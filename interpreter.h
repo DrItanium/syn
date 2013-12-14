@@ -43,6 +43,7 @@ typedef union instruction {
  * 15) store
  * 16) branch
  * 17) set
+ * 18) terminate
  */
 
 
@@ -71,7 +72,7 @@ void set(processor* proc, uchar dest, uvlong value);
 /* helper routines */
 void incrementprogramcounter(processor* proc);
 instruction retrieveinstruction(processor* proc);
-void parseinstruction(processor* proc, instruction inst);
+int cycle(processor* proc);
 int instructionexecutable(processor* proc, instruction inst);
 
 /* bios routines */
