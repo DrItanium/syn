@@ -1,2 +1,4 @@
 *.swp
 *.swo
+a.out
+interpreter.o
