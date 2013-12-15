@@ -1,57 +1,68 @@
-#define FalseRegister 127
-#define TrueRegister 126
-#define ProcessorIdRegister 125
-#define RegisterCountRegister 124
-#define CellCountRegister 123
-#define ProgramCounter 122
+
+/* default processor type */
 uvlong processor_count = 0;
 typedef struct processor {
 	uvlong gpr[128];
 	uvlong memory[131072];
 } processor;
+
 typedef union instruction {
 	uvlong value;
 	uchar bytes[8];
-	/* an instruction is made up of eight parts 
-	 * 0) predicate ind
-	 * 1) instruction id
-	 * 2) destination (true)
-	 * 3) destination (false)
-	 * 4) src0 ind
-	 * 5) src1 ind
-	 * 6) src2 ind
-	 * 7) src3 ind
-	 */
 } instruction;
 
-/* translation table
- * 0) nop
- * 1) add
- * 2) sub
- * 3) mul
- * 4) div
- * 5) rightshift
- * 6) leftshift
- * 7) binaryor
- * 8) binaryand
- * 9) binarynot
- * 10) equals
- * 11) notequals
- * 12) greaterthan
- * 13) lessthan
- * 14) load
- * 15) store
- * 16) branch
- * 17) set
- * 18) terminate
- */
+/* processor register indicies */
+enum {
+	FalseRegister = 127,
+	TrueRegister = 126,
+	ProcessorIdRegister = 125,
+	RegisterCountRegister = 124,
+	CellCountRegister = 123,
+	ProgramCounter = 122,
+};
 
+/* instruction components */
+enum {
+	InstructionPredicate = 0,
+	InstructionId = 1,
+	InstructionDestination0 = 2,
+	InstructionDestination1 = 3,
+	InstructionSource0 = 4,
+	InstructionSource1 = 5,
+	InstructionByte6 = 6,
+	InstructionByte7 = 7,
+};
+
+/* instruction translation table */
+enum {
+	NopInstruction = 0,
+	AddInstruction = 1,
+	SubInstruction = 2,
+	MulInstruction = 3,
+	DivInstruction = 4,
+	RightShiftInstruction = 5,
+	LeftShiftInstruction = 6,
+	BinaryOrInstruction = 7,
+	BinaryAndInstruction = 8,
+	BinaryNotInstruction = 9,
+	EqualsInstruction = 10,
+	NotEqualsInstruction = 11,
+	GreaterThanInstruction = 12,
+	LessThanInstruction = 13,
+	LoadInstruction = 14,
+	StoreInstruction = 15,
+	BranchInstruction = 16,
+	SetInstruction = 17,
+	ModInstruction = 18,
+	TerminateInstruction = 255,
+};
 
 void nop(processor* proc);
 void add(processor* proc, uchar dest, uchar src0, uchar src1);
 void sub(processor* proc, uchar dest, uchar src0, uchar src1);
 void mul(processor* proc, uchar dest, uchar src0, uchar src1);
 void divop(processor* proc, uchar dest, uchar src0, uchar src1);
+void modop(processor* proc, uchar dest, uchar src0, uchar src1);
 void rightshift(processor* proc, uchar dest, uchar src0, uchar src1);
 void leftshift(processor* proc, uchar dest, uchar src0, uchar src1);
 void binaryor(processor* proc, uchar dest, uchar src0, uchar src1);

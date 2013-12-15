@@ -8,28 +8,27 @@ void main() {
 	exits(0);
 }
 void setupprocessor(processor* proc) {
+	instruction nop;
 	instruction branch0, branch1;
 	
 	/* Upper registers have a special purpose */
-	/* false/zero */
 	proc->gpr[FalseRegister] = 0;
-	/* true/one */
 	proc->gpr[TrueRegister] = 1;
-	/* processor-id */
 	proc->gpr[ProcessorIdRegister] = processor_count++;
-	/* register count */
 	proc->gpr[RegisterCountRegister] = 128;
-	/* cell count [64-bits * total count] */
 	proc->gpr[CellCountRegister] = 131072;
 	/* program-counter */
 	proc->gpr[ProgramCounter] = 2048;
 	/* just loop at this point */
+	nop.value = 0;
+	nop.bytes[InstructionPredicate] = TrueRegister;
+	nop.bytes[InstructionId] = NopInstruction;
 	branch0.value = 0;
-	branch0.bytes[0] = TrueRegister;
-	branch0.bytes[1] = 16;
+	branch0.bytes[InstructionPredicate] = TrueRegister;
+	branch0.bytes[InstructionId] = BranchInstruction;
 	branch1.value = proc->gpr[ProgramCounter];
-	proc->memory[proc->gpr[ProgramCounter]] = 0;
-	
+	proc->memory[proc->gpr[ProgramCounter]] = nop.value;
+
 	proc->memory[proc->gpr[ProgramCounter] + 1] = branch0.value;
 	proc->memory[proc->gpr[ProgramCounter] + 2] = branch1.value;
 }
@@ -40,75 +39,78 @@ void incrementprogramcounter(processor* proc) {
 	proc->gpr[ProgramCounter]++;
 }
 int instructionexecutable(processor* proc, instruction inst) {
-	return proc->gpr[inst.bytes[0]];
+	return proc->gpr[inst.bytes[InstructionPredicate]];
 }
 int cycle(processor* proc) {
 	instruction a, b;
 	a = retrieveinstruction(proc);
 	/* check to see if we should execute */
 	if(instructionexecutable(proc, a)) {
-		switch(a.bytes[1]) {
-			case 0:
+		switch(a.bytes[InstructionId]) {
+			case NopInstruction:
 				nop(proc);
 				break;
-			case 1:
-				add(proc, a.bytes[2], a.bytes[4], a.bytes[5]);
+			case AddInstruction:
+				add(proc, a.bytes[InstructionDestination0], a.bytes[InstructionSource0], a.bytes[InstructionSource1]);
 				break;
-			case 2:
-				sub(proc, a.bytes[2], a.bytes[4], a.bytes[5]);
+			case SubInstruction:
+				sub(proc, a.bytes[InstructionDestination0], a.bytes[InstructionSource0], a.bytes[InstructionSource1]);
 				break;
-			case 3:
-				mul(proc, a.bytes[2], a.bytes[4], a.bytes[5]);
+			case MulInstruction:
+				mul(proc, a.bytes[InstructionDestination0], a.bytes[InstructionSource0], a.bytes[InstructionSource1]);
 				break;
-			case 4:
-				divop(proc, a.bytes[2], a.bytes[4], a.bytes[5]);
+			case DivInstruction:
+				divop(proc, a.bytes[InstructionDestination0], a.bytes[InstructionSource0], a.bytes[InstructionSource1]);
 				break;
-			case 5:
-				rightshift(proc, a.bytes[2], a.bytes[4], a.bytes[5]);
+			case RightShiftInstruction:
+				rightshift(proc, a.bytes[InstructionDestination0], a.bytes[InstructionSource0], a.bytes[InstructionSource1]);
 				break;
-			case 6:
-				leftshift(proc, a.bytes[2], a.bytes[4], a.bytes[5]);
+			case LeftShiftInstruction:
+				leftshift(proc, a.bytes[InstructionDestination0], a.bytes[InstructionSource0], a.bytes[InstructionSource1]);
 				break;
-			case 7:
-				binaryor(proc, a.bytes[2], a.bytes[4], a.bytes[5]);
+			case BinaryOrInstruction:
+				binaryor(proc, a.bytes[InstructionDestination0], a.bytes[InstructionSource0], a.bytes[InstructionSource1]);
 				break;
-			case 8:
-				binaryand(proc, a.bytes[2], a.bytes[4], a.bytes[5]);
+			case BinaryAndInstruction:
+				binaryand(proc, a.bytes[InstructionDestination0], a.bytes[InstructionSource0], a.bytes[InstructionSource1]);
 				break;
-			case 9:
-				binarynot(proc, a.bytes[2], a.bytes[4]);
+			case BinaryNotInstruction:
+				binarynot(proc, a.bytes[InstructionDestination0], a.bytes[InstructionSource0]);
 				break;
-			case 10:
-				equals(proc, a.bytes[2], a.bytes[3], a.bytes[4], a.bytes[5]);
+			case EqualsInstruction:
+				equals(proc, a.bytes[InstructionDestination0], a.bytes[InstructionDestination1], a.bytes[InstructionSource0], a.bytes[InstructionSource1]);
 				break;
-			case 11:
-				notequals(proc, a.bytes[2], a.bytes[3], a.bytes[4], a.bytes[5]);
+			case NotEqualsInstruction:
+				notequals(proc, a.bytes[InstructionDestination0], a.bytes[InstructionDestination1], a.bytes[InstructionSource0], a.bytes[InstructionSource1]);
 				break;
-			case 12:
-				greaterthan(proc, a.bytes[2], a.bytes[3], a.bytes[4], a.bytes[5]);
+			case GreaterThanInstruction:
+				greaterthan(proc, a.bytes[InstructionDestination0], a.bytes[InstructionDestination1], a.bytes[InstructionSource0], a.bytes[InstructionSource1]);
 				break;
-			case 13:
-				lessthan(proc, a.bytes[2], a.bytes[3], a.bytes[4], a.bytes[5]);
+			case LessThanInstruction:
+				lessthan(proc, a.bytes[InstructionDestination0], a.bytes[InstructionDestination1], a.bytes[InstructionSource0], a.bytes[InstructionSource1]);
 				break;
-			case 14:
-				load(proc, a.bytes[2], a.bytes[4]);
+			case LoadInstruction:
+				load(proc, a.bytes[InstructionDestination0], a.bytes[InstructionSource0]);
 				break;
-			case 15:
-				store(proc, a.bytes[2], a.bytes[4]);
+			case StoreInstruction:
+				store(proc, a.bytes[InstructionDestination0], a.bytes[InstructionSource0]);
 				break;
-			case 16:
+			case BranchInstruction:
 				/* we need to grab the next cell */
 				incrementprogramcounter(proc);
 				b = retrieveinstruction(proc);
 				branch(proc, b.value % proc->gpr[CellCountRegister]);
 				break;
-			case 17:
+			case SetInstruction:
 				/* this is an interesting case */
 				incrementprogramcounter(proc);
 				b = retrieveinstruction(proc);
-				set(proc, a.bytes[2], b.value);
+				set(proc, a.bytes[InstructionDestination0], b.value);
 				break;
-			case 18:
+			case ModInstruction:
+				modop(proc, a.bytes[InstructionDestination0], a.bytes[InstructionSource0], a.bytes[InstructionSource1]);
+				break;
+			case TerminateInstruction:
 			default:
 				return 0;
 		}
@@ -184,3 +186,7 @@ void set(processor* proc, uchar dest, uvlong value) {
 		proc->gpr[dest] = value;
 }
 void nop(processor* proc) { }
+
+void modop(processor* proc, uchar dest, uchar src0, uchar src1) {
+	proc->gpr[dest] = proc->gpr[src0] % proc->gpr[src1];	
+}
