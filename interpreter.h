@@ -44,10 +44,12 @@ enum {
 	PlatformScratch5 = 112,
 	PlatformScratch6 = 111,
 	PlatformScratch7 = 110,
-	PlatformInputRegister0 = 109,
-	PlatformInputRegister1 = 108,
-	PlatformInputRegister2 = 107,
-	PlatformInputRegister3 = 106,
+	PlatformTrue = 109,
+	PlatformFalse = 108,
+	PlatformInputRegister0 = 107,
+	PlatformInputRegister1 = 106,
+	PlatformInputRegister2 = 105,
+	PlatformInputRegister3 = 104,
 };
 
 
@@ -77,12 +79,19 @@ enum {
 	PlatformCallInstruction = 254,
 	TerminateInstruction = 255,
 };
+/* platform layout */
+enum {
+	NilLocation = 0,
+	TerminateLocation = 1,
+	PlatformHandlerLocation = 2,
+};
 
 /* platform calls */
 enum {
 	platformexit = 0,
 	platformputc = 1,
 	platformgetc = 2,
+	platformerror = 255,
 };
 
 
@@ -118,7 +127,16 @@ void incrementprogramcounter(processor* proc);
 instruction retrieveinstruction(processor* proc);
 int cycle(processor* proc);
 int instructionexecutable(processor* proc, instruction inst);
+void encodeeqinstruction(processor* proc, int offset, uchar pred, uchar dest0, uchar dest1, uchar src0, uchar src1);
+void encodesetinstruction(processor* proc, int offset, uchar pred, uchar reg, uvlong value);
+void encodebranchinstruction(processor* proc, int offset, uchar pred, uvlong value);
+void encodeplatforminstruction(processor* proc, int offset, uchar pred);
+void encoderetinstruction(processor* proc, int offset, uchar pred);
+void encodecallinstruction(processor* proc, int offset, uchar pred, uchar dest);
 
 /* platform routines */
 void setupprocessor(processor* proc);
+void installplatformcallhandler(processor* proc);
 void platformcall(processor* proc);
+void installexitcall(processor* proc);
+void installprocessorloop(processor* proc);

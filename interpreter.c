@@ -1,8 +1,10 @@
 #include <u.h>
 #include <libc.h>
+#include <stdio.h>
 #include "interpreter.h"
 void main() {
 	processor proc;
+	printf("startup\n");
 	setupprocessor(&proc);
 	while(cycle(&proc));
 	exits(0);
@@ -18,15 +20,19 @@ int instructionexecutable(processor* proc, instruction inst) {
 	return proc->gpr[inst.predicate];
 }
 int cycle(processor* proc) {
+	int shouldincrementprogramcounter;
 	instruction a, b;
+	shouldincrementprogramcounter = 1;
 	a = retrieveinstruction(proc);
 	/* check to see if we should execute */
 	if(instructionexecutable(proc, a)) {
 		switch(a.id) {
 			case NopInstruction:
+				printf("nop\n");
 				nop(proc);
 				break;
 			case AddInstruction:
+				printf("add\n");
 				add(proc, a.destination0, a.source0, a.source1);
 				break;
 			case SubInstruction:
@@ -54,6 +60,7 @@ int cycle(processor* proc) {
 				binarynot(proc, a.destination0, a.source0);
 				break;
 			case EqualsInstruction:
+				printf("equals\n");
 				equals(proc, a.destination0, a.destination1, a.source0, a.source1);
 				break;
 			case NotEqualsInstruction:
@@ -76,18 +83,21 @@ int cycle(processor* proc) {
 				incrementprogramcounter(proc);
 				b = retrieveinstruction(proc);
 				branch(proc, b.value % proc->gpr[CellCountRegister]);
+				shouldincrementprogramcounter = 0;
 				break;
 			case SetInstruction:
 				/* this is an interesting case */
 				incrementprogramcounter(proc);
 				b = retrieveinstruction(proc);
 				set(proc, a.destination0, b.value);
+				shouldincrementprogramcounter = 0;
 				break;
 			case ModInstruction:
 				modop(proc, a.destination0, a.source0, a.source1);
 				break;
 			case CallInstruction:
 				call(proc, b.source0);
+				shouldincrementprogramcounter = 0;
 				break;
 			case RetInstruction:
 				ret(proc);
@@ -100,7 +110,9 @@ int cycle(processor* proc) {
 				return 0;
 		}
 	} 
-	incrementprogramcounter(proc);
+	if(shouldincrementprogramcounter) {
+		incrementprogramcounter(proc);
+	}
 	return 1;
 }
 void add(processor* proc, uchar dest, uchar src0, uchar src1) {
@@ -184,10 +196,6 @@ void call(processor* proc, uchar dest) {
 void ret(processor* proc) {
 	add(proc, ProgramCounter, ReturnRegister, FalseRegister);
 }
-static void installexitcall(processor* proc);
-static void installputccall(processor* proc);
-static void installgetccall(processor* proc);
-static void installprocessorloop(processor* proc);
 void setupprocessor(processor* proc) {
 
 	/* Upper registers have a special purpose */
@@ -200,49 +208,107 @@ void setupprocessor(processor* proc) {
 	/* program-counter */
 	proc->gpr[ProgramCounter] = 2048;
 	installexitcall(proc);
-	installputccall(proc);
-	installgetccall(proc);
+	installplatformcallhandler(proc);
 	installprocessorloop(proc);
 }
 void installprocessorloop(processor* proc) {
-	instruction nop;
-	instruction branch0, branch1;
-	/* just loop at this point */
-	nop.value = 0;
-	nop.predicate = TrueRegister;
-	nop.id = NopInstruction;
-	branch0.value = 0;
-	branch0.predicate = TrueRegister;
-	branch0.id = BranchInstruction;
-	branch1.value = proc->gpr[ProgramCounter];
-	proc->memory[proc->gpr[ProgramCounter]] = nop.value;
+	int offset;
 
-	proc->memory[proc->gpr[ProgramCounter] + 1] = branch0.value;
-	proc->memory[proc->gpr[ProgramCounter] + 2] = branch1.value;
+	offset = proc->gpr[ProgramCounter];
+	/* just loop at this point */
+	encodesetinstruction(proc, offset, TrueRegister, PlatformInputRegister0, (uvlong)'a');
+	encodesetinstruction(proc, offset + 2, TrueRegister, PlatformFunctionCallIndex, platformputc);
+	encodesetinstruction(proc, offset + 4, TrueRegister, 0, PlatformHandlerLocation);
+	encodecallinstruction(proc, offset + 6, TrueRegister, 0);
+	encodebranchinstruction(proc, offset + 7, TrueRegister, offset);
 }
 void installplatformcallhandler(processor* proc) {
-
+	encodesetinstruction(proc, PlatformHandlerLocation, TrueRegister, PlatformScratch0, platformexit);
+	encodeeqinstruction(proc, PlatformHandlerLocation + 2, TrueRegister, PlatformTrue, PlatformFalse, PlatformFunctionCallIndex, PlatformScratch0);
+	encodebranchinstruction(proc, PlatformHandlerLocation + 3, PlatformTrue, TerminateLocation);
+	encodesetinstruction(proc, PlatformHandlerLocation + 5, PlatformFalse, PlatformScratch0, platformputc);
+	encodeeqinstruction(proc, PlatformHandlerLocation + 7, PlatformFalse, PlatformTrue, PlatformFalse, PlatformFunctionCallIndex, PlatformScratch0);
+	encodesetinstruction(proc, PlatformHandlerLocation + 8, PlatformFalse, PlatformScratch0, platformgetc);
+	encodeeqinstruction(proc, PlatformHandlerLocation + 10, PlatformFalse, PlatformTrue, PlatformFalse, PlatformFunctionCallIndex, PlatformScratch0);
+	encodesetinstruction(proc, PlatformHandlerLocation + 11, PlatformFalse, PlatformScratch0, platformerror);
+	encodeplatforminstruction(proc, PlatformHandlerLocation + 13, TrueRegister);
+	encoderetinstruction(proc, PlatformHandlerLocation + 14, TrueRegister);
 }
 void installexitcall(processor* proc) {
 	instruction terminate;
 	terminate.value = 0;
 	terminate.id = TerminateInstruction;
 	terminate.predicate = TrueRegister;
-	proc->memory[0] = terminate.value;
+	proc->memory[TerminateLocation] = terminate.value;
 }
 
-void installputccall(processor* proc) {
-	instruction setA,setB, platform, ret;
-	setA.value = 0;
-	setB.value = 1;
-	platform.value = 0;
-	ret.value = 0;
-	setA.predicate = TrueRegister;
-	setA.id = SetInstruction;
-	platform.predicate = TrueRegister;
-	platform.id = PlatformCallInstruction;
-	proc->memory[1] = setA.value;
-	proc->memory[2] = setB.value;
-	proc->memory[3] = platform.value;
-	proc->memory[4] = ret.value;
+void encodesetinstruction(processor* proc, int offset, uchar pred, uchar reg, uvlong value) {
+	instruction a;	
+	a.value = 0;
+	a.predicate = pred;
+	a.id = SetInstruction;
+	a.destination0 = reg;
+	proc->memory[offset] = a.value;
+	proc->memory[offset + 1] = value;
+}
+void encodebranchinstruction(processor* proc, int offset, uchar pred, uvlong value) {
+	instruction a;	
+	a.value = 0;
+	a.predicate = pred;
+	a.id = BranchInstruction;
+	proc->memory[offset] = a.value;
+	proc->memory[offset + 1] = value;
+}
+
+void encodeeqinstruction(processor* proc, int offset, uchar pred, uchar d0, uchar d1, uchar s0, uchar s1) {
+	instruction a;	
+	a.value = 0;
+	a.predicate = pred;
+	a.id = EqualsInstruction;
+	a.destination0 = d0;
+	a.destination1 = d1;
+	a.source0 = s0;
+	a.source1 = s1;
+	proc->memory[offset] = a.value;
+}
+void encodecallinstruction(processor* proc, int offset, uchar pred, uchar dest) {
+	instruction a;
+	a.value = 0;
+	a.predicate = pred;
+	a.id = CallInstruction;
+	a.source0 = dest;
+	proc->memory[offset] = a.value;
+}
+void encodeplatforminstruction(processor* proc, int offset, uchar pred) {
+	instruction a;	
+	a.value = 0;
+	a.predicate = pred;
+	a.id = PlatformCallInstruction;
+	proc->memory[offset] = a.value;
+}
+
+
+void encoderetinstruction(processor* proc, int offset, uchar pred) {
+	instruction a;	
+	a.value = 0;
+	a.predicate = pred;
+	a.id = RetInstruction;
+	proc->memory[offset] = a.value;
+}
+
+void platformcall(processor* proc) {
+	switch(proc->gpr[PlatformFunctionCallIndex]) {
+		case platformputc:
+			proc->gpr[PlatformOutputRegister0] = putchar((char)proc->gpr[PlatformInputRegister0]);
+			break;
+		case platformgetc:
+			proc->gpr[PlatformOutputRegister0] = getchar();
+			break;
+		case platformexit:
+			sysfatal("Somehow platformexit was called!");
+		case platformerror:
+			sysfatal("A platform error occurred!");
+		default:
+			sysfatal("Invalid platform call occurred");
+	}
 }
