@@ -2,3 +2,4 @@
 *.swo
 a.out
 interpreter.o
+o.interpreter
