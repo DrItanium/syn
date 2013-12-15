@@ -4,7 +4,6 @@
 #include "interpreter.h"
 void main() {
 	processor proc;
-	printf("startup\n");
 	setupprocessor(&proc);
 	while(cycle(&proc));
 	exits(0);
@@ -28,11 +27,9 @@ int cycle(processor* proc) {
 	if(instructionexecutable(proc, a)) {
 		switch(a.id) {
 			case NopInstruction:
-				printf("nop\n");
 				nop(proc);
 				break;
 			case AddInstruction:
-				printf("add\n");
 				add(proc, a.destination0, a.source0, a.source1);
 				break;
 			case SubInstruction:
@@ -60,7 +57,6 @@ int cycle(processor* proc) {
 				binarynot(proc, a.destination0, a.source0);
 				break;
 			case EqualsInstruction:
-				printf("equals\n");
 				equals(proc, a.destination0, a.destination1, a.source0, a.source1);
 				break;
 			case NotEqualsInstruction:
@@ -176,7 +172,7 @@ void store(processor* proc, uchar dest, uchar src) {
 }
 
 void branch(processor* proc, uvlong dest) {
-	set(proc, ProgramCounter, dest - 1);
+	set(proc, ProgramCounter, dest);
 }
 
 void set(processor* proc, uchar dest, uvlong value) {
