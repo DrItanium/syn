@@ -221,8 +221,7 @@ void installprocessorloop(processor* proc) {
 	proc->memory[proc->gpr[ProgramCounter] + 2] = branch1.value;
 }
 void installplatformcallhandler(processor* proc) {
-	/* code is as follows
-	 *
+
 }
 void installexitcall(processor* proc) {
 	instruction terminate;
@@ -233,11 +232,6 @@ void installexitcall(processor* proc) {
 }
 
 void installputccall(processor* proc) {
-	/* code is as follows @ index 1
-	 *
-	 * platform 
-	 * ret
-	 */
 	instruction setA,setB, platform, ret;
 	setA.value = 0;
 	setB.value = 1;
