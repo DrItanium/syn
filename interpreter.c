@@ -78,7 +78,7 @@ int cycle(processor* proc) {
 				/* we need to grab the next cell */
 				incrementprogramcounter(proc);
 				b = retrieveinstruction(proc);
-				branch(proc, b.value % proc->gpr[CellCountRegister]);
+				branch(proc, b.value);
 				shouldincrementprogramcounter = 0;
 				break;
 			case SetInstruction:
@@ -92,7 +92,7 @@ int cycle(processor* proc) {
 				modop(proc, a.destination0, a.source0, a.source1);
 				break;
 			case CallInstruction:
-				call(proc, b.source0);
+				call(proc, a.source0);
 				shouldincrementprogramcounter = 0;
 				break;
 			case RetInstruction:
@@ -172,7 +172,7 @@ void store(processor* proc, uchar dest, uchar src) {
 }
 
 void branch(processor* proc, uvlong dest) {
-	set(proc, ProgramCounter, dest);
+	set(proc, ProgramCounter, dest % proc->gpr[CellCountRegister]);
 }
 
 void set(processor* proc, uchar dest, uvlong value) {
