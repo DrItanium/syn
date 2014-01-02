@@ -1,10 +1,13 @@
 enum {
    RegisterCount = 128,
+#ifndef MemorySize 
    MemorySize = 131072, /* 64-bit cells */
+#endif
 };
 /* default processor type */
 uvlong processor_count = 0;
 typedef struct processor {
+   /* no processor caches makes it possible to do complete static scheduling */
    uvlong gpr[RegisterCount];
    uvlong *memory;
 } processor;
@@ -22,6 +25,7 @@ typedef union instruction {
       uchar byte7;
    };
 } instruction;
+
 
 /* processor register indicies */
 enum {
@@ -127,12 +131,15 @@ void incrementprogramcounter(processor* proc);
 instruction retrieveinstruction(processor* proc);
 int cycle(processor* proc);
 int instructionexecutable(processor* proc, instruction inst);
-void encodeeqinstruction(processor* proc, int offset, uchar pred, uchar dest0, uchar dest1, uchar src0, uchar src1);
-void encodesetinstruction(processor* proc, int offset, uchar pred, uchar reg, uvlong value);
-void encodebranchinstruction(processor* proc, int offset, uchar pred, uvlong value);
-void encodeplatforminstruction(processor* proc, int offset, uchar pred);
-void encoderetinstruction(processor* proc, int offset, uchar pred);
-void encodecallinstruction(processor* proc, int offset, uchar pred, uchar dest);
+int encodeinstruction(processor* proc, int offset, uchar predicate, uchar id, uchar dest0, uchar dest1, uchar source0, uchar source1, uchar byte6, uchar byte7);
+int encodevalue(processor* proc, int offset, uvlong value);
+int encodeeqinstruction(processor* proc, int offset, uchar pred, uchar dest0, uchar dest1, uchar src0, uchar src1);
+int encodesetinstruction(processor* proc, int offset, uchar pred, uchar reg, uvlong value);
+int encodebranchinstruction(processor* proc, int offset, uchar pred, uvlong value);
+int encodeplatforminstruction(processor* proc, int offset, uchar pred);
+int encoderetinstruction(processor* proc, int offset, uchar pred);
+int encodecallinstruction(processor* proc, int offset, uchar pred, uchar dest);
+int encodeprintchar(processor* proc, int offset, uchar pred, char value);
 
 /* platform routines */
 void setupprocessor(processor* proc);
@@ -141,3 +148,6 @@ void platformcall(processor* proc);
 void installexitcall(processor* proc);
 void installprocessorloop(processor* proc);
 void shutdownprocessor(processor* proc);
+
+/* custom program handler */
+void installprogram(processor* proc);

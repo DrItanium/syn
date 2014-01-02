@@ -2,10 +2,12 @@
 #include <libc.h>
 #include <stdio.h>
 #include "interpreter.h"
+
 void main() {
    
    processor proc;
    setupprocessor(&proc);
+   installprogram(&proc);
    while(cycle(&proc));
    shutdownprocessor(&proc);
    exits(0);
@@ -222,24 +224,28 @@ void setupprocessor(processor* proc) {
    installprocessorloop(proc);
 }
 void installprocessorloop(processor* proc) {
-   int offset;
-
+   int offset, firstOffset;
+   
    offset = proc->gpr[ProgramCounter];
+   firstOffset = offset;
    /* just print a and exit */
-   encodesetinstruction(proc, offset, TrueRegister, PlatformInputRegister0, (uvlong)'i');
-   encodebranchinstruction(proc, offset + 2, TrueRegister, offset);
+   offset = encodesetinstruction(proc, offset, TrueRegister, PlatformInputRegister0, (uvlong)'i');
+   offset = encodesetinstruction(proc, offset, TrueRegister, PlatformFunctionCallIndex, platformputc);
+   offset = encodeplatforminstruction(proc, offset, TrueRegister);
+   encodebranchinstruction(proc, offset, TrueRegister, 0);
 }
 void installplatformcallhandler(processor* proc) {
-   encodesetinstruction(proc, PlatformHandlerLocation, TrueRegister, PlatformScratch0, platformexit);
-   encodeeqinstruction(proc, PlatformHandlerLocation + 2, TrueRegister, PlatformTrue, PlatformFalse, PlatformFunctionCallIndex, PlatformScratch0);
-   encodebranchinstruction(proc, PlatformHandlerLocation + 3, PlatformTrue, TerminateLocation);
-   encodesetinstruction(proc, PlatformHandlerLocation + 5, PlatformFalse, PlatformScratch0, platformputc);
-   encodeeqinstruction(proc, PlatformHandlerLocation + 7, PlatformFalse, PlatformTrue, PlatformFalse, PlatformFunctionCallIndex, PlatformScratch0);
-   encodesetinstruction(proc, PlatformHandlerLocation + 8, PlatformFalse, PlatformScratch0, platformgetc);
-   encodeeqinstruction(proc, PlatformHandlerLocation + 10, PlatformFalse, PlatformTrue, PlatformFalse, PlatformFunctionCallIndex, PlatformScratch0);
-   encodesetinstruction(proc, PlatformHandlerLocation + 11, PlatformFalse, PlatformScratch0, platformerror);
-   encodeplatforminstruction(proc, PlatformHandlerLocation + 13, TrueRegister);
-   encoderetinstruction(proc, PlatformHandlerLocation + 14, TrueRegister);
+   int a;
+   a = encodesetinstruction(proc, PlatformHandlerLocation, TrueRegister, PlatformScratch0, platformexit);
+   a = encodeeqinstruction(proc, a, TrueRegister, PlatformTrue, PlatformFalse, PlatformFunctionCallIndex, PlatformScratch0);
+   a = encodebranchinstruction(proc, a, PlatformTrue, TerminateLocation);
+   a = encodesetinstruction(proc, a, PlatformFalse, PlatformScratch0, platformputc);
+   a = encodeeqinstruction(proc, a, PlatformFalse, PlatformTrue, PlatformFalse, PlatformFunctionCallIndex, PlatformScratch0);
+   a = encodesetinstruction(proc, a, PlatformFalse, PlatformScratch0, platformgetc);
+   a = encodeeqinstruction(proc, a, PlatformFalse, PlatformTrue, PlatformFalse, PlatformFunctionCallIndex, PlatformScratch0);
+   a = encodesetinstruction(proc, a, PlatformFalse, PlatformScratch0, platformerror);
+   a = encodeplatforminstruction(proc, a, TrueRegister);
+   encoderetinstruction(proc, a, TrueRegister);
 }
 void installexitcall(processor* proc) {
    instruction terminate;
@@ -249,58 +255,28 @@ void installexitcall(processor* proc) {
    proc->memory[TerminateLocation] = terminate.value;
 }
 
-void encodesetinstruction(processor* proc, int offset, uchar pred, uchar reg, uvlong value) {
-   instruction a;	
-   a.value = 0;
-   a.predicate = pred;
-   a.id = SetInstruction;
-   a.destination0 = reg;
-   proc->memory[offset] = a.value;
-   proc->memory[offset + 1] = value;
+int encodesetinstruction(processor* proc, int offset, uchar pred, uchar reg, uvlong value) {
+   return encodevalue(proc, encodeinstruction(proc, offset, pred, SetInstruction, reg, 0, 0, 0, 0, 0), value);
 }
-void encodebranchinstruction(processor* proc, int offset, uchar pred, uvlong value) {
-   instruction a;	
-   a.value = 0;
-   a.predicate = pred;
-   a.id = BranchInstruction;
-   proc->memory[offset] = a.value;
-   proc->memory[offset + 1] = value;
+int encodebranchinstruction(processor* proc, int offset, uchar pred, uvlong value) {
+   return encodevalue(proc, encodeinstruction(proc, offset, pred, BranchInstruction, 0, 0, 0, 0, 0, 0), value);
 }
 
-void encodeeqinstruction(processor* proc, int offset, uchar pred, uchar d0, uchar d1, uchar s0, uchar s1) {
-   instruction a;	
-   a.value = 0;
-   a.predicate = pred;
-   a.id = EqualsInstruction;
-   a.destination0 = d0;
-   a.destination1 = d1;
-   a.source0 = s0;
-   a.source1 = s1;
-   proc->memory[offset] = a.value;
+int encodeeqinstruction(processor* proc, int offset, uchar pred, uchar d0, uchar d1, uchar s0, uchar s1) {
+   return encodeinstruction(proc, offset, pred, EqualsInstruction, d0, d1, s0, s1, 0, 0);
 }
-void encodecallinstruction(processor* proc, int offset, uchar pred, uchar dest) {
-   instruction a;
-   a.value = 0;
-   a.predicate = pred;
-   a.id = CallInstruction;
-   a.source0 = dest;
-   proc->memory[offset] = a.value;
+
+int encodecallinstruction(processor* proc, int offset, uchar pred, uchar dest) {
+   return encodeinstruction(proc, offset, pred, CallInstruction, 0, 0, dest, 0, 0, 0);
 }
-void encodeplatforminstruction(processor* proc, int offset, uchar pred) {
-   instruction a;	
-   a.value = 0;
-   a.predicate = pred;
-   a.id = PlatformCallInstruction;
-   proc->memory[offset] = a.value;
+
+int encodeplatforminstruction(processor* proc, int offset, uchar pred) {
+   return encodeinstruction(proc, offset, pred, PlatformCallInstruction, 0, 0, 0, 0, 0, 0);
 }
 
 
-void encoderetinstruction(processor* proc, int offset, uchar pred) {
-   instruction a;	
-   a.value = 0;
-   a.predicate = pred;
-   a.id = RetInstruction;
-   proc->memory[offset] = a.value;
+int encoderetinstruction(processor* proc, int offset, uchar pred) {
+   return encodeinstruction(proc, offset, pred, RetInstruction, 0, 0, 0, 0, 0, 0);
 }
 
 void platformcall(processor* proc) {
@@ -319,3 +295,29 @@ void platformcall(processor* proc) {
          sysfatal("Invalid platform call occurred");
    }
 }
+
+int encodeprintchar(processor* proc, int offset, uchar pred, char value) {
+   offset = encodesetinstruction(proc, offset, TrueRegister, PlatformInputRegister0, (uvlong)value);
+   offset = encodesetinstruction(proc, offset, TrueRegister, PlatformFunctionCallIndex, platformputc);
+   return encodeplatforminstruction(proc, offset, TrueRegister);
+}
+
+int encodeinstruction(processor* proc, int offset, uchar predicate, uchar id, uchar dest0, uchar dest1, uchar source0, uchar source1, uchar byte6, uchar byte7) {
+   instruction a;
+   a.predicate = predicate;
+   a.id = id;
+   a.destination0 = dest0;
+   a.destination1 = dest1;
+   a.source0 = source0;
+   a.source1 = source1;
+   a.byte6 = byte6;
+   a.byte7 = byte7;
+   proc->memory[offset] = a.value;
+   return offset + 1;
+}
+
+int encodevalue(processor* proc, int offset, uvlong value) {
+   proc->memory[offset] = value;
+   return offset + 1;
+}
+void installprogram(processor* proc) { }
