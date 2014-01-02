@@ -224,14 +224,11 @@ void setupprocessor(processor* proc) {
    installprocessorloop(proc);
 }
 void installprocessorloop(processor* proc) {
-   int offset, firstOffset;
+   int offset;
    
    offset = proc->gpr[ProgramCounter];
-   firstOffset = offset;
    /* just print a and exit */
-   offset = encodesetinstruction(proc, offset, TrueRegister, PlatformInputRegister0, (uvlong)'i');
-   offset = encodesetinstruction(proc, offset, TrueRegister, PlatformFunctionCallIndex, platformputc);
-   offset = encodeplatforminstruction(proc, offset, TrueRegister);
+   offset = encodeprintstring(proc, offset, TrueRegister, "I am a cat");
    encodebranchinstruction(proc, offset, TrueRegister, 0);
 }
 void installplatformcallhandler(processor* proc) {
@@ -301,6 +298,14 @@ int encodeprintchar(processor* proc, int offset, uchar pred, char value) {
    offset = encodesetinstruction(proc, offset, TrueRegister, PlatformFunctionCallIndex, platformputc);
    return encodeplatforminstruction(proc, offset, TrueRegister);
 }
+
+int encodeprintstring(processor* proc, int offset, uchar pred, char* value) {
+   for(;*value != '\0'; ++value) {
+      offset = encodeprintchar(proc, offset, pred, *value);
+   }
+   return offset;
+}
+
 
 int encodeinstruction(processor* proc, int offset, uchar predicate, uchar id, uchar dest0, uchar dest1, uchar source0, uchar source1, uchar byte6, uchar byte7) {
    instruction a;

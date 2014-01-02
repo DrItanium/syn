@@ -140,6 +140,7 @@ int encodeplatforminstruction(processor* proc, int offset, uchar pred);
 int encoderetinstruction(processor* proc, int offset, uchar pred);
 int encodecallinstruction(processor* proc, int offset, uchar pred, uchar dest);
 int encodeprintchar(processor* proc, int offset, uchar pred, char value);
+int encodeprintstring(processor* proc, int offset, uchar pred, char* value);
 
 /* platform routines */
 void setupprocessor(processor* proc);
