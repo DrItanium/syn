@@ -1,4 +1,8 @@
-This is a simple register based architecture with a limited register count.
+This project contains multiple different kinds of cpu architectures. The first 
+one was a simple risc core and the newer one I'm working on is a microcoded cpu.
 
-The assembler tools depend on proton so that is also required as well
-The interpreter requires plan9port to function
+In the src folder you will find folders corresponding to the different cpu 
+types.
+
+risc - the original theoretical-architecture risc core
+microcode - a cpu where the majority of the code is written in electron/clips.
