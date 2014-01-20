@@ -2,8 +2,8 @@
 
 TARG=interpreter
 OFILES=\
-	interpreter.$O\
+	processor.$O\
 
-HFILES=interpreter.h
+HFILES=processor.h
 
 <$PLAN9/src/mkone

@@ -1,7 +1,7 @@
 #include <u.h>
 #include <libc.h>
 #include <stdio.h>
-#include "interpreter.h"
+#include "processor.h"
 
 void main() {
    
