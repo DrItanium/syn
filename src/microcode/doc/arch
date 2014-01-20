@@ -1,0 +1,2 @@
+This processor is meant to be a microcoded cpu where the microcode is written 
+using electron/clips code with some added functions.
