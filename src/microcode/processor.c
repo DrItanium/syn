@@ -4,9 +4,24 @@
 #include <clips.h>
 #include "processor.h"
 
-static void GetRegisterFunc(void* theEnv, DATA_OBJECT_PTR ret);
-static int SetRegisterFunc(void* theEnv);
-static uvlong GetRegisterCountFunc(void* theEnv);
+#define UNIT_DATA USER_ENVIRONMENT_DATA + 0
+/* unit 0 */
+#define EXECUTION_UNIT_DATA UNIT_DATA
+/* every other unit */
+#define SCHEDULER_UNIT_DATA UNIT_DATA
+
+#define GetUnit(theEnv) ((unit*) GetEnvironmentData(theEnv, UNIT_DATA))
+#define GetExecutionUnit(theEnv) ((executionunit*) GetEnvironmentData(theEnv, EXECUTION_UNIT_DATA))
+#define GetSchedulerUnit(theEnv) ((schedulerunit*) GetEnvironmentData(theEnv, SCHEDULER_UNIT_DATA))
+
+static void GetExecutionRegisterFunc(void* theEnv, DATA_OBJECT_PTR ret);
+static int SetExecutionRegisterFunc(void* theEnv);
+static uvlong GetExecutionRegisterCountFunc(void* theEnv);
+static void SetExecutionLength(void* theEnv);
+
+static void GetSchedulerRegisterFunc(void* theEnv, DATA_OBJECT_PTR ret);
+static int SetSchedulerRegisterFunc(void* theEnv);
+static uvlong GetSchedulerRegisterCountFunc(void* theEnv);
 int main(int argc, char *argv[]) {
     void *theEnv;
 
@@ -26,67 +41,37 @@ int main(int argc, char *argv[]) {
 
     return(-1);
 }
-uvlong registercount(void) {
-    return GlobalRegisterCount;
-}
-
-void setregister(uint dest, uvlong value) {
-    globalregisters[dest] = value;
-}
-
-uvlong getregister(uint dest) {
-    return globalregisters[dest];
-}
-
-void GetRegisterFunc(void* theEnv, DATA_OBJECT_PTR ret) {
-    uint dest;
-    dest = EnvRtnLong(theEnv, 1);
-    if(dest >= 0 && dest < GlobalRegisterCount) {
-        ret->type = INTEGER;
-        ret->value = EnvAddLong(theEnv, getregister(dest));
-    } else {
-        ret->type = SYMBOL;
-        ret->value = EnvFalseSymbol(theEnv);
-    }
-}
-int SetRegisterFunc(void* theEnv) {
-    uint dest;
-    uvlong value;
-    dest = EnvRtnLong(theEnv, 1);
-    value = EnvRtnLong(theEnv, 2);
-
-    if(dest >= 0 && dest < GlobalRegisterCount) {
-        setregister(dest, value);
-        return TRUE;
-    } else {
-        return FALSE;
-    }
-}
-
-uvlong GetRegisterCountFunc(void* theEnv) {
-    return registercount();
-}
 void UserFunctions() {
 
 }
-
 void EnvUserFunctions(void* theEnv) {
-    EnvDefineFunction2(theEnv, 
-            "get-register",
-            'u',
-            PTIEF GetRegisterFunc,
-            "GetRegisterFunc",
-            (char*)"11ii");
-    EnvDefineFunction2(theEnv, 
-            "set-register",
-            'b',
-            PTIEF SetRegisterFunc,
-            "SetRegisterFunc",
-            "22iii");
-    EnvDefineFunction2(theEnv,
-            "register-count",
-            'g',
-            PTIEF GetRegisterCountFunc,
-            "GetRegisterCountFunc",
-            "00a");
+
+    if(coreindex == 0) {
+        if (! AllocateEnvironmentData(theEnv,,SCHEDULER_UNIT_DATA,
+                    sizeof(schedulerunit),NULL))
+        {
+            printf("Error allocating environment data for SCHEDULER_UNIT_DATA\n");
+            exit(EXIT_FAILURE);
+        }
+        EnvDefineFunction2(theEnv, "get-register", 'u', PTIEF GetSchedulerRegisterFunc, "GetSchedulerRegisterFunc", "11ii");
+        EnvDefineFunction2(theEnv, "set-register", 'b', PTIEF SetSchedulerRegisterFunc, "SetSchedulerRegisterFunc", "22iii");
+        EnvDefineFunction2(theEnv, "register-count", 'g', PTIEF GetSchedulerRegisterCountFunc, "GetSchedulerRegisterCountFunc", "00a");
+    } else {
+        if (! AllocateEnvironmentData(theEnv,,EXECUTION_UNIT_DATA,
+                    sizeof(executionunit),NULL))
+        {
+            printf("Error allocating environment data for EXECUTION_UNIT_DATA\n");
+            exit(EXIT_FAILURE);
+        }
+
+        GetExecutionUnit(theEnv)->executionLength = 128;
+        EnvDefineFunction2(theEnv, "get-register", 'u', PTIEF GetExecutionRegisterFunc, "GetExecutionRegisterFunc", "11ii");
+        EnvDefineFunction2(theEnv, "set-register", 'b', PTIEF SetExecutionRegisterFunc, "SetExecutionRegisterFunc", "22iii");
+        EnvDefineFunction2(theEnv, "register-count", 'g', PTIEF GetExecutionRegisterCountFunc, "GetExecutionRegisterCountFunc", "00a");
+        EnvDefineFunction2(theEnv, "set-execution-length", 'g', PTIEF SetExecutionLength, "SetExecutionLength", "11ii");
+    }
+    EnvDefineFunction2(theEnv,"get-index",'l',PTIEF GetIndex, "GetIndex", "00");
+    GetUnit(theEnv)->index = coreindex;
+    cores[coreindex] = theEnv;
+    coreindex++;
 }
