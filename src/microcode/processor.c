@@ -4,7 +4,7 @@
 #include <clips.h>
 #include "processor.h"
 
-static uvlong GetRegisterFunc(void* theEnv);
+static void GetRegisterFunc(void* theEnv, DATA_OBJECT_PTR ret);
 static int SetRegisterFunc(void* theEnv);
 static uvlong GetRegisterCountFunc(void* theEnv);
 int main(int argc, char *argv[]) {
@@ -38,13 +38,15 @@ uvlong getregister(uint dest) {
     return registers[dest];
 }
 
-uvlong GetRegisterFunc(void* theEnv) {
+void GetRegisterFunc(void* theEnv, DATA_OBJECT_PTR ret) {
     uint dest;
     dest = EnvRtnLong(theEnv, 1);
-    if(dest < RegisterCount) {
-        return getregister(dest);
+    if(dest >= 0 && dest < RegisterCount) {
+        ret->type = INTEGER;
+        ret->value = EnvAddLong(theEnv, getregister(dest));
     } else {
-        return -1;
+        ret->type = SYMBOL;
+        ret->value = EnvFalseSymbol(theEnv);
     }
 }
 int SetRegisterFunc(void* theEnv) {
@@ -71,7 +73,7 @@ void UserFunctions() {
 void EnvUserFunctions(void* theEnv) {
    EnvDefineFunction2(theEnv, 
            "get-register",
-           'g',
+           'u',
            PTIEF GetRegisterFunc,
            "GetRegisterFunc",
            (char*)"11ii");
