@@ -1,27 +1,20 @@
-/* microcoded processor */
-/* an mimd array */
+/* microcoded processor with no registers! */
 typedef unsigned char byte;
 typedef unsigned char bit;
+/* divided into four parts */
 
-enum {
-    CoreRegisterCount = 128,
-    UnitCount = 0,
-    CoreCount = UnitCount + 1,
-    DefaultExeuctionLength = 1024,
-};
-typedef union sysregister {
-        uvlong ivalue;
-        double fvalue;
-        bit pvalue : 1;
-} sysregister;
+/* dispatch multiplexer */
+void* mux;
+/* input provider */
+void* input;
+/* panels that are connected to the multiplexer */
+void* panels;
+/* graphics processor */
+void* gpu;
 
-typedef struct executionunit {
-    uint index;
-    sysregister registers[CoreRegisterCount];
-    uint executionlength;
-} executionunit;
+typedef struct terminatordata {
+    bit shouldterminate : 1;
+} terminatordata;
 
-
-uint coreindex = 0;
-void* cores[CoreCount];
-
+/* router names */
+char* inputtomux = "mux";
