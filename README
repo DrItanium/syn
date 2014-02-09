@@ -4,5 +4,8 @@ one was a simple risc core and the newer one I'm working on is a microcoded cpu.
 In the src folder you will find folders corresponding to the different cpu 
 types.
 
-risc - the original theoretical-architecture risc core
+phoenix - the original theoretical-architecture risc core
 microcode - a cpu where the majority of the code is written in electron/clips.
+polymer - a more expert system based processor which abstracts the gpu to a byte 
+          stream
+
