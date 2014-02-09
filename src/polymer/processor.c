@@ -64,8 +64,8 @@ main(int argc, char *argv[]) {
         key = event(&evt);
         if(key == Emouse) {
             m = evt.mouse;
-           sprintf(buf, "(mouse %d %d %d %ld)", m.buttons, m.xy.x, m.xy.y, m.msec);
-           EnvAssertString(input, buf);
+            sprintf(buf, "(mouse %d %d %d %ld)", m.buttons, m.xy.x, m.xy.y, m.msec);
+            EnvAssertString(input, buf);
         } else if (key == Ekeyboard) {
             sprintf(buf, "(key %d)", evt.kbdc);
             EnvAssertString(input, buf);
@@ -106,7 +106,7 @@ setupgpu(void) {
     createchanneltomux(gpu);
     EnvAddRouter(gpu, tomicrocode, 40, findgpu, printgpu, getcgpu, ungetcgpu, exitgpu);
     EnvDefineFunction2(gpu, "put-register", 'b', PTIEF putgpuregister, "putgpuregister", "22nin");
-    EnvDefineFunction2(gpu, "get-register", 'u', PTIEF getgpuregister, "putgpuregister", "12i");
+    EnvDefineFunction2(gpu, "get-register", 'u', PTIEF getgpuregister, "putgpuregister", "22i");
     EnvBatchStar(gpu, "microcode/gpu.clp");
 }
 
@@ -247,8 +247,8 @@ ungetcgpu(void* theEnv, int ch, char* logicalName) {
     index = GetGPUData(theEnv)->index;
     /* we can't ungetc if we haven't actually looked at it */
     if(index > 0) {
-       result = ch; 
-       GetGPUData(theEnv)->index--;
+        result = ch; 
+        GetGPUData(theEnv)->index--;
     } else {
         /* can't decrement any more */
         result = EOF;
@@ -263,17 +263,50 @@ exitgpu(void* theEnv, int num) {
 }
 
 /*
-    EnvDefineFunction2(gpu, "put-register", 'b', PTIEF putgpuregister, "putgpuregister", "22nin");
-    EnvDefineFunction2(gpu, "get-register", 'u', PTIEF getgpuregister, "putgpuregister", "12gik");
-*/
+   EnvDefineFunction2(gpu, "put-register", 'b', PTIEF putgpuregister, "putgpuregister", "22nin");
+   EnvDefineFunction2(gpu, "get-register", 'u', PTIEF getgpuregister, "putgpuregister", "12i");
+   */
 
 int
 putgpuregister(void* theEnv) {
-    return TRUE;
-}
+    uint index;
+    DATA_OBJECT arg0;
+    index = EnvRtnLong(theEnv, 1);
+    if(index >= 0 && index < GPURegisterCount &&
+            EnvArgTypeCheck(theEnv, "put-register", 2, INTEGER_OR_FLOAT, &arg0) == TRUE) {
 
+        if(GetType(arg0) == INTEGER) {
+            GetGPUData(theEnv)->registers[index].ivalue = DOToLong(arg0);
+        } else {
+            GetGPUData(theEnv)->registers[index].fvalue = DOToLong(arg0);
+        }
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
+enum {
+    RegisterIntType = 0,
+    RegisterFloatType,
+};
 void
 getgpuregister(void* theEnv, DATA_OBJECT_PTR ret) {
-    ret->type = SYMBOL;
-    ret->value = EnvFalseSymbol(theEnv);
+    uint index, type;
+    index = EnvRtnLong(theEnv, 1);
+    type = EnvRtnLong(theEnv, 2);
+    if(index >= 0 && index < GPURegisterCount) {
+        if(type == RegisterIntType) {
+            ret->type = INTEGER;
+            ret->value = EnvAddLong(theEnv, GetGPUData(theEnv)->registers[index].ivalue);
+        } else if(type == RegisterFloatType) {
+            ret->type = FLOAT;
+            ret->value = EnvAddDouble(theEnv, GetGPUData(theEnv)->registers[index].fvalue);
+        } else {
+            ret->type = SYMBOL;
+            ret->value = EnvFalseSymbol(theEnv);
+        }
+    } else {
+        ret->type = SYMBOL;
+        ret->value = EnvFalseSymbol(theEnv);
+    }
 }

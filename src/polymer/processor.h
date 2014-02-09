@@ -18,6 +18,7 @@ typedef struct terminatordata {
 
 enum {
     RegisterByteLength = sizeof(uvlong),
+    GPURegisterCount = 128,
 };
 
 typedef union gpuregister {
@@ -27,7 +28,7 @@ typedef union gpuregister {
 } gpuregister;
 
 typedef struct gpudata {
-    gpuregister registers[128];
+    gpuregister registers[GPURegisterCount];
     /* read from using getc and putc */
     gpuregister output;
     int index;
