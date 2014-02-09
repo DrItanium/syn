@@ -69,7 +69,7 @@ main(int argc, char *argv[]) {
         } else if (key == Ekeyboard) {
             sprintf(buf, "(key %d)", evt.kbdc);
             EnvAssertString(input, buf);
-        } 
+        }
         /* mux is executed three times per cycle */
         EnvRun(input, -1L);
         EnvRun(mux, -1L);
@@ -93,6 +93,12 @@ void EnvUserFunctions(void* theEnv) {
 void 
 eresized(int new) {
     /* need to jump into the gpu environment and perform graphical resizing */
+    char buf[1024];
+    sprintf(buf, "(message (to panels) (from gpu) (action resize) (values %d %d %d))", 
+            new,
+            screen->clipr.max.x,
+            screen->clipr.max.y);
+    EnvAssertString(mux, buf);
 }
 void 
 setupgpu(void) {
