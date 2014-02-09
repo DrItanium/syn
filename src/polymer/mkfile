@@ -1,0 +1,12 @@
+<$PLAN9/src/mkhdr
+
+TARG=polymer
+BIN=/usr/local/bin/
+LDFLAGS="-lrt -lm -lc -L/usr/lib /usr/local/lib/libelectron.a"
+CFLAGS=-Os -I/usr/include -I/usr/local/include/electron 
+OFILES=\
+	processor.$O\
+
+HFILES=processor.h
+
+<$PLAN9/src/mkone
