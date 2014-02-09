@@ -6,18 +6,41 @@
 #include "processor.h"
 
 #define MULTIPLEXER_TERMINATOR_DATA USER_ENVIRONMENT_DATA + 0 
+#define GPU_DATA USER_ENVIRONMENT_DATA + 1
 
 #define GetMultiplexerTerminatorData(theEnv) ((terminatordata*) GetEnvironmentData(theEnv, MULTIPLEXER_TERMINATOR_DATA))
+#define GetGPUData(theEnv) ((gpudata*) GetEnvironmentData(theEnv, GPU_DATA))
 static void setupmux(void);
 static void setupgpu(void);
 static void setupinput(void);
 static void setuppanels(void);
 static void markterminate(void*);
 /* routers */
-/* input to mux */
-static int findinputtomux(void*, char*);
-static int exitinputtomux(void*, int);
-static int printinputtomux(void*, char*, char*);
+/* generic mux interface functions */
+static int validcommunicationchannel(void*, char*, char*);
+static int usecommunicationchannel(void*, void*, char*, char*);
+static int findtomux(void*, char*);
+static int exittomux(void*, int);
+static int printtomux(void*, char*, char*);
+static void createchanneltomux(void*);
+
+/* gpu */
+static int findgpu(void*, char*);
+static int exitgpu(void*, int);
+static int printgpu(void*, char*, char*);
+static int getcgpu(void*, char*);
+static int ungetcgpu(void*, int, char*);
+static void interpret(void*, char*);
+static int putgpuregister(void*);
+static void getgpuregister(void*, DATA_OBJECT_PTR);
+
+static int findmuxtogpu(void*, char*);
+static int exitmuxtogpu(void*, int); 
+static int printmuxtogpu(void*, char*, char*);
+
+static int findmuxtopanels(void*, char*);
+static int exitmuxtopanels(void*, int); 
+static int printmuxtopanels(void*, char*, char*);
 
 void 
 main(int argc, char *argv[]) {
@@ -46,8 +69,13 @@ main(int argc, char *argv[]) {
         } else if (key == Ekeyboard) {
             sprintf(buf, "(key %d)", evt.kbdc);
             EnvAssertString(input, buf);
-        }
+        } 
+        /* mux is executed three times per cycle */
         EnvRun(input, -1L);
+        EnvRun(mux, -1L);
+        EnvRun(panels, -1L);
+        EnvRun(mux, -1L);
+        EnvRun(gpu, -1L);
         EnvRun(mux, -1L);
         if(GetMultiplexerTerminatorData(mux)->shouldterminate == 1) {
             DeallocateEnvironmentData();
@@ -64,11 +92,21 @@ void EnvUserFunctions(void* theEnv) {
 }
 void 
 eresized(int new) {
-
+    /* need to jump into the gpu environment and perform graphical resizing */
 }
 void 
 setupgpu(void) {
     gpu = CreateEnvironment();
+    if (! AllocateEnvironmentData(gpu, GPU_DATA,
+                sizeof(gpudata),NULL))
+    {
+        sysfatal("Error allocating environment data for GPU_DATA: %r");
+        exits("allocgpudatafailure");
+    }
+    createchanneltomux(gpu);
+    EnvAddRouter(gpu, tomicrocode, 40, findgpu, printgpu, getcgpu, ungetcgpu, exitgpu);
+    EnvDefineFunction2(gpu, "put-register", 'b', PTIEF putgpuregister, "putgpuregister", "22nin");
+    EnvDefineFunction2(gpu, "get-register", 'u', PTIEF getgpuregister, "putgpuregister", "12i");
     EnvBatchStar(gpu, "microcode/gpu.clp");
 }
 
@@ -78,24 +116,27 @@ setupmux(void) {
     if (! AllocateEnvironmentData(mux, MULTIPLEXER_TERMINATOR_DATA,
                 sizeof(terminatordata),NULL))
     {
-        printf("Error allocating environment data for MULTIPLEXER_TERMINATOR_DATA\n");
-        exit(EXIT_FAILURE);
+        sysfatal("Error allocating environment data for MULTIPLEXER_TERMINATOR_DATA: %r");
+        exits("allocmuxdatafailure");
     }
     GetMultiplexerTerminatorData(mux)->shouldterminate = 0;
     EnvDefineFunction2(mux, "exit", 'v', PTIEF markterminate, "markterminate", "00a");
+    EnvAddRouter(mux, togpu, 40, findmuxtogpu, printmuxtogpu, NULL, NULL, exitmuxtogpu);
+    EnvAddRouter(mux, topanels, 40, findmuxtopanels, printmuxtopanels, NULL, NULL, exitmuxtopanels);
     EnvBatchStar(mux, "microcode/mux.clp");
 }
 
 void
 setuppanels(void) {
     panels = CreateEnvironment();
+    createchanneltomux(panels);
     EnvBatchStar(panels, "microcode/panels.clp");
 }
 
 void 
 setupinput(void) {
     input = CreateEnvironment();
-    EnvAddRouter(input, inputtomux, 40, findinputtomux, printinputtomux, NULL, NULL, exitinputtomux);
+    createchanneltomux(input);
     EnvBatchStar(input, "microcode/input.clp");
 }
 
@@ -104,22 +145,135 @@ markterminate(void* theEnv) {
     GetMultiplexerTerminatorData(theEnv)->shouldterminate = 1;
 }
 
-/* input to mux */
 int 
-findinputtomux(void* theEnv, char* logicalName) {
-    if((strcmp(logicalName, inputtomux) == 0)) {
+validcommunicationchannel(void* theEnv, char* logicalName, char* target) {
+    if((strcmp(logicalName, target) == 0)) {
         return TRUE;
     } else {
         return FALSE;
     }
 }
-int 
-exitinputtomux(void* theEnv, int num) {
-    /* nothing needed */
+int
+usecommunicationchannel(void* theEnv, void* target, char* logicalName, char* str) {
+    EnvAssertString(target, str);
     return 1;
 }
+/* generic to mux finder */
 int 
-printinputtomux(void* theEnv, char* logicalName, char* str) {
-    EnvAssertString(mux, str);
+findtomux(void* theEnv, char* logicalName) {
+    return validcommunicationchannel(theEnv, logicalName, tomux);
+}
+
+int 
+exittomux(void* theEnv, int num) {
     return 1;
+}
+
+int
+printtomux(void* theEnv, char* logicalName, char* str) {
+    return usecommunicationchannel(theEnv, mux, logicalName, str); 
+}
+
+void
+createchanneltomux(void* theEnv) {
+    EnvAddRouter(theEnv, tomux, 40, findtomux, printtomux, NULL, NULL, exittomux);
+}
+
+/* mux to gpu */
+int 
+findmuxtogpu(void* theEnv, char* logicalName) {
+    return validcommunicationchannel(theEnv, logicalName, togpu);
+}
+
+int
+exitmuxtogpu(void* theEnv, int num) {
+    return 1;
+}
+
+int
+printmuxtogpu(void* theEnv, char* logicalName, char* str) {
+    return usecommunicationchannel(theEnv, gpu, logicalName, str); 
+}
+
+/* mux to panels */
+int 
+findmuxtopanels(void* theEnv, char* logicalName) {
+    return validcommunicationchannel(theEnv, logicalName, topanels);
+}
+
+int
+exitmuxtopanels(void* theEnv, int num) {
+    return 1;
+}
+
+int
+printmuxtopanels(void* theEnv, char* logicalName, char* str) {
+    return usecommunicationchannel(theEnv, panels, logicalName, str); 
+}
+
+/* gpu operations */
+int
+findgpu(void* theEnv, char* logicalName) {
+    return validcommunicationchannel(theEnv, logicalName, tomicrocode);
+}
+
+int
+printgpu(void* theEnv, char* logicalName, char* str) {
+    interpret(theEnv, str);
+    return 1;
+}
+
+void
+interpret(void* theEnv, char* stream) {
+    /* do nothing right now */
+}
+
+int
+getcgpu(void* theEnv, char* logicalName) {
+    int index, result;
+    index = GetGPUData(theEnv)->index;
+    if(index < RegisterByteLength) {
+        result = GetGPUData(theEnv)->output.bytes[index];
+        GetGPUData(theEnv)->index++;
+    } else {
+        result = EOF;
+    }
+    return result;
+}
+
+int
+ungetcgpu(void* theEnv, int ch, char* logicalName) {
+    int index, result;
+    index = GetGPUData(theEnv)->index;
+    /* we can't ungetc if we haven't actually looked at it */
+    if(index > 0) {
+       result = ch; 
+       GetGPUData(theEnv)->index--;
+    } else {
+        /* can't decrement any more */
+        result = EOF;
+    }
+    return result;
+}
+
+int 
+exitgpu(void* theEnv, int num) {
+    /* clean up all of the different functions */
+    return 1;
+}
+
+/*
+    EnvDefineFunction2(gpu, "put-register", 'b', PTIEF putgpuregister, "putgpuregister", "22nin");
+    EnvDefineFunction2(gpu, "get-register", 'u', PTIEF getgpuregister, "putgpuregister", "12gik");
+*/
+
+int
+putgpuregister(void* theEnv) {
+    return TRUE;
+}
+
+void
+getgpuregister(void* theEnv, DATA_OBJECT_PTR ret) {
+    ret->type = SYMBOL;
+    ret->value = EnvFalseSymbol(theEnv);
 }
