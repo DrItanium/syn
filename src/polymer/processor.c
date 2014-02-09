@@ -94,11 +94,18 @@ void
 eresized(int new) {
     /* need to jump into the gpu environment and perform graphical resizing */
     char buf[1024];
+    if(new && getwindow(display, Refnone) < 0) {
+        fprint(2, "can't reattach to window: %r\n");
+        exits("resized");
+    }
     sprintf(buf, "(message (to panels) (from gpu) (action resize) (values %d %d %d))", 
             new,
-            screen->clipr.max.x,
-            screen->clipr.max.y);
-    EnvAssertString(mux, buf);
+            screen->r.max.x,
+            screen->r.max.y);
+    EnvAssertString(panels, buf);
+    EnvRun(panels, -1);
+    EnvRun(gpu, -1);
+    flushimage(display, 1);
 }
 void 
 setupgpu(void) {
