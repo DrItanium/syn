@@ -1,8 +1,6 @@
 <$PLAN9/src/mkhdr
 
-LIB=/usr/local/lib/libelectron.a
-CFLAGS=-I/usr/local/include
-LDFLAGS=-lm -lrt
+CFLAGS=-g3 -O0
 TARG=iris
 OFILES=\
 	processor.$O\
