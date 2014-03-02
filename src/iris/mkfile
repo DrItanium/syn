@@ -1,0 +1,12 @@
+<$PLAN9/src/mkhdr
+
+LIB=/usr/local/lib/libelectron.a
+CFLAGS=-I/usr/local/include
+LDFLAGS=-lm -lrt
+TARG=iris
+OFILES=\
+	processor.$O\
+
+HFILES=processor.h
+
+<$PLAN9/src/mkone
