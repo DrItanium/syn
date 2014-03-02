@@ -1,15 +1,16 @@
+typedef unsigned char byte;
 enum {
-   RegisterCount = 128,
+   RegisterCount = 8,
 #ifndef MemorySize 
-   MemorySize = 131072, /* 64-bit cells */
+   MemorySize = 256, /* 8-bit cells */
 #endif
 };
 /* default processor type */
 uvlong processor_count = 0;
 typedef struct processor {
    /* no processor caches makes it possible to do complete static scheduling */
-   uvlong gpr[RegisterCount];
-   uvlong *memory;
+   byte gpr[RegisterCount];
+   byte memory[MemorySize];
 } processor;
 
 typedef union instruction {
