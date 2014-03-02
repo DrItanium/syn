@@ -4,12 +4,7 @@
 #include "processor.h"
 
 void main() {
-   instruction i;
    printf("sizeof(instruction) = %ld\n", sizeof(instruction));
-   i.id = 1;
-   i.setform.reg0 = 4;
-   i.setform.value = 250;
-   i.next = 1;
 
    exits(0);
 }
