@@ -1,146 +1,100 @@
 typedef unsigned char byte;
-typedef byte bit;
 enum {
-   RegisterCount = 8,
+   RegisterCount = 4,
 #ifndef MemorySize 
    MemorySize = 256, /* 8-bit cells */
 #endif
 };
-/* default processor type */
-uvlong processor_count = 0;
+
 typedef struct processor {
-   /* no processor caches makes it possible to do complete static scheduling */
    byte gpr[RegisterCount];
    byte memory[MemorySize];
+   byte predicateregister : 1;
 } processor;
 
-/* instructions are 16 bits in length */
 typedef union instruction {
-   /* A bit of a cheat! */
-   ushort value : 16;
+   ushort wholedata : 16;
    struct {
-      byte id : 5;
+      byte opgroup : 3;
       union {
          struct {
+            byte op : 4;
+            byte dest : 3;
+            byte source0 : 3;
+            byte source1 : 3;
+         } arithmetic;
+         struct {
+            byte op : 2; 
+            byte reg0 : 3;
+            union {
+               byte immediate;
+               byte reg1 : 3;
+               struct {
+                  byte reg1 : 3;
+                  byte tagbits : 5;
+               } chainmode;
+            };
+         } move;
+         struct {
+            byte op : 2;
+            byte immediateform : 1;
+            union {
+               byte immediate;
+               byte reg1 : 3;
+            };
+         } jump;
+         struct {
+            byte op : 3;
             byte reg0 : 3;
             byte reg1 : 3;
-            byte reg2 : 3;
-            bit unused : 1;
-         } normalform;
-         struct {
-            byte reg0 : 2;
-            byte value;
-         } jumpform;
-         struct {
-           byte reg0 : 3;
-         } singlebyteversion;
+            byte chaintags : 4;
+         } compare;
       };
-      bit next : 1;
    };
 } instruction;
 
 
 
-/* instruction translation table */
+/* Instructions Groups */
 enum {
-   NopInstruction = 0,
-   AddInstruction = 1,
-   SubInstruction = 2,
-   MulInstruction = 3,
-   DivInstruction = 4,
-   RightShiftInstruction = 5,
-   LeftShiftInstruction = 6,
-   BinaryOrInstruction = 7,
-   BinaryAndInstruction = 8,
-   BinaryNotInstruction = 9,
-   EqualsInstruction = 10,
-   NotEqualsInstruction = 11,
-   GreaterThanInstruction = 12,
-   LessThanInstruction = 13,
-   LoadInstruction = 14,
-   StoreInstruction = 15,
-   BranchInstruction = 16,
-   SetInstruction = 17,
-   ModInstruction = 18,
-   CallInstruction = 19,
-   RetInstruction = 20,
-   PlatformCallInstruction = 254,
-   TerminateInstruction = 255,
+   InstructionGroupArithmetic = 0,
+   InstructionGroupMove,
+   InstructionGroupJump,
+   InstructionGroupCompare,
 };
-/* platform layout */
 enum {
-   NilLocation = 0,
-   TerminateLocation = 1,
-   PlatformHandlerLocation = 2,
+   ArithmeticOpAdd = 0,
+   ArithmeticOpSub,
+   ArithmeticOpMul,
+   ArithmeticOpDiv,
+   ArithmeticOpRem,
+   ArithmeticOpShiftLeft,
+   ArithmeticOpShiftRight,
+   ArithmeticOpBinaryAnd,
+   ArithmeticOpBinaryOr,
+   ArithmeticOpBinaryNot,
 };
-
-/* platform calls */
 enum {
-   platformexit = 0,
-   platformputc = 1,
-   platformgetc = 2,
-   platformerror = 255,
+   MoveOpRegToReg = 0,
+   MoveOpImmediateToReg,
+   MoveOpRegToImmediate,
+   MoveOpChainMode,
 };
-
-
-
-/* execution processor set */
-/*
-void nop(processor* proc);
-void add(processor* proc, uchar dest, uchar src0, uchar src1);
-void sub(processor* proc, uchar dest, uchar src0, uchar src1);
-void mul(processor* proc, uchar dest, uchar src0, uchar src1);
-void divop(processor* proc, uchar dest, uchar src0, uchar src1);
-void modop(processor* proc, uchar dest, uchar src0, uchar src1);
-void rightshift(processor* proc, uchar dest, uchar src0, uchar src1);
-void leftshift(processor* proc, uchar dest, uchar src0, uchar src1);
-void binaryor(processor* proc, uchar dest, uchar src0, uchar src1);
-void binaryand(processor* proc, uchar dest, uchar src0, uchar src1);
-void binaryxor(processor* proc, uchar dest, uchar src0, uchar src1);
-void binarynot(processor* proc, uchar dest, uchar src0);
-void equals(processor* proc, uchar desttrue, uchar destfalse, uchar src0, uchar src1);
-void notequals(processor* proc, uchar desttrue, uchar destfalse, uchar src0, uchar src1);
-void greaterthan(processor* proc, uchar desttrue, uchar destfalse, uchar src0, uchar src1);
-void lessthan(processor* proc, uchar desttrue, uchar destfalse, uchar src0, uchar src1);
-
-void load(processor* proc, uchar dest, uchar src);
-void store(processor* proc, uchar dest, uchar src);
-
-void branch(processor* proc, uvlong dest);
-void set(processor* proc, uchar dest, uvlong value);
-void call(processor* proc, uchar dest);
-void ret(processor* proc);
-*/
-
-/* helper routines */
-/*
-void incrementprogramcounter(processor* proc);
-instruction retrieveinstruction(processor* proc);
-int cycle(processor* proc);
-int instructionexecutable(processor* proc, instruction inst);
-int encodeinstruction(processor* proc, int offset, uchar predicate, uchar id, uchar dest0, uchar dest1, uchar source0, uchar source1, uchar byte6, uchar byte7);
-int encodevalue(processor* proc, int offset, uvlong value);
-int encodeeqinstruction(processor* proc, int offset, uchar pred, uchar dest0, uchar dest1, uchar src0, uchar src1);
-int encodesetinstruction(processor* proc, int offset, uchar pred, uchar reg, uvlong value);
-int encodebranchinstruction(processor* proc, int offset, uchar pred, uvlong value);
-int encodeplatforminstruction(processor* proc, int offset, uchar pred);
-int encoderetinstruction(processor* proc, int offset, uchar pred);
-int encodecallinstruction(processor* proc, int offset, uchar pred, uchar dest);
-int encodeprintchar(processor* proc, int offset, uchar pred, char value);
-int encodeprintstring(processor* proc, int offset, uchar pred, char* value);
-*/
-
-/* platform routines */
-/*
-void setupprocessor(processor* proc);
-void installplatformcallhandler(processor* proc);
-void platformcall(processor* proc);
-void installexitcall(processor* proc);
-void installprocessorloop(processor* proc);
-void shutdownprocessor(processor* proc);
-*/
-
-/* custom program handler */
-/*
-void installprogram(processor* proc);
-*/
+enum {
+   JumpOpUnconditional = 0,
+   JumpOpIfTrue,
+   JumpOpIfFalse,
+};
+enum {
+   CompareOpEq = 0,
+   CompareOpNeq,
+   CompareOpLessThan,
+   CompareOpGreaterThan,
+   CompareOpLessThanOrEqualTo,
+   CompareOpGreaterThanOrEqualTo,
+   CompareOpChainMode,
+};
+void arithmetic(processor* proc, instruction inst);
+void move(processor* proc, instruction inst);
+void jump(processor* proc, instruction inst);
+void compare(processor* proc, instruction inst);
