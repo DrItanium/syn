@@ -122,3 +122,4 @@ void compare(processor* proc, instruction inst);
 void putregister(processor* proc, byte index, byte value);
 byte getregister(processor* proc, byte index);
 void decode(processor* proc, ushort value);
+void panic(char* message, char* code);
