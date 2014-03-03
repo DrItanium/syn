@@ -145,6 +145,9 @@ void jump(processor* proc, instruction inst) {
    schar address;
    byte shouldJump;
    ushort v0;
+   address = 0;
+   shouldJump = 0;
+   v0 = 0;
    switch(inst.jump.conditional) {
       case JumpOpUnconditional:
          shouldJump = 1;
@@ -182,6 +185,7 @@ void jump(processor* proc, instruction inst) {
 }
 void compare(processor* proc, instruction inst) {
    byte value;
+   value = 0;
    switch(inst.compare.op) {
       case CompareOpEq:
          value = (getregister(proc, inst.compare.reg0) ==
