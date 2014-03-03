@@ -5,24 +5,21 @@
 
 void main() {
    processor proc;
+   printf("sizeof(instruction) == %ld\n", sizeof(instruction));
 
    exits(0);
 }
 void putregister(processor* proc, byte index, byte value) {
-   if(index >= 0 && index < 4) {
+   if(index >= 0 && index < RegisterCount) {
       proc->gpr[index] = value;
-   } else if(index >= 4 && index < 8) {
-      proc->memory[proc->gpr[index % 4]] = value;
    } else {
       sysfatal("panic: attempted to store to a register out of range");
       exits("registerputoutofrange");
    }
 }
 byte getregister(processor* proc, byte index) {
-   if(index >= 0 && index < 4) {
+   if(index >= 0 && index < RegisterCount) {
       return proc->gpr[index];
-   } else if(index >= 4 && index < 8) {
-      return proc->memory[proc->gpr[index % 4]];
    } else {
       sysfatal("panic: attempted to retrieve a value from a register out of range");
       exits("registergetoutofrange");
@@ -30,7 +27,6 @@ byte getregister(processor* proc, byte index) {
    }
 }
 void arithmetic(processor* proc, instruction inst) {
-   
 }
 void move(processor* proc, instruction inst) {
    ushort tmp;
