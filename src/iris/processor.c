@@ -134,7 +134,11 @@ void move(processor* proc, instruction inst) {
       case MoveOpRegToAddress:
          tmp = (ushort)(((ushort)getregister(proc, inst.move.addressmode.reg2)) << 8);
          tmp += getregister(proc, inst.move.addressmode.reg1);
-         putregister(proc, inst.move.reg0, proc->memory[tmp]);
+         if(inst.move.addressmode.accessmode == AccessModeMoveOpLoad) {
+            putregister(proc, inst.move.reg0, proc->memory[tmp]);
+         } else {
+            proc->memory[tmp] = inst.move.reg0;
+         }
          break;
       default:
          panic("panic: invalid move operation conditional type",

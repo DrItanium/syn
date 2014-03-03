@@ -39,6 +39,7 @@ typedef union instruction {
          struct {
             byte reg1 : 3;
             byte reg2 : 3;
+            byte accessmode : 1;
          } addressmode;
       };
    } move;
@@ -114,6 +115,11 @@ enum {
    CombineBitsOpAnd,
    CombineBitsOpOr,
    CombineBitsOpXor,
+};
+
+enum {
+   AccessModeMoveOpLoad = 0,
+   AccessModeMoveOpStore,
 };
 void arithmetic(processor* proc, instruction inst);
 void move(processor* proc, instruction inst);
