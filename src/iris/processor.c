@@ -5,9 +5,32 @@
 
 void main() {
    processor proc;
+   instruction i;
+   i.value = 12345;
    printf("sizeof(instruction) == %ld\n", sizeof(instruction));
 
    exits(0);
+}
+void decode(processor* proc, ushort value) {
+   instruction i;
+   i.value = value;
+   switch(i.opgroup) {
+      case InstructionGroupArithmetic:
+         arithmetic(proc, i);
+         break;
+      case InstructionGroupMove:
+         move(proc, i);
+         break;
+      case InstructionGroupJump:
+         move(proc, i);
+         break;
+      case InstructionGroupCompare:
+         compare(proc, i);
+         break;
+      default:
+         sysfatal("panic: invalid instruction group provided");
+         exits("invalidinstructiongroup");
+   }
 }
 void putregister(processor* proc, byte index, byte value) {
    if(index >= 0 && index < RegisterCount) {
@@ -27,6 +50,64 @@ byte getregister(processor* proc, byte index) {
    }
 }
 void arithmetic(processor* proc, instruction inst) {
+   switch(inst.arithmetic.op) {
+      case ArithmeticOpAdd:
+         putregister(proc, inst.arithmetic.dest, 
+               (getregister(proc, inst.arithmetic.source0) +
+                getregister(proc, inst.arithmetic.source1)));
+         break;
+      case ArithmeticOpSub:
+         putregister(proc, inst.arithmetic.dest, 
+               (getregister(proc, inst.arithmetic.source0) -
+                getregister(proc, inst.arithmetic.source1)));
+         break;
+      case ArithmeticOpMul:
+         putregister(proc, inst.arithmetic.dest, 
+               (getregister(proc, inst.arithmetic.source0) *
+                getregister(proc, inst.arithmetic.source1)));
+         break;
+      case ArithmeticOpDiv:
+         putregister(proc, inst.arithmetic.dest, 
+               (getregister(proc, inst.arithmetic.source0) /
+                getregister(proc, inst.arithmetic.source1)));
+         break;
+      case ArithmeticOpRem:
+         putregister(proc, inst.arithmetic.dest, 
+               (getregister(proc, inst.arithmetic.source0) %
+                getregister(proc, inst.arithmetic.source1)));
+         break;
+      case ArithmeticOpShiftLeft:
+         putregister(proc, inst.arithmetic.dest, 
+               (getregister(proc, inst.arithmetic.source0) << 
+                getregister(proc, inst.arithmetic.source1)));
+         break;
+      case ArithmeticOpShiftRight:
+         putregister(proc, inst.arithmetic.dest, 
+               (getregister(proc, inst.arithmetic.source0) >>
+                getregister(proc, inst.arithmetic.source1)));
+         break;
+      case ArithmeticOpBinaryAnd:
+         putregister(proc, inst.arithmetic.dest, 
+               (getregister(proc, inst.arithmetic.source0) &
+                getregister(proc, inst.arithmetic.source1)));
+         break;
+      case ArithmeticOpBinaryOr:
+         putregister(proc, inst.arithmetic.dest, 
+               (getregister(proc, inst.arithmetic.source0) |
+                getregister(proc, inst.arithmetic.source1)));
+         break;
+      case ArithmeticOpBinaryNot:
+         putregister(proc, inst.arithmetic.dest, ~getregister(proc, inst.arithmetic.source0));
+         break;
+      case ArithmeticOpBinaryXor:
+         putregister(proc, inst.arithmetic.dest, 
+               (getregister(proc, inst.arithmetic.source0) ^
+                getregister(proc, inst.arithmetic.source1)));
+         break;
+      default:
+         sysfatal("panic: invalid arithmetic operation");
+         exits("invalidarithmeticoperation");
+   }
 }
 void move(processor* proc, instruction inst) {
    ushort tmp;
