@@ -53,3 +53,61 @@ The list of arithmetic operations are as follows:
 
 -------------------------------------------------------------------
 
+For move operations the general format is:
+
+bits 11-12 : specific operation
+bits 8-10 : first register (source or destination dependent on mode)
+bits 0-7 : mode specific bits
+
+There are a potential four different modes for a move operation in the iris
+core.
+
+0: Register to Register 
+1: Immediate to Register 
+2: Register to Address (has load and store functionality)
+3: Undefined (will cause a panic in the simulator if used)
+
+>>>>>> Register to Register mode
+In the register to register mode the remaining bits are as follows:
+
+bits 5-7 : second register
+bits 0-4  : unused
+
+In this mode the first register is the destination and the second register
+source.
+
+>>>>>> Immediate to Register mode
+In this mode the remaining bits are as follows:
+
+bits 0-7 : immediate value
+
+this immediate value is written to the first register
+
+>>>>>> Register to Address mode [Load/Store]
+In this mode the remaining bits are as follows:
+
+bits 5-7 : second register [lower half]
+bits 2-4 : third register [upper half]
+bit 1 : access mode [load or store]
+bit 0 : unused
+
+In this mode the second and third register are used to create a 16-bit absolute
+address. This address is used different depending on access mode where:
+
+0 : Load 
+1 : Store
+
+In load mode, the contents of the computed address are saved into the first
+register. In store mode, the contents of the first register are saved into
+memory at the computed address. The 16-bit address is built as follows:
+
+0-7 : contents of second register
+8-15 : contents of third register
+
+The move instruction is a very important instruction which provides load and
+store functionality depending on mode bits set. It is impossible for both to
+occur at the same time.
+
+-------------------------------------------------------------------
+
+
