@@ -56,7 +56,7 @@ typedef struct instruction {
          byte op : 3;
          byte reg0 : 3;
          byte reg1 : 3;
-         byte chaintags : 4;
+         byte combinebits : 4; /* nil, and, or, xor */
       } compare;
    };
 } instruction;
@@ -104,7 +104,13 @@ enum {
    CompareOpGreaterThan,
    CompareOpLessThanOrEqualTo,
    CompareOpGreaterThanOrEqualTo,
-   CompareOpChainMode,
+};
+
+enum {
+   CombineBitsOpNil = 0,
+   CombineBitsOpAnd,
+   CombineBitsOpOr,
+   CombineBitsOpXor,
 };
 void arithmetic(processor* proc, instruction inst);
 void move(processor* proc, instruction inst);

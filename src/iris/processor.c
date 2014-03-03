@@ -46,9 +46,55 @@ void jump(processor* proc, instruction inst) {
 
 
 }
-
 void compare(processor* proc, instruction inst) {
+   byte value;
+   switch(inst.compare.op) {
+      case CompareOpEq:
+         value = (getregister(proc, inst.compare.reg0) ==
+                  getregister(proc, inst.compare.reg1));
+         break;
+      case CompareOpNeq:
+         value = (getregister(proc, inst.compare.reg0) !=
+                  getregister(proc, inst.compare.reg1));
+         break;
+      case CompareOpLessThan:
+         value = (getregister(proc, inst.compare.reg0) < 
+                  getregister(proc, inst.compare.reg1));
+         break;
+      case CompareOpGreaterThan:
+         value = (getregister(proc, inst.compare.reg0) > 
+                  getregister(proc, inst.compare.reg1));
+         break;
+      case CompareOpLessThanOrEqualTo:
+         value = (getregister(proc, inst.compare.reg0) <= 
+                  getregister(proc, inst.compare.reg1));
+         break;
+      case CompareOpGreaterThanOrEqualTo:
+         value = (getregister(proc, inst.compare.reg0) >= 
+                  getregister(proc, inst.compare.reg1));
+         break;
+      default:
+         sysfatal("panic: invalid compare operation");
+         exits("invalidcompareopcode");
+   }
 
+   switch(inst.compare.combinebits) {
+      case CombineBitsOpNil:
+         proc->predicateregister = value;
+         break;
+      case CombineBitsOpAnd:
+         proc->predicateregister &= value;
+         break;
+      case CombineBitsOpOr:
+         proc->predicateregister |= value;
+         break;
+      case CombineBitsOpXor:
+         proc->predicateregister ^= value;
+         break;
+      default:
+         sysfatal("panic: invalid compare combine bits");
+         exits("invalidcomparecombinebits");
+   }
 }
 
 
