@@ -1,6 +1,5 @@
 <$PLAN9/src/mkhdr
 
-CFLAGS=-g3 -O0
 TARG=iris
 OFILES=\
 	processor.$O\
