@@ -18,10 +18,6 @@ void main() {
 
    exits(0);
 }
-void panic(char* message, char* code) {
-   sysfatal(message);
-   exits(code);
-}
 void decode(processor* proc, ushort value) {
    datum i;
    instruction j;
@@ -41,24 +37,21 @@ void decode(processor* proc, ushort value) {
          compare(proc, j);
          break;
       default:
-         panic("panic: invalid instruction group provided", 
-               "invalidinstructiongroup");
+         sysfatal("invalid instruction group provided");
    }
 }
 void putregister(processor* proc, byte index, byte value) {
    if(index < RegisterCount) {
       proc->gpr[index] = value;
    } else {
-      panic("panic: attempted to store to a register out of range", 
-            "registerputoutofrange");
+      sysfatal("attempted to store to a register out of range");
    }
 }
 byte getregister(processor* proc, byte index) {
    if(index < RegisterCount) {
       return proc->gpr[index];
    } else {
-      panic("panic: attempted to retrieve a value from a register out of range", 
-            "registergetoutofrange");
+      sysfatal("attempted to retrieve a value from a register out of range");
       return 0;
    }
 }
@@ -118,8 +111,7 @@ void arithmetic(processor* proc, instruction inst) {
                 getregister(proc, inst.arithmetic.source1)));
          break;
       default:
-         panic("panic: invalid arithmetic operation",
-               "invalidarithmeticoperation");
+         sysfatal("invalid arithmetic operation");
    }
 }
 void move(processor* proc, instruction inst) {
@@ -141,8 +133,7 @@ void move(processor* proc, instruction inst) {
          }
          break;
       default:
-         panic("panic: invalid move operation conditional type",
-               "invalidmoveoperationconditionaltype");
+         sysfatal("invalid move operation conditional type");
    }
 }
 void jump(processor* proc, instruction inst) {
@@ -163,8 +154,7 @@ void jump(processor* proc, instruction inst) {
          shouldJump = (proc->predicateregister == 0);
          break;
       default:
-         panic("panic: invalid jump conditional type", 
-               "invalidjumpconditionaltype");
+         sysfatal("invalid jump conditional type");
    }
    if(shouldJump == 1) {
       if(inst.jump.distance == JumpDistanceShort) {
@@ -216,8 +206,7 @@ void compare(processor* proc, instruction inst) {
                getregister(proc, inst.compare.reg1));
          break;
       default:
-         panic("panic: invalid compare operation", 
-               "invalidcompareopcode");
+         sysfatal("invalid compare operation");
    }
 
    switch(inst.compare.combinebits) {
@@ -234,7 +223,6 @@ void compare(processor* proc, instruction inst) {
          proc->predicateregister ^= value;
          break;
       default:
-         panic("panic: invalid compare combine bits", 
-               "invalidcomparecombinebits");
+         sysfatal("invalid compare combine bits");
    }
 }
