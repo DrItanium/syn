@@ -9,8 +9,8 @@ void main() {
    instruction tmp;
    d.group = InstructionGroupCompare;
    tmp.compare.op = CompareOpEq;
-   tmp.compare.reg0 = 0;
-   tmp.compare.reg1 = 1;
+   tmp.compare.reg0 = 7;
+   tmp.compare.reg1 = 5;
    tmp.compare.combinebits = CombineBitsOpNil;
    d.rest = tmp.value;
    decode(&proc, d.value);
