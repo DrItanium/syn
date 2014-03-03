@@ -14,59 +14,56 @@ typedef struct processor {
    byte predicateregister : 1;
 } processor;
 
-typedef union instruction {
+typedef union datum {
    ushort value : 16;
    struct {
-      byte opgroup : 3;
+      byte group : 3;
+      ushort rest : 13;
+   };
+} datum;
+
+typedef union instruction {
+   ushort value : 13;
+   struct {
+      byte op : 4;
+      byte dest : 3;
+      byte source0 : 3;
+      byte source1 : 3;
+   } arithmetic;
+   struct {
+      byte op : 2; 
+      byte reg0 : 3;
       union {
+         byte immediate : 8;
+         byte reg1 : 3;
          struct {
-            byte op : 4;
-            byte dest : 3;
-            byte source0 : 3;
-            byte source1 : 3;
-         } arithmetic;
+            byte reg1 : 3;
+            byte reg2 : 3;
+         } addressmode;
+      };
+   } move;
+   struct {
+      byte distance : 1;
+      byte conditional : 2;
+      byte immediatemode : 1;
+      union {
+         byte immediate : 8;
+         union {
+            byte reg1 : 3;
+         } shortform;
          struct {
-            byte op : 2; 
-            byte reg0 : 3;
-            union {
-               byte immediate : 8;
-               struct {
-                  byte reg1 : 3;
-               } regtoregmode;
-               struct {
-                  byte reg1 : 3;
-                  byte reg2 : 3;
-               } addressmode;
-            };
-         } move;
-         struct {
-            byte distance : 1;
-            byte conditional : 2;
-            union {
-               struct {
-                  /* only supported in short mode */
-                  byte immediatemode : 1;
-                  union {
-                     byte immediate : 8;
-                     byte reg1 : 3;
-                  };
-               } shortform;
-               struct {
-                  byte reg0 : 3;
-                  byte reg1 : 3;
-               } longtype;
-            };
-         } jump;
-         struct {
-            byte op : 3;
             byte reg0 : 3;
             byte reg1 : 3;
-            byte combinebits : 4; /* nil, and, or, xor */
-         } compare;
+         } longtype;
       };
-   };
+   } jump;
+   struct {
+      byte op : 3;
+      byte reg0 : 3;
+      byte reg1 : 3;
+      byte combinebits : 4; /* nil, and, or, xor */
+   } compare;
 } instruction;
-
 
 
 /* Instructions Groups */

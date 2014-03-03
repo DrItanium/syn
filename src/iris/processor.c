@@ -5,27 +5,28 @@
 
 void main() {
    processor proc;
-   instruction i;
-   i.value = 12345;
    printf("sizeof(instruction) == %ld\n", sizeof(instruction));
+   printf("sizeof(datum) == %ld\n", sizeof(datum));
 
    exits(0);
 }
 void decode(processor* proc, ushort value) {
-   instruction i;
+   datum i;
+   instruction j;
    i.value = value;
-   switch(i.opgroup) {
+   j.value = i.rest;
+   switch(i.group) {
       case InstructionGroupArithmetic:
-         arithmetic(proc, i);
+         arithmetic(proc, j);
          break;
       case InstructionGroupMove:
-         move(proc, i);
+         move(proc, j);
          break;
       case InstructionGroupJump:
-         move(proc, i);
+         move(proc, j);
          break;
       case InstructionGroupCompare:
-         compare(proc, i);
+         compare(proc, j);
          break;
       default:
          sysfatal("panic: invalid instruction group provided");
@@ -113,7 +114,7 @@ void move(processor* proc, instruction inst) {
    ushort tmp;
    switch(inst.move.op) {
       case MoveOpRegToReg:
-         putregister(proc, inst.move.reg0, getregister(proc, inst.move.regtoregmode.reg1));
+         putregister(proc, inst.move.reg0, getregister(proc, inst.move.reg1));
          break;
       case MoveOpImmediateToReg:
          putregister(proc, inst.move.reg0, inst.move.immediate);
@@ -149,11 +150,11 @@ void jump(processor* proc, instruction inst) {
    if(shouldJump == 1) {
       if(inst.jump.distance == JumpDistanceShort) {
          /* short form (relative) */
-         if(inst.jump.shortform.immediatemode == 0) {
+         if(inst.jump.immediatemode == 0) {
             /* register mode */
             address = getregister(proc, inst.jump.shortform.reg1);
          } else {
-            address = inst.jump.shortform.immediate;
+            address = inst.jump.immediate;
          }
          proc->pc += address;
       } else {
