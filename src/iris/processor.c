@@ -37,14 +37,13 @@ void move(processor* proc, instruction inst) {
 }
 
 void jump(processor* proc, instruction inst) {
-   switch(inst.jump.op) {
-      case JumpOpUnconditional:
-      case JumpOpIfTrue:
-      case JumpOpIfFalse:
-      default:
-         sysfatal("panic: invalid jump type!");
-         exits("invalidjumptype");
+
+   if(inst.jump.distance == JumpDistanceShort) {
+         
+   } else {
+     /* long form */ 
    }
+
 
 }
 

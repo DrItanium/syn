@@ -2,54 +2,62 @@ typedef unsigned char byte;
 enum {
    RegisterCount = 4,
 #ifndef MemorySize 
-   MemorySize = 256, /* 8-bit cells */
+   MemorySize = 65536, /* 8-bit cells */
 #endif
 };
 
 typedef struct processor {
    byte gpr[RegisterCount];
    byte memory[MemorySize];
+   ushort pc : 16;
    byte predicateregister : 1;
 } processor;
 
-typedef union instruction {
-   ushort wholedata : 16;
-   struct {
-      byte opgroup : 3;
-      union {
-         struct {
-            byte op : 4;
-            byte dest : 3;
-            byte source0 : 3;
-            byte source1 : 3;
-         } arithmetic;
-         struct {
-            byte op : 2; 
-            byte reg0 : 3;
-            union {
-               byte immediate;
-               byte reg1 : 3;
-               struct {
-                  byte reg1 : 3;
-                  byte tagbits : 5;
-               } chainmode;
-            };
-         } move;
-         struct {
-            byte op : 2;
-            byte immediateform : 1;
-            union {
-               byte immediate;
-               byte reg1 : 3;
-            };
-         } jump;
-         struct {
-            byte op : 3;
-            byte reg0 : 3;
+typedef struct instruction {
+   byte opgroup : 3;
+   union {
+      struct {
+         byte op : 4;
+         byte dest : 3;
+         byte source0 : 3;
+         byte source1 : 3;
+      } arithmetic;
+      struct {
+         byte op : 2; 
+         byte reg0 : 3;
+         union {
+            byte immediate;
             byte reg1 : 3;
-            byte chaintags : 4;
-         } compare;
-      };
+            struct {
+               byte reg1 : 3;
+               byte tagbits : 5;
+            } chainmode;
+         };
+      } move;
+      struct {
+         byte distance : 1;
+         byte conditional : 2;
+         union {
+            struct {
+               /* only supported in short mode */
+               byte immediatemode : 1;
+               union {
+                  byte immediate;
+                  byte reg1 : 3;
+               };
+            } shortform;
+            struct {
+               byte reg0 : 3;
+               byte reg1 : 3;
+            } longjumpform;
+         };
+      } jump;
+      struct {
+         byte op : 3;
+         byte reg0 : 3;
+         byte reg1 : 3;
+         byte chaintags : 4;
+      } compare;
    };
 } instruction;
 
@@ -81,6 +89,10 @@ enum {
    MoveOpChainMode,
 };
 enum {
+   JumpDistanceShort = 0,
+   JumpDistanceLong = 1,
+};
+enum {
    JumpOpUnconditional = 0,
    JumpOpIfTrue,
    JumpOpIfFalse,
@@ -98,3 +110,5 @@ void arithmetic(processor* proc, instruction inst);
 void move(processor* proc, instruction inst);
 void jump(processor* proc, instruction inst);
 void compare(processor* proc, instruction inst);
+void putregister(processor* proc, byte index, byte value);
+byte getregister(processor* proc, byte index);
