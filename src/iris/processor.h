@@ -30,8 +30,8 @@ typedef struct instruction {
             byte reg1 : 3;
             struct {
                byte reg1 : 3;
-               byte tagbits : 5;
-            } chainmode;
+               byte reg2 : 3;
+            } longmode;
          };
       } move;
       struct {
@@ -49,7 +49,7 @@ typedef struct instruction {
             struct {
                byte reg0 : 3;
                byte reg1 : 3;
-            } longjumpform;
+            } longtype;
          };
       } jump;
       struct {
@@ -86,7 +86,7 @@ enum {
    MoveOpRegToReg = 0,
    MoveOpImmediateToReg,
    MoveOpRegToImmediate,
-   MoveOpChainMode,
+   MoveOpLongMode,
 };
 enum {
    JumpDistanceShort = 0,
