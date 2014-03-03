@@ -33,15 +33,59 @@ void arithmetic(processor* proc, instruction inst) {
    
 }
 void move(processor* proc, instruction inst) {
-
+   ushort tmp;
+   switch(inst.move.op) {
+      case MoveOpRegToReg:
+         putregister(proc, inst.move.reg0, getregister(proc, inst.move.regtoregmode.reg1));
+         break;
+      case MoveOpImmediateToReg:
+         putregister(proc, inst.move.reg0, inst.move.immediate);
+         break;
+      case MoveOpRegToAddress:
+         tmp = (ushort)(((ushort)getregister(proc, inst.move.addressmode.reg2)) << 8);
+         tmp += getregister(proc, inst.move.addressmode.reg1);
+         putregister(proc, inst.move.reg0, proc->memory[tmp]);
+         break;
+      default:
+         sysfatal("panic: invalid move operation conditional type");
+         exits("invalidmoveoperationconditionaltype");
+   }
 }
-
 void jump(processor* proc, instruction inst) {
-
-   if(inst.jump.distance == JumpDistanceShort) {
-         
-   } else {
-     /* long form */ 
+   schar address;
+   byte shouldJump;
+   ushort v0;
+   switch(inst.jump.conditional) {
+      case JumpOpUnconditional:
+         shouldJump = 1;
+         break;
+      case JumpOpIfTrue:
+         shouldJump = (proc->predicateregister != 0);
+         break;
+      case JumpOpIfFalse:
+         shouldJump = (proc->predicateregister == 0);
+         break;
+      default:
+         sysfatal("panic: invalid jump conditional type");
+         exits("invalidjumpconditionaltype");
+   }
+   if(shouldJump == 1) {
+      if(inst.jump.distance == JumpDistanceShort) {
+         /* short form (relative) */
+         if(inst.jump.shortform.immediatemode == 0) {
+            /* register mode */
+            address = getregister(proc, inst.jump.shortform.reg1);
+         } else {
+            address = inst.jump.shortform.immediate;
+         }
+         proc->pc += address;
+      } else {
+         /* long form (absolute) */ 
+         /* little endian */
+         v0 = (ushort)((ushort)getregister(proc, inst.jump.longtype.reg0) << 8);
+         v0 += getregister(proc, inst.jump.longtype.reg1);
+         proc->pc = v0;
+      }
    }
 
 
@@ -51,27 +95,27 @@ void compare(processor* proc, instruction inst) {
    switch(inst.compare.op) {
       case CompareOpEq:
          value = (getregister(proc, inst.compare.reg0) ==
-                  getregister(proc, inst.compare.reg1));
+               getregister(proc, inst.compare.reg1));
          break;
       case CompareOpNeq:
          value = (getregister(proc, inst.compare.reg0) !=
-                  getregister(proc, inst.compare.reg1));
+               getregister(proc, inst.compare.reg1));
          break;
       case CompareOpLessThan:
          value = (getregister(proc, inst.compare.reg0) < 
-                  getregister(proc, inst.compare.reg1));
+               getregister(proc, inst.compare.reg1));
          break;
       case CompareOpGreaterThan:
          value = (getregister(proc, inst.compare.reg0) > 
-                  getregister(proc, inst.compare.reg1));
+               getregister(proc, inst.compare.reg1));
          break;
       case CompareOpLessThanOrEqualTo:
          value = (getregister(proc, inst.compare.reg0) <= 
-                  getregister(proc, inst.compare.reg1));
+               getregister(proc, inst.compare.reg1));
          break;
       case CompareOpGreaterThanOrEqualTo:
          value = (getregister(proc, inst.compare.reg0) >= 
-                  getregister(proc, inst.compare.reg1));
+               getregister(proc, inst.compare.reg1));
          break;
       default:
          sysfatal("panic: invalid compare operation");

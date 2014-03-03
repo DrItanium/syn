@@ -27,11 +27,13 @@ typedef struct instruction {
          byte reg0 : 3;
          union {
             byte immediate;
-            byte reg1 : 3;
+            struct {
+               byte reg1 : 3;
+            } regtoregmode;
             struct {
                byte reg1 : 3;
                byte reg2 : 3;
-            } longmode;
+            } addressmode;
          };
       } move;
       struct {
@@ -85,8 +87,7 @@ enum {
 enum {
    MoveOpRegToReg = 0,
    MoveOpImmediateToReg,
-   MoveOpRegToImmediate,
-   MoveOpLongMode,
+   MoveOpRegToAddress,
 };
 enum {
    JumpDistanceShort = 0,
