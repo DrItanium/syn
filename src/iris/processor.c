@@ -31,7 +31,7 @@ void decode(processor* proc, ushort value) {
          move(proc, j);
          break;
       case InstructionGroupJump:
-         move(proc, j);
+         jump(proc, j);
          break;
       case InstructionGroupCompare:
          compare(proc, j);
