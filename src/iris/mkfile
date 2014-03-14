@@ -2,9 +2,8 @@
 
 TARG=iris
 OFILES=\
-	core.$O\
    iris.$O\
 
-HFILES=core.h
+HFILES=iris.h
 
 <$PLAN9/src/mkone

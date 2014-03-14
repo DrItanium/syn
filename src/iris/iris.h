@@ -5,12 +5,12 @@ enum {
    MajorOperationGroupCount = 8,
 };
 
-typedef struct processor {
+typedef struct core {
    byte gpr[RegisterCount];
    byte memory[MemorySize];
    ushort pc : 16;
    byte predicateregister : 1;
-} processor;
+} core;
 
 typedef union datum {
    ushort value : 16;
@@ -119,10 +119,10 @@ enum {
    AccessModeMoveOpLoad = 0,
    AccessModeMoveOpStore,
 };
-void arithmetic(processor* proc, instruction inst);
-void move(processor* proc, instruction inst);
-void jump(processor* proc, instruction inst);
-void compare(processor* proc, instruction inst);
-void putregister(processor* proc, byte index, byte value);
-byte getregister(processor* proc, byte index);
-void decode(processor* proc, ushort value);
+void arithmetic(core* proc, instruction inst);
+void move(core* proc, instruction inst);
+void jump(core* proc, instruction inst);
+void compare(core* proc, instruction inst);
+void putregister(core* proc, byte index, byte value);
+byte getregister(core* proc, byte index);
+void decode(core* proc, ushort value);
