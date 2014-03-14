@@ -1,9 +1,7 @@
 typedef unsigned char byte;
 enum {
    RegisterCount = 8, 
-#ifndef MemorySize 
    MemorySize = 65536, /* 8-bit cells */
-#endif
    MajorOperationGroupCount = 8,
 };
 
