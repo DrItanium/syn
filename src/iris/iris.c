@@ -15,6 +15,7 @@ void main() {
    d.rest = tmp.value;
    decode(&proc, d.value);
    printf("equality = %d\n", proc.predicateregister);
+   printf("sizeof(instruction) = %ld\n", sizeof(instruction));
 
    exits(0);
 }
@@ -138,12 +139,16 @@ void move(core* proc, instruction inst) {
    }
 }
 void jump(core* proc, instruction inst) {
-   schar address;
+   byte address;
+   schar saddress;
    byte shouldJump;
+   byte normalMode;
    ushort v0;
    address = 0;
    shouldJump = 0;
    v0 = 0;
+   saddress = 0;
+   normalMode = 1;
    switch(inst.jump.conditional) {
       case JumpOpUnconditional:
          shouldJump = 1;
@@ -154,29 +159,63 @@ void jump(core* proc, instruction inst) {
       case JumpOpIfFalse:
          shouldJump = (proc->predicateregister == 0);
          break;
+      case JumpOpIfThenElse:
+         normalMode = 0;
+         shouldJump = proc->predicateregister;
+         break;
       default:
          sysfatal("invalid jump conditional type");
    }
-   if(shouldJump == 1) {
-      if(inst.jump.distance == JumpDistanceShort) {
-         /* short form (relative) */
-         if(inst.jump.immediatemode == 0) {
-            /* register mode */
-            address = getregister(proc, inst.jump.shortform.reg1);
+   if(normalMode == 1) {
+      if(shouldJump == 1) {
+         if(inst.jump.distance == JumpDistanceShort) {
+            /* short form (relative) */
+            if(inst.jump.immediatemode == 0) {
+               /* register mode */
+               address = getregister(proc, inst.jump.shortform.reg1);
+            } else {
+               address = inst.jump.immediate;
+            }
+            if(inst.jump.signedmode == 0) {
+               /* we are in unsigned mode */
+               proc->pc += address;
+            } else {
+               /* we are in signed mode */
+               saddress = (schar)address;
+               proc->pc += saddress;
+            }
          } else {
-            address = inst.jump.immediate;
+            /* long form (absolute) */ 
+            /* little endian */
+            v0 = (ushort)((ushort)getregister(proc, inst.jump.longtype.reg1) << 8);
+            v0 += getregister(proc, inst.jump.longtype.reg0);
+            proc->pc = v0;
          }
-         proc->pc += address;
+      }
+   } else {
+      /* now this is going to get a tad confusing */
+      if(inst.jump.immediatemode == JumpOpIfThenElse_TrueFalse) {
+         shouldJump = (shouldJump != 0);
+      } else if(inst.jump.immediatemode == JumpOpIfThenElse_FalseTrue) {
+         shouldJump = (shouldJump == 0); 
       } else {
-         /* long form (absolute) */ 
-         /* little endian */
-         v0 = (ushort)((ushort)getregister(proc, inst.jump.longtype.reg0) << 8);
-         v0 += getregister(proc, inst.jump.longtype.reg1);
-         proc->pc = v0;
+         /* this should never ever get executed! */
+         sysfatal("invalid ifthenelse instruction type");
+      }
+      if(shouldJump == 1) {
+         if(inst.jump.signedmode == 1) {
+            proc->pc += (schar)getregister(proc, inst.jump.ifthenelsetype.reg0);
+         } else {
+            proc->pc += getregister(proc, inst.jump.ifthenelsetype.reg0);
+         }
+      } else {
+         if(inst.jump.ifthenelsetype.reg1issigned == 1) {
+            proc->pc += (schar)getregister(proc, inst.jump.ifthenelsetype.reg1);
+         } else {
+            proc->pc += getregister(proc, inst.jump.ifthenelsetype.reg1);
+         }
       }
    }
-
-
 }
 void compare(core* proc, instruction inst) {
    byte value;
