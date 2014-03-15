@@ -45,6 +45,7 @@ typedef union instruction {
       byte distance : 1;
       byte conditional : 2;
       byte immediatemode : 1;
+      byte signedmode : 1;
       union {
          byte immediate : 8;
          union {
@@ -54,6 +55,11 @@ typedef union instruction {
             byte reg0 : 3;
             byte reg1 : 3;
          } longtype;
+         struct {
+            byte reg0 : 3;
+            byte reg1issigned : 1;
+            byte reg1 : 3;
+         } ifthenelsetype;
       };
    } jump;
    struct {
@@ -98,6 +104,11 @@ enum {
    JumpOpUnconditional = 0,
    JumpOpIfTrue,
    JumpOpIfFalse,
+   JumpOpIfThenElse,
+};
+enum {
+   JumpOpIfThenElse_TrueFalse = 0,
+   JumpOpIfThenElse_FalseTrue,
 };
 enum {
    CompareOpEq = 0,
