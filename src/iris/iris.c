@@ -1,9 +1,8 @@
-#include <u.h>
-#include <libc.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include "iris.h"
 
-void main() {
+int main() {
    core proc;
    datum d;
    instruction tmp;
@@ -17,7 +16,7 @@ void main() {
    printf("equality = %d\n", proc.predicateregister);
    printf("sizeof(instruction) = %ld\n", sizeof(instruction));
 
-   exits(0);
+   return 0;
 }
 
 void decode(core* proc, ushort value) {
@@ -39,21 +38,21 @@ void decode(core* proc, ushort value) {
          compare(proc, j);
          break;
       default:
-         sysfatal("invalid instruction group provided");
+         error("invalid instruction group provided", ErrorInvalidInstructionGroupProvided);
    }
 }
 void putregister(core* proc, byte index, byte value) {
    if(index < RegisterCount) {
       proc->gpr[index] = value;
    } else {
-      sysfatal("attempted to store to a register out of range");
+      error("attempted to store to a register out of range", ErrorPutRegisterOutOfRange);
    }
 }
 byte getregister(core* proc, byte index) {
    if(index < RegisterCount) {
       return proc->gpr[index];
    } else {
-      sysfatal("attempted to retrieve a value from a register out of range");
+      error("attempted to retrieve a value from a register out of range", ErrorGetRegisterOutOfRange);
       return 0;
    }
 }
@@ -113,7 +112,7 @@ void arithmetic(core* proc, instruction inst) {
                 getregister(proc, inst.arithmetic.source1)));
          break;
       default:
-         sysfatal("invalid arithmetic operation");
+         error("invalid arithmetic operation", ErrorInvalidArithmeticOperation);
    }
 }
 void move(core* proc, instruction inst) {
@@ -135,7 +134,7 @@ void move(core* proc, instruction inst) {
          }
          break;
       default:
-         sysfatal("invalid move operation conditional type");
+         error("invalid move operation conditional type", ErrorInvalidMoveOperationConditionalType);
    }
 }
 void jump(core* proc, instruction inst) {
@@ -164,7 +163,7 @@ void jump(core* proc, instruction inst) {
          shouldJump = proc->predicateregister;
          break;
       default:
-         sysfatal("invalid jump conditional type");
+         error("invalid jump conditional type", ErrorInvalidJumpConditionalType);
    }
    if(normalMode == 1) {
       if(shouldJump == 1) {
@@ -200,7 +199,7 @@ void jump(core* proc, instruction inst) {
          shouldJump = (shouldJump == 0); 
       } else {
          /* this should never ever get executed! */
-         sysfatal("invalid ifthenelse instruction type");
+         error("invalid ifthenelse instruction type", ErrorInvalidIfThenElseInstructionType);
       }
       if(shouldJump == 1) {
          if(inst.jump.signedmode == 1) {
@@ -246,7 +245,7 @@ void compare(core* proc, instruction inst) {
                getregister(proc, inst.compare.reg1));
          break;
       default:
-         sysfatal("invalid compare operation");
+         error("invalid compare operation", ErrorInvalidCompareOperation);
    }
 
    switch(inst.compare.combinebits) {
@@ -263,6 +262,11 @@ void compare(core* proc, instruction inst) {
          proc->predicateregister ^= value;
          break;
       default:
-         sysfatal("invalid compare combine bits");
+         error("invalid compare combine bits", ErrorInvalidCombineBits);
    }
+}
+
+void error(char* message, int code) {
+   fprintf(stderr, "%s\n", message);
+   exit(code);
 }
