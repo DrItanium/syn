@@ -31,10 +31,10 @@ int main(int argc, char* argv[]) {
          target = fopen(argv[1], "r");
          if(target != 0) {
             code = execute(target);
-         if(fclose(target) != 0) {
-            fprintf(stderr, "Couldn't close file: %s\n", argv[1]);
-            code = 1;
-         }
+            if(fclose(target) != 0) {
+               fprintf(stderr, "Couldn't close file: %s\n", argv[1]);
+               code = 1;
+            }
          } else {
             fprintf(stderr, "Couldn't open file: %s\n", argv[1]);
             code = 1;
@@ -45,18 +45,18 @@ int main(int argc, char* argv[]) {
       code = 1;
    }
    /*
-   datum d;
-   instruction tmp;
-   d.group = InstructionGroupCompare;
-   tmp.compare.op = CompareOpEq;
-   tmp.compare.reg0 = 7;
-   tmp.compare.reg1 = 5;
-   tmp.compare.combinebits = CombineBitsOpNil;
-   d.rest = tmp.value;
-   decode(&proc, d.value);
-   printf("equality = %d\n", proc.predicateregister);
-   printf("sizeof(instruction) = %ld\n", sizeof(instruction));
-   */
+      datum d;
+      instruction tmp;
+      d.group = InstructionGroupCompare;
+      tmp.compare.op = CompareOpEq;
+      tmp.compare.reg0 = 7;
+      tmp.compare.reg1 = 5;
+      tmp.compare.combinebits = CombineBitsOpNil;
+      d.rest = tmp.value;
+      decode(&proc, d.value);
+      printf("equality = %d\n", proc.predicateregister);
+      printf("sizeof(instruction) = %ld\n", sizeof(instruction));
+      */
    printf("sizeof(datum) = %ld\n", sizeof(datum));
    shutdown();
    return code;
@@ -67,7 +67,14 @@ void usage(char* arg0) {
 }
 int execute(FILE* file) {
    /* install the program to memory */
+   int i;
+   datum tmp;
    installprogram(file); 
+   for(i = 0; i < MemorySize; i+=2) {
+      tmp.contents[0] = proc.memory[i];
+      tmp.contents[1] = proc.memory[i + 1];
+      decode(&proc, tmp.value);
+   }
    return 0;
 }
 void startup() {
@@ -85,12 +92,16 @@ void installprogram(FILE* file) {
    current = fgetc(file);
    while(current != EOF) {
       if(i < MemorySize) {
-        proc.memory[i] = current;
-        i++; 
-        current = fgetc(file);
+         proc.memory[i] = current;
+         i++; 
+         current = fgetc(file);
       } else {
          fprintf(stderr, "Warning: ran out of space!\nTruncated installation\n");
          break;
       }
    }
+}
+
+void irissystem(core* proc, instruction j) {
+   /* implement system commands */
 }
