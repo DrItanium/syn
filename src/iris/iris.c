@@ -20,6 +20,9 @@ void decode(core* proc, ushort value) {
       case InstructionGroupCompare:
          compare(proc, j);
          break;
+      case InstructionGroupSystem:
+         irissystem(proc, j);
+         break;
       default:
          error("invalid instruction group provided", ErrorInvalidInstructionGroupProvided);
    }
@@ -256,3 +259,4 @@ void error(char* message, int code) {
    fprintf(stderr, "%s\n", message);
    exit(code);
 }
+

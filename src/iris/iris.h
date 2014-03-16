@@ -76,6 +76,11 @@ typedef union instruction {
       byte reg1 : 3;
       byte combinebits : 3; /* nil, and, or, xor */
    } compare;
+   struct {
+      byte reg0 : 3;
+      byte reg1 : 3;
+      byte operation : 7;
+   } systemcall;
 } instruction;
 
 
@@ -85,6 +90,8 @@ enum {
    InstructionGroupMove,
    InstructionGroupJump,
    InstructionGroupCompare,
+   InstructionGroupSystem,
+   InstructionGroupCompact,
 };
 enum {
    ArithmeticOpAdd = 0,
@@ -159,5 +166,6 @@ void putregister(core* proc, byte index, byte value);
 byte getregister(core* proc, byte index);
 void decode(core* proc, ushort value);
 void error(char* message, int code);
+void irissystem(core* proc, instruction inst);
 
 #endif 
