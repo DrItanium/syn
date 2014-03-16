@@ -66,7 +66,7 @@ typedef union instruction {
       byte op : 3;
       byte reg0 : 3;
       byte reg1 : 3;
-      byte combinebits : 4; /* nil, and, or, xor */
+      byte combinebits : 2; /* nil, and, or, xor */
    } compare;
 } instruction;
 
