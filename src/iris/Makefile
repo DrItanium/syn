@@ -29,4 +29,4 @@ clean:
 	@rm -f iris stest ${OBJ} iris-${VERSION}.tar.gz
 
 
-.PHONY: all options clean dist install uninstall
+.PHONY: all options clean
