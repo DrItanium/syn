@@ -26,7 +26,7 @@ int main() {
    char unparsed[20];
    ushort inst;
 
-   for(inst = 0; inst < 65536; inst++) {
+   for(inst = 0; inst < 65535; inst++) {
       unparse(unparsed, inst);
       printf("%s\n", unparsed);
    }
