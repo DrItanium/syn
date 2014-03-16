@@ -77,9 +77,9 @@ typedef union instruction {
       byte combinebits : 3; /* nil, and, or, xor */
    } compare;
    struct {
+      byte operation : 7;
       byte reg0 : 3;
       byte reg1 : 3;
-      byte operation : 7;
    } systemcall;
 } instruction;
 
@@ -91,7 +91,6 @@ enum {
    InstructionGroupJump,
    InstructionGroupCompare,
    InstructionGroupSystem,
-   InstructionGroupCompact,
 };
 enum {
    ArithmeticOpAdd = 0,
