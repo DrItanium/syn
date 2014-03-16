@@ -23,7 +23,7 @@ int main() {
 */
 
 int main() {
-   char unparsed[20];
+   char unparsed[100];
    ushort inst;
 
    for(inst = 0; inst < 65535; inst++) {
@@ -283,5 +283,5 @@ void compare(core* proc, instruction inst) {
 
 void error(char* message, int code) {
    fprintf(stderr, "%s\n", message);
-   exit(code);
+   // exit(code);
 }
