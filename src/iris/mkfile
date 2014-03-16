@@ -1,9 +1,0 @@
-<$PLAN9/src/mkhdr
-
-TARG=iris
-OFILES=\
-   iris.$O\
-
-HFILES=iris.h
-
-<$PLAN9/src/mkone
