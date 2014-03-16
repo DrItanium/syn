@@ -45,8 +45,12 @@ char* arithmetic_mnemonic(instruction i) {
 char* move_mnemonic(instruction i) {
    switch(i.move.op) {
       case MoveOpRegToReg:       return "move";
-      case MoveOpImmediateToReg: return "store";
-      case MoveOpRegToAddress:   return "load";
+      case MoveOpImmediateToReg: return "load";
+      case MoveOpRegToAddress:
+         switch(i.move.addressmode.accessmode) {
+            case AccessModeMoveOpLoad:  return "load";
+            case AccessModeMoveOpStore: return "store";
+         }
       default:
          error("invalid move operation conditional type",
                ErrorInvalidMoveOperationConditionalType);
