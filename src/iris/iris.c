@@ -1,7 +1,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "iris.h"
+#include "unparse.h"
 
+/*
 int main() {
    core proc;
    datum d;
@@ -15,6 +17,19 @@ int main() {
    decode(&proc, d.value);
    printf("equality = %d\n", proc.predicateregister);
    printf("sizeof(instruction) = %ld\n", sizeof(instruction));
+
+   return 0;
+}
+*/
+
+int main() {
+   char unparsed[20];
+   ushort inst;
+
+   for(inst = 0; inst < 65536; inst++) {
+      unparse(unparsed, inst);
+      printf("%s\n", unparsed);
+   }
 
    return 0;
 }

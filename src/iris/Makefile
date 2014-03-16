@@ -3,8 +3,8 @@
 
 include config.mk
 
-SRC = iris.c
-OBJ = ${SRC:.c=.o}
+SRCS = $(wildcard *.c)
+OBJS = ${SRCS:.c=.o}
 
 all: options iris
 
@@ -15,18 +15,18 @@ options:
 	@echo "CC       = ${CC}"
 
 .c.o:
-	@echo CC -c $<
-	@${CC} -c $< ${CFLAGS}
+	@echo CC -c ${SRCS}
+	@${CC} -c ${SRCS} ${CFLAGS}
 
 ${OBJ}: config.mk 
 
-iris: iris.o
-	@echo CC -o $@
-	@${CC} -o $@ iris.o ${LDFLAGS}
+iris: ${OBJS}
+	@echo CC ${OBJS} -o iris
+	@${CC} ${OBJS} -o iris ${LDFLAGS}
 
 clean:
 	@echo cleaning
-	@rm -f iris stest ${OBJ} iris-${VERSION}.tar.gz
+	@rm -f iris stest ${OBJS} iris-${VERSION}.tar.gz
 
 
 .PHONY: all options clean
