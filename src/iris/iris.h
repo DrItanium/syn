@@ -21,6 +21,7 @@ typedef struct core {
 
 typedef union datum {
    ushort value : 16;
+   byte contents[2];
    struct {
       byte group : 3;
       ushort rest : 13;

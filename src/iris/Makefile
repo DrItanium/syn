@@ -3,7 +3,7 @@
 
 include config.mk
 
-SRC = iris.c
+SRC = iris.c sim.c
 OBJ = ${SRC:.c=.o}
 
 all: options iris
@@ -20,13 +20,13 @@ options:
 
 ${OBJ}: config.mk 
 
-iris: iris.o
+iris: iris.o sim.o
 	@echo CC -o $@
-	@${CC} -o $@ iris.o ${LDFLAGS}
+	@${CC} -o $@ iris.o sim.o ${LDFLAGS}
 
 clean:
 	@echo cleaning
-	@rm -f iris stest ${OBJ} iris-${VERSION}.tar.gz
+	@rm -f iris sim ${OBJ} 
 
 
 .PHONY: all options clean

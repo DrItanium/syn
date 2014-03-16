@@ -2,23 +2,6 @@
 #include <stdio.h>
 #include "iris.h"
 
-int main() {
-   core proc;
-   datum d;
-   instruction tmp;
-   d.group = InstructionGroupCompare;
-   tmp.compare.op = CompareOpEq;
-   tmp.compare.reg0 = 7;
-   tmp.compare.reg1 = 5;
-   tmp.compare.combinebits = CombineBitsOpNil;
-   d.rest = tmp.value;
-   decode(&proc, d.value);
-   printf("equality = %d\n", proc.predicateregister);
-   printf("sizeof(instruction) = %ld\n", sizeof(instruction));
-
-   return 0;
-}
-
 void decode(core* proc, ushort value) {
    datum i;
    instruction j;
@@ -41,6 +24,7 @@ void decode(core* proc, ushort value) {
          error("invalid instruction group provided", ErrorInvalidInstructionGroupProvided);
    }
 }
+
 void putregister(core* proc, byte index, byte value) {
    if(index < RegisterCount) {
       proc->gpr[index] = value;
@@ -48,6 +32,7 @@ void putregister(core* proc, byte index, byte value) {
       error("attempted to store to a register out of range", ErrorPutRegisterOutOfRange);
    }
 }
+
 byte getregister(core* proc, byte index) {
    if(index < RegisterCount) {
       return proc->gpr[index];
@@ -56,6 +41,7 @@ byte getregister(core* proc, byte index) {
       return 0;
    }
 }
+
 void arithmetic(core* proc, instruction inst) {
    switch(inst.arithmetic.op) {
       case ArithmeticOpAdd:
