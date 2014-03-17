@@ -111,3 +111,5 @@ void unparse_bitstring(char* unparsed, ushort value) {
       value >>= 1;
    }
 }
+
+/* vim: set expandtab tabstop=3 shiftwidth=3: */

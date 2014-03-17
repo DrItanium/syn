@@ -81,3 +81,5 @@ char* compare_mnemonic(instruction i) {
       default:                            return "UNKNOWN_COMPARE";
    }
 }
+
+/* vim: set expandtab tabstop=3 shiftwidth=3: */
