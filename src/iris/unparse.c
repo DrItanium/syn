@@ -98,3 +98,12 @@ void unparse_jump(char* unparsed, instruction i) {
 void unparse_compare(char* unparsed, instruction i) {
    sprintf(unparsed, "%s TODO", compare_mnemonic(i));
 }
+
+void unparse_bitstring(char* unparsed, ushort value) {
+   unparsed[16] = '\0';
+   int bit;
+   for (bit = 15; bit >= 0; bit -= 1) {
+      unparsed[bit] = (value & 1) + '0';
+      value >>= 1;
+   }
+}

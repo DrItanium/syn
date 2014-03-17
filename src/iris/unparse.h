@@ -6,3 +6,4 @@ void unparse_arithmetic(char* unparsed, instruction i);
 void unparse_move(char* unparsed, instruction i);
 void unparse_jump(char* unparsed, instruction i);
 void unparse_compare(char* unparsed, instruction i);
+void unparse_bitstring(char* bits, ushort value);

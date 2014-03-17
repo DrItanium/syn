@@ -24,12 +24,18 @@ int main() {
 
 int main() {
    char unparsed[100];
-   ushort inst;
+   ushort insn;
 
-   for(inst = 0; inst < 65535; inst++) {
-      unparse(unparsed, inst);
+   for(insn = 0; insn < 65535; insn++) {
+      unparse_bitstring(unparsed, insn);
+      printf("%s : ", unparsed);
+      unparse(unparsed, insn);
       printf("%s\n", unparsed);
    }
+   unparse_bitstring(unparsed, insn);
+   printf("%s : ", unparsed);
+   unparse(unparsed, insn);
+   printf("%s\n", unparsed);
 
    return 0;
 }
