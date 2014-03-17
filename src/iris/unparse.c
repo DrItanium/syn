@@ -92,7 +92,15 @@ void unparse_jump(char* unparsed, instruction i) {
 }
 
 void unparse_compare(char* unparsed, instruction i) {
-   sprintf(unparsed, "%s TODO", compare_mnemonic(i));
+   char* insn;
+   char reg0[3];
+   char reg1[3];
+
+   insn = compare_mnemonic(i);
+   unparse_register(reg0, i.compare.reg0);
+   unparse_register(reg1, i.compare.reg1);
+
+   sprintf(unparsed, "%s %s %s", insn, reg0, reg1);
 }
 
 void unparse_bitstring(char* unparsed, ushort value) {
