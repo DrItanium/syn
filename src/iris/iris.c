@@ -289,5 +289,5 @@ void compare(core* proc, instruction inst) {
 
 void error(char* message, int code) {
    fprintf(stderr, "%s\n", message);
-   // exit(code);
+   exit(code);
 }

@@ -22,8 +22,7 @@ void unparse(char* unparsed, ushort value) {
          unparse_compare(unparsed, i);
          break;
       default:
-         error("invalid instruction group provided",
-               ErrorInvalidInstructionGroupProvided);
+         sprintf(unparsed, "UNASSIGNED INSTRUCTION GROUP");
    }
 }
 
@@ -31,8 +30,7 @@ void unparse_register(char* unparsed, byte index) {
    if(index < RegisterCount) {
       sprintf(unparsed, "r%d", index);
    } else {
-      error("attempted to unparse an out-of-range register",
-            ErrorRegisterOutOfRange);
+      sprintf(unparsed, "INVALID_REGISTER");
    }
 }
 
@@ -51,9 +49,20 @@ void unparse_arithmetic(char* unparsed, instruction i) {
       case ArithmeticOpBinaryNot:
          sprintf(unparsed, "%s %s <- %s", insn, dest, source0);
          break;
-      default:
+      case ArithmeticOpAdd:
+      case ArithmeticOpSub:
+      case ArithmeticOpMul:
+      case ArithmeticOpDiv:
+      case ArithmeticOpRem:
+      case ArithmeticOpShiftLeft:
+      case ArithmeticOpShiftRight:
+      case ArithmeticOpBinaryAnd:
+      case ArithmeticOpBinaryOr:
+      case ArithmeticOpBinaryXor:
          sprintf(unparsed, "%s %s <- %s %s", insn, dest, source0, source1);
          break;
+      default:
+         sprintf(unparsed, "INVALID ARITHMETIC");
    }
 }
 
@@ -86,8 +95,7 @@ void unparse_move(char* unparsed, instruction i) {
          }
          break;
       default:
-         error("invalid move operation conditional type",
-               ErrorInvalidMoveOperationConditionalType);
+         sprintf(unparsed, "INVALID MOVE");
    }
 }
 

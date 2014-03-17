@@ -16,9 +16,7 @@ char* mnemonic(ushort value) {
       case InstructionGroupCompare:
          return compare_mnemonic(i);
       default:
-         error("invalid instruction group provided",
-               ErrorInvalidInstructionGroupProvided);
-         return "lolurmom"; /* suppress compiler warnings */
+         return "UNKNOWN_GROUP";
    }
 }
 
@@ -35,10 +33,7 @@ char* arithmetic_mnemonic(instruction i) {
       case ArithmeticOpBinaryOr:   return "ior";
       case ArithmeticOpBinaryNot:  return "not";
       case ArithmeticOpBinaryXor:  return "xor";
-      default:
-         error("invalid arithmetic operation",
-               ErrorInvalidArithmeticOperation);
-         return "UNKNOWN_ARITHMETIC_OPERATOR";
+      default:                     return "UNKNOWN_ARITHMETIC";
    }
 }
 
@@ -51,10 +46,7 @@ char* move_mnemonic(instruction i) {
             case AccessModeMoveOpLoad:  return "load";
             case AccessModeMoveOpStore: return "store";
          }
-      default:
-         error("invalid move operation conditional type",
-               ErrorInvalidMoveOperationConditionalType);
-         return "UNKNOWN_MOVE_OPERATOR";
+      default:                   return "UNKNOWN_MOVE";
    }
 }
 
@@ -64,10 +56,7 @@ char* jump_mnemonic(instruction i) {
       case JumpOpIfTrue:        return "iftrue";
       case JumpOpIfFalse:       return "iffalse";
       case JumpOpIfThenElse:    return "if";
-      default:
-         error("invalid jump conditional type",
-               ErrorInvalidJumpConditionalType);
-         return "UNKNOWN JUMP OPERATOR";
+      default:                  return "UNKNOWN_JUMP";
    }
 }
 
@@ -79,9 +68,7 @@ char* compare_mnemonic(instruction i) {
       case CombineBitsOpAnd: strcpy(combinebits, "and_"); break;
       case CombineBitsOpOr:  strcpy(combinebits, "or_");  break;
       case CombineBitsOpXor: strcpy(combinebits, "xor_"); break;
-      default:
-         error("invalid compare combine bits", ErrorInvalidCombineBits);
-         return "???";
+      default:               return "UNKNOWN_COMPARE";
    }
 
    switch(i.compare.op) {
@@ -91,8 +78,6 @@ char* compare_mnemonic(instruction i) {
       case CompareOpGreaterThan:          return strcat(combinebits, "gt");
       case CompareOpLessThanOrEqualTo:    return strcat(combinebits, "le");
       case CompareOpGreaterThanOrEqualTo: return strcat(combinebits, "ge");
-      default:
-         error("invalid compare operation", ErrorInvalidCompareOperation);
-         return "UNKNOWN COMPARE OPERATOR";
+      default:                            return "UNKNOWN_COMPARE";
    }
 }
