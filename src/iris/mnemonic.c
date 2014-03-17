@@ -16,7 +16,7 @@ char* mnemonic(ushort value) {
       case InstructionGroupCompare:
          return compare_mnemonic(i);
       default:
-         return "UNKNOWN_GROUP";
+         return "UNASSIGNED_GROUP";
    }
 }
 
@@ -33,7 +33,7 @@ char* arithmetic_mnemonic(instruction i) {
       case ArithmeticOpBinaryOr:   return "ior";
       case ArithmeticOpBinaryNot:  return "not";
       case ArithmeticOpBinaryXor:  return "xor";
-      default:                     return "UNKNOWN_ARITHMETIC";
+      default:                     return "UNASSIGNED_ARITHMETIC";
    }
 }
 

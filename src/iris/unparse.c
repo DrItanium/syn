@@ -49,20 +49,8 @@ void unparse_arithmetic(char* unparsed, instruction i) {
       case ArithmeticOpBinaryNot:
          sprintf(unparsed, "%s %s <- %s", insn, dest, source0);
          break;
-      case ArithmeticOpAdd:
-      case ArithmeticOpSub:
-      case ArithmeticOpMul:
-      case ArithmeticOpDiv:
-      case ArithmeticOpRem:
-      case ArithmeticOpShiftLeft:
-      case ArithmeticOpShiftRight:
-      case ArithmeticOpBinaryAnd:
-      case ArithmeticOpBinaryOr:
-      case ArithmeticOpBinaryXor:
-         sprintf(unparsed, "%s %s <- %s %s", insn, dest, source0, source1);
-         break;
       default:
-         sprintf(unparsed, "INVALID ARITHMETIC");
+         sprintf(unparsed, "%s %s <- %s %s", insn, dest, source0, source1);
    }
 }
 
