@@ -3,10 +3,8 @@
 #include "mnemonic.h"
 #include "unparse.h"
 
-void unparse(char* unparsed, ushort value) {
-   datum d;
+void unparse(char* unparsed, datum d) {
    instruction i;
-   d.value = value;
    i.value = d.rest;
    switch(d.group) {
       case InstructionGroupArithmetic:
@@ -103,9 +101,11 @@ void unparse_compare(char* unparsed, instruction i) {
    sprintf(unparsed, "%s %s %s", insn, reg0, reg1);
 }
 
-void unparse_bitstring(char* unparsed, ushort value) {
+void unparse_bitstring(char* unparsed, datum d) {
    unparsed[16] = '\0';
    int bit;
+   ushort value;
+   value = d.value;
    for (bit = 15; bit >= 0; bit -= 1) {
       unparsed[bit] = (value & 1) + '0';
       value >>= 1;
