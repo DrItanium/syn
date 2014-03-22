@@ -68,7 +68,10 @@ void usage(char* arg0) {
 int execute(FILE* file) {
    /* install the program to memory */
    int i;
-   datum tmp;
+   union {
+      datum value;
+      byte contents[2];
+   } tmp;
    installprogram(file); 
    for(i = 0; i < MemorySize; i+=2) {
       tmp.contents[0] = proc.memory[i];
@@ -102,6 +105,6 @@ void installprogram(FILE* file) {
    }
 }
 
-void irissystem(core* proc, instruction j) {
+void irissystem(core* proc, datum j) {
    /* implement system commands */
 }
