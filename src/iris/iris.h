@@ -166,5 +166,16 @@ byte getregister(core* proc, byte index);
 void decode(core* proc, ushort value);
 void error(char* message, int code);
 void irissystem(core* proc, instruction inst);
-
+/* macros */
+#define getgroup(instruction) ((byte)(instruction & 0x8))
+/* arithmetic */
+#define getarithmeticop(instruction) ((byte)((instruction & 0x78) >> 3))
+#define getarithmeticdest(instruction) ((byte)((instruction & 0x380) >> 7))
+#define getarithmeticsource0(instruction) ((byte)((instruction & 0x1C00) >> 10))
+#define getarithmeticsource1(instruction) ((byte)((instruction & 0xE000) >> 13))
+/* compare */
+#define getcompareop(instruction) ((byte)((instruction & 0x38) >> 3))
+#define getcomparereg0(instruction) ((byte)((instruction & 0x1C0) >> 6))
+#define getcomparereg1(instruction) ((byte)((instruction & 0xE00) >> 9))
+#define getcomparecombinebits(instruction) ((byte)((instruction & 0x7000) >> 12))
 #endif 
