@@ -73,7 +73,7 @@ typedef struct core {
  *    union {
  *       byte immediate : 8;
  *       union {
- *          byte reg1 : 3;
+ *          byte reg0 : 3;
  *       } shortform;
  *       struct {
  *          byte reg0 : 3;
