@@ -5,6 +5,7 @@ typedef unsigned char byte;
 typedef unsigned char uchar;
 typedef signed char schar;
 typedef unsigned short ushort;
+typedef unsigned short datum;
 
 enum {
    RegisterCount = 8, 
@@ -18,11 +19,6 @@ typedef struct core {
    ushort pc : 16;
    byte predicateregister : 1;
 } core;
-
-typedef union datum {
-   ushort value : 16;
-   byte contents[2];
-} datum;
 
 /* macros */
 #define getgroup(instruction) ((byte)(instruction & 0x8))
@@ -200,13 +196,13 @@ enum {
    ErrorPutRegisterOutOfRange = 8,
    ErrorInvalidInstructionGroupProvided = 9,
 };
-void arithmetic(core* proc, instruction inst);
-void move(core* proc, instruction inst);
-void jump(core* proc, instruction inst);
-void compare(core* proc, instruction inst);
+void arithmetic(core* proc, datum inst);
+void move(core* proc, datum inst);
+void jump(core* proc, datum inst);
+void compare(core* proc, datum inst);
 void putregister(core* proc, byte index, byte value);
 byte getregister(core* proc, byte index);
 void decode(core* proc, ushort value);
 void error(char* message, int code);
-void irissystem(core* proc, instruction inst);
+void irissystem(core* proc, datum inst);
 #endif 
