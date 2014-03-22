@@ -192,8 +192,8 @@ This is a special mode which allows for instruction compression in cases where
 fallthrough to the next instruction is not desirable. The decoder interprets
 these bits a tad differently from the other.
 bit 15 : unused
-bit 12-14 : Register to use if condition is not met
-bit 11 : Condition is not met register is signed?
+bit 14 : Condition is not met register is signed?
+bit 11-13 : Register to use if condition is not met
 bit 8-10 : Register to use if condition is met
 bit 7 : Condition met register is signed?
 bit 6 : Conditional style
