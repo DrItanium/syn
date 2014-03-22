@@ -26,61 +26,71 @@ typedef union datum {
 
 /* macros */
 #define getgroup(instruction) ((byte)(instruction & 0x8))
-//typedef union instruction {
-//   ushort value : 13;
-//   struct {
-//      byte op : 4;
-//      byte dest : 3;
-//      byte source0 : 3;
-//      byte source1 : 3;
-//   } arithmetic;
+
 /* arithmetic */
+/* C structure version 
+ * DO NOT UNCOMMENT
+ * struct arithmetic {
+ *    byte op : 4;
+ *    byte dest : 3;
+ *    byte source0 : 3;
+ *    byte source1 : 3;
+ * };
+ */
 #define getarithmeticop(instruction) ((byte)((instruction & 0x78) >> 3))
 #define getarithmeticdest(instruction) ((byte)((instruction & 0x380) >> 7))
 #define getarithmeticsource0(instruction) ((byte)((instruction & 0x1C00) >> 10))
 #define getarithmeticsource1(instruction) ((byte)((instruction & 0xE000) >> 13))
-//   struct {
-//      byte op : 2; 
-//      byte reg0 : 3;
-//      union {
-//         byte immediate : 8;
-//         byte reg1 : 3;
-//         struct {
-//            byte reg1 : 3;
-//            byte reg2 : 3;
-//            byte accessmode : 1;
-//         } addressmode;
-//      };
-//   } move;
+
 /* move */
+/* C structure version
+ * DO NOT UNCOMMENT
+ * struct move {
+ *    byte op : 2; 
+ *    byte reg0 : 3;
+ *    union {
+ *       byte immediate : 8;
+ *       byte reg1 : 3;
+ *       struct {
+ *          byte reg1 : 3;
+ *          byte reg2 : 3;
+ *          byte accessmode : 1;
+ *       } addressmode;
+ *    };
+ * };
+ */
 #define getmoveop(instruction) ((byte)((instruction & 0x18) >> 3))
 #define getmovereg0(instruction) ((byte)((instruction & 0xE0) >> 5))
 #define getmoveimmediate(instruction) ((byte)((instruction) >> 8))
 #define getmovereg1(instruction) ((byte)((instruction & 0x700) >> 8))
 #define getmovereg2(instruction) ((byte)((instruction & 0x3800) >> 11))
 #define getmoveaccessmode(instruction) ((byte)((instruction & 0x4000) >> 14))
-//   struct {
-//      byte distance : 1;
-//      byte conditional : 2;
-//      byte immediatemode : 1;
-//      byte signedmode : 1;
-//      union {
-//         byte immediate : 8;
-//         union {
-//            byte reg1 : 3;
-//         } shortform;
-//         struct {
-//            byte reg0 : 3;
-//            byte reg1 : 3;
-//         } longtype;
-//         struct {
-//            byte reg0 : 3;
-//            byte reg1 : 3;
-//            byte reg1issigned : 1;
-//         } ifthenelsetype;
-//      };
-//   } jump;
+
 /* jump */
+/* C structure version
+ * DO NOT UNCOMMENT
+ * struct jump {
+ *    byte distance : 1;
+ *    byte conditional : 2;
+ *    byte immediatemode : 1;
+ *    byte signedmode : 1;
+ *    union {
+ *       byte immediate : 8;
+ *       union {
+ *          byte reg1 : 3;
+ *       } shortform;
+ *       struct {
+ *          byte reg0 : 3;
+ *          byte reg1 : 3;
+ *       } longtype;
+ *       struct {
+ *          byte reg0 : 3;
+ *          byte reg1 : 3;
+ *          byte reg1issigned : 1;
+ *       } ifthenelsetype;
+ *    };
+ * };
+ */
 #define getjumpdistance(instruction) ((byte)((instruction & 0x8) >> 3))
 #define getjumpconditional(instruction) ((byte)((instruction & 0x30) >> 4))
 #define getjumpimmediatemode(instruction) ((byte)((instruction & 0x40) >> 6))
@@ -89,22 +99,32 @@ typedef union datum {
 #define getjumpreg0(instruction) ((byte)((instruction & 0x700) >> 8))
 #define getjumpreg1(instruction) ((byte)((instruction & 0x3800) >> 11))
 #define getjumpreg1issigned(instruction) ((byte)((instruction & 0x4000)) >> 14)
-//   struct {
-//      byte op : 3;
-//      byte reg0 : 3;
-//      byte reg1 : 3;
-//      byte combinebits : 3; /* nil, and, or, xor */
-//   } compare;
+/* compare */
+/* C structure version 
+ * DO NOT UNCOMMENT
+ * struct {
+ *    byte op : 3;
+ *    byte reg0 : 3;
+ *    byte reg1 : 3;
+ *    byte combinebits : 3; 
+ * } compare;
+ */
 #define getcompareop(instruction) ((byte)((instruction & 0x38) >> 3))
 #define getcomparereg0(instruction) ((byte)((instruction & 0x1C0) >> 6))
 #define getcomparereg1(instruction) ((byte)((instruction & 0xE00) >> 9))
 #define getcomparecombinebits(instruction) ((byte)((instruction & 0x7000) >> 12))
-//   struct {
-//      byte operation : 7;
-//      byte reg0 : 3;
-//      byte reg1 : 3;
-//   } systemcall;
-//} instruction;
+/* systemcall */
+/* C structure version
+ * DO NOT UNCOMMENT
+ * struct {
+ *    byte operation : 7;
+ *    byte reg0 : 3;
+ *    byte reg1 : 3;
+ * } systemcall;
+ */
+#define getsystemoperation(instruction) ((byte)((instruction & 0x3F8) >> 3))
+#define getsystemreg0(instruction) ((byte)((instruction & 0x1C00) >> 10))
+#define getsystemreg1(instruction) ((byte)((instruction) >> 13))
 
 
 /* Instructions Groups */
