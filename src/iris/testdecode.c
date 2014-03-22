@@ -62,7 +62,7 @@ datum control[] = {
    /* system */
    0x3F8, /* operation */
    0x1C00, /* reg0 */
-   0xE00, /* reg1 */
+   0xE000, /* reg1 */
 };
 byte widths[] = {
    /* max values for each bit width */
@@ -111,7 +111,7 @@ int cases[] = {
    8, /* immediate */
    3, /* reg0 */
    3, /* reg1 */
-   1, /* reg0 */
+   1, /* reg1issigned */
    /* compare */
    3, /* op */
    3, /* reg0 */
@@ -158,13 +158,13 @@ int checkandreport(testcase* test) {
       case 0: result = getgroup(value); break;
       case 1: result = getarithmeticop(value); break;
       case 2: result = getarithmeticdest(value); break;
-      case 3: result = getarithmeticsource0(value);
-      case 4: result = getarithmeticsource1(value) ; break;
-      case 5: result = getmoveop(value) ; break;
-      case 6: result = getmovereg0(value) ; break;
-      case 7: result = getmoveimmediate(value) ; break;
-      case 8: result = getmovereg1(value) ; break;
-      case 9: result = getmovereg2(value) ; break;
+      case 3: result = getarithmeticsource0(value); break;
+      case 4: result = getarithmeticsource1(value); break;
+      case 5: result = getmoveop(value); break;
+      case 6: result = getmovereg0(value); break;
+      case 7: result = getmoveimmediate(value); break;
+      case 8: result = getmovereg1(value); break;
+      case 9: result = getmovereg2(value); break;
       case 10: result = getmoveaccessmode(value); break;
       case 11: result = getjumpdistance(value); break;
       case 12: result = getjumpconditional(value); break;
