@@ -21,7 +21,7 @@ typedef struct core {
 } core;
 
 /* macros */
-#define getgroup(instruction) ((byte)(instruction & 0x8))
+#define getgroup(instruction) ((byte)(instruction & 0x7))
 
 /* arithmetic */
 /* C structure version 
