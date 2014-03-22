@@ -94,7 +94,7 @@ typedef struct core {
 #define getjumpimmediate(instruction) ((byte)((instruction) >> 8))
 #define getjumpreg0(instruction) ((byte)((instruction & 0x700) >> 8))
 #define getjumpreg1(instruction) ((byte)((instruction & 0x3800) >> 11))
-#define getjumpreg1issigned(instruction) ((byte)((instruction & 0x4000)) >> 14)
+#define getjumpreg1issigned(instruction) ((byte)((instruction & 0x4000) >> 14))
 /* compare */
 /* C structure version 
  * DO NOT UNCOMMENT
