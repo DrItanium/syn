@@ -23,7 +23,8 @@ actually in use. The four modes are:
 1: Move
 2: Jump
 3: Compare
-4-7: Undefined (will cause a panic in the simulator at this point in time)
+4: System
+5-7: Undefined (will cause a panic in the simulator at this point in time)
 
 The operation bits are different for each major operation group. 
 
@@ -236,3 +237,14 @@ for the combine bits
 2 : or (or the new value with the old)
 3 : xor (xor the new value with the old)
 4-7 : Unused bits (will cause the simulator to panic)
+
+---------------------------------------------------------------------
+The system call operation is as follows:
+
+bits 13-15 : Second register
+bits 10-12 : First register
+bits 3-9 : Operation
+
+The system call operation suports up to 128 different system calls and its
+implementation is system dependent so it is up to the designer how to implement
+this and its behavior.
