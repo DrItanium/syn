@@ -3,10 +3,10 @@
 
 include config.mk
 
-SRC = iris.c sim.c test.c
+SRC = iris.c sim.c 
 OBJ = ${SRC:.c=.o}
 
-all: options iris test
+all: options iris 
 
 options:
 	@echo iris build options:
@@ -24,13 +24,9 @@ iris: iris.o sim.o
 	@echo CC -o $@
 	@${CC} -o $@ iris.o sim.o ${LDFLAGS}
 
-test: iris.o test.o
-	@echo CC -o $@
-	@${CC} -o $@ test.o iris.o ${LDFLAGS}
-
 clean:
 	@echo cleaning
-	@rm -f iris test ${OBJ} 
+	@rm -f iris ${OBJ} 
 
 
 .PHONY: all options clean
