@@ -22,66 +22,89 @@ typedef struct core {
 typedef union datum {
    ushort value : 16;
    byte contents[2];
-   struct {
-      byte group : 3;
-      ushort rest : 13;
-   };
 } datum;
 
-typedef union instruction {
-   ushort value : 13;
-   struct {
-      byte op : 4;
-      byte dest : 3;
-      byte source0 : 3;
-      byte source1 : 3;
-   } arithmetic;
-   struct {
-      byte op : 2; 
-      byte reg0 : 3;
-      union {
-         byte immediate : 8;
-         byte reg1 : 3;
-         struct {
-            byte reg1 : 3;
-            byte reg2 : 3;
-            byte accessmode : 1;
-         } addressmode;
-      };
-   } move;
-   struct {
-      byte distance : 1;
-      byte conditional : 2;
-      byte immediatemode : 1;
-      byte signedmode : 1;
-      union {
-         byte immediate : 8;
-         union {
-            byte reg1 : 3;
-         } shortform;
-         struct {
-            byte reg0 : 3;
-            byte reg1 : 3;
-         } longtype;
-         struct {
-            byte reg0 : 3;
-            byte reg1issigned : 1;
-            byte reg1 : 3;
-         } ifthenelsetype;
-      };
-   } jump;
-   struct {
-      byte op : 3;
-      byte reg0 : 3;
-      byte reg1 : 3;
-      byte combinebits : 3; /* nil, and, or, xor */
-   } compare;
-   struct {
-      byte operation : 7;
-      byte reg0 : 3;
-      byte reg1 : 3;
-   } systemcall;
-} instruction;
+/* macros */
+#define getgroup(instruction) ((byte)(instruction & 0x8))
+//typedef union instruction {
+//   ushort value : 13;
+//   struct {
+//      byte op : 4;
+//      byte dest : 3;
+//      byte source0 : 3;
+//      byte source1 : 3;
+//   } arithmetic;
+/* arithmetic */
+#define getarithmeticop(instruction) ((byte)((instruction & 0x78) >> 3))
+#define getarithmeticdest(instruction) ((byte)((instruction & 0x380) >> 7))
+#define getarithmeticsource0(instruction) ((byte)((instruction & 0x1C00) >> 10))
+#define getarithmeticsource1(instruction) ((byte)((instruction & 0xE000) >> 13))
+//   struct {
+//      byte op : 2; 
+//      byte reg0 : 3;
+//      union {
+//         byte immediate : 8;
+//         byte reg1 : 3;
+//         struct {
+//            byte reg1 : 3;
+//            byte reg2 : 3;
+//            byte accessmode : 1;
+//         } addressmode;
+//      };
+//   } move;
+/* move */
+#define getmoveop(instruction) ((byte)((instruction & 0x18) >> 3))
+#define getmovereg0(instruction) ((byte)((instruction & 0xE0) >> 5))
+#define getmoveimmediate(instruction) ((byte)((instruction) >> 8))
+#define getmovereg1(instruction) ((byte)((instruction & 0x700) >> 8))
+#define getmovereg2(instruction) ((byte)((instruction & 0x3800) >> 11))
+#define getmoveaccessmode(instruction) ((byte)((instruction & 0x4000) >> 14))
+//   struct {
+//      byte distance : 1;
+//      byte conditional : 2;
+//      byte immediatemode : 1;
+//      byte signedmode : 1;
+//      union {
+//         byte immediate : 8;
+//         union {
+//            byte reg1 : 3;
+//         } shortform;
+//         struct {
+//            byte reg0 : 3;
+//            byte reg1 : 3;
+//         } longtype;
+//         struct {
+//            byte reg0 : 3;
+//            byte reg1 : 3;
+//            byte reg1issigned : 1;
+//         } ifthenelsetype;
+//      };
+//   } jump;
+/* jump */
+#define getjumpdistance(instruction) ((byte)((instruction & 0x8) >> 3))
+#define getjumpconditional(instruction) ((byte)((instruction & 0x30) >> 4))
+#define getjumpimmediatemode(instruction) ((byte)((instruction & 0x40) >> 6))
+#define getjumpsignedmode(instruction) ((byte)((instruction & 0x80) >> 7))
+#define getjumpimmediate(instruction) ((byte)((instruction) >> 8))
+#define getjumpreg0(instruction) ((byte)((instruction & 0x700) >> 8))
+#define getjumpreg1(instruction) ((byte)((instruction & 0x3800) >> 11))
+#define getjumpreg1issigned(instruction) ((byte)((instruction & 0x4000)) >> 14)
+//   struct {
+//      byte op : 3;
+//      byte reg0 : 3;
+//      byte reg1 : 3;
+//      byte combinebits : 3; /* nil, and, or, xor */
+//   } compare;
+#define getcompareop(instruction) ((byte)((instruction & 0x38) >> 3))
+#define getcomparereg0(instruction) ((byte)((instruction & 0x1C0) >> 6))
+#define getcomparereg1(instruction) ((byte)((instruction & 0xE00) >> 9))
+#define getcomparecombinebits(instruction) ((byte)((instruction & 0x7000) >> 12))
+//   struct {
+//      byte operation : 7;
+//      byte reg0 : 3;
+//      byte reg1 : 3;
+//   } systemcall;
+//} instruction;
 
 
 /* Instructions Groups */
@@ -166,16 +189,4 @@ byte getregister(core* proc, byte index);
 void decode(core* proc, ushort value);
 void error(char* message, int code);
 void irissystem(core* proc, instruction inst);
-/* macros */
-#define getgroup(instruction) ((byte)(instruction & 0x8))
-/* arithmetic */
-#define getarithmeticop(instruction) ((byte)((instruction & 0x78) >> 3))
-#define getarithmeticdest(instruction) ((byte)((instruction & 0x380) >> 7))
-#define getarithmeticsource0(instruction) ((byte)((instruction & 0x1C00) >> 10))
-#define getarithmeticsource1(instruction) ((byte)((instruction & 0xE000) >> 13))
-/* compare */
-#define getcompareop(instruction) ((byte)((instruction & 0x38) >> 3))
-#define getcomparereg0(instruction) ((byte)((instruction & 0x1C0) >> 6))
-#define getcomparereg1(instruction) ((byte)((instruction & 0xE00) >> 9))
-#define getcomparecombinebits(instruction) ((byte)((instruction & 0x7000) >> 12))
 #endif 
