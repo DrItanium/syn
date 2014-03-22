@@ -1,25 +1,6 @@
 #include <string.h>
 #include "mnemonic.h"
 
-char* mnemonic(ushort value) {
-   datum d;
-   instruction i;
-   d.value = value;
-   i.value = d.rest;
-   switch(d.group) {
-      case InstructionGroupArithmetic:
-         return arithmetic_mnemonic(i);
-      case InstructionGroupMove:
-         return move_mnemonic(i);
-      case InstructionGroupJump:
-         return jump_mnemonic(i);
-      case InstructionGroupCompare:
-         return compare_mnemonic(i);
-      default:
-         return "UNASSIGNED_GROUP";
-   }
-}
-
 char* arithmetic_mnemonic(instruction i) {
    switch(i.arithmetic.op) {
       case ArithmeticOpAdd:        return "add";
@@ -30,7 +11,7 @@ char* arithmetic_mnemonic(instruction i) {
       case ArithmeticOpShiftLeft:  return "shl";
       case ArithmeticOpShiftRight: return "shr";
       case ArithmeticOpBinaryAnd:  return "and";
-      case ArithmeticOpBinaryOr:   return "ior";
+      case ArithmeticOpBinaryOr:   return "or";
       case ArithmeticOpBinaryNot:  return "not";
       case ArithmeticOpBinaryXor:  return "xor";
       default:                     return "UNASSIGNED_ARITHMETIC";
@@ -40,7 +21,7 @@ char* arithmetic_mnemonic(instruction i) {
 char* move_mnemonic(instruction i) {
    switch(i.move.op) {
       case MoveOpRegToReg:       return "move";
-      case MoveOpImmediateToReg: return "load";
+      case MoveOpImmediateToReg: return "move";
       case MoveOpRegToAddress:
          switch(i.move.addressmode.accessmode) {
             case AccessModeMoveOpLoad:  return "load";
