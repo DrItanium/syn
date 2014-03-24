@@ -84,7 +84,70 @@ void unparse_move(char* unparsed, ushort insn) {
 }
 
 void unparse_jump(char* unparsed, ushort insn) {
+   byte is_normal;
+   is_normal = getjumpconditional(insn) != JumpOpIfThenElse;
+   if(is_normal == 1) {
+      unparse_normal_jump(unparsed, insn);
+   } else {
+      unparse_if_then_else(unparsed, insn);
+   }
+}
+
+void unparse_normal_jump(char* unparsed, ushort insn) {
+   const char* op;
+   char reg0[3];
+   char reg1[3];
+   byte is_relative;
+   byte is_immediate;
+   byte is_signed;
+
+   op = jump_mnemonic(insn);
+   is_relative = getjumpdistance(insn) == JumpDistanceShort;
+   is_immediate = getjumpimmediatemode(insn) == 1;
+   is_signed = getjumpsignedmode(insn) == 1;
+
+   if(is_relative && is_immediate && is_signed == 1) {
+      sprintf(unparsed, "%s %d", op, (schar) getjumpimmediate(insn));
+   } else if(is_relative && is_immediate && !is_signed == 1) {
+      sprintf(unparsed, "%s %d", op, getjumpimmediate(insn));
+   } else if(is_relative && !is_immediate && is_signed == 1) {
+      unparse_register(reg1, getjumpreg1(insn));
+      sprintf(unparsed, "%s $%s", op, reg1);
+   } else if(is_relative && !is_immediate && !is_signed == 1) {
+      unparse_register(reg1, getjumpreg1(insn));
+      sprintf(unparsed, "%s %s", op, reg1);
+   } else if(!is_relative) {
+      unparse_register(reg0, getjumpreg0(insn));
+      unparse_register(reg1, getjumpreg1(insn));
+      sprintf(unparsed, "%s %s %s", op, reg0, reg1);
+   } else {
+      sprintf(unparsed, "INVALID JUMP");
+   }
+}
+
+void unparse_if_then_else(char* unparsed, ushort insn) {
    sprintf(unparsed, "%s TODO", jump_mnemonic(insn));
+   /*
+   // now this is going to get a tad confusing
+   if(immediatemode == JumpOpIfThenElse_TrueFalse) {
+   } else if(immediatemode == JumpOpIfThenElse_FalseTrue) {
+   } else {
+      // this should never ever get executed!
+   }
+   if(shouldJump == 1) {
+      if(getjumpsignedmode(inst) == 1) {
+         proc->pc += (schar)getregister(proc, getjumpreg0(inst));
+      } else {
+         proc->pc += getregister(proc, getjumpreg0(inst));
+      }
+   } else {
+      if(getjumpreg1issigned(inst) == 1) {
+         proc->pc += (schar)getregister(proc, getjumpreg1(inst));
+      } else {
+         proc->pc += getregister(proc, getjumpreg1(inst));
+      }
+   }
+   */
 }
 
 void unparse_compare(char* unparsed, ushort insn) {
