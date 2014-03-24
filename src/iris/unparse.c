@@ -3,21 +3,19 @@
 #include "mnemonic.h"
 #include "unparse.h"
 
-void unparse(char* unparsed, datum d) {
-   instruction i;
-   i.value = d.rest;
-   switch(d.group) {
+void unparse(char* unparsed, ushort insn) {
+   switch(getgroup(insn)) {
       case InstructionGroupArithmetic:
-         unparse_arithmetic(unparsed, i);
+         unparse_arithmetic(unparsed, insn);
          break;
       case InstructionGroupMove:
-         unparse_move(unparsed, i);
+         unparse_move(unparsed, insn);
          break;
       case InstructionGroupJump:
-         unparse_jump(unparsed, i);
+         unparse_jump(unparsed, insn);
          break;
       case InstructionGroupCompare:
-         unparse_compare(unparsed, i);
+         unparse_compare(unparsed, insn);
          break;
       default:
          sprintf(unparsed, "UNASSIGNED INSTRUCTION GROUP");
@@ -32,52 +30,52 @@ void unparse_register(char* unparsed, byte index) {
    }
 }
 
-void unparse_arithmetic(char* unparsed, instruction i) {
-   char* insn;
+void unparse_arithmetic(char* unparsed, ushort insn) {
+   const char* op;
    char dest[3];
    char source0[3];
    char source1[3];
 
-   insn = arithmetic_mnemonic(i);
-   unparse_register(dest, i.arithmetic.dest);
-   unparse_register(source0, i.arithmetic.source0);
-   unparse_register(source1, i.arithmetic.source1);
+   op = arithmetic_mnemonic(insn);
+   unparse_register(dest, getarithmeticdest(insn));
+   unparse_register(source0, getarithmeticsource0(insn));
+   unparse_register(source1, getarithmeticsource1(insn));
 
-   switch(i.arithmetic.op) {
+   switch(getarithmeticop(insn)) {
       case ArithmeticOpBinaryNot:
-         sprintf(unparsed, "%s %s <- %s", insn, dest, source0);
+         sprintf(unparsed, "%s %s <- %s", op, dest, source0);
          break;
       default:
-         sprintf(unparsed, "%s %s <- %s %s", insn, dest, source0, source1);
+         sprintf(unparsed, "%s %s <- %s %s", op, dest, source0, source1);
    }
 }
 
-void unparse_move(char* unparsed, instruction i) {
-   char* insn;
+void unparse_move(char* unparsed, ushort insn) {
+   const char* op;
    char reg0[3];
    char reg1[3];
    char reg2[3];
 
-   insn = move_mnemonic(i);
+   op = move_mnemonic(insn);
 
-   switch(i.move.op) {
+   switch(getmoveop(insn)) {
       case MoveOpRegToReg:
-         unparse_register(reg0, i.move.reg0);
-         unparse_register(reg1, i.move.reg1);
-         sprintf(unparsed, "%s %s <- %s", insn, reg0, reg1);
+         unparse_register(reg0, getmovereg0(insn));
+         unparse_register(reg1, getmovereg1(insn));
+         sprintf(unparsed, "%s %s <- %s", op, reg0, reg1);
          break;
       case MoveOpImmediateToReg:
-         unparse_register(reg0, i.move.reg0);
-         sprintf(unparsed, "%s %s <- %d", insn, reg0, i.move.immediate);
+         unparse_register(reg0, getmovereg0(insn));
+         sprintf(unparsed, "%s %s <- %d", op, reg0, getmoveimmediate(insn));
          break;
       case MoveOpRegToAddress:
-         unparse_register(reg0, i.move.reg0);
-         unparse_register(reg1, i.move.addressmode.reg1);
-         unparse_register(reg2, i.move.addressmode.reg2);
-         if(i.move.addressmode.accessmode == AccessModeMoveOpLoad) {
-            sprintf(unparsed, "%s %s <- %s %s", insn, reg0, reg1, reg2);
+         unparse_register(reg0, getmovereg0(insn));
+         unparse_register(reg1, getmovereg1(insn));
+         unparse_register(reg2, getmovereg2(insn));
+         if(getmoveaccessmode(insn) == AccessModeMoveOpLoad) {
+            sprintf(unparsed, "%s %s <- %s %s", op, reg0, reg1, reg2);
          } else {
-            sprintf(unparsed, "%s %s -> %s %s", insn, reg0, reg1, reg2);
+            sprintf(unparsed, "%s %s -> %s %s", op, reg0, reg1, reg2);
          }
          break;
       default:
@@ -85,30 +83,28 @@ void unparse_move(char* unparsed, instruction i) {
    }
 }
 
-void unparse_jump(char* unparsed, instruction i) {
-   sprintf(unparsed, "%s TODO", jump_mnemonic(i));
+void unparse_jump(char* unparsed, ushort insn) {
+   sprintf(unparsed, "%s TODO", jump_mnemonic(insn));
 }
 
-void unparse_compare(char* unparsed, instruction i) {
-   char* insn;
+void unparse_compare(char* unparsed, ushort insn) {
+   const char* op;
    char reg0[3];
    char reg1[3];
 
-   insn = compare_mnemonic(i);
-   unparse_register(reg0, i.compare.reg0);
-   unparse_register(reg1, i.compare.reg1);
+   op = compare_mnemonic(insn);
+   unparse_register(reg0, getcomparereg0(insn));
+   unparse_register(reg1, getcomparereg1(insn));
 
-   sprintf(unparsed, "%s %s %s", insn, reg0, reg1);
+   sprintf(unparsed, "%s %s %s", op, reg0, reg1);
 }
 
-void unparse_bitstring(char* unparsed, datum d) {
+void unparse_bitstring(char* unparsed, ushort insn) {
    unparsed[16] = '\0';
    int bit;
-   ushort value;
-   value = d.value;
    for (bit = 15; bit >= 0; bit -= 1) {
-      unparsed[bit] = (value & 1) + '0';
-      value >>= 1;
+      unparsed[bit] = (insn & 1) + '0';
+      insn >>= 1;
    }
 }
 

@@ -5,19 +5,17 @@
 
 int main() {
    char unparsed[100];
-   datum d;
-   ushort value;
+   ushort insn;
 
-   for(value = 0; value < 65535; value++) {
-      d.value = value;
-      unparse_bitstring(unparsed, d);
+   for(insn = 0; insn < 65535; insn++) {
+      unparse_bitstring(unparsed, insn);
       printf("%s : ", unparsed);
-      unparse(unparsed, d);
+      unparse(unparsed, insn);
       printf("%s\n", unparsed);
    }
-   unparse_bitstring(unparsed, d);
+   unparse_bitstring(unparsed, insn);
    printf("%s : ", unparsed);
-   unparse(unparsed, d);
+   unparse(unparsed, insn);
    printf("%s\n", unparsed);
 
    return 0;
