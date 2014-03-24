@@ -119,35 +119,36 @@ void unparse_normal_jump(char* unparsed, ushort insn) {
    } else if(!is_relative) {
       unparse_register(reg0, getjumpreg0(insn));
       unparse_register(reg1, getjumpreg1(insn));
-      sprintf(unparsed, "%s %s %s", op, reg0, reg1);
+      sprintf(unparsed, "%s %s:%s", op, reg0, reg1);
    } else {
       sprintf(unparsed, "INVALID JUMP");
    }
 }
 
 void unparse_if_then_else(char* unparsed, ushort insn) {
-   sprintf(unparsed, "%s TODO", jump_mnemonic(insn));
-   /*
-   // now this is going to get a tad confusing
-   if(immediatemode == JumpOpIfThenElse_TrueFalse) {
-   } else if(immediatemode == JumpOpIfThenElse_FalseTrue) {
+   const char* op;
+   char reg0[3];
+   char reg1[3];
+   byte reg0_is_signed;
+   byte reg1_is_signed;
+
+   op = jump_mnemonic(insn);
+   unparse_register(reg0, getjumpreg0(insn));
+   unparse_register(reg1, getjumpreg1(insn));
+   reg0_is_signed = getjumpsignedmode(insn) == 1;
+   reg1_is_signed = getjumpreg1issigned(insn) == 1;
+
+   if(reg0_is_signed && reg1_is_signed == 1) {
+      sprintf(unparsed, "%s $%s $%s", op, reg0, reg1);
+   } else if(reg0_is_signed && !reg1_is_signed == 1) {
+      sprintf(unparsed, "%s $%s %s", op, reg0, reg1);
+   } else if(!reg0_is_signed && reg1_is_signed == 1) {
+      sprintf(unparsed, "%s %s $%s", op, reg0, reg1);
+   } else if(!reg0_is_signed && !reg1_is_signed == 1) {
+      sprintf(unparsed, "%s %s %s", op, reg0, reg1);
    } else {
-      // this should never ever get executed!
+      sprintf(unparsed, "INVALID JUMP");
    }
-   if(shouldJump == 1) {
-      if(getjumpsignedmode(inst) == 1) {
-         proc->pc += (schar)getregister(proc, getjumpreg0(inst));
-      } else {
-         proc->pc += getregister(proc, getjumpreg0(inst));
-      }
-   } else {
-      if(getjumpreg1issigned(inst) == 1) {
-         proc->pc += (schar)getregister(proc, getjumpreg1(inst));
-      } else {
-         proc->pc += getregister(proc, getjumpreg1(inst));
-      }
-   }
-   */
 }
 
 void unparse_compare(char* unparsed, ushort insn) {

@@ -37,7 +37,11 @@ const char* jump_mnemonic(ushort insn) {
       case JumpOpUnconditional: return "goto";
       case JumpOpIfTrue:        return "if1";
       case JumpOpIfFalse:       return "if0";
-      case JumpOpIfThenElse:    return "if";
+      case JumpOpIfThenElse:
+         switch(getjumpimmediatemode(insn)) {
+            case JumpOpIfThenElse_TrueFalse: return "if1";
+            case JumpOpIfThenElse_FalseTrue: return "if0";
+         }
       default:                  return "UNKNOWN_JUMP";
    }
 }
