@@ -1,6 +1,6 @@
 #include "iris.h"
 
-char* arithmetic_mnemonic(instruction i);
-char* move_mnemonic(instruction i);
-char* jump_mnemonic(instruction i);
-char* compare_mnemonic(instruction i);
+const char* arithmetic_mnemonic(ushort insn);
+const char* move_mnemonic(ushort insn);
+const char* jump_mnemonic(ushort insn);
+const char* compare_mnemonic(ushort insn);

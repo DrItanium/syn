@@ -38,6 +38,11 @@ test_decode: iris.o tests/decode.o
 	@${CC} ${LDFLAGS} -o iris iris.o tests/decode.o
 	@echo done.
 
+test_mnemonic: iris.o mnemonic.o tests/mnemonic.o
+	@echo -n Building iris binary out of iris.o mnemonic.o tests/mnemonic.o...
+	@${CC} ${LDFLAGS} -o iris iris.o mnemonic.o tests/mnemonic.o
+	@echo done.
+
 clean:
 	@echo -n Cleaning...
 	@rm -f ${OBJECTS} ${TARGETS} ${TEST_OBJECTS} ${TEST_TARGETS}
