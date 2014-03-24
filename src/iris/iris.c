@@ -269,6 +269,10 @@ void compare(core* proc, datum inst) {
    }
 }
 
+void irissystem(core* proc, datum j) {
+   /* implement system commands */
+}
+
 void error(char* message, int code) {
    fprintf(stderr, "%s\n", message);
    exit(code);

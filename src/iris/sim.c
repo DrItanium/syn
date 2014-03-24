@@ -104,7 +104,3 @@ void installprogram(FILE* file) {
       }
    }
 }
-
-void irissystem(core* proc, datum j) {
-   /* implement system commands */
-}
