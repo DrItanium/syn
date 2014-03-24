@@ -3,8 +3,14 @@
 
 include config.mk
 
-SRCS = $(wildcard *.c)
-OBJS = ${SRCS:.c=.o}
+# TODO SOURCES = $(wildcard *.c)
+SOURCES = iris.c sim.c
+OBJECTS = ${SOURCES:.c=.o}
+TARGETS = iris
+
+TEST_SOURCES = $(wildcard tests/*.c)
+TEST_OBJECTS = ${TEST_SOURCES:tests/%.c=tests/%.o}
+TEST_TARGETS = ${TEST_OBJECTS:%.o=%}
 
 all: options iris
 
@@ -14,19 +20,27 @@ options:
 	@echo "LDFLAGS  = ${LDFLAGS}"
 	@echo "CC       = ${CC}"
 
-.c.o:
-	@echo CC -c ${SRCS}
-	@${CC} -c ${SRCS} ${CFLAGS}
+%.o: %.c
+	@echo -n Compiling $< into $@...
+	@${CC} ${CFLAGS} -c $< -o $@
+	@echo done.
 
-${OBJ}: config.mk 
+iris: iris.o sim.o
+	@echo -n Building $@ binary out of iris.o sim.o...
+	@${CC} ${LDFLAGS} -o $@ iris.o sim.o
+	@echo done.
 
-iris: ${OBJS}
-	@echo CC ${OBJS} -o iris
-	@${CC} ${OBJS} -o iris ${LDFLAGS}
+# TODO use some `make` magic to automatically create build targets in the same
+# pattern as below for all the TEST_TARGETS
+
+test_decode: iris.o tests/decode.o
+	@echo -n Building iris binary out of iris.o tests/decode.o...
+	@${CC} ${LDFLAGS} -o iris iris.o tests/decode.o
+	@echo done.
 
 clean:
-	@echo cleaning
-	@rm -f iris stest ${OBJS} iris-${VERSION}.tar.gz
-
+	@echo -n Cleaning...
+	@rm -f ${OBJECTS} ${TARGETS} ${TEST_OBJECTS} ${TEST_TARGETS}
+	@echo done.
 
 .PHONY: all options clean

@@ -1,6 +1,6 @@
 LIBS = -lc 
 
-CC = cc
-CFLAGS = -ansi -std=c99 -Wall -O2
-LDFLAGS = -s ${LIBS}
+CC = cc 
+CFLAGS = -g3 -ansi -std=c99 -Wall
+LDFLAGS =  ${LIBS}
 

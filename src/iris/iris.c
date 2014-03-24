@@ -1,69 +1,31 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "iris.h"
-#include "unparse.h"
-
-/*
-int main() {
-   core proc;
-   datum d;
-   instruction tmp;
-   d.group = InstructionGroupCompare;
-   tmp.compare.op = CompareOpEq;
-   tmp.compare.reg0 = 7;
-   tmp.compare.reg1 = 5;
-   tmp.compare.combinebits = CombineBitsOpNil;
-   d.rest = tmp.value;
-   decode(&proc, d.value);
-   printf("equality = %d\n", proc.predicateregister);
-   printf("sizeof(instruction) = %ld\n", sizeof(instruction));
-
-   return 0;
-}
-*/
-
-int main() {
-   char unparsed[100];
-   datum d;
-   ushort value;
-
-   for(value = 0; value < 65535; value++) {
-      d.value = value;
-      unparse_bitstring(unparsed, d);
-      printf("%s : ", unparsed);
-      unparse(unparsed, d);
-      printf("%s\n", unparsed);
-   }
-   unparse_bitstring(unparsed, d);
-   printf("%s : ", unparsed);
-   unparse(unparsed, d);
-   printf("%s\n", unparsed);
-
-   return 0;
-}
 
 void decode(core* proc, ushort value) {
-   datum i;
-   instruction j;
-   i.value = value;
-   j.value = i.rest;
-   switch(i.group) {
+   byte group;
+   group = getgroup(value);
+   switch(group) {
       case InstructionGroupArithmetic:
-         arithmetic(proc, j);
+         arithmetic(proc, value);
          break;
       case InstructionGroupMove:
-         move(proc, j);
+         move(proc, value);
          break;
       case InstructionGroupJump:
-         jump(proc, j);
+         jump(proc, value);
          break;
       case InstructionGroupCompare:
-         compare(proc, j);
+         compare(proc, value);
+         break;
+      case InstructionGroupSystem:
+         irissystem(proc, value);
          break;
       default:
          error("invalid instruction group provided", ErrorInvalidInstructionGroupProvided);
    }
 }
+
 void putregister(core* proc, byte index, byte value) {
    if(index < RegisterCount) {
       proc->gpr[index] = value;
@@ -71,6 +33,7 @@ void putregister(core* proc, byte index, byte value) {
       error("attempted to store to a register out of range", ErrorPutRegisterOutOfRange);
    }
 }
+
 byte getregister(core* proc, byte index) {
    if(index < RegisterCount) {
       return proc->gpr[index];
@@ -79,99 +42,112 @@ byte getregister(core* proc, byte index) {
       return 0;
    }
 }
-void arithmetic(core* proc, instruction inst) {
-   switch(inst.arithmetic.op) {
+
+void arithmetic(core* proc, datum inst) {
+   byte arithmeticOp, dest, source0, source1;
+   arithmeticOp = getarithmeticop(inst);
+   dest = getarithmeticdest(inst);
+   source0 = getarithmeticsource0(inst);
+   source1 = getarithmeticsource1(inst);
+   switch(arithmeticOp) {
       case ArithmeticOpAdd:
-         putregister(proc, inst.arithmetic.dest, 
-               (getregister(proc, inst.arithmetic.source0) +
-                getregister(proc, inst.arithmetic.source1)));
+         putregister(proc, dest,
+               (getregister(proc, source0) +
+                getregister(proc, source1)));
          break;
       case ArithmeticOpSub:
-         putregister(proc, inst.arithmetic.dest, 
-               (getregister(proc, inst.arithmetic.source0) -
-                getregister(proc, inst.arithmetic.source1)));
+         putregister(proc, dest, 
+               (getregister(proc, source0) -
+                getregister(proc, source1)));
          break;
       case ArithmeticOpMul:
-         putregister(proc, inst.arithmetic.dest, 
-               (getregister(proc, inst.arithmetic.source0) *
-                getregister(proc, inst.arithmetic.source1)));
+         putregister(proc, dest, 
+               (getregister(proc, source0) *
+                getregister(proc, source1)));
          break;
       case ArithmeticOpDiv:
-         putregister(proc, inst.arithmetic.dest, 
-               (getregister(proc, inst.arithmetic.source0) /
-                getregister(proc, inst.arithmetic.source1)));
+         putregister(proc, dest, 
+               (getregister(proc, source0) /
+                getregister(proc, source1)));
          break;
       case ArithmeticOpRem:
-         putregister(proc, inst.arithmetic.dest, 
-               (getregister(proc, inst.arithmetic.source0) %
-                getregister(proc, inst.arithmetic.source1)));
+         putregister(proc, dest, 
+               (getregister(proc, source0) %
+                getregister(proc, source1)));
          break;
       case ArithmeticOpShiftLeft:
-         putregister(proc, inst.arithmetic.dest, 
-               (getregister(proc, inst.arithmetic.source0) << 
-                getregister(proc, inst.arithmetic.source1)));
+         putregister(proc, dest, 
+               (getregister(proc, source0) << 
+                getregister(proc, source1)));
          break;
       case ArithmeticOpShiftRight:
-         putregister(proc, inst.arithmetic.dest, 
-               (getregister(proc, inst.arithmetic.source0) >>
-                getregister(proc, inst.arithmetic.source1)));
+         putregister(proc, dest, 
+               (getregister(proc, source0) >>
+                getregister(proc, source1)));
          break;
       case ArithmeticOpBinaryAnd:
-         putregister(proc, inst.arithmetic.dest, 
-               (getregister(proc, inst.arithmetic.source0) &
-                getregister(proc, inst.arithmetic.source1)));
+         putregister(proc, dest, 
+               (getregister(proc, source0) &
+                getregister(proc, source1)));
          break;
       case ArithmeticOpBinaryOr:
-         putregister(proc, inst.arithmetic.dest, 
-               (getregister(proc, inst.arithmetic.source0) |
-                getregister(proc, inst.arithmetic.source1)));
+         putregister(proc, dest, 
+               (getregister(proc, source0) |
+                getregister(proc, source1)));
          break;
       case ArithmeticOpBinaryNot:
-         putregister(proc, inst.arithmetic.dest, ~getregister(proc, inst.arithmetic.source0));
+         putregister(proc, dest, ~getregister(proc, source0));
          break;
       case ArithmeticOpBinaryXor:
-         putregister(proc, inst.arithmetic.dest, 
-               (getregister(proc, inst.arithmetic.source0) ^
-                getregister(proc, inst.arithmetic.source1)));
+         putregister(proc, dest, 
+               (getregister(proc, source0) ^
+                getregister(proc, source1)));
          break;
       default:
          error("invalid arithmetic operation", ErrorInvalidArithmeticOperation);
    }
 }
-void move(core* proc, instruction inst) {
+void move(core* proc, datum inst) {
    ushort tmp;
-   switch(inst.move.op) {
+   byte op;
+   op = getmoveop(inst);
+   switch(op) {
       case MoveOpRegToReg:
-         putregister(proc, inst.move.reg0, getregister(proc, inst.move.reg1));
+         putregister(proc, getmovereg0(inst), getregister(proc, getmovereg1(inst)));
          break;
       case MoveOpImmediateToReg:
-         putregister(proc, inst.move.reg0, inst.move.immediate);
+         putregister(proc, getmovereg0(inst), getmoveimmediate(inst));
          break;
       case MoveOpRegToAddress:
-         tmp = (ushort)(((ushort)getregister(proc, inst.move.addressmode.reg2)) << 8);
-         tmp += getregister(proc, inst.move.addressmode.reg1);
-         if(inst.move.addressmode.accessmode == AccessModeMoveOpLoad) {
-            putregister(proc, inst.move.reg0, proc->memory[tmp]);
+         tmp = (ushort)(((ushort)getregister(proc, getmovereg2(inst))) << 8);
+         tmp += getregister(proc, getmovereg1(inst));
+         if(getmoveaccessmode(inst) == AccessModeMoveOpLoad) {
+            putregister(proc, getmovereg0(inst), proc->memory[tmp]);
          } else {
-            proc->memory[tmp] = inst.move.reg0;
+            proc->memory[tmp] = getregister(proc, getmovereg0(inst));
          }
          break;
       default:
          error("invalid move operation conditional type", ErrorInvalidMoveOperationConditionalType);
    }
 }
-void jump(core* proc, instruction inst) {
+void jump(core* proc, datum inst) {
    byte address;
    schar saddress;
    byte shouldJump;
    byte normalMode;
+   byte conditional;
+   byte immediatemode;
    ushort v0;
    address = 0;
    shouldJump = 0;
    v0 = 0;
    saddress = 0;
    normalMode = 1;
-   switch(inst.jump.conditional) {
+   conditional = getjumpconditional(inst);
+   immediatemode = getjumpimmediatemode(inst);
+
+   switch(conditional) {
       case JumpOpUnconditional:
          shouldJump = 1;
          break;
@@ -190,15 +166,15 @@ void jump(core* proc, instruction inst) {
    }
    if(normalMode == 1) {
       if(shouldJump == 1) {
-         if(inst.jump.distance == JumpDistanceShort) {
+         if(getjumpdistance(inst) == JumpDistanceShort) {
             /* short form (relative) */
-            if(inst.jump.immediatemode == 0) {
+            if(immediatemode == 0) {
                /* register mode */
-               address = getregister(proc, inst.jump.shortform.reg1);
+               address = getregister(proc, getjumpreg1(inst));
             } else {
-               address = inst.jump.immediate;
+               address = getjumpimmediate(inst);
             }
-            if(inst.jump.signedmode == 0) {
+            if(getjumpsignedmode(inst) == 0) {
                /* we are in unsigned mode */
                proc->pc += address;
             } else {
@@ -209,69 +185,73 @@ void jump(core* proc, instruction inst) {
          } else {
             /* long form (absolute) */ 
             /* little endian */
-            v0 = (ushort)((ushort)getregister(proc, inst.jump.longtype.reg1) << 8);
-            v0 += getregister(proc, inst.jump.longtype.reg0);
+            v0 = (ushort)((ushort)getregister(proc, getjumpreg1(inst)) << 8);
+            v0 += getregister(proc, getjumpreg0(inst));
             proc->pc = v0;
          }
       }
    } else {
       /* now this is going to get a tad confusing */
-      if(inst.jump.immediatemode == JumpOpIfThenElse_TrueFalse) {
+      if(immediatemode == JumpOpIfThenElse_TrueFalse) {
          shouldJump = (shouldJump != 0);
-      } else if(inst.jump.immediatemode == JumpOpIfThenElse_FalseTrue) {
+      } else if(immediatemode == JumpOpIfThenElse_FalseTrue) {
          shouldJump = (shouldJump == 0); 
       } else {
          /* this should never ever get executed! */
          error("invalid ifthenelse instruction type", ErrorInvalidIfThenElseInstructionType);
       }
       if(shouldJump == 1) {
-         if(inst.jump.signedmode == 1) {
-            proc->pc += (schar)getregister(proc, inst.jump.ifthenelsetype.reg0);
+         if(getjumpsignedmode(inst) == 1) {
+            proc->pc += (schar)getregister(proc, getjumpreg0(inst));
          } else {
-            proc->pc += getregister(proc, inst.jump.ifthenelsetype.reg0);
+            proc->pc += getregister(proc, getjumpreg0(inst));
          }
       } else {
-         if(inst.jump.ifthenelsetype.reg1issigned == 1) {
-            proc->pc += (schar)getregister(proc, inst.jump.ifthenelsetype.reg1);
+         if(getjumpreg1issigned(inst) == 1) {
+            proc->pc += (schar)getregister(proc, getjumpreg1(inst));
          } else {
-            proc->pc += getregister(proc, inst.jump.ifthenelsetype.reg1);
+            proc->pc += getregister(proc, getjumpreg1(inst));
          }
       }
    }
 }
-void compare(core* proc, instruction inst) {
-   byte value;
+void compare(core* proc, datum inst) {
+   byte value, op, reg0, reg1, combine; 
    value = 0;
-   switch(inst.compare.op) {
+   op = getcompareop(inst);
+   reg0 = getcomparereg0(inst);
+   reg1 = getcomparereg1(inst);
+   combine = getcomparecombinebits(inst);
+   switch(op) {
       case CompareOpEq:
-         value = (getregister(proc, inst.compare.reg0) ==
-               getregister(proc, inst.compare.reg1));
+         value = (getregister(proc, reg0) ==
+               getregister(proc, reg1));
          break;
       case CompareOpNeq:
-         value = (getregister(proc, inst.compare.reg0) !=
-               getregister(proc, inst.compare.reg1));
+         value = (getregister(proc, reg0) !=
+               getregister(proc, reg1));
          break;
       case CompareOpLessThan:
-         value = (getregister(proc, inst.compare.reg0) < 
-               getregister(proc, inst.compare.reg1));
+         value = (getregister(proc, reg0) < 
+               getregister(proc, reg1));
          break;
       case CompareOpGreaterThan:
-         value = (getregister(proc, inst.compare.reg0) > 
-               getregister(proc, inst.compare.reg1));
+         value = (getregister(proc, reg0) > 
+               getregister(proc, reg1));
          break;
       case CompareOpLessThanOrEqualTo:
-         value = (getregister(proc, inst.compare.reg0) <= 
-               getregister(proc, inst.compare.reg1));
+         value = (getregister(proc, reg0) <= 
+               getregister(proc, reg1));
          break;
       case CompareOpGreaterThanOrEqualTo:
-         value = (getregister(proc, inst.compare.reg0) >= 
-               getregister(proc, inst.compare.reg1));
+         value = (getregister(proc, reg0) >= 
+               getregister(proc, reg1));
          break;
       default:
          error("invalid compare operation", ErrorInvalidCompareOperation);
    }
 
-   switch(inst.compare.combinebits) {
+   switch(combine) {
       case CombineBitsOpNil:
          proc->predicateregister = value;
          break;

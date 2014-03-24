@@ -4,8 +4,14 @@ one was a simple risc core and the newer one I'm working on is a microcoded cpu.
 In the src folder you will find folders corresponding to the different cpu 
 types.
 
-phoenix - the original theoretical-architecture risc core
+phoenix - the original theoretical-architecture risc core (64-bit and tons of
+          registers)
+iris - A simple 8 bit cpu
+
+The following are obsolete cores that I have left but have no intention of
+continuing.
+
 microcode - a cpu where the majority of the code is written in electron/clips.
-polymer - a more expert system based processor which abstracts the gpu to a byte 
-          stream
+polymer - a more expert system based processor which abstracts the gpu to a 
+          byte stream
 

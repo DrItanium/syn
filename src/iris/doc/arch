@@ -13,8 +13,8 @@ Some stats:
 
 The general format of the instructions are as follows:
 
-bits 13-15 : operation group [3 bits]
-bits 0-12 : operation bits [13 bits]
+bits 3-15 : operation bits [13 bits]
+bits 0-2 : operation group [3 bits]
 
 Iris has support for up to eight instruction groups where only four are
 actually in use. The four modes are:
@@ -23,7 +23,8 @@ actually in use. The four modes are:
 1: Move
 2: Jump
 3: Compare
-4-7: Undefined (will cause a panic in the simulator at this point in time)
+4: System
+5-7: Undefined (will cause a panic in the simulator at this point in time)
 
 The operation bits are different for each major operation group. 
 
@@ -31,10 +32,11 @@ The operation bits are different for each major operation group.
 
 For arithmetic operations the format is as follows:
 
-bits 9-12 : specific operation
-bits 6-8 : destination register
-bits 3-5 : first source register
-bits 0-2 : second source register
+bits 13-15 : second source register
+bits 10-12 : first source register
+bits 7-9 : destination register
+bits 3-6 : specific operation
+
 
 The list of arithmetic operations are as follows:
 
@@ -55,9 +57,9 @@ The list of arithmetic operations are as follows:
 
 For move operations the general format is:
 
-bits 11-12 : specific operation
-bits 8-10 : first register (source or destination dependent on mode)
-bits 0-7 : mode specific bits
+bits 8-15 : mode specific bits
+bits 5-7 : first register (source or destination dependent on mode)
+bits 3-4 : specific operation
 
 There are a potential four different modes for a move operation in the iris
 core.
@@ -70,8 +72,8 @@ core.
 >>>>>> Register to Register mode
 In the register to register mode the remaining bits are as follows:
 
-bits 5-7 : second register
-bits 0-4  : unused
+bits 11-15 : unused
+bits 8-10 : second register
 
 In this mode the first register is the destination and the second register
 source.
@@ -79,17 +81,16 @@ source.
 >>>>>> Immediate to Register mode
 In this mode the remaining bits are as follows:
 
-bits 0-7 : immediate value
+bits 8-15 : immediate value
 
 this immediate value is written to the first register
 
 >>>>>> Register to Address mode [Load/Store]
 In this mode the remaining bits are as follows:
-
-bits 5-7 : second register [lower half]
-bits 2-4 : third register [upper half]
-bit 1 : access mode [load or store]
-bit 0 : unused
+bit 15 : unused
+bit 14 : access mode [load or store]
+bit 11-13 : third register [upper half]
+bit 8-10 : second register [lower half]
 
 In this mode the second and third register are used to create a 16-bit absolute
 address. This address is used different depending on access mode where:
@@ -111,10 +112,11 @@ occur at the same time.
 -------------------------------------------------------------------
 For jump operations the general format is:
 
-bit 12 : The jump distance 
-bits 10-11 : The conditional type
-bit 9 : Immediate mode?
-bit 8 : Signed mode?
+bits 7 : Signed mode?
+bits 6 : Immediate mode?
+bits 4-5 : The conditional type
+bit 3 : The jump distance 
+
 
 There are two distances that one can jump:
 
@@ -162,16 +164,16 @@ data representation modes.
 An absolute jump only has one mode that is to use two registers in the same
 fashion as done for loads and stores.
 
-bits 5-7 : contents of the first register (lower-half)
-bits 2-4 : contents of the second register (upper-half)
-bits 0-1 : unused
+bits 14-15 : unused
+bits 11-13 : contents of the second register (upper-half)
+bits 8-10 : contents of the first register (lower-half)
 
 >>>>>> Immediate Relative Jump 
        (Signed or Unsigned, Unconditional or If True or If False)
 
 An immediate relative jump uses consumes the remaning 8 bits as follows:
 
-bits 0-7 : Immediate value
+bits 8-15 : Immediate value
 
 In this style the immediate value is combined with the program counter to
 define where to next read instructions from. 
@@ -182,21 +184,20 @@ define where to next read instructions from.
 
 A register value relative jump consumes the remaining 8 bits as follows:
 
-bits 5-7 : the target register
-bits 0-4 : unused
+bits 11-15 : unused
+bits 8-10 : the target register
 
 >>>>>> If Then else Jump
 
 This is a special mode which allows for instruction compression in cases where
 fallthrough to the next instruction is not desirable. The decoder interprets
 these bits a tad differently from the other.
-
-bit 9 : Conditional style
-bit 8 : Condition met register is signed
-bit 5-7 : Register to use if condition is met
-bit 4 : Condition is not met register is signed
-bit 1-3 : Register to use if condition is not met
-bit 0 : unused 
+bit 15 : unused
+bit 14 : Condition is not met register is signed?
+bit 11-13 : Register to use if condition is not met
+bit 8-10 : Register to use if condition is met
+bit 7 : Condition met register is signed?
+bit 6 : Conditional style
 
 The immediate mode bit is now repurposed to describe how the condition should
 go:
@@ -211,11 +212,11 @@ registers can be used.
 -------------------------------------------------------------------
 For condition operations the form is as follows:
 
-bits 10-12 : Conditional operation type
-bits 7-9 : First register
-bits 4-6 : Second register
-bits 1-3 : Combine bits
-bit  0 : unused
+bit  15 : unused
+bits 12-14 : Combine bits
+bits 9-11 : Second register
+bits 6-8 : First register
+bits 3-5 : Conditional operation type
 
 The types of conditional operations are as follows:
 
@@ -236,3 +237,14 @@ for the combine bits
 2 : or (or the new value with the old)
 3 : xor (xor the new value with the old)
 4-7 : Unused bits (will cause the simulator to panic)
+
+---------------------------------------------------------------------
+The system call operation is as follows:
+
+bits 13-15 : Second register
+bits 10-12 : First register
+bits 3-9 : Operation
+
+The system call operation suports up to 128 different system calls and its
+implementation is system dependent so it is up to the designer how to implement
+this and its behavior.
