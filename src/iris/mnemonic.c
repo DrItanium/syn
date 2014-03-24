@@ -50,42 +50,42 @@ const char* compare_mnemonic(ushort insn) {
    switch(getcomparecombinebits(insn)) {
       case CombineBitsOpNil:
          switch(getcompareop(insn)) {
-            case CompareOpEq:                   return "eq"; break;
-            case CompareOpNeq:                  return "ne"; break;
-            case CompareOpLessThan:             return "lt"; break;
-            case CompareOpGreaterThan:          return "gt"; break;
-            case CompareOpLessThanOrEqualTo:    return "le"; break;
-            case CompareOpGreaterThanOrEqualTo: return "ge"; break;
+            case CompareOpEq:                   return "eq";
+            case CompareOpNeq:                  return "ne";
+            case CompareOpLessThan:             return "lt";
+            case CompareOpGreaterThan:          return "gt";
+            case CompareOpLessThanOrEqualTo:    return "le";
+            case CompareOpGreaterThanOrEqualTo: return "ge";
             default:                            return "UNKNOWN_COMPARE";
          }
       case CombineBitsOpAnd:
          switch(getcompareop(insn)) {
-            case CompareOpEq:                   return "and_eq"; break;
-            case CompareOpNeq:                  return "and_ne"; break;
-            case CompareOpLessThan:             return "and_lt"; break;
-            case CompareOpGreaterThan:          return "and_gt"; break;
-            case CompareOpLessThanOrEqualTo:    return "and_le"; break;
-            case CompareOpGreaterThanOrEqualTo: return "and_ge"; break;
+            case CompareOpEq:                   return "and_eq";
+            case CompareOpNeq:                  return "and_ne";
+            case CompareOpLessThan:             return "and_lt";
+            case CompareOpGreaterThan:          return "and_gt";
+            case CompareOpLessThanOrEqualTo:    return "and_le";
+            case CompareOpGreaterThanOrEqualTo: return "and_ge";
             default:                            return "UNKNOWN_COMPARE";
          }
       case CombineBitsOpOr:
          switch(getcompareop(insn)) {
-            case CompareOpEq:                   return "or_eq"; break;
-            case CompareOpNeq:                  return "or_ne"; break;
-            case CompareOpLessThan:             return "or_lt"; break;
-            case CompareOpGreaterThan:          return "or_gt"; break;
-            case CompareOpLessThanOrEqualTo:    return "or_le"; break;
-            case CompareOpGreaterThanOrEqualTo: return "or_ge"; break;
+            case CompareOpEq:                   return "or_eq";
+            case CompareOpNeq:                  return "or_ne";
+            case CompareOpLessThan:             return "or_lt";
+            case CompareOpGreaterThan:          return "or_gt";
+            case CompareOpLessThanOrEqualTo:    return "or_le";
+            case CompareOpGreaterThanOrEqualTo: return "or_ge";
             default:                            return "UNKNOWN_COMPARE";
          }
       case CombineBitsOpXor:
          switch(getcompareop(insn)) {
-            case CompareOpEq:                   return "xor_eq"; break;
-            case CompareOpNeq:                  return "xor_ne"; break;
-            case CompareOpLessThan:             return "xor_lt"; break;
-            case CompareOpGreaterThan:          return "xor_gt"; break;
-            case CompareOpLessThanOrEqualTo:    return "xor_le"; break;
-            case CompareOpGreaterThanOrEqualTo: return "xor_ge"; break;
+            case CompareOpEq:                   return "xor_eq";
+            case CompareOpNeq:                  return "xor_ne";
+            case CompareOpLessThan:             return "xor_lt";
+            case CompareOpGreaterThan:          return "xor_gt";
+            case CompareOpLessThanOrEqualTo:    return "xor_le";
+            case CompareOpGreaterThanOrEqualTo: return "xor_ge";
             default:                            return "UNKNOWN_COMPARE";
          }
       default:                                  return "UNKNOWN_COMPARE";
