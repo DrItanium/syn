@@ -43,10 +43,10 @@ void unparse_arithmetic(char* unparsed, ushort insn) {
 
    switch(getarithmeticop(insn)) {
       case ArithmeticOpBinaryNot:
-         sprintf(unparsed, "%s %s <- %s", op, dest, source0);
+         sprintf(unparsed, "%s %s %s", op, dest, source0);
          break;
       default:
-         sprintf(unparsed, "%s %s <- %s %s", op, dest, source0, source1);
+         sprintf(unparsed, "%s %s %s %s", op, dest, source0, source1);
    }
 }
 
@@ -62,21 +62,17 @@ void unparse_move(char* unparsed, ushort insn) {
       case MoveOpRegToReg:
          unparse_register(reg0, getmovereg0(insn));
          unparse_register(reg1, getmovereg1(insn));
-         sprintf(unparsed, "%s %s <- %s", op, reg0, reg1);
+         sprintf(unparsed, "%s %s %s", op, reg0, reg1);
          break;
       case MoveOpImmediateToReg:
          unparse_register(reg0, getmovereg0(insn));
-         sprintf(unparsed, "%s %s <- %d", op, reg0, getmoveimmediate(insn));
+         sprintf(unparsed, "%s %s %d", op, reg0, getmoveimmediate(insn));
          break;
       case MoveOpRegToAddress:
          unparse_register(reg0, getmovereg0(insn));
          unparse_register(reg1, getmovereg1(insn));
          unparse_register(reg2, getmovereg2(insn));
-         if(getmoveaccessmode(insn) == AccessModeMoveOpLoad) {
-            sprintf(unparsed, "%s %s <- %s %s", op, reg0, reg1, reg2);
-         } else {
-            sprintf(unparsed, "%s %s -> %s %s", op, reg0, reg1, reg2);
-         }
+         sprintf(unparsed, "%s %s %s:%s", op, reg0, reg1, reg2);
          break;
       default:
          sprintf(unparsed, "INVALID MOVE");

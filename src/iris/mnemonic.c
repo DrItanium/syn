@@ -21,8 +21,8 @@ const char* arithmetic_mnemonic(ushort insn) {
 
 const char* move_mnemonic(ushort insn) {
    switch(getmoveop(insn)) {
-      case MoveOpRegToReg:       return "move";
-      case MoveOpImmediateToReg: return "move";
+      case MoveOpRegToReg:       return "load";
+      case MoveOpImmediateToReg: return "load";
       case MoveOpRegToAddress:
          switch(getmoveaccessmode(insn)) {
             case AccessModeMoveOpLoad:  return "load";
