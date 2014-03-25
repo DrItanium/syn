@@ -187,5 +187,3 @@ int checkandreport(testcase* test) {
          fieldName, value, result, against, strings[compare]);
    return compare;
 }
-
-void irissystem(core* proc, datum j) { }

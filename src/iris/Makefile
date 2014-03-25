@@ -3,14 +3,14 @@
 
 include config.mk
 
-# TODO SOURCES = $(wildcard *.c)
-SOURCES = iris.c sim.c
-OBJECTS = ${SOURCES:.c=.o}
-TARGETS = iris
+BINARY = iris
 
-TEST_SOURCES = $(wildcard tests/*.c)
-TEST_OBJECTS = ${TEST_SOURCES:tests/%.c=tests/%.o}
-TEST_TARGETS = ${TEST_OBJECTS:%.o=%}
+# The object file that defines main()
+MAIN = sim.o
+
+OBJECTS = $(patsubst %.c,%.o,$(filter-out sim.c,$(wildcard *.c)))
+
+TEST_OBJECTS = $(patsubst %.c,%.o,$(wildcard tests/*.c))
 
 all: options iris
 
@@ -25,32 +25,19 @@ options:
 	@${CC} ${CFLAGS} -c $< -o $@
 	@echo done.
 
-iris: iris.o sim.o
-	@echo -n Building $@ binary out of iris.o sim.o...
-	@${CC} ${LDFLAGS} -o $@ iris.o sim.o
+iris: ${MAIN} ${OBJECTS}
+	@echo -n Building ${BINARY} binary out of $^...
+	@${CC} ${LDFLAGS} -o ${BINARY} $^
 	@echo done.
 
-# TODO use some `make` magic to automatically create build targets in the same
-# pattern as below for all the TEST_TARGETS
-
-test_decode: iris.o tests/decode.o
-	@echo -n Building iris binary out of iris.o tests/decode.o...
-	@${CC} ${LDFLAGS} -o iris iris.o tests/decode.o
-	@echo done.
-
-test_mnemonic: iris.o mnemonic.o tests/mnemonic.o
-	@echo -n Building iris binary out of iris.o mnemonic.o tests/mnemonic.o...
-	@${CC} ${LDFLAGS} -o iris iris.o mnemonic.o tests/mnemonic.o
-	@echo done.
-
-test_unparse: iris.o mnemonic.o unparse.o tests/unparse.o
-	@echo -n Building iris binary out of iris.o mnemonic.o unparse.o tests/unparse.o...
-	@${CC} ${LDFLAGS} -o iris iris.o mnemonic.o unparse.o tests/unparse.o
+test_%: ${OBJECTS} tests/%.o
+	@echo -n Building ${BINARY} binary out of $^...
+	@${CC} ${LDFLAGS} -o ${BINARY} $^
 	@echo done.
 
 clean:
 	@echo -n Cleaning...
-	@rm -f ${OBJECTS} ${TARGETS} ${TEST_OBJECTS} ${TEST_TARGETS}
+	@rm -f ${BINARY} ${MAIN} ${OBJECTS} ${TEST_OBJECTS}
 	@echo done.
 
 .PHONY: all options clean
