@@ -1,8 +1,7 @@
-/* testdecode.c - Runs simple tests to make sure we haven't broken the decoder
- * logic */
+/* Runs simple tests to make sure we haven't broken the decoder logic */
 #include <stdio.h>
 #include <stdlib.h>
-#include "iris.h"
+#include "../iris.h"
 char* fieldNames[] = {
    "group",
    "arithmetic.op",
@@ -188,5 +187,3 @@ int checkandreport(testcase* test) {
          fieldName, value, result, against, strings[compare]);
    return compare;
 }
-
-void irissystem(core* proc, datum j) { }

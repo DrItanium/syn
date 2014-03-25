@@ -3,10 +3,16 @@
 
 include config.mk
 
-SRC = iris.c sim.c testdecode.c
-OBJ = ${SRC:.c=.o}
+BINARY = iris
 
-all: options iris testdecode
+# The object file that defines main()
+MAIN = sim.o
+
+OBJECTS = $(patsubst %.c,%.o,$(filter-out sim.c,$(wildcard *.c)))
+
+TEST_OBJECTS = $(patsubst %.c,%.o,$(wildcard tests/*.c))
+
+all: options iris
 
 options:
 	@echo iris build options:
@@ -14,23 +20,24 @@ options:
 	@echo "LDFLAGS  = ${LDFLAGS}"
 	@echo "CC       = ${CC}"
 
-.c.o:
-	@echo CC -c $<
-	@${CC} -c $< ${CFLAGS}
+%.o: %.c
+	@echo -n Compiling $< into $@...
+	@${CC} ${CFLAGS} -c $< -o $@
+	@echo done.
 
-${OBJ}: config.mk 
+iris: ${MAIN} ${OBJECTS}
+	@echo -n Building ${BINARY} binary out of $^...
+	@${CC} ${LDFLAGS} -o ${BINARY} $^
+	@echo done.
 
-iris: iris.o sim.o
-	@echo CC -o $@
-	@${CC} -o $@ iris.o sim.o ${LDFLAGS}
-
-testdecode: iris.o testdecode.o
-	@echo CC -o $@
-	@${CC} -o $@ iris.o testdecode.o ${LDFLAGS}
+test_%: ${OBJECTS} tests/%.o
+	@echo -n Building ${BINARY} binary out of $^...
+	@${CC} ${LDFLAGS} -o ${BINARY} $^
+	@echo done.
 
 clean:
-	@echo cleaning
-	@rm -f iris testdecode ${OBJ} 
-
+	@echo -n Cleaning...
+	@rm -f ${BINARY} ${MAIN} ${OBJECTS} ${TEST_OBJECTS}
+	@echo done.
 
 .PHONY: all options clean
