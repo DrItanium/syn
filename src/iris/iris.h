@@ -194,8 +194,7 @@ enum {
    ErrorInvalidArithmeticOperation = 6,
    ErrorGetRegisterOutOfRange = 7,
    ErrorPutRegisterOutOfRange = 8,
-   ErrorRegisterOutOfRange = 9,
-   ErrorInvalidInstructionGroupProvided = 10,
+   ErrorInvalidInstructionGroupProvided = 9,
 };
 void arithmetic(core* proc, datum inst);
 void move(core* proc, datum inst);

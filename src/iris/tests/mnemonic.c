@@ -7,7 +7,7 @@ int main() {
   ushort insn;
   for(insn = 0; insn < 65535; insn++) {
     switch(getgroup(insn)) {
-      case InstructionGroupArithmetic: 
+      case InstructionGroupArithmetic:
         puts(arithmetic_mnemonic(insn));
         break;
       case InstructionGroupMove:
