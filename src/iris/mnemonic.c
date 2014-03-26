@@ -1,9 +1,8 @@
 #include <string.h>
 #include "iris.h"
-#include "mnemonic.h"
 
 const char* arithmetic_mnemonic(ushort insn) {
-   switch(getarithmeticop(insn)) {
+   switch(get_arithmetic_op(insn)) {
       case ArithmeticOpAdd:        return "add";
       case ArithmeticOpSub:        return "sub";
       case ArithmeticOpMul:        return "mul";
@@ -20,11 +19,11 @@ const char* arithmetic_mnemonic(ushort insn) {
 }
 
 const char* move_mnemonic(ushort insn) {
-   switch(getmoveop(insn)) {
+   switch(get_move_op(insn)) {
       case MoveOpRegToReg:       return "load";
       case MoveOpImmediateToReg: return "load";
       case MoveOpRegToAddress:
-         switch(getmoveaccessmode(insn)) {
+         switch(get_move_accessmode(insn)) {
             case AccessModeMoveOpLoad:  return "load";
             case AccessModeMoveOpStore: return "store";
          }
@@ -33,12 +32,12 @@ const char* move_mnemonic(ushort insn) {
 }
 
 const char* jump_mnemonic(ushort insn) {
-   switch(getjumpconditional(insn)) {
+   switch(get_jump_conditional(insn)) {
       case JumpOpUnconditional: return "goto";
       case JumpOpIfTrue:        return "if1";
       case JumpOpIfFalse:       return "if0";
       case JumpOpIfThenElse:
-         switch(getjumpimmediatemode(insn)) {
+         switch(get_jump_immediatemode(insn)) {
             case JumpOpIfThenElse_TrueFalse: return "if1";
             case JumpOpIfThenElse_FalseTrue: return "if0";
          }
@@ -47,9 +46,9 @@ const char* jump_mnemonic(ushort insn) {
 }
 
 const char* compare_mnemonic(ushort insn) {
-   switch(getcomparecombinebits(insn)) {
+   switch(get_compare_combinebits(insn)) {
       case CombineBitsOpNil:
-         switch(getcompareop(insn)) {
+         switch(get_compare_op(insn)) {
             case CompareOpEq:                   return "eq";
             case CompareOpNeq:                  return "ne";
             case CompareOpLessThan:             return "lt";
@@ -59,7 +58,7 @@ const char* compare_mnemonic(ushort insn) {
             default:                            return "UNKNOWN_COMPARE";
          }
       case CombineBitsOpAnd:
-         switch(getcompareop(insn)) {
+         switch(get_compare_op(insn)) {
             case CompareOpEq:                   return "and_eq";
             case CompareOpNeq:                  return "and_ne";
             case CompareOpLessThan:             return "and_lt";
@@ -69,7 +68,7 @@ const char* compare_mnemonic(ushort insn) {
             default:                            return "UNKNOWN_COMPARE";
          }
       case CombineBitsOpOr:
-         switch(getcompareop(insn)) {
+         switch(get_compare_op(insn)) {
             case CompareOpEq:                   return "or_eq";
             case CompareOpNeq:                  return "or_ne";
             case CompareOpLessThan:             return "or_lt";
@@ -79,7 +78,7 @@ const char* compare_mnemonic(ushort insn) {
             default:                            return "UNKNOWN_COMPARE";
          }
       case CombineBitsOpXor:
-         switch(getcompareop(insn)) {
+         switch(get_compare_op(insn)) {
             case CompareOpEq:                   return "xor_eq";
             case CompareOpNeq:                  return "xor_ne";
             case CompareOpLessThan:             return "xor_lt";

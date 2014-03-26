@@ -3,14 +3,9 @@
 
 include config.mk
 
-BINARY = iris
+OBJECTS = $(patsubst %.c,%.o,$(filter-out cmd/sim.c,$(wildcard *.c)))
 
-# The object file that defines main()
-MAIN = sim.o
-
-OBJECTS = $(patsubst %.c,%.o,$(filter-out sim.c,$(wildcard *.c)))
-
-TEST_OBJECTS = $(patsubst %.c,%.o,$(wildcard tests/*.c))
+TEST_OBJECTS = $(patsubst %.c,%.o,$(wildcard cmd/tests/*.c))
 
 all: options iris
 
@@ -30,7 +25,7 @@ iris: ${MAIN} ${OBJECTS}
 	@${CC} ${LDFLAGS} -o ${BINARY} $^
 	@echo done.
 
-test_%: ${OBJECTS} tests/%.o
+test_%: ${OBJECTS} cmd/tests/%.o
 	@echo -n Building ${BINARY} binary out of $^...
 	@${CC} ${LDFLAGS} -o ${BINARY} $^
 	@echo done.

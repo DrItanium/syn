@@ -1,10 +1,9 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include "mnemonic.h"
-#include "unparse.h"
+#include "iris.h"
 
 void unparse(char* unparsed, ushort insn) {
-   switch(getgroup(insn)) {
+   switch(get_group(insn)) {
       case InstructionGroupArithmetic:
          unparse_arithmetic(unparsed, insn);
          break;
@@ -37,11 +36,11 @@ void unparse_arithmetic(char* unparsed, ushort insn) {
    char source1[3];
 
    op = arithmetic_mnemonic(insn);
-   unparse_register(dest, getarithmeticdest(insn));
-   unparse_register(source0, getarithmeticsource0(insn));
-   unparse_register(source1, getarithmeticsource1(insn));
+   unparse_register(dest, get_arithmetic_dest(insn));
+   unparse_register(source0, get_arithmetic_source0(insn));
+   unparse_register(source1, get_arithmetic_source1(insn));
 
-   switch(getarithmeticop(insn)) {
+   switch(get_arithmetic_op(insn)) {
       case ArithmeticOpBinaryNot:
          sprintf(unparsed, "%s %s %s", op, dest, source0);
          break;
@@ -58,20 +57,20 @@ void unparse_move(char* unparsed, ushort insn) {
 
    op = move_mnemonic(insn);
 
-   switch(getmoveop(insn)) {
+   switch(get_move_op(insn)) {
       case MoveOpRegToReg:
-         unparse_register(reg0, getmovereg0(insn));
-         unparse_register(reg1, getmovereg1(insn));
+         unparse_register(reg0, get_move_reg0(insn));
+         unparse_register(reg1, get_move_reg1(insn));
          sprintf(unparsed, "%s %s %s", op, reg0, reg1);
          break;
       case MoveOpImmediateToReg:
-         unparse_register(reg0, getmovereg0(insn));
-         sprintf(unparsed, "%s %s %d", op, reg0, getmoveimmediate(insn));
+         unparse_register(reg0, get_move_reg0(insn));
+         sprintf(unparsed, "%s %s %d", op, reg0, get_move_immediate(insn));
          break;
       case MoveOpRegToAddress:
-         unparse_register(reg0, getmovereg0(insn));
-         unparse_register(reg1, getmovereg1(insn));
-         unparse_register(reg2, getmovereg2(insn));
+         unparse_register(reg0, get_move_reg0(insn));
+         unparse_register(reg1, get_move_reg1(insn));
+         unparse_register(reg2, get_move_reg2(insn));
          sprintf(unparsed, "%s %s %s:%s", op, reg0, reg1, reg2);
          break;
       default:
@@ -81,7 +80,7 @@ void unparse_move(char* unparsed, ushort insn) {
 
 void unparse_jump(char* unparsed, ushort insn) {
    byte is_normal;
-   is_normal = getjumpconditional(insn) != JumpOpIfThenElse;
+   is_normal = get_jump_conditional(insn) != JumpOpIfThenElse;
    if(is_normal == 1) {
       unparse_normal_jump(unparsed, insn);
    } else {
@@ -98,23 +97,23 @@ void unparse_normal_jump(char* unparsed, ushort insn) {
    byte is_signed;
 
    op = jump_mnemonic(insn);
-   is_relative = getjumpdistance(insn) == JumpDistanceShort;
-   is_immediate = getjumpimmediatemode(insn) == 1;
-   is_signed = getjumpsignedmode(insn) == 1;
+   is_relative = get_jump_distance(insn) == JumpDistanceShort;
+   is_immediate = get_jump_immediatemode(insn) == 1;
+   is_signed = get_jump_signedmode(insn) == 1;
 
    if(is_relative && is_immediate && is_signed == 1) {
-      sprintf(unparsed, "%s %d", op, (schar) getjumpimmediate(insn));
+      sprintf(unparsed, "%s %d", op, (schar) get_jump_immediate(insn));
    } else if(is_relative && is_immediate && !is_signed == 1) {
-      sprintf(unparsed, "%s %d", op, getjumpimmediate(insn));
+      sprintf(unparsed, "%s %d", op, get_jump_immediate(insn));
    } else if(is_relative && !is_immediate && is_signed == 1) {
-      unparse_register(reg1, getjumpreg1(insn));
+      unparse_register(reg1, get_jump_reg1(insn));
       sprintf(unparsed, "%s $%s", op, reg1);
    } else if(is_relative && !is_immediate && !is_signed == 1) {
-      unparse_register(reg1, getjumpreg1(insn));
+      unparse_register(reg1, get_jump_reg1(insn));
       sprintf(unparsed, "%s %s", op, reg1);
    } else if(!is_relative) {
-      unparse_register(reg0, getjumpreg0(insn));
-      unparse_register(reg1, getjumpreg1(insn));
+      unparse_register(reg0, get_jump_reg0(insn));
+      unparse_register(reg1, get_jump_reg1(insn));
       sprintf(unparsed, "%s %s:%s", op, reg0, reg1);
    } else {
       sprintf(unparsed, "INVALID JUMP");
@@ -129,10 +128,10 @@ void unparse_if_then_else(char* unparsed, ushort insn) {
    byte reg1_is_signed;
 
    op = jump_mnemonic(insn);
-   unparse_register(reg0, getjumpreg0(insn));
-   unparse_register(reg1, getjumpreg1(insn));
-   reg0_is_signed = getjumpsignedmode(insn) == 1;
-   reg1_is_signed = getjumpreg1issigned(insn) == 1;
+   unparse_register(reg0, get_jump_reg0(insn));
+   unparse_register(reg1, get_jump_reg1(insn));
+   reg0_is_signed = get_jump_signedmode(insn) == 1;
+   reg1_is_signed = get_jump_reg1issigned(insn) == 1;
 
    if(reg0_is_signed && reg1_is_signed == 1) {
       sprintf(unparsed, "%s $%s $%s", op, reg0, reg1);
@@ -153,8 +152,8 @@ void unparse_compare(char* unparsed, ushort insn) {
    char reg1[3];
 
    op = compare_mnemonic(insn);
-   unparse_register(reg0, getcomparereg0(insn));
-   unparse_register(reg1, getcomparereg1(insn));
+   unparse_register(reg0, get_compare_reg0(insn));
+   unparse_register(reg1, get_compare_reg1(insn));
 
    sprintf(unparsed, "%s %s %s", op, reg0, reg1);
 }

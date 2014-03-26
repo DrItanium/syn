@@ -21,7 +21,7 @@ typedef struct core {
 } core;
 
 /* macros */
-#define getgroup(instruction) ((byte)(instruction & 0x7))
+#define get_group(instruction) ((byte)(instruction & 0x7))
 
 /* arithmetic */
 /* C structure version 
@@ -33,10 +33,10 @@ typedef struct core {
  *    byte source1 : 3;
  * };
  */
-#define getarithmeticop(instruction) ((byte)((instruction & 0x78) >> 3))
-#define getarithmeticdest(instruction) ((byte)((instruction & 0x380) >> 7))
-#define getarithmeticsource0(instruction) ((byte)((instruction & 0x1C00) >> 10))
-#define getarithmeticsource1(instruction) ((byte)((instruction & 0xE000) >> 13))
+#define get_arithmetic_op(instruction) ((byte)((instruction & 0x78) >> 3))
+#define get_arithmetic_dest(instruction) ((byte)((instruction & 0x380) >> 7))
+#define get_arithmetic_source0(instruction) ((byte)((instruction & 0x1C00) >> 10))
+#define get_arithmetic_source1(instruction) ((byte)((instruction & 0xE000) >> 13))
 
 /* move */
 /* C structure version
@@ -55,12 +55,12 @@ typedef struct core {
  *    };
  * };
  */
-#define getmoveop(instruction) ((byte)((instruction & 0x18) >> 3))
-#define getmovereg0(instruction) ((byte)((instruction & 0xE0) >> 5))
-#define getmoveimmediate(instruction) ((byte)((instruction) >> 8))
-#define getmovereg1(instruction) ((byte)((instruction & 0x700) >> 8))
-#define getmovereg2(instruction) ((byte)((instruction & 0x3800) >> 11))
-#define getmoveaccessmode(instruction) ((byte)((instruction & 0x4000) >> 14))
+#define get_move_op(instruction) ((byte)((instruction & 0x18) >> 3))
+#define get_move_reg0(instruction) ((byte)((instruction & 0xE0) >> 5))
+#define get_move_immediate(instruction) ((byte)((instruction) >> 8))
+#define get_move_reg1(instruction) ((byte)((instruction & 0x700) >> 8))
+#define get_move_reg2(instruction) ((byte)((instruction & 0x3800) >> 11))
+#define get_move_accessmode(instruction) ((byte)((instruction & 0x4000) >> 14))
 
 /* jump */
 /* C structure version
@@ -87,14 +87,14 @@ typedef struct core {
  *    };
  * };
  */
-#define getjumpdistance(instruction) ((byte)((instruction & 0x8) >> 3))
-#define getjumpconditional(instruction) ((byte)((instruction & 0x30) >> 4))
-#define getjumpimmediatemode(instruction) ((byte)((instruction & 0x40) >> 6))
-#define getjumpsignedmode(instruction) ((byte)((instruction & 0x80) >> 7))
-#define getjumpimmediate(instruction) ((byte)((instruction) >> 8))
-#define getjumpreg0(instruction) ((byte)((instruction & 0x700) >> 8))
-#define getjumpreg1(instruction) ((byte)((instruction & 0x3800) >> 11))
-#define getjumpreg1issigned(instruction) ((byte)((instruction & 0x4000) >> 14))
+#define get_jump_distance(instruction) ((byte)((instruction & 0x8) >> 3))
+#define get_jump_conditional(instruction) ((byte)((instruction & 0x30) >> 4))
+#define get_jump_immediatemode(instruction) ((byte)((instruction & 0x40) >> 6))
+#define get_jump_signedmode(instruction) ((byte)((instruction & 0x80) >> 7))
+#define get_jump_immediate(instruction) ((byte)((instruction) >> 8))
+#define get_jump_reg0(instruction) ((byte)((instruction & 0x700) >> 8))
+#define get_jump_reg1(instruction) ((byte)((instruction & 0x3800) >> 11))
+#define get_jump_reg1issigned(instruction) ((byte)((instruction & 0x4000) >> 14))
 /* compare */
 /* C structure version 
  * DO NOT UNCOMMENT
@@ -105,10 +105,10 @@ typedef struct core {
  *    byte combinebits : 3; 
  * } compare;
  */
-#define getcompareop(instruction) ((byte)((instruction & 0x38) >> 3))
-#define getcomparereg0(instruction) ((byte)((instruction & 0x1C0) >> 6))
-#define getcomparereg1(instruction) ((byte)((instruction & 0xE00) >> 9))
-#define getcomparecombinebits(instruction) ((byte)((instruction & 0x7000) >> 12))
+#define get_compare_op(instruction) ((byte)((instruction & 0x38) >> 3))
+#define get_compare_reg0(instruction) ((byte)((instruction & 0x1C0) >> 6))
+#define get_compare_reg1(instruction) ((byte)((instruction & 0xE00) >> 9))
+#define get_compare_combinebits(instruction) ((byte)((instruction & 0x7000) >> 12))
 /* systemcall */
 /* C structure version
  * DO NOT UNCOMMENT
@@ -118,9 +118,9 @@ typedef struct core {
  *    byte reg1 : 3;
  * } systemcall;
  */
-#define getsystemoperation(instruction) ((byte)((instruction & 0x3F8) >> 3))
-#define getsystemreg0(instruction) ((byte)((instruction & 0x1C00) >> 10))
-#define getsystemreg1(instruction) ((byte)((instruction) >> 13))
+#define get_system_operation(instruction) ((byte)((instruction & 0x3F8) >> 3))
+#define get_system_reg0(instruction) ((byte)((instruction & 0x1C00) >> 10))
+#define get_system_reg1(instruction) ((byte)((instruction) >> 13))
 
 
 /* Instructions Groups */
@@ -200,9 +200,24 @@ void arithmetic(core* proc, datum inst);
 void move(core* proc, datum inst);
 void jump(core* proc, datum inst);
 void compare(core* proc, datum inst);
-void putregister(core* proc, byte index, byte value);
-byte getregister(core* proc, byte index);
+void put_register(core* proc, byte index, byte value);
+byte get_register(core* proc, byte index);
 void decode(core* proc, ushort value);
 void error(char* message, int code);
-void irissystem(core* proc, datum inst);
+void iris_system(core* proc, datum inst);
+/* mnemonics */
+const char* arithmetic_mnemonic(ushort insn);
+const char* move_mnemonic(ushort insn);
+const char* jump_mnemonic(ushort insn);
+const char* compare_mnemonic(ushort insn);
+/* unparse */
+void unparse(char* unparsed, ushort insn);
+void unparse_register(char* unparsed, byte index);
+void unparse_arithmetic(char* unparsed, ushort insn);
+void unparse_move(char* unparsed, ushort insn);
+void unparse_jump(char* unparsed, ushort insn);
+void unparse_normal_jump(char* unparsed, ushort insn);
+void unparse_if_then_else(char* unparsed, ushort insn);
+void unparse_compare(char* unparsed, ushort insn);
+void unparse_bitstring(char* bits, ushort insn);
 #endif 
