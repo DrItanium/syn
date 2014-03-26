@@ -1,7 +1,7 @@
 /* Runs simple tests to make sure we haven't broken the decoder logic */
 #include <stdio.h>
 #include <stdlib.h>
-#include "../iris.h"
+#include "iris.h"
 char* fieldNames[] = {
    "group",
    "arithmetic.op",
@@ -154,32 +154,32 @@ int checkandreport(testcase* test) {
    value = control[test->index];
    against = widths[test->width];
    switch(test->index) {
-      case 0: result = getgroup(value); break;
-      case 1: result = getarithmeticop(value); break;
-      case 2: result = getarithmeticdest(value); break;
-      case 3: result = getarithmeticsource0(value); break;
-      case 4: result = getarithmeticsource1(value); break;
-      case 5: result = getmoveop(value); break;
-      case 6: result = getmovereg0(value); break;
-      case 7: result = getmoveimmediate(value); break;
-      case 8: result = getmovereg1(value); break;
-      case 9: result = getmovereg2(value); break;
-      case 10: result = getmoveaccessmode(value); break;
-      case 11: result = getjumpdistance(value); break;
-      case 12: result = getjumpconditional(value); break;
-      case 13: result = getjumpimmediatemode(value); break;
-      case 14: result = getjumpsignedmode(value); break;
-      case 15: result = getjumpimmediate(value); break;
-      case 16: result = getjumpreg0(value); break;
-      case 17: result = getjumpreg1(value); break;
-      case 18: result = getjumpreg1issigned(value); break;
-      case 19: result = getcompareop(value); break;
-      case 20: result = getcomparereg0(value); break;
-      case 21: result = getcomparereg1(value); break;
-      case 22: result = getcomparecombinebits(value); break;
-      case 23: result = getsystemoperation(value); break;
-      case 24: result = getsystemreg0(value); break;
-      case 25: result = getsystemreg1(value); break;
+      case 0: result = get_group(value); break;
+      case 1: result = get_arithmetic_op(value); break;
+      case 2: result = get_arithmetic_dest(value); break;
+      case 3: result = get_arithmetic_source0(value); break;
+      case 4: result = get_arithmetic_source1(value); break;
+      case 5: result = get_move_op(value); break;
+      case 6: result = get_move_reg0(value); break;
+      case 7: result = get_move_immediate(value); break;
+      case 8: result = get_move_reg1(value); break;
+      case 9: result = get_move_reg2(value); break;
+      case 10: result = get_move_accessmode(value); break;
+      case 11: result = get_jump_distance(value); break;
+      case 12: result = get_jump_conditional(value); break;
+      case 13: result = get_jump_immediatemode(value); break;
+      case 14: result = get_jump_signedmode(value); break;
+      case 15: result = get_jump_immediate(value); break;
+      case 16: result = get_jump_reg0(value); break;
+      case 17: result = get_jump_reg1(value); break;
+      case 18: result = get_jump_reg1issigned(value); break;
+      case 19: result = get_compare_op(value); break;
+      case 20: result = get_compare_reg0(value); break;
+      case 21: result = get_compare_reg1(value); break;
+      case 22: result = get_compare_combinebits(value); break;
+      case 23: result = get_system_operation(value); break;
+      case 24: result = get_system_reg0(value); break;
+      case 25: result = get_system_reg1(value); break;
       default: printf("%s\n", "Error: unknown test case"); return 0;
    }
    compare = (result == against) % 2;

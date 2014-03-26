@@ -1,12 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "../iris.h"
-#include "../mnemonic.h"
+#include "iris.h"
 
 int main() {
   ushort insn;
   for(insn = 0; insn < 65535; insn++) {
-    switch(getgroup(insn)) {
+    switch(get_group(insn)) {
       case InstructionGroupArithmetic:
         puts(arithmetic_mnemonic(insn));
         break;

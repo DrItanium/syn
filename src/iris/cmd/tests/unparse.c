@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "../iris.h"
-#include "../unparse.h"
+#include "iris.h"
 
 int main() {
    char unparsed[100];
