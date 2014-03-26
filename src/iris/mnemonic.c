@@ -59,32 +59,32 @@ const char* compare_mnemonic(ushort insn) {
          }
       case CombineBitsOpAnd:
          switch(get_compare_op(insn)) {
-            case CompareOpEq:                   return "and_eq";
-            case CompareOpNeq:                  return "and_ne";
-            case CompareOpLessThan:             return "and_lt";
-            case CompareOpGreaterThan:          return "and_gt";
-            case CompareOpLessThanOrEqualTo:    return "and_le";
-            case CompareOpGreaterThanOrEqualTo: return "and_ge";
+            case CompareOpEq:                   return "and.eq";
+            case CompareOpNeq:                  return "and.ne";
+            case CompareOpLessThan:             return "and.lt";
+            case CompareOpGreaterThan:          return "and.gt";
+            case CompareOpLessThanOrEqualTo:    return "and.le";
+            case CompareOpGreaterThanOrEqualTo: return "and.ge";
             default:                            return "UNKNOWN_COMPARE";
          }
       case CombineBitsOpOr:
          switch(get_compare_op(insn)) {
-            case CompareOpEq:                   return "or_eq";
-            case CompareOpNeq:                  return "or_ne";
-            case CompareOpLessThan:             return "or_lt";
-            case CompareOpGreaterThan:          return "or_gt";
-            case CompareOpLessThanOrEqualTo:    return "or_le";
-            case CompareOpGreaterThanOrEqualTo: return "or_ge";
+            case CompareOpEq:                   return "or.eq";
+            case CompareOpNeq:                  return "or.ne";
+            case CompareOpLessThan:             return "or.lt";
+            case CompareOpGreaterThan:          return "or.gt";
+            case CompareOpLessThanOrEqualTo:    return "or.le";
+            case CompareOpGreaterThanOrEqualTo: return "or.ge";
             default:                            return "UNKNOWN_COMPARE";
          }
       case CombineBitsOpXor:
          switch(get_compare_op(insn)) {
-            case CompareOpEq:                   return "xor_eq";
-            case CompareOpNeq:                  return "xor_ne";
-            case CompareOpLessThan:             return "xor_lt";
-            case CompareOpGreaterThan:          return "xor_gt";
-            case CompareOpLessThanOrEqualTo:    return "xor_le";
-            case CompareOpGreaterThanOrEqualTo: return "xor_ge";
+            case CompareOpEq:                   return "xor.eq";
+            case CompareOpNeq:                  return "xor.ne";
+            case CompareOpLessThan:             return "xor.lt";
+            case CompareOpGreaterThan:          return "xor.gt";
+            case CompareOpLessThanOrEqualTo:    return "xor.le";
+            case CompareOpGreaterThanOrEqualTo: return "xor.ge";
             default:                            return "UNKNOWN_COMPARE";
          }
       default:                                  return "UNKNOWN_COMPARE";
