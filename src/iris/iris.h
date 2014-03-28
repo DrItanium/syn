@@ -15,7 +15,8 @@ enum {
 
 typedef struct core {
    byte gpr[RegisterCount];
-   byte memory[MemorySize];
+   ushort code[MemorySize];
+   byte data[MemorySize];
    ushort pc : 16;
    byte predicateregister : 1;
 } core;
