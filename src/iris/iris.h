@@ -19,6 +19,8 @@ typedef struct core {
    byte data[MemorySize];
    ushort pc : 16;
    byte predicateregister : 1;
+   byte advancepc : 1;
+   byte terminateexecution : 1;
 } core;
 
 /* macros */
@@ -187,16 +189,18 @@ enum {
 
 /* error codes */
 enum {
-   ErrorInvalidCombineBits = 1,
-   ErrorInvalidCompareOperation = 2,
-   ErrorInvalidIfThenElseInstructionType = 3,
-   ErrorInvalidJumpConditionalType = 4,
-   ErrorInvalidMoveOperationConditionalType = 5,
-   ErrorInvalidArithmeticOperation = 6,
-   ErrorGetRegisterOutOfRange = 7,
-   ErrorPutRegisterOutOfRange = 8,
-   ErrorInvalidInstructionGroupProvided = 9,
+   ErrorNone = 0,
+   ErrorInvalidCombineBits,
+   ErrorInvalidCompareOperation ,
+   ErrorInvalidIfThenElseInstructionType,
+   ErrorInvalidJumpConditionalType,
+   ErrorInvalidMoveOperationConditionalType,
+   ErrorInvalidArithmeticOperation,
+   ErrorGetRegisterOutOfRange,
+   ErrorPutRegisterOutOfRange,
+   ErrorInvalidInstructionGroupProvided,
 };
+
 void arithmetic(core* proc, datum inst);
 void move(core* proc, datum inst);
 void jump(core* proc, datum inst);
