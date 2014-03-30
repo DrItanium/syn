@@ -5,6 +5,7 @@
 void decode(core* proc, ushort value) {
    byte group;
    group = get_group(value);
+   proc->advancepc = 1;
    switch(group) {
       case InstructionGroupArithmetic:
          arithmetic(proc, value);
@@ -14,6 +15,7 @@ void decode(core* proc, ushort value) {
          break;
       case InstructionGroupJump:
          jump(proc, value);
+         proc->advancepc = 0;
          break;
       case InstructionGroupCompare:
          compare(proc, value);
@@ -23,6 +25,7 @@ void decode(core* proc, ushort value) {
          break;
       default:
          error("invalid instruction group provided", ErrorInvalidInstructionGroupProvided);
+         break;
    }
 }
 
@@ -122,9 +125,9 @@ void move(core* proc, datum inst) {
          tmp = (ushort)(((ushort)get_register(proc, get_move_reg2(inst))) << 8);
          tmp += get_register(proc, get_move_reg1(inst));
          if(get_move_accessmode(inst) == AccessModeMoveOpLoad) {
-            put_register(proc, get_move_reg0(inst), proc->memory[tmp]);
+            put_register(proc, get_move_reg0(inst), proc->data[tmp]);
          } else {
-            proc->memory[tmp] = get_register(proc, get_move_reg0(inst));
+            proc->data[tmp] = get_register(proc, get_move_reg0(inst));
          }
          break;
       default:
