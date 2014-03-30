@@ -76,10 +76,15 @@ int execute(FILE* file) {
    return 0;
 }
 void startup() {
+   int i;
    proc.predicateregister = 0;
    proc.pc = 0;
    proc.terminateexecution = 0;
    proc.advancepc = 1;
+   for(i = 0; i < MemorySize; i++) {
+      proc.data[i] = 0;
+      proc.code[i] = 0;
+   }
 }
 
 void shutdown() {
