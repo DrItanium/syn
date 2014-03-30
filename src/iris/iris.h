@@ -199,6 +199,14 @@ enum {
    ErrorGetRegisterOutOfRange,
    ErrorPutRegisterOutOfRange,
    ErrorInvalidInstructionGroupProvided,
+   ErrorInvalidSystemCommand,
+};
+
+/* system commands */
+enum {
+   SystemCommandTerminate = 0, /* Send a halt "signal" */
+   SystemCommandGetC, 
+   SystemCommandPutC,
 };
 
 void arithmetic(core* proc, datum inst);
