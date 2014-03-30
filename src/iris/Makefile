@@ -35,4 +35,6 @@ clean:
 	@rm -f ${BINARY} ${MAIN} ${OBJECTS} ${TEST_OBJECTS}
 	@echo done.
 
+.SECONDARY: ${TEST_OBJECTS}
+
 .PHONY: all options clean
