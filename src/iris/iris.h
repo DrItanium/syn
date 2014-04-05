@@ -102,14 +102,22 @@ typedef struct core {
  *    };
  * };
  */
-#define get_jump_distance(instruction) ((byte)((instruction & 0x8) >> 3))
-#define get_jump_conditional(instruction) ((byte)((instruction & 0x30) >> 4))
-#define get_jump_immediatemode(instruction) ((byte)((instruction & 0x40) >> 6))
-#define get_jump_signedmode(instruction) ((byte)((instruction & 0x80) >> 7))
-#define get_jump_immediate(instruction) ((byte)((instruction) >> 8))
-#define get_jump_reg0(instruction) ((byte)((instruction & 0x700) >> 8))
-#define get_jump_reg1(instruction) ((byte)((instruction & 0x3800) >> 11))
-#define get_jump_reg1issigned(instruction) ((byte)((instruction & 0x4000) >> 14))
+#define get_jump_distance(instruction) (get_bits(instruction, 0x8, 3))
+#define set_jump_distance(instruction, value) (set_bits(instruction, 0x8, value, 3))
+#define get_jump_conditional(instruction) (get_bits(instruction, 0x30, 4))
+#define set_jump_conditional(instruction, value) (set_bits(instruction, 0x30, value, 4))
+#define get_jump_immediatemode(instruction) (get_bits(instruction, 0x40, 6))
+#define set_jump_immediatemode(instruction, value) (set_bits(instruction, 0x40, value, 6))
+#define get_jump_signedmode(instruction) (get_bits(instruction, 0x80, 7))
+#define set_jump_signedmode(instruction, value) (set_bits(instruction, 0x80, value, 7))
+#define get_jump_immediate(instruction) (get_bits(instruction, 0xFF00, 8))
+#define set_jump_immediate(instruction, value) (set_bits(instruction, 0xFF00, value, 8))
+#define get_jump_reg0(instruction) (get_bits(instruction, 0x700, 8))
+#define set_jump_reg0(instruction, value) (set_bits(instruction, 0x700, value, 8))
+#define get_jump_reg1(instruction) (get_bits(instruction, 0x3800, 11))
+#define set_jump_reg1(instruction, value) (set_bits(instruction, 0x3800, value, 11))
+#define get_jump_reg1issigned(instruction) (get_bits(instruction, 0x4000, 14))
+#define set_jump_reg1issigned(instruction, value) (set_bits(instruction, 0x4000, value, 14))
 /* compare */
 /* C structure version 
  * DO NOT UNCOMMENT
