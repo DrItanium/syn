@@ -128,10 +128,14 @@ typedef struct core {
  *    byte combinebits : 3; 
  * } compare;
  */
-#define get_compare_op(instruction) ((byte)((instruction & 0x38) >> 3))
-#define get_compare_reg0(instruction) ((byte)((instruction & 0x1C0) >> 6))
-#define get_compare_reg1(instruction) ((byte)((instruction & 0xE00) >> 9))
-#define get_compare_combinebits(instruction) ((byte)((instruction & 0x7000) >> 12))
+#define get_compare_op(instruction) (get_bits(instruction, 0x38, 3))
+#define set_compare_op(instruction, value) (set_bits(instruction, 0x38, value, 3))
+#define get_compare_reg0(instruction) (get_bits(instruction, 0x1C0, 6))
+#define set_compare_reg0(instruction, value) (set_bits(instruction, 0x1C0, value, 6))
+#define get_compare_reg1(instruction) (get_bits(instruction, 0xE00, 9))
+#define set_compare_reg1(instruction, value) (set_bits(instruction, 0xE00, value, 9))
+#define get_compare_combinebits(instruction) (get_bits(instruction, 0x7000, 12))
+#define set_compare_combinebits(instruction, value) (set_bits(instruction, 0x7000, value, 12))
 /* systemcall */
 /* C structure version
  * DO NOT UNCOMMENT
