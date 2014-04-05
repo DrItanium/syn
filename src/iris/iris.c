@@ -274,6 +274,32 @@ void compare(core* proc, datum inst) {
 
 void iris_system(core* proc, datum j) {
    /* implement system commands */
+   byte operation;
+   byte reg0;
+   byte reg1;
+   byte value;
+   int result;
+   operation = get_system_operation(j);
+   reg0 = get_system_reg0(j);
+   reg1 = get_system_reg1(j); 
+   result = 0;
+   value = 0;
+
+   switch(operation) {
+      case SystemCommandTerminate: /* init 0 */
+         proc->terminateexecution = 1;
+         break;
+      case SystemCommandGetC:
+         result = getchar();
+         put_register(proc, reg0, (byte)result);
+         break;
+      case SystemCommandPutC:
+         value = get_register(proc, reg0);
+         putchar(value);
+         break;
+      default:
+         error("invalid system command provided", ErrorInvalidSystemCommand);
+   }
 }
 
 void error(char* message, int code) {
