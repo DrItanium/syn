@@ -40,9 +40,12 @@ typedef struct core {
  */
 #define get_arithmetic_op(instruction) (get_bits(instruction, 0x78, 3))
 #define set_arithmetic_op(instruction, value) (set_bits(instruction, 0x78, value, 3))
-#define get_arithmetic_dest(instruction) ((byte)((instruction & 0x380) >> 7))
-#define get_arithmetic_source0(instruction) ((byte)((instruction & 0x1C00) >> 10))
+#define get_arithmetic_dest(instruction) (get_bits(instruction, 0x380, 7))
+#define set_arithmetic_dest(instruction, value) (set_bits(instruction, 0x380, value, 7))
+#define get_arithmetic_source0(instruction) (get_bits(instruction, 0x1C00, 10))
+#define set_arithmetic_source0(instruction, value) (set_bits(instruction, 0x1C00, value, 10))
 #define get_arithmetic_source1(instruction) ((byte)((instruction & 0xE000) >> 13))
+#define set_arithmetic_source1(instruction, value) (set_bits(instruction, 0xE000, value, 13))
 
 /* move */
 /* C structure version
@@ -61,12 +64,18 @@ typedef struct core {
  *    };
  * };
  */
-#define get_move_op(instruction) ((byte)((instruction & 0x18) >> 3))
-#define get_move_reg0(instruction) ((byte)((instruction & 0xE0) >> 5))
-#define get_move_immediate(instruction) ((byte)((instruction) >> 8))
-#define get_move_reg1(instruction) ((byte)((instruction & 0x700) >> 8))
-#define get_move_reg2(instruction) ((byte)((instruction & 0x3800) >> 11))
-#define get_move_accessmode(instruction) ((byte)((instruction & 0x4000) >> 14))
+#define get_move_op(instruction) (get_bits(instruction, 0x18, 3))
+#define set_move_op(instruction, value) (set_bits(instruction, 0x18, value 3))
+#define get_move_reg0(instruction) (get_bits(instruction, 0xE0, 5))
+#define set_move_reg0(instruction, value) (set_bits(instruction, 0xE0, value, 5))
+#define get_move_immediate(instruction) (get_bits(instruction, 0xFF00, 8))
+#define set_move_immediate(instruction, value) (set_bits(instruction, 0xFF00, value, 8))
+#define get_move_reg1(instruction) (get_bits(instruction, 0x700, 8))
+#define set_move_reg1(instruction, value) (set_bits(instruction, 0x700, value, 8))
+#define get_move_reg2(instruction) (get_bits(instruction, 0x3800, 11))
+#define set_move_reg2(instruction, value) (set_bits(instruction, 0x3800, value, 11))
+#define get_move_accessmode(instruction) (get_bits(instruction, 0x4000, 14))
+#define set_move_accessmode(instruction, value) (set_bits(instruction, 0x4000, value, 14))
 
 /* jump */
 /* C structure version
