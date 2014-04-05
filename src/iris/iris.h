@@ -22,9 +22,11 @@ typedef struct core {
    byte advancepc : 1;
    byte terminateexecution : 1;
 } core;
-
+#define set_bits(instruction, mask, value, shiftcount) ((instruction & ~mask) | (value << shiftcount))
+#define get_bits(instruction, mask, shiftcount) ((byte)((instruction & mask) >> shiftcount))
 /* macros */
-#define get_group(instruction) ((byte)(instruction & 0x7))
+#define get_group(instruction) (get_bits(instruction, 0x7, 0))
+#define set_group(instruction, value) (set_bits(instruction, 0x7, value, 0))
 
 /* arithmetic */
 /* C structure version 
@@ -36,7 +38,8 @@ typedef struct core {
  *    byte source1 : 3;
  * };
  */
-#define get_arithmetic_op(instruction) ((byte)((instruction & 0x78) >> 3))
+#define get_arithmetic_op(instruction) (get_bits(instruction, 0x78, 3))
+#define set_arithmetic_op(instruction, value) (set_bits(instruction, 0x78, value, 3))
 #define get_arithmetic_dest(instruction) ((byte)((instruction & 0x380) >> 7))
 #define get_arithmetic_source0(instruction) ((byte)((instruction & 0x1C00) >> 10))
 #define get_arithmetic_source1(instruction) ((byte)((instruction & 0xE000) >> 13))
