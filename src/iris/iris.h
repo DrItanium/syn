@@ -133,9 +133,12 @@ typedef struct core {
  *    byte reg1 : 3;
  * } systemcall;
  */
-#define get_system_operation(instruction) ((byte)((instruction & 0x3F8) >> 3))
-#define get_system_reg0(instruction) ((byte)((instruction & 0x1C00) >> 10))
-#define get_system_reg1(instruction) ((byte)((instruction) >> 13))
+#define get_system_operation(instruction) (get_bits(instruction, 0x3F8, 3))
+#define set_system_operation(instruction, value) (set_bits(instruction, 0x3F8, value, 3))
+#define get_system_reg0(instruction) (get_bits(instruction, 0x1C00, 10))
+#define set_system_reg0(instruction, value) (set_bits(instruction, 0x1C00, value, 10))
+#define get_system_reg1(instruction) (get_bits(instruction, 0xE000, 13))
+#define set_system_reg1(instruction, value) (set_bits(instruction, 0xE000, value, 13))
 
 
 /* Instructions Groups */
