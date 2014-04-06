@@ -1,7 +1,0 @@
-The polymer processor is a interface to the plan9port libs which enable me to 
-write programs using an expert system in a simple fashion.
-
-The polymer processor is divided into several simpler processors which interface 
-with an multiplexer processor which acts as a dispatch processor and also acts 
-as a gating processor as well. The gpu processor handles draw calls and the 
-panels processor acts on calls from the multiplexer and performs actions.
