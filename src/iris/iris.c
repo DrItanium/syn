@@ -5,6 +5,7 @@
 void decode(core* proc, ushort value) {
    byte group;
    group = get_group(value);
+   proc->advancepc = 1;
    switch(group) {
       case InstructionGroupArithmetic:
          arithmetic(proc, value);
@@ -14,6 +15,7 @@ void decode(core* proc, ushort value) {
          break;
       case InstructionGroupJump:
          jump(proc, value);
+         proc->advancepc = 0;
          break;
       case InstructionGroupCompare:
          compare(proc, value);
@@ -23,6 +25,7 @@ void decode(core* proc, ushort value) {
          break;
       default:
          error("invalid instruction group provided", ErrorInvalidInstructionGroupProvided);
+         break;
    }
 }
 
@@ -122,9 +125,9 @@ void move(core* proc, datum inst) {
          tmp = (ushort)(((ushort)get_register(proc, get_move_reg2(inst))) << 8);
          tmp += get_register(proc, get_move_reg1(inst));
          if(get_move_accessmode(inst) == AccessModeMoveOpLoad) {
-            put_register(proc, get_move_reg0(inst), proc->memory[tmp]);
+            put_register(proc, get_move_reg0(inst), proc->data[tmp]);
          } else {
-            proc->memory[tmp] = get_register(proc, get_move_reg0(inst));
+            proc->data[tmp] = get_register(proc, get_move_reg0(inst));
          }
          break;
       default:
@@ -271,6 +274,32 @@ void compare(core* proc, datum inst) {
 
 void iris_system(core* proc, datum j) {
    /* implement system commands */
+   byte operation;
+   byte reg0;
+   byte reg1;
+   byte value;
+   int result;
+   operation = get_system_operation(j);
+   reg0 = get_system_reg0(j);
+   reg1 = get_system_reg1(j); 
+   result = 0;
+   value = 0;
+
+   switch(operation) {
+      case SystemCommandTerminate: /* init 0 */
+         proc->terminateexecution = 1;
+         break;
+      case SystemCommandGetC:
+         result = getchar();
+         put_register(proc, reg0, (byte)result);
+         break;
+      case SystemCommandPutC:
+         value = get_register(proc, reg0);
+         putchar(value);
+         break;
+      default:
+         error("invalid system command provided", ErrorInvalidSystemCommand);
+   }
 }
 
 void error(char* message, int code) {

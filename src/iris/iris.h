@@ -15,13 +15,18 @@ enum {
 
 typedef struct core {
    byte gpr[RegisterCount];
-   byte memory[MemorySize];
+   ushort code[MemorySize];
+   byte data[MemorySize];
    ushort pc : 16;
    byte predicateregister : 1;
+   byte advancepc : 1;
+   byte terminateexecution : 1;
 } core;
-
+#define set_bits(instruction, mask, value, shiftcount) ((instruction & ~mask) | (value << shiftcount))
+#define get_bits(instruction, mask, shiftcount) ((byte)((instruction & mask) >> shiftcount))
 /* macros */
-#define get_group(instruction) ((byte)(instruction & 0x7))
+#define get_group(instruction) (get_bits(instruction, 0x7, 0))
+#define set_group(instruction, value) (set_bits(instruction, 0x7, value, 0))
 
 /* arithmetic */
 /* C structure version 
@@ -33,10 +38,14 @@ typedef struct core {
  *    byte source1 : 3;
  * };
  */
-#define get_arithmetic_op(instruction) ((byte)((instruction & 0x78) >> 3))
-#define get_arithmetic_dest(instruction) ((byte)((instruction & 0x380) >> 7))
-#define get_arithmetic_source0(instruction) ((byte)((instruction & 0x1C00) >> 10))
+#define get_arithmetic_op(instruction) (get_bits(instruction, 0x78, 3))
+#define set_arithmetic_op(instruction, value) (set_bits(instruction, 0x78, value, 3))
+#define get_arithmetic_dest(instruction) (get_bits(instruction, 0x380, 7))
+#define set_arithmetic_dest(instruction, value) (set_bits(instruction, 0x380, value, 7))
+#define get_arithmetic_source0(instruction) (get_bits(instruction, 0x1C00, 10))
+#define set_arithmetic_source0(instruction, value) (set_bits(instruction, 0x1C00, value, 10))
 #define get_arithmetic_source1(instruction) ((byte)((instruction & 0xE000) >> 13))
+#define set_arithmetic_source1(instruction, value) (set_bits(instruction, 0xE000, value, 13))
 
 /* move */
 /* C structure version
@@ -55,12 +64,18 @@ typedef struct core {
  *    };
  * };
  */
-#define get_move_op(instruction) ((byte)((instruction & 0x18) >> 3))
-#define get_move_reg0(instruction) ((byte)((instruction & 0xE0) >> 5))
-#define get_move_immediate(instruction) ((byte)((instruction) >> 8))
-#define get_move_reg1(instruction) ((byte)((instruction & 0x700) >> 8))
-#define get_move_reg2(instruction) ((byte)((instruction & 0x3800) >> 11))
-#define get_move_accessmode(instruction) ((byte)((instruction & 0x4000) >> 14))
+#define get_move_op(instruction) (get_bits(instruction, 0x18, 3))
+#define set_move_op(instruction, value) (set_bits(instruction, 0x18, value 3))
+#define get_move_reg0(instruction) (get_bits(instruction, 0xE0, 5))
+#define set_move_reg0(instruction, value) (set_bits(instruction, 0xE0, value, 5))
+#define get_move_immediate(instruction) (get_bits(instruction, 0xFF00, 8))
+#define set_move_immediate(instruction, value) (set_bits(instruction, 0xFF00, value, 8))
+#define get_move_reg1(instruction) (get_bits(instruction, 0x700, 8))
+#define set_move_reg1(instruction, value) (set_bits(instruction, 0x700, value, 8))
+#define get_move_reg2(instruction) (get_bits(instruction, 0x3800, 11))
+#define set_move_reg2(instruction, value) (set_bits(instruction, 0x3800, value, 11))
+#define get_move_accessmode(instruction) (get_bits(instruction, 0x4000, 14))
+#define set_move_accessmode(instruction, value) (set_bits(instruction, 0x4000, value, 14))
 
 /* jump */
 /* C structure version
@@ -87,14 +102,22 @@ typedef struct core {
  *    };
  * };
  */
-#define get_jump_distance(instruction) ((byte)((instruction & 0x8) >> 3))
-#define get_jump_conditional(instruction) ((byte)((instruction & 0x30) >> 4))
-#define get_jump_immediatemode(instruction) ((byte)((instruction & 0x40) >> 6))
-#define get_jump_signedmode(instruction) ((byte)((instruction & 0x80) >> 7))
-#define get_jump_immediate(instruction) ((byte)((instruction) >> 8))
-#define get_jump_reg0(instruction) ((byte)((instruction & 0x700) >> 8))
-#define get_jump_reg1(instruction) ((byte)((instruction & 0x3800) >> 11))
-#define get_jump_reg1issigned(instruction) ((byte)((instruction & 0x4000) >> 14))
+#define get_jump_distance(instruction) (get_bits(instruction, 0x8, 3))
+#define set_jump_distance(instruction, value) (set_bits(instruction, 0x8, value, 3))
+#define get_jump_conditional(instruction) (get_bits(instruction, 0x30, 4))
+#define set_jump_conditional(instruction, value) (set_bits(instruction, 0x30, value, 4))
+#define get_jump_immediatemode(instruction) (get_bits(instruction, 0x40, 6))
+#define set_jump_immediatemode(instruction, value) (set_bits(instruction, 0x40, value, 6))
+#define get_jump_signedmode(instruction) (get_bits(instruction, 0x80, 7))
+#define set_jump_signedmode(instruction, value) (set_bits(instruction, 0x80, value, 7))
+#define get_jump_immediate(instruction) (get_bits(instruction, 0xFF00, 8))
+#define set_jump_immediate(instruction, value) (set_bits(instruction, 0xFF00, value, 8))
+#define get_jump_reg0(instruction) (get_bits(instruction, 0x700, 8))
+#define set_jump_reg0(instruction, value) (set_bits(instruction, 0x700, value, 8))
+#define get_jump_reg1(instruction) (get_bits(instruction, 0x3800, 11))
+#define set_jump_reg1(instruction, value) (set_bits(instruction, 0x3800, value, 11))
+#define get_jump_reg1issigned(instruction) (get_bits(instruction, 0x4000, 14))
+#define set_jump_reg1issigned(instruction, value) (set_bits(instruction, 0x4000, value, 14))
 /* compare */
 /* C structure version 
  * DO NOT UNCOMMENT
@@ -105,10 +128,14 @@ typedef struct core {
  *    byte combinebits : 3; 
  * } compare;
  */
-#define get_compare_op(instruction) ((byte)((instruction & 0x38) >> 3))
-#define get_compare_reg0(instruction) ((byte)((instruction & 0x1C0) >> 6))
-#define get_compare_reg1(instruction) ((byte)((instruction & 0xE00) >> 9))
-#define get_compare_combinebits(instruction) ((byte)((instruction & 0x7000) >> 12))
+#define get_compare_op(instruction) (get_bits(instruction, 0x38, 3))
+#define set_compare_op(instruction, value) (set_bits(instruction, 0x38, value, 3))
+#define get_compare_reg0(instruction) (get_bits(instruction, 0x1C0, 6))
+#define set_compare_reg0(instruction, value) (set_bits(instruction, 0x1C0, value, 6))
+#define get_compare_reg1(instruction) (get_bits(instruction, 0xE00, 9))
+#define set_compare_reg1(instruction, value) (set_bits(instruction, 0xE00, value, 9))
+#define get_compare_combinebits(instruction) (get_bits(instruction, 0x7000, 12))
+#define set_compare_combinebits(instruction, value) (set_bits(instruction, 0x7000, value, 12))
 /* systemcall */
 /* C structure version
  * DO NOT UNCOMMENT
@@ -118,9 +145,12 @@ typedef struct core {
  *    byte reg1 : 3;
  * } systemcall;
  */
-#define get_system_operation(instruction) ((byte)((instruction & 0x3F8) >> 3))
-#define get_system_reg0(instruction) ((byte)((instruction & 0x1C00) >> 10))
-#define get_system_reg1(instruction) ((byte)((instruction) >> 13))
+#define get_system_operation(instruction) (get_bits(instruction, 0x3F8, 3))
+#define set_system_operation(instruction, value) (set_bits(instruction, 0x3F8, value, 3))
+#define get_system_reg0(instruction) (get_bits(instruction, 0x1C00, 10))
+#define set_system_reg0(instruction, value) (set_bits(instruction, 0x1C00, value, 10))
+#define get_system_reg1(instruction) (get_bits(instruction, 0xE000, 13))
+#define set_system_reg1(instruction, value) (set_bits(instruction, 0xE000, value, 13))
 
 
 /* Instructions Groups */
@@ -186,16 +216,26 @@ enum {
 
 /* error codes */
 enum {
-   ErrorInvalidCombineBits = 1,
-   ErrorInvalidCompareOperation = 2,
-   ErrorInvalidIfThenElseInstructionType = 3,
-   ErrorInvalidJumpConditionalType = 4,
-   ErrorInvalidMoveOperationConditionalType = 5,
-   ErrorInvalidArithmeticOperation = 6,
-   ErrorGetRegisterOutOfRange = 7,
-   ErrorPutRegisterOutOfRange = 8,
-   ErrorInvalidInstructionGroupProvided = 9,
+   ErrorNone = 0,
+   ErrorInvalidCombineBits,
+   ErrorInvalidCompareOperation ,
+   ErrorInvalidIfThenElseInstructionType,
+   ErrorInvalidJumpConditionalType,
+   ErrorInvalidMoveOperationConditionalType,
+   ErrorInvalidArithmeticOperation,
+   ErrorGetRegisterOutOfRange,
+   ErrorPutRegisterOutOfRange,
+   ErrorInvalidInstructionGroupProvided,
+   ErrorInvalidSystemCommand,
 };
+
+/* system commands */
+enum {
+   SystemCommandTerminate = 0, /* Send a halt "signal" */
+   SystemCommandGetC, 
+   SystemCommandPutC,
+};
+
 void arithmetic(core* proc, datum inst);
 void move(core* proc, datum inst);
 void jump(core* proc, datum inst);

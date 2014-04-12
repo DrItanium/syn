@@ -11,8 +11,6 @@ static void shutdown(void);
 static void installprogram(FILE* file);
 static core proc;
 
-
-
 int main(int argc, char* argv[]) {
    /* initialize the core */
    FILE* target;
@@ -67,39 +65,45 @@ void usage(char* arg0) {
 }
 int execute(FILE* file) {
    /* install the program to memory */
-   int i;
-   union {
-      datum value;
-      byte contents[2];
-   } tmp;
    installprogram(file); 
-   for(i = 0; i < MemorySize; i+=2) {
-      tmp.contents[0] = proc.memory[i];
-      tmp.contents[1] = proc.memory[i + 1];
-      decode(&proc, tmp.value);
-   }
+   /* TODO: Install code */
+   do {
+      decode(&proc, proc.code[proc.pc]);
+      if(proc.advancepc) {
+         proc.pc++;
+      }
+   } while(!proc.terminateexecution);
    return 0;
 }
 void startup() {
+   int i;
    proc.predicateregister = 0;
    proc.pc = 0;
+   proc.terminateexecution = 0;
+   proc.advancepc = 1;
+   for(i = 0; i < MemorySize; i++) {
+      proc.data[i] = 0;
+      proc.code[i] = 0;
+   }
 }
 
 void shutdown() {
    /* nothing to do at this point */
 }
+
 void installprogram(FILE* file) {
    /* read up to 64k of program information */
-   int current, i;
+   int count, i;
+   ushort contents; /* theres a reason for this */
    i = 0;
-   current = fgetc(file);
-   while(current != EOF) {
+   count = fread(&contents, sizeof(contents), 1, file);
+   while(count > 0) {
       if(i < MemorySize) {
-         proc.memory[i] = current;
+         proc.code[i] = contents;
          i++; 
-         current = fgetc(file);
+         count = fread(&contents, sizeof(contents), 1, file);
       } else {
-         fprintf(stderr, "Warning: ran out of space!\nTruncated installation\n");
+         fprintf(stderr, "warning: ran out of space!\ntruncated installation\n");
          break;
       }
    }
