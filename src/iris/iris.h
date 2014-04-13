@@ -19,7 +19,7 @@ typedef union instruction {
 enum {
    RegisterCount = 256, 
    /* used in cases where we don't have enough encoding space */
-   ImpliedRegisterCount = 64,
+   ImpliedRegisterCount = 256,
    MemorySize = 65536, /* 8-bit cells */
    MajorOperationGroupCount = 8,
 };
@@ -34,33 +34,49 @@ typedef struct core {
    byte terminateexecution;
 } core;
 
-/* compatibility */
-#define set_bits(instruction, mask, value, shiftcount) ((instruction & ~mask) | (value << shiftcount))
-#define get_bits(instruction, mask, shiftcount) ((byte)((instruction & mask) >> shiftcount))
-/* macros */
 byte get_group(instruction* inst);
 void set_group(Instruction* inst, byte group);
-#define get_group(instruction) (get_bits(instruction, 0x7, 0))
-#define set_group(instruction, value) (set_bits(instruction, 0x7, value, 0))
+byte get_op(instruction* inst);
+void set_op(instruction* inst, byte op);
+byte get_register(instruction* inst, byte index);
+void set_register(instruction* inst, byte index, byte value);
+datum get_immediate(instruction* inst, byte index);
+void set_immediate(instruction* inst, byte index, datum value);
+
+/* Instructions Groups */
+enum {
+   InstructionGroupArithmetic = 0,
+   InstructionGroupMove,
+   InstructionGroupJump,
+   InstructionGroupCompare,
+   InstructionGroupMisc,
+};
 
 /* arithmetic */
 /* C structure version 
  * DO NOT UNCOMMENT
  * struct arithmetic {
- *    byte op : 4;
+ *    byte op : 5;
  *    byte dest : 8;
  *    byte source0 : 8;
  *    byte source1 : 8;
  * };
  */
-byte get_arithmetic_op(instruction* inst);
-void set_arithmetic_op(instruction* inst, byte value);
-byte get_arithmetic_dest(instruction* inst);
-void set_arithmetic_dest(instruction* inst, byte value);
-byte get_arithmetic_source0(instruction* inst);
-void set_arithmetic_source0(instruction* inst, byte value);
-byte get_arithmetic_source1(instruction* inst);
-void set_arithmetic_source1(instruction* inst, byte value);
+
+/* ops */
+enum {
+   ArithmeticOpAdd = 0,
+   ArithmeticOpSub,
+   ArithmeticOpMul,
+   ArithmeticOpDiv,
+   ArithmeticOpRem,
+   ArithmeticOpShiftLeft,
+   ArithmeticOpShiftRight,
+   ArithmeticOpBinaryAnd,
+   ArithmeticOpBinaryOr,
+   ArithmeticOpBinaryNot,
+   ArithmeticOpBinaryXor,
+};
 
 /* move */
 /* C structure version
@@ -77,24 +93,28 @@ void set_arithmetic_source1(instruction* inst, byte value);
  *    };
  * };
  */
-byte get_move_op(instruction* inst);
-void set_move_op(instruction* inst, byte value);
-byte get_move_reg0(instruction* inst);
-void set_move_reg0(instruction* inst, byte value);
-ushort get_move_immediate(instruction* inst);
-void set_move_immediate(instruction* inst, ushort value);
-byte get_move_reg1(instruction* inst);
-void set_move_reg1(instruction* inst, byte value);
-byte get_move_reg2(instruction* inst);
-void set_move_reg2(instruction* inst, byte value);
+
+enum {
+   MoveOpMove = 0, /* move r? r? */
+   MoveOpSwap, /* swap r? r? */
+   MoveOpSwapRegAddr, /* swap.reg.addr r? r? */
+   MoveOpSwapAddrAddr, /* swap.addr.addr r? r? */
+   MoveOpSwapRegMem, /* swap.reg.mem r? $imm */
+   MoveOpSwapAddrMem, /* swap.addr.mem r? $imm */
+   MoveOpSet, /* set r? $imm */
+   MoveOpLoad, /* load r? r? */
+   MoveOpLoadMem, /* load.mem r? $imm */
+   MoveOpStore, /* store r? r? */
+   MoveOpStoreAddr, /* store.addr r? r? */
+   MoveOpStoreMem, /* store.mem r? $imm */
+   MoveOpStoreImm, /* store.imm r? $imm */
+};
 
 /* jump */
 /* C structure version
  * DO NOT UNCOMMENT
  * struct jump {
- *    byte op : 2;
- *    byte secondaryop : 2;
- *    byte immediatemode : 1;
+ *    byte op : 5;
  *    modes {
  *       unconditional {
  *          immediate {
@@ -106,6 +126,7 @@ void set_move_reg2(instruction* inst, byte value);
  *          };
  *          register {
  *             byte target : 8;
+ *             // upper 16 bits unused
  *          };
  *          link_register {
  *             byte linkregister : 8;
@@ -133,159 +154,124 @@ void set_move_reg2(instruction* inst, byte value);
  *          };
  *       };
  *       ifthenelse {
- *          normal {
+ *          normal_pred_true {
  *               byte predicate : 8;
  *               byte ontrue : 8;
  *               byte onfalse : 8;
  *          };
- *          call {
+ *          normal_pred_false {
+ *               byte predicate : 8;
+ *               byte ontrue : 8;
+ *               byte onfalse : 8;
+ *          };
+ *          link_pred_true {
  *             // predicate is in set of implied registers
  *             byte linkregister : 8;
  *             byte ontrue : 8;
  *             byte onfalse : 8;
  *          };
- *          
+ *          link_pred_false {
+ *             // predicate is in set of implied registers
+ *             byte linkregister : 8;
+ *             byte ontrue : 8;
+ *             byte onfalse : 8;
+ *          }
  *       };
- *       
- *    };
- *    union {
- *       struct {
- *         byte predicate : 8;
- *         ushort immediate : 16;
- *       } conditional_call_mode;
- *       struct {
- *         byte predicate : 8;
- *         byte target : 8;
- *       } conditional
- *       ushort immediate : 16;
- *       struct {
- *          byte predicate : 8;
- *          byte 
- *       }
- *       union {
- *          byte reg0 : 3;
- *       } shortform;
- *       struct {
- *          byte reg0 : 3;
- *          byte reg1 : 3;
- *       } longtype;
- *       struct {
- *          byte reg0 : 3;
- *          byte reg1 : 3;
- *          byte reg1issigned : 1;
- *       } ifthenelsetype;
  *    };
  * };
  */
-#define get_jump_conditional(instruction) (get_bits(instruction, 0x30, 4))
-#define set_jump_conditional(instruction, value) (set_bits(instruction, 0x30, value, 4))
-#define get_jump_immediatemode(instruction) (get_bits(instruction, 0x40, 6))
-#define set_jump_immediatemode(instruction, value) (set_bits(instruction, 0x40, value, 6))
-#define get_jump_signedmode(instruction) (get_bits(instruction, 0x80, 7))
-#define set_jump_signedmode(instruction, value) (set_bits(instruction, 0x80, value, 7))
-#define get_jump_immediate(instruction) (get_bits(instruction, 0xFF00, 8))
-#define set_jump_immediate(instruction, value) (set_bits(instruction, 0xFF00, value, 8))
-#define get_jump_reg0(instruction) (get_bits(instruction, 0x700, 8))
-#define set_jump_reg0(instruction, value) (set_bits(instruction, 0x700, value, 8))
-#define get_jump_reg1(instruction) (get_bits(instruction, 0x3800, 11))
-#define set_jump_reg1(instruction, value) (set_bits(instruction, 0x3800, value, 11))
-#define get_jump_reg1issigned(instruction) (get_bits(instruction, 0x4000, 14))
-#define set_jump_reg1issigned(instruction, value) (set_bits(instruction, 0x4000, value, 14))
+enum {
+   JumpOpUnconditionalImmediate = 0,
+   JumpOpUnconditionalImmediateLink,
+   JumpOpUnconditionalRegister,
+   JumpOpUnconditionalRegisterLink,
+   JumpOpConditionalImmediate,
+   JumpOpConditionalImmediateLink,
+   JumpOpConditionalRegister,
+   JumpOpConditionalRegisterLink,
+   JumpOpIfThenElseNormalPredTrue,
+   JumpOpIfThenElseNormalPredFalse,
+   JumpOpIfThenElseLinkPredTrue,
+   JumpOpIfThenElseLinkPredFalse,
+};
+
 /* compare */
 /* C structure version 
  * DO NOT UNCOMMENT
  * struct {
- *    byte op : 3;
- *    byte reg0 : 3;
- *    byte reg1 : 3;
- *    byte combinebits : 3; 
+ *    byte op : 5;
+ *    byte dest : 8;
+ *    byte reg0 : 8;
+ *    byte reg1 : 8;
  * } compare;
  */
-#define get_compare_op(instruction) (get_bits(instruction, 0x38, 3))
-#define set_compare_op(instruction, value) (set_bits(instruction, 0x38, value, 3))
-#define get_compare_reg0(instruction) (get_bits(instruction, 0x1C0, 6))
-#define set_compare_reg0(instruction, value) (set_bits(instruction, 0x1C0, value, 6))
-#define get_compare_reg1(instruction) (get_bits(instruction, 0xE00, 9))
-#define set_compare_reg1(instruction, value) (set_bits(instruction, 0xE00, value, 9))
-#define get_compare_combinebits(instruction) (get_bits(instruction, 0x7000, 12))
-#define set_compare_combinebits(instruction, value) (set_bits(instruction, 0x7000, value, 12))
-/* systemcall */
+enum {
+   CompareOpEq = 0,
+   CompareOpEqAnd,
+   CompareOpEqOr,
+   CompareOpEqXor,
+   CompareOpNeq,
+   CompareOpNeqAnd,
+   CompareOpNeqOr,
+   CompareOpNeqXor,
+   CompareOpLessThan,
+   CompareOpLessThanAnd,
+   CompareOpLessThanOr,
+   CompareOpLessThanXor,
+   CompareOpGreaterThan,
+   CompareOpGreaterThanAnd,
+   CompareOpGreaterThanOr,
+   CompareOpGreaterThanXor,
+   CompareOpLessThanOrEqualTo,
+   CompareOpLessThanOrEqualToAnd,
+   CompareOpLessThanOrEqualToOr,
+   CompareOpLessThanOrEqualToXor,
+   CompareOpGreaterThanOrEqualTo,
+   CompareOpGreaterThanOrEqualToAnd,
+   CompareOpGreaterThanOrEqualToOr,
+   CompareOpGreaterThanOrEqualToXor,
+};
+
+/* misc */
 /* C structure version
  * DO NOT UNCOMMENT
  * struct {
- *    byte operation : 7;
- *    byte reg0 : 3;
- *    byte reg1 : 3;
- * } systemcall;
+ *    byte op : 5;
+ *    systemcall {
+ *       byte operation : 8;
+ *       byte reg0 : 8;
+ *       byte reg1 : 8;
+ *    };
+ *    setimplicitregister_immediate {
+ *       byte index : 8;
+ *       byte reg0 : 8;
+ *    };
+ *    getimplicitregister_immediate {
+ *       byte index : 8;
+ *       byte reg0 : 8;
+ *    };
+ *    setimplicitregister_register {
+ *       byte index : 8;
+ *       byte reg0 : 8;
+ *    };
+ *    getimplicitregister_register {
+ *       byte index : 8;
+ *       byte reg0 : 8;
+ *    };
+ * } misc;
  */
-#define get_system_operation(instruction) (get_bits(instruction, 0x3F8, 3))
-#define set_system_operation(instruction, value) (set_bits(instruction, 0x3F8, value, 3))
-#define get_system_reg0(instruction) (get_bits(instruction, 0x1C00, 10))
-#define set_system_reg0(instruction, value) (set_bits(instruction, 0x1C00, value, 10))
-#define get_system_reg1(instruction) (get_bits(instruction, 0xE000, 13))
-#define set_system_reg1(instruction, value) (set_bits(instruction, 0xE000, value, 13))
-
-
-/* Instructions Groups */
 enum {
-   InstructionGroupArithmetic = 0,
-   InstructionGroupMove,
-   InstructionGroupJump,
-   InstructionGroupCompare,
-   InstructionGroupSystem,
+   MiscOpSystemCall = 0,
+   MiscOpSetImplicitRegisterImmediate,
+   MiscOpSetImplicitRegisterIndirect,
+   MiscOpGetImplicitRegisterImmediate,
+   MiscOpGetImplicitRegisterIndirect,
 };
+/* implicit registers */
 enum {
-   ArithmeticOpAdd = 0,
-   ArithmeticOpSub,
-   ArithmeticOpMul,
-   ArithmeticOpDiv,
-   ArithmeticOpRem,
-   ArithmeticOpShiftLeft,
-   ArithmeticOpShiftRight,
-   ArithmeticOpBinaryAnd,
-   ArithmeticOpBinaryOr,
-   ArithmeticOpBinaryNot,
-   ArithmeticOpBinaryXor,
-};
-enum {
-   MoveOpRegToReg = 0,
-   MoveOpImmediateToReg,
-   MoveOpRegToAddress,
-};
-enum {
-   JumpDistanceShort = 0,
-   JumpDistanceLong = 1,
-};
-enum {
-   JumpOpUnconditional = 0,
-   JumpOpIfTrue,
-   JumpOpIfFalse,
-   JumpOpIfThenElse,
-};
-enum {
-   JumpOpIfThenElse_TrueFalse = 0,
-   JumpOpIfThenElse_FalseTrue,
-};
-enum {
-   CompareOpEq = 0,
-   CompareOpNeq,
-   CompareOpLessThan,
-   CompareOpGreaterThan,
-   CompareOpLessThanOrEqualTo,
-   CompareOpGreaterThanOrEqualTo,
+   ImplicitRegisterPredicate = 0,
 };
 
-enum {
-   CombineBitsOpNil = 0,
-   CombineBitsOpAnd,
-   CombineBitsOpOr,
-   CombineBitsOpXor,
-};
-
-enum {
-   AccessModeMoveOpLoad = 0,
-   AccessModeMoveOpStore,
-};
 
 /* error codes */
 enum {
@@ -307,7 +293,9 @@ enum {
    SystemCommandTerminate = 0, /* Send a halt "signal" */
    SystemCommandGetC, 
    SystemCommandPutC,
+   SystemCommandPanic,
 };
+
 
 void arithmetic(core* proc, datum inst);
 void move(core* proc, datum inst);
