@@ -68,7 +68,7 @@ int execute(FILE* file) {
    installprogram(file); 
    /* TODO: Install code */
    do {
-      decode(&proc, proc.code[proc.pc].full);
+      decode(&proc, &proc.code[proc.pc]);
       if(proc.advancepc) {
          proc.pc++;
       }
