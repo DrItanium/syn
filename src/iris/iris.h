@@ -279,17 +279,18 @@ enum {
  *       byte index : 8;
  *       byte reg0 : 8;
  *    };
+ *    // Maintain <- flow order
  *    getimplicitregister_immediate {
- *       byte index : 8;
  *       byte reg0 : 8;
+ *       byte index : 8;
  *    };
  *    setimplicitregister_register {
  *       byte index : 8;
  *       byte reg0 : 8;
  *    };
  *    getimplicitregister_register {
- *       byte index : 8;
  *       byte reg0 : 8;
+ *       byte index : 8;
  *    };
  * } misc;
  */

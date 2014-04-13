@@ -50,6 +50,7 @@ void unparse_arithmetic(char* unparsed, instruction* insn) {
          break;
       default:
          sprintf(unparsed, "%s %s %s %s", op, dest, source0, source1);
+         break;
    }
 }
 
@@ -89,13 +90,14 @@ void unparse_move(char* unparsed, instruction* insn) {
          unparse_register(reg1, get_move_reg1(insn));
          sprintf(unparsed, "%s %s %s", op, reg0, reg1);
          break;
-      case MoveOpStoreMem: /* store.mem r? $imm */
-      case MoveOpStoreImm: /* store.imm r? $imm */
+      case MoveOpStoreMem: /* memcopy r? $imm */
+      case MoveOpStoreImm: /* memset r? $imm */
          unparse_register(reg0, get_move_reg0(insn));
          sprintf(unparsed, "%s %s $%d", op, reg0, get_move_immediate(insn));
          break;
       default:
          sprintf(unparsed, "%s", "INVALID MOVE");
+         break;
    }
 }
 
@@ -150,7 +152,9 @@ void unparse_jump(char* unparsed, instruction* insn) {
          unparse_register(reg2, get_jump_reg2(insn));
          sprintf(unparsed, "%s %s %s %s", op, reg0, reg1, reg2);
          break;
-      default: sprintf(unparsed, "%s", "INVALID JUMP");
+      default: 
+         sprintf(unparsed, "%s", "INVALID JUMP");
+         break;
    }
 }
 
@@ -167,6 +171,45 @@ void unparse_compare(char* unparsed, instruction* insn) {
    unparse_register(reg2, get_compare_reg2(insn));
 
    sprintf(unparsed, "%s %s %s %s", op, reg0, reg1, reg2);
+}
+void unparse_misc(char* unparsed, instruction* insn) {
+   const char* op;
+   char reg0[REGISTER_STRING_LENGTH];
+   char reg1[REGISTER_STRING_LENGTH];
+   op = misc_mnemonic(insn);
+   switch(get_misc_op(insn)) {
+      case MiscOpSystemCall:
+            unparse_register(reg0, get_misc_reg0(insn));
+            unparse_register(reg1, get_misc_reg1(insn));
+            sprintf(unparsed, "%s $%d %s %s", op, get_misc_index(insn), reg0, reg1);
+            break;
+      case MiscOpSetImplicitRegisterImmediate:
+            unparse_register(reg0, get_misc_reg0(insn));
+            sprintf(unparsed, "%s $%d %s", op, get_misc_index(insn), reg0);
+            break;
+      case MiscOpSetImplicitRegisterIndirect:
+            /* the index becomes a register */
+            unparse_register(reg0, get_misc_index(insn));
+            unparse_register(reg1, get_misc_reg0(insn));
+            sprintf(unparsed, "%s %s %s", op, reg0, reg1);
+            break;
+            /* Since an implication of <- as being flow order we have to
+             * reverse args */
+      case MiscOpGetImplicitRegisterImmediate:
+            unparse_register(reg0, get_misc_index(insn));
+            sprintf(unparsed, "%s %s $%d", op, reg0, get_misc_reg0(insn));
+            break;
+      case MiscOpGetImplicitRegisterIndirect:
+            unparse_register(reg0, get_misc_index(insn));
+            unparse_register(reg1, get_misc_reg0(insn));
+            sprintf(unparsed, "%s %s %s", op, reg0, reg1);
+            break;
+      default:
+         sprintf(unparsed, "%s", "INVALID MISC");
+         break;
+
+   }
+
 }
 
 void unparse_bitstring(char* unparsed, instruction* insn) {

@@ -378,14 +378,16 @@ void misc(core* proc, instruction* j) {
          value = (byte)get_register(proc, get_misc_reg0(j));
          iris_set_implicit_register(proc, index, value);
          break;
+      /* we need to imply a <- flow direction to maintain consistency.
+       * Therefore we need to swap argument orders */
       case MiscOpGetImplicitRegisterImmediate:
-         index = get_misc_index(j);
-         value = get_misc_reg0(j);
+         value = get_misc_index(j);
+         index = get_misc_reg0(j);
          put_register(proc, value, iris_get_implicit_register(proc, index));
          break;
       case MiscOpGetImplicitRegisterIndirect:
-         index = (byte)get_register(proc, get_misc_index(j));
          value = get_misc_reg0(j);
+         index = (byte)get_register(proc, get_misc_index(j));
          put_register(proc, value, iris_get_implicit_register(proc, index));
          break;
       default:
