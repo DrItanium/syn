@@ -12,15 +12,20 @@ enum {
    MemorySize = 65536, /* 8-bit cells */
    MajorOperationGroupCount = 8,
 };
-
+typedef struct instruction {
+   byte first;
+   byte second;
+   byte third;
+} instruction;
 typedef struct core {
    byte gpr[RegisterCount];
-   ushort code[MemorySize];
+   ushort addressRegisters[2];
+   instruction code[MemorySize];
    byte data[MemorySize];
    ushort pc : 16;
-   byte predicateregister : 1;
-   byte advancepc : 1;
-   byte terminateexecution : 1;
+   byte predicateregister;
+   byte advancepc;
+   byte terminateexecution;
 } core;
 #define set_bits(instruction, mask, value, shiftcount) ((instruction & ~mask) | (value << shiftcount))
 #define get_bits(instruction, mask, shiftcount) ((byte)((instruction & mask) >> shiftcount))
