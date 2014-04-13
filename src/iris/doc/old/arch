@@ -1,3 +1,5 @@
+NOTE: this document is out of date, it is provided for purposes of seeing where
+iris came from.
 The iris core is a simple 8-bit processor which has 16-bit instructions.
 
 Some stats:
