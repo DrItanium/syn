@@ -357,31 +357,47 @@ void compare(core* proc, instruction* inst) {
    }
 }
 static void iris_system_call(core* proc, instruction* j);
-static void iris_set_implicit_register_immediate(core* proc, instruction* j);
-static void iris_set_implicit_register_indirect(core* proc, instruction* j);
-static void iris_get_implicit_register_immediate(core* proc, instruction* j);
-static void iris_get_implicit_register_indirect(core* proc, instruction* j);
+static void iris_set_implicit_register(core* proc, byte index, byte value);
+static byte iris_get_implicit_register(core* proc, byte index);
 void misc(core* proc, instruction* j) {
+   byte index, value;
+   index = 0;
+   value = 0;
    /* implement system commands */
    switch(get_misc_op(j)) {
       case MiscOpSystemCall:
          iris_system_call(proc, j);
          break;
       case MiscOpSetImplicitRegisterImmediate:
-         iris_set_implicit_register_immediate(proc, j);
+         index = get_misc_index(j);
+         value = (byte)get_register(proc, get_misc_reg0(j));
+         iris_set_implicit_register(proc, index, value);
          break;
       case MiscOpSetImplicitRegisterIndirect:
-         iris_set_implicit_register_indirect(proc, j);
+         index = (byte)get_register(proc, get_misc_index(j));
+         value = (byte)get_register(proc, get_misc_reg0(j));
+         iris_set_implicit_register(proc, index, value);
          break;
       case MiscOpGetImplicitRegisterImmediate:
-         iris_get_implicit_register_immediate(proc, j);
+         index = get_misc_index(j);
+         value = get_misc_reg0(j);
+         put_register(proc, value, iris_get_implicit_register(proc, index));
          break;
       case MiscOpGetImplicitRegisterIndirect:
-         iris_get_implicit_register_indirect(proc, j);
+         index = (byte)get_register(proc, get_misc_index(j));
+         value = get_misc_reg0(j);
+         put_register(proc, value, iris_get_implicit_register(proc, index));
          break;
       default:
          error("invalid misc operation", ErrorInvalidMiscOperation);
    }
+}
+
+void iris_set_implicit_register(core* proc, byte index, byte value) {
+   proc->impliedregisters[index] = value;
+}
+byte iris_get_implicit_register(core* proc, byte index) {
+   return proc->impliedregisters[index];
 }
 void iris_system_call(core* proc, instruction* j) {
    byte reg0, reg1;
