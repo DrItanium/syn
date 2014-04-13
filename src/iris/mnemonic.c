@@ -43,10 +43,14 @@ const char* jump_mnemonic(instruction* insn) {
       case JumpOpUnconditionalImmediateLink:       return "goto.link";
       case JumpOpUnconditionalRegister:            return "jump";
       case JumpOpUnconditionalRegisterLink:        return "jump.link";
-      case JumpOpConditionalImmediate:             return "goto.cond";
-      case JumpOpConditionalImmediateLink:         return "goto.cond.link";
-      case JumpOpConditionalRegister:              return "jump.cond";
-      case JumpOpConditionalRegisterLink:          return "jump.cond.link";
+      case JumpOpConditionalTrueImmediate:             return "goto.if1";
+      case JumpOpConditionalTrueImmediateLink:         return "goto.if1.link";
+      case JumpOpConditionalTrueRegister:              return "jump.if1";
+      case JumpOpConditionalTrueRegisterLink:          return "jump.if1.link";
+      case JumpOpConditionalFalseImmediate:             return "goto.if0";
+      case JumpOpConditionalFalseImmediateLink:         return "goto.if0.link";
+      case JumpOpConditionalFalseRegister:              return "jump.if0";
+      case JumpOpConditionalFalseRegisterLink:          return "jump.if0.link";
       case JumpOpIfThenElseNormalPredTrue:         return "if1";
       case JumpOpIfThenElseNormalPredFalse:        return "if0";
       case JumpOpIfThenElseLinkPredTrue:           return "if1.link";

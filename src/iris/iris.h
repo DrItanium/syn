@@ -28,7 +28,7 @@ typedef struct core {
    byte impliedregisters[ImpliedRegisterCount];
    instruction code[MemorySize];
    datum data[MemorySize];
-   ushort pc : 16;
+   ushort pc;
    byte advancepc;
    byte terminateexecution;
 } core;
@@ -133,7 +133,27 @@ enum {
  *             byte target : 8;
  *          }
  *       };
- *       conditional {
+ *       conditional_true {
+ *          immediate {
+ *             byte predicate : 8;
+ *             ushort value : 16;
+ *          };
+ *          immediate_link {
+ *          // predicate is set in implied registers
+ *             byte link_register : 8;
+ *             ushort immediate : 16;
+ *          };
+ *          register {
+ *             byte predicate : 8;
+ *             byte target : 8;
+ *          };
+ *          register_link {
+ *             byte predicate : 8;
+ *             byte target : 8;
+ *             byte linkregister : 8;
+ *          };
+ *       };
+ *       conditional_false {
  *          immediate {
  *             byte predicate : 8;
  *             ushort value : 16;
@@ -185,10 +205,14 @@ enum {
    JumpOpUnconditionalImmediateLink,
    JumpOpUnconditionalRegister,
    JumpOpUnconditionalRegisterLink,
-   JumpOpConditionalImmediate,
-   JumpOpConditionalImmediateLink,
-   JumpOpConditionalRegister,
-   JumpOpConditionalRegisterLink,
+   JumpOpConditionalTrueImmediate,
+   JumpOpConditionalTrueImmediateLink,
+   JumpOpConditionalTrueRegister,
+   JumpOpConditionalTrueRegisterLink,
+   JumpOpConditionalFalseImmediate,
+   JumpOpConditionalFalseImmediateLink,
+   JumpOpConditionalFalseRegister,
+   JumpOpConditionalFalseRegisterLink,
    JumpOpIfThenElseNormalPredTrue,
    JumpOpIfThenElseNormalPredFalse,
    JumpOpIfThenElseLinkPredTrue,
@@ -237,9 +261,9 @@ enum {
    CompareOpGreaterThanOrEqualToXor,
 };
 #define get_compare_op(inst) (decode_op(inst))
-#define get_compare_reg0(insn) (decode_register(inst, 1))
-#define get_compare_reg1(insn) (decode_register(inst, 2))
-#define get_compare_reg2(insn) (decode_register(inst, 3))
+#define get_compare_reg0(inst) (decode_register(inst, 1))
+#define get_compare_reg1(inst) (decode_register(inst, 2))
+#define get_compare_reg2(inst) (decode_register(inst, 3))
 
 /* misc */
 /* C structure version
@@ -289,16 +313,14 @@ enum {
 /* error codes */
 enum {
    ErrorNone = 0,
-   ErrorInvalidCombineBits,
-   ErrorInvalidCompareOperation ,
-   ErrorInvalidIfThenElseInstructionType,
-   ErrorInvalidJumpConditionalType,
-   ErrorInvalidMoveOperationConditionalType,
-   ErrorInvalidArithmeticOperation,
    ErrorGetRegisterOutOfRange,
    ErrorPutRegisterOutOfRange,
    ErrorInvalidInstructionGroupProvided,
-   ErrorInvalidMiscCommand,
+   ErrorInvalidArithmeticOperation,
+   ErrorInvalidMoveOperation,
+   ErrorInvalidJumpOperation,
+   ErrorInvalidCompareOperation,
+   ErrorInvalidMiscOperation,
    ErrorInvalidSystemCommand,
 };
 

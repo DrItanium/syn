@@ -72,7 +72,7 @@ void unparse_move(char* unparsed, instruction* insn) {
       case MoveOpSwapAddrMem: /* swap.addr.mem r? $imm */
       case MoveOpSet: /* set r? $imm */
          unparse_register(reg0, get_move_reg0(insn));
-         sprintf(unparsed, "%s %s $%d", reg0, get_move_immediate(insn));
+         sprintf(unparsed, "%s %s $%d", op, reg0, get_move_immediate(insn));
          break;
       case MoveOpLoad: /* load r? r? */
          unparse_register(reg0, get_move_reg0(insn));
@@ -81,7 +81,7 @@ void unparse_move(char* unparsed, instruction* insn) {
          break;
       case MoveOpLoadMem: /* load.mem r? $imm */
          unparse_register(reg0, get_move_reg0(insn));
-         sprintf(unparsed, "%s %s $%d", reg0, get_move_immediate(insn));
+         sprintf(unparsed, "%s %s $%d", op, reg0, get_move_immediate(insn));
          break;
       case MoveOpStore: /* store r? r? */
       case MoveOpStoreAddr: /* store.addr r? r? */
@@ -92,7 +92,7 @@ void unparse_move(char* unparsed, instruction* insn) {
       case MoveOpStoreMem: /* store.mem r? $imm */
       case MoveOpStoreImm: /* store.imm r? $imm */
          unparse_register(reg0, get_move_reg0(insn));
-         sprintf(unparsed, "%s %s $%d", reg0, get_move_immediate(insn));
+         sprintf(unparsed, "%s %s $%d", op, reg0, get_move_immediate(insn));
          break;
       default:
          sprintf(unparsed, "%s", "INVALID MOVE");
@@ -122,21 +122,25 @@ void unparse_jump(char* unparsed, instruction* insn) {
          unparse_register(reg1, get_jump_reg1(insn));
          sprintf(unparsed, "%s %s %s", op, reg0, reg1);
          break;
-      case JumpOpConditionalImmediate:
+      case JumpOpConditionalTrueImmediate:
+      case JumpOpConditionalFalseImmediate:
          unparse_register(reg0, get_jump_reg0(insn));
          sprintf(unparsed, "%s %s $%d", op, reg0, get_jump_immediate(insn));
          break;
-      case JumpOpConditionalImmediateLink:
+      case JumpOpConditionalTrueImmediateLink:
+      case JumpOpConditionalFalseImmediateLink:
          /* remember that the predicate is implied */
          unparse_register(reg0, get_jump_reg0(insn));
          sprintf(unparsed, "%s %s $%d", op, reg0, get_jump_immediate(insn));
          break;
-      case JumpOpConditionalRegister:
+      case JumpOpConditionalTrueRegister:
+      case JumpOpConditionalFalseRegister:
          unparse_register(reg0, get_jump_reg0(insn));
          unparse_register(reg1, get_jump_reg1(insn));
          sprintf(unparsed, "%s %s %s", op, reg0, reg1);
          break;
-      case JumpOpConditionalRegisterLink:
+      case JumpOpConditionalTrueRegisterLink:
+      case JumpOpConditionalFalseRegisterLink:
       case JumpOpIfThenElseNormalPredTrue:
       case JumpOpIfThenElseNormalPredFalse:
       case JumpOpIfThenElseLinkPredTrue: /* implied predicate register */
@@ -166,9 +170,9 @@ void unparse_compare(char* unparsed, instruction* insn) {
 }
 
 void unparse_bitstring(char* unparsed, instruction* insn) {
-   unparsed[32] = '\0';
    int bit;
    uint data;
+   unparsed[32] = '\0';
    data = insn->full;
    for (bit = 31; bit >= 0; bit -= 1) {
       unparsed[bit] = (data & 1) + '0';
