@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "iris.h"
-
-void unparse(char* unparsed, ushort insn) {
+#define REGISTER_STRING_LENGTH 5
+void unparse(char* unparsed, instruction* insn) {
    switch(get_group(insn)) {
       case InstructionGroupArithmetic:
          unparse_arithmetic(unparsed, insn);
@@ -16,8 +16,12 @@ void unparse(char* unparsed, ushort insn) {
       case InstructionGroupCompare:
          unparse_compare(unparsed, insn);
          break;
+      case InstructionGroupMisc:
+         unparse_misc(unparsed, insn);
+         break;
       default:
          sprintf(unparsed, "UNASSIGNED INSTRUCTION GROUP");
+         break;
    }
 }
 
@@ -29,11 +33,11 @@ void unparse_register(char* unparsed, byte index) {
    }
 }
 
-void unparse_arithmetic(char* unparsed, ushort insn) {
+void unparse_arithmetic(char* unparsed, instruction* insn) {
    const char* op;
-   char dest[3];
-   char source0[3];
-   char source1[3];
+   char dest[REGISTER_STRING_LENGTH];
+   char source0[REGISTER_STRING_LENGTH];
+   char source1[REGISTER_STRING_LENGTH];
 
    op = arithmetic_mnemonic(insn);
    unparse_register(dest, get_arithmetic_dest(insn));
@@ -49,121 +53,126 @@ void unparse_arithmetic(char* unparsed, ushort insn) {
    }
 }
 
-void unparse_move(char* unparsed, ushort insn) {
+void unparse_move(char* unparsed, instruction* insn) {
    const char* op;
-   char reg0[3];
-   char reg1[3];
-   char reg2[3];
+   char reg0[REGISTER_STRING_LENGTH];
+   char reg1[REGISTER_STRING_LENGTH];
 
    op = move_mnemonic(insn);
-
    switch(get_move_op(insn)) {
-      case MoveOpRegToReg:
+      case MoveOpMove: /* move r? r? */
+      case MoveOpSwap: /* swap r? r? */
+      case MoveOpSwapRegAddr: /* swap.reg.addr r? r? */
+      case MoveOpSwapAddrAddr: /* swap.addr.addr r? r? */
          unparse_register(reg0, get_move_reg0(insn));
          unparse_register(reg1, get_move_reg1(insn));
          sprintf(unparsed, "%s %s %s", op, reg0, reg1);
          break;
-      case MoveOpImmediateToReg:
+      case MoveOpSwapRegMem: /* swap.reg.mem r? $imm */
+      case MoveOpSwapAddrMem: /* swap.addr.mem r? $imm */
+      case MoveOpSet: /* set r? $imm */
          unparse_register(reg0, get_move_reg0(insn));
-         sprintf(unparsed, "%s %s %d", op, reg0, get_move_immediate(insn));
+         sprintf(unparsed, "%s %s $%d", reg0, get_move_immediate(insn));
          break;
-      case MoveOpRegToAddress:
+      case MoveOpLoad: /* load r? r? */
          unparse_register(reg0, get_move_reg0(insn));
          unparse_register(reg1, get_move_reg1(insn));
-         unparse_register(reg2, get_move_reg2(insn));
-         sprintf(unparsed, "%s %s %s:%s", op, reg0, reg1, reg2);
+         sprintf(unparsed, "%s %s %s", op, reg0, reg1);
+         break;
+      case MoveOpLoadMem: /* load.mem r? $imm */
+         unparse_register(reg0, get_move_reg0(insn));
+         sprintf(unparsed, "%s %s $%d", reg0, get_move_immediate(insn));
+         break;
+      case MoveOpStore: /* store r? r? */
+      case MoveOpStoreAddr: /* store.addr r? r? */
+         unparse_register(reg0, get_move_reg0(insn));
+         unparse_register(reg1, get_move_reg1(insn));
+         sprintf(unparsed, "%s %s %s", op, reg0, reg1);
+         break;
+      case MoveOpStoreMem: /* store.mem r? $imm */
+      case MoveOpStoreImm: /* store.imm r? $imm */
+         unparse_register(reg0, get_move_reg0(insn));
+         sprintf(unparsed, "%s %s $%d", reg0, get_move_immediate(insn));
          break;
       default:
-         sprintf(unparsed, "INVALID MOVE");
+         sprintf(unparsed, "%s", "INVALID MOVE");
    }
 }
 
-void unparse_jump(char* unparsed, ushort insn) {
-   byte is_normal;
-   is_normal = get_jump_conditional(insn) != JumpOpIfThenElse;
-   if(is_normal == 1) {
-      unparse_normal_jump(unparsed, insn);
-   } else {
-      unparse_if_then_else(unparsed, insn);
-   }
-}
-
-void unparse_normal_jump(char* unparsed, ushort insn) {
+void unparse_jump(char* unparsed, instruction* insn) {
    const char* op;
-   char reg0[3];
-   char reg1[3];
-   byte is_relative;
-   byte is_immediate;
-   byte is_signed;
-
+   char reg0[REGISTER_STRING_LENGTH];
+   char reg1[REGISTER_STRING_LENGTH];
+   char reg2[REGISTER_STRING_LENGTH];
    op = jump_mnemonic(insn);
-   is_relative = get_jump_distance(insn) == JumpDistanceShort;
-   is_immediate = get_jump_immediatemode(insn) == 1;
-   is_signed = get_jump_signedmode(insn) == 1;
-
-   if(is_relative && is_immediate && is_signed == 1) {
-      sprintf(unparsed, "%s %d", op, (schar) get_jump_immediate(insn));
-   } else if(is_relative && is_immediate && !is_signed == 1) {
-      sprintf(unparsed, "%s %d", op, get_jump_immediate(insn));
-   } else if(is_relative && !is_immediate && is_signed == 1) {
-      unparse_register(reg1, get_jump_reg1(insn));
-      sprintf(unparsed, "%s $%s", op, reg1);
-   } else if(is_relative && !is_immediate && !is_signed == 1) {
-      unparse_register(reg1, get_jump_reg1(insn));
-      sprintf(unparsed, "%s %s", op, reg1);
-   } else if(!is_relative) {
-      unparse_register(reg0, get_jump_reg0(insn));
-      unparse_register(reg1, get_jump_reg1(insn));
-      sprintf(unparsed, "%s %s:%s", op, reg0, reg1);
-   } else {
-      sprintf(unparsed, "INVALID JUMP");
+   switch(get_jump_op(insn)) {
+      case JumpOpUnconditionalImmediate:
+         sprintf(unparsed, "%s $%d", op, get_jump_immediate(insn));
+         break;
+      case JumpOpUnconditionalImmediateLink:
+         unparse_register(reg0, get_jump_reg0(insn));
+         sprintf(unparsed, "%s %s $%d", op, reg0, get_jump_immediate(insn));
+         break;
+      case JumpOpUnconditionalRegister:
+         unparse_register(reg0, get_jump_reg0(insn));
+         sprintf(unparsed, "%s %s", op, reg0);
+         break;
+      case JumpOpUnconditionalRegisterLink:
+         unparse_register(reg0, get_jump_reg0(insn));
+         unparse_register(reg1, get_jump_reg1(insn));
+         sprintf(unparsed, "%s %s %s", op, reg0, reg1);
+         break;
+      case JumpOpConditionalImmediate:
+         unparse_register(reg0, get_jump_reg0(insn));
+         sprintf(unparsed, "%s %s $%d", op, reg0, get_jump_immediate(insn));
+         break;
+      case JumpOpConditionalImmediateLink:
+         /* remember that the predicate is implied */
+         unparse_register(reg0, get_jump_reg0(insn));
+         sprintf(unparsed, "%s %s $%d", op, reg0, get_jump_immediate(insn));
+         break;
+      case JumpOpConditionalRegister:
+         unparse_register(reg0, get_jump_reg0(insn));
+         unparse_register(reg1, get_jump_reg1(insn));
+         sprintf(unparsed, "%s %s %s", op, reg0, reg1);
+         break;
+      case JumpOpConditionalRegisterLink:
+      case JumpOpIfThenElseNormalPredTrue:
+      case JumpOpIfThenElseNormalPredFalse:
+      case JumpOpIfThenElseLinkPredTrue: /* implied predicate register */
+      case JumpOpIfThenElseLinkPredFalse: /* implied predicate register */
+         unparse_register(reg0, get_jump_reg0(insn));
+         unparse_register(reg1, get_jump_reg1(insn));
+         unparse_register(reg2, get_jump_reg2(insn));
+         sprintf(unparsed, "%s %s %s %s", op, reg0, reg1, reg2);
+         break;
+      default: sprintf(unparsed, "%s", "INVALID JUMP");
    }
 }
 
-void unparse_if_then_else(char* unparsed, ushort insn) {
+
+void unparse_compare(char* unparsed, instruction* insn) {
    const char* op;
-   char reg0[3];
-   char reg1[3];
-   byte reg0_is_signed;
-   byte reg1_is_signed;
-
-   op = jump_mnemonic(insn);
-   unparse_register(reg0, get_jump_reg0(insn));
-   unparse_register(reg1, get_jump_reg1(insn));
-   reg0_is_signed = get_jump_signedmode(insn) == 1;
-   reg1_is_signed = get_jump_reg1issigned(insn) == 1;
-
-   if(reg0_is_signed && reg1_is_signed == 1) {
-      sprintf(unparsed, "%s $%s $%s", op, reg0, reg1);
-   } else if(reg0_is_signed && !reg1_is_signed == 1) {
-      sprintf(unparsed, "%s $%s %s", op, reg0, reg1);
-   } else if(!reg0_is_signed && reg1_is_signed == 1) {
-      sprintf(unparsed, "%s %s $%s", op, reg0, reg1);
-   } else if(!reg0_is_signed && !reg1_is_signed == 1) {
-      sprintf(unparsed, "%s %s %s", op, reg0, reg1);
-   } else {
-      sprintf(unparsed, "INVALID JUMP");
-   }
-}
-
-void unparse_compare(char* unparsed, ushort insn) {
-   const char* op;
-   char reg0[3];
-   char reg1[3];
+   char reg0[REGISTER_STRING_LENGTH];
+   char reg1[REGISTER_STRING_LENGTH];
+   char reg2[REGISTER_STRING_LENGTH];
 
    op = compare_mnemonic(insn);
    unparse_register(reg0, get_compare_reg0(insn));
    unparse_register(reg1, get_compare_reg1(insn));
+   unparse_register(reg2, get_compare_reg2(insn));
 
-   sprintf(unparsed, "%s %s %s", op, reg0, reg1);
+   sprintf(unparsed, "%s %s %s %s", op, reg0, reg1, reg2);
 }
 
-void unparse_bitstring(char* unparsed, ushort insn) {
-   unparsed[16] = '\0';
+void unparse_bitstring(char* unparsed, instruction* insn) {
+   unparsed[32] = '\0';
    int bit;
-   for (bit = 15; bit >= 0; bit -= 1) {
-      unparsed[bit] = (insn & 1) + '0';
-      insn >>= 1;
+   uint data;
+   data = insn->full;
+   for (bit = 31; bit >= 0; bit -= 1) {
+      unparsed[bit] = (data & 1) + '0';
+      data >>= 1;
    }
 }
 

@@ -2,11 +2,9 @@
 #include <stdio.h>
 #include "iris.h"
 
-void decode(core* proc, ushort value) {
-   byte group;
-   group = get_group(value);
+void decode(core* proc, instruction* value) {
    proc->advancepc = 1;
-   switch(group) {
+   switch(get_group(value)) {
       case InstructionGroupArithmetic:
          arithmetic(proc, value);
          break;
@@ -20,8 +18,8 @@ void decode(core* proc, ushort value) {
       case InstructionGroupCompare:
          compare(proc, value);
          break;
-      case InstructionGroupSystem:
-         iris_system(proc, value);
+      case InstructionGroupMisc:
+         misc(proc, value);
          break;
       default:
          error("invalid instruction group provided", ErrorInvalidInstructionGroupProvided);
@@ -29,7 +27,7 @@ void decode(core* proc, ushort value) {
    }
 }
 
-void put_register(core* proc, byte index, byte value) {
+void put_register(core* proc, byte index, datum value) {
    if(index < RegisterCount) {
       proc->gpr[index] = value;
    } else {
@@ -37,7 +35,7 @@ void put_register(core* proc, byte index, byte value) {
    }
 }
 
-byte get_register(core* proc, byte index) {
+datum get_register(core* proc, byte index) {
    if(index < RegisterCount) {
       return proc->gpr[index];
    } else {
@@ -46,7 +44,7 @@ byte get_register(core* proc, byte index) {
    }
 }
 
-void arithmetic(core* proc, datum inst) {
+void arithmetic(core* proc, instruction* inst) {
    byte arithmeticOp, dest, source0, source1;
    arithmeticOp = get_arithmetic_op(inst);
    dest = get_arithmetic_dest(inst);
@@ -110,7 +108,7 @@ void arithmetic(core* proc, datum inst) {
          error("invalid arithmetic operation", ErrorInvalidArithmeticOperation);
    }
 }
-void move(core* proc, datum inst) {
+void move(core* proc, instruction* inst) {
    ushort tmp;
    byte op;
    op = get_move_op(inst);
@@ -134,7 +132,7 @@ void move(core* proc, datum inst) {
          error("invalid move operation conditional type", ErrorInvalidMoveOperationConditionalType);
    }
 }
-void jump(core* proc, datum inst) {
+void jump(core* proc, instruction* inst) {
    byte address;
    schar saddress;
    byte shouldJump;
@@ -218,7 +216,7 @@ void jump(core* proc, datum inst) {
       }
    }
 }
-void compare(core* proc, datum inst) {
+void compare(core* proc, instruction* inst) {
    byte value, op, reg0, reg1, combine; 
    value = 0;
    op = get_compare_op(inst);
@@ -271,27 +269,46 @@ void compare(core* proc, datum inst) {
          error("invalid compare combine bits", ErrorInvalidCombineBits);
    }
 }
-
-void iris_system(core* proc, datum j) {
+static void iris_system_call(core* proc, instruction* j);
+static void iris_set_implicit_register_immediate(core* proc, instruction* j);
+static void iris_set_implicit_register_indirect(core* proc, instruction* j);
+static void iris_get_implicit_register_immediate(core* proc, instruction* j);
+static void iris_get_implicit_register_indirect(core* proc, instruction* j);
+void iris_misc(core* proc, instruction* j) {
    /* implement system commands */
-   byte operation;
-   byte reg0;
-   byte reg1;
-   byte value;
+   switch(get_misc_op(j)) {
+      case MiscOpSystemCall:
+         iris_system_call(proc, j);
+         break;
+      case MiscOpSetImplicitRegisterImmediate:
+         iris_set_implicit_register_immediate(core, j);
+         break;
+      case MiscOpSetImplicitRegisterIndirect:
+         iris_set_implicit_register_indirect(core, j);
+         break;
+      case MiscOpGetImplicitRegisterImmediate:
+         iris_get_implicit_register_immediate(core, j);
+         break;
+      case MiscOpGetImplicitRegisterIndirect:
+         iris_get_implicit_register_indirect(core, j);
+         break;
+      default:
+         error("invalid misc operation", ErrorInvalidMiscCommand);
+   }
+}
+void iris_system_call(core* proc, instruction* j) {
+   byte reg0, reg1;
    int result;
-   operation = get_system_operation(j);
-   reg0 = get_system_reg0(j);
-   reg1 = get_system_reg1(j); 
-   result = 0;
-   value = 0;
-
-   switch(operation) {
+   datum value;
+   reg0 = get_misc_reg0(j);
+   reg1 = get_misc_reg1(j);
+   switch(get_misc_index(j)) {
       case SystemCommandTerminate: /* init 0 */
          proc->terminateexecution = 1;
          break;
       case SystemCommandGetC:
          result = getchar();
-         put_register(proc, reg0, (byte)result);
+         put_register(proc, reg0, (datum)result);
          break;
       case SystemCommandPutC:
          value = get_register(proc, reg0);
