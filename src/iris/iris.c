@@ -3,6 +3,7 @@
 #include "iris.h"
 
 void decode(core* proc, instruction* value) {
+   /* reset the advancepc value */
    proc->advancepc = 1;
    switch(get_group(value)) {
       case InstructionGroupArithmetic:
@@ -13,7 +14,6 @@ void decode(core* proc, instruction* value) {
          break;
       case InstructionGroupJump:
          jump(proc, value);
-         proc->advancepc = 0;
          break;
       case InstructionGroupCompare:
          compare(proc, value);
@@ -89,32 +89,6 @@ void arithmetic(core* proc, instruction* inst) {
    }
 #undef perform_operation
 }
-void compare(core* proc, instruction* inst) {
-   ushort value;
-   /* grab the appropriate value */
-   value = get_register(proc, get_compare_reg0(inst));
-   switch(get_compare_op(inst)) {
-#define perform_operation(symbol, assign) \
-      value assign (get_register(proc, get_compare_reg1(inst)) symbol \
-            get_register(proc, get_compare_reg2(inst))); \
-      put_register(proc, get_compare_reg0(inst), value)
-#define define_group(class, symbol) \
-      case CompareOp ## class :        perform_operation(symbol, =); break; \
-      case CompareOp ## class ## And : perform_operation(symbol, &=); break; \
-      case CompareOp ## class ## Or :  perform_operation(symbol, |=); break; \
-      case CompareOp ## class ## Xor : perform_operation(symbol, ^=); break
-      define_group(Eq, ==);
-      define_group(Neq, !=);
-      define_group(LessThan, <);
-      define_group(GreaterThan, >);
-      define_group(LessThanOrEqualTo, <=);
-      define_group(GreaterThanOrEqualTo, >=);
-#undef define_group
-#undef perform_operation
-      default:
-         error("invalid compare operation", ErrorInvalidCompareOperation);
-   }
-}
 
 void move(core* proc, instruction* inst) {
    ushort tmp;
@@ -135,91 +109,177 @@ void move(core* proc, instruction* inst) {
          }
          break;
       default:
-         error("invalid move operation conditional type", ErrorInvalidMoveOperationConditionalType);
+         error("invalid move operation", ErrorInvalidMoveOperation);
    }
 }
 void jump(core* proc, instruction* inst) {
-   byte address;
-   schar saddress;
-   byte shouldJump;
-   byte normalMode;
-   byte conditional;
-   byte immediatemode;
-   ushort v0;
-   address = 0;
-   shouldJump = 0;
-   v0 = 0;
-   saddress = 0;
-   normalMode = 1;
-   conditional = get_jump_conditional(inst);
-   immediatemode = get_jump_immediatemode(inst);
-
-   switch(conditional) {
-      case JumpOpUnconditional:
-         shouldJump = 1;
+   proc->advancepc = 0;
+   switch(get_jump_op(inst)) {
+      case JumpOpUnconditionalImmediate:
+         proc->pc = get_jump_immediate(inst);
          break;
-      case JumpOpIfTrue:
-         shouldJump = (proc->predicateregister != 0);
+      case JumpOpUnconditionalImmediateLink:
+         put_register(proc, get_jump_reg0(inst), proc->pc + 1);
+         proc->pc = get_jump_immediate(inst);
          break;
-      case JumpOpIfFalse:
-         shouldJump = (proc->predicateregister == 0);
+      case JumpOpUnconditionalRegister:
+         proc->pc = get_register(proc, get_jump_reg0(inst));
          break;
-      case JumpOpIfThenElse:
-         normalMode = 0;
-         shouldJump = proc->predicateregister;
+      case JumpOpUnconditionalRegisterLink:
+         put_register(proc, get_jump_reg0(inst), proc->pc + 1);
+         proc->pc = get_register(proc, get_jump_reg1(inst));
          break;
+      case JumpOpConditionalTrueImmediate: 
+         {
+            if((get_register(proc, get_jump_reg0(inst)) != 0)) {
+               proc->pc = get_jump_immediate(inst); 
+            } else {
+               proc->advancepc = 1;
+            }
+            break;
+         }
+      case JumpOpConditionalTrueImmediateLink:
+         {
+            /* load the implied predicate register */
+            if((get_register(proc, proc->impliedregisters[ImplicitRegisterPredicate]) != 0)) {
+               put_register(proc, get_jump_reg0(inst), proc->pc + 1);
+               proc->pc = get_jump_immediate(inst); 
+            } else {
+               proc->advancepc = 1;
+            }
+            break;
+         }
+      case JumpOpConditionalTrueRegister:
+         {
+            if((get_register(proc, get_jump_reg0(inst)) != 0)) {
+               proc->pc = get_register(proc, get_jump_reg1(inst));
+            } else {
+               /* fall through */
+               proc->advancepc = 1;
+            }
+            break;
+         }
+      case JumpOpConditionalTrueRegisterLink:
+         {
+            /* load the implied predicate register */
+            if((get_register(proc, get_jump_reg0(inst)) != 0)) {
+               put_register(proc, get_jump_reg1(inst), proc->pc + 1);
+               proc->pc = get_register(proc, get_jump_reg2(inst));
+            } else {
+               proc->advancepc = 1;
+            }
+            break;
+         }
+      case JumpOpConditionalFalseImmediate: 
+         {
+            if((get_register(proc, get_jump_reg0(inst)) == 0)) {
+               proc->pc = get_jump_immediate(inst); 
+            } else {
+               proc->advancepc = 1;
+            }
+            break;
+         }
+      case JumpOpConditionalFalseImmediateLink:
+         {
+            /* load the implied predicate register */
+            if((get_register(proc, proc->impliedregisters[ImplicitRegisterPredicate]) == 0)) {
+               put_register(proc, get_jump_reg0(inst), proc->pc + 1);
+               proc->pc = get_jump_immediate(inst); 
+            } else {
+               proc->advancepc = 1;
+            }
+            break;
+         }
+      case JumpOpConditionalFalseRegister:
+         {
+            if((get_register(proc, get_jump_reg0(inst)) == 0)) {
+               proc->pc = get_register(proc, get_jump_reg1(inst));
+            } else {
+               /* fall through */
+               proc->advancepc = 1;
+            }
+            break;
+         }
+      case JumpOpConditionalFalseRegisterLink:
+         {
+            /* load the implied predicate register */
+            if((get_register(proc, get_jump_reg0(inst)) == 0)) {
+               put_register(proc, get_jump_reg1(inst), proc->pc + 1);
+               proc->pc = get_register(proc, get_jump_reg2(inst));
+            } else {
+               proc->advancepc = 1;
+            }
+            break;
+         }
+      case JumpOpIfThenElseNormalPredTrue: 
+         {
+            if((get_register(proc, get_jump_reg0(inst)) != 0)) {
+               proc->pc = get_register(proc, get_jump_reg1(inst));
+            } else {
+               /* fall through */
+               proc->pc = get_register(proc, get_jump_reg2(inst));
+            }
+            break;
+         }
+      case JumpOpIfThenElseNormalPredFalse:
+         {
+            if((get_register(proc, get_jump_reg0(inst)) == 0)) {
+               proc->pc = get_register(proc, get_jump_reg1(inst));
+            } else {
+               /* fall through */
+               proc->pc = get_register(proc, get_jump_reg2(inst));
+            }
+            break;
+         }
+      case JumpOpIfThenElseLinkPredTrue:
+         {
+            put_register(proc, get_jump_reg0(inst), proc->pc + 1);
+            if((get_register(proc, proc->impliedregisters[ImplicitRegisterPredicate]) != 0)) {
+               proc->pc = get_register(proc, get_jump_reg1(inst));
+            } else {
+               proc->pc = get_register(proc, get_jump_reg2(inst));
+            }
+            break;
+         }
+      case JumpOpIfThenElseLinkPredFalse:
+         {
+            put_register(proc, get_jump_reg0(inst), proc->pc + 1);
+            if((get_register(proc, proc->impliedregisters[ImplicitRegisterPredicate]) == 0)) {
+               proc->pc = get_register(proc, get_jump_reg1(inst));
+            } else {
+               proc->pc = get_register(proc, get_jump_reg2(inst));
+            }
+            break;
+         }
       default:
-         error("invalid jump conditional type", ErrorInvalidJumpConditionalType);
+         error("invalid jump operation", ErrorInvalidJumpOperation);
    }
-   if(normalMode == 1) {
-      if(shouldJump == 1) {
-         if(get_jump_distance(inst) == JumpDistanceShort) {
-            /* short form (relative) */
-            if(immediatemode == 0) {
-               /* register mode */
-               address = get_register(proc, get_jump_reg1(inst));
-            } else {
-               address = get_jump_immediate(inst);
-            }
-            if(get_jump_signedmode(inst) == 0) {
-               /* we are in unsigned mode */
-               proc->pc += address;
-            } else {
-               /* we are in signed mode */
-               saddress = (schar)address;
-               proc->pc += saddress;
-            }
-         } else {
-            /* long form (absolute) */ 
-            /* little endian */
-            v0 = (ushort)((ushort)get_register(proc, get_jump_reg1(inst)) << 8);
-            v0 += get_register(proc, get_jump_reg0(inst));
-            proc->pc = v0;
-         }
-      }
-   } else {
-      /* now this is going to get a tad confusing */
-      if(immediatemode == JumpOpIfThenElse_TrueFalse) {
-         shouldJump = (shouldJump != 0);
-      } else if(immediatemode == JumpOpIfThenElse_FalseTrue) {
-         shouldJump = (shouldJump == 0); 
-      } else {
-         /* this should never ever get executed! */
-         error("invalid ifthenelse instruction type", ErrorInvalidIfThenElseInstructionType);
-      }
-      if(shouldJump == 1) {
-         if(get_jump_signedmode(inst) == 1) {
-            proc->pc += (schar)get_register(proc, get_jump_reg0(inst));
-         } else {
-            proc->pc += get_register(proc, get_jump_reg0(inst));
-         }
-      } else {
-         if(get_jump_reg1issigned(inst) == 1) {
-            proc->pc += (schar)get_register(proc, get_jump_reg1(inst));
-         } else {
-            proc->pc += get_register(proc, get_jump_reg1(inst));
-         }
-      }
+}
+
+void compare(core* proc, instruction* inst) {
+   ushort value;
+   /* grab the appropriate value */
+   value = get_register(proc, get_compare_reg0(inst));
+   switch(get_compare_op(inst)) {
+#define perform_operation(symbol, assign) \
+      value assign (get_register(proc, get_compare_reg1(inst)) symbol \
+            get_register(proc, get_compare_reg2(inst))); \
+      put_register(proc, get_compare_reg0(inst), value)
+#define define_group(class, symbol) \
+      case CompareOp ## class :        perform_operation(symbol, =); break; \
+      case CompareOp ## class ## And : perform_operation(symbol, &=); break; \
+      case CompareOp ## class ## Or :  perform_operation(symbol, |=); break; \
+      case CompareOp ## class ## Xor : perform_operation(symbol, ^=); break
+                                       define_group(Eq, ==);
+                                       define_group(Neq, !=);
+                                       define_group(LessThan, <);
+                                       define_group(GreaterThan, >);
+                                       define_group(LessThanOrEqualTo, <=);
+                                       define_group(GreaterThanOrEqualTo, >=);
+#undef define_group
+#undef perform_operation
+      default:
+         error("invalid compare operation", ErrorInvalidCompareOperation);
    }
 }
 static void iris_system_call(core* proc, instruction* j);
