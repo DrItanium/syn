@@ -6,30 +6,40 @@ typedef unsigned char uchar;
 typedef signed char schar;
 typedef unsigned short ushort;
 typedef unsigned short datum;
+typedef unsigned int uint;
+/* TODO: see if we should just use int32_t. A c99 feature */
+typedef uint instruction;
+/* four bytes and now super flexible */
+typedef union instruction {
+   uint full;
+   byte bytes[4];
+   datum words[2];
+} instruction;
 
 enum {
-   RegisterCount = 8, 
+   RegisterCount = 256, 
+   /* used in cases where we don't have enough encoding space */
+   ImpliedRegisterCount = 64,
    MemorySize = 65536, /* 8-bit cells */
    MajorOperationGroupCount = 8,
 };
-typedef struct instruction {
-   byte first;
-   byte second;
-   byte third;
-} instruction;
+
 typedef struct core {
-   byte gpr[RegisterCount];
-   ushort addressRegisters[2];
+   datum dreg[RegisterCount];
+   byte impliedregisters[ImpliedRegisterCount];
    instruction code[MemorySize];
-   byte data[MemorySize];
+   datum data[MemorySize];
    ushort pc : 16;
-   byte predicateregister;
    byte advancepc;
    byte terminateexecution;
 } core;
+
+/* compatibility */
 #define set_bits(instruction, mask, value, shiftcount) ((instruction & ~mask) | (value << shiftcount))
 #define get_bits(instruction, mask, shiftcount) ((byte)((instruction & mask) >> shiftcount))
 /* macros */
+byte get_group(instruction* inst);
+void set_group(Instruction* inst, byte group);
 #define get_group(instruction) (get_bits(instruction, 0x7, 0))
 #define set_group(instruction, value) (set_bits(instruction, 0x7, value, 0))
 
@@ -38,60 +48,120 @@ typedef struct core {
  * DO NOT UNCOMMENT
  * struct arithmetic {
  *    byte op : 4;
- *    byte dest : 3;
- *    byte source0 : 3;
- *    byte source1 : 3;
+ *    byte dest : 8;
+ *    byte source0 : 8;
+ *    byte source1 : 8;
  * };
  */
-#define get_arithmetic_op(instruction) (get_bits(instruction, 0x78, 3))
-#define set_arithmetic_op(instruction, value) (set_bits(instruction, 0x78, value, 3))
-#define get_arithmetic_dest(instruction) (get_bits(instruction, 0x380, 7))
-#define set_arithmetic_dest(instruction, value) (set_bits(instruction, 0x380, value, 7))
-#define get_arithmetic_source0(instruction) (get_bits(instruction, 0x1C00, 10))
-#define set_arithmetic_source0(instruction, value) (set_bits(instruction, 0x1C00, value, 10))
-#define get_arithmetic_source1(instruction) ((byte)((instruction & 0xE000) >> 13))
-#define set_arithmetic_source1(instruction, value) (set_bits(instruction, 0xE000, value, 13))
+byte get_arithmetic_op(instruction* inst);
+void set_arithmetic_op(instruction* inst, byte value);
+byte get_arithmetic_dest(instruction* inst);
+void set_arithmetic_dest(instruction* inst, byte value);
+byte get_arithmetic_source0(instruction* inst);
+void set_arithmetic_source0(instruction* inst, byte value);
+byte get_arithmetic_source1(instruction* inst);
+void set_arithmetic_source1(instruction* inst, byte value);
 
 /* move */
 /* C structure version
  * DO NOT UNCOMMENT
  * struct move {
- *    byte op : 2; 
- *    byte reg0 : 3;
+ *    byte op : 5;  //extend the op bits
+ *    byte reg0 : 8;
  *    union {
- *       byte immediate : 8;
- *       byte reg1 : 3;
+ *       ushort immediate : 16;
  *       struct {
- *          byte reg1 : 3;
- *          byte reg2 : 3;
- *          byte accessmode : 1;
- *       } addressmode;
+ *         byte reg1 : 8;
+ *         byte reg2 : 8;
+ *       };
  *    };
  * };
  */
-#define get_move_op(instruction) (get_bits(instruction, 0x18, 3))
-#define set_move_op(instruction, value) (set_bits(instruction, 0x18, value 3))
-#define get_move_reg0(instruction) (get_bits(instruction, 0xE0, 5))
-#define set_move_reg0(instruction, value) (set_bits(instruction, 0xE0, value, 5))
-#define get_move_immediate(instruction) (get_bits(instruction, 0xFF00, 8))
-#define set_move_immediate(instruction, value) (set_bits(instruction, 0xFF00, value, 8))
-#define get_move_reg1(instruction) (get_bits(instruction, 0x700, 8))
-#define set_move_reg1(instruction, value) (set_bits(instruction, 0x700, value, 8))
-#define get_move_reg2(instruction) (get_bits(instruction, 0x3800, 11))
-#define set_move_reg2(instruction, value) (set_bits(instruction, 0x3800, value, 11))
-#define get_move_accessmode(instruction) (get_bits(instruction, 0x4000, 14))
-#define set_move_accessmode(instruction, value) (set_bits(instruction, 0x4000, value, 14))
+byte get_move_op(instruction* inst);
+void set_move_op(instruction* inst, byte value);
+byte get_move_reg0(instruction* inst);
+void set_move_reg0(instruction* inst, byte value);
+ushort get_move_immediate(instruction* inst);
+void set_move_immediate(instruction* inst, ushort value);
+byte get_move_reg1(instruction* inst);
+void set_move_reg1(instruction* inst, byte value);
+byte get_move_reg2(instruction* inst);
+void set_move_reg2(instruction* inst, byte value);
 
 /* jump */
 /* C structure version
  * DO NOT UNCOMMENT
  * struct jump {
- *    byte distance : 1;
- *    byte conditional : 2;
+ *    byte op : 2;
+ *    byte secondaryop : 2;
  *    byte immediatemode : 1;
- *    byte signedmode : 1;
+ *    modes {
+ *       unconditional {
+ *          immediate {
+ *          ushort immediate : 16;  
+ *          };
+ *          immediate_link {
+ *               byte linkregister : 8;
+ *               ushort immediate : 16;
+ *          };
+ *          register {
+ *             byte target : 8;
+ *          };
+ *          link_register {
+ *             byte linkregister : 8;
+ *             byte target : 8;
+ *          }
+ *       };
+ *       conditional {
+ *          immediate {
+ *             byte predicate : 8;
+ *             ushort value : 16;
+ *          };
+ *          immediate_link {
+ *          // predicate is set in implied registers
+ *             byte link_register : 8;
+ *             ushort immediate : 16;
+ *          };
+ *          register {
+ *             byte predicate : 8;
+ *             byte target : 8;
+ *          };
+ *          register_link {
+ *             byte predicate : 8;
+ *             byte target : 8;
+ *             byte linkregister : 8;
+ *          };
+ *       };
+ *       ifthenelse {
+ *          normal {
+ *               byte predicate : 8;
+ *               byte ontrue : 8;
+ *               byte onfalse : 8;
+ *          };
+ *          call {
+ *             // predicate is in set of implied registers
+ *             byte linkregister : 8;
+ *             byte ontrue : 8;
+ *             byte onfalse : 8;
+ *          };
+ *          
+ *       };
+ *       
+ *    };
  *    union {
- *       byte immediate : 8;
+ *       struct {
+ *         byte predicate : 8;
+ *         ushort immediate : 16;
+ *       } conditional_call_mode;
+ *       struct {
+ *         byte predicate : 8;
+ *         byte target : 8;
+ *       } conditional
+ *       ushort immediate : 16;
+ *       struct {
+ *          byte predicate : 8;
+ *          byte 
+ *       }
  *       union {
  *          byte reg0 : 3;
  *       } shortform;
@@ -107,8 +177,6 @@ typedef struct core {
  *    };
  * };
  */
-#define get_jump_distance(instruction) (get_bits(instruction, 0x8, 3))
-#define set_jump_distance(instruction, value) (set_bits(instruction, 0x8, value, 3))
 #define get_jump_conditional(instruction) (get_bits(instruction, 0x30, 4))
 #define set_jump_conditional(instruction, value) (set_bits(instruction, 0x30, value, 4))
 #define get_jump_immediatemode(instruction) (get_bits(instruction, 0x40, 6))
