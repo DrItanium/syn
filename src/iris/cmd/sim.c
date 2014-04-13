@@ -55,7 +55,6 @@ int main(int argc, char* argv[]) {
       printf("equality = %d\n", proc.predicateregister);
       printf("sizeof(instruction) = %ld\n", sizeof(instruction));
       */
-   printf("sizeof(datum) = %ld\n", sizeof(datum));
    shutdown();
    return code;
 }
@@ -99,8 +98,10 @@ void shutdown() {
 void installprogram(FILE* file) {
    /* read up to 64k of program information */
    int count, i;
+   datum cell;
    instruction contents; /* theres a reason for this */
    i = 0;
+   cell = 0;
    count = fread(&contents, sizeof(contents), 1, file);
    while(count > 0) {
       if(i < MemorySize) {
@@ -108,7 +109,17 @@ void installprogram(FILE* file) {
          i++; 
          count = fread(&contents, sizeof(contents), 1, file);
       } else {
-         fprintf(stderr, "warning: ran out of space!\ntruncated installation\n");
+         break;
+      }
+   }
+   count = fread(&cell, sizeof(cell), 1, file);
+   while(count > 0) {
+      if(i < MemorySize) {
+         proc.data[i] = cell;
+         i++;
+         count = fread(&contents, sizeof(contents), 1, file);
+      } else {
+         printf("warning: Input file still has: %d cells left.\n", count);
          break;
       }
    }
