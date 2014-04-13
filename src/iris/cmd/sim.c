@@ -68,7 +68,7 @@ int execute(FILE* file) {
    installprogram(file); 
    /* TODO: Install code */
    do {
-      decode(&proc, proc.code[proc.pc]);
+      decode(&proc, proc.code[proc.pc].full);
       if(proc.advancepc) {
          proc.pc++;
       }
@@ -77,13 +77,18 @@ int execute(FILE* file) {
 }
 void startup() {
    int i;
-   proc.predicateregister = 0;
    proc.pc = 0;
    proc.terminateexecution = 0;
    proc.advancepc = 1;
+   for(i = 0; i < RegisterCount; i++) {
+      proc.gpr[i] = 0;
+   }
+   for(i = 0; i < ImplicitRegisterPredicate; i++) {
+      proc.impliedregisters[i] = 0;
+   }
    for(i = 0; i < MemorySize; i++) {
       proc.data[i] = 0;
-      proc.code[i] = 0;
+      proc.code[i].full = 0;
    }
 }
 
@@ -94,7 +99,7 @@ void shutdown() {
 void installprogram(FILE* file) {
    /* read up to 64k of program information */
    int count, i;
-   ushort contents; /* theres a reason for this */
+   instruction contents; /* theres a reason for this */
    i = 0;
    count = fread(&contents, sizeof(contents), 1, file);
    while(count > 0) {

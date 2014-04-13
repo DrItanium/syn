@@ -7,10 +7,9 @@ typedef signed char schar;
 typedef unsigned short ushort;
 typedef unsigned short datum;
 typedef unsigned int uint;
-/* TODO: see if we should just use int32_t. A c99 feature */
-typedef uint instruction;
 /* four bytes and now super flexible */
 typedef union instruction {
+   /* TODO: see if we should just use int32_t. A c99 feature */
    uint full;
    byte bytes[4];
    datum words[2];
@@ -25,7 +24,7 @@ enum {
 };
 
 typedef struct core {
-   datum dreg[RegisterCount];
+   datum gpr[RegisterCount];
    byte impliedregisters[ImpliedRegisterCount];
    instruction code[MemorySize];
    datum data[MemorySize];
@@ -34,14 +33,6 @@ typedef struct core {
    byte terminateexecution;
 } core;
 
-byte get_group(instruction* inst);
-void set_group(Instruction* inst, byte group);
-byte get_op(instruction* inst);
-void set_op(instruction* inst, byte op);
-byte get_register(instruction* inst, byte index);
-void set_register(instruction* inst, byte index, byte value);
-datum get_immediate(instruction* inst, byte index);
-void set_immediate(instruction* inst, byte index, datum value);
 
 /* Instructions Groups */
 enum {
@@ -297,20 +288,21 @@ enum {
 };
 
 
-void arithmetic(core* proc, datum inst);
-void move(core* proc, datum inst);
-void jump(core* proc, datum inst);
-void compare(core* proc, datum inst);
+void arithmetic(core* proc, uint inst);
+void move(core* proc, uint inst);
+void jump(core* proc, uint inst);
+void compare(core* proc, uint inst);
 void put_register(core* proc, byte index, byte value);
 byte get_register(core* proc, byte index);
-void decode(core* proc, ushort value);
+void decode(core* proc, uint value);
 void error(char* message, int code);
-void iris_system(core* proc, datum inst);
+void iris_system(core* proc, uint inst);
 /* mnemonics */
-const char* arithmetic_mnemonic(ushort insn);
-const char* move_mnemonic(ushort insn);
-const char* jump_mnemonic(ushort insn);
-const char* compare_mnemonic(ushort insn);
+const char* arithmetic_mnemonic(uint insn);
+const char* move_mnemonic(uint insn);
+const char* jump_mnemonic(uint insn);
+const char* compare_mnemonic(uint insn);
+const char* misc_mnemonic(uint insn);
 /* unparse */
 void unparse(char* unparsed, ushort insn);
 void unparse_register(char* unparsed, byte index);
@@ -321,4 +313,13 @@ void unparse_normal_jump(char* unparsed, ushort insn);
 void unparse_if_then_else(char* unparsed, ushort insn);
 void unparse_compare(char* unparsed, ushort insn);
 void unparse_bitstring(char* bits, ushort insn);
+/* encode */
+byte decode_group(instruction* inst);
+void encode_group(instruction* inst, byte group);
+byte decode_op(instruction* inst);
+void encode_op(instruction* inst, byte op);
+byte decode_register(instruction* inst, byte index);
+void encode_register(instruction* inst, byte index, byte value);
+datum decode_immediate(instruction* inst, byte index);
+void encode_immediate(instruction* inst, byte index, datum value);
 #endif 
