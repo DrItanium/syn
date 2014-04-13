@@ -6,7 +6,7 @@
 byte decode_group(instruction* inst) {
    return decode_bits(inst->words[0], 0x7, 0);
 }
-void encode_group(Instruction* inst, byte group) {
+void encode_group(instruction* inst, byte group) {
    inst->words[0] = encode_bits(inst->words[0], 0x7, group, 0);
 }
 byte decode_op(instruction* inst) {
