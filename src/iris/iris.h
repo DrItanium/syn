@@ -101,8 +101,8 @@ enum {
    MoveOpLoadMem, /* load.mem r? $imm */
    MoveOpStore, /* store r? r? */
    MoveOpStoreAddr, /* store.addr r? r? */
-   MoveOpStoreMem, /* store.mem r? $imm */
-   MoveOpStoreImm, /* store.imm r? $imm */
+   MoveOpStoreMem, /* memcopy r? $imm */
+   MoveOpStoreImm, /* memset r? $imm */
 };
 #define get_move_op(inst) (decode_op(inst))
 #define get_move_immediate(inst) (decode_immediate(inst, 1))

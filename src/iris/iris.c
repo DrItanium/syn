@@ -89,24 +89,98 @@ void arithmetic(core* proc, instruction* inst) {
    }
 #undef perform_operation
 }
-
 void move(core* proc, instruction* inst) {
-   ushort tmp;
+   ushort a, b;
+   ushort addr0, addr1;
+   a = 0;
+   b = 0;
+   addr0 = 0;
+   addr1 = 0;
    switch(get_move_op(inst)) {
-      case MoveOpRegToReg:
-         put_register(proc, get_move_reg0(inst), get_register(proc, get_move_reg1(inst)));
+
+      case MoveOpMove: /* move r? r? */
+         put_register(proc, get_move_reg0(inst), 
+               get_register(proc, get_move_reg1(inst)));
          break;
-      case MoveOpImmediateToReg:
+      case MoveOpSwap: /* swap r? r? */
+         a = get_register(proc, get_move_reg0(inst));
+         b = get_register(proc, get_move_reg1(inst));
+         put_register(proc, get_move_reg0(inst), b);
+         put_register(proc, get_move_reg1(inst), a);
+         break;
+      case MoveOpSwapRegAddr: /* swap.reg.addr r? r? */
+         /* need to preserve the address in case it gets overwritten */
+         /* for example, swap.reg.addr r0 r0 */
+         addr0 = get_register(proc, get_move_reg1(inst));
+         a = get_register(proc, get_move_reg0(inst));
+         b = proc->data[addr0];
+         put_register(proc, get_move_reg0(inst), b);
+         proc->data[addr0] = a;
+         break;
+      case MoveOpSwapAddrAddr: /* swap.addr.addr r? r? */
+         /* we're not touching registers */
+         addr0 = get_register(proc, get_move_reg0(inst));
+         addr1 = get_register(proc, get_move_reg1(inst));
+         a = proc->data[addr0];
+         b = proc->data[addr1];
+         proc->data[addr0] = b;
+         proc->data[addr1] = a;
+         break;
+      case MoveOpSwapRegMem: /* swap.reg.mem r? $imm */
+         addr0 = get_move_immediate(inst);
+         a = get_register(proc, get_move_reg0(inst));
+         b = proc->data[addr0];
+         put_register(proc, get_move_reg0(inst), b);
+         proc->data[addr0] = a;
+         break;
+      case MoveOpSwapAddrMem: /* swap.addr.mem r? $imm */
+         addr0 = get_register(proc, get_move_reg0(inst));
+         addr1 = get_move_immediate(inst);
+         a = proc->data[addr0];
+         b = proc->data[addr1];
+         proc->data[addr0] = b;
+         proc->data[addr1] = a;
+         break;
+      case MoveOpSet: /* set r? $imm */
          put_register(proc, get_move_reg0(inst), get_move_immediate(inst));
          break;
-      case MoveOpRegToAddress:
-         tmp = (ushort)(((ushort)get_register(proc, get_move_reg2(inst))) << 8);
-         tmp += get_register(proc, get_move_reg1(inst));
-         if(get_move_accessmode(inst) == AccessModeMoveOpLoad) {
-            put_register(proc, get_move_reg0(inst), proc->data[tmp]);
-         } else {
-            proc->data[tmp] = get_register(proc, get_move_reg0(inst));
-         }
+      case MoveOpLoad: /* load r? r? */
+         addr0 = get_register(proc, get_move_reg1(inst));
+         a = proc->data[addr0];
+         put_register(proc, get_move_reg0(inst), a);
+         break;
+      case MoveOpLoadMem: /* load.mem r? $imm */
+         addr0 = get_move_immediate(inst);
+         a = proc->data[addr0];
+         put_register(proc, get_move_reg0(inst), a);
+         break;
+
+         /* In the case of stores, reg0 contains the address and the second
+          * field contains the value to be stored. This maintains the idea that
+          * the destination comes before the source registers. Think of the
+          * following flow direction <- and it should make sense */
+
+      case MoveOpStore: /* store r? r? */
+         addr0 = get_register(proc, get_move_reg0(inst));
+         a = get_register(proc, get_move_reg1(inst));
+         proc->data[addr0] = a;
+         break;
+      case MoveOpStoreAddr: /* store.addr r? r? */
+         addr0 = get_register(proc, get_move_reg0(inst));
+         addr1 = get_register(proc, get_move_reg1(inst));
+         a = proc->data[addr1];
+         proc->data[addr0] = a;
+         break;
+      case MoveOpStoreMem: /* memcopy r? $imm */
+         addr0 = get_register(proc, get_move_reg0(inst));
+         addr1 = get_move_immediate(inst);
+         a = proc->data[addr1];
+         proc->data[addr0] = a;
+         break;
+      case MoveOpStoreImm: /* memset r? $imm */
+         addr0 = get_register(proc, get_move_reg0(inst));
+         a = get_move_immediate(inst);
+         proc->data[addr0] = a;
          break;
       default:
          error("invalid move operation", ErrorInvalidMoveOperation);
@@ -287,26 +361,26 @@ static void iris_set_implicit_register_immediate(core* proc, instruction* j);
 static void iris_set_implicit_register_indirect(core* proc, instruction* j);
 static void iris_get_implicit_register_immediate(core* proc, instruction* j);
 static void iris_get_implicit_register_indirect(core* proc, instruction* j);
-void iris_misc(core* proc, instruction* j) {
+void misc(core* proc, instruction* j) {
    /* implement system commands */
    switch(get_misc_op(j)) {
       case MiscOpSystemCall:
          iris_system_call(proc, j);
          break;
       case MiscOpSetImplicitRegisterImmediate:
-         iris_set_implicit_register_immediate(core, j);
+         iris_set_implicit_register_immediate(proc, j);
          break;
       case MiscOpSetImplicitRegisterIndirect:
-         iris_set_implicit_register_indirect(core, j);
+         iris_set_implicit_register_indirect(proc, j);
          break;
       case MiscOpGetImplicitRegisterImmediate:
-         iris_get_implicit_register_immediate(core, j);
+         iris_get_implicit_register_immediate(proc, j);
          break;
       case MiscOpGetImplicitRegisterIndirect:
-         iris_get_implicit_register_indirect(core, j);
+         iris_get_implicit_register_indirect(proc, j);
          break;
       default:
-         error("invalid misc operation", ErrorInvalidMiscCommand);
+         error("invalid misc operation", ErrorInvalidMiscOperation);
    }
 }
 void iris_system_call(core* proc, instruction* j) {

@@ -31,8 +31,8 @@ const char* move_mnemonic(instruction* insn) {
       case MoveOpLoadMem:        return "load.mem"; /* load.mem r? $imm */
       case MoveOpStore:          return "store"; /* store r? r? */
       case MoveOpStoreAddr:      return "store.addr"; /* store.addr r? r? */
-      case MoveOpStoreMem:       return "store.mem"; /* store.mem r? $imm */
-      case MoveOpStoreImm:       return "store.imm"; /* store.imm r? $imm */
+      case MoveOpStoreMem:       return "memcopy"; /* memcopy r? $imm */
+      case MoveOpStoreImm:       return "memset"; /* memset r? $imm */
       default:                   return "UNKNOWN_MOVE";
    }
 }
