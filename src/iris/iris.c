@@ -45,74 +45,80 @@ datum get_register(core* proc, byte index) {
 }
 
 void arithmetic(core* proc, instruction* inst) {
-   byte arithmeticOp, dest, source0, source1;
-   arithmeticOp = get_arithmetic_op(inst);
-   dest = get_arithmetic_dest(inst);
-   source0 = get_arithmetic_source0(inst);
-   source1 = get_arithmetic_source1(inst);
-   switch(arithmeticOp) {
+#define perform_operation(symbol) (put_register(proc, \
+         get_arithmetic_dest(inst), (get_register(proc, \
+               get_arithmetic_source0(inst) symbol \
+               get_arithmetic_source1(inst)))))
+   switch(get_arithmetic_op(inst)) {
       case ArithmeticOpAdd:
-         put_register(proc, dest,
-               (get_register(proc, source0) +
-                get_register(proc, source1)));
+         perform_operation(+);
          break;
       case ArithmeticOpSub:
-         put_register(proc, dest, 
-               (get_register(proc, source0) -
-                get_register(proc, source1)));
+         perform_operation(-);
          break;
       case ArithmeticOpMul:
-         put_register(proc, dest, 
-               (get_register(proc, source0) *
-                get_register(proc, source1)));
+         perform_operation(*);
          break;
       case ArithmeticOpDiv:
-         put_register(proc, dest, 
-               (get_register(proc, source0) /
-                get_register(proc, source1)));
+         perform_operation(/);
          break;
       case ArithmeticOpRem:
-         put_register(proc, dest, 
-               (get_register(proc, source0) %
-                get_register(proc, source1)));
+         perform_operation(%);
          break;
       case ArithmeticOpShiftLeft:
-         put_register(proc, dest, 
-               (get_register(proc, source0) << 
-                get_register(proc, source1)));
+         perform_operation(<<);
          break;
       case ArithmeticOpShiftRight:
-         put_register(proc, dest, 
-               (get_register(proc, source0) >>
-                get_register(proc, source1)));
+         perform_operation(>>);
          break;
       case ArithmeticOpBinaryAnd:
-         put_register(proc, dest, 
-               (get_register(proc, source0) &
-                get_register(proc, source1)));
+         perform_operation(&);
          break;
       case ArithmeticOpBinaryOr:
-         put_register(proc, dest, 
-               (get_register(proc, source0) |
-                get_register(proc, source1)));
+         perform_operation(|);
          break;
       case ArithmeticOpBinaryNot:
-         put_register(proc, dest, ~get_register(proc, source0));
+         put_register(proc, get_arithmetic_dest(inst), 
+               ~(get_register(proc, get_arithmetic_source0(inst))));
          break;
       case ArithmeticOpBinaryXor:
-         put_register(proc, dest, 
-               (get_register(proc, source0) ^
-                get_register(proc, source1)));
+         perform_operation(^);
          break;
       default:
          error("invalid arithmetic operation", ErrorInvalidArithmeticOperation);
    }
+#undef perform_operation
 }
+void compare(core* proc, instruction* inst) {
+   ushort value;
+   /* grab the appropriate value */
+   value = get_register(proc, get_compare_reg0(inst));
+   switch(get_compare_op(inst)) {
+#define perform_operation(symbol, assign) \
+      value assign (get_register(proc, get_compare_reg1(inst)) symbol \
+            get_register(proc, get_compare_reg2(inst))); \
+      put_register(proc, get_compare_reg0(inst), value)
+#define define_group(class, symbol) \
+      case CompareOp ## class :        perform_operation(symbol, =); break; \
+      case CompareOp ## class ## And : perform_operation(symbol, &=); break; \
+      case CompareOp ## class ## Or :  perform_operation(symbol, |=); break; \
+      case CompareOp ## class ## Xor : perform_operation(symbol, ^=); break
+      define_group(Eq, ==);
+      define_group(Neq, !=);
+      define_group(LessThan, <);
+      define_group(GreaterThan, >);
+      define_group(LessThanOrEqualTo, <=);
+      define_group(GreaterThanOrEqualTo, >=);
+#undef define_group
+#undef perform_operation
+      default:
+         error("invalid compare operation", ErrorInvalidCompareOperation);
+   }
+}
+
 void move(core* proc, instruction* inst) {
    ushort tmp;
-   byte op;
-   op = get_move_op(inst);
-   switch(op) {
+   switch(get_move_op(inst)) {
       case MoveOpRegToReg:
          put_register(proc, get_move_reg0(inst), get_register(proc, get_move_reg1(inst)));
          break;
@@ -214,59 +220,6 @@ void jump(core* proc, instruction* inst) {
             proc->pc += get_register(proc, get_jump_reg1(inst));
          }
       }
-   }
-}
-void compare(core* proc, instruction* inst) {
-   byte value, op, reg0, reg1, combine; 
-   value = 0;
-   op = get_compare_op(inst);
-   reg0 = get_compare_reg0(inst);
-   reg1 = get_compare_reg1(inst);
-   combine = get_compare_combinebits(inst);
-   switch(op) {
-      case CompareOpEq:
-         value = (get_register(proc, reg0) ==
-               get_register(proc, reg1));
-         break;
-      case CompareOpNeq:
-         value = (get_register(proc, reg0) !=
-               get_register(proc, reg1));
-         break;
-      case CompareOpLessThan:
-         value = (get_register(proc, reg0) < 
-               get_register(proc, reg1));
-         break;
-      case CompareOpGreaterThan:
-         value = (get_register(proc, reg0) > 
-               get_register(proc, reg1));
-         break;
-      case CompareOpLessThanOrEqualTo:
-         value = (get_register(proc, reg0) <= 
-               get_register(proc, reg1));
-         break;
-      case CompareOpGreaterThanOrEqualTo:
-         value = (get_register(proc, reg0) >= 
-               get_register(proc, reg1));
-         break;
-      default:
-         error("invalid compare operation", ErrorInvalidCompareOperation);
-   }
-
-   switch(combine) {
-      case CombineBitsOpNil:
-         proc->predicateregister = value;
-         break;
-      case CombineBitsOpAnd:
-         proc->predicateregister &= value;
-         break;
-      case CombineBitsOpOr:
-         proc->predicateregister |= value;
-         break;
-      case CombineBitsOpXor:
-         proc->predicateregister ^= value;
-         break;
-      default:
-         error("invalid compare combine bits", ErrorInvalidCombineBits);
    }
 }
 static void iris_system_call(core* proc, instruction* j);
