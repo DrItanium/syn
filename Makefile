@@ -1,11 +1,6 @@
 PROJECTS = iris
 
-all: platform_info ${PROJECTS} 
+all: ${PROJECTS} 
 
 iris:
 	cd src/iris && ${MAKE}
-
-platform_info:
-	@echo platform info:
-	@uname -a
-
