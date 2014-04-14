@@ -156,7 +156,48 @@ Opcode: 6
 Assembly Command: set reg_dest $immediate
 Description: Sets the contents of the destination register to the supplied
              immediate value.
+
+>>>>>> Load 
+Opcode: 7
+Assembly Command: load reg_dest reg_src
+Description: Sets the contents of the destination register to the contents of
+             memory pointed at by the contents of the source register.
+
+>>>>>> Load From Memory Using Immediate Value
+Opcode: 8
+Assembly Command: load.mem reg_dest $immediate
+Description: Sets the contents of the destination register to the contents of
+             memory pointed at by the immediate.
+
+>>>>>> Store
+Opcode: 9
+Assembly Command: store dest_reg source_reg
+Description: Stores the contents of the source register into memory at the
+             address contained in the destination register. 
+
+>>>>>> Memory Copy using Registers
+Opcode: 10
+Assembly Command: store.addr dest_reg source_reg
+Description: Stores the contents of memory found at the address contained in
+             the source register into memory at the address described in the
+             destination register.
+             
+>>>>>> Memory Copy using Immediate Value and Register
+Opcode: 11
+Assembly Command: memcopy dest_reg $immediate
+Description: Stores the contents of memory found at the address contained in
+             the source register into memory at the address described in the
+             destination register.
+
+>>>>>> Memory Set using Immediate Value and Register
+Opcode: 12
+Assembly Command: memset dest_reg $immediate
+Description: Stores the contents of memory found at the address contained in
+             the source register into memory at the address described in the
+             destination register.
+
 -------------------------------------------------------------------
+TODO: Continue
 For jump operations the general format is:
 
 bits 7 : Signed mode?
