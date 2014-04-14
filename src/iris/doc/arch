@@ -1,0 +1,297 @@
+The second generation iris core is a 16-bit processor which has 32-bit
+instructions.
+
+Some stats:
+
+- 256 general purpose 16-bit registers
+- 256 indirect register 8-bit registers 
+- Harvard Design
+  - 64k instruction words (code domain)
+  - 64k data words (data domain)
+  - Instruction words are 32-bits in length
+  - Data words are 16-bits in length
+  - Self-modifying code is not allowed for simplicity reasons (can't access the 
+- CISC design (with influence taken from itanium, x86, and RISC designs)
+   - Relatively simple decoder logic
+- Has three unused execution groups for extension purposes
+
+The general format of the instructions are as follows:
+
+bits 0-2 : mode [3 bits]
+bits 3-7 : operation [5 bits]
+bits 8-31 : operation bits [24 bits]
+
+These 24 bits are usually broken up into three 8-bit pieces or an 8-bit piece
+followed by a 16-bit piece. So the following table will describe different
+shorthand the rest of this document will use. Each entry will be of the
+following form:
+
+[ Bits | uses | terms ]
+
+[ bits 8-15 | register, index | dest, destination register, first register, reg0, index ]
+[ bits 16-23 | register, index | source0, src0, first source register, index ]
+[ bits 24-31 | register | source1, src1, second source register ]
+[ bits 16-31 | immediate | immediate ]
+
+It is important to note that immediate values will ALWAYS be in bits 16-31 in
+the instructions which require them. The first register space can sometimes go
+unused in the case of some instructions. It is also important to note that one
+of improvements to iris is this simplification to how bits are used. 
+
+Iris has support for up to eight instruction groups where only five are
+actually in use. The five modes are:
+
+0: Arithmetic
+1: Move
+2: Jump
+3: Compare
+4: Misc 
+5-7: Undefined (will cause a panic in the simulator at this point in time)
+
+The operation bits are different for each major operation group. 
+
+-------------------------------------------------------------------
+
+For arithmetic operations the format is as follows:
+bits 8-15 : destination register
+bits 16-23 : first source register
+bits 24-31 : second source register
+
+
+The list of arithmetic operations are as follows:
+
+0: add
+1: subtract
+2: multiply 
+3: divide
+4: remainder (aka mod)
+5: shift left
+6: shift right
+7: binary and
+8: binary or
+9: binary not (second source register isn't used, same form though)
+10: binary xor
+11-31 will cause a panic in the simulator as they are currently undefined
+
+-------------------------------------------------------------------
+
+For move operations the general format is:
+
+register-register form:
+
+   bits 8-15 : register 0
+   bits 16-23 : register 1
+   bits 24-31 : unused
+
+register-immediate form
+
+   bits 8-15 : register 0
+   bits 16-31 : immediate
+
+The list of move operations are as follows:
+
+0: Move Register to Register (register-register)
+1: Swap Registers (register-register)
+2: Swap Register Contents With Address Contents (register-register)
+3: Swap Address Address (register-register)
+4: Swap Register Memory (register-immediate)
+5: Swap Address Memory (register-immediate)
+6: Set (register-immediate)
+7: Load (register-register)
+8: Load From Memory (register-immediate)
+9: Store (register-register)
+10: Store Register to Address (register-register)
+11: Memory Copy (register-immediate)
+12: Memory Set (register-immediate)
+13-31: Undefined
+
+>>>>>> Move Register to Register
+Opcode: 0
+Assembly Command: move reg_dest reg_source
+Description: Copies the contents of the source register into the destination
+             register..
+
+>>>>>> Swap Registers
+Opcode: 1
+Assembly Command: swap reg_dest reg_source
+Description: Swaps the contents of the source register with the contents of the
+             destination register.
+
+>>>>>> Swap Register Contents with Memory Contents
+Opcode: 2
+Assembly Command: swap.reg.addr reg_dest reg_source
+Description: Interprets the source register as a memory address, loads the
+             value at that memory location, stores the contents of the
+             destination register to that address, and sets the contents of 
+             the destination register to the old memory contents.
+
+>>>>>> Swap Memory Using Registers
+Opcode: 3
+Assembly Command: swap.addr.addr reg_dest reg_source
+Description: Interprets the source and destination registers as memory
+             addresses, loads the values at each memory location, and then
+             stores those values in the other memory address. 
+
+             For example, if we have r0 = 0xA and r1 = 0xB then this operation
+             will save the memory pointed at by r0's contents (0xA) into the 
+             memory pointed at by r1's contents (0xB) and vice-versa. 
+
+>>>>>> Swap Register Contents Into Immediate Memory Address 
+Opcode: 4
+Assembly Command: swap.reg.mem reg_dest $immediate 
+Description: Interprets the immediate value as a memory address, loads the
+             value at that location, saves the contents of the destination
+             register into that address, and sets the contents of the
+             destination register to the value that was in memory.
+
+>>>>>> Swap Memory Using Register And Immediate Value 
+Opcode: 5
+Assembly Command: swap.addr.mem reg_dest $immediate 
+Description: Swaps the contents of two memory locations pointed at using 
+             the contents of the destination register and the supplied
+             immediate value.
+
+>>>>>> Set Register With Immediate Value
+Opcode: 6
+Assembly Command: set reg_dest $immediate
+Description: Sets the contents of the destination register to the supplied
+             immediate value.
+-------------------------------------------------------------------
+For jump operations the general format is:
+
+bits 7 : Signed mode?
+bits 6 : Immediate mode?
+bits 4-5 : The conditional type
+bit 3 : The jump distance 
+
+
+There are two distances that one can jump:
+
+0: Relative (8-bit "Short Jump")
+1: Absolute (16-bit "Long Jump")
+
+A relative jump is one where we append an 8-bit value to the program counter.
+Whereas an absolute jump is setting the address to a given value. The
+differences will be described after defining the rest of the bits below
+
+There are four different conditional Jump types:
+
+0: Unconditional
+1: If True
+2: If False
+3: If then else 
+
+An unconditional jump means exactly what it sounds like.....an unconditional
+jump. The other two valid modes are to jump if the predicate bit is set to one
+(true) or to jump if the predicate bit is set to zero (false). The final mode
+is a register mode specific version which allows if/else behavior. It is
+important to note that this final mode is interpreted differently from the
+other jump instructions.
+
+The immediate mode bit defines two types of execution:
+
+0 : Register mode
+1 : Immediate mode
+
+It is important to note that performing a long jump disallows the use of
+immediate mode, the value of this bit is not read!
+
+The signed mode bit defines how an immediate relative address is interpreted:
+
+0 : Treat as unsigned 
+1 : Treat as signed
+
+This allows a backwards jump for up to 128 bytes or 64 instructions and a
+forward jump of upto 127 bytes or 63 instructions + 1 slop byte.
+
+Since there are so many combinations it is important to describe the different
+data representation modes.
+
+>>>>>> Absolute Jump (Unconditional or If True or If False)
+An absolute jump only has one mode that is to use two registers in the same
+fashion as done for loads and stores.
+
+bits 14-15 : unused
+bits 11-13 : contents of the second register (upper-half)
+bits 8-10 : contents of the first register (lower-half)
+
+>>>>>> Immediate Relative Jump 
+       (Signed or Unsigned, Unconditional or If True or If False)
+
+An immediate relative jump uses consumes the remaning 8 bits as follows:
+
+bits 8-15 : Immediate value
+
+In this style the immediate value is combined with the program counter to
+define where to next read instructions from. 
+
+
+>>>>>> Register Relative Jump 
+       (Signed or Unsigned, Unconditional or If True or If False)
+
+A register value relative jump consumes the remaining 8 bits as follows:
+
+bits 11-15 : unused
+bits 8-10 : the target register
+
+>>>>>> If Then else Jump
+
+This is a special mode which allows for instruction compression in cases where
+fallthrough to the next instruction is not desirable. The decoder interprets
+these bits a tad differently from the other.
+bit 15 : unused
+bit 14 : Condition is not met register is signed?
+bit 11-13 : Register to use if condition is not met
+bit 8-10 : Register to use if condition is met
+bit 7 : Condition met register is signed?
+bit 6 : Conditional style
+
+The immediate mode bit is now repurposed to describe how the condition should
+go:
+
+0 : predicate != 0  (If True Equivalent)
+1 : predicate == 0  (If False Equivalent)
+
+This form is always relative due to the amount of space required to describe an
+absolute jump and encode four registers while remaining flexible in what
+registers can be used.
+
+-------------------------------------------------------------------
+For condition operations the form is as follows:
+
+bit  15 : unused
+bits 12-14 : Combine bits
+bits 9-11 : Second register
+bits 6-8 : First register
+bits 3-5 : Conditional operation type
+
+The types of conditional operations are as follows:
+
+0 : Equals
+1 : Not equals
+2 : Less than
+3 : Greater than
+4 : Less than or equal to
+5 : Greater than or equal to
+6,7 : Not defined (will cause a panic in the simulator)
+
+The combine bits are used to support multiple conditions by applying the result
+of the compare to the current predicate value. The following values are values
+for the combine bits
+
+0 : set (overwrite)
+1 : and (and the new value with the old)
+2 : or (or the new value with the old)
+3 : xor (xor the new value with the old)
+4-7 : Unused bits (will cause the simulator to panic)
+
+---------------------------------------------------------------------
+The system call operation is as follows:
+
+bits 13-15 : Second register
+bits 10-12 : First register
+bits 3-9 : Operation
+
+The system call operation suports up to 128 different system calls and its
+implementation is system dependent so it is up to the designer how to implement
+this and its behavior.
