@@ -10,10 +10,10 @@ void encode_group(instruction* inst, byte group) {
    inst->words[0] = encode_bits(inst->words[0], 0x7, group, 0);
 }
 byte decode_op(instruction* inst) {
-   return decode_bits(inst->words[0], 0xF8, 3);
+   return decode_bits(inst->bytes[0], 0xF8, 3);
 }
 void encode_op(instruction* inst, byte value) {
-   inst->words[0] = encode_bits(inst->words[0], 0xF8, value, 3);
+   inst->words[0] = encode_bits(inst->bytes[0], 0xF8, value, 3);
 }
 
 byte decode_register(instruction* inst, byte index) {

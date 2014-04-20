@@ -10,7 +10,7 @@ typedef struct testcase {
 #define LENGTH(X) (sizeof(X) / (sizeof(X[0])))
 testcase tests [] = {
    { "group", 0x00000006, 0x6 },
-   { "op", 0x0000001A, 0x1A, },
+   { "op", 0x000000D0, 0x1A, },
    { "reg0", 0x0000F000, 0xF0, },
    { "reg1", 0x00DE0000, 0xDE, },
    { "reg2", 0xAD000000, 0xAD, },
