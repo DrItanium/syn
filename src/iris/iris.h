@@ -362,7 +362,6 @@ void unparse_bitstring(char* bits, instruction* insn);
 void unparse_misc(char* unparsed, instruction* insn);
 /* encode */
 byte decode_group(instruction* inst);
-#define get_group(inst) (decode_group(inst))
 void encode_group(instruction* inst, byte group);
 byte decode_op(instruction* inst);
 void encode_op(instruction* inst, byte op);
@@ -370,4 +369,11 @@ byte decode_register(instruction* inst, byte index);
 void encode_register(instruction* inst, byte index, byte value);
 datum decode_immediate(instruction* inst, byte index);
 void encode_immediate(instruction* inst, byte index, datum value);
+
+#define get_group(inst) (decode_group(inst))
+#define get_op(inst) (decode_op(inst))
+#define get_reg0(inst) (decode_register(inst, 1))
+#define get_reg1(inst) (decode_register(inst, 2))
+#define get_reg2(inst) (decode_register(inst, 3))
+#define get_immediate(inst) (decode_immediate(inst, 1))
 #endif 
