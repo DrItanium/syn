@@ -28,10 +28,10 @@ following form:
 
 [ Bits | uses | terms ]
 
-[ bits 8-15 | register, index | dest, destination register, first register, reg0, index ]
+[ bits 8-15  | register, index | dest, destination register, first register, reg0, index ]
 [ bits 16-23 | register, index | source0, src0, first source register, index ]
-[ bits 24-31 | register | source1, src1, second source register ]
-[ bits 16-31 | immediate | immediate ]
+[ bits 24-31 | register        | source1, src1, second source register ]
+[ bits 16-31 | immediate       | immediate ]
 
 It is important to note that immediate values will ALWAYS be in bits 16-31 in
 the instructions which require them. The first register space can sometimes go
@@ -197,105 +197,190 @@ Description: Stores the contents of memory found at the address contained in
              destination register.
 
 -------------------------------------------------------------------
-TODO: Continue
-For jump operations the general format is:
+For Jump operations, we have three major groups:
 
-bits 7 : Signed mode?
-bits 6 : Immediate mode?
-bits 4-5 : The conditional type
-bit 3 : The jump distance 
+- Unconditional
+- Conditional True
+- Conditional False
+- IfThenElse
 
+When dealing with immediate values, the jump operation is called a goto
+When dealing with registers, the jump operation is called a jump.
 
-There are two distances that one can jump:
+>>>>>> Jump Unconditional Immediate 
+Opcode: 0
+Assembly Command: goto $immediate
+Description: Jumps to the target address
+Layout:
+   Byte 0 : Group + Opcode
+   Byte 1 : Unused
+   Byte 2-3 : immediate value, little endian
 
-0: Relative (8-bit "Short Jump")
-1: Absolute (16-bit "Long Jump")
+>>>>>> Jump Unconditional Immediate and Link
+Opcode: 1
+Assembly Command: goto.link dest_reg $immediate
+Description: Jumps to the target address and stores the current address in the
+             destination register.
+Layout:
+   Byte 0 : Group + Opcode
+   Byte 1 : Index to store current address in (useful for returns)
+   Byte 2-3 : immediate value, little endian
 
-A relative jump is one where we append an 8-bit value to the program counter.
-Whereas an absolute jump is setting the address to a given value. The
-differences will be described after defining the rest of the bits below
+>>>>>> Jump Unconditional Register 
+Opcode: 2
+Assembly Command: jump <addr_register>
+Description: Jumps to the target address
+Layout:
+   Byte 0 : Group + Opcode
+   Byte 1 : Index of register containing jump address
+   Byte 2-3 : Unused
 
-There are four different conditional Jump types:
+>>>>>> Jump Unconditional Register and Link
+Opcode: 3
+Assembly Command: jump.link <linkregister> <addr_register>
+Description: Jumps to the target address
+Layout:
+   Byte 0 : Group + Opcode
+   Byte 1 : Index of Link Register
+   Byte 2 : Index of Address Register
+   Byte 3 : Unused
 
-0: Unconditional
-1: If True
-2: If False
-3: If then else 
+>>>>>> Jump Immediate If True
+Opcode: 4
+Assembly Command: goto.if1 $immediate
+Description: Jumps to the target address provided that the given predicate
+             register contains a value which is not zero
+Layout:
+   Byte 0 : Group + Opcode
+   Byte 1 : Index of Predicate Register 
+   Byte 2-3 : immediate value, little endian
 
-An unconditional jump means exactly what it sounds like.....an unconditional
-jump. The other two valid modes are to jump if the predicate bit is set to one
-(true) or to jump if the predicate bit is set to zero (false). The final mode
-is a register mode specific version which allows if/else behavior. It is
-important to note that this final mode is interpreted differently from the
-other jump instructions.
+>>>>>> Jump Immediate If True and Link
+Opcode: 5
+Assembly Command: goto.if1.link <link_register> $immediate
+Description: Jumps to the target address provided that the contents of the
+             predicate register (Index defined via implied register) is not
+             zero. The current address is stored in the link_register. 
+Layout:
+   Byte 0 : Group + Opcode
+   Byte 1 : Index to store current address in (useful for returns)
+   Byte 2-3 : immediate value, little endian
 
-The immediate mode bit defines two types of execution:
+>>>>>> Jump Register If True 
+Opcode: 6
+Assembly Command: jump.if1 <predicate_reg> <addr_register>
+Description: Jumps to the target address provided the contents of the predicate
+             register are not zero.
+Layout:
+   Byte 0 : Group + Opcode
+   Byte 1 : Index of the Predicate Register
+   Byte 2 : Index of the Address Register
+   Byte 3 : Unused
 
-0 : Register mode
-1 : Immediate mode
+>>>>>> Jump Register If True and Link
+Opcode: 7
+Assembly Command: jump.if1.link <predicate> <addr> <link>
+Description: Jumps to the target address provided the contents of the predicate
+             are not zero and saves the current location to the provided link 
+             register.
+Layout:
+   Byte 0 : Group + Opcode
+   Byte 1 : Index of Predicate Register
+   Byte 2 : Index of Address Register
+   Byte 3 : Index of Link Register 
 
-It is important to note that performing a long jump disallows the use of
-immediate mode, the value of this bit is not read!
+>>>>>> Jump Immediate If False
+Opcode: 8
+Assembly Command: goto.if0 $immediate
+Description: Jumps to the target address provided that the given predicate
+             register contains a value which is zero
+Layout:
+   Byte 0 : Group + Opcode
+   Byte 1 : Index of Predicate Register 
+   Byte 2-3 : immediate value, little endian
 
-The signed mode bit defines how an immediate relative address is interpreted:
+>>>>>> Jump Immediate If False and Link
+Opcode: 9
+Assembly Command: goto.if0.link <link_register> $immediate
+Description: Jumps to the target address provided that the contents of the
+             predicate register (Index defined via implied register) is zero. 
+             The current address is stored in the link_register. 
+Layout:
+   Byte 0 : Group + Opcode
+   Byte 1 : Index to store current address in (useful for returns)
+   Byte 2-3 : immediate value, little endian
 
-0 : Treat as unsigned 
-1 : Treat as signed
+>>>>>> Jump Register If False
+Opcode: 10 
+Assembly Command: jump.if0 <predicate_reg> <addr_register>
+Description: Jumps to the target address provided the contents of the predicate
+             register are zero.
+Layout:
+   Byte 0 : Group + Opcode
+   Byte 1 : Index of the Predicate Register
+   Byte 2 : Index of the Address Register
+   Byte 3 : Unused
 
-This allows a backwards jump for up to 128 bytes or 64 instructions and a
-forward jump of upto 127 bytes or 63 instructions + 1 slop byte.
+>>>>>> Jump Register If True and Link
+Opcode: 11 
+Assembly Command: jump.if0.link <predicate> <addr> <link>
+Description: Jumps to the target address provided the contents of the predicate
+             are zero and saves the current location to the provided link 
+             register.
+Layout:
+   Byte 0 : Group + Opcode
+   Byte 1 : Index of Predicate Register
+   Byte 2 : Index of Address Register
+   Byte 3 : Index of Link Register 
 
-Since there are so many combinations it is important to describe the different
-data representation modes.
+>>>>>> If True Then Else 
+Opcode: 12
+Assembly Command: if1 <predicate> <ontrue> <onfalse> 
+Description: If the contents of the predicate register are not zero then jump
+             to the address contained in the ontrue register else jump to the
+             on false register
+Layout:
+   Byte 0 : Group + Opcode
+   Byte 1 : Index of Predicate Register 
+   Byte 2 : Index of On True Register
+   Byte 3 : Index of On False Register
 
->>>>>> Absolute Jump (Unconditional or If True or If False)
-An absolute jump only has one mode that is to use two registers in the same
-fashion as done for loads and stores.
+>>>>>> If False Then Else 
+Opcode: 13
+Assembly Command: if0 <predicate> <ontrue> <onfalse> 
+Description: If the contents of the predicate register are zero then jump to 
+             the address contained in the ontrue register else jump to the
+             on false register
+Layout:
+   Byte 0 : Group + Opcode
+   Byte 1 : Index of Predicate Register 
+   Byte 2 : Index of On True Register
+   Byte 3 : Index of On False Register
 
-bits 14-15 : unused
-bits 11-13 : contents of the second register (upper-half)
-bits 8-10 : contents of the first register (lower-half)
+>>>>>> If True Then Else and Link
+Opcode: 14
+Assembly Command: if1.link <link_register> <ontrue> <onfalse> 
+Description: If the contents of the predicate register are not zero (implied
+             register) then jump to the address contained in the ontrue 
+             register else jump to the on false register and save the current
+             location to the link register
+Layout:
+   Byte 0 : Group + Opcode
+   Byte 1 : Index of Link Register 
+   Byte 2 : Index of On True Register
+   Byte 3 : Index of On False Register
 
->>>>>> Immediate Relative Jump 
-       (Signed or Unsigned, Unconditional or If True or If False)
-
-An immediate relative jump uses consumes the remaning 8 bits as follows:
-
-bits 8-15 : Immediate value
-
-In this style the immediate value is combined with the program counter to
-define where to next read instructions from. 
-
-
->>>>>> Register Relative Jump 
-       (Signed or Unsigned, Unconditional or If True or If False)
-
-A register value relative jump consumes the remaining 8 bits as follows:
-
-bits 11-15 : unused
-bits 8-10 : the target register
-
->>>>>> If Then else Jump
-
-This is a special mode which allows for instruction compression in cases where
-fallthrough to the next instruction is not desirable. The decoder interprets
-these bits a tad differently from the other.
-bit 15 : unused
-bit 14 : Condition is not met register is signed?
-bit 11-13 : Register to use if condition is not met
-bit 8-10 : Register to use if condition is met
-bit 7 : Condition met register is signed?
-bit 6 : Conditional style
-
-The immediate mode bit is now repurposed to describe how the condition should
-go:
-
-0 : predicate != 0  (If True Equivalent)
-1 : predicate == 0  (If False Equivalent)
-
-This form is always relative due to the amount of space required to describe an
-absolute jump and encode four registers while remaining flexible in what
-registers can be used.
+>>>>>> If False Then Else and Link
+Opcode: 15
+Assembly Command: if0.link <link_register> <ontrue> <onfalse> 
+Description: If the contents of the predicate register (implied register) are 
+             zero then jump to the address contained in the ontrue register 
+             else jump to the on false register and save the current location 
+Layout:
+   Byte 0 : Group + Opcode
+   Byte 1 : Index of Link Register 
+   Byte 2 : Index of On True Register
+   Byte 3 : Index of On False Register
 
 -------------------------------------------------------------------
 For condition operations the form is as follows:
