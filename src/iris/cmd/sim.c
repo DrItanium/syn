@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 #include "iris.h"
 
 static void usage(char* arg0);
@@ -12,60 +13,70 @@ static void installprogram(FILE* file);
 static core proc;
 
 int main(int argc, char* argv[]) {
-   /* initialize the core */
-   FILE* target;
-   int code;
-   code = 0;
-   startup();
-   if(argc == 1) {
-      /* assume standard input */
-      code = execute(stdin);
-   } else if (argc == 2) {
-      if(strcmp(argv[1], "-h") == 0) {
-         usage(argv[0]);
-         code = 1;
-      } else {
-         /* a file */
-         target = fopen(argv[1], "r");
-         if(target != 0) {
-            code = execute(target);
-            if(fclose(target) != 0) {
-               fprintf(stderr, "Couldn't close file: %s\n", argv[1]);
-               code = 1;
+   char* line;
+   char* tmpline;
+   FILE* file;
+   int needsclosing, last, i, errorfree;
+   line = 0;
+   file = 0;
+   last = argc - 1;
+   tmpline = 0;
+   needsclosing = 0;
+   errorfree = 1;
+   if(argc > 1) {
+      for(i = 1; errorfree && (i < last); ++i) {
+         tmpline = argv[i];
+         if(strlen(tmpline) == 2 && tmpline[0] == '-') {
+            switch(tmpline[1]) {
+               case 'h':
+               default:
+                  errorfree = 0;
+                  break;
             }
          } else {
-            fprintf(stderr, "Couldn't open file: %s\n", argv[1]);
-            code = 1;
+            errorfree = 0;
+            break;
          }
+      }
+      if(errorfree) {
+         if(i == last) {
+            line = argv[last];
+            if(strlen(line) == 1 && line[0] == '-') {
+               file = stdin;
+            } else if(strlen(line) >= 1 && line[0] != '-') {
+               file = fopen(line, "r");
+               if(!file) {
+                  fprintf(stderr, "couldn't open %s\n", line);
+                  exit(errno);
+               }
+               needsclosing = 1;
+            }
+         } else {
+            fprintf(stderr, "no file provided\n");
+         }
+      }
+   }
+
+   if(file) {
+      startup();
+      execute(file);
+      shutdown();
+      if(needsclosing && fclose(file) != 0) {
+         fprintf(stderr, "couldn't close %s\n", line); 
+         exit(errno);
       }
    } else {
       usage(argv[0]);
-      code = 1;
    }
-   /*
-      datum d;
-      instruction tmp;
-      d.group = InstructionGroupCompare;
-      tmp.compare.op = CompareOpEq;
-      tmp.compare.reg0 = 7;
-      tmp.compare.reg1 = 5;
-      tmp.compare.combinebits = CombineBitsOpNil;
-      d.rest = tmp.value;
-      decode(&proc, d.value);
-      printf("equality = %d\n", proc.predicateregister);
-      printf("sizeof(instruction) = %ld\n", sizeof(instruction));
-      */
-   shutdown();
-   return code;
+   return 0;
 }
 
 void usage(char* arg0) {
-   fprintf(stderr, "usage: %s -h | <file> | <pipe>\n", arg0);
+   fprintf(stderr, "usage: %s -h | [<file> | -]\n", arg0);
 }
 int execute(FILE* file) {
    /* install the program to memory */
    installprogram(file); 
-   /* TODO: Install code */
    do {
       decode(&proc, &proc.code[proc.pc]);
       if(proc.advancepc) {
