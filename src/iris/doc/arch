@@ -385,31 +385,172 @@ Layout:
 -------------------------------------------------------------------
 For condition operations the form is as follows:
 
-bit  15 : unused
-bits 12-14 : Combine bits
-bits 9-11 : Second register
-bits 6-8 : First register
-bits 3-5 : Conditional operation type
+byte 0 : Group + Op (3 + 5 bits)
+byte 1 : Destination Register
+byte 2 : Source Register 0
+byte 3 : Source Register 1
 
-The types of conditional operations are as follows:
+>>>>>> Equals 
+Opcode: 0
+Assembly Command: eq <dest> <src0> <src1> 
+Description: Checks to see if the contents of src0 == src1 and stores the
+             result in dest
 
-0 : Equals
-1 : Not equals
-2 : Less than
-3 : Greater than
-4 : Less than or equal to
-5 : Greater than or equal to
-6,7 : Not defined (will cause a panic in the simulator)
+>>>>>> And Equals 
+Opcode: 1
+Assembly Command: and.eq <dest> <src0> <src1> 
+Description: Checks to see if the contents of src0 == src1 then and's the 
+             result with the contents of dest and stores that in dest.
+             Basically, dest &= (src0 == src1).
 
-The combine bits are used to support multiple conditions by applying the result
-of the compare to the current predicate value. The following values are values
-for the combine bits
+>>>>>> Or Equals 
+Opcode: 2
+Assembly Command: or.eq <dest> <src0> <src1> 
+Description: Checks to see if the contents of src0 == src1 then or's the 
+             result with the contents of dest and stores that in dest.
+             Basically, dest |= (src0 == src1).
 
-0 : set (overwrite)
-1 : and (and the new value with the old)
-2 : or (or the new value with the old)
-3 : xor (xor the new value with the old)
-4-7 : Unused bits (will cause the simulator to panic)
+>>>>>> Xor Equals 
+Opcode: 3
+Assembly Command: xor.eq <dest> <src0> <src1> 
+Description: Checks to see if the contents of src0 == src1 then xor's the 
+             result with the contents of dest and stores that in dest.
+             Basically, dest ^= (src0 == src1).
+
+>>>>>> Not Equals 
+Opcode: 4
+Assembly Command: ne <dest> <src0> <src1> 
+Description: Checks to see if the contents of src0 != src1 and stores the
+             result in dest
+
+>>>>>> And Not Equals 
+Opcode: 5
+Assembly Command: and.ne <dest> <src0> <src1> 
+Description: Checks to see if the contents of src0 != src1 then and's the 
+             result with the contents of dest and stores that in dest.
+             Basically, dest &= (src0 != src1).
+
+>>>>>> Or Not Equals 
+Opcode: 6
+Assembly Command: or.ne <dest> <src0> <src1> 
+Description: Checks to see if the contents of src0 != src1 then or's the 
+             result with the contents of dest and stores that in dest.
+             Basically, dest |= (src0 != src1).
+
+>>>>>> Xor Not Equals 
+Opcode: 7
+Assembly Command: xor.ne <dest> <src0> <src1> 
+Description: Checks to see if the contents of src0 != src1 then xor's the 
+             result with the contents of dest and stores that in dest.
+             Basically, dest ^= (src0 != src1).
+
+>>>>>> Less Than 
+Opcode: 8
+Assembly Command: lt <dest> <src0> <src1> 
+Description: Checks to see if the contents of src0 < src1 and stores the
+             result in dest
+
+>>>>>> And Less Than 
+Opcode: 9
+Assembly Command: and.lt <dest> <src0> <src1> 
+Description: Checks to see if the contents of src0 < src1 then and's the 
+             result with the contents of dest and stores that in dest.
+             Basically, dest &= (src0 < src1).
+
+>>>>>> Or Less Than 
+Opcode: 10 
+Assembly Command: or.lt <dest> <src0> <src1> 
+Description: Checks to see if the contents of src0 < src1 then or's the 
+             result with the contents of dest and stores that in dest.
+             Basically, dest |= (src0 < src1).
+
+>>>>>> Xor Less Than 
+Opcode: 11
+Assembly Command: xor.lt <dest> <src0> <src1> 
+Description: Checks to see if the contents of src0 < src1 then xor's the 
+             result with the contents of dest and stores that in dest.
+             Basically, dest ^= (src0 < src1).
+
+>>>>>> Greater Than 
+Opcode: 12
+Assembly Command: gt <dest> <src0> <src1> 
+Description: Checks to see if the contents of src0 > src1 and stores the
+             result in dest
+
+>>>>>> And Greater Than 
+Opcode: 13 
+Assembly Command: and.gt <dest> <src0> <src1> 
+Description: Checks to see if the contents of src0 > src1 then and's the 
+             result with the contents of dest and stores that in dest.
+             Basically, dest &= (src0 > src1).
+
+>>>>>> Or Greater Than 
+Opcode: 14 
+Assembly Command: or.gt <dest> <src0> <src1> 
+Description: Checks to see if the contents of src0 > src1 then or's the 
+             result with the contents of dest and stores that in dest.
+             Basically, dest |= (src0 > src1).
+
+>>>>>> Xor Greater Than 
+Opcode: 15
+Assembly Command: xor.gt <dest> <src0> <src1> 
+Description: Checks to see if the contents of src0 > src1 then xor's the 
+             result with the contents of dest and stores that in dest.
+             Basically, dest ^= (src0 > src1).
+
+>>>>>> Less Than Or Equal To 
+Opcode: 16
+Assembly Command: le <dest> <src0> <src1> 
+Description: Checks to see if the contents of src0 <= src1 and stores the
+             result in dest
+
+>>>>>> And Less Than Or Equal To 
+Opcode: 17 
+Assembly Command: and.le <dest> <src0> <src1> 
+Description: Checks to see if the contents of src0 <= src1 then and's the 
+             result with the contents of dest and stores that in dest.
+             Basically, dest &= (src0 <= src1).
+
+>>>>>> Or Less Than Or Equal To 
+Opcode: 18 
+Assembly Command: or.le <dest> <src0> <src1> 
+Description: Checks to see if the contents of src0 <= src1 then or's the 
+             result with the contents of dest and stores that in dest.
+             Basically, dest |= (src0 <= src1).
+
+>>>>>> Xor Less Than Or Equal To 
+Opcode: 19
+Assembly Command: xor.le <dest> <src0> <src1> 
+Description: Checks to see if the contents of src0 <= src1 then xor's the 
+             result with the contents of dest and stores that in dest.
+             Basically, dest ^= (src0 <= src1).
+
+>>>>>> Greater Than Or Equal To 
+Opcode: 20 
+Assembly Command: ge <dest> <src0> <src1> 
+Description: Checks to see if the contents of src0 >= src1 and stores the
+             result in dest
+
+>>>>>> And Greater Than Or Equal To 
+Opcode: 21
+Assembly Command: and.ge <dest> <src0> <src1> 
+Description: Checks to see if the contents of src0 >= src1 then and's the 
+             result with the contents of dest and stores that in dest.
+             Basically, dest &= (src0 >= src1).
+
+>>>>>> Or Greater Than Or Equal To 
+Opcode: 22
+Assembly Command: or.ge <dest> <src0> <src1> 
+Description: Checks to see if the contents of src0 >= src1 then or's the 
+             result with the contents of dest and stores that in dest.
+             Basically, dest |= (src0 >= src1).
+
+>>>>>> Xor Greater Than Or Equal To 
+Opcode: 23
+Assembly Command: xor.ge <dest> <src0> <src1> 
+Description: Checks to see if the contents of src0 >= src1 then xor's the 
+             result with the contents of dest and stores that in dest.
+             Basically, dest ^= (src0 >= src1).
 
 ---------------------------------------------------------------------
 The system call operation is as follows:
