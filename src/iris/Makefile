@@ -1,13 +1,17 @@
-# iris - simple 8-bit CPU core
+# iris - simple 16-bit CPU core
 # See LICENSE file for copyright and license details.
 
 include config.mk
 
 OBJECTS = $(patsubst %.c,%.o,$(filter-out cmd/sim.c,$(wildcard *.c)))
-
+RL_OBJECTS = $(patsubst %.c,%.o,$(filter-out cmd/img.c,$(wildcard *.c)))
 TEST_OBJECTS = $(patsubst %.c,%.o,$(wildcard cmd/tests/*.c))
 
-all: options iris
+ALL_BINARIES = ${BINARY} ${RL_BINARY}
+ALL_OBJECTS = ${OBJECTS} ${RL_OBJECTS} ${TEST_OBJECTS}
+ALL_MAINS = ${MAIN} ${RL_MAIN}
+
+all: options iris rl
 
 options:
 	@echo iris build options:
@@ -25,6 +29,11 @@ iris: ${MAIN} ${OBJECTS}
 	@${CC} ${LDFLAGS} -o ${BINARY} $^
 	@echo done.
 
+rl: ${RL_MAIN} ${RL_OBJECTS}
+	@echo -n Building ${RL_BINARY} binary out of $^...
+	@${CC} ${LDFLAGS} -o ${RL_BINARY} $^
+	@echo done.
+
 test_%: ${OBJECTS} cmd/tests/%.o
 	@echo -n Building ${BINARY} binary out of $^...
 	@${CC} ${LDFLAGS} -o ${BINARY} $^
@@ -32,7 +41,7 @@ test_%: ${OBJECTS} cmd/tests/%.o
 
 clean:
 	@echo -n Cleaning...
-	@rm -f ${BINARY} ${MAIN} ${OBJECTS} ${TEST_OBJECTS}
+	@rm -f ${ALL_BINARIES} ${ALL_OBJECTS} ${ALL_MAINS}
 	@echo done.
 
 .SECONDARY: ${TEST_OBJECTS}
