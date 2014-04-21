@@ -33,14 +33,23 @@ FileWrapper files[] = {
 #define outfile_ptr (&outfile)
 #define infile_ptr (&infile)
 
+enum {
+   SegmentCode = 0,
+   SegmentData,
+
+   SegmentCount,
+};
+void installcode(FILE* file, int lineno);
+void installdata(FILE* file, int lineno);
+
 static void usage(char* arg0);
 static int execute(FILE* file);
 static void startup(void);
 static void shutdown(FILE* output);
-static void installprogram(FILE* file);
 static core proc;
 static void openfw(FileWrapper* fw);
 static void closefw(FileWrapper* fw);
+static int translateline(FILE* file, int lineno);
 
 int main(int argc, char* argv[]) {
    char* tmpline;
@@ -111,16 +120,13 @@ void usage(char* arg0) {
    fprintf(stderr, "usage: %s [-o <file>] <file>\n", arg0);
 }
 int execute(FILE* file) {
-   /* install the program to memory */
-   /*
-      installprogram(file); 
-      do {
-      decode(&proc, &proc.code[proc.pc]);
-      if(proc.advancepc) {
-      proc.pc++;
-      }
-      } while(!proc.terminateexecution);
-      */
+   int status, lineno;
+   lineno = 1; 
+   status = translateline(file, lineno);
+   while(status == 0) {
+      lineno++;
+      status = translateline(file, lineno);
+   }
    return 0;
 }
 void startup() {
@@ -145,35 +151,6 @@ void shutdown(FILE* output) {
    fwrite(&(proc.data), sizeof(datum), MemorySize, output);
 }
 
-void installprogram(FILE* file) {
-   /* read up to 64k of program information */
-   int count, i;
-   datum cell;
-   instruction contents; /* theres a reason for this */
-   i = 0;
-   cell = 0;
-   count = fread(&contents, sizeof(contents), 1, file);
-   while(count > 0) {
-      if(i < MemorySize) {
-         proc.code[i] = contents;
-         i++; 
-         count = fread(&contents, sizeof(contents), 1, file);
-      } else {
-         break;
-      }
-   }
-   count = fread(&cell, sizeof(cell), 1, file);
-   while(count > 0) {
-      if(i < MemorySize) {
-         proc.data[i] = cell;
-         i++;
-         count = fread(&contents, sizeof(contents), 1, file);
-      } else {
-         printf("warning: Input file still has: %d cells left.\n", count);
-         break;
-      }
-   }
-}
 
 void openfw(FileWrapper* fw) {
    FILE* tmp;
@@ -192,4 +169,65 @@ void closefw(FileWrapper* fw) {
       exit(errno);
    }
 }
+int translateline(FILE* file, int lineno) {
+   int curr;
+   byte segment;
+   /* install the program to memory */
+   /* each line in the map looks like this 
+    * <c|d><addr-in-hex><value-in-hex> 
+    *
+    * Anything else is an error even empty lines
+    */
+   curr = fgetc(file);
+   if(curr == EOF) {
+      return 1;
+   } else {
+      segment = (byte)curr;
+      switch(curr) {
+         case SegmentCode:
+            /* read the address */
+            installcode(file, lineno);
+            break;
+         case SegmentData:
+            installdata(file, lineno);
+            break;
+         default:
+            fprintf(stderr, "error: line %d, unknown segment %d\n", lineno, segment);
+            exit(1);
+            break;
+      }
+   }
+   return 0;
+}
 
+void installcode(FILE* f, int ln) {
+   ushort addr;
+   uint value;
+   if(fread(&addr, sizeof(addr), 1, f) == 1) {
+      if(fread(&value, sizeof(value), 1, f) == 1) {
+         proc.code[addr].full = value;
+      } else {
+         fprintf(stderr, "error: line %d, invalid value\n", ln);
+         exit(1);
+      }
+   } else {
+      fprintf(stderr, "error: line %d, invalid address\n", ln);
+      exit(1);
+   }
+}
+
+void installdata(FILE* f, int ln) {
+   ushort addr;
+   ushort value;
+   if(fread(&addr, sizeof(addr), 1, f) == 1) {
+      if(fread(&value, sizeof(value), 1, f) == 1) {
+         proc.data[addr] = value;
+      } else {
+         fprintf(stderr, "error: line %d, invalid value\n", ln);
+         exit(1);
+      }
+   } else {
+      fprintf(stderr, "error: line %d, invalid address\n", ln);
+      exit(1);
+   }
+}
