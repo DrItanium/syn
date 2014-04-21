@@ -92,10 +92,10 @@ const char* compare_mnemonic(instruction* insn) {
 const char* misc_mnemonic(instruction* insn) {
    switch(get_misc_op(insn)) {
       case MiscOpSystemCall:                       return "system";
-      case MiscOpSetImplicitRegisterImmediate:     return "implicit.reg.set";
-      case MiscOpSetImplicitRegisterIndirect:      return "implicit.reg.reg.set";
-      case MiscOpGetImplicitRegisterImmediate:     return "implicit.reg.get";
-      case MiscOpGetImplicitRegisterIndirect:      return "implicit.reg.reg.get";
+      case MiscOpSetImplicitRegisterImmediate:     return "implicit.register.set";
+      case MiscOpSetImplicitRegisterIndirect:      return "implicit.register.indirect.set";
+      case MiscOpGetImplicitRegisterImmediate:     return "implicit.register.get";
+      case MiscOpGetImplicitRegisterIndirect:      return "implicit.register.indirect.get";
       default:                                     return "UNKNOWN_MISC";
    }
 
