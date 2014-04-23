@@ -80,6 +80,15 @@ int main(int argc, char* argv[]) {
       }
       if(errorfree) {
          if(i == last) {
+            /* open the input file */
+            tmpline = argv[i];
+            if(strlen(tmpline) == 1 && tmpline[0] == '-') {
+               infile.fptr = stdin;
+            } else if(strlen(tmpline) >= 1 && tmpline[0] != '-') {
+               infile.line = tmpline;
+               openfw(infile_ptr);
+            }
+
             /* open the output */
             if(!(outfile.line)) {
                outfile.line = "v.obj";
@@ -88,14 +97,6 @@ int main(int argc, char* argv[]) {
                outfile.fptr = stdout; 
             } else {
                openfw(outfile_ptr);
-            }
-            /* open the output file */
-            tmpline = argv[i];
-            if(strlen(tmpline) == 1 && tmpline[0] == '-') {
-               infile.fptr = stdin;
-            } else if(strlen(tmpline) >= 1 && tmpline[0] != '-') {
-               infile.line = tmpline;
-               openfw(infile_ptr);
             }
          } else {
             fprintf(stderr, "no file provided\n");
