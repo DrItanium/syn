@@ -4,13 +4,8 @@
 #include <string.h>
 #include <errno.h>
 #include "iris.h"
+#include "util.h"
 
-typedef struct FileWrapper {
-   FILE* fptr;
-   char* line;
-   char* permissions;
-   int needsclosing;
-} FileWrapper;
 
 enum {
    FileWrapperInput = 0,
@@ -47,8 +42,6 @@ static int execute(FILE* file);
 static void startup(void);
 static void shutdown(FILE* output);
 static core proc;
-static void openfw(FileWrapper* fw);
-static void closefw(FileWrapper* fw);
 static int translateline(FILE* file, int lineno);
 
 int main(int argc, char* argv[]) {
@@ -153,23 +146,6 @@ void shutdown(FILE* output) {
 }
 
 
-void openfw(FileWrapper* fw) {
-   FILE* tmp;
-   tmp = fopen(fw->line, fw->permissions);
-   if(!tmp) {
-      fprintf(stderr, "couldn't open %s\n", fw->line);
-      exit(errno);
-   }
-   fw->needsclosing = 1;
-   fw->fptr = tmp;
-}
-
-void closefw(FileWrapper* fw) {
-   if(fw->needsclosing && fclose(fw->fptr) != 0) {
-      fprintf(stderr, "couldn't close %s\n", fw->line); 
-      exit(errno);
-   }
-}
 int translateline(FILE* file, int lineno) {
    int curr;
    byte segment;
