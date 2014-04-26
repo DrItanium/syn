@@ -17,6 +17,7 @@ int main() {
    input = 0;
    while(readinstruction(stdin, &curr)) {
       unparse(buffer, &curr);
+      printf("%s\n", buffer);
    }
    return 0;
 }
