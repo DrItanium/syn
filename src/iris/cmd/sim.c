@@ -4,7 +4,20 @@
 #include <string.h>
 #include <errno.h>
 #include "iris.h"
+#include "util.h"
 
+enum {
+   FileWrapperInput = 0,
+
+   FileWrapperCount,
+};
+
+FileWrapper files[] = {
+   /* input */
+   { 0, 0, "r", 0},
+};
+#define infile (files[FileWrapperInput])
+#define infile_ptr (&infile)
 static void usage(char* arg0);
 static int execute(FILE* file);
 static void startup(void);
@@ -15,13 +28,10 @@ static core proc;
 int main(int argc, char* argv[]) {
    char* line;
    char* tmpline;
-   FILE* file;
-   int needsclosing, last, i, errorfree;
+   int last, i, errorfree;
    line = 0;
-   file = 0;
    last = argc - 1;
    tmpline = 0;
-   needsclosing = 0;
    errorfree = 1;
    if(argc > 1) {
       for(i = 1; errorfree && (i < last); ++i) {
@@ -42,14 +52,10 @@ int main(int argc, char* argv[]) {
          if(i == last) {
             line = argv[last];
             if(strlen(line) == 1 && line[0] == '-') {
-               file = stdin;
+               infile.fptr = stdin;
             } else if(strlen(line) >= 1 && line[0] != '-') {
-               file = fopen(line, "r");
-               if(!file) {
-                  fprintf(stderr, "couldn't open %s\n", line);
-                  exit(errno);
-               }
-               needsclosing = 1;
+               infile.line = line;
+               openfw(infile_ptr);
             }
          } else {
             fprintf(stderr, "no file provided\n");
@@ -57,13 +63,12 @@ int main(int argc, char* argv[]) {
       }
    }
 
-   if(file) {
+   if(infile.fptr) {
       startup();
-      execute(file);
+      execute(infile.fptr);
       shutdown();
-      if(needsclosing && fclose(file) != 0) {
-         fprintf(stderr, "couldn't close %s\n", line); 
-         exit(errno);
+      for(i = 0; i < FileWrapperCount; i++) {
+         closefw(&(files[i]));
       }
    } else {
       usage(argv[0]);
