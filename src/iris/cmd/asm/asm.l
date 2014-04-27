@@ -10,20 +10,89 @@ digit [0-9]
 xdigit [a-fA-F0-9]
 bdigit [0-1]
 letter [a-zA-Z]
-omni [a-zA-Z0-9]
+omni [a-zA-Z0-9.]
 
 
 %%
+"add" { return ARITHMETIC_OP_ADD; }
+"sub" { return ARITHMETIC_OP_SUB; }
+"mul" { return ARITHMETIC_OP_MUL; }
+"div" { return ARITHMETIC_OP_DIV; }
+"rem" { return ARITHMETIC_OP_REM; }
+"shl" { return ARITHMETIC_OP_SHIFTLEFT; }
+"shr" { return ARITHMETIC_OP_SHIFTRIGHT; }
+"and" { return ARITHMETIC_OP_BINARYAND; }
+"or" { return ARITHMETIC_OP_BINARYOR; }
+"not" { return ARITHMETIC_OP_BINARYNOT; }
+"xor" { return ARITHMETIC_OP_BINARYXOR; }
+"move" { return MOVE_OP_MOVE; }
+"swap" { return MOVE_OP_SWAP; }
+"swap.reg.addr" { return MOVE_OP_SWAPREGADDR; }
+"swap.addr.addr" { return MOVE_OP_SWAPADDRADDR; }
+"swap.reg.mem" { return MOVE_OP_SWAPREGMEM; }
+"swap.addr.mem" { return MOVE_OP_SWAPADDRMEM; }
+"set" { return MOVE_OP_SET; }
+"load" { return MOVE_OP_LOAD; }
+"load.mem" { return MOVE_OP_LOADMEM; }
+"store" { return MOVE_OP_STORE; }
+"store.addr" { return MOVE_OP_STOREADDR; }
+"memcopy" { return MOVE_OP_STOREMEM; }
+"memset" { return MOVE_OP_STOREIMM; }
+"goto" { return JUMP_OP_UNCONDITIONALIMMEDIATE; }
+"goto.link" { return JUMP_OP_UNCONDITIONALIMMEDIATELINK; }
+"jump" { return JUMP_OP_UNCONDITIONALREGISTER; }
+"jump.link" { return JUMP_OP_UNCONDITIONALREGISTERLINK; }
+"goto.if1" { return JUMP_OP_CONDITIONALTRUEIMMEDIATE; }
+"goto.if1.link" { return JUMP_OP_CONDITIONALTRUEIMMEDIATELINK; }
+"jump.if1" { return JUMP_OP_CONDITIONALTRUEREGISTER; }
+"jump.if1.link" { return JUMP_OP_CONDITIONALTRUEREGISTERLINK; }
+"goto.if0" { return JUMP_OP_CONDITIONALFALSEIMMEDIATE; }
+"goto.if0.link" { return JUMP_OP_CONDITIONALFALSEIMMEDIATELINK; }
+"jump.if0" { return JUMP_OP_CONDITIONALFALSEREGISTER; }
+"jump.if0.link" { return JUMP_OP_CONDITIONALFALSEREGISTERLINK; }
+"if1" { return JUMP_OP_IFTHENELSENORMALPREDTRUE; }
+"if0" { return JUMP_OP_IFTHENELSENORMALPREDFALSE; }
+"if1.link" { return JUMP_OP_IFTHENELSELINKPREDTRUE; }
+"if0.link" { return JUMP_OP_IFTHENELSELINKPREDFALSE; }
+"eq" { return COMPARE_OP_EQ; }
+"and.eq" { return COMPARE_OP_EQAND; }
+"or.eq" { return COMPARE_OP_EQOR; }
+"xor.eq" { return COMPARE_OP_EQXOR; }
+"ne" { return COMPARE_OP_NEQ; }
+"and.ne" { return COMPARE_OP_NEQAND; }
+"or.ne" { return COMPARE_OP_NEQOR; }
+"xor.ne" { return COMPARE_OP_NEQXOR; }
+"lt" { return COMPARE_OP_LESSTHAN; }
+"and.lt" { return COMPARE_OP_LESSTHANAND; }
+"or.lt" { return COMPARE_OP_LESSTHANOR; }
+"xor.lt" { return COMPARE_OP_LESSTHANXOR; }
+"gt" { return COMPARE_OP_GREATERTHAN; }
+"and.gt" { return COMPARE_OP_GREATERTHANAND; }
+"or.gt" { return COMPARE_OP_GREATERTHANOR; }
+"xor.gt" { return COMPARE_OP_GREATERTHANXOR; }
+"le" { return COMPARE_OP_LESSTHANOREQUALTO; }
+"and.le" { return COMPARE_OP_LESSTHANOREQUALTOAND; }
+"or.le" { return COMPARE_OP_LESSTHANOREQUALTOOR; }
+"xor.le" { return COMPARE_OP_LESSTHANOREQUALTOXOR; }
+"ge" { return COMPARE_OP_GREATERTHANOREQUALTO; }
+"and.ge" { return COMPARE_OP_GREATERTHANOREQUALTOAND; }
+"or.ge" { return COMPARE_OP_GREATERTHANOREQUALTOOR; }
+"xor.ge" { return COMPARE_OP_GREATERTHANOREQUALTOXOR; }
+"system" { return MISC_OP_SYSTEMCALL; }
+"implicit.register.set" { return MISC_OP_SETIMPLICITREGISTERIMMEDIATE; }
+"implicit.register.indirect.set" { return MISC_OP_SETIMPLICITREGISTERINDIRECT; }
+"implicit.register.get" { return MISC_OP_GETIMPLICITREGISTERIMMEDIATE; }
+"implicit.register.indirect.get" { return MISC_OP_GETIMPLICITREGISTERINDIRECT; }
 [ \t\n]     ;
-r{digit}+     { printf("Found register %s\n", yytext); }
-${digit}+     { printf("Found decimal number %s\n", yytext); }
-${xdigit}+ { printf("Found hex number %s\n", yytext); }
-{letter}({omni}*): { printf("Found a label %s\n", yytext); }
-@{letter}({omni}*) { printf("Found a label replace %s\n", yytext); }
-.data      { printf("Found a data directive\n"); }
-.code      { printf("Found a code directive\n"); }
-.org       { printf("Found an org directive\n"); }
-{omni}+ { printf("Found a symbol\n"); }
+r{digit}+     { printf("Found register %s\n", yytext); return REGISTER; }
+${digit}+     { printf("Found decimal number %s\n", yytext); return IMMEDIATE; }
+${xdigit}+ { printf("Found hex number %s\n", yytext); return IMMEDIATE; }
+{letter}({omni}*): { printf("Found a label %s\n", yytext); return LABEL}
+@{letter}({omni}*) { printf("Found a label replace %s\n", yytext); return LABEL_REPLACE; }
+.data      { printf("Found a data directive\n"); return DIRECTIVE_DATA; }
+.code      { printf("Found a code directive\n"); return DIRECTIVE_CODE; }
+.org       { printf("Found an org directive\n"); return DIRECTIVE_ORG; }
+{omni}+ { printf("Found a symbol: %s\n", yytext); return SYMBOL; }
 %%
 
 int main() {
