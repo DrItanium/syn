@@ -69,20 +69,20 @@ void unparse_move(char* unparsed, instruction* insn) {
          unparse_register(reg1, get_move_reg1(insn));
          sprintf(unparsed, "%s %s %s", op, reg0, reg1);
          break;
-      case MoveOpSwapRegMem: /* swap.reg.mem r? $imm */
-      case MoveOpSwapAddrMem: /* swap.addr.mem r? $imm */
-      case MoveOpSet: /* set r? $imm */
+      case MoveOpSwapRegMem: /* swap.reg.mem r? imm */
+      case MoveOpSwapAddrMem: /* swap.addr.mem r? imm */
+      case MoveOpSet: /* set r? imm */
          unparse_register(reg0, get_move_reg0(insn));
-         sprintf(unparsed, "%s %s $%d", op, reg0, get_move_immediate(insn));
+         sprintf(unparsed, "%s %s %d", op, reg0, get_move_immediate(insn));
          break;
       case MoveOpLoad: /* load r? r? */
          unparse_register(reg0, get_move_reg0(insn));
          unparse_register(reg1, get_move_reg1(insn));
          sprintf(unparsed, "%s %s %s", op, reg0, reg1);
          break;
-      case MoveOpLoadMem: /* load.mem r? $imm */
+      case MoveOpLoadMem: /* load.mem r? imm */
          unparse_register(reg0, get_move_reg0(insn));
-         sprintf(unparsed, "%s %s $%d", op, reg0, get_move_immediate(insn));
+         sprintf(unparsed, "%s %s %d", op, reg0, get_move_immediate(insn));
          break;
       case MoveOpStore: /* store r? r? */
       case MoveOpStoreAddr: /* store.addr r? r? */
@@ -90,10 +90,10 @@ void unparse_move(char* unparsed, instruction* insn) {
          unparse_register(reg1, get_move_reg1(insn));
          sprintf(unparsed, "%s %s %s", op, reg0, reg1);
          break;
-      case MoveOpStoreMem: /* memcopy r? $imm */
-      case MoveOpStoreImm: /* memset r? $imm */
+      case MoveOpStoreMem: /* memcopy r? imm */
+      case MoveOpStoreImm: /* memset r? imm */
          unparse_register(reg0, get_move_reg0(insn));
-         sprintf(unparsed, "%s %s $%d", op, reg0, get_move_immediate(insn));
+         sprintf(unparsed, "%s %s %d", op, reg0, get_move_immediate(insn));
          break;
       default:
          sprintf(unparsed, "%s", "INVALID MOVE");
@@ -109,11 +109,11 @@ void unparse_jump(char* unparsed, instruction* insn) {
    op = jump_mnemonic(insn);
    switch(get_jump_op(insn)) {
       case JumpOpUnconditionalImmediate:
-         sprintf(unparsed, "%s $%d", op, get_jump_immediate(insn));
+         sprintf(unparsed, "%s %d", op, get_jump_immediate(insn));
          break;
       case JumpOpUnconditionalImmediateLink:
          unparse_register(reg0, get_jump_reg0(insn));
-         sprintf(unparsed, "%s %s $%d", op, reg0, get_jump_immediate(insn));
+         sprintf(unparsed, "%s %s %d", op, reg0, get_jump_immediate(insn));
          break;
       case JumpOpUnconditionalRegister:
          unparse_register(reg0, get_jump_reg0(insn));
@@ -127,13 +127,13 @@ void unparse_jump(char* unparsed, instruction* insn) {
       case JumpOpConditionalTrueImmediate:
       case JumpOpConditionalFalseImmediate:
          unparse_register(reg0, get_jump_reg0(insn));
-         sprintf(unparsed, "%s %s $%d", op, reg0, get_jump_immediate(insn));
+         sprintf(unparsed, "%s %s %d", op, reg0, get_jump_immediate(insn));
          break;
       case JumpOpConditionalTrueImmediateLink:
       case JumpOpConditionalFalseImmediateLink:
          /* remember that the predicate is implied */
          unparse_register(reg0, get_jump_reg0(insn));
-         sprintf(unparsed, "%s %s $%d", op, reg0, get_jump_immediate(insn));
+         sprintf(unparsed, "%s %s %d", op, reg0, get_jump_immediate(insn));
          break;
       case JumpOpConditionalTrueRegister:
       case JumpOpConditionalFalseRegister:
@@ -181,11 +181,11 @@ void unparse_misc(char* unparsed, instruction* insn) {
       case MiscOpSystemCall:
             unparse_register(reg0, get_misc_reg0(insn));
             unparse_register(reg1, get_misc_reg1(insn));
-            sprintf(unparsed, "%s $%d %s %s", op, get_misc_index(insn), reg0, reg1);
+            sprintf(unparsed, "%s %d %s %s", op, get_misc_index(insn), reg0, reg1);
             break;
       case MiscOpSetImplicitRegisterImmediate:
             unparse_register(reg0, get_misc_reg0(insn));
-            sprintf(unparsed, "%s $%d %s", op, get_misc_index(insn), reg0);
+            sprintf(unparsed, "%s %d %s", op, get_misc_index(insn), reg0);
             break;
       case MiscOpSetImplicitRegisterIndirect:
             /* the index becomes a register */
@@ -197,7 +197,7 @@ void unparse_misc(char* unparsed, instruction* insn) {
              * reverse args */
       case MiscOpGetImplicitRegisterImmediate:
             unparse_register(reg0, get_misc_index(insn));
-            sprintf(unparsed, "%s %s $%d", op, reg0, get_misc_reg0(insn));
+            sprintf(unparsed, "%s %s %d", op, reg0, get_misc_reg0(insn));
             break;
       case MiscOpGetImplicitRegisterIndirect:
             unparse_register(reg0, get_misc_index(insn));
