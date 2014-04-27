@@ -3,14 +3,16 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <limits.h>
 #include "iris.h"
 #include "asm.tab.h"
 
 static byte getregister(void);
 static ulong getdecimalimmediate(void);
 static ulong getheximmediate(void);
+extern void yyerror(const char* c);
 %}
-
+%option yylineno
 digit [0-9]
 xdigit [a-fA-F0-9]
 bdigit [0-1]
@@ -115,7 +117,7 @@ byte getregister(void) {
 ulong getdecimalimmediate() {
    ulong tmp;
    tmp = strtoul(yytext, NULL, 10);
-   if(tmp == ULONG_MAX && errno = ERANGE) {
+   if(tmp == ULONG_MAX && errno == ERANGE) {
       yyerror("number is too large and overflowed!");
    } else {
       if(tmp > 65535 || tmp < 0) {
@@ -139,3 +141,4 @@ ulong getheximmediate() {
       }
    }
 }
+
