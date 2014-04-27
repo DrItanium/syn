@@ -7,6 +7,7 @@ typedef signed char schar;
 typedef unsigned short ushort;
 typedef unsigned short datum;
 typedef unsigned int uint;
+typedef unsigned long ulong;
 /* four bytes and now super flexible */
 typedef union instruction {
    /* TODO: see if we should just use int32_t. A c99 feature */

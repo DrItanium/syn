@@ -4,6 +4,11 @@
 #include <string.h>
 #include <errno.h>
 #include "iris.h"
+#include "asm.tab.h"
+
+static byte getregister(void);
+static ulong getdecimalimmediate(void);
+static ulong getheximmediate(void);
 %}
 
 digit [0-9]
@@ -83,19 +88,54 @@ omni [a-zA-Z0-9.]
 "implicit.register.indirect.set" { return MISC_OP_SETIMPLICITREGISTERINDIRECT; }
 "implicit.register.get" { return MISC_OP_GETIMPLICITREGISTERIMMEDIATE; }
 "implicit.register.indirect.get" { return MISC_OP_GETIMPLICITREGISTERINDIRECT; }
+"@label" { return LABEL; }
+"@data"  { return DIRECTIVE_DATA; }
+"@code"  { return DIRECTIVE_CODE; }
+"@org"   { return DIRECTIVE_ORG; }
 [ \t\n]     ;
-r{digit}+     { printf("Found register %s\n", yytext); return REGISTER; }
-${digit}+     { printf("Found decimal number %s\n", yytext); return IMMEDIATE; }
-${xdigit}+ { printf("Found hex number %s\n", yytext); return IMMEDIATE; }
-{letter}({omni}*): { printf("Found a label %s\n", yytext); return LABEL}
-@{letter}({omni}*) { printf("Found a label replace %s\n", yytext); return LABEL_REPLACE; }
-.data      { printf("Found a data directive\n"); return DIRECTIVE_DATA; }
-.code      { printf("Found a code directive\n"); return DIRECTIVE_CODE; }
-.org       { printf("Found an org directive\n"); return DIRECTIVE_ORG; }
-{omni}+ { printf("Found a symbol: %s\n", yytext); return SYMBOL; }
+r{digit}+ { yylval.rval = getregister(); return REGISTER; }
+{digit}+ { yylval.ival = getdecimalimmediate(); return IMMEDIATE; }
+0x{xdigit}+ { yylval.ival = getheximmediate(); return IMMEDIATE; }
+{omni}+ { yylval.sval = strdup(yytext); return SYMBOL; }
 %%
 
-int main() {
 
-   yylex();
+byte getregister(void) {
+   int c;
+
+   yytext[0] = '0';
+   c = atoi(yytext);
+   if(c > 255 || c < 0) {
+      yyerror("target register is too large");
+   } else {
+      return (byte)c;
+   }
+}
+
+ulong getdecimalimmediate() {
+   ulong tmp;
+   tmp = strtoul(yytext, NULL, 10);
+   if(tmp == ULONG_MAX && errno = ERANGE) {
+      yyerror("number is too large and overflowed!");
+   } else {
+      if(tmp > 65535 || tmp < 0) {
+         yyerror("provided number is larger than 16-bits!");
+      } else {
+         return tmp;
+      }
+   }
+}
+
+ulong getheximmediate() {
+   ulong tmp;
+   tmp = strtoul(yytext, NULL, 16);
+   if(tmp == ULONG_MAX && errno == ERANGE) {
+      yyerror("number is too large and overflowed!");
+   } else {
+      if(tmp > 65535 || tmp < 0) {
+         yyerror("provided number is larger than 16-bits!");
+      } else {
+         return tmp;
+      }
+   }
 }

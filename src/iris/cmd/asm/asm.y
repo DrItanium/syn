@@ -10,11 +10,12 @@
 
 %union {
       char* sval;
-      unsigned int ival;
+      byte rval;
+      ulong ival;
 }
 
 
-%token DIRECTIVE_ORG DIRECTIVE_CODE DIRECTIVE_DATA
+%token DIRECTIVE_ORG DIRECTIVE_CODE DIRECTIVE_DATA LABEL
 %token ARITHMETIC_OP_ADD
 %token ARITHMETIC_OP_SUB
 %token ARITHMETIC_OP_MUL
@@ -86,17 +87,24 @@
 %token MISC_OP_GETIMPLICITREGISTERINDIRECT
 
 
+%token <rval> REGISTER
 %token <ival> IMMEDIATE
-%token <sval> REGISTER LABEL LABEL_REPLACE
+%token <sval> SYMBOL
 
 %%
 asm:
-   LABEL 
-   { printf("bison found a label: %s\n", $1); }
-   | SYMBOL
-instruction:
+   LABEL SYMBOL { printf("bison found a label: %s\n", $2); } |
+   DIRECTIVE_ORG IMMEDIATE { printf("bison found an org directive for: %d\n", $2); }
+   ;
 
 
 
 %%
+main() {
 
+do {
+   yyparse();
+} while(!feof(yyin));
+
+}
+void yyerror(const char
