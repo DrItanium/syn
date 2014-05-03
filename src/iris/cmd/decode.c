@@ -7,14 +7,11 @@
 static int readinstruction(FILE* input, instruction* container);
 int main() {
    instruction curr;
-   int current, i;
-   uint input;
+   int i;
    char buffer[80];
-   byte cell;
    for(i = 0; i < 80; i++) {
       buffer[i] = 0;
    }
-   input = 0;
    while(readinstruction(stdin, &curr)) {
       unparse(buffer, &curr);
       printf("%s\n", buffer);

@@ -113,30 +113,51 @@ void shutdown() {
 
 void installprogram(FILE* file) {
    /* read up to 64k of program information */
-   int count, i;
-   datum cell;
-   instruction contents; /* theres a reason for this */
-   i = 0;
-   cell = 0;
-   count = fread(&contents, sizeof(contents), 1, file);
-   while(count > 0) {
-      if(i < MemorySize) {
-         proc.code[i] = contents;
-         i++; 
-         count = fread(&contents, sizeof(contents), 1, file);
-      } else {
+   int a, b, c, d, i;
+   instruction tmp;
+   for(i = 0; i < MemorySize; i++) {
+      a = fgetc(file);
+      b = fgetc(file);
+      c = fgetc(file);
+      d = fgetc(file);
+      if(a == EOF || b == EOF || c == EOF || d == EOF) {
          break;
+      } else {
+         tmp.full = (((d & 0x000000FF) << 24) + ((c & 0x000000FF) << 16) + 
+               ((b & 0x000000FF) << 8) + (a & 0x000000FF));
+         proc.code[i] = tmp;
       }
    }
-   count = fread(&cell, sizeof(cell), 1, file);
-   while(count > 0) {
+   if(i < MemorySize) {
+      if(feof(file)) {
+         fprintf(stderr,"End of the file was reached\nNo data section!\n");
+      }
+      if(ferror(file)) {
+         fprintf(stderr, "Error occurred during code section load: %d\n", errno);
+         exit(errno);
+      }
+   } else {
+      for(i = 0; i < MemorySize; i++) {
+         a = fgetc(file);
+         b = fgetc(file);
+         if(a == EOF || b == EOF) {
+            break;
+         } else {
+            proc.data[i] = ((b & 0x000000FF) << 8) + (a & 0x000000FF);
+         }
+      }
       if(i < MemorySize) {
-         proc.data[i] = cell;
-         i++;
-         count = fread(&contents, sizeof(contents), 1, file);
+         if(feof(file)) {
+            fprintf(stderr, "End of file was reached before end of data section\n");
+         }
+         if(ferror(file)) {
+            fprintf(stderr, "Error occurred during data section load: %d\n", errno);
+            exit(errno);
+         }
       } else {
-         printf("warning: Input file still has: %d cells left.\n", count);
-         break;
+         if(fgetc(file) != EOF) {
+            fprintf(stderr, "warning: image contains more data than is loadable\n");
+         }
       }
    }
 }
