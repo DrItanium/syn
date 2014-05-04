@@ -143,8 +143,8 @@ dynamicop curri;
 
 %%
 F:
- asm
-   F asm |
+   asm |
+   F asm  
    ;
 asm:
    directive |
@@ -153,9 +153,9 @@ asm:
 directive:
          DIRECTIVE_ORG IMMEDIATE {
             if(asmstate.segment == CodeSegment) {
-               code_address = $2;
+               asmstate.code_address = $2;
             } else if(asmstate.segment == DataSegment) {
-               data_address = $2;
+               asmstate.data_address = $2;
             } else {
                yyerror("Invalid segment!");
             }
@@ -173,15 +173,15 @@ directive:
       ;
 statement:
          label {
-            curri.segment = segment
-            if(segment == CodeSegment) {
+            curri.segment = asmstate.segment;
+            if(asmstate.segment == CodeSegment) {
                
             }
          }|
          operation {
-            if(segment == CodeSegment) {
+            if(asmstate.segment == CodeSegment) {
                curri.segment = CodeSegment;
-               curri.address = code_address;
+               curri.address = asmstate.code_address;
                save_encoding();
             } else {
                yyerror("operation in an invalid segment!");
@@ -190,9 +190,9 @@ statement:
          ;
 label:
      LABEL SYMBOL { 
-      if(segment == CodeSegment) {
+      if(asmstate.segment == CodeSegment) {
           add_label_entry($2, asmstate.code_address);
-      } else if (segment == DataSegment) {
+      } else if (asmstate.segment == DataSegment) {
           add_label_entry($2, asmstate.data_address);
       } else {
           yyerror("label in invalid segment!");
@@ -409,7 +409,7 @@ main() {
       curri.reg0 = 0;
       curri.reg1 = 0;
       curri.reg2 = 0;
-      curri.immediatestyle = ImmediateNone;
+      curri.hasimmediate = 0;
       curri.immediate = 0;
       curri.hassymbol = 0;
       curri.symbol = 0;
@@ -418,9 +418,9 @@ main() {
    } while(!feof(yyin));
 
    for(i = 0; i < asmstate.entry_count; i++) {
-      free(asmstate.entries[i]->value);
+      free(asmstate.entries[i].value);
    }
-   free(asmstate->entries);
+   free(asmstate.entries);
    asmstate.entries = 0;
 }
 
@@ -438,15 +438,15 @@ void add_label_entry(char* c, ushort addr) {
          asmstate.entry_storage_length += 80;
      }
    }
-   for(i = 0; i < asmentry.entry_count; i++) {
+   for(i = 0; i < asmstate.entry_count; i++) {
       if(strcmp(asmstate.entries[i].value, c) == 0) {
          yyerror("Found a duplicate label!");
          exit(1);
       }
    }
-   asmstate.entries[asmentry.entry_count].value = c;
-   asmstate.entries[asmentry.entry_count].address = addr;
-   asmentry.entry_count++;
+   asmstate.entries[asmstate.entry_count].value = c;
+   asmstate.entries[asmstate.entry_count].address = addr;
+   asmstate.entry_count++;
 }
 
 void save_encoding(void) {
