@@ -84,7 +84,7 @@ int main(int argc, char* argv[]) {
 
             /* open the output */
             if(!(outfile.line)) {
-               outfile.line = "v.obj";
+               outfile.line = "v.img";
             }
             if(strlen(outfile.line) == 1 && (outfile.line)[0] == '-') {
                outfile.fptr = stdout; 

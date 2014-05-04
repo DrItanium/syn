@@ -4,6 +4,7 @@
 #include <string.h>
 #include <errno.h>
 #include "iris.h"
+#include "util.h"
 
 #include "asm.tab.h"
 
@@ -13,6 +14,26 @@ extern FILE* yyin;
 extern int yylineno;
 
 void yyerror(const char* s);
+enum {
+   FileWrapperInput = 0,
+   FileWrapperOutput,
+
+   /* always last */
+   FileWrapperCount,
+};
+
+FileWrapper files[] = {
+   /* input */
+   { 0, 0, "r", 0 },
+   /* output */
+   { 0, 0, "w", 0 },
+};
+
+#define outfile (files[FileWrapperOutput])
+#define infile (files[FileWrapperInput])
+
+#define outfile_ptr (&outfile)
+#define infile_ptr (&infile)
 /* segment */
 enum  {
    CodeSegment = 0,
@@ -45,7 +66,6 @@ struct {
    int dynop_count;
    int dynop_storage_length;
    dynamicop* dynops;
-   FILE* input;
    FILE* output;
 } asmstate;
 
@@ -55,10 +75,11 @@ void add_label_entry(char* name, ushort address);
 void persist_dynamic_op(void);
 void save_encoding(void);
 void write_dynamic_op(dynamicop* op);
-void initialize(void);
+void initialize(FILE* output, FILE* input);
 void cleanup(void);
 void resolve_labels(void);
 int resolve_op(dynamicop* dop);
+void usage(char* arg0);
 %}
 
 %union {
@@ -403,14 +424,73 @@ lexeme:
 ;
 %%
 int main(int argc, char* argv[]) {
-   initialize();
-   do {
-      yyparse();
-   } while(!feof(asmstate.input));
-   resolve_labels();
-   cleanup();
+   char* tmpline;
+   int last, i, errorfree;
+   /* make sure these are properly initialized */
+   last = argc - 1;
+   tmpline = 0;
+   errorfree = 1;
+   i = 0;
+   if(argc > 1) {
+      for(i = 1; errorfree && (i < last); ++i) {
+         tmpline = argv[i];
+         if(strlen(tmpline) == 2 && tmpline[0] == '-') {
+            switch(tmpline[1]) {
+               case 'o':
+                  i++;
+                  outfile.line = argv[i];
+                  break;
+               case 'h':
+               default:
+                  errorfree = 0;
+                  break;
+            }
+         } else {
+            errorfree = 0;
+            break;
+         }
+      }
+      if(errorfree) {
+         if(i == last) {
+            /* open the input file */
+            tmpline = argv[i];
+            if(strlen(tmpline) == 1 && tmpline[0] == '-') {
+               infile.fptr = stdin;
+            } else if(strlen(tmpline) >= 1 && tmpline[0] != '-') {
+               infile.line = tmpline;
+               openfw(infile_ptr);
+            }
+
+            /* open the output */
+            if(!(outfile.line)) {
+               outfile.line = "v.obj";
+            }
+            if(strlen(outfile.line) == 1 && (outfile.line)[0] == '-') {
+               outfile.fptr = stdout; 
+            } else {
+               openfw(outfile_ptr);
+            }
+         } else {
+            fprintf(stderr, "no file provided\n");
+         }
+      }
+   }
+   if(outfile.fptr && infile.fptr) {
+      initialize(outfile.fptr, infile.fptr);
+      do {
+         yyparse();
+      } while(!feof(yyin));
+      resolve_labels();
+      cleanup();
+   } else {
+      usage(argv[0]);
+   }
+   return 0;
 }
 
+void usage(char* arg0) {
+   fprintf(stderr, "usage: %s [-o <file>] <file>\n", arg0);
+}
 void add_label_entry(char* c, ushort addr) {
    labelentry* le;
    int i;
@@ -518,16 +598,20 @@ int resolve_op(dynamicop* dop) {
 void cleanup() {
    int i;
    /* clean up */
+   for(i = 0; i < FileWrapperCount; i++) {
+         closefw(&(files[i]));
+   }
    free(asmstate.dynops);
    free(asmstate.entries);
    asmstate.entries = 0;
    asmstate.dynops = 0;
 }
-void initialize() {
+void initialize(FILE* output, FILE* input) {
    int i;
    labelentry* le;
    dynamicop* dops;
    i = 0;
+   yyin = input;
    le = calloc(80, sizeof(labelentry));
    dops = calloc(80, sizeof(dynamicop));
    asmstate.segment = CodeSegment;
@@ -539,8 +623,7 @@ void initialize() {
    asmstate.dynops = dops;
    asmstate.dynop_count = 0;
    asmstate.dynop_storage_length = 80;
-   asmstate.input = yyin;
-   asmstate.output = stdout;
+   asmstate.output = output;
    curri.segment = 0;
    curri.address = 0;
    curri.group = 0;
