@@ -14,10 +14,6 @@ extern char* yytext;
 extern int yylineno;
 
 void yyerror(const char* s);
-void add_label_entry(char* name, ushort address);
-void persist_dynamic_op(void);
-void save_encoding(void);
-void write_dynamic_op(void);
 /* segment */
 enum  {
    CodeSegment = 0,
@@ -36,8 +32,6 @@ typedef struct dynamicop {
    byte reg0;
    byte reg1;
    byte reg2;
-   int hasimmediate;
-   ushort immediate;
    int hassymbol;
    char* symbol;
 } dynamicop;
@@ -56,6 +50,11 @@ struct {
 } asmstate;
 
 dynamicop curri;
+
+void add_label_entry(char* name, ushort address);
+void persist_dynamic_op(void);
+void save_encoding(void);
+void write_dynamic_op(dynamicop* op);
 %}
 
 %union {
@@ -143,8 +142,8 @@ dynamicop curri;
 
 %%
 F:
-   asm |
-   F asm  
+   F asm |
+   asm
    ;
 asm:
    directive |
@@ -225,14 +224,16 @@ move_op:
 
        mop_mixed REGISTER IMMEDIATE {
             curri.reg0 = $2;
-            curri.immediate = $3;
+            curri.reg1 = (byte)(($3 & 0x00FF));
+            curri.reg2 = (byte)(($3 & 0xFF00) >> 8);
        }
        ;
 
 jump_op:
        JUMP_OP_UNCONDITIONALIMMEDIATE IMMEDIATE { 
          curri.op = JumpOpUnconditionalImmediate; 
-         curri.immediate = $2; 
+         curri.reg1 = (byte)(($2 & 0x00FF));
+         curri.reg2 = (byte)(($2 & 0xFF00) >> 8);
          } | 
        JUMP_OP_UNCONDITIONALREGISTER REGISTER { 
        curri.op = JumpOpUnconditionalRegister; 
@@ -244,7 +245,8 @@ jump_op:
        } |
        jop_reg_imm REGISTER IMMEDIATE {
             curri.reg0 = $2;
-            curri.immediate = $3;
+            curri.reg1 = (byte)(($3 & 0x00FF));
+            curri.reg2 = (byte)(($3 & 0xFF00) >> 8);
        } |
        jop_reg_reg_reg REGISTER REGISTER REGISTER {
             curri.reg0 = $2;
@@ -381,7 +383,10 @@ miop:
 lexeme:
       SYMBOL { curri.hassymbol = 1; 
                curri.symbol = $1; } | 
-      IMMEDIATE { curri.immediate = $1; }
+      IMMEDIATE { 
+            curri.reg1 = (byte)(($1 & 0x00FF));
+            curri.reg2 = (byte)(($1 & 0xFF00) >> 8);
+      }
 ;
 %%
 main() {
@@ -400,7 +405,8 @@ main() {
    asmstate.dynops = dops;
    asmstate.dynop_count = 0;
    asmstate.dynop_storage_length = 80;
-
+   asmstate.input = yyin;
+   asmstate.output = stdout;
    do {
       curri.segment = 0;
       curri.address = 0;
@@ -409,8 +415,6 @@ main() {
       curri.reg0 = 0;
       curri.reg1 = 0;
       curri.reg2 = 0;
-      curri.hasimmediate = 0;
-      curri.immediate = 0;
       curri.hassymbol = 0;
       curri.symbol = 0;
       yyparse();
@@ -453,11 +457,38 @@ void save_encoding(void) {
    if(curri.hassymbol) {
       persist_dynamic_op();
    } else {
-      write_dynamic_op(); 
+      write_dynamic_op(&curri); 
    }
 }
-void write_dynamic_op(void) {
-   /* need to figure out a better way to determine encodings */
+/*((instruction & ~mask) | (value << shiftcount)) */
+void write_dynamic_op(dynamicop* dop) {
+   /* little endian build up */
+   byte cells[8];
+   byte tmp;
+   int count;
+   tmp = 0;
+   cells[0] = dop->segment;
+   cells[1] = dop->address;
+   cells[2] = (dop->address) >> 8;
+   if(dop->segment == CodeSegment) {
+      count = 7; 
+      tmp = ((tmp & ~0x7) | (dop->group));
+      tmp = ((tmp & ~0xF8) | (dop->op << 3));
+      cells[3] = tmp;
+      cells[4] = dop->reg0;
+      cells[5] = dop->reg1;
+      cells[6] = dop->reg2;
+   } else if(dop->segment == DataSegment) {
+      count = 5;
+      cells[3] = dop->reg1;
+      cells[4] = dop->reg2;
+   } else {
+      yyerror("Unknown segment!");
+   }
+   if(fwrite(cells, sizeof(byte), count, asmstate.output) != count) {
+      fprintf(stderr, "panic: couldn't write entire instruction!\n");
+      exit(errno);
+   }
 }
 void persist_dynamic_op(void) {
    dynamicop* d;
