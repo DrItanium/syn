@@ -146,6 +146,9 @@ int resolve_op(dynamicop* dop);
 %token <sval> SYMBOL
 
 %%
+Q: /* empty */ |
+   F 
+;
 F:
    F asm {
       curri.segment = 0;

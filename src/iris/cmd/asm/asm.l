@@ -97,6 +97,7 @@ omni [a-zA-Z0-9.]
 "@org"   { return DIRECTIVE_ORG; }
 "@declare" { return DIRECTIVE_DECLARE; }
 [ \t\n]     ;
+[;].*       ; // comments
 r{digit}+ { yylval.rval = getregister(); return REGISTER; }
 {digit}+ { yylval.ival = getdecimalimmediate(); return IMMEDIATE; }
 0x{xdigit}+ { yylval.ival = getheximmediate(); return IMMEDIATE; }
