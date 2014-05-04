@@ -14,23 +14,48 @@ extern char* yytext;
 extern int yylineno;
 
 void yyerror(const char* s);
+void add_label_entry(char* name, ushort address);
+void persist_dynamic_op(void);
+void save_encoding(void);
+void write_dynamic_op(void);
 /* segment */
 enum  {
    CodeSegment = 0,
    DataSegment,
 };
-int segment = CodeSegment;
-ushort code_address = 0;
-ushort data_address = 0;
-
-struct {
+typedef struct labelentry {
+   char* value;
+   ushort address;
+} labelentry;
+/* used to store ops which require a second pass */
+typedef struct dynamicop {
+   int segment;
+   ushort address;
    byte group;
    byte op;
    byte reg0;
    byte reg1;
    byte reg2;
+   int hasimmediate;
    ushort immediate;
-} curri;
+   int hassymbol;
+   char* symbol;
+} dynamicop;
+struct {
+   int segment;
+   ushort code_address;
+   ushort data_address;
+   int entry_count;
+   int entry_storage_length;
+   labelentry* entries;
+   int dynop_count;
+   int dynop_storage_length;
+   dynamicop* dynops;
+   FILE* input;
+   FILE* output;
+} asmstate;
+
+dynamicop curri;
 %}
 
 %union {
@@ -40,7 +65,7 @@ struct {
 }
 
 
-%token DIRECTIVE_ORG DIRECTIVE_CODE DIRECTIVE_DATA LABEL
+%token DIRECTIVE_ORG DIRECTIVE_CODE DIRECTIVE_DATA LABEL DIRECTIVE_DECLARE
 %token ARITHMETIC_OP_ADD
 %token ARITHMETIC_OP_SUB
 %token ARITHMETIC_OP_MUL
@@ -127,24 +152,52 @@ asm:
    ;
 directive:
          DIRECTIVE_ORG IMMEDIATE {
-            if(segment == CodeSegment) {
+            if(asmstate.segment == CodeSegment) {
                code_address = $2;
-            } else if(segment == DataSegment) {
+            } else if(asmstate.segment == DataSegment) {
                data_address = $2;
             } else {
                yyerror("Invalid segment!");
             }
             } | 
-      DIRECTIVE_CODE { segment = CodeSegment; } |
-      DIRECTIVE_DATA { segment = DataSegment; } 
+      DIRECTIVE_CODE { asmstate.segment = CodeSegment; } |
+      DIRECTIVE_DATA { asmstate.segment = DataSegment; } |
+      DIRECTIVE_DECLARE lexeme { 
+            if(asmstate.segment == DataSegment) {
+               curri.segment = DataSegment;
+               save_encoding();
+            } else {
+               yyerror("Declaration in non-data segment!");
+            }
+      }
       ;
 statement:
-         label |
-         label operation |
-         operation
+         label {
+            curri.segment = segment
+            if(segment == CodeSegment) {
+               
+            }
+         }|
+         operation {
+            if(segment == CodeSegment) {
+               curri.segment = CodeSegment;
+               curri.address = code_address;
+               save_encoding();
+            } else {
+               yyerror("operation in an invalid segment!");
+            }
+         }
          ;
 label:
-     LABEL SYMBOL { printf("bison found a label: %s\n", $2); }
+     LABEL SYMBOL { 
+      if(segment == CodeSegment) {
+          add_label_entry($2, asmstate.code_address);
+      } else if (segment == DataSegment) {
+          add_label_entry($2, asmstate.data_address);
+      } else {
+          yyerror("label in invalid segment!");
+      }
+     }
    ;
 operation:
          arithmetic_op { curri.group = InstructionGroupArithmetic; } |
@@ -211,23 +264,33 @@ misc_op:
        MISC_OP_SYSTEMCALL IMMEDIATE REGISTER REGISTER 
        { 
          curri.op = MiscOpSystemCall; 
-         curri.immediate = $2;
-         if(curri.immediate > 255 || curri.immediate < 0) {
+         if($2 > 255 || $2 < 0) {
             yyerror("system call offset out of range!");
          }
+         curri.reg0 = $2;
          curri.reg1 = $3;
          curri.reg2 = $4;
        } |
        MISC_OP_SETIMPLICITREGISTERIMMEDIATE IMMEDIATE REGISTER {
        curri.op = MiscOpSetImplicitRegisterImmediate; 
-       curri.immediate = $2;
-       if(curri.immediate > 255 || curri.immediate < 0) {
+       if($2 > 255 || $2 < 0) {
             yyerror("implicit register offset out of range!");
        }
+       curri.reg0 = $2;
        curri.reg1 = $3;
        } |
-       MISC_OP_GETIMPLICITREGISTERIMMEDIATE REGISTER IMMEDIATE { curri.op = MiscOpGetImplicitRegisterImmediate; } |
-       miop REGISTER REGISTER  { }
+       MISC_OP_GETIMPLICITREGISTERIMMEDIATE REGISTER IMMEDIATE { 
+       curri.op = MiscOpGetImplicitRegisterImmediate; 
+       if($3 > 255 || $3 < 0) {
+            yyerror("implicit register offset out of range!");
+       }
+       curri.reg0 = $2;
+       curri.reg1 = $3;
+       } |
+       miop REGISTER REGISTER  { 
+         curri.reg0 = $2;
+         curri.reg1 = $3;
+       }
        ;
 aop:
    ARITHMETIC_OP_ADD { curri.op = ArithmeticOpAdd; } |
@@ -239,7 +302,6 @@ aop:
    ARITHMETIC_OP_SHIFTRIGHT { curri.op = ArithmeticOpShiftRight; } |
    ARITHMETIC_OP_BINARYAND { curri.op = ArithmeticOpBinaryAnd; } |
    ARITHMETIC_OP_BINARYOR { curri.op = ArithmeticOpBinaryOr; } |
-   ARITHMETIC_OP_BINARYNOT { curri.op = ArithmeticOpBinaryNot; } |
    ARITHMETIC_OP_BINARYXOR { curri.op = ArithmeticOpBinaryXor; } 
    ;
 
@@ -316,13 +378,95 @@ miop:
    MISC_OP_SETIMPLICITREGISTERINDIRECT { curri.op = MiscOpSetImplicitRegisterIndirect; } |
    MISC_OP_GETIMPLICITREGISTERINDIRECT { curri.op = MiscOpGetImplicitRegisterIndirect; } 
 ;
+lexeme:
+      SYMBOL { curri.hassymbol = 1; 
+               curri.symbol = $1; } | 
+      IMMEDIATE { curri.immediate = $1; }
+;
 %%
 main() {
+   int i;
+   labelentry* le;
+   dynamicop* dops;
+   i = 0;
+   le = calloc(80, sizeof(labelentry));
+   dops = calloc(80, sizeof(dynamicop));
+   asmstate.segment = CodeSegment;
+   asmstate.data_address = 0;
+   asmstate.code_address = 0;
+   asmstate.entries = le;
+   asmstate.entry_count = 0;
+   asmstate.entry_storage_length = 80;
+   asmstate.dynops = dops;
+   asmstate.dynop_count = 0;
+   asmstate.dynop_storage_length = 80;
 
-do {
-   yyparse();
-} while(!feof(yyin));
+   do {
+      curri.segment = 0;
+      curri.address = 0;
+      curri.group = 0;
+      curri.op = 0;
+      curri.reg0 = 0;
+      curri.reg1 = 0;
+      curri.reg2 = 0;
+      curri.immediatestyle = ImmediateNone;
+      curri.immediate = 0;
+      curri.hassymbol = 0;
+      curri.symbol = 0;
+      yyparse();
 
+   } while(!feof(yyin));
+
+   for(i = 0; i < asmstate.entry_count; i++) {
+      free(asmstate.entries[i]->value);
+   }
+   free(asmstate->entries);
+   asmstate.entries = 0;
+}
+
+void add_label_entry(char* c, ushort addr) {
+   labelentry* le;
+   int i;
+   if(asmstate.entry_count == asmstate.entry_storage_length) {
+     le = realloc(asmstate.entries, asmstate.entry_storage_length + 80);
+     if(le == NULL) {
+         fprintf(stderr, "panic: couldn't allocate more label memory!\n");
+         free(asmstate.entries);
+         exit(1);
+     } else {
+         asmstate.entries = le;
+         asmstate.entry_storage_length += 80;
+     }
+   }
+   for(i = 0; i < asmentry.entry_count; i++) {
+      if(strcmp(asmstate.entries[i].value, c) == 0) {
+         yyerror("Found a duplicate label!");
+         exit(1);
+      }
+   }
+   asmstate.entries[asmentry.entry_count].value = c;
+   asmstate.entries[asmentry.entry_count].address = addr;
+   asmentry.entry_count++;
+}
+
+void save_encoding(void) {
+   if(curri.hassymbol) {
+      persist_dynamic_op();
+   } else {
+      write_dynamic_op(); 
+   }
+}
+void write_dynamic_op(void) {
+   /* need to figure out a better way to determine encodings */
+}
+void persist_dynamic_op(void) {
+   dynamicop* d;
+   if(asmstate.dynop_count == asmstate.dynop_storage_length) {
+      d = realloc(asmstate.dynops, asmstate.dynop_storage_length + 80);
+      if(d == NULL) {
+         fprintf(stderr, "panic: couldn't allocate more dynamic operation memory!\n");
+      }
+   }
 }
 
 void yyerror(const char* s) {
