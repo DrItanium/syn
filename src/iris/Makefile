@@ -10,7 +10,6 @@ DECODE_OBJECTS = $(patsubst %.c,%.o,$(filter-out cmd/decode.c,$(wildcard *.c)))
 
 ALL_BINARIES = ${BINARY} ${RL_BINARY} ${DECODE_BINARY} ${ASM_BINARY}
 ALL_OBJECTS = ${OBJECTS} ${RL_OBJECTS} ${TEST_OBJECTS} ${DECODE_OBJECTS}
-ALL_FILES = lex.yy.c asm.tab.c asm.tab.h
 ALL_MAINS = ${MAIN} ${RL_MAIN} ${DECODE_MAIN}
 
 all: options iris rl decode asm
@@ -21,11 +20,6 @@ options:
 	@echo "LDFLAGS  = ${LDFLAGS}"
 	@echo "CC       = ${CC}"
 
-asm.tab.c asm.tab.h: cmd/asm/asm.y
-	@${YACC} -d cmd/asm/asm.y
-
-lex.yy.c: cmd/asm/asm.l asm.tab.h
-	@${LEX} cmd/asm/asm.l
 
 %.o: %.c
 	@echo -n Compiling $< into $@...
@@ -47,8 +41,10 @@ decode: ${DECODE_MAIN} ${DECODE_OBJECTS}
 	@${CC} ${LDFLAGS} -o ${DECODE_BINARY} $^
 	@echo done.
 
-asm: lex.yy.c asm.tab.c asm.tab.h
-	@${CC} lex.yy.c asm.tab.c -I. ${LDFLAGS} -o ${ASM_BINARY}
+asm: 
+	@cd cmd/asm && $(MAKE)
+	@mv cmd/asm/irisasm .
+
 
 test_%: ${OBJECTS} cmd/tests/%.o
 	@echo -n Building ${BINARY} binary out of $^...
@@ -58,6 +54,7 @@ test_%: ${OBJECTS} cmd/tests/%.o
 clean:
 	@echo -n Cleaning...
 	@rm -f ${ALL_BINARIES} ${ALL_OBJECTS} ${ALL_MAINS} ${ASM_OBJECTS} ${ALL_FILES}
+	@cd cmd/asm && $(MAKE) clean
 	@echo done.
 
 .SECONDARY: ${TEST_OBJECTS}
