@@ -57,6 +57,22 @@ clean:
 	@cd cmd/asm && $(MAKE) clean
 	@echo done.
 
+install: all
+	@echo installing executables to ${DESTDIR}${PREFIX}/bin
+	@mkdir -p ${DESTDIR}${PREFIX}/bin
+	@cp -f ${ALL_BINARIES} ${DESTDIR}${PREFIX}/bin
+	@chmod 755 ${DESTDIR}${PREFIX}/bin/${BINARY}
+	@chmod 755 ${DESTDIR}${PREFIX}/bin/${RL_BINARY}
+	@chmod 755 ${DESTDIR}${PREFIX}/bin/${DECODE_BINARY}
+	@chmod 755 ${DESTDIR}${PREFIX}/bin/${ASM_BINARY}
+
+uninstall:
+	@echo removing executables from ${DESTDIR}${PREFIX}/bin
+	@rm -f ${DESTDIR}${PREFIX}/bin/${BINARY}
+	@rm -f ${DESTDIR}${PREFIX}/bin/${RL_BINARY}
+	@rm -f ${DESTDIR}${PREFIX}/bin/${DECODE_BINARY}
+	@rm -f ${DESTDIR}${PREFIX}/bin/${ASM_BINARY}
+
 .SECONDARY: ${TEST_OBJECTS}
 
-.PHONY: all options clean
+.PHONY: all options clean install uninstall

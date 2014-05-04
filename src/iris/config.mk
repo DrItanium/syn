@@ -15,3 +15,5 @@ ASM_BINARY = irisasm
 MAIN = cmd/sim.o
 RL_MAIN = cmd/img.o
 DECODE_MAIN = cmd/decode.o
+
+PREFIX = /usr/local
