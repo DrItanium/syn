@@ -3,7 +3,6 @@ include ../../config.mk
 ALL_FILES = lex.yy.c asm.tab.c asm.tab.h
 all: default
 
-
 asm.tab.c asm.tab.h: asm.y
 	@${YACC} -d asm.y
 
@@ -17,3 +16,5 @@ default: lex.yy.c asm.tab.c asm.tab.h
 
 clean:
 	@rm -f ${ALL_FILES} ${ASM_BINARY} *.o
+
+.PHONY: all clean
