@@ -227,18 +227,14 @@ move_op:
             curri.reg1 = $3;
        } |
 
-       mop_mixed REGISTER IMMEDIATE {
+       mop_mixed REGISTER lexeme {
             curri.reg0 = $2;
-            curri.reg1 = (byte)(($3 & 0x00FF));
-            curri.reg2 = (byte)(($3 & 0xFF00) >> 8);
        }
        ;
 
 jump_op:
-       JUMP_OP_UNCONDITIONALIMMEDIATE IMMEDIATE { 
+       JUMP_OP_UNCONDITIONALIMMEDIATE lexeme { 
          curri.op = JumpOpUnconditionalImmediate; 
-         curri.reg1 = (byte)(($2 & 0x00FF));
-         curri.reg2 = (byte)(($2 & 0xFF00) >> 8);
          } | 
        JUMP_OP_UNCONDITIONALREGISTER REGISTER { 
        curri.op = JumpOpUnconditionalRegister; 
@@ -248,10 +244,8 @@ jump_op:
             curri.reg0 = $2;
             curri.reg1 = $3;
        } |
-       jop_reg_imm REGISTER IMMEDIATE {
+       jop_reg_imm REGISTER lexeme {
             curri.reg0 = $2;
-            curri.reg1 = (byte)(($3 & 0x00FF));
-            curri.reg2 = (byte)(($3 & 0xFF00) >> 8);
        } |
        jop_reg_reg_reg REGISTER REGISTER REGISTER {
             curri.reg0 = $2;
@@ -496,7 +490,7 @@ void write_dynamic_op(dynamicop* dop) {
 }
 
 void yyerror(const char* s) {
-   printf("%d: %s at %s\n", yylineno, s, yytext);
+   printf("%d: %s\n", yylineno, s);
    exit(-1);
 }
 void resolve_labels() {
