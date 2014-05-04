@@ -21,7 +21,8 @@ enum  {
 };
 typedef struct labelentry {
    char* value;
-   ushort address;
+   byte loweraddr;
+   byte upperaddr;
 } labelentry;
 /* used to store ops which require a second pass */
 typedef struct dynamicop {
@@ -55,6 +56,10 @@ void add_label_entry(char* name, ushort address);
 void persist_dynamic_op(void);
 void save_encoding(void);
 void write_dynamic_op(dynamicop* op);
+void initialize(void);
+void cleanup(void);
+void resolve_labels(void);
+int resolve_op(dynamicop* dop);
 %}
 
 %union {
@@ -390,23 +395,7 @@ lexeme:
 ;
 %%
 main() {
-   int i;
-   labelentry* le;
-   dynamicop* dops;
-   i = 0;
-   le = calloc(80, sizeof(labelentry));
-   dops = calloc(80, sizeof(dynamicop));
-   asmstate.segment = CodeSegment;
-   asmstate.data_address = 0;
-   asmstate.code_address = 0;
-   asmstate.entries = le;
-   asmstate.entry_count = 0;
-   asmstate.entry_storage_length = 80;
-   asmstate.dynops = dops;
-   asmstate.dynop_count = 0;
-   asmstate.dynop_storage_length = 80;
-   asmstate.input = yyin;
-   asmstate.output = stdout;
+   initialize();
    do {
       curri.segment = 0;
       curri.address = 0;
@@ -420,12 +409,8 @@ main() {
       yyparse();
 
    } while(!feof(yyin));
-
-   for(i = 0; i < asmstate.entry_count; i++) {
-      free(asmstate.entries[i].value);
-   }
-   free(asmstate.entries);
-   asmstate.entries = 0;
+   resolve_labels();
+   cleanup();
 }
 
 void add_label_entry(char* c, ushort addr) {
@@ -449,8 +434,26 @@ void add_label_entry(char* c, ushort addr) {
       }
    }
    asmstate.entries[asmstate.entry_count].value = c;
-   asmstate.entries[asmstate.entry_count].address = addr;
+   asmstate.entries[asmstate.entry_count].loweraddr = (byte)((addr & 0x00FF));
+   asmstate.entries[asmstate.entry_count].upperaddr = (byte)((addr & 0xFF00) >> 8);
    asmstate.entry_count++;
+}
+
+void persist_dynamic_op(void) {
+   dynamicop* d;
+   if(asmstate.dynop_count == asmstate.dynop_storage_length) {
+      d = realloc(asmstate.dynops, asmstate.dynop_storage_length + 80);
+      if(d == NULL) {
+         fprintf(stderr, "panic: couldn't allocate more dynamic operation memory!\n");
+         free(asmstate.dynops);
+         exit(1);
+      } else {
+         asmstate.dynops = d;
+         asmstate.dynop_storage_length += 80;
+      }
+   }
+   asmstate.dynops[asmstate.dynop_count] = curri;
+   asmstate.dynop_count++;
 }
 
 void save_encoding(void) {
@@ -483,24 +486,75 @@ void write_dynamic_op(dynamicop* dop) {
       cells[3] = dop->reg1;
       cells[4] = dop->reg2;
    } else {
-      yyerror("Unknown segment!");
+      fprintf(stderr, "panic: unknown segment %d\n", dop->segment);
+      exit(1);
    }
    if(fwrite(cells, sizeof(byte), count, asmstate.output) != count) {
       fprintf(stderr, "panic: couldn't write entire instruction!\n");
       exit(errno);
    }
 }
-void persist_dynamic_op(void) {
-   dynamicop* d;
-   if(asmstate.dynop_count == asmstate.dynop_storage_length) {
-      d = realloc(asmstate.dynops, asmstate.dynop_storage_length + 80);
-      if(d == NULL) {
-         fprintf(stderr, "panic: couldn't allocate more dynamic operation memory!\n");
-      }
-   }
-}
 
 void yyerror(const char* s) {
    printf("%d: %s at %s\n", yylineno, s, yytext);
    exit(-1);
+}
+void resolve_labels() {
+   /* we need to go through the list of dynamic operations and replace
+      the label with the corresponding address */
+   int i;
+   for(i = 0; i < asmstate.dynop_count; i++) {
+      if(!resolve_op(&(asmstate.dynops[i]))) {
+         fprintf(stderr, "panic: couldn't find label %s\n", asmstate.dynops[i].symbol);
+         exit(1);
+      } else {
+         write_dynamic_op(&(asmstate.dynops[i]));
+      }
+   }
+}
+int resolve_op(dynamicop* dop) {
+   int i;
+   for(i = 0; i < asmstate.entry_count; i++) {
+      if(strcmp(asmstate.entries[i].value, dop->symbol) == 0) {
+         /* we found the corresponding label so save the address to the
+          * encoding */
+         dop->reg1 = asmstate.entries[i].loweraddr;
+         dop->reg2 = asmstate.entries[i].upperaddr;
+         return 1;
+      }
+   }
+   return 0;
+}
+void cleanup() {
+   int i;
+   /* clean up */
+   for(i = 0; i < asmstate.entry_count; i++) {
+      free(asmstate.entries[i].value);
+   }
+   for(i = 0; i < asmstate.dynop_count; i++) {
+      free(asmstate.dynops[i].symbol);
+   }
+   free(asmstate.dynops);
+   free(asmstate.entries);
+   asmstate.entries = 0;
+   asmstate.dynops = 0;
+}
+void initialize() {
+   int i;
+   labelentry* le;
+   dynamicop* dops;
+   i = 0;
+   le = calloc(80, sizeof(labelentry));
+   dops = calloc(80, sizeof(dynamicop));
+   asmstate.segment = CodeSegment;
+   asmstate.data_address = 0;
+   asmstate.code_address = 0;
+   asmstate.entries = le;
+   asmstate.entry_count = 0;
+   asmstate.entry_storage_length = 80;
+   asmstate.dynops = dops;
+   asmstate.dynop_count = 0;
+   asmstate.dynop_storage_length = 80;
+   asmstate.input = yyin;
+   asmstate.output = stdout;
 }
