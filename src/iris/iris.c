@@ -45,10 +45,11 @@ datum get_register(core* proc, byte index) {
 }
 
 void arithmetic(core* proc, instruction* inst) {
-#define perform_operation(symbol) (put_register(proc, \
-         get_arithmetic_dest(inst), (get_register(proc, \
-               get_arithmetic_source0(inst) symbol \
-               get_arithmetic_source1(inst)))))
+#define perform_operation(symbol) \
+   (put_register(proc, get_arithmetic_dest(inst), \
+         (get_register(proc, get_arithmetic_source0(inst))) \
+          symbol \
+         (get_register(proc, get_arithmetic_source1(inst)))))
    switch(get_arithmetic_op(inst)) {
       case ArithmeticOpAdd:
          perform_operation(+);

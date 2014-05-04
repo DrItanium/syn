@@ -212,6 +212,7 @@ directive:
       DIRECTIVE_DECLARE lexeme { 
             if(asmstate.segment == DataSegment) {
                curri.segment = DataSegment;
+               curri.address = asmstate.data_address;
                save_encoding();
                asmstate.data_address++;
             } else {
