@@ -57,7 +57,7 @@ clean:
 	@cd cmd/asm && $(MAKE) clean
 	@echo done.
 
-install: all
+install: 
 	@echo installing executables to ${DESTDIR}${PREFIX}/bin
 	@mkdir -p ${DESTDIR}${PREFIX}/bin
 	@cp -f ${ALL_BINARIES} ${DESTDIR}${PREFIX}/bin
