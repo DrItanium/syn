@@ -147,8 +147,28 @@ int resolve_op(dynamicop* dop);
 
 %%
 F:
-   F asm |
-   asm
+   F asm {
+      curri.segment = 0;
+      curri.address = 0;
+      curri.group = 0;
+      curri.op = 0;
+      curri.reg0 = 0;
+      curri.reg1 = 0;
+      curri.reg2 = 0;
+      curri.hassymbol = 0;
+      curri.symbol = 0;
+   } | 
+   asm {
+      curri.segment = 0;
+      curri.address = 0;
+      curri.group = 0;
+      curri.op = 0;
+      curri.reg0 = 0;
+      curri.reg1 = 0;
+      curri.reg2 = 0;
+      curri.hassymbol = 0;
+      curri.symbol = 0;
+   }
    ;
 asm:
    directive |
@@ -170,23 +190,20 @@ directive:
             if(asmstate.segment == DataSegment) {
                curri.segment = DataSegment;
                save_encoding();
+               asmstate.data_address++;
             } else {
                yyerror("Declaration in non-data segment!");
             }
       }
       ;
 statement:
-         label {
-            curri.segment = asmstate.segment;
-            if(asmstate.segment == CodeSegment) {
-               
-            }
-         }|
+         label { curri.segment = asmstate.segment; }|
          operation {
             if(asmstate.segment == CodeSegment) {
                curri.segment = CodeSegment;
                curri.address = asmstate.code_address;
                save_encoding();
+               asmstate.code_address++;
             } else {
                yyerror("operation in an invalid segment!");
             }
@@ -401,6 +418,7 @@ main() {
       curri.hassymbol = 0;
       curri.symbol = 0;
       yyparse();
+      //printf("Restarting\n");
 
    } while(!feof(yyin));
    resolve_labels();
@@ -430,6 +448,11 @@ void add_label_entry(char* c, ushort addr) {
    asmstate.entries[asmstate.entry_count].value = c;
    asmstate.entries[asmstate.entry_count].loweraddr = (byte)((addr & 0x00FF));
    asmstate.entries[asmstate.entry_count].upperaddr = (byte)((addr & 0xFF00) >> 8);
+   /*
+   printf("created %s, %d, %d\n", asmstate.entries[asmstate.entry_count].value,
+                                  asmstate.entries[asmstate.entry_count].loweraddr,
+                                  asmstate.entries[asmstate.entry_count].upperaddr);
+                                  */
    asmstate.entry_count++;
 }
 
@@ -447,6 +470,13 @@ void persist_dynamic_op(void) {
       }
    }
    asmstate.dynops[asmstate.dynop_count] = curri;
+   /*
+   printf("created %d, %d, %d, %d, %d\n", curri.group, 
+                                          curri.op, 
+                                          curri.reg0,
+                                          curri.reg1,
+                                          curri.reg2);
+                                          */
    asmstate.dynop_count++;
 }
 
@@ -457,35 +487,34 @@ void save_encoding(void) {
       write_dynamic_op(&curri); 
    }
 }
-/*((instruction & ~mask) | (value << shiftcount)) */
 void write_dynamic_op(dynamicop* dop) {
+   /* ((instruction & ~mask) | (value << shiftcount)) */
    /* little endian build up */
-   byte cells[8];
    byte tmp;
-   int count;
    tmp = 0;
-   cells[0] = dop->segment;
-   cells[1] = dop->address;
-   cells[2] = (dop->address) >> 8;
+   /*
+   printf("wrote %d, %d, %d, %d, %d\n", dop->group, 
+                                          dop->op, 
+                                          dop->reg0,
+                                          dop->reg1,
+                                          dop->reg2);
+                                          */
+   fputc(dop->segment, asmstate.output);
+   fputc(((dop->address & 0x00FF)), asmstate.output);
+   fputc(((dop->address & 0xFF00) >> 8), asmstate.output);
    if(dop->segment == CodeSegment) {
-      count = 7; 
       tmp = ((tmp & ~0x7) | (dop->group));
       tmp = ((tmp & ~0xF8) | (dop->op << 3));
-      cells[3] = tmp;
-      cells[4] = dop->reg0;
-      cells[5] = dop->reg1;
-      cells[6] = dop->reg2;
+      fputc(tmp, asmstate.output);
+      fputc(dop->reg0, asmstate.output);
+      fputc(dop->reg1, asmstate.output);
+      fputc(dop->reg2, asmstate.output);
    } else if(dop->segment == DataSegment) {
-      count = 5;
-      cells[3] = dop->reg1;
-      cells[4] = dop->reg2;
+      fputc(dop->reg1, asmstate.output);
+      fputc(dop->reg2, asmstate.output);
    } else {
       fprintf(stderr, "panic: unknown segment %d\n", dop->segment);
       exit(1);
-   }
-   if(fwrite(cells, sizeof(byte), count, asmstate.output) != count) {
-      fprintf(stderr, "panic: couldn't write entire instruction!\n");
-      exit(errno);
    }
 }
 
@@ -522,12 +551,14 @@ int resolve_op(dynamicop* dop) {
 void cleanup() {
    int i;
    /* clean up */
+   /*
    for(i = 0; i < asmstate.entry_count; i++) {
       free(asmstate.entries[i].value);
    }
    for(i = 0; i < asmstate.dynop_count; i++) {
       free(asmstate.dynops[i].symbol);
    }
+   */
    free(asmstate.dynops);
    free(asmstate.entries);
    asmstate.entries = 0;
