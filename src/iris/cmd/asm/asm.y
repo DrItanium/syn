@@ -10,7 +10,6 @@
 extern int yylex();
 extern int yyparse();
 extern FILE* yyin;
-extern char* yytext;
 extern int yylineno;
 
 void yyerror(const char* s);
@@ -246,10 +245,7 @@ move_op:
             curri.reg0 = $2;
             curri.reg1 = $3;
        } |
-
-       mop_mixed REGISTER lexeme {
-            curri.reg0 = $2;
-       }
+       mop_mixed REGISTER lexeme { curri.reg0 = $2; }
        ;
 
 jump_op:
@@ -257,16 +253,14 @@ jump_op:
          curri.op = JumpOpUnconditionalImmediate; 
          } | 
        JUMP_OP_UNCONDITIONALREGISTER REGISTER { 
-       curri.op = JumpOpUnconditionalRegister; 
-       curri.reg0 = $2;
+         curri.op = JumpOpUnconditionalRegister; 
+         curri.reg0 = $2;
        } |
        jop_reg_reg REGISTER REGISTER {
             curri.reg0 = $2;
             curri.reg1 = $3;
        } |
-       jop_reg_imm REGISTER lexeme {
-            curri.reg0 = $2;
-       } |
+       jop_reg_imm REGISTER lexeme { curri.reg0 = $2; } |
        jop_reg_reg_reg REGISTER REGISTER REGISTER {
             curri.reg0 = $2;
             curri.reg1 = $3;
@@ -408,22 +402,11 @@ lexeme:
       }
 ;
 %%
-main() {
+int main(int argc, char* argv[]) {
    initialize();
    do {
-      curri.segment = 0;
-      curri.address = 0;
-      curri.group = 0;
-      curri.op = 0;
-      curri.reg0 = 0;
-      curri.reg1 = 0;
-      curri.reg2 = 0;
-      curri.hassymbol = 0;
-      curri.symbol = 0;
       yyparse();
-      //printf("Restarting\n");
-
-   } while(!feof(yyin));
+   } while(!feof(asmstate.input));
    resolve_labels();
    cleanup();
 }
@@ -451,11 +434,6 @@ void add_label_entry(char* c, ushort addr) {
    asmstate.entries[asmstate.entry_count].value = c;
    asmstate.entries[asmstate.entry_count].loweraddr = (byte)((addr & 0x00FF));
    asmstate.entries[asmstate.entry_count].upperaddr = (byte)((addr & 0xFF00) >> 8);
-   /*
-   printf("created %s, %d, %d\n", asmstate.entries[asmstate.entry_count].value,
-                                  asmstate.entries[asmstate.entry_count].loweraddr,
-                                  asmstate.entries[asmstate.entry_count].upperaddr);
-                                  */
    asmstate.entry_count++;
 }
 
@@ -473,13 +451,6 @@ void persist_dynamic_op(void) {
       }
    }
    asmstate.dynops[asmstate.dynop_count] = curri;
-   /*
-   printf("created %d, %d, %d, %d, %d\n", curri.group, 
-                                          curri.op, 
-                                          curri.reg0,
-                                          curri.reg1,
-                                          curri.reg2);
-                                          */
    asmstate.dynop_count++;
 }
 
@@ -495,13 +466,6 @@ void write_dynamic_op(dynamicop* dop) {
    /* little endian build up */
    byte tmp;
    tmp = 0;
-   /*
-   printf("wrote %d, %d, %d, %d, %d\n", dop->group, 
-                                          dop->op, 
-                                          dop->reg0,
-                                          dop->reg1,
-                                          dop->reg2);
-                                          */
    fputc(dop->segment, asmstate.output);
    fputc(((dop->address & 0x00FF)), asmstate.output);
    fputc(((dop->address & 0xFF00) >> 8), asmstate.output);
@@ -554,14 +518,6 @@ int resolve_op(dynamicop* dop) {
 void cleanup() {
    int i;
    /* clean up */
-   /*
-   for(i = 0; i < asmstate.entry_count; i++) {
-      free(asmstate.entries[i].value);
-   }
-   for(i = 0; i < asmstate.dynop_count; i++) {
-      free(asmstate.dynops[i].symbol);
-   }
-   */
    free(asmstate.dynops);
    free(asmstate.entries);
    asmstate.entries = 0;
@@ -585,4 +541,13 @@ void initialize() {
    asmstate.dynop_storage_length = 80;
    asmstate.input = yyin;
    asmstate.output = stdout;
+   curri.segment = 0;
+   curri.address = 0;
+   curri.group = 0;
+   curri.op = 0;
+   curri.reg0 = 0;
+   curri.reg1 = 0;
+   curri.reg2 = 0;
+   curri.hassymbol = 0;
+   curri.symbol = 0;
 }
