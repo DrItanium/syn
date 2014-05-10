@@ -10,8 +10,8 @@ DECODE_OBJECTS = $(patsubst %.c,%.o,$(filter-out cmd/decode.c,$(wildcard *.c)))
 DBG_OBJECTS = $(patsubst %.c,%.o,$(filter-out cmd/dbg.c,$(wildcard *.c)))
 
 ALL_BINARIES = ${BINARY} ${RL_BINARY} ${DECODE_BINARY} ${ASM_BINARY} ${DBG_BINARY}
-ALL_OBJECTS = ${OBJECTS} ${RL_OBJECTS} ${TEST_OBJECTS} ${DECODE_OBJECTS}
-ALL_MAINS = ${MAIN} ${RL_MAIN} ${DECODE_MAIN}
+ALL_OBJECTS = ${OBJECTS} ${RL_OBJECTS} ${TEST_OBJECTS} ${DECODE_OBJECTS} ${DBG_OBJECTS}
+ALL_MAINS = ${MAIN} ${RL_MAIN} ${DECODE_MAIN} ${DBG_MAIN}
 
 all: options iris rl decode asm dbg
 
@@ -71,6 +71,7 @@ install:
 	@chmod 755 ${DESTDIR}${PREFIX}/bin/${RL_BINARY}
 	@chmod 755 ${DESTDIR}${PREFIX}/bin/${DECODE_BINARY}
 	@chmod 755 ${DESTDIR}${PREFIX}/bin/${ASM_BINARY}
+	@chmod 755 ${DESTDIR}${PREFIX}/bin/${DBG_BINARY}
 
 uninstall:
 	@echo removing executables from ${DESTDIR}${PREFIX}/bin
@@ -78,6 +79,7 @@ uninstall:
 	@rm -f ${DESTDIR}${PREFIX}/bin/${RL_BINARY}
 	@rm -f ${DESTDIR}${PREFIX}/bin/${DECODE_BINARY}
 	@rm -f ${DESTDIR}${PREFIX}/bin/${ASM_BINARY}
+	@rm -f ${DESTDIR}${PREFIX}/bin/${DBG_BINARY}
 
 .SECONDARY: ${TEST_OBJECTS}
 
