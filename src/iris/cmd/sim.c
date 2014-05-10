@@ -91,20 +91,7 @@ int execute(FILE* file) {
    return 0;
 }
 void startup() {
-   int i;
-   proc.pc = 0;
-   proc.terminateexecution = 0;
-   proc.advancepc = 1;
-   for(i = 0; i < RegisterCount; i++) {
-      proc.gpr[i] = 0;
-   }
-   for(i = 0; i < ImplicitRegisterPredicate; i++) {
-      proc.impliedregisters[i] = 0;
-   }
-   for(i = 0; i < MemorySize; i++) {
-      proc.data[i] = 0;
-      proc.code[i].full = 0;
-   }
+   iris_rom_init(&proc);
 }
 
 void shutdown() {

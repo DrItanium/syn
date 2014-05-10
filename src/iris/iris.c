@@ -445,7 +445,16 @@ void iris_error(char* message, int code) {
 
 void iris_rom_init(core* proc) {
    int i;
+   proc->pc = 0;
+   proc->terminateexecution = 0;
+   proc->advancepc = 1;
    /* clear out processor space to be sure everything is okay */
+   for(i = 0; i < RegisterCount; i++) {
+      proc->gpr[i] = 0;
+   }
+   for(i = 0; i < ImplicitRegisterPredicate; i++) {
+      proc->impliedregisters[i] = 0;
+   }
    for(i = 0; i < MemorySize; ++i) {
       proc->data[i] = 0;
       proc->stack[i] = 0;
