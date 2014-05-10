@@ -24,6 +24,7 @@ static void startup(void);
 static void shutdown(void);
 static void installprogram(FILE* file);
 static core proc;
+static byte breakpoints[MemorySize];
 
 
 int main(int argc, char* argv[]) {
@@ -81,19 +82,36 @@ void usage(char* arg0) {
    fprintf(stderr, "usage: %s -h | [<file> | -]\n", arg0);
 }
 int execute(FILE* file) {
-   int i;
+   int i, c;
+   char buffer[80];
+   c = 0;
+   for(i = 0; i < 80; i++) {
+      buffer[i] = 0;
+   }
    /* install the program to memory */
    installprogram(file); 
+   /* pause execution at this point */
    do {
-      iris_decode(&proc, &proc.code[proc.pc]);
-      if(proc.advancepc) {
-         proc.pc++;
+      if(i != 'c') {
+         iris_unparse(buffer, &(proc.code[proc.pc]));
+         printf("%s\n", buffer);
+         i = getc(stdin); 
+      }
+      if(((char)i) == 'q') {
+         break;
+      } else {
+         iris_decode(&proc, &proc.code[proc.pc]);
+         if(proc.advancepc) {
+            proc.pc++;
+         }
+         c++;
       }
    } while(!proc.terminateexecution);
+   printf("instruction count: %d\n", c);
    return 0;
 }
 void startup() {
-   int i, height, width, startx, starty;
+   int i;
    proc.pc = 0;
    proc.terminateexecution = 0;
    proc.advancepc = 1;
