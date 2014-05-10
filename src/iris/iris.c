@@ -90,6 +90,10 @@ void iris_arithmetic(core* proc, instruction* inst) {
    }
 #undef perform_operation
 }
+static void iris_push(core* proc, instruction* inst);
+static void iris_push_immediate(core* proc, instruction* inst);
+static void iris_pop(core* proc, instruction* inst);
+
 void iris_move(core* proc, instruction* inst) {
    ushort a, b;
    ushort addr0, addr1;
@@ -182,6 +186,15 @@ void iris_move(core* proc, instruction* inst) {
          addr0 = iris_get_register(proc, get_move_reg0(inst));
          a = get_move_immediate(inst);
          proc->data[addr0] = a;
+         break;
+      case MoveOpPush: /* push r? */
+         iris_push(proc, inst);
+         break;
+      case MoveOpPushImmediate: /* push.imm $imm */
+         iris_push_immediate(proc, inst);
+         break;
+      case MoveOpPop: /* pop r? */
+         iris_pop(proc, inst);
          break;
       default:
          iris_error("invalid move operation", ErrorInvalidMoveOperation);
@@ -430,4 +443,63 @@ void iris_error(char* message, int code) {
    exit(code);
 }
 
+void iris_rom_init(core* proc) {
+   int i;
+   /* clear out processor space to be sure everything is okay */
+   for(i = 0; i < MemorySize; ++i) {
+      proc->data[i] = 0;
+      proc->stack[i] = 0;
+      proc->code[i].full = 0;
+   }
+   /* by default we use these registers for stack and predicate so set them as such */
+   proc->impliedregisters[ImplicitRegisterPredicate] = DefaultPredicateRegisterIndex;
+   proc->impliedregisters[ImplicitRegisterStack] = DefaultStackPointerRegisterIndex;
+   proc->gpr[DefaultPredicateRegisterIndex] = 0;
+   proc->gpr[DefaultStackPointerRegisterIndex] = 0;
+}
+static void iris_push_onto_stack(core* proc, datum value);
+static datum iris_pop_off_stack(core* proc);
+
+void iris_push(core* proc, instruction* inst) {
+   byte index;
+   datum value;
+   index = get_reg0(inst);
+   value = iris_get_register(proc, index);
+   iris_push_onto_stack(proc, value);
+}
+void iris_push_immediate(core* proc, instruction* inst) {
+   datum value;
+   value = get_immediate(inst);
+   iris_push_onto_stack(proc, value);
+}
+void iris_pop(core* proc, instruction* inst) {
+   datum result;
+   byte index;
+   result = iris_pop_off_stack(proc);
+   index = get_reg0(inst);
+   iris_put_register(proc, index, result);
+}
+
+void iris_push_onto_stack(core* proc, datum value) {
+   byte implied;
+   datum index;
+   implied = proc->impliedregisters[ImplicitRegisterStack];
+   index = iris_get_register(proc, implied);
+   proc->stack[index] = value;
+   index++;
+   iris_put_register(proc, implied, index);
+}
+
+datum iris_pop_off_stack(core* proc) {
+   byte implied;
+   datum index, value;
+   implied = proc->impliedregisters[ImplicitRegisterStack];
+   index = iris_get_register(proc, implied);
+   value = proc->stack[index];
+   index--;
+   iris_put_register(proc, implied, index);
+   return value;
+}
+
 /* vim: set expandtab tabstop=3 shiftwidth=3: */
+

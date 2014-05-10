@@ -20,8 +20,10 @@ enum {
    RegisterCount = 256, 
    /* used in cases where we don't have enough encoding space */
    ImpliedRegisterCount = 256,
-   MemorySize = 65536, /* 8-bit cells */
+   MemorySize = 65536, 
    MajorOperationGroupCount = 8,
+   DefaultPredicateRegisterIndex = 255,
+   DefaultStackPointerRegisterIndex = 254,
 };
 
 typedef struct core {
@@ -29,6 +31,7 @@ typedef struct core {
    byte impliedregisters[ImpliedRegisterCount];
    instruction code[MemorySize];
    datum data[MemorySize];
+   datum stack[MemorySize];
    ushort pc;
    byte advancepc;
    byte terminateexecution;
@@ -104,6 +107,10 @@ enum {
    MoveOpStoreAddr, /* store.addr r? r? */
    MoveOpStoreMem, /* memcopy r? $imm */
    MoveOpStoreImm, /* memset r? $imm */
+   /* uses an indirect register for the stack pointer */
+   MoveOpPush, /* push r? */
+   MoveOpPushImmediate, /* push.imm $imm */
+   MoveOpPop, /* pop r? */
 };
 #define get_move_op(inst) (iris_decode_op(inst))
 #define get_move_immediate(inst) (iris_decode_immediate(inst, 1))
@@ -305,6 +312,7 @@ enum {
 /* implicit registers */
 enum {
    ImplicitRegisterPredicate = 0,
+   ImplicitRegisterStack, 
 };
 #define get_misc_op(inst) (iris_decode_op(inst))
 #define get_misc_index(inst) (iris_decode_register(inst, 1))
@@ -334,7 +342,7 @@ enum {
    SystemCommandPanic,
 };
 
-
+void iris_rom_init(core* proc);
 void iris_arithmetic(core* proc, instruction* inst);
 void iris_move(core* proc, instruction* inst);
 void iris_jump(core* proc, instruction* inst);
