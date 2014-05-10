@@ -36,9 +36,9 @@ int main() {
          insn.bytes[1] = values[k].a;
          insn.bytes[2] = values[k].b;
          insn.bytes[3] = values[k].c;
-         unparse_bitstring(unparsed, &insn);
+         iris_unparse_bitstring(unparsed, &insn);
          printf("%s : ", unparsed);
-         unparse(unparsed, &insn);
+         iris_unparse(unparsed, &insn);
          printf("%s\n", unparsed);
       }
    }

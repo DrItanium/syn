@@ -10,19 +10,19 @@ int main() {
     insn.full = i;
     switch(get_group(&insn)) {
       case InstructionGroupArithmetic:
-        puts(arithmetic_mnemonic(&insn));
+        puts(iris_arithmetic_mnemonic(&insn));
         break;
       case InstructionGroupMove:
-        puts(move_mnemonic(&insn));
+        puts(iris_move_mnemonic(&insn));
         break;
       case InstructionGroupJump:
-        puts(jump_mnemonic(&insn));
+        puts(iris_jump_mnemonic(&insn));
         break;
       case InstructionGroupCompare:
-        puts(compare_mnemonic(&insn));
+        puts(iris_compare_mnemonic(&insn));
         break;
       case InstructionGroupMisc:
-        puts(misc_mnemonic(&insn));
+        puts(iris_misc_mnemonic(&insn));
         break;
       default:
         puts("Unknown instruction group");
