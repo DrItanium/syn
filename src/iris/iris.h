@@ -69,10 +69,10 @@ enum {
    ArithmeticOpBinaryNot,
    ArithmeticOpBinaryXor,
 };
-#define get_arithmetic_op(inst) (decode_op(inst))
-#define get_arithmetic_dest(inst) (decode_register(inst, 1))
-#define get_arithmetic_source0(inst) (decode_register(inst, 2))
-#define get_arithmetic_source1(inst) (decode_register(inst, 3))
+#define get_arithmetic_op(inst) (iris_decode_op(inst))
+#define get_arithmetic_dest(inst) (iris_decode_register(inst, 1))
+#define get_arithmetic_source0(inst) (iris_decode_register(inst, 2))
+#define get_arithmetic_source1(inst) (iris_decode_register(inst, 3))
 
 /* move */
 /* C structure version
@@ -105,10 +105,10 @@ enum {
    MoveOpStoreMem, /* memcopy r? $imm */
    MoveOpStoreImm, /* memset r? $imm */
 };
-#define get_move_op(inst) (decode_op(inst))
-#define get_move_immediate(inst) (decode_immediate(inst, 1))
-#define get_move_reg0(inst) (decode_register(inst, 1))
-#define get_move_reg1(inst) (decode_register(inst, 2))
+#define get_move_op(inst) (iris_decode_op(inst))
+#define get_move_immediate(inst) (iris_decode_immediate(inst, 1))
+#define get_move_reg0(inst) (iris_decode_register(inst, 1))
+#define get_move_reg1(inst) (iris_decode_register(inst, 2))
 
 /* jump */
 /* C structure version
@@ -219,11 +219,11 @@ enum {
    JumpOpIfThenElseLinkPredTrue,
    JumpOpIfThenElseLinkPredFalse,
 };
-#define get_jump_op(inst) (decode_op(inst))
-#define get_jump_immediate(inst) (decode_immediate(inst, 1))
-#define get_jump_reg0(inst) (decode_register(inst, 1))
-#define get_jump_reg1(inst) (decode_register(inst, 2))
-#define get_jump_reg2(inst) (decode_register(inst, 3))
+#define get_jump_op(inst) (iris_decode_op(inst))
+#define get_jump_immediate(inst) (iris_decode_immediate(inst, 1))
+#define get_jump_reg0(inst) (iris_decode_register(inst, 1))
+#define get_jump_reg1(inst) (iris_decode_register(inst, 2))
+#define get_jump_reg2(inst) (iris_decode_register(inst, 3))
 
 /* compare */
 /* C structure version 
@@ -261,10 +261,10 @@ enum {
    CompareOpGreaterThanOrEqualToOr,
    CompareOpGreaterThanOrEqualToXor,
 };
-#define get_compare_op(inst) (decode_op(inst))
-#define get_compare_reg0(inst) (decode_register(inst, 1))
-#define get_compare_reg1(inst) (decode_register(inst, 2))
-#define get_compare_reg2(inst) (decode_register(inst, 3))
+#define get_compare_op(inst) (iris_decode_op(inst))
+#define get_compare_reg0(inst) (iris_decode_register(inst, 1))
+#define get_compare_reg1(inst) (iris_decode_register(inst, 2))
+#define get_compare_reg2(inst) (iris_decode_register(inst, 3))
 
 /* misc */
 /* C structure version
@@ -306,10 +306,10 @@ enum {
 enum {
    ImplicitRegisterPredicate = 0,
 };
-#define get_misc_op(inst) (decode_op(inst))
-#define get_misc_index(inst) (decode_register(inst, 1))
-#define get_misc_reg0(inst) (decode_register(inst, 2))
-#define get_misc_reg1(inst) (decode_register(inst, 3))
+#define get_misc_op(inst) (iris_decode_op(inst))
+#define get_misc_index(inst) (iris_decode_register(inst, 1))
+#define get_misc_reg0(inst) (iris_decode_register(inst, 2))
+#define get_misc_reg1(inst) (iris_decode_register(inst, 3))
 
 
 /* error codes */
@@ -335,46 +335,46 @@ enum {
 };
 
 
-void arithmetic(core* proc, instruction* inst);
-void move(core* proc, instruction* inst);
-void jump(core* proc, instruction* inst);
-void compare(core* proc, instruction* inst);
-void put_register(core* proc, byte index, datum value);
-datum get_register(core* proc, byte index);
-void decode(core* proc, instruction* value);
-void error(char* message, int code);
-void misc(core* proc, instruction* inst);
+void iris_arithmetic(core* proc, instruction* inst);
+void iris_move(core* proc, instruction* inst);
+void iris_jump(core* proc, instruction* inst);
+void iris_compare(core* proc, instruction* inst);
+void iris_put_register(core* proc, byte index, datum value);
+datum iris_get_register(core* proc, byte index);
+void iris_decode(core* proc, instruction* value);
+void iris_error(char* message, int code);
+void iris_misc(core* proc, instruction* inst);
 /* mnemonics */
-const char* arithmetic_mnemonic(instruction* insn);
-const char* move_mnemonic(instruction* insn);
-const char* jump_mnemonic(instruction* insn);
-const char* compare_mnemonic(instruction* insn);
-const char* misc_mnemonic(instruction* insn);
+const char* iris_arithmetic_mnemonic(instruction* insn);
+const char* iris_move_mnemonic(instruction* insn);
+const char* iris_jump_mnemonic(instruction* insn);
+const char* iris_compare_mnemonic(instruction* insn);
+const char* iris_misc_mnemonic(instruction* insn);
 /* unparse */
-void unparse(char* unparsed, instruction* insn);
-void unparse_register(char* unparsed, byte index);
-void unparse_arithmetic(char* unparsed, instruction* insn);
-void unparse_move(char* unparsed, instruction* insn);
-void unparse_jump(char* unparsed, instruction* insn);
-void unparse_normal_jump(char* unparsed, instruction* insn);
-void unparse_if_then_else(char* unparsed, instruction* insn);
-void unparse_compare(char* unparsed, instruction* insn);
-void unparse_bitstring(char* bits, instruction* insn);
-void unparse_misc(char* unparsed, instruction* insn);
+void iris_unparse(char* unparsed, instruction* insn);
+void iris_unparse_register(char* unparsed, byte index);
+void iris_unparse_arithmetic(char* unparsed, instruction* insn);
+void iris_unparse_move(char* unparsed, instruction* insn);
+void iris_unparse_jump(char* unparsed, instruction* insn);
+void iris_unparse_normal_jump(char* unparsed, instruction* insn);
+void iris_unparse_if_then_else(char* unparsed, instruction* insn);
+void iris_unparse_compare(char* unparsed, instruction* insn);
+void iris_unparse_bitstring(char* bits, instruction* insn);
+void iris_unparse_misc(char* unparsed, instruction* insn);
 /* encode */
-byte decode_group(instruction* inst);
-void encode_group(instruction* inst, byte group);
-byte decode_op(instruction* inst);
-void encode_op(instruction* inst, byte op);
-byte decode_register(instruction* inst, byte index);
-void encode_register(instruction* inst, byte index, byte value);
-datum decode_immediate(instruction* inst, byte index);
-void encode_immediate(instruction* inst, byte index, datum value);
+byte iris_decode_group(instruction* inst);
+void iris_encode_group(instruction* inst, byte group);
+byte iris_decode_op(instruction* inst);
+void iris_encode_op(instruction* inst, byte op);
+byte iris_decode_register(instruction* inst, byte index);
+void iris_encode_register(instruction* inst, byte index, byte value);
+datum iris_decode_immediate(instruction* inst, byte index);
+void iris_encode_immediate(instruction* inst, byte index, datum value);
 
-#define get_group(inst) (decode_group(inst))
-#define get_op(inst) (decode_op(inst))
-#define get_reg0(inst) (decode_register(inst, 1))
-#define get_reg1(inst) (decode_register(inst, 2))
-#define get_reg2(inst) (decode_register(inst, 3))
-#define get_immediate(inst) (decode_immediate(inst, 1))
+#define get_group(inst) (iris_decode_group(inst))
+#define get_op(inst) (iris_decode_op(inst))
+#define get_reg0(inst) (iris_decode_register(inst, 1))
+#define get_reg1(inst) (iris_decode_register(inst, 2))
+#define get_reg2(inst) (iris_decode_register(inst, 3))
+#define get_immediate(inst) (iris_decode_immediate(inst, 1))
 #endif 

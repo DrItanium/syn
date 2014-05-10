@@ -13,7 +13,7 @@ int main() {
       buffer[i] = 0;
    }
    while(readinstruction(stdin, &curr)) {
-      unparse(buffer, &curr);
+      iris_unparse(buffer, &curr);
       printf("%s\n", buffer);
    }
    return 0;

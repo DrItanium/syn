@@ -83,7 +83,7 @@ int execute(FILE* file) {
    /* install the program to memory */
    installprogram(file); 
    do {
-      decode(&proc, &proc.code[proc.pc]);
+      iris_decode(&proc, &proc.code[proc.pc]);
       if(proc.advancepc) {
          proc.pc++;
       }

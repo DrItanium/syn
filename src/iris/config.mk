@@ -1,4 +1,4 @@
-LIBS = -lc 
+LIBS = -lc -lncurses
 
 CC = cc 
 LEX = flex
@@ -10,10 +10,12 @@ BINARY = iris
 RL_BINARY = irislink
 DECODE_BINARY = irisdecode
 ASM_BINARY = irisasm
+DBG_BINARY = irisdbg
 
 # The object file that defines main()
 MAIN = cmd/sim.o
 RL_MAIN = cmd/img.o
 DECODE_MAIN = cmd/decode.o
+DBG_MAIN = cmd/dbg.o
 
 PREFIX = /usr/local

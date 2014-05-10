@@ -2,54 +2,54 @@
 #include <stdio.h>
 #include "iris.h"
 
-void decode(core* proc, instruction* value) {
+void iris_decode(core* proc, instruction* value) {
    /* reset the advancepc value */
    proc->advancepc = 1;
    switch(get_group(value)) {
       case InstructionGroupArithmetic:
-         arithmetic(proc, value);
+         iris_arithmetic(proc, value);
          break;
       case InstructionGroupMove:
-         move(proc, value);
+         iris_move(proc, value);
          break;
       case InstructionGroupJump:
-         jump(proc, value);
+         iris_jump(proc, value);
          break;
       case InstructionGroupCompare:
-         compare(proc, value);
+         iris_compare(proc, value);
          break;
       case InstructionGroupMisc:
-         misc(proc, value);
+         iris_misc(proc, value);
          break;
       default:
-         error("invalid instruction group provided", ErrorInvalidInstructionGroupProvided);
+         iris_error("invalid instruction group provided", ErrorInvalidInstructionGroupProvided);
          break;
    }
 }
 
-void put_register(core* proc, byte index, datum value) {
+void iris_put_register(core* proc, byte index, datum value) {
    if(index < RegisterCount) {
       proc->gpr[index] = value;
    } else {
-      error("attempted to store to a register out of range", ErrorPutRegisterOutOfRange);
+      iris_error("attempted to store to a register out of range", ErrorPutRegisterOutOfRange);
    }
 }
 
-datum get_register(core* proc, byte index) {
+datum iris_get_register(core* proc, byte index) {
    if(index < RegisterCount) {
       return proc->gpr[index];
    } else {
-      error("attempted to retrieve a value from a register out of range", ErrorGetRegisterOutOfRange);
+      iris_error("attempted to retrieve a value from a register out of range", ErrorGetRegisterOutOfRange);
       return 0;
    }
 }
 
-void arithmetic(core* proc, instruction* inst) {
+void iris_arithmetic(core* proc, instruction* inst) {
 #define perform_operation(symbol) \
-   (put_register(proc, get_arithmetic_dest(inst), \
-         (get_register(proc, get_arithmetic_source0(inst))) \
+   (iris_put_register(proc, get_arithmetic_dest(inst), \
+         (iris_get_register(proc, get_arithmetic_source0(inst))) \
           symbol \
-         (get_register(proc, get_arithmetic_source1(inst)))))
+         (iris_get_register(proc, get_arithmetic_source1(inst)))))
    switch(get_arithmetic_op(inst)) {
       case ArithmeticOpAdd:
          perform_operation(+);
@@ -79,18 +79,18 @@ void arithmetic(core* proc, instruction* inst) {
          perform_operation(|);
          break;
       case ArithmeticOpBinaryNot:
-         put_register(proc, get_arithmetic_dest(inst), 
-               ~(get_register(proc, get_arithmetic_source0(inst))));
+         iris_put_register(proc, get_arithmetic_dest(inst), 
+               ~(iris_get_register(proc, get_arithmetic_source0(inst))));
          break;
       case ArithmeticOpBinaryXor:
          perform_operation(^);
          break;
       default:
-         error("invalid arithmetic operation", ErrorInvalidArithmeticOperation);
+         iris_error("invalid arithmetic operation", ErrorInvalidArithmeticOperation);
    }
 #undef perform_operation
 }
-void move(core* proc, instruction* inst) {
+void iris_move(core* proc, instruction* inst) {
    ushort a, b;
    ushort addr0, addr1;
    a = 0;
@@ -100,28 +100,28 @@ void move(core* proc, instruction* inst) {
    switch(get_move_op(inst)) {
 
       case MoveOpMove: /* move r? r? */
-         put_register(proc, get_move_reg0(inst), 
-               get_register(proc, get_move_reg1(inst)));
+         iris_put_register(proc, get_move_reg0(inst), 
+               iris_get_register(proc, get_move_reg1(inst)));
          break;
       case MoveOpSwap: /* swap r? r? */
-         a = get_register(proc, get_move_reg0(inst));
-         b = get_register(proc, get_move_reg1(inst));
-         put_register(proc, get_move_reg0(inst), b);
-         put_register(proc, get_move_reg1(inst), a);
+         a = iris_get_register(proc, get_move_reg0(inst));
+         b = iris_get_register(proc, get_move_reg1(inst));
+         iris_put_register(proc, get_move_reg0(inst), b);
+         iris_put_register(proc, get_move_reg1(inst), a);
          break;
       case MoveOpSwapRegAddr: /* swap.reg.addr r? r? */
          /* need to preserve the address in case it gets overwritten */
          /* for example, swap.reg.addr r0 r0 */
-         addr0 = get_register(proc, get_move_reg1(inst));
-         a = get_register(proc, get_move_reg0(inst));
+         addr0 = iris_get_register(proc, get_move_reg1(inst));
+         a = iris_get_register(proc, get_move_reg0(inst));
          b = proc->data[addr0];
-         put_register(proc, get_move_reg0(inst), b);
+         iris_put_register(proc, get_move_reg0(inst), b);
          proc->data[addr0] = a;
          break;
       case MoveOpSwapAddrAddr: /* swap.addr.addr r? r? */
          /* we're not touching registers */
-         addr0 = get_register(proc, get_move_reg0(inst));
-         addr1 = get_register(proc, get_move_reg1(inst));
+         addr0 = iris_get_register(proc, get_move_reg0(inst));
+         addr1 = iris_get_register(proc, get_move_reg1(inst));
          a = proc->data[addr0];
          b = proc->data[addr1];
          proc->data[addr0] = b;
@@ -129,13 +129,13 @@ void move(core* proc, instruction* inst) {
          break;
       case MoveOpSwapRegMem: /* swap.reg.mem r? $imm */
          addr0 = get_move_immediate(inst);
-         a = get_register(proc, get_move_reg0(inst));
+         a = iris_get_register(proc, get_move_reg0(inst));
          b = proc->data[addr0];
-         put_register(proc, get_move_reg0(inst), b);
+         iris_put_register(proc, get_move_reg0(inst), b);
          proc->data[addr0] = a;
          break;
       case MoveOpSwapAddrMem: /* swap.addr.mem r? $imm */
-         addr0 = get_register(proc, get_move_reg0(inst));
+         addr0 = iris_get_register(proc, get_move_reg0(inst));
          addr1 = get_move_immediate(inst);
          a = proc->data[addr0];
          b = proc->data[addr1];
@@ -143,17 +143,17 @@ void move(core* proc, instruction* inst) {
          proc->data[addr1] = a;
          break;
       case MoveOpSet: /* set r? $imm */
-         put_register(proc, get_move_reg0(inst), get_move_immediate(inst));
+         iris_put_register(proc, get_move_reg0(inst), get_move_immediate(inst));
          break;
       case MoveOpLoad: /* load r? r? */
-         addr0 = get_register(proc, get_move_reg1(inst));
+         addr0 = iris_get_register(proc, get_move_reg1(inst));
          a = proc->data[addr0];
-         put_register(proc, get_move_reg0(inst), a);
+         iris_put_register(proc, get_move_reg0(inst), a);
          break;
       case MoveOpLoadMem: /* load.mem r? $imm */
          addr0 = get_move_immediate(inst);
          a = proc->data[addr0];
-         put_register(proc, get_move_reg0(inst), a);
+         iris_put_register(proc, get_move_reg0(inst), a);
          break;
 
          /* In the case of stores, reg0 contains the address and the second
@@ -162,51 +162,51 @@ void move(core* proc, instruction* inst) {
           * following flow direction <- and it should make sense */
 
       case MoveOpStore: /* store r? r? */
-         addr0 = get_register(proc, get_move_reg0(inst));
-         a = get_register(proc, get_move_reg1(inst));
+         addr0 = iris_get_register(proc, get_move_reg0(inst));
+         a = iris_get_register(proc, get_move_reg1(inst));
          proc->data[addr0] = a;
          break;
       case MoveOpStoreAddr: /* store.addr r? r? */
-         addr0 = get_register(proc, get_move_reg0(inst));
-         addr1 = get_register(proc, get_move_reg1(inst));
+         addr0 = iris_get_register(proc, get_move_reg0(inst));
+         addr1 = iris_get_register(proc, get_move_reg1(inst));
          a = proc->data[addr1];
          proc->data[addr0] = a;
          break;
       case MoveOpStoreMem: /* memcopy r? $imm */
-         addr0 = get_register(proc, get_move_reg0(inst));
+         addr0 = iris_get_register(proc, get_move_reg0(inst));
          addr1 = get_move_immediate(inst);
          a = proc->data[addr1];
          proc->data[addr0] = a;
          break;
       case MoveOpStoreImm: /* memset r? $imm */
-         addr0 = get_register(proc, get_move_reg0(inst));
+         addr0 = iris_get_register(proc, get_move_reg0(inst));
          a = get_move_immediate(inst);
          proc->data[addr0] = a;
          break;
       default:
-         error("invalid move operation", ErrorInvalidMoveOperation);
+         iris_error("invalid move operation", ErrorInvalidMoveOperation);
    }
 }
-void jump(core* proc, instruction* inst) {
+void iris_jump(core* proc, instruction* inst) {
    proc->advancepc = 0;
    switch(get_jump_op(inst)) {
       case JumpOpUnconditionalImmediate:
          proc->pc = get_jump_immediate(inst);
          break;
       case JumpOpUnconditionalImmediateLink:
-         put_register(proc, get_jump_reg0(inst), proc->pc + 1);
+         iris_put_register(proc, get_jump_reg0(inst), proc->pc + 1);
          proc->pc = get_jump_immediate(inst);
          break;
       case JumpOpUnconditionalRegister:
-         proc->pc = get_register(proc, get_jump_reg0(inst));
+         proc->pc = iris_get_register(proc, get_jump_reg0(inst));
          break;
       case JumpOpUnconditionalRegisterLink:
-         put_register(proc, get_jump_reg0(inst), proc->pc + 1);
-         proc->pc = get_register(proc, get_jump_reg1(inst));
+         iris_put_register(proc, get_jump_reg0(inst), proc->pc + 1);
+         proc->pc = iris_get_register(proc, get_jump_reg1(inst));
          break;
       case JumpOpConditionalTrueImmediate: 
          {
-            if((get_register(proc, get_jump_reg0(inst)) != 0)) {
+            if((iris_get_register(proc, get_jump_reg0(inst)) != 0)) {
                proc->pc = get_jump_immediate(inst); 
             } else {
                proc->advancepc = 1;
@@ -216,8 +216,8 @@ void jump(core* proc, instruction* inst) {
       case JumpOpConditionalTrueImmediateLink:
          {
             /* load the implied predicate register */
-            if((get_register(proc, proc->impliedregisters[ImplicitRegisterPredicate]) != 0)) {
-               put_register(proc, get_jump_reg0(inst), proc->pc + 1);
+            if((iris_get_register(proc, proc->impliedregisters[ImplicitRegisterPredicate]) != 0)) {
+               iris_put_register(proc, get_jump_reg0(inst), proc->pc + 1);
                proc->pc = get_jump_immediate(inst); 
             } else {
                proc->advancepc = 1;
@@ -226,8 +226,8 @@ void jump(core* proc, instruction* inst) {
          }
       case JumpOpConditionalTrueRegister:
          {
-            if((get_register(proc, get_jump_reg0(inst)) != 0)) {
-               proc->pc = get_register(proc, get_jump_reg1(inst));
+            if((iris_get_register(proc, get_jump_reg0(inst)) != 0)) {
+               proc->pc = iris_get_register(proc, get_jump_reg1(inst));
             } else {
                /* fall through */
                proc->advancepc = 1;
@@ -237,9 +237,9 @@ void jump(core* proc, instruction* inst) {
       case JumpOpConditionalTrueRegisterLink:
          {
             /* load the implied predicate register */
-            if((get_register(proc, get_jump_reg0(inst)) != 0)) {
-               put_register(proc, get_jump_reg1(inst), proc->pc + 1);
-               proc->pc = get_register(proc, get_jump_reg2(inst));
+            if((iris_get_register(proc, get_jump_reg0(inst)) != 0)) {
+               iris_put_register(proc, get_jump_reg1(inst), proc->pc + 1);
+               proc->pc = iris_get_register(proc, get_jump_reg2(inst));
             } else {
                proc->advancepc = 1;
             }
@@ -247,7 +247,7 @@ void jump(core* proc, instruction* inst) {
          }
       case JumpOpConditionalFalseImmediate: 
          {
-            if((get_register(proc, get_jump_reg0(inst)) == 0)) {
+            if((iris_get_register(proc, get_jump_reg0(inst)) == 0)) {
                proc->pc = get_jump_immediate(inst); 
             } else {
                proc->advancepc = 1;
@@ -257,8 +257,8 @@ void jump(core* proc, instruction* inst) {
       case JumpOpConditionalFalseImmediateLink:
          {
             /* load the implied predicate register */
-            if((get_register(proc, proc->impliedregisters[ImplicitRegisterPredicate]) == 0)) {
-               put_register(proc, get_jump_reg0(inst), proc->pc + 1);
+            if((iris_get_register(proc, proc->impliedregisters[ImplicitRegisterPredicate]) == 0)) {
+               iris_put_register(proc, get_jump_reg0(inst), proc->pc + 1);
                proc->pc = get_jump_immediate(inst); 
             } else {
                proc->advancepc = 1;
@@ -267,8 +267,8 @@ void jump(core* proc, instruction* inst) {
          }
       case JumpOpConditionalFalseRegister:
          {
-            if((get_register(proc, get_jump_reg0(inst)) == 0)) {
-               proc->pc = get_register(proc, get_jump_reg1(inst));
+            if((iris_get_register(proc, get_jump_reg0(inst)) == 0)) {
+               proc->pc = iris_get_register(proc, get_jump_reg1(inst));
             } else {
                /* fall through */
                proc->advancepc = 1;
@@ -278,9 +278,9 @@ void jump(core* proc, instruction* inst) {
       case JumpOpConditionalFalseRegisterLink:
          {
             /* load the implied predicate register */
-            if((get_register(proc, get_jump_reg0(inst)) == 0)) {
-               put_register(proc, get_jump_reg1(inst), proc->pc + 1);
-               proc->pc = get_register(proc, get_jump_reg2(inst));
+            if((iris_get_register(proc, get_jump_reg0(inst)) == 0)) {
+               iris_put_register(proc, get_jump_reg1(inst), proc->pc + 1);
+               proc->pc = iris_get_register(proc, get_jump_reg2(inst));
             } else {
                proc->advancepc = 1;
             }
@@ -288,58 +288,58 @@ void jump(core* proc, instruction* inst) {
          }
       case JumpOpIfThenElseNormalPredTrue: 
          {
-            if((get_register(proc, get_jump_reg0(inst)) != 0)) {
-               proc->pc = get_register(proc, get_jump_reg1(inst));
+            if((iris_get_register(proc, get_jump_reg0(inst)) != 0)) {
+               proc->pc = iris_get_register(proc, get_jump_reg1(inst));
             } else {
                /* fall through */
-               proc->pc = get_register(proc, get_jump_reg2(inst));
+               proc->pc = iris_get_register(proc, get_jump_reg2(inst));
             }
             break;
          }
       case JumpOpIfThenElseNormalPredFalse:
          {
-            if((get_register(proc, get_jump_reg0(inst)) == 0)) {
-               proc->pc = get_register(proc, get_jump_reg1(inst));
+            if((iris_get_register(proc, get_jump_reg0(inst)) == 0)) {
+               proc->pc = iris_get_register(proc, get_jump_reg1(inst));
             } else {
                /* fall through */
-               proc->pc = get_register(proc, get_jump_reg2(inst));
+               proc->pc = iris_get_register(proc, get_jump_reg2(inst));
             }
             break;
          }
       case JumpOpIfThenElseLinkPredTrue:
          {
-            put_register(proc, get_jump_reg0(inst), proc->pc + 1);
-            if((get_register(proc, proc->impliedregisters[ImplicitRegisterPredicate]) != 0)) {
-               proc->pc = get_register(proc, get_jump_reg1(inst));
+            iris_put_register(proc, get_jump_reg0(inst), proc->pc + 1);
+            if((iris_get_register(proc, proc->impliedregisters[ImplicitRegisterPredicate]) != 0)) {
+               proc->pc = iris_get_register(proc, get_jump_reg1(inst));
             } else {
-               proc->pc = get_register(proc, get_jump_reg2(inst));
+               proc->pc = iris_get_register(proc, get_jump_reg2(inst));
             }
             break;
          }
       case JumpOpIfThenElseLinkPredFalse:
          {
-            put_register(proc, get_jump_reg0(inst), proc->pc + 1);
-            if((get_register(proc, proc->impliedregisters[ImplicitRegisterPredicate]) == 0)) {
-               proc->pc = get_register(proc, get_jump_reg1(inst));
+            iris_put_register(proc, get_jump_reg0(inst), proc->pc + 1);
+            if((iris_get_register(proc, proc->impliedregisters[ImplicitRegisterPredicate]) == 0)) {
+               proc->pc = iris_get_register(proc, get_jump_reg1(inst));
             } else {
-               proc->pc = get_register(proc, get_jump_reg2(inst));
+               proc->pc = iris_get_register(proc, get_jump_reg2(inst));
             }
             break;
          }
       default:
-         error("invalid jump operation", ErrorInvalidJumpOperation);
+         iris_error("invalid jump operation", ErrorInvalidJumpOperation);
    }
 }
 
-void compare(core* proc, instruction* inst) {
+void iris_compare(core* proc, instruction* inst) {
    ushort value;
    /* grab the appropriate value */
-   value = get_register(proc, get_compare_reg0(inst));
+   value = iris_get_register(proc, get_compare_reg0(inst));
    switch(get_compare_op(inst)) {
 #define perform_operation(symbol, assign) \
-      value assign (get_register(proc, get_compare_reg1(inst)) symbol \
-            get_register(proc, get_compare_reg2(inst))); \
-      put_register(proc, get_compare_reg0(inst), value)
+      value assign (iris_get_register(proc, get_compare_reg1(inst)) symbol \
+            iris_get_register(proc, get_compare_reg2(inst))); \
+      iris_put_register(proc, get_compare_reg0(inst), value)
 #define define_group(class, symbol) \
       case CompareOp ## class :        perform_operation(symbol, =); break; \
       case CompareOp ## class ## And : perform_operation(symbol, &=); break; \
@@ -354,13 +354,13 @@ void compare(core* proc, instruction* inst) {
 #undef define_group
 #undef perform_operation
       default:
-         error("invalid compare operation", ErrorInvalidCompareOperation);
+         iris_error("invalid compare operation", ErrorInvalidCompareOperation);
    }
 }
 static void iris_system_call(core* proc, instruction* j);
 static void iris_set_implicit_register(core* proc, byte index, byte value);
 static byte iris_get_implicit_register(core* proc, byte index);
-void misc(core* proc, instruction* j) {
+void iris_misc(core* proc, instruction* j) {
    byte index, value;
    index = 0;
    value = 0;
@@ -371,12 +371,12 @@ void misc(core* proc, instruction* j) {
          break;
       case MiscOpSetImplicitRegisterImmediate:
          index = get_misc_index(j);
-         value = (byte)get_register(proc, get_misc_reg0(j));
+         value = (byte)iris_get_register(proc, get_misc_reg0(j));
          iris_set_implicit_register(proc, index, value);
          break;
       case MiscOpSetImplicitRegisterIndirect:
-         index = (byte)get_register(proc, get_misc_index(j));
-         value = (byte)get_register(proc, get_misc_reg0(j));
+         index = (byte)iris_get_register(proc, get_misc_index(j));
+         value = (byte)iris_get_register(proc, get_misc_reg0(j));
          iris_set_implicit_register(proc, index, value);
          break;
       /* we need to imply a <- flow direction to maintain consistency.
@@ -384,15 +384,15 @@ void misc(core* proc, instruction* j) {
       case MiscOpGetImplicitRegisterImmediate:
          value = get_misc_index(j);
          index = get_misc_reg0(j);
-         put_register(proc, value, iris_get_implicit_register(proc, index));
+         iris_put_register(proc, value, iris_get_implicit_register(proc, index));
          break;
       case MiscOpGetImplicitRegisterIndirect:
          value = get_misc_reg0(j);
-         index = (byte)get_register(proc, get_misc_index(j));
-         put_register(proc, value, iris_get_implicit_register(proc, index));
+         index = (byte)iris_get_register(proc, get_misc_index(j));
+         iris_put_register(proc, value, iris_get_implicit_register(proc, index));
          break;
       default:
-         error("invalid misc operation", ErrorInvalidMiscOperation);
+         iris_error("invalid misc operation", ErrorInvalidMiscOperation);
    }
 }
 
@@ -414,18 +414,18 @@ void iris_system_call(core* proc, instruction* j) {
          break;
       case SystemCommandGetC:
          result = getchar();
-         put_register(proc, reg0, (datum)result);
+         iris_put_register(proc, reg0, (datum)result);
          break;
       case SystemCommandPutC:
-         value = get_register(proc, reg0);
+         value = iris_get_register(proc, reg0);
          putchar(value);
          break;
       default:
-         error("invalid system command provided", ErrorInvalidSystemCommand);
+         iris_error("invalid system command provided", ErrorInvalidSystemCommand);
    }
 }
 
-void error(char* message, int code) {
+void iris_error(char* message, int code) {
    fprintf(stderr, "%s\n", message);
    exit(code);
 }

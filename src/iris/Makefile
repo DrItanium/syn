@@ -7,12 +7,13 @@ OBJECTS = $(patsubst %.c,%.o,$(filter-out cmd/sim.c,$(wildcard *.c)))
 RL_OBJECTS = $(patsubst %.c,%.o,$(filter-out cmd/img.c,$(wildcard *.c)))
 TEST_OBJECTS = $(patsubst %.c,%.o,$(wildcard cmd/tests/*.c))
 DECODE_OBJECTS = $(patsubst %.c,%.o,$(filter-out cmd/decode.c,$(wildcard *.c)))
+DBG_OBJECTS = $(patsubst %.c,%.o,$(filter-out cmd/dbg.c,$(wildcard *.c)))
 
-ALL_BINARIES = ${BINARY} ${RL_BINARY} ${DECODE_BINARY} ${ASM_BINARY}
+ALL_BINARIES = ${BINARY} ${RL_BINARY} ${DECODE_BINARY} ${ASM_BINARY} ${DBG_BINARY}
 ALL_OBJECTS = ${OBJECTS} ${RL_OBJECTS} ${TEST_OBJECTS} ${DECODE_OBJECTS}
 ALL_MAINS = ${MAIN} ${RL_MAIN} ${DECODE_MAIN}
 
-all: options iris rl decode asm
+all: options iris rl decode asm dbg
 
 options:
 	@echo iris build options:
@@ -39,6 +40,11 @@ rl: ${RL_MAIN} ${RL_OBJECTS}
 decode: ${DECODE_MAIN} ${DECODE_OBJECTS}
 	@echo -n Building ${DECODE_BINARY} binary out of $^...
 	@${CC} ${LDFLAGS} -o ${DECODE_BINARY} $^
+	@echo done.
+
+dbg: ${DBG_MAIN} ${DBG_OBJECTS}
+	@echo -n Building ${DBG_BINARY} binary out of $^...
+	@${CC} ${LDFLAGS} -o ${DBG_BINARY} $^
 	@echo done.
 
 asm: 

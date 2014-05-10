@@ -1,7 +1,7 @@
 #include <string.h>
 #include "iris.h"
 
-const char* arithmetic_mnemonic(instruction* insn) {
+const char* iris_arithmetic_mnemonic(instruction* insn) {
    switch(get_arithmetic_op(insn)) {
       case ArithmeticOpAdd:        return "add";
       case ArithmeticOpSub:        return "sub";
@@ -18,7 +18,7 @@ const char* arithmetic_mnemonic(instruction* insn) {
    }
 }
 
-const char* move_mnemonic(instruction* insn) {
+const char* iris_move_mnemonic(instruction* insn) {
    switch(get_move_op(insn)) {
       case MoveOpMove:           return "move"; /* move r? r? */
       case MoveOpSwap:           return "swap"; /* swap r? r? */
@@ -37,7 +37,7 @@ const char* move_mnemonic(instruction* insn) {
    }
 }
 
-const char* jump_mnemonic(instruction* insn) {
+const char* iris_jump_mnemonic(instruction* insn) {
    switch(get_jump_op(insn)) {
       case JumpOpUnconditionalImmediate:           return "goto";
       case JumpOpUnconditionalImmediateLink:       return "goto.link";
@@ -59,7 +59,7 @@ const char* jump_mnemonic(instruction* insn) {
    }
 }
 
-const char* compare_mnemonic(instruction* insn) {
+const char* iris_compare_mnemonic(instruction* insn) {
    switch(get_compare_op(insn)) {
       case CompareOpEq:                         return "eq";
       case CompareOpEqAnd:                      return "and.eq";
@@ -89,7 +89,7 @@ const char* compare_mnemonic(instruction* insn) {
    }
 }
 
-const char* misc_mnemonic(instruction* insn) {
+const char* iris_misc_mnemonic(instruction* insn) {
    switch(get_misc_op(insn)) {
       case MiscOpSystemCall:                       return "system";
       case MiscOpSetImplicitRegisterImmediate:     return "implicit.register.set";
