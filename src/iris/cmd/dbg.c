@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
-#include <ncurses.h>
 #include "iris.h"
 #include "util.h"
 
@@ -17,8 +16,6 @@ FileWrapper files[] = {
    /* input */
    { 0, 0, "r", 0},
 };
-WINDOW* code;
-WINDOW* data;
 #define infile (files[FileWrapperInput])
 #define infile_ptr (&infile)
 static void usage(char* arg0);
@@ -27,7 +24,6 @@ static void startup(void);
 static void shutdown(void);
 static void installprogram(FILE* file);
 static core proc;
-WINDOW* create_newwin(int height, int width, int starty, int startx);
 
 
 int main(int argc, char* argv[]) {
@@ -86,10 +82,6 @@ void usage(char* arg0) {
 }
 int execute(FILE* file) {
    int i;
-   char buffer[80];
-   for(i = 0; i < 80; i++) {
-      buffer[i] = 0;
-   }
    /* install the program to memory */
    installprogram(file); 
    do {
@@ -98,12 +90,6 @@ int execute(FILE* file) {
          proc.pc++;
       }
    } while(!proc.terminateexecution);
-   for(i = 0; i < LINES / 2; i++) {
-      iris_unparse(buffer, &(proc.code[i]));
-      mvwprintw(code,i, 0, "%s",  buffer);
-   }
-   refresh();
-   getch();
    return 0;
 }
 void startup() {
@@ -121,22 +107,10 @@ void startup() {
       proc.data[i] = 0;
       proc.code[i].full = 0;
    }
-   initscr();
-   cbreak();
-   keypad(stdscr, TRUE);
-
-   height = 3;
-   width = 10;
-   starty = (LINES - height) / 2;
-   startx = (COLS - width) / 2;
-   printw("Press F1 to exit");
-   refresh();
-   code = create_newwin(height, width, starty, startx);
 }
 
 void shutdown() {
    /* nothing to do at this point */
-   endwin();
 }
 
 void installprogram(FILE* file) {
@@ -188,14 +162,4 @@ void installprogram(FILE* file) {
          }
       }
    }
-}
-
-WINDOW* create_newwin(int height, int width, int starty, int startx) {
-   WINDOW* local;
-   local = newwin(height, width, starty, startx);
-
-   box(local, 0, 0);
-
-   wrefresh(local);
-   return local;
 }

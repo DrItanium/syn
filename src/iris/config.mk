@@ -1,4 +1,4 @@
-LIBS = -lc -lncurses
+LIBS = -lc
 
 CC = cc 
 LEX = flex
