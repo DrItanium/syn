@@ -200,9 +200,6 @@ Assembly Command: memset dest_reg $immediate
 Description: Stores the contents of memory found at the address contained in
              the source register into memory at the address described in the
              destination register.
-13: Push Register Contents onto Stack
-14: Push Immediate onto Stack
-15: Pop Value Off Stack and Store In Register
 
 >>>>>> Push Register Contents onto Stack 
 Opcode: 13
