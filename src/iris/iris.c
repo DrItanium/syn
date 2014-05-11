@@ -464,7 +464,7 @@ void iris_rom_init(core* proc) {
    proc->impliedregisters[ImplicitRegisterPredicate] = DefaultPredicateRegisterIndex;
    proc->impliedregisters[ImplicitRegisterStack] = DefaultStackPointerRegisterIndex;
    proc->gpr[DefaultPredicateRegisterIndex] = 0;
-   proc->gpr[DefaultStackPointerRegisterIndex] = 0;
+   proc->gpr[DefaultStackPointerRegisterIndex] = 0xFFFF;
 }
 static void iris_push_onto_stack(core* proc, datum value);
 static datum iris_pop_off_stack(core* proc);
@@ -494,8 +494,9 @@ void iris_push_onto_stack(core* proc, datum value) {
    datum index;
    implied = proc->impliedregisters[ImplicitRegisterStack];
    index = iris_get_register(proc, implied);
-   proc->stack[index] = value;
+   /* increment and then set */
    index++;
+   proc->stack[index] = value;
    iris_put_register(proc, implied, index);
 }
 
@@ -504,6 +505,7 @@ datum iris_pop_off_stack(core* proc) {
    datum index, value;
    implied = proc->impliedregisters[ImplicitRegisterStack];
    index = iris_get_register(proc, implied);
+   /* get the value and then decrement */
    value = proc->stack[index];
    index--;
    iris_put_register(proc, implied, index);
