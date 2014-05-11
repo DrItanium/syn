@@ -11,6 +11,8 @@ Some stats:
   - Instruction words are 32-bits in length
   - Data words are 16-bits in length
   - Self-modifying code is not allowed for simplicity reasons (can't access the 
+  - 64k data words circular stack (can't overflow into external memory but will
+    wraparound by design) which grows down (from address zero downward).
 - CISC design (with influence taken from itanium, x86, and RISC designs)
    - Relatively simple decoder logic
 - Has three unused execution groups for extension purposes
@@ -103,7 +105,10 @@ The list of move operations are as follows:
 10: Store Register to Address (register-register)
 11: Memory Copy (register-immediate)
 12: Memory Set (register-immediate)
-13-31: Undefined
+13: Push Register Contents onto Stack
+14: Push Immediate onto Stack
+15: Pop Value Off Stack and Store In Register
+16-31: Undefined
 
 >>>>>> Move Register to Register
 Opcode: 0
@@ -195,6 +200,32 @@ Assembly Command: memset dest_reg $immediate
 Description: Stores the contents of memory found at the address contained in
              the source register into memory at the address described in the
              destination register.
+13: Push Register Contents onto Stack
+14: Push Immediate onto Stack
+15: Pop Value Off Stack and Store In Register
+
+>>>>>> Push Register Contents onto Stack 
+Opcode: 13
+Assembly Command: push reg 
+Description: Increments the contents of the implicit stack pointer register
+             (default is r254) and stores the contents of reg at this address
+             on the stack. The updated address is written to the stack pointer 
+             at the end.
+
+>>>>>> Push Immediate onto Stack 
+Opcode: 14
+Assembly Command: push.imm $immediate 
+Description: Increments the contents of the implicit stack pointer register
+             (default is r254) and stores the immediate value at this address
+             on the stack. The updated address is written to the stack pointer 
+             at the end.
+
+>>>>>> Pop Value Off Stack and Store In Register 
+Opcode: 15
+Assembly Command: pop reg 
+Description: Saves the value at the top of the stack into reg, 
+             decrements the stack pointer address, and then saves this updated
+             stack pointer address back into the stack pointer.
 
 -------------------------------------------------------------------
 For Jump operations, we have three major groups:
