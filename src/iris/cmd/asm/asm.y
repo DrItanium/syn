@@ -114,6 +114,9 @@ void usage(char* arg0);
 %token MOVE_OP_STOREADDR
 %token MOVE_OP_STOREMEM
 %token MOVE_OP_STOREIMM
+%token MOVE_OP_POP
+%token MOVE_OP_PUSH
+%token MOVE_OP_PUSHIMMEDIATE
 %token JUMP_OP_UNCONDITIONALIMMEDIATE
 %token JUMP_OP_UNCONDITIONALIMMEDIATELINK
 %token JUMP_OP_UNCONDITIONALREGISTER
@@ -327,6 +330,12 @@ misc_op:
        miop REGISTER REGISTER  { 
          curri.reg0 = $2;
          curri.reg1 = $3;
+       } |
+       mop_single REGISTER {
+         curri.reg0 = $2;
+       } |
+       MOVE_OP_PUSHIMMEDIATE lexeme { 
+         curri.op = MoveOpPushImmediate;
        }
        ;
 aop:
@@ -359,6 +368,11 @@ mop_mixed:
    MOVE_OP_LOADMEM { curri.op = MoveOpLoadMem; } |
    MOVE_OP_STOREMEM { curri.op = MoveOpStoreMem; } |
    MOVE_OP_STOREIMM { curri.op = MoveOpStoreImm; }
+   ;
+
+mop_single:
+   MOVE_OP_PUSH { curri.op = MoveOpPush; } |
+   MOVE_OP_POP { curri.op = MoveOpPop; } 
    ;
 
 jop_reg_imm:

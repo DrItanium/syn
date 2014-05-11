@@ -91,6 +91,9 @@ omni [a-zA-Z0-9.]
 "implicit.register.indirect.set" { return MISC_OP_SETIMPLICITREGISTERINDIRECT; }
 "implicit.register.get" { return MISC_OP_GETIMPLICITREGISTERIMMEDIATE; }
 "implicit.register.indirect.get" { return MISC_OP_GETIMPLICITREGISTERINDIRECT; }
+"push" { return MOVE_OP_PUSH; }
+"push.imm" { return MOVE_OP_PUSHIMMEDIATE; }
+"pop" { return MOVE_OP_POP; }
 "@label" { return LABEL; }
 "@data"  { return DIRECTIVE_DATA; }
 "@code"  { return DIRECTIVE_CODE; }
