@@ -1,0 +1,17 @@
+The iris core features 256 8-bit implicit register slots which are used to make
+it possible to provide more complex instructions without introducing extra
+special registers or messing with the instruction encoding to provide more
+space. 
+
+Currently, there are only two implicit register slots being used:
+
+0: Implicit predicate register. This is used when performing a jump and link 
+   with an immediate value. Since there is not enough room for the two 
+   registers plus the immediate, we cheat and use the implicit slot (which 
+   defaults to r255).
+1: Stack pointer. With the introduction of the separate stack memory the use of
+   a stack pointer became an obvious thing. Instead of having a separate stack
+   register, it was decided to repurpose one of the existing 256 for this task.
+   Use of the push and pop instructions will manipulate this register as part
+   of the operation. By default the stack pointer is bound to r254. 
+
