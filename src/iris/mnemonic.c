@@ -33,6 +33,9 @@ const char* iris_move_mnemonic(instruction* insn) {
       case MoveOpStoreAddr:      return "store.addr"; /* store.addr r? r? */
       case MoveOpStoreMem:       return "memcopy"; /* memcopy r? $imm */
       case MoveOpStoreImm:       return "memset"; /* memset r? $imm */
+      case MoveOpPush:           return "push"; /* push r? */
+      case MoveOpPushImmediate:  return "push.imm";
+      case MoveOpPop:            return "pop";
       default:                   return "UNKNOWN_MOVE";
    }
 }

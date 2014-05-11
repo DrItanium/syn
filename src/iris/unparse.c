@@ -95,6 +95,14 @@ void iris_unparse_move(char* unparsed, instruction* insn) {
          iris_unparse_register(reg0, get_move_reg0(insn));
          sprintf(unparsed, "%s %s %d", op, reg0, get_move_immediate(insn));
          break;
+      case MoveOpPush:
+      case MoveOpPop:
+         iris_unparse_register(reg0, get_move_reg0(insn));
+         sprintf(unparsed, "%s %s", op, reg0);
+         break;
+      case MoveOpPushImmediate:
+         sprintf(unparsed, "%s %d", op, get_move_immediate(insn));
+         break;
       default:
          sprintf(unparsed, "%s", "INVALID MOVE");
          break;
