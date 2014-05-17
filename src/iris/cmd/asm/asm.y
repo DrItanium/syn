@@ -304,7 +304,7 @@ misc_op:
        MISC_OP_SYSTEMCALL IMMEDIATE REGISTER REGISTER 
        { 
          curri.op = MiscOpSystemCall; 
-         if($2 > 255 || $2 < 0) {
+         if($2 > 255) {
             yyerror("system call offset out of range!");
          }
          curri.reg0 = $2;
@@ -313,7 +313,7 @@ misc_op:
        } |
        MISC_OP_SETIMPLICITREGISTERIMMEDIATE IMMEDIATE REGISTER {
        curri.op = MiscOpSetImplicitRegisterImmediate; 
-       if($2 > 255 || $2 < 0) {
+       if($2 > 255) {
             yyerror("implicit register offset out of range!");
        }
        curri.reg0 = $2;
@@ -321,7 +321,7 @@ misc_op:
        } |
        MISC_OP_GETIMPLICITREGISTERIMMEDIATE REGISTER IMMEDIATE { 
        curri.op = MiscOpGetImplicitRegisterImmediate; 
-       if($3 > 255 || $3 < 0) {
+       if($3 > 255) {
             yyerror("implicit register offset out of range!");
        }
        curri.reg0 = $2;
