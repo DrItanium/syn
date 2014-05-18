@@ -3,6 +3,7 @@
 
 include config.mk
 
+LIBIRIS_OBJECTS = $(patsubst %.c,%.o, $(wildcard src/libiris/*.c))
 OBJECTS = $(patsubst %.c,%.o,$(filter-out cmd/sim.c,$(wildcard *.c)))
 RL_OBJECTS = $(patsubst %.c,%.o,$(filter-out cmd/img.c,$(wildcard *.c)))
 TEST_OBJECTS = $(patsubst %.c,%.o,$(wildcard cmd/tests/*.c))
@@ -12,8 +13,10 @@ DBG_OBJECTS = $(patsubst %.c,%.o,$(filter-out cmd/dbg.c,$(wildcard *.c)))
 ALL_BINARIES = ${BINARY} ${RL_BINARY} ${DECODE_BINARY} ${ASM_BINARY} ${DBG_BINARY}
 ALL_OBJECTS = ${OBJECTS} ${RL_OBJECTS} ${TEST_OBJECTS} ${DECODE_OBJECTS} ${DBG_OBJECTS}
 ALL_MAINS = ${MAIN} ${RL_MAIN} ${DECODE_MAIN} ${DBG_MAIN}
+LIBIRIS_OUT = src/libiris/libiris.a
 
-all: options iris rl decode asm dbg
+all: options libiris
+# iris rl decode asm dbg
 
 options:
 	@echo iris build options:
@@ -26,7 +29,10 @@ options:
 	@echo -n Compiling $< into $@...
 	@${CC} ${CFLAGS} -c $< -o $@
 	@echo done.
-
+libiris: ${LIBIRIS_OBJECTS}
+	@echo -n Building libiris out of $^...
+	@${AR} rcs ${LIBIRIS_OUT}  $^
+	@echo done
 iris: ${MAIN} ${OBJECTS}
 	@echo -n Building ${BINARY} binary out of $^...
 	@${CC} ${LDFLAGS} -o ${BINARY} $^
@@ -59,8 +65,9 @@ test_%: ${OBJECTS} cmd/tests/%.o
 
 clean:
 	@echo -n Cleaning...
-	@rm -f ${ALL_BINARIES} ${ALL_OBJECTS} ${ALL_MAINS} ${ASM_OBJECTS} ${ALL_FILES}
-	@cd cmd/asm && $(MAKE) clean
+	@rm -f ${LIBIRIS_OUT} ${LIBIRIS_OBJECTS}
+#	@rm -f ${ALL_BINARIES} ${ALL_OBJECTS} ${ALL_MAINS} ${ASM_OBJECTS} ${ALL_FILES}
+#	@cd cmd/asm && $(MAKE) clean
 	@echo done.
 
 install: 
