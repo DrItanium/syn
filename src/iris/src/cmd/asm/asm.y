@@ -622,10 +622,8 @@ void cleanup() {
    asmstate.dynops = 0;
 }
 void initialize(FILE* output, FILE* input) {
-   int i;
    labelentry* le;
    dynamicop* dops;
-   i = 0;
    yyin = input;
    le = calloc(80, sizeof(labelentry));
    dops = calloc(80, sizeof(dynamicop));

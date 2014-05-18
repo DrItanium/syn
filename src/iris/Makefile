@@ -50,7 +50,7 @@ ${ASM_BASE}/asm.tab.c ${ASM_BASE}/asm.tab.h: ${ASM_BASE}/asm.y
 
 ${ASM_BASE}/lex.yy.c: ${ASM_BASE}/asm.l ${ASM_BASE}/asm.tab.h
 	@${LEX} -o ${ASM_BASE}/lex.yy.c -l ${ASM_BASE}/asm.l
-	@${CC} ${CFLAGS} -c ${ASM_BASE}/lex.yy.c -o ${ASM_BASE}/lex.yy.o
+	@${CC} ${CFLAGS} -D_POSIX_SOURCE -c ${ASM_BASE}/lex.yy.c -o ${ASM_BASE}/lex.yy.o
 
 ${LIBIRIS_OUT}: ${LIBIRIS_OBJECTS}
 	@echo -n Building ${LIBIRIS_OUT} out of $^...
@@ -79,7 +79,7 @@ dbg: ${DBG_MAIN} ${LIBIRIS_OUT}
 
 
 asm: ${ASM_BASE}/lex.yy.c ${ASM_BASE}/asm.tab.c ${ASM_BASE}/asm.tab.h src/libiris/util.c 
-	@echo -n Building ${ASM_BINARY} binary out of $^
+	@echo -n Building ${ASM_BINARY} binary out of $^...
 	@${CC} ${LDFLAGS} -o ${ASM_BINARY} ${ASM_BASE}/lex.yy.o ${ASM_BASE}/asm.tab.o ${LIBIRIS_OUT}
 	@echo done.
 

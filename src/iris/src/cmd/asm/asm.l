@@ -6,6 +6,7 @@
 #include <limits.h>
 #include "iris.h"
 #include "asm.tab.h"
+#define _POSIX_SOURCE 1
 
 static byte getregister(void);
 static ulong getdecimalimmediate(void);
@@ -111,7 +112,7 @@ r{digit}+ { yylval.rval = getregister(); return REGISTER; }
    j = strlen(yytext);
    contents = calloc(j + 1, sizeof(char));
    /* strdup isn't c-standard only POSIX...... */
-   if(strcpy(contents, yytext, j) == contents) {
+   if(strncpy(contents, yytext, j) == contents) {
       yylval.sval = contents;
       return SYMBOL;
    } else {
