@@ -83,9 +83,9 @@ asm: ${ASM_BASE}/lex.yy.c ${ASM_BASE}/asm.tab.c ${ASM_BASE}/asm.tab.h src/libiri
 	@${CC} ${LDFLAGS} -o ${ASM_BINARY} ${ASM_BASE}/lex.yy.o ${ASM_BASE}/asm.tab.o ${LIBIRIS_OUT}
 	@echo done.
 
-test_%: cmd/tests/%.o ${LIBIRIS_OUT}
-	@echo -n Building ${BINARY} binary out of $^...
-	@${CC} ${LDFLAGS} -o ${BINARY} $^
+test_%: src/cmd/tests/%.o ${LIBIRIS_OUT}
+	@echo -n Building ${SIM_BINARY} binary out of $^...
+	${CC} ${LDFLAGS} -o ${SIM_BINARY} $^
 	@echo done.
 
 clean:
