@@ -14,6 +14,7 @@ extern void yyerror(const char* c);
 %}
 %option yylineno
 %option noyywrap
+%option nounput
 digit [0-9]
 xdigit [a-fA-F0-9]
 bdigit [0-1]
@@ -104,7 +105,19 @@ omni [a-zA-Z0-9.]
 r{digit}+ { yylval.rval = getregister(); return REGISTER; }
 {digit}+ { yylval.ival = getdecimalimmediate(); return IMMEDIATE; }
 0x{xdigit}+ { yylval.ival = getheximmediate(); return IMMEDIATE; }
-{omni}+ { yylval.sval = strdup(yytext); return SYMBOL; }
+{omni}+ { 
+   int j;
+   char* contents;
+   j = strlen(yytext);
+   contents = calloc(j + 1, sizeof(char));
+   /* strdup isn't c-standard only POSIX...... */
+   if(strcpy(contents, yytext, j) == contents) {
+      yylval.sval = contents;
+      return SYMBOL;
+   } else {
+      yyerror("couldn't copy yytext!");
+   }
+}
 %%
 
 
@@ -115,6 +128,7 @@ byte getregister(void) {
    c = atoi(yytext);
    if(c > 255 || c < 0) {
       yyerror("target register is too large");
+      return 0;
    } else {
       return (byte)c;
    }
@@ -125,9 +139,11 @@ ulong getdecimalimmediate() {
    tmp = strtoul(yytext, NULL, 10);
    if(tmp == ULONG_MAX && errno == ERANGE) {
       yyerror("number is too large and overflowed!");
+      return 0;
    } else {
       if(tmp > 65535 || tmp < 0) {
          yyerror("provided number is larger than 16-bits!");
+         return 0;
       } else {
          return tmp;
       }
@@ -139,9 +155,11 @@ ulong getheximmediate() {
    tmp = strtoul(yytext, NULL, 16);
    if(tmp == ULONG_MAX && errno == ERANGE) {
       yyerror("number is too large and overflowed!");
+      return 0;
    } else {
       if(tmp > 65535 || tmp < 0) {
          yyerror("provided number is larger than 16-bits!");
+         return 0;
       } else {
          return tmp;
       }

@@ -3,20 +3,34 @@
 
 include config.mk
 
-LIBIRIS_OBJECTS = $(patsubst %.c,%.o, $(wildcard src/libiris/*.c))
-OBJECTS = $(patsubst %.c,%.o,$(filter-out cmd/sim.c,$(wildcard *.c)))
-RL_OBJECTS = $(patsubst %.c,%.o,$(filter-out cmd/img.c,$(wildcard *.c)))
-TEST_OBJECTS = $(patsubst %.c,%.o,$(wildcard cmd/tests/*.c))
-DECODE_OBJECTS = $(patsubst %.c,%.o,$(filter-out cmd/decode.c,$(wildcard *.c)))
-DBG_OBJECTS = $(patsubst %.c,%.o,$(filter-out cmd/dbg.c,$(wildcard *.c)))
+# The object file that defines main()
+SIM_BINARY = iris
+SIM_MAIN = src/cmd/sim.o
+SIM_OBJECTS = src/cmd/sim.o
 
-ALL_BINARIES = ${BINARY} ${RL_BINARY} ${DECODE_BINARY} ${ASM_BINARY} ${DBG_BINARY}
-ALL_OBJECTS = ${OBJECTS} ${RL_OBJECTS} ${TEST_OBJECTS} ${DECODE_OBJECTS} ${DBG_OBJECTS}
-ALL_MAINS = ${MAIN} ${RL_MAIN} ${DECODE_MAIN} ${DBG_MAIN}
+RL_BINARY = irislink
+RL_MAIN = src/cmd/img.o
+
+DECODE_BINARY = irisdecode
+DECODE_MAIN = src/cmd/decode.o
+
+DBG_BINARY = irisdbg
+DBG_MAIN = src/cmd/dbg.o
+
+ASM_BINARY = irisasm
+ASM_BASE = src/cmd/asm
+ASM_FILES = ${ASM_BASE}/lex.yy.c ${ASM_BASE}/asm.tab.c ${ASM_BASE}/asm.tab.h
+ASM_OBJECTS = ${ASM_BASE}/lex.yy.o ${ASM_BASE}/asm.tab.o
+
+LIBIRIS_OBJECTS = $(patsubst %.c,%.o, $(wildcard src/libiris/*.c))
 LIBIRIS_OUT = src/libiris/libiris.a
 
-all: options libiris
-# iris rl decode asm dbg
+TEST_OBJECTS = $(patsubst %.c,%.o,$(wildcard src/cmd/tests/*.c))
+
+ALL_BINARIES = ${SIM_BINARY} ${RL_BINARY} ${DECODE_BINARY} ${ASM_BINARY} ${DBG_BINARY} ${ASM_BINARY}
+ALL_OBJECTS = ${LIBIRIS_OBJECTS} ${RL_MAIN} ${TEST_OBJECTS} ${DECODE_MAIN} ${SIM_MAIN} ${DBG_MAIN} ${ASM_FILES} ${ASM_OBJECTS}
+
+all: options ${LIBIRIS_OUT} iris rl decode asm dbg
 
 options:
 	@echo iris build options:
@@ -29,45 +43,54 @@ options:
 	@echo -n Compiling $< into $@...
 	@${CC} ${CFLAGS} -c $< -o $@
 	@echo done.
-libiris: ${LIBIRIS_OBJECTS}
-	@echo -n Building libiris out of $^...
+
+${ASM_BASE}/asm.tab.c ${ASM_BASE}/asm.tab.h: ${ASM_BASE}/asm.y
+	@${YACC} -o ${ASM_BASE}/asm.tab.c -d ${ASM_BASE}/asm.y
+	@${CC} ${CFLAGS} -c ${ASM_BASE}/asm.tab.c -o ${ASM_BASE}/asm.tab.o
+
+${ASM_BASE}/lex.yy.c: ${ASM_BASE}/asm.l ${ASM_BASE}/asm.tab.h
+	@${LEX} -o ${ASM_BASE}/lex.yy.c -l ${ASM_BASE}/asm.l
+	@${CC} ${CFLAGS} -c ${ASM_BASE}/lex.yy.c -o ${ASM_BASE}/lex.yy.o
+
+${LIBIRIS_OUT}: ${LIBIRIS_OBJECTS}
+	@echo -n Building ${LIBIRIS_OUT} out of $^...
 	@${AR} rcs ${LIBIRIS_OUT}  $^
 	@echo done
-iris: ${MAIN} ${OBJECTS}
-	@echo -n Building ${BINARY} binary out of $^...
-	@${CC} ${LDFLAGS} -o ${BINARY} $^
+
+iris: ${SIM_MAIN} ${LIBIRIS_OUT}
+	@echo -n Building ${SIM_BINARY} binary out of $^...
+	${CC} ${LDFLAGS} -o ${SIM_BINARY} $^
 	@echo done.
 
-rl: ${RL_MAIN} ${RL_OBJECTS}
+rl: ${RL_MAIN} ${LIBIRIS_OUT}
 	@echo -n Building ${RL_BINARY} binary out of $^...
 	@${CC} ${LDFLAGS} -o ${RL_BINARY} $^
 	@echo done.
 
-decode: ${DECODE_MAIN} ${DECODE_OBJECTS}
+decode: ${DECODE_MAIN} ${LIBIRIS_OUT}
 	@echo -n Building ${DECODE_BINARY} binary out of $^...
 	@${CC} ${LDFLAGS} -o ${DECODE_BINARY} $^
 	@echo done.
 
-dbg: ${DBG_MAIN} ${DBG_OBJECTS}
+dbg: ${DBG_MAIN} ${LIBIRIS_OUT} 
 	@echo -n Building ${DBG_BINARY} binary out of $^...
 	@${CC} ${LDFLAGS} -o ${DBG_BINARY} $^
 	@echo done.
 
-asm: 
-	@cd cmd/asm && $(MAKE)
-	@mv cmd/asm/irisasm .
 
+asm: ${ASM_BASE}/lex.yy.c ${ASM_BASE}/asm.tab.c ${ASM_BASE}/asm.tab.h src/libiris/util.c 
+	@echo -n Building ${ASM_BINARY} binary out of $^
+	@${CC} ${LDFLAGS} -o ${ASM_BINARY} ${ASM_BASE}/lex.yy.o ${ASM_BASE}/asm.tab.o ${LIBIRIS_OUT}
+	@echo done.
 
-test_%: ${OBJECTS} cmd/tests/%.o
+test_%: cmd/tests/%.o ${LIBIRIS_OUT}
 	@echo -n Building ${BINARY} binary out of $^...
 	@${CC} ${LDFLAGS} -o ${BINARY} $^
 	@echo done.
 
 clean:
 	@echo -n Cleaning...
-	@rm -f ${LIBIRIS_OUT} ${LIBIRIS_OBJECTS}
-#	@rm -f ${ALL_BINARIES} ${ALL_OBJECTS} ${ALL_MAINS} ${ASM_OBJECTS} ${ALL_FILES}
-#	@cd cmd/asm && $(MAKE) clean
+	@rm -f ${LIBIRIS_OUT} ${ALL_OBJECTS} ${ALL_BINARIES}
 	@echo done.
 
 install: 
