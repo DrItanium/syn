@@ -50,45 +50,49 @@ void iris_arithmetic(core* proc, instruction* inst) {
          (iris_get_register(proc, get_arithmetic_source0(inst))) \
           symbol \
          (iris_get_register(proc, get_arithmetic_source1(inst)))))
+#define perform_operation_immediate(symbol) \
+   (iris_put_register(proc, get_arithmetic_dest(inst), \
+         (iris_get_register(proc, get_arithmetic_source0(inst))) \
+          symbol \
+         (get_arithmetic_source1(inst))))
+#define defop(tag, symbol) \
+      case tag: \
+         perform_operation(symbol); \
+         break 
+#define defiop(tag, symbol) \
+      case tag: \
+         perform_operation_immediate(symbol); \
+         break
    switch(get_arithmetic_op(inst)) {
-      case ArithmeticOpAdd:
-         perform_operation(+);
-         break;
-      case ArithmeticOpSub:
-         perform_operation(-);
-         break;
-      case ArithmeticOpMul:
-         perform_operation(*);
-         break;
-      case ArithmeticOpDiv:
-         perform_operation(/);
-         break;
-      case ArithmeticOpRem:
-         perform_operation(%);
-         break;
-      case ArithmeticOpShiftLeft:
-         perform_operation(<<);
-         break;
-      case ArithmeticOpShiftRight:
-         perform_operation(>>);
-         break;
-      case ArithmeticOpBinaryAnd:
-         perform_operation(&);
-         break;
-      case ArithmeticOpBinaryOr:
-         perform_operation(|);
-         break;
+      defop(ArithmeticOpAdd, +);
+      defop(ArithmeticOpSub, -);
+      defop(ArithmeticOpMul, *);
+      defop(ArithmeticOpDiv, /);
+      defop(ArithmeticOpRem, %);
+      defop(ArithmeticOpShiftLeft, <<);
+      defop(ArithmeticOpShiftRight, >>);
+      defop(ArithmeticOpBinaryAnd, &);
+      defop(ArithmeticOpBinaryOr, |);
       case ArithmeticOpBinaryNot:
          iris_put_register(proc, get_arithmetic_dest(inst), 
                ~(iris_get_register(proc, get_arithmetic_source0(inst))));
          break;
-      case ArithmeticOpBinaryXor:
-         perform_operation(^);
-         break;
+      defop(ArithmeticOpBinaryXor, ^);
+      /* immediate operations */
+      defiop(ArithmeticOpAddImmediate, +);
+      defiop(ArithmeticOpSubImmediate, -);
+      defiop(ArithmeticOpMulImmediate, *);
+      defiop(ArithmeticOpDivImmediate, /);
+      defiop(ArithmeticOpRemImmediate, %);
+      defiop(ArithmeticOpShiftLeftImmediate, <<);
+      defiop(ArithmeticOpShiftRightImmediate, >>);
       default:
          iris_error("invalid arithmetic operation", ErrorInvalidArithmeticOperation);
    }
 #undef perform_operation
+#undef perform_operation_immediate
+#undef defop
+#undef defiop
 }
 static void iris_push(core* proc, instruction* inst);
 static void iris_push_immediate(core* proc, instruction* inst);
