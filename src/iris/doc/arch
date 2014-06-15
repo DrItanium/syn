@@ -60,20 +60,38 @@ bits 16-23 : first source register
 bits 24-31 : second source register
 
 
-The list of arithmetic operations are as follows:
+The list of arithmetic operations are as follows (assembler names are
+surrounded by [])
 
-0: add
-1: subtract
-2: multiply 
-3: divide
-4: remainder (aka mod)
-5: shift left
-6: shift right
-7: binary and
-8: binary or
-9: binary not (second source register isn't used, same form though)
-10: binary xor
-11-31 will cause a panic in the simulator as they are currently undefined
+0: add [add]
+1: subtract [sub]
+2: multiply [mul]
+3: divide [div]
+4: remainder (aka mod) [rem]
+5: shift left [shl]
+6: shift right [shr]
+7: binary and [and]
+8: binary or [or]
+9: binary not (second source register isn't used, same form though) [not]
+10: binary xor  [xor]
+11: add immediate [addi]
+12: subtract immediate [subi]
+13: multiply immediate [muli]
+14: divide immediate [divi]
+15: remainder immediate [remi]
+16: shift left immediate [shli]
+17: shift right immediate [shri]
+18-31 will cause a panic in the simulator as they are currently undefined
+
+For the immediate forms the only difference is that bits 24-31 are not
+interpreted as a register address. Instead it is interpreted as an 8-bit
+number. Negative values are not supported so instead of doing:
+
+   addi r0, r1, -1
+
+you should do:
+
+   subi r0, r1, 1
 
 -------------------------------------------------------------------
 
