@@ -71,6 +71,13 @@ enum {
    ArithmeticOpBinaryOr,
    ArithmeticOpBinaryNot,
    ArithmeticOpBinaryXor,
+   ArithmeticOpAddImmediate,
+   ArithmeticOpSubImmediate,
+   ArithmeticOpMulImmediate,
+   ArithmeticOpDivImmediate,
+   ArithmeticOpRemImmediate,
+   ArithmeticOpShiftLeftImmediate,
+   ArithmeticOpShiftRightImmediate,
 };
 #define get_arithmetic_op(inst) (iris_decode_op(inst))
 #define get_arithmetic_dest(inst) (iris_decode_register(inst, 1))
