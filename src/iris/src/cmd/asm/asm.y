@@ -101,6 +101,13 @@ void usage(char* arg0);
 %token ARITHMETIC_OP_BINARYOR
 %token ARITHMETIC_OP_BINARYNOT
 %token ARITHMETIC_OP_BINARYXOR
+%token ARITHMETIC_OP_ADD_IMM
+%token ARITHMETIC_OP_SUB_IMM
+%token ARITHMETIC_OP_MUL_IMM
+%token ARITHMETIC_OP_DIV_IMM
+%token ARITHMETIC_OP_REM_IMM
+%token ARITHMETIC_OP_SHIFTLEFT_IMM
+%token ARITHMETIC_OP_SHIFTRIGHT_IMM
 %token MOVE_OP_MOVE
 %token MOVE_OP_SWAP
 %token MOVE_OP_SWAPREGADDR
@@ -263,6 +270,14 @@ arithmetic_op:
              ARITHMETIC_OP_BINARYNOT REGISTER REGISTER {
                   curri.reg0 = $2;
                   curri.reg1 = $3;
+             } |
+             aop_imm REGISTER REGISTER IMMEDIATE {
+               if($4 > 255) {
+                  yyerror("immediate value offset out of range!");
+               }
+               curri.reg0 = $2;
+               curri.reg1 = $3;
+               curri.reg2 = $4;
              }
       ;
 move_op:
@@ -349,6 +364,16 @@ aop:
    ARITHMETIC_OP_BINARYAND { curri.op = ArithmeticOpBinaryAnd; } |
    ARITHMETIC_OP_BINARYOR { curri.op = ArithmeticOpBinaryOr; } |
    ARITHMETIC_OP_BINARYXOR { curri.op = ArithmeticOpBinaryXor; } 
+   ;
+
+aop_imm:
+   ARITHMETIC_OP_ADD_IMM { curri.op = ArithmeticOpAddImmediate; } |
+   ARITHMETIC_OP_SUB_IMM { curri.op = ArithmeticOpSubImmediate; } |
+   ARITHMETIC_OP_MUL_IMM { curri.op = ArithmeticOpMulImmediate; } | 
+   ARITHMETIC_OP_DIV_IMM { curri.op = ArithmeticOpDivImmediate; } |
+   ARITHMETIC_OP_REM_IMM { curri.op = ArithmeticOpRemImmediate; } |
+   ARITHMETIC_OP_SHIFTLEFT_IMM { curri.op = ArithmeticOpShiftLeftImmediate; } |
+   ARITHMETIC_OP_SHIFTRIGHT_IMM { curri.op = ArithmeticOpShiftRightImmediate; } 
    ;
 
 mop_reg:

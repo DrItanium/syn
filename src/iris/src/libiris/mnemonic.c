@@ -3,18 +3,25 @@
 
 const char* iris_arithmetic_mnemonic(instruction* insn) {
    switch(get_arithmetic_op(insn)) {
-      case ArithmeticOpAdd:        return "add";
-      case ArithmeticOpSub:        return "sub";
-      case ArithmeticOpMul:        return "mul";
-      case ArithmeticOpDiv:        return "div";
-      case ArithmeticOpRem:        return "rem";
-      case ArithmeticOpShiftLeft:  return "shl";
-      case ArithmeticOpShiftRight: return "shr";
-      case ArithmeticOpBinaryAnd:  return "and";
-      case ArithmeticOpBinaryOr:   return "or";
-      case ArithmeticOpBinaryNot:  return "not";
-      case ArithmeticOpBinaryXor:  return "xor";
-      default:                     return "UNASSIGNED_ARITHMETIC";
+      case ArithmeticOpAdd:                     return "add";
+      case ArithmeticOpSub:                     return "sub";
+      case ArithmeticOpMul:                     return "mul";
+      case ArithmeticOpDiv:                     return "div";
+      case ArithmeticOpRem:                     return "rem";
+      case ArithmeticOpShiftLeft:               return "shl";
+      case ArithmeticOpShiftRight:              return "shr";
+      case ArithmeticOpBinaryAnd:               return "and";
+      case ArithmeticOpBinaryOr:                return "or";
+      case ArithmeticOpBinaryNot:               return "not";
+      case ArithmeticOpBinaryXor:               return "xor";
+      case ArithmeticOpAddImmediate:            return "addi";
+      case ArithmeticOpSubImmediate:            return "subi";
+      case ArithmeticOpMulImmediate:            return "muli";
+      case ArithmeticOpDivImmediate:            return "divi";
+      case ArithmeticOpRemImmediate:            return "remi";
+      case ArithmeticOpShiftLeftImmediate:      return "shli";
+      case ArithmeticOpShiftRightImmediate:     return "shri";
+      default:                                  return "UNASSIGNED_ARITHMETIC";
    }
 }
 

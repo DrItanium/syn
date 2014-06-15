@@ -35,6 +35,13 @@ omni [a-zA-Z0-9.]
 "or" { return ARITHMETIC_OP_BINARYOR; }
 "not" { return ARITHMETIC_OP_BINARYNOT; }
 "xor" { return ARITHMETIC_OP_BINARYXOR; }
+"addi" { return ARITHMETIC_OP_ADD_IMM; }
+"subi" { return ARITHMETIC_OP_SUB_IMM; }
+"muli" { return ARITHMETIC_OP_MUL_IMM; }
+"divi" { return ARITHMETIC_OP_DIV_IMM; }
+"remi" { return ARITHMETIC_OP_REM_IMM; }
+"shli" { return ARITHMETIC_OP_SHIFTLEFT_IMM; }
+"shri" { return ARITHMETIC_OP_SHIFTRIGHT_IMM; }
 "move" { return MOVE_OP_MOVE; }
 "swap" { return MOVE_OP_SWAP; }
 "swap.reg.addr" { return MOVE_OP_SWAPREGADDR; }
