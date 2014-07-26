@@ -80,7 +80,7 @@ void EnvUserFunctions(void *theEnv) {
    BinaryOperationsFunctionDefinitions(theEnv);
 
    /*==================*/
-   /* Initialize Maya. */
+   /* Initialize Iris. */
    /*==================*/
    iris_declarations(theEnv);
 }

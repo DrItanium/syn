@@ -394,6 +394,6 @@ void iris_encode_immediate(instruction* inst, byte index, datum value);
 #define get_immediate(inst) (iris_decode_immediate(inst, 1))
 
 /* libelectron interaction */
-void iris_declarations(void* theEnv);
+extern void iris_declarations(void* theEnv);
 
 #endif 
