@@ -42,7 +42,6 @@
 /***************************************************************************/
 
 #include <stdio.h>
-#define APPLICATION_NAME "iris REPL"
 #include "setup.h"
 #include "clips.h"
 #include "iris.h"

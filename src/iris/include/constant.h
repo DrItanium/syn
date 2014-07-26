@@ -67,7 +67,7 @@
 #endif
 
 #ifndef APPLICATION_NAME
-#define APPLICATION_NAME "maya"
+#define APPLICATION_NAME "iris"
 #endif
 
 #ifndef COMMAND_PROMPT
