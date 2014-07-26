@@ -21,16 +21,20 @@ ASM_BINARY = irisasm
 ASM_BASE = src/cmd/asm
 ASM_FILES = ${ASM_BASE}/lex.yy.c ${ASM_BASE}/asm.tab.c ${ASM_BASE}/asm.tab.h
 ASM_OBJECTS = ${ASM_BASE}/lex.yy.o ${ASM_BASE}/asm.tab.o
-
+LIBELECTRON_OBJECTS = $(patsubst %.c,%.o, $(wildcard src/libelectron/*.c))
+LIBELECTRON_OUT = src/libelectron/libelectron.a
 LIBIRIS_OBJECTS = $(patsubst %.c,%.o, $(wildcard src/libiris/*.c))
 LIBIRIS_OUT = src/libiris/libiris.a
 
 TEST_OBJECTS = $(patsubst %.c,%.o,$(wildcard src/cmd/tests/*.c))
 
-ALL_BINARIES = ${SIM_BINARY} ${RL_BINARY} ${DECODE_BINARY} ${ASM_BINARY} ${DBG_BINARY} ${ASM_BINARY}
-ALL_OBJECTS = ${LIBIRIS_OBJECTS} ${RL_MAIN} ${TEST_OBJECTS} ${DECODE_MAIN} ${SIM_MAIN} ${DBG_MAIN} ${ASM_FILES} ${ASM_OBJECTS}
+ALL_BINARIES = ${SIM_BINARY} ${RL_BINARY} ${DECODE_BINARY} ${ASM_BINARY}\
+			   ${DBG_BINARY} ${ASM_BINARY}
+ALL_OBJECTS = ${LIBELECTRON_OBJECTS} ${LIBIRIS_OBJECTS} ${RL_MAIN}\
+			  ${TEST_OBJECTS} ${DECODE_MAIN} ${SIM_MAIN} ${DBG_MAIN}\
+			  ${ASM_FILES} ${ASM_OBJECTS} ${LIBIRIS_OUT} ${LIBELECTRON_OUT}
 
-all: options ${LIBIRIS_OUT} iris rl decode asm dbg
+all: options ${LIBIRIS_OUT} ${LIBELECTRON_OUT} iris rl decode asm dbg
 
 options:
 	@echo iris build options:
@@ -57,6 +61,11 @@ ${LIBIRIS_OUT}: ${LIBIRIS_OBJECTS}
 	@${AR} rcs ${LIBIRIS_OUT}  $^
 	@echo done
 
+${LIBELECTRON_OUT}: ${LIBELECTRON_OBJECTS}
+	@echo -n Building ${LIBELECTRON_OUT} out of $^...
+	@${AR} rcs ${LIBELECTRON_OUT}  $^
+	@echo done
+
 iris: ${SIM_MAIN} ${LIBIRIS_OUT}
 	@echo -n Building ${SIM_BINARY} binary out of $^...
 	${CC} ${LDFLAGS} -o ${SIM_BINARY} $^
@@ -77,7 +86,6 @@ dbg: ${DBG_MAIN} ${LIBIRIS_OUT}
 	@${CC} ${LDFLAGS} -o ${DBG_BINARY} $^
 	@echo done.
 
-
 asm: ${ASM_BASE}/lex.yy.c ${ASM_BASE}/asm.tab.c ${ASM_BASE}/asm.tab.h src/libiris/util.c 
 	@echo -n Building ${ASM_BINARY} binary out of $^...
 	@${CC} ${LDFLAGS} -o ${ASM_BINARY} ${ASM_BASE}/lex.yy.o ${ASM_BASE}/asm.tab.o ${LIBIRIS_OUT}
@@ -90,7 +98,7 @@ test_%: src/cmd/tests/%.o ${LIBIRIS_OUT}
 
 clean:
 	@echo -n Cleaning...
-	@rm -f ${LIBIRIS_OUT} ${ALL_OBJECTS} ${ALL_BINARIES}
+	@rm -f ${ALL_OBJECTS} ${ALL_BINARIES}
 	@echo done.
 
 install: 

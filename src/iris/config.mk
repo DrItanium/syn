@@ -1,4 +1,4 @@
-LIBS = -lc
+LIBS = -lc -lm
 
 CC = cc 
 LEX = flex

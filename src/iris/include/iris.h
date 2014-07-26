@@ -392,4 +392,8 @@ void iris_encode_immediate(instruction* inst, byte index, datum value);
 #define get_reg1(inst) (iris_decode_register(inst, 2))
 #define get_reg2(inst) (iris_decode_register(inst, 3))
 #define get_immediate(inst) (iris_decode_immediate(inst, 1))
+
+/* libelectron interaction */
+void iris_declarations(void* theEnv);
+
 #endif 
