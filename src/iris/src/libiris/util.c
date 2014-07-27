@@ -21,3 +21,5 @@ void closefw(FileWrapper* fw) {
       exit(errno);
    }
 }
+
+/* vim: set expandtab tabstop=3 shiftwidth=3: */

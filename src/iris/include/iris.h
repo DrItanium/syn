@@ -327,6 +327,8 @@ enum {
    ErrorInvalidSystemCommand,
    /* repl related */
    ErrorUnableToAllocateCore,
+   ErrorTriedToSetAdvancePcToIllegalValue,
+   ErrorTriedToSetShouldTerminateToIllegalValue,
 };
 
 /* system commands */

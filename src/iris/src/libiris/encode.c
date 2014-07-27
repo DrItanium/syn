@@ -29,3 +29,4 @@ word iris_decode_immediate(instruction* inst, byte index) {
 void iris_encode_immediate(instruction* inst, byte index, word value) {
    inst->words[index] = value;
 }
+/* vim: set expandtab tabstop=3 shiftwidth=3: */
