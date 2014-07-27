@@ -44,9 +44,6 @@ ALL_OBJECTS = ${LIBELECTRON_OBJECTS} ${LIBIRIS_OBJECTS} ${RL_MAIN}\
 all: options ${LIBIRIS_OUT} ${LIBELECTRON_OUT} iris rl decode asm dbg repl
 
 options:
-	lsb_release -a
-	cat /etc/issue
-	uname -a
 	@echo iris build options:
 	@echo "CFLAGS   = ${CFLAGS}"
 	@echo "LDFLAGS  = ${LDFLAGS}"
@@ -101,9 +98,10 @@ asm: ${ASM_BASE}/lex.yy.c ${ASM_BASE}/asm.tab.c ${ASM_BASE}/asm.tab.h src/libiri
 	@${CC} ${LDFLAGS} -o ${ASM_BINARY} ${ASM_BASE}/lex.yy.o ${ASM_BASE}/asm.tab.o ${LIBIRIS_OUT}
 	@echo done.
 
+# GO TO HELL UBUNTU! I have to put the LDFLAGS after the object files it seems
 repl: ${REPL_MAIN} ${LIBELECTRON_OUT} ${LIBIRIS_OUT}
 	@echo -n Building ${REPL_BINARY} out of $^...
-	@${CC} ${LDFLAGS} -o ${REPL_BINARY} $^
+	@${CC} -o ${REPL_BINARY} $^ ${LDFLAGS}
 	@echo done.
 
 test_%: src/cmd/tests/%.o ${LIBIRIS_OUT}
