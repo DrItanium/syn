@@ -44,7 +44,9 @@ ALL_OBJECTS = ${LIBELECTRON_OBJECTS} ${LIBIRIS_OBJECTS} ${RL_MAIN}\
 all: options ${LIBIRIS_OUT} ${LIBELECTRON_OUT} iris rl decode asm dbg repl
 
 options:
-	/lib/libc.so.6
+	lsb_release -a
+	cat /etc/issue
+	uname -a
 	@echo iris build options:
 	@echo "CFLAGS   = ${CFLAGS}"
 	@echo "LDFLAGS  = ${LDFLAGS}"
