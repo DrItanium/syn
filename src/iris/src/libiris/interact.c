@@ -21,6 +21,20 @@ static dword iris_interact_getcodememory(void*);
 static void iris_interact_setdatamemory(void*);
 static word iris_interact_getdatamemory(void*);
 
+static void iris_interact_setstackmemory(void*);
+static word iris_interact_getstackmemory(void*);
+
+static int iris_interact_getadvancepc(void*);
+static void iris_interact_setadvancepc(void*);
+
+static int iris_interact_shouldterminate(void*);
+static void iris_interact_setshouldterminate(void*);
+
+static void iris_interact_dispatch(void*);
+static void iris_interact_cycle(void*);
+
+//static dword iris_interact_encode_instruction(void*);
+//static void iris_interact_decode_instruction(void*, DATA_OBJECT_PTR);
 
 void iris_declarations(void* theEnv) {
 	iris_core* curr;
@@ -42,6 +56,8 @@ void iris_declarations(void* theEnv) {
 	EnvDefineFunction2(theEnv, "get-code-memory", 'i', PTIEF iris_interact_getcodememory, "iris_interact_getcodememory ","11i");
 	EnvDefineFunction2(theEnv, "set-data-memory", 'v', PTIEF iris_interact_setdatamemory, "iris_interact_setdatamemory ","22i");
 	EnvDefineFunction2(theEnv, "get-data-memory", 'i', PTIEF iris_interact_getdatamemory, "iris_interact_getdatamemory ","11i");
+	EnvDefineFunction2(theEnv, "set-stack-memory", 'v', PTIEF iris_interact_setstackmemory, "iris_interact_setstackmemory ","22i");
+	EnvDefineFunction2(theEnv, "get-stack-memory", 'i', PTIEF iris_interact_getstackmemory, "iris_interact_getstackmemory ","11i");
 }
 
 void iris_interact_putregister(void* theEnv) {
@@ -105,5 +121,22 @@ word iris_interact_getdatamemory(void* theEnv) {
 	c = GetIrisCoreData(theEnv);
 	addr = (word)EnvRtnLong(theEnv, 1);
 	return c->data[addr];
+}
+
+void iris_interact_setstackmemory(void* theEnv) {
+	iris_core* c;
+	word addr, value;
+	c = GetIrisCoreData(theEnv);
+	addr = (word)EnvRtnLong(theEnv, 1);
+	value = (word)EnvRtnLong(theEnv, 2);
+	c->stack[addr] = value;
+}
+
+word iris_interact_getstackmemory(void* theEnv) {
+	iris_core* c;
+	word addr;
+	c = GetIrisCoreData(theEnv);
+	addr = (word)EnvRtnLong(theEnv, 1);
+	return c->stack[addr];
 }
 

@@ -84,7 +84,7 @@ int execute(FILE* file) {
    /* install the program to memory */
    installprogram(file); 
    do {
-      iris_decode(&proc, &proc.code[proc.pc]);
+      iris_dispatch(&proc, &proc.code[proc.pc]);
       if(proc.advancepc) {
          proc.pc++;
       }

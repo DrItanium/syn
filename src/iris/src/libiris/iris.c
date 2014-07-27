@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include "iris.h"
 
-void iris_decode(iris_core* proc, instruction* value) {
+void iris_dispatch(iris_core* proc, instruction* value) {
    /* reset the advancepc value */
    proc->advancepc = 1;
    switch(get_group(value)) {

@@ -101,7 +101,7 @@ int execute(FILE* file) {
       if(((char)i) == 'q') {
          break;
       } else {
-         iris_decode(&proc, &proc.code[proc.pc]);
+         iris_dispatch(&proc, &proc.code[proc.pc]);
          if(proc.advancepc) {
             proc.pc++;
          }

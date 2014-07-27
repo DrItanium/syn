@@ -344,7 +344,7 @@ void iris_jump(iris_core* proc, instruction* inst);
 void iris_compare(iris_core* proc, instruction* inst);
 void iris_put_register(iris_core* proc, byte index, word value);
 word iris_get_register(iris_core* proc, byte index);
-void iris_decode(iris_core* proc, instruction* value);
+void iris_dispatch(iris_core* proc, instruction* value);
 void iris_error(char* message, int code);
 void iris_misc(iris_core* proc, instruction* inst);
 /* mnemonics */
