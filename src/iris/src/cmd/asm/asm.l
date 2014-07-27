@@ -9,8 +9,8 @@
 #define _POSIX_SOURCE 1
 
 static byte getregister(void);
-static ulong getdecimalimmediate(void);
-static ulong getheximmediate(void);
+static unsigned long getdecimalimmediate(void);
+static unsigned long getheximmediate(void);
 extern void yyerror(const char* c);
 %}
 %option yylineno
@@ -96,10 +96,6 @@ omni [a-zA-Z0-9.]
 "or.ge" { return COMPARE_OP_GREATERTHANOREQUALTOOR; }
 "xor.ge" { return COMPARE_OP_GREATERTHANOREQUALTOXOR; }
 "system" { return MISC_OP_SYSTEMCALL; }
-"implicit.register.set" { return MISC_OP_SETIMPLICITREGISTERIMMEDIATE; }
-"implicit.register.indirect.set" { return MISC_OP_SETIMPLICITREGISTERINDIRECT; }
-"implicit.register.get" { return MISC_OP_GETIMPLICITREGISTERIMMEDIATE; }
-"implicit.register.indirect.get" { return MISC_OP_GETIMPLICITREGISTERINDIRECT; }
 "push" { return MOVE_OP_PUSH; }
 "push.imm" { return MOVE_OP_PUSHIMMEDIATE; }
 "pop" { return MOVE_OP_POP; }
@@ -142,8 +138,8 @@ byte getregister(void) {
    }
 }
 
-ulong getdecimalimmediate() {
-   ulong tmp;
+unsigned long getdecimalimmediate() {
+   unsigned long tmp;
    tmp = strtoul(yytext, NULL, 10);
    if(tmp == ULONG_MAX && errno == ERANGE) {
       yyerror("number is too large and overflowed!");
@@ -158,8 +154,8 @@ ulong getdecimalimmediate() {
    }
 }
 
-ulong getheximmediate() {
-   ulong tmp;
+unsigned long getheximmediate() {
+   unsigned long tmp;
    tmp = strtoul(yytext, NULL, 16);
    if(tmp == ULONG_MAX && errno == ERANGE) {
       yyerror("number is too large and overflowed!");

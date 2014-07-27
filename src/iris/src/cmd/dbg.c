@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <stdint.h>
 #include "iris.h"
 #include "util.h"
 
@@ -23,7 +24,7 @@ static int execute(FILE* file);
 static void startup(void);
 static void shutdown(void);
 static void installprogram(FILE* file);
-static core proc;
+static iris_core proc;
 static byte breakpoints[MemorySize];
 
 

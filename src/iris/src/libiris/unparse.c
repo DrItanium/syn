@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 #include "iris.h"
 #define REGISTER_STRING_LENGTH 5
 void iris_unparse(char* unparsed, instruction* insn) {
@@ -191,27 +192,6 @@ void iris_unparse_misc(char* unparsed, instruction* insn) {
             iris_unparse_register(reg1, get_misc_reg1(insn));
             sprintf(unparsed, "%s %d %s %s", op, get_misc_index(insn), reg0, reg1);
             break;
-      case MiscOpSetImplicitRegisterImmediate:
-            iris_unparse_register(reg0, get_misc_reg0(insn));
-            sprintf(unparsed, "%s %d %s", op, get_misc_index(insn), reg0);
-            break;
-      case MiscOpSetImplicitRegisterIndirect:
-            /* the index becomes a register */
-            iris_unparse_register(reg0, get_misc_index(insn));
-            iris_unparse_register(reg1, get_misc_reg0(insn));
-            sprintf(unparsed, "%s %s %s", op, reg0, reg1);
-            break;
-            /* Since an implication of <- as being flow order we have to
-             * reverse args */
-      case MiscOpGetImplicitRegisterImmediate:
-            iris_unparse_register(reg0, get_misc_index(insn));
-            sprintf(unparsed, "%s %s %d", op, reg0, get_misc_reg0(insn));
-            break;
-      case MiscOpGetImplicitRegisterIndirect:
-            iris_unparse_register(reg0, get_misc_index(insn));
-            iris_unparse_register(reg1, get_misc_reg0(insn));
-            sprintf(unparsed, "%s %s %s", op, reg0, reg1);
-            break;
       default:
          sprintf(unparsed, "%s", "INVALID MISC");
          break;
@@ -222,7 +202,7 @@ void iris_unparse_misc(char* unparsed, instruction* insn) {
 
 void iris_unparse_bitstring(char* unparsed, instruction* insn) {
    int bit;
-   uint data;
+   dword data;
    unparsed[32] = '\0';
    data = insn->full;
    for (bit = 31; bit >= 0; bit -= 1) {

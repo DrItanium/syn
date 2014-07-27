@@ -41,6 +41,7 @@
 /*                                                                         */
 /***************************************************************************/
 
+#include <stdint.h>
 #include "clips.h"
 #include "binops.h"
 #include "arch.h"

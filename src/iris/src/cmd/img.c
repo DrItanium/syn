@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <stdint.h>
 #include "iris.h"
 #include "util.h"
 
@@ -41,7 +42,7 @@ static void usage(char* arg0);
 static int execute(FILE* file);
 static void startup(void);
 static void shutdown(FILE* output);
-static core proc;
+static iris_core proc;
 static int translateline(FILE* file, int lineno);
 
 int main(int argc, char* argv[]) {
@@ -129,7 +130,7 @@ void startup() {
 
 void shutdown(FILE* output) {
    fwrite(&(proc.code), sizeof(instruction), MemorySize, output);
-   fwrite(&(proc.data), sizeof(datum), MemorySize, output);
+   fwrite(&(proc.data), sizeof(word), MemorySize, output);
 }
 
 
@@ -165,8 +166,8 @@ int translateline(FILE* file, int lineno) {
 }
 
 void installcode(FILE* f, int ln) {
-   ushort addr;
-   uint value;
+   word addr;
+   dword value;
    if(fread(&addr, sizeof(addr), 1, f) == 1) {
       if(fread(&value, sizeof(value), 1, f) == 1) {
          proc.code[addr].full = value;
@@ -181,8 +182,7 @@ void installcode(FILE* f, int ln) {
 }
 
 void installdata(FILE* f, int ln) {
-   ushort addr;
-   ushort value;
+   word addr, value;
    if(fread(&addr, sizeof(addr), 1, f) == 1) {
       if(fread(&value, sizeof(value), 1, f) == 1) {
          proc.data[addr] = value;

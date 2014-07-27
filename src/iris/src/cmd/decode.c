@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <stdint.h>
 #include "iris.h"
 static int readinstruction(FILE* input, instruction* container);
 int main() {

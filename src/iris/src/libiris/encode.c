@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include "iris.h"
 
 /* macros */
@@ -22,9 +23,9 @@ byte iris_decode_register(instruction* inst, byte index) {
 void iris_encode_register(instruction* inst, byte index, byte value) {
    inst->bytes[index] = value;
 }
-datum iris_decode_immediate(instruction* inst, byte index) {
+word iris_decode_immediate(instruction* inst, byte index) {
    return inst->words[index];
 }
-void iris_encode_immediate(instruction* inst, byte index, datum value) {
+void iris_encode_immediate(instruction* inst, byte index, word value) {
    inst->words[index] = value;
 }

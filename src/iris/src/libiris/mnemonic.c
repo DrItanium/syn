@@ -1,4 +1,5 @@
 #include <string.h>
+#include <stdint.h>
 #include "iris.h"
 
 const char* iris_arithmetic_mnemonic(instruction* insn) {
@@ -102,10 +103,6 @@ const char* iris_compare_mnemonic(instruction* insn) {
 const char* iris_misc_mnemonic(instruction* insn) {
    switch(get_misc_op(insn)) {
       case MiscOpSystemCall:                       return "system";
-      case MiscOpSetImplicitRegisterImmediate:     return "implicit.register.set";
-      case MiscOpSetImplicitRegisterIndirect:      return "implicit.register.indirect.set";
-      case MiscOpGetImplicitRegisterImmediate:     return "implicit.register.get";
-      case MiscOpGetImplicitRegisterIndirect:      return "implicit.register.indirect.get";
       default:                                     return "UNKNOWN_MISC";
    }
 

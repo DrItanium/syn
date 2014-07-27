@@ -1,8 +1,10 @@
+
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 #include "iris.h"
 
-void iris_decode(core* proc, instruction* value) {
+void iris_decode(iris_core* proc, instruction* value) {
    /* reset the advancepc value */
    proc->advancepc = 1;
    switch(get_group(value)) {
@@ -27,7 +29,7 @@ void iris_decode(core* proc, instruction* value) {
    }
 }
 
-void iris_put_register(core* proc, byte index, datum value) {
+void iris_put_register(iris_core* proc, byte index, word value) {
    if(index < RegisterCount) {
       proc->gpr[index] = value;
    } else {
@@ -35,7 +37,7 @@ void iris_put_register(core* proc, byte index, datum value) {
    }
 }
 
-datum iris_get_register(core* proc, byte index) {
+word iris_get_register(iris_core* proc, byte index) {
    if(index < RegisterCount) {
       return proc->gpr[index];
    } else {
@@ -44,7 +46,7 @@ datum iris_get_register(core* proc, byte index) {
    }
 }
 
-void iris_arithmetic(core* proc, instruction* inst) {
+void iris_arithmetic(iris_core* proc, instruction* inst) {
 #define perform_operation(symbol) \
    (iris_put_register(proc, get_arithmetic_dest(inst), \
          (iris_get_register(proc, get_arithmetic_source0(inst))) \
@@ -94,13 +96,13 @@ void iris_arithmetic(core* proc, instruction* inst) {
 #undef defop
 #undef defiop
 }
-static void iris_push(core* proc, instruction* inst);
-static void iris_push_immediate(core* proc, instruction* inst);
-static void iris_pop(core* proc, instruction* inst);
+static void iris_push(iris_core* proc, instruction* inst);
+static void iris_push_immediate(iris_core* proc, instruction* inst);
+static void iris_pop(iris_core* proc, instruction* inst);
 
-void iris_move(core* proc, instruction* inst) {
-   ushort a, b;
-   ushort addr0, addr1;
+void iris_move(iris_core* proc, instruction* inst) {
+   word a, b;
+   word addr0, addr1;
    a = 0;
    b = 0;
    addr0 = 0;
@@ -204,7 +206,7 @@ void iris_move(core* proc, instruction* inst) {
          iris_error("invalid move operation", ErrorInvalidMoveOperation);
    }
 }
-void iris_jump(core* proc, instruction* inst) {
+void iris_jump(iris_core* proc, instruction* inst) {
    proc->advancepc = 0;
    switch(get_jump_op(inst)) {
       case JumpOpUnconditionalImmediate:
@@ -233,7 +235,7 @@ void iris_jump(core* proc, instruction* inst) {
       case JumpOpConditionalTrueImmediateLink:
          {
             /* load the implied predicate register */
-            if((iris_get_register(proc, proc->impliedregisters[ImplicitRegisterPredicate]) != 0)) {
+            if((iris_get_register(proc, PredicateRegisterIndex) != 0)) {
                iris_put_register(proc, get_jump_reg0(inst), proc->pc + 1);
                proc->pc = get_jump_immediate(inst); 
             } else {
@@ -274,7 +276,7 @@ void iris_jump(core* proc, instruction* inst) {
       case JumpOpConditionalFalseImmediateLink:
          {
             /* load the implied predicate register */
-            if((iris_get_register(proc, proc->impliedregisters[ImplicitRegisterPredicate]) == 0)) {
+            if((iris_get_register(proc, PredicateRegisterIndex) == 0)) {
                iris_put_register(proc, get_jump_reg0(inst), proc->pc + 1);
                proc->pc = get_jump_immediate(inst); 
             } else {
@@ -326,7 +328,7 @@ void iris_jump(core* proc, instruction* inst) {
       case JumpOpIfThenElseLinkPredTrue:
          {
             iris_put_register(proc, get_jump_reg0(inst), proc->pc + 1);
-            if((iris_get_register(proc, proc->impliedregisters[ImplicitRegisterPredicate]) != 0)) {
+            if(iris_get_register(proc, PredicateRegisterIndex) != 0) {
                proc->pc = iris_get_register(proc, get_jump_reg1(inst));
             } else {
                proc->pc = iris_get_register(proc, get_jump_reg2(inst));
@@ -336,7 +338,7 @@ void iris_jump(core* proc, instruction* inst) {
       case JumpOpIfThenElseLinkPredFalse:
          {
             iris_put_register(proc, get_jump_reg0(inst), proc->pc + 1);
-            if((iris_get_register(proc, proc->impliedregisters[ImplicitRegisterPredicate]) == 0)) {
+            if((iris_get_register(proc, PredicateRegisterIndex) == 0)) {
                proc->pc = iris_get_register(proc, get_jump_reg1(inst));
             } else {
                proc->pc = iris_get_register(proc, get_jump_reg2(inst));
@@ -348,8 +350,8 @@ void iris_jump(core* proc, instruction* inst) {
    }
 }
 
-void iris_compare(core* proc, instruction* inst) {
-   ushort value;
+void iris_compare(iris_core* proc, instruction* inst) {
+   word value;
    /* grab the appropriate value */
    value = iris_get_register(proc, get_compare_reg0(inst));
    switch(get_compare_op(inst)) {
@@ -374,55 +376,22 @@ void iris_compare(core* proc, instruction* inst) {
          iris_error("invalid compare operation", ErrorInvalidCompareOperation);
    }
 }
-static void iris_system_call(core* proc, instruction* j);
-static void iris_set_implicit_register(core* proc, byte index, byte value);
-static byte iris_get_implicit_register(core* proc, byte index);
-void iris_misc(core* proc, instruction* j) {
-   byte index, value;
-   index = 0;
-   value = 0;
+static void iris_system_call(iris_core* proc, instruction* j);
+void iris_misc(iris_core* proc, instruction* j) {
    /* implement system commands */
    switch(get_misc_op(j)) {
       case MiscOpSystemCall:
          iris_system_call(proc, j);
-         break;
-      case MiscOpSetImplicitRegisterImmediate:
-         index = get_misc_index(j);
-         value = (byte)iris_get_register(proc, get_misc_reg0(j));
-         iris_set_implicit_register(proc, index, value);
-         break;
-      case MiscOpSetImplicitRegisterIndirect:
-         index = (byte)iris_get_register(proc, get_misc_index(j));
-         value = (byte)iris_get_register(proc, get_misc_reg0(j));
-         iris_set_implicit_register(proc, index, value);
-         break;
-      /* we need to imply a <- flow direction to maintain consistency.
-       * Therefore we need to swap argument orders */
-      case MiscOpGetImplicitRegisterImmediate:
-         value = get_misc_index(j);
-         index = get_misc_reg0(j);
-         iris_put_register(proc, value, iris_get_implicit_register(proc, index));
-         break;
-      case MiscOpGetImplicitRegisterIndirect:
-         value = get_misc_reg0(j);
-         index = (byte)iris_get_register(proc, get_misc_index(j));
-         iris_put_register(proc, value, iris_get_implicit_register(proc, index));
          break;
       default:
          iris_error("invalid misc operation", ErrorInvalidMiscOperation);
    }
 }
 
-void iris_set_implicit_register(core* proc, byte index, byte value) {
-   proc->impliedregisters[index] = value;
-}
-byte iris_get_implicit_register(core* proc, byte index) {
-   return proc->impliedregisters[index];
-}
-void iris_system_call(core* proc, instruction* j) {
+void iris_system_call(iris_core* proc, instruction* j) {
    byte reg0, reg1;
    int result;
-   datum value;
+   word value;
    reg0 = get_misc_reg0(j);
    reg1 = get_misc_reg1(j);
    switch(get_misc_index(j)) {
@@ -431,7 +400,7 @@ void iris_system_call(core* proc, instruction* j) {
          break;
       case SystemCommandGetC:
          result = getchar();
-         iris_put_register(proc, reg0, (datum)result);
+         iris_put_register(proc, reg0, (word)result);
          break;
       case SystemCommandPutC:
          value = iris_get_register(proc, reg0);
@@ -447,7 +416,7 @@ void iris_error(char* message, int code) {
    exit(code);
 }
 
-void iris_rom_init(core* proc) {
+void iris_rom_init(iris_core* proc) {
    int i;
    proc->pc = 0;
    proc->terminateexecution = 0;
@@ -456,63 +425,54 @@ void iris_rom_init(core* proc) {
    for(i = 0; i < RegisterCount; i++) {
       proc->gpr[i] = 0;
    }
-   for(i = 0; i < ImplicitRegisterPredicate; i++) {
-      proc->impliedregisters[i] = 0;
-   }
    for(i = 0; i < MemorySize; ++i) {
       proc->data[i] = 0;
       proc->stack[i] = 0;
       proc->code[i].full = 0;
    }
    /* by default we use these registers for stack and predicate so set them as such */
-   proc->impliedregisters[ImplicitRegisterPredicate] = DefaultPredicateRegisterIndex;
-   proc->impliedregisters[ImplicitRegisterStack] = DefaultStackPointerRegisterIndex;
-   proc->gpr[DefaultPredicateRegisterIndex] = 0;
-   proc->gpr[DefaultStackPointerRegisterIndex] = 0xFFFF;
+   proc->gpr[PredicateRegisterIndex] = 0;
+   proc->gpr[StackPointerRegisterIndex] = 0xFFFF;
 }
-static void iris_push_onto_stack(core* proc, datum value);
-static datum iris_pop_off_stack(core* proc);
+static void iris_push_onto_stack(iris_core* proc, word value);
+static word iris_pop_off_stack(iris_core* proc);
 
-void iris_push(core* proc, instruction* inst) {
+void iris_push(iris_core* proc, instruction* inst) {
    byte index;
-   datum value;
+   word value;
    index = get_reg0(inst);
    value = iris_get_register(proc, index);
    iris_push_onto_stack(proc, value);
 }
-void iris_push_immediate(core* proc, instruction* inst) {
-   datum value;
+void iris_push_immediate(iris_core* proc, instruction* inst) {
+   word value;
    value = get_immediate(inst);
    iris_push_onto_stack(proc, value);
 }
-void iris_pop(core* proc, instruction* inst) {
-   datum result;
+void iris_pop(iris_core* proc, instruction* inst) {
+   word result;
    byte index;
    result = iris_pop_off_stack(proc);
    index = get_reg0(inst);
    iris_put_register(proc, index, result);
 }
 
-void iris_push_onto_stack(core* proc, datum value) {
-   byte implied;
-   datum index;
-   implied = proc->impliedregisters[ImplicitRegisterStack];
-   index = iris_get_register(proc, implied);
+void iris_push_onto_stack(iris_core* proc, word value) {
+   word index;
+   index = iris_get_register(proc, StackPointerRegisterIndex);
    /* increment and then set */
    index++;
    proc->stack[index] = value;
-   iris_put_register(proc, implied, index);
+   iris_put_register(proc, StackPointerRegisterIndex, index);
 }
 
-datum iris_pop_off_stack(core* proc) {
-   byte implied;
-   datum index, value;
-   implied = proc->impliedregisters[ImplicitRegisterStack];
-   index = iris_get_register(proc, implied);
+word iris_pop_off_stack(iris_core* proc) {
+   word index, value;
+   index = iris_get_register(proc, StackPointerRegisterIndex);
    /* get the value and then decrement */
    value = proc->stack[index];
    index--;
-   iris_put_register(proc, implied, index);
+   iris_put_register(proc, StackPointerRegisterIndex, index);
    return value;
 }
 

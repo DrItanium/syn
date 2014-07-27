@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <stdint.h>
 #include "iris.h"
 #include "util.h"
 
@@ -47,7 +48,7 @@ typedef struct labelentry {
 /* used to store ops which require a second pass */
 typedef struct dynamicop {
    int segment;
-   ushort address;
+   word address;
    byte group;
    byte op;
    byte reg0;
@@ -58,8 +59,8 @@ typedef struct dynamicop {
 } dynamicop;
 struct {
    int segment;
-   ushort code_address;
-   ushort data_address;
+   word code_address;
+   word data_address;
    int entry_count;
    int entry_storage_length;
    labelentry* entries;
@@ -71,7 +72,7 @@ struct {
 
 dynamicop curri;
 
-void add_label_entry(char* name, ushort address);
+void add_label_entry(char* name, word address);
 void persist_dynamic_op(void);
 void save_encoding(void);
 void write_dynamic_op(dynamicop* op);
@@ -85,7 +86,7 @@ void usage(char* arg0);
 %union {
       char* sval;
       byte rval;
-      ulong ival;
+      unsigned long ival;
 }
 
 
@@ -165,10 +166,6 @@ void usage(char* arg0);
 %token COMPARE_OP_GREATERTHANOREQUALTOOR
 %token COMPARE_OP_GREATERTHANOREQUALTOXOR
 %token MISC_OP_SYSTEMCALL
-%token MISC_OP_SETIMPLICITREGISTERIMMEDIATE
-%token MISC_OP_SETIMPLICITREGISTERINDIRECT
-%token MISC_OP_GETIMPLICITREGISTERIMMEDIATE
-%token MISC_OP_GETIMPLICITREGISTERINDIRECT
 
 
 %token <rval> REGISTER
@@ -326,26 +323,6 @@ misc_op:
          curri.reg1 = $3;
          curri.reg2 = $4;
        } |
-       MISC_OP_SETIMPLICITREGISTERIMMEDIATE IMMEDIATE REGISTER {
-       curri.op = MiscOpSetImplicitRegisterImmediate; 
-       if($2 > 255) {
-            yyerror("implicit register offset out of range!");
-       }
-       curri.reg0 = $2;
-       curri.reg1 = $3;
-       } |
-       MISC_OP_GETIMPLICITREGISTERIMMEDIATE REGISTER IMMEDIATE { 
-       curri.op = MiscOpGetImplicitRegisterImmediate; 
-       if($3 > 255) {
-            yyerror("implicit register offset out of range!");
-       }
-       curri.reg0 = $2;
-       curri.reg1 = $3;
-       } |
-       miop REGISTER REGISTER  { 
-         curri.reg0 = $2;
-         curri.reg1 = $3;
-       } |
        mop_single REGISTER {
          curri.reg0 = $2;
        } |
@@ -450,10 +427,6 @@ cop:
    COMPARE_OP_GREATERTHANOREQUALTOOR { curri.op = CompareOpGreaterThanOrEqualToOr; } |
    COMPARE_OP_GREATERTHANOREQUALTOXOR { curri.op = CompareOpGreaterThanOrEqualToXor; }
 ;
-miop: 
-   MISC_OP_SETIMPLICITREGISTERINDIRECT { curri.op = MiscOpSetImplicitRegisterIndirect; } |
-   MISC_OP_GETIMPLICITREGISTERINDIRECT { curri.op = MiscOpGetImplicitRegisterIndirect; } 
-;
 lexeme:
       SYMBOL { curri.hassymbol = 1; 
                curri.symbol = $1; } | 
@@ -531,7 +504,7 @@ int main(int argc, char* argv[]) {
 void usage(char* arg0) {
    fprintf(stderr, "usage: %s [-o <file>] <file>\n", arg0);
 }
-void add_label_entry(char* c, ushort addr) {
+void add_label_entry(char* c, word addr) {
    labelentry* le;
    int i;
    if(asmstate.entry_count == asmstate.entry_storage_length) {

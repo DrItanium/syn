@@ -2,40 +2,33 @@
 #ifndef _IRIS_H
 #define _IRIS_H
 typedef unsigned char byte;
-typedef unsigned char uchar;
-typedef signed char schar;
-typedef unsigned short ushort;
-typedef unsigned short datum;
-typedef unsigned int uint;
-typedef unsigned long ulong;
+typedef uint16_t word;
+typedef uint32_t dword;
 /* four bytes and now super flexible */
 typedef union instruction {
    /* TODO: see if we should just use int32_t. A c99 feature */
-   uint full;
+   dword full;
    byte bytes[4];
-   datum words[2];
+   word words[2];
 } instruction;
 
 enum {
    RegisterCount = 256, 
-   /* used in cases where we don't have enough encoding space */
-   ImpliedRegisterCount = 256,
    MemorySize = 65536, 
    MajorOperationGroupCount = 8,
-   DefaultPredicateRegisterIndex = 255,
-   DefaultStackPointerRegisterIndex = 254,
+   PredicateRegisterIndex = 255,
+   StackPointerRegisterIndex = 254,
 };
 
-typedef struct core {
-   datum gpr[RegisterCount];
-   byte impliedregisters[ImpliedRegisterCount];
+typedef struct iris_core {
+   word gpr[RegisterCount];
    instruction code[MemorySize];
-   datum data[MemorySize];
-   datum stack[MemorySize];
-   ushort pc;
+   word data[MemorySize];
+   word stack[MemorySize];
+   word pc;
    byte advancepc;
    byte terminateexecution;
-} core;
+} iris_core;
 
 
 /* Instructions Groups */
@@ -311,16 +304,9 @@ enum {
  */
 enum {
    MiscOpSystemCall = 0,
-   MiscOpSetImplicitRegisterImmediate,
-   MiscOpSetImplicitRegisterIndirect,
-   MiscOpGetImplicitRegisterImmediate,
-   MiscOpGetImplicitRegisterIndirect,
 };
 /* implicit registers */
-enum {
-   ImplicitRegisterPredicate = 0,
-   ImplicitRegisterStack, 
-};
+
 #define get_misc_op(inst) (iris_decode_op(inst))
 #define get_misc_index(inst) (iris_decode_register(inst, 1))
 #define get_misc_reg0(inst) (iris_decode_register(inst, 2))
@@ -339,6 +325,8 @@ enum {
    ErrorInvalidCompareOperation,
    ErrorInvalidMiscOperation,
    ErrorInvalidSystemCommand,
+   /* repl related */
+   ErrorUnableToAllocateCore,
 };
 
 /* system commands */
@@ -349,16 +337,16 @@ enum {
    SystemCommandPanic,
 };
 
-void iris_rom_init(core* proc);
-void iris_arithmetic(core* proc, instruction* inst);
-void iris_move(core* proc, instruction* inst);
-void iris_jump(core* proc, instruction* inst);
-void iris_compare(core* proc, instruction* inst);
-void iris_put_register(core* proc, byte index, datum value);
-datum iris_get_register(core* proc, byte index);
-void iris_decode(core* proc, instruction* value);
+void iris_rom_init(iris_core* proc);
+void iris_arithmetic(iris_core* proc, instruction* inst);
+void iris_move(iris_core* proc, instruction* inst);
+void iris_jump(iris_core* proc, instruction* inst);
+void iris_compare(iris_core* proc, instruction* inst);
+void iris_put_register(iris_core* proc, byte index, word value);
+word iris_get_register(iris_core* proc, byte index);
+void iris_decode(iris_core* proc, instruction* value);
 void iris_error(char* message, int code);
-void iris_misc(core* proc, instruction* inst);
+void iris_misc(iris_core* proc, instruction* inst);
 /* mnemonics */
 const char* iris_arithmetic_mnemonic(instruction* insn);
 const char* iris_move_mnemonic(instruction* insn);
@@ -383,8 +371,8 @@ byte iris_decode_op(instruction* inst);
 void iris_encode_op(instruction* inst, byte op);
 byte iris_decode_register(instruction* inst, byte index);
 void iris_encode_register(instruction* inst, byte index, byte value);
-datum iris_decode_immediate(instruction* inst, byte index);
-void iris_encode_immediate(instruction* inst, byte index, datum value);
+word iris_decode_immediate(instruction* inst, byte index);
+void iris_encode_immediate(instruction* inst, byte index, word value);
 
 #define get_group(inst) (iris_decode_group(inst))
 #define get_op(inst) (iris_decode_op(inst))
@@ -393,7 +381,10 @@ void iris_encode_immediate(instruction* inst, byte index, datum value);
 #define get_reg2(inst) (iris_decode_register(inst, 3))
 #define get_immediate(inst) (iris_decode_immediate(inst, 1))
 
+
 /* libelectron interaction */
+#define IRIS_CORE_DATA USER_ENVIRONMENT_DATA + 0
+#define GetIrisCoreData(theEnv) ((iris_core*) GetEnvironmentData(theEnv, IRIS_CORE_DATA))
 extern void iris_declarations(void* theEnv);
 
 #endif 

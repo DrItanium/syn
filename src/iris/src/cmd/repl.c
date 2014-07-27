@@ -42,6 +42,7 @@
 /***************************************************************************/
 
 #include <stdio.h>
+#include <stdint.h>
 #include "setup.h"
 #include "clips.h"
 #include "iris.h"
