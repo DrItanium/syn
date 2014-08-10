@@ -366,6 +366,7 @@ void iris_unparse_if_then_else(char* unparsed, instruction* insn);
 void iris_unparse_compare(char* unparsed, instruction* insn);
 void iris_unparse_bitstring(char* bits, instruction* insn);
 void iris_unparse_misc(char* unparsed, instruction* insn);
+
 /* encode */
 byte iris_decode_group(instruction* inst);
 void iris_encode_group(instruction* inst, byte group);
@@ -388,5 +389,6 @@ void iris_encode_immediate(instruction* inst, byte index, word value);
 #define IRIS_CORE_DATA USER_ENVIRONMENT_DATA + 0
 #define GetIrisCoreData(theEnv) ((iris_core*) GetEnvironmentData(theEnv, IRIS_CORE_DATA))
 extern void iris_declarations(void* theEnv);
+void iris_shutdown(core*);
 
 #endif 

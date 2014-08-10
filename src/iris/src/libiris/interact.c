@@ -38,10 +38,11 @@ static int iris_interact_save_memory_image(void*);
 //static dword iris_interact_encode_instruction(void*);
 //static void iris_interact_decode_instruction(void*, DATA_OBJECT_PTR);
 
+static void iris_interact_deallocate(void*);
 void iris_declarations(void* theEnv) {
    iris_core* curr;
    if (! AllocateEnvironmentData(theEnv, IRIS_CORE_DATA,
-            sizeof(iris_core), NULL)) {
+            sizeof(iris_core), iris_interact_deallocate)) {
       iris_error("Error allocating environment data for iris_core", ErrorUnableToAllocateCore);
    }
    curr = GetIrisCoreData(theEnv);
@@ -386,6 +387,10 @@ int iris_interact_save_memory_image(void* theEnv) {
 
    return TRUE;
 #undef SaveWords 
+}
+
+void iris_interact_deallocate(void* theEnv) {
+   iris_shutdown(GetIrisCoreData(theEnv));
 }
 
 /* vim: set expandtab tabstop=3 shiftwidth=3: */

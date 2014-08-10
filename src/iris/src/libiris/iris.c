@@ -476,5 +476,9 @@ word iris_pop_off_stack(iris_core* proc) {
    return value;
 }
 
+void iris_shutdown(core* c) {
+   /* do nothing right now */
+}
+
 /* vim: set expandtab tabstop=3 shiftwidth=3: */
 
