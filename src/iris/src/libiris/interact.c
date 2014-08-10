@@ -254,6 +254,10 @@ int iris_interact_load_memory_image(void* theEnv) {
 
 
    core = GetIrisCoreData(theEnv);
+   /* restore the PC */
+   a = EnvGetcRouter(theEnv, logicalName);
+   b = EnvGetcRouter(theEnv, logicalName);
+   core->pc = EncodeWord(a, b);
    /* load the registers */
    LoadWords(RegisterCount, gpr, "End of stream was reached\nNo data section or an error occurred!\n")
    /* Load the code section */
@@ -319,7 +323,6 @@ int iris_interact_save_memory_image(void* theEnv) {
       return FALSE;
    }
 #define SaveWords(count, array) \
-   fptr = FindFptr(theEnv, logicalName); \
    if (fptr != NULL) { \
       for (i = 0; i < count; i++) { \
          currData = core->array[i]; \
@@ -340,11 +343,20 @@ int iris_interact_save_memory_image(void* theEnv) {
 
 
    core = GetIrisCoreData(theEnv);
+   /* save the PC */
+   fptr = FindFptr(theEnv, logicalName);
+   dataValue[0] = (char)(currData & 0x00FF);
+   dataValue[1] = (char)((currData & 0xFF00) >> 8);
+   if (fptr != NULL) {
+      putc((int)dataValue[0], fptr);
+      putc((int)dataValue[1], fptr);
+   } else {
+      EnvPrintRouter(theEnv, logicalName, dataValue);
+   }
    /* save the registers */
    SaveWords(RegisterCount, gpr)
    /* Load the code section */
-      fptr = FindFptr(theEnv, logicalName);
-   if (fptr != NULL ) {
+   if (fptr != NULL) {
       for(i = 0; i < MemorySize; i++) {
          tmp = core->code[i].full;
          instValue[0] = (char)(tmp & 0x000000FF);
