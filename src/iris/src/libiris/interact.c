@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdio.h>
 #include "clips.h"
 #include "iris.h"
 #define NO_ARGS "00"
@@ -33,7 +34,7 @@ static void iris_interact_dispatch(void*);
 static void iris_interact_cycle(void*);
 
 static int iris_interact_load_memory_image(void*);
-//static int iris_interact_save_memory_image(void*);
+static int iris_interact_save_memory_image(void*);
 //static dword iris_interact_encode_instruction(void*);
 //static void iris_interact_decode_instruction(void*, DATA_OBJECT_PTR);
 
@@ -66,7 +67,7 @@ void iris_declarations(void* theEnv) {
    EnvDefineFunction2(theEnv, "dispatch", 'v', PTIEF iris_interact_dispatch, "iris_interact_dispatch", "11i");
    EnvDefineFunction2(theEnv, "cycle", 'v', PTIEF iris_interact_cycle, "iris_interact_cycle", NO_ARGS);
    EnvDefineFunction2(theEnv, "load-memory-image", 'b', PTIEF iris_interact_load_memory_image, "iris_interact_load_memory_image", "*1");
- //  EnvDefineFunction2(theEnv, "save-memory-image", 'b', PTIEF iris_interact_save_memory_image, "iris_interact_save_memory_image", "11k");
+   EnvDefineFunction2(theEnv, "save-memory-image", 'b', PTIEF iris_interact_save_memory_image, "iris_interact_save_memory_image", "11k");
 }
 
 void iris_interact_putregister(void* theEnv) {
@@ -284,6 +285,95 @@ int iris_interact_load_memory_image(void* theEnv) {
    return TRUE;
 #undef EncodeWord
 #undef LoadWords
+}
+
+int iris_interact_save_memory_image(void* theEnv) {
+   iris_core* core;
+   int argCount, i;
+   char* logicalName;
+   dword tmp;
+   word currData;
+   char dataValue[2];
+   char instValue[4];
+   FILE* fptr;
+
+   if ((argCount = EnvArgCountCheck(theEnv, "save-memory-image", NO_MORE_THAN, 1)) == -1) {
+      return FALSE;
+   }
+
+   if (argCount == 0) {
+      logicalName = "stdin";
+   } else {
+      logicalName = GetLogicalName(theEnv,1,"stdin");
+      if (logicalName == NULL) {
+         IllegalLogicalNameMessage(theEnv, "save-memory-image");
+         SetHaltExecution(theEnv, TRUE);
+         SetEvaluationError(theEnv, TRUE);
+         return FALSE;
+      }
+   }
+   if (QueryRouters(theEnv, logicalName) == FALSE) {
+      UnrecognizedRouterMessage(theEnv, logicalName);
+      SetHaltExecution(theEnv, TRUE);
+      SetEvaluationError(theEnv, TRUE);
+      return FALSE;
+   }
+#define SaveWords(count, array) \
+   fptr = FindFptr(theEnv, logicalName); \
+   if (fptr != NULL) { \
+      for (i = 0; i < count; i++) { \
+         currData = core->array[i]; \
+         dataValue[0] = (char)(currData & 0x00FF); \
+         dataValue[1] = (char)((currData & 0xFF00) >> 8); \
+         putc((int)dataValue[0], fptr); \
+         putc((int)dataValue[1], fptr); \
+      } \
+   } else { \
+      /* custom router */ \
+      for (i = 0; i < count; i++) { \
+         currData = core->array[i]; \
+         dataValue[0] = (char)(currData & 0x00FF); \
+         dataValue[1] = (char)((currData & 0xFF00) >> 8); \
+         EnvPrintRouter(theEnv, logicalName, dataValue); \
+      } \
+   } \
+
+
+   core = GetIrisCoreData(theEnv);
+   /* save the registers */
+   SaveWords(RegisterCount, gpr)
+   /* Load the code section */
+      fptr = FindFptr(theEnv, logicalName);
+   if (fptr != NULL ) {
+      for(i = 0; i < MemorySize; i++) {
+         tmp = core->code[i].full;
+         instValue[0] = (char)(tmp & 0x000000FF);
+         instValue[1] = (char)((tmp & 0x0000FF00) >> 8);
+         instValue[2] = (char)((tmp & 0x00FF0000) >> 16);
+         instValue[3] = (char)((tmp & 0xFF000000) >> 24);
+         putc((int)instValue[0], fptr);
+         putc((int)instValue[1], fptr);
+         putc((int)instValue[2], fptr);
+         putc((int)instValue[3], fptr);
+      }
+   } else {
+      // custom router, not a file
+      for(i = 0; i < MemorySize; i++) {
+         tmp = core->code[i].full;
+         instValue[0] = (char)(tmp & 0x000000FF);
+         instValue[1] = (char)((tmp & 0x0000FF00) >> 8);
+         instValue[2] = (char)((tmp & 0x00FF0000) >> 16);
+         instValue[3] = (char)((tmp & 0xFF000000) >> 24);
+         EnvPrintRouter(theEnv, logicalName, instValue);
+      }
+   }
+   /* Load the data section */
+   SaveWords(MemorySize, data)
+   /* Load the stack */
+   SaveWords(MemorySize, stack)
+
+   return TRUE;
+#undef SaveWords 
 }
 
 /* vim: set expandtab tabstop=3 shiftwidth=3: */
