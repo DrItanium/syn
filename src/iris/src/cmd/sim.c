@@ -111,9 +111,8 @@ void installprogram(FILE* file) {
       if(a == EOF || b == EOF || c == EOF || d == EOF) {
          break;
       } else {
-         tmp.full = (((d & 0x000000FF) << 24) + ((c & 0x000000FF) << 16) + 
-               ((b & 0x000000FF) << 8) + (a & 0x000000FF));
-         proc.code[i] = tmp;
+         proc.code[i] = (((d & 0x000000FF) << 24) | ((c & 0x000000FF) << 16) | 
+               ((b & 0x000000FF) << 8) | (a & 0x000000FF));
       }
    }
    if(i < MemorySize) {
@@ -131,7 +130,7 @@ void installprogram(FILE* file) {
          if(a == EOF || b == EOF) {
             break;
          } else {
-            proc.data[i] = ((b & 0x000000FF) << 8) + (a & 0x000000FF);
+            proc.data[i] = ((b & 0x000000FF) << 8) | (a & 0x000000FF);
          }
       }
       if(i < MemorySize) {

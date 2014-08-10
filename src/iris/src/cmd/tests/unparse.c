@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include "iris.h"
 typedef struct container {
    byte a;
@@ -28,14 +29,14 @@ int main() {
    instruction insn;
    int k, len, i;
    len = LENGTH(values);
-   insn.full = 0;
+   insn = 0;
    /* limited test cases */
    for(i = 0; i < 256; i++) {
-      insn.bytes[0] = i;
       for(k = 0; k < len; k++) {
-         insn.bytes[1] = values[k].a;
-         insn.bytes[2] = values[k].b;
-         insn.bytes[3] = values[k].c;
+         insn = ((insn & ~0xFF000000) | (values[k].a << 24)) |
+            ((insn & ~0x00FF0000) | (values[k].b << 16)) |
+            ((insn & ~0x0000FF00) | (values[k].c << 8)) | 
+            ((insn & ~0x000000FF) | i);
          iris_unparse_bitstring(unparsed, &insn);
          printf("%s : ", unparsed);
          iris_unparse(unparsed, &insn);
@@ -44,3 +45,4 @@ int main() {
    }
    return 0;
 }
+/* vim: set expandtab tabstop=3 shiftwidth=3: */

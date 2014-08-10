@@ -1,13 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <stdint.h>
 #include "iris.h"
 
 int main() {
   instruction insn;
-  uint i;
+  uint32_t i;
   for(i = 0; i < 65536; i++) {
-    insn.full = i;
+    insn = i;
     switch(get_group(&insn)) {
       case InstructionGroupArithmetic:
         puts(iris_arithmetic_mnemonic(&insn));

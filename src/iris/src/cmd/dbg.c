@@ -131,8 +131,8 @@ void installprogram(FILE* file) {
       if(a == EOF || b == EOF || c == EOF || d == EOF) {
          break;
       } else {
-         tmp.full = (((d & 0x000000FF) << 24) + ((c & 0x000000FF) << 16) + 
-               ((b & 0x000000FF) << 8) + (a & 0x000000FF));
+         tmp = (((d & 0x000000FF) << 24) | ((c & 0x000000FF) << 16) | 
+               ((b & 0x000000FF) << 8) | (a & 0x000000FF));
          proc.code[i] = tmp;
       }
    }

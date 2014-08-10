@@ -204,7 +204,7 @@ void iris_unparse_bitstring(char* unparsed, instruction* insn) {
    int bit;
    dword data;
    unparsed[32] = '\0';
-   data = insn->full;
+   data = *insn;
    for (bit = 31; bit >= 0; bit -= 1) {
       unparsed[bit] = (data & 1) + '0';
       data >>= 1;

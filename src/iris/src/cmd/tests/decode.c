@@ -1,11 +1,12 @@
 /* Runs simple tests to make sure we haven't broken the decoder logic */
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include "iris.h"
 typedef struct testcase {
    const char* name;
-   uint control;
-   ushort compare;
+   uint32_t control;
+   word compare;
 } testcase;
 #define LENGTH(X) (sizeof(X) / (sizeof(X[0])))
 testcase tests [] = {
@@ -45,11 +46,11 @@ int checkandreport(int tc) {
    testcase z;
    instruction value;
    int compare;
-   ushort result;
+   word result;
    compare = 0;
    z = tests[tc];
    result = 0;
-   value.full = z.control;
+   value = z.control;
    switch(tc) {
 #define defcase(ind, op) case ind: result = op(&value); break
       defcase(0, get_group);

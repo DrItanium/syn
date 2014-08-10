@@ -5,12 +5,7 @@ typedef unsigned char byte;
 typedef uint16_t word;
 typedef uint32_t dword;
 /* four bytes and now super flexible */
-typedef union instruction {
-   /* TODO: see if we should just use int32_t. A c99 feature */
-   dword full;
-   byte bytes[4];
-   word words[2];
-} instruction;
+typedef dword instruction;
 
 enum {
    RegisterCount = 256, 

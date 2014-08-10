@@ -170,7 +170,7 @@ void installcode(FILE* f, int ln) {
    dword value;
    if(fread(&addr, sizeof(addr), 1, f) == 1) {
       if(fread(&value, sizeof(value), 1, f) == 1) {
-         proc.code[addr].full = value;
+         proc.code[addr] = value;
       } else {
          fprintf(stderr, "error: line %d, invalid value\n", ln);
          exit(1);

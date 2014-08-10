@@ -428,7 +428,7 @@ void iris_rom_init(iris_core* proc) {
    for(i = 0; i < MemorySize; ++i) {
       proc->data[i] = 0;
       proc->stack[i] = 0;
-      proc->code[i].full = 0;
+      proc->code[i] = 0;
    }
    /* by default we use these registers for stack and predicate so set them as such */
    proc->gpr[PredicateRegisterIndex] = 0;

@@ -29,7 +29,7 @@ int readinstruction(FILE* input, instruction* container) {
    if(a == EOF || b == EOF || c == EOF || d == EOF) {
       return 0;
    } else {
-      container->full = (((d & 0x000000FF) << 24) + ((c & 0x000000FF) << 16) + 
+      *container = (((d & 0x000000FF) << 24) + ((c & 0x000000FF) << 16) + 
             ((b & 0x000000FF) << 8) + (a & 0x000000FF));
 
       return 1;

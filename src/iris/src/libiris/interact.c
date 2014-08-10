@@ -103,7 +103,7 @@ void iris_interact_setcodememory(void* theEnv) {
    word addr;
    c = GetIrisCoreData(theEnv);
    addr = (word)EnvRtnLong(theEnv, 1);
-   q.full = (dword)EnvRtnLong(theEnv, 2);
+   q = (dword)EnvRtnLong(theEnv, 2);
    c->code[addr] = q;
 }
 
@@ -112,7 +112,7 @@ dword iris_interact_getcodememory(void* theEnv) {
    word addr;
    c = GetIrisCoreData(theEnv);
    addr = (word)EnvRtnLong(theEnv, 1);
-   return c->code[addr].full;
+   return c->code[addr];
 }
 
 void iris_interact_setdatamemory(void* theEnv) {
@@ -195,7 +195,7 @@ void iris_interact_dispatch(void* theEnv) {
    /* takes in an encoded instruction */
    iris_core* c;
    instruction q;
-   q.full = (dword)EnvRtnLong(theEnv, 1);
+   q = (dword)EnvRtnLong(theEnv, 1);
    c = GetIrisCoreData(theEnv);
    iris_dispatch(c, &q);
 }
@@ -270,8 +270,8 @@ int iris_interact_load_memory_image(void* theEnv) {
       if(a == EOF || b == EOF || c == EOF || d == EOF) {
          break;
       } else {
-         tmp.full = (((d & 0x000000FF) << 24) + ((c & 0x000000FF) << 16) + 
-               ((b & 0x000000FF) << 8) + (a & 0x000000FF));
+         tmp = (((d & 0x000000FF) << 24) | ((c & 0x000000FF) << 16) | 
+               ((b & 0x000000FF) << 8) | (a & 0x000000FF));
          core->code[i] = tmp;
       }
    }
@@ -301,6 +301,8 @@ int iris_interact_save_memory_image(void* theEnv) {
    char dataValue[2];
    char instValue[4];
    FILE* fptr;
+   currData = 0;
+   tmp = 0;
 
    if ((argCount = EnvArgCountCheck(theEnv, "save-memory-image", NO_MORE_THAN, 1)) == -1) {
       return FALSE;
@@ -359,7 +361,7 @@ int iris_interact_save_memory_image(void* theEnv) {
    /* Load the code section */
    if (fptr != NULL) {
       for(i = 0; i < MemorySize; i++) {
-         tmp = core->code[i].full;
+         tmp = core->code[i];
          instValue[0] = (char)(tmp & 0x000000FF);
          instValue[1] = (char)((tmp & 0x0000FF00) >> 8);
          instValue[2] = (char)((tmp & 0x00FF0000) >> 16);
@@ -372,7 +374,7 @@ int iris_interact_save_memory_image(void* theEnv) {
    } else {
       // custom router, not a file
       for(i = 0; i < MemorySize; i++) {
-         tmp = core->code[i].full;
+         tmp = core->code[i];
          instValue[0] = (char)(tmp & 0x000000FF);
          instValue[1] = (char)((tmp & 0x0000FF00) >> 8);
          instValue[2] = (char)((tmp & 0x00FF0000) >> 16);
