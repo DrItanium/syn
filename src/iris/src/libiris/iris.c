@@ -476,7 +476,7 @@ word iris_pop_off_stack(iris_core* proc) {
    return value;
 }
 
-void iris_shutdown(core* c) {
+void iris_shutdown(iris_core* c) {
    /* do nothing right now */
 }
 
