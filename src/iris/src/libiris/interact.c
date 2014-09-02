@@ -35,7 +35,8 @@ static void iris_interact_cycle(void*);
 
 static int iris_interact_load_memory_image(void*);
 static int iris_interact_save_memory_image(void*);
-//static dword iris_interact_encode_instruction(void*);
+static void iris_interact_encode_word_immediate(void*, DATA_OBJECT_PTR);
+static dword iris_interact_encode_instruction(void*);
 //static void iris_interact_decode_instruction(void*, DATA_OBJECT_PTR);
 
 static void iris_interact_deallocate(void*);
@@ -69,6 +70,8 @@ void iris_declarations(void* theEnv) {
    EnvDefineFunction2(theEnv, "cycle", 'v', PTIEF iris_interact_cycle, "iris_interact_cycle", NO_ARGS);
    EnvDefineFunction2(theEnv, "load-memory-image", 'b', PTIEF iris_interact_load_memory_image, "iris_interact_load_memory_image", "*1");
    EnvDefineFunction2(theEnv, "save-memory-image", 'b', PTIEF iris_interact_save_memory_image, "iris_interact_save_memory_image", "11k");
+   EnvDefineFunction2(theEnv, "encode-instruction", 'i', PTIEF iris_interact_encode_instruction, "iris_interact_encode_instruction", "44i");
+   EnvDefineFunction2(theEnv, "encode-word-immediate", 'm', PTIEF iris_interact_encode_word_immediate, "iris_interact_encode_word_immediate", "11i");
 }
 
 void iris_interact_putregister(void* theEnv) {
@@ -261,32 +264,32 @@ int iris_interact_load_memory_image(void* theEnv) {
    core->pc = EncodeWord(a, b);
    /* load the registers */
    LoadWords(RegisterCount, gpr, "End of stream was reached\nNo data section or an error occurred!\n")
-   /* Load the code section */
-   for(i = 0; i < MemorySize; i++) {
-      a = EnvGetcRouter(theEnv, logicalName);
-      b = EnvGetcRouter(theEnv, logicalName);
-      c = EnvGetcRouter(theEnv, logicalName);
-      d = EnvGetcRouter(theEnv, logicalName);
-      if(a == EOF || b == EOF || c == EOF || d == EOF) {
-         break;
-      } else {
-         tmp = (((d & 0x000000FF) << 24) | ((c & 0x000000FF) << 16) | 
-               ((b & 0x000000FF) << 8) | (a & 0x000000FF));
-         core->code[i] = tmp;
+      /* Load the code section */
+      for(i = 0; i < MemorySize; i++) {
+         a = EnvGetcRouter(theEnv, logicalName);
+         b = EnvGetcRouter(theEnv, logicalName);
+         c = EnvGetcRouter(theEnv, logicalName);
+         d = EnvGetcRouter(theEnv, logicalName);
+         if(a == EOF || b == EOF || c == EOF || d == EOF) {
+            break;
+         } else {
+            tmp = (((d & 0x000000FF) << 24) | ((c & 0x000000FF) << 16) | 
+                  ((b & 0x000000FF) << 8) | (a & 0x000000FF));
+            core->code[i] = tmp;
+         }
       }
-   }
    if(i < MemorySize) {
       EnvPrintRouter(theEnv, WERROR, "End of stream was reached\nNo data section or an error occurred!\n");
       return FALSE;
    } 
    /* Load the data section */
    LoadWords(MemorySize, data, "End of stream was reached before end of data section or an error occurred!\nStack was not loaded!")
-   /* Load the stack */
-   LoadWords(MemorySize, stack, "End of stream was reached before end of stack section or an error occurred!\n")
+      /* Load the stack */
+      LoadWords(MemorySize, stack, "End of stream was reached before end of stack section or an error occurred!\n")
 
-   if(EnvGetcRouter(theEnv, logicalName) != EOF) {
-      EnvPrintRouter(theEnv, WERROR, "Warning: image contains more data than is loadable\n");
-   }
+      if(EnvGetcRouter(theEnv, logicalName) != EOF) {
+         EnvPrintRouter(theEnv, WERROR, "Warning: image contains more data than is loadable\n");
+      }
    return TRUE;
 #undef EncodeWord
 #undef LoadWords
@@ -358,41 +361,70 @@ int iris_interact_save_memory_image(void* theEnv) {
    }
    /* save the registers */
    SaveWords(RegisterCount, gpr)
-   /* Load the code section */
-   if (fptr != NULL) {
-      for(i = 0; i < MemorySize; i++) {
-         tmp = core->code[i];
-         instValue[0] = (char)(tmp & 0x000000FF);
-         instValue[1] = (char)((tmp & 0x0000FF00) >> 8);
-         instValue[2] = (char)((tmp & 0x00FF0000) >> 16);
-         instValue[3] = (char)((tmp & 0xFF000000) >> 24);
-         putc((int)instValue[0], fptr);
-         putc((int)instValue[1], fptr);
-         putc((int)instValue[2], fptr);
-         putc((int)instValue[3], fptr);
+      /* Load the code section */
+      if (fptr != NULL) {
+         for(i = 0; i < MemorySize; i++) {
+            tmp = core->code[i];
+            instValue[0] = (char)(tmp & 0x000000FF);
+            instValue[1] = (char)((tmp & 0x0000FF00) >> 8);
+            instValue[2] = (char)((tmp & 0x00FF0000) >> 16);
+            instValue[3] = (char)((tmp & 0xFF000000) >> 24);
+            putc((int)instValue[0], fptr);
+            putc((int)instValue[1], fptr);
+            putc((int)instValue[2], fptr);
+            putc((int)instValue[3], fptr);
+         }
+      } else {
+         // custom router, not a file
+         for(i = 0; i < MemorySize; i++) {
+            tmp = core->code[i];
+            instValue[0] = (char)(tmp & 0x000000FF);
+            instValue[1] = (char)((tmp & 0x0000FF00) >> 8);
+            instValue[2] = (char)((tmp & 0x00FF0000) >> 16);
+            instValue[3] = (char)((tmp & 0xFF000000) >> 24);
+            EnvPrintRouter(theEnv, logicalName, instValue);
+         }
       }
-   } else {
-      // custom router, not a file
-      for(i = 0; i < MemorySize; i++) {
-         tmp = core->code[i];
-         instValue[0] = (char)(tmp & 0x000000FF);
-         instValue[1] = (char)((tmp & 0x0000FF00) >> 8);
-         instValue[2] = (char)((tmp & 0x00FF0000) >> 16);
-         instValue[3] = (char)((tmp & 0xFF000000) >> 24);
-         EnvPrintRouter(theEnv, logicalName, instValue);
-      }
-   }
    /* Load the data section */
    SaveWords(MemorySize, data)
-   /* Load the stack */
-   SaveWords(MemorySize, stack)
+      /* Load the stack */
+      SaveWords(MemorySize, stack)
 
-   return TRUE;
+      return TRUE;
 #undef SaveWords 
 }
 
 void iris_interact_deallocate(void* theEnv) {
    iris_shutdown(GetIrisCoreData(theEnv));
+}
+dword iris_interact_encode_instruction(void* theEnv) {
+   dword control, r0, r1, r2;
+   control = (dword)(byte)EnvRtnLong(theEnv, 1L);
+   r0 = (dword)(byte)EnvRtnLong(theEnv, 2L);
+   r1 = (dword)(byte)EnvRtnLong(theEnv, 3L);
+   r2 = (dword)(byte)EnvRtnLong(theEnv, 4L);
+   return ((r2 & 0x000000FF) << 24) |
+      ((r1 & 0x000000FF) << 16) |
+      ((r0 & 0x000000FF) << 8) |
+      ((control & 0x000000FF));
+}
+
+void iris_interact_encode_word_immediate(void* theEnv, DATA_OBJECT_PTR ret) {
+   void* multifield;
+   word value;
+
+   value = EnvRtnLong(theEnv, 1);
+   multifield = EnvCreateMultifield(theEnv, 2);
+   SetMFType(multifield, 1, INTEGER);
+   SetMFType(multifield, 2, INTEGER);
+   SetMFValue(multifield, 1, EnvAddLong(theEnv, value & 0x00FF));
+   SetMFValue(multifield, 2, EnvAddLong(theEnv, ((value & 0xFF00) >> 8)));
+
+   SetpType(ret, MULTIFIELD);
+   SetpValue(ret, multifield);
+
+   SetpDOBegin(ret, 1);
+   SetpDOEnd(ret, 2);
 }
 
 /* vim: set expandtab tabstop=3 shiftwidth=3: */
