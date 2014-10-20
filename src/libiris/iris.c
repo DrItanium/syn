@@ -207,6 +207,7 @@ void iris_move(iris_core* proc, instruction* inst) {
    }
 }
 void iris_jump(iris_core* proc, instruction* inst) {
+   word a;
    proc->advancepc = 0;
    switch(get_jump_op(inst)) {
       case JumpOpUnconditionalImmediate:
@@ -220,8 +221,9 @@ void iris_jump(iris_core* proc, instruction* inst) {
          proc->pc = iris_get_register(proc, get_jump_reg0(inst));
          break;
       case JumpOpUnconditionalRegisterLink:
+         a = iris_get_register(proc, get_jump_reg1(inst));
          iris_put_register(proc, get_jump_reg0(inst), proc->pc + 1);
-         proc->pc = iris_get_register(proc, get_jump_reg1(inst));
+         proc->pc = a;
          break;
       case JumpOpConditionalTrueImmediate: 
          {
@@ -257,8 +259,9 @@ void iris_jump(iris_core* proc, instruction* inst) {
          {
             /* load the implied predicate register */
             if((iris_get_register(proc, get_jump_reg0(inst)) != 0)) {
+               a = iris_get_register(proc, get_jump_reg2(inst));
                iris_put_register(proc, get_jump_reg1(inst), proc->pc + 1);
-               proc->pc = iris_get_register(proc, get_jump_reg2(inst));
+               proc->pc = a;
             } else {
                proc->advancepc = 1;
             }
@@ -298,8 +301,9 @@ void iris_jump(iris_core* proc, instruction* inst) {
          {
             /* load the implied predicate register */
             if((iris_get_register(proc, get_jump_reg0(inst)) == 0)) {
+               a = iris_get_register(proc, get_jump_reg2(inst));
                iris_put_register(proc, get_jump_reg1(inst), proc->pc + 1);
-               proc->pc = iris_get_register(proc, get_jump_reg2(inst));
+               proc->pc = a;
             } else {
                proc->advancepc = 1;
             }
