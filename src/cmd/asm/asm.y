@@ -282,7 +282,13 @@ move_op:
             curri.reg0 = $2;
             curri.reg1 = $3;
        } |
-       mop_mixed REGISTER lexeme { curri.reg0 = $2; }
+       mop_mixed REGISTER lexeme { curri.reg0 = $2; } |
+       mop_single REGISTER {
+         curri.reg0 = $2;
+       } |
+       MOVE_OP_PUSHIMMEDIATE lexeme { 
+         curri.op = MoveOpPushImmediate;
+       }
        ;
 
 jump_op:
@@ -322,13 +328,7 @@ misc_op:
          curri.reg0 = $2;
          curri.reg1 = $3;
          curri.reg2 = $4;
-       } |
-       mop_single REGISTER {
-         curri.reg0 = $2;
-       } |
-       MOVE_OP_PUSHIMMEDIATE lexeme { 
-         curri.op = MoveOpPushImmediate;
-       }
+       } 
        ;
 aop:
    ARITHMETIC_OP_ADD { curri.op = ArithmeticOpAdd; } |
