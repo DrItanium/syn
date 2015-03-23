@@ -108,7 +108,7 @@ enum {
    MoveOpPop, /* pop r? */
 };
 #define get_move_op(inst) (iris_decode_op(inst))
-#define get_move_immediate(inst) (iris_decode_immediate(inst, 1))
+#define get_move_immediate(inst) (iris_decode_immediate(inst))
 #define get_move_reg0(inst) (iris_decode_register(inst, 1))
 #define get_move_reg1(inst) (iris_decode_register(inst, 2))
 
@@ -222,7 +222,7 @@ enum {
    JumpOpIfThenElseLinkPredFalse,
 };
 #define get_jump_op(inst) (iris_decode_op(inst))
-#define get_jump_immediate(inst) (iris_decode_immediate(inst, 1))
+#define get_jump_immediate(inst) (iris_decode_immediate(inst))
 #define get_jump_reg0(inst) (iris_decode_register(inst, 1))
 #define get_jump_reg1(inst) (iris_decode_register(inst, 2))
 #define get_jump_reg2(inst) (iris_decode_register(inst, 3))
@@ -369,7 +369,7 @@ byte iris_decode_op(instruction* inst);
 void iris_encode_op(instruction* inst, byte op);
 byte iris_decode_register(instruction* inst, byte index);
 void iris_encode_register(instruction* inst, byte index, byte value);
-word iris_decode_immediate(instruction* inst, byte index);
+word iris_decode_immediate(instruction* inst);
 void iris_encode_immediate(instruction* inst, byte index, word value);
 
 #define get_group(inst) (iris_decode_group(inst))
@@ -377,7 +377,7 @@ void iris_encode_immediate(instruction* inst, byte index, word value);
 #define get_reg0(inst) (iris_decode_register(inst, 1))
 #define get_reg1(inst) (iris_decode_register(inst, 2))
 #define get_reg2(inst) (iris_decode_register(inst, 3))
-#define get_immediate(inst) (iris_decode_immediate(inst, 1))
+#define get_immediate(inst) (iris_decode_immediate(inst))
 
 
 /* libelectron interaction */

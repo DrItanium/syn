@@ -45,7 +45,7 @@ void iris_encode_register(instruction* inst, byte index, byte value) {
          break;
    }
 }
-word iris_decode_immediate(instruction* inst, byte index) {
+word iris_decode_immediate(instruction* inst) {
    return (word)decode_bits(*inst, 0xFFFF0000, 16);
 }
 void iris_encode_immediate(instruction* inst, byte index, word value) {
