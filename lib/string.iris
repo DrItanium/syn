@@ -52,7 +52,7 @@
 ;-----------------------------------------------------------------------------
 ; void* memcpy(void *s1, const void* s2, size_t n);
 ;-----------------------------------------------------------------------------
-@label memcpy
+@label memcpy					 ; memcpy {
 	pop r128 					 ; _dest
 	pop r129 					 ; _source
 	pop r130 					 ; n
@@ -62,7 +62,7 @@
 	set r135 0 					 ; predicate := false
 @label memcpy_loop			 	 ; loop {
 	lt r135 r132 r130 			 ; predicate := i < n
-	goto.if0 r134 memcpy_success ; if predicate then break 
+	goto.if0 r134 memcpy_success ; if !predicate then break 
 	load r136 r134 				 ; v := *source
 	store r133 r136 			 ; *dest = v
 	addi r134 r134 1			 ; source++
@@ -72,5 +72,24 @@
 @label memcpy_success		
 	pop r131					 ; return _dest
 	push r128					 ;
-	jump r131					 ;
+	jump r131					 ; }
 
+
+@label strlen					 ; strlen {
+	pop r128					 ; _str
+	set r129 0					 ; count := 0
+	move r130 r128				 ; str := _str
+	set r131 0					 ; predicate := false
+	set r132 0					 ; terminator := 0
+	load r133 r130				 ; curr := *str
+@label strlen_loop				 ; loop {
+	ne r131 r133 r132			 ; predicate := (curr != terminator)
+	goto.if0 r131 strlen_done	 ; if !predicate then break
+	addi r130 r130 1			 ; str++
+	load r133 r130				 ; curr = *str
+	addi r129 r129 1			 ; count++
+	goto strlen_loop			 ; }
+@label strlen_done
+	pop r134					 ; return count
+	push r129					 ; 
+	jump r134					 ; }
