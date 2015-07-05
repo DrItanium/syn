@@ -20,7 +20,7 @@ digit [0-9]
 xdigit [a-fA-F0-9]
 bdigit [0-1]
 letter [a-zA-Z]
-omni [a-zA-Z0-9.]
+omni [a-zA-Z0-9._]
 
 
 %%
