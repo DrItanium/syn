@@ -49,60 +49,64 @@
 ;-----------------------------------------------------------------------------
 ; void* memcpy(void *s1, const void* s2, size_t n);
 ;-----------------------------------------------------------------------------
-@label memcpy					 ; memcpy {
+@label memcpy					 ; memcpy (
 	pop r128 					 ; argument _dest
 	pop r129 					 ; argument _source
-	pop r130 					 ; argument n
-	set r132 0 					 ; i := 0
-	move r133 r128 				 ; dest := _dest
-	move r134 r129 				 ; source := _source
-	set r135 0 					 ; predicate := false
-@label memcpy_loop			 	 ; loop {
-	lt r135 r132 r130 			 ; predicate := i < n
-	goto.if0 r134 memcpy_success ; if !predicate then break 
-	load r136 r134 				 ; v := *source
-	store r133 r136 			 ; *dest = v
-	addi r134 r134 1			 ; source++
-	addi r133 r133 1			 ; dest++
-	addi r132 r132 1			 ; i++
-	goto memcpy_loop			 ; }
-@label memcpy_success		
-	pop r131					 ; return _dest
-	push r128					 ;
+	pop r130 					 ; argument n) {
+	set r132 0 					 ; 	i := 0
+	move r133 r128 				 ; 	dest := _dest
+	move r134 r129 				 ; 	source := _source
+	set r135 0 					 ; 	predicate := false
+@label memcpy_loop			 	 ; 	loop {
+	lt r135 r132 r130 			 ; 		predicate := i < n
+	goto.if0 r134 memcpy_success ; 		if !predicate then break 
+	load r136 r134 				 ; 		v := *source
+	store r133 r136 			 ; 		*dest = v
+	addi r134 r134 1			 ; 		source++
+	addi r133 r133 1			 ; 		dest++
+	addi r132 r132 1			 ; 		i++
+	goto memcpy_loop			 ; 	}
+@label memcpy_success			 ; 	
+	pop r131					 ; 	// extract return
+	push r128					 ; 	return _dest
 	jump r131					 ; }
 
 
-@label strlen					 ; strlen {
-	pop r128					 ; argument _str
-	set r129 0					 ; count := 0
-	move r130 r128				 ; str := _str
-	set r131 0					 ; predicate := false
-	set r132 0					 ; terminator := 0
-	load r133 r130				 ; curr := *str
-@label strlen_loop				 ; loop {
-	ne r131 r133 r132			 ; predicate := (curr != terminator)
-	goto.if0 r131 strlen_done	 ; if !predicate then break
-	addi r130 r130 1			 ; str++
-	load r133 r130				 ; curr = *str
-	addi r129 r129 1			 ; count++
-	goto strlen_loop			 ; }
-@label strlen_done
-	pop r134					 ; return count
-	push r129					 ; 
+@label strlen					 ; strlen( 
+	pop r128					 ; argument _str) {
+	set r129 0					 ; 	count := 0
+	move r130 r128				 ; 	str := _str
+	set r131 0					 ; 	predicate := false
+	set r132 0					 ; 	terminator := 0
+	load r133 r130				 ; 	curr := *str
+@label strlen_loop				 ; 	loop {
+	ne r131 r133 r132			 ; 		predicate := (curr != terminator)
+	goto.if0 r131 strlen_done	 ; 		if !predicate then break
+	addi r130 r130 1			 ; 		str++
+	load r133 r130				 ; 		curr = *str
+	addi r129 r129 1			 ; 		count++
+	goto strlen_loop			 ; 	}
+@label strlen_done				 ;
+	pop r134					 ; 	// extract return address
+	push r129					 ; 	return count
 	jump r134					 ; }
 
 ;-----------------------------------------------------------------------------
 ; void printstring(char* s1);
 ;-----------------------------------------------------------------------------
 @label printstring				 	; printstring {
-	pop r128					 	; argument _s1
-	move r129 r129				 	; s1 := _s1
-	set r130 0					 	; predicate := false
-	set r131 0					 	; terminator := 0
-@label printstring_loop			 	; loop {
-	load r132 r129				 	; curr := *s1
-	ne r130 r132 r131				; predicate = (curr != terminator)
-	goto.if0 r130 printstring_done 	; if !predicate then break
-
-@label printstring_done
+	pop r128					 	; 	argument _s1
+	move r129 r128				 	; 	s1 := _s1
+	set r130 0					 	; 	predicate := false
+	set r131 0					 	; 	terminator := 0
+@label printstring_loop			 	; 	loop {
+	load r132 r129				 	; 		curr := *s1
+	ne r130 r132 r131				; 		predicate = (curr != terminator)
+	goto.if0 r130 printstring_done 	; 		if !predicate then break
+	system 2 r132 r132				; 		print curr // special function
+	addi r129 r129 1				; 		s1++
+	goto printstring_loop			; 	}
+@label printstring_done				;
+	pop r133						; 	return
+	jump r133						; }
 
