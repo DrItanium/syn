@@ -17,62 +17,60 @@
 ;}
 ;-----------------------------------------------------------------------------
 @label memcmp
-pop r128 ; s1
-pop r129 ; s2
-pop r130 ; n
-pop r131 ; return address
-set r132 0 ; i
-move r133 r128 ; t0
-move r134 r129 ; t1
-set r135 0 ; predicate
+	pop r128 ; s1
+	pop r129 ; s2
+	pop r130 ; n
+	pop r131 ; return address
+	set r132 0 ; i
+	move r133 r128 ; t0
+	move r134 r129 ; t1
+	set r135 0 ; predicate
 @label memcmp_loop
-lt r135 r132 r130
-goto.if0 r134 memcmp_success
-load r136 r133 ; *t0
-load r137 r134 ; *t1
-lt r138 r136 r137
-goto.if1 r138 memcmp_lessthan
-gt r138 r136 r137
-goto.if1 r138 memcmp_greaterthan
-addi r132 r132 1
-addi r133 r133 1
-addi r134 r134 1
-goto memcmp_loop
+	lt r135 r132 r130
+	goto.if0 r134 memcmp_success
+	load r136 r133 ; *t0
+	load r137 r134 ; *t1
+	lt r138 r136 r137
+	goto.if1 r138 memcmp_lessthan
+	gt r138 r136 r137
+	goto.if1 r138 memcmp_greaterthan
+	addi r132 r132 1
+	addi r133 r133 1
+	addi r134 r134 1
+	goto memcmp_loop
 @label memcmp_lessthan
-push.imm 1
-goto memcmp_done
+	push.imm 1
+	goto memcmp_done
 @label memcmp_greaterthan
-push.imm 2
-goto memcmp_done
+	push.imm 2
+	goto memcmp_done
 @label memcmp_success
-push.imm 0
+	push.imm 0
 @label memcmp_done
-goto r131
+	jump r131
 
 ;-----------------------------------------------------------------------------
-; void* memcpy(void *s1, const void* s2, size_t n) {
-;		
-;}
+; void* memcpy(void *s1, const void* s2, size_t n);
 ;-----------------------------------------------------------------------------
 @label memcpy
-pop r128 					 ; _dest
-pop r129 					 ; _source
-pop r130 					 ; n
-pop r131 					 ; return address
-set r132 0 					 ; i
-move r133 r128 				 ; dest = _dest
-move r134 r129 				 ; source = _source
-set r135 0 					 ; predicate
-@label memcpy_loop			 
-lt r135 r132 r130 			 ; predicate := i < n
-goto.if0 r134 memcpy_success ; if predicate then goto memcpy_success
-load r136 r134 				 ; v = *source
-store r133 r136 			 ; *dest = v
-addi r134 r134 1			 ; source++
-addi r133 r133 1			 ; dest++
-addi r132 r132 1			 ; i++
-goto memcpy_loop			 
+	pop r128 					 ; _dest
+	pop r129 					 ; _source
+	pop r130 					 ; n
+	set r132 0 					 ; i := 0
+	move r133 r128 				 ; dest := _dest
+	move r134 r129 				 ; source := _source
+	set r135 0 					 ; predicate := false
+@label memcpy_loop			 	 ; loop {
+	lt r135 r132 r130 			 ; predicate := i < n
+	goto.if0 r134 memcpy_success ; if predicate then break 
+	load r136 r134 				 ; v := *source
+	store r133 r136 			 ; *dest = v
+	addi r134 r134 1			 ; source++
+	addi r133 r133 1			 ; dest++
+	addi r132 r132 1			 ; i++
+	goto memcpy_loop			 ; }
 @label memcpy_success		
-push r128					 ;
-goto r131					 ; return _dest
+	pop r131					 ; return _dest
+	push r128					 ;
+	jump r131					 ;
 
