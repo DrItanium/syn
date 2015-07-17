@@ -1,6 +1,7 @@
 /* UGH!!!!! */
 #ifndef _IRIS_H
 #define _IRIS_H
+#include <stdint.h>
 typedef unsigned char byte;
 typedef uint16_t word;
 typedef uint32_t dword;
@@ -71,6 +72,7 @@ enum {
 #define get_arithmetic_dest(inst) (iris_decode_register(inst, 1))
 #define get_arithmetic_source0(inst) (iris_decode_register(inst, 2))
 #define get_arithmetic_source1(inst) (iris_decode_register(inst, 3))
+#define get_arithmetic_immediate(inst) (iris_decode_immediate(inst))
 
 /* move */
 /* C structure version

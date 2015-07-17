@@ -2,7 +2,25 @@
 #include <stdio.h>
 #include <stdint.h>
 #include "iris.h"
-#define REGISTER_STRING_LENGTH 5
+enum {
+   RegisterStringLength = 5,
+};
+enum {
+   twoOperandRegister,
+   twoOperandImmediate,
+   threeOperandRegister,
+   threeOperandImmediate,
+   fourOperandRegister,
+   fourOperandImmediate,
+};
+const char* operandTypes[] = {
+   "%s %s",
+   "%s %d",
+   "%s %s %s",
+   "%s %s %d",
+   "%s %s %s %s",
+   "%s %s %s %d",
+};
 void iris_unparse(char* unparsed, instruction* insn) {
    switch(get_group(insn)) {
       case InstructionGroupArithmetic:
@@ -36,9 +54,9 @@ void iris_unparse_register(char* unparsed, byte index) {
 
 void iris_unparse_arithmetic(char* unparsed, instruction* insn) {
    const char* op;
-   char dest[REGISTER_STRING_LENGTH];
-   char source0[REGISTER_STRING_LENGTH];
-   char source1[REGISTER_STRING_LENGTH];
+   char dest[RegisterStringLength];
+   char source0[RegisterStringLength];
+   char source1[RegisterStringLength];
 
    op = iris_arithmetic_mnemonic(insn);
    iris_unparse_register(dest, get_arithmetic_dest(insn));
@@ -47,18 +65,26 @@ void iris_unparse_arithmetic(char* unparsed, instruction* insn) {
 
    switch(get_arithmetic_op(insn)) {
       case ArithmeticOpBinaryNot:
-         sprintf(unparsed, "%s %s %s", op, dest, source0);
+         sprintf(unparsed, operandTypes[threeOperandRegister], op, dest, source0);
          break;
+      case ArithmeticOpAddImmediate:
+      case ArithmeticOpSubImmediate:
+      case ArithmeticOpMulImmediate:
+      case ArithmeticOpDivImmediate:
+      case ArithmeticOpRemImmediate:
+      case ArithmeticOpShiftLeftImmediate:
+      case ArithmeticOpShiftRightImmediate:
+         sprintf(unparsed, operandTypes[fourOperandImmediate], op, source0, get_arithmetic_immediate(insn));
       default:
-         sprintf(unparsed, "%s %s %s %s", op, dest, source0, source1);
+         sprintf(unparsed, operandTypes[fourOperandRegister], op, dest, source0, source1);
          break;
    }
 }
 
 void iris_unparse_move(char* unparsed, instruction* insn) {
    const char* op;
-   char reg0[REGISTER_STRING_LENGTH];
-   char reg1[REGISTER_STRING_LENGTH];
+   char reg0[RegisterStringLength];
+   char reg1[RegisterStringLength];
 
    op = iris_move_mnemonic(insn);
    switch(get_move_op(insn)) {
@@ -66,89 +92,64 @@ void iris_unparse_move(char* unparsed, instruction* insn) {
       case MoveOpSwap: /* swap r? r? */
       case MoveOpSwapRegAddr: /* swap.reg.addr r? r? */
       case MoveOpSwapAddrAddr: /* swap.addr.addr r? r? */
-         iris_unparse_register(reg0, get_move_reg0(insn));
-         iris_unparse_register(reg1, get_move_reg1(insn));
-         sprintf(unparsed, "%s %s %s", op, reg0, reg1);
-         break;
-      case MoveOpSwapRegMem: /* swap.reg.mem r? imm */
-      case MoveOpSwapAddrMem: /* swap.addr.mem r? imm */
-      case MoveOpSet: /* set r? imm */
-         iris_unparse_register(reg0, get_move_reg0(insn));
-         sprintf(unparsed, "%s %s %d", op, reg0, get_move_immediate(insn));
-         break;
       case MoveOpLoad: /* load r? r? */
-         iris_unparse_register(reg0, get_move_reg0(insn));
-         iris_unparse_register(reg1, get_move_reg1(insn));
-         sprintf(unparsed, "%s %s %s", op, reg0, reg1);
-         break;
-      case MoveOpLoadMem: /* load.mem r? imm */
-         iris_unparse_register(reg0, get_move_reg0(insn));
-         sprintf(unparsed, "%s %s %d", op, reg0, get_move_immediate(insn));
-         break;
       case MoveOpStore: /* store r? r? */
       case MoveOpStoreAddr: /* store.addr r? r? */
          iris_unparse_register(reg0, get_move_reg0(insn));
          iris_unparse_register(reg1, get_move_reg1(insn));
-         sprintf(unparsed, "%s %s %s", op, reg0, reg1);
+         sprintf(unparsed, operandTypes[threeOperandRegister], op, reg0, reg1);
          break;
+      case MoveOpSwapRegMem: /* swap.reg.mem r? imm */
+      case MoveOpSwapAddrMem: /* swap.addr.mem r? imm */
+      case MoveOpSet: /* set r? imm */
+      case MoveOpLoadMem: /* load.mem r? imm */
       case MoveOpStoreMem: /* memcopy r? imm */
       case MoveOpStoreImm: /* memset r? imm */
          iris_unparse_register(reg0, get_move_reg0(insn));
-         sprintf(unparsed, "%s %s %d", op, reg0, get_move_immediate(insn));
+         sprintf(unparsed, operandTypes[threeOperandImmediate], op, reg0, get_move_immediate(insn));
          break;
       case MoveOpPush:
       case MoveOpPop:
          iris_unparse_register(reg0, get_move_reg0(insn));
-         sprintf(unparsed, "%s %s", op, reg0);
+         sprintf(unparsed, operandTypes[twoOperandRegister], op, reg0);
          break;
       case MoveOpPushImmediate:
-         sprintf(unparsed, "%s %d", op, get_move_immediate(insn));
+         sprintf(unparsed, operandTypes[twoOperandImmediate], op, get_move_immediate(insn));
          break;
       default:
          sprintf(unparsed, "%s", "INVALID MOVE");
          break;
    }
 }
-
 void iris_unparse_jump(char* unparsed, instruction* insn) {
    const char* op;
-   char reg0[REGISTER_STRING_LENGTH];
-   char reg1[REGISTER_STRING_LENGTH];
-   char reg2[REGISTER_STRING_LENGTH];
+   char reg0[RegisterStringLength];
+   char reg1[RegisterStringLength];
+   char reg2[RegisterStringLength];
    op = iris_jump_mnemonic(insn);
    switch(get_jump_op(insn)) {
       case JumpOpUnconditionalImmediate:
-         sprintf(unparsed, "%s %d", op, get_jump_immediate(insn));
+         sprintf(unparsed, operandTypes[twoOperandImmediate], op, get_jump_immediate(insn));
          break;
       case JumpOpUnconditionalImmediateLink:
+      case JumpOpConditionalTrueImmediate:
+      case JumpOpConditionalFalseImmediate:
+      // remember that for the next two cases the predicate is implied
+      case JumpOpConditionalTrueImmediateLink:
+      case JumpOpConditionalFalseImmediateLink:
          iris_unparse_register(reg0, get_jump_reg0(insn));
-         sprintf(unparsed, "%s %s %d", op, reg0, get_jump_immediate(insn));
+         sprintf(unparsed, operandTypes[threeOperandImmediate], op, reg0, get_jump_immediate(insn));
          break;
       case JumpOpUnconditionalRegister:
          iris_unparse_register(reg0, get_jump_reg0(insn));
-         sprintf(unparsed, "%s %s", op, reg0);
+         sprintf(unparsed, operandTypes[twoOperandRegister], op, reg0);
          break;
       case JumpOpUnconditionalRegisterLink:
-         iris_unparse_register(reg0, get_jump_reg0(insn));
-         iris_unparse_register(reg1, get_jump_reg1(insn));
-         sprintf(unparsed, "%s %s %s", op, reg0, reg1);
-         break;
-      case JumpOpConditionalTrueImmediate:
-      case JumpOpConditionalFalseImmediate:
-         iris_unparse_register(reg0, get_jump_reg0(insn));
-         sprintf(unparsed, "%s %s %d", op, reg0, get_jump_immediate(insn));
-         break;
-      case JumpOpConditionalTrueImmediateLink:
-      case JumpOpConditionalFalseImmediateLink:
-         /* remember that the predicate is implied */
-         iris_unparse_register(reg0, get_jump_reg0(insn));
-         sprintf(unparsed, "%s %s %d", op, reg0, get_jump_immediate(insn));
-         break;
       case JumpOpConditionalTrueRegister:
       case JumpOpConditionalFalseRegister:
          iris_unparse_register(reg0, get_jump_reg0(insn));
          iris_unparse_register(reg1, get_jump_reg1(insn));
-         sprintf(unparsed, "%s %s %s", op, reg0, reg1);
+         sprintf(unparsed, operandTypes[threeOperandRegister], op, reg0, reg1);
          break;
       case JumpOpConditionalTrueRegisterLink:
       case JumpOpConditionalFalseRegisterLink:
@@ -159,7 +160,7 @@ void iris_unparse_jump(char* unparsed, instruction* insn) {
          iris_unparse_register(reg0, get_jump_reg0(insn));
          iris_unparse_register(reg1, get_jump_reg1(insn));
          iris_unparse_register(reg2, get_jump_reg2(insn));
-         sprintf(unparsed, "%s %s %s %s", op, reg0, reg1, reg2);
+         sprintf(unparsed, operandTypes[fourOperandRegister], op, reg0, reg1, reg2);
          break;
       default: 
          sprintf(unparsed, "%s", "INVALID JUMP");
@@ -170,28 +171,28 @@ void iris_unparse_jump(char* unparsed, instruction* insn) {
 
 void iris_unparse_compare(char* unparsed, instruction* insn) {
    const char* op;
-   char reg0[REGISTER_STRING_LENGTH];
-   char reg1[REGISTER_STRING_LENGTH];
-   char reg2[REGISTER_STRING_LENGTH];
+   char reg0[RegisterStringLength];
+   char reg1[RegisterStringLength];
+   char reg2[RegisterStringLength];
 
    op = iris_compare_mnemonic(insn);
    iris_unparse_register(reg0, get_compare_reg0(insn));
    iris_unparse_register(reg1, get_compare_reg1(insn));
    iris_unparse_register(reg2, get_compare_reg2(insn));
 
-   sprintf(unparsed, "%s %s %s %s", op, reg0, reg1, reg2);
+   sprintf(unparsed, operandTypes[fourOperandRegister], op, reg0, reg1, reg2);
 }
 void iris_unparse_misc(char* unparsed, instruction* insn) {
    const char* op;
-   char reg0[REGISTER_STRING_LENGTH];
-   char reg1[REGISTER_STRING_LENGTH];
+   char reg0[RegisterStringLength];
+   char reg1[RegisterStringLength];
    op = iris_misc_mnemonic(insn);
    switch(get_misc_op(insn)) {
       case MiscOpSystemCall:
-            iris_unparse_register(reg0, get_misc_reg0(insn));
-            iris_unparse_register(reg1, get_misc_reg1(insn));
-            sprintf(unparsed, "%s %d %s %s", op, get_misc_index(insn), reg0, reg1);
-            break;
+         iris_unparse_register(reg0, get_misc_reg0(insn));
+         iris_unparse_register(reg1, get_misc_reg1(insn));
+         sprintf(unparsed, "%s %d %s %s", op, get_misc_index(insn), reg0, reg1);
+         break;
       default:
          sprintf(unparsed, "%s", "INVALID MISC");
          break;
