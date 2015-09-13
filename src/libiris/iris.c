@@ -101,12 +101,8 @@ static void iris_push_immediate(iris_core* proc, instruction* inst);
 static void iris_pop(iris_core* proc, instruction* inst);
 
 void iris_move(iris_core* proc, instruction* inst) {
-   word a, b;
-   word addr0, addr1;
-   a = 0;
-   b = 0;
-   addr0 = 0;
-   addr1 = 0;
+   word a = 0, b = 0;
+   word addr0 = 0, addr1 = 0;
    switch(get_move_op(inst)) {
 
       case MoveOpMove: /* move r? r? */
@@ -207,7 +203,7 @@ void iris_move(iris_core* proc, instruction* inst) {
    }
 }
 void iris_jump(iris_core* proc, instruction* inst) {
-   word a;
+   word a = 0;
    proc->advancepc = 0;
    switch(get_jump_op(inst)) {
       case JumpOpUnconditionalImmediate:
@@ -355,9 +351,8 @@ void iris_jump(iris_core* proc, instruction* inst) {
 }
 
 void iris_compare(iris_core* proc, instruction* inst) {
-   word value;
    /* grab the appropriate value */
-   value = iris_get_register(proc, get_compare_reg0(inst));
+   word value = iris_get_register(proc, get_compare_reg0(inst));;
    switch(get_compare_op(inst)) {
 #define perform_operation(symbol, assign) \
       value assign (iris_get_register(proc, get_compare_reg1(inst)) symbol \
@@ -393,22 +388,17 @@ void iris_misc(iris_core* proc, instruction* j) {
 }
 
 void iris_system_call(iris_core* proc, instruction* j) {
-   byte reg0, reg1;
-   int result;
-   word value;
-   reg0 = get_misc_reg0(j);
-   reg1 = get_misc_reg1(j);
+   byte reg0 = get_misc_reg0(j);
+   //byte reg1 = get_misc_reg1(j); // currently unused
    switch(get_misc_index(j)) {
       case SystemCommandTerminate: /* init 0 */
          proc->terminateexecution = 1;
          break;
       case SystemCommandGetC:
-         result = getchar();
-         iris_put_register(proc, reg0, (word)result);
+         iris_put_register(proc, reg0, (word)getchar());
          break;
       case SystemCommandPutC:
-         value = iris_get_register(proc, reg0);
-         putchar(value);
+         putchar((word)iris_get_register(proc, reg0));
          break;
       default:
          iris_error("invalid system command provided", ErrorInvalidSystemCommand);
@@ -421,15 +411,14 @@ void iris_error(char* message, int code) {
 }
 
 void iris_rom_init(iris_core* proc) {
-   int i;
    proc->pc = 0;
    proc->terminateexecution = 0;
    proc->advancepc = 1;
    /* clear out processor space to be sure everything is okay */
-   for(i = 0; i < RegisterCount; i++) {
+   for(int i = 0; i < RegisterCount; i++) {
       proc->gpr[i] = 0;
    }
-   for(i = 0; i < MemorySize; ++i) {
+   for(int i = 0; i < MemorySize; ++i) {
       proc->data[i] = 0;
       proc->stack[i] = 0;
       proc->code[i] = 0;
@@ -454,16 +443,11 @@ void iris_push_immediate(iris_core* proc, instruction* inst) {
    iris_push_onto_stack(proc, value);
 }
 void iris_pop(iris_core* proc, instruction* inst) {
-   word result;
-   byte index;
-   result = iris_pop_off_stack(proc);
-   index = get_reg0(inst);
-   iris_put_register(proc, index, result);
+   iris_put_register(proc, get_reg0(inst), iris_pop_off_stack(proc));
 }
 
 void iris_push_onto_stack(iris_core* proc, word value) {
-   word index;
-   index = iris_get_register(proc, StackPointerRegisterIndex);
+   word index = iris_get_register(proc, StackPointerRegisterIndex);
    /* increment and then set */
    index++;
    proc->stack[index] = value;
@@ -471,10 +455,9 @@ void iris_push_onto_stack(iris_core* proc, word value) {
 }
 
 word iris_pop_off_stack(iris_core* proc) {
-   word index, value;
-   index = iris_get_register(proc, StackPointerRegisterIndex);
+   word index = iris_get_register(proc, StackPointerRegisterIndex);
    /* get the value and then decrement */
-   value = proc->stack[index];
+   word value = proc->stack[index];
    index--;
    iris_put_register(proc, StackPointerRegisterIndex, index);
    return value;
