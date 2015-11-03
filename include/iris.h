@@ -382,10 +382,6 @@ void iris_encode_immediate(instruction* inst, byte index, word value);
 #define get_immediate(inst) (iris_decode_immediate(inst))
 
 
-/* libelectron interaction */
-#define IRIS_CORE_DATA USER_ENVIRONMENT_DATA + 0
-#define GetIrisCoreData(theEnv) ((iris_core*) GetEnvironmentData(theEnv, IRIS_CORE_DATA))
-extern void iris_declarations(void* theEnv);
 void iris_shutdown(iris_core*);
 
 #endif 
