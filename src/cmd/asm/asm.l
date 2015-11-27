@@ -43,6 +43,7 @@ omni [a-zA-Z0-9._]
 "shli" { return ARITHMETIC_OP_SHIFTLEFT_IMM; }
 "shri" { return ARITHMETIC_OP_SHIFTRIGHT_IMM; }
 "move" { return MOVE_OP_MOVE; }
+"mov"  { return MOVE_OP_MOVE; }
 "swap" { return MOVE_OP_SWAP; }
 "swap.reg.addr" { return MOVE_OP_SWAPREGADDR; }
 "swap.addr.addr" { return MOVE_OP_SWAPADDRADDR; }
