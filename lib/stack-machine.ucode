@@ -81,6 +81,7 @@ goto ucode_start						; At the end of register setup, we need to jump
 ;-----------------------------------------------------------------------------
 @label ucode_pop
 	goto.if0 r5 ucode_no_elements
+	move r32 r1										; we have elements so just save the top of the stack to the return register
 	gt r128 r5 r230 								; check and see if we have three or more elements on the stack already
 	goto.if1 r128 ucode_pop_more_than_three_elements
 	eq r128 r5 r230
@@ -90,28 +91,23 @@ goto ucode_start						; At the end of register setup, we need to jump
 	set r130 ucode_pop_one_element
 	if1 r128 r129 r130
 @label ucode_pop_more_than_three_elements
-	move r32 r1
 	move r1 r2
 	move r2 r3
 	load r3 r4
 	subi r4 r4 1
 	goto ucode_pop_parameter_done
 @label ucode_pop_three_elements
-	move r32 r1
 	move r1 r2
 	move r2 r3
 	move r3 r228
-	subi r4 r4 1
-	goto ucode_pop_parameter_done
+	goto ucode_pop_decrement
 @label ucode_pop_two_elements
-	move r32 r1
 	move r1 r2
 	move r2 r228
-	subi r4 r4 1
-	goto ucode_pop_parameter_done
+	goto ucode_pop_decrement
 @label ucode_pop_one_element
-	move r32 r1
 	move r1 r228
+@label ucode_pop_decrement
 	subi r4 r4 1
 	goto ucode_pop_parameter_done
 @label ucode_no_elements
