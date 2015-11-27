@@ -9,6 +9,9 @@
 #define _POSIX_SOURCE 1
 
 static byte getregister(void);
+static byte getinputregister(void);
+static byte getoutputregister(void);
+static byte getlocalregister(void);
 static unsigned long getdecimalimmediate(void);
 static unsigned long getheximmediate(void);
 extern void yyerror(const char* c);
@@ -108,6 +111,31 @@ omni [a-zA-Z0-9._]
 [ \t\n]     ;
 [;].*       ; // comments
 r{digit}+ { yylval.rval = getregister(); return REGISTER; }
+; // microcode extensions
+"?zero"   { yylval.rval = 225; return REGISTER; } ; // literal zero
+"?one" 	  { yylval.rval = 226; return REGISTER; } ; // literal one
+"?min"    { yylval.rval = 227; return REGISTER; } ; // smallest number
+"?max"    { yylval.rval = 228; return REGISTER; } ; // largest number
+"?pred"   { yylval.rval = 255; return REGISTER; } ; // predicate register
+"?sp"	  { yylval.rval = 254; return REGISTER; } ; // stack pointer
+"?opvec"  { yylval.rval = 0; return REGISTER; }   ; // opcode vector
+"?ps0"    { yylval.rval = 1; return REGISTER; }   ; // parameter stack position 0 / top
+"?ps1"    { yylval.rval = 2; return REGISTER; }   ; // parameter stack position 1 / second
+"?ps2"	  { yylval.rval = 3; return REGISTER; }   ; // parameter stack position 2 / third
+"?psaddr" { yylval.rval = 4; return REGISTER; }   ; // parameter stack memory "top"
+"?pslen"  { yylval.rval = 5; return REGISTER; }   ; // parameter stack count
+"?ip"	  { yylval.rval = 16; return REGISTER; }  ; // instruction pointer
+"?link"   { yylval.rval = 253; return REGISTER; }
+"?iaddr"  { yylval.rval = 252; return REGISTER; }
+"?temp0"  { yylval.rval = 251; return REGISTER; }
+"?ret"	  { yylval.rval = 32; return REGISTER; }
+return{digit}+ { yylval.rval = getoutputregister(); return REGISTER; }
+output{digit}+ { yylval.rval = getoutputregister(); return REGISTER; }
+input{digit}+ { yylval.rval = getinputregister(); return REGISTER; }
+arg{digit}+ { yylval.rval = getinputregister(); return REGISTER; }
+local{digit}+ { yylval.rval = getlocalregister(); return REGISTER; }
+l{digit}+	{ yylval.rval = getlocalregister(); return REGISTER; }
+
 {digit}+ { yylval.ival = getdecimalimmediate(); return IMMEDIATE; }
 0x{xdigit}+ { yylval.ival = getheximmediate(); return IMMEDIATE; }
 {omni}+ { 
@@ -125,17 +153,68 @@ r{digit}+ { yylval.rval = getregister(); return REGISTER; }
 }
 %%
 
+enum {
+	RegisterMax = RegisterCount - 1,
+	NumOutputRegisters = 32,
+	OutputRegistersStart = 32,
+	OutputRegistersMax = NumOutputRegisters - 1,
+	NumInputRegisters = 64,
+	InputRegistersStart = 64,
+	InputRegistersMax = NumInputRegisters - 1,
+	NumLocalRegisters = 64,
+	LocalRegistersStart = 128,
+	LocalRegistersMax = NumLocalRegisters - 1,
+};
 
 byte getregister(void) {
    int c;
 
    yytext[0] = '0';
    c = atoi(yytext);
-   if(c > 255 || c < 0) {
+   if(c > RegisterMax || c < 0) {
       yyerror("target register is too large");
       return 0;
    } else {
       return (byte)c;
+   }
+}
+
+byte getoutputregister(void) {
+   int c;
+
+   yytext[0] = '0';
+   c = atoi(yytext);
+   if(c > OutputRegistersMax || c < 0) {
+      yyerror("target output register is too large");
+      return 0;
+   } else {
+      return (byte)(c + OutputRegistersStart);
+   }
+}
+
+byte getinputregister(void) {
+   int c;
+
+   yytext[0] = '0';
+   c = atoi(yytext);
+   if(c > InputRegistersMax || c < 0) {
+      yyerror("target input register is too large");
+      return 0;
+   } else {
+      return (byte)(c + InputRegistersStart);
+   }
+}
+
+byte getlocalregister(void) {
+   int c;
+
+   yytext[0] = '0';
+   c = atoi(yytext);
+   if(c > LocalRegistersMax || c < 0) {
+      yyerror("target local register is too large");
+      return 0;
+   } else {
+      return (byte)(c + LocalRegistersStart);
    }
 }
 
