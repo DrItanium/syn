@@ -114,6 +114,8 @@ r{digit}+ { yylval.rval = getregister(); return REGISTER; }
 ; // microcode extensions
 "?zero"   { yylval.rval = 225; return REGISTER; } ; // literal zero
 "?one" 	  { yylval.rval = 226; return REGISTER; } ; // literal one
+"?two"	  { yylval.rval = 229; return REGISTER; } ; // literal two
+"?three"  { yylval.rval = 230; return REGISTER; } ; // literal three
 "?min"    { yylval.rval = 227; return REGISTER; } ; // smallest number
 "?max"    { yylval.rval = 228; return REGISTER; } ; // largest number
 "?pred"   { yylval.rval = 255; return REGISTER; } ; // predicate register
@@ -129,6 +131,8 @@ r{digit}+ { yylval.rval = getregister(); return REGISTER; }
 "?iaddr"  { yylval.rval = 252; return REGISTER; }
 "?temp0"  { yylval.rval = 251; return REGISTER; }
 "?ret"	  { yylval.rval = 32; return REGISTER; }
+"?memstart" { yylval.rval = 231; return REGISTER; } ; // start of exposed memory
+"?memend"   { yylval.rval = 232; return REGISTER; } ; // end of exposed memory
 return{digit}+ { yylval.rval = getoutputregister(); return REGISTER; }
 output{digit}+ { yylval.rval = getoutputregister(); return REGISTER; }
 input{digit}+ { yylval.rval = getinputregister(); return REGISTER; }

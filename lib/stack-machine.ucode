@@ -32,9 +32,9 @@ set r227 0xffff 							; Max
 set r228 0x0000					   		; Min
 set r229 2								; Hardcoded two
 set r230 3								; Hardcoded three
-set r231 stack_machine_memory_start		; stack machine memory start
-set r232 stack_machine_memory_end		; stack machine memory end
-set r0 opcode_vector_table				; opcode table base address
+set ?memstart stack_machine_memory_start		; stack machine memory start
+set ?memend stack_machine_memory_end		; stack machine memory end
+set ?opvec opcode_vector_table				; opcode table base address
 set r1 0								; parameter stack top
 set r2 0								; parameter stack second
 set r3 0								; parameter stack third
@@ -240,6 +240,7 @@ jump r251
 
 ; data sections
 @data
+; memory is laid out with the lower 
 @label stack_machine_memory_start
 @label parameterstackbase
 @declare 0xFFFF
@@ -247,6 +248,7 @@ jump r251
 
 @label stack_machine_memory_end
 @declare 0x0000
+@org 0xF000
 ; opcode vector table
 ; each entry is several words wide
 ; first word is the address of the code fragment to execute
