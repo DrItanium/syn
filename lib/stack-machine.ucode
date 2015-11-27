@@ -32,13 +32,16 @@ set r227 0xffff 							; Max
 set r228 0x0000					   		; Min
 set r229 2								; Hardcoded two
 set r230 3								; Hardcoded three
-
-set r0 0								; machine program counter
+set r231 stack_machine_memory_start		; stack machine memory start
+set r232 stack_machine_memory_end		; stack machine memory end
+set r0 opcode_vector_table				; opcode table base address
 set r1 0								; parameter stack top
 set r2 0								; parameter stack second
 set r3 0								; parameter stack third
 set r4 parameterstackbase				; address of the parameter stack
 set r5 0							    ; stack length
+ 
+set r16 program_counter_start			; stack program counter
 										; use the internal stack for the return stack
 										; registers 32-64 are return registers
 										; registers 64-128 are argument registers
@@ -47,9 +50,17 @@ set r5 0							    ; stack length
 										; register 253 is the link register
 										; register 252 is the indirect address register
 										; register 251 is a temporary register
-goto ucode_start						; At the end of register setup, we need to jump
-										; to ucode start
+;-----------------------------------------------------------------------------
+; ucode_start: entry-point for all ucode routines, always the bottom of the
+; environment
+;-----------------------------------------------------------------------------
+@label ucode_start
+@label ucode_loop_top
 
+goto ucode_loop_top
+@label ucode_loop_done
+system 0 r0 r0 					; We should never ever get here
+; routines follow
 ;-----------------------------------------------------------------------------
 ; ucode_push_parameter: push a value onto the parameter stack
 ; r64 - value
@@ -123,17 +134,7 @@ goto ucode_start						; At the end of register setup, we need to jump
 ; r32 - value to return
 ;-----------------------------------------------------------------------------
 @label ucode_binary_operation
-
-;-----------------------------------------------------------------------------
-; ucode_start: entry-point for all ucode routines, always the bottom of the
-; environment
-;-----------------------------------------------------------------------------
-@label ucode_start
-@label ucode_loop_top
-
-goto ucode_loop_top
-@label ucode_loop_done
-system 0 r0 r0 					; We should never ever get here
+	
 
 ;-----------------------------------------------------------------------------
 ; ucode_internal_call: push the link register onto the internal stack and then
@@ -239,6 +240,13 @@ jump r251
 
 ; data sections
 @data
+@label stack_machine_memory_start
+@label parameterstackbase
+@declare 0xFFFF
+@label program_counter_start
+
+@label stack_machine_memory_end
+@declare 0x0000
 ; opcode vector table
 ; each entry is several words wide
 ; first word is the address of the code fragment to execute
@@ -293,6 +301,3 @@ jump r251
 @declare 1
 @declare operation_store
 @declare 1
-
-@label parameterstackbase
-@declare 0xFFFF
