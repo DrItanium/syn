@@ -79,7 +79,7 @@ goto ucode_start						; At the end of register setup, we need to jump
 ; ucode_pop_parameter: pop a value off the parameter stack and return it
 ; r32 - value to return
 ;-----------------------------------------------------------------------------
-@label ucode_pop
+@label ucode_pop_parameter
 	goto.if0 r5 ucode_no_elements
 	move r32 r1										; we have elements so just save the top of the stack to the return register
 	gt r128 r5 r230 								; check and see if we have three or more elements on the stack already
