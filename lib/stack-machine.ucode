@@ -108,13 +108,21 @@ goto ucode_start						; At the end of register setup, we need to jump
 @label ucode_pop_one_element
 	move r1 r228
 @label ucode_pop_decrement
-	subi r4 r4 1
+	subi r5 r5 1
 	goto ucode_pop_parameter_done
 @label ucode_no_elements
 	move r32 r227
 @label ucode_pop_parameter_done
 	goto ucode_internal_return
 
+;-----------------------------------------------------------------------------
+; ucode_binary_operation: performs the given binary operation using the top two
+; elements of the stack, the result is pushed back onto the stack
+; r64 - operation (memory address)
+; r65
+; r32 - value to return
+;-----------------------------------------------------------------------------
+@label ucode_binary_operation
 
 ;-----------------------------------------------------------------------------
 ; ucode_start: entry-point for all ucode routines, always the bottom of the
@@ -145,9 +153,146 @@ jump r252
 pop r251
 jump r251
 
+@label operation_nop
+	jump r127
+@label operation_add
+	add r1 r64 r65
+	jump r127
+@label operation_sub
+	sub r1 r64 r65
+	jump r127
+@label operation_mul
+	mul r1 r64 r65
+	jump r127
+@label operation_div
+; TODO: insert error checking at some point
+	div r1 r64 r65
+	jump r127
+@label operation_rem
+; TODO: insert error checking at some point
+	rem r1 r64 r65
+	jump r127
+@label operation_shift_left
+	shl r1 r64 r65
+	jump r127
+@label operation_shift_right
+	shr r1 r64 r65
+	jump r127
+@label operation_binary_and
+	and r1 r64 r65
+	jump r127
+@label operation_binary_or
+	or r1 r64 r65
+	jump r127
+@label operation_binary_not
+	not r1 r64
+	jump r127
+@label operation_equals
+	eq r1 r64 r65
+	jump r127
+@label operation_not_equals
+	ne r1 r64 r65
+	jump r127
+@label operation_greater_than
+	gt r1 r64 r65
+	jump r127
+@label operation_less_than
+	lt r1 r64 r65
+	jump r127
+@label operation_greater_than_or_equal
+	ge r1 r64 r65
+	jump r127
+@label operation_less_than_or_equal
+	le r1 r64 r65
+	jump r127
+@label operation_dup
+	set r252 ucode_push_parameter
+	move r64 r1
+	goto.link r253 ucode_internal_call
+	jump r127
+@label operation_swap
+	swap r1 r2
+	jump r127
 
+@label operation_pushi
+	set r252 ucode_push_parameter
+	goto.link r253 ucode_internal_call
+	jump r127
+
+@label operation_pop
+	set r252 ucode_pop_parameter
+	goto.link r253 ucode_internal_call
+	jump r127
+
+@label operation_clear_stack
+	set r5 0
+	set r4 parameterstackbase
+	jump r127
+
+@label operation_load
+	   load r1 r64
+	   jump r127
+
+@label operation_store
+	   store r1 r64
+	   jump r127
 
 ; data sections
 @data
+; opcode vector table
+; each entry is several words wide
+; first word is the address of the code fragment to execute
+; second is the number of input arguments (minus r127, which is always set)
+; 
+@label opcode_vector_table
+@declare operation_nop
+@declare 0
+@declare operation_add
+@declare 2
+@declare operation_sub
+@declare 2
+@declare operation_mul
+@declare 2
+@declare operation_div
+@declare 2
+@declare operation_rem
+@declare 2
+@declare operation_shift_left
+@declare 2
+@declare operation_shift_right
+@declare 2
+@declare operation_binary_and
+@declare 2
+@declare operation_binary_or
+@declare 2
+@declare operation_binary_not
+@declare 1
+@declare operation_equals
+@declare 2
+@declare operation_not_equals
+@declare 2
+@declare operation_greater_than
+@declare 2
+@declare operation_less_than
+@declare 2
+@declare operation_greater_than_or_equal
+@declare 2
+@declare operation_less_than_or_equal
+@declare 2
+@declare operation_dup
+@declare 0
+@declare operation_swap
+@declare 0
+@declare operation_pushi
+@declare 1
+@declare operation_pop
+@declare 0
+@declare operation_clear_stack
+@declare 0
+@declare operation_load
+@declare 1
+@declare operation_store
+@declare 1
+
 @label parameterstackbase
 @declare 0xFFFF
