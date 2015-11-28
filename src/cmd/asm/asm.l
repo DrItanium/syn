@@ -133,6 +133,7 @@ r{digit}+ { yylval.rval = getregister(); return REGISTER; }
 "?ret"	  { yylval.rval = 32; return REGISTER; }
 "?memstart" { yylval.rval = 231; return REGISTER; } ; // start of exposed memory
 "?memend"   { yylval.rval = 232; return REGISTER; } ; // end of exposed memory
+"?vecret" { yylval.rval = 127; return REGISTER; } ; // The register containing the return address from an internal opcode vector call
 return{digit}+ { yylval.rval = getoutputregister(); return REGISTER; }
 output{digit}+ { yylval.rval = getoutputregister(); return REGISTER; }
 input{digit}+ { yylval.rval = getinputregister(); return REGISTER; }
