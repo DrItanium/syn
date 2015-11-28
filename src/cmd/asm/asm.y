@@ -265,6 +265,7 @@ arithmetic_op:
                   curri.reg2 = $4;
              }|
              ARITHMETIC_OP_BINARYNOT REGISTER REGISTER {
+			 	  curri.op = ArithmeticOpBinaryNot;
                   curri.reg0 = $2;
                   curri.reg1 = $3;
              } |
