@@ -72,7 +72,7 @@ enum {
 #define get_arithmetic_dest(inst) (iris_decode_register(inst, 1))
 #define get_arithmetic_source0(inst) (iris_decode_register(inst, 2))
 #define get_arithmetic_source1(inst) (iris_decode_register(inst, 3))
-#define get_arithmetic_immediate(inst) (iris_decode_immediate(inst))
+#define get_arithmetic_immediate(inst) (get_arithmetic_source1(inst))
 
 /* move */
 /* C structure version
