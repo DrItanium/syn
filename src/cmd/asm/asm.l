@@ -134,12 +134,9 @@ r{digit}+ { yylval.rval = getregister(); return REGISTER; }
 "?memstart" { yylval.rval = 231; return REGISTER; } ; // start of exposed memory
 "?memend"   { yylval.rval = 232; return REGISTER; } ; // end of exposed memory
 "?vecret" { yylval.rval = 127; return REGISTER; } ; // The register containing the return address from an internal opcode vector call
-return{digit}+ { yylval.rval = getoutputregister(); return REGISTER; }
-output{digit}+ { yylval.rval = getoutputregister(); return REGISTER; }
-input{digit}+ { yylval.rval = getinputregister(); return REGISTER; }
-arg{digit}+ { yylval.rval = getinputregister(); return REGISTER; }
-local{digit}+ { yylval.rval = getlocalregister(); return REGISTER; }
-l{digit}+	{ yylval.rval = getlocalregister(); return REGISTER; }
+o{digit}+ { yylval.rval = getoutputregister(); return REGISTER; }
+a{digit}+ { yylval.rval = getinputregister(); return REGISTER; }
+l{digit}+ { yylval.rval = getlocalregister(); return REGISTER; }
 
 {digit}+ { yylval.ival = getdecimalimmediate(); return IMMEDIATE; }
 0x{xdigit}+ { yylval.ival = getheximmediate(); return IMMEDIATE; }
