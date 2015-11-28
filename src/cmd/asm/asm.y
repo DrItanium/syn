@@ -166,6 +166,13 @@ void usage(char* arg0);
 %token COMPARE_OP_GREATERTHANOREQUALTOOR
 %token COMPARE_OP_GREATERTHANOREQUALTOXOR
 %token MISC_OP_SYSTEMCALL
+%token MACRO_OP_EXIT
+%token MACRO_OP_PUTCHAR
+%token MACRO_OP_READCHAR
+%token MACRO_OP_INCREMENT
+%token MACRO_OP_DECREMENT
+%token MACRO_OP_DOUBLE
+%token MACRO_OP_HALVE
 
 
 %token <rval> REGISTER
@@ -256,8 +263,61 @@ operation:
          move_op { curri.group = InstructionGroupMove; } |
          jump_op { curri.group = InstructionGroupJump; } |
          compare_op { curri.group = InstructionGroupCompare; } |
-         misc_op { curri.group = InstructionGroupMisc; }
+         misc_op { curri.group = InstructionGroupMisc; } |
+		 macro_op
          ;
+macro_op:
+		MACRO_OP_EXIT REGISTER {
+			curri.group = InstructionGroupMisc;
+			curri.op= MiscOpSystemCall;
+			curri.reg0 = SystemCommandTerminate;
+			curri.reg1 = $2;
+			curri.reg2 = $2;
+		} |
+		MACRO_OP_PUTCHAR REGISTER {
+			curri.group = InstructionGroupMisc;
+			curri.op= MiscOpSystemCall;
+			curri.reg0 = SystemCommandPutC;
+			curri.reg1 = $2;
+			curri.reg2 = $2;
+		} |
+		MACRO_OP_READCHAR REGISTER {
+			curri.group = InstructionGroupMisc;
+			curri.op= MiscOpSystemCall;
+			curri.reg0 = SystemCommandGetC;
+			curri.reg1 = $2;
+			curri.reg2 = $2;
+		} |
+		MACRO_OP_INCREMENT REGISTER {
+				curri.group = InstructionGroupArithmetic;
+				curri.op = ArithmeticOpAddImmediate;
+				curri.reg0 = $2;
+				curri.reg1 = $2;
+				curri.reg2 = 1;
+		} |
+		MACRO_OP_DECREMENT REGISTER {
+				curri.group = InstructionGroupArithmetic;
+				curri.op = ArithmeticOpSubImmediate;
+				curri.reg0 = $2;
+				curri.reg1 = $2;
+				curri.reg2 = 1;
+		} |
+		MACRO_OP_DOUBLE REGISTER {
+				curri.group = InstructionGroupArithmetic;
+				curri.op = ArithmeticOpMulImmediate;
+				curri.reg0 = $2;
+				curri.reg1 = $2;
+				curri.reg2 = 2;
+		} |
+		MACRO_OP_HALVE REGISTER {
+				curri.group = InstructionGroupArithmetic;
+				curri.op = ArithmeticOpDivImmediate;
+				curri.reg0 = $2;
+				curri.reg1 = $2;
+				curri.reg2 = 2;
+		} 
+		;
+
 arithmetic_op:
              aop REGISTER REGISTER REGISTER {
                   curri.reg0 = $2;

@@ -103,6 +103,13 @@ omni [a-zA-Z0-9._]
 "push" { return MOVE_OP_PUSH; }
 "push.imm" { return MOVE_OP_PUSHIMMEDIATE; }
 "pop" { return MOVE_OP_POP; }
+"exit" { return MACRO_OP_EXIT; }
+"putchar" { return MACRO_OP_PUTCHAR; }
+"readchar" { return MACRO_OP_READCHAR; }
+"incr" 	{ return MACRO_OP_INCREMENT; }
+"decr"  { return MACRO_OP_DECREMENT; }
+"double" { return MACRO_OP_DOUBLE; }
+"halve" { return MACRO_OP_HALVE; }
 "@label" { return LABEL; }
 "@data"  { return DIRECTIVE_DATA; }
 "@code"  { return DIRECTIVE_CODE; }
