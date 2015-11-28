@@ -141,6 +141,8 @@ r{digit}+ { yylval.rval = getregister(); return REGISTER; }
 "?memstart" { yylval.rval = 231; return REGISTER; } ; // start of exposed memory
 "?memend"   { yylval.rval = 232; return REGISTER; } ; // end of exposed memory
 "?vecret" { yylval.rval = 127; return REGISTER; } ; // The register containing the return address from an internal opcode vector call
+"?fp"  { yylval.rval = 233; return REGISTER; } ; // The top of the frame stack 
+
 o{digit}+ { yylval.rval = getoutputregister(); return REGISTER; }
 a{digit}+ { yylval.rval = getinputregister(); return REGISTER; }
 l{digit}+ { yylval.rval = getlocalregister(); return REGISTER; }
