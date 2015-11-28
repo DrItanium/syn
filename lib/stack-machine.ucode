@@ -47,6 +47,7 @@
 	set ?ps2 0								; parameter stack third
 	set ?psaddr parameterstackbase				; address of the parameter stack
 	set ?pslen 0							    ; stack length
+	set ?fp 0x8000						; The top of the frame 
 	
 	set ?ip program_counter_start			; stack program counter
 											; use the internal stack for the return stack
@@ -57,6 +58,7 @@
 											; register 253 is the link register
 											; register 252 is the indirect address register
 											; register 251 is a temporary register
+											; register 2
 @label ucode_loop_top
 	set ?iaddr ucode_dispatch_op
 	goto.link ?link ucode_internal_call
@@ -64,6 +66,9 @@
 @label ucode_loop_done
 	exit ?one								; We should never ever get here
 ; routines follow
+;-----------------------------------------------------------------------------
+; ucode_dispatch_op
+;-----------------------------------------------------------------------------
 @label ucode_dispatch_op
 	incr ?ip
 	gt ?pred ?ip ?memend
@@ -73,6 +78,50 @@
 	set ?iaddr ucode_printstring
 	goto.link ?link ucode_internal_call
 	exit ?zero
+;-----------------------------------------------------------------------------
+; ucode_save_current_frame
+;-----------------------------------------------------------------------------
+@label ucode_save_current_frame
+	swap ?sp ?fp
+	push ?ps0
+	push ?ps1
+	push ?ps2
+	push ?psaddr
+	push ?pslen
+	swap ?sp ?fp
+	goto ucode_internal_return
+
+;-----------------------------------------------------------------------------
+; ucode_restore_frame
+;-----------------------------------------------------------------------------
+@label ucode_restore_frame
+	swap ?sp ?fp
+	pop ?pslen
+	pop ?psaddr
+	pop ?ps2
+	pop ?ps1
+	pop ?ps0
+	swap ?sp ?fp
+	goto ucode_internal_return
+;-----------------------------------------------------------------------------
+; ucode_new_frame: save the old stack frame and construct a new one
+;-----------------------------------------------------------------------------
+@label ucode_new_frame
+	set ?iaddr ucode_save_current_frame
+	goto.link ?link ucode_internal_call
+	set ?ps0 0
+	set ?ps1 0
+	set ?ps2 0
+	incr ?psaddr
+	set ?pslen 0
+	goto ucode_internal_return
+;-----------------------------------------------------------------------------
+; ucode_delete_frame: destroy the current stack frame and restore the old one
+;-----------------------------------------------------------------------------
+@label ucode_delete_frame
+	set ?iaddr ucode_restore_frame
+	goto.link ?link ucode_internal_call
+	goto ucode_internal_return
 ;-----------------------------------------------------------------------------
 ; ucode_push_parameter: push a value onto the parameter stack
 ; a0 - value
@@ -95,7 +144,7 @@
 	move ?ps1 ?ps0										; move the first to second
 @label ucode_push_parameter_set_top
 	move ?ps0 a0
-	addi ?pslen ?pslen 1								; increment the stack length
+	incr ?pslen											; increment the stack length
 	goto ucode_internal_return
 
 ;-----------------------------------------------------------------------------
