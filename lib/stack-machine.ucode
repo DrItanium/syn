@@ -24,55 +24,67 @@
 ;-----------------------------------------------------------------------------
 ; Implementation of a stack machine using iris as a microcoded processor
 ;-----------------------------------------------------------------------------
+
+;-----------------------------------------------------------------------------
+; ucode_start: entry-point for the ucode
+;-----------------------------------------------------------------------------
+ 
+;-----------------------------------------------------------------------------
 ; Setup initial register state
 ;-----------------------------------------------------------------------------
-set ?zero 0								; Hardcoded zero
-set ?one 1								; Hardcoded one
-set ?max 0xffff 							; Max
-set ?min 0x0000					   		; Min
-set ?two 2								; Hardcoded two
-set ?three 3								; Hardcoded three
-set ?memstart stack_machine_memory_start		; stack machine memory start
-set ?memend stack_machine_memory_end		; stack machine memory end
-set ?opvec opcode_vector_table				; opcode table base address
-set ?ps0 0								; parameter stack top
-set ?ps1 0								; parameter stack second
-set ?ps2 0								; parameter stack third
-set ?psaddr parameterstackbase				; address of the parameter stack
-set ?pslen 0							    ; stack length
-
-set ?ip program_counter_start			; stack program counter
-										; use the internal stack for the return stack
-										; registers 32-64 are return registers
-										; registers 64-128 are argument registers
-										; registers 128-192 are local registers
-										; registers 193-224 are global registers
-										; register 253 is the link register
-										; register 252 is the indirect address register
-										; register 251 is a temporary register
-;-----------------------------------------------------------------------------
-; ucode_start: entry-point for all ucode routines, always the bottom of the
-; environment
-;-----------------------------------------------------------------------------
 @label ucode_start
+	set ?zero 0								; Hardcoded zero
+	set ?one 1								; Hardcoded one
+	set ?max 0xffff 							; Max
+	set ?min 0x0000					   		; Min
+	set ?two 2								; Hardcoded two
+	set ?three 3								; Hardcoded three
+	set ?memstart stack_machine_memory_start		; stack machine memory start
+	set ?memend stack_machine_memory_end		; stack machine memory end
+	set ?opvec opcode_vector_table				; opcode table base address
+	set ?ps0 0								; parameter stack top
+	set ?ps1 0								; parameter stack second
+	set ?ps2 0								; parameter stack third
+	set ?psaddr parameterstackbase				; address of the parameter stack
+	set ?pslen 0							    ; stack length
+	
+	set ?ip program_counter_start			; stack program counter
+											; use the internal stack for the return stack
+											; registers 32-64 are return registers
+											; registers 64-128 are argument registers
+											; registers 128-192 are local registers
+											; registers 193-224 are global registers
+											; register 253 is the link register
+											; register 252 is the indirect address register
+											; register 251 is a temporary register
 @label ucode_loop_top
-
-goto ucode_loop_top
+	set ?iaddr ucode_dispatch_op
+	goto.link ?link ucode_internal_call
+	goto ucode_loop_top
 @label ucode_loop_done
-system 0 ?zero ?zero 					; We should never ever get here
+	system 0 ?zero ?zero 					; We should never ever get here
 ; routines follow
+@label ucode_dispatch_op
+	addi ?ip ?ip 1
+	gt ?pred ?ip ?memend
+	goto.if0 ?pred ucode_internal_return
+	; right now we should terminate once we have walked through all of memory
+	set a0 done_str
+	set ?iaddr ucode_printstring
+	goto.link ?link ucode_internal_call
+	system 0 ?zero ?zero
 ;-----------------------------------------------------------------------------
 ; ucode_push_parameter: push a value onto the parameter stack
-; arg0 - value
+; a0 - value
 ;-----------------------------------------------------------------------------
 @label ucode_push_parameter
-	ge local0 ?pslen ?three 								; check and see if we have three or more elements on the stack already
-	goto.if1 local0 ucode_push_parameter_into_memory
-	eq local1 ?pslen ?two									; we don't so check and see if it has two elements
-	goto.if1 local1 ucode_shift_second_to_third
-	set local2 ucode_shift_first_to_second
-	set local3 ucode_push_parameter_set_top
-	if1 ?pslen local2 local3								; at this point the stack length is either one or zero,
+	ge l0 ?pslen ?three 								; check and see if we have three or more elements on the stack already
+	goto.if1 l0 ucode_push_parameter_into_memory
+	eq l1 ?pslen ?two									; we don't so check and see if it has two elements
+	goto.if1 l1 ucode_shift_second_to_third
+	set l2 ucode_shift_first_to_second
+	set l3 ucode_push_parameter_set_top
+	if1 ?pslen l2 l3								; at this point the stack length is either one or zero,
 													; so save an instruction and use if then else form
 @label ucode_push_parameter_into_memory
 	addi ?psaddr ?psaddr 1									; update the address
@@ -82,7 +94,7 @@ system 0 ?zero ?zero 					; We should never ever get here
 @label ucode_shift_first_to_second				
 	move ?ps1 ?ps0										; move the first to second
 @label ucode_push_parameter_set_top
-	move ?ps0 arg0
+	move ?ps0 a0
 	addi ?pslen ?pslen 1								; increment the stack length
 	goto ucode_internal_return
 
@@ -93,14 +105,14 @@ system 0 ?zero ?zero 					; We should never ever get here
 @label ucode_pop_parameter
 	goto.if0 ?pslen ucode_no_elements
 	move ?ret ?ps0										; we have elements so just save the top of the stack to the return register
-	gt local0 ?pslen ?three 								; check and see if we have three or more elements on the stack already
-	goto.if1 local0 ucode_pop_more_than_three_elements
-	eq local0 ?pslen ?three
-	goto.if1 local0 ucode_pop_three_elements
-	eq local0 ?pslen ?two									; we don't so check and see if it has two elements
-	set local1 ucode_pop_two_elements
-	set local2 ucode_pop_one_element
-	if1 local0 local1 local2
+	gt l0 ?pslen ?three 								; check and see if we have three or more elements on the stack already
+	goto.if1 l0 ucode_pop_more_than_three_elements
+	eq l0 ?pslen ?three
+	goto.if1 l0 ucode_pop_three_elements
+	eq l0 ?pslen ?two									; we don't so check and see if it has two elements
+	set l1 ucode_pop_two_elements
+	set l2 ucode_pop_one_element
+	if1 l0 l1 l2
 @label ucode_pop_more_than_three_elements
 	move ?ps0 ?ps1
 	move ?ps1 ?ps2
@@ -129,8 +141,8 @@ system 0 ?zero ?zero 					; We should never ever get here
 ;-----------------------------------------------------------------------------
 ; ucode_binary_operation: performs the given binary operation using the top two
 ; elements of the stack, the result is pushed back onto the stack
-; arg0 - operation (memory address)
-; arg1
+; a0 - operation (memory address)
+; a1
 ; ?ret - value to return
 ;-----------------------------------------------------------------------------
 @label ucode_binary_operation
@@ -157,58 +169,58 @@ jump ?temp0
 @label operation_nop
 	jump ?vecret
 @label operation_add
-	add ?ps0 arg0 arg1
+	add ?ps0 a0 a1
 	jump ?vecret
 @label operation_sub
-	sub ?ps0 arg0 arg1
+	sub ?ps0 a0 a1
 	jump ?vecret
 @label operation_mul
-	mul ?ps0 arg0 arg1
+	mul ?ps0 a0 a1
 	jump ?vecret
 @label operation_div
 ; TODO: insert error checking at some point
-	div ?ps0 arg0 arg1
+	div ?ps0 a0 a1
 	jump ?vecret
 @label operation_rem
 ; TODO: insert error checking at some point
-	rem ?ps0 arg0 arg1
+	rem ?ps0 a0 a1
 	jump ?vecret
 @label operation_shift_left
-	shl ?ps0 arg0 arg1
+	shl ?ps0 a0 a1
 	jump ?vecret
 @label operation_shift_right
-	shr ?ps0 arg0 arg1
+	shr ?ps0 a0 a1
 	jump ?vecret
 @label operation_binary_and
-	and ?ps0 arg0 arg1
+	and ?ps0 a0 a1
 	jump ?vecret
 @label operation_binary_or
-	or ?ps0 arg0 arg1
+	or ?ps0 a0 a1
 	jump ?vecret
 @label operation_binary_not
-	not ?ps0 arg0
+	not ?ps0 a0
 	jump ?vecret
 @label operation_equals
-	eq ?ps0 arg0 arg1
+	eq ?ps0 a0 a1
 	jump ?vecret
 @label operation_not_equals
-	ne ?ps0 arg0 arg1
+	ne ?ps0 a0 a1
 	jump ?vecret
 @label operation_greater_than
-	gt ?ps0 arg0 arg1
+	gt ?ps0 a0 a1
 	jump ?vecret
 @label operation_less_than
-	lt ?ps0 arg0 arg1
+	lt ?ps0 a0 a1
 	jump ?vecret
 @label operation_greater_than_or_equal
-	ge ?ps0 arg0 arg1
+	ge ?ps0 a0 a1
 	jump ?vecret
 @label operation_less_than_or_equal
-	le ?ps0 arg0 arg1
+	le ?ps0 a0 a1
 	jump ?vecret
 @label operation_dup
 	set ?iaddr ucode_push_parameter
-	move arg0 ?ps0
+	move a0 ?ps0
 	goto.link ?link ucode_internal_call
 	jump ?vecret
 @label operation_swap
@@ -231,12 +243,30 @@ jump ?temp0
 	jump ?vecret
 
 @label operation_load
-	load ?ps0 arg0
+	load ?ps0 a0
 	jump ?vecret
 
 @label operation_store
-	store ?ps0 arg0
+	store ?ps0 a0
 	jump ?vecret
+
+;-----------------------------------------------------------------------------
+; void printstring(char* s1);
+;-----------------------------------------------------------------------------
+@label ucode_printstring				 	; printstring {
+	move l0 a0				; 	argument _s1
+	set l1 0					 	; 	predicate := false
+	set l2 0					 	; 	terminator := 0
+@label printstring_loop			 	; 	loop {
+	load l3 l0				 	; 		curr := *s1
+	ne l1 l3 l2				; 		predicate = (curr != terminator)
+	goto.if0 l1 printstring_done ; 		if !predicate then break
+	system 2 l3 l3				; 		print curr // special function
+	addi l0 l0 1				; 		s1++
+	goto printstring_loop			; 	}
+@label printstring_done				;
+	goto ucode_internal_return 		; return
+								; }
 
 ; data sections
 @data
@@ -248,6 +278,12 @@ jump ?temp0
 
 @label stack_machine_memory_end
 @declare 0x0000
+@label done_str
+@declare 0x64
+@declare 0x6f
+@declare 0x6e
+@declare 0x65
+@declare 0x00
 @org 0xF000
 ; opcode vector table
 ; each entry is several words wide
