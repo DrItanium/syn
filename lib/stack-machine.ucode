@@ -62,17 +62,17 @@
 	goto.link ?link ucode_internal_call
 	goto ucode_loop_top
 @label ucode_loop_done
-	system 0 ?zero ?zero 					; We should never ever get here
+	exit ?one								; We should never ever get here
 ; routines follow
 @label ucode_dispatch_op
-	addi ?ip ?ip 1
+	incr ?ip
 	gt ?pred ?ip ?memend
 	goto.if0 ?pred ucode_internal_return
 	; right now we should terminate once we have walked through all of memory
 	set a0 done_str
 	set ?iaddr ucode_printstring
 	goto.link ?link ucode_internal_call
-	system 0 ?zero ?zero
+	exit ?zero
 ;-----------------------------------------------------------------------------
 ; ucode_push_parameter: push a value onto the parameter stack
 ; a0 - value
@@ -87,7 +87,7 @@
 	if1 ?pslen l2 l3								; at this point the stack length is either one or zero,
 													; so save an instruction and use if then else form
 @label ucode_push_parameter_into_memory
-	addi ?psaddr ?psaddr 1									; update the address
+	incr ?psaddr											; update the address
 	store ?psaddr ?ps2							    		; push the third element into memory
 @label ucode_shift_second_to_third
 	move ?ps2 ?ps1										; move the second to third
@@ -117,7 +117,7 @@
 	move ?ps0 ?ps1
 	move ?ps1 ?ps2
 	load ?ps2 ?psaddr
-	subi ?psaddr ?psaddr 1
+	decr ?psaddr
 	goto ucode_pop_parameter_done
 @label ucode_pop_three_elements
 	move ?ps0 ?ps1
@@ -131,7 +131,7 @@
 @label ucode_pop_one_element
 	move ?ps0 ?min
 @label ucode_pop_decrement
-	subi ?pslen ?pslen 1
+	decr ?pslen
 	goto ucode_pop_parameter_done
 @label ucode_no_elements
 	move ?ret ?max
@@ -261,8 +261,8 @@ jump ?temp0
 	load l3 l0				 	; 		curr := *s1
 	ne l1 l3 l2				; 		predicate = (curr != terminator)
 	goto.if0 l1 printstring_done ; 		if !predicate then break
-	system 2 l3 l3				; 		print curr // special function
-	addi l0 l0 1				; 		s1++
+	putchar l3					; print curr // special function
+	incr l0						; 		s1++
 	goto printstring_loop			; 	}
 @label printstring_done				;
 	goto ucode_internal_return 		; return
