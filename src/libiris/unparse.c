@@ -74,7 +74,8 @@ void iris_unparse_arithmetic(char* unparsed, instruction* insn) {
       case ArithmeticOpRemImmediate:
       case ArithmeticOpShiftLeftImmediate:
       case ArithmeticOpShiftRightImmediate:
-         sprintf(unparsed, operandTypes[fourOperandImmediate], op, source0, get_arithmetic_immediate(insn));
+         sprintf(unparsed, operandTypes[fourOperandImmediate], op, dest, source0, get_arithmetic_immediate(insn));
+         break;
       default:
          sprintf(unparsed, operandTypes[fourOperandRegister], op, dest, source0, source1);
          break;
