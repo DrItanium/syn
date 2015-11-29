@@ -1,0 +1,6 @@
+X(CompareOpEq, ==)
+X(CompareOpNeq, !=)
+X(CompareOpLessThan, <)
+X(CompareOpGreaterThan, >)
+X(CompareOpLessThanOrEqualTo, <=)
+X(CompareOpGreaterThanOrEqualTo, >=)
