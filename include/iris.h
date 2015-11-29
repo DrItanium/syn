@@ -2,11 +2,12 @@
 #ifndef _IRIS_H
 #define _IRIS_H
 #include <stdint.h>
+#include <stdbool.h>
 typedef unsigned char byte;
-typedef uint16_t word;
-typedef uint32_t dword;
+typedef uint32_t hword;
+typedef uint64_t word;
 /* four bytes and now super flexible */
-typedef dword instruction;
+typedef hword instruction;
 
 enum {
    RegisterCount = 256, 
@@ -16,14 +17,22 @@ enum {
    StackPointerRegisterIndex = 254,
 };
 
+typedef struct {
+	hword memorysize;
+	hword codestart, codesize;
+	hword datastart, datasize;
+} iris_memory_map;
 typedef struct iris_core {
    word gpr[RegisterCount];
-   instruction code[MemorySize];
-   word data[MemorySize];
-   word stack[MemorySize];
-   word pc;
-   byte advancepc;
-   byte terminateexecution;
+   byte* memory;
+   instruction* code;
+   byte* data;
+   hword pc;
+   bool advancepc,
+		terminateexecution;
+   hword datasize,
+		 codesize,
+		 memorysize;
 } iris_core;
 
 
@@ -33,6 +42,7 @@ enum {
    InstructionGroupMove,
    InstructionGroupJump,
    InstructionGroupCompare,
+   InstructionGroupLoadStore,
    InstructionGroupMisc,
 };
 
@@ -97,13 +107,7 @@ enum {
    MoveOpSwapAddrAddr, /* swap.addr.addr r? r? */
    MoveOpSwapRegMem, /* swap.reg.mem r? $imm */
    MoveOpSwapAddrMem, /* swap.addr.mem r? $imm */
-   MoveOpSet, /* set r? $imm */
-   MoveOpLoad, /* load r? r? */
-   MoveOpLoadMem, /* load.mem r? $imm */
-   MoveOpStore, /* store r? r? */
-   MoveOpStoreAddr, /* store.addr r? r? */
-   MoveOpStoreMem, /* memcopy r? $imm */
-   MoveOpStoreImm, /* memset r? $imm */
+   MoveOpSet, /* set r? $imm */ // 16-bit immediate
    /* uses an indirect register for the stack pointer */
    MoveOpPush, /* push r? */
    MoveOpPushImmediate, /* push.imm $imm */
@@ -233,39 +237,29 @@ enum {
 /* C structure version 
  * DO NOT UNCOMMENT
  * struct {
- *    byte op : 5;
+ * 	  byte compare : 3;
+ *    byte combine : 2;
  *    byte dest : 8;
  *    byte reg0 : 8;
  *    byte reg1 : 8;
  * } compare;
  */
 enum {
-   CompareOpEq = 0,
-   CompareOpEqAnd,
-   CompareOpEqOr,
-   CompareOpEqXor,
-   CompareOpNeq,
-   CompareOpNeqAnd,
-   CompareOpNeqOr,
-   CompareOpNeqXor,
-   CompareOpLessThan,
-   CompareOpLessThanAnd,
-   CompareOpLessThanOr,
-   CompareOpLessThanXor,
-   CompareOpGreaterThan,
-   CompareOpGreaterThanAnd,
-   CompareOpGreaterThanOr,
-   CompareOpGreaterThanXor,
-   CompareOpLessThanOrEqualTo,
-   CompareOpLessThanOrEqualToAnd,
-   CompareOpLessThanOrEqualToOr,
-   CompareOpLessThanOrEqualToXor,
-   CompareOpGreaterThanOrEqualTo,
-   CompareOpGreaterThanOrEqualToAnd,
-   CompareOpGreaterThanOrEqualToOr,
-   CompareOpGreaterThanOrEqualToXor,
+	CombineOpSet = 0,
+	CombineOpAnd,
+	CombineOpOr,
+	CombineOpXor,
 };
-#define get_compare_op(inst) (iris_decode_op(inst))
+enum {
+	CompareOpEq = 0,
+	CompareOpNeq,
+	CompareOpLessThan,
+	CompareOpGreaterThan,
+	CompareOpLessThanOrEqualTo,
+	CompareOpGreaterThanOrEqualTo,
+};
+#define get_compare_op(inst) (iris_decode_op(inst) & 0x7)
+#define get_combine_op(inst) ((iris_decode_op(inst) >> 2) & 0x3)
 #define get_compare_reg0(inst) (iris_decode_register(inst, 1))
 #define get_compare_reg1(inst) (iris_decode_register(inst, 2))
 #define get_compare_reg2(inst) (iris_decode_register(inst, 3))
@@ -321,6 +315,7 @@ enum {
    ErrorInvalidJumpOperation,
    ErrorInvalidCompareOperation,
    ErrorInvalidMiscOperation,
+   ErrorInvalidCombineOperation,
    ErrorInvalidSystemCommand,
    /* repl related */
    ErrorUnableToAllocateCore,
@@ -334,6 +329,22 @@ enum {
    SystemCommandGetC, 
    SystemCommandPutC,
    SystemCommandPanic,
+};
+
+// Load Store group
+enum {
+   MoveOpLoad, /* load r? r? */
+   MoveOpLoadMem, /* load.mem r? $imm */
+   MoveOpStore, /* store r? r? */
+   MoveOpStoreAddr, /* store.addr r? r? */
+   MoveOpStoreMem, /* memcopy r? $imm */
+   MoveOpStoreImm, /* memset r? $imm */
+   MoveOpStore32, /* store32 r? r? */
+   MoveOpStore16, /* store16 r? r? */
+   MoveOpStore8, /* store8 r? r? */
+   MoveOpLoad32, /* load32 r? r? */
+   MoveOpLoad16, /* load16 r? r? */
+   MoveOpLoad8, /* load8 r? r? */
 };
 
 void iris_rom_init(iris_core* proc);
@@ -381,7 +392,7 @@ void iris_encode_immediate(instruction* inst, byte index, word value);
 #define get_reg2(inst) (iris_decode_register(inst, 3))
 #define get_immediate(inst) (iris_decode_immediate(inst))
 
-
 void iris_shutdown(iris_core*);
+void iris_new_core(iris_core* proc, iris_memory_map* memmap);
 
 #endif 

@@ -352,27 +352,32 @@ void iris_jump(iris_core* proc, instruction* inst) {
 
 void iris_compare(iris_core* proc, instruction* inst) {
    /* grab the appropriate value */
-   word value = iris_get_register(proc, get_compare_reg0(inst));;
+   word tmp = 0;
    switch(get_compare_op(inst)) {
-#define perform_operation(symbol, assign) \
-      value assign (iris_get_register(proc, get_compare_reg1(inst)) symbol \
-            iris_get_register(proc, get_compare_reg2(inst))); \
-      iris_put_register(proc, get_compare_reg0(inst), value)
-#define define_group(class, symbol) \
-      case CompareOp ## class :        perform_operation(symbol, =); break; \
-      case CompareOp ## class ## And : perform_operation(symbol, &=); break; \
-      case CompareOp ## class ## Or :  perform_operation(symbol, |=); break; \
-      case CompareOp ## class ## Xor : perform_operation(symbol, ^=); break
-                                       define_group(Eq, ==);
-                                       define_group(Neq, !=);
-                                       define_group(LessThan, <);
-                                       define_group(GreaterThan, >);
-                                       define_group(LessThanOrEqualTo, <=);
-                                       define_group(GreaterThanOrEqualTo, >=);
-#undef define_group
-#undef perform_operation
+#define X(class, symbol) \
+      case class: \
+                  tmp = (iris_get_register(proc, get_compare_reg1(inst))) symbol (iris_get_register(proc, get_compare_reg2(inst))); \
+      break; 
+#include "moveops.def"
+#undef X
       default:
          iris_error("invalid compare operation", ErrorInvalidCompareOperation);
+   }
+   switch(get_combine_op(inst)) {
+      case CombineOpSet:
+         iris_put_register(proc, get_compare_reg0(inst), tmp);
+         break;
+      case CombineOpAnd:
+         iris_put_register(proc, get_compare_reg0(inst), tmp & iris_get_register(proc, get_compare_reg0(inst)));
+         break;
+      case CombineOpOr:
+         iris_put_register(proc, get_compare_reg0(inst), tmp | iris_get_register(proc, get_compare_reg0(inst)));
+         break;
+      case CombineOpXor:
+         iris_put_register(proc, get_compare_reg0(inst), tmp ^ iris_get_register(proc, get_compare_reg0(inst)));
+         break;
+      default:
+         iris_error("invalid combine operation", ErrorInvalidCombineOperation);
    }
 }
 static void iris_system_call(iris_core* proc, instruction* j);
@@ -465,6 +470,14 @@ word iris_pop_off_stack(iris_core* proc) {
 
 void iris_shutdown(iris_core* c) {
    /* do nothing right now */
+}
+void iris_new_core(iris_core* proc, iris_memory_map* mm) {
+   proc->memory = calloc(mm->memorysize, sizeof(byte));
+   proc->memorysize = mm->memorysize;
+   proc->code = (instruction*)(proc->memory + mm->codestart);
+   proc->codesize = mm->codesize;
+   proc->data = (proc->memory + mm->datastart);
+   proc->datasize = mm->datasize;
 }
 
 /* vim: set expandtab tabstop=3 shiftwidth=3: */
