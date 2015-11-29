@@ -209,25 +209,38 @@ enum {
  *    };
  * };
  */
+// jump base form (bits 0,1 of the op)
+// immediate? (bit 2)
+// link? (bit 3)
+// true/false (bit 4)
 enum {
-   JumpOpUnconditionalImmediate = 0,
-   JumpOpUnconditionalImmediateLink,
-   JumpOpUnconditionalRegister,
-   JumpOpUnconditionalRegisterLink,
-   JumpOpConditionalTrueImmediate,
-   JumpOpConditionalTrueImmediateLink,
-   JumpOpConditionalTrueRegister,
-   JumpOpConditionalTrueRegisterLink,
-   JumpOpConditionalFalseImmediate,
-   JumpOpConditionalFalseImmediateLink,
-   JumpOpConditionalFalseRegister,
-   JumpOpConditionalFalseRegisterLink,
-   JumpOpIfThenElseNormalPredTrue,
-   JumpOpIfThenElseNormalPredFalse,
-   JumpOpIfThenElseLinkPredTrue,
-   JumpOpIfThenElseLinkPredFalse,
+	JumpOpUnconditional = 0,
+	JumpOpConditional,
+	JumpOpIfThenElse,
+	JumpOpUnused,
 };
-#define get_jump_op(inst) (iris_decode_op(inst))
+#define get_jump_form(inst) (iris_decode_op(inst) & 0x3)
+#define get_jump_immediate_flag(inst) ((iris_decode_op(inst) >> 2) & 0x1)
+#define get_jump_link_flag(inst) ((iris_decode_op(inst) >> 3) & 0x1)
+#define get_jump_true_false_flag(inst) ((iris_decode_op(inst) >> 4) & 0x1)
+//enum {
+//   JumpOpUnconditionalImmediate = 0,
+//   JumpOpUnconditionalImmediateLink,
+//   JumpOpUnconditionalRegister,
+//   JumpOpUnconditionalRegisterLink,
+//   JumpOpConditionalTrueImmediate,
+//   JumpOpConditionalTrueImmediateLink,
+//   JumpOpConditionalTrueRegister,
+//   JumpOpConditionalTrueRegisterLink,
+//   JumpOpConditionalFalseImmediate,
+//   JumpOpConditionalFalseImmediateLink,
+//   JumpOpConditionalFalseRegister,
+//   JumpOpConditionalFalseRegisterLink,
+//   JumpOpIfThenElseNormalPredTrue,
+//   JumpOpIfThenElseNormalPredFalse,
+//   JumpOpIfThenElseLinkPredTrue,
+//   JumpOpIfThenElseLinkPredFalse,
+//};
 #define get_jump_immediate(inst) (iris_decode_immediate(inst))
 #define get_jump_reg0(inst) (iris_decode_register(inst, 1))
 #define get_jump_reg1(inst) (iris_decode_register(inst, 2))
