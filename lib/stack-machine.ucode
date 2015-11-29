@@ -23,6 +23,9 @@
 ;  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;-----------------------------------------------------------------------------
 ; Implementation of a stack machine using iris as a microcoded processor
+; 
+; Please note that this is a constantly evolving design, as I implement
+; different aspects of the microcode new things will be introduced
 ;-----------------------------------------------------------------------------
 
 ;-----------------------------------------------------------------------------
@@ -190,12 +193,13 @@
 ;-----------------------------------------------------------------------------
 ; ucode_binary_operation: performs the given binary operation using the top two
 ; elements of the stack, the result is pushed back onto the stack
-; a0 - operation (memory address)
-; a1
+; a0 - operation (from memory, lower half)
+; a1 - operation (from memory, upper half)
 ; ?ret - value to return
 ;-----------------------------------------------------------------------------
 @label ucode_binary_operation
-	
+	; first thing to do is extract the 
+	goto ucode_internal_return
 
 ;-----------------------------------------------------------------------------
 ; ucode_internal_call: push the link register onto the internal stack and then
@@ -204,16 +208,16 @@
 ; ?iaddr - destination
 ;-----------------------------------------------------------------------------
 @label ucode_internal_call
-push ?link
-jump ?iaddr
+	push ?link
+	jump ?iaddr
 
 ;-----------------------------------------------------------------------------
 ; ucode_internal_return: pop the top address off of the internal stack and 
 ; jump to it
 ;-----------------------------------------------------------------------------
 @label ucode_internal_return
-pop ?temp0
-jump ?temp0
+	pop ?temp0
+	jump ?temp0
 
 @label operation_nop
 	jump ?vecret
