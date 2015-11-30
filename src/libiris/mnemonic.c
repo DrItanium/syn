@@ -28,74 +28,125 @@ const char* iris_arithmetic_mnemonic(instruction* insn) {
 
 const char* iris_move_mnemonic(instruction* insn) {
    switch(get_move_op(insn)) {
-      case MoveOpMove:           return "move"; /* move r? r? */
-      case MoveOpSwap:           return "swap"; /* swap r? r? */
-      case MoveOpSwapRegAddr:    return "swap.reg.addr"; /* swap.reg.addr r? r? */
-      case MoveOpSwapAddrAddr:   return "swap.addr.addr"; /* swap.addr.addr r? r? */
-      case MoveOpSwapRegMem:     return "swap.reg.mem"; /* swap.reg.mem r? $imm */
-      case MoveOpSwapAddrMem:    return "swap.addr.mem"; /* swap.addr.mem r? $imm */
-      case MoveOpSet:            return "set"; /* set r? $imm */
-      case MoveOpLoad:           return "load"; /* load r? r? */
-      case MoveOpLoadMem:        return "load.mem"; /* load.mem r? $imm */
-      case MoveOpStore:          return "store"; /* store r? r? */
-      case MoveOpStoreAddr:      return "store.addr"; /* store.addr r? r? */
-      case MoveOpStoreMem:       return "memcopy"; /* memcopy r? $imm */
-      case MoveOpStoreImm:       return "memset"; /* memset r? $imm */
-      case MoveOpPush:           return "push"; /* push r? */
-      case MoveOpPushImmediate:  return "push.imm";
-      case MoveOpPop:            return "pop";
+      case MoveOpMove:           return "move"; /* move <idx> r? r? <mask> */
+      case MoveOpSwap:           return "swap"; /* swap <idx> r? r? <mask> */
+      case MoveOpSet:            return "set"; /* set <pos> r? $imm */
+      case MoveOpSlice:          return "slice"; /* slice <idx> r? r? <mask> */
       default:                   return "UNKNOWN_MOVE";
    }
 }
 
 const char* iris_jump_mnemonic(instruction* insn) {
-   switch(get_jump_op(insn)) {
-      case JumpOpUnconditionalImmediate:           return "goto";
-      case JumpOpUnconditionalImmediateLink:       return "goto.link";
-      case JumpOpUnconditionalRegister:            return "jump";
-      case JumpOpUnconditionalRegisterLink:        return "jump.link";
-      case JumpOpConditionalTrueImmediate:             return "goto.if1";
-      case JumpOpConditionalTrueImmediateLink:         return "goto.if1.link";
-      case JumpOpConditionalTrueRegister:              return "jump.if1";
-      case JumpOpConditionalTrueRegisterLink:          return "jump.if1.link";
-      case JumpOpConditionalFalseImmediate:             return "goto.if0";
-      case JumpOpConditionalFalseImmediateLink:         return "goto.if0.link";
-      case JumpOpConditionalFalseRegister:              return "jump.if0";
-      case JumpOpConditionalFalseRegisterLink:          return "jump.if0.link";
-      case JumpOpIfThenElseNormalPredTrue:         return "if1";
-      case JumpOpIfThenElseNormalPredFalse:        return "if0";
-      case JumpOpIfThenElseLinkPredTrue:           return "if1.link";
-      case JumpOpIfThenElseLinkPredFalse:          return "if0.link";
-      default:                                     return "UNKNOWN_JUMP";
+   switch(get_jump_form(insn)) {
+      case JumpOpUnconditional: 
+         {
+            if (get_jump_link_flag(insn)) {
+               if (get_jump_immediate_flag(insn)) {
+                  return "goto.link";
+               } else {
+                  return "jump.link";
+               }
+            } else {
+              if (get_jump_immediate_flag(insn)) {
+                  return "goto";
+              } else {
+                 return "jump";
+              }
+            }
+            break;
+         }
+      case JumpOpConditional: 
+         {
+            if (get_jump_true_false_flag(insn)) { 
+               /* true form */
+               if (get_jump_link_flag(insn)) {
+                  /* link form */
+                  if (get_jump_immediate_flag(insn)) {
+                     /* immediate form */
+                     return "goto.if1.link";
+                  } else {
+                     /* register form */
+                     return "jump.if1.link";
+                  }
+               } else {
+                  /* non link form */
+                  if (get_jump_immediate_flag(insn)) {
+                     /* immediate form */
+                     return "goto.if1";
+                  } else {
+                     /* register form */
+                     return "jump.if1";
+                  }
+               }
+            } else {
+               /* false form */
+               if (get_jump_link_flag(insn)) {
+                  /* link */
+                  if (get_jump_immediate_flag(insn)) {
+                     /* immediate */
+                     return "goto.if0.link";
+                  } else {
+                     /* register */
+                     return "jump.if0.link";
+                  }
+               } else {
+                  /* non-link */
+                  if (get_jump_immediate_flag(insn)) {
+                     /* immediate */
+                     return "goto.if0";
+                  } else {
+                     /* register */
+                     return "jump.if0";
+                  }
+               }
+            }
+            break;
+         }
+      case JumpOpIfThenElse:
+         {
+            if (get_jump_true_false_flag(insn)) {
+               /* true */
+               if (get_jump_link_flag(insn)) {
+                  return "if1.link";
+               } else {
+                  return "if1";
+               }
+            } else {
+               /* false */
+               if (get_jump_link_flag(insn)) {
+                  return "if0.link";
+               } else {
+                  return "if0";
+               }
+            }
+            break;
+         }
+      default:
+         return "INVALID JUMP OPERATION";
    }
 }
 
 const char* iris_compare_mnemonic(instruction* insn) {
    switch(get_compare_op(insn)) {
-      case CompareOpEq:                         return "eq";
-      case CompareOpEqAnd:                      return "and.eq";
-      case CompareOpEqOr:                       return "or.eq";
-      case CompareOpEqXor:                      return "xor.eq";
-      case CompareOpNeq:                        return "ne";
-      case CompareOpNeqAnd:                     return "and.ne";
-      case CompareOpNeqOr:                      return "or.ne";
-      case CompareOpNeqXor:                     return "xor.ne";
-      case CompareOpLessThan:                   return "lt";
-      case CompareOpLessThanAnd:                return "and.lt";
-      case CompareOpLessThanOr:                 return "or.lt";
-      case CompareOpLessThanXor:                return "xor.lt";
-      case CompareOpGreaterThan:                return "gt";
-      case CompareOpGreaterThanAnd:             return "and.gt";
-      case CompareOpGreaterThanOr:              return "or.gt";
-      case CompareOpGreaterThanXor:             return "xor.gt";
-      case CompareOpLessThanOrEqualTo:          return "le";
-      case CompareOpLessThanOrEqualToAnd:       return "and.le";
-      case CompareOpLessThanOrEqualToOr:        return "or.le";
-      case CompareOpLessThanOrEqualToXor:       return "xor.le";
-      case CompareOpGreaterThanOrEqualTo:       return "ge";
-      case CompareOpGreaterThanOrEqualToAnd:    return "and.ge";
-      case CompareOpGreaterThanOrEqualToOr:     return "or.ge";
-      case CompareOpGreaterThanOrEqualToXor:    return "xor.ge";
+#define X(class, __, name) \
+   case class: \
+               {\
+                  switch(get_combine_op(insn)) { \
+                     case CombineOpSet: \
+                                        return name ; \
+                     case CombineOpAnd: \
+                                        return "and." name ; \
+                     case CombineOpOr: \
+                                       return "or." name ; \
+                     case CombineOpXor: \
+                                        return "xor." name ; \
+                     default: \
+                              iris_error("invalid combine operation", ErrorInvalidCombineOperation); \
+                  } \
+                  return "UNKNOWN_COMBINE"; \
+               }
+#include "moveops.def" 
+#undef X
       default:                                  return "UNKNOWN_COMPARE";
    }
 }

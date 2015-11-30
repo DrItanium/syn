@@ -96,9 +96,6 @@ void iris_arithmetic(iris_core* proc, instruction* inst) {
 #undef defop
 #undef defiop
 }
-//static void iris_push(iris_core* proc, instruction* inst);
-//static void iris_push_immediate(iris_core* proc, instruction* inst);
-//static void iris_pop(iris_core* proc, instruction* inst);
 
 /* position masks */
 enum {
@@ -108,13 +105,7 @@ enum {
    MaskBits48_63 = 0x0000FFFFFFFFFFFF,
    MaskBits0_31   = 0x00000000FFFFFFFF,
    MaskBits32_63  = 0xFFFFFFFF00000000,
-   MaskBits0_15_and_32_47 = 0xFFFF0000FFFF0000,
-   MaskBits16_31_and_48_63 = 0x0000FFFF0000FFFF,
 };
-	//MoveOp_Form_64bit_chunks = 0,
-	//MoveOp_Form_32bit_chunks,
-	//MoveOp_Form_16bit_chunks,
-	//MoveOp_Form_8bit_chunks, 
 void iris_movefull(iris_core* proc, instruction* inst) {
    iris_put_register(proc, get_move_reg0(inst), iris_get_register(proc, get_move_reg1(inst)));
 }
@@ -649,7 +640,7 @@ void iris_compare(iris_core* proc, instruction* inst) {
    /* grab the appropriate value */
    word tmp = 0;
    switch(get_compare_op(inst)) {
-#define X(class, symbol) \
+#define X(class, symbol, _) \
       case class: \
                   tmp = (iris_get_register(proc, get_compare_reg1(inst))) symbol (iris_get_register(proc, get_compare_reg2(inst))); \
       break; 
@@ -729,41 +720,6 @@ void iris_rom_init(iris_core* proc) {
    proc->gpr[PredicateRegisterIndex] = 0;
    proc->gpr[StackPointerRegisterIndex] = 0xFFFF;
 }
-//static void iris_push_onto_stack(iris_core* proc, word value);
-//static word iris_pop_off_stack(iris_core* proc);
-//
-//void iris_push(iris_core* proc, instruction* inst) {
-//   byte index;
-//   word value;
-//   index = get_reg0(inst);
-//   value = iris_get_register(proc, index);
-//   iris_push_onto_stack(proc, value);
-//}
-//void iris_push_immediate(iris_core* proc, instruction* inst) {
-//   word value;
-//   value = get_immediate(inst);
-//   iris_push_onto_stack(proc, value);
-//}
-//void iris_pop(iris_core* proc, instruction* inst) {
-//   iris_put_register(proc, get_reg0(inst), iris_pop_off_stack(proc));
-//}
-//
-//void iris_push_onto_stack(iris_core* proc, word value) {
-//   word index = iris_get_register(proc, StackPointerRegisterIndex);
-//   /* increment and then set */
-//   index++;
-//   proc->stack[index] = value;
-//   iris_put_register(proc, StackPointerRegisterIndex, index);
-//}
-
-//word iris_pop_off_stack(iris_core* proc) {
-//   word index = iris_get_register(proc, StackPointerRegisterIndex);
-//   /* get the value and then decrement */
-//   word value = proc->stack[index];
-//   index--;
-//   iris_put_register(proc, StackPointerRegisterIndex, index);
-//   return value;
-//}
 
 void iris_shutdown(iris_core* c) {
    /* do nothing right now */
