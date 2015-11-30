@@ -62,7 +62,7 @@ typedef struct dynamicop {
 		byte position;
 	} move;
 	struct {
-		byte compare;
+		byte combine;
 	} compare;
    } fields;
    byte reg0;
@@ -127,22 +127,9 @@ void usage(char* arg0);
 %token MOVE_OP_SWAP
 %token MOVE_OP_SET
 %token MOVE_OP_SLICE
-%token JUMP_OP_UNCONDITIONALIMMEDIATE
-%token JUMP_OP_UNCONDITIONALIMMEDIATELINK
-%token JUMP_OP_UNCONDITIONALREGISTER
-%token JUMP_OP_UNCONDITIONALREGISTERLINK
-%token JUMP_OP_CONDITIONALTRUEIMMEDIATE
-%token JUMP_OP_CONDITIONALTRUEIMMEDIATELINK
-%token JUMP_OP_CONDITIONALTRUEREGISTER
-%token JUMP_OP_CONDITIONALTRUEREGISTERLINK
-%token JUMP_OP_CONDITIONALFALSEIMMEDIATE
-%token JUMP_OP_CONDITIONALFALSEIMMEDIATELINK
-%token JUMP_OP_CONDITIONALFALSEREGISTER
-%token JUMP_OP_CONDITIONALFALSEREGISTERLINK
-%token JUMP_OP_IFTHENELSENORMALPREDTRUE
-%token JUMP_OP_IFTHENELSENORMALPREDFALSE
-%token JUMP_OP_IFTHENELSELINKPREDTRUE
-%token JUMP_OP_IFTHENELSELINKPREDFALSE
+%token JUMP_OP_UNCONDITIONAL
+%token JUMP_OP_CONDITIONAL
+%token JUMP_OP_IFTHENELSE
 %token COMPARE_OP_EQ
 %token COMPARE_OP_NEQ
 %token COMPARE_OP_LESSTHAN
@@ -160,6 +147,15 @@ void usage(char* arg0);
 %token MACRO_OP_DECREMENT
 %token MACRO_OP_DOUBLE
 %token MACRO_OP_HALVE
+%token IF_TOK
+%token IS_TOK
+%token THEN_TOK
+%token TRUE_TOK
+%token FALSE_TOK
+%token ELSE_TOK
+%token GOTO_TOK
+%token JUMP_TOK
+%token LINK_TOK
 
 
 %token <rval> REGISTER
@@ -355,24 +351,76 @@ move_op:
        ;
 
 jump_op:
-       JUMP_OP_UNCONDITIONALIMMEDIATE lexeme { 
-         curri.op = JumpOpUnconditionalImmediate; 
-         } | 
-       JUMP_OP_UNCONDITIONALREGISTER REGISTER { 
-         curri.op = JumpOpUnconditionalRegister; 
-         curri.reg0 = $2;
-       } |
-       jop_reg_reg REGISTER REGISTER {
-            curri.reg0 = $2;
-            curri.reg1 = $3;
-       } |
-       jop_reg_imm REGISTER lexeme { curri.reg0 = $2; } |
-       jop_reg_reg_reg REGISTER REGISTER REGISTER {
-            curri.reg0 = $2;
-            curri.reg1 = $3;
-            curri.reg2 = $4;
-       }
-       ;
+	   GOTO_TOK lexeme {
+
+	   } |
+	   GOTO_TOK lexeme LINK_TOK REGISTER {
+
+	   } |
+	   JUMP_TOK REGISTER {
+
+	   } |
+	   JUMP_TOK REGISTER LINK_TOK REGISTER {
+
+	   } |
+	   IF_TOK REGISTER IS_TOK TRUE_TOK THEN_TOK GOTO_TOK lexeme {
+
+	   } |
+	   IF_TOK REGISTER IS_TOK FALSE_TOK THEN_TOK GOTO_TOK lexeme {
+
+	   } |
+	   IF_TOK TRUE_TOK THEN_TOK GOTO_TOK lexeme LINK_TOK REGISTER {
+
+	   } |
+	   IF_TOK FALSE_TOK THEN_TOK GOTO_TOK lexeme LINK_TOK REGISTER {
+
+	   } |
+	   IF_TOK REGISTER IS_TOK TRUE_TOK THEN_TOK JUMP_TOK REGISTER {
+
+	   } |
+	   IF_TOK REGISTER IS_TOK FALSE_TOK THEN_TOK JUMP_TOK REGISTER {
+
+	   } |
+	   IF_TOK TRUE_TOK THEN_TOK JUMP_TOK REGISTER LINK_TOK REGISTER {
+
+	   } |
+	   IF_TOK FALSE_TOK THEN_TOK JUMP_TOK REGISTER LINK_TOK REGISTER {
+
+	   } |
+	   IF_TOK REGISTER IS_TOK TRUE_TOK THEN_TOK REGISTER ELSE_TOK REGISTER {
+
+	   } |
+	   IF_TOK REGISTER IS_TOK FALSE_TOK THEN_TOK REGISTER ELSE_TOK REGISTER {
+
+	   } |
+
+	   IF_TOK TRUE_TOK THEN_TOK REGISTER ELSE_TOK REGISTER LINK_TOK REGISTER {
+
+	   } |
+	   IF_TOK FALSE_TOK THEN_TOK REGISTER ELSE_TOK REGISTER LINK_TOK REGISTER {
+
+	   };
+
+
+       /*JUMP_OP_UNCONDITIONALIMMEDIATE lexeme { 
+       //  curri.op = JumpOpUnconditionalImmediate; 
+       //  } | 
+       //JUMP_OP_UNCONDITIONALREGISTER REGISTER { 
+       //  curri.op = JumpOpUnconditionalRegister; 
+       //  curri.reg0 = $2;
+       //} |
+       //jop_reg_reg REGISTER REGISTER {
+       //     curri.reg0 = $2;
+       //     curri.reg1 = $3;
+       //} |
+       //jop_reg_imm REGISTER lexeme { curri.reg0 = $2; } |
+       //jop_reg_reg_reg REGISTER REGISTER REGISTER {
+       //     curri.reg0 = $2;
+       //     curri.reg1 = $3;
+       //     curri.reg2 = $4;
+       //}
+       //;
+	   */
 
 compare_op:
           cop REGISTER REGISTER REGISTER {
@@ -424,6 +472,7 @@ aop_imm:
 
 
 
+/*
 jop_reg_imm:
    JUMP_OP_UNCONDITIONALIMMEDIATELINK { curri.op = JumpOpUnconditionalImmediateLink; } |
    JUMP_OP_CONDITIONALTRUEIMMEDIATE { curri.op = JumpOpConditionalTrueImmediate; } |
@@ -447,6 +496,7 @@ jop_reg_reg_reg:
    JUMP_OP_IFTHENELSELINKPREDTRUE { curri.op = JumpOpIfThenElseLinkPredTrue; } |
    JUMP_OP_IFTHENELSELINKPREDFALSE { curri.op = JumpOpIfThenElseLinkPredFalse; } |
 ;
+*/
 
 cop:
    COMPARE_OP_EQ { curri.op = CompareOpEq; } |

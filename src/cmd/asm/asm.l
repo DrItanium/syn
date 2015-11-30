@@ -48,33 +48,7 @@ omni [a-zA-Z0-9._]
 "move" { return MOVE_OP_MOVE; }
 "mov"  { return MOVE_OP_MOVE; }
 "swap" { return MOVE_OP_SWAP; }
-"swap.reg.addr" { return MOVE_OP_SWAPREGADDR; }
-"swap.addr.addr" { return MOVE_OP_SWAPADDRADDR; }
-"swap.reg.mem" { return MOVE_OP_SWAPREGMEM; }
-"swap.addr.mem" { return MOVE_OP_SWAPADDRMEM; }
 "set" { return MOVE_OP_SET; }
-"load" { return MOVE_OP_LOAD; }
-"load.mem" { return MOVE_OP_LOADMEM; }
-"store" { return MOVE_OP_STORE; }
-"store.addr" { return MOVE_OP_STOREADDR; }
-"memcopy" { return MOVE_OP_STOREMEM; }
-"memset" { return MOVE_OP_STOREIMM; }
-"goto" { return JUMP_OP_UNCONDITIONALIMMEDIATE; }
-"goto.link" { return JUMP_OP_UNCONDITIONALIMMEDIATELINK; }
-"jump" { return JUMP_OP_UNCONDITIONALREGISTER; }
-"jump.link" { return JUMP_OP_UNCONDITIONALREGISTERLINK; }
-"goto.if1" { return JUMP_OP_CONDITIONALTRUEIMMEDIATE; }
-"goto.if1.link" { return JUMP_OP_CONDITIONALTRUEIMMEDIATELINK; }
-"jump.if1" { return JUMP_OP_CONDITIONALTRUEREGISTER; }
-"jump.if1.link" { return JUMP_OP_CONDITIONALTRUEREGISTERLINK; }
-"goto.if0" { return JUMP_OP_CONDITIONALFALSEIMMEDIATE; }
-"goto.if0.link" { return JUMP_OP_CONDITIONALFALSEIMMEDIATELINK; }
-"jump.if0" { return JUMP_OP_CONDITIONALFALSEREGISTER; }
-"jump.if0.link" { return JUMP_OP_CONDITIONALFALSEREGISTERLINK; }
-"if1" { return JUMP_OP_IFTHENELSENORMALPREDTRUE; }
-"if0" { return JUMP_OP_IFTHENELSENORMALPREDFALSE; }
-"if1.link" { return JUMP_OP_IFTHENELSELINKPREDTRUE; }
-"if0.link" { return JUMP_OP_IFTHENELSELINKPREDFALSE; }
 "eq" { return COMPARE_OP_EQ; }
 "ne" { return COMPARE_OP_NEQ; }
 "lt" { return COMPARE_OP_LESSTHAN; }
@@ -85,9 +59,6 @@ omni [a-zA-Z0-9._]
 "|=" { return COMBINE_OP_OR; }
 "^=" { return COMBINE_OP_XOR; }
 "system" { return MISC_OP_SYSTEMCALL; }
-"push" { return MOVE_OP_PUSH; }
-"push.imm" { return MOVE_OP_PUSHIMMEDIATE; }
-"pop" { return MOVE_OP_POP; }
 "exit" { return MACRO_OP_EXIT; }
 "putchar" { return MACRO_OP_PUTCHAR; }
 "readchar" { return MACRO_OP_READCHAR; }
@@ -95,6 +66,15 @@ omni [a-zA-Z0-9._]
 "decr"  { return MACRO_OP_DECREMENT; }
 "double" { return MACRO_OP_DOUBLE; }
 "halve" { return MACRO_OP_HALVE; }
+"if" { return IF_TOK; }
+"is" { return IS_TOK; }
+"then" { return THEN_TOK; }
+"true" { return TRUE_TOK; }
+"false" { return FALSE_TOK; }
+"else" { return ELSE_TOK; }
+"goto" { return GOTO_TOK; }
+"jump" { return JUMP_TOK; }
+"link" { return LINK_TOK; }
 "@label" { return LABEL; }
 "@data"  { return DIRECTIVE_DATA; }
 "@code"  { return DIRECTIVE_CODE; }
@@ -103,7 +83,6 @@ omni [a-zA-Z0-9._]
 [ \t\n]     ;
 [;].*       ; // comments
 r{digit}+ { yylval.rval = getregister(); return REGISTER; }
-; // microcode extensions
 "?zero"   { yylval.rval = 225; return REGISTER; } ; // literal zero
 "?one" 	  { yylval.rval = 226; return REGISTER; } ; // literal one
 "?two"	  { yylval.rval = 229; return REGISTER; } ; // literal two
