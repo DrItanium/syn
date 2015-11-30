@@ -100,9 +100,205 @@ static void iris_push(iris_core* proc, instruction* inst);
 static void iris_push_immediate(iris_core* proc, instruction* inst);
 static void iris_pop(iris_core* proc, instruction* inst);
 
+/* position masks */
+enum {
+   MaskBits0_15  = 0xFFFFFFFFFFFF0000,
+   MaskBits16_31 = 0xFFFFFFFF0000FFFF,
+   MaskBits32_47 = 0xFFFF0000FFFFFFFF,
+   MaskBits48_63 = 0x0000FFFFFFFFFFFF,
+   MaskBits0_31   = 0x00000000FFFFFFFF,
+   MaskBits32_63  = 0xFFFFFFFF00000000,
+   MaskBits0_15_and_32_47 = 0xFFFF0000FFFF0000,
+   MaskBits16_31_and_48_63 = 0x0000FFFF0000FFFF,
+};
+	//MoveOp_Form_64bit_chunks = 0,
+	//MoveOp_Form_32bit_chunks,
+	//MoveOp_Form_16bit_chunks,
+	//MoveOp_Form_8bit_chunks, 
+void iris_movefull(iris_core* proc, instruction* inst) {
+   iris_put_register(proc, get_move_reg0(inst), iris_get_register(proc, get_move_reg1(inst)));
+}
+void iris_move_generic(iris_core* proc, instruction* inst, word mask) {
+   iris_put_register(proc, get_move_reg0(inst), 
+         (iris_get_register(proc, get_move_reg0(inst)) & ~mask) |
+         (((iris_get_register(proc, get_move_reg1(inst))) & mask)));
+}
+void iris_moveupper32(iris_core* proc, instruction* inst) {
+   iris_move_generic(proc, inst, MaskBits32_63);
+}
+
+void iris_movelower32(iris_core* proc, instruction* inst) {
+   iris_move_generic(proc, inst, MaskBits0_31);
+}
+word generate_full_mask(byte mask) {
+   return ((word)((mask & 0x01) ? 0xFF : 0x0)) |
+          (((word)(((mask & 0x02) >> 1) ? 0xFF : 0x0)) << 8) |
+          (((word)(((mask & 0x04) >> 2) ? 0xFF : 0x0)) << 16) |
+          (((word)(((mask & 0x08) >> 3) ? 0xFF : 0x0)) << 24) |
+          (((word)(((mask & 0x10) >> 4) ? 0xFF : 0x0)) << 32) |
+          (((word)(((mask & 0x20) >> 5) ? 0xFF : 0x0)) << 40) |
+          (((word)(((mask & 0x40) >> 6) ? 0xFF : 0x0)) << 48) |
+          (((word)(((mask & 0x80) >> 7) ? 0xFF : 0x0)) << 56);
+}
 void iris_move(iris_core* proc, instruction* inst) {
-   word a = 0, b = 0;
-   word addr0 = 0, addr1 = 0;
+   word a = 0,
+        b = 0;
+   word addr0 = 0, 
+        addr1 = 0;
+   word mask = 0;
+   switch(get_move_op(inst)) {
+      case MoveOpMove:
+         {
+            mask = (word)(byte)get_move_mask(inst);
+            if (mask != 0) {
+               switch(get_move_position(inst)) {
+                  case MoveOp_Form_64bit_chunks:
+                     {
+                     // properly format the mask
+                     mask &= 0x1;
+                     if (mask == 1) {
+                        iris_movefull(proc, inst);
+                     } else {
+                        iris_error("The bit mask is improperly formed for a 64bit move!", ErrorIllegalMoveBits);
+                     }
+                     break;
+                     }
+                  case MoveOp_Form_32bit_chunks:
+                     {
+                        mask &= 0x3;
+                        switch (mask) {
+                           case 0x1:
+                              iris_movelower32(proc, inst);
+                              break;
+                           case 0x2:
+                              iris_moveupper32(proc, inst);
+                              break;
+                           case 0x3:
+                              iris_movefull(proc, inst);
+                              break;
+                           default:
+                              iris_error("The bit mask is improperly formed for a 32bit move!", ErrorIllegalMoveBits);
+                        }
+                     break;
+                     }
+                  case MoveOp_Form_16bit_chunks:
+                     {
+                        mask &= 0xF;
+                        switch (mask) {
+                              case 0xF:
+                                 iris_movefull(proc, inst);
+                                 break;
+                              case 0xE:
+                                 iris_move_generic(proc, inst, 0xFFFFFFFFFFFF0000);
+                                 break;
+                              case 0xD:
+                                 iris_move_generic(proc, inst, 0xFFFFFFFF0000FFFF);
+                                 break;
+                              case 0xC:
+                                 iris_moveupper32(proc, inst);
+                                 break;
+                              case 0xB:
+                                 iris_move_generic(proc, inst, 0xFFFF0000FFFFFFFF);
+                                 break;
+                              case 0xA:
+                                 iris_move_generic(proc, inst, 0xFFFF0000FFFF0000);
+                                 break;
+                              case 0x9:
+                                 iris_move_generic(proc, inst, 0xFFFF00000000FFFF);
+                                 break;
+                              case 0x8:
+                                 iris_move_generic(proc, inst, 0xFFFF000000000000);
+                                 break;
+                              case 0x7:
+                                 iris_move_generic(proc, inst, 0x0000FFFFFFFFFFFF);
+                                 break;
+                              case 0x6:
+                                 iris_move_generic(proc, inst, 0x0000FFFFFFFF0000);
+                                 break;
+                              case 0x5:
+                                 iris_move_generic(proc, inst, 0x0000FFFF0000FFFF);
+                                 break;
+                              case 0x4:
+                                 iris_move_generic(proc, inst, 0x0000FFFF00000000);
+                                 break;
+                              case 0x3:
+                                 iris_movelower32(proc, inst);
+                                 break;
+                              case 0x2:
+                                 iris_move_generic(proc, inst, 0x00000000FFFF0000);
+                                 break;
+                              case 0x1:
+                                 iris_move_generic(proc, inst, 0x000000000000FFFF);
+                                 break;
+                              default:
+                                 iris_error("The bit mask is improperly formed for a 16bit move!", ErrorIllegalMoveBits);
+                        }
+                        break;
+                     }
+                  case MoveOp_Form_8bit_chunks:
+                     {
+                        if (mask == 0xFF) {
+                           iris_movefull(proc, inst);
+                        } else if (mask == 0xF0) {
+                           iris_moveupper32(proc, inst);
+                        } else if (mask == 0x0F) {
+                           iris_movelower32(proc, inst);
+                        } else if (mask == 0xC0) {
+                           iris_move_generic(proc, inst, MaskBits48_63);
+                        } else if (mask == 0x30) {
+                           iris_move_generic(proc, inst, MaskBits32_47);
+                        } else if (mask == 0x0C) {
+                           iris_move_generic(proc, inst, MaskBits16_31);
+                        } else if (mask == 0x03) {
+                           iris_move_generic(proc, inst, MaskBits0_15);
+                        } else {
+                           iris_move_generic(proc, inst, generate_full_mask(mask));
+                        }
+                        break;
+                     }
+                  default:
+                     iris_error("Illegal move operation position bits!", ErrorIllegalMoveBits);
+               }
+            }
+            break;
+         }
+      case MoveOpSwap:
+         break;
+      case MoveOpSet:
+         {
+            word value = (word)get_move_immediate(inst);
+            word reg = iris_get_register(proc, get_move_reg0(inst));
+            word mask = 0;
+            word shift = 0;
+
+            switch(get_move_position(inst)) {
+               case MoveOpSet_Bits_0_15:
+                  mask = MaskBits0_15;
+                  shift = 0;
+                  break;
+               case MoveOpSet_Bits_16_31:
+                  mask = MaskBits16_31;
+                  shift = 16;
+                  break;
+               case MoveOpSet_Bits_32_47:
+                  mask = MaskBits32_47;
+                  shift = 32;
+                  break;
+               case MoveOpSet_Bits_48_63:
+                  mask = MaskBits48_63;
+                  shift = 48;
+                  break;
+               default:
+                  iris_error("Illegal set operation bit position!", ErrorIllegalSetBits);
+            }
+            iris_put_register(proc, get_move_reg0(inst), (reg & mask) | ((value << shift) & (~mask)));
+            break;
+         }
+      case MoveOpSlice:
+         break;
+      default:
+         iris_error("Illegal move operation!", ErrorInvalidMoveOperation);
+   }
    switch(get_move_op(inst)) {
 
       case MoveOpMove: /* move r? r? */
@@ -209,12 +405,13 @@ void iris_jump(iris_core* proc, instruction* inst) {
       case JumpOpUnconditional: 
          {
             if (get_jump_link_flag(inst)) {
-               iris_put_register(proc, get_jump_reg0(inst), proc->pc + 1);
+               a = proc->pc + 1;
                if (get_jump_immediate_flag(inst)) {
                   proc->pc = get_jump_immediate(inst);
                } else {
                   proc->pc = iris_get_register(proc, get_jump_reg1(inst));
                }
+               iris_put_register(proc, get_jump_reg0(inst), a);
             } else {
               if (get_jump_immediate_flag(inst)) {
                  proc->pc = get_jump_immediate(inst);

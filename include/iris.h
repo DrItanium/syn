@@ -99,24 +99,85 @@ enum {
  *    };
  * };
  */
-
+// base operation (bit 0 and 1)
+// Move Form (destination is always register)
+// 	bits 2-3 are width bits
+// 		00: 64-bit chunks (1)
+// 		01: 32-bit chunks (2)
+// 		10: 16-bit chunks (3)
+// 		11: 8-bit chunks (4)
+//
+// 	register slot 3 is used in conjunction with other bit patterns to perform
+// 	more complex things like byte slicing, etc
+//
+// 		This does lead to some interesting equivalents (0xFF = 0x0F = 0x3 = 0x1)
+// 		With the values being 8-bit, 16-bit, 32-bit, and 64-bit chunks
+// 		respectively
+//
+// 		It also means that a mask set to zero is the equivalent to a nop 
+//
+// Swap Form (destination and sources are always registers)
+// 	bits 2-3 are width bits
+// 		00: 64-bit chunks (1 bit mask)
+// 		01: 32-bit chunks (2 bit mask)
+// 		10: 16-bit chunks (4 bit mask)
+// 		11: 8-bit chunks (8 bit mask)
+//
+// 		This does lead to some interesting equivalents (0xFF = 0x0F = 0x3 = 0x1)
+// 		With the values being 8-bit, 16-bit, 32-bit, and 64-bit chunks
+// 		respectively
+//
+// 		It also means that a mask set to zero is the equivalent to a nop 
+//
+// 	register slot 3 is used in conjunction with other bit patterns to perform
+// 	more complex things like byte slicing, etc
+//
+// Set Form 
+// bits 2-3 are position bits (or where to place the 16-bit value)
+// 	00: 0-15
+// 	01: 16-31
+// 	10: 32-47
+// 	11: 48-63
+// 
+// Slice Form (slice out bits from an 8 bit segment)
+// bits 2,3,4 are position bits (in combination with the bit mask in register slot 3)
+// 	000: 0-7
+// 	001: 8-15
+// 	010: 16-23
+// 	011: 24-31
+// 	100: 32-39
+// 	101: 40-47
+// 	110: 48-55
+// 	111: 56-63
 enum {
-   MoveOpMove = 0, /* move r? r? */
-   MoveOpSwap, /* swap r? r? */
-   MoveOpSwapRegAddr, /* swap.reg.addr r? r? */
-   MoveOpSwapAddrAddr, /* swap.addr.addr r? r? */
-   MoveOpSwapRegMem, /* swap.reg.mem r? $imm */
-   MoveOpSwapAddrMem, /* swap.addr.mem r? $imm */
-   MoveOpSet, /* set r? $imm */ // 16-bit immediate
-   /* uses an indirect register for the stack pointer */
-   MoveOpPush, /* push r? */
-   MoveOpPushImmediate, /* push.imm $imm */
-   MoveOpPop, /* pop r? */
+	MoveOpMove = 0,
+	MoveOpSwap,
+	MoveOpSet,
+	MoveOpSlice,
 };
-#define get_move_op(inst) (iris_decode_op(inst))
+enum {
+	MoveOpSet_Bits_0_15 = 0,
+	MoveOpSet_Bits_16_31,
+	MoveOpSet_Bits_32_47,
+	MoveOpSet_Bits_48_63,
+};
+enum {
+	MoveOp_Form_64bit_chunks = 0,
+	MoveOp_Form_32bit_chunks,
+	MoveOp_Form_16bit_chunks,
+	MoveOp_Form_8bit_chunks, 
+};
+//enum {
+//   MoveOpMove = 0, /* move r? r? */
+//   MoveOpSwap, /* swap r? r? */
+//   MoveOpSet, /* set r? $imm */ // 16-bit immediate
+//};
+#define get_move_op(inst) (iris_decode_op(inst) & 0x3)
+#define get_move_position(inst) ((iris_decode_op(inst) >> 2))
 #define get_move_immediate(inst) (iris_decode_immediate(inst))
 #define get_move_reg0(inst) (iris_decode_register(inst, 1))
 #define get_move_reg1(inst) (iris_decode_register(inst, 2))
+#define get_move_mask(inst) (iris_decode_register(inst, 3))
 
 /* jump */
 /* C structure version
@@ -330,6 +391,9 @@ enum {
    ErrorInvalidMiscOperation,
    ErrorInvalidCombineOperation,
    ErrorInvalidSystemCommand,
+   ErrorIllogicalSwapOperation,
+   ErrorIllegalSetBits,
+   ErrorIllegalMoveBits,
    /* repl related */
    ErrorUnableToAllocateCore,
    ErrorTriedToSetAdvancePcToIllegalValue,
@@ -358,6 +422,10 @@ enum {
    MoveOpLoad32, /* load32 r? r? */
    MoveOpLoad16, /* load16 r? r? */
    MoveOpLoad8, /* load8 r? r? */
+   /* uses an indirect register for the stack pointer */
+   MoveOpPush, /* push r? */
+   MoveOpPushImmediate, /* push.imm $imm */
+   MoveOpPop, /* pop r? */
 };
 
 void iris_rom_init(iris_core* proc);
