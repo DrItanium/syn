@@ -4,6 +4,7 @@
 #include <string.h>
 #include <errno.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include "iris.h"
 #include "util.h"
 
@@ -51,6 +52,19 @@ typedef struct dynamicop {
    word address;
    byte group;
    byte op;
+   union {
+	struct {
+		bool immediate;
+		bool link;
+		bool condcheck;
+	} jump;
+	struct {
+		byte position;
+	} move;
+	struct {
+		byte compare;
+	} compare;
+   } fields;
    byte reg0;
    byte reg1;
    byte reg2;
@@ -111,20 +125,8 @@ void usage(char* arg0);
 %token ARITHMETIC_OP_SHIFTRIGHT_IMM
 %token MOVE_OP_MOVE
 %token MOVE_OP_SWAP
-%token MOVE_OP_SWAPREGADDR
-%token MOVE_OP_SWAPADDRADDR
-%token MOVE_OP_SWAPREGMEM
-%token MOVE_OP_SWAPADDRMEM
 %token MOVE_OP_SET
-%token MOVE_OP_LOAD
-%token MOVE_OP_LOADMEM
-%token MOVE_OP_STORE
-%token MOVE_OP_STOREADDR
-%token MOVE_OP_STOREMEM
-%token MOVE_OP_STOREIMM
-%token MOVE_OP_POP
-%token MOVE_OP_PUSH
-%token MOVE_OP_PUSHIMMEDIATE
+%token MOVE_OP_SLICE
 %token JUMP_OP_UNCONDITIONALIMMEDIATE
 %token JUMP_OP_UNCONDITIONALIMMEDIATELINK
 %token JUMP_OP_UNCONDITIONALREGISTER
@@ -142,30 +144,15 @@ void usage(char* arg0);
 %token JUMP_OP_IFTHENELSELINKPREDTRUE
 %token JUMP_OP_IFTHENELSELINKPREDFALSE
 %token COMPARE_OP_EQ
-%token COMPARE_OP_EQAND
-%token COMPARE_OP_EQOR
-%token COMPARE_OP_EQXOR
 %token COMPARE_OP_NEQ
-%token COMPARE_OP_NEQAND
-%token COMPARE_OP_NEQOR
-%token COMPARE_OP_NEQXOR
 %token COMPARE_OP_LESSTHAN
-%token COMPARE_OP_LESSTHANAND
-%token COMPARE_OP_LESSTHANOR
-%token COMPARE_OP_LESSTHANXOR
 %token COMPARE_OP_GREATERTHAN
-%token COMPARE_OP_GREATERTHANAND
-%token COMPARE_OP_GREATERTHANOR
-%token COMPARE_OP_GREATERTHANXOR
 %token COMPARE_OP_LESSTHANOREQUALTO
-%token COMPARE_OP_LESSTHANOREQUALTOAND
-%token COMPARE_OP_LESSTHANOREQUALTOOR
-%token COMPARE_OP_LESSTHANOREQUALTOXOR
 %token COMPARE_OP_GREATERTHANOREQUALTO
-%token COMPARE_OP_GREATERTHANOREQUALTOAND
-%token COMPARE_OP_GREATERTHANOREQUALTOOR
-%token COMPARE_OP_GREATERTHANOREQUALTOXOR
 %token MISC_OP_SYSTEMCALL
+%token COMBINE_OP_AND
+%token COMBINE_OP_OR
+%token COMBINE_OP_XOR
 %token MACRO_OP_EXIT
 %token MACRO_OP_PUTCHAR
 %token MACRO_OP_READCHAR
@@ -339,17 +326,32 @@ arithmetic_op:
              }
       ;
 move_op:
-       mop_reg REGISTER REGISTER {
-            curri.reg0 = $2;
-            curri.reg1 = $3;
-       } |
-       mop_mixed REGISTER lexeme { curri.reg0 = $2; } |
-       mop_single REGISTER {
-         curri.reg0 = $2;
-       } |
-       MOVE_OP_PUSHIMMEDIATE lexeme { 
-         curri.op = MoveOpPushImmediate;
-       }
+	   MOVE_OP_MOVE IMMEDIATE REGISTER REGISTER IMMEDIATE {
+	   		curri.op = MoveOpMove;
+			curri.fields.move.position = $2;
+			curri.reg0 = $3;
+			curri.reg1 = $4;
+			curri.reg2 = $5;
+	   } |
+	   MOVE_OP_SWAP IMMEDIATE REGISTER REGISTER IMMEDIATE {
+	   		curri.op = MoveOpSwap;
+			curri.fields.move.position = $2;
+			curri.reg0 = $3;
+			curri.reg1 = $4;
+			curri.reg2 = $5;
+	   } |
+	   MOVE_OP_SLICE IMMEDIATE REGISTER REGISTER IMMEDIATE {
+	   		curri.op = MoveOpSlice;
+			curri.fields.move.position = $2;
+			curri.reg0 = $3;
+			curri.reg1 = $4;
+			curri.reg2 = $5;
+	   } |
+	   MOVE_OP_SET IMMEDIATE REGISTER lexeme {
+			curri.op = MoveOpSet;
+			curri.fields.move.position = $2;
+			curri.reg0 = $3;
+	   }
        ;
 
 jump_op:
@@ -374,10 +376,16 @@ jump_op:
 
 compare_op:
           cop REGISTER REGISTER REGISTER {
+		  	   curri.fields.compare.combine = CombineOpSet;
                curri.reg0 = $2;
                curri.reg1 = $3;
                curri.reg2 = $4;
-          }
+          } |
+		  cop combineop REGISTER REGISTER REGISTER {
+               curri.reg0 = $3;
+               curri.reg1 = $4;
+               curri.reg2 = $5;
+		  }
           ;
 misc_op:
        MISC_OP_SYSTEMCALL IMMEDIATE REGISTER REGISTER 
@@ -414,29 +422,7 @@ aop_imm:
    ARITHMETIC_OP_SHIFTRIGHT_IMM { curri.op = ArithmeticOpShiftRightImmediate; } 
    ;
 
-mop_reg:
-   MOVE_OP_MOVE { curri.op = MoveOpMove; } |
-   MOVE_OP_SWAP { curri.op = MoveOpSwap; } |
-   MOVE_OP_SWAPREGADDR { curri.op = MoveOpSwapRegAddr; } |
-   MOVE_OP_SWAPADDRADDR { curri.op = MoveOpSwapAddrAddr; } |
-   MOVE_OP_LOAD { curri.op = MoveOpLoad; } |
-   MOVE_OP_STORE { curri.op = MoveOpStore; } |
-   MOVE_OP_STOREADDR { curri.op = MoveOpStoreAddr; } 
-   ;
 
-mop_mixed:
-   MOVE_OP_SWAPREGMEM { curri.op = MoveOpSwapRegMem; } |
-   MOVE_OP_SWAPADDRMEM { curri.op = MoveOpSwapAddrMem; } |
-   MOVE_OP_SET { curri.op = MoveOpSet; } |
-   MOVE_OP_LOADMEM { curri.op = MoveOpLoadMem; } |
-   MOVE_OP_STOREMEM { curri.op = MoveOpStoreMem; } |
-   MOVE_OP_STOREIMM { curri.op = MoveOpStoreImm; }
-   ;
-
-mop_single:
-   MOVE_OP_PUSH { curri.op = MoveOpPush; } |
-   MOVE_OP_POP { curri.op = MoveOpPop; } 
-   ;
 
 jop_reg_imm:
    JUMP_OP_UNCONDITIONALIMMEDIATELINK { curri.op = JumpOpUnconditionalImmediateLink; } |
@@ -464,29 +450,16 @@ jop_reg_reg_reg:
 
 cop:
    COMPARE_OP_EQ { curri.op = CompareOpEq; } |
-   COMPARE_OP_EQAND { curri.op = CompareOpEqAnd; } |
-   COMPARE_OP_EQOR { curri.op = CompareOpEqOr; } |
-   COMPARE_OP_EQXOR { curri.op = CompareOpEqXor; } |
    COMPARE_OP_NEQ { curri.op = CompareOpNeq; } |
-   COMPARE_OP_NEQAND { curri.op = CompareOpNeqAnd; } |
-   COMPARE_OP_NEQOR { curri.op = CompareOpNeqOr; } |
-   COMPARE_OP_NEQXOR { curri.op = CompareOpNeqXor; } |
    COMPARE_OP_LESSTHAN { curri.op = CompareOpLessThan; } |
-   COMPARE_OP_LESSTHANAND { curri.op = CompareOpLessThanAnd; } |
-   COMPARE_OP_LESSTHANOR { curri.op = CompareOpLessThanOr; } |
-   COMPARE_OP_LESSTHANXOR { curri.op = CompareOpLessThanXor; } |
    COMPARE_OP_GREATERTHAN { curri.op = CompareOpGreaterThan; } |
-   COMPARE_OP_GREATERTHANAND { curri.op = CompareOpGreaterThanAnd; } |
-   COMPARE_OP_GREATERTHANOR { curri.op = CompareOpGreaterThanOr; } |
-   COMPARE_OP_GREATERTHANXOR { curri.op = CompareOpGreaterThanXor; } |
    COMPARE_OP_LESSTHANOREQUALTO { curri.op = CompareOpLessThanOrEqualTo; } |
-   COMPARE_OP_LESSTHANOREQUALTOAND { curri.op = CompareOpLessThanOrEqualToAnd; } |
-   COMPARE_OP_LESSTHANOREQUALTOOR { curri.op = CompareOpLessThanOrEqualToOr; } |
-   COMPARE_OP_LESSTHANOREQUALTOXOR { curri.op = CompareOpLessThanOrEqualToXor; } |
-   COMPARE_OP_GREATERTHANOREQUALTO { curri.op = CompareOpGreaterThanOrEqualTo; } |
-   COMPARE_OP_GREATERTHANOREQUALTOAND { curri.op = CompareOpGreaterThanOrEqualToAnd; } |
-   COMPARE_OP_GREATERTHANOREQUALTOOR { curri.op = CompareOpGreaterThanOrEqualToOr; } |
-   COMPARE_OP_GREATERTHANOREQUALTOXOR { curri.op = CompareOpGreaterThanOrEqualToXor; }
+   COMPARE_OP_GREATERTHANOREQUALTO { curri.op = CompareOpGreaterThanOrEqualTo; } 
+;
+combineop:
+		  COMBINE_OP_AND { curri.fields.compare.combine = CombineOpAnd; } |
+		  COMBINE_OP_OR { curri.fields.compare.combine = CombineOpOr; } |
+		  COMBINE_OP_XOR { curri.fields.compare.combine = CombineOpXor; }
 ;
 lexeme:
       SYMBOL { curri.hassymbol = 1; 
