@@ -357,46 +357,69 @@ jump_op:
 unconditional_jump_op:
 	   JUMP_TOK lexeme {
 			curri.fields.jump.immediate = true;
-	   } |
-	   JUMP_TOK lexeme unconditional_link {
-			curri.fields.jump.immediate = true;
+			curri.fields.jump.link = false;
 	   } |
 	   JUMP_TOK REGISTER {
+			curri.fields.jump.immediate = false;
+			curri.fields.jump.link = false;
 			curri.reg0 = $2;
 	   } |
-	   JUMP_TOK REGISTER unconditional_link {
-			curri.reg1 = $2;
-	   };
-unconditional_link:
-		LINK_TOK REGISTER {
+	   JUMP_TOK lexeme LINK_TOK REGISTER {
+			curri.fields.jump.immediate = true;
 			curri.fields.jump.link = true;
-			curri.reg0 = $2;
-		};
-conditional_jump_op:
-	   IF_TOK REGISTER IS_TOK TRUE_TOK THEN_TOK GOTO_TOK lexeme {
-
+			curri.reg0 = $4;
 	   } |
-	   IF_TOK REGISTER IS_TOK FALSE_TOK THEN_TOK GOTO_TOK lexeme {
-
-	   } |
-	   IF_TOK TRUE_TOK THEN_TOK GOTO_TOK lexeme LINK_TOK REGISTER {
-
-	   } |
-	   IF_TOK FALSE_TOK THEN_TOK GOTO_TOK lexeme LINK_TOK REGISTER {
-
-	   } |
-	   IF_TOK REGISTER IS_TOK TRUE_TOK THEN_TOK JUMP_TOK REGISTER {
-
-	   } |
-	   IF_TOK REGISTER IS_TOK FALSE_TOK THEN_TOK JUMP_TOK REGISTER {
-
-	   } |
-	   IF_TOK TRUE_TOK THEN_TOK JUMP_TOK REGISTER LINK_TOK REGISTER {
-
-	   } |
-	   IF_TOK FALSE_TOK THEN_TOK JUMP_TOK REGISTER LINK_TOK REGISTER {
-
+	   JUMP_TOK REGISTER LINK_TOK REGISTER {
+	   		curri.fields.jump.immediate = false;
+			curri.fields.jump.link = true;
+			curri.reg1 = $2;
+			curri.reg0 = $4;
 	   };
+
+conditional_jump_op:
+	   IF_TOK REGISTER IS_TOK TRUE_TOK THEN_TOK JUMP_TOK lexeme LINK_TOK REGISTER {
+			curri.fields.jump.immediate = true;
+			curri.fields.jump.link = true;
+			curri.fields.jump.condcheck = true;
+			curri.reg0 = $9;
+			if ($2 != PredicateRegisterIndex) {
+				yyerror("The implied predicate register ?pred is the only allowed register in conditional immediate link instructions!");
+			}
+	   } |
+	   IF_TOK REGISTER IS_TOK FALSE_TOK THEN_TOK JUMP_TOK lexeme LINK_TOK REGISTER {
+			curri.fields.jump.immediate = true;
+			curri.fields.jump.link = true;
+			curri.fields.jump.condcheck = false;
+			curri.reg0 = $9;
+			if ($2 != PredicateRegisterIndex) {
+				yyerror("The implied predicate register ?pred is the only allowed register in conditional immediate link instructions!");
+			}
+	   } |
+	   IF_TOK REGISTER IS_TOK TRUE_TOK THEN_TOK donuts1 {
+		   curri.fields.jump.condcheck = true;
+		curri.reg0 = $2;
+	   } |
+	   IF_TOK REGISTER IS_TOK FALSE_TOK THEN_TOK donuts1 {
+		   curri.fields.jump.condcheck = false;
+		curri.reg0 = $2;
+	   };
+donuts1:
+	   JUMP_TOK lexeme {
+	   		curri.fields.jump.immediate = true;
+			curri.fields.jump.link = false;
+	   }|
+	   JUMP_TOK REGISTER {
+	   		curri.fields.jump.immediate = false;
+			curri.fields.jump.link = false;
+			curri.reg1 = $2;
+	   }|
+	   JUMP_TOK REGISTER LINK_TOK REGISTER {
+			curri.fields.jump.immediate = false;
+			curri.fields.jump.link = true;
+			curri.reg1 = $2;
+			curri.reg2 = $4;
+	   };
+
 ifthenelse_jump_op:
 	   IF_TOK REGISTER IS_TOK TRUE_TOK THEN_TOK REGISTER ELSE_TOK REGISTER {
 	   } |
