@@ -30,8 +30,8 @@ const char* iris_move_mnemonic(instruction* insn) {
    switch(get_move_op(insn)) {
       case MoveOpMove:           return "move"; /* move <idx> r? r? <mask> */
       case MoveOpSwap:           return "swap"; /* swap <idx> r? r? <mask> */
-      case MoveOpSet:            return "set"; /* set <pos> r? $imm */
       case MoveOpSlice:          return "slice"; /* slice <idx> r? r? <mask> */
+      case MoveOpSet:            return "set"; /* set <pos> r? $imm */
       default:                   return "UNKNOWN_MOVE";
    }
 }
