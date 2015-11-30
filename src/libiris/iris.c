@@ -118,6 +118,21 @@ enum {
 void iris_movefull(iris_core* proc, instruction* inst) {
    iris_put_register(proc, get_move_reg0(inst), iris_get_register(proc, get_move_reg1(inst)));
 }
+void iris_swapfull(iris_core* proc, instruction* inst) {
+   word a = iris_get_register(proc, get_move_reg0(inst));
+   iris_put_register(proc, get_move_reg0(inst), iris_get_register(proc, get_move_reg1(inst)));
+   iris_put_register(proc, get_move_reg1(inst), a);
+}
+void iris_swap_generic(iris_core* proc, instruction* inst, word mask) {
+   word a = iris_get_register(proc, get_move_reg0(inst)),
+        b = iris_get_register(proc, get_move_reg1(inst));
+   word p0 = a & mask;
+   word p1 = b & mask;
+   word r0 = a & ~mask;
+   word r1 = b & ~mask;
+   iris_put_register(proc, get_move_reg0(inst), r0 | p1);
+   iris_put_register(proc, get_move_reg1(inst), r1 | p0);
+}
 void iris_move_generic(iris_core* proc, instruction* inst, word mask) {
    iris_put_register(proc, get_move_reg0(inst), 
          (iris_get_register(proc, get_move_reg0(inst)) & ~mask) |
@@ -130,6 +145,13 @@ void iris_moveupper32(iris_core* proc, instruction* inst) {
 void iris_movelower32(iris_core* proc, instruction* inst) {
    iris_move_generic(proc, inst, MaskBits0_31);
 }
+void iris_swapupper32(iris_core* proc, instruction* inst) {
+   iris_swap_generic(proc, inst, MaskBits32_63);
+}
+
+void iris_swaplower32(iris_core* proc, instruction* inst) {
+   iris_swap_generic(proc, inst, MaskBits0_31);
+}
 word generate_full_mask(byte mask) {
    return ((word)((mask & 0x01) ? 0xFF : 0x0)) |
           (((word)(((mask & 0x02) >> 1) ? 0xFF : 0x0)) << 8) |
@@ -141,10 +163,6 @@ word generate_full_mask(byte mask) {
           (((word)(((mask & 0x80) >> 7) ? 0xFF : 0x0)) << 56);
 }
 void iris_move(iris_core* proc, instruction* inst) {
-   word a = 0,
-        b = 0;
-   word addr0 = 0, 
-        addr1 = 0;
    word mask = 0;
    switch(get_move_op(inst)) {
       case MoveOpMove:
@@ -263,7 +281,120 @@ void iris_move(iris_core* proc, instruction* inst) {
             break;
          }
       case MoveOpSwap:
-         break;
+         {
+            mask = (word)(byte)get_move_mask(inst);
+            if (mask != 0) {
+               switch(get_move_position(inst)) {
+                  case MoveOp_Form_64bit_chunks:
+                     {
+                     // properly format the mask
+                     mask &= 0x1;
+                     if (mask == 1) {
+                        iris_swapfull(proc, inst);
+                     } else {
+                        iris_error("The bit mask is improperly formed for a 64bit move!", ErrorIllegalMoveBits);
+                     }
+                     break;
+                     }
+                  case MoveOp_Form_32bit_chunks:
+                     {
+                        mask &= 0x3;
+                        switch (mask) {
+                           case 0x1:
+                              iris_swaplower32(proc, inst);
+                              break;
+                           case 0x2:
+                              iris_swapupper32(proc, inst);
+                              break;
+                           case 0x3:
+                              iris_swapfull(proc, inst);
+                              break;
+                           default:
+                              iris_error("The bit mask is improperly formed for a 32bit move!", ErrorIllegalMoveBits);
+                        }
+                     break;
+                     }
+                  case MoveOp_Form_16bit_chunks:
+                     {
+                        mask &= 0xF;
+                        switch (mask) {
+                              case 0xF:
+                                 iris_swapfull(proc, inst);
+                                 break;
+                              case 0xE:
+                                 iris_swap_generic(proc, inst, 0xFFFFFFFFFFFF0000);
+                                 break;
+                              case 0xD:
+                                 iris_swap_generic(proc, inst, 0xFFFFFFFF0000FFFF);
+                                 break;
+                              case 0xC:
+                                 iris_swapupper32(proc, inst);
+                                 break;
+                              case 0xB:
+                                 iris_swap_generic(proc, inst, 0xFFFF0000FFFFFFFF);
+                                 break;
+                              case 0xA:
+                                 iris_swap_generic(proc, inst, 0xFFFF0000FFFF0000);
+                                 break;
+                              case 0x9:
+                                 iris_swap_generic(proc, inst, 0xFFFF00000000FFFF);
+                                 break;
+                              case 0x8:
+                                 iris_swap_generic(proc, inst, 0xFFFF000000000000);
+                                 break;
+                              case 0x7:
+                                 iris_swap_generic(proc, inst, 0x0000FFFFFFFFFFFF);
+                                 break;
+                              case 0x6:
+                                 iris_swap_generic(proc, inst, 0x0000FFFFFFFF0000);
+                                 break;
+                              case 0x5:
+                                 iris_swap_generic(proc, inst, 0x0000FFFF0000FFFF);
+                                 break;
+                              case 0x4:
+                                 iris_swap_generic(proc, inst, 0x0000FFFF00000000);
+                                 break;
+                              case 0x3:
+                                 iris_swaplower32(proc, inst);
+                                 break;
+                              case 0x2:
+                                 iris_swap_generic(proc, inst, 0x00000000FFFF0000);
+                                 break;
+                              case 0x1:
+                                 iris_swap_generic(proc, inst, 0x000000000000FFFF);
+                                 break;
+                              default:
+                                 iris_error("The bit mask is improperly formed for a 16bit move!", ErrorIllegalMoveBits);
+                        }
+                        break;
+                     }
+                  case MoveOp_Form_8bit_chunks:
+                     {
+                        if (mask == 0xFF) {
+                           iris_swapfull(proc, inst);
+                        } else if (mask == 0xF0) {
+                           iris_swapupper32(proc, inst);
+                        } else if (mask == 0x0F) {
+                           iris_swaplower32(proc, inst);
+                        } else if (mask == 0xC0) {
+                           iris_swap_generic(proc, inst, MaskBits48_63);
+                        } else if (mask == 0x30) {
+                           iris_swap_generic(proc, inst, MaskBits32_47);
+                        } else if (mask == 0x0C) {
+                           iris_swap_generic(proc, inst, MaskBits16_31);
+                        } else if (mask == 0x03) {
+                           iris_swap_generic(proc, inst, MaskBits0_15);
+                        } else {
+                           iris_swap_generic(proc, inst, generate_full_mask(mask));
+                        }
+                        break;
+                     }
+                  default:
+                     iris_error("Illegal move operation position bits!", ErrorIllegalMoveBits);
+               }
+            }
+            break;
+         }
       case MoveOpSet:
          {
             word value = (word)get_move_immediate(inst);
@@ -295,107 +426,11 @@ void iris_move(iris_core* proc, instruction* inst) {
             break;
          }
       case MoveOpSlice:
+         //TODO: implement
+         iris_error("Slice operations not implemented yet!", ErrorInvalidMoveOperation);
          break;
       default:
          iris_error("Illegal move operation!", ErrorInvalidMoveOperation);
-   }
-   switch(get_move_op(inst)) {
-
-      case MoveOpMove: /* move r? r? */
-         iris_put_register(proc, get_move_reg0(inst), 
-               iris_get_register(proc, get_move_reg1(inst)));
-         break;
-      case MoveOpSwap: /* swap r? r? */
-         a = iris_get_register(proc, get_move_reg0(inst));
-         b = iris_get_register(proc, get_move_reg1(inst));
-         iris_put_register(proc, get_move_reg0(inst), b);
-         iris_put_register(proc, get_move_reg1(inst), a);
-         break;
-      case MoveOpSwapRegAddr: /* swap.reg.addr r? r? */
-         /* need to preserve the address in case it gets overwritten */
-         /* for example, swap.reg.addr r0 r0 */
-         addr0 = iris_get_register(proc, get_move_reg1(inst));
-         a = iris_get_register(proc, get_move_reg0(inst));
-         b = proc->data[addr0];
-         iris_put_register(proc, get_move_reg0(inst), b);
-         proc->data[addr0] = a;
-         break;
-      case MoveOpSwapAddrAddr: /* swap.addr.addr r? r? */
-         /* we're not touching registers */
-         addr0 = iris_get_register(proc, get_move_reg0(inst));
-         addr1 = iris_get_register(proc, get_move_reg1(inst));
-         a = proc->data[addr0];
-         b = proc->data[addr1];
-         proc->data[addr0] = b;
-         proc->data[addr1] = a;
-         break;
-      case MoveOpSwapRegMem: /* swap.reg.mem r? $imm */
-         addr0 = get_move_immediate(inst);
-         a = iris_get_register(proc, get_move_reg0(inst));
-         b = proc->data[addr0];
-         iris_put_register(proc, get_move_reg0(inst), b);
-         proc->data[addr0] = a;
-         break;
-      case MoveOpSwapAddrMem: /* swap.addr.mem r? $imm */
-         addr0 = iris_get_register(proc, get_move_reg0(inst));
-         addr1 = get_move_immediate(inst);
-         a = proc->data[addr0];
-         b = proc->data[addr1];
-         proc->data[addr0] = b;
-         proc->data[addr1] = a;
-         break;
-      case MoveOpSet: /* set r? $imm */
-         iris_put_register(proc, get_move_reg0(inst), get_move_immediate(inst));
-         break;
-      case MoveOpLoad: /* load r? r? */
-         addr0 = iris_get_register(proc, get_move_reg1(inst));
-         a = proc->data[addr0];
-         iris_put_register(proc, get_move_reg0(inst), a);
-         break;
-      case MoveOpLoadMem: /* load.mem r? $imm */
-         addr0 = get_move_immediate(inst);
-         a = proc->data[addr0];
-         iris_put_register(proc, get_move_reg0(inst), a);
-         break;
-
-         /* In the case of stores, reg0 contains the address and the second
-          * field contains the value to be stored. This maintains the idea that
-          * the destination comes before the source registers. Think of the
-          * following flow direction <- and it should make sense */
-
-      case MoveOpStore: /* store r? r? */
-         addr0 = iris_get_register(proc, get_move_reg0(inst));
-         a = iris_get_register(proc, get_move_reg1(inst));
-         proc->data[addr0] = a;
-         break;
-      case MoveOpStoreAddr: /* store.addr r? r? */
-         addr0 = iris_get_register(proc, get_move_reg0(inst));
-         addr1 = iris_get_register(proc, get_move_reg1(inst));
-         a = proc->data[addr1];
-         proc->data[addr0] = a;
-         break;
-      case MoveOpStoreMem: /* memcopy r? $imm */
-         addr0 = iris_get_register(proc, get_move_reg0(inst));
-         addr1 = get_move_immediate(inst);
-         a = proc->data[addr1];
-         proc->data[addr0] = a;
-         break;
-      case MoveOpStoreImm: /* memset r? $imm */
-         addr0 = iris_get_register(proc, get_move_reg0(inst));
-         a = get_move_immediate(inst);
-         proc->data[addr0] = a;
-         break;
-      case MoveOpPush: /* push r? */
-         iris_push(proc, inst);
-         break;
-      case MoveOpPushImmediate: /* push.imm $imm */
-         iris_push_immediate(proc, inst);
-         break;
-      case MoveOpPop: /* pop r? */
-         iris_pop(proc, inst);
-         break;
-      default:
-         iris_error("invalid move operation", ErrorInvalidMoveOperation);
    }
 }
 void iris_jump(iris_core* proc, instruction* inst) {
