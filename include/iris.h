@@ -167,6 +167,16 @@ enum {
 	MoveOp_Form_16bit_chunks,
 	MoveOp_Form_8bit_chunks, 
 };
+enum {
+	SliceOp_0to7 = 0,
+	SliceOp_8to15,
+	SliceOp_16to23,
+	SliceOp_24to31,
+	SliceOp_32to39,
+	SliceOp_40to47,
+	SliceOp_48to55,
+	SliceOp_56to63,
+};
 //enum {
 //   MoveOpMove = 0, /* move r? r? */
 //   MoveOpSwap, /* swap r? r? */

@@ -167,6 +167,10 @@ void iris_move(iris_core* proc, instruction* inst) {
    switch(get_move_op(inst)) {
       case MoveOpMove:
          {
+            // do nothing
+            if (get_move_reg0(inst) == get_move_reg1(inst)) {
+               break;
+            }
             mask = (word)(byte)get_move_mask(inst);
             if (mask != 0) {
                switch(get_move_position(inst)) {
@@ -282,6 +286,10 @@ void iris_move(iris_core* proc, instruction* inst) {
          }
       case MoveOpSwap:
          {
+            // do nothing
+            if (get_move_reg0(inst) == get_move_reg1(inst)) {
+               break;
+            }
             mask = (word)(byte)get_move_mask(inst);
             if (mask != 0) {
                switch(get_move_position(inst)) {
@@ -426,9 +434,64 @@ void iris_move(iris_core* proc, instruction* inst) {
             break;
          }
       case MoveOpSlice:
-         //TODO: implement
-         iris_error("Slice operations not implemented yet!", ErrorInvalidMoveOperation);
+         {
+            // pull the contents of the source out
+            byte target = 0,
+                 mask = get_move_mask(inst),
+                 result = 0;
+            word contents = iris_get_register(proc, get_move_reg1(inst)),
+                 dest = iris_get_register(proc, get_move_reg0(inst)),
+                 shift = 0;
+         switch(get_move_position(inst)) {
+            case SliceOp_0to7:
+               target = (byte)contents;
+               dest &= 0xFFFFFFFFFFFFFF00;
+               break;
+            case SliceOp_8to15:
+               target = (byte)(contents >> 8);
+               dest &= 0xFFFFFFFFFFFF00FF;
+               shift = 8;
+               break;
+            case SliceOp_16to23:
+               target = (byte)(contents >> 16);
+               dest &= 0xFFFFFFFFFF00FFFF;
+               shift = 16;
+               break;
+            case SliceOp_24to31:
+               target = (byte)(contents >> 24);
+               dest &= 0xFFFFFFFF00FFFFFF;
+               shift = 24;
+               break;
+            case SliceOp_32to39:
+               target = (byte)(contents >> 32);
+               dest &= 0xFFFFFF00FFFFFFFF;
+               shift = 32;
+               break;
+            case SliceOp_40to47:
+               target = (byte)(contents >> 40);
+               dest &= 0xFFFF00FFFFFFFFFF;
+               shift = 40;
+               break;
+            case SliceOp_48to55:
+               target = (byte)(contents >> 48);
+               dest &= 0xFF00FFFFFFFFFFFF;
+               shift = 48;
+               break;
+            case SliceOp_56to63:
+               target = (byte)(contents >> 56);
+               dest &= 0x00FFFFFFFFFFFFFF;
+               shift = 56;
+               break;
+            default:
+               iris_error("illegal slice position defined!", ErrorInvalidMoveOperation);
+         }
+         if (mask != 0) {
+            // put result into the destination
+            result = target & mask;
+         }
+         iris_put_register(proc, get_move_reg0(inst), dest | (((word)result) << shift));
          break;
+         }
       default:
          iris_error("Illegal move operation!", ErrorInvalidMoveOperation);
    }
