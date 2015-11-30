@@ -351,18 +351,28 @@ move_op:
        ;
 
 jump_op:
-	   GOTO_TOK lexeme {
-
+	   unconditional_jump_op { curri.op = JumpOpUnconditional; } |
+	   conditional_jump_op { curri.op = JumpOpConditional; } |
+	   ifthenelse_jump_op { curri.op = JumpOpIfThenElse; } ;
+unconditional_jump_op:
+	   JUMP_TOK lexeme {
+			curri.fields.jump.immediate = true;
 	   } |
-	   GOTO_TOK lexeme LINK_TOK REGISTER {
-
+	   JUMP_TOK lexeme unconditional_link {
+			curri.fields.jump.immediate = true;
 	   } |
 	   JUMP_TOK REGISTER {
-
+			curri.reg0 = $2;
 	   } |
-	   JUMP_TOK REGISTER LINK_TOK REGISTER {
-
-	   } |
+	   JUMP_TOK REGISTER unconditional_link {
+			curri.reg1 = $2;
+	   };
+unconditional_link:
+		LINK_TOK REGISTER {
+			curri.fields.jump.link = true;
+			curri.reg0 = $2;
+		};
+conditional_jump_op:
 	   IF_TOK REGISTER IS_TOK TRUE_TOK THEN_TOK GOTO_TOK lexeme {
 
 	   } |
@@ -386,14 +396,13 @@ jump_op:
 	   } |
 	   IF_TOK FALSE_TOK THEN_TOK JUMP_TOK REGISTER LINK_TOK REGISTER {
 
-	   } |
+	   };
+ifthenelse_jump_op:
 	   IF_TOK REGISTER IS_TOK TRUE_TOK THEN_TOK REGISTER ELSE_TOK REGISTER {
-
 	   } |
 	   IF_TOK REGISTER IS_TOK FALSE_TOK THEN_TOK REGISTER ELSE_TOK REGISTER {
 
 	   } |
-
 	   IF_TOK TRUE_TOK THEN_TOK REGISTER ELSE_TOK REGISTER LINK_TOK REGISTER {
 
 	   } |
