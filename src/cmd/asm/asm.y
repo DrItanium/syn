@@ -323,6 +323,8 @@ arithmetic_op:
       ;
 move_op:
 	   MOVE_OP_MOVE IMMEDIATE REGISTER REGISTER IMMEDIATE {
+	   //TODO: add checks for position ranges ($2)
+	   //TODO: add checks for bit mask ranges ($5)
 	   		curri.op = MoveOpMove;
 			curri.fields.move.position = $2;
 			curri.reg0 = $3;
@@ -330,6 +332,8 @@ move_op:
 			curri.reg2 = $5;
 	   } |
 	   MOVE_OP_SWAP IMMEDIATE REGISTER REGISTER IMMEDIATE {
+	   //TODO: add checks for position ranges ($2)
+	   //TODO: add checks for bit mask ranges ($5)
 	   		curri.op = MoveOpSwap;
 			curri.fields.move.position = $2;
 			curri.reg0 = $3;
@@ -337,6 +341,8 @@ move_op:
 			curri.reg2 = $5;
 	   } |
 	   MOVE_OP_SLICE IMMEDIATE REGISTER REGISTER IMMEDIATE {
+	   //TODO: add checks for position ranges ($2)
+	   //TODO: add checks for bit mask ranges ($5)
 	   		curri.op = MoveOpSlice;
 			curri.fields.move.position = $2;
 			curri.reg0 = $3;
@@ -344,6 +350,7 @@ move_op:
 			curri.reg2 = $5;
 	   } |
 	   MOVE_OP_SET IMMEDIATE REGISTER lexeme {
+	   //TODO: add checks for position ranges ($2)
 			curri.op = MoveOpSet;
 			curri.fields.move.position = $2;
 			curri.reg0 = $3;
@@ -455,7 +462,6 @@ ifthenelse_jump_op:
 			curri.reg1 = $6;
 			curri.reg2 = $8;
 	   };
-
 
 compare_op:
           cop REGISTER REGISTER REGISTER {
