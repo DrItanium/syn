@@ -96,9 +96,9 @@ void iris_arithmetic(iris_core* proc, instruction* inst) {
 #undef defop
 #undef defiop
 }
-static void iris_push(iris_core* proc, instruction* inst);
-static void iris_push_immediate(iris_core* proc, instruction* inst);
-static void iris_pop(iris_core* proc, instruction* inst);
+//static void iris_push(iris_core* proc, instruction* inst);
+//static void iris_push_immediate(iris_core* proc, instruction* inst);
+//static void iris_pop(iris_core* proc, instruction* inst);
 
 /* position masks */
 enum {
@@ -718,50 +718,52 @@ void iris_rom_init(iris_core* proc) {
    for(int i = 0; i < RegisterCount; i++) {
       proc->gpr[i] = 0;
    }
+   /*
    for(int i = 0; i < MemorySize; ++i) {
       proc->data[i] = 0;
       proc->stack[i] = 0;
       proc->code[i] = 0;
    }
+   */
    /* by default we use these registers for stack and predicate so set them as such */
    proc->gpr[PredicateRegisterIndex] = 0;
    proc->gpr[StackPointerRegisterIndex] = 0xFFFF;
 }
-static void iris_push_onto_stack(iris_core* proc, word value);
-static word iris_pop_off_stack(iris_core* proc);
+//static void iris_push_onto_stack(iris_core* proc, word value);
+//static word iris_pop_off_stack(iris_core* proc);
+//
+//void iris_push(iris_core* proc, instruction* inst) {
+//   byte index;
+//   word value;
+//   index = get_reg0(inst);
+//   value = iris_get_register(proc, index);
+//   iris_push_onto_stack(proc, value);
+//}
+//void iris_push_immediate(iris_core* proc, instruction* inst) {
+//   word value;
+//   value = get_immediate(inst);
+//   iris_push_onto_stack(proc, value);
+//}
+//void iris_pop(iris_core* proc, instruction* inst) {
+//   iris_put_register(proc, get_reg0(inst), iris_pop_off_stack(proc));
+//}
+//
+//void iris_push_onto_stack(iris_core* proc, word value) {
+//   word index = iris_get_register(proc, StackPointerRegisterIndex);
+//   /* increment and then set */
+//   index++;
+//   proc->stack[index] = value;
+//   iris_put_register(proc, StackPointerRegisterIndex, index);
+//}
 
-void iris_push(iris_core* proc, instruction* inst) {
-   byte index;
-   word value;
-   index = get_reg0(inst);
-   value = iris_get_register(proc, index);
-   iris_push_onto_stack(proc, value);
-}
-void iris_push_immediate(iris_core* proc, instruction* inst) {
-   word value;
-   value = get_immediate(inst);
-   iris_push_onto_stack(proc, value);
-}
-void iris_pop(iris_core* proc, instruction* inst) {
-   iris_put_register(proc, get_reg0(inst), iris_pop_off_stack(proc));
-}
-
-void iris_push_onto_stack(iris_core* proc, word value) {
-   word index = iris_get_register(proc, StackPointerRegisterIndex);
-   /* increment and then set */
-   index++;
-   proc->stack[index] = value;
-   iris_put_register(proc, StackPointerRegisterIndex, index);
-}
-
-word iris_pop_off_stack(iris_core* proc) {
-   word index = iris_get_register(proc, StackPointerRegisterIndex);
-   /* get the value and then decrement */
-   word value = proc->stack[index];
-   index--;
-   iris_put_register(proc, StackPointerRegisterIndex, index);
-   return value;
-}
+//word iris_pop_off_stack(iris_core* proc) {
+//   word index = iris_get_register(proc, StackPointerRegisterIndex);
+//   /* get the value and then decrement */
+//   word value = proc->stack[index];
+//   index--;
+//   iris_put_register(proc, StackPointerRegisterIndex, index);
+//   return value;
+//}
 
 void iris_shutdown(iris_core* c) {
    /* do nothing right now */
