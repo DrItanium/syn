@@ -395,15 +395,15 @@ conditional_jump_op:
 				yyerror("The implied predicate register ?pred is the only allowed register in conditional immediate link instructions!");
 			}
 	   } |
-	   IF_TOK REGISTER IS_TOK TRUE_TOK THEN_TOK donuts1 {
+	   IF_TOK REGISTER IS_TOK TRUE_TOK THEN_TOK then_body {
 		   curri.fields.jump.condcheck = true;
 		curri.reg0 = $2;
 	   } |
-	   IF_TOK REGISTER IS_TOK FALSE_TOK THEN_TOK donuts1 {
+	   IF_TOK REGISTER IS_TOK FALSE_TOK THEN_TOK then_body {
 		   curri.fields.jump.condcheck = false;
-		curri.reg0 = $2;
+			curri.reg0 = $2;
 	   };
-donuts1:
+then_body:
 	   JUMP_TOK lexeme {
 	   		curri.fields.jump.immediate = true;
 			curri.fields.jump.link = false;
@@ -422,37 +422,40 @@ donuts1:
 
 ifthenelse_jump_op:
 	   IF_TOK REGISTER IS_TOK TRUE_TOK THEN_TOK REGISTER ELSE_TOK REGISTER {
+	   		curri.fields.jump.link = false;
+	   		curri.fields.jump.condcheck = true;
+			curri.reg0 = $2;
+			curri.reg1 = $6;
+			curri.reg2 = $8;
 	   } |
 	   IF_TOK REGISTER IS_TOK FALSE_TOK THEN_TOK REGISTER ELSE_TOK REGISTER {
-
+	   		curri.fields.jump.link = false;
+	   		curri.fields.jump.condcheck = false;
+			curri.reg0 = $2;
+			curri.reg1 = $6;
+			curri.reg2 = $8;
 	   } |
-	   IF_TOK TRUE_TOK THEN_TOK REGISTER ELSE_TOK REGISTER LINK_TOK REGISTER {
-
+	   IF_TOK REGISTER IS_TOK TRUE_TOK THEN_TOK REGISTER ELSE_TOK REGISTER LINK_TOK REGISTER {
+			if ($2 != PredicateRegisterIndex) {
+				yyerror("The implied predicate register ?pred is the only allowed register in if then else with link instructions!");
+			}
+			curri.fields.jump.link = true;
+		    curri.fields.jump.condcheck = true;
+			curri.reg0 = $10;
+			curri.reg1 = $6;
+			curri.reg2 = $8;
 	   } |
-	   IF_TOK FALSE_TOK THEN_TOK REGISTER ELSE_TOK REGISTER LINK_TOK REGISTER {
-
+	   IF_TOK REGISTER IS_TOK FALSE_TOK THEN_TOK REGISTER ELSE_TOK REGISTER LINK_TOK REGISTER {
+			if ($2 != PredicateRegisterIndex) {
+				yyerror("The implied predicate register ?pred is the only allowed register in if then else with link instructions!");
+			}
+			curri.fields.jump.link = true;
+		    curri.fields.jump.condcheck = false;
+			curri.reg0 = $10;
+			curri.reg1 = $6;
+			curri.reg2 = $8;
 	   };
 
-
-       /*JUMP_OP_UNCONDITIONALIMMEDIATE lexeme { 
-       //  curri.op = JumpOpUnconditionalImmediate; 
-       //  } | 
-       //JUMP_OP_UNCONDITIONALREGISTER REGISTER { 
-       //  curri.op = JumpOpUnconditionalRegister; 
-       //  curri.reg0 = $2;
-       //} |
-       //jop_reg_reg REGISTER REGISTER {
-       //     curri.reg0 = $2;
-       //     curri.reg1 = $3;
-       //} |
-       //jop_reg_imm REGISTER lexeme { curri.reg0 = $2; } |
-       //jop_reg_reg_reg REGISTER REGISTER REGISTER {
-       //     curri.reg0 = $2;
-       //     curri.reg1 = $3;
-       //     curri.reg2 = $4;
-       //}
-       //;
-	   */
 
 compare_op:
           cop REGISTER REGISTER REGISTER {
