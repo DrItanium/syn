@@ -167,7 +167,7 @@ int translateline(FILE* file, int lineno) {
 
 void installcode(FILE* f, int ln) {
    word addr;
-   dword value;
+   instruction value;
    if(fread(&addr, sizeof(addr), 1, f) == 1) {
       if(fread(&value, sizeof(value), 1, f) == 1) {
          proc.code[addr] = value;
