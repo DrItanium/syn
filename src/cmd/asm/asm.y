@@ -64,6 +64,9 @@ typedef struct dynamicop {
 	struct {
 		byte combine;
 	} compare;
+	struct {
+		bool merge;
+	} load_store;
    } fields;
    byte reg0;
    byte reg1;
@@ -123,30 +126,18 @@ void usage(char* arg0);
 %token ARITHMETIC_OP_REM_IMM
 %token ARITHMETIC_OP_SHIFTLEFT_IMM
 %token ARITHMETIC_OP_SHIFTRIGHT_IMM
-%token MOVE_OP_MOVE
-%token MOVE_OP_SWAP
-%token MOVE_OP_SET
-%token MOVE_OP_SLICE
-%token JUMP_OP_UNCONDITIONAL
-%token JUMP_OP_CONDITIONAL
-%token JUMP_OP_IFTHENELSE
-%token COMPARE_OP_EQ
-%token COMPARE_OP_NEQ
-%token COMPARE_OP_LESSTHAN
-%token COMPARE_OP_GREATERTHAN
-%token COMPARE_OP_LESSTHANOREQUALTO
-%token COMPARE_OP_GREATERTHANOREQUALTO
+%token MOVE_OP_MOVE MOVE_OP_SWAP MOVE_OP_SET MOVE_OP_SLICE
+%token LOADSTORE_OP_LOAD LOADSTORE_OP_STORE
+%token JUMP_OP_UNCONDITIONAL JUMP_OP_CONDITIONAL JUMP_OP_IFTHENELSE
+%token COMPARE_OP_EQ COMPARE_OP_NEQ COMPARE_OP_LESSTHAN COMPARE_OP_GREATERTHAN 
+%token COMPARE_OP_LESSTHANOREQUALTO COMPARE_OP_GREATERTHANOREQUALTO
 %token MISC_OP_SYSTEMCALL
-%token COMBINE_OP_AND
-%token COMBINE_OP_OR
-%token COMBINE_OP_XOR
-%token MACRO_OP_EXIT
-%token MACRO_OP_PUTCHAR
-%token MACRO_OP_READCHAR
-%token MACRO_OP_INCREMENT
-%token MACRO_OP_DECREMENT
-%token MACRO_OP_DOUBLE
-%token MACRO_OP_HALVE
+%token COMBINE_OP_AND COMBINE_OP_OR COMBINE_OP_XOR MACRO_OP_EXIT
+%token MACRO_OP_PUTCHAR MACRO_OP_READCHAR
+%token MACRO_OP_INCREMENT MACRO_OP_DECREMENT
+%token MACRO_OP_DOUBLE MACRO_OP_HALVE
+%token MACRO_OP_LOAD8 MACRO_OP_LOAD16 MACRO_OP_LOAD32 MACRO_OP_LOAD64
+%token MACRO_OP_STORE8 MACRO_OP_STORE16 MACRO_OP_STORE32 MACRO_OP_STORE64
 %token IF_TOK
 %token IS_TOK
 %token THEN_TOK
@@ -156,6 +147,7 @@ void usage(char* arg0);
 %token GOTO_TOK
 %token JUMP_TOK
 %token LINK_TOK
+%token MERGE_TOK
 
 
 %token <rval> REGISTER
@@ -247,8 +239,50 @@ operation:
          jump_op { curri.group = InstructionGroupJump; } |
          compare_op { curri.group = InstructionGroupCompare; } |
          misc_op { curri.group = InstructionGroupMisc; } |
+		 loadstore_op { curri.group = InstructionGroupLoadStore; } |
 		 macro_op
          ;
+loadstore_op:
+			LOADSTORE_OP_STORE REGISTER REGISTER IMMEDIATE {
+			if ($4 > 255) {
+				yyerror("store bit mask must be [0,255]");
+			}
+			curri.op = LoadStoreOp_Store;
+			curri.fields.load_store.merge = false;
+			curri.reg0 = $2;
+			curri.reg1 = $3;
+			curri.reg2 = $4;
+			} |
+			LOADSTORE_OP_STORE MERGE_TOK REGISTER REGISTER IMMEDIATE {
+			if ($5 > 255) {
+				yyerror("store bit mask must be [0,255]");
+			}
+			curri.op = LoadStoreOp_Store;
+			curri.fields.load_store.merge = true;
+			curri.reg0 = $3;
+			curri.reg1 = $4;
+			curri.reg2 = $5;
+			} |
+			LOADSTORE_OP_LOAD REGISTER REGISTER IMMEDIATE {
+			if ($4 > 255) {
+				yyerror("load bit mask must be [0,255]");
+			}
+			curri.op = LoadStoreOp_Load;
+			curri.fields.load_store.merge = false;
+			curri.reg0 = $2;
+			curri.reg1 = $3;
+			curri.reg2 = $4;
+			} |
+			LOADSTORE_OP_LOAD MERGE_TOK REGISTER REGISTER IMMEDIATE {
+			if ($5 > 255) {
+				yyerror("load bit mask must be [0,255]");
+			}
+			curri.op = LoadStoreOp_Load;
+			curri.fields.load_store.merge = true;
+			curri.reg0 = $3;
+			curri.reg1 = $4;
+			curri.reg2 = $5;
+			};
 macro_op:
 		MACRO_OP_EXIT REGISTER {
 			curri.group = InstructionGroupMisc;
@@ -298,6 +332,70 @@ macro_op:
 				curri.reg0 = $2;
 				curri.reg1 = $2;
 				curri.reg2 = 2;
+		} |
+		MACRO_OP_LOAD8 REGISTER REGISTER {
+				curri.group = InstructionGroupLoadStore;
+				curri.op = LoadStoreOp_Load;
+				curri.fields.load_store.merge = false;
+				curri.reg0 = $2;
+				curri.reg1 = $3;
+				curri.reg2 = 0x1;
+		} |
+		MACRO_OP_LOAD16 REGISTER REGISTER {
+				curri.group = InstructionGroupLoadStore;
+				curri.op = LoadStoreOp_Load;
+				curri.fields.load_store.merge = false;
+				curri.reg0 = $2;
+				curri.reg1 = $3;
+				curri.reg2 = 0x3;
+		} |
+		MACRO_OP_LOAD32 REGISTER REGISTER {
+				curri.group = InstructionGroupLoadStore;
+				curri.op = LoadStoreOp_Load;
+				curri.fields.load_store.merge = false;
+				curri.reg0 = $2;
+				curri.reg1 = $3;
+				curri.reg2 = 0xF;
+		} |
+		MACRO_OP_LOAD64 REGISTER REGISTER {
+				curri.group = InstructionGroupLoadStore;
+				curri.op = LoadStoreOp_Load;
+				curri.fields.load_store.merge = false;
+				curri.reg0 = $2;
+				curri.reg1 = $3;
+				curri.reg2 = 0xFF;
+		} |
+		MACRO_OP_STORE8 REGISTER REGISTER {
+				curri.group = InstructionGroupLoadStore;
+				curri.op = LoadStoreOp_Store;
+				curri.fields.load_store.merge = true;
+				curri.reg0 = $2;
+				curri.reg1 = $3;
+				curri.reg2 = 0x1;
+		} |
+		MACRO_OP_STORE16 REGISTER REGISTER {
+				curri.group = InstructionGroupLoadStore;
+				curri.op = LoadStoreOp_Store;
+				curri.fields.load_store.merge = true;
+				curri.reg0 = $2;
+				curri.reg1 = $3;
+				curri.reg2 = 0x3;
+		} |
+		MACRO_OP_STORE32 REGISTER REGISTER {
+				curri.group = InstructionGroupLoadStore;
+				curri.op = LoadStoreOp_Store;
+				curri.fields.load_store.merge = true;
+				curri.reg0 = $2;
+				curri.reg1 = $3;
+				curri.reg2 = 0xF;
+		} |
+		MACRO_OP_STORE64 REGISTER REGISTER {
+				curri.group = InstructionGroupLoadStore;
+				curri.op = LoadStoreOp_Store;
+				curri.fields.load_store.merge = true;
+				curri.reg0 = $2;
+				curri.reg1 = $3;
+				curri.reg2 = 0xFF;
 		} 
 		;
 

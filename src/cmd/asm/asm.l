@@ -58,6 +58,8 @@ omni [a-zA-Z0-9._]
 "&=" { return COMBINE_OP_AND; }
 "|=" { return COMBINE_OP_OR; }
 "^=" { return COMBINE_OP_XOR; }
+"load" { return LOADSTORE_OP_LOAD; }
+"store" { return LOADSTORE_OP_STORE; }
 "system" { return MISC_OP_SYSTEMCALL; }
 "exit" { return MACRO_OP_EXIT; }
 "putchar" { return MACRO_OP_PUTCHAR; }
@@ -66,6 +68,15 @@ omni [a-zA-Z0-9._]
 "decr"  { return MACRO_OP_DECREMENT; }
 "double" { return MACRO_OP_DOUBLE; }
 "halve" { return MACRO_OP_HALVE; }
+"load8" { return MACRO_OP_LOAD8; }
+"load16" { return MACRO_OP_LOAD16; }
+"load32" { return MACRO_OP_LOAD32; }
+"load64" { return MACRO_OP_LOAD64; }
+"store8" { return MACRO_OP_STORE8; }
+"store16" { return MACRO_OP_STORE16; }
+"store32" { return MACRO_OP_STORE32; }
+"store64" { return MACRO_OP_STORE64; }
+"merge" { return MERGE_TOK; }
 "if" { return IF_TOK; }
 "is" { return IS_TOK; }
 "then" { return THEN_TOK; }
