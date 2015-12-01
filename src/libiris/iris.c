@@ -726,14 +726,13 @@ void iris_rom_init(iris_core* proc) {
 
 void iris_shutdown(iris_core* c) {
    /* do nothing right now */
+   free(c->memory);
+   c->memory = 0;
+   c->memorysize = 0;
 }
-void iris_new_core(iris_core* proc, iris_memory_map* mm) {
-   proc->memory = calloc(mm->memorysize, sizeof(byte));
-   proc->memorysize = mm->memorysize;
-   proc->code = (instruction*)(proc->memory + mm->codestart);
-   proc->codesize = mm->codesize;
-   proc->data = (proc->memory + mm->datastart);
-   proc->datasize = mm->datasize;
+void iris_new_core(iris_core* proc, hword memorysize) {
+   proc->memory = calloc(memorysize, sizeof(byte));
+   proc->memorysize = memorysize;
 }
 
 /* vim: set expandtab tabstop=3 shiftwidth=3: */

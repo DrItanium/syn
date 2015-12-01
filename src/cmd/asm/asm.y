@@ -20,7 +20,7 @@ enum {
    FileWrapperInput = 0,
    FileWrapperOutput,
 
-   /* always last */
+/* always last */
    FileWrapperCount,
 };
 
@@ -36,19 +36,12 @@ FileWrapper files[] = {
 
 #define outfile_ptr (&outfile)
 #define infile_ptr (&infile)
-/* segment */
-enum  {
-   CodeSegment = 0,
-   DataSegment,
-};
 typedef struct labelentry {
    char* value;
-   byte loweraddr;
-   byte upperaddr;
+   word addr;
 } labelentry;
 /* used to store ops which require a second pass */
 typedef struct dynamicop {
-   int segment;
    word address;
    byte group;
    byte op;
@@ -75,9 +68,7 @@ typedef struct dynamicop {
    char* symbol;
 } dynamicop;
 struct {
-   int segment;
-   word code_address;
-   word data_address;
+   word address;
    int entry_count;
    int entry_storage_length;
    labelentry* entries;
@@ -101,13 +92,13 @@ void usage(char* arg0);
 %}
 
 %union {
-      char* sval;
-      byte rval;
-      unsigned long ival;
+	  char* sval;
+	  byte rval;
+	  unsigned long ival;
 }
 
 
-%token DIRECTIVE_ORG DIRECTIVE_CODE DIRECTIVE_DATA LABEL DIRECTIVE_DECLARE
+%token DIRECTIVE_ORG LABEL DIRECTIVE_WORD DIRECTIVE_BYTE DIRECTIVE_SKIP DIRECTIVE_HWORD
 %token ARITHMETIC_OP_ADD
 %token ARITHMETIC_OP_SUB
 %token ARITHMETIC_OP_MUL
@@ -156,30 +147,30 @@ void usage(char* arg0);
 
 %%
 Q: /* empty */ |
-   F 
+ F 
 ;
 F:
-   F asm {
-      curri.segment = 0;
-      curri.address = 0;
-      curri.group = 0;
-      curri.op = 0;
-      curri.reg0 = 0;
-      curri.reg1 = 0;
-      curri.reg2 = 0;
-      curri.hassymbol = 0;
-      curri.symbol = 0;
+ F asm {
+	  curri.segment = 0;
+	  curri.address = 0;
+	  curri.group = 0;
+	  curri.op = 0;
+	  curri.reg0 = 0;
+	  curri.reg1 = 0;
+	  curri.reg2 = 0;
+	  curri.hassymbol = 0;
+	  curri.symbol = 0;
    } | 
    asm {
-      curri.segment = 0;
-      curri.address = 0;
-      curri.group = 0;
-      curri.op = 0;
-      curri.reg0 = 0;
-      curri.reg1 = 0;
-      curri.reg2 = 0;
-      curri.hassymbol = 0;
-      curri.symbol = 0;
+	  curri.segment = 0;
+	  curri.address = 0;
+	  curri.group = 0;
+	  curri.op = 0;
+	  curri.reg0 = 0;
+	  curri.reg1 = 0;
+	  curri.reg2 = 0;
+	  curri.hassymbol = 0;
+	  curri.symbol = 0;
    }
    ;
 asm:
@@ -187,61 +178,41 @@ asm:
    statement
    ;
 directive:
-         DIRECTIVE_ORG IMMEDIATE {
-            if(asmstate.segment == CodeSegment) {
-               asmstate.code_address = $2;
-            } else if(asmstate.segment == DataSegment) {
-               asmstate.data_address = $2;
-            } else {
-               yyerror("Invalid segment!");
-            }
-            } | 
-      DIRECTIVE_CODE { asmstate.segment = CodeSegment; } |
-      DIRECTIVE_DATA { asmstate.segment = DataSegment; } |
-      DIRECTIVE_DECLARE lexeme { 
-            if(asmstate.segment == DataSegment) {
-               curri.segment = DataSegment;
-               curri.address = asmstate.data_address;
-               save_encoding();
-               asmstate.data_address++;
-            } else {
-               yyerror("Declaration in non-data segment!");
-            }
-      }
-      ;
+		 DIRECTIVE_ORG IMMEDIATE { asmstate.address = $2; } | 
+	  DIRECTIVE_SKIP IMMEDIATE { asmstate.address += $2; } |
+	  DIRECTIVE_WORD  data_lexeme { } |
+	  DIRECTIVE_HWORD data_lexeme { } |
+	  DIRECTIVE_BYTE  data_lexeme { };
+data_lexeme:
+		   SYMBOL {
+
+}
+		   ;
+
 statement:
-         label { curri.segment = asmstate.segment; }|
-         operation {
-            if(asmstate.segment == CodeSegment) {
-               curri.segment = CodeSegment;
-               curri.address = asmstate.code_address;
-               save_encoding();
-               asmstate.code_address++;
-            } else {
-               yyerror("operation in an invalid segment!");
-            }
-         }
-         ;
+		 label { curri.segment = asmstate.segment; }|
+		 operation {
+			if(asmstate.segment == CodeSegment) {
+			   curri.segment = CodeSegment;
+			   curri.address = asmstate.code_address;
+			   save_encoding();
+			   asmstate.code_address++;
+			} else {
+			   yyerror("operation in an invalid segment!");
+			}
+		 }
+		 ;
 label:
-     LABEL SYMBOL { 
-      if(asmstate.segment == CodeSegment) {
-          add_label_entry($2, asmstate.code_address);
-      } else if (asmstate.segment == DataSegment) {
-          add_label_entry($2, asmstate.data_address);
-      } else {
-          yyerror("label in invalid segment!");
-      }
-     }
-   ;
+	 LABEL SYMBOL { add_label_entry($2, asmstate.address); } ;
 operation:
-         arithmetic_op { curri.group = InstructionGroupArithmetic; } |
-         move_op { curri.group = InstructionGroupMove; } |
-         jump_op { curri.group = InstructionGroupJump; } |
-         compare_op { curri.group = InstructionGroupCompare; } |
-         misc_op { curri.group = InstructionGroupMisc; } |
+		 arithmetic_op { curri.group = InstructionGroupArithmetic; } |
+		 move_op { curri.group = InstructionGroupMove; } |
+		 jump_op { curri.group = InstructionGroupJump; } |
+		 compare_op { curri.group = InstructionGroupCompare; } |
+		 misc_op { curri.group = InstructionGroupMisc; } |
 		 loadstore_op { curri.group = InstructionGroupLoadStore; } |
 		 macro_op
-         ;
+		 ;
 loadstore_op:
 			LOADSTORE_OP_STORE REGISTER REGISTER IMMEDIATE {
 			if ($4 > 255) {
@@ -400,30 +371,30 @@ macro_op:
 		;
 
 arithmetic_op:
-             aop REGISTER REGISTER REGISTER {
-                  curri.reg0 = $2;
-                  curri.reg1 = $3;
-                  curri.reg2 = $4;
-             }|
-             ARITHMETIC_OP_BINARYNOT REGISTER REGISTER {
-			 	  curri.op = ArithmeticOpBinaryNot;
-                  curri.reg0 = $2;
-                  curri.reg1 = $3;
-             } |
-             aop_imm REGISTER REGISTER IMMEDIATE {
-               if($4 > 255) {
-                  yyerror("immediate value offset out of range!");
-               }
-               curri.reg0 = $2;
-               curri.reg1 = $3;
-               curri.reg2 = $4;
-             }
-      ;
+			 aop REGISTER REGISTER REGISTER {
+				  curri.reg0 = $2;
+				  curri.reg1 = $3;
+				  curri.reg2 = $4;
+			 }|
+			 ARITHMETIC_OP_BINARYNOT REGISTER REGISTER {
+				  curri.op = ArithmeticOpBinaryNot;
+				  curri.reg0 = $2;
+				  curri.reg1 = $3;
+			 } |
+			 aop_imm REGISTER REGISTER IMMEDIATE {
+			   if($4 > 255) {
+				  yyerror("immediate value offset out of range!");
+			   }
+			   curri.reg0 = $2;
+			   curri.reg1 = $3;
+			   curri.reg2 = $4;
+			 }
+	  ;
 move_op:
 	   MOVE_OP_MOVE IMMEDIATE REGISTER REGISTER IMMEDIATE {
 	   //TODO: add checks for position ranges ($2)
 	   //TODO: add checks for bit mask ranges ($5)
-	   		curri.op = MoveOpMove;
+			curri.op = MoveOpMove;
 			curri.fields.move.position = $2;
 			curri.reg0 = $3;
 			curri.reg1 = $4;
@@ -432,7 +403,7 @@ move_op:
 	   MOVE_OP_SWAP IMMEDIATE REGISTER REGISTER IMMEDIATE {
 	   //TODO: add checks for position ranges ($2)
 	   //TODO: add checks for bit mask ranges ($5)
-	   		curri.op = MoveOpSwap;
+			curri.op = MoveOpSwap;
 			curri.fields.move.position = $2;
 			curri.reg0 = $3;
 			curri.reg1 = $4;
@@ -441,7 +412,7 @@ move_op:
 	   MOVE_OP_SLICE IMMEDIATE REGISTER REGISTER IMMEDIATE {
 	   //TODO: add checks for position ranges ($2)
 	   //TODO: add checks for bit mask ranges ($5)
-	   		curri.op = MoveOpSlice;
+			curri.op = MoveOpSlice;
 			curri.fields.move.position = $2;
 			curri.reg0 = $3;
 			curri.reg1 = $4;
@@ -453,14 +424,14 @@ move_op:
 			curri.fields.move.position = $2;
 			curri.reg0 = $3;
 	   }
-       ;
+	   ;
 
 jump_op:
 	   unconditional_jump_op { curri.op = JumpOpUnconditional; } |
 	   conditional_jump_op { curri.op = JumpOpConditional; } |
 	   ifthenelse_jump_op { curri.op = JumpOpIfThenElse; } ;
 unconditional_jump_op:
-	   JUMP_TOK lexeme {
+					 JUMP_TOK lexeme {
 			curri.fields.jump.immediate = true;
 			curri.fields.jump.link = false;
 	   } |
@@ -475,14 +446,14 @@ unconditional_jump_op:
 			curri.reg0 = $4;
 	   } |
 	   JUMP_TOK REGISTER LINK_TOK REGISTER {
-	   		curri.fields.jump.immediate = false;
+			curri.fields.jump.immediate = false;
 			curri.fields.jump.link = true;
 			curri.reg1 = $2;
 			curri.reg0 = $4;
 	   };
 
 conditional_jump_op:
-	   IF_TOK REGISTER IS_TOK TRUE_TOK THEN_TOK JUMP_TOK lexeme LINK_TOK REGISTER {
+				   IF_TOK REGISTER IS_TOK TRUE_TOK THEN_TOK JUMP_TOK lexeme LINK_TOK REGISTER {
 			curri.fields.jump.immediate = true;
 			curri.fields.jump.link = true;
 			curri.fields.jump.condcheck = true;
@@ -509,12 +480,12 @@ conditional_jump_op:
 			curri.reg0 = $2;
 	   };
 then_body:
-	   JUMP_TOK lexeme {
-	   		curri.fields.jump.immediate = true;
+		 JUMP_TOK lexeme {
+			curri.fields.jump.immediate = true;
 			curri.fields.jump.link = false;
 	   }|
 	   JUMP_TOK REGISTER {
-	   		curri.fields.jump.immediate = false;
+			curri.fields.jump.immediate = false;
 			curri.fields.jump.link = false;
 			curri.reg1 = $2;
 	   }|
@@ -526,16 +497,16 @@ then_body:
 	   };
 
 ifthenelse_jump_op:
-	   IF_TOK REGISTER IS_TOK TRUE_TOK THEN_TOK REGISTER ELSE_TOK REGISTER {
-	   		curri.fields.jump.link = false;
-	   		curri.fields.jump.condcheck = true;
+				  IF_TOK REGISTER IS_TOK TRUE_TOK THEN_TOK REGISTER ELSE_TOK REGISTER {
+			curri.fields.jump.link = false;
+			curri.fields.jump.condcheck = true;
 			curri.reg0 = $2;
 			curri.reg1 = $6;
 			curri.reg2 = $8;
 	   } |
 	   IF_TOK REGISTER IS_TOK FALSE_TOK THEN_TOK REGISTER ELSE_TOK REGISTER {
-	   		curri.fields.jump.link = false;
-	   		curri.fields.jump.condcheck = false;
+			curri.fields.jump.link = false;
+			curri.fields.jump.condcheck = false;
 			curri.reg0 = $2;
 			curri.reg1 = $6;
 			curri.reg2 = $8;
@@ -545,7 +516,7 @@ ifthenelse_jump_op:
 				yyerror("The implied predicate register ?pred is the only allowed register in if then else with link instructions!");
 			}
 			curri.fields.jump.link = true;
-		    curri.fields.jump.condcheck = true;
+			curri.fields.jump.condcheck = true;
 			curri.reg0 = $10;
 			curri.reg1 = $6;
 			curri.reg2 = $8;
@@ -555,37 +526,37 @@ ifthenelse_jump_op:
 				yyerror("The implied predicate register ?pred is the only allowed register in if then else with link instructions!");
 			}
 			curri.fields.jump.link = true;
-		    curri.fields.jump.condcheck = false;
+			curri.fields.jump.condcheck = false;
 			curri.reg0 = $10;
 			curri.reg1 = $6;
 			curri.reg2 = $8;
 	   };
 
 compare_op:
-          cop REGISTER REGISTER REGISTER {
-		  	   curri.fields.compare.combine = CombineOpSet;
-               curri.reg0 = $2;
-               curri.reg1 = $3;
-               curri.reg2 = $4;
-          } |
+		  cop REGISTER REGISTER REGISTER {
+			   curri.fields.compare.combine = CombineOpSet;
+			   curri.reg0 = $2;
+			   curri.reg1 = $3;
+			   curri.reg2 = $4;
+		  } |
 		  cop combineop REGISTER REGISTER REGISTER {
-               curri.reg0 = $3;
-               curri.reg1 = $4;
-               curri.reg2 = $5;
+			   curri.reg0 = $3;
+			   curri.reg1 = $4;
+			   curri.reg2 = $5;
 		  }
-          ;
+		  ;
 misc_op:
-       MISC_OP_SYSTEMCALL IMMEDIATE REGISTER REGISTER 
-       { 
-         curri.op = MiscOpSystemCall; 
-         if($2 > 255) {
-            yyerror("system call offset out of range!");
-         }
-         curri.reg0 = $2;
-         curri.reg1 = $3;
-         curri.reg2 = $4;
-       } 
-       ;
+	   MISC_OP_SYSTEMCALL IMMEDIATE REGISTER REGISTER 
+	   { 
+		 curri.op = MiscOpSystemCall; 
+		 if($2 > 255) {
+			yyerror("system call offset out of range!");
+		 }
+		 curri.reg0 = $2;
+		 curri.reg1 = $3;
+		 curri.reg2 = $4;
+	   } 
+	   ;
 aop:
    ARITHMETIC_OP_ADD { curri.op = ArithmeticOpAdd; } |
    ARITHMETIC_OP_SUB { curri.op = ArithmeticOpSub; } |
@@ -600,7 +571,7 @@ aop:
    ;
 
 aop_imm:
-   ARITHMETIC_OP_ADD_IMM { curri.op = ArithmeticOpAddImmediate; } |
+	   ARITHMETIC_OP_ADD_IMM { curri.op = ArithmeticOpAddImmediate; } |
    ARITHMETIC_OP_SUB_IMM { curri.op = ArithmeticOpSubImmediate; } |
    ARITHMETIC_OP_MUL_IMM { curri.op = ArithmeticOpMulImmediate; } | 
    ARITHMETIC_OP_DIV_IMM { curri.op = ArithmeticOpDivImmediate; } |
@@ -613,7 +584,7 @@ aop_imm:
 
 /*
 jop_reg_imm:
-   JUMP_OP_UNCONDITIONALIMMEDIATELINK { curri.op = JumpOpUnconditionalImmediateLink; } |
+		   JUMP_OP_UNCONDITIONALIMMEDIATELINK { curri.op = JumpOpUnconditionalImmediateLink; } |
    JUMP_OP_CONDITIONALTRUEIMMEDIATE { curri.op = JumpOpConditionalTrueImmediate; } |
    JUMP_OP_CONDITIONALTRUEIMMEDIATELINK { curri.op = JumpOpConditionalTrueImmediateLink; } |
    JUMP_OP_CONDITIONALFALSEIMMEDIATE { curri.op = JumpOpConditionalFalseImmediate; } |
@@ -622,13 +593,13 @@ jop_reg_imm:
 
 
 jop_reg_reg:
-   JUMP_OP_UNCONDITIONALREGISTERLINK { curri.op = JumpOpUnconditionalRegisterLink; } |
+		   JUMP_OP_UNCONDITIONALREGISTERLINK { curri.op = JumpOpUnconditionalRegisterLink; } |
    JUMP_OP_CONDITIONALTRUEREGISTER { curri.op = JumpOpConditionalTrueRegister; } |
    JUMP_OP_CONDITIONALFALSEREGISTER { curri.op = JumpOpConditionalFalseRegister; }
    ;
 
 jop_reg_reg_reg:
-   JUMP_OP_CONDITIONALTRUEREGISTERLINK { curri.op = JumpOpConditionalTrueRegisterLink; } |
+			   JUMP_OP_CONDITIONALTRUEREGISTERLINK { curri.op = JumpOpConditionalTrueRegisterLink; } |
    JUMP_OP_CONDITIONALFALSEREGISTERLINK { curri.op = JumpOpConditionalFalseRegisterLink; } |
    JUMP_OP_IFTHENELSENORMALPREDTRUE { curri.op = JumpOpIfThenElseNormalPredTrue; } |
    JUMP_OP_IFTHENELSENORMALPREDFALSE { curri.op = JumpOpIfThenElseNormalPredFalse; } |
@@ -646,17 +617,17 @@ cop:
    COMPARE_OP_GREATERTHANOREQUALTO { curri.op = CompareOpGreaterThanOrEqualTo; } 
 ;
 combineop:
-		  COMBINE_OP_AND { curri.fields.compare.combine = CombineOpAnd; } |
+		 COMBINE_OP_AND { curri.fields.compare.combine = CombineOpAnd; } |
 		  COMBINE_OP_OR { curri.fields.compare.combine = CombineOpOr; } |
 		  COMBINE_OP_XOR { curri.fields.compare.combine = CombineOpXor; }
 ;
 lexeme:
-      SYMBOL { curri.hassymbol = 1; 
-               curri.symbol = $1; } | 
-      IMMEDIATE { 
-            curri.reg1 = (byte)(($1 & 0x00FF));
-            curri.reg2 = (byte)(($1 & 0xFF00) >> 8);
-      }
+	  SYMBOL { curri.hassymbol = 1; 
+			   curri.symbol = $1; } | 
+	  IMMEDIATE { 
+			curri.reg1 = (byte)(($1 & 0x00FF));
+			curri.reg2 = (byte)(($1 & 0xFF00) >> 8);
+	  }
 ;
 %%
 int main(int argc, char* argv[]) {
@@ -668,58 +639,58 @@ int main(int argc, char* argv[]) {
    errorfree = 1;
    i = 0;
    if(argc > 1) {
-      for(i = 1; errorfree && (i < last); ++i) {
-         tmpline = argv[i];
-         if(strlen(tmpline) == 2 && tmpline[0] == '-') {
-            switch(tmpline[1]) {
-               case 'o':
-                  i++;
-                  outfile.line = argv[i];
-                  break;
-               case 'h':
-               default:
-                  errorfree = 0;
-                  break;
-            }
-         } else {
-            errorfree = 0;
-            break;
-         }
-      }
-      if(errorfree) {
-         if(i == last) {
-            /* open the input file */
-            tmpline = argv[i];
-            if(strlen(tmpline) == 1 && tmpline[0] == '-') {
-               infile.fptr = stdin;
-            } else if(strlen(tmpline) >= 1 && tmpline[0] != '-') {
-               infile.line = tmpline;
-               openfw(infile_ptr);
-            }
+	  for(i = 1; errorfree && (i < last); ++i) {
+		 tmpline = argv[i];
+		 if(strlen(tmpline) == 2 && tmpline[0] == '-') {
+			switch(tmpline[1]) {
+			   case 'o':
+				  i++;
+				  outfile.line = argv[i];
+				  break;
+			   case 'h':
+			   default:
+				  errorfree = 0;
+				  break;
+			}
+		 } else {
+			errorfree = 0;
+			break;
+		 }
+	  }
+	  if(errorfree) {
+		 if(i == last) {
+			/* open the input file */
+			tmpline = argv[i];
+			if(strlen(tmpline) == 1 && tmpline[0] == '-') {
+			   infile.fptr = stdin;
+			} else if(strlen(tmpline) >= 1 && tmpline[0] != '-') {
+			   infile.line = tmpline;
+			   openfw(infile_ptr);
+			}
 
-            /* open the output */
-            if(!(outfile.line)) {
-               outfile.line = "v.obj";
-            }
-            if(strlen(outfile.line) == 1 && (outfile.line)[0] == '-') {
-               outfile.fptr = stdout; 
-            } else {
-               openfw(outfile_ptr);
-            }
-         } else {
-            fprintf(stderr, "no file provided\n");
-         }
-      }
+/* open the output */
+			if(!(outfile.line)) {
+			   outfile.line = "v.obj";
+			}
+			if(strlen(outfile.line) == 1 && (outfile.line)[0] == '-') {
+			   outfile.fptr = stdout; 
+			} else {
+			   openfw(outfile_ptr);
+			}
+		 } else {
+			fprintf(stderr, "no file provided\n");
+		 }
+	  }
    }
    if(outfile.fptr && infile.fptr) {
-      initialize(outfile.fptr, infile.fptr);
-      do {
-         yyparse();
-      } while(!feof(yyin));
-      resolve_labels();
-      cleanup();
+	  initialize(outfile.fptr, infile.fptr);
+	  do {
+		 yyparse();
+	  } while(!feof(yyin));
+	  resolve_labels();
+	  cleanup();
    } else {
-      usage(argv[0]);
+	  usage(argv[0]);
    }
    return 0;
 }
@@ -731,40 +702,48 @@ void add_label_entry(char* c, word addr) {
    labelentry* le;
    int i;
    if(asmstate.entry_count == asmstate.entry_storage_length) {
-     le = realloc(asmstate.entries, asmstate.entry_storage_length + 80);
-     if(le == NULL) {
-         fprintf(stderr, "panic: couldn't allocate more label memory!\n");
-         free(asmstate.entries);
-         exit(1);
-     } else {
-         asmstate.entries = le;
-         asmstate.entry_storage_length += 80;
-     }
+	 le = realloc(asmstate.entries, asmstate.entry_storage_length + 80);
+	 if(le == NULL) {
+		 fprintf(stderr, "panic: couldn't allocate more label memory!\n");
+		 free(asmstate.entries);
+		 exit(1);
+	 } else {
+		 asmstate.entries = le;
+		 asmstate.entry_storage_length += 80;
+	 }
    }
    for(i = 0; i < asmstate.entry_count; i++) {
-      if(strcmp(asmstate.entries[i].value, c) == 0) {
-         yyerror("Found a duplicate label!");
-         exit(1);
-      }
+	  if(strcmp(asmstate.entries[i].value, c) == 0) {
+		 yyerror("Found a duplicate label!");
+		 exit(1);
+	  }
    }
    asmstate.entries[asmstate.entry_count].value = c;
-   asmstate.entries[asmstate.entry_count].loweraddr = (byte)((addr & 0x00FF));
-   asmstate.entries[asmstate.entry_count].upperaddr = (byte)((addr & 0xFF00) >> 8);
+   #define set_addr(index, mask) asmstate.entries[asmstate.entry_count].addr[index] = (byte)((addr & mask) >> (index * 8))
+	set_addr(0, 0x00000000000000FF);
+	set_addr(1, 0x000000000000FF00);
+	set_addr(2, 0x0000000000FF0000);
+	set_addr(3, 0x00000000FF000000);
+	set_addr(4, 0x000000FF00000000);
+	set_addr(5, 0x0000FF0000000000);
+	set_addr(6, 0x00FF000000000000);
+	set_addr(7, 0xFF00000000000000);
+   #undef set_addr
    asmstate.entry_count++;
 }
 
 void persist_dynamic_op(void) {
    dynamicop* d;
    if(asmstate.dynop_count == asmstate.dynop_storage_length) {
-      d = realloc(asmstate.dynops, asmstate.dynop_storage_length + 80);
-      if(d == NULL) {
-         fprintf(stderr, "panic: couldn't allocate more dynamic operation memory!\n");
-         free(asmstate.dynops);
-         exit(1);
-      } else {
-         asmstate.dynops = d;
-         asmstate.dynop_storage_length += 80;
-      }
+	  d = realloc(asmstate.dynops, asmstate.dynop_storage_length + 80);
+	  if(d == NULL) {
+		 fprintf(stderr, "panic: couldn't allocate more dynamic operation memory!\n");
+		 free(asmstate.dynops);
+		 exit(1);
+	  } else {
+		 asmstate.dynops = d;
+		 asmstate.dynop_storage_length += 80;
+	  }
    }
    asmstate.dynops[asmstate.dynop_count] = curri;
    asmstate.dynop_count++;
@@ -772,9 +751,9 @@ void persist_dynamic_op(void) {
 
 void save_encoding(void) {
    if(curri.hassymbol) {
-      persist_dynamic_op();
+	  persist_dynamic_op();
    } else {
-      write_dynamic_op(&curri); 
+	  write_dynamic_op(&curri); 
    }
 }
 void write_dynamic_op(dynamicop* dop) {
@@ -786,18 +765,18 @@ void write_dynamic_op(dynamicop* dop) {
    fputc(((dop->address & 0x00FF)), asmstate.output);
    fputc(((dop->address & 0xFF00) >> 8), asmstate.output);
    if(dop->segment == CodeSegment) {
-      tmp = ((tmp & ~0x7) | (dop->group));
-      tmp = ((tmp & ~0xF8) | (dop->op << 3));
-      fputc(tmp, asmstate.output);
-      fputc(dop->reg0, asmstate.output);
-      fputc(dop->reg1, asmstate.output);
-      fputc(dop->reg2, asmstate.output);
+	  tmp = ((tmp & ~0x7) | (dop->group));
+	  tmp = ((tmp & ~0xF8) | (dop->op << 3));
+	  fputc(tmp, asmstate.output);
+	  fputc(dop->reg0, asmstate.output);
+	  fputc(dop->reg1, asmstate.output);
+	  fputc(dop->reg2, asmstate.output);
    } else if(dop->segment == DataSegment) {
-      fputc(dop->reg1, asmstate.output);
-      fputc(dop->reg2, asmstate.output);
+	  fputc(dop->reg1, asmstate.output);
+	  fputc(dop->reg2, asmstate.output);
    } else {
-      fprintf(stderr, "panic: unknown segment %d\n", dop->segment);
-      exit(1);
+	  fprintf(stderr, "panic: unknown segment %d\n", dop->segment);
+	  exit(1);
    }
 }
 
@@ -807,27 +786,27 @@ void yyerror(const char* s) {
 }
 void resolve_labels() {
    /* we need to go through the list of dynamic operations and replace
-      the label with the corresponding address */
+	  the label with the corresponding address */
    int i;
    for(i = 0; i < asmstate.dynop_count; i++) {
-      if(!resolve_op(&(asmstate.dynops[i]))) {
-         fprintf(stderr, "panic: couldn't find label %s\n", asmstate.dynops[i].symbol);
-         exit(1);
-      } else {
-         write_dynamic_op(&(asmstate.dynops[i]));
-      }
+	  if(!resolve_op(&(asmstate.dynops[i]))) {
+		 fprintf(stderr, "panic: couldn't find label %s\n", asmstate.dynops[i].symbol);
+		 exit(1);
+	  } else {
+		 write_dynamic_op(&(asmstate.dynops[i]));
+	  }
    }
 }
 int resolve_op(dynamicop* dop) {
    int i;
    for(i = 0; i < asmstate.entry_count; i++) {
-      if(strcmp(asmstate.entries[i].value, dop->symbol) == 0) {
-         /* we found the corresponding label so save the address to the
-          * encoding */
-         dop->reg1 = asmstate.entries[i].loweraddr;
-         dop->reg2 = asmstate.entries[i].upperaddr;
-         return 1;
-      }
+	  if(strcmp(asmstate.entries[i].value, dop->symbol) == 0) {
+		 /* we found the corresponding label so save the address to the
+		  * encoding */
+		 dop->reg1 = asmstate.entries[i].loweraddr;
+		 dop->reg2 = asmstate.entries[i].upperaddr;
+		 return 1;
+	  }
    }
    return 0;
 }
@@ -835,7 +814,7 @@ void cleanup() {
    int i;
    /* clean up */
    for(i = 0; i < FileWrapperCount; i++) {
-         closefw(&(files[i]));
+		 closefw(&(files[i]));
    }
    free(asmstate.dynops);
    free(asmstate.entries);

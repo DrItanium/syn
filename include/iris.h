@@ -17,22 +17,13 @@ enum {
    StackPointerRegisterIndex = 254,
 };
 
-typedef struct {
-	hword memorysize;
-	hword codestart, codesize;
-	hword datastart, datasize;
-} iris_memory_map;
 typedef struct iris_core {
    word gpr[RegisterCount];
    byte* memory;
-   instruction* code;
-   byte* data;
    hword pc;
    bool advancepc,
 		terminateexecution;
-   hword datasize,
-		 codesize,
-		 memorysize;
+   hword memorysize;
 } iris_core;
 
 
@@ -499,6 +490,6 @@ void iris_encode_immediate(instruction* inst, byte index, word value);
 #define get_immediate(inst) (iris_decode_immediate(inst))
 
 void iris_shutdown(iris_core*);
-void iris_new_core(iris_core* proc, iris_memory_map* memmap);
+void iris_new_core(iris_core* proc, hword memorysize);
 
 #endif 

@@ -87,10 +87,11 @@ omni [a-zA-Z0-9._]
 "jump" { return JUMP_TOK; }
 "link" { return LINK_TOK; }
 "@label" { return LABEL; }
-"@data"  { return DIRECTIVE_DATA; }
-"@code"  { return DIRECTIVE_CODE; }
 "@org"   { return DIRECTIVE_ORG; }
-"@declare" { return DIRECTIVE_DECLARE; }
+"@word" { return DIRECTIVE_WORD; }
+"@skip" { return DIRECTIVE_SKIP; }
+"@byte" { return DIRECTIVE_BYTE; }
+"@hword" { return DIRECTIVE_HWORD; }
 [ \t\n]     ;
 [;].*       ; // comments
 r{digit}+ { yylval.rval = getregister(); return REGISTER; }
