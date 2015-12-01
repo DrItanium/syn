@@ -401,6 +401,7 @@ enum {
    ErrorInvalidMiscOperation,
    ErrorInvalidCombineOperation,
    ErrorInvalidSystemCommand,
+   ErrorInvalidLoadStoreOperation,
    ErrorIllogicalSwapOperation,
    ErrorIllegalSetBits,
    ErrorIllegalMoveBits,
@@ -419,24 +420,37 @@ enum {
 };
 
 // Load Store group
+// class (1 bit: position 0)
+// merge (1 bit: position 1)
+// register slot 3 is used as a bit mask to describe byte layout
+
 enum {
-   MoveOpLoad, /* load r? r? */
-   MoveOpLoadMem, /* load.mem r? $imm */
-   MoveOpStore, /* store r? r? */
-   MoveOpStoreAddr, /* store.addr r? r? */
-   MoveOpStoreMem, /* memcopy r? $imm */
-   MoveOpStoreImm, /* memset r? $imm */
-   MoveOpStore32, /* store32 r? r? */
-   MoveOpStore16, /* store16 r? r? */
-   MoveOpStore8, /* store8 r? r? */
-   MoveOpLoad32, /* load32 r? r? */
-   MoveOpLoad16, /* load16 r? r? */
-   MoveOpLoad8, /* load8 r? r? */
-   /* uses an indirect register for the stack pointer */
-   MoveOpPush, /* push r? */
-   MoveOpPushImmediate, /* push.imm $imm */
-   MoveOpPop, /* pop r? */
+	LoadStoreOp_Load = 0, /* load <merge> width r? r? mask */
+	LoadStoreOp_Store, /* store <merge> width r? r? mask */
 };
+
+#define get_load_store_op(inst) (iris_decode_op(inst) & 0x1)
+#define get_load_store_merge_flag(inst) ((iris_decode_op(inst) & 0x2) >> 1)
+#define get_load_store_reg0(inst) (iris_decode_register(inst, 1))
+#define get_load_store_reg1(inst) (iris_decode_register(inst, 2))
+#define get_load_store_mask(inst) (iris_decode_register(inst, 3))
+
+//   MoveOpLoadMem, /* load.mem r? $imm */
+//   MoveOpStore, /* store r? r? */
+//   MoveOpStoreAddr, /* store.addr r? r? */
+//   MoveOpStoreMem, /* memcopy r? $imm */
+//   MoveOpStoreImm, /* memset r? $imm */
+//   MoveOpStore32, /* store32 r? r? */
+//   MoveOpStore16, /* store16 r? r? */
+//   MoveOpStore8, /* store8 r? r? */
+//   MoveOpLoad32, /* load32 r? r? */
+//   MoveOpLoad16, /* load16 r? r? */
+//   MoveOpLoad8, /* load8 r? r? */
+//   /* uses an indirect register for the stack pointer */
+//   MoveOpPush, /* push r? */
+//   MoveOpPushImmediate, /* push.imm $imm */
+//   MoveOpPop, /* pop r? */
+//};
 
 void iris_rom_init(iris_core* proc);
 void iris_arithmetic(iris_core* proc, instruction* inst);
@@ -448,6 +462,7 @@ word iris_get_register(iris_core* proc, byte index);
 void iris_dispatch(iris_core* proc, instruction* value);
 void iris_error(char* message, int code);
 void iris_misc(iris_core* proc, instruction* inst);
+void iris_load_store(iris_core* proc, instruction* inst);
 /* mnemonics */
 const char* iris_arithmetic_mnemonic(instruction* insn);
 const char* iris_move_mnemonic(instruction* insn);

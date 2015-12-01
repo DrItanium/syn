@@ -23,6 +23,9 @@ void iris_dispatch(iris_core* proc, instruction* value) {
       case InstructionGroupMisc:
          iris_misc(proc, value);
          break;
+      case InstructionGroupLoadStore:
+         iris_load_store(proc, value);
+         break;
       default:
          iris_error("invalid instruction group provided", ErrorInvalidInstructionGroupProvided);
          break;
@@ -734,4 +737,102 @@ void iris_new_core(iris_core* proc, iris_memory_map* mm) {
 }
 
 /* vim: set expandtab tabstop=3 shiftwidth=3: */
+static word iris_merge_load(iris_core*, word, word, byte);
+static void iris_full_store(iris_core* proc, word addr, word value) {
+   // need to decompose it into multiple pieces
+   if ((addr + 7) >= proc->memorysize) {
+      iris_error("MEMORY PROTECTION ERROR! Attempted to access outside memory boundaries", 8);
+   }
+   proc->memory[addr + 0] = (byte)(value);
+   proc->memory[addr + 1] = (byte)(value >> 8);
+   proc->memory[addr + 2] = (byte)(value >> 16);
+   proc->memory[addr + 3] = (byte)(value >> 24);
+   proc->memory[addr + 4] = (byte)(value >> 32);
+   proc->memory[addr + 5] = (byte)(value >> 40);
+   proc->memory[addr + 6] = (byte)(value >> 48);
+   proc->memory[addr + 7] = (byte)(value >> 56);
+}
+static word iris_full_load(iris_core* proc, word addr) {
+   if ((addr + 7) >= proc->memorysize) {
+      iris_error("MEMORY PROTECTION ERROR! Attempted to access outside memory boundaries", 8);
+   }
+   return ((word)(proc->memory[addr])) |
+      (((word)(proc->memory[addr+1])) << 8)  |
+      (((word)(proc->memory[addr+2])) << 16)  |
+      (((word)(proc->memory[addr+3])) << 24)  |
+      (((word)(proc->memory[addr+4])) << 32)  |
+      (((word)(proc->memory[addr+5])) << 40) |
+      (((word)(proc->memory[addr+6])) << 48) |
+      (((word)(proc->memory[addr+7])) << 56);
+}
+static void iris_store_overwrite(iris_core* proc, word addr, word value, byte mask) {
+   if (mask == 0x00) {
+      // since none of the bits are active in the mask it must be zero that we
+      // want to store in there
+      iris_full_store(proc, addr, 0);
+   } else if (mask == 0xFF) {
+      iris_full_store(proc, addr, value);
+   } else {
+      iris_full_store(proc, addr, value & generate_full_mask(mask));
+   }
+}
 
+static void iris_store_merge(iris_core* proc, word addr, word value, byte mask) {
+   if (mask == 0x00) {
+      // do nothing since this is a merge!
+   } else if (mask == 0xFF) {
+      iris_full_store(proc, addr, value);
+   } else {
+      iris_full_store(proc, addr, iris_merge_load(proc, addr, value, mask));
+   }
+}
+
+
+static word iris_load_memory(iris_core* proc, word addr, byte mask) {
+   if (mask == 0x00) {
+      return 0;
+   } else if (mask == 0xFF) {
+      return iris_full_load(proc, addr);
+   } else {
+      return iris_full_load(proc, addr) & generate_full_mask(mask);
+   }
+}
+
+static word iris_merge_load(iris_core* proc, word addr, word value, byte mask) {
+   if (mask == 0x00) {
+      return value;
+   } else if (mask == 0xFF) {
+      return iris_full_load(proc, addr);
+   } else {
+      return (value & ~generate_full_mask(mask)) | (iris_full_load(proc, addr) & generate_full_mask(mask)) ;
+   }
+}
+static void iris_load(iris_core* proc, bool merge, word addr, word value, byte mask, byte dest) {
+   iris_put_register(proc, dest, merge ?  iris_merge_load(proc, addr, value, mask) : iris_load_memory(proc, addr, mask));
+}
+static void iris_store(iris_core* proc, bool merge, word addr, word value, byte mask) {
+   if (merge) {
+      iris_store_merge(proc, addr, value, mask);
+   } else {
+      iris_store_overwrite(proc, addr, value, mask);
+   }
+}
+void iris_load_store(iris_core* proc, instruction* inst) {
+   // load a word's worth of data and then modify it according to the bit mask
+   word addr0 = iris_get_register(proc, get_load_store_reg0(inst)),
+        addr1 = iris_get_register(proc, get_load_store_reg1(inst));
+   switch(get_load_store_op(inst)) {
+      case LoadStoreOp_Load:
+         //addr1 is address
+         //addr0 is value
+         iris_load(proc, (bool)get_load_store_merge_flag(inst), addr1, addr0, get_load_store_mask(inst), get_load_store_reg0(inst));
+         break;
+      case LoadStoreOp_Store:
+         // addr0 is address
+         // addr1 is value
+         iris_store(proc, (bool)get_load_store_merge_flag(inst), addr0, addr1, get_load_store_mask(inst));
+         break;
+      default:
+         iris_error("invalid load/store operation provided", ErrorInvalidLoadStoreOperation);
+   }
+}
