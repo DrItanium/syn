@@ -11,6 +11,14 @@ namespace iris16 {
 	enum ArchitectureConstants  {
 		RegisterCount = 256,
 		AddressMax = 65535,
+		InstructionPointerIndex = 255,
+		LinkRegisterIndex = 254,
+		StackPointerIndex = 253,
+	};
+	enum class InstructionGroup : byte {
+#define X(title, _, __) title,
+#include "target/iris16/groups.def"
+#undef X
 	};
 	class DecodedInstruction {
 		public:
@@ -33,15 +41,19 @@ namespace iris16 {
 			virtual void dump(std::ostream& stream);
 			virtual void run();
 		private:
+			void dispatch();
+#define X(_, op, __) void op();
+#include "target/iris16/groups.def"
+#undef X
 
 		private:
 			DecodedInstruction current;
-			bool execute = true;
-			word gpr[RegisterCount] = {0};
-			word data[AddressMax] = { 0 };
-			dword instruction[AddressMax] = { 0 };
-			word stack[AddressMax] = { 0 };
-
+			bool execute = true,
+				 advanceIp = true;
+			word gpr[ArchitectureConstants::RegisterCount] = {0};
+			word data[ArchitectureConstants::AddressMax] = { 0 };
+			dword instruction[ArchitectureConstants::AddressMax] = { 0 };
+			word stack[ArchitectureConstants::AddressMax] = { 0 };
 	};
 }
 #endif

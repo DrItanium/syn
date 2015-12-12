@@ -1,12 +1,12 @@
 // Enum Title, Mask, Shift amount, field type, is_register_legal, post_fix
 // define X(title, mask, shift, type, is_register, post)
-X(Control,     0x000000FF, 0, byte, false, control)
-X(Destination, 0x0000FF00, 8, byte, true, destination)
-X(Source0,     0x00FF0000, 16, byte, true, source0)
-X(Source1,     0xFF000000, 24, byte, true, source1)
-X(Immediate,   0xFFFF0000, 16, immediate, false, immediate)
-X(Group,       0x00000007, 0, byte, false, group)
-X(Operation,   0x000000F8, 3, byte, false, op)
-X(HalfImmediate, 0xFF000000, 24, byte, false, half_immediate)
+X(Control, 		 0b00000000000000000000000011111111, 0, byte, false, control)
+X(Destination, 	 0b00000000000000001111111100000000, 8, byte, true, destination)
+X(Source0,       0b00000000111111110000000000000000, 16, byte, true, source0)
+X(Source1,     	 0b11111111000000000000000000000000, 24, byte, true, source1)
+X(Immediate, 	 0b11111111111111110000000000000000, 16, immediate, false, immediate)
+X(Group, 		 0b00000000000000000000000000000111, 0, byte, false, group)
+X(Operation,     0b00000000000000000000000011111000, 3, byte, false, op)
+X(HalfImmediate, 0b11111111000000000000000000000000, 24, byte, false, halfImmediate)
 
 

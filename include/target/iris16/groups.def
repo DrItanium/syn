@@ -1,0 +1,6 @@
+X(Arithmetic, arithmetic, InstructionGroup::Arithmetic)
+X(Move, move, InstructionGroup::Move)
+X(Jump, jump, InstructionGroup::Jump)
+X(Compare, compare, InstructionGroup::Compare)
+X(Misc, misc, InstructionGroup::Misc)
+

@@ -19,7 +19,39 @@ namespace iris16 {
 	}
 	void Core::run() {
 		while(execute) {
-			
+			current.decode(instruction[gpr[ArchitectureConstants::InstructionPointerIndex]]);
+			dispatch();
+			if (advanceIp) {
+				gpr[ArchitectureConstants::InstructionPointerIndex]++;
+			}
 		}
+	}
+	void Core::dispatch() {
+		switch(static_cast<InstructionGroup>(current.getGroup())) {
+#define X(_, operation, tag) case tag: operation(); break; 
+#include "target/iris16/groups.def"
+#undef X
+			default:
+				std::cerr << "Illegal instruction group " << current.getGroup() << std::endl;
+				execute = false;
+				break;
+		}
+	}
+
+	void Core::arithmetic() {
+
+	}
+
+	void Core::jump() {
+
+	}
+	void Core::misc() {
+
+	}
+	void Core::move() {
+
+	}
+	void Core::compare() {
+	
 	}
 }
