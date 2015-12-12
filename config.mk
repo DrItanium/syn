@@ -4,7 +4,8 @@ CC = cc
 CXX = c++
 LEX = flex
 YACC = bison
-CFLAGS = -g3 -ansi -std=c99 -Wall -Iinclude/
-CXXFLAGS = -std=c++11
+GENFLAGS = -Wall -Iinclude/ -g3
+CFLAGS = -ansi -std=c99 ${GENFLAGS}
+CXXFLAGS = -std=c++11 ${GENFLAGS}
 LDFLAGS = ${LIBS}
 PREFIX = /usr/local

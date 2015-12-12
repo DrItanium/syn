@@ -23,7 +23,7 @@ ASM_BASE = src/cmd/asm
 ASM_FILES = ${ASM_BASE}/lex.yy.c ${ASM_BASE}/asm.tab.c ${ASM_BASE}/asm.tab.h
 ASM_OBJECTS = ${ASM_BASE}/lex.yy.o ${ASM_BASE}/asm.tab.o
 
-LIBIRIS_OBJECTS = $(patsubst %.c,%.o, $(wildcard src/libiris/*.c))
+LIBIRIS_OBJECTS = $(patsubst %.cc,%.o, $(wildcard src/libiris/*.cc))
 LIBIRIS_OUT = src/libiris/libiris.a
 
 TEST_OBJECTS = $(patsubst %.c,%.o,$(wildcard src/cmd/tests/*.c))
