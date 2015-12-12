@@ -4,17 +4,42 @@
 #include <stdint.h>
 //#include <stdbool.h>
 typedef unsigned char byte;
+typedef uint16_t immediate;
 typedef uint32_t hword;
 typedef uint64_t word;
 /* four bytes and now super flexible */
-typedef hword instruction;
+typedef hword raw_instruction;
 
+class instruction {
+	public:
+		explicit instruction();
+		explicit instruction(raw_instruction* inst);
+		raw_instruction encode();
+#define X(index, bitmask, shiftby, typ, isreg, postfix) \
+		typ get ## index () const; \
+		void set ## index (typ value); 
+#include "instruction.def"
+#undef X
+	private:
+		// members
+#define X(index, bitmask, shiftby, typ, isreg, postfix) \
+		typ _ ## postfix;
+#include "instruction.def"
+#undef X
+		
+};
 enum {
    RegisterCount = 256, 
    MemorySize = 65536, 
    MajorOperationGroupCount = 8,
    PredicateRegisterIndex = 255,
    StackPointerRegisterIndex = 254,
+};
+
+enum InstructionField {
+#define X(name, u0, u1, u2, u3, u4) name,
+#include "instruction.def"
+#undef X
 };
 
 struct iris_core {
@@ -474,23 +499,16 @@ void iris_unparse_bitstring(char* bits, instruction* insn);
 void iris_unparse_misc(char* unparsed, instruction* insn);
 
 /* encode */
-byte iris_decode_group(instruction* inst);
-void iris_encode_group(instruction* inst, byte group);
-byte iris_decode_op(instruction* inst);
-void iris_encode_op(instruction* inst, byte op);
+#define X(index, bitmask, shiftby, typ, isreg, postfix) \
+typ iris_decode_ ## postfix (instruction* inst); \
+void iris_encode_ ## postfix (instruction* inst, typ value); 
+#include "instruction.def"
+#undef X
 byte iris_decode_register(instruction* inst, byte index);
 void iris_encode_register(instruction* inst, byte index, byte value);
-word iris_decode_immediate(instruction* inst);
-void iris_encode_immediate(instruction* inst, byte index, word value);
-
-#define get_group(inst) (iris_decode_group(inst))
-#define get_op(inst) (iris_decode_op(inst))
-#define get_reg0(inst) (iris_decode_register(inst, 1))
-#define get_reg1(inst) (iris_decode_register(inst, 2))
-#define get_reg2(inst) (iris_decode_register(inst, 3))
-#define get_immediate(inst) (iris_decode_immediate(inst))
 
 void iris_shutdown(iris_core*);
 void iris_new_core(iris_core* proc, hword memorysize);
+
 
 #endif 
