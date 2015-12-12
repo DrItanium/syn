@@ -40,8 +40,6 @@ template<InstructionField index>
 byte iris_decode_register(raw_instruction* inst) {
    return (byte)*inst;
 }
-#define CAT(a, ...) PRIMITIVE_CAT(a, __VA_ARGS__)
-#define PRIMITIVE_CAT(a, ...) a ## __VA_ARGS__
 #define CASE_ON(cond) PRIMITIVE_CAT(CASE_ON_, cond)
 #define CASE_ON_false(index, _)
 #define CASE_ON_true(index, ret) \
