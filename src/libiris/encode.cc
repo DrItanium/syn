@@ -3,10 +3,15 @@
 
 /* macros */
 #define encode_bits(instruction, mask, value, shiftcount) ((instruction & ~mask) | (value << shiftcount))
-#define decode_bits(instruction, mask, shiftcount) ((instruction & mask) >> shiftcount)
+//#define decode_bits(instruction, mask, shiftcount) ((instruction & mask) >> shiftcount)
 #define extract_byte0(a) ((byte)(a & 0x000000FF))
+template<typename T, int mask, int shiftcount>
+T iris_decode_bits(instruction* inst) {
+   return (T)(((*inst & mask) >> shiftcount);
+}
+
 byte iris_decode_group(instruction* inst) {
-   return (byte)decode_bits(extract_byte0(*inst), 0x7, 0);
+   return iris_decode_bits<byte, 0x7, 0>(inst);
 }
 void iris_encode_group(instruction* inst, byte group) {
    *inst = encode_bits(*inst, 0x7, group, 0);

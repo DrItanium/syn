@@ -35,11 +35,11 @@ import ycm_core
 
 flags = [
     '-x',
-    'c',
+    'c++',
     '-D_POSIX_SOURCE',
     '-Iinclude/',
     '-Wall',
-    '-std=c99',
+    '-std=c++11',
 ]
 
 
