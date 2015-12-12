@@ -20,6 +20,11 @@ namespace iris16 {
 #include "target/iris16/groups.def"
 #undef X
 	};
+	enum class ArithmeticOp : byte {
+#define X(name, _, __, ___) name,
+#include "target/iris16/arithmetic.def"
+#undef X
+	};
 	class DecodedInstruction {
 		public:
 			DecodedInstruction();
@@ -55,5 +60,6 @@ namespace iris16 {
 			dword instruction[ArchitectureConstants::AddressMax] = { 0 };
 			word stack[ArchitectureConstants::AddressMax] = { 0 };
 	};
+
 }
 #endif
