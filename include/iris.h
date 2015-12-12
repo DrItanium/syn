@@ -2,7 +2,7 @@
 #ifndef _IRIS_H
 #define _IRIS_H
 #include <stdint.h>
-#include <stdbool.h>
+//#include <stdbool.h>
 typedef unsigned char byte;
 typedef uint32_t hword;
 typedef uint64_t word;
@@ -17,14 +17,15 @@ enum {
    StackPointerRegisterIndex = 254,
 };
 
-typedef struct iris_core {
+struct iris_core {
    word gpr[RegisterCount];
    byte* memory;
    hword pc;
    bool advancepc,
 		terminateexecution;
    hword memorysize;
-} iris_core;
+   
+};
 
 
 /* Instructions Groups */
