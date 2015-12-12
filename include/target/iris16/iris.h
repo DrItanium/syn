@@ -3,11 +3,11 @@
 #include "iris_base.h"
 #include "Core.h"
 #include <cstdint>
+typedef uint16_t word;
+typedef uint32_t dword;
+typedef dword raw_instruction;
+typedef word immediate;
 namespace iris16 {
-	typedef uint16_t word;
-	typedef uint32_t dword;
-	typedef dword raw_instruction;
-	typedef word immediate;
 	enum ArchitectureConstants  {
 		RegisterCount = 256,
 		AddressMax = 65535,
@@ -41,7 +41,7 @@ namespace iris16 {
 			word data[AddressMax] = { 0 };
 			dword instruction[AddressMax] = { 0 };
 			word stack[AddressMax] = { 0 };
-			
+
 	};
 }
 #endif

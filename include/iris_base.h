@@ -1,10 +1,10 @@
 #ifndef _IRIS_BASE_H
 #define _IRIS_BASE_H
-namespace iris {
-
 #define INDIRECTOR(a, ...) PRIMITIVE_INDIRECTOR(a, __VA_ARGS__)
 #define PRIMITIVE_INDIRECTOR(a, ...) a ## __VA_ARGS__
 typedef unsigned char byte;
+namespace iris {
+
 
 template<typename T, typename F, typename number, number bitmask, number shiftcount = 0>
 F decodeBits(T input) {

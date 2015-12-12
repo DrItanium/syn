@@ -26,6 +26,9 @@ ASM_OBJECTS = ${ASM_BASE}/lex.yy.o ${ASM_BASE}/asm.tab.o
 LIBIRIS_OBJECTS = $(patsubst %.cc,%.o, $(wildcard src/libiris/*.cc))
 LIBIRIS_OUT = src/libiris/libiris.a
 
+IRIS16_OBJECTS = $(patsubst %.cc,%.o, $(wildcard src/target/iris16/*.cc))
+IRIS16_OUT = src/target/iris16/libiris16.a
+
 TEST_OBJECTS = $(patsubst %.c,%.o,$(wildcard src/cmd/tests/*.c))
 
 ALL_BINARIES = ${SIM_BINARY} ${RL_BINARY} ${DECODE_BINARY} ${ASM_BINARY}\
@@ -33,7 +36,7 @@ ALL_BINARIES = ${SIM_BINARY} ${RL_BINARY} ${DECODE_BINARY} ${ASM_BINARY}\
 ALL_OBJECTS = ${LIBIRIS_OBJECTS} ${RL_MAIN} ${TEST_OBJECTS} ${DECODE_MAIN} \
 			  ${SIM_MAIN} ${DBG_MAIN} ${ASM_FILES} ${ASM_OBJECTS} ${LIBIRIS_OUT}
 
-all: options ${LIBIRIS_OUT} iris rl decode asm dbg
+all: options ${IRIS16_OBJECTS} ${LIBIRIS_OUT} iris rl decode asm dbg
 
 options:
 	@echo iris build options:
