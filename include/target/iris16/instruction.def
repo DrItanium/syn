@@ -1,4 +1,5 @@
 // Enum Title, Mask, Shift amount, field type, is_register_legal, post_fix
+// define X(title, mask, shift, type, is_register, post)
 X(Control,     0x000000FF, 0, byte, false, control)
 X(Destination, 0x0000FF00, 8, byte, true, destination)
 X(Source0,     0x00FF0000, 16, byte, true, source0)
