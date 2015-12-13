@@ -28,8 +28,8 @@ namespace iris16 {
 	};
 
 	enum class JumpOp : byte {
-#define X(name, _) name,
-//#include "target/iris16/jump.def"
+#define X(name, id, ifthenelse, conditional, iffalse, immediate, link) name,
+#include "target/iris16/jump.def"
 #undef X
 	};
 	class DecodedInstruction {
