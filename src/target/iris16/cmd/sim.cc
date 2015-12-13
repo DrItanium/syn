@@ -8,10 +8,6 @@ std::istream* input = 0;
 bool close = false;
 iris16::Core core;
 static void usage(char* arg0);
-static int execute(FILE* file);
-static void startup(void);
-static void shutdown(void);
-static void installprogram(FILE* file);
 
 int main(int argc, char* argv[]) {
    bool errorfree = true;

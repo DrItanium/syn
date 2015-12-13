@@ -5,10 +5,19 @@ include config.mk
 
 IRIS16_SIM_BINARY = iris16
 IRIS16_SIM_MAIN = src/target/iris16/cmd/sim.o
-IRIS16_SIM_OBJECTS = src/target/iris16/cmd/sim.o
+IRIS16_SIM_OBJECTS = ${IRIS16_SIM_MAIN}
+
+IRIS16_LINK_BINARY = iris16link
+IRIS16_LINK_MAIN = src/target/iris16/cmd/link.o
+IRIS16_LINK_OBJECTS = ${IRIS16_SIM_MAIN}
 
 IRIS16_OBJECTS = $(patsubst %.cc,%.o, $(wildcard src/target/iris16/lib/*.cc))
 IRIS16_OUT = src/target/iris16/libiris16.a
+
+ALL_IRIS16_OBJECTS = ${IRIS16_OBJECTS} ${IRIS16_SIM_OBJECTS} ${IRIS16_LINK_OBJECTS} \
+					 ${IRIS16_OUT}
+IRIS16_BINARIES = ${IRIS16_SIM_BINARY} ${IRIS16_LINK_BINARY}
+IRIS16_TOOLS = ${IRIS16_SIM_BINARY}
 
 # The object file that defines main()
 SIM_BINARY = iris
@@ -37,13 +46,12 @@ LIBIRIS_OUT = src/libiris/libiris.a
 TEST_OBJECTS = $(patsubst %.c,%.o,$(wildcard src/cmd/tests/*.c))
 
 ALL_BINARIES = ${SIM_BINARY} ${RL_BINARY} ${DECODE_BINARY} ${ASM_BINARY}\
-			   ${DBG_BINARY} ${IRIS16_SIM_BINARY}
+			   ${DBG_BINARY} ${IRIS16_BINARIES}
 ALL_OBJECTS = ${LIBIRIS_OBJECTS} ${RL_MAIN} ${TEST_OBJECTS} ${DECODE_MAIN} \
 			  ${SIM_MAIN} ${DBG_MAIN} ${ASM_FILES} ${ASM_OBJECTS} ${LIBIRIS_OUT} \
-			  ${IRIS16_OBJECTS} ${IRIS16_SIM_MAIN} ${IRIS16_SIM_OBJECTS} \
-			  ${IRIS16_OUT}
+			  ${ALL_IRIS16_OBJECTS}
 
-all: options ${IRIS16_OUT} ${IRIS16_SIM_BINARY}
+all: options ${IRIS16_OUT} ${IRIS16_TOOLS}
 
 options:
 	@echo iris build options:
