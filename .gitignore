@@ -9,3 +9,4 @@ v.img
 bin/iris16
 libiris16.a
 bin/iris16asm
+bin/iris16link
