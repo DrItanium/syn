@@ -59,6 +59,6 @@ int main(int argc, char* argv[]) {
 }
 
 void usage(char* arg0) {
-   fprintf(stderr, "usage: %s -h | [<file> | -]\n", arg0);
+	std::cerr << "usage: " << arg0 << " -h | [file | -]" << std::endl;
 }
 
