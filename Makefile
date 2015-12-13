@@ -26,7 +26,11 @@ ASM_OBJECTS = ${ASM_BASE}/lex.yy.o ${ASM_BASE}/asm.tab.o
 LIBIRIS_OBJECTS = $(patsubst %.cc,%.o, $(wildcard src/libiris/*.cc))
 LIBIRIS_OUT = src/libiris/libiris.a
 
-IRIS16_OBJECTS = $(patsubst %.cc,%.o, $(wildcard src/target/iris16/*.cc))
+IRIS16_SIM_BINARY = iris16
+IRIS16_SIM_MAIN = src/target/iris16/cmd/sim.o
+IRIS16_SIM_OBJECTS = src/target/iris16/cmd/sim.o
+
+IRIS16_OBJECTS = $(patsubst %.cc,%.o, $(wildcard src/target/iris16/lib/*.cc))
 IRIS16_OUT = src/target/iris16/libiris16.a
 
 TEST_OBJECTS = $(patsubst %.c,%.o,$(wildcard src/cmd/tests/*.c))
@@ -37,7 +41,7 @@ ALL_OBJECTS = ${LIBIRIS_OBJECTS} ${RL_MAIN} ${TEST_OBJECTS} ${DECODE_MAIN} \
 			  ${SIM_MAIN} ${DBG_MAIN} ${ASM_FILES} ${ASM_OBJECTS} ${LIBIRIS_OUT} \
 			  ${IRIS16_OBJECTS}
 
-all: options ${IRIS16_OBJECTS} 
+all: options ${IRIS16_OUT} ${IRIS16_SIM_BINARY}
 
 options:
 	@echo iris build options:
@@ -53,6 +57,21 @@ options:
 	@${CC} ${CFLAGS} -c $< -o $@
 	@echo done.
 
+%.o: %.cc
+	@echo -n Compiling $< into $@...
+	@${CC} ${CXXFLAGS} -c $< -o $@
+	@echo done.
+
+${IRIS16_OUT}: ${IRIS16_OBJECTS}
+	@echo -n Building ${IRIS16_OUT} out of $^...
+	@${AR} rcs ${IRIS16_OUT}  $^
+	@echo done
+
+${IRIS16_SIM_BINARY}: ${IRIS16_SIM_MAIN} ${IRIS16_OUT}
+	@echo -n Building ${IRIS16_SIM_BINARY} binary out of $^...
+	${CXX} ${LDFLAGS} -o ${IRIS16_SIM_BINARY} $^
+	@echo done.
+
 ${ASM_BASE}/asm.tab.c ${ASM_BASE}/asm.tab.h: ${ASM_BASE}/asm.y
 	@${YACC} -o ${ASM_BASE}/asm.tab.c -d ${ASM_BASE}/asm.y
 	@${CC} ${CFLAGS} -c ${ASM_BASE}/asm.tab.c -o ${ASM_BASE}/asm.tab.o
@@ -65,6 +84,8 @@ ${LIBIRIS_OUT}: ${LIBIRIS_OBJECTS}
 	@echo -n Building ${LIBIRIS_OUT} out of $^...
 	@${AR} rcs ${LIBIRIS_OUT}  $^
 	@echo done
+
+
 
 iris: ${SIM_MAIN} ${LIBIRIS_OUT}
 	@echo -n Building ${SIM_BINARY} binary out of $^...
