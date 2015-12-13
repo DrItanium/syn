@@ -38,44 +38,33 @@ namespace iris16 {
 			data[INDIRECTOR(type, dest ##  0)] = INDIRECTOR(type, src ## 1); 
 #define X(name, id, type, target, dest, src) \
 			case id: \
-				INDIRECTOR(X,type)(target, dest, src) \
+					 INDIRECTOR(X,type)(target, dest, src) \
 			break;
 #include "target/iris16/move.def"
 #undef X
-#undef XMoveGPRRegisterRegister 
-#undef XMoveGPRRegisterImmediate 
-#undef XSwapGPRRegisterRegister 
-#undef XLoadDataRegisterRegister 
-#undef XLoadDataRegisterImmediate 
-#undef XLoadStackRegisterRegister 
-#undef XStoreDataRegisterRegister 
-#undef XStoreDataRegisterImmediate 
-#undef XStoreStackRegisterRegister 
-#undef XStoreStackRegisterImmediate 
+#undef XMove
+#undef XSwap
+#undef XLoad
+#undef XStore
+#undef XPop
+#undef XPush
+#undef GPRRegister0 
+#undef GPRRegister1 
+#undef GPRImmediate1 
+#undef DataRegister0 
+#undef DataRegister1 
+#undef DataImmediate1
+#undef StackPushRegister0 
+#undef StackPushRegister1  
+#undef StackPushImmediate1 
+#undef StackPopRegister0 
+#undef StackPopRegister1 
+#undef StackPopImmediate1 	
+#undef StoreRegister0  	
+#undef StoreRegister1 		
+#undef StoreImmediate1 	
 			default:
-				std::cerr << "Illegal misc code " << current.getOperation() << std::endl;
-				execute = false;
-				advanceIp = false;
-				break;
-		}
-	}
-	void Core::systemCall() {
-		switch(static_cast<SystemCalls>(current.getDestination())) {
-			case SystemCalls::Terminate:
-				execute = false;
-				advanceIp = false;
-				break;
-			case SystemCalls::PutC:
-				// read register 0 and register 1
-				std::cout << (char)gpr[current.getSource0()];
-				break;
-			case SystemCalls::GetC:
-				byte value;
-				std::cin >> value;
-				gpr[current.getSource0()] = (word)value;
-				break;
-			default:
-				std::cerr << "Illegal system call " << current.getDestination() << std::endl;
+				std::cerr << "Illegal move code " << current.getOperation() << std::endl;
 				execute = false;
 				advanceIp = false;
 				break;
