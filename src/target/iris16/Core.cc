@@ -38,9 +38,6 @@ namespace iris16 {
 		}
 	}
 
-	void Core::move() {
-
-	}
 	void Core::compare() {
 
 	}
