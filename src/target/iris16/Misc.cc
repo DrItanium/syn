@@ -1,0 +1,42 @@
+#include "target/iris16/iris.h"
+
+namespace iris16 {
+
+	void Core::misc() {
+		switch(static_cast<MiscOp>(current.getOperation())) {
+#define X(name, id, func) \
+			case id: \
+			func (); \
+			break;
+#include "target/iris16/misc.def"
+#undef X
+			default:
+				std::cerr << "Illegal misc code " << current.getOperation() << std::endl;
+				execute = false;
+				advanceIp = false;
+				break;
+		}
+	}
+	void Core::systemCall() {
+		switch(static_cast<SystemCalls>(current.getDestination())) {
+			case SystemCalls::Terminate:
+				execute = false;
+				advanceIp = false;
+				break;
+			case SystemCalls::PutC:
+				// read register 0 and register 1
+				std::cout << (char)gpr[current.getSource0()];
+				break;
+			case SystemCalls::GetC:
+				byte value;
+				std::cin >> value;
+				gpr[current.getSource0()] = (word)value;
+				break;
+			default:
+				std::cerr << "Illegal system call " << current.getDestination() << std::endl;
+				execute = false;
+				advanceIp = false;
+				break;
+		}
+	}
+}

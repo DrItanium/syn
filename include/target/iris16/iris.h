@@ -26,10 +26,20 @@ namespace iris16 {
 #include "target/iris16/arithmetic.def"
 #undef X
 	};
+	enum class MiscOp : byte {
+#define X(title, id, func) title, 
+#include "target/iris16/misc.def"
+#undef X
+	};
 
 	enum class JumpOp : byte {
 #define X(name, id, ifthenelse, conditional, iffalse, immediate, link) name,
 #include "target/iris16/jump.def"
+#undef X
+	};
+	enum class SystemCalls : byte {
+#define X(name) name,
+#include "target/iris16/syscalls.def"
 #undef X
 	};
 	class DecodedInstruction {
@@ -56,6 +66,9 @@ namespace iris16 {
 			void dispatch();
 #define X(_, op, __) void op();
 #include "target/iris16/groups.def"
+#undef X
+#define X(title, id, func) void func ();
+#include "target/iris16/misc.def"
 #undef X
 
 		private:

@@ -38,12 +38,6 @@ namespace iris16 {
 		}
 	}
 
-	void Core::jump() {
-
-	}
-	void Core::misc() {
-
-	}
 	void Core::move() {
 
 	}
