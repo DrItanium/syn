@@ -20,33 +20,45 @@ namespace iris16 {
 #define X(title, _, __) title,
 #include "target/iris16/groups.def"
 #undef X
+		Count,
 	};
+	static_assert((byte)InstructionGroup::Count < ((byte)0b111), "too many instruction groups defined");
 	enum class ArithmeticOp : byte {
 #define X(name, _, __, ___) name,
 #include "target/iris16/arithmetic.def"
 #undef X
+		Count
 	};
+	static_assert((byte)ArithmeticOp::Count < ((byte)0b11111), "too many Arithmetic operations defined");
 	enum class MiscOp : byte {
 #define X(title, id, func) title, 
 #include "target/iris16/misc.def"
 #undef X
+		Count
 	};
+	static_assert((byte)MiscOp::Count < ((byte)0b11111), "too many Misc operations defined");
 
 	enum class JumpOp : byte {
 #define X(name, id, ifthenelse, conditional, iffalse, immediate, link) name,
 #include "target/iris16/jump.def"
 #undef X
+		Count
 	};
+	static_assert((byte)JumpOp::Count < ((byte)0b11111), "too many Jump operations defined");
+
 	enum class SystemCalls : byte {
 #define X(name) name,
 #include "target/iris16/syscalls.def"
 #undef X
+		Count,
 	};
 	enum class MoveOp : byte {
 #define X(name, id, type, target, dest, src) name,
 #include "target/iris16/move.def"
 #undef X
+		Count,
 	};
+	static_assert((byte)MoveOp::Count < ((byte)0b11111), "too many Move operations defined");
 	class DecodedInstruction {
 		public:
 			DecodedInstruction();
