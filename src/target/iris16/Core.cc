@@ -7,6 +7,9 @@ namespace iris16 {
 	void Core::initialize() {
 
 	}
+	void Core::shutdown() {
+
+	}
 	template<typename T, int count>
 	void populateContents(T* contents, std::istream& stream, char* buf, std::function<T(std::istream&, char*)> func) {
 		for(int i = 0; i < count; ++i) {
@@ -14,13 +17,13 @@ namespace iris16 {
 		}
 	}
 	void Core::installprogram(std::istream& stream) {
-		char* buf = new char[4];
+		char* buf = new char[sizeof(dword)];
 		auto encodeWord = [](std::istream& s, char* buf) {
-			s.read(buf, 2);
+			s.read(buf, sizeof(word));
 			return iris::encodeBits<word, byte, word, 0xFF00, 8>(static_cast<word>(buf[0]), static_cast<byte>(buf[1]));
 		};
 		auto encodeDword = [](std::istream& s, char* buf) {
-			s.read(buf, 4);
+			s.read(buf, sizeof(dword));
 			return iris::encodeBits<dword, byte, dword, 0xFF000000, 24>(
 					iris::encodeBits<dword, byte, dword, 0x00FF000, 16>(
 						iris::encodeBits<dword, byte, dword, 0x0000FF00, 8>(
@@ -36,13 +39,15 @@ namespace iris16 {
 		delete[] buf;
 	}
 
-	void Core::shutdown() {
-
+	template<typename T, int count>
+	void dumpContents(T* contents, std::ostream& stream, char* buf, std::function<char*(T,char*)> func) {
+		for(int i = 0; i < count; ++i) {
+			stream.write(func(contents[i], buf), sizeof(T));
+		}
 	}
-
 	void Core::dump(std::ostream& stream) {
 		// save the registers
-		char* buf = new char[4];
+		char* buf = new char[sizeof(dword)];
 		auto decomposeWord = [](word v, char* buf) {
 			buf[0] = (char)v;
 			buf[1] = (char)(v >> 8);
@@ -55,18 +60,10 @@ namespace iris16 {
 			buf[3] = (char)(v >> 24);
 			return buf;
 		};
-		for(int i = 0; i < ArchitectureConstants::RegisterCount; ++i) {
-			stream.write(decomposeWord(gpr[i], buf), 2);
-		}
-		for (int i = 0; i < ArchitectureConstants::AddressMax; ++i) {
-			stream.write(decomposeWord(data[i], buf), 2);
-		}
-		for (int i = 0; i < ArchitectureConstants::AddressMax; ++i) {
-			stream.write(decomposeDword(instruction[i], buf), 4);
-		}
-		for (int i = 0; i < ArchitectureConstants::AddressMax; ++i) {
-			stream.write(decomposeWord(stack[i], buf), 2);
-		}
+		dumpContents<word, ArchitectureConstants::RegisterCount>(gpr, stream, buf, decomposeWord);
+		dumpContents<word, ArchitectureConstants::RegisterCount>(data, stream, buf, decomposeWord);
+		dumpContents<dword, ArchitectureConstants::RegisterCount>(instruction, stream, buf, decomposeDword);
+		dumpContents<word, ArchitectureConstants::RegisterCount>(stack, stream, buf, decomposeWord);
 		delete[] buf;
 	}
 	void Core::run() {
