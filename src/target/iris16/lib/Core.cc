@@ -3,7 +3,12 @@
 
 namespace iris16 {
 	Core::Core() { }
-
+	void Core::setInstructionMemory(word address, dword value) {
+		instruction[address] = value;
+	}
+	void Core::setDataMemory(word address, word value) {
+		instruction[address] = value;
+	}
 	void Core::initialize() {
 
 	}

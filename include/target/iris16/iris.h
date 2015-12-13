@@ -17,6 +17,8 @@ namespace iris16 {
 		MaxGroups = 0b111,
 		MaxOperations = 0b11111,
 	};
+	dword encodeDword(byte a, byte b, byte c, byte d);
+	word encodeWord(byte a, byte b);
 
 	enum class InstructionGroup : byte {
 #define X(title, _, __) title,
@@ -88,6 +90,8 @@ namespace iris16 {
 			virtual void shutdown();
 			virtual void dump(std::ostream& stream);
 			virtual void run();
+			void setInstructionMemory(word address, dword value);
+			void setDataMemory(word address, word value);
 		private:
 			void dispatch();
 #define X(_, op, __) void op();
