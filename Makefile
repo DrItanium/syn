@@ -101,6 +101,11 @@ ${IRIS16_SIM_BINARY}: ${IRIS16_SIM_MAIN} ${IRIS16_OUT}
 	@${CXX} ${LDFLAGS} -o ${IRIS16_SIM_BINARY} $^
 	@echo done.
 
+${IRIS16_LINK_BINARY}: ${IRIS16_LINK_MAIN} ${IRIS16_OUT}
+	@echo -n Building ${IRIS16_LINK_BINARY} binary out of $^...
+	@${CXX} ${LDFLAGS} -o ${IRIS16_LINK_BINARY} $^
+	@echo done.
+
 ${IRIS16_ASM_BASE}/asm.tab.c ${IRIS16_ASM_BASE}/asm.tab.h: ${IRIS16_ASM_BASE}/asm.y
 	@${YACC} -o ${IRIS16_ASM_BASE}/asm.tab.c -d ${IRIS16_ASM_BASE}/asm.y
 	@${CXX} ${CXXFLAGS} -c ${IRIS16_ASM_BASE}/asm.tab.c -o ${IRIS16_ASM_BASE}/asm.tab.o
@@ -128,6 +133,7 @@ ${LIBIRIS_OUT}: ${LIBIRIS_OBJECTS}
 	@echo -n Building ${LIBIRIS_OUT} out of $^...
 	@${AR} rcs ${LIBIRIS_OUT}  $^
 	@echo done
+
 
 
 
