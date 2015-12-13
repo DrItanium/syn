@@ -48,6 +48,6 @@ namespace iris16 {
 
 	}
 	void Core::compare() {
-	
+
 	}
 }
