@@ -17,6 +17,7 @@ namespace iris16 {
 	void Core::jump() {
 		word newAddr = 0;
 		bool cond = true;
+		advanceIp = false;
 		word ip = gpr[ArchitectureConstants::InstructionPointerIndex];
 		switch(static_cast<JumpOp>(current.getOperation())) {
 #define X(name, op, ifthenelse, conditional, iffalse, immediate, link) \
@@ -49,6 +50,8 @@ namespace iris16 {
 #include "target/iris16/jump.def"
 #undef X
 			default:
+				std::cerr << "Illegal jump code " << current.getOperation() << std::endl;
+				execute = false;
 				break;
 		}
 	}
