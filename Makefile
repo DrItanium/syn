@@ -18,6 +18,7 @@ ALL_IRIS16_OBJECTS = ${IRIS16_OBJECTS} ${IRIS16_SIM_OBJECTS} ${IRIS16_LINK_OBJEC
 					 ${IRIS16_OUT}
 IRIS16_BINARIES = ${IRIS16_SIM_BINARY} ${IRIS16_LINK_BINARY}
 IRIS16_TOOLS = ${IRIS16_SIM_BINARY}
+IRIS16 = ${IRIS16_OUT} ${IRIS16_TOOLS}
 
 # The object file that defines main()
 SIM_BINARY = iris
@@ -51,7 +52,7 @@ ALL_OBJECTS = ${LIBIRIS_OBJECTS} ${RL_MAIN} ${TEST_OBJECTS} ${DECODE_MAIN} \
 			  ${SIM_MAIN} ${DBG_MAIN} ${ASM_FILES} ${ASM_OBJECTS} ${LIBIRIS_OUT} \
 			  ${ALL_IRIS16_OBJECTS}
 
-all: options ${IRIS16_OUT} ${IRIS16_TOOLS}
+all: options ${IRIS16}
 
 options:
 	@echo iris build options:
@@ -79,7 +80,7 @@ ${IRIS16_OUT}: ${IRIS16_OBJECTS}
 
 ${IRIS16_SIM_BINARY}: ${IRIS16_SIM_MAIN} ${IRIS16_OUT}
 	@echo -n Building ${IRIS16_SIM_BINARY} binary out of $^...
-	${CXX} ${LDFLAGS} -o ${IRIS16_SIM_BINARY} $^
+	@${CXX} ${LDFLAGS} -o ${IRIS16_SIM_BINARY} $^
 	@echo done.
 
 ${ASM_BASE}/asm.tab.c ${ASM_BASE}/asm.tab.h: ${ASM_BASE}/asm.y
