@@ -3,22 +3,41 @@
 
 include config.mk
 
-IRIS16_SIM_BINARY = iris16
+IRIS16_SIM_BINARY = bin/iris16
 IRIS16_SIM_MAIN = src/target/iris16/cmd/sim.o
 IRIS16_SIM_OBJECTS = ${IRIS16_SIM_MAIN}
 
-IRIS16_LINK_BINARY = iris16link
+IRIS16_LINK_BINARY = bin/iris16link
 IRIS16_LINK_MAIN = src/target/iris16/cmd/link.o
 IRIS16_LINK_OBJECTS = ${IRIS16_SIM_MAIN}
 
 IRIS16_OBJECTS = $(patsubst %.cc,%.o, $(wildcard src/target/iris16/lib/*.cc))
 IRIS16_OUT = src/target/iris16/libiris16.a
 
-ALL_IRIS16_OBJECTS = ${IRIS16_OBJECTS} ${IRIS16_SIM_OBJECTS} ${IRIS16_LINK_OBJECTS} \
-					 ${IRIS16_OUT}
-IRIS16_BINARIES = ${IRIS16_SIM_BINARY} ${IRIS16_LINK_BINARY}
-IRIS16_TOOLS = ${IRIS16_SIM_BINARY}
-IRIS16 = ${IRIS16_OUT} ${IRIS16_TOOLS}
+IRIS16_ASM_BINARY = bin/iris16asm
+IRIS16_ASM_BASE = src/target/iris16/cmd/asm
+
+IRIS16_ASM_FILES = ${IRIS16_ASM_BASE}/lex.yy.c \
+				   ${IRIS16_ASM_BASE}/asm.tab.c \
+				   ${IRIS16_ASM_BASE}/asm.tab.h
+
+IRIS16_ASM_OBJECTS = ${IRIS16_ASM_BASE}/lex.yy.o \
+					 ${IRIS16_ASM_BASE}/asm.tab.o
+
+ALL_IRIS16_OBJECTS = ${IRIS16_OBJECTS} \
+					 ${IRIS16_SIM_OBJECTS} \
+					 ${IRIS16_LINK_OBJECTS} \
+					 ${IRIS16_OUT} \
+					 ${IRIS16_ASM_OBJECTS} \
+					 ${IRIS16_ASM_FILES}
+IRIS16_BINARIES = ${IRIS16_SIM_BINARY} \
+				  ${IRIS16_LINK_BINARY} \
+				  ${IRIS16_ASM_BINARY}
+IRIS16_TOOLS = ${IRIS16_SIM_BINARY} \
+			   ${IRIS16_ASM_BINARY}
+
+IRIS16 = ${IRIS16_OUT} \
+		 ${IRIS16_TOOLS}
 
 # The object file that defines main()
 SIM_BINARY = iris
@@ -82,6 +101,21 @@ ${IRIS16_SIM_BINARY}: ${IRIS16_SIM_MAIN} ${IRIS16_OUT}
 	@echo -n Building ${IRIS16_SIM_BINARY} binary out of $^...
 	@${CXX} ${LDFLAGS} -o ${IRIS16_SIM_BINARY} $^
 	@echo done.
+
+${IRIS16_ASM_BASE}/asm.tab.c ${IRIS16_ASM_BASE}/asm.tab.h: ${IRIS16_ASM_BASE}/asm.y
+	@${YACC} -o ${IRIS16_ASM_BASE}/asm.tab.c -d ${IRIS16_ASM_BASE}/asm.y
+	@${CXX} ${CXXFLAGS} -c ${IRIS16_ASM_BASE}/asm.tab.c -o ${IRIS16_ASM_BASE}/asm.tab.o
+
+${IRIS16_ASM_BASE}/lex.yy.c: ${IRIS16_ASM_BASE}/asm.l ${IRIS16_ASM_BASE}/asm.tab.h
+	@${LEX} -o ${IRIS16_ASM_BASE}/lex.yy.c -l ${IRIS16_ASM_BASE}/asm.l
+	@${CXX} ${CXXFLAGS} -D_POSIX_SOURCE -c ${IRIS16_ASM_BASE}/lex.yy.c -o ${IRIS16_ASM_BASE}/lex.yy.o
+
+${IRIS16_ASM_BINARY}: ${IRIS16_ASM_BASE}/lex.yy.c ${IRIS16_ASM_BASE}/asm.tab.c ${IRIS16_ASM_BASE}/asm.tab.h src/libiris/util.c 
+	@echo -n Building ${IRIS16_ASM_BINARY} binary out of $^...
+	@${CXX} ${LDFLAGS} -o ${IRIS16_ASM_BINARY} ${IRIS16_ASM_BASE}/lex.yy.o ${IRIS16_ASM_BASE}/asm.tab.o ${LIBIRIS_OUT}
+	@echo done.
+
+
 
 ${ASM_BASE}/asm.tab.c ${ASM_BASE}/asm.tab.h: ${ASM_BASE}/asm.y
 	@${YACC} -o ${ASM_BASE}/asm.tab.c -d ${ASM_BASE}/asm.y

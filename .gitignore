@@ -2,15 +2,10 @@
 *.swo
 *.o
 
-iris
-irislink
-irisdecode
-irisasm
-irisdbg
 v.obj
 v.img
-irisrepl
 
 
-iris16
+bin/iris16
 libiris16.a
+bin/iris16asm
