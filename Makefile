@@ -34,15 +34,18 @@ TEST_OBJECTS = $(patsubst %.c,%.o,$(wildcard src/cmd/tests/*.c))
 ALL_BINARIES = ${SIM_BINARY} ${RL_BINARY} ${DECODE_BINARY} ${ASM_BINARY}\
 			   ${DBG_BINARY} 
 ALL_OBJECTS = ${LIBIRIS_OBJECTS} ${RL_MAIN} ${TEST_OBJECTS} ${DECODE_MAIN} \
-			  ${SIM_MAIN} ${DBG_MAIN} ${ASM_FILES} ${ASM_OBJECTS} ${LIBIRIS_OUT}
+			  ${SIM_MAIN} ${DBG_MAIN} ${ASM_FILES} ${ASM_OBJECTS} ${LIBIRIS_OUT} \
+			  ${IRIS16_OBJECTS}
 
-all: options ${IRIS16_OBJECTS} ${LIBIRIS_OUT} iris rl decode asm dbg
+all: options ${IRIS16_OBJECTS} 
 
 options:
 	@echo iris build options:
 	@echo "CFLAGS   = ${CFLAGS}"
+	@echo "CXXFLAGS = ${CXXFLAGS}"
 	@echo "LDFLAGS  = ${LDFLAGS}"
 	@echo "CC       = ${CC}"
+	@echo "CXX      = ${CXX}"
 
 
 %.o: %.c
