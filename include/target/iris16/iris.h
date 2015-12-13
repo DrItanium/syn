@@ -42,6 +42,11 @@ namespace iris16 {
 #include "target/iris16/syscalls.def"
 #undef X
 	};
+	enum class MoveOp : byte {
+#define X(name, id, type, target, dest, src) name,
+#include "target/iris16/move.def"
+#undef X
+	};
 	class DecodedInstruction {
 		public:
 			DecodedInstruction();
