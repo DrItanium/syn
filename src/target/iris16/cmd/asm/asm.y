@@ -4,6 +4,7 @@
 #include <string>
 #include <cstdint>
 #include "target/iris16/iris.h"
+#include <fstream>
 #include <iostream>
 #include <vector>
 #include <map>
@@ -16,30 +17,10 @@ extern FILE* yyin;
 extern int yylineno;
 
 void yyerror(const char* s);
-enum {
-   FileWrapperInput = 0,
-   FileWrapperOutput,
-
-   /* always last */
-   FileWrapperCount,
-};
-
-FileWrapper files[] = {
-   /* input */
-   { 0, 0, "r", 0 },
-   /* output */
-   { 0, 0, "w", 0 },
-};
-
-#define outfile (files[FileWrapperOutput])
-#define infile (files[FileWrapperInput])
-
-#define outfile_ptr (&outfile)
-#define infile_ptr (&infile)
 /* segment */
 enum class Segment : byte {
-   CodeSegment,
-   DataSegment,
+   Code,
+   Data,
 };
 /* used to store ops which require a second pass */
 struct dynamicop {
@@ -56,10 +37,6 @@ struct dynamicop {
 struct asmstate {
 	
    ~asmstate() {
-	if (closeOutput) {
-		static_cast<std::ofstream*>(output)->close();
-		delete output;
-	}
    }
    Segment segment;
    word code_address;
@@ -70,16 +47,16 @@ struct asmstate {
    bool closeOutput;
 };
 
+asmstate state;
 dynamicop curri;
 
-void add_label_entry(char* name, word address);
+void add_label_entry(const std::string& name, word address);
 void persist_dynamic_op(void);
 void save_encoding(void);
 void write_dynamic_op(dynamicop* op);
-void initialize(FILE* output, FILE* input);
-void cleanup(void);
+void initialize(std::ostream* output, bool close, FILE* input);
 void resolve_labels(void);
-int resolve_op(dynamicop* dop);
+bool resolve_op(dynamicop* dop);
 void usage(char* arg0);
 %}
 
@@ -178,7 +155,7 @@ Q: /* empty */ |
 ;
 F:
    F asm {
-      curri.segment = 0;
+      curri.segment = Segment::Code;
       curri.address = 0;
       curri.group = 0;
       curri.op = 0;
@@ -186,10 +163,10 @@ F:
       curri.reg1 = 0;
       curri.reg2 = 0;
       curri.hassymbol = 0;
-      curri.symbol = 0;
+      curri.symbol = "";
    } | 
    asm {
-      curri.segment = 0;
+      curri.segment = Segment::Code;
       curri.address = 0;
       curri.group = 0;
       curri.op = 0;
@@ -197,7 +174,7 @@ F:
       curri.reg1 = 0;
       curri.reg2 = 0;
       curri.hassymbol = 0;
-      curri.symbol = 0;
+      curri.symbol = "";
    }
    ;
 asm:
@@ -206,35 +183,35 @@ asm:
    ;
 directive:
          DIRECTIVE_ORG IMMEDIATE {
-            if(asmstate.segment == CodeSegment) {
-               asmstate.code_address = $2;
-            } else if(asmstate.segment == DataSegment) {
-               asmstate.data_address = $2;
+            if(state.segment == Segment::Code) {
+               state.code_address = $2;
+            } else if(state.segment == Segment::Data) {
+               state.data_address = $2;
             } else {
                yyerror("Invalid segment!");
             }
             } | 
-      DIRECTIVE_CODE { asmstate.segment = CodeSegment; } |
-      DIRECTIVE_DATA { asmstate.segment = DataSegment; } |
+      DIRECTIVE_CODE { state.segment = Segment::Code; } |
+      DIRECTIVE_DATA { state.segment = Segment::Data; } |
       DIRECTIVE_DECLARE lexeme { 
-            if(asmstate.segment == DataSegment) {
-               curri.segment = DataSegment;
-               curri.address = asmstate.data_address;
+            if(state.segment == Segment::Data) {
+               curri.segment = Segment::Data;
+               curri.address = state.data_address;
                save_encoding();
-               asmstate.data_address++;
+               state.data_address++;
             } else {
                yyerror("Declaration in non-data segment!");
             }
       }
       ;
 statement:
-         label { curri.segment = asmstate.segment; }|
+         label { curri.segment = state.segment; }|
          operation {
-            if(asmstate.segment == CodeSegment) {
-               curri.segment = CodeSegment;
-               curri.address = asmstate.code_address;
+            if(state.segment == Segment::Code) {
+               curri.segment = Segment::Code;
+               curri.address = state.code_address;
                save_encoding();
-               asmstate.code_address++;
+               state.code_address++;
             } else {
                yyerror("operation in an invalid segment!");
             }
@@ -242,21 +219,21 @@ statement:
          ;
 label:
      LABEL SYMBOL { 
-      if(asmstate.segment == CodeSegment) {
-          add_label_entry($2, asmstate.code_address);
-      } else if (asmstate.segment == DataSegment) {
-          add_label_entry($2, asmstate.data_address);
+      if(state.segment == Segment::Code) {
+          add_label_entry($2, state.code_address);
+      } else if (state.segment == Segment::Data) {
+          add_label_entry($2, state.data_address);
       } else {
           yyerror("label in invalid segment!");
       }
      }
    ;
 operation:
-         arithmetic_op { curri.group = InstructionGroupArithmetic; } |
-         move_op { curri.group = InstructionGroupMove; } |
-         jump_op { curri.group = InstructionGroupJump; } |
-         compare_op { curri.group = InstructionGroupCompare; } |
-         misc_op { curri.group = InstructionGroupMisc; }
+         arithmetic_op { curri.group = (byte)iris16::InstructionGroup::Arithmetic; } |
+         move_op { curri.group = (byte)iris16::InstructionGroup::Move; } |
+         jump_op { curri.group = (byte)iris16::InstructionGroup::Jump; } |
+         compare_op { curri.group = (byte)iris16::InstructionGroup::Compare; } |
+         misc_op { curri.group = (byte)iris16::InstructionGroup::Misc; }
          ;
 arithmetic_op:
              aop REGISTER REGISTER REGISTER {
@@ -287,16 +264,16 @@ move_op:
          curri.reg0 = $2;
        } |
        MOVE_OP_PUSHIMMEDIATE lexeme { 
-         curri.op = MoveOpPushImmediate;
+         curri.op = (byte)iris16::MoveOp::PushImmediate;
        }
        ;
 
 jump_op:
        JUMP_OP_UNCONDITIONALIMMEDIATE lexeme { 
-         curri.op = JumpOpUnconditionalImmediate; 
+         curri.op = (byte)iris16::JumpOp::UnconditionalImmediate; 
          } | 
        JUMP_OP_UNCONDITIONALREGISTER REGISTER { 
-         curri.op = JumpOpUnconditionalRegister; 
+         curri.op = (byte)iris16::JumpOp::UnconditionalRegister; 
          curri.reg0 = $2;
        } |
        jop_reg_reg REGISTER REGISTER {
@@ -321,7 +298,7 @@ compare_op:
 misc_op:
        MISC_OP_SYSTEMCALL IMMEDIATE REGISTER REGISTER 
        { 
-         curri.op = MiscOpSystemCall; 
+         curri.op = (byte)iris16::MiscOp::SystemCall; 
          if($2 > 255) {
             yyerror("system call offset out of range!");
          }
@@ -331,99 +308,95 @@ misc_op:
        } 
        ;
 aop:
-   ARITHMETIC_OP_ADD { curri.op = iris16::ArithmeticOp::Add; } |
-   ARITHMETIC_OP_SUB { curri.op = iris16::ArithmeticOp::Sub; } |
-   ARITHMETIC_OP_MUL { curri.op = iris16::ArithmeticOp::Mul; } |
-   ARITHMETIC_OP_DIV { curri.op = iris16::ArithmeticOp::Div; } |
-   ARITHMETIC_OP_REM { curri.op = iris16::ArithmeticOp::Rem; } |
-   ARITHMETIC_OP_SHIFTLEFT { curri.op = iris16::ArithmeticOp::ShiftLeft; } |
-   ARITHMETIC_OP_SHIFTRIGHT { curri.op = iris16::ArithmeticOp::ShiftRight; } |
-   ARITHMETIC_OP_BINARYAND { curri.op = iris16::ArithmeticOp::BinaryAnd; } |
-   ARITHMETIC_OP_BINARYOR { curri.op = iris16::ArithmeticOp::BinaryOr; } |
-   ARITHMETIC_OP_BINARYXOR { curri.op = iris16::ArithmeticOp::BinaryXor; } 
+   ARITHMETIC_OP_ADD { curri.op = (byte)iris16::ArithmeticOp::Add; } |
+   ARITHMETIC_OP_SUB { curri.op = (byte)iris16::ArithmeticOp::Sub; } |
+   ARITHMETIC_OP_MUL { curri.op = (byte)iris16::ArithmeticOp::Mul; } |
+   ARITHMETIC_OP_DIV { curri.op = (byte)iris16::ArithmeticOp::Div; } |
+   ARITHMETIC_OP_REM { curri.op = (byte)iris16::ArithmeticOp::Rem; } |
+   ARITHMETIC_OP_SHIFTLEFT { curri.op = (byte)iris16::ArithmeticOp::ShiftLeft; } |
+   ARITHMETIC_OP_SHIFTRIGHT { curri.op = (byte)iris16::ArithmeticOp::ShiftRight; } |
+   ARITHMETIC_OP_BINARYAND { curri.op = (byte)iris16::ArithmeticOp::BinaryAnd; } |
+   ARITHMETIC_OP_BINARYOR { curri.op = (byte)iris16::ArithmeticOp::BinaryOr; } |
+   ARITHMETIC_OP_BINARYXOR { curri.op = (byte)iris16::ArithmeticOp::BinaryXor; } 
    ;
 
 aop_imm:
-   ARITHMETIC_OP_ADD_IMM { curri.op = iris16::ArithmeticOp::AddImmediate; } |
-   ARITHMETIC_OP_SUB_IMM { curri.op = iris16::ArithmeticOp::SubImmediate; } |
-   ARITHMETIC_OP_MUL_IMM { curri.op = iris16::ArithmeticOp::MulImmediate; } | 
-   ARITHMETIC_OP_DIV_IMM { curri.op = iris16::ArithmeticOp::DivImmediate; } |
-   ARITHMETIC_OP_REM_IMM { curri.op = iris16::ArithmeticOp::RemImmediate; } |
-   ARITHMETIC_OP_SHIFTLEFT_IMM { curri.op = iris16::ArithmeticOp::ShiftLeftImmediate; } |
-   ARITHMETIC_OP_SHIFTRIGHT_IMM { curri.op = iris16::ArithmeticOp::ShiftRightImmediate; } 
+   ARITHMETIC_OP_ADD_IMM { curri.op = (byte)iris16::ArithmeticOp::AddImmediate; } |
+   ARITHMETIC_OP_SUB_IMM { curri.op = (byte)iris16::ArithmeticOp::SubImmediate; } |
+   ARITHMETIC_OP_MUL_IMM { curri.op = (byte)iris16::ArithmeticOp::MulImmediate; } | 
+   ARITHMETIC_OP_DIV_IMM { curri.op = (byte)iris16::ArithmeticOp::DivImmediate; } |
+   ARITHMETIC_OP_REM_IMM { curri.op = (byte)iris16::ArithmeticOp::RemImmediate; } |
+   ARITHMETIC_OP_SHIFTLEFT_IMM { curri.op = (byte)iris16::ArithmeticOp::ShiftLeftImmediate; } |
+   ARITHMETIC_OP_SHIFTRIGHT_IMM { curri.op = (byte)iris16::ArithmeticOp::ShiftRightImmediate; } 
    ;
 
 mop_reg:
-   MOVE_OP_MOVE { curri.op = MoveOpMove; } |
-   MOVE_OP_SWAP { curri.op = MoveOpSwap; } |
-   MOVE_OP_LOAD { curri.op = MoveOpLoad; } |
-   MOVE_OP_STORE { curri.op = MoveOpStore; } |
-   MOVE_OP_STOREADDR { curri.op = MoveOpStoreAddr; } 
+   MOVE_OP_MOVE { curri.op = (byte)iris16::MoveOp::Move; } |
+   MOVE_OP_SWAP { curri.op = (byte)iris16::MoveOp::Swap; } |
+   MOVE_OP_LOAD { curri.op = (byte)iris16::MoveOp::Load; } |
+   MOVE_OP_STORE { curri.op = (byte)iris16::MoveOp::Store; } |
    ;
 
 mop_mixed:
-   MOVE_OP_SWAPREGMEM { curri.op = MoveOpSwapRegMem; } |
-   MOVE_OP_SWAPADDRMEM { curri.op = MoveOpSwapAddrMem; } |
-   MOVE_OP_SET { curri.op = MoveOpSet; } |
-   MOVE_OP_LOADMEM { curri.op = MoveOpLoadMem; } |
-   MOVE_OP_STOREMEM { curri.op = MoveOpStoreMem; } |
-   MOVE_OP_STOREIMM { curri.op = MoveOpStoreImm; }
+   MOVE_OP_SET { curri.op = (byte)iris16::MoveOp::Set; } |
+   MOVE_OP_STOREIMM { curri.op = (byte)iris16::MoveOp::Memset; } |
+   MOVE_OP_LOADMEM { curri.op = (byte)iris16::MoveOp::LoadImmediate; } 
    ;
 
 mop_single:
-   MOVE_OP_PUSH { curri.op = MoveOpPush; } |
-   MOVE_OP_POP { curri.op = MoveOpPop; } 
+   MOVE_OP_PUSH { curri.op = (byte)iris16::MoveOp::Push; } |
+   MOVE_OP_POP { curri.op = (byte)iris16::MoveOp::Pop; } 
    ;
 
 jop_reg_imm:
-   JUMP_OP_UNCONDITIONALIMMEDIATELINK { curri.op = JumpOpUnconditionalImmediateLink; } |
-   JUMP_OP_CONDITIONALTRUEIMMEDIATE { curri.op = JumpOpConditionalTrueImmediate; } |
-   JUMP_OP_CONDITIONALTRUEIMMEDIATELINK { curri.op = JumpOpConditionalTrueImmediateLink; } |
-   JUMP_OP_CONDITIONALFALSEIMMEDIATE { curri.op = JumpOpConditionalFalseImmediate; } |
-   JUMP_OP_CONDITIONALFALSEIMMEDIATELINK { curri.op = JumpOpConditionalFalseImmediateLink; } 
+   JUMP_OP_UNCONDITIONALIMMEDIATELINK { curri.op = (byte)iris16::JumpOp::UnconditionalImmediateLink; } |
+   JUMP_OP_CONDITIONALTRUEIMMEDIATE { curri.op = (byte)iris16::JumpOp::ConditionalTrueImmediate; } |
+   JUMP_OP_CONDITIONALTRUEIMMEDIATELINK { curri.op = (byte)iris16::JumpOp::ConditionalTrueImmediateLink; } |
+   JUMP_OP_CONDITIONALFALSEIMMEDIATE { curri.op = (byte)iris16::JumpOp::ConditionalFalseImmediate; } |
+   JUMP_OP_CONDITIONALFALSEIMMEDIATELINK { curri.op = (byte)iris16::JumpOp::ConditionalFalseImmediateLink; } 
    ;
 
 
 jop_reg_reg:
-   JUMP_OP_UNCONDITIONALREGISTERLINK { curri.op = JumpOpUnconditionalRegisterLink; } |
-   JUMP_OP_CONDITIONALTRUEREGISTER { curri.op = JumpOpConditionalTrueRegister; } |
-   JUMP_OP_CONDITIONALFALSEREGISTER { curri.op = JumpOpConditionalFalseRegister; }
+   JUMP_OP_UNCONDITIONALREGISTERLINK { curri.op = (byte)iris16::JumpOp::UnconditionalRegisterLink; } |
+   JUMP_OP_CONDITIONALTRUEREGISTER { curri.op = (byte)iris16::JumpOp::ConditionalTrueRegister; } |
+   JUMP_OP_CONDITIONALFALSEREGISTER { curri.op = (byte)iris16::JumpOp::ConditionalFalseRegister; }
    ;
 
 jop_reg_reg_reg:
-   JUMP_OP_CONDITIONALTRUEREGISTERLINK { curri.op = JumpOpConditionalTrueRegisterLink; } |
-   JUMP_OP_CONDITIONALFALSEREGISTERLINK { curri.op = JumpOpConditionalFalseRegisterLink; } |
-   JUMP_OP_IFTHENELSENORMALPREDTRUE { curri.op = JumpOpIfThenElseNormalPredTrue; } |
-   JUMP_OP_IFTHENELSENORMALPREDFALSE { curri.op = JumpOpIfThenElseNormalPredFalse; } |
-   JUMP_OP_IFTHENELSELINKPREDTRUE { curri.op = JumpOpIfThenElseLinkPredTrue; } |
-   JUMP_OP_IFTHENELSELINKPREDFALSE { curri.op = JumpOpIfThenElseLinkPredFalse; } |
+   JUMP_OP_CONDITIONALTRUEREGISTERLINK { curri.op = (byte)iris16::JumpOp::ConditionalTrueRegisterLink; } |
+   JUMP_OP_CONDITIONALFALSEREGISTERLINK { curri.op = (byte)iris16::JumpOp::ConditionalFalseRegisterLink; } |
+   JUMP_OP_IFTHENELSENORMALPREDTRUE { curri.op = (byte)iris16::JumpOp::IfThenElseNormalPredTrue; } |
+   JUMP_OP_IFTHENELSENORMALPREDFALSE { curri.op = (byte)iris16::JumpOp::IfThenElseNormalPredFalse; } |
+   JUMP_OP_IFTHENELSELINKPREDTRUE { curri.op = (byte)iris16::JumpOp::IfThenElseLinkPredTrue; } |
+   JUMP_OP_IFTHENELSELINKPREDFALSE { curri.op = (byte)iris16::JumpOp::IfThenElseLinkPredFalse; } |
 ;
 
 cop:
-   COMPARE_OP_EQ { curri.op = CompareOpEq; } |
-   COMPARE_OP_EQAND { curri.op = CompareOpEqAnd; } |
-   COMPARE_OP_EQOR { curri.op = CompareOpEqOr; } |
-   COMPARE_OP_EQXOR { curri.op = CompareOpEqXor; } |
-   COMPARE_OP_NEQ { curri.op = CompareOpNeq; } |
-   COMPARE_OP_NEQAND { curri.op = CompareOpNeqAnd; } |
-   COMPARE_OP_NEQOR { curri.op = CompareOpNeqOr; } |
-   COMPARE_OP_NEQXOR { curri.op = CompareOpNeqXor; } |
-   COMPARE_OP_LESSTHAN { curri.op = CompareOpLessThan; } |
-   COMPARE_OP_LESSTHANAND { curri.op = CompareOpLessThanAnd; } |
-   COMPARE_OP_LESSTHANOR { curri.op = CompareOpLessThanOr; } |
-   COMPARE_OP_LESSTHANXOR { curri.op = CompareOpLessThanXor; } |
-   COMPARE_OP_GREATERTHAN { curri.op = CompareOpGreaterThan; } |
-   COMPARE_OP_GREATERTHANAND { curri.op = CompareOpGreaterThanAnd; } |
-   COMPARE_OP_GREATERTHANOR { curri.op = CompareOpGreaterThanOr; } |
-   COMPARE_OP_GREATERTHANXOR { curri.op = CompareOpGreaterThanXor; } |
-   COMPARE_OP_LESSTHANOREQUALTO { curri.op = CompareOpLessThanOrEqualTo; } |
-   COMPARE_OP_LESSTHANOREQUALTOAND { curri.op = CompareOpLessThanOrEqualToAnd; } |
-   COMPARE_OP_LESSTHANOREQUALTOOR { curri.op = CompareOpLessThanOrEqualToOr; } |
-   COMPARE_OP_LESSTHANOREQUALTOXOR { curri.op = CompareOpLessThanOrEqualToXor; } |
-   COMPARE_OP_GREATERTHANOREQUALTO { curri.op = CompareOpGreaterThanOrEqualTo; } |
-   COMPARE_OP_GREATERTHANOREQUALTOAND { curri.op = CompareOpGreaterThanOrEqualToAnd; } |
-   COMPARE_OP_GREATERTHANOREQUALTOOR { curri.op = CompareOpGreaterThanOrEqualToOr; } |
-   COMPARE_OP_GREATERTHANOREQUALTOXOR { curri.op = CompareOpGreaterThanOrEqualToXor; }
+   COMPARE_OP_EQ { curri.op = (byte)iris16::CompareOp::Eq; } |
+   COMPARE_OP_EQAND { curri.op = (byte)iris16::CompareOp::EqAnd; } |
+   COMPARE_OP_EQOR { curri.op = (byte)iris16::CompareOp::EqOr; } |
+   COMPARE_OP_EQXOR { curri.op = (byte)iris16::CompareOp::EqXor; } |
+   COMPARE_OP_NEQ { curri.op = (byte)iris16::CompareOp::Neq; } |
+   COMPARE_OP_NEQAND { curri.op = (byte)iris16::CompareOp::NeqAnd; } |
+   COMPARE_OP_NEQOR { curri.op = (byte)iris16::CompareOp::NeqOr; } |
+   COMPARE_OP_NEQXOR { curri.op = (byte)iris16::CompareOp::NeqXor; } |
+   COMPARE_OP_LESSTHAN { curri.op = (byte)iris16::CompareOp::LessThan; } |
+   COMPARE_OP_LESSTHANAND { curri.op = (byte)iris16::CompareOp::LessThanAnd; } |
+   COMPARE_OP_LESSTHANOR { curri.op = (byte)iris16::CompareOp::LessThanOr; } |
+   COMPARE_OP_LESSTHANXOR { curri.op = (byte)iris16::CompareOp::LessThanXor; } |
+   COMPARE_OP_GREATERTHAN { curri.op = (byte)iris16::CompareOp::GreaterThan; } |
+   COMPARE_OP_GREATERTHANAND { curri.op = (byte)iris16::CompareOp::GreaterThanAnd; } |
+   COMPARE_OP_GREATERTHANOR { curri.op = (byte)iris16::CompareOp::GreaterThanOr; } |
+   COMPARE_OP_GREATERTHANXOR { curri.op = (byte)iris16::CompareOp::GreaterThanXor; } |
+   COMPARE_OP_LESSTHANOREQUALTO { curri.op = (byte)iris16::CompareOp::LessThanOrEqualTo; } |
+   COMPARE_OP_LESSTHANOREQUALTOAND { curri.op = (byte)iris16::CompareOp::LessThanOrEqualToAnd; } |
+   COMPARE_OP_LESSTHANOREQUALTOOR { curri.op = (byte)iris16::CompareOp::LessThanOrEqualToOr; } |
+   COMPARE_OP_LESSTHANOREQUALTOXOR { curri.op = (byte)iris16::CompareOp::LessThanOrEqualToXor; } |
+   COMPARE_OP_GREATERTHANOREQUALTO { curri.op = (byte)iris16::CompareOp::GreaterThanOrEqualTo; } |
+   COMPARE_OP_GREATERTHANOREQUALTOAND { curri.op = (byte)iris16::CompareOp::GreaterThanOrEqualToAnd; } |
+   COMPARE_OP_GREATERTHANOREQUALTOOR { curri.op = (byte)iris16::CompareOp::GreaterThanOrEqualToOr; } |
+   COMPARE_OP_GREATERTHANOREQUALTOXOR { curri.op = (byte)iris16::CompareOp::GreaterThanOrEqualToXor; }
 ;
 lexeme:
       SYMBOL { curri.hassymbol = 1; 
@@ -435,85 +408,101 @@ lexeme:
 ;
 %%
 int main(int argc, char* argv[]) {
-   char* tmpline;
-   int last, i, errorfree;
+	FILE* input = 0;
+	std::string line("v.obj");
+	std::ostream* output = 0;
+	bool closeOutput = false,
+		 closeInput = false,
+		 errorfree = true;
+   int last = argc - 1,
+   	   i = 0;
    /* make sure these are properly initialized */
    last = argc - 1;
-   tmpline = 0;
    errorfree = 1;
    i = 0;
    if(argc > 1) {
       for(i = 1; errorfree && (i < last); ++i) {
-         tmpline = argv[i];
-         if(strlen(tmpline) == 2 && tmpline[0] == '-') {
+		 std::string tmpline(argv[i]);
+         if(tmpline.size() == 2 && tmpline[0] == '-') {
             switch(tmpline[1]) {
-               case 'o':
-                  i++;
-                  outfile.line = argv[i];
-                  break;
+			   case 'o':
+			   		++i;
+			   		line = argv[i];
+			   		break;
                case 'h':
                default:
-                  errorfree = 0;
+                  errorfree = false;
                   break;
             }
          } else {
-            errorfree = 0;
+            errorfree = false;
             break;
          }
       }
       if(errorfree) {
          if(i == last) {
-            /* open the input file */
-            tmpline = argv[i];
-            if(strlen(tmpline) == 1 && tmpline[0] == '-') {
-               infile.fptr = stdin;
-            } else if(strlen(tmpline) >= 1 && tmpline[0] != '-') {
-               infile.line = tmpline;
-               openfw(infile_ptr);
-            }
-
+			std::string tline(argv[last]);
+			if(tline.size() == 1 && tline[0] == '-') {
+				input = stdin;
+				closeInput = false;
+			} else if (tline.size() >= 1) {
+				if ((input = fopen(tline.c_str(), "r")) != NULL) {
+					closeInput = true;
+				} else {
+					std::cerr << "Couldn't open " << tline << " for reading!" << std::endl;
+					exit(1);
+				}
+			}
             /* open the output */
-            if(!(outfile.line)) {
-               outfile.line = "v.obj";
-            }
-            if(strlen(outfile.line) == 1 && (outfile.line)[0] == '-') {
-               outfile.fptr = stdout; 
+            if(line.size() == 1 && line[0] == '-') {
+			   output = &std::cout; 
+			   closeOutput = false;
             } else {
-               openfw(outfile_ptr);
+			   output = new std::ofstream(line.c_str(), std::ofstream::out | std::ofstream::binary);
+			   closeOutput = true;
             }
          } else {
-            fprintf(stderr, "no file provided\n");
+			 std::cerr << "no file provided" << std::endl;
          }
-      }
+      } else {
+	  	
+	  }
    }
-   if(outfile.fptr && infile.fptr) {
-      initialize(outfile.fptr, infile.fptr);
+   if(output && input) {
+      initialize(output, closeOutput, input);
       do {
          yyparse();
       } while(!feof(yyin));
       resolve_labels();
-      cleanup();
+	  if (closeOutput) {
+	  	static_cast<std::ofstream*>(output)->close();
+	  	delete output;
+	  	output = 0;
+	  	state.output = 0;
+	  }
+	  if(closeInput) {
+	  	fclose(input);
+		input = 0;
+	  }
    } else {
       usage(argv[0]);
    }
-   return 0;
 }
 
 void usage(char* arg0) {
 	std::cerr << "usage: " << arg0 << " [-o <file>] <file>" << std::endl;
 }
 void add_label_entry(const std::string& c, word addr) {
-   labelentry* le;
-   if (asmstate.labels.count(c) != 0) {
+   if (state.labels.count(c) != 0) {
 		yyerror("Found a duplicate label!");
 		exit(1);
    } else {
-	 asmstate.labels[c] = addr;
+	 state.labels[c] = addr;
    }
 }
 
 void persist_dynamic_op(void) {
-   asmstate.dynops.push_back(curri);
+   state.dynops.push_back(curri);
 }
 
 void save_encoding(void) {
@@ -533,22 +522,22 @@ void write_dynamic_op(dynamicop* dop) {
    buf[1] = (char)(dop->address & 0x00FF);
    buf[2] = (char)((dop->address & 0xFF00) >> 8);
    switch(dop->segment) {
-   		case Segment::CodeSegment:
+   		case Segment::Code:
 			buf[3] = (char)iris::encodeBits<byte, byte, byte, 0b11111000, 3>(
 								iris::encodeBits<byte, byte, byte, 0b00000111, 0>((byte)0, dop->group),
 								dop->op);
 			buf[4] = (char)dop->reg0;
 			buf[5] = (char)dop->reg1;
 			buf[6] = (char)dop->reg2;
-			asmstate.output->write(buf, 7);
+			state.output->write(buf, 7);
 			break;
-		case Segment::DataSegment:
+		case Segment::Data:
 			buf[3] = (char)dop->reg1;
 			buf[4] = (char)dop->reg2;
-			asmstate.output->write(buf, 5);
+			state.output->write(buf, 5);
 			break;
 		default:
-			std::cerr << "panic: unknown segment " << dop->segment << std::endl;
+			std::cerr << "panic: unknown segment " << (byte)dop->segment << std::endl;
 			exit(1);
    }
    delete[] buf;
@@ -561,57 +550,33 @@ void yyerror(const char* s) {
 void resolve_labels() {
    /* we need to go through the list of dynamic operations and replace
       the label with the corresponding address */
-   int i;
-   for(i = 0; i < asmstate.dynop_count; i++) {
-      if(!resolve_op(&(asmstate.dynops[i]))) {
-         fprintf(stderr, "panic: couldn't find label %s\n", asmstate.dynops[i].symbol);
-         exit(1);
-      } else {
-         write_dynamic_op(&(asmstate.dynops[i]));
-      }
+   for(std::vector<dynamicop>::iterator it = state.dynops.begin(); it != state.dynops.end(); ++it) {
+   		if (!resolve_op(&(*it))) {
+			std::cerr << "panic: couldn't find label " << it->symbol << std::endl;
+			exit(1);
+		} else {
+			write_dynamic_op(&(*it));
+		}
    }
 }
-int resolve_op(dynamicop* dop) {
-   int i;
-   for(i = 0; i < asmstate.entry_count; i++) {
-      if(strcmp(asmstate.entries[i].value, dop->symbol) == 0) {
-         /* we found the corresponding label so save the address to the
-          * encoding */
-         dop->reg1 = asmstate.entries[i].loweraddr;
-         dop->reg2 = asmstate.entries[i].upperaddr;
-         return 1;
-      }
+bool resolve_op(dynamicop* dop) {
+   if(state.labels.count(dop->symbol) == 1) {
+		word addr = state.labels[dop->symbol];
+		dop->reg1 = iris::decodeBits<word, byte, word, 0x00FF>(addr);
+		dop->reg2 = iris::decodeBits<word, byte, word, 0xFF00, 8>(addr);
+		return true;
    }
-   return 0;
+   return false;
 }
-void cleanup() {
-   int i;
-   /* clean up */
-   for(i = 0; i < FileWrapperCount; i++) {
-         closefw(&(files[i]));
-   }
-   free(asmstate.dynops);
-   free(asmstate.entries);
-   asmstate.entries = 0;
-   asmstate.dynops = 0;
-}
-void initialize(std::ostream& output, FILE* input) {
-   labelentry* le;
-   dynamicop* dops;
+
+void initialize(std::ostream* output, bool close, FILE* input) {
    yyin = input;
-   le = calloc(80, sizeof(labelentry));
-   dops = calloc(80, sizeof(dynamicop));
-   asmstate.segment = CodeSegment;
-   asmstate.data_address = 0;
-   asmstate.code_address = 0;
-   asmstate.entries = le;
-   asmstate.entry_count = 0;
-   asmstate.entry_storage_length = 80;
-   asmstate.dynops = dops;
-   asmstate.dynop_count = 0;
-   asmstate.dynop_storage_length = 80;
-   asmstate.output = output;
-   curri.segment = 0;
+   state.segment = Segment::Code;
+   state.data_address = 0;
+   state.code_address = 0;
+   state.output = output;
+   state.closeOutput = close;
+   curri.segment = Segment::Code;
    curri.address = 0;
    curri.group = 0;
    curri.op = 0;
@@ -619,5 +584,4 @@ void initialize(std::ostream& output, FILE* input) {
    curri.reg1 = 0;
    curri.reg2 = 0;
    curri.hassymbol = 0;
-   curri.symbol = 0;
 }

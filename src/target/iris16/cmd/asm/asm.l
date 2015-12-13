@@ -4,7 +4,8 @@
 #include <string.h>
 #include <errno.h>
 #include <limits.h>
-#include "iris.h"
+#include <cstdint>
+#include "target/iris16/iris.h"
 #include "asm.tab.h"
 #define _POSIX_SOURCE 1
 
@@ -104,17 +105,9 @@ r{digit}+ { yylval.rval = getregister(); return REGISTER; }
 {digit}+ { yylval.ival = getdecimalimmediate(); return IMMEDIATE; }
 0x{xdigit}+ { yylval.ival = getheximmediate(); return IMMEDIATE; }
 {omni}+ { 
-   int j;
-   char* contents;
-   j = strlen(yytext);
-   contents = calloc(j + 1, sizeof(char));
-   /* strdup isn't c-standard only POSIX...... */
-   if(strncpy(contents, yytext, j) == contents) {
-      yylval.sval = contents;
-      return SYMBOL;
-   } else {
-      yyerror("couldn't copy yytext!");
-   }
+	std::string contents(yytext);
+	yylval.sval = (char*)contents.c_str();
+	return SYMBOL;
 }
 %%
 

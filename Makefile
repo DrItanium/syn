@@ -110,9 +110,9 @@ ${IRIS16_ASM_BASE}/lex.yy.c: ${IRIS16_ASM_BASE}/asm.l ${IRIS16_ASM_BASE}/asm.tab
 	@${LEX} -o ${IRIS16_ASM_BASE}/lex.yy.c -l ${IRIS16_ASM_BASE}/asm.l
 	@${CXX} ${CXXFLAGS} -D_POSIX_SOURCE -c ${IRIS16_ASM_BASE}/lex.yy.c -o ${IRIS16_ASM_BASE}/lex.yy.o
 
-${IRIS16_ASM_BINARY}: ${IRIS16_ASM_BASE}/lex.yy.c ${IRIS16_ASM_BASE}/asm.tab.c ${IRIS16_ASM_BASE}/asm.tab.h src/libiris/util.c 
+${IRIS16_ASM_BINARY}: ${IRIS16_ASM_BASE}/lex.yy.c ${IRIS16_ASM_BASE}/asm.tab.c ${IRIS16_ASM_BASE}/asm.tab.h 
 	@echo -n Building ${IRIS16_ASM_BINARY} binary out of $^...
-	@${CXX} ${LDFLAGS} -o ${IRIS16_ASM_BINARY} ${IRIS16_ASM_BASE}/lex.yy.o ${IRIS16_ASM_BASE}/asm.tab.o ${LIBIRIS_OUT}
+	@${CXX} ${LDFLAGS} -o ${IRIS16_ASM_BINARY} ${IRIS16_ASM_BASE}/lex.yy.o ${IRIS16_ASM_BASE}/asm.tab.o ${IRIS16_OUT}
 	@echo done.
 
 
