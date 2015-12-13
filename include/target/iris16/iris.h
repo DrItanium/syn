@@ -14,6 +14,8 @@ namespace iris16 {
 		InstructionPointerIndex = 255,
 		LinkRegisterIndex = 254,
 		StackPointerIndex = 253,
+		MaxGroups = 0b111,
+		MaxOperations = 0b11111,
 	};
 
 	enum class InstructionGroup : byte {
@@ -22,21 +24,21 @@ namespace iris16 {
 #undef X
 		Count,
 	};
-	static_assert((byte)InstructionGroup::Count < ((byte)0b111), "too many instruction groups defined");
+	static_assert((byte)InstructionGroup::Count < ArchitectureConstants::MaxGroups, "too many instruction groups defined");
 	enum class ArithmeticOp : byte {
 #define X(name, _, __, ___) name,
 #include "target/iris16/arithmetic.def"
 #undef X
 		Count
 	};
-	static_assert((byte)ArithmeticOp::Count < ((byte)0b11111), "too many Arithmetic operations defined");
+	static_assert((byte)ArithmeticOp::Count < ((byte)ArchitectureConstants::MaxOperations), "too many Arithmetic operations defined");
 	enum class MiscOp : byte {
 #define X(title, id, func) title, 
 #include "target/iris16/misc.def"
 #undef X
 		Count
 	};
-	static_assert((byte)MiscOp::Count < ((byte)0b11111), "too many Misc operations defined");
+	static_assert((byte)MiscOp::Count < ((byte)ArchitectureConstants::MaxOperations), "too many Misc operations defined");
 
 	enum class JumpOp : byte {
 #define X(name, id, ifthenelse, conditional, iffalse, immediate, link) name,
@@ -44,7 +46,7 @@ namespace iris16 {
 #undef X
 		Count
 	};
-	static_assert((byte)JumpOp::Count < ((byte)0b11111), "too many Jump operations defined");
+	static_assert((byte)JumpOp::Count < ((byte)ArchitectureConstants::MaxOperations), "too many Jump operations defined");
 
 	enum class SystemCalls : byte {
 #define X(name) name,
@@ -58,7 +60,14 @@ namespace iris16 {
 #undef X
 		Count,
 	};
-	static_assert((byte)MoveOp::Count < ((byte)0b11111), "too many Move operations defined");
+	static_assert((byte)MoveOp::Count < ((byte)ArchitectureConstants::MaxOperations), "too many Move operations defined");
+	enum class CompareOp : byte {
+#define X(name, id, op, group) name,
+#include "target/iris16/compare.def"
+#undef X
+		Count,
+	};
+	static_assert((byte)CompareOp::Count < ((byte)ArchitectureConstants::MaxOperations), "too many Compare operations defined");
 	class DecodedInstruction {
 		public:
 			DecodedInstruction();
