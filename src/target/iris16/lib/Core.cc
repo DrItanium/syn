@@ -7,7 +7,7 @@ namespace iris16 {
 		instruction[address] = value;
 	}
 	void Core::setDataMemory(word address, word value) {
-		instruction[address] = value;
+		data[address] = value;
 	}
 	void Core::initialize() {
 
@@ -16,37 +16,38 @@ namespace iris16 {
 
 	}
 	template<typename T, int count>
-	void populateContents(T* contents, std::istream& stream, char* buf, std::function<T(std::istream&, char*)> func) {
+	void populateContents(T* contents, std::istream& stream, std::function<T(char*)> func) {
+		char* buf = new char[sizeof(T)];
 		for(int i = 0; i < count; ++i) {
-			contents[i] = func(stream, buf);
+			stream.read(buf, sizeof(T));
+			contents[i] = func(buf);
 		}
+		delete[] buf;
 	}
 	void Core::installprogram(std::istream& stream) {
-		char* buf = new char[sizeof(dword)];
-		auto encodeWord = [](std::istream& s, char* buf) {
-			s.read(buf, sizeof(word));
+		auto encodeWord = [](char* buf) {
 			return iris16::encodeWord(buf[0], buf[1]);
 		};
-		auto encodeDword = [](std::istream& s, char* buf) {
-			s.read(buf, sizeof(dword));
+		auto encodeDword = [](char* buf) {
 			return iris16::encodeDword(buf[0], buf[1], buf[2], buf[3]);
 		};
-		populateContents<word, ArchitectureConstants::RegisterCount>(gpr, stream, buf, encodeWord);
-		populateContents<word, ArchitectureConstants::AddressMax>(data, stream, buf, encodeWord);
-		populateContents<dword, ArchitectureConstants::AddressMax>(instruction, stream, buf, encodeDword);
-		populateContents<word, ArchitectureConstants::AddressMax>(stack, stream, buf, encodeWord);
-		delete[] buf;
+		populateContents<word, ArchitectureConstants::RegisterCount>(gpr, stream, encodeWord);
+		populateContents<word, ArchitectureConstants::AddressMax>(data, stream, encodeWord);
+		populateContents<dword, ArchitectureConstants::AddressMax>(instruction, stream, encodeDword);
+		populateContents<word, ArchitectureConstants::AddressMax>(stack, stream, encodeWord);
 	}
 
 	template<typename T, int count>
-	void dumpContents(T* contents, std::ostream& stream, char* buf, std::function<char*(T,char*)> func) {
+	void dumpContents(T* contents, std::ostream& stream, std::function<char*(T,char*)> func) {
+		char* buf = new char[sizeof(T)];
 		for(int i = 0; i < count; ++i) {
-			stream.write(func(contents[i], buf), sizeof(T));
+			func(contents[i], buf);
+			stream.write(buf, sizeof(T));
 		}
+		delete[] buf;
 	}
 	void Core::dump(std::ostream& stream) {
 		// save the registers
-		char* buf = new char[sizeof(dword)];
 		auto decomposeWord = [](word v, char* buf) {
 			buf[0] = (char)v;
 			buf[1] = (char)(v >> 8);
@@ -59,19 +60,21 @@ namespace iris16 {
 			buf[3] = (char)(v >> 24);
 			return buf;
 		};
-		dumpContents<word, ArchitectureConstants::RegisterCount>(gpr, stream, buf, decomposeWord);
-		dumpContents<word, ArchitectureConstants::RegisterCount>(data, stream, buf, decomposeWord);
-		dumpContents<dword, ArchitectureConstants::RegisterCount>(instruction, stream, buf, decomposeDword);
-		dumpContents<word, ArchitectureConstants::RegisterCount>(stack, stream, buf, decomposeWord);
-		delete[] buf;
+		dumpContents<word, ArchitectureConstants::RegisterCount>(gpr, stream, decomposeWord);
+		dumpContents<word, ArchitectureConstants::AddressMax>(data, stream, decomposeWord);
+		dumpContents<dword, ArchitectureConstants::AddressMax>(instruction, stream, decomposeDword);
+		dumpContents<word, ArchitectureConstants::AddressMax>(stack, stream, decomposeWord);
 	}
 	void Core::run() {
 		while(execute) {
+			if (!advanceIp) {
+				advanceIp = true;
+			}
 			current.decode(instruction[gpr[ArchitectureConstants::InstructionPointerIndex]]);
 			dispatch();
 			if (advanceIp) {
 				gpr[ArchitectureConstants::InstructionPointerIndex]++;
-			}
+			} 
 		}
 	}
 	void Core::dispatch() {

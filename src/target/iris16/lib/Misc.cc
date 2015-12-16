@@ -25,7 +25,7 @@ namespace iris16 {
 				break;
 			case SystemCalls::PutC:
 				// read register 0 and register 1
-				std::cout << (char)gpr[current.getSource0()];
+				std::cout.put((char)gpr[current.getSource0()]);
 				break;
 			case SystemCalls::GetC:
 				byte value;
