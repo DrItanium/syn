@@ -61,7 +61,12 @@ int main(int argc, char* argv[]) {
 				closeInput = false;
 			} else if (tline.size() >= 1) {
 				input = new std::ifstream(tline.c_str(), std::ifstream::binary | std::ifstream::in);
-				closeInput = true;
+				if (input->good()) {
+					closeInput = true;
+				} else {
+					std::cerr << "couldn't open " << tline << " for reading!" << std::endl;
+					exit(1);
+				}
 			}
             /* open the output */
             if(line.size() == 1 && line[0] == '-') {
@@ -69,13 +74,18 @@ int main(int argc, char* argv[]) {
 			   closeOutput = false;
             } else {
 			   output = new std::ofstream(line.c_str(), std::ofstream::out | std::ofstream::binary);
+			   if (output->good()) {
 			   closeOutput = true;
+			   } else {
+				   std::cerr << "couldn't open " << line << " for writing!" << std::endl;
+				   exit(1);
+			   }
             }
          } else {
 			 std::cerr << "no file provided" << std::endl;
          }
       } else {
-	  	
+		usage(argv[0]);
 	  }
    }
 
