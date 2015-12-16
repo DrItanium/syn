@@ -85,8 +85,4 @@ namespace iris16 {
 				break;
 		}
 	}
-
-	void Core::compare() {
-
-	}
 }

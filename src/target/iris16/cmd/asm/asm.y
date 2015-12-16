@@ -369,7 +369,7 @@ jop_reg_reg_reg:
    JUMP_OP_IFTHENELSENORMALPREDTRUE { curri.op = (byte)iris16::JumpOp::IfThenElseNormalPredTrue; } |
    JUMP_OP_IFTHENELSENORMALPREDFALSE { curri.op = (byte)iris16::JumpOp::IfThenElseNormalPredFalse; } |
    JUMP_OP_IFTHENELSELINKPREDTRUE { curri.op = (byte)iris16::JumpOp::IfThenElseLinkPredTrue; } |
-   JUMP_OP_IFTHENELSELINKPREDFALSE { curri.op = (byte)iris16::JumpOp::IfThenElseLinkPredFalse; } |
+   JUMP_OP_IFTHENELSELINKPREDFALSE { curri.op = (byte)iris16::JumpOp::IfThenElseLinkPredFalse; }
 ;
 
 cop:
@@ -515,31 +515,29 @@ void save_encoding(void) {
 void write_dynamic_op(dynamicop* dop) {
    /* ((instruction & ~mask) | (value << shiftcount)) */
    /* little endian build up */
-   byte tmp;
-   tmp = 0;
    char* buf = new char[8];
-   buf[0] = (char)dop->segment;
-   buf[1] = (char)(dop->address & 0x00FF);
-   buf[2] = (char)((dop->address & 0xFF00) >> 8);
+   buf[0] = 0;
+   buf[1] = (char)dop->segment;
+   buf[2] = (char)(dop->address & 0x00FF);
+   buf[3] = (char)((dop->address & 0xFF00) >> 8);
    switch(dop->segment) {
    		case Segment::Code:
-			buf[3] = (char)iris::encodeBits<byte, byte, byte, 0b11111000, 3>(
-								iris::encodeBits<byte, byte, byte, 0b00000111, 0>((byte)0, dop->group),
+			buf[4] = (char)iris::encodeBits<byte, byte, 0b11111000, 3>(
+								iris::encodeBits<byte, byte, 0b00000111, 0>((byte)0, dop->group),
 								dop->op);
-			buf[4] = (char)dop->reg0;
-			buf[5] = (char)dop->reg1;
-			buf[6] = (char)dop->reg2;
-			state.output->write(buf, 7);
+			buf[5] = (char)dop->reg0;
+			buf[6] = (char)dop->reg1;
+			buf[7] = (char)dop->reg2;
 			break;
 		case Segment::Data:
-			buf[3] = (char)dop->reg1;
-			buf[4] = (char)dop->reg2;
-			state.output->write(buf, 5);
+			buf[4] = (char)dop->reg1;
+			buf[5] = (char)dop->reg2;
 			break;
 		default:
 			std::cerr << "panic: unknown segment " << (byte)dop->segment << std::endl;
 			exit(1);
    }
+   state.output->write(buf, 8);
    delete[] buf;
 }
 
@@ -562,8 +560,8 @@ void resolve_labels() {
 bool resolve_op(dynamicop* dop) {
    if(state.labels.count(dop->symbol) == 1) {
 		word addr = state.labels[dop->symbol];
-		dop->reg1 = iris::decodeBits<word, byte, word, 0x00FF>(addr);
-		dop->reg2 = iris::decodeBits<word, byte, word, 0xFF00, 8>(addr);
+		dop->reg1 = iris::decodeBits<word, byte, 0x00FF>(addr);
+		dop->reg2 = iris::decodeBits<word, byte, 0xFF00, 8>(addr);
 		return true;
    }
    return false;

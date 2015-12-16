@@ -99,24 +99,41 @@ void usage(char* arg0) {
 	std::cerr << "usage: " << arg0 << " [-o <file>] <file>" << std::endl;
 }
 void execute(std::istream& input) {
+	dword result = 0;
+	word result0 = 0;
 	char* buf = new char[8];
 	for(int lineNumber = 0; input.good(); ++lineNumber) {
-		input.read(buf, 3);
-		Segment target = static_cast<Segment>(buf[0]);
-		word address = iris::encodeBits<word, byte, word, 0xFF00, 8>(
-				iris::encodeBits<word, byte, word, 0x00FF>(word(0), byte(buf[1])),
-				byte(buf[2]));
+		input.read(buf, 8);
+		if (input.gcount() < 8 && input.gcount() > 0) {
+			std::cerr << "panic: unaligned object file found!" << std::endl;
+			exit(1);
+		} else if (input.gcount() == 0) {
+			if (input.eof()) {
+				break;
+			} else {
+				std::cerr << "panic: something bad happened while reading input file!" << std::endl;
+				exit(1);
+			}
+		}
+		//ignore the first byte, it is always zero
+		byte tmp = buf[1];
+		Segment target = static_cast<Segment>(buf[1]);
+		word address = iris16::encodeWord(buf[2], buf[3]);
+		std::cerr << "current target = " << static_cast<int>(target) << "\tcurrent address = 0x" << std::hex << address << std::endl;
 		switch(target) {
 			case Segment::Code:
-				input.read(buf, 4);
-				proc.setInstructionMemory(address, iris16::encodeDword(buf[0], buf[1], buf[2], buf[3]));
+				result = iris16::encodeDword(buf[4], buf[5], buf[6], buf[7]);
+				std::cerr << " code result: 0x" << std::hex << result << std::endl;
+				proc.setInstructionMemory(address, result);
 				break;
 			case Segment::Data:
-				input.read(buf, 2);
-				proc.setDataMemory(address, iris16::encodeWord(buf[0], buf[1]));
+				result0 = iris16::encodeWord(buf[4], buf[5]);
+				std::cerr << " data result: 0x" << std::hex << result0 << std::endl;
+				proc.setDataMemory(address, result0);
 				break;
 			default:
-				std::cerr << "error: line " << lineNumber << ", unknown segment " << (byte)target << std::endl;
+				std::cerr << "error: line " << lineNumber << ", unknown segment " << static_cast<int>(target) << "/" << static_cast<int>(tmp) << std::endl;
+				std::cerr << "current address: " << std::hex << address << std::endl;
 				exit(1);
 				break;
 		}
