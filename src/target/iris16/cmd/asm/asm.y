@@ -532,6 +532,8 @@ void write_dynamic_op(dynamicop* dop) {
 		case Segment::Data:
 			buf[4] = (char)dop->reg1;
 			buf[5] = (char)dop->reg2;
+			buf[6] = 0;
+			buf[7] = 0;
 			break;
 		default:
 			std::cerr << "panic: unknown segment " << (byte)dop->segment << std::endl;

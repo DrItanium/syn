@@ -16,6 +16,7 @@ enum class Segment  {
 static void usage(char* arg0);
 static void execute(std::istream& file);
 iris16::Core proc;
+bool debug = false;
 
 int main(int argc, char* argv[]) {
 	std::string line("v.img");
@@ -39,6 +40,9 @@ int main(int argc, char* argv[]) {
 			   		++i;
 			   		line = argv[i];
 			   		break;
+				case 'd':
+					debug = true;
+					break;
                case 'h':
                default:
                   errorfree = false;
@@ -96,7 +100,7 @@ int main(int argc, char* argv[]) {
 }
 
 void usage(char* arg0) {
-	std::cerr << "usage: " << arg0 << " [-o <file>] <file>" << std::endl;
+	std::cerr << "usage: " << arg0 << " [-d] [-o <file>] <file>" << std::endl;
 }
 void execute(std::istream& input) {
 	dword result = 0;
@@ -119,16 +123,22 @@ void execute(std::istream& input) {
 		byte tmp = buf[1];
 		Segment target = static_cast<Segment>(buf[1]);
 		word address = iris16::encodeWord(buf[2], buf[3]);
-		std::cerr << "current target = " << static_cast<int>(target) << "\tcurrent address = 0x" << std::hex << address << std::endl;
+		if (debug) {
+			std::cerr << "current target = " << static_cast<int>(target) << "\tcurrent address = 0x" << std::hex << address << std::endl;
+		}
 		switch(target) {
 			case Segment::Code:
 				result = iris16::encodeDword(buf[4], buf[5], buf[6], buf[7]);
-				std::cerr << " code result: 0x" << std::hex << result << std::endl;
+				if (debug) {
+					std::cerr << " code result: 0x" << std::hex << result << std::endl;
+				}
 				proc.setInstructionMemory(address, result);
 				break;
 			case Segment::Data:
 				result0 = iris16::encodeWord(buf[4], buf[5]);
-				std::cerr << " data result: 0x" << std::hex << result0 << std::endl;
+				if (debug) {
+					std::cerr << " data result: 0x" << std::hex << result0 << std::endl;
+				}
 				proc.setDataMemory(address, result0);
 				break;
 			default:
