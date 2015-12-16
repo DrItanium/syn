@@ -6,22 +6,22 @@ typedef unsigned char byte;
 namespace iris {
 
 
-template<typename T, typename F, typename number, number bitmask, number shiftcount = 0>
+template<typename T, typename F, T bitmask, T shiftcount = 0>
 F decodeBits(T input) {
    return (F)((input & bitmask) >> shiftcount);
 }
 
-template<typename T, typename F, typename number, number bitmask, number shiftcount = 0>
+template<typename T, typename F, T bitmask, T shiftcount = 0>
 F decodeBits(T* input) {
    return (F)((*input & bitmask) >> shiftcount);
 }
 
-template<typename T, typename F, typename number, number bitmask, number shiftcount = 0>
+template<typename T, typename F, T bitmask, T shiftcount = 0>
 T encodeBits(T input, F value) {
 	return (T)((input & ~bitmask) | (value << shiftcount));
 }
 
-template<typename T, typename F, typename number, number bitmask, number shiftcount = 0> 
+template<typename T, typename F, T bitmask, T shiftcount = 0> 
 void encodeBits(T* input, F value) {
 	*input = ((*input & ~bitmask) | (value << shiftcount));
 }
