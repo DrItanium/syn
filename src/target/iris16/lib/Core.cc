@@ -25,17 +25,11 @@ namespace iris16 {
 		char* buf = new char[sizeof(dword)];
 		auto encodeWord = [](std::istream& s, char* buf) {
 			s.read(buf, sizeof(word));
-			return iris::encodeBits<word, byte, 0xFF00, 8>(static_cast<word>(buf[0]), static_cast<byte>(buf[1]));
+			return iris16::encodeWord(buf[0], buf[1]);
 		};
 		auto encodeDword = [](std::istream& s, char* buf) {
 			s.read(buf, sizeof(dword));
-			return iris::encodeBits<dword, byte, 0xFF000000, 24>(
-					iris::encodeBits<dword, byte, 0x00FF000, 16>(
-						iris::encodeBits<dword, byte, 0x0000FF00, 8>(
-							static_cast<dword>(buf[0]), 
-							static_cast<byte>(buf[1])),
-						static_cast<byte>(buf[2])),
-					static_cast<byte>(buf[3]));
+			return iris16::encodeDword(buf[0], buf[1], buf[2], buf[3]);
 		};
 		populateContents<word, ArchitectureConstants::RegisterCount>(gpr, stream, buf, encodeWord);
 		populateContents<word, ArchitectureConstants::AddressMax>(data, stream, buf, encodeWord);
