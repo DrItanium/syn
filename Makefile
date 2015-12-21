@@ -41,11 +41,49 @@ IRIS16 = ${IRIS16_OUT} \
 
 # The object file that defines main()
 #TEST_OBJECTS = $(patsubst %.c,%.o,$(wildcard src/cmd/tests/*.c))
+# STACK64 stuffs
+STACK64_OBJECTS = $(patsubst %.cc,%.o, $(wildcard src/target/stack64/lib/*.cc))
+STACK64_OUT = src/target/stack64/libstack64.a
 
-ALL_BINARIES = ${IRIS16_BINARIES}
-ALL_OBJECTS = ${ALL_IRIS16_OBJECTS}
+STACK64_SIM_BINARY = stack64
+STACK64_SIM_MAIN = src/target/stack64/cmd/sim.o
+STACK64_SIM_OBJECTS = ${STACK64_SIM_MAIN}
 
-all: options ${IRIS16}
+STACK64_LINK_BINARY = stack64link
+STACK64_LINK_MAIN = src/target/stack64/cmd/link.o
+STACK64_LINK_OBJECTS = ${STACK64_SIM_MAIN}
+
+STACK64_ASM_BINARY = stack64asm
+STACK64_ASM_BASE = src/target/stack64/cmd/asm
+
+STACK64_ASM_FILES = ${STACK64_ASM_BASE}/lex.yy.c \
+				   ${STACK64_ASM_BASE}/asm.tab.c \
+				   ${STACK64_ASM_BASE}/asm.tab.h
+
+STACK64_ASM_OBJECTS = ${STACK64_ASM_BASE}/lex.yy.o \
+					 ${STACK64_ASM_BASE}/asm.tab.o
+
+ALL_STACK64_OBJECTS = ${STACK64_OBJECTS} \
+					 ${STACK64_SIM_OBJECTS} \
+					 ${STACK64_LINK_OBJECTS} \
+					 ${STACK64_OUT} \
+					 ${STACK64_ASM_OBJECTS} \
+					 ${STACK64_ASM_FILES}
+
+STACK64_BINARIES = ${STACK64_SIM_BINARY} \
+				  ${STACK64_LINK_BINARY} \
+				  ${STACK64_ASM_BINARY}
+STACK64_TOOLS = ${STACK64_BINARIES}
+
+STACK64 = ${STACK64_OUT} \
+		 ${STACK64_TOOLS}
+
+ALL_BINARIES = ${IRIS16_BINARIES} \
+			   ${STACK64_BINARIES}
+ALL_OBJECTS = ${ALL_IRIS16_OBJECTS} \
+			  ${ALL_STACK64_OBJECTS}
+
+all: options ${IRIS16} ${STACK64}
 
 options:
 	@echo iris build options:
@@ -92,6 +130,34 @@ ${IRIS16_ASM_BASE}/lex.yy.c: ${IRIS16_ASM_BASE}/asm.l ${IRIS16_ASM_BASE}/asm.tab
 ${IRIS16_ASM_BINARY}: ${IRIS16_ASM_BASE}/lex.yy.c ${IRIS16_ASM_BASE}/asm.tab.c ${IRIS16_ASM_BASE}/asm.tab.h 
 	@echo -n Building ${IRIS16_ASM_BINARY} binary out of $^...
 	@${CXX} ${LDFLAGS} -o bin/${IRIS16_ASM_BINARY} ${IRIS16_ASM_BASE}/lex.yy.o ${IRIS16_ASM_BASE}/asm.tab.o ${IRIS16_OUT}
+	@echo done.
+
+${STACK64_OUT}: ${STACK64_OBJECTS}
+	@echo -n Building ${STACK64_OUT} out of $^...
+	@${AR} rcs ${STACK64_OUT}  $^
+	@echo done
+
+${STACK64_SIM_BINARY}: ${STACK64_SIM_MAIN} ${STACK64_OUT}
+	@echo -n Building ${STACK64_SIM_BINARY} binary out of $^...
+	@${CXX} ${LDFLAGS} -o bin/${STACK64_SIM_BINARY} $^
+	@echo done.
+
+${STACK64_LINK_BINARY}: ${STACK64_LINK_MAIN} ${STACK64_OUT}
+	@echo -n Building ${STACK64_LINK_BINARY} binary out of $^...
+	@${CXX} ${LDFLAGS} -o bin/${STACK64_LINK_BINARY} $^
+	@echo done.
+
+${STACK64_ASM_BASE}/asm.tab.c ${STACK64_ASM_BASE}/asm.tab.h: ${STACK64_ASM_BASE}/asm.y
+	@${YACC} -o ${STACK64_ASM_BASE}/asm.tab.c -d ${STACK64_ASM_BASE}/asm.y
+	@${CXX} ${CXXFLAGS} -c ${STACK64_ASM_BASE}/asm.tab.c -o ${STACK64_ASM_BASE}/asm.tab.o
+
+${STACK64_ASM_BASE}/lex.yy.c: ${STACK64_ASM_BASE}/asm.l ${STACK64_ASM_BASE}/asm.tab.h
+	@${LEX} -o ${STACK64_ASM_BASE}/lex.yy.c -l ${STACK64_ASM_BASE}/asm.l
+	@${CXX} ${CXXFLAGS} -D_POSIX_SOURCE -c ${STACK64_ASM_BASE}/lex.yy.c -o ${STACK64_ASM_BASE}/lex.yy.o
+
+${STACK64_ASM_BINARY}: ${STACK64_ASM_BASE}/lex.yy.c ${STACK64_ASM_BASE}/asm.tab.c ${STACK64_ASM_BASE}/asm.tab.h 
+	@echo -n Building ${STACK64_ASM_BINARY} binary out of $^...
+	@${CXX} ${LDFLAGS} -o bin/${STACK64_ASM_BINARY} ${STACK64_ASM_BASE}/lex.yy.o ${STACK64_ASM_BASE}/asm.tab.o ${STACK64_OUT}
 	@echo done.
 
 #test_%: src/cmd/tests/%.o ${LIBIRIS_OUT}
