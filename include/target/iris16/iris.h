@@ -14,8 +14,8 @@ namespace iris16 {
 		InstructionPointerIndex = 255,
 		LinkRegisterIndex = 254,
 		StackPointerIndex = 253,
-		MaxGroups = 0b111,
-		MaxOperations = 0b11111,
+		MaxGroups = 0x7,
+		MaxOperations = 0x1F,
 	};
 	dword encodeDword(byte a, byte b, byte c, byte d);
 	word encodeWord(byte a, byte b);
@@ -26,7 +26,7 @@ namespace iris16 {
 #undef X
 		Count,
 	};
-	static_assert((byte)InstructionGroup::Count < ArchitectureConstants::MaxGroups, "too many instruction groups defined");
+	static_assert((byte)InstructionGroup::Count < ((byte)ArchitectureConstants::MaxGroups), "too many instruction groups defined");
 	enum class ArithmeticOp : byte {
 #define X(name, _, __, ___) name,
 #include "target/iris16/arithmetic.def"
