@@ -2,9 +2,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
-#include "iris.h"
-
-void iris_dispatch(iris_core* proc, instruction* value) {
+#include "target/stack64/iris.h"
+namespace stack64 {
+void iris_dispatch(Core* proc, instruction* value) {
    /* reset the advancepc value */
    proc->advancepc = 1;
    switch(get_group(value)) {
@@ -32,7 +32,7 @@ void iris_dispatch(iris_core* proc, instruction* value) {
    }
 }
 
-void iris_put_register(iris_core* proc, byte index, word value) {
+void iris_put_register(Core* proc, byte index, word value) {
    if(index < RegisterCount) {
       proc->gpr[index] = value;
    } else {
@@ -40,7 +40,7 @@ void iris_put_register(iris_core* proc, byte index, word value) {
    }
 }
 
-word iris_get_register(iris_core* proc, byte index) {
+word iris_get_register(Core* proc, byte index) {
    if(index < RegisterCount) {
       return proc->gpr[index];
    } else {
@@ -49,7 +49,7 @@ word iris_get_register(iris_core* proc, byte index) {
    }
 }
 
-void iris_arithmetic(iris_core* proc, instruction* inst) {
+void iris_arithmetic(Core* proc, instruction* inst) {
 #define perform_operation(symbol) \
    (iris_put_register(proc, get_arithmetic_dest(inst), \
          (iris_get_register(proc, get_arithmetic_source0(inst))) \
@@ -109,15 +109,15 @@ enum {
    MaskBits0_31   = 0x00000000FFFFFFFF,
    MaskBits32_63  = 0xFFFFFFFF00000000,
 };
-void iris_movefull(iris_core* proc, instruction* inst) {
+void iris_movefull(Core* proc, instruction* inst) {
    iris_put_register(proc, get_move_reg0(inst), iris_get_register(proc, get_move_reg1(inst)));
 }
-void iris_swapfull(iris_core* proc, instruction* inst) {
+void iris_swapfull(Core* proc, instruction* inst) {
    word a = iris_get_register(proc, get_move_reg0(inst));
    iris_put_register(proc, get_move_reg0(inst), iris_get_register(proc, get_move_reg1(inst)));
    iris_put_register(proc, get_move_reg1(inst), a);
 }
-void iris_swap_generic(iris_core* proc, instruction* inst, word mask) {
+void iris_swap_generic(Core* proc, instruction* inst, word mask) {
    word a = iris_get_register(proc, get_move_reg0(inst)),
         b = iris_get_register(proc, get_move_reg1(inst));
    word p0 = a & mask;
@@ -127,23 +127,23 @@ void iris_swap_generic(iris_core* proc, instruction* inst, word mask) {
    iris_put_register(proc, get_move_reg0(inst), r0 | p1);
    iris_put_register(proc, get_move_reg1(inst), r1 | p0);
 }
-void iris_move_generic(iris_core* proc, instruction* inst, word mask) {
+void iris_move_generic(Core* proc, instruction* inst, word mask) {
    iris_put_register(proc, get_move_reg0(inst), 
          (iris_get_register(proc, get_move_reg0(inst)) & ~mask) |
          (((iris_get_register(proc, get_move_reg1(inst))) & mask)));
 }
-void iris_moveupper32(iris_core* proc, instruction* inst) {
+void iris_moveupper32(Core* proc, instruction* inst) {
    iris_move_generic(proc, inst, MaskBits32_63);
 }
 
-void iris_movelower32(iris_core* proc, instruction* inst) {
+void iris_movelower32(Core* proc, instruction* inst) {
    iris_move_generic(proc, inst, MaskBits0_31);
 }
-void iris_swapupper32(iris_core* proc, instruction* inst) {
+void iris_swapupper32(Core* proc, instruction* inst) {
    iris_swap_generic(proc, inst, MaskBits32_63);
 }
 
-void iris_swaplower32(iris_core* proc, instruction* inst) {
+void iris_swaplower32(Core* proc, instruction* inst) {
    iris_swap_generic(proc, inst, MaskBits0_31);
 }
 word generate_full_mask(byte mask) {
@@ -156,7 +156,7 @@ word generate_full_mask(byte mask) {
           (((word)(((mask & 0x40) >> 6) ? 0xFF : 0x0)) << 48) |
           (((word)(((mask & 0x80) >> 7) ? 0xFF : 0x0)) << 56);
 }
-void iris_move(iris_core* proc, instruction* inst) {
+void iris_move(Core* proc, instruction* inst) {
    word mask = 0;
    switch(get_move_op(inst)) {
       case MoveOpMove:
@@ -490,7 +490,7 @@ void iris_move(iris_core* proc, instruction* inst) {
          iris_error("Illegal move operation!", ErrorInvalidMoveOperation);
    }
 }
-void iris_jump(iris_core* proc, instruction* inst) {
+void iris_jump(Core* proc, instruction* inst) {
    word a = 0;
    proc->advancepc = false;
    switch(get_jump_form(inst)) {
@@ -639,7 +639,7 @@ void iris_jump(iris_core* proc, instruction* inst) {
    }
 }
 
-void iris_compare(iris_core* proc, instruction* inst) {
+void iris_compare(Core* proc, instruction* inst) {
    /* grab the appropriate value */
    word tmp = 0;
    switch(get_compare_op(inst)) {
@@ -647,7 +647,7 @@ void iris_compare(iris_core* proc, instruction* inst) {
       case class: \
                   tmp = (iris_get_register(proc, get_compare_reg1(inst))) symbol (iris_get_register(proc, get_compare_reg2(inst))); \
       break; 
-#include "moveops.def"
+#include "target/stack64/moveops.def"
 #undef X
       default:
          iris_error("invalid compare operation", ErrorInvalidCompareOperation);
@@ -669,8 +669,8 @@ void iris_compare(iris_core* proc, instruction* inst) {
          iris_error("invalid combine operation", ErrorInvalidCombineOperation);
    }
 }
-static void iris_system_call(iris_core* proc, instruction* j);
-void iris_misc(iris_core* proc, instruction* j) {
+static void iris_system_call(Core* proc, instruction* j);
+void iris_misc(Core* proc, instruction* j) {
    /* implement system commands */
    switch(get_misc_op(j)) {
       case MiscOpSystemCall:
@@ -681,7 +681,7 @@ void iris_misc(iris_core* proc, instruction* j) {
    }
 }
 
-void iris_system_call(iris_core* proc, instruction* j) {
+void iris_system_call(Core* proc, instruction* j) {
    byte reg0 = get_misc_reg0(j);
    //byte reg1 = get_misc_reg1(j); // currently unused
    switch(get_misc_index(j)) {
@@ -704,7 +704,7 @@ void iris_error(char* message, int code) {
    exit(code);
 }
 
-void iris_rom_init(iris_core* proc) {
+void iris_rom_init(Core* proc) {
    proc->pc = 0;
    proc->terminateexecution = 0;
    proc->advancepc = 1;
@@ -723,21 +723,18 @@ void iris_rom_init(iris_core* proc) {
    proc->gpr[PredicateRegisterIndex] = 0;
    proc->gpr[StackPointerRegisterIndex] = 0xFFFF;
 }
-
-void iris_shutdown(iris_core* c) {
-   /* do nothing right now */
-   free(c->memory);
-   c->memory = 0;
-   c->memorysize = 0;
+Core::~Core() {
+	delete[] memory;
+	memory = 0;
 }
-void iris_new_core(iris_core* proc, hword memorysize) {
-   proc->memory = calloc(memorysize, sizeof(byte));
-   proc->memorysize = memorysize;
+Core::Core(hword size) : memorysize(size){
+	memory = new byte(size);
+	memorysize = size;
 }
 
 /* vim: set expandtab tabstop=3 shiftwidth=3: */
-static word iris_merge_load(iris_core*, word, word, byte);
-static void iris_full_store(iris_core* proc, word addr, word value) {
+static word iris_merge_load(Core*, word, word, byte);
+static void iris_full_store(Core* proc, word addr, word value) {
    // need to decompose it into multiple pieces
    if ((addr + 7) >= proc->memorysize) {
       iris_error("MEMORY PROTECTION ERROR! Attempted to access outside memory boundaries", 8);
@@ -751,7 +748,7 @@ static void iris_full_store(iris_core* proc, word addr, word value) {
    proc->memory[addr + 6] = (byte)(value >> 48);
    proc->memory[addr + 7] = (byte)(value >> 56);
 }
-static word iris_full_load(iris_core* proc, word addr) {
+static word iris_full_load(Core* proc, word addr) {
    if ((addr + 7) >= proc->memorysize) {
       iris_error("MEMORY PROTECTION ERROR! Attempted to access outside memory boundaries", 8);
    }
@@ -764,7 +761,7 @@ static word iris_full_load(iris_core* proc, word addr) {
       (((word)(proc->memory[addr+6])) << 48) |
       (((word)(proc->memory[addr+7])) << 56);
 }
-static void iris_store_overwrite(iris_core* proc, word addr, word value, byte mask) {
+static void iris_store_overwrite(Core* proc, word addr, word value, byte mask) {
    if (mask == 0x00) {
       // since none of the bits are active in the mask it must be zero that we
       // want to store in there
@@ -776,7 +773,7 @@ static void iris_store_overwrite(iris_core* proc, word addr, word value, byte ma
    }
 }
 
-static void iris_store_merge(iris_core* proc, word addr, word value, byte mask) {
+static void iris_store_merge(Core* proc, word addr, word value, byte mask) {
    if (mask == 0x00) {
       // do nothing since this is a merge!
    } else if (mask == 0xFF) {
@@ -787,7 +784,7 @@ static void iris_store_merge(iris_core* proc, word addr, word value, byte mask) 
 }
 
 
-static word iris_load_memory(iris_core* proc, word addr, byte mask) {
+static word iris_load_memory(Core* proc, word addr, byte mask) {
    if (mask == 0x00) {
       return 0;
    } else if (mask == 0xFF) {
@@ -797,7 +794,7 @@ static word iris_load_memory(iris_core* proc, word addr, byte mask) {
    }
 }
 
-static word iris_merge_load(iris_core* proc, word addr, word value, byte mask) {
+static word iris_merge_load(Core* proc, word addr, word value, byte mask) {
    if (mask == 0x00) {
       return value;
    } else if (mask == 0xFF) {
@@ -806,17 +803,17 @@ static word iris_merge_load(iris_core* proc, word addr, word value, byte mask) {
       return (value & ~generate_full_mask(mask)) | (iris_full_load(proc, addr) & generate_full_mask(mask)) ;
    }
 }
-static void iris_load(iris_core* proc, bool merge, word addr, word value, byte mask, byte dest) {
+static void iris_load(Core* proc, bool merge, word addr, word value, byte mask, byte dest) {
    iris_put_register(proc, dest, merge ?  iris_merge_load(proc, addr, value, mask) : iris_load_memory(proc, addr, mask));
 }
-static void iris_store(iris_core* proc, bool merge, word addr, word value, byte mask) {
+static void iris_store(Core* proc, bool merge, word addr, word value, byte mask) {
    if (merge) {
       iris_store_merge(proc, addr, value, mask);
    } else {
       iris_store_overwrite(proc, addr, value, mask);
    }
 }
-void iris_load_store(iris_core* proc, instruction* inst) {
+void iris_load_store(Core* proc, instruction* inst) {
    // load a word's worth of data and then modify it according to the bit mask
    word addr0 = iris_get_register(proc, get_load_store_reg0(inst)),
         addr1 = iris_get_register(proc, get_load_store_reg1(inst));
@@ -834,4 +831,5 @@ void iris_load_store(iris_core* proc, instruction* inst) {
       default:
          iris_error("invalid load/store operation provided", ErrorInvalidLoadStoreOperation);
    }
+}
 }

@@ -82,8 +82,9 @@ ALL_BINARIES = ${IRIS16_BINARIES} \
 			   ${STACK64_BINARIES}
 ALL_OBJECTS = ${ALL_IRIS16_OBJECTS} \
 			  ${ALL_STACK64_OBJECTS}
-
-all: options ${IRIS16} ${STACK64}
+# NOTE: stack64 isn't complete and hasn't been ported over so it is currently
+# broken
+all: options ${IRIS16} 
 
 options:
 	@echo iris build options:

@@ -2,14 +2,15 @@
 #ifndef _IRIS_H
 #define _IRIS_H
 #include <cstdint>
-//#include <stdbool.h>
+#include "iris_base.h"
+#include "Core.h"
+namespace stack64 {
 typedef unsigned char byte;
 typedef uint16_t immediate;
 typedef uint32_t hword;
 typedef uint64_t word;
 /* four bytes and now super flexible */
 typedef hword raw_instruction;
-namespace stack64 {
 
 class instruction {
 	public:
@@ -39,17 +40,34 @@ enum {
 
 enum InstructionField {
 #define X(name, u0, u1, u2, u3, u4) name,
-#include "instruction.def"
+#include "target/stack64/instruction.def"
 #undef X
 };
-
-struct iris_core {
-   word gpr[RegisterCount];
-   byte* memory;
-   hword pc;
-   bool advancepc,
-		terminateexecution;
-   hword memorysize;
+class Core : public iris::Core {
+	public:
+		explicit Core(hword capacity);
+		~Core();
+		virtual void initialize();
+		virtual void installprogram(std::istream& stream);
+		virtual void shutdown();
+		virtual void dump(std::ostream& stream);
+		virtual void run();
+	private:
+		void dispatch();
+		void arithmetic();
+		void move();
+		void jump();
+		void compare();
+		void loadStore();
+		void misc();
+	private:
+		
+		word gpr[RegisterCount];
+		byte* memory;
+		hword pc;
+		bool advancepc,
+			 terminateexecution;
+		hword memorysize;
    
 };
 
@@ -470,34 +488,34 @@ enum {
 //   MoveOpPop, /* pop r? */
 //};
 
-void iris_rom_init(iris_core* proc);
-void iris_arithmetic(iris_core* proc, instruction* inst);
-void iris_move(iris_core* proc, instruction* inst);
-void iris_jump(iris_core* proc, instruction* inst);
-void iris_compare(iris_core* proc, instruction* inst);
-void iris_put_register(iris_core* proc, byte index, word value);
-word iris_get_register(iris_core* proc, byte index);
-void iris_dispatch(iris_core* proc, instruction* value);
-void iris_error(char* message, int code);
-void iris_misc(iris_core* proc, instruction* inst);
-void iris_load_store(iris_core* proc, instruction* inst);
+//void iris_rom_init(Core* proc);
+//void iris_arithmetic(Core* proc, instruction* inst);
+//void iris_move(Core* proc, instruction* inst);
+//void iris_jump(Core* proc, instruction* inst);
+//void iris_compare(Core* proc, instruction* inst);
+//void iris_put_register(Core* proc, byte index, word value);
+//word iris_get_register(Core* proc, byte index);
+//void iris_dispatch(Core* proc, instruction* value);
+//void iris_error(char* message, int code);
+//void iris_misc(Core* proc, instruction* inst);
+//void iris_load_store(Core* proc, instruction* inst);
 /* mnemonics */
-const char* iris_arithmetic_mnemonic(instruction* insn);
-const char* iris_move_mnemonic(instruction* insn);
-const char* iris_jump_mnemonic(instruction* insn);
-const char* iris_compare_mnemonic(instruction* insn);
-const char* iris_misc_mnemonic(instruction* insn);
+//const char* iris_arithmetic_mnemonic(instruction* insn);
+//const char* iris_move_mnemonic(instruction* insn);
+//const char* iris_jump_mnemonic(instruction* insn);
+//const char* iris_compare_mnemonic(instruction* insn);
+//const char* iris_misc_mnemonic(instruction* insn);
 /* unparse */
-void iris_unparse(char* unparsed, instruction* insn);
-void iris_unparse_register(char* unparsed, byte index);
-void iris_unparse_arithmetic(char* unparsed, instruction* insn);
-void iris_unparse_move(char* unparsed, instruction* insn);
-void iris_unparse_jump(char* unparsed, instruction* insn);
-void iris_unparse_normal_jump(char* unparsed, instruction* insn);
-void iris_unparse_if_then_else(char* unparsed, instruction* insn);
-void iris_unparse_compare(char* unparsed, instruction* insn);
-void iris_unparse_bitstring(char* bits, instruction* insn);
-void iris_unparse_misc(char* unparsed, instruction* insn);
+//void iris_unparse(char* unparsed, instruction* insn);
+//void iris_unparse_register(char* unparsed, byte index);
+//void iris_unparse_arithmetic(char* unparsed, instruction* insn);
+//void iris_unparse_move(char* unparsed, instruction* insn);
+//void iris_unparse_jump(char* unparsed, instruction* insn);
+//void iris_unparse_normal_jump(char* unparsed, instruction* insn);
+//void iris_unparse_if_then_else(char* unparsed, instruction* insn);
+//void iris_unparse_compare(char* unparsed, instruction* insn);
+//void iris_unparse_bitstring(char* bits, instruction* insn);
+//void iris_unparse_misc(char* unparsed, instruction* insn);
 
 /* encode */
 #define X(index, bitmask, shiftby, typ, isreg, postfix) \
@@ -508,8 +526,8 @@ void iris_encode_ ## postfix (instruction* inst, typ value);
 byte iris_decode_register(instruction* inst, byte index);
 void iris_encode_register(instruction* inst, byte index, byte value);
 
-void iris_shutdown(iris_core*);
-void iris_new_core(iris_core* proc, hword memorysize);
+//void iris_shutdown(Core*);
+//void iris_new_core(Core* proc, hword memorysize);
 
 
 } // namespace stack64

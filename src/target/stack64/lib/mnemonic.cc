@@ -1,7 +1,7 @@
 #include <string.h>
 #include <stdint.h>
-#include "iris.h"
-
+#include "target/stack64/iris.h"
+namespace stack64 {
 const char* iris_arithmetic_mnemonic(instruction* insn) {
    switch(get_arithmetic_op(insn)) {
       case ArithmeticOpAdd:                     return "add";
@@ -145,7 +145,7 @@ const char* iris_compare_mnemonic(instruction* insn) {
                   } \
                   return "UNKNOWN_COMBINE"; \
                }
-#include "moveops.def" 
+#include "target/stack64/moveops.def" 
 #undef X
       default:                                  return "UNKNOWN_COMPARE";
    }
@@ -159,4 +159,5 @@ const char* iris_misc_mnemonic(instruction* insn) {
 
 }
 
+}
 /* vim: set expandtab tabstop=3 shiftwidth=3: */
