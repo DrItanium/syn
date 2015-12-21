@@ -1,7 +1,7 @@
 /* UGH!!!!! */
 #ifndef _IRIS_H
 #define _IRIS_H
-#include <stdint.h>
+#include <cstdint>
 //#include <stdbool.h>
 typedef unsigned char byte;
 typedef uint16_t immediate;
@@ -9,6 +9,7 @@ typedef uint32_t hword;
 typedef uint64_t word;
 /* four bytes and now super flexible */
 typedef hword raw_instruction;
+namespace stack64 {
 
 class instruction {
 	public:
@@ -511,4 +512,5 @@ void iris_shutdown(iris_core*);
 void iris_new_core(iris_core* proc, hword memorysize);
 
 
+} // namespace stack64
 #endif 
