@@ -5,6 +5,3 @@ types.
 The primary core being worked on right now is the iris core. It is a 16-bit 
 RISC/CISC cpu core with a ton of registers and a fixed memory space.
 
-Branches
-   - master [![Build Status](https://travis-ci.org/DrItanium/iris.svg?branch=)](https://travis-ci.org/DrItanium/iris)
-   - iris [![Build Status](https://travis-ci.org/DrItanium/iris.svg?branch=)](https://travis-ci.org/DrItanium/iris)
