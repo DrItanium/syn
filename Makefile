@@ -168,7 +168,10 @@ ${STACK64_ASM_BINARY}: ${STACK64_ASM_BASE}/lex.yy.c ${STACK64_ASM_BASE}/asm.tab.
 
 clean:
 	@echo -n Cleaning...
-	@rm -f ${ALL_OBJECTS} ${ALL_BINARIES}
+	@rm -f ${ALL_OBJECTS} 
+	@for n in $(ALL_BINARIES); do \
+		rm -f bin/$$n; \
+	done
 	@echo done.
 
 install: ${ALL_BINARIES}
