@@ -8,4 +8,5 @@ X(Memset, MoveOp::Memset, Store, Data, Register, Immediate)
 X(Push, 		 MoveOp::Push, Push, Stack, Register, Register)
 X(PushImmediate, MoveOp::PushImmediate, Push, Stack, Register, Immediate)
 X(Pop, MoveOp::Pop, Pop, Stack, Register, Register)
-
+X(LoadCode, MoveOp::LoadCode, LoadCode, Code, Register, UpperLowerRegisters)
+X(StoreCode, MoveOp::StoreCode, StoreCode, Code, Register, UpperLowerRegisters)

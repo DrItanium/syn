@@ -6,6 +6,7 @@ namespace iris16 {
 		switch(static_cast<MoveOp>(current.getOperation())) {
 #define GPRRegister0 (gpr[current.getDestination()])
 #define GPRRegister1 (gpr[current.getSource0()])
+#define GPRRegister2 (gpr[current.getSource1()])
 #define GPRImmediate1 (current.getImmediate())
 #define DataRegister0 GPRRegister0
 #define DataRegister1 GPRRegister1
@@ -19,6 +20,17 @@ namespace iris16 {
 #define StoreRegister0  GPRRegister0
 #define StoreRegister1 GPRRegister1
 #define StoreImmediate1 GPRImmediate1
+#define CodeRegister0 GPRRegister0
+#define CodeUpperLowerRegisters1 GPRRegister1
+#define CodeUpperLowerRegisters2 GPRRegister2
+
+#define XLoadCode(type, dest, src) \
+			auto result = instruction[INDIRECTOR(type, dest ## 0)]; \
+			INDIRECTOR(type, src ## 1) = (word)result; \
+			INDIRECTOR(type, src ## 2) = (word)(result >> 16);
+
+#define XStoreCode(type, dest, src) \
+			instruction[INDIRECTOR(type, dest ## 0)] = ((((dword)INDIRECTOR(type, src ## 2)) << 16) | ((dword)INDIRECTOR(type, src ## 1)));
 
 #define XMove(type, dest, src) \
 			INDIRECTOR(type, dest ## 0) = INDIRECTOR(type, src ## 1);
@@ -38,8 +50,10 @@ namespace iris16 {
 			data[INDIRECTOR(type, dest ##  0)] = INDIRECTOR(type, src ## 1); 
 #define X(name, id, type, target, dest, src) \
 			case id: \
+					 { \
 					 INDIRECTOR(X,type)(target, dest, src) \
-			break;
+			break; \
+					 }
 #include "move.def"
 #undef X
 #undef XMove
@@ -63,6 +77,8 @@ namespace iris16 {
 #undef StoreRegister0  	
 #undef StoreRegister1 		
 #undef StoreImmediate1 	
+#undef XStoreCode
+#undef XLoadCode
 			default:
 				std::cerr << "Illegal move code " << current.getOperation() << std::endl;
 				execute = false;
