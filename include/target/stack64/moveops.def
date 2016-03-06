@@ -1,6 +1,0 @@
-X(CompareOpEq, ==, "eq")
-X(CompareOpNeq, !=, "ne")
-X(CompareOpLessThan, <, "lt")
-X(CompareOpGreaterThan, >, "gt")
-X(CompareOpLessThanOrEqualTo, <=, "le")
-X(CompareOpGreaterThanOrEqualTo, >=, "ge")
