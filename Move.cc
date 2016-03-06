@@ -79,6 +79,9 @@ namespace iris16 {
 #undef StoreImmediate1 	
 #undef XStoreCode
 #undef XLoadCode
+#undef CodeRegister0 
+#undef CodeUpperLowerRegisters1 
+#undef CodeUpperLowerRegisters2 
 			default:
 				std::cerr << "Illegal move code " << current.getOperation() << std::endl;
 				execute = false;
