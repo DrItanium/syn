@@ -20,31 +20,31 @@ namespace iris16 {
 		advanceIp = false;
 		word ip = gpr[ArchitectureConstants::InstructionPointerIndex];
 		switch(static_cast<JumpOp>(current.getOperation())) {
+#define XImmediateCond_true (current.getImmediate())
+#define XImmediateCond_false (gpr[current.getSource0()])
+#define XIfThenElse_false(immediate) \
+			newAddr = cond ? INDIRECTOR(XImmediateCond, _ ## immediate) : ip + 1;
+#define XIfThenElse_true(immediate) \
+			newAddr = gpr[cond ? current.getSource0() : current.getSource1()];
+#define XImmediateUncond_false (gpr[current.getDestination()])
+#define XImmediateUncond_true (current.getImmediate())
+#define XConditional_false(name, ifthenelse, immediate) \
+			newAddr = INDIRECTOR(XImmediateUncond, _ ## immediate);
+#define XConditional_true(name, ifthenelse, immediate) \
+			cond = jumpCond<JumpOp:: name> (gpr[current.getDestination()]); \
+			INDIRECTOR(XIfThenElse, _ ## ifthenelse)(immediate)
+#define XLink_true \
+			if (cond) { \
+				gpr[ArchitectureConstants::LinkRegisterIndex] = ip + 1; \
+			}
+#define XLink_false
+
 #define X(name, ifthenelse, conditional, iffalse, immediate, link) \
 			case JumpOp:: name: \
 					 { \
-						 if (conditional) { \
-							 cond = jumpCond<JumpOp::name>(gpr[current.getDestination()]); \
-							 if(ifthenelse) { \
-								 newAddr = gpr[cond ? current.getSource0() : current.getSource1()]; \
-							 } else { \
-								 if (immediate) { \
-									 newAddr = cond ? current.getImmediate() : ip + 1; \
-								 } else { \
-									 newAddr = cond ? gpr[current.getSource0()] : ip + 1; \
-								 } \
-							 } \
-						 } else  { \
-							 if (immediate) { \
-								 newAddr = current.getImmediate(); \
-							 } else { \
-								 newAddr = gpr[current.getDestination()]; \
-							 } \
-						 } \
+						 INDIRECTOR(XConditional, _ ## conditional)(name, ifthenelse, immediate) \
 						 gpr[ArchitectureConstants::InstructionPointerIndex] = newAddr; \
-						 if (link && cond) { \
-								 gpr[ArchitectureConstants::LinkRegisterIndex] = ip + 1; \
-						 }  \
+						 INDIRECTOR(XLink, _ ## link)  \
 						 break; \
 					 }
 #include "jump.def"
