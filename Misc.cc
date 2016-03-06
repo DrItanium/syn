@@ -4,8 +4,8 @@ namespace iris16 {
 
 	void Core::misc() {
 		switch(static_cast<MiscOp>(current.getOperation())) {
-#define X(name, id, func) \
-			case id: \
+#define X(name, func) \
+			case MiscOp:: name: \
 			func (); \
 			break;
 #include "misc.def"

@@ -1,1 +1,1 @@
-X(SystemCall, MiscOp::SystemCall, systemCall)
+X(SystemCall, systemCall)

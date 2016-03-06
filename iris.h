@@ -35,7 +35,7 @@ namespace iris16 {
 	};
 	static_assert((byte)ArithmeticOp::Count < ((byte)ArchitectureConstants::MaxOperations), "too many Arithmetic operations defined");
 	enum class MiscOp : byte {
-#define X(title, id, func) title, 
+#define X(title, func) title, 
 #include "misc.def"
 #undef X
 		Count
@@ -97,7 +97,7 @@ namespace iris16 {
 #define X(_, op, __) void op();
 #include "groups.def"
 #undef X
-#define X(title, id, func) void func ();
+#define X(title, func) void func ();
 #include "misc.def"
 #undef X
 
