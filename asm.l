@@ -5,7 +5,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <cstdint>
-#include "target/iris16/iris.h"
+#include "iris.h"
 #include "asm.tab.h"
 #define _POSIX_SOURCE 1
 

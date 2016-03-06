@@ -3,7 +3,7 @@
 #include <cstdio>
 #include <string>
 #include <cstdint>
-#include "target/iris16/iris.h"
+#include "iris.h"
 #include <fstream>
 #include <iostream>
 #include <vector>

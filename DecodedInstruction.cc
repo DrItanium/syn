@@ -1,4 +1,4 @@
-#include "target/iris16/iris.h"
+#include "iris.h"
 
 namespace iris16 {
 	DecodedInstruction::DecodedInstruction() { }
@@ -6,7 +6,7 @@ namespace iris16 {
 	void DecodedInstruction::decode(raw_instruction input) {
 #define X(title, mask, shift, type, is_register, post) \
 		_ ## post = iris::decodeBits<raw_instruction, type, mask, shift>(input);
-#include "target/iris16/instruction.def"
+#include "instruction.def"
 #undef X
 	}
 }

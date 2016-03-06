@@ -1,4 +1,4 @@
-#include "target/iris16/iris.h"
+#include "iris.h"
 
 namespace iris16 {
 	void Core::compare() {
@@ -12,7 +12,7 @@ namespace iris16 {
 			gpr[current.getDestination()] INDIRECTOR(Op, mod) (gpr[current.getSource0()] compare gpr[current.getSource1()]); \
 			break;
 
-#include "target/iris16/compare.def"
+#include "compare.def"
 #undef X
 #undef OpNone
 #undef OpAnd

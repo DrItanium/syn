@@ -1,4 +1,4 @@
-#include "target/iris16/iris.h"
+#include "iris.h"
 
 namespace iris16 {
 	void Core::move() {
@@ -40,7 +40,7 @@ namespace iris16 {
 			case id: \
 					 INDIRECTOR(X,type)(target, dest, src) \
 			break;
-#include "target/iris16/move.def"
+#include "move.def"
 #undef X
 #undef XMove
 #undef XSwap

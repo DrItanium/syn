@@ -1,4 +1,4 @@
-#include "target/iris16/iris.h"
+#include "iris.h"
 
 namespace iris16 {
 	template<ArithmeticOp op>
@@ -19,7 +19,7 @@ namespace iris16 {
 #define XImmediate(n, op) XNone(n, op) 
 #define XDenominatorImmediate(n, op) XDenominator(n, op)
 #define X(name, title, op, desc) INDIRECTOR(X, desc)(title, op)
-#include "target/iris16/arithmetic.def"
+#include "arithmetic.def"
 #undef X
 #undef XNone
 #undef XDenominator
@@ -52,7 +52,7 @@ namespace iris16 {
 							INDIRECTOR(X, desc)(title) \
 							break; \
 						}
-#include "target/iris16/arithmetic.def"
+#include "arithmetic.def"
 #undef X
 #undef XNone
 #undef XDenominator

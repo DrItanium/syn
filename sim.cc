@@ -1,5 +1,5 @@
 /* sim.c - the iris simulator */
-#include "target/iris16/iris.h"
+#include "iris.h"
 #include <iostream>
 #include <fstream>
 #include <string>

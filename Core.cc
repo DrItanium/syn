@@ -1,4 +1,4 @@
-#include "target/iris16/iris.h"
+#include "iris.h"
 #include <functional>
 
 namespace iris16 {
@@ -80,7 +80,7 @@ namespace iris16 {
 	void Core::dispatch() {
 		switch(static_cast<InstructionGroup>(current.getGroup())) {
 #define X(_, operation, tag) case tag: operation(); break; 
-#include "target/iris16/groups.def"
+#include "groups.def"
 #undef X
 			default:
 				std::cerr << "Illegal instruction group " << current.getGroup() << std::endl;

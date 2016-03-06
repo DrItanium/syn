@@ -1,4 +1,4 @@
-#include "target/iris16/iris.h"
+#include "iris.h"
 
 namespace iris16 {
 
@@ -8,7 +8,7 @@ namespace iris16 {
 			case id: \
 			func (); \
 			break;
-#include "target/iris16/misc.def"
+#include "misc.def"
 #undef X
 			default:
 				std::cerr << "Illegal misc code " << current.getOperation() << std::endl;

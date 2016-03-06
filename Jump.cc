@@ -1,4 +1,4 @@
-#include "target/iris16/iris.h"
+#include "iris.h"
 
 namespace iris16 {
 	template<JumpOp op> 
@@ -7,7 +7,7 @@ namespace iris16 {
 		};
 #define X(name, id, ifthenelse, conditional, iffalse, immediate, link) \
 	template<> struct ConditionalStyle<id> { static const bool isFalseForm = iffalse; };
-#include "target/iris16/jump.def"
+#include "jump.def"
 #undef X
 	template<JumpOp op>
 		bool jumpCond(word cond) {
@@ -47,7 +47,7 @@ namespace iris16 {
 						 }  \
 						 break; \
 					 }
-#include "target/iris16/jump.def"
+#include "jump.def"
 #undef X
 			default:
 				std::cerr << "Illegal jump code " << current.getOperation() << std::endl;

@@ -4,7 +4,7 @@
 #include <string>
 #include <cstdint>
 #include <fstream>
-#include "target/iris16/iris.h"
+#include "iris.h"
 
 
 enum class Segment  {

@@ -22,21 +22,21 @@ namespace iris16 {
 
 	enum class InstructionGroup : byte {
 #define X(title, _, __) title,
-#include "target/iris16/groups.def"
+#include "groups.def"
 #undef X
 		Count,
 	};
 	static_assert((byte)InstructionGroup::Count < ((byte)ArchitectureConstants::MaxGroups), "too many instruction groups defined");
 	enum class ArithmeticOp : byte {
 #define X(name, _, __, ___) name,
-#include "target/iris16/arithmetic.def"
+#include "arithmetic.def"
 #undef X
 		Count
 	};
 	static_assert((byte)ArithmeticOp::Count < ((byte)ArchitectureConstants::MaxOperations), "too many Arithmetic operations defined");
 	enum class MiscOp : byte {
 #define X(title, id, func) title, 
-#include "target/iris16/misc.def"
+#include "misc.def"
 #undef X
 		Count
 	};
@@ -44,7 +44,7 @@ namespace iris16 {
 
 	enum class JumpOp : byte {
 #define X(name, id, ifthenelse, conditional, iffalse, immediate, link) name,
-#include "target/iris16/jump.def"
+#include "jump.def"
 #undef X
 		Count
 	};
@@ -52,20 +52,20 @@ namespace iris16 {
 
 	enum class SystemCalls : byte {
 #define X(name) name,
-#include "target/iris16/syscalls.def"
+#include "syscalls.def"
 #undef X
 		Count,
 	};
 	enum class MoveOp : byte {
 #define X(name, id, type, target, dest, src) name,
-#include "target/iris16/move.def"
+#include "move.def"
 #undef X
 		Count,
 	};
 	static_assert((byte)MoveOp::Count < ((byte)ArchitectureConstants::MaxOperations), "too many Move operations defined");
 	enum class CompareOp : byte {
 #define X(name, id, op, group) name,
-#include "target/iris16/compare.def"
+#include "compare.def"
 #undef X
 		Count,
 	};
@@ -75,11 +75,11 @@ namespace iris16 {
 			DecodedInstruction();
 			void decode(raw_instruction input);
 #define X(title, mask, shift, type, is_register, post) type get ## title () const { return _ ## post ; }
-#include "target/iris16/instruction.def"
+#include "instruction.def"
 #undef X
 		private:
 #define X(title, mask, shift, type, is_register, post) type _ ## post ;
-#include "target/iris16/instruction.def"
+#include "instruction.def"
 #undef X
 	};
 	class Core : public iris::Core {
@@ -95,10 +95,10 @@ namespace iris16 {
 		private:
 			void dispatch();
 #define X(_, op, __) void op();
-#include "target/iris16/groups.def"
+#include "groups.def"
 #undef X
 #define X(title, id, func) void func ();
-#include "target/iris16/misc.def"
+#include "misc.def"
 #undef X
 
 		private:
