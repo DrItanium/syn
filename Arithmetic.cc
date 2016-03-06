@@ -7,18 +7,18 @@ namespace iris16 {
 		}
 #define XNone(n, op) \
 	template<> \
-	word arithmeticOp<n>(word a, word b) { \
+	word arithmeticOp<ArithmeticOp:: n>(word a, word b) { \
 		return a op b; \
 	}
 #define XDenominator(n, op) XNone(n, op)
 #define XUnary(n, op) \
 	template<> \
-	word arithmeticOp<n>(word a, word unused) { \
+	word arithmeticOp<ArithmeticOp:: n>(word a, word unused) { \
 		return op a; \
 	}
 #define XImmediate(n, op) XNone(n, op) 
 #define XDenominatorImmediate(n, op) XDenominator(n, op)
-#define X(name, title, op, desc) INDIRECTOR(X, desc)(title, op)
+#define X(name, op, desc) INDIRECTOR(X, desc)(name, op)
 #include "arithmetic.def"
 #undef X
 #undef XNone
@@ -29,9 +29,9 @@ namespace iris16 {
 
 	void Core::arithmetic() {
 		switch(static_cast<ArithmeticOp>(current.getOperation())) {
-#define XNone(n) gpr[current.getDestination()] = arithmeticOp<n>( gpr[current.getSource0()], gpr[current.getSource1()]);
-#define XImmediate(n) gpr[current.getDestination()] = arithmeticOp<n>(gpr[current.getSource0()], static_cast<word>(current.getSource1()));
-#define XUnary(n) gpr[current.getDestination()] = arithmeticOp<n>(gpr[current.getSource0()], 0);
+#define XNone(n) gpr[current.getDestination()] = arithmeticOp<ArithmeticOp:: n>( gpr[current.getSource0()], gpr[current.getSource1()]);
+#define XImmediate(n) gpr[current.getDestination()] = arithmeticOp<ArithmeticOp:: n>(gpr[current.getSource0()], static_cast<word>(current.getSource1()));
+#define XUnary(n) gpr[current.getDestination()] = arithmeticOp<ArithmeticOp:: n>(gpr[current.getSource0()], 0);
 #define XDenominator(n) \
 			if (gpr[current.getSource1()] == 0) { \
 				std::cerr << "denominator in for operation " << #n << " is zero!" << std::endl; \
@@ -46,10 +46,10 @@ namespace iris16 {
 			} else { \
 				XImmediate(n) \
 			}
-#define X(name, title, op, desc) \
-			case title: \
+#define X(name, op, desc) \
+			case ArithmeticOp:: name: \
 						{ \
-							INDIRECTOR(X, desc)(title) \
+							INDIRECTOR(X, desc)(name) \
 							break; \
 						}
 #include "arithmetic.def"

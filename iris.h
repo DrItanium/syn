@@ -28,7 +28,7 @@ namespace iris16 {
 	};
 	static_assert((byte)InstructionGroup::Count < ((byte)ArchitectureConstants::MaxGroups), "too many instruction groups defined");
 	enum class ArithmeticOp : byte {
-#define X(name, _, __, ___) name,
+#define X(name, __, ___) name,
 #include "arithmetic.def"
 #undef X
 		Count
