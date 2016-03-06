@@ -3,10 +3,10 @@
 
 int main(int argc, char* argv[]) {
 	char c = 0;
-	std::cin >> c;
+	std::cin >> std::noskipws >> c;
 	while (!std::cin.eof()) {
 		std::cout << "@declare 0x" << std::hex << (int)c << std::endl;
-		std::cin >> c;
+		std::cin >> std::noskipws >> c;
 	}
 	std::cout << "@declare 0x00" << std::endl;
 	return 0;

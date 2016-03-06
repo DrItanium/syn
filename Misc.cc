@@ -29,7 +29,7 @@ namespace iris16 {
 				break;
 			case SystemCalls::GetC:
 				byte value;
-				std::cin >> value;
+				std::cin >> std::noskipws >> value;
 				gpr[current.getSource0()] = (word)value;
 				break;
 			default:
