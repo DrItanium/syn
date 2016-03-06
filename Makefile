@@ -143,3 +143,28 @@ uninstall:
 .SECONDARY: ${TEST_OBJECTS}
 
 .PHONY: all options clean install uninstall
+
+
+Arithmetic.o: Arithmetic.cc iris.h iris_base.h Core.h groups.def \
+	arithmetic.def misc.def jump.def syscalls.def move.def compare.def \
+	instruction.def
+Compare.o: Compare.cc iris.h iris_base.h Core.h groups.def arithmetic.def \
+	misc.def jump.def syscalls.def move.def compare.def instruction.def
+Core.o: Core.cc iris.h iris_base.h Core.h groups.def arithmetic.def \
+	misc.def jump.def syscalls.def move.def compare.def instruction.def
+DecodedInstruction.o: DecodedInstruction.cc iris.h iris_base.h Core.h \
+	groups.def arithmetic.def misc.def jump.def syscalls.def move.def \
+	compare.def instruction.def
+Encoder.o: Encoder.cc iris.h iris_base.h Core.h groups.def arithmetic.def \
+	misc.def jump.def syscalls.def move.def compare.def instruction.def
+Jump.o: Jump.cc iris.h iris_base.h Core.h groups.def arithmetic.def \
+	misc.def jump.def syscalls.def move.def compare.def instruction.def
+link.o: link.cc iris.h iris_base.h Core.h groups.def arithmetic.def \
+	misc.def jump.def syscalls.def move.def compare.def instruction.def
+Misc.o: Misc.cc iris.h iris_base.h Core.h groups.def arithmetic.def \
+	misc.def jump.def syscalls.def move.def compare.def instruction.def
+Move.o: Move.cc iris.h iris_base.h Core.h groups.def arithmetic.def \
+	misc.def jump.def syscalls.def move.def compare.def instruction.def
+sim.o: sim.cc iris.h iris_base.h Core.h groups.def arithmetic.def \
+	misc.def jump.def syscalls.def move.def compare.def instruction.def
+strgen.o: strgen.cc

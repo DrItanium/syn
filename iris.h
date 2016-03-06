@@ -21,7 +21,7 @@ namespace iris16 {
 	word encodeWord(byte a, byte b);
 
 	enum class InstructionGroup : byte {
-#define X(title, _, __) title,
+#define X(title, _) title,
 #include "groups.def"
 #undef X
 		Count,
@@ -94,7 +94,7 @@ namespace iris16 {
 			void setDataMemory(word address, word value);
 		private:
 			void dispatch();
-#define X(_, op, __) void op();
+#define X(_, op) void op();
 #include "groups.def"
 #undef X
 #define X(title, func) void func ();

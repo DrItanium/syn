@@ -79,7 +79,7 @@ namespace iris16 {
 	}
 	void Core::dispatch() {
 		switch(static_cast<InstructionGroup>(current.getGroup())) {
-#define X(_, operation, tag) case tag: operation(); break; 
+#define X(name, operation) case InstructionGroup:: name: operation(); break; 
 #include "groups.def"
 #undef X
 			default:
