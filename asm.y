@@ -102,6 +102,8 @@ void usage(char* arg0);
 %token MOVE_OP_POP
 %token MOVE_OP_PUSH
 %token MOVE_OP_PUSHIMMEDIATE
+%token MOVE_OP_LOAD_CODE
+%token MOVE_OP_STORE_CODE
 %token JUMP_OP_UNCONDITIONALIMMEDIATE
 %token JUMP_OP_UNCONDITIONALIMMEDIATELINK
 %token JUMP_OP_UNCONDITIONALREGISTER
@@ -265,7 +267,18 @@ move_op:
        } |
        MOVE_OP_PUSHIMMEDIATE lexeme { 
          curri.op = (byte)iris16::MoveOp::PushImmediate;
-       }
+       } |
+	   MOVE_OP_STORE_CODE REGISTER REGISTER REGISTER {
+		curri.reg0 = $2;
+		curri.reg1 = $3;
+		curri.reg2 = $4;
+	   } |
+	   MOVE_OP_LOAD_CODE REGISTER REGISTER REGISTER {
+	   	curri.reg0 = $2;
+		curri.reg1 = $3;
+		curri.reg2 = $4;
+	   }
+
        ;
 
 jump_op:

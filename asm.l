@@ -47,8 +47,11 @@ omni [a-zA-Z0-9._]
 "swap" { return MOVE_OP_SWAP; }
 "set" { return MOVE_OP_SET; }
 "load" { return MOVE_OP_LOAD; }
+"load.imm" { return MOVE_OP_LOADMEM; }
 "load.mem" { return MOVE_OP_LOADMEM; }
+"load.code" { return MOVE_OP_LOAD_CODE; }
 "store" { return MOVE_OP_STORE; }
+"store.code" { return MOVE_OP_STORE_CODE; }
 "memset" { return MOVE_OP_STOREIMM; }
 "goto" { return JUMP_OP_UNCONDITIONALIMMEDIATE; }
 "goto.link" { return JUMP_OP_UNCONDITIONALIMMEDIATELINK; }
