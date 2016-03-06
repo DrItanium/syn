@@ -43,7 +43,7 @@ namespace iris16 {
 	static_assert((byte)MiscOp::Count < ((byte)ArchitectureConstants::MaxOperations), "too many Misc operations defined");
 
 	enum class JumpOp : byte {
-#define X(name, id, ifthenelse, conditional, iffalse, immediate, link) name,
+#define X(name, ifthenelse, conditional, iffalse, immediate, link) name,
 #include "jump.def"
 #undef X
 		Count

@@ -5,8 +5,8 @@ namespace iris16 {
 		struct ConditionalStyle {
 			static const bool isFalseForm = false;
 		};
-#define X(name, id, ifthenelse, conditional, iffalse, immediate, link) \
-	template<> struct ConditionalStyle<id> { static const bool isFalseForm = iffalse; };
+#define X(name, ifthenelse, conditional, iffalse, immediate, link) \
+	template<> struct ConditionalStyle<JumpOp:: name> { static const bool isFalseForm = iffalse; };
 #include "jump.def"
 #undef X
 	template<JumpOp op>
@@ -20,11 +20,11 @@ namespace iris16 {
 		advanceIp = false;
 		word ip = gpr[ArchitectureConstants::InstructionPointerIndex];
 		switch(static_cast<JumpOp>(current.getOperation())) {
-#define X(name, op, ifthenelse, conditional, iffalse, immediate, link) \
-			case op: \
+#define X(name, ifthenelse, conditional, iffalse, immediate, link) \
+			case JumpOp:: name: \
 					 { \
 						 if (conditional) { \
-							 cond = jumpCond<op>(gpr[current.getDestination()]); \
+							 cond = jumpCond<JumpOp::name>(gpr[current.getDestination()]); \
 							 if(ifthenelse) { \
 								 newAddr = gpr[cond ? current.getSource0() : current.getSource1()]; \
 							 } else { \
