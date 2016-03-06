@@ -6,7 +6,10 @@ v.obj
 v.img
 
 
-bin/iris16
+iris16
 libiris16.a
-bin/iris16asm
-bin/iris16link
+iris16asm
+iris16link
+asm.tab.c
+asm.tab.h
+lex.yy.c
