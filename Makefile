@@ -22,6 +22,11 @@ IRIS16_LINK_BINARY = iris16link
 IRIS16_LINK_MAIN = link.o
 IRIS16_LINK_OBJECTS = ${IRIS16_LINK_MAIN}
 
+
+IRIS16_STRGEN_BINARY = iris16strgen
+IRIS16_STRGEN_MAIN = strgen.o
+IRIS16_STRGEN_OBJECTS = ${IRIS16_STRGEN_MAIN} 
+
 IRIS16_ASM_BINARY = iris16asm
 
 IRIS16_ASM_FILES = lex.yy.c \
@@ -36,11 +41,14 @@ ALL_IRIS16_OBJECTS = ${IRIS16_OBJECTS} \
 					 ${IRIS16_LINK_OBJECTS} \
 					 ${IRIS16_OUT} \
 					 ${IRIS16_ASM_OBJECTS} \
-					 ${IRIS16_ASM_FILES}
+					 ${IRIS16_ASM_FILES} \
+					 ${IRIS16_STRGEN_OBJECTS}
 
 IRIS16_BINARIES = ${IRIS16_SIM_BINARY} \
 				  ${IRIS16_LINK_BINARY} \
-				  ${IRIS16_ASM_BINARY}
+				  ${IRIS16_ASM_BINARY} \
+				  ${IRIS16_STRGEN_BINARY}
+
 IRIS16_TOOLS = ${IRIS16_BINARIES}
 
 IRIS16 = ${IRIS16_OUT} \
@@ -88,6 +96,12 @@ ${IRIS16_LINK_BINARY}: ${IRIS16_LINK_MAIN} ${IRIS16_OUT}
 	@echo -n Building ${IRIS16_LINK_BINARY} binary out of $^...
 	@${CXX} ${LDFLAGS} -o ${IRIS16_LINK_BINARY} $^
 	@echo done.
+
+${IRIS16_STRGEN_BINARY}: ${IRIS16_STRGEN_MAIN} ${IRIS16_OUT}
+	@echo -n Building ${IRIS16_STRGEN_BINARY} binary out of $^...
+	@${CXX} ${LDFLAGS} -o ${IRIS16_STRGEN_BINARY} $^
+	@echo done.
+
 
 asm.tab.c asm.tab.h: asm.y
 	@${YACC} -o asm.tab.c -d asm.y
