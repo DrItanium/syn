@@ -48,8 +48,8 @@ namespace iris16 {
 			stack[INDIRECTOR(type, Push ## dest ## 0)] = INDIRECTOR(type, Push ## src ## 1);
 #define XStore(type, dest, src) \
 			data[INDIRECTOR(type, dest ##  0)] = INDIRECTOR(type, src ## 1); 
-#define X(name, id, type, target, dest, src) \
-			case id: \
+#define X(name, type, target, dest, src) \
+			case MoveOp:: name: \
 					 { \
 					 INDIRECTOR(X,type)(target, dest, src) \
 			break; \

@@ -57,7 +57,7 @@ namespace iris16 {
 		Count,
 	};
 	enum class MoveOp : byte {
-#define X(name, id, type, target, dest, src) name,
+#define X(name, type, target, dest, src) name,
 #include "move.def"
 #undef X
 		Count,
