@@ -7,9 +7,9 @@ namespace iris16 {
 #define OpAnd &=
 #define OpOr |=
 #define OpXor ^=
-#define X(type, id, compare, mod) \
-		case id: \
-			gpr[current.getDestination()] INDIRECTOR(Op, mod) (gpr[current.getSource0()] compare gpr[current.getSource1()]); \
+#define X(type, compare, mod) \
+			case CompareOp:: type: \
+								   gpr[current.getDestination()] INDIRECTOR(Op, mod) (gpr[current.getSource0()] compare gpr[current.getSource1()]); \
 			break;
 
 #include "compare.def"
