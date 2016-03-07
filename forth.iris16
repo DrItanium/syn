@@ -7,11 +7,11 @@
 ;	- LinkRegister: r254
 ; 	- StackPointer: r253
 ; Specified Registers (upper half of the register set)
+;   - Data and index stack are stored in 
 ;	- r128 - parameter stack bottom
 ;	- r129 - parameter stack current
 ;	- r130 - return stack bottom
 ; 	- r131 - return stack current
-;   - r132-r140 - temporary registers
 ;-----------------------------------------------------------------------------
 @label DONE			; top of our "control loop", what he calls RETURN
 	
@@ -23,14 +23,28 @@
 ;-----------------------------------------------------------------------------
 @label print
 	@label print_loop
-		load r132 r32 				; load the current char from memory into a register
-		if0.goto r132 print_done	; before printing, check to see that we should print, if it is zero then stop
-		system 2 r132 r132			; print the character to the user
+		load r127 r32 				; load the current char from memory into a register
+		if0.goto r127 print_done	; before printing, check to see that we should print, if it is zero then stop
+		system 2 r127 r127			; print the character to the user
 		addi r32 r32 1				; advance the index pointer to the next character
 		goto print_loop				; we're not done yet
 	@label print_done
 		goto r254					; return using the link register
 
+;-----------------------------------------------------------------------------
+; Treat the top of the stack as an address and loads its contents in place of
+; the original address
+;-----------------------------------------------------------------------------
+@label AtVerb
+	load r130 r130		; replace the top of the stack with its contents in memory
+	goto r254			; we're done here, go back
+;-----------------------------------------------------------------------------
+; Store second in memory at the address stored in top
+;-----------------------------------------------------------------------------
+@label EqualsVerb
+	store r130 r131		; store the second stack element into memory using the top as the address
+	
+	goto r254			; we're done here!
 ;-----------------------------------------------------------------------------
 ; Takes in the offending word, an error message, prints them, then clears the
 ; stacks and then calls DONE.
