@@ -30,6 +30,14 @@
 ;	- Max Word Length: r232 (wlen)
 ;	- Safe Temporary 7: r231 (stmp7)
 ;	- Zero register: r230 (zero)
+;	- FETCH / DEPOSIT current: r229 (fdcur)
+;	- input pointer: r228 (inptr)
+;	- output pointer: r227 (outptr)
+;-----------------------------------------------------------------------------
+; Parameter passing conventions
+;  If the given subroutine calls another subroutine then you need to save
+;  the current lr onto the return stack, otherwise you can just use it.
+;  lr will always be populated in the case of subroutine calls
 ;-----------------------------------------------------------------------------
 ; setup the parameter and return stack pointers inside stack memory
 ;-----------------------------------------------------------------------------
@@ -53,50 +61,11 @@ set space 0x20							; fixed register for the ascii space code
 set wlen 62								; the maximum number of characters allowed in a single word (- 1 for the terminator)
 @label DONE								; top of our "control loop", what he calls RETURN
 	set spar0 WORD_BUFFER				; load the front of the word buffer
-;-----------------------------------------------------------------------------
-; WORD: Read the next word in the input
-;	spar0 - pointer to temporary storage to save the current word
-;-----------------------------------------------------------------------------
-	@label WORD
-		move stmp2 spar0												; copy the pointer address to temporary storage so we can mess with it
-		set	stmp3 WORD_read_data										; where to jump to if we see a space
-		set	stmp4 WORD_reassign_jumps 									; where to jump to when wanting to handle storage
-		set stmp5 0														; The number of characters in the word
-		@label WORD_read_data											; Find all leading spaces and discard them
-			system 1 stmp0 stmp0										; load the next character from input
-			eq stmp1 stmp0 space 										; check and see if it is a space
-			if1 stmp1 stmp3 stmp4										; if we see a space then jump
-																		; to stmp2 otherwise it is to
-																		; stmp4. Initially this is
-																		; setup to skip all prefixed
-																		; spaces. Once a non-space has
-																		; been seen then the jumps
-																		; are reassigned to process (and store) 
-																		; the word until we see another space
-																		;
-			@label WORD_reassign_jumps									; This should only be executed once!
-				set stmp3 WORD_done_reading								; terminate if we see another space at this point
-				set stmp4 WORD_store_word								; continue processing but skip this code
-																		;
-			@label WORD_store_word										; The actual save operation
-				store stmp2 stmp0										; store the character into the character buffer
-				addi stmp2 stmp2 1										; move to the next character
-				gt stmp1 stmp5 wlen										; did we go over the maximum word length?
-				goto.if1 stmp1 WORD_too_large_word_ERROR				; If so then error out
-				addi stmp5 stmp5 1										; increment the word length count 
-				goto WORD_read_data										; restart the process
-																		;
-		@label WORD_too_large_word_ERROR								; we need to setup the pointers for error states
-			store stmp2 zero											; rewrite zero to the end of word entry
-			set spar1 errmsg_WORD_too_large_word						; load the error message 
-			goto ERROR													; get out of here!
-		@label WORD_done_reading										; WOOOO we're done
-			store stmp2 zero											; put a zero in the current cell, or the last one
-			
-	goto.link lr print
-	set spar0 msg_newline
-	goto.link lr print
-	goto DONE
+	goto.link lr WORD					; read the next word
+	goto.link lr print					; print it out
+	set spar0 msg_newline				; 
+	goto.link lr print					; print out a newline
+	goto DONE							; 
 ;-----------------------------------------------------------------------------
 ; Prints a string character by character until we see a \0
 ; Inputs:
@@ -155,11 +124,73 @@ set wlen 62								; the maximum number of characters allowed in a single word (
 	system 0, spar0, spar0
 
 
+;-----------------------------------------------------------------------------
+; WORD: Read the next word in the input
+;	spar0 - pointer to temporary storage to save the current word
+;-----------------------------------------------------------------------------
+@label WORD
+	move stmp2 spar0												; copy the pointer address to temporary storage so we can mess with it
+	set	stmp3 WORD_read_data										; where to jump to if we see a space
+	set	stmp4 WORD_reassign_jumps 									; where to jump to when wanting to handle storage
+	set stmp5 0														; The number of characters in the word
+	@label WORD_read_data											; Find all leading spaces and discard them
+		system 1 stmp0 stmp0										; load the next character from input
+		eq stmp1 stmp0 space 										; check and see if it is a space
+		if1 stmp1 stmp3 stmp4										; if we see a space then jump
+																	; to stmp2 otherwise it is to
+																	; stmp4. Initially this is
+																	; setup to skip all prefixed
+																	; spaces. Once a non-space has
+																	; been seen then the jumps
+																	; are reassigned to process (and store) 
+																	; the word until we see another space
+																	;
+		@label WORD_reassign_jumps									; This should only be executed once!
+			set stmp3 WORD_done_reading								; terminate if we see another space at this point
+			set stmp4 WORD_store_word								; continue processing but skip this code
+																	;
+		@label WORD_store_word										; The actual save operation
+			store stmp2 stmp0										; store the character into the character buffer
+			addi stmp2 stmp2 1										; move to the next character
+			gt stmp1 stmp5 wlen										; did we go over the maximum word length?
+			goto.if1 stmp1 WORD_too_large_word_ERROR				; If so then error out
+			addi stmp5 stmp5 1										; increment the word length count 
+			goto WORD_read_data										; restart the process
+																	;
+	@label WORD_too_large_word_ERROR								; we need to setup the pointers for error states
+		store stmp2 zero											; rewrite zero to the end of word entry
+		set spar1 errmsg_WORD_too_large_word						; load the error message 
+		goto ERROR													; get out of here!
+	@label WORD_done_reading										; WOOOO we're done
+		store stmp2 zero											; put a zero in the current cell, or the last one
+		jump lr														; return
+;-----------------------------------------------------------------------------
+; SUBROUTINE
+; Load the character defined by the input pointer into the fdcur register, 
+; then advance inptr by one
+;-----------------------------------------------------------------------------
+@label FETCH
+	load fdcur inptr
+	addi inptr inptr 1
+	jump lr
+
+;-----------------------------------------------------------------------------
+; SUBROUTINE
+; Store the character in fdcur in the address described by outptr, then 
+; advance outptr by one
+; then advance in by one
+;-----------------------------------------------------------------------------
+@label DEPOSIT
+	store outptr fdcur
+	addi outptr outptr 1
+	jump lr
+
 @data
 @label msg_newline
 	; \n
 	@declare 0x0A
 	@declare 0x00
+@data
 @label errmsg_WORD_too_large_word
 	; " WORD TOO LARGE!"
 	@declare 0x20
