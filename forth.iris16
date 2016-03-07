@@ -147,7 +147,9 @@ goto DONE
 		store stmp2 zero											; rewrite zero to the end of word entry
 		move spar1 errmsg_WORD_too_large_word						; load the error message 
 		goto ERROR													; get out of here!
-	@label WORD_done_reading					; WOOOO we're done
+	@label WORD_done_reading										; WOOOO we're done
+		store stmp2 zero											; put a zero in the current cell, or the last one
+		
 
 @data
 @label errmsg_WORD_too_large_word
@@ -169,4 +171,69 @@ goto DONE
 	@declare 0x45
 	@declare 0x21
 	@declare 0xa
+	@declare 0x00
+@label WORD_BUFFER
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
+	@declare 0x00
 	@declare 0x00
