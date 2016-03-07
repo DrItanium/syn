@@ -102,7 +102,7 @@ omni [a-zA-Z0-9._]
 "@code"  { return DIRECTIVE_CODE; }
 "@org"   { return DIRECTIVE_ORG; }
 "@declare" { return DIRECTIVE_DECLARE; }
-"mctmp" { yylval.rval = 229; return REGISTER; }
+"fdcur" { yylval.rval = 229; return REGISTER; }
 "zero"  { yylval.rval = 230; return REGISTER; }
 "stmp7" { yylval.rval = 231; return REGISTER; }
 "wlen"  { yylval.rval = 232; return REGISTER; }
