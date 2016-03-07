@@ -58,7 +58,7 @@ set wlen 62								; the maximum number of characters allowed in a single word (
 ;	spar0 - pointer to temporary storage to save the current word
 ;-----------------------------------------------------------------------------
 	@label WORD
-		set stmp2 spar0													; copy the pointer address to temporary storage so we can mess with it
+		move stmp2 spar0												; copy the pointer address to temporary storage so we can mess with it
 		set	stmp3 WORD_read_data										; where to jump to if we see a space
 		set	stmp4 WORD_reassign_jumps 									; where to jump to when wanting to handle storage
 		set stmp5 0														; The number of characters in the word
@@ -82,18 +82,20 @@ set wlen 62								; the maximum number of characters allowed in a single word (
 				store stmp2 stmp0										; store the character into the character buffer
 				addi stmp2 stmp2 1										; move to the next character
 				gt stmp1 stmp5 wlen										; did we go over the maximum word length?
-				if1.goto stmp1 WORD_too_large_word_ERROR				; If so then error out
+				goto.if1 stmp1 WORD_too_large_word_ERROR				; If so then error out
 				addi stmp5 stmp5 1										; increment the word length count 
 				goto WORD_read_data										; restart the process
 																		;
 		@label WORD_too_large_word_ERROR								; we need to setup the pointers for error states
 			store stmp2 zero											; rewrite zero to the end of word entry
-			move spar1 errmsg_WORD_too_large_word						; load the error message 
+			set spar1 errmsg_WORD_too_large_word						; load the error message 
 			goto ERROR													; get out of here!
 		@label WORD_done_reading										; WOOOO we're done
 			store stmp2 zero											; put a zero in the current cell, or the last one
 			
-	goto print
+	goto.link lr print
+	set spar0 msg_newline
+	goto.link lr print
 	goto DONE
 ;-----------------------------------------------------------------------------
 ; Prints a string character by character until we see a \0
@@ -103,12 +105,12 @@ set wlen 62								; the maximum number of characters allowed in a single word (
 @label print
 	@label print_loop
 		load stmp0 spar0			; load the current char from memory into a register
-		if0.goto stmp0 print_done	; before printing, check to see that we should print, if it is zero then stop
+		goto.if0 stmp0 print_done	; before printing, check to see that we should print, if it is zero then stop
 		system 2 stmp0 stmp0		; print the character to the user
 		addi spar0 spar0 1			; advance the index pointer to the next character
 		goto print_loop				; we're not done yet
 	@label print_done
-		goto lr						; return using the link register
+		jump lr						; return using the link register
 ;-----------------------------------------------------------------------------
 ; Treat the top of the stack as an address and loads its contents in place of
 ; the original address
@@ -119,7 +121,7 @@ set wlen 62								; the maximum number of characters allowed in a single word (
 	load stmp1 stmp0				; load, from memory, the data at the top of the stack
 	push stmp1						; push the loaded value onto the stack
 	swap sp ptop					; restore the previous value to the stack pointer and update ptop
-	goto lr							; we're done here, go back
+	jump lr							; we're done here, go back
 ;-----------------------------------------------------------------------------
 ; Store second in memory at the address stored in top
 ;-----------------------------------------------------------------------------
@@ -130,7 +132,7 @@ set wlen 62								; the maximum number of characters allowed in a single word (
 	store stmp0 stmp1				; data[stmp0] = stmp1
 	swap sp ptop					; restore the previous value and update ptop
 									; TODO: put error checking here of the parameter stack
-	goto lr							; we're done here!
+	jump lr							; we're done here!
 ;-----------------------------------------------------------------------------
 ; Takes in the offending word, an error message, prints them, then clears the
 ; stacks and then calls DONE.
@@ -154,6 +156,10 @@ set wlen 62								; the maximum number of characters allowed in a single word (
 
 
 @data
+@label msg_newline
+	; \n
+	@declare 0x0A
+	@declare 0x00
 @label errmsg_WORD_too_large_word
 	; " WORD TOO LARGE!"
 	@declare 0x20
