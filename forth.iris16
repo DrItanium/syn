@@ -178,11 +178,26 @@ set wlen 62								; the maximum number of characters allowed in a single word (
 ; SUBROUTINE
 ; Store the character in fdcur in the address described by outptr, then 
 ; advance outptr by one
-; then advance in by one
 ;-----------------------------------------------------------------------------
 @label DEPOSIT
 	store outptr fdcur
 	addi outptr outptr 1
+	jump lr
+
+;-----------------------------------------------------------------------------
+; SUBROUTINE
+; Parse a number, has two entry points as described in the book. SIGNED and
+; NATURAL. SIGNED starts with a -, natural does not
+;-----------------------------------------------------------------------------
+@label NUMBER
+	swap sp rtop
+	push lr
+	goto.link lr SIGNED
+	pop lr
+	swap sp rtop
+	jump lr
+@label SIGNED				
+@label NATURAL
 	jump lr
 
 @data
