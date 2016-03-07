@@ -2,61 +2,94 @@
 ; An implementation of the language specified by Charles H. Moore's book on
 ; a Problem orientied langauge.
 ;-----------------------------------------------------------------------------
-; Fixed registers (this is in the hardware)
-;   - InstructionPoiner : r255
-;	- LinkRegister: r254
-; 	- StackPointer: r253
-; Specified Registers (upper half of the register set)
-;   - Data and index stack are stored in 
-;	- r128 - parameter stack bottom
-;	- r129 - parameter stack current
-;	- r130 - return stack bottom
-; 	- r131 - return stack current
+; Fixed registers
+;   - InstructionPoiner : r255 (aka ip)
+;	- LinkRegister: r254 (aka lr)
+; 	- StackPointer: r253 (aka sp)
+; 	- Parameter Stack Top: r252 (aka ptop)
+;	- Parameter Stack End: r251 (aka pend)
+;	- Return Stack Top: r250 (aka rtop)
+;	- Return Stack End: r249 (aka rend)
+;	These are used internally for passing arguments around to leaf functions
+;	- Safe Param 0: r248 (spar0)
+;	- Safe Param 1: r247 (spar1)
+;	- Safe Param 2: r246 (spar2)
+;	- Safe Param 3: r245 (spar3)
+;	- Safe Result 0: r244 (sres0)
+;	- Safe Result 1: r243 (sres1)
+;	- Safe Result 2: r242 (sres2)
+;	- Safe Result 3: r241 (sres3)
+;	- Safe Temporary 0: r240 (stmp0)
+;	- Safe Temporary 1: r239 (stmp1)
+;	- Safe Temporary 2: r238 (stmp2)
+;	- Safe Temporary 3: r237 (stmp3)
 ;-----------------------------------------------------------------------------
+; setup the parameter and return stack pointers inside stack memory
+;-----------------------------------------------------------------------------
+; First setup the memory addresses using the org directive so that it is easy
+; to keep track of
+;-----------------------------------------------------------------------------
+@data
+@org 0xFFFF
+	@label ParameterStackBottom ; this will make sure that 0x0000 is never wasted
+@org 0x7FFF
+	@label ReturnStackBottom
+@code
+; setup the initial values of the registers
+set ptop ParameterStackBottom
+set pend ParameterStackBottom
+set rtop ReturnStackBottom
+set rend ReturnStackBottom
 @label DONE			; top of our "control loop", what he calls RETURN
 	
-
 ;-----------------------------------------------------------------------------
 ; Prints a string character by character until we see a \0
 ; Inputs:
-;	r32 - what to print out
+;	spar0 - what to print out
 ;-----------------------------------------------------------------------------
 @label print
 	@label print_loop
-		load r127 r32 				; load the current char from memory into a register
-		if0.goto r127 print_done	; before printing, check to see that we should print, if it is zero then stop
-		system 2 r127 r127			; print the character to the user
-		addi r32 r32 1				; advance the index pointer to the next character
+		load stmp0 spar0			; load the current char from memory into a register
+		if0.goto stmp0 print_done	; before printing, check to see that we should print, if it is zero then stop
+		system 2 stmp0 stmp0		; print the character to the user
+		addi spar0 spar0 1			; advance the index pointer to the next character
 		goto print_loop				; we're not done yet
 	@label print_done
-		goto r254					; return using the link register
-
+		goto lr						; return using the link register
 ;-----------------------------------------------------------------------------
 ; Treat the top of the stack as an address and loads its contents in place of
 ; the original address
 ;-----------------------------------------------------------------------------
 @label AtVerb
-	load r130 r130		; replace the top of the stack with its contents in memory
-	goto r254			; we're done here, go back
+	swap sp ptop 					; set the parameter stack as the current target
+	pop stmp0						; get the top element
+	load stmp1 stmp0				; load, from memory, the data at the top of the stack
+	push stmp1						; push the loaded value onto the stack
+	swap sp ptop					; restore the previous value to the stack pointer and update ptop
+	goto lr							; we're done here, go back
 ;-----------------------------------------------------------------------------
 ; Store second in memory at the address stored in top
 ;-----------------------------------------------------------------------------
 @label EqualsVerb
-	store r130 r131		; store the second stack element into memory using the top as the address
-	
-	goto r254			; we're done here!
+	swap sp ptop					; load the top of the parameter stack
+	pop stmp0						; get the top element (drop the element)
+	pop stmp1 						; get the second element (drop the element)
+	store stmp0 stmp1				; data[stmp0] = stmp1
+	swap sp ptop					; restore the previous value and update ptop
+									; TODO: put error checking here of the parameter stack
+	goto lr							; we're done here!
 ;-----------------------------------------------------------------------------
 ; Takes in the offending word, an error message, prints them, then clears the
 ; stacks and then calls DONE.
 ; Inputs are on r32, r33 for this routine
-;	r32 - word that did a bad thing
-;   r33 - error type
+;	spar0 - word that did a bad thing
+;   spar1 - error type
 ;-----------------------------------------------------------------------------
 @label ERROR								; Error routine
-	move r129 r128  						; overwrite the current parameter stack location with the bottom
-	move r131 r130							; overwrite the current return stack location with the bottom
-	goto.link r254	print					; print the offending word that did the bad thing
-	move r32 r33							; now we need to print the error type so setup the arguments
-	goto.link r254 print					; and print it
+	move ptop pend 							; overwrite the current parameter stack location with the bottom
+	move rtop rend							; overwrite the current return stack location with the bottom
+	goto.link lr	print					; print the offending word that did the bad thing
+	move spar0 spar1 						; now we need to print the error type so setup the arguments
+	goto.link lr print						; and print it
 	goto DONE								; and we're done!
 

@@ -102,6 +102,25 @@ omni [a-zA-Z0-9._]
 "@code"  { return DIRECTIVE_CODE; }
 "@org"   { return DIRECTIVE_ORG; }
 "@declare" { return DIRECTIVE_DECLARE; }
+"stmp3" { yylval.rval = 237; return REGISTER; }
+"stmp2" { yylval.rval = 238; return REGISTER; }
+"stmp1" { yylval.rval = 239; return REGISTER; }
+"stmp0" { yylval.rval = 240; return REGISTER; }
+"sres3" { yylval.rval = 241; return REGISTER; }
+"sres2" { yylval.rval = 242; return REGISTER; }
+"sres1" { yylval.rval = 243; return REGISTER; }
+"sres0" { yylval.rval = 244; return REGISTER; }
+"spar3" { yylval.rval = 245; return REGISTER; }
+"spar2" { yylval.rval = 246; return REGISTER; }
+"spar1" { yylval.rval = 247; return REGISTER; }
+"spar0" { yylval.rval = 248; return REGISTER; }
+"rend"	{ yylval.rval = 249; return REGISTER; }
+"rtop"	{ yylval.rval = 250; return REGISTER; }
+"pend"	{ yylval.rval = 251; return REGISTER; }
+"ptop"	{ yylval.rval = 252; return REGISTER; }
+"sp"	{ yylval.rval = 253; return REGISTER; }
+"lr"	{ yylval.rval = 254; return REGISTER; }
+"ip"	{ yylval.rval = 255; return REGISTER; }
 [ \t\n]     ;
 [;].*       ; // comments
 r{digit}+ { yylval.rval = getregister(); return REGISTER; }
