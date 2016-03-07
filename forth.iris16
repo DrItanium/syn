@@ -1,33 +1,48 @@
 ;-----------------------------------------------------------------------------
+; An implementation of the language specified by Charles H. Moore's book on
+; a Problem orientied langauge.
+;-----------------------------------------------------------------------------
 ; Fixed registers (this is in the hardware)
 ;   - InstructionPoiner : r255
 ;	- LinkRegister: r254
 ; 	- StackPointer: r253
-; register conventions
-;	- r252 - Return Stack
-;	- r251 - Parameter Stack
+; Specified Registers (upper half of the register set)
+;	- r128 - parameter stack bottom
+;	- r129 - parameter stack current
+;	- r130 - return stack bottom
+; 	- r131 - return stack current
+;   - r132-r140 - temporary registers
 ;-----------------------------------------------------------------------------
-
-
-
-;-----------------------------------------------------------------------------
-; General return routine
-;-----------------------------------------------------------------------------
-@label return
-	pop r130
-	goto r130
-;-----------------------------------------------------------------------------
-; Indirect call routine
-; Inputs 
-;	- r128: destination to jump to
-;	- r129: where we came from
-;-----------------------------------------------------------------------------
-@label call
-	push r129
-	goto r128
-
-;-----------------------------------------------------------------------------
-; Push a value onto the return stack
-;-----------------------------------------------------------------------------
-@label push_return_stack
+@label DONE			; top of our "control loop", what he calls RETURN
 	
+
+;-----------------------------------------------------------------------------
+; Prints a string character by character until we see a \0
+; Inputs:
+;	r32 - what to print out
+;-----------------------------------------------------------------------------
+@label print
+	@label print_loop
+		load r132 r32 				; load the current char from memory into a register
+		if0.goto r132 print_done	; before printing, check to see that we should print, if it is zero then stop
+		system 2 r132 r132			; print the character to the user
+		addi r32 r32 1				; advance the index pointer to the next character
+		goto print_loop				; we're not done yet
+	@label print_done
+		goto r254					; return using the link register
+
+;-----------------------------------------------------------------------------
+; Takes in the offending word, an error message, prints them, then clears the
+; stacks and then calls DONE.
+; Inputs are on r32, r33 for this routine
+;	r32 - word that did a bad thing
+;   r33 - error type
+;-----------------------------------------------------------------------------
+@label ERROR								; Error routine
+	move r129 r128  						; overwrite the current parameter stack location with the bottom
+	move r131 r130							; overwrite the current return stack location with the bottom
+	goto.link r254	print					; print the offending word that did the bad thing
+	move r32 r33							; now we need to print the error type so setup the arguments
+	goto.link r254 print					; and print it
+	goto DONE								; and we're done!
+
