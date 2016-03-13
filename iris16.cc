@@ -1,4 +1,4 @@
-#include "iris.h"
+#include "iris16.h"
 
 namespace iris16 {
 	void Core::compare() {
