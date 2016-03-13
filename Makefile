@@ -138,26 +138,16 @@ uninstall:
 .PHONY: all options clean install uninstall
 
 
-#Arithmetic.o: Arithmetic.cc iris.h iris_base.h Core.h groups.def \
-#	arithmetic.def misc.def jump.def syscalls.def move.def compare.def \
-#	instruction.def
-#Compare.o: Compare.cc iris.h iris_base.h Core.h groups.def arithmetic.def \
-#	misc.def jump.def syscalls.def move.def compare.def instruction.def
-#Core.o: Core.cc iris.h iris_base.h Core.h groups.def arithmetic.def \
-#	misc.def jump.def syscalls.def move.def compare.def instruction.def
-#DecodedInstruction.o: DecodedInstruction.cc iris.h iris_base.h Core.h \
-#	groups.def arithmetic.def misc.def jump.def syscalls.def move.def \
-#	compare.def instruction.def
-#Encoder.o: Encoder.cc iris.h iris_base.h Core.h groups.def arithmetic.def \
-#	misc.def jump.def syscalls.def move.def compare.def instruction.def
-#Jump.o: Jump.cc iris.h iris_base.h Core.h groups.def arithmetic.def \
-#	misc.def jump.def syscalls.def move.def compare.def instruction.def
-#link.o: link.cc iris.h iris_base.h Core.h groups.def arithmetic.def \
-#	misc.def jump.def syscalls.def move.def compare.def instruction.def
-#Misc.o: Misc.cc iris.h iris_base.h Core.h groups.def arithmetic.def \
-#	misc.def jump.def syscalls.def move.def compare.def instruction.def
-#Move.o: Move.cc iris.h iris_base.h Core.h groups.def arithmetic.def \
-#	misc.def jump.def syscalls.def move.def compare.def instruction.def
-#sim.o: sim.cc iris.h iris_base.h Core.h groups.def arithmetic.def \
-#	misc.def jump.def syscalls.def move.def compare.def instruction.def
-#strgen.o: strgen.cc
+iris16.o: iris16.cc iris16.h iris_base.h Core.h iris16_groups.def \
+ iris16_arithmetic.def iris16_misc.def iris16_jump.def \
+ iris16_syscalls.def iris16_move.def iris16_compare.def \
+ iris16_instruction.def
+iris16_link.o: iris16_link.cc iris16.h iris_base.h Core.h \
+ iris16_groups.def iris16_arithmetic.def iris16_misc.def iris16_jump.def \
+ iris16_syscalls.def iris16_move.def iris16_compare.def \
+ iris16_instruction.def
+iris16_sim.o: iris16_sim.cc iris16.h iris_base.h Core.h iris16_groups.def \
+ iris16_arithmetic.def iris16_misc.def iris16_jump.def \
+ iris16_syscalls.def iris16_move.def iris16_compare.def \
+ iris16_instruction.def
+iris16_strgen.o: iris16_strgen.cc

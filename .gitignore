@@ -13,4 +13,7 @@ iris16link
 asm.tab.c
 asm.tab.h
 lex.yy.c
+iris16_asm.tab.c
+iris16_asm.tab.h
+iris16_lex.yy.c
 iris16strgen
