@@ -17,3 +17,6 @@ X(DivImmediate, 		  /, DenominatorImmediate )
 X(RemImmediate, 		  %, DenominatorImmediate )
 X(ShiftLeftImmediate, 	 <<, Immediate )
 X(ShiftRightImmediate,	 >>, Immediate )
+X(Increment, ++, Unary)
+X(Decrement, --, Unary)
+
