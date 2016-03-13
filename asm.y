@@ -333,7 +333,15 @@ compare_op:
                curri.reg0 = $2;
                curri.reg1 = $3;
                curri.reg2 = $4;
-          }
+          } |
+		  icop REGISTER REGISTER IMMEDIATE {
+		  	if ($4 > 255) {
+                  yyerror("immediate value offset out of range!");
+			}
+			curri.reg0 = $2;
+			curri.reg1 = $3;
+			curri.reg2 = $4;
+		  }
           ;
 misc_op:
        MISC_OP_SYSTEMCALL IMMEDIATE REGISTER REGISTER 
@@ -418,7 +426,9 @@ cop:
    COMPARE_OP_LESSTHAN { curri.op = (byte)iris16::CompareOp::LessThan; } |
    COMPARE_OP_GREATERTHAN { curri.op = (byte)iris16::CompareOp::GreaterThan; } |
    COMPARE_OP_LESSTHANOREQUALTO { curri.op = (byte)iris16::CompareOp::LessThanOrEqualTo; } |
-   COMPARE_OP_GREATERTHANOREQUALTO { curri.op = (byte)iris16::CompareOp::GreaterThanOrEqualTo; } |
+   COMPARE_OP_GREATERTHANOREQUALTO { curri.op = (byte)iris16::CompareOp::GreaterThanOrEqualTo; } 
+;
+icop:
    COMPARE_OP_EQ_IMMEDIATE { curri.op = (byte)iris16::CompareOp::EqImm; } |
    COMPARE_OP_NEQ_IMMEDIATE { curri.op = (byte)iris16::CompareOp::NeqImm; } |
    COMPARE_OP_LESSTHAN_IMMEDIATE { curri.op = (byte)iris16::CompareOp::LessThanImm; } |
