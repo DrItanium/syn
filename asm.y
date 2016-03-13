@@ -133,6 +133,8 @@ void usage(char* arg0);
 %token COMPARE_OP_LESSTHANOREQUALTO_IMMEDIATE
 %token COMPARE_OP_GREATERTHANOREQUALTO_IMMEDIATE
 %token MISC_OP_SYSTEMCALL
+%token ARITHMETIC_MACRO_OP_INCR
+%token ARITHMETIC_MACRO_OP_DECR
 
 /*
 %token COMPARE_OP_EQAND
@@ -281,8 +283,17 @@ arithmetic_op:
                curri.reg0 = $2;
                curri.reg1 = $3;
                curri.reg2 = $4;
-             }
+             } |
+			 aop_single_macro REGISTER {
+			 	curri.reg0 = $2;
+				curri.reg1 = $2;
+				curri.reg2 = 1;
+			 }
       ;
+aop_single_macro:
+   ARITHMETIC_MACRO_OP_INCR { curri.op = (byte)iris16::ArithmeticOp::AddImmediate; } |
+   ARITHMETIC_MACRO_OP_DECR { curri.op = (byte)iris16::ArithmeticOp::SubImmediate; } 
+   ;
 move_op:
        mop_reg REGISTER REGISTER {
             curri.reg0 = $2;
