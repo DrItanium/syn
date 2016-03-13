@@ -70,29 +70,29 @@ omni [a-zA-Z0-9._]
 "if1.link" { return JUMP_OP_IFTHENELSELINKPREDTRUE; }
 "if0.link" { return JUMP_OP_IFTHENELSELINKPREDFALSE; }
 "eq" { return COMPARE_OP_EQ; }
-"and.eq" { return COMPARE_OP_EQAND; }
-"or.eq" { return COMPARE_OP_EQOR; }
-"xor.eq" { return COMPARE_OP_EQXOR; }
+"==" { return COMPARE_OP_EQ; }
 "ne" { return COMPARE_OP_NEQ; }
-"and.ne" { return COMPARE_OP_NEQAND; }
-"or.ne" { return COMPARE_OP_NEQOR; }
-"xor.ne" { return COMPARE_OP_NEQXOR; }
+"!=" { return COMPARE_OP_NEQ; }
 "lt" { return COMPARE_OP_LESSTHAN; }
-"and.lt" { return COMPARE_OP_LESSTHANAND; }
-"or.lt" { return COMPARE_OP_LESSTHANOR; }
-"xor.lt" { return COMPARE_OP_LESSTHANXOR; }
+"<" { return COMPARE_OP_LESSTHAN; }
 "gt" { return COMPARE_OP_GREATERTHAN; }
-"and.gt" { return COMPARE_OP_GREATERTHANAND; }
-"or.gt" { return COMPARE_OP_GREATERTHANOR; }
-"xor.gt" { return COMPARE_OP_GREATERTHANXOR; }
+">" { return COMPARE_OP_GREATERTHAN; }
 "le" { return COMPARE_OP_LESSTHANOREQUALTO; }
-"and.le" { return COMPARE_OP_LESSTHANOREQUALTOAND; }
-"or.le" { return COMPARE_OP_LESSTHANOREQUALTOOR; }
-"xor.le" { return COMPARE_OP_LESSTHANOREQUALTOXOR; }
+"<=" { return COMPARE_OP_LESSTHANOREQUALTO; }
 "ge" { return COMPARE_OP_GREATERTHANOREQUALTO; }
-"and.ge" { return COMPARE_OP_GREATERTHANOREQUALTOAND; }
-"or.ge" { return COMPARE_OP_GREATERTHANOREQUALTOOR; }
-"xor.ge" { return COMPARE_OP_GREATERTHANOREQUALTOXOR; }
+">=" { return COMPARE_OP_GREATERTHANOREQUALTO; }
+"eq.imm" { return COMPARE_OP_EQ_IMMEDIATE; }
+"==.imm" { return COMPARE_OP_EQ_IMMEDIATE; }
+"ne.imm" { return COMPARE_OP_NEQ_IMMEDIATE; }
+"!=.imm" { return COMPARE_OP_NEQ_IMMEDIATE; }
+"lt.imm" { return COMPARE_OP_LESSTHAN_IMMEDIATE; }
+"<.imm" { return COMPARE_OP_LESSTHAN_IMMEDIATE; }
+"gt.imm" { return COMPARE_OP_GREATERTHAN_IMMEDIATE; }
+">.imm"  { return COMPARE_OP_GREATERTHAN_IMMEDIATE; }
+"le.imm" { return COMPARE_OP_LESSTHANOREQUALTO_IMMEDIATE; }
+"<=.imm" { return COMPARE_OP_LESSTHANOREQUALTO_IMMEDIATE; }
+"ge.imm" { return COMPARE_OP_GREATERTHANOREQUALTO_IMMEDIATE; }
+">=.imm" { return COMPARE_OP_GREATERTHANOREQUALTO_IMMEDIATE; }
 "system" { return MISC_OP_SYSTEMCALL; }
 "push" { return MOVE_OP_PUSH; }
 "push.imm" { return MOVE_OP_PUSHIMMEDIATE; }
@@ -142,7 +142,27 @@ r{digit}+ { yylval.rval = getregister(); return REGISTER; }
 	return SYMBOL;
 }
 %%
+/*
 
+"and.eq" { return COMPARE_OP_EQAND; }
+"or.eq" { return COMPARE_OP_EQOR; }
+"xor.eq" { return COMPARE_OP_EQXOR; }
+"and.ne" { return COMPARE_OP_NEQAND; }
+"or.ne" { return COMPARE_OP_NEQOR; }
+"xor.ne" { return COMPARE_OP_NEQXOR; }
+"and.lt" { return COMPARE_OP_LESSTHANAND; }
+"or.lt" { return COMPARE_OP_LESSTHANOR; }
+"xor.lt" { return COMPARE_OP_LESSTHANXOR; }
+"and.gt" { return COMPARE_OP_GREATERTHANAND; }
+"or.gt" { return COMPARE_OP_GREATERTHANOR; }
+"xor.gt" { return COMPARE_OP_GREATERTHANXOR; }
+"and.le" { return COMPARE_OP_LESSTHANOREQUALTOAND; }
+"or.le" { return COMPARE_OP_LESSTHANOREQUALTOOR; }
+"xor.le" { return COMPARE_OP_LESSTHANOREQUALTOXOR; }
+"and.ge" { return COMPARE_OP_GREATERTHANOREQUALTOAND; }
+"or.ge" { return COMPARE_OP_GREATERTHANOREQUALTOOR; }
+"xor.ge" { return COMPARE_OP_GREATERTHANOREQUALTOXOR; }
+*/
 
 byte getregister(void) {
    int c;

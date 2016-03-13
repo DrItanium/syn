@@ -121,31 +121,58 @@ void usage(char* arg0);
 %token JUMP_OP_IFTHENELSELINKPREDTRUE
 %token JUMP_OP_IFTHENELSELINKPREDFALSE
 %token COMPARE_OP_EQ
+%token COMPARE_OP_NEQ
+%token COMPARE_OP_LESSTHAN
+%token COMPARE_OP_GREATERTHAN
+%token COMPARE_OP_LESSTHANOREQUALTO
+%token COMPARE_OP_GREATERTHANOREQUALTO
+%token COMPARE_OP_EQ_IMMEDIATE
+%token COMPARE_OP_NEQ_IMMEDIATE
+%token COMPARE_OP_LESSTHAN_IMMEDIATE
+%token COMPARE_OP_GREATERTHAN_IMMEDIATE
+%token COMPARE_OP_LESSTHANOREQUALTO_IMMEDIATE
+%token COMPARE_OP_GREATERTHANOREQUALTO_IMMEDIATE
+%token MISC_OP_SYSTEMCALL
+
+/*
 %token COMPARE_OP_EQAND
 %token COMPARE_OP_EQOR
 %token COMPARE_OP_EQXOR
-%token COMPARE_OP_NEQ
 %token COMPARE_OP_NEQAND
 %token COMPARE_OP_NEQOR
 %token COMPARE_OP_NEQXOR
-%token COMPARE_OP_LESSTHAN
 %token COMPARE_OP_LESSTHANAND
 %token COMPARE_OP_LESSTHANOR
 %token COMPARE_OP_LESSTHANXOR
-%token COMPARE_OP_GREATERTHAN
-%token COMPARE_OP_GREATERTHANAND
-%token COMPARE_OP_GREATERTHANOR
-%token COMPARE_OP_GREATERTHANXOR
-%token COMPARE_OP_LESSTHANOREQUALTO
-%token COMPARE_OP_LESSTHANOREQUALTOAND
-%token COMPARE_OP_LESSTHANOREQUALTOOR
-%token COMPARE_OP_LESSTHANOREQUALTOXOR
-%token COMPARE_OP_GREATERTHANOREQUALTO
 %token COMPARE_OP_GREATERTHANOREQUALTOAND
 %token COMPARE_OP_GREATERTHANOREQUALTOOR
 %token COMPARE_OP_GREATERTHANOREQUALTOXOR
-%token MISC_OP_SYSTEMCALL
-
+%token COMPARE_OP_LESSTHANOREQUALTOAND
+%token COMPARE_OP_LESSTHANOREQUALTOOR
+%token COMPARE_OP_LESSTHANOREQUALTOXOR
+%token COMPARE_OP_GREATERTHANAND
+%token COMPARE_OP_GREATERTHANOR
+%token COMPARE_OP_GREATERTHANXOR
+// from cop
+   COMPARE_OP_EQAND { curri.op = (byte)iris16::CompareOp::EqAnd; } |
+   COMPARE_OP_EQOR { curri.op = (byte)iris16::CompareOp::EqOr; } |
+   COMPARE_OP_EQXOR { curri.op = (byte)iris16::CompareOp::EqXor; } |
+   COMPARE_OP_NEQAND { curri.op = (byte)iris16::CompareOp::NeqAnd; } |
+   COMPARE_OP_NEQOR { curri.op = (byte)iris16::CompareOp::NeqOr; } |
+   COMPARE_OP_NEQXOR { curri.op = (byte)iris16::CompareOp::NeqXor; } |
+   COMPARE_OP_LESSTHANAND { curri.op = (byte)iris16::CompareOp::LessThanAnd; } |
+   COMPARE_OP_LESSTHANOR { curri.op = (byte)iris16::CompareOp::LessThanOr; } |
+   COMPARE_OP_LESSTHANXOR { curri.op = (byte)iris16::CompareOp::LessThanXor; } |
+   COMPARE_OP_GREATERTHANAND { curri.op = (byte)iris16::CompareOp::GreaterThanAnd; } |
+   COMPARE_OP_GREATERTHANOR { curri.op = (byte)iris16::CompareOp::GreaterThanOr; } |
+   COMPARE_OP_GREATERTHANXOR { curri.op = (byte)iris16::CompareOp::GreaterThanXor; } |
+   COMPARE_OP_LESSTHANOREQUALTOAND { curri.op = (byte)iris16::CompareOp::LessThanOrEqualToAnd; } |
+   COMPARE_OP_LESSTHANOREQUALTOOR { curri.op = (byte)iris16::CompareOp::LessThanOrEqualToOr; } |
+   COMPARE_OP_LESSTHANOREQUALTOXOR { curri.op = (byte)iris16::CompareOp::LessThanOrEqualToXor; } |
+   COMPARE_OP_GREATERTHANOREQUALTOAND { curri.op = (byte)iris16::CompareOp::GreaterThanOrEqualToAnd; } |
+   COMPARE_OP_GREATERTHANOREQUALTOOR { curri.op = (byte)iris16::CompareOp::GreaterThanOrEqualToOr; } |
+   COMPARE_OP_GREATERTHANOREQUALTOXOR { curri.op = (byte)iris16::CompareOp::GreaterThanOrEqualToXor; } |
+*/
 
 %token <rval> REGISTER
 %token <ival> IMMEDIATE
@@ -387,29 +414,17 @@ jop_reg_reg_reg:
 
 cop:
    COMPARE_OP_EQ { curri.op = (byte)iris16::CompareOp::Eq; } |
-   COMPARE_OP_EQAND { curri.op = (byte)iris16::CompareOp::EqAnd; } |
-   COMPARE_OP_EQOR { curri.op = (byte)iris16::CompareOp::EqOr; } |
-   COMPARE_OP_EQXOR { curri.op = (byte)iris16::CompareOp::EqXor; } |
    COMPARE_OP_NEQ { curri.op = (byte)iris16::CompareOp::Neq; } |
-   COMPARE_OP_NEQAND { curri.op = (byte)iris16::CompareOp::NeqAnd; } |
-   COMPARE_OP_NEQOR { curri.op = (byte)iris16::CompareOp::NeqOr; } |
-   COMPARE_OP_NEQXOR { curri.op = (byte)iris16::CompareOp::NeqXor; } |
    COMPARE_OP_LESSTHAN { curri.op = (byte)iris16::CompareOp::LessThan; } |
-   COMPARE_OP_LESSTHANAND { curri.op = (byte)iris16::CompareOp::LessThanAnd; } |
-   COMPARE_OP_LESSTHANOR { curri.op = (byte)iris16::CompareOp::LessThanOr; } |
-   COMPARE_OP_LESSTHANXOR { curri.op = (byte)iris16::CompareOp::LessThanXor; } |
    COMPARE_OP_GREATERTHAN { curri.op = (byte)iris16::CompareOp::GreaterThan; } |
-   COMPARE_OP_GREATERTHANAND { curri.op = (byte)iris16::CompareOp::GreaterThanAnd; } |
-   COMPARE_OP_GREATERTHANOR { curri.op = (byte)iris16::CompareOp::GreaterThanOr; } |
-   COMPARE_OP_GREATERTHANXOR { curri.op = (byte)iris16::CompareOp::GreaterThanXor; } |
    COMPARE_OP_LESSTHANOREQUALTO { curri.op = (byte)iris16::CompareOp::LessThanOrEqualTo; } |
-   COMPARE_OP_LESSTHANOREQUALTOAND { curri.op = (byte)iris16::CompareOp::LessThanOrEqualToAnd; } |
-   COMPARE_OP_LESSTHANOREQUALTOOR { curri.op = (byte)iris16::CompareOp::LessThanOrEqualToOr; } |
-   COMPARE_OP_LESSTHANOREQUALTOXOR { curri.op = (byte)iris16::CompareOp::LessThanOrEqualToXor; } |
    COMPARE_OP_GREATERTHANOREQUALTO { curri.op = (byte)iris16::CompareOp::GreaterThanOrEqualTo; } |
-   COMPARE_OP_GREATERTHANOREQUALTOAND { curri.op = (byte)iris16::CompareOp::GreaterThanOrEqualToAnd; } |
-   COMPARE_OP_GREATERTHANOREQUALTOOR { curri.op = (byte)iris16::CompareOp::GreaterThanOrEqualToOr; } |
-   COMPARE_OP_GREATERTHANOREQUALTOXOR { curri.op = (byte)iris16::CompareOp::GreaterThanOrEqualToXor; }
+   COMPARE_OP_EQ_IMMEDIATE { curri.op = (byte)iris16::CompareOp::EqImm; } |
+   COMPARE_OP_NEQ_IMMEDIATE { curri.op = (byte)iris16::CompareOp::NeqImm; } |
+   COMPARE_OP_LESSTHAN_IMMEDIATE { curri.op = (byte)iris16::CompareOp::LessThanImm; } |
+   COMPARE_OP_GREATERTHAN_IMMEDIATE { curri.op = (byte)iris16::CompareOp::GreaterThanImm; } |
+   COMPARE_OP_LESSTHANOREQUALTO_IMMEDIATE { curri.op = (byte)iris16::CompareOp::LessThanOrEqualToImm; } |
+   COMPARE_OP_GREATERTHANOREQUALTO_IMMEDIATE { curri.op = (byte)iris16::CompareOp::GreaterThanOrEqualToImm; }
 ;
 lexeme:
       SYMBOL { curri.hassymbol = 1; 
