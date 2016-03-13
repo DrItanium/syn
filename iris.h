@@ -65,7 +65,9 @@ namespace iris16 {
 	static_assert((byte)MoveOp::Count < ((byte)ArchitectureConstants::MaxOperations), "too many Move operations defined");
 	enum class CompareOp : byte {
 #define X(name, op, group) name,
+#define Y(name, op, group) name,
 #include "compare.def"
+#undef Y
 #undef X
 		Count,
 	};
