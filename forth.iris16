@@ -196,7 +196,7 @@ set wlen 62								; the maximum number of characters allowed in a single word (
 	pop lr
 	swap sp rtop
 	jump lr
-@label SIGNED				
+@label SIGNED				; test to see if the number is negative
 @label NATURAL
 	jump lr
 
