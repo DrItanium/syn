@@ -3,13 +3,13 @@
 #include <cstdio>
 #include <string>
 #include <cstdint>
-#include "iris.h"
+#include "iris16.h"
 #include <fstream>
 #include <iostream>
 #include <vector>
 #include <map>
 
-#include "asm.tab.h"
+#include "iris16_asm.tab.h"
 
 extern int yylex();
 extern int yyparse();

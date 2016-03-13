@@ -5,8 +5,8 @@
 #include <errno.h>
 #include <limits.h>
 #include <cstdint>
-#include "iris.h"
-#include "asm.tab.h"
+#include "iris16.h"
+#include "iris16_asm.tab.h"
 #define _POSIX_SOURCE 1
 
 static byte getregister(void);

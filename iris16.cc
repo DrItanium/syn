@@ -10,6 +10,15 @@ namespace iris16 {
 		return iris::encodeBits<dword, byte, 0xFF000000, 24>(iris::encodeBits<dword, byte, 0x00FF0000, 16>( iris::encodeBits<dword, byte, 0x0000FF00, 8>( iris::encodeBits<dword, byte, 0x000000FF>(dword(0), a), b), c), d);
 	}
 
+	DecodedInstruction::DecodedInstruction() { }
+
+	void DecodedInstruction::decode(raw_instruction input) {
+#define X(title, mask, shift, type, is_register, post) \
+		_ ## post = iris::decodeBits<raw_instruction, type, mask, shift>(input);
+#include "iris16_instruction.def"
+#undef X
+	}
+
 	Core::Core() { }
 	void Core::setInstructionMemory(word address, dword value) {
 		instruction[address] = value;
@@ -88,7 +97,7 @@ namespace iris16 {
 	void Core::dispatch() {
 		switch(static_cast<InstructionGroup>(current.getGroup())) {
 #define X(name, operation) case InstructionGroup:: name: operation(); break; 
-#include "groups.def"
+#include "iris16_groups.def"
 #undef X
 			default:
 				std::cerr << "Illegal instruction group " << current.getGroup() << std::endl;
@@ -111,7 +120,7 @@ namespace iris16 {
 								   gpr[current.getDestination()] INDIRECTOR(Op, mod) (gpr[current.getSource0()] compare (word(current.getSource1()))); \
 			break;
 
-#include "compare.def"
+#include "iris16_compare.def"
 #undef X
 #undef Y
 #undef OpNone
@@ -143,7 +152,7 @@ namespace iris16 {
 #define XImmediate(n, op) XNone(n, op) 
 #define XDenominatorImmediate(n, op) XDenominator(n, op)
 #define X(name, op, desc) INDIRECTOR(X, desc)(name, op)
-#include "arithmetic.def"
+#include "iris16_arithmetic.def"
 #undef X
 #undef XNone
 #undef XDenominator
@@ -176,7 +185,7 @@ namespace iris16 {
 							INDIRECTOR(X, desc)(name) \
 							break; \
 						}
-#include "arithmetic.def"
+#include "iris16_arithmetic.def"
 #undef X
 #undef XNone
 #undef XDenominator
@@ -196,7 +205,7 @@ namespace iris16 {
 		};
 #define X(name, ifthenelse, conditional, iffalse, immediate, link) \
 	template<> struct ConditionalStyle<JumpOp:: name> { static const bool isFalseForm = iffalse; };
-#include "jump.def"
+#include "iris16_jump.def"
 #undef X
 	template<JumpOp op>
 		bool jumpCond(word cond) {
@@ -236,7 +245,7 @@ namespace iris16 {
 						 INDIRECTOR(XLink, _ ## link)  \
 						 break; \
 					 }
-#include "jump.def"
+#include "iris16_jump.def"
 #undef X
 			default:
 				std::cerr << "Illegal jump code " << current.getOperation() << std::endl;
@@ -250,7 +259,7 @@ namespace iris16 {
 			case MiscOp:: name: \
 			func (); \
 			break;
-#include "misc.def"
+#include "iris16_misc.def"
 #undef X
 			default:
 				std::cerr << "Illegal misc code " << current.getOperation() << std::endl;
@@ -334,7 +343,7 @@ namespace iris16 {
 					 INDIRECTOR(X,type)(target, dest, src) \
 			break; \
 					 }
-#include "move.def"
+#include "iris16_move.def"
 #undef X
 #undef XMove
 #undef XSwap
