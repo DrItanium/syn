@@ -154,7 +154,7 @@ set wlen 62								; the maximum number of characters allowed in a single word (
 			addi stmp2 stmp2 1										; move to the next character
 			gt stmp1 stmp5 wlen										; did we go over the maximum word length?
 			goto.if1 stmp1 WORD_too_large_word_ERROR				; If so then error out
-			addi stmp5 stmp5 1										; increment the word length count 
+			++ stmp5 												; increment the word length count 
 			goto WORD_read_data										; restart the process
 																	;
 	@label WORD_too_large_word_ERROR								; we need to setup the pointers for error states
@@ -171,7 +171,7 @@ set wlen 62								; the maximum number of characters allowed in a single word (
 ;-----------------------------------------------------------------------------
 @label FETCH
 	load fdcur inptr
-	addi inptr inptr 1
+	++ inptr
 	jump lr
 
 ;-----------------------------------------------------------------------------
@@ -181,7 +181,7 @@ set wlen 62								; the maximum number of characters allowed in a single word (
 ;-----------------------------------------------------------------------------
 @label DEPOSIT
 	store outptr fdcur
-	addi outptr outptr 1
+	++ outptr
 	jump lr
 
 ;-----------------------------------------------------------------------------
