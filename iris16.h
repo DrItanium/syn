@@ -22,21 +22,21 @@ namespace iris16 {
 
 	enum class InstructionGroup : byte {
 #define X(title, _) title,
-#include "groups.def"
+#include "iris16_groups.def"
 #undef X
 		Count,
 	};
 	static_assert((byte)InstructionGroup::Count < ((byte)ArchitectureConstants::MaxGroups), "too many instruction groups defined");
 	enum class ArithmeticOp : byte {
 #define X(name, __, ___) name,
-#include "arithmetic.def"
+#include "iris16_arithmetic.def"
 #undef X
 		Count
 	};
 	static_assert((byte)ArithmeticOp::Count < ((byte)ArchitectureConstants::MaxOperations), "too many Arithmetic operations defined");
 	enum class MiscOp : byte {
 #define X(title, func) title, 
-#include "misc.def"
+#include "iris16_misc.def"
 #undef X
 		Count
 	};
@@ -44,7 +44,7 @@ namespace iris16 {
 
 	enum class JumpOp : byte {
 #define X(name, ifthenelse, conditional, iffalse, immediate, link) name,
-#include "jump.def"
+#include "iris16_jump.def"
 #undef X
 		Count
 	};
@@ -52,13 +52,13 @@ namespace iris16 {
 
 	enum class SystemCalls : byte {
 #define X(name) name,
-#include "syscalls.def"
+#include "iris16_syscalls.def"
 #undef X
 		Count,
 	};
 	enum class MoveOp : byte {
 #define X(name, type, target, dest, src) name,
-#include "move.def"
+#include "iris16_move.def"
 #undef X
 		Count,
 	};
@@ -66,7 +66,7 @@ namespace iris16 {
 	enum class CompareOp : byte {
 #define X(name, op, group) name,
 #define Y(name, op, group) name,
-#include "compare.def"
+#include "iris16_compare.def"
 #undef Y
 #undef X
 		Count,
@@ -77,11 +77,11 @@ namespace iris16 {
 			DecodedInstruction();
 			void decode(raw_instruction input);
 #define X(title, mask, shift, type, is_register, post) type get ## title () const { return _ ## post ; }
-#include "instruction.def"
+#include "iris16_instruction.def"
 #undef X
 		private:
 #define X(title, mask, shift, type, is_register, post) type _ ## post ;
-#include "instruction.def"
+#include "iris16_instruction.def"
 #undef X
 	};
 	class Core : public iris::Core {
@@ -97,10 +97,10 @@ namespace iris16 {
 		private:
 			void dispatch();
 #define X(_, op) void op();
-#include "groups.def"
+#include "iris16_groups.def"
 #undef X
 #define X(title, func) void func ();
-#include "misc.def"
+#include "iris16_misc.def"
 #undef X
 
 		private:
