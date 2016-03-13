@@ -97,10 +97,14 @@ omni [a-zA-Z0-9._]
 "push" { return MOVE_OP_PUSH; }
 "push.imm" { return MOVE_OP_PUSHIMMEDIATE; }
 "pop" { return MOVE_OP_POP; }
+
 "incr" { return ARITHMETIC_MACRO_OP_INCR; }
+"decr" { return ARITHMETIC_MACRO_OP_DECR; }
 "++" { return ARITHMETIC_MACRO_OP_INCR; }
 "--" { return ARITHMETIC_MACRO_OP_DECR; }
-"decr" { return ARITHMETIC_MACRO_OP_DECR; }
+"halve" { return ARITHMETIC_MACRO_OP_HALVE; }
+"double" { return ARITHMETIC_MACRO_OP_DOUBLE; }
+
 "@label" { return LABEL; }
 "@data"  { return DIRECTIVE_DATA; }
 "@code"  { return DIRECTIVE_CODE; }
