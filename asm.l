@@ -97,6 +97,8 @@ omni [a-zA-Z0-9._]
 "push" { return MOVE_OP_PUSH; }
 "push.imm" { return MOVE_OP_PUSHIMMEDIATE; }
 "pop" { return MOVE_OP_POP; }
+"incr" { return MOVE_OP_INCR; }
+"++" { return MOVE_OP_INCR; }
 "@label" { return LABEL; }
 "@data"  { return DIRECTIVE_DATA; }
 "@code"  { return DIRECTIVE_CODE; }

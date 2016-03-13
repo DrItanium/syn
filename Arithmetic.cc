@@ -59,6 +59,7 @@ namespace iris16 {
 #undef XUnary
 #undef XImmediate
 #undef XDenominatorImmediate
+
 			default:
 				std::cerr << "Illegal arithmetic operation " << current.getOperation() << std::endl;
 				execute = false;
