@@ -62,12 +62,20 @@ set space 0x20							; fixed register for the ascii space code
 set wlen 62								; the maximum number of characters allowed in a single word (- 1 for the terminator)
 
 @label DONE								; top of our "control loop", what he calls RETURN
-	set spar0 WORD_BUFFER				; load the front of the word buffer
-	jl lr WORD							; read the next word
-	jl lr print							; print it out
-	set spar0 msg_newline				; 
-	jl lr print							; print out a newline
-	j DONE								; 
+		set spar0 WORD_BUFFER				; load the front of the word buffer
+		jl lr NUMBER						; check and see if we get a NUMBER from this input
+		move stmp1 sres1					; extract the result field
+		jf stmp1 PARSE_WORD					; 
+		move stmp0 sres0					; extract the number field
+		j PRINT_RESULT
+	@label PARSE_WORD 
+		set spar0 WORD_BUFFER				;
+		jl lr WORD							; read the next word
+	@label PRINT_RESULT
+		jl lr print							; print it out
+		set spar0 msg_newline				; 
+		jl lr print							; print out a newline
+		j DONE								; 
 ;-----------------------------------------------------------------------------
 ; Prints a string character by character until we see a \0
 ; Inputs:
@@ -195,30 +203,41 @@ set wlen 62								; the maximum number of characters allowed in a single word (
 @label NUMBER
 	swap sp rtop
 	push lr
+	push inptr
+	move inptr spar0
 	jl lr FETCH				; setup fdcur
 	jl lr SIGNED			; call signed to comb through
-							; check to see if fdcur is a .
-							; if it is then call NATURAL
-	
+	eqi stmp1 fdcur 0x2e	; check to see if fdcur is a .
+	jf stmp1 NUMBER_CHECK	; if fdcur isn't a . then we're done
+	move spar0 sres0		; move the result to the input
+	jl lr NATURAL			; interpret the rest of the digits
+@label NUMBER_CHECK
+	eq sres1 fdcur space	; if we see a space then this is a number
+@label IS_NUMBER
+	pop inptr
 	pop lr
 	swap sp rtop
 	jr lr
 
 @label SIGNED				; test to see if the current char is -
 	push lr					; 
-	set stmp0 zero			; Zero out stmp0 which is our storage value
+	move spar0 zero			; Zero out spar0 which is our storage value
 	eqi r226 fdcur 0x2d		; Does fdcur == 0x2d ('-')
 @label NATURAL
+	push stmp1
+	push stmp2
 	@label NATURAL_CHECK_CHARACTER
 		jl lr FETCH					; load the next symbol
 		subi stmp1 fdcur 0x30		; subtract 0x30 from the current character, 
 		gti stmp2 stmp1 0x9			; if the result is greater than 9 (remember that stmp1 is unsigned)
 		jt stmp2 DONE_NATURAL		; then return
-		muli stmp0 stmp0 10			; multiply the current value by 10
-		add stmp0 stmp0 stmp1		; add this digit to new sum
+		muli spar0 spar0 10			; multiply the current value by 10
+		add spar0 spar0 stmp1		; add this digit to new sum
 		j NATURAL_CHECK_CHARACTER	; do it again
 	@label DONE_NATURAL
-		move sres0 stmp0			; copy to the return value
+		move sres0 spar0			; copy to the return value
+		pop stmp2
+		pop stmp1
 		pop lr
 		jr lr
 
