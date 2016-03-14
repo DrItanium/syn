@@ -61,11 +61,11 @@ set space 0x20							; fixed register for the ascii space code
 set wlen 62								; the maximum number of characters allowed in a single word (- 1 for the terminator)
 @label DONE								; top of our "control loop", what he calls RETURN
 	set spar0 WORD_BUFFER				; load the front of the word buffer
-	goto.link lr WORD					; read the next word
-	goto.link lr print					; print it out
+	jl lr WORD							; read the next word
+	jl lr print							; print it out
 	set spar0 msg_newline				; 
-	goto.link lr print					; print out a newline
-	goto DONE							; 
+	jl lr print							; print out a newline
+	j DONE							; 
 ;-----------------------------------------------------------------------------
 ; Prints a string character by character until we see a \0
 ; Inputs:
@@ -73,13 +73,13 @@ set wlen 62								; the maximum number of characters allowed in a single word (
 ;-----------------------------------------------------------------------------
 @label print
 	@label print_loop
-		load stmp0 spar0			; load the current char from memory into a register
-		goto.if0 stmp0 print_done	; before printing, check to see that we should print, if it is zero then stop
+		ld stmp0 spar0				; load the current char from memory into a register
+		jf stmp0 print_done			; before printing, check to see that we should print, if it is zero then stop
 		system 2 stmp0 stmp0		; print the character to the user
 		addi spar0 spar0 1			; advance the index pointer to the next character
-		goto print_loop				; we're not done yet
+		j print_loop				; we're not done yet
 	@label print_done
-		jump lr						; return using the link register
+		jr lr						; return using the link register
 ;-----------------------------------------------------------------------------
 ; Treat the top of the stack as an address and loads its contents in place of
 ; the original address
@@ -87,10 +87,10 @@ set wlen 62								; the maximum number of characters allowed in a single word (
 @label AtVerb
 	swap sp ptop 					; set the parameter stack as the current target
 	pop stmp0						; get the top element
-	load stmp1 stmp0				; load, from memory, the data at the top of the stack
+	ld stmp1 stmp0					; load, from memory, the data at the top of the stack
 	push stmp1						; push the loaded value onto the stack
 	swap sp ptop					; restore the previous value to the stack pointer and update ptop
-	jump lr							; we're done here, go back
+	jr lr							; we're done here, go back
 ;-----------------------------------------------------------------------------
 ; Store second in memory at the address stored in top
 ;-----------------------------------------------------------------------------
@@ -98,10 +98,10 @@ set wlen 62								; the maximum number of characters allowed in a single word (
 	swap sp ptop					; load the top of the parameter stack
 	pop stmp0						; get the top element (drop the element)
 	pop stmp1 						; get the second element (drop the element)
-	store stmp0 stmp1				; data[stmp0] = stmp1
+	st stmp0 stmp1				; data[stmp0] = stmp1
 	swap sp ptop					; restore the previous value and update ptop
 									; TODO: put error checking here of the parameter stack
-	jump lr							; we're done here!
+	jr lr							; we're done here!
 ;-----------------------------------------------------------------------------
 ; Takes in the offending word, an error message, prints them, then clears the
 ; stacks and then calls DONE.
@@ -112,10 +112,10 @@ set wlen 62								; the maximum number of characters allowed in a single word (
 @label ERROR								; Error routine
 	move ptop pend 							; overwrite the current parameter stack location with the bottom
 	move rtop rend							; overwrite the current return stack location with the bottom
-	goto.link lr	print					; print the offending word that did the bad thing
+	jl lr	print							; print the offending word that did the bad thing
 	move spar0 spar1 						; now we need to print the error type so setup the arguments
-	goto.link lr print						; and print it
-	goto DONE								; and we're done!
+	jl lr print								; and print it
+	j DONE									; and we're done!
 ;-----------------------------------------------------------------------------
 ; SHUTDOWN / DIE - End the program and shutdown the machine
 ;-----------------------------------------------------------------------------
@@ -136,7 +136,7 @@ set wlen 62								; the maximum number of characters allowed in a single word (
 	@label WORD_read_data											; Find all leading spaces and discard them
 		system 1 stmp0 stmp0										; load the next character from input
 		eq stmp1 stmp0 space 										; check and see if it is a space
-		if1 stmp1 stmp3 stmp4										; if we see a space then jump
+		ift stmp1 stmp3 stmp4										; if we see a space then jump
 																	; to stmp2 otherwise it is to
 																	; stmp4. Initially this is
 																	; setup to skip all prefixed
@@ -150,29 +150,30 @@ set wlen 62								; the maximum number of characters allowed in a single word (
 			set stmp4 WORD_store_word								; continue processing but skip this code
 																	;
 		@label WORD_store_word										; The actual save operation
-			store stmp2 stmp0										; store the character into the character buffer
+			st stmp2 stmp0										; store the character into the character buffer
 			addi stmp2 stmp2 1										; move to the next character
 			gt stmp1 stmp5 wlen										; did we go over the maximum word length?
-			goto.if1 stmp1 WORD_too_large_word_ERROR				; If so then error out
-			++ stmp5 												; increment the word length count 
-			goto WORD_read_data										; restart the process
+			jt stmp1 WORD_too_large_word_ERROR						; If so then error out
+			incr stmp5 												; increment the word length count 
+			j WORD_read_data										; restart the process
 																	;
 	@label WORD_too_large_word_ERROR								; we need to setup the pointers for error states
-		store stmp2 zero											; rewrite zero to the end of word entry
+		st stmp2 zero											; rewrite zero to the end of word entry
 		set spar1 errmsg_WORD_too_large_word						; load the error message 
-		goto ERROR													; get out of here!
+		j ERROR														; get out of here!
 	@label WORD_done_reading										; WOOOO we're done
-		store stmp2 zero											; put a zero in the current cell, or the last one
-		jump lr														; return
+		st stmp2 zero											; put a zero in the current cell, or the last one
+		jr lr														; return
 ;-----------------------------------------------------------------------------
 ; SUBROUTINE
 ; Load the character defined by the input pointer into the fdcur register, 
 ; then advance inptr by one
 ;-----------------------------------------------------------------------------
 @label FETCH
-	load fdcur inptr
-	++ inptr
-	jump lr
+	ld fdcur inptr
+	incr inptr
+	jr lr
+	
 
 ;-----------------------------------------------------------------------------
 ; SUBROUTINE
@@ -180,9 +181,9 @@ set wlen 62								; the maximum number of characters allowed in a single word (
 ; advance outptr by one
 ;-----------------------------------------------------------------------------
 @label DEPOSIT
-	store outptr fdcur
-	++ outptr
-	jump lr
+	st outptr fdcur
+	incr outptr
+	jr lr
 
 ;-----------------------------------------------------------------------------
 ; SUBROUTINE
@@ -192,13 +193,13 @@ set wlen 62								; the maximum number of characters allowed in a single word (
 @label NUMBER
 	swap sp rtop
 	push lr
-	goto.link lr SIGNED
+	jl lr SIGNED
 	pop lr
 	swap sp rtop
-	jump lr
+	jr lr
 @label SIGNED				; test to see if the number is negative
 @label NATURAL
-	jump lr
+	jr lr
 
 @data
 @label msg_newline
