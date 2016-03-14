@@ -34,6 +34,7 @@
 ;	- input pointer: r228 (inptr)
 ;	- output pointer: r227 (outptr)
 ;	- is negative : r226
+;	- nil registers : r225
 ;-----------------------------------------------------------------------------
 ; Parameter passing conventions
 ;  If the given subroutine calls another subroutine then you need to save
@@ -240,6 +241,71 @@ set wlen 62								; the maximum number of characters allowed in a single word (
 		pop stmp1
 		pop lr
 		jr lr
+;TODO implement OUTPUT functionality chapter 3.4.3
+
+;-----------------------------------------------------------------------------
+; SUBROUTINE
+; Pop a word off the top of the parameter stack
+;-----------------------------------------------------------------------------
+@label WordDrop 
+	push stmp0
+	swap sp ptop	; load the parameter stack top into sp
+	pop stmp0		; pop the top element off the parameter stack
+	swap sp ptop	; put the old parameter stack back
+	pop stmp0
+	jr lr			; DONE BRO
+
+;-----------------------------------------------------------------------------
+; SUBROUTINE
+; duplicate the top of the parameter stack
+;-----------------------------------------------------------------------------
+@label WordDup
+	push stmp0
+	swap sp ptop
+	pop stmp0
+	push stmp0
+	push stmp0
+	swap sp ptop
+	pop stmp0
+	jr lr
+
+;-----------------------------------------------------------------------------
+; SUBROUTINE
+; swap the top of the parameter stack with the lower word
+;-----------------------------------------------------------------------------
+@label WordSwap
+	push stmp0
+	push stmp1
+	swap sp ptop
+	pop stmp0
+	pop stmp1
+	push stmp0
+	push stmp1
+	swap sp ptop
+	pop stmp1
+	pop stmp0
+	jr lr
+
+;-----------------------------------------------------------------------------
+; SUBROUTINE
+; push the lower word on the stack onto the stack (a b -- a b a)
+;-----------------------------------------------------------------------------
+@label WordOver
+	push stmp0
+	push stmp1
+	swap sp ptop
+	pop stmp0
+	pop stmp1
+	push stmp1
+	push stmp0
+	push stmp1
+	swap sp ptop
+	pop stmp1
+	pop stmp0
+	jr lr
+
+
+
 
 @data
 @label msg_newline
