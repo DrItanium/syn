@@ -3,10 +3,10 @@
 ; a Problem orientied langauge.
 ;-----------------------------------------------------------------------------
 ; Fixed registers
-;   - InstructionPoiner : r255 (aka ip)
+;	- InstructionPoiner : r255 (aka ip)
 ;	- LinkRegister: r254 (aka lr)
-; 	- StackPointer: r253 (aka sp)
-; 	- Parameter Stack Top: r252 (aka ptop)
+;	- StackPointer: r253 (aka sp)
+;	- Parameter Stack Top: r252 (aka ptop)
 ;	- Parameter Stack End: r251 (aka pend)
 ;	- Return Stack Top: r250 (aka rtop)
 ;	- Return Stack End: r249 (aka rend)
@@ -24,7 +24,7 @@
 ;	- Safe Temporary 2: r238 (stmp2)
 ;	- Safe Temporary 3: r237 (stmp3)
 ;	- ASCII Space: r236 (space)
-; 	- Safe Temporary 4: r235 (stmp4)
+;	- Safe Temporary 4: r235 (stmp4)
 ;	- Safe Temporary 5: r234 (stmp5)
 ;	- Safe Temporary 6: r233 (stmp6)
 ;	- Max Word Length: r232 (wlen)
@@ -59,13 +59,14 @@ set rtop ReturnStackBottom
 set rend ReturnStackBottom				 
 set space 0x20							; fixed register for the ascii space code
 set wlen 62								; the maximum number of characters allowed in a single word (- 1 for the terminator)
+
 @label DONE								; top of our "control loop", what he calls RETURN
 	set spar0 WORD_BUFFER				; load the front of the word buffer
 	jl lr WORD							; read the next word
 	jl lr print							; print it out
 	set spar0 msg_newline				; 
 	jl lr print							; print out a newline
-	j DONE							; 
+	j DONE								; 
 ;-----------------------------------------------------------------------------
 ; Prints a string character by character until we see a \0
 ; Inputs:
