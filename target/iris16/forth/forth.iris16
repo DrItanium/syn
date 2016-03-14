@@ -33,6 +33,7 @@
 ;	- FETCH / DEPOSIT current: r229 (fdcur)
 ;	- input pointer: r228 (inptr)
 ;	- output pointer: r227 (outptr)
+;	- is negative : r226
 ;-----------------------------------------------------------------------------
 ; Parameter passing conventions
 ;  If the given subroutine calls another subroutine then you need to save
@@ -151,7 +152,7 @@ set wlen 62								; the maximum number of characters allowed in a single word (
 			set stmp4 WORD_store_word								; continue processing but skip this code
 																	;
 		@label WORD_store_word										; The actual save operation
-			st stmp2 stmp0										; store the character into the character buffer
+			st stmp2 stmp0											; store the character into the character buffer
 			addi stmp2 stmp2 1										; move to the next character
 			gt stmp1 stmp5 wlen										; did we go over the maximum word length?
 			jt stmp1 WORD_too_large_word_ERROR						; If so then error out
@@ -159,11 +160,11 @@ set wlen 62								; the maximum number of characters allowed in a single word (
 			j WORD_read_data										; restart the process
 																	;
 	@label WORD_too_large_word_ERROR								; we need to setup the pointers for error states
-		st stmp2 zero											; rewrite zero to the end of word entry
+		st stmp2 zero												; rewrite zero to the end of word entry
 		set spar1 errmsg_WORD_too_large_word						; load the error message 
 		j ERROR														; get out of here!
 	@label WORD_done_reading										; WOOOO we're done
-		st stmp2 zero											; put a zero in the current cell, or the last one
+		st stmp2 zero												; put a zero in the current cell, or the last one
 		jr lr														; return
 ;-----------------------------------------------------------------------------
 ; SUBROUTINE
@@ -194,13 +195,32 @@ set wlen 62								; the maximum number of characters allowed in a single word (
 @label NUMBER
 	swap sp rtop
 	push lr
-	jl lr SIGNED
+	jl lr FETCH				; setup fdcur
+	jl lr SIGNED			; call signed to comb through
+							; check to see if fdcur is a .
+							; if it is then call NATURAL
+	
 	pop lr
 	swap sp rtop
 	jr lr
-@label SIGNED				; test to see if the number is negative
+
+@label SIGNED				; test to see if the current char is -
+	push lr					; 
+	set stmp0 zero			; Zero out stmp0 which is our storage value
+	eqi r226 fdcur 0x2d		; Does fdcur == 0x2d ('-')
 @label NATURAL
-	jr lr
+	@label NATURAL_CHECK_CHARACTER
+		jl lr FETCH					; load the next symbol
+		subi stmp1 fdcur 0x30		; subtract 0x30 from the current character, 
+		gti stmp2 stmp1 0x9			; if the result is greater than 9 (remember that stmp1 is unsigned)
+		jt stmp2 DONE_NATURAL		; then return
+		muli stmp0 stmp0 10			; multiply the current value by 10
+		add stmp0 stmp0 stmp1		; add this digit to new sum
+		j NATURAL_CHECK_CHARACTER	; do it again
+	@label DONE_NATURAL
+		move sres0 stmp0			; copy to the return value
+		pop lr
+		jr lr
 
 @data
 @label msg_newline
