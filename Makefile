@@ -123,7 +123,7 @@ install: ${ALL_BINARIES}
 	@echo installing executables to ${DESTDIR}${PREFIX}/bin
 	@mkdir -p ${DESTDIR}${PREFIX}/bin
 	@for n in $(ALL_BINARIES); do \
-		cp bin/$$n ${DESTDIR}${PREFIX}/bin/$$n; \
+		cp $$n ${DESTDIR}${PREFIX}/bin/$$n; \
 		chmod 755 ${DESTDIR}${PREFIX}/bin/$$n; \
 	done
 	
