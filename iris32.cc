@@ -20,22 +20,22 @@ namespace iris32 {
 	void ExecState::setAdvanceIp(bool value) {
 		advanceIp = value;
 	}
-	MemoryController::MemoryController(hword size) : memorySize(size), memory(new byte[size]) { }
+	MemoryController::MemoryController(word size) : memorySize(size / sizeof(word)), memory(new word[size / sizeof(word)]) { }
 
 	MemoryController::~MemoryController() {
 		delete [] memory;
 		memory = 0;
 	}
-
-
-	void MemoryController::writeByte(word addr, byte value) {
+	void MemoryController::write(word address, word value) {
+		auto addr = address >> 2; // shift the address
 		if (addr >= 0 && addr < memorySize) {
 			memory[addr] = value;
 		} else {
-			throw "Address out of range";
+			throw "Address out of range!";
 		}
 	}
-	byte MemoryController::readByte(word addr) {
+	word MemoryController::read(word address) {
+		auto addr = address >> 2; // modify the address
 		if (addr >= 0 && addr < memorySize) {
 			return memory[addr];
 		} else {
@@ -44,20 +44,24 @@ namespace iris32 {
 	}
 
 	void MemoryController::install(std::istream& stream) {
+		char storage[sizeof(word)] = { 0 };
 		for (hword i = 0; i < memorySize; ++i) {
 			if (!stream.good()) {
 				throw "Memory size too small";
 			} else {
-				auto value = stream.get();
-				memory[i] = byte(value);
+				stream.read(storage, sizeof(word));
+				memory[i] = word(storage[0]) | (word(storage[1]) << 8) | (word(storage[2]) << 16) | (word(storage[3]) << 24);
 			}
 		}
 	}
 	void MemoryController::dump(std::ostream& stream) {
-		char storage[1] = { 0 };
-		for (hword i = 0; i < memorySize; ++i) {
-			storage[0] = memory[i];
-			stream.write(storage, 1);
+		char storage[sizeof(word)] = { 0 };
+		for (word i = 0; i < memorySize; ++i) {
+			auto cell = memory[i];
+			for (int j = 0; j < sizeof(word); ++j) {
+				storage[j] = byte(cell >> (8 * j));
+			}
+			stream.write(storage, sizeof(word));
 		}
 	}
 

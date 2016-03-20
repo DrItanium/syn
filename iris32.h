@@ -4,76 +4,36 @@
 #include "Core.h"
 #include <cstdint>
 
-typedef int64_t word;
-typedef int32_t hword;
-typedef int16_t quword;
-typedef uint64_t raw_instruction;
+typedef int64_t dword;
+typedef int32_t word;
+typedef int16_t hword;
+typedef int64_t raw_instruction;
 
-typedef float hfword;
-typedef double fword;
-
-typedef struct {
-	int64_t upper;
-	int64_t lower;
-} dword;
 namespace iris32 {
 	enum ArchitectureConstants  {
 		RegisterCount = 256,
-		FloatRegisterCount = 256,
 		AddressMax = 268435456,
 		InstructionPointerIndex = RegisterCount - 1,
 		LinkRegisterIndex = RegisterCount - 2,
 		StackPointerIndex = RegisterCount - 3,
 		CallPointerIndex = RegisterCount - 4,
 		InternalTemporaryCount = 8,
-		//MaxGroups = 0x7,
-		//MaxOperations = 0x1F,
-		//
 	};
 	enum {
-		DecodeMask = 0b00000111,
-		RestCount = 0b00011111,
+		WidthMask= 0b00000111,
+		RestCount = ~(WidthMask) >> 3,
 	};
-	enum class OneByteOperations : byte {
-		Return,
-		Count,
-	};
-	static_assert(byte(OneByteOperations::Count) <= byte(RestCount), "too many one byte operations defined!");
-	enum class TwoByteOperations : byte {
-		PushByte,
-		Increment,
-		Decrement,
-		Halve,
-		Double,
-		InvertBits,
-		Pop,
-		Square,
-		CallRegister,
-		Count,
-	};
-	static_assert(byte(TwoByteOperations::Count) <= byte(RestCount), "too many two byte operations defined!");
-	enum class DecodeWidth : byte {
-		Variable,
-		OneByte,
-		TwoByte,
-		FourByte,
-		EightByte,
-		TenByte,
-		NumberOfDecodeTypes,
-	};
-	static_assert((byte)DecodeWidth::NumberOfDecodeTypes <= ((byte)DecodeMask), "too many instruction widths defined");
 	class MemoryController {
 		public:
-			MemoryController(hword memSize);
+			MemoryController(word memSize);
 			~MemoryController();
-			byte readByte(word address);
-			word readWord(word address);
-			void writeByte(word address, byte value);
+			word read(word address);
+			void write(word address, word value);
 			void install(std::istream& stream);
 			void dump(std::ostream& stream);
 		private:
-			hword memorySize;
-			byte* memory;
+			word memorySize;
+			word* memory;
 	};
 
 	/// Represents the execution state of a thread of execution
