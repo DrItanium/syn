@@ -6,7 +6,6 @@ namespace iris {
 	 // Generic iris core interface
 	 class Core {
 		public:
-			virtual ~Core();
 			virtual void initialize() = 0;
 			virtual void installprogram(std::istream& stream) = 0;
 			virtual void shutdown() = 0;

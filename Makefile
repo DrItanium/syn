@@ -47,14 +47,60 @@ IRIS16_TOOLS = ${IRIS16_BINARIES}
 IRIS16 = ${IRIS16_OUT} \
 		 ${IRIS16_TOOLS}
 
+IRIS64_OBJECTS = iris64.o \
+
+IRIS64_OUT = libiris64.a
+
+IRIS64_SIM_BINARY = iris64
+IRIS64_SIM_MAIN = iris64_sim.o
+IRIS64_SIM_OBJECTS = ${IRIS64_SIM_MAIN}
+
+IRIS64_LINK_BINARY = iris64link
+IRIS64_LINK_MAIN = iris64_link.o
+IRIS64_LINK_OBJECTS = ${IRIS64_LINK_MAIN}
+
+
+IRIS64_STRGEN_BINARY = iris64strgen
+IRIS64_STRGEN_MAIN = iris64_strgen.o
+IRIS64_STRGEN_OBJECTS = ${IRIS64_STRGEN_MAIN} 
+
+IRIS64_ASM_BINARY = iris64asm
+
+IRIS64_ASM_FILES = iris64_lex.yy.c \
+				   iris64_asm.tab.c \
+				   iris64_asm.tab.h
+
+IRIS64_ASM_OBJECTS = iris64_lex.yy.o \
+					 iris64_asm.tab.o
+
+ALL_IRIS64_OBJECTS = ${IRIS64_OBJECTS} \
+					 ${IRIS64_SIM_OBJECTS} \
+					 ${IRIS64_LINK_OBJECTS} \
+					 ${IRIS64_OUT} \
+					 ${IRIS64_ASM_OBJECTS} \
+					 ${IRIS64_ASM_FILES} \
+					 ${IRIS64_STRGEN_OBJECTS}
+
+IRIS64_BINARIES = ${IRIS64_SIM_BINARY} \
+				  ${IRIS64_LINK_BINARY} \
+				  ${IRIS64_ASM_BINARY} \
+				  ${IRIS64_STRGEN_BINARY}
+
+IRIS64_TOOLS = ${IRIS64_BINARIES}
+
+IRIS64 = ${IRIS64_OUT} \
+		 ${IRIS64_TOOLS}
+
 # The object file that defines main()
 #TEST_OBJECTS = $(patsubst %.c,%.o,$(wildcard src/cmd/tests/*.c))
 
-ALL_BINARIES = ${IRIS16_BINARIES}
+ALL_BINARIES = ${IRIS16_BINARIES} \
+			   ${IRIS64_BINARIES}
 
-ALL_OBJECTS = ${ALL_IRIS16_OBJECTS}
+ALL_OBJECTS = ${ALL_IRIS16_OBJECTS} \
+			  ${ALL_IRIS64_OBJECTS}
 
-all: options ${IRIS16} 
+all: options ${IRIS16} ${IRIS64}
 
 options:
 	@echo iris build options:
@@ -109,10 +155,41 @@ ${IRIS16_ASM_BINARY}: iris16_lex.yy.c iris16_asm.tab.c iris16_asm.tab.h
 	@${CXX} ${LDFLAGS} -o ${IRIS16_ASM_BINARY} iris16_lex.yy.o iris16_asm.tab.o ${IRIS16_OUT}
 	@echo done.
 
-#test_%: src/cmd/tests/%.o ${LIBIRIS_OUT}
-#	@echo -n Building ${SIM_BINARY} binary out of $^...
-#	${CC} ${LDFLAGS} -o ${SIM_BINARY} $^
-#	@echo done.
+# BEGIN IRIS64
+#
+${IRIS64_OUT}: ${IRIS64_OBJECTS}
+	@echo -n Building ${IRIS64_OUT} out of $^...
+	@${AR} rcs ${IRIS64_OUT}  $^
+	@echo done
+
+${IRIS64_SIM_BINARY}: ${IRIS64_SIM_MAIN} ${IRIS64_OUT}
+	@echo -n Building ${IRIS64_SIM_BINARY} binary out of $^...
+	@${CXX} ${LDFLAGS} -o ${IRIS64_SIM_BINARY} $^
+	@echo done.
+
+${IRIS64_LINK_BINARY}: ${IRIS64_LINK_MAIN} ${IRIS64_OUT}
+	@echo -n Building ${IRIS64_LINK_BINARY} binary out of $^...
+	@${CXX} ${LDFLAGS} -o ${IRIS64_LINK_BINARY} $^
+	@echo done.
+
+${IRIS64_STRGEN_BINARY}: ${IRIS64_STRGEN_MAIN} ${IRIS64_OUT}
+	@echo -n Building ${IRIS64_STRGEN_BINARY} binary out of $^...
+	@${CXX} ${LDFLAGS} -o ${IRIS64_STRGEN_BINARY} $^
+	@echo done.
+
+
+iris64_asm.tab.c iris64_asm.tab.h: iris64_asm.y
+	@${YACC} -o iris64_asm.tab.c -d iris64_asm.y
+	@${CXX} ${CXXFLAGS} -c iris64_asm.tab.c -o iris64_asm.tab.o
+
+iris64_lex.yy.c: iris64_asm.l iris64_asm.tab.h
+	@${LEX} -o iris64_lex.yy.c -l iris64_asm.l
+	@${CXX} ${CXXFLAGS} -D_POSIX_SOURCE -c iris64_lex.yy.c -o iris64_lex.yy.o
+
+${IRIS64_ASM_BINARY}: iris64_lex.yy.c iris64_asm.tab.c iris64_asm.tab.h 
+	@echo -n Building ${IRIS64_ASM_BINARY} binary out of $^...
+	@${CXX} ${LDFLAGS} -o ${IRIS64_ASM_BINARY} iris64_lex.yy.o iris64_asm.tab.o ${IRIS64_OUT}
+	@echo done.
 
 clean:
 	@echo -n Cleaning...
@@ -151,3 +228,17 @@ iris16_sim.o: iris16_sim.cc iris16.h iris_base.h Core.h iris16_groups.def \
  iris16_syscalls.def iris16_move.def iris16_compare.def \
  iris16_instruction.def
 iris16_strgen.o: iris16_strgen.cc
+
+iris64.o: iris64.cc iris64.h iris_base.h Core.h iris64_groups.def \
+ iris64_arithmetic.def iris64_misc.def iris64_jump.def \
+ iris64_syscalls.def iris64_move.def iris64_compare.def \
+ iris64_instruction.def
+iris64_link.o: iris64_link.cc iris16.h iris_base.h Core.h \
+ iris16_groups.def iris16_arithmetic.def iris16_misc.def iris16_jump.def \
+ iris16_syscalls.def iris16_move.def iris16_compare.def \
+ iris16_instruction.def
+iris64_sim.o: iris64_sim.cc iris16.h iris_base.h Core.h iris16_groups.def \
+ iris16_arithmetic.def iris16_misc.def iris16_jump.def \
+ iris16_syscalls.def iris16_move.def iris16_compare.def \
+ iris16_instruction.def
+iris64_strgen.o: iris64_strgen.cc
