@@ -3,31 +3,76 @@
 
 namespace iris64 {
 
-	word encodeWord(byte a, byte b) {
-		return iris::encodeBits<word, byte, 0xFF00, 8>(iris::encodeBits<word, byte, 0x00FF>(word(0), a), b);
+	Core::Core(hword memSize) : memorySize(memSize), memory(new byte[memSize]) { 
 	}
-	dword encodeDword(byte a, byte b, byte c, byte d) {
-		return iris::encodeBits<dword, byte, 0xFF000000, 24>(iris::encodeBits<dword, byte, 0x00FF0000, 16>( iris::encodeBits<dword, byte, 0x0000FF00, 8>( iris::encodeBits<dword, byte, 0x000000FF>(dword(0), a), b), c), d);
-	}
-
-	DecodedInstruction::DecodedInstruction() { }
-
-	void DecodedInstruction::decode(raw_instruction input) {
-#define X(title, mask, shift, type, is_register, post) \
-		_ ## post = iris::decodeBits<raw_instruction, type, mask, shift>(input);
-#include "iris64_instruction.def"
-#undef X
-	}
-
-	Core::Core(hword memSize) : memorySize(memSize), memory(new byte[memSize]) { }
 	Core::~Core() {
 		delete [] memory;
 		memory = 0;
+	}
+	byte Core::readByte(word addr) {
+		if (addr >= 0 && addr < memorySize) {
+			return memory[addr];
+		} else {
+			throw "Address out of range";
+		}
+	}
+	void Core::decodeVariable(byte input) {
+
+	}
+	void Core::decodeOneByte(byte input) {
+
+	}
+	void Core::decodeTwoByte(byte input) {
+
+	}
+	void Core::decodeFourByte(byte input) {
+
+	}
+	void Core::decodeEightByte(byte input) {
+
+	}
+	void Core::decodeTenByte(byte input) {
+
+	}
+	void Core::decode() {
+		// read a byte from the current instruction pointer address
+		byte curr = readByte(gpr[ArchitectureConstants::InstructionPointerIndex]);
+		++gpr[ArchitectureConstants::InstructionPointerIndex];
+		auto width = DecodeWidth(curr & DecodeMask);
+		byte rest = (curr & (~DecodeMask)) >> 4;
+		switch (width) {
+			case DecodeWidth::Variable:
+				decodeVariable(rest);
+				break;
+			case DecodeWidth::OneByte: // one byte
+				decodeOneByte(rest);
+				break;
+			case DecodeWidth::TwoByte:
+				decodeTwoByte(rest);
+				break;
+			case DecodeWidth::FourByte:
+				decodeFourByte(rest);
+				break;
+			case DecodeWidth::EightByte:
+				decodeEightByte(rest);
+				break;
+			case DecodeWidth::TenByte:
+				decodeTenByte(rest);
+				break;
+			default:
+				throw "Illegal opcode";
+		}
 	}
 	void Core::initialize() {
 
 	}
 	void Core::shutdown() {
+
+	}
+	void Core::installprogram(std::istream& stream) {
+
+	}
+	void Core::dump(std::ostream& stream) {
 
 	}
 	/*
@@ -52,7 +97,6 @@ namespace iris64 {
 		populateContents<raw_instruction, ArchitectureConstants::AddressMax>(text, stream, encodeDword);
 		populateContents<word, ArchitectureConstants::AddressMax>(stack, stream, encodeWord);
 	}
-	*/
 
 	template<typename T, int count>
 	void dumpContents(T* contents, std::ostream& stream, std::function<char*(T,char*)> func) {
@@ -82,7 +126,9 @@ namespace iris64 {
 		dumpContents<dword, ArchitectureConstants::AddressMax>(instruction, stream, decomposeDword);
 		dumpContents<word, ArchitectureConstants::AddressMax>(stack, stream, decomposeWord);
 	}
+	*/
 	void Core::run() {
+		/*
 		while(execute) {
 			if (!advanceIp) {
 				advanceIp = true;
@@ -93,8 +139,10 @@ namespace iris64 {
 				gpr[ArchitectureConstants::InstructionPointerIndex]++;
 			} 
 		}
+		*/
 	}
 	void Core::dispatch() {
+		/*
 		switch(static_cast<InstructionGroup>(current.getGroup())) {
 #define X(name, operation) case InstructionGroup:: name: operation(); break; 
 #include "iris64_groups.def"
@@ -104,7 +152,9 @@ namespace iris64 {
 				execute = false;
 				break;
 		}
+		*/
 	}
+	/*
 	void Core::compare() {
 		switch(static_cast<CompareOp>(current.getOperation())) {
 #define OpNone =
@@ -378,4 +428,5 @@ namespace iris64 {
 				break;
 		}
 	}
-}
+	*/
+} // end namespace iris64

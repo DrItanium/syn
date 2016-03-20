@@ -27,73 +27,19 @@ namespace iris64 {
 		MaxGroups = 0x7,
 		MaxOperations = 0x1F,
 	};
-	dword encodeDword(byte a, byte b, byte c, byte d);
-	word encodeWord(byte a, byte b);
-
-	enum class InstructionGroup : byte {
-#define X(title, _) title,
-#include "iris64_groups.def"
-#undef X
-		Count,
+	enum {
+		DecodeMask = 0b00000111,
 	};
-	static_assert((byte)InstructionGroup::Count < ((byte)ArchitectureConstants::MaxGroups), "too many instruction groups defined");
-	enum class ArithmeticOp : byte {
-#define X(name, __, ___) name,
-#include "iris64_arithmetic.def"
-#undef X
-		Count
+	enum class DecodeWidth : byte {
+		Variable,
+		OneByte,
+		TwoByte,
+		FourByte,
+		EightByte,
+		TenByte,
+		NumberOfDecodeTypes,
 	};
-	static_assert((byte)ArithmeticOp::Count < ((byte)ArchitectureConstants::MaxOperations), "too many Arithmetic operations defined");
-	enum class MiscOp : byte {
-#define X(title, func) title, 
-#include "iris64_misc.def"
-#undef X
-		Count
-	};
-	static_assert((byte)MiscOp::Count < ((byte)ArchitectureConstants::MaxOperations), "too many Misc operations defined");
-
-	enum class JumpOp : byte {
-#define X(name, ifthenelse, conditional, iffalse, immediate, link) name,
-#include "iris64_jump.def"
-#undef X
-		Count
-	};
-	static_assert((byte)JumpOp::Count < ((byte)ArchitectureConstants::MaxOperations), "too many Jump operations defined");
-
-	enum class SystemCalls : byte {
-#define X(name) name,
-#include "iris64_syscalls.def"
-#undef X
-		Count,
-	};
-	enum class MoveOp : byte {
-#define X(name, type, target, dest, src) name,
-#include "iris64_move.def"
-#undef X
-		Count,
-	};
-	static_assert((byte)MoveOp::Count < ((byte)ArchitectureConstants::MaxOperations), "too many Move operations defined");
-	enum class CompareOp : byte {
-#define X(name, op, group) name,
-#define Y(name, op, group) name,
-#include "iris64_compare.def"
-#undef Y
-#undef X
-		Count,
-	};
-	static_assert((byte)CompareOp::Count < ((byte)ArchitectureConstants::MaxOperations), "too many Compare operations defined");
-	class DecodedInstruction {
-		public:
-			DecodedInstruction();
-			void decode(raw_instruction input);
-#define X(title, mask, shift, type, is_register, post) type get ## title () const { return _ ## post ; }
-#include "iris64_instruction.def"
-#undef X
-		private:
-#define X(title, mask, shift, type, is_register, post) type _ ## post ;
-#include "iris64_instruction.def"
-#undef X
-	};
+	static_assert((byte)DecodeWidth::NumberOfDecodeTypes <= ((byte)DecodeMask), "too many instruction widths defined");
 	class Core : public iris::Core {
 		public:
 			Core(hword memSize);
@@ -104,22 +50,21 @@ namespace iris64 {
 			virtual void dump(std::ostream& stream);
 			virtual void run();
 		private:
+			byte readByte(word address);
+			void decode();
 			void dispatch();
-#define X(_, op) void op();
-#include "iris64_groups.def"
-#undef X
-#define X(title, func) void func ();
-#include "iris64_misc.def"
-#undef X
-
+			void decodeVariable(byte rest);
+			void decodeOneByte(byte rest);
+			void decodeTwoByte(byte rest);
+			void decodeFourByte(byte rest);
+			void decodeEightByte(byte rest);
+			void decodeTenByte(byte rest);
 		private:
 			hword memorySize;
 			byte* memory;
 			bool execute = true,
 				 advanceIp = true;
 			word gpr[ArchitectureConstants::RegisterCount] = {0};
-			DecodedInstruction current;
-			// removed data section, it is part of memory
 	};
 
 } // end namespace iris64
