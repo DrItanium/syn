@@ -2,35 +2,69 @@
 #include <functional>
 
 namespace iris64 {
+	MemoryController::MemoryController(hword size) : memorySize(size), memory(new byte[size]) { }
 
-	Core::Core(hword memSize) : memorySize(memSize), memory(new byte[memSize]) { 
-	}
-	Core::~Core() {
+	MemoryController::~MemoryController() {
 		delete [] memory;
 		memory = 0;
 	}
-	byte Core::readByte(word addr) {
+
+
+	void MemoryController::writeByte(word addr, byte value) {
+		if (addr >= 0 && addr < memorySize) {
+			memory[addr] = value;
+		} else {
+			throw "Address out of range";
+		}
+	}
+	byte MemoryController::readByte(word addr) {
 		if (addr >= 0 && addr < memorySize) {
 			return memory[addr];
 		} else {
 			throw "Address out of range";
 		}
 	}
+
+	void MemoryController::install(std::istream& stream) {
+		for (hword i = 0; i < memorySize; ++i) {
+			if (!stream.good()) {
+				throw "Memory size too small";
+			} else {
+				auto value = stream.get();
+				memory[i] = byte(value);
+			}
+		}
+	}
+	void MemoryController::dump(std::ostream& stream) {
+		char storage[1] = { 0 };
+		for (hword i = 0; i < memorySize; ++i) {
+			storage[0] = memory[i];
+			stream.write(storage, 1);
+		}
+	}
+
+	Core::Core(MemoryController* m) : mc(m) { }
+	void Core::installprogram(std::istream& stream) {
+		mc->install(stream);
+	}
+	void Core::dump(std::ostream& stream) {
+		mc->dump(stream);
+	}
 	void Core::decode() {
 		// read a byte from the current instruction pointer address
-		byte curr = readByte(gpr[ArchitectureConstants::InstructionPointerIndex]);
+		byte curr = mc->readByte(gpr[ArchitectureConstants::InstructionPointerIndex]);
 		++gpr[ArchitectureConstants::InstructionPointerIndex];
 		auto width = DecodeWidth(curr & DecodeMask);
-		byte rest = (curr & (~DecodeMask)) >> 4;
+		byte rest = (curr & (~DecodeMask)) >> 5;
 		switch (width) {
 			case DecodeWidth::Variable:
 				decodeVariable(rest);
 				break;
 			case DecodeWidth::OneByte: // one byte
-				decodeOneByte(rest);
+				decodeOneByte(OneByteOperations(rest));
 				break;
 			case DecodeWidth::TwoByte:
-				decodeTwoByte(rest);
+				decodeTwoByte(TwoByteOperations(rest));
 				break;
 			case DecodeWidth::FourByte:
 				decodeFourByte(rest);
@@ -51,31 +85,40 @@ namespace iris64 {
 	void Core::shutdown() {
 
 	}
-	void Core::installprogram(std::istream& stream) {
-		for (hword i = 0; i < memorySize; ++i) {
-			if (!stream.good()) {
-				throw "Memory size too small";
-			} else {
-				auto value = stream.get();
-				memory[i] = byte(value);
-			}
-		}
-	}
-	void Core::dump(std::ostream& stream) {
-		char storage[1] = { 0 };
-		for (hword i = 0; i < memorySize; ++i) {
-			storage[0] = memory[i];
-			stream.write(storage, 1);
-		}
-	}
 	void Core::decodeVariable(byte input) {
 
 	}
-	void Core::decodeOneByte(byte input) {
-
+	void Core::decodeOneByte(OneByteOperations input) {
+		switch (input) {
+			case OneByteOperations::Return:
+				break;
+			default:
+				throw "Illegal operation";
+		}
 	}
-	void Core::decodeTwoByte(byte input) {
-
+	void Core::decodeTwoByte(TwoByteOperations input) {
+		switch(input) {
+			case TwoByteOperations::PushByte:
+				break;
+			case TwoByteOperations::Increment:
+				break;
+			case TwoByteOperations::Decrement:
+				break;
+			case TwoByteOperations::Double:
+				break;
+			case TwoByteOperations::Halve:
+				break;
+			case TwoByteOperations::InvertBits:
+				break;
+			case TwoByteOperations::Pop:
+				break;
+			case TwoByteOperations::Square:
+				break;
+			case TwoByteOperations::CallRegister:
+				break;
+			default:
+				throw "Illegal operation";
+		}
 	}
 	void Core::decodeFourByte(byte input) {
 
@@ -86,58 +129,6 @@ namespace iris64 {
 	void Core::decodeTenByte(byte input) {
 
 	}
-	/*
-	template<typename T, int count>
-	void populateContents(T* contents, std::istream& stream, std::function<T(char*)> func) {
-		char* buf = new char[sizeof(T)];
-		for(int i = 0; i < count; ++i) {
-			stream.read(buf, sizeof(T));
-			contents[i] = func(buf);
-		}
-		delete[] buf;
-	}
-	void Core::installprogram(std::istream& stream) {
-		auto encodeWord = [](char* buf) {
-			return iris64::encodeWord(buf[0], buf[1]);
-		};
-		auto encodeDword = [](char* buf) {
-			return iris64::encodeDword(buf[0], buf[1], buf[2], buf[3]);
-		};
-		populateContents<word, ArchitectureConstants::RegisterCount>(gpr, stream, encodeWord);
-		populateContents<word, ArchitectureConstants::AddressMax>(data, stream, encodeWord);
-		populateContents<raw_instruction, ArchitectureConstants::AddressMax>(text, stream, encodeDword);
-		populateContents<word, ArchitectureConstants::AddressMax>(stack, stream, encodeWord);
-	}
-
-	template<typename T, int count>
-	void dumpContents(T* contents, std::ostream& stream, std::function<char*(T,char*)> func) {
-		char* buf = new char[sizeof(T)];
-		for(int i = 0; i < count; ++i) {
-			func(contents[i], buf);
-			stream.write(buf, sizeof(T));
-		}
-		delete[] buf;
-	}
-	void Core::dump(std::ostream& stream) {
-		// save the registers
-		auto decomposeWord = [](word v, char* buf) {
-			buf[0] = (char)v;
-			buf[1] = (char)(v >> 8);
-			return buf;
-		};
-		auto decomposeDword = [](dword v, char* buf) {
-			buf[0] = (char)v;
-			buf[1] = (char)(v >> 8);
-			buf[2] = (char)(v >> 16);
-			buf[3] = (char)(v >> 24);
-			return buf;
-		};
-		dumpContents<word, ArchitectureConstants::RegisterCount>(gpr, stream, decomposeWord);
-		dumpContents<word, ArchitectureConstants::AddressMax>(data, stream, decomposeWord);
-		dumpContents<dword, ArchitectureConstants::AddressMax>(instruction, stream, decomposeDword);
-		dumpContents<word, ArchitectureConstants::AddressMax>(stack, stream, decomposeWord);
-	}
-	*/
 	void Core::run() {
 		/*
 		while(execute) {

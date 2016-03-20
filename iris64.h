@@ -24,12 +24,32 @@ namespace iris64 {
 		InstructionPointerIndex = RegisterCount - 1,
 		LinkRegisterIndex = RegisterCount - 2,
 		StackPointerIndex = RegisterCount - 3,
-		MaxGroups = 0x7,
-		MaxOperations = 0x1F,
+		//MaxGroups = 0x7,
+		//MaxOperations = 0x1F,
+		//
 	};
 	enum {
 		DecodeMask = 0b00000111,
+		RestCount = 0b00011111,
 	};
+	enum class OneByteOperations : byte {
+		Return,
+		Count,
+	};
+	static_assert(byte(OneByteOperations::Count) <= byte(RestCount), "too many one byte operations defined!");
+	enum class TwoByteOperations : byte {
+		PushByte,
+		Increment,
+		Decrement,
+		Halve,
+		Double,
+		InvertBits,
+		Pop,
+		Square,
+		CallRegister,
+		Count,
+	};
+	static_assert(byte(TwoByteOperations::Count) <= byte(RestCount), "too many two byte operations defined!");
 	enum class DecodeWidth : byte {
 		Variable,
 		OneByte,
@@ -40,28 +60,37 @@ namespace iris64 {
 		NumberOfDecodeTypes,
 	};
 	static_assert((byte)DecodeWidth::NumberOfDecodeTypes <= ((byte)DecodeMask), "too many instruction widths defined");
+	class MemoryController {
+		public:
+			MemoryController(hword memSize);
+			~MemoryController();
+			byte readByte(word address);
+			void writeByte(word address, byte value);
+			void install(std::istream& stream);
+			void dump(std::ostream& stream);
+		private:
+			hword memorySize;
+			byte* memory;
+	};
 	class Core : public iris::Core {
 		public:
-			Core(hword memSize);
-			virtual ~Core();
+			Core(MemoryController* memC);
 			virtual void initialize();
 			virtual void installprogram(std::istream& stream);
 			virtual void shutdown();
 			virtual void dump(std::ostream& stream);
 			virtual void run();
 		private:
-			byte readByte(word address);
 			void decode();
 			void dispatch();
 			void decodeVariable(byte rest);
-			void decodeOneByte(byte rest);
-			void decodeTwoByte(byte rest);
+			void decodeOneByte(OneByteOperations rest);
+			void decodeTwoByte(TwoByteOperations rest);
 			void decodeFourByte(byte rest);
 			void decodeEightByte(byte rest);
 			void decodeTenByte(byte rest);
 		private:
-			hword memorySize;
-			byte* memory;
+			MemoryController* mc;
 			bool execute = true,
 				 advanceIp = true;
 			word gpr[ArchitectureConstants::RegisterCount] = {0};
