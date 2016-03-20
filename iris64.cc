@@ -1,7 +1,7 @@
-#include "iris16.h"
+#include "iris64.h"
 #include <functional>
 
-namespace iris16 {
+namespace iris64 {
 
 	word encodeWord(byte a, byte b) {
 		return iris::encodeBits<word, byte, 0xFF00, 8>(iris::encodeBits<word, byte, 0x00FF>(word(0), a), b);
@@ -15,16 +15,14 @@ namespace iris16 {
 	void DecodedInstruction::decode(raw_instruction input) {
 #define X(title, mask, shift, type, is_register, post) \
 		_ ## post = iris::decodeBits<raw_instruction, type, mask, shift>(input);
-#include "iris16_instruction.def"
+#include "iris64_instruction.def"
 #undef X
 	}
 
-	Core::Core() { }
-	void Core::setInstructionMemory(word address, dword value) {
-		instruction[address] = value;
-	}
-	void Core::setDataMemory(word address, word value) {
-		data[address] = value;
+	Core::Core(hword memSize) : memorySize(memSize), memory(new byte[memSize]) { }
+	Core::~Core() {
+		delete [] memory;
+		memory = 0;
 	}
 	void Core::initialize() {
 
@@ -32,6 +30,7 @@ namespace iris16 {
 	void Core::shutdown() {
 
 	}
+	/*
 	template<typename T, int count>
 	void populateContents(T* contents, std::istream& stream, std::function<T(char*)> func) {
 		char* buf = new char[sizeof(T)];
@@ -43,16 +42,17 @@ namespace iris16 {
 	}
 	void Core::installprogram(std::istream& stream) {
 		auto encodeWord = [](char* buf) {
-			return iris16::encodeWord(buf[0], buf[1]);
+			return iris64::encodeWord(buf[0], buf[1]);
 		};
 		auto encodeDword = [](char* buf) {
-			return iris16::encodeDword(buf[0], buf[1], buf[2], buf[3]);
+			return iris64::encodeDword(buf[0], buf[1], buf[2], buf[3]);
 		};
 		populateContents<word, ArchitectureConstants::RegisterCount>(gpr, stream, encodeWord);
 		populateContents<word, ArchitectureConstants::AddressMax>(data, stream, encodeWord);
-		populateContents<dword, ArchitectureConstants::AddressMax>(instruction, stream, encodeDword);
+		populateContents<raw_instruction, ArchitectureConstants::AddressMax>(text, stream, encodeDword);
 		populateContents<word, ArchitectureConstants::AddressMax>(stack, stream, encodeWord);
 	}
+	*/
 
 	template<typename T, int count>
 	void dumpContents(T* contents, std::ostream& stream, std::function<char*(T,char*)> func) {
@@ -97,7 +97,7 @@ namespace iris16 {
 	void Core::dispatch() {
 		switch(static_cast<InstructionGroup>(current.getGroup())) {
 #define X(name, operation) case InstructionGroup:: name: operation(); break; 
-#include "iris16_groups.def"
+#include "iris64_groups.def"
 #undef X
 			default:
 				std::cerr << "Illegal instruction group " << current.getGroup() << std::endl;
@@ -120,7 +120,7 @@ namespace iris16 {
 								   gpr[current.getDestination()] INDIRECTOR(Op, mod) (gpr[current.getSource0()] compare (word(current.getSource1()))); \
 			break;
 
-#include "iris16_compare.def"
+#include "iris64_compare.def"
 #undef X
 #undef Y
 #undef OpNone
@@ -152,7 +152,7 @@ namespace iris16 {
 #define XImmediate(n, op) XNone(n, op) 
 #define XDenominatorImmediate(n, op) XDenominator(n, op)
 #define X(name, op, desc) INDIRECTOR(X, desc)(name, op)
-#include "iris16_arithmetic.def"
+#include "iris64_arithmetic.def"
 #undef X
 #undef XNone
 #undef XDenominator
@@ -185,7 +185,7 @@ namespace iris16 {
 							INDIRECTOR(X, desc)(name) \
 							break; \
 						}
-#include "iris16_arithmetic.def"
+#include "iris64_arithmetic.def"
 #undef X
 #undef XNone
 #undef XDenominator
@@ -205,7 +205,7 @@ namespace iris16 {
 		};
 #define X(name, ifthenelse, conditional, iffalse, immediate, link) \
 	template<> struct ConditionalStyle<JumpOp:: name> { static const bool isFalseForm = iffalse; };
-#include "iris16_jump.def"
+#include "iris64_jump.def"
 #undef X
 	template<JumpOp op>
 		bool jumpCond(word cond) {
@@ -245,7 +245,7 @@ namespace iris16 {
 						 INDIRECTOR(XLink, _ ## link)  \
 						 break; \
 					 }
-#include "iris16_jump.def"
+#include "iris64_jump.def"
 #undef X
 			default:
 				std::cerr << "Illegal jump code " << current.getOperation() << std::endl;
@@ -259,7 +259,7 @@ namespace iris16 {
 			case MiscOp:: name: \
 			func (); \
 			break;
-#include "iris16_misc.def"
+#include "iris64_misc.def"
 #undef X
 			default:
 				std::cerr << "Illegal misc code " << current.getOperation() << std::endl;
@@ -343,7 +343,7 @@ namespace iris16 {
 					 INDIRECTOR(X,type)(target, dest, src) \
 			break; \
 					 }
-#include "iris16_move.def"
+#include "iris64_move.def"
 #undef X
 #undef XMove
 #undef XSwap
