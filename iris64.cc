@@ -2,6 +2,24 @@
 #include <functional>
 
 namespace iris64 {
+	ExecState::ExecState(word numRegs) : regCount(numRegs), gpr(new word[numRegs]) { }
+	ExecState::~ExecState() {
+		delete [] gpr;
+		gpr = 0;
+	}
+	word& ExecState::operator[](word idx) {
+		if (idx < 0 || idx >= regCount) {
+			throw "Illegal register index!";
+		} else {
+			return gpr[idx];
+		}
+	}
+	bool ExecState::shouldAdvanceIp() {
+			return advanceIp;
+	}
+	void ExecState::setAdvanceIp(bool value) {
+		advanceIp = value;
+	}
 	MemoryController::MemoryController(hword size) : memorySize(size), memory(new byte[size]) { }
 
 	MemoryController::~MemoryController() {
@@ -43,37 +61,41 @@ namespace iris64 {
 		}
 	}
 
-	Core::Core(MemoryController* m) : mc(m) { }
+	Core::Core(MemoryController* m, ExecState&& t0, ExecState&& t1) : 
+		mc(m),
+		thread0(std::move(t0)),
+		thread1(std::move(t1))
+	{ }
 	void Core::installprogram(std::istream& stream) {
 		mc->install(stream);
 	}
 	void Core::dump(std::ostream& stream) {
 		mc->dump(stream);
 	}
-	void Core::decode() {
+	void Core::decode(ExecState& thread) {
 		// read a byte from the current instruction pointer address
-		byte curr = mc->readByte(gpr[ArchitectureConstants::InstructionPointerIndex]);
-		++gpr[ArchitectureConstants::InstructionPointerIndex];
+		byte curr = mc->readByte(thread[ArchitectureConstants::InstructionPointerIndex]);
+		++thread[ArchitectureConstants::InstructionPointerIndex];
 		auto width = DecodeWidth(curr & DecodeMask);
 		byte rest = (curr & (~DecodeMask)) >> 5;
 		switch (width) {
 			case DecodeWidth::Variable:
-				decodeVariable(rest);
+				decodeVariable(thread, rest);
 				break;
 			case DecodeWidth::OneByte: // one byte
-				decodeOneByte(OneByteOperations(rest));
+				decodeOneByte(thread, OneByteOperations(rest));
 				break;
 			case DecodeWidth::TwoByte:
-				decodeTwoByte(TwoByteOperations(rest));
+				decodeTwoByte(thread, TwoByteOperations(rest));
 				break;
 			case DecodeWidth::FourByte:
-				decodeFourByte(rest);
+				decodeFourByte(thread, rest);
 				break;
 			case DecodeWidth::EightByte:
-				decodeEightByte(rest);
+				decodeEightByte(thread, rest);
 				break;
 			case DecodeWidth::TenByte:
-				decodeTenByte(rest);
+				decodeTenByte(thread, rest);
 				break;
 			default:
 				throw "Illegal opcode";
@@ -85,10 +107,10 @@ namespace iris64 {
 	void Core::shutdown() {
 
 	}
-	void Core::decodeVariable(byte input) {
+	void Core::decodeVariable(ExecState& curr, byte input) {
 
 	}
-	void Core::decodeOneByte(OneByteOperations input) {
+	void Core::decodeOneByte(ExecState& curr, OneByteOperations input) {
 		switch (input) {
 			case OneByteOperations::Return:
 				break;
@@ -96,7 +118,7 @@ namespace iris64 {
 				throw "Illegal operation";
 		}
 	}
-	void Core::decodeTwoByte(TwoByteOperations input) {
+	void Core::decodeTwoByte(ExecState& curr, TwoByteOperations input) {
 		switch(input) {
 			case TwoByteOperations::PushByte:
 				break;
@@ -120,30 +142,34 @@ namespace iris64 {
 				throw "Illegal operation";
 		}
 	}
-	void Core::decodeFourByte(byte input) {
+	void Core::decodeFourByte(ExecState& curr, byte input) {
 
 	}
-	void Core::decodeEightByte(byte input) {
+	void Core::decodeEightByte(ExecState& curr, byte input) {
 
 	}
-	void Core::decodeTenByte(byte input) {
+	void Core::decodeTenByte(ExecState& curr, byte input) {
 
 	}
 	void Core::run() {
-		/*
 		while(execute) {
-			if (!advanceIp) {
-				advanceIp = true;
+			execBody(thread0);
+			if (execute) {
+				execBody(thread1);
 			}
-			current.decode(instruction[gpr[ArchitectureConstants::InstructionPointerIndex]]);
-			dispatch();
-			if (advanceIp) {
-				gpr[ArchitectureConstants::InstructionPointerIndex]++;
-			} 
 		}
-		*/
 	}
-	void Core::dispatch() {
+	void Core::execBody(ExecState& thread) {
+		if (!thread.shouldAdvanceIp()) {
+			thread.setAdvanceIp(true);
+		}
+		decode(thread);
+		dispatch(thread);
+		if (thread.shouldAdvanceIp()) {
+			++thread[ArchitectureConstants::InstructionPointerIndex];
+		}
+	}
+	void Core::dispatch(ExecState& thread) {
 		/*
 		switch(static_cast<InstructionGroup>(current.getGroup())) {
 #define X(name, operation) case InstructionGroup:: name: operation(); break; 

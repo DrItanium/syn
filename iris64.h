@@ -72,28 +72,42 @@ namespace iris64 {
 			hword memorySize;
 			byte* memory;
 	};
+	/// Represents the execution state of a thread of execution
+	class ExecState {
+		public:
+			ExecState(word numRegisters);
+			~ExecState();
+			word& operator[](word idx);
+			bool shouldAdvanceIp();
+			void setAdvanceIp(bool value);
+		private:
+			bool advanceIp = true;
+			word regCount = 0;
+			word* gpr = 0;
+	};
 	class Core : public iris::Core {
 		public:
-			Core(MemoryController* memC);
+			Core(MemoryController* memC, ExecState&& t0, ExecState&& t1);
 			virtual void initialize();
 			virtual void installprogram(std::istream& stream);
 			virtual void shutdown();
 			virtual void dump(std::ostream& stream);
 			virtual void run();
 		private:
-			void decode();
-			void dispatch();
-			void decodeVariable(byte rest);
-			void decodeOneByte(OneByteOperations rest);
-			void decodeTwoByte(TwoByteOperations rest);
-			void decodeFourByte(byte rest);
-			void decodeEightByte(byte rest);
-			void decodeTenByte(byte rest);
+			void execBody(ExecState& thread);
+			void decode(ExecState& curr);
+			void dispatch(ExecState& curr);
+			void decodeVariable(ExecState& curr, byte rest);
+			void decodeOneByte(ExecState& curr, OneByteOperations rest);
+			void decodeTwoByte(ExecState& curr, TwoByteOperations rest);
+			void decodeFourByte(ExecState& curr, byte rest);
+			void decodeEightByte(ExecState& curr, byte rest);
+			void decodeTenByte(ExecState& curr, byte rest);
 		private:
 			MemoryController* mc;
-			bool execute = true,
-				 advanceIp = true;
-			word gpr[ArchitectureConstants::RegisterCount] = {0};
+			ExecState thread0,
+					  thread1;
+			bool execute = true;
 	};
 
 } // end namespace iris64
