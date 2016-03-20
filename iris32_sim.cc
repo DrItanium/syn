@@ -1,12 +1,11 @@
 /* sim.c - the iris simulator */
-#include "iris64.h"
+#include "iris32.h"
 #include <iostream>
 #include <fstream>
 #include <string>
 
 std::istream* input = 0;
 bool close = false;
-iris64::Core core(iris64::ArchitectureConstants::AddressMax);
 static void usage(char* arg0);
 
 int main(int argc, char* argv[]) {
@@ -44,6 +43,8 @@ int main(int argc, char* argv[]) {
 		}
 	}
 	if(input) {
+		iris32::ExecState t0, t1;
+		iris32::Core core(iris32::ArchitectureConstants::AddressMax, std::move(t0), std::move(t1));
 		core.initialize();
 		core.installprogram(*input);
 		core.run();

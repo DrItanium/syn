@@ -47,60 +47,60 @@ IRIS16_TOOLS = ${IRIS16_BINARIES}
 IRIS16 = ${IRIS16_OUT} \
 		 ${IRIS16_TOOLS}
 
-IRIS64_OBJECTS = iris64.o \
+IRIS32_OBJECTS = iris32.o \
 
-IRIS64_OUT = libiris64.a
+IRIS32_OUT = libiris32.a
 
-IRIS64_SIM_BINARY = iris64
-IRIS64_SIM_MAIN = iris64_sim.o
-IRIS64_SIM_OBJECTS = ${IRIS64_SIM_MAIN}
+IRIS32_SIM_BINARY = iris32
+IRIS32_SIM_MAIN = iris32_sim.o
+IRIS32_SIM_OBJECTS = ${IRIS32_SIM_MAIN}
 
-IRIS64_LINK_BINARY = iris64link
-IRIS64_LINK_MAIN = iris64_link.o
-IRIS64_LINK_OBJECTS = ${IRIS64_LINK_MAIN}
+IRIS32_LINK_BINARY = iris32link
+IRIS32_LINK_MAIN = iris32_link.o
+IRIS32_LINK_OBJECTS = ${IRIS32_LINK_MAIN}
 
 
-IRIS64_STRGEN_BINARY = iris64strgen
-IRIS64_STRGEN_MAIN = iris64_strgen.o
-IRIS64_STRGEN_OBJECTS = ${IRIS64_STRGEN_MAIN} 
+IRIS32_STRGEN_BINARY = iris32strgen
+IRIS32_STRGEN_MAIN = iris32_strgen.o
+IRIS32_STRGEN_OBJECTS = ${IRIS32_STRGEN_MAIN} 
 
-IRIS64_ASM_BINARY = iris64asm
+IRIS32_ASM_BINARY = iris32asm
 
-IRIS64_ASM_FILES = iris64_lex.yy.c \
-				   iris64_asm.tab.c \
-				   iris64_asm.tab.h
+IRIS32_ASM_FILES = iris32_lex.yy.c \
+				   iris32_asm.tab.c \
+				   iris32_asm.tab.h
 
-IRIS64_ASM_OBJECTS = iris64_lex.yy.o \
-					 iris64_asm.tab.o
+IRIS32_ASM_OBJECTS = iris32_lex.yy.o \
+					 iris32_asm.tab.o
 
-ALL_IRIS64_OBJECTS = ${IRIS64_OBJECTS} \
-					 ${IRIS64_SIM_OBJECTS} \
-					 ${IRIS64_LINK_OBJECTS} \
-					 ${IRIS64_OUT} \
-					 ${IRIS64_ASM_OBJECTS} \
-					 ${IRIS64_ASM_FILES} \
-					 ${IRIS64_STRGEN_OBJECTS}
+ALL_IRIS32_OBJECTS = ${IRIS32_OBJECTS} \
+					 ${IRIS32_SIM_OBJECTS} \
+					 ${IRIS32_LINK_OBJECTS} \
+					 ${IRIS32_OUT} \
+					 ${IRIS32_ASM_OBJECTS} \
+					 ${IRIS32_ASM_FILES} \
+					 ${IRIS32_STRGEN_OBJECTS}
 
-IRIS64_BINARIES = ${IRIS64_SIM_BINARY} \
-				  ${IRIS64_LINK_BINARY} \
-				  ${IRIS64_ASM_BINARY} \
-				  ${IRIS64_STRGEN_BINARY}
+IRIS32_BINARIES = ${IRIS32_SIM_BINARY} \
+				  ${IRIS32_LINK_BINARY} \
+				  ${IRIS32_ASM_BINARY} \
+				  ${IRIS32_STRGEN_BINARY}
 
-IRIS64_TOOLS = ${IRIS64_BINARIES}
+IRIS32_TOOLS = ${IRIS32_BINARIES}
 
-IRIS64 = ${IRIS64_OUT} \
-		 ${IRIS64_TOOLS}
+IRIS32 = ${IRIS32_OUT} \
+		 ${IRIS32_TOOLS}
 
 # The object file that defines main()
 #TEST_OBJECTS = $(patsubst %.c,%.o,$(wildcard src/cmd/tests/*.c))
 
 ALL_BINARIES = ${IRIS16_BINARIES} \
-			   ${IRIS64_BINARIES}
+			   ${IRIS32_BINARIES}
 
 ALL_OBJECTS = ${ALL_IRIS16_OBJECTS} \
-			  ${ALL_IRIS64_OBJECTS}
+			  ${ALL_IRIS32_OBJECTS}
 
-all: options ${IRIS16} ${IRIS64}
+all: options ${IRIS16} ${IRIS32}
 
 options:
 	@echo iris build options:
@@ -155,40 +155,40 @@ ${IRIS16_ASM_BINARY}: iris16_lex.yy.c iris16_asm.tab.c iris16_asm.tab.h
 	@${CXX} ${LDFLAGS} -o ${IRIS16_ASM_BINARY} iris16_lex.yy.o iris16_asm.tab.o ${IRIS16_OUT}
 	@echo done.
 
-# BEGIN IRIS64
+# BEGIN IRIS32
 #
-${IRIS64_OUT}: ${IRIS64_OBJECTS}
-	@echo -n Building ${IRIS64_OUT} out of $^...
-	@${AR} rcs ${IRIS64_OUT}  $^
+${IRIS32_OUT}: ${IRIS32_OBJECTS}
+	@echo -n Building ${IRIS32_OUT} out of $^...
+	@${AR} rcs ${IRIS32_OUT}  $^
 	@echo done
 
-${IRIS64_SIM_BINARY}: ${IRIS64_SIM_MAIN} ${IRIS64_OUT}
-	@echo -n Building ${IRIS64_SIM_BINARY} binary out of $^...
-	@${CXX} ${LDFLAGS} -o ${IRIS64_SIM_BINARY} $^
+${IRIS32_SIM_BINARY}: ${IRIS32_SIM_MAIN} ${IRIS32_OUT}
+	@echo -n Building ${IRIS32_SIM_BINARY} binary out of $^...
+	@${CXX} ${LDFLAGS} -o ${IRIS32_SIM_BINARY} $^
 	@echo done.
 
-${IRIS64_LINK_BINARY}: ${IRIS64_LINK_MAIN} ${IRIS64_OUT}
-	@echo -n Building ${IRIS64_LINK_BINARY} binary out of $^...
-	@${CXX} ${LDFLAGS} -o ${IRIS64_LINK_BINARY} $^
+${IRIS32_LINK_BINARY}: ${IRIS32_LINK_MAIN} ${IRIS32_OUT}
+	@echo -n Building ${IRIS32_LINK_BINARY} binary out of $^...
+	@${CXX} ${LDFLAGS} -o ${IRIS32_LINK_BINARY} $^
 	@echo done.
 
-${IRIS64_STRGEN_BINARY}: ${IRIS64_STRGEN_MAIN} ${IRIS64_OUT}
-	@echo -n Building ${IRIS64_STRGEN_BINARY} binary out of $^...
-	@${CXX} ${LDFLAGS} -o ${IRIS64_STRGEN_BINARY} $^
+${IRIS32_STRGEN_BINARY}: ${IRIS32_STRGEN_MAIN} ${IRIS32_OUT}
+	@echo -n Building ${IRIS32_STRGEN_BINARY} binary out of $^...
+	@${CXX} ${LDFLAGS} -o ${IRIS32_STRGEN_BINARY} $^
 	@echo done.
 
 
-iris64_asm.tab.c iris64_asm.tab.h: iris64_asm.y
-	@${YACC} -o iris64_asm.tab.c -d iris64_asm.y
-	@${CXX} ${CXXFLAGS} -c iris64_asm.tab.c -o iris64_asm.tab.o
+iris32_asm.tab.c iris32_asm.tab.h: iris32_asm.y
+	@${YACC} -o iris32_asm.tab.c -d iris32_asm.y
+	@${CXX} ${CXXFLAGS} -c iris32_asm.tab.c -o iris32_asm.tab.o
 
-iris64_lex.yy.c: iris64_asm.l iris64_asm.tab.h
-	@${LEX} -o iris64_lex.yy.c -l iris64_asm.l
-	@${CXX} ${CXXFLAGS} -D_POSIX_SOURCE -c iris64_lex.yy.c -o iris64_lex.yy.o
+iris32_lex.yy.c: iris32_asm.l iris32_asm.tab.h
+	@${LEX} -o iris32_lex.yy.c -l iris32_asm.l
+	@${CXX} ${CXXFLAGS} -D_POSIX_SOURCE -c iris32_lex.yy.c -o iris32_lex.yy.o
 
-${IRIS64_ASM_BINARY}: iris64_lex.yy.c iris64_asm.tab.c iris64_asm.tab.h 
-	@echo -n Building ${IRIS64_ASM_BINARY} binary out of $^...
-	@${CXX} ${LDFLAGS} -o ${IRIS64_ASM_BINARY} iris64_lex.yy.o iris64_asm.tab.o ${IRIS64_OUT}
+${IRIS32_ASM_BINARY}: iris32_lex.yy.c iris32_asm.tab.c iris32_asm.tab.h 
+	@echo -n Building ${IRIS32_ASM_BINARY} binary out of $^...
+	@${CXX} ${LDFLAGS} -o ${IRIS32_ASM_BINARY} iris32_lex.yy.o iris32_asm.tab.o ${IRIS32_OUT}
 	@echo done.
 
 clean:
@@ -229,16 +229,16 @@ iris16_sim.o: iris16_sim.cc iris16.h iris_base.h Core.h iris16_groups.def \
  iris16_instruction.def
 iris16_strgen.o: iris16_strgen.cc
 
-iris64.o: iris64.cc iris64.h iris_base.h Core.h iris64_groups.def \
- iris64_arithmetic.def iris64_misc.def iris64_jump.def \
- iris64_syscalls.def iris64_move.def iris64_compare.def \
- iris64_instruction.def
-iris64_link.o: iris64_link.cc iris16.h iris_base.h Core.h \
- iris16_groups.def iris16_arithmetic.def iris16_misc.def iris16_jump.def \
- iris16_syscalls.def iris16_move.def iris16_compare.def \
- iris16_instruction.def
-iris64_sim.o: iris64_sim.cc iris16.h iris_base.h Core.h iris16_groups.def \
- iris16_arithmetic.def iris16_misc.def iris16_jump.def \
- iris16_syscalls.def iris16_move.def iris16_compare.def \
- iris16_instruction.def
-iris64_strgen.o: iris64_strgen.cc
+iris32.o: iris32.cc iris32.h iris_base.h Core.h iris32_groups.def \
+ iris32_arithmetic.def iris32_misc.def iris32_jump.def \
+ iris32_syscalls.def iris32_move.def iris32_compare.def \
+ iris32_instruction.def
+iris32_link.o: iris32_link.cc iris32.h iris_base.h Core.h \
+ iris32_groups.def iris32_arithmetic.def iris32_misc.def iris32_jump.def \
+ iris32_syscalls.def iris32_move.def iris32_compare.def \
+ iris32_instruction.def
+iris32_sim.o: iris32_sim.cc iris32.h iris_base.h Core.h iris32_groups.def \
+ iris32_arithmetic.def iris32_misc.def iris32_jump.def \
+ iris32_syscalls.def iris32_move.def iris32_compare.def \
+ iris32_instruction.def
+iris32_strgen.o: iris32_strgen.cc

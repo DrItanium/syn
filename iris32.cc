@@ -2,31 +2,24 @@
 #include <functional>
 
 namespace iris32 {
-	ExecState::ExecState(word numRegs) : regCount(numRegs), gpr(new word[numRegs]) { }
-	ExecState::~ExecState() {
-		delete [] gpr;
-		gpr = 0;
+	DecodedInstruction::DecodedInstruction(word inst) :
+#define X(title, mask, shift, type, isreg, field ) \
+		field ( (type) ((inst & mask) >> shift) ),
+#include "iris32_instruction.def"
+#undef X
+		raw(inst)
+	{ }
+#define X(title, mask, shift, type, isreg, field) \
+	type DecodedInstruction:: get ## title ( ) { \
+		return field ; \
+	} \
+	void DecodedInstruction:: set ## title ( type value ) { \
+		field = value ; \
 	}
-	word& ExecState::operator[](word idx) {
-		if (idx < 0 || idx >= regCount) {
-			throw "Illegal register index!";
-		} else {
-			return gpr[idx];
-		}
-	}
-	bool ExecState::shouldAdvanceIp() {
-			return advanceIp;
-	}
-	void ExecState::setAdvanceIp(bool value) {
-		advanceIp = value;
-	}
-	MemoryController::MemoryController(word size) : memorySize(size / sizeof(word)), memory(new word[size / sizeof(word)]) { }
+#include "iris32_instruction.def"
+#undef X
 
-	MemoryController::~MemoryController() {
-		delete [] memory;
-		memory = 0;
-	}
-	void MemoryController::write(word address, word value) {
+	void Core::write(word address, word value) {
 		auto addr = address >> 2; // shift the address
 		if (addr >= 0 && addr < memorySize) {
 			memory[addr] = value;
@@ -34,7 +27,7 @@ namespace iris32 {
 			throw "Address out of range!";
 		}
 	}
-	word MemoryController::read(word address) {
+	word Core::read(word address) {
 		auto addr = address >> 2; // modify the address
 		if (addr >= 0 && addr < memorySize) {
 			return memory[addr];
@@ -43,7 +36,17 @@ namespace iris32 {
 		}
 	}
 
-	void MemoryController::install(std::istream& stream) {
+	Core::Core(word msize, ExecState&& t0, ExecState&& t1) : 
+		memorySize(msize / sizeof(word)),
+		memory(new word[msize / sizeof(word)]),
+		thread0(std::move(t0)),
+		thread1(std::move(t1))
+	{ }
+	Core::~Core() {
+		delete [] memory;
+		memory = 0;
+	}
+	void Core::installprogram(std::istream& stream) {
 		char storage[sizeof(word)] = { 0 };
 		for (hword i = 0; i < memorySize; ++i) {
 			if (!stream.good()) {
@@ -54,7 +57,7 @@ namespace iris32 {
 			}
 		}
 	}
-	void MemoryController::dump(std::ostream& stream) {
+	void Core::dump(std::ostream& stream) {
 		char storage[sizeof(word)] = { 0 };
 		for (word i = 0; i < memorySize; ++i) {
 			auto cell = memory[i];
@@ -64,123 +67,26 @@ namespace iris32 {
 			stream.write(storage, sizeof(word));
 		}
 	}
-
-	Core::Core(MemoryController* m, ExecState&& t0, ExecState&& t1) : 
-		mc(m),
-		thread0(std::move(t0)),
-		thread1(std::move(t1))
-	{ }
-	void Core::installprogram(std::istream& stream) {
-		mc->install(stream);
-	}
-	void Core::dump(std::ostream& stream) {
-		mc->dump(stream);
-	}
-	void Core::decode(ExecState& thread) {
+	void Core::dispatch(ExecState& thread) {
 		// read a byte from the current instruction pointer address
-		byte curr = mc->readByte(thread[ArchitectureConstants::InstructionPointerIndex]);
-		++thread[ArchitectureConstants::InstructionPointerIndex];
-		auto width = DecodeWidth(curr & DecodeMask);
-		byte rest = (curr & (~DecodeMask)) >> 5;
-		switch (width) {
-			case DecodeWidth::Variable:
-				decodeVariable(thread, rest);
-				break;
-			case DecodeWidth::OneByte: // one byte
-				decodeOneByte(thread, OneByteOperations(rest));
-				break;
-			case DecodeWidth::TwoByte:
-				decodeTwoByte(thread, TwoByteOperations(rest));
-				break;
-			case DecodeWidth::FourByte:
-				decodeFourByte(thread, rest);
-				break;
-			case DecodeWidth::EightByte:
-				decodeEightByte(thread, rest);
-				break;
-			case DecodeWidth::TenByte:
-				decodeTenByte(thread, rest);
-				break;
+		word instruction = read(thread.gpr[ArchitectureConstants::InstructionPointerIndex]);
+		auto group = (byte(instruction) & GroupMask),
+			 rest = (byte(instruction) & RestMask) >> 3;
+		switch (group) {
+#define X(en, fn) \
+			case InstructionGroup:: en : \
+				 fn (thread) ; \
+			break;
+#include "iris32_groups.def"
+#undef X
 			default:
-				throw "Illegal opcode";
+				throw "Illegal instruction group!";
 		}
 	}
 	void Core::initialize() {
 
 	}
 	void Core::shutdown() {
-
-	}
-	void Core::decodeVariable(ExecState& curr, byte input) {
-
-	}
-	word MemoryController::readWord(word address) {
-		// assume it is a byte address
-		auto addr = address >> 3;
-		if (addr < 0 || addr >= memorySize) {
-			throw "Address out of range";
-		} else {
-			return ((word*)memory)[addr];
-		}
-	}
-	void Core::decodeOneByte(ExecState& curr, OneByteOperations input) {
-		switch (input) {
-			case OneByteOperations::Return:
-				{
-				auto callTop = curr[ArchitectureConstants::CallPointerIndex];
-				curr[ArchitectureConstants::InstructionPointerIndex] = mc->readWord(callTop);
-				curr[ArchitectureConstants::CallPointerIndex] = ((callTop >> 3) + 1) << 3; // decrement the call pointer
-				break;
-				}
-			default:
-				{
-				throw "Illegal operation";
-				}
-		}
-	}
-	void Core::decodeTwoByte(ExecState& curr, TwoByteOperations input) {
-		byte reg = mc->readByte(curr[ArchitectureConstants::InstructionPointerIndex]);
-		++curr[ArchitectureConstants::InstructionPointerIndex];
-		switch(input) {
-			case TwoByteOperations::PushByte:
-				mc->writeByte(--curr[ArchitectureConstants::StackPointerIndex], reg);
-				break;
-			case TwoByteOperations::Increment:
-				++curr[reg];
-				break;
-			case TwoByteOperations::Decrement:
-				--curr[reg];
-				break;
-			case TwoByteOperations::Double:
-				curr[reg] *= 2;
-				break;
-			case TwoByteOperations::Halve:
-				curr[reg] /= 2;
-				break;
-			case TwoByteOperations::InvertBits:
-				curr[reg] = ~curr[reg];
-				break;
-			case TwoByteOperations::Pop:
-				curr[reg] = mc->readWord(curr[ArchitectureConstants::StackPointerIndex]);
-				curr[ArchitectureConstants::StackPointerIndex] = ((curr[ArchitectureConstants::StackPointerIndex] >> 3) + 1) << 3;
-				break;
-			case TwoByteOperations::Square:
-				curr[reg] = curr[reg] * curr[reg];
-				break;
-			case TwoByteOperations::CallRegister:
-				curr[ArchitectureConstants::CallPointerIndex]
-				break;
-			default:
-				throw "Illegal operation";
-		}
-	}
-	void Core::decodeFourByte(ExecState& curr, byte input) {
-
-	}
-	void Core::decodeEightByte(ExecState& curr, byte input) {
-
-	}
-	void Core::decodeTenByte(ExecState& curr, byte input) {
 
 	}
 	void Core::run() {
@@ -192,27 +98,13 @@ namespace iris32 {
 		}
 	}
 	void Core::execBody(ExecState& thread) {
-		if (!thread.shouldAdvanceIp()) {
-			thread.setAdvanceIp(true);
+		if (!thread.advanceIp) {
+			thread.advanceIp = true;
 		}
-		decode(thread);
 		dispatch(thread);
-		if (thread.shouldAdvanceIp()) {
-			++thread[ArchitectureConstants::InstructionPointerIndex];
+		if (thread.advanceIp) {
+			++thread.gpr[ArchitectureConstants::InstructionPointerIndex];
 		}
-	}
-	void Core::dispatch(ExecState& thread) {
-		/*
-		switch(static_cast<InstructionGroup>(current.getGroup())) {
-#define X(name, operation) case InstructionGroup:: name: operation(); break; 
-#include "iris32_groups.def"
-#undef X
-			default:
-				std::cerr << "Illegal instruction group " << current.getGroup() << std::endl;
-				execute = false;
-				break;
-		}
-		*/
 	}
 	/*
 	void Core::compare() {

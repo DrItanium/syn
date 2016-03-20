@@ -7,7 +7,6 @@
 typedef int64_t dword;
 typedef int32_t word;
 typedef int16_t hword;
-typedef int64_t raw_instruction;
 
 namespace iris32 {
 	enum ArchitectureConstants  {
@@ -20,8 +19,8 @@ namespace iris32 {
 		InternalTemporaryCount = 8,
 	};
 	enum {
-		WidthMask= 0b00000111,
-		RestCount = ~(WidthMask) >> 3,
+		GroupMask = 0b00000111,
+		RestMask = ~GroupMask,
 	};
 	class MemoryController {
 		public:
@@ -35,41 +34,58 @@ namespace iris32 {
 			word memorySize;
 			word* memory;
 	};
-
-	/// Represents the execution state of a thread of execution
-	class ExecState {
+	enum InstructionGroup {
+#define X(e, __) e ,
+#include "iris32_groups.def"
+#undef X
+	};
+	class DecodedInstruction {
+		enum class Fields {
+#define X(en, u0, u1, u2, u3, u4) en ,
+#include "iris32_instruction.def"
+#undef X
+			Count,
+		};
 		public:
-			ExecState(word numRegisters);
-			~ExecState();
-			word& operator[](word idx);
-			bool shouldAdvanceIp();
-			void setAdvanceIp(bool value);
+			DecodedInstruction(word rinst);
+#define X(field, mask, shift, type, isreg, unused) \
+			type get ## field (); \
+			void set ## field (type value);
+#include "iris32_instruction.def"
+#undef X
 		private:
-			bool advanceIp = true;
-			word regCount = 0;
-			word* gpr = 0;
+#define X(u0, u1, u2, type, u3, fieldName) type fieldName; 
+#include "iris32_instruction.def"
+#undef X
+			word raw;
+	};
+	/// Represents the execution state of a thread of execution
+	struct ExecState {
+		bool advanceIp = true;
+		word gpr[ArchitectureConstants::RegisterCount] = { 0 };
 	};
 
 	class Core : public iris::Core {
 		public:
-			Core(MemoryController* memC, ExecState&& t0, ExecState&& t1);
+			Core(word memorySize, ExecState&& t0, ExecState&& t1);
+			~Core();
 			virtual void initialize();
 			virtual void installprogram(std::istream& stream);
 			virtual void shutdown();
 			virtual void dump(std::ostream& stream);
 			virtual void run();
 		private:
+			void write(word address, word value);
+			word read(word address);
 			void execBody(ExecState& thread);
 			void decode(ExecState& curr);
 			void dispatch(ExecState& curr);
-			void decodeVariable(ExecState& curr, byte rest);
-			void decodeOneByte(ExecState& curr, OneByteOperations rest);
-			void decodeTwoByte(ExecState& curr, TwoByteOperations rest);
-			void decodeFourByte(ExecState& curr, byte rest);
-			void decodeEightByte(ExecState& curr, byte rest);
-			void decodeTenByte(ExecState& curr, byte rest);
+#define X(_, func) void func (ExecState& curr); 
+#include "iris32_groups.def"
+#undef X
 		private:
-			MemoryController* mc;
+			word memorySize;
+			word* memory;
 			ExecState thread0,
 					  thread1;
 			bool execute = true;
