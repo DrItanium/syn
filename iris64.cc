@@ -1,7 +1,7 @@
-#include "iris64.h"
+#include "iris32.h"
 #include <functional>
 
-namespace iris64 {
+namespace iris32 {
 	ExecState::ExecState(word numRegs) : regCount(numRegs), gpr(new word[numRegs]) { }
 	ExecState::~ExecState() {
 		delete [] gpr;
@@ -110,33 +110,61 @@ namespace iris64 {
 	void Core::decodeVariable(ExecState& curr, byte input) {
 
 	}
+	word MemoryController::readWord(word address) {
+		// assume it is a byte address
+		auto addr = address >> 3;
+		if (addr < 0 || addr >= memorySize) {
+			throw "Address out of range";
+		} else {
+			return ((word*)memory)[addr];
+		}
+	}
 	void Core::decodeOneByte(ExecState& curr, OneByteOperations input) {
 		switch (input) {
 			case OneByteOperations::Return:
+				{
+				auto callTop = curr[ArchitectureConstants::CallPointerIndex];
+				curr[ArchitectureConstants::InstructionPointerIndex] = mc->readWord(callTop);
+				curr[ArchitectureConstants::CallPointerIndex] = ((callTop >> 3) + 1) << 3; // decrement the call pointer
 				break;
+				}
 			default:
+				{
 				throw "Illegal operation";
+				}
 		}
 	}
 	void Core::decodeTwoByte(ExecState& curr, TwoByteOperations input) {
+		byte reg = mc->readByte(curr[ArchitectureConstants::InstructionPointerIndex]);
+		++curr[ArchitectureConstants::InstructionPointerIndex];
 		switch(input) {
 			case TwoByteOperations::PushByte:
+				mc->writeByte(--curr[ArchitectureConstants::StackPointerIndex], reg);
 				break;
 			case TwoByteOperations::Increment:
+				++curr[reg];
 				break;
 			case TwoByteOperations::Decrement:
+				--curr[reg];
 				break;
 			case TwoByteOperations::Double:
+				curr[reg] *= 2;
 				break;
 			case TwoByteOperations::Halve:
+				curr[reg] /= 2;
 				break;
 			case TwoByteOperations::InvertBits:
+				curr[reg] = ~curr[reg];
 				break;
 			case TwoByteOperations::Pop:
+				curr[reg] = mc->readWord(curr[ArchitectureConstants::StackPointerIndex]);
+				curr[ArchitectureConstants::StackPointerIndex] = ((curr[ArchitectureConstants::StackPointerIndex] >> 3) + 1) << 3;
 				break;
 			case TwoByteOperations::Square:
+				curr[reg] = curr[reg] * curr[reg];
 				break;
 			case TwoByteOperations::CallRegister:
+				curr[ArchitectureConstants::CallPointerIndex]
 				break;
 			default:
 				throw "Illegal operation";
@@ -173,7 +201,7 @@ namespace iris64 {
 		/*
 		switch(static_cast<InstructionGroup>(current.getGroup())) {
 #define X(name, operation) case InstructionGroup:: name: operation(); break; 
-#include "iris64_groups.def"
+#include "iris32_groups.def"
 #undef X
 			default:
 				std::cerr << "Illegal instruction group " << current.getGroup() << std::endl;
@@ -198,7 +226,7 @@ namespace iris64 {
 								   gpr[current.getDestination()] INDIRECTOR(Op, mod) (gpr[current.getSource0()] compare (word(current.getSource1()))); \
 			break;
 
-#include "iris64_compare.def"
+#include "iris32_compare.def"
 #undef X
 #undef Y
 #undef OpNone
@@ -230,7 +258,7 @@ namespace iris64 {
 #define XImmediate(n, op) XNone(n, op) 
 #define XDenominatorImmediate(n, op) XDenominator(n, op)
 #define X(name, op, desc) INDIRECTOR(X, desc)(name, op)
-#include "iris64_arithmetic.def"
+#include "iris32_arithmetic.def"
 #undef X
 #undef XNone
 #undef XDenominator
@@ -263,7 +291,7 @@ namespace iris64 {
 							INDIRECTOR(X, desc)(name) \
 							break; \
 						}
-#include "iris64_arithmetic.def"
+#include "iris32_arithmetic.def"
 #undef X
 #undef XNone
 #undef XDenominator
@@ -283,7 +311,7 @@ namespace iris64 {
 		};
 #define X(name, ifthenelse, conditional, iffalse, immediate, link) \
 	template<> struct ConditionalStyle<JumpOp:: name> { static const bool isFalseForm = iffalse; };
-#include "iris64_jump.def"
+#include "iris32_jump.def"
 #undef X
 	template<JumpOp op>
 		bool jumpCond(word cond) {
@@ -323,7 +351,7 @@ namespace iris64 {
 						 INDIRECTOR(XLink, _ ## link)  \
 						 break; \
 					 }
-#include "iris64_jump.def"
+#include "iris32_jump.def"
 #undef X
 			default:
 				std::cerr << "Illegal jump code " << current.getOperation() << std::endl;
@@ -337,7 +365,7 @@ namespace iris64 {
 			case MiscOp:: name: \
 			func (); \
 			break;
-#include "iris64_misc.def"
+#include "iris32_misc.def"
 #undef X
 			default:
 				std::cerr << "Illegal misc code " << current.getOperation() << std::endl;
@@ -421,7 +449,7 @@ namespace iris64 {
 					 INDIRECTOR(X,type)(target, dest, src) \
 			break; \
 					 }
-#include "iris64_move.def"
+#include "iris32_move.def"
 #undef X
 #undef XMove
 #undef XSwap
@@ -457,4 +485,4 @@ namespace iris64 {
 		}
 	}
 	*/
-} // end namespace iris64
+} // end namespace iris32

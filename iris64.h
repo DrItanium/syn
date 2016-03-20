@@ -1,5 +1,5 @@
-#ifndef _TARGET_IRIS64_IRIS_H
-#define _TARGET_IRIS64_IRIS_H
+#ifndef _TARGET_IRIS32_IRIS_H
+#define _TARGET_IRIS32_IRIS_H
 #include "iris_base.h"
 #include "Core.h"
 #include <cstdint>
@@ -16,7 +16,7 @@ typedef struct {
 	int64_t upper;
 	int64_t lower;
 } dword;
-namespace iris64 {
+namespace iris32 {
 	enum ArchitectureConstants  {
 		RegisterCount = 256,
 		FloatRegisterCount = 256,
@@ -24,6 +24,8 @@ namespace iris64 {
 		InstructionPointerIndex = RegisterCount - 1,
 		LinkRegisterIndex = RegisterCount - 2,
 		StackPointerIndex = RegisterCount - 3,
+		CallPointerIndex = RegisterCount - 4,
+		InternalTemporaryCount = 8,
 		//MaxGroups = 0x7,
 		//MaxOperations = 0x1F,
 		//
@@ -65,6 +67,7 @@ namespace iris64 {
 			MemoryController(hword memSize);
 			~MemoryController();
 			byte readByte(word address);
+			word readWord(word address);
 			void writeByte(word address, byte value);
 			void install(std::istream& stream);
 			void dump(std::ostream& stream);
@@ -72,6 +75,7 @@ namespace iris64 {
 			hword memorySize;
 			byte* memory;
 	};
+
 	/// Represents the execution state of a thread of execution
 	class ExecState {
 		public:
@@ -85,6 +89,7 @@ namespace iris64 {
 			word regCount = 0;
 			word* gpr = 0;
 	};
+
 	class Core : public iris::Core {
 		public:
 			Core(MemoryController* memC, ExecState&& t0, ExecState&& t1);
@@ -110,5 +115,5 @@ namespace iris64 {
 			bool execute = true;
 	};
 
-} // end namespace iris64
-#endif // end _TARGET_IRIS64_IRIS_H
+} // end namespace iris32
+#endif // end _TARGET_IRIS32_IRIS_H
