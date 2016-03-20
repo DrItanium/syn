@@ -11,9 +11,9 @@ namespace iris16 {
 	enum ArchitectureConstants  {
 		RegisterCount = 256,
 		AddressMax = 65535,
-		InstructionPointerIndex = 255,
-		LinkRegisterIndex = 254,
-		StackPointerIndex = 253,
+		InstructionPointerIndex = RegisterCount - 1,
+		LinkRegisterIndex = RegisterCount - 2,
+		StackPointerIndex = RegisterCount - 3,
 		MaxGroups = 0x7,
 		MaxOperations = 0x1F,
 	};
