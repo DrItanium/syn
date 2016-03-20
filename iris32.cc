@@ -18,6 +18,14 @@ namespace iris32 {
 	}
 #include "iris32_instruction.def"
 #undef X
+	word DecodedInstruction::encodeInstruction() {
+		return
+#define X(title, mask, shift, type, isreg, field) \
+			((word(field) << shift) & mask) |
+#include "iris32_instruction.def"
+#undef X
+			0;
+	}
 
 	void Core::write(word address, word value) {
 		auto addr = address >> 2; // shift the address
@@ -69,13 +77,11 @@ namespace iris32 {
 	}
 	void Core::dispatch(ExecState& thread) {
 		// read a byte from the current instruction pointer address
-		word instruction = read(thread.gpr[ArchitectureConstants::InstructionPointerIndex]);
-		auto group = (byte(instruction) & GroupMask),
-			 rest = (byte(instruction) & RestMask) >> 3;
-		switch (group) {
+		auto decoded = DecodedInstruction(read(thread.gpr[ArchitectureConstants::InstructionPointerIndex]));
+		switch (decoded.getGroup()) {
 #define X(en, fn) \
 			case InstructionGroup:: en : \
-				 fn (thread) ; \
+				 fn (thread, decoded) ; \
 			break;
 #include "iris32_groups.def"
 #undef X

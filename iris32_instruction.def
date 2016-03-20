@@ -5,8 +5,8 @@ X(Destination, 	 0x0000FF00, 8, byte, true, destination)
 X(Source0,       0x00FF0000, 16, byte, true, source0)
 X(Source1,     	 0xFF000000, 24, byte, true, source1)
 X(Immediate, 	 0xFFFF0000, 16, hword, false, immediate)
-X(Group,		 0b00000111, 0, byte, false, group)
-X(Operation,     0b11111000, 3, byte, false, op)
+X(Group,		 0x00000007, 0, byte, false, group)
+X(Operation,     0x000000F8, 3, byte, false, op)
 X(HalfImmediate, 0xFF000000, 24, byte, false, halfImmediate)
 
 

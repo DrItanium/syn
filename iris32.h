@@ -53,6 +53,7 @@ namespace iris32 {
 			void set ## field (type value);
 #include "iris32_instruction.def"
 #undef X
+			word encodeInstruction();
 		private:
 #define X(u0, u1, u2, type, u3, fieldName) type fieldName; 
 #include "iris32_instruction.def"
@@ -80,7 +81,7 @@ namespace iris32 {
 			void execBody(ExecState& thread);
 			void decode(ExecState& curr);
 			void dispatch(ExecState& curr);
-#define X(_, func) void func (ExecState& curr); 
+#define X(_, func) void func (ExecState& thread, DecodedInstruction& inst); 
 #include "iris32_groups.def"
 #undef X
 		private:
