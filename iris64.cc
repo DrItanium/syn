@@ -16,24 +16,6 @@ namespace iris64 {
 			throw "Address out of range";
 		}
 	}
-	void Core::decodeVariable(byte input) {
-
-	}
-	void Core::decodeOneByte(byte input) {
-
-	}
-	void Core::decodeTwoByte(byte input) {
-
-	}
-	void Core::decodeFourByte(byte input) {
-
-	}
-	void Core::decodeEightByte(byte input) {
-
-	}
-	void Core::decodeTenByte(byte input) {
-
-	}
 	void Core::decode() {
 		// read a byte from the current instruction pointer address
 		byte curr = readByte(gpr[ArchitectureConstants::InstructionPointerIndex]);
@@ -70,9 +52,38 @@ namespace iris64 {
 
 	}
 	void Core::installprogram(std::istream& stream) {
-
+		for (hword i = 0; i < memorySize; ++i) {
+			if (!stream.good()) {
+				throw "Memory size too small";
+			} else {
+				auto value = stream.get();
+				memory[i] = byte(value);
+			}
+		}
 	}
 	void Core::dump(std::ostream& stream) {
+		char storage[1] = { 0 };
+		for (hword i = 0; i < memorySize; ++i) {
+			storage[0] = memory[i];
+			stream.write(storage, 1);
+		}
+	}
+	void Core::decodeVariable(byte input) {
+
+	}
+	void Core::decodeOneByte(byte input) {
+
+	}
+	void Core::decodeTwoByte(byte input) {
+
+	}
+	void Core::decodeFourByte(byte input) {
+
+	}
+	void Core::decodeEightByte(byte input) {
+
+	}
+	void Core::decodeTenByte(byte input) {
 
 	}
 	/*
