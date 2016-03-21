@@ -130,6 +130,11 @@ F:
       curri.reg2 = 0;
       curri.hassymbol = 0;
       curri.symbol = "";
+	  curri.useUpper = false;
+	  curri.reg3 = 0;
+	  curri.reg4 = 0;
+	  curri.dataWord = 0;
+	  curri.isOperation = false;
    } | 
    asm {
       curri.address = 0;
@@ -140,6 +145,11 @@ F:
       curri.reg2 = 0;
       curri.hassymbol = 0;
       curri.symbol = "";
+	  curri.useUpper = false;
+	  curri.reg3 = 0;
+	  curri.reg4 = 0;
+	  curri.dataWord = 0;
+	  curri.isOperation = false;
    }
    ;
 asm:
@@ -159,7 +169,6 @@ directive:
 statement:
          label |
          operation {
-		 	   std::cout << "instruction at " << state.address << std::endl;
 			   curri.address = state.address;
 			   curri.isOperation = true;
 			   save_encoding();
@@ -168,7 +177,6 @@ statement:
          ;
 label:
      LABEL SYMBOL { 
-	 std::cout << "Label: " << $2 << " address: " << state.address << std::endl;
 	 add_label_entry($2, state.address); 
 	 } ;
 operation:
@@ -356,6 +364,7 @@ lexeme:
       SYMBOL { curri.hassymbol = 1; 
                curri.symbol = $1; } | 
       IMMEDIATE { 
+	  //std::cerr << "IMMEDIATE value = " << std::hex << word($1) << std::endl;
             curri.reg1 = (byte)(($1 & 0x000000FF));
             curri.reg2 = (byte)(($1 & 0x0000FF00) >> 8);
 			curri.reg3 = (byte)(($1 & 0x00FF0000) >> 16);
@@ -506,12 +515,12 @@ void yyerror(const char* s) {
 void resolve_labels() {
    /* we need to go through the list of dynamic operations and replace
       the label with the corresponding address */
-   for(std::vector<dynamicop>::iterator it = state.dynops.begin(); it != state.dynops.end(); ++it) {
-   		if (!resolve_op(&(*it))) {
-			std::cerr << "panic: couldn't find label " << it->symbol << std::endl;
+   for (auto &op : state.dynops) {
+   		if (!resolve_op(&op)) {
+			std::cerr << "panic: couldn't find label " << op.symbol << std::endl;
 			exit(1);
 		} else {
-			write_dynamic_op(&(*it));
+			write_dynamic_op(&op);
 		}
    }
 }

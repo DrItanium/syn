@@ -129,6 +129,8 @@ namespace iris32 {
 			virtual void dump(std::ostream& stream);
 			virtual void run();
 			void write(word address, word value);
+			bool debugEnabled();
+			void toggleDebug();
 			word read(word address);
 		private:
 			void execBody();
@@ -145,6 +147,7 @@ namespace iris32 {
 			ExecState *thread0,
 					  *thread1;
 			bool execute = true;
+			bool debug = false;
 	};
 
 } // end namespace iris32

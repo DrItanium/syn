@@ -2,6 +2,12 @@
 #include <functional>
 
 namespace iris32 {
+	void Core::toggleDebug() {
+		debug = !debug;
+	}
+	bool Core::debugEnabled() {
+		return debug;
+	}
 	word encodeWord(byte a, byte b, byte c, byte d) {
 		return word(a) | word(b) << 8 | word(c) << 16 | word(d) << 24; 
 	}
@@ -87,7 +93,7 @@ namespace iris32 {
 		switch (static_cast<InstructionGroup>(decoded.getGroup())) {
 #define X(en, fn) \
 			case InstructionGroup:: en : \
-				std::cerr << "Calling " << "InstructionGroup::" << #en << std::endl; \
+				if (debug) std::cerr << "Calling " << "InstructionGroup::" << #en << std::endl; \
 				 fn (decoded) ; \
 			break;
 #include "iris32_groups.def"
@@ -116,11 +122,11 @@ namespace iris32 {
 		}
 	}
 	void Core::execBody() {
-		std::cerr << "current thread " << std::hex << &thread << std::endl;
+		if (debug) std::cerr << "current thread " << std::hex << &thread << std::endl;
 		if (!thread->advanceIp) {
 			thread->advanceIp = true;
 		}
-		std::cerr << "\tip = " << std::hex << thread->gpr[ArchitectureConstants::InstructionPointerIndex] << std::endl;
+		if (debug) std::cerr << "\tip = " << std::hex << thread->gpr[ArchitectureConstants::InstructionPointerIndex] << std::endl;
 		dispatch();
 		if (thread->advanceIp) {
 			++thread->gpr[ArchitectureConstants::InstructionPointerIndex];
@@ -137,12 +143,12 @@ namespace iris32 {
 #define OpXor ^=
 #define X(type, compare, mod) \
 			case CompareOp:: type: \
-								   std::cerr << "Called CompareOp::" << #type << std::endl; \
+								   if (debug) std::cerr << "Called CompareOp::" << #type << std::endl; \
 								   thread->gpr[current.getDestination()] INDIRECTOR(Op, mod) (thread->gpr[current.getSource0()] compare thread->gpr[current.getSource1()]); \
 			break;
 #define Y(type, compare, mod) \
 			case CompareOp:: type: \
-								   std::cerr << "Called CompareOp::" << #type << std::endl; \
+								   if (debug) std::cerr << "Called CompareOp::" << #type << std::endl; \
 								   thread->gpr[current.getDestination()] INDIRECTOR(Op, mod) (thread->gpr[current.getSource0()] compare (word(current.getSource1()))); \
 			break;
 
@@ -193,14 +199,14 @@ namespace iris32 {
 #define XUnary(n) thread->gpr[inst.getDestination()] = arithmeticOp<ArithmeticOp:: n>(thread->gpr[inst.getSource0()], 0);
 #define XDenominator(n) \
 			if (thread->gpr[inst.getSource1()] == 0) { \
-				std::cerr << "denominator in for operation " << std::hex <<  #n << " is zero!" << std::endl; \
+				if (debug) std::cerr << "denominator in for operation " << std::hex <<  #n << " is zero!" << std::endl; \
 				execute = false; \
 			} else { \
 				XNone(n) \
 			}
 #define XDenominatorImmediate(n) \
 			if (thread->gpr[inst.getSource1()] == 0) { \
-				std::cerr << "denominator in for operation " << std::hex << #n << " is zero!" << std::endl; \
+				if (debug) std::cerr << "denominator in for operation " << std::hex << #n << " is zero!" << std::endl; \
 				execute = false; \
 			} else { \
 				XImmediate(n) \
@@ -208,7 +214,7 @@ namespace iris32 {
 #define X(name, op, desc) \
 			case ArithmeticOp:: name: \
 						{ \
-							std::cerr << "Called ArithmeticOp::" << #name << std::endl; \
+							if (debug) std::cerr << "Called ArithmeticOp::" << #name << std::endl; \
 							INDIRECTOR(X, desc)(name) \
 							break; \
 						}
@@ -267,7 +273,7 @@ namespace iris32 {
 #define X(name, ifthenelse, conditional, iffalse, immediate, link) \
 			case JumpOp:: name: \
 					 { \
-						 std::cerr << "Called JumpOp::" << #name << std::endl; \
+						 if (debug) std::cerr << "Called JumpOp::" << #name << std::endl; \
 						 INDIRECTOR(XConditional, _ ## conditional)(name, ifthenelse, immediate) \
 						 thread->gpr[ArchitectureConstants::InstructionPointerIndex] = newAddr; \
 						 INDIRECTOR(XLink, _ ## link)  \
@@ -347,7 +353,10 @@ namespace iris32 {
 #define XSetLower(type, dest, src) \
 			INDIRECTOR(type, dest ## 0) |= (word(INDIRECTOR(type, src ## 1)));
 #define XSetUpper(type, dest, src) \
-			INDIRECTOR(type, dest ## 0) |= (word(INDIRECTOR(type, src ## 1)) << 16);
+			auto value = INDIRECTOR(type, dest ## 0); \
+			value &= 0x0000FFFF; \
+			value |= (word(INDIRECTOR(type, src ## 1)) << 16); \
+			INDIRECTOR(type, dest ## 0) = value;
 
 #define XSwap(type, dest, src) \
 			a = INDIRECTOR(type, dest ##  0); \
@@ -366,7 +375,7 @@ namespace iris32 {
 #define X(name, type, target, dest, src) \
 			case MoveOp:: name: \
 					 { \
-					 std::cerr << "Called CompareOp::" << #name << std::endl; \
+						 if (debug) std::cerr << "Called CompareOp::" << #name << std::endl;  \
 					 INDIRECTOR(X,type)(target, dest, src) \
 			break; \
 					 }
