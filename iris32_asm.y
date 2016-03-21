@@ -497,32 +497,31 @@ void save_encoding(void) {
 void write_dynamic_op(dynamicop* dop) {
    /* ((instruction & ~mask) | (value << shiftcount)) */
    /* little endian build up */
-   char* buf = new char[8];
-   buf[0] = 0;
-   buf[1] = (char)dop->segment;
-   buf[2] = (char)(dop->address & 0x00FF);
-   buf[3] = (char)((dop->address & 0xFF00) >> 8);
+   char buf[8] = { 0 };
+   buf[0] = char(dop->address & 0x000000FF);
+   buf[1] = char((dop->address & 0x0000FF00) >> 8);
+   buf[2] = char((dop->address & 0x00FF0000) >> 16);
+   buf[3] = char((dop->address & 0xFF000000) >> 24);
    switch(dop->segment) {
    		case Segment::Code:
-			buf[4] = (char)iris::encodeBits<byte, byte, 0b11111000, 3>(
+			buf[4] = char(iris::encodeBits<byte, byte, 0b11111000, 3>(
 								iris::encodeBits<byte, byte, 0b00000111, 0>((byte)0, dop->group),
-								dop->op);
-			buf[5] = (char)dop->reg0;
-			buf[6] = (char)dop->reg1;
-			buf[7] = (char)dop->reg2;
+								dop->op));
+			buf[5] = char(dop->reg0);
+			buf[6] = char(dop->reg1);
+			buf[7] = char(dop->reg2);
 			break;
 		case Segment::Data:
-			buf[4] = (char)dop->reg1;
-			buf[5] = (char)dop->reg2;
-			buf[6] = 0;
-			buf[7] = 0;
+			buf[4] = char(dop->reg1);
+			buf[5] = char(dop->reg2);
+			buf[6] = char(dop->reg3);
+			buf[7] = char(dop->reg4);
 			break;
 		default:
 			std::cerr << "panic: unknown segment " << (byte)dop->segment << std::endl;
 			exit(1);
    }
    state.output->write(buf, 8);
-   delete[] buf;
 }
 
 void yyerror(const char* s) {
