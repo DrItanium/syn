@@ -294,7 +294,8 @@ namespace iris32 {
 				break;
 			case SystemCalls::PutC:
 				// read register 0 and register 1
-				std::cout.put((char)thread.gpr[inst.getSource0()]);
+				std::cout << (char)thread.gpr[inst.getSource0()];
+				//std::cout.put((char)thread.gpr[inst.getSource0()]);
 				break;
 			case SystemCalls::GetC:
 				byte value;

@@ -36,13 +36,13 @@ struct dynamicop {
    word dataWord;
    int hassymbol;
    std::string symbol;
+   bool useUpper = false;
 };
 struct asmstate {
 	
    ~asmstate() { }
    Segment segment;
-   word code_address;
-   word data_address;
+   word address;
    std::map<std::string, word> labels;
    std::vector<dynamicop> dynops;
    std::ostream* output;
@@ -155,23 +155,17 @@ asm:
    statement
    ;
 directive:
-         DIRECTIVE_ORG IMMEDIATE {
-            if(state.segment == Segment::Code) {
-               state.code_address = $2;
-            } else if(state.segment == Segment::Data) {
-               state.data_address = $2;
-            } else {
-               yyerror("Invalid segment!");
-            }
-            } | 
+		 DIRECTIVE_ORG IMMEDIATE {
+			   state.address = $2;
+		} | 
       DIRECTIVE_CODE { state.segment = Segment::Code; } |
       DIRECTIVE_DATA { state.segment = Segment::Data; } |
       DIRECTIVE_DECLARE lexeme { 
             if(state.segment == Segment::Data) {
                curri.segment = Segment::Data;
-               curri.address = state.data_address;
+               curri.address = state.address;
                save_encoding();
-               state.data_address++;
+               state.address++;
             } else {
                yyerror("Declaration in non-data segment!");
             }
@@ -182,25 +176,16 @@ statement:
          operation {
             if(state.segment == Segment::Code) {
                curri.segment = Segment::Code;
-               curri.address = state.code_address;
+               curri.address = state.address;
                save_encoding();
-               state.code_address++;
+               state.address++;
             } else {
                yyerror("operation in an invalid segment!");
             }
          }
          ;
 label:
-     LABEL SYMBOL { 
-      if(state.segment == Segment::Code) {
-          add_label_entry($2, state.code_address);
-      } else if (state.segment == Segment::Data) {
-          add_label_entry($2, state.data_address);
-      } else {
-          yyerror("label in invalid segment!");
-      }
-     }
-   ;
+     LABEL SYMBOL { add_label_entry($2, state.address); } ;
 operation:
          arithmetic_op { curri.group = (byte)iris32::InstructionGroup::Arithmetic; } |
          move_op { curri.group = (byte)iris32::InstructionGroup::Move; } |
@@ -260,6 +245,7 @@ move_op:
 	        curri.reg0 = $2;
 	        curri.reg1 = curri.reg3;
 	        curri.reg2 = curri.reg4;
+			curri.useUpper = true;
 	   } |
        MOVE_OP_SET_LOWER REGISTER lexeme { 
          curri.op = (byte)iris32::MoveOp::SetLower; 
@@ -512,8 +498,13 @@ void write_dynamic_op(dynamicop* dop) {
 								iris::encodeBits<byte, byte, 0b00000111, 0>((byte)0, dop->group),
 								dop->op));
 			buf[5] = char(dop->reg0);
-			buf[6] = char(dop->reg1);
-			buf[7] = char(dop->reg2);
+			if (dop->useUpper) {
+				buf[6] = char(dop->reg3);
+				buf[7] = char(dop->reg4);
+			} else {
+				buf[6] = char(dop->reg1);
+				buf[7] = char(dop->reg2);
+			}
 			break;
 		case Segment::Data:
 			buf[4] = char(dop->reg1);
@@ -547,8 +538,10 @@ void resolve_labels() {
 bool resolve_op(dynamicop* dop) {
    if(state.labels.count(dop->symbol) == 1) {
 		word addr = state.labels[dop->symbol];
-		dop->reg1 = iris::decodeBits<word, byte, 0x00FF>(addr);
-		dop->reg2 = iris::decodeBits<word, byte, 0xFF00, 8>(addr);
+		dop->reg1 = iris::decodeBits<word, byte, 0x000000FF>(addr);
+		dop->reg2 = iris::decodeBits<word, byte, 0x0000FF00, 8>(addr);
+		dop->reg3 = iris::decodeBits<word, byte, 0x00FF0000, 16>(addr);
+		dop->reg4 = iris::decodeBits<word, byte, 0xFF000000, 24>(addr);
 		return true;
    }
    return false;
@@ -557,8 +550,7 @@ bool resolve_op(dynamicop* dop) {
 void initialize(std::ostream* output, bool close, FILE* input) {
    yyin = input;
    state.segment = Segment::Code;
-   state.data_address = 0;
-   state.code_address = 0;
+   state.address = 0;
    state.output = output;
    state.closeOutput = close;
    curri.segment = Segment::Code;
