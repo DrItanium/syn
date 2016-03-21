@@ -441,68 +441,6 @@ System Operations (this list may not always be up to date, see source to make
    1) Halt - Terminates the simulator or system
    2) getc - Gets a character from standard input and stores the result in reg0 
    3) putc - prints the character stored in reg0 to standard out 
-   4) panic - crashes the simulator and provides a core dump
-   5-255) Undefined
-
-
->>>>>> Set Implicit Register Immediate
-Opcode: 1
-Assembly Command: implicit.register.set $<index> <reg> 
-Description: Sets the target register to use implicitly for operations which
-             require more operands than allowed in the actual encoding space.
-             The lower 8-bits of the register's contents are stored in the 
-             byte register at the provided immediate index. Keep in mind that
-             one could use implicit register offsets as extra storage but be
-             aware that unused implicit registers may become used in later
-             implementations of the iris core.
-
-Layout:
-   byte 1: Implicit register index 
-   byte 2: Index of register
-   byte 3: Unused
-
->>>>>> Set Implicit Register Indirect 
-Opcode: 2
-Assembly Command: implicit.register.indirect.set <index_reg> <value_reg> 
-Description: Sets the target register to use implicitly for operations which
-             require more operands than allowed in the actual encoding space.
-             The lower 8-bits of the register's contents are stored in the 
-             implicit byte register at the index located in the lower 8-bits of
-             the index register. Keep in mind that one could use implicit 
-             register offsets as extra storage but be aware that unused 
-             implicit registers may become used in later implementations of the 
-             iris core.
-
-Layout:
-   byte 1: index register (lower 8-bits)
-   byte 2: value register (lower 8-bits)
-   byte 3: Unused
-
->>>>>> Get Implicit Register Immediate
-Opcode: 3
-Assembly Command: implicit.register.get <reg> $<index> 
-Description: Retrieves the value stored in the given implicit register 
-             described by the immediate index and stores it in the provided
-             register. Keep in mind, that this information is useful if you
-             want to temporary swap implicit register targets.
-
-Layout:
-   byte 1: Register to store contents of indirect register in
-   byte 2: Immediate indirect register index
-   byte 3: Unused
-
->>>>>> Get Implicit Register Indirect 
-Opcode: 4
-Assembly Command: implicit.register.indirect.get <value_reg> <index_reg>
-Description: Retrieves the value stored in the given implicit register 
-             described by the lower 8-bits of the provided value register 
-             and stores it in the value register. Keep in mind, that this 
-             information is useful if you want to temporary swap implicit
-             register targets.
-
-Layout:
-   byte 1: value register (lower 8-bits)
-   byte 2: index register (lower 8-bits)
-   byte 3: Unused
+   4-255) Undefined
 
 
