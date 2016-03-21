@@ -8,7 +8,7 @@
 #include <iostream>
 #include <vector>
 #include <map>
-
+#include "iris32.h"
 #include "iris32_asm.tab.h"
 
 extern int yylex();
@@ -19,8 +19,8 @@ extern int yylineno;
 void yyerror(const char* s);
 /* segment */
 enum class Segment : byte {
-   SectionCode,
-   SectionData,
+   Code,
+   Data,
 };
 /* used to store ops which require a second pass */
 struct dynamicop {
@@ -31,6 +31,9 @@ struct dynamicop {
    byte reg0;
    byte reg1;
    byte reg2;
+   byte reg3;
+   byte reg4;
+   word dataWord;
    int hassymbol;
    std::string symbol;
 };
@@ -91,7 +94,7 @@ void usage(char* arg0);
 %token MOVE_OP_SWAPADDRADDR
 %token MOVE_OP_SWAPREGMEM
 %token MOVE_OP_SWAPADDRMEM
-%token MOVE_OP_SET
+%token MOVE_OP_SET_LOWER MOVE_OP_SET_UPPER
 %token MOVE_OP_LOAD
 %token MOVE_OP_LOADMEM
 %token MOVE_OP_STORE
@@ -313,24 +316,20 @@ move_op:
             curri.reg0 = $2;
             curri.reg1 = $3;
        } |
-       mop_mixed REGISTER lexeme { curri.reg0 = $2; } |
+
+       MOVE_OP_SET_UPPER REGISTER lexeme { 
+	        curri.op = (byte)iris32::MoveOp::SetUpper; 
+	        curri.reg0 = $2;
+	        curri.reg1 = curri.reg3;
+	        curri.reg2 = curri.reg4;
+	   } |
+       MOVE_OP_SET_LOWER REGISTER lexeme { 
+         curri.op = (byte)iris32::MoveOp::SetLower; 
+		 curri.reg0 = $2;
+       }  |
        mop_single REGISTER {
          curri.reg0 = $2;
-       } |
-       MOVE_OP_PUSHIMMEDIATE lexeme { 
-         curri.op = (byte)iris32::MoveOp::PushImmediate;
-       } |
-	   MOVE_OP_STORE_CODE REGISTER REGISTER REGISTER {
-		curri.reg0 = $2;
-		curri.reg1 = $3;
-		curri.reg2 = $4;
-	   } |
-	   MOVE_OP_LOAD_CODE REGISTER REGISTER REGISTER {
-	   	curri.reg0 = $2;
-		curri.reg1 = $3;
-		curri.reg2 = $4;
-	   }
-
+       } 
        ;
 
 jump_op:
@@ -410,11 +409,6 @@ mop_reg:
    MOVE_OP_STORE { curri.op = (byte)iris32::MoveOp::Store; } |
    ;
 
-mop_mixed:
-   MOVE_OP_SET { curri.op = (byte)iris32::MoveOp::Set; } |
-   MOVE_OP_STOREIMM { curri.op = (byte)iris32::MoveOp::Memset; } |
-   MOVE_OP_LOADMEM { curri.op = (byte)iris32::MoveOp::LoadImmediate; } 
-   ;
 
 mop_single:
    MOVE_OP_PUSH { curri.op = (byte)iris32::MoveOp::Push; } |
@@ -465,9 +459,12 @@ lexeme:
       SYMBOL { curri.hassymbol = 1; 
                curri.symbol = $1; } | 
       IMMEDIATE { 
-            curri.reg1 = (byte)(($1 & 0x00FF));
-            curri.reg2 = (byte)(($1 & 0xFF00) >> 8);
-      }
+            curri.reg1 = (byte)(($1 & 0x000000FF));
+            curri.reg2 = (byte)(($1 & 0x0000FF00) >> 8);
+			curri.reg3 = (byte)(($1 & 0x00FF0000) >> 16);
+			curri.reg4 = (byte)(($1 & 0xFF000000) >> 24);
+			curri.dataWord = $1;
+      } 
 ;
 %%
 int main(int argc, char* argv[]) {

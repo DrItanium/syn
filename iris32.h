@@ -108,7 +108,7 @@ namespace iris32 {
 #undef X
 		NumberOfMiscOps,
 	};
-	static_assert(byte(MiscOp::NumberOfMiscOps) <= byte(MaxInstructionsPerGroup), "Too many jump operations defined!");
+	static_assert(byte(MiscOp::NumberOfMiscOps) <= byte(MaxInstructionsPerGroup), "Too many misc operations defined!");
 
 	enum class SystemCalls : byte {
 #define X(title) title ,
