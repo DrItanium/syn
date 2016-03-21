@@ -153,22 +153,22 @@ directive:
         DIRECTIVE_DECLARE lexeme { 
 			   curri.address = state.address;
 			   save_encoding();
-			   state.address+=sizeof(word);
+			   state.address++;
       }
       ;
 statement:
          label |
          operation {
-		 	   std::cout << "instruction at " << std::hex << state.address << std::endl;
+		 	   std::cout << "instruction at " << state.address << std::endl;
 			   curri.address = state.address;
 			   curri.isOperation = true;
 			   save_encoding();
-			   state.address+=sizeof(word);
+			   state.address++;
          }
          ;
 label:
      LABEL SYMBOL { 
-	 std::cout << "Label: " << $2 << " address: " << std::hex << state.address << std::endl;
+	 std::cout << "Label: " << $2 << " address: " << state.address << std::endl;
 	 add_label_entry($2, state.address); 
 	 } ;
 operation:

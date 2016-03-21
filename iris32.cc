@@ -30,20 +30,18 @@ namespace iris32 {
 			0;
 	}
 
-	void Core::write(word address, word value) {
-		auto addr = address >> 2; // shift the address
+	void Core::write(word addr, word value) {
 		if (addr >= 0 && addr < memorySize) {
 			memory[addr] = value;
 		} else {
-			std::cerr << "Address " << std::hex << address << " is out of range" << std::endl;
+			std::cerr << "Address " << std::hex << addr << " is out of range" << std::endl;
 			execute = false;
 			throw 0;
 		}
 	}
 	word Core::read(word address) {
-		auto addr = address >> 2; // modify the address
-		if (addr >= 0 && addr < memorySize) {
-			return memory[addr];
+		if (address >= 0 && address < memorySize) {
+			return memory[address];
 		} else {
 			std::cerr << "Address " << std::hex << address << " is out of range" << std::endl;
 			execute = false;
@@ -52,8 +50,8 @@ namespace iris32 {
 	}
 
 	Core::Core(word msize, ExecState&& t0, ExecState&& t1) : 
-		memorySize(msize / sizeof(word)),
-		memory(new word[msize / sizeof(word)]),
+		memorySize(msize),
+		memory(new word[msize]),
 		thread0(std::move(t0)),
 		thread1(std::move(t1))
 	{ }
@@ -119,8 +117,7 @@ namespace iris32 {
 		}
 		dispatch(thread);
 		if (thread.advanceIp) {
-			auto value = thread.gpr[ArchitectureConstants::InstructionPointerIndex];
-			thread.gpr[ArchitectureConstants::InstructionPointerIndex] = ((value >> 2) + 1) << 2;
+			++thread.gpr[ArchitectureConstants::InstructionPointerIndex];
 		}
 	}
 	void Core::compare(ExecState& thread, DecodedInstruction& current) {
@@ -146,7 +143,7 @@ namespace iris32 {
 #undef OpOr
 #undef OrXor
 			default:
-				std::cerr << "Illegal compare code " << current.getOperation() << std::endl;
+				std::cerr << "Illegal compare code " << std::hex << current.getOperation() << std::endl;
 				execute = false;
 				thread.advanceIp = false;
 				break;
@@ -185,14 +182,14 @@ namespace iris32 {
 #define XUnary(n) thread.gpr[inst.getDestination()] = arithmeticOp<ArithmeticOp:: n>(thread.gpr[inst.getSource0()], 0);
 #define XDenominator(n) \
 			if (thread.gpr[inst.getSource1()] == 0) { \
-				std::cerr << "denominator in for operation " << #n << " is zero!" << std::endl; \
+				std::cerr << "denominator in for operation " << std::hex <<  #n << " is zero!" << std::endl; \
 				execute = false; \
 			} else { \
 				XNone(n) \
 			}
 #define XDenominatorImmediate(n) \
 			if (thread.gpr[inst.getSource1()] == 0) { \
-				std::cerr << "denominator in for operation " << #n << " is zero!" << std::endl; \
+				std::cerr << "denominator in for operation " << std::hex << #n << " is zero!" << std::endl; \
 				execute = false; \
 			} else { \
 				XImmediate(n) \
@@ -212,7 +209,7 @@ namespace iris32 {
 #undef XDenominatorImmediate
 
 			default:
-				std::cerr << "Illegal arithmetic operation " << inst.getOperation() << std::endl;
+				std::cerr << "Illegal arithmetic operation " << std::hex << inst.getOperation() << std::endl;
 				execute = false;
 				break;
 		}
@@ -239,7 +236,7 @@ namespace iris32 {
 #define XImmediateCond_true (inst.getImmediate())
 #define XImmediateCond_false (thread.gpr[inst.getSource0()])
 #define XIfThenElse_false(immediate) \
-			newAddr = cond ? INDIRECTOR(XImmediateCond, _ ## immediate) : ((ip >> 2) + 1) << 2;
+			newAddr = cond ? INDIRECTOR(XImmediateCond, _ ## immediate) : ip + 1;
 #define XIfThenElse_true(immediate) \
 			newAddr = thread.gpr[cond ? inst.getSource0() : inst.getSource1()];
 #define XImmediateUncond_false (thread.gpr[inst.getDestination()])
@@ -251,7 +248,7 @@ namespace iris32 {
 			INDIRECTOR(XIfThenElse, _ ## ifthenelse)(immediate)
 #define XLink_true \
 			if (cond) { \
-				thread.gpr[ArchitectureConstants::LinkRegisterIndex] = ((ip >> 2) + 1) << 2; \
+				thread.gpr[ArchitectureConstants::LinkRegisterIndex] = ip + 1; \
 			}
 #define XLink_false
 
@@ -266,7 +263,7 @@ namespace iris32 {
 #include "iris32_jump.def"
 #undef X
 			default:
-				std::cerr << "Illegal jump code " << inst.getOperation() << std::endl;
+				std::cerr << "Illegal jump code " << std::hex << inst.getOperation() << std::endl;
 				execute = false;
 				break;
 		}
@@ -280,7 +277,7 @@ namespace iris32 {
 #include "iris32_misc.def"
 #undef X
 			default:
-				std::cerr << "Illegal misc code " << inst.getOperation() << std::endl;
+				std::cerr << "Illegal misc code " << std::hex << inst.getOperation() << std::endl;
 				execute = false;
 				thread.advanceIp = false;
 				break;
@@ -303,7 +300,7 @@ namespace iris32 {
 				thread.gpr[inst.getSource0()] = (word)value;
 				break;
 			default:
-				std::cerr << "Illegal system call " << inst.getDestination() << std::endl;
+				std::cerr << "Illegal system call " << std::hex << inst.getDestination() << std::endl;
 				execute = false;
 				thread.advanceIp = false;
 				break;
@@ -388,7 +385,7 @@ namespace iris32 {
 #undef CodeUpperLowerRegisters1 
 #undef CodeUpperLowerRegisters2 
 			default:
-				std::cerr << "Illegal move code " << inst.getOperation() << std::endl;
+				std::cerr << "Illegal move code " << std::hex << inst.getOperation() << std::endl;
 				execute = false;
 				thread.advanceIp = false;
 				break;

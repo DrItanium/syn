@@ -12,7 +12,7 @@ namespace iris32 {
 	word encodeWord(byte, byte, byte, byte);
 	enum ArchitectureConstants  {
 		RegisterCount = 256,
-		AddressMax = 268435456,
+		AddressMax = 268435456 /* bytes */ / sizeof(word), // words
 		InstructionPointerIndex = RegisterCount - 1,
 		LinkRegisterIndex = RegisterCount - 2,
 		StackPointerIndex = RegisterCount - 3,
