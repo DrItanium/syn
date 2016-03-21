@@ -9,6 +9,7 @@ typedef int32_t word;
 typedef int16_t hword;
 
 namespace iris32 {
+	word encodeWord(byte, byte, byte, byte);
 	enum ArchitectureConstants  {
 		RegisterCount = 256,
 		AddressMax = 268435456,
@@ -35,7 +36,7 @@ namespace iris32 {
 			word memorySize;
 			word* memory;
 	};
-	enum InstructionGroup {
+	enum class InstructionGroup {
 #define X(e, __) e ,
 #include "iris32_groups.def"
 #undef X
@@ -67,7 +68,7 @@ namespace iris32 {
 		word gpr[ArchitectureConstants::RegisterCount] = { 0 };
 	};
 
-	enum CompareOp : byte {
+	enum class CompareOp : byte {
 #define X(title, operation, unused) title,
 #define Y(title, operation, unused) title,
 #include "iris32_compare.def"
@@ -77,7 +78,7 @@ namespace iris32 {
 	};
 	static_assert(byte(CompareOp::NumberOfCompareOps) <= byte(MaxInstructionsPerGroup), "Too many compare operations defined!");
 
-	enum ArithmeticOp : byte {
+	enum class ArithmeticOp : byte {
 #define X(title, operation, type) title ,
 #include "iris32_arithmetic.def"
 #undef X
@@ -85,7 +86,7 @@ namespace iris32 {
 	};
 	static_assert(byte(ArithmeticOp::NumberOfArithmeticOps) <= byte(MaxInstructionsPerGroup), "Too many arithmetic operations defined!");
 
-	enum MoveOp : byte {
+	enum class MoveOp : byte {
 #define X(title, operation, __, ___, ____) title ,
 #include "iris32_move.def"
 #undef X
@@ -93,7 +94,7 @@ namespace iris32 {
 	};
 	static_assert(byte(MoveOp::NumberOfMoveOps) <= byte(MaxInstructionsPerGroup), "Too many move operations defined!");
 
-	enum JumpOp : byte {
+	enum class JumpOp : byte {
 #define X(title, u0, u1, u2, u3, u4) title ,
 #include "iris32_jump.def"
 #undef X
@@ -101,7 +102,7 @@ namespace iris32 {
 	};
 	static_assert(byte(JumpOp::NumberOfJumpOps) <= byte(MaxInstructionsPerGroup), "Too many jump operations defined!");
 
-	enum MiscOp : byte {
+	enum class MiscOp : byte {
 #define X(title, __) title ,
 #include "iris32_misc.def"
 #undef X
@@ -109,7 +110,7 @@ namespace iris32 {
 	};
 	static_assert(byte(MiscOp::NumberOfMiscOps) <= byte(MaxInstructionsPerGroup), "Too many jump operations defined!");
 
-	enum SystemCalls : byte {
+	enum class SystemCalls : byte {
 #define X(title) title ,
 #include "iris32_syscalls.def"
 #undef X

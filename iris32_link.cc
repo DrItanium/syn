@@ -4,7 +4,7 @@
 #include <string>
 #include <cstdint>
 #include <fstream>
-#include "iris16.h"
+#include "iris32.h"
 
 
 enum class Segment  {
@@ -15,7 +15,6 @@ enum class Segment  {
 
 static void usage(char* arg0);
 static void execute(std::istream& file);
-iris16::Core proc;
 bool debug = false;
 
 int main(int argc, char* argv[]) {
@@ -90,6 +89,8 @@ int main(int argc, char* argv[]) {
 	}
 
 	if(output && input) {
+		iris32::ExecState t0, t1;
+		iris32::Core proc(iris32::ArchitectureConstants::AddressMax, std::move(t0), std::move(t1));
 		proc.initialize();
 		execute(*input);
 		proc.dump(*output);
@@ -132,20 +133,20 @@ void execute(std::istream& input) {
 		//ignore the first byte, it is always zero
 		byte tmp = buf[1];
 		Segment target = static_cast<Segment>(buf[1]);
-		word address = iris16::encodeWord(buf[2], buf[3]);
+		word address = iris32::encodeWord(buf[2], buf[3]);
 		if (debug) {
 			std::cerr << "current target = " << static_cast<int>(target) << "\tcurrent address = 0x" << std::hex << address << std::endl;
 		}
 		switch(target) {
 			case Segment::Code:
-				result = iris16::encodeDword(buf[4], buf[5], buf[6], buf[7]);
+				result = iris32::encodeDword(buf[4], buf[5], buf[6], buf[7]);
 				if (debug) {
 					std::cerr << " code result: 0x" << std::hex << result << std::endl;
 				}
 				proc.setInstructionMemory(address, result);
 				break;
 			case Segment::Data:
-				result0 = iris16::encodeWord(buf[4], buf[5]);
+				result0 = iris32::encodeWord(buf[4], buf[5]);
 				if (debug) {
 					std::cerr << " data result: 0x" << std::hex << result0 << std::endl;
 				}
