@@ -72,12 +72,28 @@ namespace iris32 {
 		while(stream.good()) {
 			stream.read(a, sizeof(word));
 			if (!stream.good()) {
+				if (stream.gcount() > 0) {
+					std::cerr << "panic: provided data is not valid iris32 encoded assembler" << std::endl;
+					exit(1);
+				} else {
+					break;
+				}
+			}
+			auto p0 = word(a[0]);
+			auto p1 = word(a[1]) << 8;
+			auto p2 = word(a[2]) << 16;
+			auto p3 = word(a[3]) << 24;
+			auto addr = p0;
+			addr = (addr & 0xFFFF00FF) | p1;
+			addr = (addr & 0xFF00FFFF) | p2;
+			addr = (addr & 0x00FFFFFF) | p3;
+			stream.read(b, sizeof(uint32_t));
+			if (stream.gcount() != sizeof(word)) {
 				std::cerr << "panic: provided data is not valid iris32 encoded assembler" << std::endl;
 				exit(1);
 			}
-			stream.read(b, sizeof(word));
-			auto addr = word(a[0]) | (word(a[1]) << 8) | (word(a[2]) << 16) | (word(a[3]) << 24);
-			memory[addr] = word(b[0]) | (word(b[1]) << 8) | (word(b[2]) << 16) | (word(b[3]) << 24);
+			auto second = uint32_t(b[0]) | (uint32_t(b[1]) << 8) | (uint32_t(b[2]) << 16) | (uint32_t(b[3]) << 24);
+			memory[addr] = second;
 		}
 	}
 	void Core::dump(std::ostream& stream) {
