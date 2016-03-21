@@ -239,7 +239,7 @@ namespace iris32 {
 #define XImmediateCond_true (inst.getImmediate())
 #define XImmediateCond_false (thread.gpr[inst.getSource0()])
 #define XIfThenElse_false(immediate) \
-			newAddr = cond ? INDIRECTOR(XImmediateCond, _ ## immediate) : ip + 1;
+			newAddr = cond ? INDIRECTOR(XImmediateCond, _ ## immediate) : ((ip >> 2) + 1) << 2;
 #define XIfThenElse_true(immediate) \
 			newAddr = thread.gpr[cond ? inst.getSource0() : inst.getSource1()];
 #define XImmediateUncond_false (thread.gpr[inst.getDestination()])
@@ -251,7 +251,7 @@ namespace iris32 {
 			INDIRECTOR(XIfThenElse, _ ## ifthenelse)(immediate)
 #define XLink_true \
 			if (cond) { \
-				thread.gpr[ArchitectureConstants::LinkRegisterIndex] = ip + 1; \
+				thread.gpr[ArchitectureConstants::LinkRegisterIndex] = ((ip >> 2) + 1) << 2; \
 			}
 #define XLink_false
 
