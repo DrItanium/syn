@@ -77,7 +77,7 @@ namespace iris32 {
 		char storage[sizeof(word)] = { 0 };
 		for (word i = 0; i < memorySize; ++i) {
 			auto cell = memory[i];
-			for (int j = 0; j < sizeof(word); ++j) {
+			for (int j = 0; j < int(sizeof(word)); ++j) {
 				storage[j] = byte(cell >> (8 * j));
 			}
 			stream.write(storage, sizeof(word));

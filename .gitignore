@@ -16,3 +16,13 @@ iris16_asm.tab.c
 iris16_asm.tab.h
 iris16_lex.yy.c
 iris16strgen
+libiris32.a
+iris32asm
+iris32link
+asm.tab.c
+asm.tab.h
+lex.yy.c
+iris32_asm.tab.c
+iris32_asm.tab.h
+iris32_lex.yy.c
+iris32strgen
