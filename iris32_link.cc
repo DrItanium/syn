@@ -14,7 +14,7 @@ enum class Segment  {
 };
 
 static void usage(char* arg0);
-static void execute(std::istream& file);
+static void execute(iris32::Core& core, std::istream& file);
 bool debug = false;
 
 int main(int argc, char* argv[]) {
@@ -92,7 +92,7 @@ int main(int argc, char* argv[]) {
 		iris32::ExecState t0, t1;
 		iris32::Core proc(iris32::ArchitectureConstants::AddressMax, std::move(t0), std::move(t1));
 		proc.initialize();
-		execute(*input);
+		execute(proc, *input);
 		proc.dump(*output);
 		proc.shutdown();
 		if (closeInput) {
@@ -113,10 +113,8 @@ int main(int argc, char* argv[]) {
 void usage(char* arg0) {
 	std::cerr << "usage: " << arg0 << " [-d] [-o <file>] <file>" << std::endl;
 }
-void execute(std::istream& input) {
-	dword result = 0;
-	word result0 = 0;
-	char* buf = new char[8];
+void execute(iris32::Core& core, std::istream& input) {
+	char buf[8] = { 0 };
 	for(int lineNumber = 0; input.good(); ++lineNumber) {
 		input.read(buf, 8);
 		if (input.gcount() < 8 && input.gcount() > 0) {
@@ -130,34 +128,11 @@ void execute(std::istream& input) {
 				exit(1);
 			}
 		}
-		//ignore the first byte, it is always zero
-		byte tmp = buf[1];
-		Segment target = static_cast<Segment>(buf[1]);
-		word address = iris32::encodeWord(buf[2], buf[3]);
+		word address = iris32::encodeWord(buf[0], buf[1], buf[2], buf[3]),
+			 value = iris32::encodeWord(buf[4], buf[5], buf[6], buf[7]);
 		if (debug) {
-			std::cerr << "current target = " << static_cast<int>(target) << "\tcurrent address = 0x" << std::hex << address << std::endl;
+			std::cerr << "current address = 0x" << std::hex << address << "\n\tvalue = 0x" << std::hex << value << std::endl;
 		}
-		switch(target) {
-			case Segment::Code:
-				result = iris32::encodeDword(buf[4], buf[5], buf[6], buf[7]);
-				if (debug) {
-					std::cerr << " code result: 0x" << std::hex << result << std::endl;
-				}
-				proc.setInstructionMemory(address, result);
-				break;
-			case Segment::Data:
-				result0 = iris32::encodeWord(buf[4], buf[5]);
-				if (debug) {
-					std::cerr << " data result: 0x" << std::hex << result0 << std::endl;
-				}
-				proc.setDataMemory(address, result0);
-				break;
-			default:
-				std::cerr << "error: line " << lineNumber << ", unknown segment " << static_cast<int>(target) << "/" << static_cast<int>(tmp) << std::endl;
-				std::cerr << "current address: " << std::hex << address << std::endl;
-				exit(1);
-				break;
-		}
+		core.write(address, value);
 	}
-	delete[] buf;
 }

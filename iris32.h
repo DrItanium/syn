@@ -128,9 +128,9 @@ namespace iris32 {
 			virtual void shutdown();
 			virtual void dump(std::ostream& stream);
 			virtual void run();
-		private:
 			void write(word address, word value);
 			word read(word address);
+		private:
 			void execBody(ExecState& thread);
 			void decode(ExecState& curr);
 			void dispatch(ExecState& curr);
