@@ -17,14 +17,8 @@ extern FILE* yyin;
 extern int yylineno;
 
 void yyerror(const char* s);
-/* segment */
-enum class Segment : byte {
-   Code,
-   Data,
-};
 /* used to store ops which require a second pass */
 struct dynamicop {
-   Segment segment;
    word address;
    byte group;
    byte op;
@@ -37,11 +31,11 @@ struct dynamicop {
    int hassymbol;
    std::string symbol;
    bool useUpper = false;
+   bool isOperation = false;
 };
 struct asmstate {
 	
    ~asmstate() { }
-   Segment segment;
    word address;
    std::map<std::string, word> labels;
    std::vector<dynamicop> dynops;
@@ -128,7 +122,6 @@ Q: /* empty */ |
 ;
 F:
    F asm {
-      curri.segment = Segment::Code;
       curri.address = 0;
       curri.group = 0;
       curri.op = 0;
@@ -139,7 +132,6 @@ F:
       curri.symbol = "";
    } | 
    asm {
-      curri.segment = Segment::Code;
       curri.address = 0;
       curri.group = 0;
       curri.op = 0;
@@ -155,37 +147,30 @@ asm:
    statement
    ;
 directive:
-		 DIRECTIVE_ORG IMMEDIATE {
+		DIRECTIVE_ORG IMMEDIATE {
 			   state.address = $2;
 		} | 
-      DIRECTIVE_CODE { state.segment = Segment::Code; } |
-      DIRECTIVE_DATA { state.segment = Segment::Data; } |
-      DIRECTIVE_DECLARE lexeme { 
-            if(state.segment == Segment::Data) {
-               curri.segment = Segment::Data;
-               curri.address = state.address;
-               save_encoding();
-               state.address++;
-            } else {
-               yyerror("Declaration in non-data segment!");
-            }
+        DIRECTIVE_DECLARE lexeme { 
+			   curri.address = state.address;
+			   save_encoding();
+			   state.address+=sizeof(word);
       }
       ;
 statement:
-         label { curri.segment = state.segment; }|
+         label |
          operation {
-            if(state.segment == Segment::Code) {
-               curri.segment = Segment::Code;
-               curri.address = state.address;
-               save_encoding();
-               state.address++;
-            } else {
-               yyerror("operation in an invalid segment!");
-            }
+		 	   std::cout << "instruction at " << std::hex << state.address << std::endl;
+			   curri.address = state.address;
+			   curri.isOperation = true;
+			   save_encoding();
+			   state.address+=sizeof(word);
          }
          ;
 label:
-     LABEL SYMBOL { add_label_entry($2, state.address); } ;
+     LABEL SYMBOL { 
+	 std::cout << "Label: " << $2 << " address: " << std::hex << state.address << std::endl;
+	 add_label_entry($2, state.address); 
+	 } ;
 operation:
          arithmetic_op { curri.group = (byte)iris32::InstructionGroup::Arithmetic; } |
          move_op { curri.group = (byte)iris32::InstructionGroup::Move; } |
@@ -484,6 +469,7 @@ void save_encoding(void) {
       write_dynamic_op(&curri); 
    }
 }
+
 void write_dynamic_op(dynamicop* dop) {
    /* ((instruction & ~mask) | (value << shiftcount)) */
    /* little endian build up */
@@ -492,30 +478,24 @@ void write_dynamic_op(dynamicop* dop) {
    buf[1] = char((dop->address & 0x0000FF00) >> 8);
    buf[2] = char((dop->address & 0x00FF0000) >> 16);
    buf[3] = char((dop->address & 0xFF000000) >> 24);
-   switch(dop->segment) {
-   		case Segment::Code:
-			buf[4] = char(iris::encodeBits<byte, byte, 0b11111000, 3>(
-								iris::encodeBits<byte, byte, 0b00000111, 0>((byte)0, dop->group),
-								dop->op));
-			buf[5] = char(dop->reg0);
-			if (dop->useUpper) {
-				buf[6] = char(dop->reg3);
-				buf[7] = char(dop->reg4);
-			} else {
-				buf[6] = char(dop->reg1);
-				buf[7] = char(dop->reg2);
-			}
-			break;
-		case Segment::Data:
-			buf[4] = char(dop->reg1);
-			buf[5] = char(dop->reg2);
+   if (dop->isOperation) {
+		buf[4] = char(iris::encodeBits<byte, byte, 0b11111000, 3>(
+							iris::encodeBits<byte, byte, 0b00000111, 0>((byte)0, dop->group),
+							dop->op));
+		buf[5] = char(dop->reg0);
+		if (dop->useUpper) {
 			buf[6] = char(dop->reg3);
 			buf[7] = char(dop->reg4);
-			break;
-		default:
-			std::cerr << "panic: unknown segment " << (byte)dop->segment << std::endl;
-			exit(1);
-   }
+		} else {
+			buf[6] = char(dop->reg1);
+			buf[7] = char(dop->reg2);
+		}
+	} else {
+		buf[4] = char(dop->reg1);
+		buf[5] = char(dop->reg2);
+		buf[6] = char(dop->reg3);
+		buf[7] = char(dop->reg4);
+	}
    state.output->write(buf, 8);
 }
 
@@ -549,11 +529,9 @@ bool resolve_op(dynamicop* dop) {
 
 void initialize(std::ostream* output, bool close, FILE* input) {
    yyin = input;
-   state.segment = Segment::Code;
    state.address = 0;
    state.output = output;
    state.closeOutput = close;
-   curri.segment = Segment::Code;
    curri.address = 0;
    curri.group = 0;
    curri.op = 0;
