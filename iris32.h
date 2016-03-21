@@ -16,11 +16,12 @@ namespace iris32 {
 		LinkRegisterIndex = RegisterCount - 2,
 		StackPointerIndex = RegisterCount - 3,
 		CallPointerIndex = RegisterCount - 4,
-		InternalTemporaryCount = 8,
+		
 	};
 	enum {
 		GroupMask = 0b00000111,
 		RestMask = ~GroupMask,
+		MaxInstructionsPerGroup = RestMask >> 3,
 	};
 	class MemoryController {
 		public:
@@ -66,6 +67,57 @@ namespace iris32 {
 		word gpr[ArchitectureConstants::RegisterCount] = { 0 };
 	};
 
+	enum CompareOp : byte {
+#define X(title, operation, unused) title,
+#define Y(title, operation, unused) title,
+#include "iris32_compare.def"
+#undef X
+#undef Y
+		NumberOfCompareOps,
+	};
+	static_assert(byte(CompareOp::NumberOfCompareOps) <= byte(MaxInstructionsPerGroup), "Too many compare operations defined!");
+
+	enum ArithmeticOp : byte {
+#define X(title, operation, type) title ,
+#include "iris32_arithmetic.def"
+#undef X
+		NumberOfArithmeticOps,
+	};
+	static_assert(byte(ArithmeticOp::NumberOfArithmeticOps) <= byte(MaxInstructionsPerGroup), "Too many arithmetic operations defined!");
+
+	enum MoveOp : byte {
+#define X(title, operation, __, ___, ____) title ,
+#include "iris32_move.def"
+#undef X
+		NumberOfMoveOps,
+	};
+	static_assert(byte(MoveOp::NumberOfMoveOps) <= byte(MaxInstructionsPerGroup), "Too many move operations defined!");
+
+	enum JumpOp : byte {
+#define X(title, u0, u1, u2, u3, u4) title ,
+#include "iris32_jump.def"
+#undef X
+		NumberOfJumpOps,
+	};
+	static_assert(byte(JumpOp::NumberOfJumpOps) <= byte(MaxInstructionsPerGroup), "Too many jump operations defined!");
+
+	enum MiscOp : byte {
+#define X(title, __) title ,
+#include "iris32_misc.def"
+#undef X
+		NumberOfMiscOps,
+	};
+	static_assert(byte(MiscOp::NumberOfMiscOps) <= byte(MaxInstructionsPerGroup), "Too many jump operations defined!");
+
+	enum SystemCalls : byte {
+#define X(title) title ,
+#include "iris32_syscalls.def"
+#undef X
+		NumberOfSyscalls,
+	};
+	static_assert(byte(SystemCalls::NumberOfSyscalls) <= 255, "Too many syscall operations defined!");
+
+
 	class Core : public iris::Core {
 		public:
 			Core(word memorySize, ExecState&& t0, ExecState&& t1);
@@ -84,6 +136,7 @@ namespace iris32 {
 #define X(_, func) void func (ExecState& thread, DecodedInstruction& inst); 
 #include "iris32_groups.def"
 #undef X
+			void systemCall(ExecState& thread, DecodedInstruction& inst);
 		private:
 			word memorySize;
 			word* memory;

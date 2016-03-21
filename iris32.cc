@@ -112,13 +112,12 @@ namespace iris32 {
 			++thread.gpr[ArchitectureConstants::InstructionPointerIndex];
 		}
 	}
-	/*
-	void Core::compare() {
+	void Core::compare(ExecState& thread, DecodedInstruction& current) {
 		switch(static_cast<CompareOp>(current.getOperation())) {
 #define OpNone =
-//#define OpAnd &=
-//#define OpOr |=
-//#define OpXor ^=
+#define OpAnd &=
+#define OpOr |=
+#define OpXor ^=
 #define X(type, compare, mod) \
 			case CompareOp:: type: \
 								   gpr[current.getDestination()] INDIRECTOR(Op, mod) (gpr[current.getSource0()] compare gpr[current.getSource1()]); \
@@ -132,13 +131,13 @@ namespace iris32 {
 #undef X
 #undef Y
 #undef OpNone
-//#undef OpAnd
-//#undef OpOr
-//#undef OrXor
+#undef OpAnd
+#undef OpOr
+#undef OrXor
 			default:
 				std::cerr << "Illegal compare code " << current.getOperation() << std::endl;
 				execute = false;
-				advanceIp = false;
+				thread.advanceIp = false;
 				break;
 		}
 	}
@@ -168,7 +167,7 @@ namespace iris32 {
 #undef XImmediate
 #undef XDenominatorImmediate
 
-	void Core::arithmetic() {
+	void Core::arithmetic(ExecState& thread, DecodedInstruction& inst) {
 		switch(static_cast<ArithmeticOp>(current.getOperation())) {
 #define XNone(n) gpr[current.getDestination()] = arithmeticOp<ArithmeticOp:: n>( gpr[current.getSource0()], gpr[current.getSource1()]);
 #define XImmediate(n) gpr[current.getDestination()] = arithmeticOp<ArithmeticOp:: n>(gpr[current.getSource0()], static_cast<word>(current.getSource1()));
@@ -220,24 +219,24 @@ namespace iris32 {
 			return ConditionalStyle<op>::isFalseForm ? (cond == 0) : (cond != 0);
 		}
 
-	void Core::jump() {
+	void Core::jump(ExecState& thread, DecodedInstruction& inst) {
 		word newAddr = 0;
 		bool cond = true;
-		advanceIp = false;
-		word ip = gpr[ArchitectureConstants::InstructionPointerIndex];
-		switch(static_cast<JumpOp>(current.getOperation())) {
-#define XImmediateCond_true (current.getImmediate())
-#define XImmediateCond_false (gpr[current.getSource0()])
+		thread.advanceIp = false;
+		word ip = thread.gpr[ArchitectureConstants::InstructionPointerIndex];
+		switch(static_cast<JumpOp>(inst.getOperation())) {
+#define XImmediateCond_true (inst.getImmediate())
+#define XImmediateCond_false (gpr[inst.getSource0()])
 #define XIfThenElse_false(immediate) \
 			newAddr = cond ? INDIRECTOR(XImmediateCond, _ ## immediate) : ip + 1;
 #define XIfThenElse_true(immediate) \
-			newAddr = gpr[cond ? current.getSource0() : current.getSource1()];
-#define XImmediateUncond_false (gpr[current.getDestination()])
-#define XImmediateUncond_true (current.getImmediate())
+			newAddr = gpr[cond ? inst.getSource0() : inst.getSource1()];
+#define XImmediateUncond_false (gpr[inst.getDestination()])
+#define XImmediateUncond_true (inst.getImmediate())
 #define XConditional_false(name, ifthenelse, immediate) \
 			newAddr = INDIRECTOR(XImmediateUncond, _ ## immediate);
 #define XConditional_true(name, ifthenelse, immediate) \
-			cond = jumpCond<JumpOp:: name> (gpr[current.getDestination()]); \
+			cond = jumpCond<JumpOp:: name> (gpr[inst.getDestination()]); \
 			INDIRECTOR(XIfThenElse, _ ## ifthenelse)(immediate)
 #define XLink_true \
 			if (cond) { \
@@ -256,63 +255,63 @@ namespace iris32 {
 #include "iris32_jump.def"
 #undef X
 			default:
-				std::cerr << "Illegal jump code " << current.getOperation() << std::endl;
+				std::cerr << "Illegal jump code " << inst.getOperation() << std::endl;
 				execute = false;
 				break;
 		}
 	}
-	void Core::misc() {
-		switch(static_cast<MiscOp>(current.getOperation())) {
+	void Core::misc(ExecState& thread, DecodedInstruction& inst) {
+		switch(static_cast<MiscOp>(inst.getOperation())) {
 #define X(name, func) \
 			case MiscOp:: name: \
-			func (); \
+			func (thread, inst); \
 			break;
 #include "iris32_misc.def"
 #undef X
 			default:
-				std::cerr << "Illegal misc code " << current.getOperation() << std::endl;
+				std::cerr << "Illegal misc code " << inst.getOperation() << std::endl;
 				execute = false;
-				advanceIp = false;
+				thread.advanceIp = false;
 				break;
 		}
 	}
-	void Core::systemCall() {
-		switch(static_cast<SystemCalls>(current.getDestination())) {
+	void Core::systemCall(ExecState& thread, DecodedInstruction& inst) {
+		switch(static_cast<SystemCalls>(inst.getDestination())) {
 			case SystemCalls::Terminate:
 				execute = false;
-				advanceIp = false;
+				thread.advanceIp = false;
 				break;
 			case SystemCalls::PutC:
 				// read register 0 and register 1
-				std::cout.put((char)gpr[current.getSource0()]);
+				std::cout.put((char)thread.gpr[inst.getSource0()]);
 				break;
 			case SystemCalls::GetC:
 				byte value;
 				std::cin >> std::noskipws >> value;
-				gpr[current.getSource0()] = (word)value;
+				thread.gpr[inst.getSource0()] = (word)value;
 				break;
 			default:
-				std::cerr << "Illegal system call " << current.getDestination() << std::endl;
+				std::cerr << "Illegal system call " << inst.getDestination() << std::endl;
 				execute = false;
-				advanceIp = false;
+				thread.advanceIp = false;
 				break;
 		}
 	}
-	void Core::move() {
+	void Core::move(ExecState& thread, DecodedInstruction& inst) {
 		word a = 0;
-		switch(static_cast<MoveOp>(current.getOperation())) {
-#define GPRRegister0 (gpr[current.getDestination()])
-#define GPRRegister1 (gpr[current.getSource0()])
-#define GPRRegister2 (gpr[current.getSource1()])
-#define GPRImmediate1 (current.getImmediate())
+		switch(static_cast<MoveOp>(inst.getOperation())) {
+#define GPRRegister0 (thread.gpr[inst.getDestination()])
+#define GPRRegister1 (thread.gpr[inst.getSource0()])
+#define GPRRegister2 (thread.gpr[inst.getSource1()])
+#define GPRImmediate1 (inst.getImmediate())
 #define DataRegister0 GPRRegister0
 #define DataRegister1 GPRRegister1
 #define DataImmediate1 GPRImmediate1
-#define StackPushRegister0 (gpr[ArchitectureConstants::StackPointerIndex])
+#define StackPushRegister0 (thread.gpr[ArchitectureConstants::StackPointerIndex])
 #define StackPushRegister1 GPRRegister0
 #define StackPushImmediate1 GPRImmediate1
 #define StackPopRegister0 GPRRegister0
-#define StackPopRegister1 (gpr[ArchitectureConstants::StackPointerIndex])
+#define StackPopRegister1 (thread.gpr[ArchitectureConstants::StackPointerIndex])
 #define StackPopImmediate1 GPRImmediate1
 #define StoreRegister0  GPRRegister0
 #define StoreRegister1 GPRRegister1
@@ -321,30 +320,27 @@ namespace iris32 {
 #define CodeUpperLowerRegisters1 GPRRegister1
 #define CodeUpperLowerRegisters2 GPRRegister2
 
-#define XLoadCode(type, dest, src) \
-			auto result = instruction[INDIRECTOR(type, dest ## 0)]; \
-			INDIRECTOR(type, src ## 1) = (word)result; \
-			INDIRECTOR(type, src ## 2) = (word)(result >> 16);
-
-#define XStoreCode(type, dest, src) \
-			instruction[INDIRECTOR(type, dest ## 0)] = ((((dword)INDIRECTOR(type, src ## 2)) << 16) | ((dword)INDIRECTOR(type, src ## 1)));
-
 #define XMove(type, dest, src) \
 			INDIRECTOR(type, dest ## 0) = INDIRECTOR(type, src ## 1);
+#define XSetLower(type, dest, src) \
+			INDIRECTOR(type, dest ## 0) |= (word(INDIRECTOR(type, src ## 1)));
+#define XSetUpper(type, dest, src) \
+			INDIRECTOR(type, dest ## 0) |= (word(INDIRECTOR(type, src ## 1)) << 16);
+
 #define XSwap(type, dest, src) \
 			a = INDIRECTOR(type, dest ##  0); \
 			INDIRECTOR(type, dest ## 0) = INDIRECTOR(type, src ## 1); \
-			INDIRECTOR(type, src ##  1) = a; 
+			INDIRECTOR(type, src ##  1) = a;
 #define XLoad(type, dest, src) \
-			INDIRECTOR(type, dest ## 0) = data[INDIRECTOR(type, src ## 1)];
+			INDIRECTOR(type, dest ## 0) = read(INDIRECTOR(type, src ## 1));
 #define XPop(type, dest, src) \
-			INDIRECTOR(type, Pop ## dest ## 0) = stack[INDIRECTOR(type, Pop ## src ## 1)]; \
-			--INDIRECTOR(type, Pop ## src ## 1); 
+			INDIRECTOR(type, Pop ## dest ## 0) = read(INDIRECTOR(type, Pop ## src ## 1)); \
+			++INDIRECTOR(type, Pop ## src ## 1); 
 #define XPush(type, dest, src) \
-			++INDIRECTOR(type, Push ## dest ## 0); \
-			stack[INDIRECTOR(type, Push ## dest ## 0)] = INDIRECTOR(type, Push ## src ## 1);
+			--INDIRECTOR(type, Push ## dest ## 0); \
+			write(INDIRECTOR(type, Push ## dest ## 0), INDIRECTOR(type, Push ## src ## 1)); 
 #define XStore(type, dest, src) \
-			data[INDIRECTOR(type, dest ##  0)] = INDIRECTOR(type, src ## 1); 
+			write(INDIRECTOR(type, dest ## 0), INDIRECTOR(type, src ## 1));
 #define X(name, type, target, dest, src) \
 			case MoveOp:: name: \
 					 { \
@@ -380,11 +376,10 @@ namespace iris32 {
 #undef CodeUpperLowerRegisters1 
 #undef CodeUpperLowerRegisters2 
 			default:
-				std::cerr << "Illegal move code " << current.getOperation() << std::endl;
+				std::cerr << "Illegal move code " << inst.getOperation() << std::endl;
 				execute = false;
-				advanceIp = false;
+				thread.advanceIp = false;
 				break;
 		}
 	}
-	*/
 } // end namespace iris32
