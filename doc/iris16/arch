@@ -4,16 +4,15 @@ instructions.
 Some stats:
 
 - 256 general purpose 16-bit registers
-- 256 indirect register 8-bit registers 
 - Harvard Design
   - 64k instruction words (code domain)
   - 64k data words (data domain)
+  - 64k stack words (stack domain)
   - Instruction words are 32-bits in length
   - Data words are 16-bits in length
-  - Self-modifying code is not allowed for simplicity reasons (can't access the 
   - 64k data words circular stack (can't overflow into external memory but will
     wraparound by design) which grows down (from address zero downward).
-- CISC design (with influence taken from itanium, x86, and RISC designs)
+- CISC design for compact code representation
    - Relatively simple decoder logic
 - Has three unused execution groups for extension purposes
 
@@ -87,11 +86,11 @@ For the immediate forms the only difference is that bits 24-31 are not
 interpreted as a register address. Instead it is interpreted as an 8-bit
 number. Negative values are not supported so instead of doing:
 
-   addi r0, r1, -1
+   addi r0 r1 -1
 
 you should do:
 
-   subi r0, r1, 1
+   subi r0 r1 1
 
 -------------------------------------------------------------------
 
@@ -102,6 +101,10 @@ register-register form:
    bits 8-15 : register 0
    bits 16-23 : register 1
    bits 24-31 : unused
+register-register-register form:
+   bits 8-15 : register 0
+   bits 16-23 : register 1 (lower 16-bits)
+   bits 24-31 : register 2 (upper 16-bits)
 
 register-immediate form
 
@@ -110,117 +113,57 @@ register-immediate form
 
 The list of move operations are as follows:
 
-0: Move Register to Register (register-register)
-1: Swap Registers (register-register)
-2: Swap Register Contents With Address Contents (register-register)
-3: Swap Address Address (register-register)
-4: Swap Register Memory (register-immediate)
-5: Swap Address Memory (register-immediate)
-6: Set (register-immediate)
-7: Load (register-register)
-8: Load From Memory (register-immediate)
-9: Store (register-register)
-10: Store Register to Address (register-register)
-11: Memory Copy (register-immediate)
-12: Memory Set (register-immediate)
-13: Push Register Contents onto Stack
-14: Push Immediate onto Stack
-15: Pop Value Off Stack and Store In Register
-16-31: Undefined
+Move Register to Register (move)
+Swap Registers (swap)
+Set (set)
+Load (register-register)
+Load From Memory (ldm, register-immediate)
+Load From Code (ldc, register-register-regsiter)
+Store (st, register-register)
+Store to Code (stc, register-register-register)
+Memory Set (memset, register-immediate)
+Push Register Contents onto Stack (push)
+Push Immediate onto Stack (pushi)
+Pop Value Off Stack and Store In Register (pop)
 
 >>>>>> Move Register to Register
-Opcode: 0
 Assembly Command: move reg_dest reg_source
 Description: Copies the contents of the source register into the destination
              register..
 
 >>>>>> Swap Registers
-Opcode: 1
 Assembly Command: swap reg_dest reg_source
 Description: Swaps the contents of the source register with the contents of the
              destination register.
 
->>>>>> Swap Register Contents with Memory Contents
-Opcode: 2
-Assembly Command: swap.reg.addr reg_dest reg_source
-Description: Interprets the source register as a memory address, loads the
-             value at that memory location, stores the contents of the
-             destination register to that address, and sets the contents of 
-             the destination register to the old memory contents.
-
->>>>>> Swap Memory Using Registers
-Opcode: 3
-Assembly Command: swap.addr.addr reg_dest reg_source
-Description: Interprets the source and destination registers as memory
-             addresses, loads the values at each memory location, and then
-             stores those values in the other memory address. 
-
-             For example, if we have r0 = 0xA and r1 = 0xB then this operation
-             will save the memory pointed at by r0's contents (0xA) into the 
-             memory pointed at by r1's contents (0xB) and vice-versa. 
-
->>>>>> Swap Register Contents Into Immediate Memory Address 
-Opcode: 4
-Assembly Command: swap.reg.mem reg_dest $immediate 
-Description: Interprets the immediate value as a memory address, loads the
-             value at that location, saves the contents of the destination
-             register into that address, and sets the contents of the
-             destination register to the value that was in memory.
-
->>>>>> Swap Memory Using Register And Immediate Value 
-Opcode: 5
-Assembly Command: swap.addr.mem reg_dest $immediate 
-Description: Swaps the contents of two memory locations pointed at using 
-             the contents of the destination register and the supplied
-             immediate value.
 
 >>>>>> Set Register With Immediate Value
-Opcode: 6
 Assembly Command: set reg_dest $immediate
 Description: Sets the contents of the destination register to the supplied
              immediate value.
 
 >>>>>> Load 
-Opcode: 7
-Assembly Command: load reg_dest reg_src
+Assembly Command: ld reg_dest reg_src
 Description: Sets the contents of the destination register to the contents of
              memory pointed at by the contents of the source register.
 
 >>>>>> Load From Memory Using Immediate Value
-Opcode: 8
-Assembly Command: load.mem reg_dest $immediate
+Assembly Command: ldi reg_dest $immediate
 Description: Sets the contents of the destination register to the contents of
              memory pointed at by the immediate.
 
 >>>>>> Store
-Opcode: 9
-Assembly Command: store dest_reg source_reg
+Assembly Command: st dest_reg source_reg
 Description: Stores the contents of the source register into memory at the
              address contained in the destination register. 
 
->>>>>> Memory Copy using Registers
-Opcode: 10
-Assembly Command: store.addr dest_reg source_reg
-Description: Stores the contents of memory found at the address contained in
-             the source register into memory at the address described in the
-             destination register.
-             
->>>>>> Memory Copy using Immediate Value and Register
-Opcode: 11
-Assembly Command: memcopy dest_reg $immediate
-Description: Stores the contents of memory found at the address contained in
-             the source register into memory at the address described in the
-             destination register.
-
 >>>>>> Memory Set using Immediate Value and Register
-Opcode: 12
 Assembly Command: memset dest_reg $immediate
 Description: Stores the contents of memory found at the address contained in
              the source register into memory at the address described in the
              destination register.
 
 >>>>>> Push Register Contents onto Stack 
-Opcode: 13
 Assembly Command: push reg 
 Description: Increments the contents of the implicit stack pointer register
              (default is r254) and stores the contents of reg at this address
@@ -228,15 +171,13 @@ Description: Increments the contents of the implicit stack pointer register
              at the end.
 
 >>>>>> Push Immediate onto Stack 
-Opcode: 14
-Assembly Command: push.imm $immediate 
+Assembly Command: pushi $immediate 
 Description: Increments the contents of the implicit stack pointer register
              (default is r254) and stores the immediate value at this address
              on the stack. The updated address is written to the stack pointer 
              at the end.
 
 >>>>>> Pop Value Off Stack and Store In Register 
-Opcode: 15
 Assembly Command: pop reg 
 Description: Saves the value at the top of the stack into reg, 
              decrements the stack pointer address, and then saves this updated
@@ -254,8 +195,7 @@ When dealing with immediate values, the jump operation is called a goto
 When dealing with registers, the jump operation is called a jump.
 
 >>>>>> Jump Unconditional Immediate 
-Opcode: 0
-Assembly Command: goto $immediate
+Assembly Command: j $immediate
 Description: Jumps to the target address
 Layout:
    Byte 0 : Group + Opcode
@@ -263,8 +203,7 @@ Layout:
    Byte 2-3 : immediate value, little endian
 
 >>>>>> Jump Unconditional Immediate and Link
-Opcode: 1
-Assembly Command: goto.link dest_reg $immediate
+Assembly Command: jl dest_reg $immediate
 Description: Jumps to the target address and stores the current address in the
              destination register.
 Layout:
@@ -273,8 +212,7 @@ Layout:
    Byte 2-3 : immediate value, little endian
 
 >>>>>> Jump Unconditional Register 
-Opcode: 2
-Assembly Command: jump <addr_register>
+Assembly Command: jr <addr_register>
 Description: Jumps to the target address
 Layout:
    Byte 0 : Group + Opcode
@@ -282,8 +220,7 @@ Layout:
    Byte 2-3 : Unused
 
 >>>>>> Jump Unconditional Register and Link
-Opcode: 3
-Assembly Command: jump.link <linkregister> <addr_register>
+Assembly Command: jrl <linkregister> <addr_register>
 Description: Jumps to the target address
 Layout:
    Byte 0 : Group + Opcode
@@ -292,8 +229,7 @@ Layout:
    Byte 3 : Unused
 
 >>>>>> Jump Immediate If True
-Opcode: 4
-Assembly Command: goto.if1 $immediate
+Assembly Command: jt $immediate
 Description: Jumps to the target address provided that the given predicate
              register contains a value which is not zero
 Layout:
@@ -302,8 +238,7 @@ Layout:
    Byte 2-3 : immediate value, little endian
 
 >>>>>> Jump Immediate If True and Link
-Opcode: 5
-Assembly Command: goto.if1.link <link_register> $immediate
+Assembly Command: jtl <link_register> $immediate
 Description: Jumps to the target address provided that the contents of the
              predicate register (Index defined via implied register) is not
              zero. The current address is stored in the link_register. 
@@ -313,8 +248,7 @@ Layout:
    Byte 2-3 : immediate value, little endian
 
 >>>>>> Jump Register If True 
-Opcode: 6
-Assembly Command: jump.if1 <predicate_reg> <addr_register>
+Assembly Command: jrt <predicate_reg> <addr_register>
 Description: Jumps to the target address provided the contents of the predicate
              register are not zero.
 Layout:
@@ -324,8 +258,7 @@ Layout:
    Byte 3 : Unused
 
 >>>>>> Jump Register If True and Link
-Opcode: 7
-Assembly Command: jump.if1.link <predicate> <addr> <link>
+Assembly Command: jrtl <predicate> <addr> <link>
 Description: Jumps to the target address provided the contents of the predicate
              are not zero and saves the current location to the provided link 
              register.
@@ -336,8 +269,7 @@ Layout:
    Byte 3 : Index of Link Register 
 
 >>>>>> Jump Immediate If False
-Opcode: 8
-Assembly Command: goto.if0 $immediate
+Assembly Command: jf $immediate
 Description: Jumps to the target address provided that the given predicate
              register contains a value which is zero
 Layout:
@@ -346,8 +278,7 @@ Layout:
    Byte 2-3 : immediate value, little endian
 
 >>>>>> Jump Immediate If False and Link
-Opcode: 9
-Assembly Command: goto.if0.link <link_register> $immediate
+Assembly Command: jfl <link_register> $immediate
 Description: Jumps to the target address provided that the contents of the
              predicate register (Index defined via implied register) is zero. 
              The current address is stored in the link_register. 
@@ -357,8 +288,7 @@ Layout:
    Byte 2-3 : immediate value, little endian
 
 >>>>>> Jump Register If False
-Opcode: 10 
-Assembly Command: jump.if0 <predicate_reg> <addr_register>
+Assembly Command: jrf <predicate_reg> <addr_register>
 Description: Jumps to the target address provided the contents of the predicate
              register are zero.
 Layout:
@@ -367,9 +297,8 @@ Layout:
    Byte 2 : Index of the Address Register
    Byte 3 : Unused
 
->>>>>> Jump Register If True and Link
-Opcode: 11 
-Assembly Command: jump.if0.link <predicate> <addr> <link>
+>>>>>> Jump Register If False and Link
+Assembly Command: jrfl <predicate> <addr> <link>
 Description: Jumps to the target address provided the contents of the predicate
              are zero and saves the current location to the provided link 
              register.
@@ -380,8 +309,7 @@ Layout:
    Byte 3 : Index of Link Register 
 
 >>>>>> If True Then Else 
-Opcode: 12
-Assembly Command: if1 <predicate> <ontrue> <onfalse> 
+Assembly Command: ift <predicate> <ontrue> <onfalse> 
 Description: If the contents of the predicate register are not zero then jump
              to the address contained in the ontrue register else jump to the
              on false register
@@ -392,8 +320,7 @@ Layout:
    Byte 3 : Index of On False Register
 
 >>>>>> If False Then Else 
-Opcode: 13
-Assembly Command: if0 <predicate> <ontrue> <onfalse> 
+Assembly Command: iff <predicate> <ontrue> <onfalse> 
 Description: If the contents of the predicate register are zero then jump to 
              the address contained in the ontrue register else jump to the
              on false register
@@ -404,8 +331,7 @@ Layout:
    Byte 3 : Index of On False Register
 
 >>>>>> If True Then Else and Link
-Opcode: 14
-Assembly Command: if1.link <link_register> <ontrue> <onfalse> 
+Assembly Command: iftl <link_register> <ontrue> <onfalse> 
 Description: If the contents of the predicate register are not zero (implied
              register) then jump to the address contained in the ontrue 
              register else jump to the on false register and save the current
@@ -417,8 +343,7 @@ Layout:
    Byte 3 : Index of On False Register
 
 >>>>>> If False Then Else and Link
-Opcode: 15
-Assembly Command: if0.link <link_register> <ontrue> <onfalse> 
+Assembly Command: iffl <link_register> <ontrue> <onfalse> 
 Description: If the contents of the predicate register (implied register) are 
              zero then jump to the address contained in the ontrue register 
              else jump to the on false register and save the current location 
@@ -437,166 +362,64 @@ byte 2 : Source Register 0
 byte 3 : Source Register 1
 
 >>>>>> Equals 
-Opcode: 0
 Assembly Command: eq <dest> <src0> <src1> 
 Description: Checks to see if the contents of src0 == src1 and stores the
              result in dest
 
->>>>>> And Equals 
-Opcode: 1
-Assembly Command: and.eq <dest> <src0> <src1> 
-Description: Checks to see if the contents of src0 == src1 then and's the 
-             result with the contents of dest and stores that in dest.
-             Basically, dest &= (src0 == src1).
-
->>>>>> Or Equals 
-Opcode: 2
-Assembly Command: or.eq <dest> <src0> <src1> 
-Description: Checks to see if the contents of src0 == src1 then or's the 
-             result with the contents of dest and stores that in dest.
-             Basically, dest |= (src0 == src1).
-
->>>>>> Xor Equals 
-Opcode: 3
-Assembly Command: xor.eq <dest> <src0> <src1> 
-Description: Checks to see if the contents of src0 == src1 then xor's the 
-             result with the contents of dest and stores that in dest.
-             Basically, dest ^= (src0 == src1).
-
 >>>>>> Not Equals 
-Opcode: 4
 Assembly Command: ne <dest> <src0> <src1> 
 Description: Checks to see if the contents of src0 != src1 and stores the
              result in dest
 
->>>>>> And Not Equals 
-Opcode: 5
-Assembly Command: and.ne <dest> <src0> <src1> 
-Description: Checks to see if the contents of src0 != src1 then and's the 
-             result with the contents of dest and stores that in dest.
-             Basically, dest &= (src0 != src1).
-
->>>>>> Or Not Equals 
-Opcode: 6
-Assembly Command: or.ne <dest> <src0> <src1> 
-Description: Checks to see if the contents of src0 != src1 then or's the 
-             result with the contents of dest and stores that in dest.
-             Basically, dest |= (src0 != src1).
-
->>>>>> Xor Not Equals 
-Opcode: 7
-Assembly Command: xor.ne <dest> <src0> <src1> 
-Description: Checks to see if the contents of src0 != src1 then xor's the 
-             result with the contents of dest and stores that in dest.
-             Basically, dest ^= (src0 != src1).
-
 >>>>>> Less Than 
-Opcode: 8
 Assembly Command: lt <dest> <src0> <src1> 
 Description: Checks to see if the contents of src0 < src1 and stores the
              result in dest
 
->>>>>> And Less Than 
-Opcode: 9
-Assembly Command: and.lt <dest> <src0> <src1> 
-Description: Checks to see if the contents of src0 < src1 then and's the 
-             result with the contents of dest and stores that in dest.
-             Basically, dest &= (src0 < src1).
-
->>>>>> Or Less Than 
-Opcode: 10 
-Assembly Command: or.lt <dest> <src0> <src1> 
-Description: Checks to see if the contents of src0 < src1 then or's the 
-             result with the contents of dest and stores that in dest.
-             Basically, dest |= (src0 < src1).
-
->>>>>> Xor Less Than 
-Opcode: 11
-Assembly Command: xor.lt <dest> <src0> <src1> 
-Description: Checks to see if the contents of src0 < src1 then xor's the 
-             result with the contents of dest and stores that in dest.
-             Basically, dest ^= (src0 < src1).
-
 >>>>>> Greater Than 
-Opcode: 12
 Assembly Command: gt <dest> <src0> <src1> 
 Description: Checks to see if the contents of src0 > src1 and stores the
              result in dest
 
->>>>>> And Greater Than 
-Opcode: 13 
-Assembly Command: and.gt <dest> <src0> <src1> 
-Description: Checks to see if the contents of src0 > src1 then and's the 
-             result with the contents of dest and stores that in dest.
-             Basically, dest &= (src0 > src1).
-
->>>>>> Or Greater Than 
-Opcode: 14 
-Assembly Command: or.gt <dest> <src0> <src1> 
-Description: Checks to see if the contents of src0 > src1 then or's the 
-             result with the contents of dest and stores that in dest.
-             Basically, dest |= (src0 > src1).
-
->>>>>> Xor Greater Than 
-Opcode: 15
-Assembly Command: xor.gt <dest> <src0> <src1> 
-Description: Checks to see if the contents of src0 > src1 then xor's the 
-             result with the contents of dest and stores that in dest.
-             Basically, dest ^= (src0 > src1).
-
 >>>>>> Less Than Or Equal To 
-Opcode: 16
 Assembly Command: le <dest> <src0> <src1> 
 Description: Checks to see if the contents of src0 <= src1 and stores the
              result in dest
 
->>>>>> And Less Than Or Equal To 
-Opcode: 17 
-Assembly Command: and.le <dest> <src0> <src1> 
-Description: Checks to see if the contents of src0 <= src1 then and's the 
-             result with the contents of dest and stores that in dest.
-             Basically, dest &= (src0 <= src1).
-
->>>>>> Or Less Than Or Equal To 
-Opcode: 18 
-Assembly Command: or.le <dest> <src0> <src1> 
-Description: Checks to see if the contents of src0 <= src1 then or's the 
-             result with the contents of dest and stores that in dest.
-             Basically, dest |= (src0 <= src1).
-
->>>>>> Xor Less Than Or Equal To 
-Opcode: 19
-Assembly Command: xor.le <dest> <src0> <src1> 
-Description: Checks to see if the contents of src0 <= src1 then xor's the 
-             result with the contents of dest and stores that in dest.
-             Basically, dest ^= (src0 <= src1).
-
 >>>>>> Greater Than Or Equal To 
-Opcode: 20 
 Assembly Command: ge <dest> <src0> <src1> 
 Description: Checks to see if the contents of src0 >= src1 and stores the
              result in dest
 
->>>>>> And Greater Than Or Equal To 
-Opcode: 21
-Assembly Command: and.ge <dest> <src0> <src1> 
-Description: Checks to see if the contents of src0 >= src1 then and's the 
-             result with the contents of dest and stores that in dest.
-             Basically, dest &= (src0 >= src1).
+>>>>>> Equals Immediate
+Assembly Command: eqi <dest> <src0> $imm8
+Description: Checks to see if the contents of src0 == $imm8 and stores the
+             result in dest
 
->>>>>> Or Greater Than Or Equal To 
-Opcode: 22
-Assembly Command: or.ge <dest> <src0> <src1> 
-Description: Checks to see if the contents of src0 >= src1 then or's the 
-             result with the contents of dest and stores that in dest.
-             Basically, dest |= (src0 >= src1).
+>>>>>> Not Equals Immediate
+Assembly Command: ne <dest> <src0> $imm8
+Description: Checks to see if the contents of src0 != $imm8 and stores the
+             result in dest
 
->>>>>> Xor Greater Than Or Equal To 
-Opcode: 23
-Assembly Command: xor.ge <dest> <src0> <src1> 
-Description: Checks to see if the contents of src0 >= src1 then xor's the 
-             result with the contents of dest and stores that in dest.
-             Basically, dest ^= (src0 >= src1).
+>>>>>> Less Than Immediate
+Assembly Command: lti <dest> <src0> $imm8
+Description: Checks to see if the contents of src0 < $imm8 and stores the
+             result in dest
+
+>>>>>> Greater Than Immediate
+Assembly Command: gti <dest> <src0> $imm8
+Description: Checks to see if the contents of src0 > $imm8 and stores the
+             result in dest
+
+>>>>>> Less Than Or Equal To Immediate
+Assembly Command: lei <dest> <src0> $imm8
+Description: Checks to see if the contents of src0 <= $imm8 and stores the
+             result in dest
+
+>>>>>> Greater Than Or Equal To Immediate
+Assembly Command: gei <dest> <src0> $imm8
+Description: Checks to see if the contents of src0 >= $imm8 and stores the
+             result in dest
 
 ---------------------------------------------------------------------
 The misc op group has the following operations:
