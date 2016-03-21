@@ -63,7 +63,7 @@ namespace iris32 {
 	}
 	void Core::installprogram(std::istream& stream) {
 		char storage[sizeof(word)] = { 0 };
-		for (hword i = 0; i < memorySize; ++i) {
+		for (word i = 0; i < memorySize; ++i) {
 			if (!stream.good()) {
 				std::cerr << "WARNING: Memory image is smaller than total memory!" << std::endl;
 				break;
@@ -119,7 +119,8 @@ namespace iris32 {
 		}
 		dispatch(thread);
 		if (thread.advanceIp) {
-			++thread.gpr[ArchitectureConstants::InstructionPointerIndex];
+			auto value = thread.gpr[ArchitectureConstants::InstructionPointerIndex];
+			thread.gpr[ArchitectureConstants::InstructionPointerIndex] = ((value >> 2) + 1) << 2;
 		}
 	}
 	void Core::compare(ExecState& thread, DecodedInstruction& current) {

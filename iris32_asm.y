@@ -271,6 +271,10 @@ move_op:
        ;
 
 jump_op:
+	   JUMP_OP_UNCONDITIONALREGISTER REGISTER {
+	   curri.op = (byte)iris32::JumpOp::UnconditionalRegister;
+	   	curri.reg0 = $2;
+	   } |
        jop_reg_reg REGISTER REGISTER {
             curri.reg0 = $2;
             curri.reg1 = $3;
