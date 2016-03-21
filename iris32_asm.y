@@ -90,38 +90,16 @@ void usage(char* arg0);
 %token ARITHMETIC_OP_SHIFTRIGHT_IMM
 %token MOVE_OP_MOVE
 %token MOVE_OP_SWAP
-%token MOVE_OP_SWAPREGADDR
-%token MOVE_OP_SWAPADDRADDR
-%token MOVE_OP_SWAPREGMEM
-%token MOVE_OP_SWAPADDRMEM
 %token MOVE_OP_SET_LOWER MOVE_OP_SET_UPPER
 %token MOVE_OP_LOAD
-%token MOVE_OP_LOADMEM
 %token MOVE_OP_STORE
-%token MOVE_OP_STOREADDR
-%token MOVE_OP_STOREMEM
-%token MOVE_OP_STOREIMM
 %token MOVE_OP_POP
 %token MOVE_OP_PUSH
-%token MOVE_OP_PUSHIMMEDIATE
-%token MOVE_OP_LOAD_CODE
-%token MOVE_OP_STORE_CODE
-%token JUMP_OP_UNCONDITIONALIMMEDIATE
-%token JUMP_OP_UNCONDITIONALIMMEDIATELINK
-%token JUMP_OP_UNCONDITIONALREGISTER
-%token JUMP_OP_UNCONDITIONALREGISTERLINK
-%token JUMP_OP_CONDITIONALTRUEIMMEDIATE
-%token JUMP_OP_CONDITIONALTRUEIMMEDIATELINK
-%token JUMP_OP_CONDITIONALTRUEREGISTER
-%token JUMP_OP_CONDITIONALTRUEREGISTERLINK
-%token JUMP_OP_CONDITIONALFALSEIMMEDIATE
-%token JUMP_OP_CONDITIONALFALSEIMMEDIATELINK
-%token JUMP_OP_CONDITIONALFALSEREGISTER
-%token JUMP_OP_CONDITIONALFALSEREGISTERLINK
-%token JUMP_OP_IFTHENELSENORMALPREDTRUE
-%token JUMP_OP_IFTHENELSENORMALPREDFALSE
-%token JUMP_OP_IFTHENELSELINKPREDTRUE
-%token JUMP_OP_IFTHENELSELINKPREDFALSE
+%token JUMP_OP_UNCONDITIONALREGISTER JUMP_OP_UNCONDITIONALREGISTERLINK
+%token JUMP_OP_CONDITIONALTRUEREGISTER JUMP_OP_CONDITIONALTRUEREGISTERLINK
+%token JUMP_OP_CONDITIONALFALSEREGISTER JUMP_OP_CONDITIONALFALSEREGISTERLINK
+%token JUMP_OP_IFTHENELSENORMALPREDTRUE JUMP_OP_IFTHENELSENORMALPREDFALSE
+%token JUMP_OP_IFTHENELSELINKPREDTRUE JUMP_OP_IFTHENELSELINKPREDFALSE
 %token COMPARE_OP_EQ
 %token COMPARE_OP_NEQ
 %token COMPARE_OP_LESSTHAN
@@ -139,46 +117,6 @@ void usage(char* arg0);
 %token ARITHMETIC_MACRO_OP_DECR
 %token ARITHMETIC_MACRO_OP_HALVE
 %token ARITHMETIC_MACRO_OP_DOUBLE
-
-/*
-%token COMPARE_OP_EQAND
-%token COMPARE_OP_EQOR
-%token COMPARE_OP_EQXOR
-%token COMPARE_OP_NEQAND
-%token COMPARE_OP_NEQOR
-%token COMPARE_OP_NEQXOR
-%token COMPARE_OP_LESSTHANAND
-%token COMPARE_OP_LESSTHANOR
-%token COMPARE_OP_LESSTHANXOR
-%token COMPARE_OP_GREATERTHANOREQUALTOAND
-%token COMPARE_OP_GREATERTHANOREQUALTOOR
-%token COMPARE_OP_GREATERTHANOREQUALTOXOR
-%token COMPARE_OP_LESSTHANOREQUALTOAND
-%token COMPARE_OP_LESSTHANOREQUALTOOR
-%token COMPARE_OP_LESSTHANOREQUALTOXOR
-%token COMPARE_OP_GREATERTHANAND
-%token COMPARE_OP_GREATERTHANOR
-%token COMPARE_OP_GREATERTHANXOR
-// from cop
-   COMPARE_OP_EQAND { curri.op = (byte)iris32::CompareOp::EqAnd; } |
-   COMPARE_OP_EQOR { curri.op = (byte)iris32::CompareOp::EqOr; } |
-   COMPARE_OP_EQXOR { curri.op = (byte)iris32::CompareOp::EqXor; } |
-   COMPARE_OP_NEQAND { curri.op = (byte)iris32::CompareOp::NeqAnd; } |
-   COMPARE_OP_NEQOR { curri.op = (byte)iris32::CompareOp::NeqOr; } |
-   COMPARE_OP_NEQXOR { curri.op = (byte)iris32::CompareOp::NeqXor; } |
-   COMPARE_OP_LESSTHANAND { curri.op = (byte)iris32::CompareOp::LessThanAnd; } |
-   COMPARE_OP_LESSTHANOR { curri.op = (byte)iris32::CompareOp::LessThanOr; } |
-   COMPARE_OP_LESSTHANXOR { curri.op = (byte)iris32::CompareOp::LessThanXor; } |
-   COMPARE_OP_GREATERTHANAND { curri.op = (byte)iris32::CompareOp::GreaterThanAnd; } |
-   COMPARE_OP_GREATERTHANOR { curri.op = (byte)iris32::CompareOp::GreaterThanOr; } |
-   COMPARE_OP_GREATERTHANXOR { curri.op = (byte)iris32::CompareOp::GreaterThanXor; } |
-   COMPARE_OP_LESSTHANOREQUALTOAND { curri.op = (byte)iris32::CompareOp::LessThanOrEqualToAnd; } |
-   COMPARE_OP_LESSTHANOREQUALTOOR { curri.op = (byte)iris32::CompareOp::LessThanOrEqualToOr; } |
-   COMPARE_OP_LESSTHANOREQUALTOXOR { curri.op = (byte)iris32::CompareOp::LessThanOrEqualToXor; } |
-   COMPARE_OP_GREATERTHANOREQUALTOAND { curri.op = (byte)iris32::CompareOp::GreaterThanOrEqualToAnd; } |
-   COMPARE_OP_GREATERTHANOREQUALTOOR { curri.op = (byte)iris32::CompareOp::GreaterThanOrEqualToOr; } |
-   COMPARE_OP_GREATERTHANOREQUALTOXOR { curri.op = (byte)iris32::CompareOp::GreaterThanOrEqualToXor; } |
-*/
 
 %token <rval> REGISTER
 %token <ival> IMMEDIATE
@@ -333,18 +271,10 @@ move_op:
        ;
 
 jump_op:
-       JUMP_OP_UNCONDITIONALIMMEDIATE lexeme { 
-         curri.op = (byte)iris32::JumpOp::UnconditionalImmediate; 
-         } | 
-       JUMP_OP_UNCONDITIONALREGISTER REGISTER { 
-         curri.op = (byte)iris32::JumpOp::UnconditionalRegister; 
-         curri.reg0 = $2;
-       } |
        jop_reg_reg REGISTER REGISTER {
             curri.reg0 = $2;
             curri.reg1 = $3;
        } |
-       jop_reg_imm REGISTER lexeme { curri.reg0 = $2; } |
        jop_reg_reg_reg REGISTER REGISTER REGISTER {
             curri.reg0 = $2;
             curri.reg1 = $3;
@@ -413,14 +343,6 @@ mop_reg:
 mop_single:
    MOVE_OP_PUSH { curri.op = (byte)iris32::MoveOp::Push; } |
    MOVE_OP_POP { curri.op = (byte)iris32::MoveOp::Pop; } 
-   ;
-
-jop_reg_imm:
-   JUMP_OP_UNCONDITIONALIMMEDIATELINK { curri.op = (byte)iris32::JumpOp::UnconditionalImmediateLink; } |
-   JUMP_OP_CONDITIONALTRUEIMMEDIATE { curri.op = (byte)iris32::JumpOp::ConditionalTrueImmediate; } |
-   JUMP_OP_CONDITIONALTRUEIMMEDIATELINK { curri.op = (byte)iris32::JumpOp::ConditionalTrueImmediateLink; } |
-   JUMP_OP_CONDITIONALFALSEIMMEDIATE { curri.op = (byte)iris32::JumpOp::ConditionalFalseImmediate; } |
-   JUMP_OP_CONDITIONALFALSEIMMEDIATELINK { curri.op = (byte)iris32::JumpOp::ConditionalFalseImmediateLink; } 
    ;
 
 

@@ -49,22 +49,13 @@ omni [a-zA-Z0-9._]
 "setl" { return MOVE_OP_SET_LOWER; }
 "setu" { return MOVE_OP_SET_UPPER; }
 "ld" { return MOVE_OP_LOAD; }
-"ldi" { return MOVE_OP_LOADMEM; }
-"ldm" { return MOVE_OP_LOADMEM; }
 "st" { return MOVE_OP_STORE; }
-"memset" { return MOVE_OP_STOREIMM; }
-"j" 		{ return JUMP_OP_UNCONDITIONALIMMEDIATE; }
-"jl" 		{ return JUMP_OP_UNCONDITIONALIMMEDIATELINK; }
-"jr" 		{ return JUMP_OP_UNCONDITIONALREGISTER; }
-"jrl" 		{ return JUMP_OP_UNCONDITIONALREGISTERLINK; }
-"jt" 		{ return JUMP_OP_CONDITIONALTRUEIMMEDIATE; }
-"jtl" 		{ return JUMP_OP_CONDITIONALTRUEIMMEDIATELINK; }
-"jrt" 		{ return JUMP_OP_CONDITIONALTRUEREGISTER; }
-"jrtl" 		{ return JUMP_OP_CONDITIONALTRUEREGISTERLINK; }
-"jf" 		{ return JUMP_OP_CONDITIONALFALSEIMMEDIATE; }
-"jfl" 		{ return JUMP_OP_CONDITIONALFALSEIMMEDIATELINK; }
-"jrf" 		{ return JUMP_OP_CONDITIONALFALSEREGISTER; }
-"jrfl" 		{ return JUMP_OP_CONDITIONALFALSEREGISTERLINK; }
+"j" 		{ return JUMP_OP_UNCONDITIONALREGISTER; }
+"jl" 		{ return JUMP_OP_UNCONDITIONALREGISTERLINK; }
+"jt" 		{ return JUMP_OP_CONDITIONALTRUEREGISTER; }
+"jtl" 		{ return JUMP_OP_CONDITIONALTRUEREGISTERLINK; }
+"jf" 		{ return JUMP_OP_CONDITIONALFALSEREGISTER; }
+"jfl" 		{ return JUMP_OP_CONDITIONALFALSEREGISTERLINK; }
 "ift" 		{ return JUMP_OP_IFTHENELSENORMALPREDTRUE; }
 "iff" 		{ return JUMP_OP_IFTHENELSENORMALPREDFALSE; }
 "iftl" { return JUMP_OP_IFTHENELSELINKPREDTRUE; }
@@ -83,7 +74,6 @@ omni [a-zA-Z0-9._]
 "gei" { return COMPARE_OP_GREATERTHANOREQUALTO_IMMEDIATE; }
 "system" { return MISC_OP_SYSTEMCALL; }
 "push" { return MOVE_OP_PUSH; }
-"pushi" { return MOVE_OP_PUSHIMMEDIATE; }
 "pop" { return MOVE_OP_POP; }
 
 "incr" { return ARITHMETIC_MACRO_OP_INCR; }
@@ -115,6 +105,16 @@ r{digit}+ { yylval.rval = getregister(); return REGISTER; }
 %%
 /*
 
+"ldi" { return MOVE_OP_LOADMEM; }
+"ldm" { return MOVE_OP_LOADMEM; }
+"memset" { return MOVE_OP_STOREIMM; }
+//"pushi" { return MOVE_OP_PUSHIMMEDIATE; }
+"j" 		{ return JUMP_OP_UNCONDITIONALIMMEDIATE; }
+"jl" 		{ return JUMP_OP_UNCONDITIONALIMMEDIATELINK; }
+"jt" 		{ return JUMP_OP_CONDITIONALTRUEIMMEDIATE; }
+"jtl" 		{ return JUMP_OP_CONDITIONALTRUEIMMEDIATELINK; }
+"jf" 		{ return JUMP_OP_CONDITIONALFALSEIMMEDIATE; }
+"jfl" 		{ return JUMP_OP_CONDITIONALFALSEIMMEDIATELINK; }
    "and.eq" { return COMPARE_OP_EQAND; }
    "or.eq" { return COMPARE_OP_EQOR; }
    "xor.eq" { return COMPARE_OP_EQXOR; }
