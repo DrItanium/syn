@@ -103,37 +103,6 @@ r{digit}+ { yylval.rval = getregister(); return REGISTER; }
 	return SYMBOL;
 		}
 %%
-/*
-
-"ldi" { return MOVE_OP_LOADMEM; }
-"ldm" { return MOVE_OP_LOADMEM; }
-"memset" { return MOVE_OP_STOREIMM; }
-//"pushi" { return MOVE_OP_PUSHIMMEDIATE; }
-"j" 		{ return JUMP_OP_UNCONDITIONALIMMEDIATE; }
-"jl" 		{ return JUMP_OP_UNCONDITIONALIMMEDIATELINK; }
-"jt" 		{ return JUMP_OP_CONDITIONALTRUEIMMEDIATE; }
-"jtl" 		{ return JUMP_OP_CONDITIONALTRUEIMMEDIATELINK; }
-"jf" 		{ return JUMP_OP_CONDITIONALFALSEIMMEDIATE; }
-"jfl" 		{ return JUMP_OP_CONDITIONALFALSEIMMEDIATELINK; }
-   "and.eq" { return COMPARE_OP_EQAND; }
-   "or.eq" { return COMPARE_OP_EQOR; }
-   "xor.eq" { return COMPARE_OP_EQXOR; }
-   "and.ne" { return COMPARE_OP_NEQAND; }
-   "or.ne" { return COMPARE_OP_NEQOR; }
-   "xor.ne" { return COMPARE_OP_NEQXOR; }
-   "and.lt" { return COMPARE_OP_LESSTHANAND; }
-   "or.lt" { return COMPARE_OP_LESSTHANOR; }
-   "xor.lt" { return COMPARE_OP_LESSTHANXOR; }
-   "and.gt" { return COMPARE_OP_GREATERTHANAND; }
-   "or.gt" { return COMPARE_OP_GREATERTHANOR; }
-   "xor.gt" { return COMPARE_OP_GREATERTHANXOR; }
-   "and.le" { return COMPARE_OP_LESSTHANOREQUALTOAND; }
-   "or.le" { return COMPARE_OP_LESSTHANOREQUALTOOR; }
-   "xor.le" { return COMPARE_OP_LESSTHANOREQUALTOXOR; }
-   "and.ge" { return COMPARE_OP_GREATERTHANOREQUALTOAND; }
-   "or.ge" { return COMPARE_OP_GREATERTHANOREQUALTOOR; }
-   "xor.ge" { return COMPARE_OP_GREATERTHANOREQUALTOXOR; }
- */
 
 byte getregister(void) {
 	int c;
