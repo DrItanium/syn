@@ -66,15 +66,18 @@ namespace iris32 {
 		memory = 0;
 	}
 	void Core::installprogram(std::istream& stream) {
-		char storage[sizeof(word)] = { 0 };
-		for (word i = 0; i < memorySize; ++i) {
+		// read directly from the assembler's output
+		char a[sizeof(word)] = { 0 };
+		char b[sizeof(word)] = { 0 };
+		while(stream.good()) {
+			stream.read(a, sizeof(word));
 			if (!stream.good()) {
-				std::cerr << "WARNING: Memory image is smaller than total memory!" << std::endl;
-				break;
-			} else {
-				stream.read(storage, sizeof(word));
-				memory[i] = word(storage[0]) | (word(storage[1]) << 8) | (word(storage[2]) << 16) | (word(storage[3]) << 24);
+				std::cerr << "panic: provided data is not valid iris32 encoded assembler" << std::endl;
+				exit(1);
 			}
+			stream.read(b, sizeof(word));
+			auto addr = word(a[0]) | (word(a[1]) << 8) | (word(a[2]) << 16) | (word(a[3]) << 24);
+			memory[addr] = word(b[0]) | (word(b[1]) << 8) | (word(b[2]) << 16) | (word(b[3]) << 24);
 		}
 	}
 	void Core::dump(std::ostream& stream) {

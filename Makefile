@@ -55,11 +55,6 @@ IRIS32_SIM_BINARY = iris32_sim
 IRIS32_SIM_MAIN = iris32_sim.o
 IRIS32_SIM_OBJECTS = ${IRIS32_SIM_MAIN}
 
-IRIS32_LINK_BINARY = iris32link
-IRIS32_LINK_MAIN = iris32_link.o
-IRIS32_LINK_OBJECTS = ${IRIS32_LINK_MAIN}
-
-
 IRIS32_STRGEN_BINARY = iris32strgen
 IRIS32_STRGEN_MAIN = iris32_strgen.o
 IRIS32_STRGEN_OBJECTS = ${IRIS32_STRGEN_MAIN} 
@@ -75,14 +70,12 @@ IRIS32_ASM_OBJECTS = iris32_lex.yy.o \
 
 ALL_IRIS32_OBJECTS = ${IRIS32_OBJECTS} \
 					 ${IRIS32_SIM_OBJECTS} \
-					 ${IRIS32_LINK_OBJECTS} \
 					 ${IRIS32_OUT} \
 					 ${IRIS32_ASM_OBJECTS} \
 					 ${IRIS32_ASM_FILES} \
 					 ${IRIS32_STRGEN_OBJECTS}
 
 IRIS32_BINARIES = ${IRIS32_SIM_BINARY} \
-				  ${IRIS32_LINK_BINARY} \
 				  ${IRIS32_ASM_BINARY} \
 				  ${IRIS32_STRGEN_BINARY}
 
@@ -167,11 +160,6 @@ ${IRIS32_SIM_BINARY}: ${IRIS32_SIM_MAIN} ${IRIS32_OUT}
 	@${CXX} ${LDFLAGS} -o ${IRIS32_SIM_BINARY} $^
 	@echo done.
 
-${IRIS32_LINK_BINARY}: ${IRIS32_LINK_MAIN} ${IRIS32_OUT}
-	@echo -n Building ${IRIS32_LINK_BINARY} binary out of $^...
-	@${CXX} ${LDFLAGS} -o ${IRIS32_LINK_BINARY} $^
-	@echo done.
-
 ${IRIS32_STRGEN_BINARY}: ${IRIS32_STRGEN_MAIN} ${IRIS32_OUT}
 	@echo -n Building ${IRIS32_STRGEN_BINARY} binary out of $^...
 	@${CXX} ${LDFLAGS} -o ${IRIS32_STRGEN_BINARY} $^
@@ -231,10 +219,6 @@ iris16_strgen.o: iris16_strgen.cc
 
 iris32.o: iris32.cc iris32.h iris_base.h Core.h iris32_groups.def \
  iris32_arithmetic.def iris32_misc.def iris32_jump.def \
- iris32_syscalls.def iris32_move.def iris32_compare.def \
- iris32_instruction.def
-iris32_link.o: iris32_link.cc iris32.h iris_base.h Core.h \
- iris32_groups.def iris32_arithmetic.def iris32_misc.def iris32_jump.def \
  iris32_syscalls.def iris32_move.def iris32_compare.def \
  iris32_instruction.def
 iris32_sim.o: iris32_sim.cc iris32.h iris_base.h Core.h iris32_groups.def \
