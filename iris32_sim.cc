@@ -44,6 +44,7 @@ int main(int argc, char* argv[]) {
 	}
 	if(input) {
 		iris32::ExecState t0, t1;
+		t1.gpr[iris32::ArchitectureConstants::InstructionPointerIndex] = (iris32::ArchitectureConstants::AddressMax / 2);
 		iris32::Core core(iris32::ArchitectureConstants::AddressMax, std::move(t0), std::move(t1));
 		core.initialize();
 		core.installprogram(*input);
