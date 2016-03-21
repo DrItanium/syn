@@ -34,7 +34,7 @@ namespace iris32 {
 		if (addr >= 0 && addr < memorySize) {
 			memory[addr] = value;
 		} else {
-			std::cerr << "Address " << std::hex << addr << " is out of range" << std::endl;
+			std::cerr << "write: Address " << std::hex << addr << " is out of range of" << std::hex << memorySize << std::endl;
 			execute = false;
 			throw 0;
 		}
@@ -43,17 +43,17 @@ namespace iris32 {
 		if (address >= 0 && address < memorySize) {
 			return memory[address];
 		} else {
-			std::cerr << "Address " << std::hex << address << " is out of range" << std::endl;
+			std::cerr << "read: Address " << std::hex << address << " is out of range of " << std::hex << memorySize << std::endl;
 			execute = false;
 			throw 0;
 		}
 	}
 
-	Core::Core(word msize, ExecState&& t0, ExecState&& t1) : 
+	Core::Core(word msize, ExecState* t0, ExecState* t1) : 
 		memorySize(msize),
 		memory(new word[msize]),
-		thread0(std::move(t0)),
-		thread1(std::move(t1))
+		thread0(t0),
+		thread1(t1)
 	{ }
 	Core::~Core() {
 		delete [] memory;
@@ -81,13 +81,14 @@ namespace iris32 {
 			stream.write(storage, sizeof(word));
 		}
 	}
-	void Core::dispatch(ExecState& thread) {
+	void Core::dispatch() {
 		// read a byte from the current instruction pointer address
-		auto decoded = DecodedInstruction(read(thread.gpr[ArchitectureConstants::InstructionPointerIndex]));
+		auto decoded = DecodedInstruction(read(thread->gpr[ArchitectureConstants::InstructionPointerIndex]));
 		switch (static_cast<InstructionGroup>(decoded.getGroup())) {
 #define X(en, fn) \
 			case InstructionGroup:: en : \
-				 fn (thread, decoded) ; \
+				std::cerr << "Calling " << "InstructionGroup::" << #en << std::endl; \
+				 fn (decoded) ; \
 			break;
 #include "iris32_groups.def"
 #undef X
@@ -104,23 +105,31 @@ namespace iris32 {
 
 	}
 	void Core::run() {
+		thread = thread0;
 		while(execute) {
-			execBody(thread0);
+			execBody();
 			if (execute) {
-				execBody(thread1);
+				thread = thread1;
+				execBody();
+			}
+			thread = thread0;
+		}
+	}
+	void Core::execBody() {
+		std::cerr << "current thread " << std::hex << &thread << std::endl;
+		if (!thread->advanceIp) {
+			thread->advanceIp = true;
+		}
+		std::cerr << "\tip = " << std::hex << thread->gpr[ArchitectureConstants::InstructionPointerIndex] << std::endl;
+		dispatch();
+		if (thread->advanceIp) {
+			++thread->gpr[ArchitectureConstants::InstructionPointerIndex];
+			if (thread->gpr[ArchitectureConstants::InstructionPointerIndex] >= memorySize) {
+				thread->gpr[ArchitectureConstants::InstructionPointerIndex] = 0;
 			}
 		}
 	}
-	void Core::execBody(ExecState& thread) {
-		if (!thread.advanceIp) {
-			thread.advanceIp = true;
-		}
-		dispatch(thread);
-		if (thread.advanceIp) {
-			++thread.gpr[ArchitectureConstants::InstructionPointerIndex];
-		}
-	}
-	void Core::compare(ExecState& thread, DecodedInstruction& current) {
+	void Core::compare( DecodedInstruction& current) {
 		switch(static_cast<CompareOp>(current.getOperation())) {
 #define OpNone =
 #define OpAnd &=
@@ -128,11 +137,13 @@ namespace iris32 {
 #define OpXor ^=
 #define X(type, compare, mod) \
 			case CompareOp:: type: \
-								   thread.gpr[current.getDestination()] INDIRECTOR(Op, mod) (thread.gpr[current.getSource0()] compare thread.gpr[current.getSource1()]); \
+								   std::cerr << "Called CompareOp::" << #type << std::endl; \
+								   thread->gpr[current.getDestination()] INDIRECTOR(Op, mod) (thread->gpr[current.getSource0()] compare thread->gpr[current.getSource1()]); \
 			break;
 #define Y(type, compare, mod) \
 			case CompareOp:: type: \
-								   thread.gpr[current.getDestination()] INDIRECTOR(Op, mod) (thread.gpr[current.getSource0()] compare (word(current.getSource1()))); \
+								   std::cerr << "Called CompareOp::" << #type << std::endl; \
+								   thread->gpr[current.getDestination()] INDIRECTOR(Op, mod) (thread->gpr[current.getSource0()] compare (word(current.getSource1()))); \
 			break;
 
 #include "iris32_compare.def"
@@ -145,7 +156,7 @@ namespace iris32 {
 			default:
 				std::cerr << "Illegal compare code " << std::hex << current.getOperation() << std::endl;
 				execute = false;
-				thread.advanceIp = false;
+				thread->advanceIp = false;
 				break;
 		}
 	}
@@ -175,20 +186,20 @@ namespace iris32 {
 #undef XImmediate
 #undef XDenominatorImmediate
 
-	void Core::arithmetic(ExecState& thread, DecodedInstruction& inst) {
+	void Core::arithmetic( DecodedInstruction& inst) {
 		switch(static_cast<ArithmeticOp>(inst.getOperation())) {
-#define XNone(n) thread.gpr[inst.getDestination()] = arithmeticOp<ArithmeticOp:: n>( thread.gpr[inst.getSource0()], thread.gpr[inst.getSource1()]);
-#define XImmediate(n) thread.gpr[inst.getDestination()] = arithmeticOp<ArithmeticOp:: n>(thread.gpr[inst.getSource0()], static_cast<word>(inst.getSource1()));
-#define XUnary(n) thread.gpr[inst.getDestination()] = arithmeticOp<ArithmeticOp:: n>(thread.gpr[inst.getSource0()], 0);
+#define XNone(n) thread->gpr[inst.getDestination()] = arithmeticOp<ArithmeticOp:: n>( thread->gpr[inst.getSource0()], thread->gpr[inst.getSource1()]);
+#define XImmediate(n) thread->gpr[inst.getDestination()] = arithmeticOp<ArithmeticOp:: n>(thread->gpr[inst.getSource0()], static_cast<word>(inst.getSource1()));
+#define XUnary(n) thread->gpr[inst.getDestination()] = arithmeticOp<ArithmeticOp:: n>(thread->gpr[inst.getSource0()], 0);
 #define XDenominator(n) \
-			if (thread.gpr[inst.getSource1()] == 0) { \
+			if (thread->gpr[inst.getSource1()] == 0) { \
 				std::cerr << "denominator in for operation " << std::hex <<  #n << " is zero!" << std::endl; \
 				execute = false; \
 			} else { \
 				XNone(n) \
 			}
 #define XDenominatorImmediate(n) \
-			if (thread.gpr[inst.getSource1()] == 0) { \
+			if (thread->gpr[inst.getSource1()] == 0) { \
 				std::cerr << "denominator in for operation " << std::hex << #n << " is zero!" << std::endl; \
 				execute = false; \
 			} else { \
@@ -197,6 +208,7 @@ namespace iris32 {
 #define X(name, op, desc) \
 			case ArithmeticOp:: name: \
 						{ \
+							std::cerr << "Called ArithmeticOp::" << #name << std::endl; \
 							INDIRECTOR(X, desc)(name) \
 							break; \
 						}
@@ -227,36 +239,37 @@ namespace iris32 {
 			return ConditionalStyle<op>::isFalseForm ? (cond == 0) : (cond != 0);
 		}
 
-	void Core::jump(ExecState& thread, DecodedInstruction& inst) {
+	void Core::jump( DecodedInstruction& inst) {
 		word newAddr = 0;
 		bool cond = true;
-		thread.advanceIp = false;
-		word ip = thread.gpr[ArchitectureConstants::InstructionPointerIndex];
+		thread->advanceIp = false;
+		word ip = thread->gpr[ArchitectureConstants::InstructionPointerIndex];
 		switch(static_cast<JumpOp>(inst.getOperation())) {
 #define XImmediateCond_true (inst.getImmediate())
-#define XImmediateCond_false (thread.gpr[inst.getSource0()])
+#define XImmediateCond_false (thread->gpr[inst.getSource0()])
 #define XIfThenElse_false(immediate) \
 			newAddr = cond ? INDIRECTOR(XImmediateCond, _ ## immediate) : ip + 1;
 #define XIfThenElse_true(immediate) \
-			newAddr = thread.gpr[cond ? inst.getSource0() : inst.getSource1()];
-#define XImmediateUncond_false (thread.gpr[inst.getDestination()])
+			newAddr = thread->gpr[cond ? inst.getSource0() : inst.getSource1()];
+#define XImmediateUncond_false (thread->gpr[inst.getDestination()])
 #define XImmediateUncond_true (inst.getImmediate())
 #define XConditional_false(name, ifthenelse, immediate) \
 			newAddr = INDIRECTOR(XImmediateUncond, _ ## immediate);
 #define XConditional_true(name, ifthenelse, immediate) \
-			cond = jumpCond<JumpOp:: name> (thread.gpr[inst.getDestination()]); \
+			cond = jumpCond<JumpOp:: name> (thread->gpr[inst.getDestination()]); \
 			INDIRECTOR(XIfThenElse, _ ## ifthenelse)(immediate)
 #define XLink_true \
 			if (cond) { \
-				thread.gpr[ArchitectureConstants::LinkRegisterIndex] = ip + 1; \
+				thread->gpr[ArchitectureConstants::LinkRegisterIndex] = ip + 1; \
 			}
 #define XLink_false
 
 #define X(name, ifthenelse, conditional, iffalse, immediate, link) \
 			case JumpOp:: name: \
 					 { \
+						 std::cerr << "Called JumpOp::" << #name << std::endl; \
 						 INDIRECTOR(XConditional, _ ## conditional)(name, ifthenelse, immediate) \
-						 thread.gpr[ArchitectureConstants::InstructionPointerIndex] = newAddr; \
+						 thread->gpr[ArchitectureConstants::InstructionPointerIndex] = newAddr; \
 						 INDIRECTOR(XLink, _ ## link)  \
 						 break; \
 					 }
@@ -268,59 +281,59 @@ namespace iris32 {
 				break;
 		}
 	}
-	void Core::misc(ExecState& thread, DecodedInstruction& inst) {
+	void Core::misc( DecodedInstruction& inst) {
 		switch(static_cast<MiscOp>(inst.getOperation())) {
 #define X(name, func) \
 			case MiscOp:: name: \
-			func (thread, inst); \
+			func (inst); \
 			break;
 #include "iris32_misc.def"
 #undef X
 			default:
 				std::cerr << "Illegal misc code " << std::hex << inst.getOperation() << std::endl;
 				execute = false;
-				thread.advanceIp = false;
+				thread->advanceIp = false;
 				break;
 		}
 	}
-	void Core::systemCall(ExecState& thread, DecodedInstruction& inst) {
+	void Core::systemCall(DecodedInstruction& inst) {
 		switch(static_cast<SystemCalls>(inst.getDestination())) {
 			case SystemCalls::Terminate:
 				execute = false;
-				thread.advanceIp = false;
+				thread->advanceIp = false;
 				break;
 			case SystemCalls::PutC:
 				// read register 0 and register 1
-				std::cout << (char)thread.gpr[inst.getSource0()];
-				//std::cout.put((char)thread.gpr[inst.getSource0()]);
+				std::cout << (char)thread->gpr[inst.getSource0()];
+				//std::cout.put((char)thread->gpr[inst.getSource0()]);
 				break;
 			case SystemCalls::GetC:
 				byte value;
 				std::cin >> std::noskipws >> value;
-				thread.gpr[inst.getSource0()] = (word)value;
+				thread->gpr[inst.getSource0()] = (word)value;
 				break;
 			default:
 				std::cerr << "Illegal system call " << std::hex << inst.getDestination() << std::endl;
 				execute = false;
-				thread.advanceIp = false;
+				thread->advanceIp = false;
 				break;
 		}
 	}
-	void Core::move(ExecState& thread, DecodedInstruction& inst) {
+	void Core::move( DecodedInstruction& inst) {
 		word a = 0;
 		switch(static_cast<MoveOp>(inst.getOperation())) {
-#define GPRRegister0 (thread.gpr[inst.getDestination()])
-#define GPRRegister1 (thread.gpr[inst.getSource0()])
-#define GPRRegister2 (thread.gpr[inst.getSource1()])
+#define GPRRegister0 (thread->gpr[inst.getDestination()])
+#define GPRRegister1 (thread->gpr[inst.getSource0()])
+#define GPRRegister2 (thread->gpr[inst.getSource1()])
 #define GPRImmediate1 (inst.getImmediate())
 #define DataRegister0 GPRRegister0
 #define DataRegister1 GPRRegister1
 #define DataImmediate1 GPRImmediate1
-#define StackPushRegister0 (thread.gpr[ArchitectureConstants::StackPointerIndex])
+#define StackPushRegister0 (thread->gpr[ArchitectureConstants::StackPointerIndex])
 #define StackPushRegister1 GPRRegister0
 #define StackPushImmediate1 GPRImmediate1
 #define StackPopRegister0 GPRRegister0
-#define StackPopRegister1 (thread.gpr[ArchitectureConstants::StackPointerIndex])
+#define StackPopRegister1 (thread->gpr[ArchitectureConstants::StackPointerIndex])
 #define StackPopImmediate1 GPRImmediate1
 #define StoreRegister0  GPRRegister0
 #define StoreRegister1 GPRRegister1
@@ -353,6 +366,7 @@ namespace iris32 {
 #define X(name, type, target, dest, src) \
 			case MoveOp:: name: \
 					 { \
+					 std::cerr << "Called CompareOp::" << #name << std::endl; \
 					 INDIRECTOR(X,type)(target, dest, src) \
 			break; \
 					 }
@@ -387,7 +401,7 @@ namespace iris32 {
 			default:
 				std::cerr << "Illegal move code " << std::hex << inst.getOperation() << std::endl;
 				execute = false;
-				thread.advanceIp = false;
+				thread->advanceIp = false;
 				break;
 		}
 	}

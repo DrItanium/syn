@@ -25,14 +25,14 @@ addi r0 r0 1
 j r5
 @label done
 system 0 r0 r0
-@org 0x80000
+@org 0x8000
 ; thread 1's instruction address
 setl r0 wait_loop
 setu r0 wait_loop
 @label wait_loop
 j r0
 
-@org 0x40000
+@org 0x4000
 @label string
 @word 0x46
 @word 0x75

@@ -90,7 +90,7 @@ int main(int argc, char* argv[]) {
 
 	if(output && input) {
 		iris32::ExecState t0, t1;
-		iris32::Core proc(iris32::ArchitectureConstants::AddressMax, std::move(t0), std::move(t1));
+		iris32::Core proc(iris32::ArchitectureConstants::AddressMax, &t0, &t1);
 		proc.initialize();
 		execute(proc, *input);
 		proc.dump(*output);

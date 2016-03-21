@@ -121,7 +121,7 @@ namespace iris32 {
 
 	class Core : public iris::Core {
 		public:
-			Core(word memorySize, ExecState&& t0, ExecState&& t1);
+			Core(word memorySize, ExecState* t0, ExecState* t1);
 			~Core();
 			virtual void initialize();
 			virtual void installprogram(std::istream& stream);
@@ -131,18 +131,19 @@ namespace iris32 {
 			void write(word address, word value);
 			word read(word address);
 		private:
-			void execBody(ExecState& thread);
-			void decode(ExecState& curr);
-			void dispatch(ExecState& curr);
-#define X(_, func) void func (ExecState& thread, DecodedInstruction& inst); 
+			void execBody();
+			void decode();
+			void dispatch();
+#define X(_, func) void func (DecodedInstruction& inst); 
 #include "iris32_groups.def"
 #undef X
-			void systemCall(ExecState& thread, DecodedInstruction& inst);
+			void systemCall(DecodedInstruction& inst);
 		private:
 			word memorySize;
 			word* memory;
-			ExecState thread0,
-					  thread1;
+			ExecState *thread = 0;
+			ExecState *thread0,
+					  *thread1;
 			bool execute = true;
 	};
 
