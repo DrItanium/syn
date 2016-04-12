@@ -33,7 +33,7 @@ namespace iris16 {
 
 	}
 	template<typename T, int count>
-	void populateContents(T* contents, std::istream& stream, std::function<T(char*)> func) {
+	void populateContents(T* contents, std::istream& stream, const std::function<T(char*)>& func) {
 		char* buf = new char[sizeof(T)];
 		for(int i = 0; i < count; ++i) {
 			stream.read(buf, sizeof(T));
@@ -55,7 +55,7 @@ namespace iris16 {
 	}
 
 	template<typename T, int count>
-	void dumpContents(T* contents, std::ostream& stream, std::function<char*(T,char*)> func) {
+	void dumpContents(T* contents, std::ostream& stream, const std::function<char*(T,char*)>& func) {
 		char* buf = new char[sizeof(T)];
 		for(int i = 0; i < count; ++i) {
 			func(contents[i], buf);
@@ -326,17 +326,17 @@ namespace iris16 {
 #define XSwap(type, dest, src) \
 			a = INDIRECTOR(type, dest ##  0); \
 			INDIRECTOR(type, dest ## 0) = INDIRECTOR(type, src ## 1); \
-			INDIRECTOR(type, src ##  1) = a; 
+			INDIRECTOR(type, src ##  1) = a;
 #define XLoad(type, dest, src) \
 			INDIRECTOR(type, dest ## 0) = data[INDIRECTOR(type, src ## 1)];
 #define XPop(type, dest, src) \
 			INDIRECTOR(type, Pop ## dest ## 0) = stack[INDIRECTOR(type, Pop ## src ## 1)]; \
-			--INDIRECTOR(type, Pop ## src ## 1); 
+			--INDIRECTOR(type, Pop ## src ## 1);
 #define XPush(type, dest, src) \
 			++INDIRECTOR(type, Push ## dest ## 0); \
 			stack[INDIRECTOR(type, Push ## dest ## 0)] = INDIRECTOR(type, Push ## src ## 1);
 #define XStore(type, dest, src) \
-			data[INDIRECTOR(type, dest ##  0)] = INDIRECTOR(type, src ## 1); 
+			data[INDIRECTOR(type, dest ##  0)] = INDIRECTOR(type, src ## 1);
 #define X(name, type, target, dest, src) \
 			case MoveOp:: name: \
 					 { \
@@ -351,26 +351,26 @@ namespace iris16 {
 #undef XStore
 #undef XPop
 #undef XPush
-#undef GPRRegister0 
-#undef GPRRegister1 
-#undef GPRImmediate1 
-#undef DataRegister0 
-#undef DataRegister1 
+#undef GPRRegister0
+#undef GPRRegister1
+#undef GPRImmediate1
+#undef DataRegister0
+#undef DataRegister1
 #undef DataImmediate1
-#undef StackPushRegister0 
-#undef StackPushRegister1  
-#undef StackPushImmediate1 
-#undef StackPopRegister0 
-#undef StackPopRegister1 
-#undef StackPopImmediate1 	
-#undef StoreRegister0  	
-#undef StoreRegister1 		
-#undef StoreImmediate1 	
+#undef StackPushRegister0
+#undef StackPushRegister1
+#undef StackPushImmediate1
+#undef StackPopRegister0
+#undef StackPopRegister1
+#undef StackPopImmediate1
+#undef StoreRegister0
+#undef StoreRegister1
+#undef StoreImmediate1
 #undef XStoreCode
 #undef XLoadCode
-#undef CodeRegister0 
-#undef CodeUpperLowerRegisters1 
-#undef CodeUpperLowerRegisters2 
+#undef CodeRegister0
+#undef CodeUpperLowerRegisters1
+#undef CodeUpperLowerRegisters2
 			default:
 				std::cerr << "Illegal move code " << current.getOperation() << std::endl;
 				execute = false;
