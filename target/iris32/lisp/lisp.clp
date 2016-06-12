@@ -25,7 +25,24 @@
            (export ?ALL))
 
 (defglobal lisp
-           ?*address-variable* = r251)
+           ?*address-variable* = r251
+           ?*arg0* = r250
+           ?*arg1* = r249
+           ?*arg2* = r248
+           ?*arg3* = r247
+           ?*arg4* = r246
+           ?*arg5* = r245
+           ?*arg6* = r244
+           ?*arg7* = r243
+           ?*ret0* = r242
+           ?*ret1* = r241
+           ?*ret2* = r240
+           ?*ret3* = r239
+           ?*tmp0* = r238
+           ?*tmp1* = r237
+           ?*tmp2* = r236
+           ?*tmp3* = r235)
+
 (defgeneric lisp::ret)
 (defgeneric lisp::call)
 (defgeneric lisp::set)
@@ -71,3 +88,55 @@
                  ?address)
            (setu ?*address-variable*
                  ?address)))
+
+
+(defgeneric lisp::str-length:function)
+(defgeneric lisp::new-function)
+
+(defmethod lisp::new-function
+  ((?title SYMBOL)
+   $?body)
+  (create$ (@code)
+           (@label ?title)
+           $?body))
+(defmethod lisp::str-length:function
+  ()
+  (new-function strlength
+                (push ?*tmp0*)
+                (push ?*tmp1*)
+                (push ?*tmp2*)
+                (set ?*ret0* 0)
+                (set ?*tmp2* 
+                     strlength_loop_top)
+                (@label strlength_loop_top)
+                (ld ?*tmp0*
+                    ?*arg0*)
+                (nei ?*tmp1* ?*tmp0* 0)
+                (jf ?*tmp1* 
+                    strlength_done)
+                (incr ?*ret0*)
+                (incr ?*arg0*)
+                (j ?*tmp2*)
+                (@label strlength_done)
+                (pop ?*tmp2*)
+                (pop ?*tmp1*)
+                (pop ?*tmp0*)
+                (ret)))
+(defmethod lisp::str-length.
+  "Call strlength"
+  ((?ptr SYMBOL
+         (registerp ?ptr)))
+  (create$ (push ?*arg0*)
+           (move ?*arg0* ?ptr)
+           (call strlength)
+           (pop ?*arg0*)))
+
+(defmethod lisp::str-length.
+ ((?ptr (immediatep ?ptr)))
+ (create$ (push ?*arg0*)
+          (set ?ptr)
+          (move ?*arg0* 
+                ?*address-variable*)
+          (call strlength)
+          (pop ?*arg0*)))
+   
