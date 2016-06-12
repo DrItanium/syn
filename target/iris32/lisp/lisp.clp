@@ -45,27 +45,19 @@
          (registerp ?reg)))
   (system-op 1 ?reg ?reg))
 
-(defmethod lisp::j
-  ((?address (immediate ?register)))
-  (create$ (set ?address)
-           (j ?*address-variable*)))
-(defmethod lisp::jl
-  ((?address (immediate ?register)))
+(defmethod lisp::call
+  ((?address (immediatep ?current-argument)))
   (create$ (set ?address)
            (jl ?*address-variable*)))
 
 (defmethod lisp::call
-  ((?address (immediate ?register)))
-  (jl ?address))
-
-(defmethod lisp::call
   ((?address SYMBOL
-             (registerp ?register)))
+             (registerp ?current-argument)))
   (jl ?address))
 
 (defmethod lisp::ret
   ((?register SYMBOL
-              (registerp ?register)))
+              (registerp ?current-argument)))
   (j ?register))
 
 (defmethod lisp::ret
@@ -74,7 +66,7 @@
 
 (defmethod lisp::set
   ((?address SYMBOL
-             (immediate ?register)))
+             (immediatep ?current-argument)))
   (create$ (setl ?*address-variable* 
                  ?address)
            (setu ?*address-variable*
