@@ -1,14 +1,5 @@
 (defmodule iris32
            (export ?ALL))
-(defgeneric iris32::system-op)
-(defmethod iris32::system-op
-  ((?code INTEGER
-          (<= 0 ?current-argument 255))
-   (?arg0 SYMBOL 
-          (registerp ?current-argument))
-   (?arg1 SYMBOL 
-          (registerp ?current-argument)))
-  (format nil "system %d %s %s" ?code ?arg0 ?arg1))
 (defglobal iris32
            ?*registers* = (create$ r0 r1 r2 r3 r4 r5 r6 r7 r8 r9 r10
                                    r11 r12 r13 r14 r15 r16 r17 r18 r19 r20
@@ -48,6 +39,7 @@
              (or (numberp ?input)
                  (and (lexemep ?input)
                       (not (registerp ?input)))))
+(defgeneric iris32::system-op)
 (defgeneric iris32::ge)
 (defgeneric iris32::le)
 (defgeneric iris32::gt)
@@ -638,3 +630,11 @@
           ?dest
           ?source0
           ?source1))
+(defmethod iris32::system-op
+  ((?code INTEGER
+          (<= 0 ?current-argument 255))
+   (?arg0 SYMBOL 
+          (registerp ?current-argument))
+   (?arg1 SYMBOL 
+          (registerp ?current-argument)))
+  (format nil "system %d %s %s" ?code ?arg0 ?arg1))
