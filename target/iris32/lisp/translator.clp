@@ -20,7 +20,9 @@
 ; ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
+(defrule MAIN::init
+         =>
+         (focus iris32))
 (defmodule iris32
            (export ?ALL))
 
@@ -28,21 +30,59 @@
              (slot op)
              (slot title)
              (multislot arguments))
+(defrule iris32::build-opcode-three-reg
+         ?f <- (opcode:three-reg ?title)
+         =>
+         (retract ?f)
+         (assert (opcode ?title register register register)))
+(defrule iris32::build-opcode-three-reg-imm
+         ?f <- (opcode:three-reg-imm ?title)
+         =>
+         (retract ?f)
+         (assert (opcode ?title register register immediate)))
+
+(defrule iris32::build-opcode-two-reg
+         ?f <- (opcode:two-reg ?title)
+         =>
+         (retract ?f)
+         (assert (opcode ?title register register)))
+
 (deffacts iris32::opcodes-defs
-          (opcode-decl (op +)
-                       (title add)
-                       (arguments register register register))
-          (opcode-decl (op +)
-                       (title addi)
-                       (arguments register register immediate))
-          (opcode-decl (op -)
-                       (title sub)
-                       (arguments register register register))
-          (opcode-decl (op -)
-                       (title subi)
-                       (arguments register register immediate))
+          (opcode:three-reg add)
+          (opcode:three-reg-imm addi)
+          (opcode:three-reg sub)
+          (opcode:three-reg-imm subi)
+          (opcode:three-reg mul)
+          (opcode:three-reg-imm muli)
+          (opcode:three-reg div)
+          (opcode:three-reg-imm divi)
+          (opcode:three-reg rem)
+          (opcode:three-reg-imm remi)
+          (opcode @org immediate)
+          (opcode @label immediate)
+          (opcode @data)
+          (opcode @code)
+          (opcode @org immediate)
+          (opcode @word immediate)
+          (opcode j register)
+          (opcode:two-reg jl)
+          (opcode:two-reg jt)
+          (opcode:two-reg jf)
+          (opcode:three-reg jtl)
+          (opcode:three-reg jfl)
+          (opcode:three-reg ift)
+          (opcode:three-reg iff)
+          (opcode:three-reg iftl)
+          (opcode:three-reg iffl)
           )
 
+(defrule iris32::build-generic-op-code
+         ?f <- (opcode ?title $?args)
+         =>
+         (retract ?f)
+         (assert (opcode-decl (op ?title)
+                              (title ?title)
+                              (arguments $?args))))
 (deffunction iris32::registerp
              (?input)
              (or (and (instancep ?input)
@@ -62,23 +102,6 @@
                  (and (lexemep ?input)
                       (not (registerp ?input)))))
 
-(defclass iris32::register
-  (is-a USER))
-(defclass iris32::immediate
-  (is-a USER))
-(defclass iris32::opcode
-  (is-a USER)
-  (slot op
-        (type SYMBOL)
-        (storage local)
-        (visibility public)
-        (default ?NONE))
-  (slot title
-        (type SYMBOL)
-        (storage local)
-        (visibility public)
-        (default ?NONE))
-  (multislot children))
 
 (defrule iris32::build-opcode:three-register
          ?f <- (opcode-decl (op ?op)
@@ -87,7 +110,7 @@
          =>
          (assert (make defgeneric ?op))
          (retract ?f)
-         (format t "(defmethod iris32::op%s
+         (format t "(defmethod iris32::%s
                       ((?dest (registerp ?current-argument))
                        (?source0 (registerp ?current-argument))
                        (?source1 (registerp ?current-argument)))
@@ -106,15 +129,15 @@
          =>
          (assert (make defgeneric ?op))
          (retract ?f)
-         (format t "(defmethod iris32::op%s
+         (format t "(defmethod iris32::%s
                       ((?dest (registerp ?current-argument))
                        (?source0 (registerp ?current-argument))
                        (?source1 (immediatep ?current-argument)))
                       (format nil 
-                              \"%s %%s %%s %%d\" 
+                              \"%s %%s %%s %%s\" 
                               ?dest
                               ?source0
-                              ?source1))%n"
+                              (str-cat ?source1)))%n"
          ?op
          ?title))
 (defrule iris32::build-opcode:two-register
@@ -124,7 +147,7 @@
          =>
          (assert (make defgeneric ?op))
          (retract ?f)
-         (format t "(defmethod iris32::op%s
+         (format t "(defmethod iris32::%s
                       ((?dest (registerp ?current-argument))
                        (?source (registerp ?current-argument)))
                       (format nil 
@@ -140,7 +163,7 @@
          =>
          (retract ?f)
          (assert (make defgeneric ?op))
-         (format t "(defmethod iris32::op%s
+         (format t "(defmethod iris32::%s
                       ((?dest (registerp ?current-argument))
                        (?source (immediatep ?current-argument)))
                       (format nil
@@ -149,10 +172,50 @@
                               (str-cat ?source)))%n"
          ?op
          ?title))
+(defrule iris32::build-opcode:single-reg-form
+         ?f <- (opcode-decl (op ?op)
+                            (title ?title)
+                            (arguments register))
+         =>
+         (retract ?f)
+         (assert (make defgeneric ?op))
+         (format t "(defmethod iris32::%s
+                      ((?dest (registerp ?current-argument)))
+                      (format nil 
+                              \"%s %%s\"
+                              ?dest))%n"
+         ?op
+         ?title))
 
+(defrule iris32::build-opcode:single-immediate-form
+         ?f <- (opcode-decl (op ?op)
+                            (title ?title)
+                            (arguments immediate))
+         =>
+         (retract ?f)
+         (assert (make defgeneric ?op))
+         (format t "(defmethod iris32::%s
+                      ((?dest (immediatep ?current-argument)))
+                      (format nil 
+                              \"%s %%s\"
+                              (str-cat ?dest)))%n"
+         ?op
+         ?title))
+(defrule iris32::build-opcode:no-args
+         ?f <- (opcode-decl (op ?op)
+                            (title ?title)
+                            (arguments))
+         =>
+         (retract ?f)
+         (assert (make defgeneric ?op))
+         (format t "(defmethod iris32::%s
+                      ((?dest (immediatep ?current-argument)))
+                      %s)%n"
+         ?op
+         ?title))
 (defrule iris32::build-defgeneric
          (declare (salience -1))
          ?f <- (make defgeneric ?op)
          =>
          (retract ?f)
-         (format t "(defgeneric iris32::op%s)%n" ?op))
+         (format t "(defgeneric iris32::%s)%n" ?op))
