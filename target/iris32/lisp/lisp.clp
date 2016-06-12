@@ -20,15 +20,62 @@
 ; ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-(defmodule forth
+(defmodule lisp
            (import iris32 ?ALL)
            (export ?ALL))
 
-(defglobal forth
-           ?*top* = r0
-           ?*lower* = r1)
-(defgeneric forth::place)
-(defgeneric forth::pop)
-(defgeneric forth::top)
-(defgeneric forth::lower)
+(defglobal lisp
+           ?*address-variable* = r251)
+(defgeneric lisp::ret)
+(defgeneric lisp::call)
+(defgeneric lisp::set)
+(defgeneric lisp::putc)
+(defgeneric lisp::getc)
+(defgeneric lisp::terminate)
 
+(defmethod lisp::terminate
+  ()
+  (system-op 0 r0 r0))
+(defmethod lisp::putc
+  ((?reg SYMBOL
+         (registerp ?reg)))
+  (system-op 2 ?reg ?reg))
+(defmethod lisp::getc
+  ((?reg SYMBOL
+         (registerp ?reg)))
+  (system-op 1 ?reg ?reg))
+
+(defmethod lisp::j
+  ((?address (immediate ?register)))
+  (create$ (set ?address)
+           (j ?*address-variable*)))
+(defmethod lisp::jl
+  ((?address (immediate ?register)))
+  (create$ (set ?address)
+           (jl ?*address-variable*)))
+
+(defmethod lisp::call
+  ((?address (immediate ?register)))
+  (jl ?address))
+
+(defmethod lisp::call
+  ((?address SYMBOL
+             (registerp ?register)))
+  (jl ?address))
+
+(defmethod lisp::ret
+  ((?register SYMBOL
+              (registerp ?register)))
+  (j ?register))
+
+(defmethod lisp::ret
+  ()
+  (ret lr))
+
+(defmethod lisp::set
+  ((?address SYMBOL
+             (immediate ?register)))
+  (create$ (setl ?*address-variable* 
+                 ?address)
+           (setu ?*address-variable*
+                 ?address)))
