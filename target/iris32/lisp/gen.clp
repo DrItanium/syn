@@ -31,6 +31,8 @@
              (slot title)
              (multislot arguments))
 (defglobal iris32
+           ?*current-router* = t)
+(defglobal iris32
            ?*registers* = (create$ r0 r1 r2 r3 r4 r5 r6 r7 r8 r9 r10
                                    r11 r12 r13 r14 r15 r16 r17 r18 r19 r20
                                    r21 r22 r23 r24 r25 r26 r27 r28 r29 r30
@@ -98,7 +100,6 @@
          (retract ?f)
          (assert (opcode-list ?type $?rest)
                  (opcode: ?type ?first)))
-
 (deffacts iris32::opcodes-defs
           (opcode-list three-reg 
                        add 
@@ -173,27 +174,14 @@
                        @word)
           (opcode-list none
                        @data
-                       @code))
+                       @code)
 
-(defrule iris32::build-generic-op-code
-         ?f <- (opcode ?title $?args)
-         =>
-         (retract ?f)
-         (assert (opcode-decl (op ?title)
-                              (title ?title)
-                              (arguments $?args))))
+          )
+
 (deffunction iris32::registerp
              (?input)
-             (or (and (instancep ?input)
-                      (eq (class ?input)
-                          register))
-                 (and (lexemep ?input)
-                      (has-prefix ?input r)
-                      (numberp (bind ?val 
-                                     (string-to-field (sub-string 2 
-                                                                  (length$ ?input)
-                                                                  ?input))))
-                      (<= 0 ?val 255))))
+             (member$ ?input 
+                      ?*registers*))
 
 (deffunction iris32::immediatep
              (?input)
@@ -202,6 +190,14 @@
                       (not (registerp ?input)))))
 
 
+(defrule iris32::build-generic-op-code
+         ?f <- (opcode ?title $?args)
+         =>
+         (retract ?f)
+         (assert (opcode-decl (op ?title)
+                              (title ?title)
+                              (arguments $?args))))
+
 (defrule iris32::build-opcode:three-register
          ?f <- (opcode-decl (op ?op)
                             (title ?title)
@@ -209,10 +205,13 @@
          =>
          (assert (make defgeneric ?op))
          (retract ?f)
-         (format t "(defmethod iris32::%s
-                      ((?dest (registerp ?current-argument))
-                       (?source0 (registerp ?current-argument))
-                       (?source1 (registerp ?current-argument)))
+         (format ?*current-router* "(defmethod iris32::%s
+                      ((?dest SYMBOL 
+                              (registerp ?current-argument))
+                       (?source0 SYMBOL
+                                 (registerp ?current-argument))
+                       (?source1 SYMBOL
+                                 (registerp ?current-argument)))
                       (format nil 
                               \"%s %%s %%s %%s\" 
                               ?dest
@@ -228,9 +227,11 @@
          =>
          (assert (make defgeneric ?op))
          (retract ?f)
-         (format t "(defmethod iris32::%s
-                      ((?dest (registerp ?current-argument))
-                       (?source0 (registerp ?current-argument))
+         (format ?*current-router* "(defmethod iris32::%s
+                      ((?dest SYMBOL
+                              (registerp ?current-argument))
+                       (?source0 SYMBOL
+                                 (registerp ?current-argument))
                        (?source1 (immediatep ?current-argument)))
                       (format nil 
                               \"%s %%s %%s %%s\" 
@@ -246,9 +247,11 @@
          =>
          (assert (make defgeneric ?op))
          (retract ?f)
-         (format t "(defmethod iris32::%s
-                      ((?dest (registerp ?current-argument))
-                       (?source (registerp ?current-argument)))
+         (format ?*current-router* "(defmethod iris32::%s
+                      ((?dest SYMBOL
+                              (registerp ?current-argument))
+                       (?source SYMBOL
+                                (registerp ?current-argument)))
                       (format nil 
                               \"%s %%s %%s\"
                               ?dest
@@ -262,8 +265,9 @@
          =>
          (retract ?f)
          (assert (make defgeneric ?op))
-         (format t "(defmethod iris32::%s
-                      ((?dest (registerp ?current-argument))
+         (format ?*current-router* "(defmethod iris32::%s
+                      ((?dest SYMBOL
+                              (registerp ?current-argument))
                        (?source (immediatep ?current-argument)))
                       (format nil
                               \"%s %%s %%s\"
@@ -278,8 +282,9 @@
          =>
          (retract ?f)
          (assert (make defgeneric ?op))
-         (format t "(defmethod iris32::%s
-                      ((?dest (registerp ?current-argument)))
+         (format ?*current-router* "(defmethod iris32::%s
+                      ((?dest SYMBOL
+                              (registerp ?current-argument)))
                       (format nil 
                               \"%s %%s\"
                               ?dest))%n"
@@ -293,7 +298,7 @@
          =>
          (retract ?f)
          (assert (make defgeneric ?op))
-         (format t "(defmethod iris32::%s
+         (format ?*current-router* "(defmethod iris32::%s
                       ((?dest (immediatep ?current-argument)))
                       (format nil 
                               \"%s %%s\"
@@ -307,7 +312,7 @@
          =>
          (retract ?f)
          (assert (make defgeneric ?op))
-         (format t "(defmethod iris32::%s
+         (format ?*current-router* "(defmethod iris32::%s
                       ((?dest (immediatep ?current-argument)))
                       %s)%n"
          ?op
@@ -317,4 +322,7 @@
          ?f <- (make defgeneric ?op)
          =>
          (retract ?f)
-         (format t "(defgeneric iris32::%s)%n" ?op))
+         (format ?*current-router* "(defgeneric iris32::%s)%n" ?op))
+(reset)
+(run)
+(exit)
