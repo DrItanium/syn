@@ -65,7 +65,7 @@
 (defclass iris32::register
   (is-a USER))
 (defclass iris32::immediate
- (is-a USER))
+  (is-a USER))
 (defclass iris32::opcode
   (is-a USER)
   (slot op
@@ -88,9 +88,9 @@
          (assert (make defgeneric ?op))
          (retract ?f)
          (format t "(defmethod iris32::op%s
-                      ((?dest SYMBOL)
-                       (?source0 SYMBOL)
-                       (?source1 SYMBOL))
+                      ((?dest (registerp ?current-argument))
+                       (?source0 (registerp ?current-argument))
+                       (?source1 (registerp ?current-argument)))
                       (format nil 
                               \"%s %%s %%s %%s\" 
                               ?dest
@@ -107,9 +107,9 @@
          (assert (make defgeneric ?op))
          (retract ?f)
          (format t "(defmethod iris32::op%s
-                      ((?dest SYMBOL)
-                       (?source0 SYMBOL)
-                       (?source1 INTEGER))
+                      ((?dest (registerp ?current-argument))
+                       (?source0 (registerp ?current-argument))
+                       (?source1 (immediatep ?current-argument)))
                       (format nil 
                               \"%s %%s %%s %%d\" 
                               ?dest
@@ -125,8 +125,8 @@
          (assert (make defgeneric ?op))
          (retract ?f)
          (format t "(defmethod iris32::op%s
-                      ((?dest SYMBOL)
-                       (?source SYMBOL))
+                      ((?dest (registerp ?current-argument))
+                       (?source (registerp ?current-argument)))
                       (format nil 
                               \"%s %%s %%s\"
                               ?dest
@@ -141,8 +141,14 @@
          (retract ?f)
          (assert (make defgeneric ?op))
          (format t "(defmethod iris32::op%s
-         ((?dest SYMBOL)
-          (?source 
+                      ((?dest (registerp ?current-argument))
+                       (?source (immediatep ?current-argument)))
+                      (format nil
+                              \"%s %%s %%s\"
+                              ?dest
+                              (str-cat ?source)))%n"
+         ?op
+         ?title))
 
 (defrule iris32::build-defgeneric
          (declare (salience -1))
