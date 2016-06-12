@@ -86,6 +86,7 @@ omni [a-zA-Z0-9._]
 "@code"  { return DIRECTIVE_CODE; }
 "@org"   { return DIRECTIVE_ORG; }
 "@word" { return DIRECTIVE_DECLARE; }
+"tmp"	{ yylval.rval = 251; return REGISTER; }
 "cp"	 { yylval.rval = 252; return REGISTER; }
 "sp"	 { yylval.rval = 253; return REGISTER; }
 "lr"	 { yylval.rval = 254; return REGISTER; }
