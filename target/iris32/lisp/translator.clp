@@ -43,6 +43,43 @@
                        (arguments register register immediate))
           )
 
+(deffunction iris32::registerp
+             (?input)
+             (or (and (instancep ?input)
+                      (eq (class ?input)
+                          register))
+                 (and (lexemep ?input)
+                      (has-prefix ?input r)
+                      (numberp (bind ?val 
+                                     (string-to-field (sub-string 2 
+                                                                  (length$ ?input)
+                                                                  ?input))))
+                      (<= 0 ?val 255))))
+
+(deffunction iris32::immediatep
+             (?input)
+             (or (numberp ?input)
+                 (and (lexemep ?input)
+                      (not (registerp ?input)))))
+
+(defclass iris32::register
+  (is-a USER))
+(defclass iris32::immediate
+ (is-a USER))
+(defclass iris32::opcode
+  (is-a USER)
+  (slot op
+        (type SYMBOL)
+        (storage local)
+        (visibility public)
+        (default ?NONE))
+  (slot title
+        (type SYMBOL)
+        (storage local)
+        (visibility public)
+        (default ?NONE))
+  (multislot children))
+
 (defrule iris32::build-opcode:three-register
          ?f <- (opcode-decl (op ?op)
                             (title ?title)
@@ -80,6 +117,32 @@
                               ?source1))%n"
          ?op
          ?title))
+(defrule iris32::build-opcode:two-register
+         ?f <- (opcode-decl (op ?op)
+                            (title ?title)
+                            (arguments register register))
+         =>
+         (assert (make defgeneric ?op))
+         (retract ?f)
+         (format t "(defmethod iris32::op%s
+                      ((?dest SYMBOL)
+                       (?source SYMBOL))
+                      (format nil 
+                              \"%s %%s %%s\"
+                              ?dest
+                              ?source))%n"
+         ?op
+         ?title))
+(defrule iris32::build-opcode:set-form
+         ?f <- (opcode-decl (op ?op)
+                            (title ?title)
+                            (arguments register immediate))
+         =>
+         (retract ?f)
+         (assert (make defgeneric ?op))
+         (format t "(defmethod iris32::op%s
+         ((?dest SYMBOL)
+          (?source 
 
 (defrule iris32::build-defgeneric
          (declare (salience -1))
