@@ -50,8 +50,7 @@
                                    r241 r242 r243 r244 r245 r246 r247 r248 r249 r250
                                    r251 r252 r253 r254 r255 
                                    ; aliases that the assembler understands
-                                   cp sp lr ip
-                                   tmp))
+                                   cp sp lr ip))
 (deffunction iris32::registerp
              (?input)
              (member$ ?input 
@@ -661,3 +660,4 @@
    (?arg1 SYMBOL 
           (registerp ?current-argument)))
   (format nil "system %d %s %s" ?code ?arg0 ?arg1))
+
