@@ -37,7 +37,7 @@ flags = [
     '-x',
     'c++',
     '-D_POSIX_SOURCE',
-    '-Iinclude/',
+    '-I.',
     '-Wall',
     '-std=c++11',
 ]
