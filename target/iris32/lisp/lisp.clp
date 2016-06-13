@@ -53,6 +53,7 @@
 (defmethod lisp::terminate
   ()
   (system-op 0 r0 r0))
+
 (defmethod lisp::putc
   ((?reg SYMBOL
          (registerp ?reg)))
@@ -132,11 +133,31 @@
            (pop ?*arg0*)))
 
 (defmethod lisp::str-length.
- ((?ptr (immediatep ?ptr)))
- (create$ (push ?*arg0*)
-          (set ?ptr)
-          (move ?*arg0* 
-                ?*address-variable*)
-          (call strlength)
-          (pop ?*arg0*)))
-   
+  ((?ptr (immediatep ?ptr)))
+  (create$ (push ?*arg0*)
+           (set ?ptr)
+           (move ?*arg0* 
+                 ?*address-variable*)
+           (call strlength)
+           (pop ?*arg0*)))
+(defmethod lisp::multi-op
+  ((?op SYMBOL)
+   (?destination SYMBOL
+                 (registerp ?current-argument))
+   (?source0 SYMBOL
+             (registerp ?current-argument))
+   (?source1 SYMBOL
+             (registerp ?current-argument))
+   $?rest)
+  (create$ (funcall ?op 
+                    ?destination 
+                    ?source0 
+                    ?source1)
+           (if (> (length$ ?rest) 0) then
+             (multi-op ?op 
+                       ?destination 
+                       ?destination 
+                       (expand$ ?rest))
+             else
+             (create$))))
+
