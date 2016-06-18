@@ -43,9 +43,17 @@ int main(int argc, char* argv[]) {
 		}
 	}
 	if(input) {
-		iris32::ExecState t0, t1;
-		t1.gpr[iris32::ArchitectureConstants::InstructionPointerIndex] = 0x8000;
-		iris32::Core core(iris32::ArchitectureConstants::AddressMax, &t0, &t1);
+		// eight threads of execution that are interleaved
+		iris32::ExecState t0, t1, t2, t3, t4, t5, t6, t7;
+		t0.gpr[iris32::ArchitectureConstants::InstructionPointerIndex] = 0x1000;
+		t1.gpr[iris32::ArchitectureConstants::InstructionPointerIndex] = 0x2000;
+		t2.gpr[iris32::ArchitectureConstants::InstructionPointerIndex] = 0x3000;
+		t3.gpr[iris32::ArchitectureConstants::InstructionPointerIndex] = 0x4000;
+		t4.gpr[iris32::ArchitectureConstants::InstructionPointerIndex] = 0x5000;
+		t5.gpr[iris32::ArchitectureConstants::InstructionPointerIndex] = 0x6000;
+		t6.gpr[iris32::ArchitectureConstants::InstructionPointerIndex] = 0x7000;
+		t7.gpr[iris32::ArchitectureConstants::InstructionPointerIndex] = 0x8000;
+		iris32::Core core(iris32::ArchitectureConstants::AddressMax, { &t0, &t1, &t2, &t3, &t4, &t5, &t6, &t7 });
 		core.initialize();
 		core.installprogram(*input);
 		core.run();

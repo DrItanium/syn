@@ -3,6 +3,7 @@
 #include "iris_base.h"
 #include "Core.h"
 #include <cstdint>
+#include <vector>
 
 typedef int64_t dword;
 typedef int32_t word;
@@ -121,7 +122,7 @@ namespace iris32 {
 
 	class Core : public iris::Core {
 		public:
-			Core(word memorySize, ExecState* t0, ExecState* t1);
+			Core(word memorySize, std::initializer_list<ExecState*> execs);
 			~Core();
 			virtual void initialize();
 			virtual void installprogram(std::istream& stream);
@@ -144,8 +145,7 @@ namespace iris32 {
 			word memorySize;
 			word* memory;
 			ExecState *thread = 0;
-			ExecState *thread0,
-					  *thread1;
+			std::vector<ExecState*> threads;
 			bool execute = true;
 			bool debug = false;
 	};

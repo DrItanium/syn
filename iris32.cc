@@ -55,11 +55,10 @@ namespace iris32 {
 		}
 	}
 
-	Core::Core(word msize, ExecState* t0, ExecState* t1) : 
+	Core::Core(word msize, std::initializer_list<ExecState*> execs) :
 		memorySize(msize),
 		memory(new word[msize]),
-		thread0(t0),
-		thread1(t1)
+		threads(execs)
 	{ }
 	Core::~Core() {
 		delete [] memory;
@@ -125,22 +124,27 @@ namespace iris32 {
 
 	}
 	void Core::run() {
-		thread = thread0;
-		while(execute) {
-			execBody();
-			if (execute) {
-				thread = thread1;
-				execBody();
+		while (execute) {
+			for (auto &cthread : threads) {
+				if (!execute) {
+					return;
+				} else {
+					thread = cthread;
+					execBody();
+				}
 			}
-			thread = thread0;
 		}
 	}
 	void Core::execBody() {
-		if (debug) std::cerr << "current thread " << std::hex << &thread << std::endl;
+		if (debug) {
+			std::cerr << "current thread " << std::hex << &thread << std::endl;
+		}
 		if (!thread->advanceIp) {
 			thread->advanceIp = true;
 		}
-		if (debug) std::cerr << "\tip = " << std::hex << thread->gpr[ArchitectureConstants::InstructionPointerIndex] << std::endl;
+		if (debug) {
+			std::cerr << "\tip = " << std::hex << thread->gpr[ArchitectureConstants::InstructionPointerIndex] << std::endl;
+		}
 		dispatch();
 		if (thread->advanceIp) {
 			++thread->gpr[ArchitectureConstants::InstructionPointerIndex];
