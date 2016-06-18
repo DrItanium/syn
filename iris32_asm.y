@@ -250,8 +250,7 @@ move_op:
        ;
 
 jump_op:
-	   JUMP_OP_UNCONDITIONALREGISTER REGISTER {
-	   curri.op = (byte)iris32::JumpOp::UnconditionalRegister;
+	   jop_reg REGISTER {
 	   	curri.reg0 = $2;
 	   } |
        jop_reg_reg REGISTER REGISTER {
@@ -328,9 +327,13 @@ mop_single:
    MOVE_OP_POP { curri.op = (byte)iris32::MoveOp::Pop; } 
    ;
 
+jop_reg:
+   JUMP_OP_UNCONDITIONALREGISTERLINK { curri.op = (byte)iris32::JumpOp::UnconditionalRegisterLink; } |
+	   JUMP_OP_UNCONDITIONALREGISTER { curri.op = (byte)iris32::JumpOp::UnconditionalRegister; }
+	   ;
+
 
 jop_reg_reg:
-   JUMP_OP_UNCONDITIONALREGISTERLINK { curri.op = (byte)iris32::JumpOp::UnconditionalRegisterLink; } |
    JUMP_OP_CONDITIONALTRUEREGISTER { curri.op = (byte)iris32::JumpOp::ConditionalTrueRegister; } |
    JUMP_OP_CONDITIONALFALSEREGISTER { curri.op = (byte)iris32::JumpOp::ConditionalFalseRegister; }
    ;
