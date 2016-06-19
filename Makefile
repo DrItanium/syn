@@ -92,6 +92,8 @@ ALL_BINARIES = ${IRIS16_BINARIES} \
 
 ALL_OBJECTS = ${ALL_IRIS16_OBJECTS} \
 			  ${ALL_IRIS32_OBJECTS}
+ALL_ARCHIVES = ${IRIS16_OUT} \
+			   ${IRIS32_OUT}
 
 all: options ${IRIS16} ${IRIS32}
 
@@ -191,12 +193,26 @@ install: ${ALL_BINARIES}
 		cp $$n ${DESTDIR}${PREFIX}/bin/$$n; \
 		chmod 755 ${DESTDIR}${PREFIX}/bin/$$n; \
 	done
+	@echo installing archives
+	@mkdir -p ${DESTDIR}${PREFIX}/lib/iris/
+	@for n in $(ALL_ARCHIVES); do \
+		cp $$n ${DESTDIR}${PREFIX}/lib/iris/$$n; \
+	done
+	@echo installing headers
+	@mkdir -p ${DESTDIR}${PREFIX}/include/iris/
+	@cp -r *.h *.def ${DESTDIR}${PREFIX}/include/iris/
 	
 uninstall:
 	@echo removing executables from ${DESTDIR}${PREFIX}/bin
 	@for n in $(ALL_BINARIES); do \
 		rm -f ${DESTDIR}${PREFIX}/bin/$$n ; \
 	done
+	@echo removing archives and headers
+	@for n in ${ALL_ARCHIVES}; do \
+		rm ${DESTDIR}${PREFIX}/lib/iris/$$n; \
+	done
+	@rmdir ${DESTDIR}${PREFIX}/lib/iris
+	@rm -rf ${DESTDIR}${PREFIX}/include/iris
 
 .SECONDARY: ${TEST_OBJECTS}
 
