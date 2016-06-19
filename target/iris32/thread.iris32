@@ -1,27 +1,50 @@
 @org 0x00000000
-@code
+; use the upper most 16 registers (240-255) for stuff, 
 @label setup_thread
-setl r0 thread_control_block_base	 ; load the thread control block base address
-setu r0 thread_control_block_base	 ; 
-muli r1 tid 8						 ; compute the offset
-addi r0 r0 r1						 ; combine it with the thread control block base
-ld r250 r0							 ; store the thread id control block
+setl r243 thread_control_block_base	 ; load the thread control block base address
+setu r243 thread_control_block_base	 ; 
+muli r242 tid 8						 ; compute the offset
+add r243 r243 r242					 ; combine it with the thread control block base
+ld r250 r243						 ; store the thread id control block
 setl r249 0xFFFF 					 ; r249 is the thread invocation flag
 setu r249 0xFFFF					 ;
+setl r244 thread_idle				 ; Setup the thread_idle address
+setu r244 thread_idle				 ;
+									 ; TODO: setup stack pointer
 @label thread_idle					 ; now, we are in the thread handler block
 ld r248 r250						 ; load the evaluate jump field
 addi r246 r250 4					 ; compute the offset for the jump address
 ld r245 r246						 ; load it from memory
 eq r247 r249 r248					 ; check to see if we should jump
 jt r247 r245						 ; jump to address if the thread invocation flag is set to true
-j thread_idle
-@label main_thread
+j r244
 
+@label main_thread
+setl r0 string ; address
+setu r0 string
+setl r1 0 ; load cell
+setu r1 0 ; load cell
+setl r2 0 ; predicate cell 
+setu r2 0 ; predicate cell 
+setl r3 0 ; zero cell
+setu r3 0 ; zero cell
+setl r4 done
+setu r4 done
+setl r5 continue
+setu r5 continue
+@label continue
+ld r1 r0
+ne r2 r1 r3
+jf r2 r4
+system 2 r1 r1 
+addi r0 r0 1
+j r5
+@label done
+system 0 r0 r0
 
 ; thread data structure
 ; 32-bits, evaluate jump
 ; 32-bits, address to jump to
-@data
 @org 0x00010000
 @label thread_control_block_base
 @label thread0
@@ -48,4 +71,44 @@ j thread_idle
 @label thread7
 @word 0x00000000
 @word thread_idle
-
+@word 0x0000
+@word 0x0000
+@word 0x0000
+@word 0x0000
+@word 0x0000
+@word 0x0000
+@label string
+@word 0x46
+@word 0x75
+@word 0x63
+@word 0x6B
+@word 0x20
+@word 0x79
+@word 0x6F
+@word 0x75
+@word 0x20
+@word 0x4D
+@word 0x65
+@word 0x6E
+@word 0x64
+@word 0x65
+@word 0x7A
+@word 0x2E
+@word 0x0A
+@word 0x46
+@word 0x75
+@word 0x63
+@word 0x6B
+@word 0x20
+@word 0x79
+@word 0x6F
+@word 0x75
+@word 0x20
+@word 0x41
+@word 0x69
+@word 0x72
+@word 0x65
+@word 0x6E
+@word 0x2E
+@word 0x0A
+@word 0x00
