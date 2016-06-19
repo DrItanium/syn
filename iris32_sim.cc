@@ -5,7 +5,8 @@
 #include <string>
 
 std::istream* input = nullptr;
-bool close = false;
+bool close = false,
+	 debug = false;
 static void usage(char* arg0);
 
 int main(int argc, char* argv[]) {
@@ -17,6 +18,9 @@ int main(int argc, char* argv[]) {
 			std::string tmpline(argv[i]);
 			if(tmpline.size() == 2 && tmpline[0] == '-') {
 				switch(tmpline[1]) {
+					case 'd':
+						debug = true;
+						break;
 					case 'h':
 					default:
 						errorfree = false;
@@ -55,6 +59,9 @@ int main(int argc, char* argv[]) {
 		t6.gpr[iris32::ArchitectureConstants::ThreadIndex] = 6;
 		t7.gpr[iris32::ArchitectureConstants::ThreadIndex] = 7;
 		iris32::Core core(iris32::ArchitectureConstants::AddressMax, { &t0, &t1, &t2, &t3, &t4, &t5, &t6, &t7 });
+		if (debug) {
+			core.toggleDebug();
+		}
 		core.initialize();
 		core.installprogram(*input);
 		core.run();
@@ -69,6 +76,6 @@ int main(int argc, char* argv[]) {
 }
 
 void usage(char* arg0) {
-	std::cerr << "usage: " << arg0 << " -h | [file | -]" << std::endl;
+	std::cerr << "usage: " << arg0 << " -h | [-d] [file | -]" << std::endl;
 }
 
