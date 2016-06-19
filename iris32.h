@@ -18,6 +18,7 @@ namespace iris32 {
 		LinkRegisterIndex = RegisterCount - 2,
 		StackPointerIndex = RegisterCount - 3,
 		CallPointerIndex = RegisterCount - 4,
+		ThreadIndex = RegisterCount - 5,
 		
 	};
 	enum {
