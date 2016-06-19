@@ -159,12 +159,10 @@ namespace iris32 {
 	void Core::execBody() {
 		if (debug) {
 			std::cerr << "current thread " << std::hex << thread << std::endl;
+			std::cerr << "{" << std::endl;
 		}
 		if (!thread->advanceIp) {
 			thread->advanceIp = true;
-		}
-		if (debug) {
-			std::cerr << "\tip = 0x" << std::hex << thread->gpr[ArchitectureConstants::InstructionPointerIndex] << std::endl;
 		}
 		dispatch();
 		if (thread->advanceIp) {
@@ -172,6 +170,9 @@ namespace iris32 {
 			if (thread->gpr[ArchitectureConstants::InstructionPointerIndex] >= memorySize) {
 				thread->gpr[ArchitectureConstants::InstructionPointerIndex] = 0;
 			}
+		}
+		if (debug) {
+			std::cerr << "}" << std::endl;
 		}
 	}
 	void Core::compare( DecodedInstruction& current) {
@@ -307,6 +308,9 @@ namespace iris32 {
 #define XLink_true \
 			if (cond) { \
 				thread->gpr[ArchitectureConstants::LinkRegisterIndex] = ip + 1; \
+				if (debug) { \
+					std::cerr << "update link register index to "  << std::hex << thread->gpr[ArchitectureConstants::LinkRegisterIndex] << std::endl; \
+				} \
 			}
 #define XLink_false
 
