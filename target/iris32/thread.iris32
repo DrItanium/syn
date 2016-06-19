@@ -1,23 +1,37 @@
-@org 0x00000000
 ; use the upper most 16 registers (240-255) for stuff, 
-@label setup_thread
 setl r243 thread_control_block_base	 ; load the thread control block base address
 setu r243 thread_control_block_base	 ; 
-muli r242 tid 8						 ; compute the offset
-add r243 r243 r242					 ; combine it with the thread control block base
-ld r250 r243						 ; store the thread id control block
-setl r249 0xFFFF 					 ; r249 is the thread invocation flag
-setu r249 0xFFFF					 ;
+muli r242 tid 2						 ; compute the offset
+add r250 r243 r242					 ; combine it with the thread control block base and store it in the thread control base
+move r250 r250						 ;
+setl r249 0xFFFFFFFF 				 ; r249 is the thread invocation flag
+setu r249 0xFFFFFFFF				 ;
 setl r244 thread_idle				 ; Setup the thread_idle address
 setu r244 thread_idle				 ;
 									 ; TODO: setup stack pointer
 @label thread_idle					 ; now, we are in the thread handler block
 ld r248 r250						 ; load the evaluate jump field
-addi r246 r250 4					 ; compute the offset for the jump address
+addi r246 r250 1					 ; compute the offset for the jump address
 ld r245 r246						 ; load it from memory
 eq r247 r249 r248					 ; check to see if we should jump
 jt r247 r245						 ; jump to address if the thread invocation flag is set to true
 j r244
+
+@label thread1_idle
+j r244
+@label thread2_idle
+j r244
+@label thread3_idle
+j r244
+@label thread4_idle
+j r244
+@label thread5_idle
+j r244
+@label thread6_idle
+j r244
+@label thread7_idle
+j r244
+
 
 @label main_thread
 setl r0 string ; address
@@ -45,38 +59,39 @@ system 0 r0 r0
 ; thread data structure
 ; 32-bits, evaluate jump
 ; 32-bits, address to jump to
-@org 0x00010000
 @label thread_control_block_base
 @label thread0
 @word 0xFFFFFFFF
 @word main_thread
 @label thread1
 @word 0x00000000
-@word thread_idle
+@word thread1_idle
 @label thread2
 @word 0x00000000
-@word thread_idle
+@word thread2_idle
 @label thread3
 @word 0x00000000
-@word thread_idle
+@word thread3_idle
 @label thread4
 @word 0x00000000
-@word thread_idle
+@word thread4_idle
 @label thread5
 @word 0x00000000
-@word thread_idle
+@word thread5_idle
 @label thread6
 @word 0x00000000
-@word thread_idle
+@word thread6_idle
 @label thread7
 @word 0x00000000
-@word thread_idle
+@word thread7_idle
+
 @word 0x0000
 @word 0x0000
 @word 0x0000
 @word 0x0000
 @word 0x0000
 @word 0x0000
+
 @label string
 @word 0x46
 @word 0x75
