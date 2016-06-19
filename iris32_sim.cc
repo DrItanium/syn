@@ -4,7 +4,7 @@
 #include <fstream>
 #include <string>
 
-std::istream* input = 0;
+std::istream* input = nullptr;
 bool close = false;
 static void usage(char* arg0);
 
@@ -19,11 +19,11 @@ int main(int argc, char* argv[]) {
 				switch(tmpline[1]) {
 					case 'h':
 					default:
-						errorfree = 0;
+						errorfree = false;
 						break;
 				}
 			} else {
-				errorfree = 0;
+				errorfree = false;
 				break;
 			}
 		}
@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
 				std::cerr << "no file provided" << std::endl;
 			}
 		}
-	}
+	} 
 	if(input) {
 		// eight threads of execution that are interleaved
 		iris32::ExecState t0, t1, t2, t3, t4, t5, t6, t7;
