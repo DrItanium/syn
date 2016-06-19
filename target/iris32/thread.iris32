@@ -1,0 +1,51 @@
+@org 0x00000000
+@code
+@label setup_thread
+setl r0 thread_control_block_base	 ; load the thread control block base address
+setu r0 thread_control_block_base	 ; 
+muli r1 tid 8						 ; compute the offset
+addi r0 r0 r1						 ; combine it with the thread control block base
+ld r250 r0							 ; store the thread id control block
+setl r249 0xFFFF 					 ; r249 is the thread invocation flag
+setu r249 0xFFFF					 ;
+@label thread_idle					 ; now, we are in the thread handler block
+ld r248 r250						 ; load the evaluate jump field
+addi r246 r250 4					 ; compute the offset for the jump address
+ld r245 r246						 ; load it from memory
+eq r247 r249 r248					 ; check to see if we should jump
+jt r247 r245						 ; jump to address if the thread invocation flag is set to true
+j thread_idle
+@label main_thread
+
+
+; thread data structure
+; 32-bits, evaluate jump
+; 32-bits, address to jump to
+@data
+@org 0x00010000
+@label thread_control_block_base
+@label thread0
+@word 0xFFFFFFFF
+@word main_thread
+@label thread1
+@word 0x00000000
+@word thread_idle
+@label thread2
+@word 0x00000000
+@word thread_idle
+@label thread3
+@word 0x00000000
+@word thread_idle
+@label thread4
+@word 0x00000000
+@word thread_idle
+@label thread5
+@word 0x00000000
+@word thread_idle
+@label thread6
+@word 0x00000000
+@word thread_idle
+@label thread7
+@word 0x00000000
+@word thread_idle
+
