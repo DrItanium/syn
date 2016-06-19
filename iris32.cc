@@ -87,7 +87,15 @@ namespace iris32 {
 				std::cerr << "panic: provided data is not valid iris32 encoded assembler" << std::endl;
 				exit(1);
 			}
-			memory[addr] = word(b[0]) | (word(b[1]) << 8) | (word(b[2]) << 16) | (word(b[3]) << 24);
+			auto data = word(b[0]);
+			data = (data & 0xFFFF00FF) | (word(b[1]) << 8);
+			data = (data & 0xFF00FFFF) | (word(b[2]) << 16);
+			data = (data & 0x00FFFFFF) | (word(b[3]) << 24);
+			if (debug) {
+				std::cerr << "install 0x" << std::hex << data 
+						  << " @ 0x" << std::hex << addr << std::endl;
+			}
+			memory[addr] = data;
 		}
 	}
 	void Core::dump(std::ostream& stream) {
@@ -102,7 +110,20 @@ namespace iris32 {
 	}
 	void Core::dispatch() {
 		// read a byte from the current instruction pointer address
-		auto decoded = DecodedInstruction(read(thread->gpr[ArchitectureConstants::InstructionPointerIndex]));
+		auto result = read(thread->gpr[ArchitectureConstants::InstructionPointerIndex]);
+		if (debug) {
+			std::cerr << "ip: 0x" << std::hex << thread->gpr[ArchitectureConstants::InstructionPointerIndex] 
+				      << ", instruction raw: 0x" << std::hex << result << std::endl;
+		}
+		auto decoded = DecodedInstruction(result);
+		if (debug) { 
+			std::cerr << "destination register index: r" << std::dec << (int)  decoded.getDestination() 
+				<< ", value: " << (thread->gpr[decoded.getDestination()]) << "\n" 
+				<< "source0 register index: r" <<  std::dec << (int)  decoded.getSource0()  
+				<< ", value: " << (thread->gpr[decoded.getSource0()]) << "\n" 
+				<< "source 1 register index: r" <<  std::dec << (int)  decoded.getSource1() 
+				<< ", value: " << (thread->gpr[decoded.getSource1()]) << std::endl; 
+		} 
 		switch (static_cast<InstructionGroup>(decoded.getGroup())) {
 #define X(en, fn) \
 			case InstructionGroup:: en : \
@@ -137,13 +158,13 @@ namespace iris32 {
 	}
 	void Core::execBody() {
 		if (debug) {
-			std::cerr << "current thread " << std::hex << &thread << std::endl;
+			std::cerr << "current thread " << std::hex << thread << std::endl;
 		}
 		if (!thread->advanceIp) {
 			thread->advanceIp = true;
 		}
 		if (debug) {
-			std::cerr << "\tip = " << std::hex << thread->gpr[ArchitectureConstants::InstructionPointerIndex] << std::endl;
+			std::cerr << "\tip = 0x" << std::hex << thread->gpr[ArchitectureConstants::InstructionPointerIndex] << std::endl;
 		}
 		dispatch();
 		if (thread->advanceIp) {
@@ -270,7 +291,8 @@ namespace iris32 {
 		word ip = thread->gpr[ArchitectureConstants::InstructionPointerIndex];
 		switch(static_cast<JumpOp>(inst.getOperation())) {
 #define XImmediateCond_true (inst.getImmediate())
-#define XImmediateCond_false (thread->gpr[inst.getSource0()])
+#define XImmediateCond_false \
+			(thread->gpr[inst.getSource0()])
 #define XIfThenElse_false(immediate) \
 			newAddr = cond ? INDIRECTOR(XImmediateCond, _ ## immediate) : ip + 1;
 #define XIfThenElse_true(immediate) \
@@ -291,7 +313,9 @@ namespace iris32 {
 #define X(name, ifthenelse, conditional, iffalse, immediate, link) \
 			case JumpOp:: name: \
 					 { \
-						 if (debug) std::cerr << "Called JumpOp::" << #name << std::endl; \
+						 if (debug) { \
+							 std::cerr << "Called JumpOp::" << #name << std::endl; \
+						 } \
 						 INDIRECTOR(XConditional, _ ## conditional)(name, ifthenelse, immediate) \
 						 thread->gpr[ArchitectureConstants::InstructionPointerIndex] = newAddr; \
 						 INDIRECTOR(XLink, _ ## link)  \
