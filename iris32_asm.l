@@ -82,8 +82,6 @@ omni [a-zA-Z0-9._]
 "double" { return ARITHMETIC_MACRO_OP_DOUBLE; }
 
 "@label" { return LABEL; }
-"@data"  { return DIRECTIVE_DATA; }
-"@code"  { return DIRECTIVE_CODE; }
 "@org"   { return DIRECTIVE_ORG; }
 "@word" { return DIRECTIVE_DECLARE; }
 "tid"	 { yylval.rval = 251; return REGISTER; }
