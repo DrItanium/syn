@@ -17,7 +17,7 @@ namespace iris32 {
 		InstructionPointerIndex = RegisterCount - 1,
 		LinkRegisterIndex = RegisterCount - 2,
 		StackPointerIndex = RegisterCount - 3,
-		CallPointerIndex = RegisterCount - 4,
+		ConditionRegisterIndex = RegisterCount - 4,
 		ThreadIndex = RegisterCount - 5,
 		
 	};
