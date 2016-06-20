@@ -111,18 +111,17 @@ namespace iris32 {
 	void Core::dispatch() {
 		// read a byte from the current instruction pointer address
 		auto result = read(thread->gpr[ArchitectureConstants::InstructionPointerIndex]);
-		if (debug) {
-			std::cerr << "ip: 0x" << std::hex << thread->gpr[ArchitectureConstants::InstructionPointerIndex] 
-				      << ", instruction raw: 0x" << std::hex << result << std::endl;
-		}
 		auto decoded = DecodedInstruction(result);
 		if (debug) { 
-			std::cerr << "destination register index: r" << std::dec << (int)  decoded.getDestination() 
+			std::cerr << "before: " << "\n"
+				<< "\tdestination register index: r" << std::dec << (int)  decoded.getDestination() 
 				<< ", value: " << (thread->gpr[decoded.getDestination()]) << "\n" 
-				<< "source0 register index: r" <<  std::dec << (int)  decoded.getSource0()  
+				<< "\tsource0 register index: r" <<  std::dec << (int)  decoded.getSource0()  
 				<< ", value: " << (thread->gpr[decoded.getSource0()]) << "\n" 
-				<< "source 1 register index: r" <<  std::dec << (int)  decoded.getSource1() 
+				<< "\tsource 1 register index: r" <<  std::dec << (int)  decoded.getSource1() 
 				<< ", value: " << (thread->gpr[decoded.getSource1()]) << std::endl; 
+			std::cerr << "ip: 0x" << std::hex << thread->gpr[ArchitectureConstants::InstructionPointerIndex] 
+				      << ", instruction raw: 0x" << std::hex << result << std::endl;
 		} 
 		switch (static_cast<InstructionGroup>(decoded.getGroup())) {
 #define X(en, fn) \
@@ -137,6 +136,17 @@ namespace iris32 {
 				execute = false;
 				break;
 		}
+		if (debug) { 
+			std::cerr << "after: " << "\n"
+				<< "\tdestination register index: r" << std::dec << (int)  decoded.getDestination() 
+				<< ", value: " << (thread->gpr[decoded.getDestination()]) << "\n" 
+				<< "\tsource0 register index: r" <<  std::dec << (int)  decoded.getSource0()  
+				<< ", value: " << (thread->gpr[decoded.getSource0()]) << "\n" 
+				<< "\tsource 1 register index: r" <<  std::dec << (int)  decoded.getSource1() 
+				<< ", value: " << (thread->gpr[decoded.getSource1()]) << std::endl; 
+			std::cerr << "ip: 0x" << std::hex << thread->gpr[ArchitectureConstants::InstructionPointerIndex] 
+				      << ", instruction raw: 0x" << std::hex << result << std::endl;
+		} 
 	}
 	void Core::initialize() {
 
@@ -158,8 +168,8 @@ namespace iris32 {
 	}
 	void Core::execBody() {
 		if (debug) {
-			std::cerr << "current thread " << std::hex << thread << std::endl;
 			std::cerr << "{" << std::endl;
+			std::cerr << "current thread " << std::hex << thread << std::endl;
 		}
 		if (!thread->advanceIp) {
 			thread->advanceIp = true;
@@ -322,6 +332,9 @@ namespace iris32 {
 						 } \
 						 INDIRECTOR(XConditional, _ ## conditional)(name, ifthenelse, immediate) \
 						 thread->gpr[ArchitectureConstants::InstructionPointerIndex] = newAddr; \
+						 if (debug) { \
+							 std::cerr << "newAddr = " << std::hex << newAddr << std::endl; \
+						 } \
 						 INDIRECTOR(XLink, _ ## link)  \
 						 break; \
 					 }
@@ -397,7 +410,10 @@ namespace iris32 {
 #define XMove(type, dest, src) \
 			INDIRECTOR(type, dest ## 0) = INDIRECTOR(type, src ## 1);
 #define XSetLower(type, dest, src) \
-			INDIRECTOR(type, dest ## 0) |= (word(INDIRECTOR(type, src ## 1)));
+			auto value = INDIRECTOR(type, dest ## 0); \
+			value &= 0xFFFF0000; \
+			value |= (word(INDIRECTOR(type, src ## 1))); \
+			INDIRECTOR(type, dest ## 0) = value; 
 #define XSetUpper(type, dest, src) \
 			auto value = INDIRECTOR(type, dest ## 0); \
 			value &= 0x0000FFFF; \
@@ -421,7 +437,7 @@ namespace iris32 {
 #define X(name, type, target, dest, src) \
 			case MoveOp:: name: \
 					 { \
-						 if (debug) std::cerr << "Called CompareOp::" << #name << std::endl;  \
+						 if (debug) std::cerr << "Called MoveOp::" << #name << std::endl;  \
 					 INDIRECTOR(X,type)(target, dest, src) \
 			break; \
 					 }

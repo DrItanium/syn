@@ -2,8 +2,6 @@
 ; use registers 0-31 for globals
 ; use registers 32-63 for inputs
 ; use registers 64-95 for temporaries
-setl r240 funcall					 ; function calls go through standard code sections
-setu r240 funcall					 ; so setup the address
 setl r243 thread_control_block_base	 ; load the thread control block base address
 setu r243 thread_control_block_base	 ; 
 muli r242 tid 4						 ; compute the offset
@@ -45,17 +43,22 @@ setu r208 printstring
 setl r32 string ; address
 setu r32 string
 jl r208
+setl r208 printstring
+setu r208 printstring
+setl r32 phase2_string ; address
+setu r32 phase2_string
+jl r208
 
 setl r208 terminate_execution
 setu r208 terminate_execution
 j r208
 
 @label terminate_execution
-	system 0 r0 r0
+system 0 r0 r0
 
 @label printchar
-	system 2 r32 r32
-	j lr
+system 2 r32 r32
+j lr
 
 
 @label printstring
@@ -88,6 +91,25 @@ j r208
 	pop lr
 	j lr
 
+@label phase2_string
+@word 0x77
+@word 0x68
+@word 0x79
+@word 0x20
+@word 0x79
+@word 0x6f
+@word 0x75
+@word 0x20
+@word 0x6e
+@word 0x6f
+@word 0x20
+@word 0x77
+@word 0x6f
+@word 0x72
+@word 0x6b
+@word 0x3f
+@word 0xa
+@word 0x00
 
 @label string
 @word 0x46
