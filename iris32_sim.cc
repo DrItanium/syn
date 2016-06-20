@@ -48,19 +48,17 @@ int main(int argc, char* argv[]) {
 	} 
 	if(input) {
 		// eight threads of execution that are interleaved
-		//iris32::ExecState t0, t1, t2, t3, t4, t5, t6, t7;
-		//// make sure they all start at the same position
-		//t0.gpr[iris32::ArchitectureConstants::ThreadIndex] = 0;
-		//t1.gpr[iris32::ArchitectureConstants::ThreadIndex] = 1;
-		//t2.gpr[iris32::ArchitectureConstants::ThreadIndex] = 2;
-		//t3.gpr[iris32::ArchitectureConstants::ThreadIndex] = 3;
-		//t4.gpr[iris32::ArchitectureConstants::ThreadIndex] = 4;
-		//t5.gpr[iris32::ArchitectureConstants::ThreadIndex] = 5;
-		//t6.gpr[iris32::ArchitectureConstants::ThreadIndex] = 6;
-		//t7.gpr[iris32::ArchitectureConstants::ThreadIndex] = 7;
-		//iris32::Core core(iris32::ArchitectureConstants::AddressMax, { &t0, &t1, &t2, &t3, &t4, &t5, &t6, &t7 });
-		iris32::ExecState t0;
-		iris32::Core core(iris32::ArchitectureConstants::AddressMax, { &t0 });
+		iris32::ExecState t0, t1, t2, t3, t4, t5, t6, t7;
+		// make sure they all start at the same position
+		t0.gpr[iris32::ArchitectureConstants::ThreadIndex] = 0;
+		t1.gpr[iris32::ArchitectureConstants::ThreadIndex] = 1;
+		t2.gpr[iris32::ArchitectureConstants::ThreadIndex] = 2;
+		t3.gpr[iris32::ArchitectureConstants::ThreadIndex] = 3;
+		t4.gpr[iris32::ArchitectureConstants::ThreadIndex] = 4;
+		t5.gpr[iris32::ArchitectureConstants::ThreadIndex] = 5;
+		t6.gpr[iris32::ArchitectureConstants::ThreadIndex] = 6;
+		t7.gpr[iris32::ArchitectureConstants::ThreadIndex] = 7;
+		iris32::Core core(iris32::ArchitectureConstants::AddressMax, { &t0, &t1, &t2, &t3, &t4, &t5, &t6, &t7 });
 		if (debug) {
 			core.toggleDebug();
 		}
