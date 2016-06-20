@@ -111,6 +111,7 @@ void usage(char* arg0);
 %token ARITHMETIC_MACRO_OP_DECR
 %token ARITHMETIC_MACRO_OP_HALVE
 %token ARITHMETIC_MACRO_OP_DOUBLE
+%token JUMP_MACRO_OP_RETURN
 
 %token <rval> REGISTER
 %token <ival> IMMEDIATE
@@ -250,6 +251,10 @@ move_op:
        ;
 
 jump_op:
+	   JUMP_MACRO_OP_RETURN {
+			curri.op = (byte)iris32::JumpOp::UnconditionalRegister;
+			curri.reg0 = iris32::ArchitectureConstants::LinkRegisterIndex;
+	   } |
 	   jop_reg REGISTER {
 	   	curri.reg0 = $2;
 	   } |

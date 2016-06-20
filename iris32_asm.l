@@ -80,6 +80,7 @@ omni [a-zA-Z0-9._]
 "decr" { return ARITHMETIC_MACRO_OP_DECR; }
 "halve" { return ARITHMETIC_MACRO_OP_HALVE; }
 "double" { return ARITHMETIC_MACRO_OP_DOUBLE; }
+"ret"	{ return JUMP_MACRO_OP_RETURN; }
 
 "@label" { return LABEL; }
 "@org"   { return DIRECTIVE_ORG; }
