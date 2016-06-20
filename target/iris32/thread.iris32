@@ -1,7 +1,8 @@
-; use the upper most 16 registers (208-255) for kernel and backend stuff
+; use the upper most registers (208-255) for kernel and backend stuff
 ; use registers 0-31 for globals
 ; use registers 32-63 for inputs
 ; use registers 64-95 for temporaries
+; use registers 96-111 for returns
 setl r243 thread_control_block_base	 ; load the thread control block base address
 setu r243 thread_control_block_base	 ; 
 muli r242 tid 4						 ; compute the offset
@@ -49,11 +50,15 @@ setu r208 terminate_execution
 j r208
 
 @label terminate_execution
-system 0 r0 r0
+	system 0 r0 r0
 
 @label printchar
-system 2 r32 r32
-j lr
+	system 2 r32 r32
+	ret
+
+@label readchar
+	system 1 r96 r96
+	ret
 
 
 @label printstring
@@ -84,7 +89,7 @@ j lr
 	pop r64
 	pop cr
 	pop lr
-	j lr
+	ret
 
 @label string
 @word 0x46
