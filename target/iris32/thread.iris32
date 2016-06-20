@@ -43,11 +43,6 @@ setu r208 printstring
 setl r32 string ; address
 setu r32 string
 jl r208
-setl r208 printstring
-setu r208 printstring
-setl r32 phase2_string ; address
-setu r32 phase2_string
-jl r208
 
 setl r208 terminate_execution
 setu r208 terminate_execution
@@ -90,26 +85,6 @@ j lr
 	pop cr
 	pop lr
 	j lr
-
-@label phase2_string
-@word 0x77
-@word 0x68
-@word 0x79
-@word 0x20
-@word 0x79
-@word 0x6f
-@word 0x75
-@word 0x20
-@word 0x6e
-@word 0x6f
-@word 0x20
-@word 0x77
-@word 0x6f
-@word 0x72
-@word 0x6b
-@word 0x3f
-@word 0xa
-@word 0x00
 
 @label string
 @word 0x46
@@ -171,6 +146,7 @@ j lr
 ; 32-bits, evaluate jump
 ; 32-bits, address to jump to
 ; 32-bits, base stack pointer address
+; 32-bits, unused
 @label thread_control_block_base
 @label thread0
 @word 0xFFFFFFFF
