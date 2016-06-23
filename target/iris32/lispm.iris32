@@ -5,19 +5,27 @@
 ; do so the following code comes from my basic thread implementation
 ; use the upper most 16 registers (208-255) for kernel and backend stuff
 ; use registers 0-31 for globals
-; use registers 32-63 for inputs
+; use registers 32-47 for inputs
+; use registers 48-63 for outputs
 ; use registers 64-95 for temporaries
 setl r243 thread_control_block_base	 ; load the thread control block base address
 setu r243 thread_control_block_base	 ; 
 muli r242 tid 4						 ; compute the offset
 add r250 r243 r242					 ; combine it with the thread control block base and store it in the thread control base
 addi r249 r250 2					 ; setup the stack pointer
-ld sp r249							 ; load the stack pointer offset into memory
+ld sp r249						 ; load the stack pointer offset into memory
 move r240 sp						 ; save a copy of the base stack pointer to r240
-setl r249 0xFFFFFFFF 				 ; r249 is the thread invocation flag
-setu r249 0xFFFFFFFF				 ;
-setl r244 thread_idle				 ; Setup the thread_idle address
-setu r244 thread_idle				 ;
+setl r249 0xFFFFFFFF 					 ; r249 is the thread invocation flag
+setu r249 0xFFFFFFFF					 ;
+setl r244 thread_idle					 ; Setup the thread_idle address
+setu r244 thread_idle					 ;
+setl r209 nil						 ; load the address of nil
+setu r209 nil						 ;
+setl r0 0						 ; r0 is zero
+setu r0 0						 ;
+setl r1 1						 ; r1 is one
+setu r1 1						 ;
+
 @label thread_idle					 ; now, we are in the thread handler block
 ld r248 r250						 ; load the evaluate jump field
 addi r246 r250 1					 ; compute the offset for the jump address
@@ -59,6 +67,44 @@ system 0 r0 r0
 @label printchar
 system 2 r32 r32
 j lr
+
+; list data structure is super simple
+; 1 word - status bits
+; 1 word - current value
+; 1 word - next address
+
+; ---
+; load the current value from the list pointer
+@label car
+	addi r48 r32 1
+	ld r48 r48
+	j lr
+@label cdr
+	addi r48 r32 2
+	ld r48 r48
+	j lr
+
+@label atomp
+	push r64		; save locals
+	push r65		; 
+	ld r64 r32		; load the first cell in the list data structure
+	and r65 r64 r1		; bit 0 in the flags cell is the atom flag
+	eq r48 r65 r1		; did we get one out of the check?
+	pop r65
+	pop r64
+	j lr
+
+
+
+@label nilp
+	eq r48 r32 r209
+	j lr
+
+; special data structure in memory that we compare things to
+@label nil
+	@word 0x00
+	@word 0x00
+	@word 0x00
 
 
 ;@label printstring
