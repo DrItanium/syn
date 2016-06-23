@@ -51,11 +51,11 @@ j r244
 
 
 @label main_thread
-setl r208 printstring
-setu r208 printstring
-setl r32 string ; address
-setu r32 string
-jl r208
+;setl r208 printstring
+;setu r208 printstring
+;setl r32 string ; address
+;setu r32 string
+;jl r208
 
 setl r208 terminate_execution
 setu r208 terminate_execution
