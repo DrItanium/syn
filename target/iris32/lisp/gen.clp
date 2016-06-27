@@ -214,9 +214,7 @@
               ALIAS)))
   (format nil 
           "(%s SYMBOL
-               (and (instance-existp (symbol-to-instance-name ?current-argument))
-               (eq register
-                   (class (symbol-to-instance-name ?current-argument)))))%n"
+               (register-aliasp ?current-argument))%n"
           ?title))
 
 
