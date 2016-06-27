@@ -136,27 +136,6 @@ r{digit}+ { yylval.rval = getregister(); return REGISTER; }
 	return SYMBOL;
 }
 %%
-/*
-
-"and.eq" { return COMPARE_OP_EQAND; }
-"or.eq" { return COMPARE_OP_EQOR; }
-"xor.eq" { return COMPARE_OP_EQXOR; }
-"and.ne" { return COMPARE_OP_NEQAND; }
-"or.ne" { return COMPARE_OP_NEQOR; }
-"xor.ne" { return COMPARE_OP_NEQXOR; }
-"and.lt" { return COMPARE_OP_LESSTHANAND; }
-"or.lt" { return COMPARE_OP_LESSTHANOR; }
-"xor.lt" { return COMPARE_OP_LESSTHANXOR; }
-"and.gt" { return COMPARE_OP_GREATERTHANAND; }
-"or.gt" { return COMPARE_OP_GREATERTHANOR; }
-"xor.gt" { return COMPARE_OP_GREATERTHANXOR; }
-"and.le" { return COMPARE_OP_LESSTHANOREQUALTOAND; }
-"or.le" { return COMPARE_OP_LESSTHANOREQUALTOOR; }
-"xor.le" { return COMPARE_OP_LESSTHANOREQUALTOXOR; }
-"and.ge" { return COMPARE_OP_GREATERTHANOREQUALTOAND; }
-"or.ge" { return COMPARE_OP_GREATERTHANOREQUALTOOR; }
-"xor.ge" { return COMPARE_OP_GREATERTHANOREQUALTOXOR; }
-*/
 
 byte getregister(void) {
    int c;
