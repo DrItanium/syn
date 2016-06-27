@@ -251,7 +251,7 @@
           (eq ?current-argument
               ALIAS)))
   (format nil 
-          "(send %s get-refers-to)%n" 
+          "(send (symbol-to-instance-name %s) get-refers-to)%n" 
           ?title))
 
 (deffunction iris32::generate-names
