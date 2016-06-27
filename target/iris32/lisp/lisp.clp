@@ -49,6 +49,16 @@
 (defgeneric lisp::putc)
 (defgeneric lisp::getc)
 (defgeneric lisp::terminate)
+(defgeneric lisp::defun)
+
+(defgeneric lisp::save)
+(defgeneric lisp::restore)
+(defmethod lisp::defun
+           ((?title SYMBOL)
+            $?body)
+           (create$ (@label ?title)
+                    $?body
+                    (ret)))
 
 (defmethod lisp::terminate
   ()
