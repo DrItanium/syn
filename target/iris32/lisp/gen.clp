@@ -197,6 +197,129 @@
          (assert (opcode-decl (op ?title)
                               (title ?title)
                               (arguments $?args))))
+(defmethod iris32::generate-argument-code
+  ((?title LEXEME)
+   (?type SYMBOL
+          (eq ?current-argument
+              REGISTER)))
+  (format nil 
+          "(%s SYMBOL
+               (registerp ?current-argument))%n"
+          ?title))
+
+(defmethod iris32::generate-argument-code
+  ((?title LEXEME)
+   (?type SYMBOL
+          (eq ?current-argument
+              ALIAS)))
+  (format nil 
+          "(%s INSTANCE
+               register)%n" 
+               ?title))
+
+(defmethod iris32::generate-argument-code
+  ((?title LEXEME)
+   (?type SYMBOL
+          (eq ?current-argument
+              IMMEDIATE)))
+  (format nil 
+          "(%s (immediatep ?current-argument))%n"
+          ?title))
+
+(defmethod iris32::generate-argument-body
+  ((?title LEXEME)
+   (?type SYMBOL
+          (eq ?current-argument
+              IMMEDIATE)))
+  (format nil 
+          "(str-cat %s)%n" 
+          ?title))
+(defmethod iris32::generate-argument-body
+  ((?title LEXEME)
+   (?type SYMBOL
+          (eq ?current-argument
+              REGISTER)))
+  (format nil 
+          "%s%n" 
+          ?title))
+(defmethod iris32::generate-argument-body
+  ((?title LEXEME)
+   (?type SYMBOL
+          (eq ?current-argument
+              ALIAS)))
+  (format nil 
+          "(send %s get-refers-to)%n" 
+          ?title))
+
+(deffunction iris32::generate-names
+             (?count)
+             (bind ?output
+                   (create$))
+             (loop-for-count ?count do
+                             (bind ?output
+                                   ?output
+                                   (str-cat "?" 
+                                            (gensym*))))
+             ?output)
+(deffunction iris32::generate-string-replacements
+             (?count)
+             (bind ?output 
+                   (create$))
+             (loop-for-count ?count do
+                             (bind ?output
+                                   ?output
+                                   %s))
+             ?output)
+
+
+(deffunction iris32::fuse-multifield
+             (?list)
+             (bind ?str
+                   (create$))
+             (progn$ (?a ?list)
+                     (bind ?str
+                           ?str
+                           ?a
+                           " "))
+             (str-cat (expand$ ?str)))
+(defmethod iris32::generate-function
+  ((?op SYMBOL)
+   (?title SYMBOL)
+   $?args)
+  ; construct the set of inputs
+  (bind ?names
+        (generate-names (length$ ?args)))
+  (bind ?inputs
+        (create$))
+  (bind ?bodies
+        (create$))
+  (progn$ (?a ?args)
+          (bind ?name 
+                (nth$ ?a-index
+                      ?names))
+          (bind ?bodies
+                ?bodies
+                (generate-argument-body ?name
+                                        ?a))
+          (bind ?inputs
+                ?inputs
+                (generate-argument-code ?name
+                                        ?a)))
+
+  (format ?*current-router*
+          "(defmethod iris32::%s
+             (%s)
+             (format nil \"%s %s\" %s))%n"
+          ?op
+          (fuse-multifield ?inputs)
+          ?title
+          (fuse-multifield (generate-string-replacements (length$ ?args)))
+          (fuse-multifield ?bodies)))
+
+
+
+
+
 
 (defrule iris32::build-opcode:three-register
          ?f <- (opcode-decl (op ?op)
@@ -205,20 +328,47 @@
          =>
          (assert (make defgeneric ?op))
          (retract ?f)
-         (format ?*current-router* "(defmethod iris32::%s
-                      ((?dest SYMBOL 
-                              (registerp ?current-argument))
-                       (?source0 SYMBOL
-                                 (registerp ?current-argument))
-                       (?source1 SYMBOL
-                                 (registerp ?current-argument)))
-                      (format nil 
-                              \"%s %%s %%s %%s\" 
-                              ?dest
-                              ?source0
-                              ?source1))%n"
-         ?op
-         ?title))
+         (generate-function ?op 
+                            ?title
+                            REGISTER
+                            REGISTER
+                            REGISTER)
+         (generate-function ?op
+                            ?title
+                            REGISTER
+                            REGISTER
+                            ALIAS)
+         (generate-function ?op
+                            ?title
+                            REGISTER
+                            ALIAS
+                            REGISTER)
+         (generate-function ?op
+                            ?title
+                            REGISTER
+                            ALIAS
+                            ALIAS)
+         (generate-function ?op
+                            ?title
+                            ALIAS
+                            REGISTER
+                            REGISTER)
+         (generate-function ?op
+                            ?title
+                            ALIAS
+                            REGISTER
+                            ALIAS)
+         (generate-function ?op
+                            ?title
+                            ALIAS
+                            ALIAS
+                            REGISTER)
+         (generate-function ?op
+                            ?title
+                            ALIAS
+                            ALIAS
+                            ALIAS))
+
 
 (defrule iris32::build-opcode:immediate-form
          ?f <- (opcode-decl (op ?op)
@@ -227,19 +377,26 @@
          =>
          (assert (make defgeneric ?op))
          (retract ?f)
-         (format ?*current-router* "(defmethod iris32::%s
-                      ((?dest SYMBOL
-                              (registerp ?current-argument))
-                       (?source0 SYMBOL
-                                 (registerp ?current-argument))
-                       (?source1 (immediatep ?current-argument)))
-                      (format nil 
-                              \"%s %%s %%s %%s\" 
-                              ?dest
-                              ?source0
-                              (str-cat ?source1)))%n"
-         ?op
-         ?title))
+         (generate-function ?op
+                            ?title
+                            REGISTER
+                            REGISTER
+                            IMMEDIATE)
+         (generate-function ?op
+                            ?title
+                            REGISTER
+                            ALIAS
+                            IMMEDIATE)
+         (generate-function ?op
+                            ?title
+                            ALIAS
+                            REGISTER
+                            IMMEDIATE)
+         (generate-function ?op
+                            ?title
+                            ALIAS
+                            ALIAS
+                            IMMEDIATE))
 (defrule iris32::build-opcode:two-register
          ?f <- (opcode-decl (op ?op)
                             (title ?title)
@@ -247,17 +404,22 @@
          =>
          (assert (make defgeneric ?op))
          (retract ?f)
-         (format ?*current-router* "(defmethod iris32::%s
-                      ((?dest SYMBOL
-                              (registerp ?current-argument))
-                       (?source SYMBOL
-                                (registerp ?current-argument)))
-                      (format nil 
-                              \"%s %%s %%s\"
-                              ?dest
-                              ?source))%n"
-         ?op
-         ?title))
+         (generate-function ?op
+                            ?title
+                            REGISTER
+                            REGISTER)
+         (generate-function ?op
+                            ?title
+                            REGISTER
+                            ALIAS)
+         (generate-function ?op
+                            ?title
+                            ALIAS
+                            REGISTER)
+         (generate-function ?op
+                            ?title
+                            ALIAS
+                            ALIAS))
 (defrule iris32::build-opcode:set-form
          ?f <- (opcode-decl (op ?op)
                             (title ?title)
@@ -265,16 +427,14 @@
          =>
          (retract ?f)
          (assert (make defgeneric ?op))
-         (format ?*current-router* "(defmethod iris32::%s
-                      ((?dest SYMBOL
-                              (registerp ?current-argument))
-                       (?source (immediatep ?current-argument)))
-                      (format nil
-                              \"%s %%s %%s\"
-                              ?dest
-                              (str-cat ?source)))%n"
-         ?op
-         ?title))
+         (generate-function ?op
+                            ?title
+                            ALIAS
+                            IMMEDIATE)
+         (generate-function ?op 
+                            ?title 
+                            REGISTER 
+                            IMMEDIATE))
 (defrule iris32::build-opcode:single-reg-form
          ?f <- (opcode-decl (op ?op)
                             (title ?title)
@@ -282,14 +442,12 @@
          =>
          (retract ?f)
          (assert (make defgeneric ?op))
-         (format ?*current-router* "(defmethod iris32::%s
-                      ((?dest SYMBOL
-                              (registerp ?current-argument)))
-                      (format nil 
-                              \"%s %%s\"
-                              ?dest))%n"
-         ?op
-         ?title))
+         (generate-function ?op
+                            ?title
+                            REGISTER)
+         (generate-function ?op
+                            ?title
+                            ALIAS))
 
 (defrule iris32::build-opcode:single-immediate-form
          ?f <- (opcode-decl (op ?op)
@@ -298,13 +456,10 @@
          =>
          (retract ?f)
          (assert (make defgeneric ?op))
-         (format ?*current-router* "(defmethod iris32::%s
-                      ((?dest (immediatep ?current-argument)))
-                      (format nil 
-                              \"%s %%s\"
-                              (str-cat ?dest)))%n"
-         ?op
-         ?title))
+         (generate-function ?op
+                            ?title
+                            IMMEDIATE))
+
 (defrule iris32::build-opcode:no-args
          ?f <- (opcode-decl (op ?op)
                             (title ?title)
@@ -313,8 +468,8 @@
          (retract ?f)
          (assert (make defgeneric ?op))
          (format ?*current-router* "(defmethod iris32::%s
-                      ((?dest (immediatep ?current-argument)))
-                      %s)%n"
+                                      ((?dest (immediatep ?current-argument)))
+                                      %s)%n"
          ?op
          ?title))
 (defrule iris32::build-defgeneric
