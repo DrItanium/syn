@@ -213,9 +213,12 @@
           (eq ?current-argument
               ALIAS)))
   (format nil 
-          "(%s INSTANCE
-               register)%n" 
-               ?title))
+          "(%s SYMBOL
+               (and (instance-existp (symbol-to-instance-name ?current-argument))
+               (eq register
+                   (class (symbol-to-instance-name ?current-argument)))))%n"
+          ?title))
+
 
 (defmethod iris32::generate-argument-code
   ((?title LEXEME)

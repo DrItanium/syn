@@ -173,6 +173,16 @@
                       (not (registerp ?input)))))
 
 (defgeneric iris32::system-op)
+(defmethod iris32::system-op
+  ((?code INTEGER
+          (<= 0 ?current-argument 255))
+   (?arg0 SYMBOL 
+          (registerp ?current-argument))
+   (?arg1 SYMBOL 
+          (registerp ?current-argument)))
+  (format nil "system %d %s %s" ?code ?arg0 ?arg1))
+
+
 (defgeneric iris32::ge)
 (defgeneric iris32::le)
 (defgeneric iris32::gt)
@@ -228,6 +238,10 @@
 (defgeneric iris32::@org)
 (defgeneric iris32::@code)
 (defgeneric iris32::@data)
+
+
+
+
 (defmethod iris32::@data
   ((?dest (immediatep ?current-argument)))
   @data)
@@ -256,8 +270,10 @@
   (format nil "decr %s " ?gen4
           ))
 (defmethod iris32::decr
-  ((?gen5 INSTANCE
-          register)
+  ((?gen5 SYMBOL
+          (and (instance-existp (symbol-to-instance-name ?current-argument))
+               (eq register
+                   (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "decr %s " (send ?gen5 get-refers-to)
           ))
@@ -268,8 +284,10 @@
   (format nil "incr %s " ?gen6
           ))
 (defmethod iris32::incr
-  ((?gen7 INSTANCE
-          register)
+  ((?gen7 SYMBOL
+          (and (instance-existp (symbol-to-instance-name ?current-argument))
+               (eq register
+                   (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "incr %s " (send ?gen7 get-refers-to)
           ))
@@ -280,8 +298,10 @@
   (format nil "double %s " ?gen8
           ))
 (defmethod iris32::double
-  ((?gen9 INSTANCE
-          register)
+  ((?gen9 SYMBOL
+          (and (instance-existp (symbol-to-instance-name ?current-argument))
+               (eq register
+                   (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "double %s " (send ?gen9 get-refers-to)
           ))
@@ -292,8 +312,10 @@
   (format nil "halve %s " ?gen10
           ))
 (defmethod iris32::halve
-  ((?gen11 INSTANCE
-           register)
+  ((?gen11 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "halve %s " (send ?gen11 get-refers-to)
           ))
@@ -304,8 +326,10 @@
   (format nil "pop %s " ?gen12
           ))
 (defmethod iris32::pop
-  ((?gen13 INSTANCE
-           register)
+  ((?gen13 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "pop %s " (send ?gen13 get-refers-to)
           ))
@@ -316,8 +340,10 @@
   (format nil "push %s " ?gen14
           ))
 (defmethod iris32::push
-  ((?gen15 INSTANCE
-           register)
+  ((?gen15 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "push %s " (send ?gen15 get-refers-to)
           ))
@@ -328,14 +354,18 @@
   (format nil "j %s " ?gen16
           ))
 (defmethod iris32::j
-  ((?gen17 INSTANCE
-           register)
+  ((?gen17 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "j %s " (send ?gen17 get-refers-to)
           ))
 (defmethod iris32::setu
-  ((?gen18 INSTANCE
-           register)
+  ((?gen18 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
    (?gen19 (immediatep ?current-argument))
    )
   (format nil "setu %s %s " (send ?gen18 get-refers-to)
@@ -350,8 +380,10 @@
           (str-cat ?gen21)
           ))
 (defmethod iris32::setl
-  ((?gen22 INSTANCE
-           register)
+  ((?gen22 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
    (?gen23 (immediatep ?current-argument))
    )
   (format nil "setl %s %s " (send ?gen22 get-refers-to)
@@ -382,8 +414,10 @@
            (registerp ?current-argument))
    (?gen30 SYMBOL
            (registerp ?current-argument))
-   (?gen31 INSTANCE
-           register)
+   (?gen31 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "or %s %s %s " ?gen29
           ?gen30
@@ -392,8 +426,10 @@
 (defmethod iris32::lor
   ((?gen32 SYMBOL
            (registerp ?current-argument))
-   (?gen33 INSTANCE
-           register)
+   (?gen33 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
    (?gen34 SYMBOL
            (registerp ?current-argument))
    )
@@ -404,18 +440,24 @@
 (defmethod iris32::lor
   ((?gen35 SYMBOL
            (registerp ?current-argument))
-   (?gen36 INSTANCE
-           register)
-   (?gen37 INSTANCE
-           register)
+   (?gen36 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
+   (?gen37 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "or %s %s %s " ?gen35
           (send ?gen36 get-refers-to)
           (send ?gen37 get-refers-to)
           ))
 (defmethod iris32::lor
-  ((?gen38 INSTANCE
-           register)
+  ((?gen38 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
    (?gen39 SYMBOL
            (registerp ?current-argument))
    (?gen40 SYMBOL
@@ -426,22 +468,30 @@
           ?gen40
           ))
 (defmethod iris32::lor
-  ((?gen41 INSTANCE
-           register)
+  ((?gen41 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
    (?gen42 SYMBOL
            (registerp ?current-argument))
-   (?gen43 INSTANCE
-           register)
+   (?gen43 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "or %s %s %s " (send ?gen41 get-refers-to)
           ?gen42
           (send ?gen43 get-refers-to)
           ))
 (defmethod iris32::lor
-  ((?gen44 INSTANCE
-           register)
-   (?gen45 INSTANCE
-           register)
+  ((?gen44 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
+   (?gen45 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
    (?gen46 SYMBOL
            (registerp ?current-argument))
    )
@@ -450,12 +500,18 @@
           ?gen46
           ))
 (defmethod iris32::lor
-  ((?gen47 INSTANCE
-           register)
-   (?gen48 INSTANCE
-           register)
-   (?gen49 INSTANCE
-           register)
+  ((?gen47 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
+   (?gen48 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
+   (?gen49 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "or %s %s %s " (send ?gen47 get-refers-to)
           (send ?gen48 get-refers-to)
@@ -478,8 +534,10 @@
            (registerp ?current-argument))
    (?gen54 SYMBOL
            (registerp ?current-argument))
-   (?gen55 INSTANCE
-           register)
+   (?gen55 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "and %s %s %s " ?gen53
           ?gen54
@@ -488,8 +546,10 @@
 (defmethod iris32::land
   ((?gen56 SYMBOL
            (registerp ?current-argument))
-   (?gen57 INSTANCE
-           register)
+   (?gen57 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
    (?gen58 SYMBOL
            (registerp ?current-argument))
    )
@@ -500,18 +560,24 @@
 (defmethod iris32::land
   ((?gen59 SYMBOL
            (registerp ?current-argument))
-   (?gen60 INSTANCE
-           register)
-   (?gen61 INSTANCE
-           register)
+   (?gen60 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
+   (?gen61 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "and %s %s %s " ?gen59
           (send ?gen60 get-refers-to)
           (send ?gen61 get-refers-to)
           ))
 (defmethod iris32::land
-  ((?gen62 INSTANCE
-           register)
+  ((?gen62 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
    (?gen63 SYMBOL
            (registerp ?current-argument))
    (?gen64 SYMBOL
@@ -522,22 +588,30 @@
           ?gen64
           ))
 (defmethod iris32::land
-  ((?gen65 INSTANCE
-           register)
+  ((?gen65 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
    (?gen66 SYMBOL
            (registerp ?current-argument))
-   (?gen67 INSTANCE
-           register)
+   (?gen67 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "and %s %s %s " (send ?gen65 get-refers-to)
           ?gen66
           (send ?gen67 get-refers-to)
           ))
 (defmethod iris32::land
-  ((?gen68 INSTANCE
-           register)
-   (?gen69 INSTANCE
-           register)
+  ((?gen68 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
+   (?gen69 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
    (?gen70 SYMBOL
            (registerp ?current-argument))
    )
@@ -546,12 +620,18 @@
           ?gen70
           ))
 (defmethod iris32::land
-  ((?gen71 INSTANCE
-           register)
-   (?gen72 INSTANCE
-           register)
-   (?gen73 INSTANCE
-           register)
+  ((?gen71 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
+   (?gen72 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
+   (?gen73 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "and %s %s %s " (send ?gen71 get-refers-to)
           (send ?gen72 get-refers-to)
@@ -574,8 +654,10 @@
            (registerp ?current-argument))
    (?gen78 SYMBOL
            (registerp ?current-argument))
-   (?gen79 INSTANCE
-           register)
+   (?gen79 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "eq %s %s %s " ?gen77
           ?gen78
@@ -584,8 +666,10 @@
 (defmethod iris32::cmp_eq
   ((?gen80 SYMBOL
            (registerp ?current-argument))
-   (?gen81 INSTANCE
-           register)
+   (?gen81 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
    (?gen82 SYMBOL
            (registerp ?current-argument))
    )
@@ -596,18 +680,24 @@
 (defmethod iris32::cmp_eq
   ((?gen83 SYMBOL
            (registerp ?current-argument))
-   (?gen84 INSTANCE
-           register)
-   (?gen85 INSTANCE
-           register)
+   (?gen84 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
+   (?gen85 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "eq %s %s %s " ?gen83
           (send ?gen84 get-refers-to)
           (send ?gen85 get-refers-to)
           ))
 (defmethod iris32::cmp_eq
-  ((?gen86 INSTANCE
-           register)
+  ((?gen86 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
    (?gen87 SYMBOL
            (registerp ?current-argument))
    (?gen88 SYMBOL
@@ -618,22 +708,30 @@
           ?gen88
           ))
 (defmethod iris32::cmp_eq
-  ((?gen89 INSTANCE
-           register)
+  ((?gen89 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
    (?gen90 SYMBOL
            (registerp ?current-argument))
-   (?gen91 INSTANCE
-           register)
+   (?gen91 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "eq %s %s %s " (send ?gen89 get-refers-to)
           ?gen90
           (send ?gen91 get-refers-to)
           ))
 (defmethod iris32::cmp_eq
-  ((?gen92 INSTANCE
-           register)
-   (?gen93 INSTANCE
-           register)
+  ((?gen92 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
+   (?gen93 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
    (?gen94 SYMBOL
            (registerp ?current-argument))
    )
@@ -642,12 +740,18 @@
           ?gen94
           ))
 (defmethod iris32::cmp_eq
-  ((?gen95 INSTANCE
-           register)
-   (?gen96 INSTANCE
-           register)
-   (?gen97 INSTANCE
-           register)
+  ((?gen95 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
+   (?gen96 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
+   (?gen97 SYMBOL
+           (and (instance-existp (symbol-to-instance-name ?current-argument))
+                (eq register
+                    (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "eq %s %s %s " (send ?gen95 get-refers-to)
           (send ?gen96 get-refers-to)
@@ -665,15 +769,19 @@
 (defmethod iris32::lnot
   ((?gen100 SYMBOL
             (registerp ?current-argument))
-   (?gen101 INSTANCE
-            register)
+   (?gen101 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "not %s %s " ?gen100
           (send ?gen101 get-refers-to)
           ))
 (defmethod iris32::lnot
-  ((?gen102 INSTANCE
-            register)
+  ((?gen102 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen103 SYMBOL
             (registerp ?current-argument))
    )
@@ -681,10 +789,14 @@
           ?gen103
           ))
 (defmethod iris32::lnot
-  ((?gen104 INSTANCE
-            register)
-   (?gen105 INSTANCE
-            register)
+  ((?gen104 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen105 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "not %s %s " (send ?gen104 get-refers-to)
           (send ?gen105 get-refers-to)
@@ -701,15 +813,19 @@
 (defmethod iris32::move
   ((?gen108 SYMBOL
             (registerp ?current-argument))
-   (?gen109 INSTANCE
-            register)
+   (?gen109 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "move %s %s " ?gen108
           (send ?gen109 get-refers-to)
           ))
 (defmethod iris32::move
-  ((?gen110 INSTANCE
-            register)
+  ((?gen110 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen111 SYMBOL
             (registerp ?current-argument))
    )
@@ -717,10 +833,14 @@
           ?gen111
           ))
 (defmethod iris32::move
-  ((?gen112 INSTANCE
-            register)
-   (?gen113 INSTANCE
-            register)
+  ((?gen112 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen113 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "move %s %s " (send ?gen112 get-refers-to)
           (send ?gen113 get-refers-to)
@@ -737,15 +857,19 @@
 (defmethod iris32::swap
   ((?gen116 SYMBOL
             (registerp ?current-argument))
-   (?gen117 INSTANCE
-            register)
+   (?gen117 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "swap %s %s " ?gen116
           (send ?gen117 get-refers-to)
           ))
 (defmethod iris32::swap
-  ((?gen118 INSTANCE
-            register)
+  ((?gen118 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen119 SYMBOL
             (registerp ?current-argument))
    )
@@ -753,10 +877,14 @@
           ?gen119
           ))
 (defmethod iris32::swap
-  ((?gen120 INSTANCE
-            register)
-   (?gen121 INSTANCE
-            register)
+  ((?gen120 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen121 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "swap %s %s " (send ?gen120 get-refers-to)
           (send ?gen121 get-refers-to)
@@ -773,15 +901,19 @@
 (defmethod iris32::ld
   ((?gen124 SYMBOL
             (registerp ?current-argument))
-   (?gen125 INSTANCE
-            register)
+   (?gen125 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "ld %s %s " ?gen124
           (send ?gen125 get-refers-to)
           ))
 (defmethod iris32::ld
-  ((?gen126 INSTANCE
-            register)
+  ((?gen126 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen127 SYMBOL
             (registerp ?current-argument))
    )
@@ -789,10 +921,14 @@
           ?gen127
           ))
 (defmethod iris32::ld
-  ((?gen128 INSTANCE
-            register)
-   (?gen129 INSTANCE
-            register)
+  ((?gen128 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen129 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "ld %s %s " (send ?gen128 get-refers-to)
           (send ?gen129 get-refers-to)
@@ -809,15 +945,19 @@
 (defmethod iris32::st
   ((?gen132 SYMBOL
             (registerp ?current-argument))
-   (?gen133 INSTANCE
-            register)
+   (?gen133 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "st %s %s " ?gen132
           (send ?gen133 get-refers-to)
           ))
 (defmethod iris32::st
-  ((?gen134 INSTANCE
-            register)
+  ((?gen134 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen135 SYMBOL
             (registerp ?current-argument))
    )
@@ -825,10 +965,14 @@
           ?gen135
           ))
 (defmethod iris32::st
-  ((?gen136 INSTANCE
-            register)
-   (?gen137 INSTANCE
-            register)
+  ((?gen136 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen137 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "st %s %s " (send ?gen136 get-refers-to)
           (send ?gen137 get-refers-to)
@@ -845,15 +989,19 @@
 (defmethod iris32::jl
   ((?gen140 SYMBOL
             (registerp ?current-argument))
-   (?gen141 INSTANCE
-            register)
+   (?gen141 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "jl %s %s " ?gen140
           (send ?gen141 get-refers-to)
           ))
 (defmethod iris32::jl
-  ((?gen142 INSTANCE
-            register)
+  ((?gen142 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen143 SYMBOL
             (registerp ?current-argument))
    )
@@ -861,10 +1009,14 @@
           ?gen143
           ))
 (defmethod iris32::jl
-  ((?gen144 INSTANCE
-            register)
-   (?gen145 INSTANCE
-            register)
+  ((?gen144 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen145 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "jl %s %s " (send ?gen144 get-refers-to)
           (send ?gen145 get-refers-to)
@@ -881,15 +1033,19 @@
 (defmethod iris32::jt
   ((?gen148 SYMBOL
             (registerp ?current-argument))
-   (?gen149 INSTANCE
-            register)
+   (?gen149 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "jt %s %s " ?gen148
           (send ?gen149 get-refers-to)
           ))
 (defmethod iris32::jt
-  ((?gen150 INSTANCE
-            register)
+  ((?gen150 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen151 SYMBOL
             (registerp ?current-argument))
    )
@@ -897,10 +1053,14 @@
           ?gen151
           ))
 (defmethod iris32::jt
-  ((?gen152 INSTANCE
-            register)
-   (?gen153 INSTANCE
-            register)
+  ((?gen152 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen153 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "jt %s %s " (send ?gen152 get-refers-to)
           (send ?gen153 get-refers-to)
@@ -917,15 +1077,19 @@
 (defmethod iris32::jf
   ((?gen156 SYMBOL
             (registerp ?current-argument))
-   (?gen157 INSTANCE
-            register)
+   (?gen157 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "jf %s %s " ?gen156
           (send ?gen157 get-refers-to)
           ))
 (defmethod iris32::jf
-  ((?gen158 INSTANCE
-            register)
+  ((?gen158 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen159 SYMBOL
             (registerp ?current-argument))
    )
@@ -933,10 +1097,14 @@
           ?gen159
           ))
 (defmethod iris32::jf
-  ((?gen160 INSTANCE
-            register)
-   (?gen161 INSTANCE
-            register)
+  ((?gen160 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen161 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "jf %s %s " (send ?gen160 get-refers-to)
           (send ?gen161 get-refers-to)
@@ -955,8 +1123,10 @@
 (defmethod iris32::addi
   ((?gen165 SYMBOL
             (registerp ?current-argument))
-   (?gen166 INSTANCE
-            register)
+   (?gen166 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen167 (immediatep ?current-argument))
    )
   (format nil "addi %s %s %s " ?gen165
@@ -964,8 +1134,10 @@
           (str-cat ?gen167)
           ))
 (defmethod iris32::addi
-  ((?gen168 INSTANCE
-            register)
+  ((?gen168 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen169 SYMBOL
             (registerp ?current-argument))
    (?gen170 (immediatep ?current-argument))
@@ -975,10 +1147,14 @@
           (str-cat ?gen170)
           ))
 (defmethod iris32::addi
-  ((?gen171 INSTANCE
-            register)
-   (?gen172 INSTANCE
-            register)
+  ((?gen171 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen172 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen173 (immediatep ?current-argument))
    )
   (format nil "addi %s %s %s " (send ?gen171 get-refers-to)
@@ -999,8 +1175,10 @@
 (defmethod iris32::subi
   ((?gen177 SYMBOL
             (registerp ?current-argument))
-   (?gen178 INSTANCE
-            register)
+   (?gen178 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen179 (immediatep ?current-argument))
    )
   (format nil "subi %s %s %s " ?gen177
@@ -1008,8 +1186,10 @@
           (str-cat ?gen179)
           ))
 (defmethod iris32::subi
-  ((?gen180 INSTANCE
-            register)
+  ((?gen180 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen181 SYMBOL
             (registerp ?current-argument))
    (?gen182 (immediatep ?current-argument))
@@ -1019,10 +1199,14 @@
           (str-cat ?gen182)
           ))
 (defmethod iris32::subi
-  ((?gen183 INSTANCE
-            register)
-   (?gen184 INSTANCE
-            register)
+  ((?gen183 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen184 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen185 (immediatep ?current-argument))
    )
   (format nil "subi %s %s %s " (send ?gen183 get-refers-to)
@@ -1043,8 +1227,10 @@
 (defmethod iris32::muli
   ((?gen189 SYMBOL
             (registerp ?current-argument))
-   (?gen190 INSTANCE
-            register)
+   (?gen190 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen191 (immediatep ?current-argument))
    )
   (format nil "muli %s %s %s " ?gen189
@@ -1052,8 +1238,10 @@
           (str-cat ?gen191)
           ))
 (defmethod iris32::muli
-  ((?gen192 INSTANCE
-            register)
+  ((?gen192 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen193 SYMBOL
             (registerp ?current-argument))
    (?gen194 (immediatep ?current-argument))
@@ -1063,10 +1251,14 @@
           (str-cat ?gen194)
           ))
 (defmethod iris32::muli
-  ((?gen195 INSTANCE
-            register)
-   (?gen196 INSTANCE
-            register)
+  ((?gen195 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen196 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen197 (immediatep ?current-argument))
    )
   (format nil "muli %s %s %s " (send ?gen195 get-refers-to)
@@ -1087,8 +1279,10 @@
 (defmethod iris32::divi
   ((?gen201 SYMBOL
             (registerp ?current-argument))
-   (?gen202 INSTANCE
-            register)
+   (?gen202 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen203 (immediatep ?current-argument))
    )
   (format nil "divi %s %s %s " ?gen201
@@ -1096,8 +1290,10 @@
           (str-cat ?gen203)
           ))
 (defmethod iris32::divi
-  ((?gen204 INSTANCE
-            register)
+  ((?gen204 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen205 SYMBOL
             (registerp ?current-argument))
    (?gen206 (immediatep ?current-argument))
@@ -1107,10 +1303,14 @@
           (str-cat ?gen206)
           ))
 (defmethod iris32::divi
-  ((?gen207 INSTANCE
-            register)
-   (?gen208 INSTANCE
-            register)
+  ((?gen207 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen208 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen209 (immediatep ?current-argument))
    )
   (format nil "divi %s %s %s " (send ?gen207 get-refers-to)
@@ -1131,8 +1331,10 @@
 (defmethod iris32::remi
   ((?gen213 SYMBOL
             (registerp ?current-argument))
-   (?gen214 INSTANCE
-            register)
+   (?gen214 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen215 (immediatep ?current-argument))
    )
   (format nil "remi %s %s %s " ?gen213
@@ -1140,8 +1342,10 @@
           (str-cat ?gen215)
           ))
 (defmethod iris32::remi
-  ((?gen216 INSTANCE
-            register)
+  ((?gen216 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen217 SYMBOL
             (registerp ?current-argument))
    (?gen218 (immediatep ?current-argument))
@@ -1151,10 +1355,14 @@
           (str-cat ?gen218)
           ))
 (defmethod iris32::remi
-  ((?gen219 INSTANCE
-            register)
-   (?gen220 INSTANCE
-            register)
+  ((?gen219 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen220 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen221 (immediatep ?current-argument))
    )
   (format nil "remi %s %s %s " (send ?gen219 get-refers-to)
@@ -1175,8 +1383,10 @@
 (defmethod iris32::shli
   ((?gen225 SYMBOL
             (registerp ?current-argument))
-   (?gen226 INSTANCE
-            register)
+   (?gen226 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen227 (immediatep ?current-argument))
    )
   (format nil "shli %s %s %s " ?gen225
@@ -1184,8 +1394,10 @@
           (str-cat ?gen227)
           ))
 (defmethod iris32::shli
-  ((?gen228 INSTANCE
-            register)
+  ((?gen228 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen229 SYMBOL
             (registerp ?current-argument))
    (?gen230 (immediatep ?current-argument))
@@ -1195,10 +1407,14 @@
           (str-cat ?gen230)
           ))
 (defmethod iris32::shli
-  ((?gen231 INSTANCE
-            register)
-   (?gen232 INSTANCE
-            register)
+  ((?gen231 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen232 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen233 (immediatep ?current-argument))
    )
   (format nil "shli %s %s %s " (send ?gen231 get-refers-to)
@@ -1219,8 +1435,10 @@
 (defmethod iris32::shri
   ((?gen237 SYMBOL
             (registerp ?current-argument))
-   (?gen238 INSTANCE
-            register)
+   (?gen238 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen239 (immediatep ?current-argument))
    )
   (format nil "shri %s %s %s " ?gen237
@@ -1228,8 +1446,10 @@
           (str-cat ?gen239)
           ))
 (defmethod iris32::shri
-  ((?gen240 INSTANCE
-            register)
+  ((?gen240 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen241 SYMBOL
             (registerp ?current-argument))
    (?gen242 (immediatep ?current-argument))
@@ -1239,10 +1459,14 @@
           (str-cat ?gen242)
           ))
 (defmethod iris32::shri
-  ((?gen243 INSTANCE
-            register)
-   (?gen244 INSTANCE
-            register)
+  ((?gen243 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen244 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen245 (immediatep ?current-argument))
    )
   (format nil "shri %s %s %s " (send ?gen243 get-refers-to)
@@ -1263,8 +1487,10 @@
 (defmethod iris32::eqi
   ((?gen249 SYMBOL
             (registerp ?current-argument))
-   (?gen250 INSTANCE
-            register)
+   (?gen250 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen251 (immediatep ?current-argument))
    )
   (format nil "eqi %s %s %s " ?gen249
@@ -1272,8 +1498,10 @@
           (str-cat ?gen251)
           ))
 (defmethod iris32::eqi
-  ((?gen252 INSTANCE
-            register)
+  ((?gen252 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen253 SYMBOL
             (registerp ?current-argument))
    (?gen254 (immediatep ?current-argument))
@@ -1283,10 +1511,14 @@
           (str-cat ?gen254)
           ))
 (defmethod iris32::eqi
-  ((?gen255 INSTANCE
-            register)
-   (?gen256 INSTANCE
-            register)
+  ((?gen255 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen256 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen257 (immediatep ?current-argument))
    )
   (format nil "eqi %s %s %s " (send ?gen255 get-refers-to)
@@ -1307,8 +1539,10 @@
 (defmethod iris32::nei
   ((?gen261 SYMBOL
             (registerp ?current-argument))
-   (?gen262 INSTANCE
-            register)
+   (?gen262 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen263 (immediatep ?current-argument))
    )
   (format nil "nei %s %s %s " ?gen261
@@ -1316,8 +1550,10 @@
           (str-cat ?gen263)
           ))
 (defmethod iris32::nei
-  ((?gen264 INSTANCE
-            register)
+  ((?gen264 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen265 SYMBOL
             (registerp ?current-argument))
    (?gen266 (immediatep ?current-argument))
@@ -1327,10 +1563,14 @@
           (str-cat ?gen266)
           ))
 (defmethod iris32::nei
-  ((?gen267 INSTANCE
-            register)
-   (?gen268 INSTANCE
-            register)
+  ((?gen267 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen268 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen269 (immediatep ?current-argument))
    )
   (format nil "nei %s %s %s " (send ?gen267 get-refers-to)
@@ -1351,8 +1591,10 @@
 (defmethod iris32::lti
   ((?gen273 SYMBOL
             (registerp ?current-argument))
-   (?gen274 INSTANCE
-            register)
+   (?gen274 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen275 (immediatep ?current-argument))
    )
   (format nil "lti %s %s %s " ?gen273
@@ -1360,8 +1602,10 @@
           (str-cat ?gen275)
           ))
 (defmethod iris32::lti
-  ((?gen276 INSTANCE
-            register)
+  ((?gen276 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen277 SYMBOL
             (registerp ?current-argument))
    (?gen278 (immediatep ?current-argument))
@@ -1371,10 +1615,14 @@
           (str-cat ?gen278)
           ))
 (defmethod iris32::lti
-  ((?gen279 INSTANCE
-            register)
-   (?gen280 INSTANCE
-            register)
+  ((?gen279 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen280 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen281 (immediatep ?current-argument))
    )
   (format nil "lti %s %s %s " (send ?gen279 get-refers-to)
@@ -1395,8 +1643,10 @@
 (defmethod iris32::lei
   ((?gen285 SYMBOL
             (registerp ?current-argument))
-   (?gen286 INSTANCE
-            register)
+   (?gen286 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen287 (immediatep ?current-argument))
    )
   (format nil "lei %s %s %s " ?gen285
@@ -1404,8 +1654,10 @@
           (str-cat ?gen287)
           ))
 (defmethod iris32::lei
-  ((?gen288 INSTANCE
-            register)
+  ((?gen288 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen289 SYMBOL
             (registerp ?current-argument))
    (?gen290 (immediatep ?current-argument))
@@ -1415,10 +1667,14 @@
           (str-cat ?gen290)
           ))
 (defmethod iris32::lei
-  ((?gen291 INSTANCE
-            register)
-   (?gen292 INSTANCE
-            register)
+  ((?gen291 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen292 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen293 (immediatep ?current-argument))
    )
   (format nil "lei %s %s %s " (send ?gen291 get-refers-to)
@@ -1439,8 +1695,10 @@
 (defmethod iris32::gei
   ((?gen297 SYMBOL
             (registerp ?current-argument))
-   (?gen298 INSTANCE
-            register)
+   (?gen298 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen299 (immediatep ?current-argument))
    )
   (format nil "gei %s %s %s " ?gen297
@@ -1448,8 +1706,10 @@
           (str-cat ?gen299)
           ))
 (defmethod iris32::gei
-  ((?gen300 INSTANCE
-            register)
+  ((?gen300 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen301 SYMBOL
             (registerp ?current-argument))
    (?gen302 (immediatep ?current-argument))
@@ -1459,10 +1719,14 @@
           (str-cat ?gen302)
           ))
 (defmethod iris32::gei
-  ((?gen303 INSTANCE
-            register)
-   (?gen304 INSTANCE
-            register)
+  ((?gen303 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen304 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen305 (immediatep ?current-argument))
    )
   (format nil "gei %s %s %s " (send ?gen303 get-refers-to)
@@ -1486,8 +1750,10 @@
             (registerp ?current-argument))
    (?gen310 SYMBOL
             (registerp ?current-argument))
-   (?gen311 INSTANCE
-            register)
+   (?gen311 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "add %s %s %s " ?gen309
           ?gen310
@@ -1496,8 +1762,10 @@
 (defmethod iris32::add
   ((?gen312 SYMBOL
             (registerp ?current-argument))
-   (?gen313 INSTANCE
-            register)
+   (?gen313 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen314 SYMBOL
             (registerp ?current-argument))
    )
@@ -1508,18 +1776,24 @@
 (defmethod iris32::add
   ((?gen315 SYMBOL
             (registerp ?current-argument))
-   (?gen316 INSTANCE
-            register)
-   (?gen317 INSTANCE
-            register)
+   (?gen316 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen317 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "add %s %s %s " ?gen315
           (send ?gen316 get-refers-to)
           (send ?gen317 get-refers-to)
           ))
 (defmethod iris32::add
-  ((?gen318 INSTANCE
-            register)
+  ((?gen318 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen319 SYMBOL
             (registerp ?current-argument))
    (?gen320 SYMBOL
@@ -1530,22 +1804,30 @@
           ?gen320
           ))
 (defmethod iris32::add
-  ((?gen321 INSTANCE
-            register)
+  ((?gen321 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen322 SYMBOL
             (registerp ?current-argument))
-   (?gen323 INSTANCE
-            register)
+   (?gen323 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "add %s %s %s " (send ?gen321 get-refers-to)
           ?gen322
           (send ?gen323 get-refers-to)
           ))
 (defmethod iris32::add
-  ((?gen324 INSTANCE
-            register)
-   (?gen325 INSTANCE
-            register)
+  ((?gen324 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen325 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen326 SYMBOL
             (registerp ?current-argument))
    )
@@ -1554,12 +1836,18 @@
           ?gen326
           ))
 (defmethod iris32::add
-  ((?gen327 INSTANCE
-            register)
-   (?gen328 INSTANCE
-            register)
-   (?gen329 INSTANCE
-            register)
+  ((?gen327 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen328 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen329 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "add %s %s %s " (send ?gen327 get-refers-to)
           (send ?gen328 get-refers-to)
@@ -1582,8 +1870,10 @@
             (registerp ?current-argument))
    (?gen334 SYMBOL
             (registerp ?current-argument))
-   (?gen335 INSTANCE
-            register)
+   (?gen335 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "sub %s %s %s " ?gen333
           ?gen334
@@ -1592,8 +1882,10 @@
 (defmethod iris32::sub
   ((?gen336 SYMBOL
             (registerp ?current-argument))
-   (?gen337 INSTANCE
-            register)
+   (?gen337 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen338 SYMBOL
             (registerp ?current-argument))
    )
@@ -1604,18 +1896,24 @@
 (defmethod iris32::sub
   ((?gen339 SYMBOL
             (registerp ?current-argument))
-   (?gen340 INSTANCE
-            register)
-   (?gen341 INSTANCE
-            register)
+   (?gen340 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen341 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "sub %s %s %s " ?gen339
           (send ?gen340 get-refers-to)
           (send ?gen341 get-refers-to)
           ))
 (defmethod iris32::sub
-  ((?gen342 INSTANCE
-            register)
+  ((?gen342 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen343 SYMBOL
             (registerp ?current-argument))
    (?gen344 SYMBOL
@@ -1626,22 +1924,30 @@
           ?gen344
           ))
 (defmethod iris32::sub
-  ((?gen345 INSTANCE
-            register)
+  ((?gen345 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen346 SYMBOL
             (registerp ?current-argument))
-   (?gen347 INSTANCE
-            register)
+   (?gen347 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "sub %s %s %s " (send ?gen345 get-refers-to)
           ?gen346
           (send ?gen347 get-refers-to)
           ))
 (defmethod iris32::sub
-  ((?gen348 INSTANCE
-            register)
-   (?gen349 INSTANCE
-            register)
+  ((?gen348 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen349 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen350 SYMBOL
             (registerp ?current-argument))
    )
@@ -1650,12 +1956,18 @@
           ?gen350
           ))
 (defmethod iris32::sub
-  ((?gen351 INSTANCE
-            register)
-   (?gen352 INSTANCE
-            register)
-   (?gen353 INSTANCE
-            register)
+  ((?gen351 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen352 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen353 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "sub %s %s %s " (send ?gen351 get-refers-to)
           (send ?gen352 get-refers-to)
@@ -1678,8 +1990,10 @@
             (registerp ?current-argument))
    (?gen358 SYMBOL
             (registerp ?current-argument))
-   (?gen359 INSTANCE
-            register)
+   (?gen359 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "mul %s %s %s " ?gen357
           ?gen358
@@ -1688,8 +2002,10 @@
 (defmethod iris32::mul
   ((?gen360 SYMBOL
             (registerp ?current-argument))
-   (?gen361 INSTANCE
-            register)
+   (?gen361 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen362 SYMBOL
             (registerp ?current-argument))
    )
@@ -1700,18 +2016,24 @@
 (defmethod iris32::mul
   ((?gen363 SYMBOL
             (registerp ?current-argument))
-   (?gen364 INSTANCE
-            register)
-   (?gen365 INSTANCE
-            register)
+   (?gen364 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen365 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "mul %s %s %s " ?gen363
           (send ?gen364 get-refers-to)
           (send ?gen365 get-refers-to)
           ))
 (defmethod iris32::mul
-  ((?gen366 INSTANCE
-            register)
+  ((?gen366 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen367 SYMBOL
             (registerp ?current-argument))
    (?gen368 SYMBOL
@@ -1722,22 +2044,30 @@
           ?gen368
           ))
 (defmethod iris32::mul
-  ((?gen369 INSTANCE
-            register)
+  ((?gen369 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen370 SYMBOL
             (registerp ?current-argument))
-   (?gen371 INSTANCE
-            register)
+   (?gen371 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "mul %s %s %s " (send ?gen369 get-refers-to)
           ?gen370
           (send ?gen371 get-refers-to)
           ))
 (defmethod iris32::mul
-  ((?gen372 INSTANCE
-            register)
-   (?gen373 INSTANCE
-            register)
+  ((?gen372 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen373 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen374 SYMBOL
             (registerp ?current-argument))
    )
@@ -1746,12 +2076,18 @@
           ?gen374
           ))
 (defmethod iris32::mul
-  ((?gen375 INSTANCE
-            register)
-   (?gen376 INSTANCE
-            register)
-   (?gen377 INSTANCE
-            register)
+  ((?gen375 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen376 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen377 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "mul %s %s %s " (send ?gen375 get-refers-to)
           (send ?gen376 get-refers-to)
@@ -1774,8 +2110,10 @@
             (registerp ?current-argument))
    (?gen382 SYMBOL
             (registerp ?current-argument))
-   (?gen383 INSTANCE
-            register)
+   (?gen383 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "div %s %s %s " ?gen381
           ?gen382
@@ -1784,8 +2122,10 @@
 (defmethod iris32::div
   ((?gen384 SYMBOL
             (registerp ?current-argument))
-   (?gen385 INSTANCE
-            register)
+   (?gen385 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen386 SYMBOL
             (registerp ?current-argument))
    )
@@ -1796,18 +2136,24 @@
 (defmethod iris32::div
   ((?gen387 SYMBOL
             (registerp ?current-argument))
-   (?gen388 INSTANCE
-            register)
-   (?gen389 INSTANCE
-            register)
+   (?gen388 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen389 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "div %s %s %s " ?gen387
           (send ?gen388 get-refers-to)
           (send ?gen389 get-refers-to)
           ))
 (defmethod iris32::div
-  ((?gen390 INSTANCE
-            register)
+  ((?gen390 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen391 SYMBOL
             (registerp ?current-argument))
    (?gen392 SYMBOL
@@ -1818,22 +2164,30 @@
           ?gen392
           ))
 (defmethod iris32::div
-  ((?gen393 INSTANCE
-            register)
+  ((?gen393 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen394 SYMBOL
             (registerp ?current-argument))
-   (?gen395 INSTANCE
-            register)
+   (?gen395 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "div %s %s %s " (send ?gen393 get-refers-to)
           ?gen394
           (send ?gen395 get-refers-to)
           ))
 (defmethod iris32::div
-  ((?gen396 INSTANCE
-            register)
-   (?gen397 INSTANCE
-            register)
+  ((?gen396 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen397 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen398 SYMBOL
             (registerp ?current-argument))
    )
@@ -1842,12 +2196,18 @@
           ?gen398
           ))
 (defmethod iris32::div
-  ((?gen399 INSTANCE
-            register)
-   (?gen400 INSTANCE
-            register)
-   (?gen401 INSTANCE
-            register)
+  ((?gen399 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen400 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen401 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "div %s %s %s " (send ?gen399 get-refers-to)
           (send ?gen400 get-refers-to)
@@ -1870,8 +2230,10 @@
             (registerp ?current-argument))
    (?gen406 SYMBOL
             (registerp ?current-argument))
-   (?gen407 INSTANCE
-            register)
+   (?gen407 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "rem %s %s %s " ?gen405
           ?gen406
@@ -1880,8 +2242,10 @@
 (defmethod iris32::rem
   ((?gen408 SYMBOL
             (registerp ?current-argument))
-   (?gen409 INSTANCE
-            register)
+   (?gen409 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen410 SYMBOL
             (registerp ?current-argument))
    )
@@ -1892,18 +2256,24 @@
 (defmethod iris32::rem
   ((?gen411 SYMBOL
             (registerp ?current-argument))
-   (?gen412 INSTANCE
-            register)
-   (?gen413 INSTANCE
-            register)
+   (?gen412 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen413 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "rem %s %s %s " ?gen411
           (send ?gen412 get-refers-to)
           (send ?gen413 get-refers-to)
           ))
 (defmethod iris32::rem
-  ((?gen414 INSTANCE
-            register)
+  ((?gen414 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen415 SYMBOL
             (registerp ?current-argument))
    (?gen416 SYMBOL
@@ -1914,22 +2284,30 @@
           ?gen416
           ))
 (defmethod iris32::rem
-  ((?gen417 INSTANCE
-            register)
+  ((?gen417 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen418 SYMBOL
             (registerp ?current-argument))
-   (?gen419 INSTANCE
-            register)
+   (?gen419 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "rem %s %s %s " (send ?gen417 get-refers-to)
           ?gen418
           (send ?gen419 get-refers-to)
           ))
 (defmethod iris32::rem
-  ((?gen420 INSTANCE
-            register)
-   (?gen421 INSTANCE
-            register)
+  ((?gen420 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen421 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen422 SYMBOL
             (registerp ?current-argument))
    )
@@ -1938,12 +2316,18 @@
           ?gen422
           ))
 (defmethod iris32::rem
-  ((?gen423 INSTANCE
-            register)
-   (?gen424 INSTANCE
-            register)
-   (?gen425 INSTANCE
-            register)
+  ((?gen423 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen424 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen425 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "rem %s %s %s " (send ?gen423 get-refers-to)
           (send ?gen424 get-refers-to)
@@ -1966,8 +2350,10 @@
             (registerp ?current-argument))
    (?gen430 SYMBOL
             (registerp ?current-argument))
-   (?gen431 INSTANCE
-            register)
+   (?gen431 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "shl %s %s %s " ?gen429
           ?gen430
@@ -1976,8 +2362,10 @@
 (defmethod iris32::shl
   ((?gen432 SYMBOL
             (registerp ?current-argument))
-   (?gen433 INSTANCE
-            register)
+   (?gen433 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen434 SYMBOL
             (registerp ?current-argument))
    )
@@ -1988,18 +2376,24 @@
 (defmethod iris32::shl
   ((?gen435 SYMBOL
             (registerp ?current-argument))
-   (?gen436 INSTANCE
-            register)
-   (?gen437 INSTANCE
-            register)
+   (?gen436 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen437 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "shl %s %s %s " ?gen435
           (send ?gen436 get-refers-to)
           (send ?gen437 get-refers-to)
           ))
 (defmethod iris32::shl
-  ((?gen438 INSTANCE
-            register)
+  ((?gen438 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen439 SYMBOL
             (registerp ?current-argument))
    (?gen440 SYMBOL
@@ -2010,22 +2404,30 @@
           ?gen440
           ))
 (defmethod iris32::shl
-  ((?gen441 INSTANCE
-            register)
+  ((?gen441 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen442 SYMBOL
             (registerp ?current-argument))
-   (?gen443 INSTANCE
-            register)
+   (?gen443 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "shl %s %s %s " (send ?gen441 get-refers-to)
           ?gen442
           (send ?gen443 get-refers-to)
           ))
 (defmethod iris32::shl
-  ((?gen444 INSTANCE
-            register)
-   (?gen445 INSTANCE
-            register)
+  ((?gen444 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen445 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen446 SYMBOL
             (registerp ?current-argument))
    )
@@ -2034,12 +2436,18 @@
           ?gen446
           ))
 (defmethod iris32::shl
-  ((?gen447 INSTANCE
-            register)
-   (?gen448 INSTANCE
-            register)
-   (?gen449 INSTANCE
-            register)
+  ((?gen447 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen448 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen449 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "shl %s %s %s " (send ?gen447 get-refers-to)
           (send ?gen448 get-refers-to)
@@ -2062,8 +2470,10 @@
             (registerp ?current-argument))
    (?gen454 SYMBOL
             (registerp ?current-argument))
-   (?gen455 INSTANCE
-            register)
+   (?gen455 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "shr %s %s %s " ?gen453
           ?gen454
@@ -2072,8 +2482,10 @@
 (defmethod iris32::shr
   ((?gen456 SYMBOL
             (registerp ?current-argument))
-   (?gen457 INSTANCE
-            register)
+   (?gen457 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen458 SYMBOL
             (registerp ?current-argument))
    )
@@ -2084,18 +2496,24 @@
 (defmethod iris32::shr
   ((?gen459 SYMBOL
             (registerp ?current-argument))
-   (?gen460 INSTANCE
-            register)
-   (?gen461 INSTANCE
-            register)
+   (?gen460 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen461 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "shr %s %s %s " ?gen459
           (send ?gen460 get-refers-to)
           (send ?gen461 get-refers-to)
           ))
 (defmethod iris32::shr
-  ((?gen462 INSTANCE
-            register)
+  ((?gen462 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen463 SYMBOL
             (registerp ?current-argument))
    (?gen464 SYMBOL
@@ -2106,22 +2524,30 @@
           ?gen464
           ))
 (defmethod iris32::shr
-  ((?gen465 INSTANCE
-            register)
+  ((?gen465 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen466 SYMBOL
             (registerp ?current-argument))
-   (?gen467 INSTANCE
-            register)
+   (?gen467 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "shr %s %s %s " (send ?gen465 get-refers-to)
           ?gen466
           (send ?gen467 get-refers-to)
           ))
 (defmethod iris32::shr
-  ((?gen468 INSTANCE
-            register)
-   (?gen469 INSTANCE
-            register)
+  ((?gen468 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen469 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen470 SYMBOL
             (registerp ?current-argument))
    )
@@ -2130,12 +2556,18 @@
           ?gen470
           ))
 (defmethod iris32::shr
-  ((?gen471 INSTANCE
-            register)
-   (?gen472 INSTANCE
-            register)
-   (?gen473 INSTANCE
-            register)
+  ((?gen471 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen472 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen473 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "shr %s %s %s " (send ?gen471 get-refers-to)
           (send ?gen472 get-refers-to)
@@ -2158,8 +2590,10 @@
             (registerp ?current-argument))
    (?gen478 SYMBOL
             (registerp ?current-argument))
-   (?gen479 INSTANCE
-            register)
+   (?gen479 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "jtl %s %s %s " ?gen477
           ?gen478
@@ -2168,8 +2602,10 @@
 (defmethod iris32::jtl
   ((?gen480 SYMBOL
             (registerp ?current-argument))
-   (?gen481 INSTANCE
-            register)
+   (?gen481 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen482 SYMBOL
             (registerp ?current-argument))
    )
@@ -2180,18 +2616,24 @@
 (defmethod iris32::jtl
   ((?gen483 SYMBOL
             (registerp ?current-argument))
-   (?gen484 INSTANCE
-            register)
-   (?gen485 INSTANCE
-            register)
+   (?gen484 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen485 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "jtl %s %s %s " ?gen483
           (send ?gen484 get-refers-to)
           (send ?gen485 get-refers-to)
           ))
 (defmethod iris32::jtl
-  ((?gen486 INSTANCE
-            register)
+  ((?gen486 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen487 SYMBOL
             (registerp ?current-argument))
    (?gen488 SYMBOL
@@ -2202,22 +2644,30 @@
           ?gen488
           ))
 (defmethod iris32::jtl
-  ((?gen489 INSTANCE
-            register)
+  ((?gen489 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen490 SYMBOL
             (registerp ?current-argument))
-   (?gen491 INSTANCE
-            register)
+   (?gen491 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "jtl %s %s %s " (send ?gen489 get-refers-to)
           ?gen490
           (send ?gen491 get-refers-to)
           ))
 (defmethod iris32::jtl
-  ((?gen492 INSTANCE
-            register)
-   (?gen493 INSTANCE
-            register)
+  ((?gen492 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen493 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen494 SYMBOL
             (registerp ?current-argument))
    )
@@ -2226,12 +2676,18 @@
           ?gen494
           ))
 (defmethod iris32::jtl
-  ((?gen495 INSTANCE
-            register)
-   (?gen496 INSTANCE
-            register)
-   (?gen497 INSTANCE
-            register)
+  ((?gen495 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen496 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen497 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "jtl %s %s %s " (send ?gen495 get-refers-to)
           (send ?gen496 get-refers-to)
@@ -2254,8 +2710,10 @@
             (registerp ?current-argument))
    (?gen502 SYMBOL
             (registerp ?current-argument))
-   (?gen503 INSTANCE
-            register)
+   (?gen503 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "jfl %s %s %s " ?gen501
           ?gen502
@@ -2264,8 +2722,10 @@
 (defmethod iris32::jfl
   ((?gen504 SYMBOL
             (registerp ?current-argument))
-   (?gen505 INSTANCE
-            register)
+   (?gen505 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen506 SYMBOL
             (registerp ?current-argument))
    )
@@ -2276,18 +2736,24 @@
 (defmethod iris32::jfl
   ((?gen507 SYMBOL
             (registerp ?current-argument))
-   (?gen508 INSTANCE
-            register)
-   (?gen509 INSTANCE
-            register)
+   (?gen508 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen509 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "jfl %s %s %s " ?gen507
           (send ?gen508 get-refers-to)
           (send ?gen509 get-refers-to)
           ))
 (defmethod iris32::jfl
-  ((?gen510 INSTANCE
-            register)
+  ((?gen510 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen511 SYMBOL
             (registerp ?current-argument))
    (?gen512 SYMBOL
@@ -2298,22 +2764,30 @@
           ?gen512
           ))
 (defmethod iris32::jfl
-  ((?gen513 INSTANCE
-            register)
+  ((?gen513 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen514 SYMBOL
             (registerp ?current-argument))
-   (?gen515 INSTANCE
-            register)
+   (?gen515 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "jfl %s %s %s " (send ?gen513 get-refers-to)
           ?gen514
           (send ?gen515 get-refers-to)
           ))
 (defmethod iris32::jfl
-  ((?gen516 INSTANCE
-            register)
-   (?gen517 INSTANCE
-            register)
+  ((?gen516 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen517 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen518 SYMBOL
             (registerp ?current-argument))
    )
@@ -2322,12 +2796,18 @@
           ?gen518
           ))
 (defmethod iris32::jfl
-  ((?gen519 INSTANCE
-            register)
-   (?gen520 INSTANCE
-            register)
-   (?gen521 INSTANCE
-            register)
+  ((?gen519 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen520 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen521 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "jfl %s %s %s " (send ?gen519 get-refers-to)
           (send ?gen520 get-refers-to)
@@ -2350,8 +2830,10 @@
             (registerp ?current-argument))
    (?gen526 SYMBOL
             (registerp ?current-argument))
-   (?gen527 INSTANCE
-            register)
+   (?gen527 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "ift %s %s %s " ?gen525
           ?gen526
@@ -2360,8 +2842,10 @@
 (defmethod iris32::ift
   ((?gen528 SYMBOL
             (registerp ?current-argument))
-   (?gen529 INSTANCE
-            register)
+   (?gen529 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen530 SYMBOL
             (registerp ?current-argument))
    )
@@ -2372,18 +2856,24 @@
 (defmethod iris32::ift
   ((?gen531 SYMBOL
             (registerp ?current-argument))
-   (?gen532 INSTANCE
-            register)
-   (?gen533 INSTANCE
-            register)
+   (?gen532 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen533 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "ift %s %s %s " ?gen531
           (send ?gen532 get-refers-to)
           (send ?gen533 get-refers-to)
           ))
 (defmethod iris32::ift
-  ((?gen534 INSTANCE
-            register)
+  ((?gen534 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen535 SYMBOL
             (registerp ?current-argument))
    (?gen536 SYMBOL
@@ -2394,22 +2884,30 @@
           ?gen536
           ))
 (defmethod iris32::ift
-  ((?gen537 INSTANCE
-            register)
+  ((?gen537 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen538 SYMBOL
             (registerp ?current-argument))
-   (?gen539 INSTANCE
-            register)
+   (?gen539 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "ift %s %s %s " (send ?gen537 get-refers-to)
           ?gen538
           (send ?gen539 get-refers-to)
           ))
 (defmethod iris32::ift
-  ((?gen540 INSTANCE
-            register)
-   (?gen541 INSTANCE
-            register)
+  ((?gen540 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen541 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen542 SYMBOL
             (registerp ?current-argument))
    )
@@ -2418,12 +2916,18 @@
           ?gen542
           ))
 (defmethod iris32::ift
-  ((?gen543 INSTANCE
-            register)
-   (?gen544 INSTANCE
-            register)
-   (?gen545 INSTANCE
-            register)
+  ((?gen543 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen544 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen545 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "ift %s %s %s " (send ?gen543 get-refers-to)
           (send ?gen544 get-refers-to)
@@ -2446,8 +2950,10 @@
             (registerp ?current-argument))
    (?gen550 SYMBOL
             (registerp ?current-argument))
-   (?gen551 INSTANCE
-            register)
+   (?gen551 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "iff %s %s %s " ?gen549
           ?gen550
@@ -2456,8 +2962,10 @@
 (defmethod iris32::iff
   ((?gen552 SYMBOL
             (registerp ?current-argument))
-   (?gen553 INSTANCE
-            register)
+   (?gen553 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen554 SYMBOL
             (registerp ?current-argument))
    )
@@ -2468,18 +2976,24 @@
 (defmethod iris32::iff
   ((?gen555 SYMBOL
             (registerp ?current-argument))
-   (?gen556 INSTANCE
-            register)
-   (?gen557 INSTANCE
-            register)
+   (?gen556 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen557 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "iff %s %s %s " ?gen555
           (send ?gen556 get-refers-to)
           (send ?gen557 get-refers-to)
           ))
 (defmethod iris32::iff
-  ((?gen558 INSTANCE
-            register)
+  ((?gen558 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen559 SYMBOL
             (registerp ?current-argument))
    (?gen560 SYMBOL
@@ -2490,22 +3004,30 @@
           ?gen560
           ))
 (defmethod iris32::iff
-  ((?gen561 INSTANCE
-            register)
+  ((?gen561 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen562 SYMBOL
             (registerp ?current-argument))
-   (?gen563 INSTANCE
-            register)
+   (?gen563 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "iff %s %s %s " (send ?gen561 get-refers-to)
           ?gen562
           (send ?gen563 get-refers-to)
           ))
 (defmethod iris32::iff
-  ((?gen564 INSTANCE
-            register)
-   (?gen565 INSTANCE
-            register)
+  ((?gen564 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen565 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen566 SYMBOL
             (registerp ?current-argument))
    )
@@ -2514,12 +3036,18 @@
           ?gen566
           ))
 (defmethod iris32::iff
-  ((?gen567 INSTANCE
-            register)
-   (?gen568 INSTANCE
-            register)
-   (?gen569 INSTANCE
-            register)
+  ((?gen567 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen568 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen569 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "iff %s %s %s " (send ?gen567 get-refers-to)
           (send ?gen568 get-refers-to)
@@ -2542,8 +3070,10 @@
             (registerp ?current-argument))
    (?gen574 SYMBOL
             (registerp ?current-argument))
-   (?gen575 INSTANCE
-            register)
+   (?gen575 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "iftl %s %s %s " ?gen573
           ?gen574
@@ -2552,8 +3082,10 @@
 (defmethod iris32::iftl
   ((?gen576 SYMBOL
             (registerp ?current-argument))
-   (?gen577 INSTANCE
-            register)
+   (?gen577 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen578 SYMBOL
             (registerp ?current-argument))
    )
@@ -2564,18 +3096,24 @@
 (defmethod iris32::iftl
   ((?gen579 SYMBOL
             (registerp ?current-argument))
-   (?gen580 INSTANCE
-            register)
-   (?gen581 INSTANCE
-            register)
+   (?gen580 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen581 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "iftl %s %s %s " ?gen579
           (send ?gen580 get-refers-to)
           (send ?gen581 get-refers-to)
           ))
 (defmethod iris32::iftl
-  ((?gen582 INSTANCE
-            register)
+  ((?gen582 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen583 SYMBOL
             (registerp ?current-argument))
    (?gen584 SYMBOL
@@ -2586,22 +3124,30 @@
           ?gen584
           ))
 (defmethod iris32::iftl
-  ((?gen585 INSTANCE
-            register)
+  ((?gen585 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen586 SYMBOL
             (registerp ?current-argument))
-   (?gen587 INSTANCE
-            register)
+   (?gen587 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "iftl %s %s %s " (send ?gen585 get-refers-to)
           ?gen586
           (send ?gen587 get-refers-to)
           ))
 (defmethod iris32::iftl
-  ((?gen588 INSTANCE
-            register)
-   (?gen589 INSTANCE
-            register)
+  ((?gen588 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen589 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen590 SYMBOL
             (registerp ?current-argument))
    )
@@ -2610,12 +3156,18 @@
           ?gen590
           ))
 (defmethod iris32::iftl
-  ((?gen591 INSTANCE
-            register)
-   (?gen592 INSTANCE
-            register)
-   (?gen593 INSTANCE
-            register)
+  ((?gen591 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen592 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen593 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "iftl %s %s %s " (send ?gen591 get-refers-to)
           (send ?gen592 get-refers-to)
@@ -2638,8 +3190,10 @@
             (registerp ?current-argument))
    (?gen598 SYMBOL
             (registerp ?current-argument))
-   (?gen599 INSTANCE
-            register)
+   (?gen599 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "iffl %s %s %s " ?gen597
           ?gen598
@@ -2648,8 +3202,10 @@
 (defmethod iris32::iffl
   ((?gen600 SYMBOL
             (registerp ?current-argument))
-   (?gen601 INSTANCE
-            register)
+   (?gen601 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen602 SYMBOL
             (registerp ?current-argument))
    )
@@ -2660,18 +3216,24 @@
 (defmethod iris32::iffl
   ((?gen603 SYMBOL
             (registerp ?current-argument))
-   (?gen604 INSTANCE
-            register)
-   (?gen605 INSTANCE
-            register)
+   (?gen604 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen605 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "iffl %s %s %s " ?gen603
           (send ?gen604 get-refers-to)
           (send ?gen605 get-refers-to)
           ))
 (defmethod iris32::iffl
-  ((?gen606 INSTANCE
-            register)
+  ((?gen606 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen607 SYMBOL
             (registerp ?current-argument))
    (?gen608 SYMBOL
@@ -2682,22 +3244,30 @@
           ?gen608
           ))
 (defmethod iris32::iffl
-  ((?gen609 INSTANCE
-            register)
+  ((?gen609 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen610 SYMBOL
             (registerp ?current-argument))
-   (?gen611 INSTANCE
-            register)
+   (?gen611 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "iffl %s %s %s " (send ?gen609 get-refers-to)
           ?gen610
           (send ?gen611 get-refers-to)
           ))
 (defmethod iris32::iffl
-  ((?gen612 INSTANCE
-            register)
-   (?gen613 INSTANCE
-            register)
+  ((?gen612 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen613 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen614 SYMBOL
             (registerp ?current-argument))
    )
@@ -2706,12 +3276,18 @@
           ?gen614
           ))
 (defmethod iris32::iffl
-  ((?gen615 INSTANCE
-            register)
-   (?gen616 INSTANCE
-            register)
-   (?gen617 INSTANCE
-            register)
+  ((?gen615 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen616 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen617 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "iffl %s %s %s " (send ?gen615 get-refers-to)
           (send ?gen616 get-refers-to)
@@ -2734,8 +3310,10 @@
             (registerp ?current-argument))
    (?gen622 SYMBOL
             (registerp ?current-argument))
-   (?gen623 INSTANCE
-            register)
+   (?gen623 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "ne %s %s %s " ?gen621
           ?gen622
@@ -2744,8 +3322,10 @@
 (defmethod iris32::ne
   ((?gen624 SYMBOL
             (registerp ?current-argument))
-   (?gen625 INSTANCE
-            register)
+   (?gen625 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen626 SYMBOL
             (registerp ?current-argument))
    )
@@ -2756,18 +3336,24 @@
 (defmethod iris32::ne
   ((?gen627 SYMBOL
             (registerp ?current-argument))
-   (?gen628 INSTANCE
-            register)
-   (?gen629 INSTANCE
-            register)
+   (?gen628 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen629 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "ne %s %s %s " ?gen627
           (send ?gen628 get-refers-to)
           (send ?gen629 get-refers-to)
           ))
 (defmethod iris32::ne
-  ((?gen630 INSTANCE
-            register)
+  ((?gen630 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen631 SYMBOL
             (registerp ?current-argument))
    (?gen632 SYMBOL
@@ -2778,22 +3364,30 @@
           ?gen632
           ))
 (defmethod iris32::ne
-  ((?gen633 INSTANCE
-            register)
+  ((?gen633 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen634 SYMBOL
             (registerp ?current-argument))
-   (?gen635 INSTANCE
-            register)
+   (?gen635 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "ne %s %s %s " (send ?gen633 get-refers-to)
           ?gen634
           (send ?gen635 get-refers-to)
           ))
 (defmethod iris32::ne
-  ((?gen636 INSTANCE
-            register)
-   (?gen637 INSTANCE
-            register)
+  ((?gen636 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen637 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen638 SYMBOL
             (registerp ?current-argument))
    )
@@ -2802,12 +3396,18 @@
           ?gen638
           ))
 (defmethod iris32::ne
-  ((?gen639 INSTANCE
-            register)
-   (?gen640 INSTANCE
-            register)
-   (?gen641 INSTANCE
-            register)
+  ((?gen639 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen640 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen641 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "ne %s %s %s " (send ?gen639 get-refers-to)
           (send ?gen640 get-refers-to)
@@ -2830,8 +3430,10 @@
             (registerp ?current-argument))
    (?gen646 SYMBOL
             (registerp ?current-argument))
-   (?gen647 INSTANCE
-            register)
+   (?gen647 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "lt %s %s %s " ?gen645
           ?gen646
@@ -2840,8 +3442,10 @@
 (defmethod iris32::lt
   ((?gen648 SYMBOL
             (registerp ?current-argument))
-   (?gen649 INSTANCE
-            register)
+   (?gen649 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen650 SYMBOL
             (registerp ?current-argument))
    )
@@ -2852,18 +3456,24 @@
 (defmethod iris32::lt
   ((?gen651 SYMBOL
             (registerp ?current-argument))
-   (?gen652 INSTANCE
-            register)
-   (?gen653 INSTANCE
-            register)
+   (?gen652 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen653 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "lt %s %s %s " ?gen651
           (send ?gen652 get-refers-to)
           (send ?gen653 get-refers-to)
           ))
 (defmethod iris32::lt
-  ((?gen654 INSTANCE
-            register)
+  ((?gen654 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen655 SYMBOL
             (registerp ?current-argument))
    (?gen656 SYMBOL
@@ -2874,22 +3484,30 @@
           ?gen656
           ))
 (defmethod iris32::lt
-  ((?gen657 INSTANCE
-            register)
+  ((?gen657 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen658 SYMBOL
             (registerp ?current-argument))
-   (?gen659 INSTANCE
-            register)
+   (?gen659 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "lt %s %s %s " (send ?gen657 get-refers-to)
           ?gen658
           (send ?gen659 get-refers-to)
           ))
 (defmethod iris32::lt
-  ((?gen660 INSTANCE
-            register)
-   (?gen661 INSTANCE
-            register)
+  ((?gen660 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen661 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen662 SYMBOL
             (registerp ?current-argument))
    )
@@ -2898,12 +3516,18 @@
           ?gen662
           ))
 (defmethod iris32::lt
-  ((?gen663 INSTANCE
-            register)
-   (?gen664 INSTANCE
-            register)
-   (?gen665 INSTANCE
-            register)
+  ((?gen663 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen664 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen665 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "lt %s %s %s " (send ?gen663 get-refers-to)
           (send ?gen664 get-refers-to)
@@ -2926,8 +3550,10 @@
             (registerp ?current-argument))
    (?gen670 SYMBOL
             (registerp ?current-argument))
-   (?gen671 INSTANCE
-            register)
+   (?gen671 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "gt %s %s %s " ?gen669
           ?gen670
@@ -2936,8 +3562,10 @@
 (defmethod iris32::gt
   ((?gen672 SYMBOL
             (registerp ?current-argument))
-   (?gen673 INSTANCE
-            register)
+   (?gen673 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen674 SYMBOL
             (registerp ?current-argument))
    )
@@ -2948,18 +3576,24 @@
 (defmethod iris32::gt
   ((?gen675 SYMBOL
             (registerp ?current-argument))
-   (?gen676 INSTANCE
-            register)
-   (?gen677 INSTANCE
-            register)
+   (?gen676 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen677 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "gt %s %s %s " ?gen675
           (send ?gen676 get-refers-to)
           (send ?gen677 get-refers-to)
           ))
 (defmethod iris32::gt
-  ((?gen678 INSTANCE
-            register)
+  ((?gen678 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen679 SYMBOL
             (registerp ?current-argument))
    (?gen680 SYMBOL
@@ -2970,22 +3604,30 @@
           ?gen680
           ))
 (defmethod iris32::gt
-  ((?gen681 INSTANCE
-            register)
+  ((?gen681 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen682 SYMBOL
             (registerp ?current-argument))
-   (?gen683 INSTANCE
-            register)
+   (?gen683 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "gt %s %s %s " (send ?gen681 get-refers-to)
           ?gen682
           (send ?gen683 get-refers-to)
           ))
 (defmethod iris32::gt
-  ((?gen684 INSTANCE
-            register)
-   (?gen685 INSTANCE
-            register)
+  ((?gen684 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen685 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen686 SYMBOL
             (registerp ?current-argument))
    )
@@ -2994,12 +3636,18 @@
           ?gen686
           ))
 (defmethod iris32::gt
-  ((?gen687 INSTANCE
-            register)
-   (?gen688 INSTANCE
-            register)
-   (?gen689 INSTANCE
-            register)
+  ((?gen687 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen688 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen689 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "gt %s %s %s " (send ?gen687 get-refers-to)
           (send ?gen688 get-refers-to)
@@ -3022,8 +3670,10 @@
             (registerp ?current-argument))
    (?gen694 SYMBOL
             (registerp ?current-argument))
-   (?gen695 INSTANCE
-            register)
+   (?gen695 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "le %s %s %s " ?gen693
           ?gen694
@@ -3032,8 +3682,10 @@
 (defmethod iris32::le
   ((?gen696 SYMBOL
             (registerp ?current-argument))
-   (?gen697 INSTANCE
-            register)
+   (?gen697 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen698 SYMBOL
             (registerp ?current-argument))
    )
@@ -3044,18 +3696,24 @@
 (defmethod iris32::le
   ((?gen699 SYMBOL
             (registerp ?current-argument))
-   (?gen700 INSTANCE
-            register)
-   (?gen701 INSTANCE
-            register)
+   (?gen700 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen701 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "le %s %s %s " ?gen699
           (send ?gen700 get-refers-to)
           (send ?gen701 get-refers-to)
           ))
 (defmethod iris32::le
-  ((?gen702 INSTANCE
-            register)
+  ((?gen702 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen703 SYMBOL
             (registerp ?current-argument))
    (?gen704 SYMBOL
@@ -3066,22 +3724,30 @@
           ?gen704
           ))
 (defmethod iris32::le
-  ((?gen705 INSTANCE
-            register)
+  ((?gen705 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen706 SYMBOL
             (registerp ?current-argument))
-   (?gen707 INSTANCE
-            register)
+   (?gen707 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "le %s %s %s " (send ?gen705 get-refers-to)
           ?gen706
           (send ?gen707 get-refers-to)
           ))
 (defmethod iris32::le
-  ((?gen708 INSTANCE
-            register)
-   (?gen709 INSTANCE
-            register)
+  ((?gen708 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen709 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen710 SYMBOL
             (registerp ?current-argument))
    )
@@ -3090,12 +3756,18 @@
           ?gen710
           ))
 (defmethod iris32::le
-  ((?gen711 INSTANCE
-            register)
-   (?gen712 INSTANCE
-            register)
-   (?gen713 INSTANCE
-            register)
+  ((?gen711 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen712 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen713 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "le %s %s %s " (send ?gen711 get-refers-to)
           (send ?gen712 get-refers-to)
@@ -3118,8 +3790,10 @@
             (registerp ?current-argument))
    (?gen718 SYMBOL
             (registerp ?current-argument))
-   (?gen719 INSTANCE
-            register)
+   (?gen719 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "ge %s %s %s " ?gen717
           ?gen718
@@ -3128,8 +3802,10 @@
 (defmethod iris32::ge
   ((?gen720 SYMBOL
             (registerp ?current-argument))
-   (?gen721 INSTANCE
-            register)
+   (?gen721 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen722 SYMBOL
             (registerp ?current-argument))
    )
@@ -3140,18 +3816,24 @@
 (defmethod iris32::ge
   ((?gen723 SYMBOL
             (registerp ?current-argument))
-   (?gen724 INSTANCE
-            register)
-   (?gen725 INSTANCE
-            register)
+   (?gen724 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen725 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "ge %s %s %s " ?gen723
           (send ?gen724 get-refers-to)
           (send ?gen725 get-refers-to)
           ))
 (defmethod iris32::ge
-  ((?gen726 INSTANCE
-            register)
+  ((?gen726 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen727 SYMBOL
             (registerp ?current-argument))
    (?gen728 SYMBOL
@@ -3162,22 +3844,30 @@
           ?gen728
           ))
 (defmethod iris32::ge
-  ((?gen729 INSTANCE
-            register)
+  ((?gen729 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen730 SYMBOL
             (registerp ?current-argument))
-   (?gen731 INSTANCE
-            register)
+   (?gen731 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "ge %s %s %s " (send ?gen729 get-refers-to)
           ?gen730
           (send ?gen731 get-refers-to)
           ))
 (defmethod iris32::ge
-  ((?gen732 INSTANCE
-            register)
-   (?gen733 INSTANCE
-            register)
+  ((?gen732 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen733 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    (?gen734 SYMBOL
             (registerp ?current-argument))
    )
@@ -3186,23 +3876,20 @@
           ?gen734
           ))
 (defmethod iris32::ge
-  ((?gen735 INSTANCE
-            register)
-   (?gen736 INSTANCE
-            register)
-   (?gen737 INSTANCE
-            register)
+  ((?gen735 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen736 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
+   (?gen737 SYMBOL
+            (and (instance-existp (symbol-to-instance-name ?current-argument))
+                 (eq register
+                     (class (symbol-to-instance-name ?current-argument)))))
    )
   (format nil "ge %s %s %s " (send ?gen735 get-refers-to)
           (send ?gen736 get-refers-to)
           (send ?gen737 get-refers-to)
           ))
-(defmethod iris32::system-op
-  ((?code INTEGER
-          (<= 0 ?current-argument 255))
-   (?arg0 SYMBOL 
-          (registerp ?current-argument))
-   (?arg1 SYMBOL 
-          (registerp ?current-argument)))
-  (format nil "system %d %s %s" ?code ?arg0 ?arg1))
-
