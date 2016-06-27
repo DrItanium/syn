@@ -22,22 +22,6 @@ eq r247 r249 r248					 ; check to see if we should jump
 jt r247 r245						 ; jump to address if the thread invocation flag is set to true
 j r244
 
-@label thread1_idle
-j r244
-@label thread2_idle
-j r244
-@label thread3_idle
-j r244
-@label thread4_idle
-j r244
-@label thread5_idle
-j r244
-@label thread6_idle
-j r244
-@label thread7_idle
-j r244
-
-
 @label main_thread
 setl r208 printstring
 setu r208 printstring
@@ -161,42 +145,42 @@ j r208
 
 @label thread1
 @word 0x00000000
-@word thread1_idle
+@word thread_idle
 @word thread1_stack_base
 @word 0x0
 
 @label thread2
 @word 0x00000000
-@word thread2_idle
+@word thread_idle
 @word thread2_stack_base
 @word 0x0
 
 @label thread3
 @word 0x00000000
-@word thread3_idle
+@word thread_idle
 @word thread3_stack_base
 @word 0x0
 
 @label thread4
 @word 0x00000000
-@word thread4_idle
+@word thread_idle
 @word thread4_stack_base
 @word 0x0
 
 @label thread5
 @word 0x00000000
-@word thread5_idle
+@word thread_idle
 @word thread5_stack_base
 @word 0x0
 
 @label thread6
 @word 0x00000000
-@word thread6_idle
+@word thread_idle
 @word thread6_stack_base
 @word 0x0
 
 @label thread7
 @word 0x00000000
-@word thread7_idle
+@word thread_idle
 @word thread7_stack_base
 @word 0x0
