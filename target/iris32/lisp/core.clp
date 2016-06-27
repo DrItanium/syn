@@ -159,7 +159,7 @@
                                    r241 r242 r243 r244 r245 r246 r247 r248 r249 r250
                                    r251 r252 r253 r254 r255 
                                    ; aliases that the assembler understands
-                                   cp sp lr ip)
+                                   cr sp lr ip)
            )
 
 (deffunction iris32::registerp
@@ -189,6 +189,41 @@
    (?arg1 SYMBOL 
           (registerp ?current-argument)))
   (format nil "system %d %s %s" ?code ?arg0 ?arg1))
+
+(defmethod iris32::system-op
+  ((?code INTEGER
+          (<= 0 ?current-argument 255))
+   (?arg0 (register-aliasp ?current-argument))
+   (?arg1 SYMBOL 
+          (registerp ?current-argument)))
+  (format nil 
+          "system %d %s %s" 
+          ?code 
+          (send (symbol-to-instance-name ?arg0) get-refers-to)
+          ?arg1))
+
+(defmethod iris32::system-op
+  ((?code INTEGER
+          (<= 0 ?current-argument 255))
+   (?arg0 SYMBOL 
+          (registerp ?current-argument))
+   (?arg1 (register-aliasp ?current-argument)))
+  (format nil 
+          "system %d %s %s" 
+          ?code 
+          ?arg0
+          (send (symbol-to-instance-name ?arg1) get-refers-to)))
+
+(defmethod iris32::system-op
+  ((?code INTEGER
+          (<= 0 ?current-argument 255))
+   (?arg0 (register-aliasp ?current-argument))
+   (?arg1 (register-aliasp ?current-argument)))
+  (format nil 
+          "system %d %s %s" 
+          ?code 
+          (send (symbol-to-instance-name ?arg0) get-refers-to)
+          (send (symbol-to-instance-name ?arg1) get-refers-to)))
 
 
 (defgeneric iris32::ge)
