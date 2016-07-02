@@ -75,26 +75,34 @@ j lr
 
 ; ---
 ; load the current value from the list pointer
-@label car
+@label first
 	addi r48 r32 1
 	ld r48 r48
 	j lr
-@label cdr
+
+@label rest
 	addi r48 r32 2
 	ld r48 r48
 	j lr
 
 @label atomp
-	push r64		; save locals
-	push r65		; 
-	ld r64 r32		; load the first cell in the list data structure
-	and r65 r64 r1		; bit 0 in the flags cell is the atom flag
-	eq r48 r65 r1		; did we get one out of the check?
-	pop r65
-	pop r64
+	andi r48 r32 0x1	; bit 0 in the flags cell is the list flag, if it is zero then we are looking at an atom
+	eqi r48 r48 0		; did we get zero out of the check?
 	j lr
 
+@label listp
+	andi r48 r32 0x1	; bit 0 in the flags cell is the list flag
+	nei r48 r48 0x1		; did we get one out of the check?
+	j lr
 
+@label numberp
+	andi r48 r32 0x2	; bit 1 in the flags cell is the number cell
+	eqi r48 r48 0x2 	; does the flags cell equal 0b10 ??, an atom and a number
+	j lr
+@label stringp
+	andi r48 r32 0x4	; bit 2 in the flags cell is the string cell
+	eqi r48 r48 0x4		; does the flags cell equal 0b100 ??, an atom and a string
+	j lr
 
 @label nilp
 	eq r48 r32 r209
@@ -105,6 +113,14 @@ j lr
 	@word 0x00
 	@word 0x00
 	@word 0x00
+
+@label native_functions
+@word terminate_execution
+@word printchar
+@word atomp
+@word rest
+@word first
+@word nilp
 
 
 ;@label printstring
