@@ -164,6 +164,15 @@
             (<= (length$ ?current-argument)
                 32))
    $?body)
+  (printout t 
+   "?name = " ?name crlf
+   "?args = " ?args crlf
+   "?returns = " ?returns crlf
+   "?locals = " ?locals crlf
+   "?body = " ?body crlf)
+
+    
+        
   FALSE
   )
 
