@@ -90,3 +90,80 @@
                 ?output
                 (pop ?r)))
   ?output)
+
+(defclass lisp::data-element
+  (is-a register)
+  (slot type
+        (type SYMBOL)
+        (allowed-symbols number 
+                         char
+                         string
+                         list)
+        (visibility public)
+        (storage local)
+        (default ?NONE)))
+
+
+(deffunction lisp::bind-to-register
+             (?collection 
+              ?start-register 
+              ?max
+              ?error-message)
+             (if (> (length$ ?collection)
+                    ?max) then
+                 (printout werror ?error-message crlf)
+                 FALSE
+                 else
+                 (progn$ (?c ?collection)
+                         (send ?c put-refers-to 
+                               (sym-cat ?start-register
+                                        (- ?c-index 1))))
+                 ?collection))
+(deffunction lisp::args
+             ($?args)
+             (bind-to-register ?args
+                               in
+                               16
+                               "Too many input arguments"))
+(deffunction lisp::returns
+             ($?returns)
+             (bind-to-register ?returns
+                               out
+                               16
+                               "Too many output arguments"))
+(deffunction lisp::locals
+             ($?locals)
+             (bind-to-register ?locals
+                               temp
+                               32
+                               "Too many locals"))
+
+(deffunction lisp::string
+             (?title)
+             (make-instance ?title of data-element
+                           (type string)))
+(deffunction lisp::number
+             (?title)
+             (make-instance ?title of data-element
+                            (type number)))
+(deffunction lisp::list
+             (?title)
+             (make-instance ?title of data-element
+                            (type list)))
+
+
+(defmethod lisp::defun
+  ((?name SYMBOL)
+   (?args MULTIFIELD
+          (<= (length$ ?current-argument)
+              16))
+   (?returns MULTIFIELD
+             (<= (length$ ?current-argument)
+                 16))
+   (?locals MULTIFIELD
+            (<= (length$ ?current-argument)
+                32))
+   $?body)
+  FALSE
+  )
+
