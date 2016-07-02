@@ -142,7 +142,6 @@
                        swap
                        ld
                        st
-                       jl
                        jt
                        jf)
           (opcode-decl (op lnot)
@@ -161,6 +160,7 @@
           (opcode setu register immediate)
           ; jump instructions
           (opcode j register)
+          (opcode jl register)
           (opcode push register)
           (opcode pop register)
           (opcode halve register)
