@@ -54,7 +54,7 @@
 (defmethod system::push-multiple
   ($?a)
   (map push
-       $?a))
+       (expand$ ?a)))
 
 (defgeneric system::pop-multiple)
 (defmethod system::pop-multiple
@@ -62,7 +62,7 @@
   (map pop (expand$ ?a)))
 (defmethod system::pop-multiple
   ($?a)
-  (map pop $?a))
+  (map pop (expand$ ?a)))
 
 (deffunction system::thread-evaluate-jump-fns
              ()
