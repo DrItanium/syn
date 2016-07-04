@@ -159,7 +159,7 @@
                                    r241 r242 r243 r244 r245 r246 r247 r248 r249 r250
                                    r251 r252 r253 r254 r255 
                                    ; aliases that the assembler understands
-                                   cr sp lr ip)
+                                   tid cr sp lr ip)
            )
 
 (deffunction iris32::registerp
