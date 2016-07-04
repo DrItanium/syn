@@ -64,6 +64,9 @@
   ($?a)
   (map pop (expand$ ?a)))
 
+
+
+
 (deffunction system::thread-evaluate-jump-fns
              ()
              (create$ (define thread_evaluate_jump_enable
@@ -142,4 +145,33 @@
                       (j r244)
                       (map setup-idle 
                            1 2 3 4 5 6 7)))
-
+(deffunction system::printstring-fn
+             ()
+             (define printstring
+               (push-multiple lr
+                              temp0
+                              temp1
+                              temp2
+                              temp3
+                              temp4
+                              temp5)
+               (move temp0 in0)
+               (set temp3 printchar)
+               (set temp4 printstring_done)
+               (set temp5 printstring_loop)
+               (@label printstring_loop)
+               (ld temp1 temp0)
+               (ne temp2 temp1 zero)
+               (jf temp2 temp4)
+               (move in0 temp1)
+               (jl temp3)
+               (addi temp0 temp0 1)
+               (j temp5)
+               (@label printstring_done)
+               (pop-multiple temp5
+                             temp4
+                             temp3
+                             temp2
+                             temp1
+                             temp0
+                             lr)))

@@ -189,7 +189,11 @@ j lr
 ;@word 0x0A
 ;@word 0x00
 
-
+@label MEMORY_BEGIN
+@word 0x0000000
+@org 0x03DFFFFF
+@label MEMORY_END
+@word 0xFFFFFFFF
 ; stack data
 @org 0x03F00000
 @label thread0_stack_base
