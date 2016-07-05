@@ -326,8 +326,8 @@
                   (output-lets)
                   (internal-lets)
                   (system-op 1
-                   r48
-                   r48)))
+                             r48
+                             r48)))
 
 (deffunction system::stack-data-fn
              ()
