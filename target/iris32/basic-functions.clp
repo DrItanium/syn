@@ -44,7 +44,11 @@
               (thread-idle-address of register (refers-to r244))
               (nilptr of register (refers-to r209))
               (creg of register (refers-to r208))
-              (thread-jump of register (refers-to r244)))
+              (thread-jump of register (refers-to r244))
+              (memory-start of register (refers-to r96))
+              (memory-end of register (refers-to r97))
+              (memory-size of register (refers-to r98))
+              )
 
 (defgeneric system::push-multiple)
 (defmethod system::push-multiple
@@ -136,6 +140,13 @@
                       (set r209 nil) 
                       (set r0 0) 
                       (set r1 1) 
+                      (set memory-start 
+                           MEMORY_BEGIN)
+                      (set memory-end 
+                           MEMORY_END)
+                      (sub memory-size 
+                           memory-end 
+                           memory-start)
                       (@label thread_idle)
                       (ld r248 r250)
                       (addi r246 r250 1)
@@ -175,3 +186,15 @@
                              temp1
                              temp0
                              lr)))
+(deffunction system::memory-description
+             ()
+             (create$ (@label MEMORY_DATA)
+                      (@word MEMORY_BEGIN)
+                      (@word MEMORY_END)
+                      (@label MEMORY_BEGIN)
+                      (@org 0x03DFFFFF)
+                      (@label MEMORY_END)
+                      (@word 0xFFFFFFFF)))
+
+
+
