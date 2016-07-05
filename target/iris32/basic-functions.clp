@@ -71,107 +71,6 @@
 
 
 
-(deffunction system::thread-evaluate-jump-fns
-             ()
-             (create$ (define thread_evaluate_jump_enable
-                        (push-multiple temp0 
-                                       temp1)
-                        (muli temp0 in0 4)
-                        (add temp1 tcbase temp0)
-                        (st temp1 thread-invoke-flag)
-                        (pop-multiple temp1
-                                      temp0))
-                      (define thread_evaluate_jump_disable
-                        (push-multiple temp0
-                                       temp1)
-                        (muli temp0 in0 4)
-                        (add temp1 tcbase temp0)
-                        (st temp1 zero)
-                        (pop-multiple temp1
-                                      temp0))))
-
-(deffunction system::thread-control-data
-             ()
-             (create$ (@org 0x03FF0000)
-                      (@label thread_control_block_base)
-                      (decl-thread-control-block 0 
-                                                 TRUE 
-                                                 main_thread)
-                      (map decl-thread-control-block 
-                           1 2 3 4 5 6 7)))
-(deffunction system::terminate-execution-fn
-             ()
-             (create$ (@label terminate_execution)
-                      (system-op 0 zero zero)))
-(deffunction system::printchar-fn
-             ()
-             (define printchar
-               (system-op 2 
-                          r32 
-                          r32)))
-(deffunction system::readchar-fn
-             ()
-             (define printchar
-               (system-op 1 r48 r48)))
-(deffunction system::stack-data-fn
-             ()
-             (map stack-entry 0 1 2 3 4 5 6 7))
-
-(deffunction system::main-thread-fn
-             ()
-             (create$ (@label main_thread)
-                      ; (set r208 printstring)
-                      ; (set r32 string)
-                      ; (jl r208)
-                      (set r208 
-                           terminate_execution)
-                      (j r208)))
-
-(deffunction system::init-fn
-             ()
-             (create$ (set r243 thread_control_block_base) 
-                      (muli r242 
-                            tid 
-                            4) 
-                      (add r250 
-                           r243 
-                           r242) 
-                      (addi r249 
-                            r250 
-                            2) 
-                      (ld sp 
-                          r249) 
-                      (move r240 
-                            sp) 
-                      (set r249 
-                           0xFFFFFFFF) 
-                      (set r244 
-                           thread_idle) 
-                      (set r0 0) 
-                      (set r1 1) 
-                      (set memory-start 
-                           MEMORY_BEGIN)
-                      (set memory-end 
-                           MEMORY_END)
-                      (sub memory-size 
-                           memory-end 
-                           memory-start)
-                      (@label thread_idle)
-                      (ld r248 
-                          r250)
-                      (addi r246 
-                            r250 
-                            1)
-                      (ld r245 
-                          r246)
-                      (eq r247 
-                          r249 
-                          r248)
-                      (jt r247 
-                          r245)
-                      (j r244)
-                      (map setup-idle 
-                           1 2 3 4 5 6 7)))
 
 (defmethod system::let
   ((?title SYMBOL
@@ -299,7 +198,6 @@
   (if (open ?path
             (bind ?file
                   (gensym*))
-            ?file
             "w") then
     (progn$ (?l ?lines)
             (printout ?file 
@@ -316,7 +214,6 @@
   (if (open ?path 
             (bind ?file
                   (gensym*))
-            ?file 
             "r") then
     (bind ?lines
           (create$))
@@ -370,4 +267,124 @@
                   "iris32asm %s" 
                   ?input)))
 
+(deffunction system::thread-evaluate-jump-fns
+             ()
+             (create$ (def thread_evaluate_jump_enable
+                           (input-lets thread-id)
+                           (output-lets)
+                           (internal-lets offset 
+                                          address)
+                           (muli offset 
+                                 thread-id 
+                                 4)
+                           (add address 
+                                tcbase 
+                                offset)
+                           (st address 
+                               thread-invoke-flag))
+                      (def thread_evaluate_jump_disable
+                           (input-lets thread-id)
+                           (output-lets)
+                           (internal-lets offset
+                                          address)
+                           (muli offset
+                                 thread-id
+                                 4)
+                           (add address
+                                tcbase
+                                offset)
+                           (st address
+                               zero))))
 
+(deffunction system::thread-control-data
+             ()
+             (create$ (@org 0x03FF0000)
+                      (@label thread_control_block_base)
+                      (decl-thread-control-block 0 
+                                                 TRUE 
+                                                 main_thread)
+                      (map decl-thread-control-block 
+                           1 2 3 4 5 6 7)))
+(deffunction system::terminate-execution-fn
+             ()
+             (create$ (@label terminate_execution)
+                      (system-op 0 zero zero)))
+(deffunction system::printchar-fn
+             ()
+             (def printchar
+                  (input-lets)
+                  (output-lets)
+                  (internal-lets)
+                  (system-op 2
+                             r32
+                             r32)))
+
+(deffunction system::readchar-fn
+             ()
+             (def readchar
+                  (input-lets)
+                  (output-lets)
+                  (internal-lets)
+                  (system-op 1
+                   r48
+                   r48)))
+
+(deffunction system::stack-data-fn
+             ()
+             (map stack-entry 0 1 2 3 4 5 6 7))
+
+(deffunction system::main-thread-fn
+             ()
+             (create$ (@label main_thread)
+                      ; (set r208 printstring)
+                      ; (set r32 string)
+                      ; (jl r208)
+                      (set r208 
+                           terminate_execution)
+                      (j r208)))
+
+(deffunction system::init-fn
+             ()
+             (create$ (set r243 thread_control_block_base) 
+                      (muli r242 
+                            tid 
+                            4) 
+                      (add r250 
+                           r243 
+                           r242) 
+                      (addi r249 
+                            r250 
+                            2) 
+                      (ld sp 
+                          r249) 
+                      (move r240 
+                            sp) 
+                      (set r249 
+                           0xFFFFFFFF) 
+                      (set r244 
+                           thread_idle) 
+                      (set r0 0) 
+                      (set r1 1) 
+                      (set memory-start 
+                           MEMORY_BEGIN)
+                      (set memory-end 
+                           MEMORY_END)
+                      (sub memory-size 
+                           memory-end 
+                           memory-start)
+                      (@label thread_idle)
+                      (ld r248 
+                          r250)
+                      (addi r246 
+                            r250 
+                            1)
+                      (ld r245 
+                          r246)
+                      (eq r247 
+                          r249 
+                          r248)
+                      (jt r247 
+                          r245)
+                      (j r244)
+                      (map setup-idle 
+                           1 2 3 4 5 6 7)))
