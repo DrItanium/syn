@@ -274,46 +274,87 @@
                    ?internals)
              (bind ?contents 
                    (define ?title 
-                     (if (> (length$ ?internals) 0) then
+                     (if (not (empty$ ?internals)) then
                        (push-multiple ?internals)
                        else
                        (create$))
                      $?body
-                     (if (> (length$ ?internals) 0) then
+                     (if (not (empty$ ?internals)) then
                        (pop-multiple (reverse$ ?internals))
                        else
                        (create$))))
 
-             (if (> (length$ ?unmake) 0) then
-               (map unlet (expand$ ?unmake)))
+             (if (> (length$ ?unmake) 
+                    0) then
+               (map unlet 
+                    (expand$ ?unmake)))
              ?contents)
 (defgeneric system::compile)
 (defgeneric system::check)
-(defmethod system::compile
-           ((?path LEXEME))
-           (bind ?file 
-                 (gensym*))
-           (open ?path ?file "r")
-           (bind ?lines
-            (create$))
-           (while (neq (bind ?curr
-                        (readline ?file)) EOF) do
-                  (bind ?lines
-                   ?lines
-                   ?curr))
-           (check ?lines))
+(defgeneric system::read-all-lines)
+(defmethod system::read-all-lines
+  ((?path LEXEME))
+  (open ?path 
+        (bind ?file
+              (gensym*))
+        ?file 
+        "r")
+  (bind ?lines
+        (create$))
+  (while (neq (bind ?curr
+                    (readline ?file)) 
+              EOF) do
+         (bind ?lines
+               ?lines
+               ?curr))
+  (close ?file)
+  ?lines)
+
+(defmethod system::check
+  ((?input LEXEME)
+   (?output LEXEME)
+   (?lines MULTIFIELD))
+  (open ?input 
+        (bind ?name
+              (gensym*))
+        "w")
+  (progn$ (?line ?lines)
+          (printout ?name
+                    ?line crlf))
+  (close ?name)
+  (compile ?input 
+           ?output)
+  (remove ?input)
+  (remove ?output))
 
 (defmethod system::check
   ((?lines MULTIFIELD))
-  (bind ?file 
-        /tmp/compilation)
-  (bind ?output
-        /tmp/compilation.out)
-  (open ?file file "w")
-  (progn$ (?line ?lines)
-          (printout file ?line crlf))
-  (close file)
-  (system (format nil "iris32asm -o %s %s" ?output ?file))
-  (remove ?output)
-  (remove ?file))
+  (check /tmp/compilation
+         /tmp/compilation.out
+         ?lines))
+(defmethod system::check
+  ($?lines)
+  (check ?lines))
+(defmethod system::check
+  ((?input LEXEME)
+   (?output LEXEME)
+   $?lines)
+  (check ?input
+         ?output
+         ?lines))
+
+
+(defmethod system::compile
+  ((?input LEXEME)
+   (?output LEXEME))
+  (system (format nil 
+                  "iris32asm -o %s %s" 
+                  ?output 
+                  ?input)))
+(defmethod system::compile
+  ((?input LEXEME))
+  (system (format nil 
+                  "iris32asm %s" 
+                  ?input)))
+
 
