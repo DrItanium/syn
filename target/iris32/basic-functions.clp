@@ -218,27 +218,6 @@
                            ?v
                            ?output))
              ?output)
-(deffunction system::def
-             (?title ?inputs ?outputs ?internals $?body)
-             (bind ?unmake
-                   ?inputs
-                   ?outputs
-                   ?internals)
-             (bind ?contents 
-                   (define ?title 
-                     (if (> (length$ ?internals) 0) then
-                       (push-multiple ?internals)
-                       else
-                       (create$))
-                     $?body
-                     (if (> (length$ ?internals) 0) then
-                       (pop-multiple (reverse$ ?internals))
-                       else
-                       (create$))))
-
-             (if (> (length$ ?unmake) 0) then
-               (map unlet (expand$ ?unmake)))
-             ?contents)
 
 
 (deffunction system::printstring-fn
@@ -286,4 +265,55 @@
                       (@word 0xFFFFFFFF)))
 
 
+
+(deffunction system::def
+             (?title ?inputs ?outputs ?internals $?body)
+             (bind ?unmake
+                   ?inputs
+                   ?outputs
+                   ?internals)
+             (bind ?contents 
+                   (define ?title 
+                     (if (> (length$ ?internals) 0) then
+                       (push-multiple ?internals)
+                       else
+                       (create$))
+                     $?body
+                     (if (> (length$ ?internals) 0) then
+                       (pop-multiple (reverse$ ?internals))
+                       else
+                       (create$))))
+
+             (if (> (length$ ?unmake) 0) then
+               (map unlet (expand$ ?unmake)))
+             ?contents)
+(defgeneric system::compile)
+(defgeneric system::check)
+(defmethod system::compile
+           ((?path LEXEME))
+           (bind ?file 
+                 (gensym*))
+           (open ?path ?file "r")
+           (bind ?lines
+            (create$))
+           (while (neq (bind ?curr
+                        (readline ?file)) EOF) do
+                  (bind ?lines
+                   ?lines
+                   ?curr))
+           (check ?lines))
+
+(defmethod system::check
+  ((?lines MULTIFIELD))
+  (bind ?file 
+        /tmp/compilation)
+  (bind ?output
+        /tmp/compilation.out)
+  (open ?file file "w")
+  (progn$ (?line ?lines)
+          (printout file ?line crlf))
+  (close file)
+  (system (format nil "iris32asm -o %s %s" ?output ?file))
+  (remove ?output)
+  (remove ?file))
 
