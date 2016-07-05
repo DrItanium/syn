@@ -292,40 +292,53 @@
 (defgeneric system::compile)
 (defgeneric system::check)
 (defgeneric system::read-all-lines)
+(defgeneric system::write-all-lines)
+(defmethod system::write-all-lines
+  ((?path LEXEME)
+   (?lines MULTIFIELD))
+  (if (open ?path
+            (bind ?file
+                  (gensym*))
+            ?file
+            "w") then
+    (progn$ (?l ?lines)
+            (printout ?file 
+                      ?l crlf))
+    (close ?file)))
+(defmethod system::write-all-lines
+  ((?path LEXEME)
+   $?lines)
+  (write-all-lines ?path
+                   ?lines))
+
 (defmethod system::read-all-lines
   ((?path LEXEME))
-  (open ?path 
-        (bind ?file
-              (gensym*))
-        ?file 
-        "r")
-  (bind ?lines
-        (create$))
-  (while (neq (bind ?curr
-                    (readline ?file)) 
-              EOF) do
-         (bind ?lines
-               ?lines
-               ?curr))
-  (close ?file)
-  ?lines)
+  (if (open ?path 
+            (bind ?file
+                  (gensym*))
+            ?file 
+            "r") then
+    (bind ?lines
+          (create$))
+    (while (neq (bind ?curr
+                      (readline ?file)) 
+                EOF) do
+           (bind ?lines
+                 ?lines
+                 ?curr))
+    (close ?file)
+    ?lines))
 
 (defmethod system::check
   ((?input LEXEME)
    (?output LEXEME)
    (?lines MULTIFIELD))
-  (open ?input 
-        (bind ?name
-              (gensym*))
-        "w")
-  (progn$ (?line ?lines)
-          (printout ?name
-                    ?line crlf))
-  (close ?name)
-  (compile ?input 
-           ?output)
-  (remove ?input)
-  (remove ?output))
+  (if (write-all-lines ?input
+                       ?lines) then
+    (compile ?input 
+             ?output)
+    (remove ?input)
+    (remove ?output)))
 
 (defmethod system::check
   ((?lines MULTIFIELD))
