@@ -173,17 +173,73 @@
                       (map setup-idle 
                            1 2 3 4 5 6 7)))
 
-(deffunction system::let
-             ((?title SYMBOL
-                      (not (instance-existp (symbol-to-instance-name ?current-argument))))
-              (?as SYMBOL
-                   (instance-existp (symbol-to-instance-name ?current-argument))))
-             (make-instance ?title of register 
-                            (refers-to ?as)))
-(deffunction system::unlet
-             ((?title SYMBOL
-                      (instance-existp (symbol-to-instance-name ?current-argument))))
-             (unmake-instance (symbol-to-instance-name ?title)))
+(defmethod system::let
+  ((?title SYMBOL
+           (not (instance-existp (symbol-to-instance-name ?current-argument))))
+   (?as SYMBOL
+        (instance-existp (symbol-to-instance-name ?current-argument))))
+  (make-instance ?title of register 
+                 (refers-to ?as))
+  ?title)
+(defmethod system::unlet
+  ((?title SYMBOL
+           (instance-existp (symbol-to-instance-name ?current-argument))))
+  (unmake-instance (symbol-to-instance-name ?title)))
+
+(deffunction system::generic-lets
+             (?prefix ?max $?lets)
+             (if (> (length$ ?lets) ?max) then
+               (printout werror
+                         "ERROR: defined " (length$ ?lets) " lets. This is too many!" crlf)
+               (halt))
+             (bind ?output
+                   (create$))
+             (progn$ (?let ?lets)
+                     (bind ?output
+                           ?output
+                           (let ?let
+                             (sym-cat ?prefix (- ?let-index 1)))))
+             ?output)
+(deffunction system::input-lets
+             ($?lets)
+             (generic-lets in 16 ?lets))
+(deffunction system::output-lets
+             ($?lets)
+             (generic-lets out 16 ?lets))
+(deffunction system::internal-lets
+             ($?lets)
+             (generic-lets temp 32 ?lets))
+(deffunction system::reverse$
+             (?list)
+             (bind ?output
+                   (create$))
+             (progn$ (?v ?list)
+                     (bind ?output
+                           ?v
+                           ?output))
+             ?output)
+(deffunction system::def
+             (?title ?inputs ?outputs ?internals $?body)
+             (bind ?unmake
+                   ?inputs
+                   ?outputs
+                   ?internals)
+             (bind ?contents 
+                   (define ?title 
+                     (if (> (length$ ?internals) 0) then
+                       (push-multiple ?internals)
+                       else
+                       (create$))
+                     $?body
+                     (if (> (length$ ?internals) 0) then
+                       (pop-multiple (reverse$ ?internals))
+                       else
+                       (create$))))
+
+             (if (> (length$ ?unmake) 0) then
+               (map unlet (expand$ ?unmake)))
+             ?contents)
+
 
 (deffunction system::printstring-fn
              ()

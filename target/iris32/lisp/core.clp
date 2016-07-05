@@ -29,6 +29,13 @@
         (visibility public)
         (storage local)
         (default ?NONE)))
+(defmessage-handler iris32::register walk-reference-chain primary
+                    ()
+                    (if (instance-existp (symbol-to-instance-name ?self:refers-to)) then
+                        (send (symbol-to-instance-name ?self:refers-to) walk-reference-chain)
+                        else
+                        ?self:refers-to))
+                            
 
 (definstances iris32::register-aliases
               (global0 of register (refers-to r0))
@@ -199,7 +206,7 @@
   (format nil 
           "system %d %s %s" 
           ?code 
-          (send (symbol-to-instance-name ?arg0) get-refers-to)
+          (send (symbol-to-instance-name ?arg0) walk-reference-chain)
           ?arg1))
 
 (defmethod iris32::system-op
@@ -212,7 +219,7 @@
           "system %d %s %s" 
           ?code 
           ?arg0
-          (send (symbol-to-instance-name ?arg1) get-refers-to)))
+          (send (symbol-to-instance-name ?arg1) walk-reference-chain)))
 
 (defmethod iris32::system-op
   ((?code INTEGER
@@ -222,8 +229,8 @@
   (format nil 
           "system %d %s %s" 
           ?code 
-          (send (symbol-to-instance-name ?arg0) get-refers-to)
-          (send (symbol-to-instance-name ?arg1) get-refers-to)))
+          (send (symbol-to-instance-name ?arg0) walk-reference-chain)
+          (send (symbol-to-instance-name ?arg1) walk-reference-chain)))
 
 
 (defgeneric iris32::ge)
@@ -316,7 +323,7 @@
              ((?gen5 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "decr %s " (send (symbol-to-instance-name ?gen5) get-refers-to)
+             (format nil "decr %s " (send (symbol-to-instance-name ?gen5) walk-reference-chain)
  ))
 (defmethod iris32::incr
              ((?gen6 SYMBOL
@@ -328,7 +335,7 @@
              ((?gen7 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "incr %s " (send (symbol-to-instance-name ?gen7) get-refers-to)
+             (format nil "incr %s " (send (symbol-to-instance-name ?gen7) walk-reference-chain)
  ))
 (defmethod iris32::double
              ((?gen8 SYMBOL
@@ -340,7 +347,7 @@
              ((?gen9 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "double %s " (send (symbol-to-instance-name ?gen9) get-refers-to)
+             (format nil "double %s " (send (symbol-to-instance-name ?gen9) walk-reference-chain)
  ))
 (defmethod iris32::halve
              ((?gen10 SYMBOL
@@ -352,7 +359,7 @@
              ((?gen11 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "halve %s " (send (symbol-to-instance-name ?gen11) get-refers-to)
+             (format nil "halve %s " (send (symbol-to-instance-name ?gen11) walk-reference-chain)
  ))
 (defmethod iris32::pop
              ((?gen12 SYMBOL
@@ -362,9 +369,8 @@
  ))
 (defmethod iris32::pop
              ((?gen13 SYMBOL
-               (register-aliasp ?current-argument))
- )
-             (format nil "pop %s " (send (symbol-to-instance-name ?gen13) get-refers-to)
+               (register-aliasp ?current-argument)))
+             (format nil "pop %s " (send (symbol-to-instance-name ?gen13) walk-reference-chain)
  ))
 (defmethod iris32::push
              ((?gen14 SYMBOL
@@ -376,7 +382,7 @@
              ((?gen15 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "push %s " (send (symbol-to-instance-name ?gen15) get-refers-to)
+             (format nil "push %s " (send (symbol-to-instance-name ?gen15) walk-reference-chain)
  ))
 (defmethod iris32::jl
              ((?gen16 SYMBOL
@@ -388,7 +394,7 @@
              ((?gen17 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "jl %s " (send (symbol-to-instance-name ?gen17) get-refers-to)
+             (format nil "jl %s " (send (symbol-to-instance-name ?gen17) walk-reference-chain)
  ))
 (defmethod iris32::j
              ((?gen18 SYMBOL
@@ -400,14 +406,14 @@
              ((?gen19 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "j %s " (send (symbol-to-instance-name ?gen19) get-refers-to)
+             (format nil "j %s " (send (symbol-to-instance-name ?gen19) walk-reference-chain)
  ))
 (defmethod iris32::setu
              ((?gen20 SYMBOL
                (register-aliasp ?current-argument))
  (?gen21 (immediatep ?current-argument))
  )
-             (format nil "setu %s %s " (send (symbol-to-instance-name ?gen20) get-refers-to)
+             (format nil "setu %s %s " (send (symbol-to-instance-name ?gen20) walk-reference-chain)
  (str-cat ?gen21)
  ))
 (defmethod iris32::setu
@@ -423,7 +429,7 @@
                (register-aliasp ?current-argument))
  (?gen25 (immediatep ?current-argument))
  )
-             (format nil "setl %s %s " (send (symbol-to-instance-name ?gen24) get-refers-to)
+             (format nil "setl %s %s " (send (symbol-to-instance-name ?gen24) walk-reference-chain)
  (str-cat ?gen25)
  ))
 (defmethod iris32::setl
@@ -456,7 +462,7 @@
  )
              (format nil "or %s %s %s " ?gen31
  ?gen32
- (send (symbol-to-instance-name ?gen33) get-refers-to)
+ (send (symbol-to-instance-name ?gen33) walk-reference-chain)
  ))
 (defmethod iris32::lor
              ((?gen34 SYMBOL
@@ -467,7 +473,7 @@
                (registerp ?current-argument))
  )
              (format nil "or %s %s %s " ?gen34
- (send (symbol-to-instance-name ?gen35) get-refers-to)
+ (send (symbol-to-instance-name ?gen35) walk-reference-chain)
  ?gen36
  ))
 (defmethod iris32::lor
@@ -479,8 +485,8 @@
                (register-aliasp ?current-argument))
  )
              (format nil "or %s %s %s " ?gen37
- (send (symbol-to-instance-name ?gen38) get-refers-to)
- (send (symbol-to-instance-name ?gen39) get-refers-to)
+ (send (symbol-to-instance-name ?gen38) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen39) walk-reference-chain)
  ))
 (defmethod iris32::lor
              ((?gen40 SYMBOL
@@ -490,7 +496,7 @@
  (?gen42 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "or %s %s %s " (send (symbol-to-instance-name ?gen40) get-refers-to)
+             (format nil "or %s %s %s " (send (symbol-to-instance-name ?gen40) walk-reference-chain)
  ?gen41
  ?gen42
  ))
@@ -502,9 +508,9 @@
  (?gen45 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "or %s %s %s " (send (symbol-to-instance-name ?gen43) get-refers-to)
+             (format nil "or %s %s %s " (send (symbol-to-instance-name ?gen43) walk-reference-chain)
  ?gen44
- (send (symbol-to-instance-name ?gen45) get-refers-to)
+ (send (symbol-to-instance-name ?gen45) walk-reference-chain)
  ))
 (defmethod iris32::lor
              ((?gen46 SYMBOL
@@ -514,8 +520,8 @@
  (?gen48 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "or %s %s %s " (send (symbol-to-instance-name ?gen46) get-refers-to)
- (send (symbol-to-instance-name ?gen47) get-refers-to)
+             (format nil "or %s %s %s " (send (symbol-to-instance-name ?gen46) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen47) walk-reference-chain)
  ?gen48
  ))
 (defmethod iris32::lor
@@ -526,9 +532,9 @@
  (?gen51 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "or %s %s %s " (send (symbol-to-instance-name ?gen49) get-refers-to)
- (send (symbol-to-instance-name ?gen50) get-refers-to)
- (send (symbol-to-instance-name ?gen51) get-refers-to)
+             (format nil "or %s %s %s " (send (symbol-to-instance-name ?gen49) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen50) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen51) walk-reference-chain)
  ))
 (defmethod iris32::land
              ((?gen52 SYMBOL
@@ -552,7 +558,7 @@
  )
              (format nil "and %s %s %s " ?gen55
  ?gen56
- (send (symbol-to-instance-name ?gen57) get-refers-to)
+ (send (symbol-to-instance-name ?gen57) walk-reference-chain)
  ))
 (defmethod iris32::land
              ((?gen58 SYMBOL
@@ -563,7 +569,7 @@
                (registerp ?current-argument))
  )
              (format nil "and %s %s %s " ?gen58
- (send (symbol-to-instance-name ?gen59) get-refers-to)
+ (send (symbol-to-instance-name ?gen59) walk-reference-chain)
  ?gen60
  ))
 (defmethod iris32::land
@@ -575,8 +581,8 @@
                (register-aliasp ?current-argument))
  )
              (format nil "and %s %s %s " ?gen61
- (send (symbol-to-instance-name ?gen62) get-refers-to)
- (send (symbol-to-instance-name ?gen63) get-refers-to)
+ (send (symbol-to-instance-name ?gen62) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen63) walk-reference-chain)
  ))
 (defmethod iris32::land
              ((?gen64 SYMBOL
@@ -586,7 +592,7 @@
  (?gen66 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "and %s %s %s " (send (symbol-to-instance-name ?gen64) get-refers-to)
+             (format nil "and %s %s %s " (send (symbol-to-instance-name ?gen64) walk-reference-chain)
  ?gen65
  ?gen66
  ))
@@ -598,9 +604,9 @@
  (?gen69 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "and %s %s %s " (send (symbol-to-instance-name ?gen67) get-refers-to)
+             (format nil "and %s %s %s " (send (symbol-to-instance-name ?gen67) walk-reference-chain)
  ?gen68
- (send (symbol-to-instance-name ?gen69) get-refers-to)
+ (send (symbol-to-instance-name ?gen69) walk-reference-chain)
  ))
 (defmethod iris32::land
              ((?gen70 SYMBOL
@@ -610,8 +616,8 @@
  (?gen72 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "and %s %s %s " (send (symbol-to-instance-name ?gen70) get-refers-to)
- (send (symbol-to-instance-name ?gen71) get-refers-to)
+             (format nil "and %s %s %s " (send (symbol-to-instance-name ?gen70) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen71) walk-reference-chain)
  ?gen72
  ))
 (defmethod iris32::land
@@ -622,9 +628,9 @@
  (?gen75 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "and %s %s %s " (send (symbol-to-instance-name ?gen73) get-refers-to)
- (send (symbol-to-instance-name ?gen74) get-refers-to)
- (send (symbol-to-instance-name ?gen75) get-refers-to)
+             (format nil "and %s %s %s " (send (symbol-to-instance-name ?gen73) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen74) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen75) walk-reference-chain)
  ))
 (defmethod iris32::cmp_eq
              ((?gen76 SYMBOL
@@ -648,7 +654,7 @@
  )
              (format nil "eq %s %s %s " ?gen79
  ?gen80
- (send (symbol-to-instance-name ?gen81) get-refers-to)
+ (send (symbol-to-instance-name ?gen81) walk-reference-chain)
  ))
 (defmethod iris32::cmp_eq
              ((?gen82 SYMBOL
@@ -659,7 +665,7 @@
                (registerp ?current-argument))
  )
              (format nil "eq %s %s %s " ?gen82
- (send (symbol-to-instance-name ?gen83) get-refers-to)
+ (send (symbol-to-instance-name ?gen83) walk-reference-chain)
  ?gen84
  ))
 (defmethod iris32::cmp_eq
@@ -671,8 +677,8 @@
                (register-aliasp ?current-argument))
  )
              (format nil "eq %s %s %s " ?gen85
- (send (symbol-to-instance-name ?gen86) get-refers-to)
- (send (symbol-to-instance-name ?gen87) get-refers-to)
+ (send (symbol-to-instance-name ?gen86) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen87) walk-reference-chain)
  ))
 (defmethod iris32::cmp_eq
              ((?gen88 SYMBOL
@@ -682,7 +688,7 @@
  (?gen90 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "eq %s %s %s " (send (symbol-to-instance-name ?gen88) get-refers-to)
+             (format nil "eq %s %s %s " (send (symbol-to-instance-name ?gen88) walk-reference-chain)
  ?gen89
  ?gen90
  ))
@@ -694,9 +700,9 @@
  (?gen93 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "eq %s %s %s " (send (symbol-to-instance-name ?gen91) get-refers-to)
+             (format nil "eq %s %s %s " (send (symbol-to-instance-name ?gen91) walk-reference-chain)
  ?gen92
- (send (symbol-to-instance-name ?gen93) get-refers-to)
+ (send (symbol-to-instance-name ?gen93) walk-reference-chain)
  ))
 (defmethod iris32::cmp_eq
              ((?gen94 SYMBOL
@@ -706,8 +712,8 @@
  (?gen96 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "eq %s %s %s " (send (symbol-to-instance-name ?gen94) get-refers-to)
- (send (symbol-to-instance-name ?gen95) get-refers-to)
+             (format nil "eq %s %s %s " (send (symbol-to-instance-name ?gen94) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen95) walk-reference-chain)
  ?gen96
  ))
 (defmethod iris32::cmp_eq
@@ -718,9 +724,9 @@
  (?gen99 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "eq %s %s %s " (send (symbol-to-instance-name ?gen97) get-refers-to)
- (send (symbol-to-instance-name ?gen98) get-refers-to)
- (send (symbol-to-instance-name ?gen99) get-refers-to)
+             (format nil "eq %s %s %s " (send (symbol-to-instance-name ?gen97) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen98) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen99) walk-reference-chain)
  ))
 (defmethod iris32::lnot
              ((?gen100 SYMBOL
@@ -738,7 +744,7 @@
                (register-aliasp ?current-argument))
  )
              (format nil "not %s %s " ?gen102
- (send (symbol-to-instance-name ?gen103) get-refers-to)
+ (send (symbol-to-instance-name ?gen103) walk-reference-chain)
  ))
 (defmethod iris32::lnot
              ((?gen104 SYMBOL
@@ -746,7 +752,7 @@
  (?gen105 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "not %s %s " (send (symbol-to-instance-name ?gen104) get-refers-to)
+             (format nil "not %s %s " (send (symbol-to-instance-name ?gen104) walk-reference-chain)
  ?gen105
  ))
 (defmethod iris32::lnot
@@ -755,8 +761,8 @@
  (?gen107 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "not %s %s " (send (symbol-to-instance-name ?gen106) get-refers-to)
- (send (symbol-to-instance-name ?gen107) get-refers-to)
+             (format nil "not %s %s " (send (symbol-to-instance-name ?gen106) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen107) walk-reference-chain)
  ))
 (defmethod iris32::move
              ((?gen108 SYMBOL
@@ -774,7 +780,7 @@
                (register-aliasp ?current-argument))
  )
              (format nil "move %s %s " ?gen110
- (send (symbol-to-instance-name ?gen111) get-refers-to)
+ (send (symbol-to-instance-name ?gen111) walk-reference-chain)
  ))
 (defmethod iris32::move
              ((?gen112 SYMBOL
@@ -782,7 +788,7 @@
  (?gen113 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "move %s %s " (send (symbol-to-instance-name ?gen112) get-refers-to)
+             (format nil "move %s %s " (send (symbol-to-instance-name ?gen112) walk-reference-chain)
  ?gen113
  ))
 (defmethod iris32::move
@@ -791,8 +797,8 @@
  (?gen115 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "move %s %s " (send (symbol-to-instance-name ?gen114) get-refers-to)
- (send (symbol-to-instance-name ?gen115) get-refers-to)
+             (format nil "move %s %s " (send (symbol-to-instance-name ?gen114) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen115) walk-reference-chain)
  ))
 (defmethod iris32::swap
              ((?gen116 SYMBOL
@@ -810,7 +816,7 @@
                (register-aliasp ?current-argument))
  )
              (format nil "swap %s %s " ?gen118
- (send (symbol-to-instance-name ?gen119) get-refers-to)
+ (send (symbol-to-instance-name ?gen119) walk-reference-chain)
  ))
 (defmethod iris32::swap
              ((?gen120 SYMBOL
@@ -818,7 +824,7 @@
  (?gen121 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "swap %s %s " (send (symbol-to-instance-name ?gen120) get-refers-to)
+             (format nil "swap %s %s " (send (symbol-to-instance-name ?gen120) walk-reference-chain)
  ?gen121
  ))
 (defmethod iris32::swap
@@ -827,8 +833,8 @@
  (?gen123 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "swap %s %s " (send (symbol-to-instance-name ?gen122) get-refers-to)
- (send (symbol-to-instance-name ?gen123) get-refers-to)
+             (format nil "swap %s %s " (send (symbol-to-instance-name ?gen122) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen123) walk-reference-chain)
  ))
 (defmethod iris32::ld
              ((?gen124 SYMBOL
@@ -846,7 +852,7 @@
                (register-aliasp ?current-argument))
  )
              (format nil "ld %s %s " ?gen126
- (send (symbol-to-instance-name ?gen127) get-refers-to)
+ (send (symbol-to-instance-name ?gen127) walk-reference-chain)
  ))
 (defmethod iris32::ld
              ((?gen128 SYMBOL
@@ -854,7 +860,7 @@
  (?gen129 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "ld %s %s " (send (symbol-to-instance-name ?gen128) get-refers-to)
+             (format nil "ld %s %s " (send (symbol-to-instance-name ?gen128) walk-reference-chain)
  ?gen129
  ))
 (defmethod iris32::ld
@@ -863,8 +869,8 @@
  (?gen131 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "ld %s %s " (send (symbol-to-instance-name ?gen130) get-refers-to)
- (send (symbol-to-instance-name ?gen131) get-refers-to)
+             (format nil "ld %s %s " (send (symbol-to-instance-name ?gen130) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen131) walk-reference-chain)
  ))
 (defmethod iris32::st
              ((?gen132 SYMBOL
@@ -882,7 +888,7 @@
                (register-aliasp ?current-argument))
  )
              (format nil "st %s %s " ?gen134
- (send (symbol-to-instance-name ?gen135) get-refers-to)
+ (send (symbol-to-instance-name ?gen135) walk-reference-chain)
  ))
 (defmethod iris32::st
              ((?gen136 SYMBOL
@@ -890,7 +896,7 @@
  (?gen137 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "st %s %s " (send (symbol-to-instance-name ?gen136) get-refers-to)
+             (format nil "st %s %s " (send (symbol-to-instance-name ?gen136) walk-reference-chain)
  ?gen137
  ))
 (defmethod iris32::st
@@ -899,8 +905,8 @@
  (?gen139 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "st %s %s " (send (symbol-to-instance-name ?gen138) get-refers-to)
- (send (symbol-to-instance-name ?gen139) get-refers-to)
+             (format nil "st %s %s " (send (symbol-to-instance-name ?gen138) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen139) walk-reference-chain)
  ))
 (defmethod iris32::jt
              ((?gen140 SYMBOL
@@ -918,7 +924,7 @@
                (register-aliasp ?current-argument))
  )
              (format nil "jt %s %s " ?gen142
- (send (symbol-to-instance-name ?gen143) get-refers-to)
+ (send (symbol-to-instance-name ?gen143) walk-reference-chain)
  ))
 (defmethod iris32::jt
              ((?gen144 SYMBOL
@@ -926,7 +932,7 @@
  (?gen145 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "jt %s %s " (send (symbol-to-instance-name ?gen144) get-refers-to)
+             (format nil "jt %s %s " (send (symbol-to-instance-name ?gen144) walk-reference-chain)
  ?gen145
  ))
 (defmethod iris32::jt
@@ -935,8 +941,8 @@
  (?gen147 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "jt %s %s " (send (symbol-to-instance-name ?gen146) get-refers-to)
- (send (symbol-to-instance-name ?gen147) get-refers-to)
+             (format nil "jt %s %s " (send (symbol-to-instance-name ?gen146) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen147) walk-reference-chain)
  ))
 (defmethod iris32::jf
              ((?gen148 SYMBOL
@@ -954,7 +960,7 @@
                (register-aliasp ?current-argument))
  )
              (format nil "jf %s %s " ?gen150
- (send (symbol-to-instance-name ?gen151) get-refers-to)
+ (send (symbol-to-instance-name ?gen151) walk-reference-chain)
  ))
 (defmethod iris32::jf
              ((?gen152 SYMBOL
@@ -962,7 +968,7 @@
  (?gen153 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "jf %s %s " (send (symbol-to-instance-name ?gen152) get-refers-to)
+             (format nil "jf %s %s " (send (symbol-to-instance-name ?gen152) walk-reference-chain)
  ?gen153
  ))
 (defmethod iris32::jf
@@ -971,8 +977,8 @@
  (?gen155 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "jf %s %s " (send (symbol-to-instance-name ?gen154) get-refers-to)
- (send (symbol-to-instance-name ?gen155) get-refers-to)
+             (format nil "jf %s %s " (send (symbol-to-instance-name ?gen154) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen155) walk-reference-chain)
  ))
 (defmethod iris32::addi
              ((?gen156 SYMBOL
@@ -993,7 +999,7 @@
  (?gen161 (immediatep ?current-argument))
  )
              (format nil "addi %s %s %s " ?gen159
- (send (symbol-to-instance-name ?gen160) get-refers-to)
+ (send (symbol-to-instance-name ?gen160) walk-reference-chain)
  (str-cat ?gen161)
  ))
 (defmethod iris32::addi
@@ -1003,7 +1009,7 @@
                (registerp ?current-argument))
  (?gen164 (immediatep ?current-argument))
  )
-             (format nil "addi %s %s %s " (send (symbol-to-instance-name ?gen162) get-refers-to)
+             (format nil "addi %s %s %s " (send (symbol-to-instance-name ?gen162) walk-reference-chain)
  ?gen163
  (str-cat ?gen164)
  ))
@@ -1014,8 +1020,8 @@
                (register-aliasp ?current-argument))
  (?gen167 (immediatep ?current-argument))
  )
-             (format nil "addi %s %s %s " (send (symbol-to-instance-name ?gen165) get-refers-to)
- (send (symbol-to-instance-name ?gen166) get-refers-to)
+             (format nil "addi %s %s %s " (send (symbol-to-instance-name ?gen165) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen166) walk-reference-chain)
  (str-cat ?gen167)
  ))
 (defmethod iris32::subi
@@ -1037,7 +1043,7 @@
  (?gen173 (immediatep ?current-argument))
  )
              (format nil "subi %s %s %s " ?gen171
- (send (symbol-to-instance-name ?gen172) get-refers-to)
+ (send (symbol-to-instance-name ?gen172) walk-reference-chain)
  (str-cat ?gen173)
  ))
 (defmethod iris32::subi
@@ -1047,7 +1053,7 @@
                (registerp ?current-argument))
  (?gen176 (immediatep ?current-argument))
  )
-             (format nil "subi %s %s %s " (send (symbol-to-instance-name ?gen174) get-refers-to)
+             (format nil "subi %s %s %s " (send (symbol-to-instance-name ?gen174) walk-reference-chain)
  ?gen175
  (str-cat ?gen176)
  ))
@@ -1058,8 +1064,8 @@
                (register-aliasp ?current-argument))
  (?gen179 (immediatep ?current-argument))
  )
-             (format nil "subi %s %s %s " (send (symbol-to-instance-name ?gen177) get-refers-to)
- (send (symbol-to-instance-name ?gen178) get-refers-to)
+             (format nil "subi %s %s %s " (send (symbol-to-instance-name ?gen177) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen178) walk-reference-chain)
  (str-cat ?gen179)
  ))
 (defmethod iris32::muli
@@ -1081,7 +1087,7 @@
  (?gen185 (immediatep ?current-argument))
  )
              (format nil "muli %s %s %s " ?gen183
- (send (symbol-to-instance-name ?gen184) get-refers-to)
+ (send (symbol-to-instance-name ?gen184) walk-reference-chain)
  (str-cat ?gen185)
  ))
 (defmethod iris32::muli
@@ -1091,7 +1097,7 @@
                (registerp ?current-argument))
  (?gen188 (immediatep ?current-argument))
  )
-             (format nil "muli %s %s %s " (send (symbol-to-instance-name ?gen186) get-refers-to)
+             (format nil "muli %s %s %s " (send (symbol-to-instance-name ?gen186) walk-reference-chain)
  ?gen187
  (str-cat ?gen188)
  ))
@@ -1102,8 +1108,8 @@
                (register-aliasp ?current-argument))
  (?gen191 (immediatep ?current-argument))
  )
-             (format nil "muli %s %s %s " (send (symbol-to-instance-name ?gen189) get-refers-to)
- (send (symbol-to-instance-name ?gen190) get-refers-to)
+             (format nil "muli %s %s %s " (send (symbol-to-instance-name ?gen189) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen190) walk-reference-chain)
  (str-cat ?gen191)
  ))
 (defmethod iris32::divi
@@ -1125,7 +1131,7 @@
  (?gen197 (immediatep ?current-argument))
  )
              (format nil "divi %s %s %s " ?gen195
- (send (symbol-to-instance-name ?gen196) get-refers-to)
+ (send (symbol-to-instance-name ?gen196) walk-reference-chain)
  (str-cat ?gen197)
  ))
 (defmethod iris32::divi
@@ -1135,7 +1141,7 @@
                (registerp ?current-argument))
  (?gen200 (immediatep ?current-argument))
  )
-             (format nil "divi %s %s %s " (send (symbol-to-instance-name ?gen198) get-refers-to)
+             (format nil "divi %s %s %s " (send (symbol-to-instance-name ?gen198) walk-reference-chain)
  ?gen199
  (str-cat ?gen200)
  ))
@@ -1146,8 +1152,8 @@
                (register-aliasp ?current-argument))
  (?gen203 (immediatep ?current-argument))
  )
-             (format nil "divi %s %s %s " (send (symbol-to-instance-name ?gen201) get-refers-to)
- (send (symbol-to-instance-name ?gen202) get-refers-to)
+             (format nil "divi %s %s %s " (send (symbol-to-instance-name ?gen201) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen202) walk-reference-chain)
  (str-cat ?gen203)
  ))
 (defmethod iris32::remi
@@ -1169,7 +1175,7 @@
  (?gen209 (immediatep ?current-argument))
  )
              (format nil "remi %s %s %s " ?gen207
- (send (symbol-to-instance-name ?gen208) get-refers-to)
+ (send (symbol-to-instance-name ?gen208) walk-reference-chain)
  (str-cat ?gen209)
  ))
 (defmethod iris32::remi
@@ -1179,7 +1185,7 @@
                (registerp ?current-argument))
  (?gen212 (immediatep ?current-argument))
  )
-             (format nil "remi %s %s %s " (send (symbol-to-instance-name ?gen210) get-refers-to)
+             (format nil "remi %s %s %s " (send (symbol-to-instance-name ?gen210) walk-reference-chain)
  ?gen211
  (str-cat ?gen212)
  ))
@@ -1190,8 +1196,8 @@
                (register-aliasp ?current-argument))
  (?gen215 (immediatep ?current-argument))
  )
-             (format nil "remi %s %s %s " (send (symbol-to-instance-name ?gen213) get-refers-to)
- (send (symbol-to-instance-name ?gen214) get-refers-to)
+             (format nil "remi %s %s %s " (send (symbol-to-instance-name ?gen213) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen214) walk-reference-chain)
  (str-cat ?gen215)
  ))
 (defmethod iris32::shli
@@ -1213,7 +1219,7 @@
  (?gen221 (immediatep ?current-argument))
  )
              (format nil "shli %s %s %s " ?gen219
- (send (symbol-to-instance-name ?gen220) get-refers-to)
+ (send (symbol-to-instance-name ?gen220) walk-reference-chain)
  (str-cat ?gen221)
  ))
 (defmethod iris32::shli
@@ -1223,7 +1229,7 @@
                (registerp ?current-argument))
  (?gen224 (immediatep ?current-argument))
  )
-             (format nil "shli %s %s %s " (send (symbol-to-instance-name ?gen222) get-refers-to)
+             (format nil "shli %s %s %s " (send (symbol-to-instance-name ?gen222) walk-reference-chain)
  ?gen223
  (str-cat ?gen224)
  ))
@@ -1234,8 +1240,8 @@
                (register-aliasp ?current-argument))
  (?gen227 (immediatep ?current-argument))
  )
-             (format nil "shli %s %s %s " (send (symbol-to-instance-name ?gen225) get-refers-to)
- (send (symbol-to-instance-name ?gen226) get-refers-to)
+             (format nil "shli %s %s %s " (send (symbol-to-instance-name ?gen225) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen226) walk-reference-chain)
  (str-cat ?gen227)
  ))
 (defmethod iris32::shri
@@ -1257,7 +1263,7 @@
  (?gen233 (immediatep ?current-argument))
  )
              (format nil "shri %s %s %s " ?gen231
- (send (symbol-to-instance-name ?gen232) get-refers-to)
+ (send (symbol-to-instance-name ?gen232) walk-reference-chain)
  (str-cat ?gen233)
  ))
 (defmethod iris32::shri
@@ -1267,7 +1273,7 @@
                (registerp ?current-argument))
  (?gen236 (immediatep ?current-argument))
  )
-             (format nil "shri %s %s %s " (send (symbol-to-instance-name ?gen234) get-refers-to)
+             (format nil "shri %s %s %s " (send (symbol-to-instance-name ?gen234) walk-reference-chain)
  ?gen235
  (str-cat ?gen236)
  ))
@@ -1278,8 +1284,8 @@
                (register-aliasp ?current-argument))
  (?gen239 (immediatep ?current-argument))
  )
-             (format nil "shri %s %s %s " (send (symbol-to-instance-name ?gen237) get-refers-to)
- (send (symbol-to-instance-name ?gen238) get-refers-to)
+             (format nil "shri %s %s %s " (send (symbol-to-instance-name ?gen237) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen238) walk-reference-chain)
  (str-cat ?gen239)
  ))
 (defmethod iris32::eqi
@@ -1301,7 +1307,7 @@
  (?gen245 (immediatep ?current-argument))
  )
              (format nil "eqi %s %s %s " ?gen243
- (send (symbol-to-instance-name ?gen244) get-refers-to)
+ (send (symbol-to-instance-name ?gen244) walk-reference-chain)
  (str-cat ?gen245)
  ))
 (defmethod iris32::eqi
@@ -1311,7 +1317,7 @@
                (registerp ?current-argument))
  (?gen248 (immediatep ?current-argument))
  )
-             (format nil "eqi %s %s %s " (send (symbol-to-instance-name ?gen246) get-refers-to)
+             (format nil "eqi %s %s %s " (send (symbol-to-instance-name ?gen246) walk-reference-chain)
  ?gen247
  (str-cat ?gen248)
  ))
@@ -1322,8 +1328,8 @@
                (register-aliasp ?current-argument))
  (?gen251 (immediatep ?current-argument))
  )
-             (format nil "eqi %s %s %s " (send (symbol-to-instance-name ?gen249) get-refers-to)
- (send (symbol-to-instance-name ?gen250) get-refers-to)
+             (format nil "eqi %s %s %s " (send (symbol-to-instance-name ?gen249) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen250) walk-reference-chain)
  (str-cat ?gen251)
  ))
 (defmethod iris32::nei
@@ -1345,7 +1351,7 @@
  (?gen257 (immediatep ?current-argument))
  )
              (format nil "nei %s %s %s " ?gen255
- (send (symbol-to-instance-name ?gen256) get-refers-to)
+ (send (symbol-to-instance-name ?gen256) walk-reference-chain)
  (str-cat ?gen257)
  ))
 (defmethod iris32::nei
@@ -1355,7 +1361,7 @@
                (registerp ?current-argument))
  (?gen260 (immediatep ?current-argument))
  )
-             (format nil "nei %s %s %s " (send (symbol-to-instance-name ?gen258) get-refers-to)
+             (format nil "nei %s %s %s " (send (symbol-to-instance-name ?gen258) walk-reference-chain)
  ?gen259
  (str-cat ?gen260)
  ))
@@ -1366,8 +1372,8 @@
                (register-aliasp ?current-argument))
  (?gen263 (immediatep ?current-argument))
  )
-             (format nil "nei %s %s %s " (send (symbol-to-instance-name ?gen261) get-refers-to)
- (send (symbol-to-instance-name ?gen262) get-refers-to)
+             (format nil "nei %s %s %s " (send (symbol-to-instance-name ?gen261) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen262) walk-reference-chain)
  (str-cat ?gen263)
  ))
 (defmethod iris32::lti
@@ -1389,7 +1395,7 @@
  (?gen269 (immediatep ?current-argument))
  )
              (format nil "lti %s %s %s " ?gen267
- (send (symbol-to-instance-name ?gen268) get-refers-to)
+ (send (symbol-to-instance-name ?gen268) walk-reference-chain)
  (str-cat ?gen269)
  ))
 (defmethod iris32::lti
@@ -1399,7 +1405,7 @@
                (registerp ?current-argument))
  (?gen272 (immediatep ?current-argument))
  )
-             (format nil "lti %s %s %s " (send (symbol-to-instance-name ?gen270) get-refers-to)
+             (format nil "lti %s %s %s " (send (symbol-to-instance-name ?gen270) walk-reference-chain)
  ?gen271
  (str-cat ?gen272)
  ))
@@ -1410,8 +1416,8 @@
                (register-aliasp ?current-argument))
  (?gen275 (immediatep ?current-argument))
  )
-             (format nil "lti %s %s %s " (send (symbol-to-instance-name ?gen273) get-refers-to)
- (send (symbol-to-instance-name ?gen274) get-refers-to)
+             (format nil "lti %s %s %s " (send (symbol-to-instance-name ?gen273) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen274) walk-reference-chain)
  (str-cat ?gen275)
  ))
 (defmethod iris32::lei
@@ -1433,7 +1439,7 @@
  (?gen281 (immediatep ?current-argument))
  )
              (format nil "lei %s %s %s " ?gen279
- (send (symbol-to-instance-name ?gen280) get-refers-to)
+ (send (symbol-to-instance-name ?gen280) walk-reference-chain)
  (str-cat ?gen281)
  ))
 (defmethod iris32::lei
@@ -1443,7 +1449,7 @@
                (registerp ?current-argument))
  (?gen284 (immediatep ?current-argument))
  )
-             (format nil "lei %s %s %s " (send (symbol-to-instance-name ?gen282) get-refers-to)
+             (format nil "lei %s %s %s " (send (symbol-to-instance-name ?gen282) walk-reference-chain)
  ?gen283
  (str-cat ?gen284)
  ))
@@ -1454,8 +1460,8 @@
                (register-aliasp ?current-argument))
  (?gen287 (immediatep ?current-argument))
  )
-             (format nil "lei %s %s %s " (send (symbol-to-instance-name ?gen285) get-refers-to)
- (send (symbol-to-instance-name ?gen286) get-refers-to)
+             (format nil "lei %s %s %s " (send (symbol-to-instance-name ?gen285) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen286) walk-reference-chain)
  (str-cat ?gen287)
  ))
 (defmethod iris32::gei
@@ -1477,7 +1483,7 @@
  (?gen293 (immediatep ?current-argument))
  )
              (format nil "gei %s %s %s " ?gen291
- (send (symbol-to-instance-name ?gen292) get-refers-to)
+ (send (symbol-to-instance-name ?gen292) walk-reference-chain)
  (str-cat ?gen293)
  ))
 (defmethod iris32::gei
@@ -1487,7 +1493,7 @@
                (registerp ?current-argument))
  (?gen296 (immediatep ?current-argument))
  )
-             (format nil "gei %s %s %s " (send (symbol-to-instance-name ?gen294) get-refers-to)
+             (format nil "gei %s %s %s " (send (symbol-to-instance-name ?gen294) walk-reference-chain)
  ?gen295
  (str-cat ?gen296)
  ))
@@ -1498,8 +1504,8 @@
                (register-aliasp ?current-argument))
  (?gen299 (immediatep ?current-argument))
  )
-             (format nil "gei %s %s %s " (send (symbol-to-instance-name ?gen297) get-refers-to)
- (send (symbol-to-instance-name ?gen298) get-refers-to)
+             (format nil "gei %s %s %s " (send (symbol-to-instance-name ?gen297) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen298) walk-reference-chain)
  (str-cat ?gen299)
  ))
 (defmethod iris32::add
@@ -1524,7 +1530,7 @@
  )
              (format nil "add %s %s %s " ?gen303
  ?gen304
- (send (symbol-to-instance-name ?gen305) get-refers-to)
+ (send (symbol-to-instance-name ?gen305) walk-reference-chain)
  ))
 (defmethod iris32::add
              ((?gen306 SYMBOL
@@ -1535,7 +1541,7 @@
                (registerp ?current-argument))
  )
              (format nil "add %s %s %s " ?gen306
- (send (symbol-to-instance-name ?gen307) get-refers-to)
+ (send (symbol-to-instance-name ?gen307) walk-reference-chain)
  ?gen308
  ))
 (defmethod iris32::add
@@ -1547,8 +1553,8 @@
                (register-aliasp ?current-argument))
  )
              (format nil "add %s %s %s " ?gen309
- (send (symbol-to-instance-name ?gen310) get-refers-to)
- (send (symbol-to-instance-name ?gen311) get-refers-to)
+ (send (symbol-to-instance-name ?gen310) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen311) walk-reference-chain)
  ))
 (defmethod iris32::add
              ((?gen312 SYMBOL
@@ -1558,7 +1564,7 @@
  (?gen314 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "add %s %s %s " (send (symbol-to-instance-name ?gen312) get-refers-to)
+             (format nil "add %s %s %s " (send (symbol-to-instance-name ?gen312) walk-reference-chain)
  ?gen313
  ?gen314
  ))
@@ -1570,9 +1576,9 @@
  (?gen317 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "add %s %s %s " (send (symbol-to-instance-name ?gen315) get-refers-to)
+             (format nil "add %s %s %s " (send (symbol-to-instance-name ?gen315) walk-reference-chain)
  ?gen316
- (send (symbol-to-instance-name ?gen317) get-refers-to)
+ (send (symbol-to-instance-name ?gen317) walk-reference-chain)
  ))
 (defmethod iris32::add
              ((?gen318 SYMBOL
@@ -1582,8 +1588,8 @@
  (?gen320 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "add %s %s %s " (send (symbol-to-instance-name ?gen318) get-refers-to)
- (send (symbol-to-instance-name ?gen319) get-refers-to)
+             (format nil "add %s %s %s " (send (symbol-to-instance-name ?gen318) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen319) walk-reference-chain)
  ?gen320
  ))
 (defmethod iris32::add
@@ -1594,9 +1600,9 @@
  (?gen323 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "add %s %s %s " (send (symbol-to-instance-name ?gen321) get-refers-to)
- (send (symbol-to-instance-name ?gen322) get-refers-to)
- (send (symbol-to-instance-name ?gen323) get-refers-to)
+             (format nil "add %s %s %s " (send (symbol-to-instance-name ?gen321) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen322) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen323) walk-reference-chain)
  ))
 (defmethod iris32::sub
              ((?gen324 SYMBOL
@@ -1620,7 +1626,7 @@
  )
              (format nil "sub %s %s %s " ?gen327
  ?gen328
- (send (symbol-to-instance-name ?gen329) get-refers-to)
+ (send (symbol-to-instance-name ?gen329) walk-reference-chain)
  ))
 (defmethod iris32::sub
              ((?gen330 SYMBOL
@@ -1631,7 +1637,7 @@
                (registerp ?current-argument))
  )
              (format nil "sub %s %s %s " ?gen330
- (send (symbol-to-instance-name ?gen331) get-refers-to)
+ (send (symbol-to-instance-name ?gen331) walk-reference-chain)
  ?gen332
  ))
 (defmethod iris32::sub
@@ -1643,8 +1649,8 @@
                (register-aliasp ?current-argument))
  )
              (format nil "sub %s %s %s " ?gen333
- (send (symbol-to-instance-name ?gen334) get-refers-to)
- (send (symbol-to-instance-name ?gen335) get-refers-to)
+ (send (symbol-to-instance-name ?gen334) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen335) walk-reference-chain)
  ))
 (defmethod iris32::sub
              ((?gen336 SYMBOL
@@ -1654,7 +1660,7 @@
  (?gen338 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "sub %s %s %s " (send (symbol-to-instance-name ?gen336) get-refers-to)
+             (format nil "sub %s %s %s " (send (symbol-to-instance-name ?gen336) walk-reference-chain)
  ?gen337
  ?gen338
  ))
@@ -1666,9 +1672,9 @@
  (?gen341 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "sub %s %s %s " (send (symbol-to-instance-name ?gen339) get-refers-to)
+             (format nil "sub %s %s %s " (send (symbol-to-instance-name ?gen339) walk-reference-chain)
  ?gen340
- (send (symbol-to-instance-name ?gen341) get-refers-to)
+ (send (symbol-to-instance-name ?gen341) walk-reference-chain)
  ))
 (defmethod iris32::sub
              ((?gen342 SYMBOL
@@ -1678,8 +1684,8 @@
  (?gen344 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "sub %s %s %s " (send (symbol-to-instance-name ?gen342) get-refers-to)
- (send (symbol-to-instance-name ?gen343) get-refers-to)
+             (format nil "sub %s %s %s " (send (symbol-to-instance-name ?gen342) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen343) walk-reference-chain)
  ?gen344
  ))
 (defmethod iris32::sub
@@ -1690,9 +1696,9 @@
  (?gen347 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "sub %s %s %s " (send (symbol-to-instance-name ?gen345) get-refers-to)
- (send (symbol-to-instance-name ?gen346) get-refers-to)
- (send (symbol-to-instance-name ?gen347) get-refers-to)
+             (format nil "sub %s %s %s " (send (symbol-to-instance-name ?gen345) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen346) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen347) walk-reference-chain)
  ))
 (defmethod iris32::mul
              ((?gen348 SYMBOL
@@ -1716,7 +1722,7 @@
  )
              (format nil "mul %s %s %s " ?gen351
  ?gen352
- (send (symbol-to-instance-name ?gen353) get-refers-to)
+ (send (symbol-to-instance-name ?gen353) walk-reference-chain)
  ))
 (defmethod iris32::mul
              ((?gen354 SYMBOL
@@ -1727,7 +1733,7 @@
                (registerp ?current-argument))
  )
              (format nil "mul %s %s %s " ?gen354
- (send (symbol-to-instance-name ?gen355) get-refers-to)
+ (send (symbol-to-instance-name ?gen355) walk-reference-chain)
  ?gen356
  ))
 (defmethod iris32::mul
@@ -1739,8 +1745,8 @@
                (register-aliasp ?current-argument))
  )
              (format nil "mul %s %s %s " ?gen357
- (send (symbol-to-instance-name ?gen358) get-refers-to)
- (send (symbol-to-instance-name ?gen359) get-refers-to)
+ (send (symbol-to-instance-name ?gen358) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen359) walk-reference-chain)
  ))
 (defmethod iris32::mul
              ((?gen360 SYMBOL
@@ -1750,7 +1756,7 @@
  (?gen362 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "mul %s %s %s " (send (symbol-to-instance-name ?gen360) get-refers-to)
+             (format nil "mul %s %s %s " (send (symbol-to-instance-name ?gen360) walk-reference-chain)
  ?gen361
  ?gen362
  ))
@@ -1762,9 +1768,9 @@
  (?gen365 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "mul %s %s %s " (send (symbol-to-instance-name ?gen363) get-refers-to)
+             (format nil "mul %s %s %s " (send (symbol-to-instance-name ?gen363) walk-reference-chain)
  ?gen364
- (send (symbol-to-instance-name ?gen365) get-refers-to)
+ (send (symbol-to-instance-name ?gen365) walk-reference-chain)
  ))
 (defmethod iris32::mul
              ((?gen366 SYMBOL
@@ -1774,8 +1780,8 @@
  (?gen368 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "mul %s %s %s " (send (symbol-to-instance-name ?gen366) get-refers-to)
- (send (symbol-to-instance-name ?gen367) get-refers-to)
+             (format nil "mul %s %s %s " (send (symbol-to-instance-name ?gen366) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen367) walk-reference-chain)
  ?gen368
  ))
 (defmethod iris32::mul
@@ -1786,9 +1792,9 @@
  (?gen371 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "mul %s %s %s " (send (symbol-to-instance-name ?gen369) get-refers-to)
- (send (symbol-to-instance-name ?gen370) get-refers-to)
- (send (symbol-to-instance-name ?gen371) get-refers-to)
+             (format nil "mul %s %s %s " (send (symbol-to-instance-name ?gen369) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen370) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen371) walk-reference-chain)
  ))
 (defmethod iris32::div
              ((?gen372 SYMBOL
@@ -1812,7 +1818,7 @@
  )
              (format nil "div %s %s %s " ?gen375
  ?gen376
- (send (symbol-to-instance-name ?gen377) get-refers-to)
+ (send (symbol-to-instance-name ?gen377) walk-reference-chain)
  ))
 (defmethod iris32::div
              ((?gen378 SYMBOL
@@ -1823,7 +1829,7 @@
                (registerp ?current-argument))
  )
              (format nil "div %s %s %s " ?gen378
- (send (symbol-to-instance-name ?gen379) get-refers-to)
+ (send (symbol-to-instance-name ?gen379) walk-reference-chain)
  ?gen380
  ))
 (defmethod iris32::div
@@ -1835,8 +1841,8 @@
                (register-aliasp ?current-argument))
  )
              (format nil "div %s %s %s " ?gen381
- (send (symbol-to-instance-name ?gen382) get-refers-to)
- (send (symbol-to-instance-name ?gen383) get-refers-to)
+ (send (symbol-to-instance-name ?gen382) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen383) walk-reference-chain)
  ))
 (defmethod iris32::div
              ((?gen384 SYMBOL
@@ -1846,7 +1852,7 @@
  (?gen386 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "div %s %s %s " (send (symbol-to-instance-name ?gen384) get-refers-to)
+             (format nil "div %s %s %s " (send (symbol-to-instance-name ?gen384) walk-reference-chain)
  ?gen385
  ?gen386
  ))
@@ -1858,9 +1864,9 @@
  (?gen389 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "div %s %s %s " (send (symbol-to-instance-name ?gen387) get-refers-to)
+             (format nil "div %s %s %s " (send (symbol-to-instance-name ?gen387) walk-reference-chain)
  ?gen388
- (send (symbol-to-instance-name ?gen389) get-refers-to)
+ (send (symbol-to-instance-name ?gen389) walk-reference-chain)
  ))
 (defmethod iris32::div
              ((?gen390 SYMBOL
@@ -1870,8 +1876,8 @@
  (?gen392 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "div %s %s %s " (send (symbol-to-instance-name ?gen390) get-refers-to)
- (send (symbol-to-instance-name ?gen391) get-refers-to)
+             (format nil "div %s %s %s " (send (symbol-to-instance-name ?gen390) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen391) walk-reference-chain)
  ?gen392
  ))
 (defmethod iris32::div
@@ -1882,9 +1888,9 @@
  (?gen395 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "div %s %s %s " (send (symbol-to-instance-name ?gen393) get-refers-to)
- (send (symbol-to-instance-name ?gen394) get-refers-to)
- (send (symbol-to-instance-name ?gen395) get-refers-to)
+             (format nil "div %s %s %s " (send (symbol-to-instance-name ?gen393) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen394) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen395) walk-reference-chain)
  ))
 (defmethod iris32::rem
              ((?gen396 SYMBOL
@@ -1908,7 +1914,7 @@
  )
              (format nil "rem %s %s %s " ?gen399
  ?gen400
- (send (symbol-to-instance-name ?gen401) get-refers-to)
+ (send (symbol-to-instance-name ?gen401) walk-reference-chain)
  ))
 (defmethod iris32::rem
              ((?gen402 SYMBOL
@@ -1919,7 +1925,7 @@
                (registerp ?current-argument))
  )
              (format nil "rem %s %s %s " ?gen402
- (send (symbol-to-instance-name ?gen403) get-refers-to)
+ (send (symbol-to-instance-name ?gen403) walk-reference-chain)
  ?gen404
  ))
 (defmethod iris32::rem
@@ -1931,8 +1937,8 @@
                (register-aliasp ?current-argument))
  )
              (format nil "rem %s %s %s " ?gen405
- (send (symbol-to-instance-name ?gen406) get-refers-to)
- (send (symbol-to-instance-name ?gen407) get-refers-to)
+ (send (symbol-to-instance-name ?gen406) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen407) walk-reference-chain)
  ))
 (defmethod iris32::rem
              ((?gen408 SYMBOL
@@ -1942,7 +1948,7 @@
  (?gen410 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "rem %s %s %s " (send (symbol-to-instance-name ?gen408) get-refers-to)
+             (format nil "rem %s %s %s " (send (symbol-to-instance-name ?gen408) walk-reference-chain)
  ?gen409
  ?gen410
  ))
@@ -1954,9 +1960,9 @@
  (?gen413 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "rem %s %s %s " (send (symbol-to-instance-name ?gen411) get-refers-to)
+             (format nil "rem %s %s %s " (send (symbol-to-instance-name ?gen411) walk-reference-chain)
  ?gen412
- (send (symbol-to-instance-name ?gen413) get-refers-to)
+ (send (symbol-to-instance-name ?gen413) walk-reference-chain)
  ))
 (defmethod iris32::rem
              ((?gen414 SYMBOL
@@ -1966,8 +1972,8 @@
  (?gen416 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "rem %s %s %s " (send (symbol-to-instance-name ?gen414) get-refers-to)
- (send (symbol-to-instance-name ?gen415) get-refers-to)
+             (format nil "rem %s %s %s " (send (symbol-to-instance-name ?gen414) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen415) walk-reference-chain)
  ?gen416
  ))
 (defmethod iris32::rem
@@ -1978,9 +1984,9 @@
  (?gen419 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "rem %s %s %s " (send (symbol-to-instance-name ?gen417) get-refers-to)
- (send (symbol-to-instance-name ?gen418) get-refers-to)
- (send (symbol-to-instance-name ?gen419) get-refers-to)
+             (format nil "rem %s %s %s " (send (symbol-to-instance-name ?gen417) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen418) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen419) walk-reference-chain)
  ))
 (defmethod iris32::shl
              ((?gen420 SYMBOL
@@ -2004,7 +2010,7 @@
  )
              (format nil "shl %s %s %s " ?gen423
  ?gen424
- (send (symbol-to-instance-name ?gen425) get-refers-to)
+ (send (symbol-to-instance-name ?gen425) walk-reference-chain)
  ))
 (defmethod iris32::shl
              ((?gen426 SYMBOL
@@ -2015,7 +2021,7 @@
                (registerp ?current-argument))
  )
              (format nil "shl %s %s %s " ?gen426
- (send (symbol-to-instance-name ?gen427) get-refers-to)
+ (send (symbol-to-instance-name ?gen427) walk-reference-chain)
  ?gen428
  ))
 (defmethod iris32::shl
@@ -2027,8 +2033,8 @@
                (register-aliasp ?current-argument))
  )
              (format nil "shl %s %s %s " ?gen429
- (send (symbol-to-instance-name ?gen430) get-refers-to)
- (send (symbol-to-instance-name ?gen431) get-refers-to)
+ (send (symbol-to-instance-name ?gen430) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen431) walk-reference-chain)
  ))
 (defmethod iris32::shl
              ((?gen432 SYMBOL
@@ -2038,7 +2044,7 @@
  (?gen434 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "shl %s %s %s " (send (symbol-to-instance-name ?gen432) get-refers-to)
+             (format nil "shl %s %s %s " (send (symbol-to-instance-name ?gen432) walk-reference-chain)
  ?gen433
  ?gen434
  ))
@@ -2050,9 +2056,9 @@
  (?gen437 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "shl %s %s %s " (send (symbol-to-instance-name ?gen435) get-refers-to)
+             (format nil "shl %s %s %s " (send (symbol-to-instance-name ?gen435) walk-reference-chain)
  ?gen436
- (send (symbol-to-instance-name ?gen437) get-refers-to)
+ (send (symbol-to-instance-name ?gen437) walk-reference-chain)
  ))
 (defmethod iris32::shl
              ((?gen438 SYMBOL
@@ -2062,8 +2068,8 @@
  (?gen440 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "shl %s %s %s " (send (symbol-to-instance-name ?gen438) get-refers-to)
- (send (symbol-to-instance-name ?gen439) get-refers-to)
+             (format nil "shl %s %s %s " (send (symbol-to-instance-name ?gen438) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen439) walk-reference-chain)
  ?gen440
  ))
 (defmethod iris32::shl
@@ -2074,9 +2080,9 @@
  (?gen443 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "shl %s %s %s " (send (symbol-to-instance-name ?gen441) get-refers-to)
- (send (symbol-to-instance-name ?gen442) get-refers-to)
- (send (symbol-to-instance-name ?gen443) get-refers-to)
+             (format nil "shl %s %s %s " (send (symbol-to-instance-name ?gen441) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen442) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen443) walk-reference-chain)
  ))
 (defmethod iris32::shr
              ((?gen444 SYMBOL
@@ -2100,7 +2106,7 @@
  )
              (format nil "shr %s %s %s " ?gen447
  ?gen448
- (send (symbol-to-instance-name ?gen449) get-refers-to)
+ (send (symbol-to-instance-name ?gen449) walk-reference-chain)
  ))
 (defmethod iris32::shr
              ((?gen450 SYMBOL
@@ -2111,7 +2117,7 @@
                (registerp ?current-argument))
  )
              (format nil "shr %s %s %s " ?gen450
- (send (symbol-to-instance-name ?gen451) get-refers-to)
+ (send (symbol-to-instance-name ?gen451) walk-reference-chain)
  ?gen452
  ))
 (defmethod iris32::shr
@@ -2123,8 +2129,8 @@
                (register-aliasp ?current-argument))
  )
              (format nil "shr %s %s %s " ?gen453
- (send (symbol-to-instance-name ?gen454) get-refers-to)
- (send (symbol-to-instance-name ?gen455) get-refers-to)
+ (send (symbol-to-instance-name ?gen454) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen455) walk-reference-chain)
  ))
 (defmethod iris32::shr
              ((?gen456 SYMBOL
@@ -2134,7 +2140,7 @@
  (?gen458 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "shr %s %s %s " (send (symbol-to-instance-name ?gen456) get-refers-to)
+             (format nil "shr %s %s %s " (send (symbol-to-instance-name ?gen456) walk-reference-chain)
  ?gen457
  ?gen458
  ))
@@ -2146,9 +2152,9 @@
  (?gen461 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "shr %s %s %s " (send (symbol-to-instance-name ?gen459) get-refers-to)
+             (format nil "shr %s %s %s " (send (symbol-to-instance-name ?gen459) walk-reference-chain)
  ?gen460
- (send (symbol-to-instance-name ?gen461) get-refers-to)
+ (send (symbol-to-instance-name ?gen461) walk-reference-chain)
  ))
 (defmethod iris32::shr
              ((?gen462 SYMBOL
@@ -2158,8 +2164,8 @@
  (?gen464 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "shr %s %s %s " (send (symbol-to-instance-name ?gen462) get-refers-to)
- (send (symbol-to-instance-name ?gen463) get-refers-to)
+             (format nil "shr %s %s %s " (send (symbol-to-instance-name ?gen462) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen463) walk-reference-chain)
  ?gen464
  ))
 (defmethod iris32::shr
@@ -2170,9 +2176,9 @@
  (?gen467 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "shr %s %s %s " (send (symbol-to-instance-name ?gen465) get-refers-to)
- (send (symbol-to-instance-name ?gen466) get-refers-to)
- (send (symbol-to-instance-name ?gen467) get-refers-to)
+             (format nil "shr %s %s %s " (send (symbol-to-instance-name ?gen465) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen466) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen467) walk-reference-chain)
  ))
 (defmethod iris32::jtl
              ((?gen468 SYMBOL
@@ -2196,7 +2202,7 @@
  )
              (format nil "jtl %s %s %s " ?gen471
  ?gen472
- (send (symbol-to-instance-name ?gen473) get-refers-to)
+ (send (symbol-to-instance-name ?gen473) walk-reference-chain)
  ))
 (defmethod iris32::jtl
              ((?gen474 SYMBOL
@@ -2207,7 +2213,7 @@
                (registerp ?current-argument))
  )
              (format nil "jtl %s %s %s " ?gen474
- (send (symbol-to-instance-name ?gen475) get-refers-to)
+ (send (symbol-to-instance-name ?gen475) walk-reference-chain)
  ?gen476
  ))
 (defmethod iris32::jtl
@@ -2219,8 +2225,8 @@
                (register-aliasp ?current-argument))
  )
              (format nil "jtl %s %s %s " ?gen477
- (send (symbol-to-instance-name ?gen478) get-refers-to)
- (send (symbol-to-instance-name ?gen479) get-refers-to)
+ (send (symbol-to-instance-name ?gen478) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen479) walk-reference-chain)
  ))
 (defmethod iris32::jtl
              ((?gen480 SYMBOL
@@ -2230,7 +2236,7 @@
  (?gen482 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "jtl %s %s %s " (send (symbol-to-instance-name ?gen480) get-refers-to)
+             (format nil "jtl %s %s %s " (send (symbol-to-instance-name ?gen480) walk-reference-chain)
  ?gen481
  ?gen482
  ))
@@ -2242,9 +2248,9 @@
  (?gen485 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "jtl %s %s %s " (send (symbol-to-instance-name ?gen483) get-refers-to)
+             (format nil "jtl %s %s %s " (send (symbol-to-instance-name ?gen483) walk-reference-chain)
  ?gen484
- (send (symbol-to-instance-name ?gen485) get-refers-to)
+ (send (symbol-to-instance-name ?gen485) walk-reference-chain)
  ))
 (defmethod iris32::jtl
              ((?gen486 SYMBOL
@@ -2254,8 +2260,8 @@
  (?gen488 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "jtl %s %s %s " (send (symbol-to-instance-name ?gen486) get-refers-to)
- (send (symbol-to-instance-name ?gen487) get-refers-to)
+             (format nil "jtl %s %s %s " (send (symbol-to-instance-name ?gen486) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen487) walk-reference-chain)
  ?gen488
  ))
 (defmethod iris32::jtl
@@ -2266,9 +2272,9 @@
  (?gen491 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "jtl %s %s %s " (send (symbol-to-instance-name ?gen489) get-refers-to)
- (send (symbol-to-instance-name ?gen490) get-refers-to)
- (send (symbol-to-instance-name ?gen491) get-refers-to)
+             (format nil "jtl %s %s %s " (send (symbol-to-instance-name ?gen489) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen490) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen491) walk-reference-chain)
  ))
 (defmethod iris32::jfl
              ((?gen492 SYMBOL
@@ -2292,7 +2298,7 @@
  )
              (format nil "jfl %s %s %s " ?gen495
  ?gen496
- (send (symbol-to-instance-name ?gen497) get-refers-to)
+ (send (symbol-to-instance-name ?gen497) walk-reference-chain)
  ))
 (defmethod iris32::jfl
              ((?gen498 SYMBOL
@@ -2303,7 +2309,7 @@
                (registerp ?current-argument))
  )
              (format nil "jfl %s %s %s " ?gen498
- (send (symbol-to-instance-name ?gen499) get-refers-to)
+ (send (symbol-to-instance-name ?gen499) walk-reference-chain)
  ?gen500
  ))
 (defmethod iris32::jfl
@@ -2315,8 +2321,8 @@
                (register-aliasp ?current-argument))
  )
              (format nil "jfl %s %s %s " ?gen501
- (send (symbol-to-instance-name ?gen502) get-refers-to)
- (send (symbol-to-instance-name ?gen503) get-refers-to)
+ (send (symbol-to-instance-name ?gen502) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen503) walk-reference-chain)
  ))
 (defmethod iris32::jfl
              ((?gen504 SYMBOL
@@ -2326,7 +2332,7 @@
  (?gen506 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "jfl %s %s %s " (send (symbol-to-instance-name ?gen504) get-refers-to)
+             (format nil "jfl %s %s %s " (send (symbol-to-instance-name ?gen504) walk-reference-chain)
  ?gen505
  ?gen506
  ))
@@ -2338,9 +2344,9 @@
  (?gen509 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "jfl %s %s %s " (send (symbol-to-instance-name ?gen507) get-refers-to)
+             (format nil "jfl %s %s %s " (send (symbol-to-instance-name ?gen507) walk-reference-chain)
  ?gen508
- (send (symbol-to-instance-name ?gen509) get-refers-to)
+ (send (symbol-to-instance-name ?gen509) walk-reference-chain)
  ))
 (defmethod iris32::jfl
              ((?gen510 SYMBOL
@@ -2350,8 +2356,8 @@
  (?gen512 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "jfl %s %s %s " (send (symbol-to-instance-name ?gen510) get-refers-to)
- (send (symbol-to-instance-name ?gen511) get-refers-to)
+             (format nil "jfl %s %s %s " (send (symbol-to-instance-name ?gen510) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen511) walk-reference-chain)
  ?gen512
  ))
 (defmethod iris32::jfl
@@ -2362,9 +2368,9 @@
  (?gen515 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "jfl %s %s %s " (send (symbol-to-instance-name ?gen513) get-refers-to)
- (send (symbol-to-instance-name ?gen514) get-refers-to)
- (send (symbol-to-instance-name ?gen515) get-refers-to)
+             (format nil "jfl %s %s %s " (send (symbol-to-instance-name ?gen513) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen514) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen515) walk-reference-chain)
  ))
 (defmethod iris32::ift
              ((?gen516 SYMBOL
@@ -2388,7 +2394,7 @@
  )
              (format nil "ift %s %s %s " ?gen519
  ?gen520
- (send (symbol-to-instance-name ?gen521) get-refers-to)
+ (send (symbol-to-instance-name ?gen521) walk-reference-chain)
  ))
 (defmethod iris32::ift
              ((?gen522 SYMBOL
@@ -2399,7 +2405,7 @@
                (registerp ?current-argument))
  )
              (format nil "ift %s %s %s " ?gen522
- (send (symbol-to-instance-name ?gen523) get-refers-to)
+ (send (symbol-to-instance-name ?gen523) walk-reference-chain)
  ?gen524
  ))
 (defmethod iris32::ift
@@ -2411,8 +2417,8 @@
                (register-aliasp ?current-argument))
  )
              (format nil "ift %s %s %s " ?gen525
- (send (symbol-to-instance-name ?gen526) get-refers-to)
- (send (symbol-to-instance-name ?gen527) get-refers-to)
+ (send (symbol-to-instance-name ?gen526) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen527) walk-reference-chain)
  ))
 (defmethod iris32::ift
              ((?gen528 SYMBOL
@@ -2422,7 +2428,7 @@
  (?gen530 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "ift %s %s %s " (send (symbol-to-instance-name ?gen528) get-refers-to)
+             (format nil "ift %s %s %s " (send (symbol-to-instance-name ?gen528) walk-reference-chain)
  ?gen529
  ?gen530
  ))
@@ -2434,9 +2440,9 @@
  (?gen533 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "ift %s %s %s " (send (symbol-to-instance-name ?gen531) get-refers-to)
+             (format nil "ift %s %s %s " (send (symbol-to-instance-name ?gen531) walk-reference-chain)
  ?gen532
- (send (symbol-to-instance-name ?gen533) get-refers-to)
+ (send (symbol-to-instance-name ?gen533) walk-reference-chain)
  ))
 (defmethod iris32::ift
              ((?gen534 SYMBOL
@@ -2446,8 +2452,8 @@
  (?gen536 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "ift %s %s %s " (send (symbol-to-instance-name ?gen534) get-refers-to)
- (send (symbol-to-instance-name ?gen535) get-refers-to)
+             (format nil "ift %s %s %s " (send (symbol-to-instance-name ?gen534) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen535) walk-reference-chain)
  ?gen536
  ))
 (defmethod iris32::ift
@@ -2458,9 +2464,9 @@
  (?gen539 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "ift %s %s %s " (send (symbol-to-instance-name ?gen537) get-refers-to)
- (send (symbol-to-instance-name ?gen538) get-refers-to)
- (send (symbol-to-instance-name ?gen539) get-refers-to)
+             (format nil "ift %s %s %s " (send (symbol-to-instance-name ?gen537) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen538) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen539) walk-reference-chain)
  ))
 (defmethod iris32::iff
              ((?gen540 SYMBOL
@@ -2484,7 +2490,7 @@
  )
              (format nil "iff %s %s %s " ?gen543
  ?gen544
- (send (symbol-to-instance-name ?gen545) get-refers-to)
+ (send (symbol-to-instance-name ?gen545) walk-reference-chain)
  ))
 (defmethod iris32::iff
              ((?gen546 SYMBOL
@@ -2495,7 +2501,7 @@
                (registerp ?current-argument))
  )
              (format nil "iff %s %s %s " ?gen546
- (send (symbol-to-instance-name ?gen547) get-refers-to)
+ (send (symbol-to-instance-name ?gen547) walk-reference-chain)
  ?gen548
  ))
 (defmethod iris32::iff
@@ -2507,8 +2513,8 @@
                (register-aliasp ?current-argument))
  )
              (format nil "iff %s %s %s " ?gen549
- (send (symbol-to-instance-name ?gen550) get-refers-to)
- (send (symbol-to-instance-name ?gen551) get-refers-to)
+ (send (symbol-to-instance-name ?gen550) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen551) walk-reference-chain)
  ))
 (defmethod iris32::iff
              ((?gen552 SYMBOL
@@ -2518,7 +2524,7 @@
  (?gen554 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "iff %s %s %s " (send (symbol-to-instance-name ?gen552) get-refers-to)
+             (format nil "iff %s %s %s " (send (symbol-to-instance-name ?gen552) walk-reference-chain)
  ?gen553
  ?gen554
  ))
@@ -2530,9 +2536,9 @@
  (?gen557 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "iff %s %s %s " (send (symbol-to-instance-name ?gen555) get-refers-to)
+             (format nil "iff %s %s %s " (send (symbol-to-instance-name ?gen555) walk-reference-chain)
  ?gen556
- (send (symbol-to-instance-name ?gen557) get-refers-to)
+ (send (symbol-to-instance-name ?gen557) walk-reference-chain)
  ))
 (defmethod iris32::iff
              ((?gen558 SYMBOL
@@ -2542,8 +2548,8 @@
  (?gen560 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "iff %s %s %s " (send (symbol-to-instance-name ?gen558) get-refers-to)
- (send (symbol-to-instance-name ?gen559) get-refers-to)
+             (format nil "iff %s %s %s " (send (symbol-to-instance-name ?gen558) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen559) walk-reference-chain)
  ?gen560
  ))
 (defmethod iris32::iff
@@ -2554,9 +2560,9 @@
  (?gen563 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "iff %s %s %s " (send (symbol-to-instance-name ?gen561) get-refers-to)
- (send (symbol-to-instance-name ?gen562) get-refers-to)
- (send (symbol-to-instance-name ?gen563) get-refers-to)
+             (format nil "iff %s %s %s " (send (symbol-to-instance-name ?gen561) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen562) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen563) walk-reference-chain)
  ))
 (defmethod iris32::iftl
              ((?gen564 SYMBOL
@@ -2580,7 +2586,7 @@
  )
              (format nil "iftl %s %s %s " ?gen567
  ?gen568
- (send (symbol-to-instance-name ?gen569) get-refers-to)
+ (send (symbol-to-instance-name ?gen569) walk-reference-chain)
  ))
 (defmethod iris32::iftl
              ((?gen570 SYMBOL
@@ -2591,7 +2597,7 @@
                (registerp ?current-argument))
  )
              (format nil "iftl %s %s %s " ?gen570
- (send (symbol-to-instance-name ?gen571) get-refers-to)
+ (send (symbol-to-instance-name ?gen571) walk-reference-chain)
  ?gen572
  ))
 (defmethod iris32::iftl
@@ -2603,8 +2609,8 @@
                (register-aliasp ?current-argument))
  )
              (format nil "iftl %s %s %s " ?gen573
- (send (symbol-to-instance-name ?gen574) get-refers-to)
- (send (symbol-to-instance-name ?gen575) get-refers-to)
+ (send (symbol-to-instance-name ?gen574) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen575) walk-reference-chain)
  ))
 (defmethod iris32::iftl
              ((?gen576 SYMBOL
@@ -2614,7 +2620,7 @@
  (?gen578 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "iftl %s %s %s " (send (symbol-to-instance-name ?gen576) get-refers-to)
+             (format nil "iftl %s %s %s " (send (symbol-to-instance-name ?gen576) walk-reference-chain)
  ?gen577
  ?gen578
  ))
@@ -2626,9 +2632,9 @@
  (?gen581 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "iftl %s %s %s " (send (symbol-to-instance-name ?gen579) get-refers-to)
+             (format nil "iftl %s %s %s " (send (symbol-to-instance-name ?gen579) walk-reference-chain)
  ?gen580
- (send (symbol-to-instance-name ?gen581) get-refers-to)
+ (send (symbol-to-instance-name ?gen581) walk-reference-chain)
  ))
 (defmethod iris32::iftl
              ((?gen582 SYMBOL
@@ -2638,8 +2644,8 @@
  (?gen584 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "iftl %s %s %s " (send (symbol-to-instance-name ?gen582) get-refers-to)
- (send (symbol-to-instance-name ?gen583) get-refers-to)
+             (format nil "iftl %s %s %s " (send (symbol-to-instance-name ?gen582) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen583) walk-reference-chain)
  ?gen584
  ))
 (defmethod iris32::iftl
@@ -2650,9 +2656,9 @@
  (?gen587 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "iftl %s %s %s " (send (symbol-to-instance-name ?gen585) get-refers-to)
- (send (symbol-to-instance-name ?gen586) get-refers-to)
- (send (symbol-to-instance-name ?gen587) get-refers-to)
+             (format nil "iftl %s %s %s " (send (symbol-to-instance-name ?gen585) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen586) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen587) walk-reference-chain)
  ))
 (defmethod iris32::iffl
              ((?gen588 SYMBOL
@@ -2676,7 +2682,7 @@
  )
              (format nil "iffl %s %s %s " ?gen591
  ?gen592
- (send (symbol-to-instance-name ?gen593) get-refers-to)
+ (send (symbol-to-instance-name ?gen593) walk-reference-chain)
  ))
 (defmethod iris32::iffl
              ((?gen594 SYMBOL
@@ -2687,7 +2693,7 @@
                (registerp ?current-argument))
  )
              (format nil "iffl %s %s %s " ?gen594
- (send (symbol-to-instance-name ?gen595) get-refers-to)
+ (send (symbol-to-instance-name ?gen595) walk-reference-chain)
  ?gen596
  ))
 (defmethod iris32::iffl
@@ -2699,8 +2705,8 @@
                (register-aliasp ?current-argument))
  )
              (format nil "iffl %s %s %s " ?gen597
- (send (symbol-to-instance-name ?gen598) get-refers-to)
- (send (symbol-to-instance-name ?gen599) get-refers-to)
+ (send (symbol-to-instance-name ?gen598) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen599) walk-reference-chain)
  ))
 (defmethod iris32::iffl
              ((?gen600 SYMBOL
@@ -2710,7 +2716,7 @@
  (?gen602 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "iffl %s %s %s " (send (symbol-to-instance-name ?gen600) get-refers-to)
+             (format nil "iffl %s %s %s " (send (symbol-to-instance-name ?gen600) walk-reference-chain)
  ?gen601
  ?gen602
  ))
@@ -2722,9 +2728,9 @@
  (?gen605 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "iffl %s %s %s " (send (symbol-to-instance-name ?gen603) get-refers-to)
+             (format nil "iffl %s %s %s " (send (symbol-to-instance-name ?gen603) walk-reference-chain)
  ?gen604
- (send (symbol-to-instance-name ?gen605) get-refers-to)
+ (send (symbol-to-instance-name ?gen605) walk-reference-chain)
  ))
 (defmethod iris32::iffl
              ((?gen606 SYMBOL
@@ -2734,8 +2740,8 @@
  (?gen608 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "iffl %s %s %s " (send (symbol-to-instance-name ?gen606) get-refers-to)
- (send (symbol-to-instance-name ?gen607) get-refers-to)
+             (format nil "iffl %s %s %s " (send (symbol-to-instance-name ?gen606) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen607) walk-reference-chain)
  ?gen608
  ))
 (defmethod iris32::iffl
@@ -2746,9 +2752,9 @@
  (?gen611 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "iffl %s %s %s " (send (symbol-to-instance-name ?gen609) get-refers-to)
- (send (symbol-to-instance-name ?gen610) get-refers-to)
- (send (symbol-to-instance-name ?gen611) get-refers-to)
+             (format nil "iffl %s %s %s " (send (symbol-to-instance-name ?gen609) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen610) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen611) walk-reference-chain)
  ))
 (defmethod iris32::ne
              ((?gen612 SYMBOL
@@ -2772,7 +2778,7 @@
  )
              (format nil "ne %s %s %s " ?gen615
  ?gen616
- (send (symbol-to-instance-name ?gen617) get-refers-to)
+ (send (symbol-to-instance-name ?gen617) walk-reference-chain)
  ))
 (defmethod iris32::ne
              ((?gen618 SYMBOL
@@ -2783,7 +2789,7 @@
                (registerp ?current-argument))
  )
              (format nil "ne %s %s %s " ?gen618
- (send (symbol-to-instance-name ?gen619) get-refers-to)
+ (send (symbol-to-instance-name ?gen619) walk-reference-chain)
  ?gen620
  ))
 (defmethod iris32::ne
@@ -2795,8 +2801,8 @@
                (register-aliasp ?current-argument))
  )
              (format nil "ne %s %s %s " ?gen621
- (send (symbol-to-instance-name ?gen622) get-refers-to)
- (send (symbol-to-instance-name ?gen623) get-refers-to)
+ (send (symbol-to-instance-name ?gen622) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen623) walk-reference-chain)
  ))
 (defmethod iris32::ne
              ((?gen624 SYMBOL
@@ -2806,7 +2812,7 @@
  (?gen626 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "ne %s %s %s " (send (symbol-to-instance-name ?gen624) get-refers-to)
+             (format nil "ne %s %s %s " (send (symbol-to-instance-name ?gen624) walk-reference-chain)
  ?gen625
  ?gen626
  ))
@@ -2818,9 +2824,9 @@
  (?gen629 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "ne %s %s %s " (send (symbol-to-instance-name ?gen627) get-refers-to)
+             (format nil "ne %s %s %s " (send (symbol-to-instance-name ?gen627) walk-reference-chain)
  ?gen628
- (send (symbol-to-instance-name ?gen629) get-refers-to)
+ (send (symbol-to-instance-name ?gen629) walk-reference-chain)
  ))
 (defmethod iris32::ne
              ((?gen630 SYMBOL
@@ -2830,8 +2836,8 @@
  (?gen632 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "ne %s %s %s " (send (symbol-to-instance-name ?gen630) get-refers-to)
- (send (symbol-to-instance-name ?gen631) get-refers-to)
+             (format nil "ne %s %s %s " (send (symbol-to-instance-name ?gen630) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen631) walk-reference-chain)
  ?gen632
  ))
 (defmethod iris32::ne
@@ -2842,9 +2848,9 @@
  (?gen635 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "ne %s %s %s " (send (symbol-to-instance-name ?gen633) get-refers-to)
- (send (symbol-to-instance-name ?gen634) get-refers-to)
- (send (symbol-to-instance-name ?gen635) get-refers-to)
+             (format nil "ne %s %s %s " (send (symbol-to-instance-name ?gen633) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen634) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen635) walk-reference-chain)
  ))
 (defmethod iris32::lt
              ((?gen636 SYMBOL
@@ -2868,7 +2874,7 @@
  )
              (format nil "lt %s %s %s " ?gen639
  ?gen640
- (send (symbol-to-instance-name ?gen641) get-refers-to)
+ (send (symbol-to-instance-name ?gen641) walk-reference-chain)
  ))
 (defmethod iris32::lt
              ((?gen642 SYMBOL
@@ -2879,7 +2885,7 @@
                (registerp ?current-argument))
  )
              (format nil "lt %s %s %s " ?gen642
- (send (symbol-to-instance-name ?gen643) get-refers-to)
+ (send (symbol-to-instance-name ?gen643) walk-reference-chain)
  ?gen644
  ))
 (defmethod iris32::lt
@@ -2891,8 +2897,8 @@
                (register-aliasp ?current-argument))
  )
              (format nil "lt %s %s %s " ?gen645
- (send (symbol-to-instance-name ?gen646) get-refers-to)
- (send (symbol-to-instance-name ?gen647) get-refers-to)
+ (send (symbol-to-instance-name ?gen646) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen647) walk-reference-chain)
  ))
 (defmethod iris32::lt
              ((?gen648 SYMBOL
@@ -2902,7 +2908,7 @@
  (?gen650 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "lt %s %s %s " (send (symbol-to-instance-name ?gen648) get-refers-to)
+             (format nil "lt %s %s %s " (send (symbol-to-instance-name ?gen648) walk-reference-chain)
  ?gen649
  ?gen650
  ))
@@ -2914,9 +2920,9 @@
  (?gen653 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "lt %s %s %s " (send (symbol-to-instance-name ?gen651) get-refers-to)
+             (format nil "lt %s %s %s " (send (symbol-to-instance-name ?gen651) walk-reference-chain)
  ?gen652
- (send (symbol-to-instance-name ?gen653) get-refers-to)
+ (send (symbol-to-instance-name ?gen653) walk-reference-chain)
  ))
 (defmethod iris32::lt
              ((?gen654 SYMBOL
@@ -2926,8 +2932,8 @@
  (?gen656 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "lt %s %s %s " (send (symbol-to-instance-name ?gen654) get-refers-to)
- (send (symbol-to-instance-name ?gen655) get-refers-to)
+             (format nil "lt %s %s %s " (send (symbol-to-instance-name ?gen654) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen655) walk-reference-chain)
  ?gen656
  ))
 (defmethod iris32::lt
@@ -2938,9 +2944,9 @@
  (?gen659 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "lt %s %s %s " (send (symbol-to-instance-name ?gen657) get-refers-to)
- (send (symbol-to-instance-name ?gen658) get-refers-to)
- (send (symbol-to-instance-name ?gen659) get-refers-to)
+             (format nil "lt %s %s %s " (send (symbol-to-instance-name ?gen657) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen658) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen659) walk-reference-chain)
  ))
 (defmethod iris32::gt
              ((?gen660 SYMBOL
@@ -2964,7 +2970,7 @@
  )
              (format nil "gt %s %s %s " ?gen663
  ?gen664
- (send (symbol-to-instance-name ?gen665) get-refers-to)
+ (send (symbol-to-instance-name ?gen665) walk-reference-chain)
  ))
 (defmethod iris32::gt
              ((?gen666 SYMBOL
@@ -2975,7 +2981,7 @@
                (registerp ?current-argument))
  )
              (format nil "gt %s %s %s " ?gen666
- (send (symbol-to-instance-name ?gen667) get-refers-to)
+ (send (symbol-to-instance-name ?gen667) walk-reference-chain)
  ?gen668
  ))
 (defmethod iris32::gt
@@ -2987,8 +2993,8 @@
                (register-aliasp ?current-argument))
  )
              (format nil "gt %s %s %s " ?gen669
- (send (symbol-to-instance-name ?gen670) get-refers-to)
- (send (symbol-to-instance-name ?gen671) get-refers-to)
+ (send (symbol-to-instance-name ?gen670) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen671) walk-reference-chain)
  ))
 (defmethod iris32::gt
              ((?gen672 SYMBOL
@@ -2998,7 +3004,7 @@
  (?gen674 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "gt %s %s %s " (send (symbol-to-instance-name ?gen672) get-refers-to)
+             (format nil "gt %s %s %s " (send (symbol-to-instance-name ?gen672) walk-reference-chain)
  ?gen673
  ?gen674
  ))
@@ -3010,9 +3016,9 @@
  (?gen677 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "gt %s %s %s " (send (symbol-to-instance-name ?gen675) get-refers-to)
+             (format nil "gt %s %s %s " (send (symbol-to-instance-name ?gen675) walk-reference-chain)
  ?gen676
- (send (symbol-to-instance-name ?gen677) get-refers-to)
+ (send (symbol-to-instance-name ?gen677) walk-reference-chain)
  ))
 (defmethod iris32::gt
              ((?gen678 SYMBOL
@@ -3022,8 +3028,8 @@
  (?gen680 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "gt %s %s %s " (send (symbol-to-instance-name ?gen678) get-refers-to)
- (send (symbol-to-instance-name ?gen679) get-refers-to)
+             (format nil "gt %s %s %s " (send (symbol-to-instance-name ?gen678) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen679) walk-reference-chain)
  ?gen680
  ))
 (defmethod iris32::gt
@@ -3034,9 +3040,9 @@
  (?gen683 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "gt %s %s %s " (send (symbol-to-instance-name ?gen681) get-refers-to)
- (send (symbol-to-instance-name ?gen682) get-refers-to)
- (send (symbol-to-instance-name ?gen683) get-refers-to)
+             (format nil "gt %s %s %s " (send (symbol-to-instance-name ?gen681) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen682) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen683) walk-reference-chain)
  ))
 (defmethod iris32::le
              ((?gen684 SYMBOL
@@ -3060,7 +3066,7 @@
  )
              (format nil "le %s %s %s " ?gen687
  ?gen688
- (send (symbol-to-instance-name ?gen689) get-refers-to)
+ (send (symbol-to-instance-name ?gen689) walk-reference-chain)
  ))
 (defmethod iris32::le
              ((?gen690 SYMBOL
@@ -3071,7 +3077,7 @@
                (registerp ?current-argument))
  )
              (format nil "le %s %s %s " ?gen690
- (send (symbol-to-instance-name ?gen691) get-refers-to)
+ (send (symbol-to-instance-name ?gen691) walk-reference-chain)
  ?gen692
  ))
 (defmethod iris32::le
@@ -3083,8 +3089,8 @@
                (register-aliasp ?current-argument))
  )
              (format nil "le %s %s %s " ?gen693
- (send (symbol-to-instance-name ?gen694) get-refers-to)
- (send (symbol-to-instance-name ?gen695) get-refers-to)
+ (send (symbol-to-instance-name ?gen694) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen695) walk-reference-chain)
  ))
 (defmethod iris32::le
              ((?gen696 SYMBOL
@@ -3094,7 +3100,7 @@
  (?gen698 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "le %s %s %s " (send (symbol-to-instance-name ?gen696) get-refers-to)
+             (format nil "le %s %s %s " (send (symbol-to-instance-name ?gen696) walk-reference-chain)
  ?gen697
  ?gen698
  ))
@@ -3106,9 +3112,9 @@
  (?gen701 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "le %s %s %s " (send (symbol-to-instance-name ?gen699) get-refers-to)
+             (format nil "le %s %s %s " (send (symbol-to-instance-name ?gen699) walk-reference-chain)
  ?gen700
- (send (symbol-to-instance-name ?gen701) get-refers-to)
+ (send (symbol-to-instance-name ?gen701) walk-reference-chain)
  ))
 (defmethod iris32::le
              ((?gen702 SYMBOL
@@ -3118,8 +3124,8 @@
  (?gen704 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "le %s %s %s " (send (symbol-to-instance-name ?gen702) get-refers-to)
- (send (symbol-to-instance-name ?gen703) get-refers-to)
+             (format nil "le %s %s %s " (send (symbol-to-instance-name ?gen702) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen703) walk-reference-chain)
  ?gen704
  ))
 (defmethod iris32::le
@@ -3130,9 +3136,9 @@
  (?gen707 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "le %s %s %s " (send (symbol-to-instance-name ?gen705) get-refers-to)
- (send (symbol-to-instance-name ?gen706) get-refers-to)
- (send (symbol-to-instance-name ?gen707) get-refers-to)
+             (format nil "le %s %s %s " (send (symbol-to-instance-name ?gen705) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen706) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen707) walk-reference-chain)
  ))
 (defmethod iris32::ge
              ((?gen708 SYMBOL
@@ -3156,7 +3162,7 @@
  )
              (format nil "ge %s %s %s " ?gen711
  ?gen712
- (send (symbol-to-instance-name ?gen713) get-refers-to)
+ (send (symbol-to-instance-name ?gen713) walk-reference-chain)
  ))
 (defmethod iris32::ge
              ((?gen714 SYMBOL
@@ -3167,7 +3173,7 @@
                (registerp ?current-argument))
  )
              (format nil "ge %s %s %s " ?gen714
- (send (symbol-to-instance-name ?gen715) get-refers-to)
+ (send (symbol-to-instance-name ?gen715) walk-reference-chain)
  ?gen716
  ))
 (defmethod iris32::ge
@@ -3179,8 +3185,8 @@
                (register-aliasp ?current-argument))
  )
              (format nil "ge %s %s %s " ?gen717
- (send (symbol-to-instance-name ?gen718) get-refers-to)
- (send (symbol-to-instance-name ?gen719) get-refers-to)
+ (send (symbol-to-instance-name ?gen718) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen719) walk-reference-chain)
  ))
 (defmethod iris32::ge
              ((?gen720 SYMBOL
@@ -3190,7 +3196,7 @@
  (?gen722 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "ge %s %s %s " (send (symbol-to-instance-name ?gen720) get-refers-to)
+             (format nil "ge %s %s %s " (send (symbol-to-instance-name ?gen720) walk-reference-chain)
  ?gen721
  ?gen722
  ))
@@ -3202,9 +3208,9 @@
  (?gen725 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "ge %s %s %s " (send (symbol-to-instance-name ?gen723) get-refers-to)
+             (format nil "ge %s %s %s " (send (symbol-to-instance-name ?gen723) walk-reference-chain)
  ?gen724
- (send (symbol-to-instance-name ?gen725) get-refers-to)
+ (send (symbol-to-instance-name ?gen725) walk-reference-chain)
  ))
 (defmethod iris32::ge
              ((?gen726 SYMBOL
@@ -3214,8 +3220,8 @@
  (?gen728 SYMBOL
                (registerp ?current-argument))
  )
-             (format nil "ge %s %s %s " (send (symbol-to-instance-name ?gen726) get-refers-to)
- (send (symbol-to-instance-name ?gen727) get-refers-to)
+             (format nil "ge %s %s %s " (send (symbol-to-instance-name ?gen726) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen727) walk-reference-chain)
  ?gen728
  ))
 (defmethod iris32::ge
@@ -3226,7 +3232,7 @@
  (?gen731 SYMBOL
                (register-aliasp ?current-argument))
  )
-             (format nil "ge %s %s %s " (send (symbol-to-instance-name ?gen729) get-refers-to)
- (send (symbol-to-instance-name ?gen730) get-refers-to)
- (send (symbol-to-instance-name ?gen731) get-refers-to)
+             (format nil "ge %s %s %s " (send (symbol-to-instance-name ?gen729) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen730) walk-reference-chain)
+ (send (symbol-to-instance-name ?gen731) walk-reference-chain)
  ))
