@@ -25,6 +25,12 @@ setl r0 0						 ; r0 is zero
 setu r0 0						 ;
 setl r1 1						 ; r1 is one
 setu r1 1						 ;
+setl r2 2
+setu r2 2
+setl r3 3
+setu r3 3
+setl r4 4
+setu r4 4
 
 @label thread_idle					 ; now, we are in the thread handler block
 ld r248 r250						 ; load the evaluate jump field
@@ -86,21 +92,21 @@ j lr
 	j lr
 
 @label atomp
-	andi r48 r32 0x1	; bit 0 in the flags cell is the list flag, if it is zero then we are looking at an atom
+	and r48 r32 r1	; bit 0 in the flags cell is the list flag, if it is zero then we are looking at an atom
 	eqi r48 r48 0		; did we get zero out of the check?
 	j lr
 
 @label listp
-	andi r48 r32 0x1	; bit 0 in the flags cell is the list flag
+	and r48 r32 r1	; bit 0 in the flags cell is the list flag
 	nei r48 r48 0x1		; did we get one out of the check?
 	j lr
 
 @label numberp
-	andi r48 r32 0x2	; bit 1 in the flags cell is the number cell
+	and r48 r32 r2	; bit 1 in the flags cell is the number cell
 	eqi r48 r48 0x2 	; does the flags cell equal 0b10 ??, an atom and a number
 	j lr
 @label stringp
-	andi r48 r32 0x4	; bit 2 in the flags cell is the string cell
+	and r48 r32 r4	; bit 2 in the flags cell is the string cell
 	eqi r48 r48 0x4		; does the flags cell equal 0b100 ??, an atom and a string
 	j lr
 
@@ -217,7 +223,7 @@ j lr
 ; 32-bits, evaluate jump
 ; 32-bits, address to jump to
 ; 32-bits, base stack pointer address
-; 32-bits, unused
+; 32-bits, memory base address
 @label thread_control_block_base
 @label thread0
 @word 0xFFFFFFFF

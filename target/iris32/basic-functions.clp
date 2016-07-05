@@ -130,14 +130,23 @@
 (deffunction system::init-fn
              ()
              (create$ (set r243 thread_control_block_base) 
-                      (muli r242 tid 4) 
-                      (add r250 r243 r242) 
-                      (addi r249 r250 2) 
-                      (ld sp r249) 
-                      (move r240 sp) 
-                      (set r249 0xFFFFFFFF) 
-                      (set r244 thread_idle) 
-                      (set r209 nil) 
+                      (muli r242 
+                            tid 
+                            4) 
+                      (add r250 
+                           r243 
+                           r242) 
+                      (addi r249 
+                            r250 
+                            2) 
+                      (ld sp 
+                          r249) 
+                      (move r240 
+                            sp) 
+                      (set r249 
+                           0xFFFFFFFF) 
+                      (set r244 
+                           thread_idle) 
                       (set r0 0) 
                       (set r1 1) 
                       (set memory-start 
@@ -148,14 +157,34 @@
                            memory-end 
                            memory-start)
                       (@label thread_idle)
-                      (ld r248 r250)
-                      (addi r246 r250 1)
-                      (ld r245 r246)
-                      (eq r247 r249 r248)
-                      (jt r247 r245)
+                      (ld r248 
+                          r250)
+                      (addi r246 
+                            r250 
+                            1)
+                      (ld r245 
+                          r246)
+                      (eq r247 
+                          r249 
+                          r248)
+                      (jt r247 
+                          r245)
                       (j r244)
                       (map setup-idle 
                            1 2 3 4 5 6 7)))
+
+(deffunction system::let
+             ((?title SYMBOL
+                      (not (instance-existp (symbol-to-instance-name ?current-argument))))
+              (?as SYMBOL
+                   (instance-existp (symbol-to-instance-name ?current-argument))))
+             (make-instance ?title of register 
+                            (refers-to ?as)))
+(deffunction system::unlet
+             ((?title SYMBOL
+                      (instance-existp (symbol-to-instance-name ?current-argument))))
+             (unmake-instance (symbol-to-instance-name ?title)))
+
 (deffunction system::printstring-fn
              ()
              (define printstring
@@ -166,10 +195,14 @@
                               temp3
                               temp4
                               temp5)
-               (move temp0 in0)
-               (set temp3 printchar)
-               (set temp4 printstring_done)
-               (set temp5 printstring_loop)
+               (move temp0 
+                     in0)
+               (set temp3 
+                    printchar)
+               (set temp4 
+                    printstring_done)
+               (set temp5 
+                    printstring_loop)
                (@label printstring_loop)
                (ld temp1 temp0)
                (ne temp2 temp1 zero)
