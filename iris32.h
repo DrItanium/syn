@@ -220,9 +220,6 @@ namespace iris32 {
 			void execBody();
 			void decode();
 			void dispatch();
-#define X(_, func) void func (DecodedInstruction& inst); 
-#include "iris32_groups.def"
-#undef X
 			void systemCall(DecodedInstruction& inst);
 		private:
 			template<typename T, T value>
