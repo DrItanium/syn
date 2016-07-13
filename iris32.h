@@ -49,6 +49,9 @@ namespace iris32 {
 	template<InstructionGroup group>
 	struct EncodeInstructionGroupAsByte { };
 
+	template<InstructionGroup group>
+	struct GroupToOp { };
+
 #define X(group, __) \
 	template<> \
 	struct DecodeByteToInstructionGroup< static_cast< byte > ( InstructionGroup :: group ) > { \
@@ -57,7 +60,7 @@ namespace iris32 {
 	template<> \
 	struct EncodeInstructionGroupAsByte< InstructionGroup :: group > { \
 		static const byte value = static_cast< byte > (InstructionGroup :: group ); \
-	};
+	}; 
 #include "iris32_groups.def"
 #undef X
 
@@ -70,6 +73,7 @@ namespace iris32 {
 		};
 		public:
 			DecodedInstruction(word rinst);
+			word getRawValue() const { return raw; }
 #define X(field, mask, shift, type, isreg, unused) \
 			type get ## field (); \
 			void set ## field (type value);
@@ -191,6 +195,13 @@ namespace iris32 {
 	};
 	static_assert(byte(SystemCalls::NumberOfSyscalls) <= 255, "Too many syscall operations defined!");
 
+#define X(group, __) \
+	template<> \
+	struct GroupToOp< InstructionGroup :: group > { \
+		typedef group ## Op OpKind; \
+	};
+#include "iris32_groups.def"
+#undef X
 
 	class Core : public iris::Core {
 		public:
@@ -214,6 +225,9 @@ namespace iris32 {
 #undef X
 			void systemCall(DecodedInstruction& inst);
 		private:
+			template<typename T, T value>
+			friend void invoke(Core* core, DecodedInstruction&& inst);
+		private:
 			word memorySize;
 			word* memory;
 			ExecState *thread = 0;
@@ -223,4 +237,5 @@ namespace iris32 {
 	};
 
 } // end namespace iris32
+#undef DefOp
 #endif // end _TARGET_IRIS32_IRIS_H
