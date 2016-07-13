@@ -1,0 +1,19 @@
+language: cpp
+
+compiler:
+  - gcc
+
+before_install:
+  # g++4.8.1
+  - if [ "$CXX" == "c++" ]; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test; fi
+
+  - sudo apt-get update -qq
+
+install:
+  # g++4.8.1
+  - if [ "$CXX" = "c++" ]; then sudo apt-get install -qq g++-5.1; fi
+  - if [ "$CXX" = "c++" ]; then export CXX="g++-5.1"; fi
+
+
+script:
+  - $CXX --version
