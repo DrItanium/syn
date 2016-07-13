@@ -404,6 +404,8 @@ namespace iris32 {
 				<< ", value: " << (thread->gpr[decoded.getSource1()]) << std::endl; 
 			std::cerr << "ip: 0x" << std::hex << thread->gpr[ArchitectureConstants::InstructionPointerIndex] 
 				<< ", instruction raw: 0x" << std::hex << decoded.getRawValue() << std::endl;
+			std::cerr << "group: " << std::hex << (int)decoded.getGroup() << std::endl;
+			std::cerr << "op: " << std::hex << (int)decoded.getOperation() << std::endl;
 		};
 		if (debug) { 
 			printInst("before", std::move(decoded));
@@ -414,7 +416,7 @@ namespace iris32 {
 	DecodeByteToInstructionGroup < Decode ## cl ## val :: group > :: value > :: OpKind, \
 	OpInfer < Decode ## cl ## val :: op , DecodeByteToInstructionGroup < Decode ## cl ## val :: group > :: value > :: value >(this, std::move(decoded));\
 	break;
-		switch (decoded.getRawValue()) {
+		switch (decoded.getControl()) {
 #define X(title, operation, unused) DispatchDecode(CompareOp, title)
 #define Y(title, operation, unused) X(title, operation, unused)
 #include "iris32_compare.def"
