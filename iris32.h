@@ -119,13 +119,13 @@ namespace iris32 {
 		NumberOfCompareOps,
 	};
 	static_assert(byte(CompareOp::NumberOfCompareOps) <= byte(MaxInstructionsPerGroup), "Too many compare operations defined!");
-
-#define X(e, __, ___) \
+#define DefOp(cl, group, e) \
 	template<> \
-	struct OpInfer<static_cast< byte >( CompareOp :: e ), InstructionGroup::Compare> { static const CompareOp value = CompareOp :: e ; }; \
+	struct OpInfer<static_cast< byte >( cl :: e ), InstructionGroup:: group > { static const cl value = cl :: e ; }; \
 	template<> \
-	struct OpToIndex<CompareOp, CompareOp:: e > { static const byte value = static_cast < byte > (CompareOp :: e); }; \
-	typedef DecodeControl<EncodeControl< EncodeInstructionGroupAsByte < InstructionGroup::Control >::value, static_cast < byte > (CompareOp:: e)>::value> DecodeCompareOp ## e;
+	struct OpToIndex<cl, cl :: e > { static const byte value = static_cast < byte > (cl :: e); }; \
+	typedef DecodeControl<EncodeControl< EncodeInstructionGroupAsByte < InstructionGroup:: group >::value, static_cast < byte > (cl :: e)>::value> Decode ## cl ## e;
+#define X(e, __, ___) DefOp(CompareOp, Compare, e)
 #define Y(e, __, ___) X(e, __, ___)
 #include "iris32_compare.def"
 #undef Y
@@ -143,6 +143,10 @@ namespace iris32 {
 	};
 	static_assert(byte(ArithmeticOp::NumberOfArithmeticOps) <= byte(MaxInstructionsPerGroup), "Too many arithmetic operations defined!");
 
+#define X(title, u0, u1) DefOp(ArithmeticOp, Arithmetic, title) 
+#include "iris32_arithmetic.def"
+#undef X
+
 	enum class MoveOp : byte {
 #define X(title, operation, __, ___, ____) title ,
 #include "iris32_move.def"
@@ -150,6 +154,10 @@ namespace iris32 {
 		NumberOfMoveOps,
 	};
 	static_assert(byte(MoveOp::NumberOfMoveOps) <= byte(MaxInstructionsPerGroup), "Too many move operations defined!");
+
+#define X(title, __, ___, ____, _____) DefOp(MoveOp, Move, title)
+#include "iris32_move.def"
+#undef X
 
 	enum class JumpOp : byte {
 #define X(title, u0, u1, u2, u3, u4) title ,
@@ -159,6 +167,10 @@ namespace iris32 {
 	};
 	static_assert(byte(JumpOp::NumberOfJumpOps) <= byte(MaxInstructionsPerGroup), "Too many jump operations defined!");
 
+#define X(title, u0, u1, u2, u3, u4) DefOp(JumpOp, Jump, title)
+#include "iris32_jump.def"
+#undef X
+
 	enum class MiscOp : byte {
 #define X(title, __) title ,
 #include "iris32_misc.def"
@@ -166,6 +178,10 @@ namespace iris32 {
 		NumberOfMiscOps,
 	};
 	static_assert(byte(MiscOp::NumberOfMiscOps) <= byte(MaxInstructionsPerGroup), "Too many misc operations defined!");
+
+#define X(title, __) DefOp(MiscOp, Misc, title)
+#include "iris32_misc.def"
+#undef X
 
 	enum class SystemCalls : byte {
 #define X(title) title ,
