@@ -48,6 +48,9 @@
               (memory-start of register (refers-to r96))
               (memory-end of register (refers-to r97))
               (memory-size of register (refers-to r98))
+              (lparen of register (refers-to r99))
+              (rparen of register (refers-to r100))
+              (space-mark of register (refers-to r101))
               )
 
 (defgeneric system::push-multiple)
@@ -388,3 +391,17 @@
                       (j r244)
                       (map setup-idle 
                            1 2 3 4 5 6 7)))
+
+(deffunction system::eval-input
+             ()
+             (def eval-input
+                  (input-lets front)
+                  (output-lets thing)
+                  (internal-lets curr)
+                  (push lr)
+                  (
+
+                  (pop lr))
+                                 
+                  
+
