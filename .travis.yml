@@ -13,6 +13,7 @@ install:
   # g++4.8.1
   - if [ "$CXX" = "c++" ]; then sudo apt-get install -qq g++-5.1; fi
   - if [ "$CXX" = "c++" ]; then export CXX="g++-5.1"; fi
+  - if [ "$CC" = "cc" ]; then export CC="gcc-5.1"; fi
 
 
-script: CC="gcc-5.1" CXX="g++-5.1"make
+script: make
