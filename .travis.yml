@@ -15,5 +15,3 @@ install:
   - if [ "$CXX" = "c++" ]; then export CXX="g++-5.1"; fi
 
 
-script:
-  - $CXX --version
