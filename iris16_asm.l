@@ -17,6 +17,7 @@ extern void yyerror(const char* c);
 %option yylineno
 %option noyywrap
 %option nounput
+%option prefix="IRIS16"
 digit [0-9]
 xdigit [a-fA-F0-9]
 bdigit [0-1]

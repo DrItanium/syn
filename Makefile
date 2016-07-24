@@ -130,6 +130,13 @@ IRIS32 = ${IRIS32_OUT} \
 
 # The object file that defines main()
 #TEST_OBJECTS = $(patsubst %.c,%.o,$(wildcard src/cmd/tests/*.c))
+SIM_OBJECTS = iris_sim.o \
+			 ${IRIS16_OUT} \
+			 ${IRIS17_OUT} \
+			 ${IRIS32_OUT} 
+
+
+SIM_BINARY = iris_sim
 
 ALL_BINARIES = ${IRIS16_BINARIES} \
 			   ${IRIS32_BINARIES} \
@@ -143,7 +150,7 @@ ALL_ARCHIVES = ${IRIS16_OUT} \
 			   ${IRIS32_OUT} \
 			   ${IRIS17_OUT}
 
-all: options ${IRIS16} ${IRIS32} ${IRIS17}
+all: options ${SIM_BINARY} 
 
 options:
 	@echo iris build options:
@@ -163,27 +170,15 @@ options:
 	@echo -n Compiling $< into $@...
 	@${CC} ${CXXFLAGS} -c $< -o $@
 	@echo done.
-
 ${IRIS16_OUT}: ${IRIS16_OBJECTS}
 	@echo -n Building ${IRIS16_OUT} out of $^...
 	@${AR} rcs ${IRIS16_OUT}  $^
 	@echo done
 
-${IRIS16_SIM_BINARY}: ${IRIS16_SIM_MAIN} ${IRIS16_OUT}
-	@echo -n Building ${IRIS16_SIM_BINARY} binary out of $^...
-	@${CXX} ${LDFLAGS} -o ${IRIS16_SIM_BINARY} $^
+${SIM_BINARY}: ${SIM_OBJECTS}
+	@echo -n Building ${SIM_BINARY_NAME} binary out of $^...
+	@${CXX} ${LDFLAGS} -o ${SIM_BINARY_NAME} $^
 	@echo done.
-
-${IRIS16_LINK_BINARY}: ${IRIS16_LINK_MAIN} ${IRIS16_OUT}
-	@echo -n Building ${IRIS16_LINK_BINARY} binary out of $^...
-	@${CXX} ${LDFLAGS} -o ${IRIS16_LINK_BINARY} $^
-	@echo done.
-
-${IRIS16_STRGEN_BINARY}: ${IRIS16_STRGEN_MAIN} ${IRIS16_OUT}
-	@echo -n Building ${IRIS16_STRGEN_BINARY} binary out of $^...
-	@${CXX} ${LDFLAGS} -o ${IRIS16_STRGEN_BINARY} $^
-	@echo done.
-
 
 iris16_asm.tab.c iris16_asm.tab.h: iris16_asm.y
 	@${YACC} -o iris16_asm.tab.c -d iris16_asm.y

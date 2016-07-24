@@ -5,7 +5,7 @@
 
 namespace iris {
 	template<>
-	Core* getCore<Architecture::iris16>() {
+	Core* newCore<Architecture::iris16>() {
 		return new iris16::Core();
 	}
 

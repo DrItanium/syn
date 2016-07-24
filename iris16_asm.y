@@ -1,3 +1,4 @@
+%define api.prefix {iris16}
 %{
 #include <cstdlib>
 #include <cstdio>
@@ -44,7 +45,6 @@ struct asmstate {
    std::map<std::string, word> labels;
    std::vector<dynamicop> dynops;
    std::ostream* output;
-   bool closeOutput;
 };
 
 asmstate state;
@@ -54,7 +54,7 @@ void add_label_entry(const std::string& name, word address);
 void persist_dynamic_op(void);
 void save_encoding(void);
 void write_dynamic_op(dynamicop* op);
-void initialize(std::ostream* output, bool close, FILE* input);
+void initialize(std::ostream* output FILE* input);
 void resolve_labels(void);
 bool resolve_op(dynamicop* dop);
 void usage(char* arg0);
@@ -471,91 +471,18 @@ lexeme:
       }
 ;
 %%
-int main(int argc, char* argv[]) {
-	FILE* input = 0;
-	std::string line("v.obj");
-	std::ostream* output = 0;
-	bool closeOutput = false,
-		 closeInput = false,
-		 errorfree = true;
-   int last = argc - 1,
-   	   i = 0;
-   /* make sure these are properly initialized */
-   last = argc - 1;
-   errorfree = 1;
-   i = 0;
-   if(argc > 1) {
-      for(i = 1; errorfree && (i < last); ++i) {
-		 std::string tmpline(argv[i]);
-         if(tmpline.size() == 2 && tmpline[0] == '-') {
-            switch(tmpline[1]) {
-			   case 'o':
-			   		++i;
-			   		line = argv[i];
-			   		break;
-               case 'h':
-               default:
-                  errorfree = false;
-                  break;
-            }
-         } else {
-            errorfree = false;
-            break;
-         }
-      }
-      if(errorfree) {
-         if(i == last) {
-			std::string tline(argv[last]);
-			if(tline.size() == 1 && tline[0] == '-') {
-				input = stdin;
-				closeInput = false;
-			} else if (tline.size() >= 1) {
-				if ((input = fopen(tline.c_str(), "r")) != NULL) {
-					closeInput = true;
-				} else {
-					std::cerr << "Couldn't open " << tline << " for reading!" << std::endl;
-					exit(1);
-				}
-			}
-            /* open the output */
-            if(line.size() == 1 && line[0] == '-') {
-			   output = &std::cout; 
-			   closeOutput = false;
-            } else {
-			   output = new std::ofstream(line.c_str(), std::ofstream::out | std::ofstream::binary);
-			   closeOutput = true;
-            }
-         } else {
-			 std::cerr << "no file provided" << std::endl;
-         }
-      } else {
-	  	
-	  }
-   }
-   if(output && input) {
-      initialize(output, closeOutput, input);
+namespace iris {
+	template<>
+	void assemble(FILE* input, std::ostream& output) {
+
+      initialize(output, input);
       do {
          yyparse();
       } while(!feof(yyin));
       resolve_labels();
-	  if (closeOutput) {
-	  	static_cast<std::ofstream*>(output)->close();
-	  	delete output;
-	  	output = 0;
-	  	state.output = 0;
-	  }
-	  if(closeInput) {
-	  	fclose(input);
-		input = 0;
-	  }
-   } else {
-      usage(argv[0]);
-   }
+	}
 }
 
-void usage(char* arg0) {
-	std::cerr << "usage: " << arg0 << " [-o <file>] <file>" << std::endl;
-}
 void add_label_entry(const std::string& c, word addr) {
    if (state.labels.count(c) != 0) {
 		yyerror("Found a duplicate label!");
@@ -633,13 +560,12 @@ bool resolve_op(dynamicop* dop) {
    return false;
 }
 
-void initialize(std::ostream* output, bool close, FILE* input) {
+void initialize(std::ostream* output, FILE* input) {
    yyin = input;
    state.segment = Segment::Code;
    state.data_address = 0;
    state.code_address = 0;
    state.output = output;
-   state.closeOutput = close;
    curri.segment = Segment::Code;
    curri.address = 0;
    curri.group = 0;
