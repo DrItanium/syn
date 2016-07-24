@@ -158,13 +158,14 @@ ASM_BINARY = iris_asm
 
 
 ALL_BINARIES = ${SIM_BINARY} \
-			   ${IRIS32_BINARIES} \
-			   ${IRIS17_BINARIES}
+			   ${ASM_BINARY}
 
 ALL_OBJECTS = ${COMMON_THINGS} \
 			  ${SIM_OBJECTS} \
 			  ${ALL_IRIS32_OBJECTS} \
-			  ${ALL_IRIS17_OBJECTS}
+			  ${ALL_IRIS17_OBJECTS} \
+			  ${ALL_IRIS16_OBJECTS} \
+			  ${ASM_OBJECTS}
 
 ALL_ARCHIVES = ${IRIS16_OUT} \
 			   ${IRIS32_OUT} \
@@ -191,6 +192,7 @@ options:
 	@${CC} ${CXXFLAGS} -c $< -o $@
 	@echo done.
 
+
 ${SIM_BINARY}: ${SIM_OBJECTS}
 	@echo -n Building ${SIM_BINARY} binary out of $^...
 	@${CXX} ${LDFLAGS} -o ${SIM_BINARY} $^
@@ -209,22 +211,22 @@ ${IRIS16_OUT}: ${IRIS16_OBJECTS}
 	@${AR} rcs ${IRIS16_OUT}  $^
 	@echo done
 
+
 iris16_asm.tab.c iris16_asm.tab.h: iris16_asm.y
 	@echo -n Constructing Parser from $< ...
 	@${YACC} -o iris16_asm.tab.c -d iris16_asm.y
+	@echo done
+	@echo -n Compiling iris16_asm.tab.c into iris16_asm.tab.o ...
 	@${CXX} ${CXXFLAGS} -c iris16_asm.tab.c -o iris16_asm.tab.o
 	@echo done
 
 iris16_lex.yy.c: iris16_asm.l iris16_asm.tab.h
 	@echo -n Constructing Lexer from $< ...
 	@${LEX} -o iris16_lex.yy.c iris16_asm.l
+	@echo done
+	@echo -n Compiling iris16_lex.yy.c into iris16_lex.yy.o ...
 	@${CXX} ${CXXFLAGS} -D_POSIX_SOURCE -c iris16_lex.yy.c -o iris16_lex.yy.o
 	@echo done
-
-#${IRIS16_ASM_BINARY}: iris16_lex.yy.c iris16_asm.tab.c iris16_asm.tab.h 
-#	@echo -n Building ${IRIS16_ASM_BINARY} binary out of $^...
-#	@${CXX} ${LDFLAGS} -o ${IRIS16_ASM_BINARY} iris16_lex.yy.o iris16_asm.tab.o ${IRIS16_OUT}
-#	@echo done.
 
 # BEGIN IRIS32
 #
@@ -233,29 +235,21 @@ ${IRIS32_OUT}: ${IRIS32_OBJECTS}
 	@${AR} rcs ${IRIS32_OUT}  $^
 	@echo done
 
-${IRIS32_SIM_BINARY}: ${IRIS32_SIM_MAIN} ${IRIS32_OUT}
-	@echo -n Building ${IRIS32_SIM_BINARY} binary out of $^...
-	@${CXX} ${LDFLAGS} -o ${IRIS32_SIM_BINARY} $^
-	@echo done.
-
-${IRIS32_STRGEN_BINARY}: ${IRIS32_STRGEN_MAIN} ${IRIS32_OUT}
-	@echo -n Building ${IRIS32_STRGEN_BINARY} binary out of $^...
-	@${CXX} ${LDFLAGS} -o ${IRIS32_STRGEN_BINARY} $^
-	@echo done.
-
-
 iris32_asm.tab.c iris32_asm.tab.h: iris32_asm.y
+	@echo -n Constructing Parser from $< ...
 	@${YACC} -o iris32_asm.tab.c -d iris32_asm.y
+	@echo done
+	@echo -n Compiling iris32_asm.tab.c into iris32_asm.tab.o ...
 	@${CXX} ${CXXFLAGS} -c iris32_asm.tab.c -o iris32_asm.tab.o
+	@echo done
 
 iris32_lex.yy.c: iris32_asm.l iris32_asm.tab.h
+	@echo -n Constructing Lexer from $< ...
 	@${LEX} -o iris32_lex.yy.c iris32_asm.l
+	@echo done
+	@echo -n Compiling iris32_lex.yy.c into iris32_lex.yy.o ...
 	@${CXX} ${CXXFLAGS} -D_POSIX_SOURCE -c iris32_lex.yy.c -o iris32_lex.yy.o
-
-${IRIS32_ASM_BINARY}: iris32_lex.yy.c iris32_asm.tab.c iris32_asm.tab.h 
-	@echo -n Building ${IRIS32_ASM_BINARY} binary out of $^...
-	@${CXX} ${LDFLAGS} -o ${IRIS32_ASM_BINARY} iris32_lex.yy.o iris32_asm.tab.o ${IRIS32_OUT}
-	@echo done.
+	@echo done
 
 # BEGIN IRIS17
 #
@@ -265,34 +259,21 @@ ${IRIS17_OUT}: ${IRIS17_OBJECTS}
 	@${AR} rcs ${IRIS17_OUT}  $^
 	@echo done
 
-${IRIS17_SIM_BINARY}: ${IRIS17_SIM_MAIN} ${IRIS17_OUT}
-	@echo -n Building ${IRIS17_SIM_BINARY} binary out of $^...
-	@${CXX} ${LDFLAGS} -o ${IRIS17_SIM_BINARY} $^
-	@echo done.
-
-${IRIS17_LINK_BINARY}: ${IRIS17_LINK_MAIN} ${IRIS17_OUT}
-	@echo -n Building ${IRIS17_LINK_BINARY} binary out of $^...
-	@${CXX} ${LDFLAGS} -o ${IRIS17_LINK_BINARY} $^
-	@echo done.
-
-${IRIS17_STRGEN_BINARY}: ${IRIS17_STRGEN_MAIN} ${IRIS17_OUT}
-	@echo -n Building ${IRIS17_STRGEN_BINARY} binary out of $^...
-	@${CXX} ${LDFLAGS} -o ${IRIS17_STRGEN_BINARY} $^
-	@echo done.
-
-
 iris17_asm.tab.c iris17_asm.tab.h: iris17_asm.y
+	@echo -n Constructing Parser from $< ...
 	@${YACC} -o iris17_asm.tab.c -d iris17_asm.y
+	@echo done
+	@echo -n Compiling iris17_asm.tab.c into iris17_asm.tab.o ...
 	@${CXX} ${CXXFLAGS} -c iris17_asm.tab.c -o iris17_asm.tab.o
+	@echo done
 
 iris17_lex.yy.c: iris17_asm.l iris17_asm.tab.h
+	@echo -n Constructing Lexer from $< ...
 	@${LEX} -o iris17_lex.yy.c iris17_asm.l
+	@echo done
+	@echo -n Compiling iris17_lex.yy.c into iris17_lex.yy.o ...
 	@${CXX} ${CXXFLAGS} -D_POSIX_SOURCE -c iris17_lex.yy.c -o iris17_lex.yy.o
-
-${IRIS17_ASM_BINARY}: iris17_lex.yy.c iris17_asm.tab.c iris17_asm.tab.h 
-	@echo -n Building ${IRIS17_ASM_BINARY} binary out of $^...
-	@${CXX} ${LDFLAGS} -o ${IRIS17_ASM_BINARY} iris17_lex.yy.o iris17_asm.tab.o ${IRIS17_OUT}
-	@echo done.
+	@echo done
 
 clean:
 	@echo -n Cleaning...
