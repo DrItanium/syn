@@ -9,6 +9,7 @@
 #include <iostream>
 #include <vector>
 #include <map>
+#include "asm_interact.h"
 
 #include "iris17_asm.tab.h"
 
@@ -46,7 +47,6 @@ struct asmstate {
    std::map<std::string, word> labels;
    std::vector<dynamicop> dynops;
    std::ostream* output;
-   bool closeOutput;
 };
 
 asmstate state;
@@ -56,7 +56,7 @@ void add_label_entry(const std::string& name, word address);
 void persist_dynamic_op(void);
 void save_encoding(void);
 void write_dynamic_op(dynamicop* op);
-void initialize(std::ostream* output, bool close, FILE* input);
+void initialize(std::ostream* output, FILE* input);
 void resolve_labels(void);
 bool resolve_op(dynamicop* dop);
 }
@@ -473,6 +473,17 @@ lexeme:
       }
 ;
 %%
+namespace iris {
+
+	template<>
+	void assemble<Architecture::iris17>(FILE* input, std::ostream* output) {
+      iris17::initialize(output, input);
+      do {
+         yyparse();
+      } while(!feof(iris17in));
+      iris17::resolve_labels();
+	}
+}
 void iris17error(const char* s) {
    printf("%d: %s\n", iris17lineno, s);
    exit(-1);
@@ -551,13 +562,12 @@ bool resolve_op(dynamicop* dop) {
    return false;
 }
 
-void initialize(std::ostream* output, bool close, FILE* input) {
+void initialize(std::ostream* output, FILE* input) {
    iris17in = input;
    iris17::state.segment = iris17::Segment::Code;
    iris17::state.data_address = 0;
    iris17::state.code_address = 0;
    iris17::state.output = output;
-   iris17::state.closeOutput = close;
    iris17::curri.segment = iris17::Segment::Code;
    iris17::curri.address = 0;
    iris17::curri.group = 0;
