@@ -5,11 +5,11 @@
 #include <cstdint>
 #include <vector>
 
-typedef int64_t dword;
-typedef int32_t word;
-typedef int16_t hword;
 
 namespace iris32 {
+	typedef int64_t dword;
+	typedef int32_t word;
+	typedef int16_t hword;
 	word encodeWord(byte, byte, byte, byte);
 	enum ArchitectureConstants  {
 		RegisterCount = 256,

@@ -97,43 +97,43 @@ omni [a-zA-Z0-9._]
 "@code"  { return DIRECTIVE_CODE; }
 "@org"   { return DIRECTIVE_ORG; }
 "@declare" { return DIRECTIVE_DECLARE; }
-"outptr" { yylval.rval = 227; return REGISTER; }
-"inptr"  { yylval.rval = 228; return REGISTER; }
-"fdcur"  { yylval.rval = 229; return REGISTER; }
-"zero"   { yylval.rval = 230; return REGISTER; }
-"stmp7"  { yylval.rval = 231; return REGISTER; }
-"wlen"   { yylval.rval = 232; return REGISTER; }
-"stmp6"  { yylval.rval = 233; return REGISTER; }
-"stmp5"  { yylval.rval = 234; return REGISTER; }
-"stmp4"  { yylval.rval = 235; return REGISTER; }
-"space"  { yylval.rval = 236; return REGISTER; }
-"stmp3"  { yylval.rval = 237; return REGISTER; }
-"stmp2"  { yylval.rval = 238; return REGISTER; }
-"stmp1"  { yylval.rval = 239; return REGISTER; }
-"stmp0"  { yylval.rval = 240; return REGISTER; }
-"sres3"  { yylval.rval = 241; return REGISTER; }
-"sres2"  { yylval.rval = 242; return REGISTER; }
-"sres1"  { yylval.rval = 243; return REGISTER; }
-"sres0"  { yylval.rval = 244; return REGISTER; }
-"spar3"  { yylval.rval = 245; return REGISTER; }
-"spar2"  { yylval.rval = 246; return REGISTER; }
-"spar1"  { yylval.rval = 247; return REGISTER; }
-"spar0"  { yylval.rval = 248; return REGISTER; }
-"rend"	 { yylval.rval = 249; return REGISTER; }
-"rtop"	 { yylval.rval = 250; return REGISTER; }
-"pend"	 { yylval.rval = 251; return REGISTER; }
-"ptop"	 { yylval.rval = 252; return REGISTER; }
-"sp"	 { yylval.rval = 253; return REGISTER; }
-"lr"	 { yylval.rval = 254; return REGISTER; }
-"ip"	 { yylval.rval = 255; return REGISTER; }
+"outptr" { iris17lval.rval = 227; return REGISTER; }
+"inptr"  { iris17lval.rval = 228; return REGISTER; }
+"fdcur"  { iris17lval.rval = 229; return REGISTER; }
+"zero"   { iris17lval.rval = 230; return REGISTER; }
+"stmp7"  { iris17lval.rval = 231; return REGISTER; }
+"wlen"   { iris17lval.rval = 232; return REGISTER; }
+"stmp6"  { iris17lval.rval = 233; return REGISTER; }
+"stmp5"  { iris17lval.rval = 234; return REGISTER; }
+"stmp4"  { iris17lval.rval = 235; return REGISTER; }
+"space"  { iris17lval.rval = 236; return REGISTER; }
+"stmp3"  { iris17lval.rval = 237; return REGISTER; }
+"stmp2"  { iris17lval.rval = 238; return REGISTER; }
+"stmp1"  { iris17lval.rval = 239; return REGISTER; }
+"stmp0"  { iris17lval.rval = 240; return REGISTER; }
+"sres3"  { iris17lval.rval = 241; return REGISTER; }
+"sres2"  { iris17lval.rval = 242; return REGISTER; }
+"sres1"  { iris17lval.rval = 243; return REGISTER; }
+"sres0"  { iris17lval.rval = 244; return REGISTER; }
+"spar3"  { iris17lval.rval = 245; return REGISTER; }
+"spar2"  { iris17lval.rval = 246; return REGISTER; }
+"spar1"  { iris17lval.rval = 247; return REGISTER; }
+"spar0"  { iris17lval.rval = 248; return REGISTER; }
+"rend"	 { iris17lval.rval = 249; return REGISTER; }
+"rtop"	 { iris17lval.rval = 250; return REGISTER; }
+"pend"	 { iris17lval.rval = 251; return REGISTER; }
+"ptop"	 { iris17lval.rval = 252; return REGISTER; }
+"sp"	 { iris17lval.rval = 253; return REGISTER; }
+"lr"	 { iris17lval.rval = 254; return REGISTER; }
+"ip"	 { iris17lval.rval = 255; return REGISTER; }
 [ \t\n]     ;
 [;].*       ; // comments
-r{digit}+ { yylval.rval = getregister(); return REGISTER; }
-{digit}+ { yylval.ival = getdecimalimmediate(); return IMMEDIATE; }
-0x{xdigit}+ { yylval.ival = getheximmediate(); return IMMEDIATE; }
+r{digit}+ { iris17lval.rval = getregister(); return REGISTER; }
+{digit}+ { iris17lval.ival = getdecimalimmediate(); return IMMEDIATE; }
+0x{xdigit}+ { iris17lval.ival = getheximmediate(); return IMMEDIATE; }
 {omni}+ { 
 	std::string contents(yytext);
-	yylval.sval = (char*)contents.c_str();
+	iris17lval.sval = (char*)contents.c_str();
 	return SYMBOL;
 }
 %%

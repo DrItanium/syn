@@ -1,3 +1,4 @@
+%option prefix="IRIS32"
 %{
 #include <stdlib.h>
 #include <stdio.h>
@@ -13,7 +14,7 @@ static byte getregister(void);
 static word getdecimalimmediate(void);
 static word getheximmediate(void);
 static word getbinaryimmediate(void);
-extern void yyerror(const char* c);
+extern void iris32error(const char* c);
 %}
 %option yylineno
 %option noyywrap
@@ -85,21 +86,21 @@ omni [a-zA-Z0-9._]
 "@label" { return LABEL; }
 "@org"   { return DIRECTIVE_ORG; }
 "@word" { return DIRECTIVE_DECLARE; }
-"tid"	 { yylval.rval = 251; return REGISTER; }
-"cr"	 { yylval.rval = 252; return REGISTER; }
-"sp"	 { yylval.rval = 253; return REGISTER; }
-"lr"	 { yylval.rval = 254; return REGISTER; }
-"ip"	 { yylval.rval = 255; return REGISTER; }
+"tid"	 { iris32lval.rval = 251; return REGISTER; }
+"cr"	 { iris32lval.rval = 252; return REGISTER; }
+"sp"	 { iris32lval.rval = 253; return REGISTER; }
+"lr"	 { iris32lval.rval = 254; return REGISTER; }
+"ip"	 { iris32lval.rval = 255; return REGISTER; }
 [ \t\n]     ;
 [;].*       ; // comments
-r{digit}+ { yylval.rval = getregister(); return REGISTER; }
-{digit}+ { yylval.ival = getdecimalimmediate(); return IMMEDIATE; }
-0x{xdigit}+ { yylval.ival = getheximmediate(); return IMMEDIATE; }
-0b[01]+ { yylval.ival = getbinaryimmediate(); return IMMEDIATE; }
+r{digit}+ { iris32lval.rval = getregister(); return REGISTER; }
+{digit}+ { iris32lval.ival = getdecimalimmediate(); return IMMEDIATE; }
+0x{xdigit}+ { iris32lval.ival = getheximmediate(); return IMMEDIATE; }
+0b[01]+ { iris32lval.ival = getbinaryimmediate(); return IMMEDIATE; }
 
 {omni}+ { 
-	std::string contents(yytext);
-	yylval.sval = (char*)contents.c_str();
+	std::string contents(IRIS32text);
+	iris32lval.sval = (char*)contents.c_str();
 	return SYMBOL;
 		}
 %%
@@ -107,10 +108,10 @@ r{digit}+ { yylval.rval = getregister(); return REGISTER; }
 byte getregister(void) {
 	int c;
 
-	yytext[0] = '0';
-	c = atoi(yytext);
+	IRIS32text[0] = '0';
+	c = atoi(IRIS32text);
 	if(c > 255 || c < 0) {
-		yyerror("target register is too large");
+		iris32error("target register is too large");
 		return 0;
 	} else {
 		return (byte)c;
@@ -118,9 +119,9 @@ byte getregister(void) {
 }
 word getbinaryimmediate() {
 	uint32_t tmp;
-	tmp = strtoul(yytext, NULL, 2);
+	tmp = strtoul(IRIS32text, NULL, 2);
 	if(tmp == ULONG_MAX && errno == ERANGE) {
-		yyerror("number is too large and overflowed!");
+		iris32error("number is too large and overflowed!");
 		return 0;
 	} else {
 		return word(tmp);
@@ -128,9 +129,9 @@ word getbinaryimmediate() {
 }
 word getdecimalimmediate() {
 	uint32_t tmp;
-	tmp = strtoul(yytext, NULL, 10);
+	tmp = strtoul(IRIS32text, NULL, 10);
 	if(tmp == ULONG_MAX && errno == ERANGE) {
-		yyerror("number is too large and overflowed!");
+		iris32error("number is too large and overflowed!");
 		return 0;
 	} else {
 		return word(tmp);
@@ -139,9 +140,9 @@ word getdecimalimmediate() {
 
 word getheximmediate() {
 	uint32_t tmp;
-	tmp = strtoul(yytext, NULL, 16);
+	tmp = strtoul(IRIS32text, NULL, 16);
 	if(tmp == ULONG_MAX && errno == ERANGE) {
-		yyerror("number is too large and overflowed!");
+		iris32error("number is too large and overflowed!");
 		return 0;
 	} else {
 		return word(tmp);

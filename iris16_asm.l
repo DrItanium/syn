@@ -13,7 +13,7 @@
 static byte getregister(void);
 static unsigned long getdecimalimmediate(void);
 static unsigned long getheximmediate(void);
-extern void yyerror(const char* c);
+extern void iris16error(const char* c);
 %}
 %option yylineno
 %option noyywrap
@@ -132,7 +132,7 @@ r{digit}+ { iris16lval.rval = getregister(); return REGISTER; }
 {digit}+ { iris16lval.ival = getdecimalimmediate(); return IMMEDIATE; }
 0x{xdigit}+ { iris16lval.ival = getheximmediate(); return IMMEDIATE; }
 {omni}+ { 
-	std::string contents(yytext);
+	std::string contents(IRIS16text);
 	iris16lval.sval = (char*)contents.c_str();
 	return SYMBOL;
 }
@@ -141,10 +141,10 @@ r{digit}+ { iris16lval.rval = getregister(); return REGISTER; }
 byte getregister(void) {
    int c;
 
-   yytext[0] = '0';
-   c = atoi(yytext);
+   IRIS16text[0] = '0';
+   c = atoi(IRIS16text);
    if(c > 255 || c < 0) {
-      yyerror("target register is too large");
+      iris16error("target register is too large");
       return 0;
    } else {
       return (byte)c;
@@ -153,13 +153,13 @@ byte getregister(void) {
 
 unsigned long getdecimalimmediate() {
    unsigned long tmp;
-   tmp = strtoul(yytext, NULL, 10);
+   tmp = strtoul(IRIS16text, NULL, 10);
    if(tmp == ULONG_MAX && errno == ERANGE) {
-      yyerror("number is too large and overflowed!");
+      iris16error("number is too large and overflowed!");
       return 0;
    } else {
       if(tmp > 65535 || tmp < 0) {
-         yyerror("provided number is larger than 16-bits!");
+         iris16error("provided number is larger than 16-bits!");
          return 0;
       } else {
          return tmp;
@@ -169,13 +169,13 @@ unsigned long getdecimalimmediate() {
 
 unsigned long getheximmediate() {
    unsigned long tmp;
-   tmp = strtoul(yytext, NULL, 16);
+   tmp = strtoul(IRIS16text, NULL, 16);
    if(tmp == ULONG_MAX && errno == ERANGE) {
-      yyerror("number is too large and overflowed!");
+      iris16error("number is too large and overflowed!");
       return 0;
    } else {
       if(tmp > 65535 || tmp < 0) {
-         yyerror("provided number is larger than 16-bits!");
+         iris16error("provided number is larger than 16-bits!");
          return 0;
       } else {
          return tmp;
