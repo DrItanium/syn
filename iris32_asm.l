@@ -10,10 +10,12 @@
 #include "iris32_asm.tab.h"
 #define _POSIX_SOURCE 1
 
+namespace iris32 {
 static byte getregister(void);
 static word getdecimalimmediate(void);
 static word getheximmediate(void);
 static word getbinaryimmediate(void);
+}
 extern void iris32error(const char* c);
 %}
 %option yylineno
@@ -93,10 +95,10 @@ omni [a-zA-Z0-9._]
 "ip"	 { iris32lval.rval = 255; return REGISTER; }
 [ \t\n]     ;
 [;].*       ; // comments
-r{digit}+ { iris32lval.rval = getregister(); return REGISTER; }
-{digit}+ { iris32lval.ival = getdecimalimmediate(); return IMMEDIATE; }
-0x{xdigit}+ { iris32lval.ival = getheximmediate(); return IMMEDIATE; }
-0b[01]+ { iris32lval.ival = getbinaryimmediate(); return IMMEDIATE; }
+r{digit}+ { iris32lval.rval = iris32::getregister(); return REGISTER; }
+{digit}+ { iris32lval.ival = iris32::getdecimalimmediate(); return IMMEDIATE; }
+0x{xdigit}+ { iris32lval.ival = iris32::getheximmediate(); return IMMEDIATE; }
+0b[01]+ { iris32lval.ival = iris32::getbinaryimmediate(); return IMMEDIATE; }
 
 {omni}+ { 
 	std::string contents(IRIS32text);
@@ -104,7 +106,7 @@ r{digit}+ { iris32lval.rval = getregister(); return REGISTER; }
 	return SYMBOL;
 		}
 %%
-
+namespace iris32 {
 byte getregister(void) {
 	int c;
 
@@ -148,4 +150,4 @@ word getheximmediate() {
 		return word(tmp);
 	}
 }
-
+}

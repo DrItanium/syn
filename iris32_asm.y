@@ -8,6 +8,7 @@
 #include <iostream>
 #include <vector>
 #include <map>
+#include "asm_interact.h"
 #include "iris32.h"
 #include "iris32_asm.tab.h"
 
@@ -42,7 +43,6 @@ struct asmstate {
    std::map<std::string, word> labels;
    std::vector<dynamicop> dynops;
    std::ostream* output;
-   bool closeOutput;
 };
 
 asmstate state;
@@ -52,7 +52,7 @@ void add_label_entry(const std::string& name, word address);
 void persist_dynamic_op(void);
 void save_encoding(void);
 void write_dynamic_op(iris32::dynamicop* op);
-void initialize(std::ostream* output, bool close, FILE* input);
+void initialize(std::ostream* output, FILE* input);
 void resolve_labels(void);
 bool resolve_op(iris32::dynamicop* dop);
 }
@@ -383,7 +383,20 @@ lexeme:
       } 
 ;
 %%
+void iris32error(const char* s) {
+   printf("%d: %s\n", iris32lineno, s);
+   exit(-1);
+}
+
 namespace iris {
+	template<>
+	void assemble<Architecture::iris32>(FILE* input, std::ostream* output) {
+      iris32::initialize(output, input);
+      do {
+         yyparse();
+      } while(!feof(yyin));
+      iris32::resolve_labels();
+	}
 
 }
 namespace iris32 {
@@ -437,10 +450,6 @@ void write_dynamic_op(dynamicop* dop) {
    iris32::state.output->write(buf, 8);
 }
 
-void iris32error(const char* s) {
-   printf("%d: %s\n", iris32lineno, s);
-   exit(-1);
-}
 void resolve_labels() {
    /* we need to go through the list of dynamic operations and replace
       the label with the corresponding address */
@@ -465,11 +474,10 @@ bool resolve_op(dynamicop* dop) {
    return false;
 }
 
-void initialize(std::ostream* output, bool close, FILE* input) {
+void initialize(std::ostream* output, FILE* input) {
    yyin = input;
    iris32::state.address = 0;
    iris32::state.output = output;
-   iris32::state.closeOutput = close;
    iris32::curri.address = 0;
    iris32::curri.group = 0;
    iris32::curri.op = 0;

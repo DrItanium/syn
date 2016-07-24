@@ -13,7 +13,7 @@
 static byte getregister(void);
 static unsigned long getdecimalimmediate(void);
 static unsigned long getheximmediate(void);
-extern void yyerror(const char* c);
+extern void iris17error(const char* c);
 %}
 %option yylineno
 %option noyywrap
@@ -144,7 +144,7 @@ byte getregister(void) {
    yytext[0] = '0';
    c = atoi(yytext);
    if(c > 255 || c < 0) {
-      yyerror("target register is too large");
+      iris17error("target register is too large");
       return 0;
    } else {
       return (byte)c;
@@ -155,11 +155,11 @@ unsigned long getdecimalimmediate() {
    unsigned long tmp;
    tmp = strtoul(yytext, NULL, 10);
    if(tmp == ULONG_MAX && errno == ERANGE) {
-      yyerror("number is too large and overflowed!");
+      iris17error("number is too large and overflowed!");
       return 0;
    } else {
       if(tmp > 65535 || tmp < 0) {
-         yyerror("provided number is larger than 16-bits!");
+         iris17error("provided number is larger than 16-bits!");
          return 0;
       } else {
          return tmp;
@@ -171,11 +171,11 @@ unsigned long getheximmediate() {
    unsigned long tmp;
    tmp = strtoul(yytext, NULL, 16);
    if(tmp == ULONG_MAX && errno == ERANGE) {
-      yyerror("number is too large and overflowed!");
+      iris17error("number is too large and overflowed!");
       return 0;
    } else {
       if(tmp > 65535 || tmp < 0) {
-         yyerror("provided number is larger than 16-bits!");
+         iris17error("provided number is larger than 16-bits!");
          return 0;
       } else {
          return tmp;
