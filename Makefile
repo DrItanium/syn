@@ -139,14 +139,30 @@ SIM_OBJECTS = iris_sim.o \
 			  ${IRIS17_OUT} \
 			  ${IRIS32_OUT} 
 
-
 SIM_BINARY = iris_sim
 
-ALL_BINARIES = ${IRIS16_BINARIES} \
+ASM_OBJECTS = iris_asm.o \
+			  asm_interact.o \
+			  ${COMMON_THINGS} \
+			  ${IRIS16_OUT} \
+			  ${IRIS17_OUT} \
+			  ${IRIS32_OUT}
+ASM_PARSERS = ${IRIS16_ASM_FILES} \
+			  ${IRIS32_ASM_FILES} \
+			  ${IRIS17_ASM_FILES} 
+ASM_SUPPLIMENTARY_BUILD = ${IRIS16_ASM_OBJECTS} \
+						  ${IRIS32_ASM_OBJECTS} \
+						  ${IRIS17_ASM_OBJECTS} \
+
+ASM_BINARY = iris_asm
+
+
+ALL_BINARIES = ${SIM_BINARY} \
 			   ${IRIS32_BINARIES} \
 			   ${IRIS17_BINARIES}
 
-ALL_OBJECTS = ${ALL_IRIS16_OBJECTS} \
+ALL_OBJECTS = ${COMMON_THINGS} \
+			  ${SIM_OBJECTS} \
 			  ${ALL_IRIS32_OBJECTS} \
 			  ${ALL_IRIS17_OBJECTS}
 
@@ -154,7 +170,7 @@ ALL_ARCHIVES = ${IRIS16_OUT} \
 			   ${IRIS32_OUT} \
 			   ${IRIS17_OUT}
 
-all: options ${SIM_BINARY} 
+all: options ${SIM_BINARY} ${ASM_BINARY}
 
 options:
 	@echo iris build options:
@@ -175,15 +191,23 @@ options:
 	@${CC} ${CXXFLAGS} -c $< -o $@
 	@echo done.
 
-${IRIS16_OUT}: ${IRIS16_OBJECTS}
-	@echo -n Building ${IRIS16_OUT} out of $^...
-	@${AR} rcs ${IRIS16_OUT}  $^
-	@echo done
-
 ${SIM_BINARY}: ${SIM_OBJECTS}
 	@echo -n Building ${SIM_BINARY} binary out of $^...
 	@${CXX} ${LDFLAGS} -o ${SIM_BINARY} $^
 	@echo done.
+
+${ASM_BINARY}: ${ASM_OBJECTS} ${ASM_PARSERS} 
+	@echo -n Building ${ASM_BINARY} binary out of $^...
+	@${CXX} ${LDFLAGS} -o ${ASM_BINARY} ${ASM_SUPPLIMENTARY_BUILD} ${ASM_OBJECTS}
+	@echo done.
+
+# BEGIN IRIS16
+#
+
+${IRIS16_OUT}: ${IRIS16_OBJECTS}
+	@echo -n Building ${IRIS16_OUT} out of $^...
+	@${AR} rcs ${IRIS16_OUT}  $^
+	@echo done
 
 iris16_asm.tab.c iris16_asm.tab.h: iris16_asm.y
 	@${YACC} -o iris16_asm.tab.c -d iris16_asm.y
