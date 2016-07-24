@@ -1,0 +1,275 @@
+; this is a lisp machine style...machine 
+; it uses a dispatch table for core operations along with more interesting
+; extended types. 
+; Since this machine has 8 lock step threads, we have to give them something to
+; do so the following code comes from my basic thread implementation
+; use the upper most 16 registers (208-255) for kernel and backend stuff
+; use registers 0-31 for globals
+; use registers 32-47 for inputs
+; use registers 48-63 for outputs
+; use registers 64-95 for temporaries
+setl r243 thread_control_block_base	 ; load the thread control block base address
+setu r243 thread_control_block_base	 ; 
+muli r242 tid 4						 ; compute the offset
+add r250 r243 r242					 ; combine it with the thread control block base and store it in the thread control base
+addi r249 r250 2					 ; setup the stack pointer
+ld sp r249						 ; load the stack pointer offset into memory
+move r240 sp						 ; save a copy of the base stack pointer to r240
+setl r249 0xFFFFFFFF 					 ; r249 is the thread invocation flag
+setu r249 0xFFFFFFFF					 ;
+setl r244 thread_idle					 ; Setup the thread_idle address
+setu r244 thread_idle					 ;
+setl r209 nil						 ; load the address of nil
+setu r209 nil						 ;
+setl r0 0						 ; r0 is zero
+setu r0 0						 ;
+setl r1 1						 ; r1 is one
+setu r1 1						 ;
+setl r2 2
+setu r2 2
+setl r3 3
+setu r3 3
+setl r4 4
+setu r4 4
+
+@label thread_idle					 ; now, we are in the thread handler block
+ld r248 r250						 ; load the evaluate jump field
+addi r246 r250 1					 ; compute the offset for the jump address
+ld r245 r246						 ; load it from memory
+eq r247 r249 r248					 ; check to see if we should jump
+jt r247 r245						 ; jump to address if the thread invocation flag is set to true
+j r244
+
+@label thread1_idle
+j r244
+@label thread2_idle
+j r244
+@label thread3_idle
+j r244
+@label thread4_idle
+j r244
+@label thread5_idle
+j r244
+@label thread6_idle
+j r244
+@label thread7_idle
+j r244
+
+
+@label main_thread
+;setl r208 printstring
+;setu r208 printstring
+;setl r32 string ; address
+;setu r32 string
+;jl r208
+
+setl r208 terminate_execution
+setu r208 terminate_execution
+j r208
+
+@label terminate_execution
+system 0 r0 r0
+
+@label printchar
+system 2 r32 r32
+j lr
+
+; list data structure is super simple
+; 1 word - status bits
+; 1 word - current value
+; 1 word - next address
+
+; ---
+; load the current value from the list pointer
+@label first
+	addi r48 r32 1
+	ld r48 r48
+	j lr
+
+@label rest
+	addi r48 r32 2
+	ld r48 r48
+	j lr
+
+@label atomp
+	and r48 r32 r1	; bit 0 in the flags cell is the list flag, if it is zero then we are looking at an atom
+	eqi r48 r48 0		; did we get zero out of the check?
+	j lr
+
+@label listp
+	and r48 r32 r1	; bit 0 in the flags cell is the list flag
+	nei r48 r48 0x1		; did we get one out of the check?
+	j lr
+
+@label numberp
+	and r48 r32 r2	; bit 1 in the flags cell is the number cell
+	eqi r48 r48 0x2 	; does the flags cell equal 0b10 ??, an atom and a number
+	j lr
+@label stringp
+	and r48 r32 r4	; bit 2 in the flags cell is the string cell
+	eqi r48 r48 0x4		; does the flags cell equal 0b100 ??, an atom and a string
+	j lr
+
+@label nilp
+	eq r48 r32 r209
+	j lr
+
+; special data structure in memory that we compare things to
+@label nil
+	@word 0x00
+	@word 0x00
+	@word 0x00
+
+@label native_functions
+@word terminate_execution
+@word printchar
+@word atomp
+@word rest
+@word first
+@word nilp
+
+
+;@label printstring
+;	push lr
+;	push cr							; save the condition register
+;	push r64
+;	push r65
+;	push r66
+;	push r67
+;	move r64 r32 					; address cell
+;	setl r65 printstring_continue
+;	setu r65 printstring_continue
+;	setl r66 printstring_done
+;	setu r66 printstring_done
+;	setl r67 printchar
+;	setu r67 printchar
+;@label printstring_continue
+;	ld r32 r64
+;	nei cr r32 0
+;	jf cr r66
+;	jl r67 
+;	incr r64
+;	j r65
+;@label printstring_done
+;	pop r67
+;	pop r66
+;	pop r65
+;	pop r64
+;	pop cr
+;	pop lr
+;	j lr
+;
+;@label string
+;@word 0x46
+;@word 0x75
+;@word 0x63
+;@word 0x6B
+;@word 0x20
+;@word 0x79
+;@word 0x6F
+;@word 0x75
+;@word 0x20
+;@word 0x4D
+;@word 0x65
+;@word 0x6E
+;@word 0x64
+;@word 0x65
+;@word 0x7A
+;@word 0x2E
+;@word 0x0A
+;@word 0x46
+;@word 0x75
+;@word 0x63
+;@word 0x6B
+;@word 0x20
+;@word 0x79
+;@word 0x6F
+;@word 0x75
+;@word 0x20
+;@word 0x41
+;@word 0x69
+;@word 0x72
+;@word 0x65
+;@word 0x6E
+;@word 0x2E
+;@word 0x0A
+;@word 0x00
+
+@label MEMORY_BEGIN
+@word 0x0000000
+@org 0x03DFFFFF
+@label MEMORY_END
+@word 0xFFFFFFFF
+; stack data
+@org 0x03F00000
+@label thread0_stack_base
+@org 0x03F10000
+@label thread1_stack_base
+@org 0x03F20000
+@label thread2_stack_base
+@org 0x03F30000
+@label thread3_stack_base
+@org 0x03F40000
+@label thread4_stack_base
+@org 0x03F50000
+@label thread5_stack_base
+@org 0x03F60000
+@label thread6_stack_base
+@org 0x03F70000
+@label thread7_stack_base
+; thread data
+@org 0x03FF0000
+; thread data structure
+; 32-bits, evaluate jump
+; 32-bits, address to jump to
+; 32-bits, base stack pointer address
+; 32-bits, memory base address
+@label thread_control_block_base
+@label thread0
+@word 0xFFFFFFFF
+@word main_thread
+@word thread0_stack_base
+@word 0x0
+
+@label thread1
+@word 0x00000000
+@word thread1_idle
+@word thread1_stack_base
+@word 0x0
+
+@label thread2
+@word 0x00000000
+@word thread2_idle
+@word thread2_stack_base
+@word 0x0
+
+@label thread3
+@word 0x00000000
+@word thread3_idle
+@word thread3_stack_base
+@word 0x0
+
+@label thread4
+@word 0x00000000
+@word thread4_idle
+@word thread4_stack_base
+@word 0x0
+
+@label thread5
+@word 0x00000000
+@word thread5_idle
+@word thread5_stack_base
+@word 0x0
+
+@label thread6
+@word 0x00000000
+@word thread6_idle
+@word thread6_stack_base
+@word 0x0
+
+@label thread7
+@word 0x00000000
+@word thread7_idle
+@word thread7_stack_base
+@word 0x0
+
