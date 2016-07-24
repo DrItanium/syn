@@ -1,5 +1,6 @@
 #include "iris16.h"
 #include "sim_registration.h"
+#include "strgen.h"
 #include <functional>
 
 namespace iris {
@@ -7,6 +8,12 @@ namespace iris {
 	Core* getCore<Architecture::iris16>() {
 		return new iris16::Core();
 	}
+
+	template<>
+	void getWordDescription<Architecture::iris16>(std::ostream& out) {
+		out << "@declare";
+	}
+
 }
 namespace iris16 {
 

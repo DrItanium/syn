@@ -1,13 +1,31 @@
 /* strgen.cc - convert a string into an data decl */
 #include <iostream>
+#include "strgen.h"
 
-int main(int argc, char* argv[]) {
+void outputString(iris::Architecture arch) {
 	char c = 0;
 	std::cin >> std::noskipws >> c;
 	while (!std::cin.eof()) {
-		std::cout << "@declare 0x" << std::hex << (int)c << std::endl;
+		iris::constructWord(arch, std::cout, c);
 		std::cin >> std::noskipws >> c;
 	}
-	std::cout << "@declare 0x00" << std::endl;
+	iris::constructWord(arch, std::cout, 0);
+}
+int main(int argc, char* argv[]) {
+	outputString(iris::Architecture::iris16);
 	return 0;
+}
+
+namespace iris {
+	void constructWord(Architecture target, std::ostream& out, char c) {
+		switch (target) {
+#define X(arch, om, nom) case Architecture:: arch : getWordDescription<Architecture:: arch>(out); break;
+#include "architecture_registrations.def"
+#undef X
+			default:
+				std::cerr << "Unknown architecture defined!" << std::endl;
+				throw 0;
+		}
+		out << " 0x" << std::hex << (int)c << std::endl;
+	}
 }
