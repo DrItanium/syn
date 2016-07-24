@@ -5,14 +5,16 @@
 #include "Core.h"
 #include "architecture.h"
 
-#include <map>
-#include <functional>
+#include <string>
+
 
 namespace iris {
+	Core* getCore(const std::string& value);
 	template<Architecture arch>
-	Core* getCore() {
+	Core* newCore() {
 		return nullptr;
 	}
+
 }
 
 #endif // end IRIS_SIM_REGISTRATION

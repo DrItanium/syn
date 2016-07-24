@@ -1,14 +1,17 @@
 /* sim.c - the iris simulator */
-#include "iris16.h"
 #include <iostream>
 #include <fstream>
 #include <string>
+#include "Problem.h"
+#include "Core.h"
+#include "sim_registration.h"
 
 std::istream* input = 0;
 bool close = false;
-iris16::Core core;
+bool debug = false;
+iris::Core* core = nullptr;
 static void usage(char* arg0);
-
+std::string target;
 int main(int argc, char* argv[]) {
 	bool errorfree = true;
 	int last = argc - 1, 
@@ -18,17 +21,26 @@ int main(int argc, char* argv[]) {
 			std::string tmpline(argv[i]);
 			if(tmpline.size() == 2 && tmpline[0] == '-') {
 				switch(tmpline[1]) {
+					case 'd':
+						debug = true;
+						break;
+					case 't':
+						++i;
+						target = argv[i];
+						break;
 					case 'h':
 					default:
-						errorfree = 0;
+						errorfree = false;
 						break;
 				}
 			} else {
-				errorfree = 0;
+				errorfree = false;
 				break;
 			}
 		}
-		if(errorfree) {
+		if(target.empty()) {
+			std::cerr << "No target provided!" << std::endl;
+		} else if(errorfree) {
 			if(i == last) {
 				std::string line(argv[last]);
 				if(line.size() == 1 && line[0] == '-') {
@@ -43,21 +55,40 @@ int main(int argc, char* argv[]) {
 			}
 		}
 	}
-	if(input) {
-		core.initialize();
-		core.installprogram(*input);
-		core.run();
-		core.shutdown();
-		if (close) {
-			static_cast<std::ifstream*>(input)->close();
-			delete input;
+	// now check the target:
+	try {
+		core = iris::getCore(target);
+		if (!core) {
+			std::cerr << "PROBLEM: core initialization for target '" << target << "' failed!" << std::endl;
+			return 1;
+		} else {
+			if(input) {
+				if (debug) {
+					core->toggleDebug();
+				}
+				core->initialize();
+				core->installprogram(*input);
+				core->run();
+				core->shutdown();
+				if (close) {
+					static_cast<std::ifstream*>(input)->close();
+					delete input;
+				}
+			} else {
+				usage(argv[0]);
+			}
 		}
-	} else {
-		usage(argv[0]);
+	} catch(iris::Problem p) {
+		std::cerr << "PROBLEM: " << p.what() << std::endl;
+		return 1;
 	}
 }
 
 void usage(char* arg0) {
-	std::cerr << "usage: " << arg0 << " -h | [file | -]" << std::endl;
+	std::cerr << "usage: " << arg0 << " -h | -d -t <type> [file | -]" << std::endl;
+	std::cerr << "Supported Targets:" << std::endl;
+#define X(blah, str, om) std::cerr << "\t" << str << std::endl;
+#include "architecture_registrations.def"
+#undef X
 }
 
