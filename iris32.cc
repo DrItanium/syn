@@ -4,27 +4,11 @@
 
 namespace iris {
 	template<>
-	Core* getCore<Architecture::iris32>() {
-		iris32::ExecState t0, t1, t2, t3, t4, t5, t6, t7;
-		// make sure they all start at the same position
-		t0.gpr[iris32::ArchitectureConstants::ThreadIndex] = 0;
-		t1.gpr[iris32::ArchitectureConstants::ThreadIndex] = 1;
-		t2.gpr[iris32::ArchitectureConstants::ThreadIndex] = 2;
-		t3.gpr[iris32::ArchitectureConstants::ThreadIndex] = 3;
-		t4.gpr[iris32::ArchitectureConstants::ThreadIndex] = 4;
-		t5.gpr[iris32::ArchitectureConstants::ThreadIndex] = 5;
-		t6.gpr[iris32::ArchitectureConstants::ThreadIndex] = 6;
-		t7.gpr[iris32::ArchitectureConstants::ThreadIndex] = 7;
+	Core* newCore<Architecture::iris32>() {
 		return new iris32::Core(iris32::ArchitectureConstants::AddressMax, 8);
 	}
 }
 namespace iris32 {
-	void Core::toggleDebug() {
-		debug = !debug;
-	}
-	bool Core::debugEnabled() {
-		return debug;
-	}
 	word encodeWord(byte a, byte b, byte c, byte d) {
 		return word(a) | word(b) << 8 | word(c) << 16 | word(d) << 24;
 	}
@@ -108,7 +92,7 @@ namespace iris32 {
 			data = (data & 0xFFFF00FF) | (word(b[1]) << 8);
 			data = (data & 0xFF00FFFF) | (word(b[2]) << 16);
 			data = (data & 0x00FFFFFF) | (word(b[3]) << 24);
-			if (debug) {
+			if (debugEnabled()) {
 				std::cerr << "install 0x" << std::hex << data
 					<< " @ 0x" << std::hex << addr << std::endl;
 			}
@@ -153,7 +137,7 @@ namespace iris32 {
 #define XLink_true \
 			if (cond) { \
 				thread->gpr[ArchitectureConstants::LinkRegisterIndex] = ip + 1; \
-				if (debug) { \
+				if (core->debugEnabled()) { \
 					std::cerr << "update link register index to "  << std::hex << thread->gpr[ArchitectureConstants::LinkRegisterIndex] << std::endl; \
 				} \
 			}
@@ -168,14 +152,13 @@ namespace iris32 {
 				word newAddr = 0; \
 				bool cond = true; \
 				thread->advanceIp = false; \
-				bool debug = core->debug; \
 				word ip = thread->gpr[ArchitectureConstants::InstructionPointerIndex]; \
-				if (debug) { \
+				if (core->debugEnabled()) { \
 					std::cerr << "Called JumpOp::" << #name << std::endl; \
 				} \
 				INDIRECTOR(XConditional, _ ## conditional)(name, ifthenelse, immediate) \
 				thread->gpr[ArchitectureConstants::InstructionPointerIndex] = newAddr; \
-				if (debug) { \
+				if (core->debugEnabled()) { \
 					std::cerr << "newAddr = " << std::hex << newAddr << std::endl; \
 				} \
 				INDIRECTOR(XLink, _ ## link)  \
@@ -234,7 +217,7 @@ namespace iris32 {
 	template<> \
 	void invoke<MoveOp, MoveOp :: name>(Core* core, DecodedInstruction&& inst) { \
 		auto thread = core->thread; \
-		if (core->debug) {\
+		if (core->debugEnabled()) {\
 			std::cerr << "Called MoveOp::" << #name << std::endl;  \
 		}\
 		INDIRECTOR(X,type)(target, dest, src) \
@@ -276,7 +259,7 @@ namespace iris32 {
 	template<> \
 	void invoke<CompareOp, CompareOp:: type>(Core* core, DecodedInstruction&& current) { \
 		auto thread = core->thread; \
-		if (core->debug) { \
+		if (core->debugEnabled()) { \
 			std::cerr << "Called CompareOp::" << #type << std::endl; \
 		} \
 		thread->gpr[current.getDestination()] INDIRECTOR(Op, mod) (thread->gpr[current.getSource0()] compare thread->gpr[current.getSource1()]); \
@@ -285,7 +268,7 @@ namespace iris32 {
 	template<> \
 	void invoke<CompareOp, CompareOp:: type> (Core* core, DecodedInstruction&& current) { \
 		auto thread = core->thread; \
-		if (core->debug) { \
+		if (core->debugEnabled()) { \
 			std::cerr << "Called CompareOp::" << #type << std::endl; \
 		} \
 		thread->gpr[current.getDestination()] INDIRECTOR(Op, mod) (thread->gpr[current.getSource0()] compare (word(current.getSource1()))); \
@@ -304,7 +287,7 @@ namespace iris32 {
 #define XUnary(n, op) thread->gpr[inst.getDestination()] = op thread->gpr[inst.getSource0()];
 #define XDenominator(n, op) \
 			if (thread->gpr[inst.getSource1()] == 0) { \
-				if (debug) { \
+				if (core->debugEnabled()) { \
 					std::cerr << "denominator in for operation " << std::hex <<  #n << " is zero!" << std::endl; \
 				} \
 				core->execute = false; \
@@ -313,7 +296,7 @@ namespace iris32 {
 			}
 #define XDenominatorImmediate(n, op) \
 			if (thread->gpr[inst.getSource1()] == 0) { \
-				if (debug) { \
+				if (core->debugEnabled()) { \
 					std::cerr << "denominator in for operation " << std::hex << #n << " is zero!" << std::endl; \
 				} \
 				core->execute = false; \
@@ -324,8 +307,7 @@ namespace iris32 {
 	template<> \
 	void invoke<ArithmeticOp, ArithmeticOp :: name >(Core* core, DecodedInstruction&& inst) { \
 		auto thread = core->thread; \
-		auto debug = core->debug; \
-		if (debug) { \
+		if (core->debugEnabled()) { \
 			std::cerr << "Called ArithmeticOp::" << #name << std::endl; \
 		}\
 		INDIRECTOR(X, desc)(name, op) \
@@ -381,7 +363,7 @@ namespace iris32 {
 			std::cerr << "group: " << std::hex << (int)decoded.getGroup() << std::endl;
 			std::cerr << "op: " << std::hex << (int)decoded.getOperation() << std::endl;
 		};
-		if (debug) {
+		if (debugEnabled()) {
 			printInst("before", std::move(decoded));
 		}
 #define DispatchDecode(cl, val) \
@@ -412,7 +394,7 @@ namespace iris32 {
 				throw "Undefined control!";
 		}
 #undef DispatchDecode
-		if (debug) {
+		if (debugEnabled()) {
 			printInst("after", std::move(decoded));
 		}
 	}
@@ -439,7 +421,7 @@ namespace iris32 {
 		}
 	}
 	void Core::execBody() {
-		if (debug) {
+		if (debugEnabled()) {
 			std::cerr << "{" << std::endl;
 			std::cerr << "current thread " << std::hex << thread << std::endl;
 		}
@@ -453,7 +435,7 @@ namespace iris32 {
 				thread->gpr[ArchitectureConstants::InstructionPointerIndex] = 0;
 			}
 		}
-		if (debug) {
+		if (debugEnabled()) {
 			std::cerr << "}" << std::endl;
 		}
 	}

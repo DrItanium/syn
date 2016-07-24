@@ -128,12 +128,16 @@ IRIS32_TOOLS = ${IRIS32_BINARIES}
 IRIS32 = ${IRIS32_OUT} \
 		 ${IRIS32_TOOLS}
 
+COMMON_THINGS = architecture.o \
+
 # The object file that defines main()
 #TEST_OBJECTS = $(patsubst %.c,%.o,$(wildcard src/cmd/tests/*.c))
 SIM_OBJECTS = iris_sim.o \
-			 ${IRIS16_OUT} \
-			 ${IRIS17_OUT} \
-			 ${IRIS32_OUT} 
+			  sim_registration.o \
+			  ${COMMON_THINGS} \
+			  ${IRIS16_OUT} \
+			  ${IRIS17_OUT} \
+			  ${IRIS32_OUT} 
 
 
 SIM_BINARY = iris_sim
@@ -170,14 +174,15 @@ options:
 	@echo -n Compiling $< into $@...
 	@${CC} ${CXXFLAGS} -c $< -o $@
 	@echo done.
+
 ${IRIS16_OUT}: ${IRIS16_OBJECTS}
 	@echo -n Building ${IRIS16_OUT} out of $^...
 	@${AR} rcs ${IRIS16_OUT}  $^
 	@echo done
 
 ${SIM_BINARY}: ${SIM_OBJECTS}
-	@echo -n Building ${SIM_BINARY_NAME} binary out of $^...
-	@${CXX} ${LDFLAGS} -o ${SIM_BINARY_NAME} $^
+	@echo -n Building ${SIM_BINARY} binary out of $^...
+	@${CXX} ${LDFLAGS} -o ${SIM_BINARY} $^
 	@echo done.
 
 iris16_asm.tab.c iris16_asm.tab.h: iris16_asm.y
@@ -188,10 +193,10 @@ iris16_lex.yy.c: iris16_asm.l iris16_asm.tab.h
 	@${LEX} -o iris16_lex.yy.c -l iris16_asm.l
 	@${CXX} ${CXXFLAGS} -D_POSIX_SOURCE -c iris16_lex.yy.c -o iris16_lex.yy.o
 
-${IRIS16_ASM_BINARY}: iris16_lex.yy.c iris16_asm.tab.c iris16_asm.tab.h 
-	@echo -n Building ${IRIS16_ASM_BINARY} binary out of $^...
-	@${CXX} ${LDFLAGS} -o ${IRIS16_ASM_BINARY} iris16_lex.yy.o iris16_asm.tab.o ${IRIS16_OUT}
-	@echo done.
+#${IRIS16_ASM_BINARY}: iris16_lex.yy.c iris16_asm.tab.c iris16_asm.tab.h 
+#	@echo -n Building ${IRIS16_ASM_BINARY} binary out of $^...
+#	@${CXX} ${LDFLAGS} -o ${IRIS16_ASM_BINARY} iris16_lex.yy.o iris16_asm.tab.o ${IRIS16_OUT}
+#	@echo done.
 
 # BEGIN IRIS32
 #

@@ -12,6 +12,7 @@ bool debug = false;
 iris::Core* core = nullptr;
 static void usage(char* arg0);
 std::string target;
+
 int main(int argc, char* argv[]) {
 	bool errorfree = true;
 	int last = argc - 1, 
@@ -38,9 +39,7 @@ int main(int argc, char* argv[]) {
 				break;
 			}
 		}
-		if(target.empty()) {
-			std::cerr << "No target provided!" << std::endl;
-		} else if(errorfree) {
+		if(errorfree) {
 			if(i == last) {
 				std::string line(argv[last]);
 				if(line.size() == 1 && line[0] == '-') {
@@ -52,8 +51,15 @@ int main(int argc, char* argv[]) {
 				}
 			} else {
 				std::cerr << "no file provided" << std::endl;
+				usage(argv[0]);
+				return 1;
 			}
 		}
+	}
+	if(target.empty()) {
+		std::cerr << "No target provided!" << std::endl;
+		usage(argv[0]);
+		return 2;
 	}
 	// now check the target:
 	try {

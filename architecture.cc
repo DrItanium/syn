@@ -5,7 +5,7 @@
 namespace iris {
 	Architecture getArchitectureFromString(const std::string& value) {
 		static std::map<std::string, Architecture> translationTable = {
-#define X(en, str, __) { str, Architecture:: e },
+#define X(en, str, __) { str, Architecture:: en },
 #include "architecture_registrations.def"
 #undef X
 		};
@@ -18,7 +18,7 @@ namespace iris {
 	}
 	std::string getStringFromArchitecture(Architecture arch) {
 		static std::map<Architecture, std::string> translationTable = {
-#define X(en, str, __) { Architecture:: e, str },
+#define X(en, str, __) { Architecture:: en, str },
 #include "architecture_registrations.def"
 #undef X
 		};

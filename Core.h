@@ -12,7 +12,7 @@ namespace iris {
 			virtual void dump(std::ostream& stream) = 0;
 			virtual void run() = 0;
 			inline bool debugEnabled() const { return _debug; }
-			void toggleDebug() { _debug = !_debug; }
+			void toggleDebug() 				 { _debug = !_debug; }
 		private:
 			bool _debug = false;
 
