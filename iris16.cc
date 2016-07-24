@@ -129,55 +129,30 @@ namespace iris16 {
 				break;
 		}
 	}
-	template<ArithmeticOp op>
-		word arithmeticOp(word a, word b) {
-			return a;
-		}
-#define XNone(n, op) \
-	template<> \
-	word arithmeticOp<ArithmeticOp:: n>(word a, word b) { \
-		return a op b; \
-	}
-#define XDenominator(n, op) XNone(n, op)
-#define XUnary(n, op) \
-	template<> \
-	word arithmeticOp<ArithmeticOp:: n>(word a, word unused) { \
-		return op a; \
-	}
-#define XImmediate(n, op) XNone(n, op) 
-#define XDenominatorImmediate(n, op) XDenominator(n, op)
-#define X(name, op, desc) INDIRECTOR(X, desc)(name, op)
-#include "iris16_arithmetic.def"
-#undef X
-#undef XNone
-#undef XDenominator
-#undef XUnary
-#undef XImmediate
-#undef XDenominatorImmediate
 
 	void Core::arithmetic() {
 		switch(static_cast<ArithmeticOp>(current.getOperation())) {
-#define XNone(n) gpr[current.getDestination()] = arithmeticOp<ArithmeticOp:: n>( gpr[current.getSource0()], gpr[current.getSource1()]);
-#define XImmediate(n) gpr[current.getDestination()] = arithmeticOp<ArithmeticOp:: n>(gpr[current.getSource0()], static_cast<word>(current.getSource1()));
-#define XUnary(n) gpr[current.getDestination()] = arithmeticOp<ArithmeticOp:: n>(gpr[current.getSource0()], 0);
-#define XDenominator(n) \
+#define XNone(n, op) gpr[current.getDestination()] = ( gpr[current.getSource0()] op  gpr[current.getSource1()]);
+#define XImmediate(n, op) gpr[current.getDestination()] = (gpr[current.getSource0()] op static_cast<word>(current.getSource1())); 
+#define XUnary(n, op) gpr[current.getDestination()] = (op gpr[current.getSource0()]); 
+#define XDenominator(n, op) \
 			if (gpr[current.getSource1()] == 0) { \
 				std::cerr << "denominator in for operation " << #n << " is zero!" << std::endl; \
 				execute = false; \
 			} else { \
-				XNone(n) \
+				XNone(n, op) \
 			}
-#define XDenominatorImmediate(n) \
+#define XDenominatorImmediate(n, op) \
 			if (gpr[current.getSource1()] == 0) { \
 				std::cerr << "denominator in for operation " << #n << " is zero!" << std::endl; \
 				execute = false; \
 			} else { \
-				XImmediate(n) \
+				XImmediate(n, op) \
 			}
 #define X(name, op, desc) \
 			case ArithmeticOp:: name: \
 						{ \
-							INDIRECTOR(X, desc)(name) \
+							INDIRECTOR(X, desc)(name, op) \
 							break; \
 						}
 #include "iris16_arithmetic.def"

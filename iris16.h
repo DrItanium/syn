@@ -102,7 +102,6 @@ namespace iris16 {
 #define X(title, func) void func ();
 #include "iris16_misc.def"
 #undef X
-
 		private:
 			DecodedInstruction current;
 			bool execute = true,
