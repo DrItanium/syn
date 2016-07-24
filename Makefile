@@ -210,12 +210,16 @@ ${IRIS16_OUT}: ${IRIS16_OBJECTS}
 	@echo done
 
 iris16_asm.tab.c iris16_asm.tab.h: iris16_asm.y
+	@echo -n Constructing Parser from $< ...
 	@${YACC} -o iris16_asm.tab.c -d iris16_asm.y
 	@${CXX} ${CXXFLAGS} -c iris16_asm.tab.c -o iris16_asm.tab.o
+	@echo done
 
 iris16_lex.yy.c: iris16_asm.l iris16_asm.tab.h
-	@${LEX} -o iris16_lex.yy.c -l iris16_asm.l
+	@echo -n Constructing Lexer from $< ...
+	@${LEX} -o iris16_lex.yy.c iris16_asm.l
 	@${CXX} ${CXXFLAGS} -D_POSIX_SOURCE -c iris16_lex.yy.c -o iris16_lex.yy.o
+	@echo done
 
 #${IRIS16_ASM_BINARY}: iris16_lex.yy.c iris16_asm.tab.c iris16_asm.tab.h 
 #	@echo -n Building ${IRIS16_ASM_BINARY} binary out of $^...
@@ -245,7 +249,7 @@ iris32_asm.tab.c iris32_asm.tab.h: iris32_asm.y
 	@${CXX} ${CXXFLAGS} -c iris32_asm.tab.c -o iris32_asm.tab.o
 
 iris32_lex.yy.c: iris32_asm.l iris32_asm.tab.h
-	@${LEX} -o iris32_lex.yy.c -l iris32_asm.l
+	@${LEX} -o iris32_lex.yy.c iris32_asm.l
 	@${CXX} ${CXXFLAGS} -D_POSIX_SOURCE -c iris32_lex.yy.c -o iris32_lex.yy.o
 
 ${IRIS32_ASM_BINARY}: iris32_lex.yy.c iris32_asm.tab.c iris32_asm.tab.h 
@@ -282,7 +286,7 @@ iris17_asm.tab.c iris17_asm.tab.h: iris17_asm.y
 	@${CXX} ${CXXFLAGS} -c iris17_asm.tab.c -o iris17_asm.tab.o
 
 iris17_lex.yy.c: iris17_asm.l iris17_asm.tab.h
-	@${LEX} -o iris17_lex.yy.c -l iris17_asm.l
+	@${LEX} -o iris17_lex.yy.c iris17_asm.l
 	@${CXX} ${CXXFLAGS} -D_POSIX_SOURCE -c iris17_lex.yy.c -o iris17_lex.yy.o
 
 ${IRIS17_ASM_BINARY}: iris17_lex.yy.c iris17_asm.tab.c iris17_asm.tab.h 
@@ -292,7 +296,7 @@ ${IRIS17_ASM_BINARY}: iris17_lex.yy.c iris17_asm.tab.c iris17_asm.tab.h
 
 clean:
 	@echo -n Cleaning...
-	@rm -f ${ALL_OBJECTS} ${ALL_BINARIES}
+	@rm -f ${ALL_OBJECTS} ${ALL_BINARIES} ${ASM_PARSERS}
 	@echo done.
 
 install: ${ALL_BINARIES}

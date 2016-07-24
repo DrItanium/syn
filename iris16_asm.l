@@ -20,6 +20,7 @@ extern void iris16error(const char* c);
 %option yylineno
 %option noyywrap
 %option nounput
+
 digit [0-9]
 xdigit [a-fA-F0-9]
 bdigit [0-1]
