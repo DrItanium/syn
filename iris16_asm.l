@@ -1,3 +1,4 @@
+%option prefix="IRIS16"
 %{
 #include <stdlib.h>
 #include <stdio.h>
@@ -17,7 +18,6 @@ extern void yyerror(const char* c);
 %option yylineno
 %option noyywrap
 %option nounput
-%option prefix="IRIS16"
 digit [0-9]
 xdigit [a-fA-F0-9]
 bdigit [0-1]
@@ -97,43 +97,43 @@ omni [a-zA-Z0-9._]
 "@code"  { return DIRECTIVE_CODE; }
 "@org"   { return DIRECTIVE_ORG; }
 "@declare" { return DIRECTIVE_DECLARE; }
-"outptr" { yylval.rval = 227; return REGISTER; }
-"inptr"  { yylval.rval = 228; return REGISTER; }
-"fdcur"  { yylval.rval = 229; return REGISTER; }
-"zero"   { yylval.rval = 230; return REGISTER; }
-"stmp7"  { yylval.rval = 231; return REGISTER; }
-"wlen"   { yylval.rval = 232; return REGISTER; }
-"stmp6"  { yylval.rval = 233; return REGISTER; }
-"stmp5"  { yylval.rval = 234; return REGISTER; }
-"stmp4"  { yylval.rval = 235; return REGISTER; }
-"space"  { yylval.rval = 236; return REGISTER; }
-"stmp3"  { yylval.rval = 237; return REGISTER; }
-"stmp2"  { yylval.rval = 238; return REGISTER; }
-"stmp1"  { yylval.rval = 239; return REGISTER; }
-"stmp0"  { yylval.rval = 240; return REGISTER; }
-"sres3"  { yylval.rval = 241; return REGISTER; }
-"sres2"  { yylval.rval = 242; return REGISTER; }
-"sres1"  { yylval.rval = 243; return REGISTER; }
-"sres0"  { yylval.rval = 244; return REGISTER; }
-"spar3"  { yylval.rval = 245; return REGISTER; }
-"spar2"  { yylval.rval = 246; return REGISTER; }
-"spar1"  { yylval.rval = 247; return REGISTER; }
-"spar0"  { yylval.rval = 248; return REGISTER; }
-"rend"	 { yylval.rval = 249; return REGISTER; }
-"rtop"	 { yylval.rval = 250; return REGISTER; }
-"pend"	 { yylval.rval = 251; return REGISTER; }
-"ptop"	 { yylval.rval = 252; return REGISTER; }
-"sp"	 { yylval.rval = 253; return REGISTER; }
-"lr"	 { yylval.rval = 254; return REGISTER; }
-"ip"	 { yylval.rval = 255; return REGISTER; }
+"outptr" { iris16lval.rval = 227; return REGISTER; }
+"inptr"  { iris16lval.rval = 228; return REGISTER; }
+"fdcur"  { iris16lval.rval = 229; return REGISTER; }
+"zero"   { iris16lval.rval = 230; return REGISTER; }
+"stmp7"  { iris16lval.rval = 231; return REGISTER; }
+"wlen"   { iris16lval.rval = 232; return REGISTER; }
+"stmp6"  { iris16lval.rval = 233; return REGISTER; }
+"stmp5"  { iris16lval.rval = 234; return REGISTER; }
+"stmp4"  { iris16lval.rval = 235; return REGISTER; }
+"space"  { iris16lval.rval = 236; return REGISTER; }
+"stmp3"  { iris16lval.rval = 237; return REGISTER; }
+"stmp2"  { iris16lval.rval = 238; return REGISTER; }
+"stmp1"  { iris16lval.rval = 239; return REGISTER; }
+"stmp0"  { iris16lval.rval = 240; return REGISTER; }
+"sres3"  { iris16lval.rval = 241; return REGISTER; }
+"sres2"  { iris16lval.rval = 242; return REGISTER; }
+"sres1"  { iris16lval.rval = 243; return REGISTER; }
+"sres0"  { iris16lval.rval = 244; return REGISTER; }
+"spar3"  { iris16lval.rval = 245; return REGISTER; }
+"spar2"  { iris16lval.rval = 246; return REGISTER; }
+"spar1"  { iris16lval.rval = 247; return REGISTER; }
+"spar0"  { iris16lval.rval = 248; return REGISTER; }
+"rend"	 { iris16lval.rval = 249; return REGISTER; }
+"rtop"	 { iris16lval.rval = 250; return REGISTER; }
+"pend"	 { iris16lval.rval = 251; return REGISTER; }
+"ptop"	 { iris16lval.rval = 252; return REGISTER; }
+"sp"	 { iris16lval.rval = 253; return REGISTER; }
+"lr"	 { iris16lval.rval = 254; return REGISTER; }
+"ip"	 { iris16lval.rval = 255; return REGISTER; }
 [ \t\n]     ;
 [;].*       ; // comments
-r{digit}+ { yylval.rval = getregister(); return REGISTER; }
-{digit}+ { yylval.ival = getdecimalimmediate(); return IMMEDIATE; }
-0x{xdigit}+ { yylval.ival = getheximmediate(); return IMMEDIATE; }
+r{digit}+ { iris16lval.rval = getregister(); return REGISTER; }
+{digit}+ { iris16lval.ival = getdecimalimmediate(); return IMMEDIATE; }
+0x{xdigit}+ { iris16lval.ival = getheximmediate(); return IMMEDIATE; }
 {omni}+ { 
 	std::string contents(yytext);
-	yylval.sval = (char*)contents.c_str();
+	iris16lval.sval = (char*)contents.c_str();
 	return SYMBOL;
 }
 %%

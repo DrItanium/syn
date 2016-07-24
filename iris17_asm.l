@@ -1,3 +1,4 @@
+%option prefix="IRIS17"
 %{
 #include <stdlib.h>
 #include <stdio.h>
@@ -5,8 +6,8 @@
 #include <errno.h>
 #include <limits.h>
 #include <cstdint>
-#include "iris16.h"
-#include "iris16_asm.tab.h"
+#include "iris17.h"
+#include "iris17_asm.tab.h"
 #define _POSIX_SOURCE 1
 
 static byte getregister(void);

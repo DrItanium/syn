@@ -1,15 +1,16 @@
+%define api.prefix {iris17}
 %{
 #include <cstdlib>
 #include <cstdio>
 #include <string>
 #include <cstdint>
-#include "iris16.h"
+#include "iris17.h"
 #include <fstream>
 #include <iostream>
 #include <vector>
 #include <map>
 
-#include "iris16_asm.tab.h"
+#include "iris17_asm.tab.h"
 
 extern int yylex();
 extern int yyparse();
@@ -158,24 +159,24 @@ void usage(char* arg0);
 %token COMPARE_OP_GREATERTHANOR
 %token COMPARE_OP_GREATERTHANXOR
 // from cop
-   COMPARE_OP_EQAND { curri.op = (byte)iris16::CompareOp::EqAnd; } |
-   COMPARE_OP_EQOR { curri.op = (byte)iris16::CompareOp::EqOr; } |
-   COMPARE_OP_EQXOR { curri.op = (byte)iris16::CompareOp::EqXor; } |
-   COMPARE_OP_NEQAND { curri.op = (byte)iris16::CompareOp::NeqAnd; } |
-   COMPARE_OP_NEQOR { curri.op = (byte)iris16::CompareOp::NeqOr; } |
-   COMPARE_OP_NEQXOR { curri.op = (byte)iris16::CompareOp::NeqXor; } |
-   COMPARE_OP_LESSTHANAND { curri.op = (byte)iris16::CompareOp::LessThanAnd; } |
-   COMPARE_OP_LESSTHANOR { curri.op = (byte)iris16::CompareOp::LessThanOr; } |
-   COMPARE_OP_LESSTHANXOR { curri.op = (byte)iris16::CompareOp::LessThanXor; } |
-   COMPARE_OP_GREATERTHANAND { curri.op = (byte)iris16::CompareOp::GreaterThanAnd; } |
-   COMPARE_OP_GREATERTHANOR { curri.op = (byte)iris16::CompareOp::GreaterThanOr; } |
-   COMPARE_OP_GREATERTHANXOR { curri.op = (byte)iris16::CompareOp::GreaterThanXor; } |
-   COMPARE_OP_LESSTHANOREQUALTOAND { curri.op = (byte)iris16::CompareOp::LessThanOrEqualToAnd; } |
-   COMPARE_OP_LESSTHANOREQUALTOOR { curri.op = (byte)iris16::CompareOp::LessThanOrEqualToOr; } |
-   COMPARE_OP_LESSTHANOREQUALTOXOR { curri.op = (byte)iris16::CompareOp::LessThanOrEqualToXor; } |
-   COMPARE_OP_GREATERTHANOREQUALTOAND { curri.op = (byte)iris16::CompareOp::GreaterThanOrEqualToAnd; } |
-   COMPARE_OP_GREATERTHANOREQUALTOOR { curri.op = (byte)iris16::CompareOp::GreaterThanOrEqualToOr; } |
-   COMPARE_OP_GREATERTHANOREQUALTOXOR { curri.op = (byte)iris16::CompareOp::GreaterThanOrEqualToXor; } |
+   COMPARE_OP_EQAND { curri.op = (byte)iris17::CompareOp::EqAnd; } |
+   COMPARE_OP_EQOR { curri.op = (byte)iris17::CompareOp::EqOr; } |
+   COMPARE_OP_EQXOR { curri.op = (byte)iris17::CompareOp::EqXor; } |
+   COMPARE_OP_NEQAND { curri.op = (byte)iris17::CompareOp::NeqAnd; } |
+   COMPARE_OP_NEQOR { curri.op = (byte)iris17::CompareOp::NeqOr; } |
+   COMPARE_OP_NEQXOR { curri.op = (byte)iris17::CompareOp::NeqXor; } |
+   COMPARE_OP_LESSTHANAND { curri.op = (byte)iris17::CompareOp::LessThanAnd; } |
+   COMPARE_OP_LESSTHANOR { curri.op = (byte)iris17::CompareOp::LessThanOr; } |
+   COMPARE_OP_LESSTHANXOR { curri.op = (byte)iris17::CompareOp::LessThanXor; } |
+   COMPARE_OP_GREATERTHANAND { curri.op = (byte)iris17::CompareOp::GreaterThanAnd; } |
+   COMPARE_OP_GREATERTHANOR { curri.op = (byte)iris17::CompareOp::GreaterThanOr; } |
+   COMPARE_OP_GREATERTHANXOR { curri.op = (byte)iris17::CompareOp::GreaterThanXor; } |
+   COMPARE_OP_LESSTHANOREQUALTOAND { curri.op = (byte)iris17::CompareOp::LessThanOrEqualToAnd; } |
+   COMPARE_OP_LESSTHANOREQUALTOOR { curri.op = (byte)iris17::CompareOp::LessThanOrEqualToOr; } |
+   COMPARE_OP_LESSTHANOREQUALTOXOR { curri.op = (byte)iris17::CompareOp::LessThanOrEqualToXor; } |
+   COMPARE_OP_GREATERTHANOREQUALTOAND { curri.op = (byte)iris17::CompareOp::GreaterThanOrEqualToAnd; } |
+   COMPARE_OP_GREATERTHANOREQUALTOOR { curri.op = (byte)iris17::CompareOp::GreaterThanOrEqualToOr; } |
+   COMPARE_OP_GREATERTHANOREQUALTOXOR { curri.op = (byte)iris17::CompareOp::GreaterThanOrEqualToXor; } |
 */
 
 %token <rval> REGISTER
@@ -262,11 +263,11 @@ label:
      }
    ;
 operation:
-         arithmetic_op { curri.group = (byte)iris16::InstructionGroup::Arithmetic; } |
-         move_op { curri.group = (byte)iris16::InstructionGroup::Move; } |
-         jump_op { curri.group = (byte)iris16::InstructionGroup::Jump; } |
-         compare_op { curri.group = (byte)iris16::InstructionGroup::Compare; } |
-         misc_op { curri.group = (byte)iris16::InstructionGroup::Misc; }
+         arithmetic_op { curri.group = (byte)iris17::InstructionGroup::Arithmetic; } |
+         move_op { curri.group = (byte)iris17::InstructionGroup::Move; } |
+         jump_op { curri.group = (byte)iris17::InstructionGroup::Jump; } |
+         compare_op { curri.group = (byte)iris17::InstructionGroup::Compare; } |
+         misc_op { curri.group = (byte)iris17::InstructionGroup::Misc; }
          ;
 arithmetic_op:
              aop REGISTER REGISTER REGISTER {
@@ -293,19 +294,19 @@ arithmetic_op:
       ;
 aop_single_macro:
    ARITHMETIC_MACRO_OP_INCR { 
-     curri.op = (byte)iris16::ArithmeticOp::AddImmediate;
+     curri.op = (byte)iris17::ArithmeticOp::AddImmediate;
      curri.reg2 = 1;
    } |
    ARITHMETIC_MACRO_OP_DECR { 
-     curri.op = (byte)iris16::ArithmeticOp::SubImmediate;  
+     curri.op = (byte)iris17::ArithmeticOp::SubImmediate;  
 	 curri.reg2 = 1;
    } |
    ARITHMETIC_MACRO_OP_HALVE { 
-     curri.op = (byte)iris16::ArithmeticOp::DivImmediate; 
+     curri.op = (byte)iris17::ArithmeticOp::DivImmediate; 
      curri.reg2 = 2;
    } |
    ARITHMETIC_MACRO_OP_DOUBLE {
-     curri.op = (byte)iris16::ArithmeticOp::MulImmediate; 
+     curri.op = (byte)iris17::ArithmeticOp::MulImmediate; 
      curri.reg2 = 2;
    }
    ;
@@ -319,7 +320,7 @@ move_op:
          curri.reg0 = $2;
        } |
        MOVE_OP_PUSHIMMEDIATE lexeme { 
-         curri.op = (byte)iris16::MoveOp::PushImmediate;
+         curri.op = (byte)iris17::MoveOp::PushImmediate;
        } |
 	   MOVE_OP_STORE_CODE REGISTER REGISTER REGISTER {
 		curri.reg0 = $2;
@@ -336,10 +337,10 @@ move_op:
 
 jump_op:
        JUMP_OP_UNCONDITIONALIMMEDIATE lexeme { 
-         curri.op = (byte)iris16::JumpOp::UnconditionalImmediate; 
+         curri.op = (byte)iris17::JumpOp::UnconditionalImmediate; 
          } | 
        JUMP_OP_UNCONDITIONALREGISTER REGISTER { 
-         curri.op = (byte)iris16::JumpOp::UnconditionalRegister; 
+         curri.op = (byte)iris17::JumpOp::UnconditionalRegister; 
          curri.reg0 = $2;
        } |
        jop_reg_reg REGISTER REGISTER {
@@ -372,7 +373,7 @@ compare_op:
 misc_op:
        MISC_OP_SYSTEMCALL IMMEDIATE REGISTER REGISTER 
        { 
-         curri.op = (byte)iris16::MiscOp::SystemCall; 
+         curri.op = (byte)iris17::MiscOp::SystemCall; 
          if($2 > 255) {
             yyerror("system call offset out of range!");
          }
@@ -382,85 +383,85 @@ misc_op:
        } 
        ;
 aop:
-   ARITHMETIC_OP_ADD { curri.op = (byte)iris16::ArithmeticOp::Add; } |
-   ARITHMETIC_OP_SUB { curri.op = (byte)iris16::ArithmeticOp::Sub; } |
-   ARITHMETIC_OP_MUL { curri.op = (byte)iris16::ArithmeticOp::Mul; } |
-   ARITHMETIC_OP_DIV { curri.op = (byte)iris16::ArithmeticOp::Div; } |
-   ARITHMETIC_OP_REM { curri.op = (byte)iris16::ArithmeticOp::Rem; } |
-   ARITHMETIC_OP_SHIFTLEFT { curri.op = (byte)iris16::ArithmeticOp::ShiftLeft; } |
-   ARITHMETIC_OP_SHIFTRIGHT { curri.op = (byte)iris16::ArithmeticOp::ShiftRight; } |
-   ARITHMETIC_OP_BINARYAND { curri.op = (byte)iris16::ArithmeticOp::BinaryAnd; } |
-   ARITHMETIC_OP_BINARYOR { curri.op = (byte)iris16::ArithmeticOp::BinaryOr; } |
-   ARITHMETIC_OP_BINARYXOR { curri.op = (byte)iris16::ArithmeticOp::BinaryXor; } 
+   ARITHMETIC_OP_ADD { curri.op = (byte)iris17::ArithmeticOp::Add; } |
+   ARITHMETIC_OP_SUB { curri.op = (byte)iris17::ArithmeticOp::Sub; } |
+   ARITHMETIC_OP_MUL { curri.op = (byte)iris17::ArithmeticOp::Mul; } |
+   ARITHMETIC_OP_DIV { curri.op = (byte)iris17::ArithmeticOp::Div; } |
+   ARITHMETIC_OP_REM { curri.op = (byte)iris17::ArithmeticOp::Rem; } |
+   ARITHMETIC_OP_SHIFTLEFT { curri.op = (byte)iris17::ArithmeticOp::ShiftLeft; } |
+   ARITHMETIC_OP_SHIFTRIGHT { curri.op = (byte)iris17::ArithmeticOp::ShiftRight; } |
+   ARITHMETIC_OP_BINARYAND { curri.op = (byte)iris17::ArithmeticOp::BinaryAnd; } |
+   ARITHMETIC_OP_BINARYOR { curri.op = (byte)iris17::ArithmeticOp::BinaryOr; } |
+   ARITHMETIC_OP_BINARYXOR { curri.op = (byte)iris17::ArithmeticOp::BinaryXor; } 
    ;
 
 aop_imm:
-   ARITHMETIC_OP_ADD_IMM { curri.op = (byte)iris16::ArithmeticOp::AddImmediate; } |
-   ARITHMETIC_OP_SUB_IMM { curri.op = (byte)iris16::ArithmeticOp::SubImmediate; } |
-   ARITHMETIC_OP_MUL_IMM { curri.op = (byte)iris16::ArithmeticOp::MulImmediate; } | 
-   ARITHMETIC_OP_DIV_IMM { curri.op = (byte)iris16::ArithmeticOp::DivImmediate; } |
-   ARITHMETIC_OP_REM_IMM { curri.op = (byte)iris16::ArithmeticOp::RemImmediate; } |
-   ARITHMETIC_OP_SHIFTLEFT_IMM { curri.op = (byte)iris16::ArithmeticOp::ShiftLeftImmediate; } |
-   ARITHMETIC_OP_SHIFTRIGHT_IMM { curri.op = (byte)iris16::ArithmeticOp::ShiftRightImmediate; } 
+   ARITHMETIC_OP_ADD_IMM { curri.op = (byte)iris17::ArithmeticOp::AddImmediate; } |
+   ARITHMETIC_OP_SUB_IMM { curri.op = (byte)iris17::ArithmeticOp::SubImmediate; } |
+   ARITHMETIC_OP_MUL_IMM { curri.op = (byte)iris17::ArithmeticOp::MulImmediate; } | 
+   ARITHMETIC_OP_DIV_IMM { curri.op = (byte)iris17::ArithmeticOp::DivImmediate; } |
+   ARITHMETIC_OP_REM_IMM { curri.op = (byte)iris17::ArithmeticOp::RemImmediate; } |
+   ARITHMETIC_OP_SHIFTLEFT_IMM { curri.op = (byte)iris17::ArithmeticOp::ShiftLeftImmediate; } |
+   ARITHMETIC_OP_SHIFTRIGHT_IMM { curri.op = (byte)iris17::ArithmeticOp::ShiftRightImmediate; } 
    ;
 
 mop_reg:
-   MOVE_OP_MOVE { curri.op = (byte)iris16::MoveOp::Move; } |
-   MOVE_OP_SWAP { curri.op = (byte)iris16::MoveOp::Swap; } |
-   MOVE_OP_LOAD { curri.op = (byte)iris16::MoveOp::Load; } |
-   MOVE_OP_STORE { curri.op = (byte)iris16::MoveOp::Store; } |
+   MOVE_OP_MOVE { curri.op = (byte)iris17::MoveOp::Move; } |
+   MOVE_OP_SWAP { curri.op = (byte)iris17::MoveOp::Swap; } |
+   MOVE_OP_LOAD { curri.op = (byte)iris17::MoveOp::Load; } |
+   MOVE_OP_STORE { curri.op = (byte)iris17::MoveOp::Store; } |
    ;
 
 mop_mixed:
-   MOVE_OP_SET { curri.op = (byte)iris16::MoveOp::Set; } |
-   MOVE_OP_STOREIMM { curri.op = (byte)iris16::MoveOp::Memset; } |
-   MOVE_OP_LOADMEM { curri.op = (byte)iris16::MoveOp::LoadImmediate; } 
+   MOVE_OP_SET { curri.op = (byte)iris17::MoveOp::Set; } |
+   MOVE_OP_STOREIMM { curri.op = (byte)iris17::MoveOp::Memset; } |
+   MOVE_OP_LOADMEM { curri.op = (byte)iris17::MoveOp::LoadImmediate; } 
    ;
 
 mop_single:
-   MOVE_OP_PUSH { curri.op = (byte)iris16::MoveOp::Push; } |
-   MOVE_OP_POP { curri.op = (byte)iris16::MoveOp::Pop; } 
+   MOVE_OP_PUSH { curri.op = (byte)iris17::MoveOp::Push; } |
+   MOVE_OP_POP { curri.op = (byte)iris17::MoveOp::Pop; } 
    ;
 
 jop_reg_imm:
-   JUMP_OP_UNCONDITIONALIMMEDIATELINK { curri.op = (byte)iris16::JumpOp::UnconditionalImmediateLink; } |
-   JUMP_OP_CONDITIONALTRUEIMMEDIATE { curri.op = (byte)iris16::JumpOp::ConditionalTrueImmediate; } |
-   JUMP_OP_CONDITIONALTRUEIMMEDIATELINK { curri.op = (byte)iris16::JumpOp::ConditionalTrueImmediateLink; } |
-   JUMP_OP_CONDITIONALFALSEIMMEDIATE { curri.op = (byte)iris16::JumpOp::ConditionalFalseImmediate; } |
-   JUMP_OP_CONDITIONALFALSEIMMEDIATELINK { curri.op = (byte)iris16::JumpOp::ConditionalFalseImmediateLink; } 
+   JUMP_OP_UNCONDITIONALIMMEDIATELINK { curri.op = (byte)iris17::JumpOp::UnconditionalImmediateLink; } |
+   JUMP_OP_CONDITIONALTRUEIMMEDIATE { curri.op = (byte)iris17::JumpOp::ConditionalTrueImmediate; } |
+   JUMP_OP_CONDITIONALTRUEIMMEDIATELINK { curri.op = (byte)iris17::JumpOp::ConditionalTrueImmediateLink; } |
+   JUMP_OP_CONDITIONALFALSEIMMEDIATE { curri.op = (byte)iris17::JumpOp::ConditionalFalseImmediate; } |
+   JUMP_OP_CONDITIONALFALSEIMMEDIATELINK { curri.op = (byte)iris17::JumpOp::ConditionalFalseImmediateLink; } 
    ;
 
 
 jop_reg_reg:
-   JUMP_OP_UNCONDITIONALREGISTERLINK { curri.op = (byte)iris16::JumpOp::UnconditionalRegisterLink; } |
-   JUMP_OP_CONDITIONALTRUEREGISTER { curri.op = (byte)iris16::JumpOp::ConditionalTrueRegister; } |
-   JUMP_OP_CONDITIONALFALSEREGISTER { curri.op = (byte)iris16::JumpOp::ConditionalFalseRegister; }
+   JUMP_OP_UNCONDITIONALREGISTERLINK { curri.op = (byte)iris17::JumpOp::UnconditionalRegisterLink; } |
+   JUMP_OP_CONDITIONALTRUEREGISTER { curri.op = (byte)iris17::JumpOp::ConditionalTrueRegister; } |
+   JUMP_OP_CONDITIONALFALSEREGISTER { curri.op = (byte)iris17::JumpOp::ConditionalFalseRegister; }
    ;
 
 jop_reg_reg_reg:
-   JUMP_OP_CONDITIONALTRUEREGISTERLINK { curri.op = (byte)iris16::JumpOp::ConditionalTrueRegisterLink; } |
-   JUMP_OP_CONDITIONALFALSEREGISTERLINK { curri.op = (byte)iris16::JumpOp::ConditionalFalseRegisterLink; } |
-   JUMP_OP_IFTHENELSENORMALPREDTRUE { curri.op = (byte)iris16::JumpOp::IfThenElseNormalPredTrue; } |
-   JUMP_OP_IFTHENELSENORMALPREDFALSE { curri.op = (byte)iris16::JumpOp::IfThenElseNormalPredFalse; } |
-   JUMP_OP_IFTHENELSELINKPREDTRUE { curri.op = (byte)iris16::JumpOp::IfThenElseLinkPredTrue; } |
-   JUMP_OP_IFTHENELSELINKPREDFALSE { curri.op = (byte)iris16::JumpOp::IfThenElseLinkPredFalse; }
+   JUMP_OP_CONDITIONALTRUEREGISTERLINK { curri.op = (byte)iris17::JumpOp::ConditionalTrueRegisterLink; } |
+   JUMP_OP_CONDITIONALFALSEREGISTERLINK { curri.op = (byte)iris17::JumpOp::ConditionalFalseRegisterLink; } |
+   JUMP_OP_IFTHENELSENORMALPREDTRUE { curri.op = (byte)iris17::JumpOp::IfThenElseNormalPredTrue; } |
+   JUMP_OP_IFTHENELSENORMALPREDFALSE { curri.op = (byte)iris17::JumpOp::IfThenElseNormalPredFalse; } |
+   JUMP_OP_IFTHENELSELINKPREDTRUE { curri.op = (byte)iris17::JumpOp::IfThenElseLinkPredTrue; } |
+   JUMP_OP_IFTHENELSELINKPREDFALSE { curri.op = (byte)iris17::JumpOp::IfThenElseLinkPredFalse; }
 ;
 
 cop:
-   COMPARE_OP_EQ { curri.op = (byte)iris16::CompareOp::Eq; } |
-   COMPARE_OP_NEQ { curri.op = (byte)iris16::CompareOp::Neq; } |
-   COMPARE_OP_LESSTHAN { curri.op = (byte)iris16::CompareOp::LessThan; } |
-   COMPARE_OP_GREATERTHAN { curri.op = (byte)iris16::CompareOp::GreaterThan; } |
-   COMPARE_OP_LESSTHANOREQUALTO { curri.op = (byte)iris16::CompareOp::LessThanOrEqualTo; } |
-   COMPARE_OP_GREATERTHANOREQUALTO { curri.op = (byte)iris16::CompareOp::GreaterThanOrEqualTo; } 
+   COMPARE_OP_EQ { curri.op = (byte)iris17::CompareOp::Eq; } |
+   COMPARE_OP_NEQ { curri.op = (byte)iris17::CompareOp::Neq; } |
+   COMPARE_OP_LESSTHAN { curri.op = (byte)iris17::CompareOp::LessThan; } |
+   COMPARE_OP_GREATERTHAN { curri.op = (byte)iris17::CompareOp::GreaterThan; } |
+   COMPARE_OP_LESSTHANOREQUALTO { curri.op = (byte)iris17::CompareOp::LessThanOrEqualTo; } |
+   COMPARE_OP_GREATERTHANOREQUALTO { curri.op = (byte)iris17::CompareOp::GreaterThanOrEqualTo; } 
 ;
 icop:
-   COMPARE_OP_EQ_IMMEDIATE { curri.op = (byte)iris16::CompareOp::EqImm; } |
-   COMPARE_OP_NEQ_IMMEDIATE { curri.op = (byte)iris16::CompareOp::NeqImm; } |
-   COMPARE_OP_LESSTHAN_IMMEDIATE { curri.op = (byte)iris16::CompareOp::LessThanImm; } |
-   COMPARE_OP_GREATERTHAN_IMMEDIATE { curri.op = (byte)iris16::CompareOp::GreaterThanImm; } |
-   COMPARE_OP_LESSTHANOREQUALTO_IMMEDIATE { curri.op = (byte)iris16::CompareOp::LessThanOrEqualToImm; } |
-   COMPARE_OP_GREATERTHANOREQUALTO_IMMEDIATE { curri.op = (byte)iris16::CompareOp::GreaterThanOrEqualToImm; }
+   COMPARE_OP_EQ_IMMEDIATE { curri.op = (byte)iris17::CompareOp::EqImm; } |
+   COMPARE_OP_NEQ_IMMEDIATE { curri.op = (byte)iris17::CompareOp::NeqImm; } |
+   COMPARE_OP_LESSTHAN_IMMEDIATE { curri.op = (byte)iris17::CompareOp::LessThanImm; } |
+   COMPARE_OP_GREATERTHAN_IMMEDIATE { curri.op = (byte)iris17::CompareOp::GreaterThanImm; } |
+   COMPARE_OP_LESSTHANOREQUALTO_IMMEDIATE { curri.op = (byte)iris17::CompareOp::LessThanOrEqualToImm; } |
+   COMPARE_OP_GREATERTHANOREQUALTO_IMMEDIATE { curri.op = (byte)iris17::CompareOp::GreaterThanOrEqualToImm; }
 ;
 lexeme:
       SYMBOL { curri.hassymbol = 1; 

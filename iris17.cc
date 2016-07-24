@@ -1,7 +1,7 @@
-#include "iris16.h"
+#include "iris17.h"
 #include <functional>
 
-namespace iris16 {
+namespace iris17 {
 
 	word encodeWord(byte a, byte b) {
 		return iris::encodeBits<word, byte, 0xFF00, 8>(iris::encodeBits<word, byte, 0x00FF>(word(0), a), b);
@@ -15,7 +15,7 @@ namespace iris16 {
 	void DecodedInstruction::decode(raw_instruction input) {
 #define X(title, mask, shift, type, is_register, post) \
 		_ ## post = iris::decodeBits<raw_instruction, type, mask, shift>(input);
-#include "iris16_instruction.def"
+#include "iris17_instruction.def"
 #undef X
 	}
 
@@ -42,11 +42,11 @@ namespace iris16 {
 	}
 	void Core::installprogram(std::istream& stream) {
 		auto encodeWord = [](char buf[2]) {
-			return iris16::encodeWord(buf[0], buf[1]);
+			return iris17::encodeWord(buf[0], buf[1]);
 		};
 		populateContents<word, ArchitectureConstants::RegisterCount>(gpr, stream, encodeWord);
 		populateContents<word, ArchitectureConstants::AddressMax>(data, stream, encodeWord);
-		populateContents<dword, ArchitectureConstants::AddressMax>(instruction, stream, [](char buf[4]) { return iris16::encodeDword(buf[0], buf[1], buf[2], buf[3]); });
+		populateContents<dword, ArchitectureConstants::AddressMax>(instruction, stream, [](char buf[4]) { return iris17::encodeDword(buf[0], buf[1], buf[2], buf[3]); });
 		populateContents<word, ArchitectureConstants::AddressMax>(stack, stream, encodeWord);
 	}
 
@@ -92,7 +92,7 @@ namespace iris16 {
 	void Core::dispatch() {
 		switch(static_cast<InstructionGroup>(current.getGroup())) {
 #define X(name, operation) case InstructionGroup:: name: operation(); break; 
-#include "iris16_groups.def"
+#include "iris17_groups.def"
 #undef X
 			default:
 				std::cerr << "Illegal instruction group " << current.getGroup() << std::endl;
@@ -115,7 +115,7 @@ namespace iris16 {
 								   gpr[current.getDestination()] INDIRECTOR(Op, mod) (gpr[current.getSource0()] compare (word(current.getSource1()))); \
 			break;
 
-#include "iris16_compare.def"
+#include "iris17_compare.def"
 #undef X
 #undef Y
 #undef OpNone
@@ -155,7 +155,7 @@ namespace iris16 {
 							INDIRECTOR(X, desc)(name, op) \
 							break; \
 						}
-#include "iris16_arithmetic.def"
+#include "iris17_arithmetic.def"
 #undef X
 #undef XNone
 #undef XDenominator
@@ -175,7 +175,7 @@ namespace iris16 {
 		};
 #define X(name, ifthenelse, conditional, iffalse, immediate, link) \
 	template<> struct ConditionalStyle<JumpOp:: name> { static const bool isFalseForm = iffalse; };
-#include "iris16_jump.def"
+#include "iris17_jump.def"
 #undef X
 
 	void Core::jump() {
@@ -211,7 +211,7 @@ namespace iris16 {
 						 INDIRECTOR(XLink, _ ## link)  \
 						 break; \
 					 }
-#include "iris16_jump.def"
+#include "iris17_jump.def"
 #undef X
 			default:
 				std::cerr << "Illegal jump code " << current.getOperation() << std::endl;
@@ -225,7 +225,7 @@ namespace iris16 {
 			case MiscOp:: name: \
 			func (); \
 			break;
-#include "iris16_misc.def"
+#include "iris17_misc.def"
 #undef X
 			default:
 				std::cerr << "Illegal misc code " << current.getOperation() << std::endl;
@@ -309,7 +309,7 @@ namespace iris16 {
 					 INDIRECTOR(X,type)(target, dest, src) \
 			break; \
 					 }
-#include "iris16_move.def"
+#include "iris17_move.def"
 #undef X
 #undef XMove
 #undef XSwap

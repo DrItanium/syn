@@ -8,7 +8,7 @@ namespace iris {
 	void parseAssembly(Architecture arch, FILE* input, std::ostream* output) {
 		switch(arch) {
 #define X(en, str, instance) \
-			case Architecture:: en \
+			case Architecture:: en: \
 				return assemble<Architecture:: en>(input, output);
 #include "architecture_registrations.def"
 #undef X

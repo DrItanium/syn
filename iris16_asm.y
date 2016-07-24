@@ -9,6 +9,7 @@
 #include <iostream>
 #include <vector>
 #include <map>
+#include "asm_interact.h"
 
 #include "iris16_asm.tab.h"
 
@@ -54,7 +55,7 @@ void add_label_entry(const std::string& name, word address);
 void persist_dynamic_op(void);
 void save_encoding(void);
 void write_dynamic_op(dynamicop* op);
-void initialize(std::ostream* output FILE* input);
+void initialize(std::ostream* output, FILE* input);
 void resolve_labels(void);
 bool resolve_op(dynamicop* dop);
 void usage(char* arg0);
@@ -473,8 +474,7 @@ lexeme:
 %%
 namespace iris {
 	template<>
-	void assemble(FILE* input, std::ostream& output) {
-
+	void assemble<Architecture::iris16>(FILE* input, std::ostream* output) {
       initialize(output, input);
       do {
          yyparse();
