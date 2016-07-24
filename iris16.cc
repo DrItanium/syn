@@ -34,23 +34,19 @@ namespace iris16 {
 	}
 	template<typename T, int count>
 	void populateContents(T* contents, std::istream& stream, const std::function<T(char*)>& func) {
-		char* buf = new char[sizeof(T)];
+		char buf[sizeof(T)] = { 0 };
 		for(int i = 0; i < count; ++i) {
 			stream.read(buf, sizeof(T));
 			contents[i] = func(buf);
 		}
-		delete[] buf;
 	}
 	void Core::installprogram(std::istream& stream) {
-		auto encodeWord = [](char* buf) {
+		auto encodeWord = [](char buf[2]) {
 			return iris16::encodeWord(buf[0], buf[1]);
-		};
-		auto encodeDword = [](char* buf) {
-			return iris16::encodeDword(buf[0], buf[1], buf[2], buf[3]);
 		};
 		populateContents<word, ArchitectureConstants::RegisterCount>(gpr, stream, encodeWord);
 		populateContents<word, ArchitectureConstants::AddressMax>(data, stream, encodeWord);
-		populateContents<dword, ArchitectureConstants::AddressMax>(instruction, stream, encodeDword);
+		populateContents<dword, ArchitectureConstants::AddressMax>(instruction, stream, [](char buf[4]) { return iris16::encodeDword(buf[0], buf[1], buf[2], buf[3]); });
 		populateContents<word, ArchitectureConstants::AddressMax>(stack, stream, encodeWord);
 	}
 
@@ -58,8 +54,7 @@ namespace iris16 {
 	void dumpContents(T* contents, std::ostream& stream, const std::function<char*(T,char*)>& func) {
 		char* buf = new char[sizeof(T)];
 		for(int i = 0; i < count; ++i) {
-			func(contents[i], buf);
-			stream.write(buf, sizeof(T));
+			stream.write(func(contents[i], buf), sizeof(T));
 		}
 		delete[] buf;
 	}
@@ -207,10 +202,6 @@ namespace iris16 {
 	template<> struct ConditionalStyle<JumpOp:: name> { static const bool isFalseForm = iffalse; };
 #include "iris16_jump.def"
 #undef X
-	template<JumpOp op>
-		bool jumpCond(word cond) {
-			return ConditionalStyle<op>::isFalseForm ? (cond == 0) : (cond != 0);
-		}
 
 	void Core::jump() {
 		word newAddr = 0;
@@ -229,7 +220,7 @@ namespace iris16 {
 #define XConditional_false(name, ifthenelse, immediate) \
 			newAddr = INDIRECTOR(XImmediateUncond, _ ## immediate);
 #define XConditional_true(name, ifthenelse, immediate) \
-			cond = jumpCond<JumpOp:: name> (gpr[current.getDestination()]); \
+			cond = (ConditionalStyle<JumpOp:: name>::isFalseForm ? (gpr[current.getDestination()] == 0) : (gpr[current.getDestination()] != 0)); \
 			INDIRECTOR(XIfThenElse, _ ## ifthenelse)(immediate)
 #define XLink_true \
 			if (cond) { \
