@@ -147,6 +147,7 @@ ASM_OBJECTS = iris_asm.o \
 			  ${IRIS16_OUT} \
 			  ${IRIS17_OUT} \
 			  ${IRIS32_OUT}
+
 ASM_PARSERS = ${IRIS16_ASM_FILES} \
 			  ${IRIS32_ASM_FILES} \
 			  ${IRIS17_ASM_FILES} 

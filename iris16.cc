@@ -3,11 +3,8 @@
 #include "strgen.h"
 #include <functional>
 
+
 namespace iris {
-	template<>
-	Core* newCore<Architecture::iris16>() {
-		return new iris16::Core();
-	}
 
 	template<>
 	void getWordDescription<Architecture::iris16>(std::ostream& out) {
@@ -16,6 +13,10 @@ namespace iris {
 
 }
 namespace iris16 {
+
+	Core* newCore() {
+		return new iris16::Core();
+	}
 
 	word encodeWord(byte a, byte b) {
 		return iris::encodeBits<word, byte, 0xFF00, 8>(iris::encodeBits<word, byte, 0x00FF>(word(0), a), b);

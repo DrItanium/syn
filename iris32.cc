@@ -1,14 +1,10 @@
 #include "iris32.h"
-#include "sim_registration.h"
 #include <functional>
 
-namespace iris {
-	template<>
-	Core* newCore<Architecture::iris32>() {
+namespace iris32 {
+	Core* newCore() {
 		return new iris32::Core(iris32::ArchitectureConstants::AddressMax, 8);
 	}
-}
-namespace iris32 {
 	word encodeWord(byte a, byte b, byte c, byte d) {
 		return word(a) | word(b) << 8 | word(c) << 16 | word(d) << 24;
 	}

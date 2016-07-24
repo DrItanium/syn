@@ -3,6 +3,9 @@
 
 namespace iris17 {
 
+	Core* newCore() {
+		return new Core();
+	}
 	word encodeWord(byte a, byte b) {
 		return iris::encodeBits<word, byte, 0xFF00, 8>(iris::encodeBits<word, byte, 0x00FF>(word(0), a), b);
 	}

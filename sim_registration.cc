@@ -1,16 +1,12 @@
 #include "sim_registration.h"
 #include "Problem.h"
+#include "targets.h"
 namespace iris {
-	Core* getCore(Architecture arch);
 	Core* getCore(const std::string& value) {
-		return getCore(getArchitectureFromString(value));
-	}
-
-	Core* getCore(Architecture arch) {
-		switch(arch) {
+		switch (getArchitectureFromString(value)) {
 #define X(en, str, __) \
 			case Architecture:: en: \
-									return newCore<Architecture:: en>();
+									return en :: newCore();
 #include "architecture_registrations.def"
 #undef X
 			default:

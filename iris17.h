@@ -1,5 +1,5 @@
-#ifndef _TARGET_IRIS16_IRIS_H
-#define _TARGET_IRIS16_IRIS_H
+#ifndef _TARGET_IRIS17_IRIS_H
+#define _TARGET_IRIS17_IRIS_H
 #include "iris_base.h"
 #include "Core.h"
 #include <cstdint>
@@ -111,6 +111,8 @@ namespace iris17 {
 			dword instruction[ArchitectureConstants::AddressMax] = { 0 };
 			word stack[ArchitectureConstants::AddressMax] = { 0 };
 	};
+
+	Core* newCore();
 
 }
 #endif

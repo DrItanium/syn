@@ -112,5 +112,7 @@ namespace iris16 {
 			word stack[ArchitectureConstants::AddressMax] = { 0 };
 	};
 
+	Core* newCore();
+
 }
 #endif

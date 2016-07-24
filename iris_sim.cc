@@ -12,7 +12,6 @@ bool debug = false;
 iris::Core* core = nullptr;
 static void usage(char* arg0);
 std::string target;
-
 int main(int argc, char* argv[]) {
 	bool errorfree = true;
 	int last = argc - 1, 
@@ -97,4 +96,3 @@ void usage(char* arg0) {
 #include "architecture_registrations.def"
 #undef X
 }
-
