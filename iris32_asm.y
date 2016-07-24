@@ -12,9 +12,9 @@
 #include "iris32.h"
 #include "iris32_asm.tab.h"
 
-extern int yylex();
-extern int yyparse();
-extern FILE* yyin;
+extern int iris32lex();
+extern int iris32parse();
+extern FILE* iris32in;
 extern int iris32lineno;
 
 void iris32error(const char* s);
@@ -394,7 +394,7 @@ namespace iris {
       iris32::initialize(output, input);
       do {
          yyparse();
-      } while(!feof(yyin));
+      } while(!feof(iris32in));
       iris32::resolve_labels();
 	}
 
@@ -475,7 +475,7 @@ bool resolve_op(dynamicop* dop) {
 }
 
 void initialize(std::ostream* output, FILE* input) {
-   yyin = input;
+   iris32in = input;
    iris32::state.address = 0;
    iris32::state.output = output;
    iris32::curri.address = 0;

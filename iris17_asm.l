@@ -1,4 +1,4 @@
-%option prefix="IRIS17"
+%option prefix="iris17"
 %{
 #include <stdlib.h>
 #include <stdio.h>
@@ -10,9 +10,11 @@
 #include "iris17_asm.tab.h"
 #define _POSIX_SOURCE 1
 
-static byte getregister(void);
-static unsigned long getdecimalimmediate(void);
-static unsigned long getheximmediate(void);
+namespace iris17 {
+	static byte getregister(void);
+	static unsigned long getdecimalimmediate(void);
+	static unsigned long getheximmediate(void);
+}
 extern void iris17error(const char* c);
 %}
 %option yylineno
@@ -128,21 +130,21 @@ omni [a-zA-Z0-9._]
 "ip"	 { iris17lval.rval = 255; return REGISTER; }
 [ \t\n]     ;
 [;].*       ; // comments
-r{digit}+ { iris17lval.rval = getregister(); return REGISTER; }
-{digit}+ { iris17lval.ival = getdecimalimmediate(); return IMMEDIATE; }
-0x{xdigit}+ { iris17lval.ival = getheximmediate(); return IMMEDIATE; }
+r{digit}+ { iris17lval.rval = iris17::getregister(); return REGISTER; }
+{digit}+ { iris17lval.ival = iris17::getdecimalimmediate(); return IMMEDIATE; }
+0x{xdigit}+ { iris17lval.ival = iris17::getheximmediate(); return IMMEDIATE; }
 {omni}+ { 
-	std::string contents(yytext);
+	std::string contents(iris17text);
 	iris17lval.sval = (char*)contents.c_str();
 	return SYMBOL;
 }
 %%
-
+namespace iris17 {
 byte getregister(void) {
    int c;
 
-   yytext[0] = '0';
-   c = atoi(yytext);
+   iris17text[0] = '0';
+   c = atoi(iris17text);
    if(c > 255 || c < 0) {
       iris17error("target register is too large");
       return 0;
@@ -153,7 +155,7 @@ byte getregister(void) {
 
 unsigned long getdecimalimmediate() {
    unsigned long tmp;
-   tmp = strtoul(yytext, NULL, 10);
+   tmp = strtoul(iris17text, NULL, 10);
    if(tmp == ULONG_MAX && errno == ERANGE) {
       iris17error("number is too large and overflowed!");
       return 0;
@@ -169,7 +171,7 @@ unsigned long getdecimalimmediate() {
 
 unsigned long getheximmediate() {
    unsigned long tmp;
-   tmp = strtoul(yytext, NULL, 16);
+   tmp = strtoul(iris17text, NULL, 16);
    if(tmp == ULONG_MAX && errno == ERANGE) {
       iris17error("number is too large and overflowed!");
       return 0;
@@ -183,3 +185,4 @@ unsigned long getheximmediate() {
    }
 }
 
+}

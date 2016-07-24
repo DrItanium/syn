@@ -15,10 +15,10 @@
 
 extern int yylex();
 extern int yyparse();
-extern FILE* yyin;
-extern int yylineno;
+extern FILE* iris16in;
+extern int iris16lineno;
 
-void yyerror(const char* s);
+void iris16error(const char* s);
 
 namespace iris16 {
 /* segment */
@@ -224,7 +224,7 @@ directive:
             } else if(iris16::state.segment == iris16::Segment::Data) {
                iris16::state.data_address = $2;
             } else {
-               yyerror("Invalid segment!");
+               iris16error("Invalid segment!");
             }
             } | 
       DIRECTIVE_CODE { iris16::state.segment = iris16::Segment::Code; } |
@@ -233,10 +233,10 @@ directive:
             if(iris16::state.segment == iris16::Segment::Data) {
                iris16::curri.segment = iris16::Segment::Data;
                iris16::curri.address = iris16::state.data_address;
-               save_encoding();
+               iris16::save_encoding();
                iris16::state.data_address++;
             } else {
-               yyerror("Declaration in non-data segment!");
+               iris16error("Declaration in non-data segment!");
             }
       }
       ;
@@ -246,21 +246,21 @@ statement:
             if(iris16::state.segment == iris16::Segment::Code) {
                iris16::curri.segment = iris16::Segment::Code;
                iris16::curri.address = iris16::state.code_address;
-               save_encoding();
+               iris16::save_encoding();
                iris16::state.code_address++;
             } else {
-               yyerror("operation in an invalid segment!");
+               iris16error("operation in an invalid segment!");
             }
          }
          ;
 label:
      LABEL SYMBOL { 
       if(iris16::state.segment == iris16::Segment::Code) {
-          add_label_entry($2, iris16::state.code_address);
+          iris16::add_label_entry($2, iris16::state.code_address);
       } else if (iris16::state.segment == iris16::Segment::Data) {
-          add_label_entry($2, iris16::state.data_address);
+          iris16::add_label_entry($2, iris16::state.data_address);
       } else {
-          yyerror("label in invalid segment!");
+          iris16error("label in invalid segment!");
       }
      }
    ;
@@ -283,7 +283,7 @@ arithmetic_op:
              } |
              aop_imm REGISTER REGISTER IMMEDIATE {
                if($4 > 255) {
-                  yyerror("immediate value offset out of range!");
+                  iris16error("immediate value offset out of range!");
                }
                iris16::curri.reg0 = $2;
                iris16::curri.reg1 = $3;
@@ -365,7 +365,7 @@ compare_op:
           } |
 		  icop REGISTER REGISTER IMMEDIATE {
 		  	if ($4 > 255) {
-                  yyerror("immediate value offset out of range!");
+                  iris16error("immediate value offset out of range!");
 			}
 			iris16::curri.reg0 = $2;
 			iris16::curri.reg1 = $3;
@@ -377,7 +377,7 @@ misc_op:
        { 
          iris16::curri.op = (byte)iris16::MiscOp::SystemCall; 
          if($2 > 255) {
-            yyerror("system call offset out of range!");
+            iris16error("system call offset out of range!");
          }
          iris16::curri.reg0 = $2;
          iris16::curri.reg1 = $3;
@@ -474,8 +474,8 @@ lexeme:
       }
 ;
 %%
-void yyerror(const char* s) {
-   printf("%d: %s\n", yylineno, s);
+void iris16error(const char* s) {
+   printf("%d: %s\n", iris16lineno, s);
    exit(-1);
 }
 namespace iris {
@@ -484,14 +484,14 @@ namespace iris {
       iris16::initialize(output, input);
       do {
          yyparse();
-      } while(!feof(yyin));
+      } while(!feof(iris16in));
       iris16::resolve_labels();
 	}
 }
 namespace iris16 {
 void add_label_entry(const std::string& c, word addr) {
    if (iris16::state.labels.count(c) != 0) {
-		yyerror("Found a duplicate label!");
+		iris16error("Found a duplicate label!");
 		exit(1);
    } else {
 	 iris16::state.labels[c] = addr;
@@ -563,7 +563,7 @@ bool resolve_op(dynamicop* dop) {
 }
 
 void initialize(std::ostream* output, FILE* input) {
-   yyin = input;
+   iris16in = input;
    iris16::state.segment = iris16::Segment::Code;
    iris16::state.data_address = 0;
    iris16::state.code_address = 0;

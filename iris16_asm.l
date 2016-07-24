@@ -1,4 +1,4 @@
-%option prefix="IRIS16"
+%option prefix="iris16"
 %{
 #include <stdlib.h>
 #include <stdio.h>
@@ -10,9 +10,11 @@
 #include "iris16_asm.tab.h"
 #define _POSIX_SOURCE 1
 
-static byte getregister(void);
-static unsigned long getdecimalimmediate(void);
-static unsigned long getheximmediate(void);
+namespace iris16 {
+	static byte getregister(void);
+	static unsigned long getdecimalimmediate(void);
+	static unsigned long getheximmediate(void);
+}
 extern void iris16error(const char* c);
 %}
 %option yylineno
@@ -128,21 +130,21 @@ omni [a-zA-Z0-9._]
 "ip"	 { iris16lval.rval = 255; return REGISTER; }
 [ \t\n]     ;
 [;].*       ; // comments
-r{digit}+ { iris16lval.rval = getregister(); return REGISTER; }
-{digit}+ { iris16lval.ival = getdecimalimmediate(); return IMMEDIATE; }
-0x{xdigit}+ { iris16lval.ival = getheximmediate(); return IMMEDIATE; }
+r{digit}+ { iris16lval.rval = iris16::getregister(); return REGISTER; }
+{digit}+ { iris16lval.ival = iris16::getdecimalimmediate(); return IMMEDIATE; }
+0x{xdigit}+ { iris16lval.ival = iris16::getheximmediate(); return IMMEDIATE; }
 {omni}+ { 
-	std::string contents(IRIS16text);
+	std::string contents(iris16text);
 	iris16lval.sval = (char*)contents.c_str();
 	return SYMBOL;
 }
 %%
-
+namespace iris16 {
 byte getregister(void) {
    int c;
 
-   IRIS16text[0] = '0';
-   c = atoi(IRIS16text);
+   iris16text[0] = '0';
+   c = atoi(iris16text);
    if(c > 255 || c < 0) {
       iris16error("target register is too large");
       return 0;
@@ -153,7 +155,7 @@ byte getregister(void) {
 
 unsigned long getdecimalimmediate() {
    unsigned long tmp;
-   tmp = strtoul(IRIS16text, NULL, 10);
+   tmp = strtoul(iris16text, NULL, 10);
    if(tmp == ULONG_MAX && errno == ERANGE) {
       iris16error("number is too large and overflowed!");
       return 0;
@@ -169,7 +171,7 @@ unsigned long getdecimalimmediate() {
 
 unsigned long getheximmediate() {
    unsigned long tmp;
-   tmp = strtoul(IRIS16text, NULL, 16);
+   tmp = strtoul(iris16text, NULL, 16);
    if(tmp == ULONG_MAX && errno == ERANGE) {
       iris16error("number is too large and overflowed!");
       return 0;
@@ -183,3 +185,4 @@ unsigned long getheximmediate() {
    }
 }
 
+}

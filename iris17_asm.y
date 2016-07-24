@@ -14,8 +14,8 @@
 
 extern int yylex();
 extern int yyparse();
-extern FILE* yyin;
-extern int yylineno;
+extern FILE* iris17in;
+extern int iris17lineno;
 
 void iris17error(const char* s);
 namespace iris17 {
@@ -474,7 +474,7 @@ lexeme:
 ;
 %%
 void iris17error(const char* s) {
-   printf("%d: %s\n", yylineno, s);
+   printf("%d: %s\n", iris17lineno, s);
    exit(-1);
 }
 namespace iris17 {
@@ -552,7 +552,7 @@ bool resolve_op(dynamicop* dop) {
 }
 
 void initialize(std::ostream* output, bool close, FILE* input) {
-   yyin = input;
+   iris17in = input;
    iris17::state.segment = iris17::Segment::Code;
    iris17::state.data_address = 0;
    iris17::state.code_address = 0;

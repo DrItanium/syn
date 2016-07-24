@@ -1,4 +1,4 @@
-%option prefix="IRIS32"
+%option prefix="iris32"
 %{
 #include <stdlib.h>
 #include <stdio.h>
@@ -101,7 +101,7 @@ r{digit}+ { iris32lval.rval = iris32::getregister(); return REGISTER; }
 0b[01]+ { iris32lval.ival = iris32::getbinaryimmediate(); return IMMEDIATE; }
 
 {omni}+ { 
-	std::string contents(IRIS32text);
+	std::string contents(iris32text);
 	iris32lval.sval = (char*)contents.c_str();
 	return SYMBOL;
 		}
@@ -110,8 +110,8 @@ namespace iris32 {
 byte getregister(void) {
 	int c;
 
-	IRIS32text[0] = '0';
-	c = atoi(IRIS32text);
+	iris32text[0] = '0';
+	c = atoi(iris32text);
 	if(c > 255 || c < 0) {
 		iris32error("target register is too large");
 		return 0;
@@ -121,7 +121,7 @@ byte getregister(void) {
 }
 word getbinaryimmediate() {
 	uint32_t tmp;
-	tmp = strtoul(IRIS32text, NULL, 2);
+	tmp = strtoul(iris32text, NULL, 2);
 	if(tmp == ULONG_MAX && errno == ERANGE) {
 		iris32error("number is too large and overflowed!");
 		return 0;
@@ -131,7 +131,7 @@ word getbinaryimmediate() {
 }
 word getdecimalimmediate() {
 	uint32_t tmp;
-	tmp = strtoul(IRIS32text, NULL, 10);
+	tmp = strtoul(iris32text, NULL, 10);
 	if(tmp == ULONG_MAX && errno == ERANGE) {
 		iris32error("number is too large and overflowed!");
 		return 0;
@@ -142,7 +142,7 @@ word getdecimalimmediate() {
 
 word getheximmediate() {
 	uint32_t tmp;
-	tmp = strtoul(IRIS32text, NULL, 16);
+	tmp = strtoul(iris32text, NULL, 16);
 	if(tmp == ULONG_MAX && errno == ERANGE) {
 		iris32error("number is too large and overflowed!");
 		return 0;
