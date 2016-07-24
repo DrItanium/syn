@@ -205,7 +205,7 @@ namespace iris32 {
 
 	class Core : public iris::Core {
 		public:
-			Core(word memorySize, std::initializer_list<ExecState*> execs);
+			Core(word memorySize, byte numThreads);
 			~Core();
 			virtual void initialize();
 			virtual void installprogram(std::istream& stream);
@@ -227,8 +227,8 @@ namespace iris32 {
 		private:
 			word memorySize;
 			word* memory;
-			ExecState *thread = 0;
-			std::vector<ExecState*> threads;
+			ExecState *thread = nullptr;
+			std::vector<ExecState> threads;
 			bool execute = true;
 			bool debug = false;
 	};

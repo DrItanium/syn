@@ -1,0 +1,2 @@
+X(iris16, "iris16", iris16::Core)
+X(iris32, "iris32", iris32::Core)

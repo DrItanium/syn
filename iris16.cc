@@ -1,6 +1,13 @@
 #include "iris16.h"
+#include "sim_registration.h"
 #include <functional>
 
+namespace iris {
+	template<>
+	Core* getCore<Architecture::iris16>() {
+		return new iris16::Core();
+	}
+}
 namespace iris16 {
 
 	word encodeWord(byte a, byte b) {

@@ -1,6 +1,23 @@
 #include "iris32.h"
+#include "sim_registration.h"
 #include <functional>
 
+namespace iris {
+	template<>
+	Core* getCore<Architecture::iris32>() {
+		iris32::ExecState t0, t1, t2, t3, t4, t5, t6, t7;
+		// make sure they all start at the same position
+		t0.gpr[iris32::ArchitectureConstants::ThreadIndex] = 0;
+		t1.gpr[iris32::ArchitectureConstants::ThreadIndex] = 1;
+		t2.gpr[iris32::ArchitectureConstants::ThreadIndex] = 2;
+		t3.gpr[iris32::ArchitectureConstants::ThreadIndex] = 3;
+		t4.gpr[iris32::ArchitectureConstants::ThreadIndex] = 4;
+		t5.gpr[iris32::ArchitectureConstants::ThreadIndex] = 5;
+		t6.gpr[iris32::ArchitectureConstants::ThreadIndex] = 6;
+		t7.gpr[iris32::ArchitectureConstants::ThreadIndex] = 7;
+		return new iris32::Core(iris32::ArchitectureConstants::AddressMax, 8);
+	}
+}
 namespace iris32 {
 	void Core::toggleDebug() {
 		debug = !debug;
@@ -55,10 +72,10 @@ namespace iris32 {
 		}
 	}
 
-	Core::Core(word msize, std::initializer_list<ExecState*> execs) :
+	Core::Core(word msize, byte numThreads) :
 		memorySize(msize),
 		memory(new word[msize]),
-		threads(execs)
+		threads(numThreads)
 	{ }
 	Core::~Core() {
 		delete [] memory;
@@ -400,7 +417,11 @@ namespace iris32 {
 		}
 	}
 	void Core::initialize() {
-
+		int threadIndex = 0;
+		for (auto &cthread : threads) {
+			cthread.gpr[iris32::ArchitectureConstants::ThreadIndex] = threadIndex;
+			++threadIndex;
+		}
 	}
 	void Core::shutdown() {
 
@@ -411,7 +432,7 @@ namespace iris32 {
 				if (!execute) {
 					return;
 				} else {
-					thread = cthread;
+					thread = &cthread;
 					execBody();
 				}
 			}
