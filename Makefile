@@ -47,6 +47,50 @@ IRIS16_TOOLS = ${IRIS16_BINARIES}
 IRIS16 = ${IRIS16_OUT} \
 		 ${IRIS16_TOOLS}
 
+IRIS17_OBJECTS = iris17.o \
+
+IRIS17_OUT = libiris17.a
+
+IRIS17_SIM_BINARY = iris17_sim
+IRIS17_SIM_MAIN = iris17_sim.o
+IRIS17_SIM_OBJECTS = ${IRIS17_SIM_MAIN}
+
+IRIS17_LINK_BINARY = iris17link
+IRIS17_LINK_MAIN = iris17_link.o
+IRIS17_LINK_OBJECTS = ${IRIS17_LINK_MAIN}
+
+
+IRIS17_STRGEN_BINARY = iris17strgen
+IRIS17_STRGEN_MAIN = iris17_strgen.o
+IRIS17_STRGEN_OBJECTS = ${IRIS17_STRGEN_MAIN} 
+
+IRIS17_ASM_BINARY = iris17asm
+
+IRIS17_ASM_FILES = iris17_lex.yy.c \
+				   iris17_asm.tab.c \
+				   iris17_asm.tab.h
+
+IRIS17_ASM_OBJECTS = iris17_lex.yy.o \
+					 iris17_asm.tab.o
+
+ALL_IRIS17_OBJECTS = ${IRIS17_OBJECTS} \
+					 ${IRIS17_SIM_OBJECTS} \
+					 ${IRIS17_LINK_OBJECTS} \
+					 ${IRIS17_OUT} \
+					 ${IRIS17_ASM_OBJECTS} \
+					 ${IRIS17_ASM_FILES} \
+					 ${IRIS17_STRGEN_OBJECTS}
+
+IRIS17_BINARIES = ${IRIS17_SIM_BINARY} \
+				  ${IRIS17_LINK_BINARY} \
+				  ${IRIS17_ASM_BINARY} \
+				  ${IRIS17_STRGEN_BINARY}
+
+IRIS17_TOOLS = ${IRIS17_BINARIES}
+
+IRIS17 = ${IRIS17_OUT} \
+		 ${IRIS17_TOOLS}
+
 IRIS32_OBJECTS = iris32.o \
 
 IRIS32_OUT = libiris32.a
@@ -88,14 +132,18 @@ IRIS32 = ${IRIS32_OUT} \
 #TEST_OBJECTS = $(patsubst %.c,%.o,$(wildcard src/cmd/tests/*.c))
 
 ALL_BINARIES = ${IRIS16_BINARIES} \
-			   ${IRIS32_BINARIES}
+			   ${IRIS32_BINARIES} \
+			   ${IRIS17_BINARIES}
 
 ALL_OBJECTS = ${ALL_IRIS16_OBJECTS} \
-			  ${ALL_IRIS32_OBJECTS}
-ALL_ARCHIVES = ${IRIS16_OUT} \
-			   ${IRIS32_OUT}
+			  ${ALL_IRIS32_OBJECTS} \
+			  ${ALL_IRIS17_OBJECTS}
 
-all: options ${IRIS16} ${IRIS32}
+ALL_ARCHIVES = ${IRIS16_OUT} \
+			   ${IRIS32_OUT} \
+			   ${IRIS17_OUT}
+
+all: options ${IRIS16} ${IRIS32} ${IRIS17}
 
 options:
 	@echo iris build options:
@@ -179,6 +227,43 @@ iris32_lex.yy.c: iris32_asm.l iris32_asm.tab.h
 ${IRIS32_ASM_BINARY}: iris32_lex.yy.c iris32_asm.tab.c iris32_asm.tab.h 
 	@echo -n Building ${IRIS32_ASM_BINARY} binary out of $^...
 	@${CXX} ${LDFLAGS} -o ${IRIS32_ASM_BINARY} iris32_lex.yy.o iris32_asm.tab.o ${IRIS32_OUT}
+	@echo done.
+
+# BEGIN IRIS17
+#
+#
+${IRIS17_OUT}: ${IRIS17_OBJECTS}
+	@echo -n Building ${IRIS17_OUT} out of $^...
+	@${AR} rcs ${IRIS17_OUT}  $^
+	@echo done
+
+${IRIS17_SIM_BINARY}: ${IRIS17_SIM_MAIN} ${IRIS17_OUT}
+	@echo -n Building ${IRIS17_SIM_BINARY} binary out of $^...
+	@${CXX} ${LDFLAGS} -o ${IRIS17_SIM_BINARY} $^
+	@echo done.
+
+${IRIS17_LINK_BINARY}: ${IRIS17_LINK_MAIN} ${IRIS17_OUT}
+	@echo -n Building ${IRIS17_LINK_BINARY} binary out of $^...
+	@${CXX} ${LDFLAGS} -o ${IRIS17_LINK_BINARY} $^
+	@echo done.
+
+${IRIS17_STRGEN_BINARY}: ${IRIS17_STRGEN_MAIN} ${IRIS17_OUT}
+	@echo -n Building ${IRIS17_STRGEN_BINARY} binary out of $^...
+	@${CXX} ${LDFLAGS} -o ${IRIS17_STRGEN_BINARY} $^
+	@echo done.
+
+
+iris17_asm.tab.c iris17_asm.tab.h: iris17_asm.y
+	@${YACC} -o iris17_asm.tab.c -d iris17_asm.y
+	@${CXX} ${CXXFLAGS} -c iris17_asm.tab.c -o iris17_asm.tab.o
+
+iris17_lex.yy.c: iris17_asm.l iris17_asm.tab.h
+	@${LEX} -o iris17_lex.yy.c -l iris17_asm.l
+	@${CXX} ${CXXFLAGS} -D_POSIX_SOURCE -c iris17_lex.yy.c -o iris17_lex.yy.o
+
+${IRIS17_ASM_BINARY}: iris17_lex.yy.c iris17_asm.tab.c iris17_asm.tab.h 
+	@echo -n Building ${IRIS17_ASM_BINARY} binary out of $^...
+	@${CXX} ${LDFLAGS} -o ${IRIS17_ASM_BINARY} iris17_lex.yy.o iris17_asm.tab.o ${IRIS17_OUT}
 	@echo done.
 
 clean:
