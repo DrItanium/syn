@@ -1,0 +1,9 @@
+language: cpp
+
+compiler:
+  - gcc
+
+sudo: required
+dist: trusty
+
+script: make
