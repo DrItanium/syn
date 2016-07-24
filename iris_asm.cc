@@ -39,7 +39,6 @@ int main(int argc, char* argv[]) {
 			   		++i;
 			   		line = argv[i];
 			   		break;
-               case 'h':
                default:
                   errorfree = false;
                   break;
@@ -77,6 +76,9 @@ int main(int argc, char* argv[]) {
       } else if (target.empty()) {
 		std::cerr << "No target provided!" << std::endl;
 	  }
+   } else {
+		usage(argv[0]);
+		return 0;
    }
    if(output && input) {
 	   iris::parseAssembly(target, input, output);
@@ -95,5 +97,5 @@ int main(int argc, char* argv[]) {
 }
 
 void usage(char* arg0) {
-	std::cerr << "usage: " << arg0 << " [-o <file>] <file>" << std::endl;
+	std::cerr << "usage: " << arg0 << " -t <target> [-o <file>] <file>" << std::endl;
 }
