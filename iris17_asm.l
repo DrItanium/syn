@@ -145,7 +145,7 @@ byte getregister(void) {
 
    iris17text[0] = '0';
    c = atoi(iris17text);
-   if(c > 255 || c < 0) {
+   if(c > ArchitectureConstants::RegisterCount || c < 0) {
       iris17error("target register is too large");
       return 0;
    } else {

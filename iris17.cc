@@ -55,7 +55,6 @@ namespace iris17 {
 		registerValue<index>() = iris17::encodeWord(buf[0], buf[1]);
 #include "iris17_registers.def"
 #undef X
-
 		populateContents<word, ArchitectureConstants::AddressMax>(data, stream, encodeWord);
 		populateContents<dword, ArchitectureConstants::AddressMax>(instruction, stream, [](char buf[4]) { return iris17::encodeDword(buf[0], buf[1], buf[2], buf[3]); });
 		populateContents<word, ArchitectureConstants::AddressMax>(stack, stream, encodeWord);
@@ -127,11 +126,11 @@ namespace iris17 {
 //#define OpXor ^=
 #define X(type, compare, mod) \
 			case CompareOp:: type: \
-								   registerValue(current.getDestination()) INDIRECTOR(Op, mod) (registerValue(current.getSource0()) compare registerValue(current.getSource1())); \
+								   getDestinationRegister() INDIRECTOR(Op, mod) (getSource0Register() compare getSource1Register()); \
 			break;
 #define Y(type, compare, mod) \
 			case CompareOp:: type: \
-								   registerValue(current.getDestination()) INDIRECTOR(Op, mod) (registerValue(current.getSource0()) compare (word(current.getSource1()))); \
+								   getDestinationRegister() INDIRECTOR(Op, mod) (getSource0Register() compare (word(getHalfImmediate()))); \
 			break;
 
 #include "iris17_compare.def"
@@ -148,21 +147,20 @@ namespace iris17 {
 				break;
 		}
 	}
-
 	void Core::arithmetic() {
 		switch(static_cast<ArithmeticOp>(current.getOperation())) {
-#define XNone(n, op) registerValue(current.getDestination()) = ( registerValue(current.getSource0()) op  registerValue(current.getSource1()));
-#define XImmediate(n, op) registerValue(current.getDestination()) = (registerValue(current.getSource0()) op static_cast<word>(current.getSource1())); 
-#define XUnary(n, op) registerValue(current.getDestination()) = (op registerValue(current.getSource0())); 
+#define XNone(n, op) getDestinationRegister() = ( getSource0Register() op  getSource1Register());
+#define XImmediate(n, op) getDestinationRegister() = (getSource0Register() op static_cast<word>(getHalfImmediate())); 
+#define XUnary(n, op) getDestinationRegister() = (op getSource0Register()); 
 #define XDenominator(n, op) \
-			if (registerValue(current.getSource1()) == 0) { \
+			if (getSource1Register() == 0) { \
 				std::cerr << "denominator in for operation " << #n << " is zero!" << std::endl; \
 				execute = false; \
 			} else { \
 				XNone(n, op) \
 			}
 #define XDenominatorImmediate(n, op) \
-			if (registerValue(current.getSource1()) == 0) { \
+			if (getSource1Register() == 0) { \
 				std::cerr << "denominator in for operation " << #n << " is zero!" << std::endl; \
 				execute = false; \
 			} else { \
@@ -204,17 +202,21 @@ namespace iris17 {
 		word ip = registerValue<ArchitectureConstants::InstructionPointerIndex>();
 		switch(static_cast<JumpOp>(current.getOperation())) {
 #define XImmediateCond_true (current.getImmediate())
-#define XImmediateCond_false (registerValue(current.getSource0()))
+#define XImmediateCond_false (getSource0Register())
 #define XIfThenElse_false(immediate) \
 			newAddr = cond ? INDIRECTOR(XImmediateCond, _ ## immediate) : ip + 1;
 #define XIfThenElse_true(immediate) \
-			newAddr = registerValue(cond ? current.getSource0() : current.getSource1());
-#define XImmediateUncond_false (registerValue(current.getDestination()))
+			if (cond) { \
+				newAddr = getSource0Register(); \
+			} else { \
+				newAddr = getSource1Register(); \
+			}
+#define XImmediateUncond_false (getDestinationRegister())
 #define XImmediateUncond_true (current.getImmediate())
 #define XConditional_false(name, ifthenelse, immediate) \
 			newAddr = INDIRECTOR(XImmediateUncond, _ ## immediate);
 #define XConditional_true(name, ifthenelse, immediate) \
-			cond = (ConditionalStyle<JumpOp:: name>::isFalseForm ? (registerValue(current.getDestination()) == 0) : (registerValue(current.getDestination()) != 0)); \
+			cond = (ConditionalStyle<JumpOp:: name>::isFalseForm ? (getDestinationRegister() == 0) : (getDestinationRegister() != 0)); \
 			INDIRECTOR(XIfThenElse, _ ## ifthenelse)(immediate)
 #define XLink_true \
 			if (cond) { \
@@ -226,7 +228,7 @@ namespace iris17 {
 			case JumpOp:: name: \
 					 { \
 						 INDIRECTOR(XConditional, _ ## conditional)(name, ifthenelse, immediate) \
-						 registerValue(ArchitectureConstants::InstructionPointerIndex) = newAddr; \
+						 registerValue<ArchitectureConstants::InstructionPointerIndex>() = newAddr; \
 						 INDIRECTOR(XLink, _ ## link)  \
 						 break; \
 					 }
@@ -261,12 +263,12 @@ namespace iris17 {
 				break;
 			case SystemCalls::PutC:
 				// read register 0 and register 1
-				std::cout.put((char)registerValue(current.getSource0()));
+				std::cout.put((char)getSource0Register());
 				break;
 			case SystemCalls::GetC:
 				byte value;
 				std::cin >> std::noskipws >> value;
-				registerValue(current.getSource0()) = (word)value;
+				getSource0Register() = (word)value;
 				break;
 			default:
 				std::cerr << "Illegal system call " << current.getDestination() << std::endl;
@@ -278,18 +280,18 @@ namespace iris17 {
 	void Core::move() {
 		word a = 0;
 		switch(static_cast<MoveOp>(current.getOperation())) {
-#define GPRRegister0 (registerValue(current.getDestination()))
-#define GPRRegister1 (registerValue(current.getSource0()))
-#define GPRRegister2 (registerValue(current.getSource1()))
+#define GPRRegister0 (getDestinationRegister())
+#define GPRRegister1 (getSource0Register())
+#define GPRRegister2 (getSource1Register())
 #define GPRImmediate1 (current.getImmediate())
 #define DataRegister0 GPRRegister0
 #define DataRegister1 GPRRegister1
 #define DataImmediate1 GPRImmediate1
-#define StackPushRegister0 (registerValue(ArchitectureConstants::StackPointerIndex))
+#define StackPushRegister0 (registerValue<ArchitectureConstants::StackPointerIndex>())
 #define StackPushRegister1 GPRRegister0
 #define StackPushImmediate1 GPRImmediate1
 #define StackPopRegister0 GPRRegister0
-#define StackPopRegister1 (registerValue(ArchitectureConstants::StackPointerIndex))
+#define StackPopRegister1 (registerValue<ArchitectureConstants::StackPointerIndex>())
 #define StackPopImmediate1 GPRImmediate1
 #define StoreRegister0  GPRRegister0
 #define StoreRegister1 GPRRegister1
@@ -411,6 +413,32 @@ namespace iris17 {
 					str << "current address: " << std::hex << address << std::endl;
 					throw iris::Problem(str.str());
 			}
+		}
+	}
+	word& Core::getDestinationRegister() {
+		return registerValue(current.getDestination());
+	}
+	word& Core::getSource0Register() {
+		return registerValue(current.getSource0());
+	}
+	word& Core::getSource1Register() {
+		return registerValue(current.getSource1());
+	}
+	word Core::getHalfImmediate() {
+		return current.getHalfImmediate();
+	}
+	word Core::getImmediate() {
+		return current.getImmediate();
+	}
+	word& Core::registerValue(byte index) {
+		switch(index) {
+#define X(index) case index : return registerValue<index>();
+#include "iris17_registers.def"
+#undef X
+			default:
+				std::stringstream msg;
+				msg << "Out of range register index: " << index;
+				throw iris::Problem(msg.str());
 		}
 	}
 }

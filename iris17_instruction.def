@@ -8,5 +8,6 @@ X(Immediate, 	 0xFFFF0000, 16, immediate, false, immediate)
 X(Group, 		 0x00000007, 0, byte, false, group)
 X(Operation,     0x000000F8, 3, byte, false, op)
 X(HalfImmediate, 0xFF000000, 24, byte, false, halfImmediate)
+X(AllRegisters, 0xFFFFFF00, 8, dword, false, allRegisters)
 
 

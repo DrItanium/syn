@@ -10,8 +10,16 @@ namespace iris17 {
 	typedef uint32_t dword;
 	typedef dword raw_instruction;
 	typedef word immediate;
+	dword encodeDword(byte a, byte b, byte c, byte d);
+	word encodeWord(byte a, byte b);
+	enum class Register : word {
+#define X(index) r ## index ,
+#include "iris17_registers.def"
+#undef X
+		 Count,
+	};
 	enum ArchitectureConstants  {
-		RegisterCount = 256,
+		RegisterCount = static_cast<word>(Register::Count),
 		AddressMax = 65535,
 		InstructionPointerIndex = RegisterCount - 1,
 		LinkRegisterIndex = RegisterCount - 2,
@@ -19,9 +27,8 @@ namespace iris17 {
 		MaxGroups = 0x7,
 		MaxOperations = 0x1F,
 	};
-	dword encodeDword(byte a, byte b, byte c, byte d);
-	word encodeWord(byte a, byte b);
-
+	constexpr Register toRegister(byte value) { return static_cast<Register>(value); }
+	constexpr byte fromRegister(Register value) { return static_cast<byte>(value); }
 	enum class InstructionGroup : byte {
 #define X(title, _) title,
 #include "iris17_groups.def"
@@ -86,6 +93,21 @@ namespace iris17 {
 #include "iris17_instruction.def"
 #undef X
 	};
+	template<byte index>
+	struct RegisterInfo {
+		static constexpr byte value = index;
+		static constexpr Register registerVersion = toRegister(index);
+	};
+#define X(index) template struct RegisterInfo<index>;
+#include "iris17_registers.def"
+#undef X
+	template<dword signature>
+	struct RegisterSignature {
+		static constexpr dword fullSignature = signature;
+		static RegisterInfo<static_cast<byte>(signature)> destination;
+		static RegisterInfo<static_cast<byte>(signature >> 8)> source0;
+		static RegisterInfo<static_cast<byte>(signature >> 16)> source1;
+	};
 	class Core : public iris::Core {
 		public:
 			Core();
@@ -117,17 +139,12 @@ namespace iris17 {
 					throw iris::Problem(msg.str());
 			}
 		}
-		word& registerValue(byte index) {
-			switch(index) {
-#define X(index) case index : return registerValue<index>();
-#include "iris17_registers.def"
-#undef X
-				default:
-					std::stringstream msg;
-					msg << "Out of range register index: " << index;
-					throw iris::Problem(msg.str());
-			}
-		}
+		inline word& getDestinationRegister();
+		inline word& getSource0Register();
+		inline word& getSource1Register();
+		inline word getHalfImmediate();
+		inline word getImmediate();
+		inline word& registerValue(byte index);
 		private:
 			DecodedInstruction current;
 			bool execute = true,
