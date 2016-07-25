@@ -158,23 +158,31 @@ ASM_SUPPLIMENTARY_BUILD = ${IRIS16_ASM_OBJECTS} \
 
 ASM_BINARY = iris_asm
 
+LINK_OBJECTS = iris_link.o \
+			  sim_registration.o \
+			  ${COMMON_THINGS}
+
+LINK_BINARY = iris_link
+
 
 
 ALL_BINARIES = ${SIM_BINARY} \
-			   ${ASM_BINARY}
+			   ${ASM_BINARY} \
+			   ${LINK_BINARY}
 
 ALL_OBJECTS = ${COMMON_THINGS} \
 			  ${SIM_OBJECTS} \
 			  ${ALL_IRIS32_OBJECTS} \
 			  ${ALL_IRIS17_OBJECTS} \
 			  ${ALL_IRIS16_OBJECTS} \
-			  ${ASM_OBJECTS}
+			  ${ASM_OBJECTS} \
+			  ${LINK_OBJECTS}
 
 ALL_ARCHIVES = ${IRIS16_OUT} \
 			   ${IRIS32_OUT} \
 			   ${IRIS17_OUT}
 
-all: options ${SIM_BINARY} ${ASM_BINARY}
+all: options ${SIM_BINARY} ${ASM_BINARY} ${LINK_BINARY}
 
 options:
 	@echo iris build options:
@@ -199,6 +207,11 @@ options:
 ${SIM_BINARY}: ${SIM_OBJECTS}
 	@echo -n Building ${SIM_BINARY} binary out of $^...
 	@${CXX} ${LDFLAGS} -o ${SIM_BINARY} $^
+	@echo done.
+
+${LINK_BINARY}: ${LINK_OBJECTS}
+	@echo -n Building ${LINK_BINARY} binary out of $^...
+	@${CXX} ${LDFLAGS} -o ${LINK_BINARY} $^
 	@echo done.
 
 ${ASM_BINARY}: ${ASM_OBJECTS} ${ASM_PARSERS} 
@@ -316,27 +329,43 @@ uninstall:
 .PHONY: all options clean install uninstall
 
 
+architecture.o: architecture.cc architecture.h \
+	architecture_registrations.def Problem.h
+asm_interact.o: asm_interact.cc asm_interact.h architecture.h \
+	architecture_registrations.def Problem.h
 iris16.o: iris16.cc iris16.h iris_base.h Core.h iris16_groups.def \
- iris16_arithmetic.def iris16_misc.def iris16_jump.def \
- iris16_syscalls.def iris16_move.def iris16_compare.def \
- iris16_instruction.def
-iris16_link.o: iris16_link.cc iris16.h iris_base.h Core.h \
- iris16_groups.def iris16_arithmetic.def iris16_misc.def iris16_jump.def \
- iris16_syscalls.def iris16_move.def iris16_compare.def \
- iris16_instruction.def
-iris16_sim.o: iris16_sim.cc iris16.h iris_base.h Core.h iris16_groups.def \
- iris16_arithmetic.def iris16_misc.def iris16_jump.def \
- iris16_syscalls.def iris16_move.def iris16_compare.def \
- iris16_instruction.def
-iris16_strgen.o: iris16_strgen.cc
-
+	iris16_arithmetic.def iris16_misc.def iris16_jump.def \
+	iris16_syscalls.def iris16_move.def iris16_compare.def \
+	iris16_instruction.def sim_registration.h architecture.h \
+	architecture_registrations.def Problem.h
+iris17.o: iris17.cc iris17.h iris_base.h Core.h iris17_groups.def \
+	iris17_arithmetic.def iris17_misc.def iris17_jump.def \
+	iris17_syscalls.def iris17_move.def iris17_compare.def \
+	iris17_instruction.def Problem.h
+iris17_sim.o: iris17_sim.cc iris16.h iris_base.h Core.h iris16_groups.def \
+	iris16_arithmetic.def iris16_misc.def iris16_jump.def \
+	iris16_syscalls.def iris16_move.def iris16_compare.def \
+	iris16_instruction.def
 iris32.o: iris32.cc iris32.h iris_base.h Core.h iris32_groups.def \
- iris32_arithmetic.def iris32_misc.def iris32_jump.def \
- iris32_syscalls.def iris32_move.def iris32_compare.def \
- iris32_instruction.def
+	iris32_instruction.def iris32_compare.def iris32_arithmetic.def \
+	iris32_move.def iris32_jump.def iris32_misc.def iris32_syscalls.def \
+	Problem.h
 iris32_sim.o: iris32_sim.cc iris32.h iris_base.h Core.h iris32_groups.def \
- iris32_arithmetic.def iris32_misc.def iris32_jump.def \
- iris32_syscalls.def iris32_move.def iris32_compare.def \
- iris32_instruction.def
-iris32_strgen.o: iris32_strgen.cc
-
+	iris32_instruction.def iris32_compare.def iris32_arithmetic.def \
+	iris32_move.def iris32_jump.def iris32_misc.def iris32_syscalls.def
+iris_asm.o: iris_asm.cc asm_interact.h architecture.h \
+	architecture_registrations.def Problem.h
+iris_link.o: iris_link.cc Core.h sim_registration.h architecture.h \
+	architecture_registrations.def Problem.h
+iris_sim.o: iris_sim.cc Problem.h Core.h sim_registration.h \
+	architecture.h architecture_registrations.def
+sim_registration.o: sim_registration.cc sim_registration.h Core.h \
+	architecture.h architecture_registrations.def Problem.h targets.h \
+	iris16.h iris_base.h iris16_groups.def iris16_arithmetic.def \
+	iris16_misc.def iris16_jump.def iris16_syscalls.def iris16_move.def \
+	iris16_compare.def iris16_instruction.def iris32.h iris32_groups.def \
+	iris32_instruction.def iris32_compare.def iris32_arithmetic.def \
+	iris32_move.def iris32_jump.def iris32_misc.def iris32_syscalls.def \
+	iris17.h iris17_groups.def iris17_arithmetic.def iris17_misc.def \
+	iris17_jump.def iris17_syscalls.def iris17_move.def iris17_compare.def \
+	iris17_instruction.def
