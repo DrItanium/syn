@@ -2,7 +2,9 @@
 #define _TARGET_IRIS17_IRIS_H
 #include "iris_base.h"
 #include "Core.h"
+#include "Problem.h"
 #include <cstdint>
+#include <sstream>
 namespace iris17 {
 	typedef uint16_t word;
 	typedef uint32_t dword;
@@ -103,11 +105,36 @@ namespace iris17 {
 #define X(title, func) void func ();
 #include "iris17_misc.def"
 #undef X
+		template<byte index>
+		word& registerValue() {
+			switch(index) {
+#define X(index) case index : return r ## index;
+#include "iris17_registers.def"
+#undef X
+				default:
+					std::stringstream msg;
+					msg << "Out of range register index: " << index;
+					throw iris::Problem(msg.str());
+			}
+		}
+		word& registerValue(byte index) {
+			switch(index) {
+#define X(index) case index : return registerValue<index>();
+#include "iris17_registers.def"
+#undef X
+				default:
+					std::stringstream msg;
+					msg << "Out of range register index: " << index;
+					throw iris::Problem(msg.str());
+			}
+		}
 		private:
 			DecodedInstruction current;
 			bool execute = true,
 				 advanceIp = true;
-			word gpr[ArchitectureConstants::RegisterCount] = {0};
+#define X(index) word r ## index = 0;
+#include "iris17_registers.def"
+#undef X
 			word data[ArchitectureConstants::AddressMax] = { 0 };
 			dword instruction[ArchitectureConstants::AddressMax] = { 0 };
 			word stack[ArchitectureConstants::AddressMax] = { 0 };
