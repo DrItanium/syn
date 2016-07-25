@@ -128,38 +128,45 @@ IRIS32_TOOLS = ${IRIS32_BINARIES}
 IRIS32 = ${IRIS32_OUT} \
 		 ${IRIS32_TOOLS}
 
+
+ARCH_TARGETS = ${IRIS16_OUT} \
+			   ${IRIS32_OUT} \
+			   ${IRIS17_OUT}
+
 COMMON_THINGS = architecture.o \
+				${ARCH_TARGETS}
 
 # The object file that defines main()
 #TEST_OBJECTS = $(patsubst %.c,%.o,$(wildcard src/cmd/tests/*.c))
 SIM_OBJECTS = iris_sim.o \
 			  sim_registration.o \
-			  ${COMMON_THINGS} \
-			  ${IRIS16_OUT} \
-			  ${IRIS17_OUT} \
-			  ${IRIS32_OUT} 
+			  ${COMMON_THINGS}
 
 SIM_BINARY = iris_sim
 
 ASM_OBJECTS = iris_asm.o \
 			  asm_interact.o \
-			  ${COMMON_THINGS} \
-			  ${IRIS16_OUT} \
-			  ${IRIS17_OUT} \
-			  ${IRIS32_OUT}
+			  ${COMMON_THINGS}
 
 ASM_PARSERS = ${IRIS16_ASM_FILES} \
 			  ${IRIS32_ASM_FILES} \
 			  ${IRIS17_ASM_FILES} 
+
 ASM_SUPPLIMENTARY_BUILD = ${IRIS16_ASM_OBJECTS} \
 						  ${IRIS32_ASM_OBJECTS} \
 						  ${IRIS17_ASM_OBJECTS} \
 
 ASM_BINARY = iris_asm
 
+STRGEN_BINARY = iris_strgen
+
+STRGEN_OBJECTS = iris_strgen.o \
+				 ${COMMON_THINGS}
+
 
 ALL_BINARIES = ${SIM_BINARY} \
-			   ${ASM_BINARY}
+			   ${ASM_BINARY} \
+			   ${STRGEN_BINARY}
 
 ALL_OBJECTS = ${COMMON_THINGS} \
 			  ${SIM_OBJECTS} \
@@ -172,7 +179,7 @@ ALL_ARCHIVES = ${IRIS16_OUT} \
 			   ${IRIS32_OUT} \
 			   ${IRIS17_OUT}
 
-all: options ${SIM_BINARY} ${ASM_BINARY}
+all: options ${SIM_BINARY} ${ASM_BINARY} ${STRGEN_BINARY}
 
 options:
 	@echo iris build options:
@@ -197,6 +204,11 @@ options:
 ${SIM_BINARY}: ${SIM_OBJECTS}
 	@echo -n Building ${SIM_BINARY} binary out of $^...
 	@${CXX} ${LDFLAGS} -o ${SIM_BINARY} $^
+	@echo done.
+
+${STRGEN_BINARY}: ${STRGEN_OBJECTS}
+	@echo -n Building ${STRGEN_BINARY} binary out of $^...
+	@${CXX} ${LDFLAGS} -o ${STRGEN_BINARY} $^
 	@echo done.
 
 ${ASM_BINARY}: ${ASM_OBJECTS} ${ASM_PARSERS} 

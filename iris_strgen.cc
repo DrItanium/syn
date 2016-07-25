@@ -1,6 +1,9 @@
 /* strgen.cc - convert a string into an data decl */
 #include <iostream>
+#include <fstream>
+#include <string>
 #include "architecture.h"
+#include "Problem.h"
 #include "strgen.h"
 
 void outputString(iris::Architecture arch) {
