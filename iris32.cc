@@ -2,9 +2,6 @@
 #include <functional>
 
 namespace iris32 {
-	void getWordDescription(std::ostream& out) {
-		out << "@word";
-	}
 	Core* newCore() {
 		return new iris32::Core(iris32::ArchitectureConstants::AddressMax, 8);
 	}

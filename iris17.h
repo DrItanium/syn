@@ -113,7 +113,6 @@ namespace iris17 {
 	};
 
 	Core* newCore();
-	void getWordDescription(std::ostream& out);
 
 }
 #endif

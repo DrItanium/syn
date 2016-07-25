@@ -1,14 +1,9 @@
 #include "iris16.h"
 #include "sim_registration.h"
-#include "strgen.h"
 #include <functional>
 
 
 namespace iris16 {
-	void getWordDescription(std::ostream& out) {
-		out << "@declare";
-	}
-
 	Core* newCore() {
 		return new iris16::Core();
 	}

@@ -158,15 +158,10 @@ ASM_SUPPLIMENTARY_BUILD = ${IRIS16_ASM_OBJECTS} \
 
 ASM_BINARY = iris_asm
 
-STRGEN_BINARY = iris_strgen
-
-STRGEN_OBJECTS = iris_strgen.o \
-				 ${COMMON_THINGS}
 
 
 ALL_BINARIES = ${SIM_BINARY} \
-			   ${ASM_BINARY} \
-			   ${STRGEN_BINARY}
+			   ${ASM_BINARY}
 
 ALL_OBJECTS = ${COMMON_THINGS} \
 			  ${SIM_OBJECTS} \
@@ -179,7 +174,7 @@ ALL_ARCHIVES = ${IRIS16_OUT} \
 			   ${IRIS32_OUT} \
 			   ${IRIS17_OUT}
 
-all: options ${SIM_BINARY} ${ASM_BINARY} ${STRGEN_BINARY}
+all: options ${SIM_BINARY} ${ASM_BINARY}
 
 options:
 	@echo iris build options:
@@ -204,11 +199,6 @@ options:
 ${SIM_BINARY}: ${SIM_OBJECTS}
 	@echo -n Building ${SIM_BINARY} binary out of $^...
 	@${CXX} ${LDFLAGS} -o ${SIM_BINARY} $^
-	@echo done.
-
-${STRGEN_BINARY}: ${STRGEN_OBJECTS}
-	@echo -n Building ${STRGEN_BINARY} binary out of $^...
-	@${CXX} ${LDFLAGS} -o ${STRGEN_BINARY} $^
 	@echo done.
 
 ${ASM_BINARY}: ${ASM_OBJECTS} ${ASM_PARSERS} 
@@ -349,3 +339,4 @@ iris32_sim.o: iris32_sim.cc iris32.h iris_base.h Core.h iris32_groups.def \
  iris32_syscalls.def iris32_move.def iris32_compare.def \
  iris32_instruction.def
 iris32_strgen.o: iris32_strgen.cc
+
