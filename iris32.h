@@ -231,6 +231,7 @@ namespace iris32 {
 	};
 
 	Core* newCore();
+	void getWordDescription(std::ostream& out);
 } // end namespace iris32
 #undef DefOp
 #endif // end _TARGET_IRIS32_IRIS_H

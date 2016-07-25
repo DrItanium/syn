@@ -1,5 +1,6 @@
 /* strgen.cc - convert a string into an data decl */
 #include <iostream>
+#include "architecture.h"
 #include "strgen.h"
 
 void outputString(iris::Architecture arch) {
@@ -19,7 +20,7 @@ int main(int argc, char* argv[]) {
 namespace iris {
 	void constructWord(Architecture target, std::ostream& out, char c) {
 		switch (target) {
-#define X(arch, om, nom) case Architecture:: arch : getWordDescription<Architecture:: arch>(out); break;
+#define X(arch, om, nom) case Architecture:: arch : arch :: getWordDescription(out); break;
 #include "architecture_registrations.def"
 #undef X
 			default:

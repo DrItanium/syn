@@ -3,6 +3,9 @@
 
 namespace iris17 {
 
+	void getWordDescription(std::ostream& out) {
+		out << "@declare";
+	}
 	Core* newCore() {
 		return new Core();
 	}

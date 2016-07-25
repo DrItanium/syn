@@ -4,15 +4,10 @@
 #include <functional>
 
 
-namespace iris {
-
-	template<>
-	void getWordDescription<Architecture::iris16>(std::ostream& out) {
+namespace iris16 {
+	void getWordDescription(std::ostream& out) {
 		out << "@declare";
 	}
-
-}
-namespace iris16 {
 
 	Core* newCore() {
 		return new iris16::Core();
