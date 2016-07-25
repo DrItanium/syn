@@ -212,6 +212,7 @@ namespace iris32 {
 			virtual void shutdown();
 			virtual void dump(std::ostream& stream);
 			virtual void run();
+			virtual void link(std::istream& input);
 			void write(word address, word value);
 			word read(word address);
 		private:

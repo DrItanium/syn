@@ -7,12 +7,6 @@
 #include "iris16.h"
 
 
-enum class Segment  {
-	Code, 
-	Data,
-	Count,
-};
-
 static void usage(char* arg0);
 static void execute(std::istream& file);
 iris16::Core proc;
@@ -111,52 +105,4 @@ int main(int argc, char* argv[]) {
 
 void usage(char* arg0) {
 	std::cerr << "usage: " << arg0 << " [-d] [-o <file>] <file>" << std::endl;
-}
-void execute(std::istream& input) {
-	dword result = 0;
-	word result0 = 0;
-	char* buf = new char[8];
-	for(int lineNumber = 0; input.good(); ++lineNumber) {
-		input.read(buf, 8);
-		if (input.gcount() < 8 && input.gcount() > 0) {
-			std::cerr << "panic: unaligned object file found!" << std::endl;
-			exit(1);
-		} else if (input.gcount() == 0) {
-			if (input.eof()) {
-				break;
-			} else {
-				std::cerr << "panic: something bad happened while reading input file!" << std::endl;
-				exit(1);
-			}
-		}
-		//ignore the first byte, it is always zero
-		byte tmp = buf[1];
-		Segment target = static_cast<Segment>(buf[1]);
-		word address = iris16::encodeWord(buf[2], buf[3]);
-		if (debug) {
-			std::cerr << "current target = " << static_cast<int>(target) << "\tcurrent address = 0x" << std::hex << address << std::endl;
-		}
-		switch(target) {
-			case Segment::Code:
-				result = iris16::encodeDword(buf[4], buf[5], buf[6], buf[7]);
-				if (debug) {
-					std::cerr << " code result: 0x" << std::hex << result << std::endl;
-				}
-				proc.setInstructionMemory(address, result);
-				break;
-			case Segment::Data:
-				result0 = iris16::encodeWord(buf[4], buf[5]);
-				if (debug) {
-					std::cerr << " data result: 0x" << std::hex << result0 << std::endl;
-				}
-				proc.setDataMemory(address, result0);
-				break;
-			default:
-				std::cerr << "error: line " << lineNumber << ", unknown segment " << static_cast<int>(target) << "/" << static_cast<int>(tmp) << std::endl;
-				std::cerr << "current address: " << std::hex << address << std::endl;
-				exit(1);
-				break;
-		}
-	}
-	delete[] buf;
 }

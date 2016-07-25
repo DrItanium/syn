@@ -1,6 +1,7 @@
 #include "iris16.h"
 #include "sim_registration.h"
 #include <functional>
+#include <sstream>
 
 
 namespace iris16 {
@@ -347,6 +348,57 @@ namespace iris16 {
 				execute = false;
 				advanceIp = false;
 				break;
+		}
+	}
+
+	enum class Segment  {
+		Code, 
+		Data,
+		Count,
+	};
+	void Core::link(std::istream& input) {
+		dword result = 0;
+		word result0 = 0;
+		char buf[8] = {0};
+		for(int lineNumber = 0; input.good(); ++lineNumber) {
+			input.read(buf, 8);
+			if (input.gcount() < 8 && input.gcount() > 0) {
+				throw iris::Problem("unaligned object file found!");
+			} else if (input.gcount() == 0) {
+				if (input.eof()) {
+					break;
+				} else {
+					throw iris::Problem("something bad happened while reading input file!");
+				}
+			}
+			//ignore the first byte, it is always zero
+			byte tmp = buf[1];
+			Segment target = static_cast<Segment>(buf[1]);
+			word address = iris16::encodeWord(buf[2], buf[3]);
+			if (debugEnabled()) {
+				std::cerr << "current target = " << static_cast<int>(target) << "\tcurrent address = 0x" << std::hex << address << std::endl;
+			}
+			switch(target) {
+				case Segment::Code:
+					result = iris16::encodeDword(buf[4], buf[5], buf[6], buf[7]);
+					if (debugEnabled()) {
+						std::cerr << " code result: 0x" << std::hex << result << std::endl;
+					}
+					setInstructionMemory(address, result);
+					break;
+				case Segment::Data:
+					result0 = iris16::encodeWord(buf[4], buf[5]);
+					if (debugEnabled()) {
+						std::cerr << " data result: 0x" << std::hex << result0 << std::endl;
+					}
+					setDataMemory(address, result0);
+					break;
+				default:
+					std::stringstream str;
+					str << "error: line " << lineNumber << ", unknown segment " << static_cast<int>(target) << "/" << static_cast<int>(tmp) << std::endl;
+					str << "current address: " << std::hex << address << std::endl;
+					throw iris::Problem(str.str());
+			}
 		}
 	}
 }

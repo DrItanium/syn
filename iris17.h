@@ -92,6 +92,7 @@ namespace iris17 {
 			virtual void shutdown();
 			virtual void dump(std::ostream& stream);
 			virtual void run();
+			virtual void link(std::istream& stream);
 			void setInstructionMemory(word address, dword value);
 			void setDataMemory(word address, word value);
 		private:

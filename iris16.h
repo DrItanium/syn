@@ -92,6 +92,7 @@ namespace iris16 {
 			virtual void shutdown();
 			virtual void dump(std::ostream& stream);
 			virtual void run();
+			virtual void link(std::istream& input);
 			void setInstructionMemory(word address, dword value);
 			void setDataMemory(word address, word value);
 		private:
@@ -113,5 +114,6 @@ namespace iris16 {
 	};
 
 	Core* newCore();
+	void link(Core* core, std::istream& input, std::ostream& output);
 }
 #endif

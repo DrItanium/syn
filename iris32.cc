@@ -1,5 +1,6 @@
 #include "iris32.h"
 #include <functional>
+#include "Problem.h"
 
 namespace iris32 {
 	Core* newCore() {
@@ -435,4 +436,9 @@ namespace iris32 {
 			std::cerr << "}" << std::endl;
 		}
 	}
+
+	void Core::link(std::istream& input) {
+		throw iris::Problem("iris32 does not require explicit linking!");
+	}
+
 } // end namespace iris32
