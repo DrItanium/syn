@@ -38,7 +38,7 @@ namespace iris17 {
 	void populateContents(word* contents, std::istream& stream) {
 		char buf[sizeof(word)] = { 0 };
 		for(int i = 0; i < count; ++i) {
-			stream.read(buf, sizeof(T));
+			stream.read(buf, sizeof(word));
 			contents[i] = iris17::encodeWord(buf[0], buf[1]);
 		}
 	}
@@ -70,59 +70,103 @@ namespace iris17 {
 			if (!advanceIp) {
 				advanceIp = true;
 			}
-			current.decode(instruction[registerValue<ArchitectureConstants::InstructionPointerIndex>()]);
+			current.decode(instruction[registerValue<ArchitectureConstants::InstructionPointer>()]);
 			dispatch();
 			if (advanceIp) {
-				++registerValue<ArchitectureConstants::InstructionPointerIndex>();
+				++registerValue<ArchitectureConstants::InstructionPointer>();
 			} 
 		}
 	}
-	template<JumpOp op> 
-		struct ConditionalStyle {
-			static const bool isFalseForm = false;
-		};
-#define X(name, ifthenelse, conditional, iffalse, immediate, link) \
-	template<> struct ConditionalStyle<JumpOp:: name> { static const bool isFalseForm = iffalse; };
-#include "iris17_jump.def"
-#undef X
-	void Core::dispatch() {
-		switch(current.getControl()) {
-#define X(type, compare, mod) \
-			case ControlSignature<InstructionGroup::Compare, GetAssociatedOp<InstructionGroup::Compare>::Association, GetAssociatedOp<InstructionGroup::Compare>::Association:: type>::fullSignature: \
-								   getDestinationRegister() = (getSource0Register() compare getSource1Register()); \
-			break;
-#define Y(type, compare, mod) \
-			case ControlSignature<InstructionGroup::Compare, GetAssociatedOp<InstructionGroup::Compare>::Association, GetAssociatedOp<InstructionGroup::Compare>::Association:: type>::fullSignature: \
-								   getDestinationRegister() = (getSource0Register() compare static_cast<word>(current.getSource1())); \
-			break;
-
+#define OpNone =
+#define OpAnd &=
+#define OpOr |=
+#define OpXor ^=
+#define DefCompareOp(type, compare, mod, action) \
+	template<> \
+	void Core::op<InstructionGroup::Compare, GetAssociatedOp<InstructionGroup::Compare>::Association, GetAssociatedOp<InstructionGroup::Compare>::Association:: type>() { \
+								   registerValue<ConditionRegister>() INDIRECTOR(Op, mod) (getArg0Register() compare action); \
+	}
+#define X(op, compare, mod) DefCompareOp(op, compare, mod, (getArg1Register()))
+#define Y(op, compare, mod) DefCompareOp(op, compare, mod, (static_cast<word>(current.getArg1())))
 #include "iris17_compare.def"
 #undef X
 #undef Y
-//
-#define XNone(n, op) getDestinationRegister() = ( getSource0Register() op  getSource1Register());
-#define XImmediate(n, op) getDestinationRegister() = (getSource0Register() op static_cast<word>(getHalfImmediate())); 
-#define XUnary(n, op) getDestinationRegister() = (op getSource0Register());
+#undef DefCompareOp
+#undef OpNone
+#undef OpAnd
+#undef OpOr
+#undef OrXor
+
+#define DefMoveOp(title) \
+	template<> \
+	void Core::op<InstructionGroup::Move, GetAssociatedOp<InstructionGroup::Move>::Association, GetAssociatedOp<InstructionGroup::Move>::Association:: title>()
+
+	DefMoveOp(Move)  {
+		getArg0Register() = getArg1Register();
+	}
+
+	DefMoveOp(SetLower) {
+		registerValue<ArchitectureConstants::AddressRegister>() = iris17::encodeWord(current.getImmediate(), static_cast<byte>(registerValue<ArchitectureConstants::AddressRegister>() >> 8));
+	}
+
+	DefMoveOp(SetUpper) {
+		registerValue<ArchitectureConstants::AddressRegister>() = iris17::encodeWord(static_cast<byte>(registerValue<ArchitectureConstants::AddressRegister>()), current.getImmediate());
+	}
+
+	DefMoveOp(Swap) {
+		word a = getArg0Register();
+		getArg0Register() = getArg1Register();
+		getArg1Register() = a;
+	}
+
+	DefMoveOp(Load) {
+		registerValue<ArchitectureConstants::DataRegister>() = data[registerValue<ArchitectureConstants::AddressRegister>()];
+	}
+
+	DefMoveOp(Store) {
+		data[registerValue<ArchitectureConstants::AddressRegister>()] = registerValue<ArchitectureConstants::DataRegister>();
+	}
+
+	DefMoveOp(Push) {
+		++registerValue<ArchitectureConstants::StackPointer>();
+		stack[registerValue<ArchitectureConstants::StackPointer>()] = getArg0Register();
+	}
+
+	DefMoveOp(Pop) {
+		getArg0Register() = stack[registerValue<ArchitectureConstants::StackPointer>()];
+		--registerValue<ArchitectureConstants::StackPointer>();
+	}
+
+	DefMoveOp(LoadCode) {
+		registerValue<ArchitectureConstants::DataRegister>() = instruction[registerValue<ArchitectureConstants::AddressRegister>()];
+	}
+
+	DefMoveOp(StoreCode) {
+		instruction[registerValue<ArchitectureConstants::AddressRegister>()] = registerValue<ArchitectureConstants::DataRegister>();
+	}
+	
+#define XNone(n, op) getArg0Register() = ( getArg0Register() op  getArg1Register());
+#define XImmediate(n, op) getArg0Register() = (getArg0Register() op static_cast<word>(current.getArg1())); 
+#define XUnary(n, op) getArg0Register() = (op getArg0Register());
 #define XDenominator(n, op) \
-			if (getSource1Register() == 0) { \
+			if (getArg1Register() == 0) { \
 				throw iris::Problem("denominator for operation " #n " is zero!"); \
 				execute = false; \
 			} else { \
 				XNone(n, op) \
 			}
 #define XDenominatorImmediate(n, op) \
-			if (getSource1Register() == 0) { \
+			if (getArg1Register() == 0) { \
 				execute = false; \
 				throw iris::Problem("denominator for operation " #n " is zero!"); \
 			} else { \
 				XImmediate(n, op) \
 			}
-#define X(name, op, desc) \
-			case ControlSignature<InstructionGroup::Arithmetic, GetAssociatedOp<InstructionGroup::Arithmetic>::Association, GetAssociatedOp<InstructionGroup::Arithmetic>::Association:: name>::fullSignature: \
-						{ \
-							INDIRECTOR(X, desc)(name, op) \
-							break; \
-						}
+#define X(name, title, desc) \
+	template<> \
+	void Core::op<InstructionGroup::Arithmetic, GetAssociatedOp<InstructionGroup::Arithmetic>::Association, GetAssociatedOp<InstructionGroup::Arithmetic>::Association:: name>() { \
+		INDIRECTOR(X, desc)(name, title) \
+	}
 #include "iris17_arithmetic.def"
 #undef X
 #undef XNone
@@ -131,167 +175,118 @@ namespace iris17 {
 #undef XImmediate
 #undef XDenominatorImmediate
 
-#define XImmediateCond_true (current.getImmediate())
-#define XImmediateCond_false (getSource0Register())
-#define XIfThenElse_false(immediate) newAddr = cond ? INDIRECTOR(XImmediateCond, _ ## immediate) : ip + 1;
-#define XIfThenElse_true(immediate) newAddr = cond ? getSource0Register() : getSource1Register() ;
-#define XImmediateUncond_false (getDestinationRegister())
-#define XImmediateUncond_true (current.getImmediate())
-#define XConditional_false(name, ifthenelse, immediate) newAddr = INDIRECTOR(XImmediateUncond, _ ## immediate);
-#define XConditional_true(name, ifthenelse, immediate) \
-			cond = (ConditionalStyle<JumpOp:: name>::isFalseForm ? (getDestinationRegister() == 0) : (getDestinationRegister() != 0)); \
-			INDIRECTOR(XIfThenElse, _ ## ifthenelse)(immediate)
-#define XLink_true \
-			if (cond) { \
-				registerValue<ArchitectureConstants::LinkRegisterIndex>() = ip + 1; \
-			}
-#define XLink_false
+#define DefJumpOp(title) \
+	template<> \
+	void Core::op<InstructionGroup::Jump, GetAssociatedOp<InstructionGroup::Jump>::Association, GetAssociatedOp<InstructionGroup::Jump>::Association:: title>() 
 
-#define X(name, ifthenelse, conditional, iffalse, immediate, link) \
-			case ControlSignature<InstructionGroup::Jump, GetAssociatedOp<InstructionGroup::Jump>::Association, GetAssociatedOp<InstructionGroup::Jump>::Association:: name>::fullSignature: \
-					 { \
-						 word newAddr = 0; \
-						 bool cond = true; \
-						 advanceIp = false; \
-						 word ip = registerValue<ArchitectureConstants::InstructionPointerIndex>(); \
-						 INDIRECTOR(XConditional, _ ## conditional)(name, ifthenelse, immediate) \
-						 registerValue<ArchitectureConstants::InstructionPointerIndex>() = newAddr; \
-						 INDIRECTOR(XLink, _ ## link)  \
-						 break; \
-					 }
-#include "iris17_jump.def"
-#undef X
-#undef XLink_true
-#undef XLink_false
-#undef XImmediateCond_true
-#undef XImmediateCond_false
-#undef XIfThenElse_false
-#undef XIfThenElse_true
-#undef XImmediateUncond_false 
-#undef XImmediateUncond_true 
-#undef XConditional_false
-#undef XConditional_true
-#define X(name, func) \
-			case ControlSignature<InstructionGroup::Misc, GetAssociatedOp<InstructionGroup::Misc>::Association, GetAssociatedOp<InstructionGroup::Misc>::Association:: name>::fullSignature: \
-			func (); \
-			break;
-#include "iris17_misc.def"
-#undef X
-#define GPRRegister0 (getDestinationRegister())
-#define GPRRegister1 (getSource0Register())
-#define GPRRegister2 (getSource1Register())
-#define GPRImmediate1 (current.getImmediate())
-#define DataRegister0 GPRRegister0
-#define DataRegister1 GPRRegister1
-#define DataImmediate1 GPRImmediate1
-#define StackPushRegister0 (registerValue<ArchitectureConstants::StackPointerIndex>())
-#define StackPushRegister1 GPRRegister0
-#define StackPushImmediate1 GPRImmediate1
-#define StackPopRegister0 GPRRegister0
-#define StackPopRegister1 (registerValue<ArchitectureConstants::StackPointerIndex>())
-#define StackPopImmediate1 GPRImmediate1
-#define StoreRegister0  GPRRegister0
-#define StoreRegister1 GPRRegister1
-#define StoreImmediate1 GPRImmediate1
-#define CodeRegister0 GPRRegister0
-#define CodeUpperLowerRegisters1 GPRRegister1
-#define CodeUpperLowerRegisters2 GPRRegister2
+DefJumpOp(Branch) {
 
-#define XLoadCode(type, dest, src) \
-			auto result = instruction[INDIRECTOR(type, dest ## 0)]; \
-			INDIRECTOR(type, src ## 1) = (word)result; \
-			INDIRECTOR(type, src ## 2) = (word)(result >> 16);
+}
 
-#define XStoreCode(type, dest, src) \
-			instruction[INDIRECTOR(type, dest ## 0)] = ((((dword)INDIRECTOR(type, src ## 2)) << 16) | ((dword)INDIRECTOR(type, src ## 1)));
+DefJumpOp(Call) {
 
-#define XMove(type, dest, src) \
-			INDIRECTOR(type, dest ## 0) = INDIRECTOR(type, src ## 1);
-#define XSwap(type, dest, src) \
-			auto a = INDIRECTOR(type, dest ##  0); \
-			INDIRECTOR(type, dest ## 0) = INDIRECTOR(type, src ## 1); \
-			INDIRECTOR(type, src ##  1) = a;
-#define XLoad(type, dest, src) \
-			INDIRECTOR(type, dest ## 0) = data[INDIRECTOR(type, src ## 1)];
-#define XPop(type, dest, src) \
-			INDIRECTOR(type, Pop ## dest ## 0) = stack[INDIRECTOR(type, Pop ## src ## 1)]; \
-			--INDIRECTOR(type, Pop ## src ## 1);
-#define XPush(type, dest, src) \
-			++INDIRECTOR(type, Push ## dest ## 0); \
-			stack[INDIRECTOR(type, Push ## dest ## 0)] = INDIRECTOR(type, Push ## src ## 1);
-#define XStore(type, dest, src) \
-			data[INDIRECTOR(type, dest ##  0)] = INDIRECTOR(type, src ## 1);
-#define X(name, type, target, dest, src) \
-			case ControlSignature<InstructionGroup::Move, GetAssociatedOp<InstructionGroup::Move>::Association, GetAssociatedOp<InstructionGroup::Move>::Association:: name>::fullSignature: \
-					 { \
-					 INDIRECTOR(X,type)(target, dest, src) \
-			break; \
-					 }
-#include "iris17_move.def"
-#undef X
-#undef XMove
-#undef XSwap
-#undef XLoad
-#undef XStore
-#undef XPop
-#undef XPush
-#undef GPRRegister0
-#undef GPRRegister1
-#undef GPRImmediate1
-#undef DataRegister0
-#undef DataRegister1
-#undef DataImmediate1
-#undef StackPushRegister0
-#undef StackPushRegister1
-#undef StackPushImmediate1
-#undef StackPopRegister0
-#undef StackPopRegister1
-#undef StackPopImmediate1
-#undef StoreRegister0
-#undef StoreRegister1
-#undef StoreImmediate1
-#undef XStoreCode
-#undef XLoadCode
-#undef CodeRegister0
-#undef CodeUpperLowerRegisters1
-#undef CodeUpperLowerRegisters2
+}
 
-			default:
-				std::stringstream str;
-				str << "Illegal instruction " << current.getGroup() << " " << current.getOperation();
-				execute = false;
-				throw iris::Problem(str.str());
-		}
-	}
+DefJumpOp(IndirectBranch) {
 
+}
 
-	void Core::systemCall() {
-		switch(static_cast<SystemCalls>(current.getDestination())) {
+DefJumpOp(IndirectCall) {
+
+}
+
+DefJumpOp(ConditionalBranch) {
+
+}
+
+DefJumpOp(ConditionalIndirectBranch) {
+
+}
+
+DefJumpOp(IfThenElse) {
+
+}
+
+DefJumpOp(IfThenElseLink) {
+
+}
+	template<>
+	void Core::op<InstructionGroup::Misc, GetAssociatedOp<InstructionGroup::Misc>::Association, GetAssociatedOp<InstructionGroup::Misc>::Association::SystemCall>() {
+		switch(static_cast<SystemCalls>(current.getArg0())) {
 			case SystemCalls::Terminate:
 				execute = false;
 				advanceIp = false;
 				break;
 			case SystemCalls::PutC:
 				// read register 0 and register 1
-				std::cout.put((char)getSource0Register());
+				std::cout.put(static_cast<char>(getArg1Register()));
 				break;
 			case SystemCalls::GetC:
 				byte value;
 				std::cin >> std::noskipws >> value;
-				getSource0Register() = (word)value;
+				getArg1Register() = static_cast<word>(value);
 				break;
 			default:
-				std::cerr << "Illegal system call " << current.getDestination() << std::endl;
+				std::stringstream ss;
+				ss << "Illegal system call " << current.getArg0();
 				execute = false;
 				advanceIp = false;
-				break;
+				throw iris::Problem(ss.str());
 		}
 	}
+
+	void Core::dispatch() {
+		switch(current.getControl()) {
+#define X(type, compare, mod) \
+			case ControlSignature<InstructionGroup::Compare, GetAssociatedOp<InstructionGroup::Compare>::Association, GetAssociatedOp<InstructionGroup::Compare>::Association:: type>::fullSignature: \
+			op<InstructionGroup::Compare, GetAssociatedOp<InstructionGroup::Compare>::Association, GetAssociatedOp<InstructionGroup::Compare>::Association:: type>(); \
+			break;
+				
+#define Y(type, compare, mod) X(type, compare, mod)
+#include "iris17_compare.def"
+#undef Y
+#undef X
+
+#define X(name, __, ____) \
+			case ControlSignature<InstructionGroup::Arithmetic, GetAssociatedOp<InstructionGroup::Arithmetic>::Association, GetAssociatedOp<InstructionGroup::Arithmetic>::Association:: name>::fullSignature: \
+			op<InstructionGroup::Arithmetic, GetAssociatedOp<InstructionGroup::Arithmetic>::Association, GetAssociatedOp<InstructionGroup::Arithmetic>::Association:: name>(); \
+			break;
+#include "iris17_arithmetic.def"
+#undef X
+
+#define X(title) \
+			case ControlSignature<InstructionGroup::Jump, GetAssociatedOp<InstructionGroup::Jump>::Association, GetAssociatedOp<InstructionGroup::Jump>::Association:: title>::fullSignature: \
+			op<InstructionGroup::Jump, GetAssociatedOp<InstructionGroup::Jump>::Association, GetAssociatedOp<InstructionGroup::Jump>::Association:: title>(); \
+			break;
+#include "iris17_jump.def"
+#undef X
+#define X(title, func) \
+			case ControlSignature<InstructionGroup::Misc, GetAssociatedOp<InstructionGroup::Misc>::Association, GetAssociatedOp<InstructionGroup::Misc>::Association:: title>::fullSignature: \
+			op<InstructionGroup::Misc, GetAssociatedOp<InstructionGroup::Misc>::Association, GetAssociatedOp<InstructionGroup::Misc>::Association:: title>(); \
+			break;
+#include "iris17_misc.def"
+#undef X
+
+#define X(name) \
+			case ControlSignature<InstructionGroup::Move, GetAssociatedOp<InstructionGroup::Move>::Association, GetAssociatedOp<InstructionGroup::Move>::Association:: name>::fullSignature: op<InstructionGroup::Move, GetAssociatedOp<InstructionGroup::Move>::Association, GetAssociatedOp<InstructionGroup::Move>::Association:: name>(); break;
+#include "iris17_move.def"
+#undef X
+
+			default:
+				std::stringstream str;
+				str << "Illegal instruction " << current.getControl();
+				execute = false;
+				throw iris::Problem(str.str());
+		}
+	}
+	
+
 	enum class Segment  {
 		Code, 
 		Data,
 		Count,
 	};
+
 	void Core::link(std::istream& input) {
 		dword result = 0;
 		word result0 = 0;
@@ -316,7 +311,7 @@ namespace iris17 {
 			}
 			switch(target) {
 				case Segment::Code:
-					result = iris17::encodeDword(buf[4], buf[5], buf[6], buf[7]);
+					result = iris17::encodeWord(buf[4], buf[5]);
 					if (debugEnabled()) {
 						std::cerr << " code result: 0x" << std::hex << result << std::endl;
 					}
@@ -337,20 +332,14 @@ namespace iris17 {
 			}
 		}
 	}
-	word& Core::getDestinationRegister() {
-		return registerValue(current.getDestination());
+	byte Core::getControl() {
+		return current.getControl();
 	}
-	word& Core::getSource0Register() {
-		return registerValue(current.getSource0());
+	word& Core::getArg0Register() {
+		return registerValue(current.getArg0());
 	}
-	word& Core::getSource1Register() {
-		return registerValue(current.getSource1());
-	}
-	word Core::getHalfImmediate() {
-		return current.getHalfImmediate();
-	}
-	word Core::getImmediate() {
-		return current.getImmediate();
+	word& Core::getArg1Register() {
+		return registerValue(current.getArg1());
 	}
 	word& Core::registerValue(byte index) {
 		return gpr[index];

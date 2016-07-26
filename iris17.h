@@ -15,9 +15,12 @@ namespace iris17 {
 	enum ArchitectureConstants  {
 		RegisterCount = 16,
 		AddressMax = 65535,
-		InstructionPointerIndex = RegisterCount - 1,
-		LinkRegisterIndex = RegisterCount - 2,
-		StackPointerIndex = RegisterCount - 3,
+		InstructionPointer = RegisterCount - 1,
+		LinkRegister = RegisterCount - 2,
+		StackPointer = RegisterCount - 3,
+		ConditionRegister = RegisterCount - 4,
+		AddressRegister = RegisterCount - 5,
+		DataRegister = RegisterCount - 6,
 		MaxGroups = 0x7,
 		MaxOperations = 0x1F,
 	};
@@ -44,7 +47,7 @@ namespace iris17 {
 	static_assert((byte)MiscOp::Count < ((byte)ArchitectureConstants::MaxOperations), "too many Misc operations defined");
 
 	enum class JumpOp : byte {
-#define X(name, ifthenelse, conditional, iffalse, immediate, link) name,
+#define X(name) name,
 #include "iris17_jump.def"
 #undef X
 		Count
@@ -58,7 +61,7 @@ namespace iris17 {
 		Count,
 	};
 	enum class MoveOp : byte {
-#define X(name, type, target, dest, src) name,
+#define X(name) name,
 #include "iris17_move.def"
 #undef X
 		Count,
@@ -129,12 +132,15 @@ namespace iris17 {
 					throw iris::Problem(msg.str());
 			}
 		}
-		inline word& getDestinationRegister();
-		inline word& getSource0Register();
-		inline word& getSource1Register();
-		inline word getHalfImmediate();
-		inline word getImmediate();
+		inline byte getControl();
+		inline word& getArg0Register();
+		inline word& getArg1Register();
 		inline word& registerValue(byte index);
+
+		template<InstructionGroup group, typename T, T operation>
+		void op() {
+			throw iris::Problem("Unimplemented function!");
+		}
 		private:
 			DecodedInstruction current;
 			bool execute = true,
