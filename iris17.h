@@ -8,18 +8,12 @@
 namespace iris17 {
 	typedef uint16_t word;
 	typedef uint32_t dword;
-	typedef dword raw_instruction;
+	typedef word raw_instruction;
 	typedef word immediate;
-	dword encodeDword(byte a, byte b, byte c, byte d);
-	word encodeWord(byte a, byte b);
-	enum class Register : word {
-#define X(index) r ## index ,
-#include "iris17_registers.def"
-#undef X
-		 Count,
-	};
+	inline dword encodeDword(byte a, byte b, byte c, byte d);
+	inline word encodeWord(byte a, byte b);
 	enum ArchitectureConstants  {
-		RegisterCount = static_cast<word>(Register::Count),
+		RegisterCount = 16,
 		AddressMax = 65535,
 		InstructionPointerIndex = RegisterCount - 1,
 		LinkRegisterIndex = RegisterCount - 2,
@@ -27,8 +21,6 @@ namespace iris17 {
 		MaxGroups = 0x7,
 		MaxOperations = 0x1F,
 	};
-	constexpr Register toRegister(byte value) { return static_cast<Register>(value); }
-	constexpr byte fromRegister(Register value) { return static_cast<byte>(value); }
 	enum class InstructionGroup : byte {
 #define X(title, _) title,
 #include "iris17_groups.def"
@@ -85,7 +77,7 @@ namespace iris17 {
 		public:
 			DecodedInstruction();
 			void decode(raw_instruction input);
-#define X(title, mask, shift, type, is_register, post) type get ## title () const { return _ ## post ; }
+#define X(title, mask, shift, type, is_register, post) inline type get ## title () const { return _ ## post ; }
 #include "iris17_instruction.def"
 #undef X
 		private:
@@ -93,20 +85,21 @@ namespace iris17 {
 #include "iris17_instruction.def"
 #undef X
 	};
-	template<byte index>
-	struct RegisterInfo {
-		static constexpr byte value = index;
-		static constexpr Register registerVersion = toRegister(index);
+	template<InstructionGroup group>
+	struct GetAssociatedOp { };
+#define X(title, _) \
+	template<> \
+	struct GetAssociatedOp<InstructionGroup :: title > { \
+		typedef title ## Op Association; \
 	};
-#define X(index) template struct RegisterInfo<index>;
-#include "iris17_registers.def"
+#include "iris17_groups.def"
 #undef X
-	template<dword signature>
-	struct RegisterSignature {
-		static constexpr dword fullSignature = signature;
-		static RegisterInfo<static_cast<byte>(signature)> destination;
-		static RegisterInfo<static_cast<byte>(signature >> 8)> source0;
-		static RegisterInfo<static_cast<byte>(signature >> 16)> source1;
+
+	template<InstructionGroup group,typename T, T op>
+	struct ControlSignature {
+		static constexpr byte groupValue = static_cast<byte>(group);
+		static constexpr byte opValue = static_cast<byte>(op);
+		static constexpr byte fullSignature = (opValue << 3) | groupValue;
 	};
 	class Core : public iris::Core {
 		public:
@@ -121,16 +114,13 @@ namespace iris17 {
 			void setDataMemory(word address, word value);
 		private:
 			void dispatch();
-#define X(_, op) void op();
-#include "iris17_groups.def"
-#undef X
 #define X(title, func) void func ();
 #include "iris17_misc.def"
 #undef X
 		template<byte index>
 		word& registerValue() {
 			switch(index) {
-#define X(index) case index : return r ## index;
+#define X(index) case index : return gpr[index];
 #include "iris17_registers.def"
 #undef X
 				default:
@@ -149,11 +139,9 @@ namespace iris17 {
 			DecodedInstruction current;
 			bool execute = true,
 				 advanceIp = true;
-#define X(index) word r ## index = 0;
-#include "iris17_registers.def"
-#undef X
+			word gpr[ArchitectureConstants::RegisterCount] = { 0 };
 			word data[ArchitectureConstants::AddressMax] = { 0 };
-			dword instruction[ArchitectureConstants::AddressMax] = { 0 };
+			word instruction[ArchitectureConstants::AddressMax] = { 0 };
 			word stack[ArchitectureConstants::AddressMax] = { 0 };
 	};
 
