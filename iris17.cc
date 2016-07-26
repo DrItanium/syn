@@ -4,7 +4,12 @@
 #include "Problem.h"
 
 namespace iris17 {
-
+/*
+ * Iris17 is a variable length encoding 16 bit architecture. 
+ * It has a 24 bit memory space across 256 16-bit sections. The variable length
+ * encoding comes from different register choices. The reserved registers are
+ * used to compress the encoding. 
+ */
 	Core* newCore() {
 		return new Core();
 	}
@@ -22,15 +27,11 @@ namespace iris17 {
 	}
 
 	Core::Core() { }
-	void Core::setInstructionMemory(word address, dword value) {
-		instruction[address] = value;
-	}
-	void Core::setDataMemory(word address, word value) {
-		data[address] = value;
-	}
+
 	void Core::initialize() {
 
 	}
+
 	void Core::shutdown() {
 
 	}
@@ -120,11 +121,8 @@ namespace iris17 {
 	}
 
 	DefMoveOp(Load) {
-		registerValue<ArchitectureConstants::DataRegister>() = data[registerValue<ArchitectureConstants::AddressRegister>()];
-	}
-
-	DefMoveOp(Store) {
-		data[registerValue<ArchitectureConstants::AddressRegister>()] = registerValue<ArchitectureConstants::DataRegister>();
+		byte segment = registerValue<ArchitectureConstants::SegmentRegister>();
+		registerValue<ArchitectureConstants::DataRegister>() = memory[segment][registerValue<ArchitectureConstants::AddressRegister>()];
 	}
 
 	DefMoveOp(Push) {
@@ -133,18 +131,10 @@ namespace iris17 {
 	}
 
 	DefMoveOp(Pop) {
-		getArg0Register() = stack[registerValue<ArchitectureConstants::StackPointer>()];
+		getArg0Register() = memory[registerValue<ArchitectureConstants::StackPointer>()][registerValue<ArchitectureConstants::StackPointer>()];
 		--registerValue<ArchitectureConstants::StackPointer>();
 	}
 
-	DefMoveOp(LoadCode) {
-		registerValue<ArchitectureConstants::DataRegister>() = instruction[registerValue<ArchitectureConstants::AddressRegister>()];
-	}
-
-	DefMoveOp(StoreCode) {
-		instruction[registerValue<ArchitectureConstants::AddressRegister>()] = registerValue<ArchitectureConstants::DataRegister>();
-	}
-	
 #define XNone(n, op) getArg0Register() = ( getArg0Register() op  getArg1Register());
 #define XImmediate(n, op) getArg0Register() = (getArg0Register() op static_cast<word>(current.getArg1())); 
 #define XUnary(n, op) getArg0Register() = (op getArg0Register());
@@ -180,11 +170,17 @@ namespace iris17 {
 	void Core::op<InstructionGroup::Jump, GetAssociatedOp<InstructionGroup::Jump>::Association, GetAssociatedOp<InstructionGroup::Jump>::Association:: title>() 
 
 DefJumpOp(Branch) {
-
+	advanceIp = false;
+	++registerValue<ArchitectureConstants::InstructionPointer>();
+	// need to read the next "instruction"
+	registerValue<ArchitectureConstants::InstructionPointer>() = instruction[registerValue<ArchitectureConstants::InstructionPointer>()];
 }
 
 DefJumpOp(Call) {
+	advanceIp = false;
+	++registerValue<ArchitectureConstants::InstructionPointer>();
 
+	registerValue<ArchitectureConstants::InstructionPointer>
 }
 
 DefJumpOp(IndirectBranch) {

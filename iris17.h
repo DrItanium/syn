@@ -13,17 +13,23 @@ namespace iris17 {
 	inline dword encodeDword(byte a, byte b, byte c, byte d);
 	inline word encodeWord(byte a, byte b);
 	enum ArchitectureConstants  {
-		RegisterCount = 16,
+		RegisterCount = 64,
 		AddressMax = 65535,
+		SegmentCount = 256,
 		InstructionPointer = RegisterCount - 1,
 		LinkRegister = RegisterCount - 2,
 		StackPointer = RegisterCount - 3,
 		ConditionRegister = RegisterCount - 4,
 		AddressRegister = RegisterCount - 5,
 		DataRegister = RegisterCount - 6,
+		DataSegmentRegister = RegisterCount - 7,
+		CodeSegmentRegister = RegisterCount - 8,
+		StackSegmentRegister = RegisterCount - 9,
+
 		MaxGroups = 0x7,
 		MaxOperations = 0x1F,
 	};
+	
 	enum class InstructionGroup : byte {
 #define X(title, _) title,
 #include "iris17_groups.def"
@@ -107,14 +113,12 @@ namespace iris17 {
 	class Core : public iris::Core {
 		public:
 			Core();
-			virtual void initialize();
-			virtual void installprogram(std::istream& stream);
-			virtual void shutdown();
-			virtual void dump(std::ostream& stream);
-			virtual void run();
-			virtual void link(std::istream& stream);
-			void setInstructionMemory(word address, dword value);
-			void setDataMemory(word address, word value);
+			virtual void initialize() override;
+			virtual void installprogram(std::istream& stream) override;
+			virtual void shutdown() override;
+			virtual void dump(std::ostream& stream) override;
+			virtual void run() override;
+			virtual void link(std::istream& stream) override;
 		private:
 			void dispatch();
 #define X(title, func) void func ();
@@ -146,9 +150,7 @@ namespace iris17 {
 			bool execute = true,
 				 advanceIp = true;
 			word gpr[ArchitectureConstants::RegisterCount] = { 0 };
-			word data[ArchitectureConstants::AddressMax] = { 0 };
-			word instruction[ArchitectureConstants::AddressMax] = { 0 };
-			word stack[ArchitectureConstants::AddressMax] = { 0 };
+			word memory[ArchitectureConstants::SegmentCount][ArchitectureConstants::AddressMax] = { { 0 }, };
 	};
 
 	Core* newCore();
