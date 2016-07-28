@@ -167,13 +167,20 @@ namespace iris17 {
 	void Core::op<InstructionGroup::Arithmetic, GetAssociatedOp<InstructionGroup::Arithmetic>::Association, GetAssociatedOp<InstructionGroup::Arithmetic>::Association:: name>() { \
 		INDIRECTOR(X, desc)(name, title) \
 	}
+#define Y(name)
 #include "iris17_arithmetic.def"
+#undef Y
 #undef X
 #undef XNone
 #undef XDenominator
 #undef XUnary
 #undef XImmediate
 #undef XDenominatorImmediate
+#define DefArithmeticOp(Increment) \
+    template<> \
+    void Core::op<InstructionGroup::Arithmetic, GetAssociatedOp<InstructionGroup::Arith
+
+}
 
 #define DefJumpOp(title) \
 	template<> \
