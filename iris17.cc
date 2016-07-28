@@ -5,10 +5,10 @@
 
 namespace iris17 {
 /*
- * Iris17 is a variable length encoding 16 bit architecture. 
+ * Iris17 is a variable length encoding 16 bit architecture.
  * It has a 24 bit memory space across 256 16-bit sections. The variable length
  * encoding comes from different register choices. The reserved registers are
- * used to compress the encoding. 
+ * used to compress the encoding.
  */
 	Core* newCore() {
 		return new Core();
@@ -75,7 +75,7 @@ namespace iris17 {
 			dispatch();
 			if (advanceIp) {
 				++registerValue<ArchitectureConstants::InstructionPointer>();
-			} 
+			}
 		}
 	}
 #define OpNone =
@@ -103,21 +103,31 @@ namespace iris17 {
 	void Core::op<InstructionGroup::Move, GetAssociatedOp<InstructionGroup::Move>::Association, GetAssociatedOp<InstructionGroup::Move>::Association:: title>()
 
 	DefMoveOp(Move)  {
-		getArg0Register() = getArg1Register();
+        ++registerValue<ArchitectureConstants::InstructionPointer>();
+        DecodedInstruction next;
+        next.decode(instruction[registerValue<ArchitectureConstants::InstructionPointer>()]);
+        registerValue(current.getEmbeddedArg()) = registerValue(next.getSpecificArg0());
 	}
 
-	DefMoveOp(SetLower) {
-		registerValue<ArchitectureConstants::AddressRegister>() = iris17::encodeWord(current.getImmediate(), static_cast<byte>(registerValue<ArchitectureConstants::AddressRegister>() >> 8));
+    DefMoveOp(SetFull) {
+        ++registerValue<ArchitectureConstants::InstructionPointer>();
+        registerValue(current.getEmbeddedArg()) = instruction[registerValue<ArchitectureConstants::InstructionPointer>()];
+    }
+	DefMoveOp(SetLower_AddressRegister) {
+		registerValue<ArchitectureConstants::AddressRegister>() = iris17::encodeWord(current.getEmbeddedImmediate(), static_cast<byte>(registerValue<ArchitectureConstants::AddressRegister>() >> 8));
 	}
 
-	DefMoveOp(SetUpper) {
-		registerValue<ArchitectureConstants::AddressRegister>() = iris17::encodeWord(static_cast<byte>(registerValue<ArchitectureConstants::AddressRegister>()), current.getImmediate());
+	DefMoveOp(SetUpper_AddressRegister) {
+		registerValue<ArchitectureConstants::AddressRegister>() = iris17::encodeWord(static_cast<byte>(registerValue<ArchitectureConstants::AddressRegister>()), current.getEmbeddedImmediate());
 	}
 
 	DefMoveOp(Swap) {
-		word a = getArg0Register();
-		getArg0Register() = getArg1Register();
-		getArg1Register() = a;
+        ++registerValue<ArchitectureConstants::InstructionPointer>();
+        DecodedInstruction next;
+        next.decode(instruction[registerValue<ArchitectureConstants::InstructionPointer>()]);
+        word a = registerValue(current.getEmbeddedArg());
+        registerValue(current.getEmbeddedArg()) = registerValue(next.getSpecificArg0());
+        registerValue(next.getSpecificArg0()) = a;
 	}
 
 	DefMoveOp(Load) {
@@ -136,7 +146,7 @@ namespace iris17 {
 	}
 
 #define XNone(n, op) getArg0Register() = ( getArg0Register() op  getArg1Register());
-#define XImmediate(n, op) getArg0Register() = (getArg0Register() op static_cast<word>(current.getArg1())); 
+#define XImmediate(n, op) getArg0Register() = (getArg0Register() op static_cast<word>(current.getArg1()));
 #define XUnary(n, op) getArg0Register() = (op getArg0Register());
 #define XDenominator(n, op) \
 			if (getArg1Register() == 0) { \
@@ -167,7 +177,7 @@ namespace iris17 {
 
 #define DefJumpOp(title) \
 	template<> \
-	void Core::op<InstructionGroup::Jump, GetAssociatedOp<InstructionGroup::Jump>::Association, GetAssociatedOp<InstructionGroup::Jump>::Association:: title>() 
+	void Core::op<InstructionGroup::Jump, GetAssociatedOp<InstructionGroup::Jump>::Association, GetAssociatedOp<InstructionGroup::Jump>::Association:: title>()
 
 DefJumpOp(Branch) {
 	advanceIp = false;
@@ -178,16 +188,18 @@ DefJumpOp(Branch) {
 
 DefJumpOp(Call) {
 	advanceIp = false;
+    // read the next word
 	++registerValue<ArchitectureConstants::InstructionPointer>();
-
-	registerValue<ArchitectureConstants::InstructionPointer>
+	registerValue<ArchitectureConstants::InstructionPointer> = instruction[registerValue<ArchitectureConstants::InstructionPointer>()];
 }
 
 DefJumpOp(IndirectBranch) {
-
+    advanceIp = false;
+    registerValue<ArchitectureConstants::InstructionPointer> = registerValue(current.getArg0());
 }
 
 DefJumpOp(IndirectCall) {
+    advanceIp = false;
 
 }
 
@@ -237,7 +249,7 @@ DefJumpOp(IfThenElseLink) {
 			case ControlSignature<InstructionGroup::Compare, GetAssociatedOp<InstructionGroup::Compare>::Association, GetAssociatedOp<InstructionGroup::Compare>::Association:: type>::fullSignature: \
 			op<InstructionGroup::Compare, GetAssociatedOp<InstructionGroup::Compare>::Association, GetAssociatedOp<InstructionGroup::Compare>::Association:: type>(); \
 			break;
-				
+
 #define Y(type, compare, mod) X(type, compare, mod)
 #include "iris17_compare.def"
 #undef Y
@@ -275,10 +287,10 @@ DefJumpOp(IfThenElseLink) {
 				throw iris::Problem(str.str());
 		}
 	}
-	
+
 
 	enum class Segment  {
-		Code, 
+		Code,
 		Data,
 		Count,
 	};

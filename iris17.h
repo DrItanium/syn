@@ -29,7 +29,7 @@ namespace iris17 {
 		MaxGroups = 0x7,
 		MaxOperations = 0x1F,
 	};
-	
+
 	enum class InstructionGroup : byte {
 #define X(title, _) title,
 #include "iris17_groups.def"
@@ -45,7 +45,7 @@ namespace iris17 {
 	};
 	static_assert((byte)ArithmeticOp::Count < ((byte)ArchitectureConstants::MaxOperations), "too many Arithmetic operations defined");
 	enum class MiscOp : byte {
-#define X(title, func) title, 
+#define X(title, func) title,
 #include "iris17_misc.def"
 #undef X
 		Count
