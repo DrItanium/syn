@@ -21,7 +21,7 @@ namespace iris17 {
 		StackPointer = RegisterCount - 3,
 		ConditionRegister = RegisterCount - 4,
 		AddressRegister = RegisterCount - 5,
-		DataRegister = RegisterCount - 6,
+		ValueRegister = RegisterCount - 6,
 		DataSegmentRegister = RegisterCount - 7,
 		CodeSegmentRegister = RegisterCount - 8,
 		StackSegmentRegister = RegisterCount - 9,
@@ -139,14 +139,27 @@ namespace iris17 {
 			}
 		}
 		inline byte getControl();
-		inline word& getArg0Register();
-		inline word& getArg1Register();
 		inline word& registerValue(byte index);
 
 		template<InstructionGroup group, typename T, T operation>
 		void op() {
 			throw iris::Problem("Unimplemented function!");
 		}
+		inline word* getStackSegment();
+		inline word* getCodeSegment();
+		inline word* getDataSegment();
+		inline word& getInstructionPointer();
+		inline word& getStackPointer();
+		inline word& getConditionRegister();
+		inline word& getLinkRegister();
+		inline word& getCodeSegmentRegister();
+		inline word& getStackSegmentRegister();
+		inline word& getDataSegmentRegister();
+		inline word& getAddressRegister();
+		inline word& getValueRegister();
+		inline word getCurrentCodeWord();
+		inline word getTopOfStack();
+
 		private:
 			DecodedInstruction current;
 			bool execute = true,

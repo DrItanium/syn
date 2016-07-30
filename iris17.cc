@@ -71,10 +71,10 @@ namespace iris17 {
 			if (!advanceIp) {
 				advanceIp = true;
 			}
-			current.decode(memory[registerValue<ArchitectureConstants::CodeSegmentRegister>()][registerValue<ArchitectureConstants::InstructionPointer>()]);
+			current.decode(getCurrentCodeWord());
 			dispatch();
 			if (advanceIp) {
-				++registerValue<ArchitectureConstants::InstructionPointer>();
+				++getInstructionPointer();
 			}
 		}
 	}
@@ -85,11 +85,11 @@ namespace iris17 {
 #define DefCompareOp(type, compare, mod, action) \
 	template<> \
 	void Core::op<InstructionGroup::Compare, GetAssociatedOp<InstructionGroup::Compare>::Association, GetAssociatedOp<InstructionGroup::Compare>::Association:: type>() { \
-		++registerValue<ArchitectureConstants::InstructionPointer>(); \
-		auto rest = memory[registerValue<ArchitectureConstants::CodeSegmentRegister>()][registerValue<ArchitectureConstants::InstructionPointer>()]; \
+		++getInstructionPointer(); \
+		auto rest = getCurrentCodeWord(); \
 		DecodedInstruction second;\
 		second.decode(rest); \
-		registerValue<ConditionRegister>() INDIRECTOR(Op, mod) (registerValue(current.getEmbeddedArg()) compare action ); \
+		getConditionRegister() INDIRECTOR(Op, mod) (registerValue(current.getEmbeddedArg()) compare action ); \
 	}
 #define X(op, compare, mod) DefCompareOp(op, compare, mod, (second.getSpecificArg0()))
 #define Y(op, compare, mod) DefCompareOp(op, compare, mod, (rest))
@@ -107,64 +107,65 @@ namespace iris17 {
 	void Core::op<InstructionGroup::Move, GetAssociatedOp<InstructionGroup::Move>::Association, GetAssociatedOp<InstructionGroup::Move>::Association:: title>()
 
 	DefMoveOp(Move)  {
-        ++registerValue<ArchitectureConstants::InstructionPointer>();
-		auto instruction = memory[registerValue<ArchitectureConstants::CodeSegmentRegister>()];
+		++getInstructionPointer();
         DecodedInstruction next;
-        next.decode(instruction[registerValue<ArchitectureConstants::InstructionPointer>()]);
+        next.decode(getCodeSegment()[getInstructionPointer()]);
         registerValue(current.getEmbeddedArg()) = registerValue(next.getSpecificArg0());
 	}
 
     DefMoveOp(SetFull) {
-		auto instruction = memory[registerValue<ArchitectureConstants::CodeSegmentRegister>()];
-        ++registerValue<ArchitectureConstants::InstructionPointer>();
-        registerValue(current.getEmbeddedArg()) = instruction[registerValue<ArchitectureConstants::InstructionPointer>()];
+        ++getInstructionPointer();
+        registerValue(current.getEmbeddedArg()) = getCodeSegment()[getInstructionPointer()];
     }
 	DefMoveOp(SetLower_AddressRegister) {
-		registerValue<ArchitectureConstants::AddressRegister>() = iris17::encodeWord(current.getEmbeddedImmediate(), static_cast<byte>(registerValue<ArchitectureConstants::AddressRegister>() >> 8));
+		getAddressRegister() = iris17::encodeWord(current.getEmbeddedImmediate(), static_cast<byte>(getAddressRegister() >> 8));
 	}
 
 	DefMoveOp(SetUpper_AddressRegister) {
-		registerValue<ArchitectureConstants::AddressRegister>() = iris17::encodeWord(static_cast<byte>(registerValue<ArchitectureConstants::AddressRegister>()), current.getEmbeddedImmediate());
+		getAddressRegister() = iris17::encodeWord(static_cast<byte>(getAddressRegister()), current.getEmbeddedImmediate());
 	}
 
 	DefMoveOp(Swap) {
-		auto instruction = memory[registerValue<ArchitectureConstants::CodeSegmentRegister>()];
-        ++registerValue<ArchitectureConstants::InstructionPointer>();
+		auto instruction = getCodeSegment();
+		++getInstructionPointer();
         DecodedInstruction next;
-        next.decode(instruction[registerValue<ArchitectureConstants::InstructionPointer>()]);
+        next.decode(instruction[getInstructionPointer()]);
         word a = registerValue(current.getEmbeddedArg());
         registerValue(current.getEmbeddedArg()) = registerValue(next.getSpecificArg0());
         registerValue(next.getSpecificArg0()) = a;
 	}
 
 	DefMoveOp(Load) {
-		registerValue<ArchitectureConstants::DataRegister>() = memory[registerValue<ArchitectureConstants::DataSegmentRegister>()][registerValue<ArchitectureConstants::AddressRegister>()];
+		getValueRegister() = getDataSegment()[getAddressRegister()];
+	}
+
+	DefMoveOp(Store) {
+		getDataSegment()[getAddressRegister()] = getValueRegister();
 	}
 
 	DefMoveOp(Push) {
-		word& stackPointer = registerValue<ArchitectureConstants::StackPointer>();
+		word& stackPointer = getStackPointer();
 		++stackPointer;
-		auto stackSeg = registerValue<ArchitectureConstants::StackSegmentRegister>();
-		memory[stackSeg][stackPointer] = registerValue(current.getEmbeddedArg());
+		getStackSegment()[stackPointer] = registerValue(current.getEmbeddedArg());
 	}
 
 	DefMoveOp(Pop) {
-		getArg0Register() = memory[registerValue<ArchitectureConstants::StackPointer>()][registerValue<ArchitectureConstants::StackPointer>()];
-		--registerValue<ArchitectureConstants::StackPointer>();
+		registerValue(current.getEmbeddedArg()) = getStackSegment()[getStackPointer()];
+		--getStackPointer();
 	}
 
-#define XNone(n, op) getArg0Register() = ( getArg0Register() op  getArg1Register());
-#define XImmediate(n, op) getArg0Register() = (getArg0Register() op static_cast<word>(current.getArg1()));
-#define XUnary(n, op) getArg0Register() = (op getArg0Register());
+#define XNone(n, op) registerValue(current.getEmbeddedArg()) = ( src0 op  registerValue(next.getSpecificArg1()));
+#define XImmediate(n, op) registerValue(current.getEmbeddedArg()) = (src0 op static_cast<word>(next.getSpecificArg1()));
+#define XUnary(n, op) registerValue(current.getEmbeddedArg()) = (op src0);
 #define XDenominator(n, op) \
-			if (getArg1Register() == 0) { \
+			if (registerValue(next.getSpecificArg1()) == 0) { \
 				throw iris::Problem("denominator for operation " #n " is zero!"); \
 				execute = false; \
 			} else { \
 				XNone(n, op) \
 			}
 #define XDenominatorImmediate(n, op) \
-			if (getArg1Register() == 0) { \
+			if (registerValue(next.getSpecificArg1()) == 0) { \
 				execute = false; \
 				throw iris::Problem("denominator for operation " #n " is zero!"); \
 			} else { \
@@ -173,6 +174,10 @@ namespace iris17 {
 #define X(name, title, desc) \
 	template<> \
 	void Core::op<InstructionGroup::Arithmetic, GetAssociatedOp<InstructionGroup::Arithmetic>::Association, GetAssociatedOp<InstructionGroup::Arithmetic>::Association:: name>() { \
+		++getInstructionPointer(); \
+		DecodedInstruction next; \
+		next.decode(getCurrentCodeWord()); \
+		auto src0 = registerValue(next.getSpecificArg0()); \
 		INDIRECTOR(X, desc)(name, title) \
 	}
 #define Y(name) 
@@ -184,10 +189,17 @@ namespace iris17 {
 #undef XUnary
 #undef XImmediate
 #undef XDenominatorImmediate
-#define DefArithmeticOp(Increment) \
-    template<> \
-    void Core::op<InstructionGroup::Arithmetic, GetAssociatedOp<InstructionGroup::Arith
 
+#define DefArithmeticOp(name) \
+	template<> \
+	void Core::op<InstructionGroup::Arithmetic, GetAssociatedOp<InstructionGroup::Arithmetic>::Association, GetAssociatedOp<InstructionGroup::Arithmetic>::Association:: name>()
+
+DefArithmeticOp(Increment) {
+	registerValue(current.getEmbeddedArg()) = registerValue(current.getEmbeddedArg()) + 1;
+}
+
+DefArithmeticOp(Decrement) {
+	registerValue(current.getEmbeddedArg()) = registerValue(current.getEmbeddedArg()) - 1;
 }
 
 #define DefJumpOp(title) \
@@ -196,26 +208,31 @@ namespace iris17 {
 
 DefJumpOp(Branch) {
 	advanceIp = false;
-	++registerValue<ArchitectureConstants::InstructionPointer>();
+	++getInstructionPointer();
 	// need to read the next "instruction"
-	registerValue<ArchitectureConstants::InstructionPointer>() = instruction[registerValue<ArchitectureConstants::InstructionPointer>()];
+	getInstructionPointer() = getCurrentCodeWord();
 }
 
 DefJumpOp(Call) {
 	advanceIp = false;
     // read the next word
-	++registerValue<ArchitectureConstants::InstructionPointer>();
-	registerValue<ArchitectureConstants::InstructionPointer> = instruction[registerValue<ArchitectureConstants::InstructionPointer>()];
+	//
+	++getInstructionPointer();
+	auto ip = getInstructionPointer();
+	getInstructionPointer() = getCurrentCodeWord();
+	getLinkRegister() = ip + 1;
 }
 
 DefJumpOp(IndirectBranch) {
     advanceIp = false;
-    registerValue<ArchitectureConstants::InstructionPointer> = registerValue(current.getArg0());
+	getInstructionPointer() = registerValue(current.getEmbeddedArg());
 }
 
 DefJumpOp(IndirectCall) {
     advanceIp = false;
-
+	auto ip = getInstructionPointer() + 1;
+	getInstructionPointer() = registerValue(current.getEmbeddedArg());
+	getLinkRegister() = ip;
 }
 
 DefJumpOp(ConditionalBranch) {
@@ -235,23 +252,26 @@ DefJumpOp(IfThenElseLink) {
 }
 	template<>
 	void Core::op<InstructionGroup::Misc, GetAssociatedOp<InstructionGroup::Misc>::Association, GetAssociatedOp<InstructionGroup::Misc>::Association::SystemCall>() {
-		switch(static_cast<SystemCalls>(current.getArg0())) {
+		++getInstructionPointer();
+		DecodedInstruction next;
+		next.decode(getCurrentCodeWord());
+		switch(static_cast<SystemCalls>(current.getEmbeddedImmediate())) {
 			case SystemCalls::Terminate:
 				execute = false;
 				advanceIp = false;
 				break;
 			case SystemCalls::PutC:
 				// read register 0 and register 1
-				std::cout.put(static_cast<char>(getArg1Register()));
+				std::cout.put(static_cast<char>(registerValue(next.getSpecificArg0())));
 				break;
 			case SystemCalls::GetC:
 				byte value;
 				std::cin >> std::noskipws >> value;
-				getArg1Register() = static_cast<word>(value);
+				registerValue(next.getSpecificArg1()) = static_cast<word>(value);
 				break;
 			default:
 				std::stringstream ss;
-				ss << "Illegal system call " << current.getArg0();
+				ss << "Illegal system call " << current.getEmbeddedImmediate();
 				execute = false;
 				advanceIp = false;
 				throw iris::Problem(ss.str());
@@ -270,10 +290,11 @@ DefJumpOp(IfThenElseLink) {
 #undef Y
 #undef X
 
-#define X(name, __, ____) \
+#define Y(name) \
 			case ControlSignature<InstructionGroup::Arithmetic, GetAssociatedOp<InstructionGroup::Arithmetic>::Association, GetAssociatedOp<InstructionGroup::Arithmetic>::Association:: name>::fullSignature: \
 			op<InstructionGroup::Arithmetic, GetAssociatedOp<InstructionGroup::Arithmetic>::Association, GetAssociatedOp<InstructionGroup::Arithmetic>::Association:: name>(); \
 			break;
+#define X(name, __, ____) Y(name)
 #include "iris17_arithmetic.def"
 #undef X
 
@@ -338,14 +359,14 @@ DefJumpOp(IfThenElseLink) {
 					if (debugEnabled()) {
 						std::cerr << " code result: 0x" << std::hex << result << std::endl;
 					}
-					setInstructionMemory(address, result);
+					//setInstructionMemory(address, result);
 					break;
 				case Segment::Data:
 					result0 = iris17::encodeWord(buf[4], buf[5]);
 					if (debugEnabled()) {
 						std::cerr << " data result: 0x" << std::hex << result0 << std::endl;
 					}
-					setDataMemory(address, result0);
+					//setDataMemory(address, result0);
 					break;
 				default:
 					std::stringstream str;
@@ -358,13 +379,49 @@ DefJumpOp(IfThenElseLink) {
 	byte Core::getControl() {
 		return current.getControl();
 	}
-	word& Core::getArg0Register() {
-		return registerValue(current.getArg0());
-	}
-	word& Core::getArg1Register() {
-		return registerValue(current.getArg1());
-	}
 	word& Core::registerValue(byte index) {
 		return gpr[index];
+	}
+	word* Core::getStackSegment() {
+		return memory[getStackSegmentRegister()];
+	}
+	word* Core::getCodeSegment() {
+		return memory[getCodeSegmentRegister()];
+	}
+	word* Core::getDataSegment() {
+		return memory[getDataSegmentRegister()];
+	}
+	word& Core::getInstructionPointer() {
+		return registerValue<ArchitectureConstants::InstructionPointer>();
+	}
+	word& Core::getStackPointer() {
+		return registerValue<ArchitectureConstants::StackPointer>();
+	}
+	word& Core::getConditionRegister() {
+		return registerValue<ArchitectureConstants::ConditionRegister>();
+	}
+	word& Core::getLinkRegister() {
+		return registerValue<ArchitectureConstants::LinkRegister>();
+	}
+	word& Core::getCodeSegmentRegister() {
+		return registerValue<ArchitectureConstants::CodeSegmentRegister>();
+	}
+	word& Core::getStackSegmentRegister() {
+		return registerValue<ArchitectureConstants::StackSegmentRegister>();
+	}
+	word& Core::getDataSegmentRegister() {
+		return registerValue<ArchitectureConstants::DataSegmentRegister>();
+	}
+	word& Core::getAddressRegister() {
+		return registerValue<ArchitectureConstants::AddressRegister>();
+	}
+	word& Core::getValueRegister() {
+		return registerValue<ArchitectureConstants::ValueRegister>();
+	}
+	word Core::getCurrentCodeWord() {
+		return getCodeSegment()[getInstructionPointer()];
+	}
+	word Core::getTopOfStack() {
+		return getStackSegment()[getStackPointer()];
 	}
 }
