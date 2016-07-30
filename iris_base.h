@@ -17,24 +17,47 @@ namespace iris {
 		56 
 	};
 	template<typename T, int index>
-	struct MaskData  { };
-#define DefMaskData(type, index, mask) template<> struct MaskData<type, index> { \
+	struct FieldData  { };
+#define DefFieldData(type, index, mask) \
+	template<> \
+	struct FieldData<type, index> { \
 	static constexpr type Value = mask ;  \
 	static constexpr type FieldIndex = static_cast<type>(fields[index]); \
 }
-	DefMaskData(int16_t, 0, 0x00FF);
-	DefMaskData(int16_t, 1, int16_t(0xFF00));
-	DefMaskData(int32_t, 0, 0x000000FF);
-	DefMaskData(int32_t, 1, 0x0000FF00);
-	DefMaskData(int32_t, 2, 0x00FF0000);
-	DefMaskData(int32_t, 3, int32_t(0xFF000000));
-	DefMaskData(uint16_t, 0, 0x00FF);
-	DefMaskData(uint16_t, 1, 0xFF00);
-	DefMaskData(uint32_t, 0, 0x000000FF);
-	DefMaskData(uint32_t, 1, 0x0000FF00);
-	DefMaskData(uint32_t, 2, 0x00FF0000);
-	DefMaskData(uint32_t, 3, 0xFF000000);
-#undef DefMaskData
+	DefFieldData(int16_t, 0, 0x00FF);
+	DefFieldData(int16_t, 1, int16_t(0xFF00));
+
+	DefFieldData(int32_t, 0, 0x000000FF);
+	DefFieldData(int32_t, 1, 0x0000FF00);
+	DefFieldData(int32_t, 2, 0x00FF0000);
+	DefFieldData(int32_t, 3, int32_t(0xFF000000));
+
+	DefFieldData(int64_t,  0, 0x00000000000000FF);
+	DefFieldData(int64_t,  1, 0x000000000000FF00);
+	DefFieldData(int64_t,  2, 0x0000000000FF0000);
+	DefFieldData(int64_t,  3, 0x00000000FF000000);
+	DefFieldData(int64_t,  4, 0x000000FF00000000);
+	DefFieldData(int64_t,  5, 0x0000FF0000000000);
+	DefFieldData(int64_t,  6, 0x00FF000000000000);
+	DefFieldData(int64_t,  7, int64_t(0xFF00000000000000));
+
+	DefFieldData(uint16_t, 0, 0x00FF);
+	DefFieldData(uint16_t, 1, 0xFF00);
+
+	DefFieldData(uint32_t, 0, 0x000000FF);
+	DefFieldData(uint32_t, 1, 0x0000FF00);
+	DefFieldData(uint32_t, 2, 0x00FF0000);
+	DefFieldData(uint32_t, 3, 0xFF000000);
+
+	DefFieldData(uint64_t, 0, 0x00000000000000FF);
+	DefFieldData(uint64_t, 1, 0x000000000000FF00);
+	DefFieldData(uint64_t, 2, 0x0000000000FF0000);
+	DefFieldData(uint64_t, 3, 0x00000000FF000000);
+	DefFieldData(uint64_t, 4, 0x000000FF00000000);
+	DefFieldData(uint64_t, 5, 0x0000FF0000000000);
+	DefFieldData(uint64_t, 6, 0x00FF000000000000);
+	DefFieldData(uint64_t, 7, 0xFF00000000000000);
+#undef DefFieldData
 
 
 template<typename T, typename F, T bitmask, T shiftcount>
@@ -44,7 +67,7 @@ inline F decodeBits(T input) {
 
 template<typename T, typename F, int field> 
 inline F decodeField(T input) {
-	return decodeBits<T, F, MaskData<T, field>::Value, MaskData<T, field>::FieldIndex>(input);
+	return decodeBits<T, F, FieldData<T, field>::Value, FieldData<T, field>::FieldIndex>(input);
 }
 
 template<typename T, typename F, T bitmask, T shiftcount>
@@ -54,7 +77,7 @@ inline T encodeBits(T input, F value) {
 
 template<typename T, typename F, int field>
 inline T encodeField(T input, F value) {
-	return encodeBits<T, F, MaskData<T, field>::Value, MaskData<T, field>::FieldIndex>(input, value);
+	return encodeBits<T, F, FieldData<T, field>::Value, FieldData<T, field>::FieldIndex>(input, value);
 }
 
 uint16_t encodeUint16LE(byte a, byte b);

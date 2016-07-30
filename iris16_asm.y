@@ -555,8 +555,8 @@ void resolve_labels() {
 bool resolve_op(dynamicop* dop) {
    if(iris16::state.labels.count(dop->symbol) == 1) {
 		word addr = iris16::state.labels[dop->symbol];
-		dop->reg1 = iris::decodeBits<word, byte, 0x00FF>(addr);
-		dop->reg2 = iris::decodeBits<word, byte, 0xFF00, 8>(addr);
+		dop->reg1 = iris::decodeField<word, byte, 0>(addr);
+		dop->reg2 = iris::decodeField<word, byte, 1>(addr);
 		return true;
    }
    return false;
