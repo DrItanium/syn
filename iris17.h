@@ -14,9 +14,9 @@ namespace iris17 {
 	typedef int32_t RegisterValue;
 	inline word encodeWord (byte a, byte b, byte c, byte d);
 	inline hword encodeHword(byte a, byte b);
-	inline void decodeWord(word value, byte storage[sizeof(word)]);
-	inline void decodeHword(hword value, byte storage[sizeof(hword)]);
-	inline void decodeRegisterValue(RegisterValue value, byte storage[sizeof(RegisterValue)]);
+	inline void decodeWord(word value, byte* storage);
+	inline void decodeHword(hword value, byte* storage);
+	inline void decodeRegisterValue(RegisterValue value, byte* storage);
 	enum ArchitectureConstants  {
 		RegisterCount = 16,
 		AddressMax = 65535 * 256,
@@ -73,7 +73,7 @@ namespace iris17 {
 #include "iris17_misc.def"
 #undef X
 		template<byte index>
-		word& registerValue() {
+		RegisterValue& registerValue() {
 			switch(index) {
 #define X(index) case index : return gpr[index];
 #include "iris17_registers.def"
@@ -88,13 +88,13 @@ namespace iris17 {
 		void op(DecodedInstruction&& inst) {
 			throw iris::Problem("Unimplemented function!");
 		}
-		inline word& registerValue(byte index);
-		inline word& getInstructionPointer();
-		inline word& getStackPointer();
-		inline word& getConditionRegister();
-		inline word& getLinkRegister();
-		inline word& getAddressRegister();
-		inline word& getValueRegister();
+		inline RegisterValue& registerValue(byte index);
+		inline RegisterValue& getInstructionPointer();
+		inline RegisterValue& getStackPointer();
+		inline RegisterValue& getConditionRegister();
+		inline RegisterValue& getLinkRegister();
+		inline RegisterValue& getAddressRegister();
+		inline RegisterValue& getValueRegister();
 		inline word getCurrentCodeWord();
 		inline word getTopOfStack();
 

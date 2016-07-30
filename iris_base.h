@@ -57,14 +57,14 @@ inline T encodeField(T input, F value) {
 	return encodeBits<T, F, MaskData<T, field>::Value, MaskData<T, field>::FieldIndex>(input, value);
 }
 
-inline uint16_t encodeUint16LE(byte a, byte b);
-inline int16_t encodeInt16LE(byte a, byte b);
-inline uint32_t encodeUint32LE(byte a, byte b, byte c, byte d);
-inline int32_t encodeInt32LE(byte a, byte b, byte c, byte d);
-inline void decodeUint32LE(uint32_t value, byte storage[sizeof(uint32_t)]);
-inline void decodeUint16LE(uint16_t value, byte storage[sizeof(uint16_t)]);
-inline void decodeInt32LE(int32_t value, byte storage[sizeof(int32_t)]);
-inline void decodeInt16LE(int16_t value, byte storage[sizeof(int16_t)]);
+uint16_t encodeUint16LE(byte a, byte b);
+int16_t encodeInt16LE(byte a, byte b);
+uint32_t encodeUint32LE(byte a, byte b, byte c, byte d);
+int32_t encodeInt32LE(byte a, byte b, byte c, byte d);
+void decodeUint32LE(uint32_t value, byte storage[sizeof(uint32_t)]);
+void decodeUint16LE(uint16_t value, byte storage[sizeof(uint16_t)]);
+void decodeInt32LE(int32_t value, byte storage[sizeof(int32_t)]);
+void decodeInt16LE(int16_t value, byte storage[sizeof(int16_t)]);
 
 }
 #endif

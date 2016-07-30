@@ -68,15 +68,17 @@ namespace iris17 {
 
 	void Core::dump(std::ostream& stream) {
 		// save the registers
-		static char rBuf[sizeof(RegisterValue)] = { 0 };
-		static char memBuf[sizeof(word)] = { 0 };
+		static byte rBuf[sizeof(RegisterValue)] = { 0 };
+		static byte memBuf[sizeof(word)] = { 0 };
 		for (int i = 0; i < ArchitectureConstants::RegisterCount; ++i) {
 			decodeWord(gpr[i], rBuf);
-			stream.write(rBuf, sizeof(RegisterValue));
+			char* tmp = (char*)rBuf;
+			stream.write(tmp, sizeof(RegisterValue));
 		}
 		for (int i = 0; i < ArchitectureConstants::AddressMax; ++i) {
 			decodeWord(memory[i], memBuf);
-			stream.write(memBuf, sizeof(word));
+			char* tmp = (char*)memBuf;
+			stream.write(tmp, sizeof(word));
 		}
 	}
 	void Core::run() {
@@ -84,8 +86,8 @@ namespace iris17 {
 			if (!advanceIp) {
 				advanceIp = true;
 			}
-			current.decode(getCurrentCodeWord());
-			dispatch();
+			DecodedInstruction di(getCurrentCodeWord());
+			dispatch(std::move(di));
 			if (advanceIp) {
 				++getInstructionPointer();
 			}
@@ -98,7 +100,7 @@ namespace iris17 {
 
 #define DefOp(title) \
 	template<> \
-	void Core::op<Operation:: title>() 
+	void Core::op<Operation:: title>(DecodedInstruction&& current) 
 
 	DefOp(Add){
 		
@@ -109,45 +111,44 @@ namespace iris17 {
 	}
 	
 	DefOp(Decrement) {
-		registerValue(current.getEmbeddedArg()) = registerValue(current.getEmbeddedArg()) - 1;
+		//registerValue(current.getEmbeddedArg()) = registerValue(current.getEmbeddedArg()) - 1;
 	}
 
-	DefMoveOp(Move)  {
-		registerValue(current.getArg0()) = registerValue(current.getArg1());
+	DefOp(Move)  {
+		//registerValue(current.getArg0()) = registerValue(current.getArg1());
 	}
 
-	DefMoveOp(Swap) {
+	DefOp(Swap) {
         word a = registerValue(current.getArg0());
         registerValue(current.getArg0()) = registerValue(current.getArg1());
         registerValue(current.getArg1()) = a;
 	}
 
-    DefMoveOp(Set) {
+    DefOp(Set) {
         ++getInstructionPointer();
         registerValue(current.getArg0()) = getCurrentCodeWord();
     }
 
 
-	DefMoveOp(Load) {
+	DefOp(Load) {
 		// use arg0 to denote which data segment to use
-		getValueRegister() = getSegment(registerValue(current.getArg0()))[getAddressRegister()];
+		//getValueRegister() = getSegment(registerValue(current.getArg0()))[getAddressRegister()];
 	}
 
-	DefMoveOp(Store) {
-		getDataSegment()[getAddressRegister()] = getValueRegister();
+	DefOp(Store) {
+		//getDataSegment()[getAddressRegister()] = getValueRegister();
 	}
 
-	DefMoveOp(Push) {
-		word& stackPointer = getStackPointer();
-		++stackPointer;
-		getStackSegment()[stackPointer] = registerValue(current.getEmbeddedArg());
+	DefOp(Push) {
+		//word& stackPointer = getStackPointer();
+		//++stackPointer;
+		//getStackSegment()[stackPointer] = registerValue(current.getEmbeddedArg());
 	}
 
-	DefMoveOp(Pop) {
-		registerValue(current.getEmbeddedArg()) = getStackSegment()[getStackPointer()];
-		--getStackPointer();
+	DefOp(Pop) {
+		//registerValue(current.getEmbeddedArg()) = getStackSegment()[getStackPointer()];
+		//--getStackPointer();
 	}
-
 DefOp(Branch) {
 	advanceIp = false;
 	++getInstructionPointer();
@@ -155,104 +156,102 @@ DefOp(Branch) {
 	getInstructionPointer() = getCurrentCodeWord();
 }
 
-DefJumpOp(Call) {
-	advanceIp = false;
-    // read the next word
-	//
-	++getInstructionPointer();
-	word ip = getInstructionPointer();
-	getInstructionPointer() = getCurrentCodeWord();
-	getLinkRegister() = ip + 1;
-}
-
-DefJumpOp(IndirectBranch) {
-    advanceIp = false;
-	getInstructionPointer() = registerValue(current.getEmbeddedArg());
-}
-
-DefJumpOp(IndirectCall) {
-    advanceIp = false;
-	word ip = getInstructionPointer() + 1;
-	getInstructionPointer() = registerValue(current.getEmbeddedArg());
-	getLinkRegister() = ip;
-}
-
-DefJumpOp(ConditionalBranch) {
-	advanceIp = false;
-	if (getConditionRegister() != 0) {
-		++getInstructionPointer();
-		getInstructionPointer() = getCurrentCodeWord();
-	} else {
-		getInstructionPointer() += 2;
-	}
-}
-
-DefJumpOp(ConditionalIndirectBranch) {
-	advanceIp = false;
-	if (getConditionRegister() != 0) {
-		getInstructionPointer() = registerValue(current.getEmbeddedArg());
-	} else {
-		++getInstructionPointer();
-	}
-}
-
-DefJumpOp(IfThenElse) {
-	advanceIp = false;
-	++getInstructionPointer();
-	DecodedInstruction next;
-	next.decode(getCurrentCodeWord());
-	getInstructionPointer() = registerValue(((registerValue(current.getEmbeddedArg()) != 0) ? next.getSpecificArg0() : next.getSpecificArg1()));
-}
-
-DefJumpOp(IfThenElseLink) {
-	advanceIp = false;
-	word ip = getInstructionPointer() + 2;
-	++getInstructionPointer();
-	DecodedInstruction next;
-	next.decode(getCurrentCodeWord());
-	getInstructionPointer() = registerValue(((registerValue(current.getEmbeddedArg()) != 0) ? next.getSpecificArg0() : next.getSpecificArg1()));
-	getLinkRegister() = ip;
-}
+//DefJumpOp(Call) {
+//	advanceIp = false;
+//    // read the next word
+//	//
+//	++getInstructionPointer();
+//	word ip = getInstructionPointer();
+//	getInstructionPointer() = getCurrentCodeWord();
+//	getLinkRegister() = ip + 1;
+//}
+//
+//DefJumpOp(IndirectBranch) {
+//    advanceIp = false;
+//	getInstructionPointer() = registerValue(current.getEmbeddedArg());
+//}
+//
+//DefJumpOp(IndirectCall) {
+//    advanceIp = false;
+//	word ip = getInstructionPointer() + 1;
+//	getInstructionPointer() = registerValue(current.getEmbeddedArg());
+//	getLinkRegister() = ip;
+//}
+//
+//DefJumpOp(ConditionalBranch) {
+//	advanceIp = false;
+//	if (getConditionRegister() != 0) {
+//		++getInstructionPointer();
+//		getInstructionPointer() = getCurrentCodeWord();
+//	} else {
+//		getInstructionPointer() += 2;
+//	}
+//}
+//
+//DefJumpOp(ConditionalIndirectBranch) {
+//	advanceIp = false;
+//	if (getConditionRegister() != 0) {
+//		getInstructionPointer() = registerValue(current.getEmbeddedArg());
+//	} else {
+//		++getInstructionPointer();
+//	}
+//}
+//
+//DefJumpOp(IfThenElse) {
+//	advanceIp = false;
+//	++getInstructionPointer();
+//	DecodedInstruction next;
+//	next.decode(getCurrentCodeWord());
+//	getInstructionPointer() = registerValue(((registerValue(current.getEmbeddedArg()) != 0) ? next.getSpecificArg0() : next.getSpecificArg1()));
+//}
+//
+//DefJumpOp(IfThenElseLink) {
+//	advanceIp = false;
+//	word ip = getInstructionPointer() + 2;
+//	++getInstructionPointer();
+//	DecodedInstruction next;
+//	next.decode(getCurrentCodeWord());
+//	getInstructionPointer() = registerValue(((registerValue(current.getEmbeddedArg()) != 0) ? next.getSpecificArg0() : next.getSpecificArg1()));
+//	getLinkRegister() = ip;
+//}
 
 	template<>
-	void Core::op<InstructionGroup::Misc, GetAssociatedOp<InstructionGroup::Misc>::Association, GetAssociatedOp<InstructionGroup::Misc>::Association::SystemCall>() {
-		++getInstructionPointer();
-		DecodedInstruction next;
-		next.decode(getCurrentCodeWord());
-		switch(static_cast<SystemCalls>(current.getEmbeddedImmediate())) {
+	void Core::op<Operation::SystemCall>(DecodedInstruction&& current) {
+		switch(static_cast<SystemCalls>(current.getByte1())) {
 			case SystemCalls::Terminate:
 				execute = false;
 				advanceIp = false;
 				break;
 			case SystemCalls::PutC:
 				// read register 0 and register 1
-				std::cout.put(static_cast<char>(registerValue(next.getSpecificArg0())));
+				std::cout.put(static_cast<char>(registerValue(current.getArg2())));
 				break;
 			case SystemCalls::GetC:
 				byte value;
 				std::cin >> std::noskipws >> value;
-				registerValue(next.getSpecificArg1()) = static_cast<word>(value);
+				registerValue(current.getArg3()) = static_cast<word>(value);
 				break;
 			default:
 				std::stringstream ss;
-				ss << "Illegal system call " << current.getEmbeddedImmediate();
+				ss << "Illegal system call " << current.getByte1();
 				execute = false;
 				advanceIp = false;
 				throw iris::Problem(ss.str());
 		}
 	}
 
-	void Core::dispatch() {
-		switch(current.getControl()) {
+	void Core::dispatch(DecodedInstruction&& current) {
+		auto controlValue = current.getControl();
+		switch(controlValue) {
 #define X(type) \
 			case Operation:: type : \
-				op<Operation:: type>(); \
+				op<Operation:: type>(std::move(current)); \
 			break;
 #include "iris17_ops.def"
 #undef X
 			default:
 				std::stringstream str;
-				str << "Illegal instruction " << current.getControl();
+				str << "Illegal instruction " << std::hex << static_cast<byte>(controlValue);
 				execute = false;
 				throw iris::Problem(str.str());
 		}
@@ -310,28 +309,25 @@ DefJumpOp(IfThenElseLink) {
 		//	}
 		//}
 	}
-	byte Core::getControl() {
-		return current.getControl();
-	}
-	word& Core::registerValue(byte index) {
+	RegisterValue& Core::registerValue(byte index) {
 		return gpr[index];
 	}
-	word& Core::getInstructionPointer() {
+	RegisterValue& Core::getInstructionPointer() {
 		return registerValue<ArchitectureConstants::InstructionPointer>();
 	}
-	word& Core::getStackPointer() {
+	RegisterValue& Core::getStackPointer() {
 		return registerValue<ArchitectureConstants::StackPointer>();
 	}
-	word& Core::getConditionRegister() {
+	RegisterValue& Core::getConditionRegister() {
 		return registerValue<ArchitectureConstants::ConditionRegister>();
 	}
-	word& Core::getLinkRegister() {
+	RegisterValue& Core::getLinkRegister() {
 		return registerValue<ArchitectureConstants::LinkRegister>();
 	}
-	word& Core::getAddressRegister() {
+	RegisterValue& Core::getAddressRegister() {
 		return registerValue<ArchitectureConstants::AddressRegister>();
 	}
-	word& Core::getValueRegister() {
+	RegisterValue& Core::getValueRegister() {
 		return registerValue<ArchitectureConstants::ValueRegister>();
 	}
 	word Core::getCurrentCodeWord() {
