@@ -45,9 +45,9 @@ namespace iris17 {
 	}
 	void Core::installprogram(std::istream& stream) {
 		populateContents<ArchitectureConstants::RegisterCount>(gpr, stream);
-		populateContents<ArchitectureConstants::AddressMax>(data, stream);
-		populateContents<ArchitectureConstants::AddressMax>(instruction, stream);
-		populateContents<ArchitectureConstants::AddressMax>(stack, stream);
+		for (int i = 0 ; i < ArchitectureConstants::SegmentCount; ++i) {
+			populateContents<ArchitectureConstants::AddressMax>(memory[i], stream);
+		}
 	}
 
 	template<int count>
@@ -62,16 +62,16 @@ namespace iris17 {
 	void Core::dump(std::ostream& stream) {
 		// save the registers
 		dumpContents<ArchitectureConstants::RegisterCount>(gpr, stream);
-		dumpContents<ArchitectureConstants::AddressMax>(data, stream);
-		dumpContents<ArchitectureConstants::AddressMax>(instruction, stream);
-		dumpContents<ArchitectureConstants::AddressMax>(stack, stream);
+		for (int i = 0 ; i < ArchitectureConstants::SegmentCount; ++i) {
+			dumpContents<ArchitectureConstants::AddressMax>(memory[i], stream);
+		}
 	}
 	void Core::run() {
 		while(execute) {
 			if (!advanceIp) {
 				advanceIp = true;
 			}
-			current.decode(instruction[registerValue<ArchitectureConstants::InstructionPointer>()]);
+			current.decode(memory[registerValue<ArchitectureConstants::CodeSegmentRegister>()][registerValue<ArchitectureConstants::InstructionPointer>()]);
 			dispatch();
 			if (advanceIp) {
 				++registerValue<ArchitectureConstants::InstructionPointer>();
@@ -85,10 +85,14 @@ namespace iris17 {
 #define DefCompareOp(type, compare, mod, action) \
 	template<> \
 	void Core::op<InstructionGroup::Compare, GetAssociatedOp<InstructionGroup::Compare>::Association, GetAssociatedOp<InstructionGroup::Compare>::Association:: type>() { \
-								   registerValue<ConditionRegister>() INDIRECTOR(Op, mod) (getArg0Register() compare action); \
+		++registerValue<ArchitectureConstants::InstructionPointer>(); \
+		auto rest = memory[registerValue<ArchitectureConstants::CodeSegmentRegister>()][registerValue<ArchitectureConstants::InstructionPointer>()]; \
+		DecodedInstruction second;\
+		second.decode(rest); \
+		registerValue<ConditionRegister>() INDIRECTOR(Op, mod) (registerValue(current.getEmbeddedArg()) compare action ); \
 	}
-#define X(op, compare, mod) DefCompareOp(op, compare, mod, (getArg1Register()))
-#define Y(op, compare, mod) DefCompareOp(op, compare, mod, (static_cast<word>(current.getArg1())))
+#define X(op, compare, mod) DefCompareOp(op, compare, mod, (second.getSpecificArg0()))
+#define Y(op, compare, mod) DefCompareOp(op, compare, mod, (rest))
 #include "iris17_compare.def"
 #undef X
 #undef Y
@@ -104,12 +108,14 @@ namespace iris17 {
 
 	DefMoveOp(Move)  {
         ++registerValue<ArchitectureConstants::InstructionPointer>();
+		auto instruction = memory[registerValue<ArchitectureConstants::CodeSegmentRegister>()];
         DecodedInstruction next;
         next.decode(instruction[registerValue<ArchitectureConstants::InstructionPointer>()]);
         registerValue(current.getEmbeddedArg()) = registerValue(next.getSpecificArg0());
 	}
 
     DefMoveOp(SetFull) {
+		auto instruction = memory[registerValue<ArchitectureConstants::CodeSegmentRegister>()];
         ++registerValue<ArchitectureConstants::InstructionPointer>();
         registerValue(current.getEmbeddedArg()) = instruction[registerValue<ArchitectureConstants::InstructionPointer>()];
     }
@@ -122,6 +128,7 @@ namespace iris17 {
 	}
 
 	DefMoveOp(Swap) {
+		auto instruction = memory[registerValue<ArchitectureConstants::CodeSegmentRegister>()];
         ++registerValue<ArchitectureConstants::InstructionPointer>();
         DecodedInstruction next;
         next.decode(instruction[registerValue<ArchitectureConstants::InstructionPointer>()]);
@@ -131,13 +138,14 @@ namespace iris17 {
 	}
 
 	DefMoveOp(Load) {
-		byte segment = registerValue<ArchitectureConstants::SegmentRegister>();
-		registerValue<ArchitectureConstants::DataRegister>() = memory[segment][registerValue<ArchitectureConstants::AddressRegister>()];
+		registerValue<ArchitectureConstants::DataRegister>() = memory[registerValue<ArchitectureConstants::DataSegmentRegister>()][registerValue<ArchitectureConstants::AddressRegister>()];
 	}
 
 	DefMoveOp(Push) {
-		++registerValue<ArchitectureConstants::StackPointer>();
-		stack[registerValue<ArchitectureConstants::StackPointer>()] = getArg0Register();
+		word& stackPointer = registerValue<ArchitectureConstants::StackPointer>();
+		++stackPointer;
+		auto stackSeg = registerValue<ArchitectureConstants::StackSegmentRegister>();
+		memory[stackSeg][stackPointer] = registerValue(current.getEmbeddedArg());
 	}
 
 	DefMoveOp(Pop) {
@@ -167,7 +175,7 @@ namespace iris17 {
 	void Core::op<InstructionGroup::Arithmetic, GetAssociatedOp<InstructionGroup::Arithmetic>::Association, GetAssociatedOp<InstructionGroup::Arithmetic>::Association:: name>() { \
 		INDIRECTOR(X, desc)(name, title) \
 	}
-#define Y(name)
+#define Y(name) 
 #include "iris17_arithmetic.def"
 #undef Y
 #undef X
