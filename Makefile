@@ -46,6 +46,7 @@ ARCH_OBJECTS = ${IRIS32_OBJECTS} \
 			
 
 COMMON_THINGS = architecture.o \
+				iris_base.o \
 				${ARCH_TARGETS}
 
 # The object file that defines main()
@@ -241,42 +242,41 @@ uninstall:
 
 
 architecture.o: architecture.cc architecture.h \
-	architecture_registrations.def Problem.h
+ architecture_registrations.def Problem.h
 asm_interact.o: asm_interact.cc asm_interact.h architecture.h \
-	architecture_registrations.def Problem.h
+ architecture_registrations.def Problem.h
 iris16.o: iris16.cc iris16.h iris_base.h Core.h iris16_groups.def \
-	iris16_arithmetic.def iris16_misc.def iris16_jump.def \
-	iris16_syscalls.def iris16_move.def iris16_compare.def \
-	iris16_instruction.def sim_registration.h architecture.h \
-	architecture_registrations.def Problem.h
-iris17.o: iris17.cc iris17.h iris_base.h Core.h iris17_groups.def \
-	iris17_arithmetic.def iris17_misc.def iris17_jump.def \
-	iris17_syscalls.def iris17_move.def iris17_compare.def \
-	iris17_instruction.def Problem.h
+ iris16_arithmetic.def iris16_misc.def iris16_jump.def \
+ iris16_syscalls.def iris16_move.def iris16_compare.def \
+ iris16_instruction.def sim_registration.h architecture.h \
+ architecture_registrations.def Problem.h
+iris17.o: iris17.cc iris17.h iris_base.h Core.h Problem.h iris17_ops.def \
+ iris17_syscalls.def iris17_instruction.def iris17_misc.def \
+ iris17_registers.def
 iris17_sim.o: iris17_sim.cc iris16.h iris_base.h Core.h iris16_groups.def \
-	iris16_arithmetic.def iris16_misc.def iris16_jump.def \
-	iris16_syscalls.def iris16_move.def iris16_compare.def \
-	iris16_instruction.def
+ iris16_arithmetic.def iris16_misc.def iris16_jump.def \
+ iris16_syscalls.def iris16_move.def iris16_compare.def \
+ iris16_instruction.def
 iris32.o: iris32.cc iris32.h iris_base.h Core.h iris32_groups.def \
-	iris32_instruction.def iris32_compare.def iris32_arithmetic.def \
-	iris32_move.def iris32_jump.def iris32_misc.def iris32_syscalls.def \
-	Problem.h
+ iris32_instruction.def iris32_compare.def iris32_arithmetic.def \
+ iris32_move.def iris32_jump.def iris32_misc.def iris32_syscalls.def \
+ Problem.h
 iris32_sim.o: iris32_sim.cc iris32.h iris_base.h Core.h iris32_groups.def \
-	iris32_instruction.def iris32_compare.def iris32_arithmetic.def \
-	iris32_move.def iris32_jump.def iris32_misc.def iris32_syscalls.def
+ iris32_instruction.def iris32_compare.def iris32_arithmetic.def \
+ iris32_move.def iris32_jump.def iris32_misc.def iris32_syscalls.def
 iris_asm.o: iris_asm.cc asm_interact.h architecture.h \
-	architecture_registrations.def Problem.h
+ architecture_registrations.def Problem.h
+iris_base.o: iris_base.cc iris_base.h
 iris_link.o: iris_link.cc Core.h sim_registration.h architecture.h \
-	architecture_registrations.def Problem.h
+ architecture_registrations.def Problem.h
 iris_sim.o: iris_sim.cc Problem.h Core.h sim_registration.h \
-	architecture.h architecture_registrations.def
+ architecture.h architecture_registrations.def
 sim_registration.o: sim_registration.cc sim_registration.h Core.h \
-	architecture.h architecture_registrations.def Problem.h targets.h \
-	iris16.h iris_base.h iris16_groups.def iris16_arithmetic.def \
-	iris16_misc.def iris16_jump.def iris16_syscalls.def iris16_move.def \
-	iris16_compare.def iris16_instruction.def iris32.h iris32_groups.def \
-	iris32_instruction.def iris32_compare.def iris32_arithmetic.def \
-	iris32_move.def iris32_jump.def iris32_misc.def iris32_syscalls.def \
-	iris17.h iris17_groups.def iris17_arithmetic.def iris17_misc.def \
-	iris17_jump.def iris17_syscalls.def iris17_move.def iris17_compare.def \
-	iris17_instruction.def
+ architecture.h architecture_registrations.def Problem.h targets.h \
+ iris16.h iris_base.h iris16_groups.def iris16_arithmetic.def \
+ iris16_misc.def iris16_jump.def iris16_syscalls.def iris16_move.def \
+ iris16_compare.def iris16_instruction.def iris32.h iris32_groups.def \
+ iris32_instruction.def iris32_compare.def iris32_arithmetic.def \
+ iris32_move.def iris32_jump.def iris32_misc.def iris32_syscalls.def \
+ iris17.h iris17_ops.def iris17_syscalls.def iris17_instruction.def \
+ iris17_misc.def iris17_registers.def

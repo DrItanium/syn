@@ -11,8 +11,12 @@ namespace iris17 {
 	typedef uint32_t word;
 	typedef word raw_instruction; // this is more of a packet!
 	typedef hword immediate;
+	typedef int32_t RegisterValue;
 	inline word encodeWord (byte a, byte b, byte c, byte d);
 	inline hword encodeHword(byte a, byte b);
+	inline void decodeWord(word value, byte storage[sizeof(word)]);
+	inline void decodeHword(hword value, byte storage[sizeof(hword)]);
+	inline void decodeRegisterValue(RegisterValue value, byte storage[sizeof(RegisterValue)]);
 	enum ArchitectureConstants  {
 		RegisterCount = 16,
 		AddressMax = 65535 * 256,
@@ -42,9 +46,8 @@ namespace iris17 {
 	};
 	class DecodedInstruction {
 		public:
-			DecodedInstruction();
 			DecodedInstruction(raw_instruction input);
-			void decode(raw_instruction input);
+			inline raw_instruction getRawValue() const { return _rawValue; }
 #define X(title, mask, shift, type, is_register, post) inline type get ## title () const { return _ ## post ; }
 #include "iris17_instruction.def"
 #undef X
@@ -52,6 +55,7 @@ namespace iris17 {
 #define X(title, mask, shift, type, is_register, post) type _ ## post ;
 #include "iris17_instruction.def"
 #undef X
+			raw_instruction _rawValue;
 	};
 
 	class Core : public iris::Core {
@@ -64,7 +68,7 @@ namespace iris17 {
 			virtual void run() override;
 			virtual void link(std::istream& stream) override;
 		private:
-			void dispatch();
+			void dispatch(DecodedInstruction&& inst);
 #define X(title, func) void func ();
 #include "iris17_misc.def"
 #undef X
@@ -80,13 +84,11 @@ namespace iris17 {
 					throw iris::Problem(msg.str());
 			}
 		}
-		inline byte getControl();
-		inline word& registerValue(byte index);
-
-		template<Operation op>
-		void op() {
+		template<Operation operation>
+		void op(DecodedInstruction&& inst) {
 			throw iris::Problem("Unimplemented function!");
 		}
+		inline word& registerValue(byte index);
 		inline word& getInstructionPointer();
 		inline word& getStackPointer();
 		inline word& getConditionRegister();
@@ -97,10 +99,9 @@ namespace iris17 {
 		inline word getTopOfStack();
 
 		private:
-			DecodedInstruction current;
 			bool execute = true,
 				 advanceIp = true;
-			word gpr[ArchitectureConstants::RegisterCount] = { 0 };
+			RegisterValue gpr[ArchitectureConstants::RegisterCount] = { 0 };
 			std::unique_ptr<word[]> memory;
 	};
 

@@ -13,18 +13,29 @@ namespace iris17 {
 	Core* newCore() {
 		return new Core();
 	}
-	word encodeWord(byte a, byte b) {
-		return iris::encodeBits<word, byte, 0xFF00, 8>(iris::encodeBits<word, byte, 0x00FF>(word(0), a), b);
+	word encodeWord(byte a, byte b, byte c, byte d) {
+		return iris::encodeUint32LE(a, b, c, d);
+	}
+	hword encodeHword(byte a, byte b) {
+		return iris::encodeUint16LE(a, b);
+	}
+	void decodeWord(word value, byte* storage) {
+		return iris::decodeUint32LE(value, storage);
+	}
+	void decodeWord(RegisterValue value, byte* storage) {
+		return iris::decodeInt32LE(value, storage);
+	}
+	void decodeHword(hword value, byte* storage) {
+		return iris::decodeUint16LE(value, storage);
 	}
 
-	DecodedInstruction::DecodedInstruction() { }
-
-	void DecodedInstruction::decode(raw_instruction input) {
+	DecodedInstruction::DecodedInstruction(raw_instruction input) :
 #define X(title, mask, shift, type, is_register, post) \
-		_ ## post = iris::decodeBits<raw_instruction, type, mask, shift>(input);
+		_ ## post (iris::decodeBits<raw_instruction, type, mask, shift>(input)),
 #include "iris17_instruction.def"
 #undef X
-	}
+		_rawValue(input) { }
+
 
 	Core::Core() : memory(new word[ArchitectureConstants::AddressMax]) {
 
@@ -35,34 +46,37 @@ namespace iris17 {
 	void Core::shutdown() { }
 
 	template<int count>
-	void populateContents(word* contents, std::istream& stream) {
+	void populateContents(RegisterValue* contents, std::istream& stream) {
 		char buf[sizeof(word)] = { 0 };
 		for(int i = 0; i < count; ++i) {
 			stream.read(buf, sizeof(word));
-			contents[i] = iris17::encodeWord(buf[0], buf[1]);
+			contents[i] = iris17::encodeWord(buf[0], buf[1], buf[2], buf[3]);
+		}
+	}
+	template<int count>
+	void populateContents(const std::unique_ptr<word[]>& contents, std::istream& stream) {
+		char buf[sizeof(word)] = { 0 };
+		for(int i = 0; i < count; ++i) {
+			stream.read(buf, sizeof(word));
+			contents[i] = iris17::encodeWord(buf[0], buf[1], buf[2], buf[3]);
 		}
 	}
 	void Core::installprogram(std::istream& stream) {
 		populateContents<ArchitectureConstants::RegisterCount>(gpr, stream);
-		for (int i = 0 ; i < ArchitectureConstants::SegmentCount; ++i) {
-			populateContents<ArchitectureConstants::AddressMax>(memory[i], stream);
-		}
+		populateContents<ArchitectureConstants::AddressMax>(memory, stream);
 	}
 
-	template<int count>
-	void dumpContents(word* contents, std::ostream& stream) {
-		char buf[sizeof(word)] = { 0 };
-		for(int i = 0; i < count; ++i) {
-			buf[0] = static_cast<char>(contents[i]);
-			buf[1] = static_cast<char>(contents[i] >> 8);
-			stream.write(buf, sizeof(word));
-		}
-	}
 	void Core::dump(std::ostream& stream) {
 		// save the registers
-		dumpContents<ArchitectureConstants::RegisterCount>(gpr, stream);
-		for (int i = 0 ; i < ArchitectureConstants::SegmentCount; ++i) {
-			dumpContents<ArchitectureConstants::AddressMax>(memory[i], stream);
+		static char rBuf[sizeof(RegisterValue)] = { 0 };
+		static char memBuf[sizeof(word)] = { 0 };
+		for (int i = 0; i < ArchitectureConstants::RegisterCount; ++i) {
+			decodeWord(gpr[i], rBuf);
+			stream.write(rBuf, sizeof(RegisterValue));
+		}
+		for (int i = 0; i < ArchitectureConstants::AddressMax; ++i) {
+			decodeWord(memory[i], memBuf);
+			stream.write(memBuf, sizeof(word));
 		}
 	}
 	void Core::run() {
@@ -70,44 +84,33 @@ namespace iris17 {
 			if (!advanceIp) {
 				advanceIp = true;
 			}
-			auto lower = getCurrentCodeWord();
-			++getInstructionPointer();
-			auto upper = getCurrentCodeWord();
-			
-			current.decode(raw_instruction(upper << 16) | raw_instruction(lower));
+			current.decode(getCurrentCodeWord());
 			dispatch();
 			if (advanceIp) {
 				++getInstructionPointer();
 			}
 		}
 	}
-#define OpNone =
-#define OpAnd &=
-#define OpOr |=
-#define OpXor ^=
-#define DefCompareOp(type, compare, mod, action) \
-	template<> \
-	void Core::op<InstructionGroup::Compare, GetAssociatedOp<InstructionGroup::Compare>::Association, GetAssociatedOp<InstructionGroup::Compare>::Association:: type>() { \
-		++getInstructionPointer(); \
-		auto rest = getCurrentCodeWord(); \
-		DecodedInstruction second;\
-		second.decode(rest); \
-		getConditionRegister() INDIRECTOR(Op, mod) (registerValue(current.getEmbeddedArg()) compare action ); \
-	}
-#define X(op, compare, mod) DefCompareOp(op, compare, mod, (second.getSpecificArg0()))
-#define Y(op, compare, mod) DefCompareOp(op, compare, mod, (rest))
-#include "iris17_compare.def"
-#undef X
-#undef Y
-#undef DefCompareOp
-#undef OpNone
-#undef OpAnd
-#undef OpOr
-#undef OrXor
 
-#define DefMoveOp(title) \
+
+
+
+
+#define DefOp(title) \
 	template<> \
-	void Core::op<InstructionGroup::Move, GetAssociatedOp<InstructionGroup::Move>::Association, GetAssociatedOp<InstructionGroup::Move>::Association:: title>()
+	void Core::op<Operation:: title>() 
+
+	DefOp(Add){
+		
+	}
+
+	DefOp(Increment) {
+		registerValue(current.getArg0()) = registerValue(current.getArg0()) + 1;
+	}
+	
+	DefOp(Decrement) {
+		registerValue(current.getEmbeddedArg()) = registerValue(current.getEmbeddedArg()) - 1;
+	}
 
 	DefMoveOp(Move)  {
 		registerValue(current.getArg0()) = registerValue(current.getArg1());
@@ -145,59 +148,7 @@ namespace iris17 {
 		--getStackPointer();
 	}
 
-#define XNone(n, op) registerValue(current.getEmbeddedArg()) = ( src0 op  registerValue(next.getSpecificArg1()));
-#define XImmediate(n, op) registerValue(current.getEmbeddedArg()) = (src0 op static_cast<word>(next.getSpecificArg1()));
-#define XUnary(n, op) registerValue(current.getEmbeddedArg()) = (op src0);
-#define XDenominator(n, op) \
-			if (registerValue(next.getSpecificArg1()) == 0) { \
-				throw iris::Problem("denominator for operation " #n " is zero!"); \
-				execute = false; \
-			} else { \
-				XNone(n, op) \
-			}
-#define XDenominatorImmediate(n, op) \
-			if (registerValue(next.getSpecificArg1()) == 0) { \
-				execute = false; \
-				throw iris::Problem("denominator for operation " #n " is zero!"); \
-			} else { \
-				XImmediate(n, op) \
-			}
-#define X(name, title, desc) \
-	template<> \
-	void Core::op<InstructionGroup::Arithmetic, GetAssociatedOp<InstructionGroup::Arithmetic>::Association, GetAssociatedOp<InstructionGroup::Arithmetic>::Association:: name>() { \
-		++getInstructionPointer(); \
-		DecodedInstruction next; \
-		next.decode(getCurrentCodeWord()); \
-		auto src0 = registerValue(next.getSpecificArg0()); \
-		INDIRECTOR(X, desc)(name, title) \
-	}
-#define Y(name) 
-#include "iris17_arithmetic.def"
-#undef Y
-#undef X
-#undef XNone
-#undef XDenominator
-#undef XUnary
-#undef XImmediate
-#undef XDenominatorImmediate
-
-#define DefArithmeticOp(name) \
-	template<> \
-	void Core::op<InstructionGroup::Arithmetic, GetAssociatedOp<InstructionGroup::Arithmetic>::Association, GetAssociatedOp<InstructionGroup::Arithmetic>::Association:: name>()
-
-DefArithmeticOp(Increment) {
-	registerValue(current.getEmbeddedArg()) = registerValue(current.getEmbeddedArg()) + 1;
-}
-
-DefArithmeticOp(Decrement) {
-	registerValue(current.getEmbeddedArg()) = registerValue(current.getEmbeddedArg()) - 1;
-}
-
-#define DefJumpOp(title) \
-	template<> \
-	void Core::op<InstructionGroup::Jump, GetAssociatedOp<InstructionGroup::Jump>::Association, GetAssociatedOp<InstructionGroup::Jump>::Association:: title>()
-
-DefJumpOp(Branch) {
+DefOp(Branch) {
 	advanceIp = false;
 	++getInstructionPointer();
 	// need to read the next "instruction"
@@ -293,42 +244,12 @@ DefJumpOp(IfThenElseLink) {
 
 	void Core::dispatch() {
 		switch(current.getControl()) {
-#define X(type, compare, mod) \
-			case ControlSignature<InstructionGroup::Compare, GetAssociatedOp<InstructionGroup::Compare>::Association, GetAssociatedOp<InstructionGroup::Compare>::Association:: type>::fullSignature: \
-			op<InstructionGroup::Compare, GetAssociatedOp<InstructionGroup::Compare>::Association, GetAssociatedOp<InstructionGroup::Compare>::Association:: type>(); \
+#define X(type) \
+			case Operation:: type : \
+				op<Operation:: type>(); \
 			break;
-
-#define Y(type, compare, mod) X(type, compare, mod)
-#include "iris17_compare.def"
-#undef Y
+#include "iris17_ops.def"
 #undef X
-
-#define Y(name) \
-			case ControlSignature<InstructionGroup::Arithmetic, GetAssociatedOp<InstructionGroup::Arithmetic>::Association, GetAssociatedOp<InstructionGroup::Arithmetic>::Association:: name>::fullSignature: \
-			op<InstructionGroup::Arithmetic, GetAssociatedOp<InstructionGroup::Arithmetic>::Association, GetAssociatedOp<InstructionGroup::Arithmetic>::Association:: name>(); \
-			break;
-#define X(name, __, ____) Y(name)
-#include "iris17_arithmetic.def"
-#undef X
-
-#define X(title) \
-			case ControlSignature<InstructionGroup::Jump, GetAssociatedOp<InstructionGroup::Jump>::Association, GetAssociatedOp<InstructionGroup::Jump>::Association:: title>::fullSignature: \
-			op<InstructionGroup::Jump, GetAssociatedOp<InstructionGroup::Jump>::Association, GetAssociatedOp<InstructionGroup::Jump>::Association:: title>(); \
-			break;
-#include "iris17_jump.def"
-#undef X
-#define X(title, func) \
-			case ControlSignature<InstructionGroup::Misc, GetAssociatedOp<InstructionGroup::Misc>::Association, GetAssociatedOp<InstructionGroup::Misc>::Association:: title>::fullSignature: \
-			op<InstructionGroup::Misc, GetAssociatedOp<InstructionGroup::Misc>::Association, GetAssociatedOp<InstructionGroup::Misc>::Association:: title>(); \
-			break;
-#include "iris17_misc.def"
-#undef X
-
-#define X(name) \
-			case ControlSignature<InstructionGroup::Move, GetAssociatedOp<InstructionGroup::Move>::Association, GetAssociatedOp<InstructionGroup::Move>::Association:: name>::fullSignature: op<InstructionGroup::Move, GetAssociatedOp<InstructionGroup::Move>::Association, GetAssociatedOp<InstructionGroup::Move>::Association:: name>(); break;
-#include "iris17_move.def"
-#undef X
-
 			default:
 				std::stringstream str;
 				str << "Illegal instruction " << current.getControl();
@@ -338,65 +259,62 @@ DefJumpOp(IfThenElseLink) {
 	}
 
 
-	enum class Segment  {
-		Code,
-		Data,
-		Count,
-	};
+	//enum class Segment  {
+	//	Code,
+	//	Data,
+	//	Count,
+	//};
 
 	void Core::link(std::istream& input) {
-		dword result = 0;
-		word result0 = 0;
-		char buf[8] = {0};
-		for(int lineNumber = 0; input.good(); ++lineNumber) {
-			input.read(buf, 8);
-			if (input.gcount() < 8 && input.gcount() > 0) {
-				throw iris::Problem("unaligned object file found!");
-			} else if (input.gcount() == 0) {
-				if (input.eof()) {
-					break;
-				} else {
-					throw iris::Problem("something bad happened while reading input file!");
-				}
-			}
-			//ignore the first byte, it is always zero
-			byte tmp = buf[1];
-			Segment target = static_cast<Segment>(buf[1]);
-			word address = iris17::encodeWord(buf[2], buf[3]);
-			if (debugEnabled()) {
-				std::cerr << "current target = " << static_cast<int>(target) << "\tcurrent address = 0x" << std::hex << address << std::endl;
-			}
-			switch(target) {
-				case Segment::Code:
-					result = iris17::encodeWord(buf[4], buf[5]);
-					if (debugEnabled()) {
-						std::cerr << " code result: 0x" << std::hex << result << std::endl;
-					}
-					//setInstructionMemory(address, result);
-					break;
-				case Segment::Data:
-					result0 = iris17::encodeWord(buf[4], buf[5]);
-					if (debugEnabled()) {
-						std::cerr << " data result: 0x" << std::hex << result0 << std::endl;
-					}
-					//setDataMemory(address, result0);
-					break;
-				default:
-					std::stringstream str;
-					str << "error: line " << lineNumber << ", unknown segment " << static_cast<int>(target) << "/" << static_cast<int>(tmp) << std::endl;
-					str << "current address: " << std::hex << address << std::endl;
-					throw iris::Problem(str.str());
-			}
-		}
+		//dword result = 0;
+		//word result0 = 0;
+		//char buf[8] = {0};
+		//for(int lineNumber = 0; input.good(); ++lineNumber) {
+		//	input.read(buf, 8);
+		//	if (input.gcount() < 8 && input.gcount() > 0) {
+		//		throw iris::Problem("unaligned object file found!");
+		//	} else if (input.gcount() == 0) {
+		//		if (input.eof()) {
+		//			break;
+		//		} else {
+		//			throw iris::Problem("something bad happened while reading input file!");
+		//		}
+		//	}
+		//	//ignore the first byte, it is always zero
+		//	byte tmp = buf[1];
+		//	Segment target = static_cast<Segment>(buf[1]);
+		//	word address = iris17::encodeWord(buf[2], buf[3]);
+		//	if (debugEnabled()) {
+		//		std::cerr << "current target = " << static_cast<int>(target) << "\tcurrent address = 0x" << std::hex << address << std::endl;
+		//	}
+		//	switch(target) {
+		//		case Segment::Code:
+		//			result = iris17::encodeWord(buf[4], buf[5]);
+		//			if (debugEnabled()) {
+		//				std::cerr << " code result: 0x" << std::hex << result << std::endl;
+		//			}
+		//			//setInstructionMemory(address, result);
+		//			break;
+		//		case Segment::Data:
+		//			result0 = iris17::encodeWord(buf[4], buf[5]);
+		//			if (debugEnabled()) {
+		//				std::cerr << " data result: 0x" << std::hex << result0 << std::endl;
+		//			}
+		//			//setDataMemory(address, result0);
+		//			break;
+		//		default:
+		//			std::stringstream str;
+		//			str << "error: line " << lineNumber << ", unknown segment " << static_cast<int>(target) << "/" << static_cast<int>(tmp) << std::endl;
+		//			str << "current address: " << std::hex << address << std::endl;
+		//			throw iris::Problem(str.str());
+		//	}
+		//}
 	}
 	byte Core::getControl() {
 		return current.getControl();
 	}
 	word& Core::registerValue(byte index) {
 		return gpr[index];
-	}
-	word* Core::getSegment(byte segment) {
-		return memory[segment];
 	}
 	word& Core::getInstructionPointer() {
 		return registerValue<ArchitectureConstants::InstructionPointer>();
@@ -417,9 +335,9 @@ DefJumpOp(IfThenElseLink) {
 		return registerValue<ArchitectureConstants::ValueRegister>();
 	}
 	word Core::getCurrentCodeWord() {
-		return getCodeSegment()[getInstructionPointer()];
+		return memory[getInstructionPointer()];
 	}
 	word Core::getTopOfStack() {
-		return getStackSegment()[getStackPointer()];
+		return memory[getStackPointer()];
 	}
 }
