@@ -8,24 +8,24 @@
 namespace iris17 {
 	typedef uint16_t word;
 	typedef uint32_t dword;
-	typedef word raw_instruction;
+	typedef dword raw_instruction; // this is more of a packet!
 	typedef word immediate;
 	inline dword encodeDword(byte a, byte b, byte c, byte d);
 	inline word encodeWord(byte a, byte b);
 	enum ArchitectureConstants  {
-		RegisterCount = 64,
+		RegisterCount = 16,
 		AddressMax = 65535,
 		SegmentCount = 256,
+		// unlike iris16 and iris32, there is a limited set of registers with
+		// a majority of them marked for explicit usage, instructions
+		// themselves are still 16 bits wide but 32bits are extracted per
+		// packet.
 		InstructionPointer = RegisterCount - 1,
 		LinkRegister = RegisterCount - 2,
 		StackPointer = RegisterCount - 3,
 		ConditionRegister = RegisterCount - 4,
 		AddressRegister = RegisterCount - 5,
 		ValueRegister = RegisterCount - 6,
-		DataSegmentRegister = RegisterCount - 7,
-		CodeSegmentRegister = RegisterCount - 8,
-		StackSegmentRegister = RegisterCount - 9,
-
 		MaxGroups = 0x7,
 		MaxOperations = 0x1F,
 	};
@@ -145,16 +145,11 @@ namespace iris17 {
 		void op() {
 			throw iris::Problem("Unimplemented function!");
 		}
-		inline word* getStackSegment();
-		inline word* getCodeSegment();
-		inline word* getDataSegment();
+		inline word* getSegment(byte segment);
 		inline word& getInstructionPointer();
 		inline word& getStackPointer();
 		inline word& getConditionRegister();
 		inline word& getLinkRegister();
-		inline word& getCodeSegmentRegister();
-		inline word& getStackSegmentRegister();
-		inline word& getDataSegmentRegister();
 		inline word& getAddressRegister();
 		inline word& getValueRegister();
 		inline word getCurrentCodeWord();

@@ -28,13 +28,10 @@ namespace iris17 {
 
 	Core::Core() { }
 
-	void Core::initialize() {
+	void Core::initialize() { }
 
-	}
+	void Core::shutdown() { }
 
-	void Core::shutdown() {
-
-	}
 	template<int count>
 	void populateContents(word* contents, std::istream& stream) {
 		char buf[sizeof(word)] = { 0 };
@@ -71,7 +68,11 @@ namespace iris17 {
 			if (!advanceIp) {
 				advanceIp = true;
 			}
-			current.decode(getCurrentCodeWord());
+			auto lower = getCurrentCodeWord();
+			++getInstructionPointer();
+			auto upper = getCurrentCodeWord();
+			
+			current.decode(raw_instruction(upper << 16) | raw_instruction(lower));
 			dispatch();
 			if (advanceIp) {
 				++getInstructionPointer();
@@ -107,40 +108,36 @@ namespace iris17 {
 	void Core::op<InstructionGroup::Move, GetAssociatedOp<InstructionGroup::Move>::Association, GetAssociatedOp<InstructionGroup::Move>::Association:: title>()
 
 	DefMoveOp(Move)  {
-		++getInstructionPointer();
-        DecodedInstruction next;
-        next.decode(getCodeSegment()[getInstructionPointer()]);
-        registerValue(current.getEmbeddedArg()) = registerValue(next.getSpecificArg0());
-	}
-
-    DefMoveOp(SetFull) {
-        ++getInstructionPointer();
-        registerValue(current.getEmbeddedArg()) = getCodeSegment()[getInstructionPointer()];
-    }
-	DefMoveOp(SetLower_AddressRegister) {
-		getAddressRegister() = iris17::encodeWord(current.getEmbeddedImmediate(), static_cast<byte>(getAddressRegister() >> 8));
-	}
-
-	DefMoveOp(SetUpper_AddressRegister) {
-		getAddressRegister() = iris17::encodeWord(static_cast<byte>(getAddressRegister()), current.getEmbeddedImmediate());
+		registerValue(current.getArg0()) = registerValue(current.getArg1());
 	}
 
 	DefMoveOp(Swap) {
-		auto instruction = getCodeSegment();
-		++getInstructionPointer();
-        DecodedInstruction next;
-        next.decode(instruction[getInstructionPointer()]);
-        word a = registerValue(current.getEmbeddedArg());
-        registerValue(current.getEmbeddedArg()) = registerValue(next.getSpecificArg0());
-        registerValue(next.getSpecificArg0()) = a;
+        word a = registerValue(current.getArg0());
+        registerValue(current.getArg0()) = registerValue(current.getArg1());
+        registerValue(current.getArg1()) = a;
 	}
 
+    DefMoveOp(Set) {
+        ++getInstructionPointer();
+        registerValue(current.getArg0()) = getCurrentCodeWord();
+    }
+
+
 	DefMoveOp(Load) {
-		getValueRegister() = getDataSegment()[getAddressRegister()];
+		// use arg0 to denote which data segment to use
+		getValueRegister() = getSegment(registerValue(current.getArg0()))[getAddressRegister()];
 	}
 
 	DefMoveOp(Store) {
 		getDataSegment()[getAddressRegister()] = getValueRegister();
+	}
+
+	DefMoveOp(Load) {
+		++getInstructionPointer();
+		DecodedInstruction next;
+		next.decode(getCurrentCodeWord());
+		next.getSpecificArg0();
+		//registerValue(current.getEmbeddedArg()) = getDataSegment()[
 	}
 
 	DefMoveOp(Push) {
@@ -404,14 +401,8 @@ DefJumpOp(IfThenElseLink) {
 	word& Core::registerValue(byte index) {
 		return gpr[index];
 	}
-	word* Core::getStackSegment() {
-		return memory[getStackSegmentRegister()];
-	}
-	word* Core::getCodeSegment() {
-		return memory[getCodeSegmentRegister()];
-	}
-	word* Core::getDataSegment() {
-		return memory[getDataSegmentRegister()];
+	word* Core::getSegment(byte segment) {
+		return memory[segment];
 	}
 	word& Core::getInstructionPointer() {
 		return registerValue<ArchitectureConstants::InstructionPointer>();
@@ -424,15 +415,6 @@ DefJumpOp(IfThenElseLink) {
 	}
 	word& Core::getLinkRegister() {
 		return registerValue<ArchitectureConstants::LinkRegister>();
-	}
-	word& Core::getCodeSegmentRegister() {
-		return registerValue<ArchitectureConstants::CodeSegmentRegister>();
-	}
-	word& Core::getStackSegmentRegister() {
-		return registerValue<ArchitectureConstants::StackSegmentRegister>();
-	}
-	word& Core::getDataSegmentRegister() {
-		return registerValue<ArchitectureConstants::DataSegmentRegister>();
 	}
 	word& Core::getAddressRegister() {
 		return registerValue<ArchitectureConstants::AddressRegister>();
