@@ -26,7 +26,9 @@ namespace iris17 {
 #undef X
 	}
 
-	Core::Core() { }
+	Core::Core() : memory(new word[ArchitectureConstants::AddressMax]) {
+
+	}
 
 	void Core::initialize() { }
 
@@ -130,14 +132,6 @@ namespace iris17 {
 
 	DefMoveOp(Store) {
 		getDataSegment()[getAddressRegister()] = getValueRegister();
-	}
-
-	DefMoveOp(Load) {
-		++getInstructionPointer();
-		DecodedInstruction next;
-		next.decode(getCurrentCodeWord());
-		next.getSpecificArg0();
-		//registerValue(current.getEmbeddedArg()) = getDataSegment()[
 	}
 
 	DefMoveOp(Push) {

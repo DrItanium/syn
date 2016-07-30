@@ -5,17 +5,17 @@
 #include "Problem.h"
 #include <cstdint>
 #include <sstream>
+#include <memory>
 namespace iris17 {
-	typedef uint16_t word;
-	typedef uint32_t dword;
-	typedef dword raw_instruction; // this is more of a packet!
-	typedef word immediate;
-	inline dword encodeDword(byte a, byte b, byte c, byte d);
-	inline word encodeWord(byte a, byte b);
+	typedef uint16_t hword;
+	typedef uint32_t word;
+	typedef word raw_instruction; // this is more of a packet!
+	typedef hword immediate;
+	inline word encodeWord (byte a, byte b, byte c, byte d);
+	inline hword encodeHword(byte a, byte b);
 	enum ArchitectureConstants  {
 		RegisterCount = 16,
-		AddressMax = 65535,
-		SegmentCount = 256,
+		AddressMax = 65535 * 256,
 		// unlike iris16 and iris32, there is a limited set of registers with
 		// a majority of them marked for explicit usage, instructions
 		// themselves are still 16 bits wide but 32bits are extracted per
@@ -26,33 +26,13 @@ namespace iris17 {
 		ConditionRegister = RegisterCount - 4,
 		AddressRegister = RegisterCount - 5,
 		ValueRegister = RegisterCount - 6,
-		MaxGroups = 0x7,
-		MaxOperations = 0x1F,
 	};
 
-	enum class InstructionGroup : byte {
-#define X(title, _) title,
-#include "iris17_groups.def"
+	enum class Operations : byte {
+#define X(name) name,
+#include "iris17_ops.def"
 #undef X
-		Count,
 	};
-	static_assert((byte)InstructionGroup::Count < ((byte)ArchitectureConstants::MaxGroups), "too many instruction groups defined");
-	enum class ArithmeticOp : byte {
-#define Y(name) name,
-#define X(name, __, ___) Y(name)
-#include "iris17_arithmetic.def"
-#undef X
-#undef Y
-		Count
-	};
-	static_assert((byte)ArithmeticOp::Count < ((byte)ArchitectureConstants::MaxOperations), "too many Arithmetic operations defined");
-	enum class MiscOp : byte {
-#define X(title, func) title,
-#include "iris17_misc.def"
-#undef X
-		Count
-	};
-	static_assert((byte)MiscOp::Count < ((byte)ArchitectureConstants::MaxOperations), "too many Misc operations defined");
 
 	enum class JumpOp : byte {
 #define X(name) name,
@@ -160,7 +140,8 @@ namespace iris17 {
 			bool execute = true,
 				 advanceIp = true;
 			word gpr[ArchitectureConstants::RegisterCount] = { 0 };
-			word memory[ArchitectureConstants::SegmentCount][ArchitectureConstants::AddressMax] = { { 0 }, };
+			std::unique_ptr<word[]> memory;
+			//word memory[ArchitectureConstants::SegmentCount][ArchitectureConstants::AddressMax] = { { 0 }, };
 	};
 
 	Core* newCore();
