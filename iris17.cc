@@ -37,48 +37,42 @@ namespace iris17 {
 		_rawValue(input) { }
 
 
-	Core::Core() : memory(new word[ArchitectureConstants::AddressMax]) {
-
-	}
+	Core::Core() { }
 
 	void Core::initialize() { }
 
 	void Core::shutdown() { }
 
-	template<int count>
-	void populateContents(RegisterValue* contents, std::istream& stream) {
-		char buf[sizeof(word)] = { 0 };
+	template<typename T, int count>
+	void populateContents(T* contents, std::istream& stream, std::function<T(byte*)> encode) {
+		static char buf[sizeof(word)] = { 0 };
 		for(int i = 0; i < count; ++i) {
 			stream.read(buf, sizeof(word));
-			contents[i] = iris17::encodeWord(buf[0], buf[1], buf[2], buf[3]);
-		}
-	}
-	template<int count>
-	void populateContents(const std::unique_ptr<word[]>& contents, std::istream& stream) {
-		char buf[sizeof(word)] = { 0 };
-		for(int i = 0; i < count; ++i) {
-			stream.read(buf, sizeof(word));
-			contents[i] = iris17::encodeWord(buf[0], buf[1], buf[2], buf[3]);
+			contents[i] = encode((byte*)buf);
 		}
 	}
 	void Core::installprogram(std::istream& stream) {
-		populateContents<ArchitectureConstants::RegisterCount>(gpr, stream);
-		populateContents<ArchitectureConstants::AddressMax>(memory, stream);
+
+		populateContents<RegisterValue, ArchitectureConstants::RegisterCount>(gpr, stream, [](byte* buf) { return iris::encodeUint32LE(buf); });
+		for (int i =0 ; i < ArchitectureConstants::SegmentCount; ++i) {
+			populateContents<word, ArchitectureConstants::AddressMax>(memory[i], stream, [](byte* buf) { return iris::encodeUint16LE(buf); });
+		}
+	}
+
+	template<typename T, int count>
+	void dumpContents(T* contents, std::ostream& stream, std::function<void(T value, byte* buf)> decompose) {
+		static byte buf[sizeof(T)];
+		for (int i = 0; i < count; ++i) {
+			decompose(contents[i], (byte*)buf);
+			stream.write(buf, sizeof(T));
+		}
 	}
 
 	void Core::dump(std::ostream& stream) {
 		// save the registers
-		static byte rBuf[sizeof(RegisterValue)] = { 0 };
-		static byte memBuf[sizeof(word)] = { 0 };
-		for (int i = 0; i < ArchitectureConstants::RegisterCount; ++i) {
-			decodeWord(gpr[i], rBuf);
-			char* tmp = (char*)rBuf;
-			stream.write(tmp, sizeof(RegisterValue));
-		}
-		for (int i = 0; i < ArchitectureConstants::AddressMax; ++i) {
-			decodeWord(memory[i], memBuf);
-			char* tmp = (char*)memBuf;
-			stream.write(tmp, sizeof(word));
+		dumpContents<RegisterValue, ArchitectureConstants::RegisterCount>(gpr, stream, iris::decodeUint32LE);
+		for (int i = 0; i < ArchitectureConstants::SegmentCount; ++i) {
+			dumpContents<word, ArchitectureConstants::AddressMax>(memory[i], stream, iris::decodeUint16LE);
 		}
 	}
 	void Core::run() {
@@ -96,37 +90,149 @@ namespace iris17 {
 
 
 
-
+#define mValueArg0 (current.getDestination())
+#define mValueArg1 (current.getSrc0())
+#define mValueArg2 (current.getSrc1())
+#define mValueArg3 (current.getSrc2())
+#define mValueArg4 (current.getSrc3())
+#define mRegisterArg0 (registerValue(mValueArg0))
+#define mRegisterArg1 (registerValue(mValueArg1))
+#define mRegisterArg2 (registerValue(mValueArg2))
+#define mRegisterArg3 (registerValue(mValueArg3))
+#define mRegisterArg4 (registerValue(mValueArg4))
+#define mAsRegisterValue(value) static_cast<RegisterValue>(value)
 
 #define DefOp(title) \
 	template<> \
 	void Core::op<Operation:: title>(DecodedInstruction&& current) 
+	
+	DefOp(Nop) { 
+	}
 
-	DefOp(Add){
-		
+#define ArithmeticOp(title, operation, src1) \
+	DefOp(title) { \
+		mRegisterArg0 = mRegisterArg0 operation src1 ; \
+	}
+#define X(title, operation) ArithmeticOp(title, operation, mRegisterArg1)
+#define Y(title, operation) ArithmeticOp(title, operation, mAsRegisterValue(mValueArg1))
+// for the cases where we have an immediate form
+#define Z(title, operation) \
+	X(title, operation) \
+	Y(title ## Immediate , operation)
+#define Div(title, operation, src1) \
+	DefOp(title) { \
+		if (src1 == 0) { \
+			throw iris::Problem("Denominator is zero!"); \
+		} else { \
+			mRegisterArg0 = mRegisterArg0 operation src1 ; \
+		} \
+	}
+#define W(title, operation) \
+	Div(title, operation,  mRegisterArg1) \
+	Div(title ## Immediate, operation, mAsRegisterValue(mValueArg1))
+
+	Z(Add, +)
+	Z(Sub, -)
+	Z(Mul, *)
+	W(Div, /)
+	W(Rem, %)
+	Z(ShiftLeft, <<)
+	Z(ShiftRight, >>)
+	X(BinaryAnd, &)
+	X(BinaryOr, |)
+	X(BinaryXor, ^)
+#undef Z
+#undef X
+#undef Y
+#undef W
+#undef Div
+#undef ArithmeticOp
+	DefOp(BinaryNot) {
+		mRegisterArg0 = ~ mRegisterArg0;
 	}
 
 	DefOp(Increment) {
-		registerValue(current.getArg0()) = registerValue(current.getArg0()) + 1;
+		++mRegisterArg0;
 	}
 	
 	DefOp(Decrement) {
-		//registerValue(current.getEmbeddedArg()) = registerValue(current.getEmbeddedArg()) - 1;
+		--mRegisterArg0;
+	}
+
+	DefOp(Double) {
+		mRegisterArg0 *= 2;
+	}
+
+	DefOp(Halve) {
+		mRegisterArg0 /= 2;
 	}
 
 	DefOp(Move)  {
-		//registerValue(current.getArg0()) = registerValue(current.getArg1());
+		mRegisterArg0 = mRegisterArg1;
 	}
 
 	DefOp(Swap) {
-        word a = registerValue(current.getArg0());
-        registerValue(current.getArg0()) = registerValue(current.getArg1());
-        registerValue(current.getArg1()) = a;
+		RegisterValue tmp = mRegisterArg0;
+		mRegisterArg0 = mRegisterArg1;
+		mRegisterArg1 = tmp;
 	}
 
+	template<byte bitmask> 
+	struct SetBitmaskToWordMask {
+		static constexpr bool decomposedBits[] = {
+			(bitmask & 0b0001),
+			((bitmask & 0b0010) >> 1),
+			((bitmask & 0b0100) >> 2),
+			((bitmask & 0b1000) >> 3),
+		};
+		static constexpr byte determineMaskValue(bool value) { return value ? 0xFF : 0x00; }
+		static constexpr RegisterValue mask = (determineMaskValue(decomposedBits[3]) << 24) |
+				(determineMaskValue(decomposedBits[2]) << 16) | 
+				(determineMaskValue(decomposedBits[1]) << 8) | 
+				(determineMaskValue(decomposedBits[0]));
+		static constexpr bool readLower = decomposedBits[1] || decomposedBits[0];
+		static constexpr bool readUpper = decomposedBits[2] || decomposedBits[3];
+	};
+
     DefOp(Set) {
-        ++getInstructionPointer();
-        registerValue(current.getArg0()) = getCurrentCodeWord();
+		auto bitmask = mRegisterArg1;
+		switch (bitmask) {
+#define X(value) \
+			case value: \
+			{ \
+				RegisterValue lower = 0; \
+				RegisterValue upper = 0; \
+				if (SetBitmaskToWordMask<value>::readLower) { \
+					++getInstructionPointer(); \
+					lower = getCurrentCodeWord(); \
+				} \
+				if (SetBitmaskToWordMask<value>::readUpper) { \
+					++getInstructionPointer(); \
+					upper = RegisterValue(getCurrentCodeWord()) << 16; \
+				} \
+				mRegisterArg0 = SetBitmaskToWordMask<value>::mask & (lower | upper); \
+				break; \
+			}
+			X(0b0000)
+			X(0b0001)
+			X(0b0010)
+			X(0b0011)
+			X(0b0100)
+			X(0b0101)
+			X(0b0110)
+			X(0b0111)
+			X(0b1000)
+			X(0b1001)
+			X(0b1010)
+			X(0b1011)
+			X(0b1100)
+			X(0b1101)
+			X(0b1110)
+			X(0b1111)
+#undef X
+			default:
+				throw iris::Problem("unknown mask!");
+		}
     }
 
 
@@ -151,25 +257,20 @@ namespace iris17 {
 	}
 DefOp(Branch) {
 	advanceIp = false;
-	++getInstructionPointer();
-	// need to read the next "instruction"
-	getInstructionPointer() = getCurrentCodeWord();
+	getInstructionPointer() = current.getAddress24();
 }
 
-//DefJumpOp(Call) {
-//	advanceIp = false;
-//    // read the next word
-//	//
-//	++getInstructionPointer();
-//	word ip = getInstructionPointer();
-//	getInstructionPointer() = getCurrentCodeWord();
-//	getLinkRegister() = ip + 1;
-//}
-//
-//DefJumpOp(IndirectBranch) {
-//    advanceIp = false;
-//	getInstructionPointer() = registerValue(current.getEmbeddedArg());
-//}
+DefJumpOp(Call) {
+	advanceIp = false;
+	word ip = getInstructionPointer();
+	getInstructionPointer() = current.getAddress24();
+	getLinkRegister() = ip + 1;
+}
+
+DefJumpOp(IndirectBranch) {
+    advanceIp = false;
+	getInstructionPointer() = registerValue(current.getEmbeddedArg());
+}
 //
 //DefJumpOp(IndirectCall) {
 //    advanceIp = false;

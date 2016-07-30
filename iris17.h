@@ -7,19 +7,20 @@
 #include <sstream>
 #include <memory>
 namespace iris17 {
-	typedef uint16_t hword;
-	typedef uint32_t word;
+	typedef uint8_t hword;
+	typedef uint16_t word;
+	typedef uint32_t dword;
 	typedef word raw_instruction; // this is more of a packet!
 	typedef hword immediate;
-	typedef int32_t RegisterValue;
-	inline word encodeWord (byte a, byte b, byte c, byte d);
-	inline hword encodeHword(byte a, byte b);
+	typedef uint32_t RegisterValue;
+	inline word encodeWord (byte a, byte b);
+	inline RegisterValue encodeRegisterValue(byte a, byte b, byte c, byte d);
 	inline void decodeWord(word value, byte* storage);
-	inline void decodeHword(hword value, byte* storage);
 	inline void decodeRegisterValue(RegisterValue value, byte* storage);
 	enum ArchitectureConstants  {
 		RegisterCount = 16,
-		AddressMax = 65535 * 256,
+		SegmentCount = 256,
+		AddressMax = 65535,
 		// unlike iris16 and iris32, there is a limited set of registers with
 		// a majority of them marked for explicit usage, instructions
 		// themselves are still 16 bits wide but 32bits are extracted per
@@ -88,6 +89,7 @@ namespace iris17 {
 		void op(DecodedInstruction&& inst) {
 			throw iris::Problem("Unimplemented function!");
 		}
+
 		inline RegisterValue& registerValue(byte index);
 		inline RegisterValue& getInstructionPointer();
 		inline RegisterValue& getStackPointer();
@@ -95,6 +97,7 @@ namespace iris17 {
 		inline RegisterValue& getLinkRegister();
 		inline RegisterValue& getAddressRegister();
 		inline RegisterValue& getValueRegister();
+		inline word* getSegment(RegisterValue segment);
 		inline word getCurrentCodeWord();
 		inline word getTopOfStack();
 
@@ -102,7 +105,7 @@ namespace iris17 {
 			bool execute = true,
 				 advanceIp = true;
 			RegisterValue gpr[ArchitectureConstants::RegisterCount] = { 0 };
-			std::unique_ptr<word[]> memory;
+			word memory[ArchitectureConstants::SegmentCount][ArchitectureConstants::AddressMax] = { { 0 } };
 	};
 
 	Core* newCore();

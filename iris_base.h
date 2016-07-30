@@ -83,6 +83,8 @@ inline T encodeField(T input, F value) {
 uint16_t encodeUint16LE(byte a, byte b);
 int16_t encodeInt16LE(byte a, byte b);
 uint32_t encodeUint32LE(byte a, byte b, byte c, byte d);
+uint16_t encodeUint16LE(byte contents[sizeof(uint16_t)]);
+uint32_t encodeUint32LE(byte contents[sizeof(uint32_t)]);
 int32_t encodeInt32LE(byte a, byte b, byte c, byte d);
 void decodeUint32LE(uint32_t value, byte storage[sizeof(uint32_t)]);
 void decodeUint16LE(uint16_t value, byte storage[sizeof(uint16_t)]);
