@@ -28,19 +28,11 @@ namespace iris17 {
 		ValueRegister = RegisterCount - 6,
 	};
 
-	enum class Operations : byte {
+	enum class Operation : byte {
 #define X(name) name,
 #include "iris17_ops.def"
 #undef X
 	};
-
-	enum class JumpOp : byte {
-#define X(name) name,
-#include "iris17_jump.def"
-#undef X
-		Count
-	};
-	static_assert((byte)JumpOp::Count < ((byte)ArchitectureConstants::MaxOperations), "too many Jump operations defined");
 
 	enum class SystemCalls : byte {
 #define X(name) name,
@@ -48,25 +40,10 @@ namespace iris17 {
 #undef X
 		Count,
 	};
-	enum class MoveOp : byte {
-#define X(name) name,
-#include "iris17_move.def"
-#undef X
-		Count,
-	};
-	static_assert((byte)MoveOp::Count < ((byte)ArchitectureConstants::MaxOperations), "too many Move operations defined");
-	enum class CompareOp : byte {
-#define X(name, op, group) name,
-#define Y(name, op, group) name,
-#include "iris17_compare.def"
-#undef Y
-#undef X
-		Count,
-	};
-	static_assert((byte)CompareOp::Count < ((byte)ArchitectureConstants::MaxOperations), "too many Compare operations defined");
 	class DecodedInstruction {
 		public:
 			DecodedInstruction();
+			DecodedInstruction(raw_instruction input);
 			void decode(raw_instruction input);
 #define X(title, mask, shift, type, is_register, post) inline type get ## title () const { return _ ## post ; }
 #include "iris17_instruction.def"
@@ -76,22 +53,7 @@ namespace iris17 {
 #include "iris17_instruction.def"
 #undef X
 	};
-	template<InstructionGroup group>
-	struct GetAssociatedOp { };
-#define X(title, _) \
-	template<> \
-	struct GetAssociatedOp<InstructionGroup :: title > { \
-		typedef title ## Op Association; \
-	};
-#include "iris17_groups.def"
-#undef X
 
-	template<InstructionGroup group,typename T, T op>
-	struct ControlSignature {
-		static constexpr byte groupValue = static_cast<byte>(group);
-		static constexpr byte opValue = static_cast<byte>(op);
-		static constexpr byte fullSignature = (opValue << 3) | groupValue;
-	};
 	class Core : public iris::Core {
 		public:
 			Core();
@@ -121,11 +83,10 @@ namespace iris17 {
 		inline byte getControl();
 		inline word& registerValue(byte index);
 
-		template<InstructionGroup group, typename T, T operation>
+		template<Operation op>
 		void op() {
 			throw iris::Problem("Unimplemented function!");
 		}
-		inline word* getSegment(byte segment);
 		inline word& getInstructionPointer();
 		inline word& getStackPointer();
 		inline word& getConditionRegister();
@@ -141,7 +102,6 @@ namespace iris17 {
 				 advanceIp = true;
 			word gpr[ArchitectureConstants::RegisterCount] = { 0 };
 			std::unique_ptr<word[]> memory;
-			//word memory[ArchitectureConstants::SegmentCount][ArchitectureConstants::AddressMax] = { { 0 }, };
 	};
 
 	Core* newCore();
