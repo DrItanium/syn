@@ -218,7 +218,7 @@ DefJumpOp(Call) {
     // read the next word
 	//
 	++getInstructionPointer();
-	auto ip = getInstructionPointer();
+	word ip = getInstructionPointer();
 	getInstructionPointer() = getCurrentCodeWord();
 	getLinkRegister() = ip + 1;
 }
@@ -230,26 +230,48 @@ DefJumpOp(IndirectBranch) {
 
 DefJumpOp(IndirectCall) {
     advanceIp = false;
-	auto ip = getInstructionPointer() + 1;
+	word ip = getInstructionPointer() + 1;
 	getInstructionPointer() = registerValue(current.getEmbeddedArg());
 	getLinkRegister() = ip;
 }
 
 DefJumpOp(ConditionalBranch) {
-
+	advanceIp = false;
+	if (getConditionRegister() != 0) {
+		++getInstructionPointer();
+		getInstructionPointer() = getCurrentCodeWord();
+	} else {
+		getInstructionPointer() += 2;
+	}
 }
 
 DefJumpOp(ConditionalIndirectBranch) {
-
+	advanceIp = false;
+	if (getConditionRegister() != 0) {
+		getInstructionPointer() = registerValue(current.getEmbeddedArg());
+	} else {
+		++getInstructionPointer();
+	}
 }
 
 DefJumpOp(IfThenElse) {
-
+	advanceIp = false;
+	++getInstructionPointer();
+	DecodedInstruction next;
+	next.decode(getCurrentCodeWord());
+	getInstructionPointer() = registerValue(((registerValue(current.getEmbeddedArg()) != 0) ? next.getSpecificArg0() : next.getSpecificArg1()));
 }
 
 DefJumpOp(IfThenElseLink) {
-
+	advanceIp = false;
+	word ip = getInstructionPointer() + 2;
+	++getInstructionPointer();
+	DecodedInstruction next;
+	next.decode(getCurrentCodeWord());
+	getInstructionPointer() = registerValue(((registerValue(current.getEmbeddedArg()) != 0) ? next.getSpecificArg0() : next.getSpecificArg1()));
+	getLinkRegister() = ip;
 }
+
 	template<>
 	void Core::op<InstructionGroup::Misc, GetAssociatedOp<InstructionGroup::Misc>::Association, GetAssociatedOp<InstructionGroup::Misc>::Association::SystemCall>() {
 		++getInstructionPointer();
