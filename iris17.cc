@@ -37,7 +37,10 @@ namespace iris17 {
 		_rawValue(input) { }
 
 
-	Core::Core() { }
+	Core::Core() : memory(new word[ArchitectureConstants::AddressMax]) { }
+	Core::~Core() {
+		delete [] memory;
+	}
 
 	void Core::initialize() { }
 
@@ -54,9 +57,7 @@ namespace iris17 {
 	void Core::installprogram(std::istream& stream) {
 
 		populateContents<RegisterValue, ArchitectureConstants::RegisterCount>(gpr, stream, [](byte* buf) { return iris::encodeUint32LE(buf); });
-		for (int i =0 ; i < ArchitectureConstants::SegmentCount; ++i) {
-			populateContents<word, ArchitectureConstants::AddressMax>(memory[i], stream, [](byte* buf) { return iris::encodeUint16LE(buf); });
-		}
+		populateContents<word, ArchitectureConstants::AddressMax>(memory, stream, [](byte* buf) { return iris::encodeUint16LE(buf); });
 	}
 
 	template<typename T, int count>
@@ -71,9 +72,7 @@ namespace iris17 {
 	void Core::dump(std::ostream& stream) {
 		// save the registers
 		dumpContents<RegisterValue, ArchitectureConstants::RegisterCount>(gpr, stream, iris::decodeUint32LE);
-		for (int i = 0; i < ArchitectureConstants::SegmentCount; ++i) {
-			dumpContents<word, ArchitectureConstants::AddressMax>(memory[i], stream, iris::decodeUint16LE);
-		}
+		dumpContents<word, ArchitectureConstants::AddressMax>(memory, stream, iris::decodeUint16LE);
 	}
 	void Core::run() {
 		while(execute) {
@@ -190,6 +189,8 @@ namespace iris17 {
 				(determineMaskValue(decomposedBits[2]) << 16) | 
 				(determineMaskValue(decomposedBits[1]) << 8) | 
 				(determineMaskValue(decomposedBits[0]));
+		static constexpr word lowerMask = (determineMaskValue(decomposedBits[1]) << 8) | (determineMaskValue(decomposedBits[0]));
+		static constexpr word upperMask = (determineMaskValue(decomposedBits[3]) << 8) | (determineMaskValue(decomposedBits[2]));
 		static constexpr bool readLower = decomposedBits[1] || decomposedBits[0];
 		static constexpr bool readUpper = decomposedBits[2] || decomposedBits[3];
 	};
@@ -213,42 +214,102 @@ namespace iris17 {
 				mRegisterArg0 = SetBitmaskToWordMask<value>::mask & (lower | upper); \
 				break; \
 			}
-			X(0b0000)
-			X(0b0001)
-			X(0b0010)
-			X(0b0011)
-			X(0b0100)
-			X(0b0101)
-			X(0b0110)
-			X(0b0111)
-			X(0b1000)
-			X(0b1001)
-			X(0b1010)
-			X(0b1011)
-			X(0b1100)
-			X(0b1101)
-			X(0b1110)
-			X(0b1111)
+#include "iris17_bitmask4bit.def"
 #undef X
 			default:
 				throw iris::Problem("unknown mask!");
 		}
     }
-
-
+	void Core::storeWord(RegisterValue address, word value) {
+		if (address > ArchitectureConstants::AddressMax) {
+			throw iris::Problem("Attempted to write outside of memory!");
+		} else {
+			memory[address] = value;
+		}
+	}
+	word Core::loadWord(RegisterValue address) {
+		if (address > ArchitectureConstants::AddressMax) {
+			throw iris::Problem("Attempted to read from outside of memory!");
+		} else {
+			return memory[address];
+		}
+	}
+	RegisterValue Core::loadRegisterValue(RegisterValue address) {
+		return iris::encodeBits<RegisterValue, word, 0xFFFFFFFF, 16>(RegisterValue(loadWord(address)), loadWord(address + 1));
+	}
+	void Core::storeRegisterValue(RegisterValue address, RegisterValue value) {
+		storeWord(address, iris::decodeBits<RegisterValue, word, 0x0000FFFF, 0>(value));
+		storeWord(address + 1, iris::decodeBits<RegisterValue, word, 0xFFFF0000, 16>(value));
+	}
 	DefOp(Load) {
-		// use arg0 to denote which data segment to use
-		//getValueRegister() = getSegment(registerValue(current.getArg0()))[getAddressRegister()];
+		// use the destination field of the instruction to denote offset, thus we need
+		// to use the Address and Value registers
+		auto offset = current.getDestination();
+		RegisterValue address = getAddressRegister() + offset;
+		// use the src0 field of the instruction to denote the bitmask
+		auto bitmask = current.getSrc0();
+		switch (bitmask) {
+			// 0b1101 implies that we have to leave 0x0000FF00 around in the
+			// value register since it isn't necessary
+#define X(value) \
+			case value: \
+			{ \
+				RegisterValue lower = 0; \
+				RegisterValue upper = 0; \
+				if (SetBitmaskToWordMask<value>::readLower) { \
+					lower = loadWord(address); \
+				} \
+				if (SetBitmaskToWordMask<value>::readUpper) { \
+					upper = RegisterValue(loadWord(address + 1)) << 16; \
+				} \
+				getValueRegister() = (SetBitmaskToWordMask<value>::mask & (lower | upper)) | (getValueRegister() & ~SetBitmaskToWordMask<value>::mask); \
+				break; \
+			}
+#include "iris17_bitmask4bit.def"
+#undef X
+		}
+		getValueRegister() = loadRegisterValue(address);
 	}
 
 	DefOp(Store) {
-		//getDataSegment()[getAddressRegister()] = getValueRegister();
+		auto offset = current.getDestination();
+		auto bitmask = current.getSrc0();
+		RegisterValue address = getAddressRegister() + offset;
+		switch(bitmask) {
+			// 0b1101 implies that we have to leave 0x0000FF00 around in the
+			// value register since it isn't necessary
+#define X(value) \
+			case value: \
+			{ \
+				RegisterValue lower = 0; \
+				RegisterValue upper = 0; \
+				if (SetBitmaskToWordMask<value>::readLower) { \
+					lower = SetBitmaskToWordMask<value>::lowerMask & iris::decodeBits<RegisterValue, word, 0x0000FFFF, 0>(getValueRegister()); \
+					auto loader = loadWord(address) & ~SetBitmaskToWordMask<value>::lowerMask; \
+					storeWord(address, lower | loader); \
+				} \
+				if (SetBitmaskToWordMask<value>::readUpper) { \
+					upper = SetBitmaskToWordMask<value>::upperMask & iris::decodeBits<RegisterValue, word, 0xFFFF0000, 16>(getValueRegister()); \
+					auto loader = loadWord(address) & ~SetBitmaskToWordMask<value>::upperMask; \
+					storeWord(address + 1, upper | loader); \
+				} \
+				break; \
+			}
+#include "iris17_bitmask4bit.def"
+#undef X
+
+		}
+		storeRegisterValue(address, getValueRegister());
 	}
 
 	DefOp(Push) {
-		//word& stackPointer = getStackPointer();
-		//++stackPointer;
-		//getStackSegment()[stackPointer] = registerValue(current.getEmbeddedArg());
+		auto stackPointer = getStackPointer();
+		// decrement the stack pointer by two words
+		stackPointer -= 2;
+		// make sure that if we underflow that we don't go off into bad memory
+		stackPointer &= 0x00FFFFFF;
+		storeRegisterValue(stackPointer, registerValue(current.getSrc0()));
+		//TODO: push immediate???
 	}
 
 	DefOp(Pop) {
@@ -409,6 +470,14 @@ DefJumpOp(IndirectBranch) {
 		//			throw iris::Problem(str.str());
 		//	}
 		//}
+	}
+	word* Core::getSegment(RegisterVaue address)  {
+		auto segment = iris::decodeField<RegisterValue, word, 2>(address);
+		if (segment > ArchitectureConstants::SegmentCount) {
+			throw iris::Problem("Attempted to get illegal segment");
+		} else {
+			return memory[segment];
+		}
 	}
 	RegisterValue& Core::registerValue(byte index) {
 		return gpr[index];

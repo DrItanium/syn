@@ -20,7 +20,7 @@ namespace iris17 {
 	enum ArchitectureConstants  {
 		RegisterCount = 16,
 		SegmentCount = 256,
-		AddressMax = 65535,
+		AddressMax = 65535 * SegmentCount,
 		// unlike iris16 and iris32, there is a limited set of registers with
 		// a majority of them marked for explicit usage, instructions
 		// themselves are still 16 bits wide but 32bits are extracted per
@@ -62,6 +62,7 @@ namespace iris17 {
 	class Core : public iris::Core {
 		public:
 			Core();
+			virtual ~Core();
 			virtual void initialize() override;
 			virtual void installprogram(std::istream& stream) override;
 			virtual void shutdown() override;
@@ -100,12 +101,16 @@ namespace iris17 {
 		inline word* getSegment(RegisterValue segment);
 		inline word getCurrentCodeWord();
 		inline word getTopOfStack();
+		inline void storeWord(RegisterValue address, word value);
+		inline word loadWord(RegisterValue address);
+		inline RegisterValue loadRegisterValue(RegisterValue address);
+		inline void storeRegisterValue(RegisterValue address, RegisterValue value);
 
 		private:
 			bool execute = true,
 				 advanceIp = true;
 			RegisterValue gpr[ArchitectureConstants::RegisterCount] = { 0 };
-			word memory[ArchitectureConstants::SegmentCount][ArchitectureConstants::AddressMax] = { { 0 } };
+			word *memory = nullptr;
 	};
 
 	Core* newCore();
