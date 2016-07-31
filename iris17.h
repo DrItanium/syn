@@ -31,6 +31,8 @@ namespace iris17 {
 		ConditionRegister = RegisterCount - 4,
 		AddressRegister = RegisterCount - 5,
 		ValueRegister = RegisterCount - 6,
+		ConditionalArgument0 = RegisterCount - 7,
+		ConditionalArgument1 = RegisterCount - 8,
 	};
 
 	enum class Operation : byte {
@@ -45,6 +47,23 @@ namespace iris17 {
 #undef X
 		Count,
 	};
+
+	enum class CompareCombine : byte {
+		None,
+		And,
+		Or,
+		Xor,
+	};
+
+	enum class CompareStyle : byte {
+		Equals,
+		NotEquals,
+		LessThan,
+		GreaterThan,
+		LessThanOrEqualTo,
+		GreaterThanOrEqualTo,
+	};
+
 	class DecodedInstruction {
 		public:
 			DecodedInstruction(raw_instruction input);

@@ -362,11 +362,8 @@ namespace iris17 {
 	}
 
 	DefOp(Pop) {
-		//registerValue(current.getEmbeddedArg()) = getStackSegment()[getStackPointer()];
-		//--getStackPointer();
 		auto stackPointer = getStackPointer();
 		auto bitmask = current.getSrc0();
-		auto fromStack = registerValue(current.getSrc1());
 		switch (bitmask) {
 			// pop the entries off of the stack and store it in the register
 #define X(value) \
@@ -386,7 +383,7 @@ namespace iris17 {
 					stackPointer &= SetBitmaskToWordMask<0b0111>::mask; \
 					upper = SetBitmaskToWordMask<value>::upperMask & val; \
 				} \
-				fromStack = iris::encodeBits<word, RegisterValue, SetBitmaskToWordMask<0b1100>::mask, 16>(iris::encodeBits<word, RegisterValue, SetBitmaskToWordMask<0b0011>::mask, 0>(RegisterValue(0), lower), upper); \
+				registerValue(current.getSrc1()) = iris::encodeBits<word, RegisterValue, SetBitmaskToWordMask<0b1100>::mask, 16>(iris::encodeBits<word, RegisterValue, SetBitmaskToWordMask<0b0011>::mask, 0>(RegisterValue(0), lower), upper); \
 				break; \
 			}
 #include "iris17_bitmask4bit.def"
@@ -475,7 +472,102 @@ DefOp(IfThenElseLink) {
 	} else {
 		getInstructionPointer() = SetBitmaskToWordMask<0b0111>::mask & onFalse;
 	}
+}
+template<CompareCombine compareOp> 
+bool combine(bool newValue, bool existingValue) {
+	throw iris::Problem("Undefined combine operation");
+}
+template<>
+bool combine<CompareCombine::None>(bool newValue, bool existingValue) {
+	return newValue;
+}
 
+template<>
+bool combine<CompareCombine::And>(bool newValue, bool existingValue) {
+	return newValue && existingValue;
+}
+
+template<>
+bool combine<CompareCombine::Or>(bool newValue, bool existingValue) {
+	return newValue || existingValue;
+}
+
+template<>
+bool combine<CompareCombine::Xor>(bool newValue, bool existingValue) {
+	return newValue ^ existingValue;
+}
+
+template<CompareStyle style>
+bool compare(RegisterValue a, RegisterValue b) {
+	throw iris::Problem("Undefined comparison style!");
+}
+
+template<>
+bool compare<CompareStyle::Equals>(RegisterValue a, RegisterValue b) {
+	return a == b;
+}
+
+template<>
+bool compare<CompareStyle::NotEquals>(RegisterValue a, RegisterValue b) {
+	return a != b;
+}
+
+template<>
+bool compare<CompareStyle::LessThan>(RegisterValue a, RegisterValue b) {
+	return a < b;
+}
+
+template<>
+bool compare<CompareStyle::GreaterThan>(RegisterValue a, RegisterValue b) {
+	return a > b;
+}
+
+template<>
+bool compare<CompareStyle::LessThanOrEqualTo>(RegisterValue a, RegisterValue b) {
+	return a <= b;
+}
+template<>
+bool compare<CompareStyle::GreaterThanOrEqualTo>(RegisterValue a, RegisterValue b) {
+	return a >= b;
+}
+
+DefOp(Compare) {
+	++getInstructionPointer();
+	DecodedInstruction next(getCurrentCodeWord());
+	switch (current.getConditionalCompareType()) {
+#define X(type) \
+		case CompareStyle:: type : { \
+									   RegisterValue first = registerValue(next.getSrc1()); \
+									   RegisterValue second = current.getConditionalImmediateFlag() ? next.getUpper() : registerValue(next.getSrc2()); \
+									   bool result = compare<CompareStyle:: type>(first, second); \
+									   switch (current.getConditionalCombineFlag()) { \
+										   case CompareCombine::None: \
+											   getConditionRegister() = combine<CompareCombine::None>(result, getConditionRegister()); \
+											   break; \
+										   case CompareCombine::And: \
+											   getConditionRegister() = combine<CompareCombine::And>(result, getConditionRegister()); \
+											   break; \
+										   case CompareCombine::Or: \
+											   getConditionRegister() = combine<CompareCombine::Or>(result, getConditionRegister()); \
+											   break; \
+										   case CompareCombine::Xor: \
+											   getConditionRegister() = combine<CompareCombine::Xor>(result, getConditionRegister()); \
+											   break; \
+										   default: \
+													throw iris::Problem("Illegal Compare Combine Operation"); \
+									   } \
+									   break; \
+								   }
+		X(Equals)
+		X(NotEquals)
+		X(LessThan)
+		X(GreaterThan)
+		X(LessThanOrEqualTo)
+		X(GreaterThanOrEqualTo)
+#undef X
+		default:
+			throw iris::Problem("illegal compare type!");
+	}
 }
 
 	template<>

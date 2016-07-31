@@ -1,9 +1,0 @@
-// title, id, ifthenelseform?, conditional?, iffalse?, immediate?, link?
-X(Branch)
-X(Call)
-X(IndirectBranch)
-X(IndirectCall)
-X(ConditionalBranch)
-X(ConditionalIndirectBranch)
-X(IfThenElse)
-X(IfThenElseLink)
