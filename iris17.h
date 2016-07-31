@@ -98,7 +98,6 @@ namespace iris17 {
 		inline RegisterValue& getLinkRegister();
 		inline RegisterValue& getAddressRegister();
 		inline RegisterValue& getValueRegister();
-		inline word* getSegment(RegisterValue segment);
 		inline word getCurrentCodeWord();
 		inline word getTopOfStack();
 		inline void storeWord(RegisterValue address, word value);

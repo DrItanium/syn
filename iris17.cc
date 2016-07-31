@@ -65,7 +65,7 @@ namespace iris17 {
 		static byte buf[sizeof(T)];
 		for (int i = 0; i < count; ++i) {
 			decompose(contents[i], (byte*)buf);
-			stream.write(buf, sizeof(T));
+			stream.write((char*)buf, sizeof(T));
 		}
 	}
 
@@ -318,19 +318,19 @@ namespace iris17 {
 	}
 DefOp(Branch) {
 	advanceIp = false;
-	getInstructionPointer() = current.getAddress24();
+	//getInstructionPointer() = current.getAddress24();
 }
 
-DefJumpOp(Call) {
+DefOp(Call) {
 	advanceIp = false;
-	word ip = getInstructionPointer();
-	getInstructionPointer() = current.getAddress24();
-	getLinkRegister() = ip + 1;
+	//word ip = getInstructionPointer();
+	//getInstructionPointer() = current.getAddress24();
+	//getLinkRegister() = ip + 1;
 }
 
-DefJumpOp(IndirectBranch) {
+DefOp(IndirectBranch) {
     advanceIp = false;
-	getInstructionPointer() = registerValue(current.getEmbeddedArg());
+	//getInstructionPointer() = registerValue(current.getEmbeddedArg());
 }
 //
 //DefJumpOp(IndirectCall) {
@@ -379,23 +379,23 @@ DefJumpOp(IndirectBranch) {
 
 	template<>
 	void Core::op<Operation::SystemCall>(DecodedInstruction&& current) {
-		switch(static_cast<SystemCalls>(current.getByte1())) {
+		switch(static_cast<SystemCalls>(getAddressRegister())) {
 			case SystemCalls::Terminate:
 				execute = false;
 				advanceIp = false;
 				break;
 			case SystemCalls::PutC:
 				// read register 0 and register 1
-				std::cout.put(static_cast<char>(registerValue(current.getArg2())));
+				std::cout.put(static_cast<char>(registerValue(current.getDestination())));
 				break;
 			case SystemCalls::GetC:
 				byte value;
 				std::cin >> std::noskipws >> value;
-				registerValue(current.getArg3()) = static_cast<word>(value);
+				registerValue(current.getDestination()) = static_cast<word>(value);
 				break;
 			default:
 				std::stringstream ss;
-				ss << "Illegal system call " << current.getByte1();
+				ss << "Illegal system call " << std::hex << getAddressRegister();
 				execute = false;
 				advanceIp = false;
 				throw iris::Problem(ss.str());
@@ -470,14 +470,6 @@ DefJumpOp(IndirectBranch) {
 		//			throw iris::Problem(str.str());
 		//	}
 		//}
-	}
-	word* Core::getSegment(RegisterVaue address)  {
-		auto segment = iris::decodeField<RegisterValue, word, 2>(address);
-		if (segment > ArchitectureConstants::SegmentCount) {
-			throw iris::Problem("Attempted to get illegal segment");
-		} else {
-			return memory[segment];
-		}
 	}
 	RegisterValue& Core::registerValue(byte index) {
 		return gpr[index];
