@@ -249,6 +249,35 @@ namespace iris17 {
 		// use the src0 field of the instruction to denote the bitmask
 		auto bitmask = current.getSrc0();
 		switch (bitmask) {
+#define X(value) \
+			case value: \
+			{ \
+				RegisterValue lower = 0; \
+				RegisterValue upper = 0; \
+				if (SetBitmaskToWordMask<value>::readLower) { \
+					lower = loadWord(address); \
+				} \
+				if (SetBitmaskToWordMask<value>::readUpper) { \
+					upper = RegisterValue(loadWord(address + 1)) << 16; \
+				} \
+				getValueRegister() = (SetBitmaskToWordMask<value>::mask & (lower | upper)); \
+				break; \
+			}
+#include "iris17_bitmask4bit.def"
+#undef X
+			default:
+				throw iris::Problem("illegal bitmask");
+		}
+	}
+
+	DefOp(LoadMerge) {
+		// use the destination field of the instruction to denote offset, thus we need
+		// to use the Address and Value registers
+		auto offset = current.getDestination();
+		RegisterValue address = getAddressRegister() + offset;
+		// use the src0 field of the instruction to denote the bitmask
+		auto bitmask = current.getSrc0();
+		switch (bitmask) {
 			// 0b1101 implies that we have to leave 0x0000FF00 around in the
 			// value register since it isn't necessary
 #define X(value) \
@@ -267,8 +296,9 @@ namespace iris17 {
 			}
 #include "iris17_bitmask4bit.def"
 #undef X
+			default:
+				throw iris::Problem("illegal bitmask");
 		}
-		getValueRegister() = loadRegisterValue(address);
 	}
 
 	DefOp(Store) {
@@ -297,49 +327,115 @@ namespace iris17 {
 			}
 #include "iris17_bitmask4bit.def"
 #undef X
-
+			default:
+				throw iris::Problem("illegal bitmask");
 		}
-		storeRegisterValue(address, getValueRegister());
 	}
 
 	DefOp(Push) {
 		auto stackPointer = getStackPointer();
-		// decrement the stack pointer by two words
-		stackPointer -= 2;
-		// make sure that if we underflow that we don't go off into bad memory
-		stackPointer &= 0x00FFFFFF;
-		storeRegisterValue(stackPointer, registerValue(current.getSrc0()));
-		//TODO: push immediate???
+		auto bitmask = current.getSrc0();
+		auto pushToStack = registerValue(current.getSrc1());
+		switch (bitmask) {
+#define X(value) \
+			case value: \
+			{ \
+				if (SetBitmaskToWordMask<value>::readUpper) { \
+					--stackPointer; \
+					stackPointer &= 0x00FFFFFF; \
+					RegisterValue upper = SetBitmaskToWordMask<value>::upperMask & iris::decodeBits<RegisterValue, word, 0xFFFF0000, 16>(pushToStack); \
+					storeWord(stackPointer, upper); \
+				} \
+				if (SetBitmaskToWordMask<value>::readLower) { \
+					--stackPointer; \
+					stackPointer &= 0x00FFFFFF; \
+					RegisterValue lower = SetBitmaskToWordMask<value>::lowerMask & iris::decodeBits<RegisterValue, word, 0x0000FFFF, 0>(pushToStack); \
+					storeWord(stackPointer, lower); \
+				} \
+				break; \
+			}
+#include "iris17_bitmask4bit.def"
+#undef X
+			default:
+				throw iris::Problem("illegal bitmask");
+		}
 	}
 
 	DefOp(Pop) {
 		//registerValue(current.getEmbeddedArg()) = getStackSegment()[getStackPointer()];
 		//--getStackPointer();
+		auto stackPointer = getStackPointer();
+		auto bitmask = current.getSrc0();
+		auto fromStack = registerValue(current.getSrc1());
+		switch (bitmask) {
+			// pop the entries off of the stack and store it in the register
+#define X(value) \
+			case value: \
+			{ \
+				RegisterValue lower = 0; \
+				RegisterValue upper = 0; \
+				if (SetBitmaskToWordMask<value>::readLower) { \
+					auto val = loadWord(stackPointer); \
+					++stackPointer; \
+					stackPointer &= 0x00FFFFFF; \
+					lower = SetBitmaskToWordMask<value>::lowerMask & val; \
+				} \
+				if (SetBitmaskToWordMask<value>::readUpper) { \
+					auto val = loadWord(stackPointer); \
+					++stackPointer; \
+					stackPointer &= 0x00FFFFFF; \
+					upper = SetBitmaskToWordMask<value>::upperMask & val; \
+				} \
+				fromStack = iris::encodeBits<word, RegisterValue, 0xFFFF0000, 16>(iris::encodeBits<word, RegisterValue, 0x0000FFFF, 0>(RegisterValue(0), lower), upper); \
+				break; \
+			}
+#include "iris17_bitmask4bit.def"
+#undef X
+			default:
+				throw iris::Problem("illegal bitmask");
+		}
 	}
 DefOp(Branch) {
 	advanceIp = false;
-	//getInstructionPointer() = current.getAddress24();
+	++getInstructionPointer();
+	// make a 24 bit number
+	auto bottom = RegisterValue(current.getUpper());
+	auto upper = RegisterValue(getCurrentCodeWord()) << 8;
+	getInstructionPointer() = SetBitmaskToWordMask<0b0111>::mask & (upper | bottom);
+
 }
 
 DefOp(Call) {
 	advanceIp = false;
-	//word ip = getInstructionPointer();
-	//getInstructionPointer() = current.getAddress24();
-	//getLinkRegister() = ip + 1;
+	++getInstructionPointer();
+	// make a 24 bit number
+	auto ip = getInstructionPointer();
+	auto bottom = RegisterValue(current.getUpper());
+	auto upper = RegisterValue(getCurrentCodeWord()) << 8;
+	getInstructionPointer() = SetBitmaskToWordMask<0b0111>::mask & (upper | bottom);
+	getLinkRegister() = ip + 1;
+	if (getLinkRegister() > SetBitmaskToWordMask<0b0111>::mask) {
+		getLinkRegister() &= SetBitmaskToWordMask<0b0111>::mask; // make sure that we aren't over the memory setup
+	}
 }
 
 DefOp(IndirectBranch) {
     advanceIp = false;
-	//getInstructionPointer() = registerValue(current.getEmbeddedArg());
+	auto target = registerValue(current.getDestination());
+	getInstructionPointer() = SetBitmaskToWordMask<0b0111>::mask & target;
 }
-//
-//DefJumpOp(IndirectCall) {
-//    advanceIp = false;
-//	word ip = getInstructionPointer() + 1;
-//	getInstructionPointer() = registerValue(current.getEmbeddedArg());
-//	getLinkRegister() = ip;
-//}
-//
+
+DefOp(IndirectCall) {
+    advanceIp = false;
+	auto ip = getInstructionPointer();
+	auto target = registerValue(current.getDestination());
+	getInstructionPointer() = SetBitmaskToWordMask<0b0111>::mask & target;
+	getLinkRegister() = ip + 1;
+	if (getLinkRegister() > SetBitmaskToWordMask<0b0111>::mask) {
+		getLinkRegister() &= SetBitmaskToWordMask<0b0111>::mask; // make sure that we aren't over the memory setup
+	}
+}
+
 //DefJumpOp(ConditionalBranch) {
 //	advanceIp = false;
 //	if (getConditionRegister() != 0) {
