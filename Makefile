@@ -252,7 +252,7 @@ iris16.o: iris16.cc iris16.h iris_base.h Core.h iris16_groups.def \
  architecture_registrations.def Problem.h
 iris17.o: iris17.cc iris17.h iris_base.h Core.h Problem.h iris17_ops.def \
  iris17_syscalls.def iris17_instruction.def iris17_misc.def \
- iris17_registers.def
+ iris17_registers.def iris17_bitmask4bit.def
 iris17_sim.o: iris17_sim.cc iris16.h iris_base.h Core.h iris16_groups.def \
  iris16_arithmetic.def iris16_misc.def iris16_jump.def \
  iris16_syscalls.def iris16_move.def iris16_compare.def \
