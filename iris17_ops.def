@@ -23,9 +23,10 @@ X(Increment)
 X(Decrement)
 X(Double)
 X(Halve)
+X(Square)
+X(Cube)
 
 X(Compare)
-
 X(Branch)
 X(Call)
 X(IndirectBranch)
@@ -45,3 +46,5 @@ X(LoadMerge)
 X(Store)
 X(Push)
 X(Pop)
+
+X(Return)

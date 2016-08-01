@@ -570,6 +570,20 @@ DefOp(Compare) {
 	}
 }
 
+DefOp(Return) {
+	advanceIp = false;
+	// jump to the link register
+	getInstructionPointer() = getLinkRegister();
+}
+
+DefOp(Square) {
+	registerValue(current.getDestination()) = registerValue(current.getDestination()) * registerValue(current.getDestination());
+}
+
+DefOp(Cube) {
+	registerValue(current.getDestination()) = registerValue(current.getDestination()) * registerValue(current.getDestination()) * registerValue(current.getDestination());
+}
+
 	template<>
 	void Core::op<Operation::SystemCall>(DecodedInstruction&& current) {
 		switch(static_cast<SystemCalls>(getAddressRegister())) {

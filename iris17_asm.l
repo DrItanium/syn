@@ -29,69 +29,54 @@ omni [a-zA-Z0-9._]
 
 
 %%
-"add" { return ARITHMETIC_OP_ADD; }
-"sub" { return ARITHMETIC_OP_SUB; }
-"mul" { return ARITHMETIC_OP_MUL; }
-"div" { return ARITHMETIC_OP_DIV; }
-"rem" { return ARITHMETIC_OP_REM; }
-"shl" { return ARITHMETIC_OP_SHIFTLEFT; }
-"shr" { return ARITHMETIC_OP_SHIFTRIGHT; }
-"and" { return ARITHMETIC_OP_BINARYAND; }
-"or" { return ARITHMETIC_OP_BINARYOR; }
-"not" { return ARITHMETIC_OP_BINARYNOT; }
-"xor" { return ARITHMETIC_OP_BINARYXOR; }
-"addi" { return ARITHMETIC_OP_ADD_IMM; }
-"subi" { return ARITHMETIC_OP_SUB_IMM; }
-"muli" { return ARITHMETIC_OP_MUL_IMM; }
-"divi" { return ARITHMETIC_OP_DIV_IMM; }
-"remi" { return ARITHMETIC_OP_REM_IMM; }
-"shli" { return ARITHMETIC_OP_SHIFTLEFT_IMM; }
-"shri" { return ARITHMETIC_OP_SHIFTRIGHT_IMM; }
+"add"  { return OP_ADD; }
+"sub"  { return OP_SUB; }
+"mul"  { return OP_MUL; }
+"div"  { return OP_DIV; }
+"rem"  { return OP_REM; }
+"shl"  { return OP_SHIFTLEFT; }
+"shr"  { return OP_SHIFTRIGHT; }
+"and"  { return OP_BINARYAND; }
+"or"   { return OP_BINARYOR; }
+"not"  { return OP_BINARYNOT; }
+"xor"  { return OP_BINARYXOR; }
+"addi" { return OP_ADD_IMM; }
+"subi" { return OP_SUB_IMM; }
+"muli" { return OP_MUL_IMM; }
+"divi" { return OP_DIV_IMM; }
+"remi" { return OP_REM_IMM; }
+"shli" { return OP_SHIFTLEFT_IMM; }
+"shri" { return OP_SHIFTRIGHT_IMM; }
 
-"incr" { return ARITHMETIC_MACRO_OP_INCR; }
-"decr" { return ARITHMETIC_MACRO_OP_DECR; }
-"halve" { return ARITHMETIC_MACRO_OP_HALVE; }
-"double" { return ARITHMETIC_MACRO_OP_DOUBLE; }
+"incr" { return OP_INCR; }
+"decr" { return OP_DECR; }
+"halve" { return OP_HALVE; }
+"double" { return OP_DOUBLE; }
+"square" { return OP_SQUARE; }
+"cube"	 { return OP_CUBE; }
 
-"move" { return MOVE_OP_MOVE; }
-"swap" { return MOVE_OP_SWAP; }
-"set" { return MOVE_OP_SET; }
-"ld" { return MOVE_OP_LOAD; }
-"st" { return MOVE_OP_STORE; }
+"move" { return OP_MOVE; }
+"swap" { return OP_SWAP; }
+"set" { return OP_SET; }
+"ld" { return OP_LOAD; }
+"ld.merge" { return OP_MERGE; }
+"st" { return OP_STORE; }
+"push" { return OP_PUSH; }
+"pop" { return OP_POP; }
 
-"b" 		{ return JUMP_OP_UNCONDITIONALIMMEDIATE; }
-"call" 		{ return JUMP_OP_UNCONDITIONALIMMEDIATELINK; }
-"br" 		{ return JUMP_OP_UNCONDITIONALREGISTER; }
-"callr" 		{ return JUMP_OP_UNCONDITIONALREGISTERLINK; }
-"bc" 		{ return JUMP_OP_CONDITIONALTRUEIMMEDIATE; }
-"bcr" 		{ return JUMP_OP_CONDITIONALTRUEIMMEDIATE; }
-"bif"		{ return JUMP_OP_IFTHENELSE; }
-"bifl"		{ return JUMP_OP_IFTHENELSELINK; }
+"branch" 		{ return OP_BRANCH; }
+"call" 		{ return OP_CALL; }
+"branch.indirect" 		{ return OP_BRANCH_INDIRECT; }
+"call.indirect" 	{ return OP_CALL_INDIRECT; }
+"branch.cond" 		{ return OP_BRANCH_CONDITIONAL; }
+"branch.cond.indirect" 		{ return OP_BRANCH_CONDITIONAL_INDIRECT; }
+"branch.if"		{ return OP_BRANCH_IF_THEN_ELSE; }
+"call.if"		{ return OP_CALL_IF_THEN_ELSE; }
+"return"	{ return OP_RETURN; }
 
-"eq" { return COMPARE_OP_EQ; }
-"neq" { return COMPARE_OP_NEQ; }
-"lt" { return COMPARE_OP_LESSTHAN; }
-"gt" { return COMPARE_OP_GREATERTHAN; }
-"le" { return COMPARE_OP_LESSTHANOREQUALTO; }
-"ge" { return COMPARE_OP_GREATERTHANOREQUALTO; }
+"compare"   { return OP_COMPARE; }
 
-"eqi" { return COMPARE_OP_EQ_IMMEDIATE; }
-"neqi" { return COMPARE_OP_NEQ_IMMEDIATE; }
-"lti" { return COMPARE_OP_LESSTHAN_IMMEDIATE; }
-"gti" { return COMPARE_OP_GREATERTHAN_IMMEDIATE; }
-"lei" { return COMPARE_OP_LESSTHANOREQUALTO_IMMEDIATE; }
-"gei" { return COMPARE_OP_GREATERTHANOREQUALTO_IMMEDIATE; }
-
-"eqi" { return COMPARE_OP_EQ_IMMEDIATE; }
-"neqi" { return COMPARE_OP_NEQ_IMMEDIATE; }
-"lti" { return COMPARE_OP_LESSTHAN_IMMEDIATE; }
-"gti" { return COMPARE_OP_GREATERTHAN_IMMEDIATE; }
-"lei" { return COMPARE_OP_LESSTHANOREQUALTO_IMMEDIATE; }
-"gei" { return COMPARE_OP_GREATERTHANOREQUALTO_IMMEDIATE; }
-
-"system" { return MISC_OP_SYSTEMCALL; }
-"push" { return MOVE_OP_PUSH; }
-"pop" { return MOVE_OP_POP; }
+"system" { return OP_SYSTEM; }
 
 
 "@label" { return LABEL; }
@@ -99,6 +84,7 @@ omni [a-zA-Z0-9._]
 "@code"  { return DIRECTIVE_CODE; }
 "@org"   { return DIRECTIVE_ORG; }
 "@declare" { return DIRECTIVE_DECLARE; }
+
 "ip"	 	 { iris17lval.rval = iris17::ArchitectureConstants::InstructionPointer; return REGISTER; }
 "lr"	 	 { iris17lval.rval = iris17::ArchitectureConstants::LinkRegister; return REGISTER; }
 "sp"	 	 { iris17lval.rval = iris17::ArchitectureConstants::StackPointer; return REGISTER; }
