@@ -29,7 +29,7 @@ namespace iris17 {
 	DecodedInstruction::DecodedInstruction(raw_instruction input) :
 #define X(title, mask, shift, type, is_register, post) \
 		_ ## post (iris::decodeBits<raw_instruction, type, mask, shift>(input)),
-#include "iris17_instruction.def"
+#include "def/iris17/instruction.def"
 #undef X
 		_rawValue(input) { }
 
@@ -120,7 +120,7 @@ namespace iris17 {
 #define W(title, operation) \
 	Div(title, operation,  mRegisterArg1) \
 	Div(title ## Immediate, operation, mAsRegisterValue(mValueArg1))
-#include "iris17_arithmetic_ops.def"
+#include "def/iris17/arithmetic_ops.def"
 #undef Z
 #undef X
 #undef Y
@@ -195,7 +195,7 @@ namespace iris17 {
 				mRegisterArg0 = SetBitmaskToWordMask<value>::mask & (lower | upper); \
 				break; \
 			}
-#include "iris17_bitmask4bit.def"
+#include "def/iris17/bitmask4bit.def"
 #undef X
 			default:
 				throw iris::Problem("unknown mask!");
@@ -244,7 +244,7 @@ namespace iris17 {
 				getValueRegister() = (SetBitmaskToWordMask<value>::mask & (lower | upper)); \
 				break; \
 			}
-#include "iris17_bitmask4bit.def"
+#include "def/iris17/bitmask4bit.def"
 #undef X
 			default:
 				throw iris::Problem("illegal bitmask");
@@ -275,7 +275,7 @@ namespace iris17 {
 				getValueRegister() = (SetBitmaskToWordMask<value>::mask & (lower | upper)) | (getValueRegister() & ~SetBitmaskToWordMask<value>::mask); \
 				break; \
 			}
-#include "iris17_bitmask4bit.def"
+#include "def/iris17/bitmask4bit.def"
 #undef X
 			default:
 				throw iris::Problem("illegal bitmask");
@@ -306,7 +306,7 @@ namespace iris17 {
 				} \
 				break; \
 			}
-#include "iris17_bitmask4bit.def"
+#include "def/iris17/bitmask4bit.def"
 #undef X
 			default:
 				throw iris::Problem("illegal bitmask");
@@ -335,7 +335,7 @@ namespace iris17 {
 				} \
 				break; \
 			}
-#include "iris17_bitmask4bit.def"
+#include "def/iris17/bitmask4bit.def"
 #undef X
 			default:
 				throw iris::Problem("illegal bitmask");
@@ -367,7 +367,7 @@ namespace iris17 {
 				registerValue(current.getSrc1()) = iris::encodeBits<word, RegisterValue, SetBitmaskToWordMask<0b1100>::mask, 16>(iris::encodeBits<word, RegisterValue, SetBitmaskToWordMask<0b0011>::mask, 0>(RegisterValue(0), lower), upper); \
 				break; \
 			}
-#include "iris17_bitmask4bit.def"
+#include "def/iris17/bitmask4bit.def"
 #undef X
 			default:
 				throw iris::Problem("illegal bitmask");
@@ -597,7 +597,7 @@ DefOp(Cube) {
 			case Operation:: type : \
 				operation<Operation:: type>(std::move(current)); \
 			break;
-#include "iris17_ops.def"
+#include "def/iris17/ops.def"
 #undef X
 			default:
 				std::stringstream str;

@@ -35,13 +35,13 @@ namespace iris17 {
 
 	enum class Operation : byte {
 #define X(name) name,
-#include "iris17_ops.def"
+#include "def/iris17/ops.def"
 #undef X
 	};
 
 	enum class SystemCalls : byte {
 #define X(name) name,
-#include "iris17_syscalls.def"
+#include "def/iris17/syscalls.def"
 #undef X
 		Count,
 	};
@@ -67,11 +67,11 @@ namespace iris17 {
 			DecodedInstruction(raw_instruction input);
 			inline raw_instruction getRawValue() const { return _rawValue; }
 #define X(title, mask, shift, type, is_register, post) inline type get ## title () const { return _ ## post ; }
-#include "iris17_instruction.def"
+#include "def/iris17/instruction.def"
 #undef X
 		private:
 #define X(title, mask, shift, type, is_register, post) type _ ## post ;
-#include "iris17_instruction.def"
+#include "def/iris17/instruction.def"
 #undef X
 			raw_instruction _rawValue;
 	};
@@ -89,13 +89,13 @@ namespace iris17 {
 		private:
 			void dispatch(DecodedInstruction&& inst);
 #define X(title, func) void func ();
-#include "iris17_misc.def"
+#include "def/iris17/misc.def"
 #undef X
 		template<byte index>
 		RegisterValue& registerValue() {
 			switch(index) {
 #define X(index) case index : return gpr[index];
-#include "iris17_registers.def"
+#include "def/iris17/registers.def"
 #undef X
 				default:
 					std::stringstream msg;
