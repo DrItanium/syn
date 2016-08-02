@@ -22,14 +22,14 @@ namespace iris16 {
 
 	enum class InstructionGroup : byte {
 #define X(title, _) title,
-#include "iris16_groups.def"
+#include "def/iris16/groups.def"
 #undef X
 		Count,
 	};
 	static_assert((byte)InstructionGroup::Count < ((byte)ArchitectureConstants::MaxGroups), "too many instruction groups defined");
 	enum class ArithmeticOp : byte {
 #define X(name, __, ___) name,
-#include "iris16_arithmetic.def"
+#include "def/iris16/arithmetic.def"
 #undef X
 		Count
 	};
@@ -44,7 +44,7 @@ namespace iris16 {
 
 	enum class JumpOp : byte {
 #define X(name, ifthenelse, conditional, iffalse, immediate, link) name,
-#include "iris16_jump.def"
+#include "def/iris16/jump.def"
 #undef X
 		Count
 	};
@@ -52,13 +52,13 @@ namespace iris16 {
 
 	enum class SystemCalls : byte {
 #define X(name) name,
-#include "iris16_syscalls.def"
+#include "def/iris16/syscalls.def"
 #undef X
 		Count,
 	};
 	enum class MoveOp : byte {
 #define X(name, type, target, dest, src) name,
-#include "iris16_move.def"
+#include "def/iris16/move.def"
 #undef X
 		Count,
 	};
@@ -66,7 +66,7 @@ namespace iris16 {
 	enum class CompareOp : byte {
 #define X(name, op, group) name,
 #define Y(name, op, group) name,
-#include "iris16_compare.def"
+#include "def/iris16/compare.def"
 #undef Y
 #undef X
 		Count,
@@ -77,11 +77,11 @@ namespace iris16 {
 			DecodedInstruction();
 			void decode(raw_instruction input);
 #define X(title, mask, shift, type, is_register, post) type get ## title () const { return _ ## post ; }
-#include "iris16_instruction.def"
+#include "def/iris16/instruction.def"
 #undef X
 		private:
 #define X(title, mask, shift, type, is_register, post) type _ ## post ;
-#include "iris16_instruction.def"
+#include "def/iris16/instruction.def"
 #undef X
 	};
 	class Core : public iris::Core {
@@ -98,10 +98,10 @@ namespace iris16 {
 		private:
 			void dispatch();
 #define X(_, op) void op();
-#include "iris16_groups.def"
+#include "def/iris16/groups.def"
 #undef X
 #define X(title, func) void func ();
-#include "iris16_misc.def"
+#include "def/iris16/misc.def"
 #undef X
 		private:
 			DecodedInstruction current;
