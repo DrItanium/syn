@@ -21,6 +21,8 @@ namespace iris17 {
 		RegisterCount = 16,
 		SegmentCount = 256,
 		AddressMax = 65535 * SegmentCount,
+		MaxInstructionCount = 64,
+		MaxSystemCalls = 128,
 		// unlike iris16 and iris32, there is a limited set of registers with
 		// a majority of them marked for explicit usage, instructions
 		// themselves are still 16 bits wide but 32bits are extracted per
@@ -37,7 +39,9 @@ namespace iris17 {
 #define X(name) name,
 #include "def/iris17/ops.def"
 #undef X
+		Count,
 	};
+	static_assert(static_cast<byte>(Operation::Count) <= static_cast<byte>(ArchitectureConstants::MaxInstructionCount), "Too many operations defined!");
 
 	enum class SystemCalls : byte {
 #define X(name) name,
@@ -45,6 +49,7 @@ namespace iris17 {
 #undef X
 		Count,
 	};
+	static_assert(static_cast<byte>(SystemCalls::Count) <= static_cast<byte>(ArchitectureConstants::MaxSystemCalls), "Too many system calls defined!");
 
 	enum class CompareCombine : byte {
 		None,

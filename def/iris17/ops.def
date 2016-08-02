@@ -1,4 +1,3 @@
-
 // title, id, operation, action
 X(Nop)
 X(Add)
@@ -8,17 +7,12 @@ X(Div)
 X(Rem)
 X(ShiftLeft)
 X(ShiftRight)
+
 X(BinaryAnd)
 X(BinaryOr)
 X(BinaryNot)
 X(BinaryXor)
-X(AddImmediate)
-X(SubImmediate)
-X(MulImmediate)
-X(DivImmediate)
-X(RemImmediate)
-X(ShiftLeftImmediate)
-X(ShiftRightImmediate)
+
 X(Increment)
 X(Decrement)
 X(Double)

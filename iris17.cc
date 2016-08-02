@@ -99,34 +99,32 @@ namespace iris17 {
 	DefOp(Nop) { 
 	}
 
-#define ArithmeticOp(title, operation, src1) \
+#define X(title, operation) \
 	DefOp(title) { \
-		mRegisterArg0 = mRegisterArg0 operation src1 ; \
+		mRegisterArg0 = mRegisterArg0 operation (current.getArithmeticFlagImmediate() ? mAsRegisterValue(mValueArg1) : mRegisterArg1); \
 	}
-#define X(title, operation) ArithmeticOp(title, operation, mRegisterArg1)
-#define Y(title, operation) ArithmeticOp(title, operation, mAsRegisterValue(mValueArg1))
 // for the cases where we have an immediate form
-#define Z(title, operation) \
-	X(title, operation) \
-	Y(title ## Immediate , operation)
-#define Div(title, operation, src1) \
+#define Y(title, operation) \
 	DefOp(title) { \
+		RegisterValue src1 = (current.getArithmeticFlagImmediate() ? mAsRegisterValue(mValueArg1) : mRegisterArg1); \
 		if (src1 == 0) { \
 			throw iris::Problem("Denominator is zero!"); \
 		} else { \
-			mRegisterArg0 = mRegisterArg0 operation src1 ; \
+			mRegisterArg0 = mRegisterArg0 operation src1; \
 		} \
 	}
-#define W(title, operation) \
-	Div(title, operation,  mRegisterArg1) \
-	Div(title ## Immediate, operation, mAsRegisterValue(mValueArg1))
 #include "def/iris17/arithmetic_ops.def"
-#undef Z
 #undef X
 #undef Y
-#undef W
-#undef Div
-#undef ArithmeticOp
+	DefOp(BinaryAnd) {
+		mRegisterArg0 = mRegisterArg0 & mRegisterArg1;
+	}
+	DefOp(BinaryOr) {
+		mRegisterArg0 = mRegisterArg0 | mRegisterArg1;
+	}
+	DefOp(BinaryXor) {
+		mRegisterArg0 = mRegisterArg0 ^ mRegisterArg1;
+	}
 	DefOp(BinaryNot) {
 		mRegisterArg0 = ~ mRegisterArg0;
 	}
