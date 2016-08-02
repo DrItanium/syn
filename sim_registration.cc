@@ -7,7 +7,7 @@ namespace iris {
 #define X(en, str, __) \
 			case Architecture:: en: \
 									return en :: newCore();
-#include "architecture_registrations.def"
+#include "def/architecture_registrations.def"
 #undef X
 			default:
 				throw Problem("Unknown architecture provided!");

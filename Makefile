@@ -242,14 +242,14 @@ uninstall:
 
 
 architecture.o: architecture.cc architecture.h \
- architecture_registrations.def Problem.h
+ def/architecture_registrations.def Problem.h
 asm_interact.o: asm_interact.cc asm_interact.h architecture.h \
- architecture_registrations.def Problem.h
+ def/architecture_registrations.def Problem.h
 iris16.o: iris16.cc iris16.h iris_base.h Core.h def/iris16/groups.def \
  def/iris16/arithmetic.def def/iris16/misc.def def/iris16/jump.def \
  def/iris16/syscalls.def def/iris16/move.def def/iris16/compare.def \
  def/iris16/instruction.def sim_registration.h architecture.h \
- architecture_registrations.def Problem.h
+ def/architecture_registrations.def Problem.h
 iris17.o: iris17.cc iris17.h iris_base.h Core.h Problem.h \
  def/iris17/ops.def def/iris17/syscalls.def def/iris17/instruction.def \
  def/iris17/misc.def def/iris17/registers.def \
@@ -267,14 +267,14 @@ iris32_sim.o: iris32_sim.cc iris32.h iris_base.h Core.h \
  def/iris32/arithmetic.def def/iris32/move.def def/iris32/jump.def \
  def/iris32/misc.def def/iris32/syscalls.def
 iris_asm.o: iris_asm.cc asm_interact.h architecture.h \
- architecture_registrations.def Problem.h
+ def/architecture_registrations.def Problem.h
 iris_base.o: iris_base.cc iris_base.h
 iris_link.o: iris_link.cc Core.h sim_registration.h architecture.h \
- architecture_registrations.def Problem.h
+ def/architecture_registrations.def Problem.h
 iris_sim.o: iris_sim.cc Problem.h Core.h sim_registration.h \
- architecture.h architecture_registrations.def
+ architecture.h def/architecture_registrations.def
 sim_registration.o: sim_registration.cc sim_registration.h Core.h \
- architecture.h architecture_registrations.def Problem.h targets.h \
+ architecture.h def/architecture_registrations.def Problem.h targets.h \
  iris16.h iris_base.h def/iris16/groups.def def/iris16/arithmetic.def \
  def/iris16/misc.def def/iris16/jump.def def/iris16/syscalls.def \
  def/iris16/move.def def/iris16/compare.def def/iris16/instruction.def \

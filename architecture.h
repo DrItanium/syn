@@ -6,7 +6,7 @@
 namespace iris {
 	enum class Architecture {
 #define X(name, str, cl) name, 
-	#include "architecture_registrations.def"
+	#include "def/architecture_registrations.def"
 #undef X
 	};
 	Architecture getArchitectureFromString(const std::string& value);
