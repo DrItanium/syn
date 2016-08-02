@@ -13,10 +13,10 @@ namespace iris17 {
 	Core* newCore() {
 		return new Core();
 	}
-	word encodeWord(byte a, byte b, byte c, byte d) {
+	RegisterValue encodeRegisterValue(byte a, byte b, byte c, byte d) {
 		return iris::encodeUint32LE(a, b, c, d);
 	}
-	hword encodeHword(byte a, byte b) {
+	word encodeWord(byte a, byte b) {
 		return iris::encodeUint16LE(a, b);
 	}
 	void decodeWord(word value, byte* storage) {
@@ -24,9 +24,6 @@ namespace iris17 {
 	}
 	void decodeWord(RegisterValue value, byte* storage) {
 		return iris::decodeInt32LE(value, storage);
-	}
-	void decodeHword(hword value, byte* storage) {
-		return iris::decodeUint16LE(value, storage);
 	}
 
 	DecodedInstruction::DecodedInstruction(raw_instruction input) :
@@ -91,14 +88,8 @@ namespace iris17 {
 
 #define mValueArg0 (current.getDestination())
 #define mValueArg1 (current.getSrc0())
-#define mValueArg2 (current.getSrc1())
-#define mValueArg3 (current.getSrc2())
-#define mValueArg4 (current.getSrc3())
 #define mRegisterArg0 (registerValue(mValueArg0))
 #define mRegisterArg1 (registerValue(mValueArg1))
-#define mRegisterArg2 (registerValue(mValueArg2))
-#define mRegisterArg3 (registerValue(mValueArg3))
-#define mRegisterArg4 (registerValue(mValueArg4))
 #define mAsRegisterValue(value) static_cast<RegisterValue>(value)
 
 #define DefOp(title) \
@@ -129,17 +120,7 @@ namespace iris17 {
 #define W(title, operation) \
 	Div(title, operation,  mRegisterArg1) \
 	Div(title ## Immediate, operation, mAsRegisterValue(mValueArg1))
-
-	Z(Add, +)
-	Z(Sub, -)
-	Z(Mul, *)
-	W(Div, /)
-	W(Rem, %)
-	Z(ShiftLeft, <<)
-	Z(ShiftRight, >>)
-	X(BinaryAnd, &)
-	X(BinaryOr, |)
-	X(BinaryXor, ^)
+#include "iris17_arithmetic_ops.def"
 #undef Z
 #undef X
 #undef Y
@@ -626,57 +607,26 @@ DefOp(Cube) {
 		}
 	}
 
-
-	//enum class Segment  {
-	//	Code,
-	//	Data,
-	//	Count,
-	//};
-
 	void Core::link(std::istream& input) {
-		//dword result = 0;
-		//word result0 = 0;
-		//char buf[8] = {0};
-		//for(int lineNumber = 0; input.good(); ++lineNumber) {
-		//	input.read(buf, 8);
-		//	if (input.gcount() < 8 && input.gcount() > 0) {
-		//		throw iris::Problem("unaligned object file found!");
-		//	} else if (input.gcount() == 0) {
-		//		if (input.eof()) {
-		//			break;
-		//		} else {
-		//			throw iris::Problem("something bad happened while reading input file!");
-		//		}
-		//	}
-		//	//ignore the first byte, it is always zero
-		//	byte tmp = buf[1];
-		//	Segment target = static_cast<Segment>(buf[1]);
-		//	word address = iris17::encodeWord(buf[2], buf[3]);
-		//	if (debugEnabled()) {
-		//		std::cerr << "current target = " << static_cast<int>(target) << "\tcurrent address = 0x" << std::hex << address << std::endl;
-		//	}
-		//	switch(target) {
-		//		case Segment::Code:
-		//			result = iris17::encodeWord(buf[4], buf[5]);
-		//			if (debugEnabled()) {
-		//				std::cerr << " code result: 0x" << std::hex << result << std::endl;
-		//			}
-		//			//setInstructionMemory(address, result);
-		//			break;
-		//		case Segment::Data:
-		//			result0 = iris17::encodeWord(buf[4], buf[5]);
-		//			if (debugEnabled()) {
-		//				std::cerr << " data result: 0x" << std::hex << result0 << std::endl;
-		//			}
-		//			//setDataMemory(address, result0);
-		//			break;
-		//		default:
-		//			std::stringstream str;
-		//			str << "error: line " << lineNumber << ", unknown segment " << static_cast<int>(target) << "/" << static_cast<int>(tmp) << std::endl;
-		//			str << "current address: " << std::hex << address << std::endl;
-		//			throw iris::Problem(str.str());
-		//	}
-		//}
+		// two address system, 1 RegisterValue -> address, 1 word -> value
+		constexpr int bufSize = sizeof(RegisterValue) + sizeof(word);
+		char buf[bufSize] = { 0 };
+		for(int lineNumber = 0; input.good(); ++lineNumber) {
+			input.read(buf, bufSize);
+			if (input.gcount() < bufSize && input.gcount() > 0) {
+				throw iris::Problem("unaligned object file found!");
+			} else if (input.gcount() == 0) {
+				if (input.eof()) {
+					break;
+				} else {
+					throw iris::Problem("something bad happened while reading input file!");
+				}
+			}
+			//ignore the first byte, it is always zero
+			RegisterValue address = encodeRegisterValue(buf[0], buf[1], buf[2], buf[3]);
+			word value = encodeWord(buf[4], buf[5]);
+			this->storeWord(address, value);
+		}
 	}
 	RegisterValue& Core::registerValue(byte index) {
 		return gpr[index];
