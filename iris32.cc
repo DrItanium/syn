@@ -12,7 +12,7 @@ namespace iris32 {
 	DecodedInstruction::DecodedInstruction(word inst) :
 #define X(title, mask, shift, type, isreg, field ) \
 		field ( (type) ((inst & mask) >> shift) ),
-#include "iris32_instruction.def"
+#include "def/iris32/instruction.def"
 #undef X
 		raw(inst)
 		{ }
@@ -23,13 +23,13 @@ namespace iris32 {
 	void DecodedInstruction:: set ## title ( type value ) { \
 		field = value ; \
 	}
-#include "iris32_instruction.def"
+#include "def/iris32/instruction.def"
 #undef X
 	word DecodedInstruction::encodeInstruction() {
 		return
 #define X(title, mask, shift, type, isreg, field) \
 			((word(field) << shift) & mask) |
-#include "iris32_instruction.def"
+#include "def/iris32/instruction.def"
 #undef X
 			0;
 	}
@@ -160,7 +160,7 @@ namespace iris32 {
 				} \
 				INDIRECTOR(XLink, _ ## link)  \
 			}
-#include "iris32_jump.def"
+#include "def/iris32/jump.def"
 #undef X
 // move operations
 #define GPRRegister0 (thread->gpr[inst.getDestination()])
@@ -219,7 +219,7 @@ namespace iris32 {
 		}\
 		INDIRECTOR(X,type)(target, dest, src) \
 	}
-#include "iris32_move.def"
+#include "def/iris32/move.def"
 #undef X
 #undef XMove
 #undef XSwap
@@ -271,7 +271,7 @@ namespace iris32 {
 		thread->gpr[current.getDestination()] INDIRECTOR(Op, mod) (thread->gpr[current.getSource0()] compare (word(current.getSource1()))); \
 	}
 
-#include "iris32_compare.def"
+#include "def/iris32/compare.def"
 #undef X
 #undef Y
 #undef OpNone
@@ -309,7 +309,7 @@ namespace iris32 {
 		}\
 		INDIRECTOR(X, desc)(name, op) \
 	}
-#include "iris32_arithmetic.def"
+#include "def/iris32/arithmetic.def"
 #undef X
 #undef XNone
 #undef XDenominator
@@ -372,20 +372,20 @@ namespace iris32 {
 		switch (decoded.getControl()) {
 #define X(title, operation, unused) DispatchDecode(CompareOp, title)
 #define Y(title, operation, unused) X(title, operation, unused)
-#include "iris32_compare.def"
+#include "def/iris32/compare.def"
 #undef X
 #undef Y
 #define X(title, operation, type) DispatchDecode(ArithmeticOp, title)
-#include "iris32_arithmetic.def"
+#include "def/iris32/arithmetic.def"
 #undef X
 #define X(title, operation, __, ___, ____) DispatchDecode(MoveOp, title)
-#include "iris32_move.def"
+#include "def/iris32/move.def"
 #undef X
 #define X(title, u0, u1, u2, u3, u4) DispatchDecode(JumpOp, title)
-#include "iris32_jump.def"
+#include "def/iris32/jump.def"
 #undef X
 #define X(title, __) DispatchDecode(MiscOp, title)
-#include "iris32_misc.def"
+#include "def/iris32/misc.def"
 #undef X
 			default:
 				throw "Undefined control!";

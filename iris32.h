@@ -40,7 +40,7 @@ namespace iris32 {
 	};
 	enum class InstructionGroup : byte {
 #define X(e, __) e ,
-#include "iris32_groups.def"
+#include "def/iris32/groups.def"
 #undef X
 	};
 	template<byte index>
@@ -61,13 +61,13 @@ namespace iris32 {
 	struct EncodeInstructionGroupAsByte< InstructionGroup :: group > { \
 		static const byte value = static_cast< byte > (InstructionGroup :: group ); \
 	}; 
-#include "iris32_groups.def"
+#include "def/iris32/groups.def"
 #undef X
 
 	class DecodedInstruction {
 		enum class Fields {
 #define X(en, u0, u1, u2, u3, u4) en ,
-#include "iris32_instruction.def"
+#include "def/iris32/instruction.def"
 #undef X
 			Count,
 		};
@@ -77,12 +77,12 @@ namespace iris32 {
 #define X(field, mask, shift, type, isreg, unused) \
 			type get ## field (); \
 			void set ## field (type value);
-#include "iris32_instruction.def"
+#include "def/iris32/instruction.def"
 #undef X
 			word encodeInstruction();
 		private:
 #define X(u0, u1, u2, type, u3, fieldName) type fieldName; 
-#include "iris32_instruction.def"
+#include "def/iris32/instruction.def"
 #undef X
 			word raw;
 	};
@@ -117,7 +117,7 @@ namespace iris32 {
 	enum class CompareOp : byte {
 #define X(title, operation, unused) title,
 #define Y(title, operation, unused) title,
-#include "iris32_compare.def"
+#include "def/iris32/compare.def"
 #undef X
 #undef Y
 		NumberOfCompareOps,
@@ -131,7 +131,7 @@ namespace iris32 {
 	typedef DecodeControl<EncodeControl< EncodeInstructionGroupAsByte < InstructionGroup:: group >::value, static_cast < byte > (cl :: e)>::value> Decode ## cl ## e;
 #define X(e, __, ___) DefOp(CompareOp, Compare, e)
 #define Y(e, __, ___) X(e, __, ___)
-#include "iris32_compare.def"
+#include "def/iris32/compare.def"
 #undef Y
 #undef X
 
@@ -141,55 +141,55 @@ namespace iris32 {
 
 	enum class ArithmeticOp : byte {
 #define X(title, operation, type) title ,
-#include "iris32_arithmetic.def"
+#include "def/iris32/arithmetic.def"
 #undef X
 		NumberOfArithmeticOps,
 	};
 	static_assert(byte(ArithmeticOp::NumberOfArithmeticOps) <= byte(MaxInstructionsPerGroup), "Too many arithmetic operations defined!");
 
 #define X(title, u0, u1) DefOp(ArithmeticOp, Arithmetic, title) 
-#include "iris32_arithmetic.def"
+#include "def/iris32/arithmetic.def"
 #undef X
 
 	enum class MoveOp : byte {
 #define X(title, operation, __, ___, ____) title ,
-#include "iris32_move.def"
+#include "def/iris32/move.def"
 #undef X
 		NumberOfMoveOps,
 	};
 	static_assert(byte(MoveOp::NumberOfMoveOps) <= byte(MaxInstructionsPerGroup), "Too many move operations defined!");
 
 #define X(title, __, ___, ____, _____) DefOp(MoveOp, Move, title)
-#include "iris32_move.def"
+#include "def/iris32/move.def"
 #undef X
 
 	enum class JumpOp : byte {
 #define X(title, u0, u1, u2, u3, u4) title ,
-#include "iris32_jump.def"
+#include "def/iris32/jump.def"
 #undef X
 		NumberOfJumpOps,
 	};
 	static_assert(byte(JumpOp::NumberOfJumpOps) <= byte(MaxInstructionsPerGroup), "Too many jump operations defined!");
 
 #define X(title, u0, u1, u2, u3, u4) DefOp(JumpOp, Jump, title)
-#include "iris32_jump.def"
+#include "def/iris32/jump.def"
 #undef X
 
 	enum class MiscOp : byte {
 #define X(title, __) title ,
-#include "iris32_misc.def"
+#include "def/iris32/misc.def"
 #undef X
 		NumberOfMiscOps,
 	};
 	static_assert(byte(MiscOp::NumberOfMiscOps) <= byte(MaxInstructionsPerGroup), "Too many misc operations defined!");
 
 #define X(title, __) DefOp(MiscOp, Misc, title)
-#include "iris32_misc.def"
+#include "def/iris32/misc.def"
 #undef X
 
 	enum class SystemCalls : byte {
 #define X(title) title ,
-#include "iris32_syscalls.def"
+#include "def/iris32/syscalls.def"
 #undef X
 		NumberOfSyscalls,
 	};
@@ -200,7 +200,7 @@ namespace iris32 {
 	struct GroupToOp< InstructionGroup :: group > { \
 		typedef group ## Op OpKind; \
 	};
-#include "iris32_groups.def"
+#include "def/iris32/groups.def"
 #undef X
 
 	class Core : public iris::Core {
