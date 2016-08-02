@@ -3,8 +3,8 @@
 // Enum Title, Mask, Shift amount, field type, is_register_legal, post_fix
 // define X(title, mask, shift, type, is_register, post)
 X(Control,        				  0b0000000000111111, 0, Operation, false, control)
-X(Destination, 	  				  0b0000111100000000, 8, byte, true, destination)
-X(Src0,			  				  0b1111000000000000, 12, byte, true, src0)
+X(Destination, 	  				  0b0000111100000000, 4, byte, true, destination)
+X(Src0,			  				  0b1111000000000000, 8, byte, true, src0)
 X(Src1,			  				  0b0000000000001111, 0, byte, true, src1)
 X(Src2,			  				  0b0000000011110000, 4, byte, true, src2)
 X(Upper,		  				  0b1111111100000000, 8, byte, false, upper)
@@ -16,4 +16,22 @@ X(ConditionalCombineFlag,   0b0001100000000000, 11, CompareCombine, false, condi
 X(ConditionalCompareType,   0b0000011100000000, 8,  CompareStyle, false, compareStyle)
 
 // arithmetic flags
-X(ArithmeticFlagImmediate,  0b0000000010000000, 7, bool, false, arithmeticFlagImmediate)
+X(ArithmeticFlagImmediate,          0b0000000001000000, 4, bool, false, arithmeticFlagImmediate)
+X(ArithmeticImmediate,		        0b1111100000000000, 11, RegisterValue, false, arithmeticImmediate)
+X(ArithmeticImmediateDestination,   0b0000011110000000, 7, byte, true, arithmeticImmediateDestination)
+
+// branch flags
+X(BranchFlags,						0b0000000011000000,  6, byte, false, branchFlags)
+X(BranchIndirectDestination,        0b1111000000000000, 12, byte, true, branchIndirectDestination)
+
+// call flags
+X(CallFlagImmediate, 0b0000000001000000, 6, bool, false, callFlagImmediate)
+X(CallDestination,   0b1111000000000000, 12, byte, true, callDestination)
+
+// if flags
+X(IfFlagCall,        0b0000000001000000, 6, bool, false, ifFlagCall)
+X(IfOnTrue,          0b0000111100000000, 8, byte, true, ifOnTrue)
+X(IfOnFalse,         0b1111000000000000, 12, byte, true, ifOnFalse)
+
+
+

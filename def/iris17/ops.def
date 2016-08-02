@@ -7,7 +7,6 @@ X(Div)
 X(Rem)
 X(ShiftLeft)
 X(ShiftRight)
-
 X(BinaryAnd)
 X(BinaryOr)
 X(BinaryNot)
@@ -21,14 +20,14 @@ X(Square)
 X(Cube)
 
 X(Compare)
+
 X(Branch)
 X(Call)
-X(IndirectBranch)
-X(IndirectCall)
-X(ConditionalBranch)
-X(ConditionalIndirectBranch)
-X(IfThenElse)
-X(IfThenElseLink)
+//X(Call)
+//X(IndirectCall)
+X(If)
+//X(IfThenElse)
+//X(IfThenElseLink)
 
 X(SystemCall)
 

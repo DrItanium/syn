@@ -101,12 +101,12 @@ namespace iris17 {
 
 #define X(title, operation) \
 	DefOp(title) { \
-		mRegisterArg0 = mRegisterArg0 operation (current.getArithmeticFlagImmediate() ? mAsRegisterValue(mValueArg1) : mRegisterArg1); \
+		mRegisterArg0 = mRegisterArg0 operation (current.getArithmeticFlagImmediate() ? current.getArithmeticImmediate() : mRegisterArg1); \
 	}
 // for the cases where we have an immediate form
 #define Y(title, operation) \
 	DefOp(title) { \
-		RegisterValue src1 = (current.getArithmeticFlagImmediate() ? mAsRegisterValue(mValueArg1) : mRegisterArg1); \
+		RegisterValue src1 = (current.getArithmeticFlagImmediate() ? current.getArithmeticImmediate() : mRegisterArg1); \
 		if (src1 == 0) { \
 			throw iris::Problem("Denominator is zero!"); \
 		} else { \
@@ -116,17 +116,9 @@ namespace iris17 {
 #include "def/iris17/arithmetic_ops.def"
 #undef X
 #undef Y
-	DefOp(BinaryAnd) {
-		mRegisterArg0 = mRegisterArg0 & mRegisterArg1;
-	}
-	DefOp(BinaryOr) {
-		mRegisterArg0 = mRegisterArg0 | mRegisterArg1;
-	}
-	DefOp(BinaryXor) {
-		mRegisterArg0 = mRegisterArg0 ^ mRegisterArg1;
-	}
+
 	DefOp(BinaryNot) {
-		mRegisterArg0 = ~ mRegisterArg0;
+		mRegisterArg0 = ~mRegisterArg0;
 	}
 
 	DefOp(Increment) {
@@ -371,87 +363,99 @@ namespace iris17 {
 				throw iris::Problem("illegal bitmask");
 		}
 	}
-DefOp(Branch) {
-	advanceIp = false;
-	++getInstructionPointer();
-	// make a 24 bit number
-	auto bottom = RegisterValue(current.getUpper());
-	auto upper = RegisterValue(getCurrentCodeWord()) << 8;
-	getInstructionPointer() = SetBitmaskToWordMask<0b0111>::mask & (upper | bottom);
+	template<bool indirect, bool conditional>
+	struct BranchFlags_BoolsToByte {
+		static constexpr byte flag = (static_cast<byte>(conditional) << 1) | static_cast<byte>(indirect);
+	};
+	template<byte value>
+	struct BranchFlags_ByteToBools {
+		static constexpr bool isImmediate = static_cast<bool>(value & 0b11);
+		static constexpr bool isConditional = static_cast<bool>((value & 0b11) >> 1);
+	};
+	template<byte flags>
+	bool branchSpecificOperation(RegisterValue& ip, RegisterValue cond, std::function<RegisterValue()> getUpper16, std::function<RegisterValue(byte)> registerValue, DecodedInstruction&& current) {
+		bool advanceIp = true;
+		if (BranchFlags_ByteToBools<flags>::isImmediate) {
+			++ip;
+			if (BranchFlags_ByteToBools<flags>::isConditional) {
+				if (cond != 0) {
+					advanceIp = false;
+					auto bottom = current.getUpper();
+					auto upper = getUpper16() << 8;
+					ip = SetBitmaskToWordMask<0b0111>::mask & (upper | bottom);
+				}
+			} else {
+				advanceIp = false;
+				auto bottom = RegisterValue(current.getUpper());
+				auto upper = getUpper16() << 8;
+				ip = SetBitmaskToWordMask<0b0111>::mask & (upper | bottom);
+			}
+		}  else {
+			if (BranchFlags_ByteToBools<flags>::isConditional) {
+				if (cond != 0) {
+					advanceIp = false;
+					auto target = registerValue(current.getBranchIndirectDestination());
+					ip = SetBitmaskToWordMask<0b0111>::mask & target;
+				}
+			} else {
+				advanceIp = false;
+				auto target = registerValue(current.getBranchIndirectDestination());
+				ip = SetBitmaskToWordMask<0b0111>::mask & target;
+			}
+		}
+		return advanceIp;
+	}
 
+DefOp(Branch) {
+	switch (current.getBranchFlags()) {
+		case 0b00:
+			advanceIp = branchSpecificOperation<0b00>(getInstructionPointer(), getConditionRegister(), [this]() { return RegisterValue(getCurrentCodeWord()); }, [this](byte index) { return registerValue(index); }, std::move(current));
+			break;
+		case 0b01:
+			advanceIp = branchSpecificOperation<0b01>(getInstructionPointer(), getConditionRegister(), [this]() { return RegisterValue(getCurrentCodeWord()); }, [this](byte index) { return registerValue(index); }, std::move(current));
+			break;
+		case 0b10:
+			advanceIp = branchSpecificOperation<0b10>(getInstructionPointer(), getConditionRegister(), [this]() { return RegisterValue(getCurrentCodeWord()); }, [this](byte index) { return registerValue(index); }, std::move(current));
+			break;
+		case 0b11:
+			advanceIp = branchSpecificOperation<0b11>(getInstructionPointer(), getConditionRegister(), [this]() { return RegisterValue(getCurrentCodeWord()); }, [this](byte index) { return registerValue(index); }, std::move(current));
+			break;
+		default:
+			throw iris::Problem("Illegal flags combination!");
+	}
 }
 
 DefOp(Call) {
 	advanceIp = false;
-	++getInstructionPointer();
-	// make a 24 bit number
-	auto ip = getInstructionPointer();
-	auto bottom = RegisterValue(current.getUpper());
-	auto upper = RegisterValue(getCurrentCodeWord()) << 8;
-	getInstructionPointer() = SetBitmaskToWordMask<0b0111>::mask & (upper | bottom);
-	getLinkRegister() = ip + 1;
-	if (getLinkRegister() > SetBitmaskToWordMask<0b0111>::mask) {
-		getLinkRegister() &= SetBitmaskToWordMask<0b0111>::mask; // make sure that we aren't over the memory setup
-	}
-}
-
-DefOp(IndirectBranch) {
-    advanceIp = false;
-	auto target = registerValue(current.getDestination());
-	getInstructionPointer() = SetBitmaskToWordMask<0b0111>::mask & target;
-}
-
-DefOp(IndirectCall) {
-    advanceIp = false;
-	auto ip = getInstructionPointer();
-	auto target = registerValue(current.getDestination());
-	getInstructionPointer() = SetBitmaskToWordMask<0b0111>::mask & target;
-	getLinkRegister() = ip + 1;
-	if (getLinkRegister() > SetBitmaskToWordMask<0b0111>::mask) {
-		getLinkRegister() &= SetBitmaskToWordMask<0b0111>::mask; // make sure that we aren't over the memory setup
-	}
-}
-
-DefOp(ConditionalBranch) {
-	++getInstructionPointer();
-	if (getConditionRegister() != 0) {
-		advanceIp = false;
+	RegisterValue ip = getInstructionPointer();
+	if (current.getCallFlagImmediate()) {
+		++getInstructionPointer();
 		// make a 24 bit number
 		auto bottom = RegisterValue(current.getUpper());
 		auto upper = RegisterValue(getCurrentCodeWord()) << 8;
 		getInstructionPointer() = SetBitmaskToWordMask<0b0111>::mask & (upper | bottom);
-	} 
-}
-
-DefOp(ConditionalIndirectBranch) {
-	if (getConditionRegister() != 0) {
-		advanceIp = false;
-		// make a 24 bit number
+	} else {
 		auto target = registerValue(current.getDestination());
 		getInstructionPointer() = SetBitmaskToWordMask<0b0111>::mask & target;
 	}
-}
-DefOp(IfThenElse) {
-	advanceIp = false;
-	auto onTrue = registerValue(current.getDestination());
-	auto onFalse = registerValue(current.getSrc0());
-	if (getConditionRegister() != 0) {
-		getInstructionPointer() = SetBitmaskToWordMask<0b0111>::mask & onTrue;
-	} else {
-		getInstructionPointer() = SetBitmaskToWordMask<0b0111>::mask & onFalse;
+	getLinkRegister() = ip + 1;
+	if (getLinkRegister() > SetBitmaskToWordMask<0b0111>::mask) {
+		getLinkRegister() &= SetBitmaskToWordMask<0b0111>::mask; // make sure that we aren't over the memory setup
 	}
 }
-DefOp(IfThenElseLink) {
+
+DefOp(If) {
 	advanceIp = false;
-	auto onTrue = registerValue(current.getDestination());
-	auto onFalse = registerValue(current.getSrc0());
-	getLinkRegister() = getInstructionPointer() + 1;
-	if (getConditionRegister() != 0) {
-		getInstructionPointer() = SetBitmaskToWordMask<0b0111>::mask & onTrue;
-	} else {
-		getInstructionPointer() = SetBitmaskToWordMask<0b0111>::mask & onFalse;
-	}
+	if (current.getIfFlagCall()) {
+		getLinkRegister() = getInstructionPointer() + 1;
+		if (getLinkRegister() > SetBitmaskToWordMask<0b0111>::mask) {
+			getLinkRegister() &= SetBitmaskToWordMask<0b0111>::mask; // make sure that we aren't over the memory setup
+		}
+	} 
+	RegisterValue addr = registerValue((getConditionRegister() != 0) ? current.getIfOnTrue() : current.getIfOnFalse());
+	getInstructionPointer() = SetBitmaskToWordMask<0b0111>::mask & addr; 
 }
+
 template<CompareCombine compareOp> 
 bool combine(bool newValue, bool existingValue) {
 	throw iris::Problem("Undefined combine operation");

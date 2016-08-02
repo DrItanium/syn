@@ -22,7 +22,7 @@ namespace iris17 {
 		SegmentCount = 256,
 		AddressMax = 65535 * SegmentCount,
 		MaxInstructionCount = 64,
-		MaxSystemCalls = 128,
+		MaxSystemCalls = 64,
 		// unlike iris16 and iris32, there is a limited set of registers with
 		// a majority of them marked for explicit usage, instructions
 		// themselves are still 16 bits wide but 32bits are extracted per
