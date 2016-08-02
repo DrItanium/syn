@@ -94,7 +94,7 @@ namespace iris17 {
 
 #define DefOp(title) \
 	template<> \
-	void Core::op<Operation:: title>(DecodedInstruction&& current) 
+	void Core::operation<Operation:: title>(DecodedInstruction&& current) 
 	
 	DefOp(Nop) { 
 	}
@@ -566,7 +566,7 @@ DefOp(Cube) {
 }
 
 	template<>
-	void Core::op<Operation::SystemCall>(DecodedInstruction&& current) {
+	void Core::operation<Operation::SystemCall>(DecodedInstruction&& current) {
 		switch(static_cast<SystemCalls>(getAddressRegister())) {
 			case SystemCalls::Terminate:
 				execute = false;
@@ -595,7 +595,7 @@ DefOp(Cube) {
 		switch(controlValue) {
 #define X(type) \
 			case Operation:: type : \
-				op<Operation:: type>(std::move(current)); \
+				operation<Operation:: type>(std::move(current)); \
 			break;
 #include "iris17_ops.def"
 #undef X
@@ -629,7 +629,11 @@ DefOp(Cube) {
 		}
 	}
 	RegisterValue& Core::registerValue(byte index) {
-		return gpr[index];
+		if (index >= ArchitectureConstants::RegisterCount) {
+			throw iris::Problem("Attempted to access an out of range register!");
+		} else {
+			return gpr[index];
+		}
 	}
 	RegisterValue& Core::getInstructionPointer() {
 		return registerValue<ArchitectureConstants::InstructionPointer>();
@@ -651,8 +655,5 @@ DefOp(Cube) {
 	}
 	word Core::getCurrentCodeWord() {
 		return memory[getInstructionPointer()];
-	}
-	word Core::getTopOfStack() {
-		return memory[getStackPointer()];
 	}
 }

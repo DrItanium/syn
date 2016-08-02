@@ -31,8 +31,6 @@ namespace iris17 {
 		ConditionRegister = RegisterCount - 4,
 		AddressRegister = RegisterCount - 5,
 		ValueRegister = RegisterCount - 6,
-		ConditionalArgument0 = RegisterCount - 7,
-		ConditionalArgument1 = RegisterCount - 8,
 	};
 
 	enum class Operation : byte {
@@ -105,24 +103,23 @@ namespace iris17 {
 					throw iris::Problem(msg.str());
 			}
 		}
-		template<Operation operation>
-		void op(DecodedInstruction&& inst) {
+		template<Operation op>
+		void operation(DecodedInstruction&& inst) {
 			throw iris::Problem("Unimplemented function!");
 		}
 
-		inline RegisterValue& registerValue(byte index);
-		inline RegisterValue& getInstructionPointer();
-		inline RegisterValue& getStackPointer();
-		inline RegisterValue& getConditionRegister();
-		inline RegisterValue& getLinkRegister();
-		inline RegisterValue& getAddressRegister();
-		inline RegisterValue& getValueRegister();
-		inline word getCurrentCodeWord();
-		inline word getTopOfStack();
-		inline void storeWord(RegisterValue address, word value);
-		inline word loadWord(RegisterValue address);
-		inline RegisterValue loadRegisterValue(RegisterValue address);
-		inline void storeRegisterValue(RegisterValue address, RegisterValue value);
+		RegisterValue& registerValue(byte index);
+		RegisterValue& getInstructionPointer();
+		RegisterValue& getStackPointer();
+		RegisterValue& getConditionRegister();
+		RegisterValue& getLinkRegister();
+		RegisterValue& getAddressRegister();
+		RegisterValue& getValueRegister();
+		word getCurrentCodeWord();
+		void storeWord(RegisterValue address, word value);
+		word loadWord(RegisterValue address);
+		RegisterValue loadRegisterValue(RegisterValue address);
+		void storeRegisterValue(RegisterValue address, RegisterValue value);
 
 		private:
 			bool execute = true,
