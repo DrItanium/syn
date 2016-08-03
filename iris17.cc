@@ -26,12 +26,18 @@ namespace iris17 {
 		return iris::decodeInt32LE(value, storage);
 	}
 
-	DecodedInstruction::DecodedInstruction(raw_instruction input) :
+	DecodedInstruction::DecodedInstruction(raw_instruction input) : _rawValue(input) { }
+
+	raw_instruction DecodedInstruction::getRawValue() const {
+		return _rawValue;
+	}
+
 #define X(title, mask, shift, type, is_register, post) \
-		_ ## post (iris::decodeBits<raw_instruction, type, mask, shift>(input)),
+		type DecodedInstruction:: get ## title () const { \
+			return iris::decodeBits<raw_instruction, type, mask, shift>(_rawValue); \
+		}
 #include "def/iris17/instruction.def"
 #undef X
-		_rawValue(input) { }
 
 
 	Core::Core() : memory(new word[ArchitectureConstants::AddressMax]) { }
