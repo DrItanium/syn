@@ -6,8 +6,6 @@ X(Logical)
 X(Compare)
 
 X(Branch)
-X(Call)
-X(If)
 X(Return)
 
 X(SystemCall)

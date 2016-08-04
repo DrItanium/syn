@@ -29,42 +29,52 @@ omni [a-zA-Z0-9._]
 
 
 %%
-"add"       { return OP_ADD; }
-"sub"       { return OP_SUB; }
-"mul"       { return OP_MUL; }
-"div"       { return OP_DIV; }
-"rem"       { return OP_REM; }
-"shl"       { return OP_SHIFTLEFT; }
-"shr"       { return OP_SHIFTRIGHT; }
-"addi"      { return OP_ADD_IMM; }
-"subi"      { return OP_SUB_IMM; }
-"muli"      { return OP_MUL_IMM; }
-"divi"      { return OP_DIV_IMM; }
-"remi"      { return OP_REM_IMM; }
-"shli"      { return OP_SHIFTLEFT_IMM; }
-"shri"      { return OP_SHIFTRIGHT_IMM; }
+"nop"        { return OP_NOP; }
+"arithmetic" { return OP_ARITHMETIC; }
+"shift"      { return OP_SHIFT; }
+"logical"    { return OP_LOGICAL; }
+"compare"    { return OP_COMPARE; }
+"branch"     { return OP_BRANCH; }
+"return"     { return OP_RETURN; }
+"system"     { return OP_SYSTEM; }
+"move"       { return OP_MOVE; }
+"set"        { return OP_SET; }
+"swap"       { return OP_SWAP; }
+"memory"     { return OP_MEMORY; }
 
-"and"       { return OP_BINARYAND; }
-"or"        { return OP_BINARYOR; }
-"not"       { return OP_BINARYNOT; }
-"xor"       { return OP_BINARYXOR; }
+"add"       { return ARITHMETIC_OP_ADD; }
+"sub"       { return ARITHMETIC_OP_SUB; }
+"mul"       { return ARITHMETIC_OP_MUL; }
+"div"       { return ARITHMETIC_OP_DIV; }
+"rem"       { return ARITHMETIC_OP_REM; }
+"addi"      { return ARITHMETIC_OP_ADD_IMM; }
+"subi"      { return ARITHMETIC_OP_SUB_IMM; }
+"muli"      { return ARITHMETIC_OP_MUL_IMM; }
+"divi"      { return ARITHMETIC_OP_DIV_IMM; }
+"remi"      { return ARITHMETIC_OP_REM_IMM; }
 
-"move"      { return OP_MOVE; }
-"swap"      { return OP_SWAP; }
-"set"       { return OP_SET; }
-"ld"        { return OP_LOAD; }
-"ld.merge"  { return OP_MERGE; }
-"st"        { return OP_STORE; }
-"push"      { return OP_PUSH; }
-"pop"       { return OP_POP; }
+"shl"       { return SHIFT_OP_SHIFTLEFT; }
+"shr"       { return SHIFT_OP_SHIFTRIGHT; }
+"shli"      { return SHIFT_OP_SHIFTLEFT_IMM; }
+"shri"      { return SHIFT_OP_SHIFTRIGHT_IMM; }
 
-"branch"    { return OP_BRANCH; }
-"call"      { return OP_CALL; }
-"if"        { return OP_IF; }
-"return"    { return OP_RETURN; }
-"compare"   { return OP_COMPARE; }
-"system"    { return OP_SYSTEM; }
+"and"       { return ACTION_AND; }
+"or"        { return ACTION_OR; }
+"xor"       { return ACTION_XOR; }
 
+"not"       { return LOGICAL_OP_NOT; }
+"nand"      { return LOGICAL_OP_NAND; }
+
+"ld"        { return MEMORY_OP_LOAD; }
+"merge"     { return MEMORY_OP_MERGE; }
+"st"        { return MEMORY_OP_STORE; }
+"push"      { return MEMORY_OP_PUSH; }
+"pop"       { return MEMORY_OP_POP; }
+
+"jump"      { return BRANCH_FLAG_JUMP; }
+"call"      { return BRANCH_FLAG_CALL; }
+"if"        { return BRANCH_FLAG_IF; }
+"cond"      { return BRANCH_FLAG_COND; }
 
 "@label"    { return LABEL; }
 "@org"      { return DIRECTIVE_ORG; }
