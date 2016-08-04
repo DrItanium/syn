@@ -29,76 +29,61 @@ omni [a-zA-Z0-9._]
 
 
 %%
-"add"  { return OP_ADD; }
-"sub"  { return OP_SUB; }
-"mul"  { return OP_MUL; }
-"div"  { return OP_DIV; }
-"rem"  { return OP_REM; }
-"shl"  { return OP_SHIFTLEFT; }
-"shr"  { return OP_SHIFTRIGHT; }
-"and"  { return OP_BINARYAND; }
-"or"   { return OP_BINARYOR; }
-"not"  { return OP_BINARYNOT; }
-"xor"  { return OP_BINARYXOR; }
-"addi" { return OP_ADD_IMM; }
-"subi" { return OP_SUB_IMM; }
-"muli" { return OP_MUL_IMM; }
-"divi" { return OP_DIV_IMM; }
-"remi" { return OP_REM_IMM; }
-"shli" { return OP_SHIFTLEFT_IMM; }
-"shri" { return OP_SHIFTRIGHT_IMM; }
+"add"       { return OP_ADD; }
+"sub"       { return OP_SUB; }
+"mul"       { return OP_MUL; }
+"div"       { return OP_DIV; }
+"rem"       { return OP_REM; }
+"shl"       { return OP_SHIFTLEFT; }
+"shr"       { return OP_SHIFTRIGHT; }
+"addi"      { return OP_ADD_IMM; }
+"subi"      { return OP_SUB_IMM; }
+"muli"      { return OP_MUL_IMM; }
+"divi"      { return OP_DIV_IMM; }
+"remi"      { return OP_REM_IMM; }
+"shli"      { return OP_SHIFTLEFT_IMM; }
+"shri"      { return OP_SHIFTRIGHT_IMM; }
 
-"incr" { return OP_INCR; }
-"decr" { return OP_DECR; }
-"halve" { return OP_HALVE; }
-"double" { return OP_DOUBLE; }
-"square" { return OP_SQUARE; }
-"cube"	 { return OP_CUBE; }
+"and"       { return OP_BINARYAND; }
+"or"        { return OP_BINARYOR; }
+"not"       { return OP_BINARYNOT; }
+"xor"       { return OP_BINARYXOR; }
 
-"move" { return OP_MOVE; }
-"swap" { return OP_SWAP; }
-"set" { return OP_SET; }
-"ld" { return OP_LOAD; }
-"ld.merge" { return OP_MERGE; }
-"st" { return OP_STORE; }
-"push" { return OP_PUSH; }
-"pop" { return OP_POP; }
+"move"      { return OP_MOVE; }
+"swap"      { return OP_SWAP; }
+"set"       { return OP_SET; }
+"ld"        { return OP_LOAD; }
+"ld.merge"  { return OP_MERGE; }
+"st"        { return OP_STORE; }
+"push"      { return OP_PUSH; }
+"pop"       { return OP_POP; }
 
-"branch" 		{ return OP_BRANCH; }
-"call" 		{ return OP_CALL; }
-"branch.indirect" 		{ return OP_BRANCH_INDIRECT; }
-"call.indirect" 	{ return OP_CALL_INDIRECT; }
-"branch.cond" 		{ return OP_BRANCH_CONDITIONAL; }
-"branch.cond.indirect" 		{ return OP_BRANCH_CONDITIONAL_INDIRECT; }
-"branch.if"		{ return OP_BRANCH_IF_THEN_ELSE; }
-"call.if"		{ return OP_CALL_IF_THEN_ELSE; }
-"return"	{ return OP_RETURN; }
-
+"branch"    { return OP_BRANCH; }
+"call"      { return OP_CALL; }
+"if"        { return OP_IF; }
+"return"    { return OP_RETURN; }
 "compare"   { return OP_COMPARE; }
+"system"    { return OP_SYSTEM; }
 
-"system" { return OP_SYSTEM; }
 
+"@label"    { return LABEL; }
+"@org"      { return DIRECTIVE_ORG; }
+"@declare"  { return DIRECTIVE_DECLARE; }
 
-"@label" { return LABEL; }
-"@data"  { return DIRECTIVE_DATA; }
-"@code"  { return DIRECTIVE_CODE; }
-"@org"   { return DIRECTIVE_ORG; }
-"@declare" { return DIRECTIVE_DECLARE; }
-
-"ip"	 	 { iris17lval.rval = iris17::ArchitectureConstants::InstructionPointer; return REGISTER; }
-"lr"	 	 { iris17lval.rval = iris17::ArchitectureConstants::LinkRegister; return REGISTER; }
-"sp"	 	 { iris17lval.rval = iris17::ArchitectureConstants::StackPointer; return REGISTER; }
-"cond"	 	 { iris17lval.rval = iris17::ArchitectureConstants::ConditionRegister; return REGISTER; }
-"addr"	 	 { iris17lval.rval = iris17::ArchitectureConstants::AddressRegister; return REGISTER; }
-"value"	 	 { iris17lval.rval = iris17::ArchitectureConstants::ValueRegister; return REGISTER; }
+"ip"        { iris17lval.rval = iris17::ArchitectureConstants::InstructionPointer; return REGISTER; }
+"lr"        { iris17lval.rval = iris17::ArchitectureConstants::LinkRegister; return REGISTER; }
+"sp"        { iris17lval.rval = iris17::ArchitectureConstants::StackPointer; return REGISTER; }
+"cond"      { iris17lval.rval = iris17::ArchitectureConstants::ConditionRegister; return REGISTER; }
+"addr"      { iris17lval.rval = iris17::ArchitectureConstants::AddressRegister; return REGISTER; }
+"value"     { iris17lval.rval = iris17::ArchitectureConstants::ValueRegister; return REGISTER; }
 
 [ \t\n]     ;
 [;].*       ; // comments
-r{digit}+ { iris17lval.rval = iris17::getregister(); return REGISTER; }
-{digit}+ { iris17lval.ival = iris17::getdecimalimmediate(); return IMMEDIATE; }
+r{digit}+   { iris17lval.rval = iris17::getregister(); return REGISTER; }
+{digit}+    { iris17lval.ival = iris17::getdecimalimmediate(); return IMMEDIATE; }
 0x{xdigit}+ { iris17lval.ival = iris17::getheximmediate(); return IMMEDIATE; }
-0b[01]+ { iris17lval.ival = iris17::getbinaryimmediate(); return IMMEDIATE; }
-{omni}+ { 
+0b[01]+     { iris17lval.ival = iris17::getbinaryimmediate(); return IMMEDIATE; }
+{omni}+     { 
 	std::string contents(iris17text);
 	iris17lval.sval = (char*)contents.c_str();
 	return SYMBOL;

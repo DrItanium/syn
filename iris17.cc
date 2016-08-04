@@ -119,22 +119,6 @@ namespace iris17 {
 		registerValue(current.getDestination()) = ~registerValue(current.getDestination());
 	}
 
-	DefOp(Increment) {
-		++registerValue(current.getDestination());
-	}
-	
-	DefOp(Decrement) {
-		--registerValue(current.getDestination());
-	}
-
-	DefOp(Double) {
-		registerValue(current.getDestination()) *= 2;
-	}
-
-	DefOp(Halve) {
-		registerValue(current.getDestination()) /= 2;
-	}
-
 	DefOp(Move)  {
 		registerValue(current.getDestination()) = registerValue(current.getSrc0());
 	}
@@ -569,14 +553,6 @@ DefOp(Return) {
 	advanceIp = false;
 	// jump to the link register
 	getInstructionPointer() = getLinkRegister();
-}
-
-DefOp(Square) {
-	registerValue(current.getDestination()) = registerValue(current.getDestination()) * registerValue(current.getDestination());
-}
-
-DefOp(Cube) {
-	registerValue(current.getDestination()) = registerValue(current.getDestination()) * registerValue(current.getDestination()) * registerValue(current.getDestination());
 }
 
 	template<>

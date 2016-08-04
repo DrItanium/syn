@@ -12,22 +12,12 @@ X(BinaryOr)
 X(BinaryNot)
 X(BinaryXor)
 
-X(Increment)
-X(Decrement)
-X(Double)
-X(Halve)
-X(Square)
-X(Cube)
-
 X(Compare)
 
 X(Branch)
 X(Call)
-//X(Call)
-//X(IndirectCall)
 X(If)
-//X(IfThenElse)
-//X(IfThenElseLink)
+X(Return)
 
 X(SystemCall)
 
@@ -40,4 +30,3 @@ X(Store)
 X(Push)
 X(Pop)
 
-X(Return)
