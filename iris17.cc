@@ -398,9 +398,10 @@ namespace iris17 {
 
 	template<byte value>
 	struct BranchFlags {
-		static constexpr bool isIf = static_cast<bool>(value & 0b111);
-		static constexpr bool isCall = static_cast<bool>((value & 0b111) >> 1);
-		static constexpr bool isImmediate = static_cast<bool>((value & 0b111) >> 2);
+		static constexpr bool isIf = static_cast<bool>(value & 0b0001);
+		static constexpr bool isCall = static_cast<bool>((value & 0b0010) >> 1);
+		static constexpr bool isImmediate = static_cast<bool>((value & 0b0100) >> 2);
+		static constexpr bool isConditional = static_cast<bool>((value & 0b1000) >> 3);
 	};
 	template<byte flags>
 	bool branchSpecificOperation(RegisterValue& ip, RegisterValue& linkRegister, RegisterValue& cond, std::function<RegisterValue()> getUpper16, std::function<RegisterValue&(byte)> registerValue, DecodedInstruction&& current) {
@@ -423,10 +424,10 @@ namespace iris17 {
 			if (linkRegister > bitmask24) {
 				linkRegister &= bitmask24; // make sure that we aren't over the memory setup
 			}
-			if (BranchFlags<flags>::isImmediate()) {
+			if (BranchFlags<flags>::isImmediate) {
 				++ip;
 				// make a 24 bit number
-				ip = bitmask24 & (static_cast<RegisterValue>(current.getUpper())) | (getUpper16() << 8);
+				ip = bitmask24 & ((static_cast<RegisterValue>(current.getUpper())) | (getUpper16() << 8));
 			} else {
 				ip = bitmask24 & registerValue(current.getBranchIndirectDestination());
 			}
@@ -464,18 +465,21 @@ namespace iris17 {
 		return advanceIp;
 	}
 
-	template<bool ifForm, bool callForm, bool immediateForm>
+	template<bool isConditional, bool ifForm, bool callForm, bool immediateForm>
 	struct BranchFlagsEncoder {
-		static constexpr byte flags = (static_cast<byte>(ifForm) << 2) | (static_cast<byte>(callForm) << 1) | static_cast<byte>(immediateForm);
+		static constexpr byte flags = (static_cast<byte>(isConditional) << 3) | (static_cast<byte>(ifForm) << 2) | (static_cast<byte>(callForm) << 1) | static_cast<byte>(immediateForm);
 	};
-	typedef BranchFlagsEncoder<true, false, false> IfJump;
-	typedef BranchFlagsEncoder<true, true, false> IfCall;
+	typedef BranchFlagsEncoder<false, true, false, false> IfJump;
+	typedef BranchFlagsEncoder<false, true, true, false> IfCall;
 
-	typedef BranchFlagsEncoder<false, true, false> CallIndirect;
-	typedef BranchFlagsEncoder<false, true, true> CallDirect;
+	typedef BranchFlagsEncoder<false, false, true, false> CallIndirect;
+	typedef BranchFlagsEncoder<false, false, true, true> CallDirect;
 
-	typedef BranchFlagsEncoder<false, false, true> JumpDirect;
-	typedef BranchFlagsEncoder<false, false, false> JumpIndirect;
+	typedef BranchFlagsEncoder<false, false, false, true> JumpDirect;
+	typedef BranchFlagsEncoder<false, false, false, false> JumpIndirect;
+
+	typedef BranchFlagsEncoder<true, false, false, true> ConditionalJumpDirect;
+	typedef BranchFlagsEncoder<true, false, false, false> ConditionalJumpIndirect;
 
 	DefOp(Branch) {
 		auto upper16fn = [this]() { return static_cast<RegisterValue>(getCurrentCodeWord()); };
@@ -492,7 +496,9 @@ namespace iris17 {
 			X(CallIndirect)
 			X(CallDirect)
 			X(JumpDirect)
-			X(JumpIndirect);
+			X(JumpIndirect)
+			X(ConditionalJumpDirect)
+			X(ConditionalJumpIndirect)
 #undef X
 			default:
 				throw iris::Problem("Undefined branch flag setup!");
@@ -611,12 +617,12 @@ DefOp(Return) {
 				break;
 			case SystemCalls::PutC:
 				// read register 0 and register 1
-				std::cout.put(static_cast<char>(registerValue(current.getDestination())));
+				std::cout.put(static_cast<char>(registerValue(current.getSystemArg0())));
 				break;
 			case SystemCalls::GetC:
 				byte value;
 				std::cin >> std::noskipws >> value;
-				registerValue(current.getDestination()) = static_cast<word>(value);
+				registerValue(current.getSystemArg0()) = static_cast<word>(value);
 				break;
 			default:
 				std::stringstream ss;
