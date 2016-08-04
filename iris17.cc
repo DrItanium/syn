@@ -90,45 +90,6 @@ namespace iris17 {
 		}
 	}
 
-#define DefOp(title) \
-	template<> \
-	void Core::operation<Operation:: title>(DecodedInstruction&& current) 
-	
-	DefOp(Nop) { 
-	}
-
-#define X(title, operation) \
-	DefOp(title) { \
-		registerValue(current.getDestination()) = registerValue(current.getDestination()) operation (current.getArithmeticFlagImmediate() ? current.getArithmeticImmediate() : registerValue(current.getSrc0())); \
-	}
-// for the cases where we have an immediate form
-#define Y(title, operation) \
-	DefOp(title) { \
-		RegisterValue src1 = (current.getArithmeticFlagImmediate() ? current.getArithmeticImmediate() : registerValue(current.getSrc0())); \
-		if (src1 == 0) { \
-			throw iris::Problem("Denominator is zero!"); \
-		} else { \
-			registerValue(current.getDestination()) = registerValue(current.getDestination()) operation src1; \
-		} \
-	}
-#include "def/iris17/arithmetic_ops.def"
-#undef X
-#undef Y
-
-	DefOp(BinaryNot) {
-		registerValue(current.getDestination()) = ~registerValue(current.getDestination());
-	}
-
-	DefOp(Move)  {
-		registerValue(current.getDestination()) = registerValue(current.getSrc0());
-	}
-
-	DefOp(Swap) {
-		RegisterValue tmp = registerValue(current.getDestination());
-		registerValue(current.getDestination()) = registerValue(current.getSrc0());
-		registerValue(current.getSrc0()) = tmp;
-	}
-
 	template<byte bitmask> 
 	struct SetBitmaskToWordMask {
 		static constexpr bool decomposedBits[] = {
@@ -162,9 +123,135 @@ namespace iris17 {
 	constexpr RegisterValue bitmask24 = mask<0b0111>();
 	constexpr RegisterValue upper16Mask = mask<0b1100>();
 	constexpr RegisterValue lower16Mask = mask<0b0011>();
+
+#define DefOp(title) \
+	template<> \
+	void Core::operation<Operation:: title>(DecodedInstruction&& current) 
+	
+	DefOp(Nop) { 
+	}
+
+	DefOp(Shift) {
+		auto destination = registerValue(current.getShiftRegister0());
+		RegisterValue source = (current.getShiftFlagImmediate() ? static_cast<RegisterValue>(current.getShiftImmediate()) : registerValue(current.getShiftRegister1()));
+		if (current.getShiftFlagLeft()) {
+			destination = destination << source;
+		} else {
+			destination = destination >> source;
+		}
+	}
+
+	DefOp(Logical) {
+		if (current.getLogicalFlagImmediate()) {
+			auto dest = registerValue(current.getLogicalImmediateDestination());
+			RegisterValue immediate = 0;
+			switch (current.getLogicalFlagImmediateMask()) {
+#define X(value) \
+				case value : { \
+								 RegisterValue lower = 0; \
+								 RegisterValue upper = 0; \
+								if (readLower<value>()) { \
+									++getInstructionPointer(); \
+									lower = RegisterValue(getCurrentCodeWord()); \
+								} \
+								if (readUpper<value>()) { \
+									++getInstructionPointer(); \
+									upper = (RegisterValue(getCurrentCodeWord()) << 16) & lower16Mask; \
+								} \
+								immediate = upper | lower; \
+								break; \
+							 }
+#include "def/iris17/bitmask4bit.def"
+#undef X
+				default:
+					throw iris::Problem("Illegal bit mask provided!");
+			}
+			switch (current.getLogicalFlagImmediateType()) {
+				case ImmediateLogicalOps::And:
+					dest = dest & immediate;
+					break;
+				case ImmediateLogicalOps::Or:
+					dest = dest | immediate;
+					break;
+				case ImmediateLogicalOps::Xor:
+					dest = dest ^ immediate;
+					break;
+				case ImmediateLogicalOps::Nand:
+					dest = ~(dest & immediate);
+					break;
+				default:
+					throw iris::Problem("Illegal immediate logical op!");
+			}
+		} else {
+			switch (current.getLogicalFlagType()) {
+				case LogicalOps::And:
+					registerValue(current.getLogicalRegister0()) = (registerValue(current.getLogicalRegister0()) & registerValue(current.getLogicalRegister1()));
+					break;
+				case LogicalOps::Or:
+					registerValue(current.getLogicalRegister0()) = (registerValue(current.getLogicalRegister0()) | registerValue(current.getLogicalRegister1()));
+					break;
+				case LogicalOps::Xor:
+					registerValue(current.getLogicalRegister0()) = (registerValue(current.getLogicalRegister0()) ^ registerValue(current.getLogicalRegister1()));
+					break;
+				case LogicalOps::Nand:
+					registerValue(current.getLogicalRegister0()) = ~(registerValue(current.getLogicalRegister0()) & registerValue(current.getLogicalRegister1()));
+					break;
+				case LogicalOps::Not:
+					registerValue(current.getLogicalRegister0()) = ~registerValue(current.getLogicalRegister0());
+					break;
+				default:
+					throw iris::Problem("Illegal logical op!");
+			}
+		}
+	}
+	DefOp(Arithmetic) {
+		auto destination = registerValue(current.getArithmeticDestination());
+		RegisterValue source = (current.getArithmeticFlagImmediate() ? current.getArithmeticImmediate() : registerValue(current.getArithmeticSource()));
+		switch (current.getArithmeticFlagType()) {
+#define X(title, operation) \
+			case ArithmeticOps:: title : { \
+											 destination = destination operation source; \
+											 break; \
+										 }
+#define Y(title, operation) \
+			case ArithmeticOps:: title : { \
+											 if (source == 0) { \
+												 throw iris::Problem("Denominator is zero!"); \
+											 } else { \
+												destination = destination operation source; \
+											 } \
+										 break; \
+										 }
+#include "def/iris17/arithmetic_ops.def"
+#undef X
+#undef Y
+			default:
+				throw iris::Problem("Illegal Arithmetic Operation");
+		}
+	}
+
+	DefOp(Move)  {
+		switch (current.getMoveBitmask()) {
+#define X(value) \
+			case value : { \
+							 registerValue(current.getMoveRegister0()) = registerValue(current.getMoveRegister1()) & mask<value>(); \
+							 break; \
+						 }
+#include "def/iris17/bitmask4bit.def"
+#undef X
+			default: 
+				throw iris::Problem("Illegal bitmask!");
+		}
+	}
+
+	DefOp(Swap) {
+		RegisterValue tmp = registerValue(current.getSwapDestination());
+		registerValue(current.getSwapDestination()) = registerValue(current.getSwapSource());
+		registerValue(current.getSwapSource()) = tmp;
+	}
+
     DefOp(Set) {
-		auto bitmask = registerValue(current.getSrc0());
-		switch (bitmask) {
+		switch (current.getSetBitmask()) {
 #define X(value) \
 			case value: \
 			{ \
@@ -178,7 +265,7 @@ namespace iris17 {
 					++getInstructionPointer(); \
 					upper = RegisterValue(getCurrentCodeWord()) << 16; \
 				} \
-				registerValue(current.getDestination()) = mask<value>() & (lower | upper); \
+				registerValue(current.getSetDestination()) = mask<value>() & (lower | upper); \
 				break; \
 			}
 #include "def/iris17/bitmask4bit.def"
@@ -208,249 +295,209 @@ namespace iris17 {
 		storeWord(address, iris::decodeBits<RegisterValue, word, lower16Mask, 0>(value));
 		storeWord(address + 1, iris::decodeBits<RegisterValue, word, upper16Mask, 16>(value));
 	}
-	DefOp(Load) {
+	template<byte bitmask> 
+	void loadOperation(RegisterValue& value, RegisterValue address, std::function<word(RegisterValue)> loadWord) {
 		// use the destination field of the instruction to denote offset, thus we need
 		// to use the Address and Value registers
-		auto offset = current.getDestination();
-		RegisterValue address = getAddressRegister() + offset;
-		// use the src0 field of the instruction to denote the bitmask
-		auto bitmask = current.getSrc0();
-		switch (bitmask) {
-#define X(value) \
-			case value: \
-			{ \
-				RegisterValue lower = 0; \
-				RegisterValue upper = 0; \
-				if (readLower<value>()) { \
-					lower = loadWord(address); \
-				} \
-				if (readUpper<value>()) { \
-					upper = RegisterValue(loadWord(address + 1)) << 16; \
-				} \
-				getValueRegister() = (mask<value>() & (lower | upper)); \
-				break; \
-			}
-#include "def/iris17/bitmask4bit.def"
-#undef X
-			default:
-				throw iris::Problem("illegal bitmask");
-		}
+		RegisterValue lower = readLower<bitmask>() ? loadWord(address) : 0;
+		RegisterValue upper = readUpper<bitmask>() ? (static_cast<RegisterValue>(loadWord(address + 1)) << 16) : 0;
+		value = mask<bitmask>() & (lower | upper);
 	}
-
-	DefOp(LoadMerge) {
+	template<byte bitmask>
+	void loadMergeOperation(RegisterValue &value, RegisterValue address, std::function<word(RegisterValue)> loadWord) {
+		// 0b1101 implies that we have to leave 0x0000FF00 around in the
+		// value register since it isn't necessary
+		auto constexpr cMask = mask<bitmask>();
 		// use the destination field of the instruction to denote offset, thus we need
 		// to use the Address and Value registers
-		auto offset = current.getDestination();
-		RegisterValue address = getAddressRegister() + offset;
-		// use the src0 field of the instruction to denote the bitmask
-		auto bitmask = current.getSrc0();
-		switch (bitmask) {
-			// 0b1101 implies that we have to leave 0x0000FF00 around in the
-			// value register since it isn't necessary
-#define X(value) \
-			case value: \
-			{ \
-				RegisterValue lower = 0; \
-				RegisterValue upper = 0; \
-				if (readLower<value>()) { \
-					lower = loadWord(address); \
-				} \
-				if (readUpper<value>()) { \
-					upper = RegisterValue(loadWord(address + 1)) << 16; \
-				} \
-				getValueRegister() = (mask<value>() & (lower | upper)) | (getValueRegister() & ~mask<value>()); \
-				break; \
-			}
-#include "def/iris17/bitmask4bit.def"
-#undef X
-			default:
-				throw iris::Problem("illegal bitmask");
+		RegisterValue lower = readLower<bitmask>() ? loadWord(address) : 0;
+		RegisterValue upper = readUpper<bitmask>() ? (static_cast<RegisterValue>(loadWord(address + 1)) << 16) : 0;
+		value = (cMask & (lower | upper)) | (value & ~cMask);
+	}
+	template<byte bitmask>
+	void storeOperation(RegisterValue& value, RegisterValue address, std::function<word(RegisterValue)> loadWord, std::function<void(RegisterValue, word)> storeWord) {
+		if (readLower<bitmask>()) { 
+			auto constexpr lmask = lowerMask<bitmask>();
+			word lower = lmask & iris::decodeBits<RegisterValue, word, lower16Mask, 0>(value); 
+			auto loader = loadWord(address) & ~lmask;
+			storeWord(address, lower | loader); 
+		} 
+		if (readUpper<bitmask>()) { 
+			auto constexpr umask = upperMask<bitmask>();
+			word upper = umask & iris::decodeBits<RegisterValue, word, upper16Mask, 16>(value);
+			auto loader = loadWord(address + 1) & ~umask;
+			storeWord(address + 1, upper | loader); 
+		} 
+	}
+	template<byte bitmask>
+	void pushOperation(RegisterValue& stackPointer, RegisterValue& pushToStack, std::function<void(RegisterValue, word)> storeWord) {
+		// read backwards because the stack grows upward towards zero
+		if (readUpper<bitmask>()) {
+			--stackPointer;
+			stackPointer &= bitmask24;
+			word upper = upperMask<bitmask>() & iris::decodeBits<RegisterValue, word, upper16Mask, 16>(pushToStack);
+			storeWord(stackPointer, upper);
+		}
+		if (readLower<bitmask>()) {
+			--stackPointer;
+			stackPointer &= bitmask24;
+			word lower = lowerMask<bitmask>() & iris::decodeBits<RegisterValue, word, lower16Mask, 0>(pushToStack);
+			storeWord(stackPointer, lower);
 		}
 	}
 
-	DefOp(Store) {
-		auto offset = current.getDestination();
-		auto bitmask = current.getSrc0();
-		RegisterValue address = getAddressRegister() + offset;
-		switch(bitmask) {
-			// 0b1101 implies that we have to leave 0x0000FF00 around in the
-			// value register since it isn't necessary
+	template<byte bitmask>
+	void popOperation(RegisterValue& stackPointer, RegisterValue& storage, std::function<word(RegisterValue)> loadWord) {
+		RegisterValue lower = 0; 
+		RegisterValue upper = 0; 
+		if (readLower<bitmask>()) { 
+			lower = lowerMask<bitmask>() & loadWord(stackPointer); 
+			++stackPointer; 
+			stackPointer &= bitmask24; 
+		} 
+		if (readUpper<bitmask>()) { 
+			upper = upperMask<bitmask>() & loadWord(stackPointer);
+			++stackPointer; 
+			stackPointer &= bitmask24; 
+		} 
+		storage = iris::encodeBits<word, RegisterValue, upper16Mask, 16>(iris::encodeBits<word, RegisterValue, lower16Mask, 0>(RegisterValue(0), lower), upper); 
+	}
+	DefOp(Memory) {
+		auto loadWordFn = [this](RegisterValue address) { return loadWord(address); };
+		auto storeWordFn = [this](RegisterValue address, word value) { storeWord(address, value); };
+		switch (current.getMemoryFlagBitmask()) {
 #define X(value) \
-			case value: \
-			{ \
-				RegisterValue lower = 0; \
-				RegisterValue upper = 0; \
-				if (readLower<value>()) { \
-					lower = lowerMask<value>() & iris::decodeBits<RegisterValue, word, lower16Mask, 0>(getValueRegister()); \
-					auto loader = loadWord(address) & ~lowerMask<value>(); \
-					storeWord(address, lower | loader); \
-				} \
-				if (readUpper<value>()) { \
-					upper = upperMask<value>() & iris::decodeBits<RegisterValue, word, upper16Mask, 16>(getValueRegister()); \
-					auto loader = loadWord(address) & ~upperMask<value>(); \
-					storeWord(address + 1, upper | loader); \
-				} \
-				break; \
-			}
+			case value : { \
+							 switch (current.getMemoryFlagType()) { \
+								 case MemoryOperation::Load: \
+								 								loadOperation<value>(getValueRegister(), getAddressRegister() + current.getMemoryOffset(), loadWordFn); \
+								 break; \
+								 case MemoryOperation::LoadMerge: \
+																  loadMergeOperation<value>(getValueRegister(), getAddressRegister() + current.getMemoryOffset(), loadWordFn); \
+								 break; \
+								 case MemoryOperation::Store: \
+															  storeOperation<value>(getValueRegister(), getAddressRegister() + current.getMemoryOffset(), loadWordFn, storeWordFn); \
+								 break; \
+								 case MemoryOperation::Push: \
+															 pushOperation<value>(getStackPointer(), registerValue(current.getMemoryRegister()), storeWordFn); \
+								 break; \
+								 case MemoryOperation::Pop: \
+															popOperation<value>(getStackPointer(), registerValue(current.getMemoryRegister()), loadWordFn); \
+								 break; \
+								default: \
+										 throw iris::Problem("Illegal memory operation type!"); \
+							 } \
+							 break; \
+						 }
 #include "def/iris17/bitmask4bit.def"
 #undef X
 			default:
-				throw iris::Problem("illegal bitmask");
+				throw iris::Problem("Illegal bitmask!");
 		}
 	}
 
-	DefOp(Push) {
-		auto stackPointer = getStackPointer();
-		auto bitmask = current.getSrc0();
-		auto pushToStack = registerValue(current.getSrc1());
-		switch (bitmask) {
-#define X(value) \
-			case value: \
-			{ \
-				if (readUpper<value>()) { \
-					--stackPointer; \
-					stackPointer &= bitmask24; \
-					RegisterValue upper = upperMask<value>() & iris::decodeBits<RegisterValue, word, upper16Mask, 16>(pushToStack); \
-					storeWord(stackPointer, upper); \
-				} \
-				if (readLower<value>()) { \
-					--stackPointer; \
-					stackPointer &= bitmask24; \
-					RegisterValue lower = lowerMask<value>() & iris::decodeBits<RegisterValue, word, lower16Mask, 0>(pushToStack); \
-					storeWord(stackPointer, lower); \
-				} \
-				break; \
-			}
-#include "def/iris17/bitmask4bit.def"
-#undef X
-			default:
-				throw iris::Problem("illegal bitmask");
-		}
-	}
-
-	DefOp(Pop) {
-		auto stackPointer = getStackPointer();
-		auto bitmask = current.getSrc0();
-		switch (bitmask) {
-			// pop the entries off of the stack and store it in the register
-#define X(value) \
-			case value: \
-			{ \
-				RegisterValue lower = 0; \
-				RegisterValue upper = 0; \
-				if (readLower<value>()) { \
-					auto val = loadWord(stackPointer); \
-					++stackPointer; \
-					stackPointer &= bitmask24; \
-					lower = lowerMask<value>() & val; \
-				} \
-				if (readUpper<value>()) { \
-					auto val = loadWord(stackPointer); \
-					++stackPointer; \
-					stackPointer &= bitmask24; \
-					upper = upperMask<value>() & val; \
-				} \
-				registerValue(current.getSrc1()) = iris::encodeBits<word, RegisterValue, upper16Mask, 16>(iris::encodeBits<word, RegisterValue, lower16Mask, 0>(RegisterValue(0), lower), upper); \
-				break; \
-			}
-#include "def/iris17/bitmask4bit.def"
-#undef X
-			default:
-				throw iris::Problem("illegal bitmask");
-		}
-	}
-	template<bool indirect, bool conditional>
-	struct BranchFlags_BoolsToByte {
-		static constexpr byte flag = (static_cast<byte>(conditional) << 1) | static_cast<byte>(indirect);
-	};
 	template<byte value>
-	struct BranchFlags_ByteToBools {
-		static constexpr bool isImmediate = static_cast<bool>(value & 0b11);
-		static constexpr bool isConditional = static_cast<bool>((value & 0b11) >> 1);
+	struct BranchFlags {
+		static constexpr bool isIf = static_cast<bool>(value & 0b111);
+		static constexpr bool isCall = static_cast<bool>((value & 0b111) >> 1);
+		static constexpr bool isImmediate = static_cast<bool>((value & 0b111) >> 2);
 	};
 	template<byte flags>
-	bool branchSpecificOperation(RegisterValue& ip, RegisterValue cond, std::function<RegisterValue()> getUpper16, std::function<RegisterValue(byte)> registerValue, DecodedInstruction&& current) {
+	bool branchSpecificOperation(RegisterValue& ip, RegisterValue& linkRegister, RegisterValue& cond, std::function<RegisterValue()> getUpper16, std::function<RegisterValue&(byte)> registerValue, DecodedInstruction&& current) {
 		bool advanceIp = true;
-		if (BranchFlags_ByteToBools<flags>::isImmediate) {
-			++ip;
-			if (BranchFlags_ByteToBools<flags>::isConditional) {
-				if (cond != 0) {
+		if (BranchFlags<flags>::isIf) {
+			// if instruction
+			advanceIp = false;
+			if (BranchFlags<flags>::isCall) {
+				linkRegister = ip + 1;
+				if (linkRegister > bitmask24) {
+					linkRegister &= bitmask24;
+				}
+			} 
+			ip = bitmask24 & ((cond != 0) ? registerValue(current.getBranchIfOnTrue()) : registerValue(current.getBranchIfOnFalse())); 
+		} else if (BranchFlags<flags>::isCall) {
+			// call instruction
+			advanceIp = false;
+			// determine next
+			linkRegister = BranchFlags<flags>::isImmediate ? ip + 2 : ip + 1;
+			if (linkRegister > bitmask24) {
+				linkRegister &= bitmask24; // make sure that we aren't over the memory setup
+			}
+			if (BranchFlags<flags>::isImmediate()) {
+				++ip;
+				// make a 24 bit number
+				ip = bitmask24 & (static_cast<RegisterValue>(current.getUpper())) | (getUpper16() << 8);
+			} else {
+				ip = bitmask24 & registerValue(current.getBranchIndirectDestination());
+			}
+		} else {
+			// jump instruction
+			if (BranchFlags<flags>::isImmediate) {
+				++ip;
+				if (BranchFlags<flags>::isConditional) {
+					if (cond != 0) {
+						advanceIp = false;
+						auto bottom = current.getUpper();
+						auto upper = getUpper16() << 8;
+						ip = bitmask24 & (upper | bottom);
+					}
+				} else {
 					advanceIp = false;
-					auto bottom = current.getUpper();
+					auto bottom = RegisterValue(current.getUpper());
 					auto upper = getUpper16() << 8;
 					ip = bitmask24 & (upper | bottom);
 				}
-			} else {
-				advanceIp = false;
-				auto bottom = RegisterValue(current.getUpper());
-				auto upper = getUpper16() << 8;
-				ip = bitmask24 & (upper | bottom);
-			}
-		}  else {
-			if (BranchFlags_ByteToBools<flags>::isConditional) {
-				if (cond != 0) {
+			}  else {
+				if (BranchFlags<flags>::isConditional) {
+					if (cond != 0) {
+						advanceIp = false;
+						auto target = registerValue(current.getBranchIndirectDestination());
+						ip = bitmask24 & target;
+					}
+				} else {
 					advanceIp = false;
 					auto target = registerValue(current.getBranchIndirectDestination());
 					ip = bitmask24 & target;
 				}
-			} else {
-				advanceIp = false;
-				auto target = registerValue(current.getBranchIndirectDestination());
-				ip = bitmask24 & target;
 			}
 		}
 		return advanceIp;
 	}
 
-DefOp(Branch) {
-	switch (current.getBranchFlags()) {
-		case 0b00:
-			advanceIp = branchSpecificOperation<0b00>(getInstructionPointer(), getConditionRegister(), [this]() { return RegisterValue(getCurrentCodeWord()); }, [this](byte index) { return registerValue(index); }, std::move(current));
-			break;
-		case 0b01:
-			advanceIp = branchSpecificOperation<0b01>(getInstructionPointer(), getConditionRegister(), [this]() { return RegisterValue(getCurrentCodeWord()); }, [this](byte index) { return registerValue(index); }, std::move(current));
-			break;
-		case 0b10:
-			advanceIp = branchSpecificOperation<0b10>(getInstructionPointer(), getConditionRegister(), [this]() { return RegisterValue(getCurrentCodeWord()); }, [this](byte index) { return registerValue(index); }, std::move(current));
-			break;
-		case 0b11:
-			advanceIp = branchSpecificOperation<0b11>(getInstructionPointer(), getConditionRegister(), [this]() { return RegisterValue(getCurrentCodeWord()); }, [this](byte index) { return registerValue(index); }, std::move(current));
-			break;
-		default:
-			throw iris::Problem("Illegal flags combination!");
-	}
-}
+	template<bool ifForm, bool callForm, bool immediateForm>
+	struct BranchFlagsEncoder {
+		static constexpr byte flags = (static_cast<byte>(ifForm) << 2) | (static_cast<byte>(callForm) << 1) | static_cast<byte>(immediateForm);
+	};
+	typedef BranchFlagsEncoder<true, false, false> IfJump;
+	typedef BranchFlagsEncoder<true, true, false> IfCall;
 
-DefOp(Call) {
-	advanceIp = false;
-	RegisterValue ip = getInstructionPointer();
-	if (current.getCallFlagImmediate()) {
-		++getInstructionPointer();
-		// make a 24 bit number
-		auto bottom = RegisterValue(current.getUpper());
-		auto upper = RegisterValue(getCurrentCodeWord()) << 8;
-		getInstructionPointer() = bitmask24 & (upper | bottom);
-	} else {
-		auto target = registerValue(current.getDestination());
-		getInstructionPointer() = bitmask24 & target;
-	}
-	getLinkRegister() = ip + 1;
-	if (getLinkRegister() > bitmask24) {
-		getLinkRegister() &= bitmask24; // make sure that we aren't over the memory setup
-	}
-}
+	typedef BranchFlagsEncoder<false, true, false> CallIndirect;
+	typedef BranchFlagsEncoder<false, true, true> CallDirect;
 
-DefOp(If) {
-	advanceIp = false;
-	if (current.getIfFlagCall()) {
-		getLinkRegister() = getInstructionPointer() + 1;
-		if (getLinkRegister() > bitmask24) {
-			getLinkRegister() &= bitmask24; // make sure that we aren't over the memory setup
+	typedef BranchFlagsEncoder<false, false, true> JumpDirect;
+	typedef BranchFlagsEncoder<false, false, false> JumpIndirect;
+
+	DefOp(Branch) {
+		auto upper16fn = [this]() { return static_cast<RegisterValue>(getCurrentCodeWord()); };
+		auto regValFn = [this](byte index) -> RegisterValue& { return registerValue(index); };
+
+		switch (current.getBranchFlags()) {
+#define X(value) \
+			case value :: flags : { \
+							 advanceIp = branchSpecificOperation< value :: flags >(getInstructionPointer(), getLinkRegister(), getConditionRegister(), upper16fn, regValFn, std::move(current)); \
+							 break; \
+						 }
+			X(IfJump)
+			X(IfCall)
+			X(CallIndirect)
+			X(CallDirect)
+			X(JumpDirect)
+			X(JumpIndirect);
+#undef X
+			default:
+				throw iris::Problem("Undefined branch flag setup!");
 		}
-	} 
-	RegisterValue addr = registerValue((getConditionRegister() != 0) ? current.getIfOnTrue() : current.getIfOnFalse());
-	getInstructionPointer() = bitmask24 & addr; 
-}
+	}
 
 template<CompareCombine compareOp> 
 bool combine(bool newValue, bool existingValue) {
@@ -516,8 +563,8 @@ DefOp(Compare) {
 	switch (current.getConditionalCompareType()) {
 #define X(type) \
 		case CompareStyle:: type : { \
-									   RegisterValue first = registerValue(next.getSrc1()); \
-									   RegisterValue second = current.getConditionalImmediateFlag() ? next.getUpper() : registerValue(next.getSrc2()); \
+									   RegisterValue first = registerValue(next.getConditionalRegister0()); \
+									   RegisterValue second = current.getConditionalImmediateFlag() ? next.getUpper() : registerValue(next.getConditionalRegister1()); \
 									   bool result = compare<CompareStyle:: type>(first, second); \
 									   switch (current.getConditionalCombineFlag()) { \
 										   case CompareCombine::None: \

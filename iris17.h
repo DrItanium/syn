@@ -21,7 +21,7 @@ namespace iris17 {
 		RegisterCount = 16,
 		SegmentCount = 256,
 		AddressMax = 65535 * SegmentCount,
-		MaxInstructionCount = 64,
+		MaxInstructionCount = 16,
 		MaxSystemCalls = 64,
 		// unlike iris16 and iris32, there is a limited set of registers with
 		// a majority of them marked for explicit usage, instructions
@@ -65,6 +65,40 @@ namespace iris17 {
 		GreaterThan,
 		LessThanOrEqualTo,
 		GreaterThanOrEqualTo,
+	};
+
+	enum class ArithmeticOps : byte {
+		Add,
+		Sub,
+		Mul,
+		Div,
+		Rem,
+		Count,
+	};
+	enum class ImmediateLogicalOps : byte {
+		And,
+		Or,
+		Xor,
+		Nand,
+		Count,
+	};
+
+	enum class LogicalOps : byte {
+		And,
+		Or,
+		Xor,
+		Nand,
+		Not,
+		Count,
+	};
+
+	enum class MemoryOperation : byte {
+		Load,
+		LoadMerge,
+		Store,
+		Push,
+		Pop,
+		Count,
 	};
 
 	class DecodedInstruction {
