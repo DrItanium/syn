@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <sstream>
 #include <memory>
+#include <vector>
 namespace iris17 {
 	typedef uint8_t hword;
 	typedef uint16_t word;
@@ -100,7 +101,6 @@ namespace iris17 {
 		Pop,
 		Count,
 	};
-
 	class DecodedInstruction {
 		public:
 			DecodedInstruction(raw_instruction input);

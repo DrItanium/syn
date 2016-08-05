@@ -42,22 +42,23 @@ omni [a-zA-Z0-9._]
 "swap"       { return OP_SWAP; }
 "memory"     { return OP_MEMORY; }
 
+"immediate" { return FLAG_IMMEDIATE; }
 "add"       { return ARITHMETIC_OP_ADD; }
 "sub"       { return ARITHMETIC_OP_SUB; }
 "mul"       { return ARITHMETIC_OP_MUL; }
 "div"       { return ARITHMETIC_OP_DIV; }
 "rem"       { return ARITHMETIC_OP_REM; }
-"addi"      { return ARITHMETIC_OP_ADD_IMM; }
-"subi"      { return ARITHMETIC_OP_SUB_IMM; }
-"muli"      { return ARITHMETIC_OP_MUL_IMM; }
-"divi"      { return ARITHMETIC_OP_DIV_IMM; }
-"remi"      { return ARITHMETIC_OP_REM_IMM; }
+"left"      { return SHIFT_FLAG_LEFT; }
+"right"     { return SHIFT_FLAG_RIGHT; }
 
-"shl"       { return SHIFT_OP_SHIFTLEFT; }
-"shr"       { return SHIFT_OP_SHIFTRIGHT; }
-"shli"      { return SHIFT_OP_SHIFTLEFT_IMM; }
-"shri"      { return SHIFT_OP_SHIFTRIGHT_IMM; }
+"=="        { return COMPARE_OP_EQ; }
+"!="        { return COMPARE_OP_NEQ; }
+"<"         { return COMPARE_OP_LT; }
+"<="        { return COMPARE_OP_LT_EQ; }
+">"         { return COMPARE_OP_GT; }
+">="        { return COMPARE_OP_GT_EQ; }
 
+"none"      { return ACTION_NONE; }
 "and"       { return ACTION_AND; }
 "or"        { return ACTION_OR; }
 "xor"       { return ACTION_XOR; }
@@ -71,7 +72,6 @@ omni [a-zA-Z0-9._]
 "push"      { return MEMORY_OP_PUSH; }
 "pop"       { return MEMORY_OP_POP; }
 
-"jump"      { return BRANCH_FLAG_JUMP; }
 "call"      { return BRANCH_FLAG_CALL; }
 "if"        { return BRANCH_FLAG_IF; }
 "cond"      { return BRANCH_FLAG_COND; }
@@ -93,6 +93,7 @@ r{digit}+   { iris17lval.rval = iris17::getregister(); return REGISTER; }
 {digit}+    { iris17lval.ival = iris17::getdecimalimmediate(); return IMMEDIATE; }
 0x{xdigit}+ { iris17lval.ival = iris17::getheximmediate(); return IMMEDIATE; }
 0b[01]+     { iris17lval.ival = iris17::getbinaryimmediate(); return IMMEDIATE; }
+0m[01][01][01][01] { iris17lval.ival = iris17::getbinaryimmediate(); return BITMASK4; }
 {omni}+     { 
 	std::string contents(iris17text);
 	iris17lval.sval = (char*)contents.c_str();

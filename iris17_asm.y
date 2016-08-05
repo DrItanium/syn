@@ -25,25 +25,43 @@ enum class Segment : byte {
    Code,
    Data,
 };
+enum class InstructionFields : byte {
+#define X(title, mask, shift, type, is_register, post) title,
+#include "def/iris17/instruction.def"
+#undef X
+};
+template<InstructionFields field>
+struct InstructionFieldInformation { };
+
+#define X(_title, _mask, _shift, _type, _is_register, _post) \
+template<> \
+struct InstructionFieldInformation<InstructionFields :: _title> { \
+	static constexpr word mask = _mask; \
+	static constexpr byte shiftCount = _shift; \
+	typedef _type AssociatedType; \
+	static constexpr bool isRegister = _is_register; \
+}; 
+#include "def/iris17/instruction.def"
+#undef X
+
+template<InstructionFields field>
+typename InstructionFieldInformation<field>::AssociatedType encodeInstruction(raw_instruction base, typename InstructionFieldInformation<field>::AssociatedType value) {
+	return iris::encodeBits<raw_instruction, InstructionFieldInformation<field>::AssociatedType, InstructionFieldInformation<field>::mask, InstructionFieldInformation<field>::shiftCount>(base, value);
+}
+
 /* used to store ops which require a second pass */
 struct dynamicop {
-   Segment segment;
-   word address;
-   byte group;
-   byte op;
-   byte reg0;
-   byte reg1;
-   byte reg2;
+   RegisterValue address;
+   word first;
+   word second;
+   word third;
    int hassymbol;
    std::string symbol;
 };
 struct asmstate {
 	
-   ~asmstate() {
-   }
-   Segment segment;
-   word code_address;
-   word data_address;
+   ~asmstate() { }
+   word address;
    std::map<std::string, word> labels;
    std::vector<dynamicop> dynops;
    std::ostream* output;
@@ -76,18 +94,21 @@ bool resolve_op(dynamicop* dop);
 %token ARITHMETIC_OP_ADD     ARITHMETIC_OP_SUB     ARITHMETIC_OP_MUL ARITHMETIC_OP_DIV 
 %token ARITHMETIC_OP_REM     ARITHMETIC_OP_ADD_IMM ARITHMETIC_OP_SUB_IMM 
 %token ARITHMETIC_OP_MUL_IMM ARITHMETIC_OP_DIV_IMM ARITHMETIC_OP_REM_IMM 
-%token SHIFT_OP_SHIFTLEFT     SHIFT_OP_SHIFTRIGHT 
-%token SHIFT_OP_SHIFTLEFT_IMM SHIFT_OP_SHIFTRIGHT_IMM
-%token ACTION_AND ACTION_OR ACTION_XOR
+%token FLAG_IMMEDIATE
+%token SHIFT_FLAG_LEFT SHIFT_FLAG_RIGHT
+%token ACTION_NONE ACTION_AND ACTION_OR ACTION_XOR
 %token LOGICAL_OP_NOT LOGICAL_OP_NAND
-%token OP_MOVE OP_SWAP OP_SET 
 %token MEMORY_OP_LOAD MEMORY_OP_MERGE MEMORY_OP_STORE MEMORY_OP_POP MEMORY_OP_PUSH
 %token BRANCH_FLAG_JUMP BRANCH_FLAG_CALL BRANCH_FLAG_IF BRANCH_FLAG_COND
+%token COMPARE_OP_EQ COMPARE_OP_NEQ COMPARE_OP_GT COMPARE_OP_GT_EQ 
+%token COMPARE_OP_LT COMPARE_OP_LT_EQ
 
 
 %token <rval> REGISTER
 %token <ival> IMMEDIATE
 %token <sval> SYMBOL
+%token <ival> BITMASK4
+
 
 %%
 Q: /* empty */ |
@@ -95,26 +116,8 @@ Q: /* empty */ |
 ;
 F:
    F asm {
-      iris17::curri.segment = iris17::Segment::Code;
-      iris17::curri.address = 0;
-      iris17::curri.group = 0;
-      iris17::curri.op = 0;
-      iris17::curri.reg0 = 0;
-      iris17::curri.reg1 = 0;
-      iris17::curri.reg2 = 0;
-      iris17::curri.hassymbol = 0;
-      iris17::curri.symbol = "";
    } | 
    asm {
-      iris17::curri.segment = iris17::Segment::Code;
-      iris17::curri.address = 0;
-      iris17::curri.group = 0;
-      iris17::curri.op = 0;
-      iris17::curri.reg0 = 0;
-      iris17::curri.reg1 = 0;
-      iris17::curri.reg2 = 0;
-      iris17::curri.hassymbol = 0;
-      iris17::curri.symbol = "";
    }
    ;
 asm:
@@ -122,261 +125,238 @@ asm:
    statement
    ;
 directive:
-         DIRECTIVE_ORG IMMEDIATE {
-            if(iris17::state.segment == iris17::Segment::Code) {
-               iris17::state.code_address = $2;
-            } else if(iris17::state.segment == iris17::Segment::Data) {
-               iris17::state.data_address = $2;
-            } else {
-               yyerror("Invalid segment!");
-            }
-            } | 
-      DIRECTIVE_CODE { iris17::state.segment = iris17::Segment::Code; } |
-      DIRECTIVE_DATA { iris17::state.segment = iris17::Segment::Data; } |
-      DIRECTIVE_DECLARE lexeme { 
-            if(iris17::state.segment == iris17::Segment::Data) {
-               iris17::curri.segment = iris17::Segment::Data;
-               iris17::curri.address = iris17::state.data_address;
-               iris17::save_encoding();
-               iris17::state.data_address++;
-            } else {
-               yyerror("Declaration in non-data segment!");
-            }
-      }
-      ;
+	DIRECTIVE_ORG IMMEDIATE { 
+
+	} | 
+	DIRECTIVE_DECLARE lexeme { 
+
+	} ;
 statement:
-         label { iris17::curri.segment = iris17::state.segment; }|
+         label { }|
          operation {
-            if(iris17::state.segment == iris17::Segment::Code) {
-               iris17::curri.segment = iris17::Segment::Code;
-               iris17::curri.address = iris17::state.code_address;
-               iris17::save_encoding();
-               iris17::state.code_address++;
-            } else {
-               yyerror("operation in an invalid segment!");
-            }
          }
          ;
 label:
      LABEL SYMBOL { 
-      if(iris17::state.segment == iris17::Segment::Code) {
-          iris17::add_label_entry($2, iris17::state.code_address);
-      } else if (iris17::state.segment == iris17::Segment::Data) {
-          iris17::add_label_entry($2, iris17::state.data_address);
-      } else {
-          yyerror("label in invalid segment!");
-      }
      }
    ;
 operation:
-         arithmetic_op { iris17::curri.group = (byte)iris17::InstructionGroup::Arithmetic; } |
-         move_op { iris17::curri.group = (byte)iris17::InstructionGroup::Move; } |
-         jump_op { iris17::curri.group = (byte)iris17::InstructionGroup::Jump; } |
-         compare_op { iris17::curri.group = (byte)iris17::InstructionGroup::Compare; } |
-         misc_op { iris17::curri.group = (byte)iris17::InstructionGroup::Misc; }
-         ;
-arithmetic_op:
-             aop REGISTER REGISTER REGISTER {
-                  iris17::curri.reg0 = $2;
-                  iris17::curri.reg1 = $3;
-                  iris17::curri.reg2 = $4;
-             }|
-             ARITHMETIC_OP_BINARYNOT REGISTER REGISTER {
-                  iris17::curri.reg0 = $2;
-                  iris17::curri.reg1 = $3;
-             } |
-             aop_imm REGISTER REGISTER IMMEDIATE {
-               if($4 > 255) {
-                  yyerror("immediate value offset out of range!");
-               }
-               iris17::curri.reg0 = $2;
-               iris17::curri.reg1 = $3;
-               iris17::curri.reg2 = $4;
-             } |
-			 aop_single_macro REGISTER {
-			 	iris17::curri.reg0 = $2;
-				iris17::curri.reg1 = $2;
-			 }
-      ;
-aop_single_macro:
-   ARITHMETIC_MACRO_OP_INCR { 
-     iris17::curri.op = (byte)iris17::ArithmeticOp::AddImmediate;
-     iris17::curri.reg2 = 1;
-   } |
-   ARITHMETIC_MACRO_OP_DECR { 
-     iris17::curri.op = (byte)iris17::ArithmeticOp::SubImmediate;  
-	 iris17::curri.reg2 = 1;
-   } |
-   ARITHMETIC_MACRO_OP_HALVE { 
-     iris17::curri.op = (byte)iris17::ArithmeticOp::DivImmediate; 
-     iris17::curri.reg2 = 2;
-   } |
-   ARITHMETIC_MACRO_OP_DOUBLE {
-     iris17::curri.op = (byte)iris17::ArithmeticOp::MulImmediate; 
-     iris17::curri.reg2 = 2;
-   }
-   ;
-move_op:
-       mop_reg REGISTER REGISTER {
-            iris17::curri.reg0 = $2;
-            iris17::curri.reg1 = $3;
-       } |
-       mop_mixed REGISTER lexeme { iris17::curri.reg0 = $2; } |
-       mop_single REGISTER {
-         iris17::curri.reg0 = $2;
-       } |
-       MOVE_OP_PUSHIMMEDIATE lexeme { 
-         iris17::curri.op = (byte)iris17::MoveOp::PushImmediate;
-       } |
-	   MOVE_OP_STORE_CODE REGISTER REGISTER REGISTER {
-		iris17::curri.reg0 = $2;
-		iris17::curri.reg1 = $3;
-		iris17::curri.reg2 = $4;
-	   } |
-	   MOVE_OP_LOAD_CODE REGISTER REGISTER REGISTER {
-	   	iris17::curri.reg0 = $2;
-		iris17::curri.reg1 = $3;
-		iris17::curri.reg2 = $4;
-	   }
+		OP_NOP {
 
-       ;
-
-jump_op:
-       JUMP_OP_UNCONDITIONALIMMEDIATE lexeme { 
-         iris17::curri.op = (byte)iris17::JumpOp::UnconditionalImmediate; 
-         } | 
-       JUMP_OP_UNCONDITIONALREGISTER REGISTER { 
-         iris17::curri.op = (byte)iris17::JumpOp::UnconditionalRegister; 
-         iris17::curri.reg0 = $2;
-       } |
-       jop_reg_reg REGISTER REGISTER {
-            iris17::curri.reg0 = $2;
-            iris17::curri.reg1 = $3;
-       } |
-       jop_reg_imm REGISTER lexeme { iris17::curri.reg0 = $2; } |
-       jop_reg_reg_reg REGISTER REGISTER REGISTER {
-            iris17::curri.reg0 = $2;
-            iris17::curri.reg1 = $3;
-            iris17::curri.reg2 = $4;
-       }
-       ;
-
+		} |
+		shift_op |
+		logical_op |
+		compare_op |
+		arithmetic_op |
+		branch_op |
+		system_op |
+		move_op |
+		set_op |
+		swap_op |
+		memory_op;
 compare_op:
-          cop REGISTER REGISTER REGISTER {
-               iris17::curri.reg0 = $2;
-               iris17::curri.reg1 = $3;
-               iris17::curri.reg2 = $4;
-          } |
-		  icop REGISTER REGISTER IMMEDIATE {
-		  	if ($4 > 255) {
-                  yyerror("immediate value offset out of range!");
-			}
-			iris17::curri.reg0 = $2;
-			iris17::curri.reg1 = $3;
-			iris17::curri.reg2 = $4;
-		  }
-          ;
-misc_op:
-       OP_SYSTEM IMMEDIATE REGISTER REGISTER 
-       { 
-         iris17::curri.op = (byte)iris17::MiscOp::SystemCall; 
-         if($2 > 255) {
-            yyerror("system call offset out of range!");
-         }
-         iris17::curri.reg0 = $2;
-         iris17::curri.reg1 = $3;
-         iris17::curri.reg2 = $4;
-       } 
-       ;
-aop:
-   ARITHMETIC_OP_ADD { iris17::curri.op = (byte)iris17::ArithmeticOp::Add; } |
-   ARITHMETIC_OP_SUB { iris17::curri.op = (byte)iris17::ArithmeticOp::Sub; } |
-   ARITHMETIC_OP_MUL { iris17::curri.op = (byte)iris17::ArithmeticOp::Mul; } |
-   ARITHMETIC_OP_DIV { iris17::curri.op = (byte)iris17::ArithmeticOp::Div; } |
-   ARITHMETIC_OP_REM { iris17::curri.op = (byte)iris17::ArithmeticOp::Rem; } |
-   ARITHMETIC_OP_SHIFTLEFT { iris17::curri.op = (byte)iris17::ArithmeticOp::ShiftLeft; } |
-   ARITHMETIC_OP_SHIFTRIGHT { iris17::curri.op = (byte)iris17::ArithmeticOp::ShiftRight; } |
-   ARITHMETIC_OP_BINARYAND { iris17::curri.op = (byte)iris17::ArithmeticOp::BinaryAnd; } |
-   ARITHMETIC_OP_BINARYOR { iris17::curri.op = (byte)iris17::ArithmeticOp::BinaryOr; } |
-   ARITHMETIC_OP_BINARYXOR { iris17::curri.op = (byte)iris17::ArithmeticOp::BinaryXor; } 
-   ;
+		  OP_COMPARE compare_type combine_type compare_args {
 
-aop_imm:
-   ARITHMETIC_OP_ADD_IMM { iris17::curri.op = (byte)iris17::ArithmeticOp::AddImmediate; } |
-   ARITHMETIC_OP_SUB_IMM { iris17::curri.op = (byte)iris17::ArithmeticOp::SubImmediate; } |
-   ARITHMETIC_OP_MUL_IMM { iris17::curri.op = (byte)iris17::ArithmeticOp::MulImmediate; } | 
-   ARITHMETIC_OP_DIV_IMM { iris17::curri.op = (byte)iris17::ArithmeticOp::DivImmediate; } |
-   ARITHMETIC_OP_REM_IMM { iris17::curri.op = (byte)iris17::ArithmeticOp::RemImmediate; } |
-   ARITHMETIC_OP_SHIFTLEFT_IMM { iris17::curri.op = (byte)iris17::ArithmeticOp::ShiftLeftImmediate; } |
-   ARITHMETIC_OP_SHIFTRIGHT_IMM { iris17::curri.op = (byte)iris17::ArithmeticOp::ShiftRightImmediate; } 
-   ;
+		  };
+compare_args:
+		 FLAG_IMMEDIATE REGISTER IMMEDIATE {
+			// IMMEDIATE8
+		 } |
+		 REGISTER REGISTER {
 
-mop_reg:
-   MOVE_OP_MOVE { iris17::curri.op = (byte)iris17::MoveOp::Move; } |
-   MOVE_OP_SWAP { iris17::curri.op = (byte)iris17::MoveOp::Swap; } |
-   MOVE_OP_LOAD { iris17::curri.op = (byte)iris17::MoveOp::Load; } |
-   MOVE_OP_STORE { iris17::curri.op = (byte)iris17::MoveOp::Store; } |
-   ;
+		 };
 
-mop_mixed:
-   MOVE_OP_SET { iris17::curri.op = (byte)iris17::MoveOp::Set; } |
-   MOVE_OP_STOREIMM { iris17::curri.op = (byte)iris17::MoveOp::Memset; } |
-   MOVE_OP_LOADMEM { iris17::curri.op = (byte)iris17::MoveOp::LoadImmediate; } 
-   ;
+compare_type:
+		COMPARE_OP_EQ {
 
-mop_single:
-   MOVE_OP_PUSH { iris17::curri.op = (byte)iris17::MoveOp::Push; } |
-   MOVE_OP_POP { iris17::curri.op = (byte)iris17::MoveOp::Pop; } 
-   ;
+		} |
+		COMPARE_OP_NEQ {
 
-jop_reg_imm:
-   JUMP_OP_UNCONDITIONALIMMEDIATELINK { iris17::curri.op = (byte)iris17::JumpOp::UnconditionalImmediateLink; } |
-   JUMP_OP_CONDITIONALTRUEIMMEDIATE { iris17::curri.op = (byte)iris17::JumpOp::ConditionalTrueImmediate; } |
-   JUMP_OP_CONDITIONALTRUEIMMEDIATELINK { iris17::curri.op = (byte)iris17::JumpOp::ConditionalTrueImmediateLink; } |
-   JUMP_OP_CONDITIONALFALSEIMMEDIATE { iris17::curri.op = (byte)iris17::JumpOp::ConditionalFalseImmediate; } |
-   JUMP_OP_CONDITIONALFALSEIMMEDIATELINK { iris17::curri.op = (byte)iris17::JumpOp::ConditionalFalseImmediateLink; } 
-   ;
+		} |
+		COMPARE_OP_LT {
 
+		} |
+		COMPARE_OP_LT_EQ {
 
-jop_reg_reg:
-   JUMP_OP_UNCONDITIONALREGISTERLINK { iris17::curri.op = (byte)iris17::JumpOp::UnconditionalRegisterLink; } |
-   JUMP_OP_CONDITIONALTRUEREGISTER { iris17::curri.op = (byte)iris17::JumpOp::ConditionalTrueRegister; } |
-   JUMP_OP_CONDITIONALFALSEREGISTER { iris17::curri.op = (byte)iris17::JumpOp::ConditionalFalseRegister; }
-   ;
+		} |
+		COMPARE_OP_GT {
 
-jop_reg_reg_reg:
-   JUMP_OP_CONDITIONALTRUEREGISTERLINK { iris17::curri.op = (byte)iris17::JumpOp::ConditionalTrueRegisterLink; } |
-   JUMP_OP_CONDITIONALFALSEREGISTERLINK { iris17::curri.op = (byte)iris17::JumpOp::ConditionalFalseRegisterLink; } |
-   JUMP_OP_IFTHENELSENORMALPREDTRUE { iris17::curri.op = (byte)iris17::JumpOp::IfThenElseNormalPredTrue; } |
-   JUMP_OP_IFTHENELSENORMALPREDFALSE { iris17::curri.op = (byte)iris17::JumpOp::IfThenElseNormalPredFalse; } |
-   JUMP_OP_IFTHENELSELINKPREDTRUE { iris17::curri.op = (byte)iris17::JumpOp::IfThenElseLinkPredTrue; } |
-   JUMP_OP_IFTHENELSELINKPREDFALSE { iris17::curri.op = (byte)iris17::JumpOp::IfThenElseLinkPredFalse; }
-;
+		} |
+		COMPARE_OP_GT_EQ {
 
-cop:
-   COMPARE_OP_EQ { iris17::curri.op = (byte)iris17::CompareOp::Eq; } |
-   COMPARE_OP_NEQ { iris17::curri.op = (byte)iris17::CompareOp::Neq; } |
-   COMPARE_OP_LESSTHAN { iris17::curri.op = (byte)iris17::CompareOp::LessThan; } |
-   COMPARE_OP_GREATERTHAN { iris17::curri.op = (byte)iris17::CompareOp::GreaterThan; } |
-   COMPARE_OP_LESSTHANOREQUALTO { iris17::curri.op = (byte)iris17::CompareOp::LessThanOrEqualTo; } |
-   COMPARE_OP_GREATERTHANOREQUALTO { iris17::curri.op = (byte)iris17::CompareOp::GreaterThanOrEqualTo; } 
-;
-icop:
-   COMPARE_OP_EQ_IMMEDIATE { iris17::curri.op = (byte)iris17::CompareOp::EqImm; } |
-   COMPARE_OP_NEQ_IMMEDIATE { iris17::curri.op = (byte)iris17::CompareOp::NeqImm; } |
-   COMPARE_OP_LESSTHAN_IMMEDIATE { iris17::curri.op = (byte)iris17::CompareOp::LessThanImm; } |
-   COMPARE_OP_GREATERTHAN_IMMEDIATE { iris17::curri.op = (byte)iris17::CompareOp::GreaterThanImm; } |
-   COMPARE_OP_LESSTHANOREQUALTO_IMMEDIATE { iris17::curri.op = (byte)iris17::CompareOp::LessThanOrEqualToImm; } |
-   COMPARE_OP_GREATERTHANOREQUALTO_IMMEDIATE { iris17::curri.op = (byte)iris17::CompareOp::GreaterThanOrEqualToImm; }
-;
-lexeme:
-      SYMBOL { iris17::curri.hassymbol = 1; 
-               iris17::curri.symbol = $1; } | 
-      IMMEDIATE { 
-            iris17::curri.reg1 = (byte)(($1 & 0x00FF));
-            iris17::curri.reg2 = (byte)(($1 & 0xFF00) >> 8);
-      }
-;
+		};
+combine_type: 
+		ACTION_NONE {
+
+		} |
+		ACTION_AND {
+
+		} |
+		ACTION_OR {
+
+		} |
+		ACTION_XOR {
+
+		};
+
+logical_op:
+		OP_LOGICAL logical_op logical_args {
+
+		} |
+		OP_LOGICAL LOGICAL_OP_NOT REGISTER {
+
+		};
+logical_args: 
+		FLAG_IMMEDIATE REGISTER IMMEDIATE {
+			//IMMEDIATE5
+		} |
+		REGISTER REGISTER {
+
+		};
+logical_op: 
+		ACTION_AND {
+
+		} |
+		ACTION_OR {
+
+		} |
+		ACTION_XOR {
+
+		} |
+		LOGICAL_OP_NAND {
+
+		};
+shift_op:
+		OP_SHIFT shift_left_or_right shift_args {
+
+		};
+shift_args:
+		FLAG_IMMEDIATE REGISTER IMMEDIATE {
+			// IMMEDIATE4
+		} |
+		REGISTER REGISTER {
+
+		};
+
+shift_left_or_right:
+		SHIFT_FLAG_LEFT {
+
+		} |
+		SHIFT_FLAG_RIGHT {
+
+		};
+system_op:
+		OP_SYSTEM IMMEDIATE REGISTER {
+		//IMMEDIATE8
+
+		};
+move_op: 
+	   OP_MOVE BITMASK4 REGISTER REGISTER {
+	    
+	   };
+set_op: 
+	  OP_SET BITMASK4 REGISTER lexeme {
+
+	  };
+swap_op:
+		OP_SWAP REGISTER REGISTER {
+
+		};
+branch_op: 
+		 OP_BRANCH branch {
+
+		 };
+branch:
+	  	if_op |
+		jump_op |
+		call_op;
+if_op: 
+	 BRANCH_FLAG_IF REGISTER REGISTER {
+
+	 } |
+	 BRANCH_FLAG_IF BRANCH_FLAG_CALL REGISTER REGISTER {
+
+	 };
+jump_op:
+	FLAG_IMMEDIATE lexeme {
+
+	} |
+	BRANCH_FLAG_COND FLAG_IMMEDIATE lexeme {
+
+	} |
+	REGISTER {
+		
+	} |
+	BRANCH_FLAG_COND REGISTER {
+
+	};
+call_op:
+	   BRANCH_FLAG_CALL FLAG_IMMEDIATE lexeme {
+
+	   } |
+	   BRANCH_FLAG_CALL REGISTER {
+
+	   };
+memory_op:
+		OP_MEMORY memory {
+
+		};
+memory:
+	  	load_store_op BITMASK4 IMMEDIATE {
+			// IMMEDIATE4
+		} |
+		stack_operation BITMASK4 REGISTER {
+
+		};
+
+load_store_op:
+			 MEMORY_OP_LOAD {
+
+			 } |
+			 MEMORY_OP_MERGE {
+
+			 } |
+			 MEMORY_OP_STORE {
+
+			 };
+stack_operation:
+			   MEMORY_OP_PUSH {
+					
+			   } |
+			   MEMORY_OP_POP {
+					
+			   };
+arithmetic_op:
+		OP_ARITHMETIC arithmetic_subop FLAG_IMMEDIATE REGISTER IMMEDIATE {
+
+		} |
+		OP_ARITHMETIC arithmetic_subop REGISTER REGISTER {
+
+		};
+arithmetic_subop: 
+				ARITHMETIC_OP_ADD {
+
+				} |
+				ARITHMETIC_OP_SUB {
+
+				} |
+				ARITHMETIC_OP_MUL {
+
+				} |
+				ARITHMETIC_OP_DIV {
+
+				} |
+				ARITHMETIC_OP_REM {
+
+				};
+lexeme: 
+	  IMMEDIATE {
+
+	  } |
+	  SYMBOL {
+
+	  };
+
 %%
 namespace iris {
 
@@ -395,91 +375,92 @@ void iris17error(const char* s) {
 }
 namespace iris17 {
 void add_label_entry(const std::string& c, word addr) {
-   if (iris17::state.labels.count(c) != 0) {
-		yyerror("Found a duplicate label!");
-		exit(1);
-   } else {
-	 iris17::state.labels[c] = addr;
-   }
+//   if (iris17::state.labels.count(c) != 0) {
+//		yyerror("Found a duplicate label!");
+//		exit(1);
+//   } else {
+//	 iris17::state.labels[c] = addr;
+//   }
 }
 
 void persist_dynamic_op(void) {
-   iris17::state.dynops.push_back(curri);
+//   iris17::state.dynops.push_back(curri);
 }
 
 void save_encoding(void) {
-   if(iris17::curri.hassymbol) {
-      persist_dynamic_op();
-   } else {
-      write_dynamic_op(&curri); 
-   }
+//   if(iris17::curri.hassymbol) {
+//      persist_dynamic_op();
+//   } else {
+//      write_dynamic_op(&curri); 
+//   }
 }
 void write_dynamic_op(dynamicop* dop) {
    /* ((instruction & ~mask) | (value << shiftcount)) */
    /* little endian build up */
-   char* buf = new char[8];
-   buf[0] = 0;
-   buf[1] = (char)dop->segment;
-   buf[2] = (char)(dop->address & 0x00FF);
-   buf[3] = (char)((dop->address & 0xFF00) >> 8);
-   switch(dop->segment) {
-   		case iris17::Segment::Code:
-			buf[4] = (char)iris::encodeBits<byte, byte, 0b11111000, 3>(
-								iris::encodeBits<byte, byte, 0b00000111, 0>((byte)0, dop->group),
-								dop->op);
-			buf[5] = (char)dop->reg0;
-			buf[6] = (char)dop->reg1;
-			buf[7] = (char)dop->reg2;
-			break;
-		case iris17::Segment::Data:
-			buf[4] = (char)dop->reg1;
-			buf[5] = (char)dop->reg2;
-			buf[6] = 0;
-			buf[7] = 0;
-			break;
-		default:
-			std::cerr << "panic: unknown segment " << (byte)dop->segment << std::endl;
-			exit(1);
-   }
-   iris17::state.output->write(buf, 8);
-   delete[] buf;
+//   char* buf = new char[8];
+//   buf[0] = 0;
+//   buf[1] = (char)dop->segment;
+//   buf[2] = (char)(dop->address & 0x00FF);
+//   buf[3] = (char)((dop->address & 0xFF00) >> 8);
+//   switch(dop->segment) {
+//   		case iris17::Segment::Code:
+//			buf[4] = (char)iris::encodeBits<byte, byte, 0b11111000, 3>(
+//								iris::encodeBits<byte, byte, 0b00000111, 0>((byte)0, dop->group),
+//								dop->op);
+//			buf[5] = (char)dop->reg0;
+//			buf[6] = (char)dop->reg1;
+//			buf[7] = (char)dop->reg2;
+//			break;
+//		case iris17::Segment::Data:
+//			buf[4] = (char)dop->reg1;
+//			buf[5] = (char)dop->reg2;
+//			buf[6] = 0;
+//			buf[7] = 0;
+//			break;
+//		default:
+//			std::cerr << "panic: unknown segment " << (byte)dop->segment << std::endl;
+//			exit(1);
+//   }
+//   iris17::state.output->write(buf, 8);
+//   delete[] buf;
 }
 
 void resolve_labels() {
    /* we need to go through the list of dynamic operations and replace
       the label with the corresponding address */
-   for(std::vector<dynamicop>::iterator it = iris17::state.dynops.begin(); it != iris17::state.dynops.end(); ++it) {
-   		if (!resolve_op(&(*it))) {
-			std::cerr << "panic: couldn't find label " << it->symbol << std::endl;
-			exit(1);
-		} else {
-			write_dynamic_op(&(*it));
-		}
-   }
+//   for(std::vector<dynamicop>::iterator it = iris17::state.dynops.begin(); it != iris17::state.dynops.end(); ++it) {
+//   		if (!resolve_op(&(*it))) {
+//			std::cerr << "panic: couldn't find label " << it->symbol << std::endl;
+//			exit(1);
+//		} else {
+//			write_dynamic_op(&(*it));
+//		}
+//   }
 }
 bool resolve_op(dynamicop* dop) {
-   if(iris17::state.labels.count(dop->symbol) == 1) {
-		word addr = iris17::state.labels[dop->symbol];
-		dop->reg1 = iris::decodeBits<word, byte, 0x00FF>(addr);
-		dop->reg2 = iris::decodeBits<word, byte, 0xFF00, 8>(addr);
-		return true;
-   }
-   return false;
+//   if(iris17::state.labels.count(dop->symbol) == 1) {
+//		word addr = iris17::state.labels[dop->symbol];
+//		dop->reg1 = iris::decodeBits<word, byte, 0x00FF>(addr);
+//		dop->reg2 = iris::decodeBits<word, byte, 0xFF00, 8>(addr);
+//		return true;
+//   }
+//   return false;
+return false;
 }
 
 void initialize(std::ostream* output, FILE* input) {
-   iris17in = input;
-   iris17::state.segment = iris17::Segment::Code;
-   iris17::state.data_address = 0;
-   iris17::state.code_address = 0;
-   iris17::state.output = output;
-   iris17::curri.segment = iris17::Segment::Code;
-   iris17::curri.address = 0;
-   iris17::curri.group = 0;
-   iris17::curri.op = 0;
-   iris17::curri.reg0 = 0;
-   iris17::curri.reg1 = 0;
-   iris17::curri.reg2 = 0;
-   iris17::curri.hassymbol = 0;
+//   iris17in = input;
+//   iris17::state.segment = iris17::Segment::Code;
+//   iris17::state.data_address = 0;
+//   iris17::state.code_address = 0;
+//   iris17::state.output = output;
+//   iris17::curri.segment = iris17::Segment::Code;
+//   iris17::curri.address = 0;
+//   iris17::curri.group = 0;
+//   iris17::curri.op = 0;
+//   iris17::curri.reg0 = 0;
+//   iris17::curri.reg1 = 0;
+//   iris17::curri.reg2 = 0;
+//   iris17::curri.hassymbol = 0;
 }
 }
