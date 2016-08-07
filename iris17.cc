@@ -171,14 +171,8 @@ namespace iris17 {
 #undef Component
 		static void logical(DecodedInstruction&& inst, std::function<RegisterValue&(byte)> registerValue, std::function<void()> incrementInstructionPointer, std::function<word()> getCurrentCodeWord) {
 			if (immediate) {
-				logical(registerValue(inst.getLogicalImmediateDestination()), incrementInstructionPointer, getCurrentCodeWord);
-			} else {
-				logical(registerValue(inst.getLogicalRegister0()), registerValue(inst.getLogicalRegister1()));
-			}
-		}
-		private:
-			static void logical(RegisterValue& dest, std::function<void()> incrementInstructionPointer, std::function<word()> getCurrentCodeWord) {
 				RegisterValue immediate = retrieveImmediate<bitmask>(incrementInstructionPointer, getCurrentCodeWord);
+				auto dest = registerValue(inst.getLogicalImmediateDestination());
 				switch (immediate_type) {
 					case ImmediateLogicalOps::And:
 						dest = dest & immediate;
@@ -195,8 +189,9 @@ namespace iris17 {
 					default:
 						throw iris::Problem("Illegal immediate logical op!");
 				}
-			}
-			static void logical(RegisterValue& dest, RegisterValue& src) {
+			} else {
+				auto dest = registerValue(inst.getLogicalRegister0());
+				auto src = registerValue(inst.getLogicalRegister1());
 				switch(indirect_type) {
 					case LogicalOps::And:
 						dest = dest & src;
@@ -217,77 +212,76 @@ namespace iris17 {
 						throw iris::Problem("Illegal indirect logical operation!");
 				}
 			}
+		}
 	};
 
 	DefOp(Logical) {
+			auto incrIp = [this] () { ++getInstructionPointer(); };
+			auto getCurrWord = [this] () { return getCurrentCodeWord(); };
+			auto getRegVal = [this](byte index) { return registerValue(index); };
 		switch(current.getLogicalSignature()) {
 #define X(value) \
 				case value : \
-							 LogicalImmediateOperation<value>::logical(dest, incrIp, getCurrWord); \
+							 LogicalOperation<value>::logical(std::move(current), getRegVal, incrIp, getCurrWord); \
 				break;
 #include "def/iris17/bitmask8bit.def"
 #undef X
 				default:
 					throw iris::Problem("Illegal logical signature!");
-
-		}
-		if (current.getLogicalFlagImmediate()) {
-			auto incrIp = [this] () { ++getInstructionPointer(); };
-			auto getCurrWord = [this] () { return getCurrentCodeWord(); };
-			auto dest = registerValue(current.getLogicalImmediateDestination());
-			switch (current.getLogicalImmediateSignature()) { 
-
-			}
-		} else {
-			switch (current.getLogicalSignature()) {
-#define X(value) \
-				case value : \
-							 LogicalIndirectOperation<value>::logical(registerValue(current.getLogicalRegister0()), registerValue(current.getLogicalRegister1())); \
-				break;
-#include "def/iris17/bitmask8bit.def"
-#undef X
-				default:
-					throw iris::Problem("Illegal indirect logical signature!");
-			}
 		}
 	}
-	template<bool checkDenominator, ArithmeticOps op>
-	RegisterValue arithmeticOperation(RegisterValue arg0, RegisterValue arg1) {
-		if (checkDenominator) {
-			if (arg1 == 0) {
+
+	template<ArithmeticOps op>
+	struct RequiresDenominatorCheck {
+		static constexpr bool value = false;
+	};
+#define MustCheckDenominator(op) \
+	template<> \
+	struct RequiresDenominatorCheck<ArithmeticOps:: op> { \
+		static constexpr bool value = true; \
+	}
+	MustCheckDenominator(Div);
+	MustCheckDenominator(Rem);
+#undef MustCheckDenominator
+
+	template<ArithmeticOps op>
+	void arithmeticOperation(RegisterValue& dest, RegisterValue src) {
+		if (RequiresDenominatorCheck<op>::value) {
+			if (src == 0) {
 				throw iris::Problem("Denominator is zero!");
 			}
 		}
-		switch (op) {
+		switch(op) {
 			case ArithmeticOps::Add:
-				return arg0 + arg1;
+				dest = dest + src;
+				break;
 			case ArithmeticOps::Sub:
-				return arg0 - arg1;
+				dest = dest - src;
+				break;
 			case ArithmeticOps::Mul:
-				return arg0 * arg1;
+				dest = dest * src;
+				break;
 			case ArithmeticOps::Div:
-				return arg0 / arg1;
+				dest = dest / src;
+				break;
 			case ArithmeticOps::Rem:
-				return arg0 % arg1;
+				dest = dest % src;
+				break;
 			default:
-				throw iris::Problem("Illegal Arithmetic Operation");
+				throw iris::Problem("Illegal arithmetic operation!");
 		}
 	}
+
 	DefOp(Arithmetic) {
 		auto destination = registerValue(current.getArithmeticDestination());
 		RegisterValue source = (current.getArithmeticFlagImmediate() ? current.getArithmeticImmediate() : registerValue(current.getArithmeticSource()));
 		switch (current.getArithmeticFlagType()) {
-#define Z(title, checkDenominator) \
-			case ArithmeticOps:: title : { \
-											 destination = arithmeticOperation< checkDenominator, ArithmeticOps:: title> (destination, source); \
-											 break; \
-										 }
-#define X(title) Z(title, false)
-#define Y(title) Z(title, true)
+#define X(title) \
+			case ArithmeticOps:: title : \
+										 arithmeticOperation< ArithmeticOps:: title > (destination, source); \
+			break; \
 #include "def/iris17/arithmetic_ops.def"
 #undef X
-#undef Y
-#undef Z
 			default:
 				throw iris::Problem("Illegal Arithmetic Operation");
 		}
