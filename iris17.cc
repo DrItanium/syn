@@ -130,15 +130,10 @@ namespace iris17 {
 	
 	DefOp(Nop) { 
 	}
-
 	DefOp(Shift) {
 		auto destination = registerValue(current.getShiftRegister0());
 		RegisterValue source = (current.getShiftFlagImmediate() ? static_cast<RegisterValue>(current.getShiftImmediate()) : registerValue(current.getShiftRegister1()));
-		if (current.getShiftFlagLeft()) {
-			destination = destination << source;
-		} else {
-			destination = destination >> source;
-		}
+		destination = (current.getShiftFlagLeft() ? (destination << source) : (destination >> source));
 	}
 
 	DefOp(Logical) {
@@ -204,32 +199,47 @@ namespace iris17 {
 			}
 		}
 	}
-	DefOp(Arithmetic) {
-		auto destination = registerValue(current.getArithmeticDestination());
-		RegisterValue source = (current.getArithmeticFlagImmediate() ? current.getArithmeticImmediate() : registerValue(current.getArithmeticSource()));
-		switch (current.getArithmeticFlagType()) {
-#define X(title, operation) \
-			case ArithmeticOps:: title : { \
-											 destination = destination operation source; \
-											 break; \
-										 }
-#define Y(title, operation) \
-			case ArithmeticOps:: title : { \
-											 if (source == 0) { \
-												 throw iris::Problem("Denominator is zero!"); \
-											 } else { \
-												destination = destination operation source; \
-											 } \
-										 break; \
-										 }
-#include "def/iris17/arithmetic_ops.def"
-#undef X
-#undef Y
+	template<bool checkDenominator, ArithmeticOps op>
+	RegisterValue arithmeticOperation(RegisterValue arg0, RegisterValue arg1) {
+		if (checkDenominator) {
+			if (arg1 == 0) {
+				throw iris::Problem("Denominator is zero!");
+			}
+		}
+		switch (op) {
+			case ArithmeticOps::Add:
+				return arg0 + arg1;
+			case ArithmeticOps::Sub:
+				return arg0 - arg1;
+			case ArithmeticOps::Mul:
+				return arg0 * arg1;
+			case ArithmeticOps::Div:
+				return arg0 / arg1;
+			case ArithmeticOps::Rem:
+				return arg0 % arg1;
 			default:
 				throw iris::Problem("Illegal Arithmetic Operation");
 		}
 	}
-
+	DefOp(Arithmetic) {
+		auto destination = registerValue(current.getArithmeticDestination());
+		RegisterValue source = (current.getArithmeticFlagImmediate() ? current.getArithmeticImmediate() : registerValue(current.getArithmeticSource()));
+		switch (current.getArithmeticFlagType()) {
+#define Z(title, checkDenominator) \
+			case ArithmeticOps:: title : { \
+											 destination = arithmeticOperation< checkDenominator, ArithmeticOps:: title> (destination, source); \
+											 break; \
+										 }
+#define X(title) Z(title, false)
+#define Y(title) Z(title, true)
+#include "def/iris17/arithmetic_ops.def"
+#undef X
+#undef Y
+#undef Z
+			default:
+				throw iris::Problem("Illegal Arithmetic Operation");
+		}
+	}
 	DefOp(Move)  {
 		switch (current.getMoveBitmask()) {
 #define X(value) \
@@ -245,30 +255,42 @@ namespace iris17 {
 	}
 
 	DefOp(Swap) {
-		RegisterValue tmp = registerValue(current.getSwapDestination());
-		registerValue(current.getSwapDestination()) = registerValue(current.getSwapSource());
-		registerValue(current.getSwapSource()) = tmp;
+		if (current.getSwapDestination() != current.getSwapSource()) {
+			RegisterValue tmp = registerValue(current.getSwapDestination());
+			registerValue(current.getSwapDestination()) = registerValue(current.getSwapSource());
+			registerValue(current.getSwapSource()) = tmp;
+		}
+	}
+	template<byte bitmask>
+	RegisterValue retrieveImmediate(std::function<void()> incrementInstructionPointer, std::function<word()> getCurrentCodeWord) {
+		RegisterValue lower = 0;
+		RegisterValue upper = 0;
+		if (readLower<bitmask>()) {
+			incrementInstructionPointer();
+			lower = getCurrentCodeWord();
+		}
+		if (readUpper<bitmask>()) {
+			incrementInstructionPointer();
+			upper = static_cast<RegisterValue>(getCurrentCodeWord()) << 16;
+		}
+		return mask<bitmask>() & ( lower | upper );
+	}
+	template<>
+	RegisterValue retrieveImmediate<0b0000>(std::function<void()> unused0, std::function<word()> unused1) {
+		return 0;
 	}
 
     DefOp(Set) {
+		auto incrIp = [this]() { ++getInstructionPointer(); };
+		auto getWord = [this]() { return getCurrentCodeWord(); };
 		switch (current.getSetBitmask()) {
 #define X(value) \
 			case value: \
 			{ \
-				RegisterValue lower = 0; \
-				RegisterValue upper = 0; \
-				if ( readLower<value>() ) { \
-					++getInstructionPointer(); \
-					lower = getCurrentCodeWord(); \
-				} \
-				if (readUpper<value>() ) { \
-					++getInstructionPointer(); \
-					upper = RegisterValue(getCurrentCodeWord()) << 16; \
-				} \
-				registerValue(current.getSetDestination()) = mask<value>() & (lower | upper); \
+				registerValue(current.getSetDestination()) = retrieveImmediate<value>(incrIp, getWord); \
 				break; \
-			}
-#include "def/iris17/bitmask4bit.def"
+			} 
+			#include "def/iris17/bitmask4bit.def"
 #undef X
 			default:
 				throw iris::Problem("unknown mask!");
@@ -302,6 +324,10 @@ namespace iris17 {
 		RegisterValue lower = readLower<bitmask>() ? loadWord(address) : 0;
 		RegisterValue upper = readUpper<bitmask>() ? (static_cast<RegisterValue>(loadWord(address + 1)) << 16) : 0;
 		value = mask<bitmask>() & (lower | upper);
+	}
+	template<>
+	void loadOperation<0b0000>(RegisterValue& value, RegisterValue address, std::function<word(RegisterValue)> loadWord) {
+		value = 0;
 	}
 	template<byte bitmask>
 	void loadMergeOperation(RegisterValue &value, RegisterValue address, std::function<word(RegisterValue)> loadWord) {
