@@ -20,6 +20,7 @@ X(ArithmeticFlagType,               0b0000000011100000, 5, ArithmeticOps,  arith
 X(ArithmeticImmediate,              0b1111000000000000, 12, RegisterValue,  arithmeticImmediate)
 X(ArithmeticDestination,            0b0000111100000000, 8, byte,  arithmeticDestination)
 X(ArithmeticSource,                 0b1111000000000000, 12, byte,  arithmeticSource)
+X(ArithmeticSignature,				0b0000000011110000, 4, byte, arithmeticSignature)
 
 // Logical Immediate Flags
 X(LogicalFlagImmediate,             0b0000000000010000, 4, bool,  logicalFlagImmediate)
@@ -36,7 +37,7 @@ X(LogicalSignature,                 0b0000111111110000, 4, byte, logicalSignatur
 // Shift Operation
 X(ShiftFlagLeft,                    0b0000000000010000, 4, bool,  shiftFlagLeft)
 X(ShiftFlagImmediate,				0b0000000000100000, 5, bool,  shiftFlagImmediate)
-X(ShiftImmediate,					0b1111100000000000, 11, byte,  shiftImmediate)
+X(ShiftImmediate,					0b1111100000000000, 11, RegisterValue,  shiftImmediate)
 X(ShiftRegister0,					0b0000011110000000, 7, byte,  shiftRegister0)
 X(ShiftRegister1,					0b0111100000000000, 11, byte,  shiftRegister1)
 

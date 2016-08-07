@@ -81,7 +81,6 @@ namespace iris17 {
 		Or,
 		Xor,
 		Nand,
-		Count,
 	};
 
 	enum class LogicalOps : byte {
@@ -90,7 +89,6 @@ namespace iris17 {
 		Xor,
 		Nand,
 		Not,
-		Count,
 	};
 
 	enum class MemoryOperation : byte {
