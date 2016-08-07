@@ -1,73 +1,70 @@
 // A raw instruction is actually a 64-bit pa
 // 
-// Enum Title, Mask, Shift amount, field type, is_register_legal, post_fix
+// Enum Title, Mask, Shift amount, field type, post_fix
 // define X(title, mask, shift, type, is_register, post)
-X(Control,                  0b0000000000001111, 0, Operation, false, control)
-//X(Destination, 	  		0b0000111100000000, 4, byte, true, destination)
-//X(Src0,			  		0b1111000000000000, 8, byte, true, src0)
-//X(Src1,			  		0b0000000000001111, 0, byte, true, src1)
-//X(Src2,			  		0b0000000011110000, 4, byte, true, src2)
-X(Upper,		  			0b1111111100000000, 8, byte, false, upper)
-X(Lower,		  			0b0000000011111111, 0, byte, false, lower)
+X(Control,                  0b0000000000001111, 0, Operation,  control)
+X(Upper,		  			0b1111111100000000, 8, byte,  upper)
+X(Lower,		  			0b0000000011111111, 0, byte,  lower)
 
 // Conditional instruction flags
-X(ConditionalImmediateFlag, 0b0010000000000000, 13, bool, false, conditionalImmediateFlag)
-X(ConditionalCombineFlag,   0b0001100000000000, 11, CompareCombine, false, conditionalCombineFlag)
-X(ConditionalCompareType,   0b0000011100000000, 8,  CompareStyle, false, compareStyle)
-X(ConditionalRegister0,     0b0000000000001111, 0, byte, true, conditionalRegister0)
-X(ConditionalRegister1,     0b0000000011110000, 4, byte, true, conditionalRegister1)
+X(ConditionalImmediateFlag, 0b0010000000000000, 13, bool,  conditionalImmediateFlag)
+X(ConditionalCombineFlag,   0b0001100000000000, 11, CompareCombine,  conditionalCombineFlag)
+X(ConditionalCompareType,   0b0000011100000000, 8,  CompareStyle,  compareStyle)
+X(ConditionalRegister0,     0b0000000000001111, 0, byte,  conditionalRegister0)
+X(ConditionalRegister1,     0b0000000011110000, 4, byte,  conditionalRegister1)
 
 
 // arithmetic flags
-X(ArithmeticFlagImmediate,          0b0000000000010000, 4, bool, false, arithmeticFlagImmediate)
-X(ArithmeticFlagType,               0b0000000011100000, 5, ArithmeticOps, false, arithmeticFlagType)
-X(ArithmeticImmediate,              0b1111000000000000, 12, RegisterValue, false, arithmeticImmediate)
-X(ArithmeticDestination,            0b0000111100000000, 8, byte, true, arithmeticDestination)
-X(ArithmeticSource,                 0b1111000000000000, 12, byte, true, arithmeticSource)
+X(ArithmeticFlagImmediate,          0b0000000000010000, 4, bool,  arithmeticFlagImmediate)
+X(ArithmeticFlagType,               0b0000000011100000, 5, ArithmeticOps,  arithmeticFlagType)
+X(ArithmeticImmediate,              0b1111000000000000, 12, RegisterValue,  arithmeticImmediate)
+X(ArithmeticDestination,            0b0000111100000000, 8, byte,  arithmeticDestination)
+X(ArithmeticSource,                 0b1111000000000000, 12, byte,  arithmeticSource)
 
 // Logical Immediate Flags
-X(LogicalFlagImmediate,             0b0000000000010000, 4, bool, false, logicalFlagImmediate)
-X(LogicalFlagImmediateType,         0b0000000001100000, 5, ImmediateLogicalOps, false, logicalFlagType)
-X(LogicalFlagImmediateMask,         0b0000111100000000, 8, byte, false, logicalFlagImmediateMask)
-X(LogicalImmediateDestination,      0b1111000000000000, 12, byte, true, logicalImmediateDestination)
+X(LogicalFlagImmediate,             0b0000000000010000, 4, bool,  logicalFlagImmediate)
+X(LogicalFlagImmediateType,         0b0000000001100000, 5, ImmediateLogicalOps,  logicalFlagType)
+X(LogicalFlagImmediateMask,         0b0000111100000000, 8, byte,  logicalFlagImmediateMask)
+X(LogicalImmediateDestination,      0b1111000000000000, 12, byte,  logicalImmediateDestination)
+X(LogicalImmediateSignature,        0b0000111101100000, 5, byte, logicalImmediateSignature)
 // Logical Flags
-X(LogicalFlagType,                  0b0000000011100000, 4, LogicalOps, false, logicalFlagType)
-X(LogicalRegister0,                 0b0000111100000000, 8, byte, true, logicalRegister0)
-X(LogicalRegister1,                 0b1111000000000000, 11, byte, true, logicalRegister1)
+X(LogicalFlagType,                  0b0000000011100000, 4, LogicalOps,  logicalFlagType)
+X(LogicalRegister0,                 0b0000111100000000, 8, byte,  logicalRegister0)
+X(LogicalRegister1,                 0b1111000000000000, 12, byte,  logicalRegister1)
 
 // Shift Operation
-X(ShiftFlagLeft,                    0b0000000000010000, 4, bool, false, shiftFlagLeft)
-X(ShiftFlagImmediate,				0b0000000000100000, 5, bool, false, shiftFlagImmediate)
-X(ShiftImmediate,					0b1111100000000000, 11, byte, false, shiftImmediate)
-X(ShiftRegister0,					0b0000011110000000, 7, byte, true, shiftRegister0)
-X(ShiftRegister1,					0b0111100000000000, 11, byte, true, shiftRegister1)
+X(ShiftFlagLeft,                    0b0000000000010000, 4, bool,  shiftFlagLeft)
+X(ShiftFlagImmediate,				0b0000000000100000, 5, bool,  shiftFlagImmediate)
+X(ShiftImmediate,					0b1111100000000000, 11, byte,  shiftImmediate)
+X(ShiftRegister0,					0b0000011110000000, 7, byte,  shiftRegister0)
+X(ShiftRegister1,					0b0111100000000000, 11, byte,  shiftRegister1)
 
 // branch flags
 // If flags
-X(BranchFlags,                     0b0000000011110000,  4, byte, false, branchFlags)
-X(BranchIfOnTrue,                  0b0000111100000000,  8, byte, true, branchIfOnTrue)
-X(BranchIfOnFalse,                 0b1111000000000000, 12, byte, true, branchIfOnFalse)
+X(BranchFlags,                     0b0000000011110000,  4, byte,  branchFlags)
+X(BranchIfOnTrue,                  0b0000111100000000,  8, byte,  branchIfOnTrue)
+X(BranchIfOnFalse,                 0b1111000000000000, 12, byte,  branchIfOnFalse)
 // jump flags
-X(BranchIndirectDestination,       0b1111000000000000,  12, byte, true,  branchIndirectDestination)
+X(BranchIndirectDestination,       0b1111000000000000,  12, byte,   branchIndirectDestination)
 
 // memory operation flags
-X(MemoryFlagType,    0b0000000001110000, 4, MemoryOperation, false, memoryFlagType)
-X(MemoryFlagBitmask, 0b0000111100000000, 8, byte, false, memoryFlagBitmask)
-X(MemoryOffset,      0b1111000000000000, 12, byte, false, memoryOffset)
-X(MemoryRegister,    0b1111000000000000, 12, byte, true, memoryRegister)
+X(MemoryFlagType,    0b0000000001110000, 4, MemoryOperation,  memoryFlagType)
+X(MemoryFlagBitmask, 0b0000111100000000, 8, byte,  memoryFlagBitmask)
+X(MemoryOffset,      0b1111000000000000, 12, byte,  memoryOffset)
+X(MemoryRegister,    0b1111000000000000, 12, byte,  memoryRegister)
 
 // move operation flags
-X(MoveBitmask,       0b0000000011110000, 4, byte, false, moveBitmask)
-X(MoveRegister0,     0b0000111100000000, 8, byte, true, moveRegister0)
-X(MoveRegister1,     0b1111000000000000, 12, byte, true, moveRegister1)
+X(MoveBitmask,       0b0000000011110000, 4, byte,  moveBitmask)
+X(MoveRegister0,     0b0000111100000000, 8, byte,  moveRegister0)
+X(MoveRegister1,     0b1111000000000000, 12, byte,  moveRegister1)
 
 // set operation flags
-X(SetBitmask,        0b0000000011110000, 4, byte, false, setBitmask)
-X(SetDestination,    0b0000111100000000, 8, byte, true, setDestination)
+X(SetBitmask,        0b0000000011110000, 4, byte,  setBitmask)
+X(SetDestination,    0b0000111100000000, 8, byte,  setDestination)
 
 // Swap operation flags
-X(SwapDestination,   0b0000111100000000, 8, byte, true, swapDestination)
-X(SwapSource,        0b1111000000000000, 12, byte, true, swapSource)
+X(SwapDestination,   0b0000111100000000, 8, byte,  swapDestination)
+X(SwapSource,        0b1111000000000000, 12, byte,  swapSource)
 
 // system call flags
-X(SystemArg0,        0b0000111100000000, 8, byte, true, systemArg0)
+X(SystemArg0,        0b0000111100000000, 8, byte,  systemArg0)

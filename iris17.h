@@ -105,7 +105,7 @@ namespace iris17 {
 		public:
 			DecodedInstruction(raw_instruction input);
 			raw_instruction getRawValue() const;
-#define X(title, mask, shift, type, is_register, post) type get ## title () const; 
+#define X(title, mask, shift, type, post) type get ## title () const; 
 #include "def/iris17/instruction.def"
 #undef X
 		private:

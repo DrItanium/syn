@@ -32,7 +32,7 @@ namespace iris17 {
 		return _rawValue;
 	}
 
-#define X(title, mask, shift, type, is_register, post) \
+#define X(title, mask, shift, type, post) \
 		type DecodedInstruction:: get ## title () const { \
 			return iris::decodeBits<raw_instruction, type, mask, shift>(_rawValue); \
 		}
@@ -135,11 +135,76 @@ namespace iris17 {
 		RegisterValue source = (current.getShiftFlagImmediate() ? static_cast<RegisterValue>(current.getShiftImmediate()) : registerValue(current.getShiftRegister1()));
 		destination = (current.getShiftFlagLeft() ? (destination << source) : (destination >> source));
 	}
+	template<byte bitmask>
+	RegisterValue retrieveImmediate(std::function<void()> incrementInstructionPointer, std::function<word()> getCurrentCodeWord) {
+		RegisterValue lower = 0;
+		RegisterValue upper = 0;
+		if (readLower<bitmask>()) {
+			incrementInstructionPointer();
+			lower = getCurrentCodeWord();
+		}
+		if (readUpper<bitmask>()) {
+			incrementInstructionPointer();
+			upper = static_cast<RegisterValue>(getCurrentCodeWord()) << 16;
+		}
+		return mask<bitmask>() & ( lower | upper );
+	}
+	template<>
+	RegisterValue retrieveImmediate<0b0000>(std::function<void()> unused0, std::function<word()> unused1) {
+		return 0;
+	}
+	RegisterValue retrieveImmediate(byte bitmask, std::function<void()> incrementInstructionPointer, std::function<word()> getCurrentCodeWord) {
+		switch (bitmask) {
+#define X(value) \
+			case value : return retrieveImmediate<value>(incrementInstructionPointer, getCurrentCodeWord);
+#include "def/iris17/bitmask4bit.def"
+#undef X
+			default:
+						 throw iris::Problem("Illegal bitmask provided!");
+		}
+
+	}
+
+	template<byte signature>
+	struct LogicalImmediateOperation {
+#define Component(fieldName, mask, shift, type) static constexpr type fieldName = static_cast<type>((signature & mask)  >> shift);
+#include "def/iris17/logical_immediate.sig"
+#undef Component
+		static void compareImmediate(RegisterValue& dest, std::function<void()> incrementInstructionPointer, std::function<word()> getCurrentCodeWord) {
+			RegisterValue immediate = retrieveImmediate<bitmask>(incrementInstructionPointer, getCurrentCodeWord);
+			switch (type) {
+				case ImmediateLogicalOps::And:
+					dest = dest & immediate;
+					break;
+				case ImmediateLogicalOps::Or:
+					dest = dest | immediate;
+					break;
+				case ImmediateLogicalOps::Nand:
+					dest = ~(dest & immediate);
+					break;
+				case ImmediateLogicalOps::Xor:
+					dest = dest ^ immediate;
+					break;
+				default:
+					throw iris::Problem("Illegal immediate logical op!");
+			}
+		}
+	};
 
 	DefOp(Logical) {
 		if (current.getLogicalFlagImmediate()) {
+			auto incrIp = [this] () { ++getInstructionPointer(); };
+			auto getCurrWord = [this] () { return getCurrentCodeWord(); };
 			auto dest = registerValue(current.getLogicalImmediateDestination());
 			RegisterValue immediate = 0;
+			switch (current.getLogicalImmediateSignature()) { 
+
+#define X(value) \
+			case value : \
+				LogicalImmediateOperation<value>::compareImmediate(dest, incrIp, getCurrWord); \
+			break;
+#include "def/iris17/bitmask8bit.def"
+#undef X
 			switch (current.getLogicalFlagImmediateMask()) {
 #define X(value) \
 				case value : { \
@@ -260,24 +325,6 @@ namespace iris17 {
 			registerValue(current.getSwapDestination()) = registerValue(current.getSwapSource());
 			registerValue(current.getSwapSource()) = tmp;
 		}
-	}
-	template<byte bitmask>
-	RegisterValue retrieveImmediate(std::function<void()> incrementInstructionPointer, std::function<word()> getCurrentCodeWord) {
-		RegisterValue lower = 0;
-		RegisterValue upper = 0;
-		if (readLower<bitmask>()) {
-			incrementInstructionPointer();
-			lower = getCurrentCodeWord();
-		}
-		if (readUpper<bitmask>()) {
-			incrementInstructionPointer();
-			upper = static_cast<RegisterValue>(getCurrentCodeWord()) << 16;
-		}
-		return mask<bitmask>() & ( lower | upper );
-	}
-	template<>
-	RegisterValue retrieveImmediate<0b0000>(std::function<void()> unused0, std::function<word()> unused1) {
-		return 0;
 	}
 
     DefOp(Set) {
