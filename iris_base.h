@@ -62,7 +62,7 @@ namespace iris {
 
 template<typename T, typename F, T bitmask, T shiftcount>
 inline F decodeBits(T input) {
-   return (F)((input & bitmask) >> shiftcount);
+	return static_cast<F>((input & bitmask) >> shiftcount);
 }
 
 template<typename T, typename F, int field> 
@@ -72,7 +72,7 @@ inline F decodeField(T input) {
 
 template<typename T, typename F, T bitmask, T shiftcount>
 inline T encodeBits(T input, F value) {
-	return (T)((input & ~bitmask) | (value << shiftcount));
+	return static_cast<T>((input & ~bitmask) | (static_cast<T>(value) << shiftcount));
 }
 
 template<typename T, typename F, int field>

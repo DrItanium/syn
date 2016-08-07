@@ -360,7 +360,7 @@ namespace iris17 {
 			++stackPointer; 
 			stackPointer &= bitmask24; 
 		} 
-		storage = iris::encodeBits<word, RegisterValue, upper16Mask, 16>(iris::encodeBits<word, RegisterValue, lower16Mask, 0>(RegisterValue(0), lower), upper); 
+		storage = iris::encodeBits<RegisterValue, word, upper16Mask, 16>(iris::encodeBits<RegisterValue, word, lower16Mask, 0>(static_cast<RegisterValue>(0), lower), upper);
 	}
 	DefOp(Memory) {
 		auto loadWordFn = [this](RegisterValue address) { return loadWord(address); };
@@ -507,84 +507,58 @@ namespace iris17 {
 
 template<CompareCombine compareOp> 
 bool combine(bool newValue, bool existingValue) {
-	throw iris::Problem("Undefined combine operation");
-}
-template<>
-bool combine<CompareCombine::None>(bool newValue, bool existingValue) {
-	return newValue;
-}
-
-template<>
-bool combine<CompareCombine::And>(bool newValue, bool existingValue) {
-	return newValue && existingValue;
-}
-
-template<>
-bool combine<CompareCombine::Or>(bool newValue, bool existingValue) {
-	return newValue || existingValue;
-}
-
-template<>
-bool combine<CompareCombine::Xor>(bool newValue, bool existingValue) {
-	return newValue ^ existingValue;
+	switch (compareOp) {
+		case CompareCombine::None:
+			return newValue;
+		case CompareCombine::And:
+			return newValue && existingValue;
+		case CompareCombine::Or:
+			return newValue || existingValue;
+		case CompareCombine::Xor:
+			return newValue ^ existingValue;
+		default:
+			throw iris::Problem("Undefined combine operation");
+	}
 }
 
 template<CompareStyle style>
 bool compare(RegisterValue a, RegisterValue b) {
-	throw iris::Problem("Undefined comparison style!");
-}
-
-template<>
-bool compare<CompareStyle::Equals>(RegisterValue a, RegisterValue b) {
-	return a == b;
-}
-
-template<>
-bool compare<CompareStyle::NotEquals>(RegisterValue a, RegisterValue b) {
-	return a != b;
-}
-
-template<>
-bool compare<CompareStyle::LessThan>(RegisterValue a, RegisterValue b) {
-	return a < b;
-}
-
-template<>
-bool compare<CompareStyle::GreaterThan>(RegisterValue a, RegisterValue b) {
-	return a > b;
-}
-
-template<>
-bool compare<CompareStyle::LessThanOrEqualTo>(RegisterValue a, RegisterValue b) {
-	return a <= b;
-}
-template<>
-bool compare<CompareStyle::GreaterThanOrEqualTo>(RegisterValue a, RegisterValue b) {
-	return a >= b;
+	switch (style) {
+		case CompareStyle::Equals:
+			return a == b;
+		case CompareStyle::NotEquals:
+			return a != b;
+		case CompareStyle::LessThan:
+			return a < b;
+		case CompareStyle::LessThanOrEqualTo:
+			return a <= b;
+		case CompareStyle::GreaterThan:
+			return a > b;
+		case CompareStyle::GreaterThanOrEqualTo:
+			return a >= b;
+		default:
+			throw iris::Problem("Undefined comparison style!");
+	}
 }
 
 DefOp(Compare) {
 	++getInstructionPointer();
 	DecodedInstruction next(getCurrentCodeWord());
 	switch (current.getConditionalCompareType()) {
+#define combineOp(flag) \
+		case CompareCombine:: flag : \
+									 getConditionRegister() = combine<CompareCombine:: flag>(result, getConditionRegister()); \
+		break;
 #define X(type) \
 		case CompareStyle:: type : { \
 									   RegisterValue first = registerValue(next.getConditionalRegister0()); \
 									   RegisterValue second = current.getConditionalImmediateFlag() ? next.getUpper() : registerValue(next.getConditionalRegister1()); \
 									   bool result = compare<CompareStyle:: type>(first, second); \
 									   switch (current.getConditionalCombineFlag()) { \
-										   case CompareCombine::None: \
-											   getConditionRegister() = combine<CompareCombine::None>(result, getConditionRegister()); \
-											   break; \
-										   case CompareCombine::And: \
-											   getConditionRegister() = combine<CompareCombine::And>(result, getConditionRegister()); \
-											   break; \
-										   case CompareCombine::Or: \
-											   getConditionRegister() = combine<CompareCombine::Or>(result, getConditionRegister()); \
-											   break; \
-										   case CompareCombine::Xor: \
-											   getConditionRegister() = combine<CompareCombine::Xor>(result, getConditionRegister()); \
-											   break; \
+										   combineOp(None) \
+										   combineOp(And) \
+										   combineOp(Or) \
+										   combineOp(Xor) \
 										   default: \
 													throw iris::Problem("Illegal Compare Combine Operation"); \
 									   } \
@@ -597,6 +571,7 @@ DefOp(Compare) {
 		X(LessThanOrEqualTo)
 		X(GreaterThanOrEqualTo)
 #undef X
+#undef combineOp
 		default:
 			throw iris::Problem("illegal compare type!");
 	}

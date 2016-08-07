@@ -1,7 +1,7 @@
 LIBS = -lc -lm
 
-CC ?= cc
-CXX ?= c++
+CC := cc
+CXX := c++
 LEX ?= flex
 YACC ?= bison
 GENFLAGS = -Wall -g3
