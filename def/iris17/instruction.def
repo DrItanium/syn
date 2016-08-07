@@ -54,6 +54,7 @@ X(MemoryFlagType,    0b0000000001110000, 4, MemoryOperation,  memoryFlagType)
 X(MemoryFlagBitmask, 0b0000111100000000, 8, byte,  memoryFlagBitmask)
 X(MemoryOffset,      0b1111000000000000, 12, byte,  memoryOffset)
 X(MemoryRegister,    0b1111000000000000, 12, byte,  memoryRegister)
+X(MemorySignature,   0b0000111111110000, 4, byte, memorySignature)
 
 // move operation flags
 X(MoveBitmask,       0b0000000011110000, 4, byte,  moveBitmask)

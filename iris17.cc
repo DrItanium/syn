@@ -435,37 +435,61 @@ namespace iris17 {
 	void popOperation<0b0000>(RegisterValue& stackPointer, RegisterValue& storage, std::function<word(RegisterValue)> loadWord) {
 		storage = 0;
 	}
+
+	template<byte signature>
+	void memoryOperation(DecodedInstruction&& inst, std::function<RegisterValue&(byte)> registerValue, std::function<void(RegisterValue, word)> storeWord, std::function<word(RegisterValue)> loadWord) {
+#define Component(fieldName, mask, shift, type) constexpr type fieldName = static_cast<type>((signature & mask) >> shift);
+#include "def/iris17/memory.sig"
+#undef Component
+		if (error_state) {
+			throw iris::Problem("Illegally encoded Memory operation!");
+		}
+
+		switch (type) {
+			case MemoryOperation::Load: 
+				loadOperation<bitmask, false>(registerValue(ArchitectureConstants::ValueRegister), registerValue(ArchitectureConstants::AddressRegister) + inst.getMemoryOffset(), loadWord);
+				break;
+			case MemoryOperation::LoadMerge:
+				loadOperation<bitmask, true>(registerValue(ArchitectureConstants::ValueRegister), registerValue(ArchitectureConstants::AddressRegister) + inst.getMemoryOffset(), loadWord);
+				break;
+			case MemoryOperation::Store:
+				storeOperation<bitmask>(registerValue(ArchitectureConstants::ValueRegister), registerValue(ArchitectureConstants::AddressRegister) + inst.getMemoryOffset(), loadWord, storeWord);
+				break;
+			case MemoryOperation::Push:
+				pushOperation<bitmask>(registerValue(ArchitectureConstants::StackPointer), registerValue(inst.getMemoryRegister()), storeWord); 
+				break; 
+			case MemoryOperation::Pop: 
+				popOperation<bitmask>(registerValue(ArchitectureConstants::StackPointer), registerValue(inst.getMemoryRegister()), loadWord); 
+				break; 
+			default: 
+				throw iris::Problem("Illegal memory operation type!");
+		}
+	}
+
 	DefOp(Memory) {
 		auto loadWordFn = [this](RegisterValue address) { return loadWord(address); };
 		auto storeWordFn = [this](RegisterValue address, word value) { storeWord(address, value); };
-		switch (current.getMemoryFlagBitmask()) {
+		auto regVal = [this](byte index) -> RegisterValue& {
+			switch(index) {
+				case ArchitectureConstants::StackPointer:
+					return registerValue<ArchitectureConstants::StackPointer>();
+				case ArchitectureConstants::ValueRegister:
+					return registerValue<ArchitectureConstants::ValueRegister>();
+				case ArchitectureConstants::AddressRegister:
+					return registerValue<ArchitectureConstants::AddressRegister>();
+				default:
+					return registerValue(index);
+			}
+		};
+		switch (current.getMemorySignature()) {
 #define X(value) \
-			case value : { \
-							 switch (current.getMemoryFlagType()) { \
-								 case MemoryOperation::Load: \
-								 			loadOperation<value, false>(getValueRegister(), getAddressRegister() + current.getMemoryOffset(), loadWordFn); \
-								 break; \
-								 case MemoryOperation::LoadMerge: \
-											loadOperation<value, true>(getValueRegister(), getAddressRegister() + current.getMemoryOffset(), loadWordFn); \
-								 break; \
-								 case MemoryOperation::Store: \
-															  storeOperation<value>(getValueRegister(), getAddressRegister() + current.getMemoryOffset(), loadWordFn, storeWordFn); \
-								 break; \
-								 case MemoryOperation::Push: \
-															 pushOperation<value>(getStackPointer(), registerValue(current.getMemoryRegister()), storeWordFn); \
-								 break; \
-								 case MemoryOperation::Pop: \
-															popOperation<value>(getStackPointer(), registerValue(current.getMemoryRegister()), loadWordFn); \
-								 break; \
-								default: \
-										 throw iris::Problem("Illegal memory operation type!"); \
-							 } \
-							 break; \
-						 }
-#include "def/iris17/bitmask4bit.def"
+			case value: \
+						memoryOperation<value>(std::move(current), regVal, storeWordFn, loadWordFn); \
+			break;
+#include "def/iris17/bitmask8bit.def"
 #undef X
 			default:
-				throw iris::Problem("Illegal bitmask!");
+				throw iris::Problem("Illegal memory signature!");
 		}
 	}
 
