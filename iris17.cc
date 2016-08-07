@@ -164,103 +164,90 @@ namespace iris17 {
 		}
 
 	}
-
 	template<byte signature>
-	struct LogicalImmediateOperation {
-#define Component(fieldName, mask, shift, type) static constexpr type fieldName = static_cast<type>((signature & mask)  >> shift);
-#include "def/iris17/logical_immediate.sig"
+	struct LogicalOperation {
+#define Component(fieldName, mask, shift, type) constexpr type fieldName = static_cast<type>((signature & mask) >> shift);
+#include "def/iris17/logical_generic.sig"
 #undef Component
-		static void compareImmediate(RegisterValue& dest, std::function<void()> incrementInstructionPointer, std::function<word()> getCurrentCodeWord) {
-			RegisterValue immediate = retrieveImmediate<bitmask>(incrementInstructionPointer, getCurrentCodeWord);
-			switch (type) {
-				case ImmediateLogicalOps::And:
-					dest = dest & immediate;
-					break;
-				case ImmediateLogicalOps::Or:
-					dest = dest | immediate;
-					break;
-				case ImmediateLogicalOps::Nand:
-					dest = ~(dest & immediate);
-					break;
-				case ImmediateLogicalOps::Xor:
-					dest = dest ^ immediate;
-					break;
-				default:
-					throw iris::Problem("Illegal immediate logical op!");
+		static void logical(DecodedInstruction&& inst, std::function<RegisterValue&(byte)> registerValue, std::function<void()> incrementInstructionPointer, std::function<word()> getCurrentCodeWord) {
+			if (immediate) {
+				logical(registerValue(inst.getLogicalImmediateDestination()), incrementInstructionPointer, getCurrentCodeWord);
+			} else {
+				logical(registerValue(inst.getLogicalRegister0()), registerValue(inst.getLogicalRegister1()));
 			}
 		}
+		private:
+			static void logical(RegisterValue& dest, std::function<void()> incrementInstructionPointer, std::function<word()> getCurrentCodeWord) {
+				RegisterValue immediate = retrieveImmediate<bitmask>(incrementInstructionPointer, getCurrentCodeWord);
+				switch (immediate_type) {
+					case ImmediateLogicalOps::And:
+						dest = dest & immediate;
+						break;
+					case ImmediateLogicalOps::Or:
+						dest = dest | immediate;
+						break;
+					case ImmediateLogicalOps::Nand:
+						dest = ~(dest & immediate);
+						break;
+					case ImmediateLogicalOps::Xor:
+						dest = dest ^ immediate;
+						break;
+					default:
+						throw iris::Problem("Illegal immediate logical op!");
+				}
+			}
+			static void logical(RegisterValue& dest, RegisterValue& src) {
+				switch(indirect_type) {
+					case LogicalOps::And:
+						dest = dest & src;
+						break;
+					case LogicalOps::Or:
+						dest = dest | src;
+						break;
+					case LogicalOps::Not:
+						dest = ~dest;
+						break;
+					case LogicalOps::Xor:
+						dest = dest ^ src;
+						break;
+					case LogicalOps::Nand:
+						dest = ~(dest & src);
+						break;
+					default:
+						throw iris::Problem("Illegal indirect logical operation!");
+				}
+			}
 	};
 
 	DefOp(Logical) {
+		switch(current.getLogicalSignature()) {
+#define X(value) \
+				case value : \
+							 LogicalImmediateOperation<value>::logical(dest, incrIp, getCurrWord); \
+				break;
+#include "def/iris17/bitmask8bit.def"
+#undef X
+				default:
+					throw iris::Problem("Illegal logical signature!");
+
+		}
 		if (current.getLogicalFlagImmediate()) {
 			auto incrIp = [this] () { ++getInstructionPointer(); };
 			auto getCurrWord = [this] () { return getCurrentCodeWord(); };
 			auto dest = registerValue(current.getLogicalImmediateDestination());
-			RegisterValue immediate = 0;
 			switch (current.getLogicalImmediateSignature()) { 
 
-#define X(value) \
-			case value : \
-				LogicalImmediateOperation<value>::compareImmediate(dest, incrIp, getCurrWord); \
-			break;
-#include "def/iris17/bitmask8bit.def"
-#undef X
-			switch (current.getLogicalFlagImmediateMask()) {
-#define X(value) \
-				case value : { \
-								 RegisterValue lower = 0; \
-								 RegisterValue upper = 0; \
-								if (readLower<value>()) { \
-									++getInstructionPointer(); \
-									lower = RegisterValue(getCurrentCodeWord()); \
-								} \
-								if (readUpper<value>()) { \
-									++getInstructionPointer(); \
-									upper = (RegisterValue(getCurrentCodeWord()) << 16) & lower16Mask; \
-								} \
-								immediate = upper | lower; \
-								break; \
-							 }
-#include "def/iris17/bitmask4bit.def"
-#undef X
-				default:
-					throw iris::Problem("Illegal bit mask provided!");
-			}
-			switch (current.getLogicalFlagImmediateType()) {
-				case ImmediateLogicalOps::And:
-					dest = dest & immediate;
-					break;
-				case ImmediateLogicalOps::Or:
-					dest = dest | immediate;
-					break;
-				case ImmediateLogicalOps::Xor:
-					dest = dest ^ immediate;
-					break;
-				case ImmediateLogicalOps::Nand:
-					dest = ~(dest & immediate);
-					break;
-				default:
-					throw iris::Problem("Illegal immediate logical op!");
 			}
 		} else {
-			switch (current.getLogicalFlagType()) {
-				case LogicalOps::And:
-					registerValue(current.getLogicalRegister0()) = (registerValue(current.getLogicalRegister0()) & registerValue(current.getLogicalRegister1()));
-					break;
-				case LogicalOps::Or:
-					registerValue(current.getLogicalRegister0()) = (registerValue(current.getLogicalRegister0()) | registerValue(current.getLogicalRegister1()));
-					break;
-				case LogicalOps::Xor:
-					registerValue(current.getLogicalRegister0()) = (registerValue(current.getLogicalRegister0()) ^ registerValue(current.getLogicalRegister1()));
-					break;
-				case LogicalOps::Nand:
-					registerValue(current.getLogicalRegister0()) = ~(registerValue(current.getLogicalRegister0()) & registerValue(current.getLogicalRegister1()));
-					break;
-				case LogicalOps::Not:
-					registerValue(current.getLogicalRegister0()) = ~registerValue(current.getLogicalRegister0());
-					break;
+			switch (current.getLogicalSignature()) {
+#define X(value) \
+				case value : \
+							 LogicalIndirectOperation<value>::logical(registerValue(current.getLogicalRegister0()), registerValue(current.getLogicalRegister1())); \
+				break;
+#include "def/iris17/bitmask8bit.def"
+#undef X
 				default:
-					throw iris::Problem("Illegal logical op!");
+					throw iris::Problem("Illegal indirect logical signature!");
 			}
 		}
 	}
