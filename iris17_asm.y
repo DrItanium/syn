@@ -12,7 +12,7 @@
 #include "asm_interact.h"
 
 #include "iris17_asm.tab.h"
-
+#define YYERROR_VERBOSE 1
 extern int yylex();
 extern int yyparse();
 extern FILE* iris17in;
@@ -74,18 +74,18 @@ struct dynamicop {
 		} Arithmetic;
 		struct {
 			bool immediate;
-			union {
-				struct {
-					ImmediateLogicalOps subType;
-					byte bitmask;
-					byte destination;
-				} Immediate;
-				struct {
-					LogicalOps subType;
-					byte register0;
-					byte register1;
-				} Indirect;
-			} forms;
+			// no union so that we can be lazy when determining the subtype
+			struct {
+				ImmediateLogicalOps subType;
+				byte bitmask;
+				byte destination;
+				RegisterValue source;
+			} Immediate;
+			struct {
+				LogicalOps subType;
+				byte register0;
+				byte register1;
+			} Indirect;
 		} Logical;
 		struct {
 			bool shiftLeft;
@@ -261,7 +261,6 @@ operation:
 		} |
 		OP_COMPARE compare_op {
 			op.type = iris17::Operation::Compare;
-			std::cout << "operation compare" << std::endl;
 		} |
 		OP_ARITHMETIC arithmetic_op {
 			op.type = iris17::Operation::Arithmetic;
@@ -285,9 +284,7 @@ operation:
 			op.type = iris17::Operation::Memory;
 		};
 compare_op:
-		  compare_type combine_type compare_args {
-			std::cout << "compare_op" << std::endl;
-		  };
+		  compare_type combine_type compare_args;
 compare_args:
 		 FLAG_IMMEDIATE REGISTER IMMEDIATE {
 			// IMMEDIATE8
@@ -335,31 +332,40 @@ combine_type:
 		};
 
 logical_op:
-		OP_LOGICAL logical_op logical_args {
-
-		} |
-		OP_LOGICAL LOGICAL_OP_NOT REGISTER {
-			
+		logical_op logical_args |
+		LOGICAL_OP_NOT REGISTER {
+			op.Logical.immediate = false;
+			op.Logical.Indirect.subType = iris17::LogicalOps::Not;
+			op.Logical.Indirect.register0 = $2;
 		};
 logical_args: 
-		FLAG_IMMEDIATE REGISTER IMMEDIATE {
-			//IMMEDIATE5
+		FLAG_IMMEDIATE IMMEDIATE REGISTER IMMEDIATE {
+			op.Logical.immediate = true;
+			op.Logical.Immediate.bitmask = ($2 & 0x0000000F);
+			op.Logical.Immediate.destination = $3;
+			op.Logical.Immediate.source = $4; 
 		} |
 		REGISTER REGISTER {
-
+			op.Logical.immediate = false;
+			op.Logical.Indirect.register0 = $1;
+			op.Logical.Indirect.register1 = $2;
 		};
 logical_op: 
 		ACTION_AND {
-
+			op.Logical.Immediate.subType = iris17::ImmediateLogicalOps::And;
+			op.Logical.Indirect.subType = iris17::LogicalOps::And;
 		} |
 		ACTION_OR {
-
+			op.Logical.Immediate.subType = iris17::ImmediateLogicalOps::Or;
+			op.Logical.Indirect.subType = iris17::LogicalOps::Or;
 		} |
 		ACTION_XOR {
-
+			op.Logical.Immediate.subType = iris17::ImmediateLogicalOps::Xor;
+			op.Logical.Indirect.subType = iris17::LogicalOps::Xor;
 		} |
 		LOGICAL_OP_NAND {
-
+			op.Logical.Immediate.subType = iris17::ImmediateLogicalOps::Nand;
+			op.Logical.Indirect.subType = iris17::LogicalOps::Nand;
 		};
 shift_op:
 		OP_SHIFT shift_left_or_right shift_args {
@@ -527,5 +533,6 @@ return false;
 }
 
 void initialize(std::ostream* output, FILE* input) {
+	iris17in = input;
 }
 }
