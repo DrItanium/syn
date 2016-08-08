@@ -26,7 +26,7 @@ enum class Segment : byte {
    Data,
 };
 enum class InstructionFields : byte {
-#define X(title, mask, shift, type, is_register, post) title,
+#define X(title, mask, shift, type, post) title,
 #include "def/iris17/instruction.def"
 #undef X
 };
@@ -141,7 +141,7 @@ label:
    ;
 operation:
 		OP_NOP {
-
+			
 		} |
 		shift_op |
 		logical_op |
