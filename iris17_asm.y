@@ -339,9 +339,9 @@ logical_op:
 			op.Logical.Indirect.register0 = $2;
 		};
 logical_args: 
-		FLAG_IMMEDIATE IMMEDIATE REGISTER IMMEDIATE {
+		FLAG_IMMEDIATE BITMASK4 REGISTER IMMEDIATE {
 			op.Logical.immediate = true;
-			op.Logical.Immediate.bitmask = ($2 & 0x0000000F);
+			op.Logical.Immediate.bitmask = $2;
 			op.Logical.Immediate.destination = $3;
 			op.Logical.Immediate.source = $4; 
 		} |
@@ -390,13 +390,13 @@ shift_left_or_right:
 			op.Shift.shiftLeft = false;
 		};
 system_op:
-		OP_SYSTEM IMMEDIATE REGISTER {
+		IMMEDIATE {
 		//IMMEDIATE8
-
+			op.System.arg0 = $1;
 		};
 move_op: 
 	   OP_MOVE BITMASK4 REGISTER REGISTER {
-	    
+	
 	   };
 set_op: 
 	  OP_SET BITMASK4 REGISTER lexeme {
