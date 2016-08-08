@@ -48,7 +48,6 @@ typename InstructionFieldInformation<field>::AssociatedType encodeInstruction(ra
 	return iris::encodeBits<raw_instruction, InstructionFieldInformation<field>::AssociatedType, InstructionFieldInformation<field>::mask, InstructionFieldInformation<field>::shiftCount>(base, value);
 }
 /* used to store ops which require a second pass */
-typedef std::string label;
 struct dynamicop {
 	RegisterValue address;
 	int numWords;
@@ -68,9 +67,11 @@ struct dynamicop {
 		struct {
 			bool immediate;
 			ArithmeticOps subType;
-			byte immediateValue;
 			byte destination;
-			byte source;
+			union {
+				byte source;
+				byte immediateValue;
+			};
 		} Arithmetic;
 		struct {
 			bool immediate;
@@ -112,8 +113,10 @@ struct dynamicop {
 				} Indirect;
 				struct {
 					RegisterValue immediateValue;
+					bool isLabel;
+					char* labelValue;
 				} Immediate;
-			} forms;
+			};
 		} Branch;
 		struct {
 			MemoryOperation subType;
@@ -122,7 +125,7 @@ struct dynamicop {
 				byte storage;
 				byte offset : 4;
 				byte reg : 4;
-			} forms;
+			};
 		} Memory;
 		struct {
 			byte bitmask;
@@ -132,7 +135,9 @@ struct dynamicop {
 		struct {
 			byte bitmask;
 			byte destination;
+			bool isSymbol;
 			RegisterValue immediate;
+			char* label;
 		} Set;
 		struct {
 			byte dest;
@@ -391,58 +396,102 @@ shift_left_or_right:
 		};
 system_op:
 		IMMEDIATE {
-		//IMMEDIATE8
 			op.System.arg0 = $1;
 		};
 move_op: 
-	   OP_MOVE BITMASK4 REGISTER REGISTER {
-	
+	   BITMASK4 REGISTER REGISTER {
+		 op.Move.bitmask = $1;
+		 op.Move.register0 = $2;
+		 op.Move.register1 = $3;
 	   };
+
 set_op: 
-	  OP_SET BITMASK4 REGISTER lexeme {
-
+	  BITMASK4 REGISTER set_lexeme {
+		op.Set.bitmask = $1;
+		op.Set.destination = $2;
 	  };
+set_lexeme:
+		  SYMBOL {
+			op.Set.isSymbol = true;
+			op.Set.label = $1;
+		  } |
+		  IMMEDIATE {
+			op.Set.isSymbol = false;
+			op.Set.immediate = $1;
+		  };
 swap_op:
-		OP_SWAP REGISTER REGISTER {
-
+		REGISTER REGISTER {
+			op.Swap.dest = $1;
+			op.Swap.source = $2;
 		};
 branch_op: 
-		 OP_BRANCH branch {
+		 branch {
 
 		 };
 branch:
-	  	if_op |
-		jump_op |
-		call_op;
+	  	BRANCH_FLAG_IF if_op {
+			op.Branch.isIf = true;
+			op.Branch.isImmediate = false;
+			op.Branch.isConditional = false;
+		} |
+		jump_op {
+			op.Branch.isIf = false;
+			op.Branch.isCall = false;
+		} |
+		BRANCH_FLAG_CALL call_op {
+			op.Branch.isIf = false;
+			op.Branch.isCall = true;
+			op.Branch.isConditional = false;
+		}; 
 if_op: 
-	 BRANCH_FLAG_IF REGISTER REGISTER {
-
+	 REGISTER REGISTER {
+		op.Branch.isCall = false;
+		op.Branch.If.onTrue = $1;
+		op.Branch.If.onFalse = $2;
 	 } |
-	 BRANCH_FLAG_IF BRANCH_FLAG_CALL REGISTER REGISTER {
-
+	 BRANCH_FLAG_CALL REGISTER REGISTER {
+		op.Branch.isCall = true;
+		op.Branch.If.onTrue = $2;
+		op.Branch.If.onFalse = $3;
 	 };
+call_op:
+	   FLAG_IMMEDIATE branch_lexeme {
+			op.Branch.isImmediate = true;
+	   } |
+	   REGISTER {
+			op.Branch.isImmediate = false;
+			op.Branch.Indirect.destination = $1;
+	   };
+branch_lexeme: 
+		   SYMBOL {
+		   		op.Branch.Immediate.isLabel = true;
+				op.Branch.Immediate.labelValue = $1;
+			} |
+			IMMEDIATE {
+				op.Branch.Immediate.isLabel = false;
+				op.Branch.Immediate.immediateValue = $1;
+			};
 jump_op:
-	FLAG_IMMEDIATE lexeme {
-
+	FLAG_IMMEDIATE branch_lexeme {
+		op.Branch.isImmediate = true;
+		op.Branch.isConditional = false;
 	} |
-	BRANCH_FLAG_COND FLAG_IMMEDIATE lexeme {
-
+	BRANCH_FLAG_COND FLAG_IMMEDIATE branch_lexeme {
+		op.Branch.isImmediate = true;
+		op.Branch.isConditional = true;
 	} |
 	REGISTER {
-		
+		op.Branch.isImmediate = false;
+		op.Branch.isConditional = false;
+		op.Branch.Indirect.destination = $1;
 	} |
 	BRANCH_FLAG_COND REGISTER {
-
+		op.Branch.isImmediate = false;
+		op.Branch.isConditional = true;
+		op.Branch.Indirect.destination = $2;
 	};
-call_op:
-	   BRANCH_FLAG_CALL FLAG_IMMEDIATE lexeme {
-
-	   } |
-	   BRANCH_FLAG_CALL REGISTER {
-
-	   };
 memory_op:
-		OP_MEMORY memory {
+		memory {
 
 		};
 memory:
@@ -471,27 +520,31 @@ stack_operation:
 					
 			   };
 arithmetic_op:
-		OP_ARITHMETIC arithmetic_subop FLAG_IMMEDIATE REGISTER IMMEDIATE {
-
+		arithmetic_subop FLAG_IMMEDIATE REGISTER IMMEDIATE {
+			op.Arithmetic.immediate = true;
+			op.Arithmetic.destination = $3;
+			op.Arithmetic.immediateValue = $4;
 		} |
-		OP_ARITHMETIC arithmetic_subop REGISTER REGISTER {
-
+		arithmetic_subop REGISTER REGISTER {
+			op.Arithmetic.immediate = false;
+			op.Arithmetic.destination = $2;
+			op.Arithmetic.source = $3;
 		};
 arithmetic_subop: 
 				ARITHMETIC_OP_ADD {
-
+					op.Arithmetic.subType = iris17::ArithmeticOps::Add;
 				} |
 				ARITHMETIC_OP_SUB {
-
+					op.Arithmetic.subType = iris17::ArithmeticOps::Sub;
 				} |
 				ARITHMETIC_OP_MUL {
-
+					op.Arithmetic.subType = iris17::ArithmeticOps::Mul;
 				} |
 				ARITHMETIC_OP_DIV {
-
+					op.Arithmetic.subType = iris17::ArithmeticOps::Div;
 				} |
 				ARITHMETIC_OP_REM {
-
+					op.Arithmetic.subType = iris17::ArithmeticOps::Rem;
 				};
 lexeme: 
 	  IMMEDIATE {
