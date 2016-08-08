@@ -83,7 +83,7 @@ omni [a-zA-Z0-9._]
 "ip"        { iris17lval.rval = iris17::ArchitectureConstants::InstructionPointer; return REGISTER; }
 "lr"        { iris17lval.rval = iris17::ArchitectureConstants::LinkRegister; return REGISTER; }
 "sp"        { iris17lval.rval = iris17::ArchitectureConstants::StackPointer; return REGISTER; }
-"cond"      { iris17lval.rval = iris17::ArchitectureConstants::ConditionRegister; return REGISTER; }
+"cr"        { iris17lval.rval = iris17::ArchitectureConstants::ConditionRegister; return REGISTER; }
 "addr"      { iris17lval.rval = iris17::ArchitectureConstants::AddressRegister; return REGISTER; }
 "value"     { iris17lval.rval = iris17::ArchitectureConstants::ValueRegister; return REGISTER; }
 

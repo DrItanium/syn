@@ -47,27 +47,127 @@ template<InstructionFields field>
 typename InstructionFieldInformation<field>::AssociatedType encodeInstruction(raw_instruction base, typename InstructionFieldInformation<field>::AssociatedType value) {
 	return iris::encodeBits<raw_instruction, InstructionFieldInformation<field>::AssociatedType, InstructionFieldInformation<field>::mask, InstructionFieldInformation<field>::shiftCount>(base, value);
 }
-
 /* used to store ops which require a second pass */
+typedef std::string label;
 struct dynamicop {
-   RegisterValue address;
-   word first;
-   word second;
-   word third;
-   int hassymbol;
-   std::string symbol;
+	RegisterValue address;
+	int numWords;
+	Operation type;
+	union {
+		uint64_t storage[16]; // make sure this is the largest entry
+		struct {
+			bool immediate;
+			CompareStyle subType;
+			CompareCombine combineType;
+			byte register0;
+			union {
+				byte register1;
+				byte immediateValue;
+			};
+		} Compare;
+		struct {
+			bool immediate;
+			ArithmeticOps subType;
+			byte immediateValue;
+			byte destination;
+			byte source;
+		} Arithmetic;
+		struct {
+			bool immediate;
+			union {
+				struct {
+					ImmediateLogicalOps subType;
+					byte bitmask;
+					byte destination;
+				} Immediate;
+				struct {
+					LogicalOps subType;
+					byte register0;
+					byte register1;
+				} Indirect;
+			} forms;
+		} Logical;
+		struct {
+			bool shiftLeft;
+			bool immediate;
+			byte register0;
+			union {
+				byte storage;
+				byte immediateValue : 5;
+				byte register1 : 4;
+			};
+		} Shift;
+		struct {
+			bool isIf;
+			bool isCall;
+			bool isImmediate;
+			bool isConditional;
+			union {
+				struct {
+					byte onTrue;
+					byte onFalse;
+				} If;
+				struct {
+					byte destination;
+				} Indirect;
+				struct {
+					RegisterValue immediateValue;
+				} Immediate;
+			} forms;
+		} Branch;
+		struct {
+			MemoryOperation subType;
+			byte bitmask;
+			union {
+				byte storage;
+				byte offset : 4;
+				byte reg : 4;
+			} forms;
+		} Memory;
+		struct {
+			byte bitmask;
+			byte register0;
+			byte register1;
+		} Move;
+		struct {
+			byte bitmask;
+			byte destination;
+			RegisterValue immediate;
+		} Set;
+		struct {
+			byte dest;
+			byte source;
+		} Swap;
+		struct {
+			byte arg0;
+		} System;
+	};
 };
+
 struct asmstate {
-	
    ~asmstate() { }
-   word address;
-   std::map<std::string, word> labels;
+   void nextAddress();
+   void registerLabel(const std::string& text);
+   void registerDynamicOperation(dynamicop op);
+   RegisterValue address;
+   std::map<std::string, RegisterValue> labels;
    std::vector<dynamicop> dynops;
    std::ostream* output;
 };
 
-asmstate state;
-dynamicop curri;
+void asmstate::nextAddress() {
+	++address;
+}
+void asmstate::registerLabel(const std::string& text) {
+	labels.emplace(text, address);
+}
+void asmstate::registerDynamicOperation(dynamicop op) {
+	op.address = address;
+	dynops.emplace_back(op);
+	//TODO: fix address computation by making a class internal to iris17 to
+	//handle this
+}
+
 
 void add_label_entry(const std::string& name, word address);
 void persist_dynamic_op(void);
@@ -77,6 +177,8 @@ void initialize(std::ostream* output, FILE* input);
 void resolve_labels(void);
 bool resolve_op(dynamicop* dop);
 }
+iris17::asmstate state;
+iris17::dynamicop op;
 %}
 
 %union {
@@ -115,8 +217,16 @@ Q: /* empty */ |
 ;
 F:
    F asm {
+   		op.numWords = 1;
+		for (int i = 0; i < 16; ++i) {
+			op.storage[i] = 0;
+		}
    } | 
    asm {
+   		op.numWords = 1;
+		for (int i = 0; i < 16; ++i) {
+			op.storage[i] = 0;
+		}
    }
    ;
 asm:
@@ -141,61 +251,87 @@ label:
    ;
 operation:
 		OP_NOP {
-			
+			op.type = iris17::Operation::Nop;
 		} |
-		shift_op |
-		logical_op |
-		compare_op |
-		arithmetic_op |
-		branch_op |
-		system_op |
-		move_op |
-		set_op |
-		swap_op |
-		memory_op;
+		OP_SHIFT shift_op {
+			op.type = iris17::Operation::Shift;
+		}|
+		OP_LOGICAL logical_op {
+			op.type = iris17::Operation::Logical;
+		} |
+		OP_COMPARE compare_op {
+			op.type = iris17::Operation::Compare;
+			std::cout << "operation compare" << std::endl;
+		} |
+		OP_ARITHMETIC arithmetic_op {
+			op.type = iris17::Operation::Arithmetic;
+		} |
+		OP_BRANCH branch_op {
+			op.type = iris17::Operation::Branch;
+		} |
+		OP_SYSTEM system_op {
+			op.type = iris17::Operation::SystemCall;
+		}|
+		OP_MOVE move_op {
+			op.type = iris17::Operation::Move;
+		} |
+		OP_SET set_op {
+			op.type = iris17::Operation::Set; 
+		} |
+		OP_SWAP swap_op {
+			op.type = iris17::Operation::Swap; 
+		} |
+		OP_MEMORY memory_op {
+			op.type = iris17::Operation::Memory;
+		};
 compare_op:
-		  OP_COMPARE compare_type combine_type compare_args {
-
+		  compare_type combine_type compare_args {
+			std::cout << "compare_op" << std::endl;
 		  };
 compare_args:
 		 FLAG_IMMEDIATE REGISTER IMMEDIATE {
 			// IMMEDIATE8
+			op.Compare.immediate = true;
+			op.Compare.immediateValue = static_cast<byte>($3);
+			op.Compare.register0 = $2;
 		 } |
 		 REGISTER REGISTER {
-
+			op.Compare.immediate = false;
+			op.Compare.register0 = $1;
+			op.Compare.register1 = $2;
 		 };
 
 compare_type:
 		COMPARE_OP_EQ {
-
+			op.Compare.subType = iris17::CompareStyle::Equals;
 		} |
 		COMPARE_OP_NEQ {
-
+			op.Compare.subType = iris17::CompareStyle::NotEquals;
 		} |
 		COMPARE_OP_LT {
-
+			op.Compare.subType = iris17::CompareStyle::LessThan;
 		} |
 		COMPARE_OP_LT_EQ {
-
+			op.Compare.subType = iris17::CompareStyle::LessThanOrEqualTo;
 		} |
 		COMPARE_OP_GT {
-
+			op.Compare.subType = iris17::CompareStyle::GreaterThanOrEqualTo;
 		} |
 		COMPARE_OP_GT_EQ {
-
+			op.Compare.subType = iris17::CompareStyle::GreaterThan;
 		};
 combine_type: 
 		ACTION_NONE {
-
+			op.Compare.combineType = iris17::CompareCombine::None;
 		} |
 		ACTION_AND {
-
+			op.Compare.combineType = iris17::CompareCombine::And;
 		} |
 		ACTION_OR {
-
+			op.Compare.combineType = iris17::CompareCombine::Or;
 		} |
 		ACTION_XOR {
-
+			op.Compare.combineType = iris17::CompareCombine::Xor;
 		};
 
 logical_op:
@@ -203,7 +339,7 @@ logical_op:
 
 		} |
 		OP_LOGICAL LOGICAL_OP_NOT REGISTER {
-
+			
 		};
 logical_args: 
 		FLAG_IMMEDIATE REGISTER IMMEDIATE {
@@ -374,92 +510,22 @@ void iris17error(const char* s) {
 }
 namespace iris17 {
 void add_label_entry(const std::string& c, word addr) {
-//   if (iris17::state.labels.count(c) != 0) {
-//		yyerror("Found a duplicate label!");
-//		exit(1);
-//   } else {
-//	 iris17::state.labels[c] = addr;
-//   }
 }
 
 void persist_dynamic_op(void) {
-//   iris17::state.dynops.push_back(curri);
 }
 
 void save_encoding(void) {
-//   if(iris17::curri.hassymbol) {
-//      persist_dynamic_op();
-//   } else {
-//      write_dynamic_op(&curri); 
-//   }
 }
 void write_dynamic_op(dynamicop* dop) {
-   /* ((instruction & ~mask) | (value << shiftcount)) */
-   /* little endian build up */
-//   char* buf = new char[8];
-//   buf[0] = 0;
-//   buf[1] = (char)dop->segment;
-//   buf[2] = (char)(dop->address & 0x00FF);
-//   buf[3] = (char)((dop->address & 0xFF00) >> 8);
-//   switch(dop->segment) {
-//   		case iris17::Segment::Code:
-//			buf[4] = (char)iris::encodeBits<byte, byte, 0b11111000, 3>(
-//								iris::encodeBits<byte, byte, 0b00000111, 0>((byte)0, dop->group),
-//								dop->op);
-//			buf[5] = (char)dop->reg0;
-//			buf[6] = (char)dop->reg1;
-//			buf[7] = (char)dop->reg2;
-//			break;
-//		case iris17::Segment::Data:
-//			buf[4] = (char)dop->reg1;
-//			buf[5] = (char)dop->reg2;
-//			buf[6] = 0;
-//			buf[7] = 0;
-//			break;
-//		default:
-//			std::cerr << "panic: unknown segment " << (byte)dop->segment << std::endl;
-//			exit(1);
-//   }
-//   iris17::state.output->write(buf, 8);
-//   delete[] buf;
 }
 
 void resolve_labels() {
-   /* we need to go through the list of dynamic operations and replace
-      the label with the corresponding address */
-//   for(std::vector<dynamicop>::iterator it = iris17::state.dynops.begin(); it != iris17::state.dynops.end(); ++it) {
-//   		if (!resolve_op(&(*it))) {
-//			std::cerr << "panic: couldn't find label " << it->symbol << std::endl;
-//			exit(1);
-//		} else {
-//			write_dynamic_op(&(*it));
-//		}
-//   }
 }
 bool resolve_op(dynamicop* dop) {
-//   if(iris17::state.labels.count(dop->symbol) == 1) {
-//		word addr = iris17::state.labels[dop->symbol];
-//		dop->reg1 = iris::decodeBits<word, byte, 0x00FF>(addr);
-//		dop->reg2 = iris::decodeBits<word, byte, 0xFF00, 8>(addr);
-//		return true;
-//   }
-//   return false;
 return false;
 }
 
 void initialize(std::ostream* output, FILE* input) {
-//   iris17in = input;
-//   iris17::state.segment = iris17::Segment::Code;
-//   iris17::state.data_address = 0;
-//   iris17::state.code_address = 0;
-//   iris17::state.output = output;
-//   iris17::curri.segment = iris17::Segment::Code;
-//   iris17::curri.address = 0;
-//   iris17::curri.group = 0;
-//   iris17::curri.op = 0;
-//   iris17::curri.reg0 = 0;
-//   iris17::curri.reg1 = 0;
-//   iris17::curri.reg2 = 0;
-//   iris17::curri.hassymbol = 0;
 }
 }

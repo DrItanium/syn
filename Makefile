@@ -252,8 +252,10 @@ iris16.o: iris16.cc iris16.h iris_base.h Core.h def/iris16/groups.def \
  def/architecture_registrations.def Problem.h
 iris17.o: iris17.cc iris17.h iris_base.h Core.h Problem.h \
  def/iris17/ops.def def/iris17/syscalls.def def/iris17/instruction.def \
- def/iris17/misc.def def/iris17/registers.def \
- def/iris17/arithmetic_ops.def def/iris17/bitmask4bit.def
+ def/iris17/misc.def def/iris17/registers.def def/iris17/set.sig \
+ def/iris17/logical_generic.sig def/iris17/arithmetic.sig \
+ def/iris17/move.sig def/iris17/memory.sig def/iris17/bitmask8bit.def \
+ def/iris17/bitmask4bit.def
 iris17_sim.o: iris17_sim.cc iris16.h iris_base.h Core.h \
  def/iris16/groups.def def/iris16/arithmetic.def def/iris16/misc.def \
  def/iris16/jump.def def/iris16/syscalls.def def/iris16/move.def \
@@ -282,4 +284,6 @@ sim_registration.o: sim_registration.cc sim_registration.h Core.h \
  def/iris32/compare.def def/iris32/arithmetic.def def/iris32/move.def \
  def/iris32/jump.def def/iris32/misc.def def/iris32/syscalls.def iris17.h \
  def/iris17/ops.def def/iris17/syscalls.def def/iris17/instruction.def \
- def/iris17/misc.def def/iris17/registers.def
+ def/iris17/misc.def def/iris17/registers.def def/iris17/set.sig \
+ def/iris17/logical_generic.sig def/iris17/arithmetic.sig \
+ def/iris17/move.sig def/iris17/memory.sig
