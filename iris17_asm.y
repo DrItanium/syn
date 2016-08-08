@@ -93,9 +93,8 @@ struct dynamicop {
 			bool immediate;
 			byte register0;
 			union {
-				byte storage;
-				byte immediateValue : 5;
-				byte register1 : 4;
+				byte immediateValue;
+				byte register1;
 			};
 		} Shift;
 		struct {
@@ -122,9 +121,8 @@ struct dynamicop {
 			MemoryOperation subType;
 			byte bitmask;
 			union {
-				byte storage;
-				byte offset : 4;
-				byte reg : 4;
+				byte offset;
+				byte reg;
 			};
 		} Memory;
 		struct {
@@ -242,9 +240,16 @@ directive:
 	DIRECTIVE_ORG IMMEDIATE { 
 
 	} | 
-	DIRECTIVE_DECLARE lexeme { 
+	DIRECTIVE_DECLARE directive_lexeme { 
 
 	} ;
+directive_lexeme:
+	SYMBOL {
+
+	} |
+	IMMEDIATE {
+
+	};
 statement:
          label { }|
          operation {
@@ -287,6 +292,9 @@ operation:
 		} |
 		OP_MEMORY memory_op {
 			op.type = iris17::Operation::Memory;
+		} |
+		OP_RETURN {
+			op.type = iris17::Operation::Return;
 		};
 compare_op:
 		  compare_type combine_type compare_args;
@@ -491,33 +499,32 @@ jump_op:
 		op.Branch.Indirect.destination = $2;
 	};
 memory_op:
-		memory {
-
-		};
-memory:
 	  	load_store_op BITMASK4 IMMEDIATE {
 			// IMMEDIATE4
+			op.Memory.bitmask = $2;
+			op.Memory.offset = ($3 & 0b1111);
 		} |
 		stack_operation BITMASK4 REGISTER {
-
+			op.Memory.bitmask = $2;
+			op.Memory.reg = $3;
 		};
 
 load_store_op:
 			 MEMORY_OP_LOAD {
-
+				op.Memory.subType = iris17::MemoryOperation::Load;
 			 } |
 			 MEMORY_OP_MERGE {
-
+				op.Memory.subType = iris17::MemoryOperation::LoadMerge;
 			 } |
 			 MEMORY_OP_STORE {
-
+				op.Memory.subType = iris17::MemoryOperation::Store;
 			 };
 stack_operation:
 			   MEMORY_OP_PUSH {
-					
+					op.Memory.subType = iris17::MemoryOperation::Push;
 			   } |
 			   MEMORY_OP_POP {
-					
+					op.Memory.subType = iris17::MemoryOperation::Pop;
 			   };
 arithmetic_op:
 		arithmetic_subop FLAG_IMMEDIATE REGISTER IMMEDIATE {
@@ -546,14 +553,6 @@ arithmetic_subop:
 				ARITHMETIC_OP_REM {
 					op.Arithmetic.subType = iris17::ArithmeticOps::Rem;
 				};
-lexeme: 
-	  IMMEDIATE {
-
-	  } |
-	  SYMBOL {
-
-	  };
-
 %%
 namespace iris {
 
