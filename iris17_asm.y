@@ -368,23 +368,26 @@ logical_op:
 			op.Logical.Indirect.subType = iris17::LogicalOps::Nand;
 		};
 shift_op:
-		OP_SHIFT shift_left_or_right shift_args {
-
-		};
+		shift_left_or_right shift_args;
 shift_args:
 		FLAG_IMMEDIATE REGISTER IMMEDIATE {
+			op.Shift.immediate = true;
 			// IMMEDIATE4
+			op.Shift.register0 = $2;
+			op.Shift.immediateValue = $3 & 0b11111;
 		} |
 		REGISTER REGISTER {
-
+			op.Shift.immediate = false;
+			op.Shift.register0 = $1;
+			op.Shift.register1 = $2;
 		};
 
 shift_left_or_right:
 		SHIFT_FLAG_LEFT {
-
+			op.Shift.shiftLeft = true;
 		} |
 		SHIFT_FLAG_RIGHT {
-
+			op.Shift.shiftLeft = false;
 		};
 system_op:
 		OP_SYSTEM IMMEDIATE REGISTER {
