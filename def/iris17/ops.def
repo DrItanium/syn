@@ -4,14 +4,11 @@ X(Arithmetic)
 X(Shift)
 X(Logical)
 X(Compare)
-
+X(Combine)
 X(Branch)
 X(Return)
-
 X(SystemCall)
-
 X(Move)
 X(Set)
 X(Swap)
 X(Memory)
-

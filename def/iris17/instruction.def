@@ -7,11 +7,11 @@ X(Upper,		  			0b1111111100000000, 8, byte,  upper)
 X(Lower,		  			0b0000000011111111, 0, byte,  lower)
 
 // Conditional instruction flags
-X(ConditionalImmediateFlag, 0b0010000000000000, 13, bool,  conditionalImmediateFlag)
-X(ConditionalCombineFlag,   0b0001100000000000, 11, CompareCombine,  conditionalCombineFlag)
-X(ConditionalCompareType,   0b0000011100000000, 8,  CompareStyle,  compareStyle)
-X(ConditionalRegister0,     0b0000000000001111, 0, byte,  conditionalRegister0)
-X(ConditionalRegister1,     0b0000000011110000, 4, byte,  conditionalRegister1)
+X(CompareImmediateFlag, 0b0010000000000000, 13, bool,  conditionalImmediateFlag)
+X(CompareCombineFlag,   0b0001100000000000, 11, CompareCombine,  conditionalCombineFlag)
+X(CompareType,   		0b0000011100000000, 8,  CompareStyle,  compareStyle)
+X(CompareRegister0,     0b0000000000001111, 0, byte,  conditionalRegister0)
+X(CompareRegister1,     0b0000000011110000, 4, byte,  conditionalRegister1)
 
 
 // arithmetic flags

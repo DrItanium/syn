@@ -146,9 +146,7 @@ namespace iris17 {
 
     DefOp(Set) {
 		switch (current.getSetSignature()) {
-#define X(value) \
-			setOperation<value>(std::move(current)); \
-			break;
+#define X(value) setOperation<value>(std::move(current)); break;
 #include "def/iris17/bitmask8bit.def"
 #undef X
 			default:
@@ -156,27 +154,6 @@ namespace iris17 {
 		}
     }
 
-	void Core::storeWord(RegisterValue address, word value) {
-		if (address > ArchitectureConstants::AddressMax) {
-			throw iris::Problem("Attempted to write outside of memory!");
-		} else {
-			memory[address] = value;
-		}
-	}
-	word Core::loadWord(RegisterValue address) {
-		if (address > ArchitectureConstants::AddressMax) {
-			throw iris::Problem("Attempted to read from outside of memory!");
-		} else {
-			return memory[address];
-		}
-	}
-	RegisterValue Core::loadRegisterValue(RegisterValue address) {
-		return iris::encodeBits<RegisterValue, word, bitmask32, 16>(RegisterValue(loadWord(address)), loadWord(address + 1));
-	}
-	void Core::storeRegisterValue(RegisterValue address, RegisterValue value) {
-		storeWord(address, iris::decodeBits<RegisterValue, word, lower16Mask, 0>(value));
-		storeWord(address + 1, iris::decodeBits<RegisterValue, word, upper16Mask, 16>(value));
-	}
 
 	DefOp(Memory) {
 		switch (current.getMemorySignature()) {
@@ -254,21 +231,6 @@ namespace iris17 {
 		return advanceIp;
 	}
 
-	template<bool isConditional, bool ifForm, bool callForm, bool immediateForm>
-	struct BranchFlagsEncoder {
-		static constexpr byte flags = (static_cast<byte>(isConditional) << 3) | (static_cast<byte>(ifForm) << 2) | (static_cast<byte>(callForm) << 1) | static_cast<byte>(immediateForm);
-	};
-	typedef BranchFlagsEncoder<false, true, false, false> IfJump;
-	typedef BranchFlagsEncoder<false, true, true, false> IfCall;
-
-	typedef BranchFlagsEncoder<false, false, true, false> CallIndirect;
-	typedef BranchFlagsEncoder<false, false, true, true> CallDirect;
-
-	typedef BranchFlagsEncoder<false, false, false, true> JumpDirect;
-	typedef BranchFlagsEncoder<false, false, false, false> JumpIndirect;
-
-	typedef BranchFlagsEncoder<true, false, false, true> ConditionalJumpDirect;
-	typedef BranchFlagsEncoder<true, false, false, false> ConditionalJumpIndirect;
 
 	DefOp(Branch) {
 		auto upper16fn = [this]() { return static_cast<RegisterValue>(getCurrentCodeWord()); };
@@ -334,17 +296,17 @@ bool compare(RegisterValue a, RegisterValue b) {
 DefOp(Compare) {
 	++getInstructionPointer();
 	DecodedInstruction next(getCurrentCodeWord());
-	switch (current.getConditionalCompareType()) {
+	switch (current.getCompareType()) {
 #define combineOp(flag) \
 		case CompareCombine:: flag : \
 									 getConditionRegister() = combine<CompareCombine:: flag>(result, getConditionRegister()); \
 		break;
 #define X(type) \
 		case CompareStyle:: type : { \
-									   RegisterValue first = registerValue(next.getConditionalRegister0()); \
-									   RegisterValue second = current.getConditionalImmediateFlag() ? next.getUpper() : registerValue(next.getConditionalRegister1()); \
+									   RegisterValue first = registerValue(next.getCompareRegister0()); \
+									   RegisterValue second = current.getCompareImmediateFlag() ? next.getUpper() : registerValue(next.getCompareRegister1()); \
 									   bool result = compare<CompareStyle:: type>(first, second); \
-									   switch (current.getConditionalCombineFlag()) { \
+									   switch (current.getCompareCombineFlag()) { \
 										   combineOp(None) \
 										   combineOp(And) \
 										   combineOp(Or) \
@@ -463,5 +425,26 @@ DefOp(Return) {
 	}
 	word Core::getCurrentCodeWord() {
 		return memory[getInstructionPointer()];
+	}
+	void Core::storeWord(RegisterValue address, word value) {
+		if (address > ArchitectureConstants::AddressMax) {
+			throw iris::Problem("Attempted to write outside of memory!");
+		} else {
+			memory[address] = value;
+		}
+	}
+	word Core::loadWord(RegisterValue address) {
+		if (address > ArchitectureConstants::AddressMax) {
+			throw iris::Problem("Attempted to read from outside of memory!");
+		} else {
+			return memory[address];
+		}
+	}
+	RegisterValue Core::loadRegisterValue(RegisterValue address) {
+		return iris::encodeBits<RegisterValue, word, bitmask32, 16>(RegisterValue(loadWord(address)), loadWord(address + 1));
+	}
+	void Core::storeRegisterValue(RegisterValue address, RegisterValue value) {
+		storeWord(address, iris::decodeBits<RegisterValue, word, lower16Mask, 0>(value));
+		storeWord(address + 1, iris::decodeBits<RegisterValue, word, upper16Mask, 16>(value));
 	}
 }

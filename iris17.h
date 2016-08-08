@@ -144,6 +144,22 @@ namespace iris17 {
 	constexpr RegisterValue upper16Mask = mask<0b1100>();
 	constexpr RegisterValue lower16Mask = mask<0b0011>();
 
+	template<bool isConditional, bool ifForm, bool callForm, bool immediateForm>
+	struct BranchFlagsEncoder {
+		static constexpr byte flags = (static_cast<byte>(isConditional) << 3) | (static_cast<byte>(ifForm) << 2) | (static_cast<byte>(callForm) << 1) | static_cast<byte>(immediateForm);
+	};
+	typedef BranchFlagsEncoder<false, true, false, false> IfJump;
+	typedef BranchFlagsEncoder<false, true, true, false> IfCall;
+
+	typedef BranchFlagsEncoder<false, false, true, false> CallIndirect;
+	typedef BranchFlagsEncoder<false, false, true, true> CallDirect;
+
+	typedef BranchFlagsEncoder<false, false, false, true> JumpDirect;
+	typedef BranchFlagsEncoder<false, false, false, false> JumpIndirect;
+
+	typedef BranchFlagsEncoder<true, false, false, true> ConditionalJumpDirect;
+	typedef BranchFlagsEncoder<true, false, false, false> ConditionalJumpIndirect;
+
 	class Core : public iris::Core {
 		public:
 			Core();
@@ -389,8 +405,6 @@ namespace iris17 {
 		}
 	}
 
-
-		RegisterValue retrieveImmediate(byte bitmask);
 		RegisterValue& registerValue(byte index);
 		RegisterValue& getInstructionPointer();
 		RegisterValue& getStackPointer();
