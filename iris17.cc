@@ -91,39 +91,6 @@ namespace iris17 {
 		}
 	}
 
-	template<byte bitmask> 
-	struct SetBitmaskToWordMask {
-		static constexpr bool decomposedBits[] = {
-			(bitmask & 0b0001),
-			((bitmask & 0b0010) >> 1),
-			((bitmask & 0b0100) >> 2),
-			((bitmask & 0b1000) >> 3),
-		};
-		static constexpr byte determineMaskValue(bool value) { return value ? 0xFF : 0x00; }
-		static constexpr RegisterValue mask = (determineMaskValue(decomposedBits[3]) << 24) |
-				(determineMaskValue(decomposedBits[2]) << 16) | 
-				(determineMaskValue(decomposedBits[1]) << 8) | 
-				(determineMaskValue(decomposedBits[0]));
-		static constexpr word lowerMask = (determineMaskValue(decomposedBits[1]) << 8) | (determineMaskValue(decomposedBits[0]));
-		static constexpr word upperMask = (determineMaskValue(decomposedBits[3]) << 8) | (determineMaskValue(decomposedBits[2]));
-		static constexpr bool readLower = decomposedBits[1] || decomposedBits[0];
-		static constexpr bool readUpper = decomposedBits[2] || decomposedBits[3];
-	};
-	template<byte bitmask>
-	constexpr RegisterValue mask() { return SetBitmaskToWordMask<bitmask>::mask; }
-	template<byte bitmask>
-	constexpr word lowerMask() { return SetBitmaskToWordMask<bitmask>::lowerMask; }
-	template<byte bitmask>
-	constexpr word upperMask() { return SetBitmaskToWordMask<bitmask>::upperMask; }
-	template<byte bitmask>
-	constexpr bool readLower() { return SetBitmaskToWordMask<bitmask>::readLower; }
-	template<byte bitmask>
-	constexpr bool readUpper() { return SetBitmaskToWordMask<bitmask>::readUpper; }
-
-	constexpr RegisterValue bitmask32 = mask<0b1111>();
-	constexpr RegisterValue bitmask24 = mask<0b0111>();
-	constexpr RegisterValue upper16Mask = mask<0b1100>();
-	constexpr RegisterValue lower16Mask = mask<0b0011>();
 
 #define DefOp(title) \
 	template<> \
@@ -136,97 +103,11 @@ namespace iris17 {
 		RegisterValue source = (current.getShiftFlagImmediate() ? static_cast<RegisterValue>(current.getShiftImmediate()) : registerValue(current.getShiftRegister1()));
 		destination = (current.getShiftFlagLeft() ? (destination << source) : (destination >> source));
 	}
-	template<byte bitmask>
-	RegisterValue retrieveImmediate(std::function<void()> incrementInstructionPointer, std::function<word()> getCurrentCodeWord) {
-		RegisterValue lower = 0;
-		RegisterValue upper = 0;
-		if (readLower<bitmask>()) {
-			incrementInstructionPointer();
-			lower = getCurrentCodeWord();
-		}
-		if (readUpper<bitmask>()) {
-			incrementInstructionPointer();
-			upper = static_cast<RegisterValue>(getCurrentCodeWord()) << 16;
-		}
-		return mask<bitmask>() & ( lower | upper );
-	}
-	template<>
-	RegisterValue retrieveImmediate<0b0000>(std::function<void()> unused0, std::function<word()> unused1) {
-		return 0;
-	}
 
-	RegisterValue retrieveImmediate(byte bitmask, std::function<void()> incrementInstructionPointer, std::function<word()> getCurrentCodeWord) {
-		switch (bitmask) {
-#define X(value) \
-			case value : return retrieveImmediate<value>(incrementInstructionPointer, getCurrentCodeWord);
-#include "def/iris17/bitmask4bit.def"
-#undef X
-			default:
-				throw iris::Problem("Illegal bitmask provided!");
-		}
-
-	}
-
-	template<byte signature>
-	void logicalOperation(DecodedInstruction&& inst, std::function<RegisterValue&(byte)> registerValue, std::function<void()> incrementInstructionPointer, std::function<word()> getCurrentCodeWord) {
-#define Component(fieldName, mask, shift, type) constexpr type fieldName = static_cast<type>((signature & mask) >> shift);
-#include "def/iris17/logical_generic.sig"
-#undef Component
-		// first make sure that the garbage bits haven't been set (some of these are impossible!)
-		if (immediate && immediate_error) {
-			throw iris::Problem("Illegal bit set for immediate mode logicalOperation!");
-		} else if (!immediate && indirect_error) {
-			throw iris::Problem("Illegal bits set for indirect mode logicalOperation!");
-		}
-		auto dest = registerValue(immediate ? inst.getLogicalImmediateDestination() : inst.getLogicalRegister0());
-		RegisterValue src = immediate ? retrieveImmediate<bitmask>(incrementInstructionPointer, getCurrentCodeWord) : registerValue(inst.getLogicalRegister1());
-		if (immediate) {
-			switch (immediate_type) {
-				case ImmediateLogicalOps::And:
-					dest = dest & src;
-					break;
-				case ImmediateLogicalOps::Or:
-					dest = dest | src;
-					break;
-				case ImmediateLogicalOps::Nand:
-					dest = ~(dest & src);
-					break;
-				case ImmediateLogicalOps::Xor:
-					dest = dest ^ src;
-					break;
-			}
-		} else {
-			switch(indirect_type) {
-				case LogicalOps::And:
-					dest = dest & src;
-					break;
-				case LogicalOps::Or:
-					dest = dest | src;
-					break;
-				case LogicalOps::Not:
-					dest = ~dest;
-					break;
-				case LogicalOps::Xor:
-					dest = dest ^ src;
-					break;
-				case LogicalOps::Nand:
-					dest = ~(dest & src);
-					break;
-				default:
-					throw iris::Problem("Illegal indirect logical operation!");
-			}
-		}
-	}
 
 	DefOp(Logical) {
-		auto incrIp = [this] () { ++getInstructionPointer(); };
-		auto getCurrWord = [this]() -> word { return getCurrentCodeWord(); };
-		auto regVal = [this](byte index) -> RegisterValue& { return this->registerValue(index); };
 		switch(current.getLogicalSignature()) {
-#define X(datum) \
-				case datum: \
-							 logicalOperation<datum>(std::move(current), regVal, incrIp, getCurrWord); \
-				break;
+#define X(datum) case datum: logicalOperation<datum>(std::move(current)); break;
 #include "def/iris17/bitmask8bit.def"
 #undef X
 				default:
@@ -234,59 +115,11 @@ namespace iris17 {
 		}
 	}
 
-	template<ArithmeticOps op>
-	struct RequiresDenominatorCheck {
-		static constexpr bool value = false;
-	};
-#define MustCheckDenominator(op) \
-	template<> \
-	struct RequiresDenominatorCheck<ArithmeticOps:: op> { \
-		static constexpr bool value = true; \
-	}
-	MustCheckDenominator(Div);
-	MustCheckDenominator(Rem);
-#undef MustCheckDenominator
 
-	template<byte signature>
-	void arithmeticOperation(DecodedInstruction&& inst, std::function<RegisterValue&(byte)> registerValue) {
-#define Component(fieldName, mask, shift, type) constexpr type fieldName = static_cast<type>((signature & mask) >> shift);
-#include "def/iris17/arithmetic.sig"
-#undef Component
-		auto dest = registerValue(inst.getArithmeticDestination());
-		RegisterValue src = immediate ? inst.getArithmeticImmediate() : registerValue(inst.getArithmeticSource());
-		if (RequiresDenominatorCheck<op>::value) {
-			if (src == 0) {
-				throw iris::Problem("Denominator is zero!");
-			}
-		}
-		switch(op) {
-			case ArithmeticOps::Add:
-				dest = dest + src;
-				break;
-			case ArithmeticOps::Sub:
-				dest = dest - src;
-				break;
-			case ArithmeticOps::Mul:
-				dest = dest * src;
-				break;
-			case ArithmeticOps::Div:
-				dest = dest / src;
-				break;
-			case ArithmeticOps::Rem:
-				dest = dest % src;
-				break;
-			default:
-				throw iris::Problem("Illegal arithmetic operation!");
-		}
-	}
 
 	DefOp(Arithmetic) {
-		auto regVal = [this](byte index) -> RegisterValue& { return registerValue(index); };
 		switch (current.getArithmeticSignature()) {
-#define X(value) \
-			case value: \
-				arithmeticOperation< value > (std::move(current), regVal); \
-			break; 
+#define X(value) case value: arithmeticOperation< value > (std::move(current)); break; 
 #include "def/iris17/bitmask4bit.def"
 #undef X
 			default:
@@ -294,16 +127,12 @@ namespace iris17 {
 		}
 	}
 	DefOp(Move)  {
-		switch (current.getMoveBitmask()) {
-#define X(value) \
-			case value : { \
-							 registerValue(current.getMoveRegister0()) = registerValue(current.getMoveRegister1()) & mask<value>(); \
-							 break; \
-						 }
+		switch (current.getMoveSignature()) {
+#define X(value) case value : moveOperation<value>(std::move(current)); break;
 #include "def/iris17/bitmask4bit.def"
 #undef X
 			default: 
-				throw iris::Problem("Illegal bitmask!");
+				throw iris::Problem("Illegal move signature!");
 		}
 	}
 
@@ -316,21 +145,17 @@ namespace iris17 {
 	}
 
     DefOp(Set) {
-		auto incrIp = [this]() { ++getInstructionPointer(); };
-		auto getWord = [this]() { return getCurrentCodeWord(); };
-		switch (current.getSetBitmask()) {
+		switch (current.getSetSignature()) {
 #define X(value) \
-			case value: \
-			{ \
-				registerValue(current.getSetDestination()) = retrieveImmediate<value>(incrIp, getWord); \
-				break; \
-			} 
-			#include "def/iris17/bitmask4bit.def"
+			setOperation<value>(std::move(current)); \
+			break;
+#include "def/iris17/bitmask8bit.def"
 #undef X
 			default:
-				throw iris::Problem("unknown mask!");
+				throw iris::Problem("Illegal set signature!");
 		}
     }
+
 	void Core::storeWord(RegisterValue address, word value) {
 		if (address > ArchitectureConstants::AddressMax) {
 			throw iris::Problem("Attempted to write outside of memory!");
@@ -352,140 +177,10 @@ namespace iris17 {
 		storeWord(address, iris::decodeBits<RegisterValue, word, lower16Mask, 0>(value));
 		storeWord(address + 1, iris::decodeBits<RegisterValue, word, upper16Mask, 16>(value));
 	}
-	template<byte bitmask, bool merge> 
-	void loadOperation(RegisterValue& value, RegisterValue address, std::function<word(RegisterValue)> loadWord) {
-		// use the destination field of the instruction to denote offset, thus we need
-		// to use the Address and Value registers
-		RegisterValue lower = readLower<bitmask>() ? loadWord(address) : 0;
-		RegisterValue upper = readUpper<bitmask>() ? (static_cast<RegisterValue>(loadWord(address + 1)) << 16) : 0;
-		if (merge) {
-			value = mask<bitmask>() & (lower | upper);
-		} else {
-			auto constexpr cMask = mask<bitmask>();
-			value = (cMask & (lower | upper)) | (value & ~cMask);
-		}
-	}
-	template<>
-	void loadOperation<0b0000, false>(RegisterValue& value, RegisterValue address, std::function<word(RegisterValue)> loadWord) {
-		value = 0;
-	}
-	template<>
-	void loadOperation<0b0000, true>(RegisterValue& value, RegisterValue address, std::function<word(RegisterValue)> loadWord) {
-		// do nothing since the mask will be 0x00000000 which means that the
-		// original value stays around. It really is value = value in this case
-	}
-	template<byte bitmask>
-	void storeOperation(RegisterValue& value, RegisterValue address, std::function<word(RegisterValue)> loadWord, std::function<void(RegisterValue, word)> storeWord) {
-		if (readLower<bitmask>()) { 
-			auto constexpr lmask = lowerMask<bitmask>();
-			word lower = lmask & iris::decodeBits<RegisterValue, word, lower16Mask, 0>(value); 
-			auto loader = loadWord(address) & ~lmask;
-			storeWord(address, lower | loader); 
-		} 
-		if (readUpper<bitmask>()) { 
-			auto constexpr umask = upperMask<bitmask>();
-			word upper = umask & iris::decodeBits<RegisterValue, word, upper16Mask, 16>(value);
-			auto loader = loadWord(address + 1) & ~umask;
-			storeWord(address + 1, upper | loader); 
-		} 
-	}
-
-	template<>
-	void storeOperation<0b0000>(RegisterValue& value, RegisterValue address, std::function<word(RegisterValue)> loadWord, std::function<void(RegisterValue, word)> storeWord) {
-		// do nothing, it is a no-op
-	}
-
-	template<byte bitmask>
-	void pushOperation(RegisterValue& stackPointer, RegisterValue& pushToStack, std::function<void(RegisterValue, word)> storeWord) {
-		// read backwards because the stack grows upward towards zero
-		if (readUpper<bitmask>()) {
-			--stackPointer;
-			stackPointer &= bitmask24;
-			word upper = upperMask<bitmask>() & iris::decodeBits<RegisterValue, word, upper16Mask, 16>(pushToStack);
-			storeWord(stackPointer, upper);
-		}
-		if (readLower<bitmask>()) {
-			--stackPointer;
-			stackPointer &= bitmask24;
-			word lower = lowerMask<bitmask>() & iris::decodeBits<RegisterValue, word, lower16Mask, 0>(pushToStack);
-			storeWord(stackPointer, lower);
-		}
-	}
-	template<>
-	void pushOperation<0b0000>(RegisterValue& stackPointer, RegisterValue& pushToStack, std::function<void(RegisterValue, word)> storeWord) {
-	}
-
-	template<byte bitmask>
-	void popOperation(RegisterValue& stackPointer, RegisterValue& storage, std::function<word(RegisterValue)> loadWord) {
-		RegisterValue lower = 0; 
-		RegisterValue upper = 0; 
-		if (readLower<bitmask>()) { 
-			lower = lowerMask<bitmask>() & loadWord(stackPointer); 
-			++stackPointer; 
-			stackPointer &= bitmask24; 
-		} 
-		if (readUpper<bitmask>()) { 
-			upper = upperMask<bitmask>() & loadWord(stackPointer);
-			++stackPointer; 
-			stackPointer &= bitmask24; 
-		} 
-		storage = iris::encodeBits<RegisterValue, word, upper16Mask, 16>(iris::encodeBits<RegisterValue, word, lower16Mask, 0>(static_cast<RegisterValue>(0), lower), upper);
-	}
-	template<>
-	void popOperation<0b0000>(RegisterValue& stackPointer, RegisterValue& storage, std::function<word(RegisterValue)> loadWord) {
-		storage = 0;
-	}
-
-	template<byte signature>
-	void memoryOperation(DecodedInstruction&& inst, std::function<RegisterValue&(byte)> registerValue, std::function<void(RegisterValue, word)> storeWord, std::function<word(RegisterValue)> loadWord) {
-#define Component(fieldName, mask, shift, type) constexpr type fieldName = static_cast<type>((signature & mask) >> shift);
-#include "def/iris17/memory.sig"
-#undef Component
-		if (error_state) {
-			throw iris::Problem("Illegally encoded Memory operation!");
-		}
-
-		switch (type) {
-			case MemoryOperation::Load: 
-				loadOperation<bitmask, false>(registerValue(ArchitectureConstants::ValueRegister), registerValue(ArchitectureConstants::AddressRegister) + inst.getMemoryOffset(), loadWord);
-				break;
-			case MemoryOperation::LoadMerge:
-				loadOperation<bitmask, true>(registerValue(ArchitectureConstants::ValueRegister), registerValue(ArchitectureConstants::AddressRegister) + inst.getMemoryOffset(), loadWord);
-				break;
-			case MemoryOperation::Store:
-				storeOperation<bitmask>(registerValue(ArchitectureConstants::ValueRegister), registerValue(ArchitectureConstants::AddressRegister) + inst.getMemoryOffset(), loadWord, storeWord);
-				break;
-			case MemoryOperation::Push:
-				pushOperation<bitmask>(registerValue(ArchitectureConstants::StackPointer), registerValue(inst.getMemoryRegister()), storeWord); 
-				break; 
-			case MemoryOperation::Pop: 
-				popOperation<bitmask>(registerValue(ArchitectureConstants::StackPointer), registerValue(inst.getMemoryRegister()), loadWord); 
-				break; 
-			default: 
-				throw iris::Problem("Illegal memory operation type!");
-		}
-	}
 
 	DefOp(Memory) {
-		auto loadWordFn = [this](RegisterValue address) { return loadWord(address); };
-		auto storeWordFn = [this](RegisterValue address, word value) { storeWord(address, value); };
-		auto regVal = [this](byte index) -> RegisterValue& {
-			switch(index) {
-				case ArchitectureConstants::StackPointer:
-					return registerValue<ArchitectureConstants::StackPointer>();
-				case ArchitectureConstants::ValueRegister:
-					return registerValue<ArchitectureConstants::ValueRegister>();
-				case ArchitectureConstants::AddressRegister:
-					return registerValue<ArchitectureConstants::AddressRegister>();
-				default:
-					return registerValue(index);
-			}
-		};
 		switch (current.getMemorySignature()) {
-#define X(value) \
-			case value: \
-						memoryOperation<value>(std::move(current), regVal, storeWordFn, loadWordFn); \
-			break;
+#define X(value) case value: memoryOperation<value>(std::move(current)); break;
 #include "def/iris17/bitmask8bit.def"
 #undef X
 			default:
@@ -634,6 +329,7 @@ bool compare(RegisterValue a, RegisterValue b) {
 			throw iris::Problem("Undefined comparison style!");
 	}
 }
+
 
 DefOp(Compare) {
 	++getInstructionPointer();

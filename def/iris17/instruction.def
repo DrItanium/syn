@@ -60,10 +60,12 @@ X(MemorySignature,   0b0000111111110000, 4, byte, memorySignature)
 X(MoveBitmask,       0b0000000011110000, 4, byte,  moveBitmask)
 X(MoveRegister0,     0b0000111100000000, 8, byte,  moveRegister0)
 X(MoveRegister1,     0b1111000000000000, 12, byte,  moveRegister1)
+X(MoveSignature,     0b0000000011110000, 4, byte, moveSignature)
 
 // set operation flags
-X(SetBitmask,        0b0000000011110000, 4, byte,  setBitmask)
-X(SetDestination,    0b0000111100000000, 8, byte,  setDestination)
+X(SetBitmask,        0b0000000011110000, 4, byte, setBitmask)
+X(SetDestination,    0b0000111100000000, 8, byte, setDestination)
+X(SetSignature,      0b0000111111110000, 4, byte, setSignature)
 
 // Swap operation flags
 X(SwapDestination,   0b0000111100000000, 8, byte,  swapDestination)

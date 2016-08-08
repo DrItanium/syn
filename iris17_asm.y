@@ -33,13 +33,12 @@ enum class InstructionFields : byte {
 template<InstructionFields field>
 struct InstructionFieldInformation { };
 
-#define X(_title, _mask, _shift, _type, _is_register, _post) \
+#define X(_title, _mask, _shift, _type, _post) \
 template<> \
 struct InstructionFieldInformation<InstructionFields :: _title> { \
 	static constexpr word mask = _mask; \
 	static constexpr byte shiftCount = _shift; \
 	typedef _type AssociatedType; \
-	static constexpr bool isRegister = _is_register; \
 }; 
 #include "def/iris17/instruction.def"
 #undef X
