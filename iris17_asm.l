@@ -78,7 +78,8 @@ omni [a-zA-Z0-9._]
 
 "@label"    { return LABEL; }
 "@org"      { return DIRECTIVE_ORG; }
-"@declare"  { return DIRECTIVE_DECLARE; }
+"@word"     { return DIRECTIVE_WORD; }
+"@dword"    { return DIRECTIVE_DWORD; }
 
 "ip"        { iris17lval.rval = iris17::ArchitectureConstants::InstructionPointer; return REGISTER; }
 "lr"        { iris17lval.rval = iris17::ArchitectureConstants::LinkRegister; return REGISTER; }

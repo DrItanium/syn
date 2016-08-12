@@ -146,7 +146,31 @@ struct dynamicop {
 		} System;
 	};
 };
+struct data_registration
+{
+	data_registration(RegisterValue addr, int wd, RegisterValue imm) :
+		address(addr),
+		width(wd),
+		immediate(imm),
+		setImmediate(false) {
 
+		}
+	data_registration(RegisterValue addr, int wd, const std::string& l) :
+	address(addr),
+	width(wd),
+	immediate(0),
+	setImmediate(true),
+	label(l) {
+
+	}
+		
+	RegisterValue address = 0;
+	int width = 0;
+	RegisterValue immediate = 0;
+	bool setImmediate = false;
+	std::string label;
+
+};
 struct asmstate {
    ~asmstate() { }
    void nextAddress();
@@ -154,6 +178,7 @@ struct asmstate {
    void registerDynamicOperation(dynamicop op);
    RegisterValue address;
    std::map<std::string, RegisterValue> labels;
+   std::vector<data_registration> declarations;
    std::vector<dynamicop> dynops;
    std::ostream* output;
 };
@@ -191,7 +216,7 @@ iris17::dynamicop op;
 }
 
 
-%token DIRECTIVE_ORG LABEL DIRECTIVE_DECLARE
+%token LABEL DIRECTIVE_ORG DIRECTIVE_WORD DIRECTIVE_DWORD
 %token OP_NOP OP_ARITHMETIC OP_SHIFT OP_LOGICAL OP_COMPARE OP_BRANCH OP_RETURN
 %token OP_SYSTEM OP_MOVE OP_SET OP_SWAP OP_MEMORY
 
@@ -238,27 +263,38 @@ asm:
    ;
 directive:
 	DIRECTIVE_ORG IMMEDIATE { 
-
+		state.address = ($2 & iris17::bitmask24);
 	} | 
-	DIRECTIVE_DECLARE directive_lexeme { 
+	directive_word |
+	directive_dword;
 
-	} ;
-directive_lexeme:
-	SYMBOL {
+directive_word:
+	DIRECTIVE_WORD SYMBOL {
 
+		state.declarations.emplace_back(state.address, 1, $2);
+		++state.address;
 	} |
-	IMMEDIATE {
+	DIRECTIVE_WORD IMMEDIATE {
+		state.declarations.emplace_back(state.address, 1, static_cast<iris17::word>($2 & iris17::lower16Mask));
+		++state.address;
+	};
 
+directive_dword:
+	DIRECTIVE_DWORD SYMBOL {
+		state.declarations.emplace_back(state.address, 2, $2);
+		state.address += 2;
+	} |
+	DIRECTIVE_DWORD IMMEDIATE {
+		state.declarations.emplace_back(state.address, 2, static_cast<iris17::RegisterValue>($2 & iris17::bitmask24));
+		state.address += 2;
 	};
 statement:
-         label { }|
-         operation {
-         }
-         ;
+         label |
+         operation; 
 label:
-     LABEL SYMBOL { 
-     }
-   ;
+     LABEL SYMBOL {
+	 	state.registerLabel($2);
+     };
 operation:
 		OP_NOP {
 			op.type = iris17::Operation::Nop;
