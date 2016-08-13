@@ -162,7 +162,7 @@ namespace iris17 {
 	using ConditionalJumpDirect = BranchFlagsEncoder<true, false, false, true>;
 	using ConditionalJumpIndirect = BranchFlagsEncoder<true, false, false, false>;
 
-	static int instructionSizeFromImmediateMask(byte bitmask);
+	int instructionSizeFromImmediateMask(byte bitmask);
 
 	template<byte bitmask>
 	static constexpr int instructionSizeFromImmediateMask() {
@@ -454,107 +454,23 @@ struct InstructionEncoder {
 	int currentLine;
 	RegisterValue address;
 	Operation type;
-	union {
-		uint64_t storage[16]; // make sure this is the largest entry
-		struct {
-			bool immediate;
-			CompareStyle subType;
-			CompareCombine combineType;
-			byte register0;
-			union {
-				byte register1;
-				byte immediateValue;
-			};
-		} Compare;
-		struct {
-			bool immediate;
-			ArithmeticOps subType;
-			byte destination;
-			union {
-				byte source;
-				byte immediateValue;
-			};
-		} Arithmetic;
-		struct {
-			bool immediate;
-			// no union so that we can be lazy when determining the subtype
-			struct {
-				ImmediateLogicalOps subType;
-				byte bitmask;
-				byte destination;
-				RegisterValue source;
-				bool isLabel;
-				char* labelValue;
-			} Immediate;
-			struct {
-				LogicalOps subType;
-				byte register0;
-				byte register1;
-			} Indirect;
-		} Logical;
-		struct {
-			bool shiftLeft;
-			bool immediate;
-			byte register0;
-			union {
-				byte immediateValue;
-				byte register1;
-			};
-		} Shift;
-		struct {
-			bool isIf;
-			bool isCall;
-			bool isImmediate;
-			bool isConditional;
-			union {
-				struct {
-					byte onTrue;
-					byte onFalse;
-				} If;
-				struct {
-					byte destination;
-				} Indirect;
-				struct {
-					RegisterValue immediateValue;
-					bool isLabel;
-					char* labelValue;
-				} Immediate;
-			};
-		} Branch;
-		struct {
-			MemoryOperation subType;
-			byte bitmask;
-			union {
-				byte offset;
-				byte reg;
-			};
-		} Memory;
-		struct {
-			byte bitmask;
-			byte register0;
-			byte register1;
-		} Move;
-		struct {
-			byte bitmask;
-			byte destination;
-			RegisterValue immediate;
-			bool isSymbol;
-			char* label;
-		} Set;
-		struct {
-			byte dest;
-			byte source;
-		} Swap;
-		struct {
-			byte arg0;
-		} System;
-	};
+	bool immediate;
+	bool shiftLeft;
+	bool isIf;
+	bool isCall;
+	bool isConditional;
+	byte bitmask;
+	byte arg0;
+	byte arg1;
+	bool isLabel;
+	std::string labelValue;
+	byte subType;
+	CompareCombine combineType;
+	RegisterValue fullImmediate;
 	using Encoding = std::tuple<int, word, word, word>;
 	int numWords();
 	Encoding encode();
-	bool hasLabel();
-	char* getLabel();
-	void imbueImmediate(RegisterValue immediate);
+	void clear();
 	private:
 		Encoding encodeArithmetic();
 		Encoding encodeMove();

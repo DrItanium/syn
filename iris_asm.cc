@@ -81,18 +81,24 @@ int main(int argc, char* argv[]) {
 		return 0;
    }
    if(output && input) {
-	   iris::parseAssembly(target, input, output);
-	  if (closeOutput) {
-	  	static_cast<std::ofstream*>(output)->close();
-	  	delete output;
-	  	output = 0;
-	  }
-	  if(closeInput) {
-	  	fclose(input);
-		input = 0;
-	  }
+	   try {
+		   iris::parseAssembly(target, input, output);
+		   if (closeOutput) {
+			   static_cast<std::ofstream*>(output)->close();
+			   delete output;
+			   output = 0;
+		   }
+		   if(closeInput) {
+			   fclose(input);
+			   input = 0;
+		   }
+	   } catch (iris::Problem pb) {
+			std::cerr << pb.what() << std::endl;
+			return 1;
+	   }
    } else {
       usage(argv[0]);
+	  return 0;
    }
 }
 
