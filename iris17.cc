@@ -447,4 +447,29 @@ DefOp(Return) {
 		storeWord(address, iris::decodeBits<RegisterValue, word, lower16Mask, 0>(value));
 		storeWord(address + 1, iris::decodeBits<RegisterValue, word, upper16Mask, 16>(value));
 	}
+
+	int 
+	dynamicop::numberOfBytes() {
+		switch (type) {
+			case Operation::Return:
+			case Operation::SystemCall:
+			case Operation::Arithmetic:
+			case Operation::Nop:
+			case Operation::Shift:
+			case Operation::Move:
+			case Operation::Swap:
+				return 1;
+			case Operation::Compare:
+				return 2;
+			case Operation::Set:
+			case Operation::Memory:
+			case Operation::Logical:
+			case Operation::Branch:
+				// TODO: this...
+				return 3;
+			default:
+				//throw iris::Problem("Illegal operation!");
+		}
+	
+	}
 }
