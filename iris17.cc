@@ -193,7 +193,9 @@ namespace iris17 {
 			if (isImmediate) {
 				++ip;
 				// make a 24 bit number
-				ip = bitmask24 & ((static_cast<RegisterValue>(current.getUpper())) | (getUpper16() << 8));
+				auto bottom = static_cast<RegisterValue>(current.getUpper());
+				auto upper = getUpper16() << 8;
+				ip = bitmask24 & (upper | bottom);
 			} else {
 				ip = bitmask24 & registerValue(current.getBranchIndirectDestination());
 			}
@@ -201,30 +203,16 @@ namespace iris17 {
 			// jump instruction
 			if (isImmediate) {
 				++ip;
-				if (isConditional) {
-					if (cond != 0) {
-						advanceIp = false;
-						auto bottom = current.getUpper();
-						auto upper = getUpper16() << 8;
-						ip = bitmask24 & (upper | bottom);
-					}
-				} else {
+				if ((isConditional && cond != 0) || !isConditional) {
 					advanceIp = false;
-					auto bottom = RegisterValue(current.getUpper());
+					auto bottom = current.getUpper();
 					auto upper = getUpper16() << 8;
 					ip = bitmask24 & (upper | bottom);
-				}
+				} 
 			}  else {
-				if (isConditional) {
-					if (cond != 0) {
+				if ((isConditional && cond != 0) || !isConditional) {
 						advanceIp = false;
-						auto target = registerValue(current.getBranchIndirectDestination());
-						ip = bitmask24 & target;
-					}
-				} else {
-					advanceIp = false;
-					auto target = registerValue(current.getBranchIndirectDestination());
-					ip = bitmask24 & target;
+						ip = bitmask24 & registerValue(current.getBranchIndirectDestination());
 				}
 			}
 		}
@@ -535,6 +523,50 @@ DefOp(Return) {
 	}
 
 	dynamicop::EncodedInstruction
+	dynamicop::encodeLogical() {
+		auto first = encodeControl(0, type);
+		first = encodeLogicalFlagImmediate(first, Logical.immediate);
+		if (Logical.immediate) {
+			first = encodeLogicalFlagImmediateType(first, Logical.Immediate.subType);
+			first = encodeLogicalFlagImmediateMask(first, Logical.Immediate.bitmask);
+			first = encodeLogicalImmediateDestination(first, Logical.Immediate.destination);
+			auto maskedImmediate = getMask(Logical.Immediate.bitmask) & Logical.Immediate.source;
+			auto second = static_cast<word>(maskedImmediate);
+			auto third = static_cast<word>(maskedImmediate >> 16);
+			return std::make_tuple(instructionSizeFromImmediateMask(Logical.Immediate.bitmask), first, second, third);
+		} else {
+			first = encodeLogicalFlagType(first, Logical.Indirect.subType);
+			first = encodeLogicalRegister0(first, Logical.Indirect.register0);
+			first = encodeLogicalRegister1(first, Logical.Indirect.register1);
+			return std::make_tuple(1, first, 0, 0);
+		}
+	}
+
+	dynamicop::EncodedInstruction
+	dynamicop::encodeBranch() {
+		auto first = encodeControl(0, type);
+		first = encodeBranchFlagIsConditional(first, Branch.isConditional);
+		first = encodeBranchFlagIsIfForm(first, Branch.isIf);
+		first = encodeBranchFlagIsImmediate(first, Branch.isImmediate);
+		first = encodeBranchFlagIsCallForm(first, Branch.isCall);
+		if (Branch.isIf) {
+			first = encodeBranchIfOnFalse(first, Branch.If.onFalse);
+			first = encodeBranchIfOnTrue(first, Branch.If.onTrue);
+			return std::make_tuple(1, first, 0, 0);
+		} else {
+			if (Branch.isImmediate) {
+				// encode the 24-bit number
+				first = encodeUpper(first, static_cast<byte>(Branch.Immediate.immediateValue));
+				auto second = static_cast<word>(Branch.Immediate.immediateValue >> 8);
+				return std::make_tuple(2, first, second, 0);
+			} else {
+				first = encodeBranchIndirectDestination(first, Branch.Indirect.destination);
+				return std::make_tuple(1, first, 0, 0);
+			}
+		}
+	}
+
+	dynamicop::EncodedInstruction
 	dynamicop::encode() {
 		// always encode the type
 		switch (type) {
@@ -557,13 +589,17 @@ DefOp(Return) {
 				return encodeSet();
 			case Operation::Memory:
 				return encodeMemory();
+			case Operation::Logical:
+				return encodeLogical();
+			case Operation::Branch:
+				return encodeBranch();
+			default: 
+				throw iris::Problem("Illegal type to encode!");
 		}
 	}
 	//int 
 	//dynamicop::numberOfBytes() {
 	//	switch (type) {
-	//		case Operation::Memory:
-	//		case Operation::Logical:
 	//		case Operation::Branch:
 	//			// TODO: this...
 	//			return 3;

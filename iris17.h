@@ -161,11 +161,14 @@ namespace iris17 {
 
 	using ConditionalJumpDirect = BranchFlagsEncoder<true, false, false, true>;
 	using ConditionalJumpIndirect = BranchFlagsEncoder<true, false, false, false>;
+
 	static int instructionSizeFromImmediateMask(byte bitmask);
+
 	template<byte bitmask>
 	static constexpr int instructionSizeFromImmediateMask() {
 		return 1 + (readLower<bitmask>() ? 1 : 0) + (readUpper<bitmask>() ? 1 : 0);
 	}
+
 	class Core : public iris::Core {
 		public:
 			Core();
@@ -555,6 +558,8 @@ struct dynamicop {
 		EncodedInstruction encodeCompare();
 		EncodedInstruction encodeSet();
 		EncodedInstruction encodeMemory();
+		EncodedInstruction encodeLogical();
+		EncodedInstruction encodeBranch();
 };
 struct data_registration
 {
