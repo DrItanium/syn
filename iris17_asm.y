@@ -38,7 +38,7 @@ template<> \
 struct InstructionFieldInformation<InstructionFields :: _title> { \
 	static constexpr word mask = _mask; \
 	static constexpr byte shiftCount = _shift; \
-	typedef _type AssociatedType; \
+	using AssociatedType = _type ; \
 }; 
 #include "def/iris17/instruction.def"
 #undef X
@@ -606,11 +606,6 @@ void iris17error(const char* s) {
    exit(-1);
 }
 namespace iris17 {
-void add_label_entry(const std::string& c, word addr) {
-}
-
-void persist_dynamic_op(void) {
-}
 
 void save_encoding(void) {
 }

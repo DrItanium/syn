@@ -8,12 +8,12 @@
 #include <memory>
 #include <vector>
 namespace iris17 {
-	typedef uint8_t hword;
-	typedef uint16_t word;
-	typedef uint32_t dword;
-	typedef word raw_instruction; // this is more of a packet!
-	typedef hword immediate;
-	typedef uint32_t RegisterValue;
+	using hword = uint8_t;
+	using word = uint16_t;
+	using dword = uint32_t;
+	using raw_instruction = word; // this is more of a packet!
+	using immediate = hword;
+	using RegisterValue = dword;
 	inline word encodeWord (byte a, byte b);
 	inline RegisterValue encodeRegisterValue(byte a, byte b, byte c, byte d);
 	inline void decodeWord(word value, byte* storage);
@@ -148,17 +148,17 @@ namespace iris17 {
 	struct BranchFlagsEncoder {
 		static constexpr byte flags = (static_cast<byte>(isConditional) << 3) | (static_cast<byte>(ifForm) << 2) | (static_cast<byte>(callForm) << 1) | static_cast<byte>(immediateForm);
 	};
-	typedef BranchFlagsEncoder<false, true, false, false> IfJump;
-	typedef BranchFlagsEncoder<false, true, true, false> IfCall;
+	using IfJump = BranchFlagsEncoder<false, true, false, false>;
+	using IfCall = BranchFlagsEncoder<false, true, true, false>;
 
-	typedef BranchFlagsEncoder<false, false, true, false> CallIndirect;
-	typedef BranchFlagsEncoder<false, false, true, true> CallDirect;
+	using CallIndirect = BranchFlagsEncoder<false, false, true, false>;
+	using CallDirect = BranchFlagsEncoder<false, false, true, true>;
 
-	typedef BranchFlagsEncoder<false, false, false, true> JumpDirect;
-	typedef BranchFlagsEncoder<false, false, false, false> JumpIndirect;
+	using JumpDirect = BranchFlagsEncoder<false, false, false, true>;
+	using JumpIndirect = BranchFlagsEncoder<false, false, false, false>;
 
-	typedef BranchFlagsEncoder<true, false, false, true> ConditionalJumpDirect;
-	typedef BranchFlagsEncoder<true, false, false, false> ConditionalJumpIndirect;
+	using ConditionalJumpDirect = BranchFlagsEncoder<true, false, false, true>;
+	using ConditionalJumpIndirect = BranchFlagsEncoder<true, false, false, false>;
 
 	class Core : public iris::Core {
 		public:
