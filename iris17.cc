@@ -448,28 +448,155 @@ DefOp(Return) {
 		storeWord(address + 1, iris::decodeBits<RegisterValue, word, upper16Mask, 16>(value));
 	}
 
-	int 
-	dynamicop::numberOfBytes() {
-		switch (type) {
-			case Operation::Return:
-			case Operation::SystemCall:
-			case Operation::Arithmetic:
-			case Operation::Nop:
-			case Operation::Shift:
-			case Operation::Move:
-			case Operation::Swap:
-				return 1;
-			case Operation::Compare:
-				return 2;
-			case Operation::Set:
-			case Operation::Memory:
-			case Operation::Logical:
-			case Operation::Branch:
-				// TODO: this...
-				return 3;
-			default:
-				//throw iris::Problem("Illegal operation!");
+	dynamicop::EncodedInstruction
+	dynamicop::encodeArithmetic() {
+		auto first = encodeControl(0, type);
+		first = encodeArithmeticFlagImmediate(first, Arithmetic.immediate);
+		first = encodeArithmeticFlagType(first, Arithmetic.subType);
+		first = encodeArithmeticDestination(first, Arithmetic.destination);
+		if (Arithmetic.immediate) {
+			first = encodeArithmeticImmediate(first, Arithmetic.immediateValue);
+		} else {
+			first = encodeArithmeticSource(first, Arithmetic.source);
 		}
+		return std::make_tuple(1, first, 0, 0);
+	}
+
+	dynamicop::EncodedInstruction
+	dynamicop::encodeMove() {
+		auto first = encodeControl(0, type);
+		first = encodeMoveBitmask(first, Move.bitmask);
+		first = encodeMoveRegister0(first, Move.register0);
+		first = encodeMoveRegister1(first, Move.register1);
+		return std::make_tuple(1, first, 0, 0);
+	}
+
+	dynamicop::EncodedInstruction
+	dynamicop::encodeSwap() {
+		return std::make_tuple(1, encodeSwapSource( encodeSwapDestination( encodeControl(0, type), Swap.dest), Swap.source), 0, 0);
+	}
+
+	dynamicop::EncodedInstruction
+	dynamicop::encodeShift() {
+		auto first = encodeControl(0, type);
+		first = encodeShiftFlagImmediate(first, Shift.immediate);
+		first = encodeShiftFlagLeft(first, Shift.shiftLeft);
+		first = encodeShiftRegister0(first, Shift.register0);
+		if (Shift.immediate) {
+			first = encodeShiftImmediate(first, Shift.immediateValue);
+		} else {
+			first = encodeShiftRegister1(first, Shift.register1);
+		}
+		return std::make_tuple(1, first, 0, 0);
+	}
+
+	dynamicop::EncodedInstruction
+	dynamicop::encodeSystem() {
+		return std::make_tuple(1, encodeSystemArg0(encodeControl(0, type), System.arg0), 0, 0);
+	}
+
+	dynamicop::EncodedInstruction
+	dynamicop::encodeCompare() {
+		auto first = encodeControl(0, type);
+		first = encodeCompareType(first, Compare.subType);
+		first = encodeCompareCombineFlag(first, Compare.combineType);
+		first = encodeCompareImmediateFlag(first, Compare.immediate);
+		auto second = encodeCompareRegister0(0, Compare.register0);
+		if (Compare.immediate) {
+			second = encodeCompareImmediate(second, Compare.immediateValue);
+		} else {
+			second = encodeCompareRegister1(second, Compare.register1);
+		}
+		return std::make_tuple(2, first, second, 0);
+	}
 	
+	dynamicop::EncodedInstruction
+	dynamicop::encodeSet() {
+		int count = instructionSizeFromImmediateMask(Set.bitmask);
+		auto first = encodeControl(0, type);
+		first = encodeSetBitmask(first, Set.bitmask);
+		first = encodeSetDestination(first, Set.destination);
+		// use the mask during encoding since we know how many words the
+		// instruction is made up of
+		auto maskedValue = getMask(Set.bitmask) & Set.immediate;
+		auto second = static_cast<word>(maskedValue);
+		auto third = static_cast<word>(maskedValue >> 16);
+		return std::make_tuple(count, first, second, third);
+	}
+
+	dynamicop::EncodedInstruction
+	dynamicop::encodeMemory() {
+		auto first = encodeControl(0, type);
+		first = encodeMemoryFlagType(first, Memory.subType);
+		first = encodeMemoryFlagBitmask(first, Memory.bitmask);
+		// the register and offset occupy the same space
+		first = encodeMemoryOffset(first, Memory.offset);
+		return std::make_tuple(1, first, 0, 0);
+	}
+
+	dynamicop::EncodedInstruction
+	dynamicop::encode() {
+		// always encode the type
+		switch (type) {
+			case Operation::Nop:
+			case Operation::Return:
+				return std::make_tuple(1, encodeControl(0, type), 0, 0);
+			case Operation::Arithmetic:
+				return encodeArithmetic();
+			case Operation::Move:
+				return encodeMove();
+			case Operation::Swap:
+				return encodeSwap();
+			case Operation::Shift:
+				return encodeShift();
+			case Operation::SystemCall:
+				return encodeSystem();
+			case Operation::Compare:
+				return encodeCompare();
+			case Operation::Set:
+				return encodeSet();
+			case Operation::Memory:
+				return encodeMemory();
+		}
+	}
+	//int 
+	//dynamicop::numberOfBytes() {
+	//	switch (type) {
+	//		case Operation::Memory:
+	//		case Operation::Logical:
+	//		case Operation::Branch:
+	//			// TODO: this...
+	//			return 3;
+	//		default:
+	//			throw iris::Problem("Illegal operation!");
+	//	}
+	//
+	//}
+#define X(title, mask, shift, type, post) \
+	word encode ## title (word input, type value) { \
+		return iris::encodeBits<word, type, mask, shift>(input, value); \
+	}
+#include "def/iris17/instruction.def"
+#undef X
+
+			static int instructionSizeFromImmediateMask(byte bitmask) {
+				switch(bitmask) {
+#define X(bits) case bits : return instructionSizeFromImmediateMask<bits>();
+#include "def/iris17/bitmask4bit.def"
+#undef X
+					default:
+						throw iris::Problem("illegal bitmask value!");
+				}
+			}
+	RegisterValue
+	getMask(byte bitmask) {
+		switch (bitmask) {
+#define X(bits) case bits : return mask<bits>();
+#include "def/iris17/bitmask4bit.def"
+#undef X
+			
+			default:
+				throw iris::Problem("Illegal bitmask provided!");
+		}
 	}
 }

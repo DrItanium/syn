@@ -7,6 +7,8 @@
 #include <sstream>
 #include <memory>
 #include <vector>
+#include <tuple>
+
 namespace iris17 {
 	using hword = uint8_t;
 	using word = uint16_t;
@@ -143,7 +145,7 @@ namespace iris17 {
 	constexpr RegisterValue bitmask24 = mask<0b0111>();
 	constexpr RegisterValue upper16Mask = mask<0b1100>();
 	constexpr RegisterValue lower16Mask = mask<0b0011>();
-
+	RegisterValue getMask(byte bitmask);
 	template<bool isConditional, bool ifForm, bool callForm, bool immediateForm>
 	struct BranchFlagsEncoder {
 		static constexpr byte flags = (static_cast<byte>(isConditional) << 3) | (static_cast<byte>(ifForm) << 2) | (static_cast<byte>(callForm) << 1) | static_cast<byte>(immediateForm);
@@ -159,7 +161,11 @@ namespace iris17 {
 
 	using ConditionalJumpDirect = BranchFlagsEncoder<true, false, false, true>;
 	using ConditionalJumpIndirect = BranchFlagsEncoder<true, false, false, false>;
-
+	static int instructionSizeFromImmediateMask(byte bitmask);
+	template<byte bitmask>
+	static constexpr int instructionSizeFromImmediateMask() {
+		return 1 + (readLower<bitmask>() ? 1 : 0) + (readUpper<bitmask>() ? 1 : 0);
+	}
 	class Core : public iris::Core {
 		public:
 			Core();
@@ -205,6 +211,9 @@ namespace iris17 {
 				}
 				return mask<bitmask>() & ( lower | upper );
 			}
+
+
+
 
 			template<byte signature>
 			void setOperation(DecodedInstruction&& inst) {
@@ -435,6 +444,9 @@ namespace iris17 {
 	MustCheckDenominator(Div);
 	MustCheckDenominator(Rem);
 #undef MustCheckDenominator
+#define X(title, mask, shift, type, post) word encode ## title (word input, type value);
+#include "def/iris17/instruction.def"
+#undef X
 struct dynamicop {
 	RegisterValue address;
 	int numWords;
@@ -532,7 +544,17 @@ struct dynamicop {
 			byte arg0;
 		} System;
 	};
-	int numberOfBytes();
+	using EncodedInstruction = std::tuple<int, word, word, word>;
+	EncodedInstruction encode();
+	private:
+		EncodedInstruction encodeArithmetic();
+		EncodedInstruction encodeMove();
+		EncodedInstruction encodeSwap();
+		EncodedInstruction encodeShift();
+		EncodedInstruction encodeSystem();
+		EncodedInstruction encodeCompare();
+		EncodedInstruction encodeSet();
+		EncodedInstruction encodeMemory();
 };
 struct data_registration
 {
