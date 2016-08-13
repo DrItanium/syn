@@ -47,16 +47,44 @@ template<InstructionFields field>
 typename InstructionFieldInformation<field>::AssociatedType encodeInstruction(raw_instruction base, typename InstructionFieldInformation<field>::AssociatedType value) {
 	return iris::encodeBits<raw_instruction, InstructionFieldInformation<field>::AssociatedType, InstructionFieldInformation<field>::mask, InstructionFieldInformation<field>::shiftCount>(base, value);
 }
+struct data_registration
+{
+	data_registration(int lineno, RegisterValue addr, int wd, RegisterValue imm) :
+		address(addr),
+		width(wd),
+		immediate(imm),
+		setImmediate(false),
+		currentLine(lineno) {
+
+		}
+	data_registration(int lineno, RegisterValue addr, int wd, const std::string& l) :
+	address(addr),
+	width(wd),
+	immediate(0),
+	setImmediate(true),
+	label(l),
+	currentLine(lineno) {
+
+	}
+		
+	RegisterValue address = 0;
+	int width = 0;
+	RegisterValue immediate = 0;
+	bool setImmediate = false;
+	std::string label;
+	int currentLine;
+
+};
 /* used to store ops which require a second pass */
 struct asmstate {
    ~asmstate() { }
    void nextAddress();
    void registerLabel(const std::string& text);
-   void registerDynamicOperation(dynamicop op);
+   void registerDynamicOperation(InstructionEncoder op);
    RegisterValue address;
    std::map<std::string, RegisterValue> labels;
    std::vector<data_registration> declarations;
-   std::vector<dynamicop> dynops;
+   std::vector<InstructionEncoder> dynops;
    std::ostream* output;
 };
 
@@ -66,24 +94,100 @@ void asmstate::nextAddress() {
 void asmstate::registerLabel(const std::string& text) {
 	labels.emplace(text, address);
 }
-void asmstate::registerDynamicOperation(dynamicop op) {
+void asmstate::registerDynamicOperation(InstructionEncoder op) {
 	op.address = address;
 	dynops.emplace_back(op);
-	//TODO: fix address computation by making a class internal to iris17 to
-	//handle this
+	address += op.numWords();
 }
 
 
-void add_label_entry(const std::string& name, word address);
-void persist_dynamic_op(void);
-void save_encoding(void);
-void write_dynamic_op(dynamicop* op);
 void initialize(std::ostream* output, FILE* input);
-void resolve_labels(void);
-bool resolve_op(dynamicop* dop);
+void resolveLabels();
+void saveEncoding();
 }
+
 iris17::asmstate state;
-iris17::dynamicop op;
+iris17::InstructionEncoder op;
+
+namespace iris17 {
+	void initialize(std::ostream* output, FILE* input) {
+		iris17in = input;
+		state.output = output;
+	}
+	void resolveLabels() {
+		// need to go through and replace all symbols with corresponding immediates
+		for (auto &op : state.dynops) {
+			if (op.hasLabel()) {
+				auto label = op.getLabel();
+				if (!state.labels.count(label)) {
+					std::stringstream stream;
+					stream << op.currentLine << ": label " << label << " does not exist!\n";
+					throw iris::Problem(stream.str());
+				}
+				op.imbueImmediate(state.labels[label]);
+			}
+		}
+		for (auto &reg : state.declarations) {
+			if (reg.setImmediate) {
+				if (!state.labels.count(reg.label)) {
+					std::stringstream stream;
+					stream << reg.currentLine << ": label " << reg.label << " does not exist!\n";
+					throw iris::Problem(stream.str());
+				} else {
+					reg.immediate = state.labels[reg.label];
+				}
+			}
+		}
+	}
+	void writeEntry(RegisterValue address, word value) {
+		char buf[6] = { 0 };
+		buf[0] = static_cast<char>(address);
+		buf[1] = static_cast<char>(address >> 8);
+		buf[2] = static_cast<char>(address >> 16);
+		buf[3] = static_cast<char>(address >> 24);
+		buf[4] = static_cast<char>(value);
+		buf[5] = static_cast<char>(value >> 8);
+		state.output->write(buf, 6);
+	}
+	void saveEncoding() {
+		// go through and generate our list of dynamic operations and corresponding declarations
+		// start with the declarations because they are easier :)
+		for (auto &reg : state.declarations) {
+			switch(reg.width) {
+				case 2: 
+					writeEntry(reg.address + 1, static_cast<word>(reg.immediate >> 16));
+				case 1: 
+					writeEntry(reg.address, static_cast<word>(reg.immediate));
+					break;
+				default: {
+					std::stringstream stream;
+					stream << reg.currentLine << ": given data declaration has an unexpected width of " << reg.width << " words!\n";
+					auto str = stream.str();
+					throw iris::Problem(str);
+				}
+			}
+		}
+		for (auto &op : state.dynops) {
+			auto encoding = op.encode();
+			auto address = op.address;
+			switch (std::get<0>(encoding)) {
+				case 3:
+					writeEntry(address + 2, std::get<3>(encoding));
+				case 2:
+					writeEntry(address + 1, std::get<2>(encoding));
+				case 1:
+					writeEntry(address, std::get<1>(encoding));
+					break;
+				default: {
+					std::stringstream stream;
+					stream << op.currentLine << ": given operation has an unexpected width of " << std::get<0>(encoding) << " words!\n";
+					auto str = stream.str();
+					throw iris::Problem(str);
+				}
+			}
+		}
+	}
+}
 %}
 
 %union {
@@ -122,13 +226,11 @@ Q: /* empty */ |
 ;
 F:
    F asm {
-   		op.numWords = 1;
 		for (int i = 0; i < 16; ++i) {
 			op.storage[i] = 0;
 		}
    } | 
    asm {
-   		op.numWords = 1;
 		for (int i = 0; i < 16; ++i) {
 			op.storage[i] = 0;
 		}
@@ -148,26 +250,30 @@ directive:
 directive_word:
 	DIRECTIVE_WORD SYMBOL {
 
-		state.declarations.emplace_back(state.address, 1, $2);
+		state.declarations.emplace_back(iris17lineno, state.address, 1, $2);
 		++state.address;
 	} |
 	DIRECTIVE_WORD IMMEDIATE {
-		state.declarations.emplace_back(state.address, 1, static_cast<iris17::word>($2 & iris17::lower16Mask));
+		state.declarations.emplace_back(iris17lineno, state.address, 1, static_cast<iris17::word>($2 & iris17::lower16Mask));
 		++state.address;
 	};
 
 directive_dword:
 	DIRECTIVE_DWORD SYMBOL {
-		state.declarations.emplace_back(state.address, 2, $2);
+		state.declarations.emplace_back(iris17lineno, state.address, 2, $2);
 		state.address += 2;
 	} |
 	DIRECTIVE_DWORD IMMEDIATE {
-		state.declarations.emplace_back(state.address, 2, static_cast<iris17::RegisterValue>($2 & iris17::bitmask24));
+		state.declarations.emplace_back(iris17lineno, state.address, 2, static_cast<iris17::RegisterValue>($2 & iris17::bitmask24));
 		state.address += 2;
 	};
 statement:
          label |
-         operation; 
+         operation { 
+		 	op.currentLine = iris17lineno;
+		 	state.registerDynamicOperation(op);
+		 };
+
 label:
      LABEL SYMBOL {
 	 	state.registerLabel($2);
@@ -265,17 +371,26 @@ logical_op:
 			op.Logical.Indirect.register0 = $2;
 		};
 logical_args: 
-		FLAG_IMMEDIATE BITMASK4 REGISTER IMMEDIATE {
+		FLAG_IMMEDIATE BITMASK4 REGISTER logical_lexeme {
 			op.Logical.immediate = true;
 			op.Logical.Immediate.bitmask = $2;
 			op.Logical.Immediate.destination = $3;
-			op.Logical.Immediate.source = $4; 
 		} |
 		REGISTER REGISTER {
 			op.Logical.immediate = false;
 			op.Logical.Indirect.register0 = $1;
 			op.Logical.Indirect.register1 = $2;
 		};
+logical_lexeme:
+			  IMMEDIATE {
+			  		op.Logical.Immediate.isLabel = false;
+					op.Logical.Immediate.source = $1;
+			  } |
+			  SYMBOL {
+			  		op.Logical.Immediate.isLabel = true;
+					op.Logical.Immediate.source = 0;
+					op.Logical.Immediate.labelValue = $1;
+			  };
 logical_op: 
 		ACTION_AND {
 			op.Logical.Immediate.subType = iris17::ImmediateLogicalOps::And;
@@ -475,7 +590,8 @@ namespace iris {
       do {
          yyparse();
       } while(!feof(iris17in));
-      iris17::resolve_labels();
+      iris17::resolveLabels();
+	  iris17::saveEncoding();
 	}
 }
 void iris17error(const char* s) {
@@ -484,18 +600,6 @@ void iris17error(const char* s) {
 }
 namespace iris17 {
 
-void save_encoding(void) {
-}
-void write_dynamic_op(dynamicop* dop) {
-}
 
-void resolve_labels() {
-}
-bool resolve_op(dynamicop* dop) {
-return false;
-}
 
-void initialize(std::ostream* output, FILE* input) {
-	iris17in = input;
-}
 }

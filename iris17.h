@@ -450,9 +450,9 @@ namespace iris17 {
 #define X(title, mask, shift, type, post) word encode ## title (word input, type value);
 #include "def/iris17/instruction.def"
 #undef X
-struct dynamicop {
+struct InstructionEncoder {
+	int currentLine;
 	RegisterValue address;
-	int numWords;
 	Operation type;
 	union {
 		uint64_t storage[16]; // make sure this is the largest entry
@@ -483,6 +483,8 @@ struct dynamicop {
 				byte bitmask;
 				byte destination;
 				RegisterValue source;
+				bool isLabel;
+				char* labelValue;
 			} Immediate;
 			struct {
 				LogicalOps subType;
@@ -535,8 +537,8 @@ struct dynamicop {
 		struct {
 			byte bitmask;
 			byte destination;
-			bool isSymbol;
 			RegisterValue immediate;
+			bool isSymbol;
 			char* label;
 		} Set;
 		struct {
@@ -547,44 +549,23 @@ struct dynamicop {
 			byte arg0;
 		} System;
 	};
-	using EncodedInstruction = std::tuple<int, word, word, word>;
-	EncodedInstruction encode();
+	using Encoding = std::tuple<int, word, word, word>;
+	int numWords();
+	Encoding encode();
+	bool hasLabel();
+	char* getLabel();
+	void imbueImmediate(RegisterValue immediate);
 	private:
-		EncodedInstruction encodeArithmetic();
-		EncodedInstruction encodeMove();
-		EncodedInstruction encodeSwap();
-		EncodedInstruction encodeShift();
-		EncodedInstruction encodeSystem();
-		EncodedInstruction encodeCompare();
-		EncodedInstruction encodeSet();
-		EncodedInstruction encodeMemory();
-		EncodedInstruction encodeLogical();
-		EncodedInstruction encodeBranch();
-};
-struct data_registration
-{
-	data_registration(RegisterValue addr, int wd, RegisterValue imm) :
-		address(addr),
-		width(wd),
-		immediate(imm),
-		setImmediate(false) {
-
-		}
-	data_registration(RegisterValue addr, int wd, const std::string& l) :
-	address(addr),
-	width(wd),
-	immediate(0),
-	setImmediate(true),
-	label(l) {
-
-	}
-		
-	RegisterValue address = 0;
-	int width = 0;
-	RegisterValue immediate = 0;
-	bool setImmediate = false;
-	std::string label;
-
+		Encoding encodeArithmetic();
+		Encoding encodeMove();
+		Encoding encodeSwap();
+		Encoding encodeShift();
+		Encoding encodeSystem();
+		Encoding encodeCompare();
+		Encoding encodeSet();
+		Encoding encodeMemory();
+		Encoding encodeLogical();
+		Encoding encodeBranch();
 };
 }
 #endif

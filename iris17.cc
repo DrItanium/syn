@@ -436,8 +436,7 @@ DefOp(Return) {
 		storeWord(address + 1, iris::decodeBits<RegisterValue, word, upper16Mask, 16>(value));
 	}
 
-	dynamicop::EncodedInstruction
-	dynamicop::encodeArithmetic() {
+	InstructionEncoder::Encoding InstructionEncoder::encodeArithmetic() {
 		auto first = encodeControl(0, type);
 		first = encodeArithmeticFlagImmediate(first, Arithmetic.immediate);
 		first = encodeArithmeticFlagType(first, Arithmetic.subType);
@@ -450,8 +449,7 @@ DefOp(Return) {
 		return std::make_tuple(1, first, 0, 0);
 	}
 
-	dynamicop::EncodedInstruction
-	dynamicop::encodeMove() {
+	InstructionEncoder::Encoding InstructionEncoder::encodeMove() {
 		auto first = encodeControl(0, type);
 		first = encodeMoveBitmask(first, Move.bitmask);
 		first = encodeMoveRegister0(first, Move.register0);
@@ -459,13 +457,11 @@ DefOp(Return) {
 		return std::make_tuple(1, first, 0, 0);
 	}
 
-	dynamicop::EncodedInstruction
-	dynamicop::encodeSwap() {
+	InstructionEncoder::Encoding InstructionEncoder::encodeSwap() {
 		return std::make_tuple(1, encodeSwapSource( encodeSwapDestination( encodeControl(0, type), Swap.dest), Swap.source), 0, 0);
 	}
 
-	dynamicop::EncodedInstruction
-	dynamicop::encodeShift() {
+	InstructionEncoder::Encoding InstructionEncoder::encodeShift() {
 		auto first = encodeControl(0, type);
 		first = encodeShiftFlagImmediate(first, Shift.immediate);
 		first = encodeShiftFlagLeft(first, Shift.shiftLeft);
@@ -478,13 +474,11 @@ DefOp(Return) {
 		return std::make_tuple(1, first, 0, 0);
 	}
 
-	dynamicop::EncodedInstruction
-	dynamicop::encodeSystem() {
+	InstructionEncoder::Encoding InstructionEncoder::encodeSystem() {
 		return std::make_tuple(1, encodeSystemArg0(encodeControl(0, type), System.arg0), 0, 0);
 	}
 
-	dynamicop::EncodedInstruction
-	dynamicop::encodeCompare() {
+	InstructionEncoder::Encoding InstructionEncoder::encodeCompare() {
 		auto first = encodeControl(0, type);
 		first = encodeCompareType(first, Compare.subType);
 		first = encodeCompareCombineFlag(first, Compare.combineType);
@@ -498,8 +492,7 @@ DefOp(Return) {
 		return std::make_tuple(2, first, second, 0);
 	}
 	
-	dynamicop::EncodedInstruction
-	dynamicop::encodeSet() {
+	InstructionEncoder::Encoding InstructionEncoder::encodeSet() {
 		int count = instructionSizeFromImmediateMask(Set.bitmask);
 		auto first = encodeControl(0, type);
 		first = encodeSetBitmask(first, Set.bitmask);
@@ -512,8 +505,7 @@ DefOp(Return) {
 		return std::make_tuple(count, first, second, third);
 	}
 
-	dynamicop::EncodedInstruction
-	dynamicop::encodeMemory() {
+	InstructionEncoder::Encoding InstructionEncoder::encodeMemory() {
 		auto first = encodeControl(0, type);
 		first = encodeMemoryFlagType(first, Memory.subType);
 		first = encodeMemoryFlagBitmask(first, Memory.bitmask);
@@ -522,8 +514,7 @@ DefOp(Return) {
 		return std::make_tuple(1, first, 0, 0);
 	}
 
-	dynamicop::EncodedInstruction
-	dynamicop::encodeLogical() {
+	InstructionEncoder::Encoding InstructionEncoder::encodeLogical() {
 		auto first = encodeControl(0, type);
 		first = encodeLogicalFlagImmediate(first, Logical.immediate);
 		if (Logical.immediate) {
@@ -542,8 +533,7 @@ DefOp(Return) {
 		}
 	}
 
-	dynamicop::EncodedInstruction
-	dynamicop::encodeBranch() {
+	InstructionEncoder::Encoding InstructionEncoder::encodeBranch() {
 		auto first = encodeControl(0, type);
 		first = encodeBranchFlagIsConditional(first, Branch.isConditional);
 		first = encodeBranchFlagIsIfForm(first, Branch.isIf);
@@ -566,8 +556,7 @@ DefOp(Return) {
 		}
 	}
 
-	dynamicop::EncodedInstruction
-	dynamicop::encode() {
+	InstructionEncoder::Encoding InstructionEncoder::encode() {
 		// always encode the type
 		switch (type) {
 			case Operation::Nop:
@@ -597,17 +586,6 @@ DefOp(Return) {
 				throw iris::Problem("Illegal type to encode!");
 		}
 	}
-	//int 
-	//dynamicop::numberOfBytes() {
-	//	switch (type) {
-	//		case Operation::Branch:
-	//			// TODO: this...
-	//			return 3;
-	//		default:
-	//			throw iris::Problem("Illegal operation!");
-	//	}
-	//
-	//}
 #define X(title, mask, shift, type, post) \
 	word encode ## title (word input, type value) { \
 		return iris::encodeBits<word, type, mask, shift>(input, value); \
@@ -615,17 +593,16 @@ DefOp(Return) {
 #include "def/iris17/instruction.def"
 #undef X
 
-			static int instructionSizeFromImmediateMask(byte bitmask) {
-				switch(bitmask) {
+	static int instructionSizeFromImmediateMask(byte bitmask) {
+		switch(bitmask) {
 #define X(bits) case bits : return instructionSizeFromImmediateMask<bits>();
 #include "def/iris17/bitmask4bit.def"
 #undef X
-					default:
-						throw iris::Problem("illegal bitmask value!");
-				}
-			}
-	RegisterValue
-	getMask(byte bitmask) {
+			default:
+				throw iris::Problem("illegal bitmask value!");
+		}
+	}
+	RegisterValue getMask(byte bitmask) {
 		switch (bitmask) {
 #define X(bits) case bits : return mask<bits>();
 #include "def/iris17/bitmask4bit.def"
@@ -634,5 +611,46 @@ DefOp(Return) {
 			default:
 				throw iris::Problem("Illegal bitmask provided!");
 		}
+	}
+	int InstructionEncoder::numWords() {
+		return std::get<0>(encode());
+	}
+	bool InstructionEncoder::hasLabel() {
+		return (type == Operation::Branch && Branch.isImmediate && Branch.Immediate.isLabel) ||
+			   (type == Operation::Set && Set.isSymbol) ||
+			   (type == Operation::Logical && Logical.immediate && Logical.Immediate.isLabel);
+	}
+	char* InstructionEncoder::getLabel() {
+		if (hasLabel()) {
+			switch (type) {
+				case Operation::Branch:
+					return Branch.Immediate.labelValue;
+				case Operation::Set:
+					return Set.label;
+				case Operation::Logical:
+					return Logical.Immediate.labelValue;
+				default:
+					throw iris::Problem("The type of this Instruction has a label that getLabel doesn't know about!");
+			}
+		} else {
+			return nullptr;
+		}
+	}
+	void InstructionEncoder::imbueImmediate(RegisterValue immediate) {
+		if (hasLabel()) {
+			switch (type) {
+				case Operation::Branch:
+					Branch.Immediate.immediateValue = immediate;
+					break;
+				case Operation::Set:
+					Set.immediate = immediate;
+					break;
+				case Operation::Logical:
+					Logical.Immediate.source = immediate;
+					break;
+				default:
+					throw iris::Problem("The type of this Instruction has a label that imbueImmediate doesn't know about!");
+			}
+		} 
 	}
 }
