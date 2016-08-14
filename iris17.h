@@ -230,7 +230,9 @@ namespace iris17 {
 #define Component(fieldName, mask, shift, type) constexpr type fieldName = static_cast<type>((signature & mask) >> shift);
 #include "def/iris17/set.sig"
 #undef Component
-				registerValue<destination>() = retrieveImmediate<bitmask>();
+				auto immediate = retrieveImmediate<bitmask>();
+				std::cout << "destination: " << std::hex << registerValue<destination>() << ", immediate " << std::hex << immediate << std::endl;
+				registerValue<destination>() = immediate;
 			}
 
 			template<byte signature>
@@ -336,12 +338,14 @@ namespace iris17 {
 		// to use the Address and Value registers
 		RegisterValue lower = readLower<bitmask>() ? loadWord(address) : 0;
 		RegisterValue upper = readUpper<bitmask>() ? (static_cast<RegisterValue>(loadWord(address + 1)) << 16) : 0;
+		std::cout << "\t before value register " << std::hex << getValueRegister() << std::endl;
 		if (merge) {
 			getValueRegister() = mask<bitmask>() & (lower | upper);
 		} else {
 			auto constexpr cMask = mask<bitmask>();
 			getValueRegister()= (cMask & (lower | upper)) | (getValueRegister()& ~cMask);
 		}
+		std::cout << "\t after value register " << std::hex << getValueRegister() << std::endl;
 	}
 	template<byte bitmask>
 	void storeOperation(RegisterValue address) {

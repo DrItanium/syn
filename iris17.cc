@@ -137,9 +137,11 @@ namespace iris17 {
 	DefOp(Swap) {
 		std::cout << std::hex << getInstructionPointer() << ": Swap call" << std::endl;
 		if (current.getSwapDestination() != current.getSwapSource()) {
+			std::cout << "\tbefore destination: " << std::hex << registerValue(current.getSwapDestination()) << ", source: " << std::hex << registerValue(current.getSwapSource()) << std::endl;
 			RegisterValue tmp = registerValue(current.getSwapDestination());
 			registerValue(current.getSwapDestination()) = registerValue(current.getSwapSource());
 			registerValue(current.getSwapSource()) = tmp;
+			std::cout << "\tafter destination: " << std::hex << registerValue(current.getSwapDestination()) << ", source: " << std::hex << registerValue(current.getSwapSource()) << std::endl;
 		}
 	}
 
@@ -306,6 +308,7 @@ DefOp(Compare) {
 									   RegisterValue first = registerValue(next.getCompareRegister0()); \
 									   RegisterValue second = current.getCompareImmediateFlag() ? next.getUpper() : registerValue(next.getCompareRegister1()); \
 									   bool result = compare<CompareStyle:: type>(first, second); \
+									   std::cout << "\tresult = " << result << std::endl; \
 									   switch (current.getCompareCombineFlag()) { \
 										   combineOp(None) \
 										   combineOp(And) \
@@ -345,6 +348,7 @@ DefOp(Return) {
 				break;
 			case SystemCalls::PutC:
 				// read register 0 and register 1
+				std::cout << "putc " << std::hex << static_cast<int>(registerValue(current.getSystemArg0())) << std::endl;
 				std::cout.put(static_cast<char>(registerValue(current.getSystemArg0())));
 				break;
 			case SystemCalls::GetC:

@@ -1,8 +1,9 @@
-	set 0m0000 r0 0 ; zero
-	set 0m0001 r1 2 ; put 
+	set 0m0000 r0 0x0 ; zero
+	set 0m0001 r1 0x2 ; put 
+	set 0m0000 r2 0x0 ; temp
 	set 0m1111 addr string	; address
 @label continue
-	memory load 0m1111 0
+	memory load 0m0011 0x0
 	compare == none value r0
 	branch cond immediate done
 	swap addr r1
@@ -11,7 +12,7 @@
 	arithmetic add immediate addr 1
 	branch immediate continue
 @label done
-	set 0m0000 addr 0
+	swap addr r0
 	system value
 
 @label string
