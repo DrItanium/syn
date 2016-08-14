@@ -370,7 +370,7 @@ shift_left_or_right:
 		SHIFT_FLAG_RIGHT { op.shiftLeft = false; };
 
 system_op:
-		IMMEDIATE { op.arg0 = $1; };
+		destination_register;
 
 move_op: bitmask destination_register source_register; 
 
