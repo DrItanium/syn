@@ -59,7 +59,6 @@ namespace iris17 {
 		}
 	}
 	void Core::installprogram(std::istream& stream) {
-
 		populateContents<RegisterValue, ArchitectureConstants::RegisterCount>(gpr, stream, [](byte* buf) { return iris::encodeUint32LE(buf); });
 		populateContents<word, ArchitectureConstants::AddressMax>(memory, stream, [](byte* buf) { return iris::encodeUint16LE(buf); });
 	}
@@ -366,24 +365,30 @@ DefOp(Return) {
 	}
 
 	void Core::link(std::istream& input) {
+		// we have some more data to read through
 		// two address system, 1 RegisterValue -> address, 1 word -> value
-		constexpr int bufSize = sizeof(RegisterValue) + sizeof(word);
+		constexpr int bufSize = 8;
 		char buf[bufSize] = { 0 };
 		for(int lineNumber = 0; input.good(); ++lineNumber) {
 			input.read(buf, bufSize);
-			if (input.gcount() < bufSize && input.gcount() > 0) {
-				throw iris::Problem("unaligned object file found!");
-			} else if (input.gcount() == 0) {
-				if (input.eof()) {
-					break;
-				} else {
-					throw iris::Problem("something bad happened while reading input file!");
+			if (input.gcount() == 0) {
+				break;
+			} else if (input.gcount() != bufSize) {
+				throw iris::Problem("unaligned object file found");
+			} else {
+				// use the first byte to determine what sort of installation
+				// should occur
+				switch (buf[0]) {
+					case 0: // memory value
+						storeWord(encodeRegisterValue(buf[2], buf[3], buf[4], buf[5]), encodeWord(buf[6], buf[7]));
+						break;
+					case 1: // register value
+						gpr[static_cast<byte>(buf[1])] = encodeRegisterValue(buf[2], buf[3], buf[4], buf[5]);
+						break;
+					default:
+						throw iris::Problem("undefined link class!");
 				}
 			}
-			//ignore the first byte, it is always zero
-			RegisterValue address = encodeRegisterValue(buf[0], buf[1], buf[2], buf[3]);
-			word value = encodeWord(buf[4], buf[5]);
-			this->storeWord(address, value);
 		}
 	}
 	RegisterValue& Core::registerValue(byte index) {

@@ -80,6 +80,7 @@ omni [a-zA-Z0-9._]
 "@org"      { return DIRECTIVE_ORG; }
 "@word"     { return DIRECTIVE_WORD; }
 "@dword"    { return DIRECTIVE_DWORD; }
+"@startup"  { return DIRECTIVE_REGISTER_AT_START; }
 
 "ip"        { iris17lval.rval = iris17::ArchitectureConstants::InstructionPointer; return REGISTER; }
 "lr"        { iris17lval.rval = iris17::ArchitectureConstants::LinkRegister; return REGISTER; }

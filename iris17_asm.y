@@ -81,11 +81,13 @@ struct asmstate {
    void nextAddress();
    void registerLabel(const std::string& text);
    void registerDynamicOperation(InstructionEncoder op);
+   void setRegisterAtStartup(byte index, RegisterValue value);
    RegisterValue address;
    std::map<std::string, RegisterValue> labels;
    std::vector<data_registration> declarations;
    std::vector<InstructionEncoder> dynops;
    std::ostream* output;
+   RegisterValue registerStartupValues[ArchitectureConstants::RegisterCount] = { 0 };
 };
 
 void asmstate::nextAddress() {
@@ -98,6 +100,13 @@ void asmstate::registerDynamicOperation(InstructionEncoder op) {
 	op.address = address;
 	dynops.emplace_back(op);
 	address += op.numWords();
+}
+void asmstate::setRegisterAtStartup(byte index, RegisterValue value) {
+	if (index >= ArchitectureConstants::RegisterCount)  {
+		throw iris::Problem("Out of range register set!");
+	} else {
+		registerStartupValues[index] = value;
+	}
 }
 
 
@@ -140,17 +149,32 @@ namespace iris17 {
 			}
 		}
 	}
+	void writeRegisterEntry(byte index, RegisterValue value) {
+		constexpr int bufSize = 8;
+		char buf[bufSize] = { 0 };
+		buf[0] = 1;
+		buf[1] = index;
+		buf[2] = static_cast<char>(value);
+		buf[3] = static_cast<char>(value >> 8);
+		buf[4] = static_cast<char>(value >> 16);
+		buf[5] = static_cast<char>(value >> 24);
+		state.output->write(buf, bufSize);
+	}
 	void writeEntry(RegisterValue address, word value) {
-		char buf[6] = { 0 };
-		buf[0] = static_cast<char>(address);
-		buf[1] = static_cast<char>(address >> 8);
-		buf[2] = static_cast<char>(address >> 16);
-		buf[3] = static_cast<char>(address >> 24);
-		buf[4] = static_cast<char>(value);
-		buf[5] = static_cast<char>(value >> 8);
-		state.output->write(buf, 6);
+		constexpr int bufSize = 8;
+		char buf[bufSize] = { 0 };
+		buf[2] = static_cast<char>(address);
+		buf[3] = static_cast<char>(address >> 8);
+		buf[4] = static_cast<char>(address >> 16);
+		buf[5] = static_cast<char>(address >> 24);
+		buf[6] = static_cast<char>(value);
+		buf[7] = static_cast<char>(value >> 8);
+		state.output->write(buf, bufSize);
 	}
 	void saveEncoding() {
+		for (byte i = 0; i < ArchitectureConstants::RegisterCount; ++i) {
+			writeRegisterEntry(i, state.registerStartupValues[i]);
+		}
 		// go through and generate our list of dynamic operations and corresponding declarations
 		// start with the declarations because they are easier :)
 		for (auto &reg : state.declarations) {
@@ -201,6 +225,7 @@ namespace iris17 {
 %token LABEL DIRECTIVE_ORG DIRECTIVE_WORD DIRECTIVE_DWORD
 %token OP_NOP OP_ARITHMETIC OP_SHIFT OP_LOGICAL OP_COMPARE OP_BRANCH OP_RETURN
 %token OP_SYSTEM OP_MOVE OP_SET OP_SWAP OP_MEMORY
+%token DIRECTIVE_REGISTER_AT_START
 
 %token ARITHMETIC_OP_ADD     ARITHMETIC_OP_SUB     ARITHMETIC_OP_MUL ARITHMETIC_OP_DIV 
 %token ARITHMETIC_OP_REM     ARITHMETIC_OP_ADD_IMM ARITHMETIC_OP_SUB_IMM 
@@ -232,7 +257,8 @@ asm:
 directive:
 	DIRECTIVE_ORG IMMEDIATE { state.address = ($2 & iris17::bitmask24); } | 
 	directive_word |
-	directive_dword;
+	directive_dword | 
+	DIRECTIVE_REGISTER_AT_START REGISTER IMMEDIATE { state.setRegisterAtStartup($2, $3); };
 
 directive_word:
 	DIRECTIVE_WORD SYMBOL {
