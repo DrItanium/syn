@@ -1,17 +1,17 @@
 	set 0m0000 r0 0 ; zero
-	set 0m0001 r1 1 ; put 
+	set 0m0001 r1 2 ; put 
 	set 0m1111 addr string	; address
 @label continue
 	memory load 0m1111 0
-	compare != none value r0
+	compare == none value r0
 	branch cond immediate done
 	swap addr r1
 	system value
 	swap addr r1
-	arithmetic add immediate r0 1
+	arithmetic add immediate addr 1
 	branch immediate continue
 @label done
-	swap addr r1
+	set 0m0000 addr 0
 	system value
 
 @label string

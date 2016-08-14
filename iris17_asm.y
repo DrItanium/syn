@@ -78,7 +78,6 @@ struct data_registration
 /* used to store ops which require a second pass */
 struct asmstate {
    ~asmstate() { }
-   void nextAddress();
    void registerLabel(const std::string& text);
    void registerDynamicOperation(InstructionEncoder op);
    void setRegisterAtStartup(byte index, RegisterValue value);
@@ -90,9 +89,6 @@ struct asmstate {
    RegisterValue registerStartupValues[ArchitectureConstants::RegisterCount] = { 0 };
 };
 
-void asmstate::nextAddress() {
-	++address;
-}
 void asmstate::registerLabel(const std::string& text) {
 	labels.emplace(text, address);
 }
@@ -123,6 +119,7 @@ namespace iris17 {
 	void initialize(std::ostream* output, FILE* input) {
 		iris17in = input;
 		state.output = output;
+		state.address = 0;
 	}
 	void resolveLabels() {
 		// need to go through and replace all symbols with corresponding immediates
@@ -507,9 +504,4 @@ namespace iris {
 void iris17error(const char* s) {
    printf("%d: %s\n", iris17lineno, s);
    exit(-1);
-}
-namespace iris17 {
-
-
-
 }

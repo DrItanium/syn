@@ -40,7 +40,6 @@ namespace iris17 {
 #include "def/iris17/instruction.def"
 #undef X
 
-
 	Core::Core() : memory(new word[ArchitectureConstants::AddressMax]) { }
 	Core::~Core() {
 		delete [] memory;
@@ -136,6 +135,7 @@ namespace iris17 {
 	}
 
 	DefOp(Swap) {
+		std::cout << std::hex << getInstructionPointer() << ": Swap call" << std::endl;
 		if (current.getSwapDestination() != current.getSwapSource()) {
 			RegisterValue tmp = registerValue(current.getSwapDestination());
 			registerValue(current.getSwapDestination()) = registerValue(current.getSwapSource());
@@ -144,17 +144,23 @@ namespace iris17 {
 	}
 
     DefOp(Set) {
+		std::cout << std::hex << getInstructionPointer() << ": Set call" << std::endl;
 		switch (current.getSetSignature()) {
-#define X(value) setOperation<value>(std::move(current)); break;
+#define X(value) case value: setOperation<value>(std::move(current)); break;
 #include "def/iris17/bitmask8bit.def"
 #undef X
-			default:
-				throw iris::Problem("Illegal set signature!");
+			default: {
+						 std::stringstream stream;
+						 stream << "Illegal set signature 0x" << std::hex << static_cast<int>(current.getSetSignature()) << "\n";
+						 auto str = stream.str();
+						 throw iris::Problem(str);
+					 }
 		}
     }
 
 
 	DefOp(Memory) {
+		std::cout << std::hex << getInstructionPointer() << ": Memory Operation" << std::endl;
 		switch (current.getMemorySignature()) {
 #define X(value) case value: memoryOperation<value>(std::move(current)); break;
 #include "def/iris17/bitmask8bit.def"
@@ -166,10 +172,11 @@ namespace iris17 {
 
 	template<byte flags>
 	bool branchSpecificOperation(RegisterValue& ip, RegisterValue& linkRegister, RegisterValue& cond, std::function<RegisterValue()> getUpper16, std::function<RegisterValue&(byte)> registerValue, DecodedInstruction&& current) {
-		constexpr bool isIf = static_cast<bool>(flags & 0b0001);
-		constexpr bool isCall = static_cast<bool>((flags & 0b0010) >> 1);
-		constexpr bool isImmediate = static_cast<bool>((flags & 0b0100) >> 2);
-		constexpr bool isConditional = static_cast<bool>((flags & 0b1000) >> 3);
+		using decodedFlags = BranchFlagsDecoder<flags>;
+		constexpr bool isIf = decodedFlags::isIf;
+		constexpr bool isCall = decodedFlags::isCall;
+		constexpr bool isImmediate = decodedFlags::isImmediate;
+		constexpr bool isConditional = decodedFlags::isConditional;
 		bool advanceIp = true;
 		if (isIf) {
 			// if instruction
@@ -201,13 +208,16 @@ namespace iris17 {
 		} else {
 			// jump instruction
 			if (isImmediate) {
+				std::cout << "\t\tip before all: " << std::hex << ip << std::endl;
 				++ip;
+				std::cout << "\t\tip after increment: " << std::hex << ip << std::endl;
 				if ((isConditional && cond != 0) || !isConditional) {
 					advanceIp = false;
 					auto bottom = current.getUpper();
 					auto upper = getUpper16() << 8;
 					ip = bitmask24 & (upper | bottom);
 				} 
+				std::cout << "\t\tip after computation: " << std::hex << ip << std::endl;
 			}  else {
 				if ((isConditional && cond != 0) || !isConditional) {
 						advanceIp = false;
@@ -220,6 +230,7 @@ namespace iris17 {
 
 
 	DefOp(Branch) {
+		std::cout << std::hex << getInstructionPointer() << ": Branch Operation" << std::endl;
 		auto upper16fn = [this]() { return static_cast<RegisterValue>(getCurrentCodeWord()); };
 		auto regValFn = [this](byte index) -> RegisterValue& { return registerValue(index); };
 
@@ -241,6 +252,7 @@ namespace iris17 {
 			default:
 				throw iris::Problem("Undefined branch flag setup!");
 		}
+		std::cout << "ip = " << getInstructionPointer() << std::endl;
 	}
 
 template<CompareCombine compareOp> 
@@ -281,6 +293,7 @@ bool compare(RegisterValue a, RegisterValue b) {
 
 
 DefOp(Compare) {
+	std::cout << "Compare Operation" << std::endl;
 	++getInstructionPointer();
 	DecodedInstruction next(getCurrentCodeWord());
 	switch (current.getCompareType()) {
@@ -324,6 +337,7 @@ DefOp(Return) {
 
 	template<>
 	void Core::operation<Operation::SystemCall>(DecodedInstruction&& current) {
+		std::cout << "System call" << std::endl;
 		switch(static_cast<SystemCalls>(getAddressRegister())) {
 			case SystemCalls::Terminate:
 				execute = false;

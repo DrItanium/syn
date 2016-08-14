@@ -150,6 +150,13 @@ namespace iris17 {
 	struct BranchFlagsEncoder {
 		static constexpr byte flags = (static_cast<byte>(isConditional) << 3) | (static_cast<byte>(ifForm) << 2) | (static_cast<byte>(callForm) << 1) | static_cast<byte>(immediateForm);
 	};
+	template<byte flags>
+	struct BranchFlagsDecoder {
+		static constexpr bool isImmediate = static_cast<bool>(flags);
+		static constexpr bool isCall = static_cast<bool>((flags & 0b0010) >> 1);
+		static constexpr bool isIf = static_cast<bool>((flags & 0b0100) >> 2);
+		static constexpr bool isConditional = static_cast<bool>((flags & 0b1000) >> 3);
+	};
 	using IfJump = BranchFlagsEncoder<false, true, false, false>;
 	using IfCall = BranchFlagsEncoder<false, true, true, false>;
 

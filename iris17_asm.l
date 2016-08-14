@@ -11,10 +11,11 @@
 #define _POSIX_SOURCE 1
 
 namespace iris17 {
-	static byte getregister(void);
-	static unsigned long getdecimalimmediate(void);
-	static unsigned long getheximmediate(void);
-	static unsigned long getbinaryimmediate(void);
+	byte getregister();
+	unsigned long getdecimalimmediate();
+	unsigned long getheximmediate();
+	unsigned long getbinaryimmediate();
+	unsigned long getbitmask4();
 }
 extern void iris17error(const char* c);
 %}
@@ -66,9 +67,9 @@ omni [a-zA-Z0-9._]
 "not"       { return LOGICAL_OP_NOT; }
 "nand"      { return LOGICAL_OP_NAND; }
 
-"ld"        { return MEMORY_OP_LOAD; }
+"load"        { return MEMORY_OP_LOAD; }
 "merge"     { return MEMORY_OP_MERGE; }
-"st"        { return MEMORY_OP_STORE; }
+"store"        { return MEMORY_OP_STORE; }
 "push"      { return MEMORY_OP_PUSH; }
 "pop"       { return MEMORY_OP_POP; }
 
@@ -95,7 +96,7 @@ r{digit}+   { iris17lval.rval = iris17::getregister(); return REGISTER; }
 {digit}+    { iris17lval.ival = iris17::getdecimalimmediate(); return IMMEDIATE; }
 0x{xdigit}+ { iris17lval.ival = iris17::getheximmediate(); return IMMEDIATE; }
 0b[01]+     { iris17lval.ival = iris17::getbinaryimmediate(); return IMMEDIATE; }
-0m[01][01][01][01] { iris17lval.ival = iris17::getbinaryimmediate(); return BITMASK4; }
+0m[01][01][01][01] { iris17lval.ival = iris17::getbitmask4(); return BITMASK4; }
 {omni}+     { 
 	std::string contents(iris17text);
 	iris17lval.sval = (char*)contents.c_str();
@@ -118,7 +119,9 @@ byte getregister(void) {
 
 unsigned long getdecimalimmediate() {
    unsigned long tmp;
-   tmp = strtoul(iris17text, NULL, 10);
+   std::string str(iris17text);
+   str[1] = '0';
+   tmp = strtoul(str.c_str(), NULL, 10);
    if(tmp == ULONG_MAX && errno == ERANGE) {
       iris17error("number is too large and overflowed!");
       return 0;
@@ -134,7 +137,9 @@ unsigned long getdecimalimmediate() {
 
 unsigned long getheximmediate() {
    unsigned long tmp;
-   tmp = strtoul(iris17text, NULL, 16);
+   std::string str(iris17text);
+   str[1] = '0';
+   tmp = strtoul(str.c_str(), NULL, 16);
    if(tmp == ULONG_MAX && errno == ERANGE) {
       iris17error("number is too large and overflowed!");
       return 0;
@@ -150,7 +155,9 @@ unsigned long getheximmediate() {
 
 unsigned long getbinaryimmediate() {
    unsigned long tmp;
-   tmp = strtoul(iris17text, NULL, 2);
+   std::string str(iris17text);
+   str[1] = '0';
+   tmp = strtoul(str.c_str(), NULL, 2);
    if(tmp == ULONG_MAX && errno == ERANGE) {
       iris17error("number is too large and overflowed!");
       return 0;
@@ -162,6 +169,25 @@ unsigned long getbinaryimmediate() {
          return tmp;
       }
    }
+}
+
+unsigned long getbitmask4() {
+	unsigned long tmp = 0;
+	std::string mask(iris17text);
+	// replace the code with the binary symbol
+	mask.at(1) = '0';
+	tmp = strtoul(mask.c_str(), NULL, 2);
+	if(tmp == ULONG_MAX && errno == ERANGE) {
+		iris17error("number is too large and overflowed!");
+		return 0;
+	} else {
+		if(tmp > 0xFFFFFFFF || tmp < 0) {
+			iris17error("provided number is larger than 32-bits!");
+			return 0;
+		} else {
+			return tmp;
+		}
+	}
 }
 
 }
