@@ -1,6 +1,5 @@
 	set 0m0000 r0 0x0 ; zero
 	set 0m0001 r1 0x2 ; put
-	set 0m0000 r2 0x0 ; temp
 	set 0m1111 addr string	; address
 @label continue
 	memory load 0m0011 0x0
