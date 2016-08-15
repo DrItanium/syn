@@ -1,12 +1,12 @@
 *.swp
 *.swo
 *.o
+*.a
 
 v.obj
 v.img
 
 
-libiris16.a
 iris16asm
 iris16link
 asm.tab.c
@@ -16,7 +16,6 @@ iris16_asm.tab.c
 iris16_asm.tab.h
 iris16_lex.yy.c
 iris16strgen
-libiris32.a
 iris32asm
 iris32link
 asm.tab.c
@@ -28,3 +27,11 @@ iris32_lex.yy.c
 iris32strgen
 iris16_sim
 iris32_sim
+*.padd
+*.pail
+iris17_asm.tab.c
+iris17_asm.tab.h
+iris17_lex.yy.c
+iris_sim
+iris_asm
+iris_link
