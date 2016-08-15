@@ -119,7 +119,6 @@ byte getregister(void) {
 unsigned long getdecimalimmediate() {
    unsigned long tmp;
    std::string str(iris17text);
-   str[1] = '0';
    tmp = strtoul(str.c_str(), NULL, 10);
    if(tmp == ULONG_MAX && errno == ERANGE) {
       iris17error("number is too large and overflowed!");

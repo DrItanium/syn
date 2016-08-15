@@ -9,7 +9,7 @@
 	swap addr r1
 	system value
 	swap addr r1
-	arithmetic add immediate addr 0x1
+	arithmetic add immediate addr 1
 	branch immediate continue
 @label done
 	swap addr r0
