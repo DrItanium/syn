@@ -39,7 +39,7 @@ struct InstructionFieldInformation<InstructionFields :: _title> { \
 	static constexpr word mask = _mask; \
 	static constexpr byte shiftCount = _shift; \
 	using AssociatedType = _type ; \
-}; 
+};
 #include "def/iris17/instruction.def"
 #undef X
 
@@ -66,7 +66,7 @@ struct data_registration
 	currentLine(lineno) {
 
 	}
-		
+
 	RegisterValue address = 0;
 	int width = 0;
 	RegisterValue immediate = 0;
@@ -176,9 +176,9 @@ namespace iris17 {
 		// start with the declarations because they are easier :)
 		for (auto &reg : state.declarations) {
 			switch(reg.width) {
-				case 2: 
+				case 2:
 					writeEntry(reg.address + 1, static_cast<word>(reg.immediate >> 16));
-				case 1: 
+				case 1:
 					writeEntry(reg.address, static_cast<word>(reg.immediate));
 					break;
 				default: {
@@ -224,16 +224,16 @@ namespace iris17 {
 %token OP_SYSTEM OP_MOVE OP_SET OP_SWAP OP_MEMORY
 %token DIRECTIVE_REGISTER_AT_START
 
-%token ARITHMETIC_OP_ADD     ARITHMETIC_OP_SUB     ARITHMETIC_OP_MUL ARITHMETIC_OP_DIV 
-%token ARITHMETIC_OP_REM     ARITHMETIC_OP_ADD_IMM ARITHMETIC_OP_SUB_IMM 
-%token ARITHMETIC_OP_MUL_IMM ARITHMETIC_OP_DIV_IMM ARITHMETIC_OP_REM_IMM 
+%token ARITHMETIC_OP_ADD     ARITHMETIC_OP_SUB     ARITHMETIC_OP_MUL ARITHMETIC_OP_DIV
+%token ARITHMETIC_OP_REM     ARITHMETIC_OP_ADD_IMM ARITHMETIC_OP_SUB_IMM
+%token ARITHMETIC_OP_MUL_IMM ARITHMETIC_OP_DIV_IMM ARITHMETIC_OP_REM_IMM
 %token FLAG_IMMEDIATE
 %token SHIFT_FLAG_LEFT SHIFT_FLAG_RIGHT
 %token ACTION_NONE ACTION_AND ACTION_OR ACTION_XOR
 %token LOGICAL_OP_NOT LOGICAL_OP_NAND
 %token MEMORY_OP_LOAD MEMORY_OP_MERGE MEMORY_OP_STORE MEMORY_OP_POP MEMORY_OP_PUSH
 %token BRANCH_FLAG_JUMP BRANCH_FLAG_CALL BRANCH_FLAG_IF BRANCH_FLAG_COND
-%token COMPARE_OP_EQ COMPARE_OP_NEQ COMPARE_OP_GT COMPARE_OP_GT_EQ 
+%token COMPARE_OP_EQ COMPARE_OP_NEQ COMPARE_OP_GT COMPARE_OP_GT_EQ
 %token COMPARE_OP_LT COMPARE_OP_LT_EQ
 
 
@@ -245,16 +245,16 @@ namespace iris17 {
 
 %%
 Q: /* empty */ |
-   F 
+   F
 ;
 F: F asm | asm;
 asm:
    directive | statement ;
 
 directive:
-	DIRECTIVE_ORG IMMEDIATE { state.address = ($2 & iris17::bitmask24); } | 
+	DIRECTIVE_ORG IMMEDIATE { state.address = ($2 & iris17::bitmask24); } |
 	directive_word |
-	directive_dword | 
+	directive_dword |
 	DIRECTIVE_REGISTER_AT_START REGISTER IMMEDIATE { state.setRegisterAtStartup($2, $3); };
 
 directive_word:
@@ -279,7 +279,7 @@ directive_dword:
 	};
 statement:
          label |
-         operation { 
+         operation {
 		 	op.currentLine = iris17lineno;
 		 	state.registerDynamicOperation(op);
 			op.clear();
@@ -287,7 +287,10 @@ statement:
 		 };
 
 label:
-     LABEL SYMBOL { state.registerLabel($2); };
+     LABEL SYMBOL {
+        auto str = std::string($2);
+        state.registerLabel(str);
+     };
 
 operation:
 		OP_NOP { op.type = iris17::Operation::Nop; } |
@@ -318,7 +321,7 @@ compare_type:
 		COMPARE_OP_GT { op.subType = static_cast<byte>(iris17::CompareStyle::GreaterThanOrEqualTo); } |
 		COMPARE_OP_GT_EQ { op.subType = static_cast<byte>(iris17::CompareStyle::GreaterThan); };
 
-combine_type: 
+combine_type:
 		ACTION_NONE { op.combineType = iris17::CompareCombine::None; } |
 		ACTION_AND { op.combineType = iris17::CompareCombine::And; } |
 		ACTION_OR { op.combineType = iris17::CompareCombine::Or; } |
@@ -333,11 +336,11 @@ logical_op:
 			op.subType = static_cast<byte>(iris17::LogicalOps::Not);
 		};
 
-logical_args: 
+logical_args:
 		uses_immediate bitmask destination_register lexeme |
 		destination_register source_register { op.immediate = false; };
 
-logical_op: 
+logical_op:
 		ACTION_AND {
 			ifImmediate = static_cast<byte>(iris17::ImmediateLogicalOps::And);
 			ifNotImmediate = static_cast<byte>(iris17::LogicalOps::And);
@@ -369,16 +372,16 @@ shift_left_or_right:
 system_op:
 		destination_register;
 
-move_op: bitmask destination_register source_register; 
+move_op: bitmask destination_register source_register;
 
-set_op: 
+set_op:
 	  bitmask destination_register lexeme;
 
-swap_op: 
+swap_op:
 	   destination_register source_register;
 
-branch_op: 
-		 branch; 
+branch_op:
+		 branch;
 
 branch:
 	  	BRANCH_FLAG_IF if_op {
@@ -394,8 +397,8 @@ branch:
 			op.isIf = false;
 			op.isCall = true;
 			op.isConditional = false;
-		}; 
-if_op: 
+		};
+if_op:
 	 destination_register source_register {
 		op.isCall = false;
 	 } |
@@ -455,7 +458,7 @@ arithmetic_op:
 			op.arg0 = $2;
 			op.arg1 = $3;
 		};
-arithmetic_subop: 
+arithmetic_subop:
 				ARITHMETIC_OP_ADD {
 					op.subType = static_cast<byte>(iris17::ArithmeticOps::Add);
 				} |
@@ -475,7 +478,7 @@ bitmask:
 	   BITMASK4 {
 			op.bitmask = $1;
 	   };
-lexeme: 
+lexeme:
 	SYMBOL {
 		op.isLabel = true;
 		op.labelValue = $1;
