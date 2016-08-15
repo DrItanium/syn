@@ -92,12 +92,12 @@ namespace iris16 {
 			dispatch();
 			if (advanceIp) {
 				gpr[ArchitectureConstants::InstructionPointerIndex]++;
-			} 
+			}
 		}
 	}
 	void Core::dispatch() {
 		switch(static_cast<InstructionGroup>(current.getGroup())) {
-#define X(name, operation) case InstructionGroup:: name: operation(); break; 
+#define X(name, operation) case InstructionGroup:: name: operation(); break;
 #include "def/iris16/groups.def"
 #undef X
 			default:
@@ -139,8 +139,8 @@ namespace iris16 {
 	void Core::arithmetic() {
 		switch(static_cast<ArithmeticOp>(current.getOperation())) {
 #define XNone(n, op) gpr[current.getDestination()] = ( gpr[current.getSource0()] op  gpr[current.getSource1()]);
-#define XImmediate(n, op) gpr[current.getDestination()] = (gpr[current.getSource0()] op static_cast<word>(current.getSource1())); 
-#define XUnary(n, op) gpr[current.getDestination()] = (op gpr[current.getSource0()]); 
+#define XImmediate(n, op) gpr[current.getDestination()] = (gpr[current.getSource0()] op static_cast<word>(current.getSource1()));
+#define XUnary(n, op) gpr[current.getDestination()] = (op gpr[current.getSource0()]);
 #define XDenominator(n, op) \
 			if (gpr[current.getSource1()] == 0) { \
 				std::cerr << "denominator in for operation " << #n << " is zero!" << std::endl; \
@@ -175,12 +175,12 @@ namespace iris16 {
 				break;
 		}
 	}
-	template<JumpOp op> 
-		struct ConditionalStyle {
-			static const bool isFalseForm = false;
-		};
+	template<JumpOp op>
+	struct ConditionalStyle {
+		static constexpr bool isFalseForm = false;
+	};
 #define X(name, ifthenelse, conditional, iffalse, immediate, link) \
-	template<> struct ConditionalStyle<JumpOp:: name> { static const bool isFalseForm = iffalse; };
+	template<> struct ConditionalStyle<JumpOp:: name> { static constexpr bool isFalseForm = iffalse; };
 #include "def/iris16/jump.def"
 #undef X
 
@@ -352,7 +352,7 @@ namespace iris16 {
 	}
 
 	enum class Segment  {
-		Code, 
+		Code,
 		Data,
 		Count,
 	};
