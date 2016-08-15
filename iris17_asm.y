@@ -293,7 +293,12 @@ label:
      };
 
 operation:
-		OP_NOP { op.type = iris17::Operation::Nop; } |
+		OP_NOP {
+            op.type = iris17::Operation::Memory;
+            op.subType = static_cast<byte>(iris17::MemoryOperation::Store);
+            op.bitmask = 0b0000;
+            op.arg0 = 0b0000;
+        } |
 		OP_SHIFT shift_op { op.type = iris17::Operation::Shift; }|
 		OP_LOGICAL logical_op { op.type = iris17::Operation::Logical; } |
 		OP_COMPARE compare_op { op.type = iris17::Operation::Compare; } |
@@ -304,7 +309,14 @@ operation:
 		OP_SET set_op { op.type = iris17::Operation::Set; } |
 		OP_SWAP swap_op { op.type = iris17::Operation::Swap; } |
 		OP_MEMORY memory_op { op.type = iris17::Operation::Memory; } |
-		OP_RETURN { op.type = iris17::Operation::Return; };
+		OP_RETURN {
+            op.type = iris17::Operation::Branch;
+            op.isIf = false;
+            op.isConditional = false;
+            op.immediate = false;
+            op.isCall = false;
+            op.arg0 = static_cast<byte>(iris17::ArchitectureConstants::LinkRegister);
+        };
 
 compare_op:
 		  compare_type combine_type compare_args;
@@ -418,7 +430,7 @@ jump_op:
 		op.isConditional = true;
 	} |
 	destination_register {
-		op.immediate= false;
+		op.immediate = false;
 		op.isConditional = false;
 	} |
 	BRANCH_FLAG_COND destination_register {

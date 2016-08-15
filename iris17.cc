@@ -94,11 +94,9 @@ namespace iris17 {
 	template<> \
 	void Core::operation<Operation:: title>(DecodedInstruction&& current)
 
-	DefOp(Nop) {
-	}
 	DefOp(Shift) {
 		auto destination = registerValue(current.getShiftRegister0());
-		RegisterValue source = (current.getShiftFlagImmediate() ? static_cast<RegisterValue>(current.getShiftImmediate()) : registerValue(current.getShiftRegister1()));
+		auto source = (current.getShiftFlagImmediate() ? static_cast<RegisterValue>(current.getShiftImmediate()) : registerValue(current.getShiftRegister1()));
 		destination = (current.getShiftFlagLeft() ? (destination << source) : (destination >> source));
 	}
 
@@ -329,12 +327,6 @@ DefOp(Compare) {
 		default:
 			throw iris::Problem("illegal compare type!");
 	}
-}
-
-DefOp(Return) {
-	advanceIp = false;
-	// jump to the link register
-	getInstructionPointer() = getLinkRegister();
 }
 
 	template<>
@@ -581,9 +573,6 @@ DefOp(Return) {
 	InstructionEncoder::Encoding InstructionEncoder::encode() {
 		// always encode the type
 		switch (type) {
-			case Operation::Nop:
-			case Operation::Return:
-				return std::make_tuple(1, encodeControl(0, type), 0, 0);
 			case Operation::Arithmetic:
 				return encodeArithmetic();
 			case Operation::Move:
@@ -640,13 +629,13 @@ DefOp(Return) {
 	void InstructionEncoder::clear() {
 		currentLine = 0;
 		address = 0;
-		type = Operation::Nop;
+		type = Operation::Memory;
 		immediate = false;
 		shiftLeft = false;
 		isIf = false;
 		isCall = false;
 		isConditional = false;
-		bitmask = 0;
+		bitmask = 0b0000;
 		arg0 = 0;
 		arg1 = 0;
 		isLabel = false;

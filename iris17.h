@@ -246,39 +246,37 @@ namespace iris17 {
 				} else if (!immediate && indirect_error) {
 					throw iris::Problem("Illegal bits set for indirect mode logicalOperation!");
 				}
-				auto dest = registerValue(immediate ? inst.getLogicalImmediateDestination() : inst.getLogicalRegister0());
-				RegisterValue src = immediate ? retrieveImmediate<bitmask>() : registerValue(inst.getLogicalRegister1());
 				if (immediate) {
 					switch (immediate_type) {
 						case ImmediateLogicalOps::And:
-							dest = dest & src;
+							registerValue(inst.getLogicalImmediateDestination()) = registerValue(inst.getLogicalImmediateDestination()) & retrieveImmediate<bitmask>();
 							break;
 						case ImmediateLogicalOps::Or:
-							dest = dest | src;
+							registerValue(inst.getLogicalImmediateDestination()) = registerValue(inst.getLogicalImmediateDestination()) | retrieveImmediate<bitmask>();
 							break;
 						case ImmediateLogicalOps::Nand:
-							dest = ~(dest & src);
+							registerValue(inst.getLogicalImmediateDestination()) = ~(registerValue(inst.getLogicalImmediateDestination()) & retrieveImmediate<bitmask>());
 							break;
 						case ImmediateLogicalOps::Xor:
-							dest = dest ^ src;
+							registerValue(inst.getLogicalImmediateDestination()) = registerValue(inst.getLogicalImmediateDestination()) ^ retrieveImmediate<bitmask>();
 							break;
 					}
 				} else {
 					switch(indirect_type) {
 						case LogicalOps::And:
-							dest = dest & src;
+							registerValue(inst.getLogicalRegister0()) = registerValue(inst.getLogicalRegister0()) & registerValue(inst.getLogicalRegister1());
 							break;
 						case LogicalOps::Or:
-							dest = dest | src;
+							registerValue(inst.getLogicalRegister0()) = registerValue(inst.getLogicalRegister0()) | registerValue(inst.getLogicalRegister1());
 							break;
 						case LogicalOps::Not:
-							dest = ~dest;
+							registerValue(inst.getLogicalRegister0()) = ~registerValue(inst.getLogicalRegister0());
 							break;
 						case LogicalOps::Xor:
-							dest = dest ^ src;
+							registerValue(inst.getLogicalRegister0()) = registerValue(inst.getLogicalRegister0()) ^ registerValue(inst.getLogicalRegister1());
 							break;
 						case LogicalOps::Nand:
-							dest = ~(dest & src);
+							registerValue(inst.getLogicalRegister0()) = ~(registerValue(inst.getLogicalRegister0()) & registerValue(inst.getLogicalRegister1()));
 							break;
 						default:
 							throw iris::Problem("Illegal indirect logical operation!");
