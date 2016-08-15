@@ -12,6 +12,9 @@
                      (implode$ ?rest)))
 (defgeneric iris17::terminate
             "terminate the simulation")
+(defgeneric iris17::readchar)
+(defgeneric iris17::putchar)
+
 (defgeneric iris17::op:clear)
 (defgeneric iris17::op:system)
 (defgeneric iris17::op:arithmetic)
@@ -25,6 +28,8 @@
 (defgeneric iris17::op:memory)
 (defgeneric iris17::op:load)
 (defgeneric iris17::op:merge)
+(defgeneric iris17::op:push)
+(defgeneric iris17::op:pop)
 (defgeneric iris17::op:add)
 (defgeneric iris17::op:sub)
 (defgeneric iris17::op:mul)
@@ -33,6 +38,57 @@
 (defgeneric iris17::op:shift)
 (defgeneric iris17::op:shift-left)
 (defgeneric iris17::op:shift-right)
+(defgeneric iris17::op:move)
+(defgeneric iris17::op:swap)
+(defgeneric iris17::use-register)
+(defgeneric iris17::op:return)
+(defgeneric iris17::op:nop)
+(defgeneric iris17::defun)
+(defgeneric iris17::@label)
+
+(defmethod iris17::@label
+  ((?router SYMBOL)
+   (?name SYMBOL))
+  (output-base-instruction ?router
+                           @label
+                           ?name))
+
+(defmethod iris17::op:return
+  ((?router SYMBOL))
+  (output-base-instruction ?router
+                           return))
+
+(defmethod iris17::op:nop
+  ((?router SYMBOL))
+  (output-base-instruction ?router
+                           nop))
+
+(defmethod iris17::op:swap
+  ((?router SYMBOL)
+   (?reg0 SYMBOL)
+   (?reg1 SYMBOL))
+  (output-base-instruction ?router
+                           swap
+                           ?reg0
+                           ?reg1))
+(defmethod iris17::op:move
+  ((?router SYMBOL)
+   (?bitmask SYMBOL)
+   (?reg0 SYMBOL)
+   (?reg1 SYMBOL))
+  (output-base-instruction ?router
+                           move
+                           ?bitmask
+                           ?reg0
+                           ?reg1))
+(defmethod iris17::op:move
+  ((?router SYMBOL)
+   (?reg0 SYMBOL)
+   (?reg1 SYMBOL))
+  (op:move ?router
+           0m1111
+           ?reg0
+           ?reg1))
 
 (defmethod iris17::op:shift
   ((?router SYMBOL)
@@ -385,4 +441,65 @@
                               ?*address-register*)
                     (op:system ?router
                                ?*value-register*)))
+(defmethod iris17::putchar
+  ((?router SYMBOL)
+   (?register SYMBOL))
+  (create$ (op:set ?router
+                   0m0001
+                   ?*address-register*
+                   1)
+           (op:system ?router
+                      ?register)))
+(defmethod iris17::getchar
+  ((?router SYMBOL)
+   (?register SYMBOL))
+  (create$ (op:set ?router
+                   0m0001
+                   ?*address-register*
+                   2)
+           (op:system ?router
+                      ?register)))
+(defmethod iris17::use-register
+  ((?router SYMBOL)
+   (?registers MULTIFIELD
+               (> (length$ ?current-argument)
+                  0))
+   $?body)
+  (use-register ?router
+                (expand$ (first$ ?registers))
+                (use-register ?router
+                              (rest$ ?registers)
+                              $?body)))
+(defmethod iris17::use-register
+  ((?router SYMBOL)
+   (?registers MULTIFIELD
+               (= (length$ ?current-argument)
+                  0))
+   $?body)
+  ?body)
+
+(defmethod iris17::use-register
+  ((?router SYMBOL)
+   (?register SYMBOL)
+   $?body)
+  (create$ (op:push ?router
+                    0m1111
+                    ?register)
+           $?body
+           (op:pop ?router
+                   0m1111
+                   ?register)))
+(defmethod iris17::defun
+  ((?router SYMBOL)
+   (?name SYMBOL)
+   $?body)
+  (create$ (@label ?router
+                   ?name)
+           (use-register ?router
+                         lr
+                         $?body)
+           (op:return ?router)
+           (@label ?router
+                   (sym-cat ?name _end))))
+
 
