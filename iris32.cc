@@ -347,7 +347,7 @@ namespace iris32 {
 	void Core::dispatch() {
 		// read a byte from the current instruction pointer address
 		auto decoded = DecodedInstruction(read(thread->gpr[ArchitectureConstants::InstructionPointerIndex]));
-		auto printInst = [this](const std::string& msg, DecodedInstruction&& decoded) {
+		auto printInst = [this](const std::string& msg, DecodedInstruction& decoded) {
 			std::cerr << msg << "\n"
 				<< "\tdestination register index: r" << std::dec << (int)  decoded.getDestination()
 				<< ", value: " << (thread->gpr[decoded.getDestination()]) << "\n"
@@ -361,7 +361,7 @@ namespace iris32 {
 			std::cerr << "op: " << std::hex << (int)decoded.getOperation() << std::endl;
 		};
 		if (debugEnabled()) {
-			printInst("before", std::move(decoded));
+			printInst("before", decoded);
 		}
 #define DispatchDecode(cl, val) \
 	case Decode ## cl ## val :: value :  \
@@ -391,9 +391,6 @@ namespace iris32 {
 				throw "Undefined control!";
 		}
 #undef DispatchDecode
-		if (debugEnabled()) {
-			printInst("after", std::move(decoded));
-		}
 	}
 	void Core::initialize() {
 		int threadIndex = 0;
