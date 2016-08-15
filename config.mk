@@ -1,7 +1,7 @@
 LIBS = -lc -lm
 
-CC := cc
-CXX := c++
+CC := asminst -a x86_64_gcc --parse-only -- cc
+CXX := asminst -a x86_64_gcc --parse-only -- c++
 LEX ?= flex
 YACC ?= bison
 GENFLAGS = -Wall -g3

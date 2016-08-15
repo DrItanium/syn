@@ -19,7 +19,7 @@ namespace iris32 {
 		StackPointerIndex = RegisterCount - 3,
 		ConditionRegisterIndex = RegisterCount - 4,
 		ThreadIndex = RegisterCount - 5,
-		
+
 	};
 	enum {
 		GroupMask = 0b00000111,
@@ -60,7 +60,7 @@ namespace iris32 {
 	template<> \
 	struct EncodeInstructionGroupAsByte< InstructionGroup :: group > { \
 		static const byte value = static_cast< byte > (InstructionGroup :: group ); \
-	}; 
+	};
 #include "def/iris32/groups.def"
 #undef X
 
@@ -81,7 +81,7 @@ namespace iris32 {
 #undef X
 			word encodeInstruction();
 		private:
-#define X(u0, u1, u2, type, u3, fieldName) type fieldName; 
+#define X(u0, u1, u2, type, u3, fieldName) type fieldName;
 #include "def/iris32/instruction.def"
 #undef X
 			word raw;
@@ -92,10 +92,10 @@ namespace iris32 {
 		word gpr[ArchitectureConstants::RegisterCount] = { 0 };
 	};
 	template<byte index, InstructionGroup group>
-		struct OpInfer { };
+	struct OpInfer { };
 
 	template<typename T, T op>
-		struct OpToIndex { };
+	struct OpToIndex { };
 
 	template<byte control>
 	struct DecodeGroup : public std::integral_constant<byte, control & 0b00000111> { };
@@ -105,9 +105,9 @@ namespace iris32 {
 
 	template<byte control>
 	struct DecodeControl {
-		static const byte value = control;
-		static const byte group = DecodeGroup<control>::value;
-		static const byte op = DecodeOp<control>::value;
+		static constexpr byte value = control;
+		static constexpr byte group = DecodeGroup<control>::value;
+		static constexpr byte op = DecodeOp<control>::value;
 	};
 
 	template<byte group, byte op>
@@ -125,10 +125,10 @@ namespace iris32 {
 	static_assert(byte(CompareOp::NumberOfCompareOps) <= byte(MaxInstructionsPerGroup), "Too many compare operations defined!");
 #define DefOp(cl, group, e) \
 	template<> \
-	struct OpInfer<static_cast< byte >( cl :: e ), InstructionGroup:: group > { static const cl value = cl :: e ; }; \
+	struct OpInfer<static_cast< byte >( cl :: e ), InstructionGroup:: group > { static constexpr cl value = cl :: e ; }; \
 	template<> \
-	struct OpToIndex<cl, cl :: e > { static const byte value = static_cast < byte > (cl :: e); }; \
-	typedef DecodeControl<EncodeControl< EncodeInstructionGroupAsByte < InstructionGroup:: group >::value, static_cast < byte > (cl :: e)>::value> Decode ## cl ## e;
+	struct OpToIndex<cl, cl :: e > { static constexpr byte value = static_cast < byte > (cl :: e); }; \
+	using Decode ## cl ## e = DecodeControl<EncodeControl< EncodeInstructionGroupAsByte < InstructionGroup:: group >::value, static_cast < byte > (cl :: e)>::value>;
 #define X(e, __, ___) DefOp(CompareOp, Compare, e)
 #define Y(e, __, ___) X(e, __, ___)
 #include "def/iris32/compare.def"
@@ -147,7 +147,7 @@ namespace iris32 {
 	};
 	static_assert(byte(ArithmeticOp::NumberOfArithmeticOps) <= byte(MaxInstructionsPerGroup), "Too many arithmetic operations defined!");
 
-#define X(title, u0, u1) DefOp(ArithmeticOp, Arithmetic, title) 
+#define X(title, u0, u1) DefOp(ArithmeticOp, Arithmetic, title)
 #include "def/iris32/arithmetic.def"
 #undef X
 
