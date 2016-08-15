@@ -25,6 +25,193 @@
 (defgeneric iris17::op:memory)
 (defgeneric iris17::op:load)
 (defgeneric iris17::op:merge)
+(defgeneric iris17::op:add)
+(defgeneric iris17::op:sub)
+(defgeneric iris17::op:mul)
+(defgeneric iris17::op:div)
+(defgeneric iris17::op:rem)
+(defgeneric iris17::op:shift)
+(defgeneric iris17::op:shift-left)
+(defgeneric iris17::op:shift-right)
+
+(defmethod iris17::op:shift
+  ((?router SYMBOL)
+   (?direction SYMBOL
+               (not (neq ?current-argument
+                         left
+                         right)))
+   (?immediate-flag SYMBOL
+                    (eq ?current-argument
+                        immediate))
+   (?register SYMBOL)
+   (?immediate INTEGER))
+  (output-base-instruction ?router
+                           shift
+                           ?direction
+                           ?immediate-flag
+                           ?register
+                           ?immediate))
+
+(defmethod iris17::op:shift
+  ((?router SYMBOL)
+   (?direction SYMBOL
+               (not (neq ?current-argument
+                         left
+                         right)))
+   (?dest SYMBOL)
+   (?src SYMBOL))
+  (output-base-instruction ?router
+                           shift
+                           ?direction
+                           ?dest
+                           ?src))
+(defmethod iris17::op:shift-left
+  ((?router SYMBOL)
+   (?immediate-flag SYMBOL
+                    (eq ?current-argument
+                        immediate))
+   (?dest SYMBOL)
+   (?immediate INTEGER))
+  (op:shift ?router
+            left
+            ?immediate-flag
+            ?dest
+            ?immediate))
+(defmethod iris17::op:shift-left
+  ((?router SYMBOL)
+   (?dest SYMBOL)
+   (?src SYMBOL))
+  (op:shift ?router
+            left
+            ?dest
+            ?src))
+
+(defmethod iris17::op:shift-right
+  ((?router SYMBOL)
+   (?immediate-flag SYMBOL
+                    (eq ?current-argument
+                        immediate))
+   (?dest SYMBOL)
+   (?immediate INTEGER))
+  (op:shift ?router
+            right
+            ?immediate-flag
+            ?dest
+            ?immediate))
+
+(defmethod iris17::op:shift-right
+  ((?router SYMBOL)
+   (?dest SYMBOL)
+   (?src SYMBOL))
+  (op:shift ?router
+            right
+            ?dest
+            ?src))
+
+(defmethod iris17::op:add
+  ((?router SYMBOL)
+   (?immediate-flag SYMBOL
+                    (eq ?current-argument
+                        immediate))
+   (?register SYMBOL)
+   (?immediate INTEGER))
+  (op:arithmetic ?router
+                 add
+                 ?immediate-flag
+                 ?register
+                 ?immediate))
+(defmethod iris17::op:add
+  ((?router SYMBOL)
+   (?destination SYMBOL)
+   (?source SYMBOL))
+  (op:arithmetic ?router
+                 add
+                 ?destination
+                 ?source))
+(defmethod iris17::op:mul
+  ((?router SYMBOL)
+   (?immediate-flag SYMBOL
+                    (eq ?current-argument
+                        immediate))
+   (?register SYMBOL)
+   (?immediate INTEGER))
+  (op:arithmetic ?router
+                 mul
+                 ?immediate-flag
+                 ?register
+                 ?immediate))
+(defmethod iris17::op:mul
+  ((?router SYMBOL)
+   (?destination SYMBOL)
+   (?source SYMBOL))
+  (op:arithmetic ?router
+                 mul
+                 ?destination
+                 ?source))
+
+(defmethod iris17::op:div
+  ((?router SYMBOL)
+   (?immediate-flag SYMBOL
+                    (eq ?current-argument
+                        immediate))
+   (?register SYMBOL)
+   (?immediate INTEGER))
+  (op:arithmetic ?router
+                 div
+                 ?immediate-flag
+                 ?register
+                 ?immediate))
+(defmethod iris17::op:div
+  ((?router SYMBOL)
+   (?destination SYMBOL)
+   (?source SYMBOL))
+  (op:arithmetic ?router
+                 div
+                 ?destination
+                 ?source))
+
+(defmethod iris17::op:rem
+  ((?router SYMBOL)
+   (?immediate-flag SYMBOL
+                    (eq ?current-argument
+                        immediate))
+   (?register SYMBOL)
+   (?immediate INTEGER))
+  (op:arithmetic ?router
+                 rem
+                 ?immediate-flag
+                 ?register
+                 ?immediate))
+(defmethod iris17::op:rem
+  ((?router SYMBOL)
+   (?destination SYMBOL)
+   (?source SYMBOL))
+  (op:arithmetic ?router
+                 rem
+                 ?destination
+                 ?source))
+
+(defmethod iris17::op:sub
+  ((?router SYMBOL)
+   (?immediate-flag SYMBOL
+                    (eq ?current-argument
+                        immediate))
+   (?register SYMBOL)
+   (?immediate INTEGER))
+  (op:arithmetic ?router
+                 sub
+                 ?immediate-flag
+                 ?register
+                 ?immediate))
+(defmethod iris17::op:sub
+  ((?router SYMBOL)
+   (?destination SYMBOL)
+   (?source SYMBOL))
+  (op:arithmetic ?router
+                 sub
+                 ?destination
+                 ?source))
+
 
 (defmethod iris17::op:memory
   ((?router SYMBOL)
@@ -108,50 +295,63 @@
 (defmethod iris17::op:increment
   ((?router SYMBOL)
    (?register SYMBOL))
-  (op:arithmetic ?router
-                 add
-                 immediate
-                 ?register
-                 1))
+  (op:add ?router
+          immediate
+          ?register
+          1))
 (defmethod iris17::op:decrement
   ((?router SYMBOL)
    (?register SYMBOL))
-  (op:arithmetic ?router
-                 sub
-                 immediate
-                 ?register
-                 1))
+  (op:sub ?router
+          immediate
+          ?register
+          1))
 
 (defmethod iris17::op:double
   ((?router SYMBOL)
    (?register SYMBOL))
-  (op:arithmetic ?router
-                 mul
-                 immediate
-                 ?register
-                 2))
+  (op:mul ?router
+          immediate
+          ?register
+          2))
 
 (defmethod iris17::op:halve
   ((?router SYMBOL)
    (?register SYMBOL))
-  (op:arithmetic ?router
-                 div
-                 immediate
-                 ?register
-                 2))
+  (op:div ?router
+          immediate
+          ?register
+          2))
 
 (defmethod iris17::op:arithmetic
   ((?router SYMBOL)
-   (?rest MULITIFIELD))
+   (?sub-type SYMBOL)
+   (?uses-immediate SYMBOL
+                    (eq ?uses-immediate
+                        immediate))
+   (?register SYMBOL)
+   (?immediate INTEGER
+               SYMBOL))
   (output-base-instruction ?router
                            arithmetic
-                           ?rest))
+                           ?sub-type
+                           ?uses-immediate
+                           ?register
+                           ?immediate))
 
 (defmethod iris17::op:arithmetic
   ((?router SYMBOL)
-   $?rest)
-  (op:arithmetic ?router
-                 ?rest))
+   (?sub-type SYMBOL)
+   (?dest SYMBOL
+              (neq ?current-argument
+                   immediate))
+   (?src SYMBOL))
+  (output-base-instruction ?router
+                           arithmetic
+                           ?sub-type
+                           ?dest
+                           ?src))
+
 
 (defmethod iris17::op:system
   ((?router SYMBOL)
