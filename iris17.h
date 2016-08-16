@@ -247,36 +247,40 @@ namespace iris17 {
 					throw iris::Problem("Illegal bits set for indirect mode logicalOperation!");
 				}
 				if (immediate) {
+                    auto &dest = registerValue(inst.getLogicalImmediateDestination());
+                    auto immediate = retrieveImmediate<bitmask>();
 					switch (immediate_type) {
 						case ImmediateLogicalOps::And:
-							registerValue(inst.getLogicalImmediateDestination()) = registerValue(inst.getLogicalImmediateDestination()) & retrieveImmediate<bitmask>();
+                            dest = dest & immediate;
 							break;
 						case ImmediateLogicalOps::Or:
-							registerValue(inst.getLogicalImmediateDestination()) = registerValue(inst.getLogicalImmediateDestination()) | retrieveImmediate<bitmask>();
+                            dest = dest | immediate;
 							break;
 						case ImmediateLogicalOps::Nand:
-							registerValue(inst.getLogicalImmediateDestination()) = ~(registerValue(inst.getLogicalImmediateDestination()) & retrieveImmediate<bitmask>());
+                            dest = ~(dest & immediate);
 							break;
 						case ImmediateLogicalOps::Xor:
-							registerValue(inst.getLogicalImmediateDestination()) = registerValue(inst.getLogicalImmediateDestination()) ^ retrieveImmediate<bitmask>();
+                            dest = dest ^ immediate;
 							break;
 					}
 				} else {
+                    auto &dest = registerValue(inst.getLogicalRegister0());
+                    auto src = registerValue(inst.getLogicalRegister1());
 					switch(indirect_type) {
 						case LogicalOps::And:
-							registerValue(inst.getLogicalRegister0()) = registerValue(inst.getLogicalRegister0()) & registerValue(inst.getLogicalRegister1());
+                            dest = dest & src;
 							break;
 						case LogicalOps::Or:
-							registerValue(inst.getLogicalRegister0()) = registerValue(inst.getLogicalRegister0()) | registerValue(inst.getLogicalRegister1());
+                            dest = dest | src;
 							break;
 						case LogicalOps::Not:
-							registerValue(inst.getLogicalRegister0()) = ~registerValue(inst.getLogicalRegister0());
+                            dest = ~dest;
 							break;
 						case LogicalOps::Xor:
-							registerValue(inst.getLogicalRegister0()) = registerValue(inst.getLogicalRegister0()) ^ registerValue(inst.getLogicalRegister1());
+                            dest = dest ^ src;
 							break;
 						case LogicalOps::Nand:
-							registerValue(inst.getLogicalRegister0()) = ~(registerValue(inst.getLogicalRegister0()) & registerValue(inst.getLogicalRegister1()));
+                            dest = ~(dest & src);
 							break;
 						default:
 							throw iris::Problem("Illegal indirect logical operation!");
@@ -292,32 +296,30 @@ namespace iris17 {
 #define Component(fieldName, mask, shift, type) constexpr type fieldName = static_cast<type>((signature & mask) >> shift);
 #include "def/iris17/arithmetic.sig"
 #undef Component
-				RegisterValue src = immediate ? inst.getArithmeticImmediate() : registerValue(inst.getArithmeticSource());
+				auto src = immediate ? inst.getArithmeticImmediate() : registerValue(inst.getArithmeticSource());
 				if (RequiresDenominatorCheck<op>::value && src == 0) {
 					throw iris::Problem("Denominator is zero!");
 				}
-                //std::cout << "before arithmetic instruction, destination value: " << std::hex << registerValue(inst.getArithmeticDestination()) << std::endl;
-                //std::cout << "src = " << std::dec << src << std::endl;
+                auto &dest = registerValue(inst.getArithmeticDestination());
 				switch(op) {
 					case ArithmeticOps::Add:
-                        registerValue(inst.getArithmeticDestination()) += src;
+                        dest += src;
 						break;
 					case ArithmeticOps::Sub:
-                        registerValue(inst.getArithmeticDestination()) -= src;
+                        dest -= src;
 						break;
 					case ArithmeticOps::Mul:
-                        registerValue(inst.getArithmeticDestination()) *= src;
+                        dest *= src;
 						break;
 					case ArithmeticOps::Div:
-                        registerValue(inst.getArithmeticDestination()) /= src;
+                        dest /= src;
 						break;
 					case ArithmeticOps::Rem:
-                        registerValue(inst.getArithmeticDestination()) %= src;
+                        dest %= src;
 						break;
 					default:
 						throw iris::Problem("Illegal arithmetic operation!");
 				}
-                //std::cout << "after arithmetic instruction, destination value: " << std::hex << registerValue(inst.getArithmeticDestination()) << std::endl;
 			}
 			template<byte signature>
 			void moveOperation(DecodedInstruction&& inst) {
@@ -332,21 +334,22 @@ namespace iris17 {
 			}
 	template<byte bitmask, bool merge>
 	void loadOperation(RegisterValue address) {
-        //std::cout << "\t\tloadOperation, loading address 0x" << std::hex << address << std::endl;
 		// use the destination field of the instruction to denote offset, thus we need
 		// to use the Address and Value registers
-		RegisterValue lower = readLower<bitmask>() ? loadWord(address) : 0;
-		RegisterValue upper = readUpper<bitmask>() ? (static_cast<RegisterValue>(loadWord(address + 1)) << 16) : 0;
-		//std::cout << "\t before value register " << std::hex << getValueRegister() << std::endl;
-        //std::cout << "\t lower = 0x" << std::hex << lower << std::endl;
-        //std::cout << "\t upper = 0x" << std::hex << upper << std::endl;
+        RegisterValue lower = 0;
+        RegisterValue upper = 0;
+        if (readLower<bitmask>()) {
+            lower = loadWord(address);
+        }
+        if (readUpper<bitmask>()) {
+            upper = static_cast<RegisterValue>(loadWord(address + 1)) << 16;
+        }
+		auto constexpr cMask = mask<bitmask>();
 		if (merge) {
-			auto constexpr cMask = mask<bitmask>();
-			getValueRegister()= (cMask & (lower | upper)) | (getValueRegister()& ~cMask);
+			getValueRegister() = (cMask & (lower | upper)) | (getValueRegister() & ~cMask);
 		} else {
-			getValueRegister() = mask<bitmask>() & (lower | upper);
+			getValueRegister() = cMask & (lower | upper);
 		}
-		//std::cout << "\t after value register " << std::hex << getValueRegister() << std::endl;
 	}
 	template<byte bitmask>
 	void storeOperation(RegisterValue address) {
