@@ -133,18 +133,14 @@ namespace iris17 {
 	}
 
 	DefOp(Swap) {
-		//std::cout << std::hex << getInstructionPointer() << ": Swap call" << std::endl;
 		if (current.getSwapDestination() != current.getSwapSource()) {
-			//std::cout << "\tbefore destination: " << std::hex << registerValue(current.getSwapDestination()) << ", source: " << std::hex << registerValue(current.getSwapSource()) << std::endl;
 			RegisterValue tmp = registerValue(current.getSwapDestination());
 			registerValue(current.getSwapDestination()) = registerValue(current.getSwapSource());
 			registerValue(current.getSwapSource()) = tmp;
-			//std::cout << "\tafter destination: " << std::hex << registerValue(current.getSwapDestination()) << ", source: " << std::hex << registerValue(current.getSwapSource()) << std::endl;
 		}
 	}
 
     DefOp(Set) {
-		//std::cout << std::hex << getInstructionPointer() << ": Set call" << std::endl;
 		switch (current.getSetSignature()) {
 #define X(value) case value: setOperation<value>(std::move(current)); break;
 #include "def/iris17/bitmask8bit.def"
@@ -160,7 +156,6 @@ namespace iris17 {
 
 
 	DefOp(Memory) {
-		//std::cout << std::hex << getInstructionPointer() << ": Memory Operation" << std::endl;
 		switch (current.getMemorySignature()) {
 #define X(value) case value: memoryOperation<value>(std::move(current)); break;
 #include "def/iris17/bitmask8bit.def"
@@ -173,30 +168,26 @@ namespace iris17 {
 	template<byte flags>
 	bool branchSpecificOperation(RegisterValue& ip, RegisterValue& linkRegister, RegisterValue& cond, std::function<RegisterValue()> getUpper16, std::function<RegisterValue&(byte)> registerValue, DecodedInstruction&& current) {
 		using decodedFlags = BranchFlagsDecoder<flags>;
-		constexpr bool isIf = decodedFlags::isIf;
-		constexpr bool isCall = decodedFlags::isCall;
-		constexpr bool isImmediate = decodedFlags::isImmediate;
-		constexpr bool isConditional = decodedFlags::isConditional;
 		bool advanceIp = true;
-		if (isIf) {
+		if (decodedFlags::isIf) {
 			// if instruction
 			advanceIp = false;
-			if (isCall) {
+			if (decodedFlags::isCall) {
 				linkRegister = ip + 1;
 				if (linkRegister > bitmask24) {
 					linkRegister &= bitmask24;
 				}
 			}
 			ip = bitmask24 & ((cond != 0) ? registerValue(current.getBranchIfOnTrue()) : registerValue(current.getBranchIfOnFalse()));
-		} else if (isCall) {
+		} else if (decodedFlags::isCall) {
 			// call instruction
 			advanceIp = false;
 			// determine next
-			linkRegister = isImmediate ? ip + 2 : ip + 1;
+			linkRegister = decodedFlags::isImmediate ? ip + 2 : ip + 1;
 			if (linkRegister > bitmask24) {
 				linkRegister &= bitmask24; // make sure that we aren't over the memory setup
 			}
-			if (isImmediate) {
+			if (decodedFlags::isImmediate) {
 				++ip;
 				// make a 24 bit number
 				auto bottom = static_cast<RegisterValue>(current.getUpper());
@@ -207,19 +198,16 @@ namespace iris17 {
 			}
 		} else {
 			// jump instruction
-			if (isImmediate) {
-				//std::cout << "\t\tip before all: " << std::hex << ip << std::endl;
+			if (decodedFlags::isImmediate) {
 				++ip;
-				//std::cout << "\t\tip after increment: " << std::hex << ip << std::endl;
-				if ((isConditional && cond != 0) || !isConditional) {
+				if ((decodedFlags::isConditional && cond != 0) || !decodedFlags::isConditional) {
 					advanceIp = false;
 					auto bottom = current.getUpper();
 					auto upper = getUpper16() << 8;
 					ip = bitmask24 & (upper | bottom);
 				}
-				//std::cout << "\t\tip after computation: " << std::hex << ip << std::endl;
 			}  else {
-				if ((isConditional && cond != 0) || !isConditional) {
+				if ((decodedFlags::isConditional && cond != 0) || !decodedFlags::isConditional) {
 						advanceIp = false;
 						ip = bitmask24 & registerValue(current.getBranchIndirectDestination());
 				}
@@ -230,7 +218,6 @@ namespace iris17 {
 
 
 	DefOp(Branch) {
-		//std::cout << std::hex << getInstructionPointer() << ": Branch Operation" << std::endl;
 		auto upper16fn = [this]() { return static_cast<RegisterValue>(getCurrentCodeWord()); };
 		auto regValFn = [this](byte index) -> RegisterValue& { return registerValue(index); };
 
@@ -252,7 +239,6 @@ namespace iris17 {
 			default:
 				throw iris::Problem("Undefined branch flag setup!");
 		}
-		//std::cout << "ip = " << getInstructionPointer() << std::endl;
 	}
 
 template<CompareCombine compareOp>
@@ -331,7 +317,6 @@ DefOp(Compare) {
 
 	template<>
 	void Core::operation<Operation::SystemCall>(DecodedInstruction&& current) {
-		//std::cout << "System call" << std::endl;
 		switch(static_cast<SystemCalls>(getAddressRegister())) {
 			case SystemCalls::Terminate:
 				execute = false;
@@ -339,7 +324,6 @@ DefOp(Compare) {
 				break;
 			case SystemCalls::PutC:
 				// read register 0 and register 1
-				//std::cout << "putc " << std::hex << static_cast<int>(registerValue(current.getSystemArg0())) << std::endl;
 				std::cout.put(static_cast<char>(registerValue(current.getSystemArg0())));
 				break;
 			case SystemCalls::GetC:
@@ -376,7 +360,7 @@ DefOp(Compare) {
 	void Core::link(std::istream& input) {
 		// we have some more data to read through
 		// two address system, 1 RegisterValue -> address, 1 word -> value
-		constexpr int bufSize = 8;
+		static constexpr int bufSize = 8;
 		char buf[bufSize] = { 0 };
 		for(int lineNumber = 0; input.good(); ++lineNumber) {
 			input.read(buf, bufSize);
@@ -615,7 +599,7 @@ DefOp(Compare) {
 	}
 	RegisterValue getMask(byte bitmask) {
 		switch (bitmask) {
-#define X(bits) case bits : return mask<bits>();
+#define X(bits) case bits : return SetBitmaskToWordMask<bits>::mask;
 #include "def/iris17/bitmask4bit.def"
 #undef X
 
