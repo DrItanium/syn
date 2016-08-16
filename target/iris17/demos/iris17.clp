@@ -75,6 +75,65 @@
   ($?args)
   (op:branch ?args))
 
+(defmethod iris17::op:if
+  ((?call-flag SYMBOL
+               (eq ?current-argument
+                   call))
+   (?onTrue SYMBOL)
+   (?onFalse SYMBOL))
+  (op:branch if
+             ?call-flag
+             ?onTrue
+             ?onFalse))
+(defmethod iris17::op:if
+  ((?onTrue SYMBOL)
+   (?onFalse SYMBOL))
+  (op:branch if
+             ?onTrue
+             ?onFalse))
+(defmethod iris17::op:call
+  ((?imm-flag SYMBOL
+              (eq ?current-argument
+                  immediate))
+   (?target INTEGER
+            SYMBOL))
+  (op:branch call
+             ?imm-flag
+             ?target))
+(defmethod iris17::op:call
+  ((?target SYMBOL))
+  (op:branch call
+             ?target))
+(defmethod iris17::op:jump
+           ((?immediate-flag SYMBOL
+                             (eq ?current-argument
+                                 immediate))
+            (?target INTEGER
+                     SYMBOL))
+           (op:branch ?immediate-flag
+                      ?target))
+(defmethod iris17::op:jump
+  ((?cond SYMBOL
+          (eq ?current-argument
+              cond))
+   (?immediate-flag SYMBOL
+                    (eq ?current-argument
+                        immediate))
+   (?target INTEGER
+            SYMBOL))
+  (op:branch ?cond
+             ?immediate-flag
+             ?target))
+(defmethod iris17::op:jump
+  ((?cond SYMBOL
+          (eq ?current-argument
+              cond))
+   (?target SYMBOL))
+  (op:branch ?cond
+             ?target))
+(defmethod iris17::op:jump
+  ((?target SYMBOL))
+  (op:branch ?target))
 
 
 (defmethod iris17::op:not
@@ -615,64 +674,5 @@
                                  ?loop-start)
                         (@label ?loop-done))))
 
-(defmethod iris17::op:if
-  ((?call-flag SYMBOL
-               (eq ?current-argument
-                   call))
-   (?onTrue SYMBOL)
-   (?onFalse SYMBOL))
-  (op:branch if
-             ?call-flag
-             ?onTrue
-             ?onFalse))
-(defmethod iris17::op:if
-  ((?onTrue SYMBOL)
-   (?onFalse SYMBOL))
-  (op:branch if
-             ?onTrue
-             ?onFalse))
-(defmethod iris17::op:call
-  ((?imm-flag SYMBOL
-              (eq ?current-argument
-                  immediate))
-   (?target INTEGER
-            SYMBOL))
-  (op:branch call
-             ?imm-flag
-             ?target))
-(defmethod iris17::op:call
-  ((?target SYMBOL))
-  (op:branch call
-             ?target))
-(defmethod iris17::op:jump
-           ((?immediate-flag SYMBOL
-                             (eq ?current-argument
-                                 immediate))
-            (?target INTEGER
-                     SYMBOL))
-           (op:branch ?immediate-flag
-                      ?target))
-(defmethod iris17::op:jump
-  ((?cond SYMBOL
-          (eq ?current-argument
-              cond))
-   (?immediate-flag SYMBOL
-                    (eq ?current-argument
-                        immediate))
-   (?target INTEGER
-            SYMBOL))
-  (op:branch ?cond
-             ?immediate-flag
-             ?target))
-(defmethod iris17::op:jump
-  ((?cond SYMBOL
-          (eq ?current-argument
-              cond))
-   (?target SYMBOL))
-  (op:branch ?cond
-             ?target))
-(defmethod iris17::op:jump
-  ((?target SYMBOL))
-  (op:branch ?target))
 
 
