@@ -55,11 +55,11 @@ namespace iris32 {
 #define X(group, __) \
 	template<> \
 	struct DecodeByteToInstructionGroup< static_cast< byte > ( InstructionGroup :: group ) > { \
-		static const InstructionGroup value = InstructionGroup :: group ; \
+		static constexpr InstructionGroup value = InstructionGroup :: group ; \
 	}; \
 	template<> \
 	struct EncodeInstructionGroupAsByte< InstructionGroup :: group > { \
-		static const byte value = static_cast< byte > (InstructionGroup :: group ); \
+		static constexpr byte value = static_cast< byte > (InstructionGroup :: group ); \
 	};
 #include "def/iris32/groups.def"
 #undef X
@@ -91,28 +91,17 @@ namespace iris32 {
 		bool advanceIp = true;
 		word gpr[ArchitectureConstants::RegisterCount] = { 0 };
 	};
-	template<byte index, InstructionGroup group>
-	struct OpInfer { };
-
-	template<typename T, T op>
-	struct OpToIndex { };
-
-	template<byte control>
-	struct DecodeGroup : public std::integral_constant<byte, control & 0b00000111> { };
-
-	template<byte control>
-	struct DecodeOp : public std::integral_constant<byte, ((control & 0b11111000) >> 3)> { };
 
 	template<byte control>
 	struct DecodeControl {
 		static constexpr byte value = control;
-		static constexpr byte group = DecodeGroup<control>::value;
-		static constexpr byte op = DecodeOp<control>::value;
+		static constexpr InstructionGroup group = static_cast<InstructionGroup>(control & 0b00000111);
+		static constexpr byte op = ((control & 0b11111000) >> 3);
 	};
 
-	template<byte group, byte op>
-	struct EncodeControl : public std::integral_constant<byte, ((group | (op << 3)))> { };
-
+	constexpr byte encodeControl(byte group, byte op) {
+		return ((group | (op << 3)));
+	}
 
 	enum class CompareOp : byte {
 #define X(title, operation, unused) title,
@@ -124,11 +113,7 @@ namespace iris32 {
 	};
 	static_assert(byte(CompareOp::NumberOfCompareOps) <= byte(MaxInstructionsPerGroup), "Too many compare operations defined!");
 #define DefOp(cl, group, e) \
-	template<> \
-	struct OpInfer<static_cast< byte >( cl :: e ), InstructionGroup:: group > { static constexpr cl value = cl :: e ; }; \
-	template<> \
-	struct OpToIndex<cl, cl :: e > { static constexpr byte value = static_cast < byte > (cl :: e); }; \
-	using Decode ## cl ## e = DecodeControl<EncodeControl< EncodeInstructionGroupAsByte < InstructionGroup:: group >::value, static_cast < byte > (cl :: e)>::value>;
+	using Decode ## cl ## e = DecodeControl<encodeControl( static_cast<byte>(InstructionGroup:: group), static_cast < byte > (cl :: e))>;
 #define X(e, __, ___) DefOp(CompareOp, Compare, e)
 #define Y(e, __, ___) X(e, __, ___)
 #include "def/iris32/compare.def"
@@ -198,7 +183,7 @@ namespace iris32 {
 #define X(group, __) \
 	template<> \
 	struct GroupToOp< InstructionGroup :: group > { \
-		typedef group ## Op OpKind; \
+		using OpKind = group ## Op ; \
 	};
 #include "def/iris32/groups.def"
 #undef X
@@ -221,8 +206,16 @@ namespace iris32 {
 			void dispatch();
 			void systemCall(DecodedInstruction& inst);
 		private:
-			template<typename T, T value>
-			friend void invoke(Core* core, DecodedInstruction&& inst);
+			template<bool ifthenelse, bool conditional, bool iffalse, bool immediate, bool link>
+			friend void invokeJump(Core* core, DecodedInstruction&& inst);
+			template<MoveOp op>
+			friend void invokeMove(Core* core, DecodedInstruction&& inst);
+			template<CompareOp op>
+			friend void invokeCompare(Core* core, DecodedInstruction&& inst);
+			template<ArithmeticOp op, bool checkDenominator, bool immediate>
+			friend void invokeArithmetic(Core* core, DecodedInstruction&& inst);
+			template<MiscOp op>
+			friend void invokeMisc(Core* core, DecodedInstruction&& inst);
 		private:
 			word memorySize;
 			word* memory;
