@@ -5,7 +5,17 @@
            ?*link-register* = lr
            ?*value-register* = value
            ?*instruction-pointer* = ip
-           ?*return-register* = r9)
+           ?*condition-register* = cr
+           ?*stack-pointer* = sp
+           ?*arg0* = r9
+           ?*arg1* = r8
+           ?*arg2* = r7
+           ?*arg3* = r6
+           ?*temp0* = r5
+           ?*temp1* = r4
+           ?*temp2* = r3
+           ?*temp3* = r2
+           ?*return-register* = ?*arg0*)
 (deffunction iris17::output-base-instruction
              (?op $?rest)
              (format nil
@@ -45,7 +55,7 @@
 (defgeneric iris17::use-register)
 (defgeneric iris17::op:return)
 (defgeneric iris17::op:nop)
-(defgeneric iris17::defun)
+(defgeneric iris17::defunc)
 (defgeneric iris17::@label)
 (defgeneric iris17::op:logical)
 (defgeneric iris17::op:not)
@@ -53,6 +63,19 @@
 (defgeneric iris17::op:logical-and)
 (defgeneric iris17::op:logical-xor)
 (defgeneric iris17::op:logical-nand)
+(defgeneric iris17::op:branch)
+(defgeneric iris17::op:if)
+(defgeneric iris17::op:call)
+(defgeneric iris17::op:jump)
+(defmethod iris17::op:branch
+  ((?args MULTIFIELD))
+  (output-base-instruction branch
+                           ?args))
+(defmethod iris17::op:branch
+  ($?args)
+  (op:branch ?args))
+
+
 
 (defmethod iris17::op:not
   ((?reg SYMBOL))
@@ -521,7 +544,7 @@
            $?body
            (op:pop 0m1111
                    ?register)))
-(defmethod iris17::defun
+(defmethod iris17::defunc
   ((?name SYMBOL)
    $?body)
   (create$ (@label ?name)
@@ -532,36 +555,124 @@
 
 (defmethod iris17::decode-bits-fn
   ()
-  (defun
-         decode-bits
-         (use-register (create$ (bind ?data
-                                      r9)
-                                (bind ?mask
-                                      r8)
-                                (bind ?shift
-                                      r7))
-                       (op:logical-and
-                                       ?data
-                                       ?mask)
-                       (op:shift-left
-                                      ?data
-                                      ?shift))))
+  (defunc decode-bits
+          (use-register (create$ (bind ?data
+                                       r9)
+                                 (bind ?mask
+                                       r8)
+                                 (bind ?shift
+                                       r7))
+                        (op:logical-and
+                          ?data
+                          ?mask)
+                        (op:shift-left
+                          ?data
+                          ?shift))))
 
 (defmethod iris17::encode-bits-fn
   ()
-  (defun encode-bits
-         (use-register (create$ (bind ?input
-                                      r9)
-                                (bind ?add-value
-                                      r8)
-                                (bind ?mask
-                                      r7)
-                                (bind ?shift
-                                      r6))
-                       (op:not ?mask)
-                       (op:logical-and ?input
-                                       ?mask)
-                       (op:shift-left ?add-value
-                                      ?shift)
-                       (op:logical-or ?input
-                                      ?add-value))))
+  (defunc encode-bits
+          (use-register (create$ (bind ?input
+                                       r9)
+                                 (bind ?add-value
+                                       r8)
+                                 (bind ?mask
+                                       r7)
+                                 (bind ?shift
+                                       r6))
+                        (op:not ?mask)
+                        (op:logical-and ?input
+                                        ?mask)
+                        (op:shift-left ?add-value
+                                       ?shift)
+                        (op:logical-or ?input
+                                       ?add-value))))
+
+(defmethod iris17::print-string-fn
+  ()
+  (bind ?loop-start
+        printString_LoopStart)
+  (bind ?loop-done
+        printString_LoopEnd)
+  (defunc printString
+          (use-register (create$ (bind ?address
+                                       r9)
+                                 ?*address-register*)
+
+                        (op:move ?*address-register*
+                                 ?address)
+                        (@label ?loop-start)
+                        (op:load 0m0011
+                                 0)
+                        (op:zero? ?*value-register*)
+                        (op:jump cond
+                                 immediate
+                                 ?loop-done)
+                        (use-register ?*address-register*
+                                      (putchar ?*value-register*))
+                        (op:increment ?*address-register*)
+                        (op:jump immediate
+                                 ?loop-start)
+                        (@label ?loop-done))))
+
+(defmethod iris17::op:if
+  ((?call-flag SYMBOL
+               (eq ?current-argument
+                   call))
+   (?onTrue SYMBOL)
+   (?onFalse SYMBOL))
+  (op:branch if
+             ?call-flag
+             ?onTrue
+             ?onFalse))
+(defmethod iris17::op:if
+  ((?onTrue SYMBOL)
+   (?onFalse SYMBOL))
+  (op:branch if
+             ?onTrue
+             ?onFalse))
+(defmethod iris17::op:call
+  ((?imm-flag SYMBOL
+              (eq ?current-argument
+                  immediate))
+   (?target INTEGER
+            SYMBOL))
+  (op:branch call
+             ?imm-flag
+             ?target))
+(defmethod iris17::op:call
+  ((?target SYMBOL))
+  (op:branch call
+             ?target))
+(defmethod iris17::op:jump
+           ((?immediate-flag SYMBOL
+                             (eq ?current-argument
+                                 immediate))
+            (?target INTEGER
+                     SYMBOL))
+           (op:branch ?immediate-flag
+                      ?target))
+(defmethod iris17::op:jump
+  ((?cond SYMBOL
+          (eq ?current-argument
+              cond))
+   (?immediate-flag SYMBOL
+                    (eq ?current-argument
+                        immediate))
+   (?target INTEGER
+            SYMBOL))
+  (op:branch ?cond
+             ?immediate-flag
+             ?target))
+(defmethod iris17::op:jump
+  ((?cond SYMBOL
+          (eq ?current-argument
+              cond))
+   (?target SYMBOL))
+  (op:branch ?cond
+             ?target))
+(defmethod iris17::op:jump
+  ((?target SYMBOL))
+  (op:branch ?target))
+
+
