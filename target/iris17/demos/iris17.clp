@@ -11,11 +11,16 @@
            ?*arg1* = r8
            ?*arg2* = r7
            ?*arg3* = r6
-           ?*temp0* = r5
-           ?*temp1* = r4
-           ?*temp2* = r3
-           ?*temp3* = r2
-           ?*return-register* = ?*arg0*)
+           ?*tag* = r5
+           ?*this* = r4
+           ?*next* = r3
+           ?*return-register*= r2
+           ?*temp0* = r1
+           ?*temp1* = r0
+           ?*args* = (create$ ?*arg0*
+                              ?*arg1*
+                              ?*arg2*
+                              ?*arg3*))
 (deffunction iris17::output-base-instruction
              (?op $?rest)
              (format nil
@@ -24,9 +29,10 @@
                      (implode$ ?rest)))
 (defgeneric iris17::terminate
             "terminate the simulation")
+(defgeneric iris17::use-address-and-value)
 (defgeneric iris17::readchar)
 (defgeneric iris17::putchar)
-
+(defgeneric iris17::op:set-one)
 (defgeneric iris17::op:clear)
 (defgeneric iris17::op:system)
 (defgeneric iris17::op:arithmetic)
@@ -36,6 +42,7 @@
 (defgeneric iris17::op:double)
 (defgeneric iris17::op:halve)
 (defgeneric iris17::op:zero?)
+(defgeneric iris17::op:not-zero?)
 (defgeneric iris17::op:compare)
 (defgeneric iris17::op:memory)
 (defgeneric iris17::op:load)
@@ -439,8 +446,7 @@
                            ?value))
 
 (defmethod iris17::op:load
-  (
-   (?bitmask SYMBOL)
+  ((?bitmask SYMBOL)
    (?offset INTEGER))
   (op:memory load
              ?bitmask
@@ -488,6 +494,13 @@
 (defmethod iris17::op:zero?
   ((?register SYMBOL))
   (op:compare ==
+              none
+              immediate
+              ?register
+              0))
+(defmethod iris17::op:not-zero?
+  ((?register SYMBOL))
+  (op:compare !=
               none
               immediate
               ?register
@@ -558,9 +571,9 @@
                            ?value))
 (defmethod iris17::op:clear
   ((?register SYMBOL))
-  (op:set 0m0000
-          ?register
-          0))
+  (op:move 0m0000
+           ?register
+           ?register))
 
 (defmethod iris17::terminate
            ()
@@ -569,11 +582,11 @@
 
 (defmethod iris17::putchar
   ((?register SYMBOL))
-  (create$ (op:set
-                   0m0001
+  (create$ (op:set 0m0001
                    ?*address-register*
                    1)
            (op:system ?register)))
+
 (defmethod iris17::getchar
   ((?register SYMBOL))
   (create$ (op:set 0m0001
@@ -614,38 +627,40 @@
 
 (defmethod iris17::decode-bits-fn
   ()
-  (defunc decode-bits
-          (use-register (create$ (bind ?data
-                                       r9)
-                                 (bind ?mask
-                                       r8)
-                                 (bind ?shift
-                                       r7))
-                        (op:logical-and
-                          ?data
+  (bind ?data
+        ?*arg0*)
+  (bind ?mask
+        ?*arg1*)
+  (bind ?shift
+        ?*arg2*)
+  (defunc decode_bits
+          (op:logical-and ?data
                           ?mask)
-                        (op:shift-left
-                          ?data
-                          ?shift))))
+          (op:shift-left ?data
+                         ?shift)
+          (op:move ?*return-register*
+                   ?data)))
 
 (defmethod iris17::encode-bits-fn
   ()
-  (defunc encode-bits
-          (use-register (create$ (bind ?input
-                                       r9)
-                                 (bind ?add-value
-                                       r8)
-                                 (bind ?mask
-                                       r7)
-                                 (bind ?shift
-                                       r6))
-                        (op:not ?mask)
-                        (op:logical-and ?input
-                                        ?mask)
-                        (op:shift-left ?add-value
-                                       ?shift)
-                        (op:logical-or ?input
-                                       ?add-value))))
+  (bind ?input
+        ?*arg0*)
+  (bind ?add-value
+        ?*arg1*)
+  (bind ?mask
+        ?*arg2*)
+  (bind ?shift
+        ?*arg3*)
+  (defunc encode_bits
+          (op:not ?mask)
+          (op:logical-and ?input
+                          ?mask)
+          (op:shift-left ?add-value
+                         ?shift)
+          (op:logical-or ?input
+                         ?add-value)
+          (op:move ?*return-register*
+                   ?input)))
 
 (defmethod iris17::print-string-fn
   ()
@@ -653,11 +668,11 @@
         printString_LoopStart)
   (bind ?loop-done
         printString_LoopEnd)
+  (bind ?address
+        ?*arg0*)
   (defunc printString
-          (use-register (create$ (bind ?address
-                                       r9)
-                                 ?*address-register*)
-
+          (use-register (create$ ?*address-register*
+                                 ?*value-register*)
                         (op:move ?*address-register*
                                  ?address)
                         (@label ?loop-start)
@@ -673,6 +688,33 @@
                         (op:jump immediate
                                  ?loop-start)
                         (@label ?loop-done))))
+(defmethod iris17::op:set-one
+  ((?register SYMBOL))
+  (op:set 0m0001
+          ?register
+          0x1))
 
+(defmethod iris17::use-address-and-value
+  ($?body)
+  (use-register (create$ ?*address-register*
+                         ?*value-register*)
+                $?body))
+
+(defmethod iris17::call-decode-bits
+  ((?data SYMBOL)
+   (?mask SYMBOL
+          INTEGER)
+   (?shift SYMBOL
+           INTEGER))
+  (create$ (op:move ?*arg0*
+                    ?data)
+           (op:set 0m1111
+                   ?*arg1*
+                   ?mask)
+           (op:set 0m1111
+                   ?*arg2*
+                   ?shift)
+           (op:call immediate
+                    decode_bits)))
 
 
