@@ -46,8 +46,7 @@
          (member$ ?tag
                   ?*tag-orderings*)))
   (defunc ?title
-          (use-register (create$ ?*link-register*
-                                 ?*args*
+          (use-register (create$ ?*args*
                                  ?*condition-register*)
                         (call-decode-bits ?*tag*
                                           0b00011110
@@ -56,8 +55,8 @@
                                     none
                                     immediate
                                     ?*return-register*
-                                    (- (nth$ ?tag
-                                             ?*tag-orderings*)
+                                    (- (member$ ?tag
+                                                ?*tag-orderings*)
                                        1))
                         (op:move ?*return-register*
                                  ?*condition-register*))))
@@ -93,8 +92,7 @@
   (bind ?shift
         ?*arg2*)
   (defunc markedp
-          (use-register (create$ ?*link-register*
-                                 ?*condition-register*
+          (use-register (create$ ?*condition-register*
                                  ?data
                                  ?mask
                                  ?shift)
@@ -115,8 +113,7 @@
   (bind ?shift
         ?*arg3*)
   (defunc mark
-          (use-register (create$ ?*link-register*
-                                 ?*args*
+          (use-register (create$ ?*args*
                                  ?*return-register*)
                         (op:move ?input
                                  ?*tag*)
@@ -124,7 +121,7 @@
                         (op:move ?mask
                                  ?value)
                         (op:clear ?shift)
-                        (call immediate
+                        (op:call immediate
                               encode_bits)
                         (op:move ?*tag*
                                  ?*return-register*))))
