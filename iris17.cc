@@ -341,8 +341,7 @@ DefOp(Compare) {
 	}
 
 	void Core::dispatch(DecodedInstruction&& current) {
-		auto controlValue = current.getControl();
-		switch(controlValue) {
+		switch(current.getControl()) {
 #define X(type) \
 			case Operation:: type : \
 				operation<Operation:: type>(std::move(current)); \
@@ -351,7 +350,7 @@ DefOp(Compare) {
 #undef X
 			default:
 				std::stringstream str;
-				str << "Illegal instruction " << std::hex << static_cast<byte>(controlValue);
+				str << "Illegal instruction " << std::hex << static_cast<byte>(current.getControl());
 				execute = false;
 				throw iris::Problem(str.str());
 		}
