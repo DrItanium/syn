@@ -1,10 +1,12 @@
 (defmodule lisp
            (import iris17 ?ALL))
 (defglobal lisp
-           ?*tag-orderings* = (create$ integer
-                                       list
+           ?*tag-orderings* = (create$ nil
+                                       integer
                                        float
-                                       lexeme))
+                                       lexeme
+                                       list
+                                       node))
 (defgeneric lisp::mark)
 (defgeneric lisp::use-data-object-registers)
 (defgeneric lisp::tag-type-check-function)
@@ -16,6 +18,31 @@
 (defgeneric lisp::load-data-object)
 (defgeneric lisp::store-data-object)
 (defgeneric lisp::new-data-object)
+(defgeneric lisp::next-cell)
+(defgeneric lisp::nil?)
+(defgeneric lisp::cons)
+(defgeneric lisp::node?)
+(defgeneric lisp::nil-cell)
+;(defmethod lisp::nil-cell
+;  ()
+;  (create$ (@label nil)
+;           (@dword 0x1) ; always marked
+;           (@dword 0x0)
+;           (@dword nil))) ; loop back on self
+
+(defmethod lisp::nil?
+  ()
+  (tag-type-check-function nilp
+                           nil))
+
+(defmethod lisp::next-cell
+           ()
+           (defunc nextCell
+                   (use-register ?*arg0*
+                                 (op:move ?*arg0*
+                                          ?*next*)
+                                 (op:call immediate
+                                          loadDataObject))))
 
 (defmethod lisp::use-data-object-registers
   ($?body)
