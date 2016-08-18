@@ -29,6 +29,12 @@
                      (implode$ ?rest)))
 (defgeneric iris17::terminate
             "terminate the simulation")
+(defgeneric iris17::move-to-address)
+(defgeneric iris17::move-to-value)
+(defgeneric iris17::move-from-address)
+(defgeneric iris17::move-from-value)
+(defgeneric iris17::set-address)
+(defgeneric iris17::set-value)
 (defgeneric iris17::use-address-and-value)
 (defgeneric iris17::readchar)
 (defgeneric iris17::putchar)
@@ -46,6 +52,7 @@
 (defgeneric iris17::op:compare)
 (defgeneric iris17::op:memory)
 (defgeneric iris17::op:load)
+(defgeneric iris17::op:store)
 (defgeneric iris17::op:merge)
 (defgeneric iris17::op:push)
 (defgeneric iris17::op:pop)
@@ -74,6 +81,8 @@
 (defgeneric iris17::op:if)
 (defgeneric iris17::op:call)
 (defgeneric iris17::op:jump)
+(defgeneric iris17::call-decode-bits)
+(defgeneric iris17::call-encode-bits)
 (defmethod iris17::op:branch
   ((?args MULTIFIELD))
   (output-base-instruction branch
@@ -447,8 +456,16 @@
 
 (defmethod iris17::op:load
   ((?bitmask SYMBOL)
-   (?offset INTEGER))
+   (?offset INTEGER
+            SYMBOL))
   (op:memory load
+             ?bitmask
+             ?offset))
+(defmethod iris17::op:store
+  ((?bitmask SYMBOL)
+   (?offset INTEGER
+            SYMBOL))
+  (op:memory store
              ?bitmask
              ?offset))
 
@@ -711,10 +728,86 @@
            (op:set 0m1111
                    ?*arg1*
                    ?mask)
-           (op:set 0m1111
+           (op:set 0m0001 ; at most 32 so just constrain it 8 bits to save space
                    ?*arg2*
                    ?shift)
            (op:call immediate
                     decode_bits)))
 
+(defmethod iris17::call-encode-bits
+  ((?data SYMBOL)
+   (?value SYMBOL
+           INTEGER)
+   (?mask SYMBOL
+          INTEGER)
+   (?shift SYMBOL
+           INTEGER))
+  ;TODO: optimize this routine
+  (create$ (op:move ?*arg0*
+                    ?data)
+           (op:set 0m1111
+                   ?*arg1*
+                   ?value)
+           (op:set 0m1111
+                   ?*arg2*
+                   ?mask)
+           (op:set 0m0001
+                   ?*arg3*
+                   ?shift)
+           (op:call immediate
+                    encode_bits)))
+(defmethod iris17::move-to-address
+  ((?bitmask SYMBOL)
+   (?register SYMBOL))
+  (op:move ?bitmask
+           ?*address-register*
+           ?register))
+(defmethod iris17::move-to-address
+  ((?register SYMBOL))
+  (move-to-address 0m1111
+               ?register))
+(defmethod iris17::move-to-value
+  ((?bitmask SYMBOL)
+   (?register SYMBOL))
+  (op:move ?bitmask
+           ?*value-register*
+           ?register))
+(defmethod iris17::move-to-value
+  ((?register SYMBOL))
+  (move-to-value 0m1111
+               ?register))
 
+(defmethod iris17::move-from-address
+  ((?bitmask SYMBOL)
+   (?register SYMBOL))
+  (op:move ?bitmask
+           ?register
+           ?*address-register*))
+(defmethod iris17::move-from-address
+  ((?register SYMBOL))
+  (move-from-address 0m1111
+                     ?register))
+(defmethod iris17::move-from-value
+  ((?bitmask SYMBOL)
+   (?register SYMBOL))
+  (op:move ?bitmask
+           ?register
+           ?*value-register*))
+(defmethod iris17::move-from-value
+  ((?register SYMBOL))
+  (move-from-value 0m1111
+               ?register))
+(defmethod iris17::set-address
+  ((?bitmask SYMBOL)
+   (?value SYMBOL
+           INTEGER))
+  (op:set ?bitmask
+          ?*address-register*
+          ?value))
+(defmethod iris17::set-value
+  ((?bitmask SYMBOL)
+   (?value SYMBOL
+           INTEGER))
+  (op:set ?bitmask
+          ?*value-register*
+          ?value))

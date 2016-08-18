@@ -5,22 +5,43 @@
                                        list
                                        float
                                        lexeme))
-(defgeneric lisp::load-data-object)
 (defgeneric lisp::mark)
-(defgeneric lisp::use-new-data-object)
+(defgeneric lisp::use-data-object-registers)
 (defgeneric lisp::tag-type-check-function)
 (defgeneric lisp::marked?)
 (defgeneric lisp::integer?)
 (defgeneric lisp::list?)
 (defgeneric lisp::float?)
 (defgeneric lisp::lexeme?)
+(defgeneric lisp::load-data-object)
+(defgeneric lisp::store-data-object)
+(defgeneric lisp::new-data-object)
 
-(defmethod lisp::use-new-data-object
+(defmethod lisp::use-data-object-registers
   ($?body)
   (use-register (create$ ?*tag*
                          ?*this*
                          ?*next*)
                 $?body))
+
+(defmethod lisp::store-data-object
+  ()
+  (defunc storeDataObject
+          (use-address-and-value (op:move ?*address-register*
+                                          ?*arg0*)
+                                 (op:move ?*value-register*
+                                          ?*tag*)
+                                 (op:store 0m1111
+                                           0x0)
+                                 (op:move ?*value-register*
+                                          ?*this*)
+                                 (op:store 0m1111
+                                           0x2)
+                                 (op:move ?*value-register*
+                                          ?*next*)
+                                 (op:store 0m1111
+                                           0x4))))
+
 
 (defmethod lisp::integer?
   ()
@@ -104,25 +125,13 @@
                                  ?*condition-register*))))
 (defmethod lisp::mark
   ()
-  (bind ?input
-        ?*arg0*)
-  (bind ?value
-        ?*arg1*)
-  (bind ?mask
-        ?*arg2*)
-  (bind ?shift
-        ?*arg3*)
   (defunc mark
           (use-register (create$ ?*args*
                                  ?*return-register*)
-                        (op:move ?input
-                                 ?*tag*)
-                        (op:set-one ?value)
-                        (op:move ?mask
-                                 ?value)
-                        (op:clear ?shift)
-                        (op:call immediate
-                              encode_bits)
+                        (call-encode-bits ?*tag*
+                                          1
+                                          1
+                                          0)
                         (op:move ?*tag*
                                  ?*return-register*))))
 
