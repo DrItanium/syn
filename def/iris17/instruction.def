@@ -1,5 +1,5 @@
 // A raw instruction is actually a 64-bit pa
-// 
+//
 // Enum Title, Mask, Shift amount, field type, post_fix
 // define X(title, mask, shift, type, is_register, post, wordOffset)
 X(Control,                  0b0000000000001111, 0, Operation,  control)
@@ -7,7 +7,7 @@ X(Upper,		  			0b1111111100000000, 8, byte,  upper)
 X(Lower,		  			0b0000000011111111, 0, byte,  lower)
 
 // Conditional instruction flags
-X(CompareImmediateFlag, 0b0010000000000000, 13, bool, conditionalImmediateFlag)
+X(CompareImmediateFlag, 0b0010000000000000, 0, bool, conditionalImmediateFlag)
 X(CompareCombineFlag,   0b0001100000000000, 11, CompareCombine, conditionalCombineFlag)
 X(CompareType,   		0b0000011100000000, 8,  CompareStyle,  compareStyle)
 X(CompareRegister0,     0b0000000000001111, 0, byte,  conditionalRegister0)
@@ -16,7 +16,7 @@ X(CompareImmediate,     0b1111111100000000, 8, byte, compareImmediate)
 
 
 // arithmetic flags
-X(ArithmeticFlagImmediate,          0b0000000000010000, 4, bool,  arithmeticFlagImmediate)
+X(ArithmeticFlagImmediate,          0b0000000000010000, 0, bool,  arithmeticFlagImmediate)
 X(ArithmeticFlagType,               0b0000000011100000, 5, ArithmeticOps,  arithmeticFlagType)
 X(ArithmeticImmediate,              0b1111000000000000, 12, RegisterValue,  arithmeticImmediate)
 X(ArithmeticDestination,            0b0000111100000000, 8, byte,  arithmeticDestination)
@@ -24,7 +24,7 @@ X(ArithmeticSource,                 0b1111000000000000, 12, byte,  arithmeticSou
 X(ArithmeticSignature,				0b0000000011110000, 4, byte, arithmeticSignature)
 
 // Logical Immediate Flags
-X(LogicalFlagImmediate,             0b0000000000010000, 4, bool,  logicalFlagImmediate)
+X(LogicalFlagImmediate,             0b0000000000010000, 0, bool,  logicalFlagImmediate)
 X(LogicalFlagImmediateType,         0b0000000001100000, 5, ImmediateLogicalOps,  logicalFlagType)
 X(LogicalFlagImmediateMask,         0b0000111100000000, 8, byte,  logicalFlagImmediateMask)
 X(LogicalImmediateDestination,      0b1111000000000000, 12, byte,  logicalImmediateDestination)
@@ -38,8 +38,8 @@ X(LogicalRegister1,                 0b1111000000000000, 12, byte,  logicalRegist
 X(LogicalSignature,                 0b0000111111110000, 4, byte, logicalSignature)
 
 // Shift Operation
-X(ShiftFlagLeft,                    0b0000000000010000, 4, bool,  shiftFlagLeft)
-X(ShiftFlagImmediate,				0b0000000000100000, 5, bool,  shiftFlagImmediate)
+X(ShiftFlagLeft,                    0b0000000000010000, 0, bool,  shiftFlagLeft)
+X(ShiftFlagImmediate,				0b0000000000100000, 0, bool,  shiftFlagImmediate)
 X(ShiftImmediate,					0b1111100000000000, 11, RegisterValue,  shiftImmediate)
 X(ShiftRegister0,					0b0000011110000000, 7, byte,  shiftRegister0)
 X(ShiftRegister1,					0b0111100000000000, 11, byte,  shiftRegister1)
@@ -47,10 +47,10 @@ X(ShiftRegister1,					0b0111100000000000, 11, byte,  shiftRegister1)
 // branch flags
 // If flags
 X(BranchFlags,                     0b0000000011110000,  4, byte,  branchFlags)
-X(BranchFlagIsConditional,		   0b0000000010000000,  7, bool, branchFlagIsConditional)
-X(BranchFlagIsIfForm,              0b0000000001000000,  6, bool, branchFlagIsIfForm)
-X(BranchFlagIsCallForm,            0b0000000000100000,  5, bool, branchFlagIsCallForm)
-X(BranchFlagIsImmediate,           0b0000000000010000,  4, bool, branchFlagIsImmediate)
+X(BranchFlagIsConditional,		   0b0000000010000000,  0, bool, branchFlagIsConditional)
+X(BranchFlagIsIfForm,              0b0000000001000000,  0, bool, branchFlagIsIfForm)
+X(BranchFlagIsCallForm,            0b0000000000100000,  0, bool, branchFlagIsCallForm)
+X(BranchFlagIsImmediate,           0b0000000000010000,  0, bool, branchFlagIsImmediate)
 X(BranchIfOnTrue,                  0b0000111100000000,  8, byte,  branchIfOnTrue)
 X(BranchIfOnFalse,                 0b1111000000000000, 12, byte,  branchIfOnFalse)
 // jump flags
