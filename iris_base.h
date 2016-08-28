@@ -71,9 +71,19 @@ constexpr inline F decodeField(T input) noexcept {
 	return decodeBits<T, F, FieldData<T, field>::Value, FieldData<T, field>::FieldIndex>(input);
 }
 
+template<typename T, T mask>
+constexpr inline bool decodeFlag(T input) noexcept {
+	return decodeBits<T, bool, mask, static_cast<T>(0)>(input);
+}
+
 template<typename T, typename F, T bitmask, T shiftcount>
 constexpr inline T encodeBits(T input, F value) noexcept {
 	return static_cast<T>((input & ~bitmask) | (static_cast<T>(value) << shiftcount));
+}
+
+template<typename T, T mask, T shift>
+constexpr inline T encodeFlag(T input, bool value) noexcept {
+	return encodeBits<T, bool, mask, shift>(input, value);
 }
 
 template<typename T, typename F, int field>
