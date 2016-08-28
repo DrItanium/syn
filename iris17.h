@@ -186,9 +186,6 @@ namespace iris17 {
                     return mask<bitmask>() & ( lower | upper );
                 }
 
-
-
-
 			template<ArithmeticOps op>
 			struct RequiresDenominatorCheck {
 				static constexpr bool value = false;
@@ -211,17 +208,7 @@ namespace iris17 {
             template<byte signature>
             void setOperation(DecodedInstruction&& inst) {
 				using sFlags = SetFlags<signature>;
-				RegisterValue lower = 0;
-				RegisterValue upper = 0;
-				if (readLower<sFlags::bitmask>()) {
-					incrementInstructionPointer();
-					lower = iris::encodeBits<decltype(lower), Word, lower16Mask, 0>(0, getCurrentCodeWord());
-				} 
-				if (readUpper<sFlags::bitmask>()) {
-					incrementInstructionPointer();
-					upper = iris::encodeBits<decltype(upper), Word, upper16Mask, 16>(0, getCurrentCodeWord());
-				}
-				registerValue<sFlags::destination>() = (lower | upper) & mask<sFlags::bitmask>();
+				registerValue<sFlags::destination>() = retrieveImmediate<sFlags::bitmask>(); 
             }
             template<byte signature>
                 void logicalOperation(DecodedInstruction&& inst) {

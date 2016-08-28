@@ -156,17 +156,13 @@ namespace iris17 {
 	}
 
     DefOp(Set) {
-		switch (current.getSetSignature()) {
-#define X(value) case value: setOperation<value>(std::move(current)); break;
+#define X(value) if (value == current.getSetSignature()) { setOperation<value>(std::move(current)); return; }
 #include "def/iris17/bitmask8bit.def"
 #undef X
-			default: {
-						 std::stringstream stream;
-						 stream << "Illegal set signature 0x" << std::hex << static_cast<int>(current.getSetSignature()) << "\n";
-						 auto str = stream.str();
-						 throw iris::Problem(str);
-					 }
-		}
+		std::stringstream stream;
+		stream << "Illegal set signature 0x" << std::hex << static_cast<int>(current.getSetSignature()) << "\n";
+		auto str = stream.str();
+		throw iris::Problem(str);
     }
 
 
