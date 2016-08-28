@@ -84,6 +84,7 @@ namespace iris16 {
 		std::cerr << "Illegal instruction group " << getGroup() << std::endl;
 		execute = false;
 	}
+
 	void Core::compare() noexcept {
 		switch(static_cast<CompareOp>(getOperation())) {
 #define OpNone =
@@ -96,7 +97,7 @@ namespace iris16 {
 			break;
 #define Y(type, compare, mod) \
 			case CompareOp:: type: \
-								   gpr[getDestination()] INDIRECTOR(Op, mod) (gpr[getSource0()] compare (word(getSource1()))); \
+								   gpr[getDestination()] INDIRECTOR(Op, mod) (gpr[getSource0()] compare (static_cast<word>(getSource1()))); \
 			break;
 
 #include "def/iris16/compare.def"
@@ -119,20 +120,21 @@ namespace iris16 {
 #define XNone(n, op) gpr[getDestination()] = ( gpr[getSource0()] op gpr[getSource1()]);
 #define XImmediate(n, op) gpr[getDestination()] = (gpr[getSource0()] op static_cast<word>(getSource1()));
 #define XUnary(n, op) gpr[getDestination()] = (op gpr[getSource0()]);
+#define BeginDenominator(n) \
+			if (gpr[getSource1()] == 0) { \
+				std::cerr << "denominator in for operation " << #n << " is zero!" << std::endl; \
+				execute = false; \
+			} else { 
+#define EndDenominator }
+
 #define XDenominator(n, op) \
-			if (gpr[getSource1()] == 0) { \
-				std::cerr << "denominator in for operation " << #n << " is zero!" << std::endl; \
-				execute = false; \
-			} else { \
+			BeginDenominator(n) \
 				XNone(n, op) \
-			}
+			EndDenominator
 #define XDenominatorImmediate(n, op) \
-			if (gpr[getSource1()] == 0) { \
-				std::cerr << "denominator in for operation " << #n << " is zero!" << std::endl; \
-				execute = false; \
-			} else { \
+			BeginDenominator(n) \
 				XImmediate(n, op) \
-			}
+			EndDenominator
 #define X(name, op, desc) \
 			case ArithmeticOp:: name: \
 						{ \
@@ -140,6 +142,8 @@ namespace iris16 {
 							break; \
 						}
 #include "def/iris16/arithmetic.def"
+#undef BeginDenominator
+#undef EndDenominator
 #undef X
 #undef XNone
 #undef XDenominator
@@ -155,7 +159,7 @@ namespace iris16 {
 	}
 	template<JumpOp op>
 	struct ConditionalStyle {
-		static constexpr bool isFalseForm = false;
+		static constexpr auto isFalseForm = false;
 	};
 #define X(name, ifthenelse, conditional, iffalse, immediate, link) \
 	template<> struct ConditionalStyle<JumpOp:: name> { static constexpr bool isFalseForm = iffalse; };
@@ -163,10 +167,10 @@ namespace iris16 {
 #undef X
 
 	void Core::jump() noexcept {
-		word newAddr = 0;
-		bool cond = true;
+		auto newAddr = static_cast<word>(0);
+		auto cond = true;
 		advanceIp = false;
-		word ip = gpr[ArchitectureConstants::InstructionPointerIndex];
+		auto ip = gpr[ArchitectureConstants::InstructionPointerIndex];
 		switch(static_cast<JumpOp>(getOperation())) {
 #define XImmediateCond_true (getImmediate())
 #define XImmediateCond_false (gpr[getSource0()])
@@ -239,7 +243,7 @@ namespace iris16 {
 		}
 	}
 	void Core::move() noexcept {
-		word a = 0;
+		auto a = static_cast<word>(0);
 		switch(static_cast<MoveOp>(getOperation())) {
 #define GPRRegister0 (gpr[getDestination()])
 #define GPRRegister1 (gpr[getSource0()])
@@ -333,10 +337,10 @@ namespace iris16 {
 		Count,
 	};
 	void Core::link(std::istream& input) {
-		dword result = 0;
-		word result0 = 0;
+		auto result = static_cast<dword>(0);
+		auto result0 = static_cast<word>(0);
 		char buf[8] = {0};
-		for(int lineNumber = 0; input.good(); ++lineNumber) {
+		for(auto lineNumber = static_cast<int>(0); input.good(); ++lineNumber) {
 			input.read(buf, 8);
 			if (input.gcount() < 8 && input.gcount() > 0) {
 				throw iris::Problem("unaligned object file found!");
@@ -348,9 +352,9 @@ namespace iris16 {
 				}
 			}
 			//ignore the first byte, it is always zero
-			byte tmp = buf[1];
-			Segment target = static_cast<Segment>(buf[1]);
-			word address = iris16::encodeWord(buf[2], buf[3]);
+			auto tmp = static_cast<byte>(buf[1]);
+			auto target = static_cast<Segment>(buf[1]);
+			auto address = iris16::encodeWord(buf[2], buf[3]);
 			if (debugEnabled()) {
 				std::cerr << "current target = " << static_cast<int>(target) << "\tcurrent address = 0x" << std::hex << address << std::endl;
 			}
