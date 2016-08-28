@@ -14,16 +14,16 @@ namespace iris17 {
 	Core* newCore() {
 		return new Core();
 	}
-	RegisterValue encodeRegisterValue(byte a, byte b, byte c, byte d) {
+	RegisterValue encodeRegisterValue(byte a, byte b, byte c, byte d) noexcept {
 		return iris::encodeUint32LE(a, b, c, d);
 	}
-	word encodeWord(byte a, byte b) {
+	word encodeWord(byte a, byte b) noexcept {
 		return iris::encodeUint16LE(a, b);
 	}
-	void decodeWord(word value, byte* storage) {
+	void decodeWord(word value, byte* storage) noexcept {
 		return iris::decodeUint32LE(value, storage);
 	}
-	void decodeWord(RegisterValue value, byte* storage) {
+	void decodeWord(RegisterValue value, byte* storage) noexcept {
 		return iris::decodeInt32LE(value, storage);
 	}
 
@@ -342,12 +342,16 @@ DefOp(Compare) {
 
 	void Core::dispatch(DecodedInstruction&& current) {
 		switch(current.getControl()) {
-#define X(type) \
+#define DefEnum(a, b) 
+#define EndDefEnum(a, b, c)
+#define EnumEntry(type) \
 			case Operation:: type : \
-				operation<Operation:: type>(std::move(current)); \
+									operation<Operation:: type>(std::move(current)); \
 			break;
 #include "def/iris17/ops.def"
-#undef X
+#undef EnumEntry
+#undef DefEnum
+#undef EndDefEnum
 			default:
 				std::stringstream str;
 				str << "Illegal instruction " << std::hex << static_cast<byte>(current.getControl());
@@ -471,7 +475,7 @@ DefOp(Compare) {
 		return std::make_tuple(1, first, 0, 0);
 	}
 
-	InstructionEncoder::Encoding InstructionEncoder::encodeSystem() {
+	InstructionEncoder::Encoding InstructionEncoder::encodeSystemCall() {
 		return std::make_tuple(1, encodeSystemArg0(encodeControl(0, type), arg0), 0, 0);
 	}
 
@@ -556,26 +560,13 @@ DefOp(Compare) {
 	InstructionEncoder::Encoding InstructionEncoder::encode() {
 		// always encode the type
 		switch (type) {
-			case Operation::Arithmetic:
-				return encodeArithmetic();
-			case Operation::Move:
-				return encodeMove();
-			case Operation::Swap:
-				return encodeSwap();
-			case Operation::Shift:
-				return encodeShift();
-			case Operation::SystemCall:
-				return encodeSystem();
-			case Operation::Compare:
-				return encodeCompare();
-			case Operation::Set:
-				return encodeSet();
-			case Operation::Memory:
-				return encodeMemory();
-			case Operation::Logical:
-				return encodeLogical();
-			case Operation::Branch:
-				return encodeBranch();
+#define DefEnum(a, b) 
+#define EndDefEnum(a, b, c)
+#define EnumEntry(compareType) case Operation:: compareType : return encode ## compareType (); 
+#include "def/iris17/ops.def"
+#undef DefEnum
+#undef EndDefEnum
+#undef EnumEntry
 			default:
 				throw iris::Problem("Illegal type to encode!");
 		}
@@ -588,23 +579,16 @@ DefOp(Compare) {
 #undef X
 
 	int instructionSizeFromImmediateMask(byte bitmask) {
-		switch(bitmask) {
-#define X(bits) case bits : return instructionSizeFromImmediateMask<bits>();
+#define X(bits) if (bitmask == bits) { return instructionSizeFromImmediateMask<bits>(); }
 #include "def/iris17/bitmask4bit.def"
 #undef X
-			default:
-				throw iris::Problem("illegal bitmask value!");
-		}
+		throw iris::Problem("illegal bitmask value!");
 	}
 	RegisterValue getMask(byte bitmask) {
-		switch (bitmask) {
-#define X(bits) case bits : return SetBitmaskToWordMask<bits>::mask;
+#define X(bits) if (bitmask == bits) {  return SetBitmaskToWordMask<bits>::mask; }
 #include "def/iris17/bitmask4bit.def"
 #undef X
-
-			default:
-				throw iris::Problem("Illegal bitmask provided!");
-		}
+		throw iris::Problem("Illegal bitmask provided!");
 	}
 	int InstructionEncoder::numWords() {
 		return std::get<0>(encode());

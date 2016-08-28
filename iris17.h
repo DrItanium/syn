@@ -16,10 +16,10 @@ namespace iris17 {
     using raw_instruction = word; // this is more of a packet!
     using immediate = hword;
     using RegisterValue = dword;
-    inline word encodeWord (byte a, byte b);
-    inline RegisterValue encodeRegisterValue(byte a, byte b, byte c, byte d);
-    inline void decodeWord(word value, byte* storage);
-    inline void decodeRegisterValue(RegisterValue value, byte* storage);
+    inline word encodeWord (byte a, byte b) noexcept;
+    inline RegisterValue encodeRegisterValue(byte a, byte b, byte c, byte d) noexcept;
+    inline void decodeWord(word value, byte* storage) noexcept;
+    inline void decodeRegisterValue(RegisterValue value, byte* storage) noexcept;
     enum ArchitectureConstants  {
         RegisterCount = 16,
         SegmentCount = 256,
@@ -38,68 +38,24 @@ namespace iris17 {
         ValueRegister = RegisterCount - 6,
     };
 
-    enum class Operation : byte {
-#define X(name) name,
+#define DefEnum(type, width) \
+	enum class type : width { 
+#define EndDefEnum(type, width, maxCount) \
+		Count, \
+	};  \
+	static_assert(static_cast<width>(type :: Count) <= static_cast<width>( maxCount ), "Too many " #type " entries defined!");
+#define EnumEntry(type) type,
+
 #include "def/iris17/ops.def"
-#undef X
-        Count,
-    };
-    static_assert(static_cast<byte>(Operation::Count) <= static_cast<byte>(ArchitectureConstants::MaxInstructionCount), "Too many operations defined!");
-
-    enum class SystemCalls : byte {
-#define X(name) name,
+#include "def/iris17/arithmetic_ops.def"
 #include "def/iris17/syscalls.def"
-#undef X
-        Count,
-    };
-    static_assert(static_cast<byte>(SystemCalls::Count) <= static_cast<byte>(ArchitectureConstants::MaxSystemCalls), "Too many system calls defined!");
+#include "def/iris17/compare.enum"
+#include "def/iris17/logical.enum"
+#include "def/iris17/memory.enum"
+#undef DefEnum
+#undef EnumEntry
+#undef EndDefEnum
 
-    enum class CompareCombine : byte {
-        None,
-        And,
-        Or,
-        Xor,
-    };
-
-    enum class CompareStyle : byte {
-        Equals,
-        NotEquals,
-        LessThan,
-        GreaterThan,
-        LessThanOrEqualTo,
-        GreaterThanOrEqualTo,
-    };
-
-    enum class ArithmeticOps : byte {
-        Add,
-        Sub,
-        Mul,
-        Div,
-        Rem,
-        Count,
-    };
-    enum class ImmediateLogicalOps : byte {
-        And,
-        Or,
-        Xor,
-        Nand,
-    };
-
-    enum class LogicalOps : byte {
-        And,
-        Or,
-        Xor,
-        Nand,
-        Not,
-    };
-
-    enum class MemoryOperation : byte {
-        Load,
-        LoadMerge,
-        Store,
-        Push,
-        Pop,
-    };
     class DecodedInstruction {
         public:
             DecodedInstruction(raw_instruction input);
@@ -130,15 +86,15 @@ namespace iris17 {
             static constexpr bool readUpper = decomposedBits[2] || decomposedBits[3];
         };
     template<byte bitmask>
-        constexpr RegisterValue mask() { return SetBitmaskToWordMask<bitmask>::mask; }
+        constexpr RegisterValue mask() noexcept { return SetBitmaskToWordMask<bitmask>::mask; }
     template<byte bitmask>
-        constexpr word lowerMask() { return SetBitmaskToWordMask<bitmask>::lowerMask; }
+        constexpr word lowerMask() noexcept { return SetBitmaskToWordMask<bitmask>::lowerMask; }
     template<byte bitmask>
-        constexpr word upperMask() { return SetBitmaskToWordMask<bitmask>::upperMask; }
+        constexpr word upperMask() noexcept { return SetBitmaskToWordMask<bitmask>::upperMask; }
     template<byte bitmask>
-        constexpr bool readLower() { return SetBitmaskToWordMask<bitmask>::readLower; }
+        constexpr bool readLower() noexcept { return SetBitmaskToWordMask<bitmask>::readLower; }
     template<byte bitmask>
-        constexpr bool readUpper() { return SetBitmaskToWordMask<bitmask>::readUpper; }
+        constexpr bool readUpper() noexcept { return SetBitmaskToWordMask<bitmask>::readUpper; }
 
     constexpr RegisterValue bitmask32 =   SetBitmaskToWordMask<0b1111>::mask;
     constexpr RegisterValue bitmask24 =   SetBitmaskToWordMask<0b0111>::mask;
@@ -503,16 +459,13 @@ namespace iris17 {
         Encoding encode();
         void clear();
         private:
-        Encoding encodeArithmetic();
-        Encoding encodeMove();
-        Encoding encodeSwap();
-        Encoding encodeShift();
-        Encoding encodeSystem();
-        Encoding encodeCompare();
-        Encoding encodeSet();
-        Encoding encodeMemory();
-        Encoding encodeLogical();
-        Encoding encodeBranch();
+#define DefEnum(a, b)
+#define EndDefEnum(a, b, c)
+#define EnumEntry(type) Encoding encode ## type ();
+#include "def/iris17/ops.def"
+#undef DefEnum
+#undef EndDefEnum
+#undef EnumEntry
     };
 }
 #endif

@@ -1,5 +1,8 @@
-X(Add)
-X(Sub)
-X(Mul)
-X(Div)
-X(Rem)
+DefEnum(ArithmeticOps, byte)
+	EnumEntry(Add)
+	EnumEntry(Sub)
+	EnumEntry(Mul)
+	EnumEntry(Div)
+	EnumEntry(Rem)
+EndDefEnum(ArithmeticOps, byte, 8)
+
