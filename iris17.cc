@@ -276,17 +276,17 @@ template<CompareStyle style>
 bool compare(RegisterValue a, RegisterValue b) {
 	switch (style) {
 		case CompareStyle::Equals:
-			return a == b;
+			return iris::eq(a, b);
 		case CompareStyle::NotEquals:
-			return a != b;
+			return iris::neq(a, b);
 		case CompareStyle::LessThan:
-			return a < b;
+			return iris::lt(a, b);
 		case CompareStyle::LessThanOrEqualTo:
-			return a <= b;
+			return iris::le(a, b);
 		case CompareStyle::GreaterThan:
-			return a > b;
+			return iris::gt(a, b);
 		case CompareStyle::GreaterThanOrEqualTo:
-			return a >= b;
+			return iris::ge(a, b);
 		default:
 			throw iris::Problem("Undefined comparison style!");
 	}
@@ -561,7 +561,7 @@ InstructionEncoder::Encoding InstructionEncoder::encode() {
 		throw iris::Problem("illegal bitmask value!");
 	}
 	RegisterValue getMask(byte bitmask) {
-#define X(bits) if (bitmask == bits) {  return SetBitmaskToWordMask<bits>::mask; }
+#define X(bits) if (bitmask == bits) { return SetBitmaskToWordMask<bits>::mask; }
 #include "def/iris17/bitmask4bit.def"
 #undef X
 		throw iris::Problem("Illegal bitmask provided!");

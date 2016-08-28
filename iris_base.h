@@ -107,6 +107,15 @@ constexpr int32_t encodeInt32LE(byte a, byte b, byte c, byte d)  noexcept {
 	typedef byte Field;
 	return encodeField<Number, Field, 3>( encodeField<Number, Field, 2>( encodeField<Number, Field, 1>( encodeField<Number, Field, 0>(0, a), b), c), d);
 }
+
+constexpr uint32_t encodeUint32LE(uint16_t lower, uint16_t upper) noexcept {
+	return encodeBits<uint32_t, uint16_t, 0xFFFF0000, 16>(encodeBits<uint32_t, uint16_t, 0x0000FFFF, 0>(0, lower), upper);
+}
+
+constexpr int32_t encodeInt32LE(int16_t lower, int16_t upper) noexcept {
+	return encodeBits<int32_t, int16_t, static_cast<int32_t>(0xFFFF0000), 16>(encodeBits<int32_t, int16_t, 0x0000FFFF, 0>(0, lower), upper);
+}
+
 void decodeUint32LE(uint32_t value, byte storage[sizeof(uint32_t)]) noexcept;
 void decodeUint16LE(uint16_t value, byte storage[sizeof(uint16_t)]) noexcept;
 void decodeInt32LE(int32_t value, byte storage[sizeof(int32_t)]) noexcept;

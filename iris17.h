@@ -77,30 +77,26 @@ namespace iris17 {
 				iris::decodeBits<byte, bool, 0b1000, 3>(bitmask)
             };
             static constexpr byte determineMaskValue(bool value) noexcept { return value ? 0xFF : 0x00; }
-			static constexpr Word encodeWord(bool upper, bool lower) {
-				return iris::encodeBits<Word, byte, 0xFF00, 8>( 
-					iris::encodeBits<Word, byte, 0x00FF, 0>(0, 
-						determineMaskValue(lower)), 
-					determineMaskValue(upper));
+			static constexpr Word encodeWord(bool upper, bool lower) noexcept {
+				return iris::encodeUint16LE(determineMaskValue(lower), determineMaskValue(upper));
 			}
 			static constexpr Word lowerMask = encodeWord(decomposedBits[1], decomposedBits[0]);
 			static constexpr Word upperMask = encodeWord(decomposedBits[3], decomposedBits[2]);
-			static constexpr RegisterValue mask = iris::encodeBits<RegisterValue, Word, 0xFFFF0000, 16>( 
-					iris::encodeBits<RegisterValue, Word, 0x0000FFFF, 0>(0, lowerMask), upperMask);
+			static constexpr RegisterValue mask = iris::encodeUint32LE(lowerMask, upperMask);
 
             static constexpr bool readLower = decomposedBits[1] || decomposedBits[0];
             static constexpr bool readUpper = decomposedBits[2] || decomposedBits[3];
         };
     template<byte bitmask>
-        constexpr RegisterValue mask() noexcept { return SetBitmaskToWordMask<bitmask>::mask; }
+        inline constexpr RegisterValue mask() noexcept { return SetBitmaskToWordMask<bitmask>::mask; }
     template<byte bitmask>
-        constexpr Word lowerMask() noexcept { return SetBitmaskToWordMask<bitmask>::lowerMask; }
+        inline constexpr Word lowerMask() noexcept { return SetBitmaskToWordMask<bitmask>::lowerMask; }
     template<byte bitmask>
-        constexpr Word upperMask() noexcept { return SetBitmaskToWordMask<bitmask>::upperMask; }
+        inline constexpr Word upperMask() noexcept { return SetBitmaskToWordMask<bitmask>::upperMask; }
     template<byte bitmask>
-        constexpr bool readLower() noexcept { return SetBitmaskToWordMask<bitmask>::readLower; }
+        inline constexpr bool readLower() noexcept { return SetBitmaskToWordMask<bitmask>::readLower; }
     template<byte bitmask>
-        constexpr bool readUpper() noexcept { return SetBitmaskToWordMask<bitmask>::readUpper; }
+        inline constexpr bool readUpper() noexcept { return SetBitmaskToWordMask<bitmask>::readUpper; }
 
     constexpr RegisterValue bitmask32 =   SetBitmaskToWordMask<0b1111>::mask;
     constexpr RegisterValue bitmask24 =   SetBitmaskToWordMask<0b0111>::mask;
@@ -306,27 +302,16 @@ namespace iris17 {
                     if (mflags::isError) {
                         throw iris::Problem("Illegal move signature!");
                     } else {
-                        registerValue(inst.getMoveRegister0()) = registerValue(inst.getMoveRegister1()) & mask<mflags::bitmask>();
+						registerValue(inst.getMoveRegister0()) = iris::decodeBits<RegisterValue, RegisterValue, mask<mflags::bitmask>(), 0>(registerValue(inst.getMoveRegister1()));
                     }
                 }
             template<byte bitmask, bool merge>
                 void loadOperation(RegisterValue address) {
                     // use the destination field of the instruction to denote offset, thus we need
                     // to use the Address and Value registers
-                    RegisterValue lower = 0;
-                    RegisterValue upper = 0;
-                    if (readLower<bitmask>()) {
-                        lower = loadWord(address);
-                    }
-                    if (readUpper<bitmask>()) {
-                        upper = static_cast<RegisterValue>(loadWord(address + 1)) << 16;
-                    }
-                    auto static constexpr cMask = mask<bitmask>();
-                    if (merge) {
-                        getValueRegister() = (cMask & (lower | upper)) | (getValueRegister() & ~cMask);
-                    } else {
-                        getValueRegister() = cMask & (lower | upper);
-                    }
+					RegisterValue lower = readLower<bitmask>() ?  iris::encodeBits<RegisterValue, Word, 0x0000FFFF, 0>(0, loadWord(address)) : 0;
+					RegisterValue upper = readUpper<bitmask>() ?  iris::encodeBits<RegisterValue, Word, 0xFFFF0000, 16>(0, loadWord(address + 1)) : 0;
+					getValueRegister() = iris::encodeBits<RegisterValue, RegisterValue, mask<bitmask>(), 0>(merge ? getValueRegister() : 0 , lower | upper);
                 }
             template<byte bitmask>
                 void storeOperation(RegisterValue address) {

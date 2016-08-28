@@ -185,40 +185,40 @@ namespace iris32 {
 			auto &thread = core->thread;
 			switch (op) {
 				case CompareOp::Eq:
-					thread->gpr[current.getDestination()] = (thread->gpr[current.getSource0()] == thread->gpr[current.getSource1()]); 
+					thread->gpr[current.getDestination()] = iris::eq(thread->gpr[current.getSource0()], thread->gpr[current.getSource1()]); 
 					break;
 				case CompareOp::Neq:
-					thread->gpr[current.getDestination()] = (thread->gpr[current.getSource0()] != thread->gpr[current.getSource1()]); 
+					thread->gpr[current.getDestination()] = iris::neq(thread->gpr[current.getSource0()],  thread->gpr[current.getSource1()]); 
 					break;
 				case CompareOp::LessThan:
-					thread->gpr[current.getDestination()] = (thread->gpr[current.getSource0()] < thread->gpr[current.getSource1()]); 
+					thread->gpr[current.getDestination()] = iris::lt(thread->gpr[current.getSource0()], thread->gpr[current.getSource1()]); 
 					break;
 				case CompareOp::GreaterThan:
-					thread->gpr[current.getDestination()] = (thread->gpr[current.getSource0()] > thread->gpr[current.getSource1()]); 
+					thread->gpr[current.getDestination()] = iris::gt(thread->gpr[current.getSource0()], thread->gpr[current.getSource1()]); 
 					break;
 				case CompareOp::LessThanOrEqualTo:
-					thread->gpr[current.getDestination()] = (thread->gpr[current.getSource0()] <= thread->gpr[current.getSource1()]); 
+					thread->gpr[current.getDestination()] = iris::le(thread->gpr[current.getSource0()], thread->gpr[current.getSource1()]); 
 					break;
 				case CompareOp::GreaterThanOrEqualTo:
-					thread->gpr[current.getDestination()] = (thread->gpr[current.getSource0()] >= thread->gpr[current.getSource1()]); 
+					thread->gpr[current.getDestination()] = iris::ge(thread->gpr[current.getSource0()], thread->gpr[current.getSource1()]); 
 					break;
 				case CompareOp::EqImm:
-					thread->gpr[current.getDestination()] = (thread->gpr[current.getSource0()] == static_cast<word>(current.getSource1())); 
+					thread->gpr[current.getDestination()] = iris::eq(thread->gpr[current.getSource0()], static_cast<word>(current.getSource1())); 
 					break;
 				case CompareOp::NeqImm:
-					thread->gpr[current.getDestination()] = (thread->gpr[current.getSource0()] != static_cast<word>(current.getSource1())); 
+					thread->gpr[current.getDestination()] = iris::neq(thread->gpr[current.getSource0()], static_cast<word>(current.getSource1())); 
 					break;
 				case CompareOp::LessThanImm:
-					thread->gpr[current.getDestination()] = (thread->gpr[current.getSource0()] < static_cast<word>(current.getSource1())); 
+					thread->gpr[current.getDestination()] = iris::lt(thread->gpr[current.getSource0()], static_cast<word>(current.getSource1())); 
 					break;
 				case CompareOp::GreaterThanImm:
-					thread->gpr[current.getDestination()] = (thread->gpr[current.getSource0()] > static_cast<word>(current.getSource1())); 
+					thread->gpr[current.getDestination()] = iris::gt(thread->gpr[current.getSource0()], static_cast<word>(current.getSource1())); 
 					break;
 				case CompareOp::LessThanOrEqualToImm:
-					thread->gpr[current.getDestination()] = (thread->gpr[current.getSource0()] <= static_cast<word>(current.getSource1())); 
+					thread->gpr[current.getDestination()] = iris::le(thread->gpr[current.getSource0()], static_cast<word>(current.getSource1())); 
 					break;
 				case CompareOp::GreaterThanOrEqualToImm:
-					thread->gpr[current.getDestination()] = (thread->gpr[current.getSource0()] >= static_cast<word>(current.getSource1())); 
+					thread->gpr[current.getDestination()] = iris::ge(thread->gpr[current.getSource0()], static_cast<word>(current.getSource1())); 
 					break;
 				default:
 					throw iris::Problem("Illegal compare instruction!");
