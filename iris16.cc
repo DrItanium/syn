@@ -10,15 +10,6 @@ namespace iris16 {
 	}
 
 
-	DecodedInstruction::DecodedInstruction() { }
-
-	void DecodedInstruction::decode(raw_instruction input) {
-#define X(title, mask, shift, type, is_register, post) \
-		_ ## post = iris::decodeBits<raw_instruction, type, mask, shift>(input);
-#include "def/iris16/instruction.def"
-#undef X
-	}
-
 	Core::Core() { }
 	void Core::setInstructionMemory(word address, dword value) noexcept {
 		instruction[address] = value;
@@ -79,7 +70,7 @@ namespace iris16 {
 			if (!advanceIp) {
 				advanceIp = true;
 			}
-			current.decode(instruction[gpr[ArchitectureConstants::InstructionPointerIndex]]);
+			current = instruction[gpr[ArchitectureConstants::InstructionPointerIndex]];
 			dispatch();
 			if (advanceIp) {
 				++gpr[ArchitectureConstants::InstructionPointerIndex];
@@ -87,7 +78,7 @@ namespace iris16 {
 		}
 	}
 	void Core::dispatch() {
-		auto group = static_cast<InstructionGroup>(current.getGroup());
+		auto group = static_cast<InstructionGroup>(getGroup());
 #define X(name, operation) \
 		if (group == InstructionGroup:: name) { \
 			operation(); \
@@ -95,22 +86,22 @@ namespace iris16 {
 		}
 #include "def/iris16/groups.def"
 #undef X
-		std::cerr << "Illegal instruction group " << current.getGroup() << std::endl;
+		std::cerr << "Illegal instruction group " << getGroup() << std::endl;
 		execute = false;
 	}
 	void Core::compare() noexcept {
-		switch(static_cast<CompareOp>(current.getOperation())) {
+		switch(static_cast<CompareOp>(getOperation())) {
 #define OpNone =
 //#define OpAnd &=
 //#define OpOr |=
 //#define OpXor ^=
 #define X(type, compare, mod) \
 			case CompareOp:: type: \
-								   gpr[current.getDestination()] INDIRECTOR(Op, mod) (gpr[current.getSource0()] compare gpr[current.getSource1()]); \
+								   gpr[getDestination()] INDIRECTOR(Op, mod) (gpr[getSource0()] compare gpr[getSource1()]); \
 			break;
 #define Y(type, compare, mod) \
 			case CompareOp:: type: \
-								   gpr[current.getDestination()] INDIRECTOR(Op, mod) (gpr[current.getSource0()] compare (word(current.getSource1()))); \
+								   gpr[getDestination()] INDIRECTOR(Op, mod) (gpr[getSource0()] compare (word(getSource1()))); \
 			break;
 
 #include "def/iris16/compare.def"
@@ -121,7 +112,7 @@ namespace iris16 {
 //#undef OpOr
 //#undef OrXor
 			default:
-				std::cerr << "Illegal compare code " << current.getOperation() << std::endl;
+				std::cerr << "Illegal compare code " << getOperation() << std::endl;
 				execute = false;
 				advanceIp = false;
 				break;
@@ -129,19 +120,19 @@ namespace iris16 {
 	}
 
 	void Core::arithmetic() noexcept {
-		switch(static_cast<ArithmeticOp>(current.getOperation())) {
-#define XNone(n, op) gpr[current.getDestination()] = ( gpr[current.getSource0()] op  gpr[current.getSource1()]);
-#define XImmediate(n, op) gpr[current.getDestination()] = (gpr[current.getSource0()] op static_cast<word>(current.getSource1()));
-#define XUnary(n, op) gpr[current.getDestination()] = (op gpr[current.getSource0()]);
+		switch(static_cast<ArithmeticOp>(getOperation())) {
+#define XNone(n, op) gpr[getDestination()] = ( gpr[getSource0()] op  gpr[getSource1()]);
+#define XImmediate(n, op) gpr[getDestination()] = (gpr[getSource0()] op static_cast<word>(getSource1()));
+#define XUnary(n, op) gpr[getDestination()] = (op gpr[getSource0()]);
 #define XDenominator(n, op) \
-			if (gpr[current.getSource1()] == 0) { \
+			if (gpr[getSource1()] == 0) { \
 				std::cerr << "denominator in for operation " << #n << " is zero!" << std::endl; \
 				execute = false; \
 			} else { \
 				XNone(n, op) \
 			}
 #define XDenominatorImmediate(n, op) \
-			if (gpr[current.getSource1()] == 0) { \
+			if (gpr[getSource1()] == 0) { \
 				std::cerr << "denominator in for operation " << #n << " is zero!" << std::endl; \
 				execute = false; \
 			} else { \
@@ -162,7 +153,7 @@ namespace iris16 {
 #undef XDenominatorImmediate
 
 			default:
-				std::cerr << "Illegal arithmetic operation " << current.getOperation() << std::endl;
+				std::cerr << "Illegal arithmetic operation " << getOperation() << std::endl;
 				execute = false;
 				break;
 		}
@@ -181,19 +172,19 @@ namespace iris16 {
 		bool cond = true;
 		advanceIp = false;
 		word ip = gpr[ArchitectureConstants::InstructionPointerIndex];
-		switch(static_cast<JumpOp>(current.getOperation())) {
-#define XImmediateCond_true (current.getImmediate())
-#define XImmediateCond_false (gpr[current.getSource0()])
+		switch(static_cast<JumpOp>(getOperation())) {
+#define XImmediateCond_true (getImmediate())
+#define XImmediateCond_false (gpr[getSource0()])
 #define XIfThenElse_false(immediate) \
 			newAddr = cond ? INDIRECTOR(XImmediateCond, _ ## immediate) : ip + 1;
 #define XIfThenElse_true(immediate) \
-			newAddr = gpr[cond ? current.getSource0() : current.getSource1()];
-#define XImmediateUncond_false (gpr[current.getDestination()])
-#define XImmediateUncond_true (current.getImmediate())
+			newAddr = gpr[cond ? getSource0() : getSource1()];
+#define XImmediateUncond_false (gpr[getDestination()])
+#define XImmediateUncond_true (getImmediate())
 #define XConditional_false(name, ifthenelse, immediate) \
 			newAddr = INDIRECTOR(XImmediateUncond, _ ## immediate);
 #define XConditional_true(name, ifthenelse, immediate) \
-			cond = (ConditionalStyle<JumpOp:: name>::isFalseForm ? (gpr[current.getDestination()] == 0) : (gpr[current.getDestination()] != 0)); \
+			cond = (ConditionalStyle<JumpOp:: name>::isFalseForm ? (gpr[getDestination()] == 0) : (gpr[getDestination()] != 0)); \
 			INDIRECTOR(XIfThenElse, _ ## ifthenelse)(immediate)
 #define XLink_true \
 			if (cond) { \
@@ -212,13 +203,13 @@ namespace iris16 {
 #include "def/iris16/jump.def"
 #undef X
 			default:
-				std::cerr << "Illegal jump code " << current.getOperation() << std::endl;
+				std::cerr << "Illegal jump code " << getOperation() << std::endl;
 				execute = false;
 				break;
 		}
 	}
 	void Core::misc() noexcept {
-		auto op = static_cast<MiscOp>(current.getOperation());
+		auto op = static_cast<MiscOp>(getOperation());
 #define X(name, func) \
 		if (op == MiscOp:: name) { \
 			func () ; \
@@ -226,27 +217,27 @@ namespace iris16 {
 		}
 #include "def/iris16/misc.def"
 #undef X
-		std::cerr << "Illegal misc code " << current.getOperation() << std::endl;
+		std::cerr << "Illegal misc code " << getOperation() << std::endl;
 		execute = false;
 		advanceIp = false;
 	}
 	void Core::systemCall() noexcept {
-		switch(static_cast<SystemCalls>(current.getDestination())) {
+		switch(static_cast<SystemCalls>(getDestination())) {
 			case SystemCalls::Terminate:
 				execute = false;
 				advanceIp = false;
 				break;
 			case SystemCalls::PutC:
 				// read register 0 and register 1
-				std::cout.put((char)gpr[current.getSource0()]);
+				std::cout.put((char)gpr[getSource0()]);
 				break;
 			case SystemCalls::GetC:
 				byte value;
 				std::cin >> std::noskipws >> value;
-				gpr[current.getSource0()] = (word)value;
+				gpr[getSource0()] = (word)value;
 				break;
 			default:
-				std::cerr << "Illegal system call " << current.getDestination() << std::endl;
+				std::cerr << "Illegal system call " << getDestination() << std::endl;
 				execute = false;
 				advanceIp = false;
 				break;
@@ -254,11 +245,11 @@ namespace iris16 {
 	}
 	void Core::move() noexcept {
 		word a = 0;
-		switch(static_cast<MoveOp>(current.getOperation())) {
-#define GPRRegister0 (gpr[current.getDestination()])
-#define GPRRegister1 (gpr[current.getSource0()])
-#define GPRRegister2 (gpr[current.getSource1()])
-#define GPRImmediate1 (current.getImmediate())
+		switch(static_cast<MoveOp>(getOperation())) {
+#define GPRRegister0 (gpr[getDestination()])
+#define GPRRegister1 (gpr[getSource0()])
+#define GPRRegister2 (gpr[getSource1()])
+#define GPRImmediate1 (getImmediate())
 #define DataRegister0 GPRRegister0
 #define DataRegister1 GPRRegister1
 #define DataImmediate1 GPRImmediate1
@@ -334,7 +325,7 @@ namespace iris16 {
 #undef CodeUpperLowerRegisters1
 #undef CodeUpperLowerRegisters2
 			default:
-				std::cerr << "Illegal move code " << current.getOperation() << std::endl;
+				std::cerr << "Illegal move code " << getOperation() << std::endl;
 				execute = false;
 				advanceIp = false;
 				break;

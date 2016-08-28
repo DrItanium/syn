@@ -76,18 +76,6 @@ namespace iris16 {
 		Count,
 	};
 	static_assert((byte)CompareOp::Count < ((byte)ArchitectureConstants::MaxOperations), "too many Compare operations defined");
-	class DecodedInstruction {
-		public:
-			DecodedInstruction();
-			void decode(raw_instruction input);
-#define X(title, mask, shift, type, is_register, post) type get ## title () const { return _ ## post ; }
-#include "def/iris16/instruction.def"
-#undef X
-		private:
-#define X(title, mask, shift, type, is_register, post) type _ ## post ;
-#include "def/iris16/instruction.def"
-#undef X
-	};
 	class Core : public iris::Core {
 		public:
 			Core();
@@ -107,8 +95,13 @@ namespace iris16 {
 #define X(title, func) void func () noexcept;
 #include "def/iris16/misc.def"
 #undef X
+#define X(title, mask, shift, type, is_register, post) inline type get ## title () const noexcept { \
+	return iris::decodeBits<raw_instruction, type, mask, shift>(current); \
+}
+#include "def/iris16/instruction.def"
+#undef X
 		private:
-			DecodedInstruction current;
+			raw_instruction current;
 			bool execute = true,
 				 advanceIp = true;
 			word gpr[ArchitectureConstants::RegisterCount] = {0};
