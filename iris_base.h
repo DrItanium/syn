@@ -80,12 +80,32 @@ constexpr inline T encodeField(T input, F value) noexcept {
 	return encodeBits<T, F, FieldData<T, field>::Value, FieldData<T, field>::FieldIndex>(input, value);
 }
 
-uint16_t encodeUint16LE(byte a, byte b) noexcept;
-int16_t encodeInt16LE(byte a, byte b) noexcept;
-uint32_t encodeUint32LE(byte a, byte b, byte c, byte d) noexcept;
-uint16_t encodeUint16LE(byte contents[sizeof(uint16_t)]) noexcept;
-uint32_t encodeUint32LE(byte contents[sizeof(uint32_t)]) noexcept;
-int32_t encodeInt32LE(byte a, byte b, byte c, byte d) noexcept;
+constexpr uint16_t encodeUint16LE(byte a, byte b) noexcept {
+		using Number = uint16_t;
+		using Field = byte;
+		return encodeField<Number, Field, 1>(encodeField<Number, Field, 0>(0, a), b);
+}
+constexpr int16_t encodeInt16LE(byte a, byte b) noexcept {
+		typedef int16_t Number;
+		typedef byte Field;
+		return encodeField<Number, Field, 1>(encodeField<Number, Field, 0>(0, a), b);
+}
+constexpr uint32_t encodeUint32LE(byte a, byte b, byte c, byte d)  noexcept {
+	typedef uint32_t Number;
+	typedef byte Field;
+	return encodeField<Number, Field, 3>( encodeField<Number, Field, 2>( encodeField<Number, Field, 1>( encodeField<Number, Field, 0>(0, a), b), c), d);
+}
+constexpr uint16_t encodeUint16LE(byte* buf)  noexcept {
+	return encodeUint16LE(buf[0], buf[1]);
+}
+constexpr uint32_t encodeUint32LE(byte* buf)  noexcept {
+	return encodeUint32LE(buf[0], buf[1], buf[2], buf[3]);
+}
+constexpr int32_t encodeInt32LE(byte a, byte b, byte c, byte d)  noexcept {
+	typedef int32_t Number;
+	typedef byte Field;
+	return encodeField<Number, Field, 3>( encodeField<Number, Field, 2>( encodeField<Number, Field, 1>( encodeField<Number, Field, 0>(0, a), b), c), d);
+}
 void decodeUint32LE(uint32_t value, byte storage[sizeof(uint32_t)]) noexcept;
 void decodeUint16LE(uint16_t value, byte storage[sizeof(uint16_t)]) noexcept;
 void decodeInt32LE(int32_t value, byte storage[sizeof(int32_t)]) noexcept;

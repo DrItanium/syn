@@ -16,8 +16,8 @@ namespace iris17 {
     using raw_instruction = word; // this is more of a packet!
     using immediate = hword;
     using RegisterValue = dword;
-    inline word encodeWord (byte a, byte b) noexcept;
-    inline RegisterValue encodeRegisterValue(byte a, byte b, byte c, byte d) noexcept;
+    inline constexpr word encodeWord (byte a, byte b) noexcept;
+    inline constexpr RegisterValue encodeRegisterValue(byte a, byte b, byte c, byte d) noexcept;
     inline void decodeWord(word value, byte* storage) noexcept;
     inline void decodeRegisterValue(RegisterValue value, byte* storage) noexcept;
     enum ArchitectureConstants  {
@@ -76,15 +76,16 @@ namespace iris17 {
 				iris::decodeBits<byte, bool, 0b1000, 3>(bitmask)
             };
             static constexpr byte determineMaskValue(bool value) noexcept { return value ? 0xFF : 0x00; }
-			static constexpr word lowerMask = iris::encodeBits<word, byte, 0xFF00, 8>( 
+			static constexpr word encodeWord(bool upper, bool lower) {
+				return iris::encodeBits<word, byte, 0xFF00, 8>( 
 					iris::encodeBits<word, byte, 0x00FF, 0>(0, 
-						determineMaskValue(decomposedBits[0])), 
-					determineMaskValue(decomposedBits[1]));
-			static constexpr word upperMask = iris::encodeBits<word, byte, 0xFF00, 8>( 
-					iris::encodeBits<word, byte, 0x00FF, 0>(0, 
-						determineMaskValue(decomposedBits[2])), 
-					determineMaskValue(decomposedBits[3]));
-			static constexpr RegisterValue mask = iris::encodeBits<RegisterValue, word, 0xFFFF0000, 16>( iris::encodeBits<RegisterValue, word, 0x0000FFFF, 0>(0, lowerMask), upperMask);
+						determineMaskValue(lower)), 
+					determineMaskValue(upper));
+			}
+			static constexpr word lowerMask = encodeWord(decomposedBits[1], decomposedBits[0]);
+			static constexpr word upperMask = encodeWord(decomposedBits[3], decomposedBits[2]);
+			static constexpr RegisterValue mask = iris::encodeBits<RegisterValue, word, 0xFFFF0000, 16>( 
+					iris::encodeBits<RegisterValue, word, 0x0000FFFF, 0>(0, lowerMask), upperMask);
 
             static constexpr bool readLower = decomposedBits[1] || decomposedBits[0];
             static constexpr bool readUpper = decomposedBits[2] || decomposedBits[3];
@@ -113,10 +114,10 @@ namespace iris17 {
         };
     template<byte flags>
         struct BranchFlagsDecoder {
-            static constexpr bool isImmediate = static_cast<bool>(flags);
-            static constexpr bool isCall = static_cast<bool>((flags & 0b0010) >> 1);
-            static constexpr bool isIf = static_cast<bool>((flags & 0b0100) >> 2);
-            static constexpr bool isConditional = static_cast<bool>((flags & 0b1000) >> 3);
+            static constexpr bool isImmediate = iris::decodeBits<byte, bool, 0b0001, 0>(flags);
+            static constexpr bool isCall = iris::decodeBits<byte, bool, 0b0010, 1>(flags);
+            static constexpr bool isIf = iris::decodeBits<byte, bool, 0b0100, 2>(flags);
+            static constexpr bool isConditional = iris::decodeBits<byte, bool, 0b1000, 3>(flags);
         };
     using IfJump = BranchFlagsEncoder<false, true, false, false>;
     using IfCall = BranchFlagsEncoder<false, true, true, false>;

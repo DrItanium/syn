@@ -14,10 +14,10 @@ namespace iris17 {
 	Core* newCore() {
 		return new Core();
 	}
-	RegisterValue encodeRegisterValue(byte a, byte b, byte c, byte d) noexcept {
+	constexpr RegisterValue encodeRegisterValue(byte a, byte b, byte c, byte d) noexcept {
 		return iris::encodeUint32LE(a, b, c, d);
 	}
-	word encodeWord(byte a, byte b) noexcept {
+	constexpr word encodeWord(byte a, byte b) noexcept {
 		return iris::encodeUint16LE(a, b);
 	}
 	void decodeWord(word value, byte* storage) noexcept {
