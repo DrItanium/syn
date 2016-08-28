@@ -89,11 +89,11 @@ namespace iris16 {
 			inline void setInstructionMemory(word address, dword value) noexcept;
 			inline void setDataMemory(word address, word value) noexcept;
 		private:
-			void dispatch() noexcept;
-#define X(_, op) void op() noexcept;
+			void dispatch();
+#define X(_, op) void op();
 #include "def/iris16/groups.def"
 #undef X
-#define X(title, func) void func () noexcept;
+#define X(title, func) void func ();
 #include "def/iris16/misc.def"
 #undef X
 #define X(title, mask, shift, type, is_register, post) \

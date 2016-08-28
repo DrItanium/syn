@@ -72,7 +72,7 @@ namespace iris16 {
 			}
 		}
 	}
-	void Core::dispatch() noexcept {
+	void Core::dispatch() {
 		auto group = static_cast<InstructionGroup>(getGroup());
 #define X(name, operation) \
 		if (group == InstructionGroup:: name) { \
@@ -85,7 +85,7 @@ namespace iris16 {
 		execute = false;
 	}
 
-	void Core::compare() noexcept {
+	void Core::compare() {
 		switch(static_cast<CompareOp>(getOperation())) {
 #define OpNone =
 //#define OpAnd &=
@@ -115,47 +115,24 @@ namespace iris16 {
 		}
 	}
 
-	void Core::arithmetic() noexcept {
-		switch(static_cast<ArithmeticOp>(getOperation())) {
-#define XNone(n, op) gpr[getDestination()] = ( gpr[getSource0()] op gpr[getSource1()]);
-#define XImmediate(n, op) gpr[getDestination()] = (gpr[getSource0()] op static_cast<word>(getSource1()));
-#define XUnary(n, op) gpr[getDestination()] = (op gpr[getSource0()]);
-#define BeginDenominator(n) \
-			if (gpr[getSource1()] == 0) { \
-				std::cerr << "denominator in for operation " << #n << " is zero!" << std::endl; \
-				execute = false; \
-			} else { 
-#define EndDenominator }
-
-#define XDenominator(n, op) \
-			BeginDenominator(n) \
-				XNone(n, op) \
-			EndDenominator
-#define XDenominatorImmediate(n, op) \
-			BeginDenominator(n) \
-				XImmediate(n, op) \
-			EndDenominator
+	void Core::arithmetic() {
+		auto operation = static_cast<ArithmeticOp>(getOperation());
+#define XNone(n, op) gpr[getDestination()] = op(gpr[getSource0()], gpr[getSource1()]);
+#define XImmediate(n, op) gpr[getDestination()] = op(gpr[getSource0()], static_cast<word>(getSource1()));
+#define XUnary(n, op) gpr[getDestination()] = op(gpr[getSource0()]);
 #define X(name, op, desc) \
-			case ArithmeticOp:: name: \
-						{ \
-							INDIRECTOR(X, desc)(name, op) \
-							break; \
-						}
+		if (ArithmeticOp:: name == operation) { \
+			INDIRECTOR(X, desc)(name, op) \
+			return; \
+		}
 #include "def/iris16/arithmetic.def"
-#undef BeginDenominator
-#undef EndDenominator
 #undef X
 #undef XNone
 #undef XDenominator
 #undef XUnary
-#undef XImmediate
-#undef XDenominatorImmediate
 
-			default:
-				std::cerr << "Illegal arithmetic operation " << getOperation() << std::endl;
-				execute = false;
-				break;
-		}
+		std::cerr << "Illegal arithmetic operation " << getOperation() << std::endl;
+		execute = false;
 	}
 	template<JumpOp op>
 	struct ConditionalStyle {
@@ -166,7 +143,7 @@ namespace iris16 {
 #include "def/iris16/jump.def"
 #undef X
 
-	void Core::jump() noexcept {
+	void Core::jump() {
 		auto newAddr = static_cast<word>(0);
 		auto cond = true;
 		advanceIp = false;
@@ -207,7 +184,7 @@ namespace iris16 {
 				break;
 		}
 	}
-	void Core::misc() noexcept {
+	void Core::misc() {
 		auto op = static_cast<MiscOp>(getOperation());
 #define X(name, func) \
 		if (op == MiscOp:: name) { \
@@ -220,7 +197,7 @@ namespace iris16 {
 		execute = false;
 		advanceIp = false;
 	}
-	void Core::systemCall() noexcept {
+	void Core::systemCall() {
 		switch(static_cast<SystemCalls>(getDestination())) {
 			case SystemCalls::Terminate:
 				execute = false;
@@ -242,7 +219,7 @@ namespace iris16 {
 				break;
 		}
 	}
-	void Core::move() noexcept {
+	void Core::move() {
 		auto a = static_cast<word>(0);
 		switch(static_cast<MoveOp>(getOperation())) {
 #define GPRRegister0 (gpr[getDestination()])

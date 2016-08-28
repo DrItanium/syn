@@ -128,7 +128,7 @@ inline constexpr T mul(T a, T b) noexcept {
 }
 
 template<typename T>
-inline constexpr T div(T numerator, T denominator) {
+inline T div(T numerator, T denominator) {
 	if (denominator == 0) {
 		throw iris::Problem("Denominator is zero");
 	} else {
@@ -137,7 +137,7 @@ inline constexpr T div(T numerator, T denominator) {
 }
 
 template<typename T>
-inline constexpr T rem(T numerator, T denominator) {
+inline T rem(T numerator, T denominator) {
 	if (denominator == 0) {
 		throw iris::Problem("Denominator is zero");
 	} else {
@@ -172,6 +172,36 @@ inline constexpr bool le(T a, T b) noexcept {
 template<typename T>
 inline constexpr bool ge(T a, T b) noexcept {
 	return a >= b;
+}
+
+template<typename T>
+inline constexpr T shiftLeft(T a, T b) noexcept {
+	return a << b;
+}
+
+template<typename T>
+inline constexpr T shiftRight(T a, T b) noexcept {
+	return a >> b;
+}
+
+template<typename T>
+inline constexpr T binaryAnd(T a, T b) noexcept {
+	return a & b;
+}
+
+template<typename T>
+inline constexpr T binaryOr(T a, T b) noexcept {
+	return a | b;
+}
+
+template<typename T>
+inline constexpr T binaryNot(T a) noexcept {
+	return ~a;
+}
+
+template<typename T>
+inline constexpr T binaryXor(T a, T b) noexcept {
+	return a ^ b;
 }
 
 }
