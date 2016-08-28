@@ -10,15 +10,15 @@
 #include <tuple>
 
 namespace iris17 {
-    using hword = uint8_t;
-    using word = uint16_t;
-    using dword = uint32_t;
-    using raw_instruction = word; // this is more of a packet!
-    using immediate = hword;
-    using RegisterValue = dword;
-    inline constexpr word encodeWord (byte a, byte b) noexcept;
+    using HWord = uint8_t;
+    using Word = uint16_t;
+    using DWord = uint32_t;
+    using RawInstruction = Word; // this is more of a packet!
+    using immediate = HWord;
+    using RegisterValue = DWord;
+    inline constexpr Word encodeWord (byte a, byte b) noexcept;
     inline constexpr RegisterValue encodeRegisterValue(byte a, byte b, byte c, byte d) noexcept;
-    inline void decodeWord(word value, byte* storage) noexcept;
+    inline void decodeWord(Word value, byte* storage) noexcept;
     inline void decodeRegisterValue(RegisterValue value, byte* storage) noexcept;
     enum ArchitectureConstants  {
         RegisterCount = 16,
@@ -58,13 +58,14 @@ namespace iris17 {
 
     class DecodedInstruction {
         public:
-            DecodedInstruction(raw_instruction input) noexcept;
-            raw_instruction getRawValue() const noexcept;
-#define X(title, mask, shift, type, post) type get ## title () const noexcept;
+            DecodedInstruction(RawInstruction input) noexcept : _rawValue(input) { }
+			DecodedInstruction(const DecodedInstruction&) = delete;
+            RawInstruction getRawValue() const noexcept { return _rawValue; }
+#define X(title, mask, shift, type, post) type get ## title () const noexcept { return iris::decodeBits<RawInstruction, type, mask, shift>(_rawValue); }
 #include "def/iris17/instruction.def"
 #undef X
         private:
-            raw_instruction _rawValue;
+            RawInstruction _rawValue;
     };
 
     template<byte bitmask>
@@ -76,16 +77,16 @@ namespace iris17 {
 				iris::decodeBits<byte, bool, 0b1000, 3>(bitmask)
             };
             static constexpr byte determineMaskValue(bool value) noexcept { return value ? 0xFF : 0x00; }
-			static constexpr word encodeWord(bool upper, bool lower) {
-				return iris::encodeBits<word, byte, 0xFF00, 8>( 
-					iris::encodeBits<word, byte, 0x00FF, 0>(0, 
+			static constexpr Word encodeWord(bool upper, bool lower) {
+				return iris::encodeBits<Word, byte, 0xFF00, 8>( 
+					iris::encodeBits<Word, byte, 0x00FF, 0>(0, 
 						determineMaskValue(lower)), 
 					determineMaskValue(upper));
 			}
-			static constexpr word lowerMask = encodeWord(decomposedBits[1], decomposedBits[0]);
-			static constexpr word upperMask = encodeWord(decomposedBits[3], decomposedBits[2]);
-			static constexpr RegisterValue mask = iris::encodeBits<RegisterValue, word, 0xFFFF0000, 16>( 
-					iris::encodeBits<RegisterValue, word, 0x0000FFFF, 0>(0, lowerMask), upperMask);
+			static constexpr Word lowerMask = encodeWord(decomposedBits[1], decomposedBits[0]);
+			static constexpr Word upperMask = encodeWord(decomposedBits[3], decomposedBits[2]);
+			static constexpr RegisterValue mask = iris::encodeBits<RegisterValue, Word, 0xFFFF0000, 16>( 
+					iris::encodeBits<RegisterValue, Word, 0x0000FFFF, 0>(0, lowerMask), upperMask);
 
             static constexpr bool readLower = decomposedBits[1] || decomposedBits[0];
             static constexpr bool readUpper = decomposedBits[2] || decomposedBits[3];
@@ -93,9 +94,9 @@ namespace iris17 {
     template<byte bitmask>
         constexpr RegisterValue mask() noexcept { return SetBitmaskToWordMask<bitmask>::mask; }
     template<byte bitmask>
-        constexpr word lowerMask() noexcept { return SetBitmaskToWordMask<bitmask>::lowerMask; }
+        constexpr Word lowerMask() noexcept { return SetBitmaskToWordMask<bitmask>::lowerMask; }
     template<byte bitmask>
-        constexpr word upperMask() noexcept { return SetBitmaskToWordMask<bitmask>::upperMask; }
+        constexpr Word upperMask() noexcept { return SetBitmaskToWordMask<bitmask>::upperMask; }
     template<byte bitmask>
         constexpr bool readLower() noexcept { return SetBitmaskToWordMask<bitmask>::readLower; }
     template<byte bitmask>
@@ -331,13 +332,13 @@ namespace iris17 {
                 void storeOperation(RegisterValue address) {
                     if (readLower<bitmask>()) {
                         auto static constexpr lmask = lowerMask<bitmask>();
-                        word lower = lmask & iris::decodeBits<RegisterValue, word, lower16Mask, 0>(getValueRegister());
+                        Word lower = lmask & iris::decodeBits<RegisterValue, Word, lower16Mask, 0>(getValueRegister());
                         auto loader = loadWord(address) & ~lmask;
                         storeWord(address, lower | loader);
                     }
                     if (readUpper<bitmask>()) {
                         auto static constexpr umask = upperMask<bitmask>();
-                        word upper = umask & iris::decodeBits<RegisterValue, word, upper16Mask, 16>(getValueRegister());
+                        Word upper = umask & iris::decodeBits<RegisterValue, Word, upper16Mask, 16>(getValueRegister());
                         auto loader = loadWord(address + 1) & ~umask;
                         storeWord(address + 1, upper | loader);
                     }
@@ -349,12 +350,12 @@ namespace iris17 {
                     // read backwards because the stack grows upward towards zero
                     if (readUpper<bitmask>()) {
 						decrementStackPointer();
-                        word upper = upperMask<bitmask>() & iris::decodeBits<RegisterValue, word, upper16Mask, 16>(pushToStack);
+                        Word upper = upperMask<bitmask>() & iris::decodeBits<RegisterValue, Word, upper16Mask, 16>(pushToStack);
                         storeWord(getStackPointer(), upper);
                     }
                     if (readLower<bitmask>()) {
 						decrementStackPointer();
-                        word lower = lowerMask<bitmask>() & iris::decodeBits<RegisterValue, word, lower16Mask, 0>(pushToStack);
+                        Word lower = lowerMask<bitmask>() & iris::decodeBits<RegisterValue, Word, lower16Mask, 0>(pushToStack);
                         storeWord(getStackPointer(), lower);
                     }
                 }
@@ -371,7 +372,7 @@ namespace iris17 {
                         upper = upperMask<bitmask>() & loadWord(getStackPointer());
 						incrementStackPointer();
                     }
-                    storage = iris::encodeBits<RegisterValue, word, upper16Mask, 16>(iris::encodeBits<RegisterValue, word, lower16Mask, 0>(static_cast<RegisterValue>(0), lower), upper);
+                    storage = iris::encodeBits<RegisterValue, Word, upper16Mask, 16>(iris::encodeBits<RegisterValue, Word, lower16Mask, 0>(static_cast<RegisterValue>(0), lower), upper);
                 }
 
             template<MemoryOperation type, byte bitmask>
@@ -417,9 +418,9 @@ namespace iris17 {
 			void incrementInstructionPointer() noexcept;
 			void incrementStackPointer() noexcept;
 			void decrementStackPointer() noexcept;
-            word getCurrentCodeWord() noexcept;
-            void storeWord(RegisterValue address, word value);
-            word loadWord(RegisterValue address);
+            Word getCurrentCodeWord() noexcept;
+            void storeWord(RegisterValue address, Word value);
+            Word loadWord(RegisterValue address);
             RegisterValue loadRegisterValue(RegisterValue address);
             void storeRegisterValue(RegisterValue address, RegisterValue value);
 
@@ -427,7 +428,7 @@ namespace iris17 {
             bool execute = true,
                  advanceIp = true;
             RegisterValue gpr[ArchitectureConstants::RegisterCount] = { 0 };
-			std::shared_ptr<word> memory;
+			std::shared_ptr<Word> memory;
     };
 
     Core* newCore() noexcept;
@@ -441,8 +442,8 @@ namespace iris17 {
     MustCheckDenominator(Rem);
 #undef MustCheckDenominator
 #define X(title, mask, shift, type, post) \
-	constexpr inline word encode ## title (word input, type value) noexcept { \
-		return iris::encodeBits<word, type, mask, shift>(input, value); \
+	constexpr inline Word encode ## title (Word input, type value) noexcept { \
+		return iris::encodeBits<Word, type, mask, shift>(input, value); \
 	}
 #include "def/iris17/instruction.def"
 #undef X
@@ -463,7 +464,7 @@ namespace iris17 {
         byte subType;
         CompareCombine combineType;
         RegisterValue fullImmediate;
-        using Encoding = std::tuple<int, word, word, word>;
+        using Encoding = std::tuple<int, Word, Word, Word>;
         int numWords();
         Encoding encode();
         void clear();

@@ -4,13 +4,14 @@
 #include "Core.h"
 #include <cstdint>
 #include <vector>
+#include <memory>
 
 
 namespace iris32 {
-	typedef int64_t dword;
-	typedef int32_t word;
-	typedef int16_t hword;
-	word encodeWord(byte, byte, byte, byte);
+	using dword = int64_t;
+	using word = int32_t;
+	using hword = int16_t;
+	constexpr word encodeWord(byte, byte, byte, byte) noexcept;
 	enum ArchitectureConstants  {
 		RegisterCount = 256,
 		AddressMax = 268435456 /* bytes */ / sizeof(word), // words
@@ -20,24 +21,11 @@ namespace iris32 {
 		ConditionRegisterIndex = RegisterCount - 4,
 		ThreadIndex = RegisterCount - 5,
 
-	};
-	enum {
 		GroupMask = 0b00000111,
 		RestMask = ~GroupMask,
 		MaxInstructionsPerGroup = RestMask >> 3,
 	};
-	class MemoryController {
-		public:
-			MemoryController(word memSize);
-			~MemoryController();
-			word read(word address);
-			void write(word address, word value);
-			void install(std::istream& stream);
-			void dump(std::ostream& stream);
-		private:
-			word memorySize;
-			word* memory;
-	};
+
 	enum class InstructionGroup : byte {
 #define X(e, __) e ,
 #include "def/iris32/groups.def"
@@ -95,11 +83,11 @@ namespace iris32 {
 	template<byte control>
 	struct DecodeControl {
 		static constexpr byte value = control;
-		static constexpr InstructionGroup group = static_cast<InstructionGroup>(control & 0b00000111);
-		static constexpr byte op = ((control & 0b11111000) >> 3);
+		static constexpr InstructionGroup group = iris::decodeBits<byte, InstructionGroup, 0b00000111, 0>(control);
+		static constexpr byte op = iris::decodeBits<byte, byte, 0b11111000, 3>(control);
 	};
 
-	constexpr byte encodeControl(byte group, byte op) {
+	inline constexpr byte encodeControl(byte group, byte op) noexcept {
 		return ((group | (op << 3)));
 	}
 
@@ -109,9 +97,9 @@ namespace iris32 {
 #include "def/iris32/compare.def"
 #undef X
 #undef Y
-		NumberOfCompareOps,
+		Count,
 	};
-	static_assert(byte(CompareOp::NumberOfCompareOps) <= byte(MaxInstructionsPerGroup), "Too many compare operations defined!");
+	static_assert(byte(CompareOp::Count) <= byte(MaxInstructionsPerGroup), "Too many compare operations defined!");
 #define DefOp(cl, group, e) \
 	using Decode ## cl ## e = DecodeControl<encodeControl( static_cast<byte>(InstructionGroup:: group), static_cast < byte > (cl :: e))>;
 #define X(e, __, ___) DefOp(CompareOp, Compare, e)
@@ -128,9 +116,9 @@ namespace iris32 {
 #define X(title, operation, type) title ,
 #include "def/iris32/arithmetic.def"
 #undef X
-		NumberOfArithmeticOps,
+		Count,
 	};
-	static_assert(byte(ArithmeticOp::NumberOfArithmeticOps) <= byte(MaxInstructionsPerGroup), "Too many arithmetic operations defined!");
+	static_assert(byte(ArithmeticOp::Count) <= byte(MaxInstructionsPerGroup), "Too many arithmetic operations defined!");
 
 #define X(title, u0, u1) DefOp(ArithmeticOp, Arithmetic, title)
 #include "def/iris32/arithmetic.def"
@@ -140,9 +128,9 @@ namespace iris32 {
 #define X(title, operation, __, ___, ____) title ,
 #include "def/iris32/move.def"
 #undef X
-		NumberOfMoveOps,
+		Count,
 	};
-	static_assert(byte(MoveOp::NumberOfMoveOps) <= byte(MaxInstructionsPerGroup), "Too many move operations defined!");
+	static_assert(byte(MoveOp::Count) <= byte(MaxInstructionsPerGroup), "Too many move operations defined!");
 
 #define X(title, __, ___, ____, _____) DefOp(MoveOp, Move, title)
 #include "def/iris32/move.def"
@@ -152,9 +140,9 @@ namespace iris32 {
 #define X(title, u0, u1, u2, u3, u4) title ,
 #include "def/iris32/jump.def"
 #undef X
-		NumberOfJumpOps,
+		Count,
 	};
-	static_assert(byte(JumpOp::NumberOfJumpOps) <= byte(MaxInstructionsPerGroup), "Too many jump operations defined!");
+	static_assert(byte(JumpOp::Count) <= byte(MaxInstructionsPerGroup), "Too many jump operations defined!");
 
 #define X(title, u0, u1, u2, u3, u4) DefOp(JumpOp, Jump, title)
 #include "def/iris32/jump.def"
@@ -164,9 +152,9 @@ namespace iris32 {
 #define X(title, __) title ,
 #include "def/iris32/misc.def"
 #undef X
-		NumberOfMiscOps,
+		Count,
 	};
-	static_assert(byte(MiscOp::NumberOfMiscOps) <= byte(MaxInstructionsPerGroup), "Too many misc operations defined!");
+	static_assert(byte(MiscOp::Count) <= byte(MaxInstructionsPerGroup), "Too many misc operations defined!");
 
 #define X(title, __) DefOp(MiscOp, Misc, title)
 #include "def/iris32/misc.def"
@@ -176,9 +164,9 @@ namespace iris32 {
 #define X(title) title ,
 #include "def/iris32/syscalls.def"
 #undef X
-		NumberOfSyscalls,
+		Count,
 	};
-	static_assert(byte(SystemCalls::NumberOfSyscalls) <= 255, "Too many syscall operations defined!");
+	static_assert(byte(SystemCalls::Count) <= 255, "Too many syscall operations defined!");
 
 #define X(group, __) \
 	template<> \
@@ -218,13 +206,13 @@ namespace iris32 {
 			friend void invokeMisc(Core* core, DecodedInstruction&& inst);
 		private:
 			word memorySize;
-			word* memory;
-			ExecState *thread = nullptr;
-			std::vector<ExecState> threads;
+			std::unique_ptr<word> memory;
+			std::shared_ptr<ExecState> thread;
+			std::vector<std::shared_ptr<ExecState>> threads;
 			bool execute = true;
 	};
 
-	Core* newCore();
+	Core* newCore() noexcept;
 } // end namespace iris32
 #undef DefOp
 #endif // end _TARGET_IRIS32_IRIS_H

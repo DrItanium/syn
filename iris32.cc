@@ -5,10 +5,10 @@
 #include <sstream>
 
 namespace iris32 {
-	Core* newCore() {
+	Core* newCore() noexcept {
 		return new iris32::Core(iris32::ArchitectureConstants::AddressMax, 8);
 	}
-	word encodeWord(byte a, byte b, byte c, byte d) {
+	constexpr word encodeWord(byte a, byte b, byte c, byte d)  noexcept {
 		return word(a) | word(b) << 8 | word(c) << 16 | word(d) << 24;
 	}
 	DecodedInstruction::DecodedInstruction(word inst) :
@@ -38,7 +38,7 @@ namespace iris32 {
 
 	void Core::write(word addr, word value) {
 		if (addr >= 0 && addr < memorySize) {
-			memory[addr] = value;
+			memory.get()[addr] = value;
 		} else {
 			std::cerr << "write: Address " << std::hex << addr << " is out of range of" << std::hex << memorySize << std::endl;
 			execute = false;
@@ -47,7 +47,7 @@ namespace iris32 {
 	}
 	word Core::read(word address) {
 		if (address >= 0 && address < memorySize) {
-			return memory[address];
+			return memory.get()[address];
 		} else {
 			std::cerr << "read: Address " << std::hex << address << " is out of range of " << std::hex << memorySize << std::endl;
 			execute = false;
@@ -61,7 +61,6 @@ namespace iris32 {
 		threads(numThreads)
 	{ }
 	Core::~Core() {
-		delete [] memory;
 		memory = 0;
 	}
 	void Core::installprogram(std::istream& stream) {
@@ -95,13 +94,13 @@ namespace iris32 {
 				std::cerr << "install 0x" << std::hex << data
 					<< " @ 0x" << std::hex << addr << std::endl;
 			}
-			memory[addr] = data;
+			memory.get()[addr] = data;
 		}
 	}
 	void Core::dump(std::ostream& stream) {
 		char storage[sizeof(word)] = { 0 };
 		for (word i = 0; i < memorySize; ++i) {
-			auto cell = memory[i];
+			auto cell = memory.get()[i];
 			for (int j = 0; j < int(sizeof(word)); ++j) {
 				storage[j] = byte(cell >> (8 * j));
 			}
@@ -116,11 +115,11 @@ namespace iris32 {
 	// jump operations
 	template<bool ifthenelse, bool conditional, bool iffalse, bool immediate, bool link>
 		void invokeJump(Core* core, DecodedInstruction&& inst) {
-			auto thread = core->thread;
+			const auto &thread = core->thread;
 			auto newAddr = static_cast<word>(0);
 			auto cond = false;
 			thread->advanceIp = false;
-			auto ip = thread->gpr[inst.getDestination()];
+			auto ip = core->thread->gpr[inst.getDestination()];
 			if (conditional) {
 				auto dest = thread->gpr[inst.getDestination()];
 				cond = iffalse ? (dest == 0) : (dest != 0);
@@ -160,7 +159,7 @@ namespace iris32 {
 	// move operations
 	template<MoveOp op>
 		void invokeMove(Core* core, DecodedInstruction&& inst) {
-			auto thread = core->thread;
+			const auto &thread = core->thread;
 			constexpr auto stackPointer = ArchitectureConstants::StackPointerIndex;
 			switch (op) {
 				case MoveOp::Store:
@@ -199,7 +198,7 @@ namespace iris32 {
 
 	template<CompareOp op>
 		void invokeCompare(Core* core, DecodedInstruction&& current) {
-			auto thread = core->thread;
+			const auto &thread = core->thread;
 			switch (op) {
 				case CompareOp::Eq:
 					thread->gpr[current.getDestination()] = (thread->gpr[current.getSource0()] == thread->gpr[current.getSource1()]); 
@@ -239,14 +238,12 @@ namespace iris32 {
 					break;
 				default:
 					throw iris::Problem("Illegal compare instruction!");
-
-
 			}
 		}
 
 template<ArithmeticOp op, bool checkDenominator, bool immediate>
 void invokeArithmetic(Core* core, DecodedInstruction&& inst) {
-	auto thread = core->thread;
+	const auto &thread = core->thread;
 	auto src1 = static_cast<word>(immediate ? inst.getSource1() : thread->gpr[inst.getSource1()]);
 	if (checkDenominator) {
 		if (src1 == 0) {
@@ -302,7 +299,7 @@ void invokeArithmetic(Core* core, DecodedInstruction&& inst) {
 
 template<MiscOp op>
 void invokeMisc(Core* core, DecodedInstruction&& inst) {
-	auto thread = core->thread;
+	const auto &thread = core->thread;
 	switch (op) { 
 		case MiscOp::SystemCall:
 			switch(static_cast<SystemCalls>(inst.getDestination())) {
@@ -394,7 +391,7 @@ void invokeMisc(Core* core, DecodedInstruction&& inst) {
 	void Core::initialize() {
 		int threadIndex = 0;
 		for (auto &cthread : threads) {
-			cthread.gpr[iris32::ArchitectureConstants::ThreadIndex] = threadIndex;
+			cthread->gpr[iris32::ArchitectureConstants::ThreadIndex] = threadIndex;
 			++threadIndex;
 		}
 	}
@@ -403,11 +400,11 @@ void invokeMisc(Core* core, DecodedInstruction&& inst) {
 	}
 	void Core::run() {
 		while (execute) {
-			for (auto &cthread : threads) {
+			for (auto cthread : threads) {
 				if (!execute) {
 					return;
 				} else {
-					thread = &cthread;
+					thread = cthread;
 					execBody();
 				}
 			}
@@ -416,7 +413,7 @@ void invokeMisc(Core* core, DecodedInstruction&& inst) {
 	void Core::execBody() {
 		if (debugEnabled()) {
 			std::cerr << "{" << std::endl;
-			std::cerr << "current thread " << std::hex << thread << std::endl;
+			std::cerr << "current thread " << std::hex << thread.get() << std::endl;
 		}
 		if (!thread->advanceIp) {
 			thread->advanceIp = true;

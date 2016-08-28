@@ -36,7 +36,7 @@ struct InstructionFieldInformation { };
 #define X(_title, _mask, _shift, _type, _post) \
 template<> \
 struct InstructionFieldInformation<InstructionFields :: _title> { \
-	static constexpr word mask = _mask; \
+	static constexpr Word mask = _mask; \
 	static constexpr byte shiftCount = _shift; \
 	using AssociatedType = _type ; \
 };
@@ -44,8 +44,8 @@ struct InstructionFieldInformation<InstructionFields :: _title> { \
 #undef X
 
 template<InstructionFields field>
-typename InstructionFieldInformation<field>::AssociatedType encodeInstruction(raw_instruction base, typename InstructionFieldInformation<field>::AssociatedType value) {
-	return iris::encodeBits<raw_instruction, InstructionFieldInformation<field>::AssociatedType, InstructionFieldInformation<field>::mask, InstructionFieldInformation<field>::shiftCount>(base, value);
+typename InstructionFieldInformation<field>::AssociatedType encodeInstruction(RawInstruction base, typename InstructionFieldInformation<field>::AssociatedType value) {
+	return iris::encodeBits<RawInstruction, InstructionFieldInformation<field>::AssociatedType, InstructionFieldInformation<field>::mask, InstructionFieldInformation<field>::shiftCount>(base, value);
 }
 struct data_registration
 {
@@ -157,7 +157,7 @@ namespace iris17 {
 		buf[5] = static_cast<char>(value >> 24);
 		state.output->write(buf, bufSize);
 	}
-	void writeEntry(RegisterValue address, word value) {
+	void writeEntry(RegisterValue address, Word value) {
 		constexpr int bufSize = 8;
 		char buf[bufSize] = { 0 };
 		buf[2] = static_cast<char>(address);
@@ -177,9 +177,9 @@ namespace iris17 {
 		for (auto &reg : state.declarations) {
 			switch(reg.width) {
 				case 2:
-					writeEntry(reg.address + 1, static_cast<word>(reg.immediate >> 16));
+					writeEntry(reg.address + 1, static_cast<Word>(reg.immediate >> 16));
 				case 1:
-					writeEntry(reg.address, static_cast<word>(reg.immediate));
+					writeEntry(reg.address, static_cast<Word>(reg.immediate));
 					break;
 				default: {
 					std::stringstream stream;
@@ -264,7 +264,7 @@ directive_word:
 		++state.address;
 	} |
 	DIRECTIVE_WORD IMMEDIATE {
-		state.declarations.emplace_back(iris17lineno, state.address, 1, static_cast<iris17::word>($2 & iris17::lower16Mask));
+		state.declarations.emplace_back(iris17lineno, state.address, 1, static_cast<iris17::Word>($2 & iris17::lower16Mask));
 		++state.address;
 	};
 

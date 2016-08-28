@@ -17,30 +17,17 @@ namespace iris17 {
 	constexpr RegisterValue encodeRegisterValue(byte a, byte b, byte c, byte d) noexcept {
 		return iris::encodeUint32LE(a, b, c, d);
 	}
-	constexpr word encodeWord(byte a, byte b) noexcept {
+	constexpr Word encodeWord(byte a, byte b) noexcept {
 		return iris::encodeUint16LE(a, b);
 	}
-	void decodeWord(word value, byte* storage) noexcept {
+	void decodeWord(Word value, byte* storage) noexcept {
 		return iris::decodeUint32LE(value, storage);
 	}
 	void decodeWord(RegisterValue value, byte* storage) noexcept {
 		return iris::decodeInt32LE(value, storage);
 	}
 
-	DecodedInstruction::DecodedInstruction(raw_instruction input) noexcept : _rawValue(input) { }
-
-	raw_instruction DecodedInstruction::getRawValue() const noexcept {
-		return _rawValue;
-	}
-
-#define X(title, mask, shift, type, post) \
-		type DecodedInstruction:: get ## title () const noexcept { \
-			return iris::decodeBits<raw_instruction, type, mask, shift>(_rawValue); \
-		}
-#include "def/iris17/instruction.def"
-#undef X
-
-	Core::Core() : memory(new word[ArchitectureConstants::AddressMax]) { }
+	Core::Core() : memory(new Word[ArchitectureConstants::AddressMax]) { }
 	Core::~Core() { }
 
 	void Core::initialize() { }
@@ -65,7 +52,7 @@ namespace iris17 {
 	}
 	void Core::installprogram(std::istream& stream) {
 		populateContents<RegisterValue, ArchitectureConstants::RegisterCount>(gpr, stream, [](byte* buf) { return iris::encodeUint32LE(buf); });
-		populateContents<word, ArchitectureConstants::AddressMax>(memory, stream, [](byte* buf) { return iris::encodeUint16LE(buf); });
+		populateContents<Word, ArchitectureConstants::AddressMax>(memory, stream, [](byte* buf) { return iris::encodeUint16LE(buf); });
 	}
 
 	template<typename T, int count>
@@ -89,7 +76,7 @@ namespace iris17 {
 	void Core::dump(std::ostream& stream) {
 		// save the registers
 		dumpContents<RegisterValue, ArchitectureConstants::RegisterCount>(gpr, stream, iris::decodeUint32LE);
-		dumpContents<word, ArchitectureConstants::AddressMax>(memory, stream, iris::decodeUint16LE);
+		dumpContents<Word, ArchitectureConstants::AddressMax>(memory, stream, iris::decodeUint16LE);
 	}
 	void Core::run() {
 		while(execute) {
@@ -357,7 +344,7 @@ DefOp(Compare) {
 			case SystemCalls::GetC:
 				byte value;
 				std::cin >> std::noskipws >> value;
-				registerValue(current.getSystemArg0()) = static_cast<word>(value);
+				registerValue(current.getSystemArg0()) = static_cast<Word>(value);
 				break;
 			default:
 				std::stringstream ss;
@@ -390,7 +377,7 @@ DefOp(Compare) {
 
 	void Core::link(std::istream& input) {
 		// we have some more data to read through
-		// two address system, 1 RegisterValue -> address, 1 word -> value
+		// two address system, 1 RegisterValue -> address, 1 Word -> value
 		static constexpr int bufSize = 8;
 		char buf[bufSize] = { 0 };
 		for(int lineNumber = 0; input.good(); ++lineNumber) {
@@ -422,17 +409,17 @@ DefOp(Compare) {
 			return gpr[index];
 		}
 	}
-	word Core::getCurrentCodeWord() noexcept {
+	Word Core::getCurrentCodeWord() noexcept {
 		return memory.get()[getInstructionPointer()];
 	}
-	void Core::storeWord(RegisterValue address, word value) {
+	void Core::storeWord(RegisterValue address, Word value) {
 		if (address >= ArchitectureConstants::AddressMax) {
 			throw iris::Problem("Attempted to write outside of memory!");
 		} else {
 			memory.get()[address] = value;
 		}
 	}
-	word Core::loadWord(RegisterValue address) {
+	Word Core::loadWord(RegisterValue address) {
 		if (address >= ArchitectureConstants::AddressMax) {
 			throw iris::Problem("Attempted to read from outside of memory!");
 		} else {
@@ -440,11 +427,11 @@ DefOp(Compare) {
 		}
 	}
 	RegisterValue Core::loadRegisterValue(RegisterValue address) {
-		return iris::encodeBits<RegisterValue, word, bitmask32, 16>(static_cast<RegisterValue>(loadWord(address)), loadWord(address + 1));
+		return iris::encodeBits<RegisterValue, Word, bitmask32, 16>(static_cast<RegisterValue>(loadWord(address)), loadWord(address + 1));
 	}
 	void Core::storeRegisterValue(RegisterValue address, RegisterValue value) {
-		storeWord(address, iris::decodeBits<RegisterValue, word, lower16Mask, 0>(value));
-		storeWord(address + 1, iris::decodeBits<RegisterValue, word, upper16Mask, 16>(value));
+		storeWord(address, iris::decodeBits<RegisterValue, Word, lower16Mask, 0>(value));
+		storeWord(address + 1, iris::decodeBits<RegisterValue, Word, upper16Mask, 16>(value));
 	}
 
 	InstructionEncoder::Encoding InstructionEncoder::encodeArithmetic() {
@@ -496,11 +483,11 @@ DefOp(Compare) {
 		auto first = encodeControl(0, type);
 		first = encodeSetBitmask(first, bitmask);
 		first = encodeSetDestination(first, arg0);
-		// use the mask during encoding since we know how many words the
+		// use the mask during encoding since we know how many Words the
 		// instruction is made up of
 		auto maskedValue = getMask(bitmask) & fullImmediate;
-		auto second = static_cast<word>(maskedValue);
-		auto third = static_cast<word>(maskedValue >> 16);
+		auto second = static_cast<Word>(maskedValue);
+		auto third = static_cast<Word>(maskedValue >> 16);
 		return std::make_tuple(count, first, second, third);
 	}
 
@@ -521,8 +508,8 @@ DefOp(Compare) {
 			first = encodeLogicalFlagImmediateMask(first, bitmask);
 			first = encodeLogicalImmediateDestination(first, arg0);
 			auto maskedImmediate = getMask(bitmask) & fullImmediate;
-			auto second = static_cast<word>(maskedImmediate);
-			auto third = static_cast<word>(maskedImmediate >> 16);
+			auto second = static_cast<Word>(maskedImmediate);
+			auto third = static_cast<Word>(maskedImmediate >> 16);
 			return std::make_tuple(instructionSizeFromImmediateMask(bitmask), first, second, third);
 		} else {
 			first = encodeLogicalFlagType(first, static_cast<LogicalOps>(subType));
@@ -546,7 +533,7 @@ DefOp(Compare) {
 			if (immediate) {
 				// encode the 24-bit number
 				first = encodeUpper(first, static_cast<byte>(fullImmediate));
-				auto second = static_cast<word>(fullImmediate >> 8);
+				auto second = static_cast<Word>(fullImmediate >> 8);
 				return std::make_tuple(2, first, second, 0);
 			} else {
 				first = encodeBranchIndirectDestination(first, arg0);
