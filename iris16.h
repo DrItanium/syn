@@ -89,6 +89,7 @@ namespace iris16 {
 			virtual void dump(std::ostream& stream) override;
 			virtual void run() override;
 			virtual void link(std::istream& input) override;
+		private:
 			inline void setInstructionMemory(word address, dword value) noexcept;
 			inline void setDataMemory(word address, word value) noexcept;
 		private:
