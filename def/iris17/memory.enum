@@ -1,0 +1,7 @@
+DefEnum(MemoryOperation, byte)
+	EnumEntry(Load)
+	EnumEntry(LoadMerge)
+	EnumEntry(Store)
+	EnumEntry(Push)
+	EnumEntry(Pop)
+EndDefEnum(MemoryOperation, byte, 8)
