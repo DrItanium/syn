@@ -3,6 +3,7 @@
 #define INDIRECTOR(a, ...) PRIMITIVE_INDIRECTOR(a, __VA_ARGS__)
 #define PRIMITIVE_INDIRECTOR(a, ...) a ## __VA_ARGS__
 #include <cstdint>
+#include "Problem.h"
 typedef uint8_t byte;
 namespace iris {
 
@@ -110,6 +111,68 @@ void decodeUint32LE(uint32_t value, byte storage[sizeof(uint32_t)]) noexcept;
 void decodeUint16LE(uint16_t value, byte storage[sizeof(uint16_t)]) noexcept;
 void decodeInt32LE(int32_t value, byte storage[sizeof(int32_t)]) noexcept;
 void decodeInt16LE(int16_t value, byte storage[sizeof(int16_t)]) noexcept;
+
+template<typename T>
+inline constexpr T add(T a, T b) noexcept {
+	return a + b;
+}
+
+template<typename T>
+inline constexpr T sub(T a, T b) noexcept {
+	return a - b;
+}
+
+template<typename T>
+inline constexpr T mul(T a, T b) noexcept {
+	return a * b;
+}
+
+template<typename T>
+inline constexpr T div(T numerator, T denominator) {
+	if (denominator == 0) {
+		throw iris::Problem("Denominator is zero");
+	} else {
+		return numerator / denominator;
+	}
+}
+
+template<typename T>
+inline constexpr T rem(T numerator, T denominator) {
+	if (denominator == 0) {
+		throw iris::Problem("Denominator is zero");
+	} else {
+		return numerator % denominator;
+	}
+}
+
+template<typename T>
+inline constexpr bool eq(T a, T b) noexcept { 
+	return a == b; 
+}
+template<typename T>
+inline constexpr bool neq(T a, T b) noexcept {
+	return a != b;
+}
+
+template<typename T>
+inline constexpr bool lt(T a, T b) noexcept {
+	return a < b;
+}
+
+template<typename T>
+inline constexpr bool gt(T a, T b) noexcept {
+	return a > b;
+}
+
+template<typename T>
+inline constexpr bool le(T a, T b) noexcept {
+	return a <= b;
+}
+
+template<typename T>
+inline constexpr bool ge(T a, T b) noexcept {
+	return a >= b;
+}
 
 }
 #endif
