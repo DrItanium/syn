@@ -58,9 +58,9 @@ namespace iris17 {
 
     class DecodedInstruction {
         public:
-            DecodedInstruction(raw_instruction input);
-            raw_instruction getRawValue() const;
-#define X(title, mask, shift, type, post) type get ## title () const;
+            DecodedInstruction(raw_instruction input) noexcept;
+            raw_instruction getRawValue() const noexcept;
+#define X(title, mask, shift, type, post) type get ## title () const noexcept;
 #include "def/iris17/instruction.def"
 #undef X
         private:
@@ -417,7 +417,7 @@ namespace iris17 {
 			void incrementInstructionPointer() noexcept;
 			void incrementStackPointer() noexcept;
 			void decrementStackPointer() noexcept;
-            word getCurrentCodeWord();
+            word getCurrentCodeWord() noexcept;
             void storeWord(RegisterValue address, word value);
             word loadWord(RegisterValue address);
             RegisterValue loadRegisterValue(RegisterValue address);
@@ -427,10 +427,10 @@ namespace iris17 {
             bool execute = true,
                  advanceIp = true;
             RegisterValue gpr[ArchitectureConstants::RegisterCount] = { 0 };
-            word *memory = nullptr;
+			std::shared_ptr<word> memory;
     };
 
-    Core* newCore();
+    Core* newCore() noexcept;
 
 #define MustCheckDenominator(op) \
     template<> \

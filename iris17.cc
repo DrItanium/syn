@@ -11,7 +11,7 @@ namespace iris17 {
  * encoding comes from different register choices. The reserved registers are
  * used to compress the encoding.
  */
-	Core* newCore() {
+	Core* newCore() noexcept {
 		return new Core();
 	}
 	constexpr RegisterValue encodeRegisterValue(byte a, byte b, byte c, byte d) noexcept {
@@ -27,23 +27,21 @@ namespace iris17 {
 		return iris::decodeInt32LE(value, storage);
 	}
 
-	DecodedInstruction::DecodedInstruction(raw_instruction input) : _rawValue(input) { }
+	DecodedInstruction::DecodedInstruction(raw_instruction input) noexcept : _rawValue(input) { }
 
-	raw_instruction DecodedInstruction::getRawValue() const {
+	raw_instruction DecodedInstruction::getRawValue() const noexcept {
 		return _rawValue;
 	}
 
 #define X(title, mask, shift, type, post) \
-		type DecodedInstruction:: get ## title () const { \
+		type DecodedInstruction:: get ## title () const noexcept { \
 			return iris::decodeBits<raw_instruction, type, mask, shift>(_rawValue); \
 		}
 #include "def/iris17/instruction.def"
 #undef X
 
 	Core::Core() : memory(new word[ArchitectureConstants::AddressMax]) { }
-	Core::~Core() {
-		delete [] memory;
-	}
+	Core::~Core() { }
 
 	void Core::initialize() { }
 
@@ -55,6 +53,14 @@ namespace iris17 {
 		for(int i = 0; i < count; ++i) {
 			stream.read(buf, sizeof(T));
 			contents[i] = encode((byte*)buf);
+		}
+	}
+	template<typename T, int count>
+	void populateContents(const std::shared_ptr<T>& contents, std::istream& stream, std::function<T(byte*)> encode) {
+		static char buf[sizeof(T)] = { 0 };
+		for (auto i = 0; i < count; ++i) {
+			stream.read(buf, sizeof(T));
+			contents.get()[i] = encode((byte*)buf);
 		}
 	}
 	void Core::installprogram(std::istream& stream) {
@@ -71,6 +77,15 @@ namespace iris17 {
 		}
 	}
 
+	template<typename T, int count>
+	void dumpContents(const std::shared_ptr<T>& contents, std::ostream& stream, std::function<void(T value, byte* buf)> decompose) {
+		static byte buf[sizeof(T)];
+		for (auto i = 0; i < count; ++i) {
+			decompose(contents.get()[i], buf);
+			stream.write((char*)buf, sizeof(T));
+		}
+	}
+
 	void Core::dump(std::ostream& stream) {
 		// save the registers
 		dumpContents<RegisterValue, ArchitectureConstants::RegisterCount>(gpr, stream, iris::decodeUint32LE);
@@ -78,8 +93,7 @@ namespace iris17 {
 	}
 	void Core::run() {
 		while(execute) {
-			DecodedInstruction di(getCurrentCodeWord());
-			dispatch(std::move(di));
+			dispatch(std::move(DecodedInstruction(getCurrentCodeWord())));
 			if (advanceIp) {
 				incrementStackPointer();
 			} else {
@@ -426,21 +440,21 @@ DefOp(Compare) {
 	RegisterValue& Core::getValueRegister() noexcept {
 		return registerValue<ArchitectureConstants::ValueRegister>();
 	}
-	word Core::getCurrentCodeWord() {
-		return memory[getInstructionPointer()];
+	word Core::getCurrentCodeWord() noexcept {
+		return memory.get()[getInstructionPointer()];
 	}
 	void Core::storeWord(RegisterValue address, word value) {
 		if (address > ArchitectureConstants::AddressMax) {
 			throw iris::Problem("Attempted to write outside of memory!");
 		} else {
-			memory[address] = value;
+			memory.get()[address] = value;
 		}
 	}
 	word Core::loadWord(RegisterValue address) {
 		if (address > ArchitectureConstants::AddressMax) {
 			throw iris::Problem("Attempted to read from outside of memory!");
 		} else {
-			return memory[address];
+			return memory.get()[address];
 		}
 	}
 	RegisterValue Core::loadRegisterValue(RegisterValue address) {
