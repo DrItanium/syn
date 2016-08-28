@@ -10,16 +10,13 @@ namespace iris16 {
 	}
 
 
-	Core::Core() { }
+	Core::~Core() { }
 	void Core::setInstructionMemory(word address, dword value) noexcept {
 		instruction[address] = value;
 	}
 	void Core::setDataMemory(word address, word value) noexcept {
 		data[address] = value;
 	}
-
-	void Core::initialize() { }
-	void Core::shutdown() { }
 
 	template<typename T, int count>
 	void populateContents(T* contents, std::istream& stream, const std::function<T(char*)>& func) {
@@ -77,7 +74,7 @@ namespace iris16 {
 			}
 		}
 	}
-	void Core::dispatch() {
+	void Core::dispatch() noexcept {
 		auto group = static_cast<InstructionGroup>(getGroup());
 #define X(name, operation) \
 		if (group == InstructionGroup:: name) { \

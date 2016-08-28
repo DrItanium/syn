@@ -78,26 +78,28 @@ namespace iris16 {
 	static_assert((byte)CompareOp::Count < ((byte)ArchitectureConstants::MaxOperations), "too many Compare operations defined");
 	class Core : public iris::Core {
 		public:
-			Core();
-			virtual void initialize();
-			virtual void installprogram(std::istream& stream);
-			virtual void shutdown();
-			virtual void dump(std::ostream& stream);
-			virtual void run();
-			virtual void link(std::istream& input);
+			Core() { }
+			virtual ~Core();
+			virtual void initialize() override { }
+			virtual void installprogram(std::istream& stream) override;
+			virtual void shutdown() override { }
+			virtual void dump(std::ostream& stream) override;
+			virtual void run() override;
+			virtual void link(std::istream& input) override;
 			void setInstructionMemory(word address, dword value) noexcept;
 			void setDataMemory(word address, word value) noexcept;
 		private:
-			void dispatch();
+			void dispatch() noexcept;
 #define X(_, op) void op() noexcept;
 #include "def/iris16/groups.def"
 #undef X
 #define X(title, func) void func () noexcept;
 #include "def/iris16/misc.def"
 #undef X
-#define X(title, mask, shift, type, is_register, post) inline type get ## title () const noexcept { \
-	return iris::decodeBits<raw_instruction, type, mask, shift>(current); \
-}
+#define X(title, mask, shift, type, is_register, post) \
+			inline type get ## title () const noexcept { \
+				return iris::decodeBits<raw_instruction, type, mask, shift>(current); \
+			}
 #include "def/iris16/instruction.def"
 #undef X
 		private:
