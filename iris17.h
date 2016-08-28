@@ -70,18 +70,22 @@ namespace iris17 {
     template<byte bitmask>
         struct SetBitmaskToWordMask {
             static constexpr bool decomposedBits[] = {
-                (bitmask & 0b0001),
-                ((bitmask & 0b0010) >> 1),
-                ((bitmask & 0b0100) >> 2),
-                ((bitmask & 0b1000) >> 3),
+				iris::decodeBits<byte, bool, 0b0001, 0>(bitmask),
+				iris::decodeBits<byte, bool, 0b0010, 1>(bitmask),
+				iris::decodeBits<byte, bool, 0b0100, 2>(bitmask),
+				iris::decodeBits<byte, bool, 0b1000, 3>(bitmask)
             };
-            static constexpr byte determineMaskValue(bool value) { return value ? 0xFF : 0x00; }
-            static constexpr RegisterValue mask = (determineMaskValue(decomposedBits[3]) << 24) |
-                (determineMaskValue(decomposedBits[2]) << 16) |
-                (determineMaskValue(decomposedBits[1]) << 8) |
-                (determineMaskValue(decomposedBits[0]));
-            static constexpr word lowerMask = (determineMaskValue(decomposedBits[1]) << 8) | (determineMaskValue(decomposedBits[0]));
-            static constexpr word upperMask = (determineMaskValue(decomposedBits[3]) << 8) | (determineMaskValue(decomposedBits[2]));
+            static constexpr byte determineMaskValue(bool value) noexcept { return value ? 0xFF : 0x00; }
+			static constexpr word lowerMask = iris::encodeBits<word, byte, 0xFF00, 8>( 
+					iris::encodeBits<word, byte, 0x00FF, 0>(0, 
+						determineMaskValue(decomposedBits[0])), 
+					determineMaskValue(decomposedBits[1]));
+			static constexpr word upperMask = iris::encodeBits<word, byte, 0xFF00, 8>( 
+					iris::encodeBits<word, byte, 0x00FF, 0>(0, 
+						determineMaskValue(decomposedBits[2])), 
+					determineMaskValue(decomposedBits[3]));
+			static constexpr RegisterValue mask = iris::encodeBits<RegisterValue, word, 0xFFFF0000, 16>( iris::encodeBits<RegisterValue, word, 0x0000FFFF, 0>(0, lowerMask), upperMask);
+
             static constexpr bool readLower = decomposedBits[1] || decomposedBits[0];
             static constexpr bool readUpper = decomposedBits[2] || decomposedBits[3];
         };
