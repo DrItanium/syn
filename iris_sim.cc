@@ -6,14 +6,14 @@
 #include "Core.h"
 #include "sim_registration.h"
 
-std::istream* input = 0;
-bool close = false;
-bool debug = false;
+std::istream* input = nullptr;
+auto close = false;
+auto debug = false;
 iris::Core* core = nullptr;
 static void usage(char* arg0);
 std::string target;
 int main(int argc, char* argv[]) {
-	bool errorfree = true;
+	auto errorfree = true;
 	int last = argc - 1, 
 		i = 0;
 	if(argc > 1) {

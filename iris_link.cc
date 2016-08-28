@@ -10,14 +10,14 @@
 
 static void usage(char* arg0);
 iris::Core* core = nullptr;
-bool debug = false;
+auto debug = false;
 
 int main(int argc, char* argv[]) {
 	std::string line("v.img");
 	std::string target;
-	std::istream* input = 0;
-	std::ostream* output = 0;
-	bool closeOutput = false,
+	std::istream* input = nullptr;
+	std::ostream* output = nullptr;
+	auto closeOutput = false,
 		 closeInput = false,
 		 errorfree = true;
 	int last = argc - 1,
@@ -52,11 +52,11 @@ int main(int argc, char* argv[]) {
 				break;
 			}
 		}
-	if(target.empty()) {
-		std::cerr << "No target provided!" << std::endl;
-		usage(argv[0]);
-		return 2;
-	}
+		if(target.empty()) {
+			std::cerr << "No target provided!" << std::endl;
+			usage(argv[0]);
+			return 2;
+		}
 		if(errorfree) {
 			if(i == last) {
 				std::string tline(argv[last]);
