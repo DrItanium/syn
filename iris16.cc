@@ -11,9 +11,11 @@ namespace iris16 {
 
 
 	Core::~Core() { }
+
 	void Core::setInstructionMemory(word address, dword value) noexcept {
 		instruction[address] = value;
 	}
+
 	void Core::setDataMemory(word address, word value) noexcept {
 		data[address] = value;
 	}
@@ -46,15 +48,11 @@ namespace iris16 {
 	void Core::dump(std::ostream& stream) {
 		// save the registers
 		auto decomposeWord = [](word v, char* buf) {
-			buf[0] = (char)v;
-			buf[1] = (char)(v >> 8);
+			iris::decodeUint16LE(v, (byte*)buf);
 			return buf;
 		};
 		auto decomposeDword = [](dword v, char* buf) {
-			buf[0] = (char)v;
-			buf[1] = (char)(v >> 8);
-			buf[2] = (char)(v >> 16);
-			buf[3] = (char)(v >> 24);
+			iris::decodeUint32LE(v, (byte*)buf);
 			return buf;
 		};
 		dumpContents<word, ArchitectureConstants::RegisterCount>(gpr, stream, decomposeWord);
@@ -118,7 +116,7 @@ namespace iris16 {
 
 	void Core::arithmetic() noexcept {
 		switch(static_cast<ArithmeticOp>(getOperation())) {
-#define XNone(n, op) gpr[getDestination()] = ( gpr[getSource0()] op  gpr[getSource1()]);
+#define XNone(n, op) gpr[getDestination()] = ( gpr[getSource0()] op gpr[getSource1()]);
 #define XImmediate(n, op) gpr[getDestination()] = (gpr[getSource0()] op static_cast<word>(getSource1()));
 #define XUnary(n, op) gpr[getDestination()] = (op gpr[getSource0()]);
 #define XDenominator(n, op) \
@@ -226,12 +224,12 @@ namespace iris16 {
 				break;
 			case SystemCalls::PutC:
 				// read register 0 and register 1
-				std::cout.put((char)gpr[getSource0()]);
+				std::cout.put(static_cast<char>(gpr[getSource0()]));
 				break;
 			case SystemCalls::GetC:
 				byte value;
 				std::cin >> std::noskipws >> value;
-				gpr[getSource0()] = (word)value;
+				gpr[getSource0()] = static_cast<word>(value);
 				break;
 			default:
 				std::cerr << "Illegal system call " << getDestination() << std::endl;
@@ -265,11 +263,11 @@ namespace iris16 {
 
 #define XLoadCode(type, dest, src) \
 			auto result = instruction[INDIRECTOR(type, dest ## 0)]; \
-			INDIRECTOR(type, src ## 1) = (word)result; \
-			INDIRECTOR(type, src ## 2) = (word)(result >> 16);
+			INDIRECTOR(type, src ## 1) = static_cast<word>(result); \
+			INDIRECTOR(type, src ## 2) = static_cast<word>(result >> 16);
 
 #define XStoreCode(type, dest, src) \
-			instruction[INDIRECTOR(type, dest ## 0)] = ((((dword)INDIRECTOR(type, src ## 2)) << 16) | ((dword)INDIRECTOR(type, src ## 1)));
+			instruction[INDIRECTOR(type, dest ## 0)] = (((static_cast<dword>(INDIRECTOR(type, src ## 2))) << 16) | (static_cast<dword>(INDIRECTOR(type, src ## 1))));
 
 #define XMove(type, dest, src) \
 			INDIRECTOR(type, dest ## 0) = INDIRECTOR(type, src ## 1);
@@ -289,10 +287,10 @@ namespace iris16 {
 			data[INDIRECTOR(type, dest ##  0)] = INDIRECTOR(type, src ## 1);
 #define X(name, type, target, dest, src) \
 			case MoveOp:: name: \
-					 { \
-					 INDIRECTOR(X,type)(target, dest, src) \
-			break; \
-					 }
+								{ \
+									INDIRECTOR(X,type)(target, dest, src) \
+									break; \
+								}
 #include "def/iris16/move.def"
 #undef X
 #undef XMove

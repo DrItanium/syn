@@ -78,7 +78,7 @@ namespace iris16 {
 	static_assert((byte)CompareOp::Count < ((byte)ArchitectureConstants::MaxOperations), "too many Compare operations defined");
 	class Core : public iris::Core {
 		public:
-			Core() { }
+			Core() noexcept { }
 			virtual ~Core();
 			virtual void initialize() override { }
 			virtual void installprogram(std::istream& stream) override;
@@ -86,8 +86,8 @@ namespace iris16 {
 			virtual void dump(std::ostream& stream) override;
 			virtual void run() override;
 			virtual void link(std::istream& input) override;
-			void setInstructionMemory(word address, dword value) noexcept;
-			void setDataMemory(word address, word value) noexcept;
+			inline void setInstructionMemory(word address, dword value) noexcept;
+			inline void setDataMemory(word address, word value) noexcept;
 		private:
 			void dispatch() noexcept;
 #define X(_, op) void op() noexcept;
@@ -99,7 +99,7 @@ namespace iris16 {
 #define X(title, mask, shift, type, is_register, post) \
 			inline type get ## title () const noexcept { \
 				return iris::decodeBits<raw_instruction, type, mask, shift>(current); \
-			}
+			} 
 #include "def/iris16/instruction.def"
 #undef X
 		private:
