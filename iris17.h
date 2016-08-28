@@ -110,7 +110,15 @@ namespace iris17 {
 
     template<bool isConditional, bool ifForm, bool callForm, bool immediateForm>
         struct BranchFlagsEncoder {
-            static constexpr byte flags = (static_cast<byte>(isConditional) << 3) | (static_cast<byte>(ifForm) << 2) | (static_cast<byte>(callForm) << 1) | static_cast<byte>(immediateForm);
+			static constexpr byte flags = 
+				iris::encodeBits<byte, bool, 0b1000, 3>(
+						iris::encodeBits<byte, bool, 0b0100, 2>(
+							iris::encodeBits<byte, bool, 0b0010, 1>(
+								iris::encodeBits<byte, bool, 0b0001, 0>(0, 
+									immediateForm),
+								callForm),
+							ifForm),
+						isConditional);
         };
     template<byte flags>
         struct BranchFlagsDecoder {
