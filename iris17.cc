@@ -422,43 +422,25 @@ DefOp(Compare) {
 			return gpr[index];
 		}
 	}
-	RegisterValue& Core::getInstructionPointer() noexcept {
-		return registerValue<ArchitectureConstants::InstructionPointer>();
-	}
-	RegisterValue& Core::getStackPointer() noexcept {
-		return registerValue<ArchitectureConstants::StackPointer>();
-	}
-	RegisterValue& Core::getConditionRegister() noexcept {
-		return registerValue<ArchitectureConstants::ConditionRegister>();
-	}
-	RegisterValue& Core::getLinkRegister() noexcept {
-		return registerValue<ArchitectureConstants::LinkRegister>();
-	}
-	RegisterValue& Core::getAddressRegister() noexcept {
-		return registerValue<ArchitectureConstants::AddressRegister>();
-	}
-	RegisterValue& Core::getValueRegister() noexcept {
-		return registerValue<ArchitectureConstants::ValueRegister>();
-	}
 	word Core::getCurrentCodeWord() noexcept {
 		return memory.get()[getInstructionPointer()];
 	}
 	void Core::storeWord(RegisterValue address, word value) {
-		if (address > ArchitectureConstants::AddressMax) {
+		if (address >= ArchitectureConstants::AddressMax) {
 			throw iris::Problem("Attempted to write outside of memory!");
 		} else {
 			memory.get()[address] = value;
 		}
 	}
 	word Core::loadWord(RegisterValue address) {
-		if (address > ArchitectureConstants::AddressMax) {
+		if (address >= ArchitectureConstants::AddressMax) {
 			throw iris::Problem("Attempted to read from outside of memory!");
 		} else {
 			return memory.get()[address];
 		}
 	}
 	RegisterValue Core::loadRegisterValue(RegisterValue address) {
-		return iris::encodeBits<RegisterValue, word, bitmask32, 16>(RegisterValue(loadWord(address)), loadWord(address + 1));
+		return iris::encodeBits<RegisterValue, word, bitmask32, 16>(static_cast<RegisterValue>(loadWord(address)), loadWord(address + 1));
 	}
 	void Core::storeRegisterValue(RegisterValue address, RegisterValue value) {
 		storeWord(address, iris::decodeBits<RegisterValue, word, lower16Mask, 0>(value));
@@ -470,11 +452,7 @@ DefOp(Compare) {
 		first = encodeArithmeticFlagImmediate(first, immediate);
 		first = encodeArithmeticFlagType(first, static_cast<ArithmeticOps>(subType));
 		first = encodeArithmeticDestination(first, arg0);
-		if (immediate) {
-			first = encodeArithmeticImmediate(first, arg1);
-		} else {
-			first = encodeArithmeticSource(first, arg1);
-		}
+		first = immediate ? encodeArithmeticImmediate(first, arg1) : encodeArithmeticSource(first, arg1);
 		return std::make_tuple(1, first, 0, 0);
 	}
 
@@ -495,11 +473,7 @@ DefOp(Compare) {
 		first = encodeShiftFlagImmediate(first, immediate);
 		first = encodeShiftFlagLeft(first, shiftLeft);
 		first = encodeShiftRegister0(first, arg0);
-		if (immediate) {
-			first = encodeShiftImmediate(first, arg1);
-		} else {
-			first = encodeShiftRegister1(first, arg1);
-		}
+		first = immediate ? encodeShiftImmediate(first, arg1) : encodeShiftRegister1(first, arg1);
 		return std::make_tuple(1, first, 0, 0);
 	}
 
@@ -513,11 +487,7 @@ DefOp(Compare) {
 		first = encodeCompareCombineFlag(first, combineType);
 		first = encodeCompareImmediateFlag(first, immediate);
 		auto second = encodeCompareRegister0(0, arg0);
-		if (immediate) {
-			second = encodeCompareImmediate(second, arg1);
-		} else {
-			second = encodeCompareRegister1(second, arg1);
-		}
+		second = immediate ? encodeCompareImmediate(second, arg1) : encodeCompareRegister1(second, arg1);
 		return std::make_tuple(2, first, second, 0);
 	}
 
@@ -585,26 +555,17 @@ DefOp(Compare) {
 		}
 	}
 
-	InstructionEncoder::Encoding InstructionEncoder::encode() {
-		// always encode the type
-		switch (type) {
+InstructionEncoder::Encoding InstructionEncoder::encode() {
+	// always encode the type
 #define DefEnum(a, b) 
 #define EndDefEnum(a, b, c)
-#define EnumEntry(compareType) case Operation:: compareType : return encode ## compareType (); 
+#define EnumEntry(compareType) if (type == Operation:: compareType) { return encode ## compareType () ; }
 #include "def/iris17/ops.def"
 #undef DefEnum
 #undef EndDefEnum
 #undef EnumEntry
-			default:
-				throw iris::Problem("Illegal type to encode!");
-		}
-	}
-#define X(title, mask, shift, type, post) \
-	word encode ## title (word input, type value) { \
-		return iris::encodeBits<word, type, mask, shift>(input, value); \
-	}
-#include "def/iris17/instruction.def"
-#undef X
+	throw iris::Problem("Illegal type to encode!");
+}
 
 	int instructionSizeFromImmediateMask(byte bitmask) {
 #define X(bits) if (bitmask == bits) { return instructionSizeFromImmediateMask<bits>(); }

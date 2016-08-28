@@ -408,12 +408,12 @@ namespace iris17 {
                 }
 
             RegisterValue& registerValue(byte index);
-            RegisterValue& getInstructionPointer() noexcept;
-            RegisterValue& getStackPointer() noexcept;
-            RegisterValue& getConditionRegister() noexcept;
-            RegisterValue& getLinkRegister() noexcept;
-            RegisterValue& getAddressRegister() noexcept;
-            RegisterValue& getValueRegister() noexcept;
+            inline RegisterValue& getInstructionPointer() noexcept     { return registerValue<ArchitectureConstants::InstructionPointer>(); }
+            inline RegisterValue& getStackPointer() noexcept           { return registerValue<ArchitectureConstants::StackPointer>(); }
+            inline RegisterValue& getConditionRegister() noexcept      { return registerValue<ArchitectureConstants::ConditionRegister>(); }
+            inline RegisterValue& getLinkRegister() noexcept           { return registerValue<ArchitectureConstants::LinkRegister>(); }
+            inline RegisterValue& getAddressRegister() noexcept        { return registerValue<ArchitectureConstants::AddressRegister>(); }
+            inline RegisterValue& getValueRegister() noexcept          { return registerValue<ArchitectureConstants::ValueRegister>(); }
 			void incrementInstructionPointer() noexcept;
 			void incrementStackPointer() noexcept;
 			void decrementStackPointer() noexcept;
@@ -440,7 +440,10 @@ namespace iris17 {
     MustCheckDenominator(Div);
     MustCheckDenominator(Rem);
 #undef MustCheckDenominator
-#define X(title, mask, shift, type, post) word encode ## title (word input, type value);
+#define X(title, mask, shift, type, post) \
+	constexpr inline word encode ## title (word input, type value) noexcept { \
+		return iris::encodeBits<word, type, mask, shift>(input, value); \
+	}
 #include "def/iris17/instruction.def"
 #undef X
     struct InstructionEncoder {
