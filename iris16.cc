@@ -130,14 +130,6 @@ namespace iris16 {
 		execute = false;
 		throw iris::Problem(stream.str());
 	}
-	template<JumpOp op>
-	struct ConditionalStyle {
-		static constexpr auto isFalseForm = false;
-	};
-#define X(name, ifthenelse, conditional, iffalse, immediate, link) \
-	template<> struct ConditionalStyle<JumpOp:: name> { static constexpr bool isFalseForm = iffalse; };
-#include "def/iris16/jump.def"
-#undef X
 
 	void Core::jump() {
 		auto newAddr = static_cast<word>(0);
@@ -153,19 +145,16 @@ namespace iris16 {
 			newAddr = gpr[cond ? getSource0() : getSource1()];
 #define XImmediateUncond_false (gpr[getDestination()])
 #define XImmediateUncond_true (getImmediate())
-#define XConditional_false(name, ifthenelse, immediate) \
+#define XConditional_false(name, ifthenelse, immediate, iffalse) \
 			newAddr = INDIRECTOR(XImmediateUncond, _ ## immediate);
-#define XConditional_true(name, ifthenelse, immediate) \
-			cond = (ConditionalStyle<JumpOp:: name>::isFalseForm ? (gpr[getDestination()] == 0) : (gpr[getDestination()] != 0)); \
+#define XConditional_true(name, ifthenelse, immediate, iffalse) \
+			cond = (iffalse ?  (gpr[getDestination()] == 0) : (gpr[getDestination()] != 0)); \
 			INDIRECTOR(XIfThenElse, _ ## ifthenelse)(immediate)
-#define XLink_true \
-			if (cond) { \
-				gpr[ArchitectureConstants::LinkRegisterIndex] = ip + 1; \
-			}
+#define XLink_true if (cond) { gpr[ArchitectureConstants::LinkRegisterIndex] = ip + 1; }
 #define XLink_false
 #define X(name, ifthenelse, conditional, iffalse, immediate, link) \
 			if (jop == JumpOp:: name) { \
-				INDIRECTOR(XConditional, _ ## conditional)(name, ifthenelse, immediate) \
+				INDIRECTOR(XConditional, _ ## conditional)(name, ifthenelse, immediate, iffalse) \
 				gpr[ArchitectureConstants::InstructionPointerIndex] = newAddr; \
 				INDIRECTOR(XLink, _ ## link)  \
 				return; \
@@ -186,9 +175,11 @@ namespace iris16 {
 		}
 #include "def/iris16/misc.def"
 #undef X
-		std::cerr << "Illegal misc code " << getOperation() << std::endl;
+		std::stringstream ss;
+		ss << "Illegal misc code " << getOperation();
 		execute = false;
 		advanceIp = false;
+		throw iris::Problem(ss.str());
 	}
 	void Core::systemCall() {
 		auto target = static_cast<SystemCalls>(getDestination());
