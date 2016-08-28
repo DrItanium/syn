@@ -81,12 +81,26 @@ namespace iris17 {
 			DecodedInstruction di(getCurrentCodeWord());
 			dispatch(std::move(di));
 			if (advanceIp) {
-				++getInstructionPointer();
+				incrementStackPointer();
 			} else {
 				// just re-enable it
 				advanceIp = true;
 			}
 		}
+	}
+
+	void Core::incrementInstructionPointer() noexcept {
+		++getInstructionPointer();
+		getInstructionPointer() &= bitmask24;
+	}
+	void Core::incrementStackPointer() noexcept {
+		++getStackPointer();
+		getStackPointer() &= bitmask24;
+	}
+
+	void Core::decrementStackPointer() noexcept {
+		--getStackPointer();
+		getStackPointer() &= bitmask24;
 	}
 
 
@@ -280,7 +294,7 @@ bool compare(RegisterValue a, RegisterValue b) {
 
 DefOp(Compare) {
 	//std::cout << "Compare Operation" << std::endl;
-	++getInstructionPointer();
+	incrementInstructionPointer();
 	DecodedInstruction next(getCurrentCodeWord());
 	switch (current.getCompareType()) {
 #define combineOp(flag) \
@@ -394,22 +408,22 @@ DefOp(Compare) {
 			return gpr[index];
 		}
 	}
-	RegisterValue& Core::getInstructionPointer() {
+	RegisterValue& Core::getInstructionPointer() noexcept {
 		return registerValue<ArchitectureConstants::InstructionPointer>();
 	}
-	RegisterValue& Core::getStackPointer() {
+	RegisterValue& Core::getStackPointer() noexcept {
 		return registerValue<ArchitectureConstants::StackPointer>();
 	}
-	RegisterValue& Core::getConditionRegister() {
+	RegisterValue& Core::getConditionRegister() noexcept {
 		return registerValue<ArchitectureConstants::ConditionRegister>();
 	}
-	RegisterValue& Core::getLinkRegister() {
+	RegisterValue& Core::getLinkRegister() noexcept {
 		return registerValue<ArchitectureConstants::LinkRegister>();
 	}
-	RegisterValue& Core::getAddressRegister() {
+	RegisterValue& Core::getAddressRegister() noexcept {
 		return registerValue<ArchitectureConstants::AddressRegister>();
 	}
-	RegisterValue& Core::getValueRegister() {
+	RegisterValue& Core::getValueRegister() noexcept {
 		return registerValue<ArchitectureConstants::ValueRegister>();
 	}
 	word Core::getCurrentCodeWord() {

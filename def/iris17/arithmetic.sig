@@ -1,2 +1,5 @@
-Component(op, 0b00001110, 1, ArithmeticOps)
-Component(immediate, 0b00000001, 0, bool)
+DefFlags(ArithmeticFlags)
+	Component(op, 0b00001110, 1, ArithmeticOps)
+	Component(immediate, 0b00000001, 0, bool)
+	Field(checkDenominator, bool, (RequiresDenominatorCheck<op>::value))
+EndDefFlags(ArithmeticFlags)

@@ -182,11 +182,11 @@ namespace iris17 {
                     RegisterValue lower = 0;
                     RegisterValue upper = 0;
                     if (readLower<bitmask>()) {
-                        ++getInstructionPointer();
+						incrementInstructionPointer();
                         lower = getCurrentCodeWord();
                     }
                     if (readUpper<bitmask>()) {
-                        ++getInstructionPointer();
+						incrementInstructionPointer();
                         upper = static_cast<RegisterValue>(getCurrentCodeWord()) << 16;
                     }
                     return mask<bitmask>() & ( lower | upper );
@@ -195,29 +195,43 @@ namespace iris17 {
 
 
 
-            template<byte signature>
-                void setOperation(DecodedInstruction&& inst) {
-                    registerValue<((signature & 0b11110000) >> 4)>() = retrieveImmediate<(signature & 0b00001111)>();
-                }
-            template<byte signature>
-                struct LogicalFlagsTranslator {
-#define Component(fieldName, mask, shift, type) static constexpr type fieldName = static_cast<type>((signature & mask) >> shift);
+			template<ArithmeticOps op>
+			struct RequiresDenominatorCheck {
+				static constexpr bool value = false;
+			};
+#define DefFlags(name) \
+			template<byte signature> \
+			struct name { 
+#define EndDefFlags(name) };
+#define Component(fieldName, mask, shift, type) static constexpr type fieldName = (iris::decodeBits<byte, type, mask, shift>(signature)); 
+#define Field(fieldName, type, value) static constexpr type fieldName = value ;
 #include "def/iris17/logical_generic.sig"
+#include "def/iris17/arithmetic.sig"
+#include "def/iris17/move.sig"
+#include "def/iris17/memory.sig"
+#include "def/iris17/set.sig"
+#undef Field
 #undef Component
-                };
+#undef DefFlags
+#undef EndDefFlags
+            template<byte signature>
+            void setOperation(DecodedInstruction&& inst) {
+				using sFlags = SetFlags<signature>;
+				registerValue<sFlags::destination>() = registerValue<sFlags::bitmask>();
+            }
             template<byte signature>
                 void logicalOperation(DecodedInstruction&& inst) {
-                    using lflags = LogicalFlagsTranslator<signature>;
+                    using lflags = LogicalFlags<signature>;
                     // first make sure that the garbage bits haven't been set (some of these are impossible!)
-                    if (lflags::immediate && lflags::immediate_error) {
+                    if (lflags::immediate && lflags::immediateError) {
                         throw iris::Problem("Illegal bit set for immediate mode logicalOperation!");
-                    } else if (!lflags::immediate && lflags::indirect_error) {
+                    } else if (!lflags::immediate && lflags::indirectError) {
                         throw iris::Problem("Illegal bits set for indirect mode logicalOperation!");
                     }
                     if (lflags::immediate) {
                         auto &dest = registerValue(inst.getLogicalImmediateDestination());
                         auto immediate = retrieveImmediate<lflags::bitmask>();
-                        switch (lflags::immediate_type) {
+                        switch (lflags::immediateType) {
                             case ImmediateLogicalOps::And:
                                 dest = dest & immediate;
                                 break;
@@ -236,7 +250,7 @@ namespace iris17 {
                     } else {
                         auto &dest = registerValue(inst.getLogicalRegister0());
                         auto src = registerValue(inst.getLogicalRegister1());
-                        switch(lflags::indirect_type) {
+                        switch(lflags::indirectType) {
                             case LogicalOps::And:
                                 dest = dest & src;
                                 break;
@@ -257,21 +271,11 @@ namespace iris17 {
                         }
                     }
                 }
-            template<ArithmeticOps op>
-                struct RequiresDenominatorCheck {
-                    static constexpr bool value = false;
-                };
-            template<byte signature>
-                struct ArithmeticFlags {
-#define Component(fieldName, mask, shift, type) static constexpr type fieldName = static_cast<type>((signature & mask) >> shift);
-#include "def/iris17/arithmetic.sig"
-#undef Component
-                };
             template<byte signature>
                 void arithmeticOperation(DecodedInstruction&& inst) {
                     using aflags = ArithmeticFlags<signature>;
                     auto src = aflags::immediate ? inst.getArithmeticImmediate() : registerValue(inst.getArithmeticSource());
-                    if (RequiresDenominatorCheck<aflags::op>::value && src == 0) {
+					if (aflags::checkDenominator && src == 0) {
                         throw iris::Problem("Denominator is zero!");
                     }
                     auto &dest = registerValue(inst.getArithmeticDestination());
@@ -296,15 +300,9 @@ namespace iris17 {
                     }
                 }
             template<byte signature>
-                struct MoveFlags {
-#define Component(fieldName, mask, shift, type) static constexpr type fieldName = static_cast<type>((signature & mask) >> shift);
-#include "def/iris17/move.sig"
-#undef Component
-                };
-            template<byte signature>
                 void moveOperation(DecodedInstruction&& inst) {
                     using mflags = MoveFlags<signature>;
-                    if (mflags::is_error) {
+                    if (mflags::isError) {
                         throw iris::Problem("Illegal move signature!");
                     } else {
                         registerValue(inst.getMoveRegister0()) = registerValue(inst.getMoveRegister1()) & mask<mflags::bitmask>();
@@ -350,14 +348,12 @@ namespace iris17 {
                 void pushOperation(RegisterValue& pushToStack) {
                     // read backwards because the stack grows upward towards zero
                     if (readUpper<bitmask>()) {
-                        --getStackPointer();
-                        getStackPointer() &= bitmask24;
+						decrementStackPointer();
                         word upper = upperMask<bitmask>() & iris::decodeBits<RegisterValue, word, upper16Mask, 16>(pushToStack);
                         storeWord(getStackPointer(), upper);
                     }
                     if (readLower<bitmask>()) {
-                        --getStackPointer();
-                        getStackPointer() &= bitmask24;
+						decrementStackPointer();
                         word lower = lowerMask<bitmask>() & iris::decodeBits<RegisterValue, word, lower16Mask, 0>(pushToStack);
                         storeWord(getStackPointer(), lower);
                     }
@@ -369,23 +365,15 @@ namespace iris17 {
                     RegisterValue upper = 0;
                     if (readLower<bitmask>()) {
                         lower = lowerMask<bitmask>() & loadWord(getStackPointer());
-                        ++getStackPointer();
-                        getStackPointer() &= bitmask24;
+						incrementStackPointer();
                     }
                     if (readUpper<bitmask>()) {
                         upper = upperMask<bitmask>() & loadWord(getStackPointer());
-                        ++getStackPointer();
-                        getStackPointer() &= bitmask24;
+						incrementStackPointer();
                     }
                     storage = iris::encodeBits<RegisterValue, word, upper16Mask, 16>(iris::encodeBits<RegisterValue, word, lower16Mask, 0>(static_cast<RegisterValue>(0), lower), upper);
                 }
 
-            template<byte signature>
-                struct MemoryFlags {
-#define Component(fieldName, mask, shift, type) static constexpr type fieldName = static_cast<type>((signature & mask) >> shift);
-#include "def/iris17/memory.sig"
-#undef Component
-                };
             template<MemoryOperation type, byte bitmask>
                 void memoryOperation(DecodedInstruction&& inst) {
 
@@ -412,7 +400,7 @@ namespace iris17 {
             template<byte signature>
                 inline void memoryOperation(DecodedInstruction&& inst) {
                     using mflags = MemoryFlags<signature>;
-                    if (mflags::error_state) {
+                    if (mflags::errorState) {
                         throw iris::Problem("Illegally encoded Memory operation!");
                     } else {
                         memoryOperation<mflags::type, mflags::bitmask>(std::move(inst));
@@ -420,12 +408,15 @@ namespace iris17 {
                 }
 
             RegisterValue& registerValue(byte index);
-            RegisterValue& getInstructionPointer();
-            RegisterValue& getStackPointer();
-            RegisterValue& getConditionRegister();
-            RegisterValue& getLinkRegister();
-            RegisterValue& getAddressRegister();
-            RegisterValue& getValueRegister();
+            RegisterValue& getInstructionPointer() noexcept;
+            RegisterValue& getStackPointer() noexcept;
+            RegisterValue& getConditionRegister() noexcept;
+            RegisterValue& getLinkRegister() noexcept;
+            RegisterValue& getAddressRegister() noexcept;
+            RegisterValue& getValueRegister() noexcept;
+			void incrementInstructionPointer() noexcept;
+			void incrementStackPointer() noexcept;
+			void decrementStackPointer() noexcept;
             word getCurrentCodeWord();
             void storeWord(RegisterValue address, word value);
             word loadWord(RegisterValue address);
