@@ -2,14 +2,11 @@
 //
 #ifndef IRIS_SIM_REGISTRATION
 #define IRIS_SIM_REGISTRATION
-#include "Core.h"
-#include "architecture.h"
-#include "Problem.h"
-
 #include <string>
 
 
 namespace iris {
+	class Core;
 	Core* getCore(const std::string& value);
 }
 

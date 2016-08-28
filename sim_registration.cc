@@ -1,16 +1,14 @@
 #include "sim_registration.h"
 #include "Problem.h"
 #include "targets.h"
+#include "Core.h"
+#include "architecture.h"
 namespace iris {
 	Core* getCore(const std::string& value) {
-		switch (getArchitectureFromString(value)) {
-#define X(en, str, __) \
-			case Architecture:: en: \
-									return en :: newCore();
+		auto arch = getArchitectureFromString(value);
+#define X(en, str, __) if (arch == Architecture:: en) { return en :: newCore(); }
 #include "def/architecture_registrations.def"
 #undef X
-			default:
-				throw Problem("Unknown architecture provided!");
-		}
+		throw Problem("Unknown architecture provided!");
 	}
 }

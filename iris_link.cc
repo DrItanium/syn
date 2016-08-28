@@ -6,6 +6,7 @@
 #include <fstream>
 #include "Core.h"
 #include "sim_registration.h"
+#include "Problem.h"
 
 static void usage(char* arg0);
 iris::Core* core = nullptr;
