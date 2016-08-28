@@ -88,15 +88,15 @@ namespace iris17 {
             static constexpr bool readUpper = decomposedBits[2] || decomposedBits[3];
         };
     template<byte bitmask>
-        inline constexpr RegisterValue mask() noexcept { return SetBitmaskToWordMask<bitmask>::mask; }
+	inline constexpr RegisterValue mask() noexcept { return SetBitmaskToWordMask<bitmask>::mask; }
     template<byte bitmask>
-        inline constexpr Word lowerMask() noexcept { return SetBitmaskToWordMask<bitmask>::lowerMask; }
+    inline constexpr Word lowerMask() noexcept { return SetBitmaskToWordMask<bitmask>::lowerMask; }
     template<byte bitmask>
-        inline constexpr Word upperMask() noexcept { return SetBitmaskToWordMask<bitmask>::upperMask; }
+    inline constexpr Word upperMask() noexcept { return SetBitmaskToWordMask<bitmask>::upperMask; }
     template<byte bitmask>
-        inline constexpr bool readLower() noexcept { return SetBitmaskToWordMask<bitmask>::readLower; }
+    inline constexpr bool readLower() noexcept { return SetBitmaskToWordMask<bitmask>::readLower; }
     template<byte bitmask>
-        inline constexpr bool readUpper() noexcept { return SetBitmaskToWordMask<bitmask>::readUpper; }
+    inline constexpr bool readUpper() noexcept { return SetBitmaskToWordMask<bitmask>::readUpper; }
 
     constexpr RegisterValue bitmask32 =   SetBitmaskToWordMask<0b1111>::mask;
     constexpr RegisterValue bitmask24 =   SetBitmaskToWordMask<0b0111>::mask;
@@ -158,18 +158,15 @@ namespace iris17 {
 #define X(title, func) void func ();
 #include "def/iris17/misc.def"
 #undef X
-            template<byte index>
-                RegisterValue& registerValue() {
-                    switch(index) {
-#define X(index) case index : return gpr[index];
+            template<byte rindex>
+				RegisterValue& registerValue() {
+#define X(index) if (index == rindex) { return gpr[index]; }
 #include "def/iris17/registers.def"
 #undef X
-                        default:
-                            std::stringstream msg;
-                            msg << "Out of range register index: " << index;
-                            throw iris::Problem(msg.str());
-                    }
-                }
+					std::stringstream msg;
+					msg << "Out of range register index: " << rindex;
+					throw iris::Problem(msg.str());
+				}
             template<Operation op>
                 void operation(DecodedInstruction&& inst) {
                     throw iris::Problem("Unimplemented function!");
@@ -214,7 +211,17 @@ namespace iris17 {
             template<byte signature>
             void setOperation(DecodedInstruction&& inst) {
 				using sFlags = SetFlags<signature>;
-				registerValue<sFlags::destination>() = registerValue<sFlags::bitmask>();
+				RegisterValue lower = 0;
+				RegisterValue upper = 0;
+				if (readLower<sFlags::bitmask>()) {
+					incrementInstructionPointer();
+					lower = iris::encodeBits<decltype(lower), Word, lower16Mask, 0>(0, getCurrentCodeWord());
+				} 
+				if (readUpper<sFlags::bitmask>()) {
+					incrementInstructionPointer();
+					upper = iris::encodeBits<decltype(upper), Word, upper16Mask, 16>(0, getCurrentCodeWord());
+				}
+				registerValue<sFlags::destination>() = (lower | upper) & mask<sFlags::bitmask>();
             }
             template<byte signature>
                 void logicalOperation(DecodedInstruction&& inst) {
