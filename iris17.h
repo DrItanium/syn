@@ -217,6 +217,8 @@ namespace iris17 {
                             case ImmediateLogicalOps::Xor:
                                 dest = dest ^ immediate;
                                 break;
+							default: 
+								throw iris::Problem("Illegal immediate logical flag type");
                         }
                     } else {
                         auto &dest = registerValue(inst.getLogicalRegister0());

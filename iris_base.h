@@ -61,35 +61,35 @@ namespace iris {
 
 
 template<typename T, typename F, T bitmask, T shiftcount>
-inline F decodeBits(T input) {
+constexpr inline F decodeBits(T input) noexcept {
 	return static_cast<F>((input & bitmask) >> shiftcount);
 }
 
 template<typename T, typename F, int field> 
-inline F decodeField(T input) {
+constexpr inline F decodeField(T input) noexcept {
 	return decodeBits<T, F, FieldData<T, field>::Value, FieldData<T, field>::FieldIndex>(input);
 }
 
 template<typename T, typename F, T bitmask, T shiftcount>
-inline T encodeBits(T input, F value) {
+constexpr inline T encodeBits(T input, F value) noexcept {
 	return static_cast<T>((input & ~bitmask) | (static_cast<T>(value) << shiftcount));
 }
 
 template<typename T, typename F, int field>
-inline T encodeField(T input, F value) {
+constexpr inline T encodeField(T input, F value) noexcept {
 	return encodeBits<T, F, FieldData<T, field>::Value, FieldData<T, field>::FieldIndex>(input, value);
 }
 
-uint16_t encodeUint16LE(byte a, byte b);
-int16_t encodeInt16LE(byte a, byte b);
-uint32_t encodeUint32LE(byte a, byte b, byte c, byte d);
-uint16_t encodeUint16LE(byte contents[sizeof(uint16_t)]);
-uint32_t encodeUint32LE(byte contents[sizeof(uint32_t)]);
-int32_t encodeInt32LE(byte a, byte b, byte c, byte d);
-void decodeUint32LE(uint32_t value, byte storage[sizeof(uint32_t)]);
-void decodeUint16LE(uint16_t value, byte storage[sizeof(uint16_t)]);
-void decodeInt32LE(int32_t value, byte storage[sizeof(int32_t)]);
-void decodeInt16LE(int16_t value, byte storage[sizeof(int16_t)]);
+uint16_t encodeUint16LE(byte a, byte b) noexcept;
+int16_t encodeInt16LE(byte a, byte b) noexcept;
+uint32_t encodeUint32LE(byte a, byte b, byte c, byte d) noexcept;
+uint16_t encodeUint16LE(byte contents[sizeof(uint16_t)]) noexcept;
+uint32_t encodeUint32LE(byte contents[sizeof(uint32_t)]) noexcept;
+int32_t encodeInt32LE(byte a, byte b, byte c, byte d) noexcept;
+void decodeUint32LE(uint32_t value, byte storage[sizeof(uint32_t)]) noexcept;
+void decodeUint16LE(uint16_t value, byte storage[sizeof(uint16_t)]) noexcept;
+void decodeInt32LE(int32_t value, byte storage[sizeof(int32_t)]) noexcept;
+void decodeInt16LE(int16_t value, byte storage[sizeof(int16_t)]) noexcept;
 
 }
 #endif
