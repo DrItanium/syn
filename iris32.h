@@ -53,21 +53,14 @@ namespace iris32 {
 #undef X
 
 	class DecodedInstruction {
-		enum class Fields {
-#define X(en, u0, u1, u2, u3, u4) en ,
-#include "def/iris32/instruction.def"
-#undef X
-			Count,
-		};
 		public:
 			DecodedInstruction(word rinst);
 			word getRawValue() const { return raw; }
 #define X(field, mask, shift, type, isreg, unused) \
-			type get ## field (); \
+			type get ## field () const; \
 			void set ## field (type value);
 #include "def/iris32/instruction.def"
 #undef X
-			word encodeInstruction();
 		private:
 #define X(u0, u1, u2, type, u3, fieldName) type fieldName;
 #include "def/iris32/instruction.def"
@@ -193,6 +186,7 @@ namespace iris32 {
 			void decode();
 			void dispatch();
 			void systemCall(DecodedInstruction& inst);
+
 		private:
 			template<bool ifthenelse, bool conditional, bool iffalse, bool immediate, bool link>
 			friend void invokeJump(Core* core, DecodedInstruction&& inst);
