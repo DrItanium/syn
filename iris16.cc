@@ -132,31 +132,10 @@ namespace iris16 {
 	}
 
 	void Core::jump() {
-		auto newAddr = static_cast<word>(0);
-		auto cond = true;
-		advanceIp = false;
-		auto ip = gpr[ArchitectureConstants::InstructionPointerIndex];
 		auto jop = static_cast<JumpOp>(getOperation());
-#define XImmediateCond_true (getImmediate())
-#define XImmediateCond_false (gpr[getSource0()])
-#define XIfThenElse_false(immediate) \
-			newAddr = cond ? INDIRECTOR(XImmediateCond, _ ## immediate) : ip + 1;
-#define XIfThenElse_true(immediate) \
-			newAddr = gpr[cond ? getSource0() : getSource1()];
-#define XImmediateUncond_false (gpr[getDestination()])
-#define XImmediateUncond_true (getImmediate())
-#define XConditional_false(name, ifthenelse, immediate, iffalse) \
-			newAddr = INDIRECTOR(XImmediateUncond, _ ## immediate);
-#define XConditional_true(name, ifthenelse, immediate, iffalse) \
-			cond = (iffalse ?  (gpr[getDestination()] == 0) : (gpr[getDestination()] != 0)); \
-			INDIRECTOR(XIfThenElse, _ ## ifthenelse)(immediate)
-#define XLink_true if (cond) { gpr[ArchitectureConstants::LinkRegisterIndex] = ip + 1; }
-#define XLink_false
 #define X(name, ifthenelse, conditional, iffalse, immediate, link) \
 			if (jop == JumpOp:: name) { \
-				INDIRECTOR(XConditional, _ ## conditional)(name, ifthenelse, immediate, iffalse) \
-				gpr[ArchitectureConstants::InstructionPointerIndex] = newAddr; \
-				INDIRECTOR(XLink, _ ## link)  \
+				jumpBody<ifthenelse, conditional, iffalse, immediate, link>(); \
 				return; \
 			}
 #include "def/iris16/jump.def"
@@ -166,6 +145,7 @@ namespace iris16 {
 		execute = false;
 		throw iris::Problem(ss.str());
 	}
+
 	void Core::misc() {
 		auto op = static_cast<MiscOp>(getOperation());
 #define X(name, func) \
@@ -202,82 +182,14 @@ namespace iris16 {
 		}
 	}
 	void Core::move() {
-		auto a = static_cast<word>(0);
 		auto mop = static_cast<MoveOp>(getOperation());
-#define GPRRegister0 (gpr[getDestination()])
-#define GPRRegister1 (gpr[getSource0()])
-#define GPRRegister2 (gpr[getSource1()])
-#define GPRImmediate1 (getImmediate())
-#define DataRegister0 GPRRegister0
-#define DataRegister1 GPRRegister1
-#define DataImmediate1 GPRImmediate1
-#define StackPushRegister0 (gpr[ArchitectureConstants::StackPointerIndex])
-#define StackPushRegister1 GPRRegister0
-#define StackPushImmediate1 GPRImmediate1
-#define StackPopRegister0 GPRRegister0
-#define StackPopRegister1 (gpr[ArchitectureConstants::StackPointerIndex])
-#define StackPopImmediate1 GPRImmediate1
-#define StoreRegister0  GPRRegister0
-#define StoreRegister1 GPRRegister1
-#define StoreImmediate1 GPRImmediate1
-#define CodeRegister0 GPRRegister0
-#define CodeUpperLowerRegisters1 GPRRegister1
-#define CodeUpperLowerRegisters2 GPRRegister2
-#define XLoadCode(type, dest, src) \
-			auto result = instruction[INDIRECTOR(type, dest ## 0)]; \
-			INDIRECTOR(type, src ## 1) = static_cast<word>(result); \
-			INDIRECTOR(type, src ## 2) = static_cast<word>(result >> 16);
-#define XStoreCode(type, dest, src) \
-			instruction[INDIRECTOR(type, dest ## 0)] = (((static_cast<dword>(INDIRECTOR(type, src ## 2))) << 16) | (static_cast<dword>(INDIRECTOR(type, src ## 1))));
-#define XMove(type, dest, src) \
-			INDIRECTOR(type, dest ## 0) = INDIRECTOR(type, src ## 1);
-#define XSwap(type, dest, src) \
-			a = INDIRECTOR(type, dest ##  0); \
-			INDIRECTOR(type, dest ## 0) = INDIRECTOR(type, src ## 1); \
-			INDIRECTOR(type, src ##  1) = a;
-#define XLoad(type, dest, src) \
-			INDIRECTOR(type, dest ## 0) = data[INDIRECTOR(type, src ## 1)];
-#define XPop(type, dest, src) \
-			INDIRECTOR(type, Pop ## dest ## 0) = stack[INDIRECTOR(type, Pop ## src ## 1)]; \
-			--INDIRECTOR(type, Pop ## src ## 1);
-#define XPush(type, dest, src) \
-			++INDIRECTOR(type, Push ## dest ## 0); \
-			stack[INDIRECTOR(type, Push ## dest ## 0)] = INDIRECTOR(type, Push ## src ## 1);
-#define XStore(type, dest, src) \
-			data[INDIRECTOR(type, dest ##  0)] = INDIRECTOR(type, src ## 1);
 #define X(name, type, target, dest, src) \
 		if (MoveOp:: name == mop ) { \
-			INDIRECTOR(X,type)(target, dest, src) \
+			moveBody<MoveOp:: name>(); \
 			return; \
 		}
 #include "def/iris16/move.def"
 #undef X
-#undef XMove
-#undef XSwap
-#undef XLoad
-#undef XStore
-#undef XPop
-#undef XPush
-#undef GPRRegister0
-#undef GPRRegister1
-#undef GPRImmediate1
-#undef DataRegister0
-#undef DataRegister1
-#undef DataImmediate1
-#undef StackPushRegister0
-#undef StackPushRegister1
-#undef StackPushImmediate1
-#undef StackPopRegister0
-#undef StackPopRegister1
-#undef StackPopImmediate1
-#undef StoreRegister0
-#undef StoreRegister1
-#undef StoreImmediate1
-#undef XStoreCode
-#undef XLoadCode
-#undef CodeRegister0
-#undef CodeUpperLowerRegisters1
-#undef CodeUpperLowerRegisters2
 		std::stringstream ss;
 		ss << "Illegal move code " << getOperation();
 		execute = false;
