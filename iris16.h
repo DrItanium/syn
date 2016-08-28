@@ -17,8 +17,12 @@ namespace iris16 {
 		MaxGroups = 0x7,
 		MaxOperations = 0x1F,
 	};
-	dword encodeDword(byte a, byte b, byte c, byte d);
-	word encodeWord(byte a, byte b);
+	inline constexpr dword encodeDword(byte a, byte b, byte c, byte d) noexcept {
+		return iris::encodeUint32LE(a, b, c, d);
+	}
+	inline constexpr word encodeWord(byte a, byte b) noexcept {
+		return iris::encodeUint16LE(a, b);
+	}
 
 	enum class InstructionGroup : byte {
 #define X(title, _) title,
@@ -93,14 +97,14 @@ namespace iris16 {
 			virtual void dump(std::ostream& stream);
 			virtual void run();
 			virtual void link(std::istream& input);
-			void setInstructionMemory(word address, dword value);
-			void setDataMemory(word address, word value);
+			void setInstructionMemory(word address, dword value) noexcept;
+			void setDataMemory(word address, word value) noexcept;
 		private:
 			void dispatch();
-#define X(_, op) void op();
+#define X(_, op) void op() noexcept;
 #include "def/iris16/groups.def"
 #undef X
-#define X(title, func) void func ();
+#define X(title, func) void func () noexcept;
 #include "def/iris16/misc.def"
 #undef X
 		private:
@@ -113,7 +117,6 @@ namespace iris16 {
 			word stack[ArchitectureConstants::AddressMax] = { 0 };
 	};
 
-	Core* newCore();
-	void link(Core* core, std::istream& input, std::ostream& output);
+	Core* newCore() noexcept;
 }
 #endif

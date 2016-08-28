@@ -5,16 +5,10 @@
 
 
 namespace iris16 {
-	Core* newCore() {
+	Core* newCore() noexcept {
 		return new iris16::Core();
 	}
 
-	word encodeWord(byte a, byte b) {
-		return iris::encodeUint16LE(a, b);
-	}
-	dword encodeDword(byte a, byte b, byte c, byte d) {
-		return iris::encodeUint32LE(a, b, c, d);
-	}
 
 	DecodedInstruction::DecodedInstruction() { }
 
@@ -26,18 +20,16 @@ namespace iris16 {
 	}
 
 	Core::Core() { }
-	void Core::setInstructionMemory(word address, dword value) {
+	void Core::setInstructionMemory(word address, dword value) noexcept {
 		instruction[address] = value;
 	}
-	void Core::setDataMemory(word address, word value) {
+	void Core::setDataMemory(word address, word value) noexcept {
 		data[address] = value;
 	}
-	void Core::initialize() {
 
-	}
-	void Core::shutdown() {
+	void Core::initialize() { }
+	void Core::shutdown() { }
 
-	}
 	template<typename T, int count>
 	void populateContents(T* contents, std::istream& stream, const std::function<T(char*)>& func) {
 		char buf[sizeof(T)] = { 0 };
@@ -58,11 +50,10 @@ namespace iris16 {
 
 	template<typename T, int count>
 	void dumpContents(T* contents, std::ostream& stream, const std::function<char*(T,char*)>& func) {
-		char* buf = new char[sizeof(T)];
+		char buf[sizeof(T)] = { 0 };
 		for(int i = 0; i < count; ++i) {
 			stream.write(func(contents[i], buf), sizeof(T));
 		}
-		delete[] buf;
 	}
 	void Core::dump(std::ostream& stream) {
 		// save the registers
@@ -91,22 +82,23 @@ namespace iris16 {
 			current.decode(instruction[gpr[ArchitectureConstants::InstructionPointerIndex]]);
 			dispatch();
 			if (advanceIp) {
-				gpr[ArchitectureConstants::InstructionPointerIndex]++;
+				++gpr[ArchitectureConstants::InstructionPointerIndex];
 			}
 		}
 	}
 	void Core::dispatch() {
-		switch(static_cast<InstructionGroup>(current.getGroup())) {
-#define X(name, operation) case InstructionGroup:: name: operation(); break;
+		auto group = static_cast<InstructionGroup>(current.getGroup());
+#define X(name, operation) \
+		if (group == InstructionGroup:: name) { \
+			operation(); \
+			return; \
+		}
 #include "def/iris16/groups.def"
 #undef X
-			default:
-				std::cerr << "Illegal instruction group " << current.getGroup() << std::endl;
-				execute = false;
-				break;
-		}
+		std::cerr << "Illegal instruction group " << current.getGroup() << std::endl;
+		execute = false;
 	}
-	void Core::compare() {
+	void Core::compare() noexcept {
 		switch(static_cast<CompareOp>(current.getOperation())) {
 #define OpNone =
 //#define OpAnd &=
@@ -136,7 +128,7 @@ namespace iris16 {
 		}
 	}
 
-	void Core::arithmetic() {
+	void Core::arithmetic() noexcept {
 		switch(static_cast<ArithmeticOp>(current.getOperation())) {
 #define XNone(n, op) gpr[current.getDestination()] = ( gpr[current.getSource0()] op  gpr[current.getSource1()]);
 #define XImmediate(n, op) gpr[current.getDestination()] = (gpr[current.getSource0()] op static_cast<word>(current.getSource1()));
@@ -184,7 +176,7 @@ namespace iris16 {
 #include "def/iris16/jump.def"
 #undef X
 
-	void Core::jump() {
+	void Core::jump() noexcept {
 		word newAddr = 0;
 		bool cond = true;
 		advanceIp = false;
@@ -225,22 +217,20 @@ namespace iris16 {
 				break;
 		}
 	}
-	void Core::misc() {
-		switch(static_cast<MiscOp>(current.getOperation())) {
+	void Core::misc() noexcept {
+		auto op = static_cast<MiscOp>(current.getOperation());
 #define X(name, func) \
-			case MiscOp:: name: \
-			func (); \
-			break;
+		if (op == MiscOp:: name) { \
+			func () ; \
+			return; \
+		}
 #include "def/iris16/misc.def"
 #undef X
-			default:
-				std::cerr << "Illegal misc code " << current.getOperation() << std::endl;
-				execute = false;
-				advanceIp = false;
-				break;
-		}
+		std::cerr << "Illegal misc code " << current.getOperation() << std::endl;
+		execute = false;
+		advanceIp = false;
 	}
-	void Core::systemCall() {
+	void Core::systemCall() noexcept {
 		switch(static_cast<SystemCalls>(current.getDestination())) {
 			case SystemCalls::Terminate:
 				execute = false;
@@ -262,7 +252,7 @@ namespace iris16 {
 				break;
 		}
 	}
-	void Core::move() {
+	void Core::move() noexcept {
 		word a = 0;
 		switch(static_cast<MoveOp>(current.getOperation())) {
 #define GPRRegister0 (gpr[current.getDestination()])
