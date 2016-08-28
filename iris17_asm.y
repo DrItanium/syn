@@ -20,11 +20,6 @@ extern int iris17lineno;
 
 void iris17error(const char* s);
 namespace iris17 {
-/* segment */
-enum class Segment : byte {
-   Code,
-   Data,
-};
 enum class InstructionFields : byte {
 #define X(title, mask, shift, type, post) title,
 #include "def/iris17/instruction.def"
@@ -113,7 +108,8 @@ void saveEncoding();
 
 iris17::asmstate state;
 iris17::InstructionEncoder op;
-byte ifImmediate, ifNotImmediate;
+auto ifImmediate = static_cast<byte>(0);
+auto ifNotImmediate = static_cast<byte>(0);
 
 namespace iris17 {
 	void initialize(std::ostream* output, FILE* input) {
@@ -147,7 +143,7 @@ namespace iris17 {
 		}
 	}
 	void writeRegisterEntry(byte index, RegisterValue value) {
-		constexpr int bufSize = 8;
+		constexpr auto bufSize = 8;
 		char buf[bufSize] = { 0 };
 		buf[0] = 1;
 		buf[1] = index;
@@ -158,7 +154,7 @@ namespace iris17 {
 		state.output->write(buf, bufSize);
 	}
 	void writeEntry(RegisterValue address, Word value) {
-		constexpr int bufSize = 8;
+		constexpr auto bufSize = 8;
 		char buf[bufSize] = { 0 };
 		buf[2] = static_cast<char>(address);
 		buf[3] = static_cast<char>(address >> 8);

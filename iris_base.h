@@ -81,45 +81,99 @@ constexpr inline T encodeField(T input, F value) noexcept {
 	return encodeBits<T, F, FieldData<T, field>::Value, FieldData<T, field>::FieldIndex>(input, value);
 }
 
-constexpr uint16_t encodeUint16LE(byte a, byte b) noexcept {
+inline constexpr uint16_t encodeUint16LE(byte a, byte b) noexcept {
 		using Number = uint16_t;
 		using Field = byte;
 		return encodeField<Number, Field, 1>(encodeField<Number, Field, 0>(0, a), b);
 }
-constexpr int16_t encodeInt16LE(byte a, byte b) noexcept {
+inline constexpr int16_t encodeInt16LE(byte a, byte b) noexcept {
 		typedef int16_t Number;
 		typedef byte Field;
 		return encodeField<Number, Field, 1>(encodeField<Number, Field, 0>(0, a), b);
 }
-constexpr uint32_t encodeUint32LE(byte a, byte b, byte c, byte d)  noexcept {
+inline constexpr uint32_t encodeUint32LE(byte a, byte b, byte c, byte d)  noexcept {
 	typedef uint32_t Number;
 	typedef byte Field;
 	return encodeField<Number, Field, 3>( encodeField<Number, Field, 2>( encodeField<Number, Field, 1>( encodeField<Number, Field, 0>(0, a), b), c), d);
 }
-constexpr uint16_t encodeUint16LE(byte* buf)  noexcept {
+inline constexpr uint16_t encodeUint16LE(byte* buf)  noexcept {
 	return encodeUint16LE(buf[0], buf[1]);
 }
-constexpr uint32_t encodeUint32LE(byte* buf)  noexcept {
+inline constexpr uint32_t encodeUint32LE(byte* buf)  noexcept {
 	return encodeUint32LE(buf[0], buf[1], buf[2], buf[3]);
 }
-constexpr int32_t encodeInt32LE(byte a, byte b, byte c, byte d)  noexcept {
+inline constexpr int32_t encodeInt32LE(byte a, byte b, byte c, byte d)  noexcept {
 	typedef int32_t Number;
 	typedef byte Field;
 	return encodeField<Number, Field, 3>( encodeField<Number, Field, 2>( encodeField<Number, Field, 1>( encodeField<Number, Field, 0>(0, a), b), c), d);
 }
 
-constexpr uint32_t encodeUint32LE(uint16_t lower, uint16_t upper) noexcept {
+inline constexpr uint32_t encodeUint32LE(uint16_t lower, uint16_t upper) noexcept {
 	return encodeBits<uint32_t, uint16_t, 0xFFFF0000, 16>(encodeBits<uint32_t, uint16_t, 0x0000FFFF, 0>(0, lower), upper);
 }
 
-constexpr int32_t encodeInt32LE(int16_t lower, int16_t upper) noexcept {
+inline constexpr int32_t encodeInt32LE(int16_t lower, int16_t upper) noexcept {
 	return encodeBits<int32_t, int16_t, static_cast<int32_t>(0xFFFF0000), 16>(encodeBits<int32_t, int16_t, 0x0000FFFF, 0>(0, lower), upper);
 }
 
-void decodeUint32LE(uint32_t value, byte storage[sizeof(uint32_t)]) noexcept;
-void decodeUint16LE(uint16_t value, byte storage[sizeof(uint16_t)]) noexcept;
-void decodeInt32LE(int32_t value, byte storage[sizeof(int32_t)]) noexcept;
-void decodeInt16LE(int16_t value, byte storage[sizeof(int16_t)]) noexcept;
+inline void decodeUint32LE(uint32_t value, byte storage[sizeof(uint32_t)]) noexcept {
+	using Number = uint32_t;
+	using Field = byte;
+	storage[0] = decodeField<Number, Field, 0>(value);
+	storage[1] = decodeField<Number, Field, 1>(value);
+	storage[2] = decodeField<Number, Field, 2>(value);
+	storage[3] = decodeField<Number, Field, 3>(value);
+}
+
+inline void decodeUint16LE(uint16_t value, byte storage[sizeof(uint16_t)]) noexcept {
+	using Number = uint16_t;
+	using Field = byte;
+	storage[0] = decodeField<Number, Field, 0>(value);
+	storage[1] = decodeField<Number, Field, 1>(value);
+}
+inline void decodeInt32LE(int32_t value, byte storage[sizeof(int32_t)]) noexcept {
+		using Number = int32_t;
+		using Field = byte;
+		storage[0] = decodeField<Number, Field, 0>(value);
+		storage[1] = decodeField<Number, Field, 1>(value);
+		storage[2] = decodeField<Number, Field, 2>(value);
+		storage[3] = decodeField<Number, Field, 3>(value);
+
+}
+
+inline void decodeInt16LE(int16_t value, byte storage[sizeof(int16_t)]) noexcept {
+		using Number = int16_t;
+		using Field = byte;
+		storage[0] = decodeField<Number, Field, 0>(value);
+		storage[1] = decodeField<Number, Field, 1>(value);
+}
+
+inline void decodeUint64LE(uint64_t value, byte storage[sizeof(uint64_t)]) noexcept {
+	using Number = int64_t;
+	using Field = byte;
+	storage[0] = decodeField<Number, Field, 0>(value);
+	storage[1] = decodeField<Number, Field, 1>(value);
+	storage[2] = decodeField<Number, Field, 2>(value);
+	storage[3] = decodeField<Number, Field, 3>(value);
+	storage[4] = decodeField<Number, Field, 4>(value);
+	storage[5] = decodeField<Number, Field, 5>(value);
+	storage[6] = decodeField<Number, Field, 6>(value);
+	storage[7] = decodeField<Number, Field, 7>(value);
+}
+
+inline constexpr uint64_t encodeUint64LE(uint32_t lower, uint32_t upper) noexcept {
+	return encodeBits<uint64_t, uint32_t,  0xFFFFFFFF00000000, 32>(encodeBits<uint64_t, uint32_t, 0x00000000FFFFFFFF, 0>(0, lower), upper);
+}
+inline constexpr uint64_t encodeUint64LE(byte a, byte b, byte c, byte d, byte e, byte f, byte g, byte h) noexcept {
+	return encodeUint64LE(encodeUint32LE(a, b, c, d), encodeUint32LE(e, f, g, h));
+}
+
+inline constexpr uint64_t encodeUint64LE(uint16_t a, uint16_t b, uint16_t c, uint16_t d) noexcept {
+	return encodeUint64LE(encodeUint32LE(a, b), encodeUint32LE(c, d));
+}
+
+
+
 
 template<typename T>
 inline constexpr T add(T a, T b) noexcept {
