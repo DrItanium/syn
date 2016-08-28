@@ -20,45 +20,46 @@ namespace iris16 {
 		data[address] = value;
 	}
 
-	template<typename T, int count>
-	void populateContents(T* contents, std::istream& stream, const std::function<T(char*)>& func) {
-		char buf[sizeof(T)] = { 0 };
-		for(int i = 0; i < count; ++i) {
-			stream.read(buf, sizeof(T));
-			contents[i] = func(buf);
-		}
-	}
 	void Core::installprogram(std::istream& stream) {
-		auto encodeWord = [](char buf[2]) {
-			return iris16::encodeWord(buf[0], buf[1]);
-		};
-		populateContents<word, ArchitectureConstants::RegisterCount>(gpr, stream, encodeWord);
-		populateContents<word, ArchitectureConstants::AddressMax>(data, stream, encodeWord);
-		populateContents<dword, ArchitectureConstants::AddressMax>(instruction, stream, [](char buf[4]) { return iris16::encodeDword(buf[0], buf[1], buf[2], buf[3]); });
-		populateContents<word, ArchitectureConstants::AddressMax>(stack, stream, encodeWord);
+		char wordBuf[sizeof(word)] = { 0 };
+		char dwordBuf[sizeof(dword)] = { 0 };
+		for (auto i = 0; i < ArchitectureConstants::RegisterCount; ++i) {
+			stream.read(wordBuf, sizeof(word));
+			gpr[i] = iris16::encodeWord(wordBuf[0], wordBuf[1]);
+		}
+		for (auto i = 0; i < ArchitectureConstants::AddressMax; ++i) {
+			stream.read(wordBuf, sizeof(word));
+			setDataMemory(i, iris16::encodeWord(wordBuf[0], wordBuf[1]));
+		}
+		for (auto i = 0; i < ArchitectureConstants::AddressMax; ++i) {
+			stream.read(dwordBuf, sizeof(dword));
+			setInstructionMemory(i, iris16::encodeDword(dwordBuf[0], dwordBuf[1], dwordBuf[2], dwordBuf[3]));
+		}
+		for (auto i = 0; i < ArchitectureConstants::AddressMax; ++i) {
+			stream.read(wordBuf, sizeof(word));
+			stack[i] = iris16::encodeWord(wordBuf[0], wordBuf[1]);
+		}
 	}
 
-	template<typename T, int count>
-	void dumpContents(T* contents, std::ostream& stream, const std::function<char*(T,char*)>& func) {
-		char buf[sizeof(T)] = { 0 };
-		for(int i = 0; i < count; ++i) {
-			stream.write(func(contents[i], buf), sizeof(T));
-		}
-	}
 	void Core::dump(std::ostream& stream) {
-		// save the registers
-		auto decomposeWord = [](word v, char* buf) {
-			iris::decodeUint16LE(v, (byte*)buf);
-			return buf;
-		};
-		auto decomposeDword = [](dword v, char* buf) {
-			iris::decodeUint32LE(v, (byte*)buf);
-			return buf;
-		};
-		dumpContents<word, ArchitectureConstants::RegisterCount>(gpr, stream, decomposeWord);
-		dumpContents<word, ArchitectureConstants::AddressMax>(data, stream, decomposeWord);
-		dumpContents<dword, ArchitectureConstants::AddressMax>(instruction, stream, decomposeDword);
-		dumpContents<word, ArchitectureConstants::AddressMax>(stack, stream, decomposeWord);
+		char wordBuf[sizeof(word)] = { 0 };
+		char dwordBuf[sizeof(dword)] = { 0 };
+		for (auto i = 0; i < ArchitectureConstants::RegisterCount; ++i) {
+			iris::decodeUint16LE(gpr[i], (byte*)wordBuf);
+			stream.write(wordBuf, sizeof(word));
+		}
+		for (auto i = 0; i < ArchitectureConstants::AddressMax; ++i) {
+			iris::decodeUint16LE(data[i], (byte*)wordBuf);
+			stream.write(wordBuf, sizeof(word));
+		}
+		for (auto i = 0; i < ArchitectureConstants::AddressMax; ++i) {
+			iris::decodeUint32LE(instruction[i], (byte*)dwordBuf);
+			stream.write(dwordBuf, sizeof(dword));
+		}
+		for (auto i = 0; i < ArchitectureConstants::AddressMax; ++i) {
+			iris::decodeUint16LE(stack[i], (byte*)wordBuf);
+			stream.write(wordBuf, sizeof(word));
+		}
 	}
 	void Core::run() {
 		while(execute) {
@@ -81,48 +82,42 @@ namespace iris16 {
 		}
 #include "def/iris16/groups.def"
 #undef X
-		std::cerr << "Illegal instruction group " << getGroup() << std::endl;
+		std::stringstream stream;
+		stream << "Illegal instruction group " << getGroup();
 		execute = false;
+		throw iris::Problem(stream.str());
 	}
 
 	void Core::compare() {
-		switch(static_cast<CompareOp>(getOperation())) {
-#define OpNone =
-//#define OpAnd &=
-//#define OpOr |=
-//#define OpXor ^=
+		auto cop = static_cast<CompareOp>(getOperation());
 #define X(type, compare, mod) \
-			case CompareOp:: type: \
-								   gpr[getDestination()] INDIRECTOR(Op, mod) (gpr[getSource0()] compare gpr[getSource1()]); \
-			break;
+			if (cop == CompareOp:: type) { \
+				gpr[getDestination()] = (gpr[getSource0()] compare gpr[getSource1()]); \
+				return; \
+			}
 #define Y(type, compare, mod) \
-			case CompareOp:: type: \
-								   gpr[getDestination()] INDIRECTOR(Op, mod) (gpr[getSource0()] compare (static_cast<word>(getSource1()))); \
-			break;
-
+			if (cop == CompareOp:: type) { \
+				gpr[getDestination()] = (gpr[getSource0()] compare static_cast<word>(getSource1())); \
+				return; \
+			}
 #include "def/iris16/compare.def"
 #undef X
 #undef Y
-#undef OpNone
-//#undef OpAnd
-//#undef OpOr
-//#undef OrXor
-			default:
-				std::cerr << "Illegal compare code " << getOperation() << std::endl;
-				execute = false;
-				advanceIp = false;
-				break;
-		}
+		std::stringstream stream;
+		stream << "Illegal compare code " << getOperation();
+		execute = false;
+		advanceIp = false;
+		throw iris::Problem(stream.str());
 	}
 
 	void Core::arithmetic() {
 		auto operation = static_cast<ArithmeticOp>(getOperation());
-#define XNone(n, op) gpr[getDestination()] = op(gpr[getSource0()], gpr[getSource1()]);
-#define XImmediate(n, op) gpr[getDestination()] = op(gpr[getSource0()], static_cast<word>(getSource1()));
-#define XUnary(n, op) gpr[getDestination()] = op(gpr[getSource0()]);
+#define XNone(n) (gpr[getSource0()], gpr[getSource1()])
+#define XImmediate(n) (gpr[getSource0()], static_cast<word>(getSource1()))
+#define XUnary(n) (gpr[getSource0()])
 #define X(name, op, desc) \
 		if (ArithmeticOp:: name == operation) { \
-			INDIRECTOR(X, desc)(name, op) \
+			gpr[getDestination()] = op INDIRECTOR(X, desc)(name); \
 			return; \
 		}
 #include "def/iris16/arithmetic.def"
@@ -130,9 +125,10 @@ namespace iris16 {
 #undef XNone
 #undef XDenominator
 #undef XUnary
-
-		std::cerr << "Illegal arithmetic operation " << getOperation() << std::endl;
+		std::stringstream stream;
+		stream << "Illegal arithmetic operation " << getOperation();
 		execute = false;
+		throw iris::Problem(stream.str());
 	}
 	template<JumpOp op>
 	struct ConditionalStyle {
@@ -148,7 +144,7 @@ namespace iris16 {
 		auto cond = true;
 		advanceIp = false;
 		auto ip = gpr[ArchitectureConstants::InstructionPointerIndex];
-		switch(static_cast<JumpOp>(getOperation())) {
+		auto jop = static_cast<JumpOp>(getOperation());
 #define XImmediateCond_true (getImmediate())
 #define XImmediateCond_false (gpr[getSource0()])
 #define XIfThenElse_false(immediate) \
@@ -167,22 +163,19 @@ namespace iris16 {
 				gpr[ArchitectureConstants::LinkRegisterIndex] = ip + 1; \
 			}
 #define XLink_false
-
 #define X(name, ifthenelse, conditional, iffalse, immediate, link) \
-			case JumpOp:: name: \
-					 { \
-						 INDIRECTOR(XConditional, _ ## conditional)(name, ifthenelse, immediate) \
-						 gpr[ArchitectureConstants::InstructionPointerIndex] = newAddr; \
-						 INDIRECTOR(XLink, _ ## link)  \
-						 break; \
-					 }
+			if (jop == JumpOp:: name) { \
+				INDIRECTOR(XConditional, _ ## conditional)(name, ifthenelse, immediate) \
+				gpr[ArchitectureConstants::InstructionPointerIndex] = newAddr; \
+				INDIRECTOR(XLink, _ ## link)  \
+				return; \
+			}
 #include "def/iris16/jump.def"
 #undef X
-			default:
-				std::cerr << "Illegal jump code " << getOperation() << std::endl;
-				execute = false;
-				break;
-		}
+		std::stringstream ss;
+		ss << "Illegal jump code " << getOperation();
+		execute = false;
+		throw iris::Problem(ss.str());
 	}
 	void Core::misc() {
 		auto op = static_cast<MiscOp>(getOperation());
@@ -198,30 +191,28 @@ namespace iris16 {
 		advanceIp = false;
 	}
 	void Core::systemCall() {
-		switch(static_cast<SystemCalls>(getDestination())) {
-			case SystemCalls::Terminate:
-				execute = false;
-				advanceIp = false;
-				break;
-			case SystemCalls::PutC:
-				// read register 0 and register 1
-				std::cout.put(static_cast<char>(gpr[getSource0()]));
-				break;
-			case SystemCalls::GetC:
-				byte value;
-				std::cin >> std::noskipws >> value;
-				gpr[getSource0()] = static_cast<word>(value);
-				break;
-			default:
-				std::cerr << "Illegal system call " << getDestination() << std::endl;
-				execute = false;
-				advanceIp = false;
-				break;
+		auto target = static_cast<SystemCalls>(getDestination());
+		if (target == SystemCalls::Terminate) {
+			execute = false;
+			advanceIp = false;
+		} else if (target == SystemCalls::PutC) {
+			// read register 0 and register 1
+			std::cout.put(static_cast<char>(gpr[getSource0()]));
+		} else if (target == SystemCalls::GetC) {
+			auto value = static_cast<byte>(0);
+			std::cin >> std::noskipws >> value;
+			gpr[getSource0()] = static_cast<word>(value);
+		} else {
+			std::stringstream stream;
+			stream << "Illegal system call " << std::hex << getDestination();
+			execute = false;
+			advanceIp = false;
+			throw iris::Problem(stream.str());
 		}
 	}
 	void Core::move() {
 		auto a = static_cast<word>(0);
-		switch(static_cast<MoveOp>(getOperation())) {
+		auto mop = static_cast<MoveOp>(getOperation());
 #define GPRRegister0 (gpr[getDestination()])
 #define GPRRegister1 (gpr[getSource0()])
 #define GPRRegister2 (gpr[getSource1()])
@@ -241,15 +232,12 @@ namespace iris16 {
 #define CodeRegister0 GPRRegister0
 #define CodeUpperLowerRegisters1 GPRRegister1
 #define CodeUpperLowerRegisters2 GPRRegister2
-
 #define XLoadCode(type, dest, src) \
 			auto result = instruction[INDIRECTOR(type, dest ## 0)]; \
 			INDIRECTOR(type, src ## 1) = static_cast<word>(result); \
 			INDIRECTOR(type, src ## 2) = static_cast<word>(result >> 16);
-
 #define XStoreCode(type, dest, src) \
 			instruction[INDIRECTOR(type, dest ## 0)] = (((static_cast<dword>(INDIRECTOR(type, src ## 2))) << 16) | (static_cast<dword>(INDIRECTOR(type, src ## 1))));
-
 #define XMove(type, dest, src) \
 			INDIRECTOR(type, dest ## 0) = INDIRECTOR(type, src ## 1);
 #define XSwap(type, dest, src) \
@@ -267,11 +255,10 @@ namespace iris16 {
 #define XStore(type, dest, src) \
 			data[INDIRECTOR(type, dest ##  0)] = INDIRECTOR(type, src ## 1);
 #define X(name, type, target, dest, src) \
-			case MoveOp:: name: \
-								{ \
-									INDIRECTOR(X,type)(target, dest, src) \
-									break; \
-								}
+		if (MoveOp:: name == mop ) { \
+			INDIRECTOR(X,type)(target, dest, src) \
+			return; \
+		}
 #include "def/iris16/move.def"
 #undef X
 #undef XMove
@@ -300,12 +287,11 @@ namespace iris16 {
 #undef CodeRegister0
 #undef CodeUpperLowerRegisters1
 #undef CodeUpperLowerRegisters2
-			default:
-				std::cerr << "Illegal move code " << getOperation() << std::endl;
-				execute = false;
-				advanceIp = false;
-				break;
-		}
+		std::stringstream ss;
+		ss << "Illegal move code " << getOperation();
+		execute = false;
+		advanceIp = false;
+		throw iris::Problem(ss.str());
 	}
 
 	enum class Segment  {
@@ -314,8 +300,6 @@ namespace iris16 {
 		Count,
 	};
 	void Core::link(std::istream& input) {
-		auto result = static_cast<dword>(0);
-		auto result0 = static_cast<word>(0);
 		char buf[8] = {0};
 		for(auto lineNumber = static_cast<int>(0); input.good(); ++lineNumber) {
 			input.read(buf, 8);
@@ -325,36 +309,32 @@ namespace iris16 {
 				if (input.eof()) {
 					break;
 				} else {
-					throw iris::Problem("something bad happened while reading input file!");
+					throw iris::Problem("Something bad happened while reading input file!");
 				}
 			}
 			//ignore the first byte, it is always zero
-			auto tmp = static_cast<byte>(buf[1]);
 			auto target = static_cast<Segment>(buf[1]);
 			auto address = iris16::encodeWord(buf[2], buf[3]);
 			if (debugEnabled()) {
 				std::cerr << "current target = " << static_cast<int>(target) << "\tcurrent address = 0x" << std::hex << address << std::endl;
 			}
-			switch(target) {
-				case Segment::Code:
-					result = iris16::encodeDword(buf[4], buf[5], buf[6], buf[7]);
-					if (debugEnabled()) {
-						std::cerr << " code result: 0x" << std::hex << result << std::endl;
-					}
-					setInstructionMemory(address, result);
-					break;
-				case Segment::Data:
-					result0 = iris16::encodeWord(buf[4], buf[5]);
-					if (debugEnabled()) {
-						std::cerr << " data result: 0x" << std::hex << result0 << std::endl;
-					}
-					setDataMemory(address, result0);
-					break;
-				default:
-					std::stringstream str;
-					str << "error: line " << lineNumber << ", unknown segment " << static_cast<int>(target) << "/" << static_cast<int>(tmp) << std::endl;
-					str << "current address: " << std::hex << address << std::endl;
-					throw iris::Problem(str.str());
+			if (target == Segment::Code) {
+				auto result = iris16::encodeDword(buf[4], buf[5], buf[6], buf[7]);
+				if (debugEnabled()) {
+					std::cerr << " code result: 0x" << std::hex << result << std::endl;
+				}
+				setInstructionMemory(address, result);
+			} else if (target == Segment::Data) {
+				auto result = iris16::encodeWord(buf[4], buf[5]);
+				if (debugEnabled()) {
+					std::cerr << " data result: 0x" << std::hex << result << std::endl;
+				}
+				setDataMemory(address, result);
+			} else {
+				std::stringstream str;
+				str << "error: line " << lineNumber << ", unknown segment " << static_cast<int>(target) << "/" << static_cast<int>(buf[1]) << std::endl;
+				str << "current address: " << std::hex << address << std::endl;
+				throw iris::Problem(str.str());
 			}
 		}
 	}
