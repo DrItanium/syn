@@ -41,7 +41,7 @@ namespace iris16 {
 			stream.write(wordBuf, sizeof(word));
 		}
 		for (auto i = 0; i < ArchitectureConstants::AddressMax; ++i) {
-			iris::decodeUint16LE(data[i], (byte*)wordBuf);
+			iris::decodeUint16LE(getDataMemory(i), (byte*)wordBuf);
 			stream.write(wordBuf, sizeof(word));
 		}
 		for (auto i = 0; i < ArchitectureConstants::AddressMax; ++i) {
@@ -233,4 +233,9 @@ namespace iris16 {
 			}
 		}
 	}
+
+	Core::Core() noexcept { }
+	Core::Core(std::shared_ptr<word> extendedMemory, dword size) noexcept : extendedData(extendedMemory), extendedMemorySize(size) { }
+
+
 }

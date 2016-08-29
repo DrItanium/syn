@@ -3,6 +3,7 @@
 #include "iris_base.h"
 #include "Core.h"
 #include <cstdint>
+#include <memory>
 namespace iris16 {
 	typedef uint16_t word;
 	typedef uint32_t dword;
@@ -30,7 +31,8 @@ namespace iris16 {
 
 	class Core : public iris::Core {
 		public:
-			Core() noexcept { }
+			Core() noexcept;
+			Core(std::shared_ptr<word> data, dword size) noexcept;
 			virtual ~Core();
 			virtual void initialize() override { }
 			virtual void installprogram(std::istream& stream) override;
@@ -42,6 +44,30 @@ namespace iris16 {
 			inline void setDataMemory(word address, word value) noexcept         { data[address] = value; }
 			inline dword getInstructionMemory(word address) noexcept             { return instruction[address]; }
 			inline word getDataMemory(word address) noexcept                     { return data[address]; }
+			inline void setExtendedDataMemory(dword address, word value) { 
+				if (extendedMemorySize != 0) {
+					if (address < extendedMemorySize) {
+						extendedData.get()[address] = value;
+					} else {
+						throw iris::Problem("Attempted to write to an address outside the mapped extended memory range");
+					}
+				} else {
+					throw iris::Problem("Attempted to write to non existent extended memory!");
+				}
+			}
+
+			inline word getExtendedDataMemory(dword address) {
+				if (extendedMemorySize != 0) {
+					if (address < extendedMemorySize) {
+						return extendedData.get()[address];
+					} else {
+						throw iris::Problem("Attempted to read from an address outside the mapped extended memory range");
+					}
+				} else {
+					throw iris::Problem("Attempted to read from non existent extended memory!");
+				}
+			}
+
 		private:
 			void dispatch();
 			template<bool ifthenelse, bool conditional, bool iffalse, bool immediate, bool link>
@@ -72,15 +98,16 @@ namespace iris16 {
 			}
 #include "def/iris16/core_body.def"
 		private:
-			raw_instruction current;
+			std::shared_ptr<word> extendedData;
+			dword extendedMemorySize = 0;
 			bool execute = true,
 				 advanceIp = true;
 			word gpr[ArchitectureConstants::RegisterCount] = {0};
-			word data[ArchitectureConstants::AddressMax] = { 0 };
+			word data[ArchitectureConstants::AddressMax] = { 0 } ;
 			dword instruction[ArchitectureConstants::AddressMax] = { 0 };
 			word stack[ArchitectureConstants::AddressMax] = { 0 };
+			raw_instruction current = 0;
 	};
-
 	template<>
 	inline void Core::moveBody<MoveOp::Move>() {
 		gpr[getDestination()] = gpr[getSource0()];
@@ -100,22 +127,22 @@ namespace iris16 {
 
 	template<>
 	inline void Core::moveBody<MoveOp::Load>() {
-		gpr[getDestination()] = data[gpr[getSource0()]];
+		gpr[getDestination()] = getDataMemory(gpr[getSource0()]);
 	}
 
 	template<>
 	inline void Core::moveBody<MoveOp::LoadImmediate>() {
-		gpr[getDestination()] = data[getImmediate()];
+		gpr[getDestination()] = getDataMemory(getImmediate());
 	}
 
 	template<>
 	inline void Core::moveBody<MoveOp::Store>() {
-		data[gpr[getDestination()]] = gpr[getSource0()];
+		setDataMemory(gpr[getDestination()], gpr[getSource0()]);
 	}
 
 	template<>
 	inline void Core::moveBody<MoveOp::Memset>() {
-		data[gpr[getDestination()]] = getImmediate();
+		setDataMemory(gpr[getDestination()], getImmediate());
 	}
 
 	template<>
@@ -146,6 +173,24 @@ namespace iris16 {
 	template<>
 	inline void Core::moveBody<MoveOp::StoreCode>() {
 		instruction[getDestination()] = encodeDword(gpr[getSource0()], gpr[getSource1()]);
+	}
+
+	template<>
+	inline void Core::moveBody<MoveOp::ExtendedMemoryWrite>() {
+		// store destination in the address described by source0 and source1
+		auto result = gpr[getDestination()];
+		auto lower = gpr[getSource0()];
+		auto upper = gpr[getSource1()];
+		// build an address out of this
+		setExtendedDataMemory(iris::encodeUint32LE(lower, upper), result);
+	}
+
+	template<>
+	inline void Core::moveBody<MoveOp::ExtendedMemoryRead>() {
+		auto lower = gpr[getSource0()];
+		auto upper = gpr[getSource1()];
+		// build an address out of this
+		gpr[getDestination()] = getExtendedDataMemory(iris::encodeUint32LE(lower, upper));
 	}
 
 	Core* newCore() noexcept;

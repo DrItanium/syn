@@ -80,6 +80,8 @@ Def(MoveOp)
 	EnumEntry(Pop)
 	EnumEntry(LoadCode)
 	EnumEntry(StoreCode)
+	EnumEntry(ExtendedMemoryWrite)
+	EnumEntry(ExtendedMemoryRead)
 EndDef(MoveOp, MaxOps)
 
 Def(CompareOp)
