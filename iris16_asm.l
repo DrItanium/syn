@@ -103,13 +103,18 @@ omni [a-zA-Z0-9._]
 "@org"   { return DIRECTIVE_ORG; }
 "@declare" { return DIRECTIVE_DECLARE; }
 ; // registers for the storage controller
-"xstorage" { iris16lval.rval = 0; return REGISTER; } 
-"dataLower"   {iris16lval.rval = 1; return REGISTER; }
-"dataUpper"   {iris16lval.rval = 2; return REGISTER; }
-"localStorage" {iris16lval.rval = 3; return REGISTER; }
-"toCall"    { iris16lval.rval = 4; return REGISTER; }
-"dataCacheStart" { iris16lval.rval = 5; return REGISTER; }
-"dataCacheEnd" { iris16lval.rval = 6; return REGISTER; }
+"storageSizeLower"      { iris16lval.rval = 0; return REGISTER; }
+"storageSizeUpper"      { iris16lval.rval = 1; return REGISTER; }
+"storageBandSize"		{ iris16lval.rval = 2; return REGISTER; }
+"xstorage" { iris16lval.rval = 3; return REGISTER; } 
+"dataLower"   {iris16lval.rval = 4; return REGISTER; }
+"dataUpper"   {iris16lval.rval = 5; return REGISTER; }
+"localStorage" {iris16lval.rval = 6; return REGISTER; }
+"toCall"    { iris16lval.rval = 7; return REGISTER; }
+"dataCacheStart" { iris16lval.rval = 8; return REGISTER; }
+"dataCacheEnd" { iris16lval.rval = 9; return REGISTER; }
+"dataCacheAddressLower" { iris16lval.rval = 10; return REGISTER; }
+"dataCacheAddressUpper" { iris16lval.rval = 11; return REGISTER; }
 
 "outptr" { iris16lval.rval = 227; return REGISTER; }
 "inptr"  { iris16lval.rval = 228; return REGISTER; }
