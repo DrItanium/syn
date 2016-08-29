@@ -38,8 +38,10 @@ namespace iris16 {
 			virtual void dump(std::ostream& stream) override;
 			virtual void run() override;
 			virtual void link(std::istream& input) override;
-			inline void setInstructionMemory(word address, dword value) noexcept;
-			inline void setDataMemory(word address, word value) noexcept;
+			inline void setInstructionMemory(word address, dword value) noexcept { instruction[address] = value; }
+			inline void setDataMemory(word address, word value) noexcept         { data[address] = value; }
+			inline dword getInstructionMemory(word address) noexcept             { return instruction[address]; }
+			inline word getDataMemory(word address) noexcept                     { return data[address]; }
 		private:
 			void dispatch();
 			template<bool ifthenelse, bool conditional, bool iffalse, bool immediate, bool link>

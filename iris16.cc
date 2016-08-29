@@ -12,14 +12,6 @@ namespace iris16 {
 
 	Core::~Core() { }
 
-	void Core::setInstructionMemory(word address, dword value) noexcept {
-		instruction[address] = value;
-	}
-
-	void Core::setDataMemory(word address, word value) noexcept {
-		data[address] = value;
-	}
-
 	void Core::installprogram(std::istream& stream) {
 		char wordBuf[sizeof(word)] = { 0 };
 		char dwordBuf[sizeof(dword)] = { 0 };
