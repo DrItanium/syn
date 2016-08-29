@@ -173,6 +173,7 @@ namespace iris17 {
                 }
             template<byte bitmask>
                 RegisterValue retrieveImmediate() {
+					static_assert(bitmask <= 0b1111, "Wider masks are being provided to retrieveImmediate!");
                     RegisterValue lower = 0;
                     RegisterValue upper = 0;
                     if (readLower<bitmask>()) {
@@ -323,7 +324,6 @@ namespace iris17 {
                     }
                 }
 
-
             template<byte bitmask>
                 void pushOperation(RegisterValue& pushToStack) {
                     // read backwards because the stack grows upward towards zero
@@ -356,7 +356,6 @@ namespace iris17 {
 
             template<MemoryOperation type, byte bitmask>
                 void memoryOperation(DecodedInstruction&& inst) {
-
                     switch (type) {
                         case MemoryOperation::Load:
                             loadOperation<bitmask, false>(getAddressRegister() + inst.getMemoryOffset());
