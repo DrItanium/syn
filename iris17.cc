@@ -515,10 +515,11 @@ InstructionEncoder::Encoding InstructionEncoder::encode() {
 }
 
 	int instructionSizeFromImmediateMask(byte bitmask) {
+
 #define X(bits) if (bitmask == bits) { return instructionSizeFromImmediateMask<bits>(); }
 #include "def/iris17/bitmask4bit.def"
 #undef X
-		throw iris::Problem("illegal bitmask value!");
+		throw iris::Problem("Illegal bitmask provided!");
 	}
 	RegisterValue getMask(byte bitmask) {
 #define X(bits) if (bitmask == bits) { return SetBitmaskToWordMask<bits>::mask; }

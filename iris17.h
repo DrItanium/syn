@@ -26,6 +26,7 @@ namespace iris17 {
         AddressMax = 65535 * SegmentCount,
         MaxInstructionCount = 16,
         MaxSystemCalls = 64,
+		Bitmask = 0b1111,
         // unlike iris16 and iris32, there is a limited set of registers with
         // a majority of them marked for explicit usage, instructions
         // themselves are still 16 bits wide but 32bits are extracted per
@@ -70,7 +71,7 @@ namespace iris17 {
 
     template<byte bitmask>
         struct SetBitmaskToWordMask {
-			static_assert(bitmask <= 0b1111, "Bitmask is too large and must be less than or equals to 0b1111");
+			static_assert(bitmask <= ArchitectureConstants::Bitmask, "Bitmask is too large and must be less than or equals to 0b1111");
             static constexpr bool decomposedBits[] = {
 				iris::decodeBits<byte, bool, 0b0001, 0>(bitmask),
 				iris::decodeBits<byte, bool, 0b0010, 1>(bitmask),
@@ -99,7 +100,7 @@ namespace iris17 {
     template<byte bitmask>
     inline constexpr bool readUpper() noexcept { return SetBitmaskToWordMask<bitmask>::readUpper; }
 
-    constexpr RegisterValue bitmask32 =   SetBitmaskToWordMask<0b1111>::mask;
+    constexpr RegisterValue bitmask32 =   SetBitmaskToWordMask<ArchitectureConstants::Bitmask>::mask;
     constexpr RegisterValue bitmask24 =   SetBitmaskToWordMask<0b0111>::mask;
     constexpr RegisterValue upper16Mask = SetBitmaskToWordMask<0b1100>::mask;
     constexpr RegisterValue lower16Mask = SetBitmaskToWordMask<0b0011>::mask;
@@ -177,7 +178,7 @@ namespace iris17 {
                 }
             template<byte bitmask>
                 RegisterValue retrieveImmediate() {
-					static_assert(bitmask <= 0b1111, "Wider masks are being provided to retrieveImmediate!");
+					static_assert(bitmask <= ArchitectureConstants::Bitmask, "Wider masks are being provided to retrieveImmediate!");
                     RegisterValue lower = 0;
                     RegisterValue upper = 0;
                     if (readLower<bitmask>()) {
@@ -300,16 +301,16 @@ namespace iris17 {
                 }
             template<byte bitmask, bool merge>
                 void loadOperation(RegisterValue address) {
-					static_assert(bitmask <= 0b1111, "bitmask is too large!");
+					static_assert(bitmask <= ArchitectureConstants::Bitmask, "bitmask is too large!");
                     // use the destination field of the instruction to denote offset, thus we need
                     // to use the Address and Value registers
-					RegisterValue lower = readLower<bitmask>() ?  iris::encodeBits<RegisterValue, Word, 0x0000FFFF, 0>(0, loadWord(address)) : 0;
-					RegisterValue upper = readUpper<bitmask>() ?  iris::encodeBits<RegisterValue, Word, 0xFFFF0000, 16>(0, loadWord(address + 1)) : 0;
+					auto lower = readLower<bitmask>() ?  iris::encodeBits<RegisterValue, Word, lower16Mask, 0>(0, loadWord(address)) : 0;
+					auto upper = readUpper<bitmask>() ?  iris::encodeBits<RegisterValue, Word, upper16Mask, 16>(0, loadWord(address + 1)) : 0;
 					getValueRegister() = iris::encodeBits<RegisterValue, RegisterValue, mask<bitmask>(), 0>(merge ? getValueRegister() : 0 , lower | upper);
                 }
             template<byte bitmask>
                 void storeOperation(RegisterValue address) {
-					static_assert(bitmask <= 0b1111, "bitmask is too large!");
+					static_assert(bitmask <= ArchitectureConstants::Bitmask, "bitmask is too large!");
                     if (readLower<bitmask>()) {
                         auto lower = lowerMask<bitmask>() & iris::decodeBits<RegisterValue, Word, lower16Mask, 0>(getValueRegister());
                         auto loader = loadWord(address) & ~(lowerMask<bitmask>());
@@ -324,7 +325,7 @@ namespace iris17 {
 
             template<byte bitmask>
                 void pushOperation(RegisterValue& pushToStack) {
-					static_assert(bitmask <= 0b1111, "bitmask is too large!");
+					static_assert(bitmask <= ArchitectureConstants::Bitmask, "bitmask is too large!");
                     // read backwards because the stack grows upward towards zero
                     if (readUpper<bitmask>()) {
 						decrementStackPointer();
@@ -340,7 +341,7 @@ namespace iris17 {
 
             template<byte bitmask>
                 void popOperation(RegisterValue& storage) {
-					static_assert(bitmask <= 0b1111, "bitmask is too large!");
+					static_assert(bitmask <= ArchitectureConstants::Bitmask, "bitmask is too large!");
                     RegisterValue lower = 0;
                     RegisterValue upper = 0;
                     if (readLower<bitmask>()) {
