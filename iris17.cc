@@ -249,8 +249,6 @@ inline bool compare(RegisterValue a, RegisterValue b) noexcept {
 			return iris::le(a, b);
 		case CompareStyle::GreaterThanOrEqualTo:
 			return iris::ge(a, b);
-		default:
-			return false;
 	}
 }
 
