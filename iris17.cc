@@ -117,13 +117,21 @@ namespace iris17 {
 
 
 	DefOp(Logical) {
-		switch(current.getLogicalSignature()) {
-#define X(datum) case datum: logicalOperation<datum>(std::move(current)); break;
+		if (current.getLogicalFlagImmediate() && current.getLogicalImmediateError()) {
+			throw iris::Problem("Undefined bits in a logical immediate instruction are set!");
+		} else if (!current.getLogicalFlagImmediate() && current.getLogicalIndirectError()) {
+			throw iris::Problem("Undefined bits in a logical indirect instruction are set!");
+		}
+#define X(datum) \
+			else if (datum == current.getLogicalSignature()) { \
+				if ((LogicalFlags<datum>::immediate && !LogicalFlags<datum>::immediateError) || (!LogicalFlags<datum>::immediate && !LogicalFlags<datum>::indirectError)) { \
+					logicalOperation<datum>(std::move(current)); \
+				} \
+				return; \
+			}
 #include "def/iris17/bitmask8bit.def"
 #undef X
-				default:
-					throw iris::Problem("Illegal logical signature!");
-		}
+		throw iris::Problem("Illegal logical signature!");
 	}
 
 

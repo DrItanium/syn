@@ -36,6 +36,8 @@ X(LogicalRegister0,                 0b0000111100000000, 8, byte,  logicalRegiste
 X(LogicalRegister1,                 0b1111000000000000, 12, byte,  logicalRegister1)
 // signature for both kinds
 X(LogicalSignature,                 0b0000111111110000, 4, byte, logicalSignature)
+X(LogicalImmediateError,            0b0000000010000000, 7, bool, logicalImmediateError)
+X(LogicalIndirectError,             0b0000111100000000, 8, bool, logicalIndirectError)
 
 // Shift Operation
 X(ShiftFlagLeft,                    0b0000000000010000, 4, bool,  shiftFlagLeft)
