@@ -300,6 +300,7 @@ namespace iris17 {
                 }
             template<byte bitmask, bool merge>
                 void loadOperation(RegisterValue address) {
+					static_assert(bitmask <= 0b1111, "bitmask is too large!");
                     // use the destination field of the instruction to denote offset, thus we need
                     // to use the Address and Value registers
 					RegisterValue lower = readLower<bitmask>() ?  iris::encodeBits<RegisterValue, Word, 0x0000FFFF, 0>(0, loadWord(address)) : 0;
@@ -308,6 +309,7 @@ namespace iris17 {
                 }
             template<byte bitmask>
                 void storeOperation(RegisterValue address) {
+					static_assert(bitmask <= 0b1111, "bitmask is too large!");
                     if (readLower<bitmask>()) {
                         auto lower = lowerMask<bitmask>() & iris::decodeBits<RegisterValue, Word, lower16Mask, 0>(getValueRegister());
                         auto loader = loadWord(address) & ~(lowerMask<bitmask>());
@@ -322,6 +324,7 @@ namespace iris17 {
 
             template<byte bitmask>
                 void pushOperation(RegisterValue& pushToStack) {
+					static_assert(bitmask <= 0b1111, "bitmask is too large!");
                     // read backwards because the stack grows upward towards zero
                     if (readUpper<bitmask>()) {
 						decrementStackPointer();
@@ -337,6 +340,7 @@ namespace iris17 {
 
             template<byte bitmask>
                 void popOperation(RegisterValue& storage) {
+					static_assert(bitmask <= 0b1111, "bitmask is too large!");
                     RegisterValue lower = 0;
                     RegisterValue upper = 0;
                     if (readLower<bitmask>()) {
