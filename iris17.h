@@ -70,6 +70,7 @@ namespace iris17 {
 
     template<byte bitmask>
         struct SetBitmaskToWordMask {
+			static_assert(bitmask <= 0b1111, "Bitmask is too large and must be less than or equals to 0b1111");
             static constexpr bool decomposedBits[] = {
 				iris::decodeBits<byte, bool, 0b0001, 0>(bitmask),
 				iris::decodeBits<byte, bool, 0b0010, 1>(bitmask),
@@ -158,11 +159,14 @@ namespace iris17 {
 #define X(title, func) void func ();
 #include "def/iris17/misc.def"
 #undef X
-            template<byte rindex>
-				RegisterValue& registerValue() {
+			template<byte rindex>
+				inline RegisterValue& registerValue() noexcept {
+					static_assert(rindex < ArchitectureConstants::RegisterCount, "Not a legal register index!");
 #define X(index) if (index == rindex) { return gpr[index]; }
 #include "def/iris17/registers.def"
 #undef X
+					// if this is ever fired then we will get a std::terminate
+					// invoked!
 					std::stringstream msg;
 					msg << "Out of range register index: " << rindex;
 					throw iris::Problem(msg.str());
