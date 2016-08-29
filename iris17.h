@@ -213,17 +213,15 @@ namespace iris17 {
             }
 
 			template<byte signature>
-				void logicalOperation(DecodedInstruction&& inst) {
+				void logicalOperation(DecodedInstruction&& inst) noexcept {
 					using lflags = LogicalFlags<signature>;
+					static_assert(lflags::immediate && lflags::immediateError, "Illegal bits set for immediate mode logicalOperation!");
+					static_assert(!lflags::immediate && lflags::indirectError, "Illegal bits set for indirect mode logicalOperation!");
 					// first make sure that the garbage bits haven't been set (some of these are impossible!)
-					if (lflags::immediate && lflags::immediateError) {
-						throw iris::Problem("Illegal bit set for immediate mode logicalOperation!");
-					} else if (!lflags::immediate && lflags::indirectError) {
-						throw iris::Problem("Illegal bits set for indirect mode logicalOperation!");
-					} 
 					if (lflags::immediate) {
 						auto &dest = registerValue(inst.getLogicalImmediateDestination());
 						auto immediate = retrieveImmediate<lflags::bitmask>();
+						static_assert(static_cast<byte>(lflags::immediateType) < static_cast<byte>(ImmediateLogicalOps::Count), "Illegal immediate logical flag type");
 						switch (lflags::immediateType) {
 							case ImmediateLogicalOps::And:
 								dest = iris::binaryAnd(dest, immediate);
@@ -237,10 +235,9 @@ namespace iris17 {
 							case ImmediateLogicalOps::Xor:
 								dest = iris::binaryXor(dest, immediate);
 								break;
-							default: 
-								throw iris::Problem("Illegal immediate logical flag type");
 						}
 					} else {
+						static_assert(static_cast<byte>(lflags::indirectType) < static_cast<byte>(LogicalOps::Count), "Illegal indirect logical operation!");
 						auto &dest = registerValue(inst.getLogicalRegister0());
 						auto src = registerValue(inst.getLogicalRegister1());
 						switch(lflags::indirectType) {
@@ -259,14 +256,13 @@ namespace iris17 {
 							case LogicalOps::Nand:
 								dest = iris::binaryNand(dest, src);
 								break;
-							default:
-								throw iris::Problem("Illegal indirect logical operation!");
 						}
 					}
 				}
             template<byte signature>
                 void arithmeticOperation(DecodedInstruction&& inst) {
                     using aflags = ArithmeticFlags<signature>;
+					static_assert(static_cast<byte>(aflags::op) < static_cast<byte>(ArithmeticOps::Count), "Illegal arithmetic operation!");
                     auto src = aflags::immediate ? inst.getArithmeticImmediate() : registerValue(inst.getArithmeticSource());
                     auto &dest = registerValue(inst.getArithmeticDestination());
                     switch(aflags::op) {
@@ -285,8 +281,6 @@ namespace iris17 {
                         case ArithmeticOps::Rem:
 							dest = iris::rem(dest, src);
                             break;
-                        default:
-                            throw iris::Problem("Illegal arithmetic operation!");
                     }
                 }
             template<byte signature>
