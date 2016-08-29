@@ -37,6 +37,7 @@ syn keyword asmRegister r0 r1 r2 r3 r4 r5 r6 r7 r8 r9 r10 r11 r12 r13 r14 r15 r1
 syn keyword asmMacroRegister outptr inptr fdcur zero stmp7 wlen stmp6 stmp5 stmp4 stmp3 stmp2 stmp1 stmp0
 syn keyword asmMacroRegister sres3 sres2 sres1 sres0 spar3 spar2 spar1 spar0 rend rtop pend ptop sp lr ip 
 syn keyword asmMacroRegister space
+syn keyword asmMacroRegister xstorage dataLower dataUpper localStorage toCall dataCacheStart dataCacheEnd
 
 syn match asmIdentifier		"[a-z_-][a-z0-9_-]*"
 

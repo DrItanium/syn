@@ -102,6 +102,15 @@ omni [a-zA-Z0-9._]
 "@code"  { return DIRECTIVE_CODE; }
 "@org"   { return DIRECTIVE_ORG; }
 "@declare" { return DIRECTIVE_DECLARE; }
+; // registers for the storage controller
+"xstorage" { iris16lval.rval = 0; return REGISTER; } 
+"dataLower"   {iris16lval.rval = 1; return REGISTER; }
+"dataUpper"   {iris16lval.rval = 2; return REGISTER; }
+"localStorage" {iris16lval.rval = 3; return REGISTER; }
+"toCall"    { iris16lval.rval = 4; return REGISTER; }
+"dataCacheStart" { iris16lval.rval = 5; return REGISTER; }
+"dataCacheEnd" { iris16lval.rval = 6; return REGISTER; }
+
 "outptr" { iris16lval.rval = 227; return REGISTER; }
 "inptr"  { iris16lval.rval = 228; return REGISTER; }
 "fdcur"  { iris16lval.rval = 229; return REGISTER; }
