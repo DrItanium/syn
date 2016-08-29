@@ -44,6 +44,7 @@ namespace iris16 {
 			inline void setDataMemory(word address, word value) noexcept         { data[address] = value; }
 			inline dword getInstructionMemory(word address) noexcept             { return instruction[address]; }
 			inline word getDataMemory(word address) noexcept                     { return data[address]; }
+			// TODO: add support for installing externally defined system calls
 			inline void setExtendedDataMemory(dword address, word value) { 
 				if (extendedMemorySize != 0) {
 					if (address < extendedMemorySize) {
