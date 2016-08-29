@@ -219,7 +219,8 @@ namespace iris17 {
 	}
 
 template<CompareCombine compareOp>
-bool combine(bool newValue, bool existingValue) {
+inline bool combine(bool newValue, bool existingValue) noexcept {
+	static_assert(static_cast<byte>(compareOp) < static_cast<byte>(CompareCombine::Count), "Undefined compare combine type!");
 	switch (compareOp) {
 		case CompareCombine::None:
 			return newValue;
@@ -229,28 +230,27 @@ bool combine(bool newValue, bool existingValue) {
 			return newValue || existingValue;
 		case CompareCombine::Xor:
 			return newValue ^ existingValue;
-		default:
-			throw iris::Problem("Undefined combine operation");
 	}
 }
 
 template<CompareStyle style>
-bool compare(RegisterValue a, RegisterValue b) {
-	switch (style) {
-		case CompareStyle::Equals:
+inline bool compare(RegisterValue a, RegisterValue b) noexcept {
+	static_assert(static_cast<byte>(style) < static_cast<byte>(CompareStyle::Count), "Undefined comparison style!");
+	switch(style) {
+		case CompareStyle::Equals: 
 			return iris::eq(a, b);
 		case CompareStyle::NotEquals:
 			return iris::neq(a, b);
 		case CompareStyle::LessThan:
 			return iris::lt(a, b);
-		case CompareStyle::LessThanOrEqualTo:
-			return iris::le(a, b);
 		case CompareStyle::GreaterThan:
 			return iris::gt(a, b);
+		case CompareStyle::LessThanOrEqualTo:
+			return iris::le(a, b);
 		case CompareStyle::GreaterThanOrEqualTo:
 			return iris::ge(a, b);
 		default:
-			throw iris::Problem("Undefined comparison style!");
+			return false;
 	}
 }
 
