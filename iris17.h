@@ -377,6 +377,55 @@ namespace iris17 {
 						}
 					}
 				}
+			template<byte flags>
+				void branchSpecificOperation(DecodedInstruction&& current) {
+					using decodedFlags = BranchFlagsDecoder<flags>;
+					advanceIp = true;
+					if (decodedFlags::isIf) {
+						// if instruction
+						advanceIp = false;
+						if (decodedFlags::isCall) {
+							getLinkRegister() = getInstructionPointer() + 1;
+							if (getLinkRegister() > bitmask24) {
+								getLinkRegister() &= bitmask24;
+							}
+						}
+						getInstructionPointer() = bitmask24 & ((getConditionRegister() != 0) ? registerValue(current.getBranchIfOnTrue()) : registerValue(current.getBranchIfOnFalse()));
+					} else if (decodedFlags::isCall) {
+						// call instruction
+						advanceIp = false;
+						// determine next
+						getLinkRegister() = getInstructionPointer() + decodedFlags::isImmediate ?  2 : 1;
+						if (getLinkRegister() > bitmask24) {
+							getLinkRegister() &= bitmask24; // make sure that we aren't over the memory setup
+						}
+						if (decodedFlags::isImmediate) {
+							incrementInstructionPointer();
+							// make a 24 bit number
+							auto bottom = static_cast<RegisterValue>(current.getUpper());
+							auto upper = static_cast<RegisterValue>(getCurrentCodeWord()) << 8;
+							getInstructionPointer() = bitmask24 & (upper | bottom);
+						} else {
+							getInstructionPointer() = bitmask24 & registerValue(current.getBranchIndirectDestination());
+						}
+					} else {
+						// jump instruction
+						if (decodedFlags::isImmediate) {
+							incrementInstructionPointer();
+							if ((decodedFlags::isConditional && getConditionRegister() != 0) || !decodedFlags::isConditional) {
+								advanceIp = false;
+								auto bottom = current.getUpper();
+								auto upper = static_cast<RegisterValue>(getCurrentCodeWord()) << 8;
+								getInstructionPointer() = bitmask24 & (upper | bottom);
+							}
+						}  else {
+							if ((decodedFlags::isConditional && getConditionRegister() != 0) || !decodedFlags::isConditional) {
+								advanceIp = false;
+								getInstructionPointer() = bitmask24 & registerValue(current.getBranchIndirectDestination());
+							}
+						}
+					}
+				}
 
             RegisterValue& registerValue(byte index);
             inline RegisterValue& getInstructionPointer() noexcept     { return registerValue<ArchitectureConstants::InstructionPointer>(); }

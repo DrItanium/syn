@@ -171,77 +171,31 @@ namespace iris17 {
 
 
 	DefOp(Memory) {
-		switch (current.getMemorySignature()) {
-#define X(value) case value: memoryOperation<value>(std::move(current)); break;
+		if (current.getMemoryFlagIllegalBits()) {
+			throw iris::Problem("Undefined bits set in memory operation!"); 
+		} 
+#define X(value) \
+		else if (value == current.getMemorySignature()) { \
+			if (!MemoryFlags<value>::errorState) { \
+				memoryOperation<value>(std::move(current)); \
+			} \
+			return; \
+		}
 #include "def/iris17/bitmask8bit.def"
 #undef X
-			default:
-				throw iris::Problem("Illegal memory signature!");
+		else {
+			throw iris::Problem("Illegal memory signature!");
 		}
 	}
 
-	template<byte flags>
-	bool branchSpecificOperation(RegisterValue& ip, RegisterValue& linkRegister, RegisterValue& cond, std::function<RegisterValue()> getUpper16, std::function<RegisterValue&(byte)> registerValue, DecodedInstruction&& current) {
-		using decodedFlags = BranchFlagsDecoder<flags>;
-		bool advanceIp = true;
-		if (decodedFlags::isIf) {
-			// if instruction
-			advanceIp = false;
-			if (decodedFlags::isCall) {
-				linkRegister = ip + 1;
-				if (linkRegister > bitmask24) {
-					linkRegister &= bitmask24;
-				}
-			}
-			ip = bitmask24 & ((cond != 0) ? registerValue(current.getBranchIfOnTrue()) : registerValue(current.getBranchIfOnFalse()));
-		} else if (decodedFlags::isCall) {
-			// call instruction
-			advanceIp = false;
-			// determine next
-			linkRegister = decodedFlags::isImmediate ? ip + 2 : ip + 1;
-			if (linkRegister > bitmask24) {
-				linkRegister &= bitmask24; // make sure that we aren't over the memory setup
-			}
-			if (decodedFlags::isImmediate) {
-				++ip;
-				// make a 24 bit number
-				auto bottom = static_cast<RegisterValue>(current.getUpper());
-				auto upper = getUpper16() << 8;
-				ip = bitmask24 & (upper | bottom);
-			} else {
-				ip = bitmask24 & registerValue(current.getBranchIndirectDestination());
-			}
-		} else {
-			// jump instruction
-			if (decodedFlags::isImmediate) {
-				++ip;
-				if ((decodedFlags::isConditional && cond != 0) || !decodedFlags::isConditional) {
-					advanceIp = false;
-					auto bottom = current.getUpper();
-					auto upper = getUpper16() << 8;
-					ip = bitmask24 & (upper | bottom);
-				}
-			}  else {
-				if ((decodedFlags::isConditional && cond != 0) || !decodedFlags::isConditional) {
-						advanceIp = false;
-						ip = bitmask24 & registerValue(current.getBranchIndirectDestination());
-				}
-			}
-		}
-		return advanceIp;
-	}
 
 
 	DefOp(Branch) {
-		auto upper16fn = [this]() { return static_cast<RegisterValue>(getCurrentCodeWord()); };
-		auto regValFn = [this](byte index) -> RegisterValue& { return registerValue(index); };
-
 		switch (current.getBranchFlags()) {
 #define X(value) \
-			case value :: flags : { \
-							 advanceIp = branchSpecificOperation< value :: flags >(getInstructionPointer(), getLinkRegister(), getConditionRegister(), upper16fn, regValFn, std::move(current)); \
-							 break; \
-						 }
+			case value :: flags : \
+			branchSpecificOperation< value :: flags >(std::move(current)); \
+			break;
 			X(IfJump)
 			X(IfCall)
 			X(CallIndirect)
