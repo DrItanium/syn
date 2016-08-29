@@ -211,81 +211,79 @@ namespace iris17 {
 				using sFlags = SetFlags<signature>;
 				registerValue<sFlags::destination>() = retrieveImmediate<sFlags::bitmask>(); 
             }
-            template<byte signature>
-                void logicalOperation(DecodedInstruction&& inst) {
-                    using lflags = LogicalFlags<signature>;
-                    // first make sure that the garbage bits haven't been set (some of these are impossible!)
-                    if (lflags::immediate && lflags::immediateError) {
-                        throw iris::Problem("Illegal bit set for immediate mode logicalOperation!");
-                    } else if (!lflags::immediate && lflags::indirectError) {
-                        throw iris::Problem("Illegal bits set for indirect mode logicalOperation!");
-                    }
-                    if (lflags::immediate) {
-                        auto &dest = registerValue(inst.getLogicalImmediateDestination());
-                        auto immediate = retrieveImmediate<lflags::bitmask>();
-                        switch (lflags::immediateType) {
-                            case ImmediateLogicalOps::And:
-                                dest = dest & immediate;
-                                break;
-                            case ImmediateLogicalOps::Or:
-                                dest = dest | immediate;
-                                break;
-                            case ImmediateLogicalOps::Nand:
-                                dest = ~(dest & immediate);
-                                break;
-                            case ImmediateLogicalOps::Xor:
-                                dest = dest ^ immediate;
-                                break;
+
+			template<byte signature>
+				void logicalOperation(DecodedInstruction&& inst) {
+					using lflags = LogicalFlags<signature>;
+					// first make sure that the garbage bits haven't been set (some of these are impossible!)
+					if (lflags::immediate && lflags::immediateError) {
+						throw iris::Problem("Illegal bit set for immediate mode logicalOperation!");
+					} else if (!lflags::immediate && lflags::indirectError) {
+						throw iris::Problem("Illegal bits set for indirect mode logicalOperation!");
+					} 
+					if (lflags::immediate) {
+						auto &dest = registerValue(inst.getLogicalImmediateDestination());
+						auto immediate = retrieveImmediate<lflags::bitmask>();
+						switch (lflags::immediateType) {
+							case ImmediateLogicalOps::And:
+								dest = iris::binaryAnd(dest, immediate);
+								break;
+							case ImmediateLogicalOps::Or:
+								dest = iris::binaryOr(dest, immediate);
+								break;
+							case ImmediateLogicalOps::Nand:
+								dest = iris::binaryNand(dest, immediate);
+								break;
+							case ImmediateLogicalOps::Xor:
+								dest = iris::binaryXor(dest, immediate);
+								break;
 							default: 
 								throw iris::Problem("Illegal immediate logical flag type");
-                        }
-                    } else {
-                        auto &dest = registerValue(inst.getLogicalRegister0());
-                        auto src = registerValue(inst.getLogicalRegister1());
-                        switch(lflags::indirectType) {
-                            case LogicalOps::And:
-                                dest = dest & src;
-                                break;
-                            case LogicalOps::Or:
-                                dest = dest | src;
-                                break;
-                            case LogicalOps::Not:
-                                dest = ~dest;
-                                break;
-                            case LogicalOps::Xor:
-                                dest = dest ^ src;
-                                break;
-                            case LogicalOps::Nand:
-                                dest = ~(dest & src);
-                                break;
-                            default:
-                                throw iris::Problem("Illegal indirect logical operation!");
-                        }
-                    }
-                }
+						}
+					} else {
+						auto &dest = registerValue(inst.getLogicalRegister0());
+						auto src = registerValue(inst.getLogicalRegister1());
+						switch(lflags::indirectType) {
+							case LogicalOps::And:
+								dest = iris::binaryAnd(dest, src);
+								break;
+							case LogicalOps::Or:
+								dest = iris::binaryOr(dest, src);
+								break;
+							case LogicalOps::Not:
+								dest = iris::binaryNot(dest);
+								break;
+							case LogicalOps::Xor:
+								dest = iris::binaryXor(dest, src);
+								break;
+							case LogicalOps::Nand:
+								dest = iris::binaryNand(dest, src);
+								break;
+							default:
+								throw iris::Problem("Illegal indirect logical operation!");
+						}
+					}
+				}
             template<byte signature>
                 void arithmeticOperation(DecodedInstruction&& inst) {
                     using aflags = ArithmeticFlags<signature>;
                     auto src = aflags::immediate ? inst.getArithmeticImmediate() : registerValue(inst.getArithmeticSource());
-					if (aflags::checkDenominator && src == 0) {
-                        throw iris::Problem("Denominator is zero!");
-                    }
                     auto &dest = registerValue(inst.getArithmeticDestination());
                     switch(aflags::op) {
                         case ArithmeticOps::Add:
-                            dest += src;
+							dest = iris::add(dest, src);
                             break;
                         case ArithmeticOps::Sub:
-                            dest -= src;
+							dest = iris::sub(dest, src);
                             break;
                         case ArithmeticOps::Mul:
-                            dest *= src;
+							dest = iris::mul(dest, src);
                             break;
                         case ArithmeticOps::Div:
-                            dest /= src;
+							dest = iris::div(dest, src);
                             break;
                         case ArithmeticOps::Rem:
-                            dest %= src;
+							dest = iris::rem(dest, src);
                             break;
                         default:
                             throw iris::Problem("Illegal arithmetic operation!");
@@ -311,15 +309,13 @@ namespace iris17 {
             template<byte bitmask>
                 void storeOperation(RegisterValue address) {
                     if (readLower<bitmask>()) {
-                        auto static constexpr lmask = lowerMask<bitmask>();
-                        Word lower = lmask & iris::decodeBits<RegisterValue, Word, lower16Mask, 0>(getValueRegister());
-                        auto loader = loadWord(address) & ~lmask;
+                        auto lower = lowerMask<bitmask>() & iris::decodeBits<RegisterValue, Word, lower16Mask, 0>(getValueRegister());
+                        auto loader = loadWord(address) & ~(lowerMask<bitmask>());
                         storeWord(address, lower | loader);
                     }
                     if (readUpper<bitmask>()) {
-                        auto static constexpr umask = upperMask<bitmask>();
-                        Word upper = umask & iris::decodeBits<RegisterValue, Word, upper16Mask, 16>(getValueRegister());
-                        auto loader = loadWord(address + 1) & ~umask;
+                        auto upper = upperMask<bitmask>() & iris::decodeBits<RegisterValue, Word, upper16Mask, 16>(getValueRegister());
+                        auto loader = loadWord(address + 1) & ~(upperMask<bitmask>());
                         storeWord(address + 1, upper | loader);
                     }
                 }
@@ -329,12 +325,12 @@ namespace iris17 {
                     // read backwards because the stack grows upward towards zero
                     if (readUpper<bitmask>()) {
 						decrementStackPointer();
-                        Word upper = upperMask<bitmask>() & iris::decodeBits<RegisterValue, Word, upper16Mask, 16>(pushToStack);
+                        auto upper = upperMask<bitmask>() & iris::decodeBits<RegisterValue, Word, upper16Mask, 16>(pushToStack);
                         storeWord(getStackPointer(), upper);
                     }
                     if (readLower<bitmask>()) {
 						decrementStackPointer();
-                        Word lower = lowerMask<bitmask>() & iris::decodeBits<RegisterValue, Word, lower16Mask, 0>(pushToStack);
+                        auto lower = lowerMask<bitmask>() & iris::decodeBits<RegisterValue, Word, lower16Mask, 0>(pushToStack);
                         storeWord(getStackPointer(), lower);
                     }
                 }
@@ -351,40 +347,36 @@ namespace iris17 {
                         upper = upperMask<bitmask>() & loadWord(getStackPointer());
 						incrementStackPointer();
                     }
-                    storage = iris::encodeBits<RegisterValue, Word, upper16Mask, 16>(iris::encodeBits<RegisterValue, Word, lower16Mask, 0>(static_cast<RegisterValue>(0), lower), upper);
+                    storage = iris::encodeBits<RegisterValue, Word, upper16Mask, 16>(iris::encodeBits<RegisterValue, Word, lower16Mask, 0>(0, lower), upper);
                 }
 
-            template<MemoryOperation type, byte bitmask>
-                void memoryOperation(DecodedInstruction&& inst) {
-                    switch (type) {
-                        case MemoryOperation::Load:
-                            loadOperation<bitmask, false>(getAddressRegister() + inst.getMemoryOffset());
-                            break;
-                        case MemoryOperation::LoadMerge:
-                            loadOperation<bitmask, true>(getAddressRegister() + inst.getMemoryOffset());
-                            break;
-                        case MemoryOperation::Store:
-                            storeOperation<bitmask>(getAddressRegister() + inst.getMemoryOffset());
-                            break;
-                        case MemoryOperation::Push:
-                            pushOperation<bitmask>(registerValue(inst.getMemoryRegister()));
-                            break;
-                        case MemoryOperation::Pop:
-                            popOperation<bitmask>(registerValue(inst.getMemoryRegister()));
-                            break;
-                        default:
-                            throw iris::Problem("Illegal memory operation type!");
-                    }
-                }
-            template<byte signature>
-                inline void memoryOperation(DecodedInstruction&& inst) {
-                    using mflags = MemoryFlags<signature>;
-                    if (mflags::errorState) {
-                        throw iris::Problem("Illegally encoded Memory operation!");
-                    } else {
-                        memoryOperation<mflags::type, mflags::bitmask>(std::move(inst));
-                    }
-                }
+			template<byte signature>
+				inline void memoryOperation(DecodedInstruction&& inst) {
+					using mflags = MemoryFlags<signature>;
+					if (mflags::errorState) {
+						throw iris::Problem("Illegally encoded Memory operation!");
+					} else {
+						switch (mflags::type) {
+							case MemoryOperation::Load:
+								loadOperation<mflags::bitmask, false>(getAddressRegister() + inst.getMemoryOffset());
+								break;
+							case MemoryOperation::LoadMerge:
+								loadOperation<mflags::bitmask, true>(getAddressRegister() + inst.getMemoryOffset());
+								break;
+							case MemoryOperation::Store:
+								storeOperation<mflags::bitmask>(getAddressRegister() + inst.getMemoryOffset());
+								break;
+							case MemoryOperation::Push:
+								pushOperation<mflags::bitmask>(registerValue(inst.getMemoryRegister()));
+								break;
+							case MemoryOperation::Pop:
+								popOperation<mflags::bitmask>(registerValue(inst.getMemoryRegister()));
+								break;
+							default:
+								throw iris::Problem("Illegal memory operation type!");
+						}
+					}
+				}
 
             RegisterValue& registerValue(byte index);
             inline RegisterValue& getInstructionPointer() noexcept     { return registerValue<ArchitectureConstants::InstructionPointer>(); }

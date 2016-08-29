@@ -277,5 +277,10 @@ inline constexpr T binaryXor(T a, T b) noexcept {
 	return a ^ b;
 }
 
+template<typename T>
+inline constexpr T binaryNand(T a, T b) noexcept {
+	return ~(a & b);
+}
+
 }
 #endif
