@@ -23,13 +23,17 @@
 @label DATA_CACHE_START
 @org 0x8400
 @label DATA_CACHE_END
+; hardware cache variables
+
 @code
 	@org 0x0000
+		; do an overwriting load
+		system 3 storageSizeLower storageSizeUpper
 		set storageBandSize BAND_SIZE ; setup the storage band size to 0x0400
 		j startup
 
 	@label TERMINATE
-		system 0, xstorage, xstorage
+		system 0 xstorage xstorage
 	@label RETURN
 		jr lr
 	@label CALL
@@ -57,7 +61,6 @@
 
 
 	@label startup
-		
 		set dataCacheStart DATA_CACHE_START
 		set dataCacheEnd DATA_CACHE_END
 		set toCall TERMINATE

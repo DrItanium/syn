@@ -11,7 +11,7 @@ namespace phoenix {
 	Storage::~Storage() { }
 	void 
 	Storage::initialize() {
-
+		_controller.initialize();
 	}
 
 	void

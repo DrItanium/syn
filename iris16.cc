@@ -165,6 +165,10 @@ namespace iris16 {
 			auto value = static_cast<byte>(0);
 			std::cin >> std::noskipws >> value;
 			gpr[getSource0()] = static_cast<word>(value);
+		} else if (target == SystemCalls::InitializeXMem) {
+			// just load the given storage size into r0 and r1
+			gpr[getSource0()] = iris::decodeBits<dword, word, 0x0000FFFF, 0>(extendedMemorySize);
+			gpr[getSource1()] = iris::decodeBits<dword, word, 0xFFFF0000, 16>(extendedMemorySize);
 		} else {
 			std::stringstream stream;
 			stream << "Illegal system call " << std::hex << getDestination();

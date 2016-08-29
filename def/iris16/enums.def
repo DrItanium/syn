@@ -65,6 +65,7 @@ Def(SystemCalls)
 	EnumEntry(Terminate)
 	EnumEntry(GetC)
 	EnumEntry(PutC)
+	EnumEntry(InitializeXMem)
 EndDef(SystemCalls, MaxOps)
 
 Def(MoveOp)
