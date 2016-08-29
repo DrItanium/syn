@@ -187,10 +187,6 @@ namespace iris17 {
                     return mask<bitmask>() & ( lower | upper );
                 }
 
-			template<ArithmeticOps op>
-			struct RequiresDenominatorCheck {
-				static constexpr bool value = false;
-			};
 #define DefFlags(name) \
 			template<byte signature> \
 			struct name { 
@@ -452,14 +448,6 @@ namespace iris17 {
 
     Core* newCore() noexcept;
 
-#define MustCheckDenominator(op) \
-    template<> \
-    struct Core::RequiresDenominatorCheck<ArithmeticOps:: op> { \
-        static constexpr bool value = true; \
-    }
-    MustCheckDenominator(Div);
-    MustCheckDenominator(Rem);
-#undef MustCheckDenominator
 #define X(title, mask, shift, type, post) \
 	constexpr inline Word encode ## title (Word input, type value) noexcept { \
 		return iris::encodeBits<Word, type, mask, shift>(input, value); \
