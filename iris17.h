@@ -155,6 +155,7 @@ namespace iris17 {
             virtual void dump(std::ostream& stream) override;
             virtual void run() override;
             virtual void link(std::istream& stream) override;
+			std::shared_ptr<Word> getMemory();
         private:
             void dispatch(DecodedInstruction&& inst);
 #define X(title, func) void func ();

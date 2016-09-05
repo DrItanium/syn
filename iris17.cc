@@ -394,6 +394,10 @@ DefOp(Compare) {
 		storeWord(address + 1, iris::decodeBits<RegisterValue, Word, upper16Mask, 16>(value));
 	}
 
+	std::shared_ptr<Word> Core::getMemory() {
+		return memory;
+	}
+
 	InstructionEncoder::Encoding InstructionEncoder::encodeArithmetic() {
 		auto first = encodeControl(0, type);
 		first = encodeArithmeticFlagImmediate(first, immediate);

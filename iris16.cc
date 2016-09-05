@@ -241,5 +241,11 @@ namespace iris16 {
 	Core::Core() noexcept { }
 	Core::Core(std::shared_ptr<word> extendedMemory, dword size) noexcept : extendedData(extendedMemory), extendedMemorySize(size) { }
 
+	word* Core::dataMapping(word address) {
+		return &data[address];
+	}
+	word* Core::registerMapping(byte index) {
+		return &gpr[index];
+	}
 
 }
