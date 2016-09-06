@@ -148,6 +148,12 @@ namespace iris17 {
     class Core : public iris::Core {
 		public:
 			using SystemFunction = std::function<void(Core*, DecodedInstruction&&)>;
+			enum DefaultHandlers {
+				Terminate,
+				GetC,
+				PutC,
+				Count,
+			};
         public:
             Core();
             virtual ~Core();
@@ -159,12 +165,9 @@ namespace iris17 {
             virtual void link(std::istream& stream) override;
 			std::shared_ptr<Word> getMemory();
 			void installSystemHandler(byte index, SystemFunction fn);
+			void cycle();
+			bool shouldExecute() const { return execute; }
         private:
-			enum DefaultHandlers {
-				Terminate,
-				GetC,
-				PutC,
-			};
 			static void defaultSystemHandler(Core* core, DecodedInstruction&& inst);
 			static void terminate(Core* core, DecodedInstruction&& inst);
 			static void getc(Core* core, DecodedInstruction&& inst);

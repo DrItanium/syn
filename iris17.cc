@@ -94,13 +94,16 @@ namespace iris17 {
 	}
 	void Core::run() {
 		while(execute) {
-			dispatch(std::move(DecodedInstruction(getCurrentCodeWord())));
-			if (advanceIp) {
-				incrementStackPointer();
-			} else {
-				// just re-enable it
-				advanceIp = true;
-			}
+			cycle();
+		}
+	}
+	void Core::cycle() {
+		dispatch(std::move(DecodedInstruction(getCurrentCodeWord())));
+		if (advanceIp) {
+			incrementInstructionPointer();
+		} else {
+			// just re-enable it
+			advanceIp = true;
 		}
 	}
 

@@ -6,11 +6,14 @@
 
 #include "Core.h"
 #include "iris17.h"
+#include <SFML/Window.hpp>
 
 namespace Phoenix {
 class Machine : public iris::Core {
 	public:
 		using CPU = iris17::Core;
+		static constexpr int WindowWidth = 512;
+		static constexpr int WindowHeight = 384;
 	public:
 		Machine();
 		virtual ~Machine();
@@ -21,7 +24,18 @@ class Machine : public iris::Core {
 		virtual void run() override;
 		virtual void link(std::istream& stream) override;
 	private:
+		enum CustomHandlers {
+			DrawPixel = CPU::DefaultHandlers::Count,
+
+
+			Count,
+		};
+		static_assert(static_cast<int>(CustomHandlers::Count) <= static_cast<int>(iris17::ArchitectureConstants::MaxSystemCalls), "Too many system calls defined!");
+	private:
+		static void drawPixel(CPU* cpu, iris17::DecodedInstruction&& inst);
+	private:
 		std::unique_ptr<CPU> _cpu;
+		sf::Window _window;
 };
 } // end namespace Phoenix
 
