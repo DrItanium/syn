@@ -1,6 +1,6 @@
-#include "phoenix.h"
+#include "Storage.h"
 
-namespace phoenix {
+namespace Hardware {
 	Storage::Storage(Address size) : 
 		_size(size), 
 		_backingStore(new word[size]),

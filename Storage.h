@@ -1,12 +1,11 @@
-#ifndef _TARGET_PHOENIX
-#define _TARGET_PHOENIX
+#ifndef _TARGET_STORAGE
+#define _TARGET_STORAGE
 #include <cstdint>
 #include "Core.h"
 #include <memory>
 #include <list>
 #include "iris16.h"
-#include "iris17.h"
-namespace phoenix {
+namespace Hardware {
 	using word = uint16_t;
 	using Address = uint32_t;
 
@@ -26,5 +25,5 @@ namespace phoenix {
 			iris16::Core _controller;
 	};
 
-} // end namespace phoenix
-#endif // end _TARGET_PHOENIX
+} // end namespace Hardware
+#endif // end _TARGET_STORAGE
