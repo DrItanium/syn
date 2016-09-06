@@ -5,12 +5,12 @@
 #include <utility>
 
 namespace iris17 {
-/*
- * Iris17 is a variable length encoding 16 bit architecture.
- * It has a 24 bit memory space across 256 16-bit sections. The variable length
- * encoding comes from different register choices. The reserved registers are
- * used to compress the encoding.
- */
+	/*
+	 * Iris17 is a variable length encoding 16 bit architecture.
+	 * It has a 24 bit memory space across 256 16-bit sections. The variable length
+	 * encoding comes from different register choices. The reserved registers are
+	 * used to compress the encoding.
+	 */
 	Core* newCore() noexcept {
 		return new Core();
 	}
@@ -27,51 +27,65 @@ namespace iris17 {
 		return iris::decodeInt32LE(value, storage);
 	}
 
-	Core::Core() : memory(new Word[ArchitectureConstants::AddressMax]) { }
+	Core::Core() : memory(new Word[ArchitectureConstants::AddressMax]) { 
+	}
 	Core::~Core() { }
 
-	void Core::initialize() { }
+	void Core::initialize() { 
+		// setup the default system handlers
+		for (auto i = 0; i < ArchitectureConstants::MaxSystemCalls; ++i) {
+			installSystemHandler(i, Core::defaultSystemHandler);
+		}
+		installSystemHandler(Core::DefaultHandlers::Terminate, Core::terminate);
+		installSystemHandler(Core::DefaultHandlers::GetC, Core::getc);
+		installSystemHandler(Core::DefaultHandlers::PutC, Core::putc);
+	}
+
+	void Core::defaultSystemHandler(Core* core, DecodedInstruction&& inst) {
+		throw iris::Problem("Unimplemented system call!");
+	}
+
 
 	void Core::shutdown() { }
 
 	template<typename T, int count>
-	void populateContents(T* contents, std::istream& stream, std::function<T(byte*)> encode) {
-		static char buf[sizeof(T)] = { 0 };
-		for(int i = 0; i < count; ++i) {
-			stream.read(buf, sizeof(T));
-			contents[i] = encode((byte*)buf);
+		void populateContents(T* contents, std::istream& stream, std::function<T(byte*)> encode) {
+			static char buf[sizeof(T)] = { 0 };
+			for(int i = 0; i < count; ++i) {
+				stream.read(buf, sizeof(T));
+				contents[i] = encode((byte*)buf);
+			}
 		}
-	}
 	template<typename T, int count>
-	void populateContents(const std::shared_ptr<T>& contents, std::istream& stream, std::function<T(byte*)> encode) {
-		static char buf[sizeof(T)] = { 0 };
-		for (auto i = 0; i < count; ++i) {
-			stream.read(buf, sizeof(T));
-			contents.get()[i] = encode((byte*)buf);
+		void populateContents(const std::shared_ptr<T>& contents, std::istream& stream, std::function<T(byte*)> encode) {
+			static char buf[sizeof(T)] = { 0 };
+			for (auto i = 0; i < count; ++i) {
+				stream.read(buf, sizeof(T));
+				contents.get()[i] = encode((byte*)buf);
+			}
 		}
-	}
 	void Core::installprogram(std::istream& stream) {
 		populateContents<RegisterValue, ArchitectureConstants::RegisterCount>(gpr, stream, [](byte* buf) { return iris::encodeUint32LE(buf); });
 		populateContents<Word, ArchitectureConstants::AddressMax>(memory, stream, [](byte* buf) { return iris::encodeUint16LE(buf); });
 	}
 
 	template<typename T, int count>
-	void dumpContents(T* contents, std::ostream& stream, std::function<void(T value, byte* buf)> decompose) {
-		static byte buf[sizeof(T)];
-		for (int i = 0; i < count; ++i) {
-			decompose(contents[i], (byte*)buf);
-			stream.write((char*)buf, sizeof(T));
+		void dumpContents(T* contents, std::ostream& stream, std::function<void(T value, byte* buf)> decompose) {
+			static byte buf[sizeof(T)];
+			for (int i = 0; i < count; ++i) {
+				decompose(contents[i], (byte*)buf);
+				stream.write((char*)buf, sizeof(T));
+			}
 		}
-	}
 
 	template<typename T, int count>
-	void dumpContents(const std::shared_ptr<T>& contents, std::ostream& stream, std::function<void(T value, byte* buf)> decompose) {
-		static byte buf[sizeof(T)];
-		for (auto i = 0; i < count; ++i) {
-			decompose(contents.get()[i], buf);
-			stream.write((char*)buf, sizeof(T));
+		void dumpContents(const std::shared_ptr<T>& contents, std::ostream& stream, std::function<void(T value, byte* buf)> decompose) {
+			static byte buf[sizeof(T)];
+			for (auto i = 0; i < count; ++i) {
+				decompose(contents.get()[i], buf);
+				stream.write((char*)buf, sizeof(T));
+			}
 		}
-	}
 
 	void Core::dump(std::ostream& stream) {
 		// save the registers
@@ -123,12 +137,12 @@ namespace iris17 {
 			throw iris::Problem("Undefined bits in a logical indirect instruction are set!");
 		}
 #define X(datum) \
-			else if (datum == current.getLogicalSignature()) { \
-				if ((LogicalFlags<datum>::immediate && !LogicalFlags<datum>::immediateError) || (!LogicalFlags<datum>::immediate && !LogicalFlags<datum>::indirectError)) { \
-					logicalOperation<datum>(std::move(current)); \
-				} \
-				return; \
-			}
+		else if (datum == current.getLogicalSignature()) { \
+			if ((LogicalFlags<datum>::immediate && !LogicalFlags<datum>::immediateError) || (!LogicalFlags<datum>::immediate && !LogicalFlags<datum>::indirectError)) { \
+				logicalOperation<datum>(std::move(current)); \
+			} \
+			return; \
+		}
 #include "def/iris17/bitmask8bit.def"
 #undef X
 		throw iris::Problem("Illegal logical signature!");
@@ -163,7 +177,7 @@ namespace iris17 {
 		}
 	}
 
-    DefOp(Set) {
+	DefOp(Set) {
 		switch (current.getSetSignature()) {
 #define X(value) case value: setOperation<value>(std::move(current)); break;
 #include "def/iris17/bitmask8bit.def"
@@ -175,7 +189,7 @@ namespace iris17 {
 						 throw iris::Problem(str);
 					 }
 		}
-    }
+	}
 
 
 	DefOp(Memory) {
@@ -202,117 +216,115 @@ namespace iris17 {
 		switch (current.getBranchFlags()) {
 #define X(value) \
 			case value :: flags : \
-			branchSpecificOperation< value :: flags >(std::move(current)); \
+								  branchSpecificOperation< value :: flags >(std::move(current)); \
 			break;
 			X(IfJump)
-			X(IfCall)
-			X(CallIndirect)
-			X(CallDirect)
-			X(JumpDirect)
-			X(JumpIndirect)
-			X(ConditionalJumpDirect)
-			X(ConditionalJumpIndirect)
+				X(IfCall)
+				X(CallIndirect)
+				X(CallDirect)
+				X(JumpDirect)
+				X(JumpIndirect)
+				X(ConditionalJumpDirect)
+				X(ConditionalJumpIndirect)
 #undef X
 			default:
 				throw iris::Problem("Undefined branch flag setup!");
 		}
 	}
 
-template<CompareCombine compareOp>
-inline bool combine(bool newValue, bool existingValue) noexcept {
-	static_assert(static_cast<byte>(compareOp) < static_cast<byte>(CompareCombine::Count), "Undefined compare combine type!");
-	switch (compareOp) {
-		case CompareCombine::None:
-			return newValue;
-		case CompareCombine::And:
-			return newValue && existingValue;
-		case CompareCombine::Or:
-			return newValue || existingValue;
-		case CompareCombine::Xor:
-			return newValue ^ existingValue;
-	}
-}
+	template<CompareCombine compareOp>
+		inline bool combine(bool newValue, bool existingValue) noexcept {
+			static_assert(static_cast<byte>(compareOp) < static_cast<byte>(CompareCombine::Count), "Undefined compare combine type!");
+			switch (compareOp) {
+				case CompareCombine::None:
+					return newValue;
+				case CompareCombine::And:
+					return newValue && existingValue;
+				case CompareCombine::Or:
+					return newValue || existingValue;
+				case CompareCombine::Xor:
+					return newValue ^ existingValue;
+			}
+		}
 
-template<CompareStyle style>
-inline bool compare(RegisterValue a, RegisterValue b) noexcept {
-	static_assert(static_cast<byte>(style) < static_cast<byte>(CompareStyle::Count), "Undefined comparison style!");
-	switch(style) {
-		case CompareStyle::Equals: 
-			return iris::eq(a, b);
-		case CompareStyle::NotEquals:
-			return iris::neq(a, b);
-		case CompareStyle::LessThan:
-			return iris::lt(a, b);
-		case CompareStyle::GreaterThan:
-			return iris::gt(a, b);
-		case CompareStyle::LessThanOrEqualTo:
-			return iris::le(a, b);
-		case CompareStyle::GreaterThanOrEqualTo:
-			return iris::ge(a, b);
-	}
-}
+	template<CompareStyle style>
+		inline bool compare(RegisterValue a, RegisterValue b) noexcept {
+			static_assert(static_cast<byte>(style) < static_cast<byte>(CompareStyle::Count), "Undefined comparison style!");
+			switch(style) {
+				case CompareStyle::Equals: 
+					return iris::eq(a, b);
+				case CompareStyle::NotEquals:
+					return iris::neq(a, b);
+				case CompareStyle::LessThan:
+					return iris::lt(a, b);
+				case CompareStyle::GreaterThan:
+					return iris::gt(a, b);
+				case CompareStyle::LessThanOrEqualTo:
+					return iris::le(a, b);
+				case CompareStyle::GreaterThanOrEqualTo:
+					return iris::ge(a, b);
+			}
+		}
 
 
-DefOp(Compare) {
-	//std::cout << "Compare Operation" << std::endl;
-	incrementInstructionPointer();
-	DecodedInstruction next(getCurrentCodeWord());
-	switch (current.getCompareType()) {
+	DefOp(Compare) {
+		//std::cout << "Compare Operation" << std::endl;
+		incrementInstructionPointer();
+		DecodedInstruction next(getCurrentCodeWord());
+		switch (current.getCompareType()) {
 #define combineOp(flag) \
-		case CompareCombine:: flag : \
-									 getConditionRegister() = combine<CompareCombine:: flag>(result, getConditionRegister()); \
-		break;
+			case CompareCombine:: flag : \
+										 getConditionRegister() = combine<CompareCombine:: flag>(result, getConditionRegister()); \
+			break;
 #define X(type) \
-		case CompareStyle:: type : { \
-									   RegisterValue first = registerValue(next.getCompareRegister0()); \
-									   RegisterValue second = current.getCompareImmediateFlag() ? next.getUpper() : registerValue(next.getCompareRegister1()); \
-									   bool result = compare<CompareStyle:: type>(first, second); \
-									   switch (current.getCompareCombineFlag()) { \
-										   combineOp(None) \
-										   combineOp(And) \
-										   combineOp(Or) \
-										   combineOp(Xor) \
-										   default: \
-													throw iris::Problem("Illegal Compare Combine Operation"); \
-									   } \
-									   break; \
-								   }
-		X(Equals)
-		X(NotEquals)
-		X(LessThan)
-		X(GreaterThan)
-		X(LessThanOrEqualTo)
-		X(GreaterThanOrEqualTo)
+			case CompareStyle:: type : { \
+										   RegisterValue first = registerValue(next.getCompareRegister0()); \
+										   RegisterValue second = current.getCompareImmediateFlag() ? next.getUpper() : registerValue(next.getCompareRegister1()); \
+										   bool result = compare<CompareStyle:: type>(first, second); \
+										   switch (current.getCompareCombineFlag()) { \
+											   combineOp(None) \
+											   combineOp(And) \
+											   combineOp(Or) \
+											   combineOp(Xor) \
+											   default: \
+														throw iris::Problem("Illegal Compare Combine Operation"); \
+										   } \
+										   break; \
+									   }
+			X(Equals)
+				X(NotEquals)
+				X(LessThan)
+				X(GreaterThan)
+				X(LessThanOrEqualTo)
+				X(GreaterThanOrEqualTo)
 #undef X
 #undef combineOp
-		default:
-			throw iris::Problem("illegal compare type!");
+			default:
+				throw iris::Problem("illegal compare type!");
+		}
 	}
-}
 
 	template<>
-	void Core::operation<Operation::SystemCall>(DecodedInstruction&& current) {
-		switch(static_cast<SystemCalls>(getAddressRegister())) {
-			case SystemCalls::Terminate:
-				execute = false;
-				advanceIp = false;
-				break;
-			case SystemCalls::PutC:
-				// read register 0 and register 1
-				std::cout.put(static_cast<char>(registerValue(current.getSystemArg0())));
-				break;
-			case SystemCalls::GetC:
-				byte value;
-				std::cin >> std::noskipws >> value;
-				registerValue(current.getSystemArg0()) = static_cast<Word>(value);
-				break;
-			default:
-				std::stringstream ss;
-				ss << "Illegal system call " << std::hex << getAddressRegister();
-				execute = false;
-				advanceIp = false;
-				throw iris::Problem(ss.str());
+		void Core::operation<Operation::SystemCall>(DecodedInstruction&& current) {
+			if (getAddressRegister() >= ArchitectureConstants::MaxSystemCalls) {
+				throw iris::Problem("ERROR: system call index out of range!");
+			} else {
+				systemHandlers[getAddressRegister()](this, std::move(current));
+			}
 		}
+
+	void Core::terminate(Core* core, DecodedInstruction&& inst) {
+		core->execute = false;
+		core->advanceIp = false;
+	}
+
+	void Core::putc(Core* core, DecodedInstruction&& current) {
+		std::cout.put(static_cast<char>(core->registerValue(current.getSystemArg0())));
+	}
+	void Core::getc(Core* core, DecodedInstruction&& current) {
+		byte value = 0;
+		std::cin >> std::noskipws >> value;
+		core->registerValue(current.getSystemArg0()) = static_cast<Word>(value);
 	}
 
 	void Core::dispatch(DecodedInstruction&& current) {
@@ -396,6 +408,14 @@ DefOp(Compare) {
 
 	std::shared_ptr<Word> Core::getMemory() {
 		return memory;
+	}
+
+	void Core::installSystemHandler(byte index, Core::SystemFunction func) {
+		if (index >= ArchitectureConstants::MaxSystemCalls) {
+			throw iris::Problem("Can't install to out of range system handler index!");
+		} else {
+			systemHandlers[index] = func;
+		}
 	}
 
 	InstructionEncoder::Encoding InstructionEncoder::encodeArithmetic() {
@@ -506,8 +526,8 @@ DefOp(Compare) {
 		}
 	}
 
-InstructionEncoder::Encoding InstructionEncoder::encode() {
-	// always encode the type
+	InstructionEncoder::Encoding InstructionEncoder::encode() {
+		// always encode the type
 #define DefEnum(a, b) 
 #define EndDefEnum(a, b, c)
 #define EnumEntry(compareType) if (type == Operation:: compareType) { return encode ## compareType () ; }
@@ -515,8 +535,8 @@ InstructionEncoder::Encoding InstructionEncoder::encode() {
 #undef DefEnum
 #undef EndDefEnum
 #undef EnumEntry
-	throw iris::Problem("Illegal type to encode!");
-}
+		throw iris::Problem("Illegal type to encode!");
+	}
 
 	int instructionSizeFromImmediateMask(byte bitmask) {
 

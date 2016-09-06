@@ -146,6 +146,8 @@ namespace iris17 {
         }
 
     class Core : public iris::Core {
+		public:
+			using SystemFunction = std::function<void(Core*, DecodedInstruction&&)>;
         public:
             Core();
             virtual ~Core();
@@ -156,7 +158,18 @@ namespace iris17 {
             virtual void run() override;
             virtual void link(std::istream& stream) override;
 			std::shared_ptr<Word> getMemory();
+			void installSystemHandler(byte index, SystemFunction fn);
         private:
+			enum DefaultHandlers {
+				Terminate,
+				GetC,
+				PutC,
+			};
+			static void defaultSystemHandler(Core* core, DecodedInstruction&& inst);
+			static void terminate(Core* core, DecodedInstruction&& inst);
+			static void getc(Core* core, DecodedInstruction&& inst);
+			static void putc(Core* core, DecodedInstruction&& inst);
+			SystemFunction getSystemHandler(byte index);
             void dispatch(DecodedInstruction&& inst);
 #define X(title, func) void func ();
 #include "def/iris17/misc.def"
@@ -454,6 +467,7 @@ namespace iris17 {
                  advanceIp = true;
             RegisterValue gpr[ArchitectureConstants::RegisterCount] = { 0 };
 			std::shared_ptr<Word> memory;
+			SystemFunction systemHandlers[ArchitectureConstants::MaxSystemCalls] =  { 0 };
     };
 
     Core* newCore() noexcept;
