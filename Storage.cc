@@ -9,13 +9,11 @@ namespace phoenix {
 		
 	}
 	Storage::~Storage() { }
-	void 
-	Storage::initialize() {
+	void Storage::initialize() {
 		_controller.initialize();
 	}
 
-	void
-	Storage::installprogram(std::istream& stream) {
+	void Storage::installprogram(std::istream& stream) {
 		// install the controller firmware first
 		_controller.installprogram(stream);
 		// now we need to populate the storage "image"
@@ -26,13 +24,11 @@ namespace phoenix {
 		}
 	}
 
-	void 
-	Storage::shutdown() {
+	void Storage::shutdown() {
 
 	}
 
-	void
-	Storage::dump(std::ostream& stream) {
+	void Storage::dump(std::ostream& stream) {
 		_controller.dump(stream);
 		char buf[sizeof(word)] = { 0 };
 		for (auto i = static_cast<Address>(0); i < _size; ++i) {
@@ -41,8 +37,9 @@ namespace phoenix {
 		}
 	}
 
-	void
-	Storage::run() {
+	void Storage::run() {
 		_controller.run();
 	}
+
 }
+

@@ -19,6 +19,7 @@ namespace phoenix {
 			virtual void shutdown() override;
 			virtual void dump(std::ostream& stream) override;
 			virtual void run() override;
+			virtual void link(std::istream& input) override;
 		private:
 			Address _size;
 			std::shared_ptr<word> _backingStore;
@@ -26,6 +27,7 @@ namespace phoenix {
 	};
 	class Machine : public iris::Core {
 		public:
+			static constexpr Address DiskSize = 1073741824 / sizeof(word);
 			Machine();
 			virtual ~Machine(); 
 			virtual void initialize() override;
@@ -33,11 +35,12 @@ namespace phoenix {
 			virtual void shutdown() override;
 			virtual void dump(std::ostream& stream) override;
 			virtual void run() override;
+			inline Address getDiskSize() const { return DiskSize; } 
 		private:
+			std::shared_ptr<word> _hddStorage;
 			std::unique_ptr<iris17::Core> _primaryCPU;
 			std::unique_ptr<iris16::Core> _ioController, _memoryController;
-			std::shared_ptr<word> _cpuMemory;
-			std::shared_ptr<word> _hddStorage;
+			std::unique_ptr<Storage> _hdd;
 	};
 
 } // end namespace phoenix
