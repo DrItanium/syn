@@ -22,7 +22,7 @@ class Registrar {
 			} else {
 				std::stringstream stream;
 				stream << "Unregistered name " << name<< "!!!";
-				throw new iris::Problem(stream.str());
+				throw iris::Problem(stream.str());
 			}
 		}
 	private:
