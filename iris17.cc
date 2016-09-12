@@ -3,6 +3,11 @@
 #include <sstream>
 #include "Problem.h"
 #include <utility>
+#include "Factory.h"
+
+namespace {
+	static TemplateRegistrar<iris::Core> iris17CoreRegistration("iris17", iris17::newCore);
+}
 
 namespace iris17 {
 	/*

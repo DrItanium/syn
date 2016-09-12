@@ -3,6 +3,11 @@
 #include "Problem.h"
 #include "iris_base.h"
 #include <sstream>
+#include "Factory.h"
+
+namespace {
+	static TemplateRegistrar<iris::Core> iris32CoreRegistration("iris32", iris32::newCore);
+}
 
 namespace iris32 {
 	Core* newCore() noexcept {
