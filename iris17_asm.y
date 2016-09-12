@@ -335,7 +335,7 @@ combine_type:
 		ACTION_XOR { op.combineType = iris17::CompareCombine::Xor; };
 
 logical_op:
-		logical_op logical_args {
+		logical_subop logical_args {
 			op.subType = op.immediate ? ifImmediate : ifNotImmediate;
 		} |
 		LOGICAL_OP_NOT destination_register {
@@ -347,7 +347,7 @@ logical_args:
 		uses_immediate bitmask destination_register lexeme |
 		destination_register source_register { op.immediate = false; };
 
-logical_op:
+logical_subop:
 		ACTION_AND {
 			ifImmediate = static_cast<byte>(iris17::ImmediateLogicalOps::And);
 			ifNotImmediate = static_cast<byte>(iris17::LogicalOps::And);
