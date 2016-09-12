@@ -82,7 +82,7 @@ int main(int argc, char* argv[]) {
 	}
 	if(output && input) {
 		try {
-			iris::parseAssembly(target, input, output);
+			iris::assemble(target, input, output);
 			if (closeOutput) {
 				static_cast<std::ofstream*>(output)->close();
 				delete output;

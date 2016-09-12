@@ -492,17 +492,16 @@ void iris16error(const char* s) {
    printf("%d: %s\n", iris16lineno, s);
    exit(-1);
 }
-namespace iris {
-	template<>
-	void assemble<Architecture::iris16>(FILE* input, std::ostream* output) {
-      iris16::initialize(output, input);
-      do {
-         yyparse();
-      } while(!feof(iris16in));
-      iris16::resolve_labels();
-	}
-}
+
 namespace iris16 {
+	void assemble(FILE* input, std::ostream* output) {
+	  initialize(output, input);
+	  do {
+		 yyparse();
+	  } while(!feof(iris16in));
+	  resolve_labels();
+	}
+
 void add_label_entry(const std::string& c, word addr) {
    if (iris16::state.labels.count(c) != 0) {
 		iris16error("Found a duplicate label!");
@@ -518,9 +517,9 @@ void persist_dynamic_op(void) {
 
 void save_encoding(void) {
    if(iris16::curri.hassymbol) {
-      persist_dynamic_op();
+	  persist_dynamic_op();
    } else {
-      write_dynamic_op(&curri); 
+	  write_dynamic_op(&curri); 
    }
 }
 void write_dynamic_op(dynamicop* dop) {
@@ -532,7 +531,7 @@ void write_dynamic_op(dynamicop* dop) {
    buf[2] = (char)(dop->address & 0x00FF);
    buf[3] = (char)((dop->address & 0xFF00) >> 8);
    switch(dop->segment) {
-   		case iris16::Segment::Code:
+		case iris16::Segment::Code:
 			buf[4] = (char)iris::encodeBits<byte, byte, 0b11111000, 3>(
 								iris::encodeBits<byte, byte, 0b00000111, 0>((byte)0, dop->group),
 								dop->op);
@@ -556,9 +555,9 @@ void write_dynamic_op(dynamicop* dop) {
 
 void resolve_labels() {
    /* we need to go through the list of dynamic operations and replace
-      the label with the corresponding address */
+	  the label with the corresponding address */
    for(std::vector<dynamicop>::iterator it = iris16::state.dynops.begin(); it != iris16::state.dynops.end(); ++it) {
-   		if (!resolve_op(&(*it))) {
+		if (!resolve_op(&(*it))) {
 			std::cerr << "panic: couldn't find label " << it->symbol << std::endl;
 			exit(1);
 		} else {
@@ -591,4 +590,7 @@ void initialize(std::ostream* output, FILE* input) {
    iris16::curri.reg2 = 0;
    iris16::curri.hassymbol = 0;
 }
+}
+namespace {
+	static iris::RegisterAssembler iris16Asm(iris::assemblers, "iris16", iris16::assemble);
 }

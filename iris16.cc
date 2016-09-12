@@ -2,10 +2,9 @@
 #include "sim_registration.h"
 #include <functional>
 #include <sstream>
-#include "Factory.h"
 
 namespace {
-	static TemplateRegistrar<iris::Core> iris16CoreRegistration("iris16", iris16::newCore);
+	static iris::RegisterCore iris16CoreRegistration(iris::cores, "iris16", iris16::newCore);
 }
 
 

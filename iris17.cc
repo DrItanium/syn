@@ -3,10 +3,10 @@
 #include <sstream>
 #include "Problem.h"
 #include <utility>
-#include "Factory.h"
+#include "sim_registration.h"
 
 namespace {
-	static TemplateRegistrar<iris::Core> iris17CoreRegistration("iris17", iris17::newCore);
+	static iris::RegisterCore iris17CoreRegistration(iris::cores, "iris17", iris17::newCore);
 }
 
 namespace iris17 {

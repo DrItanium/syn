@@ -499,19 +499,20 @@ uses_immediate: FLAG_IMMEDIATE { op.immediate = true; };
 destination_register: REGISTER { op.arg0 = $1; };
 source_register: REGISTER { op.arg1 = $1; };
 %%
-namespace iris {
-
-	template<>
-	void assemble<Architecture::iris17>(FILE* input, std::ostream* output) {
-      iris17::initialize(output, input);
+namespace iris17 {
+	void assemble(FILE* input, std::ostream* output) {
+      initialize(output, input);
       do {
          yyparse();
       } while(!feof(iris17in));
-      iris17::resolveLabels();
-	  iris17::saveEncoding();
+      resolveLabels();
+	  saveEncoding();
 	}
 }
 void iris17error(const char* s) {
    printf("%d: %s\n", iris17lineno, s);
    exit(-1);
+}
+namespace {
+	static iris::RegisterAssembler iris17Asm(iris::assemblers, "iris17", iris17::assemble);
 }

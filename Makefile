@@ -45,8 +45,7 @@ ARCH_OBJECTS = ${IRIS32_OBJECTS} \
 			   ${IRIS17_OBJECTS}
 			
 
-COMMON_THINGS = architecture.o \
-				iris_base.o \
+COMMON_THINGS = iris_base.o \
 				${ARCH_TARGETS}
 
 # The object file that defines main()
@@ -239,3 +238,47 @@ uninstall:
 .PHONY: all options clean install uninstall
 
 
+asm_interact.o: asm_interact.cc asm_interact.h Singleton.h Registrar.h \
+ Problem.h
+iris16.o: iris16.cc iris16.h iris_base.h Problem.h Core.h \
+ def/iris16/enums.def def/iris16/core_body.def def/iris16/groups.def \
+ def/iris16/misc.def def/iris16/instruction.def sim_registration.h \
+ Singleton.h Factory.h Registrar.h def/iris16/groups.def \
+ def/iris16/compare.def def/iris16/arithmetic.def def/iris16/jump.def \
+ def/iris16/misc.def def/iris16/move.def
+iris17.o: iris17.cc iris17.h iris_base.h Problem.h Core.h \
+ def/iris17/ops.def def/iris17/arithmetic_ops.def def/iris17/syscalls.def \
+ def/iris17/compare.enum def/iris17/logical.enum def/iris17/memory.enum \
+ def/iris17/instruction.def def/iris17/misc.def def/iris17/registers.def \
+ def/iris17/logical_generic.sig def/iris17/arithmetic.sig \
+ def/iris17/move.sig def/iris17/memory.sig def/iris17/set.sig \
+ sim_registration.h Singleton.h Factory.h Registrar.h \
+ def/iris17/bitmask8bit.def def/iris17/bitmask4bit.def
+iris17_sim.o: iris17_sim.cc iris16.h iris_base.h Problem.h Core.h \
+ def/iris16/enums.def def/iris16/core_body.def def/iris16/groups.def \
+ def/iris16/misc.def def/iris16/instruction.def
+iris32.o: iris32.cc iris32.h iris_base.h Problem.h Core.h \
+ def/iris32/groups.def def/iris32/instruction.def def/iris32/compare.def \
+ def/iris32/arithmetic.def def/iris32/move.def def/iris32/jump.def \
+ def/iris32/misc.def def/iris32/syscalls.def sim_registration.h \
+ Singleton.h Factory.h Registrar.h
+iris32_sim.o: iris32_sim.cc iris32.h iris_base.h Problem.h Core.h \
+ def/iris32/groups.def def/iris32/instruction.def def/iris32/compare.def \
+ def/iris32/arithmetic.def def/iris32/move.def def/iris32/jump.def \
+ def/iris32/misc.def def/iris32/syscalls.def
+iris_asm.o: iris_asm.cc asm_interact.h Singleton.h Registrar.h Problem.h \
+ def/architecture_registrations.def
+iris_base.o: iris_base.cc iris_base.h Problem.h
+iris_link.o: iris_link.cc Core.h sim_registration.h Singleton.h Factory.h \
+ Registrar.h Problem.h def/architecture_registrations.def
+iris_sim.o: iris_sim.cc Problem.h Core.h sim_registration.h Singleton.h \
+ Factory.h Registrar.h def/architecture_registrations.def
+Phoenix.o: Phoenix.cc Phoenix.h Core.h iris17.h iris_base.h Problem.h \
+ def/iris17/ops.def def/iris17/arithmetic_ops.def def/iris17/syscalls.def \
+ def/iris17/compare.enum def/iris17/logical.enum def/iris17/memory.enum \
+ def/iris17/instruction.def def/iris17/misc.def def/iris17/registers.def \
+ def/iris17/logical_generic.sig def/iris17/arithmetic.sig \
+ def/iris17/move.sig def/iris17/memory.sig def/iris17/set.sig
+Storage.o: Storage.cc Storage.h Core.h iris16.h iris_base.h Problem.h \
+ def/iris16/enums.def def/iris16/core_body.def def/iris16/groups.def \
+ def/iris16/misc.def def/iris16/instruction.def

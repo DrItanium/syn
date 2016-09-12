@@ -388,17 +388,16 @@ void iris32error(const char* s) {
    exit(-1);
 }
 
-namespace iris {
-	template<>
-	void assemble<Architecture::iris32>(FILE* input, std::ostream* output) {
-      iris32::initialize(output, input);
+namespace iris32 {
+	void assemble(FILE* input, std::ostream* output) {
+      initialize(output, input);
       do {
          yyparse();
       } while(!feof(iris32in));
-      iris32::resolve_labels();
+      resolve_labels();
 	}
-
 }
+
 namespace iris32 {
 void add_label_entry(const std::string& c, word addr) {
    if (iris32::state.labels.count(c) != 0) {
@@ -486,4 +485,7 @@ void initialize(std::ostream* output, FILE* input) {
    iris32::curri.reg2 = 0;
    iris32::curri.hassymbol = 0;
 }
+}
+namespace {
+	static iris::RegisterAssembler iris32Asm(iris::assemblers, "iris32", iris32::assemble);
 }
