@@ -128,7 +128,5 @@ int main(int argc, char* argv[]) {
 void usage(char* arg0) {
 	std::cerr << "usage: " << arg0 << " -t <target> [-d] [-o <file>] <file>" << std::endl;
 	std::cerr << "Supported Targets:" << std::endl;
-	for (auto const& value : *iris::cores) {
-		std::cerr << "\t" << value.first << std::endl;
-	}
+	iris::forEachCoreName([](const std::string& name) { std::cerr << "\t" << name << std::endl; });
 }

@@ -5,6 +5,8 @@
 #include "Problem.h"
 #include "Core.h"
 #include "sim_registration.h"
+#include "iris17.h"
+#include "iris16.h"
 
 std::istream* input = nullptr;
 auto close = false;
@@ -92,7 +94,5 @@ int main(int argc, char* argv[]) {
 void usage(char* arg0) {
 	std::cerr << "usage: " << arg0 << " -h | -d -t <type> [file | -]" << std::endl;
 	std::cerr << "Supported Targets:" << std::endl;
-	for (auto const& value : *iris::cores) {
-		std::cerr << "\t" << value.first << std::endl;
-	}
+	iris::forEachCoreName([](const std::string& name) { std::cerr << "\t" << name << std::endl; });
 }

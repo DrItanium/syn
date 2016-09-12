@@ -3,11 +3,6 @@
 #include <sstream>
 #include "Problem.h"
 #include <utility>
-#include "sim_registration.h"
-
-namespace {
-	static iris::RegisterCore iris17CoreRegistration(iris::cores, "iris17", iris17::newCore);
-}
 
 namespace iris17 {
 	/*
@@ -126,134 +121,120 @@ namespace iris17 {
 		getStackPointer() &= bitmask24;
 	}
 
-
-
-	template<>
-	void Core::operation<Operation::Shift>(DecodedInstruction&& current) {
-		auto destination = registerValue(current.getShiftRegister0());
-		auto source = (current.getShiftFlagImmediate() ? static_cast<RegisterValue>(current.getShiftImmediate()) : registerValue(current.getShiftRegister1()));
-		destination = (current.getShiftFlagLeft() ? (destination << source) : (destination >> source));
-	}
-
-
-	template<>
-	void Core::operation<Operation::Logical>(DecodedInstruction&& current) {
-		if (current.getLogicalFlagImmediate() && current.getLogicalImmediateError()) {
-			throw iris::Problem("Undefined bits in a logical immediate instruction are set!");
-		} else if (!current.getLogicalFlagImmediate() && current.getLogicalIndirectError()) {
-			throw iris::Problem("Undefined bits in a logical indirect instruction are set!");
-		}
-#define X(datum) \
-		else if (datum == current.getLogicalSignature()) { \
-			if ((LogicalFlags<datum>::immediate && !LogicalFlags<datum>::immediateError) || (!LogicalFlags<datum>::immediate && !LogicalFlags<datum>::indirectError)) { \
-				logicalOperation<datum>(std::move(current)); \
-			} \
-			return; \
-		}
-#include "def/iris17/bitmask8bit.def"
-#undef X
-		throw iris::Problem("Illegal logical signature!");
-	}
-
-
-
-	template<>
-	void Core::operation<Operation::Arithmetic>(DecodedInstruction&& current) {
-		switch (current.getArithmeticSignature()) {
+	void Core::dispatch(DecodedInstruction&& current) {
+		auto tControl = current.getControl();
+		if (tControl == Operation::Shift) {
+			auto &destination = registerValue(current.getShiftRegister0());
+			auto source = (current.getShiftFlagImmediate() ? static_cast<RegisterValue>(current.getShiftImmediate()) : registerValue(current.getShiftRegister1()));
+			destination = (current.getShiftFlagLeft() ? (destination << source) : (destination >> source));
+		} else if (tControl == Operation::Swap) {
+			if (current.getSwapDestination() != current.getSwapSource()) {
+				auto tmp = registerValue(current.getSwapDestination());
+				registerValue(current.getSwapDestination()) = registerValue(current.getSwapSource());
+				registerValue(current.getSwapSource()) = tmp;
+			}
+		} else if (tControl == Operation::Arithmetic) {
+			switch (current.getArithmeticSignature()) {
 #define X(value) case value: arithmeticOperation< value > (std::move(current)); break;
 #include "def/iris17/bitmask4bit.def"
 #undef X
-			default:
-				throw iris::Problem("Illegal Arithmetic Signature");
-		}
-	}
-	template<>
-	void Core::operation<Operation::Move>(DecodedInstruction&& current) {
-		switch (current.getMoveSignature()) {
-#define X(value) case value : moveOperation<value>(std::move(current)); break;
+				default:
+					throw iris::Problem("Illegal Arithmetic Signature");
+			}
+		} else if (tControl == Operation::Logical) {
+			if (current.getLogicalFlagImmediate() && current.getLogicalImmediateError()) {
+				throw iris::Problem("Undefined bits in a logical immediate instruction are set!");
+			} else if (!current.getLogicalFlagImmediate() && current.getLogicalIndirectError()) {
+				throw iris::Problem("Undefined bits in a logical indirect instruction are set!");
+			}
+#define X(datum) \
+			else if (datum == current.getLogicalSignature()) { \
+				using lflags = LogicalFlags<datum>; \
+				if (lflags::immediate && lflags::immediateError) { \
+					throw iris::Problem("Illegal bit set for immediate mode logicalOperation!"); \
+				} else if (!lflags::immediate && lflags::indirectError) { \
+					throw iris::Problem("Illegal bits set for indirect mode logicalOperation!"); \
+				} else { \
+					if ((LogicalFlags<datum>::immediate && !LogicalFlags<datum>::immediateError) || (!LogicalFlags<datum>::immediate && !LogicalFlags<datum>::indirectError)) { \
+						logicalOperation<datum>(std::move(current)); \
+					} \
+				} \
+			}
+#include "def/iris17/bitmask8bit.def"
+#undef X
+			else {
+				throw iris::Problem("Illegal logical signature!");
+			}
+		} else if (tControl == Operation::Move) {
+			auto &dest = registerValue(current.getMoveRegister0());
+			switch (current.getMoveSignature()) {
+#define X(value) case value : \
+				if (MoveFlags< value >::isError) { \
+					throw iris::Problem("Illegal move signature"); \
+				} else { \
+					dest = iris::decodeBits<RegisterValue, RegisterValue, mask<MoveFlags< value >::bitmask>(), 0>(registerValue(current.getMoveRegister1())); \
+				}
 #include "def/iris17/bitmask4bit.def"
 #undef X
-			default:
-				throw iris::Problem("Illegal move signature!");
-		}
-	}
-
-	template<>
-	void Core::operation<Operation::Swap>(DecodedInstruction&& current) {
-		if (current.getSwapDestination() != current.getSwapSource()) {
-			RegisterValue tmp = registerValue(current.getSwapDestination());
-			registerValue(current.getSwapDestination()) = registerValue(current.getSwapSource());
-			registerValue(current.getSwapSource()) = tmp;
-		}
-	}
-
-	template<>
-	void Core::operation<Operation::Set>(DecodedInstruction&& current) {
-		switch (current.getSetSignature()) {
-#define X(value) case value: setOperation<value>(std::move(current)); break;
+				default:
+					throw iris::Problem("Illegal move signature!");
+			}
+		} else if (tControl == Operation::Set) {
+			switch (current.getSetSignature()) {
+#define X(value) case value: \
+				registerValue<SetFlags<value>::destination>() = retrieveImmediate<SetFlags<value>::bitmask>(); \
+				break;
 #include "def/iris17/bitmask8bit.def"
 #undef X
-			default: {
-						 std::stringstream stream;
-						 stream << "Illegal set signature 0x" << std::hex << static_cast<int>(current.getSetSignature()) << "\n";
-						 auto str = stream.str();
-						 throw iris::Problem(str);
-					 }
-		}
-	}
+				default: 
+					std::stringstream stream;
+					stream << "Illegal set signature 0x" << std::hex << static_cast<int>(current.getSetSignature()) << "\n";
+					throw iris::Problem(stream.str());
+			}
 
-
-	template<>
-	void Core::operation<Operation::Memory>(DecodedInstruction&& current) {
-		if (current.getMemoryFlagIllegalBits()) {
-			throw iris::Problem("Undefined bits set in memory operation!"); 
-		} 
+		} else if (tControl == Operation::Memory) {
+			if (current.getMemoryFlagIllegalBits()) {
+				throw iris::Problem("Undefined bits set in memory operation!"); 
+			} 
 #define X(value) \
-		else if (value == current.getMemorySignature()) { \
-			if (!MemoryFlags<value>::errorState) { \
-				memoryOperation<value>(std::move(current)); \
-			} \
-			return; \
-		}
+			else if (value == current.getMemorySignature()) { \
+				if (!MemoryFlags<value>::errorState) { \
+					memoryOperation<value>(std::move(current)); \
+				} \
+				return; \
+			}
 #include "def/iris17/bitmask8bit.def"
 #undef X
-		else {
-			throw iris::Problem("Illegal memory signature!");
-		}
-	}
-
-
-
-	template<>
-	void Core::operation<Operation::Branch>(DecodedInstruction&& current) {
-		switch (current.getBranchFlags()) {
-#define X(value) \
-			case value :: flags : \
-								  branchSpecificOperation< value :: flags >(std::move(current)); \
-			break;
-			X(IfJump)
-				X(IfCall)
-				X(CallIndirect)
-				X(CallDirect)
-				X(JumpDirect)
-				X(JumpIndirect)
-				X(ConditionalJumpDirect)
-				X(ConditionalJumpIndirect)
-#undef X
-			default:
+			else {
+				throw iris::Problem("Illegal memory signature!");
+			}
+		} else if (tControl == Operation::Branch) {
+			auto instFlags = current.getBranchFlags();
+			if (instFlags == IfJump::flags) {
+				branchSpecificOperation<IfJump::flags>(std::move(current)); 
+			} else if(instFlags == CallIndirect::flags) {
+				branchSpecificOperation<CallIndirect::flags>(std::move(current));
+			} else if (instFlags == CallDirect::flags) {
+				branchSpecificOperation<CallDirect::flags>(std::move(current));
+			} else if(instFlags == JumpIndirect::flags) {
+				branchSpecificOperation<JumpIndirect::flags>(std::move(current));
+			} else if (instFlags == JumpDirect::flags) {
+				branchSpecificOperation<JumpDirect::flags>(std::move(current));
+			} else if(instFlags == ConditionalJumpIndirect::flags) {
+				branchSpecificOperation<ConditionalJumpIndirect::flags>(std::move(current));
+			} else if (instFlags == ConditionalJumpDirect::flags) {
+				branchSpecificOperation<ConditionalJumpDirect::flags>(std::move(current));
+			} else {
 				throw iris::Problem("Undefined branch flag setup!");
-		}
-	}
-
-	template<>
-	void Core::operation<Operation::Compare>(DecodedInstruction&& current) {
-		//std::cout << "Compare Operation" << std::endl;
-		incrementInstructionPointer();
-		DecodedInstruction next(getCurrentCodeWord());
-		auto first = registerValue(next.getCompareRegister0());
-		auto second = current.getCompareImmediateFlag() ? next.getUpper() : registerValue(next.getCompareRegister1());
-		auto result = false;
-		switch (current.getCompareType()) {
+			}
+		} else if (tControl == Operation::Compare) {
+			//std::cout << "Compare Operation" << std::endl;
+			incrementInstructionPointer();
+			DecodedInstruction next(getCurrentCodeWord());
+			auto first = registerValue(next.getCompareRegister0());
+			auto second = current.getCompareImmediateFlag() ? next.getUpper() : registerValue(next.getCompareRegister1());
+			auto result = false;
+			switch (current.getCompareType()) {
 				case CompareStyle::Equals: 
 					result = iris::eq(first, second);
 					break;
@@ -272,35 +253,38 @@ namespace iris17 {
 				case CompareStyle::GreaterThanOrEqualTo:
 					result = iris::ge(first, second);
 					break;
-			default:
-				throw iris::Problem("illegal compare type!");
-		}
-		switch(current.getCompareCombineFlag()) {
-			case CompareCombine::None:
-				getConditionRegister() = result;
-				break;
-			case CompareCombine::And:
-				getConditionRegister() &= result;
-				break;
-			case CompareCombine::Or:
-				getConditionRegister() |= result;
-				break;
-			case CompareCombine::Xor:
-				getConditionRegister() ^= result;
-				break;
-			default: 
-				throw iris::Problem("Illegal Compare Combine Operation"); 
-		}
-	}
-
-	template<>
-		void Core::operation<Operation::SystemCall>(DecodedInstruction&& current) {
+				default:
+					throw iris::Problem("illegal compare type!");
+			}
+			switch(current.getCompareCombineFlag()) {
+				case CompareCombine::None:
+					getConditionRegister() = result;
+					break;
+				case CompareCombine::And:
+					getConditionRegister() &= result;
+					break;
+				case CompareCombine::Or:
+					getConditionRegister() |= result;
+					break;
+				case CompareCombine::Xor:
+					getConditionRegister() ^= result;
+					break;
+				default: 
+					throw iris::Problem("Illegal Compare Combine Operation"); 
+			}
+		} else if (tControl == Operation::SystemCall) {
 			if (getAddressRegister() >= ArchitectureConstants::MaxSystemCalls) {
 				throw iris::Problem("ERROR: system call index out of range!");
 			} else {
 				systemHandlers[getAddressRegister()](this, std::move(current));
 			}
+		} else {
+			std::stringstream str;
+			str << "Illegal instruction " << std::hex << static_cast<byte>(current.getControl());
+			execute = false;
+			throw iris::Problem(str.str());
 		}
+	}
 
 	void Core::terminate(Core* core, DecodedInstruction&& inst) {
 		core->execute = false;
@@ -316,25 +300,6 @@ namespace iris17 {
 		core->registerValue(current.getSystemArg0()) = static_cast<Word>(value);
 	}
 
-	void Core::dispatch(DecodedInstruction&& current) {
-		switch(current.getControl()) {
-#define DefEnum(a, b) 
-#define EndDefEnum(a, b, c)
-#define EnumEntry(type) \
-			case Operation:: type : \
-									operation<Operation:: type>(std::move(current)); \
-			break;
-#include "def/iris17/ops.def"
-#undef EnumEntry
-#undef DefEnum
-#undef EndDefEnum
-			default:
-				std::stringstream str;
-				str << "Illegal instruction " << std::hex << static_cast<byte>(current.getControl());
-				execute = false;
-				throw iris::Problem(str.str());
-		}
-	}
 
 	void Core::link(std::istream& input) {
 		// we have some more data to read through

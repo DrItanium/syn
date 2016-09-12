@@ -3,11 +3,6 @@
 #include "Problem.h"
 #include "iris_base.h"
 #include <sstream>
-#include "sim_registration.h"
-
-namespace {
-	static iris::RegisterCore iris32CoreRegistration(iris::cores, "iris32", iris32::newCore);
-}
 
 namespace iris32 {
 	Core* newCore() noexcept {

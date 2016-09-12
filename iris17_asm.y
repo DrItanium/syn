@@ -513,6 +513,3 @@ void iris17error(const char* s) {
    printf("%d: %s\n", iris17lineno, s);
    exit(-1);
 }
-namespace {
-	static iris::RegisterAssembler iris17Asm(iris::assemblers, "iris17", iris17::assemble);
-}

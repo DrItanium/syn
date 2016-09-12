@@ -486,6 +486,3 @@ void initialize(std::ostream* output, FILE* input) {
    iris32::curri.hassymbol = 0;
 }
 }
-namespace {
-	static iris::RegisterAssembler iris32Asm(iris::assemblers, "iris32", iris32::assemble);
-}

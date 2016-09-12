@@ -1,12 +1,6 @@
 #include "iris16.h"
-#include "sim_registration.h"
 #include <functional>
 #include <sstream>
-
-namespace {
-	static iris::RegisterCore iris16CoreRegistration(iris::cores, "iris16", iris16::newCore);
-}
-
 
 namespace iris16 {
 	Core* newCore() noexcept {

@@ -8,6 +8,7 @@
 #include <memory>
 #include <vector>
 #include <tuple>
+#include "sim_registration.h"
 
 namespace iris17 {
     using HWord = uint8_t;
@@ -189,15 +190,11 @@ namespace iris17 {
 					msg << "Out of range register index: " << rindex;
 					throw iris::Problem(msg.str());
 				}
-            template<Operation op>
-                void operation(DecodedInstruction&& inst) {
-                    throw iris::Problem("Unimplemented function!");
-                }
             template<byte bitmask>
                 RegisterValue retrieveImmediate() {
 					static_assert(bitmask <= ArchitectureConstants::Bitmask, "Wider masks are being provided to retrieveImmediate!");
-                    RegisterValue lower = 0;
-                    RegisterValue upper = 0;
+                    auto lower = static_cast<RegisterValue>(0);
+                    auto upper = static_cast<RegisterValue>(0);
                     if (readLower<bitmask>()) {
 						incrementInstructionPointer();
                         lower = getCurrentCodeWord();
@@ -224,11 +221,6 @@ namespace iris17 {
 #undef Component
 #undef DefFlags
 #undef EndDefFlags
-            template<byte signature>
-            void setOperation(DecodedInstruction&& inst) {
-				using sFlags = SetFlags<signature>;
-				registerValue<sFlags::destination>() = retrieveImmediate<sFlags::bitmask>(); 
-            }
 
 			template<byte signature>
 				void logicalOperation(DecodedInstruction&& inst) {
@@ -305,15 +297,6 @@ namespace iris17 {
                             break;
                         default:
                             throw iris::Problem("Illegal arithmetic operation!");
-                    }
-                }
-            template<byte signature>
-                void moveOperation(DecodedInstruction&& inst) {
-                    using mflags = MoveFlags<signature>;
-                    if (mflags::isError) {
-                        throw iris::Problem("Illegal move signature!");
-                    } else {
-						registerValue(inst.getMoveRegister0()) = iris::decodeBits<RegisterValue, RegisterValue, mask<mflags::bitmask>(), 0>(registerValue(inst.getMoveRegister1()));
                     }
                 }
             template<byte bitmask, bool merge>
@@ -473,7 +456,6 @@ namespace iris17 {
 			SystemFunction systemHandlers[ArchitectureConstants::MaxSystemCalls] =  { 0 };
     };
 
-    Core* newCore() noexcept;
 
 #define X(title, mask, shift, type, post) \
 	constexpr inline Word encode ## title (Word input, type value) noexcept { \
@@ -511,7 +493,8 @@ namespace iris17 {
 #undef EndDefEnum
 #undef EnumEntry
     };
+    Core* newCore() noexcept;
+	void assemble(FILE* input, std::ostream* output);
 }
-
 
 #endif

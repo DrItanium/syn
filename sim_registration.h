@@ -3,18 +3,12 @@
 #ifndef IRIS_SIM_REGISTRATION
 #define IRIS_SIM_REGISTRATION
 #include <string>
-#include "Singleton.h"
-#include "Factory.h"
-
+#include <functional>
 
 namespace iris {
 	class Core;
-	using CoreFactory = Factory<Core>;
-	static Singleton<CoreFactory> cores;
-	Core* getCore(const std::string& name) {
-		return cores->get(name)();
-	}
-	using RegisterCore = RegisterAction<CoreFactory>;
+	Core* getCore(const std::string& name);
+	void forEachCoreName(std::function<void(const std::string&)> fn);
 }
 
 #endif // end IRIS_SIM_REGISTRATION

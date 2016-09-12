@@ -7,6 +7,7 @@
 #include <vector>
 #include <map>
 
+#include "Problem.h"
 #include "asm_interact.h"
 
 void usage(char* arg0);
@@ -105,7 +106,5 @@ int main(int argc, char* argv[]) {
 void usage(char* arg0) {
 	std::cerr << "usage: " << arg0 << " -t <target> [-o <file>] <file>" << std::endl;
 	std::cerr << "Supported Targets:" << std::endl;
-	for (auto const& value : *iris::assemblers) {
-		std::cerr << "\t" << value.first << std::endl;
-	}
+	iris::forEachAssembler([](const std::string& name) { std::cerr << "\t" << name << std::endl; });
 }
