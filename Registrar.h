@@ -10,6 +10,7 @@ class Registrar {
 	public:
 		using TypeDecl = T;
 		using MapDecl = std::map<std::string, TypeDecl>;
+		using const_iterator = typename MapDecl::const_iterator;
 		Registrar() : _backingStore(new MapDecl) { }
 		~Registrar() = default;
 		void add(const std::string& name, T value) {
@@ -25,6 +26,10 @@ class Registrar {
 				throw iris::Problem(stream.str());
 			}
 		}
+		const_iterator cbegin() const { return _backingStore->cbegin(); }
+		const_iterator cend() const { return _backingStore->cend(); }
+		const_iterator begin() const { return cbegin(); }
+		const_iterator end() const { return cend(); }
 	private:
 		std::unique_ptr<MapDecl> _backingStore;
 

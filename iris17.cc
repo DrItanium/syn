@@ -127,18 +127,17 @@ namespace iris17 {
 	}
 
 
-#define DefOp(title) \
-	template<> \
-	void Core::operation<Operation:: title>(DecodedInstruction&& current)
 
-	DefOp(Shift) {
+	template<>
+	void Core::operation<Operation::Shift>(DecodedInstruction&& current) {
 		auto destination = registerValue(current.getShiftRegister0());
 		auto source = (current.getShiftFlagImmediate() ? static_cast<RegisterValue>(current.getShiftImmediate()) : registerValue(current.getShiftRegister1()));
 		destination = (current.getShiftFlagLeft() ? (destination << source) : (destination >> source));
 	}
 
 
-	DefOp(Logical) {
+	template<>
+	void Core::operation<Operation::Logical>(DecodedInstruction&& current) {
 		if (current.getLogicalFlagImmediate() && current.getLogicalImmediateError()) {
 			throw iris::Problem("Undefined bits in a logical immediate instruction are set!");
 		} else if (!current.getLogicalFlagImmediate() && current.getLogicalIndirectError()) {
@@ -158,7 +157,8 @@ namespace iris17 {
 
 
 
-	DefOp(Arithmetic) {
+	template<>
+	void Core::operation<Operation::Arithmetic>(DecodedInstruction&& current) {
 		switch (current.getArithmeticSignature()) {
 #define X(value) case value: arithmeticOperation< value > (std::move(current)); break;
 #include "def/iris17/bitmask4bit.def"
@@ -167,7 +167,8 @@ namespace iris17 {
 				throw iris::Problem("Illegal Arithmetic Signature");
 		}
 	}
-	DefOp(Move)  {
+	template<>
+	void Core::operation<Operation::Move>(DecodedInstruction&& current) {
 		switch (current.getMoveSignature()) {
 #define X(value) case value : moveOperation<value>(std::move(current)); break;
 #include "def/iris17/bitmask4bit.def"
@@ -177,7 +178,8 @@ namespace iris17 {
 		}
 	}
 
-	DefOp(Swap) {
+	template<>
+	void Core::operation<Operation::Swap>(DecodedInstruction&& current) {
 		if (current.getSwapDestination() != current.getSwapSource()) {
 			RegisterValue tmp = registerValue(current.getSwapDestination());
 			registerValue(current.getSwapDestination()) = registerValue(current.getSwapSource());
@@ -185,7 +187,8 @@ namespace iris17 {
 		}
 	}
 
-	DefOp(Set) {
+	template<>
+	void Core::operation<Operation::Set>(DecodedInstruction&& current) {
 		switch (current.getSetSignature()) {
 #define X(value) case value: setOperation<value>(std::move(current)); break;
 #include "def/iris17/bitmask8bit.def"
@@ -200,7 +203,8 @@ namespace iris17 {
 	}
 
 
-	DefOp(Memory) {
+	template<>
+	void Core::operation<Operation::Memory>(DecodedInstruction&& current) {
 		if (current.getMemoryFlagIllegalBits()) {
 			throw iris::Problem("Undefined bits set in memory operation!"); 
 		} 
@@ -220,7 +224,8 @@ namespace iris17 {
 
 
 
-	DefOp(Branch) {
+	template<>
+	void Core::operation<Operation::Branch>(DecodedInstruction&& current) {
 		switch (current.getBranchFlags()) {
 #define X(value) \
 			case value :: flags : \
@@ -240,75 +245,51 @@ namespace iris17 {
 		}
 	}
 
-	template<CompareCombine compareOp>
-		inline bool combine(bool newValue, bool existingValue) noexcept {
-			static_assert(static_cast<byte>(compareOp) < static_cast<byte>(CompareCombine::Count), "Undefined compare combine type!");
-			switch (compareOp) {
-				case CompareCombine::None:
-					return newValue;
-				case CompareCombine::And:
-					return newValue && existingValue;
-				case CompareCombine::Or:
-					return newValue || existingValue;
-				case CompareCombine::Xor:
-					return newValue ^ existingValue;
-			}
-		}
-
-	template<CompareStyle style>
-		inline bool compare(RegisterValue a, RegisterValue b) noexcept {
-			static_assert(static_cast<byte>(style) < static_cast<byte>(CompareStyle::Count), "Undefined comparison style!");
-			switch(style) {
-				case CompareStyle::Equals: 
-					return iris::eq(a, b);
-				case CompareStyle::NotEquals:
-					return iris::neq(a, b);
-				case CompareStyle::LessThan:
-					return iris::lt(a, b);
-				case CompareStyle::GreaterThan:
-					return iris::gt(a, b);
-				case CompareStyle::LessThanOrEqualTo:
-					return iris::le(a, b);
-				case CompareStyle::GreaterThanOrEqualTo:
-					return iris::ge(a, b);
-			}
-		}
-
-
-	DefOp(Compare) {
+	template<>
+	void Core::operation<Operation::Compare>(DecodedInstruction&& current) {
 		//std::cout << "Compare Operation" << std::endl;
 		incrementInstructionPointer();
 		DecodedInstruction next(getCurrentCodeWord());
+		auto first = registerValue(next.getCompareRegister0());
+		auto second = current.getCompareImmediateFlag() ? next.getUpper() : registerValue(next.getCompareRegister1());
+		auto result = false;
 		switch (current.getCompareType()) {
-#define combineOp(flag) \
-			case CompareCombine:: flag : \
-										 getConditionRegister() = combine<CompareCombine:: flag>(result, getConditionRegister()); \
-			break;
-#define X(type) \
-			case CompareStyle:: type : { \
-										   RegisterValue first = registerValue(next.getCompareRegister0()); \
-										   RegisterValue second = current.getCompareImmediateFlag() ? next.getUpper() : registerValue(next.getCompareRegister1()); \
-										   bool result = compare<CompareStyle:: type>(first, second); \
-										   switch (current.getCompareCombineFlag()) { \
-											   combineOp(None) \
-											   combineOp(And) \
-											   combineOp(Or) \
-											   combineOp(Xor) \
-											   default: \
-														throw iris::Problem("Illegal Compare Combine Operation"); \
-										   } \
-										   break; \
-									   }
-			X(Equals)
-				X(NotEquals)
-				X(LessThan)
-				X(GreaterThan)
-				X(LessThanOrEqualTo)
-				X(GreaterThanOrEqualTo)
-#undef X
-#undef combineOp
+				case CompareStyle::Equals: 
+					result = iris::eq(first, second);
+					break;
+				case CompareStyle::NotEquals:
+					result = iris::neq(first, second);
+					break;
+				case CompareStyle::LessThan:
+					result = iris::lt(first, second);
+					break;
+				case CompareStyle::GreaterThan:
+					result = iris::gt(first, second);
+					break;
+				case CompareStyle::LessThanOrEqualTo:
+					result = iris::le(first, second);
+					break;
+				case CompareStyle::GreaterThanOrEqualTo:
+					result = iris::ge(first, second);
+					break;
 			default:
 				throw iris::Problem("illegal compare type!");
+		}
+		switch(current.getCompareCombineFlag()) {
+			case CompareCombine::None:
+				getConditionRegister() = result;
+				break;
+			case CompareCombine::And:
+				getConditionRegister() &= result;
+				break;
+			case CompareCombine::Or:
+				getConditionRegister() |= result;
+				break;
+			case CompareCombine::Xor:
+				getConditionRegister() ^= result;
+				break;
+			default: 
+				throw iris::Problem("Illegal Compare Combine Operation"); 
 		}
 	}
 

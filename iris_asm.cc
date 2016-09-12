@@ -105,7 +105,7 @@ int main(int argc, char* argv[]) {
 void usage(char* arg0) {
 	std::cerr << "usage: " << arg0 << " -t <target> [-o <file>] <file>" << std::endl;
 	std::cerr << "Supported Targets:" << std::endl;
-#define X(blah, str, om) std::cerr << "\t" << str << std::endl;
-#include "def/architecture_registrations.def"
-#undef X
+	for (auto const& value : *iris::assemblers) {
+		std::cerr << "\t" << value.first << std::endl;
+	}
 }

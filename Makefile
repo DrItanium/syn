@@ -266,13 +266,12 @@ iris32_sim.o: iris32_sim.cc iris32.h iris_base.h Problem.h Core.h \
  def/iris32/groups.def def/iris32/instruction.def def/iris32/compare.def \
  def/iris32/arithmetic.def def/iris32/move.def def/iris32/jump.def \
  def/iris32/misc.def def/iris32/syscalls.def
-iris_asm.o: iris_asm.cc asm_interact.h Singleton.h Registrar.h Problem.h \
- def/architecture_registrations.def
+iris_asm.o: iris_asm.cc asm_interact.h Singleton.h Registrar.h Problem.h
 iris_base.o: iris_base.cc iris_base.h Problem.h
 iris_link.o: iris_link.cc Core.h sim_registration.h Singleton.h Factory.h \
- Registrar.h Problem.h def/architecture_registrations.def
+ Registrar.h Problem.h
 iris_sim.o: iris_sim.cc Problem.h Core.h sim_registration.h Singleton.h \
- Factory.h Registrar.h def/architecture_registrations.def
+ Factory.h Registrar.h
 Phoenix.o: Phoenix.cc Phoenix.h Core.h iris17.h iris_base.h Problem.h \
  def/iris17/ops.def def/iris17/arithmetic_ops.def def/iris17/syscalls.def \
  def/iris17/compare.enum def/iris17/logical.enum def/iris17/memory.enum \
