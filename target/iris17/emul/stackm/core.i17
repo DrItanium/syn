@@ -34,12 +34,12 @@
     arithmetic div immediate r9 0x2
     return
 @label STORE
-    move 0m1111 address r9
+    move 0m1111 addr r9
     move 0m1111 value r8
     memory store 0m1111 0x0
     return
 @label LOAD
-    move 0m1111 address r9
+    move 0m1111 addr r9
     memory load 0m1111 0x0
     move 0m1111 r9 value
     return
@@ -64,26 +64,65 @@
 @label RIGHT_SHIFT
     shift right r9 r8
     return
-@label BASE_OPERATION_CALL
+
+@label DECODE_WORD
+    memory push 0m1111 lr
+    branch call immediate AND
+    swap r8 r7
+    memory pop 0m1111 lr
+    branch immediate RIGHT_SHIFT
+
+@label ENCODE_WORD
+    memory push 0m1111 lr
+    swap r9 r8
+    branch call immediate NOT
+    swap r9 r8
+    branch call immediate AND
+    swap r8 r6
+    swap r7 r9
+    branch call immediate LEFT_SHIFT
+    memory pop 0m1111 lr
+    move 0m1111 r8 r7
+    branch immediate OR
+
+@label EQ
+    compare == none r9 r8
     return
-@label BaseOperationTable
-@word ADD         @word 0x1
-@word SUB         @word 0x1
-@word MUL         @word 0x1
-@word DIV         @word 0x1
-@word REM         @word 0x1
-@word PUSH        @word 0x0
-@word POP         @word 0x0
-@word INCREMENT   @word 0x0
-@word DECREMENT   @word 0x0
-@word DOUBLE      @word 0x0
-@word HALVE       @word 0x0
-@word STORE       @word 0x1
-@word LOAD        @word 0x0
-@word AND         @word 0x1
-@word OR          @word 0x1
-@word NOT         @word 0x0
-@word XOR         @word 0x1
-@word NAND        @word 0x1
-@word LEFT_SHIFT  @word 0x1
-@word RIGHT_SHIFT @word 0x1
+
+@label IF_THEN_ELSE
+    branch if r9 r8
+
+@label IF_THEN_ELSE_CALL
+    memory push 0m1111 lr
+    branch if call r9 r8
+    memory pop 0m1111 lr
+    return
+
+@label IS_LPAREN
+    set 0m0001 r8 0x28
+    branch immediate EQ
+
+@label IS_RPAREN
+    set 0m0001 r8 0x29
+    branch immediate EQ
+
+@label IS_SPACE
+    set 0m0001 r8 0x20
+    branch immediate EQ
+
+@label IS_SEMICOLON
+    set 0m0001 r8 0x3b
+    branch immediate EQ
+
+@label IS_NEWLINE
+    set 0m0001 r8 0x0a
+    branch immediate EQ
+
+@label IS_NULL
+    set 0m0000 r8 0x0
+    branch immediate EQ
+
+@label ZERO
+    set 0m0000 r9 0x0
+    return
+
