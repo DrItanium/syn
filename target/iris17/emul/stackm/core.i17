@@ -1,6 +1,8 @@
 ; Core iris17 stack machine routines
 ; r9 is the data stack pointer
 @label ADD
+    memory pop 0m1111 r9
+    memory pop 0m1111 r8
     arithmetic add r9 r8
     return
 @label SUB
@@ -66,24 +68,55 @@
     return
 
 @label DECODE_WORD
+    memory pop 0m1111 r9
+    memory pop 0m1111 r8
+    memory pop 0m1111 r7
     memory push 0m1111 lr
     branch call immediate AND
     swap r8 r7
     memory pop 0m1111 lr
     branch immediate RIGHT_SHIFT
 
+@label ENCODE_WORD_FUNCTIONS
+    @dword NOT
+    @dword AND
+    @dword LEFT_SHIFT
+    @dword OR
+
+@label NEXT_FUNCTION
+    arithmetic add immediate address 0x2
+    branch immediate CALL
+
+@label ARGS4
+    memory pop 0m1111 r6
+@label ARGS3
+    memory pop 0m1111 r7
+@label ARGS2
+    memory pop 0m1111 r8
+@label ARGS1
+    memory pop 0m1111 r9
+    return
+
+
+
 @label ENCODE_WORD
+    ; args
     memory push 0m1111 lr
+    swap r0 sp
+    branch call immediate ARGS4
+    swap r0 sp
     swap r9 r8
-    branch call immediate NOT
+    set 0m1111 address ENCODE_WORD_FUNCTIONS
+    branch call immediate NEXT_FUNCTION
     swap r9 r8
-    branch call immediate AND
+    branch call immediate NEXT_FUNCTION
     swap r8 r6
     swap r7 r9
-    branch call immediate LEFT_SHIFT
+    branch call immediate NEXT_FUNCTION
     memory pop 0m1111 lr
     move 0m1111 r8 r7
-    branch immediate OR
+    branch call immediate NEXT_FUNCTION
+    return
 
 @label EQ
     compare == none r9 r8
@@ -93,10 +126,8 @@
     branch if r9 r8
 
 @label IF_THEN_ELSE_CALL
-    memory push 0m1111 lr
-    branch if call r9 r8
-    memory pop 0m1111 lr
-    return
+    set 0m1111 address IF_THEN_ELSE
+    branch immediate CALL
 
 @label IS_LPAREN
     set 0m0001 r8 0x28
@@ -125,4 +156,7 @@
 @label ZERO
     set 0m0000 r9 0x0
     return
-
+@label RETURN
+    return
+@label CALL
+    branch address
