@@ -27,11 +27,11 @@ namespace iris17 {
 		return iris::decodeInt32LE(value, storage);
 	}
 
-	Core::Core() : memory(new Word[ArchitectureConstants::AddressMax]) { 
+	Core::Core() : memory(new Word[ArchitectureConstants::AddressMax]) {
 	}
 	Core::~Core() { }
 
-	void Core::initialize() { 
+	void Core::initialize() {
 		// setup the default system handlers
 		for (auto i = 0; i < ArchitectureConstants::MaxSystemCalls; ++i) {
 			installSystemHandler(i, Core::defaultSystemHandler);
@@ -106,19 +106,21 @@ namespace iris17 {
 			advanceIp = true;
 		}
 	}
-
+    inline void mask24(RegisterValue& ref) noexcept {
+        ref &= bitmask24;
+    }
 	void Core::incrementInstructionPointer() noexcept {
 		++getInstructionPointer();
-		getInstructionPointer() &= bitmask24;
+        mask24(getInstructionPointer());
 	}
 	void Core::incrementStackPointer() noexcept {
 		++getStackPointer();
-		getStackPointer() &= bitmask24;
+        mask24(getStackPointer());
 	}
 
 	void Core::decrementStackPointer() noexcept {
 		--getStackPointer();
-		getStackPointer() &= bitmask24;
+        mask24(getStackPointer());
 	}
 
 	void Core::dispatch(DecodedInstruction&& current) {
@@ -186,7 +188,7 @@ namespace iris17 {
 				break;
 #include "def/iris17/bitmask8bit.def"
 #undef X
-				default: 
+				default:
 					std::stringstream stream;
 					stream << "Illegal set signature 0x" << std::hex << static_cast<int>(current.getSetSignature()) << "\n";
 					throw iris::Problem(stream.str());
@@ -194,8 +196,8 @@ namespace iris17 {
 
 		} else if (tControl == Operation::Memory) {
 			if (current.getMemoryFlagIllegalBits()) {
-				throw iris::Problem("Undefined bits set in memory operation!"); 
-			} 
+				throw iris::Problem("Undefined bits set in memory operation!");
+			}
 #define X(value) \
 			else if (value == current.getMemorySignature()) { \
 				if (!MemoryFlags<value>::errorState) { \
@@ -211,7 +213,7 @@ namespace iris17 {
 		} else if (tControl == Operation::Branch) {
 			auto instFlags = current.getBranchFlags();
 			if (instFlags == IfJump::flags) {
-				branchSpecificOperation<IfJump::flags>(std::move(current)); 
+				branchSpecificOperation<IfJump::flags>(std::move(current));
 			} else if(instFlags == CallIndirect::flags) {
 				branchSpecificOperation<CallIndirect::flags>(std::move(current));
 			} else if (instFlags == CallDirect::flags) {
@@ -235,7 +237,7 @@ namespace iris17 {
 			auto second = current.getCompareImmediateFlag() ? next.getUpper() : registerValue(next.getCompareRegister1());
 			auto result = false;
 			switch (current.getCompareType()) {
-				case CompareStyle::Equals: 
+				case CompareStyle::Equals:
 					result = iris::eq(first, second);
 					break;
 				case CompareStyle::NotEquals:
@@ -269,8 +271,8 @@ namespace iris17 {
 				case CompareCombine::Xor:
 					getConditionRegister() ^= result;
 					break;
-				default: 
-					throw iris::Problem("Illegal Compare Combine Operation"); 
+				default:
+					throw iris::Problem("Illegal Compare Combine Operation");
 			}
 		} else if (tControl == Operation::SystemCall) {
 			if (getAddressRegister() >= ArchitectureConstants::MaxSystemCalls) {
@@ -482,7 +484,7 @@ namespace iris17 {
 
 	InstructionEncoder::Encoding InstructionEncoder::encode() {
 		// always encode the type
-#define DefEnum(a, b) 
+#define DefEnum(a, b)
 #define EndDefEnum(a, b, c)
 #define EnumEntry(compareType) if (type == Operation:: compareType) { return encode ## compareType () ; }
 #include "def/iris17/ops.def"
