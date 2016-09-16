@@ -54,6 +54,7 @@ namespace iris17 {
 #include "def/iris17/compare.enum"
 #include "def/iris17/logical.enum"
 #include "def/iris17/memory.enum"
+#include "def/iris17/complex.def"
 #undef DefEnum
 #undef EnumEntry
 #undef EndDefEnum
@@ -221,6 +222,7 @@ namespace iris17 {
 #include "def/iris17/move.sig"
 #include "def/iris17/memory.sig"
 #include "def/iris17/set.sig"
+//#include "def/iris17/complex.def"
 #undef Field
 #undef Component
 #undef DefFlags

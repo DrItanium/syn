@@ -281,7 +281,7 @@ namespace iris17 {
 				systemHandlers[getAddressRegister()](this, std::move(current));
 			}
         } else if (tControl == Operation::Complex) {
-
+            complexOperation(std::move(current));
 		} else {
 			std::stringstream str;
 			str << "Illegal instruction " << std::hex << static_cast<byte>(current.getControl());
@@ -289,6 +289,11 @@ namespace iris17 {
 			throw iris::Problem(str.str());
 		}
 	}
+
+    void Core::complexOperation(DecodedInstruction&& inst) {
+        auto complexSubType = inst.getComplexSubClass();
+
+    }
 
 	void Core::terminate(Core* core, DecodedInstruction&& inst) {
 		core->execute = false;
@@ -484,10 +489,15 @@ namespace iris17 {
 		}
 	}
     InstructionEncoder::Encoding InstructionEncoder::encodeComplex() {
+        auto sType = static_cast<ComplexSubTypes>(subType);
         auto first = encodeControl(0, type);
-        first = encodeComplexSubClass(first, subType);
-        // right now it is a single word
-        return std::make_tuple(1, first, 0, 0);
+        first = encodeComplexSubClass(first, sType);
+        if (sType == ComplexSubTypes::Encoding) {
+            // right now it is a single word
+            return std::make_tuple(1, first, 0, 0);
+        } else {
+            throw iris::Problem("Attempted to encode an unsupported value as a complex type!");
+        }
     }
 
 	InstructionEncoder::Encoding InstructionEncoder::encode() {

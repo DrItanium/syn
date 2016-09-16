@@ -1,0 +1,3 @@
+DefEnum(ComplexSubTypes, byte)
+    EnumEntry(Encoding)
+DefEnum(ComplexSubTypes, byte, 16)
