@@ -291,7 +291,7 @@ namespace iris17 {
 	}
 
     void Core::complexOperation(DecodedInstruction&& inst) {
-        auto complexSubType = inst.getComplexSubClass();
+        //auto complexSubType = inst.getComplexSubClass();
 
     }
 
@@ -494,6 +494,7 @@ namespace iris17 {
         first = encodeComplexSubClass(first, sType);
         if (sType == ComplexSubTypes::Encoding) {
             // right now it is a single word
+            first = encodeComplexClassEncoding_ShouldEncode(first, shouldEncode);
             return std::make_tuple(1, first, 0, 0);
         } else {
             throw iris::Problem("Attempted to encode an unsupported value as a complex type!");
