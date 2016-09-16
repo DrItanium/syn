@@ -83,3 +83,6 @@ X(SwapSource,        0b1111000000000000, 12, byte,  swapSource)
 
 // system call flags
 X(SystemArg0,        0b0000111100000000, 8, byte,  systemArg0)
+
+// complex class encoding flags
+X(ComplexSubClass,   0b0000000011110000, 4, byte, complexSubClass)

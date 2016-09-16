@@ -280,6 +280,8 @@ namespace iris17 {
 			} else {
 				systemHandlers[getAddressRegister()](this, std::move(current));
 			}
+        } else if (tControl == Operation::Complex) {
+
 		} else {
 			std::stringstream str;
 			str << "Illegal instruction " << std::hex << static_cast<byte>(current.getControl());
@@ -481,6 +483,12 @@ namespace iris17 {
 			}
 		}
 	}
+    InstructionEncoder::Encoding InstructionEncoder::encodeComplex() {
+        auto first = encodeControl(0, type);
+        first = encodeComplexSubClass(first, subType);
+        // right now it is a single word
+        return std::make_tuple(1, first, 0, 0);
+    }
 
 	InstructionEncoder::Encoding InstructionEncoder::encode() {
 		// always encode the type

@@ -454,6 +454,10 @@ namespace iris17 {
             Word loadWord(RegisterValue address);
             RegisterValue loadRegisterValue(RegisterValue address);
             void storeRegisterValue(RegisterValue address, RegisterValue value);
+        private:
+            void complexOperation(DecodedInstruction&& inst);
+            void encodeOperation(DecodedInstruction&& inst);
+            void decodeOperation(DecodedInstruction&& inst);
 
         private:
             bool execute = true,
