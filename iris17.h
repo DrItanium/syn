@@ -32,12 +32,30 @@ namespace iris17 {
         // a majority of them marked for explicit usage, instructions
         // themselves are still 16 bits wide but 32bits are extracted per
         // packet.
-        InstructionPointer = RegisterCount - 1,
-        LinkRegister = RegisterCount - 2,
-        StackPointer = RegisterCount - 3,
-        ConditionRegister = RegisterCount - 4,
-        AddressRegister = RegisterCount - 5,
-        ValueRegister = RegisterCount - 6,
+        R15 = RegisterCount - 1,
+        R14 = RegisterCount - 2,
+        R13 = RegisterCount - 3,
+        R12 = RegisterCount - 4,
+        R11 = RegisterCount - 5,
+        R10 = RegisterCount - 6,
+        R9  = RegisterCount - 7,
+        R8  = RegisterCount - 8,
+        R7  = RegisterCount - 9,
+        R6  = RegisterCount - 10,
+        R5  = RegisterCount - 11,
+        R4  = RegisterCount - 12,
+        R3  = RegisterCount - 13,
+        R2  = RegisterCount - 14,
+        R1  = RegisterCount - 15,
+        R0  = RegisterCount - 16,
+        InstructionPointer = R15,
+        LinkRegister = R14,
+        StackPointer = R13,
+        ConditionRegister = R12,
+        AddressRegister = R11,
+        ValueRegister = R10,
+        MaskRegister = R9,
+        ShiftRegister = R8,
     };
 
 #define DefEnum(type, width) \
@@ -448,6 +466,9 @@ namespace iris17 {
             inline RegisterValue& getLinkRegister() noexcept           { return registerValue<ArchitectureConstants::LinkRegister>(); }
             inline RegisterValue& getAddressRegister() noexcept        { return registerValue<ArchitectureConstants::AddressRegister>(); }
             inline RegisterValue& getValueRegister() noexcept          { return registerValue<ArchitectureConstants::ValueRegister>(); }
+            inline RegisterValue& getMaskRegister() noexcept           { return registerValue<ArchitectureConstants::MaskRegister>(); }
+            inline RegisterValue& getShiftRegister() noexcept           { return registerValue<ArchitectureConstants::ShiftRegister>(); }
+
             void incrementInstructionPointer() noexcept;
             void incrementStackPointer() noexcept;
             void decrementStackPointer() noexcept;
@@ -458,8 +479,7 @@ namespace iris17 {
             void storeRegisterValue(RegisterValue address, RegisterValue value);
         private:
             void complexOperation(DecodedInstruction&& inst);
-            void encodeOperation(DecodedInstruction&& inst);
-            void decodeOperation(DecodedInstruction&& inst);
+            void encodingOperation(DecodedInstruction&& inst);
 
         private:
             bool execute = true,

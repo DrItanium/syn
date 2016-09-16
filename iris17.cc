@@ -291,8 +291,23 @@ namespace iris17 {
 	}
 
     void Core::complexOperation(DecodedInstruction&& inst) {
-        //auto complexSubType = inst.getComplexSubClass();
-
+        switch (inst.getComplexSubClass()) {
+            case ComplexSubTypes::Encoding:
+                encodingOperation(std::move(inst));
+                break;
+            default:
+                throw iris::Problem("Undefined complex subtype!");
+        }
+    }
+    void Core::encodingOperation(DecodedInstruction&& inst) {
+        auto shift = 0b0000000000011111 & getShiftRegister();
+        auto mask = getMaskRegister();
+        if (inst.getComplexClassEncoding_ShouldEncode()) {
+            getAddressRegister() = (getAddressRegister() & ~mask) | ((getValueRegister() << shift) & mask);
+        } else {
+            // decode operation
+            getValueRegister() = (getAddressRegister() & mask) >> shift;
+        }
     }
 
 	void Core::terminate(Core* core, DecodedInstruction&& inst) {
