@@ -511,7 +511,6 @@ namespace iris17 {
         byte arg0;
         byte arg1;
         bool isLabel;
-        bool shouldEncode;
         std::string labelValue;
         byte subType;
         CompareCombine combineType;
