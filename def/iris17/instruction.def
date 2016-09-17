@@ -87,4 +87,4 @@ X(SystemArg0,        0b0000111100000000, 8, byte,  systemArg0)
 // complex class encoding flags
 X(ComplexSubClass,                   0b0000000011110000, 4, ComplexSubTypes, complexSubClass)
 // encoding complex operation
-X(ComplexClassEncoding_ShouldEncode, 0b0000000100000000, 8, bool, complexClassEncoding_ShouldEncode)
+X(ComplexClassEncoding_Type,         0b0000011100000000, 8, EncodingOperation, complexClassEncoding_Type)

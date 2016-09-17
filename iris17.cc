@@ -300,13 +300,23 @@ namespace iris17 {
         }
     }
     void Core::encodingOperation(DecodedInstruction&& inst) {
-        auto shift = 0b0000000000011111 & getShiftRegister();
-        auto mask = getMaskRegister();
-        if (inst.getComplexClassEncoding_ShouldEncode()) {
-            getAddressRegister() = (getAddressRegister() & ~mask) | ((getValueRegister() << shift) & mask);
-        } else {
-            // decode operation
-            getValueRegister() = (getAddressRegister() & mask) >> shift;
+        switch (inst.getComplexClassEncoding_Type()) {
+            case EncodingOperation::Decode:
+                getValueRegister() = (getAddressRegister() & getMaskRegister()) >> getShiftRegister();
+                break;
+            case EncodingOperation::Encode:
+                getAddressRegister() = (getAddressRegister() & ~getMaskRegister()) | ((getValueRegister() << getShiftRegister()) & getMaskRegister());
+                break;
+            case EncodingOperation::BitSet:
+                // use the shift register as the field select
+                getConditionRegister() = static_cast<RegisterValue>(((getAddressRegister() >> getFieldRegister()) & 0x1) == 1);
+                break;
+            case EncodingOperation::BitUnset:
+                getConditionRegister() = static_cast<RegisterValue>(((getAddressRegister() >> getFieldRegister()) & 0x1) != 1);
+                break;
+            default:
+                throw iris::Problem("Illegal complex encoding operation defined!");
+
         }
     }
 
@@ -509,7 +519,7 @@ namespace iris17 {
         first = encodeComplexSubClass(first, sType);
         if (sType == ComplexSubTypes::Encoding) {
             // right now it is a single word
-            first = encodeComplexClassEncoding_ShouldEncode(first, shouldEncode);
+            first = encodeComplexClassEncoding_Type(first, static_cast<EncodingOperation>(bitmask));
             return std::make_tuple(1, first, 0, 0);
         } else {
             throw iris::Problem("Attempted to encode an unsupported value as a complex type!");

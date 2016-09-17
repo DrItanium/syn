@@ -56,6 +56,7 @@ namespace iris17 {
         ValueRegister = R10,
         MaskRegister = R9,
         ShiftRegister = R8,
+        FieldRegister = R8,
     };
 
 #define DefEnum(type, width) \
@@ -467,7 +468,8 @@ namespace iris17 {
             inline RegisterValue& getAddressRegister() noexcept        { return registerValue<ArchitectureConstants::AddressRegister>(); }
             inline RegisterValue& getValueRegister() noexcept          { return registerValue<ArchitectureConstants::ValueRegister>(); }
             inline RegisterValue& getMaskRegister() noexcept           { return registerValue<ArchitectureConstants::MaskRegister>(); }
-            inline RegisterValue& getShiftRegister() noexcept           { return registerValue<ArchitectureConstants::ShiftRegister>(); }
+            inline RegisterValue getShiftRegister() noexcept           { return 0b11111 & registerValue<ArchitectureConstants::ShiftRegister>(); }
+            inline RegisterValue getFieldRegister() noexcept           { return 0b11111 & registerValue<ArchitectureConstants::FieldRegister>(); }
 
             void incrementInstructionPointer() noexcept;
             void incrementStackPointer() noexcept;
