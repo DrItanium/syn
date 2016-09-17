@@ -57,6 +57,7 @@ namespace iris17 {
         MaskRegister = R9,
         ShiftRegister = R8,
         FieldRegister = R8,
+        CountRegister = R7,
     };
 
 #define DefEnum(type, width) \
@@ -325,14 +326,14 @@ namespace iris17 {
                             throw iris::Problem("Illegal arithmetic operation!");
                     }
                 }
-            template<byte bitmask, bool merge>
+            template<byte bitmask>
                 void loadOperation(RegisterValue address) {
                     static_assert(bitmask <= ArchitectureConstants::Bitmask, "bitmask is too large!");
                     // use the destination field of the instruction to denote offset, thus we need
                     // to use the Address and Value registers
                     auto lower = readLower<bitmask>() ?  iris::encodeBits<RegisterValue, Word, lower16Mask, 0>(0, loadWord(address)) : 0;
                     auto upper = readUpper<bitmask>() ?  iris::encodeBits<RegisterValue, Word, upper16Mask, 16>(0, loadWord(address + 1)) : 0;
-                    getValueRegister() = iris::encodeBits<RegisterValue, RegisterValue, mask<bitmask>(), 0>(merge ? getValueRegister() : 0 , lower | upper);
+                    getValueRegister() = iris::encodeBits<RegisterValue, RegisterValue, mask<bitmask>(), 0>(0 , lower | upper);
                 }
             template<byte bitmask>
                 void storeOperation(RegisterValue address) {
@@ -389,21 +390,19 @@ namespace iris17 {
                     if (mflags::errorState) {
                         throw iris::Problem("Illegally encoded Memory operation!");
                     } else {
+                        auto offset = inst.getMemoryOffset();
                         switch (mflags::type) {
                             case MemoryOperation::Load:
-                                loadOperation<mflags::bitmask, false>(getAddressRegister() + inst.getMemoryOffset());
-                                break;
-                            case MemoryOperation::LoadMerge:
-                                loadOperation<mflags::bitmask, true>(getAddressRegister() + inst.getMemoryOffset());
+                                loadOperation<mflags::bitmask>(getAddressRegister() + offset);
                                 break;
                             case MemoryOperation::Store:
-                                storeOperation<mflags::bitmask>(getAddressRegister() + inst.getMemoryOffset());
+                                storeOperation<mflags::bitmask>(getAddressRegister() + offset);
                                 break;
                             case MemoryOperation::Push:
-                                pushOperation<mflags::bitmask>(registerValue(inst.getMemoryRegister()));
+                                pushOperation<mflags::bitmask>(registerValue(offset));
                                 break;
                             case MemoryOperation::Pop:
-                                popOperation<mflags::bitmask>(registerValue(inst.getMemoryRegister()));
+                                popOperation<mflags::bitmask>(registerValue(offset));
                                 break;
                             default:
                                 throw iris::Problem("Illegal memory operation type!");
@@ -468,6 +467,8 @@ namespace iris17 {
             inline RegisterValue& getAddressRegister() noexcept        { return registerValue<ArchitectureConstants::AddressRegister>(); }
             inline RegisterValue& getValueRegister() noexcept          { return registerValue<ArchitectureConstants::ValueRegister>(); }
             inline RegisterValue& getMaskRegister() noexcept           { return registerValue<ArchitectureConstants::MaskRegister>(); }
+            inline RegisterValue& getCountRegister() noexcept          { return registerValue<ArchitectureConstants::CountRegister>(); }
+
             inline RegisterValue getShiftRegister() noexcept           { return 0b11111 & registerValue<ArchitectureConstants::ShiftRegister>(); }
             inline RegisterValue getFieldRegister() noexcept           { return 0b11111 & registerValue<ArchitectureConstants::FieldRegister>(); }
 
