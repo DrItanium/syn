@@ -147,7 +147,11 @@ namespace iris17 {
 		if (tControl == Operation::Shift) {
 			auto &destination = registerValue(current.getShiftRegister0());
 			auto source = (current.getShiftFlagImmediate() ? static_cast<RegisterValue>(current.getShiftImmediate()) : registerValue(current.getShiftRegister1()));
-			destination = (current.getShiftFlagLeft() ? (destination << source) : (destination >> source));
+			if (current.getShiftFlagLeft()) {
+				destination <<= source;
+			} else {
+				destination >>= source;
+			}
 		} else if (tControl == Operation::Swap) {
 			if (current.getSwapDestination() != current.getSwapSource()) {
 				auto tmp = registerValue(current.getSwapDestination());
@@ -335,7 +339,6 @@ namespace iris17 {
                 break;
             default:
                 throw iris::Problem("Illegal complex encoding operation defined!");
-
         }
     }
 
