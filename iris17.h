@@ -21,6 +21,12 @@ namespace iris17 {
     inline constexpr RegisterValue encodeRegisterValue(byte a, byte b, byte c, byte d) noexcept;
     inline void decodeWord(Word value, byte* storage) noexcept;
     inline void decodeRegisterValue(RegisterValue value, byte* storage) noexcept;
+	inline Word decodeUpperHalf(RegisterValue value) noexcept;
+	inline Word decodeLowerHalf(RegisterValue value) noexcept;
+	inline constexpr RegisterValue encodeUpperHalf(RegisterValue value, Word upperHalf) noexcept;
+	inline constexpr RegisterValue encodeLowerHalf(RegisterValue value, Word lowerHalf) noexcept;
+	inline constexpr RegisterValue encodeRegisterValue(Word upper, Word lower) noexcept;
+
     enum ArchitectureConstants  {
         RegisterCount = 16,
         SegmentCount = 256,
@@ -331,22 +337,23 @@ namespace iris17 {
                     static_assert(bitmask <= ArchitectureConstants::Bitmask, "bitmask is too large!");
                     // use the destination field of the instruction to denote offset, thus we need
                     // to use the Address and Value registers
-                    auto lower = readLower<bitmask>() ?  iris::encodeBits<RegisterValue, Word, lower16Mask, 0>(0, loadWord(address)) : 0;
-                    auto upper = readUpper<bitmask>() ?  iris::encodeBits<RegisterValue, Word, upper16Mask, 16>(0, loadWord(address + 1)) : 0;
+                    auto lower = readLower<bitmask>() ? encodeLowerHalf(0, loadWord(address)) : 0;
+					auto upper = readUpper<bitmask>() ? encodeUpperHalf(0, loadWord(address + 1)) : 0;
                     getValueRegister() = iris::encodeBits<RegisterValue, RegisterValue, mask<bitmask>(), 0>(0 , lower | upper);
                 }
+
             template<byte bitmask>
                 void storeOperation(RegisterValue address) {
                     static_assert(bitmask <= ArchitectureConstants::Bitmask, "bitmask is too large!");
                     if (readLower<bitmask>()) {
                         auto lmask = lowerMask<bitmask>();
-                        auto lower = lmask & iris::decodeBits<RegisterValue, Word, lower16Mask, 0>(getValueRegister());
+                        auto lower = lmask & decodeLowerHalf(getValueRegister());
                         auto loader = loadWord(address) & ~(lmask);
                         storeWord(address, lower | loader);
                     }
                     if (readUpper<bitmask>()) {
                         auto umask = upperMask<bitmask>();
-                        auto upper = umask & iris::decodeBits<RegisterValue, Word, upper16Mask, 16>(getValueRegister());
+                        auto upper = umask & decodeUpperHalf(getValueRegister());
                         auto loader = loadWord(address + 1) & ~(umask);
                         storeWord(address + 1, upper | loader);
                     }
@@ -358,13 +365,11 @@ namespace iris17 {
                     // read backwards because the stack grows upward towards zero
                     if (readUpper<bitmask>()) {
                         decrementStackPointer();
-                        auto upper = upperMask<bitmask>() & iris::decodeBits<RegisterValue, Word, upper16Mask, 16>(pushToStack);
-                        storeWord(getStackPointer(), upper);
+                        storeWord(getStackPointer(), upperMask<bitmask>() & decodeUpperHalf(pushToStack));
                     }
                     if (readLower<bitmask>()) {
                         decrementStackPointer();
-                        auto lower = lowerMask<bitmask>() & iris::decodeBits<RegisterValue, Word, lower16Mask, 0>(pushToStack);
-                        storeWord(getStackPointer(), lower);
+                        storeWord(getStackPointer(), lowerMask<bitmask>() & decodeLowerHalf(pushToStack));
                     }
                 }
 
@@ -381,7 +386,7 @@ namespace iris17 {
                         upper = upperMask<bitmask>() & loadWord(getStackPointer());
                         incrementStackPointer();
                     }
-                    storage = iris::encodeBits<RegisterValue, Word, upper16Mask, 16>(iris::encodeBits<RegisterValue, Word, lower16Mask, 0>(0, lower), upper);
+					storage = encodeRegisterValue(upper, lower);
                 }
 
             template<byte signature>

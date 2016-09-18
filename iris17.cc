@@ -27,6 +27,25 @@ namespace iris17 {
 		return iris::decodeInt32LE(value, storage);
 	}
 
+	Word decodeUpperHalf(RegisterValue value) noexcept {
+		return iris::decodeBits<RegisterValue, Word, upper16Mask, 16>(value);
+	}
+	Word decodeLowerHalf(RegisterValue value) noexcept {
+		return iris::decodeBits<RegisterValue, Word, lower16Mask, 16>(value);
+	}
+
+	constexpr RegisterValue encodeUpperHalf(RegisterValue value, Word upperHalf) noexcept {
+		return iris::encodeBits<RegisterValue, Word, upper16Mask, 16>(value, upperHalf);
+	}
+	constexpr RegisterValue encodeLowerHalf(RegisterValue value, Word lowerHalf) noexcept {
+		return iris::encodeBits<RegisterValue, Word, lower16Mask, 0>(value, lowerHalf);
+	}
+
+	constexpr RegisterValue encodeRegisterValue(Word upper, Word lower) noexcept {
+		return encodeUpperHalf(encodeLowerHalf(0, lower), upper);
+	}
+
+
 	Core::Core() : memory(new Word[ArchitectureConstants::AddressMax]) {
 	}
 	Core::~Core() { }
