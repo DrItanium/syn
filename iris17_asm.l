@@ -96,7 +96,7 @@ omni [a-zA-Z0-9._]
 "addr"      { iris17lval.rval = iris17::ArchitectureConstants::AddressRegister; return REGISTER; }
 "value"     { iris17lval.rval = iris17::ArchitectureConstants::ValueRegister; return REGISTER; }
 "mask"      { iris17lval.rval = iris17::ArchitectureConstants::MaskRegister; return REGISTER; }
-"shift"     { iris17lval.rval = iris17::ArchitectureConstants::ShiftRegister; return REGISTER; }
+"shift_width"     { iris17lval.rval = iris17::ArchitectureConstants::ShiftRegister; return REGISTER; }
 "field"     { iris17lval.rval = iris17::ArchitectureConstants::FieldRegister; return REGISTER; }
 "count"     { iris17lval.rval = iris17::ArchitectureConstants::CountRegister; return REGISTER; }
 

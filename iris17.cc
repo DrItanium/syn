@@ -45,9 +45,17 @@ namespace iris17 {
 		return encodeUpperHalf(encodeLowerHalf(0, lower), upper);
 	}
 
-
-	Core::Core() : memory(new Word[ArchitectureConstants::AddressMax]) {
+	RegisterValue Core::retrieveImmediate(byte bitmask) noexcept {
+		switch(bitmask) {
+#define X(value) case value : return retrieveImmediate<value>(); 
+#include "def/iris17/bitmask4bit.def"
+#undef X
+			default:
+				throw iris::Problem("Illegal bitmask defined!");
+		}
 	}
+
+	Core::Core() : memory(new Word[ArchitectureConstants::AddressMax]) { }
 	Core::~Core() { }
 
 	void Core::initialize() {
@@ -175,13 +183,17 @@ namespace iris17 {
 #define X(datum) \
 			else if (datum == current.getLogicalSignature()) { \
 				using lflags = LogicalFlags<datum>; \
-				if (lflags::immediate && lflags::immediateError) { \
-					throw iris::Problem("Illegal bit set for immediate mode logicalOperation!"); \
-				} else if (!lflags::immediate && lflags::indirectError) { \
-					throw iris::Problem("Illegal bits set for indirect mode logicalOperation!"); \
+				if (lflags::immediate) { \
+					if (lflags::immediateError) { \
+						throw iris::Problem("Illegal bit set for immediate mode logicalOperation!"); \
+					} else { \
+						logicalImmediateOperation<lflags::immediateType>(std::move(current), retrieveImmediate<lflags::bitmask>()); \
+					} \
 				} else { \
-					if ((LogicalFlags<datum>::immediate && !LogicalFlags<datum>::immediateError) || (!LogicalFlags<datum>::immediate && !LogicalFlags<datum>::indirectError)) { \
-						logicalOperation<datum>(std::move(current)); \
+					if (lflags::indirectError) { \
+						throw iris::Problem("Illegal bits set for indirect mode logicalOperation!"); \
+					} else { \
+						logicalIndirectOperation<lflags::indirectType>(std::move(current)); \
 					} \
 				} \
 			}
@@ -216,7 +228,6 @@ namespace iris17 {
 					stream << "Illegal set signature 0x" << std::hex << static_cast<int>(current.getSetSignature()) << "\n";
 					throw iris::Problem(stream.str());
 			}
-
 		} else if (tControl == Operation::Memory) {
 			if (current.getMemoryFlagIllegalBits()) {
 				throw iris::Problem("Undefined bits set in memory operation!");
@@ -224,7 +235,7 @@ namespace iris17 {
 #define X(value) \
 			else if (value == current.getMemorySignature()) { \
 				if (!MemoryFlags<value>::errorState) { \
-					memoryOperation<value>(std::move(current)); \
+					memoryOperation<MemoryFlags<value>::type, MemoryFlags<value>::bitmask>(std::move(current)); \
 				} \
 				return; \
 			}
@@ -259,43 +270,33 @@ namespace iris17 {
 			auto first = registerValue(next.getCompareRegister0());
 			auto second = current.getCompareImmediateFlag() ? next.getUpper() : registerValue(next.getCompareRegister1());
 			auto result = false;
-			switch (current.getCompareType()) {
-				case CompareStyle::Equals:
-					result = iris::eq(first, second);
-					break;
-				case CompareStyle::NotEquals:
-					result = iris::neq(first, second);
-					break;
-				case CompareStyle::LessThan:
-					result = iris::lt(first, second);
-					break;
-				case CompareStyle::GreaterThan:
-					result = iris::gt(first, second);
-					break;
-				case CompareStyle::LessThanOrEqualTo:
-					result = iris::le(first, second);
-					break;
-				case CompareStyle::GreaterThanOrEqualTo:
-					result = iris::ge(first, second);
-					break;
-				default:
-					throw iris::Problem("illegal compare type!");
+			auto compareType = current.getCompareType();
+			if (compareType == CompareStyle::Equals) {
+				result = iris::eq(first, second);
+			} else if (compareType == CompareStyle::NotEquals) {
+				result = iris::neq(first, second);
+			} else if (compareType == CompareStyle::LessThan) {
+				result = iris::lt(first, second);
+			} else if (compareType == CompareStyle::GreaterThan) {
+				result = iris::gt(first, second);
+			} else if (compareType == CompareStyle::LessThanOrEqualTo) {
+				result = iris::le(first, second);
+			} else if (compareType == CompareStyle::GreaterThanOrEqualTo) {
+				result = iris::ge(first, second);
+			} else {
+				throw iris::Problem("illegal compare type!");
 			}
-			switch(current.getCompareCombineFlag()) {
-				case CompareCombine::None:
-					getConditionRegister() = result;
-					break;
-				case CompareCombine::And:
-					getConditionRegister() &= result;
-					break;
-				case CompareCombine::Or:
-					getConditionRegister() |= result;
-					break;
-				case CompareCombine::Xor:
-					getConditionRegister() ^= result;
-					break;
-				default:
-					throw iris::Problem("Illegal Compare Combine Operation");
+			auto combineType = current.getCompareCombineFlag();
+			if (combineType == CompareCombine::None) {
+				getConditionRegister() = result;
+			} else if (combineType == CompareCombine::And) {
+				getConditionRegister() &= result;
+			} else if (combineType == CompareCombine::Or) {
+				getConditionRegister() |= result;
+			} else if (combineType == CompareCombine::Xor) {
+				getConditionRegister() ^= result;
+			} else {
+				throw iris::Problem("Illegal Compare Combine Operation");
 			}
 		} else if (tControl == Operation::SystemCall) {
 			if (getAddressRegister() >= ArchitectureConstants::MaxSystemCalls) {
