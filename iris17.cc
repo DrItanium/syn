@@ -187,7 +187,7 @@ namespace iris17 {
 					if (lflags::immediateError) { \
 						throw iris::Problem("Illegal bit set for immediate mode logicalOperation!"); \
 					} else { \
-						logicalImmediateOperation<lflags::immediateType>(std::move(current), retrieveImmediate<lflags::bitmask>()); \
+						logicalImmediateOperation<lflags::immediateType, lflags::bitmask>(std::move(current)); \
 					} \
 				} else { \
 					if (lflags::indirectError) { \
@@ -314,15 +314,14 @@ namespace iris17 {
 		}
 	}
 
-    void Core::complexOperation(DecodedInstruction&& inst) {
-        switch (inst.getComplexSubClass()) {
-            case ComplexSubTypes::Encoding:
-                encodingOperation(std::move(inst));
-                break;
-            default:
-                throw iris::Problem("Undefined complex subtype!");
-        }
-    }
+	void Core::complexOperation(DecodedInstruction&& inst) {
+		auto type = inst.getComplexSubClass();
+		if (type == ComplexSubTypes::Encoding) {
+			encodingOperation(std::move(inst));
+		} else {
+			throw iris::Problem("Undefined complex subtype!");
+		}
+	}
     void Core::encodingOperation(DecodedInstruction&& inst) {
         switch (inst.getComplexClassEncoding_Type()) {
             case EncodingOperation::Decode:
