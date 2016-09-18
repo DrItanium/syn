@@ -252,7 +252,7 @@ namespace iris17 {
 #undef DefFlags
 #undef EndDefFlags
 			template<ImmediateLogicalOps type, byte bitmask>
-				void logicalImmediateOperation(DecodedInstruction&& inst) {
+				inline void logicalImmediateOperation(DecodedInstruction&& inst) {
 					auto &dest = registerValue(inst.getLogicalImmediateDestination());
 					auto immediate = retrieveImmediate<bitmask>();
 					if (type == ImmediateLogicalOps::And) {
@@ -269,7 +269,7 @@ namespace iris17 {
 				}
 
 			template<LogicalOps type>
-				void logicalIndirectOperation(DecodedInstruction&& inst) {
+				inline void logicalIndirectOperation(DecodedInstruction&& inst) {
 					auto &dest = registerValue(inst.getLogicalRegister0());
 					if (type == LogicalOps::Not) {
 						dest = iris::binaryNot(dest);

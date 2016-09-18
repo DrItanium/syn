@@ -175,33 +175,28 @@ namespace iris17 {
 					throw iris::Problem("Illegal Arithmetic Signature");
 			}
 		} else if (tControl == Operation::Logical) {
-			if (current.getLogicalFlagImmediate() && current.getLogicalImmediateError()) {
-				throw iris::Problem("Undefined bits in a logical immediate instruction are set!");
-			} else if (!current.getLogicalFlagImmediate() && current.getLogicalIndirectError()) {
-				throw iris::Problem("Undefined bits in a logical indirect instruction are set!");
-			}
 #define X(datum) \
-			else if (datum == current.getLogicalSignature()) { \
+			if (datum == current.getLogicalSignature()) { \
 				using lflags = LogicalFlags<datum>; \
 				if (lflags::immediate) { \
 					if (lflags::immediateError) { \
 						throw iris::Problem("Illegal bit set for immediate mode logicalOperation!"); \
 					} else { \
 						logicalImmediateOperation<lflags::immediateType, lflags::bitmask>(std::move(current)); \
+						return; \
 					} \
 				} else { \
 					if (lflags::indirectError) { \
 						throw iris::Problem("Illegal bits set for indirect mode logicalOperation!"); \
 					} else { \
 						logicalIndirectOperation<lflags::indirectType>(std::move(current)); \
+						return; \
 					} \
 				} \
 			}
 #include "def/iris17/bitmask8bit.def"
 #undef X
-			else {
-				throw iris::Problem("Illegal logical signature!");
-			}
+			throw iris::Problem("Illegal logical signature!");
 		} else if (tControl == Operation::Move) {
 			auto &dest = registerValue(current.getMoveRegister0());
 			switch (current.getMoveSignature()) {
@@ -229,21 +224,18 @@ namespace iris17 {
 					throw iris::Problem(stream.str());
 			}
 		} else if (tControl == Operation::Memory) {
-			if (current.getMemoryFlagIllegalBits()) {
-				throw iris::Problem("Undefined bits set in memory operation!");
-			}
 #define X(value) \
-			else if (value == current.getMemorySignature()) { \
+			if (value == current.getMemorySignature()) { \
 				if (!MemoryFlags<value>::errorState) { \
 					memoryOperation<MemoryFlags<value>::type, MemoryFlags<value>::bitmask>(std::move(current)); \
+					return; \
+				} else { \
+					throw iris::Problem("Undefined bits set in memory operation!"); \
 				} \
-				return; \
 			}
 #include "def/iris17/bitmask8bit.def"
 #undef X
-			else {
-				throw iris::Problem("Illegal memory signature!");
-			}
+			throw iris::Problem("Illegal memory signature!");
 		} else if (tControl == Operation::Branch) {
 			auto instFlags = current.getBranchFlags();
 			if (instFlags == IfJump::flags) {
@@ -264,7 +256,6 @@ namespace iris17 {
 				throw iris::Problem("Undefined branch flag setup!");
 			}
 		} else if (tControl == Operation::Compare) {
-			//std::cout << "Compare Operation" << std::endl;
 			incrementInstructionPointer();
 			DecodedInstruction next(getCurrentCodeWord());
 			auto first = registerValue(next.getCompareRegister0());
