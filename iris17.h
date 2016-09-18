@@ -308,6 +308,28 @@ namespace iris17 {
 						throw iris::Problem("Illegal arithmetic operation!");
 					}
 				}
+			template<bool useLower, bool useUpper, RegisterValue fullMask>
+				inline void loadOperation(RegisterValue address) {
+					// use the destination field of the instruction to denote offset, thus we need
+					// to use the Address and Value registers
+					auto lower = useLower ? encodeLowerHalf(0, loadWord(address)) : 0;
+					auto upper = useUpper ? encodeUpperHalf(0, loadWord(address + 1)) : 0;
+					getValueRegister() = iris::encodeBits<RegisterValue, RegisterValue, fullMask, 0>(0, lower | upper);
+				}
+
+			template<bool useLower, bool useUpper, RegisterValue lmask, RegisterValue umask>
+				inline void storeOperation(RegisterValue address) {
+					if (useLower) {
+						auto lower = lmask & decodeLowerHalf(getValueRegister());
+						auto loader = loadWord(address) & ~(lmask);
+						storeWord(address, lower | loader);
+					}
+					if (useUpper) {
+						auto upper = umask & decodeUpperHalf(getValueRegister());
+						auto loader = loadWord(address + 1) & ~(umask);
+						storeWord(address + 1, upper | loader);
+					}
+				}
 
 			template<MemoryOperation type, byte bitmask>
 				inline void memoryOperation(DecodedInstruction&& inst) {
@@ -320,24 +342,9 @@ namespace iris17 {
 					auto upper = 0u;
 					auto lower = 0u;
 					if (type == MemoryOperation::Load) {
-						auto address = getAddressRegister() + inst.getMemoryOffset();
-						// use the destination field of the instruction to denote offset, thus we need
-						// to use the Address and Value registers
-						lower = useLower ? encodeLowerHalf(0, loadWord(address)) : 0;
-						upper = useUpper ? encodeUpperHalf(0, loadWord(address + 1)) : 0;
-						getValueRegister() = iris::encodeBits<RegisterValue, RegisterValue, fullMask, 0>(0, lower | upper);
+						loadOperation<useLower, useUpper, fullMask>(getAddressRegister() + inst.getMemoryOffset());
 					} else if (type == MemoryOperation::Store) {
-						auto address = getAddressRegister() + inst.getMemoryOffset();
-						if (useLower) {
-							lower = lmask & decodeLowerHalf(getValueRegister());
-							auto loader = loadWord(address) & ~(lmask);
-							storeWord(address, lower | loader);
-						}
-						if (useUpper) {
-							upper = umask & decodeUpperHalf(getValueRegister());
-							auto loader = loadWord(address + 1) & ~(umask);
-							storeWord(address + 1, upper | loader);
-						}
+						storeOperation<useLower, useUpper, lmask, umask>(getAddressRegister() + inst.getMemoryOffset());
 					} else if (type == MemoryOperation::Push) {
 						auto pushToStack = registerValue(inst.getMemoryOffset());
 						// read backwards because the stack grows upward towards zero
@@ -359,6 +366,14 @@ namespace iris17 {
 							incrementStackPointer();
 						}
 						registerValue(inst.getMemoryOffset()) = encodeRegisterValue(upper, lower);
+					} else if (type == MemoryOperation::IndirectLoad) {
+						auto address = getAddressRegister() + inst.getMemoryOffset();
+						address = encodeRegisterValue(loadWord(address + 1), loadWord(address)) & bitmask24;
+						loadOperation<useLower, useUpper, fullMask>(address);
+					} else if (type == MemoryOperation::IndirectStore) {
+						auto address = getAddressRegister() + inst.getMemoryOffset();
+						address = encodeRegisterValue(loadWord(address + 1), loadWord(address)) & bitmask24;
+						storeOperation<useLower, useUpper, lmask, umask>(address);
 					} else {
 						throw iris::Problem("Illegal memory operation type!");
 					}
@@ -434,6 +449,7 @@ namespace iris17 {
 		private:
 			void complexOperation(DecodedInstruction&& inst);
 			void encodingOperation(DecodedInstruction&& inst);
+			void memoryManipulationOperation(DecodedInstruction&& inst);
 		private:
 			bool execute = true,
 				 advanceIp = true;
@@ -481,6 +497,6 @@ namespace iris17 {
 	};
 	Core* newCore() noexcept;
 	void assemble(FILE* input, std::ostream* output);
-}
+} // end namespace iris17
 
-#endif
+#endif // end _TARGET_IRIS17_IRIS_H
