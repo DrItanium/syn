@@ -42,6 +42,7 @@ omni [a-zA-Z0-9._]
 "set"        { return OP_SET; }
 "swap"       { return OP_SWAP; }
 "memory"     { return OP_MEMORY; }
+"complex"    { return OP_COMPLEX; }
 
 "immediate" { return FLAG_IMMEDIATE; }
 "add"       { return ARITHMETIC_OP_ADD; }
@@ -51,6 +52,12 @@ omni [a-zA-Z0-9._]
 "rem"       { return ARITHMETIC_OP_REM; }
 "left"      { return SHIFT_FLAG_LEFT; }
 "right"     { return SHIFT_FLAG_RIGHT; }
+
+"encoding"  { return COMPLEX_OP_ENCODING; }
+"bitset"    { return COMPLEX_OP_ENCODING_BITSET; }
+"bitunset"  { return COMPLEX_OP_ENCODING_BITUNSET; }
+"encode"    { return COMPLEX_OP_ENCODING_ENCODE; }
+"decode"    { return COMPLEX_OP_ENCODING_DECODE; }
 
 "=="        { return COMPARE_OP_EQ; }
 "!="        { return COMPARE_OP_NEQ; }
@@ -67,9 +74,8 @@ omni [a-zA-Z0-9._]
 "not"       { return LOGICAL_OP_NOT; }
 "nand"      { return LOGICAL_OP_NAND; }
 
-"load"        { return MEMORY_OP_LOAD; }
-"merge"     { return MEMORY_OP_MERGE; }
-"store"        { return MEMORY_OP_STORE; }
+"load"      { return MEMORY_OP_LOAD; }
+"store"     { return MEMORY_OP_STORE; }
 "push"      { return MEMORY_OP_PUSH; }
 "pop"       { return MEMORY_OP_POP; }
 

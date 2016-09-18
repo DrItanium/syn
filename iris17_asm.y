@@ -218,7 +218,14 @@ namespace iris17 {
 %token LABEL DIRECTIVE_ORG DIRECTIVE_WORD DIRECTIVE_DWORD
 %token OP_NOP OP_ARITHMETIC OP_SHIFT OP_LOGICAL OP_COMPARE OP_BRANCH OP_RETURN
 %token OP_SYSTEM OP_MOVE OP_SET OP_SWAP OP_MEMORY
+%token OP_COMPLEX
 %token DIRECTIVE_REGISTER_AT_START
+
+%token COMPLEX_OP_ENCODING
+%token COMPLEX_OP_ENCODING_BITSET 
+%token COMPLEX_OP_ENCODING_BITUNSET
+%token COMPLEX_OP_ENCODING_ENCODE 
+%token COMPLEX_OP_ENCODING_DECODE
 
 %token ARITHMETIC_OP_ADD     ARITHMETIC_OP_SUB     ARITHMETIC_OP_MUL ARITHMETIC_OP_DIV
 %token ARITHMETIC_OP_REM     ARITHMETIC_OP_ADD_IMM ARITHMETIC_OP_SUB_IMM
@@ -227,7 +234,7 @@ namespace iris17 {
 %token SHIFT_FLAG_LEFT SHIFT_FLAG_RIGHT
 %token ACTION_NONE ACTION_AND ACTION_OR ACTION_XOR
 %token LOGICAL_OP_NOT LOGICAL_OP_NAND
-%token MEMORY_OP_LOAD MEMORY_OP_MERGE MEMORY_OP_STORE MEMORY_OP_POP MEMORY_OP_PUSH
+%token MEMORY_OP_LOAD MEMORY_OP_STORE MEMORY_OP_POP MEMORY_OP_PUSH
 %token BRANCH_FLAG_JUMP BRANCH_FLAG_CALL BRANCH_FLAG_IF BRANCH_FLAG_COND
 %token COMPARE_OP_EQ COMPARE_OP_NEQ COMPARE_OP_GT COMPARE_OP_GT_EQ
 %token COMPARE_OP_LT COMPARE_OP_LT_EQ
@@ -311,8 +318,17 @@ operation:
             op.immediate = false;
             op.isCall = false;
             op.arg0 = static_cast<byte>(iris17::ArchitectureConstants::LinkRegister);
-        };
-
+        } |
+		OP_COMPLEX complex_type {
+			op.type = iris17::Operation::Complex; 
+		};
+complex_type:
+			COMPLEX_OP_ENCODING encoding_subtype { op.subType = static_cast<byte>(iris17::ComplexSubTypes::Encoding); };
+encoding_subtype:
+				COMPLEX_OP_ENCODING_BITSET   { op.bitmask = static_cast<byte>(iris17::EncodingOperation::BitSet); } |
+				COMPLEX_OP_ENCODING_BITUNSET { op.bitmask = static_cast<byte>(iris17::EncodingOperation::BitUnset); } |
+				COMPLEX_OP_ENCODING_ENCODE   { op.bitmask = static_cast<byte>(iris17::EncodingOperation::Encode); } |
+				COMPLEX_OP_ENCODING_DECODE   { op.bitmask = static_cast<byte>(iris17::EncodingOperation::Decode); };
 compare_op:
 		  compare_type combine_type compare_args;
 
@@ -441,9 +457,6 @@ memory_op:
 load_store_op:
 			 MEMORY_OP_LOAD {
 				op.subType = static_cast<byte>(iris17::MemoryOperation::Load);
-			 } |
-			 MEMORY_OP_MERGE {
-				op.subType = static_cast<byte>(iris17::MemoryOperation::LoadMerge);
 			 } |
 			 MEMORY_OP_STORE {
 				op.subType = static_cast<byte>(iris17::MemoryOperation::Store);
