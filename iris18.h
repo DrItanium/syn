@@ -10,7 +10,7 @@
 #include <tuple>
 #include "sim_registration.h"
 
-namespace iris17 {
+namespace iris18 {
 	using HWord = uint8_t;
 	using Word = uint16_t;
 	using DWord = uint32_t;
@@ -74,13 +74,13 @@ namespace iris17 {
 	static_assert(static_cast<width>(type :: Count) <= static_cast<width>( maxCount ), "Too many " #type " entries defined!");
 #define EnumEntry(type) type,
 
-#include "def/iris17/ops.def"
-#include "def/iris17/arithmetic_ops.def"
-#include "def/iris17/syscalls.def"
-#include "def/iris17/compare.enum"
-#include "def/iris17/logical.enum"
-#include "def/iris17/memory.enum"
-#include "def/iris17/complex.def"
+#include "def/iris18/ops.def"
+#include "def/iris18/arithmetic_ops.def"
+#include "def/iris18/syscalls.def"
+#include "def/iris18/compare.enum"
+#include "def/iris18/logical.enum"
+#include "def/iris18/memory.enum"
+#include "def/iris18/complex.def"
 #undef DefEnum
 #undef EnumEntry
 #undef EndDefEnum
@@ -91,7 +91,7 @@ namespace iris17 {
 			DecodedInstruction(const DecodedInstruction&) = delete;
 			RawInstruction getRawValue() const noexcept { return _rawValue; }
 #define X(title, mask, shift, type, post) inline type get ## title () const noexcept { return iris::decodeBits<RawInstruction, type, mask, shift>(_rawValue); }
-#include "def/iris17/instruction.def"
+#include "def/iris18/instruction.def"
 #undef X
 		private:
 			RawInstruction _rawValue;
@@ -203,13 +203,13 @@ namespace iris17 {
 			SystemFunction getSystemHandler(byte index);
 			void dispatch(DecodedInstruction&& inst);
 #define X(title, func) void func ();
-#include "def/iris17/misc.def"
+#include "def/iris18/misc.def"
 #undef X
 			template<byte rindex>
 				inline RegisterValue& registerValue() noexcept {
 					static_assert(rindex < ArchitectureConstants::RegisterCount, "Not a legal register index!");
 #define X(index) if (index == rindex) { return gpr[index]; }
-#include "def/iris17/registers.def"
+#include "def/iris18/registers.def"
 #undef X
 					// if this is ever fired then we will get a std::terminate
 					// invoked!
@@ -242,11 +242,11 @@ namespace iris17 {
 #define EndDefFlags(name) };
 #define Component(fieldName, mask, shift, type) static constexpr type fieldName = (iris::decodeBits<byte, type, mask, shift>(signature));
 #define Field(fieldName, type, value) static constexpr type fieldName = value ;
-#include "def/iris17/logical_generic.sig"
-#include "def/iris17/arithmetic.sig"
-#include "def/iris17/move.sig"
-#include "def/iris17/memory.sig"
-#include "def/iris17/set.sig"
+#include "def/iris18/logical_generic.sig"
+#include "def/iris18/arithmetic.sig"
+#include "def/iris18/move.sig"
+#include "def/iris18/memory.sig"
+#include "def/iris18/set.sig"
 #undef Field
 #undef Component
 #undef DefFlags
@@ -469,7 +469,7 @@ namespace iris17 {
 	constexpr inline Word encode ## title (Word input, type value) noexcept { \
 		return iris::encodeBits<Word, type, mask, shift>(input, value); \
 	}
-#include "def/iris17/instruction.def"
+#include "def/iris18/instruction.def"
 #undef X
 	struct InstructionEncoder {
 		int currentLine;
@@ -497,13 +497,13 @@ namespace iris17 {
 #define DefEnum(a, b)
 #define EndDefEnum(a, b, c)
 #define EnumEntry(type) Encoding encode ## type ();
-#include "def/iris17/ops.def"
+#include "def/iris18/ops.def"
 #undef DefEnum
 #undef EndDefEnum
 #undef EnumEntry
 	};
 	Core* newCore() noexcept;
 	void assemble(FILE* input, std::ostream* output);
-} // end namespace iris17
+} // end namespace iris18
 
 #endif // end _TARGET_IRIS17_IRIS_H

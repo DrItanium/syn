@@ -1,10 +1,10 @@
-#include "iris17.h"
+#include "iris18.h"
 #include <functional>
 #include <sstream>
 #include "Problem.h"
 #include <utility>
 
-namespace iris17 {
+namespace iris18 {
 	/*
 	 * Iris17 is a variable length encoding 16 bit architecture.
 	 * It has a 24 bit memory space across 256 16-bit sections. The variable length
@@ -48,7 +48,7 @@ namespace iris17 {
 	RegisterValue Core::retrieveImmediate(byte bitmask) noexcept {
 		switch(bitmask) {
 #define X(value) case value : return retrieveImmediate<value>(); 
-#include "def/iris17/bitmask4bit.def"
+#include "def/iris18/bitmask4bit.def"
 #undef X
 			default:
 				throw iris::Problem("Illegal bitmask defined!");
@@ -169,7 +169,7 @@ namespace iris17 {
 		} else if (tControl == Operation::Arithmetic) {
 			switch (current.getArithmeticSignature()) {
 #define X(value) case value: arithmeticOperation< value > (std::move(current)); break;
-#include "def/iris17/bitmask4bit.def"
+#include "def/iris18/bitmask4bit.def"
 #undef X
 				default:
 					throw iris::Problem("Illegal Arithmetic Signature");
@@ -194,7 +194,7 @@ namespace iris17 {
 					} \
 				} \
 			}
-#include "def/iris17/bitmask8bit.def"
+#include "def/iris18/bitmask8bit.def"
 #undef X
 			throw iris::Problem("Illegal logical signature!");
 		} else if (tControl == Operation::Move) {
@@ -206,7 +206,7 @@ namespace iris17 {
 				} else { \
 					dest = iris::decodeBits<RegisterValue, RegisterValue, mask<MoveFlags< value >::bitmask>(), 0>(registerValue(current.getMoveRegister1())); \
 				}
-#include "def/iris17/bitmask4bit.def"
+#include "def/iris18/bitmask4bit.def"
 #undef X
 				default:
 					throw iris::Problem("Illegal move signature!");
@@ -216,7 +216,7 @@ namespace iris17 {
 #define X(value) case value: \
 				registerValue<SetFlags<value>::destination>() = retrieveImmediate<SetFlags<value>::bitmask>(); \
 				break;
-#include "def/iris17/bitmask8bit.def"
+#include "def/iris18/bitmask8bit.def"
 #undef X
 				default:
 					std::stringstream stream;
@@ -233,7 +233,7 @@ namespace iris17 {
 					throw iris::Problem("Undefined bits set in memory operation!"); \
 				} \
 			}
-#include "def/iris17/bitmask8bit.def"
+#include "def/iris18/bitmask8bit.def"
 #undef X
 			throw iris::Problem("Illegal memory signature!");
 		} else if (tControl == Operation::Branch) {
@@ -545,7 +545,7 @@ namespace iris17 {
 #define DefEnum(a, b)
 #define EndDefEnum(a, b, c)
 #define EnumEntry(compareType) if (type == Operation:: compareType) { return encode ## compareType () ; }
-#include "def/iris17/ops.def"
+#include "def/iris18/ops.def"
 #undef DefEnum
 #undef EndDefEnum
 #undef EnumEntry
@@ -555,13 +555,13 @@ namespace iris17 {
 	int instructionSizeFromImmediateMask(byte bitmask) {
 
 #define X(bits) if (bitmask == bits) { return instructionSizeFromImmediateMask<bits>(); }
-#include "def/iris17/bitmask4bit.def"
+#include "def/iris18/bitmask4bit.def"
 #undef X
 		throw iris::Problem("Illegal bitmask provided!");
 	}
 	RegisterValue getMask(byte bitmask) {
 #define X(bits) if (bitmask == bits) { return SetBitmaskToWordMask<bits>::mask; }
-#include "def/iris17/bitmask4bit.def"
+#include "def/iris18/bitmask4bit.def"
 #undef X
 		throw iris::Problem("Illegal bitmask provided!");
 	}
