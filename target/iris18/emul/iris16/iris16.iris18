@@ -1,6 +1,4 @@
 ; iris16 instruction decoders
-
-
 @label DecodeDestination
 	set 0m1111 mask 0x0000FF00
 	set 0m0001 shift 8
@@ -39,9 +37,16 @@
 	return
 
 
-@label DecodeInstruction
-	; Put the loaded value in addr already before passing it in
+@label Cycle
 	memory push 0m1111 lr
+	set 0m1111 addr Iris16Registers     ; Load register base into address
+	arithmetic add immediate addr 0xFF  ; Want index 255 
+	memory load 0m0011 0x0              ; load r255 / ip
+	set 0m1111 r8 Iris16Code            ; load the base code address
+	arithmetic add immediate r8 value   ; add the contents of r255 to the address
+	move 0m1111 addr r8                 ; Move that into address
+	memory load 0m1111 0x0              ; load the current instruction
+	move 0m1111 addr value				; put the loaded instruction to addr
 	branch call immediate DecodeGroup
 	move 0m0001 r0 value
 	branch call immediate DecodeOperation
@@ -54,26 +59,18 @@
 	move 0m0001 r4 value
 	branch call immediate DecodeImmediate
 	move 0m0011 r5 value
-	memory pop 0m1111 lr
-	return
-
-@label LoadInstruction
-	memory push 0m1111 lr
-	set 0m1111 addr Iris16Registers     ; Load register base into address
-	arithmetic add immediate addr 0xFF  ; Want index 255 
-	memory load 0m0011 0x0              ; load r255 / ip
-	set 0m1111 r8 Iris16Code            ; load the base code address
-	arithmetic add immediate r8 value   ; add the contents of r255 to the address
-	move 0m1111 addr r8                 ; Move that into address
-	memory load 0m1111 0x0              ; load the current instruction
-	move 0m1111 addr value				; put the loaded instruction to addr
-	memory pop 0m1111 lr
-	return
-
-@label Cycle
-	memory push 0m1111 lr
-	branch call immediate LoadInstruction
-	branch call immediate DecodeInstruction
 	branch call immediate DispatchInstruction
 	memory pop 0m1111 lr
 	return 
+
+; memory and register declarations
+@org 0xFB0000
+@label Iris16Code
+@org 0xFD0000
+@label Iris16Data
+@org 0xFE0000
+@label Iris16Stack
+@org 0xFF0000
+@label Iris16StackEnd
+@org 0xFFFF00
+@label Iris16Registers
