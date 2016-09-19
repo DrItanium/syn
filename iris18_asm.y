@@ -239,6 +239,9 @@ namespace iris18 {
 %token COMPARE_OP_EQ COMPARE_OP_NEQ COMPARE_OP_GT COMPARE_OP_GT_EQ
 %token COMPARE_OP_LT COMPARE_OP_LT_EQ
 
+%token MACRO_OP_INCREMENT MACRO_OP_DECREMENT MACRO_OP_DOUBLE MACRO_OP_HALVE
+%token MACRO_OP_ZERO
+
 
 %token <rval> REGISTER
 %token <ival> IMMEDIATE
@@ -262,7 +265,6 @@ directive:
 
 directive_word:
 	DIRECTIVE_WORD SYMBOL {
-
 		state.declarations.emplace_back(iris18lineno, state.address, 1, $2);
 		++state.address;
 	} |
@@ -294,8 +296,8 @@ label:
         auto str = std::string($2);
         state.registerLabel(str);
      };
-
 operation:
+		macro_op |
 		OP_SHIFT shift_op { op.type = iris18::Operation::Shift; }|
 		OP_LOGICAL logical_op { op.type = iris18::Operation::Logical; } |
 		OP_COMPARE compare_op { op.type = iris18::Operation::Compare; } |
@@ -496,6 +498,40 @@ arithmetic_subop:
 				ARITHMETIC_OP_REM {
 					op.subType = static_cast<byte>(iris18::ArithmeticOps::Rem);
 				};
+macro_op:
+		MACRO_OP_COPY destination_register source_register {
+			op.type = iris18::Operation::Move;
+			op.bitmask = 0b1111;
+		} |
+		MACRO_OP_ZERO destination_register {
+			op.type = iris18::Operation::Move;
+			op.bitmask = 0x0;
+			op.arg1 = op.arg0;
+		} |
+		MACRO_OP_INCREMENT destination_register {
+			op.type = iris18::Operation::Arithmetic;
+			op.immediate = true;
+			op.subType = static_cast<byte>(iris18::ArithmeticOps::Add);
+			op.arg1 = 0x1;
+		} | 
+		MACRO_OP_DECREMENT destination_register {
+			op.type = iris18::Operation::Arithmetic;
+			op.immediate = true;
+			op.subType = static_cast<byte>(iris18::ArithmeticOps::Sub);
+			op.arg1 = 0x1;
+		} | 
+		MACRO_OP_DOUBLE destination_register {
+			op.type = iris18::Operation::Arithmetic;
+			op.immediate = true;
+			op.subType = static_cast<byte>(iris18::ArithmeticOps::Mul);
+			op.arg1 = 0x2;
+		} |
+		MACRO_OP_HALVE destination_register {
+			op.type = iris18::Operation::Arithmetic;
+			op.immediate = true;
+			op.subType = static_cast<byte>(iris18::ArithmeticOps::Div);
+			op.arg1 = 0x2;
+		};
 bitmask:
 	   BITMASK4 {
 			op.bitmask = $1;
