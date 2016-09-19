@@ -96,7 +96,6 @@ omni [a-zA-Z0-9._]
 "@dword"    { return DIRECTIVE_DWORD; }
 "@startup"  { return DIRECTIVE_REGISTER_AT_START; }
 "@constant" { return DIRECTIVE_CONSTANT; }
-"@space"    { return DIRECTIVE_SPACE; }
 
 "ip"        { iris18lval.rval = iris18::ArchitectureConstants::InstructionPointer; return REGISTER; }
 "lr"        { iris18lval.rval = iris18::ArchitectureConstants::LinkRegister; return REGISTER; }
