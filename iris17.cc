@@ -480,6 +480,7 @@ namespace iris17 {
 		auto first = encodeControl(0, type);
 		first = encodeMemoryFlagType(first, static_cast<MemoryOperation>(subType));
 		first = encodeMemoryFlagBitmask(first, bitmask);
+		first = encodeMemoryFlagIndirect(first, indirect);
 		// the register and offset occupy the same space
 		first = encodeMemoryOffset(first, arg0);
 		return std::make_tuple(1, first, 0, 0);
@@ -584,5 +585,6 @@ namespace iris17 {
 		subType = 0;
 		combineType = CompareCombine::Xor;
 		fullImmediate = 0;
+		indirect = false;
 	}
 }

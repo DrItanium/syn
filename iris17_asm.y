@@ -449,10 +449,12 @@ jump_op:
 		op.isConditional = true;
 	};
 memory_op:
-	  	load_store_op bitmask IMMEDIATE {
-			op.arg0 = ($3 & 0b1111);
-		} |
+		load_store_combined { op.indirect = false; } |
+		load_store_combined TAG_INDIRECT { op.indirect = true; } |
 		stack_operation bitmask destination_register;
+
+load_store_combined:
+			load_store_op bitmask IMMEDIATE { op.arg0 = ($3 & 0b1111); };
 
 load_store_op:
 			 MEMORY_OP_LOAD {

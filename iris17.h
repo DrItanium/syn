@@ -480,6 +480,7 @@ namespace iris17 {
 		bool isIf;
 		bool isCall;
 		bool isConditional;
+		bool indirect;
 		byte bitmask;
 		byte arg0;
 		byte arg1;
