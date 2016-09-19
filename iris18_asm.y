@@ -104,7 +104,8 @@ void asmstate::setRegisterAtStartup(byte index, RegisterValue value) {
 }
 
 void asmstate::registerConstant(const std::string& text, RegisterValue value) {
-	if (constants.count(text) == 0) {
+	auto result = constants.find(text);
+	if (result == constants.end()) {
 		constants.emplace(text, value);
 	} else {
 		std::stringstream stream;
@@ -287,9 +288,9 @@ directive:
 	directive_word |
 	directive_dword |
 	DIRECTIVE_REGISTER_AT_START REGISTER IMMEDIATE { state.setRegisterAtStartup($2, $3); } |
-	DIRECTIVE_CONSTANT ALIAS IMMEDIATE { 
+	DIRECTIVE_CONSTANT IMMEDIATE ALIAS { 
 		try {
-			state.registerConstant($2, $3);
+			state.registerConstant($3, $2);
 		} catch(iris::Problem err) {
 			iris18error(err.what().c_str());
 		}
@@ -370,6 +371,13 @@ compare_op:
 
 compare_args:
 		 uses_immediate destination_register IMMEDIATE { op.arg1= static_cast<byte>($3); } |
+		 uses_immediate destination_register ALIAS { 
+				try {
+					op.arg1 = static_cast<byte>(state.getConstantValue($3));
+				} catch(iris::Problem err) {
+					iris18error(err.what().c_str());
+				}
+		 } |
 		 destination_register source_register { op.immediate = false; };
 
 compare_type:

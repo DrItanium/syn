@@ -26,11 +26,11 @@
 @label Iris16Shutdown
 	zero addr
 	system r0 ; bye bye :)
-@constant ?true 0x1
-@constant ?false 0x0
-@constant ?advanceIp 0x1
-@constant ?execute 0x0
-@constant ?pc 0xFF
+@constant 0x1 ?true 
+@constant 0x0 ?false
+@constant 0x0 ?execute
+@constant 0x1 ?advanceIp
+@constant 0xFF ?pc
 
 @label LoadRegister
 	set 0m1111 addr Iris16Registers     ; set the base address to the register offset
@@ -74,11 +74,11 @@
 	memory store 0m1111 0x0			 ; Store the value 
 	return
 
+
 @label TryAdvanceIp
 	memory push 0m1111 lr
 	set 0m1111 addr Iris16_Fields                     ; Load the base fields offset
 	memory load 0m0011 ?advanceIp                     ; Load the advance ip field
-	branch call immediate LoadAdvanceIpField          ; Load the advance ip field
 	compare != none immediate value ?false            ; Is the advanceip field is false?
 	branch cond immediate TryAdvanceIpDone            ; If not then just leave 
 	branch call immediate IncrementInstructionPointer ; Advance the ip
@@ -109,42 +109,47 @@
 	return
 @label DecodeDestination
 	set 0m1111 mask 0x0000FF00
-	set 0m0001 shift 8
+	set 0m0001 shift_width 8
 	branch immediate BaseDecode
 
 @label DecodeSource0
 	set 0m1111 mask 0x00FF0000
-	set 0m0001 shift 16
+	set 0m0001 shift_width 16
 	branch immediate BaseDecode
 
 @label DecodeHalfImmediate
 @label DecodeSource1
 	set 0m1111 mask 0xFF000000
-	set 0m0001 shift 24
+	set 0m0001 shift_width 24
 	branch immediate BaseDecode
 
 @label DecodeImmediate
 	set 0m1111 mask 0xFFFF0000
-	set 0m0001 shift 16
+	set 0m0001 shift_width 16
 	branch immediate BaseDecode
 
 @label DecodeGroup
 	set 0m0001 mask 0x00000007
-	zero shift
+	zero shift_width
 	branch immediate BaseDecode
 
 @label DecodeOperation
 	set 0m1111 mask 0x000000F8
-	set 0m0001 shift 3
+	set 0m0001 shift_width 3
 	branch immediate BaseDecode
 
 
+
 ; Group related operations
-@constant ?GroupArithmetic 0x0
-@constant ?GroupMove 0x1
-@constant ?GroupJump 0x2
-@constant ?GroupCompare 0x3
-@constant ?GroupMisc 0x4 
+@constant 0x0 ?GroupArithmetic
+@constant 0x1 ?GroupMove
+@constant 0x2 ?GroupJump
+@constant 0x3 ?GroupCompare
+@constant 0x4 ?GroupMisc
+
+@label DispatchInstruction
+	; TODO: implement this
+	return
 
 ; memory and register declarations
 @org 0xFB0000
