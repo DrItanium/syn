@@ -63,6 +63,13 @@
 	memory pop 0m1111 lr
 	return 
 
+; Group related operations
+@constant ?GroupArithmetic 0x0
+@constant ?GroupMove 0x1
+@constant ?GroupJump 0x2
+@constant ?GroupCompare 0x3
+@constant ?GroupMisc 0x4 
+
 ; memory and register declarations
 @org 0xFB0000
 @label Iris16Code

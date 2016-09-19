@@ -1,9 +1,0 @@
-; register value
-@label LoadInstructionParameters
-	
-	
-@label StoreInDestination
-	set 0m1111 addr Iris16Registers		; load the iris16 register base
-	arithmetic add addr r1				; add the destination offset to the base
-	memory store 0m0011 0x0
-	return

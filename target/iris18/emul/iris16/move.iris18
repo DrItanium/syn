@@ -1,4 +1,0 @@
-; move instruction emulation routines
-
-@label INSTRUCTION_MOVE
-	
