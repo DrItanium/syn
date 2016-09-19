@@ -1,0 +1,11 @@
+Decoder Registers
+	R0 - Group
+	R1 - Operation
+	R2 - Destination (Index)
+	R3 - Source0 (Index)
+	R4 - Source1 (Index) / Immediate
+	R5 - Iris16InstructionPointer
+	R6 - Iris16StackPointer
+	R7 -
+	R8 -
+	R9 - 

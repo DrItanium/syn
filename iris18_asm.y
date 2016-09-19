@@ -76,11 +76,14 @@ struct asmstate {
    void registerLabel(const std::string& text);
    void registerDynamicOperation(InstructionEncoder op);
    void setRegisterAtStartup(byte index, RegisterValue value);
+   RegisterValue getConstantValue(const std::string& text);
+   void registerConstant(const std::string& title, RegisterValue value);
    RegisterValue address;
    std::map<std::string, RegisterValue> labels;
    std::vector<data_registration> declarations;
    std::vector<InstructionEncoder> dynops;
    std::ostream* output;
+   std::map<std::string, RegisterValue> constants;
    RegisterValue registerStartupValues[ArchitectureConstants::RegisterCount] = { 0 };
 };
 
@@ -97,6 +100,27 @@ void asmstate::setRegisterAtStartup(byte index, RegisterValue value) {
 		throw iris::Problem("Out of range register set!");
 	} else {
 		registerStartupValues[index] = value;
+	}
+}
+
+void asmstate::registerConstant(const std::string& text, RegisterValue value) {
+	if (constants.count(text) == 0) {
+		constants.emplace(text, value);
+	} else {
+		std::stringstream stream;
+		stream << "Redefining constant: " << text << " to " << std::hex << value << "!";
+		throw iris::Problem(stream.str());
+	}
+
+}
+RegisterValue asmstate::getConstantValue(const std::string& text) {
+	auto result = constants.find(text);
+	if (result != constants.end()) {
+		return result->second;
+	} else {
+		std::stringstream stream;
+		stream << "Undefined constant " << text << "!";
+		throw iris::Problem(stream.str());
 	}
 }
 
@@ -240,12 +264,13 @@ namespace iris18 {
 %token COMPARE_OP_LT COMPARE_OP_LT_EQ
 
 %token MACRO_OP_INCREMENT MACRO_OP_DECREMENT MACRO_OP_DOUBLE MACRO_OP_HALVE
-%token MACRO_OP_ZERO
+%token MACRO_OP_ZERO MACRO_OP_COPY
 
+%token DIRECTIVE_CONSTANT DIRECTIVE_SPACE
 
 %token <rval> REGISTER
 %token <ival> IMMEDIATE
-%token <sval> SYMBOL
+%token <sval> SYMBOL ALIAS
 %token <ival> BITMASK4
 
 
@@ -261,7 +286,16 @@ directive:
 	DIRECTIVE_ORG IMMEDIATE { state.address = ($2 & iris18::bitmask24); } |
 	directive_word |
 	directive_dword |
-	DIRECTIVE_REGISTER_AT_START REGISTER IMMEDIATE { state.setRegisterAtStartup($2, $3); };
+	DIRECTIVE_REGISTER_AT_START REGISTER IMMEDIATE { state.setRegisterAtStartup($2, $3); } |
+	DIRECTIVE_CONSTANT ALIAS IMMEDIATE { 
+		try {
+			state.registerConstant($2, $3);
+		} catch(iris::Problem err) {
+			iris18error(err.what().c_str());
+		}
+	};
+
+
 
 directive_word:
 	DIRECTIVE_WORD SYMBOL {
@@ -541,6 +575,14 @@ lexeme:
 		op.isLabel = true;
 		op.labelValue = $1;
 		op.fullImmediate = 0;
+	} |
+	ALIAS {
+		op.isLabel = false;
+		try {
+			op.fullImmediate = state.getConstantValue($1);
+		} catch(iris::Problem err) {
+			iris18error(err.what().c_str());
+		}
 	} |
 	IMMEDIATE {
 		op.isLabel = false;

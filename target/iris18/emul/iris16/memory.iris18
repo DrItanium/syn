@@ -1,0 +1,11 @@
+; memory and register declarations
+@org 0xFB0000
+@label Iris16Code
+@org 0xFD0000
+@label Iris16Data
+@org 0xFE0000
+@label Iris16Stack
+@org 0xFF0000
+@label Iris16StackEnd
+@org 0xFFFF00
+@label Iris16Registers

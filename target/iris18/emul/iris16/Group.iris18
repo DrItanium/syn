@@ -1,0 +1,7 @@
+; Group related operations
+@constant ?GroupArithmetic 0x0
+@constant ?GroupMove 0x1
+@constant ?GroupJump 0x2
+@constant ?GroupCompare 0x3
+@constant ?GroupMisc 0x4 
+

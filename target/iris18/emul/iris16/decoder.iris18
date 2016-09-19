@@ -1,7 +1,8 @@
 ; iris16 instruction decoders
 
+
 @label DecodeControl
-	set 0m1111 mask  0x000000FF
+	set 0m1111 mask 0x000000FF
 	zero shift
 	complex encoding decode
 	return
@@ -42,3 +43,5 @@
 	set 0m0001 shift 3
 	complex encoding decode
 	return
+
+

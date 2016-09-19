@@ -95,6 +95,8 @@ omni [a-zA-Z0-9._]
 "@word"     { return DIRECTIVE_WORD; }
 "@dword"    { return DIRECTIVE_DWORD; }
 "@startup"  { return DIRECTIVE_REGISTER_AT_START; }
+"@constant" { return DIRECTIVE_CONSTANT; }
+"@space"    { return DIRECTIVE_SPACE; }
 
 "ip"        { iris18lval.rval = iris18::ArchitectureConstants::InstructionPointer; return REGISTER; }
 "lr"        { iris18lval.rval = iris18::ArchitectureConstants::LinkRegister; return REGISTER; }
@@ -115,6 +117,7 @@ r{digit}+   { iris18lval.rval = iris18::getregister(); return REGISTER; }
 0x{xdigit}+ { iris18lval.ival = iris18::getheximmediate(); return IMMEDIATE; }
 0b[01]+     { iris18lval.ival = iris18::getbinaryimmediate(); return IMMEDIATE; }
 0m[01][01][01][01] { iris18lval.ival = iris18::getbitmask4(); return BITMASK4; }
+[?]{omni}+    { iris18lval.sval = iris18text; return ALIAS; }
 {omni}+     {
     iris18lval.sval = iris18text;
 	return SYMBOL;
