@@ -1,4 +1,4 @@
-%option prefix="iris32"
+%option prefix="iris17"
 %{
 #include <stdlib.h>
 #include <stdio.h>
@@ -6,17 +6,17 @@
 #include <errno.h>
 #include <limits.h>
 #include <cstdint>
-#include "iris32.h"
-#include "iris32_asm.tab.h"
+#include "iris17.h"
+#include "iris17_asm.tab.h"
 #define _POSIX_SOURCE 1
 
-namespace iris32 {
+namespace iris17 {
 static byte getregister(void);
 static word getdecimalimmediate(void);
 static word getheximmediate(void);
 static word getbinaryimmediate(void);
 }
-extern void iris32error(const char* c);
+extern void iris17error(const char* c);
 %}
 %option yylineno
 %option noyywrap
@@ -88,32 +88,32 @@ omni [a-zA-Z0-9._]
 "@label" { return LABEL; }
 "@org"   { return DIRECTIVE_ORG; }
 "@word" { return DIRECTIVE_DECLARE; }
-"tid"	 { iris32lval.rval = 251; return REGISTER; }
-"cr"	 { iris32lval.rval = 252; return REGISTER; }
-"sp"	 { iris32lval.rval = 253; return REGISTER; }
-"lr"	 { iris32lval.rval = 254; return REGISTER; }
-"ip"	 { iris32lval.rval = 255; return REGISTER; }
+"tid"	 { iris17lval.rval = 251; return REGISTER; }
+"cr"	 { iris17lval.rval = 252; return REGISTER; }
+"sp"	 { iris17lval.rval = 253; return REGISTER; }
+"lr"	 { iris17lval.rval = 254; return REGISTER; }
+"ip"	 { iris17lval.rval = 255; return REGISTER; }
 [ \t\n]     ;
 [;].*       ; // comments
-r{digit}+ { iris32lval.rval = iris32::getregister(); return REGISTER; }
-{digit}+ { iris32lval.ival = iris32::getdecimalimmediate(); return IMMEDIATE; }
-0x{xdigit}+ { iris32lval.ival = iris32::getheximmediate(); return IMMEDIATE; }
-0b[01]+ { iris32lval.ival = iris32::getbinaryimmediate(); return IMMEDIATE; }
+r{digit}+ { iris17lval.rval = iris17::getregister(); return REGISTER; }
+{digit}+ { iris17lval.ival = iris17::getdecimalimmediate(); return IMMEDIATE; }
+0x{xdigit}+ { iris17lval.ival = iris17::getheximmediate(); return IMMEDIATE; }
+0b[01]+ { iris17lval.ival = iris17::getbinaryimmediate(); return IMMEDIATE; }
 
 {omni}+ { 
-	std::string contents(iris32text);
-	iris32lval.sval = (char*)contents.c_str();
+	std::string contents(iris17text);
+	iris17lval.sval = (char*)contents.c_str();
 	return SYMBOL;
 		}
 %%
-namespace iris32 {
+namespace iris17 {
 byte getregister(void) {
 	int c;
 
-	iris32text[0] = '0';
-	c = atoi(iris32text);
+	iris17text[0] = '0';
+	c = atoi(iris17text);
 	if(c > 255 || c < 0) {
-		iris32error("target register is too large");
+		iris17error("target register is too large");
 		return 0;
 	} else {
 		return (byte)c;
@@ -121,9 +121,9 @@ byte getregister(void) {
 }
 word getbinaryimmediate() {
 	uint32_t tmp;
-	tmp = strtoul(iris32text, NULL, 2);
+	tmp = strtoul(iris17text, NULL, 2);
 	if(tmp == ULONG_MAX && errno == ERANGE) {
-		iris32error("number is too large and overflowed!");
+		iris17error("number is too large and overflowed!");
 		return 0;
 	} else {
 		return word(tmp);
@@ -131,9 +131,9 @@ word getbinaryimmediate() {
 }
 word getdecimalimmediate() {
 	uint32_t tmp;
-	tmp = strtoul(iris32text, NULL, 10);
+	tmp = strtoul(iris17text, NULL, 10);
 	if(tmp == ULONG_MAX && errno == ERANGE) {
-		iris32error("number is too large and overflowed!");
+		iris17error("number is too large and overflowed!");
 		return 0;
 	} else {
 		return word(tmp);
@@ -142,9 +142,9 @@ word getdecimalimmediate() {
 
 word getheximmediate() {
 	uint32_t tmp;
-	tmp = strtoul(iris32text, NULL, 16);
+	tmp = strtoul(iris17text, NULL, 16);
 	if(tmp == ULONG_MAX && errno == ERANGE) {
-		iris32error("number is too large and overflowed!");
+		iris17error("number is too large and overflowed!");
 		return 0;
 	} else {
 		return word(tmp);

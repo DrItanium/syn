@@ -1,12 +1,12 @@
-#include "iris32.h"
+#include "iris17.h"
 #include <functional>
 #include "Problem.h"
 #include "iris_base.h"
 #include <sstream>
 
-namespace iris32 {
+namespace iris17 {
 	Core* newCore() noexcept {
-		return new iris32::Core(iris32::ArchitectureConstants::AddressMax, 8);
+		return new iris17::Core(iris17::ArchitectureConstants::AddressMax, 8);
 	}
 	constexpr word encodeWord(byte a, byte b, byte c, byte d)  noexcept {
 		return iris::encodeInt32LE(a, b, c, d);
@@ -19,7 +19,7 @@ namespace iris32 {
 	void DecodedInstruction:: set ## title ( type value ) { \
 		raw = iris::encodeBits<word, type, mask, shift>(raw, value); \
 	}
-#include "def/iris32/instruction.def"
+#include "def/iris17/instruction.def"
 #undef X
 
 	void Core::write(word addr, word value) {
@@ -55,7 +55,7 @@ namespace iris32 {
 			stream.read(a, sizeof(word));
 			if (!stream.good()) {
 				if (stream.gcount() > 0) {
-					std::cerr << "panic: provided data is not valid iris32 encoded assembler" << std::endl;
+					std::cerr << "panic: provided data is not valid iris17 encoded assembler" << std::endl;
 					exit(1);
 				} else {
 					break;
@@ -67,7 +67,7 @@ namespace iris32 {
 			addr = (addr & 0x00FFFFFF) | (word(a[3]) << 24);
 			stream.read(b, sizeof(word));
 			if (stream.gcount() != sizeof(word)) {
-				std::cerr << "panic: provided data is not valid iris32 encoded assembler" << std::endl;
+				std::cerr << "panic: provided data is not valid iris17 encoded assembler" << std::endl;
 				exit(1);
 			}
 			auto data = word(b[0]);
@@ -343,32 +343,32 @@ namespace iris32 {
 													 invokeCompare<CompareOp :: title>(this, std::move(decoded));  \
 			break;
 #define Y(title, operation, unused) X(title, operation, unused)
-#include "def/iris32/compare.def"
+#include "def/iris17/compare.def"
 #undef X
 #undef Y
 #define X(title, immediate, checkDenominator) \
 			case DecodeArithmeticOp ## title :: value : \
 														invokeArithmetic<ArithmeticOp :: title, immediate, checkDenominator>(this, std::move(decoded));\
 			break;
-#include "def/iris32/arithmetic.def"
+#include "def/iris17/arithmetic.def"
 #undef X
 #define X(title, operation, __, ___, ____) \
 			case DecodeMoveOp ## title :: value : \
 												  invokeMove<MoveOp :: title> (this, std::move(decoded)); \
 			break;
-#include "def/iris32/move.def"
+#include "def/iris17/move.def"
 #undef X
 #define X(name, ifthenelse, conditional, iffalse, immediate, link) \
 			case DecodeJumpOp ## name :: value : \
 												 invokeJump<ifthenelse, conditional, iffalse, immediate, link>(this, std::move(decoded)); \
 			break;
-#include "def/iris32/jump.def"
+#include "def/iris17/jump.def"
 #undef X
 #define X(title, __) \
 			case DecodeMiscOp ## title :: value: \
 												 invokeMisc<MiscOp :: title>(this, std::move(decoded)); \
 			break;
-#include "def/iris32/misc.def"
+#include "def/iris17/misc.def"
 #undef X
 			default:
 				throw "Undefined control!";
@@ -377,7 +377,7 @@ namespace iris32 {
 	void Core::initialize() {
 		int threadIndex = 0;
 		for (auto &cthread : threads) {
-			cthread->gpr[iris32::ArchitectureConstants::ThreadIndex] = threadIndex;
+			cthread->gpr[iris17::ArchitectureConstants::ThreadIndex] = threadIndex;
 			++threadIndex;
 		}
 	}
@@ -417,7 +417,7 @@ namespace iris32 {
 	}
 
 	void Core::link(std::istream& input) {
-		throw iris::Problem("iris32 does not require explicit linking!");
+		throw iris::Problem("iris17 does not require explicit linking!");
 	}
 
-} // end namespace iris32
+} // end namespace iris17
