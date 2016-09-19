@@ -4,18 +4,25 @@
 	memory push 0m1111 lr
 	memory push 0m1111 addr
 	memory push 0m1111 value
-	memory push 0m1111 r5
-	memory push 0m1111 r6
-	memory push 0m1111 r7
 	branch r4
 @label RETURN
-	memory push 0m1111 r7
-	memory push 0m1111 r6
-	memory push 0m1111 r5
 	memory pop 0m1111 value
 	memory pop 0m1111 addr
 	memory pop 0m1111 lr
 	return
+
+@label SAVE_TEMPORARIES
+	memory push 0m1111 r5
+	memory push 0m1111 r6
+	memory push 0m1111 r7
+	return
+
+@label RESTORE_TEMPORARIES
+	memory push 0m1111 r7
+	memory push 0m1111 r6
+	memory push 0m1111 r5
+	return
+
 
 @label StringLength
 	copy addr r0
@@ -41,3 +48,9 @@
 	increment addr
 	decrement r2
 	branch immediate MemSetLoop
+@label MemSetDone
+	branch call 
+
+@label LoadIndirect
+	memory load 0m1111 0x0 indirect
+	branch immediate RETURN
