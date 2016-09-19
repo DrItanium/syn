@@ -1,67 +1,143 @@
 ; iris16 instruction decoders
-@label DecodeDestination
-	set 0m1111 mask 0x0000FF00
-	set 0m0001 shift 8
-	complex encoding decode
-	return
-
-@label DecodeSource0
-	set 0m1111 mask 0x00FF0000
-	set 0m0001 shift 16
-	complex encoding decode
-	return
-
-@label DecodeHalfImmediate
-@label DecodeSource1
-	set 0m1111 mask 0xFF000000
-	set 0m0001 shift 24
-	complex encoding decode
-	return
-
-@label DecodeImmediate
-	set 0m1111 mask 0xFFFF0000
-	set 0m0001 shift 16
-	complex encoding decode
-	return
-
-@label DecodeGroup
-	set 0m0001 mask 0x00000007
-	zero shift
-	complex encoding decode
-	return
-
-@label DecodeOperation
-	set 0m1111 mask 0x000000F8
-	set 0m0001 shift 3
-	complex encoding decode
-	return
-
-
-@label Cycle
-	memory push 0m1111 lr
-	set 0m1111 addr Iris16Registers     ; Load register base into address
-	arithmetic add immediate addr 0xFF  ; Want index 255 
-	memory load 0m0011 0x0              ; load r255 / ip
-	set 0m1111 r8 Iris16Code            ; load the base code address
-	arithmetic add immediate r8 value   ; add the contents of r255 to the address
-	move 0m1111 addr r8                 ; Move that into address
-	memory load 0m1111 0x0              ; load the current instruction
-	move 0m1111 addr value				; put the loaded instruction to addr
-	branch call immediate DecodeGroup
-	move 0m0001 r0 value
-	branch call immediate DecodeOperation
-	move 0m0001 r1 value
-	branch call immediate DecodeDestination
-	move 0m0001 r2 value
-	branch call immediate DecodeSource0
+@label Iris16Loop
+	branch call immediate LoadInstructionPointer ; Load the instruction pointer
+	branch call immediate LoadCodeAddress        ; Combine it with the code address offset
+	move 0m1111 addr value                       ; put the loaded instruction to addr
+	branch call immediate DecodeGroup            ; 
+	move 0m0001 r0 value                         ; store the group in r0
+	branch call immediate DecodeOperation        ;
+	move 0m0001 r1 value                         ; store the operation in r1
+	branch call immediate DecodeDestination      ;
+	move 0m0001 r2 value                         ; store the destination index
+	branch call immediate DecodeSource0          ; 
 	move 0m0001 r3 value
 	branch call immediate DecodeSource1
 	move 0m0001 r4 value
 	branch call immediate DecodeImmediate
 	move 0m0011 r5 value
 	branch call immediate DispatchInstruction
-	memory pop 0m1111 lr
+	; TODO: implement advance ip check
+	branch call immediate TryAdvanceIp
+	set 0m1111 address Iris16_Fields
+	memory load 0m0011 0x0
+	compare == none value 0x00
+	branch cond immediate Iris16Shutdown
+	branch immediate Iris16Loop
+@label Iris16Shutdown
+	zero addr
+	system r0 ; bye bye :)
+@constant ?true 0x1
+@constant ?false 0x0
+@constant ?advanceIp 0x1
+@constant ?execute 0x0
+@constant ?pc 0xFF
+
+@label LoadRegister
+	set 0m1111 addr Iris16Registers     ; set the base address to the register offset
+	arithmetic add immediate addr value ; combine the base address with the register offset
+	memory load 0m0011 0x0              ; Load it into the value register
+	return
+
+@label StoreRegister
+	; r8 - the register index
+	; value - the value to store
+	set 0m1111 addr Iris16Registers     ; set the base address to the register offset
+	arithmetic add immediate addr r8    ; combine with the register index
+	memory store 0m0011 0x0             ; Store the value into the register
+	return
+
+@label LoadDataAddress
+	set 0m1111 addr Iris16Data
+	arithmetic add immediate addr value 
+	memory load 0m0011 0x0
+	return
+
+@label StoreDataAddress
+	; r8 - offset
+	; value - the value to store
+	set 0m1111 addr Iris16Data
+	arithmetic add immediate addr r8 
+	memory store 0m0011 0x0
 	return 
+
+@label LoadCodeAddress
+	set 0m1111 addr Iris16Code			; Load the base address offset
+	arithmetic add immediate addr value ; Add the actual immediate value
+	memory load 0m1111 0x0              ; load from memory
+	return
+
+@label StoreCodeAddress
+	; r8 - the offset of the address
+	; value - what to store
+	set 0m1111 addr Iris16Code       ; load the base address offset
+	arithmetic add immediate addr r8 ; add the offset to the address
+	memory store 0m1111 0x0			 ; Store the value 
+	return
+
+@label TryAdvanceIp
+	memory push 0m1111 lr
+	set 0m1111 address Iris16_Fields                  ; Load the base fields offset
+	memory load 0m0011 ?advanceIp                     ; Load the advance ip field
+	branch call immediate LoadAdvanceIpField          ; Load the advance ip field
+	compare != none immediate value ?false            ; Is the advanceip field is false?
+	branch cond immediate TryAdvanceIpDone            ; If not then just leave 
+	branch call immediate IncrementInstructionPointer ; Advance the ip
+	set 0m0011 value ?true                            ; set the advance ip field to true
+	memory store 0m0011 ?advanceIp                    ; set advance ip 
+@label TryAdvanceIpDone
+	memory pop 0m1111 lr
+	return
+
+@label IncrementInstructionPointer
+	memory push 0m1111 lr
+	branch call immediate LoadInstructionPointer
+	increment value
+	branch call immediate StoreInstructionPointer
+	memory pop 0m1111 lr
+	return
+
+@label StoreInstructionPointer
+	set 0m0001 r8 ?pc
+	branch immediate StoreRegister
+
+@label LoadInstructionPointer
+	set 0m0001 value ?pc
+	branch immediate LoadRegister
+
+@label BaseDecode
+	complex encoding decode
+	return
+@label DecodeDestination
+	set 0m1111 mask 0x0000FF00
+	set 0m0001 shift 8
+	branch immediate BaseDecode
+
+@label DecodeSource0
+	set 0m1111 mask 0x00FF0000
+	set 0m0001 shift 16
+	branch immediate BaseDecode
+
+@label DecodeHalfImmediate
+@label DecodeSource1
+	set 0m1111 mask 0xFF000000
+	set 0m0001 shift 24
+	branch immediate BaseDecode
+
+@label DecodeImmediate
+	set 0m1111 mask 0xFFFF0000
+	set 0m0001 shift 16
+	branch immediate BaseDecode
+
+@label DecodeGroup
+	set 0m0001 mask 0x00000007
+	zero shift
+	branch immediate BaseDecode
+
+@label DecodeOperation
+	set 0m1111 mask 0x000000F8
+	set 0m0001 shift 3
+	branch immediate BaseDecode
+
 
 ; Group related operations
 @constant ?GroupArithmetic 0x0
@@ -79,5 +155,10 @@
 @label Iris16Stack
 @org 0xFF0000
 @label Iris16StackEnd
+@label Iris16_Fields
+@label Iris16_Execute
+@word 0x0001
+@label Iris16_AdvanceIp
+@word 0x0001
 @org 0xFFFF00
 @label Iris16Registers
