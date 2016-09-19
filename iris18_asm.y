@@ -490,7 +490,14 @@ memory_op:
 		stack_operation bitmask destination_register;
 
 load_store_combined:
-			load_store_op bitmask IMMEDIATE { op.arg0 = ($3 & 0b1111); };
+			load_store_op bitmask IMMEDIATE { op.arg0 = ($3 & 0b1111); } |
+			load_store_op bitmask ALIAS { 
+				try {
+					op.arg0 = static_cast<byte>(state.getConstantValue($3));
+				} catch(iris::Problem err) {
+					iris18error(err.what().c_str());
+				}
+			};
 
 load_store_op:
 			 MEMORY_OP_LOAD {

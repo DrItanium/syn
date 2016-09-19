@@ -18,9 +18,9 @@
 	branch call immediate DispatchInstruction
 	; TODO: implement advance ip check
 	branch call immediate TryAdvanceIp
-	set 0m1111 address Iris16_Fields
+	set 0m1111 addr Iris16_Fields
 	memory load 0m0011 0x0
-	compare == none value 0x00
+	compare == none immediate value 0x00
 	branch cond immediate Iris16Shutdown
 	branch immediate Iris16Loop
 @label Iris16Shutdown
@@ -34,7 +34,7 @@
 
 @label LoadRegister
 	set 0m1111 addr Iris16Registers     ; set the base address to the register offset
-	arithmetic add immediate addr value ; combine the base address with the register offset
+	arithmetic add addr value           ; combine the base address with the register offset
 	memory load 0m0011 0x0              ; Load it into the value register
 	return
 
@@ -42,13 +42,13 @@
 	; r8 - the register index
 	; value - the value to store
 	set 0m1111 addr Iris16Registers     ; set the base address to the register offset
-	arithmetic add immediate addr r8    ; combine with the register index
+	arithmetic add addr r8              ; combine with the register index
 	memory store 0m0011 0x0             ; Store the value into the register
 	return
 
 @label LoadDataAddress
 	set 0m1111 addr Iris16Data
-	arithmetic add immediate addr value 
+	arithmetic add addr value 
 	memory load 0m0011 0x0
 	return
 
@@ -56,13 +56,13 @@
 	; r8 - offset
 	; value - the value to store
 	set 0m1111 addr Iris16Data
-	arithmetic add immediate addr r8 
+	arithmetic add addr r8 
 	memory store 0m0011 0x0
 	return 
 
 @label LoadCodeAddress
 	set 0m1111 addr Iris16Code			; Load the base address offset
-	arithmetic add immediate addr value ; Add the actual immediate value
+	arithmetic add addr value           ; Add the actual immediate value
 	memory load 0m1111 0x0              ; load from memory
 	return
 
@@ -70,13 +70,13 @@
 	; r8 - the offset of the address
 	; value - what to store
 	set 0m1111 addr Iris16Code       ; load the base address offset
-	arithmetic add immediate addr r8 ; add the offset to the address
+	arithmetic add addr r8           ; add the offset to the address
 	memory store 0m1111 0x0			 ; Store the value 
 	return
 
 @label TryAdvanceIp
 	memory push 0m1111 lr
-	set 0m1111 address Iris16_Fields                  ; Load the base fields offset
+	set 0m1111 addr Iris16_Fields                     ; Load the base fields offset
 	memory load 0m0011 ?advanceIp                     ; Load the advance ip field
 	branch call immediate LoadAdvanceIpField          ; Load the advance ip field
 	compare != none immediate value ?false            ; Is the advanceip field is false?
