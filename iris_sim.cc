@@ -5,7 +5,7 @@
 #include "Problem.h"
 #include "Core.h"
 #include "sim_registration.h"
-#include "iris17.h"
+#include "iris18.h"
 #include "iris16.h"
 
 std::istream* input = nullptr;

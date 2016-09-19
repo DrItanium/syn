@@ -1,12 +1,12 @@
 #include "asm_interact.h"
 #include <map>
-#include "iris17.h"
+#include "iris18.h"
 #include "iris16.h"
 #include "iris32.h"
 
 namespace iris {
 	static std::map<std::string, std::function<void(FILE*, std::ostream*)>> assemblers = {
-		{ "iris17", iris17::assemble },
+		{ "iris18", iris18::assemble },
 		{ "iris16", iris16::assemble },
 		{ "iris32", iris32::assemble },
 	};

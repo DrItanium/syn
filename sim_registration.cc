@@ -1,13 +1,13 @@
 #include "sim_registration.h"
 #include "Core.h"
 #include <map>
-#include "iris17.h"
+#include "iris18.h"
 #include "iris16.h"
 #include "iris32.h"
 
 namespace iris {
 	static std::map<std::string, std::function<Core*()>> cores = {
-		{ "iris17", iris17::newCore },
+		{ "iris18", iris18::newCore },
 		{ "iris16", iris16::newCore },
 		{ "iris32", iris32::newCore },
 	};
