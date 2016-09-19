@@ -308,8 +308,12 @@ namespace iris17 {
 						throw iris::Problem("Illegal arithmetic operation!");
 					}
 				}
-			template<bool useLower, bool useUpper, RegisterValue fullMask>
-				inline void loadOperation(RegisterValue address) {
+			template<bool useLower, bool useUpper, RegisterValue fullMask, bool indirect>
+				inline void loadOperation(RegisterValue tmpAddress) {
+					auto address = tmpAddress;
+					if (indirect) {
+						address = encodeRegisterValue(loadWord(address + 1), loadWord(address)) & bitmask24;
+					}
 					// use the destination field of the instruction to denote offset, thus we need
 					// to use the Address and Value registers
 					auto lower = useLower ? encodeLowerHalf(0, loadWord(address)) : 0;
@@ -317,8 +321,12 @@ namespace iris17 {
 					getValueRegister() = iris::encodeBits<RegisterValue, RegisterValue, fullMask, 0>(0, lower | upper);
 				}
 
-			template<bool useLower, bool useUpper, RegisterValue lmask, RegisterValue umask>
-				inline void storeOperation(RegisterValue address) {
+			template<bool useLower, bool useUpper, RegisterValue lmask, RegisterValue umask, bool indirect>
+				inline void storeOperation(RegisterValue tmpAddress) {
+					auto address = tmpAddress;
+					if (indirect) {
+						address = encodeRegisterValue(loadWord(address + 1), loadWord(address)) & bitmask24;
+					}
 					if (useLower) {
 						auto lower = lmask & decodeLowerHalf(getValueRegister());
 						auto loader = loadWord(address) & ~(lmask);
@@ -331,7 +339,7 @@ namespace iris17 {
 					}
 				}
 
-			template<MemoryOperation type, byte bitmask>
+			template<MemoryOperation type, byte bitmask, bool indirect>
 				inline void memoryOperation(DecodedInstruction&& inst) {
 					static_assert(bitmask <= ArchitectureConstants::Bitmask, "bitmask is too large!");
 					static constexpr auto useLower = readLower<bitmask>();
@@ -342,10 +350,13 @@ namespace iris17 {
 					auto upper = 0u;
 					auto lower = 0u;
 					if (type == MemoryOperation::Load) {
-						loadOperation<useLower, useUpper, fullMask>(getAddressRegister() + inst.getMemoryOffset());
+						loadOperation<useLower, useUpper, fullMask, indirect>(getAddressRegister() + inst.getMemoryOffset());
 					} else if (type == MemoryOperation::Store) {
-						storeOperation<useLower, useUpper, lmask, umask>(getAddressRegister() + inst.getMemoryOffset());
+						storeOperation<useLower, useUpper, lmask, umask, indirect>(getAddressRegister() + inst.getMemoryOffset());
 					} else if (type == MemoryOperation::Push) {
+						if (indirect) {
+							throw iris::Problem("Can't perform an indirect push");
+						}
 						auto pushToStack = registerValue(inst.getMemoryOffset());
 						// read backwards because the stack grows upward towards zero
 						if (useUpper) {
@@ -357,6 +368,9 @@ namespace iris17 {
 							storeWord(getStackPointer(), lmask & decodeLowerHalf(pushToStack));
 						}
 					} else if (type == MemoryOperation::Pop) {
+						if (indirect) {
+							throw iris::Problem("Can't perform an indirect pop!");
+						}
 						if (useLower) {
 							lower = lmask & loadWord(getStackPointer());
 							incrementStackPointer();
@@ -366,23 +380,15 @@ namespace iris17 {
 							incrementStackPointer();
 						}
 						registerValue(inst.getMemoryOffset()) = encodeRegisterValue(upper, lower);
-					} else if (type == MemoryOperation::IndirectLoad) {
-						auto address = getAddressRegister() + inst.getMemoryOffset();
-						address = encodeRegisterValue(loadWord(address + 1), loadWord(address)) & bitmask24;
-						loadOperation<useLower, useUpper, fullMask>(address);
-					} else if (type == MemoryOperation::IndirectStore) {
-						auto address = getAddressRegister() + inst.getMemoryOffset();
-						address = encodeRegisterValue(loadWord(address + 1), loadWord(address)) & bitmask24;
-						storeOperation<useLower, useUpper, lmask, umask>(address);
 					} else {
 						throw iris::Problem("Illegal memory operation type!");
 					}
 				}
-				inline void maskLinkRegister() noexcept {
-					if (getLinkRegister() > bitmask24) {
-						getLinkRegister() &= bitmask24; // make sure that we aren't over the memory setup
-					}
+			inline void maskLinkRegister() noexcept {
+				if (getLinkRegister() > bitmask24) {
+					getLinkRegister() &= bitmask24; // make sure that we aren't over the memory setup
 				}
+			}
 			template<byte flags>
 				void branchSpecificOperation(DecodedInstruction&& current) {
 					using decodedFlags = BranchFlagsDecoder<flags>;

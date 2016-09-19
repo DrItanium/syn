@@ -82,6 +82,7 @@ omni [a-zA-Z0-9._]
 "call"      { return BRANCH_FLAG_CALL; }
 "if"        { return BRANCH_FLAG_IF; }
 "cond"      { return BRANCH_FLAG_COND; }
+"indirect"  { return TAG_INDIRECT; }
 
 "@label"    { return LABEL; }
 "@org"      { return DIRECTIVE_ORG; }

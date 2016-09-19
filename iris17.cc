@@ -227,7 +227,7 @@ namespace iris17 {
 #define X(value) \
 			if (value == current.getMemorySignature()) { \
 				if (!MemoryFlags<value>::errorState) { \
-					memoryOperation<MemoryFlags<value>::type, MemoryFlags<value>::bitmask>(std::move(current)); \
+					memoryOperation<MemoryFlags<value>::type, MemoryFlags<value>::bitmask, MemoryFlags<value>::indirect>(std::move(current)); \
 					return; \
 				} else { \
 					throw iris::Problem("Undefined bits set in memory operation!"); \
