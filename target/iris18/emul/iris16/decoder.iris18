@@ -1,0 +1,44 @@
+; iris16 instruction decoders
+
+@label DecodeControl
+	set 0m1111 mask  0x000000FF
+	zero shift
+	complex encoding decode
+	return
+
+@label DecodeDestination
+	set 0m1111 mask 0x0000FF00
+	set 0m0001 shift 8
+	complex encoding decode
+	return
+
+@label DecodeSource0
+	set 0m1111 mask 0x00FF0000
+	set 0m0001 shift 16
+	complex encoding decode
+	return
+
+@label DecodeHalfImmediate
+@label DecodeSource1
+	set 0m1111 mask 0xFF000000
+	set 0m0001 shift 24
+	complex encoding decode
+	return
+
+@label DecodeImmediate
+	set 0m1111 mask 0xFFFF0000
+	set 0m0001 shift 16
+	complex encoding decode
+	return
+
+@label DecodeGroup
+	set 0m0001 mask 0x00000007
+	zero shift
+	complex encoding decode
+	return
+
+@label DecodeOperation
+	set 0m1111 mask 0x000000F8
+	set 0m0001 shift 3
+	complex encoding decode
+	return
