@@ -3,13 +3,13 @@
 #include <map>
 #include "iris18.h"
 #include "iris16.h"
-#include "iris32.h"
+#include "iris17.h"
 
 namespace iris {
 	static std::map<std::string, std::function<Core*()>> cores = {
 		{ "iris18", iris18::newCore },
+		{ "iris17", iris17::newCore },
 		{ "iris16", iris16::newCore },
-		{ "iris32", iris32::newCore },
 	};
     Core* getCore(const std::string& name) {
 		auto loc = cores.find(name);

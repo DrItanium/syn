@@ -25,16 +25,16 @@ IRIS17_ASM_FILES = iris18_lex.yy.c \
 IRIS17_ASM_OBJECTS = iris18_lex.yy.o \
 					 iris18_asm.tab.o
 
-IRIS32_OBJECTS = iris32.o \
+IRIS32_OBJECTS = iris17.o \
 
-IRIS32_OUT = libiris32.a
+IRIS32_OUT = libiris17.a
 
-IRIS32_ASM_FILES = iris32_lex.yy.c \
-				   iris32_asm.tab.c \
-				   iris32_asm.tab.h
+IRIS32_ASM_FILES = iris17_lex.yy.c \
+				   iris17_asm.tab.c \
+				   iris17_asm.tab.h
 
-IRIS32_ASM_OBJECTS = iris32_lex.yy.o \
-					 iris32_asm.tab.o
+IRIS32_ASM_OBJECTS = iris17_lex.yy.o \
+					 iris17_asm.tab.o
 
 ARCH_TARGETS = ${IRIS16_OUT} \
 			   ${IRIS32_OUT} \
@@ -161,20 +161,20 @@ ${IRIS32_OUT}: ${IRIS32_OBJECTS}
 	@${AR} rcs ${IRIS32_OUT}  $^
 	@echo done
 
-iris32_asm.tab.c iris32_asm.tab.h: iris32_asm.y
+iris17_asm.tab.c iris17_asm.tab.h: iris17_asm.y
 	@echo -n Constructing Parser from $< ...
-	@${YACC} -o iris32_asm.tab.c -d iris32_asm.y
+	@${YACC} -o iris17_asm.tab.c -d iris17_asm.y
 	@echo done
-	@echo -n Compiling iris32_asm.tab.c into iris32_asm.tab.o ...
-	@${CXX} ${CXXFLAGS} -c iris32_asm.tab.c -o iris32_asm.tab.o
+	@echo -n Compiling iris17_asm.tab.c into iris17_asm.tab.o ...
+	@${CXX} ${CXXFLAGS} -c iris17_asm.tab.c -o iris17_asm.tab.o
 	@echo done
 
-iris32_lex.yy.c: iris32_asm.l iris32_asm.tab.h
+iris17_lex.yy.c: iris17_asm.l iris17_asm.tab.h
 	@echo -n Constructing Lexer from $< ...
-	@${LEX} -o iris32_lex.yy.c iris32_asm.l
+	@${LEX} -o iris17_lex.yy.c iris17_asm.l
 	@echo done
-	@echo -n Compiling iris32_lex.yy.c into iris32_lex.yy.o ...
-	@${CXX} ${CXXFLAGS} -D_POSIX_SOURCE -c iris32_lex.yy.c -o iris32_lex.yy.o
+	@echo -n Compiling iris17_lex.yy.c into iris17_lex.yy.o ...
+	@${CXX} ${CXXFLAGS} -D_POSIX_SOURCE -c iris17_lex.yy.c -o iris17_lex.yy.o
 	@echo done
 
 # BEGIN IRIS17
@@ -247,10 +247,10 @@ asm_interact.o: asm_interact.cc asm_interact.h iris18.h iris_base.h \
  def/iris18/logical_generic.sig def/iris18/arithmetic.sig \
  def/iris18/move.sig def/iris18/memory.sig def/iris18/set.sig iris16.h \
  def/iris16/enums.def def/iris16/core_body.def def/iris16/groups.def \
- def/iris16/misc.def def/iris16/instruction.def iris32.h \
- def/iris32/groups.def def/iris32/instruction.def def/iris32/compare.def \
- def/iris32/arithmetic.def def/iris32/move.def def/iris32/jump.def \
- def/iris32/misc.def def/iris32/syscalls.def
+ def/iris16/misc.def def/iris16/instruction.def iris17.h \
+ def/iris17/groups.def def/iris17/instruction.def def/iris17/compare.def \
+ def/iris17/arithmetic.def def/iris17/move.def def/iris17/jump.def \
+ def/iris17/misc.def def/iris17/syscalls.def
 iris16.o: iris16.cc iris16.h iris_base.h Problem.h Core.h \
  def/iris16/enums.def def/iris16/core_body.def def/iris16/groups.def \
  def/iris16/misc.def def/iris16/instruction.def def/iris16/groups.def \
@@ -266,14 +266,14 @@ iris18.o: iris18.cc iris18.h iris_base.h Problem.h Core.h \
 iris18_sim.o: iris18_sim.cc iris16.h iris_base.h Problem.h Core.h \
  def/iris16/enums.def def/iris16/core_body.def def/iris16/groups.def \
  def/iris16/misc.def def/iris16/instruction.def
-iris32.o: iris32.cc iris32.h iris_base.h Problem.h Core.h \
- def/iris32/groups.def def/iris32/instruction.def def/iris32/compare.def \
- def/iris32/arithmetic.def def/iris32/move.def def/iris32/jump.def \
- def/iris32/misc.def def/iris32/syscalls.def
-iris32_sim.o: iris32_sim.cc iris32.h iris_base.h Problem.h Core.h \
- def/iris32/groups.def def/iris32/instruction.def def/iris32/compare.def \
- def/iris32/arithmetic.def def/iris32/move.def def/iris32/jump.def \
- def/iris32/misc.def def/iris32/syscalls.def
+iris17.o: iris17.cc iris17.h iris_base.h Problem.h Core.h \
+ def/iris17/groups.def def/iris17/instruction.def def/iris17/compare.def \
+ def/iris17/arithmetic.def def/iris17/move.def def/iris17/jump.def \
+ def/iris17/misc.def def/iris17/syscalls.def
+iris17_sim.o: iris17_sim.cc iris17.h iris_base.h Problem.h Core.h \
+ def/iris17/groups.def def/iris17/instruction.def def/iris17/compare.def \
+ def/iris17/arithmetic.def def/iris17/move.def def/iris17/jump.def \
+ def/iris17/misc.def def/iris17/syscalls.def
 iris_asm.o: iris_asm.cc Problem.h asm_interact.h
 iris_base.o: iris_base.cc iris_base.h Problem.h
 iris_link.o: iris_link.cc Core.h sim_registration.h Problem.h
@@ -301,10 +301,10 @@ sim_registration.o: sim_registration.cc sim_registration.h Core.h \
  def/iris18/logical_generic.sig def/iris18/arithmetic.sig \
  def/iris18/move.sig def/iris18/memory.sig def/iris18/set.sig iris16.h \
  def/iris16/enums.def def/iris16/core_body.def def/iris16/groups.def \
- def/iris16/misc.def def/iris16/instruction.def iris32.h \
- def/iris32/groups.def def/iris32/instruction.def def/iris32/compare.def \
- def/iris32/arithmetic.def def/iris32/move.def def/iris32/jump.def \
- def/iris32/misc.def def/iris32/syscalls.def
+ def/iris16/misc.def def/iris16/instruction.def iris17.h \
+ def/iris17/groups.def def/iris17/instruction.def def/iris17/compare.def \
+ def/iris17/arithmetic.def def/iris17/move.def def/iris17/jump.def \
+ def/iris17/misc.def def/iris17/syscalls.def
 Storage.o: Storage.cc Storage.h Core.h iris16.h iris_base.h Problem.h \
  def/iris16/enums.def def/iris16/core_body.def def/iris16/groups.def \
  def/iris16/misc.def def/iris16/instruction.def

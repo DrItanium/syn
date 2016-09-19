@@ -2,13 +2,13 @@
 #include <map>
 #include "iris18.h"
 #include "iris16.h"
-#include "iris32.h"
+#include "iris17.h"
 
 namespace iris {
 	static std::map<std::string, std::function<void(FILE*, std::ostream*)>> assemblers = {
 		{ "iris18", iris18::assemble },
+		{ "iris17", iris17::assemble },
 		{ "iris16", iris16::assemble },
-		{ "iris32", iris32::assemble },
 	};
 	void assemble(const std::string& name, FILE* input, std::ostream* output) {
 		auto loc = assemblers.find(name);
