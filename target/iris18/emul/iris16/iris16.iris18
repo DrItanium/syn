@@ -3,13 +3,13 @@
 	branch call immediate LoadInstructionPointer ; Load the instruction pointer
 	branch call immediate LoadCodeAddress        ; Combine it with the code address offset
 	move 0m1111 addr value                       ; put the loaded instruction to addr
-	branch call immediate DecodeGroup            ; 
+	branch call immediate DecodeGroup            ;
 	move 0m0001 r0 value                         ; store the group in r0
 	branch call immediate DecodeOperation        ;
 	move 0m0001 r1 value                         ; store the operation in r1
 	branch call immediate DecodeDestination      ;
 	move 0m0001 r2 value                         ; store the destination index
-	branch call immediate DecodeSource0          ; 
+	branch call immediate DecodeSource0          ;
 	move 0m0001 r3 value
 	branch call immediate DecodeSource1
 	move 0m0001 r4 value
@@ -26,7 +26,7 @@
 @label Iris16Shutdown
 	zero addr
 	system r0 ; bye bye :)
-@constant 0x1 ?true 
+@constant 0x1 ?true
 @constant 0x0 ?false
 @constant 0x0 ?execute
 @constant 0x1 ?advanceIp
@@ -48,7 +48,7 @@
 
 @label LoadDataAddress
 	set 0m1111 addr Iris16Data
-	arithmetic add addr value 
+	arithmetic add addr value
 	memory load 0m0011 0x0
 	return
 
@@ -56,9 +56,9 @@
 	; r8 - offset
 	; value - the value to store
 	set 0m1111 addr Iris16Data
-	arithmetic add addr r8 
+	arithmetic add addr r8
 	memory store 0m0011 0x0
-	return 
+	return
 
 @label LoadCodeAddress
 	set 0m1111 addr Iris16Code			; Load the base address offset
@@ -71,7 +71,7 @@
 	; value - what to store
 	set 0m1111 addr Iris16Code       ; load the base address offset
 	arithmetic add addr r8           ; add the offset to the address
-	memory store 0m1111 0x0			 ; Store the value 
+	memory store 0m1111 0x0			 ; Store the value
 	return
 
 
@@ -80,10 +80,10 @@
 	set 0m1111 addr Iris16_Fields                     ; Load the base fields offset
 	memory load 0m0011 ?advanceIp                     ; Load the advance ip field
 	compare != none immediate value ?false            ; Is the advanceip field is false?
-	branch cond immediate TryAdvanceIpDone            ; If not then just leave 
+	branch cond immediate TryAdvanceIpDone            ; If not then just leave
 	branch call immediate IncrementInstructionPointer ; Advance the ip
 	set 0m0011 value ?true                            ; set the advance ip field to true
-	memory store 0m0011 ?advanceIp                    ; set advance ip 
+	memory store 0m0011 ?advanceIp                    ; set advance ip
 @label TryAdvanceIpDone
 	memory pop 0m1111 lr
 	return
@@ -148,9 +148,161 @@
 @constant 0x4 ?GroupMisc
 
 @label DispatchInstruction
-	; TODO: implement this
+    memory push 0m1111 lr
+    memory push 0m1111 addr
+    set 0m1111 addr GroupBase           ; get the base offset of the group value
+    arithmetic add addr r0              ; Add the group to the group base
+    memory load 0m1111 0x0              ; Load the actual address of the group function
+    move 0m1111 addr value              ; load the jump target into addr
+    branch call immediate EnterFunction ; Call the indirect function call
+    memory pop 0m1111 addr
+    memory pop 0m1111 lr
 	return
+@label GroupBase
+    @dword ArithmeticOperation
+    @dword MoveOperation
+    @dword JumpOperation
+    @dword CompareOperation
+    @dword MiscOperation
 
+@label EnterFunction
+    memory push 0m1111 lr
+    branch addr
+@label Done
+    memory pop 0m1111 lr
+    return
+@label LoadFunctionOffset
+    set 0m1111 addr BaseTableAddresses   ; get the base table offset
+    arithmetic add addr r0               ; add the group offset
+    memory load 0m1111 0x0               ; load that base address from memory
+    move 0m1111 addr value               ; move that address to the address register
+    arithmetic add addr r1               ; add to the corresponding add the operation to it
+    memory load 0m1111 0x0               ; load that address from the secondary offset
+    return
+@label SelectGroup
+    set 0m1111 addr GroupBase            ; Load the base offset
+@label BaseTableAddresses
+    @dword ArithmeticBase
+    @dword MoveBase
+    @dword JumpBase
+    @dword CompareBase
+    @dword MiscBase
+
+@label ResolveRegisters
+    ; load source0
+    move 0m0011 value r3
+    branch call immediate LoadRegister
+    move 0m0011 r6 value
+    ; load source1
+    move 0m0011 value r4
+    branch call immediate LoadRegister
+    move 0m0011 r7 value
+    return
+
+@label ArithmeticOperation
+    ; load source0 into r6
+    branch call immediate ResolveRegisters
+    ; load the micro routine to invoke
+    branch call immediate LoadFunctionOffset
+    move 0m1111 r8 value
+    move 0m0011 value r6    ; Set value to r6 (makes computation easier)
+    branch call r8          ; call the operation itself
+                            ; now we act to store the given value into the destination register
+    move 0m0011 r8 r2       ; Move r2 into r8 to start the store process
+                            ; Value already contains the result of calling r8
+    branch call immediate StoreRegister
+    branch immediate Done
+
+@label ArithmeticBase
+    @dword AddOperation
+    @dword SubOperation
+    @dword MulOperation
+    @dword DivOperation
+    @dword RemOperation
+    @dword ShiftLeftOperation
+    @dword ShiftRightOperation
+    @dword BinaryAndOperation
+    @dword BinaryOrOperation
+    @dword BinaryNotOperation
+    @dword BinaryXorOperation
+    @dword AddImmediateOperation
+    @dword SubImmediateOperation
+    @dword MulImmediateOperation
+    @dword DivImmediateOperation
+    @dword RemImmediateOperation
+    @dword ShiftLeftImmediateOperation
+    @dword ShiftRightImmediateOperation
+
+
+@label AddOperation
+    arithmetic add value r7
+    return
+@label SubOperation
+    arithmetic sub value r7
+    return
+@label MulOperation
+    arithmetic mul value r7
+    return
+@label DivOperation
+    arithmetic div value r7
+    return
+@label RemOperation
+    arithmetic rem value r7
+    return
+@label ShiftLeftOperation
+    shift left value r7
+    return
+@label ShiftRightOperation
+    shift right value r7
+    return
+@label BinaryAndOperation
+    logical and value r7
+    return
+@label BinaryOrOperation
+    logical or value r7
+    return
+@label BinaryNotOperation
+    logical not value
+    return
+@label BinaryXorOperation
+    logical xor value r7
+    return
+@label AddImmediateOperation
+    arithmetic add value r5
+    return
+@label SubImmediateOperation
+    arithmetic sub value r5
+    return
+@label MulImmediateOperation
+    arithmetic mul value r5
+    return
+@label DivImmediateOperation
+    arithmetic div value r5
+    return
+@label RemImmediateOperation
+    arithmetic rem value r5
+    return
+@label ShiftLeftImmediateOperation
+    shift left value r5
+    return
+@label ShiftRightImmediateOperation
+    shift right value r5
+    return
+
+@label MoveOperation
+    branch immediate Done
+@label JumpOperation
+    branch immediate Done
+@label CompareOperation
+    branch immediate Done
+@label MiscOperation
+
+    branch immediate Done
+@label MiscBase
+    @dword SystemCall
+@label SystemCall
+    ; @TODO continue
+    return
 ; memory and register declarations
 @org 0xFB0000
 @label Iris16Code
