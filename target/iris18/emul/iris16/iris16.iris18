@@ -138,15 +138,6 @@
 	set 0m0001 shift_width 3
 	branch immediate BaseDecode
 
-
-
-; Group related operations
-@constant 0x0 ?GroupArithmetic
-@constant 0x1 ?GroupMove
-@constant 0x2 ?GroupJump
-@constant 0x3 ?GroupCompare
-@constant 0x4 ?GroupMisc
-
 @label DispatchInstruction
     memory push 0m1111 lr
     memory push 0m1111 addr
@@ -158,12 +149,6 @@
     memory pop 0m1111 addr
     memory pop 0m1111 lr
 	return
-@label GroupBase
-    @dword ArithmeticOperation
-    @dword MoveOperation
-    @dword JumpOperation
-    @dword CompareOperation
-    @dword MiscOperation
 
 @label EnterFunction
     memory push 0m1111 lr
@@ -179,14 +164,6 @@
     arithmetic add addr r1               ; add to the corresponding add the operation to it
     memory load 0m1111 0x0               ; load that address from the secondary offset
     return
-@label SelectGroup
-    set 0m1111 addr GroupBase            ; Load the base offset
-@label BaseTableAddresses
-    @dword ArithmeticBase
-    @dword MoveBase
-    @dword JumpBase
-    @dword CompareBase
-    @dword MiscBase
 
 @label ResolveRegisters
     ; load source0
@@ -199,7 +176,7 @@
     move 0m0011 r7 value
     return
 
-@label ArithmeticOperation
+@label ArithmeticOp
     ; load source0 into r6
     branch call immediate ResolveRegisters
     ; load the micro routine to invoke
@@ -213,96 +190,187 @@
     branch call immediate StoreRegister
     branch immediate Done
 
-@label ArithmeticBase
-    @dword AddOperation
-    @dword SubOperation
-    @dword MulOperation
-    @dword DivOperation
-    @dword RemOperation
-    @dword ShiftLeftOperation
-    @dword ShiftRightOperation
-    @dword BinaryAndOperation
-    @dword BinaryOrOperation
-    @dword BinaryNotOperation
-    @dword BinaryXorOperation
-    @dword AddImmediateOperation
-    @dword SubImmediateOperation
-    @dword MulImmediateOperation
-    @dword DivImmediateOperation
-    @dword RemImmediateOperation
-    @dword ShiftLeftImmediateOperation
-    @dword ShiftRightImmediateOperation
 
-
-@label AddOperation
+@label Add
     arithmetic add value r7
     return
-@label SubOperation
+@label Sub
     arithmetic sub value r7
     return
-@label MulOperation
+@label Mul
     arithmetic mul value r7
     return
-@label DivOperation
+@label Div
     arithmetic div value r7
     return
-@label RemOperation
+@label Rem
     arithmetic rem value r7
     return
-@label ShiftLeftOperation
+@label ShiftLeft
     shift left value r7
     return
-@label ShiftRightOperation
+@label ShiftRight
     shift right value r7
     return
-@label BinaryAndOperation
+@label BinaryAnd
     logical and value r7
     return
-@label BinaryOrOperation
+@label BinaryOr
     logical or value r7
     return
-@label BinaryNotOperation
+@label BinaryNot
     logical not value
     return
-@label BinaryXorOperation
+@label BinaryXor
     logical xor value r7
     return
-@label AddImmediateOperation
+@label AddImmediate
     arithmetic add value r5
     return
-@label SubImmediateOperation
+@label SubImmediate
     arithmetic sub value r5
     return
-@label MulImmediateOperation
+@label MulImmediate
     arithmetic mul value r5
     return
-@label DivImmediateOperation
+@label DivImmediate
     arithmetic div value r5
     return
-@label RemImmediateOperation
+@label RemImmediate
     arithmetic rem value r5
     return
-@label ShiftLeftImmediateOperation
+@label ShiftLeftImmediate
     shift left value r5
     return
-@label ShiftRightImmediateOperation
+@label ShiftRightImmediate
     shift right value r5
     return
 
-@label MoveOperation
+@label JumpOp
     branch immediate Done
-@label JumpOperation
+@label CompareOp
     branch immediate Done
-@label CompareOperation
+@label MiscOp
     branch immediate Done
-@label MiscOperation
-
-    branch immediate Done
-@label MiscBase
-    @dword SystemCall
 @label SystemCall
     ; @TODO continue
     return
+; TODO: finish move operations, they are quite different
+@label MoveOp
+    ; load source0 into r6
+    branch call immediate ResolveRegisters
+    ; load the micro routine to invoke
+    branch call immediate LoadFunctionOffset
+    move 0m1111 r8 value
+    move 0m0011 value r6    ; Set value to r6 (makes computation easier)
+    branch call r8          ; call the operation itself
+                            ; now we act to store the given value into the destination register
+    move 0m0011 r8 r2       ; Move r2 into r8 to start the store process
+                            ; Value already contains the result of calling r8
+    branch call immediate StoreRegister
+    branch immediate Done
+@label Move
+	branch immediate Done ; don't do anything else
+@label Set
+	move 0m0011 value r5
+	branch immediate Done
+@label Swap
+	branch immediate Done
+@label Load
+	branch immediate Done
+@label LoadImmediate
+	branch immediate Done
+@label Store
+	branch immediate Done
+@label Memset
+	branch immediate Done
+@label Push
+	branch immediate Done
+@label PushImmediate
+	branch immediate Done
+@label Pop
+	branch immediate Done
+@label LoadCode
+	branch immediate Done
+@label StoreCode
+	branch immediate Done
+; Jump Table
+@label GroupBase
+    @dword ArithmeticOp
+    @dword MoveOp
+    @dword JumpOp
+    @dword CompareOp
+    @dword MiscOp
+@label BaseTableAddresses
+    @dword ArithmeticBase
+    @dword MoveBase
+    @dword JumpBase
+    @dword CompareBase
+    @dword MiscBase
+@label ArithmeticBase
+    @dword Add
+    @dword Sub
+    @dword Mul
+    @dword Div
+    @dword Rem
+    @dword ShiftLeft
+    @dword ShiftRight
+    @dword BinaryAnd
+    @dword BinaryOr
+    @dword BinaryNot
+    @dword BinaryXor
+    @dword AddImmediate
+    @dword SubImmediate
+    @dword MulImmediate
+    @dword DivImmediate
+    @dword RemImmediate
+    @dword ShiftLeftImmediate
+    @dword ShiftRightImmediate
+@label MoveBase
+	@dword Move
+	@dword Set
+	@dword Swap
+	@dword Load
+	@dword LoadImmediate
+	@dword Store
+	@dword Memset
+	@dword Push
+	@dword PushImmediate
+	@dword Pop
+	@dword LoadCode
+	@dword StoreCode
+@label JumpBase
+	@dword UnconditionalImmediate
+	@dword UnconditionalImmediateLink
+	@dword UnconditionalRegister
+	@dword UnconditionalRegisterLink
+	@dword ConditionalTrueImmediate
+	@dword ConditionalTrueImmediateLink
+	@dword ConditionalTrueRegister
+	@dword ConditionalTrueRegisterLink
+	@dword ConditionalFalseImmediate
+	@dword ConditionalFalseImmediateLink
+	@dword ConditionalFalseRegister
+	@dword ConditionalFalseRegisterLink
+	@dword IfThenElseNormalPredTrue
+	@dword IfThenElseNormalPredFalse
+	@dword IfThenElseLinkPredTrue
+	@dword IfThenElseLinkPredFalse 
+@label CompareBase
+	@dword Eq
+	@dword EqImm
+	@dword Neq
+	@dword NeqImm
+	@dword LessThan
+	@dword LessThanImm
+	@dword GreaterThan
+	@dword GreaterThanImm
+	@dword LessThanOrEqualTo
+	@dword LessThanOrEqualToImm
+	@dword GreaterThanOrEqualTo
+	@dword GreaterThanOrEqualToImm
+@label MiscBase
+	@dword SystemCall
 ; memory and register declarations
 @org 0xFB0000
 @label Iris16Code
