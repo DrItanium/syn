@@ -1,159 +1,104 @@
 (deffunction memory-op
-             (?router ?action ?bitmask ?offset)
-             (format ?router
-                     "memory %s %s %s%n"
+             (?action ?bitmask ?offset)
+             (format nil
+                     "memory %s %s %s"
                      ?action
                      ?bitmask
                      (str-cat ?offset)))
 (deffunction load-value
-             (?router ?bitmask ?offset)
-             (memory-op ?router
-                        load
+             (?bitmask ?offset)
+             (memory-op load
                         ?bitmask
-                        ?offset)
-             value)
+                        ?offset))
 (deffunction push
-             (?router ?bitmask ?reg)
-             (memory-op ?router
-                        push
+             (?bitmask ?reg)
+             (memory-op push
                         ?bitmask
-                        ?reg)
-             ?reg)
+                        ?reg))
 (deffunction pop
-             (?router ?bitmask ?reg)
-             (memory-op ?router
-                        pop
+             (?bitmask ?reg)
+             (memory-op pop
                         ?bitmask
-                        ?reg)
-             ?reg)
+                        ?reg))
 (deffunction store-value
-             (?router ?bitmask ?offset)
-             (memory-op ?router
-                        store
+             (?bitmask ?offset)
+             (memory-op store
                         ?bitmask
-                        ?offset)
-             value)
+                        ?offset))
 
 (deffunction arithmetic-op
-             (?router ?action ?immediate ?dest ?src)
-             (format ?router
-                     "arithmetic %s %s %s %s%n"
+             (?action ?immediate ?dest ?src)
+             (format nil
+                     "arithmetic %s %s %s %s"
                      ?action
                      (if ?immediate then
                        immediate
                        else
                        "")
                      ?dest
-                     ?src)
-             ?dest)
+                     ?src))
 (deffunction add
-             (?router ?dest ?src)
-             (arithmetic-op ?router
-                            add
-                            FALSE
+             (?immediate ?dest ?src)
+             (arithmetic-op add
+                            (neq ?immediate
+                                 FALSE)
                             ?dest
                             ?src))
-(deffunction add-immediate
-             (?router ?dest ?src)
-             (arithmetic-op ?router
-                            add
-                            TRUE
-                            ?dest
-                            (str-cat ?src)))
-
 
 (deffunction sub
-             (?router ?dest ?src)
-             (arithmetic-op ?router
-                            sub
-                            FALSE
+             (?immediate ?dest ?src)
+             (arithmetic-op sub
+                            (neq ?immediate
+                                 FALSE)
                             ?dest
                             ?src))
-(deffunction sub-immediate
-             (?router ?dest ?src)
-             (arithmetic-op ?router
-                            sub
-                            TRUE
-                            ?dest
-                            (str-cat ?src)))
 (deffunction mul
-             (?router ?dest ?src)
-             (arithmetic-op ?router
-                            mul
-                            FALSE
+             (?immediate ?dest ?src)
+             (arithmetic-op mul
+                            (neq ?immediate
+                                 FALSE)
                             ?dest
                             ?src))
-(deffunction mul-immediate
-             (?router ?dest ?src)
-             (arithmetic-op ?router
-                            mul
-                            TRUE
-                            ?dest
-                            (str-cat ?src)))
 (deffunction divide
-             (?router ?dest ?src)
-             (arithmetic-op ?router
-                            div
-                            FALSE
+             (?immediate ?dest ?src)
+             (arithmetic-op div
+                            (neq ?immediate
+                                 FALSE)
                             ?dest
                             ?src))
-(deffunction divide-immediate
-             (?router ?dest ?src)
-             (arithmetic-op ?router
-                            div
-                            TRUE
-                            ?dest
-                            (str-cat ?src)))
 (deffunction rem
-             (?router ?dest ?src)
-             (arithmetic-op ?router
-                            rem
-                            FALSE
+             (?immediate ?dest ?src)
+             (arithmetic-op rem
+                            (neq ?immediate
+                                 FALSE)
                             ?dest
                             ?src))
-(deffunction rem-immediate
-             (?router ?dest ?src)
-             (arithmetic-op ?router
-                            rem
-                            TRUE
-                            ?dest
-                            (str-cat ?src)))
 
 (deffunction load16
-             (?router ?addr)
-             (load-value ?router 0m0011 0))
+             (?addr)
+             (load-value 0m0011
+                         0))
 (deffunction load32
-             (?router ?addr)
-             (load-value ?router 0m1111 0))
+             (?addr)
+             (load-value 0m1111
+                         0))
 (deffunction assign
-             (?router ?bitmask ?register ?value)
-             (format ?router
-                     "set %s %s %s%n"
+             (?bitmask ?register ?value)
+             (format nil
+                     "set %s %s %s"
                      ?bitmask
                      ?register
-                     (str-cat ?value))
-             ?register)
-(deffunction load-data-address
-             (?router ?address)
-             (load16 ?router
-                     (add ?router
-                          (assign ?router
-                                  0m1111
-                                  addr
-                                  Iris16Data)
-                          ?address)))
+                     (str-cat ?value)))
+
 (deffunction ret
-             (?router ?return)
-             (printout ?router
-                       "return"
-                       crlf)
-             ?return)
+             ()
+             return)
 
 (deffunction deflabel
-             (?router ?title)
-             (printout ?router
-                       "@label %s"
-                       ?title))
+             (?title)
+             (format nil
+                     "@label %s"
+                     ?title))
 (deffunction select-immediate
              (?cond)
              (if ?cond then
@@ -173,42 +118,105 @@
                else
                ""))
 
+(defgeneric branch-call)
+(defgeneric branch)
+(defgeneric branch-if)
+(defgeneric branch-cond)
 
-(deffunction branch-if
-             (?router ?call ?onTrue ?onFalse)
-             (format ?router
-                     "branch if %s %s %s%n"
-                     (select-call ?call)
-                     ?onTrue
-                     ?onFalse))
-(deffunction branch-call
-             (?router ?immediate ?target)
-             (format ?router
-                     "branch call %s %s%n"
-                     (select-immediate ?immediate)
-                     (str-cat ?target)))
-(deffunction branch
-             (?router ?immediate ?target)
-             (format ?router
-                     "branch %s %s%n"
-                     (select-immediate ?immediate)
-                     (str-cat ?target)))
+(defmethod branch-if
+  ((?call SYMBOL)
+   (?onTrue LEXEME)
+   (?onFalse LEXEME))
+  (format nil
+          "branch if %s %s %s"
+          (select-call ?call)
+          ?onTrue
+          ?onFalse))
 
-(deffunction branch-cond
-             (?router ?cond ?immediate ?target)
-             (format ?router
-                     "branch %s %s %s%n"
-                     (select-cond ?cond)
-                     (select-immediate ?immediate)
-                     (str-cat ?target)))
+(defmethod branch-call
+  ((?immediate SYMBOL)
+   (?target LEXEME))
+  (format nil
+          "branch call %s %s"
+          (select-immediate ?immediate)
+          (str-cat ?target)))
+(defmethod branch
+  ((?immediate SYMBOL)
+   (?target LEXEME))
+  (format nil
+          "branch %s %s"
+          (select-immediate ?immediate)
+          (str-cat ?target)))
 
+(defmethod branch-cond
+  ((?immediate SYMBOL)
+   (?target LEXEME))
+  (format nil
+          "branch cond %s %s"
+          (select-immediate ?immediate)
+          (str-cat ?target)))
 
-(deffunction compare-op
-             (?router ?compare ?combine ?immediate ?arg0 ?arg1)
-             (format ?router
-                     "compare %s %s %s %s %s%n"
-                     (str-cat ?compare)
-                     (str-cat ?combine)
-                     (select-immediate ?immediate)
-                     (str-cat ?arg0)
-                     (str-cat ?arg1)))
+(defgeneric compare-op)
+(defmethod compare-op
+  ((?compare LEXEME)
+   (?combine LEXEME)
+   (?immediate SYMBOL)
+   (?arg0 LEXEME
+          INTEGER)
+   (?arg1 LEXEME
+          INTEGER))
+  (format nil
+          "compare %s %s %s %s %s"
+          (str-cat ?compare)
+          (str-cat ?combine)
+          (select-immediate ?immediate)
+          (str-cat ?arg0)
+          (str-cat ?arg1)))
+
+(defgeneric use-register)
+(defgeneric save-register)
+(defgeneric restore-register)
+(defmethod use-register
+  ((?register SYMBOL)
+   (?body MULTIFIELD))
+  (create$ (save-register ?register)
+           ?body
+           (restore-register ?register)))
+(defmethod use-register
+  ((?register SYMBOL)
+   $?body)
+  (use-register ?register
+                ?body))
+(defmethod save-register
+  ((?register SYMBOL))
+  (push 0m1111
+        ?register))
+
+(defmethod restore-register
+  ((?register SYMBOL))
+  (pop 0m1111
+       ?register))
+(defgeneric defunc)
+(defmethod defunc
+  ((?name SYMBOL)
+   (?entries MULTIFIELD))
+  (create$ (deflabel ?name)
+           ?entries
+           (ret)))
+(defmethod defunc
+  ((?name SYMBOL)
+   $?entries)
+  (defunc ?name
+          ?entries))
+(defgeneric output)
+(defmethod output
+  ((?router SYMBOL)
+   (?lines MULTIFIELD))
+  (progn$ (?line ?lines)
+          (printout ?router
+                    ?line crlf)))
+(defmethod output
+  ((?router SYMBOL)
+   $?lines)
+  (output ?router
+          ?lines))
