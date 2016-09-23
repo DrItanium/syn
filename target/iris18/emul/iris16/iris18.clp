@@ -1,3 +1,31 @@
+(defgeneric comment)
+(defmethod comment
+  ((?op LEXEME)
+   (?comment STRING))
+  (format nil
+          "%s ; %s"
+          ?op
+          ?comment))
+(defmethod comment
+  ((?comment STRING))
+  (format nil
+          "; %s"
+          ?comment))
+
+(defmethod todo
+  ((?message STRING))
+  (comment (format nil
+                   "TODO: %s"
+                   ?message)))
+(defmethod describe-arg
+  ((?argument LEXEME)
+   (?description STRING))
+  (comment (format nil
+                   "%s - %s"
+                   ?argument
+                   ?description)))
+(deffunction comment
+             (?op
 (deffunction memory-op
              (?action ?bitmask ?offset)
              (format nil
@@ -25,6 +53,14 @@
              (memory-op store
                         ?bitmask
                         ?offset))
+(deffunction store16
+             (?offset)
+             (store-value 0m0011 ?offset))
+
+(deffunction store32
+             (?offset)
+             (store-value 0m1111 ?offset))
+
 
 (deffunction arithmetic-op
              (?action ?immediate ?dest ?src)
@@ -75,24 +111,75 @@
                             ?src))
 
 (deffunction load16
-             (?addr)
+             (?offset)
              (load-value 0m0011
-                         0))
+                         ?offset))
 (deffunction load32
-             (?addr)
+             (?offset)
              (load-value 0m1111
-                         0))
-(deffunction assign
-             (?bitmask ?register ?value)
-             (format nil
-                     "set %s %s %s"
-                     ?bitmask
-                     ?register
-                     (str-cat ?value)))
+                         ?offset))
+(defgeneric assign)
+(defmethod assign
+  ((?bitmask SYMBOL)
+   (?register LEXEME)
+   (?value LEXEME
+           INTEGER))
+  (format nil
+          "set %s %s %s"
+          ?bitmask
+          ?register
+          (str-cat ?value)))
+
+(defmethod assign8
+  ((?register LEXEME)
+   (?value LEXEME
+           INTEGER))
+  (assign 0m0001
+          ?register
+          ?value))
+(defmethod assign16
+  ((?register LEXEME)
+   (?value LEXEME
+           INTEGER))
+  (assign 0m0011
+          ?register
+          ?value))
+(defmethod assign24
+  ((?register LEXEME)
+   (?value LEXEME
+           INTEGER))
+  (assign 0m0111
+          ?register
+          ?value))
+(defmethod assign32
+  ((?register LEXEME)
+   (?value LEXEME
+           INTEGER))
+  (assign 0m1111
+          ?register
+          ?value))
+
+(defgeneric move)
+(defmethod move
+  ((?bitmask SYMBOL)
+   (?dest LEXEME)
+   (?source LEXEME))
+  (format nil
+          "move %s %s %s"
+          ?bitmask
+          ?dest
+          ?source))
+(defmethod copy
+  ((?dest LEXEME)
+   (?source LEXEME))
+  (move 0m1111
+        ?dest
+        ?source))
 
 (deffunction ret
              ()
-             return)
+             (pop 0m1111
+                  ip))
 
 (deffunction deflabel
              (?title)
@@ -176,6 +263,8 @@
 (defgeneric use-register)
 (defgeneric save-register)
 (defgeneric restore-register)
+(defgeneric scope
+            "Create a scope for formatting purposes")
 (defmethod use-register
   ((?register SYMBOL)
    (?body MULTIFIELD))
@@ -200,9 +289,9 @@
 (defmethod defunc
   ((?name SYMBOL)
    (?entries MULTIFIELD))
-  (create$ (deflabel ?name)
-           ?entries
-           (ret)))
+  (scope ?name
+         ?entries
+         (ret)))
 (defmethod defunc
   ((?name SYMBOL)
    $?entries)
@@ -220,3 +309,61 @@
    $?lines)
   (output ?router
           ?lines))
+
+(defmethod zero
+  ((?register LEXEME))
+  (assign 0m0000
+          ?register
+          0x0))
+
+(defmethod syscall
+  ((?arg LEXEME))
+  (format nil
+          "system %s"
+          ?arg))
+(defmethod syscall
+  ((?arg LEXEME)
+   (?index INTEGER))
+  (create$ (assign 0m0001
+                   addr
+                   ?index)
+           (syscall ?arg)))
+(defmethod terminate
+  ()
+  (create$ (zero addr)
+           (syscall r0)))
+
+
+(defmethod scope
+  ((?name LEXEME)
+   (?body MULTIFIELD))
+  (create$ (deflabel ?name)
+           ?body))
+(defmethod scope
+  ((?name LEXEME)
+   $?body)
+  (scope ?name
+         ?body))
+(defgeneric shift)
+(defmethod shift
+  ((?direction SYMBOL)
+   (?immediate SYMBOL)
+   (?dest LEXEME)
+   (?value LEXEME
+           INTEGER))
+  (format nil
+          "shift %s %s %s %s"
+          ?direction
+          (select-immediate ?immediate)
+          ?dest
+          (str-cat ?value)))
+(defmethod increment
+  ((?register SYMBOL))
+  (add immediate
+       ?register
+       0x1))
+(defmethod decrement
+  ((?register SYMBOL))
+  (sub immediate
+       ?register
+       0x1))
