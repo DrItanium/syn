@@ -148,3 +148,67 @@
                        "return"
                        crlf)
              ?return)
+
+(deffunction deflabel
+             (?router ?title)
+             (printout ?router
+                       "@label %s"
+                       ?title))
+(deffunction select-immediate
+             (?cond)
+             (if ?cond then
+               immediate
+               else
+               ""))
+(deffunction select-call
+             (?cond)
+             (if ?cond then
+               call
+               else
+               ""))
+(deffunction select-cond
+             (?cond)
+             (if ?cond then
+               cond
+               else
+               ""))
+
+
+(deffunction branch-if
+             (?router ?call ?onTrue ?onFalse)
+             (format ?router
+                     "branch if %s %s %s%n"
+                     (select-call ?call)
+                     ?onTrue
+                     ?onFalse))
+(deffunction branch-call
+             (?router ?immediate ?target)
+             (format ?router
+                     "branch call %s %s%n"
+                     (select-immediate ?immediate)
+                     (str-cat ?target)))
+(deffunction branch
+             (?router ?immediate ?target)
+             (format ?router
+                     "branch %s %s%n"
+                     (select-immediate ?immediate)
+                     (str-cat ?target)))
+
+(deffunction branch-cond
+             (?router ?cond ?immediate ?target)
+             (format ?router
+                     "branch %s %s %s%n"
+                     (select-cond ?cond)
+                     (select-immediate ?immediate)
+                     (str-cat ?target)))
+
+
+(deffunction compare-op
+             (?router ?compare ?combine ?immediate ?arg0 ?arg1)
+             (format ?router
+                     "compare %s %s %s %s %s%n"
+                     (str-cat ?compare)
+                     (str-cat ?combine)
+                     (select-immediate ?immediate)
+                     (str-cat ?arg0)
+                     (str-cat ?arg1)))
