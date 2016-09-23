@@ -349,12 +349,11 @@ operation:
             op.arg1 = 0;
         } |
 		OP_RETURN {
-            op.type = iris18::Operation::Branch;
-            op.isIf = false;
-            op.isConditional = false;
-            op.immediate = false;
-            op.isCall = false;
-            op.arg0 = static_cast<byte>(iris18::ArchitectureConstants::LinkRegister);
+			op.type = iris18::Operation::Memory;
+			op.indirect = false;
+			op.subType = static_cast<byte>(iris18::MemoryOperation::Pop);
+            op.arg0 = static_cast<byte>(iris18::ArchitectureConstants::InstructionPointer);
+			op.bitmask = 0b1111;
         } |
 		OP_COMPLEX complex_type {
 			op.type = iris18::Operation::Complex; 

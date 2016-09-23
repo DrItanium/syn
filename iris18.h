@@ -55,15 +55,15 @@ namespace iris18 {
 		R1  = RegisterCount - 15,
 		R0  = RegisterCount - 16,
 		InstructionPointer = R15,
-		LinkRegister = R14,
-		StackPointer = R13,
-		ConditionRegister = R12,
-		AddressRegister = R11,
-		ValueRegister = R10,
-		MaskRegister = R9,
-		ShiftRegister = R8,
-		FieldRegister = R8,
-		CountRegister = R7,
+		//LinkRegister = R14,
+		StackPointer = R14,
+		//ConditionRegister = R13,
+		AddressRegister = R13,
+		ValueRegister = R12,
+		MaskRegister = R11,
+		ShiftRegister = R9,
+		FieldRegister = R9,
+		CountRegister = R8,
 	};
 
 #define DefEnum(type, width) \
@@ -196,6 +196,9 @@ namespace iris18 {
 			void cycle();
 			bool shouldExecute() const { return execute; }
 		private:
+			void pushWord(Word value);
+			void pushDword(DWord value);
+			Word popWord();
 			static void defaultSystemHandler(Core* core, DecodedInstruction&& inst);
 			static void terminate(Core* core, DecodedInstruction&& inst);
 			static void getc(Core* core, DecodedInstruction&& inst);
@@ -360,35 +363,26 @@ namespace iris18 {
 						auto pushToStack = registerValue(inst.getMemoryOffset());
 						// read backwards because the stack grows upward towards zero
 						if (useUpper) {
-							decrementStackPointer();
-							storeWord(getStackPointer(), umask & decodeUpperHalf(pushToStack));
+							pushWord(umask & decodeUpperHalf(pushToStack));
 						}
 						if (useLower) {
-							decrementStackPointer();
-							storeWord(getStackPointer(), lmask & decodeLowerHalf(pushToStack));
+							pushWord(lmask & decodeLowerHalf(pushToStack));
 						}
 					} else if (type == MemoryOperation::Pop) {
 						if (indirect) {
 							throw iris::Problem("Can't perform an indirect pop!");
 						}
 						if (useLower) {
-							lower = lmask & loadWord(getStackPointer());
-							incrementStackPointer();
+							lower = lmask & popWord();
 						}
 						if (useUpper) {
-							upper = umask & loadWord(getStackPointer());
-							incrementStackPointer();
+							upper = umask & popWord();
 						}
 						registerValue(inst.getMemoryOffset()) = encodeRegisterValue(upper, lower);
 					} else {
 						throw iris::Problem("Illegal memory operation type!");
 					}
 				}
-			inline void maskLinkRegister() noexcept {
-				if (getLinkRegister() > bitmask24) {
-					getLinkRegister() &= bitmask24; // make sure that we aren't over the memory setup
-				}
-			}
 			template<byte flags>
 				void branchSpecificOperation(DecodedInstruction&& current) {
 					using decodedFlags = BranchFlagsDecoder<flags>;
@@ -397,16 +391,16 @@ namespace iris18 {
 						// if instruction
 						advanceIp = false;
 						if (decodedFlags::isCall) {
-							getLinkRegister() = getInstructionPointer() + 1;
-							maskLinkRegister();
+							// push the instruction pointer plus one onto the
+							// stack
+							pushDword((getInstructionPointer() + 1) & bitmask24);
 						}
 						getInstructionPointer() = bitmask24 & ((getConditionRegister() != 0) ? registerValue(current.getBranchIfOnTrue()) : registerValue(current.getBranchIfOnFalse()));
 					} else if (decodedFlags::isCall) {
 						// call instruction
 						advanceIp = false;
 						// determine next
-						getLinkRegister() = getInstructionPointer() + decodedFlags::isImmediate ?  2 : 1;
-						maskLinkRegister();
+						pushDword((getInstructionPointer() + decodedFlags::isImmediate ? 2 : 1) & bitmask24);
 						if (decodedFlags::isImmediate) {
 							incrementInstructionPointer();
 							// make a 24 bit number
@@ -434,8 +428,7 @@ namespace iris18 {
 			RegisterValue& registerValue(byte index);
 			inline RegisterValue& getInstructionPointer() noexcept     { return registerValue<ArchitectureConstants::InstructionPointer>(); }
 			inline RegisterValue& getStackPointer() noexcept           { return registerValue<ArchitectureConstants::StackPointer>(); }
-			inline RegisterValue& getConditionRegister() noexcept      { return registerValue<ArchitectureConstants::ConditionRegister>(); }
-			inline RegisterValue& getLinkRegister() noexcept           { return registerValue<ArchitectureConstants::LinkRegister>(); }
+			inline bool& getConditionRegister() noexcept               { return cond; }
 			inline RegisterValue& getAddressRegister() noexcept        { return registerValue<ArchitectureConstants::AddressRegister>(); }
 			inline RegisterValue& getValueRegister() noexcept          { return registerValue<ArchitectureConstants::ValueRegister>(); }
 			inline RegisterValue& getMaskRegister() noexcept           { return registerValue<ArchitectureConstants::MaskRegister>(); }
@@ -458,7 +451,8 @@ namespace iris18 {
 			void memoryManipulationOperation(DecodedInstruction&& inst);
 		private:
 			bool execute = true,
-				 advanceIp = true;
+				 advanceIp = true,
+				 cond = false;
 			RegisterValue gpr[ArchitectureConstants::RegisterCount] = { 0 };
 			std::shared_ptr<Word> memory;
 			SystemFunction systemHandlers[ArchitectureConstants::MaxSystemCalls] =  { 0 };

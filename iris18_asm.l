@@ -97,16 +97,14 @@ omni [a-zA-Z0-9._]
 "@startup"  { return DIRECTIVE_REGISTER_AT_START; }
 "@constant" { return DIRECTIVE_CONSTANT; }
 
-"ip"        { iris18lval.rval = iris18::ArchitectureConstants::InstructionPointer; return REGISTER; }
-"lr"        { iris18lval.rval = iris18::ArchitectureConstants::LinkRegister; return REGISTER; }
-"sp"        { iris18lval.rval = iris18::ArchitectureConstants::StackPointer; return REGISTER; }
-"cr"        { iris18lval.rval = iris18::ArchitectureConstants::ConditionRegister; return REGISTER; }
-"addr"      { iris18lval.rval = iris18::ArchitectureConstants::AddressRegister; return REGISTER; }
-"value"     { iris18lval.rval = iris18::ArchitectureConstants::ValueRegister; return REGISTER; }
-"mask"      { iris18lval.rval = iris18::ArchitectureConstants::MaskRegister; return REGISTER; }
-"shift_width"     { iris18lval.rval = iris18::ArchitectureConstants::ShiftRegister; return REGISTER; }
-"field"     { iris18lval.rval = iris18::ArchitectureConstants::FieldRegister; return REGISTER; }
-"count"     { iris18lval.rval = iris18::ArchitectureConstants::CountRegister; return REGISTER; }
+"ip"           { iris18lval.rval = iris18::ArchitectureConstants::InstructionPointer; return REGISTER; }
+"sp"           { iris18lval.rval = iris18::ArchitectureConstants::StackPointer; return REGISTER; }
+"addr"         { iris18lval.rval = iris18::ArchitectureConstants::AddressRegister; return REGISTER; }
+"value"        { iris18lval.rval = iris18::ArchitectureConstants::ValueRegister; return REGISTER; }
+"mask"         { iris18lval.rval = iris18::ArchitectureConstants::MaskRegister; return REGISTER; }
+"shift_width"  { iris18lval.rval = iris18::ArchitectureConstants::ShiftRegister; return REGISTER; }
+"field"        { iris18lval.rval = iris18::ArchitectureConstants::FieldRegister; return REGISTER; }
+"count"        { iris18lval.rval = iris18::ArchitectureConstants::CountRegister; return REGISTER; }
 
 
 [ \t\n]     ;

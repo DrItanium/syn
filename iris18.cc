@@ -323,10 +323,10 @@ namespace iris18 {
                 break;
             case EncodingOperation::BitSet:
                 // use the shift register as the field select
-                getConditionRegister() = static_cast<RegisterValue>(((getAddressRegister() >> getFieldRegister()) & 0x1) == 1);
+                getConditionRegister() = ((getAddressRegister() >> getFieldRegister()) & 0x1) == 1;
                 break;
             case EncodingOperation::BitUnset:
-                getConditionRegister() = static_cast<RegisterValue>(((getAddressRegister() >> getFieldRegister()) & 0x1) != 1);
+                getConditionRegister() = ((getAddressRegister() >> getFieldRegister()) & 0x1) != 1;
                 break;
             default:
                 throw iris::Problem("Illegal complex encoding operation defined!");
@@ -417,6 +417,20 @@ namespace iris18 {
 		} else {
 			systemHandlers[index] = func;
 		}
+	}
+	void Core::pushWord(Word value) {
+		decrementStackPointer();
+		storeWord(getStackPointer(), value);
+	}
+	void Core::pushDword(DWord value) {
+		pushWord(decodeUpperHalf(value));
+		pushWord(decodeLowerHalf(value));
+	}
+
+	Word Core::popWord() {
+		auto result = loadWord(getStackPointer());
+		incrementStackPointer();
+		return result;
 	}
 
 	InstructionEncoder::Encoding InstructionEncoder::encodeArithmetic() {
