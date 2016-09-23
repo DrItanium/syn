@@ -231,7 +231,7 @@
                                  0x00000007)
                        (zero shift_width))
                 (scope ?base-decode
-                       "complex encoding decode"))
+                       "    complex encoding decode"))
         (todo "port over the rest of the tables and function dispatches"))
 (deffunction imm-and-non-imm
              (?value)

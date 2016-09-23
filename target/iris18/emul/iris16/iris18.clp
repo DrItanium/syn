@@ -9,7 +9,7 @@
 (defmethod comment
   ((?comment STRING))
   (format nil
-          "; %s"
+          "    ; %s"
           ?comment))
 
 (defmethod todo
@@ -17,6 +17,20 @@
   (comment (format nil
                    "TODO: %s"
                    ?message)))
+(deffunction generate-note-text
+             (?msg)
+             (format nil
+                     "NOTE: %s"
+                     ?msg))
+(defmethod note
+  ((?op LEXEME)
+   (?message STRING))
+  (comment ?op
+           (generate-note-text ?message)))
+(defmethod note
+  ((?message STRING))
+  (comment (generate-note-text ?message)))
+
 (defmethod describe-arg
   ((?argument LEXEME)
    (?description STRING))
@@ -27,7 +41,7 @@
 (deffunction memory-op
              (?action ?bitmask ?offset)
              (format nil
-                     "memory %s %s %s"
+                     "    memory %s %s %s"
                      ?action
                      ?bitmask
                      (str-cat ?offset)))
@@ -63,7 +77,7 @@
 (deffunction arithmetic-op
              (?action ?immediate ?dest ?src)
              (format nil
-                     "arithmetic %s %s %s %s"
+                     "    arithmetic %s %s %s %s"
                      ?action
                      (if ?immediate then
                        immediate
@@ -123,7 +137,7 @@
    (?value LEXEME
            INTEGER))
   (format nil
-          "set %s %s %s"
+          "    set %s %s %s"
           ?bitmask
           ?register
           (str-cat ?value)))
@@ -163,7 +177,7 @@
    (?dest LEXEME)
    (?source LEXEME))
   (format nil
-          "move %s %s %s"
+          "    move %s %s %s"
           ?bitmask
           ?dest
           ?source))
@@ -176,8 +190,9 @@
 
 (deffunction ret
              ()
-             (pop 0m1111
-                  ip))
+             (note (pop 0m1111
+                        ip)
+                   "return macro"))
 
 (deffunction deflabel
              (?title)
@@ -213,7 +228,7 @@
    (?onTrue LEXEME)
    (?onFalse LEXEME))
   (format nil
-          "branch if %s %s %s"
+          "    branch if %s %s %s"
           (select-call ?call)
           ?onTrue
           ?onFalse))
@@ -222,14 +237,14 @@
   ((?immediate SYMBOL)
    (?target LEXEME))
   (format nil
-          "branch call %s %s"
+          "    branch call %s %s"
           (select-immediate ?immediate)
           (str-cat ?target)))
 (defmethod branch
   ((?immediate SYMBOL)
    (?target LEXEME))
   (format nil
-          "branch %s %s"
+          "    branch %s %s"
           (select-immediate ?immediate)
           (str-cat ?target)))
 
@@ -237,7 +252,7 @@
   ((?immediate SYMBOL)
    (?target LEXEME))
   (format nil
-          "branch cond %s %s"
+          "    branch cond %s %s"
           (select-immediate ?immediate)
           (str-cat ?target)))
 
@@ -251,7 +266,7 @@
    (?arg1 LEXEME
           INTEGER))
   (format nil
-          "compare %s %s %s %s %s"
+          "    compare %s %s %s %s %s"
           (str-cat ?compare)
           (str-cat ?combine)
           (select-immediate ?immediate)
@@ -317,7 +332,7 @@
 (defmethod syscall
   ((?arg LEXEME))
   (format nil
-          "system %s"
+          "    system %s"
           ?arg))
 (defmethod syscall
   ((?arg LEXEME)
@@ -350,33 +365,35 @@
    (?value LEXEME
            INTEGER))
   (format nil
-          "shift %s %s %s %s"
+          "    shift %s %s %s %s"
           ?direction
           (select-immediate ?immediate)
           ?dest
           (str-cat ?value)))
 (defmethod increment
   ((?register SYMBOL))
-  (add immediate
-       ?register
-       0x1))
+  (note (add immediate
+             ?register
+             0x1)
+        "increment macro"))
 (defmethod decrement
   ((?register SYMBOL))
-  (sub immediate
-       ?register
-       0x1))
+  (note (sub immediate
+             ?register
+             0x1)
+        "decrement macro"))
 
 (defmethod dword
   ((?value LEXEME
            INTEGER))
   (format nil
-          "@dword %s"
+          "    @dword %s"
           (str-cat ?value)))
 (defmethod word
   ((?value LEXEME
            INTEGER))
   (format nil
-          "@word %s"
+          "    @word %s"
           (str-cat ?value)))
 (defmethod memory-location
   ((?value LEXEME
