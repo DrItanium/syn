@@ -61,9 +61,10 @@ namespace iris18 {
 		AddressRegister = R13,
 		ValueRegister = R12,
 		MaskRegister = R11,
-		ShiftRegister = R9,
-		FieldRegister = R9,
-		CountRegister = R8,
+		ShiftRegister = R10,
+		FieldRegister = R10,
+		//CountRegister = R9,
+			
 	};
 
 #define DefEnum(type, width) \
@@ -432,7 +433,6 @@ namespace iris18 {
 			inline RegisterValue& getAddressRegister() noexcept        { return registerValue<ArchitectureConstants::AddressRegister>(); }
 			inline RegisterValue& getValueRegister() noexcept          { return registerValue<ArchitectureConstants::ValueRegister>(); }
 			inline RegisterValue& getMaskRegister() noexcept           { return registerValue<ArchitectureConstants::MaskRegister>(); }
-			inline RegisterValue& getCountRegister() noexcept          { return registerValue<ArchitectureConstants::CountRegister>(); }
 
 			inline RegisterValue getShiftRegister() noexcept           { return 0b11111 & registerValue<ArchitectureConstants::ShiftRegister>(); }
 			inline RegisterValue getFieldRegister() noexcept           { return 0b11111 & registerValue<ArchitectureConstants::FieldRegister>(); }
