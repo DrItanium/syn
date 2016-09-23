@@ -11,12 +11,23 @@
              (?value)
              (assign32 addr
                        ?value))
+(deffunction jump-table
+             (?title $?locations)
+             (scope ?title
+                    (map dword
+                         (expand$ ?locations))))
+
 (output t
         (deflabel Iris16Startup)
         (deflabel Iris16Loop)
         (todo "implement the loop body")
         (deflabel Iris16Shutdown)
         (terminate)
+        (scope BadGroup
+               (todo "Print out an error message")
+               (branch-call immediate
+                            Iris16Shutdown))
+
         (defunc PushOntoStack
                 (use-register value
                               (branch-call immediate
@@ -221,7 +232,125 @@
                        (zero shift_width))
                 (scope ?base-decode
                        "complex encoding decode"))
-        (todo "port over the rest of the tables and function dispatches")
+        (todo "port over the rest of the tables and function dispatches"))
+(deffunction imm-and-non-imm
+             (?value)
+             (create$ ?value
+                      (sym-cat ?value
+                               Imm)))
+(deffunction and-link-form
+             (?value)
+             (create$ ?value
+                      (sym-cat ?value
+                               Link)))
+(deffunction boolean-forms
+             (?value)
+             (create$ (sym-cat ?value
+                               True)
+                      (sym-cat ?value
+                               False)))
+
+(deffunction imm-reg-form
+             (?value)
+             (create$ (and-link-form (sym-cat ?value
+                                              Immediate))
+                      (and-link-form (sym-cat ?value
+                                              Register))))
+(deffunction todo-implement
+             ()
+             (todo "Implement this function"))
+
+(output t
+        (defunc Move
+                (todo-implement))
+        (defunc Swap
+                (todo-implement))
+        (defunc Load
+                (todo-implement))
+        (defunc LoadImmediate
+                (todo-implement))
+        (defunc Store
+                (todo-implement))
+        (defunc Memset
+                (todo-implement))
+        (defunc Push
+                (todo-implement))
+        (defunc PushImmediate
+                (todo-implement))
+        (defunc Pop
+                (todo-implement))
+        (defunc LoadCode
+                (todo-implement))
+        (defunc StoreCode
+                (todo-implement)))
+
+(output t
+        (jump-table GroupBase
+                    ArithmeticOp
+                    MoveOp
+                    JumpOp
+                    CompareOp
+                    MiscOp
+                    BadGroup
+                    BadGroup
+                    BadGroup)
+        (jump-table BaseTableAddresses
+                    ArithmeticBase
+                    MoveBase
+                    JumpBase
+                    CompareBase
+                    MiscBase
+                    BadGroup
+                    BadGroup
+                    BadGroup)
+        (jump-table ArithmeticBase
+                    Add
+                    Sub
+                    Mul
+                    Div
+                    Rem
+                    ShiftLeft
+                    ShiftRight
+                    BinaryAnd
+                    BinaryOr
+                    BinaryNot
+                    BinaryXor
+                    AddImmediate
+                    SubImmediate
+                    DivImmediate
+                    RemImmediate
+                    ShiftLeftImmediate
+                    ShiftRightImmediate)
+        (jump-table MoveBase
+                    Move
+                    Set
+                    Swap
+                    Load
+                    LoadImmediate
+                    Store
+                    Memset
+                    Push
+                    PushImmediate
+                    Pop
+                    LoadCode
+                    StoreCode)
+        (jump-table JumpBase
+                    ; Compressed entries
+                    (imm-reg-form Unconditional)
+                    (imm-reg-form ConditionalTrue)
+                    (imm-reg-form ConditionalFalse)
+                    (boolean-forms IfThenElseNormalPred)
+                    (boolean-forms IfThenElseLinkPred))
+        (jump-table CompareBase
+                    (imm-and-non-imm Eq)
+                    (imm-and-non-imm Neq)
+                    (imm-and-non-imm LessThan)
+                    (imm-and-non-imm GreaterThan)
+                    (imm-and-non-imm LessThanOrEqualTo)
+                    (imm-and-non-imm GreaterThanOrEqualTo))
+        (jump-table MiscBase
+                    SystemCall))
+(output t
         (at-memory-location 0x00FB0000
                             (deflabel Iris16Code))
         (at-memory-location 0x00FD0000
