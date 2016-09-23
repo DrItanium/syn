@@ -221,11 +221,20 @@
                        (zero shift_width))
                 (scope ?base-decode
                        "complex encoding decode"))
-
-
-
-
-
-
+        (todo "port over the rest of the tables and function dispatches")
+        (at-memory-location 0x00FB0000
+                            (deflabel Iris16Code))
+        (at-memory-location 0x00FD0000
+                            (deflabel Iris16Data))
+        (at-memory-location 0x00FE0000
+                            (deflabel Iris16Stack))
+        (at-memory-location 0x00FF0000
+                            (deflabel Iris16_Fields)
+                            (scope Iris16_Execute
+                                   (word 0x0001))
+                            (scope Iris16_AdvanceIp
+                                   (word 0x0001)))
+        (at-memory-location 0x00FFFF00
+                            (deflabel Iris16Registers))
         )
 

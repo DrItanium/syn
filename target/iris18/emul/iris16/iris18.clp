@@ -24,8 +24,6 @@
                    "%s - %s"
                    ?argument
                    ?description)))
-(deffunction comment
-             (?op
 (deffunction memory-op
              (?action ?bitmask ?offset)
              (format nil
@@ -367,3 +365,38 @@
   (sub immediate
        ?register
        0x1))
+
+(defmethod dword
+  ((?value LEXEME
+           INTEGER))
+  (format nil
+          "@dword %s"
+          (str-cat ?value)))
+(defmethod word
+  ((?value LEXEME
+           INTEGER))
+  (format nil
+          "@word %s"
+          (str-cat ?value)))
+(defmethod memory-location
+  ((?value LEXEME
+           NUMBER))
+  (format nil
+          "@org %s"
+          (str-cat ?value)))
+
+
+
+(defmethod at-memory-location
+  ((?value LEXEME
+           NUMBER)
+   (?body MULTIFIELD))
+  (create$ (memory-location ?value)
+           ?body))
+(defmethod at-memory-location
+  ((?value LEXEME
+           NUMBER)
+   $?body)
+  (at-memory-location ?value
+                      ?body))
+
