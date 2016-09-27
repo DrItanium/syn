@@ -360,26 +360,32 @@ namespace iris18 {
 					} else if (type == MemoryOperation::Push) {
 						if (indirect) {
 							throw iris::Problem("Can't perform an indirect push");
-						}
-						auto pushToStack = registerValue(inst.getMemoryOffset());
-						// read backwards because the stack grows upward towards zero
-						if (useUpper) {
-							pushWord(umask & decodeUpperHalf(pushToStack));
-						}
-						if (useLower) {
-							pushWord(lmask & decodeLowerHalf(pushToStack));
+						} else {
+							auto pushToStack = registerValue(inst.getMemoryOffset());
+							// read backwards because the stack grows upward towards zero
+							if (useUpper) {
+								pushWord(umask & decodeUpperHalf(pushToStack));
+							}
+							if (useLower) {
+								pushWord(lmask & decodeLowerHalf(pushToStack));
+							}
 						}
 					} else if (type == MemoryOperation::Pop) {
 						if (indirect) {
 							throw iris::Problem("Can't perform an indirect pop!");
+						} else {
+							if (useLower) {
+								lower = lmask & popWord();
+							}
+							if (useUpper) {
+								upper = umask & popWord();
+							}
+							registerValue(inst.getMemoryOffset()) = encodeRegisterValue(upper, lower);
+							// can't think of a case where we should
+							// restore the instruction pointer and then
+							// immediate advance so just don't do it
+							advanceIp = inst.getMemoryOffset() != ArchitectureConstants::InstructionPointer;
 						}
-						if (useLower) {
-							lower = lmask & popWord();
-						}
-						if (useUpper) {
-							upper = umask & popWord();
-						}
-						registerValue(inst.getMemoryOffset()) = encodeRegisterValue(upper, lower);
 					} else {
 						throw iris::Problem("Illegal memory operation type!");
 					}
