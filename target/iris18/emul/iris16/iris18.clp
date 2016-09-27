@@ -1,43 +1,11 @@
-(defgeneric comment)
-(defmethod comment
-  ((?op LEXEME)
-   (?comment STRING))
-  (format nil
-          "%s ; %s"
-          ?op
-          ?comment))
-(defmethod comment
-  ((?comment STRING))
-  (format nil
-          "    ; %s"
-          ?comment))
+(defgeneric move)
+(defgeneric branch-call)
+(defgeneric branch)
+(defgeneric branch-if)
+(defgeneric branch-cond)
+(defgeneric compare-op)
+(defgeneric shift)
 
-(defmethod todo
-  ((?message STRING))
-  (comment (format nil
-                   "TODO: %s"
-                   ?message)))
-(deffunction generate-note-text
-             (?msg)
-             (format nil
-                     "NOTE: %s"
-                     ?msg))
-(defmethod note
-  ((?op LEXEME)
-   (?message STRING))
-  (comment ?op
-           (generate-note-text ?message)))
-(defmethod note
-  ((?message STRING))
-  (comment (generate-note-text ?message)))
-
-(defmethod describe-arg
-  ((?argument LEXEME)
-   (?description STRING))
-  (comment (format nil
-                   "%s - %s"
-                   ?argument
-                   ?description)))
 (deffunction memory-op
              (?action ?bitmask ?offset)
              (format nil
@@ -130,7 +98,6 @@
              (?offset)
              (load-value 0m1111
                          ?offset))
-(defgeneric assign)
 (defmethod assign
   ((?bitmask SYMBOL)
    (?register LEXEME)
@@ -171,7 +138,6 @@
           ?register
           ?value))
 
-(defgeneric move)
 (defmethod move
   ((?bitmask SYMBOL)
    (?dest LEXEME)
@@ -188,17 +154,12 @@
         ?dest
         ?source))
 
-(deffunction ret
-             ()
-             (note (pop 0m1111
-                        ip)
-                   "return macro"))
+(defmethod ret
+  ()
+  (note (pop 0m1111
+             ip)
+        "return macro"))
 
-(deffunction deflabel
-             (?title)
-             (format nil
-                     "@label %s"
-                     ?title))
 (deffunction select-immediate
              (?cond)
              (if ?cond then
@@ -218,10 +179,6 @@
                else
                ""))
 
-(defgeneric branch-call)
-(defgeneric branch)
-(defgeneric branch-if)
-(defgeneric branch-cond)
 
 (defmethod branch-if
   ((?call SYMBOL)
@@ -256,7 +213,6 @@
           (select-immediate ?immediate)
           (str-cat ?target)))
 
-(defgeneric compare-op)
 (defmethod compare-op
   ((?compare LEXEME)
    (?combine LEXEME)
@@ -273,22 +229,6 @@
           (str-cat ?arg0)
           (str-cat ?arg1)))
 
-(defgeneric use-register)
-(defgeneric save-register)
-(defgeneric restore-register)
-(defgeneric scope
-            "Create a scope for formatting purposes")
-(defmethod use-register
-  ((?register SYMBOL)
-   (?body MULTIFIELD))
-  (create$ (save-register ?register)
-           ?body
-           (restore-register ?register)))
-(defmethod use-register
-  ((?register SYMBOL)
-   $?body)
-  (use-register ?register
-                ?body))
 (defmethod save-register
   ((?register SYMBOL))
   (push 0m1111
@@ -298,30 +238,6 @@
   ((?register SYMBOL))
   (pop 0m1111
        ?register))
-(defgeneric defunc)
-(defmethod defunc
-  ((?name SYMBOL)
-   (?entries MULTIFIELD))
-  (scope ?name
-         ?entries
-         (ret)))
-(defmethod defunc
-  ((?name SYMBOL)
-   $?entries)
-  (defunc ?name
-          ?entries))
-(defgeneric output)
-(defmethod output
-  ((?router SYMBOL)
-   (?lines MULTIFIELD))
-  (progn$ (?line ?lines)
-          (printout ?router
-                    ?line crlf)))
-(defmethod output
-  ((?router SYMBOL)
-   $?lines)
-  (output ?router
-          ?lines))
 
 (defmethod zero
   ((?register LEXEME))
@@ -347,17 +263,6 @@
            (syscall r0)))
 
 
-(defmethod scope
-  ((?name LEXEME)
-   (?body MULTIFIELD))
-  (create$ (deflabel ?name)
-           ?body))
-(defmethod scope
-  ((?name LEXEME)
-   $?body)
-  (scope ?name
-         ?body))
-(defgeneric shift)
 (defmethod shift
   ((?direction SYMBOL)
    (?immediate SYMBOL)
@@ -383,37 +288,6 @@
              0x1)
         "decrement macro"))
 
-(defmethod dword
-  ((?value LEXEME
-           INTEGER))
-  (format nil
-          "    @dword %s"
-          (str-cat ?value)))
-(defmethod word
-  ((?value LEXEME
-           INTEGER))
-  (format nil
-          "    @word %s"
-          (str-cat ?value)))
-(defmethod memory-location
-  ((?value LEXEME
-           NUMBER))
-  (format nil
-          "@org %s"
-          (str-cat ?value)))
 
 
-
-(defmethod at-memory-location
-  ((?value LEXEME
-           NUMBER)
-   (?body MULTIFIELD))
-  (create$ (memory-location ?value)
-           ?body))
-(defmethod at-memory-location
-  ((?value LEXEME
-           NUMBER)
-   $?body)
-  (at-memory-location ?value
-                      ?body))
 
