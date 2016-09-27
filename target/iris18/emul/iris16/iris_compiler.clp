@@ -51,7 +51,8 @@
 (defgeneric restore-register
             "Restore the given register from the stack")
 (defgeneric set-address)
-            
+(defgeneric defjump-table)
+
 
 (defmethod dword
   ((?value LEXEME
@@ -67,48 +68,8 @@
           "    @word %s"
           (str-cat ?value)))
 
-(defmethod memory-location
-  ((?value LEXEME
-           NUMBER))
-  (format nil
-          "@org %s"
-          (str-cat ?value)))
 
-(defmethod at-memory-location
-  ((?value LEXEME
-           NUMBER)
-   (?body MULTIFIELD))
-  (create$ (memory-location ?value)
-           ?body))
-(defmethod at-memory-location
-  ((?value LEXEME
-           NUMBER)
-   $?body)
-  (at-memory-location ?value
-                      ?body))
 
-(defmethod scope
-  ((?name LEXEME)
-   (?body MULTIFIELD))
-  (create$ (deflabel ?name)
-           ?body))
-(defmethod scope
-  ((?name LEXEME)
-   $?body)
-  (scope ?name
-         ?body))
-
-(defmethod defunc
-  ((?name SYMBOL)
-   (?entries MULTIFIELD))
-  (scope ?name
-         ?entries
-         (ret)))
-(defmethod defunc
-  ((?name SYMBOL)
-   $?entries)
-  (defunc ?name
-          ?entries))
 (defmethod comment
   ((?op LEXEME)
    (?comment STRING))
@@ -149,11 +110,6 @@
                    ?argument
                    ?description)))
 
-(defmethod deflabel
-  ((?title SYMBOL))
-  (format nil
-          "@label %s"
-          ?title))
 
 (defmethod output
   ((?router SYMBOL)
@@ -179,15 +135,148 @@
   (use-register ?register
                 ?body))
 
+
+(defmethod label-text
+  ((?title LEXEME)
+   (?router SYMBOL))
+  (format ?router
+          "@label %s%n"
+          ?title))
+(defmethod label-text
+  ((?title LEXEME))
+  (label-text ?title
+              nil))
+(defclass label
+  (is-a USER)
+  (slot title
+        (type LEXEME)
+        (storage local)
+        (visibility public)
+        (default ?NONE))
+  (message-handler compile primary))
+
+(defmessage-handler label compile primary
+                    (?router)
+                    (label-text ?self:title
+                                ?router))
+(defclass container
+  (is-a USER)
+  (multislot contents
+             (visibility public)
+             (storage local))
+  (message-handler compile primary))
+
+(defmessage-handler container compile primary
+                    (?router)
+                    (progn$ (?a ?self:contents)
+                            (if (instancep ?a) then
+                              (send ?a 
+                                    compile
+                                    ?router)
+                              else
+                              (output ?router
+                                      ?a))))
+
+(defclass environment
+  (is-a USER)
+  (multislot children
+             (visibility public)
+             (storage local))
+  (message-handler defunc primary)
+  (message-handler compile primary))
+
+(defmessage-handler environment add-entries primary
+                    ($?entry)
+                    (bind ?self:children
+                          ?self:children
+                          ?entry))
+(defmessage-handler environment compile primary
+                    (?router)
+                    (progn$ (?child ?self:children)
+                            (if (instance-namep ?child) then
+                              (send ?child 
+                                    compile
+                                    ?router)
+                              else
+                              (output ?router
+                                      ?child))))
+
+(defmessage-handler environment defunc primary
+                    (?title $?body)
+                    (bind ?self:children
+                          ?self:children
+                          (scope ?title
+                                 $?body
+                                 (ret))))
+
+
+
+(definstances iris-env
+              (main-env of environment))
+
+(defglobal MAIN
+           ?*primary-env* = [main-env])
+
+(defmethod defunc
+  ((?name SYMBOL)
+   (?entries MULTIFIELD))
+  (send ?*primary-env*
+        defunc 
+        ?name
+        ?entries))
+
+(defmethod defunc
+  ((?name SYMBOL)
+   $?entries)
+  (defunc ?name
+          ?entries))
+
+(defmethod deflabel
+  ((?title LEXEME))
+  (make-instance of label
+                 (title ?title)))
+
+(defmethod scope
+  ((?name LEXEME)
+   (?body MULTIFIELD))
+  (make-instance of container
+                 (contents (deflabel ?name)
+                           $?body)))
+(defmethod scope
+  ((?name LEXEME)
+   $?body)
+  (scope ?name
+         ?body))
+
 (defmethod jump-table
- ((?title SYMBOL)
-  (?locations MULTIFIELD))
+  ((?title LEXEME)
+   (?locations MULTIFIELD))
   (scope ?title
          (map dword
               (expand$ ?locations))))
-(defmethod jump-table
- ((?title SYMBOL)
-  $?locations)
- (jump-table ?title
-             ?locations))
 
+(defmethod jump-table
+  ((?title LEXEME)
+   $?locations)
+  (jump-table ?title
+              ?locations))
+
+(defmethod memory-location
+  ((?value LEXEME
+           NUMBER))
+  (format nil
+          "@org %s"
+          (str-cat ?value)))
+
+(defmethod at-memory-location
+  ((?value LEXEME 
+           NUMBER)
+   (?body MULTIFIELD))
+  (scope (memory-location ?value)
+         ?body))
+(defmethod at-memory-location
+  ((?value LEXEME
+           NUMBER)
+   $?body)
+  (at-memory-location ?value
+                      ?body))
