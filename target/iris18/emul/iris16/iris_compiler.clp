@@ -40,6 +40,8 @@
             "Assign the given 32bit constant to the target register")
 (defgeneric assign16
             "Assign the given 16bit constant to the target register")
+(defgeneric assign24)
+(defgeneric assign8)
 (defgeneric assign
             "Assing the give constant to the target register")
 (defgeneric use-register
@@ -48,6 +50,8 @@
             "Save the given register to the stack")
 (defgeneric restore-register
             "Restore the given register from the stack")
+(defgeneric set-address)
+            
 
 (defmethod dword
   ((?value LEXEME
@@ -174,3 +178,16 @@
    $?body)
   (use-register ?register
                 ?body))
+
+(defmethod jump-table
+ ((?title SYMBOL)
+  (?locations MULTIFIELD))
+  (scope ?title
+         (map dword
+              (expand$ ?locations))))
+(defmethod jump-table
+ ((?title SYMBOL)
+  $?locations)
+ (jump-table ?title
+             ?locations))
+

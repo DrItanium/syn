@@ -291,3 +291,8 @@
 
 
 
+(defmethod set-address
+           ((?value INTEGER
+                    SYMBOL))
+           (assign32 addr
+                     ?value))

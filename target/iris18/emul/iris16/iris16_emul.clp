@@ -7,16 +7,6 @@
            ?*sp* = 0xFE
            ?*lr* = 0xFD
            )
-(deffunction set-address
-             (?value)
-             (assign32 addr
-                       ?value))
-(deffunction jump-table
-             (?title $?locations)
-             (scope ?title
-                    (map dword
-                         (expand$ ?locations))))
-
 (output t
         (deflabel Iris16Startup)
         (deflabel Iris16Loop)
