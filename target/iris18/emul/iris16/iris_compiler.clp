@@ -6,6 +6,8 @@
 ; 2) The org directive starts with @org
 ; 3) 32bit values are @dword
 ; 4) 16bit values are @word
+(defgeneric compile
+            "Compile the primary environment")
 (defgeneric output
             "Output the input body to the target IO router")
 (defgeneric deflabel
@@ -280,3 +282,29 @@
    $?body)
   (at-memory-location ?value
                       ?body))
+
+(defmethod compile
+  ((?router SYMBOL))
+  (send ?*primary-env*
+        compile
+        ?router))
+
+(defmethod compile-to-file
+  ((?path LEXEME)
+   (?mode LEXEME))
+  (if (open ?path 
+            file
+            ?mode) then
+    (compile file)
+    (close file)
+    else
+    (printout werror 
+              "ERROR: Couldn't open " ?path " with permissions " ?mode crlf)
+    FALSE))
+(defmethod compile-to-file
+  ((?path LEXEME))
+  (compile-to-file ?path
+                   "w"))
+
+
+
