@@ -8,6 +8,8 @@
 ; 4) 16bit values are @word
 (defgeneric compile
             "Compile the primary environment")
+(defgeneric container)
+
 (defgeneric output
             "Output the input body to the target IO router")
 (defgeneric deflabel
@@ -172,7 +174,7 @@
                     (?router)
                     (progn$ (?a ?self:contents)
                             (if (instancep ?a) then
-                              (send ?a 
+                              (send ?a
                                     compile
                                     ?router)
                               else
@@ -196,7 +198,7 @@
                     (?router)
                     (progn$ (?child ?self:children)
                             (if (instance-namep ?child) then
-                              (send ?child 
+                              (send ?child
                                     compile
                                     ?router)
                               else
@@ -223,7 +225,7 @@
   ((?name SYMBOL)
    (?entries MULTIFIELD))
   (send ?*primary-env*
-        defunc 
+        defunc
         ?name
         ?entries))
 
@@ -271,7 +273,7 @@
           (str-cat ?value)))
 
 (defmethod at-memory-location
-  ((?value LEXEME 
+  ((?value LEXEME
            NUMBER)
    (?body MULTIFIELD))
   (scope (memory-location ?value)
@@ -292,19 +294,17 @@
 (defmethod compile-to-file
   ((?path LEXEME)
    (?mode LEXEME))
-  (if (open ?path 
+  (if (open ?path
             file
             ?mode) then
     (compile file)
     (close file)
     else
-    (printout werror 
+    (printout werror
               "ERROR: Couldn't open " ?path " with permissions " ?mode crlf)
     FALSE))
 (defmethod compile-to-file
   ((?path LEXEME))
   (compile-to-file ?path
                    "w"))
-
-
 

@@ -8,15 +8,15 @@
            ?*lr* = 0xFD
            )
 (reset)
-(deflabel Iris16Startup)
-(deflabel Iris16Loop)
-(todo "implement the loop body")
-(deflabel Iris16Shutdown)
-(terminate)
-(scope BadGroup
-       (todo "Print out an error message")
-       (branch-call immediate
-                    Iris16Shutdown))
+(defunc Iris16Startup
+        (deflabel Iris16Loop)
+        (todo "implement the loop body"))
+(defunc Iris16Shutdown
+        (terminate))
+(defunc BadGroup
+        (todo "Print out an error message")
+        (branch-call immediate
+                     Iris16Shutdown))
 
 (defunc PushOntoStack
         (use-register value
