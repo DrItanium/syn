@@ -8,7 +8,8 @@
 ; 4) 16bit values are @word
 (defgeneric compile
             "Compile the primary environment")
-(defgeneric container)
+(defgeneric code
+            "Install code into the environment")
 
 (defgeneric output
             "Output the input body to the target IO router")
@@ -186,7 +187,7 @@
   (multislot children
              (visibility public)
              (storage local))
-  (message-handler defunc primary)
+  (message-handler add-entries primary)
   (message-handler compile primary))
 
 (defmessage-handler environment add-entries primary
@@ -205,13 +206,6 @@
                               (output ?router
                                       ?child))))
 
-(defmessage-handler environment defunc primary
-                    (?title $?body)
-                    (bind ?self:children
-                          ?self:children
-                          (scope ?title
-                                 $?body
-                                 (ret))))
 
 
 
@@ -224,11 +218,9 @@
 (defmethod defunc
   ((?name SYMBOL)
    (?entries MULTIFIELD))
-  (send ?*primary-env*
-        defunc
-        ?name
-        ?entries))
-
+  (scope ?title
+         ?entries
+         (ret)))
 (defmethod defunc
   ((?name SYMBOL)
    $?entries)
@@ -290,6 +282,9 @@
   (send ?*primary-env*
         compile
         ?router))
+(defmethod compile
+  ()
+  (compile t))
 
 (defmethod compile-to-file
   ((?path LEXEME)
@@ -308,3 +303,12 @@
   (compile-to-file ?path
                    "w"))
 
+(defmethod code
+  ((?contents MULTIFIELD))
+  (send ?*primary-env*
+        add-entries
+        ?contents))
+
+(defmethod code
+  ($?contents)
+  (code ?contents))

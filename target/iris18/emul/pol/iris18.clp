@@ -296,3 +296,4 @@
                     SYMBOL))
            (assign32 addr
                      ?value))
+
