@@ -265,28 +265,24 @@
           "    system %s"
           ?arg))
 (defmethod syscall
-  ((?arg LEXEME)
-   (?index INTEGER))
-  (create$ (assign 0m0001
-                   addr
-                   ?index)
-           (syscall ?arg)))
+  ((?index INTEGER)
+   (?arg SYMBOL))
+  (format nil
+          "    system %d %s"
+          ?index
+          ?arg))
 (defmethod terminate
   ()
-  (create$ (zero addr)
-           (syscall r0)))
+  (syscall 0
+           r0))
 (defmethod putc
   ((?register SYMBOL))
-  (create$ (assign 0m0001
-                   addr
-                   0x2)
-           (syscall ?register)))
+  (syscall 2
+           ?register))
 (defmethod getc
   ((?register SYMBOL))
-  (create$ (assign 0m0001
-                   addr
-                   0x1)
-           (syscall ?register)))
+  (syscall 1
+           ?register))
 
 
 (defmethod shift
