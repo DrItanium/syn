@@ -175,4 +175,63 @@
   (load-register ?address
                   ?value
                   0m1111))
+(deffunction registerp
+             (?input)
+             (not (neq ?input
+                       r0
+                       r1
+                       r2
+                       r3
+                       r4
+                       r5
+                       r6
+                       r7
+                       r8
+                       r9
+                       r10
+                       r11
+                       r12
+                       r13
+                       r14
+                       r15
+                       value
+                       addr
+                       sp
+                       ip
+                       field
+                       shift_width)))
+
+(defmethod go
+  "jump to the given absolute address"
+  ((?address NUMBER
+             SYMBOL))
+  (branch (if (not (registerp ?address)) then
+              immediate)
+          (str-cat ?address)))
+
+(defmethod call
+  ((?address NUMBER
+             SYMBOL))
+  (branch-call (if (not (registerp ?address)) then
+                 immediate)
+               (str-cat ?address)))
+(defmethod iris:if
+  ((?ont SYMBOL
+         (registerp ?current-argument))
+   (?onf SYMBOL
+         (registerp ?current-argument)))
+  (branch-if FALSE
+             ?ont
+             ?onf))
+
+(defmethod iris:if-call
+  ((?ont SYMBOL
+         (registerp ?current-argument))
+   (?onf SYMBOL
+         (registerp ?current-argument)))
+  (branch-if call
+             ?ont
+             ?onf))
+
+
 
