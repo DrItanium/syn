@@ -47,7 +47,7 @@ namespace iris18 {
 
 	RegisterValue Core::retrieveImmediate(byte bitmask) noexcept {
 		switch(bitmask) {
-#define X(value) case value : return retrieveImmediate<value>(); 
+#define X(value) case value : return retrieveImmediate<value>();
 #include "def/iris18/bitmask4bit.def"
 #undef X
 			default:
@@ -293,7 +293,7 @@ namespace iris18 {
 			if (getAddressRegister() >= ArchitectureConstants::MaxSystemCalls) {
 				throw iris::Problem("ERROR: system call index out of range!");
 			} else {
-				systemHandlers[getAddressRegister()](this, std::move(current));
+				systemHandlers[current.getSystemAction()](this, std::move(current));
 			}
         } else if (tControl == Operation::Complex) {
             complexOperation(std::move(current));
@@ -464,7 +464,10 @@ namespace iris18 {
 	}
 
 	InstructionEncoder::Encoding InstructionEncoder::encodeSystemCall() {
-		return std::make_tuple(1, encodeSystemArg0(encodeControl(0, type), arg0), 0, 0);
+        auto first = encodeControl(0, type);
+        first = encodeSystemAction(first, arg0);
+        first = encodeSystemArg0(first, arg1);
+        return std::make_tuple(1, first, 0, 0);
 	}
 
 	InstructionEncoder::Encoding InstructionEncoder::encodeCompare() {
