@@ -5,7 +5,21 @@
 (defgeneric branch-cond)
 (defgeneric compare-op)
 (defgeneric shift)
-
+(defgeneric swap)
+(defmethod swap
+  ((?ra SYMBOL)
+   (?rb SYMBOL)
+   (?comment STRING))
+  (comment (swap ?ra
+                 ?rb)
+           ?comment))
+(defmethod swap
+  ((?ra SYMBOL)
+   (?rb SYMBOL))
+  (format nil
+          "    swap %s %s"
+          ?ra
+          ?rb))
 (deffunction memory-op
              (?action ?bitmask ?offset)
              (format nil
@@ -261,6 +275,18 @@
   ()
   (create$ (zero addr)
            (syscall r0)))
+(defmethod putc
+  ((?register SYMBOL))
+  (create$ (assign 0m0001
+                   addr
+                   0x2)
+           (syscall ?register)))
+(defmethod getc
+  ((?register SYMBOL))
+  (create$ (assign 0m0001
+                   addr
+                   0x1)
+           (syscall ?register)))
 
 
 (defmethod shift

@@ -62,3 +62,116 @@
              (defchar-compare IsSemiColon
                               "Is it a ';'?"
                               0x3b))
+
+(defgeneric is-space
+            "Macro operation to check and see if the given register contains an ascii space code")
+(defgeneric is-lparen)
+(defgeneric is-rparen)
+
+(defmethod is-space
+  ((?register SYMBOL)
+   (?combine SYMBOL)
+   (?comment STRING))
+  (comment (is-space ?register
+                     ?combine)
+           ?comment))
+(defmethod is-space
+  ((?register SYMBOL)
+   (?combine SYMBOL))
+  (compare-op ==
+              ?combine
+              immediate
+              ?register
+              0x20))
+
+(defmethod is-space
+  ((?register SYMBOL))
+  (is-space ?register
+            none))
+
+(defgeneric store-register)
+(defgeneric load-register)
+;NOTE: Since address and value are fixed registers we have to swap the contents
+;      temporarily. This is much cheaper than save and restore
+(defmethod store-register
+  ((?address SYMBOL)
+   (?value SYMBOL)
+   (?bitmask SYMBOL)
+   (?offset SYMBOL
+            NUMBER)
+   (?comment STRING))
+  (create$ (comment ?comment)
+           (store-register ?address
+                           ?value
+                           ?bitmask
+                           ?offset)))
+(defmethod store-register
+  ((?address SYMBOL)
+   (?value SYMBOL)
+   (?bitmask SYMBOL)
+   (?offset SYMBOL))
+  (body (swap ?address
+              address)
+        (swap ?value
+              value)
+        (store-value ?bitmask ?offset)
+        (swap ?address
+              address)
+        (swap ?value
+              value)))
+
+(defmethod store-register
+  ((?address SYMBOL)
+   (?value SYMBOL)
+   (?bitmask SYMBOL))
+  (store-register ?address
+                  ?value
+                  ?bitmask
+                  0x0))
+(defmethod store-register
+  ((?address SYMBOL)
+   (?value SYMBOL))
+  (store-register ?address
+                  ?value
+                  0m1111))
+(defmethod load-register
+  ((?address SYMBOL)
+   (?value SYMBOL)
+   (?bitmask SYMBOL)
+   (?offset SYMBOL
+            NUMBER)
+   (?comment STRING))
+  (create$ (comment ?comment)
+           (load-register ?address
+                           ?value
+                           ?bitmask
+                           ?offset)))
+(defmethod load-register
+  ((?address SYMBOL)
+   (?value SYMBOL)
+   (?bitmask SYMBOL)
+   (?offset SYMBOL))
+  (body (swap ?address
+              address)
+        (swap ?value
+              value)
+        (load-value ?bitmask ?offset)
+        (swap ?address
+              address)
+        (swap ?value
+              value)))
+
+(defmethod load-register
+  ((?address SYMBOL)
+   (?value SYMBOL)
+   (?bitmask SYMBOL))
+  (load-register ?address
+                  ?value
+                  ?bitmask
+                  0x0))
+(defmethod load-register
+  ((?address SYMBOL)
+   (?value SYMBOL))
+  (load-register ?address
+                  ?value
+                  0m1111))

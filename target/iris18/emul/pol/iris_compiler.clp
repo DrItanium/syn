@@ -27,6 +27,9 @@
             "Declare a note comment")
 (defgeneric todo
             "Declare a todo comment")
+(defgeneric body
+            "Declare a body of code")
+
 (defgeneric scope
             "Declares a label targeted body of code")
 (defgeneric defunc
@@ -218,7 +221,7 @@
 (defmethod defunc
   ((?name SYMBOL)
    (?entries MULTIFIELD))
-  (scope ?title
+  (scope ?name
          ?entries
          (ret)))
 (defmethod defunc
@@ -235,9 +238,15 @@
 (defmethod scope
   ((?name LEXEME)
    (?body MULTIFIELD))
+  (body (deflabel ?name)
+        ?body))
+(defmethod body
+  ((?body MULTIFIELD))
   (make-instance of container
-                 (contents (deflabel ?name)
-                           $?body)))
+                 (contents ?body)))
+(defmethod body
+  ($?body)
+  (body ?body))
 (defmethod scope
   ((?name LEXEME)
    $?body)
@@ -268,8 +277,8 @@
   ((?value LEXEME
            NUMBER)
    (?body MULTIFIELD))
-  (scope (memory-location ?value)
-         ?body))
+  (body (memory-location ?value)
+        ?body))
 (defmethod at-memory-location
   ((?value LEXEME
            NUMBER)

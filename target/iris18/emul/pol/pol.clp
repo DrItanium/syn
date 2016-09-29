@@ -6,8 +6,6 @@
 (code (scope startup
              (comment "Make sure that we setup memory and hand off to the runtime")
              )
-      (defis-lparen)
-      (defis-rparen)
-      (defis-space))
+      (comment "standard character checking routines")
+      )
 
-(compile)
