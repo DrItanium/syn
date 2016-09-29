@@ -114,7 +114,8 @@
               address)
         (swap ?value
               value)
-        (store-value ?bitmask ?offset)
+        (store-value ?bitmask
+                     ?offset)
         (swap ?address
               address)
         (swap ?value
@@ -232,6 +233,3 @@
   (branch-if call
              ?ont
              ?onf))
-
-
-
