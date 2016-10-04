@@ -340,6 +340,7 @@ namespace iris18 {
 
 	void Core::putc(Core* core, DecodedInstruction&& current) {
 		std::cout.put(static_cast<char>(core->registerValue(current.getSystemArg0())));
+		std::cout.flush();
 	}
 	void Core::getc(Core* core, DecodedInstruction&& current) {
 		byte value = 0;
