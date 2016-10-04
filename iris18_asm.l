@@ -106,7 +106,7 @@ omni [a-zA-Z0-9._]
 "field"        { iris18lval.rval = iris18::ArchitectureConstants::FieldRegister; return REGISTER; }
 
 
-[ \t\n]     ;
+[ \t\n,]     ;
 [;].*       ; // comments
 r{digit}+   { iris18lval.rval = iris18::getregister(); return REGISTER; }
 {digit}+    { iris18lval.ival = iris18::getdecimalimmediate(); return IMMEDIATE; }
