@@ -61,7 +61,7 @@ X(BranchIndirectDestination,       0b1111000000000000,  12, byte,   branchIndire
 // memory operation flags
 X(MemoryFlagType,        0b0000000000110000, 4, MemoryOperation,  memoryFlagType)
 X(MemoryFlagBitmask,     0b0000111100000000, 8, byte,  memoryFlagBitmask)
-X(MemoryFlagIndirect,    0b0000111101000000, 6, bool, memoryFlagIndirect)
+X(MemoryFlagIndirect,    0b0000000001000000, 6, bool, memoryFlagIndirect)
 X(MemoryFlagIllegalBits, 0b0000000010000000, 7, bool, memoryFlagIllegalBits)
 X(MemoryOffset,          0b1111000000000000, 12, byte,  memoryOffset)
 X(MemoryRegister,        0b1111000000000000, 12, byte,  memoryRegister)

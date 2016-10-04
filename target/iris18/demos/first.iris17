@@ -5,10 +5,10 @@
 	memory load 0m0011 0x0
 	compare == none value r0
 	branch cond immediate done
-	swap addr r1
+	swap addr, r1
 	system value
-	swap addr r1
-	arithmetic add immediate addr 1
+	swap addr, r1
+	increment addr
 	branch immediate continue
 @label done
 	swap addr r0
