@@ -59,13 +59,15 @@ X(BranchIfOnFalse,                 0b1111000000000000, 12, byte,  branchIfOnFals
 X(BranchIndirectDestination,       0b1111000000000000,  12, byte,   branchIndirectDestination)
 
 // memory operation flags
-X(MemoryFlagType,        0b0000000000110000, 4, MemoryOperation,  memoryFlagType)
-X(MemoryFlagBitmask,     0b0000111100000000, 8, byte,  memoryFlagBitmask)
-X(MemoryFlagIndirect,    0b0000000001000000, 6, bool, memoryFlagIndirect)
-X(MemoryFlagIllegalBits, 0b0000000010000000, 7, bool, memoryFlagIllegalBits)
-X(MemoryOffset,          0b1111000000000000, 12, byte,  memoryOffset)
-X(MemoryRegister,        0b1111000000000000, 12, byte,  memoryRegister)
-X(MemorySignature,       0b0000111111110000, 4, byte, memorySignature)
+X(MemoryFlagType,         0b0000000000110000, 4, MemoryOperation,  memoryFlagType)
+X(MemoryFlagBitmask,      0b0000111100000000, 8, byte,  memoryFlagBitmask)
+X(MemoryFlagIndirect,     0b0000000001000000, 6, bool, memoryFlagIndirect)
+X(MemoryFlagReadNextWord, 0b0000000010000000, 7, bool, memoryFlagLoadNextWord)
+X(MemoryOffset,           0b1111000000000000, 12, byte,  memoryOffset)
+X(MemoryRegister,         0b1111000000000000, 12, byte,  memoryRegister)
+X(MemorySignature,        0b0000111111110000, 4, byte, memorySignature)
+X(MemoryAddress,          0b0000000000001111, 0, byte, memoryAddress)
+X(MemoryValue,            0b0000000011110000, 4, byte, memoryValue)
 
 // move operation flags
 X(MoveBitmask,       0b0000000011110000, 4, byte,  moveBitmask)

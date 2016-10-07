@@ -47,7 +47,7 @@ namespace iris18 {
 
 	RegisterValue Core::retrieveImmediate(byte bitmask) noexcept {
 		switch(bitmask) {
-#define X(value) case value : return retrieveImmediate<value>(); 
+#define X(value) case value : return retrieveImmediate<value>();
 #include "def/iris18/bitmask4bit.def"
 #undef X
 			default:
@@ -226,12 +226,8 @@ namespace iris18 {
 		} else if (tControl == Operation::Memory) {
 #define X(value) \
 			if (value == current.getMemorySignature()) { \
-				if (!MemoryFlags<value>::errorState) { \
 					memoryOperation<MemoryFlags<value>::type, MemoryFlags<value>::bitmask, MemoryFlags<value>::indirect>(std::move(current)); \
 					return; \
-				} else { \
-					throw iris::Problem("Undefined bits set in memory operation!"); \
-				} \
 			}
 #include "def/iris18/bitmask8bit.def"
 #undef X

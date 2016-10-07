@@ -1,0 +1,39 @@
+; define a page as being made up of eight 16-bit words
+; words 0 and 1 define the book keeping and tag
+; words 2 and 3 define the car
+; words 4 and 5 define the cdr
+; words 6 and 7 are unused / future expansion
+; the memory allocator defines many pages as being unmovable because they are
+; not actually part of the garbage collector. The first 64kw of memory are
+; defined as fixed memory, this turns into the first
+
+; r0, r1 - current pointers to data objects
+; r0, r1, r2 - cell 2 data
+; r0 - pointer
+; value, r8, r7, r6 - args
+; r4, r5 - temporaries
+
+
+@label ComputeAddress
+    memory push 0m1111 r7
+    set 0m1111 r7 0x00FFFFFF
+    move 0m1111 addr r8
+    logical and addr r7
+    shift right immediate addr 2
+    memory pop 0m1111 r7
+    return
+
+
+@label LoadPair
+    memory load 0m1111 0x0
+    move 0m1111 r0 value
+    memory load 0m1111 0x2
+    move 0m1111 r1 value
+    return
+
+@label PullData
+    memory push 0m1111 value
+    branch call immediate ComputeAddress
+    branch immediate LoadPair
+    memory pop 0m1111 value
+    return

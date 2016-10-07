@@ -64,7 +64,6 @@ namespace iris18 {
 		ShiftRegister = R10,
 		FieldRegister = R10,
 		//CountRegister = R9,
-			
 	};
 
 #define DefEnum(type, width) \
@@ -198,7 +197,9 @@ namespace iris18 {
 			bool shouldExecute() const { return execute; }
 		private:
 			void pushWord(Word value);
+            void pushWord(Word value, RegisterValue& ptr);
 			void pushDword(DWord value);
+            void pushDword(DWord value, RegisterValue& ptr);
 			Word popWord();
 			static void defaultSystemHandler(Core* core, DecodedInstruction&& inst);
 			static void terminate(Core* core, DecodedInstruction&& inst);
@@ -313,7 +314,7 @@ namespace iris18 {
 					}
 				}
 			template<bool useLower, bool useUpper, RegisterValue fullMask, bool indirect>
-				inline void loadOperation(RegisterValue tmpAddress) {
+				inline void loadOperation(RegisterValue tmpAddress, RegisterValue& destination) {
 					auto address = tmpAddress;
 					if (indirect) {
 						address = encodeRegisterValue(loadWord(address + 1), loadWord(address)) & bitmask24;
@@ -322,28 +323,36 @@ namespace iris18 {
 					// to use the Address and Value registers
 					auto lower = useLower ? encodeLowerHalf(0, loadWord(address)) : 0;
 					auto upper = useUpper ? encodeUpperHalf(0, loadWord(address + 1)) : 0;
-					getValueRegister() = iris::encodeBits<RegisterValue, RegisterValue, fullMask, 0>(0, lower | upper);
+                    destination = iris::encodeBits<RegisterValue, RegisterValue, fullMask, 0>(0, lower | upper);
 				}
 
 			template<bool useLower, bool useUpper, RegisterValue lmask, RegisterValue umask, bool indirect>
-				inline void storeOperation(RegisterValue tmpAddress) {
+				inline void storeOperation(RegisterValue tmpAddress, RegisterValue value) {
 					auto address = tmpAddress;
 					if (indirect) {
 						address = encodeRegisterValue(loadWord(address + 1), loadWord(address)) & bitmask24;
 					}
 					if (useLower) {
-						auto lower = lmask & decodeLowerHalf(getValueRegister());
+						auto lower = lmask & decodeLowerHalf(value);
 						auto loader = loadWord(address) & ~(lmask);
 						storeWord(address, lower | loader);
 					}
 					if (useUpper) {
-						auto upper = umask & decodeUpperHalf(getValueRegister());
+						auto upper = umask & decodeUpperHalf(value);
 						auto loader = loadWord(address + 1) & ~(umask);
 						storeWord(address + 1, upper | loader);
 					}
 				}
-
-			template<MemoryOperation type, byte bitmask, bool indirect>
+            template<bool readNext>
+            inline Word tryReadNext() {
+                if (readNext) {
+                    incrementInstructionPointer();
+                    return getCurrentCodeWord();
+                } else {
+                    return 0;
+                }
+            }
+			template<MemoryOperation type, byte bitmask, bool indirect, bool readNext>
 				inline void memoryOperation(DecodedInstruction&& inst) {
 					static_assert(bitmask <= ArchitectureConstants::Bitmask, "bitmask is too large!");
 					static constexpr auto useLower = readLower<bitmask>();
@@ -353,10 +362,15 @@ namespace iris18 {
 					static constexpr auto fullMask = mask<bitmask>();
 					auto upper = 0u;
 					auto lower = 0u;
+                    DecodedInstruction next(tryReadNext<readNext>());
 					if (type == MemoryOperation::Load) {
-						loadOperation<useLower, useUpper, fullMask, indirect>(getAddressRegister() + inst.getMemoryOffset());
+                        auto addr = readNext ? registerValue(next.getMemoryAddress()) : getAddressRegister();
+                        auto& value = readNext ? registerValue(next.getMemoryValue()) : getValueRegister();
+						loadOperation<useLower, useUpper, fullMask, indirect>(addr + inst.getMemoryOffset(), value);
 					} else if (type == MemoryOperation::Store) {
-						storeOperation<useLower, useUpper, lmask, umask, indirect>(getAddressRegister() + inst.getMemoryOffset());
+                        auto addr = readNext ? registerValue(next.getMemoryAddress()) : getAddressRegister();
+                        auto value = readNext ? registerValue(next.getMemoryValue()) : getValueRegister();
+						storeOperation<useLower, useUpper, lmask, umask, indirect>(addr + inst.getMemoryOffset(), value);
 					} else if (type == MemoryOperation::Push) {
 						if (indirect) {
 							throw iris::Problem("Can't perform an indirect push");
