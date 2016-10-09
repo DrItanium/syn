@@ -361,21 +361,22 @@ namespace iris18 {
 					static constexpr auto fullMask = mask<bitmask>();
 					auto upper = 0u;
 					auto lower = 0u;
+					auto memOffset = inst.getMemoryOffset();
                     DecodedInstruction next(tryReadNext<readNext>());
 					if (type == MemoryOperation::Load) {
                         auto addr = readNext ? registerValue(next.getMemoryAddress()) : getAddressRegister();
                         auto& value = readNext ? registerValue(next.getMemoryValue()) : getValueRegister();
-						loadOperation<useLower, useUpper, fullMask, indirect>(addr + inst.getMemoryOffset(), value);
+						loadOperation<useLower, useUpper, fullMask, indirect>(addr + memOffset, value);
 					} else if (type == MemoryOperation::Store) {
                         auto addr = readNext ? registerValue(next.getMemoryAddress()) : getAddressRegister();
                         auto value = readNext ? registerValue(next.getMemoryValue()) : getValueRegister();
-						storeOperation<useLower, useUpper, lmask, umask, indirect>(addr + inst.getMemoryOffset(), value);
+						storeOperation<useLower, useUpper, lmask, umask, indirect>(addr + memOffset, value);
 					} else if (type == MemoryOperation::Push) {
 						if (indirect) {
 							throw iris::Problem("Can't perform an indirect push");
 						} else {
 							// update the target stack to something different
-							auto pushToStack = registerValue(inst.getMemoryOffset());
+							auto pushToStack = registerValue(memOffset);
 							auto &stackPointer = readNext ? registerValue(next.getMemoryAddress()) : getStackPointer();
 							// read backwards because the stack grows upward towards zero
 							if (useUpper) {
@@ -396,11 +397,11 @@ namespace iris18 {
 							if (useUpper) {
 								upper = umask & popWord(stackPointer);
 							}
-							registerValue(inst.getMemoryOffset()) = encodeRegisterValue(upper, lower);
+							registerValue(memOffset) = encodeRegisterValue(upper, lower);
 							// can't think of a case where we should
 							// restore the instruction pointer and then
 							// immediate advance so just don't do it
-							advanceIp = inst.getMemoryOffset() != ArchitectureConstants::InstructionPointer;
+							advanceIp = memOffset != ArchitectureConstants::InstructionPointer;
 						}
 					} else {
 						throw iris::Problem("Illegal memory operation type!");
