@@ -316,41 +316,6 @@ namespace iris18 {
 						throw iris::Problem("Illegal arithmetic operation!");
 					}
 				}
-			template<bool useLower, bool useUpper, RegisterValue fullMask, bool indirect>
-				inline void loadOperation(RegisterValue tmpAddress, RegisterValue& destination) {
-					if (!useLower && !useUpper) {
-						destination = 0; // zero out the register if nothing is going to be happening
-					} else {
-						auto address = tmpAddress;
-						if (indirect) {
-							address = encodeRegisterValue(loadWord(address + 1), loadWord(address)) & bitmask24;
-						}
-						// use the destination field of the instruction to denote offset, thus we need
-						// to use the Address and Value registers
-						auto lower = useLower ? encodeLowerHalf(0, loadWord(address)) : 0u;
-						auto upper = useUpper ? encodeUpperHalf(0, loadWord(address + 1)) : 0u;
-                    	destination = iris::encodeBits<RegisterValue, RegisterValue, fullMask, 0>(0u, lower | upper);
-					}
-				}
-			template<RegisterValue mask, bool use>
-				inline void storeGeneric(RegisterValue address, Word value) {
-					if (use) {
-						if (mask == 0x0000FFFF) {
-							storeWord(address, value);
-						} else {
-							storeWord(address, (mask & value) | (loadWord(address) & ~mask));
-						}
-					}
-				}
-			template<bool useLower, bool useUpper, RegisterValue lmask, RegisterValue umask, bool indirect>
-				inline void storeOperation(RegisterValue tmpAddress, RegisterValue value) {
-					auto address = tmpAddress;
-					if (indirect) {
-						address = encodeRegisterValue(loadWord(address + 1), loadWord(address)) & bitmask24;
-					}
-					storeGeneric<lmask, useLower>(address, decodeLowerHalf(value));
-					storeGeneric<umask, useUpper>(address, decodeUpperHalf(value));
-				}
 			template<MemoryOperation type, byte bitmask, bool indirect, bool readNext>
 				inline void memoryOperation(DecodedInstruction&& inst) {
 					static_assert(bitmask <= ArchitectureConstants::Bitmask, "bitmask is too large!");
@@ -366,11 +331,40 @@ namespace iris18 {
 					if (type == MemoryOperation::Load) {
                         auto addr = readNext ? registerValue(next.getMemoryAddress()) : getAddressRegister();
                         auto& value = readNext ? registerValue(next.getMemoryValue()) : getValueRegister();
-						loadOperation<useLower, useUpper, fullMask, indirect>(addr + memOffset, value);
+						if (!useLower && !useUpper) {
+							value = 0; // zero out the register if nothing is going to be happening
+						} else {
+							auto address = addr + memOffset;
+							if (indirect) {
+								address = encodeRegisterValue(loadWord(address + 1), loadWord(address)) & bitmask24;
+							}
+							// use the value field of the instruction to denote offset, thus we need
+							// to use the Address and Value registers
+							lower = useLower ? encodeLowerHalf(0, loadWord(address)) : 0u;
+							upper = useUpper ? encodeUpperHalf(0, loadWord(address + 1)) : 0u;
+							value = iris::encodeBits<RegisterValue, RegisterValue, fullMask, 0>(0u, lower | upper);
+						}
 					} else if (type == MemoryOperation::Store) {
                         auto addr = readNext ? registerValue(next.getMemoryAddress()) : getAddressRegister();
                         auto value = readNext ? registerValue(next.getMemoryValue()) : getValueRegister();
-						storeOperation<useLower, useUpper, lmask, umask, indirect>(addr + memOffset, value);
+						auto address = addr + memOffset;
+						if (indirect) {
+							address = encodeRegisterValue(loadWord(address + 1), loadWord(address)) & bitmask24;
+						}
+						if (useLower) {
+							if (lmask == 0x0000FFFF) {
+								storeWord(address, value);
+							} else {
+								storeWord(address, (lmask & value) | (loadWord(address) & ~lmask));
+							}
+						}
+						if (useUpper) {
+							if (umask == 0x0000FFFF) {
+								storeWord(address, value);
+							} else {
+								storeWord(address, (umask & value) | (loadWord(address) & ~umask));
+							}
+						}
 					} else if (type == MemoryOperation::Push) {
 						if (indirect) {
 							throw iris::Problem("Can't perform an indirect push");
