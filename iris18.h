@@ -263,15 +263,14 @@ namespace iris18 {
 			template<ImmediateLogicalOps type, byte bitmask>
 				inline void logicalImmediateOperation(DecodedInstruction&& inst) {
 					auto &dest = registerValue(inst.getLogicalImmediateDestination());
-					auto immediate = retrieveImmediate<bitmask>();
 					if (type == ImmediateLogicalOps::And) {
-						dest = iris::binaryAnd(dest, immediate);
+						dest = iris::binaryAnd(dest, retrieveImmediate<bitmask>());
 					} else if (type == ImmediateLogicalOps::Or) {
-						dest = iris::binaryOr(dest, immediate);
+						dest = iris::binaryOr(dest, retrieveImmediate<bitmask>());
 					} else if (type == ImmediateLogicalOps::Nand) {
-						dest = iris::binaryNand(dest, immediate);
+						dest = iris::binaryNand(dest, retrieveImmediate<bitmask>());
 					} else if (type == ImmediateLogicalOps::Xor) {
-						dest = iris::binaryXor(dest, immediate);
+						dest = iris::binaryXor(dest, retrieveImmediate<bitmask>());
 					} else {
 						throw iris::Problem("Illegal immediate logical flag type");
 					}
