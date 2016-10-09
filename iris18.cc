@@ -125,7 +125,10 @@ namespace iris18 {
 		}
 	}
 	void Core::cycle() {
-		dispatch(std::move(DecodedInstruction(getCurrentCodeWord())));
+		std::cout << "Current Instruction Location: " << std::hex << getInstructionPointer() << std::endl;
+		std::cout << "\tCurrent word value: " << std::hex << getCurrentCodeWord() << std::endl;
+		DecodedInstruction di(getCurrentCodeWord());
+		dispatch(std::move(di));
 		if (advanceIp) {
 			incrementInstructionPointer();
 		} else {
@@ -314,7 +317,8 @@ namespace iris18 {
             complexOperation(std::move(current));
 		} else {
 			std::stringstream str;
-			str << "Illegal instruction " << std::hex << static_cast<byte>(current.getControl());
+			str << "Illegal instruction " << std::hex << static_cast<int>(current.getControl()) << std::endl;
+			str << "Location: " << std::hex << getInstructionPointer() << std::endl;
 			execute = false;
 			throw iris::Problem(str.str());
 		}

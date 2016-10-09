@@ -88,11 +88,13 @@ struct asmstate {
 };
 
 void asmstate::registerLabel(const std::string& text) {
+	std::cout << "Registered label " << text << " for address: " <<  std::hex << address << std::endl;
 	labels.emplace(text, address);
 }
 void asmstate::registerDynamicOperation(InstructionEncoder op) {
 	op.address = address;
 	dynops.emplace_back(op);
+	std::cout << "address: " << std::hex << op.address << " numWords: " << op.numWords() << std::endl;
 	address += op.numWords();
 }
 void asmstate::setRegisterAtStartup(byte index, RegisterValue value) {
