@@ -238,7 +238,13 @@ namespace iris18 {
 			switch (current.getMemorySignature()) {
 #define X(value) \
 				case value : \
-					memoryOperation<MemoryFlags<value>::type, MemoryFlags<value>::bitmask, MemoryFlags<value>::indirect, MemoryFlags<value>::readNextWord>(std::move(current)); \
+							 if (MemoryFlags<value>::type == MemoryOperation::Push && MemoryFlags<value>::indirect) { \
+								 throw iris::Problem("Indirect bit not supported in push operations!"); \
+							 } else if (MemoryFlags<value>::type == MemoryOperation::Pop && MemoryFlags<value>::indirect) { \
+								 throw iris::Problem("Indirect bit not supported in pop operations!"); \
+							 } else { \
+								memoryOperation<MemoryFlags<value>::type, MemoryFlags<value>::bitmask, MemoryFlags<value>::indirect, MemoryFlags<value>::readNextWord>(std::move(current)); \
+							 } \
 					break; 
 #include "def/iris18/bitmask8bit.def"
 #undef X
