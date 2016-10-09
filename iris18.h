@@ -327,32 +327,29 @@ namespace iris18 {
 						}
 						// use the destination field of the instruction to denote offset, thus we need
 						// to use the Address and Value registers
-						auto lower = useLower ? encodeLowerHalf(0, loadWord(address)) : 0;
-						auto upper = useUpper ? encodeUpperHalf(0, loadWord(address + 1)) : 0;
-                    	destination = iris::encodeBits<RegisterValue, RegisterValue, fullMask, 0>(0, lower | upper);
+						auto lower = useLower ? encodeLowerHalf(0, loadWord(address)) : 0u;
+						auto upper = useUpper ? encodeUpperHalf(0, loadWord(address + 1)) : 0u;
+                    	destination = iris::encodeBits<RegisterValue, RegisterValue, fullMask, 0>(0u, lower | upper);
 					}
 				}
-
+			template<RegisterValue mask, bool use>
+				inline void storeGeneric(RegisterValue address, Word value) {
+					if (use) {
+						if (mask == 0x0000FFFF) {
+							storeWord(address, value);
+						} else {
+							storeWord(address, (mask & value) | (loadWord(address) & ~mask));
+						}
+					}
+				}
 			template<bool useLower, bool useUpper, RegisterValue lmask, RegisterValue umask, bool indirect>
 				inline void storeOperation(RegisterValue tmpAddress, RegisterValue value) {
 					auto address = tmpAddress;
 					if (indirect) {
 						address = encodeRegisterValue(loadWord(address + 1), loadWord(address)) & bitmask24;
 					}
-					if (useLower) {
-						if (lmask == 0x0000FFFF) {
-							storeWord(address, decodeLowerHalf(value));
-						} else {
-							storeWord(address, (lmask & decodeLowerHalf(value)) | (loadWord(address) & ~(lmask)));
-						}
-					}
-					if (useUpper) {
-						if (umask == 0x0000FFFF) {
-							storeWord(address + 1, decodeUpperHalf(value));
-						} else {
-							storeWord(address + 1, (umask & decodeUpperHalf(value)) | (loadWord(address + 1) & ~(umask)));
-						}
-					}
+					storeGeneric<lmask, useLower>(address, decodeLowerHalf(value));
+					storeGeneric<umask, useUpper>(address, decodeUpperHalf(value));
 				}
 			template<MemoryOperation type, byte bitmask, bool indirect, bool readNext>
 				inline void memoryOperation(DecodedInstruction&& inst) {
