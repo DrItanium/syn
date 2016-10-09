@@ -1,43 +1,116 @@
-; define a page as being made up of eight 16-bit words
-; words 0 and 1 define the book keeping and tag
-; words 2 and 3 define the car
-; words 4 and 5 define the cdr
-; words 6 and 7 are unused / future expansion
-; the memory allocator defines many pages as being unmovable because they are
-; not actually part of the garbage collector. The first 64kw of memory are
-; defined as fixed memory, this turns into the first
-
-; r0 - car
-; r1 - cdr
-; value, r8, r7, r6 - args
-; r4, r5 - temporaries/ return values
-
+; Since I've never ever done something like this before, I used the picolisp
+; reference as a base in defining the cell layout. Unlike picoLisp, this
+; machine is really simple but is a good place to start for the time being.
+; There is no floating point support nor symbols at this time.
+; The machine is defined as having a 24-bit flat memory space internally but
+; only 8 megawords are used as user memory with the other half as system and
+; internal book keeping. We will call these halves 'zones'. A memory address
+; denotes which zone it refers to by looking at bit 23 of an address. 
+; zone 0 is system and zone 1 is memory
+; An address refering to zone 1 refers to a 21 bit "cell" address because
+; each cell is comprised of 4 words or 64-bits in size. Thus the lowest two
+; bits are used for basic tagging information. If bit zero is set to one then
+; it has been marked for garbage collection. If bit 1 is set to 1 then the car
+; is a 30-bit integer. If bit 1 is not set then the cell refers to a list and
+; then upper most 8 bits of the half cell refers to extra tagging information. 
+; 
+; Since pico lisp is so simple with respect to garbage collection, it makes it
+; a perfect target for this machine. Thus we have to setup the 21 bit "free list"
+; with the first step being to generate routines we need to manipulate lists
+; There are also two stacks, a call stack and another being a value stack
+;
+; 
+; addr - free list
+; value - return value /arg0
+; r8, r7, r6 - args1-3 respectively
+; r0, r1, r2, r3 - temporaries 
+; r4, r5 - return value / temporaries
+; Divide memory into 2 separate "zones",
+; 0 - System, Free List, Stacks
+; 1 - User Memory
+; The zone bit is defined as bit 23 in a memory address
+; 
+@startup addr 0x007FFFFC ; startup with addr set to NIL
+@startup r8 0x006FFFFC	; end of free list begin
+@org 0x00000000
+; setup the machine by first constructing the free list
+@label memorySetupLoop
+	compare == none addr r8					; see if we are done setting up the free list
+	branch cond immediate memoryHasBeenSetup
+	copy r0 addr 				; r0 is the address in zone 1
+	copy r1 addr 				; r1 is the address in zone 0
+	arithmetic add immediate r0 0x4	; next address cell
+	arithmetic sub immediate r1 0x4 ; next "free cell" location
+	memory store 0m1111 0x0 r1 r0	; store the next address cell in zone1 to car
+	memory store 0m1111 0x2 r1 addr ; store the old available address as cdr
+	copy addr r1
+	branch immediate memorySetupLoop
+@label memoryHasBeenSetup
+	
+@label Terminate
+	zero addr
+	system value
 
 @label ComputeAddress
-    logical and immediate 0m0111 value 0x00FFFFFF
-    shift right immediate value 2
+	; extract address and extra bits into separate registers r4 and r5
+	move 0m0111 r2 value		; raw 24 bit address
+	logical and immediate 0m0111 r2 0x007FFFFC
+	move 0m1100 r3 value		; extra bits, upper 8 and lower 2
+	logical and immediate 0m1001 r3 0xFF000003
     return
-
-
-@label LoadPair
-    memory load 0m1111 0x0 value r0
-    memory load 0m1111 0x2 value r1
-    return
-
-@label PullData
-	branch call immediate ComputeAddress
-	branch immediate LoadPair
-
+@label NextAddress
+	; move ahead 4 words
+	arithmetic add immediate value 0x4
+	return
+@label PreviousAddress
+	; move back 4 words
+	arithmetic sub immediate value 0x4
+	return
 @label ShouldGarbageCollect
 	; inspect the target address to see if the corresponding pair should be garbage collected
 	; value - the address to check
-	move 0m1111 r4 value			 ; use r4 as a temporary
-	logical and immediate 0m0001 r4 0x1     ; bit zero contains the garbage collect bit
-	compare != none immediate r4 0x0
+	move 0m0001 r4 value
+	logical and immediate 0m0001 r4 0x1
+	compare > none immediate r4 0x0
+	return
+@label integerp
+	move 0m0001 r4 value
+	logical and immediate 0m0001 r4 0x2
+	compare > none immediate r4 0x0
 	return
 
-@label Integerp
-	move 0m1111 r4 value
-	logical and immediate 0m0001 r4 0x2
-	compare == none immediate r4 0x0
+@label car
+	memory load 0m1111 0x0 value r4
 	return
+@label cdr
+	memory load 0m1111 0x2 value r4
+	return
+@label allocateMemoryCell
+	branch call immediate outOfMemory
+	branch cond immediate isOutOfMemory
+	; not out of memory
+	memory load 0m1111 0x0 addr value ; load the car into value
+	memory load 0m1111 0x2 addr addr   ; load the cdr into addr
+	branch immediate loadMemoryCell_Done
+@label isOutOfMemory
+	branch call immediate garbageCollect
+@label loadMemoryCell_Done
+	return
+@label garbageCollect
+	; TODO: implement
+	return
+	
+@label outOfMemory
+	memory load 0m0111 0x0
+@label nilp
+	set 0m1111 r4 0x007FFFFC
+	compare == none value r4
+	return
+@org 0x006FFFFC
+@label freeListBegin
+@org 0x007FFFFC
+@label freeListEnd
+@label NIL
+	@dword 0xFF7FFFFC
+	@dword 0xCFFFF7FF
+	
