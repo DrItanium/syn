@@ -104,6 +104,7 @@ omni [a-zA-Z0-9._]
 "mask"         { iris18lval.rval = iris18::ArchitectureConstants::MaskRegister; return REGISTER; }
 "shift_width"  { iris18lval.rval = iris18::ArchitectureConstants::ShiftRegister; return REGISTER; }
 "field"        { iris18lval.rval = iris18::ArchitectureConstants::FieldRegister; return REGISTER; }
+"cr"           { iris18lval.rval = iris18::ArchitectureConstants::ConditionRegister; return REGISTER; }
 
 
 [ \t\n,]     ;

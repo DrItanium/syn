@@ -275,6 +275,7 @@ namespace iris18 {
 			auto first = registerValue(next.getCompareRegister0());
 			auto second = current.getCompareImmediateFlag() ? next.getUpper() : registerValue(next.getCompareRegister1());
 			auto result = false;
+			auto cond = getConditionRegister() != 0;
 			auto compareType = current.getCompareType();
 			if (compareType == CompareStyle::Equals) {
 				result = iris::eq(first, second);
@@ -295,11 +296,11 @@ namespace iris18 {
 			if (combineType == CompareCombine::None) {
 				getConditionRegister() = result;
 			} else if (combineType == CompareCombine::And) {
-				getConditionRegister() &= result;
+				getConditionRegister() = result && cond;
 			} else if (combineType == CompareCombine::Or) {
-				getConditionRegister() |= result;
+				getConditionRegister() = result || cond;
 			} else if (combineType == CompareCombine::Xor) {
-				getConditionRegister() ^= result;
+				getConditionRegister() = result ^ cond;
 			} else {
 				throw iris::Problem("Illegal Compare Combine Operation");
 			}
