@@ -21,18 +21,18 @@
 ;
 ; 
 ; addr - free list
-; value - return value /arg0
-; r8, r7, r6 - args1-3 respectively
+; value, r8, r7 - args0-2 respectively
 ; r0, r1, r2, r3 - temporaries 
-; r4, r5 - return value / temporaries
+; r9, r4, r5 - return value / temporaries
+; r9 - system call input output register
 ; Divide memory into 2 separate "zones",
 ; 0 - System, Free List, Stacks
 ; 1 - User Memory
 ; The zone bit is defined as bit 23 in a memory address
-; 
-@startup addr 0x007FFFFC ; startup with addr set to NIL
-@startup r8 0x006FFFFC	; end of free list begin
 @org 0x00000000
+	set 0m1111 sp stackBottom ; setup the stack pointer
+	set 0m1111 r8 freeListBegin ; set the bottom of the free list
+	set 0m1111 addr NIL ; initialize the free list by pointing to NIL
 ; setup the machine by first constructing the free list
 @label memorySetupLoop
 	compare == none addr r8					; see if we are done setting up the free list
@@ -46,10 +46,26 @@
 	copy addr r1
 	branch immediate memorySetupLoop
 @label memoryHasBeenSetup
-	
-@label Terminate
+	branch immediate Terminate ; just quit for now
+@label getchar 
+	set 0m0001 addr 1
+	branch immediate syscall
+@label putchar
+	set 0m0001 addr 2
+	branch immediate syscall
+@label terminate
 	zero addr
-	system value
+@label syscall
+	system r9
+	return
+
+@label PrintChar
+	move 0m1111 r9 value
+	branch immediate putchar
+@label ReadChar
+	branch immediate getchar
+	
+
 
 @label ComputeAddress
 	; extract address and extra bits into separate registers r4 and r5
@@ -106,11 +122,12 @@
 	set 0m1111 r4 0x007FFFFC
 	compare == none value r4
 	return
+@org 0x006FFFF0
+@label stackBottom
 @org 0x006FFFFC
 @label freeListBegin
 @org 0x007FFFFC
 @label freeListEnd
 @label NIL
 	@dword 0xFF7FFFFC
-	@dword 0xCFFFF7FF
-	
+	@dword NIL
