@@ -201,6 +201,7 @@ namespace iris18 {
 			void pushDword(DWord value);
             void pushDword(DWord value, RegisterValue& ptr);
 			Word popWord();
+			Word popWord(RegisterValue& ptr);
 			static void defaultSystemHandler(Core* core, DecodedInstruction&& inst);
 			static void terminate(Core* core, DecodedInstruction&& inst);
 			static void getc(Core* core, DecodedInstruction&& inst);
@@ -375,24 +376,27 @@ namespace iris18 {
 						if (indirect) {
 							throw iris::Problem("Can't perform an indirect push");
 						} else {
+							// update the target stack to something different
 							auto pushToStack = registerValue(inst.getMemoryOffset());
+							auto &stackPointer = readNext ? registerValue(next.getMemoryAddress()) : getStackPointer();
 							// read backwards because the stack grows upward towards zero
 							if (useUpper) {
-								pushWord(umask & decodeUpperHalf(pushToStack));
+								pushWord(umask & decodeUpperHalf(pushToStack), stackPointer);
 							}
 							if (useLower) {
-								pushWord(lmask & decodeLowerHalf(pushToStack));
+								pushWord(lmask & decodeLowerHalf(pushToStack), stackPointer);
 							}
 						}
 					} else if (type == MemoryOperation::Pop) {
 						if (indirect) {
 							throw iris::Problem("Can't perform an indirect pop!");
 						} else {
+							auto &stackPointer = readNext ? registerValue(next.getMemoryAddress()) : getStackPointer();
 							if (useLower) {
-								lower = lmask & popWord();
+								lower = lmask & popWord(stackPointer);
 							}
 							if (useUpper) {
-								upper = umask & popWord();
+								upper = umask & popWord(stackPointer);
 							}
 							registerValue(inst.getMemoryOffset()) = encodeRegisterValue(upper, lower);
 							// can't think of a case where we should
@@ -457,9 +461,13 @@ namespace iris18 {
 			inline RegisterValue getShiftRegister() noexcept           { return 0b11111 & registerValue<ArchitectureConstants::ShiftRegister>(); }
 			inline RegisterValue getFieldRegister() noexcept           { return 0b11111 & registerValue<ArchitectureConstants::FieldRegister>(); }
 
-			void incrementInstructionPointer() noexcept;
-			void incrementStackPointer() noexcept;
-			void decrementStackPointer() noexcept;
+			inline void incrementInstructionPointer() noexcept;
+			inline void incrementStackPointer() noexcept;
+			inline void decrementStackPointer() noexcept;
+			inline void decrementStackPointer(RegisterValue& ptr) noexcept;
+			inline void incrementStackPointer(RegisterValue& ptr) noexcept;
+			inline void incrementAddress(RegisterValue& ptr) noexcept;
+			inline void decrementAddress(RegisterValue& ptr) noexcept;
 			Word getCurrentCodeWord() noexcept;
 			void storeWord(RegisterValue address, Word value);
 			Word loadWord(RegisterValue address);

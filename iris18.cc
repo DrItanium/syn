@@ -136,18 +136,29 @@ namespace iris18 {
     inline void mask24(RegisterValue& ref) noexcept {
         ref &= bitmask24;
     }
+	void Core::incrementAddress(RegisterValue& ptr) noexcept {
+		++ptr;
+		mask24(ptr);
+	}
+	void Core::decrementAddress(RegisterValue& ptr) noexcept {
+		--ptr;
+		mask24(ptr);
+	}
 	void Core::incrementInstructionPointer() noexcept {
-		++getInstructionPointer();
-        mask24(getInstructionPointer());
+		incrementAddress(getInstructionPointer());
 	}
 	void Core::incrementStackPointer() noexcept {
-		++getStackPointer();
-        mask24(getStackPointer());
+		incrementStackPointer(getStackPointer());
+	}
+	void Core::incrementStackPointer(RegisterValue& ptr) noexcept {
+		incrementAddress(ptr);
 	}
 
 	void Core::decrementStackPointer() noexcept {
-		--getStackPointer();
-        mask24(getStackPointer());
+		decrementStackPointer(getStackPointer());
+	}
+	void Core::decrementStackPointer(RegisterValue& ptr) noexcept {
+		decrementAddress(ptr);
 	}
 
 	void Core::dispatch(DecodedInstruction&& current) {
@@ -415,17 +426,26 @@ namespace iris18 {
 		}
 	}
 	void Core::pushWord(Word value) {
-		decrementStackPointer();
-		storeWord(getStackPointer(), value);
+		pushWord(value, getStackPointer());
+	}
+	void Core::pushWord(Word value, RegisterValue& ptr) {
+		decrementStackPointer(ptr);
+		storeWord(ptr, value);
+	}
+	void Core::pushDword(DWord value, RegisterValue& ptr) {
+		pushWord(decodeUpperHalf(value), ptr);
+		pushWord(decodeLowerHalf(value), ptr);
 	}
 	void Core::pushDword(DWord value) {
-		pushWord(decodeUpperHalf(value));
-		pushWord(decodeLowerHalf(value));
+		return pushDword(value, getStackPointer());
 	}
 
 	Word Core::popWord() {
-		auto result = loadWord(getStackPointer());
-		incrementStackPointer();
+		return popWord(getStackPointer());
+	}
+	Word Core::popWord(RegisterValue& ptr) {
+		auto result = loadWord(ptr);
+		incrementStackPointer(ptr);
 		return result;
 	}
 
