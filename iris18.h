@@ -316,15 +316,19 @@ namespace iris18 {
 				}
 			template<bool useLower, bool useUpper, RegisterValue fullMask, bool indirect>
 				inline void loadOperation(RegisterValue tmpAddress, RegisterValue& destination) {
-					auto address = tmpAddress;
-					if (indirect) {
-						address = encodeRegisterValue(loadWord(address + 1), loadWord(address)) & bitmask24;
+					if (!useLower && !useUpper) {
+						destination = 0; // zero out the register if nothing is going to be happening
+					} else {
+						auto address = tmpAddress;
+						if (indirect) {
+							address = encodeRegisterValue(loadWord(address + 1), loadWord(address)) & bitmask24;
+						}
+						// use the destination field of the instruction to denote offset, thus we need
+						// to use the Address and Value registers
+						auto lower = useLower ? encodeLowerHalf(0, loadWord(address)) : 0;
+						auto upper = useUpper ? encodeUpperHalf(0, loadWord(address + 1)) : 0;
+                    	destination = iris::encodeBits<RegisterValue, RegisterValue, fullMask, 0>(0, lower | upper);
 					}
-					// use the destination field of the instruction to denote offset, thus we need
-					// to use the Address and Value registers
-					auto lower = useLower ? encodeLowerHalf(0, loadWord(address)) : 0;
-					auto upper = useUpper ? encodeUpperHalf(0, loadWord(address + 1)) : 0;
-                    destination = iris::encodeBits<RegisterValue, RegisterValue, fullMask, 0>(0, lower | upper);
 				}
 
 			template<bool useLower, bool useUpper, RegisterValue lmask, RegisterValue umask, bool indirect>
@@ -334,18 +338,22 @@ namespace iris18 {
 						address = encodeRegisterValue(loadWord(address + 1), loadWord(address)) & bitmask24;
 					}
 					if (useLower) {
-						auto lower = lmask & decodeLowerHalf(value);
-						auto loader = loadWord(address) & ~(lmask);
-						storeWord(address, lower | loader);
+						if (lmask == 0x0000FFFF) {
+							storeWord(address, decodeLowerHalf(value));
+						} else {
+							storeWord(address, (lmask & decodeLowerHalf(value)) | (loadWord(address) & ~(lmask)));
+						}
 					}
 					if (useUpper) {
-						auto upper = umask & decodeUpperHalf(value);
-						auto loader = loadWord(address + 1) & ~(umask);
-						storeWord(address + 1, upper | loader);
+						if (umask == 0x0000FFFF) {
+							storeWord(address + 1, decodeUpperHalf(value));
+						} else {
+							storeWord(address + 1, (umask & decodeUpperHalf(value)) | (loadWord(address + 1) & ~(umask)));
+						}
 					}
 				}
             template<bool readNext>
-            inline Word tryReadNext() {
+            inline Word tryReadNext() noexcept {
                 if (readNext) {
                     incrementInstructionPointer();
                     return getCurrentCodeWord();
