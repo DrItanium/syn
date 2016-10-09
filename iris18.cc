@@ -226,7 +226,7 @@ namespace iris18 {
 		} else if (tControl == Operation::Memory) {
 #define X(value) \
 			if (value == current.getMemorySignature()) { \
-					memoryOperation<MemoryFlags<value>::type, MemoryFlags<value>::bitmask, MemoryFlags<value>::indirect>(std::move(current)); \
+					memoryOperation<MemoryFlags<value>::type, MemoryFlags<value>::bitmask, MemoryFlags<value>::indirect, MemoryFlags<value>::readNextWord>(std::move(current)); \
 					return; \
 			}
 #include "def/iris18/bitmask8bit.def"
