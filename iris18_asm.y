@@ -498,11 +498,23 @@ memory_op:
 
 stack_operation_choose:
 		destination_register { op.readNextWord = false; } |
-		destination_register source_register { op.readNextWord = true; };
+		destination_register source_register { 
+			// check and see if we are looking at sp
+			// no need to waste a word so just use the default version
+			// implicitly. SourceRegister in this case is the stack pointer stand in
+			auto target_sp = op.arg1; 
+			op.readNextWord = (target_sp != iris18::ArchitectureConstants::StackPointer);
+		};
+
 
 load_store_combined:
 			load_store_op bitmask immediate_or_alias { op.readNextWord = false; } |
-			load_store_op bitmask immediate_or_alias read_next_word { op.readNextWord = true; };
+			load_store_op bitmask immediate_or_alias read_next_word { 
+				// check and see if arg1 == address and arg2 == value
+				// if so, then use the compressed version!
+				auto usingImplicitRegisters = (op.arg1 == iris18::ArchitectureConstants::AddressRegister) && (op.arg2 == iris18::ArchitectureConstants::ValueRegister);
+				op.readNextWord = !usingImplicitRegisters;
+			};
 immediate_or_alias:
 		IMMEDIATE { op.arg0 = ($1 & 0b1111); } |
 		ALIAS {
