@@ -223,23 +223,26 @@ namespace iris18 {
 					msg << "Out of range register index: " << rindex;
 					throw iris::Problem(msg.str());
 				}
+            template<bool readNext>
+            inline Word tryReadNext() noexcept {
+                if (readNext) {
+                    incrementInstructionPointer();
+                    return getCurrentCodeWord();
+                } else {
+                    return 0;
+                }
+            }
 			template<byte bitmask>
 				RegisterValue retrieveImmediate() noexcept {
 					static_assert(bitmask <= ArchitectureConstants::Bitmask, "Wider masks are being provided to retrieveImmediate!");
-					if (!readLower<bitmask>() && !readUpper<bitmask>()) {
+					static constexpr auto useLower = readLower<bitmask>();
+					static constexpr auto useUpper = readUpper<bitmask>();
+					if (!useLower && !useUpper) {
 						return 0;
 					} else {
-						auto lower = 0u;
-						auto upper = 0u;
-						if (readLower<bitmask>()) {
-							incrementInstructionPointer();
-							lower = getCurrentCodeWord();
-						}
-						if (readUpper<bitmask>()) {
-							incrementInstructionPointer();
-							upper = static_cast<RegisterValue>(getCurrentCodeWord()) << 16;
-						}
-						return mask<bitmask>() & ( lower | upper );
+						auto lower = tryReadNext<useLower>();
+						auto upper = static_cast<RegisterValue>(tryReadNext<useUpper>()) << 16;
+						return mask<bitmask>() & (lower | upper);
 					}
 				}
 			RegisterValue retrieveImmediate(byte bitmask) noexcept;
@@ -352,15 +355,6 @@ namespace iris18 {
 						}
 					}
 				}
-            template<bool readNext>
-            inline Word tryReadNext() noexcept {
-                if (readNext) {
-                    incrementInstructionPointer();
-                    return getCurrentCodeWord();
-                } else {
-                    return 0;
-                }
-            }
 			template<MemoryOperation type, byte bitmask, bool indirect, bool readNext>
 				inline void memoryOperation(DecodedInstruction&& inst) {
 					static_assert(bitmask <= ArchitectureConstants::Bitmask, "bitmask is too large!");
@@ -434,13 +428,16 @@ namespace iris18 {
 						advanceIp = false;
 						// determine next
 						pushDword((getInstructionPointer() + decodedFlags::isImmediate ? 2 : 1) & bitmask24);
+						auto address = 0u;
 						if (decodedFlags::isImmediate) {
-							incrementInstructionPointer();
 							// make a 24 bit number
-							getInstructionPointer() = bitmask24 & ((static_cast<RegisterValue>(getCurrentCodeWord()) << 8) | static_cast<RegisterValue>(current.getUpper()));
+							auto upper16 = static_cast<RegisterValue>(tryReadNext<decodedFlags::isImmediate>()) << 8;
+							auto lower8 = static_cast<RegisterValue>(current.getUpper());
+							address = upper16 | lower8;
 						} else {
-							getInstructionPointer() = bitmask24 & registerValue(current.getBranchIndirectDestination());
+							address = registerValue(current.getBranchIndirectDestination());
 						}
+						getInstructionPointer() = bitmask24 & address;
 					} else {
 						// jump instruction
 						if (decodedFlags::isImmediate) {
