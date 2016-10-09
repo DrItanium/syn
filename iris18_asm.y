@@ -88,13 +88,17 @@ struct asmstate {
 };
 
 void asmstate::registerLabel(const std::string& text) {
+#ifdef DEBUG
 	std::cout << "Registered label " << text << " for address: " <<  std::hex << address << std::endl;
+#endif
 	labels.emplace(text, address);
 }
 void asmstate::registerDynamicOperation(InstructionEncoder op) {
 	op.address = address;
 	dynops.emplace_back(op);
+#ifdef DEBUG
 	std::cout << "address: " << std::hex << op.address << " numWords: " << op.numWords() << std::endl;
+#endif
 	address += op.numWords();
 }
 void asmstate::setRegisterAtStartup(byte index, RegisterValue value) {
@@ -467,32 +471,26 @@ branch:
 			op.isConditional = false;
 		};
 if_op:
-	 destination_register source_register {
-		op.isCall = false;
-	 } |
-	 BRANCH_FLAG_CALL destination_register source_register {
-		op.isCall = true;
-	 };
+	 if_uses_call destination_register source_register;
+if_uses_call:
+	BRANCH_FLAG_CALL { op.isCall = true; } |
+	{ op.isCall = false; };
 call_op:
 	   uses_immediate lexeme |
 	   destination_register {
 			op.immediate = false;
 	   };
 jump_op:
-	uses_immediate lexeme {
-		op.isConditional = false;
-	} |
-	BRANCH_FLAG_COND uses_immediate lexeme {
-		op.isConditional = true;
-	} |
-	destination_register {
+	cond_decl uses_immediate lexeme |
+	cond_decl destination_register {
 		op.immediate = false;
-		op.isConditional = false;
-	} |
-	BRANCH_FLAG_COND destination_register {
-		op.immediate = false;
-		op.isConditional = true;
 	};
+cond_decl:
+		 BRANCH_FLAG_COND {
+			op.isConditional = true;
+		 } | {
+		 	op.isConditional = false;
+		 };
 memory_op:
 		load_store_combined { op.indirect = false; } |
 		load_store_combined TAG_INDIRECT { op.indirect = true; } |
@@ -510,13 +508,7 @@ stack_operation_choose:
 
 
 load_store_combined:
-			load_store_op bitmask immediate_or_alias { op.readNextWord = false; } |
-			load_store_op bitmask immediate_or_alias read_next_word { 
-				// check and see if arg1 == address and arg2 == value
-				// if so, then use the compressed version!
-				auto usingImplicitRegisters = (op.arg1 == iris18::ArchitectureConstants::AddressRegister) && (op.arg2 == iris18::ArchitectureConstants::ValueRegister);
-				op.readNextWord = !usingImplicitRegisters;
-			};
+			load_store_op bitmask immediate_or_alias read_next_word;
 immediate_or_alias:
 		IMMEDIATE { op.arg0 = ($1 & 0b1111); } |
 		ALIAS {
@@ -530,7 +522,20 @@ read_next_word:
 		REGISTER REGISTER {
 			op.arg1 = $1;
 			op.arg2 = $2;
-		};
+			// check and see if arg1 == address and arg2 == value
+			// if so, then use the compressed version!
+			auto usingImplicitRegisters = (op.arg1 == iris18::ArchitectureConstants::AddressRegister) && (op.arg2 == iris18::ArchitectureConstants::ValueRegister);
+#ifdef DEBUG
+			std::cout << "\tusingImplicitRegisters: " << usingImplicitRegisters << std::endl;
+#endif
+			op.readNextWord = !usingImplicitRegisters;
+		} | {
+			op.readNextWord = false;
+#ifdef DEBUG
+			std::cout << "\tUsing implicit registers!" << std::endl;
+#endif
+		}; 
+
 
 load_store_op:
 			 MEMORY_OP_LOAD {

@@ -125,8 +125,10 @@ namespace iris18 {
 		}
 	}
 	void Core::cycle() {
+#ifdef DEBUG
 		std::cout << "Current Instruction Location: " << std::hex << getInstructionPointer() << std::endl;
 		std::cout << "\tCurrent word value: " << std::hex << getCurrentCodeWord() << std::endl;
+#endif
 		DecodedInstruction di(getCurrentCodeWord());
 		dispatch(std::move(di));
 		if (advanceIp) {
@@ -166,6 +168,9 @@ namespace iris18 {
 
 	void Core::dispatch(DecodedInstruction&& current) {
 		auto tControl = current.getControl();
+#ifdef DEBUG
+		std::cout << "Current control value: " << std::hex << static_cast<int>(tControl) << std::endl;
+#endif
 		if (tControl == Operation::Shift) {
 			auto &destination = registerValue(current.getShiftRegister0());
 			auto source = (current.getShiftFlagImmediate() ? static_cast<RegisterValue>(current.getShiftImmediate()) : registerValue(current.getShiftRegister1()));
@@ -256,6 +261,9 @@ namespace iris18 {
 			}
 		} else if (tControl == Operation::Branch) {
 			auto instFlags = current.getBranchFlags();
+#ifdef DEBUG
+			std::cout << "Branch flags: " << std::hex << static_cast<int>(instFlags) << std::endl;
+#endif
 			if (instFlags == IfJump::flags) {
 				branchSpecificOperation<IfJump::flags>(std::move(current));
 			} else if(instFlags == CallIndirect::flags) {
@@ -523,7 +531,7 @@ namespace iris18 {
 		first = encodeMemoryFlagType(first, static_cast<MemoryOperation>(subType));
 		first = encodeMemoryFlagBitmask(first, bitmask);
 		first = encodeMemoryFlagIndirect(first, indirect);
-		iris18::encodeMemoryFlagReadNextWord(first, readNextWord);
+		first = iris18::encodeMemoryFlagReadNextWord(first, readNextWord);
 		// the register and offset occupy the same space
 		first = encodeMemoryOffset(first, arg0);
 		// be lazy and set up the second word even if it isn't used. Reduces
@@ -634,5 +642,6 @@ namespace iris18 {
 		combineType = CompareCombine::Xor;
 		fullImmediate = 0;
 		indirect = false;
+		readNextWord = false;
 	}
 }

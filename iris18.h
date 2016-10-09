@@ -412,6 +412,9 @@ namespace iris18 {
 							pushDword((getInstructionPointer() + 1) & bitmask24);
 						}
 						getInstructionPointer() = bitmask24 & ((getConditionRegister() != 0) ? registerValue(current.getBranchIfOnTrue()) : registerValue(current.getBranchIfOnFalse()));
+#ifdef DEBUG
+						std::cout << "if: jumping to " << std::hex << getInstructionPointer() << std::endl;
+#endif
 					} else if (decodedFlags::isCall) {
 						// call instruction
 						advanceIp = false;
@@ -427,6 +430,9 @@ namespace iris18 {
 							address = registerValue(current.getBranchIndirectDestination());
 						}
 						getInstructionPointer() = bitmask24 & address;
+#ifdef DEBUG
+						std::cout << "call: Jumping to " << std::hex << getInstructionPointer() << std::endl;
+#endif
 					} else {
 						// jump instruction
 						if (decodedFlags::isImmediate) {
@@ -441,6 +447,9 @@ namespace iris18 {
 								getInstructionPointer() = bitmask24 & registerValue(current.getBranchIndirectDestination());
 							}
 						}
+#ifdef DEBUG
+						std::cout << "one way Jumping to " << std::hex << getInstructionPointer() << std::endl;
+#endif
 					}
 				}
 
