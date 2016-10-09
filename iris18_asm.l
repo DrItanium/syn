@@ -49,6 +49,7 @@ omni [a-zA-Z0-9._]
 "double"     { return MACRO_OP_DOUBLE; }
 "halve"      { return MACRO_OP_HALVE; }
 "zero"       { return MACRO_OP_ZERO; }
+"copy"       { return MACRO_OP_COPY; }
 
 "immediate" { return FLAG_IMMEDIATE; }
 "add"       { return ARITHMETIC_OP_ADD; }
