@@ -7,33 +7,76 @@
 ; not actually part of the garbage collector. The first 64kw of memory are
 ; defined as fixed memory, this turns into the first
 
-; r0, r1 - current pointers to data objects
-; r0, r1, r2 - cell 2 data
-; r0 - pointer
+; r0 - car
+; r1 - cdr
 ; value, r8, r7, r6 - args
-; r4, r5 - temporaries
+; r4, r5 - temporaries/ return values
 
 
 @label ComputeAddress
-    memory push 0m1111 r7
-    set 0m1111 r7 0x00FFFFFF
-    move 0m1111 addr r8
-    logical and addr r7
-    shift right immediate addr 2
-    memory pop 0m1111 r7
+    logical and immediate 0m0111 value 0x00FFFFFF
+    shift right immediate value 2
     return
 
 
 @label LoadPair
-    memory load 0m1111 0x0
-    move 0m1111 r0 value
-    memory load 0m1111 0x2
-    move 0m1111 r1 value
+    memory load 0m1111 0x0 value r0
+    memory load 0m1111 0x2 value r1
     return
 
 @label PullData
-    memory push 0m1111 value
-    branch call immediate ComputeAddress
-    branch immediate LoadPair
-    memory pop 0m1111 value
-    return
+	branch call immediate ComputeAddress
+	branch immediate LoadPair
+
+@label ShouldGarbageCollect
+	; inspect the target address to see if the corresponding pair should be garbage collected
+	; value - the address to check
+	move 0m1111 r4 value			 ; use r4 as a temporary
+	logical and immediate 0m0001 r4 0x1     ; bit zero contains the garbage collect bit
+	compare != none immediate r4 0x0
+	return
+
+@label Integerp
+	move 0m1111 r4 value
+	logical and immediate 0m0001 r4 0x2
+	compare == none immediate r4 0x0
+	return
+
+@label setConditionRegister
+	compare != none immediate r4 0x0
+	return
+	
+@label getConditionRegister
+	set 0m1111 value getConditionRegister_OnTrue 
+	set 0m1111 r8 getConditionRegister_OnFalse
+	branch immediate conditionalRegisterBaseOperation
+@label conditionalRegisterNot
+	set 0m1111 value conditionalRegisterNot_OnTrue
+	set 0m1111 r8 conditionalRegisterNot_OnFalse
+@label conditionalRegisterBaseOperation
+	; use value and r8 to dispatch to different operation based on the current
+	; value of condition
+	branch if value r8 			; value is onTrue, r8 is onFalse, we aren't coming back here!
+@label getConditionRegister_OnTrue
+	set 0m0001 r4 0x1
+	return
+@label getConditionRegister_OnFalse
+	zero r4
+	return
+@label conditionalRegisterNot_OnTrue
+	compare != none r4 r4 				; doesn't matter what the value of r4 is, just set the condition register to false
+	return
+@label conditionalRegisterNot_OnFalse
+	compare == none r4 r4				; set cr to true since it was false before
+	return
+
+@label saveConditionRegister
+@label pushConditionRegister
+	branch call immediate getConditionRegister
+	memory push 0m0001 r4
+	return
+
+@label restoreConditionRegister
+@label popConditionRegister
+	memory pop 0m0001 r4
+	branch immediate setConditionRegister
