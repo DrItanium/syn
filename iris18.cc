@@ -518,9 +518,12 @@ namespace iris18 {
 		first = encodeMemoryFlagType(first, static_cast<MemoryOperation>(subType));
 		first = encodeMemoryFlagBitmask(first, bitmask);
 		first = encodeMemoryFlagIndirect(first, indirect);
+		iris18::encodeMemoryFlagReadNextWord(first, readNextWord);
 		// the register and offset occupy the same space
 		first = encodeMemoryOffset(first, arg0);
-		return std::make_tuple(1, first, 0, 0);
+		auto second = encodeMemoryAddress(0, arg1);
+		second = encodeMemoryValue(0, arg2);
+		return std::make_tuple(readNextWord ? 2 : 1, first, second, 0);
 	}
 
 	InstructionEncoder::Encoding InstructionEncoder::encodeLogical() {
@@ -617,6 +620,7 @@ namespace iris18 {
 		bitmask = 0b0000;
 		arg0 = 0;
 		arg1 = 0;
+		arg2 = 0;
 		isLabel = false;
 		labelValue.clear();
 		subType = 0;

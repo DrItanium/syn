@@ -499,9 +499,11 @@ namespace iris18 {
 		bool isCall;
 		bool isConditional;
 		bool indirect;
+		bool readNextWord;
 		byte bitmask;
 		byte arg0;
 		byte arg1;
+		byte arg2;
 		bool isLabel;
 		std::string labelValue;
 		byte subType;

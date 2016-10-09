@@ -494,17 +494,29 @@ jump_op:
 memory_op:
 		load_store_combined { op.indirect = false; } |
 		load_store_combined TAG_INDIRECT { op.indirect = true; } |
-		stack_operation bitmask destination_register;
+		stack_operation bitmask stack_operation_choose;
+
+stack_operation_choose:
+		destination_register { op.readNextWord = false; } |
+		destination_register source_register { op.readNextWord = true; };
 
 load_store_combined:
-			load_store_op bitmask IMMEDIATE { op.arg0 = ($3 & 0b1111); } |
-			load_store_op bitmask ALIAS { 
+			load_store_op bitmask immediate_or_alias { op.readNextWord = false; } |
+			load_store_op bitmask immediate_or_alias read_next_word { op.readNextWord = true; };
+immediate_or_alias:
+		IMMEDIATE { op.arg0 = ($1 & 0b1111); } |
+		ALIAS {
 				try {
-					op.arg0 = static_cast<byte>(state.getConstantValue($3));
+					op.arg0 = static_cast<byte>(state.getConstantValue($1));
 				} catch(iris::Problem err) {
 					iris18error(err.what().c_str());
 				}
-			};
+		};
+read_next_word: 
+		REGISTER REGISTER {
+			op.arg1 = $1;
+			op.arg2 = $2;
+		};
 
 load_store_op:
 			 MEMORY_OP_LOAD {
