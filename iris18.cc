@@ -186,37 +186,37 @@ namespace iris18 {
 					throw iris::Problem("Illegal Arithmetic Signature");
 			}
 		} else if (tControl == Operation::Logical) {
+			switch (current.getLogicalSignature()) { 
 #define X(datum) \
-			if (datum == current.getLogicalSignature()) { \
-				using lflags = LogicalFlags<datum>; \
-				if (lflags::immediate) { \
-					if (lflags::immediateError) { \
+			case datum: \
+				if (LogicalFlags<datum>::immediate) { \
+					if (LogicalFlags<datum>::immediateError) { \
 						throw iris::Problem("Illegal bit set for immediate mode logicalOperation!"); \
 					} else { \
-						logicalImmediateOperation<lflags::immediateType, lflags::bitmask>(std::move(current)); \
-						return; \
+						logicalImmediateOperation<LogicalFlags<datum>::immediateType, LogicalFlags<datum>::bitmask>(std::move(current)); \
 					} \
 				} else { \
-					if (lflags::indirectError) { \
+					if (LogicalFlags<datum>::indirectError) { \
 						throw iris::Problem("Illegal bits set for indirect mode logicalOperation!"); \
 					} else { \
-						logicalIndirectOperation<lflags::indirectType>(std::move(current)); \
-						return; \
+						logicalIndirectOperation<LogicalFlags<datum>::indirectType>(std::move(current)); \
 					} \
 				} \
-			}
+				break;
 #include "def/iris18/bitmask8bit.def"
 #undef X
-			throw iris::Problem("Illegal logical signature!");
+			default:
+				throw iris::Problem("Illegal logical signature!");
+			}
 		} else if (tControl == Operation::Move) {
-			auto &dest = registerValue(current.getMoveRegister0());
 			switch (current.getMoveSignature()) {
 #define X(value) case value : \
 				if (MoveFlags< value >::isError) { \
 					throw iris::Problem("Illegal move signature"); \
 				} else { \
-					dest = iris::decodeBits<RegisterValue, RegisterValue, mask<MoveFlags< value >::bitmask>(), 0>(registerValue(current.getMoveRegister1())); \
-				}
+					registerValue(current.getMoveRegister0()) = iris::decodeBits<RegisterValue, RegisterValue, mask<MoveFlags< value >::bitmask>(), 0>(registerValue(current.getMoveRegister1())); \
+				} \
+				break;
 #include "def/iris18/bitmask4bit.def"
 #undef X
 				default:
@@ -235,14 +235,16 @@ namespace iris18 {
 					throw iris::Problem(stream.str());
 			}
 		} else if (tControl == Operation::Memory) {
+			switch (current.getMemorySignature()) {
 #define X(value) \
-			if (value == current.getMemorySignature()) { \
+				case value : \
 					memoryOperation<MemoryFlags<value>::type, MemoryFlags<value>::bitmask, MemoryFlags<value>::indirect, MemoryFlags<value>::readNextWord>(std::move(current)); \
-					return; \
-			}
+					break; 
 #include "def/iris18/bitmask8bit.def"
 #undef X
-			throw iris::Problem("Illegal memory signature!");
+				default:
+					throw iris::Problem("Illegal memory signature!");
+			}
 		} else if (tControl == Operation::Branch) {
 			auto instFlags = current.getBranchFlags();
 			if (instFlags == IfJump::flags) {
