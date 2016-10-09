@@ -422,7 +422,7 @@ namespace iris18 {
 							// stack
 							pushDword((getInstructionPointer() + 1) & bitmask24);
 						}
-						getInstructionPointer() = bitmask24 & ((getConditionRegister() != 0) ? registerValue(current.getBranchIfOnTrue()) : registerValue(current.getBranchIfOnFalse()));
+						getInstructionPointer() = bitmask24 & ((getConditionRegister()) ? registerValue(current.getBranchIfOnTrue()) : registerValue(current.getBranchIfOnFalse()));
 					} else if (decodedFlags::isCall) {
 						// call instruction
 						advanceIp = false;
@@ -442,12 +442,12 @@ namespace iris18 {
 						// jump instruction
 						if (decodedFlags::isImmediate) {
 							incrementInstructionPointer();
-							if ((decodedFlags::isConditional && getConditionRegister() != 0) || !decodedFlags::isConditional) {
+							if ((decodedFlags::isConditional && getConditionRegister()) || !decodedFlags::isConditional) {
 								advanceIp = false;
 								getInstructionPointer() = bitmask24 & (current.getUpper() | static_cast<RegisterValue>(getCurrentCodeWord()) << 8);
 							}
-						}  else {
-							if ((decodedFlags::isConditional && getConditionRegister() != 0) || !decodedFlags::isConditional) {
+						} else {
+							if ((decodedFlags::isConditional && getConditionRegister()) || !decodedFlags::isConditional) {
 								advanceIp = false;
 								getInstructionPointer() = bitmask24 & registerValue(current.getBranchIndirectDestination());
 							}

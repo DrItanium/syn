@@ -263,8 +263,7 @@ namespace iris18 {
 				throw iris::Problem("Undefined branch flag setup!");
 			}
 		} else if (tControl == Operation::Compare) {
-			incrementInstructionPointer();
-			DecodedInstruction next(getCurrentCodeWord());
+			DecodedInstruction next(tryReadNext<true>());
 			auto first = registerValue(next.getCompareRegister0());
 			auto second = current.getCompareImmediateFlag() ? next.getUpper() : registerValue(next.getCompareRegister1());
 			auto result = false;
