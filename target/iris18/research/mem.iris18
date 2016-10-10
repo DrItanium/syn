@@ -46,7 +46,7 @@
 	copy addr r1
 	branch immediate memorySetupLoop
 @label memoryHasBeenSetup
-	branch immediate Terminate ; just quit for now
+	branch immediate terminate ; just quit for now
 @label getchar 
 	set 0m0001 addr 1
 	branch immediate syscall
@@ -65,7 +65,26 @@
 @label ReadChar
 	branch immediate getchar
 	
-
+@label Print_OutOfMemory
+	branch immediate terminate
+@label OutOfMemory
+	set 0m1111 r4 NIL
+	compare == none addr r4
+	return
+@label GetMemoryCell
+	; need to get a cell from the available list
+	branch call immediate OutOfMemory
+	branch cond immediate PerformGC
+	branch immediate GetMemoryCell_DONE
+@label PerformGC
+	;branch call immediate GC
+	branch call immediate OutOfMemory
+	branch cond immediate Print_OutOfMemory
+@label GetMemoryCell_DONE
+	; grab the cell's address
+	memory load 0m1111 0x0 addr r9		; load the car into r9 for returning
+	memory load 0m1111 0x2 addr addr    ; pop this element off the list
+	return
 
 @label ComputeAddress
 	; extract address and extra bits into separate registers r4 and r5
@@ -101,23 +120,21 @@
 @label cdr
 	memory load 0m1111 0x2 value r4
 	return
-@label allocateMemoryCell
-	branch call immediate outOfMemory
-	branch cond immediate isOutOfMemory
-	; not out of memory
-	memory load 0m1111 0x0 addr value ; load the car into value
-	memory load 0m1111 0x2 addr addr   ; load the cdr into addr
-	branch immediate loadMemoryCell_Done
-@label isOutOfMemory
-	branch call immediate garbageCollect
-@label loadMemoryCell_Done
-	return
-@label garbageCollect
-	; TODO: implement
-	return
+;@label allocateMemoryCell
+;	branch call immediate outOfMemory
+;	branch cond immediate isOutOfMemory
+;	; not out of memory
+;	memory load 0m1111 0x0 addr value ; load the car into value
+;	memory load 0m1111 0x2 addr addr   ; load the cdr into addr
+;	branch immediate loadMemoryCell_Done
+;@label isOutOfMemory
+;	branch call immediate garbageCollect
+;@label loadMemoryCell_Done
+;	return
+;@label garbageCollect
+;	; TODO: implement
+;	return
 	
-@label outOfMemory
-	memory load 0m0111 0x0
 @label nilp
 	set 0m1111 r4 0x007FFFFC
 	compare == none value r4
