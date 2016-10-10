@@ -81,6 +81,27 @@
 	logical or immediate 0m0001 value 0x1
 	return
 
+@label gcbitset
+	logical and immediate 0m0001 value 0x1
+	compare == none immediate value 0x1
+	return 
+
+@label setintegertype
+	logical and immediate 0m1111 value 0xFFFFFFFD
+	return
+@label isintegertype
+	logical and immediate 0m0001 value 0x2
+	compare == none immediate value 0x0
+	return
+@label setlisttype
+	logical or immediate 0m1111 value 0x000000020
+	return
+@label islisttype
+	logical and immediate 0m0001 value 0x2
+	compare != none immediate value 0x0
+	return
+
+
 @label Print_OutOfMemory
 	branch immediate terminate
 @label OutOfMemory
@@ -122,11 +143,6 @@
 	; value - the address to check
 	move 0m0001 r4 value
 	logical and immediate 0m0001 r4 0x1
-	compare > none immediate r4 0x0
-	return
-@label integerp
-	move 0m0001 r4 value
-	logical and immediate 0m0001 r4 0x2
 	compare > none immediate r4 0x0
 	return
 
