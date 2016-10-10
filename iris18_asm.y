@@ -610,6 +610,18 @@ macro_op:
 			op.immediate = true;
 			op.subType = static_cast<byte>(iris18::ArithmeticOps::Div);
 			op.arg1 = 0x2;
+		} |
+		COMPARE_OP_EQ destination_register source_register { 
+			op.type = iris18::Operation::Compare;
+			op.subType = static_cast<byte>(iris18::CompareStyle::Equals); 
+			op.combineType = iris18::CompareCombine::None; 
+			op.immediate = false;
+		} |
+		COMPARE_OP_NEQ destination_register source_register {
+			op.type = iris18::Operation::Compare;
+			op.subType = static_cast<byte>(iris18::CompareStyle::NotEquals); 
+			op.combineType = iris18::CompareCombine::None; 
+			op.immediate = false;
 		};
 bitmask:
 	   BITMASK4 {

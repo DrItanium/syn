@@ -23,8 +23,8 @@
 ; addr - free list
 ; value, r8, r7 - args0-2 respectively
 ; r0, r1, r2, r3 - temporaries 
-; r9, r4, r5 - return value / temporaries
-; r9 - system call input output register
+; r4, r5 - return value / temporaries
+; r9, r10 - temporary, no need to ever save!
 ; Divide memory into 2 separate "zones",
 ; 0 - System, Free List, Stacks
 ; 1 - User Memory
@@ -47,24 +47,40 @@
 	branch immediate memorySetupLoop
 @label memoryHasBeenSetup
 	branch immediate terminate ; just quit for now
+@label ReadChar
 @label getchar 
 	set 0m0001 addr 1
 	branch immediate syscall
+@label PrintChar
+	copy r4 value
 @label putchar
 	set 0m0001 addr 2
 	branch immediate syscall
 @label terminate
 	zero addr
 @label syscall
-	system r9
+	system r4
 	return
 
-@label PrintChar
-	move 0m1111 r9 value
-	branch immediate putchar
-@label ReadChar
-	branch immediate getchar
+@label clearcell
+	; value is the address to the front of the cell
+	zero r8
+	zero r7
+	branch immediate storecell
+@label loadcell
+	memory load 0m1111 0x0 value r4
+	memory load 0m1111 0x2 value r5
+	return
+@label storecell
+	memory store 0m1111 0x0 value r8
+	memory store 0m1111 0x2 value r7
+	return
 	
+@label markgcbit
+	; mark the lowest most bit of a given dword
+	logical or immediate 0m0001 value 0x1
+	return
+
 @label Print_OutOfMemory
 	branch immediate terminate
 @label OutOfMemory
