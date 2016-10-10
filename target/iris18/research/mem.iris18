@@ -23,8 +23,9 @@
 ; addr - free list
 ; value, r8, r7 - args0-2 respectively
 ; r0, r1, r2, r3 - temporaries 
-; r4, r5 - return value / temporaries
-; r9, r10 - temporary, no need to ever save!
+; value, r4, r5 - return value / temporaries
+; r9 - unused 
+; r10 - parameter stack
 ; Divide memory into 2 separate "zones",
 ; 0 - System, Free List, Stacks
 ; 1 - User Memory
@@ -33,6 +34,7 @@
 	set 0m1111 sp stackBottom ; setup the stack pointer
 	set 0m1111 r8 freeListBegin ; set the bottom of the free list
 	set 0m1111 addr NIL ; initialize the free list by pointing to NIL
+	set 0m1111 r10 paramBottom
 ; setup the machine by first constructing the free list
 @label memorySetupLoop
 	compare == none addr r8					; see if we are done setting up the free list
@@ -52,14 +54,13 @@
 	set 0m0001 addr 1
 	branch immediate syscall
 @label PrintChar
-	copy r4 value
 @label putchar
 	set 0m0001 addr 2
 	branch immediate syscall
 @label terminate
 	zero addr
 @label syscall
-	system r4
+	system value 
 	return
 
 @label clearcell
@@ -68,9 +69,10 @@
 	zero r7
 	branch immediate storecell
 @label loadcell
-	memory load 0m1111 0x0 value r4
-	memory load 0m1111 0x2 value r5
+	memory load 0m1111 0x0 value value
+	memory load 0m1111 0x2 value r4
 	return
+
 @label storecell
 	memory store 0m1111 0x0 value r8
 	memory store 0m1111 0x2 value r7
@@ -101,7 +103,18 @@
 	compare != none immediate value 0x0
 	return
 
-
+@label popParam
+	; nothing to take in
+	memory pop 0m1111 r4 r10
+	return
+@label pushParam
+	; value - what to push onto the stack
+	memory push 0m1111 value r10
+	return
+	
+@label integer_cell
+	shift left immediate value 0x2
+	return
 @label Print_OutOfMemory
 	branch immediate terminate
 @label OutOfMemory
@@ -119,25 +132,10 @@
 	branch cond immediate Print_OutOfMemory
 @label GetMemoryCell_DONE
 	; grab the cell's address
-	memory load 0m1111 0x0 addr r9		; load the car into r9 for returning
+	memory load 0m1111 0x0 addr value	; load the car into value for returning
 	memory load 0m1111 0x2 addr addr    ; pop this element off the list
 	return
 
-@label ComputeAddress
-	; extract address and extra bits into separate registers r4 and r5
-	move 0m0111 r2 value		; raw 24 bit address
-	logical and immediate 0m0111 r2 0x007FFFFC
-	move 0m1100 r3 value		; extra bits, upper 8 and lower 2
-	logical and immediate 0m1001 r3 0xFF000003
-    return
-@label NextAddress
-	; move ahead 4 words
-	arithmetic add immediate value 0x4
-	return
-@label PreviousAddress
-	; move back 4 words
-	arithmetic sub immediate value 0x4
-	return
 @label ShouldGarbageCollect
 	; inspect the target address to see if the corresponding pair should be garbage collected
 	; value - the address to check
@@ -171,8 +169,10 @@
 	set 0m1111 r4 0x007FFFFC
 	compare == none value r4
 	return
-@org 0x006FFFF0
+@org 0x00400000
 @label stackBottom
+@org 0x00600000
+@label paramBottom
 @org 0x006FFFFC
 @label freeListBegin
 @org 0x007FFFFC
