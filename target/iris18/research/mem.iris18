@@ -21,11 +21,11 @@
 ;
 ; 
 ; addr - free list
-; value, r8, r7 - args0-2 respectively
-; r0, r1, r2, r3 - temporaries 
+; value, r8, r7, r6 - args0-3 respectively
 ; value, r4, r5 - return value / temporaries
 ; r9 - unused 
 ; r10 - parameter stack
+; r0, r1, r2, r3 - extra temporaries
 ; Divide memory into 2 separate "zones",
 ; 0 - System, Free List, Stacks
 ; 1 - User Memory
@@ -239,18 +239,12 @@
 	memory pop 0m1111 r0
 	memory pop 0m1111 value
 	return
-
-@label car
-	memory load 0m1111 0x0 value r4
-	return
-@label cdr
-	memory load 0m1111 0x2 value r4
-	return
 	
-@label nilp
+@label null
 	set 0m1111 r4 0x007FFFFC
 	compare == none value r4
 	return
+; setup a simple character lookup table
 @org 0x00400000
 	@label stackBottom
 @org 0x00600000
