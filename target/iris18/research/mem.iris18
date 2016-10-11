@@ -136,72 +136,65 @@
 
 @label markCell
 	; value - base pointer
-	memory push 0m1111 r0
-	memory push 0m1111 r1
-	copy r0 value
+	memory push 0m1111 r4
+	memory push 0m1111 r5
+	copy r4 value
 	@label markCell_checkCAR
-		memory load 0m1111 0x0 r0 r1 		; load the car
-		copy value r1
+		memory load 0m1111 0x0 r4 r5 		; load the car
+		copy value r5
 		branch call immediate isgcbitset
 		branch cond immediate markCell_checkCDR	; already marked
-		copy value r1
+		copy value r5
 		branch call immediate markgcbit
-		memory store 0m1111 0x0 r0 value
-		copy r1 value								; save the updated value
+		memory store 0m1111 0x0 r4 value
+		copy r5 value								; save the updated value
 		branch call immediate isintegertype
 		branch cond immediate markCell_checkCDR	; integer
 		; otherwise it is a list, so we'll need to do a recursive walk but the
 		; first thing to do is extract the appropriate address
-		copy value r1
+		copy value r5
 		logical and immediate 0m1111 value 0x00FFFFFC		; clear out the extra tag bits
 		branch call immediate markCell
 	@label markCell_checkCDR
 		; now do it for CDR, the difference is that we 
-		memory load 0m1111 0x0 r0 r1		; load the cdr
-		copy value r1
+		memory load 0m1111 0x0 r4 r5		; load the cdr
+		copy value r5
 		branch call immediate isgcbitset
 		branch cond immediate markCell_Done
-		copy value r1
+		copy value r5
 		branch call immediate markgcbit
-		memory store 0m1111 0x2 r0 value
-		copy r1 value
+		memory store 0m1111 0x2 r4 value
+		copy r5 value
 		branch call immediate isintegertype
 		branch cond immediate markCell_Done
-		copy value r1
+		copy value r5
 		logical and immediate 0m1111 value 0x00FFFFFC
 		branch call immediate markCell
 	@label markCell_Done
-	memory pop 0m1111 r1
-	memory pop 0m1111 r0
+	memory pop 0m1111 r5
+	memory pop 0m1111 r4
 	return
 @label markStack
 	; value - top of the stack
 	; r8 - bottom of the stack
-	memory push 0m1111 r0
-	memory push 0m1111 r1
-	memory push 0m1111 r2
-	memory push 0m1111 r3
+	memory push 0m1111 r4
+	memory push 0m1111 r5
 	copy r4 value			; save top of stack
 	copy r5 r8				; save bottom of stack
 	@label markStackLoop
-		compare > none r4 r5	; check and see if the "top" is greater than the bottom
-		branch cond immediate markStackLoop_Done	; leave if we went past the bottom
-		memory load 0m1111 0x0 r4 value				; load the actual value from memory
-		branch call immediate isintegertype			; are we looking at an integer type?
-		branch cond immediate markStackLoop_Iterate ; do nothing :)
-		@label markStack_walkMemory
-			; using value as the car 
-
-			
-			branch immediate markStack_walkMemory
+		compare > none r4 r5							; check and see if the "top" is greater than the bottom
+		branch cond immediate markStackLoop_Done		; leave if we went past the bottom
+		memory load 0m1111 0x0 r4 value					; load the actual value from memory
+		branch call immediate isintegertype				; are we looking at an integer type?
+		branch cond immediate markStackLoop_Iterate 	; do nothing :)
+		logical and immediate 0m1111 value 0x00FFFFFC	; fix the address
+		branch call immediate markCell					; now mark the cell as needed :)
 		@label markStackLoop_Iterate
 			arithmetic add immediate r4 0x4
 			branch immediate markStackLoop
 	@label markStackLoop_Done
-	memory pop 0m1111 r3
-	memory pop 0m1111 r2
-	memory pop 0m1111 r1
-	memory pop 0m1111 r0
+	memory pop 0m1111 r5
+	memory pop 0m1111 r4
 	return
 
 	; perform the "sweep"/reclamation during garbage collection via fallthrough
