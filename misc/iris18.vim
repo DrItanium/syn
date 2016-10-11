@@ -29,6 +29,7 @@ syn keyword asmOpcode encoding bitset bitunset encode decode
 syn keyword asmOpcode == ! < <= > >=
 syn keyword asmOpcode none and or xor not nand
 syn keyword asmOpcode call if cond indirect
+syn keyword asmOpcode immediate
 
 syn keyword asmRegister r0 r1 r2 r3 r4 r5 r6 r7 r8 r9 r10 r11 r12 r13 r14 r15 
 syn keyword asmMacroRegister value addr field mask ip cr sp shift_width
@@ -76,8 +77,8 @@ if version >= 508 || !exists("did_asm_syntax_inits")
   HiLink asmIdentifier	Identifier
   HiLink asmType	Type
 
-  HiLink asmRegister 	  Identifier
-  HiLink asmOpcode 	  Statement
+  HiLink asmRegister 	  Macro
+  HiLink asmOpcode 	  Type
   HiLink asmOperation     Special
   HiLink asmMacroRegister Macro
 
