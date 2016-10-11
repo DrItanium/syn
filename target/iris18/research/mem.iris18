@@ -58,9 +58,6 @@
 @label syscall
 	system value 
 	return
-
-
-
 @label clearcell
 	; value is the address to the front of the cell
 	zero r8
@@ -109,9 +106,6 @@
 	memory push 0m1111 value r10
 	return
 	
-@label integer_cell
-	shift left immediate value 0x2
-	return
 @label Print_OutOfMemory
 	branch immediate terminate
 @label OutOfMemory
@@ -192,7 +186,7 @@
 	copy r4 value			; save top of stack
 	copy r5 r8				; save bottom of stack
 	@label markStackLoop
-		compare > none r4 r5							; check and see if the "top" is greater than the bottom
+		compare >= none r4 r5							; check and see if the "top" is greater than the bottom
 		branch cond immediate markStackLoop_Done		; leave if we went past the bottom
 		memory load 0m1111 0x0 r4 value					; load the actual value from memory
 		branch call immediate isintegertype				; are we looking at an integer type?
