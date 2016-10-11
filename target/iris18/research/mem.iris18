@@ -124,7 +124,7 @@
 	branch cond immediate PerformGC
 	branch immediate GetMemoryCell_DONE
 	@label PerformGC
-		;branch call immediate GC
+		branch call immediate GC
 		branch call immediate OutOfMemory
 		branch cond immediate Print_OutOfMemory
 	@label GetMemoryCell_DONE
@@ -132,6 +132,16 @@
 	memory pop 0m1111 value addr		; pop the top of the address stack off the list
 	return
 @label GC 
+	memory push 0m1111 value 
+	memory push 0m1111 r8
+	set 0m1111 r8 paramBottom
+	copy value r10
+	branch call immediate markStack
+	; NOTE: add more entries to walk through here
+	; now sweep
+	branch call immediate reclaimMemory
+	memory pop 0m1111 r8
+	memory pop 0m1111 value 
 	return
 
 @label markCell
