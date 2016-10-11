@@ -253,9 +253,9 @@ namespace iris18 {
 %token DIRECTIVE_REGISTER_AT_START
 
 %token COMPLEX_OP_ENCODING
-%token COMPLEX_OP_ENCODING_BITSET 
+%token COMPLEX_OP_ENCODING_BITSET
 %token COMPLEX_OP_ENCODING_BITUNSET
-%token COMPLEX_OP_ENCODING_ENCODE 
+%token COMPLEX_OP_ENCODING_ENCODE
 %token COMPLEX_OP_ENCODING_DECODE
 
 %token ARITHMETIC_OP_ADD     ARITHMETIC_OP_SUB     ARITHMETIC_OP_MUL ARITHMETIC_OP_DIV
@@ -294,7 +294,7 @@ directive:
 	directive_word |
 	directive_dword |
 	DIRECTIVE_REGISTER_AT_START REGISTER IMMEDIATE { state.setRegisterAtStartup($2, $3); } |
-	DIRECTIVE_CONSTANT IMMEDIATE ALIAS { 
+	DIRECTIVE_CONSTANT IMMEDIATE ALIAS {
 		try {
 			state.registerConstant($3, $2);
 		} catch(iris::Problem err) {
@@ -362,7 +362,7 @@ operation:
 			op.bitmask = 0b1111;
         } |
 		OP_COMPLEX complex_type {
-			op.type = iris18::Operation::Complex; 
+			op.type = iris18::Operation::Complex;
 		};
 complex_type:
 			COMPLEX_OP_ENCODING encoding_subtype { op.subType = static_cast<byte>(iris18::ComplexSubTypes::Encoding); };
@@ -376,7 +376,7 @@ compare_op:
 
 compare_args:
 		 uses_immediate destination_register IMMEDIATE { op.arg1= static_cast<byte>($3); } |
-		 uses_immediate destination_register ALIAS { 
+		 uses_immediate destination_register ALIAS {
 				try {
 					op.arg1 = static_cast<byte>(state.getConstantValue($3));
 				} catch(iris::Problem err) {
@@ -441,8 +441,6 @@ shift_left_or_right:
 		SHIFT_FLAG_LEFT { op.shiftLeft = true; } |
 		SHIFT_FLAG_RIGHT { op.shiftLeft = false; };
 
-system_op:
-		destination_register;
 
 move_op: bitmask destination_register source_register;
 
@@ -507,6 +505,10 @@ stack_operation_choose:
 		};
 
 
+system_op:
+		IMMEDIATE source_register {
+            op.arg0 = ($2 & 0b1111)
+        };
 load_store_combined:
 			load_store_op bitmask immediate_or_alias read_next_word;
 immediate_or_alias:
@@ -592,13 +594,13 @@ macro_op:
 			op.immediate = true;
 			op.subType = static_cast<byte>(iris18::ArithmeticOps::Add);
 			op.arg1 = 0x1;
-		} | 
+		} |
 		MACRO_OP_DECREMENT destination_register {
 			op.type = iris18::Operation::Arithmetic;
 			op.immediate = true;
 			op.subType = static_cast<byte>(iris18::ArithmeticOps::Sub);
 			op.arg1 = 0x1;
-		} | 
+		} |
 		MACRO_OP_DOUBLE destination_register {
 			op.type = iris18::Operation::Arithmetic;
 			op.immediate = true;
