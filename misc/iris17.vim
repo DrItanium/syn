@@ -1,5 +1,5 @@
 " Vim syntax file
-" Language:	iris32 assembler
+" Language:	iris17 assembler
 " Maintainer:	Joshua Scoggins <theoretically.x64@gmail.com
 
 if version < 600
@@ -77,7 +77,7 @@ if version >= 508 || !exists("did_asm_syntax_inits")
   delcommand HiLink
 endif
 
-let b:current_syntax = "iris32"
+let b:current_syntax = "iris17"
 
 let &cpo = s:cpo_save
 unlet s:cpo_save
