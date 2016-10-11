@@ -225,6 +225,15 @@
                           none
                           ?*free*
                           ?*t0*)))
+(deffunction set-arg0
+             (?register)
+             (copy ?*arg0*
+                   ?register))
+(deffunction assign-arg0
+             (?bitmask ?value)
+             (assign ?bitmask 
+                     ?*arg0*
+                     ?value))
 (code (defunc GetMemoryCell
               (comment "need to get a cell from the free list")
               (branch-call immediate
@@ -256,17 +265,37 @@
                                           (branch-call immediate
                                                        reclaimMemory))))
       (defunc markCell
-       (describe-arg ?*arg0*
-                     "base pointer")
-       (use-register ?*t0*
-        (copy ?*t0*
-              ?*arg0*)
-        (use-register ?*t1*
-         (scope markCell_checkCAR
-          (get-car ?*t0* 
-                   ?*t1*)
-          (copy ?*arg0*
-                ?*t1*)
+              (describe-arg ?*arg0*
+                            "base pointer")
+              (use-register ?*t0*
+                            (copy ?*t0*
+                                  ?*arg0*)
+                            (use-register ?*t1*
+                                          (scope markCell_checkCAR
+                                                 (get-car ?*t0* 
+                                                          ?*t1*)
+                                                 (set-arg0 ?*t1*)
+                                                 (branch-call immediate
+                                                              isgcbitset)
+                                                 (comment (branch-cond immediate
+                                                                       markCell_checkCDR)
+                                                          "already marked")
+                                                 (set-arg0 ?*t1*)
+                                                 (branch-call immediate
+                                                              markgcbit)
+                                                 (set-car ?*t0*
+                                                          ?*ret0*)
+                                                 (comment (copy ?*t1*
+                                                                ?*ret0*) 
+                                                          "save the updated value")
+                                                 (branch-call immediate
+                                                              isintegertype)
+                                                 (comment (branch-cond immediate
+                                                                       markCell_checkCDR)
+                                                          "integer")
+                                                 ; TODO: continue
+                                                 )
 
-         
+                                          )))
+      )
 
