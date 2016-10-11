@@ -47,6 +47,27 @@
            ?*free* = addr
            ?*param-stack* = r10
            ?*cell-size* = 0x4)
+(deffunction set-car
+             (?addr ?value)
+             (store32 0x0
+                      ?addr 
+                      ?value))
+(deffunction set-cdr
+             (?addr ?value)
+             (store32 0x2
+                      ?addr
+                      ?value))
+(deffunction get-car
+             (?addr ?value)
+             (load32 0x0
+                     ?addr 
+                     ?value))
+(deffunction get-cdr
+             (?addr ?value)
+             (load32 0x2
+                     ?addr
+                     ?value))
+
 (code (memory-location 0x00000000)
       (comment (assign32 sp 
                          stackBottom)
@@ -65,7 +86,7 @@
                "Setup the parameter stack to be used internally")
       (comment "Setup the machine by first constructing the free list")
       (scope memorySetupLoop
-             (comment (compare > None r0 r1)
+             (comment (compare-op > None r0 r1)
                       "have we gone past the last cell?")
              (branch-cond immediate
                           memortyHasBeenSetup)
@@ -79,10 +100,129 @@
                       "next address cell")
              (branch immediate
                      memorySetupLoop))
+      (scope memoryHasBeenSetup
+             (branch immediate 
+                     terminate))
+      (scope ReadChar
+             (scope getchar
+                    (getc value)
+                    (ret)))
+      (scope PrintChar
+             (scope putchar
+                    (putc value)
+                    (ret)))
+      (scope terminate
+             (terminate)))
+
+(code (scope clearcell
+             (describe-arg value
+                           "The address in memory of the cell to modify")
+             (comment "Clear out r7 and r8 before calling store cell")
+             (zero ?*arg1*)
+             (zero ?*arg2*)
+             (branch immediate
+                     storecell))
+      (defunc storecell
+              (describe-arg ?*arg0*
+                            "The address in memory of the cell to modify")
+              (describe-arg ?*arg1*
+                            "The new contents of the car")
+              (describe-arg ?*arg2*
+                            "The new contents of the cdr")
+              (set-car ?*arg0*
+                       ?*arg1*)
+              (set-cdr ?*arg0*
+                       ?*arg2*)))
+(deffunction logical-and:immediate
+             (?bitmask ?reg ?mask)
+             (logical-op:immediate and
+                                   ?bitmask
+                                   ?reg
+                                   ?mask))
+(deffunction logical-or:immediate
+             (?bitmask ?reg ?value)
+             (logical-op:immediate or
+                                   ?bitmask
+                                   ?reg
+                                   ?value))
+
+(deffunction mask-value32
+             (?reg ?mask)
+             (logical-and:immediate 0m1111
+                                    ?reg
+                                    ?mask))
 
 
+(deffunction check-bit
+             "Perform a mask and compare against zero"
+             (?mask ?reg ?index ?op)
+             (create$ (logical-and:immediate ?mask
+                                             ?reg
+                                             ?index)
+                      (compare-op ?op
+                                  none
+                                  immediate
+                                  ?reg
+                                  0x0)))
 
+(deffunction check-bit-is-unset
+             (?mask ?reg ?index)
+             (check-bit ?mask
+                        ?reg
+                        ?index
+                        ==))
 
-            
-                
-                
+(deffunction check-bit-is-set
+             (?mask ?reg ?index)
+             (check-bit ?mask
+                        ?reg
+                        ?index
+                        !=))
+
+(code (defunc unmarkgcbit
+              (mask-value32 ?*arg0*
+                            0xFFFFFFFE))
+      (defunc markgcbit
+              (logical-or:immediate 0m1111
+                                    ?*arg0*
+                                    0x1))
+      (defunc isgcbitset
+              (check-bit-is-set 0m0001
+                                ?*arg0*
+                                0x1))
+      (defunc setintegertype
+              (mask-value32 ?*arg0*
+                            0xFFFFFFFD))
+      (defunc isintegertype 
+              (check-bit-is-unset 0m0001
+                                  ?*arg0*
+                                  0x2))
+      (defunc setlisttype
+              (logical-or:immediate 0m1111
+                                    ?*arg0*
+                                    0x00000020))
+      (defunc islisttype
+              (check-bit-is-set 0m0001
+                                ?*arg0*
+                                0x2)))
+
+(code (defunc popParam
+              (pop 0m1111 
+                   ?*ret0*
+                   ?*param-stack*))
+      (defunc pushParam
+              (push 0m1111
+                    ?*arg0*
+                    ?*param-stack*)))
+
+(code (defunc Print_OutOfMemory
+              (branch immediate
+                      terminate))
+      (defunc OutOfMemory
+              (assign32 ?*t0*
+                        NIL)
+              (compare-op == 
+                          none
+                          ?*free*
+                          ?*t0*)))
+

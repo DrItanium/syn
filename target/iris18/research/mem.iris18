@@ -99,7 +99,7 @@
 
 @label popParam
 	; nothing to take in
-	memory pop 0m1111 r4 r10
+	memory pop 0m1111 value r10
 	return
 @label pushParam
 	; value - what to push onto the stack

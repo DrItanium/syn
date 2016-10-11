@@ -327,8 +327,40 @@
 
 
 (defmethod set-address
-           ((?value INTEGER
-                    SYMBOL))
-           (assign32 addr
-                     ?value))
+  ((?value INTEGER
+           SYMBOL))
+  (assign32 addr
+            ?value))
+
+(defmethod logical-not
+  ((?arg0 SYMBOL))
+  (format nil
+          "    logical not %s" 
+          ?arg0))
+(defmethod logical-op
+  ((?action SYMBOL)
+   (?arg0 SYMBOL)
+   (?arg1 SYMBOL))
+  (format nil
+          "    logical %s %s %s"
+          ?action
+          ?arg0
+          ?arg1))
+
+
+(defmethod logical-op:immediate
+  ((?action SYMBOL
+            (neq ?current-argument
+                 not))
+   (?bitmask SYMBOL)
+   (?arg0 SYMBOL)
+   (?arg1 LEXEME
+          INTEGER))
+  (format nil
+          "    logical %s immediate %s %s %s"
+          ?action
+          ?bitmask
+          ?arg0
+          (str-cat ?arg1)))
+
 
