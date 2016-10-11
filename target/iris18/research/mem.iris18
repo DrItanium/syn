@@ -32,20 +32,16 @@
 ; The zone bit is defined as bit 23 in a memory address
 @org 0x00000000
 	set 0m1111 sp stackBottom ; setup the stack pointer
-	set 0m1111 r8 freeListBegin ; set the bottom of the free list
-	set 0m1111 addr NIL ; initialize the free list by pointing to NIL
-	set 0m1111 r10 paramBottom
+	set 0m1111 r0 0x00800000  ; set the start of memory
+	set 0m1111 r1 0x00FFFFFC  ; set the end of memory
+	set 0m1111 addr NIL ; initialize the free list by pointing to NIL, we're going to be using this like a stack
+	;set 0m1111 r10 paramBottom
 ; setup the machine by first constructing the free list
 @label memorySetupLoop
-	compare == none addr r8					; see if we are done setting up the free list
+	compare > none r0 r1					; have we gone past the last cell?
 	branch cond immediate memoryHasBeenSetup
-	copy r0 addr 				; r0 is the address in zone 1
-	copy r1 addr 				; r1 is the address in zone 0
+	memory push 0m1111 r0 addr
 	arithmetic add immediate r0 0x4	; next address cell
-	arithmetic sub immediate r1 0x4 ; next "free cell" location
-	memory store 0m1111 0x0 r1 r0	; store the next address cell in zone1 to car
-	memory store 0m1111 0x2 r1 addr ; store the old available address as cdr
-	copy addr r1
 	branch immediate memorySetupLoop
 @label memoryHasBeenSetup
 	branch immediate terminate ; just quit for now
@@ -63,14 +59,53 @@
 	system value 
 	return
 
+@label reclaimMemory 
+	; go through zone 1 memory and return any cells not marked
+	; start at 0x00800000 and go to 0x00FFFFFF
+	memory push 0m1111 value
+	memory push 0m1111 r0
+	set 0m1111 r0 MemoryStart					; Setup the start address, this is the pointer to keep moving
+	memory push 0m1111 r1
+	set 0m1111 r1 MemoryEnd						; Setup the end address
+@label reclaimMemory_Loop
+	compare > none r0 r1								; did we go past memory end?
+	branch cond immediate reclaimMemory_Done			; if we did then we're done
+	; load the current cell's car and check to see if we're marked as keep
+	memory load 0m1111 0x0 r0 value						; 
+	copy r3 value										; preserve value right now
+	branch call immediate isgcbitset					; see if we have the mark bitset
+	branch cond immediate reclaimMemory_unmarkgc        ; nope, we can't reclaim this cell
+	; now we have to reclaim this current cell
+	copy value r0										; need to zero out memory at the given address
+	branch call immediate clearcell						;
+	; put this given address into the free list
+	; save an add by using addr as a stack pointer
+	memory push 0m1111 value addr						; push this heap address onto the free list
+	branch immediate reclaimMemory_Loop_Advance_Address
+@label reclaimMemory_unmarkgc
+	; make sure that we unmark the given value
+	copy value r3
+	branch call immediate unmarkgcbit
+	memory store 0m1111 0x0 r0 value
+@label reclaimMemory_Loop_Advance_Address
+	arithmetic add immediate r0 0x4				; goto the next cell
+	branch immediate reclaimMemory_Loop
+@label reclaimMemory_Done
+	copy addr r2
+	memory pop 0m1111 r1
+	memory pop 0m1111 r0
+	memory pop 0m1111 value
+	return
+
+
 @label clearcell
 	; value is the address to the front of the cell
 	zero r8
 	zero r7
 	branch immediate storecell
 @label loadcell
-	memory load 0m1111 0x0 value value
 	memory load 0m1111 0x2 value r4
+	memory load 0m1111 0x0 value value
 	return
 
 @label storecell
@@ -78,12 +113,15 @@
 	memory store 0m1111 0x2 value r7
 	return
 	
+@label unmarkgcbit
+	logical and immediate 0m1111 value 0xFFFFFFFE
+	return
 @label markgcbit
 	; mark the lowest most bit of a given dword
 	logical or immediate 0m0001 value 0x1
 	return
 
-@label gcbitset
+@label isgcbitset
 	logical and immediate 0m0001 value 0x1
 	compare == none immediate value 0x1
 	return 
@@ -180,3 +218,6 @@
 @label NIL
 	@dword 0xFF7FFFFC
 	@dword NIL
+@label MemoryStart
+@org 0x00FFFFFC
+@label MemoryEnd
