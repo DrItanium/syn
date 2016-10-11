@@ -30,6 +30,7 @@
              (if (open ?path 
                        ?uid
                        "w") then
+              (printout ?uid ?str)
                (close ?uid)
                (open ?path
                      ?uid
@@ -103,7 +104,8 @@
   (?string LEXEME))
  (scope ?title
         (map word
-            (string-to-char-list ?string))))
+            (expand$ (string-to-char-list ?string)))
+        (word 0x00)))
              
 
 (defmethod dword
