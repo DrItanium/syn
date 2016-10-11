@@ -225,4 +225,48 @@
                           none
                           ?*free*
                           ?*t0*)))
+(code (defunc GetMemoryCell
+              (comment "need to get a cell from the free list")
+              (branch-call immediate
+                           OutOfMemory)
+              (branch-cond immediate
+                           PerformGC)
+              (branch immediate
+                      GetMemoryCell_DONE)
+              (scope PerformGC
+                     (branch-call immediate
+                                  GC)
+                     (branch-call immediate
+                                  OutOfMemory)
+                     (branch-cond immediate
+                                  Print_OutOfMemory))
+              (scope GetMemoryCell_DONE
+                     (pop 0m1111
+                          ?*arg0*
+                          ?*free*)))
+      (defunc GC
+              (use-register ?*arg0*
+                            (use-register ?*arg1*
+                                          (assign32 ?*arg1*
+                                                    paramBottom)
+                                          (copy ?*arg0*
+                                                ?*param-stack*)
+                                          (branch-call immediate
+                                                       markStack)
+                                          (branch-call immediate
+                                                       reclaimMemory))))
+      (defunc markCell
+       (describe-arg ?*arg0*
+                     "base pointer")
+       (use-register ?*t0*
+        (copy ?*t0*
+              ?*arg0*)
+        (use-register ?*t1*
+         (scope markCell_checkCAR
+          (get-car ?*t0* 
+                   ?*t1*)
+          (copy ?*arg0*
+                ?*t1*)
+
+         
 

@@ -259,12 +259,14 @@
 (defmethod save-register
   ((?register SYMBOL))
   (push 0m1111
-        ?register))
+        ?register
+        sp))
 
 (defmethod restore-register
   ((?register SYMBOL))
   (pop 0m1111
-       ?register))
+       ?register
+       sp))
 
 (defmethod zero
   ((?register LEXEME))
