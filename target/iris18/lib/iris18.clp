@@ -21,39 +21,60 @@
           ?ra
           ?rb))
 (deffunction memory-op
-             (?action ?bitmask ?offset)
+             (?action ?bitmask ?offset ?extra0 ?extra1)
              (format nil
-                     "    memory %s %s %s"
+                     "    memory %s %s %s %s"
                      ?action
                      ?bitmask
-                     (str-cat ?offset)))
+                     (str-cat ?offset)
+                     (str-cat ?extra0)
+                     (str-cat ?extra1)))
 (deffunction load-value
-             (?bitmask ?offset)
+             (?bitmask ?offset ?addr ?value)
              (memory-op load
                         ?bitmask
-                        ?offset))
+                        ?offset
+                        ?addr
+                        ?value))
+
 (deffunction push
-             (?bitmask ?reg)
+             (?bitmask ?reg ?sp)
              (memory-op push
                         ?bitmask
-                        ?reg))
+                        ?reg
+                        ?sp
+                        ""))
+
 (deffunction pop
-             (?bitmask ?reg)
+             (?bitmask ?reg ?sp)
              (memory-op pop
                         ?bitmask
-                        ?reg))
+                        ?reg
+                        ?sp
+                        ""))
+
 (deffunction store-value
-             (?bitmask ?offset)
+             (?bitmask ?offset ?addr ?value)
              (memory-op store
                         ?bitmask
-                        ?offset))
+                        ?offset
+                        ?addr
+                        ?value))
 (deffunction store16
-             (?offset)
-             (store-value 0m0011 ?offset))
+             (?offset ?addr ?value)
+             (store-value 0m0011 ?offset ?addr ?value))
 
 (deffunction store32
-             (?offset)
-             (store-value 0m1111 ?offset))
+             (?offset ?addr ?value)
+             (store-value 0m1111 ?offset ?addr ?value))
+
+(deffunction load16
+             (?offset ?addr ?value)
+             (load-value 0m0011 ?offset ?addr ?value))
+
+(deffunction load32
+             (?offset ?addr ?value)
+             (load-value 0m1111 ?offset ?addr ?value))
 
 
 (deffunction arithmetic-op
@@ -104,14 +125,6 @@
                             ?dest
                             ?src))
 
-(deffunction load16
-             (?offset)
-             (load-value 0m0011
-                         ?offset))
-(deffunction load32
-             (?offset)
-             (load-value 0m1111
-                         ?offset))
 (defmethod assign
   ((?bitmask SYMBOL)
    (?register LEXEME)
