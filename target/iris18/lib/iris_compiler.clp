@@ -6,6 +6,41 @@
 ; 2) The org directive starts with @org
 ; 3) 32bit values are @dword
 ; 4) 16bit values are @word
+(deffunction to-char-list
+             (?uid)
+             (bind ?output
+                   (create$))
+             (while (<> (bind ?char
+                              (get-char ?uid))
+                        -1) do
+                    (bind ?output
+                          ?output
+                          ?char))
+             ?output)
+(deffunction string-to-char-list
+             "convert the given string to a char list"
+             (?str)
+             (bind ?path
+                   (str-cat "/tmp/" 
+                            (gensym*)))
+             (bind ?uid
+                   (gensym*))
+             (bind ?outcome
+                   (create$))
+             (if (open ?path 
+                       ?uid
+                       "w") then
+               (close ?uid)
+               (open ?path
+                     ?uid
+                     "r")
+               (bind ?outcome
+                     (to-char-list ?uid))
+               (close ?uid)
+               (remove ?path))
+             ?outcome)
+
+
 (defgeneric compile
             "Compile the primary environment")
 (defgeneric code
@@ -61,6 +96,15 @@
 (defgeneric set-address)
 (defgeneric defjump-table)
 
+(defgeneric make-string)
+
+(defmethod make-string
+ ((?title SYMBOL)
+  (?string LEXEME))
+ (scope ?title
+        (map word
+            (string-to-char-list ?string))))
+             
 
 (defmethod dword
   ((?value LEXEME
