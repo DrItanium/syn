@@ -23,7 +23,7 @@
 (deffunction memory-op
              (?action ?bitmask ?offset ?extra0 ?extra1)
              (format nil
-                     "    memory %s %s %s %s"
+                     "    memory %s %s %s %s %s"
                      ?action
                      ?bitmask
                      (str-cat ?offset)
@@ -184,7 +184,8 @@
 (defmethod ret
   ()
   (note (pop 0m1111
-             ip)
+             ip
+             sp)
         "return macro"))
 
 (deffunction select-immediate

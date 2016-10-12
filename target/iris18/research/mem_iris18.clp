@@ -86,7 +86,7 @@
                "Setup the parameter stack to be used internally")
       (comment "Setup the machine by first constructing the free list")
       (scope memorySetupLoop
-             (comment (compare-op > None r0 r1)
+             (comment (compare-op > none FALSE r0 r1)
                       "have we gone past the last cell?")
              (branch-cond immediate
                           memortyHasBeenSetup)
@@ -223,6 +223,7 @@
                         NIL)
               (compare-op == 
                           none
+                          FALSE
                           ?*free*
                           ?*t0*)))
 (deffunction set-arg0
@@ -263,39 +264,57 @@
                                           (branch-call immediate
                                                        markStack)
                                           (branch-call immediate
-                                                       reclaimMemory))))
-      (defunc markCell
+                                                       reclaimMemory)))))
+(deffunction make-mark-cell-body 
+             "Factored out the common pieces into a common function for markCell"
+             (?title ?op ?next)
+             (scope ?title
+                    (funcall ?op
+                             ?*t0*
+                             ?*t1*)
+                    (set-arg0 ?*t1*)
+                    (branch-call immediate
+                                 isgcbitset)
+                    (comment (branch-cond immediate
+                                          ?next)
+                             "already marked")
+                    (set-arg0 ?*t1*)
+                    (branch-call immediate
+                                 markgcbit)
+                    (set-car ?*t0*
+                             ?*ret0*)
+                    (comment (copy ?*t1*
+                                   ?*ret0*) 
+                             "save the updated value")
+                    (branch-call immediate
+                                 isintegertype)
+                    (comment (branch-cond immediate
+                                          ?next)
+                             "integer")
+                    ; TODO: continue
+                    (comment "otherwise it is a list, so we'll need to do a recursive walk but the")
+                    (comment "first thing to do is extract the appropriate address")
+                    (set-arg0 ?*t1*)
+                    (comment (mask-value32 ?*arg0*
+                                           0x00FFFFFC)
+                             "clear out the extra tag bits")
+                    (branch-call immediate
+                                 markCell)))
+
+
+(code (defunc markCell
               (describe-arg ?*arg0*
                             "base pointer")
               (use-register ?*t0*
                             (copy ?*t0*
                                   ?*arg0*)
                             (use-register ?*t1*
-                                          (scope markCell_checkCAR
-                                                 (get-car ?*t0* 
-                                                          ?*t1*)
-                                                 (set-arg0 ?*t1*)
-                                                 (branch-call immediate
-                                                              isgcbitset)
-                                                 (comment (branch-cond immediate
-                                                                       markCell_checkCDR)
-                                                          "already marked")
-                                                 (set-arg0 ?*t1*)
-                                                 (branch-call immediate
-                                                              markgcbit)
-                                                 (set-car ?*t0*
-                                                          ?*ret0*)
-                                                 (comment (copy ?*t1*
-                                                                ?*ret0*) 
-                                                          "save the updated value")
-                                                 (branch-call immediate
-                                                              isintegertype)
-                                                 (comment (branch-cond immediate
-                                                                       markCell_checkCDR)
-                                                          "integer")
-                                                 ; TODO: continue
-                                                 )
-
-                                          )))
+                                          (make-mark-cell-body markCell_checkCAR
+                                                               get-car
+                                                               markCell_checkCDR)
+                                          (make-mark-cell-body markCell_checkCDR
+                                                               get-cdr
+                                                               markCell_Done)
+                                          (label-text markCell_Done))))
       )
 
