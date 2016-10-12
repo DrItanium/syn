@@ -234,7 +234,6 @@
 			arithmetic add immediate r0 0x4				; goto the next cell
 			branch immediate reclaimMemory_Loop
 	@label reclaimMemory_Done
-	copy addr r2
 	memory pop 0m1111 r1
 	memory pop 0m1111 r0
 	memory pop 0m1111 value

@@ -316,5 +316,121 @@
                                                                get-cdr
                                                                markCell_Done)
                                           (label-text markCell_Done))))
-      )
+      (defunc markStack
+              (describe-arg ?*arg0* 
+                            "top of the stack")
+              (describe-arg ?*arg1*
+                            "bottom of the stack")
+              (use-register ?*t0*
+                            (use-register ?*t1*
+                                          (use-register ?*t2*
+                                                        (copy ?*t0*
+                                                              ?*arg0*)
+                                                        (copy ?*t1*
+                                                              ?*arg1*)
+                                                        (scope markStackLoop
+                                                               (comment (compare-op >= none FALSE ?*t0* ?*t1*) 
+                                                                        "Check and see if the \"top\" is greater than the bottom")
+                                                               (comment (branch-cond immediate 
+                                                                                     markStackLoop_Done)
+                                                                        "leave if we went past the bottom")
+                                                               (comment (get-car ?*t0*
+                                                                                 ?*t2*)
+                                                                        "load the actual value from memory")
+                                                               (set-arg0 ?*t2*)
+                                                               (branch-call immediate
+                                                                            isintegertype)
+                                                               (branch-cond immediate
+                                                                            markStackLoop_Iterate)
+                                                               (comment (mask-value32 ?*t2*
+                                                                                      0x00FFFFFC)
+                                                                        "fix the address")
+                                                               (set-arg0 ?*t2*)
+                                                               (comment (branch-call immediate
+                                                                                     markCell)
+                                                                        "now mark the cell as needed"))
+                                                        (scope markStackLoop_Iterate
+                                                               (add immediate
+                                                                    ?*t0*
+                                                                    0x4)
+                                                               (branch immediate
+                                                                       markStackLoop))
+                                                        (label-text markStackLoop_Done)))))
+      (defunc reclaimMemory
+              (use-register ?*ret0*
+                            (use-register ?*t0*
+                                          (comment (assign32 ?*t0*
+                                                             MemoryStart)
+                                                   "Setup the start address, this is the pointer to keep moving")
+                                          (use-register ?*t1*
+                                                        (assign32 ?*t1* 
+                                                                  MemoryEnd)
+                                                        (use-register ?*t2*
+                                                                      (scope reclaimMemory_Loop
+                                                                             (comment (compare-op > 
+                                                                                                  none
+                                                                                                  FALSE
+                                                                                                  ?*t0* 
+                                                                                                  ?*t1*)
+                                                                                      "did we go past memory end?")
+                                                                             (comment (branch-cond immediate 
+                                                                                                   reclaimMemory_Done)
+                                                                                      "if we did then we're done")
+                                                                             (comment "load the current cell's car and check to see if we're marked as keep"P)
+                                                                             (get-car ?*t0*
+                                                                                      ?*t2*)
+                                                                             (set-arg0 ?*t2*)
+                                                                             (branch-call immediate 
+                                                                                          isgcbitset)
+                                                                             (branch-cond immediate
+                                                                                          reclaimMemory_unmarkgc)
+                                                                             (comment "perform the reclamation")
+                                                                             (set-arg0 ?*t0*)
+                                                                             (branch-call immediate 
+                                                                                          clearcell)
+                                                                             (comment (push 0m1111
+                                                                                            ?*arg0*
+                                                                                            ?*free*)
+                                                                                      "push this heap address onto the free list")
+                                                                             (branch immediate
+                                                                                     reclaimMemory_Loop_Advance_Address))
+                                                                      (scope reclaimMemory_unmarkgc
+                                                                             (comment "make sure that we unmark the given value")
+                                                                             (set-arg0 ?*t2*)
+                                                                             (branch-call immediate
+                                                                                          unmarkgcbit)
+                                                                             (set-car ?*t0*
+                                                                                      ?*ret0*))
+                                                                      (scope reclaimMemory_Loop_Advance_Address
+                                                                             (add immediate
+                                                                                  ?*t0*
+                                                                                  0x4)
+                                                                             (branch immediate
+                                                                                     reclaimMemory_Loop))
+                                                                      (label-text reclaimMemory_Done))))))
+      (defunc null
+              (describe-arg ?*arg0*
+                            "The pointer to check to see if it refers to nil")
+              (use-register ?*t0*
+                            (assign32 ?*t0*
+                                      NIL)
+                            (compare-op == 
+                                        none
+                                        FALSE
+                                        ?*arg0*
+                                        ?*t0*))))
+(code (at-memory-location 0x00400000
+                          (label-text stackBottom))
+      (at-memory-location 0x00600000
+                          (label-text paramBottom))
+      (at-memory-location 0x006FFFFC
+                          (label-text freeListBegin))
+      (at-memory-location 0x007FFFFC
+       (label-text freeListEnd)
+       (scope NIL
+        (dword 0xFF7FFFFC)
+        (dword NIL))
+       (label-text MemoryStart))
+      (at-memory-location 0x00FFFFFC
+       (label-text MemoryEnd)))
 
