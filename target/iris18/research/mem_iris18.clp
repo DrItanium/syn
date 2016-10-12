@@ -376,7 +376,7 @@
                                                                              (comment (branch-cond immediate 
                                                                                                    reclaimMemory_Done)
                                                                                       "if we did then we're done")
-                                                                             (comment "load the current cell's car and check to see if we're marked as keep"P)
+                                                                             (comment "load the current cell's car and check to see if we're marked as keep")
                                                                              (get-car ?*t0*
                                                                                       ?*t2*)
                                                                              (set-arg0 ?*t2*)
@@ -426,11 +426,11 @@
       (at-memory-location 0x006FFFFC
                           (label-text freeListBegin))
       (at-memory-location 0x007FFFFC
-       (label-text freeListEnd)
-       (scope NIL
-        (dword 0xFF7FFFFC)
-        (dword NIL))
-       (label-text MemoryStart))
+                          (label-text freeListEnd)
+                          (scope NIL
+                                 (dword 0xFF7FFFFC)
+                                 (dword NIL))
+                          (label-text MemoryStart))
       (at-memory-location 0x00FFFFFC
-       (label-text MemoryEnd)))
+                          (label-text MemoryEnd)))
 
