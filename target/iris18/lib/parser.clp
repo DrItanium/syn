@@ -3557,6 +3557,11 @@
   (slot args
         (default ?NONE))
   (multislot body))
+(defclass args
+  (is-a node)
+  (multislot contents
+             (visibility public)
+             (storage local)))
 
 (defmessage-handler defn get-return-value primary
                     ()
@@ -3571,12 +3576,18 @@
                        (contents defn ?name ?args $?body)
                        (name ?title)
                        (parent ?parent))
+         ?f2 <- (object (is-a list)
+                        (name ?args)
+                        (parent ?title)
+                        (contents $?contents))
          =>
-         (unmake-instance ?f)
+         (unmake-instance ?f ?f2)
          (make-instance ?title of defn
                         (parent ?parent)
                         (title ?name)
-                        (args ?args)
+                        (args (make-instance ?args of args
+                                             (contents ?contents)
+                                             (parent ?title)))
                         (body ?body)))
 
 (defclass chained-operation
@@ -3848,5 +3859,51 @@
               (sp of register)
               (value of register)
               (cr of register))
+
+(defclass fcall
+  (is-a node)
+  (slot operation
+        (visibility public)
+        (storage local)
+        (default ?NONE))
+  (multislot arguments
+             (visibility public)
+             (storage local)))
+
+
+(defrule error-not-a-registered-function-call
+         (stage (current associate))
+         (object (is-a defn)
+                 (body $? ?list $?))
+         (object (is-a list)
+                 (name ?list)
+                 (contents ?operation
+                           $?body))
+         (not (object (is-a defn)
+                      (title ?operation)))
+         =>
+         (printout werror "ERROR: The function " ?operation " is not defined before use!" crlf)
+         (halt))
+
+(defrule register-function-call
+         (stage (current associate))
+         (object (is-a defn)
+                 (body $? ?list $?))
+         ?f <- (object (is-a list)
+                       (name ?list)
+                       (contents ?operation 
+                                 $?body)
+                       (parent ?parent))
+
+         (object (is-a defn)
+                 (title ?operation)
+                 (name ?defn))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?list of fcall
+                        (operation ?defn)
+                        (arguments $?body)
+                        (parent ?parent)))
+
 
 
