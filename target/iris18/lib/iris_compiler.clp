@@ -41,7 +41,6 @@
                (remove ?path))
              ?outcome)
 
-
 (defgeneric compile
             "Compile the primary environment")
 (defgeneric code

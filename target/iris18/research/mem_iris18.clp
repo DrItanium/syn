@@ -230,11 +230,21 @@
              (?register)
              (copy ?*arg0*
                    ?register))
+(deffunction set-arg1
+             (?register)
+             (copy ?*arg1*
+                   ?register))
+(deffunction assign-arg1
+             (?bitmask ?value)
+             (assign ?bitmask
+                     ?*arg1*
+                     ?value))
 (deffunction assign-arg0
              (?bitmask ?value)
              (assign ?bitmask 
                      ?*arg0*
                      ?value))
+
 (code (defunc GetMemoryCell
               (comment "need to get a cell from the free list")
               (branch-call immediate
@@ -257,10 +267,9 @@
       (defunc GC
               (use-register (create$ ?*arg0*
                                      ?*arg1*)
-                            (assign32 ?*arg1*
-                                      paramBottom)
-                            (copy ?*arg0*
-                                  ?*param-stack*)
+                            (set-arg0 ?*param-stack*)
+                            (assign-arg1 0m1111
+                                         paramBottom)
                             (branch-call immediate
                                          markStack)
                             (branch-call immediate
@@ -419,6 +428,7 @@
                                         FALSE
                                         ?*arg0*
                                         ?*t0*))))
+
 (code (at-memory-location 0x00400000
                           (label-text stackBottom))
       (at-memory-location 0x00600000
