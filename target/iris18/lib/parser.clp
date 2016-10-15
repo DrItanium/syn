@@ -1,5 +1,4 @@
-
-; Copyright (c) 2015 Joshua Scoggins
+; Copyright (c) 2015-2016 Joshua Scoggins
 ;
 ; This software is provided 'as-is', without any express or implied
 ; warranty. In no event will the authors be held liable for any damages
@@ -16,6 +15,7 @@
 ; 2. Altered source versions must be plainly marked as such, and must not be
 ;    misrepresented as being the original software.
 ; 3. This notice may not be removed or altered from any source distribution.
+
 (defglobal MAIN 
            ?*priority:first* = 10000
            ?*priority:three* = 3
@@ -23,23 +23,7 @@
            ?*priority:one* = 1
            ?*priority:last* = -9999
            ?*priority:dead-last* = -10000)
-; Copyright (c) 2015 Joshua Scoggins
-;
-; This software is provided 'as-is', without any express or implied
-; warranty. In no event will the authors be held liable for any damages
-; arising from the use of this software.
-;
-; Permission is granted to anyone to use this software for any purpose,
-; including commercial applications, and to alter it and redistribute it
-; freely, subject to the following restrictions:
-;
-; 1. The origin of this software must not be misrepresented; you must not
-;    claim that you wrote the original software. If you use this software
-;    in a product, an acknowledgement in the product documentation would be
-;    appreciated but is not required.
-; 2. Altered source versions must be plainly marked as such, and must not be
-;    misrepresented as being the original software.
-; 3. This notice may not be removed or altered from any source distribution.
+
 (deftemplate stage
              (slot current
                    (type SYMBOL)
@@ -63,23 +47,6 @@
                        parse
                        associate
                        optimize)))
-; Copyright (c) 2015 Joshua Scoggins
-;
-; This software is provided 'as-is', without any express or implied
-; warranty. In no event will the authors be held liable for any damages
-; arising from the use of this software.
-;
-; Permission is granted to anyone to use this software for any purpose,
-; including commercial applications, and to alter it and redistribute it
-; freely, subject to the following restrictions:
-;
-; 1. The origin of this software must not be misrepresented; you must not
-;    claim that you wrote the original software. If you use this software
-;    in a product, an acknowledgement in the product documentation would be
-;    appreciated but is not required.
-; 2. Altered source versions must be plainly marked as such, and must not be
-;    misrepresented as being the original software.
-; 3. This notice may not be removed or altered from any source distribution.
 (defgeneric no-strings-in-list
             "checks to see if the given list is free of strings")
 (defgeneric no-primitive-strings-in-list
@@ -924,23 +891,6 @@
                         (parent ?file)
                         (value ?value)))
 
-; Copyright (c) 2015 Joshua Scoggins
-;
-; This software is provided 'as-is', without any express or implied
-; warranty. In no event will the authors be held liable for any damages
-; arising from the use of this software.
-;
-; Permission is granted to anyone to use this software for any purpose,
-; including commercial applications, and to alter it and redistribute it
-; freely, subject to the following restrictions:
-;
-; 1. The origin of this software must not be misrepresented; you must not
-;    claim that you wrote the original software. If you use this software
-;    in a product, an acknowledgement in the product documentation would be
-;    appreciated but is not required.
-; 2. Altered source versions must be plainly marked as such, and must not be
-;    misrepresented as being the original software.
-; 3. This notice may not be removed or altered from any source distribution.
 
 (defclass match
   (is-a node)
@@ -1154,23 +1104,6 @@
                        1 1))
 
 
-; Copyright (c) 2015 Joshua Scoggins
-;
-; This software is provided 'as-is', without any express or implied
-; warranty. In no event will the authors be held liable for any damages
-; arising from the use of this software.
-;
-; Permission is granted to anyone to use this software for any purpose,
-; including commercial applications, and to alter it and redistribute it
-; freely, subject to the following restrictions:
-;
-; 1. The origin of this software must not be misrepresented; you must not
-;    claim that you wrote the original software. If you use this software
-;    in a product, an acknowledgement in the product documentation would be
-;    appreciated but is not required.
-; 2. Altered source versions must be plainly marked as such, and must not be
-;    misrepresented as being the original software.
-; 3. This notice may not be removed or altered from any source distribution.
 (defclass message-handler-documentation
   (is-a node)
   (slot handler-name
@@ -1304,23 +1237,6 @@
                         (handler-type ?type)))
 
 
-; Copyright (c) 2015 Joshua Scoggins
-;
-; This software is provided 'as-is', without any express or implied
-; warranty. In no event will the authors be held liable for any damages
-; arising from the use of this software.
-;
-; Permission is granted to anyone to use this software for any purpose,
-; including commercial applications, and to alter it and redistribute it
-; freely, subject to the following restrictions:
-;
-; 1. The origin of this software must not be misrepresented; you must not
-;    claim that you wrote the original software. If you use this software
-;    in a product, an acknowledgement in the product documentation would be
-;    appreciated but is not required.
-; 2. Altered source versions must be plainly marked as such, and must not be
-;    misrepresented as being the original software.
-; 3. This notice may not be removed or altered from any source distribution.
 
 (defclass deftemplate
   (is-a node
@@ -1367,23 +1283,6 @@
                         (slots ?slot 
                                $?slots)))
 
-; Copyright (c) 2015 Joshua Scoggins
-;
-; This software is provided 'as-is', without any express or implied
-; warranty. In no event will the authors be held liable for any damages
-; arising from the use of this software.
-;
-; Permission is granted to anyone to use this software for any purpose,
-; including commercial applications, and to alter it and redistribute it
-; freely, subject to the following restrictions:
-;
-; 1. The origin of this software must not be misrepresented; you must not
-;    claim that you wrote the original software. If you use this software
-;    in a product, an acknowledgement in the product documentation would be
-;    appreciated but is not required.
-; 2. Altered source versions must be plainly marked as such, and must not be
-;    misrepresented as being the original software.
-; 3. This notice may not be removed or altered from any source distribution.
 (defclass default-facet
   (is-a node)
   (role abstract)
@@ -2059,23 +1958,6 @@
                         (parent ?parent)
                         (slot-name ?name)
                         (facets ?facets)))
-; Copyright (c) 2015 Joshua Scoggins
-;
-; This software is provided 'as-is', without any express or implied
-; warranty. In no event will the authors be held liable for any damages
-; arising from the use of this software.
-;
-; Permission is granted to anyone to use this software for any purpose,
-; including commercial applications, and to alter it and redistribute it
-; freely, subject to the following restrictions:
-;
-; 1. The origin of this software must not be misrepresented; you must not
-;    claim that you wrote the original software. If you use this software
-;    in a product, an acknowledgement in the product documentation would be
-;    appreciated but is not required.
-; 2. Altered source versions must be plainly marked as such, and must not be
-;    misrepresented as being the original software.
-; 3. This notice may not be removed or altered from any source distribution.
 
 (defclass function
   (is-a node
@@ -2502,23 +2384,6 @@
                         (value ?last)
                         (expand TRUE)))
 
-; Copyright (c) 2015 Joshua Scoggins
-;
-; This software is provided 'as-is', without any express or implied
-; warranty. In no event will the authors be held liable for any damages
-; arising from the use of this software.
-;
-; Permission is granted to anyone to use this software for any purpose,
-; including commercial applications, and to alter it and redistribute it
-; freely, subject to the following restrictions:
-;
-; 1. The origin of this software must not be misrepresented; you must not
-;    claim that you wrote the original software. If you use this software
-;    in a product, an acknowledgement in the product documentation would be
-;    appreciated but is not required.
-; 2. Altered source versions must be plainly marked as such, and must not be
-;    misrepresented as being the original software.
-; 3. This notice may not be removed or altered from any source distribution.
 
 (defclass defgeneric
   (is-a node
@@ -2556,23 +2421,6 @@
                         (generic-name ?gen-name)
                         (comment ?cvalue)
                         (parent ?parent)))
-; Copyright (c) 2015 Joshua Scoggins
-;
-; This software is provided 'as-is', without any express or implied
-; warranty. In no event will the authors be held liable for any damages
-; arising from the use of this software.
-;
-; Permission is granted to anyone to use this software for any purpose,
-; including commercial applications, and to alter it and redistribute it
-; freely, subject to the following restrictions:
-;
-; 1. The origin of this software must not be misrepresented; you must not
-;    claim that you wrote the original software. If you use this software
-;    in a product, an acknowledgement in the product documentation would be
-;    appreciated but is not required.
-; 2. Altered source versions must be plainly marked as such, and must not be
-;    misrepresented as being the original software.
-; 3. This notice may not be removed or altered from any source distribution.
 
 (defclass defglobal
   (is-a node)
@@ -2761,25 +2609,6 @@
                         (parent ?p)
                         (expand TRUE)))
 
-
-
-; Copyright (c) 2015 Joshua Scoggins
-;
-; This software is provided 'as-is', without any express or implied
-; warranty. In no event will the authors be held liable for any damages
-; arising from the use of this software.
-;
-; Permission is granted to anyone to use this software for any purpose,
-; including commercial applications, and to alter it and redistribute it
-; freely, subject to the following restrictions:
-;
-; 1. The origin of this software must not be misrepresented; you must not
-;    claim that you wrote the original software. If you use this software
-;    in a product, an acknowledgement in the product documentation would be
-;    appreciated but is not required.
-; 2. Altered source versions must be plainly marked as such, and must not be
-;    misrepresented as being the original software.
-; 3. This notice may not be removed or altered from any source distribution.
 (defclass defmethod
   (is-a function)
   (slot offset 
@@ -3097,23 +2926,6 @@
                         (parent ?args)
                         (argument-name ?mname)
                         (query ?query)))
-; Copyright (c) 2015 Joshua Scoggins
-;
-; This software is provided 'as-is', without any express or implied
-; warranty. In no event will the authors be held liable for any damages
-; arising from the use of this software.
-;
-; Permission is granted to anyone to use this software for any purpose,
-; including commercial applications, and to alter it and redistribute it
-; freely, subject to the following restrictions:
-;
-; 1. The origin of this software must not be misrepresented; you must not
-;    claim that you wrote the original software. If you use this software
-;    in a product, an acknowledgement in the product documentation would be
-;    appreciated but is not required.
-; 2. Altered source versions must be plainly marked as such, and must not be
-;    misrepresented as being the original software.
-; 3. This notice may not be removed or altered from any source distribution.
 
 (defclass defmodule
   (is-a node
@@ -3301,23 +3113,6 @@
                           (module-name ?module-name)
                           (construct ?construct)
                           (qualifiers ?qualifiers)))
-; Copyright (c) 2015 Joshua Scoggins
-;
-; This software is provided 'as-is', without any express or implied
-; warranty. In no event will the authors be held liable for any damages
-; arising from the use of this software.
-;
-; Permission is granted to anyone to use this software for any purpose,
-; including commercial applications, and to alter it and redistribute it
-; freely, subject to the following restrictions:
-;
-; 1. The origin of this software must not be misrepresented; you must not
-;    claim that you wrote the original software. If you use this software
-;    in a product, an acknowledgement in the product documentation would be
-;    appreciated but is not required.
-; 2. Altered source versions must be plainly marked as such, and must not be
-;    misrepresented as being the original software.
-; 3. This notice may not be removed or altered from any source distribution.
 
 ; bind operations
 
@@ -3390,23 +3185,6 @@
 
 
 
-; Copyright (c) 2015-2016 Joshua Scoggins
-;
-; This software is provided 'as-is', without any express or implied
-; warranty. In no event will the authors be held liable for any damages
-; arising from the use of this software.
-;
-; Permission is granted to anyone to use this software for any purpose,
-; including commercial applications, and to alter it and redistribute it
-; freely, subject to the following restrictions:
-;
-; 1. The origin of this software must not be misrepresented; you must not
-;    claim that you wrote the original software. If you use this software
-;    in a product, an acknowledgement in the product documentation would be
-;    appreciated but is not required.
-; 2. Altered source versions must be plainly marked as such, and must not be
-;    misrepresented as being the original software.
-; 3. This notice may not be removed or altered from any source distribution.
 
 (defclass set-dynamic-constraint-checking 
   (is-a node)
