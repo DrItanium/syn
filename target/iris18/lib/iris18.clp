@@ -274,6 +274,28 @@
   (assign 0m0000
           ?register
           0x0))
+(defmethod zero
+ ((?registers MULTIFIELD
+   (> (length$ ?current-argument)
+    1)))
+ (create$ (zero (nth$ 1 ?registers))
+          (zero (rest$ ?registers))))
+
+(defmethod zero
+ ((?registers MULTIFIELD
+   (= (length$ ?current-argument)
+    1)))
+ (zero (nth$ 1 ?registers)))
+
+(defmethod zero
+ ((?registers MULTIFIELD
+   (= (length$ ?current-argument)
+    0)))
+ (create$))
+
+(defmethod zero
+ ($?registers)
+ (zero ?registers))
 
 (defmethod syscall
   ((?arg LEXEME))
@@ -366,3 +388,16 @@
           ?arg0
           (str-cat ?arg1)))
 
+(defmethod goto
+  ((?target SYMBOL))
+  (branch immediate
+          ?target))
+(defmethod fcall
+  ((?target SYMBOL))
+  (branch-call immediate
+               ?target))
+(defmethod cgoto
+  "goto the given immediate if the condition register is set to true"
+  ((?target SYMBOL))
+  (branch-cond immediate
+               ?target))

@@ -97,6 +97,22 @@
 (defgeneric defjump-table)
 
 (defgeneric make-string)
+(defgeneric loop)
+(defgeneric goto)
+(defgeneric fcall)
+(defgeneric cgoto)
+
+(defmethod loop
+ ((?title SYMBOL)
+  (?body MULTIFIELD))
+ (scope ?title 
+        ?body
+        (goto ?title)))
+(defmethod loop
+  ((?title SYMBOL)
+   $?body)
+  (loop ?title
+        ?body))
 
 (defmethod make-string
  ((?title SYMBOL)
