@@ -182,7 +182,8 @@
                (<> (length$ ?current-argument)
                    0))
    (?body MULTIFIELD))
-  (use-register (first$ ?registers)
+  (use-register (nth$ 1 
+                      ?registers)
                 (use-register (rest$ ?registers)
                               ?body)))
 (defmethod use-register
