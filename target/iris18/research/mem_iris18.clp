@@ -131,6 +131,7 @@
                        ?car)
               (set-cdr ?addr
                        ?cdr)))
+
 (deffunction logical-and:immediate
              (?bitmask ?reg ?mask)
              (logical-op:immediate and

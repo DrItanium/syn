@@ -3548,3 +3548,305 @@
                         (parent ?parent)))
 
 
+; iris18 addons
+(defclass defn
+  (is-a node)
+  (slot title
+        (type SYMBOL)
+        (default ?NONE))
+  (slot args
+        (default ?NONE))
+  (multislot body))
+
+(defmessage-handler defn get-return-value primary
+                    ()
+                    ; find the last element of the body
+                    (send (nth$ (length$ ?self:body) 
+                                ?self:body)
+                          get-return-value))
+
+(defrule parse-defn
+         (stage (current parse))
+         ?f <- (object (is-a list)
+                       (contents defn ?name ?args $?body)
+                       (name ?title)
+                       (parent ?parent))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?title of defn
+                        (parent ?parent)
+                        (title ?name)
+                        (args ?args)
+                        (body ?body)))
+
+(defclass chained-operation
+  (is-a node)
+  (message-handler get-return-value primary))
+(defclass special-operation
+  (is-a chained-operation)
+  (slot operation
+        (visibility public)
+        (storage local)
+        (default ?NONE))
+  (multislot args
+             (storage local)
+             (visibility public)))
+
+(defclass memory-operation
+  (is-a special-operation)
+  (slot bitmask
+        (type SYMBOL)
+        (storage local)
+        (visibility public)
+        (default ?NONE)))
+(defclass stack-operation
+  (is-a memory-operation)
+  (slot pointer
+        (storage local)
+        (visibility public)
+        (default ?NONE))
+  (slot target 
+        (storage local)
+        (visibility public)
+        (default ?NONE)))
+(defmessage-handler stack-operation get-return-value primary
+                    ()
+                    ?self:target)
+(defclass load-store-operation
+  (is-a memory-operation)
+  (slot offset
+        (storage local)
+        (visibility public)
+        (default ?NONE))
+  (slot address
+        (storage local)
+        (visibility public)
+        (default ?NONE))
+  (slot value 
+        (storage local)
+        (visibility public)
+        (default ?NONE)))
+(defmessage-handler load-store-operation get-return-value primary
+                    ()
+                    ?self:value)
+
+(defclass store-operation
+  (is-a load-store-operation)
+  (slot operation
+        (source composite)
+        (storage shared)
+        (default store)))
+
+(defclass load-operation
+  (is-a load-store-operation)
+  (slot operation
+        (source composite)
+        (storage shared)
+        (default load)))
+
+(defclass push-operation
+  (is-a stack-operation)
+  (slot operation
+        (source composite)
+        (storage shared)
+        (default push)))
+
+(defclass pop-operation
+  (is-a stack-operation)
+  (slot operation
+        (source composite)
+        (storage shared)
+        (default pop)))
+
+
+(defrule parse-store-operation
+         (stage (current parse))
+         ?f <- (object (is-a list)
+                       (contents *memory
+                                 store
+                                 ?bitmask
+                                 ?offset
+                                 ?address
+                                 ?value
+                                 $?rest)
+                       (name ?name)
+                       (parent ?parent))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?name of store-operation 
+                        (bitmask ?bitmask)
+                        (parent ?parent)
+                        (address ?address)
+                        (value ?value)
+                        (args $?rest)
+                        (offset ?offset)))
+
+(defrule parse-load-operation
+         (stage (current parse))
+         ?f <- (object (is-a list)
+                       (contents *memory
+                                 load
+                                 ?bitmask
+                                 ?offset
+                                 ?address
+                                 ?value
+                                 $?rest)
+                       (name ?name)
+                       (parent ?parent))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?name of load-operation 
+                        (bitmask ?bitmask)
+                        (parent ?parent)
+                        (address ?address)
+                        (value ?value)
+                        (args $?rest)
+                        (offset ?offset)))
+(defrule parse-pop-operation
+         (stage (current parse))
+         ?f <- (object (is-a list)
+                       (contents *memory
+                                 pop
+                                 ?bitmask
+                                 ?target
+                                 ?pointer
+                                 $?rest)
+                       (name ?name)
+                       (parent ?parent))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?name of pop-operation 
+                        (bitmask ?bitmask)
+                        (parent ?parent)
+                        (pointer ?pointer)
+                        (args $?rest)
+                        (target ?target)))
+
+(defrule parse-push-operation
+         (stage (current parse))
+         ?f <- (object (is-a list)
+                       (contents *memory
+                                 push
+                                 ?bitmask
+                                 ?target
+                                 ?pointer
+                                 $?rest)
+                       (name ?name)
+                       (parent ?parent))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?name of push-operation 
+                        (bitmask ?bitmask)
+                        (parent ?parent)
+                        (pointer ?pointer)
+                        (args $?rest)
+                        (target ?target)))
+
+(defclass loop
+  (is-a node)
+  (slot id
+        (storage local)
+        (visibility public)
+        (default ?NONE))
+  (multislot body
+             (storage local)
+             (visibility public)))
+
+(defrule parse-loop
+         (stage (current parse))
+         ?f <- (object (is-a list)
+                       (contents loop
+                                 ?id
+                                 $?body)
+                       (name ?name)
+                       (parent ?parent))
+         ?f2 <- (object (is-a list)
+                        (name ?id)
+                        (contents label ?id))
+         =>
+         (unmake-instance ?f
+                          ?f2)
+         (make-instance ?name of loop
+                        (parent ?parent)
+                        (id ?id)
+                        (body ?body)))
+(defclass arithmetic-operation
+  (is-a special-operation)
+  (slot immediate
+        (type SYMBOL)
+        (storage local)
+        (visibility public)
+        (allowed-symbols FALSE
+                         TRUE))
+  (slot destination
+        (visibility public)
+        (storage local)
+        (default ?NONE))
+  (slot source
+        (visibility public)
+        (storage local)
+        (default ?NONE)))
+
+(defmessage-handler arithmetic-operation get-return-value primary
+                    ()
+                    ?self:destination)
+(defrule parse-arithmetic-operation
+         (stage (current parse))
+         ?f <- (object (is-a list)
+                       (contents *arithmetic
+                                 ?subop
+                                 ?reg0
+                                 ?reg1)
+                       (name ?name)
+                       (parent ?parent))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?name of arithmetic-operation
+                        (parent ?parent)
+                        (operation ?subop)
+                        (destination ?reg0)
+                        (source ?reg1)))
+(defclass register
+  (is-a USER))
+(deffunction registerp
+             (?reg)
+             (and (instance-existp (bind ?tag 
+                                         (symbol-to-instance-name ?reg)))
+                  (eq (class ?tag)
+                      register)))
+(defrule tag-registers
+         (declare (salience 1))
+         (stage (current parse))
+         ?f <- (object (is-a list)
+                       (contents $?a ?reg $?b))
+         (test (and (symbolp ?reg)
+                    (registerp ?reg)))
+         =>
+         (modify-instance ?f 
+                          (contents $?a 
+                                    (symbol-to-instance-name ?reg) 
+                                    $?b)))
+(definstances register-declarations
+              (r0 of register)
+              (r1 of register)
+              (r2 of register)
+              (r3 of register)
+              (r4 of register)
+              (r5 of register)
+              (r6 of register)
+              (r7 of register)
+              (r8 of register)
+              (r9 of register)
+              (r10 of register)
+              (r11 of register)
+              (r12 of register)
+              (r13 of register)
+              (r14 of register)
+              (r15 of register)
+              (addr of register)
+              (ip of register)
+              (sp of register)
+              (value of register)
+              (cr of register))
+
+
