@@ -177,6 +177,21 @@
   (output ?router
           ?lines))
 
+(defmethod use-register 
+  ((?registers MULTIFIELD
+               (<> (length$ ?current-argument)
+                   0))
+   (?body MULTIFIELD))
+  (use-register (first$ ?registers)
+                (use-register (rest$ ?registers)
+                              ?body)))
+(defmethod use-register
+ ((?registers MULTIFIELD
+   (= (length$ ?current-argument)
+    0))
+  (?body MULTIFIELD))
+ ?body)
+
 (defmethod use-register
   ((?register SYMBOL)
    (?body MULTIFIELD))
@@ -184,7 +199,8 @@
            ?body
            (restore-register ?register)))
 (defmethod use-register
-  ((?register SYMBOL)
+  ((?register SYMBOL
+              MULTIFIELD)
    $?body)
   (use-register ?register
                 ?body))
