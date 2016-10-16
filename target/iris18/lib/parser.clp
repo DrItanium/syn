@@ -925,7 +925,10 @@
 (defrule parse-defn
          (stage (current parse))
          ?f <- (object (is-a list)
-                       (contents defn ?name ?args $?body)
+                       (contents defn 
+                                 ?name 
+                                 ?args 
+                                 $?body)
                        (name ?title)
                        (parent ?parent))
          ?f2 <- (object (is-a list)
@@ -941,6 +944,19 @@
                                              (contents ?contents)
                                              (parent ?title)))
                         (body ?body)))
+
+(defrule too-many-args-to-target-defn
+         (stage (current parse))
+         (object (is-a args)
+                 (contents $?args&:(> (length$ ?args) 
+                                      4))
+                 (parent ?defn))
+         (object (is-a defn)
+                 (name ?defn)
+                 (title ?op))
+         =>
+         (printout werror "ERROR: only four arguments are allowed for a given defn. Bad function is " ?op crlf)
+         (halt))
 
 (defclass chained-operation
   (is-a node)
@@ -1222,7 +1238,6 @@
              (visibility public)
              (storage local)))
 
-
 (defrule error-not-a-registered-function-call
          (stage (current associate))
          (object (is-a defn)
@@ -1256,6 +1271,28 @@
                         (operation ?defn)
                         (arguments $?body)
                         (parent ?parent)))
+(defrule too-many-arguments-to-the-fcall
+         (stage (current associate))
+         ?f <- (object (is-a fcall)
+                       (operation ?defn)
+                       (arguments $?body)
+                       (parent ?parent))
+         (object (is-a defn)
+                 (name ?defn)
+                 (title ?going-to-call))
+         (object (is-a args)
+                 (parent ?defn)
+                 (contents $?args))
+         (test (<> (length$ ?body)
+                   (length$ ?args)))
+         (object (is-a defn)
+                 (name ?calling-defn)
+                 (title ?op))
+         (test (send ?f parent-is ?calling-defn))
+         =>
+         (printout werror "ERROR: in function " ?op ", argument mismatch when calling " ?going-to-call crlf)
+         (halt))
+
 (defclass compare-operation
   (is-a special-operation)
   (slot combine
@@ -1329,7 +1366,7 @@
 
 (defrule associate-argument
          (stage (current associate))
-         (object (is-a macro)
+         (object (is-a macro|defn)
                  (name ?macro)
                  (args ?args))
          (object (is-a args)
@@ -1351,7 +1388,7 @@
                        (value ?cv&:(not (instancep ?cv))))
          (test (neq (class ?p) 
                     args))
-         (object (is-a macro)
+         (object (is-a macro|defn)
                  (name ?mac)
                  (args ?args))
          (test (send ?f parent-is ?mac))
@@ -1370,4 +1407,128 @@
                           (value ?v)))
 
 
+(defrule update-argument-associations:arg0
+         (stage (current associate))
+         (object (is-a defn)
+                 (args ?args))
+         (object (is-a args)
+                 (name ?args)
+                 (contents ?first $?))
+         ?f <- (object (is-a argument-association)
+                       (parent ?first)
+                       (current-value nil))
+         =>
+         (modify-instance ?f
+                          (current-value [value])))
+
+(defrule update-argument-associations:arg1
+         (stage (current associate))
+         (object (is-a defn)
+                 (args ?args))
+         (object (is-a args)
+                 (name ?args)
+                 (contents ? ?curr $?))
+         ?f <- (object (is-a argument-association)
+                       (parent ?curr)
+                       (current-value nil))
+         =>
+         (modify-instance ?f
+                          (current-value [r8])))
+(defrule update-argument-associations:arg2
+         (stage (current associate))
+         (object (is-a defn)
+                 (args ?args))
+         (object (is-a args)
+                 (name ?args)
+                 (contents ? ? ?curr $?))
+         ?f <- (object (is-a argument-association)
+                       (parent ?curr)
+                       (current-value nil))
+         =>
+         (modify-instance ?f
+                          (current-value [r7])))
+
+(defrule update-argument-associations:arg3
+         (stage (current associate))
+         (object (is-a defn)
+                 (args ?args))
+         (object (is-a args)
+                 (name ?args)
+                 (contents ? ? ? ?curr $?))
+         ?f <- (object (is-a argument-association)
+                       (parent ?curr)
+                       (current-value nil))
+         =>
+         (modify-instance ?f
+                          (current-value [r6])))
+
+
+(defclass mcall
+  (is-a node)
+  (slot operation
+        (visibility public)
+        (storage local)
+        (default ?NONE))
+  (multislot arguments
+             (visibility public)
+             (storage local)))
+
+(defrule register-macro-call
+         (stage (current associate))
+         (object (is-a defn|macro)
+                 (body $? ?list $?))
+         ?f <- (object (is-a list)
+                       (name ?list)
+                       (contents ?operation 
+                                 $?body)
+                       (parent ?parent))
+
+         (object (is-a macro)
+                 (title ?operation)
+                 (name ?mac))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?list of mcall
+                        (operation ?mac)
+                        (arguments $?body)
+                        (parent ?parent)))
+
+(defclass branch-operation
+  (is-a special-operation))
+(defclass call-operation
+  (is-a branch-operation))
+(defclass funcall
+  (is-a branch-operation))
+(defclass if-operation
+  (is-a branch-operation))
+(defclass set-operation
+  (is-a special-operation)
+  (slot bitmask
+        (visibility public)
+        (storage local)
+        (default ?NONE))
+  (slot destination
+        (visibility public)
+        (storage local)
+        (default ?NONE))
+  (slot source
+        (visibility public)
+        (storage local)
+        (default ?NONE)))
+(defrule generate-set-operation
+         (stage (current parse))
+         ?f <- (object (is-a list)
+                       (contents *set
+                                 ?bitmask
+                                 ?destination
+                                 ?source)
+                       (name ?name)
+                       (parent ?parent))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?name of set-operation
+                        (parent ?parent)
+                        (bitmask ?bitmask)
+                        (destination ?destination)
+                        (source ?source)))
 
