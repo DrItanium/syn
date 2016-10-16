@@ -1,28 +1,28 @@
-%define api.prefix {iris18}
+%define api.prefix {iris19}
 %{
 #include <cstdlib>
 #include <cstdio>
 #include <string>
 #include <cstdint>
-#include "iris18.h"
+#include "iris19.h"
 #include <fstream>
 #include <iostream>
 #include <vector>
 #include <map>
 #include "asm_interact.h"
 
-#include "iris18_asm.tab.h"
+#include "iris19_asm.tab.h"
 #define YYERROR_VERBOSE 1
 extern int yylex();
 extern int yyparse();
-extern FILE* iris18in;
-extern int iris18lineno;
+extern FILE* iris19in;
+extern int iris19lineno;
 
-void iris18error(const char* s);
-namespace iris18 {
+void iris19error(const char* s);
+namespace iris19 {
 enum class InstructionFields : byte {
 #define X(title, mask, shift, type, post) title,
-#include "def/iris18/instruction.def"
+#include "def/iris19/instruction.def"
 #undef X
 };
 template<InstructionFields field>
@@ -35,7 +35,7 @@ struct InstructionFieldInformation<InstructionFields :: _title> { \
 	static constexpr byte shiftCount = _shift; \
 	using AssociatedType = _type ; \
 };
-#include "def/iris18/instruction.def"
+#include "def/iris19/instruction.def"
 #undef X
 
 template<InstructionFields field>
@@ -135,16 +135,16 @@ RegisterValue asmstate::getConstantValue(const std::string& text) {
 void initialize(std::ostream* output, FILE* input);
 void resolveLabels();
 void saveEncoding();
-}
-
-iris18::asmstate state;
-iris18::InstructionEncoder op;
+asmstate state;
+InstructionEncoder op;
 auto ifImmediate = static_cast<byte>(0);
 auto ifNotImmediate = static_cast<byte>(0);
+}
 
-namespace iris18 {
+
+namespace iris19 {
 	void initialize(std::ostream* output, FILE* input) {
-		iris18in = input;
+		iris19in = input;
 		state.output = output;
 		state.address = 0;
 	}
@@ -290,15 +290,15 @@ asm:
    directive | statement ;
 
 directive:
-	DIRECTIVE_ORG IMMEDIATE { state.address = ($2 & iris18::bitmask24); } |
+	DIRECTIVE_ORG IMMEDIATE { iris19::state.address = ($2 & iris19::bitmask24); } |
 	directive_word |
 	directive_dword |
-	DIRECTIVE_REGISTER_AT_START REGISTER IMMEDIATE { state.setRegisterAtStartup($2, $3); } |
+	DIRECTIVE_REGISTER_AT_START REGISTER IMMEDIATE { iris19::state.setRegisterAtStartup($2, $3); } |
 	DIRECTIVE_CONSTANT IMMEDIATE ALIAS {
 		try {
-			state.registerConstant($3, $2);
+			iris19::state.registerConstant($3, $2);
 		} catch(iris::Problem err) {
-			iris18error(err.what().c_str());
+			iris19error(err.what().c_str());
 		}
 	};
 
@@ -306,140 +306,140 @@ directive:
 
 directive_word:
 	DIRECTIVE_WORD SYMBOL {
-		state.declarations.emplace_back(iris18lineno, state.address, 1, $2);
-		++state.address;
+		iris19::state.declarations.emplace_back(iris19lineno, iris19::state.address, 1, $2);
+		++iris19::state.address;
 	} |
 	DIRECTIVE_WORD IMMEDIATE {
-		state.declarations.emplace_back(iris18lineno, state.address, 1, static_cast<iris18::Word>($2 & iris18::lower16Mask));
-		++state.address;
+		iris19::state.declarations.emplace_back(iris19lineno, iris19::state.address, 1, static_cast<iris19::Word>($2 & iris19::lower16Mask));
+		++iris19::state.address;
 	};
 
 directive_dword:
 	DIRECTIVE_DWORD SYMBOL {
-		state.declarations.emplace_back(iris18lineno, state.address, 2, $2);
-		state.address += 2;
+		iris19::state.declarations.emplace_back(iris19lineno, iris19::state.address, 2, $2);
+		iris19::state.address += 2;
 	} |
 	DIRECTIVE_DWORD IMMEDIATE {
-		state.declarations.emplace_back(iris18lineno, state.address, 2, static_cast<iris18::RegisterValue>($2 & iris18::bitmask24));
-		state.address += 2;
+		iris19::state.declarations.emplace_back(iris19lineno, iris19::state.address, 2, static_cast<iris19::RegisterValue>($2 & iris19::bitmask24));
+		iris19::state.address += 2;
 	};
 statement:
          label |
          operation {
-		 	op.currentLine = iris18lineno;
-		 	state.registerDynamicOperation(op);
-			op.clear();
-			op.currentLine = iris18lineno;
+		 	iris19::op.currentLine = iris19lineno;
+		 	iris19::state.registerDynamicOperation(iris19::op);
+			iris19::op.clear();
+			iris19::op.currentLine = iris19lineno;
 		 };
 
 label:
      LABEL SYMBOL {
         auto str = std::string($2);
-        state.registerLabel(str);
+        iris19::state.registerLabel(str);
      };
 operation:
 		macro_op |
-		OP_SHIFT shift_op { op.type = iris18::Operation::Shift; }|
-		OP_LOGICAL logical_op { op.type = iris18::Operation::Logical; } |
-		OP_COMPARE compare_op { op.type = iris18::Operation::Compare; } |
-		OP_ARITHMETIC arithmetic_op { op.type = iris18::Operation::Arithmetic; } |
-		OP_BRANCH branch_op { op.type = iris18::Operation::Branch; } |
-		OP_SYSTEM system_op { op.type = iris18::Operation::SystemCall; }|
-		OP_MOVE move_op { op.type = iris18::Operation::Move; } |
-		OP_SET set_op { op.type = iris18::Operation::Set; } |
-		OP_SWAP swap_op { op.type = iris18::Operation::Swap; } |
-		OP_MEMORY memory_op { op.type = iris18::Operation::Memory; } |
+		OP_SHIFT shift_op { iris19::op.type = iris19::Operation::Shift; }|
+		OP_LOGICAL logical_op { iris19::op.type = iris19::Operation::Logical; } |
+		OP_COMPARE compare_op { iris19::op.type = iris19::Operation::Compare; } |
+		OP_ARITHMETIC arithmetic_op { iris19::op.type = iris19::Operation::Arithmetic; } |
+		OP_BRANCH branch_op { iris19::op.type = iris19::Operation::Branch; } |
+		OP_SYSTEM system_op { iris19::op.type = iris19::Operation::SystemCall; }|
+		OP_MOVE move_op { iris19::op.type = iris19::Operation::Move; } |
+		OP_SET set_op { iris19::op.type = iris19::Operation::Set; } |
+		OP_SWAP swap_op { iris19::op.type = iris19::Operation::Swap; } |
+		OP_MEMORY memory_op { iris19::op.type = iris19::Operation::Memory; } |
 		OP_NOP {
-            op.type = iris18::Operation::Swap;
-            op.arg0 = 0;
-            op.arg1 = 0;
+            iris19::op.type = iris19::Operation::Swap;
+            iris19::op.arg0 = 0;
+            iris19::op.arg1 = 0;
         } |
 		OP_RETURN {
-			op.type = iris18::Operation::Memory;
-			op.indirect = false;
-			op.subType = static_cast<byte>(iris18::MemoryOperation::Pop);
-            op.arg0 = static_cast<byte>(iris18::ArchitectureConstants::InstructionPointer);
-			op.bitmask = 0b1111;
+			iris19::op.type = iris19::Operation::Memory;
+			iris19::op.indirect = false;
+			iris19::op.subType = static_cast<byte>(iris19::MemoryOperation::Pop);
+            iris19::op.arg0 = static_cast<byte>(iris19::ArchitectureConstants::InstructionPointer);
+			iris19::op.bitmask = 0b1111;
         } |
 		OP_COMPLEX complex_type {
-			op.type = iris18::Operation::Complex;
+			iris19::op.type = iris19::Operation::Complex;
 		};
 complex_type:
-			COMPLEX_OP_ENCODING encoding_subtype { op.subType = static_cast<byte>(iris18::ComplexSubTypes::Encoding); };
+			COMPLEX_OP_ENCODING encoding_subtype { iris19::op.subType = static_cast<byte>(iris19::ComplexSubTypes::Encoding); };
 encoding_subtype:
-				COMPLEX_OP_ENCODING_BITSET   { op.bitmask = static_cast<byte>(iris18::EncodingOperation::BitSet); } |
-				COMPLEX_OP_ENCODING_BITUNSET { op.bitmask = static_cast<byte>(iris18::EncodingOperation::BitUnset); } |
-				COMPLEX_OP_ENCODING_ENCODE   { op.bitmask = static_cast<byte>(iris18::EncodingOperation::Encode); } |
-				COMPLEX_OP_ENCODING_DECODE   { op.bitmask = static_cast<byte>(iris18::EncodingOperation::Decode); };
+				COMPLEX_OP_ENCODING_BITSET   { iris19::op.bitmask = static_cast<byte>(iris19::EncodingOperation::BitSet); } |
+				COMPLEX_OP_ENCODING_BITUNSET { iris19::op.bitmask = static_cast<byte>(iris19::EncodingOperation::BitUnset); } |
+				COMPLEX_OP_ENCODING_ENCODE   { iris19::op.bitmask = static_cast<byte>(iris19::EncodingOperation::Encode); } |
+				COMPLEX_OP_ENCODING_DECODE   { iris19::op.bitmask = static_cast<byte>(iris19::EncodingOperation::Decode); };
 compare_op:
 		  compare_type combine_type compare_args;
 
 compare_args:
-		 uses_immediate destination_register IMMEDIATE { op.arg1= static_cast<byte>($3); } |
+		 uses_immediate destination_register IMMEDIATE { iris19::op.arg1= static_cast<byte>($3); } |
 		 uses_immediate destination_register ALIAS {
 				try {
-					op.arg1 = static_cast<byte>(state.getConstantValue($3));
+					iris19::op.arg1 = static_cast<byte>(iris19::state.getConstantValue($3));
 				} catch(iris::Problem err) {
-					iris18error(err.what().c_str());
+					iris19error(err.what().c_str());
 				}
 		 } |
-		 destination_register source_register { op.immediate = false; };
+		 destination_register source_register { iris19::op.immediate = false; };
 
 compare_type:
-		COMPARE_OP_EQ { op.subType = static_cast<byte>(iris18::CompareStyle::Equals); } |
-		COMPARE_OP_NEQ { op.subType = static_cast<byte>(iris18::CompareStyle::NotEquals); } |
-		COMPARE_OP_LT { op.subType = static_cast<byte>(iris18::CompareStyle::LessThan); } |
-		COMPARE_OP_LT_EQ { op.subType = static_cast<byte>(iris18::CompareStyle::LessThanOrEqualTo); } |
-		COMPARE_OP_GT { op.subType = static_cast<byte>(iris18::CompareStyle::GreaterThanOrEqualTo); } |
-		COMPARE_OP_GT_EQ { op.subType = static_cast<byte>(iris18::CompareStyle::GreaterThan); };
+		COMPARE_OP_EQ { iris19::op.subType = static_cast<byte>(iris19::CompareStyle::Equals); } |
+		COMPARE_OP_NEQ { iris19::op.subType = static_cast<byte>(iris19::CompareStyle::NotEquals); } |
+		COMPARE_OP_LT { iris19::op.subType = static_cast<byte>(iris19::CompareStyle::LessThan); } |
+		COMPARE_OP_LT_EQ { iris19::op.subType = static_cast<byte>(iris19::CompareStyle::LessThanOrEqualTo); } |
+		COMPARE_OP_GT { iris19::op.subType = static_cast<byte>(iris19::CompareStyle::GreaterThanOrEqualTo); } |
+		COMPARE_OP_GT_EQ { iris19::op.subType = static_cast<byte>(iris19::CompareStyle::GreaterThan); };
 
 combine_type:
-		ACTION_NONE { op.combineType = iris18::CompareCombine::None; } |
-		ACTION_AND { op.combineType = iris18::CompareCombine::And; } |
-		ACTION_OR { op.combineType = iris18::CompareCombine::Or; } |
-		ACTION_XOR { op.combineType = iris18::CompareCombine::Xor; };
+		ACTION_NONE { iris19::op.combineType = iris19::CompareCombine::None; } |
+		ACTION_AND { iris19::op.combineType = iris19::CompareCombine::And; } |
+		ACTION_OR { iris19::op.combineType = iris19::CompareCombine::Or; } |
+		ACTION_XOR { iris19::op.combineType = iris19::CompareCombine::Xor; };
 
 logical_op:
 		logical_subop logical_args {
-			op.subType = op.immediate ? ifImmediate : ifNotImmediate;
+			iris19::op.subType = iris19::op.immediate ? iris19::ifImmediate : iris19::ifNotImmediate;
 		} |
 		LOGICAL_OP_NOT destination_register {
-			op.immediate = false;
-			op.subType = static_cast<byte>(iris18::LogicalOps::Not);
+			iris19::op.immediate = false;
+			iris19::op.subType = static_cast<byte>(iris19::LogicalOps::Not);
 		};
 
 logical_args:
 		uses_immediate bitmask destination_register lexeme |
-		destination_register source_register { op.immediate = false; };
+		destination_register source_register { iris19::op.immediate = false; };
 
 logical_subop:
 		ACTION_AND {
-			ifImmediate = static_cast<byte>(iris18::ImmediateLogicalOps::And);
-			ifNotImmediate = static_cast<byte>(iris18::LogicalOps::And);
+			iris19::ifImmediate = static_cast<byte>(iris19::ImmediateLogicalOps::And);
+			iris19::ifNotImmediate = static_cast<byte>(iris19::LogicalOps::And);
 		} |
 		ACTION_OR {
-			ifImmediate = static_cast<byte>(iris18::ImmediateLogicalOps::Or);
-			ifNotImmediate = static_cast<byte>(iris18::LogicalOps::Or);
+			iris19::ifImmediate = static_cast<byte>(iris19::ImmediateLogicalOps::Or);
+			iris19::ifNotImmediate = static_cast<byte>(iris19::LogicalOps::Or);
 		} |
 		ACTION_XOR {
-			ifImmediate = static_cast<byte>(iris18::ImmediateLogicalOps::Xor);
-			ifNotImmediate = static_cast<byte>(iris18::LogicalOps::Xor);
+			iris19::ifImmediate = static_cast<byte>(iris19::ImmediateLogicalOps::Xor);
+			iris19::ifNotImmediate = static_cast<byte>(iris19::LogicalOps::Xor);
 		} |
 		LOGICAL_OP_NAND {
-			ifImmediate = static_cast<byte>(iris18::ImmediateLogicalOps::Nand);
-			ifNotImmediate = static_cast<byte>(iris18::LogicalOps::Nand);
+			iris19::ifImmediate = static_cast<byte>(iris19::ImmediateLogicalOps::Nand);
+			iris19::ifNotImmediate = static_cast<byte>(iris19::LogicalOps::Nand);
 		};
 shift_op:
 		shift_left_or_right shift_args;
 
 
 shift_args:
-		uses_immediate destination_register IMMEDIATE { op.arg1 = $3 & 0b11111; } |
-		destination_register source_register { op.immediate = false; };
+		uses_immediate destination_register IMMEDIATE { iris19::op.arg1 = $3 & 0b11111; } |
+		destination_register source_register { iris19::op.immediate = false; };
 
 shift_left_or_right:
-		SHIFT_FLAG_LEFT { op.shiftLeft = true; } |
-		SHIFT_FLAG_RIGHT { op.shiftLeft = false; };
+		SHIFT_FLAG_LEFT { iris19::op.shiftLeft = true; } |
+		SHIFT_FLAG_RIGHT { iris19::op.shiftLeft = false; };
 
 
 move_op: bitmask destination_register source_register;
@@ -455,84 +455,84 @@ branch_op:
 
 branch:
 	  	BRANCH_FLAG_IF if_op {
-			op.isIf = true;
-			op.immediate = false;
-			op.isConditional = false;
+			iris19::op.isIf = true;
+			iris19::op.immediate = false;
+			iris19::op.isConditional = false;
 		} |
 		jump_op {
-			op.isIf = false;
-			op.isCall = false;
+			iris19::op.isIf = false;
+			iris19::op.isCall = false;
 		} |
 		BRANCH_FLAG_CALL call_op {
-			op.isIf = false;
-			op.isCall = true;
-			op.isConditional = false;
+			iris19::op.isIf = false;
+			iris19::op.isCall = true;
+			iris19::op.isConditional = false;
 		};
 if_op:
 	 if_uses_call destination_register source_register;
 if_uses_call:
-	BRANCH_FLAG_CALL { op.isCall = true; } |
-	{ op.isCall = false; };
+	BRANCH_FLAG_CALL { iris19::op.isCall = true; } |
+	{ iris19::op.isCall = false; };
 call_op:
 	   uses_immediate lexeme |
 	   destination_register {
-			op.immediate = false;
+			iris19::op.immediate = false;
 	   };
 jump_op:
 	cond_decl uses_immediate lexeme |
 	cond_decl destination_register {
-		op.immediate = false;
+		iris19::op.immediate = false;
 	};
 cond_decl:
 		 BRANCH_FLAG_COND {
-			op.isConditional = true;
+			iris19::op.isConditional = true;
 		 } | {
-		 	op.isConditional = false;
+		 	iris19::op.isConditional = false;
 		 };
 memory_op:
-		load_store_combined { op.indirect = false; } |
-		load_store_combined TAG_INDIRECT { op.indirect = true; } |
+		load_store_combined { iris19::op.indirect = false; } |
+		load_store_combined TAG_INDIRECT { iris19::op.indirect = true; } |
 		stack_operation bitmask stack_operation_choose;
 
 stack_operation_choose:
-		destination_register { op.readNextWord = false; } |
+		destination_register { iris19::op.readNextWord = false; } |
 		destination_register source_register { 
 			// check and see if we are looking at sp
 			// no need to waste a word so just use the default version
 			// implicitly. SourceRegister in this case is the stack pointer stand in
-			auto target_sp = op.arg1; 
-			op.readNextWord = (target_sp != iris18::ArchitectureConstants::StackPointer);
+			auto target_sp = iris19::op.arg1; 
+			iris19::op.readNextWord = (target_sp != iris19::ArchitectureConstants::StackPointer);
 		};
 
 
 system_op:
 		IMMEDIATE source_register {
-            op.arg0 = ($1 & 0b1111);
+            iris19::op.arg0 = ($1 & 0b1111);
         };
 load_store_combined:
 			load_store_op bitmask immediate_or_alias read_next_word;
 immediate_or_alias:
-		IMMEDIATE { op.arg0 = ($1 & 0b1111); } |
+		IMMEDIATE { iris19::op.arg0 = ($1 & 0b1111); } |
 		ALIAS {
 				try {
-					op.arg0 = static_cast<byte>(state.getConstantValue($1));
+					iris19::op.arg0 = static_cast<byte>(iris19::state.getConstantValue($1));
 				} catch(iris::Problem err) {
-					iris18error(err.what().c_str());
+					iris19error(err.what().c_str());
 				}
 		};
 read_next_word: 
 		REGISTER REGISTER {
-			op.arg1 = $1;
-			op.arg2 = $2;
+			iris19::op.arg1 = $1;
+			iris19::op.arg2 = $2;
 			// check and see if arg1 == address and arg2 == value
 			// if so, then use the compressed version!
-			auto usingImplicitRegisters = (op.arg1 == iris18::ArchitectureConstants::AddressRegister) && (op.arg2 == iris18::ArchitectureConstants::ValueRegister);
+			auto usingImplicitRegisters = (iris19::op.arg1 == iris19::ArchitectureConstants::AddressRegister) && (iris19::op.arg2 == iris19::ArchitectureConstants::ValueRegister);
 #ifdef DEBUG
 			std::cout << "\tusingImplicitRegisters: " << usingImplicitRegisters << std::endl;
 #endif
-			op.readNextWord = !usingImplicitRegisters;
+			iris19::op.readNextWord = !usingImplicitRegisters;
 		} | {
-			op.readNextWord = false;
+			iris19::op.readNextWord = false;
 #ifdef DEBUG
 			std::cout << "\tUsing implicit registers!" << std::endl;
 #endif
@@ -541,127 +541,127 @@ read_next_word:
 
 load_store_op:
 			 MEMORY_OP_LOAD {
-				op.subType = static_cast<byte>(iris18::MemoryOperation::Load);
+				iris19::op.subType = static_cast<byte>(iris19::MemoryOperation::Load);
 			 } |
 			 MEMORY_OP_STORE {
-				op.subType = static_cast<byte>(iris18::MemoryOperation::Store);
+				iris19::op.subType = static_cast<byte>(iris19::MemoryOperation::Store);
 			 };
 stack_operation:
 			   MEMORY_OP_PUSH {
-					op.subType = static_cast<byte>(iris18::MemoryOperation::Push);
+					iris19::op.subType = static_cast<byte>(iris19::MemoryOperation::Push);
 			   } |
 			   MEMORY_OP_POP {
-					op.subType = static_cast<byte>(iris18::MemoryOperation::Pop);
+					iris19::op.subType = static_cast<byte>(iris19::MemoryOperation::Pop);
 			   };
 arithmetic_op:
 		arithmetic_subop uses_immediate REGISTER IMMEDIATE {
-			op.arg0 = $3;
-			op.arg1 = $4;
+			iris19::op.arg0 = $3;
+			iris19::op.arg1 = $4;
 		} |
 		arithmetic_subop REGISTER REGISTER {
-			op.immediate = false;
-			op.arg0 = $2;
-			op.arg1 = $3;
+			iris19::op.immediate = false;
+			iris19::op.arg0 = $2;
+			iris19::op.arg1 = $3;
 		};
 arithmetic_subop:
 				ARITHMETIC_OP_ADD {
-					op.subType = static_cast<byte>(iris18::ArithmeticOps::Add);
+					iris19::op.subType = static_cast<byte>(iris19::ArithmeticOps::Add);
 				} |
 				ARITHMETIC_OP_SUB {
-					op.subType = static_cast<byte>(iris18::ArithmeticOps::Sub);
+					iris19::op.subType = static_cast<byte>(iris19::ArithmeticOps::Sub);
 				} |
 				ARITHMETIC_OP_MUL {
-					op.subType = static_cast<byte>(iris18::ArithmeticOps::Mul);
+					iris19::op.subType = static_cast<byte>(iris19::ArithmeticOps::Mul);
 				} |
 				ARITHMETIC_OP_DIV {
-					op.subType = static_cast<byte>(iris18::ArithmeticOps::Div);
+					iris19::op.subType = static_cast<byte>(iris19::ArithmeticOps::Div);
 				} |
 				ARITHMETIC_OP_REM {
-					op.subType = static_cast<byte>(iris18::ArithmeticOps::Rem);
+					iris19::op.subType = static_cast<byte>(iris19::ArithmeticOps::Rem);
 				};
 macro_op:
 		MACRO_OP_COPY destination_register source_register {
-			op.type = iris18::Operation::Move;
-			op.bitmask = 0b1111;
+			iris19::op.type = iris19::Operation::Move;
+			iris19::op.bitmask = 0b1111;
 		} |
 		MACRO_OP_ZERO destination_register {
-			op.type = iris18::Operation::Move;
-			op.bitmask = 0x0;
-			op.arg1 = op.arg0;
+			iris19::op.type = iris19::Operation::Move;
+			iris19::op.bitmask = 0x0;
+			iris19::op.arg1 = iris19::op.arg0;
 		} |
 		MACRO_OP_INCREMENT destination_register {
-			op.type = iris18::Operation::Arithmetic;
-			op.immediate = true;
-			op.subType = static_cast<byte>(iris18::ArithmeticOps::Add);
-			op.arg1 = 0x1;
+			iris19::op.type = iris19::Operation::Arithmetic;
+			iris19::op.immediate = true;
+			iris19::op.subType = static_cast<byte>(iris19::ArithmeticOps::Add);
+			iris19::op.arg1 = 0x1;
 		} |
 		MACRO_OP_DECREMENT destination_register {
-			op.type = iris18::Operation::Arithmetic;
-			op.immediate = true;
-			op.subType = static_cast<byte>(iris18::ArithmeticOps::Sub);
-			op.arg1 = 0x1;
+			iris19::op.type = iris19::Operation::Arithmetic;
+			iris19::op.immediate = true;
+			iris19::op.subType = static_cast<byte>(iris19::ArithmeticOps::Sub);
+			iris19::op.arg1 = 0x1;
 		} |
 		MACRO_OP_DOUBLE destination_register {
-			op.type = iris18::Operation::Arithmetic;
-			op.immediate = true;
-			op.subType = static_cast<byte>(iris18::ArithmeticOps::Mul);
-			op.arg1 = 0x2;
+			iris19::op.type = iris19::Operation::Arithmetic;
+			iris19::op.immediate = true;
+			iris19::op.subType = static_cast<byte>(iris19::ArithmeticOps::Mul);
+			iris19::op.arg1 = 0x2;
 		} |
 		MACRO_OP_HALVE destination_register {
-			op.type = iris18::Operation::Arithmetic;
-			op.immediate = true;
-			op.subType = static_cast<byte>(iris18::ArithmeticOps::Div);
-			op.arg1 = 0x2;
+			iris19::op.type = iris19::Operation::Arithmetic;
+			iris19::op.immediate = true;
+			iris19::op.subType = static_cast<byte>(iris19::ArithmeticOps::Div);
+			iris19::op.arg1 = 0x2;
 		} |
 		COMPARE_OP_EQ destination_register source_register { 
-			op.type = iris18::Operation::Compare;
-			op.subType = static_cast<byte>(iris18::CompareStyle::Equals); 
-			op.combineType = iris18::CompareCombine::None; 
-			op.immediate = false;
+			iris19::op.type = iris19::Operation::Compare;
+			iris19::op.subType = static_cast<byte>(iris19::CompareStyle::Equals); 
+			iris19::op.combineType = iris19::CompareCombine::None; 
+			iris19::op.immediate = false;
 		} |
 		COMPARE_OP_NEQ destination_register source_register {
-			op.type = iris18::Operation::Compare;
-			op.subType = static_cast<byte>(iris18::CompareStyle::NotEquals); 
-			op.combineType = iris18::CompareCombine::None; 
-			op.immediate = false;
+			iris19::op.type = iris19::Operation::Compare;
+			iris19::op.subType = static_cast<byte>(iris19::CompareStyle::NotEquals); 
+			iris19::op.combineType = iris19::CompareCombine::None; 
+			iris19::op.immediate = false;
 		};
 bitmask:
 	   BITMASK4 {
-			op.bitmask = $1;
+			iris19::op.bitmask = $1;
 	   };
 lexeme:
 	SYMBOL {
-		op.isLabel = true;
-		op.labelValue = $1;
-		op.fullImmediate = 0;
+		iris19::op.isLabel = true;
+		iris19::op.labelValue = $1;
+		iris19::op.fullImmediate = 0;
 	} |
 	ALIAS {
-		op.isLabel = false;
+		iris19::op.isLabel = false;
 		try {
-			op.fullImmediate = state.getConstantValue($1);
+			iris19::op.fullImmediate = iris19::state.getConstantValue($1);
 		} catch(iris::Problem err) {
-			iris18error(err.what().c_str());
+			iris19error(err.what().c_str());
 		}
 	} |
 	IMMEDIATE {
-		op.isLabel = false;
-		op.fullImmediate = $1;
+		iris19::op.isLabel = false;
+		iris19::op.fullImmediate = $1;
 	};
-uses_immediate: FLAG_IMMEDIATE { op.immediate = true; };
-destination_register: REGISTER { op.arg0 = $1; };
-source_register: REGISTER { op.arg1 = $1; };
+uses_immediate: FLAG_IMMEDIATE { iris19::op.immediate = true; };
+destination_register: REGISTER { iris19::op.arg0 = $1; };
+source_register: REGISTER { iris19::op.arg1 = $1; };
 %%
-namespace iris18 {
+namespace iris19 {
 	void assemble(FILE* input, std::ostream* output) {
       initialize(output, input);
       do {
          yyparse();
-      } while(!feof(iris18in));
+      } while(!feof(iris19in));
       resolveLabels();
 	  saveEncoding();
 	}
 }
-void iris18error(const char* s) {
-   printf("%d: %s\n", iris18lineno, s);
+void iris19error(const char* s) {
+   printf("%d: %s\n", iris19lineno, s);
    exit(-1);
 }
