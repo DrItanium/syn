@@ -901,6 +901,14 @@
   (slot args
         (default ?NONE))
   (multislot body))
+(defclass macro
+  (is-a node)
+  (slot title
+        (type SYMBOL)
+        (default ?NONE))
+  (slot args
+        (default ?NONE))
+  (multislot body))
 (defclass args
   (is-a node)
   (multislot contents
@@ -1223,7 +1231,7 @@
                  (name ?list)
                  (contents ?operation
                            $?body))
-         (not (object (is-a defn)
+         (not (object (is-a defn|macro)
                       (title ?operation)))
          =>
          (printout werror "ERROR: The function " ?operation " is not defined before use!" crlf)
@@ -1248,6 +1256,118 @@
                         (operation ?defn)
                         (arguments $?body)
                         (parent ?parent)))
+(defclass compare-operation
+  (is-a special-operation)
+  (slot combine
+        (storage local)
+        (visibility public)
+        (default ?NONE))
+  (slot destination
+        (storage local)
+        (visibility public)
+        (default ?NONE))
+  (slot source
+        (storage local)
+        (visibility public)
+        (default ?NONE)))
+(defmessage-handler compare-operation get-return-value primary 
+                    ()
+                    [cr])
+
+(defrule generate-compare-operation
+         (stage (current parse))
+         ?f <- (object (is-a list)
+                       (name ?name)
+                       (parent ?parent)
+                       (contents *compare
+                                 ?op
+                                 ?combine
+                                 ?destination
+                                 ?source))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?name of compare-operation
+                        (parent ?parent)
+                        (operation ?op)
+                        (combine ?combine)
+                        (destination ?destination)
+                        (source ?source)))
+
+
+(defrule parse-macro
+         (stage (current parse))
+         ?f <- (object (is-a list)
+                       (name ?name)
+                       (parent ?parent)
+                       (contents defmac
+                                 ?title
+                                 ?args
+                                 $?body))
+         ?f2 <- (object (is-a list)
+                        (name ?args)
+                        (parent ?name)
+                        (contents $?elements))
+         =>
+         (unmake-instance ?f
+                          ?f2)
+         (make-instance ?name of macro
+                        (parent ?parent)
+                        (body ?body)
+                        (args (make-instance ?args of args
+                                             (parent ?name)
+                                             (contents ?elements)))
+                        (title ?title)))
+(defclass argument-association
+  (is-a node)
+  (slot title
+        (storage local)
+        (visibility public)
+        (default ?NONE))
+  (slot current-value
+        (storage local)
+        (visibility public)))
+
+(defrule associate-argument
+         (stage (current associate))
+         (object (is-a macro)
+                 (name ?macro)
+                 (args ?args))
+         (object (is-a args)
+                 (name ?args)
+                 (contents $? ?arg $?))
+         ?f <- (object (is-a singlefield-variable)
+                       (name ?arg)
+                       (value ?value&:(not (instancep ?value))))
+
+         =>
+         (modify-instance ?f 
+                          (value (make-instance of argument-association
+                                                (parent ?arg)
+                                                (title ?value)))))
+(defrule register-argument
+         (stage (current associate))
+         ?f <- (object (is-a singlefield-variable)
+                       (parent ?p)
+                       (value ?cv&:(not (instancep ?cv))))
+         (test (neq (class ?p) 
+                    args))
+         (object (is-a macro)
+                 (name ?mac)
+                 (args ?args))
+         (test (send ?f parent-is ?mac))
+         (object (is-a args)
+                 (name ?args)
+                 (contents $? ?arg $?))
+         (object (is-a singlefield-variable)
+                 (name ?arg)
+                 (value ?v))
+         (object (is-a argument-association)
+                 (name ?v)
+                 (parent ?arg)
+                 (title ?cv))
+         =>
+         (modify-instance ?f 
+                          (value ?v)))
 
 
 
