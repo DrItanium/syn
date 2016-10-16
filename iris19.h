@@ -29,40 +29,22 @@ namespace iris19 {
 
 	enum ArchitectureConstants  {
 		RegisterCount = 256,
-		SegmentCount = 256,
+		SegmentCount = 4096, // 1 gigabyte
 		AddressMax = 65536 * SegmentCount,
 		MaxInstructionCount = 16,
-		MaxSystemCalls = 64,
+		MaxSystemCalls = 255,
 		Bitmask = 0b11111111,
 #define X(index) \
 		R ## index = (RegisterCount - (RegisterCount - index)),
 #include "def/iris19/bitmask8bit.def"
 #undef X
 
-		//R15 = RegisterCount - 1,
-		//R14 = RegisterCount - 2,
-		//R13 = RegisterCount - 3,
-		//R12 = RegisterCount - 4,
-		//R11 = RegisterCount - 5,
-		//R10 = RegisterCount - 6,
-		//R9  = RegisterCount - 7,
-		//R8  = RegisterCount - 8,
-		//R7  = RegisterCount - 9,
-		//R6  = RegisterCount - 10,
-		//R5  = RegisterCount - 11,
-		//R4  = RegisterCount - 12,
-		//R3  = RegisterCount - 13,
-		//R2  = RegisterCount - 14,
-		//R1  = RegisterCount - 15,
-		//R0  = RegisterCount - 16,
-		InstructionPointer = R15,
-		StackPointer = R14,
-		ConditionRegister = R13,
-		AddressRegister = R12,
-		ValueRegister = R11,
-		MaskRegister = R10,
-		ShiftRegister = R9,
-		FieldRegister = R9,
+		InstructionPointer = R255,
+		StackPointer = R254,
+		AddressRegister = R253,
+		ValueRegister = R252,
+		CodeStackRegister = R251,
+		ParamStackRegister = R250,
 	};
 
 #define DefEnum(type, width) \
@@ -133,6 +115,7 @@ namespace iris19 {
 
 	constexpr auto bitmask32 =   SetBitmaskToWordMask<ArchitectureConstants::Bitmask>::mask;
 	constexpr auto bitmask24 =   SetBitmaskToWordMask<0b0111>::mask;
+	constexpr auto memoryMaxBitmask = 0b00001111111111111111111111111111;
 	constexpr auto upper16Mask = SetBitmaskToWordMask<0b1100>::mask;
 	constexpr auto lower16Mask = SetBitmaskToWordMask<0b0011>::mask;
 
@@ -332,14 +315,14 @@ namespace iris19 {
 					auto memOffset = inst.getMemoryOffset();
                     DecodedInstruction next(tryReadNext<readNext>());
 					if (type == MemoryOperation::Load) {
-                        auto addr = readNext ? registerValue(next.getMemoryAddress()) : getAddressRegister();
-                        auto& value = readNext ? registerValue(next.getMemoryValue()) : getValueRegister();
+                        auto addr = readNext ? registerValue(next.getMemoryLoadStoreAddress()) : getAddressRegister();
+                        auto& value = readNext ? registerValue(next.getMemoryLoadStoreValue()) : getValueRegister();
 						if (!useLower && !useUpper) {
 							value = 0; // zero out the register if nothing is going to be happening
 						} else {
 							auto address = addr + memOffset;
 							if (indirect) {
-								address = encodeRegisterValue(loadWord(address + 1), loadWord(address)) & bitmask24;
+								address = encodeRegisterValue(loadWord(address + 1), loadWord(address)) & memoryMaxBitmask;
 							}
 							// use the value field of the instruction to denote offset, thus we need
 							// to use the Address and Value registers
@@ -348,21 +331,21 @@ namespace iris19 {
 							value = iris::encodeBits<RegisterValue, RegisterValue, fullMask, 0>(0u, lower | upper);
 						}
 					} else if (type == MemoryOperation::Store) {
-                        auto addr = readNext ? registerValue(next.getMemoryAddress()) : getAddressRegister();
-                        auto value = readNext ? registerValue(next.getMemoryValue()) : getValueRegister();
+                        auto addr = readNext ? registerValue(next.getMemoryLoadStoreAddress()) : getAddressRegister();
+                        auto value = readNext ? registerValue(next.getMemoryLoadStoreValue()) : getValueRegister();
 						auto address = addr + memOffset;
 						if (indirect) {
-							address = encodeRegisterValue(loadWord(address + 1), loadWord(address)) & bitmask24;
+							address = encodeRegisterValue(loadWord(address + 1), loadWord(address)) & memoryMaxBitmask;
 						}
 						if (useLower) {
-							if (lmask == 0x0000FFFF) {
+							if (lmask == 0xFFFFFFFF) {
 								storeWord(address, value);
 							} else {
 								storeWord(address, (lmask & value) | (loadWord(address) & ~lmask));
 							}
 						}
 						if (useUpper) {
-							if (umask == 0x0000FFFF) {
+							if (umask == 0xFFFFFFFF) {
 								storeWord(address, value);
 							} else {
 								storeWord(address, (umask & value) | (loadWord(address) & ~umask));
@@ -373,8 +356,8 @@ namespace iris19 {
 							throw iris::Problem("Can't perform an indirect push");
 						} else {
 							// update the target stack to something different
-							auto pushToStack = registerValue(memOffset);
-							auto &stackPointer = readNext ? registerValue(next.getMemoryAddress()) : getStackPointer();
+							auto pushToStack = registerValue(next.getMemoryStackValue());
+							auto &stackPointer = readNext ? registerValue(next.getMemoryStackAddress()) : getStackPointer();
 							// read backwards because the stack grows upward towards zero
 							if (useUpper) {
 								pushWord(umask & decodeUpperHalf(pushToStack), stackPointer);
@@ -387,14 +370,14 @@ namespace iris19 {
 						if (indirect) {
 							throw iris::Problem("Can't perform an indirect pop!");
 						} else {
-							auto &stackPointer = readNext ? registerValue(next.getMemoryAddress()) : getStackPointer();
+							auto &stackPointer = readNext ? registerValue(next.getMemoryStackAddress()) : getStackPointer();
 							if (useLower) {
 								lower = lmask & popWord(stackPointer);
 							}
 							if (useUpper) {
 								upper = umask & popWord(stackPointer);
 							}
-							registerValue(memOffset) = encodeRegisterValue(upper, lower);
+							registerValue(next.getMemoryStackValue()) = encodeRegisterValue(upper, lower);
 							// can't think of a case where we should
 							// restore the instruction pointer and then
 							// immediate advance so just don't do it
@@ -414,9 +397,9 @@ namespace iris19 {
 						if (decodedFlags::isCall) {
 							// push the instruction pointer plus one onto the
 							// stack
-							pushDword((getInstructionPointer() + 1) & bitmask24);
+							pushDword((getInstructionPointer() + 1) & memoryMaxBitmask);
 						}
-						getInstructionPointer() = bitmask24 & ((getConditionRegister() != 0) ? registerValue(current.getBranchIfOnTrue()) : registerValue(current.getBranchIfOnFalse()));
+						getInstructionPointer() = memoryMaxBitmask & ((getConditionRegister(current.getBranchCondition()) != 0) ? registerValue(current.getBranchIfOnTrue()) : registerValue(current.getBranchIfOnFalse()));
 #ifdef DEBUG
 						std::cout << "if: jumping to " << std::hex << getInstructionPointer() << std::endl;
 #endif
@@ -424,7 +407,7 @@ namespace iris19 {
 						// call instruction
 						advanceIp = false;
 						// determine next
-						pushDword((getInstructionPointer() + decodedFlags::isImmediate ? 2 : 1) & bitmask24);
+						pushDword((getInstructionPointer() + decodedFlags::isImmediate ? 2 : 1) & memoryMaxBitmask);
 						auto address = 0u;
 						if (decodedFlags::isImmediate) {
 							// make a 24 bit number
@@ -434,7 +417,7 @@ namespace iris19 {
 						} else {
 							address = registerValue(current.getBranchIndirectDestination());
 						}
-						getInstructionPointer() = bitmask24 & address;
+						getInstructionPointer() = memoryMaxBitmask & address;
 #ifdef DEBUG
 						std::cout << "call: Jumping to " << std::hex << getInstructionPointer() << std::endl;
 #endif
@@ -442,14 +425,14 @@ namespace iris19 {
 						// jump instruction
 						if (decodedFlags::isImmediate) {
 							incrementInstructionPointer();
-							if ((decodedFlags::isConditional && getConditionRegister() != 0) || !decodedFlags::isConditional) {
+							if ((decodedFlags::isConditional && getConditionRegister(current.getBranchCondition()) != 0) || !decodedFlags::isConditional) {
 								advanceIp = false;
-								getInstructionPointer() = bitmask24 & (current.getUpper() | static_cast<RegisterValue>(getCurrentCodeWord()) << 8);
+								getInstructionPointer() = memoryMaxBitmask & (current.getUpper() | static_cast<RegisterValue>(getCurrentCodeWord()) << 8);
 							}
 						} else {
-							if ((decodedFlags::isConditional && getConditionRegister() != 0) || !decodedFlags::isConditional) {
+							if ((decodedFlags::isConditional && getConditionRegister(current.getBranchCondition()) != 0) || !decodedFlags::isConditional) {
 								advanceIp = false;
-								getInstructionPointer() = bitmask24 & registerValue(current.getBranchIndirectDestination());
+								getInstructionPointer() = memoryMaxBitmask & registerValue(current.getBranchIndirectDestination());
 							}
 						}
 #ifdef DEBUG
@@ -461,13 +444,9 @@ namespace iris19 {
 			RegisterValue& registerValue(byte index);
 			inline RegisterValue& getInstructionPointer() noexcept     { return registerValue<ArchitectureConstants::InstructionPointer>(); }
 			inline RegisterValue& getStackPointer() noexcept           { return registerValue<ArchitectureConstants::StackPointer>(); }
-			inline RegisterValue& getConditionRegister() noexcept      { return registerValue<ArchitectureConstants::ConditionRegister>(); }
+			inline RegisterValue& getConditionRegister(byte index) noexcept      { return registerValue(index); }
 			inline RegisterValue& getAddressRegister() noexcept        { return registerValue<ArchitectureConstants::AddressRegister>(); }
 			inline RegisterValue& getValueRegister() noexcept          { return registerValue<ArchitectureConstants::ValueRegister>(); }
-			inline RegisterValue& getMaskRegister() noexcept           { return registerValue<ArchitectureConstants::MaskRegister>(); }
-
-			inline RegisterValue getShiftRegister() noexcept           { return 0b11111 & registerValue<ArchitectureConstants::ShiftRegister>(); }
-			inline RegisterValue getFieldRegister() noexcept           { return 0b11111 & registerValue<ArchitectureConstants::FieldRegister>(); }
 
 			inline void incrementInstructionPointer() noexcept;
 			inline void incrementStackPointer() noexcept;
@@ -481,8 +460,6 @@ namespace iris19 {
 			Word loadWord(RegisterValue address);
 			RegisterValue loadRegisterValue(RegisterValue address);
 			void storeRegisterValue(RegisterValue address, RegisterValue value);
-		private:
-			void memoryManipulationOperation(DecodedInstruction&& inst);
 		private:
 			bool execute = true,
 				 advanceIp = true;
@@ -516,7 +493,6 @@ namespace iris19 {
 		bool isLabel;
 		std::string labelValue;
 		byte subType;
-		CompareCombine combineType;
 		RegisterValue fullImmediate;
 		using Encoding = std::tuple<int, Word, Word, Word>;
 		int numWords();

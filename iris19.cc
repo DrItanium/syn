@@ -138,16 +138,16 @@ namespace iris19 {
 			advanceIp = true;
 		}
 	}
-    inline void mask24(RegisterValue& ref) noexcept {
-        ref &= bitmask24;
+    inline void maskMemory(RegisterValue& ref) noexcept {
+        ref &= memoryMaxBitmask;
     }
 	void Core::incrementAddress(RegisterValue& ptr) noexcept {
 		++ptr;
-		mask24(ptr);
+		maskMemory(ptr);
 	}
 	void Core::decrementAddress(RegisterValue& ptr) noexcept {
 		--ptr;
-		mask24(ptr);
+		maskMemory(ptr);
 	}
 	void Core::incrementInstructionPointer() noexcept {
 		incrementAddress(getInstructionPointer());
@@ -283,37 +283,24 @@ namespace iris19 {
 			}
 		} else if (tControl == Operation::Compare) {
 			DecodedInstruction next(tryReadNext<true>());
-			auto first = registerValue(next.getCompareRegister0());
-			auto second = current.getCompareImmediateFlag() ? next.getUpper() : registerValue(next.getCompareRegister1());
-			auto result = false;
-			auto cond = getConditionRegister() != 0;
+			auto& dest = registerValue(next.getCompareRegisterDest());
+			auto src0 = registerValue(next.getCompareRegisterSrc0());
+			auto src1 = current.getCompareImmediateFlag() ? static_cast<RegisterValue>(next.getCompareImmediate()) : registerValue(next.getCompareRegisterSrc1());
 			auto compareType = current.getCompareType();
 			if (compareType == CompareStyle::Equals) {
-				result = iris::eq(first, second);
+				dest = iris::eq(src0, src1);
 			} else if (compareType == CompareStyle::NotEquals) {
-				result = iris::neq(first, second);
+				dest = iris::neq(src0, src1);
 			} else if (compareType == CompareStyle::LessThan) {
-				result = iris::lt(first, second);
+				dest = iris::lt(src0, src1);
 			} else if (compareType == CompareStyle::GreaterThan) {
-				result = iris::gt(first, second);
+				dest = iris::gt(src0, src1);
 			} else if (compareType == CompareStyle::LessThanOrEqualTo) {
-				result = iris::le(first, second);
+				dest = iris::le(src0, src1);
 			} else if (compareType == CompareStyle::GreaterThanOrEqualTo) {
-				result = iris::ge(first, second);
+				dest = iris::ge(src0, src1);
 			} else {
 				throw iris::Problem("illegal compare type!");
-			}
-			auto combineType = current.getCompareCombineFlag();
-			if (combineType == CompareCombine::None) {
-				getConditionRegister() = result;
-			} else if (combineType == CompareCombine::And) {
-				getConditionRegister() = result && cond;
-			} else if (combineType == CompareCombine::Or) {
-				getConditionRegister() = result || cond;
-			} else if (combineType == CompareCombine::Xor) {
-				getConditionRegister() = result ^ cond;
-			} else {
-				throw iris::Problem("Illegal Compare Combine Operation");
 			}
 		} else if (tControl == Operation::SystemCall) {
 			if (getAddressRegister() >= ArchitectureConstants::MaxSystemCalls) {
@@ -600,7 +587,6 @@ namespace iris19 {
 		isLabel = false;
 		labelValue.clear();
 		subType = 0;
-		combineType = CompareCombine::Xor;
 		fullImmediate = 0;
 		indirect = false;
 		readNextWord = false;
