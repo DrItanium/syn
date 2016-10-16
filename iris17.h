@@ -1,5 +1,5 @@
-#ifndef _TARGET_IRIS32_IRIS_H
-#define _TARGET_IRIS32_IRIS_H
+#ifndef _TARGET_IRIS17_IRIS_H
+#define _TARGET_IRIS17_IRIS_H
 #include "iris_base.h"
 #include "Core.h"
 #include <cstdint>
@@ -210,4 +210,4 @@ namespace iris17 {
 	void assemble(FILE* input, std::ostream* output);
 } // end namespace iris17
 #undef DefOp
-#endif // end _TARGET_IRIS32_IRIS_H
+#endif // end _TARGET_IRIS17_IRIS_H

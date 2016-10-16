@@ -1,5 +1,5 @@
-#ifndef _TARGET_IRIS17_IRIS_H
-#define _TARGET_IRIS17_IRIS_H
+#ifndef _TARGET_IRIS18_IRIS_H
+#define _TARGET_IRIS18_IRIS_H
 #include "iris_base.h"
 #include "Core.h"
 #include "Problem.h"
@@ -532,4 +532,4 @@ namespace iris18 {
 	void assemble(FILE* input, std::ostream* output);
 } // end namespace iris18
 
-#endif // end _TARGET_IRIS17_IRIS_H
+#endif // end _TARGET_IRIS18_IRIS_H
