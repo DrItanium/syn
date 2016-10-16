@@ -102,6 +102,22 @@ options:
 	@${CC} ${CXXFLAGS} -c $< -o $@
 	@echo done.
 
+%.tab.c %.tab.h: %.y
+	@echo -n Constructing Parser from $< ...
+	@${YACC} -o $*.tab.c -d $<
+	@echo done
+	@echo -n Compiling $*.tab.c into $*.tab.o ...
+	@${CXX} ${CXXFLAGS} -c $*.tab.c -o $*.tab.o
+	@echo done
+
+%_lex.yy.c: %_asm.l %_asm.tab.h
+	@echo -n Constructing Lexer from $< ...
+	@${LEX} -o $*_lex.yy.c $*_asm.l
+	@echo done
+	@echo -n Compiling $*_lex.yy.c into $*_lex.yy.o ...
+	@${CXX} ${CXXFLAGS} -D_POSIX_SOURCE -c $*_lex.yy.c -o $*_lex.yy.o
+	@echo done
+
 ${SIM_BINARY}: ${SIM_OBJECTS}
 	@echo -n Building ${SIM_BINARY} binary out of $^...
 	@${CXX} ${LDFLAGS} -o ${SIM_BINARY} $^
@@ -120,64 +136,57 @@ ${ASM_BINARY}: ${ASM_OBJECTS} ${ASM_PARSERS}
 # BEGIN IRIS16
 #
 
-${IRIS16_OUT}: ${IRIS16_OBJECTS}
-	@echo -n Building ${IRIS16_OUT} out of $^...
-	@${AR} rcs ${IRIS16_OUT}  $^
-	@echo done
-
-
-iris16_asm.tab.c iris16_asm.tab.h: iris16_asm.y
-	@echo -n Constructing Parser from $< ...
-	@${YACC} -o iris16_asm.tab.c -d iris16_asm.y
-	@echo done
-	@echo -n Compiling iris16_asm.tab.c into iris16_asm.tab.o ...
-	@${CXX} ${CXXFLAGS} -c iris16_asm.tab.c -o iris16_asm.tab.o
-	@echo done
-
-iris16_lex.yy.c: iris16_asm.l iris16_asm.tab.h
-	@echo -n Constructing Lexer from $< ...
-	@${LEX} -o iris16_lex.yy.c iris16_asm.l
-	@echo done
-	@echo -n Compiling iris16_lex.yy.c into iris16_lex.yy.o ...
-	@${CXX} ${CXXFLAGS} -D_POSIX_SOURCE -c iris16_lex.yy.c -o iris16_lex.yy.o
-	@echo done
+#iris16_asm.tab.c iris16_asm.tab.h: iris16_asm.y
+#	@echo -n Constructing Parser from $< ...
+#	@${YACC} -o iris16_asm.tab.c -d iris16_asm.y
+#	@echo done
+#	@echo -n Compiling iris16_asm.tab.c into iris16_asm.tab.o ...
+#	@${CXX} ${CXXFLAGS} -c iris16_asm.tab.c -o iris16_asm.tab.o
+#	@echo done
+#
+#iris16_lex.yy.c: iris16_asm.l iris16_asm.tab.h
+#	@echo -n Constructing Lexer from $< ...
+#	@${LEX} -o iris16_lex.yy.c iris16_asm.l
+#	@echo done
+#	@echo -n Compiling iris16_lex.yy.c into iris16_lex.yy.o ...
+#	@${CXX} ${CXXFLAGS} -D_POSIX_SOURCE -c iris16_lex.yy.c -o iris16_lex.yy.o
+#	@echo done
 
 # BEGIN IRIS17
 #
-iris17_asm.tab.c iris17_asm.tab.h: iris17_asm.y
-	@echo -n Constructing Parser from $< ...
-	@${YACC} -o iris17_asm.tab.c -d iris17_asm.y
-	@echo done
-	@echo -n Compiling iris17_asm.tab.c into iris17_asm.tab.o ...
-	@${CXX} ${CXXFLAGS} -c iris17_asm.tab.c -o iris17_asm.tab.o
-	@echo done
-
-iris17_lex.yy.c: iris17_asm.l iris17_asm.tab.h
-	@echo -n Constructing Lexer from $< ...
-	@${LEX} -o iris17_lex.yy.c iris17_asm.l
-	@echo done
-	@echo -n Compiling iris17_lex.yy.c into iris17_lex.yy.o ...
-	@${CXX} ${CXXFLAGS} -D_POSIX_SOURCE -c iris17_lex.yy.c -o iris17_lex.yy.o
-	@echo done
+#iris17_asm.tab.c iris17_asm.tab.h: iris17_asm.y
+#	@echo -n Constructing Parser from $< ...
+#	@${YACC} -o iris17_asm.tab.c -d iris17_asm.y
+#	@echo done
+#	@echo -n Compiling iris17_asm.tab.c into iris17_asm.tab.o ...
+#	@${CXX} ${CXXFLAGS} -c iris17_asm.tab.c -o iris17_asm.tab.o
+#	@echo done
+#
+#iris17_lex.yy.c: iris17_asm.l iris17_asm.tab.h
+#	@echo -n Constructing Lexer from $< ...
+#	@${LEX} -o iris17_lex.yy.c iris17_asm.l
+#	@echo done
+#	@echo -n Compiling iris17_lex.yy.c into iris17_lex.yy.o ...
+#	@${CXX} ${CXXFLAGS} -D_POSIX_SOURCE -c iris17_lex.yy.c -o iris17_lex.yy.o
+#	@echo done
 
 # BEGIN IRIS18
 #
+#iris18_asm.tab.c iris18_asm.tab.h: iris18_asm.y
+#	@echo -n Constructing Parser from $< ...
+#	@${YACC} -o iris18_asm.tab.c -d iris18_asm.y
+#	@echo done
+#	@echo -n Compiling iris18_asm.tab.c into iris18_asm.tab.o ...
+#	@${CXX} ${CXXFLAGS} -c iris18_asm.tab.c -o iris18_asm.tab.o
+#	@echo done
 #
-iris18_asm.tab.c iris18_asm.tab.h: iris18_asm.y
-	@echo -n Constructing Parser from $< ...
-	@${YACC} -o iris18_asm.tab.c -d iris18_asm.y
-	@echo done
-	@echo -n Compiling iris18_asm.tab.c into iris18_asm.tab.o ...
-	@${CXX} ${CXXFLAGS} -c iris18_asm.tab.c -o iris18_asm.tab.o
-	@echo done
-
-iris18_lex.yy.c: iris18_asm.l iris18_asm.tab.h
-	@echo -n Constructing Lexer from $< ...
-	@${LEX} -o iris18_lex.yy.c iris18_asm.l
-	@echo done
-	@echo -n Compiling iris18_lex.yy.c into iris18_lex.yy.o ...
-	@${CXX} ${CXXFLAGS} -D_POSIX_SOURCE -c iris18_lex.yy.c -o iris18_lex.yy.o
-	@echo done
+#iris18_lex.yy.c: iris18_asm.l iris18_asm.tab.h
+#	@echo -n Constructing Lexer from $< ...
+#	@${LEX} -o iris18_lex.yy.c iris18_asm.l
+#	@echo done
+#	@echo -n Compiling iris18_lex.yy.c into iris18_lex.yy.o ...
+#	@${CXX} ${CXXFLAGS} -D_POSIX_SOURCE -c iris18_lex.yy.c -o iris18_lex.yy.o
+#	@echo done
 
 clean:
 	@echo -n Cleaning...
