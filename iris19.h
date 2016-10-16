@@ -11,9 +11,9 @@
 #include "sim_registration.h"
 
 namespace iris19 {
-	using HWord = uint8_t;
-	using Word = uint16_t;
-	using DWord = uint32_t;
+	using HWord = uint16_t;
+	using Word = uint32_t;
+	using DWord = uint64_t;
 	using RawInstruction = Word; // this is more of a packet!
 	using immediate = HWord;
 	using RegisterValue = DWord;
@@ -28,32 +28,33 @@ namespace iris19 {
 	inline constexpr RegisterValue encodeRegisterValue(Word upper, Word lower) noexcept;
 
 	enum ArchitectureConstants  {
-		RegisterCount = 16,
+		RegisterCount = 256,
 		SegmentCount = 256,
 		AddressMax = 65536 * SegmentCount,
 		MaxInstructionCount = 16,
 		MaxSystemCalls = 64,
-		Bitmask = 0b1111,
-		// unlike iris16 and iris32, there is a limited set of registers with
-		// a majority of them marked for explicit usage, instructions
-		// themselves are still 16 bits wide but 32bits are extracted per
-		// packet.
-		R15 = RegisterCount - 1,
-		R14 = RegisterCount - 2,
-		R13 = RegisterCount - 3,
-		R12 = RegisterCount - 4,
-		R11 = RegisterCount - 5,
-		R10 = RegisterCount - 6,
-		R9  = RegisterCount - 7,
-		R8  = RegisterCount - 8,
-		R7  = RegisterCount - 9,
-		R6  = RegisterCount - 10,
-		R5  = RegisterCount - 11,
-		R4  = RegisterCount - 12,
-		R3  = RegisterCount - 13,
-		R2  = RegisterCount - 14,
-		R1  = RegisterCount - 15,
-		R0  = RegisterCount - 16,
+		Bitmask = 0b11111111,
+#define X(index) \
+		R ## index = (RegisterCount - (RegisterCount - index)),
+#include "def/iris19/bitmask8bit.def"
+#undef X
+
+		//R15 = RegisterCount - 1,
+		//R14 = RegisterCount - 2,
+		//R13 = RegisterCount - 3,
+		//R12 = RegisterCount - 4,
+		//R11 = RegisterCount - 5,
+		//R10 = RegisterCount - 6,
+		//R9  = RegisterCount - 7,
+		//R8  = RegisterCount - 8,
+		//R7  = RegisterCount - 9,
+		//R6  = RegisterCount - 10,
+		//R5  = RegisterCount - 11,
+		//R4  = RegisterCount - 12,
+		//R3  = RegisterCount - 13,
+		//R2  = RegisterCount - 14,
+		//R1  = RegisterCount - 15,
+		//R0  = RegisterCount - 16,
 		InstructionPointer = R15,
 		StackPointer = R14,
 		ConditionRegister = R13,
@@ -99,21 +100,25 @@ namespace iris19 {
 		struct SetBitmaskToWordMask {
 			static_assert(bitmask <= ArchitectureConstants::Bitmask, "Bitmask is too large and must be less than or equals to 0b1111");
 			static constexpr bool decomposedBits[] = {
-				iris::decodeBits<byte, bool, 0b0001, 0>(bitmask),
-				iris::decodeBits<byte, bool, 0b0010, 1>(bitmask),
-				iris::decodeBits<byte, bool, 0b0100, 2>(bitmask),
-				iris::decodeBits<byte, bool, 0b1000, 3>(bitmask)
+				iris::decodeBits<byte, bool, 0b00000001, 0>(bitmask),
+				iris::decodeBits<byte, bool, 0b00000010, 1>(bitmask),
+				iris::decodeBits<byte, bool, 0b00000100, 2>(bitmask),
+				iris::decodeBits<byte, bool, 0b00001000, 3>(bitmask),
+				iris::decodeBits<byte, bool, 0b00010000, 4>(bitmask),
+				iris::decodeBits<byte, bool, 0b00100000, 5>(bitmask),
+				iris::decodeBits<byte, bool, 0b01000000, 6>(bitmask),
+				iris::decodeBits<byte, bool, 0b10000000, 7>(bitmask),
 			};
 			static constexpr byte determineMaskValue(bool value) noexcept { return value ? 0xFF : 0x00; }
-			static constexpr Word encodeWord(bool upper, bool lower) noexcept {
-				return iris::encodeUint16LE(determineMaskValue(lower), determineMaskValue(upper));
+			static constexpr Word encodeWord(bool upper, bool upperlower, bool lowerupper, bool lower) noexcept {
+				return iris::encodeUint32LE(determineMaskValue(upper), determineMaskValue(upperlower), determineMaskValue(lowerupper), determineMaskValue(lower));
 			}
-			static constexpr Word lowerMask = encodeWord(decomposedBits[1], decomposedBits[0]);
-			static constexpr Word upperMask = encodeWord(decomposedBits[3], decomposedBits[2]);
-			static constexpr RegisterValue mask = iris::encodeUint32LE(lowerMask, upperMask);
+			static constexpr Word upperMask = encodeWord(decomposedBits[7], decomposedBits[6], decomposedBits[5], decomposedBits[4]);
+			static constexpr Word lowerMask = encodeWord(decomposedBits[3], decomposedBits[2], decomposedBits[1], decomposedBits[0]);
+			static constexpr RegisterValue mask = iris::encodeUint64LE(lowerMask, upperMask);
 
-			static constexpr bool readLower = decomposedBits[1] || decomposedBits[0];
-			static constexpr bool readUpper = decomposedBits[2] || decomposedBits[3];
+			static constexpr bool readLower = decomposedBits[1] || decomposedBits[0] || decomposedBits[2] || decomposedBits[3];
+			static constexpr bool readUpper = decomposedBits[4] || decomposedBits[5] || decomposedBits[6] || decomposedBits[7];
 		};
 	template<byte bitmask>
 		inline constexpr RegisterValue mask() noexcept { return SetBitmaskToWordMask<bitmask>::mask; }
@@ -477,8 +482,6 @@ namespace iris19 {
 			RegisterValue loadRegisterValue(RegisterValue address);
 			void storeRegisterValue(RegisterValue address, RegisterValue value);
 		private:
-			void complexOperation(DecodedInstruction&& inst);
-			void encodingOperation(DecodedInstruction&& inst);
 			void memoryManipulationOperation(DecodedInstruction&& inst);
 		private:
 			bool execute = true,

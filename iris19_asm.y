@@ -249,14 +249,7 @@ namespace iris19 {
 %token LABEL DIRECTIVE_ORG DIRECTIVE_WORD DIRECTIVE_DWORD
 %token OP_NOP OP_ARITHMETIC OP_SHIFT OP_LOGICAL OP_COMPARE OP_BRANCH OP_RETURN
 %token OP_SYSTEM OP_MOVE OP_SET OP_SWAP OP_MEMORY
-%token OP_COMPLEX
 %token DIRECTIVE_REGISTER_AT_START
-
-%token COMPLEX_OP_ENCODING
-%token COMPLEX_OP_ENCODING_BITSET
-%token COMPLEX_OP_ENCODING_BITUNSET
-%token COMPLEX_OP_ENCODING_ENCODE
-%token COMPLEX_OP_ENCODING_DECODE
 
 %token ARITHMETIC_OP_ADD     ARITHMETIC_OP_SUB     ARITHMETIC_OP_MUL ARITHMETIC_OP_DIV
 %token ARITHMETIC_OP_REM     ARITHMETIC_OP_ADD_IMM ARITHMETIC_OP_SUB_IMM
@@ -360,17 +353,7 @@ operation:
 			iris19::op.subType = static_cast<byte>(iris19::MemoryOperation::Pop);
             iris19::op.arg0 = static_cast<byte>(iris19::ArchitectureConstants::InstructionPointer);
 			iris19::op.bitmask = 0b1111;
-        } |
-		OP_COMPLEX complex_type {
-			iris19::op.type = iris19::Operation::Complex;
-		};
-complex_type:
-			COMPLEX_OP_ENCODING encoding_subtype { iris19::op.subType = static_cast<byte>(iris19::ComplexSubTypes::Encoding); };
-encoding_subtype:
-				COMPLEX_OP_ENCODING_BITSET   { iris19::op.bitmask = static_cast<byte>(iris19::EncodingOperation::BitSet); } |
-				COMPLEX_OP_ENCODING_BITUNSET { iris19::op.bitmask = static_cast<byte>(iris19::EncodingOperation::BitUnset); } |
-				COMPLEX_OP_ENCODING_ENCODE   { iris19::op.bitmask = static_cast<byte>(iris19::EncodingOperation::Encode); } |
-				COMPLEX_OP_ENCODING_DECODE   { iris19::op.bitmask = static_cast<byte>(iris19::EncodingOperation::Decode); };
+        };
 compare_op:
 		  compare_type combine_type compare_args;
 

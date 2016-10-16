@@ -48,7 +48,7 @@ namespace iris19 {
 	RegisterValue Core::retrieveImmediate(byte bitmask) noexcept {
 		switch(bitmask) {
 #define X(value) case value : return retrieveImmediate<value>();
-#include "def/iris19/bitmask4bit.def"
+#include "def/iris19/bitmask8bit.def"
 #undef X
 			default:
 				throw iris::Problem("Illegal bitmask defined!");
@@ -321,8 +321,6 @@ namespace iris19 {
 			} else {
 				systemHandlers[current.getSystemAction()](this, std::move(current));
 			}
-        } else if (tControl == Operation::Complex) {
-            complexOperation(std::move(current));
 		} else {
 			std::stringstream str;
 			str << "Illegal instruction " << std::hex << static_cast<int>(current.getControl()) << std::endl;
@@ -331,34 +329,6 @@ namespace iris19 {
 			throw iris::Problem(str.str());
 		}
 	}
-
-	void Core::complexOperation(DecodedInstruction&& inst) {
-		auto type = inst.getComplexSubClass();
-		if (type == ComplexSubTypes::Encoding) {
-			encodingOperation(std::move(inst));
-		} else {
-			throw iris::Problem("Undefined complex subtype!");
-		}
-	}
-    void Core::encodingOperation(DecodedInstruction&& inst) {
-        switch (inst.getComplexClassEncoding_Type()) {
-            case EncodingOperation::Decode:
-                getValueRegister() = (getAddressRegister() & getMaskRegister()) >> getShiftRegister();
-                break;
-            case EncodingOperation::Encode:
-                getAddressRegister() = (getAddressRegister() & ~getMaskRegister()) | ((getValueRegister() << getShiftRegister()) & getMaskRegister());
-                break;
-            case EncodingOperation::BitSet:
-                // use the shift register as the field select
-                getConditionRegister() = ((getAddressRegister() >> getFieldRegister()) & 0x1) == 1;
-                break;
-            case EncodingOperation::BitUnset:
-                getConditionRegister() = ((getAddressRegister() >> getFieldRegister()) & 0x1) != 1;
-                break;
-            default:
-                throw iris::Problem("Illegal complex encoding operation defined!");
-        }
-    }
 
 	void Core::terminate(Core* core, DecodedInstruction&& inst) {
 		core->execute = false;
@@ -585,18 +555,6 @@ namespace iris19 {
 			}
 		}
 	}
-    InstructionEncoder::Encoding InstructionEncoder::encodeComplex() {
-        auto sType = static_cast<ComplexSubTypes>(subType);
-        auto first = encodeControl(0, type);
-        first = encodeComplexSubClass(first, sType);
-        if (sType == ComplexSubTypes::Encoding) {
-            // right now it is a single word
-            first = encodeComplexClassEncoding_Type(first, static_cast<EncodingOperation>(bitmask));
-            return std::make_tuple(1, first, 0, 0);
-        } else {
-            throw iris::Problem("Attempted to encode an unsupported value as a complex type!");
-        }
-    }
 
 	InstructionEncoder::Encoding InstructionEncoder::encode() {
 		// always encode the type
