@@ -466,11 +466,11 @@ namespace iris19 {
 	InstructionEncoder::Encoding InstructionEncoder::encodeCompare() {
 		auto first = encodeControl(0, type);
 		first = encodeCompareType(first, static_cast<CompareStyle>(subType));
-		first = encodeCompareCombineFlag(first, combineType);
 		first = encodeCompareImmediateFlag(first, immediate);
-		auto second = encodeCompareRegister0(0, arg0);
-		second = immediate ? encodeCompareImmediate(second, arg1) : encodeCompareRegister1(second, arg1);
-		return std::make_tuple(2, first, second, 0);
+		first = encodeCompareRegisterDest(first, this->arg0);
+		first = encodeCompareRegisterSrc0(first, this->arg1);
+		first = encodeCompareRegisterSrc1(first, this->arg2);
+		return std::make_tuple(1, first, 0, 0);
 	}
 
 	InstructionEncoder::Encoding InstructionEncoder::encodeSet() {
