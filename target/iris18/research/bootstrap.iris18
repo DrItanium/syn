@@ -1,6 +1,87 @@
 ; Need to setup the initial program load of the machine
 ; no need to ever save r9! You should only use it in leaf functions!
 @org 0x00100000
+	@label GC
+		set 0m1111 r9 paramBottom
+		memory push 0m1111 r9 r10
+		memory push 0m1111 r10 r10
+		set 0m1111 r9 reclaimMemory
+		memory push 0m1111 r9
+		branch immediate markStack
+	@label markCell_CheckPointer
+		memory push 0m1111 r0
+			memory pop 0m1111 r0 r10
+			memory push 0m1111 r0 r10
+			branch call immediate isgcbitset
+			branch cond immediate markCell_CheckPointer_Done
+			memory push 0m1111 r0 r10
+			branch call immediate integerp_without_conversion
+			branch cond immediate markCell_CheckPointer_Done
+			logical and immediate 0m1111 r0 0x00FFFFFC
+			memory push 0m1111 r0 r10
+			branch call immediate markCell
+		memory pop 0m1111 r0
+		return
+
+		memory pop 0m1111 r0
+		return
+	@label markCell
+		; arg0 base pointer
+		memory push 0m1111 r0
+		memory push 0m1111 r1
+			memory pop 0m1111 r0 r10
+			memory load 0m1111 0x0 r0 r1
+			memory push 0m1111 r1 r10
+			branch call immediate markCell_CheckPointer
+			memory load 0m1111 0x2 r0 r1
+			memory push 0m1111 r1 r10
+			branch call immediate markCell_CheckPointer
+		memory pop 0m1111 r1
+		memory pop 0m1111 r0
+		return
+	@label markStack
+		memory push 0m1111 r0
+		memory push 0m1111 r1
+		memory push 0m1111 r2
+			memory pop 0m1111 r0 r10
+			memory pop 0m1111 r1 r10
+			@label markStackLoop
+				compare >= none r0 r1
+				branch cond immediate markStackLoop_Done
+				memory load 0m1111 0x0 r0 r2
+				branch call immediate integerp
+				branch cond immediate markStackLoop_Iterate
+				logical and immediate 0m1111 r2 0x00FFFFFC
+				memory push 0m1111 r2 r10
+				branch call immediate markCell
+				@label markStackLoop_Iterate
+					arithmetic add immediate r0 0x4
+					branch immediate markStackLoop
+		@label markStackLoop_Done
+		memory pop 0m1111 r2
+		memory pop 0m1111 r1
+		memory pop 0m1111 r0
+		return
+
+	@label reclaimMemory
+		memory push 0m1111 r0
+		memory push 0m1111 r1
+		memory push 0m1111 r2
+		memory push 0m1111 r3
+			set 0m1111 r0 MemoryBegin
+			set 0m1111 r1 MemoryEnd
+			@label reclaimMemory_Loop
+				compare > none r0 r1
+				branch cond immediate reclaimMemory_Done
+				memory load 0m1111 0x0 r0 r2
+				memory push 0m1111 r2 r10
+				; TODO continue 
+		@label reclaimMemory_Done
+		memory pop 0m1111 r3
+		memory pop 0m1111 r2
+		memory pop 0m1111 r1
+		memory pop 0m1111 r0
+		return
     ; Several handler routines
     @label systemConstants
         @dword stackBottom
@@ -10,10 +91,10 @@
         @dword MemoryBegin
         @dword MemoryEnd
     @label IsOutOfMemory
-        memory push 0m1111 r4
-        set 0m1111 r4 NIL
-        compare == none addr r4
-        memory pop 0m11111 r4
+        memory push 0m1111 r0
+        set 0m1111 r0 NIL
+        compare == none addr r0
+        memory pop 0m11111 r0
         return
     @label StackUnderflow
         ; TODO: printout system error message!
@@ -81,58 +162,58 @@
     memory pop 0m1111 value
     return
 @label hash_character
-    memory push 0m1111 r4
-    memory push 0m1111 r5
+    memory push 0m1111 r0
+    memory push 0m1111 r1
     memory push 0m1111 value
     memory pop 0m1111 value r10
-    memory pop 0m1111 r4 r10
-    set 0m0001 r5 0x1
+    memory pop 0m1111 r0 r10
+    set 0m0001 r1 0x1
     ; super expensive but right now I'm just implementing it
     @label hash_character_loop
-        compare == none immediate r4 0x0
+        compare == none immediate r0 0x0
         branch cond immediate hash_character_loop_done
-        arithmetic mul immediate r5 13
-        decrement r4
+        arithmetic mul immediate r1 13
+        decrement r0
         branch immediate hash_character_loop
     @label hash_character_loop_done
-        arithmetic mul value r5             ; perform the combination action
+        arithmetic mul value r1             ; perform the combination action
         memory push 0m1111 value r10        ; now we need to tag it as an integer
         branch call immediate make_integer
     memory pop 0m1111 value
-    memory pop 0m1111 r5
-    memory pop 0m1111 r4
+    memory pop 0m1111 r1
+    memory pop 0m1111 r0
     return
 @label hash_string
-    memory push 0m1111 r4
-    memory push 0m1111 r5
-    memory push 0m1111 r6
-    memory push 0m1111 r7
+    memory push 0m1111 r0
+    memory push 0m1111 r1
+    memory push 0m1111 r2
+    memory push 0m1111 r3
     memory push 0m1111 value
-    zero r6
-    zero r4
-    zero r7
-    memory pop 0m1111 r5 r10
+    zero r2
+    zero r0
+    zero r3
+    memory pop 0m1111 r1 r10
     @label hash_string_loop
-        memory load 0m1111 0x0 r5 r6
-        compare == none immediate r6 0x0
+        memory load 0m1111 0x0 r1 r2
+        compare == none immediate r2 0x0
         branch cond immediate hash_string_done
-        memory push 0m1111 r4 r10
-        memory push 0m1111 r6 r10
+        memory push 0m1111 r0 r10
+        memory push 0m1111 r2 r10
         branch call immediate hash_character
         memory pop 0m1111 value r10
-        arithmetic add r7 value
-        increment r5
-        increment r4
+        arithmetic add r3 value
+        increment r1
+        increment r0
         branch immediate hash_string_loop
     @label hash_string_done
-        memory push 0m1111 r7 r10
+        memory push 0m1111 r3 r10
     memory pop 0m1111 value
-    memory pop 0m1111 r7
-    memory pop 0m1111 r6
-    memory pop 0m1111 r5
-    memory pop 0m1111 r4
+    memory pop 0m1111 r3
+    memory pop 0m1111 r2
+    memory pop 0m1111 r1
+    memory pop 0m1111 r0
 @label getMemoryCell
-    memory push 0m1111 r4
+    memory push 0m1111 r0
     branch call immediate IsOutOfMemory
     branch cond immediate PerformGC
     branch immediate GetMemoryCell_DONE
@@ -141,23 +222,23 @@
         branch call immediate OutOfMemory
         branch cond immediate CompletelyOutOfMemory ; We're done, no more memory!
     @label GetMemoryCell_DONE
-        memory pop 0m1111 r4 addr       ; transfer the new memory cell to the parameter stack for usage
-        memory push 0m1111 r4 r10       ; 
-    memory pop 0m1111 r4
+        memory pop 0m1111 r0 addr       ; transfer the new memory cell to the parameter stack for usage
+        memory push 0m1111 r0 r10       ; 
+    memory pop 0m1111 r0
     return
 @label cons
-    memory push 0m1111 r4
-    memory push 0m1111 r5
+    memory push 0m1111 r0
+    memory push 0m1111 r1
         branch call immediate getMemoryCell
-        memory pop 0m1111 r5 r10        ; new memory cell from the getMemoryCell call
+        memory pop 0m1111 r1 r10        ; new memory cell from the getMemoryCell call
                                         ; store the two elements
-        memory pop 0m1111 r4 r10        ; car
-        memory store 0m1111 0x0 r4 r5
-        memory pop 0m1111 r4 r10        ; cdr
-        memory store 0m1111 0x2 r4 r5
-        memory push 0m1111 r5 r10
-    memory pop 0m1111 r5
-    memory pop 0m1111 r4
+        memory pop 0m1111 r0 r10        ; car
+        memory store 0m1111 0x0 r0 r1
+        memory pop 0m1111 r0 r10        ; cdr
+        memory store 0m1111 0x2 r0 r1
+        memory push 0m1111 r1 r10
+    memory pop 0m1111 r1
+    memory pop 0m1111 r0
     return
 @label car
     memory pop 0m1111 r9 r10
