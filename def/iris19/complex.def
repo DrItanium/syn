@@ -1,0 +1,10 @@
+DefEnum(ComplexSubTypes, byte)
+    EnumEntry(Encoding)
+EndDefEnum(ComplexSubTypes, byte, 16)
+
+DefEnum(EncodingOperation, byte)
+    EnumEntry(Encode)
+    EnumEntry(Decode)
+    EnumEntry(BitSet)
+    EnumEntry(BitUnset)
+EndDefEnum(EncodingOperation, byte, 8)

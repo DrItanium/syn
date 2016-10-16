@@ -1,0 +1,15 @@
+DefEnum(ImmediateLogicalOps, byte)
+	EnumEntry(And)
+	EnumEntry(Or)
+	EnumEntry(Xor)
+	EnumEntry(Nand)
+EndDefEnum(ImmediateLogicalOps, byte, 4)
+
+
+DefEnum(LogicalOps, byte)
+	EnumEntry(And)
+	EnumEntry(Or)
+	EnumEntry(Xor)
+	EnumEntry(Nand)
+	EnumEntry(Not)
+EndDefEnum(LogicalOps, byte, 8)

@@ -1,0 +1,6 @@
+DefEnum(SystemCalls, byte)
+	EnumEntry(Terminate)
+	EnumEntry(GetC)
+	EnumEntry(PutC)
+EndDefEnum(SystemCalls, byte, ArchitectureConstants::MaxSystemCalls)
+
