@@ -507,7 +507,7 @@ stack_operation_choose:
 
 system_op:
 		IMMEDIATE source_register {
-            op.arg0 = ($2 & 0b1111)
+            op.arg0 = ($1 & 0b1111);
         };
 load_store_combined:
 			load_store_op bitmask immediate_or_alias read_next_word;
