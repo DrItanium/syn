@@ -5,8 +5,6 @@ include config.mk
 
 IRIS16_OBJECTS = iris16.o \
 
-IRIS16_OUT = libiris16.a
-
 IRIS16_ASM_FILES = iris16_lex.yy.c \
 				   iris16_asm.tab.c \
 				   iris16_asm.tab.h
@@ -14,40 +12,31 @@ IRIS16_ASM_FILES = iris16_lex.yy.c \
 IRIS16_ASM_OBJECTS = iris16_lex.yy.o \
 					 iris16_asm.tab.o
 
-IRIS17_OBJECTS = iris18.o \
+IRIS18_OBJECTS = iris18.o \
 
-IRIS17_OUT = libiris18.a
-
-IRIS17_ASM_FILES = iris18_lex.yy.c \
+IRIS18_ASM_FILES = iris18_lex.yy.c \
 				   iris18_asm.tab.c \
 				   iris18_asm.tab.h
 
-IRIS17_ASM_OBJECTS = iris18_lex.yy.o \
+IRIS18_ASM_OBJECTS = iris18_lex.yy.o \
 					 iris18_asm.tab.o
 
-IRIS32_OBJECTS = iris17.o \
+IRIS17_OBJECTS = iris17.o \
 
-IRIS32_OUT = libiris17.a
-
-IRIS32_ASM_FILES = iris17_lex.yy.c \
+IRIS17_ASM_FILES = iris17_lex.yy.c \
 				   iris17_asm.tab.c \
 				   iris17_asm.tab.h
 
-IRIS32_ASM_OBJECTS = iris17_lex.yy.o \
+IRIS17_ASM_OBJECTS = iris17_lex.yy.o \
 					 iris17_asm.tab.o
 
-ARCH_TARGETS = ${IRIS16_OUT} \
-			   ${IRIS32_OUT} \
-			   ${IRIS17_OUT}
-
-ARCH_OBJECTS = ${IRIS32_OBJECTS} \
+ARCH_OBJECTS = ${IRIS17_OBJECTS} \
 			   ${IRIS16_OBJECTS} \
-			   ${IRIS17_OBJECTS}
-			
+			   ${IRIS18_OBJECTS} \
 
 COMMON_THINGS = iris_base.o \
 				sim_registration.o \
-				${ARCH_TARGETS}
+				${ARCH_OBJECTS}
 
 # The object file that defines main()
 #TEST_OBJECTS = $(patsubst %.c,%.o,$(wildcard src/cmd/tests/*.c))
@@ -61,12 +50,12 @@ ASM_OBJECTS = iris_asm.o \
 			  ${COMMON_THINGS}
 
 ASM_PARSERS = ${IRIS16_ASM_FILES} \
-			  ${IRIS32_ASM_FILES} \
-			  ${IRIS17_ASM_FILES} 
+			  ${IRIS17_ASM_FILES} \
+			  ${IRIS18_ASM_FILES} 
 
 ASM_SUPPLIMENTARY_BUILD = ${IRIS16_ASM_OBJECTS} \
-						  ${IRIS32_ASM_OBJECTS} \
 						  ${IRIS17_ASM_OBJECTS} \
+						  ${IRIS18_ASM_OBJECTS} \
 
 ASM_BINARY = iris_asm
 
@@ -89,8 +78,8 @@ ALL_OBJECTS = ${COMMON_THINGS} \
 			  ${ASM_SUPPLIMENTARY_BUILD}
 
 ALL_ARCHIVES = ${IRIS16_OUT} \
-			   ${IRIS32_OUT} \
-			   ${IRIS17_OUT}
+			   ${IRIS17_OUT} \
+			   ${IRIS18_OUT}
 
 all: options ${SIM_BINARY} ${ASM_BINARY} ${LINK_BINARY}
 
@@ -112,7 +101,6 @@ options:
 	@echo -n Compiling $< into $@...
 	@${CC} ${CXXFLAGS} -c $< -o $@
 	@echo done.
-
 
 ${SIM_BINARY}: ${SIM_OBJECTS}
 	@echo -n Building ${SIM_BINARY} binary out of $^...
@@ -154,13 +142,8 @@ iris16_lex.yy.c: iris16_asm.l iris16_asm.tab.h
 	@${CXX} ${CXXFLAGS} -D_POSIX_SOURCE -c iris16_lex.yy.c -o iris16_lex.yy.o
 	@echo done
 
-# BEGIN IRIS32
+# BEGIN IRIS17
 #
-${IRIS32_OUT}: ${IRIS32_OBJECTS}
-	@echo -n Building ${IRIS32_OUT} out of $^...
-	@${AR} rcs ${IRIS32_OUT}  $^
-	@echo done
-
 iris17_asm.tab.c iris17_asm.tab.h: iris17_asm.y
 	@echo -n Constructing Parser from $< ...
 	@${YACC} -o iris17_asm.tab.c -d iris17_asm.y
@@ -177,14 +160,9 @@ iris17_lex.yy.c: iris17_asm.l iris17_asm.tab.h
 	@${CXX} ${CXXFLAGS} -D_POSIX_SOURCE -c iris17_lex.yy.c -o iris17_lex.yy.o
 	@echo done
 
-# BEGIN IRIS17
+# BEGIN IRIS18
 #
 #
-${IRIS17_OUT}: ${IRIS17_OBJECTS}
-	@echo -n Building ${IRIS17_OUT} out of $^...
-	@${AR} rcs ${IRIS17_OUT}  $^
-	@echo done
-
 iris18_asm.tab.c iris18_asm.tab.h: iris18_asm.y
 	@echo -n Constructing Parser from $< ...
 	@${YACC} -o iris18_asm.tab.c -d iris18_asm.y
