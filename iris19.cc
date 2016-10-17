@@ -28,14 +28,14 @@ namespace iris19 {
 	}
 
 	Word decodeUpperHalf(RegisterValue value) noexcept {
-		return iris::decodeBits<RegisterValue, Word, upper32Mask, 16>(value);
+		return iris::decodeBits<RegisterValue, Word, upper32Mask, 32>(value);
 	}
 	Word decodeLowerHalf(RegisterValue value) noexcept {
-		return iris::decodeBits<RegisterValue, Word, lower32Mask, 16>(value);
+		return iris::decodeBits<RegisterValue, Word, lower32Mask, 0>(value);
 	}
 
 	constexpr RegisterValue encodeUpperHalf(RegisterValue value, Word upperHalf) noexcept {
-		return iris::encodeBits<RegisterValue, Word, upper32Mask, 16>(value, upperHalf);
+		return iris::encodeBits<RegisterValue, Word, upper32Mask, 32>(value, upperHalf);
 	}
 	constexpr RegisterValue encodeLowerHalf(RegisterValue value, Word lowerHalf) noexcept {
 		return iris::encodeBits<RegisterValue, Word, lower32Mask, 0>(value, lowerHalf);
@@ -407,6 +407,70 @@ namespace iris19 {
 		auto result = loadWord(ptr);
 		incrementStackPointer(ptr);
 		return result;
+	}
+
+	DWord Core::popDword() {
+		return popDword(getStackPointer());
+	}
+	DWord Core::popDword(RegisterValue& ptr) {
+		auto upper = popWord(ptr);
+		auto lower = popWord(ptr);
+		return encodeRegisterValue(upper, lower);
+	}
+	RegisterValue Core::registerStackPop(byte reg) {
+		switch(reg) {
+#define X(index) case index: return registerStackPop<index>(); 
+#include "def/iris19/bitmask6bit.def"
+#undef X
+			default:
+				throw iris::Problem("Illegal register index during register stack pop");
+		}
+	}
+	RegisterValue Core::registerIndirectLoad(byte reg) {
+		switch(reg) {
+#define X(index) case index: return registerIndirectLoad<index>(); 
+#include "def/iris19/bitmask6bit.def"
+#undef X
+			default:
+				throw iris::Problem("Illegal register index during register indirect load");
+		}
+	}
+	void Core::registerStackPush(byte reg, RegisterValue value) {
+		switch(reg) {
+#define X(index) case index: registerStackPush<index>(value); break;
+#include "def/iris19/bitmask6bit.def"
+#undef X
+			default:
+				throw iris::Problem("Illegal register index during register stack push");
+		}
+	}
+	void Core::registerIndirectStore(byte reg, RegisterValue value) {
+		switch(reg) {
+#define X(index) case index: registerIndirectStore<index>(value); break;
+#include "def/iris19/bitmask6bit.def"
+#undef X
+			default:
+				throw iris::Problem("Illegal register index during register indirect store");
+		}
+	}
+	void Core::genericRegisterSet(byte registerTarget, RegisterValue value) {
+		switch(registerTarget) {
+#define X(index) case index: genericRegisterSet<index>(value); break;
+#include "def/iris19/bitmask8bit.def"
+#undef X
+			default:
+				throw iris::Problem("Illegal register target index! Should never ever hit this!");
+		}
+	}
+
+	RegisterValue Core::genericRegisterGet(byte registerTarget) {
+		switch(registerTarget) {
+#define X(index) case index: return genericRegisterGet<index>(); 
+#include "def/iris19/bitmask8bit.def"
+#undef X
+			default:
+				throw iris::Problem("Illegal register target index! Should never ever hit this!");
+		}
 	}
 
 	InstructionEncoder::Encoding InstructionEncoder::encodeArithmetic() {

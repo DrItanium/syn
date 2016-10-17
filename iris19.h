@@ -216,12 +216,15 @@ namespace iris19 {
 			void cycle();
 			bool shouldExecute() const { return execute; }
 		private:
+			void push(RegisterValue value, RegisterValue& ptr);
 			void pushWord(Word value);
             void pushWord(Word value, RegisterValue& ptr);
 			void pushDword(DWord value);
             void pushDword(DWord value, RegisterValue& ptr);
 			Word popWord();
 			Word popWord(RegisterValue& ptr);
+			DWord popDword();
+			DWord popDword(RegisterValue& ptr);
 			static void defaultSystemHandler(Core* core, DecodedInstruction&& inst);
 			static void terminate(Core* core, DecodedInstruction&& inst);
 			static void getc(Core* core, DecodedInstruction&& inst);
@@ -336,13 +339,68 @@ namespace iris19 {
 						throw iris::Problem("Illegal arithmetic operation!");
 					}
 				}
-			
-			template<byte reg, byte bitmask>
-			void registerStackPush(RegisterValue value) {
-				
+			RegisterValue registerStackPop(byte reg);
+			RegisterValue registerIndirectLoad(byte reg);
+			void registerIndirectStore(byte reg, RegisterValue value);
+			void registerStackPush(byte reg, RegisterValue value);
+			template<byte reg>
+			RegisterValue registerValueGet() {
+				return registerValue<reg>();
 			}
-			//template<byte index>
-			//RegisterValue registerStackPop();
+			template<byte reg>
+			void registerValueSet(RegisterValue value) {
+				registerValue<reg>() = value;
+			}
+			template<byte reg>
+			void registerStackPush(RegisterValue value) {
+				pushDword(value, registerValue<reg>());
+			}
+			template<byte reg>
+			RegisterValue registerStackPop() {
+				return popDword(registerValue<reg>());
+			}
+			template<byte reg>
+			void registerIndirectStore(RegisterValue value) {
+				storeRegisterValue(registerValue<reg>(), value);
+			}
+			template<byte reg>
+			RegisterValue registerIndirectLoad() {
+				return loadRegisterValue(registerValue<reg>());
+			}
+			template<byte fullReg>
+			void genericRegisterSet(RegisterValue value) {
+				if (DecodedRegister<fullReg>::isStack) {
+					if (DecodedRegister<fullReg>::isIndirect) {
+						throw iris::Problem("Unable to do both stack and indirect operations at the same time!");
+					} else {
+						registerStackPush<DecodedRegister<fullReg>::actualIndex>(value);
+					}
+				} else {
+					if (DecodedRegister<fullReg>::isIndirect) {
+						registerIndirectStore<DecodedRegister<fullReg>::actualIndex>(value);
+					} else {
+						registerValueSet<DecodedRegister<fullReg>::actualIndex>(value);
+					}
+				}
+			}
+			template<byte fullReg>
+			RegisterValue genericRegisterGet() {
+				if (DecodedRegister<fullReg>::isStack) {
+					if (DecodedRegister<fullReg>::isIndirect) {
+						throw iris::Problem("Unable to do both stack and indirect operations at the same time!");
+					} else {
+						return registerStackPop<DecodedRegister<fullReg>::actualIndex>();
+					}
+				} else {
+					if (DecodedRegister<fullReg>::isIndirect) {
+						return registerIndirectLoad<DecodedRegister<fullReg>::actualIndex>();
+					} else {
+						return registerValueGet<DecodedRegister<fullReg>::actualIndex>();
+					}
+				}
+			}
+			void genericRegisterSet(byte registerTarget, RegisterValue value);
+			RegisterValue genericRegisterGet(byte registerTarget);
 			template<byte flags>
 				void branchSpecificOperation(DecodedInstruction&& current) {
 					using decodedFlags = BranchFlagsDecoder<flags>;
