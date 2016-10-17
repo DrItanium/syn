@@ -323,21 +323,29 @@ namespace iris19 {
 			template<byte signature>
 				void arithmeticOperation(DecodedInstruction&& inst) {
 					using aflags = ArithmeticFlags<signature>;
-					auto src = aflags::immediate ? inst.getArithmeticImmediate() : registerValue(inst.getArithmeticSource());
-					auto &dest = registerValue(inst.getArithmeticDestination());
-					if (aflags::op == ArithmeticOps::Add) {
-						dest = iris::add(dest, src);
-					} else if (aflags::op == ArithmeticOps::Sub) {
-						dest = iris::sub(dest, src);
-					} else if (aflags::op == ArithmeticOps::Mul) {
-						dest = iris::mul(dest, src);
-					} else if (aflags::op == ArithmeticOps::Div) {
-						dest = iris::div(dest, src);
-					} else if (aflags::op == ArithmeticOps::Rem) {
-						dest = iris::rem(dest, src);
-					} else {
-						throw iris::Problem("Illegal arithmetic operation!");
+					auto result = 0u;
+					auto src0 = genericRegisterGet(inst.getArithmeticSource());
+					auto src1 = aflags::immediate ? inst.getArithmeticImmediate() : genericRegisterGet(inst.getArithmeticSource());
+					switch (aflags::op) {
+						case ArithmeticOps::Add:
+							result = iris::add(src0, src1);
+							break;
+						case ArithmeticOps::Sub:
+							result = iris::sub(src0, src1);
+							break;
+						case ArithmeticOps::Mul:
+							result = iris::mul(src0, src1);
+							break;
+						case ArithmeticOps::Div:
+							result = iris::div(src0, src1);
+							break;
+						case ArithmeticOps::Rem:
+							result = iris::rem(src0, src1);
+							break;
+						default:
+							throw iris::Problem("Illegal arithmetic operation!");
 					}
+					genericRegisterSet(inst.getArithmeticDestination(), result);
 				}
 			RegisterValue registerStackPop(byte reg);
 			RegisterValue registerIndirectLoad(byte reg);
