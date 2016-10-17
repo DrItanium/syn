@@ -28,17 +28,17 @@ namespace iris19 {
 	}
 
 	Word decodeUpperHalf(RegisterValue value) noexcept {
-		return iris::decodeBits<RegisterValue, Word, upper16Mask, 16>(value);
+		return iris::decodeBits<RegisterValue, Word, upper32Mask, 16>(value);
 	}
 	Word decodeLowerHalf(RegisterValue value) noexcept {
-		return iris::decodeBits<RegisterValue, Word, lower16Mask, 16>(value);
+		return iris::decodeBits<RegisterValue, Word, lower32Mask, 16>(value);
 	}
 
 	constexpr RegisterValue encodeUpperHalf(RegisterValue value, Word upperHalf) noexcept {
-		return iris::encodeBits<RegisterValue, Word, upper16Mask, 16>(value, upperHalf);
+		return iris::encodeBits<RegisterValue, Word, upper32Mask, 16>(value, upperHalf);
 	}
 	constexpr RegisterValue encodeLowerHalf(RegisterValue value, Word lowerHalf) noexcept {
-		return iris::encodeBits<RegisterValue, Word, lower16Mask, 0>(value, lowerHalf);
+		return iris::encodeBits<RegisterValue, Word, lower32Mask, 0>(value, lowerHalf);
 	}
 
 	constexpr RegisterValue encodeRegisterValue(Word upper, Word lower) noexcept {
@@ -242,23 +242,6 @@ namespace iris19 {
 					stream << "Illegal set signature 0x" << std::hex << static_cast<int>(current.getSetSignature()) << "\n";
 					throw iris::Problem(stream.str());
 			}
-		} else if (tControl == Operation::Memory) {
-			switch (current.getMemorySignature()) {
-#define X(value) \
-				case value : \
-							 if (MemoryFlags<value>::type == MemoryOperation::Push && MemoryFlags<value>::indirect) { \
-								 throw iris::Problem("Indirect bit not supported in push operations!"); \
-							 } else if (MemoryFlags<value>::type == MemoryOperation::Pop && MemoryFlags<value>::indirect) { \
-								 throw iris::Problem("Indirect bit not supported in pop operations!"); \
-							 } else { \
-								memoryOperation<MemoryFlags<value>::type, MemoryFlags<value>::bitmask, MemoryFlags<value>::indirect, MemoryFlags<value>::readNextWord>(std::move(current)); \
-							 } \
-					break; 
-#include "def/iris19/bitmask8bit.def"
-#undef X
-				default:
-					throw iris::Problem("Illegal memory signature!");
-			}
 		} else if (tControl == Operation::Branch) {
 			auto instFlags = current.getBranchFlags();
 #ifdef DEBUG
@@ -384,11 +367,11 @@ namespace iris19 {
 		}
 	}
 	RegisterValue Core::loadRegisterValue(RegisterValue address) {
-		return iris::encodeBits<RegisterValue, Word, bitmask32, 16>(static_cast<RegisterValue>(loadWord(address)), loadWord(address + 1));
+		return iris::encodeBits<RegisterValue, Word, bitmask64, 32>(static_cast<RegisterValue>(loadWord(address)), loadWord(address + 1));
 	}
 	void Core::storeRegisterValue(RegisterValue address, RegisterValue value) {
-		storeWord(address, iris::decodeBits<RegisterValue, Word, lower16Mask, 0>(value));
-		storeWord(address + 1, iris::decodeBits<RegisterValue, Word, upper16Mask, 16>(value));
+		storeWord(address, iris::decodeBits<RegisterValue, Word, lower32Mask, 0>(value));
+		storeWord(address + 1, iris::decodeBits<RegisterValue, Word, upper32Mask, 32>(value));
 	}
 
 	std::shared_ptr<Word> Core::getMemory() {
@@ -486,23 +469,6 @@ namespace iris19 {
 		return std::make_tuple(count, first, second, third);
 	}
 
-	InstructionEncoder::Encoding InstructionEncoder::encodeMemory() {
-		auto first = encodeControl(0, type);
-		auto memOp = static_cast<MemoryOperation>(subType);
-		auto second = 0;
-		first = encodeMemoryFlagType(first, memOp);
-		first = encodeMemoryFlagBitmask(first, bitmask);
-		first = encodeMemoryFlagIndirect(first, indirect);
-		first = iris19::encodeMemoryFlagReadNextWord(first, readNextWord);
-		// the register and offset occupy the same space
-		first = encodeMemoryOffset(first, arg0);
-		// be lazy and set up the second word even if it isn't used. Reduces
-		// the amount of branching and special cases :)
-		auto second = encodeMemoryAddress(0, arg1);
-		second = encodeMemoryValue(0, arg2);
-		return std::make_tuple(readNextWord ? 2 : 1, first, second, 0);
-	}
-
 	InstructionEncoder::Encoding InstructionEncoder::encodeLogical() {
 		auto first = encodeControl(0, type);
 		first = encodeLogicalFlagImmediate(first, immediate);
@@ -576,7 +542,7 @@ namespace iris19 {
 	void InstructionEncoder::clear() {
 		currentLine = 0;
 		address = 0;
-		type = Operation::Memory;
+		type = Operation::Arithmetic;
 		immediate = false;
 		shiftLeft = false;
 		isIf = false;

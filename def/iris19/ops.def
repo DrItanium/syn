@@ -1,6 +1,5 @@
 // title, id, operation, action
 DefEnum(Operation, byte)
-	EnumEntry(Memory)
 	EnumEntry(Arithmetic)
 	EnumEntry(Shift)
 	EnumEntry(Logical)
