@@ -488,7 +488,9 @@ namespace iris19 {
 
 	InstructionEncoder::Encoding InstructionEncoder::encodeMemory() {
 		auto first = encodeControl(0, type);
-		first = encodeMemoryFlagType(first, static_cast<MemoryOperation>(subType));
+		auto memOp = static_cast<MemoryOperation>(subType);
+		auto second = 0;
+		first = encodeMemoryFlagType(first, memOp);
 		first = encodeMemoryFlagBitmask(first, bitmask);
 		first = encodeMemoryFlagIndirect(first, indirect);
 		first = iris19::encodeMemoryFlagReadNextWord(first, readNextWord);

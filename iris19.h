@@ -8,6 +8,7 @@
 #include <memory>
 #include <vector>
 #include <tuple>
+#include <map>
 #include "sim_registration.h"
 
 namespace iris19 {
@@ -26,9 +27,8 @@ namespace iris19 {
 	inline constexpr RegisterValue encodeUpperHalf(RegisterValue value, Word upperHalf) noexcept;
 	inline constexpr RegisterValue encodeLowerHalf(RegisterValue value, Word lowerHalf) noexcept;
 	inline constexpr RegisterValue encodeRegisterValue(Word upper, Word lower) noexcept;
-
 	enum ArchitectureConstants  {
-		RegisterCount = 256,
+		RegisterCount = 64,
 		SegmentCount = 4096, // 1 gigabyte
 		AddressMax = 65536 * SegmentCount,
 		MaxInstructionCount = 16,
@@ -36,15 +36,13 @@ namespace iris19 {
 		Bitmask = 0b11111111,
 #define X(index) \
 		R ## index = (RegisterCount - (RegisterCount - index)),
-#include "def/iris19/bitmask8bit.def"
+#include "def/iris19/registers.def"
 #undef X
 
-		InstructionPointer = R255,
-		StackPointer = R254,
-		AddressRegister = R253,
-		ValueRegister = R252,
-		CodeStackRegister = R251,
-		ParamStackRegister = R250,
+		InstructionPointer = R63,
+		StackPointer = R62,
+		AddressRegister = R61,
+		ValueRegister = R60,
 	};
 
 #define DefEnum(type, width) \
@@ -101,6 +99,8 @@ namespace iris19 {
 
 			static constexpr bool readLower = decomposedBits[1] || decomposedBits[0] || decomposedBits[2] || decomposedBits[3];
 			static constexpr bool readUpper = decomposedBits[4] || decomposedBits[5] || decomposedBits[6] || decomposedBits[7];
+			SetBitmaskToWordMask() = delete;
+			~SetBitmaskToWordMask() = delete;
 		};
 	template<byte bitmask>
 		inline constexpr RegisterValue mask() noexcept { return SetBitmaskToWordMask<bitmask>::mask; }
@@ -112,6 +112,41 @@ namespace iris19 {
 		inline constexpr bool readLower() noexcept { return SetBitmaskToWordMask<bitmask>::readLower; }
 	template<byte bitmask>
 		inline constexpr bool readUpper() noexcept { return SetBitmaskToWordMask<bitmask>::readUpper; }
+	template<byte registerValue>
+	struct DecodedRegister {
+		static constexpr bool isIndirect = iris::decodeBits<byte, bool, 0b01000000, 6>(registerValue);
+		static constexpr bool isStack = iris::decodeBits<byte, bool, 0b10000000, 7>(registerValue);
+		static constexpr byte rawValue = registerValue;
+		static constexpr byte actualIndex = iris::decodeBits<byte, byte, 0b00111111, 0>(registerValue);
+	};
+	inline byte decodeRegisterIndex(byte index) noexcept {
+		switch (index) {
+#define X(index) case index: return DecodedRegister<index>::actualIndex;
+#include "def/iris19/bitmask8bit.def"
+#undef X
+			default:
+				throw iris::Problem("Register index out of range, Should never ever get here!");
+		}
+	}
+	inline bool registerMarkedIndirect(byte index) noexcept {
+		switch (index) {
+#define X(index) case index: return DecodedRegister<index>::isIndirect;
+#include "def/iris19/bitmask8bit.def"
+#undef X
+			default:
+				throw iris::Problem("Register index out of range, Should never ever get here!");
+		}
+	}
+
+	inline bool registerMarkedStack(byte index) noexcept {
+		switch (index) {
+#define X(index) case index: return DecodedRegister<index>::isStack;
+#include "def/iris19/bitmask8bit.def"
+#undef X
+			default:
+				throw iris::Problem("Register index out of range, Should never ever get here!");
+		}
+	}
 
 	constexpr auto bitmask32 =   SetBitmaskToWordMask<ArchitectureConstants::Bitmask>::mask;
 	constexpr auto bitmask24 =   SetBitmaskToWordMask<0b0111>::mask;
