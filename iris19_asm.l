@@ -66,7 +66,6 @@ omni [a-zA-Z0-9._]
 ">"         { return COMPARE_OP_GT; }
 ">="        { return COMPARE_OP_GT_EQ; }
 
-"none"      { return ACTION_NONE; }
 "and"       { return ACTION_AND; }
 "or"        { return ACTION_OR; }
 "xor"       { return ACTION_XOR; }
@@ -95,10 +94,6 @@ omni [a-zA-Z0-9._]
 "sp"           { iris19lval.rval = iris19::ArchitectureConstants::StackPointer; return REGISTER; }
 "addr"         { iris19lval.rval = iris19::ArchitectureConstants::AddressRegister; return REGISTER; }
 "value"        { iris19lval.rval = iris19::ArchitectureConstants::ValueRegister; return REGISTER; }
-"mask"         { iris19lval.rval = iris19::ArchitectureConstants::MaskRegister; return REGISTER; }
-"shift_width"  { iris19lval.rval = iris19::ArchitectureConstants::ShiftRegister; return REGISTER; }
-"field"        { iris19lval.rval = iris19::ArchitectureConstants::FieldRegister; return REGISTER; }
-"cr"           { iris19lval.rval = iris19::ArchitectureConstants::ConditionRegister; return REGISTER; }
 
 
 [ \t\n,]     ;

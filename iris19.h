@@ -308,23 +308,25 @@ namespace iris19 {
 
 			template<LogicalOps type>
 				inline void logicalIndirectOperation(DecodedInstruction&& inst) {
-					auto &dest = registerValue(inst.getLogicalRegister0());
+					auto result = 0u;
+					auto src0 = genericRegisterGet(inst.getLogicalRegister0());
 					if (type == LogicalOps::Not) {
-						dest = iris::binaryNot(dest);
+						result = iris::binaryNot(src0);
 					} else {
-						auto src = registerValue(inst.getLogicalRegister1());
+						auto src1 = genericRegisterGet(inst.getLogicalRegister1());
 						if (type == LogicalOps::And) {
-							dest = iris::binaryAnd(dest, src);
+							result = iris::binaryAnd(src0, src1);
 						} else if (type == LogicalOps::Or) {
-							dest = iris::binaryOr(dest, src);
+							result = iris::binaryOr(src0, src1);
 						} else if (type == LogicalOps::Xor) {
-							dest = iris::binaryXor(dest, src);
+							result = iris::binaryXor(src0, src1);
 						} else if (type == LogicalOps::Nand) {
-							dest = iris::binaryNand(dest, src);
+							result = iris::binaryNand(src0, src1);
 						} else {
 							throw iris::Problem("Illegal indirect logical operation!");
 						}
 					}
+					genericRegisterSet(inst.getLogicalRegisterDestination(), result);
 				}
 
 			template<byte signature>
