@@ -264,7 +264,7 @@ namespace iris19 {
 						return 0;
 					} else {
 						auto lower = tryReadNext<useLower>();
-						auto upper = static_cast<RegisterValue>(tryReadNext<useUpper>()) << 16;
+						auto upper = static_cast<RegisterValue>(tryReadNext<useUpper>()) << 32;
 						return mask<bitmask>() & (lower | upper);
 					}
 				}
@@ -285,18 +285,25 @@ namespace iris19 {
 #undef EndDefFlags
 			template<ImmediateLogicalOps type, byte bitmask>
 				inline void logicalImmediateOperation(DecodedInstruction&& inst) {
-					auto &dest = registerValue(inst.getLogicalImmediateDestination());
-					if (type == ImmediateLogicalOps::And) {
-						dest = iris::binaryAnd(dest, retrieveImmediate<bitmask>());
-					} else if (type == ImmediateLogicalOps::Or) {
-						dest = iris::binaryOr(dest, retrieveImmediate<bitmask>());
-					} else if (type == ImmediateLogicalOps::Nand) {
-						dest = iris::binaryNand(dest, retrieveImmediate<bitmask>());
-					} else if (type == ImmediateLogicalOps::Xor) {
-						dest = iris::binaryXor(dest, retrieveImmediate<bitmask>());
-					} else {
-						throw iris::Problem("Illegal immediate logical flag type");
+					auto result = 0u;
+					auto src0 = genericRegisterGet(inst.getLogicalImmediateSource0());
+					switch (type) {
+						case ImmediateLogicalOps::And:
+							result = iris::binaryAnd(src0, retrieveImmediate<bitmask>());
+							break;
+						case ImmediateLogicalOps::Or:
+							result = iris::binaryOr(src0, retrieveImmediate<bitmask>());
+							break;
+						case ImmediateLogicalOps::Nand:
+							result = iris::binaryNand(src0, retrieveImmediate<bitmask>());
+							break;
+						case ImmediateLogicalOps::Xor:
+							result = iris::binaryXor(src0, retrieveImmediate<bitmask>());
+							break;
+						default:
+							throw iris::Problem("Illegal immediate logical flag type");
 					}
+					genericRegisterSet(inst.getLogicalImmediateDestination(), result);
 				}
 
 			template<LogicalOps type>
