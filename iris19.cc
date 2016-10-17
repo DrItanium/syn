@@ -269,22 +269,21 @@ namespace iris19 {
 			}
 		} else if (tControl == Operation::Compare) {
 			DecodedInstruction next(tryReadNext<true>());
-			auto& dest = registerValue(next.getCompareRegisterDest());
-			auto src0 = registerValue(next.getCompareRegisterSrc0());
-			auto src1 = current.getCompareImmediateFlag() ? static_cast<RegisterValue>(next.getCompareImmediate()) : registerValue(next.getCompareRegisterSrc1());
+			auto src0 = genericRegisterGet(next.getCompareRegisterSrc0());
+			auto src1 = current.getCompareImmediateFlag() ? static_cast<RegisterValue>(next.getCompareImmediate()) : genericRegisterGet(next.getCompareRegisterSrc1());
 			auto compareType = current.getCompareType();
 			if (compareType == CompareStyle::Equals) {
-				dest = iris::eq(src0, src1);
+				genericRegisterSet(current.getCompareRegisterDest(), iris::eq(src0, src1));
 			} else if (compareType == CompareStyle::NotEquals) {
-				dest = iris::neq(src0, src1);
+				genericRegisterSet(current.getCompareRegisterDest(), iris::neq(src0, src1));
 			} else if (compareType == CompareStyle::LessThan) {
-				dest = iris::lt(src0, src1);
+				genericRegisterSet(current.getCompareRegisterDest(), iris::lt(src0, src1));
 			} else if (compareType == CompareStyle::GreaterThan) {
-				dest = iris::gt(src0, src1);
+				genericRegisterSet(current.getCompareRegisterDest(), iris::gt(src0, src1));
 			} else if (compareType == CompareStyle::LessThanOrEqualTo) {
-				dest = iris::le(src0, src1);
+				genericRegisterSet(current.getCompareRegisterDest(), iris::le(src0, src1));
 			} else if (compareType == CompareStyle::GreaterThanOrEqualTo) {
-				dest = iris::ge(src0, src1);
+				genericRegisterSet(current.getCompareRegisterDest(), iris::ge(src0, src1));
 			} else {
 				throw iris::Problem("illegal compare type!");
 			}
