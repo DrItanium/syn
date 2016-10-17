@@ -172,18 +172,21 @@ namespace iris19 {
 		std::cout << "Current control value: " << std::hex << static_cast<int>(tControl) << std::endl;
 #endif
 		if (tControl == Operation::Shift) {
-			auto &destination = registerValue(current.getShiftRegister0());
-			auto source = (current.getShiftFlagImmediate() ? static_cast<RegisterValue>(current.getShiftImmediate()) : registerValue(current.getShiftRegister1()));
+			auto result = 0u;
+			auto source0 = genericRegisterGet(current.getShiftSource0());
+			auto source1 = (current.getShiftFlagImmediate() ? current.getShiftImmediate() : genericRegisterGet(current.getShiftSource1()));
 			if (current.getShiftFlagLeft()) {
-				destination <<= source;
+				result = source0 << source1;
 			} else {
-				destination >>= source;
+				result = source0 >> source1;
 			}
+			genericRegisterSet(current.getShiftDestination(), result);
 		} else if (tControl == Operation::Swap) {
 			if (current.getSwapDestination() != current.getSwapSource()) {
-				auto tmp = registerValue(current.getSwapDestination());
-				registerValue(current.getSwapDestination()) = registerValue(current.getSwapSource());
-				registerValue(current.getSwapSource()) = tmp;
+				auto src = genericRegisterGet(current.getSwapSource());
+				auto dest = genericRegisterGet(current.getSwapDestination()); // destination is always last
+				genericRegisterSet(current.getSwapDestination(), src);
+				genericRegisterSet(current.getSwapSource(), dest);
 			}
 		} else if (tControl == Operation::Arithmetic) {
 			switch (current.getArithmeticSignature()) {
@@ -222,10 +225,10 @@ namespace iris19 {
 				if (MoveFlags< value >::isError) { \
 					throw iris::Problem("Illegal move signature"); \
 				} else { \
-					registerValue(current.getMoveRegister0()) = iris::decodeBits<RegisterValue, RegisterValue, mask<MoveFlags< value >::bitmask>(), 0>(registerValue(current.getMoveRegister1())); \
+					genericRegisterSet(current.getMoveDestination(), iris::decodeBits<RegisterValue, RegisterValue, mask<MoveFlags< value >::bitmask>(), 0>(genericRegisterGet(current.getMoveSource()))); \
 				} \
 				break;
-#include "def/iris19/bitmask4bit.def"
+#include "def/iris19/bitmask8bit.def"
 #undef X
 				default:
 					throw iris::Problem("Illegal move signature!");
@@ -485,8 +488,8 @@ namespace iris19 {
 	InstructionEncoder::Encoding InstructionEncoder::encodeMove() {
 		auto first = encodeControl(0, type);
 		first = encodeMoveBitmask(first, bitmask);
-		first = encodeMoveRegister0(first, arg0);
-		first = encodeMoveRegister1(first, arg1);
+		first = encodeMoveDestination(first, arg0);
+		first = encodeMoveSource(first, arg1);
 		return std::make_tuple(1, first, 0, 0);
 	}
 
@@ -498,8 +501,9 @@ namespace iris19 {
 		auto first = encodeControl(0, type);
 		first = encodeShiftFlagImmediate(first, immediate);
 		first = encodeShiftFlagLeft(first, shiftLeft);
-		first = encodeShiftRegister0(first, arg0);
-		first = immediate ? encodeShiftImmediate(first, arg1) : encodeShiftRegister1(first, arg1);
+		first = encodeShiftDestination(first, arg0);
+		first = encodeShiftSource0(first, arg1);
+		first = immediate ? encodeShiftImmediate(first, arg2) : encodeShiftSource1(first, arg2);
 		return std::make_tuple(1, first, 0, 0);
 	}
 
