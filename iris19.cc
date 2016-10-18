@@ -445,59 +445,35 @@ namespace iris19 {
 		auto lower = popWord(ptr);
 		return encodeRegisterValue(upper, lower);
 	}
-	RegisterValue Core::registerStackPop(byte reg) {
-		switch(reg) {
-#define X(index) case index: return registerStackPop<index>(); 
-#include "def/iris19/bitmask6bit.def"
-#undef X
-			default:
-				throw iris::Problem("Illegal register index during register stack pop");
-		}
-	}
-	RegisterValue Core::registerIndirectLoad(byte reg) {
-		switch(reg) {
-#define X(index) case index: return registerIndirectLoad<index>(); 
-#include "def/iris19/bitmask6bit.def"
-#undef X
-			default:
-				throw iris::Problem("Illegal register index during register indirect load");
-		}
-	}
-	void Core::registerStackPush(byte reg, RegisterValue value) {
-		switch(reg) {
-#define X(index) case index: registerStackPush<index>(value); break;
-#include "def/iris19/bitmask6bit.def"
-#undef X
-			default:
-				throw iris::Problem("Illegal register index during register stack push");
-		}
-	}
-	void Core::registerIndirectStore(byte reg, RegisterValue value) {
-		switch(reg) {
-#define X(index) case index: registerIndirectStore<index>(value); break;
-#include "def/iris19/bitmask6bit.def"
-#undef X
-			default:
-				throw iris::Problem("Illegal register index during register indirect store");
-		}
-	}
 	void Core::genericRegisterSet(byte registerTarget, RegisterValue value) {
-		switch(registerTarget) {
-#define X(index) case index: genericRegisterSet<index>(value); break;
-#include "def/iris19/bitmask8bit.def"
-#undef X
-			default:
-				throw iris::Problem("Illegal register target index! Should never ever hit this!");
+		if (registerIsMarkedStack(registerTarget)) {
+			if (registerIsMarkedIndirect(registerTarget)) {
+				throw iris::Problem("Unable to do both stack and indirect operations at the same time!");
+			} else {
+				pushDword(value, registerValue(registerGetActualIndex(registerTarget)));
+			} 
+		} else {
+			if (registerIsMarkedIndirect(registerTarget)) {
+				storeRegisterValue(registerValue(registerGetActualIndex(registerTarget)), value);
+			} else {
+				registerValue(registerGetActualIndex(registerTarget)) = value;
+			}
 		}
 	}
 
 	RegisterValue Core::genericRegisterGet(byte registerTarget) {
-		switch(registerTarget) {
-#define X(index) case index: return genericRegisterGet<index>(); 
-#include "def/iris19/bitmask8bit.def"
-#undef X
-			default:
-				throw iris::Problem("Illegal register target index! Should never ever hit this!");
+		if (registerIsMarkedStack(registerTarget)) {
+			if (registerIsMarkedIndirect(registerTarget)) {
+				throw iris::Problem("Unable to do both stack and indirect operations at the same time!");
+			} else {
+				return popDword(registerValue(registerGetActualIndex(registerTarget)));
+			}
+		} else {
+			if (registerIsMarkedIndirect(registerTarget)) {
+				return loadRegisterValue(registerValue(registerGetActualIndex(registerTarget)));
+			} else {
+				return registerValue(registerGetActualIndex(registerTarget));
+			}
 		}
 	}
 

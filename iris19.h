@@ -109,42 +109,15 @@ namespace iris19 {
 		inline constexpr bool readLower() noexcept { return SetBitmaskToWordMask<bitmask>::readLower; }
 	template<byte bitmask>
 		inline constexpr bool readUpper() noexcept { return SetBitmaskToWordMask<bitmask>::readUpper; }
-	template<byte registerValue>
-	struct DecodedRegister {
-		static constexpr bool isIndirect = iris::decodeBits<byte, bool, 0b01000000, 6>(registerValue);
-		static constexpr bool isStack = iris::decodeBits<byte, bool, 0b10000000, 7>(registerValue);
-		static constexpr byte rawValue = registerValue;
-		static constexpr byte actualIndex = iris::decodeBits<byte, byte, 0b00111111, 0>(registerValue);
-	};
-	inline byte decodeRegisterIndex(byte index) noexcept {
-		switch (index) {
-#define X(index) case index: return DecodedRegister<index>::actualIndex;
-#include "def/iris19/bitmask8bit.def"
-#undef X
-			default:
-				throw iris::Problem("Register index out of range, Should never ever get here!");
-		}
+	inline constexpr byte registerGetActualIndex(byte value) {
+		return iris::decodeBits<byte, byte, 0b00111111, 0>(value);
 	}
-	inline bool registerMarkedIndirect(byte index) noexcept {
-		switch (index) {
-#define X(index) case index: return DecodedRegister<index>::isIndirect;
-#include "def/iris19/bitmask8bit.def"
-#undef X
-			default:
-				throw iris::Problem("Register index out of range, Should never ever get here!");
-		}
+	inline constexpr bool registerIsMarkedIndirect(byte value) {
+		return iris::decodeBits<byte, bool, 0b01000000, 6>(value); 
 	}
-
-	inline bool registerMarkedStack(byte index) noexcept {
-		switch (index) {
-#define X(index) case index: return DecodedRegister<index>::isStack;
-#include "def/iris19/bitmask8bit.def"
-#undef X
-			default:
-				throw iris::Problem("Register index out of range, Should never ever get here!");
-		}
+	inline constexpr bool registerIsMarkedStack(byte value) {
+		return iris::decodeBits<byte, bool, 0b10000000, 7>(value);
 	}
-
 	constexpr auto bitmask64 =   SetBitmaskToWordMask<ArchitectureConstants::Bitmask>::mask;
 	constexpr auto memoryMaxBitmask = 0b00001111111111111111111111111111;
 	constexpr auto upper32Mask = SetBitmaskToWordMask<0b11110000>::mask;
@@ -266,66 +239,6 @@ namespace iris19 {
 					}
 				}
 			RegisterValue retrieveImmediate(byte bitmask) noexcept;
-			RegisterValue registerStackPop(byte reg);
-			RegisterValue registerIndirectLoad(byte reg);
-			void registerIndirectStore(byte reg, RegisterValue value);
-			void registerStackPush(byte reg, RegisterValue value);
-			template<byte reg>
-			RegisterValue registerValueGet() {
-				return registerValue<reg>();
-			}
-			template<byte reg>
-			void registerValueSet(RegisterValue value) {
-				registerValue<reg>() = value;
-			}
-			template<byte reg>
-			void registerStackPush(RegisterValue value) {
-				pushDword(value, registerValue<reg>());
-			}
-			template<byte reg>
-			RegisterValue registerStackPop() {
-				return popDword(registerValue<reg>());
-			}
-			template<byte reg>
-			void registerIndirectStore(RegisterValue value) {
-				storeRegisterValue(registerValue<reg>(), value);
-			}
-			template<byte reg>
-			RegisterValue registerIndirectLoad() {
-				return loadRegisterValue(registerValue<reg>());
-			}
-			template<byte fullReg>
-			void genericRegisterSet(RegisterValue value) {
-				if (DecodedRegister<fullReg>::isStack) {
-					if (DecodedRegister<fullReg>::isIndirect) {
-						throw iris::Problem("Unable to do both stack and indirect operations at the same time!");
-					} else {
-						registerStackPush<DecodedRegister<fullReg>::actualIndex>(value);
-					}
-				} else {
-					if (DecodedRegister<fullReg>::isIndirect) {
-						registerIndirectStore<DecodedRegister<fullReg>::actualIndex>(value);
-					} else {
-						registerValueSet<DecodedRegister<fullReg>::actualIndex>(value);
-					}
-				}
-			}
-			template<byte fullReg>
-			RegisterValue genericRegisterGet() {
-				if (DecodedRegister<fullReg>::isStack) {
-					if (DecodedRegister<fullReg>::isIndirect) {
-						throw iris::Problem("Unable to do both stack and indirect operations at the same time!");
-					} else {
-						return registerStackPop<DecodedRegister<fullReg>::actualIndex>();
-					}
-				} else {
-					if (DecodedRegister<fullReg>::isIndirect) {
-						return registerIndirectLoad<DecodedRegister<fullReg>::actualIndex>();
-					} else {
-						return registerValueGet<DecodedRegister<fullReg>::actualIndex>();
-					}
-				}
-			}
 			void genericRegisterSet(byte registerTarget, RegisterValue value);
 			RegisterValue genericRegisterGet(byte registerTarget);
 			template<byte flags>
