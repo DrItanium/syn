@@ -109,15 +109,28 @@ namespace iris19 {
 		inline constexpr bool readLower() noexcept { return SetBitmaskToWordMask<bitmask>::readLower; }
 	template<byte bitmask>
 		inline constexpr bool readUpper() noexcept { return SetBitmaskToWordMask<bitmask>::readUpper; }
-	inline constexpr byte registerGetActualIndex(byte value) {
-		return iris::decodeBits<byte, byte, 0b00111111, 0>(value);
+
+	inline constexpr bool determineMaskValue(bool value) { return value ? 0xFF : 0x00; }
+	inline constexpr Word lowerMask(byte bitmask) {
+		return iris::encodeUint32LE(
+				determineMaskValue(iris::decodeBits<byte, bool, 0b00001000,3>(bitmask)),
+				determineMaskValue(iris::decodeBits<byte, bool, 0b00000100,2>(bitmask)),
+				determineMaskValue(iris::decodeBits<byte, bool, 0b00000010,1>(bitmask)),
+				determineMaskValue(iris::decodeBits<byte, bool, 0b00000001,0>(bitmask)));
 	}
-	inline constexpr bool registerIsMarkedIndirect(byte value) {
-		return iris::decodeBits<byte, bool, 0b01000000, 6>(value); 
+	inline constexpr Word upperMask(byte bitmask) {
+		return iris::encodeUint32LE(
+				determineMaskValue(iris::decodeBits<byte, bool, 0b10000000,7>(bitmask)),
+				determineMaskValue(iris::decodeBits<byte, bool, 0b01000000,6>(bitmask)),
+				determineMaskValue(iris::decodeBits<byte, bool, 0b00100000,5>(bitmask)),
+				determineMaskValue(iris::decodeBits<byte, bool, 0b00010000,4>(bitmask)));
 	}
-	inline constexpr bool registerIsMarkedStack(byte value) {
-		return iris::decodeBits<byte, bool, 0b10000000, 7>(value);
-	}
+	inline constexpr RegisterValue mask(byte bitmask) { return iris::encodeUint64LE(upperMask(bitmask), lowerMask(bitmask)); }
+	inline constexpr bool readLower(byte bitmask) noexcept { return iris::decodeBits<byte, byte, 0b00001111, 0>(bitmask) != 0; }
+	inline constexpr bool readUpper(byte bitmask) noexcept { return iris::decodeBits<byte, byte, 0b11110000, 4>(bitmask) != 0; }
+	inline constexpr byte registerGetActualIndex(byte value) { return iris::decodeBits<byte, byte, 0b00111111, 0>(value); }
+	inline constexpr bool registerIsMarkedIndirect(byte value) { return iris::decodeBits<byte, bool, 0b01000000, 6>(value); }
+	inline constexpr bool registerIsMarkedStack(byte value) { return iris::decodeBits<byte, bool, 0b10000000, 7>(value); }
 	constexpr auto bitmask64 =   SetBitmaskToWordMask<ArchitectureConstants::Bitmask>::mask;
 	constexpr auto memoryMaxBitmask = 0b00001111111111111111111111111111;
 	constexpr auto upper32Mask = SetBitmaskToWordMask<0b11110000>::mask;
@@ -216,84 +229,12 @@ namespace iris19 {
 					msg << "Out of range register index: " << rindex;
 					throw iris::Problem(msg.str());
 				}
-            template<bool readNext>
-            inline Word tryReadNext() noexcept {
-                if (readNext) {
-                    incrementInstructionPointer();
-                    return getCurrentCodeWord();
-                } else {
-                    return 0;
-                }
-            }
-			template<byte bitmask>
-				RegisterValue retrieveImmediate() noexcept {
-					static_assert(bitmask <= ArchitectureConstants::Bitmask, "Wider masks are being provided to retrieveImmediate!");
-					static constexpr auto useLower = readLower<bitmask>();
-					static constexpr auto useUpper = readUpper<bitmask>();
-					if (!useLower && !useUpper) {
-						return 0;
-					} else {
-						auto lower = tryReadNext<useLower>();
-						auto upper = static_cast<RegisterValue>(tryReadNext<useUpper>()) << 32;
-						return mask<bitmask>() & (lower | upper);
-					}
-				}
+			inline Word readNext() noexcept { return tryReadNext(true); }
+			Word tryReadNext(bool readNext) noexcept;
 			RegisterValue retrieveImmediate(byte bitmask) noexcept;
 			void genericRegisterSet(byte registerTarget, RegisterValue value);
 			RegisterValue genericRegisterGet(byte registerTarget);
-			template<byte flags>
-				void branchSpecificOperation(DecodedInstruction&& current) {
-					using decodedFlags = BranchFlagsDecoder<flags>;
-					advanceIp = true;
-					if (decodedFlags::isIf) {
-						// if instruction
-						advanceIp = false;
-						if (decodedFlags::isCall) {
-							// push the instruction pointer plus one onto the
-							// stack
-							pushDword((getInstructionPointer() + 1) & memoryMaxBitmask);
-						}
-						getInstructionPointer() = memoryMaxBitmask & ((getConditionRegister(current.getBranchCondition()) != 0) ? registerValue(current.getBranchIfOnTrue()) : registerValue(current.getBranchIfOnFalse()));
-#ifdef DEBUG
-						std::cout << "if: jumping to " << std::hex << getInstructionPointer() << std::endl;
-#endif
-					} else if (decodedFlags::isCall) {
-						// call instruction
-						advanceIp = false;
-						// determine next
-						pushDword((getInstructionPointer() + decodedFlags::isImmediate ? 2 : 1) & memoryMaxBitmask);
-						auto address = 0u;
-						if (decodedFlags::isImmediate) {
-							// make a 24 bit number
-							auto upper16 = static_cast<RegisterValue>(tryReadNext<decodedFlags::isImmediate>()) << 8;
-							auto lower8 = static_cast<RegisterValue>(current.getUpper());
-							address = upper16 | lower8;
-						} else {
-							address = registerValue(current.getBranchIndirectDestination());
-						}
-						getInstructionPointer() = memoryMaxBitmask & address;
-#ifdef DEBUG
-						std::cout << "call: Jumping to " << std::hex << getInstructionPointer() << std::endl;
-#endif
-					} else {
-						// jump instruction
-						if (decodedFlags::isImmediate) {
-							incrementInstructionPointer();
-							if ((decodedFlags::isConditional && getConditionRegister(current.getBranchCondition()) != 0) || !decodedFlags::isConditional) {
-								advanceIp = false;
-								getInstructionPointer() = memoryMaxBitmask & (current.getUpper() | static_cast<RegisterValue>(getCurrentCodeWord()) << 8);
-							}
-						} else {
-							if ((decodedFlags::isConditional && getConditionRegister(current.getBranchCondition()) != 0) || !decodedFlags::isConditional) {
-								advanceIp = false;
-								getInstructionPointer() = memoryMaxBitmask & registerValue(current.getBranchIndirectDestination());
-							}
-						}
-#ifdef DEBUG
-						std::cout << "one way Jumping to " << std::hex << getInstructionPointer() << std::endl;
-#endif
-					}
-				}
+			void branchSpecificOperation(DecodedInstruction&& current);
 
 			RegisterValue& registerValue(byte index);
 			inline RegisterValue& getInstructionPointer() noexcept     { return registerValue<ArchitectureConstants::InstructionPointer>(); }
@@ -302,13 +243,13 @@ namespace iris19 {
 			inline RegisterValue& getAddressRegister() noexcept        { return registerValue<ArchitectureConstants::AddressRegister>(); }
 			inline RegisterValue& getValueRegister() noexcept          { return registerValue<ArchitectureConstants::ValueRegister>(); }
 
-			inline void incrementInstructionPointer() noexcept;
-			inline void incrementStackPointer() noexcept;
-			inline void decrementStackPointer() noexcept;
-			inline void decrementStackPointer(RegisterValue& ptr) noexcept;
-			inline void incrementStackPointer(RegisterValue& ptr) noexcept;
-			inline void incrementAddress(RegisterValue& ptr) noexcept;
-			inline void decrementAddress(RegisterValue& ptr) noexcept;
+			void incrementInstructionPointer() noexcept;
+			void incrementStackPointer() noexcept;
+			void decrementStackPointer() noexcept;
+			void decrementStackPointer(RegisterValue& ptr) noexcept;
+			void incrementStackPointer(RegisterValue& ptr) noexcept;
+			void incrementAddress(RegisterValue& ptr) noexcept;
+			void decrementAddress(RegisterValue& ptr) noexcept;
 			Word getCurrentCodeWord() noexcept;
 			void storeWord(RegisterValue address, Word value);
 			Word loadWord(RegisterValue address);

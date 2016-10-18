@@ -46,12 +46,14 @@ namespace iris19 {
 	}
 
 	RegisterValue Core::retrieveImmediate(byte bitmask) noexcept {
-		switch(bitmask) {
-#define X(value) case value : return retrieveImmediate<value>();
-#include "def/iris19/bitmask8bit.def"
-#undef X
-			default:
-				throw iris::Problem("Illegal bitmask defined!");
+		auto useLower = readLower(bitmask);
+		auto useUpper = readUpper(bitmask);
+		if (!useLower && !useUpper) {
+			return 0;
+		} else {
+			auto lower = tryReadNext(useLower);
+			auto upper = static_cast<RegisterValue>(tryReadNext(useUpper)) << 32;
+			return mask(bitmask) & (lower | upper);
 		}
 	}
 
@@ -166,6 +168,15 @@ namespace iris19 {
 		decrementAddress(ptr);
 	}
 
+	Word Core::tryReadNext(bool readNext) noexcept {
+		if (readNext) {
+			incrementInstructionPointer();
+			return getCurrentCodeWord();
+		} else {
+			return 0;
+		}
+	}
+
 	void Core::dispatch(DecodedInstruction&& current) {
 		auto tControl = current.getControl();
 #ifdef DEBUG
@@ -261,32 +272,26 @@ namespace iris19 {
 		} else if (tControl == Operation::Set) {
 			genericRegisterSet(current.getSetDestination(), retrieveImmediate(current.getSetBitmask()));
 		} else if (tControl == Operation::Branch) {
-			auto instFlags = current.getBranchFlags();
 
 #ifdef DEBUG
-			std::cout << "Branch flags: " << std::hex << static_cast<int>(instFlags) << std::endl;
+			std::cout << "Branch flags: " << std::hex << static_cast<int>(current.getBranchFlags()) << std::endl;
 #endif
-			if (instFlags == IfJump::flags) {
-				branchSpecificOperation<IfJump::flags>(std::move(current));
-			} else if(instFlags == CallIndirect::flags) {
-				branchSpecificOperation<CallIndirect::flags>(std::move(current));
-			} else if (instFlags == CallDirect::flags) {
-				branchSpecificOperation<CallDirect::flags>(std::move(current));
-			} else if(instFlags == JumpIndirect::flags) {
-				branchSpecificOperation<JumpIndirect::flags>(std::move(current));
-			} else if (instFlags == JumpDirect::flags) {
-				branchSpecificOperation<JumpDirect::flags>(std::move(current));
-			} else if(instFlags == ConditionalJumpIndirect::flags) {
-				branchSpecificOperation<ConditionalJumpIndirect::flags>(std::move(current));
-			} else if (instFlags == ConditionalJumpDirect::flags) {
-				branchSpecificOperation<ConditionalJumpDirect::flags>(std::move(current));
-			} else {
-				throw iris::Problem("Undefined branch flag setup!");
+			switch (current.getBranchFlags()) {
+				case IfJump::flags:
+				case CallIndirect::flags:
+				case CallDirect::flags:
+				case JumpIndirect::flags:
+				case JumpDirect::flags:
+				case ConditionalJumpIndirect::flags:
+				case ConditionalJumpDirect::flags:
+					branchSpecificOperation(std::move(current));
+					break;
+				default:
+					throw iris::Problem("Undefined branch flag setup!");
 			}
 		} else if (tControl == Operation::Compare) {
-			DecodedInstruction next(tryReadNext<true>());
-			auto src0 = genericRegisterGet(next.getCompareRegisterSrc0());
-			auto src1 = current.getCompareImmediateFlag() ? static_cast<RegisterValue>(next.getCompareImmediate()) : genericRegisterGet(next.getCompareRegisterSrc1());
+			auto src0 = genericRegisterGet(current.getCompareRegisterSrc0());
+			auto src1 = current.getCompareImmediateFlag() ? current.getCompareImmediate() : genericRegisterGet(current.getCompareRegisterSrc1());
 			auto compareType = current.getCompareType();
 			auto result = false;
 			switch (compareType) {
@@ -325,6 +330,59 @@ namespace iris19 {
 			str << "Location: " << std::hex << getInstructionPointer() << std::endl;
 			execute = false;
 			throw iris::Problem(str.str());
+		}
+	}
+	void Core::branchSpecificOperation(DecodedInstruction&& current) {
+		advanceIp = true;
+		auto isIf = current.getBranchFlagIsIfForm();
+		auto isCall = current.getBranchFlagIsCallForm();
+		auto isImmediate = current.getBranchFlagIsImmediate();
+		auto isConditional = current.getBranchFlagIsConditional();
+		if (isIf) {
+			// if instruction
+			advanceIp = false;
+			// process them all even if we don't use them all, it is then
+			// straightforward what is is happening
+			auto cond = genericRegisterGet(current.getBranchCondition()) != 0;
+			auto onTrue = genericRegisterGet(current.getBranchIfOnTrue());
+			auto onFalse = genericRegisterGet(current.getBranchIfOnFalse());
+			if (isCall) {
+				pushDword((getInstructionPointer() + 1) & memoryMaxBitmask);
+			}
+			getInstructionPointer() = memoryMaxBitmask & (cond ? onTrue : onFalse);
+#ifdef DEBUG
+						std::cout << "if: jumping to " << std::hex << getInstructionPointer() << std::endl;
+#endif
+		} else if (isCall) {
+			// call instruction
+			advanceIp = false;
+			auto returnAddress = getInstructionPointer() + (isImmediate ? 2 : 1);
+			auto address = 0u;
+			if (isImmediate) {
+				address = retrieveImmediate(0b00001111);
+			} else {
+				address = genericRegisterGet(current.getBranchIndirectDestination());
+			}
+			pushDword(returnAddress); // push the return value onto the default stack
+			getInstructionPointer() = memoryMaxBitmask & address;
+#ifdef DEBUG
+						std::cout << "call: Jumping to " << std::hex << getInstructionPointer() << std::endl;
+#endif
+		} else {
+			// jump instruction, including cond versions
+			if ((isConditional && genericRegisterGet(current.getBranchCondition()) != 0) || !isConditional) {
+				advanceIp = false;
+				auto value = 0u;
+				if (isImmediate) {
+					value = retrieveImmediate(0b00001111);
+				} else {
+					value = genericRegisterGet(current.getBranchIndirectDestination());
+				}
+				getInstructionPointer() = memoryMaxBitmask & value;
+#ifdef DEBUG
+						std::cout << "one way Jumping to " << std::hex << getInstructionPointer() << std::endl;
+#endif
+			}
 		}
 	}
 
