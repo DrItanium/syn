@@ -189,13 +189,29 @@ namespace iris19 {
 				genericRegisterSet(current.getSwapSource(), dest);
 			}
 		} else if (tControl == Operation::Arithmetic) {
-			switch (current.getArithmeticSignature()) {
-#define X(value) case value: arithmeticOperation< value > (std::move(current)); break;
-#include "def/iris19/bitmask4bit.def"
-#undef X
+			auto result = 0u;
+			auto src0 = genericRegisterGet(current.getArithmeticSource());
+			auto src1 = current.getArithmeticFlagImmediate() ? current.getArithmeticImmediate() : genericRegisterGet(current.getArithmeticSource1());
+			switch (current.getArithmeticFlagType()) {
+				case ArithmeticOps::Add:
+					result = iris::add(src0, src1);
+					break;
+				case ArithmeticOps::Sub:
+					result = iris::sub(src0, src1);
+					break;
+				case ArithmeticOps::Mul:
+					result = iris::mul(src0, src1);
+					break;
+				case ArithmeticOps::Div:
+					result = iris::div(src0, src1);
+					break;
+				case ArithmeticOps::Rem:
+					result = iris::rem(src0, src1);
+					break;
 				default:
 					throw iris::Problem("Illegal Arithmetic Signature");
 			}
+			genericRegisterSet(current.getArithmeticDestination(), result);
 		} else if (tControl == Operation::Logical) {
 			switch (current.getLogicalSignature()) { 
 #define X(datum) \

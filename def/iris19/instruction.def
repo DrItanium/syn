@@ -23,7 +23,6 @@ X(ArithmeticDestination,            0b00000000000000001111111100000000, 8, byte,
 X(ArithmeticSource,                 0b00000000111111110000000000000000, 16, byte,  arithmeticSource)
 X(ArithmeticSource1,				0b11111111000000000000000000000000, 24, byte, arithmeticSource1)
 X(ArithmeticImmediate,              0b11111111000000000000000000000000, 24, RegisterValue,  arithmeticImmediate)
-X(ArithmeticSignature,				0b00000000000000000000000011110000, 4, byte, arithmeticSignature)
 
 // Logical Immediate Flags
 X(LogicalFlagImmediate,             0b00000000000000000000000000010000, 4, bool,  logicalFlagImmediate)

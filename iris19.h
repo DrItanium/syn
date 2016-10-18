@@ -275,7 +275,6 @@ namespace iris19 {
 #define Component(fieldName, mask, shift, type) static constexpr type fieldName = (iris::decodeBits<byte, type, mask, shift>(signature));
 #define Field(fieldName, type, value) static constexpr type fieldName = value ;
 #include "def/iris19/logical_generic.sig"
-#include "def/iris19/arithmetic.sig"
 #include "def/iris19/move.sig"
 #include "def/iris19/memory.sig"
 #include "def/iris19/set.sig"
@@ -329,33 +328,6 @@ namespace iris19 {
 					genericRegisterSet(inst.getLogicalRegisterDestination(), result);
 				}
 
-			template<byte signature>
-				void arithmeticOperation(DecodedInstruction&& inst) {
-					using aflags = ArithmeticFlags<signature>;
-					auto result = 0u;
-					auto src0 = genericRegisterGet(inst.getArithmeticSource());
-					auto src1 = aflags::immediate ? inst.getArithmeticImmediate() : genericRegisterGet(inst.getArithmeticSource());
-					switch (aflags::op) {
-						case ArithmeticOps::Add:
-							result = iris::add(src0, src1);
-							break;
-						case ArithmeticOps::Sub:
-							result = iris::sub(src0, src1);
-							break;
-						case ArithmeticOps::Mul:
-							result = iris::mul(src0, src1);
-							break;
-						case ArithmeticOps::Div:
-							result = iris::div(src0, src1);
-							break;
-						case ArithmeticOps::Rem:
-							result = iris::rem(src0, src1);
-							break;
-						default:
-							throw iris::Problem("Illegal arithmetic operation!");
-					}
-					genericRegisterSet(inst.getArithmeticDestination(), result);
-				}
 			RegisterValue registerStackPop(byte reg);
 			RegisterValue registerIndirectLoad(byte reg);
 			void registerIndirectStore(byte reg, RegisterValue value);
