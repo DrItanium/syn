@@ -184,6 +184,11 @@ inline constexpr uint64_t encodeUint64LE(uint16_t a, uint16_t b, uint16_t c, uin
 	return encodeUint64LE(encodeUint32LE(a, b), encodeUint32LE(c, d));
 }
 
+template<typename T, typename F>
+inline constexpr F decodeBits(T value, T mask, T shiftcount) {
+	return static_cast<F>((value & mask) >> shiftcount);
+}
+
 
 
 

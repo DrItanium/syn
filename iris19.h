@@ -274,7 +274,6 @@ namespace iris19 {
 #define EndDefFlags(name) };
 #define Component(fieldName, mask, shift, type) static constexpr type fieldName = (iris::decodeBits<byte, type, mask, shift>(signature));
 #define Field(fieldName, type, value) static constexpr type fieldName = value ;
-#include "def/iris19/logical_generic.sig"
 #include "def/iris19/move.sig"
 #include "def/iris19/memory.sig"
 #include "def/iris19/set.sig"
@@ -282,51 +281,6 @@ namespace iris19 {
 #undef Component
 #undef DefFlags
 #undef EndDefFlags
-			template<ImmediateLogicalOps type, byte bitmask>
-				inline void logicalImmediateOperation(DecodedInstruction&& inst) {
-					auto result = 0u;
-					auto src0 = genericRegisterGet(inst.getLogicalImmediateSource0());
-					switch (type) {
-						case ImmediateLogicalOps::And:
-							result = iris::binaryAnd(src0, retrieveImmediate<bitmask>());
-							break;
-						case ImmediateLogicalOps::Or:
-							result = iris::binaryOr(src0, retrieveImmediate<bitmask>());
-							break;
-						case ImmediateLogicalOps::Nand:
-							result = iris::binaryNand(src0, retrieveImmediate<bitmask>());
-							break;
-						case ImmediateLogicalOps::Xor:
-							result = iris::binaryXor(src0, retrieveImmediate<bitmask>());
-							break;
-						default:
-							throw iris::Problem("Illegal immediate logical flag type");
-					}
-					genericRegisterSet(inst.getLogicalImmediateDestination(), result);
-				}
-
-			template<LogicalOps type>
-				inline void logicalIndirectOperation(DecodedInstruction&& inst) {
-					auto result = 0u;
-					auto src0 = genericRegisterGet(inst.getLogicalRegister0());
-					if (type == LogicalOps::Not) {
-						result = iris::binaryNot(src0);
-					} else {
-						auto src1 = genericRegisterGet(inst.getLogicalRegister1());
-						if (type == LogicalOps::And) {
-							result = iris::binaryAnd(src0, src1);
-						} else if (type == LogicalOps::Or) {
-							result = iris::binaryOr(src0, src1);
-						} else if (type == LogicalOps::Xor) {
-							result = iris::binaryXor(src0, src1);
-						} else if (type == LogicalOps::Nand) {
-							result = iris::binaryNand(src0, src1);
-						} else {
-							throw iris::Problem("Illegal indirect logical operation!");
-						}
-					}
-					genericRegisterSet(inst.getLogicalRegisterDestination(), result);
-				}
 
 			RegisterValue registerStackPop(byte reg);
 			RegisterValue registerIndirectLoad(byte reg);

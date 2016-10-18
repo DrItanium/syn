@@ -138,9 +138,9 @@ namespace iris19 {
 			advanceIp = true;
 		}
 	}
-    inline void maskMemory(RegisterValue& ref) noexcept {
-        ref &= memoryMaxBitmask;
-    }
+	inline void maskMemory(RegisterValue& ref) noexcept {
+		ref &= memoryMaxBitmask;
+	}
 	void Core::incrementAddress(RegisterValue& ptr) noexcept {
 		++ptr;
 		maskMemory(ptr);
@@ -213,42 +213,51 @@ namespace iris19 {
 			}
 			genericRegisterSet(current.getArithmeticDestination(), result);
 		} else if (tControl == Operation::Logical) {
-			switch (current.getLogicalSignature()) { 
-#define X(datum) \
-			case datum: \
-				if (LogicalFlags<datum>::immediate) { \
-					if (LogicalFlags<datum>::immediateError) { \
-						throw iris::Problem("Illegal bit set for immediate mode logicalOperation!"); \
-					} else { \
-						logicalImmediateOperation<LogicalFlags<datum>::immediateType, LogicalFlags<datum>::bitmask>(std::move(current)); \
-					} \
-				} else { \
-					if (LogicalFlags<datum>::indirectError) { \
-						throw iris::Problem("Illegal bits set for indirect mode logicalOperation!"); \
-					} else { \
-						logicalIndirectOperation<LogicalFlags<datum>::indirectType>(std::move(current)); \
-					} \
-				} \
-				break;
-#include "def/iris19/bitmask8bit.def"
-#undef X
-			default:
-				throw iris::Problem("Illegal logical signature!");
+			auto result = 0u;
+			if (current.getLogicalFlagImmediate()) {
+				auto src0 = genericRegisterGet(current.getLogicalRegister0());
+				auto immediate = retrieveImmediate(current.getLogicalFlagImmediateMask());
+				switch (current.getLogicalFlagImmediateType()) {
+					case ImmediateLogicalOps::And:
+						result = iris::binaryAnd(src0, immediate);
+						break;
+					case ImmediateLogicalOps::Or:
+						result = iris::binaryOr(src0, immediate);
+						break;
+					case ImmediateLogicalOps::Nand:
+						result = iris::binaryNand(src0, immediate);
+						break;
+					case ImmediateLogicalOps::Xor:
+						result = iris::binaryXor(src0, immediate);
+						break;
+					default:
+						throw iris::Problem("Illegal immediate logical flag type");
+				}
+				genericRegisterSet(current.getLogicalImmediateDestination(), result);
+			} else {
+				auto src0 = genericRegisterGet(current.getLogicalRegister0());
+				auto type = current.getLogicalFlagType();
+				if (type == LogicalOps::Not) {
+					result = iris::binaryNot(src0);
+				} else {
+					auto src1 = genericRegisterGet(current.getLogicalRegister1());
+					if (type == LogicalOps::And) {
+						result = iris::binaryAnd(src0, src1);
+					} else if (type == LogicalOps::Or) {
+						result = iris::binaryOr(src0, src1);
+					} else if (type == LogicalOps::Xor) {
+						result = iris::binaryXor(src0, src1);
+					} else if (type == LogicalOps::Nand) {
+						result = iris::binaryNand(src0, src1);
+					} else {
+						throw iris::Problem("Illegal indirect logical operation!");
+					}
+				}
+				genericRegisterSet(current.getLogicalRegisterDestination(), result);
 			}
 		} else if (tControl == Operation::Move) {
-			switch (current.getMoveSignature()) {
-#define X(value) case value : \
-				if (MoveFlags< value >::isError) { \
-					throw iris::Problem("Illegal move signature"); \
-				} else { \
-					genericRegisterSet(current.getMoveDestination(), iris::decodeBits<RegisterValue, RegisterValue, mask<MoveFlags< value >::bitmask>(), 0>(genericRegisterGet(current.getMoveSource()))); \
-				} \
-				break;
-#include "def/iris19/bitmask8bit.def"
-#undef X
-				default:
-					throw iris::Problem("Illegal move signature!");
-			}
+			auto src = genericRegisterGet(current.getMoveSource());
+			genericRegisterSet(current.getMoveDestination(), iris::decodeBits<RegisterValue, RegisterValue>(src, current.getMoveBitmask(), 0));
 		} else if (tControl == Operation::Set) {
 			switch (current.getSetSignature()) {
 #define X(value) case value: \
@@ -524,10 +533,10 @@ namespace iris19 {
 	}
 
 	InstructionEncoder::Encoding InstructionEncoder::encodeSystemCall() {
-        auto first = encodeControl(0, type);
-        first = encodeSystemAction(first, arg0);
-        first = encodeSystemArg0(first, arg1);
-        return std::make_tuple(1, first, 0, 0);
+		auto first = encodeControl(0, type);
+		first = encodeSystemAction(first, arg0);
+		first = encodeSystemArg0(first, arg1);
+		return std::make_tuple(1, first, 0, 0);
 	}
 
 	InstructionEncoder::Encoding InstructionEncoder::encodeCompare() {

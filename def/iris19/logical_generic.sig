@@ -1,8 +1,0 @@
-DefFlags(LogicalFlags)
-	Component(immediate,      0b00000001,  0, bool)
-	Component(bitmask,        0b11110000,  4, byte)
-	Component(immediateType,  0b00000110,  1, ImmediateLogicalOps)
-	Component(immediateError, 0b00001000,  3, bool)
-	Component(indirectType,   0b00001110,  1, LogicalOps)
-	Component(indirectError,  0b11110000,  4, bool)
-EndDefFlags(LogicalFlags)
