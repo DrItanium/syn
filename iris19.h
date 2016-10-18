@@ -52,14 +52,11 @@ namespace iris19 {
 	};  \
 	static_assert(static_cast<width>(type :: Count) <= static_cast<width>( maxCount ), "Too many " #type " entries defined!");
 #define EnumEntry(type) type,
-
 #include "def/iris19/ops.def"
 #include "def/iris19/arithmetic_ops.def"
 #include "def/iris19/syscalls.def"
 #include "def/iris19/compare.enum"
 #include "def/iris19/logical.enum"
-#include "def/iris19/memory.enum"
-#include "def/iris19/complex.def"
 #undef DefEnum
 #undef EnumEntry
 #undef EndDefEnum
@@ -269,18 +266,6 @@ namespace iris19 {
 					}
 				}
 			RegisterValue retrieveImmediate(byte bitmask) noexcept;
-
-#define DefFlags(name) template<byte signature> struct name {
-#define EndDefFlags(name) };
-#define Component(fieldName, mask, shift, type) static constexpr type fieldName = (iris::decodeBits<byte, type, mask, shift>(signature));
-#define Field(fieldName, type, value) static constexpr type fieldName = value ;
-#include "def/iris19/move.sig"
-#include "def/iris19/memory.sig"
-#undef Field
-#undef Component
-#undef DefFlags
-#undef EndDefFlags
-
 			RegisterValue registerStackPop(byte reg);
 			RegisterValue registerIndirectLoad(byte reg);
 			void registerIndirectStore(byte reg, RegisterValue value);

@@ -158,9 +158,7 @@ asm_interact.o: asm_interact.cc asm_interact.h iris18.h iris_base.h \
  def/iris17/misc.def def/iris17/syscalls.def iris19.h def/iris19/ops.def \
  def/iris19/arithmetic_ops.def def/iris19/syscalls.def \
  def/iris19/compare.enum def/iris19/logical.enum def/iris19/memory.enum \
- def/iris19/complex.def def/iris19/instruction.def def/iris19/misc.def \
- def/iris19/registers.def  \
- def/iris19/move.sig def/iris19/memory.sig 
+ def/iris19/instruction.def def/iris19/misc.def def/iris19/registers.def
 iris16.o: iris16.cc iris16.h iris_base.h Problem.h Core.h \
  def/iris16/enums.def def/iris16/core_body.def def/iris16/groups.def \
  def/iris16/misc.def def/iris16/instruction.def def/iris16/groups.def \
@@ -181,10 +179,8 @@ iris18.o: iris18.cc iris18.h iris_base.h Problem.h Core.h \
 iris19.o: iris19.cc iris19.h iris_base.h Problem.h Core.h \
  sim_registration.h def/iris19/ops.def def/iris19/arithmetic_ops.def \
  def/iris19/syscalls.def def/iris19/compare.enum def/iris19/logical.enum \
- def/iris19/memory.enum def/iris19/complex.def def/iris19/instruction.def \
+ def/iris19/memory.enum  def/iris19/instruction.def \
  def/iris19/misc.def def/iris19/registers.def \
-  def/iris19/move.sig \
- def/iris19/memory.sig  \
  def/iris19/bitmask4bit.def def/iris19/bitmask8bit.def
 iris_asm.o: iris_asm.cc Problem.h asm_interact.h
 iris_base.o: iris_base.cc iris_base.h Problem.h
@@ -217,9 +213,8 @@ sim_registration.o: sim_registration.cc sim_registration.h Core.h \
  def/iris17/misc.def def/iris17/syscalls.def iris19.h def/iris19/ops.def \
  def/iris19/arithmetic_ops.def def/iris19/syscalls.def \
  def/iris19/compare.enum def/iris19/logical.enum def/iris19/memory.enum \
- def/iris19/complex.def def/iris19/instruction.def def/iris19/misc.def \
- def/iris19/registers.def  \
- def/iris19/move.sig def/iris19/memory.sig 
+ def/iris19/instruction.def def/iris19/misc.def def/iris19/registers.def 
+   
 Storage.o: Storage.cc Storage.h Core.h iris16.h iris_base.h Problem.h \
  def/iris16/enums.def def/iris16/core_body.def def/iris16/groups.def \
  def/iris16/misc.def def/iris16/instruction.def

@@ -262,6 +262,7 @@ namespace iris19 {
 			genericRegisterSet(current.getSetDestination(), retrieveImmediate(current.getSetBitmask()));
 		} else if (tControl == Operation::Branch) {
 			auto instFlags = current.getBranchFlags();
+
 #ifdef DEBUG
 			std::cout << "Branch flags: " << std::hex << static_cast<int>(instFlags) << std::endl;
 #endif
@@ -287,21 +288,30 @@ namespace iris19 {
 			auto src0 = genericRegisterGet(next.getCompareRegisterSrc0());
 			auto src1 = current.getCompareImmediateFlag() ? static_cast<RegisterValue>(next.getCompareImmediate()) : genericRegisterGet(next.getCompareRegisterSrc1());
 			auto compareType = current.getCompareType();
-			if (compareType == CompareStyle::Equals) {
-				genericRegisterSet(current.getCompareRegisterDest(), iris::eq(src0, src1));
-			} else if (compareType == CompareStyle::NotEquals) {
-				genericRegisterSet(current.getCompareRegisterDest(), iris::neq(src0, src1));
-			} else if (compareType == CompareStyle::LessThan) {
-				genericRegisterSet(current.getCompareRegisterDest(), iris::lt(src0, src1));
-			} else if (compareType == CompareStyle::GreaterThan) {
-				genericRegisterSet(current.getCompareRegisterDest(), iris::gt(src0, src1));
-			} else if (compareType == CompareStyle::LessThanOrEqualTo) {
-				genericRegisterSet(current.getCompareRegisterDest(), iris::le(src0, src1));
-			} else if (compareType == CompareStyle::GreaterThanOrEqualTo) {
-				genericRegisterSet(current.getCompareRegisterDest(), iris::ge(src0, src1));
-			} else {
-				throw iris::Problem("illegal compare type!");
+			auto result = false;
+			switch (compareType) {
+				case CompareStyle::Equals:
+					result = iris::eq(src0, src1);
+					break;
+				case CompareStyle::NotEquals:
+					result = iris::neq(src0, src1);
+					break;
+				case CompareStyle::LessThan:
+					result = iris::lt(src0, src1);
+					break;
+				case CompareStyle::GreaterThan:
+					result = iris::gt(src0, src1);
+					break;
+				case CompareStyle::LessThanOrEqualTo:
+					result = iris::le(src0, src1);
+					break;
+				case CompareStyle::GreaterThanOrEqualTo:
+					result = iris::ge(src0, src1);
+					break;
+				default:
+					throw iris::Problem("illegal compare type!");
 			}
+			genericRegisterSet(current.getCompareRegisterDest(), result);
 		} else if (tControl == Operation::SystemCall) {
 			auto field = genericRegisterGet(current.getSystemAction());
 			if (field >= ArchitectureConstants::MaxSystemCalls) {

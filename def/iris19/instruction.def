@@ -65,7 +65,6 @@ X(BranchIndirectDestination,       0b00000000111111110000000000000000, 16, byte,
 X(MoveBitmask,            0b00000000000000000000111111110000, 4, byte,  moveBitmask)
 X(MoveDestination,        0b00000000000011111111000000000000, 12, byte,  moveDestination)
 X(MoveSource,             0b00001111111100000000000000000000, 20, byte,  moveSource)
-X(MoveSignature,          0b00000000000000000000111111110000, 4, byte, moveSignature)
 
 // set operation flags
 X(SetBitmask,             0b00000000000000000000111111110000, 4, byte, setBitmask)
