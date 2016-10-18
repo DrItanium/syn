@@ -81,5 +81,5 @@ X(SwapDestination,        0b00000000000000000000111111110000, 4, byte,  swapDest
 X(SwapSource,             0b00000000000011111111000000000000, 12, byte,  swapSource)
 
 // system call flags
-X(SystemAction,           0b00000000000000000000111111110000, 4, byte,  systemAction)
-X(SystemArg0,             0b00000000000011111111000000000000, 8, byte,  systemArg0)
+X(SystemAction,           0b00000000000000000000111111110000,  4, byte,  systemAction)
+X(SystemArg0,             0b00000000000011111111000000000000, 12, byte,  systemArg0)

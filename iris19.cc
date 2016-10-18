@@ -288,10 +288,11 @@ namespace iris19 {
 				throw iris::Problem("illegal compare type!");
 			}
 		} else if (tControl == Operation::SystemCall) {
-			if (getAddressRegister() >= ArchitectureConstants::MaxSystemCalls) {
+			auto field = genericRegisterGet(current.getSystemAction());
+			if (field >= ArchitectureConstants::MaxSystemCalls) {
 				throw iris::Problem("ERROR: system call index out of range!");
 			} else {
-				systemHandlers[current.getSystemAction()](this, std::move(current));
+				systemHandlers[field](this, std::move(current));
 			}
 		} else {
 			std::stringstream str;
@@ -308,12 +309,12 @@ namespace iris19 {
 	}
 
 	void Core::putc(Core* core, DecodedInstruction&& current) {
-		std::cout.put(static_cast<char>(core->registerValue(current.getSystemArg0())));
+		std::cout.put(static_cast<char>(core->genericRegisterGet(current.getSystemArg0())));
 	}
 	void Core::getc(Core* core, DecodedInstruction&& current) {
 		byte value = 0;
 		std::cin >> std::noskipws >> value;
-		core->registerValue(current.getSystemArg0()) = static_cast<Word>(value);
+		core->genericRegisterSet(current.getSystemArg0(), static_cast<Word>(value));
 	}
 
 
