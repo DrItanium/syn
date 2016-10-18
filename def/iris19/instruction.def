@@ -70,7 +70,6 @@ X(MoveSignature,          0b00000000000000000000111111110000, 4, byte, moveSigna
 // set operation flags
 X(SetBitmask,             0b00000000000000000000111111110000, 4, byte, setBitmask)
 X(SetDestination,         0b00000000000011111111000000000000, 12, byte, setDestination)
-X(SetSignature,           0b00000000000011111111111111110000, 4, uint16, setSignature)
 
 // Swap operation flags
 X(SwapDestination,        0b00000000000000000000111111110000, 4, byte,  swapDestination)

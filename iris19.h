@@ -276,7 +276,6 @@ namespace iris19 {
 #define Field(fieldName, type, value) static constexpr type fieldName = value ;
 #include "def/iris19/move.sig"
 #include "def/iris19/memory.sig"
-#include "def/iris19/set.sig"
 #undef Field
 #undef Component
 #undef DefFlags

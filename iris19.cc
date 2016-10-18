@@ -259,17 +259,7 @@ namespace iris19 {
 			auto src = genericRegisterGet(current.getMoveSource());
 			genericRegisterSet(current.getMoveDestination(), iris::decodeBits<RegisterValue, RegisterValue>(src, current.getMoveBitmask(), 0));
 		} else if (tControl == Operation::Set) {
-			switch (current.getSetSignature()) {
-#define X(value) case value: \
-				registerValue<SetFlags<value>::destination>() = retrieveImmediate<SetFlags<value>::bitmask>(); \
-				break;
-#include "def/iris19/bitmask8bit.def"
-#undef X
-				default:
-					std::stringstream stream;
-					stream << "Illegal set signature 0x" << std::hex << static_cast<int>(current.getSetSignature()) << "\n";
-					throw iris::Problem(stream.str());
-			}
+			genericRegisterSet(current.getSetDestination(), retrieveImmediate(current.getSetBitmask()));
 		} else if (tControl == Operation::Branch) {
 			auto instFlags = current.getBranchFlags();
 #ifdef DEBUG
