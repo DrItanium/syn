@@ -106,8 +106,8 @@ namespace iris19 {
         return encodeWord(iris::getBit<byte, 4>(bitmask), iris::getBit<byte, 5>(bitmask), iris::getBit<byte, 6>(bitmask), iris::getBit<byte, 7>(bitmask));
 	}
 	inline constexpr RegisterValue mask(byte bitmask) { return iris::encodeUint64LE(upperMask(bitmask), lowerMask(bitmask)); }
-	inline constexpr bool readLower(byte bitmask) noexcept { return iris::decodeBits<byte, byte, iris::lowerByteHalf, 0>(bitmask) != 0; }
-	inline constexpr bool readUpper(byte bitmask) noexcept { return iris::decodeBits<byte, byte, iris::upperByteHalf, 4>(bitmask) != 0; }
+	inline constexpr bool readLower(byte bitmask) noexcept { return iris::getLowerHalf(bitmask) != 0; }
+	inline constexpr bool readUpper(byte bitmask) noexcept { return iris::getUpperHalf(bitmask) != 0; }
 	inline constexpr byte registerGetActualIndex(byte value) { return iris::decodeBits<byte, byte, 0b00111111, 0>(value); }
 	inline constexpr bool registerIsMarkedIndirect(byte value) { return iris::getBit<byte, 6>(value); }
 	inline constexpr bool registerIsMarkedStack(byte value) { return iris::getBit<byte, 7>(value); }

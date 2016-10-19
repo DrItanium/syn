@@ -302,12 +302,34 @@ inline constexpr T setBit(T value, bool bit) {
     return iris::encodeBits<T, bool, 1 << index, index>(value, bit);
 }
 
-inline constexpr uint32_t expandUInt32LE(bool lowest, bool lowerUpper, bool upperLower, bool upperMost) {
+inline constexpr uint32_t expandUInt32LE(bool lowest, bool lowerUpper, bool upperLower, bool upperMost) noexcept {
     return encodeUint32LE(expandBit(lowest), expandBit(lowerUpper), expandBit(upperLower), expandBit(upperMost));
 }
+inline constexpr uint16_t expandUInt16LE(bool lower, bool upper) noexcept {
+    return encodeUint16LE(expandBit(lower), expandBit(upper));
+}
 
-constexpr byte upperByteHalf = 0b11110000;
-constexpr byte lowerByteHalf = 0b00001111;
+constexpr byte upperByteHalf = 0xF0;
+constexpr byte lowerByteHalf = 0x0F;
+constexpr uint16_t upperUint16Half = 0xFF00;
+constexpr uint16_t lowerUint16Half = 0x00FF;
+
+inline constexpr byte getUpperHalf(byte value) noexcept {
+    return iris::decodeBits<byte, byte, upperByteHalf, 4>(value);
+}
+inline constexpr byte getLowerHalf(byte value) noexcept {
+    return iris::decodeBits<byte, byte, lowerByteHalf, 0>(value);
+}
+inline constexpr uint16_t getUpperHalf(uint16_t value) noexcept {
+    using N = uint16_t;
+    return iris::decodeBits<N, N, upperUint16Half, 8>(value);
+}
+inline constexpr uint16_t getLowerHalf(uint16_t value) noexcept {
+    using N = uint16_t;
+    return iris::decodeBits<N, N, lowerUint16Half, 0>(value);
+}
+
+
 
 }
 #endif
