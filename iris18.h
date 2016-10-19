@@ -99,14 +99,13 @@ namespace iris18 {
 		struct SetBitmaskToWordMask {
 			static_assert(bitmask <= ArchitectureConstants::Bitmask, "Bitmask is too large and must be less than or equals to 0b1111");
 			static constexpr bool decomposedBits[] = {
-				iris::decodeBits<byte, bool, 0b0001, 0>(bitmask),
-				iris::decodeBits<byte, bool, 0b0010, 1>(bitmask),
-				iris::decodeBits<byte, bool, 0b0100, 2>(bitmask),
-				iris::decodeBits<byte, bool, 0b1000, 3>(bitmask)
+                iris::getBit<byte, 0>(bitmask),
+                iris::getBit<byte, 1>(bitmask),
+                iris::getBit<byte, 2>(bitmask),
+                iris::getBit<byte, 3>(bitmask),
 			};
-			static constexpr byte determineMaskValue(bool value) noexcept { return value ? 0xFF : 0x00; }
 			static constexpr Word encodeWord(bool upper, bool lower) noexcept {
-				return iris::encodeUint16LE(determineMaskValue(lower), determineMaskValue(upper));
+				return iris::encodeUint16LE(iris::expandBit(lower), iris::expandBit(upper));
 			}
 			static constexpr Word lowerMask = encodeWord(decomposedBits[1], decomposedBits[0]);
 			static constexpr Word upperMask = encodeWord(decomposedBits[3], decomposedBits[2]);
@@ -132,18 +131,16 @@ namespace iris18 {
 	constexpr auto lower16Mask = SetBitmaskToWordMask<0b0011>::mask;
 
 	RegisterValue getMask(byte bitmask);
-
 	template<bool isConditional, bool ifForm, bool callForm, bool immediateForm>
 		struct BranchFlagsEncoder {
-			static constexpr byte flags =
-				iris::encodeBits<byte, bool, 0b1000, 3>(
-						iris::encodeBits<byte, bool, 0b0100, 2>(
-							iris::encodeBits<byte, bool, 0b0010, 1>(
-								iris::encodeBits<byte, bool, 0b0001, 0>(0,
-									immediateForm),
-								callForm),
-							ifForm),
-						isConditional);
+            static constexpr byte flags = iris::setBit<byte, 3>(
+                    iris::setBit<byte, 2>(
+                        iris::setBit<byte, 1>(
+                            iris::setBit<byte, 0>(0,
+                                immediateForm),
+                            callForm),
+                        ifForm),
+                    isConditional);
 		};
 	template<byte flags>
 		struct BranchFlagsDecoder {

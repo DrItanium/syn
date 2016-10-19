@@ -9,15 +9,15 @@ typedef uint16_t uint16;
 typedef uint32_t uint32;
 namespace iris {
 
-	constexpr int32_t fields[8] = { 
-		0, 
-		8, 
-		16, 
-		24, 
-		32, 
-		40, 
-		48, 
-		56 
+	constexpr int32_t fields[8] = {
+		0,
+		8,
+		16,
+		24,
+		32,
+		40,
+		48,
+		56
 	};
 	template<typename T, int index>
 	struct FieldData  { };
@@ -68,7 +68,7 @@ constexpr inline F decodeBits(T input) noexcept {
 	return static_cast<F>((input & bitmask) >> shiftcount);
 }
 
-template<typename T, typename F, int field> 
+template<typename T, typename F, int field>
 constexpr inline F decodeField(T input) noexcept {
 	return decodeBits<T, F, FieldData<T, field>::Value, FieldData<T, field>::FieldIndex>(input);
 }
@@ -226,8 +226,8 @@ inline T rem(T numerator, T denominator) {
 }
 
 template<typename T>
-inline constexpr bool eq(T a, T b) noexcept { 
-	return a == b; 
+inline constexpr bool eq(T a, T b) noexcept {
+	return a == b;
 }
 template<typename T>
 inline constexpr bool neq(T a, T b) noexcept {
@@ -287,6 +287,19 @@ inline constexpr T binaryXor(T a, T b) noexcept {
 template<typename T>
 inline constexpr T binaryNand(T a, T b) noexcept {
 	return ~(a & b);
+}
+template<typename T, T index>
+inline constexpr bool getBit(T value) {
+    return decodeBits<T, bool, 1 << index, index>(value);
+}
+
+inline constexpr byte expandBit(bool value) {
+    return value ? 0xFF : 0x00;
+}
+
+template<typename T, T index>
+inline constexpr T setBit(T value, bool bit) {
+    return iris::encodeBits<T, bool, 1 << index, index>(value, bit);
 }
 
 }
