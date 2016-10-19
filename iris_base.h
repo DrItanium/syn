@@ -94,14 +94,14 @@ constexpr inline T encodeField(T input, F value) noexcept {
 }
 
 inline constexpr uint16_t encodeUint16LE(byte a, byte b) noexcept {
-		using Number = uint16_t;
-		using Field = byte;
-		return encodeField<Number, Field, 1>(encodeField<Number, Field, 0>(0, a), b);
+    using Number = uint16_t;
+    using Field = byte;
+    return encodeField<Number, Field, 1>(encodeField<Number, Field, 0>(0, a), b);
 }
 inline constexpr int16_t encodeInt16LE(byte a, byte b) noexcept {
-		typedef int16_t Number;
-		typedef byte Field;
-		return encodeField<Number, Field, 1>(encodeField<Number, Field, 0>(0, a), b);
+    typedef int16_t Number;
+    typedef byte Field;
+    return encodeField<Number, Field, 1>(encodeField<Number, Field, 0>(0, a), b);
 }
 inline constexpr uint32_t encodeUint32LE(byte a, byte b, byte c, byte d)  noexcept {
 	typedef uint32_t Number;
@@ -114,10 +114,10 @@ inline constexpr uint16_t encodeUint16LE(byte* buf)  noexcept {
 inline constexpr uint32_t encodeUint32LE(byte* buf)  noexcept {
 	return encodeUint32LE(buf[0], buf[1], buf[2], buf[3]);
 }
-inline constexpr int32_t encodeInt32LE(byte a, byte b, byte c, byte d)  noexcept {
-	typedef int32_t Number;
-	typedef byte Field;
-	return encodeField<Number, Field, 3>( encodeField<Number, Field, 2>( encodeField<Number, Field, 1>( encodeField<Number, Field, 0>(0, a), b), c), d);
+inline constexpr int32_t encodeInt32LE(byte lowest, byte upperLower, byte lowerUpper, byte upperMost)  noexcept {
+    using Number = int32_t;
+    using Field = byte;
+	return encodeField<Number, Field, 3>( encodeField<Number, Field, 2>( encodeField<Number, Field, 1>( encodeField<Number, Field, 0>(0, lowest), upperLower), lowerUpper), upperMost);
 }
 
 inline constexpr uint32_t encodeUint32LE(uint16_t lower, uint16_t upper) noexcept {
@@ -301,6 +301,13 @@ template<typename T, T index>
 inline constexpr T setBit(T value, bool bit) {
     return iris::encodeBits<T, bool, 1 << index, index>(value, bit);
 }
+
+inline constexpr uint32_t expandUInt32LE(bool lowest, bool lowerUpper, bool upperLower, bool upperMost) {
+    return encodeUint32LE(expandBit(lowest), expandBit(lowerUpper), expandBit(upperLower), expandBit(upperMost));
+}
+
+constexpr byte upperByteHalf = 0b11110000;
+constexpr byte lowerByteHalf = 0b00001111;
 
 }
 #endif

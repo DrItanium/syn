@@ -73,28 +73,18 @@ namespace iris19 {
 			RawInstruction _rawValue;
 	};
 
+    inline constexpr Word encodeWord(bool lower, bool upperLower, bool lowerUpper, bool upperMost) noexcept {
+        return iris::expandUInt32LE(lower, upperLower, lowerUpper, upperMost);
+    }
 	template<byte bitmask>
 		struct SetBitmaskToWordMask {
 			static_assert(bitmask <= ArchitectureConstants::Bitmask, "Bitmask is too large and must be less than or equals to 0b11111111");
-			static constexpr bool decomposedBits[] = {
-                iris::getBit<byte, 0>(bitmask),
-                iris::getBit<byte, 1>(bitmask),
-                iris::getBit<byte, 2>(bitmask),
-                iris::getBit<byte, 3>(bitmask),
-                iris::getBit<byte, 4>(bitmask),
-                iris::getBit<byte, 5>(bitmask),
-                iris::getBit<byte, 6>(bitmask),
-                iris::getBit<byte, 7>(bitmask),
-			};
-			static constexpr Word encodeWord(bool upper, bool upperlower, bool lowerupper, bool lower) noexcept {
-				return iris::encodeUint32LE(iris::expandBit(upper), iris::expandBit(upperlower), iris::expandBit(lowerupper), iris::expandBit(lower));
-			}
-			static constexpr Word upperMask = encodeWord(decomposedBits[7], decomposedBits[6], decomposedBits[5], decomposedBits[4]);
-			static constexpr Word lowerMask = encodeWord(decomposedBits[3], decomposedBits[2], decomposedBits[1], decomposedBits[0]);
+			static constexpr Word upperMask = encodeWord(iris::getBit<byte,4>(bitmask), iris::getBit<byte,5>(bitmask), iris::getBit<byte,6>(bitmask), iris::getBit<byte,7>(bitmask));
+			static constexpr Word lowerMask = encodeWord(iris::getBit<byte,0>(bitmask), iris::getBit<byte,1>(bitmask), iris::getBit<byte,2>(bitmask), iris::getBit<byte,3>(bitmask));
 			static constexpr RegisterValue mask = iris::encodeUint64LE(lowerMask, upperMask);
 
-			static constexpr bool readLower = decomposedBits[1] || decomposedBits[0] || decomposedBits[2] || decomposedBits[3];
-			static constexpr bool readUpper = decomposedBits[4] || decomposedBits[5] || decomposedBits[6] || decomposedBits[7];
+			static constexpr bool readLower = lowerMask != 0;
+            static constexpr bool readUpper = upperMask != 0;
 			SetBitmaskToWordMask() = delete;
 			~SetBitmaskToWordMask() = delete;
 		};
@@ -110,29 +100,21 @@ namespace iris19 {
 		inline constexpr bool readUpper() noexcept { return SetBitmaskToWordMask<bitmask>::readUpper; }
 
 	inline constexpr Word lowerMask(byte bitmask) {
-		return iris::encodeUint32LE(
-				iris::expandBit(iris::getBit<byte, 3>(bitmask)),
-				iris::expandBit(iris::getBit<byte, 2>(bitmask)),
-				iris::expandBit(iris::getBit<byte, 1>(bitmask)),
-				iris::expandBit(iris::getBit<byte, 0>(bitmask)));
+        return encodeWord(iris::getBit<byte, 0>(bitmask), iris::getBit<byte, 1>(bitmask), iris::getBit<byte, 2>(bitmask), iris::getBit<byte, 3>(bitmask));
 	}
 	inline constexpr Word upperMask(byte bitmask) {
-		return iris::encodeUint32LE(
-				iris::expandBit(iris::getBit<byte, 7>(bitmask)),
-				iris::expandBit(iris::getBit<byte, 6>(bitmask)),
-				iris::expandBit(iris::getBit<byte, 5>(bitmask)),
-				iris::expandBit(iris::getBit<byte, 4>(bitmask)));
+        return encodeWord(iris::getBit<byte, 4>(bitmask), iris::getBit<byte, 5>(bitmask), iris::getBit<byte, 6>(bitmask), iris::getBit<byte, 7>(bitmask));
 	}
 	inline constexpr RegisterValue mask(byte bitmask) { return iris::encodeUint64LE(upperMask(bitmask), lowerMask(bitmask)); }
-	inline constexpr bool readLower(byte bitmask) noexcept { return iris::decodeBits<byte, byte, 0b00001111, 0>(bitmask) != 0; }
-	inline constexpr bool readUpper(byte bitmask) noexcept { return iris::decodeBits<byte, byte, 0b11110000, 4>(bitmask) != 0; }
+	inline constexpr bool readLower(byte bitmask) noexcept { return iris::decodeBits<byte, byte, iris::lowerByteHalf, 0>(bitmask) != 0; }
+	inline constexpr bool readUpper(byte bitmask) noexcept { return iris::decodeBits<byte, byte, iris::upperByteHalf, 4>(bitmask) != 0; }
 	inline constexpr byte registerGetActualIndex(byte value) { return iris::decodeBits<byte, byte, 0b00111111, 0>(value); }
 	inline constexpr bool registerIsMarkedIndirect(byte value) { return iris::getBit<byte, 6>(value); }
 	inline constexpr bool registerIsMarkedStack(byte value) { return iris::getBit<byte, 7>(value); }
 	constexpr auto bitmask64 =   SetBitmaskToWordMask<ArchitectureConstants::Bitmask>::mask;
 	constexpr auto memoryMaxBitmask = 0b00001111111111111111111111111111;
-	constexpr auto upper32Mask = SetBitmaskToWordMask<0b11110000>::mask;
-	constexpr auto lower32Mask = SetBitmaskToWordMask<0b00001111>::mask;
+	constexpr auto upper32Mask = SetBitmaskToWordMask<iris::upperByteHalf>::mask;
+	constexpr auto lower32Mask = SetBitmaskToWordMask<iris::lowerByteHalf>::mask;
 
 	RegisterValue getMask(byte bitmask);
 

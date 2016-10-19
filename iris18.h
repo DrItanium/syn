@@ -144,10 +144,10 @@ namespace iris18 {
 		};
 	template<byte flags>
 		struct BranchFlagsDecoder {
-			static constexpr bool isImmediate = iris::decodeBits<byte, bool, 0b0001, 0>(flags);
-			static constexpr bool isCall = iris::decodeBits<byte, bool, 0b0010, 1>(flags);
-			static constexpr bool isIf = iris::decodeBits<byte, bool, 0b0100, 2>(flags);
-			static constexpr bool isConditional = iris::decodeBits<byte, bool, 0b1000, 3>(flags);
+			static constexpr bool isImmediate = iris::getBit<byte, 0>(flags);
+			static constexpr bool isCall = iris::getBit<byte, 1>(flags);
+			static constexpr bool isIf = iris::getBit<byte, 2>(flags);
+			static constexpr bool isConditional = iris::getBit<byte, 3>(flags);
 		};
 	using IfJump = BranchFlagsEncoder<false, true, false, false>;
 	using IfCall = BranchFlagsEncoder<false, true, true, false>;
