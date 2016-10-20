@@ -189,9 +189,6 @@ inline constexpr F decodeBits(T value, T mask, T shiftcount) {
 	return static_cast<F>((value & mask) >> shiftcount);
 }
 
-
-
-
 template<typename T>
 inline constexpr T add(T a, T b) noexcept {
 	return a + b;
@@ -224,11 +221,11 @@ inline T rem(T numerator, T denominator) {
 		return numerator % denominator;
 	}
 }
-
 template<typename T>
 inline constexpr bool eq(T a, T b) noexcept {
 	return a == b;
 }
+
 template<typename T>
 inline constexpr bool neq(T a, T b) noexcept {
 	return a != b;
@@ -338,6 +335,13 @@ inline constexpr uint32_t getUpperHalf(uint32_t value) noexcept {
 inline constexpr uint32_t getLowerHalf(uint32_t value) noexcept {
     using N = uint32_t;
     return iris::decodeBits<N, N, lowerUint32Half, 0>(value);
+}
+
+template<typename T>
+inline void swap(T& a, T& b) {
+    auto c = b;
+    b = a;
+    a = c;
 }
 
 
