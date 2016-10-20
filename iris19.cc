@@ -509,7 +509,7 @@ namespace iris19 {
 				throw iris::Problem("Unable to do both stack and indirect operations at the same time!");
 			} else {
 				pushDword(value, registerValue(registerGetActualIndex(registerTarget)));
-			} 
+			}
 		} else {
 			if (registerIsMarkedIndirect(registerTarget)) {
 				storeRegisterValue(registerValue(registerGetActualIndex(registerTarget)), value);
@@ -650,16 +650,20 @@ namespace iris19 {
 		throw iris::Problem("Illegal type to encode!");
 	}
 
-	int instructionSizeFromImmediateMask(byte bitmask) {
+	template<byte bitmask>
+    struct BitmaskToInstructionSize {
+         static constexpr auto count = 1 + (readLower<bitmask>() ? 1 : 0) + (readUpper<bitmask>() ? 1 : 0);
+    };
 
-#define X(bits) if (bitmask == bits) { return instructionSizeFromImmediateMask<bits>(); }
-#include "def/iris19/bitmask4bit.def"
+	int instructionSizeFromImmediateMask(byte bitmask) {
+#define X(bits) if (bitmask == bits) { return BitmaskToInstructionSize<bits>::count; }
+#include "def/iris19/bitmask8bit.def"
 #undef X
 		throw iris::Problem("Illegal bitmask provided!");
 	}
 	RegisterValue getMask(byte bitmask) {
 #define X(bits) if (bitmask == bits) { return SetBitmaskToWordMask<bits>::mask; }
-#include "def/iris19/bitmask4bit.def"
+#include "def/iris19/bitmask8bit.def"
 #undef X
 		throw iris::Problem("Illegal bitmask provided!");
 	}

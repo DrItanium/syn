@@ -298,12 +298,15 @@ template<typename T, T index>
 inline constexpr T setBit(T value, bool bit) {
     return iris::encodeBits<T, bool, 1 << index, index>(value, bit);
 }
-
 inline constexpr uint32_t expandUInt32LE(bool lowest, bool lowerUpper, bool upperLower, bool upperMost) noexcept {
     return encodeUint32LE(expandBit(lowest), expandBit(lowerUpper), expandBit(upperLower), expandBit(upperMost));
 }
 inline constexpr uint16_t expandUInt16LE(bool lower, bool upper) noexcept {
     return encodeUint16LE(expandBit(lower), expandBit(upper));
+}
+
+inline constexpr uint64_t expandUInt64LE(bool b0, bool b1, bool b2, bool b3, bool b4, bool b5, bool b6, bool b7) noexcept {
+    return encodeUint64LE(expandUInt32LE(b0, b1, b2, b3), expandUInt32LE(b4, b5, b6, b7));
 }
 
 constexpr byte upperByteHalf = 0xF0;

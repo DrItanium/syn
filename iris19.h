@@ -151,10 +151,6 @@ namespace iris19 {
 
 	int instructionSizeFromImmediateMask(byte bitmask);
 
-	template<byte bitmask>
-		static constexpr int instructionSizeFromImmediateMask() {
-			return 1 + (readLower<bitmask>() ? 1 : 0) + (readUpper<bitmask>() ? 1 : 0);
-		}
 
 	class Core : public iris::Core {
 		public:
