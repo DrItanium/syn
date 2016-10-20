@@ -47,7 +47,7 @@ namespace iris16 {
 			inline dword getInstructionMemory(word address) noexcept             { return instruction[address]; }
 			inline word getDataMemory(word address) noexcept                     { return data[address]; }
 			// TODO: add support for installing externally defined system calls
-			inline void setExtendedDataMemory(dword address, word value) { 
+			inline void setExtendedDataMemory(dword address, word value) {
 				if (extendedMemorySize != 0) {
 					if (address < extendedMemorySize) {
 						extendedData.get()[address] = value;
@@ -97,7 +97,52 @@ namespace iris16 {
 			}
 			template<MoveOp op>
 			inline void moveBody() {
-				throw iris::Problem("Undefined move operation");
+                if (op == MoveOp::Move) {
+                    gpr[getDestination()] = gpr[getSource0()];
+                } else if (op == MoveOp::Set) {
+                    gpr[getDestination()] = static_cast<word>(getImmediate());
+                } else if (op == MoveOp::Swap) {
+                    auto result = instruction[gpr[getDestination()]];
+                    instruction[gpr[getDestination()]] = instruction[gpr[getSource0()]];
+                    instruction[gpr[getSource0()]] = result;
+                } else if (op == MoveOp::Load) {
+                    gpr[getDestination()] = getDataMemory(gpr[getSource0()]);
+                } else if (op == MoveOp::LoadImmediate) {
+                    gpr[getDestination()] = getDataMemory(getImmediate());
+                } else if (op == MoveOp::Store) {
+                    setDataMemory(gpr[getDestination()], gpr[getSource0()]);
+                } else if (op == MoveOp::Memset) {
+                    setDataMemory(gpr[getDestination()], getImmediate());
+                } else if (op == MoveOp::Push) {
+                    ++gpr[ArchitectureConstants::StackPointerIndex];
+                    stack[gpr[ArchitectureConstants::StackPointerIndex]] = gpr[getDestination()];
+                } else if (op == MoveOp::PushImmediate) {
+                    ++gpr[ArchitectureConstants::StackPointerIndex];
+                    stack[gpr[ArchitectureConstants::StackPointerIndex]] = getImmediate();
+                } else if (op == MoveOp::Pop) {
+                    gpr[getDestination()] = stack[gpr[ArchitectureConstants::StackPointerIndex]];
+                    --gpr[ArchitectureConstants::StackPointerIndex];
+                } else if (op == MoveOp::LoadCode) {
+                    auto result = instruction[gpr[getDestination()]];
+                    gpr[getSource0()] = iris::getLowerHalf(result);
+                    gpr[getSource1()] = iris::getUpperHalf(result);
+                } else if (op == MoveOp::StoreCode) {
+                    instruction[getDestination()] = encodeDword(gpr[getSource0()], gpr[getSource1()]);
+                } else if (op == MoveOp::ExtendedMemoryWrite) {
+                    // store destination in the address described by source0 and source1
+                    auto result = gpr[getDestination()];
+                    auto lower = gpr[getSource0()];
+                    auto upper = gpr[getSource1()];
+                    // build an address out of this
+                    setExtendedDataMemory(iris::encodeUint32LE(lower, upper), result);
+                } else if (op == MoveOp::ExtendedMemoryRead) {
+                    auto lower = gpr[getSource0()];
+                    auto upper = gpr[getSource1()];
+                    // build an address out of this
+                    gpr[getDestination()] = getExtendedDataMemory(iris::encodeUint32LE(lower, upper));
+                } else {
+                    throw iris::Problem("Undefined move operation");
+                }
 			}
 #include "def/iris16/core_body.def"
 		private:
@@ -111,90 +156,6 @@ namespace iris16 {
 			word stack[ArchitectureConstants::AddressMax] = { 0 };
 			raw_instruction current = 0;
 	};
-	template<>
-	inline void Core::moveBody<MoveOp::Move>() {
-		gpr[getDestination()] = gpr[getSource0()];
-	}
-
-	template<>
-	inline void Core::moveBody<MoveOp::Set>() {
-		gpr[getDestination()] = static_cast<word>(getImmediate());
-	}
-
-	template<>
-	inline void Core::moveBody<MoveOp::Swap>() {
-		auto result = instruction[gpr[getDestination()]];
-		instruction[gpr[getDestination()]] = instruction[gpr[getSource0()]];
-		instruction[gpr[getSource0()]] = result;
-	}
-
-	template<>
-	inline void Core::moveBody<MoveOp::Load>() {
-		gpr[getDestination()] = getDataMemory(gpr[getSource0()]);
-	}
-
-	template<>
-	inline void Core::moveBody<MoveOp::LoadImmediate>() {
-		gpr[getDestination()] = getDataMemory(getImmediate());
-	}
-
-	template<>
-	inline void Core::moveBody<MoveOp::Store>() {
-		setDataMemory(gpr[getDestination()], gpr[getSource0()]);
-	}
-
-	template<>
-	inline void Core::moveBody<MoveOp::Memset>() {
-		setDataMemory(gpr[getDestination()], getImmediate());
-	}
-
-	template<>
-	inline void Core::moveBody<MoveOp::Push>() {
-		++gpr[ArchitectureConstants::StackPointerIndex];
-		stack[gpr[ArchitectureConstants::StackPointerIndex]] = gpr[getDestination()];
-	}
-
-	template<>
-	inline void Core::moveBody<MoveOp::PushImmediate>() {
-		++gpr[ArchitectureConstants::StackPointerIndex];
-		stack[gpr[ArchitectureConstants::StackPointerIndex]] = getImmediate();
-	}
-
-	template<>
-	inline void Core::moveBody<MoveOp::Pop>() {
-		gpr[getDestination()] = stack[gpr[ArchitectureConstants::StackPointerIndex]];
-		--gpr[ArchitectureConstants::StackPointerIndex];
-	}
-
-	template<>
-	inline void Core::moveBody<MoveOp::LoadCode>() {
-		auto result = instruction[gpr[getDestination()]];
-		gpr[getSource0()] = iris::decodeBits<dword, word, 0x0000FFFF, 0>(result);
-		gpr[getSource1()] = iris::decodeBits<dword, word, 0xFFFF0000, 16>(result);
-	}
-
-	template<>
-	inline void Core::moveBody<MoveOp::StoreCode>() {
-		instruction[getDestination()] = encodeDword(gpr[getSource0()], gpr[getSource1()]);
-	}
-
-	template<>
-	inline void Core::moveBody<MoveOp::ExtendedMemoryWrite>() {
-		// store destination in the address described by source0 and source1
-		auto result = gpr[getDestination()];
-		auto lower = gpr[getSource0()];
-		auto upper = gpr[getSource1()];
-		// build an address out of this
-		setExtendedDataMemory(iris::encodeUint32LE(lower, upper), result);
-	}
-
-	template<>
-	inline void Core::moveBody<MoveOp::ExtendedMemoryRead>() {
-		auto lower = gpr[getSource0()];
-		auto upper = gpr[getSource1()];
-		// build an address out of this
-		gpr[getDestination()] = getExtendedDataMemory(iris::encodeUint32LE(lower, upper));
-	}
 
 	Core* newCore() noexcept;
 	void assemble(FILE* input, std::ostream* output);
