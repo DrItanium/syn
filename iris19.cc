@@ -590,7 +590,7 @@ namespace iris19 {
 		first = encodeSetDestination(first, arg0);
 		// use the mask during encoding since we know how many Words the
 		// instruction is made up of
-		auto maskedValue = getMask(bitmask) & fullImmediate;
+		auto maskedValue = mask(bitmask) & fullImmediate;
 		auto second = static_cast<Word>(maskedValue);
 		auto third = static_cast<Word>(maskedValue >> 16);
 		return std::make_tuple(count, first, second, third);
@@ -603,7 +603,7 @@ namespace iris19 {
 			first = encodeLogicalFlagImmediateType(first, static_cast<ImmediateLogicalOps>(subType));
 			first = encodeLogicalFlagImmediateMask(first, bitmask);
 			first = encodeLogicalImmediateDestination(first, arg0);
-			auto maskedImmediate = getMask(bitmask) & fullImmediate;
+			auto maskedImmediate = mask(bitmask) & fullImmediate;
 			auto second = static_cast<Word>(maskedImmediate);
 			auto third = static_cast<Word>(maskedImmediate >> 16);
 			return std::make_tuple(instructionSizeFromImmediateMask(bitmask), first, second, third);
@@ -650,22 +650,8 @@ namespace iris19 {
 		throw iris::Problem("Illegal type to encode!");
 	}
 
-	template<byte bitmask>
-    struct BitmaskToInstructionSize {
-         static constexpr auto count = 1 + (readLower<bitmask>() ? 1 : 0) + (readUpper<bitmask>() ? 1 : 0);
-    };
-
 	int instructionSizeFromImmediateMask(byte bitmask) {
-#define X(bits) if (bitmask == bits) { return BitmaskToInstructionSize<bits>::count; }
-#include "def/iris19/bitmask8bit.def"
-#undef X
-		throw iris::Problem("Illegal bitmask provided!");
-	}
-	RegisterValue getMask(byte bitmask) {
-#define X(bits) if (bitmask == bits) { return SetBitmaskToWordMask<bits>::mask; }
-#include "def/iris19/bitmask8bit.def"
-#undef X
-		throw iris::Problem("Illegal bitmask provided!");
+        return 1 + (readLower(bitmask) ? 1 : 0) + (readUpper(bitmask) ? 1 : 0);
 	}
 	int InstructionEncoder::numWords() {
 		return std::get<0>(encode());

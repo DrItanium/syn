@@ -88,17 +88,6 @@ namespace iris19 {
 			SetBitmaskToWordMask() = delete;
 			~SetBitmaskToWordMask() = delete;
 		};
-	template<byte bitmask>
-		inline constexpr RegisterValue mask() noexcept { return SetBitmaskToWordMask<bitmask>::mask; }
-	template<byte bitmask>
-		inline constexpr Word lowerMask() noexcept { return SetBitmaskToWordMask<bitmask>::lowerMask; }
-	template<byte bitmask>
-		inline constexpr Word upperMask() noexcept { return SetBitmaskToWordMask<bitmask>::upperMask; }
-	template<byte bitmask>
-		inline constexpr bool readLower() noexcept { return SetBitmaskToWordMask<bitmask>::readLower; }
-	template<byte bitmask>
-		inline constexpr bool readUpper() noexcept { return SetBitmaskToWordMask<bitmask>::readUpper; }
-
 	inline constexpr Word lowerMask(byte bitmask) {
         return encodeWord(iris::getBit<byte, 0>(bitmask), iris::getBit<byte, 1>(bitmask), iris::getBit<byte, 2>(bitmask), iris::getBit<byte, 3>(bitmask));
 	}
@@ -115,8 +104,6 @@ namespace iris19 {
 	constexpr auto memoryMaxBitmask = 0b00001111111111111111111111111111;
 	constexpr auto upper32Mask = SetBitmaskToWordMask<iris::upperByteHalf>::mask;
 	constexpr auto lower32Mask = SetBitmaskToWordMask<iris::lowerByteHalf>::mask;
-
-	RegisterValue getMask(byte bitmask);
 
 	template<bool isConditional, bool ifForm, bool callForm, bool immediateForm>
 		struct BranchFlagsEncoder {
@@ -196,14 +183,18 @@ namespace iris19 {
 			template<byte rindex>
 				inline RegisterValue& registerValue() noexcept {
 					static_assert(rindex < ArchitectureConstants::RegisterCount, "Not a legal register index!");
-#define X(index) if (index == rindex) { return gpr[index]; }
+                    switch (rindex) {
+#define X(index) case index : return gpr[index];
 #include "def/iris19/registers.def"
 #undef X
-					// if this is ever fired then we will get a std::terminate
-					// invoked!
-					std::stringstream msg;
-					msg << "Out of range register index: " << rindex;
-					throw iris::Problem(msg.str());
+                        default: {
+                                     // if this is ever fired then we will get a std::terminate
+                                     // invoked!
+                                     std::stringstream msg;
+                                     msg << "Out of range register index: " << rindex;
+                                     throw iris::Problem(msg.str());
+                                 }
+                    }
 				}
 			inline Word readNext() noexcept { return tryReadNext(true); }
 			Word tryReadNext(bool readNext) noexcept;
@@ -215,9 +206,6 @@ namespace iris19 {
 			RegisterValue& registerValue(byte index);
 			inline RegisterValue& getInstructionPointer() noexcept     { return registerValue<ArchitectureConstants::InstructionPointer>(); }
 			inline RegisterValue& getStackPointer() noexcept           { return registerValue<ArchitectureConstants::StackPointer>(); }
-			inline RegisterValue& getConditionRegister(byte index) noexcept      { return registerValue(index); }
-			inline RegisterValue& getAddressRegister() noexcept        { return registerValue<ArchitectureConstants::AddressRegister>(); }
-			inline RegisterValue& getValueRegister() noexcept          { return registerValue<ArchitectureConstants::ValueRegister>(); }
 
 			void incrementInstructionPointer() noexcept;
 			void incrementStackPointer() noexcept;
