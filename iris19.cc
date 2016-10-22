@@ -276,48 +276,9 @@ namespace iris19 {
 #ifdef DEBUG
 			std::cout << "Branch flags: " << std::hex << static_cast<int>(current.getBranchFlags()) << std::endl;
 #endif
-			switch (current.getBranchFlags()) {
-				case IfJump::flags:
-                case IfCall::flags:
-				case CallIndirect::flags:
-				case CallDirect::flags:
-				case JumpIndirect::flags:
-				case JumpDirect::flags:
-				case ConditionalJumpIndirect::flags:
-				case ConditionalJumpDirect::flags:
-					branchSpecificOperation(std::move(current));
-					break;
-				default:
-					throw iris::Problem("Undefined branch flag setup!");
-			}
+			branchSpecificOperation(std::move(current));
 		} else if (tControl == Operation::Compare) {
-			auto src0 = genericRegisterGet(current.getCompareRegisterSrc0());
-			auto src1 = current.getCompareImmediateFlag() ? current.getCompareImmediate() : genericRegisterGet(current.getCompareRegisterSrc1());
-			auto compareType = current.getCompareType();
-			auto result = false;
-			switch (compareType) {
-				case CompareStyle::Equals:
-					result = iris::eq(src0, src1);
-					break;
-				case CompareStyle::NotEquals:
-					result = iris::neq(src0, src1);
-					break;
-				case CompareStyle::LessThan:
-					result = iris::lt(src0, src1);
-					break;
-				case CompareStyle::GreaterThan:
-					result = iris::gt(src0, src1);
-					break;
-				case CompareStyle::LessThanOrEqualTo:
-					result = iris::le(src0, src1);
-					break;
-				case CompareStyle::GreaterThanOrEqualTo:
-					result = iris::ge(src0, src1);
-					break;
-				default:
-					throw iris::Problem("illegal compare type!");
-			}
-			genericRegisterSet(current.getCompareRegisterDest(), result);
+			compareOperation(std::move(current));
 		} else if (tControl == Operation::SystemCall) {
 			auto field = genericRegisterGet(current.getSystemAction());
 			if (field >= ArchitectureConstants::MaxSystemCalls) {
@@ -333,12 +294,50 @@ namespace iris19 {
 			throw iris::Problem(str.str());
 		}
 	}
+
+	void Core::compareOperation(DecodedInstruction&& current) {
+		auto src0 = genericRegisterGet(current.getCompareRegisterSrc0());
+		auto src1 = current.getCompareImmediateFlag() ? current.getCompareImmediate() : genericRegisterGet(current.getCompareRegisterSrc1());
+		auto compareType = current.getCompareType();
+		auto result = false;
+		switch (compareType) {
+			case CompareStyle::Equals:
+				result = iris::eq(src0, src1);
+				break;
+			case CompareStyle::NotEquals:
+				result = iris::neq(src0, src1);
+				break;
+			case CompareStyle::LessThan:
+				result = iris::lt(src0, src1);
+				break;
+			case CompareStyle::GreaterThan:
+				result = iris::gt(src0, src1);
+				break;
+			case CompareStyle::LessThanOrEqualTo:
+				result = iris::le(src0, src1);
+				break;
+			case CompareStyle::GreaterThanOrEqualTo:
+				result = iris::ge(src0, src1);
+				break;
+			default:
+				throw iris::Problem("illegal compare type!");
+		}
+		genericRegisterSet(current.getCompareRegisterDest(), result);
+	}
+
 	void Core::branchSpecificOperation(DecodedInstruction&& current) {
 		advanceIp = true;
+		auto isIf = current.getBranchFlagIsIfForm();
 		auto isCall = current.getBranchFlagIsCallForm();
 		auto isImmediate = current.getBranchFlagIsImmediate();
 		auto isConditional = current.getBranchFlagIsConditional();
-		if (current.getBranchFlagIsIfForm()) {
+		if (isIf) {
+			if (isImmediate) {
+				throw iris::Problem("Branch if conditional form doesn't support the immediate flag!");
+			} 
+			if (isConditional) {
+				throw iris::Problem("Branch if conditional form can't also be marked as conditional!");
+			}
 			// if instruction
 			advanceIp = false;
 			// process them all even if we don't use them all, it is then
@@ -354,6 +353,12 @@ namespace iris19 {
 						std::cout << "if: jumping to " << std::hex << getInstructionPointer() << std::endl;
 #endif
 		} else if (isCall) {
+			if (isIf) {
+				throw iris::Problem("Should never ever get here, but somehow call was set to true then if o_O, you may have bad ram!");
+			} 
+			if (isConditional) {
+				throw iris::Problem("Just like x86, call instructions are not conditional!");
+			}
 			// call instruction
 			advanceIp = false;
 			auto returnAddress = getInstructionPointer() + (isImmediate ? 2 : 1);
@@ -369,6 +374,12 @@ namespace iris19 {
 						std::cout << "call: Jumping to " << std::hex << getInstructionPointer() << std::endl;
 #endif
 		} else {
+			if (isCall) {
+				throw iris::Problem("Unconditional Jump: Somehow call was set to false as well as if yet you're here o_O, so call was reset to true! You may have bad ram!");
+			}
+			if (isIf) {
+				throw iris::Problem("Unconditional Jump: Somehow call was set to false as well as if yet you're here o_O, so if was reset to true! You may have bad ram!");
+			} 
 			// jump instruction, including cond versions
 			if ((isConditional && genericRegisterGet(current.getBranchCondition()) != 0) || !isConditional) {
 				advanceIp = false;

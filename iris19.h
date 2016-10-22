@@ -100,30 +100,6 @@ namespace iris19 {
 	constexpr auto upper32Mask = SetBitmaskToWordMask<iris::upperByteHalf>::mask;
 	constexpr auto lower32Mask = SetBitmaskToWordMask<iris::lowerByteHalf>::mask;
 
-	template<bool isConditional, bool ifForm, bool callForm, bool immediateForm>
-		struct BranchFlagsEncoder {
-			static constexpr byte flags =
-				iris::setBit<byte, 3>(
-						iris::setBit<byte, 2>(
-							iris::setBit<byte, 1>(
-								iris::setBit<byte, 0>(0,
-									immediateForm),
-								callForm),
-							ifForm),
-						isConditional);
-		};
-	using IfJump = BranchFlagsEncoder<false, true, false, false>;
-	using IfCall = BranchFlagsEncoder<false, true, true, false>;
-
-	using CallIndirect = BranchFlagsEncoder<false, false, true, false>;
-	using CallDirect = BranchFlagsEncoder<false, false, true, true>;
-
-	using JumpDirect = BranchFlagsEncoder<false, false, false, true>;
-	using JumpIndirect = BranchFlagsEncoder<false, false, false, false>;
-
-	using ConditionalJumpDirect = BranchFlagsEncoder<true, false, false, true>;
-	using ConditionalJumpIndirect = BranchFlagsEncoder<true, false, false, false>;
-
 	int instructionSizeFromImmediateMask(byte bitmask);
 
 
@@ -190,6 +166,7 @@ namespace iris19 {
 			void genericRegisterSet(byte registerTarget, RegisterValue value);
 			RegisterValue genericRegisterGet(byte registerTarget);
 			void branchSpecificOperation(DecodedInstruction&& current);
+			void compareOperation(DecodedInstruction&& current);
 
 			RegisterValue& registerValue(byte index);
 			inline RegisterValue& getInstructionPointer() noexcept     { return registerValue<ArchitectureConstants::InstructionPointer>(); }
