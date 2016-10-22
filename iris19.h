@@ -41,8 +41,6 @@ namespace iris19 {
 
 		InstructionPointer = R63,
 		StackPointer = R62,
-		AddressRegister = R61,
-		ValueRegister = R60,
 	};
 
 #define DefEnum(type, width) \
@@ -173,7 +171,6 @@ namespace iris19 {
 			void compareOperation(DecodedInstruction&& current);
 			void arithmeticOperation(DecodedInstruction&& current);
 			void logicalOperation(DecodedInstruction&& current);
-			void systemCallOperation(DecodedInstruction&& current);
 			void shiftOperation(DecodedInstruction&& current);
 			void moveOperation(DecodedInstruction&& current);
 

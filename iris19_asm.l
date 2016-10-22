@@ -94,11 +94,8 @@ omni [a-zA-Z0-9._]
 "indirect"  { return TAG_INDIRECT; }
 "stack"     { return TAG_STACK; }
 
-"ip"           { iris19lval.rval = iris19::ArchitectureConstants::InstructionPointer; return REGISTER; }
-"sp"           { iris19lval.rval = iris19::ArchitectureConstants::StackPointer; return REGISTER; }
-"addr"         { iris19lval.rval = iris19::ArchitectureConstants::AddressRegister; return REGISTER; }
-"value"        { iris19lval.rval = iris19::ArchitectureConstants::ValueRegister; return REGISTER; }
-
+"ip"        { iris19lval.rval = iris19::ArchitectureConstants::InstructionPointer; return REGISTER; }
+"sp"        { iris19lval.rval = iris19::ArchitectureConstants::StackPointer; return REGISTER; }
 
 [ \t\n,]     ;
 [;].*       ; // comments

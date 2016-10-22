@@ -67,6 +67,3 @@ X(MoveBitmask,            0b00000000000000001111111100000000, 8, byte,  moveBitm
 X(MoveDestination,        0b00000000111111110000000000000000, 16, byte,  moveDestination)
 X(MoveSource,             0b11111111000000000000000000000000, 24, byte,  moveSource)
 
-// system call flags
-X(SystemAction,           0b00000000000000000000111111110000,  4, byte,  systemAction)
-X(SystemArg0,             0b00000000000011111111000000000000, 12, byte,  systemArg0)

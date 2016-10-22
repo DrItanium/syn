@@ -344,15 +344,15 @@ compare_op:
 		  compare_type compare_args;
 
 compare_args:
-		 uses_immediate destination_register IMMEDIATE { iris19::op.arg1= static_cast<byte>($3); } |
-		 uses_immediate destination_register ALIAS {
+		 uses_immediate destination_register source_register IMMEDIATE { iris19::op.arg1= static_cast<byte>($3); } |
+		 uses_immediate destination_register source_register ALIAS {
 				try {
 					iris19::op.arg1 = static_cast<byte>(iris19::state.getConstantValue($3));
 				} catch(iris::Problem err) {
 					iris19error(err.what().c_str());
 				}
 		 } |
-		 destination_register source_register { iris19::op.immediate = false; };
+		 destination_register source_register source1_register { iris19::op.immediate = false; };
 
 compare_type:
 		COMPARE_OP_EQ { iris19::op.subType = static_cast<byte>(iris19::CompareStyle::Equals); } |
@@ -373,8 +373,8 @@ logical_op:
 		};
 
 logical_args:
-		uses_immediate bitmask destination_register lexeme |
-		destination_register source_register { iris19::op.immediate = false; };
+		uses_immediate bitmask destination_register source_register lexeme |
+		destination_register source_register source1_register { iris19::op.immediate = false; };
 
 logical_subop:
 		ACTION_AND {
@@ -398,8 +398,8 @@ shift_op:
 
 
 shift_args:
-		uses_immediate destination_register IMMEDIATE { iris19::op.arg1 = $3 & 0b11111; } |
-		destination_register source_register { iris19::op.immediate = false; };
+		uses_immediate destination_register source_register IMMEDIATE { iris19::op.arg1 = $3 & 0b11111; } |
+		destination_register source_register source1_register { iris19::op.immediate = false; };
 
 shift_left_or_right:
 		SHIFT_FLAG_LEFT { iris19::op.shiftLeft = true; } |

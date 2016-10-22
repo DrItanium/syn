@@ -195,9 +195,6 @@ namespace iris19 {
 			case Operation::Branch:
 				branchSpecificOperation(std::move(current));
 				break;
-			case Operation::SystemCall:
-				systemCallOperation(std::move(current));
-				break;
 			case Operation::Move:
 				moveOperation(std::move(current));
 				break;
@@ -211,14 +208,6 @@ namespace iris19 {
 			str << "Location: " << std::hex << getInstructionPointer() << std::endl;
 			execute = false;
 			throw iris::Problem(str.str());
-		}
-	}
-	void Core::systemCallOperation(DecodedInstruction&& current) {
-		auto field = genericRegisterGet(current.getSystemAction());
-		if (field >= ArchitectureConstants::MaxSystemCalls) {
-			throw iris::Problem("ERROR: system call index out of range!");
-		} else {
-			systemHandlers[field](this, std::move(current));
 		}
 	}
 	void Core::moveOperation(DecodedInstruction&& current) {
@@ -237,6 +226,13 @@ namespace iris19 {
 				auto dest = genericRegisterGet(current.getMoveDestination()); // destination is always last
 				genericRegisterSet(current.getMoveDestination(), src);
 				genericRegisterSet(current.getMoveSource(), dest);
+			}
+		} else if (moveType == MoveOperation::SystemCall) {
+			auto field = genericRegisterGet(current.getMoveDestination());
+			if (field >= ArchitectureConstants::MaxSystemCalls) {
+				throw iris::Problem("ERROR: system call index out of range!");
+			} else {
+				systemHandlers[field](this, std::move(current));
 			}
 		} else {
 			throw iris::Problem("Move Superclass: Undefined subtype!");
@@ -435,12 +431,12 @@ namespace iris19 {
 	}
 
 	void Core::putc(Core* core, DecodedInstruction&& current) {
-		std::cout.put(static_cast<char>(core->genericRegisterGet(current.getSystemArg0())));
+		std::cout.put(static_cast<char>(core->genericRegisterGet(current.getMoveSource())));
 	}
 	void Core::getc(Core* core, DecodedInstruction&& current) {
 		byte value = 0;
 		std::cin >> std::noskipws >> value;
-		core->genericRegisterSet(current.getSystemArg0(), static_cast<Word>(value));
+		core->genericRegisterSet(current.getMoveSource(), static_cast<Word>(value));
 	}
 
 
@@ -620,6 +616,11 @@ namespace iris19 {
 			auto maskedValue = mask(bitmask) & fullImmediate;
 			second = static_cast<Word>(maskedValue);
 			third = static_cast<Word>(maskedValue >> 32);
+		} else if (memOp == MoveOperation::SystemCall) {
+			if (bitmask != 0) {
+				throw iris::Problem("The bitmask of a system call operation must always be zero!");
+			}
+			first = encodeMoveSource(first, arg1);
 		} else {
 			throw iris::Problem("Undefined MoveOperation requested during encoding!");
 		}
@@ -633,13 +634,6 @@ namespace iris19 {
 		first = encodeShiftDestination(first, arg0);
 		first = encodeShiftSource0(first, arg1);
 		first = immediate ? encodeShiftImmediate(first, arg2) : encodeShiftSource1(first, arg2);
-		return std::make_tuple(1, first, 0, 0);
-	}
-
-	InstructionEncoder::Encoding InstructionEncoder::encodeSystemCall() {
-		auto first = encodeControl(0, type);
-		first = encodeSystemAction(first, arg0);
-		first = encodeSystemArg0(first, arg1);
 		return std::make_tuple(1, first, 0, 0);
 	}
 
