@@ -595,14 +595,30 @@ namespace iris19 {
 
 	InstructionEncoder::Encoding InstructionEncoder::encodeMove() {
 		auto first = encodeControl(0, type);
+		auto second = 0u;
+		auto third = 0u;
+		auto count = instructionSizeFromImmediateMask(bitmask);
+		auto memOp = static_cast<MoveOperation>(subType);
+		first = encodeMoveSubtype(first, memOp);
 		first = encodeMoveBitmask(first, bitmask);
 		first = encodeMoveDestination(first, arg0);
-		first = encodeMoveSource(first, arg1);
-		return std::make_tuple(1, first, 0, 0);
-	}
-
-	InstructionEncoder::Encoding InstructionEncoder::encodeSwap() {
-		return std::make_tuple(1, encodeSwapSource( encodeSwapDestination( encodeControl(0, type), arg0), arg1), 0, 0);
+		if (memOp == MoveOperation::Move) {
+			first = encodeMoveSource(first, arg1);
+		} else if (memOp == MoveOperation::Swap) {
+			if (bitmask != 0) {
+				throw iris::Problem("The bitmask of a swap operation must always be zero!");
+			}
+			first = encodeMoveSource(first, arg1);
+		} else if (memOp == MoveOperation::Set) {
+			// use the mask during encoding since we know how many Words the
+			// instruction is made up of
+			auto maskedValue = mask(bitmask) & fullImmediate;
+			second = static_cast<Word>(maskedValue);
+			third = static_cast<Word>(maskedValue >> 32);
+		} else {
+			throw iris::Problem("Undefined MoveOperation requested during encoding!");
+		}
+		return std::make_tuple(count, first, second, third);
 	}
 
 	InstructionEncoder::Encoding InstructionEncoder::encodeShift() {
@@ -630,19 +646,6 @@ namespace iris19 {
 		first = encodeCompareRegisterSrc0(first, this->arg1);
 		first = encodeCompareRegisterSrc1(first, this->arg2);
 		return std::make_tuple(1, first, 0, 0);
-	}
-
-	InstructionEncoder::Encoding InstructionEncoder::encodeSet() {
-		int count = instructionSizeFromImmediateMask(bitmask);
-		auto first = encodeControl(0, type);
-		first = encodeSetBitmask(first, bitmask);
-		first = encodeSetDestination(first, arg0);
-		// use the mask during encoding since we know how many Words the
-		// instruction is made up of
-		auto maskedValue = mask(bitmask) & fullImmediate;
-		auto second = static_cast<Word>(maskedValue);
-		auto third = static_cast<Word>(maskedValue >> 16);
-		return std::make_tuple(count, first, second, third);
 	}
 
 	InstructionEncoder::Encoding InstructionEncoder::encodeLogical() {
