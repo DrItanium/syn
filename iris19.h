@@ -167,6 +167,12 @@ namespace iris19 {
 			RegisterValue genericRegisterGet(byte registerTarget);
 			void branchSpecificOperation(DecodedInstruction&& current);
 			void compareOperation(DecodedInstruction&& current);
+			void arithmeticOperation(DecodedInstruction&& current);
+			void logicalOperation(DecodedInstruction&& current);
+			void systemCallOperation(DecodedInstruction&& current);
+			void shiftOperation(DecodedInstruction&& current);
+			void swapOperation(DecodedInstruction&& current);
+			void moveOperation(DecodedInstruction&& current);
 
 			RegisterValue& registerValue(byte index);
 			inline RegisterValue& getInstructionPointer() noexcept     { return registerValue<ArchitectureConstants::InstructionPointer>(); }

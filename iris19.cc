@@ -178,121 +178,152 @@ namespace iris19 {
 	}
 
 	void Core::dispatch(DecodedInstruction&& current) {
-		auto tControl = current.getControl();
-#ifdef DEBUG
-		std::cout << "Current control value: " << std::hex << static_cast<int>(tControl) << std::endl;
-#endif
-		if (tControl == Operation::Shift) {
-			auto result = 0u;
-			auto source0 = genericRegisterGet(current.getShiftSource0());
-			auto source1 = (current.getShiftFlagImmediate() ? current.getShiftImmediate() : genericRegisterGet(current.getShiftSource1()));
-			if (current.getShiftFlagLeft()) {
-				result = source0 << source1;
-			} else {
-				result = source0 >> source1;
-			}
-			genericRegisterSet(current.getShiftDestination(), result);
-		} else if (tControl == Operation::Swap) {
-			if (current.getSwapDestination() != current.getSwapSource()) {
-				auto src = genericRegisterGet(current.getSwapSource());
-				auto dest = genericRegisterGet(current.getSwapDestination()); // destination is always last
-				genericRegisterSet(current.getSwapDestination(), src);
-				genericRegisterSet(current.getSwapSource(), dest);
-			}
-		} else if (tControl == Operation::Arithmetic) {
-			auto result = 0u;
-			auto src0 = genericRegisterGet(current.getArithmeticSource());
-			auto src1 = current.getArithmeticFlagImmediate() ? current.getArithmeticImmediate() : genericRegisterGet(current.getArithmeticSource1());
-			switch (current.getArithmeticFlagType()) {
-				case ArithmeticOps::Add:
-					result = iris::add(src0, src1);
-					break;
-				case ArithmeticOps::Sub:
-					result = iris::sub(src0, src1);
-					break;
-				case ArithmeticOps::Mul:
-					result = iris::mul(src0, src1);
-					break;
-				case ArithmeticOps::Div:
-					result = iris::div(src0, src1);
-					break;
-				case ArithmeticOps::Rem:
-					result = iris::rem(src0, src1);
-					break;
-				default:
-					throw iris::Problem("Illegal Arithmetic Signature");
-			}
-			genericRegisterSet(current.getArithmeticDestination(), result);
-		} else if (tControl == Operation::Logical) {
-			auto result = 0u;
-			if (current.getLogicalFlagImmediate()) {
-				auto src0 = genericRegisterGet(current.getLogicalRegister0());
-				auto immediate = retrieveImmediate(current.getLogicalFlagImmediateMask());
-				switch (current.getLogicalFlagImmediateType()) {
-					case ImmediateLogicalOps::And:
-						result = iris::binaryAnd(src0, immediate);
-						break;
-					case ImmediateLogicalOps::Or:
-						result = iris::binaryOr(src0, immediate);
-						break;
-					case ImmediateLogicalOps::Nand:
-						result = iris::binaryNand(src0, immediate);
-						break;
-					case ImmediateLogicalOps::Xor:
-						result = iris::binaryXor(src0, immediate);
-						break;
-					default:
-						throw iris::Problem("Illegal immediate logical flag type");
-				}
-				genericRegisterSet(current.getLogicalImmediateDestination(), result);
-			} else {
-				auto src0 = genericRegisterGet(current.getLogicalRegister0());
-				auto type = current.getLogicalFlagType();
-				if (type == LogicalOps::Not) {
-					result = iris::binaryNot(src0);
-				} else {
-					auto src1 = genericRegisterGet(current.getLogicalRegister1());
-					if (type == LogicalOps::And) {
-						result = iris::binaryAnd(src0, src1);
-					} else if (type == LogicalOps::Or) {
-						result = iris::binaryOr(src0, src1);
-					} else if (type == LogicalOps::Xor) {
-						result = iris::binaryXor(src0, src1);
-					} else if (type == LogicalOps::Nand) {
-						result = iris::binaryNand(src0, src1);
-					} else {
-						throw iris::Problem("Illegal indirect logical operation!");
-					}
-				}
-				genericRegisterSet(current.getLogicalRegisterDestination(), result);
-			}
-		} else if (tControl == Operation::Move) {
-			auto src = genericRegisterGet(current.getMoveSource());
-			genericRegisterSet(current.getMoveDestination(), iris::decodeBits<RegisterValue, RegisterValue>(src, current.getMoveBitmask(), 0));
-		} else if (tControl == Operation::Set) {
-			genericRegisterSet(current.getSetDestination(), retrieveImmediate(current.getSetBitmask()));
-		} else if (tControl == Operation::Branch) {
-
-#ifdef DEBUG
-			std::cout << "Branch flags: " << std::hex << static_cast<int>(current.getBranchFlags()) << std::endl;
-#endif
-			branchSpecificOperation(std::move(current));
-		} else if (tControl == Operation::Compare) {
-			compareOperation(std::move(current));
-		} else if (tControl == Operation::SystemCall) {
-			auto field = genericRegisterGet(current.getSystemAction());
-			if (field >= ArchitectureConstants::MaxSystemCalls) {
-				throw iris::Problem("ERROR: system call index out of range!");
-			} else {
-				systemHandlers[field](this, std::move(current));
-			}
-		} else {
+		auto hasError = false;
+		switch (current.getControl()) {
+			case Operation::Arithmetic:
+				arithmeticOperation(std::move(current));
+				break;
+			case Operation::Shift:
+				shiftOperation(std::move(current));
+				break;
+			case Operation::Logical:
+				logicalOperation(std::move(current));
+				break;
+			case Operation::Compare:
+				compareOperation(std::move(current));
+				break;
+			case Operation::Branch:
+				branchSpecificOperation(std::move(current));
+				break;
+			case Operation::SystemCall:
+				systemCallOperation(std::move(current));
+				break;
+			case Operation::Set:
+				// this is the only one that is done directly in the dispatch method
+				genericRegisterSet(current.getSetDestination(), retrieveImmediate(current.getSetBitmask()));
+				break;
+			case Operation::Swap:
+				swapOperation(std::move(current));
+				break;
+			case Operation::Move:
+				moveOperation(std::move(current));
+				break;
+			default:
+				hasError = true;
+				break;
+		}
+		if (hasError) {
 			std::stringstream str;
 			str << "Illegal instruction " << std::hex << static_cast<int>(current.getControl()) << std::endl;
 			str << "Location: " << std::hex << getInstructionPointer() << std::endl;
 			execute = false;
 			throw iris::Problem(str.str());
 		}
+	}
+	void Core::systemCallOperation(DecodedInstruction&& current) {
+		auto field = genericRegisterGet(current.getSystemAction());
+		if (field >= ArchitectureConstants::MaxSystemCalls) {
+			throw iris::Problem("ERROR: system call index out of range!");
+		} else {
+			systemHandlers[field](this, std::move(current));
+		}
+	}
+	void Core::moveOperation(DecodedInstruction&& current) {
+		auto src = genericRegisterGet(current.getMoveSource());
+		genericRegisterSet(current.getMoveDestination(), iris::decodeBits<RegisterValue, RegisterValue>(src, current.getMoveBitmask(), 0));
+	}
+
+	void Core::swapOperation(DecodedInstruction&& current) {
+		if (current.getSwapDestination() != current.getSwapSource()) {
+			auto src = genericRegisterGet(current.getSwapSource());
+			auto dest = genericRegisterGet(current.getSwapDestination()); // destination is always last
+			genericRegisterSet(current.getSwapDestination(), src);
+			genericRegisterSet(current.getSwapSource(), dest);
+		}
+	}
+
+	void Core::shiftOperation(DecodedInstruction&& current) {
+		auto result = 0u;
+		auto source0 = genericRegisterGet(current.getShiftSource0());
+		auto source1 = (current.getShiftFlagImmediate() ? current.getShiftImmediate() : genericRegisterGet(current.getShiftSource1()));
+		if (current.getShiftFlagLeft()) {
+			result = source0 << source1;
+		} else {
+			result = source0 >> source1;
+		}
+		genericRegisterSet(current.getShiftDestination(), result);
+	}
+
+	void Core::arithmeticOperation(DecodedInstruction&& current) {
+		auto result = 0u;
+		auto src0 = genericRegisterGet(current.getArithmeticSource());
+		auto src1 = current.getArithmeticFlagImmediate() ? current.getArithmeticImmediate() : genericRegisterGet(current.getArithmeticSource1());
+		switch (current.getArithmeticFlagType()) {
+			case ArithmeticOps::Add:
+				result = iris::add(src0, src1);
+				break;
+			case ArithmeticOps::Sub:
+				result = iris::sub(src0, src1);
+				break;
+			case ArithmeticOps::Mul:
+				result = iris::mul(src0, src1);
+				break;
+			case ArithmeticOps::Div:
+				result = iris::div(src0, src1);
+				break;
+			case ArithmeticOps::Rem:
+				result = iris::rem(src0, src1);
+				break;
+			default:
+				throw iris::Problem("Illegal Arithmetic Signature");
+		}
+		genericRegisterSet(current.getArithmeticDestination(), result);
+	}
+
+	void Core::logicalOperation(DecodedInstruction&& current) {
+		auto result = 0u;
+		auto src0 = genericRegisterGet(current.getLogicalRegister0());
+		auto dest = 0u;
+		if (current.getLogicalFlagImmediate()) {
+			auto immediate = retrieveImmediate(current.getLogicalFlagImmediateMask());
+			switch (current.getLogicalFlagImmediateType()) {
+				case ImmediateLogicalOps::And:
+					result = iris::binaryAnd(src0, immediate);
+					break;
+				case ImmediateLogicalOps::Or:
+					result = iris::binaryOr(src0, immediate);
+					break;
+				case ImmediateLogicalOps::Nand:
+					result = iris::binaryNand(src0, immediate);
+					break;
+				case ImmediateLogicalOps::Xor:
+					result = iris::binaryXor(src0, immediate);
+					break;
+				default:
+					throw iris::Problem("Illegal immediate logical flag type");
+			}
+			dest = current.getLogicalImmediateDestination();
+		} else {
+			auto type = current.getLogicalFlagType();
+			if (type == LogicalOps::Not) {
+				result = iris::binaryNot(src0);
+			} else {
+				auto src1 = genericRegisterGet(current.getLogicalRegister1());
+				if (type == LogicalOps::And) {
+					result = iris::binaryAnd(src0, src1);
+				} else if (type == LogicalOps::Or) {
+					result = iris::binaryOr(src0, src1);
+				} else if (type == LogicalOps::Xor) {
+					result = iris::binaryXor(src0, src1);
+				} else if (type == LogicalOps::Nand) {
+					result = iris::binaryNand(src0, src1);
+				} else {
+					throw iris::Problem("Illegal indirect logical operation!");
+				}
+			}
+			dest = current.getLogicalRegisterDestination();
+		}
+		genericRegisterSet(dest, result);
 	}
 
 	void Core::compareOperation(DecodedInstruction&& current) {
