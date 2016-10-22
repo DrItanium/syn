@@ -558,11 +558,16 @@ namespace iris19 {
 			if (registerIsMarkedIndirect(registerTarget)) {
 				storeRegisterValue(dest, value);
 			} else {
-				registerValue(dest) = value;
-                // if it is a normal store then don't advance ip if
-                // registerTarget == ip. That way we don't do too surprising
-                // things
-                advanceIp = dest != ArchitectureConstants::InstructionPointer;
+				if (dest == ArchitectureConstants::InstructionPointer) {
+					// if it is a normal store then don't advance ip if
+					// registerTarget == ip. That way we don't do too surprising
+					// things
+					getInstructionPointer() = value & memoryMaxBitmask;
+					advanceIp = false;
+				} else {
+					registerValue(dest) = value;
+					advanceIp = true;
+				}
 			}
 		}
 	}

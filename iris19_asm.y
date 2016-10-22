@@ -254,7 +254,7 @@ namespace iris19 {
 %token ARITHMETIC_OP_ADD     ARITHMETIC_OP_SUB     ARITHMETIC_OP_MUL ARITHMETIC_OP_DIV
 %token ARITHMETIC_OP_REM     ARITHMETIC_OP_ADD_IMM ARITHMETIC_OP_SUB_IMM
 %token ARITHMETIC_OP_MUL_IMM ARITHMETIC_OP_DIV_IMM ARITHMETIC_OP_REM_IMM
-%token FLAG_IMMEDIATE TAG_INDIRECT
+%token FLAG_IMMEDIATE 
 %token SHIFT_FLAG_LEFT SHIFT_FLAG_RIGHT
 %token ACTION_AND ACTION_OR ACTION_XOR
 %token LOGICAL_OP_NOT LOGICAL_OP_NAND
@@ -262,6 +262,7 @@ namespace iris19 {
 %token BRANCH_FLAG_JUMP BRANCH_FLAG_CALL BRANCH_FLAG_IF BRANCH_FLAG_COND
 %token COMPARE_OP_EQ COMPARE_OP_NEQ COMPARE_OP_GT COMPARE_OP_GT_EQ
 %token COMPARE_OP_LT COMPARE_OP_LT_EQ
+%token TAG_STACK TAG_INDIRECT
 
 %token MACRO_OP_INCREMENT MACRO_OP_DECREMENT MACRO_OP_DOUBLE MACRO_OP_HALVE
 %token MACRO_OP_ZERO MACRO_OP_COPY
@@ -271,7 +272,7 @@ namespace iris19 {
 %token <rval> REGISTER
 %token <ival> IMMEDIATE
 %token <sval> SYMBOL ALIAS
-%token <ival> BITMASK4
+%token <ival> BITMASK
 
 
 %%
@@ -412,17 +413,17 @@ move_group:
 move_op: 
 	   OP_MOVE bitmask destination_register source_register |
 	   OP_RETURN {
-	   		// equivalent to move ip stack sp
-			iris19::op.indirect = false;
-            iris19::op.arg0 = static_cast<byte>(iris19::ArchitectureConstants::InstructionPointer);
-			iris19::op.bitmask = 0b1111;
+	   		// equivalent to move 0m11111111 ip stack sp
+			iris19::op.bitmask = 0b11111111;
+			iris19::op.arg0 = iris19::encodeRegisterValue(iris19::ArchitectureConstants::InstructionPointer, false, false);
+			iris19::op.arg1 = iris19::encodeRegisterValue(iris19::ArchitectureConstants::StackPointer, false, true);
 	   };
 
 set_op:
 	  OP_SET bitmask destination_register lexeme;
 
 swap_op:
-	   OP_SWAP destination_register source_register |
+		OP_SWAP destination_register source_register |
 		OP_NOP {
 			iris19::op.arg0 = 0;
 			iris19::op.arg1 = 0;
@@ -556,7 +557,7 @@ macro_op:
 			iris19::op.immediate = false;
 		};
 bitmask:
-	   BITMASK4 {
+	   BITMASK {
 			iris19::op.bitmask = $1;
 	   };
 lexeme:
@@ -577,9 +578,40 @@ lexeme:
 		iris19::op.isLabel = false;
 		iris19::op.fullImmediate = $1;
 	};
-uses_immediate: FLAG_IMMEDIATE { iris19::op.immediate = true; };
-destination_register: REGISTER { iris19::op.arg0 = $1; };
-source_register: REGISTER { iris19::op.arg1 = $1; };
+uses_immediate: 
+			  FLAG_IMMEDIATE { 
+				  iris19::op.immediate = true; 
+			  };
+destination_register: 
+					TAG_STACK REGISTER {
+						iris19::op.arg0 = iris19::encodeRegisterValue($2, false, true);
+					} |
+					TAG_INDIRECT REGISTER {
+						iris19::op.arg0 = iris19::encodeRegisterValue($2, true, false);
+					} |
+					REGISTER { 
+						iris19::op.arg0 = iris19::encodeRegisterValue($1, false, false);
+					};
+source_register: 
+			   TAG_STACK REGISTER {
+					iris19::op.arg1 = iris19::encodeRegisterValue($2, false, true);
+				} |
+				TAG_INDIRECT REGISTER {
+					iris19::op.arg1 = iris19::encodeRegisterValue($2, true, false);
+				} |
+				REGISTER { 
+					iris19::op.arg1 = iris19::encodeRegisterValue($1, false, false);
+				};
+source1_register: 
+				TAG_STACK REGISTER {
+					iris19::op.arg2 = iris19::encodeRegisterValue($2, false, true);
+				} |
+				TAG_INDIRECT REGISTER {
+					iris19::op.arg2 = iris19::encodeRegisterValue($2, true, false);
+				} |
+				REGISTER { 
+					iris19::op.arg2 = iris19::encodeRegisterValue($1, false, false);
+				};
 %%
 namespace iris19 {
 	void assemble(FILE* input, std::ostream* output) {

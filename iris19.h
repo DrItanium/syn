@@ -96,6 +96,9 @@ namespace iris19 {
 	inline constexpr byte registerGetActualIndex(byte value) { return iris::decodeBits<byte, byte, 0b00111111, 0>(value); }
 	inline constexpr bool registerIsMarkedIndirect(byte value) { return iris::getBit<byte, 6>(value); }
 	inline constexpr bool registerIsMarkedStack(byte value) { return iris::getBit<byte, 7>(value); }
+	inline constexpr byte encodeRegisterValue(byte index, bool indirect, bool stack) {
+		return iris::setBit<byte, 7>(iris::setBit<byte, 6>(iris::encodeBits<byte, byte, 0b00111111, 0>(0, index), indirect), stack);
+	}
 	constexpr auto bitmask64 =   SetBitmaskToWordMask<ArchitectureConstants::Bitmask>::mask;
 	constexpr auto memoryMaxBitmask = 0b00001111111111111111111111111111;
 	constexpr auto upper32Mask = SetBitmaskToWordMask<iris::upperByteHalf>::mask;
