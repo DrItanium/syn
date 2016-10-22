@@ -338,21 +338,7 @@ operation:
 		OP_ARITHMETIC arithmetic_op { iris19::op.type = iris19::Operation::Arithmetic; } |
 		OP_BRANCH branch_op { iris19::op.type = iris19::Operation::Branch; } |
 		OP_SYSTEM system_op { iris19::op.type = iris19::Operation::SystemCall; }|
-		OP_MOVE move_op { iris19::op.type = iris19::Operation::Move; } |
-		OP_SET set_op { iris19::op.type = iris19::Operation::Set; } |
-		OP_SWAP swap_op { iris19::op.type = iris19::Operation::Swap; } |
-		OP_NOP {
-            iris19::op.type = iris19::Operation::Swap;
-            iris19::op.arg0 = 0;
-            iris19::op.arg1 = 0;
-        } |
-		OP_RETURN {
-			//iris19::op.type = iris19::Operation::Memory;
-			iris19::op.indirect = false;
-			//iris19::op.subType = static_cast<byte>(iris19::MemoryOperation::Pop);
-            iris19::op.arg0 = static_cast<byte>(iris19::ArchitectureConstants::InstructionPointer);
-			iris19::op.bitmask = 0b1111;
-        };
+		move_group { iris19::op.type = iris19::Operation::Move; };
 compare_op:
 		  compare_type compare_args;
 
@@ -418,14 +404,30 @@ shift_left_or_right:
 		SHIFT_FLAG_LEFT { iris19::op.shiftLeft = true; } |
 		SHIFT_FLAG_RIGHT { iris19::op.shiftLeft = false; };
 
+move_group: 
+		  move_op { iris19::op.subType = static_cast<byte>(iris19::MoveOperation::Move); } | 
+		  set_op { iris19::op.subType = static_cast<byte>(iris19::MoveOperation::Set); } |
+		  swap_op { iris19::op.subType = static_cast<byte>(iris19::MoveOperation::Swap); };
 
-move_op: bitmask destination_register source_register;
+move_op: 
+	   OP_MOVE bitmask destination_register source_register |
+	   OP_RETURN {
+	   		// equivalent to move ip stack sp
+			iris19::op.indirect = false;
+            iris19::op.arg0 = static_cast<byte>(iris19::ArchitectureConstants::InstructionPointer);
+			iris19::op.bitmask = 0b1111;
+	   };
 
 set_op:
-	  bitmask destination_register lexeme;
+	  OP_SET bitmask destination_register lexeme;
 
 swap_op:
-	   destination_register source_register;
+	   OP_SWAP destination_register source_register |
+		OP_NOP {
+			iris19::op.arg0 = 0;
+			iris19::op.arg1 = 0;
+		};
+
 
 branch_op:
 		 branch;
