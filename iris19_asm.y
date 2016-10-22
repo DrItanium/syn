@@ -269,6 +269,7 @@ namespace iris19 {
 
 %token DIRECTIVE_CONSTANT DIRECTIVE_SPACE
 
+%token ASSIGN
 %token <rval> REGISTER
 %token <ival> IMMEDIATE
 %token <sval> SYMBOL ALIAS
@@ -287,10 +288,10 @@ directive:
 	DIRECTIVE_ORG IMMEDIATE { iris19::state.address = ($2 & iris19::memoryMaxBitmask); } |
 	directive_word |
 	directive_dword |
-	DIRECTIVE_REGISTER_AT_START REGISTER IMMEDIATE { iris19::state.setRegisterAtStartup($2, $3); } |
-	DIRECTIVE_CONSTANT IMMEDIATE ALIAS {
+	DIRECTIVE_REGISTER_AT_START REGISTER ASSIGN IMMEDIATE { iris19::state.setRegisterAtStartup($2, $4); } |
+	DIRECTIVE_CONSTANT ALIAS ASSIGN IMMEDIATE {
 		try {
-			iris19::state.registerConstant($3, $2);
+			iris19::state.registerConstant($2, $4);
 		} catch(iris::Problem err) {
 			iris19error(err.what().c_str());
 		}
@@ -338,16 +339,15 @@ operation:
 		OP_COMPARE compare_op { iris19::op.type = iris19::Operation::Compare; } |
 		OP_ARITHMETIC arithmetic_op { iris19::op.type = iris19::Operation::Arithmetic; } |
 		OP_BRANCH branch_op { iris19::op.type = iris19::Operation::Branch; } |
-		OP_SYSTEM system_op { iris19::op.type = iris19::Operation::SystemCall; }|
 		move_group { iris19::op.type = iris19::Operation::Move; };
 compare_op:
 		  compare_type compare_args;
 
 compare_args:
-		 uses_immediate destination_register source_register IMMEDIATE { iris19::op.arg1= static_cast<byte>($3); } |
+		 uses_immediate destination_register source_register IMMEDIATE { iris19::op.arg1= static_cast<byte>($4); } |
 		 uses_immediate destination_register source_register ALIAS {
 				try {
-					iris19::op.arg1 = static_cast<byte>(iris19::state.getConstantValue($3));
+					iris19::op.arg1 = static_cast<byte>(iris19::state.getConstantValue($4));
 				} catch(iris::Problem err) {
 					iris19error(err.what().c_str());
 				}
@@ -398,7 +398,7 @@ shift_op:
 
 
 shift_args:
-		uses_immediate destination_register source_register IMMEDIATE { iris19::op.arg1 = $3 & 0b11111; } |
+		uses_immediate destination_register source_register IMMEDIATE { iris19::op.arg1 = $4 & 0b111111; } |
 		destination_register source_register source1_register { iris19::op.immediate = false; };
 
 shift_left_or_right:
@@ -408,7 +408,8 @@ shift_left_or_right:
 move_group: 
 		  move_op { iris19::op.subType = static_cast<byte>(iris19::MoveOperation::Move); } | 
 		  set_op { iris19::op.subType = static_cast<byte>(iris19::MoveOperation::Set); } |
-		  swap_op { iris19::op.subType = static_cast<byte>(iris19::MoveOperation::Swap); };
+		  swap_op { iris19::op.subType = static_cast<byte>(iris19::MoveOperation::Swap); } |
+		  system_op { iris19::op.subtype = static_cast<byte>(iris19::MoveOperation::SystemCall); };
 
 move_op: 
 	   OP_MOVE bitmask destination_register source_register |
@@ -417,17 +418,20 @@ move_op:
 			iris19::op.bitmask = 0b11111111;
 			iris19::op.arg0 = iris19::encodeRegisterValue(iris19::ArchitectureConstants::InstructionPointer, false, false);
 			iris19::op.arg1 = iris19::encodeRegisterValue(iris19::ArchitectureConstants::StackPointer, false, true);
-	   };
+	   } |
+		OP_NOP {
+			iris19::op::bitmask = 0b11111111;
+			iris19::op.arg0 = iris19::encodeRegisterValue(0, false, false);
+			iris19::op.arg1 = iris19::encodeRegisterValue(0, false, false);
+		};
 
 set_op:
 	  OP_SET bitmask destination_register lexeme;
 
 swap_op:
-		OP_SWAP destination_register source_register |
-		OP_NOP {
-			iris19::op.arg0 = 0;
-			iris19::op.arg1 = 0;
-		};
+		OP_SWAP destination_register source_register;
+system_op:
+		OP_SYSTEM destination_register source_register;
 
 
 branch_op:
@@ -470,22 +474,6 @@ cond_decl:
 		 	iris19::op.isConditional = false;
 		 };
 
-
-system_op:
-		IMMEDIATE source_register {
-            iris19::op.arg0 = ($1 & 0b1111);
-        };
-//immediate_or_alias:
-//		IMMEDIATE { iris19::op.arg0 = ($1 & 0b1111); } |
-//		ALIAS {
-//				try {
-//					iris19::op.arg0 = static_cast<byte>(iris19::state.getConstantValue($1));
-//				} catch(iris::Problem err) {
-//					iris19error(err.what().c_str());
-//				}
-//		};
-
-
 arithmetic_op:
 		arithmetic_subop uses_immediate REGISTER IMMEDIATE {
 			iris19::op.arg0 = $3;
@@ -496,6 +484,7 @@ arithmetic_op:
 			iris19::op.arg0 = $2;
 			iris19::op.arg1 = $3;
 		};
+
 arithmetic_subop:
 				ARITHMETIC_OP_ADD {
 					iris19::op.subType = static_cast<byte>(iris19::ArithmeticOps::Add);

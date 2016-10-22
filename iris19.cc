@@ -212,23 +212,35 @@ namespace iris19 {
 	}
 	void Core::moveOperation(DecodedInstruction&& current) {
 		auto moveType = current.getMoveSubtype();
+		auto bitmask = current.getMoveBitmask();
+		auto mDest = current.getMoveDestination();
 		if (moveType == MoveOperation::Move) {
-			auto src = genericRegisterGet(current.getMoveSource());
-			genericRegisterSet(current.getMoveDestination(), iris::decodeBits<RegisterValue, RegisterValue>(src, current.getMoveBitmask(), 0));
+			auto mSrc = current.getMoveSource();
+			if (!((bitmask == ArchitectureConstants::Bitmask) && (mDest == mSrc && mDest < ArchitectureConstants::RegisterCount))) {
+				auto src = genericRegisterGet(mSrc);
+				genericRegisterSet(mDest, iris::decodeBits<RegisterValue, RegisterValue>(src, bitmask, 0));
+			} 
+			// no operation otherwise
 		} else if (moveType == MoveOperation::Set) {
-			// this is the only one that is done directly in the dispatch method
-			genericRegisterSet(current.getMoveDestination(), retrieveImmediate(current.getMoveBitmask()));
+			// check and see if it is zero, if so then just set it to zero
+			auto result = bitmask == 0 ? 0 : retrieveImmediate(bitmask);
+			genericRegisterSet(mDest, result);
 		} else if (moveType == MoveOperation::Swap) {
-			if (current.getMoveDestination() != current.getMoveSource()) {
-				// this can do swap the first and second dwords of the given
-				// stack pointer in one instruction :)
-				auto src = genericRegisterGet(current.getMoveSource());
-				auto dest = genericRegisterGet(current.getMoveDestination()); // destination is always last
-				genericRegisterSet(current.getMoveDestination(), src);
-				genericRegisterSet(current.getMoveSource(), dest);
+			if (bitmask != 0) {
+				throw iris::Problem("Swap Operation: Bitmask must be set to zero since it has no bearing on this operation!");
 			}
+			// this can do swap the first and second dwords of the given
+			// stack pointer in one instruction :)
+			auto mSrc = current.getMoveSource();
+			auto src = genericRegisterGet(mSrc);
+			auto dest = genericRegisterGet(mDest);
+			genericRegisterSet(mDest, src);
+			genericRegisterSet(mSrc, dest);
 		} else if (moveType == MoveOperation::SystemCall) {
-			auto field = genericRegisterGet(current.getMoveDestination());
+			if (bitmask != 0) {
+				throw iris::Problem("System Call Operation: Bitmask must be set to zero since it has no bearing on this operation!");
+			}
+			auto field = genericRegisterGet(mDest);
 			if (field >= ArchitectureConstants::MaxSystemCalls) {
 				throw iris::Problem("ERROR: system call index out of range!");
 			} else {
