@@ -409,7 +409,7 @@ move_group:
 		  move_op { iris19::op.subType = static_cast<byte>(iris19::MoveOperation::Move); } | 
 		  set_op { iris19::op.subType = static_cast<byte>(iris19::MoveOperation::Set); } |
 		  swap_op { iris19::op.subType = static_cast<byte>(iris19::MoveOperation::Swap); } |
-		  system_op { iris19::op.subtype = static_cast<byte>(iris19::MoveOperation::SystemCall); };
+		  system_op { iris19::op.subType = static_cast<byte>(iris19::MoveOperation::SystemCall); };
 
 move_op: 
 	   OP_MOVE bitmask destination_register source_register |
@@ -420,7 +420,7 @@ move_op:
 			iris19::op.arg1 = iris19::encodeRegisterValue(iris19::ArchitectureConstants::StackPointer, false, true);
 	   } |
 		OP_NOP {
-			iris19::op::bitmask = 0b11111111;
+			iris19::op.bitmask = 0b11111111;
 			iris19::op.arg0 = iris19::encodeRegisterValue(0, false, false);
 			iris19::op.arg1 = iris19::encodeRegisterValue(0, false, false);
 		};

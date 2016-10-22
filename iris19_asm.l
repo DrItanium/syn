@@ -109,7 +109,7 @@ r{digit}+   { iris19lval.rval = iris19::getregister(); return REGISTER; }
     iris19lval.sval = iris19text;
 	return SYMBOL;
 }
-<- { return ASSIGN; }
+"<-" { return ASSIGN; }
 %%
 namespace iris19 {
 byte getregister(void) {
