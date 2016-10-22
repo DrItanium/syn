@@ -278,6 +278,7 @@ namespace iris19 {
 #endif
 			switch (current.getBranchFlags()) {
 				case IfJump::flags:
+                case IfCall::flags:
 				case CallIndirect::flags:
 				case CallDirect::flags:
 				case JumpIndirect::flags:
@@ -334,11 +335,10 @@ namespace iris19 {
 	}
 	void Core::branchSpecificOperation(DecodedInstruction&& current) {
 		advanceIp = true;
-		auto isIf = current.getBranchFlagIsIfForm();
 		auto isCall = current.getBranchFlagIsCallForm();
 		auto isImmediate = current.getBranchFlagIsImmediate();
 		auto isConditional = current.getBranchFlagIsConditional();
-		if (isIf) {
+		if (current.getBranchFlagIsIfForm()) {
 			// if instruction
 			advanceIp = false;
 			// process them all even if we don't use them all, it is then
@@ -504,33 +504,39 @@ namespace iris19 {
 		return encodeRegisterValue(upper, lower);
 	}
 	void Core::genericRegisterSet(byte registerTarget, RegisterValue value) {
+        auto dest = registerGetActualIndex(registerTarget);
 		if (registerIsMarkedStack(registerTarget)) {
 			if (registerIsMarkedIndirect(registerTarget)) {
 				throw iris::Problem("Unable to do both stack and indirect operations at the same time!");
 			} else {
-				pushDword(value, registerValue(registerGetActualIndex(registerTarget)));
+				pushDword(value, registerValue(dest));
 			}
 		} else {
 			if (registerIsMarkedIndirect(registerTarget)) {
-				storeRegisterValue(registerValue(registerGetActualIndex(registerTarget)), value);
+				storeRegisterValue(dest, value);
 			} else {
-				registerValue(registerGetActualIndex(registerTarget)) = value;
+				registerValue(dest) = value;
+                // if it is a normal store then don't advance ip if
+                // registerTarget == ip. That way we don't do too surprising
+                // things
+                advanceIp = dest != ArchitectureConstants::InstructionPointer;
 			}
 		}
 	}
 
 	RegisterValue Core::genericRegisterGet(byte registerTarget) {
+        auto &value = registerValue(registerGetActualIndex(registerTarget));
 		if (registerIsMarkedStack(registerTarget)) {
 			if (registerIsMarkedIndirect(registerTarget)) {
 				throw iris::Problem("Unable to do both stack and indirect operations at the same time!");
 			} else {
-				return popDword(registerValue(registerGetActualIndex(registerTarget)));
+				return popDword(value);
 			}
 		} else {
 			if (registerIsMarkedIndirect(registerTarget)) {
-				return loadRegisterValue(registerValue(registerGetActualIndex(registerTarget)));
+				return loadRegisterValue(value);
 			} else {
-				return registerValue(registerGetActualIndex(registerTarget));
+				return value;
 			}
 		}
 	}

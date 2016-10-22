@@ -76,24 +76,19 @@ namespace iris19 {
     inline constexpr Word encodeWord(bool lower, bool upperLower, bool lowerUpper, bool upperMost) noexcept {
         return iris::expandUInt32LE(lower, upperLower, lowerUpper, upperMost);
     }
-	template<byte bitmask>
-		struct SetBitmaskToWordMask {
-			static_assert(bitmask <= ArchitectureConstants::Bitmask, "Bitmask is too large and must be less than or equals to 0b11111111");
-			static constexpr Word upperMask = encodeWord(iris::getBit<byte,4>(bitmask), iris::getBit<byte,5>(bitmask), iris::getBit<byte,6>(bitmask), iris::getBit<byte,7>(bitmask));
-			static constexpr Word lowerMask = encodeWord(iris::getBit<byte,0>(bitmask), iris::getBit<byte,1>(bitmask), iris::getBit<byte,2>(bitmask), iris::getBit<byte,3>(bitmask));
-			static constexpr RegisterValue mask = iris::encodeUint64LE(lowerMask, upperMask);
-
-			static constexpr bool readLower = lowerMask != 0;
-            static constexpr bool readUpper = upperMask != 0;
-			SetBitmaskToWordMask() = delete;
-			~SetBitmaskToWordMask() = delete;
-		};
 	inline constexpr Word lowerMask(byte bitmask) {
         return encodeWord(iris::getBit<byte, 0>(bitmask), iris::getBit<byte, 1>(bitmask), iris::getBit<byte, 2>(bitmask), iris::getBit<byte, 3>(bitmask));
 	}
 	inline constexpr Word upperMask(byte bitmask) {
         return encodeWord(iris::getBit<byte, 4>(bitmask), iris::getBit<byte, 5>(bitmask), iris::getBit<byte, 6>(bitmask), iris::getBit<byte, 7>(bitmask));
 	}
+	template<byte bitmask>
+		struct SetBitmaskToWordMask {
+			static_assert(bitmask <= ArchitectureConstants::Bitmask, "Bitmask is too large and must be less than or equals to 0b11111111");
+			static constexpr RegisterValue mask = iris::encodeUint64LE(lowerMask(bitmask), upperMask(bitmask));
+			SetBitmaskToWordMask() = delete;
+			~SetBitmaskToWordMask() = delete;
+		};
 	inline constexpr RegisterValue mask(byte bitmask) { return iris::encodeUint64LE(upperMask(bitmask), lowerMask(bitmask)); }
 	inline constexpr bool readLower(byte bitmask) noexcept { return iris::getLowerHalf(bitmask) != 0; }
 	inline constexpr bool readUpper(byte bitmask) noexcept { return iris::getUpperHalf(bitmask) != 0; }
@@ -116,13 +111,6 @@ namespace iris19 {
 								callForm),
 							ifForm),
 						isConditional);
-		};
-	template<byte flags>
-		struct BranchFlagsDecoder {
-			static constexpr bool isImmediate = iris::getBit<byte, 0>(flags);
-			static constexpr bool isCall = iris::getBit<byte, 1>(flags);
-			static constexpr bool isIf = iris::getBit<byte, 2>(flags);
-			static constexpr bool isConditional = iris::getBit<byte, 3>(flags);
 		};
 	using IfJump = BranchFlagsEncoder<false, true, false, false>;
 	using IfCall = BranchFlagsEncoder<false, true, true, false>;
