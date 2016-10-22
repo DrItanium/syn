@@ -199,8 +199,6 @@ namespace iris19 {
 				systemCallOperation(std::move(current));
 				break;
 			case Operation::Set:
-				// this is the only one that is done directly in the dispatch method
-				genericRegisterSet(current.getSetDestination(), retrieveImmediate(current.getSetBitmask()));
 				break;
 			case Operation::Swap:
 				swapOperation(std::move(current));
@@ -229,17 +227,24 @@ namespace iris19 {
 		}
 	}
 	void Core::moveOperation(DecodedInstruction&& current) {
-		auto src = genericRegisterGet(current.getMoveSource());
-		genericRegisterSet(current.getMoveDestination(), iris::decodeBits<RegisterValue, RegisterValue>(src, current.getMoveBitmask(), 0));
+		auto moveType = current.getMoveSubtype();
+		if (moveType == MoveOperation::Move) {
+			auto src = genericRegisterGet(current.getMoveSource());
+			genericRegisterSet(current.getMoveDestination(), iris::decodeBits<RegisterValue, RegisterValue>(src, current.getMoveBitmask(), 0));
+		} else if (moveType == MoveOperation::Set) {
+			// this is the only one that is done directly in the dispatch method
+			genericRegisterSet(current.getMoveDestination(), retrieveImmediate(current.getMoveBitmask()));
+		} else if (moveType == MoveOperation::Swap) {
+			if (current.getMoveDestination() != current.getMoveSource()) {
+				auto src = genericRegisterGet(current.getMoveSource());
+				auto dest = genericRegisterGet(current.getMoveDestination()); // destination is always last
+				genericRegisterSet(current.getMoveDestination(), src);
+				genericRegisterSet(current.getMoveSource(), dest);
+			}
+		}
 	}
 
 	void Core::swapOperation(DecodedInstruction&& current) {
-		if (current.getSwapDestination() != current.getSwapSource()) {
-			auto src = genericRegisterGet(current.getSwapSource());
-			auto dest = genericRegisterGet(current.getSwapDestination()); // destination is always last
-			genericRegisterSet(current.getSwapDestination(), src);
-			genericRegisterSet(current.getSwapSource(), dest);
-		}
 	}
 
 	void Core::shiftOperation(DecodedInstruction&& current) {

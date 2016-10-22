@@ -1,0 +1,5 @@
+DefEnum(MoveOperation, byte)
+	EnumEntry(Move)
+	EnumEntry(Set)
+	EnumEntry(Swap)
+EndDefEnum(MoveOperation, byte, 4)

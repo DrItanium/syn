@@ -57,6 +57,7 @@ namespace iris19 {
 #include "def/iris19/syscalls.def"
 #include "def/iris19/compare.enum"
 #include "def/iris19/logical.enum"
+#include "def/iris19/move.def"
 #undef DefEnum
 #undef EnumEntry
 #undef EndDefEnum
