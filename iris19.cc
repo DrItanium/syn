@@ -198,11 +198,6 @@ namespace iris19 {
 			case Operation::SystemCall:
 				systemCallOperation(std::move(current));
 				break;
-			case Operation::Set:
-				break;
-			case Operation::Swap:
-				swapOperation(std::move(current));
-				break;
 			case Operation::Move:
 				moveOperation(std::move(current));
 				break;
@@ -236,15 +231,16 @@ namespace iris19 {
 			genericRegisterSet(current.getMoveDestination(), retrieveImmediate(current.getMoveBitmask()));
 		} else if (moveType == MoveOperation::Swap) {
 			if (current.getMoveDestination() != current.getMoveSource()) {
+				// this can do swap the first and second dwords of the given
+				// stack pointer in one instruction :)
 				auto src = genericRegisterGet(current.getMoveSource());
 				auto dest = genericRegisterGet(current.getMoveDestination()); // destination is always last
 				genericRegisterSet(current.getMoveDestination(), src);
 				genericRegisterSet(current.getMoveSource(), dest);
 			}
+		} else {
+			throw iris::Problem("Move Superclass: Undefined subtype!");
 		}
-	}
-
-	void Core::swapOperation(DecodedInstruction&& current) {
 	}
 
 	void Core::shiftOperation(DecodedInstruction&& current) {

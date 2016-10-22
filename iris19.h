@@ -172,7 +172,6 @@ namespace iris19 {
 			void logicalOperation(DecodedInstruction&& current);
 			void systemCallOperation(DecodedInstruction&& current);
 			void shiftOperation(DecodedInstruction&& current);
-			void swapOperation(DecodedInstruction&& current);
 			void moveOperation(DecodedInstruction&& current);
 
 			RegisterValue& registerValue(byte index);

@@ -62,7 +62,7 @@ X(BranchIfOnFalse,                 0b11111111000000000000000000000000, 24, byte,
 X(BranchIndirectDestination,       0b00000000111111110000000000000000, 16, byte,   branchIndirectDestination)
 
 // move operation flags: move, set, swap
-X(MoveSubtype,            0b00000000000000000000000000110000, 4, byte, moveSubtype)
+X(MoveSubtype,            0b00000000000000000000000000110000, 4, MoveOperation, moveSubtype)
 X(MoveBitmask,            0b00000000000000001111111100000000, 8, byte,  moveBitmask)
 X(MoveDestination,        0b00000000111111110000000000000000, 16, byte,  moveDestination)
 X(MoveSource,             0b11111111000000000000000000000000, 24, byte,  moveSource)
