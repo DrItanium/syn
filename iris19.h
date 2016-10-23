@@ -69,9 +69,6 @@ namespace iris19 {
 			byte getBitmask() const noexcept;
 			byte getSubType() const noexcept;
 			inline Operation getOperation() const noexcept { return getControl(); }
-			inline byte getConditional() const noexcept { return isOperation<Operation::Branch>() ? getBranchCondition() : 0; }
-			inline byte getOnTrue() const noexcept { return branchMarkedIf() ? getBranchIfOnTrue() : 0; }
-			inline byte getOnFalse() const noexcept { return branchMarkedIf() ? getBranchIfOnFalse() : 0; }
 			inline bool branchMarkedIf() const noexcept { return isOperation<Operation::Branch>() && getBranchFlagIsIfForm(); }
 			inline bool branchMarkedCall() const noexcept { return isOperation<Operation::Branch>() && getBranchFlagIsCallForm(); }
 			inline bool branchMarkedConditional() const noexcept { return isOperation<Operation::Branch>() && getBranchFlagIsConditional(); }
@@ -252,6 +249,50 @@ namespace iris19 {
 #undef DefEnum
 #undef EndDefEnum
 #undef EnumEntry
+		Word setControl(Word value = 0) const noexcept;
+		Word setBitmask(Word value) const noexcept;
+		Word setDestination(Word value) const noexcept;
+		Word setSource0(Word value) const noexcept;
+		Word setSource1(Word value) const noexcept;
+		Word setImmediateFlag(Word value) const noexcept;
+		Word setShortImmediate(Word value) const noexcept;
+		Word maskedLowerHalf() const noexcept;
+		Word maskedUpperHalf() const noexcept;
+		void assertBitmaskZero(const std::string& message) const;
+		template<Operation op>
+		Word singleWordEncoding() const noexcept {
+			auto enc = setControl();
+			enc = setSubType<op>(enc);
+			enc = setDestination(enc);
+			enc = setSource0(enc);
+			enc = immediate ? setShortImmediate(enc) : setSource1(enc);
+			return enc;
+		}
+		template<Operation op>
+		inline Word setSubType(Word value) const noexcept {
+			switch(op) {
+				case Operation::Arithmetic:
+					return setImmediateFlag(encodeArithmeticFlagType(value, subType));
+				case Operation::Move:
+					return encodeMoveSubtype(value, subType);
+				case Operation::Compare:
+					return setImmediateFlag(encodeCompareType(value, subType));
+				case Operation::Shift:
+					return setImmediateFlag(encodeShiftFlagLeft(value, shiftLeft));
+				case Operation::Logical:
+					return setImmediateFlag(immediate ? encodeLogicalFlagImmediateType(value, subType) : encodeLogicalFlagType(value, subType));
+				case Operation::Branch:
+					return setImmediateFlag(
+							encodeBranchFlagIsConditional(
+								encodeBranchFlagIsCallForm(
+									encodeBranchFlagIsIfForm(value, isIf), 
+									isCall), 
+								isConditional));
+
+				default:
+					return value;
+			}
+		}
 	};
 	Core* newCore() noexcept;
 	void assemble(FILE* input, std::ostream* output);

@@ -5,12 +5,43 @@
 #include <utility>
 
 namespace iris19 {
-	/*
-	 * Iris19 is a variable length encoding 16 bit architecture.
-	 * It has a 24 bit memory space across 256 16-bit sections. The variable length
-	 * encoding comes from different register choices. The reserved registers are
-	 * used to compress the encoding.
-	 */
+	// BEGIN INSTRUCTION
+	RegisterValue Instruction::getImmediate8() const noexcept {
+		return getShortImmediate();
+	}
+	byte Instruction::getBitmask() const noexcept {
+		switch(getControl()) {
+			case Operation::Move:
+			case Operation::Logical:
+				return getRawBitmask();
+			default:
+				return ArchitectureConstants::Bitmask;
+		}
+	}
+	byte Instruction::getDestination() const noexcept {
+		return getDestinationIndex();
+	}
+	byte Instruction::getSource0() const noexcept {
+		return getSource0Index();
+	}
+	byte Instruction::getSource1() const noexcept {
+		return markedImmediate() ? getShortImmediate() : getSource1();
+	}
+	byte Instruction::getSubType() const noexcept {
+		switch (getControl()) {
+			case Operation::Arithmetic:
+				return getArithmeticFlagType();
+			case Operation::Move:
+				return getMoveSubtype();
+			case Operation::Compare:
+				return getCompareType();
+			case Operation::Logical:
+				return markedImmediate() ? getLogicalFlagImmediateType() : getLogicalFlagType();
+			default:
+				return 0;
+		}
+	}
+	// BEGIN CORE
 	Core* newCore() noexcept {
 		return new Core();
 	}
@@ -224,6 +255,7 @@ namespace iris19 {
 	void Core::shiftOperation(Instruction&& current) {
 		auto result = 0u;
 		auto source0 = genericRegisterGet(current.getSource0());
+		// Cap the shift value to between 0-64
 		auto source1 = current.markedImmediate() ? current.getImmediate8() : genericRegisterGet(current.getSource1());
 		if (current.shiftLeft()) {
 			result = source0 << source1;
@@ -566,104 +598,84 @@ namespace iris19 {
 	}
 
 	InstructionEncoder::Encoding InstructionEncoder::encodeArithmetic() {
-		auto first = encodeControl(0, type);
-		first = encodeImmediateFlag(first, immediate);
-		first = encodeArithmeticFlagType(first, subType);
-		first = encodeArithmeticDestination(first, arg0);
-		first = immediate ? encodeArithmeticImmediate(first, arg1) : encodeArithmeticSource(first, arg1);
-		return std::make_tuple(1, first, 0, 0);
-	}
-
-	InstructionEncoder::Encoding InstructionEncoder::encodeMove() {
-		auto first = encodeControl(0, type);
-		auto second = 0u;
-		auto third = 0u;
-		auto count = instructionSizeFromImmediateMask(bitmask);
-		auto memOp = static_cast<MoveOperation>(subType);
-		first = encodeMoveSubtype(first, subType);
-		first = encodeMoveBitmask(first, bitmask);
-		first = encodeMoveDestination(first, arg0);
-		if (memOp == MoveOperation::Move) {
-			first = encodeMoveSource(first, arg1);
-		} else if (memOp == MoveOperation::Swap) {
-			if (bitmask != 0) {
-				throw iris::Problem("The bitmask of a swap operation must always be zero!");
-			}
-			first = encodeMoveSource(first, arg1);
-		} else if (memOp == MoveOperation::Set) {
-			// use the mask during encoding since we know how many Words the
-			// instruction is made up of
-			auto maskedValue = mask(bitmask) & fullImmediate;
-			second = static_cast<Word>(maskedValue);
-			third = static_cast<Word>(maskedValue >> 32);
-		} else if (memOp == MoveOperation::SystemCall) {
-			if (bitmask != 0) {
-				throw iris::Problem("The bitmask of a system call operation must always be zero!");
-			}
-			first = encodeMoveSource(first, arg1);
-		} else {
-			throw iris::Problem("Undefined MoveOperation requested during encoding!");
-		}
-		return std::make_tuple(count, first, second, third);
+		return std::make_tuple(1, singleWordEncoding<Operation::Arithmetic>(), 0, 0);
 	}
 
 	InstructionEncoder::Encoding InstructionEncoder::encodeShift() {
-		auto first = encodeControl(0, type);
-		first = encodeImmediateFlag(first, immediate);
-		first = encodeShiftFlagLeft(first, shiftLeft);
-		first = encodeShiftDestination(first, arg0);
-		first = encodeShiftSource0(first, arg1);
-		first = immediate ? encodeShiftImmediate(first, arg2) : encodeShiftSource1(first, arg2);
-		return std::make_tuple(1, first, 0, 0);
+		return std::make_tuple(1, singleWordEncoding<Operation::Shift>(), 0, 0);
 	}
 
 	InstructionEncoder::Encoding InstructionEncoder::encodeCompare() {
-		auto first = encodeControl(0, type);
-		first = encodeCompareType(first, subType);
-		first = encodeImmediateFlag(first, immediate);
-		first = encodeCompareRegisterDest(first, this->arg0);
-		first = encodeCompareRegisterSrc0(first, this->arg1);
-		first = encodeCompareRegisterSrc1(first, this->arg2);
-		return std::make_tuple(1, first, 0, 0);
+		return std::make_tuple(1, singleWordEncoding<Operation::Compare>(), 0, 0);
 	}
 
+	Word InstructionEncoder::maskedLowerHalf() const noexcept {
+		return static_cast<Word>(mask(bitmask) & fullImmediate);
+	}
+	Word InstructionEncoder::maskedUpperHalf() const noexcept {
+		return static_cast<Word>((mask(bitmask) & fullImmediate) >> 32);
+	}
+
+	void InstructionEncoder::assertBitmaskZero(const std::string& msg) const {
+		if (bitmask != 0) {
+			throw iris::Problem(msg.c_str());
+		}
+	}
+
+	InstructionEncoder::Encoding InstructionEncoder::encodeMove() {
+		auto memOp = static_cast<MoveOperation>(subType);
+		auto isSet = memOp == MoveOperation::Set;
+		auto second = isSet ? maskedLowerHalf() : 0;
+		auto third = isSet ? maskedUpperHalf() : 0;
+		auto count = instructionSizeFromImmediateMask(bitmask);
+		auto first = setSubType<Operation::Move>(setControl());
+		first = setBitmask(first);
+		first = setDestination(first);
+		first = setSource0(first); // safe for set operations
+		switch(memOp) {
+			case MoveOperation::Move:
+			case MoveOperation::Set:
+			case MoveOperation::SystemCall:
+			case MoveOperation::Swap:
+				return std::make_tuple(count, first, second, third);
+			default:
+				throw iris::Problem("Undefined MoveOperation requested during encoding!");
+		}
+	}
+
+
 	InstructionEncoder::Encoding InstructionEncoder::encodeLogical() {
-		auto first = encodeControl(0, type);
-		first = encodeImmediateFlag(first, immediate);
+		auto first = setSubType<Operation::Logical>(setControl());
+		first = setDestination(first);
+		first = setSource0(first);
 		if (immediate) {
-			first = encodeLogicalFlagImmediateType(first, subType);
-			first = encodeLogicalFlagImmediateMask(first, bitmask);
-			first = encodeLogicalImmediateDestination(first, arg0);
-			auto maskedImmediate = mask(bitmask) & fullImmediate;
-			auto second = static_cast<Word>(maskedImmediate);
-			auto third = static_cast<Word>(maskedImmediate >> 16);
-			return std::make_tuple(instructionSizeFromImmediateMask(bitmask), first, second, third);
+			first = setBitmask(first);
+			return std::make_tuple(instructionSizeFromImmediateMask(bitmask), first, maskedLowerHalf(), maskedUpperHalf());
 		} else {
-			first = encodeLogicalFlagType(first, subType);
-			first = encodeLogicalRegister0(first, arg0);
-			first = encodeLogicalRegister1(first, arg1);
+			first = setSource1(first);
 			return std::make_tuple(1, first, 0, 0);
 		}
 	}
 
 	InstructionEncoder::Encoding InstructionEncoder::encodeBranch() {
-		auto first = encodeControl(0, type);
-		first = encodeBranchFlagIsConditional(first, isConditional);
-		first = encodeBranchFlagIsIfForm(first, isIf);
-		first = encodeImmediateFlag(first, immediate);
-		first = encodeBranchFlagIsCallForm(first, isCall);
+		auto first = setSubType<Operation::Branch>(setControl());
+		first = setDestination(first); // conditional, but safe even for immediate calls
 		if (isIf) {
-			first = encodeBranchIfOnTrue(first, arg0);
-			first = encodeBranchIfOnFalse(first, arg1);
+			first = setSource0(first); // onTrue
+			first = setSource1(first); // onFalse
 			return std::make_tuple(1, first, 0, 0);
 		} else {
 			if (immediate) {
-				// encode the 24-bit number
-				first = encodeUpper(first, static_cast<byte>(fullImmediate));
-				auto second = static_cast<Word>(fullImmediate >> 8);
-				return std::make_tuple(2, first, second, 0);
+				// upper 16 of branch direct immediate is all zeros, use the
+				// other two words for address storage, even if 16 bits were
+				// encoded inside the first word, the third word would be
+				// necessary! This architecture needs to not be dependent on
+				// internal constants. This prevents breakage if more ram is
+				// added
+				return std::make_tuple(3, first, static_cast<Word>(fullImmediate), static_cast<Word>(fullImmediate >> 32));
 			} else {
-				first = encodeBranchIndirectDestination(first, arg0);
+				first = setDestination(first); // conditional
+				first = setSource0(first); // register destination
 				return std::make_tuple(1, first, 0, 0);
 			}
 		}
@@ -710,87 +722,22 @@ namespace iris19 {
 		indirect = false;
 		readNextWord = false;
 	}
-	// BEGIN DECODED INSTRUCTION
-	RegisterValue Instruction::getImmediate8() const noexcept {
-		switch(getControl()) {
-			case Operation::Arithmetic:
-				return markedImmediate() ? getArithmeticImmediate() : 0u;
-			case Operation::Shift:
-				return markedImmediate() ? getShiftImmediate() : 0u;
-			case Operation::Compare:
-				return markedImmediate() ? getCompareImmediate() : 0u;
-			default:
-				return 0u;
-		}
+	Word InstructionEncoder::setBitmask(Word value) const noexcept {
+		return encodeRawBitmask(value, bitmask);
 	}
-	byte Instruction::getBitmask() const noexcept {
-		switch(getControl()) {
-			case Operation::Move:
-				return getMoveBitmask();
-			case Operation::Logical:
-				return markedImmediate() ?  getLogicalFlagImmediateMask() : ArchitectureConstants::Bitmask;
-			default:
-				return ArchitectureConstants::Bitmask;
-		}
+	Word InstructionEncoder::setDestination(Word value) const noexcept {
+		return encodeDestinationIndex(value, arg0);
 	}
-	byte Instruction::getDestination() const noexcept {
-		switch(getControl()) {
-			case Operation::Arithmetic:
-				return getArithmeticDestination();
-			case Operation::Logical:
-				return markedImmediate() ? getLogicalImmediateDestination() : getLogicalRegisterDestination();
-			case Operation::Compare:
-				return getCompareRegisterDest();
-			case Operation::Move:
-				return getMoveDestination();
-			case Operation::Shift:
-				return getShiftDestination();
-			case Operation::Branch:
-				return getBranchIndirectDestination();
-			default:
-				return 0;
-		}
+	Word InstructionEncoder::setSource0(Word value) const noexcept {
+		return encodeSource0Index(value, arg1);
 	}
-	byte Instruction::getSource0() const noexcept {
-		switch (getControl()) {
-			case Operation::Arithmetic:
-				return getArithmeticSource();
-			case Operation::Compare:
-				return getCompareRegisterSrc0();
-			case Operation::Logical:
-				return markedImmediate() ? getLogicalImmediateSource0() : getLogicalRegister0();
-			case Operation::Move:
-				return getSubType<MoveOperation>() == MoveOperation::Set ? 0u : getMoveSource();
-			default:
-				return 0;
-		}
+	Word InstructionEncoder::setSource1(Word value) const noexcept {
+		return encodeSource1Index(value, arg2);
 	}
-	byte Instruction::getSource1() const noexcept {
-		switch (getControl()) {
-			case Operation::Arithmetic:
-				return markedImmediate() ? 0 : getArithmeticSource1();
-			case Operation::Shift:
-				return markedImmediate() ? 0 : getShiftSource1();
-			case Operation::Compare:
-				return markedImmediate() ? 0 : getCompareRegisterSrc1();
-			case Operation::Logical:
-				return markedImmediate() ? 0 : getLogicalRegister1();
-			default:
-				return 0;
-		}
+	Word InstructionEncoder::setImmediateFlag(Word value) const noexcept {
+		return encodeImmediateFlag(value, immediate);
 	}
-	byte Instruction::getSubType() const noexcept {
-		switch (getControl()) {
-			case Operation::Arithmetic:
-				return getArithmeticFlagType();
-			case Operation::Move:
-				return getMoveSubtype();
-			case Operation::Compare:
-				return getCompareType();
-			case Operation::Logical:
-				return markedImmediate() ? getLogicalFlagImmediateType() : getLogicalFlagType();
-			default:
-				return 0;
-		}
+	Word InstructionEncoder::setControl(Word value) const noexcept {
+		return encodeControl(value, type);
 	}
 }
