@@ -65,6 +65,18 @@ namespace iris19 {
 			DecodedInstruction(RawInstruction input) noexcept : _rawValue(input) { }
 			DecodedInstruction(const DecodedInstruction&) = delete;
 			RawInstruction getRawValue() const noexcept { return _rawValue; }
+			bool markedImmediate() const noexcept;
+			byte getBitmask() const noexcept;
+			Operation getOperation() const noexcept;
+			RegisterValue getImmediate8() const noexcept;
+			byte getDestination() const noexcept;
+			byte getConditional() const noexcept;
+			byte getOnTrue() const noexcept;
+			byte getOnFalse() const noexcept;
+			byte getSource0() const noexcept;
+			byte getSource1() const noexcept;
+
+		private:
 #define X(title, mask, shift, type, post) inline type get ## title () const noexcept { return iris::decodeBits<RawInstruction, type, mask, shift>(_rawValue); }
 #include "def/iris19/instruction.def"
 #undef X

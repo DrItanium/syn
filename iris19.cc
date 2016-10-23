@@ -235,8 +235,8 @@ namespace iris19 {
 
 	void Core::arithmeticOperation(DecodedInstruction&& current) {
 		auto result = 0u;
-		auto src0 = genericRegisterGet(current.getArithmeticSource());
-		auto src1 = current.getArithmeticFlagImmediate() ? current.getArithmeticImmediate() : genericRegisterGet(current.getArithmeticSource1());
+		auto src0 = genericRegisterGet(current.getArg0());
+		auto src1 = current.markedImmediate() ? current.get
 		switch (current.getArithmeticFlagType()) {
 			case ArithmeticOps::Add:
 				result = iris::add(src0, src1);
@@ -256,7 +256,7 @@ namespace iris19 {
 			default:
 				throw iris::Problem("Illegal Arithmetic Signature");
 		}
-		genericRegisterSet(current.getArithmeticDestination(), result);
+		genericRegisterSet(current.getDestination(), result);
 	}
 
 	void Core::logicalOperation(DecodedInstruction&& current) {
@@ -425,7 +425,7 @@ namespace iris19 {
 	void Core::link(std::istream& input) {
 		// we have some more data to read through
 		// two address system, 1 RegisterValue -> address, 1 Word -> value
-		static constexpr int bufSize = 8;
+		static constexpr int bufSize = 14;
 		char buf[bufSize] = { 0 };
 		for(int lineNumber = 0; input.good(); ++lineNumber) {
 			input.read(buf, bufSize);
@@ -438,10 +438,10 @@ namespace iris19 {
 				// should occur
 				switch (buf[0]) {
 					case 0: // memory value
-						storeWord(encodeRegisterValue(buf[2], buf[3], buf[4], buf[5]), encodeWord(buf[6], buf[7]));
+						storeWord(encodeRegisterValue(buf[2], buf[3], buf[4], buf[5], buf[6], buf[7], buf[8], buf[9]), encodeWord(static_cast<byte>(buf[10]), buf[11], buf[12], buf[13]));
 						break;
 					case 1: // register value
-						gpr[static_cast<byte>(buf[1])] = encodeRegisterValue(buf[2], buf[3], buf[4], buf[5]);
+						gpr[static_cast<byte>(buf[1])] = encodeRegisterValue(buf[2], buf[3], buf[4], buf[5], buf[6], buf[7], buf[8], buf[9]);
 						break;
 					default:
 						throw iris::Problem("undefined link class!");
@@ -711,5 +711,85 @@ namespace iris19 {
 		fullImmediate = 0;
 		indirect = false;
 		readNextWord = false;
+	}
+	// BEGIN DECODED INSTRUCTION
+	bool DecodedInstruction::markedImmediate() const noexcept {
+		switch (getControl()) {
+			case Operation::Arithmetic:
+				return getArithmeticFlagImmediate();
+			case Operation::Logical:
+				return getLogicalFlagImmediate();
+			case Operation::Shift:
+				return getShiftImmediate();
+			case Operation::Compare:
+				return getCompareImmediateFlag();
+			case Operation::Branch:
+				return getBranchFlagIsImmediate();
+			default:
+				return false;
+		}
+	}
+	RegisterValue DecodedInstruction::getImmediate8() const noexcept {
+		switch(getControl()) {
+			case Operation::Arithmetic:
+				return getArithmeticImmediate();
+			case Operation::Shift:
+				return getShiftImmediate();
+			case Operation::Compare:
+				return getCompareImmediate();
+			default:
+				return 0u;
+		}
+	}
+	byte DecodedInstruction::getBitmask() const noexcept {
+		switch(getControl()) {
+			case Operation::Move:
+				return getMoveBitmask();
+			case Operation::Logical:
+				return getLogicalFlagImmediate() ?  getLogicalFlagImmediateMask() : ArchitectureConstants::Bitmask;
+			default:
+				return ArchitectureConstants::Bitmask;
+		}
+	}
+	byte DecodedInstruction::getDestination() const noexcept {
+		switch(getControl()) {
+			case Operation::Arithmetic:
+				return getArithmeticDestination();
+			case Operation::Logical:
+				return getLogicalFlagImmediate() ? getLogicalImmediateDestination() : getLogicalRegisterDestination();
+			case Operation::Compare:
+				return getCompareRegisterDest();
+			case Operation::Move:
+				return getMoveDestination();
+			case Operation::Shift:
+				return getShiftDestination();
+			default:
+				return 0;
+		}
+	}
+	byte DecodedInstruction::getSource0() const noexcept {
+		switch (getControl()) {
+			case Operation::Arithmetic:
+				return getArithmeticSource();
+			case Operation::Move:
+				return getMoveSource();
+			case Operation::Compare:
+				return getCompareRegisterSrc0();
+			case Operation::Logical:
+				return getLogicalFlagImmediate() ? getLogicalImmediateSource0() : getLogicalRegister0();
+			case Operation::Move:
+				return getMoveSubtype() == MoveOperation::Set ? 0u : getMoveSource();
+			default:
+				return 0;
+		}
+	}
+	//byte DecodedInstruction::getSource1() const noexcept {
+	//	//switch (getControl()) {
+	//	//	case Operation::Arithmetic:
+	//	//		return
+	//	//}
+	//}
+	Operation DecodedInstruction::getOperation() const noexcept {
+		return getControl();
 	}
 }
