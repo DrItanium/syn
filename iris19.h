@@ -60,12 +60,12 @@ namespace iris19 {
 #undef EnumEntry
 #undef EndDefEnum
 
-	class DecodedInstruction {
+	class Instruction {
 		public:
-			DecodedInstruction(RawInstruction input) noexcept : _rawValue(input) { }
-			DecodedInstruction(const DecodedInstruction&) = delete;
+			Instruction(RawInstruction input) noexcept : _rawValue(input) { }
+			Instruction(const Instruction&) = delete;
 			RawInstruction getRawValue() const noexcept { return _rawValue; }
-			bool markedImmediate() const noexcept;
+			bool markedImmediate() const noexcept { return getImmediateFlag(); }
 			byte getBitmask() const noexcept;
 			byte getSubType() const noexcept;
 			inline Operation getOperation() const noexcept { return getControl(); }
@@ -142,7 +142,7 @@ namespace iris19 {
 
 	class Core : public iris::Core {
 		public:
-			using SystemFunction = std::function<void(Core*, DecodedInstruction&&)>;
+			using SystemFunction = std::function<void(Core*, Instruction&&)>;
 			enum DefaultHandlers {
 				Terminate,
 				GetC,
@@ -172,23 +172,23 @@ namespace iris19 {
 			Word popWord(RegisterValue& ptr);
 			DWord popDword();
 			DWord popDword(RegisterValue& ptr);
-			static void defaultSystemHandler(Core* core, DecodedInstruction&& inst);
-			static void terminate(Core* core, DecodedInstruction&& inst);
-			static void getc(Core* core, DecodedInstruction&& inst);
-			static void putc(Core* core, DecodedInstruction&& inst);
+			static void defaultSystemHandler(Core* core, Instruction&& inst);
+			static void terminate(Core* core, Instruction&& inst);
+			static void getc(Core* core, Instruction&& inst);
+			static void putc(Core* core, Instruction&& inst);
 			SystemFunction getSystemHandler(byte index);
-			void dispatch(DecodedInstruction&& inst);
+			void dispatch(Instruction&& inst);
 			inline Word readNext() noexcept { return tryReadNext(true); }
 			Word tryReadNext(bool readNext) noexcept;
 			RegisterValue retrieveImmediate(byte bitmask) noexcept;
 			void genericRegisterSet(byte registerTarget, RegisterValue value);
 			RegisterValue genericRegisterGet(byte registerTarget);
-			void branchSpecificOperation(DecodedInstruction&& current);
-			void compareOperation(DecodedInstruction&& current);
-			void arithmeticOperation(DecodedInstruction&& current);
-			void logicalOperation(DecodedInstruction&& current);
-			void shiftOperation(DecodedInstruction&& current);
-			void moveOperation(DecodedInstruction&& current);
+			void branchSpecificOperation(Instruction&& current);
+			void compareOperation(Instruction&& current);
+			void arithmeticOperation(Instruction&& current);
+			void logicalOperation(Instruction&& current);
+			void shiftOperation(Instruction&& current);
+			void moveOperation(Instruction&& current);
 
 			RegisterValue& registerValue(byte index);
 			inline RegisterValue& getInstructionPointer() noexcept     { return gpr[ArchitectureConstants::InstructionPointer]; }

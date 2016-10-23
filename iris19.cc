@@ -40,7 +40,7 @@ namespace iris19 {
 		installSystemHandler(Core::DefaultHandlers::PutC, Core::putc);
 	}
 
-	void Core::defaultSystemHandler(Core* core, DecodedInstruction&& inst) {
+	void Core::defaultSystemHandler(Core* core, Instruction&& inst) {
 		throw iris::Problem("Unimplemented system call!");
 	}
 
@@ -101,7 +101,7 @@ namespace iris19 {
 		std::cout << "Current Instruction Location: " << std::hex << getInstructionPointer() << std::endl;
 		std::cout << "\tCurrent word value: " << std::hex << getCurrentCodeWord() << std::endl;
 #endif
-		DecodedInstruction di(getCurrentCodeWord());
+		Instruction di(getCurrentCodeWord());
 		dispatch(std::move(di));
 		if (advanceIp) {
 			incrementInstructionPointer();
@@ -147,7 +147,7 @@ namespace iris19 {
 		}
 	}
 
-	void Core::dispatch(DecodedInstruction&& current) {
+	void Core::dispatch(Instruction&& current) {
 		auto hasError = false;
 		switch (current.getOperation()) {
 			case Operation::Arithmetic:
@@ -180,7 +180,7 @@ namespace iris19 {
 			throw iris::Problem(str.str());
 		}
 	}
-	void Core::moveOperation(DecodedInstruction&& current) {
+	void Core::moveOperation(Instruction&& current) {
 		auto moveType = current.getSubType<MoveOperation>();
 		auto bitmask = current.getBitmask();
 		auto mDest = current.getDestination();
@@ -221,7 +221,7 @@ namespace iris19 {
 		}
 	}
 
-	void Core::shiftOperation(DecodedInstruction&& current) {
+	void Core::shiftOperation(Instruction&& current) {
 		auto result = 0u;
 		auto source0 = genericRegisterGet(current.getSource0());
 		auto source1 = current.markedImmediate() ? current.getImmediate8() : genericRegisterGet(current.getSource1());
@@ -233,7 +233,7 @@ namespace iris19 {
 		genericRegisterSet(current.getDestination(), result);
 	}
 
-	void Core::arithmeticOperation(DecodedInstruction&& current) {
+	void Core::arithmeticOperation(Instruction&& current) {
 		auto result = 0u;
 		auto src0 = genericRegisterGet(current.getSource0());
 		auto src1 = current.markedImmediate() ? current.getImmediate8() : genericRegisterGet(current.getSource1());
@@ -259,7 +259,7 @@ namespace iris19 {
 		genericRegisterSet(current.getDestination(), result);
 	}
 
-	void Core::logicalOperation(DecodedInstruction&& current) {
+	void Core::logicalOperation(Instruction&& current) {
 		auto result = 0u;
 		auto src0 = genericRegisterGet(current.getSource0());
 		if (current.markedImmediate()) {
@@ -302,7 +302,7 @@ namespace iris19 {
 		genericRegisterSet(current.getDestination(), result);
 	}
 
-	void Core::compareOperation(DecodedInstruction&& current) {
+	void Core::compareOperation(Instruction&& current) {
 		auto src0 = genericRegisterGet(current.getSource0());
 		auto src1 = current.markedImmediate() ? current.getImmediate8() : genericRegisterGet(current.getSource1());
 		auto compareType = current.getSubType<CompareStyle>();
@@ -332,7 +332,7 @@ namespace iris19 {
 		genericRegisterSet(current.getDestination(), result);
 	}
 
-	void Core::branchSpecificOperation(DecodedInstruction&& current) {
+	void Core::branchSpecificOperation(Instruction&& current) {
 		advanceIp = true;
 		auto isIf = current.branchMarkedIf();
 		auto isCall = current.branchMarkedIf();
@@ -405,15 +405,15 @@ namespace iris19 {
 		}
 	}
 
-	void Core::terminate(Core* core, DecodedInstruction&& inst) {
+	void Core::terminate(Core* core, Instruction&& inst) {
 		core->execute = false;
 		core->advanceIp = false;
 	}
 
-	void Core::putc(Core* core, DecodedInstruction&& current) {
+	void Core::putc(Core* core, Instruction&& current) {
 		std::cout.put(static_cast<char>(core->genericRegisterGet(current.getSource0())));
 	}
-	void Core::getc(Core* core, DecodedInstruction&& current) {
+	void Core::getc(Core* core, Instruction&& current) {
 		byte value = 0;
 		std::cin >> std::noskipws >> value;
 		core->genericRegisterSet(current.getSource0(), static_cast<Word>(value));
@@ -567,7 +567,7 @@ namespace iris19 {
 
 	InstructionEncoder::Encoding InstructionEncoder::encodeArithmetic() {
 		auto first = encodeControl(0, type);
-		first = encodeArithmeticFlagImmediate(first, immediate);
+		first = encodeImmediateFlag(first, immediate);
 		first = encodeArithmeticFlagType(first, subType);
 		first = encodeArithmeticDestination(first, arg0);
 		first = immediate ? encodeArithmeticImmediate(first, arg1) : encodeArithmeticSource(first, arg1);
@@ -609,7 +609,7 @@ namespace iris19 {
 
 	InstructionEncoder::Encoding InstructionEncoder::encodeShift() {
 		auto first = encodeControl(0, type);
-		first = encodeShiftFlagImmediate(first, immediate);
+		first = encodeImmediateFlag(first, immediate);
 		first = encodeShiftFlagLeft(first, shiftLeft);
 		first = encodeShiftDestination(first, arg0);
 		first = encodeShiftSource0(first, arg1);
@@ -620,7 +620,7 @@ namespace iris19 {
 	InstructionEncoder::Encoding InstructionEncoder::encodeCompare() {
 		auto first = encodeControl(0, type);
 		first = encodeCompareType(first, subType);
-		first = encodeCompareImmediateFlag(first, immediate);
+		first = encodeImmediateFlag(first, immediate);
 		first = encodeCompareRegisterDest(first, this->arg0);
 		first = encodeCompareRegisterSrc0(first, this->arg1);
 		first = encodeCompareRegisterSrc1(first, this->arg2);
@@ -629,7 +629,7 @@ namespace iris19 {
 
 	InstructionEncoder::Encoding InstructionEncoder::encodeLogical() {
 		auto first = encodeControl(0, type);
-		first = encodeLogicalFlagImmediate(first, immediate);
+		first = encodeImmediateFlag(first, immediate);
 		if (immediate) {
 			first = encodeLogicalFlagImmediateType(first, subType);
 			first = encodeLogicalFlagImmediateMask(first, bitmask);
@@ -650,7 +650,7 @@ namespace iris19 {
 		auto first = encodeControl(0, type);
 		first = encodeBranchFlagIsConditional(first, isConditional);
 		first = encodeBranchFlagIsIfForm(first, isIf);
-		first = encodeBranchFlagIsImmediate(first, immediate);
+		first = encodeImmediateFlag(first, immediate);
 		first = encodeBranchFlagIsCallForm(first, isCall);
 		if (isIf) {
 			first = encodeBranchIfOnTrue(first, arg0);
@@ -711,50 +711,34 @@ namespace iris19 {
 		readNextWord = false;
 	}
 	// BEGIN DECODED INSTRUCTION
-	bool DecodedInstruction::markedImmediate() const noexcept {
-		switch (getControl()) {
-			case Operation::Arithmetic:
-				return getArithmeticFlagImmediate();
-			case Operation::Logical:
-				return getLogicalFlagImmediate();
-			case Operation::Shift:
-				return getShiftImmediate();
-			case Operation::Compare:
-				return getCompareImmediateFlag();
-			case Operation::Branch:
-				return getBranchFlagIsImmediate();
-			default:
-				return false;
-		}
-	}
-	RegisterValue DecodedInstruction::getImmediate8() const noexcept {
+	RegisterValue Instruction::getImmediate8() const noexcept {
 		switch(getControl()) {
 			case Operation::Arithmetic:
-				return getArithmeticFlagImmediate() ? getArithmeticImmediate() : 0u;
+				return markedImmediate() ? getArithmeticImmediate() : 0u;
 			case Operation::Shift:
-				return getShiftFlagImmediate() ? getShiftImmediate() : 0u;
+				return markedImmediate() ? getShiftImmediate() : 0u;
 			case Operation::Compare:
-				return getCompareImmediateFlag() ? getCompareImmediate() : 0u;
+				return markedImmediate() ? getCompareImmediate() : 0u;
 			default:
 				return 0u;
 		}
 	}
-	byte DecodedInstruction::getBitmask() const noexcept {
+	byte Instruction::getBitmask() const noexcept {
 		switch(getControl()) {
 			case Operation::Move:
 				return getMoveBitmask();
 			case Operation::Logical:
-				return getLogicalFlagImmediate() ?  getLogicalFlagImmediateMask() : ArchitectureConstants::Bitmask;
+				return markedImmediate() ?  getLogicalFlagImmediateMask() : ArchitectureConstants::Bitmask;
 			default:
 				return ArchitectureConstants::Bitmask;
 		}
 	}
-	byte DecodedInstruction::getDestination() const noexcept {
+	byte Instruction::getDestination() const noexcept {
 		switch(getControl()) {
 			case Operation::Arithmetic:
 				return getArithmeticDestination();
 			case Operation::Logical:
-				return getLogicalFlagImmediate() ? getLogicalImmediateDestination() : getLogicalRegisterDestination();
+				return markedImmediate() ? getLogicalImmediateDestination() : getLogicalRegisterDestination();
 			case Operation::Compare:
 				return getCompareRegisterDest();
 			case Operation::Move:
@@ -767,36 +751,35 @@ namespace iris19 {
 				return 0;
 		}
 	}
-	byte DecodedInstruction::getSource0() const noexcept {
+	byte Instruction::getSource0() const noexcept {
 		switch (getControl()) {
 			case Operation::Arithmetic:
 				return getArithmeticSource();
 			case Operation::Compare:
 				return getCompareRegisterSrc0();
 			case Operation::Logical:
-				return getLogicalFlagImmediate() ? getLogicalImmediateSource0() : getLogicalRegister0();
+				return markedImmediate() ? getLogicalImmediateSource0() : getLogicalRegister0();
 			case Operation::Move:
 				return getSubType<MoveOperation>() == MoveOperation::Set ? 0u : getMoveSource();
 			default:
 				return 0;
 		}
 	}
-	byte DecodedInstruction::getSource1() const noexcept {
-		auto imm = markedImmediate();
+	byte Instruction::getSource1() const noexcept {
 		switch (getControl()) {
 			case Operation::Arithmetic:
-				return imm ? 0 : getArithmeticSource1();
+				return markedImmediate() ? 0 : getArithmeticSource1();
 			case Operation::Shift:
-				return imm ? 0 : getShiftSource1();
+				return markedImmediate() ? 0 : getShiftSource1();
 			case Operation::Compare:
-				return imm ? 0 : getCompareRegisterSrc1();
+				return markedImmediate() ? 0 : getCompareRegisterSrc1();
 			case Operation::Logical:
-				return imm ? 0 : getLogicalRegister1();
+				return markedImmediate() ? 0 : getLogicalRegister1();
 			default:
 				return 0;
 		}
 	}
-	byte DecodedInstruction::getSubType() const noexcept {
+	byte Instruction::getSubType() const noexcept {
 		switch (getControl()) {
 			case Operation::Arithmetic:
 				return getArithmeticFlagType();
