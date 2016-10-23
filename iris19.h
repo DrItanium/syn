@@ -143,9 +143,6 @@ namespace iris19 {
 			static void putc(Core* core, DecodedInstruction&& inst);
 			SystemFunction getSystemHandler(byte index);
 			void dispatch(DecodedInstruction&& inst);
-#define X(title, func) void func ();
-#include "def/iris19/misc.def"
-#undef X
 			template<byte rindex>
 				inline RegisterValue& registerValue() noexcept {
 					static_assert(rindex < ArchitectureConstants::RegisterCount, "Not a legal register index!");
