@@ -384,7 +384,7 @@ move_op:
 	   OP_MOVE two_argument bitmask { iris19::op.immediate = false; }|
 	   OP_MOVE destination_register full_imm_or_source1 | // set
 	   OP_RETURN {
-	   		// equivalent to move 0m11111111 ip stack sp
+	   		// equivalent to move ip stack sp 0m11111111 
 			iris19::op.bitmask = 0b11111111;
 			iris19::op.arg0 = iris19::encodeRegisterIndex(iris19::ArchitectureConstants::InstructionPointer, false, false);
 			iris19::op.arg1 = iris19::encodeRegisterIndex(iris19::ArchitectureConstants::StackPointer, false, true);
