@@ -67,14 +67,30 @@ namespace iris19 {
 			RawInstruction getRawValue() const noexcept { return _rawValue; }
 			bool markedImmediate() const noexcept;
 			byte getBitmask() const noexcept;
-			Operation getOperation() const noexcept;
-			RegisterValue getImmediate8() const noexcept;
-			byte getDestination() const noexcept;
-			byte getConditional() const noexcept;
-			byte getOnTrue() const noexcept;
-			byte getOnFalse() const noexcept;
+			byte getSubType() const noexcept;
+			inline Operation getOperation() const noexcept { return getControl(); }
+			inline byte getConditional() const noexcept { return isOperation<Operation::Branch>() ? getBranchCondition() : 0; }
+			inline byte getOnTrue() const noexcept { return branchMarkedIf() ? getBranchIfOnTrue() : 0; }
+			inline byte getOnFalse() const noexcept { return branchMarkedIf() ? getBranchIfOnFalse() : 0; }
+			inline bool branchMarkedIf() const noexcept { return isOperation<Operation::Branch>() && getBranchFlagIsIfForm(); }
+			inline bool branchMarkedCall() const noexcept { return isOperation<Operation::Branch>() && getBranchFlagIsCallForm(); }
+			inline bool branchMarkedConditional() const noexcept { return isOperation<Operation::Branch>() && getBranchFlagIsConditional(); }
+			inline bool shiftLeft() const noexcept { return isOperation<Operation::Shift>() && getShiftFlagLeft(); }
 			byte getSource0() const noexcept;
 			byte getSource1() const noexcept;
+			RegisterValue getImmediate8() const noexcept;
+			byte getDestination() const noexcept;
+
+			template<typename T>
+			inline T getSubType() const noexcept {
+				return static_cast<T>(getSubType());
+			}
+
+			template<Operation op>
+			inline bool isOperation() const noexcept {
+				return getControl() == op;
+			}
+			
 
 		private:
 #define X(title, mask, shift, type, post) inline type get ## title () const noexcept { return iris::decodeBits<RawInstruction, type, mask, shift>(_rawValue); }
