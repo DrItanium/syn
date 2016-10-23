@@ -18,15 +18,16 @@ namespace iris19 {
 	using RawInstruction = Word; // this is more of a packet!
 	using immediate = HWord;
 	using RegisterValue = DWord;
-	inline constexpr Word encodeWord (byte a, byte b) noexcept;
-	inline constexpr RegisterValue encodeRegisterValue(byte a, byte b, byte c, byte d) noexcept;
-	inline void decodeWord(Word value, byte* storage) noexcept;
+	inline constexpr Word encodeWord (byte b0, byte b1, byte b2, byte b3) noexcept {
+		return iris::encodeUint32LE(b0, b1, b2, b3);
+	}
+	inline constexpr RegisterValue encodeRegisterValue(byte b0, byte b1, byte b2, byte b3, byte b4, byte b5, byte b6, byte b7) noexcept {
+		return iris::encodeUint64LE(b0, b1, b2, b3, b4, b5, b6, b7);
+	}
 	inline void decodeRegisterValue(RegisterValue value, byte* storage) noexcept;
-	inline Word decodeUpperHalf(RegisterValue value) noexcept;
-	inline Word decodeLowerHalf(RegisterValue value) noexcept;
-	inline constexpr RegisterValue encodeUpperHalf(RegisterValue value, Word upperHalf) noexcept;
-	inline constexpr RegisterValue encodeLowerHalf(RegisterValue value, Word lowerHalf) noexcept;
-	inline constexpr RegisterValue encodeRegisterValue(Word upper, Word lower) noexcept;
+	inline constexpr RegisterValue encodeRegisterValue(Word lower, Word upper) noexcept {
+		return iris::encodeUint64LE(lower, upper);
+	}
 	enum ArchitectureConstants  {
 		RegisterCount = 64,
 		SegmentCount = 4096, // 1 gigabyte
@@ -100,6 +101,13 @@ namespace iris19 {
 	constexpr auto memoryMaxBitmask = 0b00001111111111111111111111111111;
 	constexpr auto upper32Mask = SetBitmaskToWordMask<iris::upperByteHalf>::mask;
 	constexpr auto lower32Mask = SetBitmaskToWordMask<iris::lowerByteHalf>::mask;
+
+	inline constexpr Word decodeUpperHalf(RegisterValue value) noexcept {
+		return iris::decodeBits<RegisterValue, Word, upper32Mask, 32>(value);
+	}
+	inline constexpr Word decodeLowerHalf(RegisterValue value) noexcept {
+		return iris::decodeBits<RegisterValue, Word, lower32Mask, 0>(value);
+	}
 
 	int instructionSizeFromImmediateMask(byte bitmask);
 

@@ -14,36 +14,6 @@ namespace iris19 {
 	Core* newCore() noexcept {
 		return new Core();
 	}
-	constexpr RegisterValue encodeRegisterValue(byte a, byte b, byte c, byte d) noexcept {
-		return iris::encodeUint32LE(a, b, c, d);
-	}
-	constexpr Word encodeWord(byte a, byte b) noexcept {
-		return iris::encodeUint16LE(a, b);
-	}
-	void decodeWord(Word value, byte* storage) noexcept {
-		return iris::decodeUint32LE(value, storage);
-	}
-	void decodeWord(RegisterValue value, byte* storage) noexcept {
-		return iris::decodeInt32LE(value, storage);
-	}
-
-	Word decodeUpperHalf(RegisterValue value) noexcept {
-		return iris::decodeBits<RegisterValue, Word, upper32Mask, 32>(value);
-	}
-	Word decodeLowerHalf(RegisterValue value) noexcept {
-		return iris::decodeBits<RegisterValue, Word, lower32Mask, 0>(value);
-	}
-
-	constexpr RegisterValue encodeUpperHalf(RegisterValue value, Word upperHalf) noexcept {
-		return iris::encodeBits<RegisterValue, Word, upper32Mask, 32>(value, upperHalf);
-	}
-	constexpr RegisterValue encodeLowerHalf(RegisterValue value, Word lowerHalf) noexcept {
-		return iris::encodeBits<RegisterValue, Word, lower32Mask, 0>(value, lowerHalf);
-	}
-
-	constexpr RegisterValue encodeRegisterValue(Word upper, Word lower) noexcept {
-		return encodeUpperHalf(encodeLowerHalf(0, lower), upper);
-	}
 
 	RegisterValue Core::retrieveImmediate(byte bitmask) noexcept {
 		auto useLower = readLower(bitmask);
@@ -703,14 +673,17 @@ namespace iris19 {
 
 	InstructionEncoder::Encoding InstructionEncoder::encode() {
 		// always encode the type
+		switch (type) {
 #define DefEnum(a, b)
 #define EndDefEnum(a, b, c)
-#define EnumEntry(compareType) if (type == Operation:: compareType) { return encode ## compareType () ; }
+#define EnumEntry(compareType) case Operation:: compareType : return encode ## compareType () ; 
 #include "def/iris19/ops.def"
 #undef DefEnum
 #undef EndDefEnum
 #undef EnumEntry
-		throw iris::Problem("Illegal type to encode!");
+			default:
+				throw iris::Problem("Illegal type to encode!");
+		}
 	}
 
 	int instructionSizeFromImmediateMask(byte bitmask) {
