@@ -1,3 +1,4 @@
+
 DefEnum(LogicalOps, byte)
 	EnumEntry(And)
 	EnumEntry(Or)

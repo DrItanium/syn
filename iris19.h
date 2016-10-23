@@ -106,26 +106,19 @@ namespace iris19 {
 	inline constexpr Word upperMask(byte bitmask) {
         return encodeWord(iris::getBit<byte, 4>(bitmask), iris::getBit<byte, 5>(bitmask), iris::getBit<byte, 6>(bitmask), iris::getBit<byte, 7>(bitmask));
 	}
-	template<byte bitmask>
-		struct SetBitmaskToWordMask {
-			static_assert(bitmask <= ArchitectureConstants::Bitmask, "Bitmask is too large and must be less than or equals to 0b11111111");
-			static constexpr RegisterValue mask = iris::encodeUint64LE(lowerMask(bitmask), upperMask(bitmask));
-			SetBitmaskToWordMask() = delete;
-			~SetBitmaskToWordMask() = delete;
-		};
 	inline constexpr RegisterValue mask(byte bitmask) { return iris::encodeUint64LE(upperMask(bitmask), lowerMask(bitmask)); }
 	inline constexpr bool readLower(byte bitmask) noexcept { return iris::getLowerHalf(bitmask) != 0; }
 	inline constexpr bool readUpper(byte bitmask) noexcept { return iris::getUpperHalf(bitmask) != 0; }
 	inline constexpr byte registerGetActualIndex(byte value) { return iris::decodeBits<byte, byte, 0b00111111, 0>(value); }
 	inline constexpr bool registerIsMarkedIndirect(byte value) { return iris::getBit<byte, 6>(value); }
 	inline constexpr bool registerIsMarkedStack(byte value) { return iris::getBit<byte, 7>(value); }
-	inline constexpr byte encodeRegisterValue(byte index, bool indirect, bool stack) {
+	inline constexpr byte encodeRegisterIndex(byte index, bool indirect, bool stack) {
 		return iris::setBit<byte, 7>(iris::setBit<byte, 6>(iris::encodeBits<byte, byte, 0b00111111, 0>(0, index), indirect), stack);
 	}
-	constexpr auto bitmask64 =   SetBitmaskToWordMask<ArchitectureConstants::Bitmask>::mask;
+	constexpr auto bitmask64 = mask(0b11111111);
 	constexpr auto memoryMaxBitmask = 0b00001111111111111111111111111111;
-	constexpr auto upper32Mask = SetBitmaskToWordMask<iris::upperByteHalf>::mask;
-	constexpr auto lower32Mask = SetBitmaskToWordMask<iris::lowerByteHalf>::mask;
+	constexpr auto upper32Mask = lowerMask(0b11110000);
+	constexpr auto lower32Mask = upperMask(0b00001111);
 
 	inline constexpr Word decodeUpperHalf(RegisterValue value) noexcept {
 		return iris::decodeBits<RegisterValue, Word, upper32Mask, 32>(value);

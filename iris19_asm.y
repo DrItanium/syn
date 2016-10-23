@@ -137,8 +137,6 @@ void resolveLabels();
 void saveEncoding();
 asmstate state;
 InstructionEncoder op;
-auto ifImmediate = static_cast<byte>(0);
-auto ifNotImmediate = static_cast<byte>(0);
 }
 
 
@@ -341,18 +339,7 @@ operation:
 		OP_BRANCH branch_op { iris19::op.type = iris19::Operation::Branch; } |
 		move_group { iris19::op.type = iris19::Operation::Move; };
 compare_op:
-		  compare_type compare_args;
-
-compare_args:
-		 uses_immediate destination_register source_register IMMEDIATE { iris19::op.arg1= static_cast<byte>($4); } |
-		 uses_immediate destination_register source_register ALIAS {
-				try {
-					iris19::op.arg1 = static_cast<byte>(iris19::state.getConstantValue($4));
-				} catch(iris::Problem err) {
-					iris19error(err.what().c_str());
-				}
-		 } |
-		 destination_register source_register source1_register { iris19::op.immediate = false; };
+		  compare_type two_argument source1_or_short_immediate;
 
 compare_type:
 		COMPARE_OP_EQ { iris19::op.subType = static_cast<byte>(iris19::CompareStyle::Equals); } |
@@ -364,42 +351,25 @@ compare_type:
 
 
 logical_op:
-		logical_subop logical_args {
-			iris19::op.subType = iris19::op.immediate ? iris19::ifImmediate : iris19::ifNotImmediate;
-		} |
-		LOGICAL_OP_NOT destination_register {
+		logical_subop two_argument full_imm_or_source1 |
+		LOGICAL_OP_NOT two_argument {
 			iris19::op.immediate = false;
 			iris19::op.subType = static_cast<byte>(iris19::LogicalOps::Not);
 		};
 
-logical_args:
-		uses_immediate bitmask destination_register source_register lexeme |
-		destination_register source_register source1_register { iris19::op.immediate = false; };
+full_imm_or_source1:
+				 uses_immediate lexeme bitmask |
+				 source1_register { iris19::op.immediate = false; };
 
 logical_subop:
-		ACTION_AND {
-			iris19::ifImmediate = static_cast<byte>(iris19::ImmediateLogicalOps::And);
-			iris19::ifNotImmediate = static_cast<byte>(iris19::LogicalOps::And);
-		} |
-		ACTION_OR {
-			iris19::ifImmediate = static_cast<byte>(iris19::ImmediateLogicalOps::Or);
-			iris19::ifNotImmediate = static_cast<byte>(iris19::LogicalOps::Or);
-		} |
-		ACTION_XOR {
-			iris19::ifImmediate = static_cast<byte>(iris19::ImmediateLogicalOps::Xor);
-			iris19::ifNotImmediate = static_cast<byte>(iris19::LogicalOps::Xor);
-		} |
-		LOGICAL_OP_NAND {
-			iris19::ifImmediate = static_cast<byte>(iris19::ImmediateLogicalOps::Nand);
-			iris19::ifNotImmediate = static_cast<byte>(iris19::LogicalOps::Nand);
-		};
+		ACTION_AND { iris19::op.subType = static_cast<byte>(iris19::LogicalOps::And); } |
+		ACTION_OR { iris19::op.subType = static_cast<byte>(iris19::LogicalOps::Or); } |
+		ACTION_XOR { iris19::op.subType = static_cast<byte>(iris19::LogicalOps::Xor); } |
+		LOGICAL_OP_NAND { iris19::op.subType = static_cast<byte>(iris19::LogicalOps::Nand); };
+
 shift_op:
-		shift_left_or_right shift_args;
+		shift_left_or_right two_argument source1_or_short_immediate;
 
-
-shift_args:
-		uses_immediate destination_register source_register IMMEDIATE { iris19::op.arg1 = $4 & 0b111111; } |
-		destination_register source_register source1_register { iris19::op.immediate = false; };
 
 shift_left_or_right:
 		SHIFT_FLAG_LEFT { iris19::op.shiftLeft = true; } |
@@ -407,140 +377,110 @@ shift_left_or_right:
 
 move_group: 
 		  move_op { iris19::op.subType = static_cast<byte>(iris19::MoveOperation::Move); } | 
-		  set_op { iris19::op.subType = static_cast<byte>(iris19::MoveOperation::Set); } |
-		  swap_op { iris19::op.subType = static_cast<byte>(iris19::MoveOperation::Swap); } |
-		  system_op { iris19::op.subType = static_cast<byte>(iris19::MoveOperation::SystemCall); };
+		  OP_SWAP two_argument { iris19::op.subType = static_cast<byte>(iris19::MoveOperation::Swap); } |
+		  OP_SYSTEM two_argument { iris19::op.subType = static_cast<byte>(iris19::MoveOperation::SystemCall); };
 
 move_op: 
-	   OP_MOVE bitmask destination_register source_register |
+	   OP_MOVE two_argument bitmask { iris19::op.immediate = false; }|
+	   OP_MOVE destination_register full_imm_or_source1 | // set
 	   OP_RETURN {
 	   		// equivalent to move 0m11111111 ip stack sp
 			iris19::op.bitmask = 0b11111111;
-			iris19::op.arg0 = iris19::encodeRegisterValue(iris19::ArchitectureConstants::InstructionPointer, false, false);
-			iris19::op.arg1 = iris19::encodeRegisterValue(iris19::ArchitectureConstants::StackPointer, false, true);
+			iris19::op.arg0 = iris19::encodeRegisterIndex(iris19::ArchitectureConstants::InstructionPointer, false, false);
+			iris19::op.arg1 = iris19::encodeRegisterIndex(iris19::ArchitectureConstants::StackPointer, false, true);
+			iris19::op.immediate = false;
 	   } |
 		OP_NOP {
 			iris19::op.bitmask = 0b11111111;
-			iris19::op.arg0 = iris19::encodeRegisterValue(0, false, false);
-			iris19::op.arg1 = iris19::encodeRegisterValue(0, false, false);
+			iris19::op.arg0 = iris19::encodeRegisterIndex(0, false, false);
+			iris19::op.arg1 = iris19::encodeRegisterIndex(0, false, false);
+			iris19::op.immediate = false;
 		};
 
-set_op:
-	  OP_SET bitmask destination_register lexeme;
-
-swap_op:
-		OP_SWAP destination_register source_register;
-system_op:
-		OP_SYSTEM destination_register source_register;
-
-
 branch_op:
-		 branch;
-
-branch:
-	  	BRANCH_FLAG_IF if_op {
+	  	BRANCH_FLAG_IF uses_call three_argument {
 			iris19::op.isIf = true;
 			iris19::op.immediate = false;
 			iris19::op.isConditional = false;
 		} |
-		jump_op {
-			iris19::op.isIf = false;
-			iris19::op.isCall = false;
-		} |
-		BRANCH_FLAG_CALL call_op {
-			iris19::op.isIf = false;
-			iris19::op.isCall = true;
-			iris19::op.isConditional = false;
-		};
-if_op:
-	 if_uses_call destination_register source_register;
-if_uses_call:
-	BRANCH_FLAG_CALL { iris19::op.isCall = true; } |
-	{ iris19::op.isCall = false; };
-call_op:
-	   uses_immediate lexeme |
-	   destination_register {
-			iris19::op.immediate = false;
-	   };
+		jump_op;
+
 jump_op:
-	cond_decl uses_immediate lexeme |
-	cond_decl destination_register {
-		iris19::op.immediate = false;
-	};
-cond_decl:
-		 BRANCH_FLAG_COND {
-			iris19::op.isConditional = true;
-		 } | {
-		 	iris19::op.isConditional = false;
-		 };
+	uses_call uses_cond select_jump_imm;
+select_jump_imm:
+	   uses_immediate lexeme |
+	   source_register { iris19::op.immediate = false; };
+uses_cond:
+		 BRANCH_FLAG_COND destination_register { iris19::op.isConditional = true; } | 
+		 { iris19::op.isConditional = false; };
+uses_call:
+		 BRANCH_FLAG_CALL { iris19::op.isCall= true; } | 
+		 { iris19::op.isCall= false; };
+
+short_immediate:
+		uses_immediate IMMEDIATE { iris19::op.arg2 = $2 & 0b11111111; } |
+		uses_immediate ALIAS {
+				try {
+					iris19::op.arg2 = static_cast<byte>(iris19::state.getConstantValue($2));
+				} catch(iris::Problem err) {
+					iris19error(err.what().c_str());
+				}
+		};
+
+source1_or_short_immediate:
+		source1_register { iris19::op.immediate = false; } |
+		short_immediate;
 
 arithmetic_op:
-		arithmetic_subop uses_immediate REGISTER IMMEDIATE {
-			iris19::op.arg0 = $3;
-			iris19::op.arg1 = $4;
-		} |
-		arithmetic_subop REGISTER REGISTER {
-			iris19::op.immediate = false;
-			iris19::op.arg0 = $2;
-			iris19::op.arg1 = $3;
-		};
+		arithmetic_subop two_argument source1_or_short_immediate;
 
 arithmetic_subop:
-				ARITHMETIC_OP_ADD {
-					iris19::op.subType = static_cast<byte>(iris19::ArithmeticOps::Add);
-				} |
-				ARITHMETIC_OP_SUB {
-					iris19::op.subType = static_cast<byte>(iris19::ArithmeticOps::Sub);
-				} |
-				ARITHMETIC_OP_MUL {
-					iris19::op.subType = static_cast<byte>(iris19::ArithmeticOps::Mul);
-				} |
-				ARITHMETIC_OP_DIV {
-					iris19::op.subType = static_cast<byte>(iris19::ArithmeticOps::Div);
-				} |
-				ARITHMETIC_OP_REM {
-					iris19::op.subType = static_cast<byte>(iris19::ArithmeticOps::Rem);
-				};
+				ARITHMETIC_OP_ADD { iris19::op.subType = static_cast<byte>(iris19::ArithmeticOps::Add); } |
+				ARITHMETIC_OP_SUB { iris19::op.subType = static_cast<byte>(iris19::ArithmeticOps::Sub); } |
+				ARITHMETIC_OP_MUL { iris19::op.subType = static_cast<byte>(iris19::ArithmeticOps::Mul); } |
+				ARITHMETIC_OP_DIV { iris19::op.subType = static_cast<byte>(iris19::ArithmeticOps::Div); } |
+				ARITHMETIC_OP_REM { iris19::op.subType = static_cast<byte>(iris19::ArithmeticOps::Rem); };
+				
 macro_op:
-		MACRO_OP_COPY destination_register source_register {
+		MACRO_OP_COPY two_argument {
 			iris19::op.type = iris19::Operation::Move;
-			iris19::op.bitmask = 0b1111;
+			iris19::op.bitmask = iris19::ArchitectureConstants::Bitmask;
 		} |
 		MACRO_OP_ZERO destination_register {
 			iris19::op.type = iris19::Operation::Move;
 			iris19::op.bitmask = 0x0;
 			iris19::op.arg1 = iris19::op.arg0;
 		} |
-		MACRO_OP_INCREMENT destination_register {
+		MACRO_OP_INCREMENT two_argument {
 			iris19::op.type = iris19::Operation::Arithmetic;
 			iris19::op.immediate = true;
 			iris19::op.subType = static_cast<byte>(iris19::ArithmeticOps::Add);
-			iris19::op.arg1 = 0x1;
+			iris19::op.arg2 = 0x1;
 		} |
-		MACRO_OP_DECREMENT destination_register {
+		MACRO_OP_DECREMENT two_argument {
 			iris19::op.type = iris19::Operation::Arithmetic;
 			iris19::op.immediate = true;
 			iris19::op.subType = static_cast<byte>(iris19::ArithmeticOps::Sub);
-			iris19::op.arg1 = 0x1;
+			iris19::op.arg2 = 0x1;
 		} |
-		MACRO_OP_DOUBLE destination_register {
+		MACRO_OP_DOUBLE two_argument {
 			iris19::op.type = iris19::Operation::Arithmetic;
 			iris19::op.immediate = true;
 			iris19::op.subType = static_cast<byte>(iris19::ArithmeticOps::Mul);
-			iris19::op.arg1 = 0x2;
+			iris19::op.arg2 = 0x2;
 		} |
-		MACRO_OP_HALVE destination_register {
+		MACRO_OP_HALVE two_argument {
 			iris19::op.type = iris19::Operation::Arithmetic;
 			iris19::op.immediate = true;
 			iris19::op.subType = static_cast<byte>(iris19::ArithmeticOps::Div);
-			iris19::op.arg1 = 0x2;
+			iris19::op.arg2 = 0x2;
 		} |
-		COMPARE_OP_EQ destination_register source_register { 
+		COMPARE_OP_EQ three_argument { 
 			iris19::op.type = iris19::Operation::Compare;
 			iris19::op.subType = static_cast<byte>(iris19::CompareStyle::Equals); 
 			iris19::op.immediate = false;
 		} |
-		COMPARE_OP_NEQ destination_register source_register {
+		COMPARE_OP_NEQ three_argument {
 			iris19::op.type = iris19::Operation::Compare;
 			iris19::op.subType = static_cast<byte>(iris19::CompareStyle::NotEquals); 
 			iris19::op.immediate = false;
@@ -567,39 +507,45 @@ lexeme:
 		iris19::op.isLabel = false;
 		iris19::op.fullImmediate = $1;
 	};
+two_argument:
+			destination_register source_register;
+
+three_argument:
+			 two_argument source1_register;
+
 uses_immediate: 
 			  FLAG_IMMEDIATE { 
 				  iris19::op.immediate = true; 
 			  };
 destination_register: 
 					TAG_STACK REGISTER {
-						iris19::op.arg0 = iris19::encodeRegisterValue($2, false, true);
+						iris19::op.arg0 = iris19::encodeRegisterIndex($2, false, true);
 					} |
 					TAG_INDIRECT REGISTER {
-						iris19::op.arg0 = iris19::encodeRegisterValue($2, true, false);
+						iris19::op.arg0 = iris19::encodeRegisterIndex($2, true, false);
 					} |
 					REGISTER { 
-						iris19::op.arg0 = iris19::encodeRegisterValue($1, false, false);
+						iris19::op.arg0 = iris19::encodeRegisterIndex($1, false, false);
 					};
 source_register: 
 			   TAG_STACK REGISTER {
-					iris19::op.arg1 = iris19::encodeRegisterValue($2, false, true);
+					iris19::op.arg1 = iris19::encodeRegisterIndex($2, false, true);
 				} |
 				TAG_INDIRECT REGISTER {
-					iris19::op.arg1 = iris19::encodeRegisterValue($2, true, false);
+					iris19::op.arg1 = iris19::encodeRegisterIndex($2, true, false);
 				} |
 				REGISTER { 
-					iris19::op.arg1 = iris19::encodeRegisterValue($1, false, false);
+					iris19::op.arg1 = iris19::encodeRegisterIndex($1, false, false);
 				};
 source1_register: 
 				TAG_STACK REGISTER {
-					iris19::op.arg2 = iris19::encodeRegisterValue($2, false, true);
+					iris19::op.arg2 = iris19::encodeRegisterIndex($2, false, true);
 				} |
 				TAG_INDIRECT REGISTER {
-					iris19::op.arg2 = iris19::encodeRegisterValue($2, true, false);
+					iris19::op.arg2 = iris19::encodeRegisterIndex($2, true, false);
 				} |
 				REGISTER { 
-					iris19::op.arg2 = iris19::encodeRegisterValue($1, false, false);
+					iris19::op.arg2 = iris19::encodeRegisterIndex($1, false, false);
 				};
 %%
 namespace iris19 {
@@ -613,6 +559,6 @@ namespace iris19 {
 	}
 }
 void iris19error(const char* s) {
-   printf("%d: %s\n", iris19lineno, s);
+   std::cout << iris19lineno << ": " << s << std::endl;
    exit(-1);
 }

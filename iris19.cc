@@ -216,16 +216,16 @@ namespace iris19 {
 		auto bitmask = current.getBitmask();
 		auto mDest = current.getDestination();
 		if (moveType == MoveOperation::Move) {
-			auto mSrc = current.getSource0();
-			if (!((bitmask == ArchitectureConstants::Bitmask) && (mDest == mSrc && mDest < ArchitectureConstants::RegisterCount))) {
-				auto src = genericRegisterGet(mSrc);
-				genericRegisterSet(mDest, iris::decodeBits<RegisterValue, RegisterValue>(src, bitmask, 0));
-			} 
-			// no operation otherwise
-		} else if (moveType == MoveOperation::Set) {
-			// check and see if it is zero, if so then just set it to zero
-			auto result = bitmask == 0 ? 0 : retrieveImmediate(bitmask);
-			genericRegisterSet(mDest, result);
+			if (current.markedImmediate()) {
+				auto result = bitmask == 0 ? 0 : retrieveImmediate(bitmask);
+				genericRegisterSet(mDest, result);
+			} else {
+				auto mSrc = current.getSource0();
+				if (!((bitmask == ArchitectureConstants::Bitmask) && (mDest == mSrc && mDest < ArchitectureConstants::RegisterCount))) {
+					auto src = genericRegisterGet(mSrc);
+					genericRegisterSet(mDest, iris::decodeBits<RegisterValue, RegisterValue>(src, bitmask, 0));
+				} 
+			}
 		} else if (moveType == MoveOperation::Swap) {
 			if (bitmask != 0) {
 				throw iris::Problem("Swap Operation: Bitmask must be set to zero since it has no bearing on this operation!");
@@ -580,7 +580,7 @@ namespace iris19 {
 
 	InstructionEncoder::Encoding InstructionEncoder::encodeMove() {
 		auto memOp = static_cast<MoveOperation>(subType);
-		auto isSet = memOp == MoveOperation::Set;
+		auto isSet = memOp == MoveOperation::Move && immediate;
 		auto second = isSet ? maskedLowerHalf() : 0;
 		auto third = isSet ? maskedUpperHalf() : 0;
 		auto count = instructionSizeFromImmediateMask(bitmask);
@@ -590,7 +590,6 @@ namespace iris19 {
 		first = setSource0(first); // safe for set operations
 		switch(memOp) {
 			case MoveOperation::Move:
-			case MoveOperation::Set:
 			case MoveOperation::SystemCall:
 			case MoveOperation::Swap:
 				return std::make_tuple(count, first, second, third);
