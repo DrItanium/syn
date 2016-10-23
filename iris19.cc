@@ -382,58 +382,24 @@ namespace iris19 {
 			advanceIp = false;
 			// process them all even if we don't use them all, it is then
 			// straightforward what is is happening
-			auto cond = genericRegisterGet(current.getConditional());
-			auto onTrue = genericRegisterGet(current.getOnTrue());
-			auto onFalse = genericRegisterGet(current.getOnFalse());
+			auto cond = genericRegisterGet(current.getDestination()) != 0;
+			auto onTrue = genericRegisterGet(current.getSource0());
+			auto onFalse = genericRegisterGet(current.getSource1());
 			if (isCall) {
 				pushDword((getInstructionPointer() + 1) & memoryMaxBitmask);
 			}
 			getInstructionPointer() = memoryMaxBitmask & (cond ? onTrue : onFalse);
-#ifdef DEBUG
-						std::cout << "if: jumping to " << std::hex << getInstructionPointer() << std::endl;
-#endif
-		} else if (isCall) {
-			if (isIf) {
-				throw iris::Problem("Should never ever get here, but somehow call was set to true then if o_O, you may have bad ram!");
-			} 
-			if (isConditional) {
-				throw iris::Problem("Just like x86, call instructions are not conditional!");
-			}
-			// call instruction
-			advanceIp = false;
-			auto returnAddress = getInstructionPointer() + (isImmediate ? 2 : 1);
-			auto address = 0u;
-			if (isImmediate) {
-				address = retrieveImmediate(0b00001111);
-			} else {
-				address = genericRegisterGet(current.getDestination());
-			}
-			pushDword(returnAddress); // push the return value onto the default stack
-			getInstructionPointer() = memoryMaxBitmask & address;
-#ifdef DEBUG
-						std::cout << "call: Jumping to " << std::hex << getInstructionPointer() << std::endl;
-#endif
 		} else {
-			if (isCall) {
-				throw iris::Problem("Unconditional Jump: Somehow call was set to false as well as if yet you're here o_O, so call was reset to true! You may have bad ram!");
-			}
-			if (isIf) {
-				throw iris::Problem("Unconditional Jump: Somehow call was set to false as well as if yet you're here o_O, so if was reset to true! You may have bad ram!");
-			} 
-			// jump instruction, including cond versions
-			if ((isConditional && genericRegisterGet(current.getConditional()) != 0) || !isConditional) {
-				advanceIp = false;
-				auto value = 0u;
-				if (isImmediate) {
-					value = retrieveImmediate(0b00001111);
-				} else {
-					value = genericRegisterGet(current.getDestination());
+			advanceIp = false;
+			auto next = getInstructionPointer() + (isImmediate ? 3 : 1);
+			auto invoke = (isConditional && (genericRegisterGet(current.getDestination()) != 0)) || !isConditional;
+			if (invoke) {
+				if (isCall) {
+					pushDword(next);
 				}
-				getInstructionPointer() = memoryMaxBitmask & value;
-#ifdef DEBUG
-						std::cout << "one way Jumping to " << std::hex << getInstructionPointer() << std::endl;
-#endif
-			}
+				next = (isImmediate ? retrieveImmediate(ArchitectureConstants::Bitmask) : genericRegisterGet(current.getSource0()));
+			} 
+			getInstructionPointer() = memoryMaxBitmask & next;
 		}
 	}
 
@@ -622,6 +588,7 @@ namespace iris19 {
 		}
 	}
 
+
 	InstructionEncoder::Encoding InstructionEncoder::encodeMove() {
 		auto memOp = static_cast<MoveOperation>(subType);
 		auto isSet = memOp == MoveOperation::Set;
@@ -739,5 +706,8 @@ namespace iris19 {
 	}
 	Word InstructionEncoder::setControl(Word value) const noexcept {
 		return encodeControl(value, type);
+	}
+	Word InstructionEncoder::setShortImmediate(Word value) const noexcept {
+		return encodeShortImmediate(value, arg2);
 	}
 }
