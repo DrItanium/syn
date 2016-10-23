@@ -52,7 +52,6 @@ namespace iris19 {
 #define EnumEntry(type) type,
 #include "def/iris19/ops.def"
 #include "def/iris19/arithmetic_ops.def"
-#include "def/iris19/syscalls.def"
 #include "def/iris19/compare.enum"
 #include "def/iris19/logical.enum"
 #include "def/iris19/move.def"
@@ -143,22 +142,6 @@ namespace iris19 {
 			static void putc(Core* core, DecodedInstruction&& inst);
 			SystemFunction getSystemHandler(byte index);
 			void dispatch(DecodedInstruction&& inst);
-			template<byte rindex>
-				inline RegisterValue& registerValue() noexcept {
-					static_assert(rindex < ArchitectureConstants::RegisterCount, "Not a legal register index!");
-                    switch (rindex) {
-#define X(index) case index : return gpr[index];
-#include "def/iris19/registers.def"
-#undef X
-                        default: {
-                                     // if this is ever fired then we will get a std::terminate
-                                     // invoked!
-                                     std::stringstream msg;
-                                     msg << "Out of range register index: " << rindex;
-                                     throw iris::Problem(msg.str());
-                                 }
-                    }
-				}
 			inline Word readNext() noexcept { return tryReadNext(true); }
 			Word tryReadNext(bool readNext) noexcept;
 			RegisterValue retrieveImmediate(byte bitmask) noexcept;
@@ -172,8 +155,8 @@ namespace iris19 {
 			void moveOperation(DecodedInstruction&& current);
 
 			RegisterValue& registerValue(byte index);
-			inline RegisterValue& getInstructionPointer() noexcept     { return registerValue<ArchitectureConstants::InstructionPointer>(); }
-			inline RegisterValue& getStackPointer() noexcept           { return registerValue<ArchitectureConstants::StackPointer>(); }
+			inline RegisterValue& getInstructionPointer() noexcept     { return gpr[ArchitectureConstants::InstructionPointer]; }
+			inline RegisterValue& getStackPointer() noexcept           { return gpr[ArchitectureConstants::StackPointer]; }
 
 			void incrementInstructionPointer() noexcept;
 			void incrementStackPointer() noexcept;

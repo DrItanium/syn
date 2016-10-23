@@ -91,7 +91,6 @@ omni [a-zA-Z0-9._]
 "@startup"  { return DIRECTIVE_REGISTER_AT_START; }
 "@constant" { return DIRECTIVE_CONSTANT; }
 
-"indirect"  { return TAG_INDIRECT; }
 "stack"     { return TAG_STACK; }
 
 "ip"        { iris19lval.rval = iris19::ArchitectureConstants::InstructionPointer; return REGISTER; }

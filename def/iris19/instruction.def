@@ -30,10 +30,8 @@ X(LogicalFlagImmediateType,         0b00000000000000000000000001100000, 5, Immed
 X(LogicalFlagImmediateMask,         0b00000000000000001111111100000000, 8, byte,  logicalFlagImmediateMask)
 X(LogicalImmediateDestination,      0b00000000111111110000000000000000, 16, byte,  logicalImmediateDestination)
 X(LogicalImmediateSource0,          0b11111111000000000000000000000000, 24, byte, logicalImmediateSource0)
-X(LogicalImmediateLower32, 			0b11111111111111111111111111111111, 0, Word, logicalImmediateLower32)
-X(LogicalImmediateUpper32,          0b11111111111111111111111111111111, 0, Word, logicalImmediateUpper32)
 // Logical Flags
-X(LogicalFlagType,                  0b00000000000000000000000011100000, 4, LogicalOps,  logicalFlagType)
+X(LogicalFlagType,                  0b00000000000000000000000011100000, 5, LogicalOps,  logicalFlagType)
 X(LogicalRegisterDestination,       0b11111111000000000000000000000000, 24, byte, logicalRegisterDestination)
 X(LogicalRegister0,                 0b00000000000000001111111100000000, 8, byte,  logicalRegister0)
 X(LogicalRegister1,                 0b00000000111111110000000000000000, 16, byte,  logicalRegister1)
