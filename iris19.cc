@@ -36,7 +36,7 @@ namespace iris19 {
 			case Operation::Compare:
 				return getCompareType();
 			case Operation::Logical:
-				return markedImmediate() ? getLogicalFlagImmediateType() : getLogicalFlagType();
+				return getLogicalFlagType();
 			default:
 				return 0;
 		}
@@ -294,41 +294,32 @@ namespace iris19 {
 	void Core::logicalOperation(Instruction&& current) {
 		auto result = 0u;
 		auto src0 = genericRegisterGet(current.getSource0());
-		if (current.markedImmediate()) {
-			auto immediate = retrieveImmediate(current.getBitmask());
-			switch (current.getSubType<ImmediateLogicalOps>()) {
-				case ImmediateLogicalOps::And:
-					result = iris::binaryAnd(src0, immediate);
-					break;
-				case ImmediateLogicalOps::Or:
-					result = iris::binaryOr(src0, immediate);
-					break;
-				case ImmediateLogicalOps::Nand:
-					result = iris::binaryNand(src0, immediate);
-					break;
-				case ImmediateLogicalOps::Xor:
-					result = iris::binaryXor(src0, immediate);
-					break;
-				default:
-					throw iris::Problem("Illegal immediate logical flag type");
+		auto type = current.getSubType<LogicalOps>();
+		if (type == LogicalOps::Not) {
+			if (current.markedImmediate()) {
+				throw iris::Problem("Can't do an immediate of a binary not!");
+			} else {
+				result = iris::binaryNot(src0);
 			}
 		} else {
-			auto type = current.getSubType<LogicalOps>();
-			if (type == LogicalOps::Not) {
-				result = iris::binaryNot(src0);
-			} else {
-				auto src1 = genericRegisterGet(current.getSource1());
-				if (type == LogicalOps::And) {
+			auto src1 = current.markedImmediate() ? retrieveImmediate(current.getBitmask()) : genericRegisterGet(current.getSource1());
+			switch(type) {
+				case LogicalOps::And:
 					result = iris::binaryAnd(src0, src1);
-				} else if (type == LogicalOps::Or) {
+					break;
+				case LogicalOps::Or:
 					result = iris::binaryOr(src0, src1);
-				} else if (type == LogicalOps::Xor) {
-					result = iris::binaryXor(src0, src1);
-				} else if (type == LogicalOps::Nand) {
+					break;
+				case LogicalOps::Nand:
 					result = iris::binaryNand(src0, src1);
-				} else {
-					throw iris::Problem("Illegal indirect logical operation!");
-				}
+					break;
+				case LogicalOps::Xor:
+					result = iris::binaryXor(src0, src1);
+					break;
+				case LogicalOps::Not:
+					throw iris::Problem("FATAL ERROR: logicalOperation, type was not LogicalOps::Not so else condition was taken, but type is now LogicalOps::Not!!!!");
+				default:
+					throw iris::Problem("Undefined logical operation!");
 			}
 		}
 		genericRegisterSet(current.getDestination(), result);
@@ -574,20 +565,18 @@ namespace iris19 {
 	InstructionEncoder::Encoding InstructionEncoder::encodeCompare() {
 		return std::make_tuple(1, singleWordEncoding<Operation::Compare>(), 0, 0);
 	}
-
+	Word InstructionEncoder::lowerHalf() const noexcept {
+		return static_cast<Word>(fullImmediate);
+	}
+	Word InstructionEncoder::upperHalf() const noexcept {
+		return static_cast<Word>(fullImmediate >> 32);
+	}
 	Word InstructionEncoder::maskedLowerHalf() const noexcept {
 		return static_cast<Word>(mask(bitmask) & fullImmediate);
 	}
 	Word InstructionEncoder::maskedUpperHalf() const noexcept {
 		return static_cast<Word>((mask(bitmask) & fullImmediate) >> 32);
 	}
-
-	void InstructionEncoder::assertBitmaskZero(const std::string& msg) const {
-		if (bitmask != 0) {
-			throw iris::Problem(msg.c_str());
-		}
-	}
-
 
 	InstructionEncoder::Encoding InstructionEncoder::encodeMove() {
 		auto memOp = static_cast<MoveOperation>(subType);
@@ -639,9 +628,8 @@ namespace iris19 {
 				// necessary! This architecture needs to not be dependent on
 				// internal constants. This prevents breakage if more ram is
 				// added
-				return std::make_tuple(3, first, static_cast<Word>(fullImmediate), static_cast<Word>(fullImmediate >> 32));
+				return std::make_tuple(3, first, lowerHalf(), upperHalf());
 			} else {
-				first = setDestination(first); // conditional
 				first = setSource0(first); // register destination
 				return std::make_tuple(1, first, 0, 0);
 			}
@@ -678,7 +666,7 @@ namespace iris19 {
 		isIf = false;
 		isCall = false;
 		isConditional = false;
-		bitmask = 0b0000;
+		bitmask = 0b00000000;
 		arg0 = 0;
 		arg1 = 0;
 		arg2 = 0;

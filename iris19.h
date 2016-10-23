@@ -256,9 +256,10 @@ namespace iris19 {
 		Word setSource1(Word value) const noexcept;
 		Word setImmediateFlag(Word value) const noexcept;
 		Word setShortImmediate(Word value) const noexcept;
+		Word lowerHalf() const noexcept;
+		Word upperHalf() const noexcept;
 		Word maskedLowerHalf() const noexcept;
 		Word maskedUpperHalf() const noexcept;
-		void assertBitmaskZero(const std::string& message) const;
 		template<Operation op>
 		Word singleWordEncoding() const noexcept {
 			auto enc = setControl();
@@ -280,7 +281,7 @@ namespace iris19 {
 				case Operation::Shift:
 					return setImmediateFlag(encodeShiftFlagLeft(value, shiftLeft));
 				case Operation::Logical:
-					return setImmediateFlag(immediate ? encodeLogicalFlagImmediateType(value, subType) : encodeLogicalFlagType(value, subType));
+					return setImmediateFlag(encodeLogicalFlagType(value, subType));
 				case Operation::Branch:
 					return setImmediateFlag(
 							encodeBranchFlagIsConditional(
