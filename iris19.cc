@@ -580,7 +580,7 @@ namespace iris19 {
 
 	InstructionEncoder::Encoding InstructionEncoder::encodeMove() {
 		auto memOp = static_cast<MoveOperation>(subType);
-		auto isSet = memOp == MoveOperation::Move && immediate;
+		auto isSet = memOp == MoveOperation::Set;
 		auto second = isSet ? maskedLowerHalf() : 0;
 		auto third = isSet ? maskedUpperHalf() : 0;
 		auto count = instructionSizeFromImmediateMask(bitmask);
