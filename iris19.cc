@@ -25,7 +25,7 @@ namespace iris19 {
 		return getSource0Index();
 	}
 	byte Instruction::getSource1() const noexcept {
-		return markedImmediate() ? getShortImmediate() : getSource1();
+		return markedImmediate() ? getShortImmediate() : getSource1Index();
 	}
 	byte Instruction::getSubType() const noexcept {
 		switch (getControl()) {
@@ -95,8 +95,8 @@ namespace iris19 {
 			}
 		}
 	void Core::installprogram(std::istream& stream) {
-		populateContents<RegisterValue, ArchitectureConstants::RegisterCount>(gpr, stream, [](byte* buf) { return iris::encodeUint32LE(buf); });
-		populateContents<Word, ArchitectureConstants::AddressMax>(memory, stream, [](byte* buf) { return iris::encodeUint16LE(buf); });
+		populateContents<RegisterValue, ArchitectureConstants::RegisterCount>(gpr, stream, [](byte* buf) { return iris::encodeUint64LE(buf); });
+		populateContents<Word, ArchitectureConstants::AddressMax>(memory, stream, [](byte* buf) { return iris::encodeUint32LE(buf); });
 	}
 
 	template<typename T, int count>
@@ -119,8 +119,8 @@ namespace iris19 {
 
 	void Core::dump(std::ostream& stream) {
 		// save the registers
-		dumpContents<RegisterValue, ArchitectureConstants::RegisterCount>(gpr, stream, iris::decodeUint32LE);
-		dumpContents<Word, ArchitectureConstants::AddressMax>(memory, stream, iris::decodeUint16LE);
+		dumpContents<RegisterValue, ArchitectureConstants::RegisterCount>(gpr, stream, iris::decodeUint64LE);
+		dumpContents<Word, ArchitectureConstants::AddressMax>(memory, stream, iris::decodeUint32LE);
 	}
 	void Core::run() {
 		while(execute) {
@@ -216,16 +216,14 @@ namespace iris19 {
 		auto bitmask = current.getBitmask();
 		auto mDest = current.getDestination();
 		if (moveType == MoveOperation::Move) {
-			if (current.markedImmediate()) {
-				auto result = bitmask == 0 ? 0 : retrieveImmediate(bitmask);
-				genericRegisterSet(mDest, result);
-			} else {
-				auto mSrc = current.getSource0();
-				if (!((bitmask == ArchitectureConstants::Bitmask) && (mDest == mSrc && mDest < ArchitectureConstants::RegisterCount))) {
-					auto src = genericRegisterGet(mSrc);
-					genericRegisterSet(mDest, iris::decodeBits<RegisterValue, RegisterValue>(src, bitmask, 0));
-				} 
-			}
+			auto mSrc = current.getSource0();
+			if (!((bitmask == ArchitectureConstants::Bitmask) && (mDest == mSrc && mDest < ArchitectureConstants::RegisterCount))) {
+				auto src = genericRegisterGet(mSrc);
+				genericRegisterSet(mDest, iris::decodeBits<RegisterValue, RegisterValue>(src, bitmask, 0));
+			} 
+		} else if (moveType == MoveOperation::Set) {
+			auto result = bitmask == 0 ? 0 : retrieveImmediate(bitmask);
+			genericRegisterSet(mDest, result);
 		} else if (moveType == MoveOperation::Swap) {
 			if (bitmask != 0) {
 				throw iris::Problem("Swap Operation: Bitmask must be set to zero since it has no bearing on this operation!");
@@ -382,14 +380,16 @@ namespace iris19 {
 			getInstructionPointer() = memoryMaxBitmask & (cond ? onTrue : onFalse);
 		} else {
 			advanceIp = false;
-			auto next = getInstructionPointer() + (isImmediate ? 3 : 1);
+			auto next = 0u;
 			auto invoke = (isConditional && (genericRegisterGet(current.getDestination()) != 0)) || !isConditional;
 			if (invoke) {
 				if (isCall) {
 					pushDword(next);
 				}
 				next = (isImmediate ? retrieveImmediate(ArchitectureConstants::Bitmask) : genericRegisterGet(current.getSource0()));
-			} 
+			}  else {
+				next = getInstructionPointer() + instructionSizeFromImmediateMask(isImmediate ? 0b11111111 : 0b00000000);
+			}
 			getInstructionPointer() = memoryMaxBitmask & next;
 		}
 	}
@@ -592,6 +592,7 @@ namespace iris19 {
 			case MoveOperation::Move:
 			case MoveOperation::SystemCall:
 			case MoveOperation::Swap:
+			case MoveOperation::Set:
 				return std::make_tuple(count, first, second, third);
 			default:
 				throw iris::Problem("Undefined MoveOperation requested during encoding!");

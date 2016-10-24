@@ -1,15 +1,14 @@
 	zero r0								; zero
-	move r1 immediate 0x2 0m00000001    ; put
-	move r2 immediate string 0m11111111 ; address
+	set r1 immediate 0x2 0m00000001     ; put
+	set r2 immediate string 0m11111111 ; address
 	zero r3								; value
 	zero r4								; cond
 @label continue
-	move r3 indirect r2					; load from r2
-	compare == r4 r3 r0					; does r3 == r0 ?
+	move r3 indirect r2 0m00001111		; load from r2
+	compare != r4 r3 r0					; does r3 == r0 ?
 	branch cond r4 immediate done
-	swap addr, r1
-	system r2 r3
-	increment r2
+	system r1 r3
+	increment r2 r2
 	branch immediate continue
 @label done
 	system r0 r0

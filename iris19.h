@@ -35,13 +35,8 @@ namespace iris19 {
 		MaxInstructionCount = 16,
 		MaxSystemCalls = 255,
 		Bitmask = 0b11111111,
-#define X(index) \
-		R ## index = (RegisterCount - (RegisterCount - index)),
-#include "def/iris19/registers.def"
-#undef X
-
-		InstructionPointer = R63,
-		StackPointer = R62,
+		InstructionPointer = RegisterCount  - 1,
+		StackPointer = RegisterCount - 2,
 	};
 
 #define DefEnum(type, width) \
@@ -107,8 +102,8 @@ namespace iris19 {
         return encodeWord(iris::getBit<byte, 4>(bitmask), iris::getBit<byte, 5>(bitmask), iris::getBit<byte, 6>(bitmask), iris::getBit<byte, 7>(bitmask));
 	}
 	inline constexpr RegisterValue mask(byte bitmask) { return iris::encodeUint64LE(upperMask(bitmask), lowerMask(bitmask)); }
-	inline constexpr bool readLower(byte bitmask) noexcept { return iris::getLowerHalf(bitmask) != 0; }
-	inline constexpr bool readUpper(byte bitmask) noexcept { return iris::getUpperHalf(bitmask) != 0; }
+	inline constexpr bool readLower(byte bitmask) noexcept { return iris::getLowerHalf(bitmask) > 0; }
+	inline constexpr bool readUpper(byte bitmask) noexcept { return iris::getUpperHalf(bitmask) > 0; }
 	inline constexpr byte registerGetActualIndex(byte value) { return iris::decodeBits<byte, byte, 0b00111111, 0>(value); }
 	inline constexpr bool registerIsMarkedIndirect(byte value) { return iris::getBit<byte, 6>(value); }
 	inline constexpr bool registerIsMarkedStack(byte value) { return iris::getBit<byte, 7>(value); }
@@ -255,8 +250,7 @@ namespace iris19 {
 		Word maskedUpperHalf() const noexcept;
 		template<Operation op>
 		Word singleWordEncoding() const noexcept {
-			auto enc = setControl();
-			enc = setSubType<op>(enc);
+			auto enc = setSubType<op>(setControl());
 			enc = setDestination(enc);
 			enc = setSource0(enc);
 			enc = immediate ? setShortImmediate(enc) : setSource1(enc);

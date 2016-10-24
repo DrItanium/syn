@@ -172,7 +172,7 @@ namespace iris19 {
 		}
 	}
 	void writeRegisterEntry(byte index, RegisterValue value) {
-		constexpr auto bufSize = 8;
+		static constexpr auto bufSize = 14;
 		char buf[bufSize] = { 0 };
 		buf[0] = 1;
 		buf[1] = index;
@@ -180,17 +180,27 @@ namespace iris19 {
 		buf[3] = static_cast<char>(value >> 8);
 		buf[4] = static_cast<char>(value >> 16);
 		buf[5] = static_cast<char>(value >> 24);
+		buf[6] = static_cast<char>(value >> 32);
+		buf[7] = static_cast<char>(value >> 40);
+		buf[8] = static_cast<char>(value >> 48);
+		buf[9] = static_cast<char>(value >> 56);
 		state.output->write(buf, bufSize);
 	}
 	void writeEntry(RegisterValue address, Word value) {
-		constexpr auto bufSize = 8;
+		static constexpr auto bufSize = 14;
 		char buf[bufSize] = { 0 };
 		buf[2] = static_cast<char>(address);
 		buf[3] = static_cast<char>(address >> 8);
 		buf[4] = static_cast<char>(address >> 16);
 		buf[5] = static_cast<char>(address >> 24);
-		buf[6] = static_cast<char>(value);
-		buf[7] = static_cast<char>(value >> 8);
+		buf[6] = static_cast<char>(address >> 32);
+		buf[7] = static_cast<char>(address >> 40);
+		buf[8] = static_cast<char>(address >> 48);
+		buf[9] = static_cast<char>(address >> 56);
+		buf[10] = static_cast<char>(value);
+		buf[11] = static_cast<char>(value >> 8);
+		buf[12] = static_cast<char>(value >> 16);
+		buf[13] = static_cast<char>(value >> 24);
 		state.output->write(buf, bufSize);
 	}
 	void saveEncoding() {
@@ -356,9 +366,10 @@ logical_op:
 			iris19::op.immediate = false;
 			iris19::op.subType = static_cast<byte>(iris19::LogicalOps::Not);
 		};
-
+full_imm:
+		uses_immediate lexeme bitmask;
 full_imm_or_source1:
-				 uses_immediate lexeme bitmask |
+				 full_imm |
 				 source1_register { iris19::op.immediate = false; };
 
 logical_subop:
@@ -377,12 +388,14 @@ shift_left_or_right:
 
 move_group: 
 		  move_op { iris19::op.subType = static_cast<byte>(iris19::MoveOperation::Move); } | 
+		  OP_SET set_args { iris19::op.subType = static_cast<byte>(iris19::MoveOperation::Set); } |
 		  OP_SWAP two_argument { iris19::op.subType = static_cast<byte>(iris19::MoveOperation::Swap); } |
 		  OP_SYSTEM two_argument { iris19::op.subType = static_cast<byte>(iris19::MoveOperation::SystemCall); };
 
+set_args:
+	   destination_register full_imm;
 move_op: 
 	   OP_MOVE two_argument bitmask { iris19::op.immediate = false; }|
-	   OP_MOVE destination_register full_imm_or_source1 | // set
 	   OP_RETURN {
 	   		// equivalent to move ip stack sp 0m11111111 
 			iris19::op.bitmask = 0b11111111;
@@ -445,9 +458,11 @@ macro_op:
 		MACRO_OP_COPY two_argument {
 			iris19::op.type = iris19::Operation::Move;
 			iris19::op.bitmask = iris19::ArchitectureConstants::Bitmask;
+			iris19::op.subType = static_cast<byte>(iris19::MoveOperation::Move);
 		} |
 		MACRO_OP_ZERO destination_register {
 			iris19::op.type = iris19::Operation::Move;
+			iris19::op.subType = static_cast<byte>(iris19::MoveOperation::Move);
 			iris19::op.bitmask = 0x0;
 			iris19::op.arg1 = iris19::op.arg0;
 		} |
