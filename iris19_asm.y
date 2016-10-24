@@ -212,7 +212,7 @@ namespace iris19 {
 		for (auto &reg : state.declarations) {
 			switch(reg.width) {
 				case 2:
-					writeEntry(reg.address + 1, static_cast<Word>(reg.immediate >> 16));
+					writeEntry(reg.address + 1, static_cast<Word>(reg.immediate >> 32));
 				case 1:
 					writeEntry(reg.address, static_cast<Word>(reg.immediate));
 					break;

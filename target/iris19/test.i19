@@ -5,7 +5,7 @@
 	zero r4								; cond
 @label continue
 	move r3 indirect r2 0m00001111		; load from r2
-	compare != r4 r3 r0					; does r3 == r0 ?
+	compare == r4 r3 r0					; does r3 == r0 ?
 	branch cond r4 immediate done
 	system r1 r3
 	increment r2 r2

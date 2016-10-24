@@ -112,8 +112,8 @@ namespace iris19 {
 	}
 	constexpr auto bitmask64 = mask(0b11111111);
 	constexpr auto memoryMaxBitmask = 0b00001111111111111111111111111111;
-	constexpr auto upper32Mask = lowerMask(0b11110000);
-	constexpr auto lower32Mask = upperMask(0b00001111);
+	constexpr auto lower32Mask = mask(0b00001111);
+	constexpr auto upper32Mask = mask(0b11110000);
 
 	inline constexpr Word decodeUpperHalf(RegisterValue value) noexcept {
 		return iris::decodeBits<RegisterValue, Word, upper32Mask, 32>(value);

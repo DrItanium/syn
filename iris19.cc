@@ -219,7 +219,7 @@ namespace iris19 {
 			auto mSrc = current.getSource0();
 			if (!((bitmask == ArchitectureConstants::Bitmask) && (mDest == mSrc && mDest < ArchitectureConstants::RegisterCount))) {
 				auto src = genericRegisterGet(mSrc);
-				genericRegisterSet(mDest, iris::decodeBits<RegisterValue, RegisterValue>(src, bitmask, 0));
+				genericRegisterSet(mDest, iris::decodeBits<RegisterValue, RegisterValue>(src, mask(bitmask), 0));
 			} 
 		} else if (moveType == MoveOperation::Set) {
 			auto result = bitmask == 0 ? 0 : retrieveImmediate(bitmask);
@@ -461,7 +461,9 @@ namespace iris19 {
 		}
 	}
 	RegisterValue Core::loadRegisterValue(RegisterValue address) {
-		return iris::encodeBits<RegisterValue, Word, bitmask64, 32>(static_cast<RegisterValue>(loadWord(address)), loadWord(address + 1));
+		auto lower32 = loadWord(address);
+		auto upper32 = loadWord(address + 1);
+		return iris::encodeUint64LE(lower32, upper32);
 	}
 	void Core::storeRegisterValue(RegisterValue address, RegisterValue value) {
 		storeWord(address, iris::decodeBits<RegisterValue, Word, lower32Mask, 0>(value));
@@ -583,7 +585,7 @@ namespace iris19 {
 		auto isSet = memOp == MoveOperation::Set;
 		auto second = isSet ? maskedLowerHalf() : 0;
 		auto third = isSet ? maskedUpperHalf() : 0;
-		auto count = instructionSizeFromImmediateMask(bitmask);
+		auto count = isSet ? instructionSizeFromImmediateMask(bitmask) : 1;
 		auto first = setSubType<Operation::Move>(setControl());
 		first = setBitmask(first);
 		first = setDestination(first);
