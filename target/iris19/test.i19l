@@ -1,9 +1,18 @@
-(**asm arithmetic
-       (sub-type add)
-       (destination value
-                    stack)
-       (source0 value
-                stack)
-       (source1 value
-                stack))
+(push value
+      (add (pop value)
+           (pop value)))
+(bind sp
+      (immediate StackStart
+                 0m11111111))
+(if (pop value) then (pop value) else (pop value))
+(if (bind rtmp
+          (eq (pop (push (value (add (pop value)
+                                     (pop value)))))
+              (pop (push (value (sub (pop value)
+                                     (pop value))))))) then
+    (pop value)
+    else
+    (pop value))
 
+(@org 0x00100000)
+(@label StackStart)

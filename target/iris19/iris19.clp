@@ -1,145 +1,101 @@
-; iris19 addons
-(defclass asm-operation
+; iris19 language parser
+(defclass invocation
   (is-a node)
-  (slot group
+  (slot function
         (type SYMBOL)
+        (storage local)
         (visibility public)
         (default ?NONE))
-  (multislot properties))
-(defclass asm-operation-property
-  (is-a node)
-  (slot key
-        (type SYMBOL)
-        (visibility public)
-        (default ?NONE))
-  (multislot value
+  (multislot arguments
+             (storage local)
              (visibility public)))
-
-(defclass sub-type-property
-  (is-a asm-operation-property)
-  (slot key
-        (source composite)
-        (type SYMBOL)
-        (storage shared)
+(defclass binary-operation
+  (is-a invocation)
+  (slot destination
+        (storage local)
         (visibility public)
-        (default sub-type))
-  (slot sub-type
-        (type SYMBOL)
+        (default ?NONE))
+  (slot operation
         (storage local)
         (visibility public)
         (default ?NONE)))
-(defclass asm-operation-field
-  (is-a asm-operation-property)
-  (slot target
+(defclass unary-operation
+  (is-a invocation)
+  (slot source
+        (storage local)
+        (visibility public)
+        (default ?NONE)))
+
+(defrule parse-unary-operation
+         (stage (current parse))
+         ?f <- (object (is-a list)
+                       (contents ?function
+                                 ?source)
+                       (name ?n)
+                       (parent ?p))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?n of unary-operation
+                        (function ?function)
+                        (source ?source)
+                        (parent ?p)))
+(defrule parse-binary-operation
+         (stage (current parse))
+         ?f <- (object (is-a list)
+                       (name ?n)
+                       (parent ?p)
+                       (contents ?function
+                                 ?destination
+                                 ?operation))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?n of binary-operation
+                        (parent ?p)
+                        (function ?function)
+                        (destination ?destination)
+                        (operation ?operation)))
+(defclass if-condition
+  (is-a invocation)
+  (slot function
+        (source composite)
+        (storage shared)
+        (default if))
+  (slot condition
         (storage local)
         (visibility public)
         (default ?NONE))
-  (slot is-stack
-        (type SYMBOL)
-        (allowed-symbols FALSE
-                         TRUE)
+  (slot then
         (storage local)
-        (visibility public))
-  (slot is-indirect
-        (type SYMBOL)
-        (allowed-symbols FALSE
-                         TRUE)
+        (visibility public)
+        (default ?NONE))
+  (slot else
         (storage local)
-        (visibility public)))
-
-(deffunction build-field-registration-rules
-             (?key)
-             (bind ?rule-base
-                   (format nil
-                           "(defrule parse-asm-operation-field:%s:%%s
-                                     (declare (salience 1))
-                                     (object (is-a asm-operation)
-                                             (properties $? ?p $?))
-                                     ?f <- (object (is-a list)
-                                                   (name ?p)
-                                                   (parent ?k)
-                                                   (contents %s
-                                                             ?reg
-                                                             %%s))
-                                     =>
-                                     (unmake-instance ?f)
-                                     (make-instance ?p of asm-operation-field
-                                                    (parent ?k)
-                                                    (key %s)
-                                                    (target ?reg)
-                                                    (is-stack %%s)
-                                                    (is-indirect %%s)))"
-                           ?key
-                           ?key
-                           ?key))
-             (build (format nil
-                            ?rule-base
-                            none
-                            ""
-                            FALSE
-                            FALSE))
-             (build (format nil
-                            ?rule-base
-                            stack
-                            stack
-                            TRUE
-                            FALSE))
-             (build (format nil
-                            ?rule-base
-                            indirect
-                            indirect
-                            FALSE
-                            TRUE)))
-
-(build-field-registration-rules destination)
-(build-field-registration-rules source0)
-(build-field-registration-rules source1)
-
-
-
-(defrule parse-asm-operation
+        (visibility public)
+        (default ?NONE)))
+(defrule construct-if-condition
          (stage (current parse))
          ?f <- (object (is-a list)
-                       (contents **asm
-                                 ?group
-                                 $?properties)
-                       (name ?title)
-                       (parent ?parent))
+                       (contents if ?condition then
+                                 ?then
+                                 else
+                                 ?else)
+                       (name ?n)
+                       (parent ?p))
          =>
          (unmake-instance ?f)
-         (make-instance ?title of asm-operation
-                        (parent ?parent)
-                        (group ?group)
-                        (properties ?properties)))
-(defrule parse-asm-sub-type-property
-         (declare (salience 1))
-         (object (is-a asm-operation)
-                 (properties $? ?property $?))
-         ?f <- (object (is-a list)
-                       (name ?property)
-                       (parent ?parent)
-                       (contents sub-type
-                                 ?stype))
-         =>
-         (unmake-instance ?f)
-         (make-instance ?property of sub-type-property
-                        (sub-type ?stype)
-                        (parent ?parent)))
-
-(defrule parse-asm-operation-property:generic
+         (make-instance ?n of if-condition
+                        (parent ?p)
+                        (condition ?condition)
+                        (then ?then)
+                        (else ?else)))
+(defrule mark-push-and-immediate-pops
          (stage (current parse))
-         (object (is-a asm-operation)
-                 (properties $? ?property $?))
-         ?f <- (object (is-a list)
-                       (name ?property)
-                       (parent ?parent)
-                       (contents ?key
-                                 $?values))
+         (object (is-a invocation)
+                 (function pop)
+                 (name ?name))
+         (object (is-a invocation)
+                 (function push)
+                 (parent ?name)
+                 (name ?child))
          =>
-         (unmake-instance ?f)
-         (make-instance ?property of asm-operation-property
-                        (parent ?parent)
-                        (key ?key)
-                        (value ?values)))
-
-
+         (assert (note pop ?name push ?child optimization)))
