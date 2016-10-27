@@ -891,4 +891,10 @@
                         (parent ?file)
                         (value ?value)))
 
+; compiler operations
 
+(deffunction MAIN::parse-file
+             (?path)
+             (reset)
+             (assert (open ?path))
+             (run))
