@@ -69,6 +69,11 @@ tinyscheme:
 	@echo "Building tinyscheme..."
 	@cd misc/tinyscheme-1.41 && $(MAKE)
 	@echo "Finished building tinyscheme"
+	@echo -n "Copying tinyscheme to root..."
+	@cp misc/tinyscheme-1.41/init.scm .
+	@cp misc/tinyscheme-1.41/scheme .
+	@echo Done
+
 options:
 	@echo iris build options:
 	@echo "CFLAGS   = ${CFLAGS}"
@@ -126,8 +131,10 @@ ${ASM_BINARY}: ${ASM_OBJECTS} ${ASM_PARSERS}
 
 clean:
 	@echo -n Cleaning...
-	@rm -f ${ALL_OBJECTS} ${ALL_BINARIES} ${ASM_PARSERS}
+	@rm -f ${ALL_OBJECTS} ${ALL_BINARIES} ${ASM_PARSERS} scheme init.scm
 	@echo done.
+	@echo "Cleaning tinyscheme..."
+	@cd misc/tinyscheme-1.41 && $(MAKE) clean
 
 install: ${ALL_BINARIES}
 	@echo installing executables to ${DESTDIR}${PREFIX}/bin
