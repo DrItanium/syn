@@ -65,6 +65,10 @@ ALL_OBJECTS = ${COMMON_THINGS} \
 
 all: options ${SIM_BINARY} ${ASM_BINARY} ${LINK_BINARY}
 
+tinyscheme:
+	@echo "Building tinyscheme..."
+	@cd misc/tinyscheme-1.41 && $(MAKE)
+	@echo "Finished building tinyscheme"
 options:
 	@echo iris build options:
 	@echo "CFLAGS   = ${CFLAGS}"
