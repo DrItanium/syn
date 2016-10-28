@@ -63,7 +63,7 @@ ALL_OBJECTS = ${COMMON_THINGS} \
 			  ${ARCH_OBJECTS} \
 			  ${ASM_SUPPLIMENTARY_BUILD}
 
-all: options ${SIM_BINARY} ${ASM_BINARY} ${LINK_BINARY}
+all: options tinyscheme ${SIM_BINARY} ${ASM_BINARY} ${LINK_BINARY}
 
 tinyscheme:
 	@echo "Building tinyscheme..."
