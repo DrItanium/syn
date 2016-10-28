@@ -3,7 +3,7 @@
   (string->symbol (string-append "r"
 								 (atom->string index))))
 (macro (defregister title index)
- 	   (define ,title (register-index ,index)))
+ 	   `(define ,title (register-index ,index)))
 (defregister ip (- register-count 1))
 (defregister lr (- register-count 2))
 (defregister sp (- register-count 3))
