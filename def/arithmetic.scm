@@ -38,17 +38,16 @@
 		(*arithmetic-unit "ShiftRightImmediate" "iris::shiftRight" "Immediate")))
 
 (define arithmetic-unit-code
-  (open-output-file "iris16_arithmetic_logic.def"))
-(define arithmetic-unit-enumeration
-  (open-output-file "iris16_arithmetic_enum.def"))
+  (open-output-file "def/iris16/arithmetic_logic.def"))
 (for-each (lambda (mf)
 			(let ((str (*arithmetic (car mf)
 									(car (cdr mf))
 									(car (cdr (cdr mf))))))
 			  (display str arithmetic-unit-code)))
 		  *arithmetic-units)
-(display (*def-enum "ArithmeticOp" "byte" "ArchitectureConstants::MaxOperations" *arithmetic-units)
-		 arithmetic-unit-enumeration)
 (close-port arithmetic-unit-code)
-(close-port arithmetic-unit-enumeration)
+(*build-enum (open-output-file "def/iris16/arithmetic_enum.def")
+ 			 "ArithmeticOp" "byte" "ArchitectureConstants::MaxOperations" 
+			 (map car 
+				  *arithmetic-units))
 

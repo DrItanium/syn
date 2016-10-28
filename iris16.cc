@@ -101,9 +101,20 @@ namespace iris16 {
 	}
 
 	void Core::arithmetic() {
-		auto operation = static_cast<ArithmeticOp>(getOperation());
 		switch(static_cast<ArithmeticOp>(getOperation())) {
-#include "iris16_arithmetic_logic.def"
+
+#define XNone(n) (gpr[getSource0()], gpr[getSource1()])
+#define XImmediate(n) (gpr[getSource0()], static_cast<word>(getSource1()))
+#define XUnary(n) (gpr[getSource0()])
+#define X(name, op, desc) \
+			case ArithmeticOp:: name: \
+									   gpr[getDestination()] = op INDIRECTOR(X, desc)(name); \
+			break;
+#include "def/iris16/arithmetic.def"
+#undef X
+#undef XNone
+#undef XDenominator
+#undef XUnary
 			default: {
 		std::stringstream stream;
 		stream << "Illegal arithmetic operation " << getOperation();
