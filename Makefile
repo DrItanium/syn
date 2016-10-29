@@ -63,7 +63,16 @@ ALL_OBJECTS = ${COMMON_THINGS} \
 			  ${ARCH_OBJECTS} \
 			  ${ASM_SUPPLIMENTARY_BUILD}
 
-all: options tinyscheme ${SIM_BINARY} ${ASM_BINARY} ${LINK_BINARY}
+all: options tinyscheme maya ${SIM_BINARY} ${ASM_BINARY} ${LINK_BINARY}
+
+maya:
+	@echo "Buidling maya..."
+	@cd misc/maya && $(MAKE)
+	@echo "Finished building maya"
+	@echo -n "Copying maya to root..."
+	@cp misc/maya/maya .
+	@cp misc/maya/libmaya.a .
+	@echo Done
 
 tinyscheme:
 	@echo "Building tinyscheme..."
@@ -131,10 +140,12 @@ ${ASM_BINARY}: ${ASM_OBJECTS} ${ASM_PARSERS}
 
 clean:
 	@echo -n Cleaning...
-	@rm -f ${ALL_OBJECTS} ${ALL_BINARIES} ${ASM_PARSERS} scheme init.scm
+	@rm -f ${ALL_OBJECTS} ${ALL_BINARIES} ${ASM_PARSERS} scheme init.scm maya libmaya.a
 	@echo done.
 	@echo "Cleaning tinyscheme..."
 	@cd misc/tinyscheme-1.41 && $(MAKE) clean
+	@echo "Cleaning maya..."
+	@cd misc/maya && $(MAKE) clean
 
 install: ${ALL_BINARIES}
 	@echo installing executables to ${DESTDIR}${PREFIX}/bin
