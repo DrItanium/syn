@@ -1,6 +1,9 @@
 #include "iris16.h"
 #include <functional>
 #include <sstream>
+extern "C" {
+	#include "clips.h"
+}
 
 namespace iris16 {
 	Core* newCore() noexcept {
@@ -248,5 +251,36 @@ namespace iris16 {
 	word* Core::registerMapping(byte index) {
 		return &gpr[index];
 	}
-
+#define X(title, mask, shift, type, is_register, post) \
+			void CLIPS_decode ## title (UDFContext* context, CLIPSValue* ret) { \
+				CLIPSValue current; \
+				if (!UDFFirstArgument(context, NUMBER_TYPES, &current)) { \
+					CVSetBoolean(ret, false); \
+				} else { \
+					auto base = static_cast<raw_instruction>(CVToInteger(&current)); \
+					CVSetInteger(ret, static_cast<CLIPSInteger>(iris::decodeBits<raw_instruction, type, mask, shift>(base))); \
+				} \
+			} \
+			void CLIPS_encode ## title (UDFContext* context, CLIPSValue* ret) { \
+				CLIPSValue input, value; \
+				if (!UDFFirstArgument(context, NUMBER_TYPES, &input)) { \
+					CVSetBoolean(ret, false); \
+				} else if (!UDFNextArgument(context, NUMBER_TYPES, &value)) { \
+					CVSetBoolean(ret, false); \
+				} else { \
+					auto base = static_cast<raw_instruction>(CVToInteger(&input)); \
+					auto newValue = static_cast< type > (CVToInteger(&value)); \
+					CVSetInteger(ret, static_cast<CLIPSInteger>(iris::encodeBits<raw_instruction, type , mask , shift > ( base, newValue ))); \
+				} \
+			}
+#include "def/iris16/instruction.def"
+#undef X
+	void installExtensions(void* theEnv) {
+		Environment* env = static_cast<Environment*>(theEnv);
+#define X(title, mask, shift, type, is_register, post) \
+		EnvAddUDF(env, "iris16:encode" #title , "l", CLIPS_encode ## title, "CLIPS_encode" #title, 2, 2, "l;l;l", nullptr); \
+		EnvAddUDF(env, "iris16:decode" #title , "l", CLIPS_decode ## title, "CLIPS_decode" #title, 1, 1, "l", nullptr);
+#include "def/iris16/instruction.def"
+#undef X
+	}
 }

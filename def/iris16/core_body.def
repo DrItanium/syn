@@ -1,10 +1,3 @@
-#define X(_, op) void op();
-#include "groups.def"
-#undef X
-
-#define X(title, func) void func ();
-#include "misc.def"
-#undef X
 
 #define X(title, mask, shift, type, is_register, post) \
 			inline type get ## title () const noexcept { \

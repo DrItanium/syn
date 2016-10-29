@@ -782,8 +782,19 @@ namespace iris19 {
 #undef EnumEntry
 #undef DefEnum
 #undef EndDefEnum
+
+	void CLIPS_generateMemoryAddress(UDFContext* context, CLIPSValue* ret) { 
+		CLIPSValue in;
+		if (!UDFFirstArgument(context, NUMBER_TYPES, &in)) {
+			CVSetBoolean(ret, false);
+		} else {
+			CVSetInteger(ret, static_cast<CLIPSInteger>(static_cast<RegisterValue>(CVToInteger(&in)) & memoryMaxBitmask));
+		}
+	}
+
 	void installExtensions(void* theEnv) {
 		Environment* env = static_cast<Environment*>(theEnv);
+		EnvAddUDF(env, "iris19:generate-memory-address", "l", CLIPS_generateMemoryAddress, "CLIPS_generateMemoryAddress", 1, 1, "l", nullptr);
 #define X(title, mask, shift, type, post) \
 		EnvAddUDF(env, "iris19:encode" #title , "l", CLIPS_encode ## title, "CLIPS_encode" #title, 2, 2, "l;l;l", nullptr);
 #include "def/iris19/instruction.def"

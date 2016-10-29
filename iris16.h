@@ -144,7 +144,19 @@ namespace iris16 {
                     throw iris::Problem("Undefined move operation");
                 }
 			}
-#include "def/iris16/core_body.def"
+#define X(title, mask, shift, type, is_register, post) \
+			inline type get ## title () const noexcept { \
+				return iris::decodeBits<raw_instruction, type, mask, shift>(current); \
+			} 
+#include "def/iris16/instruction.def"
+#undef X
+#define X(_, op) void op();
+#include "def/iris16/groups.def"
+#undef X
+
+#define X(title, func) void func ();
+#include "def/iris16/misc.def"
+#undef X
 		private:
 			std::shared_ptr<word> extendedData;
 			dword extendedMemorySize = 0;
@@ -159,5 +171,6 @@ namespace iris16 {
 
 	Core* newCore() noexcept;
 	void assemble(FILE* input, std::ostream* output);
+	void installExtensions(void* theEnv);
 }
 #endif
