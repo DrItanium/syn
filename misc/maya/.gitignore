@@ -1,0 +1,10 @@
+#ignore the electron executable and the object files
+maya
+*.a
+*.o
+*.swp
+.deps/
+obj/
+libs/
+*.class
+*.obj

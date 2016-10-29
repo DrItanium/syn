@@ -284,6 +284,7 @@ namespace iris19 {
 	};
 	Core* newCore() noexcept;
 	void assemble(FILE* input, std::ostream* output);
+	void installExtensions(void* env);
 } // end namespace iris19
 
 #endif // end _TARGET_IRIS19_IRIS_H
