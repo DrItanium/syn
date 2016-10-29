@@ -14,7 +14,11 @@ endif
 
 .PHONY: clean all
 
-all: repl
+all: archive repl
+
+archive: $(OBJS)
+	@echo Bulding maya archive
+	@$(AR) rcs libmaya.a $(OBJS)
 
 repl: $(OBJS) cmd/repl/main.o
 	@echo Building maya
@@ -32,7 +36,7 @@ deinstall uninstall:
 
 clean:
 	@echo Cleaning
-	@rm -f $(OBJS) cmd/repl/main.o maya
+	@rm -f $(OBJS) cmd/repl/main.o maya libmaya.a
 
 
 .c.o :
