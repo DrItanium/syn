@@ -60,15 +60,17 @@ LINK_BINARY = iris_link
 
 ALL_BINARIES = ${SIM_BINARY} \
 			   ${ASM_BINARY} \
-			   ${LINK_BINARY}
+			   ${LINK_BINARY} \
+			   ${REPL_BINARY}
 
 ALL_OBJECTS = ${COMMON_THINGS} \
 			  ${SIM_OBJECTS} \
 			  ${ASM_OBJECTS} \
 			  ${LINK_OBJECTS} \
-			  ${ARCH_OBJECTS}
+			  ${ARCH_OBJECTS} \
+			  ${REPL_OBJECTS}
 
-all: options tinyscheme ${REPL_BINARY} ${SIM_BINARY} ${ASM_BINARY} ${LINK_BINARY}
+all: options ${REPL_BINARY} ${SIM_BINARY} ${ASM_BINARY} ${LINK_BINARY}
 
 maya:
 	@echo "Buidling maya..."
@@ -80,15 +82,6 @@ maya:
 	@echo Done
 
 libmaya.a: maya
-
-tinyscheme:
-	@echo "Building tinyscheme..."
-	@cd misc/tinyscheme-1.41 && $(MAKE)
-	@echo "Finished building tinyscheme"
-	@echo -n "Copying tinyscheme to root..."
-	@cp misc/tinyscheme-1.41/init.scm .
-	@cp misc/tinyscheme-1.41/scheme .
-	@echo Done
 
 options:
 	@echo iris build options:
@@ -153,8 +146,6 @@ clean:
 	@echo -n Cleaning...
 	@rm -f ${ALL_OBJECTS} ${ALL_BINARIES} ${ASM_PARSERS} scheme init.scm maya libmaya.a
 	@echo done.
-	@echo "Cleaning tinyscheme..."
-	@cd misc/tinyscheme-1.41 && $(MAKE) clean
 	@echo "Cleaning maya..."
 	@cd misc/maya && $(MAKE) clean
 
