@@ -71,7 +71,7 @@
                                             ?source1)
                else
                (encode-source1 ?value
-                ?source1)))
+                               ?source1)))
 (deffunction iris19::encode-destination
              (?value ?dest)
              (iris19:encodeDestinationIndex ?value
@@ -94,10 +94,13 @@
              (encode-control 0
                              ?type))
 
+(deffunction iris19::bool->int
+             (?value)
+             (if ?value then 1 else 0))
 (deffunction iris19::encode-immediate
              (?value ?immediate)
              (iris19:encodeImmediateFlag ?value
-                                         (if ?immediate then 1 else 0)))
+                                         (bool->int ?immediate)))
 (deffunction iris19::encode-arithmetic
              (?sub-type ?immediate)
              (encode-immediate
@@ -110,7 +113,7 @@
              (encode-immediate
                (iris19:encodeShiftFlagLeft
                  (make-control Shift)
-                 (if ?shift-left then 1 else 0))
+                 (bool->int ?shift-left))
                ?immediate))
 (deffunction iris19::encode-compare
              (?sub-type ?immediate)
@@ -130,9 +133,9 @@
                  (iris19:encodeBranchFlagIsCallForm
                    (iris19:encodeBranchFlagIsIfForm 
                      (make-control Branch)
-                     ?is-if)
-                   ?is-call)
-                 ?is-conditional)
+                     (bool->int ?is-if))
+                   (bool->int ?is-call))
+                 (bool->int ?is-conditional))
                ?immediate))
 (deffunction iris19::encode-if
              (?value ?source0 ?source1)
@@ -193,7 +196,7 @@
                                  (send ?self upper-half))
                         else
                         (create$ (encode-source0 ?cbits
-                                                 ?self:arg1))))))
+                                                 ?self:arg1)))))
 (defmessage-handler iris19::instruction-encoding lower-half primary
                     ()
                     (iris19:RegisterValue_decodeLowerHalf ?self:full-immediate))
