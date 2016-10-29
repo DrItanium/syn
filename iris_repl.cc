@@ -10,8 +10,9 @@ static void *mainEnv;
 int main(int argc, char* argv[]) {
 	mainEnv = CreateEnvironment();
 	// install features here
-	iris19::installExtensions(mainEnv);
 	iris16::installExtensions(mainEnv);
+	iris18::installExtensions(mainEnv);
+	iris19::installExtensions(mainEnv);
 	RerouteStdin(mainEnv, argc, argv);
 	CommandLoop(mainEnv);
 	DestroyEnvironment(mainEnv);
