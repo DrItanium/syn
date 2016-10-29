@@ -3,6 +3,7 @@
 #include <sstream>
 #include "Problem.h"
 #include <utility>
+#include <map>
 
 extern "C" {
 #include "clips.h"
@@ -652,8 +653,130 @@ namespace iris18 {
 		readNextWord = false;
 	}
 
-	void installExtensions(void* theEnv) {
+#define X(title, mask, shift, type, post) \
+	void CLIPS_encode ## title (UDFContext* context, CLIPSValue* ret) { \
+		CLIPSValue input, value; \
+		if (!UDFFirstArgument(context, NUMBER_TYPES, &input)) { \
+			CVSetBoolean(ret, false); \
+		} else if (!UDFNextArgument(context, NUMBER_TYPES, &value)) { \
+			CVSetBoolean(ret, false); \
+		} else { \
+			CVSetInteger(ret, encode ## title ( static_cast<Word>(CVToInteger(&input)), static_cast< type >(CVToInteger(&value)))); \
+		} \
+	} \
+	void CLIPS_decode ## title (UDFContext* context, CLIPSValue* ret) { \
+		CLIPSValue input; \
+		if (!UDFFirstArgument(context, NUMBER_TYPES, &input)) { \
+			CVSetBoolean(ret, false); \
+		} else { \
+			auto value = static_cast<RawInstruction>(CVToInteger(&input)); \
+			CVSetInteger(ret, static_cast<CLIPSInteger>(iris::decodeBits<RawInstruction, type , mask , shift >(value))); \
+		} \
+	}
+#include "def/iris18/instruction.def"
+#undef X
+// to integer
+#define DefEnum(type, width) \
+	void CLIPS_translateEnumToInteger_ ## type (UDFContext* context, CLIPSValue* ret) { \
+		static bool init = true; \
+		static std::map<std::string, type > collection; \
+		static int count = 0; \
+		if (init) { \
+			init = false; \
+			auto convert = [](int value) { return static_cast < type > (value) ; } ;
+#define EnumEntry(type) collection.emplace( #type , convert(count)); ++count;
+#define EndDefEnum(type, width, maxCount) \
+		} \
+		CLIPSValue in; \
+		if (!UDFFirstArgument(context, LEXEME_TYPES, &in)) { \
+			CVSetBoolean(ret, false); \
+		} else { \
+			std::string str = CVToString(&in); \
+			auto loc = collection.find(str); \
+			if (loc == collection.end()) { \
+				CVSetBoolean(ret, false); \
+			} else { \
+				CVSetInteger(ret, static_cast<int>(loc->second)); \
+			} \
+		} \
+	}
+#include "def/iris18/ops.def"
+#include "def/iris18/arithmetic_ops.def"
+#include "def/iris18/syscalls.def"
+#include "def/iris18/compare.enum"
+#include "def/iris18/logical.enum"
+#include "def/iris18/memory.enum"
+#include "def/iris18/complex.def"
+#undef EnumEntry
+#undef DefEnum
+#undef EndDefEnum
+// integer to enum
+#define DefEnum(type, width) \
+	void CLIPS_translateIntegerToEnum_ ## type (UDFContext* context, CLIPSValue* ret) { \
+		static bool init = true; \
+		static std::map<type , std::string > collection; \
+		static int count = 0; \
+		if (init) { \
+			init = false; \
+			auto convert = [](int key) { return static_cast< type > (key) ; };
+#define EnumEntry(type) collection.emplace(convert(count), #type ); ++count;
+#define EndDefEnum(type, width, maxCount) \
+		} \
+		CLIPSValue in; \
+		if (!UDFFirstArgument(context, NUMBER_TYPES, &in)) { \
+			CVSetBoolean(ret, false); \
+		} else { \
+			auto integer = CVToInteger(&in); \
+			auto loc = collection.find(static_cast< type > (integer)) ; \
+			if (loc == collection.end()) { \
+				CVSetBoolean(ret, false); \
+			} else { \
+				CVSetString(ret, loc->second.c_str()); \
+			} \
+		} \
+	}
+#include "def/iris18/ops.def"
+#include "def/iris18/arithmetic_ops.def"
+#include "def/iris18/syscalls.def"
+#include "def/iris18/compare.enum"
+#include "def/iris18/logical.enum"
+#include "def/iris18/memory.enum"
+#include "def/iris18/complex.def"
+#undef EnumEntry
+#undef DefEnum
+#undef EndDefEnum
 
+	void CLIPS_generateMemoryAddress(UDFContext* context, CLIPSValue* ret) { 
+		CLIPSValue in;
+		if (!UDFFirstArgument(context, NUMBER_TYPES, &in)) {
+			CVSetBoolean(ret, false);
+		} else {
+			CVSetInteger(ret, static_cast<CLIPSInteger>(static_cast<RegisterValue>(CVToInteger(&in)) & bitmask24));
+		}
 	}
 
+	void installExtensions(void* theEnv) {
+		Environment* env = static_cast<Environment*>(theEnv);
+		EnvAddUDF(env, "iris18:generate-memory-address", "l", CLIPS_generateMemoryAddress, "CLIPS_generateMemoryAddress", 1, 1, "l", nullptr);
+#define X(title, mask, shift, type, post) \
+		EnvAddUDF(env, "iris18:encode" #title , "l", CLIPS_encode ## title, "CLIPS_encode" #title, 2, 2, "l;l;l", nullptr); \
+		EnvAddUDF(env, "iris18:decode" #title , "l", CLIPS_decode ## title, "CLIPS_decode" #title, 1, 1, "l", nullptr);
+#include "def/iris18/instruction.def"
+#undef X
+#define EnumEntry(unused)
+#define EndDefEnum(a, b, c)
+#define DefEnum(type, unused) \
+		EnvAddUDF(env, "iris18:convertEnumToInt_" #type , "l", CLIPS_translateEnumToInteger_ ## type , "CLIPS_translateEnumToInteger_" #type , 1, 1, "s", nullptr); \
+		EnvAddUDF(env, "iris18:convertIntToEnum_" #type , "y", CLIPS_translateIntegerToEnum_ ## type , "CLIPS_translateIntegerToEnum_" #type , 1, 1, "l", nullptr);
+#include "def/iris18/ops.def"
+#include "def/iris18/arithmetic_ops.def"
+#include "def/iris18/syscalls.def"
+#include "def/iris18/compare.enum"
+#include "def/iris18/logical.enum"
+#include "def/iris18/memory.enum"
+#include "def/iris18/complex.def"
+#undef DefEnum
+#undef EnumEntry
+#undef EndDefEnum
+	}
 }

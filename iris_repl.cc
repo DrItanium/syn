@@ -3,6 +3,7 @@ extern "C" {
 }
 #include "iris16.h"
 #include "iris19.h"
+#include "iris18.h"
 
 static void *mainEnv;
 
