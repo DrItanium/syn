@@ -3,6 +3,9 @@
 #include <sstream>
 #include "Problem.h"
 #include <utility>
+extern "C" {
+	#include <clips.h>
+}
 
 namespace iris19 {
 	// BEGIN INSTRUCTION
@@ -699,5 +702,25 @@ namespace iris19 {
 	}
 	Word InstructionEncoder::setShortImmediate(Word value) const noexcept {
 		return encodeShortImmediate(value, arg2);
+	}
+#define X(title, mask, shift, type, post) \
+	void CLIPS_encode ## title (UDFContext* context, CLIPSValue* ret) { \
+		CLIPSValue input, value; \
+		if (!UDFFirstArgument(context, NUMBER_TYPES, &input)) { \
+			CVSetBoolean(ret, false); \
+		} else if (!UDFNextArgument(context, NUMBER_TYPES, &value)) { \
+			CVSetBoolean(ret, false); \
+		} else { \
+			CVSetInteger(ret, encode ## title ( static_cast<Word>(CVToInteger(&input)), static_cast< type >(CVToInteger(&value)))); \
+		} \
+	}
+#include "def/iris19/instruction.def"
+#undef X
+	void installExtensions(void* theEnv) {
+		Environment* env = static_cast<Environment*>(theEnv);
+#define X(title, mask, shift, type, post) \
+		EnvAddUDF(env, "iris19:" #post , "l", CLIPS_encode ## title, "CLIPS_encode" #title, 2, 2, "l;l;l", nullptr);
+#include "def/iris19/instruction.def"
+#undef X
 	}
 }

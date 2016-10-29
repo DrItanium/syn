@@ -1,5 +1,5 @@
 extern "C" {
-	#include "misc/maya/clips.h"
+	#include "clips.h"
 }
 #include "iris19.h"
 

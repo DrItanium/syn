@@ -1,10 +1,10 @@
-LIBS = -lc -lm
+LIBS = -lc -lm -lboost_system -lboost_filesystem
 
 CC := cc
 CXX := c++
 LEX ?= flex
 YACC ?= bison
-GENFLAGS = -Wall -g3
+GENFLAGS = -Wall -g3 -Imisc/maya/
 CFLAGS = -ansi -std=c99 ${GENFLAGS}
 CXXFLAGS = -std=c++14 ${GENFLAGS}
 LDFLAGS = ${LIBS}

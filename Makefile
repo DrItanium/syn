@@ -11,7 +11,8 @@ ARCH_OBJECTS = iris17.o \
 
 COMMON_THINGS = iris_base.o \
 				sim_registration.o \
-				${ARCH_OBJECTS}
+				${ARCH_OBJECTS} \
+				libmaya.a
 
 SIM_OBJECTS = iris_sim.o \
 			  ${COMMON_THINGS}
@@ -35,8 +36,7 @@ ASM_OBJECTS = iris_asm.o \
 REPL_BINARY = iris_repl
 
 REPL_OBJECTS= iris_repl.o \
-			  ${COMMON_THINGS} \
-			  libmaya.a \
+			  ${COMMON_THINGS}
 
 ASM_PARSERS = iris16_lex.yy.c \
 			  iris16_asm.tab.c \
@@ -146,7 +146,7 @@ ${ASM_BINARY}: ${ASM_OBJECTS}
 
 ${REPL_BINARY}: ${REPL_OBJECTS}
 	@echo -n Building ${REPL_BINARY} binary out of $^...
-	@${CXX} -lboost_system -lboost_filesystem -o ${REPL_BINARY} ${REPL_OBJECTS} 
+	@${CXX} ${LIBS} -o ${REPL_BINARY} ${REPL_OBJECTS} 
 	@echo done.
 
 clean:
