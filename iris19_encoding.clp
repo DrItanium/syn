@@ -122,10 +122,6 @@
                  (make-control Compare)
                  (iris19:convertEnumToInt_CompareStyle ?sub-type))
                ?immediate))
-(deffunction iris19::encode-move
-             (?sub-type ?is-set)
-             (iris19:encodeMoveSubtype (make-control Move)
-                                       (iris19:convertEnumToInt_MoveOperation ?sub-type)))
 (deffunction iris19::encode-branch
              (?immediate ?is-conditional ?is-call ?is-if)
              (encode-immediate
@@ -164,7 +160,8 @@
                                     single-word-encoding
                                     (encode-compare ?self:sub-type
                                                     ?self:immediate)))
-                            (case Move then)
+                            (case Move then
+                              (send ?self encode-move))
                             (case Logical then)
                             (default (create$))))
 
@@ -175,6 +172,35 @@
                                         ?self:arg0
                                         ?self:arg1
                                         ?self:arg2))
+
+(defmessage-handler iris19::instruction-encoding encode-move primary
+                    ()
+                    (create$ (encode-source0
+                               (encode-destination
+                                 (iris19:encodeRawBitmask 
+                                   (iris19:encodeMoveSubtype (make-control Move)
+                                                             (bind ?is-set
+                                                                   (eq (bind ?mem-op
+                                                                             (iris19:convertEnumToInt_MoveOperation ?self:sub-type))
+                                                                       (iris19:convertEnumToInt_MoveOperation Set))))
+
+                                   ?self:bitmask)
+                                 ?self:arg0)
+                               ?self:arg1)
+                             (if ?is-set then 
+                               (iris19:maskedLowerHalf ?self:bitmask 
+                                                       ?self:full-immediate)
+                               else
+                               (create$))
+                             (if ?is-set then
+                               (iris19:maskedUpperHalf ?self:bitmask
+                                                       ?self:full-immediate)
+                               else
+                               (create$))))
+
+
+
+
 
 (defmessage-handler iris19::instruction-encoding branch-encoding primary
                     ()
@@ -192,14 +218,8 @@
                       else
                       (if ?self:immediate then
                         (create$ ?cbits
-                                 (send ?self lower-half)
-                                 (send ?self upper-half))
+                                 (iris19:RegisterValue_decodeLowerHalf ?self:full-immediate)
+                                 (iris19:RegisterValue_decodeUpperHalf ?self:full-immediate))
                         else
                         (create$ (encode-source0 ?cbits
                                                  ?self:arg1)))))
-(defmessage-handler iris19::instruction-encoding lower-half primary
-                    ()
-                    (iris19:RegisterValue_decodeLowerHalf ?self:full-immediate))
-(defmessage-handler iris19::instruction-encoding upper-half primary
-                    ()
-                    (iris19:RegisterValue_decodeUpperHalf ?self:full-immediate))

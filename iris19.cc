@@ -872,7 +872,7 @@ namespace iris19 {
 #define EnumEntry(unused)
 #define EndDefEnum(a, b, c)
 #define DefEnum(type, unused) \
-		EnvAddUDF(env, "iris19:convertEnumToInt_" #type , "l", CLIPS_translateEnumToInteger_ ## type , "CLIPS_translateEnumToInteger_" #type , 1, 1, "s", nullptr); \
+		EnvAddUDF(env, "iris19:convertEnumToInt_" #type , "l", CLIPS_translateEnumToInteger_ ## type , "CLIPS_translateEnumToInteger_" #type , 1, 1, "sy", nullptr); \
 		EnvAddUDF(env, "iris19:convertIntToEnum_" #type , "y", CLIPS_translateIntegerToEnum_ ## type , "CLIPS_translateIntegerToEnum_" #type , 1, 1, "l", nullptr);
 #include "def/iris19/ops.def"
 #include "def/iris19/arithmetic_ops.def"
