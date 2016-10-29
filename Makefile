@@ -32,6 +32,12 @@ ASM_OBJECTS = iris_asm.o \
 			  ${COMMON_THINGS} \
 			  ${ASM_PARSERS_OBJECTS}
 
+REPL_BINARY = iris_repl
+
+REPL_OBJECTS= iris_repl.o \
+			  ${COMMON_THINGS} \
+			  libmaya.a \
+
 ASM_PARSERS = iris16_lex.yy.c \
 			  iris16_asm.tab.c \
 			  iris16_asm.tab.h \
@@ -60,10 +66,9 @@ ALL_OBJECTS = ${COMMON_THINGS} \
 			  ${SIM_OBJECTS} \
 			  ${ASM_OBJECTS} \
 			  ${LINK_OBJECTS} \
-			  ${ARCH_OBJECTS} \
-			  ${ASM_SUPPLIMENTARY_BUILD}
+			  ${ARCH_OBJECTS}
 
-all: options tinyscheme maya ${SIM_BINARY} ${ASM_BINARY} ${LINK_BINARY}
+all: options tinyscheme ${REPL_BINARY} ${SIM_BINARY} ${ASM_BINARY} ${LINK_BINARY}
 
 maya:
 	@echo "Buidling maya..."
@@ -73,6 +78,8 @@ maya:
 	@cp misc/maya/maya .
 	@cp misc/maya/libmaya.a .
 	@echo Done
+
+libmaya.a: maya
 
 tinyscheme:
 	@echo "Building tinyscheme..."
@@ -132,11 +139,15 @@ ${LINK_BINARY}: ${LINK_OBJECTS}
 	@${CXX} ${LDFLAGS} -o ${LINK_BINARY} $^
 	@echo done.
 
-${ASM_BINARY}: ${ASM_OBJECTS} ${ASM_PARSERS} 
+${ASM_BINARY}: ${ASM_OBJECTS}
 	@echo -n Building ${ASM_BINARY} binary out of $^...
-	@${CXX} ${LDFLAGS} -o ${ASM_BINARY} ${ASM_SUPPLIMENTARY_BUILD} ${ASM_OBJECTS}
+	@${CXX} ${LDFLAGS} -o ${ASM_BINARY} ${ASM_OBJECTS}
 	@echo done.
 
+${REPL_BINARY}: ${REPL_OBJECTS}
+	@echo -n Building ${REPL_BINARY} binary out of $^...
+	@${CXX} -lboost_system -lboost_filesystem -o ${REPL_BINARY} ${REPL_OBJECTS} 
+	@echo done.
 
 clean:
 	@echo -n Cleaning...
@@ -165,6 +176,7 @@ uninstall:
 
 .PHONY: all options clean install uninstall
 
+
 asm_interact.o: asm_interact.cc asm_interact.h iris18.h iris_base.h \
  Problem.h Core.h sim_registration.h def/iris18/ops.def \
  def/iris18/arithmetic_ops.def def/iris18/syscalls.def \
@@ -177,8 +189,7 @@ asm_interact.o: asm_interact.cc asm_interact.h iris18.h iris_base.h \
  def/iris16/instruction.def iris17.h def/iris17/groups.def \
  def/iris17/instruction.def def/iris17/compare.def \
  def/iris17/arithmetic.def def/iris17/move.def def/iris17/jump.def \
- def/iris17/misc.def def/iris17/syscalls.def iris19.h \
- def/iris19/registers.def def/iris19/ops.def \
+ def/iris17/misc.def def/iris17/syscalls.def iris19.h def/iris19/ops.def \
  def/iris19/arithmetic_ops.def def/iris19/compare.enum \
  def/iris19/logical.enum def/iris19/move.def def/iris19/instruction.def
 iris16.o: iris16.cc iris16.h iris_base.h Problem.h Core.h \
@@ -199,12 +210,45 @@ iris18.o: iris18.cc iris18.h iris_base.h Problem.h Core.h \
  def/iris18/move.sig def/iris18/memory.sig def/iris18/set.sig \
  def/iris18/bitmask4bit.def def/iris18/bitmask8bit.def
 iris19.o: iris19.cc iris19.h iris_base.h Problem.h Core.h \
- sim_registration.h def/iris19/registers.def def/iris19/ops.def \
- def/iris19/arithmetic_ops.def def/iris19/compare.enum \
- def/iris19/logical.enum def/iris19/move.def def/iris19/instruction.def
+ sim_registration.h def/iris19/ops.def def/iris19/arithmetic_ops.def \
+ def/iris19/compare.enum def/iris19/logical.enum def/iris19/move.def \
+ def/iris19/instruction.def
 iris_asm.o: iris_asm.cc Problem.h asm_interact.h
 iris_base.o: iris_base.cc iris_base.h Problem.h
 iris_link.o: iris_link.cc Core.h sim_registration.h Problem.h
+iris_repl.o: iris_repl.cc misc/maya/clips.h misc/maya/setup.h \
+ misc/maya/os_shim.h misc/maya/platform.h misc/maya/envrnmnt.h \
+ misc/maya/symbol.h misc/maya/usrsetup.h misc/maya/argacces.h \
+ misc/maya/expressn.h misc/maya/exprnops.h misc/maya/exprnpsr.h \
+ misc/maya/extnfunc.h misc/maya/evaluatn.h misc/maya/constant.h \
+ misc/maya/userdata.h misc/maya/factmngr.h misc/maya/conscomp.h \
+ misc/maya/constrct.h misc/maya/moduldef.h misc/maya/modulpsr.h \
+ misc/maya/utility.h misc/maya/scanner.h misc/maya/pprint.h \
+ misc/maya/symblcmp.h misc/maya/facthsh.h misc/maya/multifld.h \
+ misc/maya/pattern.h misc/maya/match.h misc/maya/network.h \
+ misc/maya/ruledef.h misc/maya/agenda.h misc/maya/constrnt.h \
+ misc/maya/cstrccom.h misc/maya/reorder.h misc/maya/tmpltdef.h \
+ misc/maya/factbld.h misc/maya/object.h misc/maya/memalloc.h \
+ misc/maya/cstrcpsr.h misc/maya/filecom.h misc/maya/strngfun.h \
+ misc/maya/commline.h misc/maya/router.h misc/maya/prntutil.h \
+ misc/maya/filertr.h misc/maya/strngrtr.h misc/maya/iofun.h \
+ misc/maya/sysdep.h misc/maya/bmathfun.h misc/maya/watch.h \
+ misc/maya/modulbsc.h misc/maya/bload.h misc/maya/exprnbin.h \
+ misc/maya/symblbin.h misc/maya/bsave.h misc/maya/rulebsc.h \
+ misc/maya/engine.h misc/maya/lgcldpnd.h misc/maya/retract.h \
+ misc/maya/drive.h misc/maya/incrrset.h misc/maya/rulecom.h \
+ misc/maya/crstrtgy.h misc/maya/dffctdef.h misc/maya/dffctbsc.h \
+ misc/maya/tmpltbsc.h misc/maya/tmpltfun.h misc/maya/factcom.h \
+ misc/maya/factfun.h misc/maya/globldef.h misc/maya/globlbsc.h \
+ misc/maya/globlcom.h misc/maya/dffnxfun.h misc/maya/genrccom.h \
+ misc/maya/genrcfun.h misc/maya/classcom.h misc/maya/classexm.h \
+ misc/maya/classinf.h misc/maya/classini.h misc/maya/classpsr.h \
+ misc/maya/defins.h misc/maya/inscom.h misc/maya/insfun.h \
+ misc/maya/insfile.h misc/maya/msgcom.h misc/maya/msgpass.h \
+ misc/maya/objrtmch.h iris19.h iris_base.h Problem.h Core.h \
+ sim_registration.h def/iris19/ops.def def/iris19/arithmetic_ops.def \
+ def/iris19/compare.enum def/iris19/logical.enum def/iris19/move.def \
+ def/iris19/instruction.def
 iris_sim.o: iris_sim.cc Problem.h Core.h sim_registration.h iris18.h \
  iris_base.h def/iris18/ops.def def/iris18/arithmetic_ops.def \
  def/iris18/syscalls.def def/iris18/compare.enum def/iris18/logical.enum \
@@ -230,8 +274,7 @@ sim_registration.o: sim_registration.cc sim_registration.h Core.h \
  def/iris16/instruction.def iris17.h def/iris17/groups.def \
  def/iris17/instruction.def def/iris17/compare.def \
  def/iris17/arithmetic.def def/iris17/move.def def/iris17/jump.def \
- def/iris17/misc.def def/iris17/syscalls.def iris19.h \
- def/iris19/registers.def def/iris19/ops.def \
+ def/iris17/misc.def def/iris17/syscalls.def iris19.h def/iris19/ops.def \
  def/iris19/arithmetic_ops.def def/iris19/compare.enum \
  def/iris19/logical.enum def/iris19/move.def def/iris19/instruction.def
 Storage.o: Storage.cc Storage.h Core.h iris16.h iris_base.h Problem.h \
