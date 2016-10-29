@@ -4,6 +4,10 @@
 #include "Problem.h"
 #include <utility>
 
+extern "C" {
+#include "clips.h"
+}
+
 namespace iris18 {
 	/*
 	 * Iris17 is a variable length encoding 16 bit architecture.
@@ -647,4 +651,9 @@ namespace iris18 {
 		indirect = false;
 		readNextWord = false;
 	}
+
+	void installExtensions(void* theEnv) {
+
+	}
+
 }

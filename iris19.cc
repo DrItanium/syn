@@ -713,6 +713,15 @@ namespace iris19 {
 		} else { \
 			CVSetInteger(ret, encode ## title ( static_cast<Word>(CVToInteger(&input)), static_cast< type >(CVToInteger(&value)))); \
 		} \
+	} \
+	void CLIPS_decode ## title (UDFContext* context, CLIPSValue* ret) { \
+		CLIPSValue input; \
+		if (!UDFFirstArgument(context, NUMBER_TYPES, &input)) { \
+			CVSetBoolean(ret, false); \
+		} else { \
+			auto value = static_cast<RawInstruction>(CVToInteger(&input)); \
+			CVSetInteger(ret, static_cast<CLIPSInteger>(iris::decodeBits<RawInstruction, type , mask , shift >(value))); \
+		} \
 	}
 #include "def/iris19/instruction.def"
 #undef X
@@ -796,7 +805,8 @@ namespace iris19 {
 		Environment* env = static_cast<Environment*>(theEnv);
 		EnvAddUDF(env, "iris19:generate-memory-address", "l", CLIPS_generateMemoryAddress, "CLIPS_generateMemoryAddress", 1, 1, "l", nullptr);
 #define X(title, mask, shift, type, post) \
-		EnvAddUDF(env, "iris19:encode" #title , "l", CLIPS_encode ## title, "CLIPS_encode" #title, 2, 2, "l;l;l", nullptr);
+		EnvAddUDF(env, "iris19:encode" #title , "l", CLIPS_encode ## title, "CLIPS_encode" #title, 2, 2, "l;l;l", nullptr); \
+		EnvAddUDF(env, "iris19:decode" #title , "l", CLIPS_decode ## title, "CLIPS_decode" #title, 1, 1, "l", nullptr);
 #include "def/iris19/instruction.def"
 #undef X
 #define EnumEntry(unused)
