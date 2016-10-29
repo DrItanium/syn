@@ -56,21 +56,22 @@
   (message-handler encode primary)
   (message-handler clear primary)
   (message-handler num-word primary))
-(defglobal iris19
- ?*arithmetic-operation* = (iris19:convertEnumToInt_Operation Arithmetic)
- )
 (deffunction iris19::encode-control
              (?value ?type)
              (iris19:encodeControl ?value
                                    (iris19:convertEnumToInt_Operation ?type)))
+(deffunction iris19::encode-source1 
+             (?value ?source1)
+             (iris19:encodeSource1Index ?value
+                                        ?source1))
 (deffunction iris19::try-encode-source1
              (?value ?immediate ?source1)
              (if ?immediate then
                (iris19:encodeShortImmediate ?value
-                                           ?source1)
+                                            ?source1)
                else
-               (iris19:encodeSource1Index ?value
-                                          ?source1)))
+               (encode-source1 ?value
+                ?source1)))
 (deffunction iris19::encode-destination
              (?value ?dest)
              (iris19:encodeDestinationIndex ?value
@@ -87,12 +88,16 @@
                                               ?dest)
                           ?src0)
                         ?immediate
-                        ?src1))
+                        ?src1)))
 (deffunction iris19::make-control
              (?type)
              (encode-control 0
                              ?type))
 
+(deffunction iris19::encode-immediate
+             (?value ?immediate)
+             (iris19:encodeImmediateFlag ?value
+                                         (if ?immediate then 1 else 0)))
 (deffunction iris19::encode-arithmetic
              (?sub-type ?immediate)
              (encode-immediate
@@ -103,14 +108,10 @@
 (deffunction iris19::encode-shift
              (?shift-left ?immediate)
              (encode-immediate
-                 (iris19:encodeShiftFlagLeft
-                   (make-control Shift)
-                   ?shift-left)
-                 ?immediate))
-(deffunction iris19::encode-immediate
-             (?value ?immediate)
-             (iris19:encodeImmediateFlag ?value
-                                         ?immediate))
+               (iris19:encodeShiftFlagLeft
+                 (make-control Shift)
+                 (if ?shift-left then 1 else 0))
+               ?immediate))
 (deffunction iris19::encode-compare
              (?sub-type ?immediate)
              (encode-immediate 
@@ -144,17 +145,17 @@
                     (switch ?self:type
                             (case Branch then
                               (send ?self 
-                               branch-encoding))
+                                    branch-encoding))
                             (case Arithmetic then 
-                             (send ?self
-                                   single-word-encoding
-                                   (encode-arithmetic ?self:sub-type
-                                                      ?self:immediate))
+                              (send ?self
+                                    single-word-encoding
+                                    (encode-arithmetic ?self:sub-type
+                                                       ?self:immediate)))
                             (case Shift then
                               (send ?self
                                     single-word-encoding
                                     (encode-shift ?self:sub-type
-                                                  ?self:immediate))
+                                                  ?self:immediate)))
                             (case Compare then
                               (send ?self
                                     single-word-encoding
@@ -164,15 +165,15 @@
                             (case Logical then)
                             (default (create$))))
 
-
-(defmessage-handler iris19::instruction-encode single-word-encoding primary
+(defmessage-handler iris19::instruction-encoding single-word-encoding primary
                     (?value)
                     (encode-single-word ?value
                                         ?self:immediate
-                                        ?self:destination
-                                        ?self:source0
-                                        ?self:source1))
-(defmessage-handler iris19::instruction-encode branch-encoding primary
+                                        ?self:arg0
+                                        ?self:arg1
+                                        ?self:arg2))
+
+(defmessage-handler iris19::instruction-encoding branch-encoding primary
                     ()
                     (bind ?cbits
                           (encode-destination 
@@ -180,11 +181,11 @@
                                            ?self:is-conditional
                                            ?self:is-call
                                            ?self:is-if)
-                            ?self:destination))
+                            ?self:arg0))
                     (if ?self:is-if then
                       (encode-if ?cbits
-                                 ?self:source0
-                                 ?self:source1)
+                                 ?self:arg1
+                                 ?self:arg2)
                       else
                       (if ?self:immediate then
                         (create$ ?cbits
@@ -192,4 +193,10 @@
                                  (send ?self upper-half))
                         else
                         (create$ (encode-source0 ?cbits
-                                                 ?self:source0))))))
+                                                 ?self:arg1))))))
+(defmessage-handler iris19::instruction-encoding lower-half primary
+                    ()
+                    (iris19:RegisterValue_decodeLowerHalf ?self:full-immediate))
+(defmessage-handler iris19::instruction-encoding upper-half primary
+                    ()
+                    (iris19:RegisterValue_decodeUpperHalf ?self:full-immediate))
