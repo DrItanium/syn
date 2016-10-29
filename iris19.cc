@@ -800,9 +800,69 @@ namespace iris19 {
 			CVSetInteger(ret, static_cast<CLIPSInteger>(static_cast<RegisterValue>(CVToInteger(&in)) & memoryMaxBitmask));
 		}
 	}
-
+	void CLIPS_decodeUpperHalf(UDFContext* context, CLIPSValue* ret) {
+		CLIPSValue in;
+		if (!UDFFirstArgument(context, NUMBER_TYPES, &in)) {
+			CVSetBoolean(ret, false);
+		} else {
+			CVSetInteger(ret, static_cast<CLIPSInteger>(decodeUpperHalf(CVToInteger(&in))));
+		}
+	}
+	void CLIPS_decodeLowerHalf(UDFContext* context, CLIPSValue* ret) {
+		CLIPSValue in;
+		if (!UDFFirstArgument(context, NUMBER_TYPES, &in)) {
+			CVSetBoolean(ret, false);
+		} else {
+			CVSetInteger(ret, static_cast<CLIPSInteger>(decodeLowerHalf(CVToInteger(&in))));
+		}
+	}
+	void CLIPS_encodeRegisterIndex(UDFContext* context, CLIPSValue* ret) {
+		CLIPSValue index, indirect, stack;
+		if (!UDFFirstArgument(context, NUMBER_TYPES, &index)) {
+			CVSetBoolean(ret, false);
+		} else if (!UDFNextArgument(context, ANY_TYPE, &indirect)) {
+			CVSetBoolean(ret, false);
+		} else if (!UDFNextArgument(context, ANY_TYPE, &stack)) {
+			CVSetBoolean(ret, false);
+		} else {
+			auto _index = static_cast<byte>(CVToInteger(&index));
+			auto _indirect = !CVIsFalseSymbol(&indirect);
+			auto _stack = !CVIsFalseSymbol(&stack);
+			CVSetInteger(ret, static_cast<CLIPSInteger>(encodeRegisterIndex(_index, _indirect, _stack)));
+		}
+	}
+	void CLIPS_decodeRegister_getActualIndex(UDFContext* context, CLIPSValue* ret) {
+		CLIPSValue reg;
+		if (!UDFFirstArgument(context, NUMBER_TYPES, &reg)) {
+			CVSetBoolean(ret, false);
+		} else {
+			CVSetInteger(ret, static_cast<CLIPSInteger>(registerGetActualIndex(static_cast<byte>(CVToInteger(&reg)))));
+		}
+	}
+	void CLIPS_decodeRegister_markedIndirect(UDFContext* context, CLIPSValue* ret) {
+		CLIPSValue reg;
+		if (!UDFFirstArgument(context, NUMBER_TYPES, &reg)) {
+			CVSetBoolean(ret, false);
+		} else {
+			CVSetBoolean(ret, registerIsMarkedIndirect(static_cast<byte>(CVToInteger(&reg))));
+		}
+	}
+	void CLIPS_decodeRegister_markedStack(UDFContext* context, CLIPSValue* ret) {
+		CLIPSValue reg;
+		if (!UDFFirstArgument(context, NUMBER_TYPES, &reg)) {
+			CVSetBoolean(ret, false);
+		} else {
+			CVSetBoolean(ret, registerIsMarkedStack(static_cast<byte>(CVToInteger(&reg))));
+		}
+	}
 	void installExtensions(void* theEnv) {
 		Environment* env = static_cast<Environment*>(theEnv);
+		EnvAddUDF(env, "iris19:registerGetActualIndex", "l", CLIPS_decodeRegister_getActualIndex, "CLIPS_decodeRegister_getActualIndex", 1, 1, "l", nullptr);
+		EnvAddUDF(env, "iris19:registerMarkedIndirect", "b", CLIPS_decodeRegister_markedIndirect, "CLIPS_decodeRegister_markedIndirect", 1, 1, "l", nullptr);
+		EnvAddUDF(env, "iris19:registerMarkedStack", "b", CLIPS_decodeRegister_markedStack, "CLIPS_decodeRegister_markedStack", 1, 1, "l", nullptr);
+		EnvAddUDF(env, "iris19:encodeRegisterIndex", "l", CLIPS_encodeRegisterIndex, "CLIPS_encodeRegisterIndex", 3, 3, "l:*:*", nullptr);
+		EnvAddUDF(env, "iris19:RegisterValue_decodeUpperHalf", "l", CLIPS_decodeUpperHalf, "CLIPS_decodeUpperHalf", 1, 1, "l", nullptr);
+		EnvAddUDF(env, "iris19:RegisterValue_decodeLowerHalf", "l", CLIPS_decodeLowerHalf, "CLIPS_decodeLowerHalf", 1, 1, "l", nullptr);
 		EnvAddUDF(env, "iris19:generate-memory-address", "l", CLIPS_generateMemoryAddress, "CLIPS_generateMemoryAddress", 1, 1, "l", nullptr);
 #define X(title, mask, shift, type, post) \
 		EnvAddUDF(env, "iris19:encode" #title , "l", CLIPS_encode ## title, "CLIPS_encode" #title, 2, 2, "l;l;l", nullptr); \
