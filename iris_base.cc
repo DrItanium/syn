@@ -262,7 +262,8 @@ namespace iris {
 	void CLIPS_printWord64uPtr(void* env, const char* logicalName, void* theValue) {
 		CLIPS_basePrintAddress(env, logicalName, theValue, getNameFromExternalAddressId<AddressIDs::Ptr_Word64u>().c_str());
 	}
-	
+	template<typename Word>
+	using WordMemoryBlock = std::tuple<std::unique_ptr<Word[]>, CLIPSInteger>;
 	template<typename Word>
 		void CLIPS_newPtr(void* env, DATA_OBJECT* ret) {
 			try {
@@ -284,8 +285,8 @@ namespace iris {
 						auto idIndex = getExternalAddressID(id);
 						ret->bitType = EXTERNAL_ADDRESS_TYPE;
 						SetpType(ret, EXTERNAL_ADDRESS);
-						auto ptr = std::make_tuple<Word*, CLIPSInteger>(new Word[size], size);
-						SetpValue(ret, EnvAddExternalAddress(env, &ptr, idIndex));
+						auto ptr = new WordMemoryBlock<Word>(std::make_unique<Word[]>(size), size);
+						SetpValue(ret, EnvAddExternalAddress(env, ptr, idIndex));
 					}
 				} else {
 					PrintErrorID(env, "NEW", 1, false);
@@ -305,7 +306,7 @@ namespace iris {
 		}
 	template<typename Word>
 	bool CLIPS_callPtr(void* env, DATA_OBJECT* value, DATA_OBJECT* ret) {
-		auto inRange = [](CLIPSInteger capacity, CLIPSInteger address) { return address > 0 && address < capacity; };
+		auto inRange = [](CLIPSInteger capacity, CLIPSInteger address) { return address >= 0 && address < capacity; };
 		if (GetpType(value) == EXTERNAL_ADDRESS) {
 			auto id = getExternalAddressIdFromType<Word*>();
 			std::stringstream ss;
@@ -330,8 +331,8 @@ namespace iris {
 				return false;
 			} else {
 				// now figure out what method we are looking at
-				auto tup = static_cast<std::tuple<Word*, CLIPSInteger>*>(DOPToExternalAddress(value));
-				auto ptr = std::get<0>(*tup);
+				auto tup = static_cast<WordMemoryBlock<Word>*>(DOPToExternalAddress(value));
+				auto ptr = std::get<0>(*tup).get();
 				auto size = std::get<1>(*tup);
 				std::string str(EnvDOToString(env, operation));
 				CVSetBoolean(ret, true);
@@ -414,9 +415,8 @@ namespace iris {
 	template<typename Word>
 		bool CLIPS_deletePtr(void* env, void* obj) {
 			if (obj != nullptr) {
-				auto tuple = static_cast<std::tuple<Word*, CLIPSInteger>*>(obj);
-				auto mem = std::get<0>(*tuple);
-				delete [] mem;
+				auto result = static_cast<WordMemoryBlock<Word>*>(obj);
+				delete result;
 			}
 			return true;
 		}
@@ -424,12 +424,53 @@ namespace iris {
 	void CLIPS_newWord16uPtr(void* env, DATA_OBJECT* ret) { CLIPS_newPtr<uint16>(env, ret); }
 	void CLIPS_newWord32uPtr(void* env, DATA_OBJECT* ret) { CLIPS_newPtr<uint32>(env, ret); }
 	void CLIPS_newWord64uPtr(void* env, DATA_OBJECT* ret) { CLIPS_newPtr<uint64>(env, ret); }
-	void CLIPS_deleteWord8uPtr(void* env, DATA_OBJECT* ret) { CLIPS_deletePtr<byte>(env, ret); }
-	void CLIPS_deleteWord16uPtr(void* env, DATA_OBJECT* ret) { CLIPS_deletePtr<uint16>(env, ret); }
-	void CLIPS_deleteWord32uPtr(void* env, DATA_OBJECT* ret) { CLIPS_deletePtr<uint32>(env, ret); }
-	void CLIPS_deleteWord64uPtr(void* env, DATA_OBJECT* ret) { CLIPS_deletePtr<uint64>(env, ret); }
+	bool CLIPS_deleteWord8uPtr(void* env, void* ret) { return CLIPS_deletePtr<byte>(env, ret); }
+	bool CLIPS_deleteWord16uPtr(void* env, void* ret) { return CLIPS_deletePtr<uint16>(env, ret); }
+	bool CLIPS_deleteWord32uPtr(void* env, void* ret) { return CLIPS_deletePtr<uint32>(env, ret); }
+	bool CLIPS_deleteWord64uPtr(void* env, void* ret) { return CLIPS_deletePtr<uint64>(env, ret); }
+	bool CLIPS_callWord8uPtr(void* env,  DATA_OBJECT* theValue, DATA_OBJECT* ret) { return CLIPS_callPtr<byte>(env, theValue, ret); }
+	bool CLIPS_callWord16uPtr(void* env, DATA_OBJECT* theValue, DATA_OBJECT* ret) { return CLIPS_callPtr<uint16>(env, theValue, ret); }
+	bool CLIPS_callWord32uPtr(void* env, DATA_OBJECT* theValue, DATA_OBJECT* ret) { return CLIPS_callPtr<uint32>(env, theValue, ret); }
+	bool CLIPS_callWord64uPtr(void* env, DATA_OBJECT* theValue, DATA_OBJECT* ret) { return CLIPS_callPtr<uint64>(env, theValue, ret); }
 	void installExtensions(void* theEnv) {
 		Environment* env = static_cast<Environment*>(theEnv);
+
+		externalAddressType word8u = {
+			"word8u",
+			CLIPS_printWord8uPtr, 
+			CLIPS_printWord8uPtr, 
+			CLIPS_deleteWord8uPtr,
+			CLIPS_newWord8uPtr,
+			CLIPS_callWord8uPtr,
+		};
+		ptrWord8u_externalAddressID = InstallExternalAddressType(theEnv, &word8u);
+		externalAddressType word16u = {
+			"word16u",
+			CLIPS_printWord16uPtr, 
+			CLIPS_printWord16uPtr, 
+			CLIPS_deleteWord16uPtr,
+			CLIPS_newWord16uPtr,
+			CLIPS_callWord16uPtr,
+		};
+		ptrWord16u_externalAddressID = InstallExternalAddressType(theEnv, &word16u);
+		externalAddressType word32u = {
+			"word32u",
+			CLIPS_printWord32uPtr, 
+			CLIPS_printWord32uPtr, 
+			CLIPS_deleteWord32uPtr,
+			CLIPS_newWord32uPtr,
+			CLIPS_callWord32uPtr,
+		};
+		ptrWord32u_externalAddressID = InstallExternalAddressType(theEnv, &word32u);
+		externalAddressType word64u = {
+			"word64u",
+			CLIPS_printWord64uPtr, 
+			CLIPS_printWord64uPtr, 
+			CLIPS_deleteWord64uPtr,
+			CLIPS_newWord64uPtr,
+			CLIPS_callWord64uPtr,
+		};
+		ptrWord64u_externalAddressID = InstallExternalAddressType(theEnv, &word64u);
 		EnvAddUDF(env, "bitmask->int", "l", CLIPS_translateBitmask, "CLIPS_translateBitmask", 1, 1, "sy", nullptr);
 		EnvAddUDF(env, "binary->int", "l", CLIPS_translateBinary, "CLIPS_translateBinary", 1, 1, "sy", nullptr);
 		EnvAddUDF(env, "hex->int", "l", CLIPS_translateHex, "CLIPS_translateHex", 1, 1, "sy", nullptr);
