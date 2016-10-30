@@ -351,7 +351,7 @@ inline void swap(T& a, T& b) {
     a = c;
 }
 
-
+void installExtensions(void* theEnv);
 
 }
 #endif
