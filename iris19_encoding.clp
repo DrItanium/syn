@@ -164,7 +164,32 @@
                               (send ?self encode-move))
                             (case Logical then)
                             (default (create$))))
-
+    (deffunction iris19::on-true
+                 (?cond ?value)
+                 (if ?cond then ?value else (create$)))
+(defmessage-handler iris19::instruction-encoding encode-logical primary
+                    ()
+                    (bind ?bits
+                          (encode-source0
+                            (encode-destination
+                              (encode-immediate
+                                (iris19:encodeLogicalFlagType (make-control Logical)
+                                                              (iris19:convertEnumToInt_LogicalOps ?self:sub-type))
+                                ?self:immediate)
+                              ?self:arg0)
+                            ?self:arg1))
+                    (if ?self:immediate then
+                      (create$ (iris19:encodeRawBitmask ?bits
+                                                        ?self:arg2)
+                               (on-true (iris19:readLower ?self:bitmask)
+                                        (iris19:maskedLowerHalf ?self:bitmask
+                                                                ?self:full-immediate))
+                               (on-true (iris19:readUpper ?self:bitmask)
+                                        (iris19:maskedUpperHalf ?self:bitmask
+                                                                ?self:full-immediate)))
+                      else
+                      (create$ (iris19:encodeSource1Index ?bits
+                                                          ?self:arg2))))
 (defmessage-handler iris19::instruction-encoding single-word-encoding primary
                     (?value)
                     (encode-single-word ?value
@@ -187,16 +212,14 @@
                                    ?self:bitmask)
                                  ?self:arg0)
                                ?self:arg1)
-                             (if ?is-set then 
-                               (iris19:maskedLowerHalf ?self:bitmask 
-                                                       ?self:full-immediate)
-                               else
-                               (create$))
-                             (if ?is-set then
-                               (iris19:maskedUpperHalf ?self:bitmask
-                                                       ?self:full-immediate)
-                               else
-                               (create$))))
+                             (on-true (and ?is-set
+                                           (iris19:readLower ?self:bitmask))
+                                      (iris19:maskedLowerHalf ?self:bitmask 
+                                                              ?self:full-immediate))
+                             (on-true (and ?is-set
+                                           (iris19:readUpper ?self:bitmask))
+                                      (iris19:maskedUpperHalf ?self:bitmask
+                                                              ?self:full-immediate))))
 
 
 

@@ -855,8 +855,82 @@ namespace iris19 {
 			CVSetBoolean(ret, registerIsMarkedStack(static_cast<byte>(CVToInteger(&reg))));
 		}
 	}
+	void CLIPS_readUpper(UDFContext* context, CLIPSValue* ret) {
+		CLIPSValue mask;
+		if (!UDFFirstArgument(context, NUMBER_TYPES, &mask)) {
+			CVSetBoolean(ret, false);
+		} else {
+			CVSetBoolean(ret, readUpper(static_cast<byte>(CVToInteger(&mask))));
+		}
+	}
+	void CLIPS_readLower(UDFContext* context, CLIPSValue* ret) {
+		CLIPSValue mask;
+		if (!UDFFirstArgument(context, NUMBER_TYPES, &mask)) {
+			CVSetBoolean(ret, false);
+		} else {
+			CVSetBoolean(ret, readLower(static_cast<byte>(CVToInteger(&mask))));
+		}
+	}
+	void CLIPS_upperMask(UDFContext* context, CLIPSValue* ret) {
+		CLIPSValue mask;
+		if (!UDFFirstArgument(context, NUMBER_TYPES, &mask)) {
+			CVSetBoolean(ret, false);
+		} else {
+			CVSetInteger(ret, static_cast<CLIPSInteger>(upperMask(static_cast<byte>(CVToInteger(&mask)))));
+		}
+	}
+	void CLIPS_lowerMask(UDFContext* context, CLIPSValue* ret) {
+		CLIPSValue mask;
+		if (!UDFFirstArgument(context, NUMBER_TYPES, &mask)) {
+			CVSetBoolean(ret, false);
+		} else {
+			CVSetInteger(ret, static_cast<CLIPSInteger>(upperMask(static_cast<byte>(CVToInteger(&mask)))));
+		}
+	}
+	void CLIPS_generateMask(UDFContext* context, CLIPSValue* ret) {
+		CLIPSValue _mask;
+		if (!UDFFirstArgument(context, NUMBER_TYPES, &_mask)) {
+			CVSetBoolean(ret, false);
+		} else {
+			CVSetInteger(ret, static_cast<CLIPSInteger>(mask(static_cast<byte>(CVToInteger(&_mask)))));
+		}
+	}
+	void CLIPS_maskedUpperHalf(UDFContext* context, CLIPSValue* ret) {
+		CLIPSValue _mask, num;
+		if (!UDFFirstArgument(context, NUMBER_TYPES, &_mask)) {
+			CVSetBoolean(ret, false);
+		} else if (!UDFNextArgument(context, NUMBER_TYPES, &num)) {
+			CVSetBoolean(ret, false);
+		} else {
+			auto bitmask = mask(static_cast<byte>(CVToInteger(&_mask)));
+			auto number = static_cast<RegisterValue>(CVToInteger(&num));
+			auto value = static_cast<Word>((bitmask & number) >> 32);
+			CVSetInteger(ret, static_cast<CLIPSInteger>(value));
+		}
+	}
+	void CLIPS_maskedLowerHalf(UDFContext* context, CLIPSValue* ret) {
+		CLIPSValue _mask, num;
+		if (!UDFFirstArgument(context, NUMBER_TYPES, &_mask)) {
+			CVSetBoolean(ret, false);
+		} else if (!UDFNextArgument(context, NUMBER_TYPES, &num)) {
+			CVSetBoolean(ret, false);
+		} else {
+			auto bitmask = mask(static_cast<byte>(CVToInteger(&_mask)));
+			auto number = static_cast<RegisterValue>(CVToInteger(&num));
+			auto value = static_cast<Word>(bitmask & number);
+			CVSetInteger(ret, static_cast<CLIPSInteger>(value));
+		}
+	}
+
 	void installExtensions(void* theEnv) {
 		Environment* env = static_cast<Environment*>(theEnv);
+		EnvAddUDF(env, "iris19:readUpper", "b", CLIPS_readUpper, "CLIPS_readUpper", 1, 1, "l", nullptr);
+		EnvAddUDF(env, "iris19:readLower", "b", CLIPS_readLower, "CLIPS_readLower", 1, 1, "l", nullptr);
+		EnvAddUDF(env, "iris19:lowerMask", "l", CLIPS_lowerMask, "CLIPS_lowerMask", 1, 1, "l", nullptr);
+		EnvAddUDF(env, "iris19:upperMask", "l", CLIPS_upperMask, "CLIPS_upperMask", 1, 1, "l", nullptr);
+		EnvAddUDF(env, "iris19:maskedUpperHalf", "l", CLIPS_maskedUpperHalf, "CLIPS_maskedUpperHalf", 2, 2, "l;l", nullptr);
+		EnvAddUDF(env, "iris19:maskedLowerHalf", "l", CLIPS_maskedLowerHalf, "CLIPS_maskedLowerHalf", 2, 2, "l;l", nullptr);
+		EnvAddUDF(env, "iris19:generateMask", "l", CLIPS_generateMask, "CLIPS_generateMask", 1, 1, "l", nullptr);
 		EnvAddUDF(env, "iris19:registerGetActualIndex", "l", CLIPS_decodeRegister_getActualIndex, "CLIPS_decodeRegister_getActualIndex", 1, 1, "l", nullptr);
 		EnvAddUDF(env, "iris19:registerMarkedIndirect", "b", CLIPS_decodeRegister_markedIndirect, "CLIPS_decodeRegister_markedIndirect", 1, 1, "l", nullptr);
 		EnvAddUDF(env, "iris19:registerMarkedStack", "b", CLIPS_decodeRegister_markedStack, "CLIPS_decodeRegister_markedStack", 1, 1, "l", nullptr);
