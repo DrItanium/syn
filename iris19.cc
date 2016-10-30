@@ -934,7 +934,7 @@ namespace iris19 {
 		EnvAddUDF(env, "iris19:registerGetActualIndex", "l", CLIPS_decodeRegister_getActualIndex, "CLIPS_decodeRegister_getActualIndex", 1, 1, "l", nullptr);
 		EnvAddUDF(env, "iris19:registerMarkedIndirect", "b", CLIPS_decodeRegister_markedIndirect, "CLIPS_decodeRegister_markedIndirect", 1, 1, "l", nullptr);
 		EnvAddUDF(env, "iris19:registerMarkedStack", "b", CLIPS_decodeRegister_markedStack, "CLIPS_decodeRegister_markedStack", 1, 1, "l", nullptr);
-		EnvAddUDF(env, "iris19:encodeRegisterIndex", "l", CLIPS_encodeRegisterIndex, "CLIPS_encodeRegisterIndex", 3, 3, "l:*:*", nullptr);
+		EnvAddUDF(env, "iris19:encodeRegisterIndex", "l", CLIPS_encodeRegisterIndex, "CLIPS_encodeRegisterIndex", 3, 3, nullptr,  nullptr);
 		EnvAddUDF(env, "iris19:RegisterValue_decodeUpperHalf", "l", CLIPS_decodeUpperHalf, "CLIPS_decodeUpperHalf", 1, 1, "l", nullptr);
 		EnvAddUDF(env, "iris19:RegisterValue_decodeLowerHalf", "l", CLIPS_decodeLowerHalf, "CLIPS_decodeLowerHalf", 1, 1, "l", nullptr);
 		EnvAddUDF(env, "iris19:generate-memory-address", "l", CLIPS_generateMemoryAddress, "CLIPS_generateMemoryAddress", 1, 1, "l", nullptr);

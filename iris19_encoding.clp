@@ -1,6 +1,10 @@
 (defmodule iris19
+           (export deffunction
+                   *stack
+                   *indirect)
            (export defclass
                    instruction-encoding))
+
 (defclass iris19::instruction-encoding
   (is-a USER)
   (slot currentLine
@@ -53,9 +57,7 @@
               INTEGER))
   (slot full-immediate
         (type INTEGER))
-  (message-handler encode primary)
-  (message-handler clear primary)
-  (message-handler num-word primary))
+  (message-handler encode primary))
 (deffunction iris19::encode-control
              (?value ?type)
              (iris19:encodeControl ?value
@@ -246,3 +248,14 @@
                         else
                         (create$ (encode-source0 ?cbits
                                                  ?self:arg1)))))
+
+(deffunction iris19::*stack
+             (?index)
+             (iris19:encodeRegisterIndex ?index 
+                                         FALSE 
+                                         TRUE))
+(deffunction iris19::*indirect
+             (?index)
+             (iris19:encodeRegisterIndex ?index 
+                                         TRUE 
+                                         FALSE))
