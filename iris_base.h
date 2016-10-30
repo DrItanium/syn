@@ -295,7 +295,7 @@ inline constexpr T binaryNand(T a, T b) noexcept {
 	return ~(a & b);
 }
 template<typename T, T index>
-inline constexpr bool getBit(T value) {
+inline constexpr bool getBit(T value) noexcept {
     return decodeBits<T, bool, 1 << index, index>(value);
 }
 

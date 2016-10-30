@@ -171,6 +171,26 @@ namespace iris {
 			CVSetInteger(ret, encodeBits<CLIPSInteger, CLIPSInteger>(CVToInteger(&input), CVToInteger(&value), CVToInteger(&mask), CVToInteger(&shift)));
 		}
 	}
+	void CLIPS_shiftLeft(UDFContext* context, CLIPSValue* ret) {
+		CLIPSValue input, shift;
+		if (!UDFFirstArgument(context, NUMBER_TYPES, &input)) {
+			CVSetBoolean(ret, false);
+		} else if (!UDFNextArgument(context, NUMBER_TYPES, &shift)) {
+			CVSetBoolean(ret, false);
+		} else {
+			CVSetInteger(ret, shiftLeft<CLIPSInteger>(CVToInteger(&input), CVToInteger(&shift)));
+		}
+	}
+	void CLIPS_shiftRight(UDFContext* context, CLIPSValue* ret) {
+		CLIPSValue input, shift;
+		if (!UDFFirstArgument(context, NUMBER_TYPES, &input)) {
+			CVSetBoolean(ret, false);
+		} else if (!UDFNextArgument(context, NUMBER_TYPES, &shift)) {
+			CVSetBoolean(ret, false);
+		} else {
+			CVSetInteger(ret, shiftRight<CLIPSInteger>(CVToInteger(&input), CVToInteger(&shift)));
+		}
+	}
 
 	void installExtensions(void* theEnv) {
 		Environment* env = static_cast<Environment*>(theEnv);
@@ -185,5 +205,7 @@ namespace iris {
 		EnvAddUDF(env, "expand-bit", "l", CLIPS_expandBit, "CLIPS_expandBit", 1, 1,  nullptr, nullptr);
 		EnvAddUDF(env, "decode-bits", "l", CLIPS_decodeBits, "CLIPS_decodeBits", 3, 3, "l;l;l", nullptr);
 		EnvAddUDF(env, "encode-bits", "l", CLIPS_encodeBits, "CLIPS_encodeBits", 4, 4, "l;l;l;l", nullptr);
+		EnvAddUDF(env, "left-shift", "l", CLIPS_shiftLeft, "CLIPS_shiftLeft", 2, 2, "l;l", nullptr);
+		EnvAddUDF(env, "right-shift", "l", CLIPS_shiftRight, "CLIPS_shiftRight", 2, 2, "l;l", nullptr);
 	}
 }
