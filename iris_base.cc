@@ -312,14 +312,21 @@ namespace iris {
 			std::stringstream ss;
 			ss << "call (" << getNameFromExternalAddressId(id) << ")";
 			auto funcStr = ss.str();
-			auto errOutOfRange = [env, ret, &funcStr](CLIPSInteger capacity, CLIPSInteger address) {
+			auto argCheck = [env, &funcStr](CLIPSValue* storage, int position, int type) { return EnvArgTypeCheck(env, funcStr.c_str(), position, type, storage); };
+			auto callErrorMessage = [env, &funcStr, ret](const std::string& subOp, const std::string& rest) {
 				PrintErrorID(env, "CALL", 3, false);
-				std::stringstream ss;
-				ss << "Function " << funcStr << ": Provided address " << std::hex << address << " is either less than zero or greater than " << std::hex << capacity << std::endl;
-				auto str = ss.str();
-				EnvPrintRouter(env, WERROR, str.c_str());
+				std::stringstream stm;
+				stm << "Function " << funcStr.c_str() << " " << subOp << ": " << rest << std::endl;
+				auto msg = stm.str();
+				EnvPrintRouter(env, WERROR, msg.c_str());
 				EnvSetEvaluationError(env, true);
 				CVSetBoolean(ret, false);
+				return false;
+			};
+			auto errOutOfRange = [callErrorMessage, env, ret, &funcStr](const std::string& subOp, CLIPSInteger capacity, CLIPSInteger address) {
+				std::stringstream ss;
+				ss << "Function " << funcStr << ": Provided address " << std::hex << address << " is either less than zero or greater than " << std::hex << capacity << std::endl;
+				return callErrorMessage(subOp, ss.str());
 			};
 			CLIPSValue operation;
 			if (EnvArgTypeCheck(env, funcStr.c_str(), 2, SYMBOL, &operation) == FALSE) {
@@ -336,7 +343,7 @@ namespace iris {
 				auto size = std::get<1>(*tup);
 				std::string str(EnvDOToString(env, operation));
 				CVSetBoolean(ret, true);
-				if (str == "zero") {
+				if (str == "clear") {
 					for(CLIPSInteger i = 0; i < size; ++i) {
 						ptr[i] = static_cast<Word>(0);
 					}
@@ -345,62 +352,52 @@ namespace iris {
 					CVSetInteger(ret, size);
 				} else if (str == "get") {
 					CLIPSValue address;
-					if (EnvArgTypeCheck(env, funcStr.c_str(), 3, INTEGER, &address) == FALSE) {
-						PrintErrorID(env, "CALL", 3, false);
-						std::stringstream stm;
-						stm << "Function " << funcStr.c_str() << " get operation requires an address!\n";
-						auto msg = stm.str();
-						EnvPrintRouter(env, WERROR, msg.c_str());
-						EnvSetEvaluationError(env, true);
-						CVSetBoolean(ret, false);
-						return false;
+					if (!argCheck(&address, 3, INTEGER)) {
+						return callErrorMessage("get", "Requires an address!");
 					} else {
 						auto addr = EnvDOToInteger(env, address);
 						if (!inRange(size, addr)) {
-							errOutOfRange(size, addr);
+							errOutOfRange("get", size, addr);
 						} else {
 							CVSetInteger(ret, static_cast<CLIPSInteger>(ptr[EnvDOToInteger(env, address)]));
 						}
 					}
 				} else if (str == "set") {
 					CLIPSValue address, value;
-					if (EnvArgTypeCheck(env, funcStr.c_str(), 3, INTEGER, &address) == FALSE) {
-						PrintErrorID(env, "CALL", 3, false);
-						std::stringstream stm;
-						stm << "Function " << funcStr.c_str() << " set operation requires an address!\n";
-						auto msg = stm.str();
-						EnvPrintRouter(env, WERROR, msg.c_str());
-						EnvSetEvaluationError(env, true);
-						CVSetBoolean(ret, false);
-						return false;
-					} else if (EnvArgTypeCheck(env, funcStr.c_str(), 4, INTEGER, &value) == FALSE) {
-						PrintErrorID(env, "CALL", 3, false);
-						std::stringstream stm;
-						stm << "Function " << funcStr.c_str() << " set operation requires a value!\n";
-						auto msg = stm.str();
-						EnvPrintRouter(env, WERROR, msg.c_str());
-						EnvSetEvaluationError(env, true);
-						CVSetBoolean(ret, false);
-						return false;
+					if (!argCheck(&address, 3, INTEGER)) {
+						return callErrorMessage("set", "First argument must be address!");
+					} else if (!argCheck(&value, 4, INTEGER)) {
+						return callErrorMessage("set", "Second argument must be an integer!");
 					} else {
 						auto addr = EnvDOToInteger(env, address);
 						if (!inRange(size, addr)) {
-							errOutOfRange(size, addr);
+							errOutOfRange("set", size, addr);
 						} else {
 							auto num = EnvDOToInteger(env, value);
 							ptr[addr] = static_cast<Word>(num);
 							CVSetBoolean(ret, true);
 						}
 					}
+				} else if (str == "swap") {
+					CLIPSValue address0, address1;
+					if (!argCheck(&address0, 3, INTEGER)) {
+						return callErrorMessage("swap", "First argument must be an address");
+					} else if (!argCheck(&address1, 4, INTEGER)) {
+						return callErrorMessage("swap", "Second argument must be an address");
+					} else {
+						auto addr0 = EnvDOToInteger(env, address0);
+						auto addr1 = EnvDOToInteger(env, address1);
+						if (!inRange(size, addr0)) {
+							errOutOfRange("swap", size, addr0);
+						} else if(!inRange(size, addr1)) {
+							errOutOfRange("swap", size, addr1);
+						} else {
+							swap<Word>(ptr[addr0], ptr[addr1]);
+							CVSetBoolean(ret, true);
+						}
+					}
 				} else {
-					PrintErrorID(env, "CALL", 3, false);
-					std::stringstream stm;
-					stm << "Function " << funcStr.c_str() << " unknown operation " << str << " requested!\n";
-					auto msg = stm.str();
-					EnvPrintRouter(env, WERROR, msg.c_str());
-					EnvSetEvaluationError(env, true);
-					CVSetBoolean(ret, false);
-					return false;
+					return callErrorMessage(str, "<- unknown operation requested!");
 				}
 			}
 			return true;
@@ -432,8 +429,123 @@ namespace iris {
 	bool CLIPS_callWord16uPtr(void* env, DATA_OBJECT* theValue, DATA_OBJECT* ret) { return CLIPS_callPtr<uint16>(env, theValue, ret); }
 	bool CLIPS_callWord32uPtr(void* env, DATA_OBJECT* theValue, DATA_OBJECT* ret) { return CLIPS_callPtr<uint32>(env, theValue, ret); }
 	bool CLIPS_callWord64uPtr(void* env, DATA_OBJECT* theValue, DATA_OBJECT* ret) { return CLIPS_callPtr<uint64>(env, theValue, ret); }
+	enum class ArithmeticOperations {
+		Add,
+		Sub,
+		Mul,
+		Div,
+		Rem,
+	};
+
+	template<typename T, ArithmeticOperations op>
+	void CLIPS_arithmeticOperation(UDFContext* context, CLIPSValue* ret) {
+		auto env = UDFContextEnvironment(context);
+		CLIPSValue arg0, arg1;
+		if (!UDFFirstArgument(context, INTEGER_TYPE, &arg0)) {
+			CVSetBoolean(ret, false);
+		} else if (!UDFNextArgument(context, INTEGER_TYPE, &arg1)) {
+			CVSetBoolean(ret, false);
+		} else {
+			try {
+				auto v0 = static_cast<T>(CVToInteger(&arg0));
+				auto v1 = static_cast<T>(CVToInteger(&arg1));
+				decltype(v0) result = 0;
+				switch(op) {
+					case ArithmeticOperations::Add:
+						result = add<T>(v0, v1);
+						break;
+					case ArithmeticOperations::Sub:
+						result = sub<T>(v0, v1);
+						break;
+					case ArithmeticOperations::Mul:
+						result = mul<T>(v0, v1);
+						break;
+					case ArithmeticOperations::Div:
+						result = div<T>(v0, v1);
+						break;
+					case ArithmeticOperations::Rem:
+						result = rem<T>(v0, v1);
+						break;
+					default:
+						throw iris::Problem("Unimplemented arithmetic operation!");
+				}
+				CVSetInteger(ret, static_cast<CLIPSInteger>(result));
+			} catch(iris::Problem p) {
+				PrintErrorID(env, "CALL", 3, false);
+				std::stringstream stm;
+				stm << "Arithmetic Operation: " << p.what() << std::endl;
+				auto msg = stm.str();
+				EnvPrintRouter(env, WERROR, msg.c_str());
+				EnvSetEvaluationError(env, true);
+				CVSetBoolean(ret, false);
+			}
+		}
+	}
+
+	template<typename T>
+	void CLIPS_Add(UDFContext* context, CLIPSValue* ret) {
+		CLIPS_arithmeticOperation<T, ArithmeticOperations::Add>(context, ret);
+	}
+	template<typename T>
+	void CLIPS_Sub(UDFContext* context, CLIPSValue* ret) {
+		CLIPS_arithmeticOperation<T, ArithmeticOperations::Sub>(context, ret);
+	}
+	template<typename T>
+	void CLIPS_Mul(UDFContext* context, CLIPSValue* ret) {
+		CLIPS_arithmeticOperation<T, ArithmeticOperations::Mul>(context, ret);
+	}
+	template<typename T>
+	void CLIPS_Div(UDFContext* context, CLIPSValue* ret) {
+		CLIPS_arithmeticOperation<T, ArithmeticOperations::Div>(context, ret);
+	}
+	template<typename T>
+	void CLIPS_Rem(UDFContext* context, CLIPSValue* ret) {
+		CLIPS_arithmeticOperation<T, ArithmeticOperations::Rem>(context, ret);
+	}
+
+#define X(type, id) \
+	void CLIPS_Add_ ## id (UDFContext* context, CLIPSValue* ret) { CLIPS_Add<type > (context, ret); } \
+	void CLIPS_Sub_ ## id (UDFContext* context, CLIPSValue* ret) { CLIPS_Sub<type > (context, ret); } \
+	void CLIPS_Mul_ ## id (UDFContext* context, CLIPSValue* ret) { CLIPS_Mul<type > (context, ret); } \
+	void CLIPS_Div_ ## id (UDFContext* context, CLIPSValue* ret) { CLIPS_Div<type > (context, ret); } \
+	void CLIPS_Rem_ ## id (UDFContext* context, CLIPSValue* ret) { CLIPS_Rem<type > (context, ret); }
+X(byte, word8u)
+X(uint16, word16u)
+X(uint32, word32u)
+X(uint64, word64u)
+X(CLIPSInteger, integer)
+#undef X
+
+	
+
 	void installExtensions(void* theEnv) {
 		Environment* env = static_cast<Environment*>(theEnv);
+
+		EnvAddUDF(env, "bitmask->int", "l", CLIPS_translateBitmask, "CLIPS_translateBitmask", 1, 1, "sy", nullptr);
+		EnvAddUDF(env, "binary->int", "l", CLIPS_translateBinary, "CLIPS_translateBinary", 1, 1, "sy", nullptr);
+		EnvAddUDF(env, "hex->int", "l", CLIPS_translateHex, "CLIPS_translateHex", 1, 1, "sy", nullptr);
+		EnvAddUDF(env, "binary-not", "l", CLIPS_binaryNot, "CLIPS_binaryNot", 1, 1, "l", nullptr);
+		EnvAddUDF(env, "binary-and", "l", CLIPS_binaryAnd, "CLIPS_binaryAnd", 2, 2, "l;l", nullptr);
+		EnvAddUDF(env, "binary-or", "l", CLIPS_binaryOr, "CLIPS_binaryOr", 2, 2, "l;l", nullptr);
+		EnvAddUDF(env, "binary-xor", "l", CLIPS_binaryXor, "CLIPS_binaryXor", 2, 2, "l;l", nullptr);
+		EnvAddUDF(env, "binary-nand", "l", CLIPS_binaryNand, "CLIPS_binaryNand", 2, 2, "l;l", nullptr);
+		EnvAddUDF(env, "expand-bit", "l", CLIPS_expandBit, "CLIPS_expandBit", 1, 1,  nullptr, nullptr);
+		EnvAddUDF(env, "decode-bits", "l", CLIPS_decodeBits, "CLIPS_decodeBits", 3, 3, "l;l;l", nullptr);
+		EnvAddUDF(env, "encode-bits", "l", CLIPS_encodeBits, "CLIPS_encodeBits", 4, 4, "l;l;l;l", nullptr);
+		EnvAddUDF(env, "left-shift", "l", CLIPS_shiftLeft, "CLIPS_shiftLeft", 2, 2, "l;l", nullptr);
+		EnvAddUDF(env, "right-shift", "l", CLIPS_shiftRight, "CLIPS_shiftRight", 2, 2, "l;l", nullptr);
+#define X(id) \
+		EnvAddUDF(env, "add-" #id , "l", CLIPS_Add_ ## id , "CLIPS_Add_" #id , 2, 2, "l;l", nullptr); \
+		EnvAddUDF(env, "sub-" #id , "l", CLIPS_Sub_ ## id , "CLIPS_Sub_" #id , 2, 2, "l;l", nullptr); \
+		EnvAddUDF(env, "mul-" #id , "l", CLIPS_Mul_ ## id , "CLIPS_Mul_" #id , 2, 2, "l;l", nullptr); \
+		EnvAddUDF(env, "div-" #id , "l", CLIPS_Div_ ## id , "CLIPS_Div_" #id , 2, 2, "l;l", nullptr); \
+		EnvAddUDF(env, "rem-" #id , "l", CLIPS_Rem_ ## id , "CLIPS_Rem_" #id , 2, 2, "l;l", nullptr)
+X(word8u);
+X(word16u);
+X(word32u);
+X(word64u);
+X(integer);
+#undef X
 
 		externalAddressType word8u = {
 			"word8u",
@@ -471,18 +583,6 @@ namespace iris {
 			CLIPS_callWord64uPtr,
 		};
 		ptrWord64u_externalAddressID = InstallExternalAddressType(theEnv, &word64u);
-		EnvAddUDF(env, "bitmask->int", "l", CLIPS_translateBitmask, "CLIPS_translateBitmask", 1, 1, "sy", nullptr);
-		EnvAddUDF(env, "binary->int", "l", CLIPS_translateBinary, "CLIPS_translateBinary", 1, 1, "sy", nullptr);
-		EnvAddUDF(env, "hex->int", "l", CLIPS_translateHex, "CLIPS_translateHex", 1, 1, "sy", nullptr);
-		EnvAddUDF(env, "binary-not", "l", CLIPS_binaryNot, "CLIPS_binaryNot", 1, 1, "l", nullptr);
-		EnvAddUDF(env, "binary-and", "l", CLIPS_binaryAnd, "CLIPS_binaryAnd", 2, 2, "l;l", nullptr);
-		EnvAddUDF(env, "binary-or", "l", CLIPS_binaryOr, "CLIPS_binaryOr", 2, 2, "l;l", nullptr);
-		EnvAddUDF(env, "binary-xor", "l", CLIPS_binaryXor, "CLIPS_binaryXor", 2, 2, "l;l", nullptr);
-		EnvAddUDF(env, "binary-nand", "l", CLIPS_binaryNand, "CLIPS_binaryNand", 2, 2, "l;l", nullptr);
-		EnvAddUDF(env, "expand-bit", "l", CLIPS_expandBit, "CLIPS_expandBit", 1, 1,  nullptr, nullptr);
-		EnvAddUDF(env, "decode-bits", "l", CLIPS_decodeBits, "CLIPS_decodeBits", 3, 3, "l;l;l", nullptr);
-		EnvAddUDF(env, "encode-bits", "l", CLIPS_encodeBits, "CLIPS_encodeBits", 4, 4, "l;l;l;l", nullptr);
-		EnvAddUDF(env, "left-shift", "l", CLIPS_shiftLeft, "CLIPS_shiftLeft", 2, 2, "l;l", nullptr);
-		EnvAddUDF(env, "right-shift", "l", CLIPS_shiftRight, "CLIPS_shiftRight", 2, 2, "l;l", nullptr);
+
 	}
 }
