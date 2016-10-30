@@ -10,6 +10,9 @@
 #include <tuple>
 #include <map>
 #include "sim_registration.h"
+extern "C" {
+#include "clips.h"
+}
 
 namespace iris19 {
 	using HWord = uint16_t;
@@ -191,6 +194,8 @@ namespace iris19 {
 			Word loadWord(RegisterValue address);
 			RegisterValue loadRegisterValue(RegisterValue address);
 			void storeRegisterValue(RegisterValue address, RegisterValue value);
+		private:
+			friend bool CLIPS_CallCoreFunction(void*, DATA_OBJECT*, DATA_OBJECT*);
 		private:
 			bool execute = true,
 				 advanceIp = true;

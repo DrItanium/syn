@@ -3,6 +3,7 @@
 #include <sstream>
 #include "Problem.h"
 #include <utility>
+#include <fstream>
 extern "C" {
 	#include <clips.h>
 }
@@ -921,9 +922,192 @@ namespace iris19 {
 			CVSetInteger(ret, static_cast<CLIPSInteger>(value));
 		}
 	}
+	unsigned int coreExternalAddressID = 0;
+	void CLIPS_PrintCoreAddress(void* env, const char* logicalName, void* theValue) {
+		void* ptr;
+		std::stringstream msg;
+		ptr = EnvValueToExternalAddress(env, theValue);
+		msg << "<Pointer-iris19:core-" << std::hex << ((ptr) ? ptr : theValue) << ">";
+		std::string result = msg.str();
+		EnvPrintRouter(env, logicalName, result.c_str());
+	}
+	bool CLIPS_DeallocateCore(void* env, void* obj) {
+		if (obj != nullptr) {
+			delete static_cast<Core*>(obj);
+		}
+		return true;
+	}
+	void CLIPS_NewCore(void* env, DATA_OBJECT* ret) {
+		if (EnvRtnArgCount(env) == 1) {
+			ret->bitType = EXTERNAL_ADDRESS_TYPE;
+			SetpType(ret, EXTERNAL_ADDRESS);
+			SetpValue(ret, EnvAddExternalAddress(env, newCore(), coreExternalAddressID));
+		} else {
+			PrintErrorID(env, "NEW", 1, false);
+			EnvPrintRouter(env, WERROR, "Function new expected no arguments besides type!\n");
+			EnvSetEvaluationError(env, true);
+		}
+	}
+	bool CLIPS_CallCoreFunction(void* env, DATA_OBJECT* value, DATA_OBJECT* ret) {
+		auto getPath = [](void* env, const std::string& function, CLIPSValue* path) {
+			if (EnvArgTypeCheck(env, "call (iris19:core)", 3, SYMBOL_OR_STRING, path) == FALSE) {
+				PrintErrorID(env, "CALL", 4, false);
+				std::stringstream ss;
+				ss << "Function call (iris19:core) of operation " << function << " requires a path!\n";
+				auto str = ss.str();
+				EnvPrintRouter(env, WERROR, str.c_str());
+				EnvSetEvaluationError(env, true);
+				return false;
+			}
+			return true;
+		};
+		if (GetpType(value) != EXTERNAL_ADDRESS) {
+			CLIPSValue operation;
+			if (EnvArgTypeCheck(env, "call (iris19:core)", 2, SYMBOL, &operation) == FALSE) {
+				PrintErrorID(env, "CALL", 2, false);
+				EnvPrintRouter(env, WERROR, "Function call expected a function name to call!\n");
+				EnvSetEvaluationError(env, true);
+				return false;
+			} else {
+				// now figure out what method we are looking at
+				auto core = static_cast<Core*>(DOPToExternalAddress(value));
+				std::string str(CVToString(&operation));
+				CVSetBoolean(ret, true);
+				if (str == "initialize") {
+					core->initialize();
+				} else if (str == "shutdown") {
+					core->shutdown();
+				} else if (str == "cycle") {
+					core->cycle();
+				} else if (str == "run") {
+					core->run();
+				} else if (str == "should-execute") {
+					CVSetBoolean(ret, core->shouldExecute());
+				} else if (str == "dump") {
+					CLIPSValue path;
+					if (!getPath(env, "dump", &path)) {
+						CVSetBoolean(ret, false);
+						return false;
+					} else {
+						std::ofstream os(CVToString(&path), std::ofstream::out | std::ofstream::binary);
+						if (os.good()) {
+							try {
+								core->dump(os);
+								os.close();
+								return true;
+							} catch(iris::Problem p) {
+								PrintErrorID(env, "CALL", 6, false);
+								EnvPrintRouter(env, WERROR, "Function call (iris19:core) of operation dump: exception: ");
+								EnvPrintRouter(env, WERROR, p.what().c_str());
+								EnvPrintRouter(env, WERROR, "\n");
+								EnvSetEvaluationError(env, true);
+								CVSetBoolean(ret, false);
+								return false;
+							}
+						} else {
+							PrintErrorID(env, "CALL", 5, false);
+							EnvPrintRouter(env, WERROR, "Function call (iris19:core) of operation dump: couldn't open ");
+							EnvPrintRouter(env, WERROR, CVToString(&path));
+							EnvPrintRouter(env, WERROR, " for writing \n");
+							EnvSetEvaluationError(env, true);
+							CVSetBoolean(ret, false);
+							return false;
+						}
+					}
+				} else if (str == "install-program") {
+					CLIPSValue path;
+					if (!getPath(env, "install-program", &path)) {
+						CVSetBoolean(ret, false);
+						return false;
+					} else {
+						std::ifstream s(CVToString(&path), std::ifstream::in | std::ifstream::binary);
+						if (s.good()) {
+							try {
+								core->installprogram(s);
+								s.close();
+								return true;
+							} catch(iris::Problem p) {
+								PrintErrorID(env, "CALL", 6, false);
+								EnvPrintRouter(env, WERROR, "Function call (iris19:core) of operation install-program: exception: ");
+								EnvPrintRouter(env, WERROR, p.what().c_str());
+								EnvPrintRouter(env, WERROR, "\n");
+								EnvSetEvaluationError(env, true);
+								CVSetBoolean(ret, false);
+								return false;
+							}
+						} else {
+							PrintErrorID(env, "CALL", 5, false);
+							EnvPrintRouter(env, WERROR, "Function call (iris19:core) of operation install-program: couldn't open ");
+							EnvPrintRouter(env, WERROR, CVToString(&path));
+							EnvPrintRouter(env, WERROR, " for reading\n");
+							EnvSetEvaluationError(env, true);
+							CVSetBoolean(ret, false);
+							return false;
+						}
+					}
+				} else if (str == "link-program") {
+					CLIPSValue path;
+					if (!getPath(env, "link-program", &path)) {
+						CVSetBoolean(ret, false);
+						return false;
+					} else {
+						std::ifstream s(CVToString(&path), std::ifstream::in | std::ifstream::binary);
+						if (s.good()) {
+							try {
+								core->link(s);
+								s.close();
+								return true;
+							} catch(iris::Problem p) {
+								PrintErrorID(env, "CALL", 6, false);
+								EnvPrintRouter(env, WERROR, "Function call (iris19:core) of operation link-program: exception: ");
+								EnvPrintRouter(env, WERROR, p.what().c_str());
+								EnvPrintRouter(env, WERROR, "\n");
+								EnvSetEvaluationError(env, true);
+								CVSetBoolean(ret, false);
+								return false;
+							}
+						} else {
+							PrintErrorID(env, "CALL", 5, false);
+							EnvPrintRouter(env, WERROR, "Function call (iris19:core) of operation link-program: couldn't open ");
+							EnvPrintRouter(env, WERROR, CVToString(&path));
+							EnvPrintRouter(env, WERROR, " for reading\n");
+							EnvSetEvaluationError(env, true);
+							CVSetBoolean(ret, false);
+							return false;
+						}
+					}
+				} else {
+					PrintErrorID(env, "CALL", 3, false);
+					std::stringstream stm;
+					stm << "Function call (iris19:core) unknown operation " << str << " requested!\n";
+					auto msg = stm.str();
+					EnvPrintRouter(env, WERROR, msg.c_str());
+					EnvSetEvaluationError(env, true);
+					CVSetBoolean(ret, false);
+					return false;
+				}
+			}
+			return true;
+		} else {
+			PrintErrorID(env, "CALL", 1, false);
+			EnvPrintRouter(env, WERROR, "Function call expected an external address as the first argument!\n");
+			EnvSetEvaluationError(env, true);
+			return false;
+		}
+	}
+
 
 	void installExtensions(void* theEnv) {
 		Environment* env = static_cast<Environment*>(theEnv);
+		externalAddressType core = {
+			"iris19:core",
+			CLIPS_PrintCoreAddress,
+			CLIPS_PrintCoreAddress,
+			CLIPS_DeallocateCore,
+			CLIPS_NewCore,
+			CLIPS_CallCoreFunction,
+		};
+		coreExternalAddressID = InstallExternalAddressType(theEnv, &core);
 		EnvAddUDF(env, "iris19:readUpper", "b", CLIPS_readUpper, "CLIPS_readUpper", 1, 1, "l", nullptr);
 		EnvAddUDF(env, "iris19:readLower", "b", CLIPS_readLower, "CLIPS_readLower", 1, 1, "l", nullptr);
 		EnvAddUDF(env, "iris19:lowerMask", "l", CLIPS_lowerMask, "CLIPS_lowerMask", 1, 1, "l", nullptr);
