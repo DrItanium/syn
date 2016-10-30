@@ -47,116 +47,23 @@ namespace iris16 {
 			inline dword getInstructionMemory(word address) noexcept             { return instruction[address]; }
 			inline word getDataMemory(word address) noexcept                     { return data[address]; }
 			// TODO: add support for installing externally defined system calls
-			inline void setExtendedDataMemory(dword address, word value) {
-				if (extendedMemorySize != 0) {
-					if (address < extendedMemorySize) {
-						extendedData.get()[address] = value;
-					} else {
-						throw iris::Problem("Attempted to write to an address outside the mapped extended memory range");
-					}
-				} else {
-					throw iris::Problem("Attempted to write to non existent extended memory!");
-				}
-			}
-
-			inline word getExtendedDataMemory(dword address) {
-				if (extendedMemorySize != 0) {
-					if (address < extendedMemorySize) {
-						return extendedData.get()[address];
-					} else {
-						throw iris::Problem("Attempted to read from an address outside the mapped extended memory range");
-					}
-				} else {
-					throw iris::Problem("Attempted to read from non existent extended memory!");
-				}
-			}
+			void setExtendedDataMemory(dword address, word value);
+			word getExtendedDataMemory(dword address);
 
 		private:
 			void dispatch();
-			template<bool ifthenelse, bool conditional, bool iffalse, bool immediate, bool link>
-			inline void jumpBody() noexcept {
-				auto newAddr = static_cast<word>(0);
-				auto cond = true;
-				advanceIp = false;
-				auto ip = gpr[ArchitectureConstants::InstructionPointerIndex];
-				if (conditional) {
-					auto dest = gpr[getDestination()];
-					cond = (iffalse ? (dest == 0) : (dest != 0));
-					if (ifthenelse) {
-						newAddr = gpr[cond ? getSource0() : getSource1()];
-					} else {
-						newAddr = cond ? (immediate ? getImmediate() : gpr[getSource0()]) : ip + 1;
-					}
-				} else {
-					newAddr = immediate ? getImmediate() : gpr[getDestination()];
-				}
-				gpr[ArchitectureConstants::InstructionPointerIndex] = newAddr;
-				if (link && cond) {
-					gpr[ArchitectureConstants::LinkRegisterIndex] = ip + 1;
-				}
-			}
-			template<MoveOp op>
-			inline void moveBody() {
-                if (op == MoveOp::Move) {
-                    gpr[getDestination()] = gpr[getSource0()];
-                } else if (op == MoveOp::Set) {
-                    gpr[getDestination()] = static_cast<word>(getImmediate());
-                } else if (op == MoveOp::Swap) {
-                    auto result = instruction[gpr[getDestination()]];
-                    instruction[gpr[getDestination()]] = instruction[gpr[getSource0()]];
-                    instruction[gpr[getSource0()]] = result;
-                } else if (op == MoveOp::Load) {
-                    gpr[getDestination()] = getDataMemory(gpr[getSource0()]);
-                } else if (op == MoveOp::LoadImmediate) {
-                    gpr[getDestination()] = getDataMemory(getImmediate());
-                } else if (op == MoveOp::Store) {
-                    setDataMemory(gpr[getDestination()], gpr[getSource0()]);
-                } else if (op == MoveOp::Memset) {
-                    setDataMemory(gpr[getDestination()], getImmediate());
-                } else if (op == MoveOp::Push) {
-                    ++gpr[ArchitectureConstants::StackPointerIndex];
-                    stack[gpr[ArchitectureConstants::StackPointerIndex]] = gpr[getDestination()];
-                } else if (op == MoveOp::PushImmediate) {
-                    ++gpr[ArchitectureConstants::StackPointerIndex];
-                    stack[gpr[ArchitectureConstants::StackPointerIndex]] = getImmediate();
-                } else if (op == MoveOp::Pop) {
-                    gpr[getDestination()] = stack[gpr[ArchitectureConstants::StackPointerIndex]];
-                    --gpr[ArchitectureConstants::StackPointerIndex];
-                } else if (op == MoveOp::LoadCode) {
-                    auto result = instruction[gpr[getDestination()]];
-                    gpr[getSource0()] = iris::getLowerHalf(result);
-                    gpr[getSource1()] = iris::getUpperHalf(result);
-                } else if (op == MoveOp::StoreCode) {
-                    instruction[getDestination()] = encodeDword(gpr[getSource0()], gpr[getSource1()]);
-                } else if (op == MoveOp::ExtendedMemoryWrite) {
-                    // store destination in the address described by source0 and source1
-                    auto result = gpr[getDestination()];
-                    auto lower = gpr[getSource0()];
-                    auto upper = gpr[getSource1()];
-                    // build an address out of this
-                    setExtendedDataMemory(iris::encodeUint32LE(lower, upper), result);
-                } else if (op == MoveOp::ExtendedMemoryRead) {
-                    auto lower = gpr[getSource0()];
-                    auto upper = gpr[getSource1()];
-                    // build an address out of this
-                    gpr[getDestination()] = getExtendedDataMemory(iris::encodeUint32LE(lower, upper));
-                } else {
-                    throw iris::Problem("Undefined move operation");
-                }
-			}
 #define X(title, mask, shift, type, is_register, post) \
 			inline type get ## title () const noexcept { \
 				return iris::decodeBits<raw_instruction, type, mask, shift>(current); \
 			} 
 #include "def/iris16/instruction.def"
 #undef X
+
 #define X(_, op) void op();
 #include "def/iris16/groups.def"
-#undef X
-
-#define X(title, func) void func ();
 #include "def/iris16/misc.def"
 #undef X
+
 		private:
 			std::shared_ptr<word> extendedData;
 			dword extendedMemorySize = 0;
