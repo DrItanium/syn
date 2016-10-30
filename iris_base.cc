@@ -516,8 +516,6 @@ X(uint64, word64u)
 X(CLIPSInteger, integer)
 #undef X
 
-	
-
 	void installExtensions(void* theEnv) {
 		Environment* env = static_cast<Environment*>(theEnv);
 
