@@ -7,6 +7,7 @@
 typedef uint8_t byte;
 typedef uint16_t uint16;
 typedef uint32_t uint32;
+typedef uint64_t uint64;
 namespace iris {
 
 	constexpr int32_t fields[8] = {
@@ -358,6 +359,13 @@ inline void swap(T& a, T& b) {
 }
 
 void installExtensions(void* theEnv);
+enum class AddressIDs {
+	SharedPtr_Word8u,
+	SharedPtr_Word16u,
+	SharedPtr_Word32u,
+	SharedPtr_Word64u,
+};
+unsigned int getExternalAddressID(AddressIDs id);
 
 }
 #endif
