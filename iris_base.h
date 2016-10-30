@@ -360,10 +360,10 @@ inline void swap(T& a, T& b) {
 
 void installExtensions(void* theEnv);
 enum class AddressIDs {
-	SharedPtr_Word8u,
-	SharedPtr_Word16u,
-	SharedPtr_Word32u,
-	SharedPtr_Word64u,
+	Ptr_Word8u,
+	Ptr_Word16u,
+	Ptr_Word32u,
+	Ptr_Word64u,
 };
 unsigned int getExternalAddressID(AddressIDs id);
 

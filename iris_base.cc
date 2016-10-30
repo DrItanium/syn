@@ -193,20 +193,20 @@ namespace iris {
 			CVSetInteger(ret, shiftRight<CLIPSInteger>(CVToInteger(&input), CVToInteger(&shift)));
 		}
 	}
-	unsigned int sharedPtrWord8u_externalAddressID = 0u;
-	unsigned int sharedPtrWord16u_externalAddressID = 0u;
-	unsigned int sharedPtrWord32u_externalAddressID = 0u;
-	unsigned int sharedPtrWord64u_externalAddressID = 0u;
+	unsigned int ptrWord8u_externalAddressID = 0u;
+	unsigned int ptrWord16u_externalAddressID = 0u;
+	unsigned int ptrWord32u_externalAddressID = 0u;
+	unsigned int ptrWord64u_externalAddressID = 0u;
 	unsigned int getExternalAddressID(AddressIDs id) {
 		switch(id) {
-			case AddressIDs::SharedPtr_Word8u:
-				return sharedPtrWord8u_externalAddressID;
-			case AddressIDs::SharedPtr_Word16u:
-				return sharedPtrWord16u_externalAddressID;
-			case AddressIDs::SharedPtr_Word32u:
-				return sharedPtrWord32u_externalAddressID;
-			case AddressIDs::SharedPtr_Word64u:
-				return sharedPtrWord64u_externalAddressID;
+			case AddressIDs::Ptr_Word8u:
+				return ptrWord8u_externalAddressID;
+			case AddressIDs::Ptr_Word16u:
+				return ptrWord16u_externalAddressID;
+			case AddressIDs::Ptr_Word32u:
+				return ptrWord32u_externalAddressID;
+			case AddressIDs::Ptr_Word64u:
+				return ptrWord64u_externalAddressID;
 			default:
 				throw iris::Problem("Attempted to retrieve an unimplemented address id!");
 		}
@@ -215,29 +215,29 @@ namespace iris {
 	AddressIDs getExternalAddressIdFromType() {
 		throw iris::Problem("unspecified type!");
 	}
-	template<> AddressIDs getExternalAddressIdFromType<std::shared_ptr<byte>>() { return AddressIDs::SharedPtr_Word8u; }
-	template<> AddressIDs getExternalAddressIdFromType<std::shared_ptr<uint16>>() { return AddressIDs::SharedPtr_Word16u; }
-	template<> AddressIDs getExternalAddressIdFromType<std::shared_ptr<uint32>>() { return AddressIDs::SharedPtr_Word32u; }
-	template<> AddressIDs getExternalAddressIdFromType<std::shared_ptr<uint64>>() { return AddressIDs::SharedPtr_Word64u; }
+	template<> AddressIDs getExternalAddressIdFromType<byte*>() { return AddressIDs::Ptr_Word8u; }
+	template<> AddressIDs getExternalAddressIdFromType<uint16*>() { return AddressIDs::Ptr_Word16u; }
+	template<> AddressIDs getExternalAddressIdFromType<uint32*>() { return AddressIDs::Ptr_Word32u; }
+	template<> AddressIDs getExternalAddressIdFromType<uint64*>() { return AddressIDs::Ptr_Word64u; }
 	template<AddressIDs id>
 	std::string getNameFromExternalAddressId() {
 		throw iris::Problem("unimplemented type!");
 	}
 
-	template<> std::string getNameFromExternalAddressId<AddressIDs::SharedPtr_Word8u>() { return "word8u-shared-ptr"; }
-	template<> std::string getNameFromExternalAddressId<AddressIDs::SharedPtr_Word16u>() { return "word16u-shared-ptr"; }
-	template<> std::string getNameFromExternalAddressId<AddressIDs::SharedPtr_Word32u>() { return "word32u-shared-ptr"; }
-	template<> std::string getNameFromExternalAddressId<AddressIDs::SharedPtr_Word64u>() { return "word64u-shared-ptr"; }
+	template<> std::string getNameFromExternalAddressId<AddressIDs::Ptr_Word8u>() { return "word8u-ptr"; }
+	template<> std::string getNameFromExternalAddressId<AddressIDs::Ptr_Word16u>() { return "word16u-ptr"; }
+	template<> std::string getNameFromExternalAddressId<AddressIDs::Ptr_Word32u>() { return "word32u-ptr"; }
+	template<> std::string getNameFromExternalAddressId<AddressIDs::Ptr_Word64u>() { return "word64u-ptr"; }
 	std::string getNameFromExternalAddressId(AddressIDs id) {
 		switch(id) {
-			case AddressIDs::SharedPtr_Word8u:
-				return getNameFromExternalAddressId<AddressIDs::SharedPtr_Word8u>();
-			case AddressIDs::SharedPtr_Word16u:
-				return getNameFromExternalAddressId<AddressIDs::SharedPtr_Word16u>();
-			case AddressIDs::SharedPtr_Word32u:
-				return getNameFromExternalAddressId<AddressIDs::SharedPtr_Word32u>();
-			case AddressIDs::SharedPtr_Word64u:
-				return getNameFromExternalAddressId<AddressIDs::SharedPtr_Word64u>();
+			case AddressIDs::Ptr_Word8u:
+				return getNameFromExternalAddressId<AddressIDs::Ptr_Word8u>();
+			case AddressIDs::Ptr_Word16u:
+				return getNameFromExternalAddressId<AddressIDs::Ptr_Word16u>();
+			case AddressIDs::Ptr_Word32u:
+				return getNameFromExternalAddressId<AddressIDs::Ptr_Word32u>();
+			case AddressIDs::Ptr_Word64u:
+				return getNameFromExternalAddressId<AddressIDs::Ptr_Word64u>();
 			default:
 				throw iris::Problem("Unimplemented type!");
 		}
@@ -250,23 +250,23 @@ namespace iris {
 		auto str = ss.str();
 		EnvPrintRouter(env, logicalName, str.c_str());
 	}
-	void CLIPS_printWord8uSharedPtr(void* env, const char* logicalName, void* theValue) {
-		CLIPS_basePrintAddress(env, logicalName, theValue, getNameFromExternalAddressId<AddressIDs::SharedPtr_Word8u>().c_str());
+	void CLIPS_printWord8uPtr(void* env, const char* logicalName, void* theValue) {
+		CLIPS_basePrintAddress(env, logicalName, theValue, getNameFromExternalAddressId<AddressIDs::Ptr_Word8u>().c_str());
 	}
-	void CLIPS_printWord16uSharedPtr(void* env, const char* logicalName, void* theValue) {
-		CLIPS_basePrintAddress(env, logicalName, theValue, getNameFromExternalAddressId<AddressIDs::SharedPtr_Word16u>().c_str());
+	void CLIPS_printWord16uPtr(void* env, const char* logicalName, void* theValue) {
+		CLIPS_basePrintAddress(env, logicalName, theValue, getNameFromExternalAddressId<AddressIDs::Ptr_Word16u>().c_str());
 	}
-	void CLIPS_printWord32uSharedPtr(void* env, const char* logicalName, void* theValue) {
-		CLIPS_basePrintAddress(env, logicalName, theValue, getNameFromExternalAddressId<AddressIDs::SharedPtr_Word32u>().c_str());
+	void CLIPS_printWord32uPtr(void* env, const char* logicalName, void* theValue) {
+		CLIPS_basePrintAddress(env, logicalName, theValue, getNameFromExternalAddressId<AddressIDs::Ptr_Word32u>().c_str());
 	}
-	void CLIPS_printWord64uSharedPtr(void* env, const char* logicalName, void* theValue) {
-		CLIPS_basePrintAddress(env, logicalName, theValue, getNameFromExternalAddressId<AddressIDs::SharedPtr_Word64u>().c_str());
+	void CLIPS_printWord64uPtr(void* env, const char* logicalName, void* theValue) {
+		CLIPS_basePrintAddress(env, logicalName, theValue, getNameFromExternalAddressId<AddressIDs::Ptr_Word64u>().c_str());
 	}
 	
 	template<typename Word>
-		void CLIPS_newSharedPtr(void* env, DATA_OBJECT* ret) {
+		void CLIPS_newPtr(void* env, DATA_OBJECT* ret) {
 			try {
-				auto id = getExternalAddressIdFromType<std::shared_ptr<Word>>();
+				auto id = getExternalAddressIdFromType<Word*>();
 				std::stringstream ss;
 				ss << "new (" << getNameFromExternalAddressId(id) << ")";
 				auto funcStr = ss.str();
@@ -284,7 +284,7 @@ namespace iris {
 						auto idIndex = getExternalAddressID(id);
 						ret->bitType = EXTERNAL_ADDRESS_TYPE;
 						SetpType(ret, EXTERNAL_ADDRESS);
-						auto ptr = std::make_shared<Word>(size);
+						auto ptr = std::make_tuple<Word*, CLIPSInteger>(new Word[size], size);
 						SetpValue(ret, EnvAddExternalAddress(env, &ptr, idIndex));
 					}
 				} else {
@@ -303,10 +303,131 @@ namespace iris {
 				CVSetBoolean(ret, false);
 			}
 		}
-	void CLIPS_newWord8uSharedPtr(void* env, DATA_OBJECT* ret) { CLIPS_newSharedPtr<byte>(env, ret); }
-	void CLIPS_newWord16uSharedPtr(void* env, DATA_OBJECT* ret) { CLIPS_newSharedPtr<uint16>(env, ret); }
-	void CLIPS_newWord32uSharedPtr(void* env, DATA_OBJECT* ret) { CLIPS_newSharedPtr<uint32>(env, ret); }
-	void CLIPS_newWord64uSharedPtr(void* env, DATA_OBJECT* ret) { CLIPS_newSharedPtr<uint64>(env, ret); }
+	template<typename Word>
+	bool CLIPS_callPtr(void* env, DATA_OBJECT* value, DATA_OBJECT* ret) {
+		auto inRange = [](CLIPSInteger capacity, CLIPSInteger address) { return address > 0 && address < capacity; };
+		if (GetpType(value) == EXTERNAL_ADDRESS) {
+			auto id = getExternalAddressIdFromType<Word*>();
+			std::stringstream ss;
+			ss << "call (" << getNameFromExternalAddressId(id) << ")";
+			auto funcStr = ss.str();
+			auto errOutOfRange = [env, ret, &funcStr](CLIPSInteger capacity, CLIPSInteger address) {
+				PrintErrorID(env, "CALL", 3, false);
+				std::stringstream ss;
+				ss << "Function " << funcStr << ": Provided address " << std::hex << address << " is either less than zero or greater than " << std::hex << capacity << std::endl;
+				auto str = ss.str();
+				EnvPrintRouter(env, WERROR, str.c_str());
+				EnvSetEvaluationError(env, true);
+				CVSetBoolean(ret, false);
+			};
+			CLIPSValue operation;
+			if (EnvArgTypeCheck(env, funcStr.c_str(), 2, SYMBOL, &operation) == FALSE) {
+				PrintErrorID(env, "CALL", 2, false);
+				EnvPrintRouter(env, WERROR, "Function ");
+				EnvPrintRouter(env, WERROR, funcStr.c_str());
+				EnvPrintRouter(env, WERROR, " expected a function name to call!\n");
+				EnvSetEvaluationError(env, true);
+				return false;
+			} else {
+				// now figure out what method we are looking at
+				auto tup = static_cast<std::tuple<Word*, CLIPSInteger>*>(DOPToExternalAddress(value));
+				auto ptr = std::get<0>(*tup);
+				auto size = std::get<1>(*tup);
+				std::string str(EnvDOToString(env, operation));
+				CVSetBoolean(ret, true);
+				if (str == "zero") {
+					for(CLIPSInteger i = 0; i < size; ++i) {
+						ptr[i] = static_cast<Word>(0);
+					}
+					CVSetBoolean(ret, true);
+				} else if (str == "size") {
+					CVSetInteger(ret, size);
+				} else if (str == "get") {
+					CLIPSValue address;
+					if (EnvArgTypeCheck(env, funcStr.c_str(), 3, INTEGER, &address) == FALSE) {
+						PrintErrorID(env, "CALL", 3, false);
+						std::stringstream stm;
+						stm << "Function " << funcStr.c_str() << " get operation requires an address!\n";
+						auto msg = stm.str();
+						EnvPrintRouter(env, WERROR, msg.c_str());
+						EnvSetEvaluationError(env, true);
+						CVSetBoolean(ret, false);
+						return false;
+					} else {
+						auto addr = EnvDOToInteger(env, address);
+						if (!inRange(size, addr)) {
+							errOutOfRange(size, addr);
+						} else {
+							CVSetInteger(ret, static_cast<CLIPSInteger>(ptr[EnvDOToInteger(env, address)]));
+						}
+					}
+				} else if (str == "set") {
+					CLIPSValue address, value;
+					if (EnvArgTypeCheck(env, funcStr.c_str(), 3, INTEGER, &address) == FALSE) {
+						PrintErrorID(env, "CALL", 3, false);
+						std::stringstream stm;
+						stm << "Function " << funcStr.c_str() << " set operation requires an address!\n";
+						auto msg = stm.str();
+						EnvPrintRouter(env, WERROR, msg.c_str());
+						EnvSetEvaluationError(env, true);
+						CVSetBoolean(ret, false);
+						return false;
+					} else if (EnvArgTypeCheck(env, funcStr.c_str(), 4, INTEGER, &value) == FALSE) {
+						PrintErrorID(env, "CALL", 3, false);
+						std::stringstream stm;
+						stm << "Function " << funcStr.c_str() << " set operation requires a value!\n";
+						auto msg = stm.str();
+						EnvPrintRouter(env, WERROR, msg.c_str());
+						EnvSetEvaluationError(env, true);
+						CVSetBoolean(ret, false);
+						return false;
+					} else {
+						auto addr = EnvDOToInteger(env, address);
+						if (!inRange(size, addr)) {
+							errOutOfRange(size, addr);
+						} else {
+							auto num = EnvDOToInteger(env, value);
+							ptr[addr] = static_cast<Word>(num);
+							CVSetBoolean(ret, true);
+						}
+					}
+				} else {
+					PrintErrorID(env, "CALL", 3, false);
+					std::stringstream stm;
+					stm << "Function " << funcStr.c_str() << " unknown operation " << str << " requested!\n";
+					auto msg = stm.str();
+					EnvPrintRouter(env, WERROR, msg.c_str());
+					EnvSetEvaluationError(env, true);
+					CVSetBoolean(ret, false);
+					return false;
+				}
+			}
+			return true;
+		} else {
+			PrintErrorID(env, "CALL", 1, false);
+			EnvPrintRouter(env, WERROR, "Function call expected an external address as the first argument!\n");
+			EnvSetEvaluationError(env, true);
+			return false;
+		}
+	}
+
+	template<typename Word>
+		bool CLIPS_deletePtr(void* env, void* obj) {
+			if (obj != nullptr) {
+				auto tuple = static_cast<std::tuple<Word*, CLIPSInteger>*>(obj);
+				auto mem = std::get<0>(*tuple);
+				delete [] mem;
+			}
+			return true;
+		}
+	void CLIPS_newWord8uPtr(void* env, DATA_OBJECT* ret) { CLIPS_newPtr<byte>(env, ret); }
+	void CLIPS_newWord16uPtr(void* env, DATA_OBJECT* ret) { CLIPS_newPtr<uint16>(env, ret); }
+	void CLIPS_newWord32uPtr(void* env, DATA_OBJECT* ret) { CLIPS_newPtr<uint32>(env, ret); }
+	void CLIPS_newWord64uPtr(void* env, DATA_OBJECT* ret) { CLIPS_newPtr<uint64>(env, ret); }
+	void CLIPS_deleteWord8uPtr(void* env, DATA_OBJECT* ret) { CLIPS_deletePtr<byte>(env, ret); }
+	void CLIPS_deleteWord16uPtr(void* env, DATA_OBJECT* ret) { CLIPS_deletePtr<uint16>(env, ret); }
+	void CLIPS_deleteWord32uPtr(void* env, DATA_OBJECT* ret) { CLIPS_deletePtr<uint32>(env, ret); }
+	void CLIPS_deleteWord64uPtr(void* env, DATA_OBJECT* ret) { CLIPS_deletePtr<uint64>(env, ret); }
 	void installExtensions(void* theEnv) {
 		Environment* env = static_cast<Environment*>(theEnv);
 		EnvAddUDF(env, "bitmask->int", "l", CLIPS_translateBitmask, "CLIPS_translateBitmask", 1, 1, "sy", nullptr);
