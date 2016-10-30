@@ -961,7 +961,7 @@ namespace iris19 {
 			}
 			return true;
 		};
-		if (GetpType(value) != EXTERNAL_ADDRESS) {
+		if (GetpType(value) == EXTERNAL_ADDRESS) {
 			CLIPSValue operation;
 			if (EnvArgTypeCheck(env, "call (iris19:core)", 2, SYMBOL, &operation) == FALSE) {
 				PrintErrorID(env, "CALL", 2, false);
@@ -971,7 +971,7 @@ namespace iris19 {
 			} else {
 				// now figure out what method we are looking at
 				auto core = static_cast<Core*>(DOPToExternalAddress(value));
-				std::string str(CVToString(&operation));
+				std::string str(EnvDOToString(env, operation));
 				CVSetBoolean(ret, true);
 				if (str == "initialize") {
 					core->initialize();
@@ -989,7 +989,7 @@ namespace iris19 {
 						CVSetBoolean(ret, false);
 						return false;
 					} else {
-						std::ofstream os(CVToString(&path), std::ofstream::out | std::ofstream::binary);
+						std::ofstream os(EnvDOToString(env, path), std::ofstream::out | std::ofstream::binary);
 						if (os.good()) {
 							try {
 								core->dump(os);
@@ -1007,7 +1007,7 @@ namespace iris19 {
 						} else {
 							PrintErrorID(env, "CALL", 5, false);
 							EnvPrintRouter(env, WERROR, "Function call (iris19:core) of operation dump: couldn't open ");
-							EnvPrintRouter(env, WERROR, CVToString(&path));
+							EnvPrintRouter(env, WERROR, EnvDOToString(env,path));
 							EnvPrintRouter(env, WERROR, " for writing \n");
 							EnvSetEvaluationError(env, true);
 							CVSetBoolean(ret, false);
@@ -1020,7 +1020,7 @@ namespace iris19 {
 						CVSetBoolean(ret, false);
 						return false;
 					} else {
-						std::ifstream s(CVToString(&path), std::ifstream::in | std::ifstream::binary);
+						std::ifstream s(EnvDOToString(env, path), std::ifstream::in | std::ifstream::binary);
 						if (s.good()) {
 							try {
 								core->installprogram(s);
@@ -1038,7 +1038,7 @@ namespace iris19 {
 						} else {
 							PrintErrorID(env, "CALL", 5, false);
 							EnvPrintRouter(env, WERROR, "Function call (iris19:core) of operation install-program: couldn't open ");
-							EnvPrintRouter(env, WERROR, CVToString(&path));
+							EnvPrintRouter(env, WERROR, EnvDOToString(env, path));
 							EnvPrintRouter(env, WERROR, " for reading\n");
 							EnvSetEvaluationError(env, true);
 							CVSetBoolean(ret, false);
@@ -1051,7 +1051,7 @@ namespace iris19 {
 						CVSetBoolean(ret, false);
 						return false;
 					} else {
-						std::ifstream s(CVToString(&path), std::ifstream::in | std::ifstream::binary);
+						std::ifstream s(EnvDOToString(env, path), std::ifstream::in | std::ifstream::binary);
 						if (s.good()) {
 							try {
 								core->link(s);
@@ -1069,7 +1069,7 @@ namespace iris19 {
 						} else {
 							PrintErrorID(env, "CALL", 5, false);
 							EnvPrintRouter(env, WERROR, "Function call (iris19:core) of operation link-program: couldn't open ");
-							EnvPrintRouter(env, WERROR, CVToString(&path));
+							EnvPrintRouter(env, WERROR, EnvDOToString(env, path));
 							EnvPrintRouter(env, WERROR, " for reading\n");
 							EnvSetEvaluationError(env, true);
 							CVSetBoolean(ret, false);
