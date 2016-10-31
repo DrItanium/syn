@@ -106,7 +106,7 @@ r{digit}+   { iris19lval.rval = iris19::getregister(); return REGISTER; }
 [?]{omni}+    { iris19lval.sval = iris19text; return ALIAS; }
 {omni}+     {
     iris19lval.sval = iris19text;
-	return SYMBOL;
+	return Symbol;
 }
 "<-" { return ASSIGN; }
 %%
