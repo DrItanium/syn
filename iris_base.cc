@@ -281,7 +281,7 @@ namespace iris {
 						EnvSetEvaluationError(env, true);
 						CVSetBoolean(ret, false);
 					} else {
-						auto size = EnvDOToInteger(env, capacity);
+						auto size = EnvDOToLong(env, capacity);
 						auto idIndex = getExternalAddressID(id);
 						ret->bitType = EXTERNAL_ADDRESS_TYPE;
 						SetpType(ret, EXTERNAL_ADDRESS);
@@ -355,11 +355,11 @@ namespace iris {
 					if (!argCheck(&address, 3, INTEGER)) {
 						return callErrorMessage("get", "Requires an address!");
 					} else {
-						auto addr = EnvDOToInteger(env, address);
+						auto addr = EnvDOToLong(env, address);
 						if (!inRange(size, addr)) {
 							errOutOfRange("get", size, addr);
 						} else {
-							CVSetInteger(ret, static_cast<CLIPSInteger>(ptr[EnvDOToInteger(env, address)]));
+							CVSetInteger(ret, static_cast<CLIPSInteger>(ptr[EnvDOToLong(env, address)]));
 						}
 					}
 				} else if (str == "set") {
@@ -369,11 +369,11 @@ namespace iris {
 					} else if (!argCheck(&value, 4, INTEGER)) {
 						return callErrorMessage("set", "Second argument must be an integer!");
 					} else {
-						auto addr = EnvDOToInteger(env, address);
+						auto addr = EnvDOToLong(env, address);
 						if (!inRange(size, addr)) {
 							errOutOfRange("set", size, addr);
 						} else {
-							auto num = EnvDOToInteger(env, value);
+							auto num = EnvDOToLong(env, value);
 							ptr[addr] = static_cast<Word>(num);
 							CVSetBoolean(ret, true);
 						}
@@ -385,8 +385,8 @@ namespace iris {
 					} else if (!argCheck(&address1, 4, INTEGER)) {
 						return callErrorMessage("swap", "Second argument must be an address");
 					} else {
-						auto addr0 = EnvDOToInteger(env, address0);
-						auto addr1 = EnvDOToInteger(env, address1);
+						auto addr0 = EnvDOToLong(env, address0);
+						auto addr1 = EnvDOToLong(env, address1);
 						if (!inRange(size, addr0)) {
 							errOutOfRange("swap", size, addr0);
 						} else if(!inRange(size, addr1)) {
@@ -547,8 +547,8 @@ X(integer);
 
 		externalAddressType word8u = {
 			"word8u",
-			CLIPS_printWord8uPtr, 
-			CLIPS_printWord8uPtr, 
+			CLIPS_printWord8uPtr,
+			CLIPS_printWord8uPtr,
 			CLIPS_deleteWord8uPtr,
 			CLIPS_newWord8uPtr,
 			CLIPS_callWord8uPtr,
@@ -556,8 +556,8 @@ X(integer);
 		ptrWord8u_externalAddressID = InstallExternalAddressType(theEnv, &word8u);
 		externalAddressType word16u = {
 			"word16u",
-			CLIPS_printWord16uPtr, 
-			CLIPS_printWord16uPtr, 
+			CLIPS_printWord16uPtr,
+			CLIPS_printWord16uPtr,
 			CLIPS_deleteWord16uPtr,
 			CLIPS_newWord16uPtr,
 			CLIPS_callWord16uPtr,
@@ -565,8 +565,8 @@ X(integer);
 		ptrWord16u_externalAddressID = InstallExternalAddressType(theEnv, &word16u);
 		externalAddressType word32u = {
 			"word32u",
-			CLIPS_printWord32uPtr, 
-			CLIPS_printWord32uPtr, 
+			CLIPS_printWord32uPtr,
+			CLIPS_printWord32uPtr,
 			CLIPS_deleteWord32uPtr,
 			CLIPS_newWord32uPtr,
 			CLIPS_callWord32uPtr,
@@ -574,8 +574,8 @@ X(integer);
 		ptrWord32u_externalAddressID = InstallExternalAddressType(theEnv, &word32u);
 		externalAddressType word64u = {
 			"word64u",
-			CLIPS_printWord64uPtr, 
-			CLIPS_printWord64uPtr, 
+			CLIPS_printWord64uPtr,
+			CLIPS_printWord64uPtr,
 			CLIPS_deleteWord64uPtr,
 			CLIPS_newWord64uPtr,
 			CLIPS_callWord64uPtr,
