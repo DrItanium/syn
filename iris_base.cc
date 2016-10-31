@@ -263,7 +263,7 @@ namespace iris {
 		CLIPS_basePrintAddress(env, logicalName, theValue, getNameFromExternalAddressId<AddressIDs::Ptr_Word64u>().c_str());
 	}
 	template<typename Word>
-	using WordMemoryBlock = std::tuple<std::unique_ptr<Word[]>, CLIPSInteger>;
+	using WordMemoryBlock = std::tuple<Word*, CLIPSInteger>;
 	template<typename Word>
 		void CLIPS_newPtr(void* env, DATA_OBJECT* ret) {
 			try {
@@ -285,7 +285,7 @@ namespace iris {
 						auto idIndex = getExternalAddressID(id);
 						ret->bitType = EXTERNAL_ADDRESS_TYPE;
 						SetpType(ret, EXTERNAL_ADDRESS);
-						auto ptr = new WordMemoryBlock<Word>(std::make_unique<Word[]>(size), size);
+						auto ptr = new WordMemoryBlock<Word>(new Word[size], size);
 						SetpValue(ret, EnvAddExternalAddress(env, ptr, idIndex));
 					}
 				} else {
@@ -339,7 +339,7 @@ namespace iris {
 			} else {
 				// now figure out what method we are looking at
 				auto tup = static_cast<WordMemoryBlock<Word>*>(DOPToExternalAddress(value));
-				auto ptr = std::get<0>(*tup).get();
+				auto ptr = std::get<0>(*tup);
 				auto size = std::get<1>(*tup);
 				std::string str(EnvDOToString(env, operation));
 				CVSetBoolean(ret, true);
@@ -413,6 +413,7 @@ namespace iris {
 		bool CLIPS_deletePtr(void* env, void* obj) {
 			if (obj != nullptr) {
 				auto result = static_cast<WordMemoryBlock<Word>*>(obj);
+                delete [] std::get<0>(*result);
 				delete result;
 			}
 			return true;
