@@ -270,30 +270,20 @@ namespace iris {
 		auto str = ss.str();
 		EnvPrintRouter(env, logicalName, str.c_str());
 	}
-	void CLIPS_printWord8uPtr(void* env, const char* logicalName, void* theValue) {
-		CLIPS_basePrintAddress(env, logicalName, theValue, getNameFromExternalAddressId<AddressIDs::Ptr_Word8u>().c_str());
+#define defPrintFunction(type) \
+	void CLIPS_print ## type ## Ptr (void* env, const char* logicalName, void* theValue) { \
+		CLIPS_basePrintAddress(env, logicalName, theValue, getNameFromExternalAddressId<AddressIDs:: Ptr_ ## type >().c_str()); \
 	}
-	void CLIPS_printWord16uPtr(void* env, const char* logicalName, void* theValue) {
-		CLIPS_basePrintAddress(env, logicalName, theValue, getNameFromExternalAddressId<AddressIDs::Ptr_Word16u>().c_str());
-	}
-	void CLIPS_printWord32uPtr(void* env, const char* logicalName, void* theValue) {
-		CLIPS_basePrintAddress(env, logicalName, theValue, getNameFromExternalAddressId<AddressIDs::Ptr_Word32u>().c_str());
-	}
-	void CLIPS_printWord64uPtr(void* env, const char* logicalName, void* theValue) {
-		CLIPS_basePrintAddress(env, logicalName, theValue, getNameFromExternalAddressId<AddressIDs::Ptr_Word64u>().c_str());
-	}
-	void CLIPS_printWord8sPtr(void* env, const char* logicalName, void* theValue) {
-		CLIPS_basePrintAddress(env, logicalName, theValue, getNameFromExternalAddressId<AddressIDs::Ptr_Word8s>().c_str());
-	}
-	void CLIPS_printWord16sPtr(void* env, const char* logicalName, void* theValue) {
-		CLIPS_basePrintAddress(env, logicalName, theValue, getNameFromExternalAddressId<AddressIDs::Ptr_Word16s>().c_str());
-	}
-	void CLIPS_printWord32sPtr(void* env, const char* logicalName, void* theValue) {
-		CLIPS_basePrintAddress(env, logicalName, theValue, getNameFromExternalAddressId<AddressIDs::Ptr_Word32s>().c_str());
-	}
-	void CLIPS_printWord64sPtr(void* env, const char* logicalName, void* theValue) {
-		CLIPS_basePrintAddress(env, logicalName, theValue, getNameFromExternalAddressId<AddressIDs::Ptr_Word64s>().c_str());
-	}
+defPrintFunction(Word8u);
+defPrintFunction(Word16u);
+defPrintFunction(Word32u);
+defPrintFunction(Word64u);
+defPrintFunction(Word8s);
+defPrintFunction(Word16s);
+defPrintFunction(Word32s);
+defPrintFunction(Word64s);
+#undef defPrintFunction
+
 	template<typename Word>
 	using WordMemoryBlock = std::tuple<Word*, CLIPSInteger>;
 	template<typename Word>
@@ -450,30 +440,21 @@ namespace iris {
 			}
 			return true;
 		}
-	void CLIPS_newWord8uPtr(void* env, DATA_OBJECT* ret) { CLIPS_newPtr<byte>(env, ret); }
-	void CLIPS_newWord16uPtr(void* env, DATA_OBJECT* ret) { CLIPS_newPtr<uint16>(env, ret); }
-	void CLIPS_newWord32uPtr(void* env, DATA_OBJECT* ret) { CLIPS_newPtr<uint32>(env, ret); }
-	void CLIPS_newWord64uPtr(void* env, DATA_OBJECT* ret) { CLIPS_newPtr<uint64>(env, ret); }
-	bool CLIPS_deleteWord8uPtr(void* env, void* ret) { return CLIPS_deletePtr<byte>(env, ret); }
-	bool CLIPS_deleteWord16uPtr(void* env, void* ret) { return CLIPS_deletePtr<uint16>(env, ret); }
-	bool CLIPS_deleteWord32uPtr(void* env, void* ret) { return CLIPS_deletePtr<uint32>(env, ret); }
-	bool CLIPS_deleteWord64uPtr(void* env, void* ret) { return CLIPS_deletePtr<uint64>(env, ret); }
-	bool CLIPS_callWord8uPtr(void* env,  DATA_OBJECT* theValue, DATA_OBJECT* ret) { return CLIPS_callPtr<byte>(env, theValue, ret); }
-	bool CLIPS_callWord16uPtr(void* env, DATA_OBJECT* theValue, DATA_OBJECT* ret) { return CLIPS_callPtr<uint16>(env, theValue, ret); }
-	bool CLIPS_callWord32uPtr(void* env, DATA_OBJECT* theValue, DATA_OBJECT* ret) { return CLIPS_callPtr<uint32>(env, theValue, ret); }
-	bool CLIPS_callWord64uPtr(void* env, DATA_OBJECT* theValue, DATA_OBJECT* ret) { return CLIPS_callPtr<uint64>(env, theValue, ret); }
-	void CLIPS_newWord8sPtr(void* env, DATA_OBJECT* ret) { CLIPS_newPtr<int8_t>(env, ret); }
-	void CLIPS_newWord16sPtr(void* env, DATA_OBJECT* ret) { CLIPS_newPtr<int16_t>(env, ret); }
-	void CLIPS_newWord32sPtr(void* env, DATA_OBJECT* ret) { CLIPS_newPtr<int32_t>(env, ret); }
-	void CLIPS_newWord64sPtr(void* env, DATA_OBJECT* ret) { CLIPS_newPtr<int64_t>(env, ret); }
-	bool CLIPS_deleteWord8sPtr(void* env, void* ret) { return CLIPS_deletePtr<int8_t>(env, ret); }
-	bool CLIPS_deleteWord16sPtr(void* env, void* ret) { return CLIPS_deletePtr<int16_t>(env, ret); }
-	bool CLIPS_deleteWord32sPtr(void* env, void* ret) { return CLIPS_deletePtr<int32_t>(env, ret); }
-	bool CLIPS_deleteWord64sPtr(void* env, void* ret) { return CLIPS_deletePtr<int64_t>(env, ret); }
-	bool CLIPS_callWord8sPtr(void* env,  DATA_OBJECT* theValue, DATA_OBJECT* ret) { return CLIPS_callPtr<int8_t>(env, theValue, ret); }
-	bool CLIPS_callWord16sPtr(void* env, DATA_OBJECT* theValue, DATA_OBJECT* ret) { return CLIPS_callPtr<int16_t>(env, theValue, ret); }
-	bool CLIPS_callWord32sPtr(void* env, DATA_OBJECT* theValue, DATA_OBJECT* ret) { return CLIPS_callPtr<int32_t>(env, theValue, ret); }
-	bool CLIPS_callWord64sPtr(void* env, DATA_OBJECT* theValue, DATA_OBJECT* ret) { return CLIPS_callPtr<int64_t>(env, theValue, ret); }
+#define defFunctions(id, type) \
+	void CLIPS_new ## id ## Ptr (void* env, DATA_OBJECT* ret) { CLIPS_newPtr< type > (env, ret); } \
+	bool CLIPS_delete ## id ## Ptr (void* env, void* ret) { return CLIPS_deletePtr< type > (env, ret); } \
+	bool CLIPS_call ## id ## Ptr (void* env, DATA_OBJECT* theValue, DATA_OBJECT* ret) { return CLIPS_callPtr< type >(env, theValue, ret); }
+defFunctions(Word8u, uint8_t);
+defFunctions(Word16u, uint16_t);
+defFunctions(Word32u, uint32_t);
+defFunctions(Word64u, uint64_t);
+defFunctions(Word8s, int8_t);
+defFunctions(Word16s, int16_t);
+defFunctions(Word32s, int32_t);
+defFunctions(Word64s, int64_t);
+#undef defFunctions
+
+
 	enum class ArithmeticOperations {
 		Add,
 		Sub,
