@@ -4,6 +4,7 @@
 #define PRIMITIVE_INDIRECTOR(a, ...) a ## __VA_ARGS__
 #include <cstdint>
 #include "Problem.h"
+#include <map>
 typedef uint8_t byte;
 typedef uint16_t uint16;
 typedef uint32_t uint32;
@@ -369,7 +370,32 @@ enum class AddressIDs {
 	Ptr_Word64u,
 	Ptr_Word64s,
 };
-unsigned int getExternalAddressID(AddressIDs id);
+unsigned int getExternalAddressID(void* env, AddressIDs id);
+
+template<typename T>
+struct ExternalAddressRegistrar {
+	public:
+		ExternalAddressRegistrar() = delete;
+		~ExternalAddressRegistrar() = delete;
+		ExternalAddressRegistrar(const ExternalAddressRegistrar&) = delete;
+		ExternalAddressRegistrar(ExternalAddressRegistrar&&) = delete;
+		static unsigned int getExternalAddressId(void* env) {
+			auto found = _cache.find(env);
+			if (found != _cache.end()) {
+				return found->second;
+			} else {
+				throw iris::Problem("unregistered external address type!");
+			}
+		}
+		static void registerExternalAddressId(void* env, unsigned int value) {
+			_cache.emplace(env, value);
+		}
+	private:
+		static std::map<void*, unsigned int> _cache;
+};
+
+template<typename T>
+std::map<void*, unsigned int> ExternalAddressRegistrar<T>::_cache;
 
 }
 #endif

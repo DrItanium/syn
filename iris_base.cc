@@ -5,6 +5,7 @@
 #include <climits>
 #include <sstream>
 #include <memory>
+#include <map>
 
 extern "C" {
 	#include "clips.h"
@@ -193,32 +194,34 @@ namespace iris {
 			CVSetInteger(ret, shiftRight<CLIPSInteger>(CVToInteger(&input), CVToInteger(&shift)));
 		}
 	}
-	unsigned int ptrWord8u_externalAddressID = 0u;
-	unsigned int ptrWord16u_externalAddressID = 0u;
-	unsigned int ptrWord32u_externalAddressID = 0u;
-	unsigned int ptrWord64u_externalAddressID = 0u;
-	unsigned int ptrWord8s_externalAddressID = 0u;
-	unsigned int ptrWord16s_externalAddressID = 0u;
-	unsigned int ptrWord32s_externalAddressID = 0u;
-	unsigned int ptrWord64s_externalAddressID = 0u;
-	unsigned int getExternalAddressID(AddressIDs id) {
+
+	template<AddressIDs op>
+	struct TypeFromExternalAddress { };
+#define X(op, type) \
+	template<> struct TypeFromExternalAddress<AddressIDs:: op > {  using Type = type *; }
+
+X(Ptr_Word8u, uint8_t);
+X(Ptr_Word8s, int8_t);
+X(Ptr_Word16u, uint16_t);
+X(Ptr_Word16s, int16_t);
+X(Ptr_Word32u, uint32_t);
+X(Ptr_Word32s, int32_t);
+X(Ptr_Word64u, uint64_t);
+X(Ptr_Word64s, int64_t);
+#undef X
+
+	unsigned int getExternalAddressID(void* env, AddressIDs id) {
 		switch(id) {
-			case AddressIDs::Ptr_Word8u:
-				return ptrWord8u_externalAddressID;
-			case AddressIDs::Ptr_Word16u:
-				return ptrWord16u_externalAddressID;
-			case AddressIDs::Ptr_Word32u:
-				return ptrWord32u_externalAddressID;
-			case AddressIDs::Ptr_Word64u:
-				return ptrWord64u_externalAddressID;
-			case AddressIDs::Ptr_Word8s:
-				return ptrWord8s_externalAddressID;
-			case AddressIDs::Ptr_Word16s:
-				return ptrWord16s_externalAddressID;
-			case AddressIDs::Ptr_Word32s:
-				return ptrWord32s_externalAddressID;
-			case AddressIDs::Ptr_Word64s:
-				return ptrWord64s_externalAddressID;
+#define X(id) case AddressIDs:: id : return ExternalAddressRegistrar< TypeFromExternalAddress<AddressIDs:: id >::Type >::getExternalAddressId(env)
+X(Ptr_Word8u);
+X(Ptr_Word8s);
+X(Ptr_Word16u);
+X(Ptr_Word16s);
+X(Ptr_Word32u);
+X(Ptr_Word32s);
+X(Ptr_Word64u);
+X(Ptr_Word64s);
+#undef X
 			default:
 				throw iris::Problem("Attempted to retrieve an unimplemented address id!");
 		}
@@ -258,10 +261,19 @@ namespace iris {
 				return getNameFromExternalAddressId<AddressIDs::Ptr_Word32u>();
 			case AddressIDs::Ptr_Word64u:
 				return getNameFromExternalAddressId<AddressIDs::Ptr_Word64u>();
+			case AddressIDs::Ptr_Word8s:
+				return getNameFromExternalAddressId<AddressIDs::Ptr_Word8s>();
+			case AddressIDs::Ptr_Word16s:
+				return getNameFromExternalAddressId<AddressIDs::Ptr_Word16s>();
+			case AddressIDs::Ptr_Word32s:
+				return getNameFromExternalAddressId<AddressIDs::Ptr_Word32s>();
+			case AddressIDs::Ptr_Word64s:
+				return getNameFromExternalAddressId<AddressIDs::Ptr_Word64s>();
 			default:
 				throw iris::Problem("Unimplemented type!");
 		}
 	}
+
 
 	void CLIPS_basePrintAddress(void* env, const char* logicalName, void* theValue, const char* func) {
 		std::stringstream ss;
@@ -304,7 +316,7 @@ defPrintFunction(Word64s);
 						CVSetBoolean(ret, false);
 					} else {
 						auto size = EnvDOToLong(env, capacity);
-						auto idIndex = getExternalAddressID(id);
+						auto idIndex = getExternalAddressID(env, id);
 						ret->bitType = EXTERNAL_ADDRESS_TYPE;
 						SetpType(ret, EXTERNAL_ADDRESS);
 						auto ptr = new WordMemoryBlock<Word>(new Word[size], size);
@@ -577,78 +589,25 @@ X(word32s);
 X(word64s);
 #undef X
 
-		externalAddressType word8u = {
-			"word8u",
-			CLIPS_printWord8uPtr,
-			CLIPS_printWord8uPtr,
-			CLIPS_deleteWord8uPtr,
-			CLIPS_newWord8uPtr,
-			CLIPS_callWord8uPtr,
-		};
-		ptrWord8u_externalAddressID = InstallExternalAddressType(theEnv, &word8u);
-		externalAddressType word16u = {
-			"word16u",
-			CLIPS_printWord16uPtr,
-			CLIPS_printWord16uPtr,
-			CLIPS_deleteWord16uPtr,
-			CLIPS_newWord16uPtr,
-			CLIPS_callWord16uPtr,
-		};
-		ptrWord16u_externalAddressID = InstallExternalAddressType(theEnv, &word16u);
-		externalAddressType word32u = {
-			"word32u",
-			CLIPS_printWord32uPtr,
-			CLIPS_printWord32uPtr,
-			CLIPS_deleteWord32uPtr,
-			CLIPS_newWord32uPtr,
-			CLIPS_callWord32uPtr,
-		};
-		ptrWord32u_externalAddressID = InstallExternalAddressType(theEnv, &word32u);
-		externalAddressType word64u = {
-			"word64u",
-			CLIPS_printWord64uPtr,
-			CLIPS_printWord64uPtr,
-			CLIPS_deleteWord64uPtr,
-			CLIPS_newWord64uPtr,
-			CLIPS_callWord64uPtr,
-		};
-		ptrWord64u_externalAddressID = InstallExternalAddressType(theEnv, &word64u);
+#define X(title, id, type) \
+	externalAddressType title = { \
+		#title , \
+		CLIPS_print ## id ## Ptr, \
+		CLIPS_print ## id ## Ptr, \
+		CLIPS_delete ## id ## Ptr, \
+		CLIPS_new ## id ## Ptr, \
+		CLIPS_call ## id ## Ptr, \
+	}; \
+	ExternalAddressRegistrar< type * >::registerExternalAddressId(theEnv, InstallExternalAddressType(theEnv, & title ))
+X(word8u, Word8u, uint8_t);
+X(word16u, Word16u, uint16_t);
+X(word32u, Word32u, uint32_t);
+X(word64u, Word64u, uint64_t);
+X(word8s, Word8s, int8_t);
+X(word16s, Word16s, int16_t);
+X(word32s, Word32s, int32_t);
+X(word64s, Word64s, int64_t);
+#undef X
 
-		externalAddressType word8s = {
-			"word8s",
-			CLIPS_printWord8sPtr,
-			CLIPS_printWord8sPtr,
-			CLIPS_deleteWord8sPtr,
-			CLIPS_newWord8sPtr,
-			CLIPS_callWord8sPtr,
-		};
-		ptrWord8u_externalAddressID = InstallExternalAddressType(theEnv, &word8s);
-		externalAddressType word16s = {
-			"word16s",
-			CLIPS_printWord16sPtr,
-			CLIPS_printWord16sPtr,
-			CLIPS_deleteWord16sPtr,
-			CLIPS_newWord16sPtr,
-			CLIPS_callWord16sPtr,
-		};
-		ptrWord16u_externalAddressID = InstallExternalAddressType(theEnv, &word16s);
-		externalAddressType word32s = {
-			"word32s",
-			CLIPS_printWord32sPtr,
-			CLIPS_printWord32sPtr,
-			CLIPS_deleteWord32sPtr,
-			CLIPS_newWord32sPtr,
-			CLIPS_callWord32sPtr,
-		};
-		ptrWord32u_externalAddressID = InstallExternalAddressType(theEnv, &word32s);
-		externalAddressType word64s = {
-			"word64s",
-			CLIPS_printWord64sPtr,
-			CLIPS_printWord64sPtr,
-			CLIPS_deleteWord64sPtr,
-			CLIPS_newWord64sPtr,
-			CLIPS_callWord64sPtr,
-		};
-		ptrWord64u_externalAddressID = InstallExternalAddressType(theEnv, &word64s);
 	}
 }
