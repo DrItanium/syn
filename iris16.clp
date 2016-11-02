@@ -63,16 +63,27 @@
                                        ?address)))
 (deffunction native::indirect-store
              (?mem ?address ?value)
-             (store-mem ?mem
-                        (load-memory ?mem
-                                     ?address)
-                        ?value))
+             (store-memory ?mem
+                           (load-memory ?mem
+                                        ?address)
+                           ?value))
 (deffunction native::swap-memory
              (?mem ?addr0 ?addr1)
              (call ?mem
                    swap
                    ?addr0
                    ?addr1))
+
+(deffunction native::memory-op
+             (?operation ?mDest ?addressDest ?mSrc0 ?addressSrc0 ?mSrc1 ?addressSrc1)
+             (store-memory ?mDest
+                           ?addressDest
+                           (funcall ?operation
+                                    (load-memory ?mSrc0
+                                                 ?addressSrc0)
+                                    (load-memory ?mSrc1
+                                                 ?addressSrc1))))
+
 
 (defmodule iris16
            (import native
