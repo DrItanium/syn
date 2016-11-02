@@ -132,6 +132,7 @@
                                    ?src0)
                       (load-memory ?mSrc1
                                    ?src1)))
+
 (deffunction ucode::memory-op-with-immediate
              "Perform a memory op where the second argument is an immediate"
              (?operation ?mDest ?dest ?mSrc0 ?src0 ?immediate)
