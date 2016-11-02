@@ -43,18 +43,15 @@
                            (bind ?output
                                  (+ (load-memory ?mem
                                                  ?address)
-                                    1)))
-             ?output)
+                                    1))))
 
 (deffunction native::decrement-memory
              (?mem ?address)
              (store-memory ?mem
                            ?address
-                           (bind ?output
-                                 (- (load-memory ?mem
-                                                 ?address)
-                                    1)))
-             ?output)
+                           (- (load-memory ?mem
+                                           ?address)
+                              1)))
 (deffunction native::indirect-load
              "Load the value stored at the address stored at the provided address"
              (?mem ?address)
@@ -75,6 +72,7 @@
                    ?addr1))
 
 (deffunction native::memory-op
+             "Load two addresses, perform an operation on the values, and then store it in a given address"
              (?operation ?mDest ?addressDest ?mSrc0 ?addressSrc0 ?mSrc1 ?addressSrc1)
              (store-memory ?mDest
                            ?addressDest
@@ -84,6 +82,38 @@
                                     (load-memory ?mSrc1
                                                  ?addressSrc1))))
 
+(deffunction native::memory-op-same-memory
+             (?operation ?mem ?destination ?source0 ?source1)
+             (memory-op ?operation
+                        ?mem
+                        ?destination
+                        ?mem
+                        ?source0
+                        ?mem
+                        ?source1))
+(deffunction native::register-style-op
+             "Load values from two addresses and perform an operation on it, the result is not saved to memory but returned instead!"
+             (?operation ?mSrc0 ?src0 ?mSrc1 ?src1)
+             (funcall ?operation
+                      (load-memory ?mSrc0
+                                   ?src0)
+                      (load-memory ?mSrc1
+                                   ?src1)))
+(deffunction native::memory-op-with-immediate
+             "Perform a memory op where the second argument is an immediate"
+             (?operation ?mDest ?dest ?mSrc0 ?src0 ?immediate)
+             (store-memory ?mDest
+                           ?dest
+                           (funcall ?operation
+                                    (load-memory ?mSrc0
+                                                 ?src0)
+                                    ?immediate)))
+(deffunction native::register-style-op-with-immediate
+             (?operation ?mSrc0 ?src0 ?immediate)
+             (funcall ?operation
+                      (load-memory ?mSrc0
+                                   ?src0)
+                      ?immediate))
 
 (defmodule iris16
            (import native
@@ -181,7 +211,7 @@
 
 (deffunction iris16::new-core
              (?data-cap ?code-cap ?stack-cap)
-             (make-instance of iris16-cpu
+             (make-instance of core
                             (data-capacity ?data-cap)
                             (code-capacity ?code-cap)
                             (stack-capacity ?stack-cap)))
