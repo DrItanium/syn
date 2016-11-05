@@ -26,3 +26,17 @@
         (type INTEGER)
         (range 0 ?VARIABLE)
         (default ?NONE)))
+
+(defrule memory-management::responds-to-request
+         ?f <- (memory-request (address ?addr)
+                               (action ?action)
+                               (arguments $?args))
+         (object (is-a memory-responder)
+                 (begin-address ?from)
+                 (end-address ?to))
+         (test (<= ?from ?addr ?to))
+         =>
+         ; todo: something here
+         )
+                 
+
