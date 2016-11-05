@@ -230,6 +230,7 @@
                   ?value))
 
 (defclass ucode::memory-space
+ "A very thin wrapper over the memory space, should not modify it's contents once initialization is complete!"
   (is-a thing)
   (slot type
         (type SYMBOL)
@@ -247,13 +248,14 @@
         (type EXTERNAL-ADDRESS)
         (storage local)
         (visibility public)
-        (access read-only))
+        (access initialize-only))
   (message-handler init after))
-
 (defmessage-handler ucode::memory-space init after
                     ()
                     (bind ?self:raw-pointer
                           (alloc ?self:type
                                  ?self:capacity)))
+
+
 
 
