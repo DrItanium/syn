@@ -229,3 +229,31 @@
                                ?address)
                   ?value))
 
+(defclass ucode::memory-space
+  (is-a thing)
+  (slot type
+        (type SYMBOL)
+        (storage local)
+        (visibility public)
+        (access initialize-only)
+        (default ?NONE))
+  (slot capacity
+        (type INTEGER)
+        (storage local)
+        (visibility public)
+        (access initialize-only)
+        (default ?NONE))
+  (slot raw-pointer
+        (type EXTERNAL-ADDRESS)
+        (storage local)
+        (visibility public)
+        (access read-only))
+  (message-handler init after))
+
+(defmessage-handler ucode::memory-space init after
+                    ()
+                    (bind ?self:raw-pointer
+                          (alloc ?self:type
+                                 ?self:capacity)))
+
+
