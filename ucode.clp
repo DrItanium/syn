@@ -34,6 +34,8 @@
             "Size of the memory space in words!")
 (defgeneric ucode::memory-type
             "Get the type associated with the given memory space")
+(defgeneric ucode::memory-copy
+            "Load a given value from memory and store it to another address")
 
 (defmethod ucode::memory-type
   ((?memory EXTERNAL-ADDRESS))
@@ -94,6 +96,17 @@
                 ?address
                 0))
 
+(defmethod ucode::memory-zero
+ "Clear a range of memory, [?from, ?to]"
+  ((?memory EXTERNAL-ADDRESS)
+   (?from INTEGER)
+   (?to INTEGER
+        (>= ?to 
+            ?from)))
+  (loop-for-count (?index ?from ?to) do
+                  (memory-zero ?memory
+                               ?index)))
+
 (defmethod ucode::cast
   ((?type SYMBOL)
    (?value INTEGER))
@@ -118,6 +131,18 @@
 
 
 (defmethod ucode::memory-load-op-store
+  ((?from EXTERNAL-ADDRESS)
+   (?addr0 INTEGER)
+   (?to EXTERNAL-ADDRESS)
+   (?addr1 INTEGER)
+   (?op SYMBOL))
+  (memory-store ?to
+                ?addr1
+                (memory-load-op ?from
+                                ?addr0
+                                ?op)))
+
+(defmethod ucode::memory-load-op-store
   ((?memory EXTERNAL-ADDRESS)
    (?address INTEGER)
    (?op SYMBOL))
@@ -127,12 +152,57 @@
                                 ?address
                                 ?op)))
 
+(defmethod ucode::memory-copy
+  ((?mem EXTERNAL-ADDRESS)
+   (?from INTEGER)
+   (?to INTEGER))
+  (memory-store ?mem
+                ?to
+                (memory-load ?mem
+                             ?from)))
+
+(defmethod ucode::memory-copy
+  ((?from-mem EXTERNAL-ADDRESS)
+   (?from-addr INTEGER)
+   (?to-mem EXTERNAL-ADDRESS)
+   (?to-addr INTEGER))
+  (memory-store ?to-mem
+                ?to-addr
+                (memory-load ?from-mem
+                             ?from-addr)))
+
+(defmethod ucode::memory-copy
+  ((?mem EXTERNAL-ADDRESS)
+   (?from INTEGER)
+   (?to INTEGER)
+   (?mask INTEGER))
+  (memory-store ?mem
+                ?to
+                (decode-bits (memory-load ?mem
+                                          ?from)
+                             ?mask
+                             0)))
+
+(defmethod ucode::memory-copy
+  ((?from-mem EXTERNAL-ADDRESS)
+   (?from-addr INTEGER)
+   (?to-mem EXTERNAL-ADDRESS)
+   (?to-addr INTEGER)
+   (?mask INTEGER))
+  (memory-store ?to-mem
+                ?to-addr
+                (decode-bits (memory-load ?from-mem
+                                          ?from-addr)
+                             ?mask
+                             0)))
+
 (defmethod ucode::memory-load
   ((?memory EXTERNAL-ADDRESS)
    (?address INTEGER))
   (call ?memory
         get
         ?address))
+
 (defmethod ucode::memory-store
   ((?memory EXTERNAL-ADDRESS)
    (?address INTEGER)
@@ -170,81 +240,4 @@
                   (memory-load ?memory
                                ?address)
                   ?value))
-
-(deffunction ucode::swap-memory
-             (?mem ?addr0 ?addr1)
-             (call ?mem
-                   swap
-                   ?addr0
-                   ?addr1))
-
-(deffunction ucode::memory-op
-             "Load two addresses, perform an operation on the values, and then store it in a given address"
-             (?operation ?mDest ?addressDest ?mSrc0 ?addressSrc0 ?mSrc1 ?addressSrc1)
-             (store-memory ?mDest
-                           ?addressDest
-                           (funcall ?operation
-                                    (load-memory ?mSrc0
-                                                 ?addressSrc0)
-                                    (load-memory ?mSrc1
-                                                 ?addressSrc1))))
-
-(deffunction ucode::memory-op-same-memory
-             (?operation ?mem ?destination ?source0 ?source1)
-             (memory-op ?operation
-                        ?mem
-                        ?destination
-                        ?mem
-                        ?source0
-                        ?mem
-                        ?source1))
-
-(deffunction ucode::two-address-memory-op
-             (?operation ?mDest ?addressDest ?mSrc0 ?addressSrc0)
-             (memory-op ?operation
-                        ?mDest ?addressDest
-                        ?mDest ?addressDest
-                        ?mSrc0 ?addressSrc0))
-
-(deffunction ucode::load-dword
-             "Load two words worth of data and return it as a multifield"
-             (?memory ?address)
-             (create$ (load-memory ?memory
-                                   ?address)
-                      (load-memory ?memory
-                                   (+ ?address 1))))
-
-(deffunction ucode::store-dword
-             (?memory ?address ?value0 ?value1)
-             (store-memory ?memory
-                           ?address
-                           ?value0)
-             (store-memory ?memory
-                           (+ ?address 1)
-                           ?value1))
-
-(deffunction ucode::register-style-op
-             "Load values from two addresses and perform an operation on it, the result is not saved to memory but returned instead!"
-             (?operation ?mSrc0 ?src0 ?mSrc1 ?src1)
-             (funcall ?operation
-                      (load-memory ?mSrc0
-                                   ?src0)
-                      (load-memory ?mSrc1
-                                   ?src1)))
-
-(deffunction ucode::memory-op-with-immediate
-             "Perform a memory op where the second argument is an immediate"
-             (?operation ?mDest ?dest ?mSrc0 ?src0 ?immediate)
-             (store-memory ?mDest
-                           ?dest
-                           (funcall ?operation
-                                    (load-memory ?mSrc0
-                                                 ?src0)
-                                    ?immediate)))
-(deffunction ucode::register-style-op-with-immediate
-             (?operation ?mSrc0 ?src0 ?immediate)
-             (funcall ?operation
-                      (load-memory ?mSrc0
-                                   ?src0)
-                      ?immediate))
 
