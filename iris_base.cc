@@ -230,27 +230,33 @@ X(Ptr_Word64s);
 	AddressIDs getExternalAddressIdFromType() {
 		throw iris::Problem("unspecified type!");
 	}
-	template<> AddressIDs getExternalAddressIdFromType<byte*>() { return AddressIDs::Ptr_Word8u; }
-	template<> AddressIDs getExternalAddressIdFromType<uint16*>() { return AddressIDs::Ptr_Word16u; }
-	template<> AddressIDs getExternalAddressIdFromType<uint32*>() { return AddressIDs::Ptr_Word32u; }
-	template<> AddressIDs getExternalAddressIdFromType<uint64*>() { return AddressIDs::Ptr_Word64u; }
-	template<> AddressIDs getExternalAddressIdFromType<int8_t*>() { return AddressIDs::Ptr_Word8s; }
-	template<> AddressIDs getExternalAddressIdFromType<int16_t*>() { return AddressIDs::Ptr_Word16s; }
-	template<> AddressIDs getExternalAddressIdFromType<int32_t*>() { return AddressIDs::Ptr_Word32s; }
-	template<> AddressIDs getExternalAddressIdFromType<int64_t*>() { return AddressIDs::Ptr_Word64s; }
 	template<AddressIDs id>
 	std::string getNameFromExternalAddressId() {
 		throw iris::Problem("unimplemented type!");
 	}
+	void CLIPS_basePrintAddress(void* env, const char* logicalName, void* theValue, const char* func) {
+		std::stringstream ss;
+		void* ptr = EnvValueToExternalAddress(env, theValue);
+		ss << "<Pointer-" << func << "-" << std::hex << ((ptr) ? ptr : theValue) << ">";
+		auto str = ss.str();
+		EnvPrintRouter(env, logicalName, str.c_str());
+	}
+#define X(type, capitalizedType, lowcaseVersion) \
+	template<> AddressIDs getExternalAddressIdFromType< type * > () { return AddressIDs:: Ptr_ ## capitalizedType ; } \
+	template<> std::string getNameFromExternalAddressId< AddressIDs:: Ptr_ ## capitalizedType > () { return #lowcaseVersion ; }  \
+	void CLIPS_print ## capitalizedType ## Ptr (void* env, const char* logicalName, void* theValue) { \
+		CLIPS_basePrintAddress(env, logicalName, theValue, getNameFromExternalAddressId<AddressIDs:: Ptr_ ## capitalizedType >().c_str()); \
+	}
+X(uint8_t, Word8u, word8u)
+X(uint16_t, Word16u, word16u)
+X(uint32_t, Word32u, word32u)
+X(uint64_t, Word64u, word64u)
+X(int8_t, Word8s, word8s)
+X(int16_t, Word16s, word16s)
+X(int32_t, Word32s, word32s)
+X(int64_t, Word64s, word64s)
+#undef X
 
-	template<> std::string getNameFromExternalAddressId<AddressIDs::Ptr_Word8u>() { return "word8u-ptr"; }
-	template<> std::string getNameFromExternalAddressId<AddressIDs::Ptr_Word16u>() { return "word16u-ptr"; }
-	template<> std::string getNameFromExternalAddressId<AddressIDs::Ptr_Word32u>() { return "word32u-ptr"; }
-	template<> std::string getNameFromExternalAddressId<AddressIDs::Ptr_Word64u>() { return "word64u-ptr"; }
-	template<> std::string getNameFromExternalAddressId<AddressIDs::Ptr_Word8s>() { return "word8s-ptr"; }
-	template<> std::string getNameFromExternalAddressId<AddressIDs::Ptr_Word16s>() { return "word16s-ptr"; }
-	template<> std::string getNameFromExternalAddressId<AddressIDs::Ptr_Word32s>() { return "word32s-ptr"; }
-	template<> std::string getNameFromExternalAddressId<AddressIDs::Ptr_Word64s>() { return "word64s-ptr"; }
 	std::string getNameFromExternalAddressId(AddressIDs id) {
 		switch(id) {
 			case AddressIDs::Ptr_Word8u:
@@ -275,27 +281,6 @@ X(Ptr_Word64s);
 	}
 
 
-	void CLIPS_basePrintAddress(void* env, const char* logicalName, void* theValue, const char* func) {
-		std::stringstream ss;
-		void* ptr = EnvValueToExternalAddress(env, theValue);
-		ss << "<Pointer-" << func << "-" << std::hex << ((ptr) ? ptr : theValue) << ">";
-		auto str = ss.str();
-		EnvPrintRouter(env, logicalName, str.c_str());
-	}
-#define defPrintFunction(type) \
-	void CLIPS_print ## type ## Ptr (void* env, const char* logicalName, void* theValue) { \
-		CLIPS_basePrintAddress(env, logicalName, theValue, getNameFromExternalAddressId<AddressIDs:: Ptr_ ## type >().c_str()); \
-	}
-defPrintFunction(Word8u);
-defPrintFunction(Word16u);
-defPrintFunction(Word32u);
-defPrintFunction(Word64u);
-defPrintFunction(Word8s);
-defPrintFunction(Word16s);
-defPrintFunction(Word32s);
-defPrintFunction(Word64s);
-#undef defPrintFunction
-
 	template<typename Word>
 	using WordMemoryBlock = std::tuple<Word*, CLIPSInteger>;
 	template<typename Word>
@@ -303,7 +288,7 @@ defPrintFunction(Word64s);
 			try {
 				auto id = getExternalAddressIdFromType<Word*>();
 				std::stringstream ss;
-				ss << "new (" << getNameFromExternalAddressId(id) << ")";
+				ss << "new (" << getNameFromExternalAddressId(id) << " memory block)";
 				auto funcStr = ss.str();
 				if (EnvRtnArgCount(env) == 2) {
 					CLIPSValue capacity;
@@ -344,7 +329,8 @@ defPrintFunction(Word64s);
 		if (GetpType(value) == EXTERNAL_ADDRESS) {
 			auto id = getExternalAddressIdFromType<Word*>();
 			std::stringstream ss;
-			ss << "call (" << getNameFromExternalAddressId(id) << ")";
+			auto type = getNameFromExternalAddressId(id);
+			ss << "call (" << type << " memory block)";
 			auto funcStr = ss.str();
 			auto argCheck = [env, &funcStr](CLIPSValue* storage, int position, int type) { return EnvArgTypeCheck(env, funcStr.c_str(), position, type, storage); };
 			auto callErrorMessage = [env, &funcStr, ret](const std::string& subOp, const std::string& rest) {
@@ -378,10 +364,13 @@ defPrintFunction(Word64s);
 				std::string str(EnvDOToString(env, operation));
 				CVSetBoolean(ret, true);
 				if (str == "clear") {
-					for(CLIPSInteger i = 0; i < size; ++i) {
+					for (CLIPSInteger i = 0; i < size; ++i) {
 						ptr[i] = static_cast<Word>(0);
 					}
 					CVSetBoolean(ret, true);
+				} else if (str == "type") {
+					// get the type of the current thing!
+					CVSetSymbol(ret, type.c_str());
 				} else if (str == "size") {
 					CVSetInteger(ret, size);
 				} else if (str == "get") {
