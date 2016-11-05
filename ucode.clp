@@ -34,6 +34,8 @@
             "Get the type associated with the given memory space")
 (defgeneric ucode::memory-copy
             "Load a given value from memory and store it to another address")
+(defgeneric ucode::memory-load-binary-op-store
+            "Load two values from the memory, perform and operation, and then store it back into memory at another address")
 
 (defmethod ucode::memory-type
   ((?memory EXTERNAL-ADDRESS))
@@ -85,7 +87,7 @@
                 0))
 
 (defmethod ucode::memory-zero
- "Clear a range of memory, [?from, ?to]"
+  "Clear a range of memory, [?from, ?to]"
   ((?memory EXTERNAL-ADDRESS)
    (?from INTEGER)
    (?to INTEGER
@@ -214,23 +216,23 @@
                         ?address
                         decrement))
 (defmethod ucode::memory-load-indirect
- ((?memory EXTERNAL-ADDRESS)
-  (?address INTEGER))
- (memory-load ?memory
-              (memory-load ?memory
-                           ?address)))
+  ((?memory EXTERNAL-ADDRESS)
+   (?address INTEGER))
+  (memory-load ?memory
+               (memory-load ?memory
+                            ?address)))
 
 (defmethod ucode::memory-store-indirect
-    ((?memory EXTERNAL-ADDRESS)
-     (?address INTEGER)
-     (?value INTEGER))
-    (memory-store ?memory
-                  (memory-load ?memory
-                               ?address)
-                  ?value))
+  ((?memory EXTERNAL-ADDRESS)
+   (?address INTEGER)
+   (?value INTEGER))
+  (memory-store ?memory
+                (memory-load ?memory
+                             ?address)
+                ?value))
 
 (defclass ucode::memory-space
- "A very thin wrapper over the memory space, should not modify it's contents once initialization is complete!"
+  "A very thin wrapper over the memory space, should not modify it's contents once initialization is complete!"
   (is-a thing)
   (slot type
         (type SYMBOL)
@@ -258,4 +260,90 @@
 
 
 
+(defmethod ucode::memory-load-binary-op-store
+  ((?mem EXTERNAL-ADDRESS)
+   (?dest INTEGER)
+   (?source0 INTEGER)
+   (?source1 INTEGER)
+   (?op SYMBOL))
+  (memory-store ?mem
+                ?dest
+                (funcall ?op
+                         (memory-load ?mem
+                                      ?source0)
+                         (memory-load ?mem
+                                      ?source1))))
 
+(defgeneric ucode::make-word64u)
+(defgeneric ucode::make-word32u)
+(defgeneric ucode::make-word16u)
+(defmethod ucode::make-word16u
+  ((?lower INTEGER)
+   (?upper INTEGER))
+  (encode-bits
+    (encode-bits 0
+                 ?lower
+                 (hex->int 0x00FF)
+                 0)
+    ?upper
+    (hex->int 0xFF00)
+    8))
+(defmethod ucode::make-word32u
+  ((?lower INTEGER)
+   (?upper INTEGER))
+  (encode-bits 
+    (encode-bits 0
+                 ?lower
+                 (hex->int 0x0000FFFF)
+                 0)
+    ?upper
+    (hex->int 0xFFFF0000)
+    16))
+(defmethod ucode::make-word32u
+  ((?lowest INTEGER)
+   (?lower-upper INTEGER)
+   (?upper-lower INTEGER)
+   (?upper INTEGER))
+  (make-word32u (make-word16u ?lowest
+                              ?lower-upper)
+                (make-word16u ?upper-lower
+                              ?upper)))
+
+(defmethod ucode::make-word64u
+  ((?lower INTEGER)
+   (?upper INTEGER))
+  (encode-bits 
+    (encode-bits 0
+                 ?lower
+                 (hex->int 0x00000000FFFFFFFF)
+                 0)
+    ?upper
+    (hex->int 0xFFFFFFFF00000000)
+    32))
+
+(defmethod ucode::make-word64u
+  ((?lowest INTEGER)
+   (?lower-upper INTEGER)
+   (?upper-lower INTEGER)
+   (?upper INTEGER))
+  (make-word64u (make-word32u ?lowest
+                              ?lower-upper)
+                (make-word32u ?upper-lower
+                              ?upper)))
+(defmethod ucode::make-word64u
+  ((?f0 INTEGER)
+   (?f1 INTEGER)
+   (?f2 INTEGER)
+   (?f3 INTEGER)
+   (?f4 INTEGER)
+   (?f5 INTEGER)
+   (?f6 INTEGER)
+   (?f7 INTEGER))
+  (make-word64u (make-word16u ?f0
+                              ?f1)
+                (make-word16u ?f2
+                              ?f3)
+                (make-word16u ?f4
+                              ?f5)
+                (make-word16u ?f6
+                              ?f7)))

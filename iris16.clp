@@ -82,7 +82,13 @@
   (message-handler set-instruction-pointer primary)
   (message-handler push-value primary)
   (message-handler init after)
+  (message-handler init before)
   (message-handler startup primary))
+(defmessage-handler iris16::core init before
+                    "Make sure that the backing code has been initialized before initializing"
+                    () 
+                    (init))
+
 (defmessage-handler iris16::core get-instruction-pointer primary
                     ()
                     (memory-load ?self:registers
@@ -264,16 +270,16 @@
 (defgeneric iris16::encode-instruction)
 (defgeneric iris16::decode-instruction)
 (defmethod iris16::decode-instruction
- ((?value INTEGER))
- (bind ?casted 
-       (cast word32u
-             ?value))
- (create$ (decode-group ?casted)
-          (decode-operation ?casted)
-          (decode-destination ?casted)
-          (decode-source0 ?casted)
-          (decode-source1 ?casted)
-          (decode-immediate ?casted)))
+  ((?value INTEGER))
+  (bind ?casted 
+        (cast word32u
+              ?value))
+  (create$ (decode-group ?casted)
+           (decode-operation ?casted)
+           (decode-destination ?casted)
+           (decode-source0 ?casted)
+           (decode-source1 ?casted)
+           (decode-immediate ?casted)))
 (defmethod iris16::encode-instruction
   ((?group INTEGER)
    (?op INTEGER)
@@ -299,3 +305,94 @@
                       ?destination
                       (decode-lower8 ?immediate)
                       (decode-upper8 ?immediate)))
+(deffunction iris16::register-binary-operation
+             (?register-file ?instruction ?op)
+             (memory-load-binary-op-store ?register-file
+                                          (decode-destination ?instruction)
+                                          (decode-source0 ?instruction)
+                                          (decode-source1 ?instruction)
+                                          ?op))
+(deffunction iris16::memory-load-op-store-with-offset
+             (?register-file ?instruction ?op)
+             (memory-store ?register-file
+                           (decode-destination ?instruction)
+                           (funcall ?op
+                                    (memory-load ?register-file
+                                                 (decode-source0 ?instruction))
+                                    (decode-half-immediate ?instruction))))
+(defglobal iris16
+           ?*init-called* = FALSE
+           ?*dual-arithmetic-operations* = (create$ add-word16u
+                                                    sub-word16u
+                                                    mul-word16u
+                                                    div-word16u
+                                                    rem-word16u
+                                                    left-shift
+                                                    right-shift)
+           ?*binary-manipulation-operations* = (create$ binary-and
+                                                        binary-op
+                                                        binary-not
+                                                        binary-xor)
+           ?*arithmetic-operations* = (create$))
+
+(deffunction iris16::init
+             "microcode startup"
+             ()
+             (if (not ?*init-called*) then
+               (bind ?*init-called*
+                     TRUE)
+               (bind ?fmt
+                     "(deffunction iris16::%s-with-offset 
+                                   (?r ?i) 
+                                   (memory-load-op-store-with-offset ?r 
+                                                                     ?i 
+                                                                     %s))")
+                     (bind ?immediate-forms
+                           (create$))
+                     (bind ?arithmetics
+                           (create$))
+                     (progn$ (?op ?*dual-arithmetic-operations*)
+                             ; build immediate operations
+                             (build (format nil
+                                            "(deffunction iris16::%s-with-offset
+                                                          (?r ?i)
+                                                          (memory-load-op-store=-with-offset ?r 
+                                                                                             ?i 
+                                                                                             %s))"
+                                            ?op 
+                                            ?op))
+                             (bind ?immediate-forms
+                                   ?immediate-forms
+                                   (sym-cat ?op
+                                            -with-offset))
+                             ; build basic operations
+                             (build (format nil
+                                            "(deffunction iris16::call-%s
+                                                          (?r ?i)
+                                                          (register-binary-operation ?r 
+                                                                                     ?i 
+                                                                                     %s))"
+                                            ?op
+                                            ?op))
+                                   (bind ?arithmetics
+                                         ?arithmetics
+                                         (sym-cat call- ?op)))
+                             (bind ?*arithmetic-operations*
+                                   ?arithmetics
+                                   ?*binary-manipulation-operations*
+                                   ?immediate-forms)))
+
+
+
+(defmethod iris16::binary-not
+  ((?first INTEGER)
+   (?unused INTEGER))
+  (binary-not ?first))
+
+
+(deffunction iris16::arithmetic-operation
+             (?register-file ?instruction)
+             (funcall (nth$ (decode-operation ?instruction)
+                            ?*arithmetic-operations*)
+                      ?register-file
+                      ?instruction))
