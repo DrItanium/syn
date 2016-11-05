@@ -355,70 +355,23 @@
                           ?a 
                           ?b))
 
-(deffunction iris16::store-code
-             (?registers ?code ?instruction)
-             (memory-load-binary-op-store ?code
-                                          (get-register ?registers
-                                                        (decode-destination ?instruction))
-                                          ?registers
-                                          (decode-source0 ?instruction)
-                                          ?registers
-                                          (decode-source1 ?instruction)
-                                          make-word32u))
-(deffunction iris16::load-code
-             (?registers ?code ?instruction)
-             (bind ?value
-                   (memory-load ?code
-                                (get-register ?registers
-                                              (decode-destination ?instruction))))
+
+(deffunction iris16::set-destination-register
+             (?registers ?instruction ?value)
              (set-register ?registers
-                           (decode-source0 ?instruction)
-                           (word32u-lower-half ?value))
+                           (decode-destination ?instruction)
+                           ?value))
+(deffunction iris16::get-source0-register
+             (?registers ?instruction)
+             (get-register ?registers
+                           (decode-source0 ?instruction)))
+
+(deffunction iris16::load-generic
+             (?registers ?data ?instruction ?address)
              (set-register ?registers
-                           (decode-source1 ?instruction)
-                           (word32u-upper-half ?value)))
-(deffunction iris16::set-immediate
-             (?register ?instruction)
-             (set-register ?register
-                           (decode-destination ?instruction)
-                           (decode-immediate ?instruction)))
-(deffunction iris16::swap-operation
-             (?register ?instruction)
-             (swap-registers ?register
-                             (decode-destination ?instruction)
-                             (decode-source0 ?instruction)))
-(deffunction iris16::move-operation
-             (?register ?instruction)
-             (set-register ?register
-                           (decode-destination ?instruction)
-                           (get-register ?register
-                                         (decode-source0 ?instruction))))
-(deffunction iris16::load-operation
-             (?register ?data ?instruction)
-             (set-register ?register
                            (decode-destination ?instruction)
                            (memory-load ?data
-                                        (get-register ?register
-                                                      (decode-source0 ?instruction)))))
-(deffunction iris16::load-immediate-operation
-             (?register ?data ?instruction)
-             (set-register ?register
-                           (decode-destination ?instruction)
-                           (memory-load ?data
-                                        (decode-immediate ?instruction))))
-(deffunction iris16::store-operation
-             (?register ?data ?instruction)
-             (memory-store ?data
-                           (get-register ?register
-                                         (decode-destination ?instruction))
-                           (get-register ?register
-                                         (decode-source0 ?instruction))))
-(deffunction iris16::store-immediate-operation
-             (?register ?data ?instruction)
-             (memory-store ?data
-                           (get-register ?register
-                                         (decode-destination ?instruction))
-                           (decode-immediate ?instruction)))
+                                        ?address)))
 (deffunction iris16::get-stack-pointer
              (?register-file)
              (get-register ?register-file
@@ -433,26 +386,14 @@
                            (get-stack-pointer ?registers)
                            ?value))
 
-(deffunction iris16::push-operation
-             (?registers ?stack ?instruction)
-             (push-generic ?registers
-                           ?stack
+(deffunction iris16::store-generic
+             (?registers ?data ?instruction ?value)
+             (memory-store ?data
                            (get-register ?registers
-                                         (decode-destination ?instruction))))
-(deffunction iris16::push-immediate-operation
-             (?registers ?stack ?instruction)
-             (push-generic ?registers
-                           ?stack
-                           (decode-immediate ?instruction)))
+                                         (decode-destination  ?instruction))
+                           ?value))
 
-(deffunction iris16::pop-operation
-             (?registers ?stack ?instruction)
-             (set-register ?registers
-                           (decode-destination ?instruction)
-                           (memory-load ?stack
-                                        (get-stack-pointer ?registers)))
-             (memory-decrement ?registers
-                               ?*stack-pointer*))
+
 (defglobal iris16
            ?*move-operations* = (create$ move-operation
                                          set-immediate 
@@ -472,50 +413,77 @@
              (switch (nth$ (decode-operation ?instruction)
                            ?*move-operations*)
                      (case move-operation then
-                       (move-operation ?registers
-                                       ?instruction))
+                       (set-destination-register ?registers
+                                                 ?instruction
+                                                 (get-source0-register ?registers
+                                                                       ?instruction)))
                      (case set-immediate then
-                       (set-immediate ?registers
-                                      ?instruction))
+                       (set-destination-register ?registers
+                                                 ?instruction
+                                                 (decode-immediate ?instruction)))
                      (case swap-operation then
-                       (swap-operation ?registers
-                                       ?instruction))
+                       (swap-registers ?registers
+                                       (decode-destination ?instruction)
+                                       (decode-source0 ?instruction)))
                      (case load-operation then
-                       (load-operation ?registers
-                                       ?data
-                                       ?instruction))
+                       (load-generic ?registers
+                                     ?data
+                                     ?instruction
+                                     (get-source0-register ?registers
+                                                           ?instruction)))
                      (case load-immediate-operation then
-                       (load-immediate-operation ?registers
-                                                 ?data
-                                                 ?instruction))
+                       (load-generic ?registers
+                                     ?data 
+                                     ?instruction
+                                     (decode-immediate ?instruction)))
                      (case store-operation then
-                       (store-operation ?registers
-                                        ?data
-                                        ?instruction))
+                       (store-generic ?registers
+                                      ?data 
+                                      ?instruction
+                                      (get-source0-register ?registers
+                                                            ?instruction)))
+
                      (case store-immediate-operation then
-                       (store-immediate-operation ?registers
-                                                  ?data
-                                                  ?instruction))
+                       (store-generic ?registers
+                                      ?data
+                                      ?instruction
+                                      (decode-immediate ?instruction)))
                      (case push-operation then
-                       (push-operation ?registers
-                                       ?stack
-                                       ?instruction))
+                       (push-generic ?registers
+                                     ?stack
+                                     (get-register ?registers
+                                                   (decode-destination ?instruction))))
                      (case push-immediate-operation then
-                       (push-immediate-operation ?registers
-                                                 ?stack
-                                                 ?instruction))
+                       (push-generic ?registers
+                                     ?stack
+                                     (decode-immediate ?instruction)))
                      (case pop-operation then
-                       (pop-operation ?registers
-                                      ?stack
-                                      ?instruction))
+                      (set-destination-register ?registers
+                                                ?instruction
+                                                (memory-load ?stack
+                                                             (get-stack-pointer ?registers)))
+                       (memory-decrement ?registers
+                                         ?*stack-pointer*))
                      (case load-code then
-                       (load-code ?registers
-                                  ?code
-                                  ?instruction))
+                       (bind ?value
+                             (memory-load ?code
+                                          (get-register ?registers
+                                                        (decode-destination ?instruction))))
+                       (set-register ?registers
+                                     (decode-source0 ?instruction)
+                                     (word32u-lower-half ?value))
+                       (set-register ?registers
+                                     (decode-source1 ?instruction)
+                                     (word32u-upper-half ?value)))
                      (case store-code then
-                       (store-code ?registers
-                                   ?code
-                                   ?instruction))
+                       (memory-load-binary-op-store ?code
+                                                    (get-register ?registers
+                                                                  (decode-destination ?instruction))
+                                                    ?registers
+                                                    (decode-source0 ?instruction)
+                                                    ?registers
+                                                    (decode-source1 ?instruction)
+                                                    make-word32u))
                      (default (printout werror "Illegal move group operation " (decode-operation ?instruction) crlf))))
 
 
