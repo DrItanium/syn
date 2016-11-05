@@ -1,5 +1,7 @@
 ; Basic routines that act as ucode operations
 (defmodule ucode
+           (import cortex
+                   ?ALL)
            (export ?ALL))
 (defgeneric ucode::memory-load
             "Load the given value from the specified address in memory and return it")
@@ -20,10 +22,6 @@
             "Load a given value from memory, increment the value, and then return it")
 (defgeneric ucode::memory-decrement
             "Load a given value from memory, decrement the value, and then return it")
-(defgeneric ucode::increment
-            "Increment the given number by 1")
-(defgeneric ucode::decrement
-            "Decrement the given number by 1")
 (defgeneric ucode::memory-load-indirect 
             "Use the value stored at the given address in memory as another address and load the value stored there!")
 (defgeneric ucode::memory-store-indirect
@@ -72,16 +70,6 @@
                 ?addr1
                 ?a))
 
-
-(defmethod ucode::increment 
-  ((?value INTEGER))
-  (+ ?value
-     1))
-
-(defmethod ucode::decrement
-  ((?value INTEGER))
-  (- ?value
-     1))
 
 (defmethod ucode::memory-zero
   ((?memory EXTERNAL-ADDRESS))
