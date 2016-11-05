@@ -249,3 +249,52 @@
                           ?op
                           (hex->int 0x000000F8)
                           3))
+(deffunction iris16::decode-upper8
+             (?value)
+             (decode-bits ?value
+                          (hex->int 0x0000FF00)
+                          8))
+(deffunction iris16::decode-lower8
+             (?value)
+             (decode-bits ?value
+                          (hex->int 0x000000FF)
+                          0))
+(defgeneric iris16::encode-instruction)
+(defgeneric iris16::decode-instruction)
+(defmethod iris16::decode-instruction
+ ((?value INTEGER))
+ (bind ?casted 
+       (cast word32u
+             ?value))
+ (create$ (decode-group ?casted)
+          (decode-operation ?casted)
+          (decode-destination ?casted)
+          (decode-source0 ?casted)
+          (decode-source1 ?casted)
+          (decode-immediate ?casted)))
+(defmethod iris16::encode-instruction
+  ((?group INTEGER)
+   (?op INTEGER)
+   (?destination INTEGER)
+   (?source0 INTEGER)
+   (?source1 INTEGER))
+  (encode-source1
+    (encode-source0
+      (encode-destination 
+        (encode-operation
+          (encode-group 0 ?group)
+          ?op)
+        ?destination)
+      ?source0)
+    ?source1))
+(defmethod iris16::encode-instruction
+  ((?group INTEGER)
+   (?op INTEGER)
+   (?destination INTEGER)
+   (?immediate INTEGER))
+  (encode-instruction ?group
+                      ?op
+                      ?destination
+                      (decode-lower8 ?immediate)
+                      (decode-upper8 ?immediate)))
+(defmethod iris16::decode-instruction
