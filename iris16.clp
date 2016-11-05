@@ -5,6 +5,8 @@
            (import ucode
                    ?ALL)
            (export defgeneric 
+                   encode-instruction
+                   decode-instruction
                    new-core)
            (export defclass
                    core))
@@ -297,4 +299,3 @@
                       ?destination
                       (decode-lower8 ?immediate)
                       (decode-upper8 ?immediate)))
-(defmethod iris16::decode-instruction
