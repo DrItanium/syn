@@ -4,7 +4,7 @@
                    ?ALL)
            (import ucode
                    ?ALL)
-           (export deffunction
+           (export defgeneric 
                    new-core)
            (export defclass
                    core))
@@ -58,21 +58,21 @@
         (visibility public)
         (storage shared)
         (access read-only)
-        (create-accessors read)
+        (create-accessor read)
         (default 253))
   (slot link-register-index
         (type INTEGER)
         (visibility public)
         (storage shared)
         (access read-only)
-        (create-accessors read)
+        (create-accessor read)
         (default 254))
   (slot instruction-pointer-index
         (type INTEGER)
         (visibility public)
         (storage shared)
         (access read-only)
-        (create-accessors read)
+        (create-accessor read)
         (default 255))
   (message-handler get-register primary)
   (message-handler set-register primary)
@@ -106,6 +106,10 @@
                       (bind ?self:registers
                             (alloc word16u 
                                    256)))
+                    ; setup the stack pointer
+                    (memory-store ?self:registers
+                                  (dynamic-get stack-pointer-index)
+                                  (hex->int 0xFFFF))
                     (memory-zero
                       (bind ?self:data
                             (alloc word16u
@@ -116,7 +120,7 @@
                                    ?self:stack-capacity)))
                     (memory-zero
                       (bind ?self:code
-                            (alloc word16u
+                            (alloc word32u
                                    ?self:code-capacity))))
 
 (defmessage-handler iris16::core push-value primary
@@ -140,10 +144,108 @@
 (defgeneric iris16::new-core)
 
 (defmethod iris16::new-core
-  ((?data-capacity INTEGER)
-   (?code-capacity INTEGER)
-   (?stack-capacity INTEGER))
+  ((?data-cap INTEGER)
+   (?code-cap INTEGER)
+   (?stack-cap INTEGER))
   (make-instance of core
+                 (parent FALSE)
                  (data-capacity ?data-cap)
                  (code-capacity ?code-cap)
                  (stack-capacity ?stack-cap)))
+(defmethod iris16::new-core
+  ()
+  (new-core (hex->int 0xFFFF)
+            (hex->int 0xFFFF)
+            (hex->int 0xFFFF)))
+; instruction decoding routines
+(deffunction iris16::decode-group
+             (?value)
+             (decode-bits ?value 
+                          (hex->int 0x00000007) 
+                          0))
+(deffunction iris16::decode-operation
+             (?value)
+             (decode-bits ?value
+                          (hex->int 0x000000F8)
+                          3))
+(deffunction iris16::decode-immediate
+             (?value)
+             (decode-bits ?value
+                          (hex->int 0xFFFF0000)
+                          16))
+(deffunction iris16::decode-half-immediate
+             (?value)
+             (decode-bits ?value
+                          (hex->int 0xFF000000)
+                          24))
+(deffunction iris16::decode-destination
+             (?value)
+             (decode-bits ?value
+                          (hex->int 0x0000FF00)
+                          8))
+(deffunction iris16::decode-source0
+             (?value)
+             (decode-bits ?value
+                          (hex->int 0x00FF0000)
+                          16))
+(deffunction iris16::decode-source1
+             (?value)
+             (decode-bits ?value
+                          (hex->int 0xFF000000)
+                          24))
+
+(deffunction iris16::decode-control
+             (?value)
+             (decode-bits ?value
+                          (hex->int 0x000000FF)
+                          0))
+(deffunction iris16::encode-control
+             (?value ?control)
+             (encode-bits ?value
+                          ?control
+                          (hex->int 0x000000FF)
+                          0))
+(deffunction iris16::encode-half-immediate
+             (?value ?immediate)
+             (encode-bits ?value
+                          ?immediate
+                          (hex->int 0xFF000000)
+                          24))
+(deffunction iris16::encode-immediate
+             (?value ?immediate)
+             (encode-bits ?value
+                          ?immediate
+                          (hex->int 0xFFFF0000)
+                          16))
+(deffunction iris16::encode-group
+             (?value ?group)
+             (encode-bits ?value
+                          ?group
+                          (hex->int 0x00000007)
+                          0))
+
+(deffunction iris16::encode-destination
+             (?value ?destination)
+             (encode-bits ?value
+                          ?destination
+                          (hex->int 0x0000FF00)
+                          8))
+
+(deffunction iris16::encode-source0
+             (?value ?source0)
+             (encode-bits ?value
+                          ?source0
+                          (hex->int 0x00FF0000)
+                          16))
+(deffunction iris16::encode-source1
+             (?value ?source1)
+             (encode-bits ?value
+                          ?source1
+                          (hex->int 0xFF000000)
+                          24))
+(deffunction iris16::encode-operation
+             (?value ?op)
+             (encode-bits ?value
+                          ?op
+                          (hex->int 0x000000F8)
+                          3))
