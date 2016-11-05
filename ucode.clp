@@ -1,77 +1,169 @@
 ; Basic routines that act as ucode operations
 (defmodule ucode
            (export ?ALL))
-(deffunction ucode::alloc-word16u
-             (?capacity)
-             (new word16u
-                  ?capacity))
-(deffunction ucode::to-word16u
-             (?value)
-             (add-word16u ?value
-                          0))
-(deffunction ucode::zero-memory
-             (?mem)
-             (call ?mem
-                   clear))
-(deffunction ucode::load-memory
-             (?mem ?address)
-             (call ?mem
-                   get
-                   ?address))
-(deffunction ucode::store-memory
-             (?mem ?address ?value)
-             (call ?mem
-                   set
-                   ?address
-                   ?value))
+(defgeneric ucode::memory-load
+            "Load the given value from the specified address in memory and return it")
 
-(deffunction ucode::load-memory16u
-             (?mem ?index)
-             (to-word16u (load-memory ?mem
-                                      ?index)))
+(defgeneric ucode::memory-store
+            "Store the given value at the specified address into memory")
+(defgeneric ucode::memory-load-op-store
+            "Load a value from memory, perform an operation on it, and then store it back into memory")
+(defgeneric ucode::memory-load-op
+            "Load a value from memory, perform an operation on it, and then return it");
+(defgeneric ucode::alloc
+            "Allocate a new memory buffer")
+(defgeneric ucode::cast
+            "Convert the given value to the specified word size")
+(defgeneric ucode::memory-zero
+            "Zero the given memory space")
+(defgeneric ucode::memory-increment
+            "Load a given value from memory, increment the value, and then return it")
+(defgeneric ucode::memory-decrement
+            "Load a given value from memory, decrement the value, and then return it")
+(defgeneric ucode::increment
+            "Increment the given number by 1")
+(defgeneric ucode::decrement
+            "Decrement the given number by 1")
+(defgeneric ucode::memory-load-indirect 
+            "Use the value stored at the given address in memory as another address and load the value stored there!")
+(defgeneric ucode::memory-store-indirect
+            "Use the value stored at the given address in memory as another address and store the given value stored there!")
+(defgeneric ucode::memory-swap
+            "Swap the contents of two memory addresses")
+(defgeneric ucode::memory-size
+            "Size of the memory space in words!")
 
-(deffunction ucode::store-memory16u
-             (?mem ?index ?value)
-             (store-memory ?mem
-                           ?index
-                           (to-word16u ?value)))
+(defmethod ucode::memory-size
+  ((?memory EXTERNAL-ADDRESS))
+  (call ?memory
+        size))
+(defmethod ucode::memory-swap
+  "Swap the contents of two memory addresses within the same memory space!"
+  ((?memory EXTERNAL-ADDRESS)
+   (?address0 INTEGER)
+   (?address1 INTEGER))
+  (call ?memory
+        swap
+        ?address0
+        ?address1))
+(defmethod ucode::memory-swap
+  "Swap the contents of two memory addresses across two different memory spaces!"
+  ((?mem0 EXTERNAL-ADDRESS)
+   (?addr0 INTEGER)
+   (?mem1 EXTERNAL-ADDRESS)
+   (?addr1 INTEGER))
+  (bind ?a 
+        (memory-load ?mem0
+                     ?addr0))
+  (memory-store ?mem0
+                ?addr0
+                (memory-load ?mem1
+                             ?addr1))
+  (memory-store ?mem1
+                ?addr1
+                ?a))
 
-(deffunction ucode::increment-memory
-             "Load the given memory cell add one and then store it again"
-             (?mem ?address)
-             (store-memory ?mem
-                           ?address
-                           (+ (load-memory ?mem
-                                           ?address)
-                              1)))
 
-(deffunction ucode::decrement-memory
-             (?mem ?address)
-             (store-memory ?mem
-                           ?address
-                           (- (load-memory ?mem
-                                           ?address)
-                              1)))
-(deffunction ucode::load-modify-store-memory
-             (?mem ?address ?operation)
-             (store-memory ?mem
-                           ?address
-                           (funcall ?operation
-                                    (load-memory ?mem
-                                                 ?address))))
+(defmethod ucode::increment 
+  ((?value INTEGER))
+  (+ ?value
+     1))
 
-(deffunction ucode::indirect-load
-             "Load the value stored at the address stored at the provided address"
-             (?mem ?address)
-             (load-memory ?mem
-                          (load-memory ?mem
-                                       ?address)))
-(deffunction ucode::indirect-store
-             (?mem ?address ?value)
-             (store-memory ?mem
-                           (load-memory ?mem
-                                        ?address)
-                           ?value))
+(defmethod ucode::decrement
+  ((?value INTEGER))
+  (- ?value
+     1))
+
+(defmethod ucode::memory-zero
+  ((?memory EXTERNAL-ADDRESS))
+  (call ?memory
+        clear))
+
+(defmethod ucode::memory-zero
+  "Zero out a specific cell!"
+  ((?memory EXTERNAL-ADDRESS)
+   (?address INTEGER))
+  (memory-store ?memory
+                ?address
+                0))
+
+(defmethod ucode::cast
+  ((?type SYMBOL)
+   (?value INTEGER))
+  (funcall (sym-cat add- 
+                    ?type)
+           ?value
+           0))
+
+(defmethod ucode::alloc
+  ((?type SYMBOL)
+   (?capacity INTEGER))
+  (new ?type
+       ?capacity))
+
+(defmethod ucode::memory-load-op
+  ((?memory EXTERNAL-ADDRESS)
+   (?address INTEGER)
+   (?op SYMBOL))
+  (funcall ?op
+           (memory-load ?memory
+                        ?address)))
+
+
+(defmethod ucode::memory-load-op-store
+  ((?memory EXTERNAL-ADDRESS)
+   (?address INTEGER)
+   (?op SYMBOL))
+  (memory-store ?memory
+                ?address
+                (memory-load-op ?memory
+                                ?address
+                                ?op)))
+
+(defmethod ucode::memory-load
+  ((?memory EXTERNAL-ADDRESS)
+   (?address INTEGER))
+  (call ?memory
+        get
+        ?address))
+(defmethod ucode::memory-store
+  ((?memory EXTERNAL-ADDRESS)
+   (?address INTEGER)
+   (?value INTEGER))
+  (call ?memory
+        set 
+        ?address
+        ?value))
+
+(defmethod ucode::memory-increment
+  ((?memory EXTERNAL-ADDRESS)
+   (?address INTEGER))
+  (memory-load-op-store ?memory
+                        ?address
+                        increment))
+
+(defmethod ucode::memory-decrement
+  ((?memory EXTERNAL-ADDRESS)
+   (?address INTEGER))
+  (memory-load-op-store ?memory
+                        ?address
+                        decrement))
+(defmethod ucode::memory-load-indirect
+ ((?memory EXTERNAL-ADDRESS)
+  (?address INTEGER))
+ (memory-load ?memory
+              (memory-load ?memory
+                           ?address)))
+
+(defmethod ucode::memory-store-indirect
+    ((?memory EXTERNAL-ADDRESS)
+     (?address INTEGER)
+     (?value INTEGER))
+    (memory-store ?memory
+                  (memory-load ?memory
+                               ?address)
+                  ?value))
+
 (deffunction ucode::swap-memory
              (?mem ?addr0 ?addr1)
              (call ?mem
@@ -148,3 +240,4 @@
                       (load-memory ?mSrc0
                                    ?src0)
                       ?immediate))
+
