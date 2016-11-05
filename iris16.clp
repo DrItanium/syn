@@ -71,7 +71,7 @@
                                    256)))
                     ; setup the stack pointer
                     (memory-store ?self:registers
-                                  (dynamic-get stack-pointer-index)
+                                  ?*stack-pointer*
                                   (hex->int 0xFFFF))
                     (memory-zero
                       (bind ?self:data
@@ -86,57 +86,6 @@
                             (alloc word32u
                                    ?self:code-capacity))))
 
-(deffunction iris16::init
-             "microcode startup"
-             ()
-             (if (not ?*init-called*) then
-               (bind ?*init-called*
-                     TRUE)
-               (bind ?fmt
-                     "(deffunction iris16::%s-with-offset 
-                                   (?r ?i) 
-                                   (memory-load-op-store-with-offset ?r 
-                                                                     ?i 
-                                                                     %s))")
-                     (bind ?immediate-forms
-                           (create$))
-                     (bind ?arithmetics
-                           (create$))
-                     (progn$ (?op ?*dual-arithmetic-operations*)
-                             ; build immediate operations
-                             (build (format nil
-                                            "(deffunction iris16::%s-with-offset
-                                                          (?r ?i)
-                                                          (memory-load-op-store=-with-offset ?r 
-                                                                                             ?i 
-                                                                                             %s))"
-                                            ?op 
-                                            ?op))
-                             (bind ?immediate-forms
-                                   ?immediate-forms
-                                   (sym-cat ?op
-                                            -with-offset))
-                             ; build basic operations
-                             (build (format nil
-                                            "(deffunction iris16::call-%s
-                                                          (?r ?i)
-                                                          (register-binary-operation ?r 
-                                                                                     ?i 
-                                                                                     %s))"
-                                            ?op
-                                            ?op))
-                                   (bind ?arithmetics
-                                         ?arithmetics
-                                         (sym-cat call- ?op)))
-                             (bind ?*arithmetic-operations*
-                                   ?arithmetics
-                                   ?*binary-manipulation-operations*
-                                   ?immediate-forms)))
-
-(defmessage-handler iris16::core init before
-                    "Make sure that the backing code has been initialized before initializing"
-                    () 
-                    (init))
 (defgeneric iris16::new-core)
 
 (defmethod iris16::new-core
@@ -309,7 +258,6 @@
                                                  (decode-source0 ?instruction))
                                     (decode-half-immediate ?instruction))))
 (defglobal iris16
-           ?*init-called* = FALSE
            ?*dual-arithmetic-operations* = (create$ add-word16u
                                                     sub-word16u
                                                     mul-word16u
@@ -361,7 +309,7 @@
                                           ?registers
                                           (decode-source0 ?instruction)
                                           ?registers
-                                          (decode-source1 ?instructions)
+                                          (decode-source1 ?instruction)
                                           make-word32u))
 (deffunction iris16::load-code
              (?registers ?code ?instruction)
@@ -449,7 +397,7 @@
                            (decode-destination ?instruction)
                            (memory-load ?stack
                                         (get-stack-pointer ?registers)))
-             (memory-decrement ?self:registers
+             (memory-decrement ?registers
                                ?*stack-pointer*))
 (defglobal iris16
            ?*move-operations* = (create$ move-operation
@@ -468,7 +416,7 @@
 (deffunction iris16::move-group-operation
              (?registers ?code ?data ?stack ?instruction)
              (switch (nth$ (decode-operation ?instruction)
-                           ?*move-operation*)
+                           ?*move-operations*)
                      (case move-operation then
                        (move-operation ?registers
                                        ?instruction))
@@ -536,7 +484,7 @@
              ; 2 - if-false
              ; 3 - immediate
              ; 4 - link
-             (bind ?if-then-else
+             (bind ?ifthenelse
                    (decode-bits ?instruction
                                 (binary->int 0b00001)
                                 0))
@@ -598,3 +546,56 @@
                              ?*link-register*
                              (+ ?ip 1))))
 
+(defglobal iris16
+           ?*init-called* = FALSE)
+(deffunction iris16::init
+             "microcode startup"
+             ()
+             (if (not ?*init-called*) then
+               (bind ?*init-called*
+                     TRUE)
+               (bind ?fmt
+                     "(deffunction iris16::%s-with-offset 
+                                   (?r ?i) 
+                                   (memory-load-op-store-with-offset ?r 
+                                                                     ?i 
+                                                                     %s))")
+                     (bind ?immediate-forms
+                           (create$))
+                     (bind ?arithmetics
+                           (create$))
+                     (progn$ (?op ?*dual-arithmetic-operations*)
+                             ; build immediate operations
+                             (build (format nil
+                                            "(deffunction iris16::%s-with-offset
+                                                          (?r ?i)
+                                                          (memory-load-op-store-with-offset ?r 
+                                                                                            ?i 
+                                                                                            %s))"
+                                            ?op 
+                                            ?op))
+                             (bind ?immediate-forms
+                                   ?immediate-forms
+                                   (sym-cat ?op
+                                            -with-offset))
+                             ; build basic operations
+                             (build (format nil
+                                            "(deffunction iris16::call-%s
+                                                          (?r ?i)
+                                                          (register-binary-operation ?r 
+                                                                                     ?i 
+                                                                                     %s))"
+                                            ?op
+                                            ?op))
+                                   (bind ?arithmetics
+                                         ?arithmetics
+                                         (sym-cat call- ?op)))
+                             (bind ?*arithmetic-operations*
+                                   ?arithmetics
+                                   ?*binary-manipulation-operations*
+                                   ?immediate-forms)))
+
+(defmessage-handler iris16::core init before
+                    "Make sure that the backing code has been initialized before initializing"
+                    () 
+                    (init))
