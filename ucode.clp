@@ -274,6 +274,22 @@
                          (memory-load ?mem
                                       ?source1))))
 
+(defmethod ucode::memory-load-binary-op-store
+  ((?mem EXTERNAL-ADDRESS)
+   (?dest INTEGER)
+   (?src0-mem EXTERNAL-ADDRESS)
+   (?source0 INTEGER)
+   (?src1-mem EXTERNAL-ADDRESS)
+   (?source1 INTEGER)
+   (?op SYMBOL))
+  (memory-store ?mem
+                ?dest
+                (funcall ?op
+                         (memory-load ?src0-mem
+                                      ?source0)
+                         (memory-load ?src1-mem
+                                      ?source1))))
+
 (defgeneric ucode::make-word64u)
 (defgeneric ucode::make-word32u)
 (defgeneric ucode::make-word16u)
@@ -347,3 +363,14 @@
                               ?f5)
                 (make-word16u ?f6
                               ?f7)))
+
+(deffunction ucode::word32u-lower-half
+             (?value)
+             (decode-bits ?value
+                          (hex->int 0x0000FFFF)
+                          0))
+(deffunction ucode::word32u-upper-half
+             (?value)
+             (decode-bits ?value
+                          (hex->int 0xFFFF0000)
+                          16))

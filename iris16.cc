@@ -216,9 +216,9 @@ namespace iris16 {
 		} else if (op == MoveOp::Set) {
 			gpr[getDestination()] = static_cast<word>(getImmediate());
 		} else if (op == MoveOp::Swap) {
-			auto result = instruction[gpr[getDestination()]];
-			instruction[gpr[getDestination()]] = instruction[gpr[getSource0()]];
-			instruction[gpr[getSource0()]] = result;
+			auto result = gpr[getDestination()];
+			gpr[getDestination()] = gpr[getSource0()];
+			gpr[getSource0()] = result;
 		} else if (op == MoveOp::Load) {
 			gpr[getDestination()] = getDataMemory(gpr[getSource0()]);
 		} else if (op == MoveOp::LoadImmediate) {

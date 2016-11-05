@@ -10,6 +10,10 @@
                    new-core)
            (export defclass
                    core))
+(defglobal iris16
+ ?*stack-pointer* = 253
+ ?*link-register* = 254
+ ?*instruction-pointer* = 255)
 
 (defclass iris16::core
   (is-a thing)
@@ -55,32 +59,6 @@
         (visibility public)
         (storage local)
         (default ?NONE))
-  (slot stack-pointer-index
-        (type INTEGER)
-        (visibility public)
-        (storage shared)
-        (access read-only)
-        (create-accessor read)
-        (default 253))
-  (slot link-register-index
-        (type INTEGER)
-        (visibility public)
-        (storage shared)
-        (access read-only)
-        (create-accessor read)
-        (default 254))
-  (slot instruction-pointer-index
-        (type INTEGER)
-        (visibility public)
-        (storage shared)
-        (access read-only)
-        (create-accessor read)
-        (default 255))
-  (message-handler get-register primary)
-  (message-handler set-register primary)
-  (message-handler get-instruction-pointer primary)
-  (message-handler set-instruction-pointer primary)
-  (message-handler push-value primary)
   (message-handler init after)
   (message-handler init before)
   (message-handler startup primary))
@@ -88,25 +66,6 @@
                     "Make sure that the backing code has been initialized before initializing"
                     () 
                     (init))
-
-(defmessage-handler iris16::core get-instruction-pointer primary
-                    ()
-                    (memory-load ?self:registers
-                                 (dynamic-get instruction-pointer-index)))
-(defmessage-handler iris16::core set-instruction-pointer primary
-                    (?value)
-                    (memory-store ?self:registers
-                                  (dynamic-get instruction-pointer-index)
-                                  ?value))
-(defmessage-handler iris16::core get-register primary
-                    (?index)
-                    (memory-load ?self:registers
-                                 ?index))
-(defmessage-handler iris16::core set-register primary
-                    (?index ?value)
-                    (memory-store ?self:registers
-                                  ?index
-                                  ?value))
 
 (defmessage-handler iris16::core init after
                     ()
@@ -131,24 +90,6 @@
                             (alloc word32u
                                    ?self:code-capacity))))
 
-(defmessage-handler iris16::core push-value primary
-                    (?value)
-                    ; increment memory first
-                    (memory-increment ?self:registers
-                                      (dynamic-get stack-pointer-index))
-                    (memory-store ?self:stack
-                                  (memory-load ?self:registers
-                                               (dynamic-get stack-pointer-index))
-                                  ?value))
-(defmessage-handler iris16::core pop-value primary
-                    ()
-                    (bind ?value
-                          (memory-load ?self:stack
-                                       (memory-load ?self:registers
-                                                    (dynamic-get stack-pointer-index))))
-                    (memory-decrement ?self:registers
-                                      (dynamic-get stack-pointer-index))
-                    ?value)
 (defgeneric iris16::new-core)
 
 (defmethod iris16::new-core
@@ -396,3 +337,117 @@
                             ?*arithmetic-operations*)
                       ?register-file
                       ?instruction))
+(deffunction iris16::get-register
+             (?register ?index)
+             (memory-load ?register
+                          ?index))
+(deffunction iris16::set-register
+             (?register ?index ?value)
+             (memory-store ?register
+                           ?index
+                           ?value))
+(deffunction iris16::swap-registers
+             (?register ?a ?b)
+             (memory-swap ?register
+                          ?a 
+                          ?b)
+
+(deffunction iris16::store-code
+             (?code ?registers ?instruction)
+             (memory-load-binary-op-store ?code
+                                          (get-register ?registers
+                                                        (decode-destination ?instruction))
+                                          ?registers
+                                          (decode-source0 ?instruction)
+                                          ?registers
+                                          (decode-source1 ?instructions)
+                                          make-word32u))
+(deffunction iris16::load-code
+             (?code ?registers ?instruction)
+             (bind ?value
+                   (memory-load ?code
+                                (get-register ?registers
+                                              (decode-destination ?instruction))))
+             (set-register ?registers
+                           (decode-source0 ?instruction)
+                           (word32u-lower-half ?value))
+             (set-register ?registers
+                           (decode-source1 ?instruction)
+                           (word32u-upper-half ?value)))
+(deffunction iris16::set-immediate
+             (?register ?instruction)
+             (set-register ?register
+                           (decode-destination ?instruction)
+                           (decode-immediate ?instruction)))
+(deffunction iris16::swap-operation
+             (?register ?instruction)
+             (swap-registers ?register
+                             (decode-destination ?instruction)
+                             (decode-source0 ?instruction)))
+(deffunction iris16::move-operation
+             (?register ?instruction)
+             (set-register ?register
+                           (decode-destination ?instruction)
+                           (get-register ?register
+                                         (decode-source0 ?instruction))))
+(deffunction iris16::load-operation
+             (?register ?data ?instruction)
+             (set-register ?register
+                           (decode-destination ?instruction)
+                           (memory-load ?data
+                                        (get-register ?register
+                                                      (decode-source0 ?instruction)))))
+(deffunction iris16::load-immediate-operation
+             (?register ?data ?instruction)
+             (set-register ?register
+                           (decode-destination ?instruction)
+                           (memory-load ?data
+                                        (decode-immediate ?instruction))))
+(deffunction iris16::store
+             (?register ?data ?instruction)
+             (memory-store ?data
+                           (get-register ?register
+                                         (decode-destination ?instruction))
+                           (get-register ?register
+                                         (decode-source0 ?instruction))))
+(deffunction iris16::store-immediate
+             (?register ?data ?instruction)
+             (memory-store ?data
+                           (get-register ?register
+                                         (decode-destination ?instruction))
+                           (decode-immediate ?instruction)))
+(deffunction iris16::get-stack-pointer
+             (?register-file)
+             (get-register ?register-file
+                           ?*stack-pointer*))
+
+(deffunction iris16::push-generic
+             (?registers ?stack ?value)
+             ; two operations in one, add followed by a store
+             (memory-increment ?registers
+                               ?*stack-pointer*)
+             (memory-store ?stack
+                           (get-stack-pointer ?registers)
+                           ?value))
+
+(deffunction iris16::push-operation
+             (?registers ?stack ?instruction)
+             (push-generic ?registers
+                           ?stack
+                           (get-register ?registers
+                                         (decode-destination ?instruction))))
+(deffunction iris16::push-immediate-operation
+             (?registers ?stack ?instruction)
+             (push-generic ?registers
+                           ?stack
+                           (decode-immediate ?instruction)))
+
+(deffunction iris16::pop-operation
+             (?registers ?stack ?instruction)
+             (set-register ?registers
+                           (decode-destination ?instruction)
+                           (memory-load ?stack
+                                        (get-stack-pointer ?registers)))
+             (memory-decrement ?self:registers
+                               ?*stack-pointer*))
+
