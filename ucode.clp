@@ -32,6 +32,13 @@
             "Swap the contents of two memory addresses")
 (defgeneric ucode::memory-size
             "Size of the memory space in words!")
+(defgeneric ucode::memory-type
+            "Get the type associated with the given memory space")
+
+(defmethod ucode::memory-type
+  ((?memory EXTERNAL-ADDRESS))
+  (call ?memory
+        type))
 
 (defmethod ucode::memory-size
   ((?memory EXTERNAL-ADDRESS))
