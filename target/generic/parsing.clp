@@ -9,6 +9,39 @@
             "convert the given register to an index value")
 (defgeneric parsing::index-to-register
             "convert the given index to a register symbol")
+(defgeneric parsing::bitmaskp
+            "is the given value a bitmask?")
+(defgeneric parsing::binaryp
+            "is the given symbol a binary number?")
+(defgeneric parsing::hexp
+            "is the given symbol a hexadecimal number?")
+
+(defmethod parsing::binaryp
+  ((?value LEXEME))
+  (has-prefix ?value
+              0b))
+(defmethod parsing::binaryp
+  (?value) 
+  FALSE)
+
+(defmethod parsing::hexp
+  ((?value LEXEME))
+  (has-prefix ?value
+              0x))
+(defmethod parsing::hexp
+  (?value) 
+  FALSE)
+
+
+(defmethod parsing::bitmaskp
+  ((?value LEXEME))
+  (has-prefix ?value 
+              0m))
+
+(defmethod parsing::bitmaskp
+  (?value)
+  FALSE)
+
 (defmethod parsing::registerp
   ((?sym SYMBOL))
   (and (has-prefix ?sym r)
@@ -35,6 +68,14 @@
 (defclass parsing::statement
   (is-a indexed-thing-with-children
         has-title))
+
+(defclass parsing::immediate-operand
+  (is-a thing
+        has-value))
+
+(defclass parsing::bitmask
+  (is-a thing
+        has-value))
 
 (defclass parsing::instruction
   (is-a statement)
@@ -198,12 +239,6 @@
                         (group ?group)
                         (operation ?operation)
                         (children $?rest)))
-(defclass parsing::immediate-operand
-  (is-a thing)
-  (slot value
-        (storage local)
-        (visibility public)
-        (default ?NONE))
 (defrule parsing::mark-immediate-operand
          ?f <- (object (is-a instruction)
                        (children $?a immediate ?value $?rest)
@@ -214,4 +249,84 @@
                                                        (parent ?instruction)
                                                        (value ?value))
                                     $?rest)))
-    
+(defrule parsing::translate-zero-macro
+         ?f <- (object (is-a instruction)
+                       (group zero)
+                       (operation ?register))
+         =>
+         (modify-instance ?f
+                          (group arithmetic)
+                          (operation sub)
+                          (children ?register ?register ?register)))
+(defrule parsing::translate-double-macro
+         ?f <- (object (is-a instruction)
+                       (group double)
+                       (operation ?register))
+         =>
+         (modify-instance ?f 
+                          (group arithmetic)
+                          (operation mul)
+                          (children ?register ?register immediate 2)))
+
+(defrule parsing::translate-set-macro
+         ?f <- (object (is-a instruction)
+                       (group set)
+                       (operation ?destination)
+                       (children $?rest))
+         =>
+         (modify-instance ?f 
+                          (group memory)
+                          (operation set)
+                          (children ?destination $?rest)))
+
+(defrule parsing::identify-bitmask-entries
+         ?f <- (object (is-a instruction)
+                       (children $?a 
+                                 ?bitmask&:(bitmaskp ?bitmask)
+                                 $?b)
+                       (name ?inst))
+         =>
+         (modify-instance ?f
+                          (children ?a (make-instance of bitmask
+                                                      (parent ?inst)
+                                                      (value ?bitmask))
+                                    ?b)))
+(defrule parsing::translate-halve-macro
+         ?f <- (object (is-a instruction)
+                       (group halve)
+                       (operation ?register))
+         =>
+         (modify-instance ?f
+                          (group arithmetic)
+                          (operation div)
+                          (children ?register ?register immediate 2)))
+
+(defrule parsing::translate-increment-macro
+         ?f <- (object (is-a instruction)
+                       (group increment)
+                       (operation ?register))
+         =>
+         (modify-instance ?f
+                          (group arithmetic)
+                          (operation add)
+                          (children ?register ?register immediate 1)))
+
+(defrule parsing::translate-decrement-macro
+         ?f <- (object (is-a instruction)
+                       (group decrement)
+                       (operation ?register))
+         =>
+         (modify-instance ?f
+                          (group arithmetic)
+                          (operation sub)
+                          (children ?register ?register immediate 1)))
+(defrule parsing::translate-move-macro
+         ?f <- (object (is-a instruction)
+                       (group move)
+                       (operation ?register)
+                       (children $?rest))
+         =>
+         (modify-instance ?f 
+                          (group memory)
+                          (operation ?move)
+                          (children ?register $?rest )))

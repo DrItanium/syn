@@ -76,3 +76,10 @@
 (defclass cortex::indexed-thing-with-children
   (is-a thing-with-children
         indexed-thing))
+
+(defclass cortex::has-value
+  (is-a USER)
+  (slot value
+        (storage local)
+        (visibility public)
+        (default ?NONE)))
