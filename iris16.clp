@@ -694,6 +694,7 @@
                else 
                (printout werror "undefined misc operation " (decode-operation ?instruction) crlf)
                (halt)))
+
 (defmessage-handler iris16::core run primary
                     (?cycle-count)
                     (loop-for-count (?c ?cycle-count) do
