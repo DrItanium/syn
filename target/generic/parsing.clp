@@ -15,6 +15,9 @@
          (string-to-field
            (sub-string 2 (length$ ?sym)
                        ?sym)))))
+(defmethod parsing::registerp
+    ((?sym INTEGER))
+    FALSE)
 
 (defmethod parsing::register-to-index
   ((?sym SYMBOL
@@ -28,8 +31,12 @@
            (>= ?index 0)))
   (sym-cat r 
            ?index))
+(defclass parsing::statement
+  (is-a indexed-thing
+        has-title))
+
 (defclass parsing::register-alias
-  (is-a has-title)
+  (is-a statement)
   (slot actual-register
         (type SYMBOL
               INSTANCE)
@@ -48,7 +55,7 @@
 
 
 (defclass parsing::label
-  (is-a has-title)
+  (is-a statement)
   (slot address
         (type INTEGER
               SYMBOL
@@ -59,7 +66,7 @@
         (default-dynamic undefined)))
 
 (defclass parsing::data
-  (is-a USER)
+  (is-a statement)
   (slot value
         (type INTEGER
               SYMBOL
@@ -70,7 +77,8 @@
         (default ?NONE)))
 
 (defclass parsing::scope
-  (is-a thing-with-children))
+  (is-a statement
+        indexed-thing-with-children))
 
 (defclass parsing::section
   (is-a scope
@@ -119,7 +127,7 @@
 (defrule parsing::readline
          ?f <- (file-information (current-line ?line&~EOF)
                                  (count ?index)
-                                 (router ?router))
+                                 (router ?router&~nil))
          =>
          (assert (line (parent ?router)
                        (raw-line ?line)
@@ -128,9 +136,32 @@
          (modify ?f 
                  (current-line (readline ?router))
                  (count (+ ?index 1))))
+(defrule parsing::done
+         (file-information (current-line EOF)
+                           (router ?router&~nil))
+         =>
+         (close ?router))
+
 
 (deffunction parsing::parse-file
              (?path)
              (assert (file-information (path ?path)))
              (focus parsing)
              (run))
+
+(defrule parsing::identify-labels
+         (line (exploded-line @label ?name)
+               (parent ?parent))
+         =>
+         (make-instance of label
+                        (parent ?parent)
+                        (title ?name)))
+
+(defrule parsing::identify-register-alias
+         (line (exploded-line @alias ?name ?register)
+               (parent ?parent))
+         =>
+         (make-instance of register-alias
+                        (title ?name)
+                        (actual-register ?register)
+                        (parent ?parent)))

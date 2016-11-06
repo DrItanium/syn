@@ -102,7 +102,7 @@
 
 (defmessage-handler iris16::core push-value primary
                     (?value)
-                    (increment-memory ?self:registers
+                    (memory-increment ?self:registers
                                       ?*stack-pointer*)
                     (memory-store ?self:stack
                                   (memory-load ?self:registers

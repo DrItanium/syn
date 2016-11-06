@@ -62,3 +62,17 @@
         (type LEXEME)
         (visibility public)
         (storage local)))
+
+(defclass cortex::has-index
+  (is-a USER)
+  (slot index
+        (type INTEGER)
+        (visibility public)
+        (storage local)))
+(defclass cortex::indexed-thing
+  (is-a thing
+        has-index))
+
+(defclass cortex::indexed-thing-with-children
+  (is-a thing-with-children
+        indexed-thing))
