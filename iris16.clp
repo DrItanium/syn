@@ -19,12 +19,12 @@
            ?*instruction-pointer* = 255)
 
 (defmethod iris16::init
-             "microcode startup"
-             ()
-             (if (not ?*init-called*) then
-               (bind ?*init-called*
-                     TRUE)
-               (init arithmetic)))
+  "microcode startup"
+  ()
+  (if (not ?*init-called*) then
+    (bind ?*init-called*
+          TRUE)
+    (init arithmetic)))
 
 (defclass iris16::core
   (is-a thing)
@@ -70,9 +70,16 @@
         (visibility public)
         (storage local)
         (default ?NONE))
+  (slot advance-ip
+        (type SYMBOL)
+        (allowed-symbols TRUE
+                        FALSE)
+        (visibility private)
+        (storage local)
+        (default-dynamic TRUE))
   (message-handler init after)
   (message-handler init before)
-  (message-handler startup primary))
+  (message-handler run primary))
 
 (defmessage-handler iris16::core init after
                     ()
@@ -458,10 +465,10 @@
                                      ?stack
                                      (decode-immediate ?instruction)))
                      (case pop-operation then
-                      (set-destination-register ?registers
-                                                ?instruction
-                                                (memory-load ?stack
-                                                             (get-stack-pointer ?registers)))
+                       (set-destination-register ?registers
+                                                 ?instruction
+                                                 (memory-load ?stack
+                                                              (get-stack-pointer ?registers)))
                        (memory-decrement ?registers
                                          ?*stack-pointer*))
                      (case load-code then
@@ -507,8 +514,8 @@
              ; 4 - link
              (bind ?ifthenelse
                    (bool (decode-bits ?instruction
-                                    (binary->int 0b00001)
-                                    0)))
+                                      (binary->int 0b00001)
+                                      0)))
              (bind ?conditional
                    (bool (decode-bits ?instruction
                                       (binary->int 0b00010)
@@ -594,18 +601,56 @@
 (deffunction iris16::misc-operation
              (?registers ?instruction)
              (if (= (decode-operation ?instruction) 0) then
-                (switch (decode-destination ?instruction)
-                        (case 0 then (halt))
-                        (case 1 then 
-                          (set-register ?registers
-                                        (decode-source0 ?instruction)
-                                        (cast word16u 
-                                              (get-char))))
-                        (case 2 then 
-                          (put-char (get-source0-register ?registers
-                                                          ?instruction)))
-                        (default (printout werror "Undefined system call " (decode-destination ?instruction) crlf)
-                                 (halt)))
-                else 
-                (printout werror "undefined misc operation " (decode-operation ?instruction) crlf)
-                (halt)))
+               (switch (decode-destination ?instruction)
+                       (case 0 then (halt))
+                       (case 1 then 
+                         (set-register ?registers
+                                       (decode-source0 ?instruction)
+                                       (cast word16u 
+                                             (get-char))))
+                       (case 2 then 
+                         (put-char (get-source0-register ?registers
+                                                         ?instruction)))
+                       (default (printout werror "Undefined system call " (decode-destination ?instruction) crlf)
+                                (halt)))
+               else 
+               (printout werror "undefined misc operation " (decode-operation ?instruction) crlf)
+               (halt)))
+(defmessage-handler iris16::core run primary
+                    (?cycle-count)
+                    (loop-for-count (?c ?cycle-count) do
+                                    (bind ?instruction
+                                          (memory-load ?self:code
+                                                       (get-instruction-pointer ?self:registers)))
+                                    (switch (decode-group ?instruction)
+                                            (case 0 then 
+                                              (arithmetic-operation ?self:registers 
+                                                                    ?instruction))
+                                            (case 1 then
+                                              (move-group-operation ?self:registers
+                                                                    ?self:code
+                                                                    ?self:data
+                                                                    ?self:stack
+                                                                    ?instruction))
+                                            (case 2 then 
+                                              (bind ?self:advance-ip 
+                                                    FALSE)
+                                              (jump-operation ?self:registers
+                                                              ?instruction))
+                                            (case 3 then
+                                              (compare-operation ?self:registers
+                                                                 ?instruction))
+                                            (case 4 then
+                                              (misc-operation ?self:registers
+                                                              ?instruction))
+                                            (default (printout werror 
+                                                               "Undefined group: " 
+                                                               (decode-group ?instruction) crlf)
+                                                     (halt)))
+                                    (if ?self:advance-ip then
+                                      (memory-increment ?self:registers
+                                                        ?*instruction-pointer*)
+                                      else
+                                      (bind ?self:advance-ip
+                                            TRUE))))
+
