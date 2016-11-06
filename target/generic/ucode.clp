@@ -386,10 +386,11 @@
          (string-to-field
            (sub-string 2 (length$ ?sym)
                        ?sym)))))
+
 (defmethod ucode::register-to-index
   ((?sym SYMBOL
          (registerp ?sym)))
   (string-to-field 
     (sub-string 2 (length$ ?sym)
                 ?sym)))
-                    
+
