@@ -591,3 +591,21 @@
                                                   (get-register ?registers
                                                                 (decode-source1 ?instruction))))))
 
+(deffunction iris16::misc-operation
+             (?registers ?instruction)
+             (if (= (decode-operation ?instruction) 0) then
+                (switch (decode-destination ?instruction)
+                        (case 0 then (halt))
+                        (case 1 then 
+                          (set-register ?registers
+                                        (decode-source0 ?instruction)
+                                        (cast word16u 
+                                              (get-char))))
+                        (case 2 then 
+                          (put-char (get-source0-register ?registers
+                                                          ?instruction)))
+                        (default (printout werror "Undefined system call " (decode-destination ?instruction) crlf)
+                                 (halt)))
+                else 
+                (printout werror "undefined misc operation " (decode-operation ?instruction) crlf)
+                (halt)))
