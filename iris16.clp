@@ -497,7 +497,6 @@
              (?registers)
              (get-register ?registers
                            ?*instruction-pointer*))
-
 (deffunction iris16::jump-operation
              (?registers ?instruction)
              ; the operation field has a total of 5 bits which we use to determine what kind of operation we are looking at
@@ -507,25 +506,25 @@
              ; 3 - immediate
              ; 4 - link
              (bind ?ifthenelse
-                   (decode-bits ?instruction
-                                (binary->int 0b00001)
-                                0))
+                   (bool (decode-bits ?instruction
+                                    (binary->int 0b00001)
+                                    0)))
              (bind ?conditional
-                   (decode-bits ?instruction
-                                (binary->int 0b00010)
-                                1))
+                   (bool (decode-bits ?instruction
+                                      (binary->int 0b00010)
+                                      1)))
              (bind ?iffalse
-                   (decode-bits ?instruction
-                                (binary->int 0b00100)
-                                2))
+                   (bool (decode-bits ?instruction
+                                      (binary->int 0b00100)
+                                      2)))
              (bind ?immediate
-                   (decode-bits ?instruction
-                                (binary->int 0b01000)
-                                3))
+                   (bool (decode-bits ?instruction
+                                      (binary->int 0b01000)
+                                      3)))
              (bind ?link
-                   (decode-bits ?instruction
-                                (binary->int 0b10000)
-                                4))
+                   (bool (decode-bits ?instruction
+                                      (binary->int 0b10000)
+                                      4)))
              (bind ?ip 
                    (get-instruction-pointer ?registers))
              (bind ?cond 
@@ -568,4 +567,27 @@
                              ?*link-register*
                              (+ ?ip 1))))
 
+(defglobal iris16
+           ?*compare-operations* = (create$ =
+                                            <>
+                                            <
+                                            <=
+                                            >=))
+(deffunction iris16::compare-operation
+             (?registers ?instruction)
+             (set-destination-register ?registers
+                                       ?instruction
+                                       (funcall (nth$ (decode-bits (decode-operation ?instruction)
+                                                                   (binary->int 0b01110)
+                                                                   1)
+                                                      ?*compare-operations*)
+                                                (get-source0-register ?registers
+                                                                      ?instruction)
+                                                (if (bool (decode-bits (decode-operation ?instruction)
+                                                                       (binary->int 0b00001)
+                                                                       0)) then
+                                                  (decode-half-immediate ?instruction)
+                                                  else
+                                                  (get-register ?registers
+                                                                (decode-source1 ?instruction))))))
 

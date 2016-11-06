@@ -48,3 +48,9 @@
 (defclass cortex::thing-with-children
   (is-a thing
         has-children))
+
+(deffunction cortex::bool
+             "Convert the number to a boolean value!"
+             (?value)
+             (<> ?value
+                 0))
