@@ -79,7 +79,39 @@
         (default-dynamic TRUE))
   (message-handler init after)
   (message-handler init before)
+  (message-handler set-code primary)
+  (message-handler set-data primary)
+  (message-handler set-stack primary)
+  (message-handler dump-image primary)
   (message-handler run primary))
+(defmessage-handler iris16::core set-code primary
+                    (?address ?value)
+                    (memory-store ?self:code
+                                  ?address
+                                  ?value))
+(defmessage-handler iris16::core set-data primary
+                    (?address ?value)
+                    (memory-store ?self:data
+                                  ?address 
+                                  ?value))
+(defmessage-handler iris16::core set-stack primary
+                    (?address ?value)
+                    (memory-store ?self:stack
+                                  ?address
+                                  ?value))
+
+(defmessage-handler iris16::core push-value primary
+                    (?value)
+                    (increment-memory ?self:registers
+                                      ?*stack-pointer*)
+                    (memory-store ?self:stack
+                                  (memory-load ?self:registers
+                                               ?*stack-pointer*)
+                                  ?value))
+
+                   
+                    
+ 
 
 (defmessage-handler iris16::core init after
                     ()
@@ -227,6 +259,52 @@
              (decode-bits ?value
                           (hex->int 0x000000FF)
                           0))
+(deffunction iris16::dump16
+             (?router ?mem ?capacity)
+             (progn$ (?curr ?capacity)
+                     (bind ?current
+                           (memory-load ?mem
+                                        ?curr))
+                     (put-char ?router
+                               (decode-lower8 ?current))
+                     (put-char ?router
+                               (decode-upper8 ?current))))
+(deffunction iris16::dump32
+             (?router ?mem ?capacity)
+             (progn$ (?curr ?capacity)
+                     (bind ?current 
+                           (memory-load ?mem
+                                        ?curr))
+                     (put-char ?router
+                               (decode-bits ?current
+                                            (hex->int 0x000000FF)
+                                            0))
+                     (put-char ?router
+                               (decode-bits ?current
+                                            (hex->int 0x0000FF00)
+                                            8))
+                     (put-char ?router
+                               (decode-bits ?current
+                                            (hex->int 0x00FF0000)
+                                            16))
+                     (put-char ?router
+                               (decode-bits ?current
+                                            (hex->int 0xFF000000)
+                                            24))))
+(defmessage-handler iris16::core dump-image primary
+                    (?router)
+                    (dump16 ?router
+                            ?self:registers
+                            256)
+                    (dump32 ?router
+                            ?self:code
+                            ?self:code-capacity)
+                    (dump16 ?router
+                            ?self:data
+                            ?self:data-capacity)
+                    (dump16 ?router
+                            ?self:stack
+                            ?self:stack-capacity))
 (defgeneric iris16::encode-instruction)
 (defgeneric iris16::decode-instruction)
 (defmethod iris16::decode-instruction
