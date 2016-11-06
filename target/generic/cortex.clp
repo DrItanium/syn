@@ -54,3 +54,11 @@
              (?value)
              (<> ?value
                  0))
+
+(defclass cortex::has-title
+  "An object which has a title separate from its instance name"
+  (is-a USER)
+  (slot title
+        (type LEXEME)
+        (visibility public)
+        (storage local)))
