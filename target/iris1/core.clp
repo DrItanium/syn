@@ -1,5 +1,5 @@
 
-(defmodule iris16
+(defmodule iris1
            (import cortex
                    ?ALL)
            (import ucode
@@ -10,15 +10,15 @@
                    new-core)
            (export defclass
                    core))
-(defgeneric iris16::init)
+(defgeneric iris1::init)
 
-(defglobal iris16
+(defglobal iris1
            ?*init-called* = FALSE
            ?*stack-pointer* = 253
            ?*link-register* = 254
            ?*instruction-pointer* = 255)
 
-(defmethod iris16::init
+(defmethod iris1::init
   "microcode startup"
   ()
   (if (not ?*init-called*) then
@@ -26,7 +26,7 @@
           TRUE)
     (init arithmetic)))
 
-(defclass iris16::core
+(defclass iris1::core
   (is-a thing)
   (slot registers
         (type EXTERNAL-ADDRESS
@@ -84,23 +84,23 @@
   (message-handler set-stack primary)
   (message-handler dump-image primary)
   (message-handler run primary))
-(defmessage-handler iris16::core set-code primary
+(defmessage-handler iris1::core set-code primary
                     (?address ?value)
                     (memory-store ?self:code
                                   ?address
                                   ?value))
-(defmessage-handler iris16::core set-data primary
+(defmessage-handler iris1::core set-data primary
                     (?address ?value)
                     (memory-store ?self:data
                                   ?address 
                                   ?value))
-(defmessage-handler iris16::core set-stack primary
+(defmessage-handler iris1::core set-stack primary
                     (?address ?value)
                     (memory-store ?self:stack
                                   ?address
                                   ?value))
 
-(defmessage-handler iris16::core push-value primary
+(defmessage-handler iris1::core push-value primary
                     (?value)
                     (memory-increment ?self:registers
                                       ?*stack-pointer*)
@@ -113,7 +113,7 @@
                     
  
 
-(defmessage-handler iris16::core init after
+(defmessage-handler iris1::core init after
                     ()
                     (memory-zero 
                       (bind ?self:registers
@@ -136,14 +136,14 @@
                             (alloc word32u
                                    ?self:code-capacity))))
 
-(defmessage-handler iris16::core init before
+(defmessage-handler iris1::core init before
                     "Make sure that the backing code has been initialized before initializing"
                     () 
                     (init))
 
-(defgeneric iris16::new-core)
+(defgeneric iris1::new-core)
 
-(defmethod iris16::new-core
+(defmethod iris1::new-core
   ((?data-cap INTEGER)
    (?code-cap INTEGER)
    (?stack-cap INTEGER))
@@ -152,114 +152,114 @@
                  (data-capacity ?data-cap)
                  (code-capacity ?code-cap)
                  (stack-capacity ?stack-cap)))
-(defmethod iris16::new-core
+(defmethod iris1::new-core
   ()
   (new-core (hex->int 0xFFFF)
             (hex->int 0xFFFF)
             (hex->int 0xFFFF)))
 ; instruction decoding routines
-(deffunction iris16::decode-group
+(deffunction iris1::decode-group
              (?value)
              (decode-bits ?value 
                           (hex->int 0x00000007) 
                           0))
-(deffunction iris16::decode-operation
+(deffunction iris1::decode-operation
              (?value)
              (decode-bits ?value
                           (hex->int 0x000000F8)
                           3))
-(deffunction iris16::decode-immediate
+(deffunction iris1::decode-immediate
              (?value)
              (decode-bits ?value
                           (hex->int 0xFFFF0000)
                           16))
-(deffunction iris16::decode-half-immediate
+(deffunction iris1::decode-half-immediate
              (?value)
              (decode-bits ?value
                           (hex->int 0xFF000000)
                           24))
-(deffunction iris16::decode-destination
+(deffunction iris1::decode-destination
              (?value)
              (decode-bits ?value
                           (hex->int 0x0000FF00)
                           8))
-(deffunction iris16::decode-source0
+(deffunction iris1::decode-source0
              (?value)
              (decode-bits ?value
                           (hex->int 0x00FF0000)
                           16))
-(deffunction iris16::decode-source1
+(deffunction iris1::decode-source1
              (?value)
              (decode-bits ?value
                           (hex->int 0xFF000000)
                           24))
 
-(deffunction iris16::decode-control
+(deffunction iris1::decode-control
              (?value)
              (decode-bits ?value
                           (hex->int 0x000000FF)
                           0))
-(deffunction iris16::encode-control
+(deffunction iris1::encode-control
              (?value ?control)
              (encode-bits ?value
                           ?control
                           (hex->int 0x000000FF)
                           0))
-(deffunction iris16::encode-half-immediate
+(deffunction iris1::encode-half-immediate
              (?value ?immediate)
              (encode-bits ?value
                           ?immediate
                           (hex->int 0xFF000000)
                           24))
-(deffunction iris16::encode-immediate
+(deffunction iris1::encode-immediate
              (?value ?immediate)
              (encode-bits ?value
                           ?immediate
                           (hex->int 0xFFFF0000)
                           16))
-(deffunction iris16::encode-group
+(deffunction iris1::encode-group
              (?value ?group)
              (encode-bits ?value
                           ?group
                           (hex->int 0x00000007)
                           0))
 
-(deffunction iris16::encode-destination
+(deffunction iris1::encode-destination
              (?value ?destination)
              (encode-bits ?value
                           ?destination
                           (hex->int 0x0000FF00)
                           8))
 
-(deffunction iris16::encode-source0
+(deffunction iris1::encode-source0
              (?value ?source0)
              (encode-bits ?value
                           ?source0
                           (hex->int 0x00FF0000)
                           16))
-(deffunction iris16::encode-source1
+(deffunction iris1::encode-source1
              (?value ?source1)
              (encode-bits ?value
                           ?source1
                           (hex->int 0xFF000000)
                           24))
-(deffunction iris16::encode-operation
+(deffunction iris1::encode-operation
              (?value ?op)
              (encode-bits ?value
                           ?op
                           (hex->int 0x000000F8)
                           3))
-(deffunction iris16::decode-upper8
+(deffunction iris1::decode-upper8
              (?value)
              (decode-bits ?value
                           (hex->int 0x0000FF00)
                           8))
-(deffunction iris16::decode-lower8
+(deffunction iris1::decode-lower8
              (?value)
              (decode-bits ?value
                           (hex->int 0x000000FF)
                           0))
-(deffunction iris16::dump16
+(deffunction iris1::dump16
              (?router ?mem ?capacity)
              (progn$ (?curr ?capacity)
                      (bind ?current
@@ -269,7 +269,7 @@
                                (decode-lower8 ?current))
                      (put-char ?router
                                (decode-upper8 ?current))))
-(deffunction iris16::dump32
+(deffunction iris1::dump32
              (?router ?mem ?capacity)
              (progn$ (?curr ?capacity)
                      (bind ?current 
@@ -291,7 +291,7 @@
                                (decode-bits ?current
                                             (hex->int 0xFF000000)
                                             24))))
-(defmessage-handler iris16::core dump-image primary
+(defmessage-handler iris1::core dump-image primary
                     (?router)
                     (dump16 ?router
                             ?self:registers
@@ -305,9 +305,9 @@
                     (dump16 ?router
                             ?self:stack
                             ?self:stack-capacity))
-(defgeneric iris16::encode-instruction)
-(defgeneric iris16::decode-instruction)
-(defmethod iris16::decode-instruction
+(defgeneric iris1::encode-instruction)
+(defgeneric iris1::decode-instruction)
+(defmethod iris1::decode-instruction
   ((?value INTEGER))
   (bind ?casted 
         (cast word32u
@@ -318,7 +318,7 @@
            (decode-source0 ?casted)
            (decode-source1 ?casted)
            (decode-immediate ?casted)))
-(defmethod iris16::encode-instruction
+(defmethod iris1::encode-instruction
   ((?group INTEGER)
    (?op INTEGER)
    (?destination INTEGER)
@@ -333,7 +333,7 @@
         ?destination)
       ?source0)
     ?source1))
-(defmethod iris16::encode-instruction
+(defmethod iris1::encode-instruction
   ((?group INTEGER)
    (?op INTEGER)
    (?destination INTEGER)
@@ -343,14 +343,14 @@
                       ?destination
                       (decode-lower8 ?immediate)
                       (decode-upper8 ?immediate)))
-(deffunction iris16::register-binary-operation
+(deffunction iris1::register-binary-operation
              (?register-file ?instruction ?op)
              (memory-load-binary-op-store ?register-file
                                           (decode-destination ?instruction)
                                           (decode-source0 ?instruction)
                                           (decode-source1 ?instruction)
                                           ?op))
-(deffunction iris16::memory-load-op-store-with-offset
+(deffunction iris1::memory-load-op-store-with-offset
              (?register-file ?instruction ?op)
              (memory-store ?register-file
                            (decode-destination ?instruction)
@@ -358,7 +358,7 @@
                                     (memory-load ?register-file
                                                  (decode-source0 ?instruction))
                                     (decode-half-immediate ?instruction))))
-(defglobal iris16
+(defglobal iris1
            ?*dual-arithmetic-operations* = (create$ add-word16u
                                                     sub-word16u
                                                     mul-word16u
@@ -371,7 +371,7 @@
                                                         binary-not
                                                         binary-xor)
            ?*arithmetic-operations* = (create$))
-(defmethod iris16::init
+(defmethod iris1::init
   ((?class SYMBOL
            (eq ?class
                arithmetic)))
@@ -382,7 +382,7 @@
   (progn$ (?op ?*dual-arithmetic-operations*)
           ; build immediate operations
           (build (format nil
-                         "(deffunction iris16::%s-with-offset
+                         "(deffunction iris1::%s-with-offset
                                        (?r ?i)
                                        (memory-load-op-store-with-offset ?r 
                                                                          ?i 
@@ -395,7 +395,7 @@
                          -with-offset))
           ; build basic operations
           (build (format nil
-                         "(deffunction iris16::call-%s
+                         "(deffunction iris1::call-%s
                                        (?r ?i)
                                        (register-binary-operation ?r 
                                                                   ?i 
@@ -413,56 +413,56 @@
 
 
 
-(defmethod iris16::binary-not
+(defmethod iris1::binary-not
   ((?first INTEGER)
    (?unused INTEGER))
   (binary-not ?first))
 
 
-(deffunction iris16::arithmetic-operation
+(deffunction iris1::arithmetic-operation
              (?register-file ?instruction)
              (funcall (nth$ (decode-operation ?instruction)
                             ?*arithmetic-operations*)
                       ?register-file
                       ?instruction))
-(deffunction iris16::get-register
+(deffunction iris1::get-register
              (?register ?index)
              (memory-load ?register
                           ?index))
-(deffunction iris16::set-register
+(deffunction iris1::set-register
              (?register ?index ?value)
              (memory-store ?register
                            ?index
                            ?value))
-(deffunction iris16::swap-registers
+(deffunction iris1::swap-registers
              (?register ?a ?b)
              (memory-swap ?register
                           ?a 
                           ?b))
 
 
-(deffunction iris16::set-destination-register
+(deffunction iris1::set-destination-register
              (?registers ?instruction ?value)
              (set-register ?registers
                            (decode-destination ?instruction)
                            ?value))
-(deffunction iris16::get-source0-register
+(deffunction iris1::get-source0-register
              (?registers ?instruction)
              (get-register ?registers
                            (decode-source0 ?instruction)))
 
-(deffunction iris16::load-generic
+(deffunction iris1::load-generic
              (?registers ?data ?instruction ?address)
              (set-register ?registers
                            (decode-destination ?instruction)
                            (memory-load ?data
                                         ?address)))
-(deffunction iris16::get-stack-pointer
+(deffunction iris1::get-stack-pointer
              (?register-file)
              (get-register ?register-file
                            ?*stack-pointer*))
 
-(deffunction iris16::push-generic
+(deffunction iris1::push-generic
              (?registers ?stack ?value)
              ; two operations in one, add followed by a store
              (memory-increment ?registers
@@ -471,7 +471,7 @@
                            (get-stack-pointer ?registers)
                            ?value))
 
-(deffunction iris16::store-generic
+(deffunction iris1::store-generic
              (?registers ?data ?instruction ?value)
              (memory-store ?data
                            (get-register ?registers
@@ -479,7 +479,7 @@
                            ?value))
 
 
-(defglobal iris16
+(defglobal iris1
            ?*move-operations* = (create$ move-operation
                                          set-immediate 
                                          swap-operation
@@ -493,7 +493,7 @@
                                          load-code
                                          store-code))
 
-(deffunction iris16::move-group-operation
+(deffunction iris1::move-group-operation
              (?registers ?code ?data ?stack ?instruction)
              (switch (nth$ (decode-operation ?instruction)
                            ?*move-operations*)
@@ -572,17 +572,17 @@
                      (default (printout werror "Illegal move group operation " (decode-operation ?instruction) crlf))))
 
 
-(deffunction iris16::set-instruction-pointer
+(deffunction iris1::set-instruction-pointer
              (?registers ?value)
              (set-register ?registers
                            ?*instruction-pointer*
                            ?value))
 
-(deffunction iris16::get-instruction-pointer
+(deffunction iris1::get-instruction-pointer
              (?registers)
              (get-register ?registers
                            ?*instruction-pointer*))
-(deffunction iris16::jump-operation
+(deffunction iris1::jump-operation
              (?registers ?instruction)
              ; the operation field has a total of 5 bits which we use to determine what kind of operation we are looking at
              ; 0 - if then else
@@ -652,13 +652,13 @@
                              ?*link-register*
                              (+ ?ip 1))))
 
-(defglobal iris16
+(defglobal iris1
            ?*compare-operations* = (create$ =
                                             <>
                                             <
                                             <=
                                             >=))
-(deffunction iris16::compare-operation
+(deffunction iris1::compare-operation
              (?registers ?instruction)
              (set-destination-register ?registers
                                        ?instruction
@@ -676,7 +676,7 @@
                                                   (get-register ?registers
                                                                 (decode-source1 ?instruction))))))
 
-(deffunction iris16::misc-operation
+(deffunction iris1::misc-operation
              (?registers ?instruction)
              (if (= (decode-operation ?instruction) 0) then
                (switch (decode-destination ?instruction)
@@ -695,7 +695,7 @@
                (printout werror "undefined misc operation " (decode-operation ?instruction) crlf)
                (halt)))
 
-(defmessage-handler iris16::core run primary
+(defmessage-handler iris1::core run primary
                     (?cycle-count)
                     (loop-for-count (?c ?cycle-count) do
                                     (bind ?instruction

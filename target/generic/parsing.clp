@@ -1,3 +1,4 @@
+; assembler parsing
 (defmodule parsing
            (import cortex
                    ?ALL)
@@ -16,8 +17,8 @@
            (sub-string 2 (length$ ?sym)
                        ?sym)))))
 (defmethod parsing::registerp
-    ((?sym INTEGER))
-    FALSE)
+  ((?sym INTEGER))
+  FALSE)
 
 (defmethod parsing::register-to-index
   ((?sym SYMBOL
@@ -32,8 +33,21 @@
   (sym-cat r 
            ?index))
 (defclass parsing::statement
-  (is-a indexed-thing
+  (is-a indexed-thing-with-children
         has-title))
+
+(defclass parsing::instruction
+  (is-a statement)
+  (slot group 
+        (type SYMBOL)
+        (visibility public)
+        (storage local)
+        (default ?NONE))
+  (slot operation
+        (type SYMBOL)
+        (visibility public)
+        (storage local)
+        (default ?NONE)))
 
 (defclass parsing::register-alias
   (is-a statement)
@@ -150,18 +164,54 @@
              (run))
 
 (defrule parsing::identify-labels
-         (line (exploded-line @label ?name)
-               (parent ?parent))
+         (declare (salience 1))
+         ?f <- (line (exploded-line @label ?name)
+                     (parent ?parent))
          =>
+         (retract ?f)
          (make-instance of label
                         (parent ?parent)
                         (title ?name)))
 
 (defrule parsing::identify-register-alias
-         (line (exploded-line @alias ?name ?register)
-               (parent ?parent))
+         (declare (salience 1))
+         ?f <- (line (exploded-line @alias ?name ?register)
+                     (line-index ?index)
+                     (parent ?parent))
          =>
+         (retract ?f)
          (make-instance of register-alias
                         (title ?name)
+                        (index ?index)
                         (actual-register ?register)
                         (parent ?parent)))
+
+(defrule parsing::identify-instruction
+         ?f <- (line (exploded-line ?group ?operation $?rest)
+                     (line-index ?index)
+                     (parent ?parent))
+         =>
+         (retract ?f)
+         (make-instance of instruction
+                        (parent ?parent)
+                        (index ?index)
+                        (group ?group)
+                        (operation ?operation)
+                        (children $?rest)))
+(defclass parsing::immediate-operand
+  (is-a thing)
+  (slot value
+        (storage local)
+        (visibility public)
+        (default ?NONE))
+(defrule parsing::mark-immediate-operand
+         ?f <- (object (is-a instruction)
+                       (children $?a immediate ?value $?rest)
+                       (name ?instruction))
+         =>
+         (modify-instance ?f 
+                          (children $?a (make-instance of immediate-operand
+                                                       (parent ?instruction)
+                                                       (value ?value))
+                                    $?rest)))
+    

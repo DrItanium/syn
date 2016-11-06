@@ -1,7 +1,7 @@
 (defmodule MAIN
            (import cortex
                    ?ALL)
-           (import iris16
+           (import iris1
                    ?ALL)
            (import parsing
                    ?ALL)
@@ -152,4 +152,3 @@
          =>
          (modify-instance ?f 
                           (destination ?alias)))
-
