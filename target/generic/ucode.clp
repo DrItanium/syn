@@ -3,10 +3,6 @@
            (import cortex
                    ?ALL)
            (export ?ALL))
-(defgeneric ucode::registerp
-            "Is the given symbol a register?")
-(defgeneric ucode::register-to-index
-            "convert the given register to an index value")
 (defgeneric ucode::memory-load
             "Load the given value from the specified address in memory and return it")
 
@@ -378,19 +374,4 @@
              (decode-bits ?value
                           (hex->int 0xFFFF0000)
                           16))
-
-(defmethod ucode::registerp
-  ((?sym SYMBOL))
-  (and (has-prefix ?sym r)
-       (integerp 
-         (string-to-field
-           (sub-string 2 (length$ ?sym)
-                       ?sym)))))
-
-(defmethod ucode::register-to-index
-  ((?sym SYMBOL
-         (registerp ?sym)))
-  (string-to-field 
-    (sub-string 2 (length$ ?sym)
-                ?sym)))
 
