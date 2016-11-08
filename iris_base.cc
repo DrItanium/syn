@@ -396,8 +396,7 @@ X(int64_t, Word64s, word64s)
 						if (!inRange(size, addr)) {
 							errOutOfRange("set", size, addr);
 						} else {
-							auto num = EnvDOToLong(env, value);
-							ptr[addr] = static_cast<Word>(num);
+							ptr[addr] = static_cast<Word>(EnvDOToLong(env, value));
 							CVSetBoolean(ret, true);
 						}
 					}
