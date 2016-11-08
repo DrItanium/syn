@@ -325,15 +325,22 @@ X(int64_t, Word64s, word64s)
 		}
 	template<typename Word>
 	bool CLIPS_callPtr(void* env, DATA_OBJECT* value, DATA_OBJECT* ret) {
+		static bool init = true;
+		static AddressIDs id;
+		static std::string funcStr;
+		static std::string type;
+		if (init) {
+			init = false;
+			id = getExternalAddressIdFromType<Word*>();
+			type = getNameFromExternalAddressId(id);
+			std::stringstream ss;
+			ss << "call (" << type << " memory block)";
+			funcStr = ss.str();
+		}
 		auto inRange = [](CLIPSInteger capacity, CLIPSInteger address) { return address >= 0 && address < capacity; };
 		if (GetpType(value) == EXTERNAL_ADDRESS) {
-			auto id = getExternalAddressIdFromType<Word*>();
-			std::stringstream ss;
-			auto type = getNameFromExternalAddressId(id);
-			ss << "call (" << type << " memory block)";
-			auto funcStr = ss.str();
-			auto argCheck = [env, &funcStr](CLIPSValue* storage, int position, int type) { return EnvArgTypeCheck(env, funcStr.c_str(), position, type, storage); };
-			auto callErrorMessage = [env, &funcStr, ret](const std::string& subOp, const std::string& rest) {
+			auto argCheck = [env](CLIPSValue* storage, int position, int type) { return EnvArgTypeCheck(env, funcStr.c_str(), position, type, storage); };
+			auto callErrorMessage = [env, ret](const std::string& subOp, const std::string& rest) {
 				PrintErrorID(env, "CALL", 3, false);
 				std::stringstream stm;
 				stm << "Function " << funcStr.c_str() << " " << subOp << ": " << rest << std::endl;
