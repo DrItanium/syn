@@ -419,6 +419,17 @@ X(int64_t, Word64s, word64s)
 							CVSetBoolean(ret, true);
 						}
 					}
+				} else if (str == "populate") {
+					CLIPSValue value;
+					if (!argCheck(&value, 3, INTEGER)) {
+						return callErrorMessage("populate", "First argument must be a value to populate all of the memory cells with");
+					} else {
+						auto val = static_cast<Word>(EnvDOToLong(env, value));
+						for (CLIPSInteger i = 0; i < size; ++i) {
+							ptr[i] = val;
+						}
+						CVSetBoolean(ret, true);
+					}
 				} else {
 					return callErrorMessage(str, "<- unknown operation requested!");
 				}
