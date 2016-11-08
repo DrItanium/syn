@@ -323,6 +323,9 @@ X(int64_t, Word64s, word64s)
 				CVSetBoolean(ret, false);
 			}
 		}
+	inline constexpr bool inRange(CLIPSInteger capacity, CLIPSInteger address) noexcept {
+		return address >= 0 && address < capacity;
+	}
 	template<typename Word>
 	bool CLIPS_callPtr(void* env, DATA_OBJECT* value, DATA_OBJECT* ret) {
 		static bool init = true;
@@ -340,7 +343,6 @@ X(int64_t, Word64s, word64s)
 			ss2 << "Function " << funcStr;
 			funcErrorPrefix = ss2.str();
 		}
-		auto inRange = [](CLIPSInteger capacity, CLIPSInteger address) { return address >= 0 && address < capacity; };
 		if (GetpType(value) == EXTERNAL_ADDRESS) {
 			auto argCheck = [env](CLIPSValue* storage, int position, int type) { return EnvArgTypeCheck(env, funcStr.c_str(), position, type, storage); };
 			auto callErrorMessage = [env, ret](const std::string& subOp, const std::string& rest) {
