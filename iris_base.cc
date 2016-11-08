@@ -328,38 +328,40 @@ X(int64_t, Word64s, word64s)
 		static bool init = true;
 		static AddressIDs id;
 		static std::string funcStr;
+		static std::string funcErrorPrefix;
 		static std::string type;
 		if (init) {
 			init = false;
 			id = getExternalAddressIdFromType<Word*>();
 			type = getNameFromExternalAddressId(id);
-			std::stringstream ss;
+			std::stringstream ss, ss2;
 			ss << "call (" << type << " memory block)";
 			funcStr = ss.str();
+			ss2 << "Function " << funcStr;
+			funcErrorPrefix = ss2.str();
 		}
 		auto inRange = [](CLIPSInteger capacity, CLIPSInteger address) { return address >= 0 && address < capacity; };
 		if (GetpType(value) == EXTERNAL_ADDRESS) {
 			auto argCheck = [env](CLIPSValue* storage, int position, int type) { return EnvArgTypeCheck(env, funcStr.c_str(), position, type, storage); };
 			auto callErrorMessage = [env, ret](const std::string& subOp, const std::string& rest) {
-				PrintErrorID(env, "CALL", 3, false);
 				std::stringstream stm;
-				stm << "Function " << funcStr.c_str() << " " << subOp << ": " << rest << std::endl;
+				stm << funcErrorPrefix << " " << subOp << ": " << rest << std::endl;
 				auto msg = stm.str();
+				PrintErrorID(env, "CALL", 3, false);
 				EnvPrintRouter(env, WERROR, msg.c_str());
 				EnvSetEvaluationError(env, true);
 				CVSetBoolean(ret, false);
 				return false;
 			};
-			auto errOutOfRange = [callErrorMessage, env, ret, &funcStr](const std::string& subOp, CLIPSInteger capacity, CLIPSInteger address) {
+			auto errOutOfRange = [callErrorMessage, env, ret](const std::string& subOp, CLIPSInteger capacity, CLIPSInteger address) {
 				std::stringstream ss;
-				ss << "Function " << funcStr << ": Provided address " << std::hex << address << " is either less than zero or greater than " << std::hex << capacity << std::endl;
+				ss << funcErrorPrefix << ": Provided address " << std::hex << address << " is either less than zero or greater than " << std::hex << capacity << std::endl;
 				return callErrorMessage(subOp, ss.str());
 			};
 			CLIPSValue operation;
 			if (EnvArgTypeCheck(env, funcStr.c_str(), 2, SYMBOL, &operation) == FALSE) {
 				PrintErrorID(env, "CALL", 2, false);
-				EnvPrintRouter(env, WERROR, "Function ");
-				EnvPrintRouter(env, WERROR, funcStr.c_str());
+				EnvPrintRouter(env, WERROR, funcErrorPrefix.c_str());
 				EnvPrintRouter(env, WERROR, " expected a function name to call!\n");
 				EnvSetEvaluationError(env, true);
 				return false;
