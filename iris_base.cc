@@ -451,6 +451,20 @@ X(int64_t, Word64s, word64s)
 					} else {
                         CLIPS_setMemory<Word>(ptr, size, static_cast<Word>(EnvDOToLong(env, value)));
 					}
+                } else if (str == "increment") {
+                    CLIPSValue address;
+                    if (!argCheck(&address, 3, INTEGER)) {
+                        return callErrorMessage("increment", "First argument must be an address");
+                    } else {
+                        ++ptr[static_cast<Word>(EnvDOToLong(env, address))];
+                    }
+                } else if (str == "decrement") {
+                    CLIPSValue address;
+                    if (!argCheck(&address, 3, INTEGER)) {
+                        return callErrorMessage("decrement", "First argument must be an address");
+                    } else {
+                        --ptr[static_cast<Word>(EnvDOToLong(env, address))];
+                    }
 				} else {
 					return callErrorMessage(str, "<- unknown operation requested!");
 				}
