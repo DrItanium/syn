@@ -31,5 +31,5 @@
                   (hex->int 0xFFFFF)))
 (defglobal MAIN
            ?*memory* = (map make-1m-page 
-                            (expand$ (number-of-items (hex->int 0x2FF) 
+                            (expand$ (number-of-items (hex->int 0x4FF) 
                                                       word32u))))
