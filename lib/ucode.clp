@@ -205,16 +205,17 @@
 (defmethod ucode::memory-increment
   ((?memory EXTERNAL-ADDRESS)
    (?address INTEGER))
-  (memory-load-op-store ?memory
-                        ?address
-                        increment))
+  (call ?memory
+        increment
+        ?address))
 
 (defmethod ucode::memory-decrement
   ((?memory EXTERNAL-ADDRESS)
    (?address INTEGER))
-  (memory-load-op-store ?memory
-                        ?address
-                        decrement))
+  (call ?memory
+        decrement
+        ?address))
+
 (defmethod ucode::memory-load-indirect
   ((?memory EXTERNAL-ADDRESS)
    (?address INTEGER))

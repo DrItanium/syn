@@ -18,6 +18,7 @@
      1))
 
 (defclass cortex::thing
+  "Base class for everything that requires a parent relationship!"
   (is-a USER)
   (slot parent
         (type INSTANCE
@@ -69,6 +70,7 @@
         (type INTEGER)
         (visibility public)
         (storage local)))
+
 (defclass cortex::indexed-thing
   (is-a thing
         has-index))
