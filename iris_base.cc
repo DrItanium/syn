@@ -245,20 +245,6 @@ namespace iris {
 	inline void CLIPS_basePrintAddress_Pointer(void* env, const char* logicalName, void* theValue, const char* func) noexcept {
 		CLIPS_basePrintAddress(env, logicalName, theValue, func, "Pointer");
 	}
-	template<typename Word>
-		using MemoryBlock = Word*;
-
-	template<typename Word>
-		using ManagedMemoryBlock = std::tuple<MemoryBlock<Word>, CLIPSInteger>;
-
-	template<typename Word>
-		inline MemoryBlock<Word> makeMemoryBlock(CLIPSInteger capacity) noexcept {
-			return new Word[capacity];
-		}
-	template<typename Word>
-		inline ManagedMemoryBlock<Word>* makeManagedMemoryBlock(CLIPSInteger capacity) noexcept {
-			return new ManagedMemoryBlock<Word>(makeMemoryBlock<Word>(capacity), capacity);
-		}
 #define X(type, capitalizedType, lowcaseVersion) \
 	template<> AddressIDs getExternalAddressIdFromType< type * > () { return AddressIDs:: Ptr_ ## capitalizedType ; } \
 	template<> std::string getNameFromExternalAddressId< AddressIDs:: Ptr_ ## capitalizedType > () { return #lowcaseVersion ; }  \
@@ -274,29 +260,35 @@ namespace iris {
 		X(int32_t, Word32s, word32s)
 		X(int64_t, Word64s, word64s)
 #undef X
+	template<>
+	std::string getNameFromExternalAddressId<AddressIDs::Slice>() { return "memory-slice"; }
 
-		std::string getNameFromExternalAddressId(AddressIDs id) {
-			switch(id) {
-				case AddressIDs::Ptr_Word8u:
-					return getNameFromExternalAddressId<AddressIDs::Ptr_Word8u>();
-				case AddressIDs::Ptr_Word16u:
-					return getNameFromExternalAddressId<AddressIDs::Ptr_Word16u>();
-				case AddressIDs::Ptr_Word32u:
-					return getNameFromExternalAddressId<AddressIDs::Ptr_Word32u>();
-				case AddressIDs::Ptr_Word64u:
-					return getNameFromExternalAddressId<AddressIDs::Ptr_Word64u>();
-				case AddressIDs::Ptr_Word8s:
-					return getNameFromExternalAddressId<AddressIDs::Ptr_Word8s>();
-				case AddressIDs::Ptr_Word16s:
-					return getNameFromExternalAddressId<AddressIDs::Ptr_Word16s>();
-				case AddressIDs::Ptr_Word32s:
-					return getNameFromExternalAddressId<AddressIDs::Ptr_Word32s>();
-				case AddressIDs::Ptr_Word64s:
-					return getNameFromExternalAddressId<AddressIDs::Ptr_Word64s>();
-				default:
-					throw iris::Problem("Unimplemented type!");
-			}
+
+
+	std::string getNameFromExternalAddressId(AddressIDs id) {
+		switch(id) {
+			case AddressIDs::Ptr_Word8u:
+				return getNameFromExternalAddressId<AddressIDs::Ptr_Word8u>();
+			case AddressIDs::Ptr_Word16u:
+				return getNameFromExternalAddressId<AddressIDs::Ptr_Word16u>();
+			case AddressIDs::Ptr_Word32u:
+				return getNameFromExternalAddressId<AddressIDs::Ptr_Word32u>();
+			case AddressIDs::Ptr_Word64u:
+				return getNameFromExternalAddressId<AddressIDs::Ptr_Word64u>();
+			case AddressIDs::Ptr_Word8s:
+				return getNameFromExternalAddressId<AddressIDs::Ptr_Word8s>();
+			case AddressIDs::Ptr_Word16s:
+				return getNameFromExternalAddressId<AddressIDs::Ptr_Word16s>();
+			case AddressIDs::Ptr_Word32s:
+				return getNameFromExternalAddressId<AddressIDs::Ptr_Word32s>();
+			case AddressIDs::Ptr_Word64s:
+				return getNameFromExternalAddressId<AddressIDs::Ptr_Word64s>();
+			case AddressIDs::Slice:
+				return getNameFromExternalAddressId<AddressIDs::Slice>();
+			default:
+				throw iris::Problem("Unimplemented type!");
 		}
+	}
 
 	inline bool errorMessage(void* env, const std::string& idClass, int idIndex, const std::string& msgPrefix, const std::string& msg) noexcept {
 		PrintErrorID(env, idClass.c_str(), idIndex, false);
@@ -338,7 +330,7 @@ namespace iris {
 						auto idIndex = getExternalAddressID(env, id);
 						ret->bitType = EXTERNAL_ADDRESS_TYPE;
 						SetpType(ret, EXTERNAL_ADDRESS);
-						SetpValue(ret, EnvAddExternalAddress(env, makeManagedMemoryBlock<Word>(size), idIndex));
+						SetpValue(ret, EnvAddExternalAddress(env, new ManagedMemoryBlock<Word>(size), idIndex));
 					}
 				} else {
 					errorMessage(env, "NEW", 1, funcErrorPrefix, " function new expected no arguments besides type!");
@@ -350,17 +342,6 @@ namespace iris {
 				s << "an exception was thrown: " << p.what();
 				auto str = s.str();
 				errorMessage(env, "NEW", 2, funcErrorPrefix, str);
-			}
-		}
-
-	inline constexpr bool inRange(CLIPSInteger capacity, CLIPSInteger address) noexcept {
-		return address >= 0 && address < capacity;
-	}
-
-	template<typename Word>
-		inline void CLIPS_setMemory(Word* memory, CLIPSInteger size, CLIPSInteger value) noexcept {
-			for (CLIPSInteger i = 0; i < size; ++i) {
-				memory[i] = value;
 			}
 		}
 
@@ -382,7 +363,7 @@ namespace iris {
 				funcErrorPrefix = ss2.str();
 			}
 			if (GetpType(value) == EXTERNAL_ADDRESS) {
-				auto tup = static_cast<ManagedMemoryBlock<Word>*>(DOPToExternalAddress(value));
+				auto ptr = static_cast<ManagedMemoryBlock<Word>*>(DOPToExternalAddress(value));
 #define argCheck(storage, position, type) EnvArgTypeCheck(env, funcStr.c_str(), position, type, storage)
 				auto callErrorMessage = [env, ret](const std::string& subOp, const std::string& rest) {
 					CVSetBoolean(ret, false);
@@ -400,19 +381,17 @@ namespace iris {
 				if (EnvArgTypeCheck(env, funcStr.c_str(), 2, SYMBOL, &operation) == FALSE) {
 					return errorMessage(env, "CALL", 2, funcErrorPrefix, "expected a function name to call!");
 				} else {
-					auto ptr = std::get<0>(*tup);
-					auto size = std::get<1>(*tup);
 					std::string str(EnvDOToString(env, operation));
 					CVSetBoolean(ret, true);
 					auto argc = EnvRtnArgCount(env);
 					if (argc == 2) {
 						if (str == "clear") {
-							CLIPS_setMemory<Word>(ptr, size, static_cast<Word>(0));
+							ptr->setMemoryToSingleValue(static_cast<Word>(0));
 						} else if (str == "type") {
 							// get the type of the current thing!
 							CVSetSymbol(ret, type.c_str());
 						} else if (str == "size") {
-							CVSetInteger(ret, size);
+							CVSetInteger(ret, ptr->size());
 						} else {
 							return callErrorMessage(str, "<- unknown operation requested!");
 						}
@@ -423,27 +402,27 @@ namespace iris {
 								return callErrorMessage("get", "Argument 0 must be an address!");
 							} else {
 								auto addr = EnvDOToLong(env, arg0);
-								if (!inRange(size, addr)) {
-									errOutOfRange("get", size, addr);
+								if (!ptr->legalAddress(addr)) {
+									errOutOfRange("get", ptr->size(), addr);
 								} else {
-									CVSetInteger(ret, static_cast<CLIPSInteger>(ptr[addr]));
+									CVSetInteger(ret, static_cast<CLIPSInteger>(ptr->getMemoryCellValue(addr)));
 								}
 							}
 						} else if (str == "populate") {
 							if (!argCheck(&arg0, 3, INTEGER)) {
 								return callErrorMessage("populate", "First argument must be a value to populate all of the memory cells with");
 							} else {
-								CLIPS_setMemory<Word>(ptr, size, static_cast<Word>(EnvDOToLong(env, arg0)));
+								ptr->setMemoryToSingleValue(static_cast<Word>(EnvDOToLong(env, arg0)));
 							}
 						} else if (str == "increment") {
 							if (!argCheck(&arg0, 3, INTEGER)) {
 								return callErrorMessage("increment", "First argument must be an address");
 							} else {
 								auto addr = EnvDOToLong(env, arg0);
-								if (!inRange(size, addr)) {
-									errOutOfRange("increment", size, addr);
+								if (!ptr->legalAddress(addr)) {
+									errOutOfRange("increment", ptr->size(), addr);
 								} else {
-									++ptr[addr];
+									ptr->decrementMemoryCell(addr);
 								}
 							}
 						} else if (str == "decrement") {
@@ -451,10 +430,10 @@ namespace iris {
 								return callErrorMessage("decrement", "First argument must be an address");
 							} else {
 								auto addr = EnvDOToLong(env, arg0);
-								if (!inRange(size, addr)) {
-									errOutOfRange("decrement", size, addr);
+								if (!ptr->legalAddress(addr)) {
+									errOutOfRange("decrement", ptr->size(), addr);
 								} else {
-									--ptr[addr];
+									ptr->incrementMemoryCell(addr);
 								}
 							}
 						} else { 
@@ -469,10 +448,10 @@ namespace iris {
 								return callErrorMessage("set", "Second argument must be an integer!");
 							} else {
 								auto addr = EnvDOToLong(env, arg0);
-								if (!inRange(size, addr)) {
-									errOutOfRange("set", size, addr);
+								if (!ptr->legalAddress(addr)) {
+									errOutOfRange("set", ptr->size(), addr);
 								} else {
-									ptr[addr] = static_cast<Word>(EnvDOToLong(env, arg1));
+									ptr->setMemoryCell(addr, static_cast<Word>(EnvDOToLong(env, arg1)));
 								}
 							}
 						} else if (str == "swap") {
@@ -483,12 +462,12 @@ namespace iris {
 							} else {
 								auto addr0 = EnvDOToLong(env, arg0);
 								auto addr1 = EnvDOToLong(env, arg1);
-								if (!inRange(size, addr0)) {
-									errOutOfRange("swap", size, addr0);
-								} else if(!inRange(size, addr1)) {
-									errOutOfRange("swap", size, addr1);
+								if (!ptr->legalAddress(addr0)) {
+									errOutOfRange("swap", ptr->size(), addr0);
+								} else if (!ptr->legalAddress(addr1)) {
+									errOutOfRange("swap", ptr->size(), addr1);
 								} else {
-									swap<Word>(ptr[addr0], ptr[addr1]);
+									ptr->swapMemoryCells(addr0, addr1);
 								}
 							}
 						} else if (str == "move") {
@@ -501,12 +480,12 @@ namespace iris {
 							} else {
 								auto srcAddr = EnvDOToLong(env, arg0);
 								auto destAddr = EnvDOToLong(env, arg1);
-								if (!inRange(size, srcAddr)) {
-									errOutOfRange("move", size, srcAddr);
-								} else if (!inRange(size, destAddr)) {
-									errOutOfRange("move", size, destAddr);
+								if (!ptr->legalAddress(srcAddr)) {
+									errOutOfRange("move", ptr->size(), srcAddr);
+								} else if (!ptr->legalAddress(destAddr)) {
+									errOutOfRange("move", ptr->size(), destAddr);
 								} else {
-									ptr[destAddr] = ptr[srcAddr];
+									ptr->copyMemoryCell(srcAddr, destAddr);
 								}
 							}
 						} else {
