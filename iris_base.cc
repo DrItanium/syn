@@ -234,18 +234,35 @@ X(Ptr_Word64s);
 	std::string getNameFromExternalAddressId() {
 		throw iris::Problem("unimplemented type!");
 	}
-	void CLIPS_basePrintAddress(void* env, const char* logicalName, void* theValue, const char* func) {
+	void CLIPS_basePrintAddress(void* env, const char* logicalName, void* theValue, const char* func, const char* majorType) {
 		std::stringstream ss;
 		void* ptr = EnvValueToExternalAddress(env, theValue);
-		ss << "<Pointer-" << func << "-" << std::hex << ((ptr) ? ptr : theValue) << ">";
+        ss << "<" << majorType << "-" << func << "-" << std::hex << ((ptr) ? ptr : theValue) << ">";
 		auto str = ss.str();
 		EnvPrintRouter(env, logicalName, str.c_str());
 	}
+    inline void CLIPS_basePrintAddress_Pointer(void* env, const char* logicalName, void* theValue, const char* func) noexcept {
+        CLIPS_basePrintAddress(env, logicalName, theValue, func, "Pointer");
+    }
+    template<typename Word>
+    using MemoryBlock = Word*;
+
+	template<typename Word>
+	using ManagedMemoryBlock = std::tuple<MemoryBlock<Word>, CLIPSInteger>;
+
+    template<typename Word>
+    inline MemoryBlock<Word> makeMemoryBlock(CLIPSInteger capacity) noexcept {
+        return new Word[capacity];
+    }
+    template<typename Word>
+    inline ManagedMemoryBlock<Word>* makeManageMemoryBlock(CLIPSInteger capacity) noexcept {
+        return new ManagedMemoryBlock<Word>(makeMemoryBlock<Word>(capacity), capacity);
+    }
 #define X(type, capitalizedType, lowcaseVersion) \
 	template<> AddressIDs getExternalAddressIdFromType< type * > () { return AddressIDs:: Ptr_ ## capitalizedType ; } \
 	template<> std::string getNameFromExternalAddressId< AddressIDs:: Ptr_ ## capitalizedType > () { return #lowcaseVersion ; }  \
 	void CLIPS_print ## capitalizedType ## Ptr (void* env, const char* logicalName, void* theValue) { \
-		CLIPS_basePrintAddress(env, logicalName, theValue, getNameFromExternalAddressId<AddressIDs:: Ptr_ ## capitalizedType >().c_str()); \
+		CLIPS_basePrintAddress_Pointer(env, logicalName, theValue, getNameFromExternalAddressId<AddressIDs:: Ptr_ ## capitalizedType >().c_str()); \
 	}
 X(uint8_t, Word8u, word8u)
 X(uint16_t, Word16u, word16u)
@@ -280,52 +297,71 @@ X(int64_t, Word64s, word64s)
 		}
 	}
 
+    inline bool errorMessage(void* env, const std::string& idClass, int idIndex, const std::string& msgPrefix, const std::string& msg) noexcept {
+        PrintErrorID(env, idClass.c_str(), idIndex, false);
+        EnvPrintRouter(env, WERROR, msgPrefix.c_str());
+        EnvPrintRouter(env, WERROR, msg.c_str());
+        EnvPrintRouter(env, WERROR, "\n");
+        EnvSetEvaluationError(env, true);
+        return false;
+    }
+
+
 
 	template<typename Word>
-	using WordMemoryBlock = std::tuple<Word*, CLIPSInteger>;
-	template<typename Word>
 		void CLIPS_newPtr(void* env, DATA_OBJECT* ret) {
-			try {
-				auto id = getExternalAddressIdFromType<Word*>();
-				std::stringstream ss;
-				ss << "new (" << getNameFromExternalAddressId(id) << " memory block)";
-				auto funcStr = ss.str();
-				if (EnvRtnArgCount(env) == 2) {
-					CLIPSValue capacity;
-					if (EnvArgTypeCheck(env, funcStr.c_str(), 2, INTEGER, &capacity) == FALSE) {
-						PrintErrorID(env, "NEW", 1, false);
-						EnvPrintRouter(env, WERROR, "Function ");
-						EnvPrintRouter(env, WERROR, funcStr.c_str());
-						EnvPrintRouter(env, WERROR, " expected an integer for capacity\n");
-						EnvSetEvaluationError(env, true);
-						CVSetBoolean(ret, false);
-					} else {
-						auto size = EnvDOToLong(env, capacity);
-						auto idIndex = getExternalAddressID(env, id);
-						ret->bitType = EXTERNAL_ADDRESS_TYPE;
-						SetpType(ret, EXTERNAL_ADDRESS);
-						auto ptr = new WordMemoryBlock<Word>(new Word[size], size);
-						SetpValue(ret, EnvAddExternalAddress(env, ptr, idIndex));
-					}
-				} else {
-					PrintErrorID(env, "NEW", 1, false);
-					EnvPrintRouter(env, WERROR, "Function new expected no arguments besides type!\n");
-					EnvSetEvaluationError(env, true);
-					CVSetBoolean(ret, false);
-				}
-			} catch(iris::Problem p) {
-				PrintErrorID(env, "NEW", 2, false);
-				std::stringstream s;
-				s << "Function new threw an exception: " << p.what();
-				auto str = s.str();
-				EnvPrintRouter(env, WERROR, str.c_str());
-				EnvSetEvaluationError(env, true);
-				CVSetBoolean(ret, false);
-			}
-		}
+            static bool init = false;
+            static AddressIDs id;
+            static std::string funcStr;
+            static std::string funcErrorPrefix;
+            static std::string type;
+            if (init) {
+                init = false;
+                id = getExternalAddressIdFromType<Word*>();
+                type = getNameFromExternalAddressId(id);
+                std::stringstream ss, ss2;
+                ss << "call (" << type << " memory block)";
+                funcStr = ss.str();
+                ss2 << "Function " << funcStr;
+                funcErrorPrefix = ss2.str();
+            }
+
+            try {
+                if (EnvRtnArgCount(env) == 2) {
+                    CLIPSValue capacity;
+                    if (EnvArgTypeCheck(env, funcStr.c_str(), 2, INTEGER, &capacity) == FALSE) {
+                        CVSetBoolean(ret, false);
+                        errorMessage(env, "NEW", 1, funcErrorPrefix, " expected an integer for capacity!");
+                    } else {
+                        auto size = EnvDOToLong(env, capacity);
+                        auto idIndex = getExternalAddressID(env, id);
+                        ret->bitType = EXTERNAL_ADDRESS_TYPE;
+                        SetpType(ret, EXTERNAL_ADDRESS);
+                        SetpValue(ret, EnvAddExternalAddress(env, makeMemoryBlock<Word>(size), idIndex));
+                    }
+                } else {
+                    errorMessage(env, "NEW", 1, funcErrorPrefix, " function new expected no arguments besides type!");
+                    CVSetBoolean(ret, false);
+                }
+            } catch(iris::Problem p) {
+                CVSetBoolean(ret, false);
+                std::stringstream s;
+                s << "an exception was thrown: " << p.what();
+                auto str = s.str();
+                errorMessage(env, "NEW", 2, funcErrorPrefix, str);
+            }
+        }
+
 	inline constexpr bool inRange(CLIPSInteger capacity, CLIPSInteger address) noexcept {
 		return address >= 0 && address < capacity;
 	}
+
+    template<typename Word>
+    inline void CLIPS_setMemory(Word* memory, CLIPSInteger size, CLIPSInteger value) noexcept {
+        for (CLIPSInteger i = 0; i < size; ++i) {
+            memory[i] = value;
+        }
+    }
 	template<typename Word>
 	bool CLIPS_callPtr(void* env, DATA_OBJECT* value, DATA_OBJECT* ret) {
 		static bool init = true;
@@ -344,16 +380,13 @@ X(int64_t, Word64s, word64s)
 			funcErrorPrefix = ss2.str();
 		}
 		if (GetpType(value) == EXTERNAL_ADDRESS) {
-			auto argCheck = [env](CLIPSValue* storage, int position, int type) { return EnvArgTypeCheck(env, funcStr.c_str(), position, type, storage); };
+#define argCheck(storage, position, type) EnvArgTypeCheck(env, funcStr.c_str(), position, type, storage)
 			auto callErrorMessage = [env, ret](const std::string& subOp, const std::string& rest) {
-				std::stringstream stm;
-				stm << funcErrorPrefix << " " << subOp << ": " << rest << std::endl;
-				auto msg = stm.str();
-				PrintErrorID(env, "CALL", 3, false);
-				EnvPrintRouter(env, WERROR, msg.c_str());
-				EnvSetEvaluationError(env, true);
 				CVSetBoolean(ret, false);
-				return false;
+				std::stringstream stm;
+				stm << " " << subOp << ": " << rest << std::endl;
+				auto msg = stm.str();
+                return errorMessage(env, "CALL", 3, funcErrorPrefix, msg);
 			};
 			auto errOutOfRange = [callErrorMessage, env, ret](const std::string& subOp, CLIPSInteger capacity, CLIPSInteger address) {
 				std::stringstream ss;
@@ -362,23 +395,16 @@ X(int64_t, Word64s, word64s)
 			};
 			CLIPSValue operation;
 			if (EnvArgTypeCheck(env, funcStr.c_str(), 2, SYMBOL, &operation) == FALSE) {
-				PrintErrorID(env, "CALL", 2, false);
-				EnvPrintRouter(env, WERROR, funcErrorPrefix.c_str());
-				EnvPrintRouter(env, WERROR, " expected a function name to call!\n");
-				EnvSetEvaluationError(env, true);
-				return false;
+                return errorMessage(env, "CALL", 2, funcErrorPrefix, "expected a function name to call!");
 			} else {
 				// now figure out what method we are looking at
-				auto tup = static_cast<WordMemoryBlock<Word>*>(DOPToExternalAddress(value));
+				auto tup = static_cast<ManagedMemoryBlock<Word>*>(DOPToExternalAddress(value));
 				auto ptr = std::get<0>(*tup);
 				auto size = std::get<1>(*tup);
 				std::string str(EnvDOToString(env, operation));
 				CVSetBoolean(ret, true);
 				if (str == "clear") {
-					for (CLIPSInteger i = 0; i < size; ++i) {
-						ptr[i] = static_cast<Word>(0);
-					}
-					CVSetBoolean(ret, true);
+                    CLIPS_setMemory<Word>(ptr, size, static_cast<Word>(0));
 				} else if (str == "type") {
 					// get the type of the current thing!
 					CVSetSymbol(ret, type.c_str());
@@ -408,7 +434,6 @@ X(int64_t, Word64s, word64s)
 							errOutOfRange("set", size, addr);
 						} else {
 							ptr[addr] = static_cast<Word>(EnvDOToLong(env, value));
-							CVSetBoolean(ret, true);
 						}
 					}
 				} else if (str == "swap") {
@@ -426,7 +451,6 @@ X(int64_t, Word64s, word64s)
 							errOutOfRange("swap", size, addr1);
 						} else {
 							swap<Word>(ptr[addr0], ptr[addr1]);
-							CVSetBoolean(ret, true);
 						}
 					}
 				} else if (str == "populate") {
@@ -434,30 +458,37 @@ X(int64_t, Word64s, word64s)
 					if (!argCheck(&value, 3, INTEGER)) {
 						return callErrorMessage("populate", "First argument must be a value to populate all of the memory cells with");
 					} else {
-						auto val = static_cast<Word>(EnvDOToLong(env, value));
-						for (CLIPSInteger i = 0; i < size; ++i) {
-							ptr[i] = val;
-						}
-						CVSetBoolean(ret, true);
+                        CLIPS_setMemory<Word>(ptr, size, static_cast<Word>(EnvDOToLong(env, value)));
 					}
+                } else if (str == "increment") {
+                    CLIPSValue address;
+                    if (!argCheck(&address, 3, INTEGER)) {
+                        return callErrorMessage("increment", "First argument must be an address");
+                    } else {
+                        ++ptr[static_cast<Word>(EnvDOToLong(env, address))];
+                    }
+                } else if (str == "decrement") {
+                    CLIPSValue address;
+                    if (!argCheck(&address, 3, INTEGER)) {
+                        return callErrorMessage("decrement", "First argument must be an address");
+                    } else {
+                        --ptr[static_cast<Word>(EnvDOToLong(env, address))];
+                    }
 				} else {
 					return callErrorMessage(str, "<- unknown operation requested!");
 				}
 			}
 			return true;
 		} else {
-			PrintErrorID(env, "CALL", 1, false);
-			EnvPrintRouter(env, WERROR, "Function call expected an external address as the first argument!\n");
-			EnvSetEvaluationError(env, true);
-			return false;
+            return errorMessage(env, "CALL", 1, funcErrorPrefix, "Function call expected an external address as the first argument!");
 		}
+#undef argCheck
 	}
 
 	template<typename Word>
 		bool CLIPS_deletePtr(void* env, void* obj) {
 			if (obj != nullptr) {
-				auto result = static_cast<WordMemoryBlock<Word>*>(obj);
-                delete [] std::get<0>(*result);
+				auto result = static_cast<ManagedMemoryBlock<Word>*>(obj);
 				delete result;
 			}
 			return true;
@@ -487,7 +518,6 @@ defFunctions(Word64s, int64_t);
 
 	template<typename T, ArithmeticOperations op>
 	void CLIPS_arithmeticOperation(UDFContext* context, CLIPSValue* ret) {
-		auto env = UDFContextEnvironment(context);
 		CLIPSValue arg0, arg1;
 		if (!UDFFirstArgument(context, INTEGER_TYPE, &arg0)) {
 			CVSetBoolean(ret, false);
@@ -519,6 +549,7 @@ defFunctions(Word64s, int64_t);
 				}
 				CVSetInteger(ret, static_cast<CLIPSInteger>(result));
 			} catch(iris::Problem p) {
+                auto env = UDFContextEnvironment(context);
 				PrintErrorID(env, "CALL", 3, false);
 				std::stringstream stm;
 				stm << "Arithmetic Operation: " << p.what() << std::endl;

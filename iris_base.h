@@ -360,6 +360,7 @@ inline void swap(T& a, T& b) {
 }
 
 void installExtensions(void* theEnv);
+
 enum class AddressIDs {
 	Ptr_Word8u,
 	Ptr_Word8s,
