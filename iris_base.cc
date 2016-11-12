@@ -484,6 +484,25 @@ X(int64_t, Word64s, word64s)
                         	--ptr[addr];
 						}
                     }
+				} else if (str == "move") {
+					// move the contents of one address to another in the same
+					// memory space
+					CLIPSValue srcAddress, destAddress;
+					if (!argCheck(&srcAddress, 3, INTEGER)) {
+						return callErrorMessage("move", "First argument must be a source address");
+					} else if (!argCheck(&destAddress, 4, INTEGER)) {
+						return callErrorMessage("move", "Second argument must be a destination address");
+					} else {
+						auto srcAddr = static_cast<Word>(EnvDOToLong(env, srcAddress));
+						auto destAddr = static_cast<Word>(EnvDOToLong(env, destAddress));
+						if (!inRange(size, srcAddr)) {
+							errOutOfRange("move", size, srcAddr);
+						} else if (!inRange(size, destAddr)) {
+							errOutOfRange("move", size, destAddr);
+						} else {
+							ptr[destAddr] = ptr[srcAddr];
+						}
+					}
 				} else {
 					return callErrorMessage(str, "<- unknown operation requested!");
 				}
