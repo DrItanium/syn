@@ -374,7 +374,6 @@ enum class AddressIDs {
 	Ptr_Word32s,
 	Ptr_Word64u,
 	Ptr_Word64s,
-	Slice,
 };
 unsigned int getExternalAddressID(void* env, AddressIDs id);
 
@@ -413,10 +412,18 @@ template<typename Word>
 class ManagedMemoryBlock {
 	public:
 		ManagedMemoryBlock(CLIPSInteger capacity) : _memory(new Word[capacity]), _capacity(capacity) { }
-		CLIPSInteger size() const noexcept { return _capacity; }
-		bool legalAddress(CLIPSInteger idx) const { return inRange<CLIPSInteger>(_capacity, idx); }
-		static inline ManagedMemoryBlock<Word>* make(CLIPSInteger capacity) noexcept {
-			return new ManagedMemoryBlock<Word>(capacity);
+		inline CLIPSInteger size() const noexcept                                    { return _capacity; }
+		inline bool legalAddress(CLIPSInteger idx) const noexcept                    { return inRange<CLIPSInteger>(_capacity, idx); }
+		static inline ManagedMemoryBlock<Word>* make(CLIPSInteger capacity) noexcept { return new ManagedMemoryBlock<Word>(capacity); }
+		inline Word getMemoryCellValue(CLIPSInteger addr) noexcept                   { return _memory.get()[addr]; }
+		inline void setMemoryCell(CLIPSInteger addr0, Word value) noexcept           { _memory.get()[addr0] = value; }
+		inline void swapMemoryCells(CLIPSInteger addr0, CLIPSInteger addr1) noexcept { swap<Word>(_memory.get()[addr0], _memory.get()[addr1]); }
+		inline void decrementMemoryCell(CLIPSInteger address) noexcept               { --_memory.get()[address]; }
+		inline void incrementMemoryCell(CLIPSInteger address) noexcept               { ++_memory.get()[address]; }
+
+		inline void copyMemoryCell(CLIPSInteger from, CLIPSInteger to) noexcept {
+			auto ptr = _memory.get();
+			ptr[to] = ptr[from];
 		}
 		inline void setMemoryToSingleValue(Word value) noexcept {
 			auto ptr = _memory.get();
@@ -424,46 +431,10 @@ class ManagedMemoryBlock {
 				ptr[i] = value;
 			}
 		}
-		inline Word getMemoryCellValue(CLIPSInteger addr) noexcept {
-			return _memory.get()[addr];
-		}
-		inline void setMemoryCell(CLIPSInteger addr0, Word value) noexcept {
-			_memory.get()[addr0] = value;
-		}
-		inline void swapMemoryCells(CLIPSInteger addr0, CLIPSInteger addr1) noexcept {
-			swap<Word>(_memory.get()[addr0], _memory.get()[addr1]);
-		}
-		inline void copyMemoryCell(CLIPSInteger from, CLIPSInteger to) noexcept {
-			auto ptr = _memory.get();
-			ptr[to] = ptr[from];
-		}
-		inline void decrementMemoryCell(CLIPSInteger address) noexcept {
-			--_memory.get()[address];
-		}
-		inline void incrementMemoryCell(CLIPSInteger address) noexcept {
-			++_memory.get()[address];
-		}
 	private:
 		std::unique_ptr<Word[]> _memory;
 		CLIPSInteger _capacity;
 };
 
-template<typename Word>
-class Slice {
-	public:
-		Slice(ManagedMemoryBlock<Word>* block, CLIPSInteger begin, CLIPSInteger length) : _block(block), _capacity(block->size() - begin), _begin(begin), _length(length) { }
-		~Slice() { }
-		inline CLIPSInteger beginIndex() const { return _begin; }
-		inline CLIPSInteger length() const { return _length; }
-		inline CLIPSInteger capacity() const { return _capacity; }
-		inline bool legalAddress(CLIPSInteger idx) const { return inRange<CLIPSInteger>(_capacity, idx); }
-		Word& operator[](std::size_t idx) { return (*_block)[idx + _begin]; }
-	private:
-		ManagedMemoryBlock<Word>* _block;
-		CLIPSInteger _capacity;
-		CLIPSInteger _begin;
-		CLIPSInteger _length;
-
-};
 }
 #endif

@@ -260,10 +260,6 @@ namespace iris {
 		X(int32_t, Word32s, word32s)
 		X(int64_t, Word64s, word64s)
 #undef X
-	template<>
-	std::string getNameFromExternalAddressId<AddressIDs::Slice>() { return "memory-slice"; }
-
-
 
 	std::string getNameFromExternalAddressId(AddressIDs id) {
 		switch(id) {
@@ -283,8 +279,6 @@ namespace iris {
 				return getNameFromExternalAddressId<AddressIDs::Ptr_Word32s>();
 			case AddressIDs::Ptr_Word64s:
 				return getNameFromExternalAddressId<AddressIDs::Ptr_Word64s>();
-			case AddressIDs::Slice:
-				return getNameFromExternalAddressId<AddressIDs::Slice>();
 			default:
 				throw iris::Problem("Unimplemented type!");
 		}
@@ -330,7 +324,7 @@ namespace iris {
 						auto idIndex = getExternalAddressID(env, id);
 						ret->bitType = EXTERNAL_ADDRESS_TYPE;
 						SetpType(ret, EXTERNAL_ADDRESS);
-						SetpValue(ret, EnvAddExternalAddress(env, new ManagedMemoryBlock<Word>(size), idIndex));
+						SetpValue(ret, EnvAddExternalAddress(env, ManagedMemoryBlock<Word>::make(size), idIndex));
 					}
 				} else {
 					errorMessage(env, "NEW", 1, funcErrorPrefix, " function new expected no arguments besides type!");

@@ -103,7 +103,7 @@ r{digit}+ { iris17lval.rval = iris17::getregister(); return REGISTER; }
 {omni}+ { 
 	std::string contents(iris17text);
 	iris17lval.sval = (char*)contents.c_str();
-	return SYMBOL;
+	return IRIS17_SYMBOL;
 		}
 %%
 namespace iris17 {

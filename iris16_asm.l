@@ -153,7 +153,7 @@ r{digit}+ { iris16lval.rval = iris16::getregister(); return REGISTER; }
 {omni}+ { 
 	std::string contents(iris16text);
 	iris16lval.sval = (char*)contents.c_str();
-	return SYMBOL;
+	return IRIS16_SYMBOL;
 }
 %%
 namespace iris16 {

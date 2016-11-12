@@ -117,7 +117,7 @@ bool resolve_op(iris17::dynamicop* dop);
 
 %token <rval> REGISTER
 %token <ival> IMMEDIATE
-%token <sval> SYMBOL
+%token <sval> IRIS17_SYMBOL
 
 %%
 Q: /* empty */ |
@@ -179,7 +179,7 @@ statement:
          }
          ;
 label:
-     LABEL SYMBOL { 
+     LABEL IRIS17_SYMBOL { 
 	 iris17::add_label_entry($2, iris17::state.address); 
 	 } ;
 operation:
@@ -371,7 +371,7 @@ icop:
    COMPARE_OP_GREATERTHANOREQUALTO_IMMEDIATE { iris17::curri.op = (byte)iris17::CompareOp::GreaterThanOrEqualToImm; }
 ;
 lexeme:
-      SYMBOL { iris17::curri.hassymbol = 1; 
+      IRIS17_SYMBOL { iris17::curri.hassymbol = 1; 
                iris17::curri.symbol = $1; } | 
       IMMEDIATE { 
 	  //std::cerr << "IMMEDIATE value = " << std::hex << word($1) << std::endl;

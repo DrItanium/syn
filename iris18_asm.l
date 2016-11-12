@@ -118,7 +118,7 @@ r{digit}+   { iris18lval.rval = iris18::getregister(); return REGISTER; }
 [?]{omni}+    { iris18lval.sval = iris18text; return ALIAS; }
 {omni}+     {
     iris18lval.sval = iris18text;
-	return SYMBOL;
+	return IRIS18_SYMBOL;
 }
 %%
 namespace iris18 {

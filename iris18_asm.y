@@ -277,7 +277,7 @@ namespace iris18 {
 
 %token <rval> REGISTER
 %token <ival> IMMEDIATE
-%token <sval> SYMBOL ALIAS
+%token <sval> IRIS18_SYMBOL ALIAS
 %token <ival> BITMASK4
 
 
@@ -305,7 +305,7 @@ directive:
 
 
 directive_word:
-	DIRECTIVE_WORD SYMBOL {
+	DIRECTIVE_WORD IRIS18_SYMBOL {
 		iris18::state.declarations.emplace_back(iris18lineno, iris18::state.address, 1, $2);
 		++iris18::state.address;
 	} |
@@ -315,7 +315,7 @@ directive_word:
 	};
 
 directive_dword:
-	DIRECTIVE_DWORD SYMBOL {
+	DIRECTIVE_DWORD IRIS18_SYMBOL {
 		iris18::state.declarations.emplace_back(iris18lineno, iris18::state.address, 2, $2);
 		iris18::state.address += 2;
 	} |
@@ -333,7 +333,7 @@ statement:
 		 };
 
 label:
-     LABEL SYMBOL {
+     LABEL IRIS18_SYMBOL {
         auto str = std::string($2);
         iris18::state.registerLabel(str);
      };
@@ -630,7 +630,7 @@ bitmask:
 			iris18::op.bitmask = $1;
 	   };
 lexeme:
-	SYMBOL {
+	IRIS18_SYMBOL {
 		iris18::op.isLabel = true;
 		iris18::op.labelValue = $1;
 		iris18::op.fullImmediate = 0;

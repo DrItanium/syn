@@ -184,7 +184,7 @@ bool resolve_op(dynamicop* dop);
 
 %token <rval> REGISTER
 %token <ival> IMMEDIATE
-%token <sval> SYMBOL
+%token <sval> IRIS16_SYMBOL
 
 %%
 Q: /* empty */ |
@@ -255,7 +255,7 @@ statement:
          }
          ;
 label:
-     LABEL SYMBOL { 
+     LABEL IRIS16_SYMBOL { 
       if(iris16::state.segment == iris16::Segment::Code) {
           iris16::add_label_entry($2, iris16::state.code_address);
       } else if (iris16::state.segment == iris16::Segment::Data) {
@@ -480,7 +480,7 @@ icop:
    COMPARE_OP_GREATERTHANOREQUALTO_IMMEDIATE { iris16::curri.op = (byte)iris16::CompareOp::GreaterThanOrEqualToImm; }
 ;
 lexeme:
-      SYMBOL { iris16::curri.hassymbol = 1; 
+      IRIS16_SYMBOL { iris16::curri.hassymbol = 1; 
                iris16::curri.symbol = $1; } | 
       IMMEDIATE { 
             iris16::curri.reg1 = (byte)(($1 & 0x00FF));
