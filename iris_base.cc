@@ -6,6 +6,7 @@
 #include <sstream>
 #include <memory>
 #include <map>
+#include <iostream>
 
 extern "C" {
 	#include "clips.h"
@@ -255,7 +256,7 @@ X(Ptr_Word64s);
         return new Word[capacity];
     }
     template<typename Word>
-    inline ManagedMemoryBlock<Word>* makeManageMemoryBlock(CLIPSInteger capacity) noexcept {
+    inline ManagedMemoryBlock<Word>* makeManagedMemoryBlock(CLIPSInteger capacity) noexcept {
         return new ManagedMemoryBlock<Word>(makeMemoryBlock<Word>(capacity), capacity);
     }
 #define X(type, capitalizedType, lowcaseVersion) \
@@ -337,7 +338,7 @@ X(int64_t, Word64s, word64s)
                         auto idIndex = getExternalAddressID(env, id);
                         ret->bitType = EXTERNAL_ADDRESS_TYPE;
                         SetpType(ret, EXTERNAL_ADDRESS);
-                        SetpValue(ret, EnvAddExternalAddress(env, makeMemoryBlock<Word>(size), idIndex));
+                        SetpValue(ret, EnvAddExternalAddress(env, makeManagedMemoryBlock<Word>(size), idIndex));
                     }
                 } else {
                     errorMessage(env, "NEW", 1, funcErrorPrefix, " function new expected no arguments besides type!");
@@ -380,6 +381,7 @@ X(int64_t, Word64s, word64s)
 			funcErrorPrefix = ss2.str();
 		}
 		if (GetpType(value) == EXTERNAL_ADDRESS) {
+			auto tup = static_cast<ManagedMemoryBlock<Word>*>(DOPToExternalAddress(value));
 #define argCheck(storage, position, type) EnvArgTypeCheck(env, funcStr.c_str(), position, type, storage)
 			auto callErrorMessage = [env, ret](const std::string& subOp, const std::string& rest) {
 				CVSetBoolean(ret, false);
@@ -398,7 +400,6 @@ X(int64_t, Word64s, word64s)
                 return errorMessage(env, "CALL", 2, funcErrorPrefix, "expected a function name to call!");
 			} else {
 				// now figure out what method we are looking at
-				auto tup = static_cast<ManagedMemoryBlock<Word>*>(DOPToExternalAddress(value));
 				auto ptr = std::get<0>(*tup);
 				auto size = std::get<1>(*tup);
 				std::string str(EnvDOToString(env, operation));
@@ -419,7 +420,7 @@ X(int64_t, Word64s, word64s)
 						if (!inRange(size, addr)) {
 							errOutOfRange("get", size, addr);
 						} else {
-							CVSetInteger(ret, static_cast<CLIPSInteger>(ptr[EnvDOToLong(env, address)]));
+							CVSetInteger(ret, static_cast<CLIPSInteger>(ptr[addr]));
 						}
 					}
 				} else if (str == "set") {
