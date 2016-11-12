@@ -15,6 +15,10 @@
                                    ?addr 
                                    (random -128 
                                            128))))
+(deffunction clear-memory
+             (?memory)
+             (call ?memory
+                   clear))
 (deffunction number-of-items 
              (?count ?item) 
              (bind ?output 
