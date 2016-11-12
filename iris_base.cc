@@ -234,18 +234,35 @@ X(Ptr_Word64s);
 	std::string getNameFromExternalAddressId() {
 		throw iris::Problem("unimplemented type!");
 	}
-	void CLIPS_basePrintAddress(void* env, const char* logicalName, void* theValue, const char* func) {
+	void CLIPS_basePrintAddress(void* env, const char* logicalName, void* theValue, const char* func, const char* majorType) {
 		std::stringstream ss;
 		void* ptr = EnvValueToExternalAddress(env, theValue);
-		ss << "<Pointer-" << func << "-" << std::hex << ((ptr) ? ptr : theValue) << ">";
+        ss << "<" << majorType << "-" << func << "-" << std::hex << ((ptr) ? ptr : theValue) << ">";
 		auto str = ss.str();
 		EnvPrintRouter(env, logicalName, str.c_str());
 	}
+    inline void CLIPS_basePrintAddress_Pointer(void* env, const char* logicalName, void* theValue, const char* func) noexcept {
+        CLIPS_basePrintAddress(env, logicalName, theValue, func, "Pointer");
+    }
+    template<typename Word>
+    using MemoryBlock = Word*;
+
+	template<typename Word>
+	using ManagedMemoryBlock = std::tuple<MemoryBlock<Word>, CLIPSInteger>;
+
+    template<typename Word>
+    inline MemoryBlock<Word> makeMemoryBlock(CLIPSInteger capacity) noexcept {
+        return new Word[capacity];
+    }
+    template<typename Word>
+    inline ManagedMemoryBlock<Word>* makeManageMemoryBlock(CLIPSInteger capacity) noexcept {
+        return new ManagedMemoryBlock<Word>(makeMemoryBlock<Word>(capacity), capacity);
+    }
 #define X(type, capitalizedType, lowcaseVersion) \
 	template<> AddressIDs getExternalAddressIdFromType< type * > () { return AddressIDs:: Ptr_ ## capitalizedType ; } \
 	template<> std::string getNameFromExternalAddressId< AddressIDs:: Ptr_ ## capitalizedType > () { return #lowcaseVersion ; }  \
 	void CLIPS_print ## capitalizedType ## Ptr (void* env, const char* logicalName, void* theValue) { \
-		CLIPS_basePrintAddress(env, logicalName, theValue, getNameFromExternalAddressId<AddressIDs:: Ptr_ ## capitalizedType >().c_str()); \
+		CLIPS_basePrintAddress_Pointer(env, logicalName, theValue, getNameFromExternalAddressId<AddressIDs:: Ptr_ ## capitalizedType >().c_str()); \
 	}
 X(uint8_t, Word8u, word8u)
 X(uint16_t, Word16u, word16u)
@@ -290,20 +307,6 @@ X(int64_t, Word64s, word64s)
     }
 
 
-    template<typename Word>
-    using MemoryBlock = Word*;
-
-	template<typename Word>
-	using ManagedMemoryBlock = std::tuple<MemoryBlock<Word>, CLIPSInteger>;
-
-    template<typename Word>
-    inline MemoryBlock<Word> makeMemoryBlock(CLIPSInteger capacity) noexcept {
-        return new Word[capacity];
-    }
-    template<typename Word>
-    inline ManagedMemoryBlock<Word>* makeManageMemoryBlock(CLIPSInteger capacity) noexcept {
-        return new ManagedMemoryBlock<Word>(makeMemoryBlock<Word>(capacity), capacity);
-    }
 
 	template<typename Word>
 		void CLIPS_newPtr(void* env, DATA_OBJECT* ret) {
