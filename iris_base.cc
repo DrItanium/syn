@@ -280,6 +280,15 @@ X(int64_t, Word64s, word64s)
 		}
 	}
 
+    inline bool errorMessage(void* env, const std::string& idClass, int idIndex, const std::string& msgPrefix, const std::string& msg) noexcept {
+        PrintErrorID(env, idClass.c_str(), idIndex, false);
+        EnvPrintRouter(env, WERROR, msgPrefix.c_str());
+        EnvPrintRouter(env, WERROR, msg.c_str());
+        EnvPrintRouter(env, WERROR, "\n");
+        EnvSetEvaluationError(env, true);
+        return false;
+    }
+
 
     template<typename Word>
     using MemoryBlock = Word*;
@@ -318,11 +327,8 @@ X(int64_t, Word64s, word64s)
                 if (EnvRtnArgCount(env) == 2) {
                     CLIPSValue capacity;
                     if (EnvArgTypeCheck(env, funcStr.c_str(), 2, INTEGER, &capacity) == FALSE) {
-                        PrintErrorID(env, "NEW", 1, false);
-                        EnvPrintRouter(env, WERROR, funcErrorPrefix.c_str());
-                        EnvPrintRouter(env, WERROR, " expected an integer for capacity\n");
-                        EnvSetEvaluationError(env, true);
                         CVSetBoolean(ret, false);
+                        errorMessage(env, "NEW", 1, funcErrorPrefix, " expected an integer for capacity!");
                     } else {
                         auto size = EnvDOToLong(env, capacity);
                         auto idIndex = getExternalAddressID(env, id);
@@ -331,21 +337,18 @@ X(int64_t, Word64s, word64s)
                         SetpValue(ret, EnvAddExternalAddress(env, makeMemoryBlock<Word>(size), idIndex));
                     }
                 } else {
-                    PrintErrorID(env, "NEW", 1, false);
-                    EnvPrintRouter(env, WERROR, "Function new expected no arguments besides type!\n");
-                    EnvSetEvaluationError(env, true);
+                    errorMessage(env, "NEW", 1, funcErrorPrefix, " function new expected no arguments besides type!");
                     CVSetBoolean(ret, false);
                 }
             } catch(iris::Problem p) {
-                PrintErrorID(env, "NEW", 2, false);
-                std::stringstream s;
-                s << "Function new threw an exception: " << p.what();
-                auto str = s.str();
-                EnvPrintRouter(env, WERROR, str.c_str());
-                EnvSetEvaluationError(env, true);
                 CVSetBoolean(ret, false);
+                std::stringstream s;
+                s << "an exception was thrown: " << p.what();
+                auto str = s.str();
+                errorMessage(env, "NEW", 2, funcErrorPrefix, str);
             }
         }
+
 	inline constexpr bool inRange(CLIPSInteger capacity, CLIPSInteger address) noexcept {
 		return address >= 0 && address < capacity;
 	}
@@ -356,7 +359,6 @@ X(int64_t, Word64s, word64s)
             memory[i] = value;
         }
     }
-
 	template<typename Word>
 	bool CLIPS_callPtr(void* env, DATA_OBJECT* value, DATA_OBJECT* ret) {
 		static bool init = true;
@@ -377,14 +379,11 @@ X(int64_t, Word64s, word64s)
 		if (GetpType(value) == EXTERNAL_ADDRESS) {
 #define argCheck(storage, position, type) EnvArgTypeCheck(env, funcStr.c_str(), position, type, storage)
 			auto callErrorMessage = [env, ret](const std::string& subOp, const std::string& rest) {
-				std::stringstream stm;
-				stm << funcErrorPrefix << " " << subOp << ": " << rest << std::endl;
-				auto msg = stm.str();
-				PrintErrorID(env, "CALL", 3, false);
-				EnvPrintRouter(env, WERROR, msg.c_str());
-				EnvSetEvaluationError(env, true);
 				CVSetBoolean(ret, false);
-				return false;
+				std::stringstream stm;
+				stm << " " << subOp << ": " << rest << std::endl;
+				auto msg = stm.str();
+                return errorMessage(env, "CALL", 3, funcErrorPrefix, msg);
 			};
 			auto errOutOfRange = [callErrorMessage, env, ret](const std::string& subOp, CLIPSInteger capacity, CLIPSInteger address) {
 				std::stringstream ss;
@@ -393,11 +392,7 @@ X(int64_t, Word64s, word64s)
 			};
 			CLIPSValue operation;
 			if (EnvArgTypeCheck(env, funcStr.c_str(), 2, SYMBOL, &operation) == FALSE) {
-				PrintErrorID(env, "CALL", 2, false);
-				EnvPrintRouter(env, WERROR, funcErrorPrefix.c_str());
-				EnvPrintRouter(env, WERROR, " expected a function name to call!\n");
-				EnvSetEvaluationError(env, true);
-				return false;
+                return errorMessage(env, "CALL", 2, funcErrorPrefix, "expected a function name to call!");
 			} else {
 				// now figure out what method we are looking at
 				auto tup = static_cast<ManagedMemoryBlock<Word>*>(DOPToExternalAddress(value));
@@ -482,10 +477,7 @@ X(int64_t, Word64s, word64s)
 			}
 			return true;
 		} else {
-			PrintErrorID(env, "CALL", 1, false);
-			EnvPrintRouter(env, WERROR, "Function call expected an external address as the first argument!\n");
-			EnvSetEvaluationError(env, true);
-			return false;
+            return errorMessage(env, "CALL", 1, funcErrorPrefix, "Function call expected an external address as the first argument!");
 		}
 #undef argCheck
 	}
