@@ -465,14 +465,24 @@ X(int64_t, Word64s, word64s)
                     if (!argCheck(&address, 3, INTEGER)) {
                         return callErrorMessage("increment", "First argument must be an address");
                     } else {
-                        ++ptr[static_cast<Word>(EnvDOToLong(env, address))];
+						auto addr = static_cast<Word>(EnvDOToLong(env, address));
+						if (!inRange(size, addr)) {
+							errOutOfRange("increment", size, addr);
+						} else {
+                        	++ptr[addr];
+						}
                     }
                 } else if (str == "decrement") {
                     CLIPSValue address;
                     if (!argCheck(&address, 3, INTEGER)) {
                         return callErrorMessage("decrement", "First argument must be an address");
                     } else {
-                        --ptr[static_cast<Word>(EnvDOToLong(env, address))];
+						auto addr = static_cast<Word>(EnvDOToLong(env, address));
+						if (!inRange(size, addr)) {
+							errOutOfRange("decrement", size, addr);
+						} else {
+                        	--ptr[addr];
+						}
                     }
 				} else {
 					return callErrorMessage(str, "<- unknown operation requested!");
