@@ -282,7 +282,12 @@ X(int64_t, Word64s, word64s)
 
 
 	template<typename Word>
-	using WordMemoryBlock = std::tuple<Word*, CLIPSInteger>;
+	using WordMemoryBlock = std::tuple<std::shared_ptr<Word[]>, CLIPSInteger>;
+
+    template<typename Word>
+    WordMemoryBlock<Word>* makeMemoryBlock(CLIPSInteger capacity) {
+        return new WordMemoryBlock<Word>(std::make_shared<Word[]>(new Word[capacity]), capacity);
+    }
 
 	template<typename Word>
 		void CLIPS_newPtr(void* env, DATA_OBJECT* ret) {
@@ -316,8 +321,7 @@ X(int64_t, Word64s, word64s)
                         auto idIndex = getExternalAddressID(env, id);
                         ret->bitType = EXTERNAL_ADDRESS_TYPE;
                         SetpType(ret, EXTERNAL_ADDRESS);
-                        auto ptr = new WordMemoryBlock<Word>(new Word[size], size);
-                        SetpValue(ret, EnvAddExternalAddress(env, ptr, idIndex));
+                        SetpValue(ret, EnvAddExternalAddress(env, makeMemoryBlock<Word>(size), idIndex));
                     }
                 } else {
                     PrintErrorID(env, "NEW", 1, false);
