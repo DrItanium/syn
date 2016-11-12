@@ -281,12 +281,19 @@ X(int64_t, Word64s, word64s)
 	}
 
 
+    template<typename Word>
+    using MemoryBlock = Word*;
+
 	template<typename Word>
-	using WordMemoryBlock = std::tuple<std::shared_ptr<Word[]>, CLIPSInteger>;
+	using ManagedMemoryBlock = std::tuple<MemoryBlock<Word>, CLIPSInteger>;
 
     template<typename Word>
-    WordMemoryBlock<Word>* makeMemoryBlock(CLIPSInteger capacity) {
-        return new WordMemoryBlock<Word>(std::make_shared<Word[]>(new Word[capacity]), capacity);
+    inline MemoryBlock<Word> makeMemoryBlock(CLIPSInteger capacity) noexcept {
+        return new Word[capacity];
+    }
+    template<typename Word>
+    inline ManagedMemoryBlock<Word>* makeManageMemoryBlock(CLIPSInteger capacity) noexcept {
+        return new ManagedMemoryBlock<Word>(makeMemoryBlock<Word>(capacity), capacity);
     }
 
 	template<typename Word>
@@ -393,7 +400,7 @@ X(int64_t, Word64s, word64s)
 				return false;
 			} else {
 				// now figure out what method we are looking at
-				auto tup = static_cast<WordMemoryBlock<Word>*>(DOPToExternalAddress(value));
+				auto tup = static_cast<ManagedMemoryBlock<Word>*>(DOPToExternalAddress(value));
 				auto ptr = std::get<0>(*tup);
 				auto size = std::get<1>(*tup);
 				std::string str(EnvDOToString(env, operation));
@@ -486,8 +493,7 @@ X(int64_t, Word64s, word64s)
 	template<typename Word>
 		bool CLIPS_deletePtr(void* env, void* obj) {
 			if (obj != nullptr) {
-				auto result = static_cast<WordMemoryBlock<Word>*>(obj);
-                delete [] std::get<0>(*result);
+				auto result = static_cast<ManagedMemoryBlock<Word>*>(obj);
 				delete result;
 			}
 			return true;
