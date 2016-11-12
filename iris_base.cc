@@ -465,7 +465,7 @@ X(int64_t, Word64s, word64s)
                     if (!argCheck(&address, 3, INTEGER)) {
                         return callErrorMessage("increment", "First argument must be an address");
                     } else {
-						auto addr = static_cast<Word>(EnvDOToLong(env, address));
+						auto addr = EnvDOToLong(env, address);
 						if (!inRange(size, addr)) {
 							errOutOfRange("increment", size, addr);
 						} else {
@@ -477,7 +477,7 @@ X(int64_t, Word64s, word64s)
                     if (!argCheck(&address, 3, INTEGER)) {
                         return callErrorMessage("decrement", "First argument must be an address");
                     } else {
-						auto addr = static_cast<Word>(EnvDOToLong(env, address));
+						auto addr = EnvDOToLong(env, address);
 						if (!inRange(size, addr)) {
 							errOutOfRange("decrement", size, addr);
 						} else {
@@ -493,8 +493,8 @@ X(int64_t, Word64s, word64s)
 					} else if (!argCheck(&destAddress, 4, INTEGER)) {
 						return callErrorMessage("move", "Second argument must be a destination address");
 					} else {
-						auto srcAddr = static_cast<Word>(EnvDOToLong(env, srcAddress));
-						auto destAddr = static_cast<Word>(EnvDOToLong(env, destAddress));
+						auto srcAddr = EnvDOToLong(env, srcAddress);
+						auto destAddr = EnvDOToLong(env, destAddress);
 						if (!inRange(size, srcAddr)) {
 							errOutOfRange("move", size, srcAddr);
 						} else if (!inRange(size, destAddr)) {
