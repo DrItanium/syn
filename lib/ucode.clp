@@ -146,10 +146,10 @@
   ((?mem EXTERNAL-ADDRESS)
    (?from INTEGER)
    (?to INTEGER))
-  (memory-store ?mem
-                ?to
-                (memory-load ?mem
-                             ?from)))
+  (call ?mem
+        move
+        ?to
+        ?from))
 
 (defmethod ucode::memory-copy
   ((?from-mem EXTERNAL-ADDRESS)
