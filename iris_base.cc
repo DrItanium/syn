@@ -310,56 +310,68 @@ namespace iris {
 						}
 					} else if (argc == 3) {
 						CLIPSValue arg0;
-						if (str == "get") {
-							if (!argCheck(&arg0, 3, INTEGER)) {
-								return callErrorMessage("get", "Argument 0 must be an address!");
+						auto oneCheck = [callErrorMessage, &arg0, env, &str](unsigned int type, const std::string& msg) {
+							if (!argCheck(&arg0, 3, type)) {
+								return callErrorMessage(str, msg);
 							} else {
+								return true;
+							}
+						};
+						if (str == "get") {
+							if (oneCheck(INTEGER, "Argument 0 must be an address!")) {
 								auto addr = EnvDOToLong(env, arg0);
 								if (!ptr->legalAddress(addr)) {
 									errOutOfRange("get", ptr->size(), addr);
 								} else {
 									CVSetInteger(ret, static_cast<CLIPSInteger>(ptr->getMemoryCellValue(addr)));
 								}
+							} else {
+								return false;
 							}
 						} else if (str == "populate") {
-							if (!argCheck(&arg0, 3, INTEGER)) {
-								return callErrorMessage("populate", "First argument must be a value to populate all of the memory cells with");
-							} else {
+							if (oneCheck(INTEGER, "First argument must be a value to populate all of the memory cells with!")) {
 								ptr->setMemoryToSingleValue(static_cast<Word>(EnvDOToLong(env, arg0)));
+							} else {
+								return false;
 							}
 						} else if (str == "increment") {
-							if (!argCheck(&arg0, 3, INTEGER)) {
-								return callErrorMessage("increment", "First argument must be an address");
-							} else {
+							if (oneCheck(INTEGER, "First argument must an address")) {
 								auto addr = EnvDOToLong(env, arg0);
 								if (!ptr->legalAddress(addr)) {
 									errOutOfRange("increment", ptr->size(), addr);
 								} else {
 									ptr->decrementMemoryCell(addr);
 								}
+							} else {
+								return false;
 							}
 						} else if (str == "decrement") {
-							if (!argCheck(&arg0, 3, INTEGER)) {
-								return callErrorMessage("decrement", "First argument must be an address");
-							} else {
+							if (oneCheck(INTEGER, "First argument must be an address")) {
 								auto addr = EnvDOToLong(env, arg0);
 								if (!ptr->legalAddress(addr)) {
 									errOutOfRange("decrement", ptr->size(), addr);
 								} else {
 									ptr->incrementMemoryCell(addr);
 								}
+							} else {
+								return false;
 							}
 						} else { 
 							return callErrorMessage(str, "<- unknown operation requested!");
 						}
 					} else if (argc == 4) {
 						CLIPSValue arg0, arg1;
-						if (str == "set") {
-							if (!argCheck(&arg0, 3, INTEGER)) {
-								return callErrorMessage("set", "First argument must be address!");
-							} else if (!argCheck(&arg1, 4, INTEGER)) {
-								return callErrorMessage("set", "Second argument must be an integer!");
+						auto twoCheck = [callErrorMessage, &arg0, &arg1, env, &str](unsigned int type0, const std::string& msg0, unsigned int type1, const std::string& msg1) {
+							if (!argCheck(&arg0, 3, type0)) {
+								return callErrorMessage(str, msg0);
+							} else if (!argCheck(&arg1, 4, type1)) {
+								return callErrorMessage(str, msg1);
 							} else {
+								return true;
+							}
+						};
+						if (str == "set") {
+							if (twoCheck(INTEGER, "First argument must be address!", INTEGER, "Second argument must be an integer!")) {
 								auto addr = EnvDOToLong(env, arg0);
 								auto value = static_cast<Word>(EnvDOToLong(env, arg1));
 								if (!ptr->legalAddress(addr)) {
@@ -367,13 +379,11 @@ namespace iris {
 								} else {
 									ptr->setMemoryCell(addr, value);
 								}
+							} else {
+								return false;
 							}
 						} else if (str == "swap") {
-							if (!argCheck(&arg0, 3, INTEGER)) {
-								return callErrorMessage("swap", "First argument must be an address");
-							} else if (!argCheck(&arg1, 4, INTEGER)) {
-								return callErrorMessage("swap", "Second argument must be an address");
-							} else {
+							if (twoCheck(INTEGER, "First argument must be an address", INTEGER, "Second argument must be an address")) {
 								auto addr0 = EnvDOToLong(env, arg0);
 								auto addr1 = EnvDOToLong(env, arg1);
 								if (!ptr->legalAddress(addr0)) {
@@ -383,15 +393,13 @@ namespace iris {
 								} else {
 									ptr->swapMemoryCells(addr0, addr1);
 								}
+							} else {
+								return false;
 							}
 						} else if (str == "move") {
 							// move the contents of one address to another in the same
 							// memory space
-							if (!argCheck(&arg0, 3, INTEGER)) {
-								return callErrorMessage("move", "First argument must be a source address");
-							} else if (!argCheck(&arg1, 4, INTEGER)) {
-								return callErrorMessage("move", "Second argument must be a destination address");
-							} else {
+							if (twoCheck(INTEGER, "First argument must be a source address", INTEGER, "Second argument must be a destination address")) {
 								auto srcAddr = EnvDOToLong(env, arg0);
 								auto destAddr = EnvDOToLong(env, arg1);
 								if (!ptr->legalAddress(srcAddr)) {
@@ -401,6 +409,8 @@ namespace iris {
 								} else {
 									ptr->copyMemoryCell(srcAddr, destAddr);
 								}
+							} else {
+								return false;
 							}
 						} else {
 							return callErrorMessage(str, "<- unknown operation requested!");
