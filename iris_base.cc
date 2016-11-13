@@ -222,19 +222,6 @@ namespace iris {
 	inline void CLIPS_basePrintAddress_Pointer(void* env, const char* logicalName, void* theValue, const char* func) noexcept {
 		CLIPS_basePrintAddress(env, logicalName, theValue, func, "Pointer");
 	}
-#define X(type, capitalizedType, lowcaseVersion) \
-	void CLIPS_print ## capitalizedType ## Ptr (void* env, const char* logicalName, void* theValue) { \
-		CLIPS_basePrintAddress_Pointer(env, logicalName, theValue, addressIdToName<AddressIDs:: Ptr_ ## capitalizedType >().c_str()); \
-	}
-		X(uint8_t, Word8u, word8u)
-		X(uint16_t, Word16u, word16u)
-		X(uint32_t, Word32u, word32u)
-		X(uint64_t, Word64u, word64u)
-		X(int8_t, Word8s, word8s)
-		X(int16_t, Word16s, word16s)
-		X(int32_t, Word32s, word32s)
-		X(int64_t, Word64s, word64s)
-#undef X
 
 	std::string getNameFromExternalAddressId(AddressIDs id) {
 		switch(id) {
@@ -280,7 +267,7 @@ namespace iris {
 			if (init) {
 				init = false;
 				id = ManagedMemoryBlock<Word>::id;
-				type = getNameFromExternalAddressId(id);
+				type = addressIdToName<ManagedMemoryBlock<Word>::id>();
 				std::stringstream ss, ss2;
 				ss << "call (" << type << " memory block)";
 				funcStr = ss.str();
@@ -480,7 +467,10 @@ namespace iris {
 #define defFunctions(id, type) \
 	void CLIPS_new ## id ## Ptr (void* env, DATA_OBJECT* ret) { CLIPS_newPtr< type > (env, ret); } \
 	bool CLIPS_delete ## id ## Ptr (void* env, void* ret) { return CLIPS_deletePtr< type > (env, ret); } \
-	bool CLIPS_call ## id ## Ptr (void* env, DATA_OBJECT* theValue, DATA_OBJECT* ret) { return CLIPS_callPtr< type >(env, theValue, ret); }
+	bool CLIPS_call ## id ## Ptr (void* env, DATA_OBJECT* theValue, DATA_OBJECT* ret) { return CLIPS_callPtr< type >(env, theValue, ret); } \
+	void CLIPS_print ## id ## Ptr (void* env, const char* logicalName, void* theValue) { \
+		CLIPS_basePrintAddress_Pointer(env, logicalName, theValue, addressIdToName<AddressIDs:: Ptr_ ## id >().c_str()); \
+	}
 	defFunctions(Word8u, uint8_t);
 	defFunctions(Word16u, uint16_t);
 	defFunctions(Word32u, uint32_t);
