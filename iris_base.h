@@ -365,18 +365,6 @@ inline void swap(T& a, T& b) {
 
 void installExtensions(void* theEnv);
 
-enum class AddressIDs {
-	Ptr_Word8u,
-	Ptr_Word8s,
-	Ptr_Word16u,
-	Ptr_Word16s,
-	Ptr_Word32u,
-	Ptr_Word32s,
-	Ptr_Word64u,
-	Ptr_Word64s,
-};
-unsigned int getExternalAddressID(void* env, AddressIDs id);
-
 template<typename T>
 struct ExternalAddressRegistrar {
 	public:
@@ -408,51 +396,33 @@ inline constexpr bool inRange(T capacity, T address) noexcept {
 	return address >= 0 && address < capacity;
 }
 
-template<typename T> struct TypeToAddressId { };
-template<AddressIDs id> struct AddressIdToType { };
+template<typename T> struct TypeToName { };
 
-#define DefMemoryBlockAssociation(t, v, name) \
+#define DefMemoryBlockAssociation(t, name) \
 	template<> \
-	struct TypeToAddressId< t [] > { \
-	static constexpr AddressIDs id = AddressIDs :: v ; \
-	static std::string getSymbolicName() noexcept { return #name; } \
-}; \
-	template<> \
-struct AddressIdToType< AddressIDs :: v > { \
-	using Type = t []; \
+	struct TypeToName< t [] > { \
 	static std::string getSymbolicName() noexcept { return #name; } \
 }
-	DefMemoryBlockAssociation(int8_t, Ptr_Word8s, word8s);
-	DefMemoryBlockAssociation(uint8_t, Ptr_Word8u, word8u);
-	DefMemoryBlockAssociation(int16_t, Ptr_Word16s, word16s);
-	DefMemoryBlockAssociation(uint16_t, Ptr_Word16u, word16u);
-	DefMemoryBlockAssociation(int32_t, Ptr_Word32s, word32s);
-	DefMemoryBlockAssociation(uint32_t, Ptr_Word32u, word32u);
-	DefMemoryBlockAssociation(int64_t, Ptr_Word64s, word64s);
-	DefMemoryBlockAssociation(uint64_t, Ptr_Word64u, word64u);
+	DefMemoryBlockAssociation(int8_t, word8s);
+	DefMemoryBlockAssociation(uint8_t, word8u);
+	DefMemoryBlockAssociation(int16_t, word16s);
+	DefMemoryBlockAssociation(uint16_t, word16u);
+	DefMemoryBlockAssociation(int32_t, word32s);
+	DefMemoryBlockAssociation(uint32_t, word32u);
+	DefMemoryBlockAssociation(int64_t, word64s);
+	DefMemoryBlockAssociation(uint64_t, word64u);
 #undef DefMemoryBlockAssociation
 
-	template<typename T>
-		AddressIDs typeToAddressId() {
-			return TypeToAddressId<T>::id;
-		}
-	template<AddressIDs id>
-		std::string addressIdToName() {
-			return AddressIdToType<id>::getSymbolicName();
-		}
-	
-
-template<typename T, AddressIDs associatedId = TypeToAddressId<T>::id>
+template<typename T>
 class ExternalAddressWrapper {
 	public:
 		using InternalType = T;
-		static constexpr AddressIDs id = associatedId;
 		ExternalAddressWrapper(std::unique_ptr<T>&& value) : _value(std::move(value)) { }
 		inline T* get() const noexcept { return _value.get(); }
-		inline constexpr AddressIDs getAssociatedAddressId() noexcept { return id; }
 	protected:
 		std::unique_ptr<T> _value;
 };
+void CLIPS_basePrintAddress(void* env, const char* logicalName, void* theValue, const char* func, const char* majorType);
 
 template<typename Word>
 class ManagedMemoryBlock : public ExternalAddressWrapper<Word[]> {

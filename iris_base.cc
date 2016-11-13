@@ -7,6 +7,7 @@
 #include <memory>
 #include <map>
 #include <iostream>
+#include "iris_sfml.h"
 
 extern "C" {
 #include "clips.h"
@@ -196,22 +197,6 @@ namespace iris {
 		}
 	}
 
-	unsigned int getExternalAddressID(void* env, AddressIDs id) {
-		switch(id) {
-#define X(id) case AddressIDs:: id : return ExternalAddressRegistrar< AddressIdToType<AddressIDs:: id >::Type >::getExternalAddressId(env)
-			X(Ptr_Word8u);
-			X(Ptr_Word8s);
-			X(Ptr_Word16u);
-			X(Ptr_Word16s);
-			X(Ptr_Word32u);
-			X(Ptr_Word32s);
-			X(Ptr_Word64u);
-			X(Ptr_Word64s);
-#undef X
-			default:
-			throw iris::Problem("Attempted to retrieve an unimplemented address id!");
-		}
-	}
 	void CLIPS_basePrintAddress(void* env, const char* logicalName, void* theValue, const char* func, const char* majorType) {
 		std::stringstream ss;
 		void* ptr = EnvValueToExternalAddress(env, theValue);
@@ -221,29 +206,6 @@ namespace iris {
 	}
 	inline void CLIPS_basePrintAddress_Pointer(void* env, const char* logicalName, void* theValue, const char* func) noexcept {
 		CLIPS_basePrintAddress(env, logicalName, theValue, func, "Pointer");
-	}
-
-	std::string getNameFromExternalAddressId(AddressIDs id) {
-		switch(id) {
-			case AddressIDs::Ptr_Word8u:
-				return addressIdToName<AddressIDs::Ptr_Word8u>();
-			case AddressIDs::Ptr_Word16u:
-				return addressIdToName<AddressIDs::Ptr_Word16u>();
-			case AddressIDs::Ptr_Word32u:
-				return addressIdToName<AddressIDs::Ptr_Word32u>();
-			case AddressIDs::Ptr_Word64u:
-				return addressIdToName<AddressIDs::Ptr_Word64u>();
-			case AddressIDs::Ptr_Word8s:
-				return addressIdToName<AddressIDs::Ptr_Word8s>();
-			case AddressIDs::Ptr_Word16s:
-				return addressIdToName<AddressIDs::Ptr_Word16s>();
-			case AddressIDs::Ptr_Word32s:
-				return addressIdToName<AddressIDs::Ptr_Word32s>();
-			case AddressIDs::Ptr_Word64s:
-				return addressIdToName<AddressIDs::Ptr_Word64s>();
-			default:
-				throw iris::Problem("Unimplemented type!");
-		}
 	}
 
 	inline bool errorMessage(void* env, const std::string& idClass, int idIndex, const std::string& msgPrefix, const std::string& msg) noexcept {
@@ -260,14 +222,12 @@ namespace iris {
 	template<typename Word>
 		void CLIPS_newPtr(void* env, DATA_OBJECT* ret) {
 			static bool init = false;
-			static AddressIDs id;
 			static std::string funcStr;
 			static std::string funcErrorPrefix;
 			static std::string type;
 			if (init) {
 				init = false;
-				id = ManagedMemoryBlock<Word>::id;
-				type = addressIdToName<ManagedMemoryBlock<Word>::id>();
+				type = TypeToName<typename ManagedMemoryBlock<Word>::InternalType>::getSymbolicName();
 				std::stringstream ss, ss2;
 				ss << "call (" << type << " memory block)";
 				funcStr = ss.str();
@@ -283,7 +243,7 @@ namespace iris {
 						errorMessage(env, "NEW", 1, funcErrorPrefix, " expected an integer for capacity!");
 					} else {
 						auto size = EnvDOToLong(env, capacity);
-						auto idIndex = getExternalAddressID(env, id);
+						auto idIndex = ExternalAddressRegistrar<typename ManagedMemoryBlock<Word>::InternalType>::getExternalAddressId(env);
 						ret->bitType = EXTERNAL_ADDRESS_TYPE;
 						SetpType(ret, EXTERNAL_ADDRESS);
 						SetpValue(ret, EnvAddExternalAddress(env, ManagedMemoryBlock<Word>::make(size), idIndex));
@@ -309,7 +269,7 @@ namespace iris {
 			static std::string type;
 			if (init) {
 				init = false;
-				type = addressIdToName<ManagedMemoryBlock<Word>::id>();
+				type = TypeToName<typename ManagedMemoryBlock<Word>::InternalType>::getSymbolicName();
 				std::stringstream ss, ss2;
 				ss << "call (" << type << " memory block)";
 				funcStr = ss.str();
@@ -469,7 +429,13 @@ namespace iris {
 	bool CLIPS_delete ## id ## Ptr (void* env, void* ret) { return CLIPS_deletePtr< type > (env, ret); } \
 	bool CLIPS_call ## id ## Ptr (void* env, DATA_OBJECT* theValue, DATA_OBJECT* ret) { return CLIPS_callPtr< type >(env, theValue, ret); } \
 	void CLIPS_print ## id ## Ptr (void* env, const char* logicalName, void* theValue) { \
-		CLIPS_basePrintAddress_Pointer(env, logicalName, theValue, addressIdToName<AddressIDs:: Ptr_ ## id >().c_str()); \
+		static bool init = true; \
+		static std::string funcName; \
+		if (init) { \
+			init = false; \
+			funcName = TypeToName<typename ManagedMemoryBlock< type >::InternalType>::getSymbolicName(); \
+		} \
+		CLIPS_basePrintAddress_Pointer(env, logicalName, theValue, funcName.c_str()); \
 	}
 	defFunctions(Word8u, uint8_t);
 	defFunctions(Word16u, uint16_t);
