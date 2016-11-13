@@ -7,7 +7,6 @@
 #include <memory>
 #include <map>
 #include <iostream>
-#include "iris_sfml.h"
 
 extern "C" {
 #include "clips.h"

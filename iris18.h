@@ -527,7 +527,6 @@ namespace iris18 {
 	};
 	Core* newCore() noexcept;
 	void assemble(FILE* input, std::ostream* output);
-	void installExtensions(void* theEnv);
 } // end namespace iris18
 
 #endif // end _TARGET_IRIS18_IRIS_H

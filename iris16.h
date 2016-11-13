@@ -78,6 +78,5 @@ namespace iris16 {
 
 	Core* newCore() noexcept;
 	void assemble(FILE* input, std::ostream* output);
-	void installExtensions(void* theEnv);
 }
 #endif
