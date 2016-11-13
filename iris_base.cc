@@ -361,10 +361,11 @@ namespace iris {
 								return callErrorMessage("set", "Second argument must be an integer!");
 							} else {
 								auto addr = EnvDOToLong(env, arg0);
+								auto value = static_cast<Word>(EnvDOToLong(env, arg1));
 								if (!ptr->legalAddress(addr)) {
 									errOutOfRange("set", ptr->size(), addr);
 								} else {
-									ptr->setMemoryCell(addr, static_cast<Word>(EnvDOToLong(env, arg1)));
+									ptr->setMemoryCell(addr, value);
 								}
 							}
 						} else if (str == "swap") {
