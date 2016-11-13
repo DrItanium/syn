@@ -6,10 +6,11 @@
 
 (deffunction randomize-memory 
              (?memory) 
-             (loop-for-count (?addr 0 
-                                    (- (call ?memory 
-                                             size) 
-                                       1)) do 
+             (bind ?size
+                   (- (call ?memory
+                            size)
+                      1))
+             (loop-for-count (?addr 0 ?size) do 
                              (call ?memory 
                                    set 
                                    ?addr 
@@ -19,6 +20,7 @@
              (?memory)
              (call ?memory
                    clear))
+
 (deffunction number-of-items 
              (?count ?item) 
              (bind ?output 
@@ -26,7 +28,7 @@
              (loop-for-count ?count do 
                              (bind ?output 
                                    ?output 
-                                   ?item)) 
+                                   ?item))
              ?output)
 
 (deffunction make-1m-page 

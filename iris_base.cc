@@ -196,24 +196,9 @@ namespace iris {
 		}
 	}
 
-	template<AddressIDs op>
-		struct TypeFromExternalAddress { };
-#define X(op, type) \
-	template<> struct TypeFromExternalAddress<AddressIDs:: op > {  using Type = type *; }
-
-	X(Ptr_Word8u, uint8_t);
-	X(Ptr_Word8s, int8_t);
-	X(Ptr_Word16u, uint16_t);
-	X(Ptr_Word16s, int16_t);
-	X(Ptr_Word32u, uint32_t);
-	X(Ptr_Word32s, int32_t);
-	X(Ptr_Word64u, uint64_t);
-	X(Ptr_Word64s, int64_t);
-#undef X
-
 	unsigned int getExternalAddressID(void* env, AddressIDs id) {
 		switch(id) {
-#define X(id) case AddressIDs:: id : return ExternalAddressRegistrar< TypeFromExternalAddress<AddressIDs:: id >::Type >::getExternalAddressId(env)
+#define X(id) case AddressIDs:: id : return ExternalAddressRegistrar< AddressIdToType<AddressIDs:: id >::Type >::getExternalAddressId(env)
 			X(Ptr_Word8u);
 			X(Ptr_Word8s);
 			X(Ptr_Word16u);
@@ -227,14 +212,6 @@ namespace iris {
 			throw iris::Problem("Attempted to retrieve an unimplemented address id!");
 		}
 	}
-	template<typename T>
-		AddressIDs getExternalAddressIdFromType() {
-			throw iris::Problem("unspecified type!");
-		}
-	template<AddressIDs id>
-		std::string getNameFromExternalAddressId() {
-			throw iris::Problem("unimplemented type!");
-		}
 	void CLIPS_basePrintAddress(void* env, const char* logicalName, void* theValue, const char* func, const char* majorType) {
 		std::stringstream ss;
 		void* ptr = EnvValueToExternalAddress(env, theValue);
@@ -246,12 +223,10 @@ namespace iris {
 		CLIPS_basePrintAddress(env, logicalName, theValue, func, "Pointer");
 	}
 #define X(type, capitalizedType, lowcaseVersion) \
-	template<> AddressIDs getExternalAddressIdFromType< type * > () { return AddressIDs:: Ptr_ ## capitalizedType ; } \
-	template<> std::string getNameFromExternalAddressId< AddressIDs:: Ptr_ ## capitalizedType > () { return #lowcaseVersion ; }  \
 	void CLIPS_print ## capitalizedType ## Ptr (void* env, const char* logicalName, void* theValue) { \
-		CLIPS_basePrintAddress_Pointer(env, logicalName, theValue, getNameFromExternalAddressId<AddressIDs:: Ptr_ ## capitalizedType >().c_str()); \
+		CLIPS_basePrintAddress_Pointer(env, logicalName, theValue, addressIdToName<AddressIDs:: Ptr_ ## capitalizedType >().c_str()); \
 	}
-	X(uint8_t, Word8u, word8u)
+		X(uint8_t, Word8u, word8u)
 		X(uint16_t, Word16u, word16u)
 		X(uint32_t, Word32u, word32u)
 		X(uint64_t, Word64u, word64u)
@@ -264,21 +239,21 @@ namespace iris {
 	std::string getNameFromExternalAddressId(AddressIDs id) {
 		switch(id) {
 			case AddressIDs::Ptr_Word8u:
-				return getNameFromExternalAddressId<AddressIDs::Ptr_Word8u>();
+				return addressIdToName<AddressIDs::Ptr_Word8u>();
 			case AddressIDs::Ptr_Word16u:
-				return getNameFromExternalAddressId<AddressIDs::Ptr_Word16u>();
+				return addressIdToName<AddressIDs::Ptr_Word16u>();
 			case AddressIDs::Ptr_Word32u:
-				return getNameFromExternalAddressId<AddressIDs::Ptr_Word32u>();
+				return addressIdToName<AddressIDs::Ptr_Word32u>();
 			case AddressIDs::Ptr_Word64u:
-				return getNameFromExternalAddressId<AddressIDs::Ptr_Word64u>();
+				return addressIdToName<AddressIDs::Ptr_Word64u>();
 			case AddressIDs::Ptr_Word8s:
-				return getNameFromExternalAddressId<AddressIDs::Ptr_Word8s>();
+				return addressIdToName<AddressIDs::Ptr_Word8s>();
 			case AddressIDs::Ptr_Word16s:
-				return getNameFromExternalAddressId<AddressIDs::Ptr_Word16s>();
+				return addressIdToName<AddressIDs::Ptr_Word16s>();
 			case AddressIDs::Ptr_Word32s:
-				return getNameFromExternalAddressId<AddressIDs::Ptr_Word32s>();
+				return addressIdToName<AddressIDs::Ptr_Word32s>();
 			case AddressIDs::Ptr_Word64s:
-				return getNameFromExternalAddressId<AddressIDs::Ptr_Word64s>();
+				return addressIdToName<AddressIDs::Ptr_Word64s>();
 			default:
 				throw iris::Problem("Unimplemented type!");
 		}
@@ -304,7 +279,7 @@ namespace iris {
 			static std::string type;
 			if (init) {
 				init = false;
-				id = getExternalAddressIdFromType<Word*>();
+				id = ManagedMemoryBlock<Word>::id;
 				type = getNameFromExternalAddressId(id);
 				std::stringstream ss, ss2;
 				ss << "call (" << type << " memory block)";
@@ -342,14 +317,12 @@ namespace iris {
 	template<typename Word>
 		bool CLIPS_callPtr(void* env, DATA_OBJECT* value, DATA_OBJECT* ret) {
 			static bool init = true;
-			static AddressIDs id;
 			static std::string funcStr;
 			static std::string funcErrorPrefix;
 			static std::string type;
 			if (init) {
 				init = false;
-				id = getExternalAddressIdFromType<Word*>();
-				type = getNameFromExternalAddressId(id);
+				type = addressIdToName<ManagedMemoryBlock<Word>::id>();
 				std::stringstream ss, ss2;
 				ss << "call (" << type << " memory block)";
 				funcStr = ss.str();
@@ -357,7 +330,7 @@ namespace iris {
 				funcErrorPrefix = ss2.str();
 			}
 			if (GetpType(value) == EXTERNAL_ADDRESS) {
-				auto ptr = static_cast<ManagedMemoryBlock<Word>*>(DOPToExternalAddress(value));
+				auto ptr = static_cast<ManagedMemoryBlock_Ptr<Word>>(DOPToExternalAddress(value));
 #define argCheck(storage, position, type) EnvArgTypeCheck(env, funcStr.c_str(), position, type, storage)
 				auto callErrorMessage = [env, ret](const std::string& subOp, const std::string& rest) {
 					CVSetBoolean(ret, false);
@@ -572,41 +545,20 @@ namespace iris {
 			}
 		}
 
-	template<typename T>
-		void CLIPS_Add(UDFContext* context, CLIPSValue* ret) {
-			CLIPS_arithmeticOperation<T, ArithmeticOperations::Add>(context, ret);
-		}
-	template<typename T>
-		void CLIPS_Sub(UDFContext* context, CLIPSValue* ret) {
-			CLIPS_arithmeticOperation<T, ArithmeticOperations::Sub>(context, ret);
-		}
-	template<typename T>
-		void CLIPS_Mul(UDFContext* context, CLIPSValue* ret) {
-			CLIPS_arithmeticOperation<T, ArithmeticOperations::Mul>(context, ret);
-		}
-	template<typename T>
-		void CLIPS_Div(UDFContext* context, CLIPSValue* ret) {
-			CLIPS_arithmeticOperation<T, ArithmeticOperations::Div>(context, ret);
-		}
-	template<typename T>
-		void CLIPS_Rem(UDFContext* context, CLIPSValue* ret) {
-			CLIPS_arithmeticOperation<T, ArithmeticOperations::Rem>(context, ret);
-		}
-
 #define X(type, id) \
-	void CLIPS_Add_ ## id (UDFContext* context, CLIPSValue* ret) { CLIPS_Add<type > (context, ret); } \
-	void CLIPS_Sub_ ## id (UDFContext* context, CLIPSValue* ret) { CLIPS_Sub<type > (context, ret); } \
-	void CLIPS_Mul_ ## id (UDFContext* context, CLIPSValue* ret) { CLIPS_Mul<type > (context, ret); } \
-	void CLIPS_Div_ ## id (UDFContext* context, CLIPSValue* ret) { CLIPS_Div<type > (context, ret); } \
-	void CLIPS_Rem_ ## id (UDFContext* context, CLIPSValue* ret) { CLIPS_Rem<type > (context, ret); }
+	void CLIPS_Add_ ## id (UDFContext* context, CLIPSValue* ret) { CLIPS_arithmeticOperation< type , ArithmeticOperations::Add > (context, ret); } \
+	void CLIPS_Sub_ ## id (UDFContext* context, CLIPSValue* ret) { CLIPS_arithmeticOperation< type , ArithmeticOperations::Sub > (context, ret); } \
+	void CLIPS_Mul_ ## id (UDFContext* context, CLIPSValue* ret) { CLIPS_arithmeticOperation< type , ArithmeticOperations::Mul > (context, ret); } \
+	void CLIPS_Div_ ## id (UDFContext* context, CLIPSValue* ret) { CLIPS_arithmeticOperation< type , ArithmeticOperations::Div > (context, ret); } \
+	void CLIPS_Rem_ ## id (UDFContext* context, CLIPSValue* ret) { CLIPS_arithmeticOperation< type , ArithmeticOperations::Rem > (context, ret); } 
 	X(byte, word8u)
-		X(int8_t, word8s)
-		X(uint16, word16u)
-		X(int16_t, word16s)
-		X(uint32, word32u)
-		X(int32_t, word32s)
-		X(uint64, word64u)
-		X(int64_t, word64s)
+	X(int8_t, word8s)
+	X(uint16, word16u)
+	X(int16_t, word16s)
+	X(uint32, word32u)
+	X(int32_t, word32s)
+	X(uint64, word64u)
+	X(int64_t, word64s)
 #undef X
 
 		void installExtensions(void* theEnv) {
@@ -625,32 +577,22 @@ namespace iris {
 			EnvAddUDF(env, "encode-bits", "l", CLIPS_encodeBits, "CLIPS_encodeBits", 4, 4, "l;l;l;l", nullptr);
 			EnvAddUDF(env, "left-shift", "l", CLIPS_shiftLeft, "CLIPS_shiftLeft", 2, 2, "l;l", nullptr);
 			EnvAddUDF(env, "right-shift", "l", CLIPS_shiftRight, "CLIPS_shiftRight", 2, 2, "l;l", nullptr);
-#define X(id) \
-			EnvAddUDF(env, "add-" #id , "l", CLIPS_Add_ ## id , "CLIPS_Add_" #id , 2, 2, "l;l", nullptr); \
-			EnvAddUDF(env, "sub-" #id , "l", CLIPS_Sub_ ## id , "CLIPS_Sub_" #id , 2, 2, "l;l", nullptr); \
-			EnvAddUDF(env, "mul-" #id , "l", CLIPS_Mul_ ## id , "CLIPS_Mul_" #id , 2, 2, "l;l", nullptr); \
-			EnvAddUDF(env, "div-" #id , "l", CLIPS_Div_ ## id , "CLIPS_Div_" #id , 2, 2, "l;l", nullptr); \
-			EnvAddUDF(env, "rem-" #id , "l", CLIPS_Rem_ ## id , "CLIPS_Rem_" #id , 2, 2, "l;l", nullptr)
-			X(word8u);
-			X(word16u);
-			X(word32u);
-			X(word64u);
-			X(word8s);
-			X(word16s);
-			X(word32s);
-			X(word64s);
-#undef X
 
 #define X(title, id, type) \
 			externalAddressType title = { \
-#title , \
+				#title , \
 				CLIPS_print ## id ## Ptr, \
 				CLIPS_print ## id ## Ptr, \
 				CLIPS_delete ## id ## Ptr, \
 				CLIPS_new ## id ## Ptr, \
 				CLIPS_call ## id ## Ptr, \
 			}; \
-			ExternalAddressRegistrar< type * >::registerExternalAddressId(theEnv, InstallExternalAddressType(theEnv, & title ))
+			ExternalAddressRegistrar< ManagedMemoryBlock< type >::InternalType > ::registerExternalAddressId(theEnv, InstallExternalAddressType(theEnv, & title )); \
+			EnvAddUDF(env, "add-" #title , "l", CLIPS_Add_ ## title , "CLIPS_Add_" #title , 2, 2, "l;l", nullptr); \
+			EnvAddUDF(env, "sub-" #title , "l", CLIPS_Sub_ ## title , "CLIPS_Sub_" #title , 2, 2, "l;l", nullptr); \
+			EnvAddUDF(env, "mul-" #title , "l", CLIPS_Mul_ ## title , "CLIPS_Mul_" #title , 2, 2, "l;l", nullptr); \
+			EnvAddUDF(env, "div-" #title , "l", CLIPS_Div_ ## title , "CLIPS_Div_" #title , 2, 2, "l;l", nullptr); \
+			EnvAddUDF(env, "rem-" #title , "l", CLIPS_Rem_ ## title , "CLIPS_Rem_" #title , 2, 2, "l;l", nullptr)
 			X(word8u, Word8u, uint8_t);
 			X(word16u, Word16u, uint16_t);
 			X(word32u, Word32u, uint32_t);

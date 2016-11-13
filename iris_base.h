@@ -408,33 +408,84 @@ inline constexpr bool inRange(T capacity, T address) noexcept {
 	return address >= 0 && address < capacity;
 }
 
-template<typename Word>
-class ManagedMemoryBlock {
+template<typename T> struct TypeToAddressId { };
+template<AddressIDs id> struct AddressIdToType { };
+
+#define DefMemoryBlockAssociation(t, v, name) \
+	template<> \
+	struct TypeToAddressId< t [] > { \
+	static constexpr AddressIDs id = AddressIDs :: v ; \
+	static std::string getSymbolicName() noexcept { return #name; } \
+}; \
+	template<> \
+struct AddressIdToType< AddressIDs :: v > { \
+	using Type = t []; \
+	static std::string getSymbolicName() noexcept { return #name; } \
+}
+	DefMemoryBlockAssociation(int8_t, Ptr_Word8s, word8s);
+	DefMemoryBlockAssociation(uint8_t, Ptr_Word8u, word8u);
+	DefMemoryBlockAssociation(int16_t, Ptr_Word16s, word16s);
+	DefMemoryBlockAssociation(uint16_t, Ptr_Word16u, word16u);
+	DefMemoryBlockAssociation(int32_t, Ptr_Word32s, word32s);
+	DefMemoryBlockAssociation(uint32_t, Ptr_Word32u, word32u);
+	DefMemoryBlockAssociation(int64_t, Ptr_Word64s, word64s);
+	DefMemoryBlockAssociation(uint64_t, Ptr_Word64u, word64u);
+#undef DefMemoryBlockAssociation
+
+	template<typename T>
+		AddressIDs typeToAddressId() {
+			return TypeToAddressId<T>::id;
+		}
+	template<AddressIDs id>
+		std::string addressIdToName() {
+			return AddressIdToType<id>::getSymbolicName();
+		}
+	
+
+template<typename T, AddressIDs associatedId = TypeToAddressId<T>::id>
+class ExternalAddressWrapper {
 	public:
-		ManagedMemoryBlock(CLIPSInteger capacity) : _memory(new Word[capacity]), _capacity(capacity) { }
+		using InternalType = T;
+		static constexpr AddressIDs id = associatedId;
+		ExternalAddressWrapper(std::unique_ptr<T>&& value) : _value(std::move(value)) { }
+		inline T* get() const noexcept { return _value.get(); }
+		inline constexpr AddressIDs getAssociatedAddressId() noexcept { return id; }
+	protected:
+		std::unique_ptr<T> _value;
+};
+
+template<typename Word>
+class ManagedMemoryBlock : public ExternalAddressWrapper<Word[]> {
+	public:
+		ManagedMemoryBlock(CLIPSInteger capacity) : 
+			ExternalAddressWrapper<Word[]>(std::move(std::unique_ptr<Word[]>(new Word[capacity]))), 
+			_capacity(capacity) { }
 		inline CLIPSInteger size() const noexcept                                    { return _capacity; }
 		inline bool legalAddress(CLIPSInteger idx) const noexcept                    { return inRange<CLIPSInteger>(_capacity, idx); }
 		static inline ManagedMemoryBlock<Word>* make(CLIPSInteger capacity) noexcept { return new ManagedMemoryBlock<Word>(capacity); }
-		inline Word getMemoryCellValue(CLIPSInteger addr) noexcept                   { return _memory.get()[addr]; }
-		inline void setMemoryCell(CLIPSInteger addr0, Word value) noexcept           { _memory.get()[addr0] = value; }
-		inline void swapMemoryCells(CLIPSInteger addr0, CLIPSInteger addr1) noexcept { swap<Word>(_memory.get()[addr0], _memory.get()[addr1]); }
-		inline void decrementMemoryCell(CLIPSInteger address) noexcept               { --_memory.get()[address]; }
-		inline void incrementMemoryCell(CLIPSInteger address) noexcept               { ++_memory.get()[address]; }
+		inline Word getMemoryCellValue(CLIPSInteger addr) noexcept                   { return this->_value.get()[addr]; }
+		inline void setMemoryCell(CLIPSInteger addr0, Word value) noexcept           { this->_value.get()[addr0] = value; }
+		inline void swapMemoryCells(CLIPSInteger addr0, CLIPSInteger addr1) noexcept { swap<Word>(this->_value.get()[addr0], this->_value.get()[addr1]); }
+		inline void decrementMemoryCell(CLIPSInteger address) noexcept               { --this->_value.get()[address]; }
+		inline void incrementMemoryCell(CLIPSInteger address) noexcept               { ++this->_value.get()[address]; }
 
 		inline void copyMemoryCell(CLIPSInteger from, CLIPSInteger to) noexcept {
-			auto ptr = _memory.get();
+			auto ptr = this->_value.get();
 			ptr[to] = ptr[from];
 		}
 		inline void setMemoryToSingleValue(Word value) noexcept {
-			auto ptr = _memory.get();
+			auto ptr = this->_value.get();
 			for (CLIPSInteger i = 0; i < _capacity; ++i) {
 				ptr[i] = value;
 			}
 		}
 	private:
-		std::unique_ptr<Word[]> _memory;
 		CLIPSInteger _capacity;
 };
+
+template<typename Word>
+using ManagedMemoryBlock_Ptr = ManagedMemoryBlock<Word>*;
+
 
 }
 #endif
