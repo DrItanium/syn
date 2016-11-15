@@ -1,90 +1,90 @@
-; assembler parsing
-(defmodule parsing
+; assembler parse and lex
+(defmodule assembler
            (import cortex
                    ?ALL)
            (export ?ALL))
-(defgeneric parsing::registerp
+(defgeneric assembler::registerp
             "Is the given symbol a register?")
-(defgeneric parsing::register-to-index
+(defgeneric assembler::register-to-index
             "convert the given register to an index value")
-(defgeneric parsing::index-to-register
+(defgeneric assembler::index-to-register
             "convert the given index to a register symbol")
-(defgeneric parsing::bitmaskp
+(defgeneric assembler::bitmaskp
             "is the given value a bitmask?")
-(defgeneric parsing::binaryp
+(defgeneric assembler::binaryp
             "is the given symbol a binary number?")
-(defgeneric parsing::hexp
+(defgeneric assembler::hexp
             "is the given symbol a hexadecimal number?")
 
-(defmethod parsing::binaryp
+(defmethod assembler::binaryp
   ((?value LEXEME))
   (has-prefix ?value
               0b))
-(defmethod parsing::binaryp
-  (?value) 
-  FALSE)
-
-(defmethod parsing::hexp
-  ((?value LEXEME))
-  (has-prefix ?value
-              0x))
-(defmethod parsing::hexp
-  (?value) 
-  FALSE)
-
-
-(defmethod parsing::bitmaskp
-  ((?value LEXEME))
-  (has-prefix ?value 
-              0m))
-
-(defmethod parsing::bitmaskp
+(defmethod assembler::binaryp
   (?value)
   FALSE)
 
-(defmethod parsing::registerp
+(defmethod assembler::hexp
+  ((?value LEXEME))
+  (has-prefix ?value
+              0x))
+(defmethod assembler::hexp
+  (?value)
+  FALSE)
+
+
+(defmethod assembler::bitmaskp
+  ((?value LEXEME))
+  (has-prefix ?value
+              0m))
+
+(defmethod assembler::bitmaskp
+  (?value)
+  FALSE)
+
+(defmethod assembler::registerp
   ((?sym SYMBOL))
   (and (has-prefix ?sym r)
-       (integerp 
+       (integerp
          (string-to-field
            (sub-string 2 (length$ ?sym)
                        ?sym)))))
-(defmethod parsing::registerp
+(defmethod assembler::registerp
   ((?sym INTEGER))
   FALSE)
 
-(defmethod parsing::register-to-index
+(defmethod assembler::register-to-index
   ((?sym SYMBOL
          (registerp ?sym)))
-  (string-to-field 
+  (string-to-field
     (sub-string 2 (length$ ?sym)
                 ?sym)))
 
-(defmethod parsing::index-to-register
+(defmethod assembler::index-to-register
   ((?index INTEGER
            (>= ?index 0)))
-  (sym-cat r 
+  (sym-cat r
            ?index))
-(defclass parsing::statement
+(defclass assembler::statement
   (is-a indexed-thing-with-children
         has-title))
-(defclass parsing::operand
+(defclass assembler::operand
   (is-a thing
         has-value))
-(defclass parsing::immediate-operand
+(defclass assembler::immediate-operand
   (is-a operand))
 
-(defclass parsing::bitmask-operand
+(defclass assembler::bitmask-operand
  (is-a operand))
-(defclass parsing::stack-operand
+(defclass assembler::stack-operand
  (is-a operand))
-(defclass parsing::indirect-operand
+(defclass assembler::indirect-operand
  (is-a operand))
- 
 
-(defclass parsing::instruction
+
+(defclass assembler::instruction
   (is-a statement)
-  (slot group 
+  (slot group
         (type SYMBOL)
         (visibility public)
         (storage local)
@@ -95,7 +95,7 @@
         (storage local)
         (default ?NONE)))
 
-(defclass parsing::register-alias
+(defclass assembler::register-alias
   (is-a statement)
   (slot actual-register
         (type SYMBOL
@@ -104,17 +104,17 @@
         (storage local)
         (default ?NONE)))
 
-(defmethod parsing::register-to-index
+(defmethod assembler::register-to-index
   ((?register register-alias))
   (register-to-index (send ?register
                            get-actual-register)))
-(defmethod parsing::registerp
+(defmethod assembler::registerp
   ((?register register-alias))
   (registerp (send ?register
                    get-actual-register)))
 
 
-(defclass parsing::label
+(defclass assembler::label
   (is-a statement)
   (slot address
         (type INTEGER
@@ -125,7 +125,7 @@
         (storage local)
         (default-dynamic undefined)))
 
-(defclass parsing::data
+(defclass assembler::data
   (is-a statement)
   (slot value
         (type INTEGER
@@ -136,16 +136,16 @@
         (storage local)
         (default ?NONE)))
 
-(defclass parsing::scope
+(defclass assembler::scope
   (is-a statement
         indexed-thing-with-children))
 
-(defclass parsing::section
+(defclass assembler::section
   (is-a scope
         has-title))
 
 
-(deftemplate parsing::line
+(deftemplate assembler::line
              "A single line when dealing with an assembler syntax which is line by line"
              (slot parent
                    (type SYMBOL)
@@ -158,7 +158,7 @@
                    (default ?NONE))
              (multislot exploded-line))
 
-(deftemplate parsing::file-information
+(deftemplate assembler::file-information
              (slot path
                    (type LEXEME)
                    (default ?NONE))
@@ -170,7 +170,7 @@
              (slot current-line
                    (type LEXEME)))
 
-(defrule parsing::open-file
+(defrule assembler::open-file
          ?f <- (file-information (router nil)
                                  (path ?path))
          =>
@@ -184,7 +184,7 @@
            (printout werror "Couldn't open " ?path " for reading!" crlf)
            (halt)))
 
-(defrule parsing::readline
+(defrule assembler::readline
          ?f <- (file-information (current-line ?line&~EOF)
                                  (count ?index)
                                  (router ?router&~nil))
@@ -193,23 +193,23 @@
                        (raw-line ?line)
                        (exploded-line (explode$ ?line))
                        (line-index ?index)))
-         (modify ?f 
+         (modify ?f
                  (current-line (readline ?router))
                  (count (+ ?index 1))))
-(defrule parsing::done
+(defrule assembler::done
          (file-information (current-line EOF)
                            (router ?router&~nil))
          =>
          (close ?router))
 
 
-(deffunction parsing::parse-file
+(deffunction assembler::parse-file
              (?path)
              (assert (file-information (path ?path)))
-             (focus parsing)
+             (focus assembler)
              (run))
 
-(defrule parsing::identify-labels
+(defrule assembler::identify-labels
          (declare (salience 1))
          ?f <- (line (exploded-line @label ?name)
                      (parent ?parent))
@@ -219,7 +219,7 @@
                         (parent ?parent)
                         (title ?name)))
 
-(defrule parsing::identify-register-alias
+(defrule assembler::identify-register-alias
          (declare (salience 1))
          ?f <- (line (exploded-line @alias ?name ?register)
                      (line-index ?index)
@@ -232,7 +232,7 @@
                         (actual-register ?register)
                         (parent ?parent)))
 
-(defrule parsing::identify-instruction
+(defrule assembler::identify-instruction
          ?f <- (line (exploded-line ?group ?operation $?rest)
                      (line-index ?index)
                      (parent ?parent))
@@ -245,20 +245,20 @@
                         (operation ?operation)
                         (children $?rest)))
 
-(defrule parsing::mark-immediate-operand
+(defrule assembler::mark-immediate-operand
          ?f <- (object (is-a instruction)
                        (children $?a immediate ?value $?rest)
                        (name ?instruction))
          =>
-         (modify-instance ?f 
+         (modify-instance ?f
                           (children $?a (make-instance of immediate-operand
                                                        (parent ?instruction)
                                                        (value ?value))
                                     $?rest)))
 
-(defrule parsing::identify-bitmask-entries
+(defrule assembler::identify-bitmask-entries
          ?f <- (object (is-a instruction)
-                       (children $?a 
+                       (children $?a
                                  ?bitmask&:(bitmaskp ?bitmask)
                                  $?b)
                        (name ?inst))
@@ -269,7 +269,7 @@
                                                       (value ?bitmask))
                                     ?b)))
 
-(defrule parsing::identify-stack-operation
+(defrule assembler::identify-stack-operation
          ?f <- (object (is-a instruction)
                        (children $?a
                                  stack ?value&:(registerp ?value)
@@ -277,13 +277,13 @@
                        (name ?inst))
          =>
          (modify-instance ?f
-                          (children $?a 
+                          (children $?a
                                     (make-instance of stack-operand
                                                    (parent ?inst)
                                                    (value ?value))
                                     $?b)))
 
-(defrule parsing::identify-indirect-operation
+(defrule assembler::identify-indirect-operation
          ?f <- (object (is-a instruction)
                        (children $?a
                                  indirect ?value&:(registerp ?value)
@@ -291,13 +291,13 @@
                        (name ?inst))
          =>
          (modify-instance ?f
-                          (children $?a 
+                          (children $?a
                                     (make-instance of indirect-operand
                                                    (parent ?inst)
                                                    (value ?value))
                                     $?b)))
 
-(defrule parsing::translate-halve-macro
+(defrule assembler::translate-halve-macro
          ?f <- (object (is-a instruction)
                        (group halve)
                        (operation ?register))
@@ -307,7 +307,7 @@
                           (operation div)
                           (children ?register ?register immediate 2)))
 
-(defrule parsing::translate-increment-macro
+(defrule assembler::translate-increment-macro
          ?f <- (object (is-a instruction)
                        (group increment)
                        (operation ?register))
@@ -317,7 +317,7 @@
                           (operation add)
                           (children ?register ?register immediate 1)))
 
-(defrule parsing::translate-decrement-macro
+(defrule assembler::translate-decrement-macro
          ?f <- (object (is-a instruction)
                        (group decrement)
                        (operation ?register))
@@ -327,7 +327,7 @@
                           (operation sub)
                           (children ?register ?register immediate 1)))
 
-(defrule parsing::translate-zero-macro
+(defrule assembler::translate-zero-macro
          ?f <- (object (is-a instruction)
                        (group zero)
                        (operation ?register))
@@ -336,12 +336,12 @@
                           (group arithmetic)
                           (operation sub)
                           (children ?register ?register ?register)))
-(defrule parsing::translate-double-macro
+(defrule assembler::translate-double-macro
          ?f <- (object (is-a instruction)
                        (group double)
                        (operation ?register))
          =>
-         (modify-instance ?f 
+         (modify-instance ?f
                           (group arithmetic)
                           (operation mul)
                           (children ?register ?register immediate 2)))
