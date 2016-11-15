@@ -1,13 +1,19 @@
 (defmodule cortex
            "Defines basic functions and such!"
            (export ?ALL))
-
+(defglobal cortex
+           ?*priority:first* = 10000
+           ?*priority:three* = 3
+           ?*priority:two* = 2
+           ?*priority:one* = 1
+           ?*priority:last* = -9999
+           ?*priority:dead-last* = -10000)
 (defgeneric cortex::increment
             "Increment the given number by 1")
 (defgeneric cortex::decrement
             "Decrement the given number by 1")
 
-(defmethod cortex::increment 
+(defmethod cortex::increment
   ((?value INTEGER))
   (+ ?value
      1))
@@ -32,10 +38,10 @@
 (defmessage-handler cortex::thing parent-is primary
                     "Is the given name a parent of the current thing"
                     (?c)
-                    (or (eq ?c 
+                    (or (eq ?c
                             ?self:parent)
                         (and (instancep ?self:parent)
-                             (send ?self:parent 
+                             (send ?self:parent
                                    parent-is
                                    ?c))))
 
