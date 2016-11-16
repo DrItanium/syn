@@ -20,6 +20,10 @@
            (import cortex
                    ?ALL)
            (export ?ALL))
+(deftemplate lisp-parse::parse-request
+             (slot path
+                   (type LEXEME)
+                   (default ?NONE)))
 (defgeneric lisp-parse::no-strings-in-list
             "checks to see if the given list is free of strings")
 (defgeneric lisp-parse::no-primitive-strings-in-list
@@ -49,8 +53,8 @@
   (slot parent
         (source composite)
         (storage shared)
-        (access read-only)
-        (default nil))
+        (access initialize-only)
+        (default FALSE))
   (slot path
         (visibility public)
         (storage local)
@@ -166,7 +170,7 @@
                          TRUE)))
 ;------------------------------------------------------------------------------
 (defrule lisp-parse::open-file
-         ?f <- (open ?path)
+         ?f <- (parse-request (path ?path))
          =>
          (retract ?f)
          (bind ?name
@@ -416,7 +420,6 @@
 ;-----------------------------------------------------------------------------
 ; Auto generated rules for special symbols
 ;-----------------------------------------------------------------------------
-
 (defrule lisp-parse::construct-special-instance:or-constraint
          "convert a symbol of type OR_CONSTRAINT to class of type or-constraint"
          (declare (salience 2))
