@@ -12,6 +12,9 @@
              (slot shift
                    (type INTEGER)
                    (default ?NONE))
+             (slot input-type
+                   (type LEXEME)
+                   (default FALSE))
              (slot output-type
                    (type LEXEME)
                    (default ?NONE)))
@@ -21,7 +24,8 @@
          =>
          (printout t
                    "#ifndef " (upcase ?name) crlf
-                   "#define " (upcase ?name) crlf))
+                   "#define " (upcase ?name) crlf
+                   "#include \"iris_base.h\"" crlf))
 (defrule MAIN::generate-endif-header
          (declare (salience ?*priority:dead-last*))
          (title ?name)
@@ -29,32 +33,54 @@
          (printout t
                    "#endif // end " (upcase ?name) crlf))
 
-(defrule MAIN::generate-field:c++
-         (input-type ?value)
+(deffunction generate-encode-decode-ops 
+             (?t ?name ?value ?mask ?shift)
+             (format t
+                     "inline constexpr %s decode%s(%s value) noexcept { return iris::decodeBits<%s, %s, %s, %s>(value); }%n"
+                     ?t
+                     ?name
+                     ?value
+                     ?value
+                     ?t
+                     (str-cat ?mask)
+                     (str-cat ?shift))
+             (format t
+                     "inline constexpr %s encode%s(%s value, %s field) noexcept { return iris::encodeBits<%s, %s, %s, %s>(value, field); }%n"
+                     ?value
+                     ?name
+                     ?value
+                     ?t
+                     ?value
+                     ?t
+                     (str-cat ?mask)
+                     (str-cat ?shift)))
+
+(defrule MAIN::generate-field:c++:use-input-type
          (field (name ?name)
                 (mask ?mask)
                 (shift ?shift)
-                (output-type ?t))
+                (output-type ?t)
+                (input-type FALSE))
+         (input-type ?value)
          =>
-         (format t
-                 "inline constexpr %s decode%s(%s value) noexcept { return iris::decodeBits<%s, %s, %s, %s>(value); }%n"
-                 ?t
-                 ?name
-                 ?value
-                 ?value
-                 ?t
-                 (str-cat ?mask)
-                 (str-cat ?shift))
-         (format t
-                 "inline constexpr %s encode%s(%s value, %s field) noexcept { return iris::encodeBits<%s, %s, %s, %s>(value, field); }%n"
-                 ?value
-                 ?name
-                 ?value
-                 ?t
-                 ?value
-                 ?t
-                 (str-cat ?mask)
-                 (str-cat ?shift)))
+         (generate-encode-decode-ops ?t 
+                                     ?name 
+                                     ?value 
+                                     ?mask 
+                                     ?shift))
+
+(defrule MAIN::generate-field:c++:use-embedded-type
+         (field (name ?name)
+                (mask ?mask)
+                (shift ?shift)
+                (output-type ?t)
+                (input-type ?value&~FALSE))
+         =>
+         (generate-encode-decode-ops ?t 
+                                     ?name 
+                                     ?value 
+                                     ?mask 
+                                     ?shift))
 
 (deftemplate enum
              (slot name
@@ -65,33 +91,15 @@
                          LEXEME)
                    (range 0 ?VARIABLE)
                    (default ?NONE))
-             (slot mask
-                   (default ?NONE))
-             (slot shift
-                   (type INTEGER)
-                   (default ?NONE))
              (slot cast-to
-                   (type LEXEME)
-                   (default ?NONE))
-             (slot field-name
                    (type LEXEME)
                    (default ?NONE))
              (multislot children
                         (default ?NONE)))
 
-(defrule MAIN::make-field-from-enum
-         (enum (field-name ?name)
-               (mask ?mask)
-               (shift ?shift)
-               (cast-to ?t))
-         (input-type ?input)
-         =>
-         (assert (field (name ?name)
-                        (mask ?mask)
-                        (shift ?shift)
-                        (output-type ?input))))
 
 (defrule MAIN::generate-enum:c++
+         (declare (salience 1))
          (enum (name ?name)
                (cast-to ?ct)
                (max-size ?size)
@@ -113,4 +121,4 @@
                  (str-cat ?size)
                  (format nil
                          "Too many %s entries defined!"
-                         ?ct)))
+                         ?name)))

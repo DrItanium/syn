@@ -53,10 +53,10 @@ namespace iris19 {
 			byte getBitmask() const noexcept;
 			byte getSubType() const noexcept;
 			inline Operation getOperation() const noexcept { return decodeControl(_rawValue); }
-			inline bool branchMarkedIf() const noexcept { return isOperation<Operation::Branch>() && getBranchFlagIsIfForm(); }
-			inline bool branchMarkedCall() const noexcept { return isOperation<Operation::Branch>() && getBranchFlagIsCallForm(); }
-			inline bool branchMarkedConditional() const noexcept { return isOperation<Operation::Branch>() && getBranchFlagIsConditional(); }
-			inline bool shiftLeft() const noexcept { return isOperation<Operation::Shift>() && getShiftFlagLeft(); }
+			inline bool branchMarkedIf() const noexcept { return isOperation<Operation::Branch>() && decodeBranchFlagIsIfForm(_rawValue); }
+			inline bool branchMarkedCall() const noexcept { return isOperation<Operation::Branch>() && decodeBranchFlagIsCallForm(_rawValue); }
+			inline bool branchMarkedConditional() const noexcept { return isOperation<Operation::Branch>() && decodeBranchFlagIsConditional(_rawValue); }
+			inline bool shiftLeft() const noexcept { return isOperation<Operation::Shift>() && decodeShiftFlagLeft(_rawValue); }
 			byte getSource0() const noexcept;
 			byte getSource1() const noexcept;
 			RegisterValue getImmediate8() const noexcept;
@@ -69,14 +69,21 @@ namespace iris19 {
 
 			template<Operation op>
 			inline bool isOperation() const noexcept {
-				return getControl() == op;
+				return decodeControl(_rawValue) == op;
 			}
 
 
-//		private:
-//#define X(title, mask, shift, type, post) inline type get ## title () const noexcept { return iris::decodeBits<RawInstruction, type, mask, shift>(_rawValue); }
-//#include "def/iris19/instruction.def"
-//#undef X
+		private:
+			inline Operation getControl() const noexcept { return decodeControl(_rawValue); }
+			inline byte getDestinationIndex() const noexcept { return decodeDestinationIndex(_rawValue); }
+			inline byte getSource0Index() const noexcept { return decodeSource0Index(_rawValue); }
+			inline byte getSource1Index() const noexcept { return decodeSource1Index(_rawValue); }
+			inline byte getShortImmediate() const noexcept { return decodeShortImmediate(_rawValue); }
+			inline byte getRawBitmask() const noexcept { return decodeRawBitmask(_rawValue); }
+			inline byte getArithmeticFlagType() const noexcept { return decodeArithmeticFlagType(_rawValue); }
+			inline byte getLogicalFlagType() const noexcept { return decodeLogicalFlagType(_rawValue); }
+			inline byte getCompareType() const noexcept { return decodeCompareType(_rawValue); }
+			inline byte getMoveSubtype() const noexcept { return decodeMoveSubtype(_rawValue); }
 		private:
 			RawInstruction _rawValue;
 	};
@@ -190,13 +197,6 @@ namespace iris19 {
 			SystemFunction systemHandlers[ArchitectureConstants::MaxSystemCalls] =  { 0 };
 	};
 
-
-//#define X(title, mask, shift, type, post) \
-//	constexpr inline Word encode ## title (Word input, type value) noexcept { \
-//		return iris::encodeBits<Word, type, mask, shift>(input, value); \
-//	}
-//#include "def/iris19/instruction.def"
-//#undef X
 	struct InstructionEncoder {
 		int currentLine;
 		RegisterValue address;
