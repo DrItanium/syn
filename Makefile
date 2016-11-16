@@ -10,11 +10,11 @@ ARCH_OBJECTS = iris17.o \
 			   iris19.o
 
 COMMON_THINGS = iris_base.o \
-				sim_registration.o \
-				${ARCH_OBJECTS} \
 				libmaya.a
 
 SIM_OBJECTS = iris_sim.o \
+			  sim_registration.o \
+			  ${ARCH_OBJECTS} \
 			  ${COMMON_THINGS}
 
 SIM_BINARY = iris_sim
@@ -31,6 +31,8 @@ ASM_PARSERS_OBJECTS = iris16_lex.yy.o \
 ASM_OBJECTS = iris_asm.o \
 			  asm_interact.o \
 			  ${COMMON_THINGS} \
+				${ARCH_OBJECTS} \
+				sim_registration.o \
 			  ${ASM_PARSERS_OBJECTS}
 
 REPL_BINARY = iris_repl
@@ -54,6 +56,8 @@ ASM_PARSERS = iris16_lex.yy.c \
 ASM_BINARY = iris_asm
 
 LINK_OBJECTS = iris_link.o \
+				${ARCH_OBJECTS} \
+				sim_registration.o \
 			  ${COMMON_THINGS}
 
 LINK_BINARY = iris_link
@@ -139,7 +143,7 @@ ${ASM_BINARY}: ${ASM_OBJECTS}
 
 ${REPL_BINARY}: ${REPL_OBJECTS}
 	@echo -n Building ${REPL_BINARY} binary out of $^...
-	@${CXX} ${LIBS} -o ${REPL_BINARY} ${REPL_OBJECTS} 
+	@${CXX} ${LIBS} -o ${REPL_BINARY} ${REPL_OBJECTS}
 	@echo done.
 
 clean:
@@ -167,6 +171,8 @@ uninstall:
 
 .PHONY: all options clean install uninstall
 
+iris19_defines.h: iris_repl def/iris19/instruction.clp cmd/deffield.clp lib/cortex.clp lib/reset-run-exit.clp
+	./iris_repl -f2 lib/cortex.clp -f2 cmd/deffield.clp -f2 def/iris19/instruction.clp -f2 lib/reset-run-exit.clp > iris19_defines.h
 
 asm_interact.o: asm_interact.cc asm_interact.h iris18.h iris_base.h \
  Problem.h Core.h sim_registration.h def/iris18/ops.def \
@@ -203,7 +209,7 @@ iris18.o: iris18.cc iris18.h iris_base.h Problem.h Core.h \
 iris19.o: iris19.cc iris19.h iris_base.h Problem.h Core.h \
  sim_registration.h def/iris19/ops.def def/iris19/arithmetic_ops.def \
  def/iris19/compare.enum def/iris19/logical.enum def/iris19/move.def \
- def/iris19/instruction.def
+ def/iris19/instruction.def iris19_defines.h
 iris_asm.o: iris_asm.cc Problem.h asm_interact.h
 iris_base.o: iris_base.cc iris_base.h Problem.h
 iris_link.o: iris_link.cc Core.h sim_registration.h Problem.h
@@ -236,10 +242,7 @@ iris_repl.o: iris_repl.cc misc/maya/clips.h misc/maya/setup.h \
  misc/maya/classinf.h misc/maya/classini.h misc/maya/classpsr.h \
  misc/maya/defins.h misc/maya/inscom.h misc/maya/insfun.h \
  misc/maya/insfile.h misc/maya/msgcom.h misc/maya/msgpass.h \
- misc/maya/objrtmch.h iris19.h iris_base.h Problem.h Core.h \
- sim_registration.h def/iris19/ops.def def/iris19/arithmetic_ops.def \
- def/iris19/compare.enum def/iris19/logical.enum def/iris19/move.def \
- def/iris19/instruction.def
+ misc/maya/objrtmch.h iris_base.h Problem.h Core.h
 iris_sim.o: iris_sim.cc Problem.h Core.h sim_registration.h iris18.h \
  iris_base.h def/iris18/ops.def def/iris18/arithmetic_ops.def \
  def/iris18/syscalls.def def/iris18/compare.enum def/iris18/logical.enum \
@@ -267,7 +270,10 @@ sim_registration.o: sim_registration.cc sim_registration.h Core.h \
  def/iris17/arithmetic.def def/iris17/move.def def/iris17/jump.def \
  def/iris17/misc.def def/iris17/syscalls.def iris19.h def/iris19/ops.def \
  def/iris19/arithmetic_ops.def def/iris19/compare.enum \
- def/iris19/logical.enum def/iris19/move.def def/iris19/instruction.def
+ def/iris19/logical.enum def/iris19/move.def def/iris19/instruction.def \
+ iris19_defines.h
 Storage.o: Storage.cc Storage.h Core.h iris16.h iris_base.h Problem.h \
  def/iris16/enums.def def/iris16/core_body.def def/iris16/groups.def \
  def/iris16/misc.def def/iris16/instruction.def
+
+

@@ -1,6 +1,7 @@
 ; several types of actions: flags, register, and custom
 (deffacts instruction-description
-          (input-type word)
+          (input-type Word)
+          (title _iris19_decl)
           (enum (name Operation)
                 (children Arithmetic
                           Shift
@@ -13,7 +14,7 @@
                 (shift 0)
                 (field-name Control)
                 (max-size "ArchitectureConstants::MaxInstructionCount"))
-          (field (name Immediate)
+          (field (name ImmediateFlag)
                  (mask 0b00000000000000000000000000001000)
                  (shift 3)
                  (output-type bool))

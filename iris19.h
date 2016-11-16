@@ -42,31 +42,17 @@ namespace iris19 {
 		StackPointer = RegisterCount - 2,
 	};
 
-#define DefEnum(type, width) \
-	enum class type : width {
-#define EndDefEnum(type, width, maxCount) \
-		Count, \
-	};  \
-	static_assert(static_cast<width>(type :: Count) <= static_cast<width>( maxCount ), "Too many " #type " entries defined!");
-#define EnumEntry(type) type,
-#include "def/iris19/ops.def"
-#include "def/iris19/arithmetic_ops.def"
-#include "def/iris19/compare.enum"
-#include "def/iris19/logical.enum"
-#include "def/iris19/move.def"
-#undef DefEnum
-#undef EnumEntry
-#undef EndDefEnum
+#include "iris19_defines.h"
 
 	class Instruction {
 		public:
 			Instruction(RawInstruction input) noexcept : _rawValue(input) { }
 			Instruction(const Instruction&) = delete;
 			RawInstruction getRawValue() const noexcept { return _rawValue; }
-			bool markedImmediate() const noexcept { return getImmediateFlag(); }
+			bool markedImmediate() const noexcept { return decodeImmediateFlag(_rawValue); }
 			byte getBitmask() const noexcept;
 			byte getSubType() const noexcept;
-			inline Operation getOperation() const noexcept { return getControl(); }
+			inline Operation getOperation() const noexcept { return decodeControl(_rawValue); }
 			inline bool branchMarkedIf() const noexcept { return isOperation<Operation::Branch>() && getBranchFlagIsIfForm(); }
 			inline bool branchMarkedCall() const noexcept { return isOperation<Operation::Branch>() && getBranchFlagIsCallForm(); }
 			inline bool branchMarkedConditional() const noexcept { return isOperation<Operation::Branch>() && getBranchFlagIsConditional(); }
@@ -85,12 +71,12 @@ namespace iris19 {
 			inline bool isOperation() const noexcept {
 				return getControl() == op;
 			}
-			
 
-		private:
-#define X(title, mask, shift, type, post) inline type get ## title () const noexcept { return iris::decodeBits<RawInstruction, type, mask, shift>(_rawValue); }
-#include "def/iris19/instruction.def"
-#undef X
+
+//		private:
+//#define X(title, mask, shift, type, post) inline type get ## title () const noexcept { return iris::decodeBits<RawInstruction, type, mask, shift>(_rawValue); }
+//#include "def/iris19/instruction.def"
+//#undef X
 		private:
 			RawInstruction _rawValue;
 	};
@@ -205,12 +191,12 @@ namespace iris19 {
 	};
 
 
-#define X(title, mask, shift, type, post) \
-	constexpr inline Word encode ## title (Word input, type value) noexcept { \
-		return iris::encodeBits<Word, type, mask, shift>(input, value); \
-	}
-#include "def/iris19/instruction.def"
-#undef X
+//#define X(title, mask, shift, type, post) \
+//	constexpr inline Word encode ## title (Word input, type value) noexcept { \
+//		return iris::encodeBits<Word, type, mask, shift>(input, value); \
+//	}
+//#include "def/iris19/instruction.def"
+//#undef X
 	struct InstructionEncoder {
 		int currentLine;
 		RegisterValue address;
@@ -278,8 +264,8 @@ namespace iris19 {
 					return setImmediateFlag(
 							encodeBranchFlagIsConditional(
 								encodeBranchFlagIsCallForm(
-									encodeBranchFlagIsIfForm(value, isIf), 
-									isCall), 
+									encodeBranchFlagIsIfForm(value, isIf),
+									isCall),
 								isConditional));
 
 				default:
