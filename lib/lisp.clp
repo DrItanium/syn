@@ -121,10 +121,11 @@
              (visibility public)
              (default ?NONE)))
 (defclass lisp-parse::scalar-node
-  (is-a node)
+  (is-a node
+        has-value)
   (slot value
-        (visibility public)
-        (default ?NONE)))
+        (source composite)
+        (default ?NONE))
 
 (defclass lisp-parse::typed-scalar-node
   (is-a scalar-node)
