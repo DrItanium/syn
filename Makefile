@@ -68,7 +68,8 @@ ALL_BINARIES = ${SIM_BINARY} \
 			   ${REPL_BINARY}
 
 DEFINE_OBJECTS = iris19_defines.h \
-				 iris16_defines.h
+				 iris16_defines.h \
+				 iris17_defines.h
 
 ALL_OBJECTS = ${COMMON_THINGS} \
 			  ${SIM_OBJECTS} \
@@ -175,7 +176,8 @@ uninstall:
 
 .PHONY: all options clean install uninstall
 
-bootstrap: iris_repl iris19_defines.h iris16_defines.h
+bootstrap: iris_repl ${DEFINE_OBJECTS}
+
 
 iris19_defines.h: iris_repl def/iris19/instruction.clp cmd/deffield.clp lib/cortex.clp lib/reset-run-exit.clp iris_base.h
 	@echo "Generating encoders, decoders and enumerations for iris19..."
@@ -184,6 +186,11 @@ iris19_defines.h: iris_repl def/iris19/instruction.clp cmd/deffield.clp lib/cort
 iris16_defines.h: iris_repl def/iris16/instruction.clp cmd/deffield.clp lib/cortex.clp lib/reset-run-exit.clp iris_base.h
 	@echo "Generating encoders, decoders and enumerations for iris16..."
 	@./deffield.sh -f2 def/iris16/instruction.clp -f2 lib/reset-run-exit.clp > iris16_defines.h
+
+iris17_defines.h: iris_repl def/iris17/instruction.clp cmd/deffield.clp lib/cortex.clp lib/reset-run-exit.clp iris_base.h
+	@echo "Generating encoders, decoders and enumerations for iris17..."
+	@./deffield.sh -f2 def/iris17/instruction.clp -f2 lib/reset-run-exit.clp > iris17_defines.h
+
 
 asm_interact.o: asm_interact.cc asm_interact.h iris18.h iris_base.h \
  Problem.h misc/maya/clips.h misc/maya/setup.h misc/maya/os_shim.h \

@@ -24,7 +24,7 @@
           (field (name Immediate)
                  (mask 0xFFFF0000)
                  (shift 16)
-                 (output-type byte))
+                 (output-type word))
           (field (name Group)
                  (mask 0x00000007)
                  (shift 0)
