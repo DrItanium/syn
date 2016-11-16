@@ -9,8 +9,7 @@ ARCH_OBJECTS = iris17.o \
 			   iris18.o \
 			   iris19.o
 
-COMMON_THINGS = iris_base.o \
-				libmaya.a
+COMMON_THINGS = libmaya.a
 
 SIM_OBJECTS = iris_sim.o \
 			  sim_registration.o \
@@ -38,6 +37,7 @@ ASM_OBJECTS = iris_asm.o \
 REPL_BINARY = iris_repl
 
 REPL_OBJECTS= iris_repl.o \
+			  iris_clips.o \
 			  ${COMMON_THINGS}
 
 ASM_PARSERS = iris16_lex.yy.c \

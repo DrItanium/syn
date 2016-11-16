@@ -1,7 +1,7 @@
 extern "C" {
 	#include "clips.h"
 }
-#include "iris_base.h"
+#include "iris_clips.h"
 
 static void *mainEnv;
 
