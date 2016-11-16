@@ -123,6 +123,5 @@
                           LessThanOrEqualTo
                           LessThanOrEqualToImm
                           GreaterThanOrEqualTo
-                          GreaterThanOrEqualToImm))
-          )
+                          GreaterThanOrEqualToImm)))
 

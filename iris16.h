@@ -54,6 +54,12 @@ namespace iris16 {
 
 		private:
 			void dispatch();
+            inline byte getDestination() const noexcept { return decodeDestination(current); }
+            inline byte getSource0() const noexcept { return decodeSource0(current); }
+            inline byte getSource1() const noexcept { return decodeSource1(current); }
+            inline byte getImmediate() const noexcept { return decodeImmediate(current); }
+            inline byte getOperation() const noexcept { return decodeOperation(current); }
+            inline byte getGroup() const noexcept { return decodeGroup(current); }
 
 #define X(_, op) void op();
 #include "def/iris16/groups.def"

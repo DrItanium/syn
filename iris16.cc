@@ -8,7 +8,8 @@ namespace iris16 {
 	}
 
 
-	Core::~Core() { }
+	Core::~Core() { 
+    }
 
 	void Core::installprogram(std::istream& stream) {
 		char wordBuf[sizeof(word)] = { 0 };
@@ -65,21 +66,33 @@ namespace iris16 {
 	}
 	void Core::dispatch() {
 		auto group = static_cast<InstructionGroup>(getGroup());
-#define X(name, operation) \
-		if (group == InstructionGroup:: name) { \
-			operation(); \
-			return; \
-		}
-#include "def/iris16/groups.def"
-#undef X
-		std::stringstream stream;
-		stream << "Illegal instruction group " << getGroup();
-		execute = false;
-		throw iris::Problem(stream.str());
+        switch (group) {
+            case InstructionGroup::Arithmetic:
+                arithmetic();
+                break;
+            case InstructionGroup::Compare:
+                compare();
+                break;
+            case InstructionGroup::Misc:
+                misc();
+                break;
+            case InstructionGroup::Jump:
+                jump();
+                break;
+            case InstructionGroup::Move:
+                move();
+                break;
+            default: {
+                        std::stringstream stream;
+                        stream << "Illegal instruction group " << getGroup();
+                        execute = false;
+                        throw iris::Problem(stream.str());
+                     }
+        }
 	}
 
 	void Core::compare() {
-		auto cop = static_cast<CompareOp>(getOperation());
+        auto cop = static_cast<CompareOp>(getOperation());
 #define X(type, compare, mod) \
 			if (cop == CompareOp:: type) { \
 				gpr[getDestination()] = (gpr[getSource0()] compare gpr[getSource1()]); \
