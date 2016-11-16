@@ -91,3 +91,14 @@
         (storage local)
         (visibility public)
         (default ?NONE)))
+
+(deftemplate cortex::fact
+             (slot target
+                   (default ?NONE))
+             (slot description
+                   (type SYMBOL)
+                   (default ?NONE))
+             (multislot data))
+
+
+
