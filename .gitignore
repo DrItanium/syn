@@ -11,6 +11,8 @@ v.img
 iris_sim
 iris_asm
 iris_link
+iris_repl
+maya
 
 *.tab.c
 *.tab.h
@@ -18,3 +20,4 @@ iris_link
 
 iris19_defines.h
 iris16_defines.h
+iris17_defines.h
