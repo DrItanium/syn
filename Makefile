@@ -77,7 +77,7 @@ ALL_OBJECTS = ${COMMON_THINGS} \
 			  ${REPL_OBJECTS} \
 			  ${DEFINE_OBJECTS}
 
-all: options ${REPL_BINARY} ${SIM_BINARY} ${ASM_BINARY} ${LINK_BINARY}
+all: options bootstrap ${SIM_BINARY} ${ASM_BINARY} ${LINK_BINARY}
 
 maya:
 	@echo "Buidling maya..."
@@ -173,10 +173,15 @@ uninstall:
 .SECONDARY: ${TEST_OBJECTS}
 
 .PHONY: all options clean install uninstall
+bootstrap: iris_repl iris19_defines.h iris16_defines.h
 
 iris19_defines.h: iris_repl def/iris19/instruction.clp cmd/deffield.clp lib/cortex.clp lib/reset-run-exit.clp iris_base.h
 	@echo "Generating encoders, decoders and enumerations for iris19..."
 	@./deffield.sh -f2 def/iris19/instruction.clp -f2 lib/reset-run-exit.clp > iris19_defines.h
+
+iris16_defines.h: iris_repl def/iris16/instruction.clp cmd/deffield.clp lib/cortex.clp lib/reset-run-exit.clp iris_base.h
+	@echo "Generating encoders, decoders and enumerations for iris16..."
+	@./deffield.sh -f2 def/iris16/instruction.clp -f2 lib/reset-run-exit.clp > iris16_defines.h
 
 asm_interact.o: asm_interact.cc asm_interact.h iris18.h iris_base.h \
  Problem.h Core.h sim_registration.h def/iris18/ops.def \
@@ -197,7 +202,7 @@ iris16.o: iris16.cc iris16.h iris_base.h Problem.h Core.h \
  def/iris16/enums.def def/iris16/core_body.def def/iris16/groups.def \
  def/iris16/misc.def def/iris16/instruction.def def/iris16/groups.def \
  def/iris16/compare.def def/iris16/arithmetic.def def/iris16/jump.def \
- def/iris16/misc.def def/iris16/move.def
+ def/iris16/misc.def def/iris16/move.def iris16_defines.h
 iris17.o: iris17.cc iris17.h iris_base.h Problem.h Core.h \
  def/iris17/groups.def def/iris17/instruction.def def/iris17/compare.def \
  def/iris17/arithmetic.def def/iris17/move.def def/iris17/jump.def \
@@ -274,8 +279,8 @@ sim_registration.o: sim_registration.cc sim_registration.h Core.h \
  def/iris17/arithmetic.def def/iris17/move.def def/iris17/jump.def \
  def/iris17/misc.def def/iris17/syscalls.def iris19.h def/iris19/ops.def \
  def/iris19/arithmetic_ops.def def/iris19/compare.enum \
- def/iris19/logical.enum def/iris19/move.def def/iris19/instruction.def \
- iris19_defines.h
+ def/iris19/logical.enum def/iris19/move.def def/iris19/instruction.def
+
 Storage.o: Storage.cc Storage.h Core.h iris16.h iris_base.h Problem.h \
  def/iris16/enums.def def/iris16/core_body.def def/iris16/groups.def \
  def/iris16/misc.def def/iris16/instruction.def

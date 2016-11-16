@@ -23,6 +23,7 @@
          (title ?name)
          =>
          (printout t
+                   "// NOTE: this file is auto generated, DO NOT MODIFY!" crlf
                    "#ifndef " (upcase ?name) crlf
                    "#define " (upcase ?name) crlf
                    "#include \"iris_base.h\"" crlf))

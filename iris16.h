@@ -27,7 +27,9 @@ namespace iris16 {
 	inline constexpr dword encodeDword(word lower, word upper) noexcept {
 		return iris::encodeUint32LE(lower, upper);
 	}
-#include "def/iris16/enums.def"
+
+#include "iris16_defines.h"
+//#include "def/iris16/enums.def"
 
 	class Core : public iris::Core {
 		public:
@@ -52,12 +54,6 @@ namespace iris16 {
 
 		private:
 			void dispatch();
-#define X(title, mask, shift, type, is_register, post) \
-			inline type get ## title () const noexcept { \
-				return iris::decodeBits<raw_instruction, type, mask, shift>(current); \
-			} 
-#include "def/iris16/instruction.def"
-#undef X
 
 #define X(_, op) void op();
 #include "def/iris16/groups.def"

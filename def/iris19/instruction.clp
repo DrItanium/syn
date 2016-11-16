@@ -1,5 +1,5 @@
 ; several types of actions: flags, register, and custom
-(deffacts instruction-description
+(deffacts iris19 
           (input-type Word)
           (title _iris19_decl)
           (enum (name Operation)
