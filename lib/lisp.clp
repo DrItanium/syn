@@ -125,705 +125,705 @@
         has-value)
   (slot value
         (source composite)
-        (default ?NONE))
-
-(defclass lisp-parse::typed-scalar-node
-  (is-a scalar-node)
-  (slot type
-        (type SYMBOL)
         (default ?NONE)))
 
-(defclass lisp-parse::string
-  "Strings need to be wrapped in their own nodes"
-  (is-a scalar-node)
-  (slot value
-        (type STRING)
-        (source composite)
-        (storage local)))
-(defclass lisp-parse::variable (is-a scalar-node))
-(defclass lisp-parse::global-variable (is-a variable))
-(defclass lisp-parse::singlefield-global-variable (is-a global-variable))
-(defclass lisp-parse::multifield-global-variable (is-a global-variable))
-(defclass lisp-parse::local-variable (is-a variable))
-(defclass lisp-parse::multifield-variable (is-a local-variable))
-(defclass lisp-parse::singlefield-variable (is-a local-variable))
-(defclass lisp-parse::constraint (is-a scalar-node))
-(defclass lisp-parse::not-constraint (is-a constraint))
-(defclass lisp-parse::and-constraint (is-a constraint))
-(defclass lisp-parse::or-constraint (is-a constraint))
-(defclass lisp-parse::wildcard (is-a scalar-node))
-(defclass lisp-parse::multifield-wildcard (is-a wildcard))
-(defclass lisp-parse::singlefield-wildcard (is-a wildcard))
+  (defclass lisp-parse::typed-scalar-node
+    (is-a scalar-node)
+    (slot type
+          (type SYMBOL)
+          (default ?NONE)))
+
+  (defclass lisp-parse::string
+    "Strings need to be wrapped in their own nodes"
+    (is-a scalar-node)
+    (slot value
+          (type STRING)
+          (source composite)
+          (storage local)))
+  (defclass lisp-parse::variable (is-a scalar-node))
+  (defclass lisp-parse::global-variable (is-a variable))
+  (defclass lisp-parse::singlefield-global-variable (is-a global-variable))
+  (defclass lisp-parse::multifield-global-variable (is-a global-variable))
+  (defclass lisp-parse::local-variable (is-a variable))
+  (defclass lisp-parse::multifield-variable (is-a local-variable))
+  (defclass lisp-parse::singlefield-variable (is-a local-variable))
+  (defclass lisp-parse::constraint (is-a scalar-node))
+  (defclass lisp-parse::not-constraint (is-a constraint))
+  (defclass lisp-parse::and-constraint (is-a constraint))
+  (defclass lisp-parse::or-constraint (is-a constraint))
+  (defclass lisp-parse::wildcard (is-a scalar-node))
+  (defclass lisp-parse::multifield-wildcard (is-a wildcard))
+  (defclass lisp-parse::singlefield-wildcard (is-a wildcard))
 
 
 
-(defclass lisp-parse::list
-  (is-a node)
-  (multislot contents
-             (visibility public)))
+  (defclass lisp-parse::list
+    (is-a node)
+    (multislot contents
+               (visibility public)))
 
-(defclass lisp-parse::reference
-  "An indirect reference to something else, useful for deffunctions and arguments"
-  (is-a scalar-node)
-  (slot expand
-        (type SYMBOL)
-        (allowed-symbols FALSE
-                         TRUE)))
-;------------------------------------------------------------------------------
-(defrule lisp-parse::open-file
-         ?f <- (parse-request (path ?path))
-         =>
-         (retract ?f)
-         (bind ?name
-               (gensym*))
-         (if (open ?path
-                   ?name
-                   "r") then
-           (make-instance ?name of file
-                          (path ?path)
-                          (router ?name)
-                          (elements (next-token ?name))
-                          (top (symbol-to-instance-name ?name)))
-           else
+  (defclass lisp-parse::reference
+    "An indirect reference to something else, useful for deffunctions and arguments"
+    (is-a scalar-node)
+    (slot expand
+          (type SYMBOL)
+          (allowed-symbols FALSE
+                           TRUE)))
+  ;------------------------------------------------------------------------------
+  (defrule lisp-parse::open-file
+           ?f <- (parse-request (path ?path))
+           =>
+           (retract ?f)
+           (bind ?name
+                 (gensym*))
+           (if (open ?path
+                     ?name
+                     "r") then
+             (make-instance ?name of file
+                            (path ?path)
+                            (router ?name)
+                            (elements (next-token ?name))
+                            (top (symbol-to-instance-name ?name)))
+             else
+             (printout werror
+                       "couldn't open " ?path crlf)))
+
+  (defrule lisp-parse::new-top-level
+           (declare (salience 2))
+           (object (is-a file)
+                   (elements LPAREN ?)
+                   (top ?file)
+                   (name ?file)
+                   (router ?router))
+           =>
+           (slot-insert$ ?file
+                         top
+                         1
+                         (make-instance of list
+                                        (parent ?file)))
+           (slot-replace$ ?file
+                          elements
+                          1 2
+                          (next-token ?router)))
+
+  (defrule lisp-parse::new-list
+           (declare (salience 3))
+           ?f <- (object (is-a file)
+                         (elements LPAREN ?)
+                         (top ?top $?)
+                         (router ?r))
+           (object (is-a list)
+                   (name ?top))
+           =>
+           (slot-insert$ ?f
+                         top
+                         1
+                         (make-instance of list
+                                        (parent ?top)))
+           (slot-replace$ ?f
+                          elements
+                          1 2
+                          (next-token ?r)))
+
+  (defrule lisp-parse::end-list
+           (declare (salience 3))
+           ?f <- (object (is-a file)
+                         (elements RPAREN ?)
+                         (router ?r)
+                         (top ?curr ?parent $?rest))
+           (object (is-a list)
+                   (name ?parent)
+                   (contents $?contents))
+           =>
+           (slot-insert$ ?parent
+                         contents
+                         (+ (length$ ?contents) 1)
+                         ?curr)
+           (modify-instance ?f
+                            (elements (next-token ?r))
+                            (top ?parent
+                                 ?rest)))
+  (defrule lisp-parse::end-list:top-level
+           (declare (salience 3))
+           ?f <- (object (is-a file)
+                         (elements RPAREN ?)
+                         (router ?r)
+                         (top ? ?parent)
+                         (name ?parent))
+           =>
+           (slot-delete$ ?f
+                         top
+                         1 1)
+           (slot-replace$ ?f
+                          elements
+                          1 2
+                          (next-token ?r)))
+
+
+  (defrule lisp-parse::parse-special-element
+           (declare (salience 1))
+           ?f <- (object (is-a file)
+                         (elements ?type
+                                   ?value)
+                         (top ?top $?)
+                         (router ?r))
+           (object (is-a list)
+                   (name ?top)
+                   (contents $?contents))
+           =>
+           (modify-instance ?f
+                            (elements (next-token ?r)))
+           (modify-instance ?top
+                            (contents ?contents
+                                      (make-instance of ?type
+                                                     (parent ?top)
+                                                     (value ?value)))))
+
+  (defrule lisp-parse::warn:parse-special-element-outside-list
+           (declare (salience 1))
+           ?f <- (object (is-a file)
+                         (elements ?type ?value)
+                         (router ?r)
+                         (top ?file)
+                         (name ?file))
+           =>
            (printout werror
-                     "couldn't open " ?path crlf)))
+                     "WARNING: Found a special tag outside a list!" crlf)
+           (modify-instance ?f
+                            (elements (next-token ?r)))
+           (make-instance of ?type
+                          (parent ?file)
+                          (value ?value)))
 
-(defrule lisp-parse::new-top-level
-         (declare (salience 2))
-         (object (is-a file)
-                 (elements LPAREN ?)
-                 (top ?file)
-                 (name ?file)
-                 (router ?router))
-         =>
-         (slot-insert$ ?file
-                       top
-                       1
-                       (make-instance of list
-                                      (parent ?file)))
-         (slot-replace$ ?file
-                        elements
-                        1 2
-                        (next-token ?router)))
+  (defrule lisp-parse::parse-string
+           (declare (salience 2))
+           ?f <- (object (is-a file)
+                         (elements ?value&:(stringp ?value))
+                         (top ?top $?)
+                         (router ?r))
+           (object (is-a list)
+                   (name ?top)
+                   (contents $?contents))
+           =>
+           (modify-instance ?f
+                            (elements (next-token ?r)))
+           (slot-insert$ ?top
+                         contents
+                         (+ (length$ ?contents) 1)
+                         (make-instance of string
+                                        (parent ?top)
+                                        (value ?value))))
 
-(defrule lisp-parse::new-list
-         (declare (salience 3))
-         ?f <- (object (is-a file)
-                       (elements LPAREN ?)
-                       (top ?top $?)
-                       (router ?r))
-         (object (is-a list)
-                 (name ?top))
-         =>
-         (slot-insert$ ?f
-                       top
-                       1
-                       (make-instance of list
-                                      (parent ?top)))
-         (slot-replace$ ?f
-                        elements
-                        1 2
-                        (next-token ?r)))
+  (defrule lisp-parse::parse-string-outside-list
+           (declare (salience 2))
+           ?f <- (object (is-a file)
+                         (elements ?value&:(stringp ?value))
+                         (name ?file)
+                         (top ?file)
+                         (router ?r))
+           =>
+           (printout werror
+                     "WARNING: Found a string outside a list!" crlf)
+           (modify-instance ?f
+                            (elements (next-token ?r)))
+           (make-instance of string
+                          (parent ?file)
+                          (value ?value)))
 
-(defrule lisp-parse::end-list
-         (declare (salience 3))
-         ?f <- (object (is-a file)
-                       (elements RPAREN ?)
-                       (router ?r)
-                       (top ?curr ?parent $?rest))
-         (object (is-a list)
-                 (name ?parent)
-                 (contents $?contents))
-         =>
-         (slot-insert$ ?parent
-                       contents
-                       (+ (length$ ?contents) 1)
-                       ?curr)
-         (modify-instance ?f
-                          (elements (next-token ?r))
-                          (top ?parent
-                               ?rest)))
-(defrule lisp-parse::end-list:top-level
-         (declare (salience 3))
-         ?f <- (object (is-a file)
-                       (elements RPAREN ?)
-                       (router ?r)
-                       (top ? ?parent)
-                       (name ?parent))
-         =>
-         (slot-delete$ ?f
-                       top
-                       1 1)
-         (slot-replace$ ?f
-                        elements
-                        1 2
-                        (next-token ?r)))
+  (defrule lisp-parse::parse-normal-element
+           (declare (salience 1))
+           ?f <- (object (is-a file)
+                         (elements ?value)
+                         (top ?top $?)
+                         (router ?r))
+           (object (is-a list)
+                   (name ?top)
+                   (contents $?contents))
+
+           =>
+           (slot-insert$ ?top
+                         contents
+                         (+ (length$ ?contents) 1)
+                         ?value)
+           (slot-replace$ ?f
+                          elements
+                          1 1
+                          (next-token ?r)))
 
 
-(defrule lisp-parse::parse-special-element
-         (declare (salience 1))
-         ?f <- (object (is-a file)
-                       (elements ?type
-                                 ?value)
-                       (top ?top $?)
-                       (router ?r))
-         (object (is-a list)
-                 (name ?top)
-                 (contents $?contents))
-         =>
-         (modify-instance ?f
-                          (elements (next-token ?r)))
-         (modify-instance ?top
-                          (contents ?contents
-                                    (make-instance of ?type
-                                                   (parent ?top)
-                                                   (value ?value)))))
-
-(defrule lisp-parse::warn:parse-special-element-outside-list
-         (declare (salience 1))
-         ?f <- (object (is-a file)
-                       (elements ?type ?value)
-                       (router ?r)
-                       (top ?file)
-                       (name ?file))
-         =>
-         (printout werror
-                   "WARNING: Found a special tag outside a list!" crlf)
-         (modify-instance ?f
-                          (elements (next-token ?r)))
-         (make-instance of ?type
-                        (parent ?file)
-                        (value ?value)))
-
-(defrule lisp-parse::parse-string
-         (declare (salience 2))
-         ?f <- (object (is-a file)
-                       (elements ?value&:(stringp ?value))
-                       (top ?top $?)
-                       (router ?r))
-         (object (is-a list)
-                 (name ?top)
-                 (contents $?contents))
-         =>
-         (modify-instance ?f
-                          (elements (next-token ?r)))
-         (slot-insert$ ?top
-                       contents
-                       (+ (length$ ?contents) 1)
-                       (make-instance of string
-                                      (parent ?top)
-                                      (value ?value))))
-
-(defrule lisp-parse::parse-string-outside-list
-         (declare (salience 2))
-         ?f <- (object (is-a file)
-                       (elements ?value&:(stringp ?value))
-                       (name ?file)
-                       (top ?file)
-                       (router ?r))
-         =>
-         (printout werror
-                   "WARNING: Found a string outside a list!" crlf)
-         (modify-instance ?f
-                          (elements (next-token ?r)))
-         (make-instance of string
-                        (parent ?file)
-                        (value ?value)))
-
-(defrule lisp-parse::parse-normal-element
-         (declare (salience 1))
-         ?f <- (object (is-a file)
-                       (elements ?value)
-                       (top ?top $?)
-                       (router ?r))
-         (object (is-a list)
-                 (name ?top)
-                 (contents $?contents))
-
-         =>
-         (slot-insert$ ?top
-                       contents
-                       (+ (length$ ?contents) 1)
-                       ?value)
-         (slot-replace$ ?f
-                        elements
-                        1 1
-                        (next-token ?r)))
+  (defrule lisp-parse::warn:parse-normal-element-outside-list
+           (declare (salience 1))
+           ?f <- (object (is-a file)
+                         (elements ?value)
+                         (name ?file)
+                         (top ?file)
+                         (router ?r))
+           =>
+           (format werror
+                   "WARNING: Found a %s (%s) outside a list!%n"
+                   (class ?value)
+                   ?value)
+           (modify-instance ?f
+                            (elements (next-token ?r)))
+           (make-instance of typed-scalar-node
+                          (parent ?file)
+                          (type (class ?value))
+                          (value ?value)))
 
 
-(defrule lisp-parse::warn:parse-normal-element-outside-list
-         (declare (salience 1))
-         ?f <- (object (is-a file)
-                       (elements ?value)
-                       (name ?file)
-                       (top ?file)
-                       (router ?r))
-         =>
-         (format werror
-                 "WARNING: Found a %s (%s) outside a list!%n"
-                 (class ?value)
-                 ?value)
-         (modify-instance ?f
-                          (elements (next-token ?r)))
-         (make-instance of typed-scalar-node
-                        (parent ?file)
-                        (type (class ?value))
-                        (value ?value)))
+  (defrule lisp-parse::error:end-list-without-beginning
+           (declare (salience 2))
+           ?f <- (object (is-a file)
+                         (elements RPAREN ?)
+                         (name ?file)
+                         (top ?file)
+                         (path ?path))
+           =>
+           (printout werror
+                     "ERROR: " ?file crlf
+                     tab "PATH: " ?path crlf
+                     tab "found a ) outside an actual list!" crlf)
+           (halt))
+
+  (defrule lisp-parse::finished-completely
+           (declare (salience 3))
+           ?f <- (object (is-a file)
+                         (elements STOP ?)
+                         (router ?name))
+           =>
+           (close ?name)
+           (modify-instance ?f
+                            (elements)))
+
+  (defrule lisp-parse::error:bottom-of-top-should-be-self-referential
+           (declare (salience 10000))
+           ?f <- (object (is-a file)
+                         (name ?file)
+                         (top ?x&~?file)
+                         (path ?path))
+           =>
+           (printout werror
+                     "ERROR: " ?file crlf
+                     tab "PATH: " ?path crlf
+                     tab "The bottom of the parsing stack is not the file itself. Some rule has broken the parser" crlf)
+           (halt))
+
+  (defrule lisp-parse::error:top-is-empty
+           (declare (salience 10000))
+           ?f <- (object (is-a file)
+                         (top)
+                         (path ?file))
+           =>
+           (printout werror
+                     "ERROR: " ?file crlf
+                     tab "The parsing stack is empty. Some rule has broken the parser" crlf)
+           (halt))
+  ;-----------------------------------------------------------------------------
+  ; Auto generated rules for special symbols
+  ;-----------------------------------------------------------------------------
+  (defrule lisp-parse::construct-special-instance:or-constraint
+           "convert a symbol of type OR_CONSTRAINT to class of type or-constraint"
+           (declare (salience 2))
+           ?f <- (object (is-a file)
+                         (elements OR_CONSTRAINT
+                                   ?value)
+                         (top ?top
+                              $?)
+                         (router ?r))
+           (object (is-a list)
+                   (name ?top)
+                   (contents $?contents))
+           =>
+           (slot-insert$ ?top
+                         contents
+                         (+ (length$ ?contents) 1)
+                         (make-instance of or-constraint
+                                        (parent ?top)
+                                        (value ?value)))
+           (slot-replace$ ?f
+                          elements
+                          1 2
+                          (next-token ?r)))
 
 
-(defrule lisp-parse::error:end-list-without-beginning
-         (declare (salience 2))
-         ?f <- (object (is-a file)
-                       (elements RPAREN ?)
-                       (name ?file)
-                       (top ?file)
-                       (path ?path))
-         =>
-         (printout werror
-                   "ERROR: " ?file crlf
-                   tab "PATH: " ?path crlf
-                   tab "found a ) outside an actual list!" crlf)
-         (halt))
+  (defrule lisp-parse::construct-special-instance-outside-list:or-constraint
+           "convert a symbol of type OR_CONSTRAINT to class of type or-constraint"
+           (declare (salience 2))
+           ?f <- (object (is-a file)
+                         (elements OR_CONSTRAINT
+                                   ?value)
+                         (top ?file)
+                         (name ?file)
+                         (router ?r))
+           =>
+           (printout werror
+                     "WARNING: Found a special tag outside a list!" crlf)
+           (slot-replace$ ?f
+                          elements
+                          1 2
+                          (next-token ?r))
+           (make-instance of or-constraint
+                          (parent ?file)
+                          (value ?value)))
 
-(defrule lisp-parse::finished-completely
-         (declare (salience 3))
-         ?f <- (object (is-a file)
-                       (elements STOP ?)
-                       (router ?name))
-         =>
-         (close ?name)
-         (modify-instance ?f
-                          (elements)))
-
-(defrule lisp-parse::error:bottom-of-top-should-be-self-referential
-         (declare (salience 10000))
-         ?f <- (object (is-a file)
-                       (name ?file)
-                       (top ?x&~?file)
-                       (path ?path))
-         =>
-         (printout werror
-                   "ERROR: " ?file crlf
-                   tab "PATH: " ?path crlf
-                   tab "The bottom of the parsing stack is not the file itself. Some rule has broken the parser" crlf)
-         (halt))
-
-(defrule lisp-parse::error:top-is-empty
-         (declare (salience 10000))
-         ?f <- (object (is-a file)
-                       (top)
-                       (path ?file))
-         =>
-         (printout werror
-                   "ERROR: " ?file crlf
-                   tab "The parsing stack is empty. Some rule has broken the parser" crlf)
-         (halt))
-;-----------------------------------------------------------------------------
-; Auto generated rules for special symbols
-;-----------------------------------------------------------------------------
-(defrule lisp-parse::construct-special-instance:or-constraint
-         "convert a symbol of type OR_CONSTRAINT to class of type or-constraint"
-         (declare (salience 2))
-         ?f <- (object (is-a file)
-                       (elements OR_CONSTRAINT
-                                 ?value)
-                       (top ?top
-                            $?)
-                       (router ?r))
-         (object (is-a list)
-                 (name ?top)
-                 (contents $?contents))
-         =>
-         (slot-insert$ ?top
-                       contents
-                       (+ (length$ ?contents) 1)
-                       (make-instance of or-constraint
-                                      (parent ?top)
-                                      (value ?value)))
-         (slot-replace$ ?f
-                        elements
-                        1 2
-                        (next-token ?r)))
+  (defrule lisp-parse::construct-special-instance:and-constraint
+           "convert a symbol of type AND_CONSTRAINT to class of type and-constraint"
+           (declare (salience 2))
+           ?f <- (object (is-a file)
+                         (elements AND_CONSTRAINT
+                                   ?value)
+                         (top ?top
+                              $?)
+                         (router ?r))
+           (object (is-a list)
+                   (name ?top)
+                   (contents $?contents))
+           =>
+           (slot-insert$ ?top
+                         contents
+                         (+ (length$ ?contents) 1)
+                         (make-instance of and-constraint
+                                        (parent ?top)
+                                        (value ?value)))
+           (slot-replace$ ?f
+                          elements
+                          1 2
+                          (next-token ?r)))
 
 
-(defrule lisp-parse::construct-special-instance-outside-list:or-constraint
-         "convert a symbol of type OR_CONSTRAINT to class of type or-constraint"
-         (declare (salience 2))
-         ?f <- (object (is-a file)
-                       (elements OR_CONSTRAINT
-                                 ?value)
-                       (top ?file)
-                       (name ?file)
-                       (router ?r))
-         =>
-         (printout werror
-                   "WARNING: Found a special tag outside a list!" crlf)
-         (slot-replace$ ?f
-                        elements
-                        1 2
-                        (next-token ?r))
-         (make-instance of or-constraint
-                        (parent ?file)
-                        (value ?value)))
+  (defrule lisp-parse::construct-special-instance-outside-list:and-constraint
+           "convert a symbol of type AND_CONSTRAINT to class of type and-constraint"
+           (declare (salience 2))
+           ?f <- (object (is-a file)
+                         (elements AND_CONSTRAINT
+                                   ?value)
+                         (top ?file)
+                         (name ?file)
+                         (router ?r))
+           =>
+           (printout werror
+                     "WARNING: Found a special tag outside a list!" crlf)
+           (slot-replace$ ?f
+                          elements
+                          1 2
+                          (next-token ?r))
+           (make-instance of and-constraint
+                          (parent ?file)
+                          (value ?value)))
 
-(defrule lisp-parse::construct-special-instance:and-constraint
-         "convert a symbol of type AND_CONSTRAINT to class of type and-constraint"
-         (declare (salience 2))
-         ?f <- (object (is-a file)
-                       (elements AND_CONSTRAINT
-                                 ?value)
-                       (top ?top
-                            $?)
-                       (router ?r))
-         (object (is-a list)
-                 (name ?top)
-                 (contents $?contents))
-         =>
-         (slot-insert$ ?top
-                       contents
-                       (+ (length$ ?contents) 1)
-                       (make-instance of and-constraint
-                                      (parent ?top)
-                                      (value ?value)))
-         (slot-replace$ ?f
-                        elements
-                        1 2
-                        (next-token ?r)))
-
-
-(defrule lisp-parse::construct-special-instance-outside-list:and-constraint
-         "convert a symbol of type AND_CONSTRAINT to class of type and-constraint"
-         (declare (salience 2))
-         ?f <- (object (is-a file)
-                       (elements AND_CONSTRAINT
-                                 ?value)
-                       (top ?file)
-                       (name ?file)
-                       (router ?r))
-         =>
-         (printout werror
-                   "WARNING: Found a special tag outside a list!" crlf)
-         (slot-replace$ ?f
-                        elements
-                        1 2
-                        (next-token ?r))
-         (make-instance of and-constraint
-                        (parent ?file)
-                        (value ?value)))
-
-(defrule lisp-parse::construct-special-instance:not-constraint
-         "convert a symbol of type NOT_CONSTRAINT to class of type not-constraint"
-         (declare (salience 2))
-         ?f <- (object (is-a file)
-                       (elements NOT_CONSTRAINT
-                                 ?value)
-                       (top ?top
-                            $?)
-                       (router ?r))
-         (object (is-a list)
-                 (name ?top)
-                 (contents $?contents))
-         =>
-         (slot-insert$ ?top
-                       contents
-                       (+ (length$ ?contents) 1)
-                       (make-instance of not-constraint
-                                      (parent ?top)
-                                      (value ?value)))
-         (slot-replace$ ?f
-                        elements
-                        1 2
-                        (next-token ?r)))
+  (defrule lisp-parse::construct-special-instance:not-constraint
+           "convert a symbol of type NOT_CONSTRAINT to class of type not-constraint"
+           (declare (salience 2))
+           ?f <- (object (is-a file)
+                         (elements NOT_CONSTRAINT
+                                   ?value)
+                         (top ?top
+                              $?)
+                         (router ?r))
+           (object (is-a list)
+                   (name ?top)
+                   (contents $?contents))
+           =>
+           (slot-insert$ ?top
+                         contents
+                         (+ (length$ ?contents) 1)
+                         (make-instance of not-constraint
+                                        (parent ?top)
+                                        (value ?value)))
+           (slot-replace$ ?f
+                          elements
+                          1 2
+                          (next-token ?r)))
 
 
-(defrule lisp-parse::construct-special-instance-outside-list:not-constraint
-         "convert a symbol of type NOT_CONSTRAINT to class of type not-constraint"
-         (declare (salience 2))
-         ?f <- (object (is-a file)
-                       (elements NOT_CONSTRAINT
-                                 ?value)
-                       (top ?file)
-                       (name ?file)
-                       (router ?r))
-         =>
-         (printout werror
-                   "WARNING: Found a special tag outside a list!" crlf)
-         (slot-replace$ ?f
-                        elements
-                        1 2
-                        (next-token ?r))
-         (make-instance of not-constraint
-                        (parent ?file)
-                        (value ?value)))
+  (defrule lisp-parse::construct-special-instance-outside-list:not-constraint
+           "convert a symbol of type NOT_CONSTRAINT to class of type not-constraint"
+           (declare (salience 2))
+           ?f <- (object (is-a file)
+                         (elements NOT_CONSTRAINT
+                                   ?value)
+                         (top ?file)
+                         (name ?file)
+                         (router ?r))
+           =>
+           (printout werror
+                     "WARNING: Found a special tag outside a list!" crlf)
+           (slot-replace$ ?f
+                          elements
+                          1 2
+                          (next-token ?r))
+           (make-instance of not-constraint
+                          (parent ?file)
+                          (value ?value)))
 
-(defrule lisp-parse::construct-special-instance:multifield-wildcard
-         "convert a symbol of type MF_WILDCARD to class of type multifield-wildcard"
-         (declare (salience 2))
-         ?f <- (object (is-a file)
-                       (elements MF_WILDCARD
-                                 ?value)
-                       (top ?top
-                            $?)
-                       (router ?r))
-         (object (is-a list)
-                 (name ?top)
-                 (contents $?contents))
-         =>
-         (slot-insert$ ?top
-                       contents
-                       (+ (length$ ?contents) 1)
-                       (make-instance of multifield-wildcard
-                                      (parent ?top)
-                                      (value ?value)))
-         (slot-replace$ ?f
-                        elements
-                        1 2
-                        (next-token ?r)))
-
-
-(defrule lisp-parse::construct-special-instance-outside-list:multifield-wildcard
-         "convert a symbol of type MF_WILDCARD to class of type multifield-wildcard"
-         (declare (salience 2))
-         ?f <- (object (is-a file)
-                       (elements MF_WILDCARD
-                                 ?value)
-                       (top ?file)
-                       (name ?file)
-                       (router ?r))
-         =>
-         (printout werror
-                   "WARNING: Found a special tag outside a list!" crlf)
-         (slot-replace$ ?f
-                        elements
-                        1 2
-                        (next-token ?r))
-         (make-instance of multifield-wildcard
-                        (parent ?file)
-                        (value ?value)))
-
-(defrule lisp-parse::construct-special-instance:singlefield-wildcard
-         "convert a symbol of type SF_WILDCARD to class of type singlefield-wildcard"
-         (declare (salience 2))
-         ?f <- (object (is-a file)
-                       (elements SF_WILDCARD
-                                 ?value)
-                       (top ?top
-                            $?)
-                       (router ?r))
-         (object (is-a list)
-                 (name ?top)
-                 (contents $?contents))
-         =>
-         (slot-insert$ ?top
-                       contents
-                       (+ (length$ ?contents) 1)
-                       (make-instance of singlefield-wildcard
-                                      (parent ?top)
-                                      (value ?value)))
-         (slot-replace$ ?f
-                        elements
-                        1 2
-                        (next-token ?r)))
+  (defrule lisp-parse::construct-special-instance:multifield-wildcard
+           "convert a symbol of type MF_WILDCARD to class of type multifield-wildcard"
+           (declare (salience 2))
+           ?f <- (object (is-a file)
+                         (elements MF_WILDCARD
+                                   ?value)
+                         (top ?top
+                              $?)
+                         (router ?r))
+           (object (is-a list)
+                   (name ?top)
+                   (contents $?contents))
+           =>
+           (slot-insert$ ?top
+                         contents
+                         (+ (length$ ?contents) 1)
+                         (make-instance of multifield-wildcard
+                                        (parent ?top)
+                                        (value ?value)))
+           (slot-replace$ ?f
+                          elements
+                          1 2
+                          (next-token ?r)))
 
 
-(defrule lisp-parse::construct-special-instance-outside-list:singlefield-wildcard
-         "convert a symbol of type SF_WILDCARD to class of type singlefield-wildcard"
-         (declare (salience 2))
-         ?f <- (object (is-a file)
-                       (elements SF_WILDCARD
-                                 ?value)
-                       (top ?file)
-                       (name ?file)
-                       (router ?r))
-         =>
-         (printout werror
-                   "WARNING: Found a special tag outside a list!" crlf)
-         (slot-replace$ ?f
-                        elements
-                        1 2
-                        (next-token ?r))
-         (make-instance of singlefield-wildcard
-                        (parent ?file)
-                        (value ?value)))
+  (defrule lisp-parse::construct-special-instance-outside-list:multifield-wildcard
+           "convert a symbol of type MF_WILDCARD to class of type multifield-wildcard"
+           (declare (salience 2))
+           ?f <- (object (is-a file)
+                         (elements MF_WILDCARD
+                                   ?value)
+                         (top ?file)
+                         (name ?file)
+                         (router ?r))
+           =>
+           (printout werror
+                     "WARNING: Found a special tag outside a list!" crlf)
+           (slot-replace$ ?f
+                          elements
+                          1 2
+                          (next-token ?r))
+           (make-instance of multifield-wildcard
+                          (parent ?file)
+                          (value ?value)))
 
-(defrule lisp-parse::construct-special-instance:multifield-variable
-         "convert a symbol of type MF_VARIABLE to class of type multifield-variable"
-         (declare (salience 2))
-         ?f <- (object (is-a file)
-                       (elements MF_VARIABLE
-                                 ?value)
-                       (top ?top
-                            $?)
-                       (router ?r))
-         (object (is-a list)
-                 (name ?top)
-                 (contents $?contents))
-         =>
-         (slot-insert$ ?top
-                       contents
-                       (+ (length$ ?contents) 1)
-                       (make-instance of multifield-variable
-                                      (parent ?top)
-                                      (value ?value)))
-         (slot-replace$ ?f
-                        elements
-                        1 2
-                        (next-token ?r)))
-
-
-(defrule lisp-parse::construct-special-instance-outside-list:multifield-variable
-         "convert a symbol of type MF_VARIABLE to class of type multifield-variable"
-         (declare (salience 2))
-         ?f <- (object (is-a file)
-                       (elements MF_VARIABLE
-                                 ?value)
-                       (top ?file)
-                       (name ?file)
-                       (router ?r))
-         =>
-         (printout werror
-                   "WARNING: Found a special tag outside a list!" crlf)
-         (slot-replace$ ?f
-                        elements
-                        1 2
-                        (next-token ?r))
-         (make-instance of multifield-variable
-                        (parent ?file)
-                        (value ?value)))
-
-(defrule lisp-parse::construct-special-instance:singlefield-variable
-         "convert a symbol of type SF_VARIABLE to class of type singlefield-variable"
-         (declare (salience 2))
-         ?f <- (object (is-a file)
-                       (elements SF_VARIABLE
-                                 ?value)
-                       (top ?top
-                            $?)
-                       (router ?r))
-         (object (is-a list)
-                 (name ?top)
-                 (contents $?contents))
-         =>
-         (slot-insert$ ?top
-                       contents
-                       (+ (length$ ?contents) 1)
-                       (make-instance of singlefield-variable
-                                      (parent ?top)
-                                      (value ?value)))
-         (slot-replace$ ?f
-                        elements
-                        1 2
-                        (next-token ?r)))
+  (defrule lisp-parse::construct-special-instance:singlefield-wildcard
+           "convert a symbol of type SF_WILDCARD to class of type singlefield-wildcard"
+           (declare (salience 2))
+           ?f <- (object (is-a file)
+                         (elements SF_WILDCARD
+                                   ?value)
+                         (top ?top
+                              $?)
+                         (router ?r))
+           (object (is-a list)
+                   (name ?top)
+                   (contents $?contents))
+           =>
+           (slot-insert$ ?top
+                         contents
+                         (+ (length$ ?contents) 1)
+                         (make-instance of singlefield-wildcard
+                                        (parent ?top)
+                                        (value ?value)))
+           (slot-replace$ ?f
+                          elements
+                          1 2
+                          (next-token ?r)))
 
 
-(defrule lisp-parse::construct-special-instance-outside-list:singlefield-variable
-         "convert a symbol of type SF_VARIABLE to class of type singlefield-variable"
-         (declare (salience 2))
-         ?f <- (object (is-a file)
-                       (elements SF_VARIABLE
-                                 ?value)
-                       (top ?file)
-                       (name ?file)
-                       (router ?r))
-         =>
-         (printout werror
-                   "WARNING: Found a special tag outside a list!" crlf)
-         (slot-replace$ ?f
-                        elements
-                        1 2
-                        (next-token ?r))
-         (make-instance of singlefield-variable
-                        (parent ?file)
-                        (value ?value)))
+  (defrule lisp-parse::construct-special-instance-outside-list:singlefield-wildcard
+           "convert a symbol of type SF_WILDCARD to class of type singlefield-wildcard"
+           (declare (salience 2))
+           ?f <- (object (is-a file)
+                         (elements SF_WILDCARD
+                                   ?value)
+                         (top ?file)
+                         (name ?file)
+                         (router ?r))
+           =>
+           (printout werror
+                     "WARNING: Found a special tag outside a list!" crlf)
+           (slot-replace$ ?f
+                          elements
+                          1 2
+                          (next-token ?r))
+           (make-instance of singlefield-wildcard
+                          (parent ?file)
+                          (value ?value)))
 
-(defrule lisp-parse::construct-special-instance:multifield-global-variable
-         "convert a symbol of type MF_GBL_VARIABLE to class of type multifield-global-variable"
-         (declare (salience 2))
-         ?f <- (object (is-a file)
-                       (elements MF_GBL_VARIABLE
-                                 ?value)
-                       (top ?top
-                            $?)
-                       (router ?r))
-         (object (is-a list)
-                 (name ?top)
-                 (contents $?contents))
-         =>
-         (slot-insert$ ?top
-                       contents
-                       (+ (length$ ?contents) 1)
-                       (make-instance of multifield-global-variable
-                                      (parent ?top)
-                                      (value ?value)))
-         (slot-replace$ ?f
-                        elements
-                        1 2
-                        (next-token ?r)))
-
-
-(defrule lisp-parse::construct-special-instance-outside-list:multifield-global-variable
-         "convert a symbol of type MF_GBL_VARIABLE to class of type multifield-global-variable"
-         (declare (salience 2))
-         ?f <- (object (is-a file)
-                       (elements MF_GBL_VARIABLE
-                                 ?value)
-                       (top ?file)
-                       (name ?file)
-                       (router ?r))
-         =>
-         (printout werror
-                   "WARNING: Found a special tag outside a list!" crlf)
-         (slot-replace$ ?f
-                        elements
-                        1 2
-                        (next-token ?r))
-         (make-instance of multifield-global-variable
-                        (parent ?file)
-                        (value ?value)))
-
-(defrule lisp-parse::construct-special-instance:singlefield-global-variable
-         "convert a symbol of type GBL_VARIABLE to class of type singlefield-global-variable"
-         (declare (salience 2))
-         ?f <- (object (is-a file)
-                       (elements GBL_VARIABLE
-                                 ?value)
-                       (top ?top
-                            $?)
-                       (router ?r))
-         (object (is-a list)
-                 (name ?top)
-                 (contents $?contents))
-         =>
-         (slot-insert$ ?top
-                       contents
-                       (+ (length$ ?contents) 1)
-                       (make-instance of singlefield-global-variable
-                                      (parent ?top)
-                                      (value ?value)))
-         (slot-replace$ ?f
-                        elements
-                        1 2
-                        (next-token ?r)))
+  (defrule lisp-parse::construct-special-instance:multifield-variable
+           "convert a symbol of type MF_VARIABLE to class of type multifield-variable"
+           (declare (salience 2))
+           ?f <- (object (is-a file)
+                         (elements MF_VARIABLE
+                                   ?value)
+                         (top ?top
+                              $?)
+                         (router ?r))
+           (object (is-a list)
+                   (name ?top)
+                   (contents $?contents))
+           =>
+           (slot-insert$ ?top
+                         contents
+                         (+ (length$ ?contents) 1)
+                         (make-instance of multifield-variable
+                                        (parent ?top)
+                                        (value ?value)))
+           (slot-replace$ ?f
+                          elements
+                          1 2
+                          (next-token ?r)))
 
 
-(defrule lisp-parse::construct-special-instance-outside-list:singlefield-global-variable
-         "convert a symbol of type GBL_VARIABLE to class of type singlefield-global-variable"
-         (declare (salience 2))
-         ?f <- (object (is-a file)
-                       (elements GBL_VARIABLE
-                                 ?value)
-                       (top ?file)
-                       (name ?file)
-                       (router ?r))
-         =>
-         (printout werror
-                   "WARNING: Found a special tag outside a list!" crlf)
-         (slot-replace$ ?f
-                        elements
-                        1 2
-                        (next-token ?r))
-         (make-instance of singlefield-global-variable
-                        (parent ?file)
-                        (value ?value)))
+  (defrule lisp-parse::construct-special-instance-outside-list:multifield-variable
+           "convert a symbol of type MF_VARIABLE to class of type multifield-variable"
+           (declare (salience 2))
+           ?f <- (object (is-a file)
+                         (elements MF_VARIABLE
+                                   ?value)
+                         (top ?file)
+                         (name ?file)
+                         (router ?r))
+           =>
+           (printout werror
+                     "WARNING: Found a special tag outside a list!" crlf)
+           (slot-replace$ ?f
+                          elements
+                          1 2
+                          (next-token ?r))
+           (make-instance of multifield-variable
+                          (parent ?file)
+                          (value ?value)))
+
+  (defrule lisp-parse::construct-special-instance:singlefield-variable
+           "convert a symbol of type SF_VARIABLE to class of type singlefield-variable"
+           (declare (salience 2))
+           ?f <- (object (is-a file)
+                         (elements SF_VARIABLE
+                                   ?value)
+                         (top ?top
+                              $?)
+                         (router ?r))
+           (object (is-a list)
+                   (name ?top)
+                   (contents $?contents))
+           =>
+           (slot-insert$ ?top
+                         contents
+                         (+ (length$ ?contents) 1)
+                         (make-instance of singlefield-variable
+                                        (parent ?top)
+                                        (value ?value)))
+           (slot-replace$ ?f
+                          elements
+                          1 2
+                          (next-token ?r)))
+
+
+  (defrule lisp-parse::construct-special-instance-outside-list:singlefield-variable
+           "convert a symbol of type SF_VARIABLE to class of type singlefield-variable"
+           (declare (salience 2))
+           ?f <- (object (is-a file)
+                         (elements SF_VARIABLE
+                                   ?value)
+                         (top ?file)
+                         (name ?file)
+                         (router ?r))
+           =>
+           (printout werror
+                     "WARNING: Found a special tag outside a list!" crlf)
+           (slot-replace$ ?f
+                          elements
+                          1 2
+                          (next-token ?r))
+           (make-instance of singlefield-variable
+                          (parent ?file)
+                          (value ?value)))
+
+  (defrule lisp-parse::construct-special-instance:multifield-global-variable
+           "convert a symbol of type MF_GBL_VARIABLE to class of type multifield-global-variable"
+           (declare (salience 2))
+           ?f <- (object (is-a file)
+                         (elements MF_GBL_VARIABLE
+                                   ?value)
+                         (top ?top
+                              $?)
+                         (router ?r))
+           (object (is-a list)
+                   (name ?top)
+                   (contents $?contents))
+           =>
+           (slot-insert$ ?top
+                         contents
+                         (+ (length$ ?contents) 1)
+                         (make-instance of multifield-global-variable
+                                        (parent ?top)
+                                        (value ?value)))
+           (slot-replace$ ?f
+                          elements
+                          1 2
+                          (next-token ?r)))
+
+
+  (defrule lisp-parse::construct-special-instance-outside-list:multifield-global-variable
+           "convert a symbol of type MF_GBL_VARIABLE to class of type multifield-global-variable"
+           (declare (salience 2))
+           ?f <- (object (is-a file)
+                         (elements MF_GBL_VARIABLE
+                                   ?value)
+                         (top ?file)
+                         (name ?file)
+                         (router ?r))
+           =>
+           (printout werror
+                     "WARNING: Found a special tag outside a list!" crlf)
+           (slot-replace$ ?f
+                          elements
+                          1 2
+                          (next-token ?r))
+           (make-instance of multifield-global-variable
+                          (parent ?file)
+                          (value ?value)))
+
+  (defrule lisp-parse::construct-special-instance:singlefield-global-variable
+           "convert a symbol of type GBL_VARIABLE to class of type singlefield-global-variable"
+           (declare (salience 2))
+           ?f <- (object (is-a file)
+                         (elements GBL_VARIABLE
+                                   ?value)
+                         (top ?top
+                              $?)
+                         (router ?r))
+           (object (is-a list)
+                   (name ?top)
+                   (contents $?contents))
+           =>
+           (slot-insert$ ?top
+                         contents
+                         (+ (length$ ?contents) 1)
+                         (make-instance of singlefield-global-variable
+                                        (parent ?top)
+                                        (value ?value)))
+           (slot-replace$ ?f
+                          elements
+                          1 2
+                          (next-token ?r)))
+
+
+  (defrule lisp-parse::construct-special-instance-outside-list:singlefield-global-variable
+           "convert a symbol of type GBL_VARIABLE to class of type singlefield-global-variable"
+           (declare (salience 2))
+           ?f <- (object (is-a file)
+                         (elements GBL_VARIABLE
+                                   ?value)
+                         (top ?file)
+                         (name ?file)
+                         (router ?r))
+           =>
+           (printout werror
+                     "WARNING: Found a special tag outside a list!" crlf)
+           (slot-replace$ ?f
+                          elements
+                          1 2
+                          (next-token ?r))
+           (make-instance of singlefield-global-variable
+                          (parent ?file)
+                          (value ?value)))
 
 
