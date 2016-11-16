@@ -127,11 +127,11 @@
         (source composite)
         (default ?NONE)))
 
-  (defclass lisp-parse::typed-scalar-node
-    (is-a scalar-node)
-    (slot type
-          (type SYMBOL)
-          (default ?NONE)))
+(defclass lisp-parse::typed-scalar-node
+  (is-a scalar-node)
+  (slot type
+        (type SYMBOL)
+        (default ?NONE)))
 
 (defclass lisp-parse::string
   "Strings need to be wrapped in their own nodes"
