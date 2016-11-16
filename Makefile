@@ -67,12 +67,15 @@ ALL_BINARIES = ${SIM_BINARY} \
 			   ${LINK_BINARY} \
 			   ${REPL_BINARY}
 
+DEFINE_OBJECTS = iris19_defines.h
+
 ALL_OBJECTS = ${COMMON_THINGS} \
 			  ${SIM_OBJECTS} \
 			  ${ASM_OBJECTS} \
 			  ${LINK_OBJECTS} \
 			  ${ARCH_OBJECTS} \
-			  ${REPL_OBJECTS}
+			  ${REPL_OBJECTS} \
+			  ${DEFINE_OBJECTS}
 
 all: options ${REPL_BINARY} ${SIM_BINARY} ${ASM_BINARY} ${LINK_BINARY}
 
@@ -171,8 +174,9 @@ uninstall:
 
 .PHONY: all options clean install uninstall
 
-iris19_defines.h: iris_repl def/iris19/instruction.clp cmd/deffield.clp lib/cortex.clp lib/reset-run-exit.clp
-	./iris_repl -f2 lib/cortex.clp -f2 cmd/deffield.clp -f2 def/iris19/instruction.clp -f2 lib/reset-run-exit.clp > iris19_defines.h
+iris19_defines.h: iris_repl def/iris19/instruction.clp cmd/deffield.clp lib/cortex.clp lib/reset-run-exit.clp iris_base.h
+	@echo "Generating encoders, decoders and enumerations for iris19..."
+	@./deffield.sh -f2 def/iris19/instruction.clp -f2 lib/reset-run-exit.clp > iris19_defines.h
 
 asm_interact.o: asm_interact.cc asm_interact.h iris18.h iris_base.h \
  Problem.h Core.h sim_registration.h def/iris18/ops.def \
