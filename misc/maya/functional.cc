@@ -55,8 +55,8 @@ MapFunction(UDFContext* context, CLIPSValue* ret) {
 	} else {
 		auto body = [](UDFContext* context, CLIPSValue* ret, CLIPSValue* theArg, const std::string& name, FUNCTION_REFERENCE* fref, struct FunctionDefinition *theFunction) -> bool {
 			struct multifield *theMultifield = nullptr;
-			struct expr *lastAdd = nullptr, 
-						*nextAdd = nullptr, 
+			struct expr *lastAdd = nullptr,
+						*nextAdd = nullptr,
 						*multiAdd = nullptr;
 			Environment* theEnv = UDFContextEnvironment(context);
 			ExpressionInstall(theEnv,fref);
@@ -65,10 +65,10 @@ MapFunction(UDFContext* context, CLIPSValue* ret) {
 				case MULTIFIELD:
 					nextAdd = GenConstant(theEnv,FCALL,(void *) FindFunction(theEnv,"create$"));
 
-					if (lastAdd == NULL) { 
-						fref->argList = nextAdd; 
-					} else { 
-						lastAdd->nextArg = nextAdd; 
+					if (lastAdd == NULL) {
+						fref->argList = nextAdd;
+					} else {
+						lastAdd->nextArg = nextAdd;
 					}
 					lastAdd = nextAdd;
 
@@ -89,10 +89,10 @@ MapFunction(UDFContext* context, CLIPSValue* ret) {
 
 				default:
 					nextAdd = GenConstant(theEnv,GetpType(theArg),GetpValue(theArg));
-					if (lastAdd == NULL) { 
-						fref->argList = nextAdd; 
-					} else { 
-						lastAdd->nextArg = nextAdd; 
+					if (lastAdd == NULL) {
+						fref->argList = nextAdd;
+					} else {
+						lastAdd->nextArg = nextAdd;
 					}
 					lastAdd = nextAdd;
 					ExpressionInstall(theEnv,lastAdd);
@@ -194,8 +194,8 @@ FilterFunction(UDFContext* context, CLIPSValue* ret) {
 	} else {
 		auto body = [](UDFContext* context, CLIPSValue* ret, CLIPSValue* theArg, const std::string& name, FUNCTION_REFERENCE* fref, struct FunctionDefinition *theFunction) -> bool {
 			struct multifield *theMultifield = nullptr;
-			struct expr *lastAdd = nullptr, 
-						*nextAdd = nullptr, 
+			struct expr *lastAdd = nullptr,
+						*nextAdd = nullptr,
 						*multiAdd = nullptr;
 			Environment* theEnv = UDFContextEnvironment(context);
 			ExpressionInstall(theEnv,fref);
@@ -204,10 +204,10 @@ FilterFunction(UDFContext* context, CLIPSValue* ret) {
 				case MULTIFIELD:
 					nextAdd = GenConstant(theEnv,FCALL,(void *) FindFunction(theEnv,"create$"));
 
-					if (lastAdd == NULL) { 
-						fref->argList = nextAdd; 
-					} else { 
-						lastAdd->nextArg = nextAdd; 
+					if (lastAdd == NULL) {
+						fref->argList = nextAdd;
+					} else {
+						lastAdd->nextArg = nextAdd;
 					}
 					lastAdd = nextAdd;
 
@@ -228,10 +228,10 @@ FilterFunction(UDFContext* context, CLIPSValue* ret) {
 
 				default:
 					nextAdd = GenConstant(theEnv,GetpType(theArg),GetpValue(theArg));
-					if (lastAdd == NULL) { 
-						fref->argList = nextAdd; 
-					} else { 
-						lastAdd->nextArg = nextAdd; 
+					if (lastAdd == NULL) {
+						fref->argList = nextAdd;
+					} else {
+						lastAdd->nextArg = nextAdd;
 					}
 					lastAdd = nextAdd;
 					ExpressionInstall(theEnv,lastAdd);
@@ -335,8 +335,8 @@ ExistsFunction(UDFContext* context, CLIPSValue* ret) {
 	} else {
 		auto body = [](UDFContext* context, CLIPSValue* ret, CLIPSValue* theArg, const std::string& name, FUNCTION_REFERENCE* fref, struct FunctionDefinition *theFunction) -> bool {
 			struct multifield *theMultifield = nullptr;
-			struct expr *lastAdd = nullptr, 
-						*nextAdd = nullptr, 
+			struct expr *lastAdd = nullptr,
+						*nextAdd = nullptr,
 						*multiAdd = nullptr;
 			Environment* theEnv = UDFContextEnvironment(context);
 			ExpressionInstall(theEnv,fref);
@@ -345,10 +345,10 @@ ExistsFunction(UDFContext* context, CLIPSValue* ret) {
 				case MULTIFIELD:
 					nextAdd = GenConstant(theEnv,FCALL,(void *) FindFunction(theEnv,"create$"));
 
-					if (lastAdd == NULL) { 
-						fref->argList = nextAdd; 
-					} else { 
-						lastAdd->nextArg = nextAdd; 
+					if (lastAdd == NULL) {
+						fref->argList = nextAdd;
+					} else {
+						lastAdd->nextArg = nextAdd;
 					}
 					lastAdd = nextAdd;
 
@@ -369,10 +369,10 @@ ExistsFunction(UDFContext* context, CLIPSValue* ret) {
 
 				default:
 					nextAdd = GenConstant(theEnv,GetpType(theArg),GetpValue(theArg));
-					if (lastAdd == NULL) { 
-						fref->argList = nextAdd; 
-					} else { 
-						lastAdd->nextArg = nextAdd; 
+					if (lastAdd == NULL) {
+						fref->argList = nextAdd;
+					} else {
+						lastAdd->nextArg = nextAdd;
 					}
 					lastAdd = nextAdd;
 					ExpressionInstall(theEnv,lastAdd);
@@ -473,8 +473,8 @@ NotExistsFunction(UDFContext* context, CLIPSValue* ret) {
 	} else {
 		auto body = [](UDFContext* context, CLIPSValue* ret, CLIPSValue* theArg, const std::string& name, FUNCTION_REFERENCE* fref, struct FunctionDefinition *theFunction) -> bool {
 			struct multifield *theMultifield = nullptr;
-			struct expr *lastAdd = nullptr, 
-						*nextAdd = nullptr, 
+			struct expr *lastAdd = nullptr,
+						*nextAdd = nullptr,
 						*multiAdd = nullptr;
 			Environment* theEnv = UDFContextEnvironment(context);
 			ExpressionInstall(theEnv,fref);
@@ -483,10 +483,10 @@ NotExistsFunction(UDFContext* context, CLIPSValue* ret) {
 				case MULTIFIELD:
 					nextAdd = GenConstant(theEnv,FCALL,(void *) FindFunction(theEnv,"create$"));
 
-					if (lastAdd == NULL) { 
-						fref->argList = nextAdd; 
-					} else { 
-						lastAdd->nextArg = nextAdd; 
+					if (lastAdd == NULL) {
+						fref->argList = nextAdd;
+					} else {
+						lastAdd->nextArg = nextAdd;
 					}
 					lastAdd = nextAdd;
 
@@ -507,10 +507,10 @@ NotExistsFunction(UDFContext* context, CLIPSValue* ret) {
 
 				default:
 					nextAdd = GenConstant(theEnv,GetpType(theArg),GetpValue(theArg));
-					if (lastAdd == NULL) { 
-						fref->argList = nextAdd; 
-					} else { 
-						lastAdd->nextArg = nextAdd; 
+					if (lastAdd == NULL) {
+						fref->argList = nextAdd;
+					} else {
+						lastAdd->nextArg = nextAdd;
 					}
 					lastAdd = nextAdd;
 					ExpressionInstall(theEnv,lastAdd);
@@ -565,7 +565,6 @@ NotExistsFunction(UDFContext* context, CLIPSValue* ret) {
 		};
 		std::string name(CVToString(&func));
 		Environment* env = UDFContextEnvironment(context);
-		struct expr *tmp2 = nullptr;
 		struct FunctionDefinition *theFunction = nullptr;
 		CLIPSValue curr, tmp;
 		FUNCTION_REFERENCE fref;
