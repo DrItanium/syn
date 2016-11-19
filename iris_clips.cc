@@ -8,6 +8,7 @@
 #include <memory>
 #include <map>
 #include <iostream>
+#include "iris_sfml_network.h"
 
 extern "C" {
 #include "clips.h"
@@ -569,6 +570,6 @@ namespace iris {
 			X(word32s, Word32s, int32_t);
 			X(word64s, Word64s, int64_t);
 #undef X
-
+			installNetworkExtensions(theEnv);
 		}
 }
