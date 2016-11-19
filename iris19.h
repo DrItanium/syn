@@ -38,9 +38,11 @@ namespace iris19 {
 		InstructionPointer = RegisterCount  - 1,
 		StackPointer = RegisterCount - 2,
 	};
+}
 
 #include "iris19_defines.h"
 
+namespace iris19 {
 	class Instruction {
 		public:
 			Instruction(RawInstruction input) noexcept : _rawValue(input) { }

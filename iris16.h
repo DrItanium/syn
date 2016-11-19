@@ -27,10 +27,10 @@ namespace iris16 {
 	inline constexpr dword encodeDword(word lower, word upper) noexcept {
 		return iris::encodeUint32LE(lower, upper);
 	}
-
+} // end namespace iris16
 #include "iris16_defines.h"
-//#include "def/iris16/enums.def"
 
+namespace iris16 {
 	class Core : public iris::Core {
 		public:
 			Core() noexcept;

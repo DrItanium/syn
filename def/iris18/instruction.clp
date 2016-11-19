@@ -1,6 +1,6 @@
 
 (deffacts iris18
-          (input-type word)
+          (input-type Word)
           (title _iris18_decl)
           (namespace iris18)
           (field (name Control) (mask 0b0000000000001111) (shift 0) (output-type Operation))
@@ -118,4 +118,13 @@
                                          Push
                                          Pop
                                          ) (cast-to byte) (max-size "4"))
+          (enum (name ComplexSubTypes) (children
+                                         Encoding
+                                         ) (cast-to byte) (max-size "16"))
+          (enum (name EncodingOperation) (children
+                                           Encode
+                                           Decode
+                                           BitSet
+                                           BitUnset
+                                           ) (cast-to byte) (max-size "8"))
           )

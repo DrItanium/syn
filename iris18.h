@@ -63,32 +63,17 @@ namespace iris18 {
 		ShiftRegister = R9,
 		FieldRegister = R9,
 	};
+} // end namespace iris18
 
-#define DefEnum(type, width) \
-	enum class type : width {
-#define EndDefEnum(type, width, maxCount) \
-		Count, \
-	};  \
-	static_assert(static_cast<width>(type :: Count) <= static_cast<width>( maxCount ), "Too many " #type " entries defined!");
-#define EnumEntry(type) type,
+#include "iris18_defines.h"
 
-#include "def/iris18/ops.def"
-#include "def/iris18/arithmetic_ops.def"
-#include "def/iris18/syscalls.def"
-#include "def/iris18/compare.enum"
-#include "def/iris18/logical.enum"
-#include "def/iris18/memory.enum"
-#include "def/iris18/complex.def"
-#undef DefEnum
-#undef EnumEntry
-#undef EndDefEnum
-
+namespace iris18 {
 	class DecodedInstruction {
 		public:
 			DecodedInstruction(RawInstruction input) noexcept : _rawValue(input) { }
 			DecodedInstruction(const DecodedInstruction&) = delete;
 			RawInstruction getRawValue() const noexcept { return _rawValue; }
-#define X(title, mask, shift, type, post) inline type get ## title () const noexcept { return iris::decodeBits<RawInstruction, type, mask, shift>(_rawValue); }
+#define X(title, mask, shift, type, post) inline type get ## title () const noexcept { return decode ## title ( _rawValue ); }
 #include "def/iris18/instruction.def"
 #undef X
 		private:
@@ -486,12 +471,6 @@ namespace iris18 {
 	};
 
 
-#define X(title, mask, shift, type, post) \
-	constexpr inline Word encode ## title (Word input, type value) noexcept { \
-		return iris::encodeBits<Word, type, mask, shift>(input, value); \
-	}
-#include "def/iris18/instruction.def"
-#undef X
 	struct InstructionEncoder {
 		int currentLine;
 		RegisterValue address;

@@ -26,9 +26,11 @@ namespace iris17 {
         MaxInstructionsPerGroup = RestMask >> 3,
         MaxGroups = 8,
     };
+} // end namespace iris17
 
 #include "iris17_defines.h"
 
+namespace iris17 {
 class DecodedInstruction {
     public:
         DecodedInstruction(word rinst);
