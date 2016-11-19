@@ -119,6 +119,7 @@ class ManagedMemoryBlock : public ExternalAddressWrapper<Word[]> {
 template<typename Word>
 using ManagedMemoryBlock_Ptr = ManagedMemoryBlock<Word>*;
 
+bool errorMessage(void* env, const std::string& idClass, int idIndex, const std::string& msgPrefix, const std::string& msg) noexcept;
 
  }
  #endif

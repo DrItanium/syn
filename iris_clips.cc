@@ -209,7 +209,7 @@ namespace iris {
 		CLIPS_basePrintAddress(env, logicalName, theValue, func, "Pointer");
 	}
 
-	inline bool errorMessage(void* env, const std::string& idClass, int idIndex, const std::string& msgPrefix, const std::string& msg) noexcept {
+	bool errorMessage(void* env, const std::string& idClass, int idIndex, const std::string& msgPrefix, const std::string& msg) noexcept {
 		PrintErrorID(env, idClass.c_str(), idIndex, false);
 		EnvPrintRouter(env, WERROR, msgPrefix.c_str());
 		EnvPrintRouter(env, WERROR, msg.c_str());
