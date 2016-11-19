@@ -43,12 +43,12 @@ inline constexpr bool inRange(T capacity, T address) noexcept {
 }
 
 template<typename T> struct TypeToName { };
-
-#define DefMemoryBlockAssociation(t, name) \
+#define DefWrapperSymbolicName(t, name) \
 	template<> \
-	struct TypeToName< t [] > { \
-	static std::string getSymbolicName() noexcept { return #name; } \
-}
+	struct TypeToName < t > { \
+		static std::string getSymbolicName() noexcept { return #name; } \
+	}
+#define DefMemoryBlockAssociation(t, name) DefWrapperSymbolicName( t [] , name )
 	DefMemoryBlockAssociation(int8_t, word8s);
 	DefMemoryBlockAssociation(uint8_t, word8u);
 	DefMemoryBlockAssociation(int16_t, word16s);
@@ -65,10 +65,27 @@ class ExternalAddressWrapper {
 		using InternalType = T;
 		ExternalAddressWrapper(std::unique_ptr<T>&& value) : _value(std::move(value)) { }
 		inline T* get() const noexcept { return _value.get(); }
+		std::string getSymbolicName() const noexcept { return TypeToName<T>::getSymbolicName(); }
 	protected:
 		std::unique_ptr<T> _value;
 };
 void CLIPS_basePrintAddress(void* env, const char* logicalName, void* theValue, const char* func, const char* majorType);
+
+template<typename T>
+void CLIPS_basePrintAddress(void* env, const char* logicalName, void* theValue) {
+	static bool init = true;
+	static std::string func;
+	if (init) {
+		init = false;
+		func = TypeToName<T>::getSymbolicName();
+	}
+	CLIPS_basePrintAddress(env, logicalName, theValue, func.c_str(), "Wrapper");
+}
+
+#define DefPrintStatement(t, suffix) \
+	void CLIPS_printAddress_ ## suffix (void* env, const char* logicalName, void* theValue) { \
+		CLIPS_basePrintAddress<t>(env, logicalName, theValue); \
+	}
 
 template<typename Word>
 class ManagedMemoryBlock : public ExternalAddressWrapper<Word[]> {
@@ -102,6 +119,7 @@ class ManagedMemoryBlock : public ExternalAddressWrapper<Word[]> {
 template<typename Word>
 using ManagedMemoryBlock_Ptr = ManagedMemoryBlock<Word>*;
 
+bool errorMessage(void* env, const std::string& idClass, int idIndex, const std::string& msgPrefix, const std::string& msg) noexcept;
 
  }
  #endif

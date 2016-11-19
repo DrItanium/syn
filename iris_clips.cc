@@ -8,6 +8,7 @@
 #include <memory>
 #include <map>
 #include <iostream>
+#include "iris_sfml_network.h"
 
 extern "C" {
 #include "clips.h"
@@ -208,7 +209,7 @@ namespace iris {
 		CLIPS_basePrintAddress(env, logicalName, theValue, func, "Pointer");
 	}
 
-	inline bool errorMessage(void* env, const std::string& idClass, int idIndex, const std::string& msgPrefix, const std::string& msg) noexcept {
+	bool errorMessage(void* env, const std::string& idClass, int idIndex, const std::string& msgPrefix, const std::string& msg) noexcept {
 		PrintErrorID(env, idClass.c_str(), idIndex, false);
 		EnvPrintRouter(env, WERROR, msgPrefix.c_str());
 		EnvPrintRouter(env, WERROR, msg.c_str());
@@ -569,6 +570,6 @@ namespace iris {
 			X(word32s, Word32s, int32_t);
 			X(word64s, Word64s, int64_t);
 #undef X
-
+			installSfmlNetworkExtensions(theEnv);
 		}
 }
