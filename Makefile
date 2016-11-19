@@ -69,7 +69,8 @@ ALL_BINARIES = ${SIM_BINARY} \
 
 DEFINE_OBJECTS = iris19_defines.h \
 				 iris16_defines.h \
-				 iris17_defines.h
+				 iris17_defines.h \
+				 iris18_defines.h
 
 ALL_OBJECTS = ${COMMON_THINGS} \
 			  ${SIM_OBJECTS} \
@@ -190,6 +191,9 @@ iris16_defines.h: iris_repl def/iris16/instruction.clp cmd/deffield.clp lib/cort
 iris17_defines.h: iris_repl def/iris17/instruction.clp cmd/deffield.clp lib/cortex.clp lib/reset-run-exit.clp iris_base.h
 	@echo "Generating encoders, decoders and enumerations for iris17..."
 	@./deffield.sh -f2 def/iris17/instruction.clp -f2 lib/reset-run-exit.clp > iris17_defines.h
+iris18_defines.h: iris_repl def/iris18/instruction.clp cmd/deffield.clp lib/cortex.clp lib/reset-run-exit.clp iris_base.h
+	@echo "Generating encoders, decoders and enumerations for iris18..."
+	@./deffield.sh -f2 def/iris18/instruction.clp -f2 lib/reset-run-exit.clp > iris18_defines.h
 
 
 iris16_asm.tab.o: iris16_asm.tab.c asm_interact.h iris16.h iris_base.h \
@@ -330,3 +334,5 @@ sim_registration.o: sim_registration.cc sim_registration.h Core.h \
  def/iris18/set.sig iris16.h iris16_defines.h def/iris16/groups.def \
  def/iris16/misc.def iris17.h iris17_defines.h iris19.h iris19_defines.h \
  def/iris19/ops.def
+
+
