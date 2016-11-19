@@ -1,6 +1,7 @@
 (deffacts iris16
           (input-type word)
           (title _iris16_decl)
+          (namespace iris16)
           (field (name Control)
                  (mask 0x000000FF)
                  (shift 0)
@@ -73,7 +74,7 @@
                           UnconditionalImmediateLink
                           UnconditionalRegister
                           UnconditionalRegisterLink
-                          ConditionalTrueImmediate 
+                          ConditionalTrueImmediate
                           ConditionalTrueImmediateLink
                           ConditionalTrueRegister
                           ConditionalTrueRegisterLink

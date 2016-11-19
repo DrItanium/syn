@@ -1,7 +1,8 @@
 ; several types of actions: flags, register, and custom
-(deffacts iris19 
+(deffacts iris19
           (input-type Word)
           (title _iris19_decl)
+          (namespace iris19)
           (enum (name Operation)
                 (children Arithmetic
                           Shift

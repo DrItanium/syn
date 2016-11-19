@@ -1,6 +1,7 @@
 (deffacts iris17
           (input-type word)
           (title _iris17_decl)
+          (namespace iris17)
           (field (name Control)
                  (mask 0x000000FF)
                  (shift 0)
