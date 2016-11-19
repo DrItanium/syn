@@ -22,7 +22,7 @@
             "Load a given value from memory, increment the value, and then return it")
 (defgeneric ucode::memory-decrement
             "Load a given value from memory, decrement the value, and then return it")
-(defgeneric ucode::memory-load-indirect 
+(defgeneric ucode::memory-load-indirect
             "Use the value stored at the given address in memory as another address and load the value stored there!")
 (defgeneric ucode::memory-store-indirect
             "Use the value stored at the given address in memory as another address and store the given value stored there!")
@@ -61,7 +61,7 @@
    (?addr0 INTEGER)
    (?mem1 EXTERNAL-ADDRESS)
    (?addr1 INTEGER))
-  (bind ?a 
+  (bind ?a
         (memory-load ?mem0
                      ?addr0))
   (memory-store ?mem0
@@ -91,7 +91,7 @@
   ((?memory EXTERNAL-ADDRESS)
    (?from INTEGER)
    (?to INTEGER
-        (>= ?to 
+        (>= ?to
             ?from)))
   (loop-for-count (?index ?from ?to) do
                   (memory-zero ?memory
@@ -100,7 +100,7 @@
 (defmethod ucode::cast
   ((?type SYMBOL)
    (?value INTEGER))
-  (funcall (sym-cat add- 
+  (funcall (sym-cat add-
                     ?type)
            ?value
            0))
@@ -198,7 +198,7 @@
    (?address INTEGER)
    (?value INTEGER))
   (call ?memory
-        set 
+        set
         ?address
         ?value))
 
@@ -308,7 +308,7 @@
 (defmethod ucode::make-word32u
   ((?lower INTEGER)
    (?upper INTEGER))
-  (encode-bits 
+  (encode-bits
     (encode-bits 0
                  ?lower
                  (hex->int 0x0000FFFF)
@@ -329,7 +329,7 @@
 (defmethod ucode::make-word64u
   ((?lower INTEGER)
    (?upper INTEGER))
-  (encode-bits 
+  (encode-bits
     (encode-bits 0
                  ?lower
                  (hex->int 0x00000000FFFFFFFF)
