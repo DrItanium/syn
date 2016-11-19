@@ -570,6 +570,6 @@ namespace iris {
 			X(word32s, Word32s, int32_t);
 			X(word64s, Word64s, int64_t);
 #undef X
-			installNetworkExtensions(theEnv);
+			installSfmlNetworkExtensions(theEnv);
 		}
 }

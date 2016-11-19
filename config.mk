@@ -1,4 +1,4 @@
-LIBS = -lc -lm -lboost_system -lboost_filesystem -lsfml-network
+LIBS = -lc -lm -lboost_system -lboost_filesystem -lsfml-system
 
 CC := cc
 CXX := c++
