@@ -18,6 +18,4 @@ maya
 *.tab.h
 *.yy.c
 
-iris19_defines.h
-iris16_defines.h
-iris17_defines.h
+*_defines.h
