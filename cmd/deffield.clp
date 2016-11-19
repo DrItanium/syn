@@ -22,11 +22,30 @@
          (declare (salience ?*priority:first*))
          (title ?name)
          =>
+         (assert (check-for-namespace))
          (printout t
                    "// NOTE: this file is auto generated, DO NOT MODIFY!" crlf
                    "#ifndef " (upcase ?name) crlf
                    "#define " (upcase ?name) crlf
                    "#include \"iris_base.h\"" crlf))
+(defrule MAIN::generate-namespace-contents
+         (declare (salience ?*priority:right-after-first*))
+         (check-for-namespace)
+         (namespace ?ns)
+         =>
+         (assert (close-namespace))
+         (printout t
+                   "namespace " ?ns " { " crlf))
+
+
+(defrule MAIN::generate-closing-namespace-contents
+         (declare (salience ?*priority:last*))
+         (close-namespace)
+         (namespace ?ns)
+         =>
+         (printout t
+                   "} // end namespace " ?ns crlf))
+
 (defrule MAIN::generate-endif-header
          (declare (salience ?*priority:dead-last*))
          (title ?name)
@@ -34,7 +53,7 @@
          (printout t
                    "#endif // end " (upcase ?name) crlf))
 
-(deffunction generate-encode-decode-ops 
+(deffunction generate-encode-decode-ops
              (?t ?name ?value ?mask ?shift)
              (format t
                      "inline constexpr %s decode%s(%s value) noexcept { return iris::decodeBits<%s, %s, %s, %s>(value); }%n"
@@ -64,10 +83,10 @@
                 (input-type FALSE))
          (input-type ?value)
          =>
-         (generate-encode-decode-ops ?t 
-                                     ?name 
-                                     ?value 
-                                     ?mask 
+         (generate-encode-decode-ops ?t
+                                     ?name
+                                     ?value
+                                     ?mask
                                      ?shift))
 
 (defrule MAIN::generate-field:c++:use-embedded-type
@@ -77,10 +96,10 @@
                 (output-type ?t)
                 (input-type ?value&~FALSE))
          =>
-         (generate-encode-decode-ops ?t 
-                                     ?name 
-                                     ?value 
-                                     ?mask 
+         (generate-encode-decode-ops ?t
+                                     ?name
+                                     ?value
+                                     ?mask
                                      ?shift))
 
 (deftemplate enum

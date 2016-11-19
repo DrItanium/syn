@@ -3,6 +3,7 @@
            (export ?ALL))
 (defglobal cortex
            ?*priority:first* = 10000
+           ?*priority:right-after-first* = 9999
            ?*priority:three* = 3
            ?*priority:two* = 2
            ?*priority:one* = 1
