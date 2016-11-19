@@ -68,21 +68,12 @@
         (type LEXEME)))
 
 (defclass parser::line
-  (is-a thing)
+  (is-a indexed-thing-with-children)
   (slot original-line
         (type LEXEME)
         (storage local)
         (visibility public)
         (default ?NONE))
-  (slot index
-        (type INTEGER)
-        (range 0 ?VARIABLE)
-        (storage local)
-        (visibility public)
-        (default ?NONE))
-  (multislot contents
-             (storage local)
-             (visibility public))
   (message-handler init after))
 
 (defmessage-handler parser::line init after
@@ -164,19 +155,19 @@
                  (word ?id)
                  (name ?k))
          ?f <- (object (is-a line)
-                       (contents $?a ?id $?b))
+                       (children $?a ?id $?b))
          =>
          (modify-instance ?f
-                          (contents ?a ?k ?b)))
+                          (children ?a ?k ?b)))
 
 (defrule parser::identify-number
          (declare (salience ?*priority:first*))
          ?f <- (object (is-a line)
-                       (contents $?a ?id&:(numberp ?id) $?b)
+                       (children $?a ?id&:(numberp ?id) $?b)
                        (name ?line))
          =>
          (modify-instance ?f
-                          (contents ?a 
+                          (children ?a 
                                     (make-instance of number
                                                    (value ?id)
                                                    (parent ?line))
