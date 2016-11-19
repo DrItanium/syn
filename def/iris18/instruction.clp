@@ -2,7 +2,7 @@
 (deffacts iris18
           (input-type word)
           (title _iris18_decl)
-
+          (namespace iris18)
           (field (name Control) (mask 0b0000000000001111) (shift 0) (output-type Operation))
           (field (name Upper) (mask 0b1111111100000000) (shift 8) (output-type byte))
           (field (name Lower) (mask 0b0000000011111111) (shift 0) (output-type byte))
