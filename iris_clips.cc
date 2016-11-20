@@ -302,6 +302,31 @@ namespace iris {
 		static std::string funcStr;
 		static std::string funcErrorPrefix;
 #include "iris_memory_block_defines.h"
+		auto isArithmeticOp = [](MemoryBlockOp op) {
+			switch(op) {
+				case MemoryBlockOp::Combine:
+				case MemoryBlockOp::Difference:
+				case MemoryBlockOp::Product:
+				case MemoryBlockOp::Divide:
+				case MemoryBlockOp::Remainder:
+					return true;
+				default:
+					return false;
+			}
+		};
+		auto isCompareOp = [](MemoryBlockOp op) {
+			switch(op) {
+				case MemoryBlockOp::Equals:
+				case MemoryBlockOp::NotEquals:
+				case MemoryBlockOp::LessThan:
+				case MemoryBlockOp::GreaterThan:
+				case MemoryBlockOp::LessThanOrEqualTo:
+				case MemoryBlockOp::GreaterThanOrEqualTo:
+					return true;
+				default:
+					return false;
+			}
+		};
 		if (init) {
 			init = false;
 			std::stringstream ss, ss2;
@@ -336,6 +361,7 @@ namespace iris {
 					CVSetBoolean(ret, false);
 					return callErrorMessage(str, "<- unknown operation requested!");
 				} else {
+					auto rangeViolation = [errOutOfRange, ptr, &str](CLIPSInteger addr) { errOutOfRange(str, ptr->size(), addr); };
 					CLIPSValue arg0, arg1;
 					auto checkArg = [callErrorMessage, &str, env](unsigned int index, unsigned int type, const std::string& msg, CLIPSValue* dat) {
 						if (!argCheck(dat, index, type)) {
@@ -379,7 +405,7 @@ namespace iris {
 						if (check) {
 							auto addr = EnvDOToLong(env, arg0);
 							if (!ptr->legalAddress(addr)) {
-								errOutOfRange("get", ptr->size(), addr);
+								rangeViolation(addr);
 								check = false;
 							} else {
 								CVSetInteger(ret, ptr->getMemoryCellValue(addr));
@@ -398,7 +424,7 @@ namespace iris {
 							auto addr = EnvDOToLong(env, arg0);
 							if (!ptr->legalAddress(addr)) {
 								check = false;
-								errOutOfRange(op == MemoryBlockOp::Increment ? "increment" : "decrement", ptr->size(), addr);
+								rangeViolation(addr);
 							} else {
 								if (op == MemoryBlockOp::Increment) {
 									ptr->incrementMemoryCell(addr);
@@ -415,14 +441,14 @@ namespace iris {
 							auto addr1 = EnvDOToLong(env, arg1);
 							if (!ptr->legalAddress(addr0)) {
 								check = false;
-								errOutOfRange(op == MemoryBlockOp::Swap ? "swap" : (op == MemoryBlockOp::Set ? "set" : "move"), ptr->size(), addr0);
+								rangeViolation(addr0);
 							} else {
 								if (op == MemoryBlockOp::Set) {
 									ptr->setMemoryCell(addr0, addr1);
 								} else {
 									if (!ptr->legalAddress(addr1)) {
 										check = false;
-										errOutOfRange(op == MemoryBlockOp::Swap ? "swap" : "move", ptr->size(), addr1);
+										rangeViolation(addr1);
 									} else {
 										if (op == MemoryBlockOp::Swap) {
 											ptr->swapMemoryCells(addr0, addr1);
@@ -432,6 +458,56 @@ namespace iris {
 									}
 								}
 							}
+						}
+						return check;
+					} else if (isArithmeticOp(op)) {
+						auto check = twoCheck(INTEGER, "First argument must be an address", INTEGER, "Second argument must be an address!");
+						if (check) {
+							auto addr0 = EnvDOToLong(env, arg0);
+							auto addr1 = EnvDOToLong(env, arg1);
+							if (!ptr->legalAddress(addr0)) {
+								check = false;
+								rangeViolation(addr0);
+							} else if (!ptr->legalAddress(addr1)) {
+								check = false;
+								rangeViolation(addr1);
+							} else {
+								using ArithmeticOperation = std::function<CLIPSInteger(CLIPSInteger, CLIPSInteger)>;
+								ArithmeticOperation fn;
+								switch(op) {
+									case MemoryBlockOp::Combine:
+										fn = iris::add<CLIPSInteger>;
+										break;
+									case MemoryBlockOp::Difference:
+										fn = iris::sub<CLIPSInteger>;
+										break;
+									case MemoryBlockOp::Product:
+										fn = iris::mul<CLIPSInteger>;
+										break;
+									case MemoryBlockOp::Divide:
+										fn = iris::div<CLIPSInteger>;
+										break;
+									case MemoryBlockOp::Remainder:
+										fn = iris::rem<CLIPSInteger>;
+										break;
+									default:
+										return callErrorMessage(str, "<- legal but unimplemented arithmetic operation!");
+								}
+								try {
+									auto val0 = ptr->getMemoryCellValue(addr0);
+									auto val1 = ptr->getMemoryCellValue(addr1);
+									CVSetInteger(ret, fn(val0, val1));
+								} catch (iris::Problem p) {
+									check = false;
+									CVSetBoolean(ret, false);
+									std::stringstream s;
+									s << "an exception was thrown: " << p.what();
+									auto str = s.str();
+									errorMessage(env, "CALL", 2, funcErrorPrefix, str);
+								}
+							}
+						} else {
+							CVSetBoolean(ret, false);
 						}
 						return check;
 					} else {
