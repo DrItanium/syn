@@ -72,6 +72,8 @@ void CLIPS_basePrintAddress(void* env, const char* logicalName, void* theValue) 
 	CLIPS_basePrintAddress(env, logicalName, theValue, func.c_str(), "Wrapper");
 }
 
+// Have to do it this way because std::function's will go out of scope and
+// everything breaks
 typedef void PrintFunction(void*, const char*, void*); 
 typedef bool DeleteFunction(void*, void*);
 typedef bool CallFunction(void*, DATA_OBJECT*, DATA_OBJECT*);
