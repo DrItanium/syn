@@ -302,64 +302,6 @@ namespace iris {
 		static std::string funcStr;
 		static std::string funcErrorPrefix;
 #include "iris_memory_block_defines.h"
-		/*
-	enum class MemoryBlockOp {
-		Type,
-		Size,
-		Clear,
-		Get,
-		Set,
-		Populate,
-		Increment,
-		Decrement,
-		Swap,
-		Move,
-		Combine,
-		Difference,
-		Multiply,
-		Divide,
-		Remainder,
-		LeftShift,
-		RightShift,
-		And,
-		Or,
-		Not,
-		Xor,
-		Nand,
-		Equals,
-		NotEquals,
-		LessThan,
-		GreaterThan,
-	};
-		static std::map<std::string, MemoryBlockOp> opTranslation = {
-			{ "type", MemoryBlockOp::Type },
-			{ "size", MemoryBlockOp::Size },
-			{ "get", MemoryBlockOp::Get },
-			{ "set", MemoryBlockOp::Set },
-			{ "clear", MemoryBlockOp::Clear },
-			{ "zero", MemoryBlockOp::Clear },
-			{ "populate", MemoryBlockOp::Populate },
-			{ "increment", MemoryBlockOp::Increment },
-			{ "++", MemoryBlockOp::Increment },
-			{ "decrement", MemoryBlockOp::Decrement },
-			{ "--", MemoryBlockOp::Decrement },
-			{ "swap", MemoryBlockOp::Swap },
-			{ "move", MemoryBlockOp::Move },
-			{ "copy", MemoryBlockOp::Move },
-		};
-		static std::map<MemoryBlockOp, int> opArgCounts = {
-			{ MemoryBlockOp::Type, 0 },
-			{ MemoryBlockOp::Size, 0 },
-			{ MemoryBlockOp::Get, 1 },
-			{ MemoryBlockOp::Set, 2 },
-			{ MemoryBlockOp::Clear, 0 },
-			{ MemoryBlockOp::Populate, 1 },
-			{ MemoryBlockOp::Increment, 1 },
-			{ MemoryBlockOp::Decrement, 1 },
-			{ MemoryBlockOp::Swap, 2 },
-			{ MemoryBlockOp::Move, 2 },
-		};
-		*/
 		if (init) {
 			init = false;
 			std::stringstream ss, ss2;

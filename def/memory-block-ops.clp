@@ -9,37 +9,76 @@
           (translation size -> Size)
           (translation get -> Get)
           (translation set -> Set)
-          (translation clear -> Clear)
-          (translation zero -> Clear)
-          (translation increment -> Increment)
-          (translation decrement -> Decrement)
-          (translation ++ -> Increment)
-          (translation -- -> Decrement)
+          (translation clear zero -> Clear)
+          (translation increment ++ -> Increment)
+          (translation decrement -- -> Decrement)
           (translation swap -> Swap)
-          (translation move -> Move)
-          (translation copy -> Move)
-          (count Populate -> 1)
-          (count Type -> 0)
-          (count Size -> 0)
-          (count Get -> 1)
-          (count Set -> 2)
-          (count Clear -> 0)
-          (count Increment -> 1)
-          (count Decrement -> 1)
-          (count Swap -> 2)
-          (count Move -> 2))
+          (translation move copy -> Move)
+          (translation add combine + -> Combine)
+          (translation sub subtract difference - -> Difference)
+          (translation mul multiply product * -> Product)
+          (translation div divide / -> Divide)
+          (translation rem remainder mod % -> Remainder)
+          (translation eq equals == -> Equals)
+          (translation neq not-equals != <> -> NotEquals)
+          (translation lt less-than < -> LessThan)
+          (translation gt greater-than > -> GreaterThan)
+          (translation lte less-than-or-equal-to <= -> LessThanOrEqualTo)
+          (translation gte greater-than-or-equal-to >= -> GreaterThanOrEqualTo)
+          (defarg-count 0
+                        Clear
+                        Type
+                        Size)
+          (defarg-count  2
+                         Combine 
+                         Difference 
+                         Product 
+                         Divide 
+                         Remainder 
+                         Equals
+                         NotEquals
+                         LessThan
+                         GreaterThan
+                         LessThanOrEqualTo
+                         GreaterThanOrEqualTo
+                         Swap
+                         Move
+                         Set)
+          (defarg-count 1
+                        Populate
+                        Get
+                        Increment
+                        Decrement))
+
+
 (definstances MAIN::output-files
               (of output-file))
+(defrule MAIN::generate-arg-count-entries
+         (declare (salience 10))
+         ?f <- (defarg-count ?count
+                             $?types)
+         =>
+         (retract ?f)
+         (progn$ (?t ?types)
+                 (assert (count ?t -> ?count))))
+(deffunction MAIN::make-translation-entry
+             (?title ?enum)
+             (format nil 
+                     "{ \"%s\", MemoryBlockOp:: %s },"
+                     ?title
+                     ?enum))
 (defrule MAIN::process-translation
          (declare (salience 2))
-         ?f <- (translation ?title -> ?enum)
+         ?f <- (translation ?first $?rest -> ?enum)
          =>
          (retract ?f)
          (assert (enum-entry (str-cat ?enum ,))
-                 (translation-entry (format nil 
-                                            "{ \"%s\", MemoryBlockOp:: %s },"
-                                            ?title
-                                            ?enum))))
+                 (translation-entry (make-translation-entry ?first
+                                                            ?enum)))
+         (progn$ (?title ?rest) 
+                 (assert (translation-entry (make-translation-entry ?title
+                                                                    ?enum)))))
+
 (defrule MAIN::process-arg-count
          (declare (salience 2))
          ?f <- (count ?enum -> ?count)
