@@ -227,7 +227,7 @@ namespace iris {
 			static std::string type;
 			if (init) {
 				init = false;
-				type = TypeToName<typename ManagedMemoryBlock<Word>::InternalType>::getSymbolicName();
+				type = ManagedMemoryBlock<Word>::getType();
 				std::stringstream ss, ss2;
 				ss << "call (" << type << " memory block)";
 				funcStr = ss.str();
@@ -243,7 +243,7 @@ namespace iris {
 						errorMessage(env, "NEW", 1, funcErrorPrefix, " expected an integer for capacity!");
 					} else {
 						auto size = EnvDOToLong(env, capacity);
-						auto idIndex = ExternalAddressRegistrar<typename ManagedMemoryBlock<Word>::InternalType>::getExternalAddressId(env);
+						auto idIndex = ManagedMemoryBlock<Word>::getAssociatedEnvironmentId(env);
 						ret->bitType = EXTERNAL_ADDRESS_TYPE;
 						SetpType(ret, EXTERNAL_ADDRESS);
 						SetpValue(ret, EnvAddExternalAddress(env, ManagedMemoryBlock<Word>::make(size), idIndex));
@@ -437,7 +437,6 @@ namespace iris {
 		}
 #define defFunctions(id, type) \
 	void CLIPS_new ## id ## Ptr (void* env, DATA_OBJECT* ret) { CLIPS_newPtr< type > (env, ret); } \
-	bool CLIPS_delete ## id ## Ptr (void* env, void* ret) { return CLIPS_deletePtr< type > (env, ret); } \
 	bool CLIPS_call ## id ## Ptr (void* env, DATA_OBJECT* theValue, DATA_OBJECT* ret) { return CLIPS_callPtr< type >(env, theValue, ret); } 
 	defFunctions(Word8u, uint8_t);
 	defFunctions(Word16u, uint16_t);
@@ -537,15 +536,7 @@ namespace iris {
 			EnvAddUDF(env, "right-shift", "l", CLIPS_shiftRight, "CLIPS_shiftRight", 2, 2, "l;l", nullptr);
 
 #define X(title, id, type) \
-			externalAddressType title = { \
-				#title , \
-				ManagedMemoryBlock<type>::printAddress, \
-				ManagedMemoryBlock<type>::printAddress, \
-				CLIPS_delete ## id ## Ptr, \
-				CLIPS_new ## id ## Ptr, \
-				CLIPS_call ## id ## Ptr, \
-			}; \
-			ExternalAddressRegistrar< ManagedMemoryBlock< type >::InternalType > ::registerExternalAddressId(theEnv, InstallExternalAddressType(theEnv, & title )); \
+			ManagedMemoryBlock<type>::registerWithEnvironment(theEnv, #title , CLIPS_new ## id ## Ptr, CLIPS_call ## id ## Ptr ); \
 			EnvAddUDF(env, "add-" #title , "l", CLIPS_Add_ ## title , "CLIPS_Add_" #title , 2, 2, "l;l", nullptr); \
 			EnvAddUDF(env, "sub-" #title , "l", CLIPS_Sub_ ## title , "CLIPS_Sub_" #title , 2, 2, "l;l", nullptr); \
 			EnvAddUDF(env, "mul-" #title , "l", CLIPS_Mul_ ## title , "CLIPS_Mul_" #title , 2, 2, "l;l", nullptr); \

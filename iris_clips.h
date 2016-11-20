@@ -72,16 +72,55 @@ void CLIPS_basePrintAddress(void* env, const char* logicalName, void* theValue) 
 	CLIPS_basePrintAddress(env, logicalName, theValue, func.c_str(), "Wrapper");
 }
 
+typedef void PrintFunction(void*, const char*, void*); 
+typedef bool DeleteFunction(void*, void*);
+typedef bool CallFunction(void*, DATA_OBJECT*, DATA_OBJECT*);
+typedef void NewFunction(void*, DATA_OBJECT*);
+
+
 template<typename T>
 class ExternalAddressWrapper {
 	public:
 		using InternalType = T;
+		static std::string getType() { return TypeToName<InternalType>::getSymbolicName(); }
+		static unsigned int getAssociatedEnvironmentId(void* env) { return ExternalAddressRegistrar<InternalType>::getExternalAddressId(env); }
+		static void registerWithEnvironment(void* env, externalAddressType* description) { 
+			ExternalAddressRegistrar<InternalType>::registerExternalAddressId(env, InstallExternalAddressType(env, description));
+		}
 		ExternalAddressWrapper(std::unique_ptr<T>&& value) : _value(std::move(value)) { }
 		inline T* get() const noexcept { return _value.get(); }
-		std::string getSymbolicName() const noexcept { return TypeToName<T>::getSymbolicName(); }
 		static void printAddress(void* env, const char* logicalName, void* theValue) {
 			CLIPS_basePrintAddress<InternalType>(env, logicalName, theValue);
 		}
+		static bool deleteWrapper(void* env, void* obj) {
+			if (obj != nullptr) {
+				auto result = static_cast<ExternalAddressWrapper<T>*>(obj);
+				delete result;
+			}
+			return true;
+		}
+		static void registerWithEnvironment(void* env, const char* title, NewFunction _new, CallFunction _call, DeleteFunction _delete, PrintFunction _print) {
+
+			externalAddressType tmp = { 
+				title,
+				_print,
+				_print,
+				_delete,
+				_new,
+				_call,
+			};
+			registerWithEnvironment(env, &tmp);
+		}
+
+		static void registerWithEnvironment(void* env, const char* title, NewFunction _new, CallFunction _call, DeleteFunction _delete) {
+			registerWithEnvironment(env, title, _new, _call, _delete, printAddress);
+		}
+
+		static void registerWithEnvironment(void* env, const char* title, NewFunction _new, CallFunction _call) {
+			registerWithEnvironment(env, title, _new, _call, deleteWrapper, printAddress);
+		}
+
+
 	protected:
 		std::unique_ptr<T> _value;
 };
