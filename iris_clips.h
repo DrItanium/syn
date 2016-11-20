@@ -99,7 +99,7 @@ class ExternalAddressWrapper {
 			}
 			return true;
 		}
-		static void registerWithEnvironment(void* env, const char* title, NewFunction _new, CallFunction _call, DeleteFunction _delete, PrintFunction _print) {
+		static void registerWithEnvironment(void* env, const char* title, NewFunction _new, CallFunction _call, DeleteFunction _delete = deleteWrapper, PrintFunction _print = printAddress) {
 
 			externalAddressType tmp = { 
 				title,
@@ -111,16 +111,6 @@ class ExternalAddressWrapper {
 			};
 			registerWithEnvironment(env, &tmp);
 		}
-
-		static void registerWithEnvironment(void* env, const char* title, NewFunction _new, CallFunction _call, DeleteFunction _delete) {
-			registerWithEnvironment(env, title, _new, _call, _delete, printAddress);
-		}
-
-		static void registerWithEnvironment(void* env, const char* title, NewFunction _new, CallFunction _call) {
-			registerWithEnvironment(env, title, _new, _call, deleteWrapper, printAddress);
-		}
-
-
 	protected:
 		std::unique_ptr<T> _value;
 };
