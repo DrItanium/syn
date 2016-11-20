@@ -30,6 +30,9 @@ struct ExternalAddressRegistrar {
 		static void registerExternalAddressId(void* env, unsigned int value) {
 			_cache.emplace(env, value);
 		}
+		static bool isOfType(void* env, DATA_OBJECT* ptr) {
+			return static_cast<struct externalAddressHashNode*>(ptr->value)->type == getExternalAddressId(env);
+		}
 	private:
 		static std::map<void*, unsigned int> _cache;
 };
@@ -112,6 +115,9 @@ class ExternalAddressWrapper {
 				_call,
 			};
 			registerWithEnvironment(env, &tmp);
+		}
+		static bool isOfType(void* env, DATA_OBJECT* ptr) {
+			return ExternalAddressRegistrar<InternalType>::isOfType(env, ptr);
 		}
 	public:
 		ExternalAddressWrapper(std::unique_ptr<T>&& value) : _value(std::move(value)) { }

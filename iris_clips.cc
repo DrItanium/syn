@@ -277,14 +277,14 @@ namespace iris {
 	void CLIPS_Mul_ ## id (UDFContext* context, CLIPSValue* ret) { CLIPS_arithmeticOperation< type , ArithmeticOperations::Mul > (context, ret); } \
 	void CLIPS_Div_ ## id (UDFContext* context, CLIPSValue* ret) { CLIPS_arithmeticOperation< type , ArithmeticOperations::Div > (context, ret); } \
 	void CLIPS_Rem_ ## id (UDFContext* context, CLIPSValue* ret) { CLIPS_arithmeticOperation< type , ArithmeticOperations::Rem > (context, ret); }
-	X(byte, word8u)
-	X(int8_t, word8s)
-	X(uint16, word16u)
-	X(int16_t, word16s)
-	X(uint32, word32u)
-	X(int32_t, word32s)
-	X(uint64, word64u)
-	X(int64_t, word64s)
+	X(byte, word8u);
+	X(int8_t, word8s);
+	X(uint16, word16u);
+	X(int16_t, word16s);
+	X(uint32, word32u);
+	X(int32_t, word32s);
+	X(uint64, word64u);
+	X(int64_t, word64s);
 #undef X
 	DefWrapperSymbolicName(sf::RenderWindow, window);
 	class WindowWrapper : public ExternalAddressWrapper<sf::RenderWindow> {
@@ -295,8 +295,8 @@ namespace iris {
 		public:
 			WindowWrapper(unsigned int width, unsigned int height, unsigned int depth, const std::string& title) :
 				ExternalAddressWrapper<InternalType>(std::move(std::make_unique<InternalType>(sf::VideoMode(width, height, depth), title))),
-							_mode(width, height, depth),
-							_title(title) { }
+				_mode(width, height, depth),
+				_title(title) { }
 			~WindowWrapper() { }
 			std::string getTitle() const noexcept { return _title; }
 			sf::VideoMode getVideoMode() noexcept { return _mode; }
@@ -309,6 +309,63 @@ namespace iris {
 			std::string _title;
 			static std::string _type;
 	};
+	DefWrapperSymbolicName(sf::Color, color);
+	class ColorWrapper : public ExternalAddressWrapper<sf::Color> {
+		public:
+			static void newFunction(void* env, DATA_OBJECT* ret);
+			static bool callFunction(void* env, DATA_OBJECT* value, DATA_OBJECT* ret);
+			static void registerWithEnvironment(void* env) { BaseClass::registerWithEnvironment(env, "color", newFunction, callFunction); }
+		public:
+			ColorWrapper(sf::Uint8 red, sf::Uint8 green, sf::Uint8 blue, sf::Uint8 alpha) : ExternalAddressWrapper<sf::Color>(std::move(std::make_unique<sf::Color>(red, green, blue, alpha))) { }
+			~ColorWrapper() { }
+			sf::Uint8 getRed() noexcept { return get()->r; }
+			sf::Uint8 getGreen() noexcept { return get()->g; }
+			sf::Uint8 getBlue() noexcept { return get()->b; }
+			sf::Uint8 getAlpha() noexcept { return get()->a; }
+			void setRed(sf::Uint8 r) noexcept { get()->r = r; }
+			void setGreen(sf::Uint8 g) noexcept { get()->g = g; }
+			void setBlue(sf::Uint8 b) noexcept { get()->b = b; }
+			void setAlpha(sf::Uint8 a) noexcept { get()->a = a; }
+		private:
+			static std::string _type;
+	};
+	void installExtensions(void* theEnv) {
+		Environment* env = static_cast<Environment*>(theEnv);
+
+		EnvAddUDF(env, "bitmask->int", "l", CLIPS_translateBitmask, "CLIPS_translateBitmask", 1, 1, "sy", nullptr);
+		EnvAddUDF(env, "binary->int", "l", CLIPS_translateBinary, "CLIPS_translateBinary", 1, 1, "sy", nullptr);
+		EnvAddUDF(env, "hex->int", "l", CLIPS_translateHex, "CLIPS_translateHex", 1, 1, "sy", nullptr);
+		EnvAddUDF(env, "binary-not", "l", CLIPS_binaryNot, "CLIPS_binaryNot", 1, 1, "l", nullptr);
+		EnvAddUDF(env, "binary-and", "l", CLIPS_binaryAnd, "CLIPS_binaryAnd", 2, 2, "l;l", nullptr);
+		EnvAddUDF(env, "binary-or", "l", CLIPS_binaryOr, "CLIPS_binaryOr", 2, 2, "l;l", nullptr);
+		EnvAddUDF(env, "binary-xor", "l", CLIPS_binaryXor, "CLIPS_binaryXor", 2, 2, "l;l", nullptr);
+		EnvAddUDF(env, "binary-nand", "l", CLIPS_binaryNand, "CLIPS_binaryNand", 2, 2, "l;l", nullptr);
+		EnvAddUDF(env, "expand-bit", "l", CLIPS_expandBit, "CLIPS_expandBit", 1, 1,  nullptr, nullptr);
+		EnvAddUDF(env, "decode-bits", "l", CLIPS_decodeBits, "CLIPS_decodeBits", 3, 3, "l;l;l", nullptr);
+		EnvAddUDF(env, "encode-bits", "l", CLIPS_encodeBits, "CLIPS_encodeBits", 4, 4, "l;l;l;l", nullptr);
+		EnvAddUDF(env, "left-shift", "l", CLIPS_shiftLeft, "CLIPS_shiftLeft", 2, 2, "l;l", nullptr);
+		EnvAddUDF(env, "right-shift", "l", CLIPS_shiftRight, "CLIPS_shiftRight", 2, 2, "l;l", nullptr);
+
+#define X(title, id, type) \
+		EnvAddUDF(env, "add-" #title , "l", CLIPS_Add_ ## title , "CLIPS_Add_" #title , 2, 2, "l;l", nullptr); \
+		EnvAddUDF(env, "sub-" #title , "l", CLIPS_Sub_ ## title , "CLIPS_Sub_" #title , 2, 2, "l;l", nullptr); \
+		EnvAddUDF(env, "mul-" #title , "l", CLIPS_Mul_ ## title , "CLIPS_Mul_" #title , 2, 2, "l;l", nullptr); \
+		EnvAddUDF(env, "div-" #title , "l", CLIPS_Div_ ## title , "CLIPS_Div_" #title , 2, 2, "l;l", nullptr); \
+		EnvAddUDF(env, "rem-" #title , "l", CLIPS_Rem_ ## title , "CLIPS_Rem_" #title , 2, 2, "l;l", nullptr)
+		X(word8u, Word8u, uint8_t);
+		X(word16u, Word16u, uint16_t);
+		X(word32u, Word32u, uint32_t);
+		X(word64u, Word64u, uint64_t);
+		X(word8s, Word8s, int8_t);
+		X(word16s, Word16s, int16_t);
+		X(word32s, Word32s, int32_t);
+		X(word64s, Word64s, int64_t);
+#undef X
+		ManagedMemoryBlock<CLIPSInteger>::registerWithEnvironment(theEnv, "memory-space");
+		WindowWrapper::registerWithEnvironment(theEnv);
+		ColorWrapper::registerWithEnvironment(theEnv);
+	}
+
 	std::string WindowWrapper::_type = WindowWrapper::getType();
 
 	void WindowWrapper::newFunction(void* env, DATA_OBJECT* ret) {
@@ -413,9 +470,17 @@ namespace iris {
 				} else if (op == "display") {
 					window->get()->display();
 				} else if (op == "clear") {
-					// right now just clear it with a black background
-					// TODO: add support for different colors
-					window->get()->clear();
+					CLIPSValue _color;
+					if (!EnvArgTypeCheck(env, funcStr.c_str(), 3, EXTERNAL_ADDRESS, &_color)) {
+						return errorMessage(env, "CALL", 2, funcErrorPrefix, "expected an external address as input");
+					} else if (!ColorWrapper::isOfType(env, &_color)) {
+						return errorMessage(env, "CALL", 2, funcErrorPrefix, "expected the external address to be a color");
+					} else {
+						auto color = static_cast<ColorWrapper*>(DOPToExternalAddress(value));
+						// right now just clear it with a black background
+						// TODO: add support for different colors
+						window->get()->clear(*color->get());
+					}
 				} else {
 					std::stringstream ss;
 					ss << "unknown operation " << op;
@@ -428,39 +493,150 @@ namespace iris {
 			return errorMessage(env, "CALL", 1, funcErrorPrefix, "Function call expected an external address as the first argument!");
 		}
 	}
-		void installExtensions(void* theEnv) {
-			Environment* env = static_cast<Environment*>(theEnv);
-
-			EnvAddUDF(env, "bitmask->int", "l", CLIPS_translateBitmask, "CLIPS_translateBitmask", 1, 1, "sy", nullptr);
-			EnvAddUDF(env, "binary->int", "l", CLIPS_translateBinary, "CLIPS_translateBinary", 1, 1, "sy", nullptr);
-			EnvAddUDF(env, "hex->int", "l", CLIPS_translateHex, "CLIPS_translateHex", 1, 1, "sy", nullptr);
-			EnvAddUDF(env, "binary-not", "l", CLIPS_binaryNot, "CLIPS_binaryNot", 1, 1, "l", nullptr);
-			EnvAddUDF(env, "binary-and", "l", CLIPS_binaryAnd, "CLIPS_binaryAnd", 2, 2, "l;l", nullptr);
-			EnvAddUDF(env, "binary-or", "l", CLIPS_binaryOr, "CLIPS_binaryOr", 2, 2, "l;l", nullptr);
-			EnvAddUDF(env, "binary-xor", "l", CLIPS_binaryXor, "CLIPS_binaryXor", 2, 2, "l;l", nullptr);
-			EnvAddUDF(env, "binary-nand", "l", CLIPS_binaryNand, "CLIPS_binaryNand", 2, 2, "l;l", nullptr);
-			EnvAddUDF(env, "expand-bit", "l", CLIPS_expandBit, "CLIPS_expandBit", 1, 1,  nullptr, nullptr);
-			EnvAddUDF(env, "decode-bits", "l", CLIPS_decodeBits, "CLIPS_decodeBits", 3, 3, "l;l;l", nullptr);
-			EnvAddUDF(env, "encode-bits", "l", CLIPS_encodeBits, "CLIPS_encodeBits", 4, 4, "l;l;l;l", nullptr);
-			EnvAddUDF(env, "left-shift", "l", CLIPS_shiftLeft, "CLIPS_shiftLeft", 2, 2, "l;l", nullptr);
-			EnvAddUDF(env, "right-shift", "l", CLIPS_shiftRight, "CLIPS_shiftRight", 2, 2, "l;l", nullptr);
-
-#define X(title, id, type) \
-			ManagedMemoryBlock<type>::registerWithEnvironment(theEnv, #title); \
-			EnvAddUDF(env, "add-" #title , "l", CLIPS_Add_ ## title , "CLIPS_Add_" #title , 2, 2, "l;l", nullptr); \
-			EnvAddUDF(env, "sub-" #title , "l", CLIPS_Sub_ ## title , "CLIPS_Sub_" #title , 2, 2, "l;l", nullptr); \
-			EnvAddUDF(env, "mul-" #title , "l", CLIPS_Mul_ ## title , "CLIPS_Mul_" #title , 2, 2, "l;l", nullptr); \
-			EnvAddUDF(env, "div-" #title , "l", CLIPS_Div_ ## title , "CLIPS_Div_" #title , 2, 2, "l;l", nullptr); \
-			EnvAddUDF(env, "rem-" #title , "l", CLIPS_Rem_ ## title , "CLIPS_Rem_" #title , 2, 2, "l;l", nullptr)
-			X(word8u, Word8u, uint8_t);
-			X(word16u, Word16u, uint16_t);
-			X(word32u, Word32u, uint32_t);
-			X(word64u, Word64u, uint64_t);
-			X(word8s, Word8s, int8_t);
-			X(word16s, Word16s, int16_t);
-			X(word32s, Word32s, int32_t);
-			X(word64s, Word64s, int64_t);
-#undef X
-			WindowWrapper::registerWithEnvironment(theEnv);
+	void ColorWrapper::newFunction(void* env, DATA_OBJECT* ret) {
+		static bool init = false;
+		static std::string funcStr;
+		static std::string funcErrorPrefix;
+		if (init) {
+			init = false;
+			std::stringstream ss, ss2;
+			ss << "new (" << _type << ")";
+			funcStr = ss.str();
+			ss2 << "Function " << funcStr;
+			funcErrorPrefix = ss2.str();
 		}
+		try {
+			auto count = EnvRtnArgCount(env);
+			if (count == 4 || count == 5) {
+				CLIPSValue _green, _red, _blue;
+				auto alphaChannel = 255u;
+				if (!EnvArgTypeCheck(env, funcStr.c_str(), 2, INTEGER, &_red)) {
+					CVSetBoolean(ret, false);
+					errorMessage(env, "NEW", 1, funcErrorPrefix, " expected an unsigned int for the red channel");
+					return;
+				} else if (!EnvArgTypeCheck(env, funcStr.c_str(), 3, INTEGER, &_green)) {
+					CVSetBoolean(ret, false);
+					errorMessage(env, "NEW", 1, funcErrorPrefix, " expected an unsigned int for the green channel");
+					return;
+				} else if (!EnvArgTypeCheck(env, funcStr.c_str(), 4, INTEGER, &_blue)) {
+					CVSetBoolean(ret, false);
+					errorMessage(env, "NEW", 1, funcErrorPrefix, " expected an integer for the blue channel");
+					return;
+				} else { 
+					if (count == 5) {
+						CLIPSValue _depth;
+						if (!EnvArgTypeCheck(env, funcStr.c_str(), 5, INTEGER, &_depth)) {
+							CVSetBoolean(ret, false);
+							errorMessage(env, "NEW", 1, funcErrorPrefix, " expected an integer for the alpha channel!");
+							return;
+						} else {
+							alphaChannel = static_cast<sf::Uint8>(EnvDOToLong(env, _depth));
+						}
+					}
+				}
+				auto green = static_cast<sf::Uint8>(EnvDOToLong(env, _green));
+				auto red = static_cast<sf::Uint8>(EnvDOToLong(env, _red));
+				auto blue= static_cast<sf::Uint8>(EnvDOToLong(env, _blue));
+				ret->bitType = EXTERNAL_ADDRESS_TYPE;
+				SetpType(ret, EXTERNAL_ADDRESS);
+				SetpValue(ret, EnvAddExternalAddress(env, new ColorWrapper(red, green, blue, alphaChannel), ColorWrapper::getAssociatedEnvironmentId(env)));
+			} else {
+				errorMessage(env, "NEW", 1, funcErrorPrefix, " function new expected four or five arguments!");
+				CVSetBoolean(ret, false);
+			}
+		} catch(iris::Problem p) {
+			CVSetBoolean(ret, false);
+			std::stringstream s;
+			s << "an exception was thrown: " << p.what();
+			auto str = s.str();
+			errorMessage(env, "NEW", 2, funcErrorPrefix, str);
+		}
+	}
+	bool ColorWrapper::callFunction(void* env, DATA_OBJECT* value, DATA_OBJECT* ret) {
+		static bool init = true;
+		static std::string funcStr;
+		static std::string funcErrorPrefix;
+		if (init) {
+			init = false;
+			std::stringstream ss, ss2;
+			ss << "call (" << _type << ")";
+			funcStr = ss.str();
+			ss2 << "Function " << funcStr;
+			funcErrorPrefix = ss2.str();
+		}
+		if (GetpType(value) == EXTERNAL_ADDRESS) {
+			auto c = static_cast<ColorWrapper*>(DOPToExternalAddress(value));
+			CLIPSValue operation;
+			if (!EnvArgTypeCheck(env, funcStr.c_str(), 2, SYMBOL, &operation)) {
+				return errorMessage(env, "CALL", 2, funcErrorPrefix, "expected a symbol to call!");
+			} else {
+				CVSetBoolean(ret, true);
+				std::string op(EnvDOToString(env, operation));
+				if (op == "get") {
+					// decode the channel
+					CLIPSValue channel;
+					if (!EnvArgTypeCheck(env, funcStr.c_str(), 3, SYMBOL, &channel)) {
+						return errorMessage(env, "CALL", 2, funcErrorPrefix, "expected a channel!");
+					} else {
+						std::string ch(EnvDOToString(env, channel));
+						if (ch == "red") {
+							CVSetInteger(ret, c->getRed());
+						} else if (ch == "green") {
+							CVSetInteger(ret, c->getGreen());
+						} else if (ch == "blue") {
+							CVSetInteger(ret, c->getBlue());
+						} else if (ch == "alpha") {
+							CVSetInteger(ret, c->getAlpha());
+						} else {
+							CVSetBoolean(ret, false);
+							std::stringstream ss;
+							ss << "unknown channel " << ch;
+							auto str = ss.str();
+							return errorMessage(env, "CALL", 3, funcErrorPrefix, str);
+						}
+					}
+				} else if (op == "set") {
+					// decode the channel
+					CLIPSValue channel, val;
+					if (!EnvArgTypeCheck(env, funcStr.c_str(), 3, SYMBOL, &channel)) {
+						return errorMessage(env, "CALL", 2, funcErrorPrefix, "expected a channel!");
+					} else if (!EnvArgTypeCheck(env, funcStr.c_str(), 4, INTEGER, &val)) {
+						return errorMessage(env, "CALL", 2, funcErrorPrefix, "expected an integer value!");
+					} else {
+						std::string ch(EnvDOToString(env, channel));
+						auto quantity = static_cast<sf::Uint8>(EnvDOToInteger(env, val));
+						CVSetBoolean(ret, true);
+						if (ch == "red") {
+							c->setRed(quantity);
+						} else if (ch == "blue") {
+							c->setBlue(quantity);
+						} else if (ch == "green") {
+							c->setGreen(quantity);
+						} else if (ch == "alpha") {
+							c->setAlpha(quantity);
+						} else {
+							CVSetBoolean(ret, false);
+							std::stringstream ss;
+							ss << "unknown channel " << ch;
+							auto str = ss.str();
+							return errorMessage(env, "CALL", 3, funcErrorPrefix, str);
+						}
+					}
+				} else if (op == "type") {
+					CVSetSymbol(ret, getType().c_str());
+				} else if (op == "to-integer") {
+					CVSetInteger(ret, c->get()->toInteger());
+				} else {
+					std::stringstream ss;
+					ss << "unknown operation " << op;
+					std::string str = ss.str();
+					return errorMessage(env, "CALL", 3, funcErrorPrefix, str);
+				}
+			}
+			return true;
+		} else {
+			return errorMessage(env, "CALL", 1, funcErrorPrefix, "Function call expected an external address as the first argument!");
+		}
+	}
+	std::string ColorWrapper::_type = ColorWrapper::getType();
 }
