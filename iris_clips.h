@@ -87,8 +87,6 @@ class ExternalAddressWrapper {
 		static void registerWithEnvironment(void* env, externalAddressType* description) { 
 			ExternalAddressRegistrar<InternalType>::registerExternalAddressId(env, InstallExternalAddressType(env, description));
 		}
-		ExternalAddressWrapper(std::unique_ptr<T>&& value) : _value(std::move(value)) { }
-		inline T* get() const noexcept { return _value.get(); }
 		static void printAddress(void* env, const char* logicalName, void* theValue) {
 			CLIPS_basePrintAddress<InternalType>(env, logicalName, theValue);
 		}
@@ -111,6 +109,9 @@ class ExternalAddressWrapper {
 			};
 			registerWithEnvironment(env, &tmp);
 		}
+	public:
+		ExternalAddressWrapper(std::unique_ptr<T>&& value) : _value(std::move(value)) { }
+		inline T* get() const noexcept { return _value.get(); }
 	protected:
 		std::unique_ptr<T> _value;
 };
@@ -119,8 +120,7 @@ template<typename Word>
 class ManagedMemoryBlock : public ExternalAddressWrapper<Word[]> {
 	public:
 		ManagedMemoryBlock(CLIPSInteger capacity) :
-			ExternalAddressWrapper<Word[]>(std::move(std::unique_ptr<Word[]>(new Word[capacity]))),
-			_capacity(capacity) { }
+			ExternalAddressWrapper<Word[]>(std::move(std::make_unique<Word[]>(capacity))), _capacity(capacity) { }
 		inline CLIPSInteger size() const noexcept                                    { return _capacity; }
 		inline bool legalAddress(CLIPSInteger idx) const noexcept                    { return inRange<CLIPSInteger>(_capacity, idx); }
 		static inline ManagedMemoryBlock<Word>* make(CLIPSInteger capacity) noexcept { return new ManagedMemoryBlock<Word>(capacity); }
