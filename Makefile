@@ -70,7 +70,8 @@ ALL_BINARIES = ${SIM_BINARY} \
 DEFINE_OBJECTS = iris19_defines.h \
 				 iris16_defines.h \
 				 iris17_defines.h \
-				 iris18_defines.h
+				 iris18_defines.h \
+				 iris_memory_block_defines.h
 
 ALL_OBJECTS = ${COMMON_THINGS} \
 			  ${SIM_OBJECTS} \
@@ -147,7 +148,7 @@ ${ASM_BINARY}: ${ASM_OBJECTS}
 	@${CXX} ${LDFLAGS} -o ${ASM_BINARY} ${ASM_OBJECTS}
 	@echo done.
 
-${REPL_BINARY}: ${REPL_OBJECTS}
+${REPL_BINARY}: ${REPL_OBJECTS} 
 	@echo -n Building ${REPL_BINARY} binary out of $^...
 	@${CXX} ${LIBS} -o ${REPL_BINARY} ${REPL_OBJECTS}
 	@echo done.
@@ -178,7 +179,10 @@ uninstall:
 .PHONY: all options clean install uninstall
 
 bootstrap: iris_repl ${DEFINE_OBJECTS}
-
+# generate the iris_memory_block_defines.h prior to generating iris_clips.h
+iris_memory_block_defines.h: maya def/memory-block-ops.clp lib/reset-run-exit.clp
+	@echo "Generating memory block call operations..."
+	@./maya -f2 def/memory-block-ops.clp -f2 lib/reset-run-exit.clp > iris_memory_block_defines.h
 
 iris19_defines.h: iris_repl def/iris19/instruction.clp cmd/deffield.clp lib/cortex.clp lib/reset-run-exit.clp iris_base.h
 	@echo "Generating encoders, decoders and enumerations for iris19..."
@@ -247,7 +251,8 @@ iris_clips.o: iris_clips.cc iris_clips.h iris_base.h Problem.h \
  misc/maya/classcom.h misc/maya/classexm.h misc/maya/classinf.h \
  misc/maya/classini.h misc/maya/classpsr.h misc/maya/defins.h \
  misc/maya/inscom.h misc/maya/insfun.h misc/maya/insfile.h \
- misc/maya/msgcom.h misc/maya/msgpass.h misc/maya/objrtmch.h
+ misc/maya/msgcom.h misc/maya/msgpass.h misc/maya/objrtmch.h \
+ iris_memory_block_defines.h
 iris_link.o: iris_link.cc Core.h sim_registration.h Problem.h
 iris_repl.o: iris_repl.cc misc/maya/clips.h misc/maya/setup.h \
  misc/maya/os_shim.h misc/maya/platform.h misc/maya/envrnmnt.h \

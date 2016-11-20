@@ -301,6 +301,8 @@ namespace iris {
 		static bool init = true;
 		static std::string funcStr;
 		static std::string funcErrorPrefix;
+#include "iris_memory_block_defines.h"
+		/*
 	enum class MemoryBlockOp {
 		Type,
 		Size,
@@ -357,6 +359,7 @@ namespace iris {
 			{ MemoryBlockOp::Swap, 2 },
 			{ MemoryBlockOp::Move, 2 },
 		};
+		*/
 		if (init) {
 			init = false;
 			std::stringstream ss, ss2;
