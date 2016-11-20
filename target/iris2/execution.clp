@@ -226,7 +226,7 @@
                        ?value)
          (object (is-a instruction)
                  (name ?inst)
-                 (group ~jump))
+                 (group ?g&~jump))
          =>
          (retract ?f)
          (modify-instance ?inst
@@ -234,4 +234,10 @@
                                                   (binary->int 0b11111)
                                                   2))))
 
-(defrule iris2-decode::decode-
+(defrule iris2-decode::decode-destination
+         ?f <- (decode ?inst
+                       destination
+                       ?value)
+         (object (is-a instruction)
+                 (name ?inst)
+                 (group ~jump&~move))
