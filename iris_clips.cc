@@ -438,16 +438,7 @@ namespace iris {
 #define defFunctions(id, type) \
 	void CLIPS_new ## id ## Ptr (void* env, DATA_OBJECT* ret) { CLIPS_newPtr< type > (env, ret); } \
 	bool CLIPS_delete ## id ## Ptr (void* env, void* ret) { return CLIPS_deletePtr< type > (env, ret); } \
-	bool CLIPS_call ## id ## Ptr (void* env, DATA_OBJECT* theValue, DATA_OBJECT* ret) { return CLIPS_callPtr< type >(env, theValue, ret); } \
-	void CLIPS_print ## id ## Ptr (void* env, const char* logicalName, void* theValue) { \
-		static bool init = true; \
-		static std::string funcName; \
-		if (init) { \
-			init = false; \
-			funcName = TypeToName<typename ManagedMemoryBlock< type >::InternalType>::getSymbolicName(); \
-		} \
-		CLIPS_basePrintAddress_Pointer(env, logicalName, theValue, funcName.c_str()); \
-	}
+	bool CLIPS_call ## id ## Ptr (void* env, DATA_OBJECT* theValue, DATA_OBJECT* ret) { return CLIPS_callPtr< type >(env, theValue, ret); } 
 	defFunctions(Word8u, uint8_t);
 	defFunctions(Word16u, uint16_t);
 	defFunctions(Word32u, uint32_t);
