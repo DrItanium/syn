@@ -217,74 +217,273 @@ namespace iris {
 		return false;
 	}
 
-	enum class ArithmeticOperations {
-		Add,
-		Sub,
-		Mul,
-		Div,
-		Rem,
-	};
+	DefWrapperSymbolicName(CLIPSInteger[], "memory-block");
+	class ManagedMemoryBlock : public ExternalAddressWrapper<CLIPSInteger[]> {
+		public:
+			using Word = CLIPSInteger;
+			static ManagedMemoryBlock* make(CLIPSInteger capacity) noexcept;
+			static void newFunction(void* env, DATA_OBJECT* ret); 
+			static bool callFunction(void* env, DATA_OBJECT* value, DATA_OBJECT* ret);
+			static void registerWithEnvironment(void* env, const char* title) { ExternalAddressWrapper<Word[]>::registerWithEnvironment(env, title, newFunction, callFunction); }
+			static void registerWithEnvironment(void* env) { registerWithEnvironment(env, "memory-block"); }
+		public:
+			ManagedMemoryBlock(CLIPSInteger capacity) :
+				ExternalAddressWrapper<Word[]>(std::move(std::make_unique<Word[]>(capacity))), _capacity(capacity) { }
+			inline CLIPSInteger size() const noexcept                                    { return _capacity; }
+			inline bool legalAddress(CLIPSInteger idx) const noexcept                    { return inRange<CLIPSInteger>(_capacity, idx); }
+			inline Word getMemoryCellValue(CLIPSInteger addr) noexcept                   { return this->_value.get()[addr]; }
+			inline void setMemoryCell(CLIPSInteger addr0, Word value) noexcept           { this->_value.get()[addr0] = value; }
+			inline void swapMemoryCells(CLIPSInteger addr0, CLIPSInteger addr1) noexcept { swap<Word>(this->_value.get()[addr0], this->_value.get()[addr1]); }
+			inline void decrementMemoryCell(CLIPSInteger address) noexcept               { --this->_value.get()[address]; }
+			inline void incrementMemoryCell(CLIPSInteger address) noexcept               { ++this->_value.get()[address]; }
 
-	template<typename T, ArithmeticOperations op>
-		void CLIPS_arithmeticOperation(UDFContext* context, CLIPSValue* ret) {
-			CLIPSValue arg0, arg1;
-			if (!UDFFirstArgument(context, INTEGER_TYPE, &arg0)) {
-				CVSetBoolean(ret, false);
-			} else if (!UDFNextArgument(context, INTEGER_TYPE, &arg1)) {
-				CVSetBoolean(ret, false);
-			} else {
-				try {
-					auto v0 = static_cast<T>(CVToInteger(&arg0));
-					auto v1 = static_cast<T>(CVToInteger(&arg1));
-					decltype(v0) result = 0;
-					switch(op) {
-						case ArithmeticOperations::Add:
-							result = add<T>(v0, v1);
-							break;
-						case ArithmeticOperations::Sub:
-							result = sub<T>(v0, v1);
-							break;
-						case ArithmeticOperations::Mul:
-							result = mul<T>(v0, v1);
-							break;
-						case ArithmeticOperations::Div:
-							result = div<T>(v0, v1);
-							break;
-						case ArithmeticOperations::Rem:
-							result = rem<T>(v0, v1);
-							break;
-						default:
-							throw iris::Problem("Unimplemented arithmetic operation!");
-					}
-					CVSetInteger(ret, static_cast<CLIPSInteger>(result));
-				} catch(iris::Problem p) {
-					auto env = UDFContextEnvironment(context);
-					PrintErrorID(env, "CALL", 3, false);
-					std::stringstream stm;
-					stm << "Arithmetic Operation: " << p.what() << std::endl;
-					auto msg = stm.str();
-					EnvPrintRouter(env, WERROR, msg.c_str());
-					EnvSetEvaluationError(env, true);
-					CVSetBoolean(ret, false);
+			inline void copyMemoryCell(CLIPSInteger from, CLIPSInteger to) noexcept {
+				auto ptr = this->_value.get();
+				ptr[to] = ptr[from];
+			}
+			inline void setMemoryToSingleValue(Word value) noexcept {
+				auto ptr = this->_value.get();
+				for (CLIPSInteger i = 0; i < _capacity; ++i) {
+					ptr[i] = value;
 				}
 			}
+		private:
+			CLIPSInteger _capacity;
+			static std::string _type;
+	};
+
+	std::string ManagedMemoryBlock::_type = ManagedMemoryBlock::getType();
+
+	using ManagedMemoryBlock_Ptr = ManagedMemoryBlock*;
+
+	ManagedMemoryBlock* ManagedMemoryBlock::make(CLIPSInteger capacity) noexcept {
+		return new ManagedMemoryBlock(capacity); 
+	}
+	void ManagedMemoryBlock::newFunction(void* env, DATA_OBJECT* ret) {
+		static bool init = false;
+		static std::string funcStr;
+		static std::string funcErrorPrefix;
+		if (init) {
+			init = false;
+			std::stringstream ss, ss2;
+			ss << "new (" << _type << ")";
+			funcStr = ss.str();
+			ss2 << "Function " << funcStr;
+			funcErrorPrefix = ss2.str();
 		}
 
-#define X(type, id) \
-	void CLIPS_Add_ ## id (UDFContext* context, CLIPSValue* ret) { CLIPS_arithmeticOperation< type , ArithmeticOperations::Add > (context, ret); } \
-	void CLIPS_Sub_ ## id (UDFContext* context, CLIPSValue* ret) { CLIPS_arithmeticOperation< type , ArithmeticOperations::Sub > (context, ret); } \
-	void CLIPS_Mul_ ## id (UDFContext* context, CLIPSValue* ret) { CLIPS_arithmeticOperation< type , ArithmeticOperations::Mul > (context, ret); } \
-	void CLIPS_Div_ ## id (UDFContext* context, CLIPSValue* ret) { CLIPS_arithmeticOperation< type , ArithmeticOperations::Div > (context, ret); } \
-	void CLIPS_Rem_ ## id (UDFContext* context, CLIPSValue* ret) { CLIPS_arithmeticOperation< type , ArithmeticOperations::Rem > (context, ret); }
-	X(byte, word8u);
-	X(int8_t, word8s);
-	X(uint16, word16u);
-	X(int16_t, word16s);
-	X(uint32, word32u);
-	X(int32_t, word32s);
-	X(uint64, word64u);
-	X(int64_t, word64s);
-#undef X
+		try {
+			if (EnvRtnArgCount(env) == 2) {
+				CLIPSValue capacity;
+				if (EnvArgTypeCheck(env, funcStr.c_str(), 2, INTEGER, &capacity) == FALSE) {
+					CVSetBoolean(ret, false);
+					errorMessage(env, "NEW", 1, funcErrorPrefix, " expected an integer for capacity!");
+				} else {
+					auto size = EnvDOToLong(env, capacity);
+					auto idIndex = ManagedMemoryBlock::getAssociatedEnvironmentId(env);
+					ret->bitType = EXTERNAL_ADDRESS_TYPE;
+					SetpType(ret, EXTERNAL_ADDRESS);
+					SetpValue(ret, EnvAddExternalAddress(env, ManagedMemoryBlock::make(size), idIndex));
+				}
+			} else {
+				errorMessage(env, "NEW", 1, funcErrorPrefix, " function new expected no arguments besides type!");
+				CVSetBoolean(ret, false);
+			}
+		} catch(iris::Problem p) {
+			CVSetBoolean(ret, false);
+			std::stringstream s;
+			s << "an exception was thrown: " << p.what();
+			auto str = s.str();
+			errorMessage(env, "NEW", 2, funcErrorPrefix, str);
+		}
+	}
+	enum class MemoryBlockOp {
+		Type,
+		Size,
+		Clear,
+		Get,
+		Set,
+		Populate,
+		Increment,
+		Decrement,
+		Swap,
+		Move,
+	};
+	bool ManagedMemoryBlock::callFunction(void* env, DATA_OBJECT* value, DATA_OBJECT* ret) {
+		static bool init = true;
+		static std::string funcStr;
+		static std::string funcErrorPrefix;
+		static std::map<std::string, MemoryBlockOp> opTranslation = {
+			{ "type", MemoryBlockOp::Type },
+			{ "size", MemoryBlockOp::Size },
+			{ "get", MemoryBlockOp::Get },
+			{ "set", MemoryBlockOp::Set },
+			{ "clear", MemoryBlockOp::Clear },
+			{ "zero", MemoryBlockOp::Clear },
+			{ "populate", MemoryBlockOp::Populate },
+			{ "increment", MemoryBlockOp::Increment },
+			{ "++", MemoryBlockOp::Increment },
+			{ "decrement", MemoryBlockOp::Decrement },
+			{ "--", MemoryBlockOp::Decrement },
+			{ "swap", MemoryBlockOp::Swap },
+			{ "move", MemoryBlockOp::Move },
+			{ "copy", MemoryBlockOp::Move },
+		};
+		static std::map<MemoryBlockOp, int> opArgCounts = {
+			{ MemoryBlockOp::Type, 0 },
+			{ MemoryBlockOp::Size, 0 },
+			{ MemoryBlockOp::Get, 1 },
+			{ MemoryBlockOp::Set, 2 },
+			{ MemoryBlockOp::Clear, 0 },
+			{ MemoryBlockOp::Populate, 1 },
+			{ MemoryBlockOp::Increment, 1 },
+			{ MemoryBlockOp::Decrement, 1 },
+			{ MemoryBlockOp::Swap, 2 },
+			{ MemoryBlockOp::Move, 2 },
+		};
+		if (init) {
+			init = false;
+			std::stringstream ss, ss2;
+			ss << "call (" << _type << ")";
+			funcStr = ss.str();
+			ss2 << "Function " << funcStr;
+			funcErrorPrefix = ss2.str();
+		}
+		if (GetpType(value) == EXTERNAL_ADDRESS) {
+			auto ptr = static_cast<ManagedMemoryBlock_Ptr>(DOPToExternalAddress(value));
+#define argCheck(storage, position, type) EnvArgTypeCheck(env, funcStr.c_str(), position, type, storage)
+			auto callErrorMessage = [env, ret](const std::string& subOp, const std::string& rest) {
+				CVSetBoolean(ret, false);
+				std::stringstream stm;
+				stm << " " << subOp << ": " << rest << std::endl;
+				auto msg = stm.str();
+				return errorMessage(env, "CALL", 3, funcErrorPrefix, msg);
+			};
+			auto errOutOfRange = [callErrorMessage, env, ret](const std::string& subOp, CLIPSInteger capacity, CLIPSInteger address) {
+				std::stringstream ss;
+				ss << funcErrorPrefix << ": Provided address " << std::hex << address << " is either less than zero or greater than " << std::hex << capacity << std::endl;
+				return callErrorMessage(subOp, ss.str());
+			};
+			CLIPSValue operation;
+			if (EnvArgTypeCheck(env, funcStr.c_str(), 2, SYMBOL, &operation) == FALSE) {
+				return errorMessage(env, "CALL", 2, funcErrorPrefix, "expected a function name to call!");
+			} else {
+				std::string str(EnvDOToString(env, operation));
+				// translate the op to an enumeration
+				auto result = opTranslation.find(str);
+				if (result == opTranslation.end()) {
+					CVSetBoolean(ret, false);
+					return callErrorMessage(str, "<- unknown operation requested!");
+				} else {
+					CLIPSValue arg0, arg1;
+					auto checkArg = [callErrorMessage, &str, env](unsigned int index, unsigned int type, const std::string& msg, CLIPSValue* dat) {
+						if (!argCheck(dat, index, type)) {
+							return callErrorMessage(str, msg);
+						} else {
+							return true;
+						}
+					};
+					auto checkArg0 = [checkArg, &arg0, env, &str](unsigned int type, const std::string& msg) { return checkArg(3, type, msg, &arg0); };
+					auto checkArg1 = [checkArg, &arg1, env, &str](unsigned int type, const std::string& msg) { return checkArg(4, type, msg, &arg1); };
+					auto oneCheck = [checkArg0](unsigned int type, const std::string& msg) { return checkArg0(type, msg); };
+					auto twoCheck = [checkArg0, checkArg1](unsigned int type0, const std::string& msg0, unsigned int type1, const std::string& msg1) {
+						return checkArg0(type0, msg0) && checkArg1(type1, msg1); 
+					};
+					auto op = result->second;
+					// TODO: clean this up when we migrate to c++17 and use the
+					// inline if variable declarations
+					auto findOpCount = opArgCounts.find(op);
+					if (findOpCount != opArgCounts.end()) {
+						// if it is registered then check the length
+						auto argCount = 2 /* always have two arguments */  + findOpCount->second;
+						if (argCount != EnvRtnArgCount(env)) {
+							std::stringstream ss;
+							ss << " expected " << std::dec << argCount << " arguments";
+							CVSetBoolean(ret, false);
+							auto tmp = ss.str();
+							return callErrorMessage(str, tmp);
+						}
+					}
+					CVSetBoolean(ret, true);
+					// now check and see if we are looking at a legal
+					// instruction count
+					if (op == MemoryBlockOp::Type) {
+						CVSetSymbol(ret, _type.c_str());
+					} else if (op == MemoryBlockOp::Size) {
+						CVSetInteger(ret, ptr->size());
+					} else if (op == MemoryBlockOp::Clear) {
+						ptr->setMemoryToSingleValue(0);
+					} else if (op == MemoryBlockOp::Get) {
+						auto check = oneCheck(INTEGER, "Argument 0 must be an integer address!");
+						if (check) {
+							auto addr = EnvDOToLong(env, arg0);
+							if (!ptr->legalAddress(addr)) {
+								errOutOfRange("get", ptr->size(), addr);
+								check = false;
+							} else {
+								CVSetInteger(ret, ptr->getMemoryCellValue(addr));
+							}
+						}
+						return check;
+					} else if (op == MemoryBlockOp::Populate) {
+						auto check = oneCheck(INTEGER, "First argument must be an INTEGER value to populate all of the memory cells with!");
+						if (check) {
+							ptr->setMemoryToSingleValue(EnvDOToLong(env, arg0));
+						} 
+						return check;
+					} else if (op == MemoryBlockOp::Increment || op == MemoryBlockOp::Decrement) {
+						auto check = oneCheck(INTEGER, "First argument must be an address");
+						if (check) {
+							auto addr = EnvDOToLong(env, arg0);
+							if (!ptr->legalAddress(addr)) {
+								check = false;
+								errOutOfRange(op == MemoryBlockOp::Increment ? "increment" : "decrement", ptr->size(), addr);
+							} else {
+								if (op == MemoryBlockOp::Increment) {
+									ptr->incrementMemoryCell(addr);
+								} else {
+									ptr->decrementMemoryCell(addr);
+								}
+							}
+						}
+						return check;
+					} else if (op == MemoryBlockOp::Set || op == MemoryBlockOp::Swap || op == MemoryBlockOp::Move) {
+						auto check = twoCheck(INTEGER, "First argument must be an address", INTEGER, "Second argument must be an address");
+						if (check) {
+							auto addr0 = EnvDOToLong(env, arg0);
+							auto addr1 = EnvDOToLong(env, arg1);
+							if (!ptr->legalAddress(addr0)) {
+								check = false;
+								errOutOfRange(op == MemoryBlockOp::Swap ? "swap" : (op == MemoryBlockOp::Set ? "set" : "move"), ptr->size(), addr0);
+							} else {
+								if (op == MemoryBlockOp::Set) {
+									ptr->setMemoryCell(addr0, addr1);
+								} else {
+									if (!ptr->legalAddress(addr1)) {
+										check = false;
+										errOutOfRange(op == MemoryBlockOp::Swap ? "swap" : "move", ptr->size(), addr1);
+									} else {
+										if (op == MemoryBlockOp::Swap) {
+											ptr->swapMemoryCells(addr0, addr1);
+										} else {
+											ptr->copyMemoryCell(addr0, addr1);
+										}
+									}
+								}
+							}
+						}
+						return check;
+					} else {
+						return callErrorMessage(str, "<- legal but unimplemented operation!");
+					}
+					return true;
+				}
+			}
+		} else {
+			return errorMessage(env, "CALL", 1, funcErrorPrefix, "Function call expected an external address as the first argument!");
+		}
+#undef argCheck
+	}
 	void installExtensions(void* theEnv) {
 		Environment* env = static_cast<Environment*>(theEnv);
 
@@ -302,22 +501,7 @@ namespace iris {
 		EnvAddUDF(env, "left-shift", "l", CLIPS_shiftLeft, "CLIPS_shiftLeft", 2, 2, "l;l", nullptr);
 		EnvAddUDF(env, "right-shift", "l", CLIPS_shiftRight, "CLIPS_shiftRight", 2, 2, "l;l", nullptr);
 
-#define X(title, id, type) \
-		EnvAddUDF(env, "add-" #title , "l", CLIPS_Add_ ## title , "CLIPS_Add_" #title , 2, 2, "l;l", nullptr); \
-		EnvAddUDF(env, "sub-" #title , "l", CLIPS_Sub_ ## title , "CLIPS_Sub_" #title , 2, 2, "l;l", nullptr); \
-		EnvAddUDF(env, "mul-" #title , "l", CLIPS_Mul_ ## title , "CLIPS_Mul_" #title , 2, 2, "l;l", nullptr); \
-		EnvAddUDF(env, "div-" #title , "l", CLIPS_Div_ ## title , "CLIPS_Div_" #title , 2, 2, "l;l", nullptr); \
-		EnvAddUDF(env, "rem-" #title , "l", CLIPS_Rem_ ## title , "CLIPS_Rem_" #title , 2, 2, "l;l", nullptr)
-		X(word8u, Word8u, uint8_t);
-		X(word16u, Word16u, uint16_t);
-		X(word32u, Word32u, uint32_t);
-		X(word64u, Word64u, uint64_t);
-		X(word8s, Word8s, int8_t);
-		X(word16s, Word16s, int16_t);
-		X(word32s, Word32s, int32_t);
-		X(word64s, Word64s, int64_t);
-#undef X
-		ManagedMemoryBlock<CLIPSInteger>::registerWithEnvironment(theEnv, "memory-space");
+		ManagedMemoryBlock::registerWithEnvironment(theEnv, "memory-space");
 	}
 
 }
