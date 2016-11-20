@@ -297,6 +297,10 @@ namespace iris {
 			errorMessage(env, "NEW", 2, funcErrorPrefix, str);
 		}
 	}
+	bool ManagedMemoryBlock::callFunction(void* env, DATA_OBJECT* value, DATA_OBJECT* ret) {
+		static bool init = true;
+		static std::string funcStr;
+		static std::string funcErrorPrefix;
 	enum class MemoryBlockOp {
 		Type,
 		Size,
@@ -308,11 +312,23 @@ namespace iris {
 		Decrement,
 		Swap,
 		Move,
+		Combine,
+		Difference,
+		Multiply,
+		Divide,
+		Remainder,
+		LeftShift,
+		RightShift,
+		And,
+		Or,
+		Not,
+		Xor,
+		Nand,
+		Equals,
+		NotEquals,
+		LessThan,
+		GreaterThan,
 	};
-	bool ManagedMemoryBlock::callFunction(void* env, DATA_OBJECT* value, DATA_OBJECT* ret) {
-		static bool init = true;
-		static std::string funcStr;
-		static std::string funcErrorPrefix;
 		static std::map<std::string, MemoryBlockOp> opTranslation = {
 			{ "type", MemoryBlockOp::Type },
 			{ "size", MemoryBlockOp::Size },
