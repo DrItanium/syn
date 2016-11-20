@@ -392,6 +392,8 @@ namespace iris {
 				std::string op(EnvDOToString(env, operation));
 				if (op == "width") {
 					CVSetInteger(ret, window->getWidth());
+				} else if (op == "type") {
+					CVSetSymbol(ret, getType().c_str());
 				} else if (op == "height") {
 					CVSetInteger(ret, window->getHeight());
 				} else if (op == "bit-depth" || op == "depth") {

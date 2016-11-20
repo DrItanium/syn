@@ -102,4 +102,9 @@
              (multislot data))
 
 
+(defgeneric cortex::external-address-type)
+(defmethod cortex::external-address-type
+  ((?a EXTERNAL-ADDRESS))
+  (call ?a 
+        type))
 
