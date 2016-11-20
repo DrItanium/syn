@@ -8,6 +8,7 @@
 #include <memory>
 #include <map>
 #include <iostream>
+#include <SFML/Graphics.hpp>
 
 extern "C" {
 #include "clips.h"
@@ -285,7 +286,142 @@ namespace iris {
 	X(uint64, word64u)
 	X(int64_t, word64s)
 #undef X
+	DefWrapperSymbolicName(sf::RenderWindow, "window");
+	class WindowWrapper : public ExternalAddressWrapper<sf::RenderWindow> {
+		public:
+			static void newFunction(void* env, DATA_OBJECT* ret);
+			static bool callFunction(void* env, DATA_OBJECT* value, DATA_OBJECT* ret);
+			static void registerWithEnvironment(void* env) { BaseClass::registerWithEnvironment(env, _type.c_str(), newFunction, callFunction); }
+		public:
+			WindowWrapper(unsigned int width, unsigned int height, unsigned int depth, const std::string& title) :
+				ExternalAddressWrapper<InternalType>(std::move(std::make_unique<InternalType>(sf::VideoMode(width, height, depth), title))),
+							_mode(width, height, depth),
+							_title(title) { }
+			~WindowWrapper() { }
+			std::string getTitle() const noexcept { return _title; }
+			sf::VideoMode getVideoMode() noexcept { return _mode; }
+			unsigned int getWidth() noexcept { return _mode.width; }
+			unsigned int getHeight() noexcept { return _mode.height; }
+			unsigned int bitsPerPixel() noexcept { return _mode.bitsPerPixel; }
+			bool legalMode() const noexcept { return _mode.isValid(); }
+		private:
+			sf::VideoMode _mode;
+			std::string _title;
+			static std::string _type;
+	};
+	std::string WindowWrapper::_type = WindowWrapper::getType();
 
+	void WindowWrapper::newFunction(void* env, DATA_OBJECT* ret) {
+		static bool init = false;
+		static std::string funcStr;
+		static std::string funcErrorPrefix;
+		if (init) {
+			init = false;
+			std::stringstream ss, ss2;
+			ss << "new (" << _type << ")";
+			funcStr = ss.str();
+			ss2 << "Function " << funcStr;
+			funcErrorPrefix = ss2.str();
+		}
+		try {
+			auto count = EnvRtnArgCount(env);
+			if (count == 4 || count == 5) {
+				CLIPSValue _height, _width, _title;
+				auto bitDepth = 32u;
+				if (!EnvArgTypeCheck(env, funcStr.c_str(), 2, INTEGER, &_width)) {
+					CVSetBoolean(ret, false);
+					errorMessage(env, "NEW", 1, funcErrorPrefix, " expected an unsigned int for width");
+					return;
+				} else if (!EnvArgTypeCheck(env, funcStr.c_str(), 3, INTEGER, &_height)) {
+					CVSetBoolean(ret, false);
+					errorMessage(env, "NEW", 1, funcErrorPrefix, " expected an unsigned int for height");
+					return;
+				} else if (!EnvArgTypeCheck(env, funcStr.c_str(), 4, SYMBOL_OR_STRING, &_title)) {
+					CVSetBoolean(ret, false);
+					errorMessage(env, "NEW", 1, funcErrorPrefix, " expected an lexme for the title of the window");
+					return;
+				} else { 
+					if (count == 5) {
+						CLIPSValue _depth;
+						if (!EnvArgTypeCheck(env, funcStr.c_str(), 5, INTEGER, &_depth)) {
+							CVSetBoolean(ret, false);
+							errorMessage(env, "NEW", 1, funcErrorPrefix, " expected an integer for the bit depth!");
+							return;
+						} else {
+							bitDepth = static_cast<unsigned int>(EnvDOToLong(env, _depth));
+						}
+					}
+				}
+				auto height = static_cast<unsigned int>(EnvDOToLong(env, _height));
+				auto width = static_cast<unsigned int>(EnvDOToLong(env, _width));
+				std::string title(EnvDOToString(env, _title));
+				ret->bitType = EXTERNAL_ADDRESS_TYPE;
+				SetpType(ret, EXTERNAL_ADDRESS);
+				SetpValue(ret, EnvAddExternalAddress(env, new WindowWrapper(height, width, bitDepth, title), WindowWrapper::getAssociatedEnvironmentId(env)));
+			} else {
+				errorMessage(env, "NEW", 1, funcErrorPrefix, " function new expected three or four arguments!");
+				CVSetBoolean(ret, false);
+			}
+		} catch(iris::Problem p) {
+			CVSetBoolean(ret, false);
+			std::stringstream s;
+			s << "an exception was thrown: " << p.what();
+			auto str = s.str();
+			errorMessage(env, "NEW", 2, funcErrorPrefix, str);
+		}
+	}
+	bool WindowWrapper::callFunction(void* env, DATA_OBJECT* value, DATA_OBJECT* ret) {
+		static bool init = true;
+		static std::string funcStr;
+		static std::string funcErrorPrefix;
+		if (init) {
+			init = false;
+			std::stringstream ss, ss2;
+			ss << "call (" << _type << ")";
+			funcStr = ss.str();
+			ss2 << "Function " << funcStr;
+			funcErrorPrefix = ss2.str();
+		}
+		if (GetpType(value) == EXTERNAL_ADDRESS) {
+			auto window = static_cast<WindowWrapper*>(DOPToExternalAddress(value));
+			CLIPSValue operation;
+			if (!EnvArgTypeCheck(env, funcStr.c_str(), 2, SYMBOL, &operation)) {
+				return errorMessage(env, "CALL", 2, funcErrorPrefix, "expected a symbol to call!");
+			} else {
+				CVSetBoolean(ret, true);
+				std::string op(EnvDOToString(env, operation));
+				if (op == "width") {
+					CVSetInteger(ret, window->getWidth());
+				} else if (op == "height") {
+					CVSetInteger(ret, window->getHeight());
+				} else if (op == "bit-depth" || op == "depth") {
+					CVSetInteger(ret, window->bitsPerPixel());
+				} else if (op == "title") {
+					CVSetString(ret, window->getTitle().c_str());
+				} else if (op == "validp") {
+					CVSetBoolean(ret, window->legalMode());
+				} else if (op == "openp") {
+					CVSetBoolean(ret, window->get()->isOpen());
+				} else if (op == "close") {
+					window->get()->close();
+				} else if (op == "has-focusp") {
+					CVSetBoolean(ret, window->get()->hasFocus());
+				} else if (op == "request-focus") {
+					window->get()->requestFocus();
+				} else if (op == "display") {
+					window->get()->display();
+				} else {
+					std::stringstream ss;
+					ss << "unknown operation " << op;
+					std::string str = ss.str();
+					return errorMessage(env, "CALL", 3, funcErrorPrefix, str);
+				}
+			}
+			return true;
+		} else {
+			return errorMessage(env, "CALL", 1, funcErrorPrefix, "Function call expected an external address as the first argument!");
+		}
+	}
 		void installExtensions(void* theEnv) {
 			Environment* env = static_cast<Environment*>(theEnv);
 
@@ -319,5 +455,6 @@ namespace iris {
 			X(word32s, Word32s, int32_t);
 			X(word64s, Word64s, int64_t);
 #undef X
+			WindowWrapper::registerWithEnvironment(theEnv);
 		}
 }

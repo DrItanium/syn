@@ -151,7 +151,11 @@ class ManagedMemoryBlock : public ExternalAddressWrapper<Word[]> {
 		}
 	private:
 		CLIPSInteger _capacity;
+		static std::string _type;
 };
+
+template<typename Word>
+std::string ManagedMemoryBlock<Word>::_type = ManagedMemoryBlock<Word>::getType();
 
 template<typename Word>
 using ManagedMemoryBlock_Ptr = ManagedMemoryBlock<Word>*;
@@ -168,12 +172,10 @@ void ManagedMemoryBlock<Word>::newFunction(void* env, DATA_OBJECT* ret) {
 	static bool init = false;
 	static std::string funcStr;
 	static std::string funcErrorPrefix;
-	static std::string type;
 	if (init) {
 		init = false;
-		type = Self::getType();
 		std::stringstream ss, ss2;
-		ss << "call (" << type << " memory block)";
+		ss << "new (" << _type << " memory block)";
 		funcStr = ss.str();
 		ss2 << "Function " << funcStr;
 		funcErrorPrefix = ss2.str();
@@ -210,12 +212,10 @@ bool ManagedMemoryBlock<Word>::callFunction(void* env, DATA_OBJECT* value, DATA_
 	static bool init = true;
 	static std::string funcStr;
 	static std::string funcErrorPrefix;
-	static std::string type;
 	if (init) {
 		init = false;
-		type = Self::getType();
 		std::stringstream ss, ss2;
-		ss << "call (" << type << " memory block)";
+		ss << "call (" << _type << " memory block)";
 		funcStr = ss.str();
 		ss2 << "Function " << funcStr;
 		funcErrorPrefix = ss2.str();
@@ -247,7 +247,7 @@ bool ManagedMemoryBlock<Word>::callFunction(void* env, DATA_OBJECT* value, DATA_
 					ptr->setMemoryToSingleValue(static_cast<Word>(0));
 				} else if (str == "type") {
 					// get the type of the current thing!
-					CVSetSymbol(ret, type.c_str());
+					CVSetSymbol(ret, _type.c_str());
 				} else if (str == "size") {
 					CVSetInteger(ret, ptr->size());
 				} else {
@@ -372,4 +372,4 @@ bool ManagedMemoryBlock<Word>::callFunction(void* env, DATA_OBJECT* value, DATA_
 }
 
 }
- #endif
+#endif
