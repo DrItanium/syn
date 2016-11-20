@@ -286,12 +286,12 @@ namespace iris {
 	X(uint64, word64u)
 	X(int64_t, word64s)
 #undef X
-	DefWrapperSymbolicName(sf::RenderWindow, "window");
+	DefWrapperSymbolicName(sf::RenderWindow, window);
 	class WindowWrapper : public ExternalAddressWrapper<sf::RenderWindow> {
 		public:
 			static void newFunction(void* env, DATA_OBJECT* ret);
 			static bool callFunction(void* env, DATA_OBJECT* value, DATA_OBJECT* ret);
-			static void registerWithEnvironment(void* env) { BaseClass::registerWithEnvironment(env, _type.c_str(), newFunction, callFunction); }
+			static void registerWithEnvironment(void* env) { BaseClass::registerWithEnvironment(env, "window", newFunction, callFunction); }
 		public:
 			WindowWrapper(unsigned int width, unsigned int height, unsigned int depth, const std::string& title) :
 				ExternalAddressWrapper<InternalType>(std::move(std::make_unique<InternalType>(sf::VideoMode(width, height, depth), title))),
@@ -410,6 +410,10 @@ namespace iris {
 					window->get()->requestFocus();
 				} else if (op == "display") {
 					window->get()->display();
+				} else if (op == "clear") {
+					// right now just clear it with a black background
+					// TODO: add support for different colors
+					window->get()->clear();
 				} else {
 					std::stringstream ss;
 					ss << "unknown operation " << op;
