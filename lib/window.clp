@@ -46,19 +46,18 @@
   (is-a thing)
   (slot width
         (type INTEGER)
-        (range 1 ?VARIABLE)
+        ;(range 1 ?VARIABLE)
         (visibility public)
         (storage local)
         (default ?NONE))
   (slot height
         (type INTEGER)
-        (range 1 ?VARIABLE)
+        ;(range 1 ?VARIABLE)
         (visibility public)
         (storage local)
         (default ?NONE))
   (slot title 
         (type LEXEME)
-        (range 0 ?VARIABLE)
         (visibility public)
         (storage local)
         (default ?NONE))
@@ -87,16 +86,18 @@
                                        ?self:title
                                        ?self:bit-depth)))
 
-(deffunction windowp
+(deffunction windowing::windowp
              (?ext)
              (eq (external-address-type ?ext)
                  window))
-(defmethod clear
+; originally, I overrode clear but that seems to cause CLIPS to crash, so for the time being I'm doing clear-window
+(defgeneric windowing::clear-window)
+(defmethod windowing::clear-window
   ((?window window))
-  (clear (send ?window
-               get-base-pointer)))
+  (clear-window (send ?window
+                      get-base-pointer)))
 
-(defmethod clear
+(defmethod windowing::clear-window
   ((?window EXTERNAL-ADDRESS
             (windowp ?current-argument)))
   (call ?window
