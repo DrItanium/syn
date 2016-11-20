@@ -548,8 +548,8 @@ namespace iris {
 #define X(title, id, type) \
 			externalAddressType title = { \
 				#title , \
-				CLIPS_print ## id ## Ptr, \
-				CLIPS_print ## id ## Ptr, \
+				ManagedMemoryBlock<type>::printAddress, \
+				ManagedMemoryBlock<type>::printAddress, \
 				CLIPS_delete ## id ## Ptr, \
 				CLIPS_new ## id ## Ptr, \
 				CLIPS_call ## id ## Ptr, \

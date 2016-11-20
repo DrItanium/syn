@@ -59,16 +59,6 @@ template<typename T> struct TypeToName { };
 	DefMemoryBlockAssociation(uint64_t, word64u);
 #undef DefMemoryBlockAssociation
 
-template<typename T>
-class ExternalAddressWrapper {
-	public:
-		using InternalType = T;
-		ExternalAddressWrapper(std::unique_ptr<T>&& value) : _value(std::move(value)) { }
-		inline T* get() const noexcept { return _value.get(); }
-		std::string getSymbolicName() const noexcept { return TypeToName<T>::getSymbolicName(); }
-	protected:
-		std::unique_ptr<T> _value;
-};
 void CLIPS_basePrintAddress(void* env, const char* logicalName, void* theValue, const char* func, const char* majorType);
 
 template<typename T>
@@ -82,10 +72,19 @@ void CLIPS_basePrintAddress(void* env, const char* logicalName, void* theValue) 
 	CLIPS_basePrintAddress(env, logicalName, theValue, func.c_str(), "Wrapper");
 }
 
-#define DefPrintStatement(t, suffix) \
-	void CLIPS_printAddress_ ## suffix (void* env, const char* logicalName, void* theValue) { \
-		CLIPS_basePrintAddress<t>(env, logicalName, theValue); \
-	}
+template<typename T>
+class ExternalAddressWrapper {
+	public:
+		using InternalType = T;
+		ExternalAddressWrapper(std::unique_ptr<T>&& value) : _value(std::move(value)) { }
+		inline T* get() const noexcept { return _value.get(); }
+		std::string getSymbolicName() const noexcept { return TypeToName<T>::getSymbolicName(); }
+		static void printAddress(void* env, const char* logicalName, void* theValue) {
+			CLIPS_basePrintAddress<InternalType>(env, logicalName, theValue);
+		}
+	protected:
+		std::unique_ptr<T> _value;
+};
 
 template<typename Word>
 class ManagedMemoryBlock : public ExternalAddressWrapper<Word[]> {
