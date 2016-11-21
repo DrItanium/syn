@@ -49,7 +49,7 @@
 /***************************************************************************/
 
 #include "clips.h"
-#include "maya.hpp"
+#include "maya.h"
 
 void EnvUserFunctions(Environment *);
 

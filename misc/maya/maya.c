@@ -20,18 +20,16 @@
 // ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-extern "C" {
 #include "clips.h"
-}
-#include "maya.hpp"
-#include "mayasetup.hpp"
+#include "maya.h"
+#include "mayasetup.h"
 
 #if BOOST_EXTENSIONS
-#include "boost.hpp"
+#include "boost.h"
 #endif
 
 #if FUNCTIONAL_EXTENSIONS
-#include "functional.hpp"
+#include "functional.h"
 #endif
 
 #if !MAYA_EXTENSIONS
@@ -40,9 +38,9 @@ void InstallMayaExtensions(void* environment) { }
 static void EmptyFunction(UDFContext*, CLIPSValue*);
 static void IsDeffunction(UDFContext*, CLIPSValue*);
 static void NextToken(UDFContext* context, CLIPSValue* ret);
-static void LastFunction(UDFContext* context, CLIPSValue* ret);
+static void LastFunction(Environment*, UDFContext* context, CLIPSValue* ret);
 
-void InstallMayaExtensions(void* environment) {
+void InstallMayaExtensions(Environment* environment) {
 	EnvAddUDF(environment, "empty$", "b", EmptyFunction, "EmptyFunction", 1, 1, "m", NULL);
 	EnvAddUDF(environment, "deffunctionp", "b", IsDeffunction, "IsDeffunction", 1, 1, "y", NULL);
 	EnvAddUDF(environment, "quit",   "v", ExitCommand,    "ExitCommand", 0,1,"l",NULL);
@@ -58,7 +56,7 @@ void InstallMayaExtensions(void* environment) {
 }
 
 void
-LastFunction(UDFContext* context, CLIPSValue* ret) {
+LastFunction(Environment* env, UDFContext* context, CLIPSValue* ret) {
 	CLIPSValue theArg;
 	struct multifield *theList;
 
