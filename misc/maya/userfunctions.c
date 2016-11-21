@@ -49,6 +49,7 @@
 /***************************************************************************/
 
 #include "clips.h"
+#include "maya.hpp"
 
 void EnvUserFunctions(Environment *);
 
@@ -64,8 +65,6 @@ void EnvUserFunctions(Environment *);
 void EnvUserFunctions(
   Environment *environment)
   {
-#if MAC_XCD
-#pragma unused(environment)
-#endif
+      InstallMayaExtensions(environment);
   }
 

@@ -20,16 +20,18 @@
 // ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+extern "C" {
 #include "clips.h"
-#include "maya.h"
-#include "mayasetup.h"
+}
+#include "maya.hpp"
+#include "mayasetup.hpp"
 
 #if BOOST_EXTENSIONS
-#include "boost.h"
-#endif 
+#include "boost.hpp"
+#endif
 
 #if FUNCTIONAL_EXTENSIONS
-#include "functional.h"
+#include "functional.hpp"
 #endif
 
 #if !MAYA_EXTENSIONS
@@ -64,8 +66,8 @@ LastFunction(UDFContext* context, CLIPSValue* ret) {
 	/* Get the segment to be subdivided. */
 	/*===================================*/
 
-	if (! UDFFirstArgument(context,MULTIFIELD_TYPE,&theArg)) { 
-		return; 
+	if (! UDFFirstArgument(context,MULTIFIELD_TYPE,&theArg)) {
+		return;
 	}
 
 	theList = (struct multifield *) DOToPointer(theArg);

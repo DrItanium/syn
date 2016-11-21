@@ -99,7 +99,7 @@
 /****************************************************************/
 /* -------------------- COMPILER FLAGS ------------------------ */
 /****************************************************************/
-
+#include "os_ship.hpp"
 /*********************************************************************/
 /* Flag denoting the environment in which the executable is to run.  */
 /* Only one of these flags should be turned on (set to 1) at a time. */
