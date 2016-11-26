@@ -137,35 +137,6 @@ namespace iris18 {
 	constexpr auto lower16Mask = SetBitmaskToWordMask<0b0011>::mask;
 
 	RegisterValue getMask(byte bitmask);
-	template<bool isConditional, bool ifForm, bool callForm, bool immediateForm>
-		struct BranchFlagsEncoder {
-            static constexpr byte flags = iris::setBit<byte, 3>(
-                    iris::setBit<byte, 2>(
-                        iris::setBit<byte, 1>(
-                            iris::setBit<byte, 0>(0,
-                                immediateForm),
-                            callForm),
-                        ifForm),
-                    isConditional);
-		};
-	template<byte flags>
-		struct BranchFlagsDecoder {
-			static constexpr bool isImmediate = iris::getBit<byte, 0>(flags);
-			static constexpr bool isCall = iris::getBit<byte, 1>(flags);
-			static constexpr bool isIf = iris::getBit<byte, 2>(flags);
-			static constexpr bool isConditional = iris::getBit<byte, 3>(flags);
-		};
-	using IfJump = BranchFlagsEncoder<false, true, false, false>;
-	using IfCall = BranchFlagsEncoder<false, true, true, false>;
-
-	using CallIndirect = BranchFlagsEncoder<false, false, true, false>;
-	using CallDirect = BranchFlagsEncoder<false, false, true, true>;
-
-	using JumpDirect = BranchFlagsEncoder<false, false, false, true>;
-	using JumpIndirect = BranchFlagsEncoder<false, false, false, false>;
-
-	using ConditionalJumpDirect = BranchFlagsEncoder<true, false, false, true>;
-	using ConditionalJumpIndirect = BranchFlagsEncoder<true, false, false, false>;
 
 	int instructionSizeFromImmediateMask(byte bitmask);
 
@@ -250,73 +221,6 @@ namespace iris18 {
 					}
 				}
 			RegisterValue retrieveImmediate(byte bitmask) noexcept;
-
-#define DefFlags(name) template<byte signature> struct name {
-#define EndDefFlags(name) };
-#define Component(fieldName, mask, shift, type) static constexpr type fieldName = (iris::decodeBits<byte, type, mask, shift>(signature));
-#define Field(fieldName, type, value) static constexpr type fieldName = value ;
-#include "def/iris18/logical_generic.sig"
-#include "def/iris18/arithmetic.sig"
-#include "def/iris18/move.sig"
-#include "def/iris18/memory.sig"
-#include "def/iris18/set.sig"
-#undef Field
-#undef Component
-#undef DefFlags
-#undef EndDefFlags
-			template<byte flags>
-				void branchSpecificOperation(DecodedInstruction&& current) {
-					using decodedFlags = BranchFlagsDecoder<flags>;
-					advanceIp = true;
-					if (decodedFlags::isIf) {
-						// if instruction
-						advanceIp = false;
-						if (decodedFlags::isCall) {
-							// push the instruction pointer plus one onto the
-							// stack
-							pushDword((getInstructionPointer() + 1) & bitmask24);
-						}
-						getInstructionPointer() = bitmask24 & ((getConditionRegister() != 0) ? registerValue(current.getBranchIfOnTrue()) : registerValue(current.getBranchIfOnFalse()));
-#ifdef DEBUG
-						std::cout << "if: jumping to " << std::hex << getInstructionPointer() << std::endl;
-#endif
-					} else if (decodedFlags::isCall) {
-						// call instruction
-						advanceIp = false;
-						// determine next
-						pushDword((getInstructionPointer() + decodedFlags::isImmediate ? 2 : 1) & bitmask24);
-						auto address = 0u;
-						if (decodedFlags::isImmediate) {
-							// make a 24 bit number
-							auto upper16 = static_cast<RegisterValue>(tryReadNext<decodedFlags::isImmediate>()) << 8;
-							auto lower8 = static_cast<RegisterValue>(current.getUpper());
-							address = upper16 | lower8;
-						} else {
-							address = registerValue(current.getBranchIndirectDestination());
-						}
-						getInstructionPointer() = bitmask24 & address;
-#ifdef DEBUG
-						std::cout << "call: Jumping to " << std::hex << getInstructionPointer() << std::endl;
-#endif
-					} else {
-						// jump instruction
-						if (decodedFlags::isImmediate) {
-							incrementInstructionPointer();
-							if ((decodedFlags::isConditional && getConditionRegister() != 0) || !decodedFlags::isConditional) {
-								advanceIp = false;
-								getInstructionPointer() = bitmask24 & (current.getUpper() | static_cast<RegisterValue>(getCurrentCodeWord()) << 8);
-							}
-						} else {
-							if ((decodedFlags::isConditional && getConditionRegister() != 0) || !decodedFlags::isConditional) {
-								advanceIp = false;
-								getInstructionPointer() = bitmask24 & registerValue(current.getBranchIndirectDestination());
-							}
-						}
-#ifdef DEBUG
-						std::cout << "one way Jumping to " << std::hex << getInstructionPointer() << std::endl;
-#endif
-					}
-				}
 
 			RegisterValue& registerValue(byte index);
 			inline RegisterValue& getInstructionPointer() noexcept     { return registerValue<ArchitectureConstants::InstructionPointer>(); }

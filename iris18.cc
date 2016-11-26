@@ -284,23 +284,54 @@ namespace iris18 {
 				throw iris::Problem("Illegal memory operation!");
 			}
 		} else if (tControl == Operation::Branch) {
-			auto instFlags = current.getBranchFlags();
-			if (instFlags == IfJump::flags) {
-				branchSpecificOperation<IfJump::flags>(std::move(current));
-			} else if(instFlags == CallIndirect::flags) {
-				branchSpecificOperation<CallIndirect::flags>(std::move(current));
-			} else if (instFlags == CallDirect::flags) {
-				branchSpecificOperation<CallDirect::flags>(std::move(current));
-			} else if(instFlags == JumpIndirect::flags) {
-				branchSpecificOperation<JumpIndirect::flags>(std::move(current));
-			} else if (instFlags == JumpDirect::flags) {
-				branchSpecificOperation<JumpDirect::flags>(std::move(current));
-			} else if(instFlags == ConditionalJumpIndirect::flags) {
-				branchSpecificOperation<ConditionalJumpIndirect::flags>(std::move(current));
-			} else if (instFlags == ConditionalJumpDirect::flags) {
-				branchSpecificOperation<ConditionalJumpDirect::flags>(std::move(current));
+			auto isIf = current.getBranchFlagIsIfForm();
+			auto isCall = current.getBranchFlagIsCallForm();
+			auto isImm = current.getBranchFlagIsImmediate();
+			auto isCond = current.getBranchFlagIsConditional();
+			advanceIp = true;
+			auto choice = getConditionRegister() != 0;
+			if (isIf) {
+				advanceIp = false;
+				if (isCall) {
+					// push the instruction pointer onto the stack
+					pushDword((getInstructionPointer() + 1) & bitmask24);
+				}
+				if (choice) {
+					getInstructionPointer() = registerValue(current.getBranchIfOnTrue());
+				} else {
+					getInstructionPointer() = registerValue(current.getBranchIfOnFalse());
+				}
+			} else if (isCall) {
+				// call instruction
+				advanceIp = false;
+				// determine next
+				auto length = isImm ? 2 : 1;
+				pushDword((getInstructionPointer() + length) & bitmask24);
+
+				auto address = 0u;
+				if (isImm) {
+					// make a 24 bit number
+					auto upper16 = static_cast<RegisterValue>(tryReadNext(isImm)) << 8;
+					auto lower8 = static_cast<RegisterValue>(current.getUpper());
+					address = upper16 | lower8;
+				} else {
+					address = registerValue(current.getBranchIndirectDestination());
+				}
+				getInstructionPointer() = bitmask24 & address;
 			} else {
-				throw iris::Problem("Undefined branch flag setup!");
+				// jump instruction
+				if (isImm) {
+					incrementInstructionPointer();
+					if ((isCond && choice) || !isCond) {
+						advanceIp = false;
+						getInstructionPointer() = bitmask24 & (current.getUpper() | static_cast<RegisterValue>(getCurrentCodeWord()) << 8);
+					} 
+				} else {
+					if ((isCond && choice) || !isCond) {
+						advanceIp = false;
+						getInstructionPointer() = bitmask24 & registerValue(current.getBranchIndirectDestination());
+					}
+				}
 			}
 		} else if (tControl == Operation::Compare) {
 			static std::map<CompareStyle, CompareUnit::Operation> translationTable = {
