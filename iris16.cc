@@ -14,45 +14,21 @@ namespace iris16 {
     }
 
 	void Core::installprogram(std::istream& stream) {
-		char wordBuf[sizeof(word)] = { 0 };
-		char dwordBuf[sizeof(dword)] = { 0 };
-		for (auto i = 0; i < ArchitectureConstants::RegisterCount; ++i) {
-			stream.read(wordBuf, sizeof(word));
-			gpr[i] = iris16::encodeWord(wordBuf[0], wordBuf[1]);
-		}
-		for (auto i = 0; i < ArchitectureConstants::AddressMax; ++i) {
-			stream.read(wordBuf, sizeof(word));
-			setDataMemory(i, iris16::encodeWord(wordBuf[0], wordBuf[1]));
-		}
-		for (auto i = 0; i < ArchitectureConstants::AddressMax; ++i) {
-			stream.read(dwordBuf, sizeof(dword));
-			setInstructionMemory(i, iris16::encodeDword(dwordBuf[0], dwordBuf[1], dwordBuf[2], dwordBuf[3]));
-		}
-		for (auto i = 0; i < ArchitectureConstants::AddressMax; ++i) {
-			stream.read(wordBuf, sizeof(word));
-			stack[i] = iris16::encodeWord(wordBuf[0], wordBuf[1]);
-		}
+		auto encodeWord = [](char* buf) { return iris16::encodeWord(buf[0], buf[1]); };
+		auto encodeDword = [](char* buf) { return iris16::encodeDword(buf[0], buf[1], buf[2], buf[3]); };
+		gpr.install(stream, encodeWord);
+		data.install(stream, encodeWord);
+		instruction.install(stream, encodeDword);
+		stack.install(stream, encodeWord);
 	}
 
 	void Core::dump(std::ostream& stream) {
-		char wordBuf[sizeof(word)] = { 0 };
-		char dwordBuf[sizeof(dword)] = { 0 };
-		for (auto i = 0; i < ArchitectureConstants::RegisterCount; ++i) {
-			iris::decodeUint16LE(gpr[i], (byte*)wordBuf);
-			stream.write(wordBuf, sizeof(word));
-		}
-		for (auto i = 0; i < ArchitectureConstants::AddressMax; ++i) {
-			iris::decodeUint16LE(getDataMemory(i), (byte*)wordBuf);
-			stream.write(wordBuf, sizeof(word));
-		}
-		for (auto i = 0; i < ArchitectureConstants::AddressMax; ++i) {
-			iris::decodeUint32LE(instruction[i], (byte*)dwordBuf);
-			stream.write(dwordBuf, sizeof(dword));
-		}
-		for (auto i = 0; i < ArchitectureConstants::AddressMax; ++i) {
-			iris::decodeUint16LE(stack[i], (byte*)wordBuf);
-			stream.write(wordBuf, sizeof(word));
-		}
+		auto decodeWord = [](word value, char* buf) { iris::decodeUint16LE(value, (byte*)buf); };
+		auto decodeDword = [](dword value, char* buf) { iris::decodeUint32LE(value, (byte*)buf); };
+		gpr.dump(stream, decodeWord);
+		data.dump(stream, decodeWord);
+		instruction.dump(stream, decodeDword);
+		stack.dump(stream, decodeWord);
 	}
 	void Core::run() {
 		while(execute) {
@@ -235,48 +211,45 @@ namespace iris16 {
 	void Core::move() {
 		auto op = static_cast<MoveOp>(getOperation());
 		if (op == MoveOp::Move) {
-			gpr[getDestination()] = gpr[getSource0()];
+			gpr.copy(getDestination(), getSource0());
 		} else if (op == MoveOp::Set) {
-			gpr[getDestination()] = static_cast<word>(getImmediate());
+			gpr.set(getDestination(), static_cast<word>(getImmediate()));
 		} else if (op == MoveOp::Swap) {
-			auto result = gpr[getDestination()];
-			gpr[getDestination()] = gpr[getSource0()];
-			gpr[getSource0()] = result;
+			gpr.swap(getDestination(), getSource0());
 		} else if (op == MoveOp::Load) {
-			gpr[getDestination()] = getDataMemory(gpr[getSource0()]);
+			gpr.set(getDestination(), data[source0Register()]);
 		} else if (op == MoveOp::LoadImmediate) {
-			gpr[getDestination()] = getDataMemory(getImmediate());
+			gpr.set(getDestination(), data[static_cast<word>(getImmediate())]);
 		} else if (op == MoveOp::Store) {
-			setDataMemory(gpr[getDestination()], gpr[getSource0()]);
+			data.set(destinationRegister(), source0Register());
 		} else if (op == MoveOp::Memset) {
-			setDataMemory(gpr[getDestination()], getImmediate());
+			data.set(destinationRegister(), static_cast<word>(getImmediate()));
 		} else if (op == MoveOp::Push) {
-			++gpr[ArchitectureConstants::StackPointerIndex];
-			stack[gpr[ArchitectureConstants::StackPointerIndex]] = gpr[getDestination()];
+			stack[++getStackPointer()] = destinationRegister();
 		} else if (op == MoveOp::PushImmediate) {
-			++gpr[ArchitectureConstants::StackPointerIndex];
-			stack[gpr[ArchitectureConstants::StackPointerIndex]] = getImmediate();
+			stack[++getStackPointer()] = static_cast<word>(getImmediate());
 		} else if (op == MoveOp::Pop) {
-			gpr[getDestination()] = stack[gpr[ArchitectureConstants::StackPointerIndex]];
-			--gpr[ArchitectureConstants::StackPointerIndex];
+			destinationRegister() = stack[getStackPointer()];
+			--getStackPointer();
 		} else if (op == MoveOp::LoadCode) {
-			auto result = instruction[gpr[getDestination()]];
-			gpr[getSource0()] = iris::getLowerHalf(result);
-			gpr[getSource1()] = iris::getUpperHalf(result);
+			auto result = instruction[destinationRegister()];
+			source0Register() = iris::getLowerHalf(result);
+			source1Register() = iris::getUpperHalf(result);
 		} else if (op == MoveOp::StoreCode) {
-			instruction[getDestination()] = encodeDword(gpr[getSource0()], gpr[getSource1()]);
+			instruction[destinationRegister()] = encodeDword(source0Register(), source1Register());
 		} else if (op == MoveOp::ExtendedMemoryWrite) {
 			// store destination in the address described by source0 and source1
-			auto result = gpr[getDestination()];
-			auto lower = gpr[getSource0()];
-			auto upper = gpr[getSource1()];
+			auto result = destinationRegister();
+			auto lower = source0Register();
+			auto upper = source1Register();
+				gpr[getSource1()];
 			// build an address out of this
 			setExtendedDataMemory(iris::encodeUint32LE(lower, upper), result);
 		} else if (op == MoveOp::ExtendedMemoryRead) {
-			auto lower = gpr[getSource0()];
-			auto upper = gpr[getSource1()];
+			auto lower = source0Register();
+			auto upper = source1Register();
 			// build an address out of this
-			gpr[getDestination()] = getExtendedDataMemory(iris::encodeUint32LE(lower, upper));
+			destinationRegister() = getExtendedDataMemory(iris::encodeUint32LE(lower, upper));
 		} else {
 			std::stringstream ss;
 			ss << "Illegal move code " << getOperation();

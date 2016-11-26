@@ -52,7 +52,9 @@ namespace iris16 {
 			// TODO: add support for installing externally defined system calls
 			void setExtendedDataMemory(dword address, word value);
 			word getExtendedDataMemory(dword address);
-
+		private:
+			word& getStackPointer() noexcept { return gpr[ArchitectureConstants::StackPointerIndex]; }
+			word& getInstructionPointer() noexcept { return gpr[ArchitectureConstants::InstructionPointerIndex]; }
 		private:
 			void dispatch();
             inline byte getDestination() const noexcept { return decodeDestination(current); }
@@ -61,6 +63,9 @@ namespace iris16 {
             inline byte getImmediate() const noexcept { return decodeImmediate(current); }
             inline byte getOperation() const noexcept { return decodeOperation(current); }
             inline byte getGroup() const noexcept { return decodeGroup(current); }
+			inline word& destinationRegister() noexcept { return gpr[getDestination()]; }
+			inline word& source0Register() noexcept { return gpr[getSource0()]; }
+			inline word& source1Register() noexcept { return gpr[getSource1()]; }
 
 #define X(_, op) void op();
 #include "def/iris16/groups.def"
@@ -74,10 +79,13 @@ namespace iris16 {
 				 advanceIp = true;
             iris::Comparator<word> _compare;
             iris::ALU<word> _alu;
-			word gpr[ArchitectureConstants::RegisterCount] = {0};
-			word data[ArchitectureConstants::AddressMax] = { 0 } ;
-			dword instruction[ArchitectureConstants::AddressMax] = { 0 };
-			word stack[ArchitectureConstants::AddressMax] = { 0 };
+			template<word capacity>
+			using WordMemorySpace = iris::FixedSizeLoadStoreUnit<word, word, capacity>;
+			using WordMemorySpace64k = WordMemorySpace<ArchitectureConstants::AddressMax>;
+			WordMemorySpace<ArchitectureConstants::RegisterCount> gpr;
+			WordMemorySpace64k data;
+			iris::FixedSizeLoadStoreUnit<dword, word, ArchitectureConstants::AddressMax> instruction;
+			WordMemorySpace64k stack;
 			raw_instruction current = 0;
 	};
 
