@@ -18,9 +18,7 @@ namespace iris17 {
         InstructionPointerIndex = RegisterCount - 1,
         LinkRegisterIndex = RegisterCount - 2,
         StackPointerIndex = RegisterCount - 3,
-        ConditionRegisterIndex = RegisterCount - 4,
         ThreadIndex = RegisterCount - 5,
-		UserRegisterCount = ThreadIndex,
 
         GroupMask = 0b00000111,
         RestMask = ~GroupMask,
@@ -49,7 +47,7 @@ class DecodedInstruction {
     private:
         word raw;
 };
-using RegisterFile = iris::FixedSizeLoadStoreUnit<word, word, ArchitectureConstants::UserRegisterCount>;
+using RegisterFile = iris::FixedSizeLoadStoreUnit<word, word, ArchitectureConstants::RegisterCount>;
 using ALU = iris::ALU<word>;
 using CompareUnit = iris::Comparator<word>;
 /// Represents the execution state of a thread of execution
@@ -59,7 +57,6 @@ struct ExecState {
 	inline word& getStackPointer() noexcept { return gpr[ArchitectureConstants::StackPointerIndex]; }
 	inline word& getInstructionPointer() noexcept { return gpr[ArchitectureConstants::InstructionPointerIndex]; }
 	inline word& getLinkRegister() noexcept { return gpr[ArchitectureConstants::LinkRegisterIndex]; }
-	inline word& getConditionRegister() noexcept { return gpr[ArchitectureConstants::ConditionRegisterIndex]; }
 	inline word& getThreadIndexRegister() noexcept { return gpr[ArchitectureConstants::ThreadIndex]; }
 };
 

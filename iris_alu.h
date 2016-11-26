@@ -8,6 +8,7 @@ namespace iris {
 template<typename Word>
 class ALU  {
     public:
+		using WordType = Word;
         enum class Operation {
             Add,
             Subtract,
@@ -61,6 +62,7 @@ class ALU  {
 template<typename Word>
 class Comparator {
     public:
+		using WordType = Word;
         enum class Operation {
             Eq,
             Neq,
