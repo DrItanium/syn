@@ -1,6 +1,7 @@
 #ifndef _TARGET_IRIS16_IRIS_H
 #define _TARGET_IRIS16_IRIS_H
 #include "iris_base.h"
+#include "iris_alu.h"
 #include "Core.h"
 #include <cstdint>
 #include <memory>
@@ -71,6 +72,8 @@ namespace iris16 {
 			dword extendedMemorySize = 0;
 			bool execute = true,
 				 advanceIp = true;
+            iris::Comparator<word> _compare;
+            iris::ALU<word> _alu;
 			word gpr[ArchitectureConstants::RegisterCount] = {0};
 			word data[ArchitectureConstants::AddressMax] = { 0 } ;
 			dword instruction[ArchitectureConstants::AddressMax] = { 0 };

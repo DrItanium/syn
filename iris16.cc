@@ -1,6 +1,8 @@
 #include "iris16.h"
+#include "iris_alu.h"
 #include <functional>
 #include <sstream>
+#include <vector>
 
 namespace iris16 {
 	Core* newCore() noexcept {
@@ -90,75 +92,87 @@ namespace iris16 {
                      }
         }
 	}
-
+    using Comparator = iris::Comparator<word>;
 	void Core::compare() {
-        auto cop = static_cast<CompareOp>(getOperation());
-#define X(type, compare, mod) \
-			if (cop == CompareOp:: type) { \
-				gpr[getDestination()] = (gpr[getSource0()] compare gpr[getSource1()]); \
-				return; \
-			}
-#define Y(type, compare, mod) \
-			if (cop == CompareOp:: type) { \
-				gpr[getDestination()] = (gpr[getSource0()] compare static_cast<word>(getSource1())); \
-				return; \
-			}
-#include "def/iris16/compare.def"
-#undef X
-#undef Y
-		std::stringstream stream;
-		stream << "Illegal compare code " << getOperation();
-		execute = false;
-		advanceIp = false;
-		throw iris::Problem(stream.str());
+        static std::map<CompareOp, std::tuple<Comparator::Operation, bool>> translationTable = {
+            { CompareOp::LessThan, std::make_tuple(Comparator::Operation::LessThan, false) },
+            { CompareOp::LessThanImm, std::make_tuple(Comparator::Operation::LessThan, true) },
+            { CompareOp::LessThanOrEqualTo, std::make_tuple(Comparator::Operation::LessThanOrEqualTo, false) },
+            { CompareOp::LessThanOrEqualToImm, std::make_tuple(Comparator::Operation::LessThanOrEqualTo, true) },
+            { CompareOp::GreaterThan, std::make_tuple(Comparator::Operation::GreaterThan, false) },
+            { CompareOp::GreaterThanImm, std::make_tuple(Comparator::Operation::GreaterThan, true) },
+            { CompareOp::GreaterThanOrEqualTo, std::make_tuple(Comparator::Operation::GreaterThanOrEqualTo, false) },
+            { CompareOp::GreaterThanOrEqualToImm, std::make_tuple(Comparator::Operation::GreaterThanOrEqualTo, true) },
+            { CompareOp::Eq, std::make_tuple(Comparator::Operation::Eq, false) },
+            { CompareOp::EqImm, std::make_tuple(Comparator::Operation::Eq, true) },
+            { CompareOp::Neq, std::make_tuple(Comparator::Operation::Neq, false) },
+            { CompareOp::NeqImm, std::make_tuple(Comparator::Operation::Neq, true) },
+        };
+        auto result = translationTable.find(static_cast<CompareOp>(getOperation()));
+        if (result == translationTable.end()) {
+            std::stringstream stream;
+            stream << "Illegal compare code " << getOperation();
+            execute = false;
+            advanceIp = false;
+            throw iris::Problem(stream.str());
+        }
+        bool imm = false;
+        Comparator::Operation backingOperation;
+        std::tie(backingOperation, imm) = result->second;
+        gpr[getDestination()] = _compare.performOperation(backingOperation, gpr[getSource0()], (imm ? static_cast<word>(getSource1()) : gpr[getSource1()]));
 	}
-
+    using ALU = iris::ALU<word>;
 	void Core::arithmetic() {
-		switch(static_cast<ArithmeticOp>(getOperation())) {
-
-#define XNone(n) (gpr[getSource0()], gpr[getSource1()])
-#define XImmediate(n) (gpr[getSource0()], static_cast<word>(getSource1()))
-#define XUnary(n) (gpr[getSource0()])
-#define X(name, op, desc) \
-			case ArithmeticOp:: name: \
-									   gpr[getDestination()] = op INDIRECTOR(X, desc)(name); \
-			break;
-#include "def/iris16/arithmetic.def"
-#undef X
-#undef XNone
-#undef XDenominator
-#undef XUnary
-			default: {
-		std::stringstream stream;
-		stream << "Illegal arithmetic operation " << getOperation();
-		execute = false;
-		throw iris::Problem(stream.str());
-					 }
-		}
+        static std::map<ArithmeticOp, std::tuple<ALU::Operation, bool, bool>> table = {
+            { ArithmeticOp::Add, std::make_tuple( ALU::Operation::Add , false, false ) },
+            { ArithmeticOp::Sub, std::make_tuple( ALU::Operation::Subtract , false, false ) },
+            { ArithmeticOp::Mul, std::make_tuple( ALU::Operation::Multiply , false, false ) } ,
+            { ArithmeticOp::Div, std::make_tuple( ALU::Operation::Divide , false, false ) },
+            { ArithmeticOp::Rem, std::make_tuple( ALU::Operation::Remainder , false, false ) },
+            { ArithmeticOp::ShiftLeft, std::make_tuple( ALU::Operation::ShiftLeft , false, false ) },
+            { ArithmeticOp::ShiftRight, std::make_tuple( ALU::Operation::ShiftRight , false, false ) },
+            { ArithmeticOp::BinaryAnd, std::make_tuple( ALU::Operation::BinaryAnd , false, false ) },
+            { ArithmeticOp::BinaryOr, std::make_tuple( ALU::Operation::BinaryOr , false, false ) },
+            { ArithmeticOp::BinaryNot, std::make_tuple( ALU::Operation::UnaryNot , false, true ) },
+            { ArithmeticOp::BinaryXor, std::make_tuple( ALU::Operation::BinaryXor , false, false ) },
+            { ArithmeticOp::AddImmediate, std::make_tuple( ALU::Operation::Add , true , false ) },
+            { ArithmeticOp::SubImmediate, std::make_tuple( ALU::Operation::Subtract , true , false ) },
+            { ArithmeticOp::MulImmediate, std::make_tuple( ALU::Operation::Multiply , true , false ) } ,
+            { ArithmeticOp::DivImmediate, std::make_tuple( ALU::Operation::Divide , true , false ) },
+            { ArithmeticOp::RemImmediate, std::make_tuple( ALU::Operation::Remainder , true , false ) },
+            { ArithmeticOp::ShiftLeftImmediate, std::make_tuple( ALU::Operation::ShiftLeft , true, false ) },
+            { ArithmeticOp::ShiftRightImmediate, std::make_tuple( ALU::Operation::ShiftRight , true, false ) },
+        };
+        auto result = table.find(static_cast<ArithmeticOp>(getOperation()));
+        if (result == table.end()) {
+            std::stringstream stream;
+            stream << "Illegal arithmetic operation " << getOperation();
+            execute = false;
+            throw iris::Problem(stream.str());
+        }
+        auto immediate = false,
+             unary = false;
+        ALU::Operation backingOp;
+        std::tie(backingOp, immediate, unary) = result->second;
+        gpr[getDestination()] =  _alu.performOperation(backingOp, gpr[getSource0()], (unary ? 0 : static_cast<word>(immediate ? getSource1() : gpr[getSource1()])));
 	}
 	void Core::jump() {
 		auto jop = static_cast<JumpOp>(getOperation());
 		auto ifthenelse = false, conditional = false, iffalse = false, immediate = false,  link = false;
-		switch(jop) {
+        static std::map<JumpOp, std::tuple<bool, bool, bool, bool, bool>> translationTable = {
 #define X(name, _ifthenelse, _conditional, _iffalse, _immediate, _link) \
-			case JumpOp:: name : { \
-									 ifthenelse = _ifthenelse; \
-									 conditional = _conditional; \
-									 iffalse = _iffalse; \
-									 immediate = _immediate; \
-									 link = _link; \
-									 break;\
-								 }
+            { JumpOp:: name , std::make_tuple( _ifthenelse, _conditional, _iffalse, _immediate, _link) } ,
 #include "def/iris16/jump.def"
 #undef X
-			
-			default: {
-						 std::stringstream ss;
-						 ss << "Illegal jump code " << std::hex << static_cast<int>(getOperation());
-						 execute =  false;
-						 throw iris::Problem(ss.str());
-					 }
-		}
+        };
+		auto result = translationTable.find(static_cast<JumpOp>(getOperation()));
+        if (result == translationTable.end()) {
+            std::stringstream ss;
+            ss << "Illegal jump code " << std::hex << static_cast<int>(getOperation());
+            execute =  false;
+            throw iris::Problem(ss.str());
+        }
+        std::tie(ifthenelse, conditional, iffalse, immediate, link) = result->second;
 		auto newAddr = static_cast<word>(0);
 		auto cond = true;
 		advanceIp = false;

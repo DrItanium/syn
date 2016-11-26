@@ -15,6 +15,11 @@ class ALU  {
             Remainder,
             ShiftLeft,
             ShiftRight,
+            BinaryAnd,
+            BinaryOr,
+            UnaryNot,
+            BinaryXor,
+            BinaryNand,
             Count,
         };
     public:
@@ -36,6 +41,16 @@ class ALU  {
                     return iris::shiftLeft<Word>(a, b);
                 case Operation::ShiftRight:
                     return iris::shiftRight<Word>(a, b);
+                case Operation::BinaryAnd:
+                    return iris::binaryAnd<Word>(a, b);
+                case Operation::BinaryOr:
+                    return iris::binaryOr<Word>(a, b);
+                case Operation::UnaryNot:
+                    return iris::binaryNot<Word>(a);
+                case Operation::BinaryXor:
+                    return iris::binaryXor<Word>(a, b);
+                case Operation::BinaryNand:
+                    return iris::binaryNand<Word>(a, b);
                 default:
                     throw iris::Problem("Undefined ALU operation!");
             }
@@ -52,6 +67,14 @@ class Comparator {
             GreaterThan,
             LessThanOrEqualTo,
             GreaterThanOrEqualTo,
+            // extended operations!
+            BinaryAnd,
+            BinaryOr,
+            UnaryNot,
+            BinaryXor,
+            BinaryNand,
+            ShiftLeft,
+            ShiftRight,
             Count,
         };
     public:
@@ -71,6 +94,20 @@ class Comparator {
                     return iris::le<Word>(a, b);
                 case Operation::GreaterThanOrEqualTo:
                     return iris::ge<Word>(a, b);
+                case Operation::BinaryAnd:
+                    return iris::binaryAnd<Word>(a, b);
+                case Operation::BinaryOr:
+                    return iris::binaryOr<Word>(a, b);
+                case Operation::UnaryNot:
+                    return iris::binaryNot<Word>(a);
+                case Operation::BinaryXor:
+                    return iris::binaryXor<Word>(a, b);
+                case Operation::BinaryNand:
+                    return iris::binaryNand<Word>(a, b);
+                case Operation::ShiftLeft:
+                    return iris::shiftLeft<Word>(a, b);
+                case Operation::ShiftRight:
+                    return iris::shiftRight<Word>(a, b);
                 default:
                     throw iris::Problem("Undefined Comparison operation!");
             }
