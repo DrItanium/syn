@@ -157,14 +157,13 @@ namespace iris16 {
         gpr[getDestination()] =  _alu.performOperation(backingOp, gpr[getSource0()], (unary ? 0 : static_cast<word>(immediate ? getSource1() : gpr[getSource1()])));
 	}
 	void Core::jump() {
-		auto jop = static_cast<JumpOp>(getOperation());
-		auto ifthenelse = false, conditional = false, iffalse = false, immediate = false,  link = false;
         static std::map<JumpOp, std::tuple<bool, bool, bool, bool, bool>> translationTable = {
 #define X(name, _ifthenelse, _conditional, _iffalse, _immediate, _link) \
             { JumpOp:: name , std::make_tuple( _ifthenelse, _conditional, _iffalse, _immediate, _link) } ,
 #include "def/iris16/jump.def"
 #undef X
         };
+		auto ifthenelse = false, conditional = false, iffalse = false, immediate = false,  link = false;
 		auto result = translationTable.find(static_cast<JumpOp>(getOperation()));
         if (result == translationTable.end()) {
             std::stringstream ss;
