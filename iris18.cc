@@ -4,6 +4,7 @@
 #include "Problem.h"
 #include <utility>
 #include <map>
+#include <future>
 
 namespace iris18 {
 	/*
@@ -243,39 +244,35 @@ namespace iris18 {
 				throw iris::Problem("Undefined branch flag setup!");
 			}
 		} else if (tControl == Operation::Compare) {
+			static std::map<CompareStyle, CompareUnit::Operation> translationTable = {
+				{ CompareStyle::Equals, CompareUnit::Operation::Eq },
+				{ CompareStyle::NotEquals, CompareUnit::Operation::Neq },
+				{ CompareStyle::LessThan, CompareUnit::Operation::LessThan },
+				{ CompareStyle::LessThanOrEqualTo, CompareUnit::Operation::LessThanOrEqualTo },
+				{ CompareStyle::GreaterThan, CompareUnit::Operation::GreaterThan },
+				{ CompareStyle::GreaterThanOrEqualTo, CompareUnit::Operation::GreaterThanOrEqualTo },
+			};
+			using CombineOp = iris::BooleanCombineUnit::Operation;
+			static std::map<CompareCombine, CombineOp> combineTranslation = {
+				{ CompareCombine::None, CombineOp::None },
+				{ CompareCombine::Xor, CombineOp::Xor },
+				{ CompareCombine::Or, CombineOp::Or },
+				{ CompareCombine::And, CombineOp::And },
+			};
 			DecodedInstruction next(tryReadNext<true>());
 			auto first = registerValue(next.getCompareRegister0());
 			auto second = current.getCompareImmediateFlag() ? next.getUpper() : registerValue(next.getCompareRegister1());
-			auto result = false;
-			auto cond = getConditionRegister() != 0;
-			auto compareType = current.getCompareType();
-			if (compareType == CompareStyle::Equals) {
-				result = iris::eq(first, second);
-			} else if (compareType == CompareStyle::NotEquals) {
-				result = iris::neq(first, second);
-			} else if (compareType == CompareStyle::LessThan) {
-				result = iris::lt(first, second);
-			} else if (compareType == CompareStyle::GreaterThan) {
-				result = iris::gt(first, second);
-			} else if (compareType == CompareStyle::LessThanOrEqualTo) {
-				result = iris::le(first, second);
-			} else if (compareType == CompareStyle::GreaterThanOrEqualTo) {
-				result = iris::ge(first, second);
-			} else {
-				throw iris::Problem("illegal compare type!");
+			auto compareResult = translationTable.find(current.getCompareType());
+			if (compareResult == translationTable.end()) {
+				throw iris::Problem("Illegal compare type!");
 			}
-			auto combineType = current.getCompareCombineFlag();
-			if (combineType == CompareCombine::None) {
-				getConditionRegister() = result;
-			} else if (combineType == CompareCombine::And) {
-				getConditionRegister() = result && cond;
-			} else if (combineType == CompareCombine::Or) {
-				getConditionRegister() = result || cond;
-			} else if (combineType == CompareCombine::Xor) {
-				getConditionRegister() = result ^ cond;
-			} else {
-				throw iris::Problem("Illegal Compare Combine Operation");
+			auto combineResult = combineTranslation.find(current.getCompareCombineFlag());
+			if (combineResult == combineTranslation.end()) {
+				throw iris::Problem("Illegal compare combine operation!");
 			}
+			getConditionRegister() = static_cast<RegisterValue>(_bCombine.performOperation(combineResult->second, 
+						_compare.performOperation(compareResult->second, first, second),
+						getConditionRegister() != 0));
 		} else if (tControl == Operation::SystemCall) {
 			if (getAddressRegister() >= ArchitectureConstants::MaxSystemCalls) {
 				throw iris::Problem("ERROR: system call index out of range!");

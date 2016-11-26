@@ -467,6 +467,7 @@ namespace iris18 {
 			ALU _shifter;
 			ALU _logicalOps;
 			CompareUnit _compare;
+			iris::BooleanCombineUnit _bCombine;
 			MemorySpace memory;
 			SystemFunction systemHandlers[ArchitectureConstants::MaxSystemCalls] =  { 0 };
 	};

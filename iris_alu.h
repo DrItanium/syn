@@ -181,5 +181,38 @@ class FixedSizeLoadStoreUnit : public LoadStoreUnit<Word, Address> {
 		virtual ~FixedSizeLoadStoreUnit() { }
 };
 
+class BooleanCombineUnit {
+	public:
+		enum class Operation {
+			None,
+			And,
+			Or,
+			Xor,
+			Nand,
+			Nor,
+			Xnor,
+		};
+	public:
+		bool performOperation(Operation op, bool newValue, bool oldValue) {
+			switch(op) {
+				case Operation::None:
+					return newValue;
+				case Operation::And:
+					return oldValue && newValue;
+				case Operation::Or:
+					return oldValue || newValue;
+				case Operation::Xor:
+					return oldValue ^ newValue;
+				case Operation::Nand:
+					return !(oldValue && newValue);
+				case Operation::Nor:
+					return !(oldValue || newValue);
+				case Operation::Xnor:
+					return !(oldValue ^ newValue);
+				default:
+					throw iris::Problem("Undefined boolean operation!");
+			}
+		}
+};
 } // end namespace iris
 #endif // end _IRIS_ALU_H
