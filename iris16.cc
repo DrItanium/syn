@@ -116,8 +116,8 @@ namespace iris16 {
 				} else if (target == SystemCalls::InitializeXMem) {
 					// just load the given storage size into r0 and r1
 					auto xSize = extendedData->getSize();
-					source0Register() = iris::decodeBits<dword, word, 0x0000FFFF, 0>(xSize);
-					source1Register() = iris::decodeBits<dword, word, 0xFFFF0000, 16>(xSize);
+					source0Register() = iris::getLowerHalf(xSize);
+					source1Register() = iris::getUpperHalf(xSize);
 				} else {
 					std::stringstream stream;
 					stream << "Illegal system call " << std::hex << getDestination();
@@ -133,11 +133,24 @@ namespace iris16 {
 				throw iris::Problem(ss.str());
 			}
 		} else if (group == InstructionGroup::Jump) {
+			// ifthenelse?, conditional?, iffalse?, immediate?, link?
 			static std::map<JumpOp, std::tuple<bool, bool, bool, bool, bool>> translationTable = {
-#define X(name, _ifthenelse, _conditional, _iffalse, _immediate, _link) \
-				{ JumpOp:: name , std::make_tuple( _ifthenelse, _conditional, _iffalse, _immediate, _link) } ,
-#include "def/iris16/jump.def"
-#undef X
+				{ JumpOp:: UnconditionalImmediate , std::make_tuple( false, false, false, true, false) } ,
+				{ JumpOp:: UnconditionalImmediateLink , std::make_tuple( false, false, false, true, true) } ,
+				{ JumpOp:: UnconditionalRegister , std::make_tuple( false, false, false, false, false) } ,
+				{ JumpOp:: UnconditionalRegisterLink , std::make_tuple( false, false, false, false, true) } ,
+				{ JumpOp:: ConditionalTrueImmediate , std::make_tuple( false, true, false, true, false) } ,
+				{ JumpOp:: ConditionalTrueImmediateLink , std::make_tuple( false, true, false, true, true) } ,
+				{ JumpOp:: ConditionalTrueRegister , std::make_tuple( false, true, false, false, false) } ,
+				{ JumpOp:: ConditionalTrueRegisterLink , std::make_tuple( false, true, false, false, true) } ,
+				{ JumpOp:: ConditionalFalseImmediate , std::make_tuple( false, true, true, true, false) } ,
+				{ JumpOp:: ConditionalFalseImmediateLink , std::make_tuple( false, true, true, true, true) } ,
+				{ JumpOp:: ConditionalFalseRegister , std::make_tuple( false, true, true, false, false) } ,
+				{ JumpOp:: ConditionalFalseRegisterLink , std::make_tuple( false, true, true, false, true) } ,
+				{ JumpOp:: IfThenElseNormalPredTrue , std::make_tuple( true, true, false, false, false) } ,
+				{ JumpOp:: IfThenElseNormalPredFalse , std::make_tuple( true, true, true, false, false) } ,
+				{ JumpOp:: IfThenElseLinkPredTrue , std::make_tuple( true, true, false, false, true) } ,
+				{ JumpOp:: IfThenElseLinkPredFalse , std::make_tuple( true, true, true, false, true) } ,
 			};
 			auto ifthenelse = false, conditional = false, iffalse = false, immediate = false,  link = false;
 			auto result = translationTable.find(static_cast<JumpOp>(getOperation()));
