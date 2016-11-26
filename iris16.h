@@ -32,10 +32,18 @@ namespace iris16 {
 #include "iris16_defines.h"
 
 namespace iris16 {
+	using ExtendedDataMemory = iris::LoadStoreUnit<word, dword>;
+	using SharedExtendedDataMemory = std::shared_ptr<ExtendedDataMemory>;
+	template<word capacity>
+	using WordMemorySpace = iris::FixedSizeLoadStoreUnit<word, word, capacity>;
+	using WordMemorySpace64k = WordMemorySpace<ArchitectureConstants::AddressMax>;
+	using ALU = iris::ALU<word>;
+	using CompareUnit = iris::Comparator<word>;
+	using RegisterFile = WordMemorySpace<ArchitectureConstants::RegisterCount>;
 	class Core : public iris::Core {
 		public:
 			Core() noexcept;
-			Core(std::shared_ptr<word> data, dword size) noexcept;
+			Core(SharedExtendedDataMemory xData) noexcept;
 			virtual ~Core();
 			virtual void initialize() override { }
 			virtual void installprogram(std::istream& stream) override;
@@ -43,8 +51,6 @@ namespace iris16 {
 			virtual void dump(std::ostream& stream) override;
 			virtual void run() override;
 			virtual void link(std::istream& input) override;
-			word* registerMapping(byte index);
-			word* dataMapping(word index);
 			inline void setInstructionMemory(word address, dword value) noexcept { instruction[address] = value; }
 			inline void setDataMemory(word address, word value) noexcept         { data[address] = value; }
 			inline dword getInstructionMemory(word address) noexcept             { return instruction[address]; }
@@ -55,37 +61,43 @@ namespace iris16 {
 		private:
 			word& getStackPointer() noexcept { return gpr[ArchitectureConstants::StackPointerIndex]; }
 			word& getInstructionPointer() noexcept { return gpr[ArchitectureConstants::InstructionPointerIndex]; }
+			word& getLinkRegister() noexcept { return gpr[ArchitectureConstants::LinkRegisterIndex]; }
 		private:
 			void dispatch();
             inline byte getDestination() const noexcept { return decodeDestination(current); }
             inline byte getSource0() const noexcept { return decodeSource0(current); }
             inline byte getSource1() const noexcept { return decodeSource1(current); }
-            inline byte getImmediate() const noexcept { return decodeImmediate(current); }
+			inline word getHalfImmediate() const noexcept { return static_cast<word>(getSource1()); }
+            inline word getImmediate() const noexcept { return decodeImmediate(current); }
             inline byte getOperation() const noexcept { return decodeOperation(current); }
             inline byte getGroup() const noexcept { return decodeGroup(current); }
 			inline word& destinationRegister() noexcept { return gpr[getDestination()]; }
 			inline word& source0Register() noexcept { return gpr[getSource0()]; }
 			inline word& source1Register() noexcept { return gpr[getSource1()]; }
 
-#define X(_, op) void op();
-#include "def/iris16/groups.def"
-#include "def/iris16/misc.def"
-#undef X
+		private:
+			template<typename Unit>
+			void performOperation(Unit& unit, typename Unit::Operation op, bool immediate) {
+				destinationRegister() = unit.performOperation(op, source0Register(), (immediate ? getHalfImmediate() : source1Register()));
+			}
+			template<typename Unit>
+			inline void performOperation(Unit& unit, std::tuple<typename Unit::Operation, bool>& tuple) {
+				typename Unit::Operation op;
+				bool immediate = false;
+				std::tie(op, immediate) = tuple;
+				performOperation(unit, op, immediate);
+			}
 
 		private:
-			std::shared_ptr<word> extendedData;
-			dword extendedMemorySize = 0;
 			bool execute = true,
 				 advanceIp = true;
-            iris::Comparator<word> _compare;
-            iris::ALU<word> _alu;
-			template<word capacity>
-			using WordMemorySpace = iris::FixedSizeLoadStoreUnit<word, word, capacity>;
-			using WordMemorySpace64k = WordMemorySpace<ArchitectureConstants::AddressMax>;
-			WordMemorySpace<ArchitectureConstants::RegisterCount> gpr;
+			CompareUnit _compare;
+			ALU _alu;
+			RegisterFile gpr;
 			WordMemorySpace64k data;
 			iris::FixedSizeLoadStoreUnit<dword, word, ArchitectureConstants::AddressMax> instruction;
 			WordMemorySpace64k stack;
+			SharedExtendedDataMemory extendedData;
 			raw_instruction current = 0;
 	};
 

@@ -11,7 +11,7 @@ namespace iris16 {
 
 
 	Core::~Core() { 
-    }
+	}
 
 	void Core::installprogram(std::istream& stream) {
 		auto encodeWord = [](char* buf) { return iris16::encodeWord(buf[0], buf[1]); };
@@ -35,227 +35,191 @@ namespace iris16 {
 			if (!advanceIp) {
 				advanceIp = true;
 			}
-			current = instruction[gpr[ArchitectureConstants::InstructionPointerIndex]];
+			current = instruction[getInstructionPointer()];
 			dispatch();
 			if (advanceIp) {
-				++gpr[ArchitectureConstants::InstructionPointerIndex];
+				++getInstructionPointer();
 			}
 		}
 	}
 	void Core::dispatch() {
 		auto group = static_cast<InstructionGroup>(getGroup());
-        switch (group) {
-            case InstructionGroup::Arithmetic:
-                arithmetic();
-                break;
-            case InstructionGroup::Compare:
-                compare();
-                break;
-            case InstructionGroup::Misc:
-                misc();
-                break;
-            case InstructionGroup::Jump:
-                jump();
-                break;
-            case InstructionGroup::Move:
-                move();
-                break;
-            default: {
-                        std::stringstream stream;
-                        stream << "Illegal instruction group " << getGroup();
-                        execute = false;
-                        throw iris::Problem(stream.str());
-                     }
-        }
-	}
-    using Comparator = iris::Comparator<word>;
-	void Core::compare() {
-        static std::map<CompareOp, std::tuple<Comparator::Operation, bool>> translationTable = {
-            { CompareOp::LessThan, std::make_tuple(Comparator::Operation::LessThan, false) },
-            { CompareOp::LessThanImm, std::make_tuple(Comparator::Operation::LessThan, true) },
-            { CompareOp::LessThanOrEqualTo, std::make_tuple(Comparator::Operation::LessThanOrEqualTo, false) },
-            { CompareOp::LessThanOrEqualToImm, std::make_tuple(Comparator::Operation::LessThanOrEqualTo, true) },
-            { CompareOp::GreaterThan, std::make_tuple(Comparator::Operation::GreaterThan, false) },
-            { CompareOp::GreaterThanImm, std::make_tuple(Comparator::Operation::GreaterThan, true) },
-            { CompareOp::GreaterThanOrEqualTo, std::make_tuple(Comparator::Operation::GreaterThanOrEqualTo, false) },
-            { CompareOp::GreaterThanOrEqualToImm, std::make_tuple(Comparator::Operation::GreaterThanOrEqualTo, true) },
-            { CompareOp::Eq, std::make_tuple(Comparator::Operation::Eq, false) },
-            { CompareOp::EqImm, std::make_tuple(Comparator::Operation::Eq, true) },
-            { CompareOp::Neq, std::make_tuple(Comparator::Operation::Neq, false) },
-            { CompareOp::NeqImm, std::make_tuple(Comparator::Operation::Neq, true) },
-        };
-        auto result = translationTable.find(static_cast<CompareOp>(getOperation()));
-        if (result == translationTable.end()) {
-            std::stringstream stream;
-            stream << "Illegal compare code " << getOperation();
-            execute = false;
-            advanceIp = false;
-            throw iris::Problem(stream.str());
-        }
-        bool imm = false;
-        Comparator::Operation backingOperation;
-        std::tie(backingOperation, imm) = result->second;
-        gpr[getDestination()] = _compare.performOperation(backingOperation, gpr[getSource0()], (imm ? static_cast<word>(getSource1()) : gpr[getSource1()]));
-	}
-    using ALU = iris::ALU<word>;
-	void Core::arithmetic() {
-        static std::map<ArithmeticOp, std::tuple<ALU::Operation, bool, bool>> table = {
-            { ArithmeticOp::Add, std::make_tuple( ALU::Operation::Add , false, false ) },
-            { ArithmeticOp::Sub, std::make_tuple( ALU::Operation::Subtract , false, false ) },
-            { ArithmeticOp::Mul, std::make_tuple( ALU::Operation::Multiply , false, false ) } ,
-            { ArithmeticOp::Div, std::make_tuple( ALU::Operation::Divide , false, false ) },
-            { ArithmeticOp::Rem, std::make_tuple( ALU::Operation::Remainder , false, false ) },
-            { ArithmeticOp::ShiftLeft, std::make_tuple( ALU::Operation::ShiftLeft , false, false ) },
-            { ArithmeticOp::ShiftRight, std::make_tuple( ALU::Operation::ShiftRight , false, false ) },
-            { ArithmeticOp::BinaryAnd, std::make_tuple( ALU::Operation::BinaryAnd , false, false ) },
-            { ArithmeticOp::BinaryOr, std::make_tuple( ALU::Operation::BinaryOr , false, false ) },
-            { ArithmeticOp::BinaryNot, std::make_tuple( ALU::Operation::UnaryNot , false, true ) },
-            { ArithmeticOp::BinaryXor, std::make_tuple( ALU::Operation::BinaryXor , false, false ) },
-            { ArithmeticOp::AddImmediate, std::make_tuple( ALU::Operation::Add , true , false ) },
-            { ArithmeticOp::SubImmediate, std::make_tuple( ALU::Operation::Subtract , true , false ) },
-            { ArithmeticOp::MulImmediate, std::make_tuple( ALU::Operation::Multiply , true , false ) } ,
-            { ArithmeticOp::DivImmediate, std::make_tuple( ALU::Operation::Divide , true , false ) },
-            { ArithmeticOp::RemImmediate, std::make_tuple( ALU::Operation::Remainder , true , false ) },
-            { ArithmeticOp::ShiftLeftImmediate, std::make_tuple( ALU::Operation::ShiftLeft , true, false ) },
-            { ArithmeticOp::ShiftRightImmediate, std::make_tuple( ALU::Operation::ShiftRight , true, false ) },
-        };
-        auto result = table.find(static_cast<ArithmeticOp>(getOperation()));
-        if (result == table.end()) {
-            std::stringstream stream;
-            stream << "Illegal arithmetic operation " << getOperation();
-            execute = false;
-            throw iris::Problem(stream.str());
-        }
-        auto immediate = false,
-             unary = false;
-        ALU::Operation backingOp;
-        std::tie(backingOp, immediate, unary) = result->second;
-        gpr[getDestination()] =  _alu.performOperation(backingOp, gpr[getSource0()], (unary ? 0 : static_cast<word>(immediate ? getSource1() : gpr[getSource1()])));
-	}
-	void Core::jump() {
-        static std::map<JumpOp, std::tuple<bool, bool, bool, bool, bool>> translationTable = {
+		if (group == InstructionGroup::Arithmetic) {
+			static std::map<ArithmeticOp, std::tuple<ALU::Operation, bool>> table = {
+				{ ArithmeticOp::Add, std::make_tuple(ALU::Operation::Add , false) },
+				{ ArithmeticOp::Sub, std::make_tuple(ALU::Operation::Subtract , false ) },
+				{ ArithmeticOp::Mul, std::make_tuple(ALU::Operation::Multiply , false ) } ,
+				{ ArithmeticOp::Div, std::make_tuple(ALU::Operation::Divide , false ) },
+				{ ArithmeticOp::Rem, std::make_tuple(ALU::Operation::Remainder , false ) },
+				{ ArithmeticOp::ShiftLeft, std::make_tuple(ALU::Operation::ShiftLeft , false ) },
+				{ ArithmeticOp::ShiftRight, std::make_tuple(ALU::Operation::ShiftRight , false ) },
+				{ ArithmeticOp::BinaryAnd, std::make_tuple(ALU::Operation::BinaryAnd , false ) },
+				{ ArithmeticOp::BinaryOr, std::make_tuple(ALU::Operation::BinaryOr , false ) },
+				{ ArithmeticOp::BinaryNot, std::make_tuple(ALU::Operation::UnaryNot , false) },
+				{ ArithmeticOp::BinaryXor, std::make_tuple(ALU::Operation::BinaryXor , false ) },
+				{ ArithmeticOp::AddImmediate, std::make_tuple(ALU::Operation::Add , true  ) },
+				{ ArithmeticOp::SubImmediate, std::make_tuple(ALU::Operation::Subtract , true  ) },
+				{ ArithmeticOp::MulImmediate, std::make_tuple(ALU::Operation::Multiply , true  ) } ,
+				{ ArithmeticOp::DivImmediate, std::make_tuple(ALU::Operation::Divide , true  ) },
+				{ ArithmeticOp::RemImmediate, std::make_tuple(ALU::Operation::Remainder , true  ) },
+				{ ArithmeticOp::ShiftLeftImmediate, std::make_tuple(ALU::Operation::ShiftLeft , true ) },
+				{ ArithmeticOp::ShiftRightImmediate, std::make_tuple(ALU::Operation::ShiftRight , true ) },
+			};
+			auto result = table.find(static_cast<ArithmeticOp>(getOperation()));
+			if (result == table.end()) {
+				std::stringstream stream;
+				stream << "Illegal arithmetic operation " << getOperation();
+				execute = false;
+				throw iris::Problem(stream.str());
+			} else {
+				performOperation(_alu, result->second);
+			}
+		} else if (group == InstructionGroup::Compare) {
+			static std::map<CompareOp, std::tuple<CompareUnit::Operation, bool>> translationTable = {
+				{ CompareOp::LessThan, std::make_tuple(CompareUnit::Operation::LessThan, false) },
+				{ CompareOp::LessThanImm, std::make_tuple(CompareUnit::Operation::LessThan, true) },
+				{ CompareOp::LessThanOrEqualTo, std::make_tuple(CompareUnit::Operation::LessThanOrEqualTo, false) },
+				{ CompareOp::LessThanOrEqualToImm, std::make_tuple(CompareUnit::Operation::LessThanOrEqualTo, true) },
+				{ CompareOp::GreaterThan, std::make_tuple(CompareUnit::Operation::GreaterThan, false) },
+				{ CompareOp::GreaterThanImm, std::make_tuple(CompareUnit::Operation::GreaterThan, true) },
+				{ CompareOp::GreaterThanOrEqualTo, std::make_tuple(CompareUnit::Operation::GreaterThanOrEqualTo, false) },
+				{ CompareOp::GreaterThanOrEqualToImm, std::make_tuple(CompareUnit::Operation::GreaterThanOrEqualTo, true) },
+				{ CompareOp::Eq, std::make_tuple(CompareUnit::Operation::Eq, false) },
+				{ CompareOp::EqImm, std::make_tuple(CompareUnit::Operation::Eq, true) },
+				{ CompareOp::Neq, std::make_tuple(CompareUnit::Operation::Neq, false) },
+				{ CompareOp::NeqImm, std::make_tuple(CompareUnit::Operation::Neq, true) },
+			};
+			auto result = translationTable.find(static_cast<CompareOp>(getOperation()));
+			if (result == translationTable.end()) {
+				std::stringstream stream;
+				stream << "Illegal compare code " << getOperation();
+				execute = false;
+				advanceIp = false;
+				throw iris::Problem(stream.str());
+			} else {
+				performOperation(_compare, result->second);
+			}
+		} else if (group == InstructionGroup::Misc) {
+			auto op = static_cast<MiscOp>(getOperation());
+			if (op == MiscOp::SystemCall) {
+				auto target = static_cast<SystemCalls>(getDestination());
+				if (target == SystemCalls::Terminate) {
+					execute = false;
+					advanceIp = false;
+				} else if (target == SystemCalls::PutC) {
+					// read register 0 and register 1
+					std::cout.put(static_cast<char>(source0Register()));
+				} else if (target == SystemCalls::GetC) {
+					auto value = static_cast<byte>(0);
+					std::cin >> std::noskipws >> value;
+					source0Register() = static_cast<word>(value);
+				} else if (target == SystemCalls::InitializeXMem) {
+					// just load the given storage size into r0 and r1
+					auto xSize = extendedData->getSize();
+					source0Register() = iris::decodeBits<dword, word, 0x0000FFFF, 0>(xSize);
+					source1Register() = iris::decodeBits<dword, word, 0xFFFF0000, 16>(xSize);
+				} else {
+					std::stringstream stream;
+					stream << "Illegal system call " << std::hex << getDestination();
+					execute = false;
+					advanceIp = false;
+					throw iris::Problem(stream.str());
+				}
+			} else {
+				std::stringstream ss;
+				ss << "Illegal misc code " << getOperation();
+				execute = false;
+				advanceIp = false;
+				throw iris::Problem(ss.str());
+			}
+		} else if (group == InstructionGroup::Jump) {
+			static std::map<JumpOp, std::tuple<bool, bool, bool, bool, bool>> translationTable = {
 #define X(name, _ifthenelse, _conditional, _iffalse, _immediate, _link) \
-            { JumpOp:: name , std::make_tuple( _ifthenelse, _conditional, _iffalse, _immediate, _link) } ,
+				{ JumpOp:: name , std::make_tuple( _ifthenelse, _conditional, _iffalse, _immediate, _link) } ,
 #include "def/iris16/jump.def"
 #undef X
-        };
-		auto ifthenelse = false, conditional = false, iffalse = false, immediate = false,  link = false;
-		auto result = translationTable.find(static_cast<JumpOp>(getOperation()));
-        if (result == translationTable.end()) {
-            std::stringstream ss;
-            ss << "Illegal jump code " << std::hex << static_cast<int>(getOperation());
-            execute =  false;
-            throw iris::Problem(ss.str());
-        }
-        std::tie(ifthenelse, conditional, iffalse, immediate, link) = result->second;
-		auto newAddr = static_cast<word>(0);
-		auto cond = true;
-		advanceIp = false;
-		auto ip = gpr[ArchitectureConstants::InstructionPointerIndex];
-		if (conditional) {
-			auto dest = gpr[getDestination()];
-			cond = (iffalse ? (dest == 0) : (dest != 0));
-			if (ifthenelse) {
-				newAddr = gpr[cond ? getSource0() : getSource1()];
+			};
+			auto ifthenelse = false, conditional = false, iffalse = false, immediate = false,  link = false;
+			auto result = translationTable.find(static_cast<JumpOp>(getOperation()));
+			if (result == translationTable.end()) {
+				std::stringstream ss;
+				ss << "Illegal jump code " << std::hex << static_cast<int>(getOperation());
+				execute =  false;
+				throw iris::Problem(ss.str());
+			}
+			std::tie(ifthenelse, conditional, iffalse, immediate, link) = result->second;
+			auto newAddr = static_cast<word>(0);
+			auto cond = true;
+			advanceIp = false;
+			auto ip = getInstructionPointer();
+			if (conditional) {
+				auto dest = destinationRegister();
+				cond = (iffalse ? (dest == 0) : (dest != 0));
+				if (ifthenelse) {
+					newAddr = gpr[cond ? getSource0() : getSource1()];
+				} else {
+					newAddr = cond ? (immediate ? getImmediate() : source0Register()) : ip + 1;
+				}
 			} else {
-				newAddr = cond ? (immediate ? getImmediate() : gpr[getSource0()]) : ip + 1;
+				newAddr = immediate ? getImmediate() : destinationRegister();
+			}
+			getInstructionPointer() = newAddr;
+			if (link && cond) {
+				getLinkRegister() = ip + 1;
+			}
+		} else if (group == InstructionGroup::Move) {
+			auto op = static_cast<MoveOp>(getOperation());
+			if (op == MoveOp::Move) {
+				gpr.copy(getDestination(), getSource0());
+			} else if (op == MoveOp::Set) {
+				gpr.set(getDestination(), getImmediate());
+			} else if (op == MoveOp::Swap) {
+				gpr.swap(getDestination(), getSource0());
+			} else if (op == MoveOp::Load) {
+				gpr.set(getDestination(), data[source0Register()]);
+			} else if (op == MoveOp::LoadImmediate) {
+				gpr.set(getDestination(), data[getImmediate()]);
+			} else if (op == MoveOp::Store) {
+				data.set(destinationRegister(), source0Register());
+			} else if (op == MoveOp::Memset) {
+				data.set(destinationRegister(), getImmediate());
+			} else if (op == MoveOp::Push) {
+				stack[++getStackPointer()] = destinationRegister();
+			} else if (op == MoveOp::PushImmediate) {
+				stack[++getStackPointer()] = getImmediate();
+			} else if (op == MoveOp::Pop) {
+				destinationRegister() = stack[getStackPointer()];
+				--getStackPointer();
+			} else if (op == MoveOp::LoadCode) {
+				auto result = instruction[destinationRegister()];
+				source0Register() = iris::getLowerHalf(result);
+				source1Register() = iris::getUpperHalf(result);
+			} else if (op == MoveOp::StoreCode) {
+				instruction[destinationRegister()] = encodeDword(source0Register(), source1Register());
+			} else if (op == MoveOp::ExtendedMemoryWrite) {
+				// store destination in the address described by source0 and source1
+				auto result = destinationRegister();
+				auto lower = source0Register();
+				auto upper = source1Register();
+				// build an address out of this
+				setExtendedDataMemory(iris::encodeUint32LE(lower, upper), result);
+			} else if (op == MoveOp::ExtendedMemoryRead) {
+				auto lower = source0Register();
+				auto upper = source1Register();
+				// build an address out of this
+				destinationRegister() = getExtendedDataMemory(iris::encodeUint32LE(lower, upper));
+			} else {
+				std::stringstream ss;
+				ss << "Illegal move code " << getOperation();
+				execute = false;
+				advanceIp = false;
+				throw iris::Problem(ss.str());
 			}
 		} else {
-			newAddr = immediate ? getImmediate() : gpr[getDestination()];
-		}
-		gpr[ArchitectureConstants::InstructionPointerIndex] = newAddr;
-		if (link && cond) {
-			gpr[ArchitectureConstants::LinkRegisterIndex] = ip + 1;
-		}
-	}
-
-	void Core::misc() {
-		auto op = static_cast<MiscOp>(getOperation());
-#define X(name, func) \
-		if (op == MiscOp:: name) { \
-			func () ; \
-			return; \
-		}
-#include "def/iris16/misc.def"
-#undef X
-		std::stringstream ss;
-		ss << "Illegal misc code " << getOperation();
-		execute = false;
-		advanceIp = false;
-		throw iris::Problem(ss.str());
-	}
-	void Core::systemCall() {
-		auto target = static_cast<SystemCalls>(getDestination());
-		if (target == SystemCalls::Terminate) {
-			execute = false;
-			advanceIp = false;
-		} else if (target == SystemCalls::PutC) {
-			// read register 0 and register 1
-			std::cout.put(static_cast<char>(gpr[getSource0()]));
-		} else if (target == SystemCalls::GetC) {
-			auto value = static_cast<byte>(0);
-			std::cin >> std::noskipws >> value;
-			gpr[getSource0()] = static_cast<word>(value);
-		} else if (target == SystemCalls::InitializeXMem) {
-			// just load the given storage size into r0 and r1
-			gpr[getSource0()] = iris::decodeBits<dword, word, 0x0000FFFF, 0>(extendedMemorySize);
-			gpr[getSource1()] = iris::decodeBits<dword, word, 0xFFFF0000, 16>(extendedMemorySize);
-		} else {
 			std::stringstream stream;
-			stream << "Illegal system call " << std::hex << getDestination();
+			stream << "Illegal instruction group " << getGroup();
 			execute = false;
-			advanceIp = false;
 			throw iris::Problem(stream.str());
-		}
-	}
-	void Core::move() {
-		auto op = static_cast<MoveOp>(getOperation());
-		if (op == MoveOp::Move) {
-			gpr.copy(getDestination(), getSource0());
-		} else if (op == MoveOp::Set) {
-			gpr.set(getDestination(), static_cast<word>(getImmediate()));
-		} else if (op == MoveOp::Swap) {
-			gpr.swap(getDestination(), getSource0());
-		} else if (op == MoveOp::Load) {
-			gpr.set(getDestination(), data[source0Register()]);
-		} else if (op == MoveOp::LoadImmediate) {
-			gpr.set(getDestination(), data[static_cast<word>(getImmediate())]);
-		} else if (op == MoveOp::Store) {
-			data.set(destinationRegister(), source0Register());
-		} else if (op == MoveOp::Memset) {
-			data.set(destinationRegister(), static_cast<word>(getImmediate()));
-		} else if (op == MoveOp::Push) {
-			stack[++getStackPointer()] = destinationRegister();
-		} else if (op == MoveOp::PushImmediate) {
-			stack[++getStackPointer()] = static_cast<word>(getImmediate());
-		} else if (op == MoveOp::Pop) {
-			destinationRegister() = stack[getStackPointer()];
-			--getStackPointer();
-		} else if (op == MoveOp::LoadCode) {
-			auto result = instruction[destinationRegister()];
-			source0Register() = iris::getLowerHalf(result);
-			source1Register() = iris::getUpperHalf(result);
-		} else if (op == MoveOp::StoreCode) {
-			instruction[destinationRegister()] = encodeDword(source0Register(), source1Register());
-		} else if (op == MoveOp::ExtendedMemoryWrite) {
-			// store destination in the address described by source0 and source1
-			auto result = destinationRegister();
-			auto lower = source0Register();
-			auto upper = source1Register();
-				gpr[getSource1()];
-			// build an address out of this
-			setExtendedDataMemory(iris::encodeUint32LE(lower, upper), result);
-		} else if (op == MoveOp::ExtendedMemoryRead) {
-			auto lower = source0Register();
-			auto upper = source1Register();
-			// build an address out of this
-			destinationRegister() = getExtendedDataMemory(iris::encodeUint32LE(lower, upper));
-		} else {
-			std::stringstream ss;
-			ss << "Illegal move code " << getOperation();
-			execute = false;
-			advanceIp = false;
-			throw iris::Problem(ss.str());
 		}
 	}
 
@@ -305,35 +269,13 @@ namespace iris16 {
 	}
 
 	Core::Core() noexcept { }
-	Core::Core(std::shared_ptr<word> extendedMemory, dword size) noexcept : extendedData(extendedMemory), extendedMemorySize(size) { }
+	Core::Core(SharedExtendedDataMemory xData) noexcept : extendedData(xData) { }
 
-	word* Core::dataMapping(word address) {
-		return &data[address];
-	}
-	word* Core::registerMapping(byte index) {
-		return &gpr[index];
-	}
 	void Core::setExtendedDataMemory(dword address, word value) {
-		if (extendedMemorySize != 0) {
-			if (address < extendedMemorySize) {
-				extendedData.get()[address] = value;
-			} else {
-				throw iris::Problem("Attempted to write to an address outside the mapped extended memory range");
-			}
-		} else {
-			throw iris::Problem("Attempted to write to non existent extended memory!");
-		}
+		extendedData->operator[](address) = value;
 	}
 
 	word Core::getExtendedDataMemory(dword address) {
-		if (extendedMemorySize != 0) {
-			if (address < extendedMemorySize) {
-				return extendedData.get()[address];
-			} else {
-				throw iris::Problem("Attempted to read from an address outside the mapped extended memory range");
-			}
-		} else {
-			throw iris::Problem("Attempted to read from non existent extended memory!");
-		}
+		return extendedData->operator[](address);
 	}
 }

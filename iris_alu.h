@@ -118,7 +118,11 @@ class Comparator {
 template<typename Word, typename Address = Word>
 class LoadStoreUnit {
 	public:
+		using WordType = Word;
+		using AddressType = Address;
+	public:
 		LoadStoreUnit(Address size) : _memory(std::move(std::make_unique<Word[]>(size))), _size(size) { }
+		LoadStoreUnit() : LoadStoreUnit(0) { }
 		virtual ~LoadStoreUnit() { }
 		inline Address getSize() const noexcept { return _size; }
 		inline bool legalAddress(Address addr) const noexcept {
