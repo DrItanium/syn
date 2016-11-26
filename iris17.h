@@ -54,21 +54,13 @@ using ALU = iris::ALU<word>;
 using CompareUnit = iris::Comparator<word>;
 /// Represents the execution state of a thread of execution
 struct ExecState {
-	public:
-		inline word& getStackPointer() noexcept { return _stackPointer; }
-		inline word& getInstructionPointer() noexcept { return _instructionPointer; }
-		inline word& getLinkRegister() noexcept { return _linkRegister; }
-		inline word& getConditionRegister() noexcept { return _conditionRegister; }
-		inline word& getThreadIndexRegister() noexcept { return _threadIndex; }
-	public:
-		bool advanceIp = true;
-		RegisterFile gpr;
-	private:
-		word _instructionPointer = 0;
-		word _linkRegister = 0;
-		word _stackPointer = 0;
-		word _conditionRegister = 0;
-		word _threadIndex = 0;
+    bool advanceIp = true;
+	RegisterFile gpr;
+	inline word& getStackPointer() noexcept { return gpr[ArchitectureConstants::StackPointerIndex]; }
+	inline word& getInstructionPointer() noexcept { return gpr[ArchitectureConstants::InstructionPointerIndex]; }
+	inline word& getLinkRegister() noexcept { return gpr[ArchitectureConstants::LinkRegisterIndex]; }
+	inline word& getConditionRegister() noexcept { return gpr[ArchitectureConstants::ConditionRegisterIndex]; }
+	inline word& getThreadIndexRegister() noexcept { return gpr[ArchitectureConstants::ThreadIndex]; }
 };
 
 using SharedExecState = std::shared_ptr<ExecState>;
