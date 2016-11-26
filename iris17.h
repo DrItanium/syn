@@ -1,6 +1,7 @@
 #ifndef _TARGET_IRIS17_IRIS_H
 #define _TARGET_IRIS17_IRIS_H
 #include "iris_base.h"
+#include "iris_alu.h"
 #include "Core.h"
 #include <cstdint>
 #include <vector>
@@ -8,7 +9,6 @@
 
 
 namespace iris17 {
-	using dword = int64_t;
     using word = int32_t;
     using hword = int16_t;
     constexpr word encodeWord(byte, byte, byte, byte) noexcept;
@@ -20,6 +20,7 @@ namespace iris17 {
         StackPointerIndex = RegisterCount - 3,
         ConditionRegisterIndex = RegisterCount - 4,
         ThreadIndex = RegisterCount - 5,
+		UserRegisterCount = ThreadIndex,
 
         GroupMask = 0b00000111,
         RestMask = ~GroupMask,
@@ -33,28 +34,49 @@ namespace iris17 {
 namespace iris17 {
 class DecodedInstruction {
     public:
-        DecodedInstruction(word rinst);
-        word getRawValue() const { return raw; }
+        DecodedInstruction(word rinst) noexcept;
+		virtual ~DecodedInstruction() noexcept;
+        inline word getRawValue() const noexcept { return raw; }
         inline byte getDestination() const noexcept { return decodeDestination(raw); }
         inline byte getSource0() const noexcept { return decodeSource0(raw); }
         inline byte getSource1() const noexcept { return decodeSource1(raw); }
         inline hword getImmediate() const noexcept { return decodeImmediate(raw); }
-        inline byte getGroup() const noexcept { return decodeGroup(raw); }
+        inline InstructionGroup getGroup() const noexcept { return static_cast<InstructionGroup>(decodeGroup(raw)); }
         inline byte getOperation() const noexcept { return decodeOperation(raw); }
         inline byte getControl() const noexcept { return decodeControl(raw); }
+		template<typename Op>
+		inline Op getSubtype() const noexcept { return static_cast<Op>(getOperation()); }
     private:
         word raw;
 };
+using RegisterFile = iris::FixedSizeLoadStoreUnit<word, word, ArchitectureConstants::UserRegisterCount>;
+using ALU = iris::ALU<word>;
+using CompareUnit = iris::Comparator<word>;
 /// Represents the execution state of a thread of execution
 struct ExecState {
-    bool advanceIp = true;
-    word gpr[ArchitectureConstants::RegisterCount] = { 0 };
+	public:
+		inline word& getStackPointer() noexcept { return _stackPointer; }
+		inline word& getInstructionPointer() noexcept { return _instructionPointer; }
+		inline word& getLinkRegister() noexcept { return _linkRegister; }
+		inline word& getConditionRegister() noexcept { return _conditionRegister; }
+		inline word& getThreadIndexRegister() noexcept { return _threadIndex; }
+	public:
+		bool advanceIp = true;
+		RegisterFile gpr;
+	private:
+		word _instructionPointer = 0;
+		word _linkRegister = 0;
+		word _stackPointer = 0;
+		word _conditionRegister = 0;
+		word _threadIndex = 0;
 };
+
+using SharedExecState = std::shared_ptr<ExecState>;
 
 class Core : public iris::Core {
     public:
-        Core(word memorySize, byte numThreads);
-        ~Core();
+        Core(word memorySize, byte numThreads) noexcept;
+        ~Core() noexcept;
         virtual void initialize();
         virtual void installprogram(std::istream& stream);
         virtual void shutdown();
@@ -75,10 +97,11 @@ class Core : public iris::Core {
         void arithmetic(DecodedInstruction&& inst);
         void misc(DecodedInstruction&& inst);
     private:
-        word memorySize;
-        std::unique_ptr<word> memory;
-        std::shared_ptr<ExecState> thread;
-        std::vector<std::shared_ptr<ExecState>> threads;
+		ALU _alu;
+		CompareUnit _compare;
+		iris::LoadStoreUnit<word, word> memory;
+		SharedExecState thread;
+        std::vector<SharedExecState> threads;
         bool execute = true;
 };
 

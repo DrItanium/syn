@@ -12,32 +12,20 @@ namespace iris17 {
     constexpr word encodeWord(byte a, byte b, byte c, byte d)  noexcept {
         return iris::encodeInt32LE(a, b, c, d);
     }
-    DecodedInstruction::DecodedInstruction(word inst) : raw(inst) { }
+    DecodedInstruction::DecodedInstruction(word inst) noexcept : raw(inst) { }
+	DecodedInstruction::~DecodedInstruction() noexcept { }
+
 
     void Core::write(word addr, word value) {
-        if (addr >= 0 && addr < memorySize) {
-            memory.get()[addr] = value;
-        } else {
-            std::stringstream ss;
-            ss << "write: Address " << std::hex << addr << " is out of range of" << std::hex << memorySize;
-            execute = false;
-            throw iris::Problem(ss.str());
-        }
+		memory[addr] = value;
     }
     word Core::read(word address) {
-        if (address >= 0 && address < memorySize) {
-            return memory.get()[address];
-        } else {
-            std::stringstream ss;
-            ss << "read: Address " << std::hex << address << " is out of range of " << std::hex << memorySize;
-            execute = false;
-            throw iris::Problem(ss.str());
-        }
+		return memory[address];
     }
 
-    Core::Core(word msize, byte numThreads) : memorySize(msize), memory(new word[msize]), threads(numThreads) { }
+    Core::Core(word msize, byte numThreads) noexcept : memory(msize), threads(numThreads) { }
 
-    Core::~Core() { }
+    Core::~Core() noexcept { }
 
     void Core::installprogram(std::istream& stream) {
         // read directly from the assembler's output
@@ -53,41 +41,28 @@ namespace iris17 {
                     break;
                 }
             }
-            auto addr = word(a[0]);
-            addr = (addr & 0xFFFF00FF) | (word(a[1]) << 8);
-            addr = (addr & 0xFF00FFFF) | (word(a[2]) << 16);
-            addr = (addr & 0x00FFFFFF) | (word(a[3]) << 24);
+			auto addr = iris::encodeUint32LE(a[0], a[1], a[2], a[3]);
             stream.read(b, sizeof(word));
             if (stream.gcount() != sizeof(word)) {
                 std::cerr << "panic: provided data is not valid iris17 encoded assembler" << std::endl;
                 exit(1);
             }
-            auto data = word(b[0]);
-            data = (data & 0xFFFF00FF) | (word(b[1]) << 8);
-            data = (data & 0xFF00FFFF) | (word(b[2]) << 16);
-            data = (data & 0x00FFFFFF) | (word(b[3]) << 24);
+			auto data = iris::encodeUint32LE(b[0], b[1], b[2], b[3]);
             if (debugEnabled()) {
                 std::cerr << "install 0x" << std::hex << data
                     << " @ 0x" << std::hex << addr << std::endl;
             }
-            memory.get()[addr] = data;
+            memory[addr] = data;
         }
     }
     void Core::dump(std::ostream& stream) {
-        char storage[sizeof(word)] = { 0 };
-        for (word i = 0; i < memorySize; ++i) {
-            auto cell = memory.get()[i];
-            for (int j = 0; j < int(sizeof(word)); ++j) {
-                storage[j] = byte(cell >> (8 * j));
-            }
-            stream.write(storage, sizeof(word));
-        }
+		memory.dump(stream, [](word value, char* buf) { 
+				buf[0] = iris::decodeBits<word, byte, 0x000000FF, 0>(value);
+				buf[1] = iris::decodeBits<word, byte, 0x0000FF00, 8>(value);
+				buf[2] = iris::decodeBits<word, byte, 0x00FF0000, 16>(value);
+				buf[3] = iris::decodeBits<word, byte, static_cast<word>(0xFF000000), 24>(value);
+				});
     }
-    template<typename T, T value>
-        void invoke(Core* c, DecodedInstruction&& inst) {
-            throw "unimplemented invocation";
-        }
-
     // jump operations
     //template<bool ifthenelse, bool conditional, bool iffalse, bool immediate, bool link>
         void Core::jump(DecodedInstruction&& inst) {
@@ -99,88 +74,83 @@ namespace iris17 {
             auto iffalse = false;
             auto immediate = false;
             auto link = false;
-            auto op = static_cast<JumpOp>(inst.getOperation());
-            switch (op) {
-#define X(name, _ifthenelse, _conditional, _iffalse, _immediate, _link) \
-                case JumpOp :: name : \
-                                      ifthenelse = _ifthenelse; \
-                conditional = _conditional; \
-                immediate = _immediate; \
-                link = _link; \
-                break;
-#include "def/iris17/jump.def"
-#undef X
-                default:
-                    throw iris::Problem("undefined jump op!");
-            }
+			static std::map<JumpOp, std::tuple<bool, bool, bool, bool, bool>> translationTable = {
+				{ JumpOp:: UnconditionalRegister , std::make_tuple( false, false, false, false, false) } ,
+				{ JumpOp:: UnconditionalRegisterLink , std::make_tuple( false, false, false, false, true) } ,
+				{ JumpOp:: ConditionalTrueRegister , std::make_tuple( false, true, false, false, false) } ,
+				{ JumpOp:: ConditionalTrueRegisterLink , std::make_tuple( false, true, false, false, true) } ,
+				{ JumpOp:: ConditionalFalseRegister , std::make_tuple( false, true, true, false, false) } ,
+				{ JumpOp:: ConditionalFalseRegisterLink , std::make_tuple( false, true, true, false, true) } ,
+				{ JumpOp:: IfThenElseNormalPredTrue , std::make_tuple( true, true, false, false, false) } ,
+				{ JumpOp:: IfThenElseNormalPredFalse , std::make_tuple( true, true, true, false, false) } ,
+				{ JumpOp:: IfThenElseLinkPredTrue , std::make_tuple( true, true, false, false, true) } ,
+				{ JumpOp:: IfThenElseLinkPredFalse , std::make_tuple( true, true, true, false, true) } ,
+			};
+			auto result = translationTable.find(inst.getSubtype<JumpOp>());
+			if (result == translationTable.end()) {
+				throw iris::Problem("undefined jump op!");
+			}
+			std::tie(ifthenelse, conditional, iffalse, immediate, link) = result->second;
 
-            auto ip = thread->gpr[inst.getDestination()];
+			auto ip = thread->gpr[inst.getDestination()];
             if (conditional) {
-                auto dest = thread->gpr[inst.getDestination()];
+				auto dest = thread->gpr[inst.getDestination()];
                 cond = iffalse ? (dest == 0) : (dest != 0);
                 if (ifthenelse) {
-                    newAddr = thread->gpr[cond ? inst.getSource0() : inst.getSource1()];
+					newAddr = thread->gpr[cond ? inst.getSource0() : inst.getSource1()];
                 } else {
                     if (cond) {
-                        if(immediate) {
-                            newAddr = inst.getImmediate();
-                        } else {
-                            newAddr = thread->gpr[inst.getSource0()];
-                        }
+						newAddr = immediate ? inst.getImmediate() : thread->gpr[inst.getSource0()];
                     } else {
                         newAddr = ip + 1;
                     }
                 }
             } else {
-                if (immediate) {
-                    newAddr = inst.getImmediate();
-                } else {
-                    newAddr = thread->gpr[inst.getSource0()];
-                }
+				newAddr = immediate ? inst.getImmediate() : thread->gpr[inst.getSource0()];
             }
-            thread->gpr[ArchitectureConstants::InstructionPointerIndex] = newAddr;
+			thread->getInstructionPointer() = newAddr;
             if (link) {
                 if (conditional) {
                     if (cond) {
-                        thread->gpr[ArchitectureConstants::LinkRegisterIndex] = ip + 1;
+						thread->getLinkRegister() = ip + 1;
                     }
                 } else {
-                    thread->gpr[ArchitectureConstants::LinkRegisterIndex] = ip + 1;
+					thread->getLinkRegister() = ip + 1;
                 }
             }
         }
 
-
     // move operations
         void Core::move(DecodedInstruction&& inst) {
-            constexpr auto stackPointer = ArchitectureConstants::StackPointerIndex;
-            auto op = static_cast<MoveOp>(inst.getOperation());
+			auto op = inst.getSubtype<MoveOp>();
+			auto &dest = thread->gpr[inst.getDestination()];
             switch (op) {
                 case MoveOp::Store:
-                    write(thread->gpr[inst.getDestination()], thread->gpr[inst.getSource0()]);
+					write(dest, thread->gpr[inst.getSource0()]);
                     break;
                 case MoveOp::Push:
-                    --thread->gpr[stackPointer];
-                    write(thread->gpr[stackPointer], thread->gpr[inst.getDestination()]);
+					// use the ALU during the push operation
+					--thread->getStackPointer();
+					write(thread->getStackPointer(), dest);
                     break;
                 case MoveOp::Pop:
-                    thread->gpr[inst.getDestination()] = read(thread->gpr[stackPointer]);
-                    ++thread->gpr[stackPointer];
+					dest = read(thread->getStackPointer());
+					++thread->getStackPointer();
                     break;
                 case MoveOp::Load:
-                    thread->gpr[inst.getDestination()] = read(thread->gpr[inst.getSource0()]);
+					dest = read(thread->gpr[inst.getSource0()]);
                     break;
                 case MoveOp::Move:
-                    thread->gpr[inst.getDestination()] = thread->gpr[inst.getSource0()];
+					dest = thread->gpr[inst.getSource0()];
                     break;
                 case MoveOp::SetLower:
-                    thread->gpr[inst.getDestination()] = iris::encodeBits<word, hword, static_cast<word>(0xFFFF0000), 0>(thread->gpr[inst.getDestination()], inst.getImmediate());
+					dest = iris::setLowerHalf(dest, inst.getImmediate());
                     break;
                 case MoveOp::SetUpper:
-                    thread->gpr[inst.getDestination()] = iris::encodeBits<word, hword, 0x0000FFFF, 16>(thread->gpr[inst.getDestination()], inst.getImmediate());
+					dest = iris::setUpperHalf(dest, inst.getImmediate());
                     break;
                 case MoveOp::Swap:
-                    iris::swap(thread->gpr[inst.getDestination()], thread->gpr[inst.getSource0()]);
+					thread->gpr.swap(inst.getDestination(), inst.getSource0());
                     break;
                 default:
                     throw iris::Problem("Illegal move code!");
@@ -191,113 +161,59 @@ namespace iris17 {
         auto destination = current.getDestination();
         auto source0 = current.getSource0();
         auto source1 = current.getSource1();
-        auto op = static_cast<CompareOp>(current.getOperation());
-        switch (op) {
-            case CompareOp::Eq:
-                thread->gpr[destination] = iris::eq(thread->gpr[source0], thread->gpr[source1]);
-                break;
-            case CompareOp::Neq:
-                thread->gpr[destination] = iris::neq(thread->gpr[source0],  thread->gpr[source1]);
-                break;
-            case CompareOp::LessThan:
-                thread->gpr[destination] = iris::lt(thread->gpr[source0], thread->gpr[source1]);
-                break;
-            case CompareOp::GreaterThan:
-                thread->gpr[destination] = iris::gt(thread->gpr[source0], thread->gpr[source1]);
-                break;
-            case CompareOp::LessThanOrEqualTo:
-                thread->gpr[destination] = iris::le(thread->gpr[source0], thread->gpr[source1]);
-                break;
-            case CompareOp::GreaterThanOrEqualTo:
-                thread->gpr[destination] = iris::ge(thread->gpr[source0], thread->gpr[source1]);
-                break;
-            case CompareOp::EqImm:
-                thread->gpr[destination] = iris::eq(thread->gpr[source0], static_cast<word>(source1));
-                break;
-            case CompareOp::NeqImm:
-                thread->gpr[destination] = iris::neq(thread->gpr[source0], static_cast<word>(source1));
-                break;
-            case CompareOp::LessThanImm:
-                thread->gpr[destination] = iris::lt(thread->gpr[source0], static_cast<word>(source1));
-                break;
-            case CompareOp::GreaterThanImm:
-                thread->gpr[destination] = iris::gt(thread->gpr[source0], static_cast<word>(source1));
-                break;
-            case CompareOp::LessThanOrEqualToImm:
-                thread->gpr[destination] = iris::le(thread->gpr[source0], static_cast<word>(source1));
-                break;
-            case CompareOp::GreaterThanOrEqualToImm:
-                thread->gpr[destination] = iris::ge(thread->gpr[source0], static_cast<word>(source1));
-                break;
-            default:
-                throw iris::Problem("Illegal compare instruction!");
-        }
+		static std::map<CompareOp, std::tuple<CompareUnit::Operation, bool>> translationTable = {
+			{ CompareOp::LessThan, std::make_tuple(CompareUnit::Operation::LessThan, false) },
+			{ CompareOp::LessThanImm, std::make_tuple(CompareUnit::Operation::LessThan, true) },
+			{ CompareOp::LessThanOrEqualTo, std::make_tuple(CompareUnit::Operation::LessThanOrEqualTo, false) },
+			{ CompareOp::LessThanOrEqualToImm, std::make_tuple(CompareUnit::Operation::LessThanOrEqualTo, true) },
+			{ CompareOp::GreaterThan, std::make_tuple(CompareUnit::Operation::GreaterThan, false) },
+			{ CompareOp::GreaterThanImm, std::make_tuple(CompareUnit::Operation::GreaterThan, true) },
+			{ CompareOp::GreaterThanOrEqualTo, std::make_tuple(CompareUnit::Operation::GreaterThanOrEqualTo, false) },
+			{ CompareOp::GreaterThanOrEqualToImm, std::make_tuple(CompareUnit::Operation::GreaterThanOrEqualTo, true) },
+			{ CompareOp::Eq, std::make_tuple(CompareUnit::Operation::Eq, false) },
+			{ CompareOp::EqImm, std::make_tuple(CompareUnit::Operation::Eq, true) },
+			{ CompareOp::Neq, std::make_tuple(CompareUnit::Operation::Neq, false) },
+			{ CompareOp::NeqImm, std::make_tuple(CompareUnit::Operation::Neq, true) },
+		};
+		auto result = translationTable.find(current.getSubtype<CompareOp>());
+		if (result == translationTable.end()) {
+			throw iris::Problem("Illegal compare operation!");
+		}
+		CompareUnit::Operation op;
+		bool immediate;
+		std::tie(op, immediate) = result->second;
+		thread->gpr[destination] = _compare.performOperation(op, thread->gpr[source0], immediate ? static_cast<word>(source1) : thread->gpr[source1]);
     }
 
     void Core::arithmetic(DecodedInstruction&& inst) {
-        auto op = static_cast<ArithmeticOp>(inst.getOperation());
-        auto checkDenominator = op == ArithmeticOp::Div || op == ArithmeticOp::Rem || op == ArithmeticOp::DivImmediate || op == ArithmeticOp::RemImmediate;
-        auto immediate = op == ArithmeticOp::AddImmediate || 
-            op == ArithmeticOp::DivImmediate || 
-            op == ArithmeticOp::RemImmediate || 
-            op == ArithmeticOp::SubImmediate ||
-            op == ArithmeticOp::MulImmediate ||
-            op == ArithmeticOp::ShiftLeftImmediate ||
-            op == ArithmeticOp::ShiftRightImmediate;
-        auto src1 = static_cast<word>(immediate ? inst.getSource1() : thread->gpr[inst.getSource1()]);
-
-        if (checkDenominator) {
-            if (src1 == 0) {
-                throw iris::Problem("denominator is zero!");
-            }
-        }
-        auto src0 = thread->gpr[inst.getSource0()];
-        auto &result = thread->gpr[inst.getDestination()];
-        switch (op) {
-            case ArithmeticOp::Add:
-            case ArithmeticOp::AddImmediate:
-                result = iris::add(src0, src1);
-                break;
-            case ArithmeticOp::Sub:
-            case ArithmeticOp::SubImmediate:
-                result = iris::sub(src0, src1);
-                break;
-            case ArithmeticOp::Mul:
-            case ArithmeticOp::MulImmediate:
-                result = iris::mul(src0, src1);
-                break;
-            case ArithmeticOp::Div:
-            case ArithmeticOp::DivImmediate:
-                result = iris::div(src0, src1);
-                break;
-            case ArithmeticOp::Rem:
-            case ArithmeticOp::RemImmediate:
-                result = iris::rem(src0, src1);
-                break;
-            case ArithmeticOp::ShiftLeft:
-            case ArithmeticOp::ShiftLeftImmediate:
-                result = iris::shiftLeft(src0, src1);
-                break;
-            case ArithmeticOp::ShiftRight:
-            case ArithmeticOp::ShiftRightImmediate:
-                result = iris::shiftRight(src0, src1);
-                break;
-            case ArithmeticOp::BinaryAnd:
-                result = iris::binaryAnd(src0, src1);
-                break;
-            case ArithmeticOp::BinaryOr:
-                result = iris::binaryOr(src0, src1);
-                break;
-            case ArithmeticOp::BinaryNot:
-                result = iris::binaryNot(src0);
-                break;
-            case ArithmeticOp::BinaryXor:
-                result = iris::binaryXor(src0, src1);
-                break;
-            default:
-                throw iris::Problem("Illegal arithmetic operation!");
-        }
-
+			static std::map<ArithmeticOp, std::tuple<ALU::Operation, bool>> translationTable = {
+				{ ArithmeticOp::Add, std::make_tuple(ALU::Operation::Add , false) },
+				{ ArithmeticOp::Sub, std::make_tuple(ALU::Operation::Subtract , false ) },
+				{ ArithmeticOp::Mul, std::make_tuple(ALU::Operation::Multiply , false ) } ,
+				{ ArithmeticOp::Div, std::make_tuple(ALU::Operation::Divide , false ) },
+				{ ArithmeticOp::Rem, std::make_tuple(ALU::Operation::Remainder , false ) },
+				{ ArithmeticOp::ShiftLeft, std::make_tuple(ALU::Operation::ShiftLeft , false ) },
+				{ ArithmeticOp::ShiftRight, std::make_tuple(ALU::Operation::ShiftRight , false ) },
+				{ ArithmeticOp::BinaryAnd, std::make_tuple(ALU::Operation::BinaryAnd , false ) },
+				{ ArithmeticOp::BinaryOr, std::make_tuple(ALU::Operation::BinaryOr , false ) },
+				{ ArithmeticOp::BinaryNot, std::make_tuple(ALU::Operation::UnaryNot , false) },
+				{ ArithmeticOp::BinaryXor, std::make_tuple(ALU::Operation::BinaryXor , false ) },
+				{ ArithmeticOp::AddImmediate, std::make_tuple(ALU::Operation::Add , true  ) },
+				{ ArithmeticOp::SubImmediate, std::make_tuple(ALU::Operation::Subtract , true  ) },
+				{ ArithmeticOp::MulImmediate, std::make_tuple(ALU::Operation::Multiply , true  ) } ,
+				{ ArithmeticOp::DivImmediate, std::make_tuple(ALU::Operation::Divide , true  ) },
+				{ ArithmeticOp::RemImmediate, std::make_tuple(ALU::Operation::Remainder , true  ) },
+				{ ArithmeticOp::ShiftLeftImmediate, std::make_tuple(ALU::Operation::ShiftLeft , true ) },
+				{ ArithmeticOp::ShiftRightImmediate, std::make_tuple(ALU::Operation::ShiftRight , true ) },
+			};
+		auto result = translationTable.find(inst.getSubtype<ArithmeticOp>());
+		if (result == translationTable.end()) {
+			throw iris::Problem("Illegal arithmetic operation!");
+		} 
+		ALU::Operation op;
+		bool immediate;
+		std::tie(op, immediate) = result->second;
+		thread->gpr[inst.getDestination()] = _alu.performOperation(op, thread->gpr[inst.getSource0()], immediate ? static_cast<word>(inst.getSource1()) : thread->gpr[inst.getSource1()]);
     }
 
     void Core::misc(DecodedInstruction&& inst) {
@@ -353,7 +269,7 @@ namespace iris17 {
         if (debugEnabled()) {
             printInst("before", decoded);
         }
-        switch (static_cast<InstructionGroup>(decoded.getGroup())) {
+        switch (decoded.getGroup()) {
             case InstructionGroup::Compare:
                 compare(std::move(decoded));
                 break;
@@ -376,7 +292,7 @@ namespace iris17 {
     void Core::initialize() {
         int threadIndex = 0;
         for (auto &cthread : threads) {
-            cthread->gpr[iris17::ArchitectureConstants::ThreadIndex] = threadIndex;
+			cthread->getThreadIndexRegister() = threadIndex;
             ++threadIndex;
         }
     }
@@ -405,9 +321,9 @@ namespace iris17 {
         }
         dispatch();
         if (thread->advanceIp) {
-            ++thread->gpr[ArchitectureConstants::InstructionPointerIndex];
-            if (thread->gpr[ArchitectureConstants::InstructionPointerIndex] >= memorySize) {
-                thread->gpr[ArchitectureConstants::InstructionPointerIndex] = 0;
+			++thread->getInstructionPointer();
+			if (thread->getInstructionPointer() >= memory.getSize()) {
+				thread->getInstructionPointer() = 0;
             }
         }
         if (debugEnabled()) {

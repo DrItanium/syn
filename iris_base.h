@@ -328,6 +328,8 @@ constexpr uint16_t upperUint16Half = 0xFF00;
 constexpr uint16_t lowerUint16Half = 0x00FF;
 constexpr uint32_t upperUint32Half = 0xFFFF0000;
 constexpr uint32_t lowerUint32Half = 0x0000FFFF;
+constexpr int32_t upperInt32Half = 0xFFFF0000;
+constexpr int32_t lowerInt32Half = 0x0000FFFF;
 
 inline constexpr byte getUpperHalf(byte value) noexcept {
     return iris::decodeBits<byte, byte, upperByteHalf, 4>(value);
@@ -352,6 +354,37 @@ inline constexpr uint32_t getLowerHalf(uint32_t value) noexcept {
     using N = uint32_t;
     return iris::decodeBits<N, N, lowerUint32Half, 0>(value);
 }
+
+inline constexpr int32_t getUpperHalf(int32_t value) noexcept {
+    using N = int32_t;
+    return iris::decodeBits<N, N, upperInt32Half, 16>(value);
+}
+inline constexpr int32_t getLowerHalf(int32_t value) noexcept {
+    using N = int32_t;
+    return iris::decodeBits<N, N, lowerInt32Half, 0>(value);
+}
+
+inline constexpr uint32_t setUpperHalf(uint32_t value, uint16_t upper) noexcept {
+    return iris::encodeBits<uint32_t, uint16_t, upperUint32Half, 16>(value, upper);
+}
+inline constexpr uint32_t setLowerHalf(uint32_t value, uint16_t lower) noexcept {
+    return iris::encodeBits<uint32_t, uint16_t, lowerUint32Half, 0>(value, lower);
+}
+
+inline constexpr int32_t setUpperHalf(int32_t value, int16_t upper) noexcept {
+    return iris::encodeBits<int32_t, int16_t, upperInt32Half, 16>(value, upper);
+}
+inline constexpr int32_t setLowerHalf(int32_t value, int16_t lower) noexcept {
+    return iris::encodeBits<int32_t, int16_t, lowerInt32Half, 0>(value, lower);
+}
+
+inline constexpr uint16_t setUpperHalf(uint16_t value, byte upper) noexcept {
+    return iris::encodeBits<uint16_t, byte, upperUint16Half, 8>(value, upper);
+}
+inline constexpr uint16_t setLowerHalf(uint16_t value, byte lower) noexcept {
+    return iris::encodeBits<uint16_t, byte, lowerUint16Half, 0>(value, lower);
+}
+
 
 
 template<typename T>

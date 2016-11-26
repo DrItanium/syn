@@ -128,18 +128,18 @@ class LoadStoreUnit {
 		inline bool legalAddress(Address addr) const noexcept {
 			return addr >= 0 && addr < _size; 
 		}
-		Word& operator[](Address addr) {
-			if (legalAddress(addr)) {
-				return _memory[addr];
-			} else {
-				throw iris::Problem("Provided address is not legal!");
-			}
-		}
 		void set(Address addr, Word value) {
 			if (legalAddress(addr)) {
 				_memory[addr] = value;
 			} else {
 				throw iris::Problem("Provided address is not legal");
+			}
+		}
+		Word& operator[](Address addr) {
+			if (legalAddress(addr)) {
+				return _memory[addr];
+			} else {
+				throw iris::Problem("Provided address is not legal!");
 			}
 		}
 		void swap(Address a, Address b) {
@@ -173,7 +173,6 @@ class FixedSizeLoadStoreUnit : public LoadStoreUnit<Word, Address> {
 		FixedSizeLoadStoreUnit() : LoadStoreUnit<Word, Address>(capacity) { }
 		virtual ~FixedSizeLoadStoreUnit() { }
 };
-
 
 } // end namespace iris
 #endif // end _IRIS_ALU_H
