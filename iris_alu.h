@@ -126,6 +126,11 @@ class LoadStoreUnit {
 		LoadStoreUnit(Address size) : _memory(std::move(std::make_unique<Word[]>(size))), _size(size) { }
 		LoadStoreUnit() : LoadStoreUnit(0) { }
 		virtual ~LoadStoreUnit() { }
+		inline void zero() noexcept {
+			for(auto i = static_cast<Address>(0); i < _size; ++i) {
+				_memory[i] = 0;
+			}
+		}
 		inline Address getSize() const noexcept { return _size; }
 		inline bool legalAddress(Address addr) const noexcept {
 			return addr >= 0 && addr < _size; 
@@ -152,14 +157,14 @@ class LoadStoreUnit {
 		}
 		void install(std::istream& stream, std::function<Word(char*)> decode) {
 			char buf[sizeof(Word)] = { 0 };
-			for (auto i = 0; i < _size; ++i) {
+			for (Address i = 0; i < _size; ++i) {
 				stream.read(buf, sizeof(Word));
 				_memory[i] = decode(buf);
 			}
 		}
 		void dump(std::ostream& stream, std::function<void(Word, char*)> encode) {
 			char buf[sizeof(Word)] = { 0 };
-			for (auto i = 0; i < _size; ++i) {
+			for (Address i = 0; i < _size; ++i) {
 				encode(_memory[i], buf);
 				stream.write(buf, sizeof(Word));
 			}

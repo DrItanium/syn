@@ -1,6 +1,7 @@
 #ifndef _TARGET_IRIS18_IRIS_H
 #define _TARGET_IRIS18_IRIS_H
 #include "iris_base.h"
+#include "iris_alu.h"
 #include "Core.h"
 #include "Problem.h"
 #include <cstdint>
@@ -153,6 +154,10 @@ namespace iris18 {
 			return 1 + (readLower<bitmask>() ? 1 : 0) + (readUpper<bitmask>() ? 1 : 0);
 		}
 
+	using ALU = iris::ALU<RegisterValue>;
+	using CompareUnit = iris::Comparator<RegisterValue>;
+	using RegisterFile = iris::FixedSizeLoadStoreUnit<RegisterValue, byte, ArchitectureConstants::RegisterCount>;
+	using MemorySpace = iris::FixedSizeLoadStoreUnit<Word, DWord, ArchitectureConstants::AddressMax>;
 	class Core : public iris::Core {
 		public:
 			using SystemFunction = std::function<void(Core*, DecodedInstruction&&)>;
@@ -163,15 +168,14 @@ namespace iris18 {
 				Count,
 			};
 		public:
-			Core();
-			virtual ~Core();
+			Core() noexcept;
+			virtual ~Core() noexcept;
 			virtual void initialize() override;
 			virtual void installprogram(std::istream& stream) override;
 			virtual void shutdown() override;
 			virtual void dump(std::ostream& stream) override;
 			virtual void run() override;
 			virtual void link(std::istream& stream) override;
-			std::shared_ptr<Word> getMemory();
 			void installSystemHandler(byte index, SystemFunction fn);
 			void cycle();
 			bool shouldExecute() const { return execute; }
@@ -194,14 +198,7 @@ namespace iris18 {
 			template<byte rindex>
 				inline RegisterValue& registerValue() noexcept {
 					static_assert(rindex < ArchitectureConstants::RegisterCount, "Not a legal register index!");
-#define X(index) if (index == rindex) { return gpr[index]; }
-#include "def/iris18/registers.def"
-#undef X
-					// if this is ever fired then we will get a std::terminate
-					// invoked!
-					std::stringstream msg;
-					msg << "Out of range register index: " << rindex;
-					throw iris::Problem(msg.str());
+					return gpr[rindex];
 				}
             template<bool readNext>
             inline Word tryReadNext() noexcept {
@@ -465,8 +462,12 @@ namespace iris18 {
 		private:
 			bool execute = true,
 				 advanceIp = true;
-			RegisterValue gpr[ArchitectureConstants::RegisterCount] = { 0 };
-			std::shared_ptr<Word> memory;
+			RegisterFile gpr;
+			ALU _alu;
+			ALU _shifter;
+			ALU _logicalOps;
+			CompareUnit _compare;
+			MemorySpace memory;
 			SystemFunction systemHandlers[ArchitectureConstants::MaxSystemCalls] =  { 0 };
 	};
 

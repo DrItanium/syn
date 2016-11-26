@@ -56,8 +56,8 @@ namespace iris18 {
 		}
 	}
 
-	Core::Core() : memory(new Word[ArchitectureConstants::AddressMax]) { }
-	Core::~Core() { }
+	Core::Core() noexcept { }
+	Core::~Core() noexcept { }
 
 	void Core::initialize() {
 		// setup the default system handlers
@@ -76,50 +76,16 @@ namespace iris18 {
 
 	void Core::shutdown() { }
 
-	template<typename T, int count>
-		void populateContents(T* contents, std::istream& stream, std::function<T(byte*)> encode) {
-			static char buf[sizeof(T)] = { 0 };
-			for(int i = 0; i < count; ++i) {
-				stream.read(buf, sizeof(T));
-				contents[i] = encode((byte*)buf);
-			}
-		}
-	template<typename T, int count>
-		void populateContents(const std::shared_ptr<T>& contents, std::istream& stream, std::function<T(byte*)> encode) {
-			static char buf[sizeof(T)] = { 0 };
-			for (auto i = 0; i < count; ++i) {
-				stream.read(buf, sizeof(T));
-				contents.get()[i] = encode((byte*)buf);
-			}
-		}
 	void Core::installprogram(std::istream& stream) {
-		populateContents<RegisterValue, ArchitectureConstants::RegisterCount>(gpr, stream, [](byte* buf) { return iris::encodeUint32LE(buf); });
-		populateContents<Word, ArchitectureConstants::AddressMax>(memory, stream, [](byte* buf) { return iris::encodeUint16LE(buf); });
+		gpr.install(stream, [](char* buf) { return iris::encodeUint32LE((byte*)buf); });
+		memory.install(stream, [](char* buf) { return iris::encodeUint16LE((byte*)buf); });
 	}
-
-	template<typename T, int count>
-		void dumpContents(T* contents, std::ostream& stream, std::function<void(T value, byte* buf)> decompose) {
-			static byte buf[sizeof(T)];
-			for (int i = 0; i < count; ++i) {
-				decompose(contents[i], (byte*)buf);
-				stream.write((char*)buf, sizeof(T));
-			}
-		}
-
-	template<typename T, int count>
-		void dumpContents(const std::shared_ptr<T>& contents, std::ostream& stream, std::function<void(T value, byte* buf)> decompose) {
-			static byte buf[sizeof(T)];
-			for (auto i = 0; i < count; ++i) {
-				decompose(contents.get()[i], buf);
-				stream.write((char*)buf, sizeof(T));
-			}
-		}
 
 	void Core::dump(std::ostream& stream) {
-		// save the registers
-		dumpContents<RegisterValue, ArchitectureConstants::RegisterCount>(gpr, stream, iris::decodeUint32LE);
-		dumpContents<Word, ArchitectureConstants::AddressMax>(memory, stream, iris::decodeUint16LE);
+		gpr.dump(stream, [](RegisterValue value, char* buf) { iris::decodeUint32LE(value, (byte*)buf); });
+		memory.dump(stream, [](Word value, char* buf) { iris::decodeUint16LE(value, (byte*)buf); });
 	}
+
 	void Core::run() {
 		while(execute) {
 			cycle();
@@ -404,28 +370,16 @@ namespace iris18 {
 		}
 	}
 	RegisterValue& Core::registerValue(byte index) {
-		if (index >= ArchitectureConstants::RegisterCount) {
-			throw iris::Problem("Attempted to access an out of range register!");
-		} else {
-			return gpr[index];
-		}
+		return gpr[index];
 	}
 	Word Core::getCurrentCodeWord() noexcept {
-		return memory.get()[getInstructionPointer()];
+		return memory[getInstructionPointer()];
 	}
 	void Core::storeWord(RegisterValue address, Word value) {
-		if (address >= ArchitectureConstants::AddressMax) {
-			throw iris::Problem("Attempted to write outside of memory!");
-		} else {
-			memory.get()[address] = value;
-		}
+			memory[address] = value;
 	}
 	Word Core::loadWord(RegisterValue address) {
-		if (address >= ArchitectureConstants::AddressMax) {
-			throw iris::Problem("Attempted to read from outside of memory!");
-		} else {
-			return memory.get()[address];
-		}
+		return memory[address];
 	}
 	RegisterValue Core::loadRegisterValue(RegisterValue address) {
 		return iris::encodeBits<RegisterValue, Word, bitmask32, 16>(static_cast<RegisterValue>(loadWord(address)), loadWord(address + 1));
@@ -433,10 +387,6 @@ namespace iris18 {
 	void Core::storeRegisterValue(RegisterValue address, RegisterValue value) {
 		storeWord(address, iris::decodeBits<RegisterValue, Word, lower16Mask, 0>(value));
 		storeWord(address + 1, iris::decodeBits<RegisterValue, Word, upper16Mask, 16>(value));
-	}
-
-	std::shared_ptr<Word> Core::getMemory() {
-		return memory;
 	}
 
 	void Core::installSystemHandler(byte index, Core::SystemFunction func) {
