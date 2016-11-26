@@ -141,16 +141,10 @@ namespace iris18 {
 		if (tControl == Operation::Shift) {
 			auto &destination = registerValue(current.getShiftRegister0());
 			auto source = (current.getShiftFlagImmediate() ? static_cast<RegisterValue>(current.getShiftImmediate()) : registerValue(current.getShiftRegister1()));
-			if (current.getShiftFlagLeft()) {
-				destination <<= source;
-			} else {
-				destination >>= source;
-			}
+			destination = _shifter.performOperation( current.getShiftFlagLeft() ? ALU::Operation::ShiftLeft : ALU::Operation::ShiftRight, destination, source);
 		} else if (tControl == Operation::Swap) {
 			if (current.getSwapDestination() != current.getSwapSource()) {
-				auto tmp = registerValue(current.getSwapDestination());
-				registerValue(current.getSwapDestination()) = registerValue(current.getSwapSource());
-				registerValue(current.getSwapSource()) = tmp;
+				gpr.swap(current.getSwapDestination(), current.getSwapSource());
 			}
 		} else if (tControl == Operation::Arithmetic) {
 			switch (current.getArithmeticSignature()) {
@@ -310,17 +304,34 @@ namespace iris18 {
     void Core::encodingOperation(DecodedInstruction&& inst) {
         switch (inst.getComplexClassEncoding_Type()) {
             case EncodingOperation::Decode:
-                getValueRegister() = (getAddressRegister() & getMaskRegister()) >> getShiftRegister();
+				// connect the result of the logical operations alu to the
+				// shifter alu then store the result in the value register
+				getValueRegister() = _shifter.performOperation(ALU::Operation::ShiftRight, 
+						_logicalOps.performOperation(ALU::Operation::BinaryAnd, getAddressRegister(), getMaskRegister()), 
+						getShiftRegister());
                 break;
             case EncodingOperation::Encode:
-                getAddressRegister() = (getAddressRegister() & ~getMaskRegister()) | ((getValueRegister() << getShiftRegister()) & getMaskRegister());
+				// this is a good candidate for std::async right here :)
+				getAddressRegister() = _logicalOps.performOperation(ALU::Operation::BinaryOr, 
+						_logicalOps.performOperation(ALU::Operation::BinaryAnd, getAddressRegister(),
+							_logicalOps.performOperation(ALU::Operation::UnaryNot, getMaskRegister(), 0)),
+						_logicalOps.performOperation(ALU::Operation::BinaryAnd, 
+							_shifter.performOperation(ALU::Operation::ShiftLeft, getValueRegister(), getShiftRegister()),
+							getMaskRegister()));
+
                 break;
             case EncodingOperation::BitSet:
                 // use the shift register as the field select
-                getConditionRegister() = ((getAddressRegister() >> getFieldRegister()) & 0x1) == 1;
+				getConditionRegister() = _compare.performOperation(CompareUnit::Operation::Eq, 
+						_logicalOps.performOperation(ALU::Operation::BinaryAnd,
+							_shifter.performOperation(ALU::Operation::ShiftRight, getAddressRegister(),
+								getFieldRegister()), 0x1), 1);
                 break;
             case EncodingOperation::BitUnset:
-                getConditionRegister() = ((getAddressRegister() >> getFieldRegister()) & 0x1) != 1;
+				getConditionRegister() = _compare.performOperation(CompareUnit::Operation::Neq,
+						_logicalOps.performOperation(ALU::Operation::BinaryAnd,
+							_shifter.performOperation(ALU::Operation::ShiftRight, getAddressRegister(),
+								getFieldRegister()), 0x1), 1);
                 break;
             default:
                 throw iris::Problem("Illegal complex encoding operation defined!");
