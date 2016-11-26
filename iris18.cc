@@ -196,47 +196,92 @@ namespace iris18 {
 			auto& dest = registerValue(source0);
 			dest = _logicalOps.performOperation(op, dest, source1);
 		} else if (tControl == Operation::Move) {
-			switch (current.getMoveSignature()) {
-#define X(value) case value : \
-				if (MoveFlags< value >::isError) { \
-					throw iris::Problem("Illegal move signature"); \
-				} else { \
-					registerValue(current.getMoveRegister0()) = iris::decodeBits<RegisterValue, RegisterValue, mask<MoveFlags< value >::bitmask>(), 0>(registerValue(current.getMoveRegister1())); \
-				} \
-				break;
-#include "def/iris18/bitmask4bit.def"
-#undef X
-				default:
-					throw iris::Problem("Illegal move signature!");
-			}
+			registerValue(current.getMoveRegister0()) = iris::decodeBits<RegisterValue, RegisterValue>( registerValue(current.getMoveRegister1()), mask(current.getMoveBitmask()), 0);
 		} else if (tControl == Operation::Set) {
-			switch (current.getSetSignature()) {
-#define X(value) case value: \
-				registerValue<SetFlags<value>::destination>() = retrieveImmediate<SetFlags<value>::bitmask>(); \
-				break;
-#include "def/iris18/bitmask8bit.def"
-#undef X
-				default:
-					std::stringstream stream;
-					stream << "Illegal set signature 0x" << std::hex << static_cast<int>(current.getSetSignature()) << "\n";
-					throw iris::Problem(stream.str());
-			}
+			registerValue(current.getSetDestination()) = retrieveImmediate(current.getSetBitmask());
 		} else if (tControl == Operation::Memory) {
-			switch (current.getMemorySignature()) {
-#define X(value) \
-				case value : \
-							 if (MemoryFlags<value>::type == MemoryOperation::Push && MemoryFlags<value>::indirect) { \
-								 throw iris::Problem("Indirect bit not supported in push operations!"); \
-							 } else if (MemoryFlags<value>::type == MemoryOperation::Pop && MemoryFlags<value>::indirect) { \
-								 throw iris::Problem("Indirect bit not supported in pop operations!"); \
-							 } else { \
-								memoryOperation<MemoryFlags<value>::type, MemoryFlags<value>::bitmask, MemoryFlags<value>::indirect, MemoryFlags<value>::readNextWord>(std::move(current)); \
-							 } \
-					break; 
-#include "def/iris18/bitmask8bit.def"
-#undef X
-				default:
-					throw iris::Problem("Illegal memory signature!");
+			auto indirect = current.getMemoryFlagIndirect();
+			auto readNext = current.getMemoryFlagReadNextWord();
+			auto rawMask = current.getMemoryFlagBitmask();
+			auto useLower = readLower(rawMask);
+			auto useUpper = readUpper(rawMask);
+			auto fullMask = mask(rawMask);
+			auto rawType = current.getMemoryFlagType();
+			auto offset = current.getMemoryOffset();
+			auto lmask = lowerMask(rawMask);
+			auto umask = upperMask(rawMask);
+			auto upper = 0u;
+			auto lower = 0u;
+			DecodedInstruction next(tryReadNext(readNext));
+			if (rawType == MemoryOperation::Load) {
+				auto addr = readNext ? registerValue(next.getMemoryAddress()) : getAddressRegister();
+				auto& value = readNext ? registerValue(next.getMemoryValue()) : getValueRegister();
+				if (!useLower && !useUpper) {
+					value = 0;
+				} else {
+					auto address = addr + offset;
+					if (indirect) {
+						address = encodeRegisterValue(loadWord(address + 1), loadWord(address)) & bitmask24;
+					}
+					lower = useLower ? encodeLowerHalf(0, loadWord(address)) : 0u;
+					upper = useUpper ? encodeUpperHalf(0, loadWord(address + 1)) : 0u;
+					value = iris::encodeBits<RegisterValue, RegisterValue>(0u, lower | upper, fullMask, 0);
+				}
+			} else if (rawType == MemoryOperation::Store) {
+				auto addr = readNext ? registerValue(next.getMemoryAddress()) : getAddressRegister();
+				auto value = readNext ? registerValue(next.getMemoryValue()) : getValueRegister();
+				auto address = addr + offset;
+				if (indirect) {
+					address = encodeRegisterValue(loadWord(address + 1), loadWord(address)) & bitmask24;
+				}
+				if (useLower) {
+					if (lmask == 0x0000FFFF) {
+						storeWord(address, value);
+					} else {
+						storeWord(address, (lmask & value) | (loadWord(address) & ~lmask));
+					}
+				}
+				if (useUpper) {
+					if (umask == 0x0000FFFF) {
+						storeWord(address + 1, value);
+					} else {
+						storeWord(address + 1, (umask & value) | (loadWord(address + 1) & ~umask));
+					}
+				}
+			} else if (rawType == MemoryOperation::Push) {
+				if (indirect) {
+					throw iris::Problem("Indirect bit not supported in push operations!");
+				} else {
+					// update the target stack to something different
+					auto pushToStack = registerValue(offset);
+					auto &stackPointer = readNext ? registerValue(next.getMemoryAddress()) : getStackPointer();
+					// read backwards because the stack grows upward towards zero
+					if (useUpper) {
+						pushWord(umask & decodeUpperHalf(pushToStack), stackPointer);
+					}
+					if (useLower) {
+						pushWord(lmask & decodeLowerHalf(pushToStack), stackPointer);
+					}
+				}
+			} else if (rawType == MemoryOperation::Pop) {
+				if (indirect) {
+					throw iris::Problem("Indirect bit not supported in pop operations!");
+				} else {
+					auto &stackPointer = readNext ? registerValue(next.getMemoryAddress()) : getStackPointer();
+					if (useLower) {
+						lower = lmask & popWord(stackPointer);
+					}
+					if (useUpper) {
+						upper = umask & popWord(stackPointer);
+					}
+					registerValue(offset) = encodeRegisterValue(upper, lower);
+					// can't think of a case where we should
+					// restore the instruction pointer and then
+					// immediate advance so just don't do it
+					advanceIp = offset != ArchitectureConstants::InstructionPointer;
+				}
+			} else {
+				throw iris::Problem("Illegal memory operation!");
 			}
 		} else if (tControl == Operation::Branch) {
 			auto instFlags = current.getBranchFlags();

@@ -111,6 +111,26 @@ namespace iris18 {
 	template<byte bitmask>
 		inline constexpr bool readUpper() noexcept { return SetBitmaskToWordMask<bitmask>::readUpper; }
 
+	inline constexpr Word lowerMask(byte bitmask) noexcept {
+		return iris::encodeUint16LE(iris::expandBit(iris::getBit<byte, 0>(bitmask)),
+									iris::expandBit(iris::getBit<byte, 1>(bitmask)));
+	}
+	inline constexpr Word upperMask(byte bitmask) noexcept {
+		return iris::encodeUint16LE(iris::expandBit(iris::getBit<byte, 2>(bitmask)),
+									iris::expandBit(iris::getBit<byte, 3>(bitmask)));
+	}
+
+	inline constexpr RegisterValue mask(byte bitmask) noexcept {
+		return iris::encodeUint32LE(lowerMask(bitmask), upperMask(bitmask));
+	}
+
+	inline constexpr bool readLower(byte bitmask) noexcept {
+		return lowerMask(bitmask) != 0;
+	}
+	inline constexpr bool readUpper(byte bitmask) noexcept {
+		return upperMask(bitmask) != 0;
+	}
+
 	constexpr auto bitmask32 =   SetBitmaskToWordMask<ArchitectureConstants::Bitmask>::mask;
 	constexpr auto bitmask24 =   SetBitmaskToWordMask<0b0111>::mask;
 	constexpr auto upper16Mask = SetBitmaskToWordMask<0b1100>::mask;
@@ -209,6 +229,13 @@ namespace iris18 {
                     return 0;
                 }
             }
+			inline Word tryReadNext(bool readNext) noexcept {
+				if (readNext) {
+					return tryReadNext<true>();
+				} else {
+					return tryReadNext<false>();
+				}
+			}
 			template<byte bitmask>
 				RegisterValue retrieveImmediate() noexcept {
 					static_assert(bitmask <= ArchitectureConstants::Bitmask, "Wider masks are being provided to retrieveImmediate!");
@@ -237,110 +264,6 @@ namespace iris18 {
 #undef Component
 #undef DefFlags
 #undef EndDefFlags
-			template<byte signature>
-				void arithmeticOperation(DecodedInstruction&& inst) {
-					using aflags = ArithmeticFlags<signature>;
-					auto src = aflags::immediate ? inst.getArithmeticImmediate() : registerValue(inst.getArithmeticSource());
-					auto &dest = registerValue(inst.getArithmeticDestination());
-					if (aflags::op == ArithmeticOps::Add) {
-						dest = iris::add(dest, src);
-					} else if (aflags::op == ArithmeticOps::Sub) {
-						dest = iris::sub(dest, src);
-					} else if (aflags::op == ArithmeticOps::Mul) {
-						dest = iris::mul(dest, src);
-					} else if (aflags::op == ArithmeticOps::Div) {
-						dest = iris::div(dest, src);
-					} else if (aflags::op == ArithmeticOps::Rem) {
-						dest = iris::rem(dest, src);
-					} else {
-						throw iris::Problem("Illegal arithmetic operation!");
-					}
-				}
-			template<MemoryOperation type, byte bitmask, bool indirect, bool readNext>
-				inline void memoryOperation(DecodedInstruction&& inst) {
-					static_assert(bitmask <= ArchitectureConstants::Bitmask, "bitmask is too large!");
-					static constexpr auto useLower = readLower<bitmask>();
-					static constexpr auto useUpper = readUpper<bitmask>();
-					static constexpr auto lmask = lowerMask<bitmask>();
-					static constexpr auto umask = upperMask<bitmask>();
-					static constexpr auto fullMask = mask<bitmask>();
-					auto upper = 0u;
-					auto lower = 0u;
-					auto memOffset = inst.getMemoryOffset();
-                    DecodedInstruction next(tryReadNext<readNext>());
-					if (type == MemoryOperation::Load) {
-                        auto addr = readNext ? registerValue(next.getMemoryAddress()) : getAddressRegister();
-                        auto& value = readNext ? registerValue(next.getMemoryValue()) : getValueRegister();
-						if (!useLower && !useUpper) {
-							value = 0; // zero out the register if nothing is going to be happening
-						} else {
-							auto address = addr + memOffset;
-							if (indirect) {
-								address = encodeRegisterValue(loadWord(address + 1), loadWord(address)) & bitmask24;
-							}
-							// use the value field of the instruction to denote offset, thus we need
-							// to use the Address and Value registers
-							lower = useLower ? encodeLowerHalf(0, loadWord(address)) : 0u;
-							upper = useUpper ? encodeUpperHalf(0, loadWord(address + 1)) : 0u;
-							value = iris::encodeBits<RegisterValue, RegisterValue, fullMask, 0>(0u, lower | upper);
-						}
-					} else if (type == MemoryOperation::Store) {
-                        auto addr = readNext ? registerValue(next.getMemoryAddress()) : getAddressRegister();
-                        auto value = readNext ? registerValue(next.getMemoryValue()) : getValueRegister();
-						auto address = addr + memOffset;
-						if (indirect) {
-							address = encodeRegisterValue(loadWord(address + 1), loadWord(address)) & bitmask24;
-						}
-						if (useLower) {
-							if (lmask == 0x0000FFFF) {
-								storeWord(address, value);
-							} else {
-								storeWord(address, (lmask & value) | (loadWord(address) & ~lmask));
-							}
-						}
-						if (useUpper) {
-							if (umask == 0x0000FFFF) {
-								storeWord(address, value);
-							} else {
-								storeWord(address, (umask & value) | (loadWord(address) & ~umask));
-							}
-						}
-					} else if (type == MemoryOperation::Push) {
-						if (indirect) {
-							throw iris::Problem("Can't perform an indirect push");
-						} else {
-							// update the target stack to something different
-							auto pushToStack = registerValue(memOffset);
-							auto &stackPointer = readNext ? registerValue(next.getMemoryAddress()) : getStackPointer();
-							// read backwards because the stack grows upward towards zero
-							if (useUpper) {
-								pushWord(umask & decodeUpperHalf(pushToStack), stackPointer);
-							}
-							if (useLower) {
-								pushWord(lmask & decodeLowerHalf(pushToStack), stackPointer);
-							}
-						}
-					} else if (type == MemoryOperation::Pop) {
-						if (indirect) {
-							throw iris::Problem("Can't perform an indirect pop!");
-						} else {
-							auto &stackPointer = readNext ? registerValue(next.getMemoryAddress()) : getStackPointer();
-							if (useLower) {
-								lower = lmask & popWord(stackPointer);
-							}
-							if (useUpper) {
-								upper = umask & popWord(stackPointer);
-							}
-							registerValue(memOffset) = encodeRegisterValue(upper, lower);
-							// can't think of a case where we should
-							// restore the instruction pointer and then
-							// immediate advance so just don't do it
-							advanceIp = memOffset != ArchitectureConstants::InstructionPointer;
-						}
-					} else {
-						throw iris::Problem("Illegal memory operation type!");
-					}
-				}
 			template<byte flags>
 				void branchSpecificOperation(DecodedInstruction&& current) {
 					using decodedFlags = BranchFlagsDecoder<flags>;
@@ -406,13 +329,13 @@ namespace iris18 {
 			inline RegisterValue getShiftRegister() noexcept           { return 0b11111 & registerValue<ArchitectureConstants::ShiftRegister>(); }
 			inline RegisterValue getFieldRegister() noexcept           { return 0b11111 & registerValue<ArchitectureConstants::FieldRegister>(); }
 
-			inline void incrementInstructionPointer() noexcept;
-			inline void incrementStackPointer() noexcept;
-			inline void decrementStackPointer() noexcept;
-			inline void decrementStackPointer(RegisterValue& ptr) noexcept;
-			inline void incrementStackPointer(RegisterValue& ptr) noexcept;
-			inline void incrementAddress(RegisterValue& ptr) noexcept;
-			inline void decrementAddress(RegisterValue& ptr) noexcept;
+			void incrementInstructionPointer() noexcept;
+			void incrementStackPointer() noexcept;
+			void decrementStackPointer() noexcept;
+			void decrementStackPointer(RegisterValue& ptr) noexcept;
+			void incrementStackPointer(RegisterValue& ptr) noexcept;
+			void incrementAddress(RegisterValue& ptr) noexcept;
+			void decrementAddress(RegisterValue& ptr) noexcept;
 			Word getCurrentCodeWord() noexcept;
 			void storeWord(RegisterValue address, Word value);
 			Word loadWord(RegisterValue address);
