@@ -18,7 +18,7 @@ namespace iris17 {
         InstructionPointerIndex = RegisterCount - 1,
         LinkRegisterIndex = RegisterCount - 2,
         StackPointerIndex = RegisterCount - 3,
-        ThreadIndex = RegisterCount - 5,
+        ThreadIndex = RegisterCount - 4,
 
         GroupMask = 0b00000111,
         RestMask = ~GroupMask,
