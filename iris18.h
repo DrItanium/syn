@@ -237,43 +237,6 @@ namespace iris18 {
 #undef Component
 #undef DefFlags
 #undef EndDefFlags
-			template<ImmediateLogicalOps type, byte bitmask>
-				inline void logicalImmediateOperation(DecodedInstruction&& inst) {
-					auto &dest = registerValue(inst.getLogicalImmediateDestination());
-					if (type == ImmediateLogicalOps::And) {
-						dest = iris::binaryAnd(dest, retrieveImmediate<bitmask>());
-					} else if (type == ImmediateLogicalOps::Or) {
-						dest = iris::binaryOr(dest, retrieveImmediate<bitmask>());
-					} else if (type == ImmediateLogicalOps::Nand) {
-						dest = iris::binaryNand(dest, retrieveImmediate<bitmask>());
-					} else if (type == ImmediateLogicalOps::Xor) {
-						dest = iris::binaryXor(dest, retrieveImmediate<bitmask>());
-					} else {
-						throw iris::Problem("Illegal immediate logical flag type");
-					}
-				}
-
-			template<LogicalOps type>
-				inline void logicalIndirectOperation(DecodedInstruction&& inst) {
-					auto &dest = registerValue(inst.getLogicalRegister0());
-					if (type == LogicalOps::Not) {
-						dest = iris::binaryNot(dest);
-					} else {
-						auto src = registerValue(inst.getLogicalRegister1());
-						if (type == LogicalOps::And) {
-							dest = iris::binaryAnd(dest, src);
-						} else if (type == LogicalOps::Or) {
-							dest = iris::binaryOr(dest, src);
-						} else if (type == LogicalOps::Xor) {
-							dest = iris::binaryXor(dest, src);
-						} else if (type == LogicalOps::Nand) {
-							dest = iris::binaryNand(dest, src);
-						} else {
-							throw iris::Problem("Illegal indirect logical operation!");
-						}
-					}
-				}
-
 			template<byte signature>
 				void arithmeticOperation(DecodedInstruction&& inst) {
 					using aflags = ArithmeticFlags<signature>;

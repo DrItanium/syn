@@ -27,6 +27,11 @@ namespace iris17 {
 
 	Core::~Core() noexcept { }
 
+	auto throwIfNotFound = [](auto result, auto& table, const std::string& msg) {
+		if (result == table.end()) {
+			throw iris::Problem(msg);
+		}
+	};
 	void Core::installprogram(std::istream& stream) {
 		// read directly from the assembler's output
 		char a[sizeof(word)] = { 0 };
@@ -82,9 +87,7 @@ namespace iris17 {
 			{ JumpOp:: IfThenElseLinkPredFalse , std::make_tuple( true, true, true, false, true) } ,
 		};
 		auto result = translationTable.find(inst.getSubtype<JumpOp>());
-		if (result == translationTable.end()) {
-			throw iris::Problem("undefined jump op!");
-		}
+		throwIfNotFound(result, translationTable, "undefined jump op!");
 		std::tie(ifthenelse, conditional, iffalse, immediate, link) = result->second;
 		auto ip = thread->getInstructionPointer();
 		if (conditional) {
@@ -169,9 +172,7 @@ namespace iris17 {
 			{ CompareOp::NeqImm, std::make_tuple(CompareUnit::Operation::Neq, true) },
 		};
 		auto result = translationTable.find(current.getSubtype<CompareOp>());
-		if (result == translationTable.end()) {
-			throw iris::Problem("Illegal compare operation!");
-		}
+		throwIfNotFound(result, translationTable, "Illegal compare operation!");
 		performBinaryOperation(thread, _compare, result->second, std::move(current));
 	}
 
@@ -197,9 +198,7 @@ namespace iris17 {
 			{ ArithmeticOp::ShiftRightImmediate, std::make_tuple(ALU::Operation::ShiftRight , true ) },
 		};
 		auto result = translationTable.find(inst.getSubtype<ArithmeticOp>());
-		if (result == translationTable.end()) {
-			throw iris::Problem("Illegal arithmetic operation!");
-		} 
+		throwIfNotFound(result, translationTable, "Illegal arithmetic operation!");
 		performBinaryOperation(thread, _alu, result->second, std::move(inst));
 	}
 

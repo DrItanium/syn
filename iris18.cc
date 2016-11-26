@@ -136,9 +136,11 @@ namespace iris18 {
 
 	void Core::dispatch(DecodedInstruction&& current) {
 		auto tControl = current.getControl();
-#ifdef DEBUG
-		std::cout << "Current control value: " << std::hex << static_cast<int>(tControl) << std::endl;
-#endif
+		auto throwIfNotFound = [](auto result, auto& table, const std::string& msg) {
+			if (result == table.end()) {
+				throw iris::Problem(msg);
+			}
+		};
 		if (tControl == Operation::Shift) {
 			auto &destination = registerValue(current.getShiftRegister0());
 			auto source = (current.getShiftFlagImmediate() ? static_cast<RegisterValue>(current.getShiftImmediate()) : registerValue(current.getShiftRegister1()));
@@ -148,36 +150,51 @@ namespace iris18 {
 				gpr.swap(current.getSwapDestination(), current.getSwapSource());
 			}
 		} else if (tControl == Operation::Arithmetic) {
-			switch (current.getArithmeticSignature()) {
-#define X(value) case value: arithmeticOperation< value > (std::move(current)); break;
-#include "def/iris18/bitmask4bit.def"
-#undef X
-				default:
-					throw iris::Problem("Illegal Arithmetic Signature");
-			}
+			static std::map<ArithmeticOps, ALU::Operation> translationTable = {
+				{ ArithmeticOps::Add, ALU::Operation::Add },
+				{ ArithmeticOps::Sub, ALU::Operation::Subtract },
+				{ ArithmeticOps::Mul, ALU::Operation::Multiply },
+				{ ArithmeticOps::Div, ALU::Operation::Divide},
+				{ ArithmeticOps::Rem, ALU::Operation::Remainder},
+			};
+			auto result = translationTable.find(current.getArithmeticFlagType());
+			throwIfNotFound(result, translationTable, "Illegal arithmetic operation!");
+			auto op = result->second;
+			auto src = current.getArithmeticImmediate() ? current.getArithmeticImmediate() : registerValue(current.getArithmeticSource());
+			auto& dest = registerValue(current.getArithmeticDestination());
+			dest = _alu.performOperation(op, dest, src);
 		} else if (tControl == Operation::Logical) {
-			switch (current.getLogicalSignature()) { 
-#define X(datum) \
-			case datum: \
-				if (LogicalFlags<datum>::immediate) { \
-					if (LogicalFlags<datum>::immediateError) { \
-						throw iris::Problem("Illegal bit set for immediate mode logicalOperation!"); \
-					} else { \
-						logicalImmediateOperation<LogicalFlags<datum>::immediateType, LogicalFlags<datum>::bitmask>(std::move(current)); \
-					} \
-				} else { \
-					if (LogicalFlags<datum>::indirectError) { \
-						throw iris::Problem("Illegal bits set for indirect mode logicalOperation!"); \
-					} else { \
-						logicalIndirectOperation<LogicalFlags<datum>::indirectType>(std::move(current)); \
-					} \
-				} \
-				break;
-#include "def/iris18/bitmask8bit.def"
-#undef X
-			default:
-				throw iris::Problem("Illegal logical signature!");
+			ALU::Operation op;
+			RegisterValue source1 = 0;
+			byte source0 = 0u;
+			if (current.getLogicalFlagImmediate()) {
+				static std::map<ImmediateLogicalOps, ALU::Operation> immediateTranslation = {
+					{ ImmediateLogicalOps::Or, ALU::Operation::BinaryOr },
+					{ ImmediateLogicalOps::And, ALU::Operation::BinaryAnd },
+					{ ImmediateLogicalOps::Xor, ALU::Operation::BinaryXor },
+					{ ImmediateLogicalOps::Nand, ALU::Operation::BinaryNand },
+				};
+				auto result = immediateTranslation.find(current.getLogicalFlagImmediateType());
+				throwIfNotFound(result, immediateTranslation, "Illegal immediate logical flag type");
+				op = result->second;
+				source1 = retrieveImmediate(current.getLogicalFlagImmediateMask());
+				source0 = current.getLogicalImmediateDestination();
+			} else {
+				static std::map<LogicalOps, ALU::Operation> nonImmediateTranslation = {
+					{ LogicalOps::Not, ALU::Operation::UnaryNot },
+					{ LogicalOps::Or, ALU::Operation::BinaryOr },
+					{ LogicalOps::And, ALU::Operation::BinaryAnd },
+					{ LogicalOps::Xor, ALU::Operation::BinaryXor },
+					{ LogicalOps::Nand, ALU::Operation::BinaryNand },
+				};
+				auto result = nonImmediateTranslation.find(current.getLogicalFlagType());
+				throwIfNotFound(result, nonImmediateTranslation, "Illegal indirect logical operation!");
+				op = result->second;
+				source0 = current.getLogicalRegister0();
+				source1 = registerValue(current.getLogicalRegister1());
 			}
+			auto& dest = registerValue(source0);
+			dest = _logicalOps.performOperation(op, dest, source1);
 		} else if (tControl == Operation::Move) {
 			switch (current.getMoveSignature()) {
 #define X(value) case value : \
@@ -223,9 +240,6 @@ namespace iris18 {
 			}
 		} else if (tControl == Operation::Branch) {
 			auto instFlags = current.getBranchFlags();
-#ifdef DEBUG
-			std::cout << "Branch flags: " << std::hex << static_cast<int>(instFlags) << std::endl;
-#endif
 			if (instFlags == IfJump::flags) {
 				branchSpecificOperation<IfJump::flags>(std::move(current));
 			} else if(instFlags == CallIndirect::flags) {
@@ -263,13 +277,9 @@ namespace iris18 {
 			auto first = registerValue(next.getCompareRegister0());
 			auto second = current.getCompareImmediateFlag() ? next.getUpper() : registerValue(next.getCompareRegister1());
 			auto compareResult = translationTable.find(current.getCompareType());
-			if (compareResult == translationTable.end()) {
-				throw iris::Problem("Illegal compare type!");
-			}
+			throwIfNotFound(compareResult, translationTable, "Illegal compare type!");
 			auto combineResult = combineTranslation.find(current.getCompareCombineFlag());
-			if (combineResult == combineTranslation.end()) {
-				throw iris::Problem("Illegal compare combine operation!");
-			}
+			throwIfNotFound(combineResult, combineTranslation, "Illegal compare combine operation!");
 			getConditionRegister() = static_cast<RegisterValue>(_bCombine.performOperation(combineResult->second, 
 						_compare.performOperation(compareResult->second, first, second),
 						getConditionRegister() != 0));

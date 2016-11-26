@@ -214,5 +214,6 @@ class BooleanCombineUnit {
 			}
 		}
 };
+
 } // end namespace iris
 #endif // end _IRIS_ALU_H
