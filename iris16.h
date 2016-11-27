@@ -1,7 +1,7 @@
 #ifndef _TARGET_IRIS16_IRIS_H
 #define _TARGET_IRIS16_IRIS_H
 #include "iris_base.h"
-#include "iris_alu.h"
+#include "iris_xunits.h"
 #include "Core.h"
 #include <cstdint>
 #include <memory>

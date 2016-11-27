@@ -10,7 +10,7 @@
 #include <tuple>
 #include <map>
 #include "sim_registration.h"
-#include "iris_alu.h"
+#include "iris_xunits.h"
 
 namespace iris19 {
 	using HWord = uint16_t;

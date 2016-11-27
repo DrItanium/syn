@@ -1,12 +1,12 @@
-// define an ALU to cut down on the amount of repeated actions
-#ifndef _IRIS_ALU_H
-#define _IRIS_ALU_H
+// define Execution Units to cut down on the amount of repeated actions
+#ifndef _IRIS_XUNITS_H
+#define _IRIS_XUNITS_H
 #include "iris_base.h"
 #include <iostream>
 namespace iris {
 
 template<typename Word>
-class ALU  {
+class ALU {
     public:
 		using WordType = Word;
         enum class Operation {
@@ -216,4 +216,4 @@ class BooleanCombineUnit {
 };
 
 } // end namespace iris
-#endif // end _IRIS_ALU_H
+#endif // end _IRIS_XUNITS_H
