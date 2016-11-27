@@ -403,8 +403,8 @@ namespace iris18 {
 					_logicalOps.performOperation(ALU::Operation::BinaryAnd, addressRegister.get(), maskRegister.get()),
 					shiftRegister.get());
 		} else if (type == EncodingOperation::Encode) {
-			auto p0 = std::async(std::launch::deferred, std::ref(notOperation), std::ref(_logicalOps), maskRegister.get());
-			auto p1 = std::async(std::launch::deferred, std::ref(shiftLeftOp), std::ref(_shifter), getValueRegister(), shiftRegister.get());
+			auto p0 = std::async(std::launch::async, std::ref(notOperation), std::ref(_logicalOps), maskRegister.get());
+			auto p1 = std::async(std::launch::async, std::ref(shiftLeftOp), std::ref(_shifter), getValueRegister(), shiftRegister.get());
 			getAddressRegister() = _logicalOps.performOperation(ALU::Operation::BinaryOr, 
 					_logicalOps.performOperation(ALU::Operation::BinaryAnd, addressRegister.get(), p0.get()),
 					_logicalOps.performOperation(ALU::Operation::BinaryAnd, p1.get(), maskRegister.get()));
