@@ -1,5 +1,4 @@
 #include "iris16.h"
-#include "iris_alu.h"
 #include <functional>
 #include <sstream>
 #include <vector>
@@ -165,16 +164,16 @@ namespace iris16 {
 			auto cond = true;
 			advanceIp = false;
 			auto ip = getInstructionPointer();
+			auto dest = destinationRegister();
 			if (conditional) {
-				auto dest = destinationRegister();
 				cond = (iffalse ? (dest == 0) : (dest != 0));
 				if (ifthenelse) {
-					newAddr = gpr[cond ? getSource0() : getSource1()];
+					newAddr = gpr.choose(cond, getSource0(), getSource1());
 				} else {
 					newAddr = cond ? (immediate ? getImmediate() : source0Register()) : ip + 1;
 				}
 			} else {
-				newAddr = immediate ? getImmediate() : destinationRegister();
+				newAddr = immediate ? getImmediate() : dest;
 			}
 			getInstructionPointer() = newAddr;
 			if (link && cond) {
