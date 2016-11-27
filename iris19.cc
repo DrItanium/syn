@@ -59,8 +59,8 @@ namespace iris19 {
 		}
 	}
 
-	Core::Core() : memory(new Word[ArchitectureConstants::AddressMax]) { }
-	Core::~Core() { }
+	Core::Core() noexcept { } 
+	Core::~Core() noexcept { }
 
 	void Core::initialize() {
 		// setup the default system handlers
@@ -76,53 +76,19 @@ namespace iris19 {
 		throw iris::Problem("Unimplemented system call!");
 	}
 
-
 	void Core::shutdown() { }
 
-	template<typename T, int count>
-		void populateContents(T* contents, std::istream& stream, std::function<T(byte*)> encode) {
-			static char buf[sizeof(T)] = { 0 };
-			for(int i = 0; i < count; ++i) {
-				stream.read(buf, sizeof(T));
-				contents[i] = encode((byte*)buf);
-			}
-		}
-	template<typename T, int count>
-		void populateContents(const std::shared_ptr<T>& contents, std::istream& stream, std::function<T(byte*)> encode) {
-			static char buf[sizeof(T)] = { 0 };
-			for (auto i = 0; i < count; ++i) {
-				stream.read(buf, sizeof(T));
-				contents.get()[i] = encode((byte*)buf);
-			}
-		}
 	void Core::installprogram(std::istream& stream) {
-		populateContents<RegisterValue, ArchitectureConstants::RegisterCount>(gpr, stream, [](byte* buf) { return iris::encodeUint64LE(buf); });
-		populateContents<Word, ArchitectureConstants::AddressMax>(memory, stream, [](byte* buf) { return iris::encodeUint32LE(buf); });
+		gpr.install(stream, [](char* buf) { return iris::encodeUint64LE((byte*)buf); });
+		memory.install(stream, [](char* buf) { return iris::encodeUint32LE((byte*)buf); });
 	}
-
-	template<typename T, int count>
-		void dumpContents(T* contents, std::ostream& stream, std::function<void(T value, byte* buf)> decompose) {
-			static byte buf[sizeof(T)];
-			for (int i = 0; i < count; ++i) {
-				decompose(contents[i], (byte*)buf);
-				stream.write((char*)buf, sizeof(T));
-			}
-		}
-
-	template<typename T, int count>
-		void dumpContents(const std::shared_ptr<T>& contents, std::ostream& stream, std::function<void(T value, byte* buf)> decompose) {
-			static byte buf[sizeof(T)];
-			for (auto i = 0; i < count; ++i) {
-				decompose(contents.get()[i], buf);
-				stream.write((char*)buf, sizeof(T));
-			}
-		}
 
 	void Core::dump(std::ostream& stream) {
 		// save the registers
-		dumpContents<RegisterValue, ArchitectureConstants::RegisterCount>(gpr, stream, iris::decodeUint64LE);
-		dumpContents<Word, ArchitectureConstants::AddressMax>(memory, stream, iris::decodeUint32LE);
+		gpr.dump(stream, [](RegisterValue v, char* buf) { iris::decodeUint64LE(v, (byte*)buf); });
+		memory.dump(stream, [](Word v, char* buf) { iris::decodeUint32LE(v, (byte*)buf); });
 	}
+
 	void Core::run() {
 		while(execute) {
 			cycle();
@@ -291,67 +257,42 @@ namespace iris19 {
 	}
 
 	void Core::logicalOperation(Instruction&& current) {
-		auto result = 0u;
-		auto src0 = genericRegisterGet(current.getSource0());
-		auto type = current.getSubType<LogicalOps>();
-		if (type == LogicalOps::Not) {
-			if (current.markedImmediate()) {
-				throw iris::Problem("Can't do an immediate of a binary not!");
-			} else {
-				result = iris::binaryNot(src0);
-			}
-		} else {
-			auto src1 = current.markedImmediate() ? retrieveImmediate(current.getBitmask()) : genericRegisterGet(current.getSource1());
-			switch(type) {
-				case LogicalOps::And:
-					result = iris::binaryAnd(src0, src1);
-					break;
-				case LogicalOps::Or:
-					result = iris::binaryOr(src0, src1);
-					break;
-				case LogicalOps::Nand:
-					result = iris::binaryNand(src0, src1);
-					break;
-				case LogicalOps::Xor:
-					result = iris::binaryXor(src0, src1);
-					break;
-				case LogicalOps::Not:
-					throw iris::Problem("FATAL ERROR: logicalOperation, type was not LogicalOps::Not so else condition was taken, but type is now LogicalOps::Not!!!!");
-				default:
-					throw iris::Problem("Undefined logical operation!");
-			}
+		static std::map<LogicalOps, ALU::Operation> table = {
+			{ LogicalOps::Not, ALU::Operation::UnaryNot },
+			{ LogicalOps::Or, ALU::Operation::BinaryOr },
+			{ LogicalOps::And, ALU::Operation::BinaryAnd },
+			{ LogicalOps::Xor, ALU::Operation::BinaryXor },
+			{ LogicalOps::Nand, ALU::Operation::BinaryNand },
+		};
+		auto result = table.find(current.getSubType<LogicalOps>());
+		if (result == table.end()) {
+			throw iris::Problem("Undefined logical operation!");
 		}
-		genericRegisterSet(current.getDestination(), result);
+		auto op = result->second;
+		auto src0 = genericRegisterGet(current.getSource0());
+		auto src1 = 0;
+		if (op != ALU::Operation::UnaryNot) {
+			src1 = current.markedImmediate() ? retrieveImmediate(current.getBitmask()) : genericRegisterGet(current.getSource1());
+		}
+		genericRegisterSet(current.getDestination(), _alu.performOperation(result->second, src0, src1));
 	}
 
 	void Core::compareOperation(Instruction&& current) {
+		static std::map<CompareStyle, CompareUnit::Operation> translationTable = {
+			{ CompareStyle::Equals, CompareUnit::Operation::Eq },
+			{ CompareStyle::NotEquals, CompareUnit::Operation::Neq },
+			{ CompareStyle::LessThan, CompareUnit::Operation::LessThan },
+			{ CompareStyle::LessThanOrEqualTo, CompareUnit::Operation::LessThanOrEqualTo },
+			{ CompareStyle::GreaterThan, CompareUnit::Operation::GreaterThan },
+			{ CompareStyle::GreaterThanOrEqualTo, CompareUnit::Operation::GreaterThanOrEqualTo },
+		};
+		auto result = translationTable.find(current.getSubType<CompareStyle>());
+		if (result == translationTable.end()) {
+			throw iris::Problem("Illegal compare type!");
+		}
 		auto src0 = genericRegisterGet(current.getSource0());
 		auto src1 = current.markedImmediate() ? current.getImmediate8() : genericRegisterGet(current.getSource1());
-		auto compareType = current.getSubType<CompareStyle>();
-		auto result = false;
-		switch (compareType) {
-			case CompareStyle::Equals:
-				result = iris::eq(src0, src1);
-				break;
-			case CompareStyle::NotEquals:
-				result = iris::neq(src0, src1);
-				break;
-			case CompareStyle::LessThan:
-				result = iris::lt(src0, src1);
-				break;
-			case CompareStyle::GreaterThan:
-				result = iris::gt(src0, src1);
-				break;
-			case CompareStyle::LessThanOrEqualTo:
-				result = iris::le(src0, src1);
-				break;
-			case CompareStyle::GreaterThanOrEqualTo:
-				result = iris::ge(src0, src1);
-				break;
-			default:
-				throw iris::Problem("illegal compare type!");
-		}
-		genericRegisterSet(current.getDestination(), result);
+		genericRegisterSet(current.getDestination(), _compare.performOperation(result->second, src0, src1));
 	}
 
 	void Core::branchSpecificOperation(Instruction&& current) {
@@ -445,34 +386,20 @@ namespace iris19 {
 		}
 	}
 	Word Core::getCurrentCodeWord() noexcept {
-		return memory.get()[getInstructionPointer()];
+		return memory[getInstructionPointer()];
 	}
 	void Core::storeWord(RegisterValue address, Word value) {
-		if (address >= ArchitectureConstants::AddressMax) {
-			throw iris::Problem("Attempted to write outside of memory!");
-		} else {
-			memory.get()[address] = value;
-		}
+		memory[address] = value;
 	}
 	Word Core::loadWord(RegisterValue address) {
-		if (address >= ArchitectureConstants::AddressMax) {
-			throw iris::Problem("Attempted to read from outside of memory!");
-		} else {
-			return memory.get()[address];
-		}
+		return memory[address];
 	}
 	RegisterValue Core::loadRegisterValue(RegisterValue address) {
-		auto lower32 = loadWord(address);
-		auto upper32 = loadWord(address + 1);
-		return iris::encodeUint64LE(lower32, upper32);
+		return iris::encodeUint64LE(loadWord(address), loadWord(address + 1));
 	}
 	void Core::storeRegisterValue(RegisterValue address, RegisterValue value) {
 		storeWord(address, iris::decodeBits<RegisterValue, Word, lower32Mask, 0>(value));
 		storeWord(address + 1, iris::decodeBits<RegisterValue, Word, upper32Mask, 32>(value));
-	}
-
-	std::shared_ptr<Word> Core::getMemory() {
-		return memory;
 	}
 
 	void Core::installSystemHandler(byte index, Core::SystemFunction func) {

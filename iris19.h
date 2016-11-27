@@ -10,6 +10,7 @@
 #include <tuple>
 #include <map>
 #include "sim_registration.h"
+#include "iris_alu.h"
 
 namespace iris19 {
 	using HWord = uint16_t;
@@ -119,6 +120,10 @@ namespace iris19 {
 
 	int instructionSizeFromImmediateMask(byte bitmask);
 
+    using RegisterFile = iris::FixedSizeLoadStoreUnit<RegisterValue, byte, ArchitectureConstants::RegisterCount>;
+    using MemorySpace = iris::FixedSizeLoadStoreUnit<Word, RegisterValue, ArchitectureConstants::AddressMax>;
+    using CompareUnit = iris::Comparator<RegisterValue>;
+    using ALU = iris::ALU<RegisterValue>;
 
 	class Core : public iris::Core {
 		public:
@@ -130,15 +135,14 @@ namespace iris19 {
 				Count,
 			};
 		public:
-			Core();
-			virtual ~Core();
+			Core() noexcept;
+			virtual ~Core() noexcept;
 			virtual void initialize() override;
 			virtual void installprogram(std::istream& stream) override;
 			virtual void shutdown() override;
 			virtual void dump(std::ostream& stream) override;
 			virtual void run() override;
 			virtual void link(std::istream& stream) override;
-			std::shared_ptr<Word> getMemory();
 			void installSystemHandler(byte index, SystemFunction fn);
 			void cycle();
 			bool shouldExecute() const { return execute; }
@@ -189,8 +193,10 @@ namespace iris19 {
 		private:
 			bool execute = true,
 				 advanceIp = true;
-			RegisterValue gpr[ArchitectureConstants::RegisterCount] = { 0 };
-			std::shared_ptr<Word> memory;
+            RegisterFile gpr;
+            MemorySpace memory;
+            CompareUnit _compare;
+            ALU _alu;
 			SystemFunction systemHandlers[ArchitectureConstants::MaxSystemCalls] =  { 0 };
 	};
 
