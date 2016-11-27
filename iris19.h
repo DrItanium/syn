@@ -190,6 +190,9 @@ namespace iris19 {
 			Word loadWord(RegisterValue address);
 			RegisterValue loadRegisterValue(RegisterValue address);
 			void storeRegisterValue(RegisterValue address, RegisterValue value);
+        private:
+            void baseALUOperation(Instruction&& current, ALU::Operation op, RegisterValue s0, RegisterValue s1);
+
 		private:
 			bool execute = true,
 				 advanceIp = true;

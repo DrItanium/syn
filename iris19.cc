@@ -6,6 +6,11 @@
 #include <fstream>
 
 namespace iris19 {
+	auto throwIfNotFound = [](auto result, auto& table, const std::string& msg) {
+		if (result == table.end()) {
+			throw iris::Problem(msg);
+		}
+	};
 	// BEGIN INSTRUCTION
 	RegisterValue Instruction::getImmediate8() const noexcept {
 		return getShortImmediate();
@@ -231,29 +236,19 @@ namespace iris19 {
 	}
 
 	void Core::arithmeticOperation(Instruction&& current) {
-		auto result = 0u;
-		auto src0 = genericRegisterGet(current.getSource0());
-		auto src1 = current.markedImmediate() ? current.getImmediate8() : genericRegisterGet(current.getSource1());
-		switch (current.getSubType<ArithmeticOps>()) {
-			case ArithmeticOps::Add:
-				result = iris::add(src0, src1);
-				break;
-			case ArithmeticOps::Sub:
-				result = iris::sub(src0, src1);
-				break;
-			case ArithmeticOps::Mul:
-				result = iris::mul(src0, src1);
-				break;
-			case ArithmeticOps::Div:
-				result = iris::div(src0, src1);
-				break;
-			case ArithmeticOps::Rem:
-				result = iris::rem(src0, src1);
-				break;
-			default:
-				throw iris::Problem("Illegal Arithmetic Signature");
-		}
-		genericRegisterSet(current.getDestination(), result);
+		static std::map<ArithmeticOps, ALU::Operation> table = {
+			{ ArithmeticOps::Add, ALU::Operation::Add },
+			{ ArithmeticOps::Sub, ALU::Operation::Subtract },
+			{ ArithmeticOps::Mul, ALU::Operation::Multiply },
+			{ ArithmeticOps::Div, ALU::Operation::Divide},
+			{ ArithmeticOps::Rem, ALU::Operation::Remainder},
+		};
+		auto result = table.find(current.getSubType<ArithmeticOps>());
+		throwIfNotFound(result, table, "Illegal arithmetic operation!");
+		baseALUOperation(std::move(current), 
+				result->second, 
+				genericRegisterGet(current.getSource0()),
+				current.markedImmediate() ? current.getImmediate8() : genericRegisterGet(current.getSource1()));
 	}
 
 	void Core::logicalOperation(Instruction&& current) {
@@ -265,20 +260,19 @@ namespace iris19 {
 			{ LogicalOps::Nand, ALU::Operation::BinaryNand },
 		};
 		auto result = table.find(current.getSubType<LogicalOps>());
-		if (result == table.end()) {
-			throw iris::Problem("Undefined logical operation!");
-		}
-		auto op = result->second;
-		auto src0 = genericRegisterGet(current.getSource0());
-		auto src1 = 0;
-		if (op != ALU::Operation::UnaryNot) {
-			src1 = current.markedImmediate() ? retrieveImmediate(current.getBitmask()) : genericRegisterGet(current.getSource1());
-		}
-		genericRegisterSet(current.getDestination(), _alu.performOperation(result->second, src0, src1));
+		throwIfNotFound(result, table, "Undefined logical operation!");
+		baseALUOperation(std::move(current), result->second, genericRegisterGet(current.getSource0()),
+				(result->second == ALU::Operation::UnaryNot ? 0 :
+				 (current.markedImmediate() ? retrieveImmediate(current.getBitmask()) : 
+				  genericRegisterGet(current.getSource1()))));
+	}
+
+	void Core::baseALUOperation(Instruction&& current, ALU::Operation op, RegisterValue s0, RegisterValue s1) {
+		genericRegisterSet(current.getDestination(), _alu.performOperation(op, s0, s1));
 	}
 
 	void Core::compareOperation(Instruction&& current) {
-		static std::map<CompareStyle, CompareUnit::Operation> translationTable = {
+		static std::map<CompareStyle, CompareUnit::Operation> table = {
 			{ CompareStyle::Equals, CompareUnit::Operation::Eq },
 			{ CompareStyle::NotEquals, CompareUnit::Operation::Neq },
 			{ CompareStyle::LessThan, CompareUnit::Operation::LessThan },
@@ -286,10 +280,8 @@ namespace iris19 {
 			{ CompareStyle::GreaterThan, CompareUnit::Operation::GreaterThan },
 			{ CompareStyle::GreaterThanOrEqualTo, CompareUnit::Operation::GreaterThanOrEqualTo },
 		};
-		auto result = translationTable.find(current.getSubType<CompareStyle>());
-		if (result == translationTable.end()) {
-			throw iris::Problem("Illegal compare type!");
-		}
+		auto result = table.find(current.getSubType<CompareStyle>());
+		throwIfNotFound(result, table, "Undefined logical operation!");
 		auto src0 = genericRegisterGet(current.getSource0());
 		auto src1 = current.markedImmediate() ? current.getImmediate8() : genericRegisterGet(current.getSource1());
 		genericRegisterSet(current.getDestination(), _compare.performOperation(result->second, src0, src1));
