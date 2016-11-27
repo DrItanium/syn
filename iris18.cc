@@ -4,7 +4,6 @@
 #include "Problem.h"
 #include <utility>
 #include <map>
-#include <future>
 
 namespace iris18 {
 	/*
@@ -391,34 +390,25 @@ namespace iris18 {
 		return unit.performOperation(ALU::Operation::ShiftLeft, v0, v1);
 	}
     void Core::encodingOperation(DecodedInstruction&& inst) {
-		auto maskRegister = std::async(std::launch::deferred, [this]() { return getMaskRegister(); });
-		auto addressRegister = std::async(std::launch::deferred, [this]() { return getAddressRegister(); });
-		auto shiftRegister = std::async(std::launch::deferred, [this]() { return getShiftRegister(); });
-
 		auto type = inst.getComplexClassEncoding_Type();
 		if (type == EncodingOperation::Decode) {
 			// connect the result of the logical operations alu to the
 			// shifter alu then store the result in the value register
-			getValueRegister() = _shifter.performOperation(ALU::Operation::ShiftRight, 
-					_logicalOps.performOperation(ALU::Operation::BinaryAnd, addressRegister.get(), maskRegister.get()),
-					shiftRegister.get());
+			getValueRegister() = iris::decodeBits<RegisterValue, RegisterValue>(getAddressRegister(), getMaskRegister(), getShiftRegister());
 		} else if (type == EncodingOperation::Encode) {
-			auto p0 = std::async(std::launch::async, std::ref(notOperation), std::ref(_logicalOps), maskRegister.get());
-			auto p1 = std::async(std::launch::async, std::ref(shiftLeftOp), std::ref(_shifter), getValueRegister(), shiftRegister.get());
-			auto p2 = std::async(std::launch::async, [&p0, this, &addressRegister](){ return _shifter.performOperation(ALU::Operation::BinaryAnd, addressRegister.get(), p0.get()); });
-			auto p3 = std::async(std::launch::async, [&p1, this, &maskRegister](){ return _alu.performOperation(ALU::Operation::BinaryAnd, p1.get(), maskRegister.get()); });
-			getAddressRegister() = _logicalOps.performOperation(ALU::Operation::BinaryOr, p2.get(), p3.get());
+			getAddressRegister() = iris::encodeBits<RegisterValue, RegisterValue>(getAddressRegister(), getValueRegister(), getMaskRegister(), getShiftRegister());
 
 		} else if (type == EncodingOperation::BitSet) {
 			getConditionRegister() = _compare.performOperation(CompareUnit::Operation::Eq, 
 					_logicalOps.performOperation(ALU::Operation::BinaryAnd,
-						_shifter.performOperation(ALU::Operation::ShiftRight, addressRegister.get(),
+						_shifter.performOperation(ALU::Operation::ShiftRight, getAddressRegister(),
 							getFieldRegister()), 0x1), 1);
 
 		} else if (type == EncodingOperation::BitUnset) {
 			getConditionRegister() = _compare.performOperation(CompareUnit::Operation::Neq,
 					_logicalOps.performOperation(ALU::Operation::BinaryAnd,
-						_shifter.performOperation(ALU::Operation::ShiftRight, addressRegister.get(),
+						_shifter.performOperation(ALU::Operation::ShiftRight, 
+							getAddressRegister(),
 							getFieldRegister()), 0x1), 1);
 		} else {
 			throw iris::Problem("Illegal complex encoding operation defined!");
