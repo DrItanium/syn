@@ -405,9 +405,9 @@ namespace iris18 {
 		} else if (type == EncodingOperation::Encode) {
 			auto p0 = std::async(std::launch::async, std::ref(notOperation), std::ref(_logicalOps), maskRegister.get());
 			auto p1 = std::async(std::launch::async, std::ref(shiftLeftOp), std::ref(_shifter), getValueRegister(), shiftRegister.get());
-			getAddressRegister() = _logicalOps.performOperation(ALU::Operation::BinaryOr, 
-					_logicalOps.performOperation(ALU::Operation::BinaryAnd, addressRegister.get(), p0.get()),
-					_logicalOps.performOperation(ALU::Operation::BinaryAnd, p1.get(), maskRegister.get()));
+			auto p2 = std::async(std::launch::async, [&p0, this, &addressRegister](){ return _shifter.performOperation(ALU::Operation::BinaryAnd, addressRegister.get(), p0.get()); });
+			auto p3 = std::async(std::launch::async, [&p1, this, &maskRegister](){ return _alu.performOperation(ALU::Operation::BinaryAnd, p1.get(), maskRegister.get()); });
+			getAddressRegister() = _logicalOps.performOperation(ALU::Operation::BinaryOr, p2.get(), p3.get());
 
 		} else if (type == EncodingOperation::BitSet) {
 			getConditionRegister() = _compare.performOperation(CompareUnit::Operation::Eq, 
