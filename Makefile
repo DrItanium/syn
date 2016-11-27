@@ -201,25 +201,21 @@ iris18_defines.h: iris_repl def/iris18/instruction.clp cmd/deffield.clp lib/cort
 
 
 
+
 asm_interact.o: asm_interact.cc asm_interact.h iris18.h iris_base.h \
- Problem.h Core.h sim_registration.h iris18_defines.h \
- def/iris18/instruction.def def/iris18/misc.def def/iris18/registers.def \
- def/iris18/logical_generic.sig def/iris18/arithmetic.sig \
- def/iris18/move.sig def/iris18/memory.sig def/iris18/set.sig \
- def/iris18/ops.def iris16.h iris_alu.h iris16_defines.h iris17.h \
- iris17_defines.h iris19.h iris19_defines.h def/iris19/ops.def
+ Problem.h iris_alu.h Core.h sim_registration.h iris18_defines.h \
+ def/iris18/instruction.def def/iris18/misc.def def/iris18/ops.def \
+ iris16.h iris16_defines.h iris17.h iris17_defines.h iris19.h \
+ iris19_defines.h def/iris19/ops.def
 iris16.o: iris16.cc iris16.h iris_base.h Problem.h iris_alu.h Core.h \
  iris16_defines.h
-iris17.o: iris17.cc iris17.h iris_base.h Problem.h Core.h \
- iris17_defines.h def/iris17/jump.def
-iris18.o: iris18.cc iris18.h iris_base.h Problem.h Core.h \
+iris17.o: iris17.cc iris17.h iris_base.h Problem.h iris_alu.h Core.h \
+ iris17_defines.h
+iris18.o: iris18.cc iris18.h iris_base.h Problem.h iris_alu.h Core.h \
  sim_registration.h iris18_defines.h def/iris18/instruction.def \
- def/iris18/misc.def def/iris18/registers.def \
- def/iris18/logical_generic.sig def/iris18/arithmetic.sig \
- def/iris18/move.sig def/iris18/memory.sig def/iris18/set.sig \
- def/iris18/ops.def def/iris18/bitmask4bit.def def/iris18/bitmask8bit.def
+ def/iris18/misc.def def/iris18/ops.def def/iris18/bitmask4bit.def
 iris19.o: iris19.cc iris19.h iris_base.h Problem.h Core.h \
- sim_registration.h iris19_defines.h def/iris19/ops.def
+ sim_registration.h iris_alu.h iris19_defines.h def/iris19/ops.def
 iris_asm.o: iris_asm.cc Problem.h asm_interact.h
 iris_clips.o: iris_clips.cc iris_clips.h iris_base.h Problem.h \
  misc/maya/clips.h misc/maya/setup.h misc/maya/os_shim.h \
@@ -284,43 +280,34 @@ iris_repl.o: iris_repl.cc misc/maya/clips.h misc/maya/setup.h \
  misc/maya/insfile.h misc/maya/msgcom.h misc/maya/msgpass.h \
  misc/maya/objrtmch.h iris_clips.h iris_base.h Problem.h
 iris_sim.o: iris_sim.cc Problem.h Core.h sim_registration.h iris18.h \
- iris_base.h iris18_defines.h def/iris18/instruction.def \
- def/iris18/misc.def def/iris18/registers.def \
- def/iris18/logical_generic.sig def/iris18/arithmetic.sig \
- def/iris18/move.sig def/iris18/memory.sig def/iris18/set.sig \
- def/iris18/ops.def iris16.h iris_alu.h iris16_defines.h
+ iris_base.h iris_alu.h iris18_defines.h def/iris18/instruction.def \
+ def/iris18/misc.def def/iris18/ops.def iris16.h iris16_defines.h
 sim_registration.o: sim_registration.cc sim_registration.h Core.h \
- iris18.h iris_base.h Problem.h iris18_defines.h \
- def/iris18/instruction.def def/iris18/misc.def def/iris18/registers.def \
- def/iris18/logical_generic.sig def/iris18/arithmetic.sig \
- def/iris18/move.sig def/iris18/memory.sig def/iris18/set.sig \
- def/iris18/ops.def iris16.h iris_alu.h iris16_defines.h iris17.h \
- iris17_defines.h iris19.h iris19_defines.h def/iris19/ops.def
+ iris18.h iris_base.h Problem.h iris_alu.h iris18_defines.h \
+ def/iris18/instruction.def def/iris18/misc.def def/iris18/ops.def \
+ iris16.h iris16_defines.h iris17.h iris17_defines.h iris19.h \
+ iris19_defines.h def/iris19/ops.def
+
 
 iris16_asm.tab.o: iris16_asm.tab.c asm_interact.h iris16.h iris_base.h \
  Problem.h iris_alu.h Core.h iris16_defines.h iris16_asm.tab.h
 iris16_lex.yy.o: iris16_lex.yy.c iris16.h iris_base.h Problem.h \
  iris_alu.h Core.h iris16_defines.h iris16_asm.tab.h
 iris17_asm.tab.o: iris17_asm.tab.c asm_interact.h iris17.h iris_base.h \
- Problem.h Core.h iris17_defines.h iris17_asm.tab.h
-iris17_lex.yy.o: iris17_lex.yy.c iris17.h iris_base.h Problem.h Core.h \
- iris17_defines.h iris17_asm.tab.h
-iris18_asm.tab.o: iris18_asm.tab.c iris18.h iris_base.h Problem.h Core.h \
- sim_registration.h iris18_defines.h def/iris18/instruction.def \
- def/iris18/misc.def def/iris18/registers.def \
- def/iris18/logical_generic.sig def/iris18/arithmetic.sig \
- def/iris18/move.sig def/iris18/memory.sig def/iris18/set.sig \
- def/iris18/ops.def asm_interact.h iris18_asm.tab.h
-iris18_lex.yy.o: iris18_lex.yy.c iris18.h iris_base.h Problem.h Core.h \
- sim_registration.h iris18_defines.h def/iris18/instruction.def \
- def/iris18/misc.def def/iris18/registers.def \
- def/iris18/logical_generic.sig def/iris18/arithmetic.sig \
- def/iris18/move.sig def/iris18/memory.sig def/iris18/set.sig \
- def/iris18/ops.def iris18_asm.tab.h
+ Problem.h iris_alu.h Core.h iris17_defines.h iris17_asm.tab.h
+iris17_lex.yy.o: iris17_lex.yy.c iris17.h iris_base.h Problem.h \
+ iris_alu.h Core.h iris17_defines.h iris17_asm.tab.h
+iris18_asm.tab.o: iris18_asm.tab.c iris18.h iris_base.h Problem.h \
+ iris_alu.h Core.h sim_registration.h iris18_defines.h \
+ def/iris18/instruction.def def/iris18/misc.def def/iris18/ops.def \
+ asm_interact.h iris18_asm.tab.h
+iris18_lex.yy.o: iris18_lex.yy.c iris18.h iris_base.h Problem.h \
+ iris_alu.h Core.h sim_registration.h iris18_defines.h \
+ def/iris18/instruction.def def/iris18/misc.def def/iris18/ops.def \
+ iris18_asm.tab.h
 iris19_asm.tab.o: iris19_asm.tab.c iris19.h iris_base.h Problem.h Core.h \
- sim_registration.h iris19_defines.h def/iris19/ops.def asm_interact.h \
- iris19_asm.tab.h def/iris19/instruction.def
+ sim_registration.h iris_alu.h iris19_defines.h def/iris19/ops.def \
+ asm_interact.h iris19_asm.tab.h def/iris19/instruction.def
 iris19_lex.yy.o: iris19_lex.yy.c iris19.h iris_base.h Problem.h Core.h \
- sim_registration.h iris19_defines.h def/iris19/ops.def iris19_asm.tab.h
-
-
+ sim_registration.h iris_alu.h iris19_defines.h def/iris19/ops.def \
+ iris19_asm.tab.h
