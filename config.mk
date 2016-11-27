@@ -1,4 +1,4 @@
-LIBS = -lc -lm -lboost_system -lboost_filesystem
+LIBS = -lc -lm -lboost_system -lboost_filesystem -lpthread
 
 CC := cc
 CXX := c++

@@ -248,6 +248,7 @@ namespace iris18 {
 		private:
 			void complexOperation(DecodedInstruction&& inst);
 			void encodingOperation(DecodedInstruction&& inst);
+			void performEncodeOp(DecodedInstruction&& inst);
 			void memoryManipulationOperation(DecodedInstruction&& inst);
 		private:
 			bool execute = true,

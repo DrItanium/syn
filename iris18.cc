@@ -384,41 +384,45 @@ namespace iris18 {
 			throw iris::Problem("Undefined complex subtype!");
 		}
 	}
+	RegisterValue notOperation(ALU & unit, RegisterValue v0) {
+		return unit.performOperation(ALU::Operation::UnaryNot, v0, 0);
+	}
+	RegisterValue shiftLeftOp(ALU& unit, RegisterValue v0, RegisterValue v1) {
+		return unit.performOperation(ALU::Operation::ShiftLeft, v0, v1);
+	}
     void Core::encodingOperation(DecodedInstruction&& inst) {
-        switch (inst.getComplexClassEncoding_Type()) {
-            case EncodingOperation::Decode:
-				// connect the result of the logical operations alu to the
-				// shifter alu then store the result in the value register
-				getValueRegister() = _shifter.performOperation(ALU::Operation::ShiftRight, 
-						_logicalOps.performOperation(ALU::Operation::BinaryAnd, getAddressRegister(), getMaskRegister()), 
-						getShiftRegister());
-                break;
-            case EncodingOperation::Encode:
-				// this is a good candidate for std::async right here :)
-				getAddressRegister() = _logicalOps.performOperation(ALU::Operation::BinaryOr, 
-						_logicalOps.performOperation(ALU::Operation::BinaryAnd, getAddressRegister(),
-							_logicalOps.performOperation(ALU::Operation::UnaryNot, getMaskRegister(), 0)),
-						_logicalOps.performOperation(ALU::Operation::BinaryAnd, 
-							_shifter.performOperation(ALU::Operation::ShiftLeft, getValueRegister(), getShiftRegister()),
-							getMaskRegister()));
+		auto maskRegister = std::async(std::launch::deferred, [this]() { return getMaskRegister(); });
+		auto addressRegister = std::async(std::launch::deferred, [this]() { return getAddressRegister(); });
+		auto shiftRegister = std::async(std::launch::deferred, [this]() { return getShiftRegister(); });
 
-                break;
-            case EncodingOperation::BitSet:
-                // use the shift register as the field select
-				getConditionRegister() = _compare.performOperation(CompareUnit::Operation::Eq, 
-						_logicalOps.performOperation(ALU::Operation::BinaryAnd,
-							_shifter.performOperation(ALU::Operation::ShiftRight, getAddressRegister(),
-								getFieldRegister()), 0x1), 1);
-                break;
-            case EncodingOperation::BitUnset:
-				getConditionRegister() = _compare.performOperation(CompareUnit::Operation::Neq,
-						_logicalOps.performOperation(ALU::Operation::BinaryAnd,
-							_shifter.performOperation(ALU::Operation::ShiftRight, getAddressRegister(),
-								getFieldRegister()), 0x1), 1);
-                break;
-            default:
-                throw iris::Problem("Illegal complex encoding operation defined!");
-        }
+		auto type = inst.getComplexClassEncoding_Type();
+		if (type == EncodingOperation::Decode) {
+			// connect the result of the logical operations alu to the
+			// shifter alu then store the result in the value register
+			getValueRegister() = _shifter.performOperation(ALU::Operation::ShiftRight, 
+					_logicalOps.performOperation(ALU::Operation::BinaryAnd, addressRegister.get(), maskRegister.get()),
+					shiftRegister.get());
+		} else if (type == EncodingOperation::Encode) {
+			auto p0 = std::async(std::launch::deferred, std::ref(notOperation), std::ref(_logicalOps), maskRegister.get());
+			auto p1 = std::async(std::launch::deferred, std::ref(shiftLeftOp), std::ref(_shifter), getValueRegister(), shiftRegister.get());
+			getAddressRegister() = _logicalOps.performOperation(ALU::Operation::BinaryOr, 
+					_logicalOps.performOperation(ALU::Operation::BinaryAnd, addressRegister.get(), p0.get()),
+					_logicalOps.performOperation(ALU::Operation::BinaryAnd, p1.get(), maskRegister.get()));
+
+		} else if (type == EncodingOperation::BitSet) {
+			getConditionRegister() = _compare.performOperation(CompareUnit::Operation::Eq, 
+					_logicalOps.performOperation(ALU::Operation::BinaryAnd,
+						_shifter.performOperation(ALU::Operation::ShiftRight, addressRegister.get(),
+							getFieldRegister()), 0x1), 1);
+
+		} else if (type == EncodingOperation::BitUnset) {
+			getConditionRegister() = _compare.performOperation(CompareUnit::Operation::Neq,
+					_logicalOps.performOperation(ALU::Operation::BinaryAnd,
+						_shifter.performOperation(ALU::Operation::ShiftRight, addressRegister.get(),
+							getFieldRegister()), 0x1), 1);
+		} else {
+			throw iris::Problem("Illegal complex encoding operation defined!");
+		}
     }
 
 	void Core::terminate(Core* core, DecodedInstruction&& inst) {
