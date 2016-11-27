@@ -164,16 +164,16 @@ namespace iris16 {
 			auto cond = true;
 			advanceIp = false;
 			auto ip = getInstructionPointer();
-			auto dest = destinationRegister();
 			if (conditional) {
+				auto dest = destinationRegister();
 				cond = (iffalse ? (dest == 0) : (dest != 0));
 				if (ifthenelse) {
-					newAddr = gpr.choose(cond, getSource0(), getSource1());
+					newAddr = gpr[cond ? getSource0() : getSource1()];
 				} else {
 					newAddr = cond ? (immediate ? getImmediate() : source0Register()) : ip + 1;
 				}
 			} else {
-				newAddr = immediate ? getImmediate() : dest;
+				newAddr = immediate ? getImmediate() : destinationRegister();
 			}
 			getInstructionPointer() = newAddr;
 			if (link && cond) {

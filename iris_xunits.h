@@ -169,9 +169,6 @@ class LoadStoreUnit {
 				stream.write(buf, sizeof(Word));
 			}
 		}
-		Word choose(bool condition, Address onTrue, Address onFalse) {
-			return _memory[condition ? onTrue : onFalse];
-		}
 	private:
 		std::unique_ptr<Word[]> _memory;
 		Address _size;
