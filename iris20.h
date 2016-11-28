@@ -6,23 +6,25 @@
 #include <cstdint>
 #include <memory>
 namespace iris20 {
-	typedef int64_t word;
-	typedef word raw_instruction;
-	typedef word immediate;
+	using word = int64_t;
+	using InstructionImmediate = int16_t;
+	using InstructionAtom = uint32_t;
 	enum ArchitectureConstants  {
 		RegisterCount = 64,
+		AtomsPerMolecule = 2,
 		AddressMax = 16777216 * 4, // per space
 		InstructionPointerIndex = RegisterCount - 1,
 		LinkRegisterIndex = RegisterCount - 2,
 		StackPointerIndex = RegisterCount - 3,
 		MaxGroups = 0b00000111,
 		MaxOperations = 0b00011111,
-		UndefinedSection = 0b00000000,
+		RegisterSection = 0b00000000,
 		DataSection = 0b01000000,
 		StackSection = 0b10000000,
-		RegisterSection = 0b11000000,
+		UndefinedSection = 0b11000000,
 		SectionBitsMask = 0b11000000,
 	};
+	using InstructionMolecule = uint64_t;
 	inline constexpr word encodeWord(byte a, byte b, byte c, byte d, byte e, byte f, byte g, byte h) noexcept {
 		return iris::encodeInt64LE(a, b, c, d, e, f, g, h);
 	}
@@ -36,11 +38,38 @@ namespace iris20 {
 	using CompareUnit = iris::Comparator<word>;
 	using RegisterFile = WordMemorySpace<ArchitectureConstants::RegisterCount>;
 	using MemorySpace = WordMemorySpace<ArchitectureConstants::AddressMax>;
+	using DecodedOperand = std::tuple<SectionType, byte>;
+	using DecomposedInstructionMolecule = std::tuple<InstructionAtom, InstructionAtom>;
+	inline constexpr DecomposedInstructionMolecule decomposeMolecule(InstructionMolecule molecule) noexcept { return std::make_tuple(decodeFirstAtom(molecule), decodeSecondAtom(molecule)); }
+	inline constexpr InstructionAtom getFirstAtom(InstructionMolecule molecule) noexcept { return decodeFirstAtom(molecule); }
+	inline constexpr InstructionAtom getSecondAtom(InstructionMolecule molecule) noexcept { return decodeSecondAtom(molecule); }
+	template<int atomIndex>
+	inline constexpr InstructionAtom getAtom(InstructionMolecule molecule) noexcept {
+		static_assert(atomIndex < ArchitectureConstants::AtomsPerMolecule, "Provided atom index is too large!");
+		return atomIndex == 0 ? getFirstAtom(molecule) : getSecondAtom(molecule);
+	}
+	
+	inline constexpr DecodedOperand getOperand(byte index) noexcept { return std::make_tuple(decodeSectionDescriptor(index), decodeSectionIndex(index)); }
+	inline constexpr DecodedOperand getDestinationOperand(InstructionAtom atom)  noexcept { return getOperand(decodeDestination(atom)); }
+	inline constexpr DecodedOperand getSource0Operand(InstructionAtom atom)  noexcept { return getOperand(decodeSource0(atom)); }
+	inline constexpr DecodedOperand getSource1Operand(InstructionAtom atom)  noexcept { return getOperand(decodeSource1(atom)); }
+	inline constexpr word getHalfImmediate(InstructionAtom atom) noexcept { return static_cast<word>(decodeSource0(atom)); }
+	inline constexpr InstructionImmediate getImmediate(InstructionAtom atom) noexcept { return decodeImmediate(atom); }
+	inline constexpr word getImmediate32(InstructionMolecule molecule) noexcept { return decodeImmediate32(molecule); }
+	inline constexpr word getImmediate48(InstructionMolecule molecule) noexcept { return decodeImmediate48(molecule); }
+	inline constexpr byte getOperation(InstructionAtom atom) noexcept { return decodeOperation(atom); }
+	inline constexpr byte getGroup(InstructionAtom atom) noexcept { return decodeGroup(atom); }
+
+	template<typename T>
+	inline constexpr T getSubtype(InstructionAtom atom) noexcept {
+		return static_cast<T>(getOperation(atom));
+	}
+
 	class Core : public iris::Core {
 		public:
 			Core() noexcept;
 			virtual ~Core();
-			virtual void initialize() override { }
+			virtual void initialize() override;
 			virtual void installprogram(std::istream& stream) override;
 			virtual void shutdown() override { }
 			virtual void dump(std::ostream& stream) override;
@@ -51,29 +80,19 @@ namespace iris20 {
 			void operandSet(byte index, word value);
 		private:
 			void dispatch();
-			inline bool isStackSection(byte index) const noexcept { return (index & ArchitectureConstants::SectionBitsMask) == ArchitectureConstants::StackSection; }
-			inline bool isDataSection(byte index) const noexcept { return (index & ArchitectureConstants::SectionBitsMask) == ArchitectureConstants::DataSection; }
-			inline bool isRegisterSection (byte index) const noexcept { return (index & ArchitectureConstants::SectionBitsMask) == ArchitectureConstants::RegisterSection; }
-			inline bool isUndefinedSection (byte index) const noexcept { return (index & ArchitectureConstants::SectionBitsMask) == ArchitectureConstants::CodeSection; }
-            inline byte getDestination() const noexcept { return decodeDestination(current); }
-            inline byte getSource0() const noexcept { return decodeSource0(current); }
-            inline byte getSource1() const noexcept { return decodeSource1(current); }
-			inline word getHalfImmediate() const noexcept { return static_cast<word>(getSource1()); }
-            inline word getImmediate() const noexcept { return decodeImmediate(current); }
-            inline byte getOperation() const noexcept { return decodeOperation(current); }
-            inline byte getGroup() const noexcept { return decodeGroup(current); }
 
 		private:
-			template<typename Unit>
+			template<typename Unit, int atomIndex>
 			void performOperation(Unit& unit, typename Unit::Operation op, bool immediate) {
-				genericSet(getDestination(), unit.performOperation(op, genericGet(getSource0()), genericGet(getSource1())));
+				auto atom = getAtom<atomIndex>(current);
+				setOperand(getDestination(atom), unit.performOperation(op, operandGet(getSource0(atom)), operandGet(getSource1(atom))));
 			}
-			template<typename Unit>
+			template<typename Unit, int atomIndex>
 			inline void performOperation(Unit& unit, std::tuple<typename Unit::Operation, bool>& tuple) {
 				typename Unit::Operation op;
 				bool immediate = false;
 				std::tie(op, immediate) = tuple;
-				performOperation(unit, op, immediate);
+				performOperation<Unit, atomIndex>(unit, op, immediate);
 			}
 
 		private:
@@ -83,7 +102,7 @@ namespace iris20 {
 			ALU _alu;
 			RegisterFile gpr;
 			MemorySpace memory; 
-			raw_instruction current = 0;
+			InstructionMolecule current;
 	};
 
 	Core* newCore() noexcept;

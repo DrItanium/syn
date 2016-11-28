@@ -224,16 +224,12 @@ namespace iris20 {
 		}
 	}
 
-	enum class Segment  {
-		Code,
-		Data,
-		Count,
-	};
 	void Core::link(std::istream& input) {
-		char buf[8] = {0};
+		constexpr bufSize = sizeof(word) * 2;
+		char buf[bufSize] = { 0 };
 		for(auto lineNumber = static_cast<int>(0); input.good(); ++lineNumber) {
-			input.read(buf, 8);
-			if (input.gcount() < 8 && input.gcount() > 0) {
+			input.read(buf, bufSize);
+			if (input.gcount() < bufSize && input.gcount() > 0) {
 				throw iris::Problem("unaligned object file found!");
 			} else if (input.gcount() == 0) {
 				if (input.eof()) {
@@ -242,41 +238,18 @@ namespace iris20 {
 					throw iris::Problem("Something bad happened while reading input file!");
 				}
 			}
-			//ignore the first byte, it is always zero
-			auto target = static_cast<Segment>(buf[1]);
-			auto address = iris20::encodeWord(buf[2], buf[3]);
+			// first 8 bytes are an address, second 8 are a value
+			auto address = iris20::encodeWord(buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]);
+			auto value = iris20::encodeWord(buf[8], buf[9], buf[10], buf[11], buf[12], buf[13], buf[14], buf[15]);
 			if (debugEnabled()) {
-				std::cerr << "current target = " << static_cast<int>(target) << "\tcurrent address = 0x" << std::hex << address << std::endl;
+				std::cerr << "addr: 0x " << std::hex << address << ": value: 0x" << std::hex << value << std::endl;
 			}
-			if (target == Segment::Code) {
-				auto result = iris20::encodeDword(buf[4], buf[5], buf[6], buf[7]);
-				if (debugEnabled()) {
-					std::cerr << " code result: 0x" << std::hex << result << std::endl;
-				}
-				setInstructionMemory(address, result);
-			} else if (target == Segment::Data) {
-				auto result = iris20::encodeWord(buf[4], buf[5]);
-				if (debugEnabled()) {
-					std::cerr << " data result: 0x" << std::hex << result << std::endl;
-				}
-				setDataMemory(address, result);
-			} else {
-				std::stringstream str;
-				str << "error: line " << lineNumber << ", unknown segment " << static_cast<int>(target) << "/" << static_cast<int>(buf[1]) << std::endl;
-				str << "current address: " << std::hex << address << std::endl;
-				throw iris::Problem(str.str());
-			}
+			memory[address] = value;
 		}
 	}
 
 	Core::Core() noexcept { }
-	Core::Core(SharedExtendedDataMemory xData) noexcept : extendedData(xData) { }
-
-	void Core::setExtendedDataMemory(dword address, word value) {
-		extendedData->operator[](address) = value;
-	}
-
-	word Core::getExtendedDataMemory(dword address) {
-		return extendedData->operator[](address);
+	void Core::initialize() {
+		_memory.zero();
 	}
 }

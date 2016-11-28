@@ -127,8 +127,8 @@ class LoadStoreUnit {
 		LoadStoreUnit() : LoadStoreUnit(0) { }
 		virtual ~LoadStoreUnit() { }
 		inline void zero() noexcept {
-			for(auto i = static_cast<Address>(0); i < _size; ++i) {
-				_memory[i] = 0;
+			for (Address addr = 0; addr < _size; ++addr) {
+				_memory[addr] = 0;
 			}
 		}
 		inline Address getSize() const noexcept { return _size; }
