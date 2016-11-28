@@ -43,16 +43,11 @@ namespace iris20 {
 	inline constexpr DecomposedInstructionMolecule decomposeMolecule(InstructionMolecule molecule) noexcept { return std::make_tuple(decodeFirstAtom(molecule), decodeSecondAtom(molecule)); }
 	inline constexpr InstructionAtom getFirstAtom(InstructionMolecule molecule) noexcept { return decodeFirstAtom(molecule); }
 	inline constexpr InstructionAtom getSecondAtom(InstructionMolecule molecule) noexcept { return decodeSecondAtom(molecule); }
-	template<int atomIndex>
-	inline constexpr InstructionAtom getAtom(InstructionMolecule molecule) noexcept {
-		static_assert(atomIndex < ArchitectureConstants::AtomsPerMolecule, "Provided atom index is too large!");
-		return atomIndex == 0 ? getFirstAtom(molecule) : getSecondAtom(molecule);
-	}
-	
 	inline constexpr DecodedOperand getOperand(byte index) noexcept { return std::make_tuple(decodeSectionDescriptor(index), decodeSectionIndex(index)); }
 	inline constexpr DecodedOperand getDestinationOperand(InstructionAtom atom)  noexcept { return getOperand(decodeDestination(atom)); }
 	inline constexpr DecodedOperand getSource0Operand(InstructionAtom atom)  noexcept { return getOperand(decodeSource0(atom)); }
 	inline constexpr DecodedOperand getSource1Operand(InstructionAtom atom)  noexcept { return getOperand(decodeSource1(atom)); }
+
 	inline constexpr word getHalfImmediate(InstructionAtom atom) noexcept { return static_cast<word>(decodeSource0(atom)); }
 	inline constexpr InstructionImmediate getImmediate(InstructionAtom atom) noexcept { return decodeImmediate(atom); }
 	inline constexpr word getImmediate32(InstructionMolecule molecule) noexcept { return decodeImmediate32(molecule); }
@@ -78,21 +73,24 @@ namespace iris20 {
 		private:
 			word operandGet(byte index);
 			void operandSet(byte index, word value);
+			inline word& getInstructionPointer() noexcept { return gpr[ArchitectureConstants::InstructionPointerIndex]; }
+			void executeAtom(InstructionAtom atom);
 		private:
 			void dispatch();
-
 		private:
-			template<typename Unit, int atomIndex>
-			void performOperation(Unit& unit, typename Unit::Operation op, bool immediate) {
-				auto atom = getAtom<atomIndex>(current);
-				setOperand(getDestination(atom), unit.performOperation(op, operandGet(getSource0(atom)), operandGet(getSource1(atom))));
+			template<typename Unit>
+			void performOperation(Unit& unit, typename Unit::Operation op, bool immediate, InstructionAtom atom) {
+				auto dest = std::get<byte>(getDestinationOperand(atom));
+				auto src0 = std::get<byte>(getSource0Operand(atom));
+				auto src1 = std::get<byte>(getSource1Operand(atom));
+				setOperand(dest, unit.performOperation(op, operandGet(src0), operandGet(src1)));
 			}
-			template<typename Unit, int atomIndex>
-			inline void performOperation(Unit& unit, std::tuple<typename Unit::Operation, bool>& tuple) {
+			template<typename Unit>
+			inline void performOperation(Unit& unit, std::tuple<typename Unit::Operation, bool>& tuple, InstructionAtom atom) {
 				typename Unit::Operation op;
 				bool immediate = false;
 				std::tie(op, immediate) = tuple;
-				performOperation<Unit, atomIndex>(unit, op, immediate);
+				performOperation(unit, op, immediate, atom);
 			}
 
 		private:

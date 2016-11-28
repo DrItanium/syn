@@ -165,6 +165,19 @@ inline void decodeInt16LE(int16_t value, byte storage[sizeof(int16_t)]) noexcept
 }
 
 inline void decodeUint64LE(uint64_t value, byte storage[sizeof(uint64_t)]) noexcept {
+	using Number = uint64_t;
+	using Field = byte;
+	storage[0] = decodeField<Number, Field, 0>(value);
+	storage[1] = decodeField<Number, Field, 1>(value);
+	storage[2] = decodeField<Number, Field, 2>(value);
+	storage[3] = decodeField<Number, Field, 3>(value);
+	storage[4] = decodeField<Number, Field, 4>(value);
+	storage[5] = decodeField<Number, Field, 5>(value);
+	storage[6] = decodeField<Number, Field, 6>(value);
+	storage[7] = decodeField<Number, Field, 7>(value);
+}
+
+inline void decodeInt64LE(int64_t value, byte storage[sizeof(int64_t)]) noexcept {
 	using Number = int64_t;
 	using Field = byte;
 	storage[0] = decodeField<Number, Field, 0>(value);

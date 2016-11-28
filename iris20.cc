@@ -13,28 +13,22 @@ namespace iris20 {
 	}
 
 	void Core::installprogram(std::istream& stream) {
-		auto encodeWord = [](char* buf) { return iris20::encodeWord(buf[0], buf[1]); };
-		auto encodeDword = [](char* buf) { return iris20::encodeDword(buf[0], buf[1], buf[2], buf[3]); };
+		auto encodeWord = [](char* buf) { return iris20::encodeWord(buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]); };
 		gpr.install(stream, encodeWord);
-		data.install(stream, encodeWord);
-		instruction.install(stream, encodeDword);
-		stack.install(stream, encodeWord);
+		memory.install(stream, encodeWord);
 	}
 
 	void Core::dump(std::ostream& stream) {
-		auto decodeWord = [](word value, char* buf) { iris::decodeUint16LE(value, (byte*)buf); };
-		auto decodeDword = [](dword value, char* buf) { iris::decodeUint32LE(value, (byte*)buf); };
+
+		auto decodeWord = [](word value, char* buf) { iris::decodeInt64LE(value, (byte*)buf); };
 		gpr.dump(stream, decodeWord);
-		data.dump(stream, decodeWord);
-		instruction.dump(stream, decodeDword);
-		stack.dump(stream, decodeWord);
+		memory.dump(stream, decodeWord);
 	}
 	void Core::run() {
 		while(execute) {
 			if (!advanceIp) {
 				advanceIp = true;
 			}
-			current = instruction[getInstructionPointer()];
 			dispatch();
 			if (advanceIp) {
 				++getInstructionPointer();
@@ -42,7 +36,12 @@ namespace iris20 {
 		}
 	}
 	void Core::dispatch() {
-		auto group = static_cast<InstructionGroup>(getGroup());
+		current = memory[getInstructionPointer()];
+		executeAtom(getFirstAtom(current));
+		executeAtom(getSecondAtom(current));
+	}
+	void Core::executeAtom(InstructionAtom atom) {
+		auto group = static_cast<InstructionGroup>(getGroup(atom));
 		if (group == InstructionGroup::Arithmetic) {
 			static std::map<ArithmeticOp, std::tuple<ALU::Operation, bool>> table = {
 				{ ArithmeticOp::Add, std::make_tuple(ALU::Operation::Add , false) },
@@ -64,10 +63,10 @@ namespace iris20 {
 				{ ArithmeticOp::ShiftLeftImmediate, std::make_tuple(ALU::Operation::ShiftLeft , true ) },
 				{ ArithmeticOp::ShiftRightImmediate, std::make_tuple(ALU::Operation::ShiftRight , true ) },
 			};
-			auto result = table.find(static_cast<ArithmeticOp>(getOperation()));
+			auto result = table.find(getSubtype<ArithmeticOp>(atom));
 			if (result == table.end()) {
 				std::stringstream stream;
-				stream << "Illegal arithmetic operation " << getOperation();
+				stream << "Illegal arithmetic operation " << getOperation(atom);
 				execute = false;
 				throw iris::Problem(stream.str());
 			} else {
@@ -211,21 +210,21 @@ namespace iris20 {
 				instruction[destinationRegister()] = encodeDword(source0Register(), source1Register());
 			} else {
 				std::stringstream ss;
-				ss << "Illegal move code " << getOperation();
+				ss << "Illegal move code " << getOperation(atom);
 				execute = false;
 				advanceIp = false;
 				throw iris::Problem(ss.str());
 			}
 		} else {
 			std::stringstream stream;
-			stream << "Illegal instruction group " << getGroup();
+			stream << "Illegal instruction group " << getGroup(atom);
 			execute = false;
 			throw iris::Problem(stream.str());
 		}
 	}
 
 	void Core::link(std::istream& input) {
-		constexpr bufSize = sizeof(word) * 2;
+		constexpr auto bufSize = sizeof(word) * 2;
 		char buf[bufSize] = { 0 };
 		for(auto lineNumber = static_cast<int>(0); input.good(); ++lineNumber) {
 			input.read(buf, bufSize);
@@ -249,7 +248,8 @@ namespace iris20 {
 	}
 
 	Core::Core() noexcept { }
+
 	void Core::initialize() {
-		_memory.zero();
+		memory.zero();
 	}
 }
