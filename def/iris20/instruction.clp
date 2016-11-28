@@ -61,22 +61,10 @@
                  (mask 0xFFFF0000)
                  (shift 16)
                  (output-type InstructionImmediate))
-          (field (name Group)
-                 (mask 0x00000007)
-                 (shift 0)
-                 (output-type byte))
           (field (name Operation)
-                 (mask 0x000000F8)
-                 (shift 3)
-                 (output-type byte))
-          (enum (name InstructionGroup)
-                (children Arithmetic
-                          Move
-                          Jump
-                          Compare
-                          Misc)
-                (cast-to byte)
-                (max-size "ArchitectureConstants::MaxGroups"))
+                 (mask 0x000000FE)
+                 (shift 1)
+                 (output-type Operation))
           (enum (name SectionType)
                 (cast-to byte)
                 (max-size "4")
@@ -86,7 +74,13 @@
                           Undefined))
           (enum (cast-to byte)
                 (max-size "ArchitectureConstants::MaxOperations")
-                (name ArithmeticOp)
+                (name SystemCalls)
+                (children Terminate
+                          GetC
+                          PutC))
+          (enum (cast-to byte)
+                (max-size "ArchitectureConstants::MaxOperations")
+                (name Operation)
                 (children Add
                           Sub
                           Mul
@@ -104,15 +98,9 @@
                           DivImmediate
                           RemImmediate
                           ShiftLeftImmediate
-                          ShiftRightImmediate))
-          (enum (cast-to byte)
-                (max-size "ArchitectureConstants::MaxOperations")
-                (name MiscOp)
-                (children SystemCall))
-          (enum (cast-to byte)
-                (max-size "ArchitectureConstants::MaxOperations")
-                (name JumpOp)
-                (children UnconditionalImmediate
+                          ShiftRightImmediate
+                          SystemCall
+                          UnconditionalImmediate
                           UnconditionalImmediateLink
                           UnconditionalRegister
                           UnconditionalRegisterLink
@@ -127,26 +115,13 @@
                           IfThenElseNormalPredTrue
                           IfThenElseNormalPredFalse
                           IfThenElseLinkPredTrue
-                          IfThenElseLinkPredFalse))
-          (enum (cast-to byte)
-                (max-size "ArchitectureConstants::MaxOperations")
-                (name SystemCalls)
-                (children Terminate
-                          GetC
-                          PutC
-                          InitializeXMem))
-          (enum (cast-to byte)
-                (max-size "ArchitectureConstants::MaxOperations")
-                (name MoveOp)
-                (children Move
+                          IfThenElseLinkPredFalse
+                          Move
                           Set16
                           Set32
                           Set48
-                          Swap))
-          (enum (cast-to byte)
-                (max-size "ArchitectureConstants::MaxOperations")
-                (name CompareOp)
-                (children Eq
+                          Swap
+                          Eq
                           EqImm
                           Neq
                           NeqImm

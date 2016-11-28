@@ -16,8 +16,7 @@ namespace iris20 {
 		InstructionPointerIndex = RegisterCount - 1,
 		LinkRegisterIndex = RegisterCount - 2,
 		StackPointerIndex = RegisterCount - 3,
-		MaxGroups = 0b00000111,
-		MaxOperations = 0b00011111,
+		MaxOperations = 0b01111111,
 		RegisterSection = 0b00000000,
 		DataSection = 0b01000000,
 		StackSection = 0b10000000,
@@ -58,13 +57,7 @@ namespace iris20 {
 	inline constexpr InstructionImmediate getImmediate(InstructionAtom atom) noexcept { return decodeImmediate(atom); }
 	inline constexpr word getImmediate32(InstructionMolecule molecule) noexcept { return decodeImmediate32(molecule); }
 	inline constexpr word getImmediate48(InstructionMolecule molecule) noexcept { return decodeImmediate48(molecule); }
-	inline constexpr byte getOperation(InstructionAtom atom) noexcept { return decodeOperation(atom); }
-	inline constexpr byte getGroup(InstructionAtom atom) noexcept { return decodeGroup(atom); }
-
-	template<typename T>
-	inline constexpr T getSubtype(InstructionAtom atom) noexcept {
-		return static_cast<T>(getOperation(atom));
-	}
+	inline constexpr Operation getOperation(InstructionAtom atom) noexcept { return decodeOperation(atom); }
 
 	class Core : public iris::Core {
 		public:
@@ -89,8 +82,8 @@ namespace iris20 {
 			void performOperation(Unit& unit, typename Unit::Operation op, bool immediate, InstructionAtom atom) {
 				auto dest = std::get<byte>(getDestinationOperand(atom));
 				auto src0 = std::get<byte>(getSource0Operand(atom));
-				auto src1 = std::get<byte>(getSource1Operand(atom));
-				operandSet(dest, unit.performOperation(op, operandGet(src0), operandGet(src1)));
+				auto src1 = immediate ? getHalfImmediate(atom) : operandGet(std::get<byte>(getSource1Operand(atom)));
+				operandSet(dest, unit.performOperation(op, operandGet(src0), src1));
 			}
 			template<typename Unit>
 			inline void performOperation(Unit& unit, std::tuple<typename Unit::Operation, bool>& tuple, InstructionAtom atom) {

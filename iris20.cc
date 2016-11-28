@@ -40,75 +40,118 @@ namespace iris20 {
 		executeAtom(getFirstAtom(current));
 		executeAtom(getSecondAtom(current));
 	}
+	enum class ExecutionUnitTarget {
+		ALU,
+		CompareUnit,
+		BranchUnit,
+		MiscUnit,
+		MoveUnit,
+	};
+	// target, subcommand, immediate?
+	using DispatchTableEntry = std::tuple<ExecutionUnitTarget, byte, bool>;
+	constexpr inline byte makeJumpByte(bool ifthenelse, bool conditional, bool iffalse, bool link) noexcept {
+		return iris::encodeFlag<byte, 0b00001000, 3>(
+				iris::encodeFlag<byte, 0b00000100, 2>(
+					iris::encodeFlag<byte, 0b00000010, 1>(
+						iris::encodeFlag<byte, 0b00000001, 0>(0u, 
+							ifthenelse),
+						conditional),
+					iffalse),
+				link);
+	}
+	constexpr inline DispatchTableEntry makeJumpConstant(bool ifthenelse, bool conditional, bool iffalse, bool immediate, bool link) noexcept {
+		return std::make_tuple(ExecutionUnitTarget::BranchUnit, makeJumpByte(ifthenelse, conditional, iffalse, link), immediate);
+	}
+	constexpr inline std::tuple<bool, bool, bool, bool> decomposeJumpByte(byte input) noexcept {
+		return std::make_tuple(iris::decodeFlag<byte, 0b00000001>(input), iris::decodeFlag<byte, 0b00000010>(input), iris::decodeFlag<byte, 0b00000100>(input), iris::decodeFlag<byte, 0b00001000>(input));
+	}
 	void Core::executeAtom(InstructionAtom atom) {
-		auto genericOperation = getOperation(atom);
-		auto group = static_cast<InstructionGroup>(getGroup(atom));
-		if (group == InstructionGroup::Arithmetic) {
-			static std::map<ArithmeticOp, std::tuple<ALU::Operation, bool>> table = {
-				{ ArithmeticOp::Add, std::make_tuple(ALU::Operation::Add , false) },
-				{ ArithmeticOp::Sub, std::make_tuple(ALU::Operation::Subtract , false ) },
-				{ ArithmeticOp::Mul, std::make_tuple(ALU::Operation::Multiply , false ) } ,
-				{ ArithmeticOp::Div, std::make_tuple(ALU::Operation::Divide , false ) },
-				{ ArithmeticOp::Rem, std::make_tuple(ALU::Operation::Remainder , false ) },
-				{ ArithmeticOp::ShiftLeft, std::make_tuple(ALU::Operation::ShiftLeft , false ) },
-				{ ArithmeticOp::ShiftRight, std::make_tuple(ALU::Operation::ShiftRight , false ) },
-				{ ArithmeticOp::BinaryAnd, std::make_tuple(ALU::Operation::BinaryAnd , false ) },
-				{ ArithmeticOp::BinaryOr, std::make_tuple(ALU::Operation::BinaryOr , false ) },
-				{ ArithmeticOp::BinaryNot, std::make_tuple(ALU::Operation::UnaryNot , false) },
-				{ ArithmeticOp::BinaryXor, std::make_tuple(ALU::Operation::BinaryXor , false ) },
-				{ ArithmeticOp::AddImmediate, std::make_tuple(ALU::Operation::Add , true  ) },
-				{ ArithmeticOp::SubImmediate, std::make_tuple(ALU::Operation::Subtract , true  ) },
-				{ ArithmeticOp::MulImmediate, std::make_tuple(ALU::Operation::Multiply , true  ) } ,
-				{ ArithmeticOp::DivImmediate, std::make_tuple(ALU::Operation::Divide , true  ) },
-				{ ArithmeticOp::RemImmediate, std::make_tuple(ALU::Operation::Remainder , true  ) },
-				{ ArithmeticOp::ShiftLeftImmediate, std::make_tuple(ALU::Operation::ShiftLeft , true ) },
-				{ ArithmeticOp::ShiftRightImmediate, std::make_tuple(ALU::Operation::ShiftRight , true ) },
-			};
-			auto result = table.find(getSubtype<ArithmeticOp>(atom));
-			if (result == table.end()) {
-				std::stringstream stream;
-				stream << "Illegal arithmetic operation " << getOperation(atom);
-				execute = false;
-				throw iris::Problem(stream.str());
+		auto operation = getOperation(atom);
+		static std::map<Operation, DispatchTableEntry> table = {
+				{ Operation::Add, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::Add) , false) },
+				{ Operation::Sub, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::Subtract) , false ) },
+				{ Operation::Mul, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::Multiply) , false ) } ,
+				{ Operation::Div, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::Divide) , false ) },
+				{ Operation::Rem, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::Remainder) , false ) },
+				{ Operation::ShiftLeft, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::ShiftLeft) , false ) },
+				{ Operation::ShiftRight, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::ShiftRight) , false ) },
+				{ Operation::BinaryAnd, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::BinaryAnd) , false ) },
+				{ Operation::BinaryOr, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::BinaryOr) , false ) },
+				{ Operation::BinaryNot, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::UnaryNot) , false) },
+				{ Operation::BinaryXor, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::BinaryXor) , false ) },
+				{ Operation::AddImmediate, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::Add) , true  ) },
+				{ Operation::SubImmediate, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::Subtract) , true  ) },
+				{ Operation::MulImmediate, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::Multiply) , true  ) } ,
+				{ Operation::DivImmediate, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::Divide) , true  ) },
+				{ Operation::RemImmediate, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::Remainder) , true  ) },
+				{ Operation::ShiftLeftImmediate, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::ShiftLeft) , true ) },
+				{ Operation::ShiftRightImmediate, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::ShiftRight) , true ) },
+				{ Operation::LessThan, std::make_tuple(ExecutionUnitTarget::CompareUnit, static_cast<byte>(CompareUnit::Operation::LessThan), false) },
+				{ Operation::LessThanImm, std::make_tuple(ExecutionUnitTarget::CompareUnit, static_cast<byte>(CompareUnit::Operation::LessThan), true) },
+				{ Operation::LessThanOrEqualTo, std::make_tuple(ExecutionUnitTarget::CompareUnit, static_cast<byte>(CompareUnit::Operation::LessThanOrEqualTo), false) },
+				{ Operation::LessThanOrEqualToImm, std::make_tuple(ExecutionUnitTarget::CompareUnit, static_cast<byte>(CompareUnit::Operation::LessThanOrEqualTo), true) },
+				{ Operation::GreaterThan, std::make_tuple(ExecutionUnitTarget::CompareUnit, static_cast<byte>(CompareUnit::Operation::GreaterThan), false) },
+				{ Operation::GreaterThanImm, std::make_tuple(ExecutionUnitTarget::CompareUnit, static_cast<byte>(CompareUnit::Operation::GreaterThan), true) },
+				{ Operation::GreaterThanOrEqualTo, std::make_tuple(ExecutionUnitTarget::CompareUnit, static_cast<byte>(CompareUnit::Operation::GreaterThanOrEqualTo), false) },
+				{ Operation::GreaterThanOrEqualToImm, std::make_tuple(ExecutionUnitTarget::CompareUnit, static_cast<byte>(CompareUnit::Operation::GreaterThanOrEqualTo), true) },
+				{ Operation::Eq, std::make_tuple(ExecutionUnitTarget::CompareUnit, static_cast<byte>(CompareUnit::Operation::Eq), false) },
+				{ Operation::EqImm, std::make_tuple(ExecutionUnitTarget::CompareUnit, static_cast<byte>(CompareUnit::Operation::Eq), true) },
+				{ Operation::Neq, std::make_tuple(ExecutionUnitTarget::CompareUnit, static_cast<byte>(CompareUnit::Operation::Neq), false) },
+				{ Operation::NeqImm, std::make_tuple(ExecutionUnitTarget::CompareUnit, static_cast<byte>(CompareUnit::Operation::Neq), true) },
+				{ Operation::SystemCall, std::make_tuple(ExecutionUnitTarget::MiscUnit, static_cast<byte>(Operation::SystemCall), false) },
+				{ Operation:: UnconditionalImmediate ,        makeJumpConstant( false, false, false, true, false) } ,
+				{ Operation:: UnconditionalImmediateLink ,    makeJumpConstant( false, false, false, true, true) } ,
+				{ Operation:: UnconditionalRegister ,         makeJumpConstant( false, false, false, false, false) } ,
+				{ Operation:: UnconditionalRegisterLink ,     makeJumpConstant( false, false, false, false, true) } ,
+				{ Operation:: ConditionalTrueImmediate ,      makeJumpConstant( false, true, false, true, false) } ,
+				{ Operation:: ConditionalTrueImmediateLink ,  makeJumpConstant( false, true, false, true, true) } ,
+				{ Operation:: ConditionalTrueRegister ,       makeJumpConstant( false, true, false, false, false) } ,
+				{ Operation:: ConditionalTrueRegisterLink ,   makeJumpConstant( false, true, false, false, true) } ,
+				{ Operation:: ConditionalFalseImmediate ,     makeJumpConstant( false, true, true, true, false) } ,
+				{ Operation:: ConditionalFalseImmediateLink , makeJumpConstant( false, true, true, true, true) } ,
+				{ Operation:: ConditionalFalseRegister ,      makeJumpConstant( false, true, true, false, false) } ,
+				{ Operation:: ConditionalFalseRegisterLink ,  makeJumpConstant( false, true, true, false, true) } ,
+				{ Operation:: IfThenElseNormalPredTrue ,      makeJumpConstant( true, true, false, false, false) } ,
+				{ Operation:: IfThenElseNormalPredFalse ,     makeJumpConstant( true, true, true, false, false) } ,
+				{ Operation:: IfThenElseLinkPredTrue ,        makeJumpConstant( true, true, false, false, true) } ,
+				{ Operation:: IfThenElseLinkPredFalse ,       makeJumpConstant( true, true, true, false, true) } ,
+				{ Operation::Move, std::make_tuple(ExecutionUnitTarget::MoveUnit, static_cast<byte>(Operation::Move), false) },
+				{ Operation::Swap, std::make_tuple(ExecutionUnitTarget::MoveUnit, static_cast<byte>(Operation::Swap), false) },
+				{ Operation::Set16, std::make_tuple(ExecutionUnitTarget::MoveUnit, static_cast<byte>(Operation::Set16), true) },
+		};
+		auto result = table.find(operation);
+		if (result == table.end()) {
+			throw iris::Problem("Illegal single atom instruction!");
+		}
+		auto tuple = result->second;
+		auto target = std::get<ExecutionUnitTarget>(tuple);
+		auto subAction = std::get<byte>(tuple);
+		auto immediate = std::get<bool>(tuple);
+		auto moveOperation = [this, op = static_cast<Operation>(subAction), immediate, atom]() {
+			auto dest = getDestinationRawValue(atom);
+			auto src = getSource0RawValue(atom);
+			if (op == Operation::Move) {
+				operandSet(dest, operandGet(src));
+			} else if (op == Operation::Set16) {
+				operandSet(dest, getImmediate(atom));
+			} else if (op == Operation::Swap) {
+				auto tmp = operandGet(dest);
+				operandSet(dest, operandGet(src));
+				operandSet(src, tmp);
 			} else {
-				performOperation(_alu, result->second, atom);
+				throw iris::Problem("Registered but unimplemented move unit operation!");
 			}
-		} else if (group == InstructionGroup::Compare) {
-			static std::map<CompareOp, std::tuple<CompareUnit::Operation, bool>> translationTable = {
-				{ CompareOp::LessThan, std::make_tuple(CompareUnit::Operation::LessThan, false) },
-				{ CompareOp::LessThanImm, std::make_tuple(CompareUnit::Operation::LessThan, true) },
-				{ CompareOp::LessThanOrEqualTo, std::make_tuple(CompareUnit::Operation::LessThanOrEqualTo, false) },
-				{ CompareOp::LessThanOrEqualToImm, std::make_tuple(CompareUnit::Operation::LessThanOrEqualTo, true) },
-				{ CompareOp::GreaterThan, std::make_tuple(CompareUnit::Operation::GreaterThan, false) },
-				{ CompareOp::GreaterThanImm, std::make_tuple(CompareUnit::Operation::GreaterThan, true) },
-				{ CompareOp::GreaterThanOrEqualTo, std::make_tuple(CompareUnit::Operation::GreaterThanOrEqualTo, false) },
-				{ CompareOp::GreaterThanOrEqualToImm, std::make_tuple(CompareUnit::Operation::GreaterThanOrEqualTo, true) },
-				{ CompareOp::Eq, std::make_tuple(CompareUnit::Operation::Eq, false) },
-				{ CompareOp::EqImm, std::make_tuple(CompareUnit::Operation::Eq, true) },
-				{ CompareOp::Neq, std::make_tuple(CompareUnit::Operation::Neq, false) },
-				{ CompareOp::NeqImm, std::make_tuple(CompareUnit::Operation::Neq, true) },
-			};
-			auto result = translationTable.find(getSubtype<CompareOp>(atom));
-			if (result == translationTable.end()) {
-				std::stringstream stream;
-				stream << "Illegal compare code " << genericOperation;
-				execute = false;
-				advanceIp = false;
-				throw iris::Problem(stream.str());
-			} else {
-				performOperation(_compare, result->second, atom);
-			}
-		} else if (group == InstructionGroup::Misc) {
-			auto op = getSubtype<MiscOp>(atom);
-			if (op == MiscOp::SystemCall) {
-				auto target = static_cast<SystemCalls>(getDestinationRawValue(atom));
-				if (target == SystemCalls::Terminate) {
+		};
+		auto miscOperation = [this, operation, immediate, atom]() {
+			if (operation == Operation::SystemCall) {
+				auto sysCallId = static_cast<SystemCalls>(getDestinationRawValue(atom));
+				if (sysCallId == SystemCalls::Terminate) {
 					execute = false;
 					advanceIp = false;
-				} else if (target == SystemCalls::PutC) {
+				} else if (sysCallId == SystemCalls::PutC) {
 					// read register 0 and register 1
 					std::cout.put(static_cast<char>(operandGet(getSource0RawValue(atom))));
-				} else if (target == SystemCalls::GetC) {
+				} else if (sysCallId == SystemCalls::GetC) {
 					auto value = static_cast<byte>(0);
 					std::cin >> std::noskipws >> value;
 					operandSet(getSource0RawValue(atom), static_cast<word>(value));
@@ -120,41 +163,13 @@ namespace iris20 {
 					throw iris::Problem(stream.str());
 				}
 			} else {
-				std::stringstream ss;
-				ss << "Illegal misc code " << genericOperation;
-				execute = false;
-				advanceIp = false;
-				throw iris::Problem(ss.str());
+				throw iris::Problem("Registered but undefined misc operation requested!");
 			}
-		} else if (group == InstructionGroup::Jump) {
-			// ifthenelse?, conditional?, iffalse?, immediate?, link?
-			static std::map<JumpOp, std::tuple<bool, bool, bool, bool, bool>> translationTable = {
-				{ JumpOp:: UnconditionalImmediate , std::make_tuple( false, false, false, true, false) } ,
-				{ JumpOp:: UnconditionalImmediateLink , std::make_tuple( false, false, false, true, true) } ,
-				{ JumpOp:: UnconditionalRegister , std::make_tuple( false, false, false, false, false) } ,
-				{ JumpOp:: UnconditionalRegisterLink , std::make_tuple( false, false, false, false, true) } ,
-				{ JumpOp:: ConditionalTrueImmediate , std::make_tuple( false, true, false, true, false) } ,
-				{ JumpOp:: ConditionalTrueImmediateLink , std::make_tuple( false, true, false, true, true) } ,
-				{ JumpOp:: ConditionalTrueRegister , std::make_tuple( false, true, false, false, false) } ,
-				{ JumpOp:: ConditionalTrueRegisterLink , std::make_tuple( false, true, false, false, true) } ,
-				{ JumpOp:: ConditionalFalseImmediate , std::make_tuple( false, true, true, true, false) } ,
-				{ JumpOp:: ConditionalFalseImmediateLink , std::make_tuple( false, true, true, true, true) } ,
-				{ JumpOp:: ConditionalFalseRegister , std::make_tuple( false, true, true, false, false) } ,
-				{ JumpOp:: ConditionalFalseRegisterLink , std::make_tuple( false, true, true, false, true) } ,
-				{ JumpOp:: IfThenElseNormalPredTrue , std::make_tuple( true, true, false, false, false) } ,
-				{ JumpOp:: IfThenElseNormalPredFalse , std::make_tuple( true, true, true, false, false) } ,
-				{ JumpOp:: IfThenElseLinkPredTrue , std::make_tuple( true, true, false, false, true) } ,
-				{ JumpOp:: IfThenElseLinkPredFalse , std::make_tuple( true, true, true, false, true) } ,
-			};
-			auto ifthenelse = false, conditional = false, iffalse = false, immediate = false,  link = false;
-			auto result = translationTable.find(getSubtype<JumpOp>(atom));
-			if (result == translationTable.end()) {
-				std::stringstream ss;
-				ss << "Illegal jump code " << std::hex << static_cast<int>(genericOperation);
-				execute =  false;
-				throw iris::Problem(ss.str());
-			}
-			std::tie(ifthenelse, conditional, iffalse, immediate, link) = result->second;
+		};
+		auto jumpOperation = [this, subAction, immediate, atom]() {
+			auto ifthenelse = false, conditional = false, iffalse = false, link = false;
+			auto result = decomposeJumpByte(subAction);
+			std::tie(ifthenelse, conditional, iffalse, link) = result;
 			auto newAddr = static_cast<word>(0);
 			auto cond = true;
 			advanceIp = false;
@@ -176,30 +191,26 @@ namespace iris20 {
 			if (link && cond) {
 				getLinkRegister() = ip + 1;
 			}
-		} else if (group == InstructionGroup::Move) {
-			auto op = getSubtype<MoveOp>(atom);
-			auto dest = getDestinationRawValue(atom);
-			auto src = getSource0RawValue(atom);
-			if (op == MoveOp::Move) {
-				operandSet(dest, operandGet(src));
-			} else if (op == MoveOp::Set16) {
-				operandSet(dest, getImmediate(atom));
-			} else if (op == MoveOp::Swap) {
-				auto tmp = operandGet(dest);
-				operandSet(dest, operandGet(src));
-				operandSet(src, tmp);
-			} else {
-				std::stringstream ss;
-				ss << "Illegal move code " << genericOperation;
-				execute = false;
-				advanceIp = false;
-				throw iris::Problem(ss.str());
-			}
-		} else {
-			std::stringstream stream;
-			stream << "Illegal instruction group " << getGroup(atom);
-			execute = false;
-			throw iris::Problem(stream.str());
+
+		};
+		switch (target) {
+			case ExecutionUnitTarget::ALU:
+				performOperation(_alu, static_cast<ALU::Operation>(subAction), immediate, atom);
+				break;
+			case ExecutionUnitTarget::CompareUnit:
+				performOperation(_compare, static_cast<CompareUnit::Operation>(subAction), immediate, atom);
+				break;
+			case ExecutionUnitTarget::MiscUnit:
+				miscOperation();
+				break;
+			case ExecutionUnitTarget::BranchUnit:
+				jumpOperation();
+				break;
+			case ExecutionUnitTarget::MoveUnit:
+				moveOperation();
+				break;
+			default:
+				throw iris::Problem("Registered execution unit target is not yet implemented!");
 		}
 	}
 
