@@ -9,7 +9,7 @@ namespace iris20 {
 	}
 
 
-	Core::~Core() { 
+	Core::~Core() {
 	}
 
 	void Core::installprogram(std::istream& stream) {
@@ -58,7 +58,7 @@ namespace iris20 {
 		return iris::encodeFlag<byte, 0b00001000, 3>(
 				iris::encodeFlag<byte, 0b00000100, 2>(
 					iris::encodeFlag<byte, 0b00000010, 1>(
-						iris::encodeFlag<byte, 0b00000001, 0>(0u, 
+						iris::encodeFlag<byte, 0b00000001, 0>(0u,
 							ifthenelse),
 						conditional),
 					iffalse),
@@ -248,4 +248,15 @@ namespace iris20 {
 	void Core::initialize() {
 		memory.zero();
 	}
+    void Core::operandSet(byte target, word value) {
+
+    }
+
+    word Core::operandGet(byte target) {
+        return 0;
+    }
+
+    void Core::executeMolecule() {
+
+    }
 }
