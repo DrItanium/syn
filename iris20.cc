@@ -1,11 +1,11 @@
-#include "iris16.h"
+#include "iris20.h"
 #include <functional>
 #include <sstream>
 #include <vector>
 
-namespace iris16 {
+namespace iris20 {
 	Core* newCore() noexcept {
-		return new iris16::Core();
+		return new iris20::Core();
 	}
 
 
@@ -13,8 +13,8 @@ namespace iris16 {
 	}
 
 	void Core::installprogram(std::istream& stream) {
-		auto encodeWord = [](char* buf) { return iris16::encodeWord(buf[0], buf[1]); };
-		auto encodeDword = [](char* buf) { return iris16::encodeDword(buf[0], buf[1], buf[2], buf[3]); };
+		auto encodeWord = [](char* buf) { return iris20::encodeWord(buf[0], buf[1]); };
+		auto encodeDword = [](char* buf) { return iris20::encodeDword(buf[0], buf[1], buf[2], buf[3]); };
 		gpr.install(stream, encodeWord);
 		data.install(stream, encodeWord);
 		instruction.install(stream, encodeDword);
@@ -255,18 +255,18 @@ namespace iris16 {
 			}
 			//ignore the first byte, it is always zero
 			auto target = static_cast<Segment>(buf[1]);
-			auto address = iris16::encodeWord(buf[2], buf[3]);
+			auto address = iris20::encodeWord(buf[2], buf[3]);
 			if (debugEnabled()) {
 				std::cerr << "current target = " << static_cast<int>(target) << "\tcurrent address = 0x" << std::hex << address << std::endl;
 			}
 			if (target == Segment::Code) {
-				auto result = iris16::encodeDword(buf[4], buf[5], buf[6], buf[7]);
+				auto result = iris20::encodeDword(buf[4], buf[5], buf[6], buf[7]);
 				if (debugEnabled()) {
 					std::cerr << " code result: 0x" << std::hex << result << std::endl;
 				}
 				setInstructionMemory(address, result);
 			} else if (target == Segment::Data) {
-				auto result = iris16::encodeWord(buf[4], buf[5]);
+				auto result = iris20::encodeWord(buf[4], buf[5]);
 				if (debugEnabled()) {
 					std::cerr << " data result: 0x" << std::hex << result << std::endl;
 				}

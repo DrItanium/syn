@@ -1,17 +1,17 @@
-#ifndef _TARGET_IRIS16_IRIS_H
-#define _TARGET_IRIS16_IRIS_H
+#ifndef _TARGET_IRIS20_IRIS_H
+#define _TARGET_IRIS20_IRIS_H
 #include "iris_base.h"
 #include "iris_xunits.h"
 #include "Core.h"
 #include <cstdint>
 #include <memory>
-namespace iris16 {
+namespace iris20 {
 	typedef uint16_t word;
 	typedef uint32_t dword;
 	typedef dword raw_instruction;
 	typedef word immediate;
 	enum ArchitectureConstants  {
-		RegisterCount = 256,
+		RegisterCount = 64,
 		AddressMax = 65535,
 		InstructionPointerIndex = RegisterCount - 1,
 		LinkRegisterIndex = RegisterCount - 2,
@@ -28,10 +28,10 @@ namespace iris16 {
 	inline constexpr dword encodeDword(word lower, word upper) noexcept {
 		return iris::encodeUint32LE(lower, upper);
 	}
-} // end namespace iris16
-#include "iris16_defines.h"
+} // end namespace iris20
+#include "iris20_defines.h"
 
-namespace iris16 {
+namespace iris20 {
 	using ExtendedDataMemory = iris::LoadStoreUnit<word, dword>;
 	using SharedExtendedDataMemory = std::shared_ptr<ExtendedDataMemory>;
 	template<word capacity>
