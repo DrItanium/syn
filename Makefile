@@ -7,7 +7,8 @@ include config.mk
 ARCH_OBJECTS = iris17.o \
 			   iris16.o \
 			   iris18.o \
-			   iris19.o
+			   iris19.o \
+			   iris20.o
 
 COMMON_THINGS = libmaya.a
 
@@ -26,6 +27,8 @@ ASM_PARSERS_OBJECTS = iris16_lex.yy.o \
 					  iris18_asm.tab.o \
 					  iris19_lex.yy.o \
 					  iris19_asm.tab.o \
+					  iris20_lex.yy.o \
+					  iris20_asm.tab.o \
 
 ASM_OBJECTS = iris_asm.o \
 			  asm_interact.o \
@@ -51,7 +54,10 @@ ASM_PARSERS = iris16_lex.yy.c \
 			  iris18_asm.tab.h \
 			  iris19_lex.yy.c \
 			  iris19_asm.tab.c \
-			  iris19_asm.tab.h
+			  iris19_asm.tab.h \
+			  iris20_lex.yy.c \
+			  iris20_asm.tab.c \
+			  iris20_asm.tab.h
 
 ASM_BINARY = iris_asm
 
@@ -71,6 +77,7 @@ DEFINE_OBJECTS = iris19_defines.h \
 				 iris16_defines.h \
 				 iris17_defines.h \
 				 iris18_defines.h \
+				 iris20_defines.h \
 				 iris_memory_block_defines.h
 
 ALL_OBJECTS = ${COMMON_THINGS} \
@@ -184,9 +191,6 @@ iris_memory_block_defines.h: maya def/memory-block-ops.clp lib/reset-run-exit.cl
 	@echo "Generating memory block call operations..."
 	@./maya -f2 def/memory-block-ops.clp -f2 lib/reset-run-exit.clp > iris_memory_block_defines.h
 
-iris19_defines.h: iris_repl def/iris19/instruction.clp cmd/deffield.clp lib/cortex.clp lib/reset-run-exit.clp iris_base.h
-	@echo "Generating encoders, decoders and enumerations for iris19..."
-	@./deffield.sh -f2 def/iris19/instruction.clp -f2 lib/reset-run-exit.clp > iris19_defines.h
 
 iris16_defines.h: iris_repl def/iris16/instruction.clp cmd/deffield.clp lib/cortex.clp lib/reset-run-exit.clp iris_base.h
 	@echo "Generating encoders, decoders and enumerations for iris16..."
@@ -195,9 +199,18 @@ iris16_defines.h: iris_repl def/iris16/instruction.clp cmd/deffield.clp lib/cort
 iris17_defines.h: iris_repl def/iris17/instruction.clp cmd/deffield.clp lib/cortex.clp lib/reset-run-exit.clp iris_base.h
 	@echo "Generating encoders, decoders and enumerations for iris17..."
 	@./deffield.sh -f2 def/iris17/instruction.clp -f2 lib/reset-run-exit.clp > iris17_defines.h
+
 iris18_defines.h: iris_repl def/iris18/instruction.clp cmd/deffield.clp lib/cortex.clp lib/reset-run-exit.clp iris_base.h
 	@echo "Generating encoders, decoders and enumerations for iris18..."
 	@./deffield.sh -f2 def/iris18/instruction.clp -f2 lib/reset-run-exit.clp > iris18_defines.h
+
+iris19_defines.h: iris_repl def/iris19/instruction.clp cmd/deffield.clp lib/cortex.clp lib/reset-run-exit.clp iris_base.h
+	@echo "Generating encoders, decoders and enumerations for iris19..."
+	@./deffield.sh -f2 def/iris19/instruction.clp -f2 lib/reset-run-exit.clp > iris19_defines.h
+	
+iris20_defines.h: iris_repl def/iris20/instruction.clp cmd/deffield.clp lib/cortex.clp lib/reset-run-exit.clp iris_base.h
+	@echo "Generating encoders, decoders and enumerations for iris20..."
+	@./deffield.sh -f2 def/iris20/instruction.clp -f2 lib/reset-run-exit.clp > iris20_defines.h
 
 
 
