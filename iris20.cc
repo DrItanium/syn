@@ -207,19 +207,8 @@ namespace iris20 {
 				source0Register() = iris::getLowerHalf(result);
 				source1Register() = iris::getUpperHalf(result);
 			} else if (op == MoveOp::StoreCode) {
+				genericSet(
 				instruction[destinationRegister()] = encodeDword(source0Register(), source1Register());
-			} else if (op == MoveOp::ExtendedMemoryWrite) {
-				// store destination in the address described by source0 and source1
-				auto result = destinationRegister();
-				auto lower = source0Register();
-				auto upper = source1Register();
-				// build an address out of this
-				setExtendedDataMemory(iris::encodeUint32LE(lower, upper), result);
-			} else if (op == MoveOp::ExtendedMemoryRead) {
-				auto lower = source0Register();
-				auto upper = source1Register();
-				// build an address out of this
-				destinationRegister() = getExtendedDataMemory(iris::encodeUint32LE(lower, upper));
 			} else {
 				std::stringstream ss;
 				ss << "Illegal move code " << getOperation();
