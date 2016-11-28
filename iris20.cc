@@ -41,6 +41,7 @@ namespace iris20 {
 		executeAtom(getSecondAtom(current));
 	}
 	void Core::executeAtom(InstructionAtom atom) {
+		auto genericOperation = getOperation(atom);
 		auto group = static_cast<InstructionGroup>(getGroup(atom));
 		if (group == InstructionGroup::Arithmetic) {
 			static std::map<ArithmeticOp, std::tuple<ALU::Operation, bool>> table = {
@@ -70,7 +71,7 @@ namespace iris20 {
 				execute = false;
 				throw iris::Problem(stream.str());
 			} else {
-				performOperation(_alu, result->second);
+				performOperation(_alu, result->second, atom);
 			}
 		} else if (group == InstructionGroup::Compare) {
 			static std::map<CompareOp, std::tuple<CompareUnit::Operation, bool>> translationTable = {
@@ -87,45 +88,40 @@ namespace iris20 {
 				{ CompareOp::Neq, std::make_tuple(CompareUnit::Operation::Neq, false) },
 				{ CompareOp::NeqImm, std::make_tuple(CompareUnit::Operation::Neq, true) },
 			};
-			auto result = translationTable.find(static_cast<CompareOp>(getOperation()));
+			auto result = translationTable.find(getSubtype<CompareOp>(atom));
 			if (result == translationTable.end()) {
 				std::stringstream stream;
-				stream << "Illegal compare code " << getOperation();
+				stream << "Illegal compare code " << genericOperation;
 				execute = false;
 				advanceIp = false;
 				throw iris::Problem(stream.str());
 			} else {
-				performOperation(_compare, result->second);
+				performOperation(_compare, result->second, atom);
 			}
 		} else if (group == InstructionGroup::Misc) {
-			auto op = static_cast<MiscOp>(getOperation());
+			auto op = getSubtype<MiscOp>(atom);
 			if (op == MiscOp::SystemCall) {
-				auto target = static_cast<SystemCalls>(getDestination());
+				auto target = static_cast<SystemCalls>(getDestinationRawValue(atom));
 				if (target == SystemCalls::Terminate) {
 					execute = false;
 					advanceIp = false;
 				} else if (target == SystemCalls::PutC) {
 					// read register 0 and register 1
-					std::cout.put(static_cast<char>(source0Register()));
+					std::cout.put(static_cast<char>(operandGet(getSource0RawValue(atom))));
 				} else if (target == SystemCalls::GetC) {
 					auto value = static_cast<byte>(0);
 					std::cin >> std::noskipws >> value;
-					source0Register() = static_cast<word>(value);
-				} else if (target == SystemCalls::InitializeXMem) {
-					// just load the given storage size into r0 and r1
-					auto xSize = extendedData->getSize();
-					source0Register() = iris::getLowerHalf(xSize);
-					source1Register() = iris::getUpperHalf(xSize);
+					operandSet(getSource0RawValue(atom), static_cast<word>(value));
 				} else {
 					std::stringstream stream;
-					stream << "Illegal system call " << std::hex << getDestination();
+					stream << "Illegal system call " << std::hex << getDestinationRawValue(atom);
 					execute = false;
 					advanceIp = false;
 					throw iris::Problem(stream.str());
 				}
 			} else {
 				std::stringstream ss;
-				ss << "Illegal misc code " << getOperation();
+				ss << "Illegal misc code " << genericOperation;
 				execute = false;
 				advanceIp = false;
 				throw iris::Problem(ss.str());
@@ -151,10 +147,10 @@ namespace iris20 {
 				{ JumpOp:: IfThenElseLinkPredFalse , std::make_tuple( true, true, true, false, true) } ,
 			};
 			auto ifthenelse = false, conditional = false, iffalse = false, immediate = false,  link = false;
-			auto result = translationTable.find(static_cast<JumpOp>(getOperation()));
+			auto result = translationTable.find(getSubtype<JumpOp>(atom));
 			if (result == translationTable.end()) {
 				std::stringstream ss;
-				ss << "Illegal jump code " << std::hex << static_cast<int>(getOperation());
+				ss << "Illegal jump code " << std::hex << static_cast<int>(genericOperation);
 				execute =  false;
 				throw iris::Problem(ss.str());
 			}
@@ -163,54 +159,38 @@ namespace iris20 {
 			auto cond = true;
 			advanceIp = false;
 			auto ip = getInstructionPointer();
+			auto dest = operandGet(getDestinationRawValue(atom));
+			auto src0Ind = getSource0RawValue(atom);
+			auto src1Ind = getSource0RawValue(atom);
 			if (conditional) {
-				auto dest = destinationRegister();
 				cond = (iffalse ? (dest == 0) : (dest != 0));
 				if (ifthenelse) {
-					newAddr = gpr[cond ? getSource0() : getSource1()];
+					newAddr = operandGet(cond ? src0Ind : src1Ind);
 				} else {
-					newAddr = cond ? (immediate ? getImmediate() : source0Register()) : ip + 1;
+					newAddr = cond ? (immediate ? getImmediate(atom) : operandGet(src1Ind)) : ip + 1;
 				}
 			} else {
-				newAddr = immediate ? getImmediate() : destinationRegister();
+				newAddr = immediate ? getImmediate(atom) : dest;
 			}
 			getInstructionPointer() = newAddr;
 			if (link && cond) {
 				getLinkRegister() = ip + 1;
 			}
 		} else if (group == InstructionGroup::Move) {
-			auto op = static_cast<MoveOp>(getOperation());
+			auto op = getSubtype<MoveOp>(atom);
+			auto dest = getDestinationRawValue(atom);
+			auto src = getSource0RawValue(atom);
 			if (op == MoveOp::Move) {
-				gpr.copy(getDestination(), getSource0());
-			} else if (op == MoveOp::Set) {
-				gpr.set(getDestination(), getImmediate());
+				operandSet(dest, operandGet(src));
+			} else if (op == MoveOp::Set16) {
+				operandSet(dest, getImmediate(atom));
 			} else if (op == MoveOp::Swap) {
-				gpr.swap(getDestination(), getSource0());
-			} else if (op == MoveOp::Load) {
-				gpr.set(getDestination(), data[source0Register()]);
-			} else if (op == MoveOp::LoadImmediate) {
-				gpr.set(getDestination(), data[getImmediate()]);
-			} else if (op == MoveOp::Store) {
-				data.set(destinationRegister(), source0Register());
-			} else if (op == MoveOp::Memset) {
-				data.set(destinationRegister(), getImmediate());
-			} else if (op == MoveOp::Push) {
-				stack[++getStackPointer()] = destinationRegister();
-			} else if (op == MoveOp::PushImmediate) {
-				stack[++getStackPointer()] = getImmediate();
-			} else if (op == MoveOp::Pop) {
-				destinationRegister() = stack[getStackPointer()];
-				--getStackPointer();
-			} else if (op == MoveOp::LoadCode) {
-				auto result = instruction[destinationRegister()];
-				source0Register() = iris::getLowerHalf(result);
-				source1Register() = iris::getUpperHalf(result);
-			} else if (op == MoveOp::StoreCode) {
-				genericSet(
-				instruction[destinationRegister()] = encodeDword(source0Register(), source1Register());
+				auto tmp = operandGet(dest);
+				operandSet(dest, operandGet(src));
+				operandSet(src, tmp);
 			} else {
 				std::stringstream ss;
-				ss << "Illegal move code " << getOperation(atom);
+				ss << "Illegal move code " << genericOperation;
 				execute = false;
 				advanceIp = false;
 				throw iris::Problem(ss.str());

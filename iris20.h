@@ -24,6 +24,9 @@ namespace iris20 {
 		UndefinedSection = 0b11000000,
 		SectionBitsMask = 0b11000000,
 	};
+	// iris20 operates on 2 atom molecules, these atoms are both executed
+	// before the cycle counter continues. This means that there is an implicit
+	// branch delay slot if the programmer so chooses.
 	using InstructionMolecule = uint64_t;
 	inline constexpr word encodeWord(byte a, byte b, byte c, byte d, byte e, byte f, byte g, byte h) noexcept {
 		return iris::encodeInt64LE(a, b, c, d, e, f, g, h);
@@ -47,6 +50,9 @@ namespace iris20 {
 	inline constexpr DecodedOperand getDestinationOperand(InstructionAtom atom)  noexcept { return getOperand(decodeDestination(atom)); }
 	inline constexpr DecodedOperand getSource0Operand(InstructionAtom atom)  noexcept { return getOperand(decodeSource0(atom)); }
 	inline constexpr DecodedOperand getSource1Operand(InstructionAtom atom)  noexcept { return getOperand(decodeSource1(atom)); }
+	inline constexpr byte getDestinationRawValue(InstructionAtom atom)  noexcept { return (decodeDestination(atom)); }
+	inline constexpr byte getSource0RawValue(InstructionAtom atom)  noexcept { return (decodeSource0(atom)); }
+	inline constexpr byte getSource1RawValue(InstructionAtom atom)  noexcept { return (decodeSource1(atom)); }
 
 	inline constexpr word getHalfImmediate(InstructionAtom atom) noexcept { return static_cast<word>(decodeSource0(atom)); }
 	inline constexpr InstructionImmediate getImmediate(InstructionAtom atom) noexcept { return decodeImmediate(atom); }
@@ -74,6 +80,7 @@ namespace iris20 {
 			word operandGet(byte index);
 			void operandSet(byte index, word value);
 			inline word& getInstructionPointer() noexcept { return gpr[ArchitectureConstants::InstructionPointerIndex]; }
+			inline word& getLinkRegister() noexcept { return gpr[ArchitectureConstants::LinkRegisterIndex]; }
 			void executeAtom(InstructionAtom atom);
 		private:
 			void dispatch();
@@ -83,7 +90,7 @@ namespace iris20 {
 				auto dest = std::get<byte>(getDestinationOperand(atom));
 				auto src0 = std::get<byte>(getSource0Operand(atom));
 				auto src1 = std::get<byte>(getSource1Operand(atom));
-				setOperand(dest, unit.performOperation(op, operandGet(src0), operandGet(src1)));
+				operandSet(dest, unit.performOperation(op, operandGet(src0), operandGet(src1)));
 			}
 			template<typename Unit>
 			inline void performOperation(Unit& unit, std::tuple<typename Unit::Operation, bool>& tuple, InstructionAtom atom) {

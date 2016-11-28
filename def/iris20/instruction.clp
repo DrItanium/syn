@@ -2,6 +2,11 @@
           (input-type InstructionAtom)
           (title _iris20_decl)
           (namespace iris20)
+          (field (name MoleculeContainsOneInstruction)
+                 (mask 0x0000000000000001)
+                 (shift 0)
+                 (input-type InstructionMolecule)
+                 (output-type bool))
           (field (name FirstAtom)
                  (mask 0x00000000FFFFFFFF)
                  (shift 0)
@@ -134,19 +139,10 @@
                 (max-size "ArchitectureConstants::MaxOperations")
                 (name MoveOp)
                 (children Move
-                          Set
-                          Swap
-                          Load
-                          LoadImmediate
-                          Store
-                          Memset
-                          Push
-                          PushImmediate
-                          Pop
-                          LoadCode
-                          StoreCode
-                          ExtendedMemoryWrite
-                          ExtendedMemoryRead))
+                          Set16
+                          Set32
+                          Set48
+                          Swap))
           (enum (cast-to byte)
                 (max-size "ArchitectureConstants::MaxOperations")
                 (name CompareOp)
