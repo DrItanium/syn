@@ -300,5 +300,8 @@ namespace iris20 {
 
     void Core::executeMolecule() {
         // decode the operation first!
+        static std::map<Operation, DispatchTableEntry> translationTable = {
+
+        };
     }
 }
