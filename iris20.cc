@@ -248,15 +248,57 @@ namespace iris20 {
 	void Core::initialize() {
 		memory.zero();
 	}
-    void Core::operandSet(byte target, word value) {
 
+    void Core::operandSet(byte target, word value) {
+        SectionType type;
+        byte index;
+        std::tie(type, index) = getOperand(target);
+        auto& data = gpr[index];
+        auto pushValue = [this, &data](word value) {
+            --data;
+            memory[data] = value;
+        };
+        switch(type) {
+            case SectionType::Register:
+                data = value;
+                break;
+            case SectionType::Memory:
+                memory[data] = value;
+                break;
+            case SectionType::Stack:
+                pushValue(value);
+                break;
+            default:
+                throw iris::Problem("Undefined section type specified!");
+        }
     }
 
     word Core::operandGet(byte target) {
-        return 0;
+        SectionType type;
+        byte index;
+        std::tie(type, index) = getOperand(target);
+        auto& data = gpr[index];
+        auto popData = [this, &data]() {
+            auto outcome = memory[data];
+            ++data;
+            return outcome;
+        };
+        auto loadData = [this, &data]() {
+            return memory[data];
+        };
+        switch(type) {
+            case SectionType::Register:
+                return data;
+            case SectionType::Stack:
+                return popData();
+            case SectionType::Memory:
+                return loadData();
+            default:
+                throw iris::Problem("Undefined section type specified!");
+        }
     }
 
     void Core::executeMolecule() {
-
+        // decode the operation first!
     }
 }
