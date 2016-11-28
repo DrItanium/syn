@@ -36,9 +36,14 @@ namespace iris20 {
 		}
 	}
 	void Core::dispatch() {
+		// TODO: add checks for dispatching on one or two atom molecules
 		current = memory[getInstructionPointer()];
-		executeAtom(getFirstAtom(current));
-		executeAtom(getSecondAtom(current));
+		if (decodeMoleculeContainsOneInstruction(current)) {
+			executeMolecule();
+		} else {
+			executeAtom(getFirstAtom(current));
+			executeAtom(getSecondAtom(current));
+		}
 	}
 	enum class ExecutionUnitTarget {
 		ALU,

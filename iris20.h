@@ -75,6 +75,10 @@ namespace iris20 {
 			inline word& getInstructionPointer() noexcept { return gpr[ArchitectureConstants::InstructionPointerIndex]; }
 			inline word& getLinkRegister() noexcept { return gpr[ArchitectureConstants::LinkRegisterIndex]; }
 			void executeAtom(InstructionAtom atom);
+			/**
+			 * Execute the given stored molecule as a single instruction!
+			 */
+			void executeMolecule();
 		private:
 			void dispatch();
 		private:
