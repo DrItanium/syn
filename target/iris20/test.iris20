@@ -1,11 +1,13 @@
 (body main
       (molecule (set r0 0x0)
                 (set r1 0x2))
-      (molecule (set32 r2 0xFFFFFFFFF))
-      (molecule (set32 r3 string))
-      (molecule (set32 r4 done))
+      (molecule (set r3
+                     (address string)))
+      (molecule (set r4
+                     (address done)))
       (body continue
-            (molecule (move r4 (memory r3))
+            (molecule (move r4
+                            (memory r3))
                       (== r4 r0))
             (molecule (swap r0 r0)
                       (cond-branch r4))
