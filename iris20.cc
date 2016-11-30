@@ -54,6 +54,13 @@ namespace iris20 {
 	};
 	// target, subcommand, immediate?
 	using DispatchTableEntry = std::tuple<ExecutionUnitTarget, byte, bool>;
+    constexpr DispatchTableEntry makeDispatchEntry(ExecutionUnitTarget target, byte value, bool immediate) {
+        return std::make_tuple(target, value, immediate);
+    }
+    template<typename T>
+    constexpr DispatchTableEntry makeDispatchEntry(ExecutionUnitTarget target, T value, bool immediate) {
+        return makeDispatchEntry(target, static_cast<byte>(value), immediate);
+    }
 	constexpr inline byte makeJumpByte(bool ifthenelse, bool conditional, bool iffalse, bool link) noexcept {
 		return iris::encodeFlag<byte, 0b00001000, 3>(
 				iris::encodeFlag<byte, 0b00000100, 2>(
@@ -65,11 +72,56 @@ namespace iris20 {
 				link);
 	}
 	constexpr inline DispatchTableEntry makeJumpConstant(bool ifthenelse, bool conditional, bool iffalse, bool immediate, bool link) noexcept {
-		return std::make_tuple(ExecutionUnitTarget::BranchUnit, makeJumpByte(ifthenelse, conditional, iffalse, link), immediate);
+        return makeDispatchEntry(ExecutionUnitTarget::BranchUnit, makeJumpByte(ifthenelse, conditional, iffalse, link), immediate);
 	}
 	constexpr inline std::tuple<bool, bool, bool, bool> decomposeJumpByte(byte input) noexcept {
 		return std::make_tuple(iris::decodeFlag<byte, 0b00000001>(input), iris::decodeFlag<byte, 0b00000010>(input), iris::decodeFlag<byte, 0b00000100>(input), iris::decodeFlag<byte, 0b00001000>(input));
 	}
+    void Core::executeMolecule() {
+        // decode the operation first!
+        static std::map<Operation, DispatchTableEntry> table = {
+            { Operation::Set32, makeDispatchEntry(ExecutionUnitTarget::MoveUnit, Operation::Set32, true) },
+            { Operation::Set48, makeDispatchEntry(ExecutionUnitTarget::MoveUnit, Operation::Set48, true) },
+        };
+		auto result = table.find(decodeMoleculeOperation(current));
+		if (result == table.end()) {
+			throw iris::Problem("Illegal molecule instruction!");
+		}
+        ExecutionUnitTarget unit;
+        byte dispatch;
+        bool immediate;
+        std::tie(unit, dispatch, immediate) = result->second;
+        auto moveOperation = [this, op = static_cast<Operation>(dispatch), immediate]() {
+            auto isSet = [](Operation op) { return op == Operation::Set32 || op == Operation::Set48; };
+            auto getImmediateWord = [this](Operation op) {
+                switch(op) {
+                    case Operation::Set32:
+                        return decodeImmediate32(current);
+                    case Operation::Set48:
+                        return decodeImmediate48(current);
+                    default:
+                        throw iris::Problem("Illegal operation to get a word from!");
+                }
+            };
+            if (immediate) {
+                if (isSet(op)) {
+                    operandSet(decodeMoleculeDestination(current), getImmediateWord(op));
+                } else {
+                    throw iris::Problem("unimplemented move operation specified!");
+                }
+            } else {
+                throw iris::Problem("no immediate operations currently defined!");
+            }
+        };
+        switch(unit) {
+            case ExecutionUnitTarget::MoveUnit:
+                moveOperation();
+                break;
+            default:
+                throw iris::Problem("Provided unit does not have molecule sized instructions!");
+
+        }
+    }
 	void Core::executeAtom(InstructionAtom atom) {
 		auto operation = getOperation(atom);
 		static std::map<Operation, DispatchTableEntry> table = {
@@ -298,10 +350,4 @@ namespace iris20 {
         }
     }
 
-    void Core::executeMolecule() {
-        // decode the operation first!
-        static std::map<Operation, DispatchTableEntry> translationTable = {
-
-        };
-    }
 }
