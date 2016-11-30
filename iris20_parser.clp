@@ -12,22 +12,74 @@
                          TRUE)
         (visibility public)
         (storage local)))
-(defclass lisp->intermediary::set-operation
-  (is-a atom)
+(defclass lisp->intermediary::has-destination
+  (is-a thing)
   (slot destination
         (visibility public)
         (storage local)
-        (default ?NONE))
-  (slot immediate-value
+        (default ?NONE)))
+
+(defclass lisp->intermediary::has-source0
+  (is-a thing)
+  (slot source0
         (visibility public)
         (storage local)
-        (default ?NONE))
+        (default ?NONE)))
+
+(defclass lisp->intermediary::has-source1
+  (is-a thing)
+  (slot source1
+        (visibility public)
+        (storage local)
+        (default ?NONE)))
+(defclass lisp->intermediary::two-argument-operation
+  (is-a atom
+        has-destination
+        has-source0))
+
+
+
+(defclass lisp->intermediary::three-argument-operation
+  (is-a atom
+        has-destination
+        has-source0
+        has-source1))
+
+(defclass lisp->intermediary::set-operation
+  (is-a two-argument-operation)
   (slot title
         (source composite)
         (storage shared)
         (access read-only)
         (create-accessor read)
         (default set)))
+
+(defclass lisp->intermediary::move-operation
+  (is-a two-argument-operation)
+  (slot title
+        (source composite)
+        (storage shared)
+        (access read-only)
+        (create-accessor read)
+        (default move)))
+
+(defclass lisp->intermediary::not-operation
+  (is-a two-argument-operation)
+  (slot title
+        (source composite)
+        (storage shared)
+        (access read-only)
+        (create-accessor read)
+        (default not)))
+
+(defclass lisp->intermediary::swap-operation
+  (is-a two-argument-operation)
+  (slot title
+        (source composite)
+        (storage shared)
+        (access read-only)
+        (create-accessor read)
+        (default swap)))
 
 (defclass lisp->intermediary::special-register-action
   (is-a node
@@ -160,5 +212,61 @@
                         (parent ?p)
                         (double-wide ?dw)
                         (destination ?destination)
-                        (immediate-value ?immediate)
+                        (source ?immediate)
+                        (contents ?rest)))
+
+(defrule lisp->intermediary::generate-move-operation
+         (declare (salience 1))
+         ?f <- (object (is-a atom)
+                       (title move)
+                       (double-wide ?dw)
+                       (parent ?p)
+                       (name ?move)
+                       (contents ?destination
+                                 ?immediate
+                                 $?rest))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?move of move-operation
+                        (parent ?p)
+                        (double-wide ?dw)
+                        (destination ?destination)
+                        (source ?immediate)
+                        (contents ?rest)))
+(defrule lisp->intermediary::generate-not-operation
+         (declare (salience 1))
+         ?f <- (object (is-a atom)
+                       (title not)
+                       (double-wide ?dw)
+                       (parent ?p)
+                       (name ?not)
+                       (contents ?destination
+                                 ?immediate
+                                 $?rest))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?not of not-operation
+                        (parent ?p)
+                        (double-wide ?dw)
+                        (destination ?destination)
+                        (source ?immediate)
+                        (contents ?rest)))
+
+(defrule lisp->intermediary::generate-swap-operation
+         (declare (salience 1))
+         ?f <- (object (is-a atom)
+                       (title swap)
+                       (double-wide ?dw)
+                       (parent ?p)
+                       (name ?swap)
+                       (contents ?destination
+                                 ?immediate
+                                 $?rest))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?swap of swap-operation
+                        (parent ?p)
+                        (double-wide ?dw)
+                        (destination ?destination)
+                        (source ?immediate)
                         (contents ?rest)))
