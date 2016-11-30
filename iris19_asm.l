@@ -12,9 +12,9 @@
 
 namespace iris19 {
 	byte getregister();
-	unsigned long getdecimalimmediate();
-	unsigned long getheximmediate();
-	unsigned long getbinaryimmediate();
+	unsigned long long getdecimalimmediate();
+	unsigned long long getheximmediate();
+	unsigned long long getbinaryimmediate();
 	unsigned long getbitmask();
 }
 extern void iris19error(const char* c);
@@ -123,7 +123,7 @@ byte getregister(void) {
    }
 }
 
-unsigned long getdecimalimmediate() {
+unsigned long long getdecimalimmediate() {
    unsigned long long tmp;
    std::string str(iris19text);
    tmp = strtoull(str.c_str(), NULL, 10);
@@ -140,7 +140,7 @@ unsigned long getdecimalimmediate() {
    }
 }
 
-unsigned long getheximmediate() {
+unsigned long long getheximmediate() {
    unsigned long long tmp;
    std::string str(iris19text);
    str[1] = '0';
@@ -158,7 +158,7 @@ unsigned long getheximmediate() {
    }
 }
 
-unsigned long getbinaryimmediate() {
+unsigned long long getbinaryimmediate() {
    unsigned long long tmp;
    std::string str(iris19text);
    str[1] = '0';
