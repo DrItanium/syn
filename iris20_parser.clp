@@ -5,7 +5,30 @@
   (is-a composite-node))
 (defclass lisp->intermediary::atom
   (is-a composite-node
-        has-title))
+        has-title)
+  (slot double-wide
+        (type SYMBOL)
+        (allowed-symbols FALSE
+                         TRUE)
+        (visibility public)
+        (storage local)))
+(defclass lisp->intermediary::set-operation
+  (is-a atom)
+  (slot destination
+        (visibility public)
+        (storage local)
+        (default ?NONE))
+  (slot immediate-value
+        (visibility public)
+        (storage local)
+        (default ?NONE))
+  (slot title
+        (source composite)
+        (storage shared)
+        (access read-only)
+        (create-accessor read)
+        (default set)))
+
 (defclass lisp->intermediary::special-register-action
   (is-a node
         has-title)
@@ -58,10 +81,23 @@
                         (title ?title)
                         (contents $?rest)))
 
+(defrule lisp->intermediary::mark-atom-double-wide-operation-from-immediate
+         ?f <- (object (is-a atom)
+                       (double-wide FALSE)
+                       (contents $? ?wide-op))
+         (object (is-a data-value)
+                 (name ?wide-op)
+                 (title int32|uint32|int64|uint64|address))
+         =>
+         (modify-instance ?f
+                          (double-wide TRUE)))
+
+
+
 (defrule lisp->intermediary::mark-special-register-action
          ?f <- (object (is-a list)
                        (parent ?atom)
-                       (contents ?title ?target)
+                       (contents ?title&stack|memory ?target)
                        (name ?special))
          (object (is-a atom)
                  (name ?atom))
@@ -96,3 +132,33 @@
                         (parent ?p)
                         (title ?width)
                         (value ?value)))
+
+(defrule lisp->intermediary::mark-atom-double-wide-operation-from-immediate
+         ?f <- (object (is-a set-operation)
+                       (double-wide FALSE)
+                       (immediate-value ?wide-op))
+         (object (is-a data-value)
+                 (name ?wide-op)
+                 (title =int32|uint32|int64|uint64|address))
+         =>
+         (modify-instance ?f
+                          (double-wide TRUE)))
+
+(defrule lisp->intermediary::generate-set-operation
+         (declare (salience 1))
+         ?f <- (object (is-a atom)
+                       (title set)
+                       (double-wide ?dw)
+                       (parent ?p)
+                       (name ?set)
+                       (contents ?destination
+                                 ?immediate
+                                 $?rest))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?set of set-operation
+                        (parent ?p)
+                        (double-wide ?dw)
+                        (destination ?destination)
+                        (immediate-value ?immediate)
+                        (contents ?rest)))
