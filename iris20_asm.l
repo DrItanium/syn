@@ -12,8 +12,8 @@
 
 namespace iris20 {
 	static byte getregister(void);
-	static unsigned long getdecimalimmediate(void);
-	static unsigned long getheximmediate(void);
+	unsigned long long getdecimalimmediate(void);
+	unsigned long long getheximmediate(void);
 }
 extern void iris20error(const char* c);
 %}
@@ -110,7 +110,7 @@ omni [a-zA-Z0-9._]
 r{digit}+ { iris20lval.rval = iris20::getregister(); return REGISTER; }
 {digit}+ { iris20lval.ival = iris20::getdecimalimmediate(); return IMMEDIATE; }
 0x{xdigit}+ { iris20lval.ival = iris20::getheximmediate(); return IMMEDIATE; }
-{omni}+ { 
+{omni}+ {
 	std::string contents(iris20text);
 	iris20lval.sval = (char*)contents.c_str();
 	return IRIS16_SYMBOL;
@@ -119,26 +119,26 @@ r{digit}+ { iris20lval.rval = iris20::getregister(); return REGISTER; }
 namespace iris20 {
 byte getregister(void) {
    int c;
-
    iris20text[0] = '0';
    c = atoi(iris20text);
-   if(c > 255 || c < 0) {
-      iris20error("target register is too large");
+   if(c > ArchitectureConstants::RegisterCount || c < 0) {
+      iris20error("not a valid target register");
       return 0;
    } else {
       return (byte)c;
    }
 }
 
-unsigned long getdecimalimmediate() {
-   unsigned long tmp;
-   tmp = strtoul(iris20text, NULL, 10);
-   if(tmp == ULONG_MAX && errno == ERANGE) {
+unsigned long long getdecimalimmediate() {
+   unsigned long long tmp;
+   std::string str(iris20text);
+   tmp = strtoull(str.c_str(), NULL, 10);
+   if(tmp == ULLONG_MAX && errno == ERANGE) {
       iris20error("number is too large and overflowed!");
       return 0;
    } else {
-      if(tmp > 65535 || tmp < 0) {
-         iris20error("provided number is larger than 16-bits!");
+      if(tmp > 0xFFFFFFFFFFFFFFFF || tmp < 0) {
+         iris20error("provided number is larger than 64-bits!");
          return 0;
       } else {
          return tmp;
@@ -146,15 +146,35 @@ unsigned long getdecimalimmediate() {
    }
 }
 
-unsigned long getheximmediate() {
-   unsigned long tmp;
-   tmp = strtoul(iris20text, NULL, 16);
+unsigned long long getheximmediate() {
+   unsigned long long tmp;
+   std::string str(iris20text);
+   str[1] = '0';
+   tmp = strtoull(str.c_str(), NULL, 16);
+   if(tmp == ULLONG_MAX && errno == ERANGE) {
+      iris20error("number is too large and overflowed!");
+      return 0;
+   } else {
+      if(tmp > 0xFFFFFFFFFFFFFFFF || tmp < 0) {
+         iris20error("provided number is larger than 64-bits!");
+         return 0;
+      } else {
+         return tmp;
+      }
+   }
+}
+
+unsigned long long getbinaryimmediate() {
+   unsigned long long tmp;
+   std::string str(iris20text);
+   str[1] = '0';
+   tmp = strtoull(str.c_str(), NULL, 2);
    if(tmp == ULONG_MAX && errno == ERANGE) {
       iris20error("number is too large and overflowed!");
       return 0;
    } else {
-      if(tmp > 65535 || tmp < 0) {
-         iris20error("provided number is larger than 16-bits!");
+      if(tmp > 0xFFFFFFFFFFFFFFFF || tmp < 0) {
+         iris20error("provided number is larger than 64-bits!");
          return 0;
       } else {
          return tmp;
