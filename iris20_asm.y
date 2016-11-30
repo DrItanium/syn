@@ -39,10 +39,8 @@ struct dynamicop {
    std::string symbol;
 };
 struct asmstate {
-	
-   ~asmstate() {
-   }
-   Segment segment;
+
+   virtual ~asmstate() { }
    word code_address;
    word data_address;
    std::map<std::string, word> labels;
@@ -188,7 +186,7 @@ bool resolve_op(dynamicop* dop);
 
 %%
 Q: /* empty */ |
-   F 
+   F
 ;
 F:
    F asm {
@@ -201,7 +199,7 @@ F:
       iris20::curri.reg2 = 0;
       iris20::curri.hassymbol = 0;
       iris20::curri.symbol = "";
-   } | 
+   } |
    asm {
       iris20::curri.segment = iris20::Segment::Code;
       iris20::curri.address = 0;
@@ -227,10 +225,10 @@ directive:
             } else {
                iris20error("Invalid segment!");
             }
-            } | 
+            } |
       DIRECTIVE_CODE { iris20::state.segment = iris20::Segment::Code; } |
       DIRECTIVE_DATA { iris20::state.segment = iris20::Segment::Data; } |
-      DIRECTIVE_DECLARE lexeme { 
+      DIRECTIVE_DECLARE lexeme {
             if(iris20::state.segment == iris20::Segment::Data) {
                iris20::curri.segment = iris20::Segment::Data;
                iris20::curri.address = iris20::state.data_address;
@@ -255,7 +253,7 @@ statement:
          }
          ;
 label:
-     LABEL IRIS16_SYMBOL { 
+     LABEL IRIS16_SYMBOL {
       if(iris20::state.segment == iris20::Segment::Code) {
           iris20::add_label_entry($2, iris20::state.code_address);
       } else if (iris20::state.segment == iris20::Segment::Data) {
@@ -296,20 +294,20 @@ arithmetic_op:
 			 }
       ;
 aop_single_macro:
-   ARITHMETIC_MACRO_OP_INCR { 
+   ARITHMETIC_MACRO_OP_INCR {
      iris20::curri.op = (byte)iris20::ArithmeticOp::AddImmediate;
      iris20::curri.reg2 = 1;
    } |
-   ARITHMETIC_MACRO_OP_DECR { 
-     iris20::curri.op = (byte)iris20::ArithmeticOp::SubImmediate;  
+   ARITHMETIC_MACRO_OP_DECR {
+     iris20::curri.op = (byte)iris20::ArithmeticOp::SubImmediate;
 	 iris20::curri.reg2 = 1;
    } |
-   ARITHMETIC_MACRO_OP_HALVE { 
-     iris20::curri.op = (byte)iris20::ArithmeticOp::DivImmediate; 
+   ARITHMETIC_MACRO_OP_HALVE {
+     iris20::curri.op = (byte)iris20::ArithmeticOp::DivImmediate;
      iris20::curri.reg2 = 2;
    } |
    ARITHMETIC_MACRO_OP_DOUBLE {
-     iris20::curri.op = (byte)iris20::ArithmeticOp::MulImmediate; 
+     iris20::curri.op = (byte)iris20::ArithmeticOp::MulImmediate;
      iris20::curri.reg2 = 2;
    }
    ;
@@ -322,7 +320,7 @@ move_op:
        mop_single REGISTER {
          iris20::curri.reg0 = $2;
        } |
-       MOVE_OP_PUSHIMMEDIATE lexeme { 
+       MOVE_OP_PUSHIMMEDIATE lexeme {
          iris20::curri.op = (byte)iris20::MoveOp::PushImmediate;
        } |
 	   MOVE_OP_STORE_CODE REGISTER REGISTER REGISTER {
@@ -348,15 +346,15 @@ move_op:
 	   	iris20::curri.reg0 = $2;
 		iris20::curri.reg1 = $3;
 		iris20::curri.reg2 = $4;
-	   } 
+	   }
        ;
 
 jump_op:
-       JUMP_OP_UNCONDITIONALIMMEDIATE lexeme { 
-         iris20::curri.op = (byte)iris20::JumpOp::UnconditionalImmediate; 
-         } | 
-       JUMP_OP_UNCONDITIONALREGISTER REGISTER { 
-         iris20::curri.op = (byte)iris20::JumpOp::UnconditionalRegister; 
+       JUMP_OP_UNCONDITIONALIMMEDIATE lexeme {
+         iris20::curri.op = (byte)iris20::JumpOp::UnconditionalImmediate;
+         } |
+       JUMP_OP_UNCONDITIONALREGISTER REGISTER {
+         iris20::curri.op = (byte)iris20::JumpOp::UnconditionalRegister;
          iris20::curri.reg0 = $2;
        } |
        jop_reg_reg REGISTER REGISTER {
@@ -387,16 +385,16 @@ compare_op:
 		  }
           ;
 misc_op:
-       MISC_OP_SYSTEMCALL IMMEDIATE REGISTER REGISTER 
-       { 
-         iris20::curri.op = (byte)iris20::MiscOp::SystemCall; 
+       MISC_OP_SYSTEMCALL IMMEDIATE REGISTER REGISTER
+       {
+         iris20::curri.op = (byte)iris20::MiscOp::SystemCall;
          if($2 > 255) {
             iris20error("system call offset out of range!");
          }
          iris20::curri.reg0 = $2;
          iris20::curri.reg1 = $3;
          iris20::curri.reg2 = $4;
-       } 
+       }
        ;
 aop:
    ARITHMETIC_OP_ADD { iris20::curri.op = (byte)iris20::ArithmeticOp::Add; } |
@@ -408,17 +406,17 @@ aop:
    ARITHMETIC_OP_SHIFTRIGHT { iris20::curri.op = (byte)iris20::ArithmeticOp::ShiftRight; } |
    ARITHMETIC_OP_BINARYAND { iris20::curri.op = (byte)iris20::ArithmeticOp::BinaryAnd; } |
    ARITHMETIC_OP_BINARYOR { iris20::curri.op = (byte)iris20::ArithmeticOp::BinaryOr; } |
-   ARITHMETIC_OP_BINARYXOR { iris20::curri.op = (byte)iris20::ArithmeticOp::BinaryXor; } 
+   ARITHMETIC_OP_BINARYXOR { iris20::curri.op = (byte)iris20::ArithmeticOp::BinaryXor; }
    ;
 
 aop_imm:
    ARITHMETIC_OP_ADD_IMM { iris20::curri.op = (byte)iris20::ArithmeticOp::AddImmediate; } |
    ARITHMETIC_OP_SUB_IMM { iris20::curri.op = (byte)iris20::ArithmeticOp::SubImmediate; } |
-   ARITHMETIC_OP_MUL_IMM { iris20::curri.op = (byte)iris20::ArithmeticOp::MulImmediate; } | 
+   ARITHMETIC_OP_MUL_IMM { iris20::curri.op = (byte)iris20::ArithmeticOp::MulImmediate; } |
    ARITHMETIC_OP_DIV_IMM { iris20::curri.op = (byte)iris20::ArithmeticOp::DivImmediate; } |
    ARITHMETIC_OP_REM_IMM { iris20::curri.op = (byte)iris20::ArithmeticOp::RemImmediate; } |
    ARITHMETIC_OP_SHIFTLEFT_IMM { iris20::curri.op = (byte)iris20::ArithmeticOp::ShiftLeftImmediate; } |
-   ARITHMETIC_OP_SHIFTRIGHT_IMM { iris20::curri.op = (byte)iris20::ArithmeticOp::ShiftRightImmediate; } 
+   ARITHMETIC_OP_SHIFTRIGHT_IMM { iris20::curri.op = (byte)iris20::ArithmeticOp::ShiftRightImmediate; }
    ;
 
 mop_reg:
@@ -431,12 +429,12 @@ mop_reg:
 mop_mixed:
    MOVE_OP_SET { iris20::curri.op = (byte)iris20::MoveOp::Set; } |
    MOVE_OP_STOREIMM { iris20::curri.op = (byte)iris20::MoveOp::Memset; } |
-   MOVE_OP_LOADMEM { iris20::curri.op = (byte)iris20::MoveOp::LoadImmediate; } 
+   MOVE_OP_LOADMEM { iris20::curri.op = (byte)iris20::MoveOp::LoadImmediate; }
    ;
 
 mop_single:
    MOVE_OP_PUSH { iris20::curri.op = (byte)iris20::MoveOp::Push; } |
-   MOVE_OP_POP { iris20::curri.op = (byte)iris20::MoveOp::Pop; } 
+   MOVE_OP_POP { iris20::curri.op = (byte)iris20::MoveOp::Pop; }
    ;
 
 jop_reg_imm:
@@ -444,7 +442,7 @@ jop_reg_imm:
    JUMP_OP_CONDITIONALTRUEIMMEDIATE { iris20::curri.op = (byte)iris20::JumpOp::ConditionalTrueImmediate; } |
    JUMP_OP_CONDITIONALTRUEIMMEDIATELINK { iris20::curri.op = (byte)iris20::JumpOp::ConditionalTrueImmediateLink; } |
    JUMP_OP_CONDITIONALFALSEIMMEDIATE { iris20::curri.op = (byte)iris20::JumpOp::ConditionalFalseImmediate; } |
-   JUMP_OP_CONDITIONALFALSEIMMEDIATELINK { iris20::curri.op = (byte)iris20::JumpOp::ConditionalFalseImmediateLink; } 
+   JUMP_OP_CONDITIONALFALSEIMMEDIATELINK { iris20::curri.op = (byte)iris20::JumpOp::ConditionalFalseImmediateLink; }
    ;
 
 
@@ -469,7 +467,7 @@ cop:
    COMPARE_OP_LESSTHAN { iris20::curri.op = (byte)iris20::CompareOp::LessThan; } |
    COMPARE_OP_GREATERTHAN { iris20::curri.op = (byte)iris20::CompareOp::GreaterThan; } |
    COMPARE_OP_LESSTHANOREQUALTO { iris20::curri.op = (byte)iris20::CompareOp::LessThanOrEqualTo; } |
-   COMPARE_OP_GREATERTHANOREQUALTO { iris20::curri.op = (byte)iris20::CompareOp::GreaterThanOrEqualTo; } 
+   COMPARE_OP_GREATERTHANOREQUALTO { iris20::curri.op = (byte)iris20::CompareOp::GreaterThanOrEqualTo; }
 ;
 icop:
    COMPARE_OP_EQ_IMMEDIATE { iris20::curri.op = (byte)iris20::CompareOp::EqImm; } |
@@ -480,9 +478,9 @@ icop:
    COMPARE_OP_GREATERTHANOREQUALTO_IMMEDIATE { iris20::curri.op = (byte)iris20::CompareOp::GreaterThanOrEqualToImm; }
 ;
 lexeme:
-      IRIS16_SYMBOL { iris20::curri.hassymbol = 1; 
-               iris20::curri.symbol = $1; } | 
-      IMMEDIATE { 
+      IRIS16_SYMBOL { iris20::curri.hassymbol = 1;
+               iris20::curri.symbol = $1; } |
+      IMMEDIATE {
             iris20::curri.reg1 = (byte)(($1 & 0x00FF));
             iris20::curri.reg2 = (byte)(($1 & 0xFF00) >> 8);
       }
@@ -519,7 +517,7 @@ void save_encoding(void) {
    if(iris20::curri.hassymbol) {
 	  persist_dynamic_op();
    } else {
-	  write_dynamic_op(&curri); 
+	  write_dynamic_op(&curri);
    }
 }
 void write_dynamic_op(dynamicop* dop) {
