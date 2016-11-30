@@ -5,9 +5,11 @@
 #include "iris16.h"
 #include "iris17.h"
 #include "iris19.h"
+#include "iris20.h"
 
 namespace iris {
 	static std::map<std::string, std::function<Core*()>> cores = {
+        { "iris20", iris20::newCore },
 		{ "iris19", iris19::newCore },
 		{ "iris18", iris18::newCore },
 		{ "iris17", iris17::newCore },

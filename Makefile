@@ -27,8 +27,6 @@ ASM_PARSERS_OBJECTS = iris16_lex.yy.o \
 					  iris18_asm.tab.o \
 					  iris19_lex.yy.o \
 					  iris19_asm.tab.o \
-					  iris20_lex.yy.o \
-					  iris20_asm.tab.o \
 
 ASM_OBJECTS = iris_asm.o \
 			  asm_interact.o \
@@ -55,9 +53,6 @@ ASM_PARSERS = iris16_lex.yy.c \
 			  iris19_lex.yy.c \
 			  iris19_asm.tab.c \
 			  iris19_asm.tab.h \
-			  iris20_lex.yy.c \
-			  iris20_asm.tab.c \
-			  iris20_asm.tab.h
 
 ASM_BINARY = iris_asm
 
@@ -155,7 +150,7 @@ ${ASM_BINARY}: ${ASM_OBJECTS}
 	@${CXX} ${LDFLAGS} -o ${ASM_BINARY} ${ASM_OBJECTS}
 	@echo done.
 
-${REPL_BINARY}: ${REPL_OBJECTS} 
+${REPL_BINARY}: ${REPL_OBJECTS}
 	@echo -n Building ${REPL_BINARY} binary out of $^...
 	@${CXX} ${LIBS} -o ${REPL_BINARY} ${REPL_OBJECTS}
 	@echo done.
@@ -207,7 +202,7 @@ iris18_defines.h: iris_repl def/iris18/instruction.clp cmd/deffield.clp lib/cort
 iris19_defines.h: iris_repl def/iris19/instruction.clp cmd/deffield.clp lib/cortex.clp lib/reset-run-exit.clp iris_base.h
 	@echo "Generating encoders, decoders and enumerations for iris19..."
 	@./deffield.sh -f2 def/iris19/instruction.clp -f2 lib/reset-run-exit.clp > iris19_defines.h
-	
+
 iris20_defines.h: iris_repl def/iris20/instruction.clp cmd/deffield.clp lib/cortex.clp lib/reset-run-exit.clp iris_base.h
 	@echo "Generating encoders, decoders and enumerations for iris20..."
 	@./deffield.sh -f2 def/iris20/instruction.clp -f2 lib/reset-run-exit.clp > iris20_defines.h
@@ -324,7 +319,3 @@ iris19_asm.tab.o: iris19_asm.tab.c iris19.h iris_base.h Problem.h Core.h \
 iris19_lex.yy.o: iris19_lex.yy.c iris19.h iris_base.h Problem.h Core.h \
  sim_registration.h iris_xunits.h iris19_defines.h def/iris19/ops.def \
  iris19_asm.tab.h
-iris20_asm.tab.o: iris20_asm.tab.c asm_interact.h iris20.h iris_base.h \
- Problem.h iris_xunits.h Core.h iris20_defines.h iris20_asm.tab.h
-iris20_lex.yy.o: iris20_lex.yy.c iris20.h iris_base.h Problem.h \
- iris_xunits.h Core.h iris20_defines.h iris20_asm.tab.h

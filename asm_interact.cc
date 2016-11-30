@@ -3,11 +3,13 @@
 #include "iris16.h"
 #include "iris17.h"
 #include "iris19.h"
+#include "iris20.h"
 
 #include <map>
 
 namespace iris {
 	static std::map<std::string, std::function<void(FILE*, std::ostream*)>> assemblers = {
+        { "iris20", [](auto a, auto b) { throw iris::Problem("Assembler is done through clips!"); }, },
 		{ "iris19", iris19::assemble },
 		{ "iris18", iris18::assemble },
 		{ "iris17", iris17::assemble },
