@@ -157,8 +157,18 @@
                           BinaryOrImmediate
                           BinaryXorImmediate
                           BinaryNand
-                          BinaryNor
                           BinaryNandImmediate
-                          BinaryNorImmediate
+                          UnconditionalImmediate32
+                          UnconditionalImmediate32Link
+                          ConditionalTrueImmediate32
+                          ConditionalTrueImmediate32Link
+                          ConditionalFalseImmediate32
+                          ConditionalFalseImmediate32Link
+                          UnconditionalImmediate48
+                          UnconditionalImmediate48Link
+                          ConditionalTrueImmediate48
+                          ConditionalTrueImmediate48Link
+                          ConditionalFalseImmediate48
+                          ConditionalFalseImmediate48Link
                           )))
 

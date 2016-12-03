@@ -71,17 +71,38 @@ namespace iris20 {
 					iffalse),
 				link);
 	}
+	constexpr inline byte makeMoleculeJumpByte(bool ifthenelse, bool conditional, bool iffalse, bool link, bool wide48) noexcept {
+		return iris::encodeFlag<byte, 0b00010000, 4>(makeJumpByte(ifthenelse, conditional, iffalse, link), wide48);
+	}
 	constexpr inline DispatchTableEntry makeJumpConstant(bool ifthenelse, bool conditional, bool iffalse, bool immediate, bool link) noexcept {
         return makeDispatchEntry(ExecutionUnitTarget::BranchUnit, makeJumpByte(ifthenelse, conditional, iffalse, link), immediate);
 	}
+	constexpr inline DispatchTableEntry makeMoleculeJumpConstant(bool ifthenelse, bool conditional, bool iffalse, bool immediate, bool link, bool wide48) noexcept {
+		return makeDispatchEntry(ExecutionUnitTarget::BranchUnit, makeMoleculeJumpByte(ifthenelse, conditional, iffalse, link, wide48), immediate);
+	}
 	constexpr inline std::tuple<bool, bool, bool, bool> decomposeJumpByte(byte input) noexcept {
 		return std::make_tuple(iris::decodeFlag<byte, 0b00000001>(input), iris::decodeFlag<byte, 0b00000010>(input), iris::decodeFlag<byte, 0b00000100>(input), iris::decodeFlag<byte, 0b00001000>(input));
+	}
+	constexpr inline std::tuple<bool, bool, bool, bool, bool> decomposeMoleculeJumpByte(byte input) noexcept {
+		return std::make_tuple(iris::decodeFlag<byte, 0b00000001>(input), iris::decodeFlag<byte, 0b00000010>(input), iris::decodeFlag<byte, 0b00000100>(input), iris::decodeFlag<byte, 0b00001000>(input), iris::decodeFlag<byte, 0b00010000>(input));
 	}
     void Core::executeMolecule() {
         // decode the operation first!
         static std::map<Operation, DispatchTableEntry> table = {
             { Operation::Set32, makeDispatchEntry(ExecutionUnitTarget::MoveUnit, Operation::Set32, true) },
             { Operation::Set48, makeDispatchEntry(ExecutionUnitTarget::MoveUnit, Operation::Set48, true) },
+			{ Operation:: UnconditionalImmediate32 ,        makeMoleculeJumpConstant( false, false, false, true, false, false) } ,
+			{ Operation:: UnconditionalImmediate32Link ,    makeMoleculeJumpConstant( false, false, false, true, true, false) } ,
+			{ Operation:: ConditionalTrueImmediate32 ,      makeMoleculeJumpConstant( false, true, false, true, false, false) } ,
+			{ Operation:: ConditionalTrueImmediate32Link ,  makeMoleculeJumpConstant( false, true, false, true, true, false) } ,
+			{ Operation:: ConditionalFalseImmediate32 ,     makeMoleculeJumpConstant( false, true, true, true, false, false) } ,
+			{ Operation:: ConditionalFalseImmediate32Link , makeMoleculeJumpConstant( false, true, true, true, true, false) } ,
+			{ Operation:: UnconditionalImmediate48 ,        makeMoleculeJumpConstant( false, false, false, true, false, true) } ,
+			{ Operation:: UnconditionalImmediate48Link ,    makeMoleculeJumpConstant( false, false, false, true, true, true) } ,
+			{ Operation:: ConditionalTrueImmediate48 ,      makeMoleculeJumpConstant( false, true, false, true, false, true) } ,
+			{ Operation:: ConditionalTrueImmediate48Link ,  makeMoleculeJumpConstant( false, true, false, true, true, true) } ,
+			{ Operation:: ConditionalFalseImmediate48 ,     makeMoleculeJumpConstant( false, true, true, true, false, true) } ,
+			{ Operation:: ConditionalFalseImmediate48Link , makeMoleculeJumpConstant( false, true, true, true, true, true) } ,
         };
 		auto result = table.find(decodeMoleculeOperation(current));
 		if (result == table.end()) {
@@ -113,13 +134,43 @@ namespace iris20 {
                 throw iris::Problem("no immediate operations currently defined!");
             }
         };
+		auto jumpOperation = [this, dispatch, immediate]() {
+			auto ifthenelse = false, conditional = false, iffalse = false, link = false, wide48 = false;
+			std::tie(ifthenelse, conditional, iffalse, link, wide48) = decomposeMoleculeJumpByte(dispatch);
+			if (!immediate) {
+				throw iris::Problem("register based jump instructions don't exist in wide mode");
+			}
+			auto newAddr = static_cast<word>(0);
+			auto cond = true;
+			advanceIp = false;
+			auto ip = getInstructionPointer();
+			auto dest = operandGet(decodeMoleculeDestination(current));
+			auto immediateSelector = wide48 ? decodeImmediate48 : decodeImmediate32;
+			if (conditional) {
+				cond = (iffalse ? (dest == 0) : (dest != 0));
+				if (ifthenelse) {
+					//newAddr = operandGet(cond ? src0Ind : src1Ind);
+					throw iris::Problem("ifthenelse not supported in wide mode!");
+				} else {
+					newAddr = cond ? (ip + immediateSelector(current)) : ip + 1;
+				}
+			} else {
+				newAddr = ip + immediateSelector(current);
+			}
+			getInstructionPointer() = newAddr;
+			if (link && cond) {
+				getLinkRegister() = ip + 1;
+			}
+		};
         switch(unit) {
             case ExecutionUnitTarget::MoveUnit:
                 moveOperation();
                 break;
+			case ExecutionUnitTarget::BranchUnit:
+				jumpOperation();
+				break;
             default:
                 throw iris::Problem("Provided unit does not have molecule sized instructions!");
-
         }
     }
 	void Core::executeAtom(InstructionAtom atom) {
@@ -132,10 +183,15 @@ namespace iris20 {
 				{ Operation::Rem, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::Remainder) , false ) },
 				{ Operation::ShiftLeft, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::ShiftLeft) , false ) },
 				{ Operation::ShiftRight, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::ShiftRight) , false ) },
+				{ Operation::BinaryNot, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::UnaryNot) , false) },
 				{ Operation::BinaryAnd, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::BinaryAnd) , false ) },
 				{ Operation::BinaryOr, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::BinaryOr) , false ) },
-				{ Operation::BinaryNot, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::UnaryNot) , false) },
 				{ Operation::BinaryXor, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::BinaryXor) , false ) },
+				{ Operation::BinaryNand, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::BinaryNand) , false ) },
+				{ Operation::BinaryAndImmediate, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::BinaryAnd) , true ) },
+				{ Operation::BinaryOrImmediate, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::BinaryOr) , true ) },
+				{ Operation::BinaryXorImmediate, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::BinaryXor) , true ) },
+				{ Operation::BinaryNandImmediate, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::BinaryNand) , true ) },
 				{ Operation::AddImmediate, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::Add) , true  ) },
 				{ Operation::SubImmediate, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::Subtract) , true  ) },
 				{ Operation::MulImmediate, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::Multiply) , true  ) } ,
@@ -233,22 +289,21 @@ namespace iris20 {
 			auto ip = getInstructionPointer();
 			auto dest = operandGet(getDestinationRawValue(atom));
 			auto src0Ind = getSource0RawValue(atom);
-			auto src1Ind = getSource0RawValue(atom);
+			auto src1Ind = getSource1RawValue(atom);
 			if (conditional) {
 				cond = (iffalse ? (dest == 0) : (dest != 0));
 				if (ifthenelse) {
 					newAddr = operandGet(cond ? src0Ind : src1Ind);
 				} else {
-					newAddr = cond ? (immediate ? getImmediate(atom) : operandGet(src1Ind)) : ip + 1;
+					newAddr = cond ? (immediate ? (ip + getImmediate(atom)) : operandGet(src1Ind)) : ip + 1;
 				}
 			} else {
-				newAddr = immediate ? getImmediate(atom) : dest;
+				newAddr = immediate ? (ip + getImmediate(atom)) : dest;
 			}
 			getInstructionPointer() = newAddr;
 			if (link && cond) {
 				getLinkRegister() = ip + 1;
 			}
-
 		};
 		switch (target) {
 			case ExecutionUnitTarget::ALU:
