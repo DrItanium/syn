@@ -152,5 +152,13 @@
                           LessThanOrEqualTo
                           LessThanOrEqualToImm
                           GreaterThanOrEqualTo
-                          GreaterThanOrEqualToImm)))
+                          GreaterThanOrEqualToImm
+                          BinaryAndImmediate
+                          BinaryOrImmediate
+                          BinaryXorImmediate
+                          BinaryNand
+                          BinaryNor
+                          BinaryNandImmediate
+                          BinaryNorImmediate
+                          )))
 
