@@ -3,7 +3,41 @@
 #define _IRIS_XUNITS_H
 #include "iris_base.h"
 #include <iostream>
+#include <cmath>
 namespace iris {
+
+template<typename Word>
+class FPU {
+    public:
+        using WordType = Word;
+        enum class Operation {
+            Add,
+            Subtract,
+            Multiply,
+            Divide,
+            SquareRoot,
+            Count,
+        };
+    public:
+        FPU() { }
+        virtual ~FPU() { }
+        inline Word performOperation(Operation op, Word a, Word b) const {
+            switch(op) {
+                case Operation::Add:
+                    return iris::add<Word>(a, b);
+                case Operation::Subtract:
+                    return iris::sub<Word>(a, b);
+                case Operation::Multiply:
+                    return iris::mul<Word>(a, b);
+                case Operation::Divide:
+                    return iris::div<Word>(a, b);
+                case Operation::SquareRoot:
+                    return static_cast<Word>(sqrt(static_cast<double>(a)));
+                default:
+                    throw iris::Problem("Undefined fpu operation!");
+            }
+        }
+};
 
 template<typename Word>
 class ALU {
@@ -133,7 +167,7 @@ class LoadStoreUnit {
 		}
 		inline Address getSize() const noexcept { return _size; }
 		inline bool legalAddress(Address addr) const noexcept {
-			return addr >= 0 && addr < _size; 
+			return addr >= 0 && addr < _size;
 		}
 		void set(Address addr, Word value) {
 			if (legalAddress(addr)) {
