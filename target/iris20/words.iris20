@@ -1,0 +1,38 @@
+(body startup
+      (molecule (set r62
+                     (address DataStackBase)))
+      (molecule (set r61
+                     (address CallStackBase)))
+      (molecule (set r60
+                     (address environment)))
+      )
+
+(body environment
+      (word eq)
+      (word neq)
+      (word lt))
+
+
+(body eq
+      (molecule (== (stack r62)
+                    (stack r62)
+                    (stack r62))
+                (branch (stack r61))))
+(body neq
+      (molecule (!= (stack r62)
+                    (stack r62)
+                    (stack r62))
+                (branch (stack r61))))
+
+(body lt
+      (molecule (< (stack r62)
+                   (stack r62)
+                   (stack r62))
+                (branch (stack r61))))
+
+(body gt
+      (molecule (> (stack r62)
+                   (stack r62)
+                   (stack r62))
+                (branch (stack r61))))
+
