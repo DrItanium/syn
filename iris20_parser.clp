@@ -262,3 +262,131 @@
                         (destination ?dest)
                         (contents $?rest)))
 
+
+(defclass lisp->intermediary::macro
+  (is-a composite-node
+        has-title)
+  (multislot arguments))
+
+(defclass lisp->intermediary::macro-call
+  (is-a composite-node
+        has-title)
+  (slot macro-reference
+        (type INSTANCE)
+        (storage local)
+        (visibility public)
+        (default ?NONE)))
+
+(defrule lisp->intermediary::parse-macro
+         (declare (salience 2))
+         ?f <- (object (is-a list)
+                       (parent ?nocare)
+                       (contents macro
+                                 ?title
+                                 ?args
+                                 $?rest)
+                       (name ?t))
+         ?f2 <- (object (is-a list)
+                        (name ?args)
+                        (parent ?t)
+                        (contents $?vars))
+         =>
+         (unmake-instance ?f ?f2)
+         (progn$ (?arg $?vars)
+                 (if (instancep ?arg) then
+                   (modify-instance ?arg
+                                    (parent ?t))))
+         (make-instance ?t of macro
+                        (arguments $?vars)
+                        (title ?title)
+                        (parent ?nocare)
+                        (contents $?rest)))
+
+(defrule lisp->intermediary::identify-macro-call
+         (declare (salience 3))
+         ?f <- (object (is-a list)
+                       (parent ?nocare)
+                       (contents ?first
+                                 $?args)
+                       (name ?list))
+         (object (is-a file)
+                 (name ?file))
+         (test (send ?f
+                     parent-is
+                     ?file))
+         (object (is-a macro)
+                 (title ?first)
+                 (name ?raw-macro)
+                 (parent ?file))
+         (test (send ?raw-macro
+                     parent-is
+                     ?file))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?list of macro-call
+                        (parent ?nocare)
+                        (title ?first)
+                        (contents $?args)
+                        (macro-reference ?raw-macro)))
+
+
+(defclass lisp->intermediary::alias
+  (is-a node
+        has-title)
+  (slot value
+        (type LEXEME)
+        (visibility public)
+        (storage local)
+        (default ?NONE)))
+
+(defclass lisp->intermediary::alias-reference
+  (is-a node
+        has-title)
+  (slot reference
+        (type INSTANCE)
+        (visibility public)
+        (storage local)
+        (default ?NONE)))
+
+(defrule lisp->intermediary::parse-alias
+         (declare (salience 2))
+         ?f <- (object (is-a list)
+                       (contents alias
+                                 ?title
+                                 ?name)
+                       (parent ?nocare)
+                       (name ?l))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?l of alias
+                        (parent ?nocare)
+                        (title ?title)
+                        (value ?name)))
+
+
+(defrule lisp->intermediary::identify-alias
+         (declare (salience 4))
+         (object (is-a list)
+                 (contents ?f $?a ?item&:(symbolp ?item) $?b)
+                 (name ?list))
+         (object (is-a file)
+                 (name ?file))
+         (test (send ?list
+                     parent-is
+                     ?file))
+         (object (is-a alias)
+                 (title ?item)
+                 (name ?alias)
+                 (parent ?other))
+         (test (send ?other
+                     parent-is
+                     ?file))
+         =>
+         (modify-instance ?list
+                          (contents ?f
+                                    ?a
+                                    (make-instance of alias-reference
+                                                   (parent ?list)
+                                                   (title ?item)
+                                                   (reference ?alias))
+                                    ?b)))

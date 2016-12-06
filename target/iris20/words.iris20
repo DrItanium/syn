@@ -1,38 +1,58 @@
+(alias sp r62)
+(alias data-stack sp)
+(alias dstack data-stack)
+(alias call-stack r61)
+(alias cstack call-stack)
+(alias arg0 r0)
+(alias arg1 r1)
+(alias arg2 r2)
+(alias env r60)
+(macro return
+       ()
+       (branch (stack call-stack)))
+(macro nop
+       ()
+       (swap (register r0)
+             (register r0)))
+(macro return-molecule
+       (?op)
+       (molecule ?op
+                 (return)))
+(macro defunc
+       (?title ?body)
+       (body ?title
+             ?body
+             (return-molecule)))
+
+
 (body startup
-      (molecule (set r62
+      (molecule (set data-stack
                      (address DataStackBase)))
-      (molecule (set r61
+      (molecule (set call-stack
                      (address CallStackBase)))
-      (molecule (set r60
+      (molecule (set env
                      (address environment)))
       )
 
-(body environment
-      (word eq)
-      (word neq)
-      (word lt))
-
-
 (body eq
-      (molecule (== (stack r62)
-                    (stack r62)
-                    (stack r62))
-                (branch (stack r61))))
+      (return-molecule (!eq (stack data-stack)
+                           (stack data-stack)
+                           (stack data-stack))))
 (body neq
-      (molecule (!= (stack r62)
-                    (stack r62)
-                    (stack r62))
-                (branch (stack r61))))
-
+      (return-molecule (!neq (stack data-stack)
+                           (stack data-stack)
+                           (stack data-stack))))
 (body lt
-      (molecule (< (stack r62)
-                   (stack r62)
-                   (stack r62))
-                (branch (stack r61))))
+ (return-molecule (!lt (stack data-stack)
+                       (stack data-stack)
+                       (stack data-stack))))
 
 (body gt
       (molecule (> (stack r62)
                    (stack r62)
                    (stack r62))
                 (branch (stack r61))))
-
+(defunc gt
+        (return-molecule (!gt (stack dstack)
+                              (stack dstack)
+                              (stack dstack))))
