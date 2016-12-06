@@ -32,12 +32,15 @@
         (visibility public)
         (storage local)
         (default ?NONE)))
+
 (defclass lisp->intermediary::two-argument-operation
   (is-a atom
         has-destination
         has-source0))
 
-
+(defclass lisp->intermediary::one-argument-operation
+  (is-a atom
+        has-destination))
 
 (defclass lisp->intermediary::three-argument-operation
   (is-a atom
@@ -45,53 +48,6 @@
         has-source0
         has-source1))
 
-(defclass lisp->intermediary::set-operation
-  (is-a two-argument-operation)
-  (slot title
-        (source composite)
-        (storage shared)
-        (access read-only)
-        (create-accessor read)
-        (default set)))
-(defclass lisp->intermediary::branch-instruction
-  (is-a USER))
-(defclass lisp->intermediary::relative-jump-operation
-  (is-a two-argument-operation
-        branch-instruction)
-  (slot title
-        (source composite)
-        (storage shared)
-        (access read-only)
-        (create-accessor read)
-        (default branch)))
-
-
-(defclass lisp->intermediary::move-operation
-  (is-a two-argument-operation)
-  (slot title
-        (source composite)
-        (storage shared)
-        (access read-only)
-        (create-accessor read)
-        (default move)))
-
-(defclass lisp->intermediary::not-operation
-  (is-a two-argument-operation)
-  (slot title
-        (source composite)
-        (storage shared)
-        (access read-only)
-        (create-accessor read)
-        (default not)))
-
-(defclass lisp->intermediary::swap-operation
-  (is-a two-argument-operation)
-  (slot title
-        (source composite)
-        (storage shared)
-        (access read-only)
-        (create-accessor read)
-        (default swap)))
 
 (defclass lisp->intermediary::special-register-action
   (is-a node
@@ -120,7 +76,27 @@
           (three-argument-instruction binary-or aliases: !or)
           (three-argument-instruction binary-xor aliases: !xor)
           (three-argument-instruction binary-nand aliases: !nand)
-          (three-argument-instruction if aliases: !if))
+          (three-argument-instruction branch-if-then-else aliases: !if)
+          (three-argument-instruction branch-if-then-else-link aliases: !if-link)
+          (three-argument-instruction equals aliases: !eq)
+          (three-argument-instruction not-equals aliases: !neq)
+          (three-argument-instruction less-than aliases: !lt)
+          (three-argument-instruction greater-than aliases: !gt)
+          (three-argument-instruction less-than-or-equal aliases: !le)
+          (three-argument-instruction greater-than-or-equal aliases: !ge)
+          (three-argument-instruction system-call aliases: !sys))
+
+
+(deffacts lisp->intermediary::two-argument-ops
+          (two-argument-instruction swap aliases: !swap)
+          (two-argument-instruction set aliases: !set)
+          (two-argument-instruction move aliases: !move)
+          (two-argument-instruction binary-not aliases: !not)
+          (two-argument-instruction conditional-branch aliases: !branch-if)
+          (two-argument-instruction conditional-branch-link aliases: !branch-if-link))
+
+(deffacts lisp->intermediary::one-argument-ops
+          (one-argument-instruction unconditional-branch aliases: !branch))
 
 (defrule lisp->intermediary::construct-body
          ?f <- (object (is-a list)
@@ -212,7 +188,7 @@
                         (value ?value)))
 
 (defrule lisp->intermediary::mark-atom-double-wide-operation-from-immediate
-         ?f <- (object (is-a set-operation)
+         ?f <- (object (is-a atom)
                        (double-wide FALSE)
                        (source0 ?wide-op))
          (object (is-a data-value)
@@ -222,82 +198,8 @@
          (modify-instance ?f
                           (double-wide TRUE)))
 
-(defrule lisp->intermediary::generate-set-operation
-         (declare (salience 1))
-         ?f <- (object (is-a atom)
-                       (title set)
-                       (double-wide ?dw)
-                       (parent ?p)
-                       (name ?set)
-                       (contents ?destination
-                                 ?immediate
-                                 $?rest))
-         =>
-         (unmake-instance ?f)
-         (make-instance ?set of set-operation
-                        (parent ?p)
-                        (double-wide ?dw)
-                        (destination ?destination)
-                        (source ?immediate)
-                        (contents ?rest)))
 
-(defrule lisp->intermediary::generate-move-operation
-         (declare (salience 1))
-         ?f <- (object (is-a atom)
-                       (title move)
-                       (double-wide ?dw)
-                       (parent ?p)
-                       (name ?move)
-                       (contents ?destination
-                                 ?immediate
-                                 $?rest))
-         =>
-         (unmake-instance ?f)
-         (make-instance ?move of move-operation
-                        (parent ?p)
-                        (double-wide ?dw)
-                        (destination ?destination)
-                        (source ?immediate)
-                        (contents ?rest)))
-(defrule lisp->intermediary::generate-not-operation
-         (declare (salience 1))
-         ?f <- (object (is-a atom)
-                       (title not)
-                       (double-wide ?dw)
-                       (parent ?p)
-                       (name ?not)
-                       (contents ?destination
-                                 ?immediate
-                                 $?rest))
-         =>
-         (unmake-instance ?f)
-         (make-instance ?not of not-operation
-                        (parent ?p)
-                        (double-wide ?dw)
-                        (destination ?destination)
-                        (source ?immediate)
-                        (contents ?rest)))
-
-(defrule lisp->intermediary::generate-swap-operation
-         (declare (salience 1))
-         ?f <- (object (is-a atom)
-                       (title swap)
-                       (double-wide ?dw)
-                       (parent ?p)
-                       (name ?swap)
-                       (contents ?destination
-                                 ?immediate
-                                 $?rest))
-         =>
-         (unmake-instance ?f)
-         (make-instance ?swap of swap-operation
-                        (parent ?p)
-                        (double-wide ?dw)
-                        (destination ?destination)
-                        (source ?immediate)
-                        (contents ?rest)))
-
-(defrule lisp->intermediary::generate-three-argument-operation:exact-title
+(defrule lisp->intermediary::generate-three-argument-operation
          (declare (salience 2))
          ?f <- (object (is-a atom)
                        (title ?title)
@@ -312,9 +214,51 @@
          =>
          (unmake-instance ?f)
          (make-instance ?op of three-argument-operation
-                        (title ?title)
+                        (title ?real-title)
                         (double-wide ?dw)
                         (parent ?p)
                         (destination ?dest)
                         (source0 ?src0)
-                        (source1 ?src1)))
+                        (source1 ?src1)
+                        (contents $?rest)))
+
+(defrule lisp->intermediary::generate-two-argument-operation
+         (declare (salience 2))
+         ?f <- (object (is-a atom)
+                       (title ?title)
+                       (double-wide ?dw)
+                       (parent ?p)
+                       (name ?op)
+                       (contents ?dest
+                                 ?src
+                                 $?rest))
+         (two-argument-instruction ?real-title aliases: $? ?title $?)
+         =>
+         (unmake-instance ?f)
+         (make-instance ?op of two-argument-operation
+                        (title ?real-title)
+                        (double-wide ?dw)
+                        (parent ?p)
+                        (destination ?dest)
+                        (source0 ?src)
+                        (contents $?rest)))
+
+(defrule lisp->intermediary::generate-one-argument-operation
+         (declare (salience 2))
+         ?f <- (object (is-a atom)
+                       (title ?title)
+                       (double-wide ?dw)
+                       (parent ?p)
+                       (name ?op)
+                       (contents ?dest
+                                 $?rest))
+         (one-argument-instruction ?real-title aliases: $? ?title $?)
+         =>
+         (unmake-instance ?f)
+         (make-instance ?op of one-argument-operation
+                        (title ?real-title)
+                        (double-wide ?dw)
+                        (parent ?p)
+                        (destination ?dest)
+                        (contents $?rest)))
+
