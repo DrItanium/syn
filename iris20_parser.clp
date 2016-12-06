@@ -376,7 +376,7 @@
                         (value ?name)))
 
 
-(defrule lisp->intermediary::identify-alias
+(defrule lisp->intermediary::identify-alias:list
          (declare (salience 4))
          (object (is-a list)
                  (contents ?f $?a ?item&:(symbolp ?item) $?b)
@@ -402,3 +402,14 @@
                                                    (title ?item)
                                                    (reference ?alias))
                                     ?b)))
+
+(defrule lisp->intermediary::identify-alias:alias
+         (declare (salience 4))
+         ?f <- (object (is-a alias)
+                       (value ?v))
+         (object (is-a alias)
+                 (title ?v)
+                 (name ?other))
+         =>
+         (modify-instance ?f
+                          (value ?other)))
