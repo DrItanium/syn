@@ -327,13 +327,14 @@ namespace iris20 {
 	}
 
 	void Core::link(std::istream& input) {
-		constexpr auto bufSize = sizeof(word) * 2;
+		constexpr static auto bufSize = sizeof(word) * 2;
 		char buf[bufSize] = { 0 };
 		for(auto lineNumber = static_cast<int>(0); input.good(); ++lineNumber) {
 			input.read(buf, bufSize);
-			if (input.gcount() < bufSize && input.gcount() > 0) {
+            auto gcount = input.gcount();
+			if (gcount < static_cast<decltype(gcount)>(bufSize) && gcount > 0) {
 				throw iris::Problem("unaligned object file found!");
-			} else if (input.gcount() == 0) {
+			} else if (gcount == 0) {
 				if (input.eof()) {
 					break;
 				} else {
