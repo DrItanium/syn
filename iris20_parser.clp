@@ -1,3 +1,6 @@
+(defmessage-handler SYMBOL resolve-alias primary
+                    ()
+                    ?self)
 (defclass lisp->intermediary::body
   (is-a composite-node
         has-title))
@@ -334,10 +337,14 @@
   (is-a node
         has-title)
   (slot value
-        (type LEXEME)
         (visibility public)
         (storage local)
-        (default ?NONE)))
+        (default ?NONE))
+  (message-handler resolve-alias primary))
+(defmessage-handler lisp->intermediary::alias resolve-alias primary
+                    ()
+                    (send ?self:value
+                          resolve-alias))
 
 (defclass lisp->intermediary::alias-reference
   (is-a node
@@ -346,7 +353,12 @@
         (type INSTANCE)
         (visibility public)
         (storage local)
-        (default ?NONE)))
+        (default ?NONE))
+  (message-handler resolve-alias primary))
+(defmessage-handler lisp->intermediary::alias-reference resolve-alias primary
+                    ()
+                    (send ?self:reference
+                          resolve-alias))
 
 (defrule lisp->intermediary::parse-alias
          (declare (salience 2))
