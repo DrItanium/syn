@@ -53,6 +53,18 @@
         (access read-only)
         (create-accessor read)
         (default set)))
+(defclass lisp->intermediate::branch-instruction
+ (is-a USER))
+(defclass lisp->intermediary::relative-jump-operation
+  (is-a two-argument-operation
+        branch-instruction)
+  (slot title
+        (source composite)
+        (storage-shared)
+        (access read-only)
+        (create-accessor read)
+        (default branch)))
+
 
 (defclass lisp->intermediary::move-operation
   (is-a two-argument-operation)
@@ -191,7 +203,7 @@
                        (immediate-value ?wide-op))
          (object (is-a data-value)
                  (name ?wide-op)
-                 (title =int32|uint32|int64|uint64|address))
+                 (title =int32|uint32|int48|uint48|address))
          =>
          (modify-instance ?f
                           (double-wide TRUE)))
