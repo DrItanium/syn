@@ -53,14 +53,14 @@
         (access read-only)
         (create-accessor read)
         (default set)))
-(defclass lisp->intermediate::branch-instruction
- (is-a USER))
+(defclass lisp->intermediary::branch-instruction
+  (is-a USER))
 (defclass lisp->intermediary::relative-jump-operation
   (is-a two-argument-operation
         branch-instruction)
   (slot title
         (source composite)
-        (storage-shared)
+        (storage shared)
         (access read-only)
         (create-accessor read)
         (default branch)))
@@ -107,6 +107,20 @@
         (visibility public)
         (storage local)
         (default ?NONE)))
+
+(deffacts lisp->intermediary::three-argument-ops
+          (three-argument-instruction add aliases: !add)
+          (three-argument-instruction sub aliases: !sub)
+          (three-argument-instruction div aliases: !div)
+          (three-argument-instruction rem aliases: !rem)
+          (three-argument-instruction mul aliases: !mul)
+          (three-argument-instruction shift-left aliases: !shl)
+          (three-argument-instruction shift-right aliases: !shr)
+          (three-argument-instruction binary-and aliases: !and)
+          (three-argument-instruction binary-or aliases: !or)
+          (three-argument-instruction binary-xor aliases: !xor)
+          (three-argument-instruction binary-nand aliases: !nand)
+          (three-argument-instruction if aliases: !if))
 
 (defrule lisp->intermediary::construct-body
          ?f <- (object (is-a list)
@@ -200,7 +214,7 @@
 (defrule lisp->intermediary::mark-atom-double-wide-operation-from-immediate
          ?f <- (object (is-a set-operation)
                        (double-wide FALSE)
-                       (immediate-value ?wide-op))
+                       (source0 ?wide-op))
          (object (is-a data-value)
                  (name ?wide-op)
                  (title =int32|uint32|int48|uint48|address))
@@ -282,3 +296,25 @@
                         (destination ?destination)
                         (source ?immediate)
                         (contents ?rest)))
+
+(defrule lisp->intermediary::generate-three-argument-operation:exact-title
+         (declare (salience 2))
+         ?f <- (object (is-a atom)
+                       (title ?title)
+                       (double-wide ?dw)
+                       (parent ?p)
+                       (name ?op)
+                       (contents ?dest
+                                 ?src0
+                                 ?src1
+                                 $?rest))
+         (three-argument-instruction ?real-title aliases: $? ?title $?)
+         =>
+         (unmake-instance ?f)
+         (make-instance ?op of three-argument-operation
+                        (title ?title)
+                        (double-wide ?dw)
+                        (parent ?p)
+                        (destination ?dest)
+                        (source0 ?src0)
+                        (source1 ?src1)))
