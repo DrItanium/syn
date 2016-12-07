@@ -1,6 +1,19 @@
+(defclass lisp->intermediary::has-reference
+  (is-a USER)
+  (slot reference
+        (type INSTANCE)
+        (visibility public)
+        (storage local)
+        (default ?NONE)))
+
 (defmessage-handler SYMBOL resolve-alias primary
                     ()
                     ?self)
+
+(defclass lisp->intermediary::reference-node
+  (is-a node
+        has-title
+        has-reference))
 (defclass lisp->intermediary::body
   (is-a composite-node
         has-title))
@@ -273,12 +286,8 @@
 
 (defclass lisp->intermediary::macro-call
   (is-a composite-node
-        has-title)
-  (slot macro-reference
-        (type INSTANCE)
-        (storage local)
-        (visibility public)
-        (default ?NONE)))
+        has-title
+        has-reference))
 
 (defrule lisp->intermediary::parse-macro
          (declare (salience 2))
@@ -330,7 +339,7 @@
                         (parent ?nocare)
                         (title ?first)
                         (contents $?args)
-                        (macro-reference ?raw-macro)))
+                        (reference ?raw-macro)))
 
 
 (defclass lisp->intermediary::alias
@@ -348,12 +357,8 @@
 
 (defclass lisp->intermediary::alias-reference
   (is-a node
-        has-title)
-  (slot reference
-        (type INSTANCE)
-        (visibility public)
-        (storage local)
-        (default ?NONE))
+        has-title
+        has-reference)
   (message-handler resolve-alias primary))
 (defmessage-handler lisp->intermediary::alias-reference resolve-alias primary
                     ()
@@ -413,3 +418,33 @@
          =>
          (modify-instance ?f
                           (value ?other)))
+
+
+(defclass lisp->intermediary::macro-argument-reference
+  (is-a reference-node))
+
+(defrule lisp->intermediary::make-macro-argument-link
+         ?f <- (object (is-a macro)
+                       (arguments $? ?aref $?)
+                       (name ?macro))
+         (object (is-a singlefield-variable|multifield-variable)
+                 (name ?aref)
+                 (parent ?macro)
+                 (value ?arg))
+         (object (is-a composite-node)
+                 (name ?cnode)
+                 (contents $? ?arf0 $?))
+         (object (is-a singlefield-variable|multifield-variable)
+                 (name ?arf0)
+                 (value ?arg)
+                 (parent ?cnode))
+         (test (send ?cnode
+                     parent-is
+                     ?macro))
+         =>
+         (unmake-instance ?arf0)
+         (make-instance ?arf0 of macro-argument-reference
+                        (parent ?cnode)
+                        (title ?arg)
+                        (reference ?aref)))
+
