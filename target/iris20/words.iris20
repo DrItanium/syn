@@ -3,10 +3,8 @@
 (alias dstack data-stack)
 (alias call-stack r61)
 (alias cstack call-stack)
-(alias arg0 r0)
-(alias arg1 r1)
-(alias arg2 r2)
-(alias env r60)
+(alias tmp0 r0)
+(alias tmp1 r1)
 (macro return
        ()
        (!branch (stack call-stack)))
@@ -18,35 +16,39 @@
        (?op)
        (molecule ?op
                  (return)))
-(macro defunc
-       (?title ?body)
-       (body ?title
-             ?body
-             (return-molecule (nop))))
 
+(macro stack3
+       (?op)
+       (push data-stack
+             (?op (pop data-stack)
+                  (pop data-stack))))
+
+(macro bind
+       (?register ?value)
+       (bind ?register
+             (address ?value)))
 
 (body startup
-      (molecule (!set data-stack
-                      (address DataStackBase)))
-      (molecule (!set call-stack
-                      (address CallStackBase)))
-      (molecule (!set env
-                      (address environment)))
-      )
-
+      (bind data-stack
+            (address DataStackBase))
+      (bind call-stack
+            (address CallStackBase)))
 (body eq
-      (return-molecule (!eq (stack data-stack)
-                            (stack data-stack)
-                            (stack data-stack))))
+      (return-molecule (stack3 !eq)))
 (body neq
-      (return-molecule (!neq (stack data-stack)
-                             (stack data-stack)
-                             (stack data-stack))))
+      (return-molecule (stack3 !neq)))
 (body lt
-      (return-molecule (!lt (stack data-stack)
-                            (stack data-stack)
-                            (stack data-stack))))
-(defunc gt
-        (return-molecule (!gt (stack dstack)
-                              (stack dstack)
-                              (stack dstack))))
+      (return-molecule (stack3 !lt)))
+(body gt
+      (return-molecule (stack3 !gt)))
+(body le
+      (return-molecule (stack3 !le)))
+(body ge
+      (return-molecule (stack3 !ge)))
+
+(branch eq)
+(branch neq)
+(branch lt)
+(branch gt)
+(branch le)
+(branch ge)

@@ -106,19 +106,12 @@
   (multislot body
              (visibility public)))
 
-(defclass lisp-parse::exec-fragment
-  "An amalgamation of several different types"
-  (is-a node
-        has-body
-        has-local-binds
-        has-arguments))
-
-
 (defclass lisp-parse::composite-node
   "A node that is made up of other nodes. This is separate from a list!"
-  (is-a node)
+  (is-a node
+        has-contents)
   (multislot contents
-             (visibility public)
+             (source composite)
              (default ?NONE)))
 (defclass lisp-parse::scalar-node
   (is-a node
@@ -158,9 +151,8 @@
 
 
 (defclass lisp-parse::list
-  (is-a node)
-  (multislot contents
-             (visibility public)))
+  (is-a node
+        has-contents))
 
 (defclass lisp-parse::reference
   "An indirect reference to something else, useful for deffunctions and arguments"

@@ -172,8 +172,6 @@
                        (parent ?atom)
                        (contents ?title&stack|memory ?target)
                        (name ?special))
-         (object (is-a atom)
-                 (name ?atom))
          =>
          (unmake-instance ?f)
          (make-instance ?special of special-register-action
@@ -549,7 +547,7 @@
 (defclass lisp->intermediary::macro-argument-reference
   (is-a reference-node))
 
-(defrule lisp->intermediary::make-macro-argument-reference
+(defrule lisp->intermediary::make-macro-argument-reference:composite-node
          (object (is-a macro)
                  (arguments $? ?aref $?)
                  (name ?macro))
@@ -558,7 +556,9 @@
                  (parent ?macro)
                  (value ?arg))
          (object (is-a composite-node)
-                 (name ?cnode&:(send ?cnode parent-is ?macro))
+                 (name ?cnode&:(send ?cnode
+                                     parent-is
+                                     ?macro))
                  (contents $? ?arf0 $?))
          (object (is-a singlefield-variable|multifield-variable)
                  (name ?arf0)
@@ -570,4 +570,29 @@
                         (parent ?cnode)
                         (title ?arg)
                         (reference ?aref)))
+
+(defrule lisp->intermediary::make-macro-argument-reference:list
+         (object (is-a macro)
+                 (arguments $? ?aref $?)
+                 (name ?macro))
+         (object (is-a singlefield-variable|multifield-variable)
+                 (name ?aref)
+                 (parent ?macro)
+                 (value ?arg))
+         (object (is-a list)
+                 (name ?cnode&:(send ?cnode
+                                     parent-is
+                                     ?macro))
+                 (contents $? ?arf0 $?))
+         (object (is-a singlefield-variable|multifield-variable)
+                 (name ?arf0)
+                 (value ?arg)
+                 (parent ?cnode))
+         =>
+         (unmake-instance ?arf0)
+         (make-instance ?arf0 of macro-argument-reference
+                        (parent ?cnode)
+                        (title ?arg)
+                        (reference ?aref)))
+
 

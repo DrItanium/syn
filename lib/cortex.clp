@@ -105,6 +105,13 @@
 (defgeneric cortex::external-address-type)
 (defmethod cortex::external-address-type
   ((?a EXTERNAL-ADDRESS))
-  (call ?a 
+  (call ?a
         type))
+
+
+(defclass cortex::has-contents
+  (is-a USER)
+  (multislot contents
+             (storage local)
+             (visibility public)))
 
