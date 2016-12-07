@@ -14,6 +14,9 @@
   (is-a node
         has-title
         has-reference))
+(defclass lisp->intermediary::composite-reference-node
+  (is-a reference-node
+        composite-node))
 (defclass lisp->intermediary::body
   (is-a composite-node
         has-title))
@@ -215,7 +218,7 @@
                           (double-wide TRUE)))
 
 
-(defrule lisp->intermediary::generate-three-argument-operation
+(defrule lisp->intermediary::generate-three-argument-operation:atom
          (declare (salience 2))
          ?f <- (object (is-a atom)
                        (title ?title)
@@ -238,7 +241,7 @@
                         (source1 ?src1)
                         (contents $?rest)))
 
-(defrule lisp->intermediary::generate-two-argument-operation
+(defrule lisp->intermediary::generate-two-argument-operation:atom
          (declare (salience 2))
          ?f <- (object (is-a atom)
                        (title ?title)
@@ -259,7 +262,7 @@
                         (source0 ?src)
                         (contents $?rest)))
 
-(defrule lisp->intermediary::generate-one-argument-operation
+(defrule lisp->intermediary::generate-one-argument-operation:atom
          (declare (salience 2))
          ?f <- (object (is-a atom)
                        (title ?title)
@@ -278,6 +281,63 @@
                         (destination ?dest)
                         (contents $?rest)))
 
+(defrule lisp->intermediary::generate-three-argument-operation:list
+         (declare (salience 2))
+         ?f <- (object (is-a list)
+                       (parent ?p)
+                       (name ?op)
+                       (contents ?title
+                                 ?dest
+                                 ?src0
+                                 ?src1
+                                 $?rest))
+         (three-argument-instruction ?real-title aliases: $? ?title $?)
+         =>
+         (unmake-instance ?f)
+         (make-instance ?op of three-argument-operation
+                        (title ?real-title)
+                        (parent ?p)
+                        (destination ?dest)
+                        (source0 ?src0)
+                        (source1 ?src1)
+                        (contents $?rest)))
+
+(defrule lisp->intermediary::generate-two-argument-operation:list
+         (declare (salience 2))
+         ?f <- (object (is-a list)
+                       (parent ?p)
+                       (name ?op)
+                       (contents ?title
+                                 ?dest
+                                 ?src
+                                 $?rest))
+         (two-argument-instruction ?real-title aliases: $? ?title $?)
+         =>
+         (unmake-instance ?f)
+         (make-instance ?op of two-argument-operation
+                        (title ?real-title)
+                        (parent ?p)
+                        (destination ?dest)
+                        (source0 ?src)
+                        (contents $?rest)))
+
+(defrule lisp->intermediary::generate-one-argument-operation:list
+         (declare (salience 2))
+         ?f <- (object (is-a list)
+                       (parent ?p)
+                       (name ?op)
+                       (contents ?title
+                                 ?dest
+                                 $?rest))
+         (one-argument-instruction ?real-title aliases: $? ?title $?)
+         =>
+         (unmake-instance ?f)
+         (make-instance ?op of one-argument-operation
+                        (title ?real-title)
+                        (parent ?p)
+                        (destination ?dest)
+                        (contents $?rest)))
+
 
 (defclass lisp->intermediary::macro
   (is-a composite-node
@@ -285,9 +345,7 @@
   (multislot arguments))
 
 (defclass lisp->intermediary::macro-call
-  (is-a composite-node
-        has-title
-        has-reference))
+  (is-a composite-reference-node))
 
 (defrule lisp->intermediary::parse-macro
          (declare (salience 2))
@@ -393,9 +451,8 @@
                      ?file))
          (object (is-a alias)
                  (title ?item)
-                 (name ?alias)
-                 (parent ?other))
-         (test (send ?other
+                 (name ?alias))
+         (test (send ?alias
                      parent-is
                      ?file))
          =>
@@ -407,6 +464,75 @@
                                                    (title ?item)
                                                    (reference ?alias))
                                     ?b)))
+
+(defrule lisp->intermediary::identify-alias:source0
+         (declare (salience 4))
+         (object (is-a has-source0)
+                 (source0 ?item&:(lexemep ?item))
+                 (name ?list))
+         (object (is-a file)
+                 (name ?file))
+         (test (send ?list
+                     parent-is
+                     ?file))
+         (object (is-a alias)
+                 (title ?item)
+                 (name ?alias))
+         (test (send ?alias
+                     parent-is
+                     ?file))
+         =>
+         (modify-instance ?list
+                          (source0 (make-instance of alias-reference
+                                                  (parent ?list)
+                                                  (title ?item)
+                                                  (reference ?alias)))))
+
+(defrule lisp->intermediary::identify-alias:source1
+         (declare (salience 4))
+         (object (is-a has-source1)
+                 (source1 ?item&:(lexemep ?item))
+                 (name ?list))
+         (object (is-a file)
+                 (name ?file))
+         (test (send ?list
+                     parent-is
+                     ?file))
+         (object (is-a alias)
+                 (title ?item)
+                 (name ?alias))
+         (test (send ?alias
+                     parent-is
+                     ?file))
+         =>
+         (modify-instance ?list
+                          (source1 (make-instance of alias-reference
+                                                  (parent ?list)
+                                                  (title ?item)
+                                                  (reference ?alias)))))
+
+(defrule lisp->intermediary::identify-alias:destination
+         (declare (salience 4))
+         (object (is-a has-destination)
+                 (destination ?item&:(lexemep ?item))
+                 (name ?list))
+         (object (is-a file)
+                 (name ?file))
+         (test (send ?list
+                     parent-is
+                     ?file))
+         (object (is-a alias)
+                 (title ?item)
+                 (name ?alias))
+         (test (send ?alias
+                     parent-is
+                     ?file))
+         =>
+         (modify-instance ?list
+                          (destination (make-instance of alias-reference
+                                                      (parent ?list)
+                                                      (title ?item)
+                                                      (reference ?alias)))))
 
 (defrule lisp->intermediary::identify-alias:alias
          (declare (salience 4))
@@ -423,24 +549,21 @@
 (defclass lisp->intermediary::macro-argument-reference
   (is-a reference-node))
 
-(defrule lisp->intermediary::make-macro-argument-link
-         ?f <- (object (is-a macro)
-                       (arguments $? ?aref $?)
-                       (name ?macro))
+(defrule lisp->intermediary::make-macro-argument-reference
+         (object (is-a macro)
+                 (arguments $? ?aref $?)
+                 (name ?macro))
          (object (is-a singlefield-variable|multifield-variable)
                  (name ?aref)
                  (parent ?macro)
                  (value ?arg))
          (object (is-a composite-node)
-                 (name ?cnode)
+                 (name ?cnode&:(send ?cnode parent-is ?macro))
                  (contents $? ?arf0 $?))
          (object (is-a singlefield-variable|multifield-variable)
                  (name ?arf0)
                  (value ?arg)
                  (parent ?cnode))
-         (test (send ?cnode
-                     parent-is
-                     ?macro))
          =>
          (unmake-instance ?arf0)
          (make-instance ?arf0 of macro-argument-reference

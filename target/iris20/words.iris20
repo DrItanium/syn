@@ -9,11 +9,11 @@
 (alias env r60)
 (macro return
        ()
-       (branch (stack call-stack)))
+       (!branch (stack call-stack)))
 (macro nop
        ()
-       (swap (register r0)
-             (register r0)))
+       (!swap r0
+              r0))
 (macro return-molecule
        (?op)
        (molecule ?op
@@ -22,36 +22,30 @@
        (?title ?body)
        (body ?title
              ?body
-             (return-molecule)))
+             (return-molecule (nop))))
 
 
 (body startup
-      (molecule (set data-stack
-                     (address DataStackBase)))
-      (molecule (set call-stack
-                     (address CallStackBase)))
-      (molecule (set env
-                     (address environment)))
+      (molecule (!set data-stack
+                      (address DataStackBase)))
+      (molecule (!set call-stack
+                      (address CallStackBase)))
+      (molecule (!set env
+                      (address environment)))
       )
 
 (body eq
       (return-molecule (!eq (stack data-stack)
-                           (stack data-stack)
-                           (stack data-stack))))
+                            (stack data-stack)
+                            (stack data-stack))))
 (body neq
       (return-molecule (!neq (stack data-stack)
-                           (stack data-stack)
-                           (stack data-stack))))
+                             (stack data-stack)
+                             (stack data-stack))))
 (body lt
- (return-molecule (!lt (stack data-stack)
-                       (stack data-stack)
-                       (stack data-stack))))
-
-(body gt
-      (molecule (> (stack r62)
-                   (stack r62)
-                   (stack r62))
-                (branch (stack r61))))
+      (return-molecule (!lt (stack data-stack)
+                            (stack data-stack)
+                            (stack data-stack))))
 (defunc gt
         (return-molecule (!gt (stack dstack)
                               (stack dstack)
