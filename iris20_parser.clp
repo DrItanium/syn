@@ -1,5 +1,5 @@
 (defclass lisp->intermediary::has-reference
-  (is-a USER)
+  (is-a thing)
   (slot reference
         (type INSTANCE)
         (visibility public)
@@ -595,4 +595,20 @@
                         (title ?arg)
                         (reference ?aref)))
 
-
+;(defmessage-handler lisp->intermediary::macro copy-body primary
+;                    (?parent $?args)
+;                    ; first bind the args to the arguments inside the class
+;                    ; temporarily
+;                    ; TODO: figure out the binding
+;                    ; once that is done, then make a copy of the body with the
+;                    ; new parent in place of the macro itself
+;                    (bind ?output
+;                          (create$))
+;                    (progn$ (?content $?contents)
+;                            (bind ?output
+;                                  ?output
+;                                  (send ?content
+;                                        clone
+;                                        ?parent)))
+;                    ?output)
+;
