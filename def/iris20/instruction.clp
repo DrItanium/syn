@@ -120,22 +120,22 @@
                           ShiftLeftImmediate
                           ShiftRightImmediate
                           SystemCall
-                          UnconditionalImmediate
-                          UnconditionalImmediateLink
-                          UnconditionalRegister
-                          UnconditionalRegisterLink
-                          ConditionalTrueImmediate
-                          ConditionalTrueImmediateLink
-                          ConditionalTrueRegister
-                          ConditionalTrueRegisterLink
-                          ConditionalFalseImmediate
-                          ConditionalFalseImmediateLink
-                          ConditionalFalseRegister
-                          ConditionalFalseRegisterLink
-                          IfThenElseNormalPredTrue
-                          IfThenElseNormalPredFalse
-                          IfThenElseLinkPredTrue
-                          IfThenElseLinkPredFalse
+                          BranchUnconditionalImmediate
+                          BranchUnconditionalImmediateLink
+                          BranchUnconditionalRegister
+                          BranchUnconditionalRegisterLink
+                          BranchConditionalTrueImmediate
+                          BranchConditionalTrueImmediateLink
+                          BranchConditionalTrueRegister
+                          BranchConditionalTrueRegisterLink
+                          BranchConditionalFalseImmediate
+                          BranchConditionalFalseImmediateLink
+                          BranchConditionalFalseRegister
+                          BranchConditionalFalseRegisterLink
+                          BranchIfThenElseNormalPredTrue
+                          BranchIfThenElseNormalPredFalse
+                          BranchIfThenElseLinkPredTrue
+                          BranchIfThenElseLinkPredFalse
                           Move
                           Set16
                           Set32
@@ -158,17 +158,17 @@
                           BinaryXorImmediate
                           BinaryNand
                           BinaryNandImmediate
-                          UnconditionalImmediate32
-                          UnconditionalImmediate32Link
-                          ConditionalTrueImmediate32
-                          ConditionalTrueImmediate32Link
-                          ConditionalFalseImmediate32
-                          ConditionalFalseImmediate32Link
-                          UnconditionalImmediate48
-                          UnconditionalImmediate48Link
-                          ConditionalTrueImmediate48
-                          ConditionalTrueImmediate48Link
-                          ConditionalFalseImmediate48
-                          ConditionalFalseImmediate48Link
+                          BranchUnconditionalImmediate32
+                          BranchUnconditionalImmediate32Link
+                          BranchConditionalTrueImmediate32
+                          BranchConditionalTrueImmediate32Link
+                          BranchConditionalFalseImmediate32
+                          BranchConditionalFalseImmediate32Link
+                          BranchUnconditionalImmediate48
+                          BranchUnconditionalImmediate48Link
+                          BranchConditionalTrueImmediate48
+                          BranchConditionalTrueImmediate48Link
+                          BranchConditionalFalseImmediate48
+                          BranchConditionalFalseImmediate48Link
                           )))
 
