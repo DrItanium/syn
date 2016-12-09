@@ -142,17 +142,17 @@
                           Set48
                           Swap
                           Eq
-                          EqImm
+                          EqImmediate
                           Neq
-                          NeqImm
+                          NeqImmediate
                           LessThan
-                          LessThanImm
+                          LessThanImmediate
                           GreaterThan
-                          GreaterThanImm
+                          GreaterThanImmediate
                           LessThanOrEqualTo
-                          LessThanOrEqualToImm
+                          LessThanOrEqualToImmediate
                           GreaterThanOrEqualTo
-                          GreaterThanOrEqualToImm
+                          GreaterThanOrEqualToImmediate
                           BinaryAndImmediate
                           BinaryOrImmediate
                           BinaryXorImmediate

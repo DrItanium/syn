@@ -100,14 +100,28 @@ InstructionAtom push16(InstructionImmediate immediate) noexcept {
 InstructionAtom store16(byte address, InstructionImmediate immediate) noexcept {
     return set16(memoryOperation(address), immediate);
 }
+#define makeArithmeticOperation(title, fragment) \
+    InstructionAtom title ( byte dest, byte s0, byte s1, bool imm = false) noexcept { \
+        return threeArgumentOperation( imm ? Operation:: fragment ## Immediate : Operation:: fragment , dest, s0, s1); \
+    }
+makeArithmeticOperation(add, Add);
+makeArithmeticOperation(sub, Sub);
+makeArithmeticOperation(mul, Mul);
+makeArithmeticOperation(div, Div);
+makeArithmeticOperation(rem, Rem);
+makeArithmeticOperation(shiftLeft, ShiftLeft);
+makeArithmeticOperation(shiftRight, ShiftRight);
+#undef makeArithmeticOperation
 
-InstructionAtom increment(byte destination) noexcept {
-    return threeArgumentOperation(Operation::AddImmediate, destination, destination, 1);
-}
+InstructionAtom increment(byte destination, byte src) noexcept { return add(destination, src, 1, true); }
+InstructionAtom increment(byte destination) noexcept { return increment(destination, destination); }
+InstructionAtom decrement(byte destination, byte src) noexcept { return sub(destination, src, 1, true); }
+InstructionAtom decrement(byte destination) noexcept { return decrement(destination, destination); }
+InstructionAtom doubleVal(byte destination, byte src) noexcept { return shiftLeft(destination, src, 1, true); }
+InstructionAtom doubleVal(byte destination) noexcept { return doubleVal(destination, destination); }
+InstructionAtom halveVal(byte destination, byte src) noexcept { return shiftRight(destination, src, 1, true); }
+InstructionAtom halveVal(byte destination) noexcept { return halveVal(destination, destination); }
 
-InstructionAtom decrement(byte destination) noexcept {
-    return threeArgumentOperation(Operation::SubImmediate, destination, destination, 1);
-}
 
 } // end namespace iris20
 
