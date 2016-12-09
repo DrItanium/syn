@@ -294,8 +294,9 @@ namespace iris20 {
 				cond = (iffalse ? (dest == 0) : (dest != 0));
 				if (ifthenelse) {
 					newAddr = operandGet(cond ? src0Ind : src1Ind);
+                    cond = true; // make sure that if we have a link, that it is always done!
 				} else {
-					newAddr = cond ? (immediate ? (ip + getImmediate(atom)) : operandGet(src1Ind)) : ip + 1;
+					newAddr = cond ? (immediate ? (ip + getImmediate(atom)) : operandGet(src0Ind)) : ip + 1;
 				}
 			} else {
 				newAddr = immediate ? (ip + getImmediate(atom)) : dest;
