@@ -100,18 +100,24 @@ InstructionAtom push16(InstructionImmediate immediate) noexcept {
 InstructionAtom store16(byte address, InstructionImmediate immediate) noexcept {
     return set16(memoryOperation(address), immediate);
 }
-#define makeArithmeticOperation(title, fragment) \
+#define makeThreeAddressOperation(title, fragment) \
     InstructionAtom title ( byte dest, byte s0, byte s1, bool imm = false) noexcept { \
         return threeArgumentOperation( imm ? Operation:: fragment ## Immediate : Operation:: fragment , dest, s0, s1); \
     }
-makeArithmeticOperation(add, Add);
-makeArithmeticOperation(sub, Sub);
-makeArithmeticOperation(mul, Mul);
-makeArithmeticOperation(div, Div);
-makeArithmeticOperation(rem, Rem);
-makeArithmeticOperation(shiftLeft, ShiftLeft);
-makeArithmeticOperation(shiftRight, ShiftRight);
-#undef makeArithmeticOperation
+makeThreeAddressOperation(add, Add);
+makeThreeAddressOperation(sub, Sub);
+makeThreeAddressOperation(mul, Mul);
+makeThreeAddressOperation(div, Div);
+makeThreeAddressOperation(rem, Rem);
+makeThreeAddressOperation(shiftLeft, ShiftLeft);
+makeThreeAddressOperation(shiftRight, ShiftRight);
+makeThreeAddressOperation(eq, Eq);
+makeThreeAddressOperation(neq, Neq);
+makeThreeAddressOperation(lt, LessThan);
+makeThreeAddressOperation(gt, GreaterThan);
+makeThreeAddressOperation(le, LessThanOrEqualTo);
+makeThreeAddressOperation(ge, GreaterThanOrEqualTo);
+#undef makeThreeAddressOperation
 
 InstructionAtom increment(byte destination, byte src) noexcept { return add(destination, src, 1, true); }
 InstructionAtom increment(byte destination) noexcept { return increment(destination, destination); }
