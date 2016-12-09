@@ -93,6 +93,11 @@ namespace iris {
 #undef DefUpperLowerPair
 
 template<typename T>
+using HalfType = typename UpperLowerPair<T>::HalfType;
+template<typename T>
+using QuarterType = HalfType<HalfType<T>>;
+
+template<typename T>
 inline constexpr T getUpperMask() noexcept {
     return UpperLowerPair<T>::upperMask;
 }
@@ -138,16 +143,27 @@ constexpr inline T encodeField(T input, F value) noexcept {
 }
 
 template<typename T>
-inline constexpr T encodeValueLE(typename UpperLowerPair<T>::HalfType lower, typename UpperLowerPair<T>::HalfType upper) noexcept {
-    using ULPair = UpperLowerPair<T>;
-    using HalfType = typename ULPair::HalfType;
-    return encodeBits<T, HalfType, getUpperMask<T>(), getShiftCount<T>()>( encodeBits<T, HalfType, getLowerMask<T>(), 0>(0, lower), upper);
+inline constexpr T encodeValueLE(HalfType<T> lower, HalfType<T> upper) noexcept {
+    // this will break on int4 and such ;)
+    return encodeBits<T, HalfType<T>, getUpperMask<T>(), getShiftCount<T>()>( encodeBits<T, HalfType<T>, getLowerMask<T>(), 0>(0, lower), upper);
+}
+template<typename T>
+inline constexpr T encodeValueLE(QuarterType<T> lowest, QuarterType<T> upperLower, QuarterType<T> lowerUpper, QuarterType<T> upperMost) noexcept {
+    return encodeValueLE<T>(encodeValueLE<HalfType<T>>(lowest, upperLower), encodeValueLE<HalfType<T>>(lowerUpper, upperMost));
+}
+
+template<typename T>
+inline constexpr T encodeValueLE(HalfType<T>* buf) noexcept {
+    return encodeValueLE<T>(buf[0], buf[1]);
+}
+
+template<typename T>
+inline constexpr T encodeValueLE(QuarterType<T>* buf) noexcept {
+    return encodeValueLE<T>(buf[0], buf[1], buf[2], buf[3]);
 }
 
 inline constexpr uint16 encodeUint16LE(byte a, byte b) noexcept {
-    using Number = uint16;
-    using Field = byte;
-    return encodeField<Number, Field, 1>(encodeField<Number, Field, 0>(0, a), b);
+    return encodeValueLE<uint16>(a, b);
 }
 inline constexpr int16 encodeInt16LE(byte a, byte b) noexcept {
     using Number = int16;
