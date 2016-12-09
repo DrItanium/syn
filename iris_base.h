@@ -94,8 +94,12 @@ namespace iris {
 
 template<typename T>
 using HalfType = typename UpperLowerPair<T>::HalfType;
+
 template<typename T>
 using QuarterType = HalfType<HalfType<T>>;
+
+template<typename T>
+using EighthType = HalfType<QuarterType<T>>;
 
 template<typename T>
 inline constexpr T getUpperMask() noexcept {
@@ -153,27 +157,22 @@ inline constexpr T encodeValueLE(QuarterType<T> lowest, QuarterType<T> upperLowe
 }
 
 template<typename T>
-inline constexpr T encodeValueLE(HalfType<T>* buf) noexcept {
-    return encodeValueLE<T>(buf[0], buf[1]);
-}
-
-template<typename T>
-inline constexpr T encodeValueLE(QuarterType<T>* buf) noexcept {
-    return encodeValueLE<T>(buf[0], buf[1], buf[2], buf[3]);
+inline constexpr T encodeValueLE(EighthType<T> a, EighthType<T> b, EighthType<T> c, EighthType<T> d, EighthType<T> e, EighthType<T> f, EighthType<T> g, EighthType<T> h) noexcept {
+    return encodeValueLE<T>(
+            encodeValueLE<QuarterType<T>>(a, b),
+            encodeValueLE<QuarterType<T>>(c, d),
+            encodeValueLE<QuarterType<T>>(e, f),
+            encodeValueLE<QuarterType<T>>(g, h));
 }
 
 inline constexpr uint16 encodeUint16LE(byte a, byte b) noexcept {
     return encodeValueLE<uint16>(a, b);
 }
 inline constexpr int16 encodeInt16LE(byte a, byte b) noexcept {
-    using Number = int16;
-    using Field = byte;
-    return encodeField<Number, Field, 1>(encodeField<Number, Field, 0>(0, a), b);
+    return encodeValueLE<int16>(a, b);
 }
 inline constexpr uint32 encodeUint32LE(byte a, byte b, byte c, byte d)  noexcept {
-    using Number = uint32;
-    using Field = byte;
-	return encodeField<Number, Field, 3>( encodeField<Number, Field, 2>( encodeField<Number, Field, 1>( encodeField<Number, Field, 0>(0, a), b), c), d);
+    return encodeValueLE<uint32>(a, b, c, d);
 }
 inline constexpr uint16 encodeUint16LE(byte* buf)  noexcept {
 	return encodeUint16LE(buf[0], buf[1]);
@@ -182,17 +181,15 @@ inline constexpr uint32 encodeUint32LE(byte* buf)  noexcept {
 	return encodeUint32LE(buf[0], buf[1], buf[2], buf[3]);
 }
 inline constexpr int32 encodeInt32LE(byte lowest, byte upperLower, byte lowerUpper, byte upperMost)  noexcept {
-    using Number = int32;
-    using Field = byte;
-	return encodeField<Number, Field, 3>( encodeField<Number, Field, 2>( encodeField<Number, Field, 1>( encodeField<Number, Field, 0>(0, lowest), upperLower), lowerUpper), upperMost);
+    return encodeValueLE<int32>(lowest, upperLower, lowerUpper, upperMost);
 }
 
 inline constexpr uint32 encodeUint32LE(uint16 lower, uint16 upper) noexcept {
-	return encodeBits<uint32, uint16, getUpperMask<uint32>(), getShiftCount<uint32>()>(encodeBits<uint32, uint16, getLowerMask<uint32>(), getShiftCount<uint32>()>(0, lower), upper);
+    return encodeValueLE<uint32>(lower, upper);
 }
 
 inline constexpr int32 encodeInt32LE(int16 lower, int16 upper) noexcept {
-	return encodeBits<int32, int16, static_cast<int32>(0xFFFF0000), 16>(encodeBits<int32, int16, 0x0000FFFF, 0>(0, lower), upper);
+    return encodeValueLE<int32>(lower, upper);
 }
 
 inline void decodeUint32LE(uint32 value, byte storage[sizeof(uint32)]) noexcept {
@@ -255,14 +252,15 @@ inline void decodeInt64LE(int64 value, byte storage[sizeof(int64)]) noexcept {
 
 
 inline constexpr uint64 encodeUint64LE(uint32 lower, uint32 upper) noexcept {
-	return encodeBits<uint64, uint32,  0xFFFFFFFF00000000, 32>(encodeBits<uint64, uint32, 0x00000000FFFFFFFF, 0>(0, lower), upper);
+    return encodeValueLE<uint64>(lower, upper);
 }
 inline constexpr uint64 encodeUint64LE(byte a, byte b, byte c, byte d, byte e, byte f, byte g, byte h) noexcept {
-	return encodeUint64LE(encodeUint32LE(a, b, c, d), encodeUint32LE(e, f, g, h));
+    return encodeValueLE<uint64>(a, b, c, d, e, f, g, h);
 }
 
 inline constexpr uint64 encodeUint64LE(uint16 a, uint16 b, uint16 c, uint16 d) noexcept {
-	return encodeUint64LE(encodeUint32LE(a, b), encodeUint32LE(c, d));
+    return encodeValueLE<uint64>(a, b, c, d);
+
 }
 
 inline constexpr uint64 encodeUint64LE(byte* buf) noexcept {
@@ -270,14 +268,14 @@ inline constexpr uint64 encodeUint64LE(byte* buf) noexcept {
 }
 
 inline constexpr int64 encodeInt64LE(uint32 lower, uint32 upper) noexcept {
-	return encodeBits<int64, uint32,  static_cast<int64>(0xFFFFFFFF00000000), 32>(encodeBits<int64, uint32, 0x00000000FFFFFFFF, 0>(0, lower), upper);
+    return encodeValueLE<int64>(lower, upper);
 }
 inline constexpr int64 encodeInt64LE(byte a, byte b, byte c, byte d, byte e, byte f, byte g, byte h) noexcept {
-	return encodeInt64LE(encodeInt32LE(a, b, c, d), encodeInt32LE(e, f, g, h));
+    return encodeValueLE<int64>(a, b, c, d, e, f, g, h);
 }
 
 inline constexpr int64 encodeInt64LE(uint16 a, uint16 b, uint16 c, uint16 d) noexcept {
-	return encodeInt64LE(encodeInt32LE(a, b), encodeInt32LE(c, d));
+    return encodeValueLE<int64>(a, b, c, d);
 }
 
 inline constexpr int64 encodeInt64LE(byte* buf) noexcept {
