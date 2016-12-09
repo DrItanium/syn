@@ -56,6 +56,8 @@ class ALU {
             UnaryNot,
             BinaryXor,
             BinaryNand,
+            CircularShiftLeft,
+            CircularShiftRight,
             Count,
         };
     public:
@@ -87,6 +89,10 @@ class ALU {
                     return iris::binaryXor<Word>(a, b);
                 case Operation::BinaryNand:
                     return iris::binaryNand<Word>(a, b);
+                case Operation::CircularShiftLeft:
+                    return iris::circularShiftLeft<Word>(a, b);
+                case Operation::CircularShiftRight:
+                    return iris::circularShiftRight<Word>(a, b);
                 default:
                     throw iris::Problem("Undefined ALU operation!");
             }
@@ -112,6 +118,8 @@ class Comparator {
             BinaryNand,
             ShiftLeft,
             ShiftRight,
+            CircularShiftLeft,
+            CircularShiftRight,
             Count,
         };
     public:
@@ -145,6 +153,10 @@ class Comparator {
                     return iris::shiftLeft<Word>(a, b);
                 case Operation::ShiftRight:
                     return iris::shiftRight<Word>(a, b);
+                case Operation::CircularShiftLeft:
+                    return iris::circularShiftLeft<Word>(a, b);
+                case Operation::CircularShiftRight:
+                    return iris::circularShiftRight<Word>(a, b);
                 default:
                     throw iris::Problem("Undefined Comparison operation!");
             }
