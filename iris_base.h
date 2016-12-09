@@ -19,7 +19,7 @@ using uint64 = uint64_t;
 
 namespace iris {
 
-	constexpr int32_t fields[8] = {
+	constexpr int32 fields[8] = {
 		0,
 		8,
 		16,
@@ -37,40 +37,74 @@ namespace iris {
 	static constexpr type Value = mask ;  \
 	static constexpr type FieldIndex = static_cast<type>(fields[index]); \
 }
-	DefFieldData(int16_t, 0, 0x00FF);
-	DefFieldData(int16_t, 1, int16_t(0xFF00));
+	DefFieldData(int16, 0, 0x00FF);
+	DefFieldData(int16, 1, static_cast<int16>(0xFF00));
 
-	DefFieldData(int32_t, 0, 0x000000FF);
-	DefFieldData(int32_t, 1, 0x0000FF00);
-	DefFieldData(int32_t, 2, 0x00FF0000);
-	DefFieldData(int32_t, 3, int32_t(0xFF000000));
+	DefFieldData(int32, 0, 0x000000FF);
+	DefFieldData(int32, 1, 0x0000FF00);
+	DefFieldData(int32, 2, 0x00FF0000);
+	DefFieldData(int32, 3, static_cast<int32>(0xFF000000));
 
-	DefFieldData(int64_t,  0, 0x00000000000000FF);
-	DefFieldData(int64_t,  1, 0x000000000000FF00);
-	DefFieldData(int64_t,  2, 0x0000000000FF0000);
-	DefFieldData(int64_t,  3, 0x00000000FF000000);
-	DefFieldData(int64_t,  4, 0x000000FF00000000);
-	DefFieldData(int64_t,  5, 0x0000FF0000000000);
-	DefFieldData(int64_t,  6, 0x00FF000000000000);
-	DefFieldData(int64_t,  7, int64_t(0xFF00000000000000));
+	DefFieldData(int64,  0, 0x00000000000000FF);
+	DefFieldData(int64,  1, 0x000000000000FF00);
+	DefFieldData(int64,  2, 0x0000000000FF0000);
+	DefFieldData(int64,  3, 0x00000000FF000000);
+	DefFieldData(int64,  4, 0x000000FF00000000);
+	DefFieldData(int64,  5, 0x0000FF0000000000);
+	DefFieldData(int64,  6, 0x00FF000000000000);
+	DefFieldData(int64,  7, static_cast<int64>(0xFF00000000000000));
 
-	DefFieldData(uint16_t, 0, 0x00FF);
-	DefFieldData(uint16_t, 1, 0xFF00);
+	DefFieldData(uint16, 0, 0x00FF);
+	DefFieldData(uint16, 1, 0xFF00);
 
-	DefFieldData(uint32_t, 0, 0x000000FF);
-	DefFieldData(uint32_t, 1, 0x0000FF00);
-	DefFieldData(uint32_t, 2, 0x00FF0000);
-	DefFieldData(uint32_t, 3, 0xFF000000);
+	DefFieldData(uint32, 0, 0x000000FF);
+	DefFieldData(uint32, 1, 0x0000FF00);
+	DefFieldData(uint32, 2, 0x00FF0000);
+	DefFieldData(uint32, 3, 0xFF000000);
 
-	DefFieldData(uint64_t, 0, 0x00000000000000FF);
-	DefFieldData(uint64_t, 1, 0x000000000000FF00);
-	DefFieldData(uint64_t, 2, 0x0000000000FF0000);
-	DefFieldData(uint64_t, 3, 0x00000000FF000000);
-	DefFieldData(uint64_t, 4, 0x000000FF00000000);
-	DefFieldData(uint64_t, 5, 0x0000FF0000000000);
-	DefFieldData(uint64_t, 6, 0x00FF000000000000);
-	DefFieldData(uint64_t, 7, 0xFF00000000000000);
+	DefFieldData(uint64, 0, 0x00000000000000FF);
+	DefFieldData(uint64, 1, 0x000000000000FF00);
+	DefFieldData(uint64, 2, 0x0000000000FF0000);
+	DefFieldData(uint64, 3, 0x00000000FF000000);
+	DefFieldData(uint64, 4, 0x000000FF00000000);
+	DefFieldData(uint64, 5, 0x0000FF0000000000);
+	DefFieldData(uint64, 6, 0x00FF000000000000);
+	DefFieldData(uint64, 7, 0xFF00000000000000);
 #undef DefFieldData
+
+    template<typename T>
+    struct UpperLowerPair { };
+    #define DefUpperLowerPair(type, halfType, up, low, shift) \
+    template<> \
+    struct UpperLowerPair<type> { \
+        using HalfType = halfType; \
+        static constexpr type upperMask = static_cast<type>(up); \
+        static constexpr type lowerMask = static_cast<type>(low); \
+        static constexpr type shiftCount = static_cast<type>(shift); \
+    }
+    DefUpperLowerPair(uint8, uint8, 0xF0, 0x0F, 4);
+    DefUpperLowerPair(int8, int8, 0xF0, 0x0F, 4);
+    DefUpperLowerPair(uint16, byte, 0xFF00, 0x00FF, 8);
+    DefUpperLowerPair(int16, int8, 0xFF00, 0x00FF, 8);
+    DefUpperLowerPair(uint32, uint16, 0xFFFF0000, 0x0000FFFF, 16);
+    DefUpperLowerPair(int32, int16, 0xFFFF0000, 0x0000FFFF, 16);
+    DefUpperLowerPair(int64, int32, 0xFFFFFFFF00000000, 0x00000000FFFFFFFF, 32);
+    DefUpperLowerPair(uint64, uint32, 0xFFFFFFFF00000000, 0x00000000FFFFFFFF, 32);
+#undef DefUpperLowerPair
+
+template<typename T>
+inline constexpr T getUpperMask() noexcept {
+    return UpperLowerPair<T>::upperMask;
+}
+template<typename T>
+inline constexpr T getLowerMask() noexcept {
+    return UpperLowerPair<T>::lowerMask;
+}
+
+template<typename T>
+inline constexpr T getShiftCount() noexcept {
+    return UpperLowerPair<T>::shiftCount;
+}
 
 
 template<typename T, typename F, T bitmask, T shiftcount>
@@ -103,43 +137,50 @@ constexpr inline T encodeField(T input, F value) noexcept {
 	return encodeBits<T, F, FieldData<T, field>::Value, FieldData<T, field>::FieldIndex>(input, value);
 }
 
-inline constexpr uint16_t encodeUint16LE(byte a, byte b) noexcept {
-    using Number = uint16_t;
+template<typename T>
+inline constexpr T encodeValueLE(typename UpperLowerPair<T>::HalfType lower, typename UpperLowerPair<T>::HalfType upper) noexcept {
+    using ULPair = UpperLowerPair<T>;
+    using HalfType = typename ULPair::HalfType;
+    return encodeBits<T, HalfType, getUpperMask<T>(), getShiftCount<T>()>( encodeBits<T, HalfType, getLowerMask<T>(), 0>(0, lower), upper);
+}
+
+inline constexpr uint16 encodeUint16LE(byte a, byte b) noexcept {
+    using Number = uint16;
     using Field = byte;
     return encodeField<Number, Field, 1>(encodeField<Number, Field, 0>(0, a), b);
 }
-inline constexpr int16_t encodeInt16LE(byte a, byte b) noexcept {
-    typedef int16_t Number;
-    typedef byte Field;
+inline constexpr int16 encodeInt16LE(byte a, byte b) noexcept {
+    using Number = int16;
+    using Field = byte;
     return encodeField<Number, Field, 1>(encodeField<Number, Field, 0>(0, a), b);
 }
-inline constexpr uint32_t encodeUint32LE(byte a, byte b, byte c, byte d)  noexcept {
-	typedef uint32_t Number;
-	typedef byte Field;
+inline constexpr uint32 encodeUint32LE(byte a, byte b, byte c, byte d)  noexcept {
+    using Number = uint32;
+    using Field = byte;
 	return encodeField<Number, Field, 3>( encodeField<Number, Field, 2>( encodeField<Number, Field, 1>( encodeField<Number, Field, 0>(0, a), b), c), d);
 }
-inline constexpr uint16_t encodeUint16LE(byte* buf)  noexcept {
+inline constexpr uint16 encodeUint16LE(byte* buf)  noexcept {
 	return encodeUint16LE(buf[0], buf[1]);
 }
-inline constexpr uint32_t encodeUint32LE(byte* buf)  noexcept {
+inline constexpr uint32 encodeUint32LE(byte* buf)  noexcept {
 	return encodeUint32LE(buf[0], buf[1], buf[2], buf[3]);
 }
-inline constexpr int32_t encodeInt32LE(byte lowest, byte upperLower, byte lowerUpper, byte upperMost)  noexcept {
-    using Number = int32_t;
+inline constexpr int32 encodeInt32LE(byte lowest, byte upperLower, byte lowerUpper, byte upperMost)  noexcept {
+    using Number = int32;
     using Field = byte;
 	return encodeField<Number, Field, 3>( encodeField<Number, Field, 2>( encodeField<Number, Field, 1>( encodeField<Number, Field, 0>(0, lowest), upperLower), lowerUpper), upperMost);
 }
 
-inline constexpr uint32_t encodeUint32LE(uint16_t lower, uint16_t upper) noexcept {
-	return encodeBits<uint32_t, uint16_t, 0xFFFF0000, 16>(encodeBits<uint32_t, uint16_t, 0x0000FFFF, 0>(0, lower), upper);
+inline constexpr uint32 encodeUint32LE(uint16 lower, uint16 upper) noexcept {
+	return encodeBits<uint32, uint16, getUpperMask<uint32>(), getShiftCount<uint32>()>(encodeBits<uint32, uint16, getLowerMask<uint32>(), getShiftCount<uint32>()>(0, lower), upper);
 }
 
-inline constexpr int32_t encodeInt32LE(int16_t lower, int16_t upper) noexcept {
-	return encodeBits<int32_t, int16_t, static_cast<int32_t>(0xFFFF0000), 16>(encodeBits<int32_t, int16_t, 0x0000FFFF, 0>(0, lower), upper);
+inline constexpr int32 encodeInt32LE(int16 lower, int16 upper) noexcept {
+	return encodeBits<int32, int16, static_cast<int32>(0xFFFF0000), 16>(encodeBits<int32, int16, 0x0000FFFF, 0>(0, lower), upper);
 }
 
-inline void decodeUint32LE(uint32_t value, byte storage[sizeof(uint32_t)]) noexcept {
-	using Number = uint32_t;
+inline void decodeUint32LE(uint32 value, byte storage[sizeof(uint32)]) noexcept {
+	using Number = uint32;
 	using Field = byte;
 	storage[0] = decodeField<Number, Field, 0>(value);
 	storage[1] = decodeField<Number, Field, 1>(value);
@@ -147,14 +188,14 @@ inline void decodeUint32LE(uint32_t value, byte storage[sizeof(uint32_t)]) noexc
 	storage[3] = decodeField<Number, Field, 3>(value);
 }
 
-inline void decodeUint16LE(uint16_t value, byte storage[sizeof(uint16_t)]) noexcept {
-	using Number = uint16_t;
+inline void decodeUint16LE(uint16 value, byte storage[sizeof(uint16)]) noexcept {
+	using Number = uint16;
 	using Field = byte;
 	storage[0] = decodeField<Number, Field, 0>(value);
 	storage[1] = decodeField<Number, Field, 1>(value);
 }
-inline void decodeInt32LE(int32_t value, byte storage[sizeof(int32_t)]) noexcept {
-		using Number = int32_t;
+inline void decodeInt32LE(int32 value, byte storage[sizeof(int32)]) noexcept {
+		using Number = int32;
 		using Field = byte;
 		storage[0] = decodeField<Number, Field, 0>(value);
 		storage[1] = decodeField<Number, Field, 1>(value);
@@ -163,15 +204,15 @@ inline void decodeInt32LE(int32_t value, byte storage[sizeof(int32_t)]) noexcept
 
 }
 
-inline void decodeInt16LE(int16_t value, byte storage[sizeof(int16_t)]) noexcept {
-		using Number = int16_t;
+inline void decodeInt16LE(int16 value, byte storage[sizeof(int16)]) noexcept {
+		using Number = int16;
 		using Field = byte;
 		storage[0] = decodeField<Number, Field, 0>(value);
 		storage[1] = decodeField<Number, Field, 1>(value);
 }
 
-inline void decodeUint64LE(uint64_t value, byte storage[sizeof(uint64_t)]) noexcept {
-	using Number = uint64_t;
+inline void decodeUint64LE(uint64 value, byte storage[sizeof(uint64)]) noexcept {
+	using Number = uint64;
 	using Field = byte;
 	storage[0] = decodeField<Number, Field, 0>(value);
 	storage[1] = decodeField<Number, Field, 1>(value);
@@ -183,8 +224,8 @@ inline void decodeUint64LE(uint64_t value, byte storage[sizeof(uint64_t)]) noexc
 	storage[7] = decodeField<Number, Field, 7>(value);
 }
 
-inline void decodeInt64LE(int64_t value, byte storage[sizeof(int64_t)]) noexcept {
-	using Number = int64_t;
+inline void decodeInt64LE(int64 value, byte storage[sizeof(int64)]) noexcept {
+	using Number = int64;
 	using Field = byte;
 	storage[0] = decodeField<Number, Field, 0>(value);
 	storage[1] = decodeField<Number, Field, 1>(value);
@@ -196,33 +237,34 @@ inline void decodeInt64LE(int64_t value, byte storage[sizeof(int64_t)]) noexcept
 	storage[7] = decodeField<Number, Field, 7>(value);
 }
 
-inline constexpr uint64_t encodeUint64LE(uint32_t lower, uint32_t upper) noexcept {
-	return encodeBits<uint64_t, uint32_t,  0xFFFFFFFF00000000, 32>(encodeBits<uint64_t, uint32_t, 0x00000000FFFFFFFF, 0>(0, lower), upper);
+
+inline constexpr uint64 encodeUint64LE(uint32 lower, uint32 upper) noexcept {
+	return encodeBits<uint64, uint32,  0xFFFFFFFF00000000, 32>(encodeBits<uint64, uint32, 0x00000000FFFFFFFF, 0>(0, lower), upper);
 }
-inline constexpr uint64_t encodeUint64LE(byte a, byte b, byte c, byte d, byte e, byte f, byte g, byte h) noexcept {
+inline constexpr uint64 encodeUint64LE(byte a, byte b, byte c, byte d, byte e, byte f, byte g, byte h) noexcept {
 	return encodeUint64LE(encodeUint32LE(a, b, c, d), encodeUint32LE(e, f, g, h));
 }
 
-inline constexpr uint64_t encodeUint64LE(uint16_t a, uint16_t b, uint16_t c, uint16_t d) noexcept {
+inline constexpr uint64 encodeUint64LE(uint16 a, uint16 b, uint16 c, uint16 d) noexcept {
 	return encodeUint64LE(encodeUint32LE(a, b), encodeUint32LE(c, d));
 }
 
-inline constexpr uint64_t encodeUint64LE(byte* buf) noexcept {
+inline constexpr uint64 encodeUint64LE(byte* buf) noexcept {
 	return encodeUint64LE(buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]);
 }
 
-inline constexpr int64_t encodeInt64LE(uint32_t lower, uint32_t upper) noexcept {
-	return encodeBits<int64_t, uint32_t,  static_cast<int64_t>(0xFFFFFFFF00000000), 32>(encodeBits<int64_t, uint32_t, 0x00000000FFFFFFFF, 0>(0, lower), upper);
+inline constexpr int64 encodeInt64LE(uint32 lower, uint32 upper) noexcept {
+	return encodeBits<int64, uint32,  static_cast<int64>(0xFFFFFFFF00000000), 32>(encodeBits<int64, uint32, 0x00000000FFFFFFFF, 0>(0, lower), upper);
 }
-inline constexpr int64_t encodeInt64LE(byte a, byte b, byte c, byte d, byte e, byte f, byte g, byte h) noexcept {
+inline constexpr int64 encodeInt64LE(byte a, byte b, byte c, byte d, byte e, byte f, byte g, byte h) noexcept {
 	return encodeInt64LE(encodeInt32LE(a, b, c, d), encodeInt32LE(e, f, g, h));
 }
 
-inline constexpr int64_t encodeInt64LE(uint16_t a, uint16_t b, uint16_t c, uint16_t d) noexcept {
+inline constexpr int64 encodeInt64LE(uint16 a, uint16 b, uint16 c, uint16 d) noexcept {
 	return encodeInt64LE(encodeInt32LE(a, b), encodeInt32LE(c, d));
 }
 
-inline constexpr int64_t encodeInt64LE(byte* buf) noexcept {
+inline constexpr int64 encodeInt64LE(byte* buf) noexcept {
 	return encodeInt64LE(buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]);
 }
 
@@ -345,30 +387,43 @@ template<typename T, T index>
 inline constexpr T setBit(T value, bool bit) {
     return iris::encodeBits<T, bool, 1 << index, index>(value, bit);
 }
-inline constexpr uint32_t expandUInt32LE(bool lowest, bool lowerUpper, bool upperLower, bool upperMost) noexcept {
+inline constexpr uint32 expandUInt32LE(bool lowest, bool lowerUpper, bool upperLower, bool upperMost) noexcept {
     return encodeUint32LE(expandBit(lowest), expandBit(lowerUpper), expandBit(upperLower), expandBit(upperMost));
 }
-inline constexpr uint16_t expandUInt16LE(bool lower, bool upper) noexcept {
+inline constexpr uint16 expandUInt16LE(bool lower, bool upper) noexcept {
     return encodeUint16LE(expandBit(lower), expandBit(upper));
 }
 
-inline constexpr uint64_t expandUInt64LE(bool b0, bool b1, bool b2, bool b3, bool b4, bool b5, bool b6, bool b7) noexcept {
+inline constexpr uint64 expandUInt64LE(bool b0, bool b1, bool b2, bool b3, bool b4, bool b5, bool b6, bool b7) noexcept {
     return encodeUint64LE(expandUInt32LE(b0, b1, b2, b3), expandUInt32LE(b4, b5, b6, b7));
 }
 
-constexpr byte upperByteHalf = 0xF0;
-constexpr byte lowerByteHalf = 0x0F;
-constexpr uint16 upperUint16Half = 0xFF00;
-constexpr uint16 lowerUint16Half = 0x00FF;
-constexpr uint32 upperUint32Half = 0xFFFF0000;
-constexpr uint32 lowerUint32Half = 0x0000FFFF;
-constexpr int32 upperInt32Half = 0xFFFF0000;
-constexpr int32 lowerInt32Half = 0x0000FFFF;
-constexpr int64 upperInt64Half = 0xFFFFFFFF00000000;
-constexpr int64 lowerInt64Half = 0x00000000FFFFFFFF;
-constexpr uint64 upperUint64Half = 0xFFFFFFFF00000000;
-constexpr uint64 lowerUint64Half = 0x00000000FFFFFFFF;
+template<typename T>
+inline constexpr typename UpperLowerPair<T>::HalfType getUpperHalf(T value) noexcept {
+    using InputType = T;
+    using DataPair = UpperLowerPair<T>;
+    using OutputType = typename DataPair::HalfType;
+    return iris::decodeBits<InputType, OutputType, DataPair::upperMask, DataPair::shiftCount>(value);
+}
+template<typename T>
+inline constexpr typename UpperLowerPair<T>::HalfType getLowerHalf(T value) noexcept {
+    using InputType = T;
+    using DataPair = UpperLowerPair<T>;
+    using OutputType = typename DataPair::HalfType;
+    return iris::decodeBits<InputType, OutputType, DataPair::lowerMask, 0>(value);
+}
 
+template<typename T>
+inline constexpr T setLowerHalf(T value, typename UpperLowerPair<T>::HalfType lower) noexcept {
+    using DataPair = UpperLowerPair<T>;
+    return iris::encodeBits<T, typename DataPair::HalfType, DataPair::lowerMask, 0>(value, lower);
+}
+template<typename T>
+inline constexpr T setUpperHalf(T value, typename UpperLowerPair<T>::HalfType upper) noexcept {
+    using DataPair = UpperLowerPair<T>;
+    return iris::encodeBits<T, typename DataPair::HalfType, DataPair::lowerMask, DataPair::shiftCount>(value, upper);
+}
+/*
 inline constexpr byte getUpperHalf(byte value) noexcept {
     return iris::decodeBits<byte, byte, upperByteHalf, 4>(value);
 }
@@ -454,6 +509,8 @@ inline constexpr uint64 setUpperHalf(uint64 value, uint32 upper) noexcept {
 inline constexpr uint64 setLowerHalf(uint64 value, uint32 lower) noexcept {
     return iris::encodeBits<uint64, uint32, lowerUint64Half, 0>(value, lower);
 }
+
+*/
 
 
 
