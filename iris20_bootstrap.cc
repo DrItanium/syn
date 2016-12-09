@@ -26,8 +26,21 @@ byte stackOperation(byte registerIndex) { return encodeRegisterOperation(registe
 byte memoryOperation(byte registerIndex) { return encodeRegisterOperation(registerIndex, true, false); }
 byte registerOperation(byte registerIndex) { return encodeRegisterOperation(registerIndex, false, false); }
 
+InstructionAtom zeroArgumentOperation(Operation op) noexcept {
+    return encodeOperation(0, op);
+}
+InstructionAtom oneArgumentOperation(Operation op, byte dest) noexcept {
+    return encodeDestination(zeroArgumentOperation(op), dest);
+}
+InstructionAtom twoArgumentOperation(Operation op, byte dest, byte src0) noexcept {
+    return encodeSource0(oneArgumentOperation(op, dest), src0);
+}
+InstructionAtom threeArgumentOperation(Operation op, byte dest, byte src0, byte src1) noexcept {
+    return encodeSource1(twoArgumentOperation(op, dest, src0), src1);
+}
+
 InstructionAtom returnInstruction(byte destination) {
-    return encodeDestination( encodeOperation(0, Operation::BranchUnconditionalRegister), destination);
+    return oneArgumentOperation(Operation::BranchUnconditionalRegister, destination);
 }
 
 InstructionAtom returnFromStack(byte stackPointer) {
@@ -47,7 +60,7 @@ InstructionAtom returnToLinkRegister() {
 }
 
 InstructionAtom move(byte dest, byte src) noexcept {
-    return encodeSource0(encodeDestination(encodeOperation(0, Operation::Move), dest), src);
+    return twoArgumentOperation(Operation::Move, dest, src);
 }
 InstructionAtom store(byte destReg, byte src) {
     return move(memoryOperation(destReg), src);
@@ -72,6 +85,29 @@ InstructionAtom restoreLinkRegister(byte stackPointer) {
     return pop(stackPointer, registerOperation(static_cast<byte>(ArchitectureConstants::LinkRegisterIndex)));
 }
 
+InstructionAtom set16(byte destination, InstructionImmediate immediate) noexcept {
+    return encodeImmediate(oneArgumentOperation(Operation::Set16, destination), immediate);
+}
+
+InstructionAtom push16(byte stackPointer, InstructionImmediate immediate) noexcept {
+    return set16(stackOperation(stackPointer), immediate);
+}
+
+InstructionAtom push16(InstructionImmediate immediate) noexcept {
+    return set16(static_cast<byte>(ArchitectureConstants::StackPointerIndex), immediate);
+}
+
+InstructionAtom store16(byte address, InstructionImmediate immediate) noexcept {
+    return set16(memoryOperation(address), immediate);
+}
+
+InstructionAtom increment(byte destination) noexcept {
+    return threeArgumentOperation(Operation::AddImmediate, destination, destination, 1);
+}
+
+InstructionAtom decrement(byte destination) noexcept {
+    return threeArgumentOperation(Operation::SubImmediate, destination, destination, 1);
+}
 
 } // end namespace iris20
 
