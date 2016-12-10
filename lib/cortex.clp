@@ -56,12 +56,18 @@
 (defclass cortex::thing-with-children
   (is-a thing
         has-children))
-
-(deffunction cortex::bool
+(deffunction cortex::int->bool
              "Convert the number to a boolean value!"
              (?value)
              (<> ?value
                  0))
+(deffunction cortex::bool
+ (?value)
+ (int->bool ?value))
+
+(deffunction cortex::bool->int
+             (?value)
+             (if ?value then 1 else 0))
 
 (defclass cortex::has-title
   "An object which has a title separate from its instance name"
