@@ -239,6 +239,34 @@ InstructionTriCompound set64(byte dest, word value) noexcept {
     return set64(dest, value, nop());
 }
 
+InstructionMolecule singleMoleculeFunction(InstructionAtom op) noexcept {
+    return molecule(op, returnToLinkRegister());
+}
+
+InstructionMolecule load32Shifted(byte destination, byte address, InstructionAtom next) noexcept {
+    return molecule(shiftLeft(destination, memoryOperation(address), 32, true), next);
+}
+InstructionMolecule load32Shifted(byte destination, byte address) noexcept {
+    return load32Shifted(destination, address, nop());
+}
+InstructionMolecule load32(byte destination, byte address) noexcept {
+    return load32Shifted(destination, address, shiftRight(destination, destination, 32, true));
+}
+
+InstructionMolecule load48Shifted(byte destination, byte address, InstructionAtom op) noexcept {
+    return molecule(shiftLeft(destination, memoryOperation(address), 16, true), op);
+}
+
+
+InstructionMolecule load48Shifted(byte destination, byte address) noexcept {
+    return load48Shifted(destination, address, nop());
+}
+
+InstructionMolecule load48(byte destination, byte address) noexcept {
+    return load48Shifted(destination, address, shiftRight(destination, memoryOperation(address), 16, true));
+}
+
+
 } // end namespace iris20
 
 int main() {
