@@ -5,10 +5,17 @@
 #include "iris20.h"
 
 namespace iris20 {
+    using InstructionBiCompound = std::tuple<InstructionMolecule, InstructionMolecule>;
+constexpr byte temporaryRegister0 = 0;
+constexpr byte temporaryRegister1 = 1;
 // define the encoding operations!
 InstructionMolecule molecule(InstructionAtom first, InstructionAtom second) {
-    return encodeSecondAtom( encodeFirstAtom( encodeMoleculeContainsOneInstruction(0 , false), first), second);
+    return encodeMoleculeContainsOneInstruction(encodeSecondAtom( encodeFirstAtom(0, first), second), false);
 }
+InstructionMolecule molecule(InstructionMolecule molecule) noexcept {
+    return encodeMoleculeContainsOneInstruction(molecule, true);
+}
+
 byte encodeRegisterOperation(byte registerIndex, bool memory, bool stack) {
     auto descript = SectionType::Undefined;
     if (memory && stack) {
@@ -26,21 +33,37 @@ byte stackOperation(byte registerIndex) { return encodeRegisterOperation(registe
 byte memoryOperation(byte registerIndex) { return encodeRegisterOperation(registerIndex, true, false); }
 byte registerOperation(byte registerIndex) { return encodeRegisterOperation(registerIndex, false, false); }
 
-InstructionAtom zeroArgumentOperation(Operation op) noexcept {
+InstructionMolecule zeroArgumentMolecule(Operation op) noexcept {
+    return molecule(encodeMoleculeOperation(0, op));
+}
+
+InstructionMolecule oneArgumentMolecule(Operation op, byte dest) noexcept {
+    return encodeMoleculeDestination(zeroArgumentMolecule(op), dest);
+}
+
+InstructionMolecule twoArgumentMolecule(Operation op, byte dest, byte s0) noexcept {
+    return encodeMoleculeSource0(oneArgumentMolecule(op, dest), s0);
+}
+
+InstructionMolecule threeArgumentMolecule(Operation op, byte dest, byte s0, byte s1) noexcept {
+    return encodeMoleculeSource1(twoArgumentMolecule(op, dest, s0), s1);
+}
+
+InstructionAtom zeroArgumentAtom(Operation op) noexcept {
     return encodeOperation(0, op);
 }
-InstructionAtom oneArgumentOperation(Operation op, byte dest) noexcept {
-    return encodeDestination(zeroArgumentOperation(op), dest);
+InstructionAtom oneArgumentAtom(Operation op, byte dest) noexcept {
+    return encodeDestination(zeroArgumentAtom(op), dest);
 }
-InstructionAtom twoArgumentOperation(Operation op, byte dest, byte src0) noexcept {
-    return encodeSource0(oneArgumentOperation(op, dest), src0);
+InstructionAtom twoArgumentAtom(Operation op, byte dest, byte src0) noexcept {
+    return encodeSource0(oneArgumentAtom(op, dest), src0);
 }
-InstructionAtom threeArgumentOperation(Operation op, byte dest, byte src0, byte src1) noexcept {
-    return encodeSource1(twoArgumentOperation(op, dest, src0), src1);
+InstructionAtom threeArgumentAtom(Operation op, byte dest, byte src0, byte src1) noexcept {
+    return encodeSource1(twoArgumentAtom(op, dest, src0), src1);
 }
 
 InstructionAtom returnInstruction(byte destination) {
-    return oneArgumentOperation(Operation::BranchUnconditionalRegister, destination);
+    return oneArgumentAtom(Operation::BranchUnconditionalRegister, destination);
 }
 
 InstructionAtom returnFromStack(byte stackPointer) {
@@ -60,7 +83,7 @@ InstructionAtom returnToLinkRegister() {
 }
 
 InstructionAtom move(byte dest, byte src) noexcept {
-    return twoArgumentOperation(Operation::Move, dest, src);
+    return twoArgumentAtom(Operation::Move, dest, src);
 }
 InstructionAtom store(byte destReg, byte src) {
     return move(memoryOperation(destReg), src);
@@ -86,7 +109,7 @@ InstructionAtom restoreLinkRegister(byte stackPointer) {
 }
 
 InstructionAtom set16(byte destination, InstructionImmediate immediate) noexcept {
-    return encodeImmediate(oneArgumentOperation(Operation::Set16, destination), immediate);
+    return encodeImmediate(oneArgumentAtom(Operation::Set16, destination), immediate);
 }
 
 InstructionAtom push16(byte stackPointer, InstructionImmediate immediate) noexcept {
@@ -100,25 +123,32 @@ InstructionAtom push16(InstructionImmediate immediate) noexcept {
 InstructionAtom store16(byte address, InstructionImmediate immediate) noexcept {
     return set16(memoryOperation(address), immediate);
 }
-#define makeThreeAddressOperation(title, fragment) \
+#define makeThreeAddressOperationWithImmediateAndStackVersion(title, fragment) \
     InstructionAtom title ( byte dest, byte s0, byte s1, bool imm = false) noexcept { \
-        return threeArgumentOperation( imm ? Operation:: fragment ## Immediate : Operation:: fragment , dest, s0, s1); \
+        return threeArgumentAtom( imm ? Operation:: fragment ## Immediate : Operation:: fragment , dest, s0, s1); \
+    } \
+    InstructionAtom title ## Stack (byte d, byte s0, byte s1) noexcept { \
+        return title ( stackOperation(d), stackOperation(s0), stackOperation(s1), false); \
     }
-makeThreeAddressOperation(add, Add);
-makeThreeAddressOperation(sub, Sub);
-makeThreeAddressOperation(mul, Mul);
-makeThreeAddressOperation(div, Div);
-makeThreeAddressOperation(rem, Rem);
-makeThreeAddressOperation(shiftLeft, ShiftLeft);
-makeThreeAddressOperation(shiftRight, ShiftRight);
-makeThreeAddressOperation(eq, Eq);
-makeThreeAddressOperation(neq, Neq);
-makeThreeAddressOperation(lt, LessThan);
-makeThreeAddressOperation(gt, GreaterThan);
-makeThreeAddressOperation(le, LessThanOrEqualTo);
-makeThreeAddressOperation(ge, GreaterThanOrEqualTo);
-#undef makeThreeAddressOperation
-
+makeThreeAddressOperationWithImmediateAndStackVersion(add, Add);
+makeThreeAddressOperationWithImmediateAndStackVersion(sub, Sub);
+makeThreeAddressOperationWithImmediateAndStackVersion(mul, Mul);
+makeThreeAddressOperationWithImmediateAndStackVersion(div, Div);
+makeThreeAddressOperationWithImmediateAndStackVersion(rem, Rem);
+makeThreeAddressOperationWithImmediateAndStackVersion(shiftLeft, ShiftLeft);
+makeThreeAddressOperationWithImmediateAndStackVersion(shiftRight, ShiftRight);
+makeThreeAddressOperationWithImmediateAndStackVersion(eq, Eq);
+makeThreeAddressOperationWithImmediateAndStackVersion(neq, Neq);
+makeThreeAddressOperationWithImmediateAndStackVersion(lt, LessThan);
+makeThreeAddressOperationWithImmediateAndStackVersion(gt, GreaterThan);
+makeThreeAddressOperationWithImmediateAndStackVersion(le, LessThanOrEqualTo);
+makeThreeAddressOperationWithImmediateAndStackVersion(ge, GreaterThanOrEqualTo);
+makeThreeAddressOperationWithImmediateAndStackVersion(binaryAnd, BinaryAnd);
+makeThreeAddressOperationWithImmediateAndStackVersion(binaryOr, BinaryOr);
+makeThreeAddressOperationWithImmediateAndStackVersion(binaryXor, BinaryXor);
+makeThreeAddressOperationWithImmediateAndStackVersion(binaryNand, BinaryNand);
+#undef makeThreeAddressOperationWithImmediateAndStackVersion
+InstructionAtom unaryNot(byte dest, byte s0) noexcept { return twoArgumentAtom(Operation::BinaryNot, dest, s0); }
 InstructionAtom increment(byte destination, byte src) noexcept { return add(destination, src, 1, true); }
 InstructionAtom increment(byte destination) noexcept { return increment(destination, destination); }
 InstructionAtom decrement(byte destination, byte src) noexcept { return sub(destination, src, 1, true); }
@@ -127,7 +157,63 @@ InstructionAtom doubleVal(byte destination, byte src) noexcept { return shiftLef
 InstructionAtom doubleVal(byte destination) noexcept { return doubleVal(destination, destination); }
 InstructionAtom halveVal(byte destination, byte src) noexcept { return shiftRight(destination, src, 1, true); }
 InstructionAtom halveVal(byte destination) noexcept { return halveVal(destination, destination); }
+InstructionAtom zeroRegister(byte reg) noexcept { return binaryXor(reg, reg, reg); }
 
+InstructionAtom ifThenElse(byte cond, byte onTrue, byte onFalse, bool link, bool checkIfFalse) noexcept {
+    Operation op;
+    if (!link && checkIfFalse) {
+        op = Operation::BranchIfThenElseNormalPredFalse;
+    } else if (!link && !checkIfFalse) {
+        op = Operation::BranchIfThenElseNormalPredTrue;
+    } else if (link && checkIfFalse) {
+        op = Operation::BranchIfThenElseLinkPredFalse;
+    } else {
+        op = Operation::BranchIfThenElseLinkPredTrue;
+    }
+    return threeArgumentAtom(op, cond, onTrue, onFalse);
+}
+
+InstructionMolecule ifConditionTrueThenElse(InstructionAtom compare, byte compareDest, byte onTrue, byte onFalse, bool link) noexcept {
+    return molecule(compare, ifThenElse(compareDest, onTrue, onFalse, link, false));
+}
+
+InstructionMolecule indirectLoadIntoRegister(byte destination, byte address) noexcept {
+    return molecule(load(registerOperation(destination), address),
+                    load(registerOperation(destination), destination));
+}
+
+InstructionMolecule indirectStoreFromRegister(byte address, byte value) noexcept {
+    // r0 is the temporary register of legend :D
+    return molecule(load(temporaryRegister0, address),
+                    store(temporaryRegister0, value));
+}
+
+InstructionMolecule stackLoad(byte stackPointer, byte destination) noexcept {
+    return molecule(pop(stackPointer, registerOperation(destination)),
+                    load(registerOperation(destination), destination));
+}
+
+// pop the top two
+InstructionMolecule stackStore(byte stackPointer) {
+    // t0 => address
+    return molecule(pop(stackPointer, registerOperation(temporaryRegister0)),
+                    store(temporaryRegister0, stackOperation(stackPointer)));
+}
+InstructionAtom swap(byte r0, byte r1) noexcept {
+    return twoArgumentAtom(Operation::Swap, r0, r1);
+}
+InstructionAtom nop() noexcept {
+    // if the two byte fields are the the same then nothing happens
+    return swap(temporaryRegister0, temporaryRegister0);
+}
+
+InstructionMolecule set32(byte destination, word value) {
+    return encodeImmediate32(oneArgumentMolecule(Operation::Set32, destination), value);
+}
+
+InstructionMolecule set48(byte destination, word value) {
+    return encodeImmediate48(oneArgumentMolecule(Operation::Set48, destination), value);
+}
 
 } // end namespace iris20
 
