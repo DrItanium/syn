@@ -246,13 +246,6 @@ namespace iris20 {
         // put a nop in the left over slot
         return set64(dest, value, nop());
     }
-    void unpack(std::vector<InstructionMolecule>& molecules, InstructionTriCompound compound) noexcept {
-        InstructionMolecule a, b, c;
-        std::tie(a, b, c) = compound;
-        molecules.emplace_back(a);
-        molecules.emplace_back(b);
-        molecules.emplace_back(c);
-    }
 
     InstructionMolecule singleMoleculeFunction(InstructionAtom op) noexcept {
         return molecule(op, returnToLinkRegister());
@@ -284,16 +277,41 @@ namespace iris20 {
     using AddressTable = std::map<std::string, word>;
     using MoleculeList = std::vector<InstructionMolecule>;
 
-    constexpr byte StackMaxIndex = static_cast<byte>(ArchitectureConstants::RegisterCount) - 4;
-    constexpr byte StackBottomIndex = static_cast<byte>(ArchitectureConstants::RegisterCount) - 5;
-    constexpr byte MemorySection0Start = static_cast<byte>(ArchitectureConstants::RegisterCount) - 6;
-    constexpr byte MemorySection0End = static_cast<byte>(ArchitectureConstants::RegisterCount) - 7;
-    constexpr byte MemorySection1Start = static_cast<byte>(ArchitectureConstants::RegisterCount) - 8;
-    constexpr byte MemorySection1End = static_cast<byte>(ArchitectureConstants::RegisterCount) - 9;
-	constexpr byte CallStackBottom = static_cast<byte>(ArchitectureConstants::RegisterCount) - 10;
-	constexpr byte CallStackTop = static_cast<byte>(ArchitectureConstants::RegisterCount) - 11;
-	constexpr byte CodeEnd = static_cast<byte>(ArchitectureConstants::RegisterCount) - 12;
-	constexpr byte CodeStart = static_cast<byte>(ArchitectureConstants::RegisterCount) - 13;
+    void unpack(MoleculeList& molecules, InstructionTriCompound compound) noexcept {
+        InstructionMolecule a, b, c;
+        std::tie(a, b, c) = compound;
+        molecules.emplace_back(a);
+        molecules.emplace_back(b);
+        molecules.emplace_back(c);
+    }
+
+	void unpack(MoleculeList& m, InstructionBiCompound compound) noexcept {
+		InstructionMolecule a, b;
+		std::tie(a, b) = compound;
+		m.emplace_back(a);
+		m.emplace_back(b);
+	}
+
+	void unpack(MoleculeList& m, InstructionMolecule i) noexcept {
+		m.emplace_back(i);
+	}
+	constexpr byte registerCount = static_cast<byte>(ArchitectureConstants::RegisterCount);
+    constexpr byte StackMaxIndex = registerCount - 4;
+    constexpr byte StackBottomIndex = registerCount - 5;
+    constexpr byte MemorySection0Start = registerCount - 6;
+    constexpr byte MemorySection0End = registerCount - 7;
+    constexpr byte MemorySection1Start = registerCount - 8;
+    constexpr byte MemorySection1End = registerCount - 9;
+	constexpr byte CallStackBottom = registerCount - 10;
+	constexpr byte CallStackTop = registerCount - 11;
+	constexpr byte CodeEnd = registerCount - 12;
+	constexpr byte CodeStart = registerCount - 13;
+	constexpr byte CallStackPointer = registerCount - 14;
+	constexpr byte AddressTableBase = registerCount - 15;
+	constexpr byte AddressTablePointer = registerCount - 16;
+	constexpr byte StackPointer = static_cast<byte>(ArchitectureConstants::StackPointerIndex);
+	constexpr byte LinkRegister = static_cast<byte>(ArchitectureConstants::LinkRegisterIndex);
+	constexpr byte InstructionPointer = static_cast<byte>(ArchitectureConstants::InstructionPointerIndex);
     // basic memory layout
     constexpr word stackBottom = ArchitectureConstants::AddressMax;
     constexpr word stackTop = stackBottom - (0x00FFFFFF / 2);
@@ -303,22 +321,24 @@ namespace iris20 {
     constexpr word memory1Start = memory1End - 0x00FFFFFF;
     constexpr word memory0End = memory1Start - 1;
     constexpr word memory0Start = memory0End - 0x00FFFFFF;
-	constexpr word codeEnd = memory0Start - 1;
-	constexpr word codeStart = codeEnd - 0x00FFFFFF;
+	constexpr word addressTableEnd = memory0Start - 1;
+	constexpr word addressTableStart = addressTableEnd  - 0xFFFF;
+	constexpr word codeEnd = addressTableStart - 1;
+	constexpr word codeStart = 0;
 	//static_assert(codeStart == 0, "Memory map is not properly laid out, code start isn't zero!");
-
     void stackInitCode(MoleculeList& molecules) {
         // carve the system up into four spaces (0-3). Space 3 is the stack for the
         // entire system
         // declare our registers
-        auto sp = registerOperation(static_cast<byte>(ArchitectureConstants::StackPointerIndex));
+        auto sp = registerOperation(StackPointer);
         auto sb = registerOperation(StackBottomIndex);
         auto sm = registerOperation(StackMaxIndex);
 		auto csb = registerOperation(CallStackBottom);
 		auto cst = registerOperation(CallStackTop);
+		auto csp = registerOperation(CallStackPointer);
         unpack(molecules, set64(sb, stackBottom, move(sp, sb)));
         unpack(molecules, set64(sm, stackTop));
-		unpack(molecules, set64(csb, callStackBottom));
+		unpack(molecules, set64(csb, callStackBottom, move(csp, csb)));
 		unpack(molecules, set64(cst, callStackTop));
     }
 
@@ -329,13 +349,17 @@ namespace iris20 {
         auto me1 = registerOperation(MemorySection1End);
 		auto cs = registerOperation(CodeStart);
 		auto ce = registerOperation(CodeEnd);
+		auto atb = registerOperation(AddressTableBase);
+		auto atp = registerOperation(AddressTablePointer);
         unpack(molecules, set64(ms0, memory0Start));
         unpack(molecules, set64(me0, memory0End));
         unpack(molecules, set64(ms1, memory1Start));
         unpack(molecules, set64(me1, memory1End));
 		unpack(molecules, set64(cs, codeStart));
 		unpack(molecules, set64(ce, codeEnd));
+		unpack(molecules, set64(atb, addressTableStart, move(atp, atb)));
     }
+
 
 
 	void emit(const MoleculeList& elements, std::ostream& out) noexcept {
@@ -349,27 +373,86 @@ namespace iris20 {
 	void emit(const MoleculeList& elements) noexcept {
 		emit(elements, std::cout);
 	}
+	void registerLabel(const std::string& title, word address, AddressTable& addresses) noexcept {
+		addresses.emplace(title, address);
+	}
+	void registerLabel(const std::string& title, const MoleculeList& molecules, AddressTable& addresses) noexcept {
+		registerLabel(title, static_cast<word>(molecules.size()), addresses);
+	}
+	void setupEvaluationLoop(MoleculeList& l, AddressTable& at) noexcept {
+		auto ip = static_cast<byte>(ArchitectureConstants::InstructionPointerIndex);
+		registerLabel("AddressTableBase", addressTableStart, at);
+		registerLabel("AddressTableEnd", addressTableEnd, at);
+		registerLabel("CodeStart", codeStart, at);
+		registerLabel("CodeEnd", codeEnd, at);
+		registerLabel("Memory0Start", memory0Start, at);
+		registerLabel("Memory0End", memory0End, at);
+		registerLabel("Memory1Start", memory1Start, at);
+		registerLabel("Memory1End", memory1End, at);
+		registerLabel("StackBottom", stackBottom, at);
+		registerLabel("StackTop", stackTop, at);
+		registerLabel("CallStackTop", callStackTop, at);
+		registerLabel("CallStackBottom", callStackBottom, at);
+		// always has to be before the EvalStart label registration
+		unpack(l, molecule(add(memoryOperation(AddressTableBase), ip, 1, true), nop()));
+		registerLabel("EvalStart", l, at);
+		// Loop back to the top of this evaluation loop
+		unpack(l, molecule(nop(), returnFromMemory(AddressTableBase)));
+	}
+	void displayMemoryMap(std::ostream& out) noexcept {
+		std::cerr << "Memory Map" << std::endl;
+		std::cerr << "\tRegister  |  value  " << std::endl;
+		std::cerr << "\tce:       |  " << std::hex << codeEnd << std::endl;
+		std::cerr << "\tcs:       |  " << std::hex << codeStart << std::endl;
+		std::cerr << "\tm0s:      |  " << std::hex << memory0Start << std::endl;
+		std::cerr << "\tm0e:      |  " << std::hex << memory0End << std::endl;
+		std::cerr << "\tm1s:      |  " << std::hex << memory1Start << std::endl;
+		std::cerr << "\tm1e:      |  " << std::hex << memory1End << std::endl;
+		std::cerr << "\tcst:      |  " << std::hex << callStackTop << std::endl;
+		std::cerr << "\tcsb:      |  " << std::hex << callStackBottom << std::endl;
+		std::cerr << "\tst:       |  " << std::hex << stackTop << std::endl;
+		std::cerr << "\tsb:       |  " << std::hex << stackBottom << std::endl;
+	}
+	void deffunction(MoleculeList& m, AddressTable& addr, const std::string& function, InstructionAtom op) noexcept {
+		registerLabel(function, m, addr);
+		unpack(m, molecule(op, returnFromStack(CallStackPointer)));
+	}
 
+	void unpack(MoleculeList& m, std::initializer_list<InstructionMolecule> pack) noexcept {
+		for(auto & p : pack) {
+			m.emplace_back(p);
+		}
+	}
+	void deffunction(MoleculeList& m, AddressTable& addr, const std::string& function, std::initializer_list<InstructionMolecule> pack) noexcept {
+		registerLabel(function, m, addr);
+		unpack(m, pack);
+		unpack(m, molecule(nop(), returnFromStack(CallStackPointer)));
+	}
+	void setupSimpleFunctions(MoleculeList& m, AddressTable& addr) noexcept {
+		// we have a simple set of functions tied to symbols
+		deffunction(m, addr, "eq", eqStack(StackPointer, StackPointer, StackPointer));
+		deffunction(m, addr, "neq", neqStack(StackPointer, StackPointer, StackPointer));
+		deffunction(m, addr, "lt", ltStack(StackPointer, StackPointer, StackPointer));
+		deffunction(m, addr, "gt", gtStack(StackPointer, StackPointer, StackPointer));
+		deffunction(m, addr, "le", leStack(StackPointer, StackPointer, StackPointer));
+		deffunction(m, addr, "ge", geStack(StackPointer, StackPointer, StackPointer));
+		deffunction(m, addr, "incr", increment(stackOperation(StackPointer), stackOperation(StackPointer)));
+		deffunction(m, addr, "decr", decrement(stackOperation(StackPointer), stackOperation(StackPointer)));
+	}
+	void bootcode(MoleculeList& m, AddressTable& addr) noexcept {
+		displayMemoryMap(std::cerr);
+		stackInitCode(m);
+		memoryBlockCode(m);
+		setupEvaluationLoop(m, addr);
+		setupSimpleFunctions(m, addr);
+		iris20::emit(m);
+	}
 } // end namespace iris20
 
 
 int main() {
     iris20::MoleculeList molecules;
-    iris20::stackInitCode(molecules);
-    iris20::memoryBlockCode(molecules);
-	std::cerr << "Memory Map" << std::endl;
-	std::cerr << "\tRegister  |  value  " << std::endl;
-	std::cerr << "\tce:       |  " << std::hex << iris20::codeEnd << std::endl;
-	std::cerr << "\tcs:       |  " << std::hex << iris20::codeStart << std::endl;
-	std::cerr << "\tm0s:      |  " << std::hex << iris20::memory0Start << std::endl;
-	std::cerr << "\tm0e:      |  " << std::hex << iris20::memory0End << std::endl;
-	std::cerr << "\tm1s:      |  " << std::hex << iris20::memory1Start << std::endl;
-	std::cerr << "\tm1e:      |  " << std::hex << iris20::memory1End << std::endl;
-	std::cerr << "\tcst:      |  " << std::hex << iris20::callStackTop << std::endl;
-	std::cerr << "\tcsb:      |  " << std::hex << iris20::callStackBottom << std::endl;
-	std::cerr << "\tst:       |  " << std::hex << iris20::stackTop << std::endl;
-	std::cerr << "\tsb:       |  " << std::hex << iris20::stackBottom << std::endl;
-
-	iris20::emit(molecules);
+	iris20::AddressTable labels;
+	iris20::bootcode(molecules, labels);
     return 0;
 }
