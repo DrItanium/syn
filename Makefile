@@ -12,6 +12,12 @@ ARCH_OBJECTS = iris17.o \
 
 COMMON_THINGS = libmaya.a
 
+BOOTSTRAP_OBJECTS = iris20_bootstrap.o \
+					${ARCH_OBJECTS} \
+					${COMMON_THINGS}
+
+BOOTSTRAP_BINARY = iris20_bootstrap
+
 SIM_OBJECTS = iris_sim.o \
 			  sim_registration.o \
 			  ${ARCH_OBJECTS} \
@@ -66,7 +72,8 @@ LINK_BINARY = iris_link
 ALL_BINARIES = ${SIM_BINARY} \
 			   ${ASM_BINARY} \
 			   ${LINK_BINARY} \
-			   ${REPL_BINARY}
+			   ${REPL_BINARY} \
+			   ${BOOTSTRAP_BINARY}
 
 DEFINE_OBJECTS = iris19_defines.h \
 				 iris16_defines.h \
@@ -81,9 +88,10 @@ ALL_OBJECTS = ${COMMON_THINGS} \
 			  ${LINK_OBJECTS} \
 			  ${ARCH_OBJECTS} \
 			  ${REPL_OBJECTS} \
-			  ${DEFINE_OBJECTS}
+			  ${DEFINE_OBJECTS} \
+			  ${BOOTSTRAP_OBJECTS} \
 
-all: options bootstrap ${SIM_BINARY} ${ASM_BINARY} ${LINK_BINARY}
+all: options bootstrap ${SIM_BINARY} ${ASM_BINARY} ${LINK_BINARY} ${BOOTSTRAP_BINARY}
 
 maya:
 	@echo "Buidling maya..."
@@ -153,6 +161,11 @@ ${ASM_BINARY}: ${ASM_OBJECTS}
 ${REPL_BINARY}: ${REPL_OBJECTS}
 	@echo -n Building ${REPL_BINARY} binary out of $^...
 	@${CXX} ${LIBS} -o ${REPL_BINARY} ${REPL_OBJECTS}
+	@echo done.
+
+${BOOTSTRAP_BINARY}: ${BOOTSTRAP_OBJECTS}
+	@echo -n Building ${BOOTSTRAP_BINARY} binary out of $^...
+	@${CXX} ${LIBS} -o ${BOOTSTRAP_BINARY} ${BOOTSTRAP_OBJECTS}
 	@echo done.
 
 clean:
@@ -319,3 +332,8 @@ iris19_asm.tab.o: iris19_asm.tab.c iris19.h iris_base.h Problem.h Core.h \
 iris19_lex.yy.o: iris19_lex.yy.c iris19.h iris_base.h Problem.h Core.h \
  sim_registration.h iris_xunits.h iris19_defines.h def/iris19/ops.def \
  iris19_asm.tab.h
+
+
+
+iris20_bootstrap.o: iris20_bootstrap.cc iris20.h iris_base.h Problem.h \
+ iris_xunits.h Core.h iris20_defines.h
