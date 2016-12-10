@@ -1,10 +1,15 @@
-language: cpp
-os: linux
-env: COMPILER_NAME=gcc CXX=g++-5 CC=gcc-5
-addons:
-    apt:
-        packages:
-            - g++-5
+language: generic
+matrix:
+    include:
+        - os: linux
+          env: COMPILER_NAME=gcc CXX=g++-5 CC=gcc-5
+        addons:
+            apt:
+                packages:
+                    - g++-5
+                sources: &sources
+                    - ubuntu-toolchain-r-test
+
 
 sudo: required
 dist: trusty
