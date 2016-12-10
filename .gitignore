@@ -12,6 +12,7 @@ iris_sim
 iris_asm
 iris_link
 iris_repl
+iris20_bootstrap
 maya
 
 *.tab.c

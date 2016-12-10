@@ -138,7 +138,10 @@ namespace iris20 {
     } \
     InstructionAtom title ## Stack (byte d, byte s0, byte s1) noexcept { \
         return title ( stackOperation(d), stackOperation(s0), stackOperation(s1), false); \
-    }
+    } \
+	InstructionAtom title ## Stack (byte target) noexcept { \
+		return title ## Stack (target, target, target); \
+	}
     makeThreeAddressOperationWithImmediateAndStackVersion(add, Add);
     makeThreeAddressOperationWithImmediateAndStackVersion(sub, Sub);
     makeThreeAddressOperationWithImmediateAndStackVersion(mul, Mul);
@@ -430,14 +433,24 @@ namespace iris20 {
 	}
 	void setupSimpleFunctions(MoleculeList& m, AddressTable& addr) noexcept {
 		// we have a simple set of functions tied to symbols
+		auto stackSp = stackOperation(StackPointer);
 		deffunction(m, addr, "eq", eqStack(StackPointer, StackPointer, StackPointer));
 		deffunction(m, addr, "neq", neqStack(StackPointer, StackPointer, StackPointer));
 		deffunction(m, addr, "lt", ltStack(StackPointer, StackPointer, StackPointer));
 		deffunction(m, addr, "gt", gtStack(StackPointer, StackPointer, StackPointer));
 		deffunction(m, addr, "le", leStack(StackPointer, StackPointer, StackPointer));
 		deffunction(m, addr, "ge", geStack(StackPointer, StackPointer, StackPointer));
-		deffunction(m, addr, "incr", increment(stackOperation(StackPointer), stackOperation(StackPointer)));
-		deffunction(m, addr, "decr", decrement(stackOperation(StackPointer), stackOperation(StackPointer)));
+		deffunction(m, addr, "incr", increment(stackSp));
+		deffunction(m, addr, "decr", decrement(stackSp));
+		deffunction(m, addr, "double", doubleVal(stackSp));
+		deffunction(m, addr, "halve", halveVal(stackSp));
+		deffunction(m, addr, "add", addStack(stackSp));
+		deffunction(m, addr, "sub", subStack(stackSp));
+		deffunction(m, addr, "mul", mulStack(stackSp));
+		deffunction(m, addr, "div", divStack(stackSp));
+		deffunction(m, addr, "rem", remStack(stackSp));
+		deffunction(m, addr, "shiftLeft", shiftLeftStack(stackSp));
+		deffunction(m, addr, "shiftRight", shiftRightStack(stackSp));
 	}
 	void bootcode(MoleculeList& m, AddressTable& addr) noexcept {
 		displayMemoryMap(std::cerr);
