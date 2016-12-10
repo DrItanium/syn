@@ -18,86 +18,43 @@
              (slot output-type
                    (type LEXEME)
                    (default ?NONE)))
-(defrule MAIN::generate-ifndef-header
-         (declare (salience ?*priority:first*))
-         (title ?name)
-         =>
-         (assert (check-for-namespace))
-         (printout t
-                   "// NOTE: this file is auto generated, DO NOT MODIFY!" crlf
-                   "#ifndef " (upcase ?name) crlf
-                   "#define " (upcase ?name) crlf
-                   "#include \"iris_base.h\"" crlf))
-(defrule MAIN::generate-namespace-contents
-         (declare (salience ?*priority:right-after-first*))
-         (check-for-namespace)
-         (namespace ?ns)
-         =>
-         (assert (close-namespace))
-         (printout t
-                   "namespace " ?ns " { " crlf))
-
-
-(defrule MAIN::generate-closing-namespace-contents
-         (declare (salience ?*priority:last*))
-         (close-namespace)
-         (namespace ?ns)
-         =>
-         (printout t
-                   "} // end namespace " ?ns crlf))
-
-(defrule MAIN::generate-endif-header
-         (declare (salience ?*priority:dead-last*))
-         (title ?name)
-         =>
-         (printout t
-                   "#endif // end " (upcase ?name) crlf))
 
 (deffunction generate-encode-decode-ops
-             (?t ?name ?value ?mask ?shift)
-             (format t
-                     "inline constexpr %s decode%s(%s value) noexcept { return iris::decodeBits<%s, %s, %s, %s>(value); }%n"
-                     ?t
+             (?n ?name ?value ?mask ?shift)
+             (format t "(deffunction %s-decode-%s (?value) (decode-bits ?value %s %s))%n"
+                     ?n
                      ?name
-                     ?value
-                     ?value
-                     ?t
                      (str-cat ?mask)
                      (str-cat ?shift))
-             (format t
-                     "inline constexpr %s encode%s(%s value, %s field) noexcept { return iris::encodeBits<%s, %s, %s, %s>(value, field); }%n"
-                     ?value
+             (format t "(deffunction %s-encode-%s (?value ?field) (encode-bits ?value ?field %s %s))%n"
+                     ?n
                      ?name
-                     ?value
-                     ?t
-                     ?value
-                     ?t
                      (str-cat ?mask)
                      (str-cat ?shift)))
 
-(defrule MAIN::generate-field:c++:use-input-type
+
+
+(defrule MAIN::generate-field:clips:use-input-type
          (field (name ?name)
                 (mask ?mask)
                 (shift ?shift)
-                (output-type ?t)
                 (input-type FALSE))
          (input-type ?value)
+         (namespace ?n)
          =>
-         (generate-encode-decode-ops ?t
-                                     ?name
+         (generate-encode-decode-ops ?name
                                      ?value
                                      ?mask
                                      ?shift))
 
-(defrule MAIN::generate-field:c++:use-embedded-type
+(defrule MAIN::generate-field:clips:use-embedded-type
          (field (name ?name)
                 (mask ?mask)
                 (shift ?shift)
-                (output-type ?t)
                 (input-type ?value&~FALSE))
+         (namespace ?n)
          =>
-         (generate-encode-decode-ops ?t
-                                     ?name
+         (generate-encode-decode-ops ?name
                                      ?value
                                      ?mask
                                      ?shift))
@@ -118,27 +75,23 @@
                         (default ?NONE)))
 
 
-(defrule MAIN::generate-enum:c++
+(defrule MAIN::generate-enum:clips
          (declare (salience 1))
          (enum (name ?name)
                (cast-to ?ct)
                (max-size ?size)
                (children $?children))
+         (namespace ?n)
          =>
-         (printout t "enum class " ?name " {" crlf)
+         (bind ?output 
+               (create$))
          (progn$ (?c ?children)
-                 (format t
-                         "%s, // %d %n"
-                         (str-cat ?c)
-                         (- ?c-index 1)))
-
-         (printout t "Count, };" crlf)
-         (format t
-                 "static_assert(static_cast<%s>(%s :: Count) <= static_cast<%s>(%s), \"%s\");%n"
-                 ?ct
+                 (bind ?output
+                       ?output
+                       (sym-cat ?c)))
+         (format t 
+                 "(defglobal MAIN ?*%s-enum%s* = (create$ %s))%n"
+                 ?n
                  ?name
-                 ?ct
-                 (str-cat ?size)
-                 (format nil
-                         "Too many %s entries defined!"
-                         ?name)))
+                 (implode$ ?output)))
+
