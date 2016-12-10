@@ -6,6 +6,7 @@
 
 namespace iris20 {
     using InstructionBiCompound = std::tuple<InstructionMolecule, InstructionMolecule>;
+    using InstructionTriCompound = std::tuple<InstructionMolecule, InstructionMolecule, InstructionMolecule>;
 constexpr byte temporaryRegister0 = 0;
 constexpr byte temporaryRegister1 = 1;
 // define the encoding operations!
@@ -207,12 +208,35 @@ InstructionAtom nop() noexcept {
     return swap(temporaryRegister0, temporaryRegister0);
 }
 
-InstructionMolecule set32(byte destination, word value) {
+InstructionMolecule set32(byte destination, word value) noexcept {
     return encodeImmediate32(oneArgumentMolecule(Operation::Set32, destination), value);
 }
 
-InstructionMolecule set48(byte destination, word value) {
+InstructionMolecule set48(byte destination, word value) noexcept {
     return encodeImmediate48(oneArgumentMolecule(Operation::Set48, destination), value);
+}
+
+InstructionAtom stackSwapTopElements(byte stackPointer) noexcept {
+    return swap(stackOperation(stackPointer), stackOperation(stackPointer));
+}
+
+InstructionAtom swapMemory(byte r0, byte r1) noexcept {
+    return swap(memoryOperation(r0), memoryOperation(r1));
+}
+
+InstructionTriCompound set64(byte dest, word value, InstructionAtom leftOverSlot) noexcept {
+    return std::make_tuple(
+            molecule(set16(registerOperation(temporaryRegister0),
+                           iris::getUpperHalf(iris::getUpperHalf(value))),
+                     shiftLeft(temporaryRegister0, temporaryRegister0, 48, true)),
+            set48(dest, iris::decodeBits<word, word, 0x0000FFFFFFFFFFFF, 0>(value)),
+            molecule(add(dest, dest, temporaryRegister0, false),
+                     leftOverSlot));
+}
+
+InstructionTriCompound set64(byte dest, word value) noexcept {
+    // put a nop in the left over slot
+    return set64(dest, value, nop());
 }
 
 } // end namespace iris20
