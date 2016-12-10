@@ -455,6 +455,11 @@ inline constexpr T setUpperHalf(T value, typename UpperLowerPair<T>::HalfType up
 }
 
 template<typename T>
+inline constexpr size_t bitwidth() noexcept {
+	return CHAR_BIT * sizeof(T);
+}
+
+template<typename T>
 inline void swap(T& a, T& b) {
     auto c = b;
     b = a;

@@ -4,6 +4,8 @@
  */
 #include "iris20.h"
 #include <vector>
+#include <iostream>
+#include <bitset>
 
 namespace iris20 {
     using InstructionBiCompound = std::tuple<InstructionMolecule, InstructionMolecule>;
@@ -288,13 +290,22 @@ namespace iris20 {
     constexpr byte MemorySection0End = static_cast<byte>(ArchitectureConstants::RegisterCount) - 7;
     constexpr byte MemorySection1Start = static_cast<byte>(ArchitectureConstants::RegisterCount) - 8;
     constexpr byte MemorySection1End = static_cast<byte>(ArchitectureConstants::RegisterCount) - 9;
+	constexpr byte CallStackBottom = static_cast<byte>(ArchitectureConstants::RegisterCount) - 10;
+	constexpr byte CallStackTop = static_cast<byte>(ArchitectureConstants::RegisterCount) - 11;
+	constexpr byte CodeEnd = static_cast<byte>(ArchitectureConstants::RegisterCount) - 12;
+	constexpr byte CodeStart = static_cast<byte>(ArchitectureConstants::RegisterCount) - 13;
     // basic memory layout
     constexpr word stackBottom = ArchitectureConstants::AddressMax;
-    constexpr word stackTop = stackBottom - 0x00FFFFFF;
-    constexpr word memory1End = stackTop - 1;
+    constexpr word stackTop = stackBottom - (0x00FFFFFF / 2);
+	constexpr word callStackBottom = stackTop - 1;
+	constexpr word callStackTop = callStackBottom - (0x00FFFFFF / 2);
+    constexpr word memory1End = callStackTop - 1;
     constexpr word memory1Start = memory1End - 0x00FFFFFF;
     constexpr word memory0End = memory1Start - 1;
     constexpr word memory0Start = memory0End - 0x00FFFFFF;
+	constexpr word codeEnd = memory0Start - 1;
+	constexpr word codeStart = codeEnd - 0x00FFFFFF;
+	//static_assert(codeStart == 0, "Memory map is not properly laid out, code start isn't zero!");
 
     void stackInitCode(MoleculeList& molecules) {
         // carve the system up into four spaces (0-3). Space 3 is the stack for the
@@ -303,8 +314,12 @@ namespace iris20 {
         auto sp = registerOperation(static_cast<byte>(ArchitectureConstants::StackPointerIndex));
         auto sb = registerOperation(StackBottomIndex);
         auto sm = registerOperation(StackMaxIndex);
+		auto csb = registerOperation(CallStackBottom);
+		auto cst = registerOperation(CallStackTop);
         unpack(molecules, set64(sb, stackBottom, move(sp, sb)));
         unpack(molecules, set64(sm, stackTop));
+		unpack(molecules, set64(csb, callStackBottom));
+		unpack(molecules, set64(cst, callStackTop));
     }
 
     void memoryBlockCode(MoleculeList& molecules) {
@@ -312,11 +327,28 @@ namespace iris20 {
         auto me0 = registerOperation(MemorySection0End);
         auto ms1 = registerOperation(MemorySection1Start);
         auto me1 = registerOperation(MemorySection1End);
+		auto cs = registerOperation(CodeStart);
+		auto ce = registerOperation(CodeEnd);
         unpack(molecules, set64(ms0, memory0Start));
         unpack(molecules, set64(me0, memory0End));
         unpack(molecules, set64(ms1, memory1Start));
         unpack(molecules, set64(me1, memory1End));
+		unpack(molecules, set64(cs, codeStart));
+		unpack(molecules, set64(ce, codeEnd));
     }
+
+
+	void emit(const MoleculeList& elements, std::ostream& out) noexcept {
+		byte storage[sizeof(InstructionMolecule)] = { 0 };
+		for (const auto& a : elements) {
+			iris::decodeUint64LE(a, storage);
+			out.write((char*)storage, sizeof(InstructionMolecule));
+		}
+	}
+
+	void emit(const MoleculeList& elements) noexcept {
+		emit(elements, std::cout);
+	}
 
 } // end namespace iris20
 
@@ -325,6 +357,19 @@ int main() {
     iris20::MoleculeList molecules;
     iris20::stackInitCode(molecules);
     iris20::memoryBlockCode(molecules);
+	std::cerr << "Memory Map" << std::endl;
+	std::cerr << "\tRegister  |  value  " << std::endl;
+	std::cerr << "\tce:       |  " << std::hex << iris20::codeEnd << std::endl;
+	std::cerr << "\tcs:       |  " << std::hex << iris20::codeStart << std::endl;
+	std::cerr << "\tm0s:      |  " << std::hex << iris20::memory0Start << std::endl;
+	std::cerr << "\tm0e:      |  " << std::hex << iris20::memory0End << std::endl;
+	std::cerr << "\tm1s:      |  " << std::hex << iris20::memory1Start << std::endl;
+	std::cerr << "\tm1e:      |  " << std::hex << iris20::memory1End << std::endl;
+	std::cerr << "\tcst:      |  " << std::hex << iris20::callStackTop << std::endl;
+	std::cerr << "\tcsb:      |  " << std::hex << iris20::callStackBottom << std::endl;
+	std::cerr << "\tst:       |  " << std::hex << iris20::stackTop << std::endl;
+	std::cerr << "\tsb:       |  " << std::hex << iris20::stackBottom << std::endl;
 
+	iris20::emit(molecules);
     return 0;
 }

@@ -12,7 +12,7 @@ namespace iris20 {
 	enum ArchitectureConstants  {
 		RegisterCount = 64,
 		AtomsPerMolecule = 2,
-		AddressMax = 0x3FFFFFFF,
+		AddressMax = 0x3FFFFFF,
 		InstructionPointerIndex = RegisterCount - 1,
 		LinkRegisterIndex = RegisterCount - 2,
 		StackPointerIndex = RegisterCount - 3,
