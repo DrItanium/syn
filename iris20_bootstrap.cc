@@ -266,9 +266,11 @@ InstructionMolecule load48(byte destination, byte address) noexcept {
     return load48Shifted(destination, address, shiftRight(destination, memoryOperation(address), 16, true));
 }
 
+using AddressTable = std::map<std::string, word>;
 
 } // end namespace iris20
 
-int main() {
 
+int main() {
+    iris20::AddressTable labels;
 }
