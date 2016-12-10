@@ -20,3 +20,4 @@ maya
 *.yy.c
 
 *_defines.h
+*_defines.clp

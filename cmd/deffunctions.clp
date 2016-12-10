@@ -2,7 +2,15 @@
 (defmodule MAIN
            (import cortex
                    ?ALL))
-
+(deffunction binaryp
+             (?sym)
+             (eq (str-index 0b
+                            ?sym) 1))
+(deffunction hexp
+             (?sm)
+             (eq (str-index 0x
+                            ?sm)
+                 1))
 (deftemplate field
              (slot name
                    (type SYMBOL)
@@ -19,18 +27,35 @@
                    (type LEXEME)
                    (default ?NONE)))
 
+(deffunction potential-convert
+             (?value)
+             (if (lexemep ?value) then
+               (if (hexp ?value) then 
+                 (hex->int ?value)
+                 else
+                 (if (binaryp ?value) then
+                   (binary->int ?value)
+                   else
+                   ?value))
+               else
+               ?value))
+
 (deffunction generate-encode-decode-ops
              (?n ?name ?value ?mask ?shift)
+             (bind ?m 
+                   (str-cat (potential-convert ?mask)))
+             (bind ?s
+              (str-cat (potential-convert ?shift)))
              (format t "(deffunction %s-decode-%s (?value) (decode-bits ?value %s %s))%n"
                      ?n
                      ?name
-                     (str-cat ?mask)
-                     (str-cat ?shift))
+                     ?m
+                     ?s)
              (format t "(deffunction %s-encode-%s (?value ?field) (encode-bits ?value ?field %s %s))%n"
                      ?n
                      ?name
-                     (str-cat ?mask)
-                     (str-cat ?shift)))
+                     ?m
+                     ?s))
 
 
 
@@ -42,7 +67,8 @@
          (input-type ?value)
          (namespace ?n)
          =>
-         (generate-encode-decode-ops ?name
+         (generate-encode-decode-ops ?n
+                                     ?name
                                      ?value
                                      ?mask
                                      ?shift))
@@ -54,7 +80,8 @@
                 (input-type ?value&~FALSE))
          (namespace ?n)
          =>
-         (generate-encode-decode-ops ?name
+         (generate-encode-decode-ops ?n
+                                     ?name
                                      ?value
                                      ?mask
                                      ?shift))
