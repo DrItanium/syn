@@ -12,7 +12,7 @@ namespace iris20 {
 	enum ArchitectureConstants  {
 		RegisterCount = 64,
 		AtomsPerMolecule = 2,
-		AddressMax = 16777216 * 4, // per space
+		AddressMax = 0x3FFFFFFF,
 		InstructionPointerIndex = RegisterCount - 1,
 		LinkRegisterIndex = RegisterCount - 2,
 		StackPointerIndex = RegisterCount - 3,
@@ -103,7 +103,7 @@ namespace iris20 {
 			CompareUnit _compare;
 			ALU _alu;
 			RegisterFile gpr;
-			MemorySpace memory; 
+			MemorySpace memory;
 			InstructionMolecule current;
 	};
 
