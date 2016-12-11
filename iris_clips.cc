@@ -521,6 +521,26 @@ namespace iris {
 		}
 #undef argCheck
 	}
+	void CLIPS_breakApartNumber(UDFContext* context, CLIPSValue* ret) {
+		CLIPSValue number;
+		if (!UDFFirstArgument(context, NUMBER_TYPES, &number)) {
+			CVSetBoolean(ret, false);
+		} else {
+			auto env = UDFContextEnvironment(context);
+			auto integer = CVToInteger(&number);
+			using IType = decltype(integer);
+			byte container[sizeof(IType)];
+			iris::decodeInt64LE(integer, container);
+			ret->type = MULTIFIELD;
+			ret->begin = 0;
+			ret->end = sizeof(IType) -1;
+			ret->value = EnvCreateMultifield(env, sizeof(IType));
+			for (int i = 0, j = 1; i < static_cast<int>(sizeof(IType)); ++i, ++j) {
+				SetMFType(ret->value, j, INTEGER);
+				SetMFValue(ret->value, j, EnvAddLong(env, container[i]));
+			}
+		}
+	}
 	void installExtensions(void* theEnv) {
 		Environment* env = static_cast<Environment*>(theEnv);
 
@@ -537,6 +557,7 @@ namespace iris {
 		EnvAddUDF(env, "encode-bits", "l", CLIPS_encodeBits, "CLIPS_encodeBits", 4, 4, "l;l;l;l", nullptr);
 		EnvAddUDF(env, "left-shift", "l", CLIPS_shiftLeft, "CLIPS_shiftLeft", 2, 2, "l;l", nullptr);
 		EnvAddUDF(env, "right-shift", "l", CLIPS_shiftRight, "CLIPS_shiftRight", 2, 2, "l;l", nullptr);
+		EnvAddUDF(env, "break-apart-number", "m", CLIPS_breakApartNumber, "CLIPS_breakApartNumber", 1, 1, "l", nullptr);
 
 		ManagedMemoryBlock::registerWithEnvironment(theEnv, "memory-space");
 	}
