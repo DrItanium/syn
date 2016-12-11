@@ -1,7 +1,7 @@
 (defglobal MAIN
            ?*addr-max* = (hex->int 0x03FFFFFF)
            ?*space-size* = (hex->int 0x00FFFFFF)
-           ?*half-space* = (/ ?*space-size* 2)
+           ?*half-space* = (div ?*space-size* 2)
            ?*stack-bottom* = ?*addr-max*
            ?*stack-top* = (- ?*stack-bottom* 
                              ?*half-space*)
@@ -44,13 +44,34 @@
            ?*register-temp5* = (- ?*register-count* 22)
            ?*register-temp6* = (- ?*register-count* 23))
 
-(deffunction temporary-register0 () ?*register-temp0*)
-(deffunction temporary-register1 () ?*register-temp1*)
-(deffunction temporary-register2 () ?*register-temp2*)
-(deffunction temporary-register3 () ?*register-temp3*)
-(deffunction temporary-register4 () ?*register-temp4*)
-(deffunction temporary-register5 () ?*register-temp5*)
-(deffunction temporary-register6 () ?*register-temp6*)
+(deffunction link-register () ?*register-lr*)
+(deffunction instruction-pointer () ?*register-ip*)
+(deffunction stack-pointer () ?*register-sp*)
+(deffunction has-register-prefix
+             (?title)
+             (str-index "register-" 
+                        ?title))
+(deffunction build-register-operation
+             (?title)
+             (bind ?reg-len
+                   (str-length "register-"))
+             (build (format nil "(deffunction register:%s () ?*%s*)" 
+                            (sub-string (+ ?reg-len 1) (str-length ?title)
+                                        ?title)
+                            ?title)))
+
+(map build-register-operation
+     (expand$ (filter has-register-prefix
+                      (expand$ (get-defglobal-list MAIN)))))
+(loop-for-count (?i 0 63) do
+                (build (format nil 
+                               "(deffunction register:%s () %d)" 
+                               (sym-cat r ?i)
+                               ?i)))
+(deffunction register:
+             (?name)
+             (funcall (sym-cat register: ?name)))
+
 
 (defgeneric output-bytes-to-router)
 (defmethod output-bytes-to-router
@@ -78,9 +99,6 @@
 (defgeneric make-molecule)
 (defgeneric return-from-stack)
 
-(deffunction link-register () ?*register-lr*)
-(deffunction instruction-pointer () ?*register-ip*)
-(deffunction stack-pointer () ?*register-sp*)
 (deffunction enum->int
              (?symbol ?collection)
              (- (member$ ?symbol
@@ -396,8 +414,8 @@
                       ?src))
 (deffunction nop
              ()
-             (swap-op 0 
-                      0))
+             (swap-op (register:r0)
+                      (register:r0)))
 
 (defgeneric push16)
 (defmethod push16
@@ -442,9 +460,11 @@
 
 (deffunction stack-store
              (?sp)
+             (bind ?rtemp0
+                   (register-operation (register:temp0)))
              (make-molecule (pop ?sp 
-                                 (register-operation (temporary-register0)))
-                            (store-op (temporary-register0)
+                                 ?rtemp0)
+                            (store-op ?rtemp0
                                       (stack-operation ?sp))))
 
 (deffunction stack-load
@@ -459,12 +479,14 @@
   ((?dest INTEGER)
    (?value INTEGER)
    (?left-over INTEGER))
-  (create$ (make-molecule (set16 (register-operation (temporary-register0))
+  (bind ?rtemp0 
+        (register-operation (register:temp0)))
+  (create$ (make-molecule (set16 ?rtemp0
                                  (decode-bits ?value 
                                               (hex->int 0xFFFF000000000000)
                                               48))
-                          (shiftleft-op (register-operation (temporary-register0))
-                                        (register-operation (temporary-register0))
+                          (shiftleft-op ?rtemp0
+                                        ?rtemp0
                                         48
                                         TRUE))
            (set48 ?dest 
@@ -473,7 +495,7 @@
                                0))
            (make-molecule (add-op ?dest 
                                   ?dest 
-                                  (temporary-register0)
+                                  ?rtemp0
                                   FALSE)
                           ?left-over)))
 
@@ -489,34 +511,19 @@
 (defmethod label
   ((?title SYMBOL))
   ?title)
-(deffunction has-register-prefix
-             (?title)
-             (str-index "register-" 
-                        ?title))
-(deffunction build-register-operation
-             (?title)
-             (bind ?reg-len
-                   (str-length "register-"))
-             (build (format nil "(deffunction register:%s () ?*%s*)" 
-                            (sub-string (+ ?reg-len 1) (str-length ?title)
-                                        ?title)
-                            ?title)))
-
-(map build-register-operation
-     (expand$ (filter has-register-prefix
-                      (expand$ (get-defglobal-list MAIN)))))
-(loop-for-count (?i 0 63) do
-                (build (format nil 
-                               "(deffunction register:%s () %d)" 
-                               (sym-cat r ?i)
-                               ?i)))
-(deffunction register:
-             (?name)
-             (funcall (sym-cat register: ?name)))
 (deffunction stack-init-code
- ()
- (create$ (set64 (register:stack-bottom)
-                 ?*stack-bottom*
-                 (move (stack-pointer)
-                       (register:stack-bottom)))
-  (set64 
+             ()
+             (create$ (set64 (register:stack-pointer-bottom)
+                             ?*stack-bottom*
+                             (move-op (stack-pointer)
+                                      (register:stack-pointer-bottom)))
+                      (set64 (register:stack-pointer-top)
+                             ?*stack-top*)
+                      (set64 (register:call-stack-bottom)
+                             ?*call-stack-bottom*
+                             (move-op (register:call-stack-pointer)
+                                      (register:call-stack-bottom)))
+                      (set64 (register:call-stack-top)
+                             ?*call-stack-top*)))
+
+
