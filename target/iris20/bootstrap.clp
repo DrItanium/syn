@@ -553,4 +553,11 @@
                       (move-op (register:address-table-pointer)
                                (register:address-table-base)))))
 
+(defgeneric func)
+(defmethod func
+  ((?title SYMBOL)
+   (?single-atom INTEGER))
+  (create$ (label ?title)
+           (make-molecule ?single-atom
+                          (return-from-stack (stack-pointer)))))
 
