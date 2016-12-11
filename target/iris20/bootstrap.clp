@@ -48,7 +48,6 @@
 
 
 
-(defgeneric defunc)
 (defgeneric molecule)
 (defgeneric return-from-register)
 (defgeneric make-atom)
@@ -58,7 +57,7 @@
 
 (deffunction link-register () ?*register-lr*)
 (deffunction instruction-pointer () ?*register-ip*)
-(deffunction stack-pointer () ?*register-stack-pointer*)
+(deffunction stack-pointer () ?*register-sp*)
 (deffunction enum->int
              (?symbol ?collection)
              (- (member$ ?symbol
@@ -75,15 +74,17 @@
 (deffunction construct-register-operation
              "Tag the type of operation to perform on the given register index"
              (?action ?index)
-             (iris20-encode-SectionDescriptor (iris20-encode-SectionIndex ?index)
+             (iris20-encode-SectionDescriptor (iris20-encode-SectionIndex 0 
+                                                                          ?index)
                                               (section-descriptor->int ?action)))
-(deffunction stack-operation (?i) (operation Stack ?i))
-(deffunction register-operation (?i) (operation Register ?i))
-(deffunction memory-operation (?i) (operation Memory ?i))
+(deffunction stack-operation (?i) (construct-register-operation Stack ?i))
+(deffunction register-operation (?i) (construct-register-operation Register ?i))
+(deffunction memory-operation (?i) (construct-register-operation Memory ?i))
 
 (defmethod make-molecule-instruction
   ((?operation SYMBOL))
-  (iris20-encode-MoleculeOperation (operation->int ?operation)))
+  (iris20-encode-MoleculeOperation 0 
+                                   (operation->int ?operation)))
 
 (defmethod make-molecule-instruction
   ((?operation SYMBOL)
@@ -109,7 +110,9 @@
 
 (defmethod make-atom
   ((?operation SYMBOL))
-  (iris20-encodeOperation (operation->int ?operation)))
+  (iris20-encode-Operation 0
+                           (operation->int ?operation)))
+
 (defmethod make-atom
   ((?operation SYMBOL)
    (?destination INTEGER))
@@ -135,7 +138,8 @@
   ((?first INTEGER)
    (?second INTEGER))
   (iris20-encode-MoleculeContainsOneInstruction (iris20-encode-SecondAtom 
-                                                  (iris20-encode-FirstAtom ?first)
+                                                  (iris20-encode-FirstAtom 0
+                                                                           ?first)
                                                   ?second)
                                                 0))
 (defmethod make-molecule
@@ -161,11 +165,94 @@
 (deffunction return-to-link-register
              ()
              (return-to-register (link-register)))
-(defmethod defunc
-  ((?title LEXEME)
-   (?atom INTEGER))
-  (create$ ?title
-           (molecule ?atom
-                     (return-from-register (link-register)))))
+(deffunction build-specific-operation-three-arg
+             (?operation)
+             (bind ?title
+                   (sym-cat (lowcase ?operation) 
+                            -op))
+             (bind ?stack-title
+                   (str-cat ?title 
+                            ":stack"))
+             (build (format nil 
+                            "(defgeneric %s)"
+                            ?title))
+             (build (format nil
+                            "(defgeneric %s)"
+                            ?stack-title))
+             (build (format nil
+                            "(defmethod %s ((?dest INTEGER) (?src0 INTEGER) (?src1 INTEGER) (?immediate SYMBOL (not (neq ?current-argument FALSE TRUE)))) (make-atom (if ?immediate then %sImmediate else %s) ?dest ?src0 ?src1))"
+                            ?title 
+                            ?operation
+                            ?operation))
+             (build (format nil
+                            "(defmethod %s ((?dest INTEGER) (?src0 INTEGER) (?src1 INTEGER)) (%s (stack-operation ?dest) (stack-operation ?src0) (stack-operation ?src1) FALSE))"
+                            ?stack-title
+                            ?title))
+             (build (format nil
+                            "(defmethod %s ((?stack INTEGER)) (%s ?stack ?stack ?stack))"
+                            ?stack-title
+                            ?stack-title)))
 
+(deffunction build-specific-operation-two-arg
+             (?operation)
+             (bind ?title
+                   (sym-cat (lowcase ?operation) 
+                            -op))
+             (bind ?stack-title
+                   (str-cat ?title 
+                            ":stack"))
+             (build (format nil 
+                            "(defgeneric %s)"
+                            ?title))
+             (build (format nil
+                            "(defgeneric %s)"
+                            ?stack-title))
+             (build (format nil
+                            "(defmethod %s ((?dest INTEGER) (?src0 INTEGER)) (make-atom %s ?dest ?src0))"
+                            ?title 
+                            ?operation))
+             (build (format nil
+                            "(defmethod %s ((?dest INTEGER) (?src0 INTEGER)) (%s (stack-operation ?dest) (stack-operation ?src0)))"
+                            ?stack-title
+                            ?title))
+             (build (format nil
+                            "(defmethod %s ((?stack INTEGER)) (%s ?stack ?stack))"
+                            ?stack-title
+                            ?stack-title)))
+
+(map build-specific-operation-three-arg 
+     Add
+     Sub
+     Mul
+     Div
+     Rem
+     ShiftLeft
+     ShiftRight
+     BinaryAnd
+     BinaryOr
+     BinaryXor
+     AddImmediate
+     SubImmediate
+     MulImmediate
+     DivImmediate
+     RemImmediate
+     ShiftLeftImmediate
+     ShiftRightImmediate
+     Eq
+     EqImmediate
+     Neq
+     NeqImmediate
+     LessThan
+     LessThanImmediate
+     GreaterThan
+     GreaterThanImmediate
+     LessThanOrEqualTo
+     LessThanOrEqualToImmediate
+     GreaterThanOrEqualTo
+     GreaterThanOrEqualToImmediate
+     BinaryAndImmediate
+     BinaryOrImmediate
+     BinaryXorImmediate
+     BinaryNand
+     BinaryNandImmediate)
 
