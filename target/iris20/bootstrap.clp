@@ -511,6 +511,7 @@
 (defmethod label
   ((?title SYMBOL))
   ?title)
+;--------------------------------------------------------------------------------
 (deffunction stack-init-code
              ()
              (create$ (set64 (register:stack-pointer-bottom)
@@ -525,5 +526,31 @@
                                       (register:call-stack-bottom)))
                       (set64 (register:call-stack-top)
                              ?*call-stack-top*)))
+(deffunction setup-start-end-pair
+             (?start ?start-addr ?end ?end-addr)
+             (create$ (set64 (register-operation ?start)
+                             ?start-addr)
+                      (set64 (register-operation ?end)
+                             ?end-addr)))
+
+(deffunction memory-block-code
+             ()
+             (create$ 
+               (setup-start-end-pair (register:memory-space0-start)
+                                     ?*memory0-start*
+                                     (register:memory-space0-end)
+                                     ?*memory0-end*)
+               (setup-start-end-pair (register:memory-space1-start)
+                                     ?*memory1-start*
+                                     (register:memory-space1-end)
+                                     ?*memory1-end*)
+               (setup-start-end-pair (register:code-start)
+                                     ?*code-start*
+                                     (register:code-end)
+                                     ?*code-end*)
+               (set64 (register-operation (register:address-table-base))
+                      ?*addr-table-begin*
+                      (move-op (register:address-table-pointer)
+                               (register:address-table-base)))))
 
 
