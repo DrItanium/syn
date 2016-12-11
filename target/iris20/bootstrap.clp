@@ -445,14 +445,14 @@
              (make-molecule (pop ?sp 
                                  (register-operation (temporary-register0)))
                             (store-op (temporary-register0)
-                                   (stack-operation ?sp))))
+                                      (stack-operation ?sp))))
 
 (deffunction stack-load
              (?sp ?dest)
              (make-molecule (pop ?sp 
                                  (register-operation ?dest))
                             (load-op (register-operation ?dest)
-                                  ?dest)))
+                                     ?dest)))
 
 (defgeneric set64)
 (defmethod set64
@@ -485,3 +485,38 @@
          (nop)))
 
 
+(defgeneric label)
+(defmethod label
+  ((?title SYMBOL))
+  ?title)
+(deffunction has-register-prefix
+             (?title)
+             (str-index "register-" 
+                        ?title))
+(deffunction build-register-operation
+             (?title)
+             (bind ?reg-len
+                   (str-length "register-"))
+             (build (format nil "(deffunction register:%s () ?*%s*)" 
+                            (sub-string (+ ?reg-len 1) (str-length ?title)
+                                        ?title)
+                            ?title)))
+
+(map build-register-operation
+     (expand$ (filter has-register-prefix
+                      (expand$ (get-defglobal-list MAIN)))))
+(loop-for-count (?i 0 63) do
+                (build (format nil 
+                               "(deffunction register:%s () %d)" 
+                               (sym-cat r ?i)
+                               ?i)))
+(deffunction register:
+             (?name)
+             (funcall (sym-cat register: ?name)))
+(deffunction stack-init-code
+ ()
+ (create$ (set64 (register:stack-bottom)
+                 ?*stack-bottom*
+                 (move (stack-pointer)
+                       (register:stack-bottom)))
+  (set64 
