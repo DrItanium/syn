@@ -44,6 +44,15 @@
            ?*register-temp5* = (- ?*register-count* 22)
            ?*register-temp6* = (- ?*register-count* 23))
 
+
+(deffunction temporary-register0 () ?*register-temp0*)
+(deffunction temporary-register1 () ?*register-temp1*)
+(deffunction temporary-register2 () ?*register-temp2*)
+(deffunction temporary-register3 () ?*register-temp3*)
+(deffunction temporary-register4 () ?*register-temp4*)
+(deffunction temporary-register5 () ?*register-temp5*)
+(deffunction temporary-register6 () ?*register-temp6*)
+
 (defgeneric output-bytes-to-router)
 (defmethod output-bytes-to-router
   ((?bytes MULTIFIELD)
@@ -317,7 +326,6 @@
                                                                                   ?dest)
                                                        ?i)))
 
-
 (map build-specific-operation-one-arg
      BranchUnconditionalRegister
      BranchUnconditionalRegisterLink)
@@ -369,4 +377,116 @@
      BranchIfThenElseLinkPredFalse
      BranchIfThenElseNormalPredTrue
      BranchIfThenElseNormalPredFalse)
+
+(deffunction push
+             (?sp ?value)
+             (move-op (stack-operation ?sp)
+                      ?value))
+(deffunction pop
+             (?sp ?dest)
+             (move-op ?dest
+                      (stack-operation ?sp)))
+
+(deffunction load
+             (?dest ?src)
+             (move-op ?dest
+                      (memory-operation ?src)))
+(deffunction store
+             (?dest ?src)
+             (move-op (memory-operation ?dest)
+                      ?src))
+(deffunction nop
+             ()
+             (swap-op 0 
+                      0))
+
+(defgeneric push16)
+(defmethod push16
+  ((?immediate INTEGER)
+   (?sp INTEGER))
+  (set16 (stack-operation ?sp)
+         ?immediate))
+(defmethod push16
+  ((?immediate INTEGER))
+  (push16 ?immediate
+          (stack-pointer)))
+(deffunction push16
+             (?sp ?immediate)
+             (set16 (stack-operation ?sp)
+                    ?immediate))
+
+(deffunction store16
+             (?address ?imm)
+             (set16 (memory-operation ?address)
+                    ?imm))
+
+(defgeneric increment)
+(defgeneric decrement)
+(defgeneric double)
+(defgeneric halve)
+
+(defmethod increment
+  ((?dest INTEGER)
+   (?src INTEGER))
+  (add-op ?dest ?src 1 TRUE))
+
+(defmethod decrement
+  ((?dest INTEGER)
+   (?src INTEGER))
+  (sub-op ?dest ?src 1 TRUE))
+
+(defmethod double
+  ((?dest INTEGER)
+   (?src INTEGER))
+  (mul-op ?dest ?src 2 TRUE))
+
+(defmethod halve
+  ((?dest INTEGER)
+   (?src INTEGER))
+  (div-op ?dest ?src 2 TRUE))
+
+(deffunction stack-store
+             (?sp)
+             (make-molecule (pop ?sp 
+                                 (register-operation (temporary-register0)))
+                            (store (temporary-register0)
+                                   (stack-operation ?sp))))
+
+(deffunction stack-load
+             (?sp ?dest)
+             (make-molecule (pop ?sp 
+                                 (register-operation ?dest))
+                            (load (register-operation ?dest)
+                                  ?dest)))
+
+(defgeneric set64)
+(defmethod set64
+  ((?dest INTEGER)
+   (?value INTEGER)
+   (?left-over INTEGER))
+  (create$ (make-molecule (set16 (register-operation (temporary-register0))
+                                 (decode-bits ?value 
+                                              (hex->int 0xFFFF000000000000)
+                                              48))
+                          (shiftleft-op (register-operation (temporary-register0))
+                                        (register-operation (temporary-register0))
+                                        48
+                                        TRUE))
+           (set48 ?dest 
+                  (decode-bits ?value
+                               (hex->int 0x0000FFFFFFFFFFFF)
+                               0))
+           (make-molecule (add-op ?dest 
+                                  ?dest 
+                                  (temporary-register0)
+                                  FALSE)
+                          ?left-over)))
+
+(defmethod set64
+  ((?dest INTEGER)
+   (?value INTEGER))
+  (set64 ?dest
+         ?value
+         (nop)))
+
 
