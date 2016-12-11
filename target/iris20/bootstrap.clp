@@ -44,9 +44,24 @@
            ?*register-temp5* = (- ?*register-count* 22)
            ?*register-temp6* = (- ?*register-count* 23))
 
+(defgeneric output-bytes-to-router)
+(defmethod output-bytes-to-router
+  ((?bytes MULTIFIELD)
+   (?router SYMBOL))
+  (progn$ (?byte ?bytes)
+          (put-char ?router
+                    ?byte)))
+(defmethod output-bytes-to-router
+  ((?bytes MULTIFIELD))
+  (output-bytes-to-router ?bytes
+                          t))
 
 
-
+(deffunction output-bytes-to-file
+             (?bytes ?router)
+             (progn$ (?byte ?bytes) 
+                     (put-char ?router 
+                               ?byte)))
 
 (defgeneric molecule)
 (defgeneric return-from-register)
