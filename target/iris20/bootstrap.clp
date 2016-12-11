@@ -44,7 +44,32 @@
            ?*register-temp5* = (- ?*register-count* 22)
            ?*register-temp6* = (- ?*register-count* 23))
 
-
+(defclass register
+  (is-a USER)
+  (slot index 
+        (type INTEGER)
+        (storage local)
+        (visibility public)
+        (default ?NONE))
+  (slot action 
+        (type SYMBOL)
+        (allowed-symbols Register
+                         Stack
+                         Memory)
+        (visibility public)
+        (storage local))
+  (message-handler get-value primary))
+(deffunction make-register
+             (?title ?index)
+             (make-instance (sym-cat ?title) of register 
+                            (index ?index) 
+                            (action Register))
+             (make-instance (sym-cat stack: ?title) of register
+                            (index ?index)
+                            (action Stack))
+             (make-instance (sym-cat memory: ?title) of register
+                            (index ?index)
+                            (action Memory)))
 (deffunction temporary-register0 () ?*register-temp0*)
 (deffunction temporary-register1 () ?*register-temp1*)
 (deffunction temporary-register2 () ?*register-temp2*)
@@ -52,7 +77,24 @@
 (deffunction temporary-register4 () ?*register-temp4*)
 (deffunction temporary-register5 () ?*register-temp5*)
 (deffunction temporary-register6 () ?*register-temp6*)
-
+; setup the initial registers
+(loop-for-count (?i 0 63) do
+                (make-register (sym-cat r ?i)
+                               ?i))
+(make-register temp0 
+               (temporary-register0))
+(make-register temp1 
+               (temporary-register1))
+(make-register temp2 
+               (temporary-register2))
+(make-register temp3 
+               (temporary-register3))
+(make-register temp4 
+               (temporary-register4))
+(make-register temp5 
+               (temporary-register5))
+(make-register temp6 
+               (temporary-register6))
 (defgeneric output-bytes-to-router)
 (defmethod output-bytes-to-router
   ((?bytes MULTIFIELD)
@@ -82,6 +124,13 @@
 (deffunction link-register () ?*register-lr*)
 (deffunction instruction-pointer () ?*register-ip*)
 (deffunction stack-pointer () ?*register-sp*)
+(make-register lr
+               (link-register))
+(make-register ip
+               (instruction-pointer))
+(make-register sp
+               (stack-pointer))
+
 (deffunction enum->int
              (?symbol ?collection)
              (- (member$ ?symbol
@@ -95,15 +144,15 @@
              (enum->int ?id
                         ?*iris20-enumOperation*))
 
-(deffunction construct-register-operation
-             "Tag the type of operation to perform on the given register index"
-             (?action ?index)
-             (iris20-encode-SectionDescriptor (iris20-encode-SectionIndex 0 
-                                                                          ?index)
-                                              (section-descriptor->int ?action)))
-(deffunction stack-operation (?i) (construct-register-operation Stack ?i))
-(deffunction register-operation (?i) (construct-register-operation Register ?i))
-(deffunction memory-operation (?i) (construct-register-operation Memory ?i))
+(deffunction stack-operation (?i) (symbol-to-instance-name (sym-cat stack: ?i)))
+(deffunction register-operation (?i) (symbol-to-instance-name (sym-cat ?i)))
+(deffunction memory-operation (?i) (symbol-to-instance-name (sym-cat memory: ?i)))
+
+(defmessage-handler register get-value primary
+                    ()
+                    (iris20-encode-SectionDescriptor (iris20-encode-SectionIndex 0 
+                                                                                 ?self:index)
+                                                     (section-descriptor->int ?self:action)))
 
 (defmethod make-molecule-instruction
   ((?operation SYMBOL))
@@ -112,25 +161,25 @@
 
 (defmethod make-molecule-instruction
   ((?operation SYMBOL)
-   (?destination INTEGER))
+   (?destination register))
   (iris20-encode-MoleculeDestination (make-molecule-instruction ?operation)
-                                     ?destination))
+                                     (send ?destination get-value)))
 (defmethod make-molecule-instruction
   ((?operation SYMBOL)
-   (?dest INTEGER)
-   (?src0 INTEGER))
+   (?dest register)
+   (?src0 register))
   (iris20-encode-MoleculeSource0 (make-molecule-instruction ?operation
                                                             ?dest)
-                                 ?src0))
+                                 (send ?src0 get-value)))
 (defmethod make-molecule-instruction
   ((?operation SYMBOL)
-   (?dest INTEGER)
-   (?src0 INTEGER)
-   (?src1 INTEGER))
+   (?dest register)
+   (?src0 register)
+   (?src1 register))
   (iris20-encode-MoleculeSource1 (make-molecule-instruction ?operation
                                                             ?dest
                                                             ?src0)
-                                 ?src1))
+                                 (send ?src1 get-value)))
 
 (defmethod make-atom
   ((?operation SYMBOL))
@@ -139,16 +188,16 @@
 
 (defmethod make-atom
   ((?operation SYMBOL)
-   (?destination INTEGER))
+   (?destination register))
   (iris20-encode-Destination (make-atom ?operation)
-                             ?destination))
+                             (send ?destination get-value)))
 (defmethod make-atom
   ((?operation SYMBOL)
-   (?dest INTEGER)
-   (?src0 INTEGER))
+   (?dest register)
+   (?src0 register))
   (iris20-encode-Source0 (make-atom ?operation
                                     ?dest)
-                         ?src0))
+                         (send ?src0 get-value)))
 (defmethod make-atom
   ((?operation SYMBOL)
    (?dest INTEGER)

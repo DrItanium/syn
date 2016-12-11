@@ -45,17 +45,46 @@
              (bind ?m 
                    (str-cat (potential-convert ?mask)))
              (bind ?s
-              (str-cat (potential-convert ?shift)))
-             (format t "(deffunction %s-decode-%s (?value) (decode-bits ?value %s %s))%n"
-                     ?n
-                     ?name
+                   (str-cat (potential-convert ?shift)))
+             (bind ?base-name
+                   (format nil
+                           "%s-%%s-%s"
+                           ?n
+                           ?name))
+             (bind ?encode-name
+                   (format nil
+                           ?base-name
+                           encode))
+             (bind ?decode-name 
+                   (format nil 
+                           ?base-name
+                           decode))
+
+             (format t 
+                     "(defgeneric %s)%n(defgeneric %s)%n"
+                     ?encode-name
+                     ?decode-name)
+             (format t 
+                     "(defmethod %s 
+                        ((?value INTEGER))
+                        (decode-bits ?value
+                                     %s
+                                     %s))%n"
+                     ?decode-name
                      ?m
                      ?s)
-             (format t "(deffunction %s-encode-%s (?value ?field) (encode-bits ?value ?field %s %s))%n"
-                     ?n
-                     ?name
+             (format t
+                     "(defmethod %s
+                        ((?value INTEGER)
+                         (?field INTEGER))
+                        (encode-bits ?value
+                                     ?field
+                                     %s
+                                     %s))%n"
+                     ?encode-name
                      ?m
                      ?s))
+
 
 
 
