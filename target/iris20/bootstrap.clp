@@ -220,7 +220,102 @@
                             ?stack-title
                             ?stack-title)))
 
+(deffunction build-specific-operation-one-arg
+             (?operation)
+             (bind ?title
+                   (sym-cat (lowcase ?operation) 
+                            -op))
+             (bind ?stack-title
+                   (str-cat ?title 
+                            ":stack"))
+             (build (format nil 
+                            "(defgeneric %s)"
+                            ?title))
+             (build (format nil
+                            "(defgeneric %s)"
+                            ?stack-title))
+             (build (format nil
+                            "(defmethod %s ((?dest INTEGER)) (make-atom %s ?dest))"
+                            ?title 
+                            ?operation))
+             (build (format nil
+                            "(defmethod %s ((?dest INTEGER)) (%s (stack-operation ?dest)))"
+                            ?stack-title
+                            ?title))
+             )
+(deffunction make-link-version
+             (?op ?link)
+             (if ?link then (sym-cat ?op Link) else ?op))
+(deffunction branch-unconditional-immediate
+             (?address ?link)
+             (iris20-encode-Immediate (make-atom (make-link-version BranchUnconditionalImmediate 
+                                                                    ?link))
+                                      ?address))
+(deffunction branch-unconditional-immediate32
+             (?address ?link)
+             (make-molecule (iris20-encode-Immediate32 (make-molecule-instruction (make-link-version BranchUnconditionalImmediate32
+                                                                                                     ?link))
+                                                       ?address)))
+
+(deffunction branch-unconditional-immediate48
+             (?address ?link)
+             (make-molecule (iris20-encode-Immediate48 (make-molecule-instruction (make-link-version BranchUnconditionalImmediate48
+                                                                                                     ?link))
+                                                       ?address)))
+
+(deffunction branch-conditional-immediate32
+             (?dest ?address ?check-false ?link)
+             (bind ?base-op
+                   (if ?check-false then
+                     BranchConditionalFalseImmediate32
+                     else
+                     BranchConditionalTrueImmediate32))
+             (make-molecule (iris20-encode-Immediate32 (make-molecule-instruction (make-link-version ?base-op
+                                                                                                     ?link)
+                                                                                  ?dest)
+                                                       ?address)))
+(deffunction branch-conditional-immediate48
+             (?dest ?address ?check-false ?link)
+             (bind ?base-op
+                   (if ?check-false then
+                     BranchConditionalFalseImmediate48
+                     else
+                     BranchConditionalTrueImmediate48))
+             (make-molecule (iris20-encode-Immediate48 (make-molecule-instruction (make-link-version ?base-op
+                                                                                                     ?link)
+                                                                                  ?dest)
+                                                       ?address)))
+(deffunction set16
+             (?dest ?i)
+             (iris20-encode-Immediate (make-atom Set16
+                                                 ?dest)
+                                      ?i))
+(deffunction set32
+             (?dest ?i)
+             (make-molecule (iris20-encode-Immediate32 (make-molecule-instruction Set32
+                                                                                  ?dest)
+                                                       ?i)))
+
+(deffunction set48
+             (?dest ?i)
+             (make-molecule (iris20-encode-Immediate48 (make-molecule-instruction Set48
+                                                                                  ?dest)
+                                                       ?i)))
+
+
+(map build-specific-operation-one-arg
+     BranchUnconditionalRegister
+     BranchUnconditionalRegisterLink)
+(map build-specific-operation-two-arg
+     Move
+     Swap
+     BinaryNot
+     BranchConditionalTrueRegister
+     BranchConditionalFalseRegister
+     BranchConditionalTrueRegisterLink
+     BranchConditionalFalseRegisterLink)
 (map build-specific-operation-three-arg 
+     SystemCall
      Add
      Sub
      Mul
@@ -254,5 +349,9 @@
      BinaryOrImmediate
      BinaryXorImmediate
      BinaryNand
-     BinaryNandImmediate)
+     BinaryNandImmediate
+     BranchIfThenElseLinkPredTrue
+     BranchIfThenElseLinkPredFalse
+     BranchIfThenElseNormalPredTrue
+     BranchIfThenElseNormalPredFalse)
 
