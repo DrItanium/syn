@@ -561,3 +561,60 @@
            (make-molecule ?single-atom
                           (return-from-stack (stack-pointer)))))
 
+(defgeneric stack-func)
+(defmethod stack-func
+  ((?title SYMBOL)
+   (?operation SYMBOL)
+   (?sp INTEGER))
+  (func ?title
+        (funcall (sym-cat ?operation -op:stack)
+                 ?sp)))
+(defmethod stack-func
+  ((?title SYMBOL)
+   (?operation SYMBOL))
+  (stack-func ?title 
+              ?operation
+              (stack-pointer)))
+(defmethod stack-func
+  ((?title SYMBOL))
+  (stack-func ?title
+              ?title))
+
+
+
+(deffunction setup-simple-funcs
+             ()
+             (create$ (map stack-func
+                           eq
+                           neq
+                           add
+                           sub
+                           div
+                           rem)
+                      (stack-func shift-left
+                                  shiftleft)
+                      (stack-func shift-right
+                                  shiftright)
+                      (stack-func lt
+                                  lessthan)
+                      (stack-func gt
+                                  greaterthan)
+                      (stack-func le
+                                  lessthanorequalto)
+                      (stack-func ge
+                                  greaterthanorequalto)
+                      (func incr
+                            (increment-op (stack-operation (stack-pointer))
+                                          (stack-operation (stack-pointer))))
+                      (func decr
+                            (decrement-op (stack-operation (stack-pointer))
+                                          (stack-operation (stack-pointer))))
+                      (func halve
+                            (halve (stack-operation (stack-pointer))
+                                   (stack-operation (stack-pointer))))
+                      (func double
+                            (double (stack-operation (stack-pointer))
+                                    (stack-operation (stack-pointer))))))
+
+
+
