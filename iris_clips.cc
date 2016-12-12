@@ -529,7 +529,7 @@ namespace iris {
 			auto env = UDFContextEnvironment(context);
 			auto integer = CVToInteger(&number);
 			using IType = decltype(integer);
-			byte container[sizeof(IType)];
+			byte container[sizeof(IType)] = { 0 };
 			iris::decodeInt64LE(integer, container);
 			ret->type = MULTIFIELD;
 			ret->begin = 0;

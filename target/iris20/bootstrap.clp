@@ -580,6 +580,17 @@
   (stack-func ?title
               ?title))
 
+(deffunction setup-read-eval-print-loop
+             ()
+             (create$ (make-molecule (add-op (memory-operation (register:address-table-base))
+                                             (register-operation (instruction-pointer))
+                                             1
+                                             TRUE)
+                                     (nop))
+                      (label EvalBase)
+                      ; loop body goes here
+                      (make-molecule (nop)
+                                     (return-from-memory (register:address-table-base)))))
 
 
 (deffunction setup-simple-funcs
@@ -617,4 +628,24 @@
                                     (stack-operation (stack-pointer))))))
 
 
+(deffunction labelp (?l) (symbolp ?l))
+(deffunction moleculep (?m) (integerp ?m))
+
+(deffunction transmute-list
+             (?input)
+             (if (labelp ?input) then 
+               label
+               else
+               (if (moleculep ?input) then
+                 molecule
+                 else
+                 unknown)))
+(deffunction strip-label
+             (?input)
+             (if (labelp ?input) then (create$) else ?input))
+
+(deffunction strip-labels
+             (?input)
+             (map strip-label
+                  (expand$ ?input)))
 
