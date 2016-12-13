@@ -527,261 +527,261 @@
 ;
 ;                                                      )
 
-                                (deffunction push
-                                             (?sp ?value)
-                                             (move-op (stack-operation ?sp)
-                                                      ?value))
-                                (deffunction pop
-                                             (?sp ?dest)
-                                             (move-op ?dest
-                                                      (stack-operation ?sp)))
+(deffunction push
+             (?sp ?value)
+             (move-op (stack-operation ?sp)
+                      ?value))
+(deffunction pop
+             (?sp ?dest)
+             (move-op ?dest
+                      (stack-operation ?sp)))
 
-                                (deffunction load-op
-                                             (?dest ?src)
-                                             (move-op ?dest
-                                                      (memory-operation ?src)))
-                                (deffunction store-op
-                                             (?dest ?src)
-                                             (move-op (memory-operation ?dest)
-                                                      ?src))
-                                (deffunction nop
-                                             ()
-                                             (swap-op (register:r0)
-                                                      (register:r0)))
+(deffunction load-op
+             (?dest ?src)
+             (move-op ?dest
+                      (memory-operation ?src)))
+(deffunction store-op
+             (?dest ?src)
+             (move-op (memory-operation ?dest)
+                      ?src))
+(deffunction nop
+             ()
+             (swap-op (register:r0)
+                      (register:r0)))
 
-                                (defgeneric push16)
-                                (defmethod push16
-                                  ((?immediate INTEGER)
-                                   (?sp INTEGER))
-                                  (set16 (stack-operation ?sp)
-                                         ?immediate))
-                                (defmethod push16
-                                  ((?immediate INTEGER))
-                                  (push16 ?immediate
-                                          (stack-pointer)))
+(defgeneric push16)
+(defmethod push16
+  ((?immediate INTEGER)
+   (?sp INTEGER))
+  (set16 (stack-operation ?sp)
+         ?immediate))
+(defmethod push16
+  ((?immediate INTEGER))
+  (push16 ?immediate
+          (stack-pointer)))
 
-                                (deffunction store16
-                                             (?address ?imm)
-                                             (set16 (memory-operation ?address)
-                                                    ?imm))
+(deffunction store16
+             (?address ?imm)
+             (set16 (memory-operation ?address)
+                    ?imm))
 
-                                (defgeneric increment-op)
-                                (defgeneric decrement-op)
-                                (defgeneric double)
-                                (defgeneric halve)
+(defgeneric increment-op)
+(defgeneric decrement-op)
+(defgeneric double)
+(defgeneric halve)
 
-                                (defmethod increment-op
-                                  ((?dest INTEGER)
-                                   (?src INTEGER))
-                                  (add-op ?dest ?src 1 TRUE))
+(defmethod increment-op
+  ((?dest INTEGER)
+   (?src INTEGER))
+  (add-op ?dest ?src 1 TRUE))
 
-                                (defmethod decrement-op
-                                  ((?dest INTEGER)
-                                   (?src INTEGER))
-                                  (sub-op ?dest ?src 1 TRUE))
+(defmethod decrement-op
+  ((?dest INTEGER)
+   (?src INTEGER))
+  (sub-op ?dest ?src 1 TRUE))
 
-                                (defmethod double
-                                  ((?dest INTEGER)
-                                   (?src INTEGER))
-                                  (mul-op ?dest ?src 2 TRUE))
+(defmethod double
+  ((?dest INTEGER)
+   (?src INTEGER))
+  (mul-op ?dest ?src 2 TRUE))
 
-                                (defmethod halve
-                                  ((?dest INTEGER)
-                                   (?src INTEGER))
-                                  (div-op ?dest ?src 2 TRUE))
+(defmethod halve
+  ((?dest INTEGER)
+   (?src INTEGER))
+  (div-op ?dest ?src 2 TRUE))
 
-                                (deffunction stack-store
-                                             (?sp)
-                                             (bind ?rtemp0
-                                                   (register-operation (register:temp0)))
-                                             (make-word (pop ?sp
-                                                             ?rtemp0)
-                                                        (store-op ?rtemp0
-                                                                  (stack-operation ?sp))))
+(deffunction stack-store
+             (?sp)
+             (bind ?rtemp0
+                   (register-operation (register:temp0)))
+             (make-word (pop ?sp
+                             ?rtemp0)
+                        (store-op ?rtemp0
+                                  (stack-operation ?sp))))
 
-                                (deffunction stack-load
-                                             (?sp ?dest)
-                                             (make-word (pop ?sp
-                                                             (register-operation ?dest))
-                                                        (load-op (register-operation ?dest)
-                                                                 ?dest)))
+(deffunction stack-load
+             (?sp ?dest)
+             (make-word (pop ?sp
+                             (register-operation ?dest))
+                        (load-op (register-operation ?dest)
+                                 ?dest)))
 
-                                (defgeneric set64)
-                                (defmethod set64
-                                  ((?dest INTEGER)
-                                   (?value INTEGER)
-                                   (?left-over INTEGER))
-                                  (bind ?rtemp0
-                                        (register-operation (register:temp0)))
-                                  (create$ (make-word (set16 ?rtemp0
-                                                             (decode-bits ?value
-                                                                          (hex->int 0xFFFF000000000000)
-                                                                          48))
-                                                      (shiftleft-op ?rtemp0
-                                                                    ?rtemp0
-                                                                    48
-                                                                    TRUE))
-                                           (set48 ?dest
-                                                  (decode-bits ?value
-                                                               (hex->int 0x0000FFFFFFFFFFFF)
-                                                               0))
-                                           (make-word (add-op ?dest
-                                                              ?dest
-                                                              ?rtemp0
-                                                              FALSE)
-                                                      ?left-over)))
+(defgeneric set64)
+(defmethod set64
+  ((?dest INTEGER)
+   (?value INTEGER)
+   (?left-over INTEGER))
+  (bind ?rtemp0
+        (register-operation (register:temp0)))
+  (create$ (make-word (set16 ?rtemp0
+                             (decode-bits ?value
+                                          (hex->int 0xFFFF000000000000)
+                                          48))
+                      (shiftleft-op ?rtemp0
+                                    ?rtemp0
+                                    48
+                                    TRUE))
+           (set48 ?dest
+                  (decode-bits ?value
+                               (hex->int 0x0000FFFFFFFFFFFF)
+                               0))
+           (make-word (add-op ?dest
+                              ?dest
+                              ?rtemp0
+                              FALSE)
+                      ?left-over)))
 
-                                (defmethod set64
-                                  ((?dest INTEGER)
-                                   (?value INTEGER))
-                                  (set64 ?dest
-                                         ?value
-                                         (nop)))
-
-
-                                ;--------------------------------------------------------------------------------
-                                (deffunction stack-init-code
-                                             ()
-                                             (create$ (set64 (register:stack-pointer-bottom)
-                                                             ?*stack-bottom*
-                                                             (move-op (stack-pointer)
-                                                                      (register:stack-pointer-bottom)))
-                                                      (set64 (register:stack-pointer-top)
-                                                             ?*stack-top*)
-                                                      (set64 (register:call-stack-bottom)
-                                                             ?*call-stack-bottom*
-                                                             (move-op (register:call-stack-pointer)
-                                                                      (register:call-stack-bottom)))
-                                                      (set64 (register:call-stack-top)
-                                                             ?*call-stack-top*)))
-                                (deffunction setup-start-end-pair
-                                             (?start ?start-addr ?end ?end-addr)
-                                             (create$ (set64 (register-operation ?start)
-                                                             ?start-addr)
-                                                      (set64 (register-operation ?end)
-                                                             ?end-addr)))
-
-                                (deffunction memory-block-code
-                                             ()
-                                             (create$
-                                               (setup-start-end-pair (register:memory-space0-start)
-                                                                     ?*memory0-start*
-                                                                     (register:memory-space0-end)
-                                                                     ?*memory0-end*)
-                                               (setup-start-end-pair (register:memory-space1-start)
-                                                                     ?*memory1-start*
-                                                                     (register:memory-space1-end)
-                                                                     ?*memory1-end*)
-                                               (setup-start-end-pair (register:code-start)
-                                                                     ?*code-start*
-                                                                     (register:code-end)
-                                                                     ?*code-end*)
-                                               (set64 (register-operation (register:address-table-base))
-                                                      ?*addr-table-begin*
-                                                      (move-op (register:address-table-pointer)
-                                                               (register:address-table-base)))))
-
-                                (defgeneric func)
-                                (defmethod func
-                                  ((?title SYMBOL)
-                                   (?single-atom INTEGER))
-                                  (create$ (.label ?title)
-                                           (make-word ?single-atom
-                                                      (return-from-register (link-register)))))
-
-                                (defgeneric stack-func)
-                                (defmethod stack-func
-                                  ((?title SYMBOL)
-                                   (?operation SYMBOL)
-                                   (?sp INTEGER))
-                                  (func ?title
-                                        (funcall (sym-cat ?operation -op:stack)
-                                                 ?sp)))
-                                (defmethod stack-func
-                                  ((?title SYMBOL)
-                                   (?operation SYMBOL))
-                                  (stack-func ?title
-                                              ?operation
-                                              (stack-pointer)))
-                                (defmethod stack-func
-                                  ((?title SYMBOL))
-                                  (stack-func ?title
-                                              ?title))
-
-                                (deffunction setup-read-eval-print-loop
-                                             ()
-                                             (create$ (make-word (add-op (memory-operation (register:address-table-base))
-                                                                         (register-operation (instruction-pointer))
-                                                                         1
-                                                                         TRUE)
-                                                                 (nop))
-                                                      (.label EvalBase)
-                                                      ; loop body goes here
-                                                      (make-word (nop)
-                                                                 (return-from-memory (register:address-table-base)))))
+(defmethod set64
+  ((?dest INTEGER)
+   (?value INTEGER))
+  (set64 ?dest
+         ?value
+         (nop)))
 
 
-                                (deffunction setup-simple-funcs
-                                             ()
-                                             (create$ (map stack-func
-                                                           eq
-                                                           neq
-                                                           add
-                                                           sub
-                                                           div
-                                                           rem)
-                                                      (stack-func shift-left
-                                                                  shiftleft)
-                                                      (stack-func shift-right
-                                                                  shiftright)
-                                                      (stack-func lt
-                                                                  lessthan)
-                                                      (stack-func gt
-                                                                  greaterthan)
-                                                      (stack-func le
-                                                                  lessthanorequalto)
-                                                      (stack-func ge
-                                                                  greaterthanorequalto)
-                                                      (func incr
-                                                            (increment-op (stack-operation (stack-pointer))
-                                                                          (stack-operation (stack-pointer))))
-                                                      (func decr
-                                                            (decrement-op (stack-operation (stack-pointer))
-                                                                          (stack-operation (stack-pointer))))
-                                                      (func halve
-                                                            (halve (stack-operation (stack-pointer))
-                                                                   (stack-operation (stack-pointer))))
-                                                      (func double
-                                                            (double (stack-operation (stack-pointer))
-                                                                    (stack-operation (stack-pointer))))))
+;--------------------------------------------------------------------------------
+(deffunction stack-init-code
+             ()
+             (create$ (set64 (register:stack-pointer-bottom)
+                             ?*stack-bottom*
+                             (move-op (stack-pointer)
+                                      (register:stack-pointer-bottom)))
+                      (set64 (register:stack-pointer-top)
+                             ?*stack-top*)
+                      (set64 (register:call-stack-bottom)
+                             ?*call-stack-bottom*
+                             (move-op (register:call-stack-pointer)
+                                      (register:call-stack-bottom)))
+                      (set64 (register:call-stack-top)
+                             ?*call-stack-top*)))
+(deffunction setup-start-end-pair
+             (?start ?start-addr ?end ?end-addr)
+             (create$ (set64 (register-operation ?start)
+                             ?start-addr)
+                      (set64 (register-operation ?end)
+                             ?end-addr)))
+
+(deffunction memory-block-code
+             ()
+             (create$
+               (setup-start-end-pair (register:memory-space0-start)
+                                     ?*memory0-start*
+                                     (register:memory-space0-end)
+                                     ?*memory0-end*)
+               (setup-start-end-pair (register:memory-space1-start)
+                                     ?*memory1-start*
+                                     (register:memory-space1-end)
+                                     ?*memory1-end*)
+               (setup-start-end-pair (register:code-start)
+                                     ?*code-start*
+                                     (register:code-end)
+                                     ?*code-end*)
+               (set64 (register-operation (register:address-table-base))
+                      ?*addr-table-begin*
+                      (move-op (register:address-table-pointer)
+                               (register:address-table-base)))))
+
+(defgeneric func)
+(defmethod func
+  ((?title SYMBOL)
+   (?single-atom INTEGER))
+  (create$ (.label ?title)
+           (make-word ?single-atom
+                      (return-from-register (link-register)))))
+
+(defgeneric stack-func)
+(defmethod stack-func
+  ((?title SYMBOL)
+   (?operation SYMBOL)
+   (?sp INTEGER))
+  (func ?title
+        (funcall (sym-cat ?operation -op:stack)
+                 ?sp)))
+(defmethod stack-func
+  ((?title SYMBOL)
+   (?operation SYMBOL))
+  (stack-func ?title
+              ?operation
+              (stack-pointer)))
+(defmethod stack-func
+  ((?title SYMBOL))
+  (stack-func ?title
+              ?title))
+
+(deffunction setup-read-eval-print-loop
+             ()
+             (create$ (make-word (add-op (memory-operation (register:address-table-base))
+                                         (register-operation (instruction-pointer))
+                                         1
+                                         TRUE)
+                                 (nop))
+                      (.label EvalBase)
+                      ; loop body goes here
+                      (make-word (nop)
+                                 (return-from-memory (register:address-table-base)))))
 
 
-                                (deffunction labelp
-                                             (?l)
-                                             (and (instancep ?l)
-                                                  (eq (class ?l)
-                                                      label)))
-                                (deffunction wordp
-                                             (?m)
-                                             (integerp ?m))
+(deffunction setup-simple-funcs
+             ()
+             (create$ (map stack-func
+                           eq
+                           neq
+                           add
+                           sub
+                           div
+                           rem)
+                      (stack-func shift-left
+                                  shiftleft)
+                      (stack-func shift-right
+                                  shiftright)
+                      (stack-func lt
+                                  lessthan)
+                      (stack-func gt
+                                  greaterthan)
+                      (stack-func le
+                                  lessthanorequalto)
+                      (stack-func ge
+                                  greaterthanorequalto)
+                      (func incr
+                            (increment-op (stack-operation (stack-pointer))
+                                          (stack-operation (stack-pointer))))
+                      (func decr
+                            (decrement-op (stack-operation (stack-pointer))
+                                          (stack-operation (stack-pointer))))
+                      (func halve
+                            (halve (stack-operation (stack-pointer))
+                                   (stack-operation (stack-pointer))))
+                      (func double
+                            (double (stack-operation (stack-pointer))
+                                    (stack-operation (stack-pointer))))))
 
-                                (deffunction transmute-list
-                                             (?input)
-                                             (if (labelp ?input) then
-                                               label
-                                               else
-                                               (if (wordp ?input) then
-                                                 word
-                                                 else
-                                                 unknown)))
-                                (deffunction strip-label
-                                             (?input)
-                                             (if (labelp ?input) then (create$) else ?input))
 
-                                (deffunction strip-labels
-                                             (?input)
-                                             (map strip-label
-                                                  (expand$ ?input)))
-                                (deffunction compute-address
-                                             (?input)
-                                             (length$ (strip-labels ?input)))
+(deffunction labelp
+             (?l)
+             (and (instancep ?l)
+                  (eq (class ?l)
+                      label)))
+(deffunction wordp
+             (?m)
+             (integerp ?m))
+
+(deffunction transmute-list
+             (?input)
+             (if (labelp ?input) then
+               label
+               else
+               (if (wordp ?input) then
+                 word
+                 else
+                 unknown)))
+(deffunction strip-label
+             (?input)
+             (if (labelp ?input) then (create$) else ?input))
+
+(deffunction strip-labels
+             (?input)
+             (map strip-label
+                  (expand$ ?input)))
+(deffunction compute-address
+             (?input)
+             (length$ (strip-labels ?input)))
