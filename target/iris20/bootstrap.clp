@@ -3,19 +3,19 @@
            ?*space-size* = (hex->int 0x00FFFFFF)
            ?*half-space* = (div ?*space-size* 2)
            ?*stack-bottom* = ?*addr-max*
-           ?*stack-top* = (- ?*stack-bottom* 
+           ?*stack-top* = (- ?*stack-bottom*
                              ?*half-space*)
            ?*call-stack-bottom* = (- ?*stack-top* 1)
-           ?*call-stack-top* = (- ?*call-stack-bottom* 
+           ?*call-stack-top* = (- ?*call-stack-bottom*
                                   ?*half-space*)
            ?*memory1-end* = (- ?*stack-top* 1)
-           ?*memory1-start* = (- ?*memory1-end* 
+           ?*memory1-start* = (- ?*memory1-end*
                                  ?*space-size*)
            ?*memory0-end* = (- ?*memory1-start* 1)
            ?*memory0-start* = (- ?*memory0-end*
                                  ?*space-size*)
            ?*addr-table-end* = (- ?*memory0-start* 1)
-           ?*addr-table-begin* = (- ?*addr-table-end* 
+           ?*addr-table-begin* = (- ?*addr-table-end*
                                     (hex->int 0xFFFF))
            ?*code-end* = (- ?*addr-table-begin* 1)
            ?*code-start* = 0
@@ -49,13 +49,13 @@
 (deffunction stack-pointer () ?*register-sp*)
 (deffunction has-register-prefix
              (?title)
-             (str-index "register-" 
+             (str-index "register-"
                         ?title))
 (deffunction build-register-operation
              (?title)
              (bind ?reg-len
                    (str-length "register-"))
-             (build (format nil "(deffunction register:%s () ?*%s*)" 
+             (build (format nil "(deffunction register:%s () ?*%s*)"
                             (sub-string (+ ?reg-len 1) (str-length ?title)
                                         ?title)
                             ?title)))
@@ -64,8 +64,8 @@
      (expand$ (filter has-register-prefix
                       (expand$ (get-defglobal-list MAIN)))))
 (loop-for-count (?i 0 63) do
-                (build (format nil 
-                               "(deffunction register:%s () %d)" 
+                (build (format nil
+                               "(deffunction register:%s () %d)"
                                (sym-cat r ?i)
                                ?i)))
 (deffunction register:
@@ -88,15 +88,14 @@
 
 (deffunction output-bytes-to-file
              (?bytes ?router)
-             (progn$ (?byte ?bytes) 
-                     (put-char ?router 
+             (progn$ (?byte ?bytes)
+                     (put-char ?router
                                ?byte)))
 
-(defgeneric molecule)
 (defgeneric return-from-register)
 (defgeneric make-atom)
-(defgeneric make-molecule-instruction)
 (defgeneric make-molecule)
+(defgeneric make-word)
 (defgeneric return-from-stack)
 
 (deffunction enum->int
@@ -105,7 +104,7 @@
                          ?collection) 1))
 (deffunction section-descriptor->int
              (?symbol)
-             (enum->int ?symbol 
+             (enum->int ?symbol
                         ?*iris20-enumSectionType*))
 (deffunction operation->int
              (?id)
@@ -115,7 +114,7 @@
 (deffunction construct-register-operation
              "Tag the type of operation to perform on the given register index"
              (?action ?index)
-             (iris20-encode-SectionDescriptor (iris20-encode-SectionIndex 0 
+             (iris20-encode-SectionDescriptor (iris20-encode-SectionIndex 0
                                                                           ?index)
                                               (section-descriptor->int ?action)))
 (deffunction stack-operation (?i) (construct-register-operation Stack ?i))
@@ -124,7 +123,7 @@
 
 (defmethod make-molecule-instruction
   ((?operation SYMBOL))
-  (iris20-encode-MoleculeOperation 0 
+  (iris20-encode-MoleculeOperation 0
                                    (operation->int ?operation)))
 
 (defmethod make-molecule-instruction
@@ -175,17 +174,78 @@
                                     ?dest
                                     ?src0)
                          ?src1))
-(defmethod make-molecule
+
+(defclass label
+  (is-a USER)
+  (slot title
+        (type SYMBOL)
+        (visibility public)
+        (storage local)
+        (default ?NONE))
+  (slot address
+        (type SYMBOL
+              INTEGER)
+        (allowed-symbols FALSE)
+        (range 0 ?VARIABLE)
+        (visibility public)
+        (storage local)
+        (default-dynamic FALSE)))
+
+(defgeneric .label)
+(defmethod .label
+  ((?title SYMBOL))
+  (make-instance of label
+                 (title ?title)))
+(defclass instruction
+  (is-a USER)
+  (role abstract)
+  (slot operation
+        (type SYMBOL)
+        (visibility public)
+        (storage local)
+        (default ?NONE))
+  (slot dest
+        (type INTEGER)
+        (visibility public)
+        (storage local)
+        (default ?NONE))
+  (slot src0
+        (type INTEGER)
+        (visibility public)
+        (storage local))
+  (slot src1
+        (type INTEGER)
+        (visibility public)
+        (storage local))
+  (slot immediate
+        (type INTEGER
+              INSTANCE)
+        (allowed-classes label)
+        (storage local)
+        (visibility public)
+        (default-dynamic 0))
+  (message-handler encode primary))
+(defclass atom
+  (is-a instruction)
+  (role concrete)
+  (pattern-match reactive)
+  (message-handler encode primary))
+;(defclass molecule
+;  (is-a instruction)
+;  (role concrete)
+;  (pattern-match reactive)))
+
+(defmethod make-word
   ((?first INTEGER)
    (?second INTEGER))
-  (iris20-encode-MoleculeContainsOneInstruction (iris20-encode-SecondAtom 
+  (iris20-encode-MoleculeContainsOneInstruction (iris20-encode-SecondAtom
                                                   (iris20-encode-FirstAtom 0
                                                                            ?first)
                                                   ?second)
                                                 0))
-(defmethod make-molecule
+(defmethod make-word
   ((?wide-instruction INTEGER))
-  (iris20-encode-MoleculeContainsOneInstruction ?wide-instruction 
+  (iris20-encode-MoleculeContainsOneInstruction ?wide-instruction
                                                 1))
 (defmethod return-instruction
   ((?register INTEGER))
@@ -206,24 +266,54 @@
 (deffunction return-to-link-register
              ()
              (return-to-register (link-register)))
+(defgeneric number-of-args)
+(defgeneric operation-to-call)
+(deffunction make-operation-to-call
+             (?symbol ?func)
+             (build (format nil
+                            "(defmethod operation-to-call ((?a SYMBOL (not (neq ?current-argument %s %s)))) %s)"
+                            ?symbol
+                            (lowcase ?symbol)
+                            ?func)))
+
+(deffunction immediatep
+             (?symbol)
+             (has-suffix ?symbol
+                         Immediate))
+(deffunction make-arg-count-function
+             (?op ?count)
+             (build (format nil
+                            "(defmethod number-of-args ((?a SYMBOL (not (neq ?current-argument %s %s)))) %d)"
+                            ?op
+                            (lowcase ?op)
+                            ?count)))
+
+(deffunction setoperationp
+             (?symbol)
+             (has-prefix ?symbol
+                         Set))
+
 (deffunction build-specific-operation-three-arg
              (?operation)
              (bind ?title
-                   (sym-cat (lowcase ?operation) 
+                   (sym-cat (lowcase ?operation)
                             -op))
              (bind ?stack-title
-                   (str-cat ?title 
+                   (str-cat ?title
                             ":stack"))
-             (build (format nil 
+             (build (format nil
                             "(defgeneric %s)"
                             ?title))
              (build (format nil
                             "(defgeneric %s)"
                             ?stack-title))
+             (make-arg-count-function ?operation
+                                      3)
+             (make-operation-to-call ?operation
+                                     ?title)
              (build (format nil
-                            "(defmethod %s ((?dest INTEGER) (?src0 INTEGER) (?src1 INTEGER) (?immediate SYMBOL (not (neq ?current-argument FALSE TRUE)))) (make-atom (if ?immediate then %sImmediate else %s) ?dest ?src0 ?src1))"
-                            ?title 
-                            ?operation
+                            "(defmethod %s ((?dest INTEGER) (?src0 INTEGER) (?src1 INTEGER)) (make-atom %s ?dest ?src0 ?src1))"
+                            ?title
                             ?operation))
              (build (format nil
                             "(defmethod %s ((?dest INTEGER) (?src0 INTEGER) (?src1 INTEGER)) (%s (stack-operation ?dest) (stack-operation ?src0) (stack-operation ?src1) FALSE))"
@@ -237,12 +327,16 @@
 (deffunction build-specific-operation-two-arg
              (?operation)
              (bind ?title
-                   (sym-cat (lowcase ?operation) 
+                   (sym-cat (lowcase ?operation)
                             -op))
+             (make-arg-count-function ?operation
+                                      2)
+             (make-operation-to-call ?operation
+                                     ?title)
              (bind ?stack-title
-                   (str-cat ?title 
+                   (str-cat ?title
                             ":stack"))
-             (build (format nil 
+             (build (format nil
                             "(defgeneric %s)"
                             ?title))
              (build (format nil
@@ -250,7 +344,7 @@
                             ?stack-title))
              (build (format nil
                             "(defmethod %s ((?dest INTEGER) (?src0 INTEGER)) (make-atom %s ?dest ?src0))"
-                            ?title 
+                            ?title
                             ?operation))
              (build (format nil
                             "(defmethod %s ((?dest INTEGER) (?src0 INTEGER)) (%s (stack-operation ?dest) (stack-operation ?src0)))"
@@ -263,13 +357,17 @@
 
 (deffunction build-specific-operation-one-arg
              (?operation)
+             (make-arg-count-function ?operation
+                                      1)
              (bind ?title
-                   (sym-cat (lowcase ?operation) 
+                   (sym-cat (lowcase ?operation)
                             -op))
+             (make-operation-to-call ?operation
+                                     ?title)
              (bind ?stack-title
-                   (str-cat ?title 
+                   (str-cat ?title
                             ":stack"))
-             (build (format nil 
+             (build (format nil
                             "(defgeneric %s)"
                             ?title))
              (build (format nil
@@ -277,7 +375,7 @@
                             ?stack-title))
              (build (format nil
                             "(defmethod %s ((?dest INTEGER)) (make-atom %s ?dest))"
-                            ?title 
+                            ?title
                             ?operation))
              (build (format nil
                             "(defmethod %s ((?dest INTEGER)) (%s (stack-operation ?dest)))"
@@ -289,20 +387,20 @@
              (if ?link then (sym-cat ?op Link) else ?op))
 (deffunction branch-unconditional-immediate
              (?address ?link)
-             (iris20-encode-Immediate (make-atom (make-link-version BranchUnconditionalImmediate 
+             (iris20-encode-Immediate (make-atom (make-link-version BranchUnconditionalImmediate
                                                                     ?link))
                                       ?address))
 (deffunction branch-unconditional-immediate32
              (?address ?link)
-             (make-molecule (iris20-encode-Immediate32 (make-molecule-instruction (make-link-version BranchUnconditionalImmediate32
-                                                                                                     ?link))
-                                                       ?address)))
+             (make-word (iris20-encode-Immediate32 (make-molecule-instruction (make-link-version BranchUnconditionalImmediate32
+                                                                                                 ?link))
+                                                   ?address)))
 
 (deffunction branch-unconditional-immediate48
              (?address ?link)
-             (make-molecule (iris20-encode-Immediate48 (make-molecule-instruction (make-link-version BranchUnconditionalImmediate48
-                                                                                                     ?link))
-                                                       ?address)))
+             (make-word (iris20-encode-Immediate48 (make-molecule-instruction (make-link-version BranchUnconditionalImmediate48
+                                                                                                 ?link))
+                                                   ?address)))
 
 (deffunction branch-conditional-immediate32
              (?dest ?address ?check-false ?link)
@@ -311,10 +409,10 @@
                      BranchConditionalFalseImmediate32
                      else
                      BranchConditionalTrueImmediate32))
-             (make-molecule (iris20-encode-Immediate32 (make-molecule-instruction (make-link-version ?base-op
-                                                                                                     ?link)
-                                                                                  ?dest)
-                                                       ?address)))
+             (make-word (iris20-encode-Immediate32 (make-molecule-instruction (make-link-version ?base-op
+                                                                                                 ?link)
+                                                                              ?dest)
+                                                   ?address)))
 (deffunction branch-conditional-immediate48
              (?dest ?address ?check-false ?link)
              (bind ?base-op
@@ -322,26 +420,39 @@
                      BranchConditionalFalseImmediate48
                      else
                      BranchConditionalTrueImmediate48))
-             (make-molecule (iris20-encode-Immediate48 (make-molecule-instruction (make-link-version ?base-op
-                                                                                                     ?link)
-                                                                                  ?dest)
-                                                       ?address)))
+             (make-word (iris20-encode-Immediate48 (make-molecule-instruction (make-link-version ?base-op
+                                                                                                 ?link)
+                                                                              ?dest)
+                                                   ?address)))
 (deffunction set16
              (?dest ?i)
              (iris20-encode-Immediate (make-atom Set16
                                                  ?dest)
                                       ?i))
+
 (deffunction set32
              (?dest ?i)
-             (make-molecule (iris20-encode-Immediate32 (make-molecule-instruction Set32
-                                                                                  ?dest)
-                                                       ?i)))
+             (make-word (iris20-encode-Immediate32 (make-molecule-instruction Set32
+                                                                              ?dest)
+                                                   ?i)))
 
 (deffunction set48
              (?dest ?i)
-             (make-molecule (iris20-encode-Immediate48 (make-molecule-instruction Set48
-                                                                                  ?dest)
-                                                       ?i)))
+             (make-word (iris20-encode-Immediate48 (make-molecule-instruction Set48
+                                                                              ?dest)
+                                                   ?i)))
+(make-arg-count-function Set16
+                         2)
+(make-arg-count-function Set32
+                         2)
+(make-arg-count-function Set48
+                         2)
+(make-operation-to-call Set16
+                        (lowcase Set16))
+(make-operation-to-call Set32
+                        (lowcase Set32))
+(make-operation-to-call Set48
+                        (lowcase Set48))
 
 (map build-specific-operation-one-arg
      BranchUnconditionalRegister
@@ -354,7 +465,7 @@
      BranchConditionalFalseRegister
      BranchConditionalTrueRegisterLink
      BranchConditionalFalseRegisterLink)
-(map build-specific-operation-three-arg 
+(map build-specific-operation-three-arg
      SystemCall
      Add
      Sub
@@ -395,257 +506,282 @@
      BranchIfThenElseNormalPredTrue
      BranchIfThenElseNormalPredFalse)
 
-(deffunction push
-             (?sp ?value)
-             (move-op (stack-operation ?sp)
-                      ?value))
-(deffunction pop
-             (?sp ?dest)
-             (move-op ?dest
-                      (stack-operation ?sp)))
+;(defmessage-handler atom encode primary
+;                    ()
+;                    (if (setoperationp ?self:operation) then
+;                      (switch ?self:operation
+;                              (case Set16 then (set16 ?self:dest
+;                                                      ?self:immediate))
+;                              (default (printout werror "ERROR: " ?self:operation " is not an atom instruction!" crlf)
+;                                       FALSE))
+;                      else
+;                      (switch (number-of-args ?self:operation)
+;                              (case 1 then (make-atom ?self:operation
+;                                                      ?self:dest))
+;                              (case 2 then (make-atom ?self:operation
+;
+;                                                      (bind ?immediatep
+;                                                            (immediatep ?self:operation))
+;                                                      (bind ?arg-count
+;                                                            (number-of-args ?self:operation))
+;
+;                                                      )
 
-(deffunction load-op
-             (?dest ?src)
-             (move-op ?dest
-                      (memory-operation ?src)))
-(deffunction store-op
-             (?dest ?src)
-             (move-op (memory-operation ?dest)
-                      ?src))
-(deffunction nop
-             ()
-             (swap-op (register:r0)
-                      (register:r0)))
+                                (deffunction push
+                                             (?sp ?value)
+                                             (move-op (stack-operation ?sp)
+                                                      ?value))
+                                (deffunction pop
+                                             (?sp ?dest)
+                                             (move-op ?dest
+                                                      (stack-operation ?sp)))
 
-(defgeneric push16)
-(defmethod push16
-  ((?immediate INTEGER)
-   (?sp INTEGER))
-  (set16 (stack-operation ?sp)
-         ?immediate))
-(defmethod push16
-  ((?immediate INTEGER))
-  (push16 ?immediate
-          (stack-pointer)))
+                                (deffunction load-op
+                                             (?dest ?src)
+                                             (move-op ?dest
+                                                      (memory-operation ?src)))
+                                (deffunction store-op
+                                             (?dest ?src)
+                                             (move-op (memory-operation ?dest)
+                                                      ?src))
+                                (deffunction nop
+                                             ()
+                                             (swap-op (register:r0)
+                                                      (register:r0)))
 
-(deffunction store16
-             (?address ?imm)
-             (set16 (memory-operation ?address)
-                    ?imm))
+                                (defgeneric push16)
+                                (defmethod push16
+                                  ((?immediate INTEGER)
+                                   (?sp INTEGER))
+                                  (set16 (stack-operation ?sp)
+                                         ?immediate))
+                                (defmethod push16
+                                  ((?immediate INTEGER))
+                                  (push16 ?immediate
+                                          (stack-pointer)))
 
-(defgeneric increment-op)
-(defgeneric decrement-op)
-(defgeneric double)
-(defgeneric halve)
+                                (deffunction store16
+                                             (?address ?imm)
+                                             (set16 (memory-operation ?address)
+                                                    ?imm))
 
-(defmethod increment-op
-  ((?dest INTEGER)
-   (?src INTEGER))
-  (add-op ?dest ?src 1 TRUE))
+                                (defgeneric increment-op)
+                                (defgeneric decrement-op)
+                                (defgeneric double)
+                                (defgeneric halve)
 
-(defmethod decrement-op
-  ((?dest INTEGER)
-   (?src INTEGER))
-  (sub-op ?dest ?src 1 TRUE))
+                                (defmethod increment-op
+                                  ((?dest INTEGER)
+                                   (?src INTEGER))
+                                  (add-op ?dest ?src 1 TRUE))
 
-(defmethod double
-  ((?dest INTEGER)
-   (?src INTEGER))
-  (mul-op ?dest ?src 2 TRUE))
+                                (defmethod decrement-op
+                                  ((?dest INTEGER)
+                                   (?src INTEGER))
+                                  (sub-op ?dest ?src 1 TRUE))
 
-(defmethod halve
-  ((?dest INTEGER)
-   (?src INTEGER))
-  (div-op ?dest ?src 2 TRUE))
+                                (defmethod double
+                                  ((?dest INTEGER)
+                                   (?src INTEGER))
+                                  (mul-op ?dest ?src 2 TRUE))
 
-(deffunction stack-store
-             (?sp)
-             (bind ?rtemp0
-                   (register-operation (register:temp0)))
-             (make-molecule (pop ?sp 
-                                 ?rtemp0)
-                            (store-op ?rtemp0
-                                      (stack-operation ?sp))))
+                                (defmethod halve
+                                  ((?dest INTEGER)
+                                   (?src INTEGER))
+                                  (div-op ?dest ?src 2 TRUE))
 
-(deffunction stack-load
-             (?sp ?dest)
-             (make-molecule (pop ?sp 
-                                 (register-operation ?dest))
-                            (load-op (register-operation ?dest)
-                                     ?dest)))
+                                (deffunction stack-store
+                                             (?sp)
+                                             (bind ?rtemp0
+                                                   (register-operation (register:temp0)))
+                                             (make-word (pop ?sp
+                                                             ?rtemp0)
+                                                        (store-op ?rtemp0
+                                                                  (stack-operation ?sp))))
 
-(defgeneric set64)
-(defmethod set64
-  ((?dest INTEGER)
-   (?value INTEGER)
-   (?left-over INTEGER))
-  (bind ?rtemp0 
-        (register-operation (register:temp0)))
-  (create$ (make-molecule (set16 ?rtemp0
-                                 (decode-bits ?value 
-                                              (hex->int 0xFFFF000000000000)
-                                              48))
-                          (shiftleft-op ?rtemp0
-                                        ?rtemp0
-                                        48
-                                        TRUE))
-           (set48 ?dest 
-                  (decode-bits ?value
-                               (hex->int 0x0000FFFFFFFFFFFF)
-                               0))
-           (make-molecule (add-op ?dest 
-                                  ?dest 
-                                  ?rtemp0
-                                  FALSE)
-                          ?left-over)))
+                                (deffunction stack-load
+                                             (?sp ?dest)
+                                             (make-word (pop ?sp
+                                                             (register-operation ?dest))
+                                                        (load-op (register-operation ?dest)
+                                                                 ?dest)))
 
-(defmethod set64
-  ((?dest INTEGER)
-   (?value INTEGER))
-  (set64 ?dest
-         ?value
-         (nop)))
+                                (defgeneric set64)
+                                (defmethod set64
+                                  ((?dest INTEGER)
+                                   (?value INTEGER)
+                                   (?left-over INTEGER))
+                                  (bind ?rtemp0
+                                        (register-operation (register:temp0)))
+                                  (create$ (make-word (set16 ?rtemp0
+                                                             (decode-bits ?value
+                                                                          (hex->int 0xFFFF000000000000)
+                                                                          48))
+                                                      (shiftleft-op ?rtemp0
+                                                                    ?rtemp0
+                                                                    48
+                                                                    TRUE))
+                                           (set48 ?dest
+                                                  (decode-bits ?value
+                                                               (hex->int 0x0000FFFFFFFFFFFF)
+                                                               0))
+                                           (make-word (add-op ?dest
+                                                              ?dest
+                                                              ?rtemp0
+                                                              FALSE)
+                                                      ?left-over)))
 
-
-(defgeneric label)
-(defmethod label
-  ((?title SYMBOL))
-  ?title)
-;--------------------------------------------------------------------------------
-(deffunction stack-init-code
-             ()
-             (create$ (set64 (register:stack-pointer-bottom)
-                             ?*stack-bottom*
-                             (move-op (stack-pointer)
-                                      (register:stack-pointer-bottom)))
-                      (set64 (register:stack-pointer-top)
-                             ?*stack-top*)
-                      (set64 (register:call-stack-bottom)
-                             ?*call-stack-bottom*
-                             (move-op (register:call-stack-pointer)
-                                      (register:call-stack-bottom)))
-                      (set64 (register:call-stack-top)
-                             ?*call-stack-top*)))
-(deffunction setup-start-end-pair
-             (?start ?start-addr ?end ?end-addr)
-             (create$ (set64 (register-operation ?start)
-                             ?start-addr)
-                      (set64 (register-operation ?end)
-                             ?end-addr)))
-
-(deffunction memory-block-code
-             ()
-             (create$ 
-               (setup-start-end-pair (register:memory-space0-start)
-                                     ?*memory0-start*
-                                     (register:memory-space0-end)
-                                     ?*memory0-end*)
-               (setup-start-end-pair (register:memory-space1-start)
-                                     ?*memory1-start*
-                                     (register:memory-space1-end)
-                                     ?*memory1-end*)
-               (setup-start-end-pair (register:code-start)
-                                     ?*code-start*
-                                     (register:code-end)
-                                     ?*code-end*)
-               (set64 (register-operation (register:address-table-base))
-                      ?*addr-table-begin*
-                      (move-op (register:address-table-pointer)
-                               (register:address-table-base)))))
-
-(defgeneric func)
-(defmethod func
-  ((?title SYMBOL)
-   (?single-atom INTEGER))
-  (create$ (label ?title)
-           (make-molecule ?single-atom
-                          (return-from-stack (stack-pointer)))))
-
-(defgeneric stack-func)
-(defmethod stack-func
-  ((?title SYMBOL)
-   (?operation SYMBOL)
-   (?sp INTEGER))
-  (func ?title
-        (funcall (sym-cat ?operation -op:stack)
-                 ?sp)))
-(defmethod stack-func
-  ((?title SYMBOL)
-   (?operation SYMBOL))
-  (stack-func ?title 
-              ?operation
-              (stack-pointer)))
-(defmethod stack-func
-  ((?title SYMBOL))
-  (stack-func ?title
-              ?title))
-
-(deffunction setup-read-eval-print-loop
-             ()
-             (create$ (make-molecule (add-op (memory-operation (register:address-table-base))
-                                             (register-operation (instruction-pointer))
-                                             1
-                                             TRUE)
-                                     (nop))
-                      (label EvalBase)
-                      ; loop body goes here
-                      (make-molecule (nop)
-                                     (return-from-memory (register:address-table-base)))))
+                                (defmethod set64
+                                  ((?dest INTEGER)
+                                   (?value INTEGER))
+                                  (set64 ?dest
+                                         ?value
+                                         (nop)))
 
 
-(deffunction setup-simple-funcs
-             ()
-             (create$ (map stack-func
-                           eq
-                           neq
-                           add
-                           sub
-                           div
-                           rem)
-                      (stack-func shift-left
-                                  shiftleft)
-                      (stack-func shift-right
-                                  shiftright)
-                      (stack-func lt
-                                  lessthan)
-                      (stack-func gt
-                                  greaterthan)
-                      (stack-func le
-                                  lessthanorequalto)
-                      (stack-func ge
-                                  greaterthanorequalto)
-                      (func incr
-                            (increment-op (stack-operation (stack-pointer))
-                                          (stack-operation (stack-pointer))))
-                      (func decr
-                            (decrement-op (stack-operation (stack-pointer))
-                                          (stack-operation (stack-pointer))))
-                      (func halve
-                            (halve (stack-operation (stack-pointer))
-                                   (stack-operation (stack-pointer))))
-                      (func double
-                            (double (stack-operation (stack-pointer))
-                                    (stack-operation (stack-pointer))))))
+                                ;--------------------------------------------------------------------------------
+                                (deffunction stack-init-code
+                                             ()
+                                             (create$ (set64 (register:stack-pointer-bottom)
+                                                             ?*stack-bottom*
+                                                             (move-op (stack-pointer)
+                                                                      (register:stack-pointer-bottom)))
+                                                      (set64 (register:stack-pointer-top)
+                                                             ?*stack-top*)
+                                                      (set64 (register:call-stack-bottom)
+                                                             ?*call-stack-bottom*
+                                                             (move-op (register:call-stack-pointer)
+                                                                      (register:call-stack-bottom)))
+                                                      (set64 (register:call-stack-top)
+                                                             ?*call-stack-top*)))
+                                (deffunction setup-start-end-pair
+                                             (?start ?start-addr ?end ?end-addr)
+                                             (create$ (set64 (register-operation ?start)
+                                                             ?start-addr)
+                                                      (set64 (register-operation ?end)
+                                                             ?end-addr)))
+
+                                (deffunction memory-block-code
+                                             ()
+                                             (create$
+                                               (setup-start-end-pair (register:memory-space0-start)
+                                                                     ?*memory0-start*
+                                                                     (register:memory-space0-end)
+                                                                     ?*memory0-end*)
+                                               (setup-start-end-pair (register:memory-space1-start)
+                                                                     ?*memory1-start*
+                                                                     (register:memory-space1-end)
+                                                                     ?*memory1-end*)
+                                               (setup-start-end-pair (register:code-start)
+                                                                     ?*code-start*
+                                                                     (register:code-end)
+                                                                     ?*code-end*)
+                                               (set64 (register-operation (register:address-table-base))
+                                                      ?*addr-table-begin*
+                                                      (move-op (register:address-table-pointer)
+                                                               (register:address-table-base)))))
+
+                                (defgeneric func)
+                                (defmethod func
+                                  ((?title SYMBOL)
+                                   (?single-atom INTEGER))
+                                  (create$ (.label ?title)
+                                           (make-word ?single-atom
+                                                      (return-from-register (link-register)))))
+
+                                (defgeneric stack-func)
+                                (defmethod stack-func
+                                  ((?title SYMBOL)
+                                   (?operation SYMBOL)
+                                   (?sp INTEGER))
+                                  (func ?title
+                                        (funcall (sym-cat ?operation -op:stack)
+                                                 ?sp)))
+                                (defmethod stack-func
+                                  ((?title SYMBOL)
+                                   (?operation SYMBOL))
+                                  (stack-func ?title
+                                              ?operation
+                                              (stack-pointer)))
+                                (defmethod stack-func
+                                  ((?title SYMBOL))
+                                  (stack-func ?title
+                                              ?title))
+
+                                (deffunction setup-read-eval-print-loop
+                                             ()
+                                             (create$ (make-word (add-op (memory-operation (register:address-table-base))
+                                                                         (register-operation (instruction-pointer))
+                                                                         1
+                                                                         TRUE)
+                                                                 (nop))
+                                                      (.label EvalBase)
+                                                      ; loop body goes here
+                                                      (make-word (nop)
+                                                                 (return-from-memory (register:address-table-base)))))
 
 
-(deffunction labelp (?l) (symbolp ?l))
-(deffunction moleculep (?m) (integerp ?m))
+                                (deffunction setup-simple-funcs
+                                             ()
+                                             (create$ (map stack-func
+                                                           eq
+                                                           neq
+                                                           add
+                                                           sub
+                                                           div
+                                                           rem)
+                                                      (stack-func shift-left
+                                                                  shiftleft)
+                                                      (stack-func shift-right
+                                                                  shiftright)
+                                                      (stack-func lt
+                                                                  lessthan)
+                                                      (stack-func gt
+                                                                  greaterthan)
+                                                      (stack-func le
+                                                                  lessthanorequalto)
+                                                      (stack-func ge
+                                                                  greaterthanorequalto)
+                                                      (func incr
+                                                            (increment-op (stack-operation (stack-pointer))
+                                                                          (stack-operation (stack-pointer))))
+                                                      (func decr
+                                                            (decrement-op (stack-operation (stack-pointer))
+                                                                          (stack-operation (stack-pointer))))
+                                                      (func halve
+                                                            (halve (stack-operation (stack-pointer))
+                                                                   (stack-operation (stack-pointer))))
+                                                      (func double
+                                                            (double (stack-operation (stack-pointer))
+                                                                    (stack-operation (stack-pointer))))))
 
-(deffunction transmute-list
-             (?input)
-             (if (labelp ?input) then 
-               label
-               else
-               (if (moleculep ?input) then
-                 molecule
-                 else
-                 unknown)))
-(deffunction strip-label
-             (?input)
-             (if (labelp ?input) then (create$) else ?input))
 
-(deffunction strip-labels
-             (?input)
-             (map strip-label
-                  (expand$ ?input)))
+                                (deffunction labelp
+                                             (?l)
+                                             (and (instancep ?l)
+                                                  (eq (class ?l)
+                                                      label)))
+                                (deffunction wordp
+                                             (?m)
+                                             (integerp ?m))
 
+                                (deffunction transmute-list
+                                             (?input)
+                                             (if (labelp ?input) then
+                                               label
+                                               else
+                                               (if (wordp ?input) then
+                                                 word
+                                                 else
+                                                 unknown)))
+                                (deffunction strip-label
+                                             (?input)
+                                             (if (labelp ?input) then (create$) else ?input))
+
+                                (deffunction strip-labels
+                                             (?input)
+                                             (map strip-label
+                                                  (expand$ ?input)))
+                                (deffunction compute-address
+                                             (?input)
+                                             (length$ (strip-labels ?input)))
