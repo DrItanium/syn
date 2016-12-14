@@ -1,3 +1,45 @@
+(deffunction target-architecture
+             ()
+             iris20)
+(deffunction enum->int
+             (?symbol ?collection)
+             (- (member$ ?symbol
+                         ?collection) 1))
+(deffunction section-descriptor->int
+             (?symbol)
+             (enum->int ?symbol
+                        ?*iris20-enumSectionType*))
+(deffunction operation->int
+             (?id)
+             (enum->int ?id
+                        ?*iris20-enumOperation*))
+
+(defmethod iris20-encode-Operation
+  ((?value INTEGER)
+   (?field SYMBOL))
+  (iris20-encode-Operation ?value
+                           (operation->int ?field)))
+(defgeneric encode)
+(defgeneric decode)
+
+(defmethod encode
+  ((?section SYMBOL)
+   (?value INTEGER)
+   (?field INTEGER
+           SYMBOL))
+  (funcall (sym-cat (target-architecture)
+                    -encode-
+                    ?section)
+           ?value
+           ?field))
+(defmethod decode
+  ((?section SYMBOL)
+   (?value INTEGER))
+  (funcall (sym-cat (target-architecture)
+                    -decode-
+                    ?section)
+           ?value))
+
 (defmessage-handler INTEGER encode primary
                     ()
                     ?self)
@@ -101,31 +143,15 @@
 (defgeneric make-word-container)
 (defgeneric return-from-stack)
 
-(deffunction enum->int
-             (?symbol ?collection)
-             (- (member$ ?symbol
-                         ?collection) 1))
-(deffunction section-descriptor->int
-             (?symbol)
-             (enum->int ?symbol
-                        ?*iris20-enumSectionType*))
-(deffunction operation->int
-             (?id)
-             (enum->int ?id
-                        ?*iris20-enumOperation*))
-
-(defmethod iris20-encode-Operation
-  ((?value INTEGER)
-   (?field SYMBOL))
-  (iris20-encode-Operation ?value
-                           (operation->int ?field)))
 
 (deffunction construct-register-operation
              "Tag the type of operation to perform on the given register index"
              (?action ?index)
-             (iris20-encode-SectionDescriptor (iris20-encode-SectionIndex 0
-                                                                          ?index)
-                                              (section-descriptor->int ?action)))
+             (encode SectionDescriptor
+                     (encode SectionIndex
+                             0
+                             ?index)
+                     (section-descriptor->int ?action)))
 (deffunction stack-operation (?i) (construct-register-operation Stack ?i))
 (deffunction register-operation (?i) (construct-register-operation Register ?i))
 (deffunction memory-operation (?i) (construct-register-operation Memory ?i))
@@ -290,20 +316,22 @@
                                         crlf)
                               (halt)
                               (create$))
-                            (case 1 then (iris20-encode-MoleculeContainsOneInstruction
-                                           (send (nth$ 1 ?self:contents) encode)
-                                           1))
-                            (case 2 then
-                              (iris20-encode-MoleculeContainsOneInstruction
-                                (iris20-encode-SecondAtom
-                                  (iris20-encode-FirstAtom 0
-                                                           (send (nth$ 1
-                                                                       ?self:contents)
-                                                                 encode))
-                                  (send (nth$ 2
-                                              ?self:contents)
-                                        encode))
-                                0))
+                            (case 1 then (encode MoleculeContainsOneInstruction
+                                                 (send (nth$ 1
+                                                             ?self:contents)
+                                                       encode)
+                                                 1))
+                            (case 2 then (encode MoleculeContainsOneInstruction
+                                                 (encode SecondAtom
+                                                         (encode FirstAtom
+                                                                 0
+                                                                 (send (nth$ 1
+                                                                             ?self:contents)
+                                                                       encode))
+                                                         (send (nth$ 2
+                                                                     ?self:contents)
+                                                               encode))
+                                                 0))
                             (default (printout werror
                                                "ERROR: word-container contains too many instructions!"
                                                crlf)
@@ -453,15 +481,17 @@
   (message-handler encode primary))
 (defmessage-handler branch-immediate-atom encode primary
                     ()
-                    (iris20-encode-Operation
-                      (iris20-encode-Immediate
-                        (if (= (number-of-args ?self:operation) 2) then
-                          (iris20-encode-Destination 0
-                                                     ?self:dest)
-                          else
-                          0)
-                        ?self:immediate)
-                      ?self:operation))
+                    (encode Operation
+                            (encode Immediate
+                                    (if (= (number-of-args ?self:operation)
+                                           2) then
+                                      (encode Destination
+                                              0
+                                              ?self:dest)
+                                      else
+                                      0)
+                                    ?self:immediate)
+                            ?self:operation))
 
 (defclass branch-immediate-molecule
   (is-a molecule)
@@ -478,16 +508,18 @@
   (message-handler encode primary))
 (defmessage-handler branch-immediate-molecule encode primary
                     ()
-                    (funcall (sym-cat iris20-encode-Immediate
-                                      ?self:width)
-                             (iris20-encode-Operation
-                               (if (= (number-of-args ?self:operation) 2) then
-                                 (iris20-encode-MoleculeDestination 0
-                                                                    ?self:dest)
-                                 else
-                                 0)
-                               ?self:operation)
-                             ?self:immediate))
+                    (encode (sym-cat Immediate
+                                     ?self:width)
+                            (encode Operation
+                                    (if (= (number-of-args ?self:operation)
+                                           2) then
+                                      (encode MoleculeDestination
+                                              0
+                                              ?self:dest)
+                                      else
+                                      0)
+                                    ?self:operation)
+                            ?self:immediate))
 
 (deffunction make-link-version
              (?op ?link)
@@ -572,12 +604,13 @@
   (message-handler encode primary))
 (defmessage-handler set16-instruction encode primary
                     ()
-                    (iris20-encode-Operation
-                      (iris20-encode-Destination
-                        (iris20-encode-Immediate 0
-                                                 ?self:immediate)
-                        ?self:dest)
-                      ?self:operation))
+                    (encode Operation
+                            (encode Destination
+                                    (encode Immediate
+                                            0
+                                            ?self:immediate)
+                                    ?self:dest)
+                            ?self:operation))
 (defclass wide-set-instruction
   (is-a molecule)
   (slot immediate
@@ -586,18 +619,18 @@
   (message-handler encode primary))
 (defmessage-handler wide-set-instruction encode primary
                     ()
-                    (iris20-encode-Operation
-                      (iris20-encode-MoleculeDestination
-                        (funcall (switch ?self:operation
-                                         (case Set32 then iris20-encode-Immediate32)
-                                         (case Set48 then iris20-encode-Immediate48)
-                                         (default (sym-cat UNKNOWN_OPERATION
-                                                           ?self:operation)))
-                                 0
-                                 (send ?self:immediate
-                                       encode))
-                        ?self:dest)
-                      ?self:operation))
+                    (encode Operation
+                            (encode MoleculeDestination
+                                    (encode (switch ?self:operation
+                                                    (case Set32 then Immediate32)
+                                                    (case Set48 then Immediate48)
+                                                    (default (sym-cat UNKNOWN_OPERATION
+                                                                      ?self:operation)))
+                                            0
+                                            (send ?self:immediate
+                                                  encode))
+                                    ?self:dest)
+                            ?self:operation))
 
 (deffunction make-wide-set-instruction
              (?dest ?i ?op)
@@ -805,43 +838,51 @@
 (defmessage-handler atom encode primary
                     ()
                     (bind ?result
-                          (iris20-encode-Operation 0
-                                                   ?self:operation))
+                          (encode Operation
+                                  0
+                                  ?self:operation))
                     (bind ?arg-count
                           (number-of-args ?self:operation))
                     (if (>= ?arg-count 1) then
                       (bind ?result
-                            (iris20-encode-Destination ?result
-                                                       ?self:dest)))
+                            (encode Destination
+                                    ?result
+                                    ?self:dest)))
                     (if (>= ?arg-count 2) then
                       (bind ?result
-                            (iris20-encode-Source0 ?result
-                                                   ?self:src0)))
+                            (encode Source0
+                                    ?result
+                                    ?self:src0)))
                     (if (>= ?arg-count 3) then
                       (bind ?result
-                            (iris20-encode-Source1 ?result
-                                                   ?self:src1)))
+                            (encode Source1
+                                    ?result
+                                    ?self:src1)))
                     ?result)
 
 (defmessage-handler molecule encode primary
                     ()
                     (bind ?result
-                          (iris20-encode-Operation 0
-                                                   ?self:operation))
+                          (encode Operation
+                                  0
+                                  ?self:operation))
                     (bind ?arg-count
                           (number-of-args ?self:operation))
                     (if (>= ?arg-count 1) then
                       (bind ?result
-                            (iris20-encode-MoleculeDestination ?result
-                                                               ?self:dest)))
+                            (encode MoleculeDestination
+                                    ?result
+                                    ?self:dest)))
                     (if (>= ?arg-count 2) then
                       (bind ?result
-                            (iris20-encode-MoleculeSource0 ?result
-                                                           ?self:src0)))
+                            (encode MoleculeSource0
+                                    ?result
+                                    ?self:src0)))
                     (if (>= ?arg-count 3) then
                       (bind ?result
-                            (iris20-encode-MoleculeSource1 ?result
-                                                           ?self:src1)))
+                            (encode MoleculeSource1
+                                    ?result
+                                    ?self:src1)))
                     ; if we have more than 3 then we have to handle those
                     ; specially
                     ?result)
