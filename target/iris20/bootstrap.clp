@@ -22,24 +22,71 @@
 (defgeneric encode)
 (defgeneric decode)
 
+
+(deffunction generic-encode-decode-operation
+             (?action ?section $?args)
+             (funcall (sym-cat (target-architecture)
+                               -
+                               ?action
+                               -
+                               ?section)
+                      (expand$ ?args)))
+
 (defmethod encode
   ((?section SYMBOL)
    (?value INTEGER)
    (?field INTEGER
            SYMBOL))
-  (funcall (sym-cat (target-architecture)
-                    -encode-
-                    ?section)
-           ?value
-           ?field))
+  (generic-encode-decode-operation encode
+                                   ?section
+                                   ?value
+                                   ?field))
 (defmethod decode
   ((?section SYMBOL)
    (?value INTEGER))
-  (funcall (sym-cat (target-architecture)
-                    -decode-
-                    ?section)
-           ?value))
+  (generic-encode-decode-operation decode
+                                   ?section
+                                   ?value))
 
+(defgeneric encode-register)
+(defgeneric decode-register)
+
+(defmethod encode-register
+  ((?index INTEGER)
+   (?section INTEGER))
+  (encode SectionIndex
+          (encode SectionDescriptor
+                  0
+                  ?section)
+          ?index))
+
+
+
+(defmethod encode-register
+  ((?index INTEGER)
+   (?section SYMBOL))
+  (encode-register ?index
+                   (section-descriptor->int ?section)))
+
+(defmethod decode-register
+  ((?register INTEGER))
+  (create$ (decode SectionDescriptor
+                   ?register)
+           (decode SectionIndex
+                   ?register)))
+
+(deffunction stack-operation
+             (?i)
+             (encode-register ?i
+                              Stack))
+(deffunction register-operation
+             (?i)
+             (encode-register ?i
+                              Register))
+(deffunction memory-operation
+             (?i)
+             (encode-register ?i
+                              Memory))
 (defmessage-handler INTEGER encode primary
                     ()
                     ?self)
@@ -144,17 +191,6 @@
 (defgeneric return-from-stack)
 
 
-(deffunction construct-register-operation
-             "Tag the type of operation to perform on the given register index"
-             (?action ?index)
-             (encode SectionDescriptor
-                     (encode SectionIndex
-                             0
-                             ?index)
-                     (section-descriptor->int ?action)))
-(deffunction stack-operation (?i) (construct-register-operation Stack ?i))
-(deffunction register-operation (?i) (construct-register-operation Register ?i))
-(deffunction memory-operation (?i) (construct-register-operation Memory ?i))
 
 (defclass instruction
   (is-a USER)
