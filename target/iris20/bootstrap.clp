@@ -1,3 +1,6 @@
+(defmessage-handler INTEGER encode primary
+                    ()
+                    ?self)
 (defglobal MAIN
            ?*addr-max* = (hex->int 0x03FFFFFF)
            ?*space-size* = (hex->int 0x00FFFFFF)
@@ -95,7 +98,7 @@
 (defgeneric return-from-register)
 (defgeneric make-atom)
 (defgeneric make-molecule)
-(defgeneric make-word)
+(defgeneric make-word-container)
 (defgeneric return-from-stack)
 
 (deffunction enum->int
@@ -111,6 +114,12 @@
              (enum->int ?id
                         ?*iris20-enumOperation*))
 
+(defmethod iris20-encode-Operation
+  ((?value INTEGER)
+   (?field SYMBOL))
+  (iris20-encode-Operation ?value
+                           (operation->int ?field)))
+
 (deffunction construct-register-operation
              "Tag the type of operation to perform on the given register index"
              (?action ?index)
@@ -121,81 +130,6 @@
 (deffunction register-operation (?i) (construct-register-operation Register ?i))
 (deffunction memory-operation (?i) (construct-register-operation Memory ?i))
 
-(defmethod make-molecule-instruction
-  ((?operation SYMBOL))
-  (iris20-encode-MoleculeOperation 0
-                                   (operation->int ?operation)))
-
-(defmethod make-molecule-instruction
-  ((?operation SYMBOL)
-   (?destination INTEGER))
-  (iris20-encode-MoleculeDestination (make-molecule-instruction ?operation)
-                                     ?destination))
-(defmethod make-molecule-instruction
-  ((?operation SYMBOL)
-   (?dest INTEGER)
-   (?src0 INTEGER))
-  (iris20-encode-MoleculeSource0 (make-molecule-instruction ?operation
-                                                            ?dest)
-                                 ?src0))
-(defmethod make-molecule-instruction
-  ((?operation SYMBOL)
-   (?dest INTEGER)
-   (?src0 INTEGER)
-   (?src1 INTEGER))
-  (iris20-encode-MoleculeSource1 (make-molecule-instruction ?operation
-                                                            ?dest
-                                                            ?src0)
-                                 ?src1))
-
-(defmethod make-atom
-  ((?operation SYMBOL))
-  (iris20-encode-Operation 0
-                           (operation->int ?operation)))
-
-(defmethod make-atom
-  ((?operation SYMBOL)
-   (?destination INTEGER))
-  (iris20-encode-Destination (make-atom ?operation)
-                             ?destination))
-(defmethod make-atom
-  ((?operation SYMBOL)
-   (?dest INTEGER)
-   (?src0 INTEGER))
-  (iris20-encode-Source0 (make-atom ?operation
-                                    ?dest)
-                         ?src0))
-(defmethod make-atom
-  ((?operation SYMBOL)
-   (?dest INTEGER)
-   (?src0 INTEGER)
-   (?src1 INTEGER))
-  (iris20-encode-Source1 (make-atom ?operation
-                                    ?dest
-                                    ?src0)
-                         ?src1))
-
-(defclass label
-  (is-a USER)
-  (slot title
-        (type SYMBOL)
-        (visibility public)
-        (storage local)
-        (default ?NONE))
-  (slot address
-        (type SYMBOL
-              INTEGER)
-        (allowed-symbols FALSE)
-        (range 0 ?VARIABLE)
-        (visibility public)
-        (storage local)
-        (default-dynamic FALSE)))
-
-(defgeneric .label)
-(defmethod .label
-  ((?title SYMBOL))
-  (make-instance of label
-                 (title ?title)))
 (defclass instruction
   (is-a USER)
   (role abstract)
@@ -230,23 +164,152 @@
   (role concrete)
   (pattern-match reactive)
   (message-handler encode primary))
-;(defclass molecule
-;  (is-a instruction)
-;  (role concrete)
-;  (pattern-match reactive)))
+(defclass molecule
+  (is-a instruction)
+  (role concrete)
+  (pattern-match reactive)
+  (message-handler encode primary))
 
-(defmethod make-word
-  ((?first INTEGER)
-   (?second INTEGER))
-  (iris20-encode-MoleculeContainsOneInstruction (iris20-encode-SecondAtom
-                                                  (iris20-encode-FirstAtom 0
-                                                                           ?first)
-                                                  ?second)
-                                                0))
-(defmethod make-word
-  ((?wide-instruction INTEGER))
-  (iris20-encode-MoleculeContainsOneInstruction ?wide-instruction
-                                                1))
+(defmethod make-molecule
+  ((?operation SYMBOL)
+   (?dest INTEGER)
+   (?src0 INTEGER)
+   (?src1 INTEGER))
+  (make-instance of molecule
+                 (operation ?operation)
+                 (dest ?dest)
+                 (src0 ?src0)
+                 (src1 ?src1)))
+(defmethod make-molecule
+  ((?operation SYMBOL)
+   (?dest INTEGER))
+  (make-molecule ?operation
+                 ?dest
+                 0
+                 0))
+(defmethod make-molecule
+  ((?operation SYMBOL))
+  (make-molecule ?operation
+                 0))
+
+(defmethod make-molecule
+  ((?operation SYMBOL)
+   (?dest INTEGER)
+   (?src0 INTEGER))
+  (make-molecule ?operation
+                 ?dest
+                 ?src0
+                 0))
+
+(defmethod make-atom
+  ((?operation SYMBOL))
+  (make-atom ?operation
+             0))
+
+(defmethod make-atom
+  ((?operation SYMBOL)
+   (?destination INTEGER))
+  (make-atom ?operation
+             ?destination
+             0))
+
+(defmethod make-atom
+  ((?operation SYMBOL)
+   (?dest INTEGER)
+   (?src0 INTEGER))
+  (make-atom ?operation
+             ?dest
+             ?src0
+             0))
+
+(defmethod make-atom
+  ((?operation SYMBOL)
+   (?dest INTEGER)
+   (?src0 INTEGER)
+   (?src1 INTEGER))
+  (make-instance of atom
+                 (operation ?operation)
+                 (dest ?dest)
+                 (src0 ?src0)
+                 (src1 ?src1)))
+
+
+(defclass word-container
+  (is-a USER)
+  (multislot contents
+             (storage local)
+             (visibility public)
+             (default ?NONE))
+  (message-handler encode primary))
+(defclass label
+  (is-a USER)
+  (slot title
+        (type SYMBOL)
+        (visibility public)
+        (storage local)
+        (default ?NONE))
+  (slot address
+        (type SYMBOL
+              INTEGER)
+        (allowed-symbols FALSE)
+        (range 0 ?VARIABLE)
+        (visibility public)
+        (storage local)
+        (default-dynamic FALSE)))
+
+(defgeneric .label)
+(defmethod .label
+  ((?title SYMBOL
+           (not (instance-existp (symbol-to-instance-name ?current-argument)))))
+  (make-instance ?title of label
+                 (title ?title)))
+(defmethod .label
+  ((?title SYMBOL
+           (instance-existp (symbol-to-instance-name ?current-argument))))
+  (symbol-to-instance-name ?title))
+
+(defmethod make-word-container
+  ((?first INTEGER
+           atom)
+   (?second INTEGER
+            atom))
+  (make-instance of word-container
+                 (contents ?first
+                           ?second)))
+(defmethod make-word-container
+  ((?wide-instruction INTEGER
+                      molecule))
+  (make-instance of word-container
+                 (contents ?wide-instruction)))
+(defmessage-handler word-container encode primary
+                    ()
+                    (switch (length$ ?self:contents)
+                            (case 0 then
+                              (printout werror
+                                        "ERROR: word-container contains no instructions!"
+                                        crlf)
+                              (halt)
+                              (create$))
+                            (case 1 then (iris20-encode-MoleculeContainsOneInstruction
+                                           (send (nth$ 1 ?self:contents) encode)
+                                           1))
+                            (case 2 then
+                              (iris20-encode-MoleculeContainsOneInstruction
+                                (iris20-encode-SecondAtom
+                                  (iris20-encode-FirstAtom 0
+                                                           (send (nth$ 1
+                                                                       ?self:contents)
+                                                                 encode))
+                                  (send (nth$ 2
+                                              ?self:contents)
+                                        encode))
+                                0))
+                            (default (printout werror
+                                               "ERROR: word-container contains too many instructions!"
+                                               crlf)
+                                     (halt)
+                                     (create$))))
+
 (defmethod return-instruction
   ((?register INTEGER))
   (make-atom BranchUnconditionalRegister
@@ -382,65 +445,186 @@
                             ?stack-title
                             ?title))
              )
+(defclass branch-immediate-atom
+  (is-a atom)
+  (slot immediate
+        (source composite)
+        (default ?NONE))
+  (message-handler encode primary))
+(defmessage-handler branch-immediate-atom encode primary
+                    ()
+                    (iris20-encode-Operation
+                      (iris20-encode-Immediate
+                        (if (= (number-of-args ?self:operation) 2) then
+                          (iris20-encode-Destination 0
+                                                     ?self:dest)
+                          else
+                          0)
+                        ?self:immediate)
+                      ?self:operation))
+
+(defclass branch-immediate-molecule
+  (is-a molecule)
+  (slot width
+        (type INTEGER)
+        (allowed-integers 32
+                          48)
+        (storage local)
+        (visibility public)
+        (default ?NONE))
+  (slot immediate
+        (source composite)
+        (default ?NONE))
+  (message-handler encode primary))
+(defmessage-handler branch-immediate-molecule encode primary
+                    ()
+                    (funcall (sym-cat iris20-encode-Immediate
+                                      ?self:width)
+                             (iris20-encode-Operation
+                               (if (= (number-of-args ?self:operation) 2) then
+                                 (iris20-encode-MoleculeDestination 0
+                                                                    ?self:dest)
+                                 else
+                                 0)
+                               ?self:operation)
+                             ?self:immediate))
+
 (deffunction make-link-version
              (?op ?link)
              (if ?link then (sym-cat ?op Link) else ?op))
 (deffunction branch-unconditional-immediate
              (?address ?link)
-             (iris20-encode-Immediate (make-atom (make-link-version BranchUnconditionalImmediate
-                                                                    ?link))
-                                      ?address))
+             (make-instance of branch-immediate-atom
+                            (operation (make-link-version BranchUnconditionalImmediate
+                                                          ?link))
+                            (dest 0)
+                            (immediate ?address)))
+(deffunction branch-conditional-immediate
+             (?dest ?address ?check-false ?link)
+             (bind ?base-op
+                   (if ?check-false then
+                     BranchConditionalFalseImmediate
+                     else
+                     BranchConditionalTrueImmediate))
+             (make-instance of branch-immediate-atom
+                            (dest ?dest)
+                            (operation (make-link-version ?base-op
+                                                          ?link))
+                            (immediate ?address)))
 (deffunction branch-unconditional-immediate32
              (?address ?link)
-             (make-word (iris20-encode-Immediate32 (make-molecule-instruction (make-link-version BranchUnconditionalImmediate32
-                                                                                                 ?link))
-                                                   ?address)))
+             (make-instance of branch-immediate-molecule
+                            (width 32)
+                            (operation (make-link-version BranchUnconditionalImmediate32
+                                                          ?link))
+                            (dest 0)
+                            (immediate ?address)))
 
 (deffunction branch-unconditional-immediate48
              (?address ?link)
-             (make-word (iris20-encode-Immediate48 (make-molecule-instruction (make-link-version BranchUnconditionalImmediate48
-                                                                                                 ?link))
-                                                   ?address)))
+             (make-instance of branch-immediate-molecule
+                            (width 48)
+                            (operation (make-link-version BranchUnconditionalImmediate48
+                                                          ?link))
+                            (dest 0)
+                            (immediate ?address)))
+
+(deffunction branch-conditional-immediate-molecule
+             (?dest ?address ?check-false ?link ?width)
+             (bind ?base-op
+                   (make-link-version (sym-cat BranchConditional
+                                               (if ?check-false then
+                                                 False
+                                                 else
+                                                 True)
+                                               Immediate
+                                               ?width)
+                                      ?link))
+             (make-instance of branch-immediate-molecule
+                            (operation ?base-op)
+                            (width ?width)
+                            (destination ?dest)
+                            (immediate ?address)))
 
 (deffunction branch-conditional-immediate32
              (?dest ?address ?check-false ?link)
-             (bind ?base-op
-                   (if ?check-false then
-                     BranchConditionalFalseImmediate32
-                     else
-                     BranchConditionalTrueImmediate32))
-             (make-word (iris20-encode-Immediate32 (make-molecule-instruction (make-link-version ?base-op
-                                                                                                 ?link)
-                                                                              ?dest)
-                                                   ?address)))
+             (branch-conditional-immediate-molecule ?dest
+                                                    ?address
+                                                    ?check-false
+                                                    ?link
+                                                    32))
+
 (deffunction branch-conditional-immediate48
              (?dest ?address ?check-false ?link)
-             (bind ?base-op
-                   (if ?check-false then
-                     BranchConditionalFalseImmediate48
-                     else
-                     BranchConditionalTrueImmediate48))
-             (make-word (iris20-encode-Immediate48 (make-molecule-instruction (make-link-version ?base-op
-                                                                                                 ?link)
-                                                                              ?dest)
-                                                   ?address)))
+             (branch-conditional-immediate-molecule ?dest
+                                                    ?address
+                                                    ?check-false
+                                                    ?link
+                                                    48))
+(defclass set16-instruction
+  (is-a atom)
+  (slot operation
+        (source composite)
+        (default-dynamic Set16))
+  (slot immediate
+        (source composite)
+        (default ?NONE))
+  (message-handler encode primary))
+(defmessage-handler set16-instruction encode primary
+                    ()
+                    (iris20-encode-Operation
+                      (iris20-encode-Destination
+                        (iris20-encode-Immediate 0
+                                                 ?self:immediate)
+                        ?self:dest)
+                      ?self:operation))
+(defclass wide-set-instruction
+  (is-a molecule)
+  (slot immediate
+        (source composite)
+        (default ?NONE))
+  (message-handler encode primary))
+(defmessage-handler wide-set-instruction encode primary
+                    ()
+                    (iris20-encode-Operation
+                      (iris20-encode-MoleculeDestination
+                        (funcall (switch ?self:operation
+                                         (case Set32 then iris20-encode-Immediate32)
+                                         (case Set48 then iris20-encode-Immediate48)
+                                         (default (sym-cat UNKNOWN_OPERATION
+                                                           ?self:operation)))
+                                 0
+                                 (send ?self:immediate
+                                       encode))
+                        ?self:dest)
+                      ?self:operation))
+
+(deffunction make-wide-set-instruction
+             (?dest ?i ?op)
+             (make-word-container
+               (make-instance of wide-set-instruction
+                              (operation ?op)
+                              (immediate ?i)
+                              (dest ?dest))))
+
+
 (deffunction set16
              (?dest ?i)
-             (iris20-encode-Immediate (make-atom Set16
-                                                 ?dest)
-                                      ?i))
-
+             (make-instance of set16-instruction
+                            (dest ?dest)
+                            (immediate ?i)))
 (deffunction set32
              (?dest ?i)
-             (make-word (iris20-encode-Immediate32 (make-molecule-instruction Set32
-                                                                              ?dest)
-                                                   ?i)))
+             (make-wide-set-instruction ?dest
+                                        ?i
+                                        Set32))
 
 (deffunction set48
              (?dest ?i)
-             (make-word (iris20-encode-Immediate48 (make-molecule-instruction Set48
-                                                                              ?dest)
-                                                   ?i)))
+             (make-wide-set-instruction ?dest
+                                        ?i
+                                        Set48))
+
 (make-arg-count-function Set16
                          2)
 (make-arg-count-function Set32
@@ -506,26 +690,6 @@
      BranchIfThenElseNormalPredTrue
      BranchIfThenElseNormalPredFalse)
 
-;(defmessage-handler atom encode primary
-;                    ()
-;                    (if (setoperationp ?self:operation) then
-;                      (switch ?self:operation
-;                              (case Set16 then (set16 ?self:dest
-;                                                      ?self:immediate))
-;                              (default (printout werror "ERROR: " ?self:operation " is not an atom instruction!" crlf)
-;                                       FALSE))
-;                      else
-;                      (switch (number-of-args ?self:operation)
-;                              (case 1 then (make-atom ?self:operation
-;                                                      ?self:dest))
-;                              (case 2 then (make-atom ?self:operation
-;
-;                                                      (bind ?immediatep
-;                                                            (immediatep ?self:operation))
-;                                                      (bind ?arg-count
-;                                                            (number-of-args ?self:operation))
-;
-;                                                      )
 
 (deffunction push
              (?sp ?value)
@@ -594,42 +758,41 @@
              (?sp)
              (bind ?rtemp0
                    (register-operation (register:temp0)))
-             (make-word (pop ?sp
-                             ?rtemp0)
-                        (store-op ?rtemp0
-                                  (stack-operation ?sp))))
+             (make-word-container (pop ?sp
+                                       ?rtemp0)
+                                  (store-op ?rtemp0
+                                            (stack-operation ?sp))))
 
 (deffunction stack-load
              (?sp ?dest)
-             (make-word (pop ?sp
-                             (register-operation ?dest))
-                        (load-op (register-operation ?dest)
-                                 ?dest)))
+             (make-word-container (pop ?sp
+                                       (register-operation ?dest))
+                                  (load-op (register-operation ?dest)
+                                           ?dest)))
 
 (defgeneric set64)
 (defmethod set64
   ((?dest INTEGER)
    (?value INTEGER)
-   (?left-over INTEGER))
+   (?left-over INTEGER
+               atom))
   (bind ?rtemp0
         (register-operation (register:temp0)))
-  (create$ (make-word (set16 ?rtemp0
-                             (decode-bits ?value
-                                          (hex->int 0xFFFF000000000000)
-                                          48))
-                      (shiftleft-op ?rtemp0
-                                    ?rtemp0
-                                    48
-                                    TRUE))
+  (create$ (make-word-container (set16 ?rtemp0
+                                       (decode-bits ?value
+                                                    (hex->int 0xFFFF000000000000)
+                                                    48))
+                                (shiftleftimmediate-op ?rtemp0
+                                                       ?rtemp0
+                                                       48))
            (set48 ?dest
                   (decode-bits ?value
                                (hex->int 0x0000FFFFFFFFFFFF)
                                0))
-           (make-word (add-op ?dest
-                              ?dest
-                              ?rtemp0
-                              FALSE)
-                      ?left-over)))
+           (make-word-container (add-op ?dest
+                                        ?dest
+                                        ?rtemp0)
+                                ?left-over)))
 
 (defmethod set64
   ((?dest INTEGER)
@@ -637,6 +800,51 @@
   (set64 ?dest
          ?value
          (nop)))
+
+
+(defmessage-handler atom encode primary
+                    ()
+                    (bind ?result
+                          (iris20-encode-Operation 0
+                                                   ?self:operation))
+                    (bind ?arg-count
+                          (number-of-args ?self:operation))
+                    (if (>= ?arg-count 1) then
+                      (bind ?result
+                            (iris20-encode-Destination ?result
+                                                       ?self:dest)))
+                    (if (>= ?arg-count 2) then
+                      (bind ?result
+                            (iris20-encode-Source0 ?result
+                                                   ?self:src0)))
+                    (if (>= ?arg-count 3) then
+                      (bind ?result
+                            (iris20-encode-Source1 ?result
+                                                   ?self:src1)))
+                    ?result)
+
+(defmessage-handler molecule encode primary
+                    ()
+                    (bind ?result
+                          (iris20-encode-Operation 0
+                                                   ?self:operation))
+                    (bind ?arg-count
+                          (number-of-args ?self:operation))
+                    (if (>= ?arg-count 1) then
+                      (bind ?result
+                            (iris20-encode-MoleculeDestination ?result
+                                                               ?self:dest)))
+                    (if (>= ?arg-count 2) then
+                      (bind ?result
+                            (iris20-encode-MoleculeSource0 ?result
+                                                           ?self:src0)))
+                    (if (>= ?arg-count 3) then
+                      (bind ?result
+                            (iris20-encode-MoleculeSource1 ?result
+                                                           ?self:src1)))
+                    ; if we have more than 3 then we have to handle those
+                    ; specially
+                    ?result)
 
 
 ;--------------------------------------------------------------------------------
@@ -686,8 +894,8 @@
   ((?title SYMBOL)
    (?single-atom INTEGER))
   (create$ (.label ?title)
-           (make-word ?single-atom
-                      (return-from-register (link-register)))))
+           (make-word-container ?single-atom
+                                (return-from-register (link-register)))))
 
 (defgeneric stack-func)
 (defmethod stack-func
@@ -710,15 +918,15 @@
 
 (deffunction setup-read-eval-print-loop
              ()
-             (create$ (make-word (add-op (memory-operation (register:address-table-base))
-                                         (register-operation (instruction-pointer))
-                                         1
-                                         TRUE)
-                                 (nop))
+             (create$ (make-word-container (add-op (memory-operation (register:address-table-base))
+                                                   (register-operation (instruction-pointer))
+                                                   1
+                                                   TRUE)
+                                           (nop))
                       (.label EvalBase)
                       ; loop body goes here
-                      (make-word (nop)
-                                 (return-from-memory (register:address-table-base)))))
+                      (make-word-container (nop)
+                                           (return-from-memory (register:address-table-base)))))
 
 
 (deffunction setup-simple-funcs
@@ -761,7 +969,7 @@
              (and (instancep ?l)
                   (eq (class ?l)
                       label)))
-(deffunction wordp
+(deffunction word-containerp
              (?m)
              (integerp ?m))
 
@@ -770,8 +978,8 @@
              (if (labelp ?input) then
                label
                else
-               (if (wordp ?input) then
-                 word
+               (if (word-containerp ?input) then
+                 word-container
                  else
                  unknown)))
 (deffunction strip-label
