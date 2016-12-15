@@ -220,16 +220,57 @@
         (storage local)
         (visibility public)
         (default-dynamic 0))
+  (slot operation-suffix
+        (type SYMBOL)
+        (storage shared)
+        (visibility public)
+        (default Operation))
+  (slot dest-suffix
+        (type SYMBOL)
+        (storage shared)
+        (visibility public)
+        (access read-only)
+        (default UNDEFINED-DESTINATION-SUFFIX))
+  (slot src0-suffix
+        (type SYMBOL)
+        (storage shared)
+        (visibility public)
+        (access read-only)
+        (default UNDEFINED-SOURCE0-SUFFIX))
+  (slot src1-suffix
+        (type SYMBOL)
+        (storage shared)
+        (visibility public)
+        (access read-only)
+        (default UNDEFINED-SOURCE1-SUFFIX))
   (message-handler encode primary))
 (defclass atom
   (is-a instruction)
   (role concrete)
   (pattern-match reactive)
+  (slot dest-suffix
+        (source composite)
+        (default Destination))
+  (slot src0-suffix
+        (source composite)
+        (default Source0))
+  (slot src1-suffix
+        (source composite)
+        (default Source1))
   (message-handler encode primary))
 (defclass molecule
   (is-a instruction)
   (role concrete)
   (pattern-match reactive)
+  (slot dest-suffix
+        (source composite)
+        (default MoleculeDestination))
+  (slot src0-suffix
+        (source composite)
+        (default MoleculeSource0))
+  (slot src1-suffix
+        (source composite)
+        (default MoleculeSource1))
   (message-handler encode primary))
 
 (defmethod make-molecule
@@ -870,59 +911,30 @@
          ?value
          (nop)))
 
-
-(defmessage-handler atom encode primary
+(defmessage-handler instruction encode primary
                     ()
                     (bind ?result
-                          (encode Operation
+                          (encode (dynamic-get operation-suffix)
                                   0
                                   ?self:operation))
                     (bind ?arg-count
                           (number-of-args ?self:operation))
                     (if (>= ?arg-count 1) then
                       (bind ?result
-                            (encode Destination
+                            (encode (dynamic-get dest-suffix)
                                     ?result
                                     ?self:dest)))
                     (if (>= ?arg-count 2) then
                       (bind ?result
-                            (encode Source0
+                            (encode (dynamic-get src0-suffix)
                                     ?result
                                     ?self:src0)))
                     (if (>= ?arg-count 3) then
                       (bind ?result
-                            (encode Source1
+                            (encode (dynamic-get src1-suffix)
                                     ?result
                                     ?self:src1)))
                     ?result)
-
-(defmessage-handler molecule encode primary
-                    ()
-                    (bind ?result
-                          (encode Operation
-                                  0
-                                  ?self:operation))
-                    (bind ?arg-count
-                          (number-of-args ?self:operation))
-                    (if (>= ?arg-count 1) then
-                      (bind ?result
-                            (encode MoleculeDestination
-                                    ?result
-                                    ?self:dest)))
-                    (if (>= ?arg-count 2) then
-                      (bind ?result
-                            (encode MoleculeSource0
-                                    ?result
-                                    ?self:src0)))
-                    (if (>= ?arg-count 3) then
-                      (bind ?result
-                            (encode MoleculeSource1
-                                    ?result
-                                    ?self:src1)))
-                    ; if we have more than 3 then we have to handle those
-                    ; specially
-                    ?result)
-
 
 ;--------------------------------------------------------------------------------
 (deffunction stack-init-code
