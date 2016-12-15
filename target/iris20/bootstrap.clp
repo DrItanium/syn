@@ -75,15 +75,15 @@
            (decode SectionIndex
                    ?register)))
 
-(deffunction stack-operation
+(deffunction stack
              (?i)
              (encode-register ?i
                               Stack))
-(deffunction register-operation
+(deffunction register
              (?i)
              (encode-register ?i
                               Register))
-(deffunction memory-operation
+(deffunction memory
              (?i)
              (encode-register ?i
                               Memory))
@@ -139,6 +139,7 @@
 (deffunction link-register () ?*register-lr*)
 (deffunction instruction-pointer () ?*register-ip*)
 (deffunction stack-pointer () ?*register-sp*)
+
 (deffunction has-register-prefix
              (?title)
              (str-index "register-"
@@ -222,27 +223,24 @@
         (default-dynamic 0))
   (slot operation-suffix
         (type SYMBOL)
-        (storage shared)
+        (storage local)
         (visibility public)
         (default Operation))
   (slot dest-suffix
         (type SYMBOL)
-        (storage shared)
         (visibility public)
-        (access read-only)
-        (default UNDEFINED-DESTINATION-SUFFIX))
+        (storage local)
+        (default ?NONE))
   (slot src0-suffix
         (type SYMBOL)
-        (storage shared)
+        (storage local)
         (visibility public)
-        (access read-only)
-        (default UNDEFINED-SOURCE0-SUFFIX))
+        (default ?NONE))
   (slot src1-suffix
         (type SYMBOL)
-        (storage shared)
         (visibility public)
-        (access read-only)
-        (default UNDEFINED-SOURCE1-SUFFIX))
+        (storage local)
+        (default ?NONE))
   (message-handler encode primary))
 (defclass atom
   (is-a instruction)
@@ -421,16 +419,16 @@
              ?register))
 (defmethod return-from-stack
   ((?sp INTEGER))
-  (return-instruction (stack-operation ?sp)))
+  (return-instruction (stack ?sp)))
 (defmethod return-from-stack
   ()
   (return-from-stack (stack-pointer)))
 (deffunction return-from-memory
              (?r)
-             (return-instruction (memory-operation ?r)))
+             (return-instruction (memory ?r)))
 (deffunction return-to-register
              (?r)
-             (return-instruction (register-operation ?r)))
+             (return-instruction (register ?r)))
 (deffunction return-to-link-register
              ()
              (return-to-register (link-register)))
@@ -484,7 +482,7 @@
                             ?title
                             ?operation))
              (build (format nil
-                            "(defmethod %s ((?dest INTEGER) (?src0 INTEGER) (?src1 INTEGER)) (%s (stack-operation ?dest) (stack-operation ?src0) (stack-operation ?src1) FALSE))"
+                            "(defmethod %s ((?dest INTEGER) (?src0 INTEGER) (?src1 INTEGER)) (%s (stack ?dest) (stack ?src0) (stack ?src1) FALSE))"
                             ?stack-title
                             ?title))
              (build (format nil
@@ -515,7 +513,7 @@
                             ?title
                             ?operation))
              (build (format nil
-                            "(defmethod %s ((?dest INTEGER) (?src0 INTEGER)) (%s (stack-operation ?dest) (stack-operation ?src0)))"
+                            "(defmethod %s ((?dest INTEGER) (?src0 INTEGER)) (%s (stack ?dest) (stack ?src0)))"
                             ?stack-title
                             ?title))
              (build (format nil
@@ -546,7 +544,7 @@
                             ?title
                             ?operation))
              (build (format nil
-                            "(defmethod %s ((?dest INTEGER)) (%s (stack-operation ?dest)))"
+                            "(defmethod %s ((?dest INTEGER)) (%s (stack ?dest)))"
                             ?stack-title
                             ?title))
              )
@@ -556,19 +554,28 @@
         (source composite)
         (default ?NONE))
   (message-handler encode primary))
+(deffunction encode-branch-operation
+             (?operation-suffix ?operation ?imm-suffix ?immediate ?dest-suffix ?dest)
+             (encode ?operation-suffix
+                     (encode ?imm-suffix
+                             (if (= (number-of-args ?operation)
+                                    2) then
+                               (encode ?dest-suffix
+                                       0
+                                       ?dest)
+                               else
+                               0)
+                              ?immediate)
+                     ?operation))
 (defmessage-handler branch-immediate-atom encode primary
                     ()
-                    (encode Operation
-                            (encode Immediate
-                                    (if (= (number-of-args ?self:operation)
-                                           2) then
-                                      (encode Destination
-                                              0
-                                              ?self:dest)
-                                      else
-                                      0)
-                                    ?self:immediate)
-                            ?self:operation))
+                    (encode-branch-operation ?self:operation-suffix
+                                             ?self:operation
+                                             Immediate
+                                             ?self:immediate
+                                             Destination
+                                             ?self:dest))
+
 
 (defclass branch-immediate-molecule
   (is-a molecule)
@@ -585,18 +592,13 @@
   (message-handler encode primary))
 (defmessage-handler branch-immediate-molecule encode primary
                     ()
-                    (encode (sym-cat Immediate
-                                     ?self:width)
-                            (encode Operation
-                                    (if (= (number-of-args ?self:operation)
-                                           2) then
-                                      (encode MoleculeDestination
-                                              0
-                                              ?self:dest)
-                                      else
-                                      0)
-                                    ?self:operation)
-                            ?self:immediate))
+                    (encode-branch-operation ?self:operation-suffix
+                                             ?self:operation
+                                             (sym-cat Immediate
+                                                      ?self:width)
+                                             ?self:immediate
+                                             MoleculeDestination
+                                             ?self:dest))
 
 (deffunction make-link-version
              (?op ?link)
@@ -670,6 +672,17 @@
                                                     ?check-false
                                                     ?link
                                                     48))
+
+(deffunction encode-set-operation
+             (?op-suffix ?op ?dest-suffix ?dest ?imm-suffix ?imm)
+             (encode ?op-suffix
+                     (encode ?dest-suffix
+                             (encode ?imm-suffix
+                                     0
+                                     (send ?imm
+                                           encode))
+                             ?dest)
+                     ?op))
 (defclass set16-instruction
   (is-a atom)
   (slot operation
@@ -681,33 +694,48 @@
   (message-handler encode primary))
 (defmessage-handler set16-instruction encode primary
                     ()
-                    (encode Operation
-                            (encode Destination
-                                    (encode Immediate
-                                            0
-                                            ?self:immediate)
-                                    ?self:dest)
-                            ?self:operation))
+                    (encode-set-operation ?self:operation-suffix
+                                          ?self:operation
+                                          ?self:dest-suffix
+                                          ?self:dest
+                                          Immediate
+                                          ?self:immediate))
+
 (defclass wide-set-instruction
   (is-a molecule)
   (slot immediate
         (source composite)
         (default ?NONE))
   (message-handler encode primary))
+(defmethod encode
+  ((?operation SYMBOL
+               (eq ?current-argument
+                   Set32))
+   (?value INTEGER)
+   (?field INTEGER
+           SYMBOL))
+  (encode Immediate32
+          ?value
+          ?field))
+(defmethod encode
+  ((?operation SYMBOL
+               (eq ?current-argument
+                   Set48))
+   (?value INTEGER)
+   (?field INTEGER
+           SYMBOL))
+  (encode Immediate48
+          ?value
+          ?field))
+
 (defmessage-handler wide-set-instruction encode primary
                     ()
-                    (encode Operation
-                            (encode MoleculeDestination
-                                    (encode (switch ?self:operation
-                                                    (case Set32 then Immediate32)
-                                                    (case Set48 then Immediate48)
-                                                    (default (sym-cat UNKNOWN_OPERATION
-                                                                      ?self:operation)))
-                                            0
-                                            (send ?self:immediate
-                                                  encode))
-                                    ?self:dest)
-                            ?self:operation))
+                    (encode-set-operation ?self:operation-suffix
+                                          ?self:operation
+                                          MoleculeDestination
+                                          ?self:dest
+                                          ?self:operation
+                                          ?self:immediate))
 
 (deffunction make-wide-set-instruction
              (?dest ?i ?op)
@@ -803,20 +831,20 @@
 
 (deffunction push
              (?sp ?value)
-             (move-op (stack-operation ?sp)
+             (move-op (stack ?sp)
                       ?value))
 (deffunction pop
              (?sp ?dest)
              (move-op ?dest
-                      (stack-operation ?sp)))
+                      (stack ?sp)))
 
 (deffunction load-op
              (?dest ?src)
              (move-op ?dest
-                      (memory-operation ?src)))
+                      (memory ?src)))
 (deffunction store-op
              (?dest ?src)
-             (move-op (memory-operation ?dest)
+             (move-op (memory ?dest)
                       ?src))
 (deffunction nop
              ()
@@ -827,7 +855,7 @@
 (defmethod push16
   ((?immediate INTEGER)
    (?sp INTEGER))
-  (set16 (stack-operation ?sp)
+  (set16 (stack ?sp)
          ?immediate))
 (defmethod push16
   ((?immediate INTEGER))
@@ -836,7 +864,7 @@
 
 (deffunction store16
              (?address ?imm)
-             (set16 (memory-operation ?address)
+             (set16 (memory ?address)
                     ?imm))
 
 (defgeneric increment-op)
@@ -867,17 +895,17 @@
 (deffunction stack-store
              (?sp)
              (bind ?rtemp0
-                   (register-operation (register:temp0)))
+                   (register (register:temp0)))
              (make-word-container (pop ?sp
                                        ?rtemp0)
                                   (store-op ?rtemp0
-                                            (stack-operation ?sp))))
+                                            (stack ?sp))))
 
 (deffunction stack-load
              (?sp ?dest)
              (make-word-container (pop ?sp
-                                       (register-operation ?dest))
-                                  (load-op (register-operation ?dest)
+                                       (register ?dest))
+                                  (load-op (register ?dest)
                                            ?dest)))
 
 (defgeneric set64)
@@ -887,7 +915,7 @@
    (?left-over INTEGER
                atom))
   (bind ?rtemp0
-        (register-operation (register:temp0)))
+        (register (register:temp0)))
   (create$ (make-word-container (set16 ?rtemp0
                                        (decode-bits ?value
                                                     (hex->int 0xFFFF000000000000)
@@ -953,9 +981,9 @@
                              ?*call-stack-top*)))
 (deffunction setup-start-end-pair
              (?start ?start-addr ?end ?end-addr)
-             (create$ (set64 (register-operation ?start)
+             (create$ (set64 (register ?start)
                              ?start-addr)
-                      (set64 (register-operation ?end)
+                      (set64 (register ?end)
                              ?end-addr)))
 
 (deffunction memory-block-code
@@ -973,7 +1001,7 @@
                                      ?*code-start*
                                      (register:code-end)
                                      ?*code-end*)
-               (set64 (register-operation (register:address-table-base))
+               (set64 (register (register:address-table-base))
                       ?*addr-table-begin*
                       (move-op (register:address-table-pointer)
                                (register:address-table-base)))))
@@ -1007,8 +1035,8 @@
 
 (deffunction setup-read-eval-print-loop
              ()
-             (create$ (make-word-container (add-op (memory-operation (register:address-table-base))
-                                                   (register-operation (instruction-pointer))
+             (create$ (make-word-container (add-op (memory (register:address-table-base))
+                                                   (register (instruction-pointer))
                                                    1
                                                    TRUE)
                                            (nop))
@@ -1040,17 +1068,17 @@
                       (stack-func ge
                                   greaterthanorequalto)
                       (func incr
-                            (increment-op (stack-operation (stack-pointer))
-                                          (stack-operation (stack-pointer))))
+                            (increment-op (stack (stack-pointer))
+                                          (stack (stack-pointer))))
                       (func decr
-                            (decrement-op (stack-operation (stack-pointer))
-                                          (stack-operation (stack-pointer))))
+                            (decrement-op (stack (stack-pointer))
+                                          (stack (stack-pointer))))
                       (func halve
-                            (halve (stack-operation (stack-pointer))
-                                   (stack-operation (stack-pointer))))
+                            (halve (stack (stack-pointer))
+                                   (stack (stack-pointer))))
                       (func double
-                            (double (stack-operation (stack-pointer))
-                                    (stack-operation (stack-pointer))))))
+                            (double (stack (stack-pointer))
+                                    (stack (stack-pointer))))))
 
 
 (deffunction labelp
@@ -1082,3 +1110,12 @@
 (deffunction compute-address
              (?input)
              (length$ (strip-labels ?input)))
+
+(deffunction encode-thing
+             (?thing)
+             (send ?thing
+                   encode))
+(deffunction encode-list
+             (?input)
+             (map encode-thing
+                  (expand$ ?input)))
