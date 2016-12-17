@@ -127,3 +127,41 @@
              (map break-apart-number
                   (expand$ ?number-list)))
 
+
+
+(defgeneric cortex::buildf)
+(defmethod cortex::buildf
+  ((?router SYMBOL)
+   (?fmt STRING)
+   (?args MULTIFIELD))
+  (build (format ?router
+                 ?fmt
+                 (expand$ ?args))))
+(defmethod cortex::buildf
+  ((?router SYMBOL)
+   (?fmt STRING)
+   $?args)
+  (buildf ?router
+          ?fmt
+          ?args))
+(defmethod cortex::buildf
+  ((?fmt STRING)
+   (?args MULTIFIELD))
+  (buildf nil
+          ?fmt
+          ?args))
+(defmethod cortex::buildf
+  ((?fmt STRING)
+   $?args)
+  (buildf ?fmt
+          ?args))
+
+(deffunction cortex::symbol->index
+             (?symbol ?collection)
+             (member$ ?symbol
+                      ?collection))
+(deffunction cortex::symbol->zero-index
+             (?symbol ?collection)
+             (- (symbol->index ?symbol
+                               ?collection)
+                1))

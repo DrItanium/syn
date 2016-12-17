@@ -1,29 +1,3 @@
-(defgeneric buildf)
-(defmethod buildf
-  ((?router SYMBOL)
-   (?fmt STRING)
-   (?args MULTIFIELD))
-  (build (format ?router
-                 ?fmt
-                 (expand$ ?args))))
-(defmethod buildf
-  ((?router SYMBOL)
-   (?fmt STRING)
-   $?args)
-  (buildf ?router
-          ?fmt
-          ?args))
-(defmethod buildf
-  ((?fmt STRING)
-   (?args MULTIFIELD))
-  (buildf nil
-          ?fmt
-          ?args))
-(defmethod buildf
-  ((?fmt STRING)
-   $?args)
-  (buildf ?fmt
-          ?args))
 (deffunction target-architecture
              ()
              (funcall current-target-architecture))
@@ -32,8 +6,8 @@
              iris20)
 (deffunction enum->int
              (?symbol ?collection)
-             (- (member$ ?symbol
-                         ?collection) 1))
+             (symbol->zero-index ?symbol
+                                 ?collection))
 (deffunction section-descriptor->int
              (?symbol)
              (enum->int ?symbol
