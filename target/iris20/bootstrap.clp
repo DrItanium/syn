@@ -1,4 +1,33 @@
+(defgeneric buildf)
+(defmethod buildf
+  ((?router SYMBOL)
+   (?fmt STRING)
+   (?args MULTIFIELD))
+  (build (format ?router
+                 ?fmt
+                 (expand$ ?args))))
+(defmethod buildf
+  ((?router SYMBOL)
+   (?fmt STRING)
+   $?args)
+  (buildf ?router
+          ?fmt
+          ?args))
+(defmethod buildf
+  ((?fmt STRING)
+   (?args MULTIFIELD))
+  (buildf nil
+          ?fmt
+          ?args))
+(defmethod buildf
+  ((?fmt STRING)
+   $?args)
+  (buildf ?fmt
+          ?args))
 (deffunction target-architecture
+             ()
+             (funcall current-target-architecture))
+(deffunction current-target-architecture
              ()
              iris20)
 (deffunction enum->int
@@ -41,6 +70,7 @@
                                    ?section
                                    ?value
                                    ?field))
+
 (defmethod decode
   ((?section SYMBOL)
    (?value INTEGER))
@@ -146,21 +176,22 @@
                         ?title))
 (deffunction build-register-operation
              (?title)
-             (bind ?reg-len
-                   (str-length "register-"))
-             (build (format nil "(deffunction register:%s () ?*%s*)"
-                            (sub-string (+ ?reg-len 1) (str-length ?title)
-                                        ?title)
-                            ?title)))
+             (buildf "(deffunction register:%s () ?*%s*)"
+                     (sub-string (+ (str-length "register-")
+                                    1)
+                                 (str-length ?title)
+                                 ?title)
+                     ?title))
 
 (map build-register-operation
      (expand$ (filter has-register-prefix
                       (expand$ (get-defglobal-list MAIN)))))
 (loop-for-count (?i 0 63) do
-                (build (format nil
-                               "(deffunction register:%s () %d)"
-                               (sym-cat r ?i)
-                               ?i)))
+                (buildf "(deffunction register:%s () %d)"
+                        (sym-cat r
+                                 ?i)
+                        ?i))
+
 (deffunction register:
              (?name)
              (funcall (sym-cat register: ?name)))
@@ -179,16 +210,10 @@
                           t))
 
 
-(deffunction output-bytes-to-file
-             (?bytes ?router)
-             (progn$ (?byte ?bytes)
-                     (put-char ?router
-                               ?byte)))
-
 (defgeneric return-from-register)
-(defgeneric make-atom)
-(defgeneric make-molecule)
-(defgeneric make-word-container)
+(defgeneric make:atom)
+(defgeneric make:molecule)
+(defgeneric make:word-container)
 (defgeneric return-from-stack)
 
 
@@ -271,7 +296,7 @@
         (default MoleculeSource1))
   (message-handler encode primary))
 
-(defmethod make-molecule
+(defmethod make:molecule
   ((?operation SYMBOL)
    (?dest INTEGER)
    (?src0 INTEGER)
@@ -281,49 +306,49 @@
                  (dest ?dest)
                  (src0 ?src0)
                  (src1 ?src1)))
-(defmethod make-molecule
+(defmethod make:molecule
   ((?operation SYMBOL)
    (?dest INTEGER))
-  (make-molecule ?operation
+  (make:molecule ?operation
                  ?dest
                  0
                  0))
-(defmethod make-molecule
+(defmethod make:molecule
   ((?operation SYMBOL))
-  (make-molecule ?operation
+  (make:molecule ?operation
                  0))
 
-(defmethod make-molecule
+(defmethod make:molecule
   ((?operation SYMBOL)
    (?dest INTEGER)
    (?src0 INTEGER))
-  (make-molecule ?operation
+  (make:molecule ?operation
                  ?dest
                  ?src0
                  0))
 
-(defmethod make-atom
+(defmethod make:atom
   ((?operation SYMBOL))
-  (make-atom ?operation
+  (make:atom ?operation
              0))
 
-(defmethod make-atom
+(defmethod make:atom
   ((?operation SYMBOL)
    (?destination INTEGER))
-  (make-atom ?operation
+  (make:atom ?operation
              ?destination
              0))
 
-(defmethod make-atom
+(defmethod make:atom
   ((?operation SYMBOL)
    (?dest INTEGER)
    (?src0 INTEGER))
-  (make-atom ?operation
+  (make:atom ?operation
              ?dest
              ?src0
              0))
 
-(defmethod make-atom
+(defmethod make:atom
   ((?operation SYMBOL)
    (?dest INTEGER)
    (?src0 INTEGER)
@@ -369,7 +394,7 @@
            (instance-existp (symbol-to-instance-name ?current-argument))))
   (symbol-to-instance-name ?title))
 
-(defmethod make-word-container
+(defmethod make:word-container
   ((?first INTEGER
            atom)
    (?second INTEGER
@@ -377,7 +402,7 @@
   (make-instance of word-container
                  (contents ?first
                            ?second)))
-(defmethod make-word-container
+(defmethod make:word-container
   ((?wide-instruction INTEGER
                       molecule))
   (make-instance of word-container
@@ -415,7 +440,7 @@
 
 (defmethod return-instruction
   ((?register INTEGER))
-  (make-atom BranchUnconditionalRegister
+  (make:atom BranchUnconditionalRegister
              ?register))
 (defmethod return-from-stack
   ((?sp INTEGER))
@@ -434,120 +459,98 @@
              (return-to-register (link-register)))
 (defgeneric number-of-args)
 (defgeneric operation-to-call)
-(deffunction make-operation-to-call
+(deffunction make:operation-to-call
              (?symbol ?func)
-             (build (format nil
-                            "(defmethod operation-to-call ((?a SYMBOL (not (neq ?current-argument %s %s)))) %s)"
-                            ?symbol
-                            (lowcase ?symbol)
-                            ?func)))
+             (buildf "(defmethod operation-to-call ((?a SYMBOL (not (neq ?current-argument %s %s)))) %s)"
+                     ?symbol
+                     (lowcase ?symbol)
+                     ?func))
 
 (deffunction immediatep
              (?symbol)
              (has-suffix ?symbol
                          Immediate))
-(deffunction make-arg-count-function
+(deffunction make:arg-count-function
              (?op ?count)
-             (build (format nil
-                            "(defmethod number-of-args ((?a SYMBOL (not (neq ?current-argument %s %s)))) %d)"
-                            ?op
-                            (lowcase ?op)
-                            ?count)))
+             (buildf "(defmethod number-of-args ((?a SYMBOL (not (neq ?current-argument %s %s)))) %d)"
+                     ?op
+                     (lowcase ?op)
+                     ?count))
 
 (deffunction setoperationp
              (?symbol)
              (has-prefix ?symbol
                          Set))
+(deffunction build-generic
+             (?title)
+             (buildf "(defgeneric %s)"
+                     ?title))
+(deffunction make-operation-title
+             (?title)
+             (sym-cat op:
+                      (lowcase ?title)))
+
+(deffunction make-stack-operation-title
+             (?title)
+             (sym-cat (make-operation-title ?title)
+                      :stack))
 
 (deffunction build-specific-operation-three-arg
              (?operation)
-             (bind ?title
-                   (sym-cat (lowcase ?operation)
-                            -op))
-             (bind ?stack-title
-                   (str-cat ?title
-                            ":stack"))
-             (build (format nil
-                            "(defgeneric %s)"
-                            ?title))
-             (build (format nil
-                            "(defgeneric %s)"
-                            ?stack-title))
-             (make-arg-count-function ?operation
+             (build-generic (bind ?title
+                                  (make-operation-title ?operation)))
+             (build-generic (bind ?stack-title
+                                  (make-stack-operation-title ?operation)))
+             (make:arg-count-function ?operation
                                       3)
-             (make-operation-to-call ?operation
+             (make:operation-to-call ?operation
                                      ?title)
-             (build (format nil
-                            "(defmethod %s ((?dest INTEGER) (?src0 INTEGER) (?src1 INTEGER)) (make-atom %s ?dest ?src0 ?src1))"
-                            ?title
-                            ?operation))
-             (build (format nil
-                            "(defmethod %s ((?dest INTEGER) (?src0 INTEGER) (?src1 INTEGER)) (%s (stack ?dest) (stack ?src0) (stack ?src1) FALSE))"
-                            ?stack-title
-                            ?title))
-             (build (format nil
-                            "(defmethod %s ((?stack INTEGER)) (%s ?stack ?stack ?stack))"
-                            ?stack-title
-                            ?stack-title)))
+             (buildf "(defmethod %s ((?dest INTEGER) (?src0 INTEGER) (?src1 INTEGER)) (make:atom %s ?dest ?src0 ?src1))"
+                     ?title
+                     ?operation)
+             (buildf "(defmethod %s ((?dest INTEGER) (?src0 INTEGER) (?src1 INTEGER)) (%s (stack ?dest) (stack ?src0) (stack ?src1) FALSE))"
+                     ?stack-title
+                     ?title)
+             (buildf "(defmethod %s ((?stack INTEGER)) (%s ?stack ?stack ?stack))"
+                     ?stack-title
+                     ?stack-title))
 
 (deffunction build-specific-operation-two-arg
              (?operation)
-             (bind ?title
-                   (sym-cat (lowcase ?operation)
-                            -op))
-             (make-arg-count-function ?operation
+             (build-generic (bind ?title
+                                  (make-operation-title ?operation)))
+             (build-generic (bind ?stack-title
+                                  (make-stack-operation-title ?operation)))
+             (make:arg-count-function ?operation
                                       2)
-             (make-operation-to-call ?operation
+             (make:operation-to-call ?operation
                                      ?title)
-             (bind ?stack-title
-                   (str-cat ?title
-                            ":stack"))
-             (build (format nil
-                            "(defgeneric %s)"
-                            ?title))
-             (build (format nil
-                            "(defgeneric %s)"
-                            ?stack-title))
-             (build (format nil
-                            "(defmethod %s ((?dest INTEGER) (?src0 INTEGER)) (make-atom %s ?dest ?src0))"
-                            ?title
-                            ?operation))
-             (build (format nil
-                            "(defmethod %s ((?dest INTEGER) (?src0 INTEGER)) (%s (stack ?dest) (stack ?src0)))"
-                            ?stack-title
-                            ?title))
-             (build (format nil
-                            "(defmethod %s ((?stack INTEGER)) (%s ?stack ?stack))"
-                            ?stack-title
-                            ?stack-title)))
+             (buildf "(defmethod %s ((?dest INTEGER) (?src0 INTEGER)) (make:atom %s ?dest ?src0))"
+                     ?title
+                     ?operation)
+             (buildf "(defmethod %s ((?dest INTEGER) (?src0 INTEGER)) (%s (stack ?dest) (stack ?src0)))"
+                     ?stack-title
+                     ?title)
+             (buildf "(defmethod %s ((?stack INTEGER)) (%s ?stack ?stack))"
+                     ?stack-title
+                     ?stack-title))
 
 (deffunction build-specific-operation-one-arg
              (?operation)
-             (make-arg-count-function ?operation
+             (build-generic (bind ?title
+                                  (make-operation-title ?operation)))
+             (build-generic (bind ?stack-title
+                                  (make-stack-operation-title ?operation)))
+             (make:arg-count-function ?operation
                                       1)
-             (bind ?title
-                   (sym-cat (lowcase ?operation)
-                            -op))
-             (make-operation-to-call ?operation
+             (make:operation-to-call ?operation
                                      ?title)
-             (bind ?stack-title
-                   (str-cat ?title
-                            ":stack"))
-             (build (format nil
-                            "(defgeneric %s)"
-                            ?title))
-             (build (format nil
-                            "(defgeneric %s)"
-                            ?stack-title))
-             (build (format nil
-                            "(defmethod %s ((?dest INTEGER)) (make-atom %s ?dest))"
-                            ?title
-                            ?operation))
-             (build (format nil
-                            "(defmethod %s ((?dest INTEGER)) (%s (stack ?dest)))"
-                            ?stack-title
-                            ?title))
-             )
+             (buildf "(defmethod %s ((?dest INTEGER)) (make:atom %s ?dest))"
+                     ?title
+                     ?operation)
+             (buildf "(defmethod %s ((?dest INTEGER)) (%s (stack ?dest)))"
+                     ?stack-title
+                     ?title))
 (defclass branch-immediate-atom
   (is-a atom)
   (slot immediate
@@ -565,7 +568,7 @@
                                        ?dest)
                                else
                                0)
-                              ?immediate)
+                             ?immediate)
                      ?operation))
 (defmessage-handler branch-immediate-atom encode primary
                     ()
@@ -600,13 +603,13 @@
                                              MoleculeDestination
                                              ?self:dest))
 
-(deffunction make-link-version
+(deffunction make:link-version
              (?op ?link)
              (if ?link then (sym-cat ?op Link) else ?op))
 (deffunction branch-unconditional-immediate
              (?address ?link)
              (make-instance of branch-immediate-atom
-                            (operation (make-link-version BranchUnconditionalImmediate
+                            (operation (make:link-version BranchUnconditionalImmediate
                                                           ?link))
                             (dest 0)
                             (immediate ?address)))
@@ -619,14 +622,14 @@
                      BranchConditionalTrueImmediate))
              (make-instance of branch-immediate-atom
                             (dest ?dest)
-                            (operation (make-link-version ?base-op
+                            (operation (make:link-version ?base-op
                                                           ?link))
                             (immediate ?address)))
 (deffunction branch-unconditional-immediate32
              (?address ?link)
              (make-instance of branch-immediate-molecule
                             (width 32)
-                            (operation (make-link-version BranchUnconditionalImmediate32
+                            (operation (make:link-version BranchUnconditionalImmediate32
                                                           ?link))
                             (dest 0)
                             (immediate ?address)))
@@ -635,7 +638,7 @@
              (?address ?link)
              (make-instance of branch-immediate-molecule
                             (width 48)
-                            (operation (make-link-version BranchUnconditionalImmediate48
+                            (operation (make:link-version BranchUnconditionalImmediate48
                                                           ?link))
                             (dest 0)
                             (immediate ?address)))
@@ -643,7 +646,7 @@
 (deffunction branch-conditional-immediate-molecule
              (?dest ?address ?check-false ?link ?width)
              (bind ?base-op
-                   (make-link-version (sym-cat BranchConditional
+                   (make:link-version (sym-cat BranchConditional
                                                (if ?check-false then
                                                  False
                                                  else
@@ -737,9 +740,9 @@
                                           ?self:operation
                                           ?self:immediate))
 
-(deffunction make-wide-set-instruction
+(deffunction make:wide-set-instruction
              (?dest ?i ?op)
-             (make-word-container
+             (make:word-container
                (make-instance of wide-set-instruction
                               (operation ?op)
                               (immediate ?i)
@@ -753,27 +756,27 @@
                             (immediate ?i)))
 (deffunction set32
              (?dest ?i)
-             (make-wide-set-instruction ?dest
+             (make:wide-set-instruction ?dest
                                         ?i
                                         Set32))
 
 (deffunction set48
              (?dest ?i)
-             (make-wide-set-instruction ?dest
+             (make:wide-set-instruction ?dest
                                         ?i
                                         Set48))
 
-(make-arg-count-function Set16
+(make:arg-count-function Set16
                          2)
-(make-arg-count-function Set32
+(make:arg-count-function Set32
                          2)
-(make-arg-count-function Set48
+(make:arg-count-function Set48
                          2)
-(make-operation-to-call Set16
+(make:operation-to-call Set16
                         (lowcase Set16))
-(make-operation-to-call Set32
+(make:operation-to-call Set32
                         (lowcase Set32))
-(make-operation-to-call Set48
+(make:operation-to-call Set48
                         (lowcase Set48))
 
 (map build-specific-operation-one-arg
@@ -831,24 +834,24 @@
 
 (deffunction push
              (?sp ?value)
-             (move-op (stack ?sp)
+             (op:move (stack ?sp)
                       ?value))
 (deffunction pop
              (?sp ?dest)
-             (move-op ?dest
+             (op:move ?dest
                       (stack ?sp)))
 
-(deffunction load-op
+(deffunction op:load
              (?dest ?src)
-             (move-op ?dest
+             (op:move ?dest
                       (memory ?src)))
-(deffunction store-op
+(deffunction op:store
              (?dest ?src)
-             (move-op (memory ?dest)
+             (op:move (memory ?dest)
                       ?src))
 (deffunction nop
              ()
-             (swap-op (register:r0)
+             (op:swap (register:r0)
                       (register:r0)))
 
 (defgeneric push16)
@@ -867,45 +870,45 @@
              (set16 (memory ?address)
                     ?imm))
 
-(defgeneric increment-op)
-(defgeneric decrement-op)
-(defgeneric double)
-(defgeneric halve)
+(defgeneric op:increment)
+(defgeneric op:decrement)
+(defgeneric op:double)
+(defgeneric op:halve)
 
-(defmethod increment-op
+(defmethod op:increment
   ((?dest INTEGER)
    (?src INTEGER))
-  (add-op ?dest ?src 1 TRUE))
+  (op:add ?dest ?src 1 TRUE))
 
-(defmethod decrement-op
+(defmethod op:decrement
   ((?dest INTEGER)
    (?src INTEGER))
-  (sub-op ?dest ?src 1 TRUE))
+  (op:sub ?dest ?src 1 TRUE))
 
-(defmethod double
+(defmethod op:double
   ((?dest INTEGER)
    (?src INTEGER))
-  (mul-op ?dest ?src 2 TRUE))
+  (op:mul ?dest ?src 2 TRUE))
 
-(defmethod halve
+(defmethod op:halve
   ((?dest INTEGER)
    (?src INTEGER))
-  (div-op ?dest ?src 2 TRUE))
+  (op:div ?dest ?src 2 TRUE))
 
 (deffunction stack-store
              (?sp)
              (bind ?rtemp0
                    (register (register:temp0)))
-             (make-word-container (pop ?sp
+             (make:word-container (pop ?sp
                                        ?rtemp0)
-                                  (store-op ?rtemp0
+                                  (op:store ?rtemp0
                                             (stack ?sp))))
 
 (deffunction stack-load
              (?sp ?dest)
-             (make-word-container (pop ?sp
+             (make:word-container (pop ?sp
                                        (register ?dest))
-                                  (load-op (register ?dest)
+                                  (op:load (register ?dest)
                                            ?dest)))
 
 (defgeneric set64)
@@ -916,18 +919,18 @@
                atom))
   (bind ?rtemp0
         (register (register:temp0)))
-  (create$ (make-word-container (set16 ?rtemp0
+  (create$ (make:word-container (set16 ?rtemp0
                                        (decode-bits ?value
                                                     (hex->int 0xFFFF000000000000)
                                                     48))
-                                (shiftleftimmediate-op ?rtemp0
+                                (op:shiftleftimmediate ?rtemp0
                                                        ?rtemp0
                                                        48))
            (set48 ?dest
                   (decode-bits ?value
                                (hex->int 0x0000FFFFFFFFFFFF)
                                0))
-           (make-word-container (add-op ?dest
+           (make:word-container (op:add ?dest
                                         ?dest
                                         ?rtemp0)
                                 ?left-over)))
@@ -969,13 +972,13 @@
              ()
              (create$ (set64 (register:stack-pointer-bottom)
                              ?*stack-bottom*
-                             (move-op (stack-pointer)
+                             (op:move (stack-pointer)
                                       (register:stack-pointer-bottom)))
                       (set64 (register:stack-pointer-top)
                              ?*stack-top*)
                       (set64 (register:call-stack-bottom)
                              ?*call-stack-bottom*
-                             (move-op (register:call-stack-pointer)
+                             (op:move (register:call-stack-pointer)
                                       (register:call-stack-bottom)))
                       (set64 (register:call-stack-top)
                              ?*call-stack-top*)))
@@ -1003,7 +1006,7 @@
                                      ?*code-end*)
                (set64 (register (register:address-table-base))
                       ?*addr-table-begin*
-                      (move-op (register:address-table-pointer)
+                      (op:move (register:address-table-pointer)
                                (register:address-table-base)))))
 
 (defgeneric func)
@@ -1011,7 +1014,7 @@
   ((?title SYMBOL)
    (?single-atom INTEGER))
   (create$ (.label ?title)
-           (make-word-container ?single-atom
+           (make:word-container ?single-atom
                                 (return-from-register (link-register)))))
 
 (defgeneric stack-func)
@@ -1020,7 +1023,9 @@
    (?operation SYMBOL)
    (?sp INTEGER))
   (func ?title
-        (funcall (sym-cat ?operation -op:stack)
+        (funcall (sym-cat op:
+                          ?operation
+                          :stack)
                  ?sp)))
 (defmethod stack-func
   ((?title SYMBOL)
@@ -1035,14 +1040,14 @@
 
 (deffunction setup-read-eval-print-loop
              ()
-             (create$ (make-word-container (add-op (memory (register:address-table-base))
+             (create$ (make:word-container (op:add (memory (register:address-table-base))
                                                    (register (instruction-pointer))
                                                    1
                                                    TRUE)
                                            (nop))
                       (.label EvalBase)
                       ; loop body goes here
-                      (make-word-container (nop)
+                      (make:word-container (nop)
                                            (return-from-memory (register:address-table-base)))))
 
 
@@ -1068,16 +1073,16 @@
                       (stack-func ge
                                   greaterthanorequalto)
                       (func incr
-                            (increment-op (stack (stack-pointer))
+                            (op:increment (stack (stack-pointer))
                                           (stack (stack-pointer))))
                       (func decr
-                            (decrement-op (stack (stack-pointer))
+                            (op:decrement (stack (stack-pointer))
                                           (stack (stack-pointer))))
                       (func halve
-                            (halve (stack (stack-pointer))
+                            (op:halve (stack (stack-pointer))
                                    (stack (stack-pointer))))
                       (func double
-                            (double (stack (stack-pointer))
+                            (op:double (stack (stack-pointer))
                                     (stack (stack-pointer))))))
 
 
@@ -1119,3 +1124,5 @@
              (?input)
              (map encode-thing
                   (expand$ ?input)))
+
+
