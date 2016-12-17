@@ -78,22 +78,16 @@
                    ?register)
            (decode SectionIndex
                    ?register)))
+(deffunction MAIN::build-register-encoder
+             (?title)
+             (buildf "(deffunction MAIN::%s (?i) (encode-register ?i %s))"
+                     (lowcase ?title)
+                     ?title))
+(map build-register-encoder
+     (expand$ ?*iris20-enumSectionType*))
 
-(deffunction MAIN::stack
-             (?i)
-             (encode-register ?i
-                              Stack))
-(deffunction MAIN::register
-             (?i)
-             (encode-register ?i
-                              Register))
-(deffunction MAIN::memory
-             (?i)
-             (encode-register ?i
-                              Memory))
-(defmessage-handler INTEGER encode primary
-                    ()
-                    ?self)
+(build-stubbed-message-handler INTEGER
+                               encode)
 (defglobal MAIN
            ?*addr-max* = (hex->int 0x03FFFFFF)
            ?*space-size* = (hex->int 0x00FFFFFF)

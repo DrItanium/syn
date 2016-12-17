@@ -108,11 +108,14 @@
              (multislot data))
 
 
-(defgeneric cortex::external-address-type)
-(defmethod cortex::external-address-type
+(defgeneric cortex::type-of)
+(defmethod cortex::type-of
   ((?a EXTERNAL-ADDRESS))
   (call ?a
         type))
+(defmethod cortex::type-of
+  ((?a PRIMITIVE))
+  (class ?a))
 
 
 (defclass cortex::has-contents
@@ -165,3 +168,8 @@
              (- (symbol->index ?symbol
                                ?collection)
                 1))
+(deffunction cortex::build-stubbed-message-handler
+             (?type ?op)
+             (buildf "(defmessage-handler %s %s primary () ?self)"
+                     ?type
+                     ?op))
