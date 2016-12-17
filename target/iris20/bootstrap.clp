@@ -407,36 +407,30 @@
                       molecule))
   (make-instance of word-container
                  (contents ?wide-instruction)))
+(defmethod encode
+  ((?thing molecule
+           atom))
+  (send ?thing
+        encode))
+(defmethod encode
+  ((?first atom)
+   (?second atom))
+  (encode SecondAtom
+          (encode FirstAtom
+                  0
+                  (encode ?first))
+          (encode ?second)))
 (defmessage-handler word-container encode primary
                     ()
-                    (switch (length$ ?self:contents)
-                            (case 0 then
-                              (printout werror
-                                        "ERROR: word-container contains no instructions!"
-                                        crlf)
-                              (halt)
-                              (create$))
-                            (case 1 then (encode MoleculeContainsOneInstruction
-                                                 (send (nth$ 1
-                                                             ?self:contents)
-                                                       encode)
-                                                 1))
-                            (case 2 then (encode MoleculeContainsOneInstruction
-                                                 (encode SecondAtom
-                                                         (encode FirstAtom
-                                                                 0
-                                                                 (send (nth$ 1
-                                                                             ?self:contents)
-                                                                       encode))
-                                                         (send (nth$ 2
-                                                                     ?self:contents)
-                                                               encode))
-                                                 0))
-                            (default (printout werror
-                                               "ERROR: word-container contains too many instructions!"
-                                               crlf)
-                                     (halt)
-                                     (create$))))
+                    (encode MoleculeContainsOneInstruction
+                            (encode (expand$ ?self:contents))
+                            (switch (length$ ?self:contents)
+                                    (case 1 then 1)
+                                    (case 2 then 0)
+                                    (default (format werror
+                                                     "ERROR: word-container contains %d instructions!%n"
+                                                     (length$ ?self:contents))
+                                             (create$)))))
 
 (defmethod return-instruction
   ((?register INTEGER))
@@ -459,23 +453,33 @@
              (return-to-register (link-register)))
 (defgeneric number-of-args)
 (defgeneric operation-to-call)
-(deffunction make:operation-to-call
-             (?symbol ?func)
-             (buildf "(defmethod operation-to-call ((?a SYMBOL (not (neq ?current-argument %s %s)))) %s)"
+(deffunction make:special-defmethod
+             (?title ?symbol ?value)
+             (buildf "(defmethod %s
+                        ((?a SYMBOL
+                             (not (neq ?current-argument
+                                       %s
+                                       %s))))
+                        %s)"
+                     ?title
                      ?symbol
                      (lowcase ?symbol)
-                     ?func))
-
+                     (str-cat ?value)))
 (deffunction immediatep
              (?symbol)
              (has-suffix ?symbol
                          Immediate))
+(deffunction make:operation-to-call
+             (?symbol ?func)
+             (make:special-defmethod operation-to-call
+                                     ?symbol
+                                     ?func))
+
 (deffunction make:arg-count-function
              (?op ?count)
-             (buildf "(defmethod number-of-args ((?a SYMBOL (not (neq ?current-argument %s %s)))) %d)"
-                     ?op
-                     (lowcase ?op)
-                     ?count))
+             (make:special-defmethod number-of-args
+                                     ?op
+                                     ?count))
 
 (deffunction setoperationp
              (?symbol)
@@ -765,19 +769,24 @@
              (make:wide-set-instruction ?dest
                                         ?i
                                         Set48))
+(deffunction make:two-argument-set-count
+             (?t)
+             (make:arg-count-function ?t
+                                      2))
+(deffunction make:operation-to-call:set
+             (?t)
+             (make:operation-to-call ?t
+                                     (lowcase ?t)))
+(deffunction make:set-operation:to-call-and-arg-count
+             (?t)
+             (make:operation-to-call:set ?t)
+             (make:two-argument-set-count ?t))
 
-(make:arg-count-function Set16
-                         2)
-(make:arg-count-function Set32
-                         2)
-(make:arg-count-function Set48
-                         2)
-(make:operation-to-call Set16
-                        (lowcase Set16))
-(make:operation-to-call Set32
-                        (lowcase Set32))
-(make:operation-to-call Set48
-                        (lowcase Set48))
+
+(map make:set-operation:to-call-and-arg-count
+     Set16
+     Set32
+     Set48)
 
 (map build-specific-operation-one-arg
      BranchUnconditionalRegister
@@ -856,7 +865,8 @@
 
 (defgeneric push16)
 (defmethod push16
-  ((?immediate INTEGER)
+  ((?immediate INTEGER
+               label)
    (?sp INTEGER))
   (set16 (stack ?sp)
          ?immediate))
@@ -864,6 +874,7 @@
   ((?immediate INTEGER))
   (push16 ?immediate
           (stack-pointer)))
+
 
 (deffunction store16
              (?address ?imm)
