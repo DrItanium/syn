@@ -61,11 +61,11 @@
                            decode))
 
              (format t 
-                     "(defgeneric %s)%n(defgeneric %s)%n"
+                     "(defgeneric MAIN::%s)%n(defgeneric MAIN::%s)%n"
                      ?encode-name
                      ?decode-name)
              (format t 
-                     "(defmethod %s 
+                     "(defmethod MAIN::%s 
                         ((?value INTEGER))
                         (decode-bits ?value
                                      %s
@@ -74,7 +74,7 @@
                      ?m
                      ?s)
              (format t
-                     "(defmethod %s
+                     "(defmethod MAIN::%s
                         ((?value INTEGER)
                          (?field INTEGER))
                         (encode-bits ?value
@@ -150,4 +150,9 @@
                  ?n
                  ?name
                  (implode$ ?output)))
-
+(defrule MAIN::generate-target-architecture
+         (namespace ?ns)
+         =>
+         (format t
+                "(deffunction MAIN::target-architecture () %s)%n"
+                ?ns))

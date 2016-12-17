@@ -1,9 +1,3 @@
-(deffunction MAIN::target-architecture
-             ()
-             (funcall current-target-architecture))
-(deffunction MAIN::current-target-architecture
-             ()
-             iris20)
 (deffunction MAIN::enum->int
              (?symbol ?collection)
              (symbol->zero-index ?symbol
@@ -410,6 +404,9 @@
 (defmethod MAIN::return-from-stack
   ()
   (return-from-stack (stack-pointer)))
+(defmethod MAIN::return-from-register
+ ((?reg INTEGER))
+ (return-instruction (register ?reg)))
 (deffunction MAIN::return-from-memory
              (?r)
              (return-instruction (memory ?r)))
@@ -480,7 +477,7 @@
              (buildf "(defmethod MAIN::%s ((?dest INTEGER) (?src0 INTEGER) (?src1 INTEGER)) (make:atom %s ?dest ?src0 ?src1))"
                      ?title
                      ?operation)
-             (buildf "(defmethod MAIN::%s ((?dest INTEGER) (?src0 INTEGER) (?src1 INTEGER)) (%s (stack ?dest) (stack ?src0) (stack ?src1) FALSE))"
+             (buildf "(defmethod MAIN::%s ((?dest INTEGER) (?src0 INTEGER) (?src1 INTEGER)) (%s (stack ?dest) (stack ?src0) (stack ?src1)))"
                      ?stack-title
                      ?title)
              (buildf "(defmethod MAIN::%s ((?stack INTEGER)) (%s ?stack ?stack ?stack))"
@@ -1000,7 +997,8 @@
 (defgeneric MAIN::func)
 (defmethod MAIN::func
   ((?title SYMBOL)
-   (?single-atom INTEGER))
+   (?single-atom INTEGER
+                 INSTANCE))
   (create$ (.label ?title)
            (make:word-container ?single-atom
                                 (return-from-register (link-register)))))
