@@ -193,62 +193,61 @@ inline constexpr int32 encodeInt32LE(int16 lower, int16 upper) noexcept {
     return encodeValueLE<int32>(lower, upper);
 }
 
-inline void decodeUint32LE(uint32 value, byte storage[sizeof(uint32)]) noexcept {
-	using Number = uint32;
+template<typename T>
+inline void decode2byteQuantityLE(T value, byte storage[sizeof(T)], int offset = 0) noexcept {
+	static_assert(sizeof(T) >= 2, "Provided type is too small to decode a 2 byte quantity into!");
+	using Number = T;
 	using Field = byte;
-	storage[0] = decodeField<Number, Field, 0>(value);
-	storage[1] = decodeField<Number, Field, 1>(value);
-	storage[2] = decodeField<Number, Field, 2>(value);
-	storage[3] = decodeField<Number, Field, 3>(value);
+	storage[offset + 0] = decodeField<Number, Field, 0>(value);
+	storage[offset + 1] = decodeField<Number, Field, 1>(value);
 }
 
-inline void decodeUint16LE(uint16 value, byte storage[sizeof(uint16)]) noexcept {
-	using Number = uint16;
+template<typename T>
+inline void decode4byteQuantityLE(T value, byte storage[sizeof(T)], int offset = 0) noexcept {
+	static_assert(sizeof(T) >= 4, "Provided type is too small to decode a 4 byte quantity into!");
+	using Number = T;
 	using Field = byte;
-	storage[0] = decodeField<Number, Field, 0>(value);
-	storage[1] = decodeField<Number, Field, 1>(value);
-}
-inline void decodeInt32LE(int32 value, byte storage[sizeof(int32)]) noexcept {
-		using Number = int32;
-		using Field = byte;
-		storage[0] = decodeField<Number, Field, 0>(value);
-		storage[1] = decodeField<Number, Field, 1>(value);
-		storage[2] = decodeField<Number, Field, 2>(value);
-		storage[3] = decodeField<Number, Field, 3>(value);
-
+	storage[offset + 0] = decodeField<Number, Field, 0>(value);
+	storage[offset + 1] = decodeField<Number, Field, 1>(value);
+	storage[offset + 2] = decodeField<Number, Field, 2>(value);
+	storage[offset + 3] = decodeField<Number, Field, 3>(value);
 }
 
-inline void decodeInt16LE(int16 value, byte storage[sizeof(int16)]) noexcept {
-		using Number = int16;
-		using Field = byte;
-		storage[0] = decodeField<Number, Field, 0>(value);
-		storage[1] = decodeField<Number, Field, 1>(value);
-}
-
-inline void decodeUint64LE(uint64 value, byte storage[sizeof(uint64)]) noexcept {
-	using Number = uint64;
+template<typename T>
+inline void decode8byteQuantityLE(T value, byte storage[sizeof(T)], int offset = 0) noexcept {
+	static_assert(sizeof(T) >= 8, "Provided type is too small to decode an 8 byte quantity into!");
+	using Number = T;
 	using Field = byte;
-	storage[0] = decodeField<Number, Field, 0>(value);
-	storage[1] = decodeField<Number, Field, 1>(value);
-	storage[2] = decodeField<Number, Field, 2>(value);
-	storage[3] = decodeField<Number, Field, 3>(value);
-	storage[4] = decodeField<Number, Field, 4>(value);
-	storage[5] = decodeField<Number, Field, 5>(value);
-	storage[6] = decodeField<Number, Field, 6>(value);
-	storage[7] = decodeField<Number, Field, 7>(value);
+	storage[offset+0] = decodeField<Number, Field, 0>(value);
+	storage[offset+1] = decodeField<Number, Field, 1>(value);
+	storage[offset+2] = decodeField<Number, Field, 2>(value);
+	storage[offset+3] = decodeField<Number, Field, 3>(value);
+	storage[offset+4] = decodeField<Number, Field, 4>(value);
+	storage[offset+5] = decodeField<Number, Field, 5>(value);
+	storage[offset+6] = decodeField<Number, Field, 6>(value);
+	storage[offset+7] = decodeField<Number, Field, 7>(value);
+}
+inline void decodeUint32LE(uint32 value, byte storage[sizeof(uint32)], int offset = 0) noexcept {
+	decode4byteQuantityLE<uint32>(value, storage, offset);
 }
 
-inline void decodeInt64LE(int64 value, byte storage[sizeof(int64)]) noexcept {
-	using Number = int64;
-	using Field = byte;
-	storage[0] = decodeField<Number, Field, 0>(value);
-	storage[1] = decodeField<Number, Field, 1>(value);
-	storage[2] = decodeField<Number, Field, 2>(value);
-	storage[3] = decodeField<Number, Field, 3>(value);
-	storage[4] = decodeField<Number, Field, 4>(value);
-	storage[5] = decodeField<Number, Field, 5>(value);
-	storage[6] = decodeField<Number, Field, 6>(value);
-	storage[7] = decodeField<Number, Field, 7>(value);
+inline void decodeUint16LE(uint16 value, byte storage[sizeof(uint16)], int offset = 0) noexcept {
+	decode2byteQuantityLE<uint16>(value, storage, offset);
+}
+inline void decodeInt32LE(int32 value, byte storage[sizeof(int32)], int offset = 0) noexcept {
+	decode4byteQuantityLE<int32>(value, storage, offset);
+
+}
+
+inline void decodeInt16LE(int16 value, byte storage[sizeof(int16)], int offset = 0) noexcept {
+	decode2byteQuantityLE<int16>(value, storage, offset);
+}
+inline void decodeUint64LE(uint64 value, byte storage[sizeof(uint64)], int offset = 0) noexcept {
+	decode8byteQuantityLE<uint64>(value, storage, offset);
+}
+
+inline void decodeInt64LE(int64 value, byte storage[sizeof(int64)], int offset = 0) noexcept {
+	decode8byteQuantityLE<int64>(value, storage, offset);
 }
 
 
