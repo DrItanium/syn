@@ -1,32 +1,32 @@
-(deffunction target-architecture
+(deffunction MAIN::target-architecture
              ()
              (funcall current-target-architecture))
-(deffunction current-target-architecture
+(deffunction MAIN::current-target-architecture
              ()
              iris20)
-(deffunction enum->int
+(deffunction MAIN::enum->int
              (?symbol ?collection)
              (symbol->zero-index ?symbol
                                  ?collection))
-(deffunction section-descriptor->int
+(deffunction MAIN::section-descriptor->int
              (?symbol)
              (enum->int ?symbol
                         ?*iris20-enumSectionType*))
-(deffunction operation->int
+(deffunction MAIN::operation->int
              (?id)
              (enum->int ?id
                         ?*iris20-enumOperation*))
 
-(defmethod iris20-encode-Operation
+(defmethod MAIN::iris20-encode-Operation
   ((?value INTEGER)
    (?field SYMBOL))
   (iris20-encode-Operation ?value
                            (operation->int ?field)))
-(defgeneric encode)
-(defgeneric decode)
+(defgeneric MAIN::encode)
+(defgeneric MAIN::decode)
 
 
-(deffunction generic-encode-decode-operation
+(deffunction MAIN::generic-encode-decode-operation
              (?action ?section $?args)
              (funcall (sym-cat (target-architecture)
                                -
@@ -35,7 +35,7 @@
                                ?section)
                       (expand$ ?args)))
 
-(defmethod encode
+(defmethod MAIN::encode
   ((?section SYMBOL)
    (?value INTEGER)
    (?field INTEGER
@@ -45,17 +45,17 @@
                                    ?value
                                    ?field))
 
-(defmethod decode
+(defmethod MAIN::decode
   ((?section SYMBOL)
    (?value INTEGER))
   (generic-encode-decode-operation decode
                                    ?section
                                    ?value))
 
-(defgeneric encode-register)
-(defgeneric decode-register)
+(defgeneric MAIN::encode-register)
+(defgeneric MAIN::decode-register)
 
-(defmethod encode-register
+(defmethod MAIN::encode-register
   ((?index INTEGER)
    (?section INTEGER))
   (encode SectionIndex
@@ -66,28 +66,28 @@
 
 
 
-(defmethod encode-register
+(defmethod MAIN::encode-register
   ((?index INTEGER)
    (?section SYMBOL))
   (encode-register ?index
                    (section-descriptor->int ?section)))
 
-(defmethod decode-register
+(defmethod MAIN::decode-register
   ((?register INTEGER))
   (create$ (decode SectionDescriptor
                    ?register)
            (decode SectionIndex
                    ?register)))
 
-(deffunction stack
+(deffunction MAIN::stack
              (?i)
              (encode-register ?i
                               Stack))
-(deffunction register
+(deffunction MAIN::register
              (?i)
              (encode-register ?i
                               Register))
-(deffunction memory
+(deffunction MAIN::memory
              (?i)
              (encode-register ?i
                               Memory))
@@ -140,17 +140,17 @@
            ?*register-temp5* = (- ?*register-count* 22)
            ?*register-temp6* = (- ?*register-count* 23))
 
-(deffunction link-register () ?*register-lr*)
-(deffunction instruction-pointer () ?*register-ip*)
-(deffunction stack-pointer () ?*register-sp*)
+(deffunction MAIN::link-register () ?*register-lr*)
+(deffunction MAIN::instruction-pointer () ?*register-ip*)
+(deffunction MAIN::stack-pointer () ?*register-sp*)
 
-(deffunction has-register-prefix
+(deffunction MAIN::has-register-prefix
              (?title)
              (str-index "register-"
                         ?title))
-(deffunction build-register-operation
+(deffunction MAIN::build-register-operation
              (?title)
-             (buildf "(deffunction register:%s () ?*%s*)"
+             (buildf "(deffunction MAIN::register:%s () ?*%s*)"
                      (sub-string (+ (str-length "register-")
                                     1)
                                  (str-length ?title)
@@ -161,38 +161,38 @@
      (expand$ (filter has-register-prefix
                       (expand$ (get-defglobal-list MAIN)))))
 (loop-for-count (?i 0 63) do
-                (buildf "(deffunction register:%s () %d)"
+                (buildf "(deffunction MAIN::register:%s () %d)"
                         (sym-cat r
                                  ?i)
                         ?i))
 
-(deffunction register:
+(deffunction MAIN::register:
              (?name)
              (funcall (sym-cat register: ?name)))
 
 
-(defgeneric output-bytes-to-router)
-(defmethod output-bytes-to-router
+(defgeneric MAIN::output-bytes-to-router)
+(defmethod MAIN::output-bytes-to-router
   ((?bytes MULTIFIELD)
    (?router SYMBOL))
   (progn$ (?byte ?bytes)
           (put-char ?router
                     ?byte)))
-(defmethod output-bytes-to-router
+(defmethod MAIN::output-bytes-to-router
   ((?bytes MULTIFIELD))
   (output-bytes-to-router ?bytes
                           t))
 
 
-(defgeneric return-from-register)
-(defgeneric make:atom)
-(defgeneric make:molecule)
-(defgeneric make:word-container)
-(defgeneric return-from-stack)
+(defgeneric MAIN::return-from-register)
+(defgeneric MAIN::make:atom)
+(defgeneric MAIN::make:molecule)
+(defgeneric MAIN::make:word-container)
+(defgeneric MAIN::return-from-stack)
 
 
 
-(defclass instruction
+(defclass MAIN::instruction
   (is-a USER)
   (role abstract)
   (slot operation
@@ -240,8 +240,8 @@
         (visibility public)
         (storage local)
         (default ?NONE))
-  (message-handler encode primary))
-(defclass atom
+  (message-handler MAIN::encode primary))
+(defclass MAIN::atom
   (is-a instruction)
   (role concrete)
   (pattern-match reactive)
@@ -254,8 +254,8 @@
   (slot src1-suffix
         (source composite)
         (default Source1))
-  (message-handler encode primary))
-(defclass molecule
+  (message-handler MAIN::encode primary))
+(defclass MAIN::molecule
   (is-a instruction)
   (role concrete)
   (pattern-match reactive)
@@ -268,9 +268,9 @@
   (slot src1-suffix
         (source composite)
         (default MoleculeSource1))
-  (message-handler encode primary))
+  (message-handler MAIN::encode primary))
 
-(defmethod make:molecule
+(defmethod MAIN::make:molecule
   ((?operation SYMBOL)
    (?dest INTEGER)
    (?src0 INTEGER)
@@ -280,19 +280,19 @@
                  (dest ?dest)
                  (src0 ?src0)
                  (src1 ?src1)))
-(defmethod make:molecule
+(defmethod MAIN::make:molecule
   ((?operation SYMBOL)
    (?dest INTEGER))
   (make:molecule ?operation
                  ?dest
                  0
                  0))
-(defmethod make:molecule
+(defmethod MAIN::make:molecule
   ((?operation SYMBOL))
   (make:molecule ?operation
                  0))
 
-(defmethod make:molecule
+(defmethod MAIN::make:molecule
   ((?operation SYMBOL)
    (?dest INTEGER)
    (?src0 INTEGER))
@@ -301,19 +301,19 @@
                  ?src0
                  0))
 
-(defmethod make:atom
+(defmethod MAIN::make:atom
   ((?operation SYMBOL))
   (make:atom ?operation
              0))
 
-(defmethod make:atom
+(defmethod MAIN::make:atom
   ((?operation SYMBOL)
    (?destination INTEGER))
   (make:atom ?operation
              ?destination
              0))
 
-(defmethod make:atom
+(defmethod MAIN::make:atom
   ((?operation SYMBOL)
    (?dest INTEGER)
    (?src0 INTEGER))
@@ -322,7 +322,7 @@
              ?src0
              0))
 
-(defmethod make:atom
+(defmethod MAIN::make:atom
   ((?operation SYMBOL)
    (?dest INTEGER)
    (?src0 INTEGER)
@@ -334,14 +334,14 @@
                  (src1 ?src1)))
 
 
-(defclass word-container
+(defclass MAIN::word-container
   (is-a USER)
   (multislot contents
              (storage local)
              (visibility public)
              (default ?NONE))
-  (message-handler encode primary))
-(defclass label
+  (message-handler MAIN::encode primary))
+(defclass MAIN::label
   (is-a USER)
   (slot title
         (type SYMBOL)
@@ -357,18 +357,18 @@
         (storage local)
         (default-dynamic FALSE)))
 
-(defgeneric .label)
-(defmethod .label
+(defgeneric MAIN::.label)
+(defmethod MAIN::.label
   ((?title SYMBOL
            (not (instance-existp (symbol-to-instance-name ?current-argument)))))
   (make-instance ?title of label
                  (title ?title)))
-(defmethod .label
+(defmethod MAIN::.label
   ((?title SYMBOL
            (instance-existp (symbol-to-instance-name ?current-argument))))
   (symbol-to-instance-name ?title))
 
-(defmethod make:word-container
+(defmethod MAIN::make:word-container
   ((?first INTEGER
            atom)
    (?second INTEGER
@@ -376,17 +376,17 @@
   (make-instance of word-container
                  (contents ?first
                            ?second)))
-(defmethod make:word-container
+(defmethod MAIN::make:word-container
   ((?wide-instruction INTEGER
                       molecule))
   (make-instance of word-container
                  (contents ?wide-instruction)))
-(defmethod encode
+(defmethod MAIN::encode
   ((?thing molecule
            atom))
   (send ?thing
         encode))
-(defmethod encode
+(defmethod MAIN::encode
   ((?first atom)
    (?second atom))
   (encode SecondAtom
@@ -394,7 +394,7 @@
                   0
                   (encode ?first))
           (encode ?second)))
-(defmessage-handler word-container encode primary
+(defmessage-handler MAIN::word-container encode primary
                     ()
                     (encode MoleculeContainsOneInstruction
                             (encode (expand$ ?self:contents))
@@ -406,30 +406,30 @@
                                                      (length$ ?self:contents))
                                              (create$)))))
 
-(defmethod return-instruction
+(defmethod MAIN::return-instruction
   ((?register INTEGER))
   (make:atom BranchUnconditionalRegister
              ?register))
-(defmethod return-from-stack
+(defmethod MAIN::return-from-stack
   ((?sp INTEGER))
   (return-instruction (stack ?sp)))
-(defmethod return-from-stack
+(defmethod MAIN::return-from-stack
   ()
   (return-from-stack (stack-pointer)))
-(deffunction return-from-memory
+(deffunction MAIN::return-from-memory
              (?r)
              (return-instruction (memory ?r)))
-(deffunction return-to-register
+(deffunction MAIN::return-to-register
              (?r)
              (return-instruction (register ?r)))
-(deffunction return-to-link-register
+(deffunction MAIN::return-to-link-register
              ()
              (return-to-register (link-register)))
-(defgeneric number-of-args)
-(defgeneric operation-to-call)
-(deffunction make:special-defmethod
+(defgeneric MAIN::number-of-args)
+(defgeneric MAIN::operation-to-call)
+(deffunction MAIN::make:special-defmethod
              (?title ?symbol ?value)
-             (buildf "(defmethod %s
+             (buildf "(defmethod MAIN::%s
                         ((?a SYMBOL
                              (not (neq ?current-argument
                                        %s
@@ -439,41 +439,41 @@
                      ?symbol
                      (lowcase ?symbol)
                      (str-cat ?value)))
-(deffunction immediatep
+(deffunction MAIN::immediatep
              (?symbol)
              (has-suffix ?symbol
                          Immediate))
-(deffunction make:operation-to-call
+(deffunction MAIN::make:operation-to-call
              (?symbol ?func)
-             (make:special-defmethod operation-to-call
+             (make:special-defmethod MAIN::operation-to-call
                                      ?symbol
                                      ?func))
 
-(deffunction make:arg-count-function
+(deffunction MAIN::make:arg-count-function
              (?op ?count)
-             (make:special-defmethod number-of-args
+             (make:special-defmethod MAIN::number-of-args
                                      ?op
                                      ?count))
 
-(deffunction setoperationp
+(deffunction MAIN::setoperationp
              (?symbol)
              (has-prefix ?symbol
                          Set))
-(deffunction build-generic
+(deffunction MAIN::build-generic
              (?title)
-             (buildf "(defgeneric %s)"
+             (buildf "(defgeneric MAIN::%s)"
                      ?title))
-(deffunction make-operation-title
+(deffunction MAIN::make-operation-title
              (?title)
              (sym-cat op:
                       (lowcase ?title)))
 
-(deffunction make-stack-operation-title
+(deffunction MAIN::make-stack-operation-title
              (?title)
              (sym-cat (make-operation-title ?title)
                       :stack))
 
-(deffunction build-specific-operation-three-arg
+(deffunction MAIN::build-specific-operation-three-arg
              (?operation)
              (build-generic (bind ?title
                                   (make-operation-title ?operation)))
@@ -483,17 +483,17 @@
                                       3)
              (make:operation-to-call ?operation
                                      ?title)
-             (buildf "(defmethod %s ((?dest INTEGER) (?src0 INTEGER) (?src1 INTEGER)) (make:atom %s ?dest ?src0 ?src1))"
+             (buildf "(defmethod MAIN::%s ((?dest INTEGER) (?src0 INTEGER) (?src1 INTEGER)) (make:atom %s ?dest ?src0 ?src1))"
                      ?title
                      ?operation)
-             (buildf "(defmethod %s ((?dest INTEGER) (?src0 INTEGER) (?src1 INTEGER)) (%s (stack ?dest) (stack ?src0) (stack ?src1) FALSE))"
+             (buildf "(defmethod MAIN::%s ((?dest INTEGER) (?src0 INTEGER) (?src1 INTEGER)) (%s (stack ?dest) (stack ?src0) (stack ?src1) FALSE))"
                      ?stack-title
                      ?title)
-             (buildf "(defmethod %s ((?stack INTEGER)) (%s ?stack ?stack ?stack))"
+             (buildf "(defmethod MAIN::%s ((?stack INTEGER)) (%s ?stack ?stack ?stack))"
                      ?stack-title
                      ?stack-title))
 
-(deffunction build-specific-operation-two-arg
+(deffunction MAIN::build-specific-operation-two-arg
              (?operation)
              (build-generic (bind ?title
                                   (make-operation-title ?operation)))
@@ -503,17 +503,17 @@
                                       2)
              (make:operation-to-call ?operation
                                      ?title)
-             (buildf "(defmethod %s ((?dest INTEGER) (?src0 INTEGER)) (make:atom %s ?dest ?src0))"
+             (buildf "(defmethod MAIN::%s ((?dest INTEGER) (?src0 INTEGER)) (make:atom %s ?dest ?src0))"
                      ?title
                      ?operation)
-             (buildf "(defmethod %s ((?dest INTEGER) (?src0 INTEGER)) (%s (stack ?dest) (stack ?src0)))"
+             (buildf "(defmethod MAIN::%s ((?dest INTEGER) (?src0 INTEGER)) (%s (stack ?dest) (stack ?src0)))"
                      ?stack-title
                      ?title)
-             (buildf "(defmethod %s ((?stack INTEGER)) (%s ?stack ?stack))"
+             (buildf "(defmethod MAIN::%s ((?stack INTEGER)) (%s ?stack ?stack))"
                      ?stack-title
                      ?stack-title))
 
-(deffunction build-specific-operation-one-arg
+(deffunction MAIN::build-specific-operation-one-arg
              (?operation)
              (build-generic (bind ?title
                                   (make-operation-title ?operation)))
@@ -523,19 +523,19 @@
                                       1)
              (make:operation-to-call ?operation
                                      ?title)
-             (buildf "(defmethod %s ((?dest INTEGER)) (make:atom %s ?dest))"
+             (buildf "(defmethod MAIN::%s ((?dest INTEGER)) (make:atom %s ?dest))"
                      ?title
                      ?operation)
-             (buildf "(defmethod %s ((?dest INTEGER)) (%s (stack ?dest)))"
+             (buildf "(defmethod MAIN::%s ((?dest INTEGER)) (%s (stack ?dest)))"
                      ?stack-title
                      ?title))
-(defclass branch-immediate-atom
+(defclass MAIN::branch-immediate-atom
   (is-a atom)
   (slot immediate
         (source composite)
         (default ?NONE))
-  (message-handler encode primary))
-(deffunction encode-branch-operation
+  (message-handler MAIN::encode primary))
+(deffunction MAIN::encode-branch-operation
              (?operation-suffix ?operation ?imm-suffix ?immediate ?dest-suffix ?dest)
              (encode ?operation-suffix
                      (encode ?imm-suffix
@@ -548,7 +548,7 @@
                                0)
                              ?immediate)
                      ?operation))
-(defmessage-handler branch-immediate-atom encode primary
+(defmessage-handler MAIN::branch-immediate-atom encode primary
                     ()
                     (encode-branch-operation ?self:operation-suffix
                                              ?self:operation
@@ -558,7 +558,7 @@
                                              ?self:dest))
 
 
-(defclass branch-immediate-molecule
+(defclass MAIN::branch-immediate-molecule
   (is-a molecule)
   (slot width
         (type INTEGER)
@@ -570,8 +570,8 @@
   (slot immediate
         (source composite)
         (default ?NONE))
-  (message-handler encode primary))
-(defmessage-handler branch-immediate-molecule encode primary
+  (message-handler MAIN::encode primary))
+(defmessage-handler MAIN::branch-immediate-molecule encode primary
                     ()
                     (encode-branch-operation ?self:operation-suffix
                                              ?self:operation
@@ -581,17 +581,17 @@
                                              MoleculeDestination
                                              ?self:dest))
 
-(deffunction make:link-version
+(deffunction MAIN::make:link-version
              (?op ?link)
              (if ?link then (sym-cat ?op Link) else ?op))
-(deffunction branch-unconditional-immediate
+(deffunction MAIN::branch-unconditional-immediate
              (?address ?link)
              (make-instance of branch-immediate-atom
                             (operation (make:link-version BranchUnconditionalImmediate
                                                           ?link))
                             (dest 0)
                             (immediate ?address)))
-(deffunction branch-conditional-immediate
+(deffunction MAIN::branch-conditional-immediate
              (?dest ?address ?check-false ?link)
              (bind ?base-op
                    (if ?check-false then
@@ -603,7 +603,7 @@
                             (operation (make:link-version ?base-op
                                                           ?link))
                             (immediate ?address)))
-(deffunction branch-unconditional-immediate32
+(deffunction MAIN::branch-unconditional-immediate32
              (?address ?link)
              (make-instance of branch-immediate-molecule
                             (width 32)
@@ -612,7 +612,7 @@
                             (dest 0)
                             (immediate ?address)))
 
-(deffunction branch-unconditional-immediate48
+(deffunction MAIN::branch-unconditional-immediate48
              (?address ?link)
              (make-instance of branch-immediate-molecule
                             (width 48)
@@ -621,7 +621,7 @@
                             (dest 0)
                             (immediate ?address)))
 
-(deffunction branch-conditional-immediate-molecule
+(deffunction MAIN::branch-conditional-immediate-molecule
              (?dest ?address ?check-false ?link ?width)
              (bind ?base-op
                    (make:link-version (sym-cat BranchConditional
@@ -638,7 +638,7 @@
                             (destination ?dest)
                             (immediate ?address)))
 
-(deffunction branch-conditional-immediate32
+(deffunction MAIN::branch-conditional-immediate32
              (?dest ?address ?check-false ?link)
              (branch-conditional-immediate-molecule ?dest
                                                     ?address
@@ -646,7 +646,7 @@
                                                     ?link
                                                     32))
 
-(deffunction branch-conditional-immediate48
+(deffunction MAIN::branch-conditional-immediate48
              (?dest ?address ?check-false ?link)
              (branch-conditional-immediate-molecule ?dest
                                                     ?address
@@ -654,7 +654,7 @@
                                                     ?link
                                                     48))
 
-(deffunction encode-set-operation
+(deffunction MAIN::encode-set-operation
              (?op-suffix ?op ?dest-suffix ?dest ?imm-suffix ?imm)
              (encode ?op-suffix
                      (encode ?dest-suffix
@@ -664,7 +664,7 @@
                                            encode))
                              ?dest)
                      ?op))
-(defclass set16-instruction
+(defclass MAIN::set16-instruction
   (is-a atom)
   (slot operation
         (source composite)
@@ -672,8 +672,8 @@
   (slot immediate
         (source composite)
         (default ?NONE))
-  (message-handler encode primary))
-(defmessage-handler set16-instruction encode primary
+  (message-handler MAIN::encode primary))
+(defmessage-handler MAIN::set16-instruction encode primary
                     ()
                     (encode-set-operation ?self:operation-suffix
                                           ?self:operation
@@ -682,13 +682,14 @@
                                           Immediate
                                           ?self:immediate))
 
-(defclass wide-set-instruction
+(defclass MAIN::wide-set-instruction
   (is-a molecule)
   (slot immediate
         (source composite)
         (default ?NONE))
-  (message-handler encode primary))
-(defmethod encode
+  (message-handler MAIN::encode primary))
+
+(defmethod MAIN::encode
   ((?operation SYMBOL
                (eq ?current-argument
                    Set32))
@@ -698,7 +699,7 @@
   (encode Immediate32
           ?value
           ?field))
-(defmethod encode
+(defmethod MAIN::encode
   ((?operation SYMBOL
                (eq ?current-argument
                    Set48))
@@ -709,7 +710,7 @@
           ?value
           ?field))
 
-(defmessage-handler wide-set-instruction encode primary
+(defmessage-handler MAIN::wide-set-instruction encode primary
                     ()
                     (encode-set-operation ?self:operation-suffix
                                           ?self:operation
@@ -718,7 +719,7 @@
                                           ?self:operation
                                           ?self:immediate))
 
-(deffunction make:wide-set-instruction
+(deffunction MAIN::make:wide-set-instruction
              (?dest ?i ?op)
              (make:word-container
                (make-instance of wide-set-instruction
@@ -727,31 +728,31 @@
                               (dest ?dest))))
 
 
-(deffunction set16
+(deffunction MAIN::set16
              (?dest ?i)
              (make-instance of set16-instruction
                             (dest ?dest)
                             (immediate ?i)))
-(deffunction set32
+(deffunction MAIN::set32
              (?dest ?i)
              (make:wide-set-instruction ?dest
                                         ?i
                                         Set32))
 
-(deffunction set48
+(deffunction MAIN::set48
              (?dest ?i)
              (make:wide-set-instruction ?dest
                                         ?i
                                         Set48))
-(deffunction make:two-argument-set-count
+(deffunction MAIN::make:two-argument-set-count
              (?t)
              (make:arg-count-function ?t
                                       2))
-(deffunction make:operation-to-call:set
+(deffunction MAIN::make:operation-to-call:set
              (?t)
              (make:operation-to-call ?t
                                      (lowcase ?t)))
-(deffunction make:set-operation:to-call-and-arg-count
+(deffunction MAIN::make:set-operation:to-call-and-arg-count
              (?t)
              (make:operation-to-call:set ?t)
              (make:two-argument-set-count ?t))
@@ -815,72 +816,80 @@
      BranchIfThenElseNormalPredFalse)
 
 
-(deffunction push
+(deffunction MAIN::push
              (?sp ?value)
              (op:move (stack ?sp)
                       ?value))
-(deffunction pop
+(deffunction MAIN::pop
              (?sp ?dest)
              (op:move ?dest
                       (stack ?sp)))
 
-(deffunction op:load
+(deffunction MAIN::op:load
              (?dest ?src)
              (op:move ?dest
                       (memory ?src)))
-(deffunction op:store
+(deffunction MAIN::op:store
              (?dest ?src)
              (op:move (memory ?dest)
                       ?src))
-(deffunction nop
+(deffunction MAIN::nop
              ()
              (op:swap (register:r0)
                       (register:r0)))
 
-(defgeneric push16)
-(defmethod push16
+(defgeneric MAIN::push16)
+(defmethod MAIN::push16
   ((?immediate INTEGER
                label)
    (?sp INTEGER))
   (set16 (stack ?sp)
          ?immediate))
-(defmethod push16
+(defmethod MAIN::push16
   ((?immediate INTEGER))
   (push16 ?immediate
           (stack-pointer)))
 
 
-(deffunction store16
+(deffunction MAIN::store16
              (?address ?imm)
              (set16 (memory ?address)
                     ?imm))
 
-(defgeneric op:increment)
-(defgeneric op:decrement)
-(defgeneric op:double)
-(defgeneric op:halve)
+(defgeneric MAIN::op:increment)
+(defgeneric MAIN::op:decrement)
+(defgeneric MAIN::op:double)
+(defgeneric MAIN::op:halve)
 
-(defmethod op:increment
+(defmethod MAIN::op:increment
   ((?dest INTEGER)
    (?src INTEGER))
-  (op:add ?dest ?src 1 TRUE))
+  (op:addimmediate ?dest
+                   ?src
+                   1))
 
-(defmethod op:decrement
+(defmethod MAIN::op:decrement
   ((?dest INTEGER)
    (?src INTEGER))
-  (op:sub ?dest ?src 1 TRUE))
+  (op:subimmediate ?dest
+                   ?src
+                   1))
 
-(defmethod op:double
+(defmethod MAIN::op:double
   ((?dest INTEGER)
    (?src INTEGER))
-  (op:mul ?dest ?src 2 TRUE))
+  (op:mulimmediate ?dest
+                   ?src
+                   2))
 
-(defmethod op:halve
+(defmethod MAIN::op:halve
   ((?dest INTEGER)
    (?src INTEGER))
-  (op:div ?dest ?src 2 TRUE))
+  (op:divimmediate ?dest
+                   ?src
+                   2))
 
-(deffunction stack-store
+(deffunction MAIN::stack-store
              (?sp)
              (bind ?rtemp0
                    (register (register:temp0)))
@@ -889,15 +898,15 @@
                                   (op:store ?rtemp0
                                             (stack ?sp))))
 
-(deffunction stack-load
+(deffunction MAIN::stack-load
              (?sp ?dest)
              (make:word-container (pop ?sp
                                        (register ?dest))
                                   (op:load (register ?dest)
                                            ?dest)))
 
-(defgeneric set64)
-(defmethod set64
+(defgeneric MAIN::set64)
+(defmethod MAIN::set64
   ((?dest INTEGER)
    (?value INTEGER)
    (?left-over INTEGER
@@ -920,14 +929,14 @@
                                         ?rtemp0)
                                 ?left-over)))
 
-(defmethod set64
+(defmethod MAIN::set64
   ((?dest INTEGER)
    (?value INTEGER))
   (set64 ?dest
          ?value
          (nop)))
 
-(defmessage-handler instruction encode primary
+(defmessage-handler MAIN::instruction encode primary
                     ()
                     (bind ?result
                           (encode (dynamic-get operation-suffix)
@@ -953,7 +962,7 @@
                     ?result)
 
 ;--------------------------------------------------------------------------------
-(deffunction stack-init-code
+(deffunction MAIN::stack-init-code
              ()
              (create$ (set64 (register:stack-pointer-bottom)
                              ?*stack-bottom*
@@ -967,14 +976,14 @@
                                       (register:call-stack-bottom)))
                       (set64 (register:call-stack-top)
                              ?*call-stack-top*)))
-(deffunction setup-start-end-pair
+(deffunction MAIN::setup-start-end-pair
              (?start ?start-addr ?end ?end-addr)
              (create$ (set64 (register ?start)
                              ?start-addr)
                       (set64 (register ?end)
                              ?end-addr)))
 
-(deffunction memory-block-code
+(deffunction MAIN::memory-block-code
              ()
              (create$
                (setup-start-end-pair (register:memory-space0-start)
@@ -994,16 +1003,16 @@
                       (op:move (register:address-table-pointer)
                                (register:address-table-base)))))
 
-(defgeneric func)
-(defmethod func
+(defgeneric MAIN::func)
+(defmethod MAIN::func
   ((?title SYMBOL)
    (?single-atom INTEGER))
   (create$ (.label ?title)
            (make:word-container ?single-atom
                                 (return-from-register (link-register)))))
 
-(defgeneric stack-func)
-(defmethod stack-func
+(defgeneric MAIN::stack-func)
+(defmethod MAIN::stack-func
   ((?title SYMBOL)
    (?operation SYMBOL)
    (?sp INTEGER))
@@ -1012,23 +1021,21 @@
                           ?operation
                           :stack)
                  ?sp)))
-(defmethod stack-func
+(defmethod MAIN::stack-func
   ((?title SYMBOL)
    (?operation SYMBOL))
   (stack-func ?title
               ?operation
               (stack-pointer)))
-(defmethod stack-func
+(defmethod MAIN::stack-func
   ((?title SYMBOL))
   (stack-func ?title
               ?title))
 
-(deffunction setup-read-eval-print-loop
+(deffunction MAIN::setup-read-eval-print-loop
              ()
-             (create$ (make:word-container (op:add (memory (register:address-table-base))
-                                                   (register (instruction-pointer))
-                                                   1
-                                                   TRUE)
+             (create$ (make:word-container (op:increment (memory (register:address-table-base))
+                                                         (register (instruction-pointer)))
                                            (nop))
                       (.label EvalBase)
                       ; loop body goes here
@@ -1036,8 +1043,10 @@
                                            (return-from-memory (register:address-table-base)))))
 
 
-(deffunction setup-simple-funcs
+(deffunction MAIN::setup-simple-funcs
              ()
+             (bind ?ssp
+                   (stack (stack-pointer)))
              (create$ (map stack-func
                            eq
                            neq
@@ -1058,29 +1067,29 @@
                       (stack-func ge
                                   greaterthanorequalto)
                       (func incr
-                            (op:increment (stack (stack-pointer))
-                                          (stack (stack-pointer))))
+                            (op:increment ?ssp
+                                          ?ssp))
                       (func decr
-                            (op:decrement (stack (stack-pointer))
-                                          (stack (stack-pointer))))
+                            (op:decrement ?ssp
+                                          ?ssp))
                       (func halve
-                            (op:halve (stack (stack-pointer))
-                                   (stack (stack-pointer))))
+                            (op:halve ?ssp
+                                      ?ssp))
                       (func double
-                            (op:double (stack (stack-pointer))
-                                    (stack (stack-pointer))))))
+                            (op:double ?ssp
+                                       ?ssp))))
 
 
-(deffunction labelp
+(deffunction MAIN::labelp
              (?l)
              (and (instancep ?l)
                   (eq (class ?l)
                       label)))
-(deffunction word-containerp
+(deffunction MAIN::word-containerp
              (?m)
              (integerp ?m))
 
-(deffunction transmute-list
+(deffunction MAIN::transmute-list
              (?input)
              (if (labelp ?input) then
                label
@@ -1089,23 +1098,23 @@
                  word-container
                  else
                  unknown)))
-(deffunction strip-label
+(deffunction MAIN::strip-label
              (?input)
              (if (labelp ?input) then (create$) else ?input))
 
-(deffunction strip-labels
+(deffunction MAIN::strip-labels
              (?input)
              (map strip-label
                   (expand$ ?input)))
-(deffunction compute-address
+(deffunction MAIN::compute-address
              (?input)
              (length$ (strip-labels ?input)))
 
-(deffunction encode-thing
+(deffunction MAIN::encode-thing
              (?thing)
              (send ?thing
                    encode))
-(deffunction encode-list
+(deffunction MAIN::encode-list
              (?input)
              (map encode-thing
                   (expand$ ?input)))
