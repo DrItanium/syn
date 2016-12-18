@@ -1,3 +1,6 @@
+(defclass program
+  (is-a USER)
+  (multislot contents))
 (deffunction MAIN::enum->int
              (?symbol ?collection)
              (symbol->zero-index ?symbol
@@ -405,8 +408,8 @@
   ()
   (return-from-stack (stack-pointer)))
 (defmethod MAIN::return-from-register
- ((?reg INTEGER))
- (return-instruction (register ?reg)))
+  ((?reg INTEGER))
+  (return-instruction (register ?reg)))
 (deffunction MAIN::return-from-memory
              (?r)
              (return-instruction (memory ?r)))
@@ -426,10 +429,10 @@
                                        %s
                                        %s))))
                         %s)"
-                     ?title
-                     ?symbol
-                     (lowcase ?symbol)
-                     (str-cat ?value)))
+             ?title
+             ?symbol
+             (lowcase ?symbol)
+             (str-cat ?value)))
 (deffunction MAIN::immediatep
              (?symbol)
              (has-suffix ?symbol
@@ -1110,5 +1113,25 @@
              (?input)
              (map encode-thing
                   (expand$ ?input)))
+(deffunction MAIN::make:program
+             (?name $?contents)
+             (make-instance ?name of program
+                            (contents ?contents)))
+(defrule MAIN::build-program
+         =>
+         (make-instance of program
+                        (contents (stack-init-code)
+                                  (memory-block-code)
+                                  (setup-read-eval-print-loop)
+                                  (setup-simple-funcs))))
+(defrule MAIN::resolve-label-address
+         (object (is-a program)
+                 (contents $?address ?label $?))
+         (object (is-a label)
+                 (name ?label)
+                 (address FALSE))
+         =>
+         (modify-instance ?label
+                          (address (compute-address ?address))))
 
 
