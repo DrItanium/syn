@@ -494,7 +494,7 @@
              (buildf "(defmethod MAIN::%s ((?stack INTEGER)) (%s ?stack ?stack ?stack))"
                      ?stack-title
                      ?stack-title)
-             (make-default-data-stack-op))
+             (make-default-data-stack-op ?stack-title))
 
 (deffunction MAIN::build-specific-operation-two-arg
              (?operation)
@@ -515,7 +515,7 @@
              (buildf "(defmethod MAIN::%s ((?stack INTEGER)) (%s ?stack ?stack))"
                      ?stack-title
                      ?stack-title)
-             (make-default-data-stack-op))
+             (make-default-data-stack-op ?stack-title))
 
 (deffunction MAIN::build-specific-operation-one-arg
              (?operation)
@@ -533,7 +533,7 @@
              (buildf "(defmethod MAIN::%s ((?dest INTEGER)) (%s (stack ?dest)))"
                      ?stack-title
                      ?title)
-             (make-default-data-stack-op))
+             (make-default-data-stack-op ?stack-title))
 (defclass MAIN::branch-immediate-atom
   (is-a atom)
   (slot immediate
@@ -919,7 +919,7 @@
   (bind ?rtemp0
         (register (register:temp0)))
   (bind ?rtemp1
-   (register (register:temp1)))
+        (register (register:temp1)))
   (create$ (make:word-container (set16 ?rtemp0
                                        (decode-bits ?value
                                                     (hex->int 0xFFFF000000000000)
@@ -1163,18 +1163,18 @@
          (retract ?f)
          (output-bytes-to-router (map break-apart-number
                                       (expand$ (encode-list (strip-labels ?contents))))))
-
+; constructs
 (deffunction MAIN::!if-true
              (?atom ?condition ?true ?false)
              (make:word-container ?atom
-                                  (branchifthenelsenormalpredtrue ?condition
+                                  (op:branchifthenelsenormalpredtrue ?condition
                                                                   ?true
                                                                   ?false)))
 
 (deffunction MAIN::!if-false
              (?atom ?condition ?true ?false)
              (make:word-container ?atom
-                                  (branchifthenelsenormalpredfalse ?condition
+                                  (op:branchifthenelsenormalpredfalse ?condition
                                                                    ?true
                                                                    ?false)))
 
@@ -1182,6 +1182,7 @@
              (?title $?contents)
              (create$ (.label ?title)
                       $?contents
-                      (make:word-container 
+                      (make:word-container (nop)
+                       (return
 
 
