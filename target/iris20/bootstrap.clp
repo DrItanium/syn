@@ -909,11 +909,54 @@
                                        (register ?dest))
                                   (op:load (register ?dest)
                                            ?dest)))
+(defclass MAIN::decoder
+  (is-a USER)
+  (slot reference
+        (type INSTANCE)
+        (storage local)
+        (visibility public)
+        (default ?NONE))
+  (slot mask
+        (type INTEGER)
+        (storage local)
+        (visibility public)
+        (default ?NONE))
+  (slot shift-count
+        (type INTEGER)
+        (storage local)
+        (visibility public)
+        (default ?NONE))
+  (message-handler encode primary))
+
+(defmessage-handler MAIN::decoder encode primary
+                    ()
+                    (decode-bits (send ?self:reference 
+                                       encode)
+                                 ?self:mask
+                                 ?self:shift-count))
+(defgeneric MAIN::make:decoder)
+(defmethod MAIN::make:decoder
+  ((?reference INTEGER)
+   (?mask INTEGER)
+   (?shift-count INTEGER))
+  (decode-bits ?reference
+               ?mask
+               ?shift-count))
+(defmethod MAIN::make:decoder
+  ((?reference label)
+   (?mask INTEGER)
+   (?shift-count INTEGER))
+  (make-instance of decoder
+                 (reference ?reference)
+                 (mask ?mask)
+                 (shift-count ?shift-count)))
+
 
 (defgeneric MAIN::set64)
 (defmethod MAIN::set64
   ((?dest INTEGER)
-   (?value INTEGER)
+   (?value INTEGER
+           label)
    (?left-over INTEGER
                atom))
   (bind ?rtemp0
@@ -921,16 +964,16 @@
   (bind ?rtemp1
         (register (register:temp1)))
   (create$ (make:word-container (set16 ?rtemp0
-                                       (decode-bits ?value
-                                                    (hex->int 0xFFFF000000000000)
-                                                    48))
+                                       (make:decoder ?value
+                                                     (hex->int 0xFFFF000000000000)
+                                                     48))
                                 (op:shiftleftimmediate ?rtemp0
                                                        ?rtemp0
                                                        48))
            (set48 ?rtemp1
-                  (decode-bits ?value
-                               (hex->int 0x0000FFFFFFFFFFFF)
-                               0))
+                  (make:decoder ?value
+                                (hex->int 0x0000FFFFFFFFFFFF)
+                                0))
            (make:word-container (op:add ?dest
                                         ?rtemp1
                                         ?rtemp0)
@@ -1168,21 +1211,97 @@
              (?atom ?condition ?true ?false)
              (make:word-container ?atom
                                   (op:branchifthenelsenormalpredtrue ?condition
-                                                                  ?true
-                                                                  ?false)))
+                                                                     ?true
+                                                                     ?false)))
 
 (deffunction MAIN::!if-false
              (?atom ?condition ?true ?false)
              (make:word-container ?atom
                                   (op:branchifthenelsenormalpredfalse ?condition
-                                                                   ?true
-                                                                   ?false)))
+                                                                      ?true
+                                                                      ?false)))
 
 (deffunction MAIN::!loop
              (?title $?contents)
              (create$ (.label ?title)
                       $?contents
-                      (make:word-container (nop)
-                       (return
+                      (set64 (register (register:temp0))
+                             (.label ?title)
+                             (op:branchunconditionalregister (register (register:temp0))))))
+(defgeneric MAIN::!push-immediate)
 
+(defmethod MAIN::!push-immediate
+  ((?value INTEGER
+           label)
+   (?nop-cell INTEGER
+              atom))
 
+  (set64 (stack (stack-pointer))
+         ?value
+         ?nop-cell))
+(defmethod MAIN::!push-immediate
+  ((?value INTEGER
+           label))
+  (!push-immediate ?value
+                   (nop)))
+
+(deffunction MAIN::!load-immediate
+             (?dest ?value)
+             (create$ (!push-immediate ?value)
+                      (make:word-container (pop (stack-pointer)
+                                                (bind ?t0 
+                                                      (register (register:temp0))))
+                                           (op:load ?dest
+                                                    ?t0))))
+(deffunction MAIN::!store-immediate
+             (?addr-register ?value)
+             ; stash the store immediately after the set64 call proper
+             (!push-immediate ?value
+                              ; load it off of the stack since we've just pushed the value
+                              (op:store ?addr-register
+                                        (stack (stack-pointer)))))
+(defgeneric MAIN::!drop)
+(defmethod MAIN::!drop
+  "Pop the top element using the given pointer register"
+  ((?pointer INTEGER)
+   (?slot INTEGER
+          atom))
+  (make:word-container (op:decrement (register ?pointer)
+                                     (register ?pointer))
+                       ?slot))
+
+(defmethod MAIN::!drop
+  ((?pointer INTEGER))
+  (!drop ?pointer
+         (nop)))
+(defmethod MAIN::!drop
+  ()
+  (!drop (stack-pointer)))
+
+(defgeneric MAIN::!peek)
+(defmethod MAIN::!peek
+  ((?destination INTEGER)
+   (?pointer INTEGER)
+   (?slot INTEGER
+          atom))
+  (make:word-container (op:load ?destination
+                                ?pointer)
+                       ?slot))
+(defmethod MAIN::!peek
+  ((?destination INTEGER)
+   (?pointer INTEGER))
+  (!peek ?destination
+         ?pointer
+         (nop)))
+;(deffunction prefix!
+;             "add a ! to the front"
+;             (?a)
+;             (sym-cat ! ?a))
+;(map build-generic
+;     (expand$ (map prefix!
+;                   lt
+;                   gt
+;                   ge
+;                   le
+;                   eq
+;                   neq)))
