@@ -1,4 +1,4 @@
-(defclass program
+(defclass MAIN::program
   (is-a USER)
   (multislot contents))
 (deffunction MAIN::enum->int
@@ -348,6 +348,8 @@
         (storage local)
         (default-dynamic FALSE)))
 
+(defmessage-handler MAIN::label encode primary () ?self:address)
+
 (defgeneric MAIN::.label)
 (defmethod MAIN::.label
   ((?title SYMBOL
@@ -467,6 +469,12 @@
              (sym-cat (make-operation-title ?title)
                       :stack))
 
+(deffunction MAIN::make-default-data-stack-op
+             (?title)
+             (buildf "(defmethod MAIN::%s () (%s (stack-pointer)))"
+                     ?title
+                     ?title))
+
 (deffunction MAIN::build-specific-operation-three-arg
              (?operation)
              (build-generic (bind ?title
@@ -485,7 +493,8 @@
                      ?title)
              (buildf "(defmethod MAIN::%s ((?stack INTEGER)) (%s ?stack ?stack ?stack))"
                      ?stack-title
-                     ?stack-title))
+                     ?stack-title)
+             (make-default-data-stack-op))
 
 (deffunction MAIN::build-specific-operation-two-arg
              (?operation)
@@ -505,7 +514,8 @@
                      ?title)
              (buildf "(defmethod MAIN::%s ((?stack INTEGER)) (%s ?stack ?stack))"
                      ?stack-title
-                     ?stack-title))
+                     ?stack-title)
+             (make-default-data-stack-op))
 
 (deffunction MAIN::build-specific-operation-one-arg
              (?operation)
@@ -522,7 +532,8 @@
                      ?operation)
              (buildf "(defmethod MAIN::%s ((?dest INTEGER)) (%s (stack ?dest)))"
                      ?stack-title
-                     ?title))
+                     ?title)
+             (make-default-data-stack-op))
 (defclass MAIN::branch-immediate-atom
   (is-a atom)
   (slot immediate
@@ -907,6 +918,8 @@
                atom))
   (bind ?rtemp0
         (register (register:temp0)))
+  (bind ?rtemp1
+   (register (register:temp1)))
   (create$ (make:word-container (set16 ?rtemp0
                                        (decode-bits ?value
                                                     (hex->int 0xFFFF000000000000)
@@ -914,12 +927,12 @@
                                 (op:shiftleftimmediate ?rtemp0
                                                        ?rtemp0
                                                        48))
-           (set48 ?dest
+           (set48 ?rtemp1
                   (decode-bits ?value
                                (hex->int 0x0000FFFFFFFFFFFF)
                                0))
            (make:word-container (op:add ?dest
-                                        ?dest
+                                        ?rtemp1
                                         ?rtemp0)
                                 ?left-over)))
 
@@ -1029,9 +1042,8 @@
 
 (deffunction MAIN::setup-read-eval-print-loop
              ()
-             (create$ (make:word-container (op:increment (memory (register:address-table-base))
-                                                         (register (instruction-pointer)))
-                                           (nop))
+             (create$ (set64 (memory (register:address-table-base))
+                             (.label EvalBase))
                       (.label EvalBase)
                       ; loop body goes here
                       (make:word-container (nop)
@@ -1117,21 +1129,59 @@
              (?name $?contents)
              (make-instance ?name of program
                             (contents ?contents)))
+(defmessage-handler MAIN::program encode primary
+                    ()
+                    (encode-list ?self:contents))
+(defglobal MAIN
+           ?*program-contents* = (create$ stack-init-code
+                                          memory-block-code
+                                          setup-read-eval-print-loop
+                                          setup-simple-funcs))
 (defrule MAIN::build-program
          =>
          (make-instance of program
-                        (contents (stack-init-code)
-                                  (memory-block-code)
-                                  (setup-read-eval-print-loop)
-                                  (setup-simple-funcs))))
+                        (contents (map funcall
+                                       (expand$ ?*program-contents*)))))
 (defrule MAIN::resolve-label-address
          (object (is-a program)
-                 (contents $?address ?label $?))
+                 (contents $?address ?label $?)
+                 (name ?program))
          (object (is-a label)
                  (name ?label)
                  (address FALSE))
          =>
+         (assert (output encoded-operation ?program))
          (modify-instance ?label
                           (address (compute-address ?address))))
+(defrule MAIN::output-program-contents
+         (declare (salience -1))
+         ?f <- (output encoded-operation ?program)
+         (object (is-a program)
+                 (name ?program)
+                 (contents $?contents))
+         =>
+         (retract ?f)
+         (output-bytes-to-router (map break-apart-number
+                                      (expand$ (encode-list (strip-labels ?contents))))))
+
+(deffunction MAIN::!if-true
+             (?atom ?condition ?true ?false)
+             (make:word-container ?atom
+                                  (branchifthenelsenormalpredtrue ?condition
+                                                                  ?true
+                                                                  ?false)))
+
+(deffunction MAIN::!if-false
+             (?atom ?condition ?true ?false)
+             (make:word-container ?atom
+                                  (branchifthenelsenormalpredfalse ?condition
+                                                                   ?true
+                                                                   ?false)))
+
+(deffunction MAIN::!loop
+             (?title $?contents)
+             (create$ (.label ?title)
+                      $?contents
+                      (make:word-container 
 
 
