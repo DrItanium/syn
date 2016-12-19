@@ -283,12 +283,12 @@ inline constexpr int64 encodeInt64LE(byte* buf) noexcept {
 }
 
 template<typename T, typename F>
-inline constexpr F decodeBits(T value, T mask, T shiftcount) {
+inline constexpr F decodeBits(T value, T mask, T shiftcount) noexcept {
 	return static_cast<F>((value & mask) >> shiftcount);
 }
 
 template<typename T, typename F>
-inline constexpr T encodeBits(T input, F value, T bitmask, T shiftcount) {
+inline constexpr T encodeBits(T input, F value, T bitmask, T shiftcount) noexcept {
 	return static_cast<T>((input & ~bitmask) | (static_cast<T>(value) << shiftcount));
 }
 
@@ -408,12 +408,12 @@ inline constexpr bool getBit(T value) noexcept {
     return decodeBits<T, bool, 1 << index, index>(value);
 }
 
-inline constexpr byte expandBit(bool value) {
+inline constexpr byte expandBit(bool value) noexcept {
     return value ? 0xFF : 0x00;
 }
 
 template<typename T, T index>
-inline constexpr T setBit(T value, bool bit) {
+inline constexpr T setBit(T value, bool bit) noexcept {
     return iris::encodeBits<T, bool, 1 << index, index>(value, bit);
 }
 inline constexpr uint32 expandUInt32LE(bool lowest, bool lowerUpper, bool upperLower, bool upperMost) noexcept {
