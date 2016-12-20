@@ -137,7 +137,11 @@
            ?*register-temp4* = (- ?*register-count* 21)
            ?*register-temp5* = (- ?*register-count* 22)
            ?*register-temp6* = (- ?*register-count* 23)
-           ?*register-ret0* = (- ?*register-count* 24))
+           ?*register-ret0* = (- ?*register-count* 24)
+           ?*register-ret1* = (- ?*register-count* 25)
+           ?*register-arg0* = (- ?*register-count* 26)
+           ?*register-arg1* = (- ?*register-count* 27)
+           ?*register-arg2* = (- ?*register-count* 28))
 
 (deffunction MAIN::link-register () ?*register-lr*)
 (deffunction MAIN::instruction-pointer () ?*register-ip*)
@@ -1057,7 +1061,8 @@
   ((?title SYMBOL)
    (?operation SYMBOL)
    (?sp INTEGER))
-  (func ?title
+  (func (sym-cat stack:
+                 ?title)
         (funcall (sym-cat op:
                           ?operation
                           :stack)
@@ -1074,17 +1079,22 @@
               ?title))
 
 
+(deffunction MAIN::is-of-type
+             (?v ?t)
+             (and (instancep ?v)
+                  (eq (class ?v)
+                      ?t)))
 
 (deffunction MAIN::labelp
              (?l)
-             (and (instancep ?l)
-                  (eq (class ?l)
-                      label)))
+             (is-of-type ?l
+                         label))
 (deffunction MAIN::word-containerp
              (?m)
-             (integerp ?m))
+             (is-of-type ?m
+                         word-container))
 
-(deffunction MAIN::transmute-list
+(deffunction MAIN::transmute-item
              (?input)
              (if (labelp ?input) then
                label
@@ -1093,6 +1103,11 @@
                  word-container
                  else
                  unknown)))
+(deffunction MAIN::transmute-list
+             (?items)
+             (map transmute-item
+                  (expand$ ?items)))
+
 (deffunction MAIN::strip-label
              (?input)
              (if (labelp ?input) then (create$) else ?input))
@@ -1310,12 +1325,24 @@
              (create$ (defunc:stack-full)
                       (defunc:stack-empty)))
 
+(deffunction MAIN::register-func3
+             (?title)
+             (func ?title
+                   (funcall (sym-cat op:
+                                     (lowcase ?title))
+                            (register:ret0)
+                            (register:arg0)
+                            (register:arg1))))
+(deffunction MAIN::stack-and-register-func
+             (?title)
+             (create$ (stack-func ?title)
+                      (register-func3 ?title)))
 
 (deffunction MAIN::setup-simple-funcs
              ()
              (bind ?ssp
                    (stack (stack-pointer)))
-             (create$ (map stack-func
+             (create$ (map stack-and-register-func
                            eq
                            neq
                            add
@@ -1334,15 +1361,33 @@
                                   lessthanorequalto)
                       (stack-func ge
                                   greaterthanorequalto)
-                      (func incr
+                      (func stack:incr
                             (op:increment ?ssp
                                           ?ssp))
-                      (func decr
+                      (func incr
+                            (op:increment (register:ret0)
+                                          (register:arg0)))
+                      (func stack:decr
                             (op:decrement ?ssp
                                           ?ssp))
-                      (func halve
+                      (func decr
+                            (op:decrement (register:ret0)
+                                          (register:arg0)))
+                      (func stack:halve
                             (op:halve ?ssp
                                       ?ssp))
-                      (func double
+                      (func halve
+                            (op:halve (register:ret0)
+                                      (register:arg0)))
+                      (func stack:double
                             (op:double ?ssp
-                                       ?ssp))))
+                                       ?ssp))
+                      (func double
+                            (op:double (register:ret0)
+                                       (register:arg0)))
+                      (func shutdown
+                            (sys-terminate))
+                      (func read-char
+                            (sys-getc (register:ret0)))
+                      (func put-char
+                            (sys-putc (register:arg0)))))
