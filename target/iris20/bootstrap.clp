@@ -1,3 +1,6 @@
+;-----------------------------------------------------------------------------
+; Generate the basic boot code for an iris20 system
+;-----------------------------------------------------------------------------
 (defclass MAIN::program
   (is-a USER)
   (multislot contents))
@@ -13,6 +16,10 @@
              (?id)
              (enum->int ?id
                         ?*iris20-enumOperation*))
+(deffunction MAIN::system-call->int
+             (?id)
+             (enum->int ?id
+                        ?*iris20-enumSystemCalls*))
 
 (defmethod MAIN::iris20-encode-Operation
   ((?value INTEGER)
@@ -129,7 +136,8 @@
            ?*register-temp3* = (- ?*register-count* 20)
            ?*register-temp4* = (- ?*register-count* 21)
            ?*register-temp5* = (- ?*register-count* 22)
-           ?*register-temp6* = (- ?*register-count* 23))
+           ?*register-temp6* = (- ?*register-count* 23)
+           ?*register-ret0* = (- ?*register-count* 24))
 
 (deffunction MAIN::link-register () ?*register-lr*)
 (deffunction MAIN::instruction-pointer () ?*register-ip*)
@@ -930,7 +938,7 @@
 
 (defmessage-handler MAIN::decoder encode primary
                     ()
-                    (decode-bits (send ?self:reference 
+                    (decode-bits (send ?self:reference
                                        encode)
                                  ?self:mask
                                  ?self:shift-count))
@@ -1010,48 +1018,30 @@
                                     ?result
                                     ?self:src1)))
                     ?result)
+(defmethod MAIN::op:systemcall
+  ((?destination SYMBOL)
+   (?source0 INTEGER)
+   (?source1 INTEGER))
+  (op:systemcall (system-call->int ?destination)
+                 ?source0
+                 ?source1))
 
+(deffunction MAIN::sys-terminate
+             ()
+             (op:systemcall Terminate
+                            (register:r0)
+                            (register:r0)))
+(deffunction MAIN::sys-getc
+             (?destination)
+             (op:systemcall GetC
+                            ?destination
+                            (register:r0)))
+(deffunction MAIN::sys-putc
+             (?source)
+             (op:systemcall PutC
+                            ?source
+                            (register:r0)))
 ;--------------------------------------------------------------------------------
-(deffunction MAIN::stack-init-code
-             ()
-             (create$ (set64 (register:stack-pointer-bottom)
-                             ?*stack-bottom*
-                             (op:move (stack-pointer)
-                                      (register:stack-pointer-bottom)))
-                      (set64 (register:stack-pointer-top)
-                             ?*stack-top*)
-                      (set64 (register:call-stack-bottom)
-                             ?*call-stack-bottom*
-                             (op:move (register:call-stack-pointer)
-                                      (register:call-stack-bottom)))
-                      (set64 (register:call-stack-top)
-                             ?*call-stack-top*)))
-(deffunction MAIN::setup-start-end-pair
-             (?start ?start-addr ?end ?end-addr)
-             (create$ (set64 (register ?start)
-                             ?start-addr)
-                      (set64 (register ?end)
-                             ?end-addr)))
-
-(deffunction MAIN::memory-block-code
-             ()
-             (create$
-               (setup-start-end-pair (register:memory-space0-start)
-                                     ?*memory0-start*
-                                     (register:memory-space0-end)
-                                     ?*memory0-end*)
-               (setup-start-end-pair (register:memory-space1-start)
-                                     ?*memory1-start*
-                                     (register:memory-space1-end)
-                                     ?*memory1-end*)
-               (setup-start-end-pair (register:code-start)
-                                     ?*code-start*
-                                     (register:code-end)
-                                     ?*code-end*)
-               (set64 (register (register:address-table-base))
-                      ?*addr-table-begin*
-                      (op:move (register:address-table-pointer)
-                               (register:address-table-base)))))
 
 (defgeneric MAIN::func)
 (defmethod MAIN::func
@@ -1083,51 +1073,6 @@
   (stack-func ?title
               ?title))
 
-(deffunction MAIN::setup-read-eval-print-loop
-             ()
-             (create$ (set64 (memory (register:address-table-base))
-                             (.label EvalBase))
-                      (.label EvalBase)
-                      ; loop body goes here
-                      (make:word-container (nop)
-                                           (return-from-memory (register:address-table-base)))))
-
-
-(deffunction MAIN::setup-simple-funcs
-             ()
-             (bind ?ssp
-                   (stack (stack-pointer)))
-             (create$ (map stack-func
-                           eq
-                           neq
-                           add
-                           sub
-                           div
-                           rem)
-                      (stack-func shift-left
-                                  shiftleft)
-                      (stack-func shift-right
-                                  shiftright)
-                      (stack-func lt
-                                  lessthan)
-                      (stack-func gt
-                                  greaterthan)
-                      (stack-func le
-                                  lessthanorequalto)
-                      (stack-func ge
-                                  greaterthanorequalto)
-                      (func incr
-                            (op:increment ?ssp
-                                          ?ssp))
-                      (func decr
-                            (op:decrement ?ssp
-                                          ?ssp))
-                      (func halve
-                            (op:halve ?ssp
-                                      ?ssp))
-                      (func double
-                            (op:double ?ssp
-                                       ?ssp))))
 
 
 (deffunction MAIN::labelp
@@ -1175,37 +1120,6 @@
 (defmessage-handler MAIN::program encode primary
                     ()
                     (encode-list ?self:contents))
-(defglobal MAIN
-           ?*program-contents* = (create$ stack-init-code
-                                          memory-block-code
-                                          setup-read-eval-print-loop
-                                          setup-simple-funcs))
-(defrule MAIN::build-program
-         =>
-         (make-instance of program
-                        (contents (map funcall
-                                       (expand$ ?*program-contents*)))))
-(defrule MAIN::resolve-label-address
-         (object (is-a program)
-                 (contents $?address ?label $?)
-                 (name ?program))
-         (object (is-a label)
-                 (name ?label)
-                 (address FALSE))
-         =>
-         (assert (output encoded-operation ?program))
-         (modify-instance ?label
-                          (address (compute-address ?address))))
-(defrule MAIN::output-program-contents
-         (declare (salience -1))
-         ?f <- (output encoded-operation ?program)
-         (object (is-a program)
-                 (name ?program)
-                 (contents $?contents))
-         =>
-         (retract ?f)
-         (output-bytes-to-router (map break-apart-number
-                                      (expand$ (encode-list (strip-labels ?contents))))))
 ; constructs
 (deffunction MAIN::!if-true
              (?atom ?condition ?true ?false)
@@ -1220,7 +1134,6 @@
                                   (op:branchifthenelsenormalpredfalse ?condition
                                                                       ?true
                                                                       ?false)))
-
 (deffunction MAIN::!loop
              (?title $?contents)
              (create$ (.label ?title)
@@ -1249,7 +1162,7 @@
              (?dest ?value)
              (create$ (!push-immediate ?value)
                       (make:word-container (pop (stack-pointer)
-                                                (bind ?t0 
+                                                (bind ?t0
                                                       (register (register:temp0))))
                                            (op:load ?dest
                                                     ?t0))))
@@ -1293,15 +1206,143 @@
   (!peek ?destination
          ?pointer
          (nop)))
-;(deffunction prefix!
-;             "add a ! to the front"
-;             (?a)
-;             (sym-cat ! ?a))
-;(map build-generic
-;     (expand$ (map prefix!
-;                   lt
-;                   gt
-;                   ge
-;                   le
-;                   eq
-;                   neq)))
+
+(defglobal MAIN
+           ?*program-contents* = (create$ stack-init-code
+                                          memory-block-code
+                                          setup-read-eval-print-loop
+                                          setup-simple-funcs
+                                          generate-defuncs))
+
+;-----------------------------------------------------------------------------
+; Rules
+;-----------------------------------------------------------------------------
+(defrule MAIN::build-program
+         =>
+         (make-instance of program
+                        (contents (map funcall
+                                       (expand$ ?*program-contents*)))))
+(defrule MAIN::resolve-label-address
+         (object (is-a program)
+                 (contents $?address ?label $?)
+                 (name ?program))
+         (object (is-a label)
+                 (name ?label)
+                 (address FALSE))
+         =>
+         (assert (output encoded-operation ?program))
+         (modify-instance ?label
+                          (address (compute-address ?address))))
+(defrule MAIN::output-program-contents
+         (declare (salience -1))
+         ?f <- (output encoded-operation ?program)
+         (object (is-a program)
+                 (name ?program)
+                 (contents $?contents))
+         =>
+         (retract ?f)
+         (output-bytes-to-router (map break-apart-number
+                                      (expand$ (encode-list (strip-labels ?contents))))))
+;-----------------------------------------------------------------------------
+; Code to generate
+;-----------------------------------------------------------------------------
+(deffunction MAIN::stack-init-code
+             ()
+             (create$ (set64 (register:stack-pointer-bottom)
+                             ?*stack-bottom*
+                             (op:move (stack-pointer)
+                                      (register:stack-pointer-bottom)))
+                      (set64 (register:stack-pointer-top)
+                             ?*stack-top*)
+                      (set64 (register:call-stack-bottom)
+                             ?*call-stack-bottom*
+                             (op:move (register:call-stack-pointer)
+                                      (register:call-stack-bottom)))
+                      (set64 (register:call-stack-top)
+                             ?*call-stack-top*)))
+(deffunction MAIN::setup-start-end-pair
+             (?start ?start-addr ?end ?end-addr)
+             (create$ (set64 (register ?start)
+                             ?start-addr)
+                      (set64 (register ?end)
+                             ?end-addr)))
+
+(deffunction MAIN::memory-block-code
+             ()
+             (create$
+               (setup-start-end-pair (register:memory-space0-start)
+                                     ?*memory0-start*
+                                     (register:memory-space0-end)
+                                     ?*memory0-end*)
+               (setup-start-end-pair (register:memory-space1-start)
+                                     ?*memory1-start*
+                                     (register:memory-space1-end)
+                                     ?*memory1-end*)
+               (setup-start-end-pair (register:code-start)
+                                     ?*code-start*
+                                     (register:code-end)
+                                     ?*code-end*)
+               (set64 (register (register:address-table-base))
+                      ?*addr-table-begin*
+                      (op:move (register:address-table-pointer)
+                               (register:address-table-base)))))
+(deffunction MAIN::setup-read-eval-print-loop
+             ()
+             (!loop EvalBase
+                    ; loop body goes here
+                    ))
+
+(deffunction MAIN::defunc:stack-empty
+             ()
+             (func stack-empty
+                   (op:eq (register:ret0)
+                          (stack-pointer)
+                          (register:stack-pointer-bottom))))
+(deffunction MAIN::defunc:stack-full
+             ()
+             (func stack-full
+                   (op:eq (register:ret0)
+                          (stack-pointer)
+                          (register:stack-pointer-top))))
+
+(deffunction MAIN::generate-defuncs
+             ()
+             (create$ (defunc:stack-full)
+                      (defunc:stack-empty)))
+
+
+(deffunction MAIN::setup-simple-funcs
+             ()
+             (bind ?ssp
+                   (stack (stack-pointer)))
+             (create$ (map stack-func
+                           eq
+                           neq
+                           add
+                           sub
+                           div
+                           rem)
+                      (stack-func shift-left
+                                  shiftleft)
+                      (stack-func shift-right
+                                  shiftright)
+                      (stack-func lt
+                                  lessthan)
+                      (stack-func gt
+                                  greaterthan)
+                      (stack-func le
+                                  lessthanorequalto)
+                      (stack-func ge
+                                  greaterthanorequalto)
+                      (func incr
+                            (op:increment ?ssp
+                                          ?ssp))
+                      (func decr
+                            (op:decrement ?ssp
+                                          ?ssp))
+                      (func halve
+                            (op:halve ?ssp
+                                      ?ssp))
+                      (func double
+                            (op:double ?ssp
+                                       ?ssp))))
