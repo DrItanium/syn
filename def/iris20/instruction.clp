@@ -124,19 +124,26 @@
                           BranchUnconditionalImmediateLink
                           BranchUnconditionalRegister
                           BranchUnconditionalRegisterLink
+                          BranchUnconditionalRegisterWithAdd
+                          BranchUnconditionalRegisterWithAddLink
                           BranchConditionalTrueImmediate
                           BranchConditionalTrueImmediateLink
                           BranchConditionalTrueRegister
                           BranchConditionalTrueRegisterLink
+                          BranchConditionalTrueRegisterWithAdd
+                          BranchConditionalTrueRegisterWithAddLink
                           BranchConditionalFalseImmediate
                           BranchConditionalFalseImmediateLink
                           BranchConditionalFalseRegister
                           BranchConditionalFalseRegisterLink
+                          BranchConditionalFalseRegisterWithAdd
+                          BranchConditionalFalseRegisterWithAddLink
                           BranchIfThenElseNormalPredTrue
                           BranchIfThenElseNormalPredFalse
                           BranchIfThenElseLinkPredTrue
                           BranchIfThenElseLinkPredFalse
                           Move
+                          MoveWithAdd ; useful for offset calculations since we are always ignoring 8 bits
                           Set16
                           Set32
                           Set48
