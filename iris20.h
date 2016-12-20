@@ -7,6 +7,7 @@
 #include <memory>
 namespace iris20 {
 	using word = int64_t;
+    using uword = uint64_t;
 	using InstructionImmediate = int16_t;
 	using InstructionAtom = uint32_t;
 	enum ArchitectureConstants  {
@@ -22,6 +23,14 @@ namespace iris20 {
 		StackSection = 0b10000000,
 		UndefinedSection = 0b11000000,
 		SectionBitsMask = 0b11000000,
+		IOAddressBase = 0xFFFFFFFFFF000000, // way up above everything else, we inject our io space
+        IOAddressSize = 0x0000000000FFFFFF,
+        IOAddressEnd = IOAddressBase + IOAddressSize,
+        // builtin addresses
+		IOTerminate = ArchitectureConstants::IOAddressEnd, // If we write to this address then terminate the cpu, it will be an error code
+        IOGetC = 0, // read from thie address and we get a 64-bit value from the keyboard
+        IOPutC,                 // write to this address and we print to the screen
+        IOUserDeviceBegin,
 	};
 	// iris20 operates on 2 atom molecules, these atoms are both executed
 	// before the cycle counter continues. This means that there is an implicit
@@ -58,7 +67,7 @@ namespace iris20 {
 	inline constexpr word getImmediate32(InstructionMolecule molecule) noexcept { return decodeImmediate32(molecule); }
 	inline constexpr word getImmediate48(InstructionMolecule molecule) noexcept { return decodeImmediate48(molecule); }
 	inline constexpr Operation getOperation(InstructionAtom atom) noexcept { return decodeOperation(atom); }
-
+    class IODevice;
 	class Core : public iris::Core {
 		public:
 			Core() noexcept;
@@ -72,6 +81,7 @@ namespace iris20 {
 		private:
 			word operandGet(byte index);
 			void operandSet(byte index, word value);
+            
 			inline word& getInstructionPointer() noexcept { return gpr[ArchitectureConstants::InstructionPointerIndex]; }
 			inline word& getLinkRegister() noexcept { return gpr[ArchitectureConstants::LinkRegisterIndex]; }
 			void executeAtom(InstructionAtom atom);
@@ -105,7 +115,32 @@ namespace iris20 {
 			RegisterFile gpr;
 			MemorySpace memory;
 			InstructionMolecule current;
+            std::map<word, std::shared_ptr<IODevice>> _devices;
+        public:
+            /**
+             * Install a given device at the given address as an offset of the IOBaseAddress given in the architecture constants
+             */
+            void installIODevice(word address, std::shared_ptr<IODevice> device);
 	};
+    class IODevice {
+        public:
+            IODevice() { }
+            virtual ~IODevice() { }
+            virtual word read() = 0;
+            virtual void write(word value) = 0;
+    };
+    class GenericIODevice : public IODevice { 
+        public:
+            using ReadFunction = std::function<word()>;
+            using WriteFunction = std::function<void(word)>;
+            GenericIODevice(ReadFunction readFn, WriteFunction writeFn) : IODevice(), _read(readFn), _write(writeFn) { }
+            virtual ~GenericIODevice() { }
+            word read() override;
+            void write(word value) override;
+        private:
+            ReadFunction _read;
+            WriteFunction _write;
+    };
 
 	Core* newCore() noexcept;
 	void assemble(FILE* input, std::ostream* output);

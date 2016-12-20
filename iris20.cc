@@ -267,17 +267,12 @@ namespace iris20 {
 		};
 		auto miscOperation = [this, operation, immediate, atom]() {
 			if (operation == Operation::SystemCall) {
+				// need to have an installed system vector, we should install
+				// reads and writes for the external "devices"
 				auto sysCallId = static_cast<SystemCalls>(getDestinationRawValue(atom));
 				if (sysCallId == SystemCalls::Terminate) {
-					execute = false;
-					advanceIp = false;
 				} else if (sysCallId == SystemCalls::PutC) {
-					// read register 0 and register 1
-					std::cout.put(static_cast<char>(operandGet(getSource0RawValue(atom))));
 				} else if (sysCallId == SystemCalls::GetC) {
-					auto value = static_cast<byte>(0);
-					std::cin >> std::noskipws >> value;
-					operandSet(getSource0RawValue(atom), static_cast<word>(value));
 				} else {
 					std::stringstream stream;
 					stream << "Illegal system call " << std::hex << getDestinationRawValue(atom);
@@ -363,9 +358,25 @@ namespace iris20 {
 	}
 
 	Core::Core() noexcept { }
-
+	word readFromStandardIn() {
+		auto value = static_cast<byte>(0);
+		std::cin >> std::noskipws >> value;
+		return static_cast<word>(value);
+	}
+	void writeToStandardOut(word value) {
+		// read register 0 and register 1
+		std::cout.put(static_cast<char>(value));
+	}
+	void writeNothing(word address) {
+	}
+	word readNothing() { 
+		return 0; 
+	}
 	void Core::initialize() {
 		memory.zero();
+		// install memory handlers
+		installIODevice(ArchitectureConstants::IOGetC, std::make_shared<GenericIODevice>(readFromStandardIn, writeNothing));
+		installIODevice(ArchitectureConstants::IOPutC, std::make_shared<GenericIODevice>(readNothing, writeToStandardOut));
 	}
 
     void Core::operandSet(byte target, word value) {
@@ -377,12 +388,32 @@ namespace iris20 {
             --data;
             memory[data] = value;
         };
+		auto storeData = [this, address = data](word value) {
+			word caddr = static_cast<word>(address);
+			if (caddr == static_cast<word>(ArchitectureConstants::IOTerminate)) {
+				// specially marked location which will cause termination to
+				// occur
+				execute = false;
+				advanceIp = false;
+			} else if (caddr >= static_cast<word>(ArchitectureConstants::IOAddressBase)) {
+				caddr -= ArchitectureConstants::IOAddressBase;
+				// need to make sure that we are in a legal device address
+				auto result = _devices.find(caddr);
+				if (result == _devices.end()) {
+					throw iris::Problem("Illegal IO memory access");
+				} else {
+					result->second->write(value);
+				}
+			} else {
+				memory[caddr] = value;
+			}
+		};
         switch(type) {
             case SectionType::Register:
                 data = value;
                 break;
             case SectionType::Memory:
-                memory[data] = value;
+				storeData(value);
                 break;
             case SectionType::Stack:
                 pushValue(value);
@@ -391,6 +422,19 @@ namespace iris20 {
                 throw iris::Problem("Undefined section type specified!");
         }
     }
+
+	void Core::installIODevice(word address, std::shared_ptr<IODevice> device) {
+		// combine with IOBaseAddress
+		static constexpr auto maximumAddr = static_cast<word>(ArchitectureConstants::IOAddressSize);
+		if (address >= 0 && address <= maximumAddr) {;
+			// compute the actual address by subtracting the base address from
+			// the offset
+			_devices.emplace(address, device);
+		} else {
+			throw iris::Problem("Offset into IO address out of range!");
+		}
+		
+	}
 
     word Core::operandGet(byte target) {
         SectionType type;
@@ -402,8 +446,22 @@ namespace iris20 {
             ++data;
             return outcome;
         };
-        auto loadData = [this, &data]() {
-            return memory[data];
+        auto loadData = [this, data]() {
+			word caddr = static_cast<word>(data);
+			if (caddr == static_cast<word>(ArchitectureConstants::IOTerminate)) {
+				// do nothing, since reading does nothing
+				return static_cast<word>(0);
+			} else if (caddr >= static_cast<word>(ArchitectureConstants::IOAddressBase)) {
+				caddr -= ArchitectureConstants::IOAddressBase;
+				auto result = _devices.find(caddr);
+				if (result == _devices.end()) {
+					throw iris::Problem("Illegal IO memory access!");
+				} else {
+					return result->second->read();
+				}
+			} else {
+				return memory[data];
+			}
         };
         switch(type) {
             case SectionType::Register:
@@ -416,5 +474,12 @@ namespace iris20 {
                 throw iris::Problem("Undefined section type specified!");
         }
     }
+
+	word GenericIODevice::read() {
+		return _read();
+	}
+	void GenericIODevice::write(word address) {
+		_write(address);
+	}
 
 }
