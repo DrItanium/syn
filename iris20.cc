@@ -173,45 +173,55 @@ namespace iris20 {
                 throw iris::Problem("Provided unit does not have molecule sized instructions!");
         }
     }
+	DispatchTableEntry aluEntry(ALU::Operation op, bool immediate) noexcept {
+		return makeDispatchEntry(ExecutionUnitTarget::ALU, op, immediate);
+	}
+	DispatchTableEntry compareEntry(CompareUnit::Operation op, bool immediate) noexcept {
+		return makeDispatchEntry(ExecutionUnitTarget::CompareUnit, op, immediate);
+	}
+	DispatchTableEntry moveEntry(Operation op, bool immediate) noexcept {
+		return makeDispatchEntry(ExecutionUnitTarget::MoveUnit, op, immediate);
+	}
+
 	void Core::executeAtom(InstructionAtom atom) {
 		auto operation = getOperation(atom);
 		static std::map<Operation, DispatchTableEntry> table = {
-				{ Operation::Add, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::Add) , false) },
-				{ Operation::Sub, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::Subtract) , false ) },
-				{ Operation::Mul, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::Multiply) , false ) } ,
-				{ Operation::Div, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::Divide) , false ) },
-				{ Operation::Rem, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::Remainder) , false ) },
-				{ Operation::ShiftLeft, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::ShiftLeft) , false ) },
-				{ Operation::ShiftRight, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::ShiftRight) , false ) },
-				{ Operation::BinaryNot, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::UnaryNot) , false) },
-				{ Operation::BinaryAnd, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::BinaryAnd) , false ) },
-				{ Operation::BinaryOr, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::BinaryOr) , false ) },
-				{ Operation::BinaryXor, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::BinaryXor) , false ) },
-				{ Operation::BinaryNand, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::BinaryNand) , false ) },
-				{ Operation::BinaryAndImmediate, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::BinaryAnd) , true ) },
-				{ Operation::BinaryOrImmediate, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::BinaryOr) , true ) },
-				{ Operation::BinaryXorImmediate, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::BinaryXor) , true ) },
-				{ Operation::BinaryNandImmediate, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::BinaryNand) , true ) },
-				{ Operation::AddImmediate, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::Add) , true  ) },
-				{ Operation::SubImmediate, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::Subtract) , true  ) },
-				{ Operation::MulImmediate, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::Multiply) , true  ) } ,
-				{ Operation::DivImmediate, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::Divide) , true  ) },
-				{ Operation::RemImmediate, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::Remainder) , true  ) },
-				{ Operation::ShiftLeftImmediate, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::ShiftLeft) , true ) },
-				{ Operation::ShiftRightImmediate, std::make_tuple(ExecutionUnitTarget::ALU, static_cast<byte>(ALU::Operation::ShiftRight) , true ) },
-				{ Operation::LessThan, std::make_tuple(ExecutionUnitTarget::CompareUnit, static_cast<byte>(CompareUnit::Operation::LessThan), false) },
-				{ Operation::LessThanImmediate, std::make_tuple(ExecutionUnitTarget::CompareUnit, static_cast<byte>(CompareUnit::Operation::LessThan), true) },
-				{ Operation::LessThanOrEqualTo, std::make_tuple(ExecutionUnitTarget::CompareUnit, static_cast<byte>(CompareUnit::Operation::LessThanOrEqualTo), false) },
-				{ Operation::LessThanOrEqualToImmediate, std::make_tuple(ExecutionUnitTarget::CompareUnit, static_cast<byte>(CompareUnit::Operation::LessThanOrEqualTo), true) },
-				{ Operation::GreaterThan, std::make_tuple(ExecutionUnitTarget::CompareUnit, static_cast<byte>(CompareUnit::Operation::GreaterThan), false) },
-				{ Operation::GreaterThanImmediate, std::make_tuple(ExecutionUnitTarget::CompareUnit, static_cast<byte>(CompareUnit::Operation::GreaterThan), true) },
-				{ Operation::GreaterThanOrEqualTo, std::make_tuple(ExecutionUnitTarget::CompareUnit, static_cast<byte>(CompareUnit::Operation::GreaterThanOrEqualTo), false) },
-				{ Operation::GreaterThanOrEqualToImmediate, std::make_tuple(ExecutionUnitTarget::CompareUnit, static_cast<byte>(CompareUnit::Operation::GreaterThanOrEqualTo), true) },
-				{ Operation::Eq, std::make_tuple(ExecutionUnitTarget::CompareUnit, static_cast<byte>(CompareUnit::Operation::Eq), false) },
-				{ Operation::EqImmediate, std::make_tuple(ExecutionUnitTarget::CompareUnit, static_cast<byte>(CompareUnit::Operation::Eq), true) },
-				{ Operation::Neq, std::make_tuple(ExecutionUnitTarget::CompareUnit, static_cast<byte>(CompareUnit::Operation::Neq), false) },
-				{ Operation::NeqImmediate, std::make_tuple(ExecutionUnitTarget::CompareUnit, static_cast<byte>(CompareUnit::Operation::Neq), true) },
-				{ Operation::SystemCall, std::make_tuple(ExecutionUnitTarget::MiscUnit, static_cast<byte>(Operation::SystemCall), false) },
+				{ Operation::Add, aluEntry(ALU::Operation::Add, false) },
+				{ Operation::Sub, aluEntry(ALU::Operation::Subtract, false ) },
+				{ Operation::Mul, aluEntry(ALU::Operation::Multiply, false ) } ,
+				{ Operation::Div, aluEntry(ALU::Operation::Divide, false ) },
+				{ Operation::Rem, aluEntry(ALU::Operation::Remainder, false ) },
+				{ Operation::ShiftLeft, aluEntry(ALU::Operation::ShiftLeft, false ) },
+				{ Operation::ShiftRight, aluEntry(ALU::Operation::ShiftRight, false ) },
+				{ Operation::BinaryNot, aluEntry(ALU::Operation::UnaryNot, false) },
+				{ Operation::BinaryAnd, aluEntry(ALU::Operation::BinaryAnd, false ) },
+				{ Operation::BinaryOr, aluEntry(ALU::Operation::BinaryOr, false ) },
+				{ Operation::BinaryXor, aluEntry(ALU::Operation::BinaryXor, false ) },
+				{ Operation::BinaryNand, aluEntry(ALU::Operation::BinaryNand, false ) },
+				{ Operation::BinaryAndImmediate, aluEntry(ALU::Operation::BinaryAnd, true ) },
+				{ Operation::BinaryOrImmediate, aluEntry(ALU::Operation::BinaryOr, true ) },
+				{ Operation::BinaryXorImmediate, aluEntry(ALU::Operation::BinaryXor, true ) },
+				{ Operation::BinaryNandImmediate, aluEntry(ALU::Operation::BinaryNand, true ) },
+				{ Operation::AddImmediate, aluEntry(ALU::Operation::Add, true  ) },
+				{ Operation::SubImmediate, aluEntry(ALU::Operation::Subtract, true  ) },
+				{ Operation::MulImmediate, aluEntry(ALU::Operation::Multiply, true  ) } ,
+				{ Operation::DivImmediate, aluEntry(ALU::Operation::Divide, true  ) },
+				{ Operation::RemImmediate, aluEntry(ALU::Operation::Remainder, true  ) },
+				{ Operation::ShiftLeftImmediate, aluEntry(ALU::Operation::ShiftLeft, true ) },
+				{ Operation::ShiftRightImmediate, aluEntry(ALU::Operation::ShiftRight, true ) },
+				{ Operation::LessThan, compareEntry(CompareUnit::Operation::LessThan, false) },
+				{ Operation::LessThanImmediate, compareEntry(CompareUnit::Operation::LessThan, true) },
+				{ Operation::LessThanOrEqualTo, compareEntry(CompareUnit::Operation::LessThanOrEqualTo, false) },
+				{ Operation::LessThanOrEqualToImmediate, compareEntry(CompareUnit::Operation::LessThanOrEqualTo, true) },
+				{ Operation::GreaterThan, compareEntry(CompareUnit::Operation::GreaterThan, false) },
+				{ Operation::GreaterThanImmediate, compareEntry(CompareUnit::Operation::GreaterThan, true) },
+				{ Operation::GreaterThanOrEqualTo, compareEntry(CompareUnit::Operation::GreaterThanOrEqualTo, false) },
+				{ Operation::GreaterThanOrEqualToImmediate, compareEntry(CompareUnit::Operation::GreaterThanOrEqualTo, true) },
+				{ Operation::Eq, compareEntry(CompareUnit::Operation::Eq, false) },
+				{ Operation::EqImmediate, compareEntry(CompareUnit::Operation::Eq, true) },
+				{ Operation::Neq, compareEntry(CompareUnit::Operation::Neq, false) },
+				{ Operation::NeqImmediate, compareEntry(CompareUnit::Operation::Neq, true) },
+				{ Operation::SystemCall, makeDispatchEntry(ExecutionUnitTarget::MiscUnit, Operation::SystemCall, false) },
 				{ Operation:: BranchUnconditionalImmediate ,        makeJumpConstant( false, false, false, true, false) } ,
 				{ Operation:: BranchUnconditionalImmediateLink ,    makeJumpConstant( false, false, false, true, true) } ,
 				{ Operation:: BranchUnconditionalRegister ,         makeJumpConstant( false, false, false, false, false) } ,
@@ -228,9 +238,9 @@ namespace iris20 {
 				{ Operation:: BranchIfThenElseNormalPredFalse ,     makeJumpConstant( true, true, true, false, false) } ,
 				{ Operation:: BranchIfThenElseLinkPredTrue ,        makeJumpConstant( true, true, false, false, true) } ,
 				{ Operation:: BranchIfThenElseLinkPredFalse ,       makeJumpConstant( true, true, true, false, true) } ,
-				{ Operation::Move, std::make_tuple(ExecutionUnitTarget::MoveUnit, static_cast<byte>(Operation::Move), false) },
-				{ Operation::Swap, std::make_tuple(ExecutionUnitTarget::MoveUnit, static_cast<byte>(Operation::Swap), false) },
-				{ Operation::Set16, std::make_tuple(ExecutionUnitTarget::MoveUnit, static_cast<byte>(Operation::Set16), true) },
+				{ Operation::Move, moveEntry(Operation::Move, false) },
+				{ Operation::Swap, moveEntry(Operation::Swap, false) },
+				{ Operation::Set16, moveEntry(Operation::Set16, true) },
 		};
 		auto result = table.find(operation);
 		if (result == table.end()) {
