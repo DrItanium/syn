@@ -221,7 +221,7 @@ namespace iris20 {
 				{ Operation::EqImmediate, compareEntry(CompareUnit::Operation::Eq, true) },
 				{ Operation::Neq, compareEntry(CompareUnit::Operation::Neq, false) },
 				{ Operation::NeqImmediate, compareEntry(CompareUnit::Operation::Neq, true) },
-				{ Operation::SystemCall, makeDispatchEntry(ExecutionUnitTarget::MiscUnit, Operation::SystemCall, false) },
+				//{ Operation::SystemCall, makeDispatchEntry(ExecutionUnitTarget::MiscUnit, Operation::SystemCall, false) },
 				{ Operation:: BranchUnconditionalImmediate ,        makeJumpConstant( false, false, false, true, false) } ,
 				{ Operation:: BranchUnconditionalImmediateLink ,    makeJumpConstant( false, false, false, true, true) } ,
 				{ Operation:: BranchUnconditionalRegister ,         makeJumpConstant( false, false, false, false, false) } ,
@@ -266,23 +266,7 @@ namespace iris20 {
 			}
 		};
 		auto miscOperation = [this, operation, immediate, atom]() {
-			if (operation == Operation::SystemCall) {
-				// need to have an installed system vector, we should install
-				// reads and writes for the external "devices"
-				auto sysCallId = static_cast<SystemCalls>(getDestinationRawValue(atom));
-				if (sysCallId == SystemCalls::Terminate) {
-				} else if (sysCallId == SystemCalls::PutC) {
-				} else if (sysCallId == SystemCalls::GetC) {
-				} else {
-					std::stringstream stream;
-					stream << "Illegal system call " << std::hex << getDestinationRawValue(atom);
-					execute = false;
-					advanceIp = false;
-					throw iris::Problem(stream.str());
-				}
-			} else {
-				throw iris::Problem("Registered but undefined misc operation requested!");
-			}
+			throw iris::Problem("Registered but undefined misc operation requested!");
 		};
 		auto jumpOperation = [this, subAction, immediate, atom]() {
 			auto ifthenelse = false, conditional = false, iffalse = false, link = false;

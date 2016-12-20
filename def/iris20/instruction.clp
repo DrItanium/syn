@@ -92,12 +92,12 @@
                           Stack
                           Memory
                           Undefined))
-          (enum (cast-to byte)
-                (max-size "ArchitectureConstants::MaxOperations")
-                (name SystemCalls)
-                (children Terminate
-                          GetC
-                          PutC))
+          ;(enum (cast-to byte)
+          ;      (max-size "ArchitectureConstants::MaxOperations")
+          ;      (name SystemCalls)
+          ;      (children Terminate
+          ;                GetC
+          ;                PutC))
           (enum (cast-to byte)
                 (max-size "ArchitectureConstants::MaxOperations")
                 (name Operation)
@@ -119,7 +119,7 @@
                           RemImmediate
                           ShiftLeftImmediate
                           ShiftRightImmediate
-                          SystemCall
+                          ;SystemCall
                           BranchUnconditionalImmediate
                           BranchUnconditionalImmediateLink
                           BranchUnconditionalRegister
