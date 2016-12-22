@@ -221,7 +221,6 @@ namespace iris20 {
 				{ Operation::EqImmediate, compareEntry(CompareUnit::Operation::Eq, true) },
 				{ Operation::Neq, compareEntry(CompareUnit::Operation::Neq, false) },
 				{ Operation::NeqImmediate, compareEntry(CompareUnit::Operation::Neq, true) },
-				//{ Operation::SystemCall, makeDispatchEntry(ExecutionUnitTarget::MiscUnit, Operation::SystemCall, false) },
 				{ Operation:: BranchUnconditionalImmediate ,        makeJumpConstant( false, false, false, true, false) } ,
 				{ Operation:: BranchUnconditionalImmediateLink ,    makeJumpConstant( false, false, false, true, true) } ,
 				{ Operation:: BranchUnconditionalRegister ,         makeJumpConstant( false, false, false, false, false) } ,
@@ -247,9 +246,10 @@ namespace iris20 {
 			throw iris::Problem("Illegal single atom instruction!");
 		}
 		auto tuple = result->second;
-		auto target = std::get<ExecutionUnitTarget>(tuple);
-		auto subAction = std::get<byte>(tuple);
-		auto immediate = std::get<bool>(tuple);
+		ExecutionUnitTarget target;
+		byte subAction;
+		bool immediate;
+		std::tie(target, subAction, immediate) = tuple;
 		auto moveOperation = [this, op = static_cast<Operation>(subAction), immediate, atom]() {
 			auto dest = getDestinationRawValue(atom);
 			auto src = getSource0RawValue(atom);

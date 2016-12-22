@@ -2,6 +2,7 @@
 #define _TARGET_IRIS20_IRIS_H
 #include "iris_base.h"
 #include "iris_xunits.h"
+#include "IODevice.h"
 #include "Core.h"
 #include <cstdint>
 #include <memory>
@@ -41,7 +42,6 @@ namespace iris20 {
 	}
 } // end namespace iris20
 #include "iris20_defines.h"
-
 namespace iris20 {
 	template<word capacity>
 	using WordMemorySpace = iris::FixedSizeLoadStoreUnit<word, word, capacity>;
@@ -67,7 +67,8 @@ namespace iris20 {
 	inline constexpr word getImmediate32(InstructionMolecule molecule) noexcept { return decodeImmediate32(molecule); }
 	inline constexpr word getImmediate48(InstructionMolecule molecule) noexcept { return decodeImmediate48(molecule); }
 	inline constexpr Operation getOperation(InstructionAtom atom) noexcept { return decodeOperation(atom); }
-    class IODevice;
+	using IODevice = iris::IODevice<word>;
+	using GenericIODevice = iris::LambdaIODevice<word>;
 	class Core : public iris::Core {
 		public:
 			Core() noexcept;
@@ -120,27 +121,8 @@ namespace iris20 {
             /**
              * Install a given device at the given address as an offset of the IOBaseAddress given in the architecture constants
              */
-            void installIODevice(word address, std::shared_ptr<IODevice> device);
+            void installIODevice(std::shared_ptr<IODevice> device);
 	};
-    class IODevice {
-        public:
-            IODevice() { }
-            virtual ~IODevice() { }
-            virtual word read() = 0;
-            virtual void write(word value) = 0;
-    };
-    class GenericIODevice : public IODevice { 
-        public:
-            using ReadFunction = std::function<word()>;
-            using WriteFunction = std::function<void(word)>;
-            GenericIODevice(ReadFunction readFn, WriteFunction writeFn) : IODevice(), _read(readFn), _write(writeFn) { }
-            virtual ~GenericIODevice() { }
-            word read() override;
-            void write(word value) override;
-        private:
-            ReadFunction _read;
-            WriteFunction _write;
-    };
 
 	Core* newCore() noexcept;
 	void assemble(FILE* input, std::ostream* output);
