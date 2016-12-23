@@ -344,14 +344,16 @@ namespace iris20 {
 		_devices.initialize();
 		memory.zero();
 		// install memory handlers
-		installIODevice(ArchitectureConstants::IOTerminate, 1, iris::readNothing<typename GenericIODevice::DataType>,
+		auto rNothing = iris::readNothing<typename GenericIODevice::DataType>;
+		auto wNothing = iris::writeNothing<typename GenericIODevice::DataType>;
+		installIODevice(ArchitectureConstants::IOTerminate, 1, rNothing,
 					[this](word addr, word value) {
 						execute = false;
 						advanceIp = false;
 					});
-		installIODevice(ArchitectureConstants::IOGetC, 1, readFromStandardIn, iris::writeNothing<typename GenericIODevice::DataType>);
-		installIODevice(ArchitectureConstants::IOPutC, 1, iris::readNothing<typename GenericIODevice::DataType>, writeToStandardOut);
-		installIODevice(ArchitectureConstants::IOGetMemorySize, 1, [](word addr) { return static_cast<word>(ArchitectureConstants::AddressMax) + 1; }, iris::writeNothing<typename GenericIODevice::DataType>);
+		installIODevice(ArchitectureConstants::IOGetC, 1, readFromStandardIn, wNothing);
+		installIODevice(ArchitectureConstants::IOPutC, 1, rNothing, writeToStandardOut);
+		installIODevice(ArchitectureConstants::IOGetMemorySize, 1, [](word addr) { return static_cast<word>(ArchitectureConstants::AddressMax) + 1; }, wNothing);
 	}
 
     void Core::operandSet(byte target, word value) {
@@ -359,53 +361,53 @@ namespace iris20 {
         byte index;
         std::tie(type, index) = getOperand(target);
         auto& data = gpr[index];
-        auto pushValue = [this, &data](word value) {
-            --data;
-            memory[data] = value;
-        };
-		auto storeData = [this, caddr = static_cast<word>(data)](word value) {
+		auto storeData = [this](word caddr, word value) {
 			if (_devices.respondsTo(caddr)) {
 				_devices.write(caddr, value);
 			} else {
 				memory[caddr] = value;
 			}
 		};
+        auto pushValue = [this, storeData](word& caddr, word value) {
+			--caddr;
+			storeData(caddr, value);
+        };
         switch(type) {
             case SectionType::Register:
                 data = value;
                 break;
             case SectionType::Memory:
-				storeData(value);
+				storeData(data, value);
                 break;
             case SectionType::Stack:
-                pushValue(value);
+                pushValue(data, value);
                 break;
             default:
                 throw iris::Problem("Undefined section type specified!");
         }
     }
-
+	
 
     word Core::operandGet(byte target) {
         SectionType type;
         byte index;
         std::tie(type, index) = getOperand(target);
         auto& data = gpr[index];
-        auto popData = [this, &data]() {
-            auto outcome = memory[data];
-            ++data;
-            return outcome;
-        };
-        auto loadData = [this, caddr = static_cast<word>(data)]() {
+        auto loadData = [this](word caddr) {
 			return _devices.respondsTo(caddr) ? _devices.read(caddr) : memory[caddr];
+        };
+        auto popData = [this, loadData](word& caddr) {
+			auto outcome = loadData(caddr);
+            ++caddr;
+            return outcome;
         };
         switch(type) {
             case SectionType::Register:
                 return data;
             case SectionType::Stack:
-                return popData();
+                return popData(data);
             case SectionType::Memory:
-                return loadData();
+                return loadData(data);
             default:
                 throw iris::Problem("Undefined section type specified!");
         }
