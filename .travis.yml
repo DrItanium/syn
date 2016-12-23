@@ -1,16 +1,1 @@
-language: generic
-os: linux
-matrix:
-  include:
-    - compiler: gcc
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - g++-5
-      env: COMPILER=g++-5 CXX=g++-5 CC=gcc-5
-sudo: required
-dist: trusty
-
-script: make
+script: make maya
