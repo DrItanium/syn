@@ -10,6 +10,9 @@ namespace iris20 {
 
 
 	Core::~Core() {
+		for (auto & dev : _devices) {
+			dev->shutdown();
+		}
 	}
 
 	void Core::installprogram(std::istream& stream) {
@@ -461,17 +464,15 @@ namespace iris20 {
 			for(auto const& installedDevice : _devices) {
 				// super slow but I've never done this before so it'll be a
 				// good starting place!
-				for (auto i = device->beginAddress(); i <= device->endAddress(); ++i) {
-					if (installedDevice->respondsTo(i)) {
-						throw iris::Problem("Address conflict found!");
-					}
+				if (device->respondsTo(installedDevice)) {
+					throw iris::Problem("Address conflict found!");
 				}
 			}
 			_devices.emplace_back(device);
+			device->initialize(); // setup the device as well
 		}
 	}
 	void Core::installIODevice(word start, word end, typename GenericIODevice::ReadFunction read, typename GenericIODevice::WriteFunction write, typename GenericIODevice::InitializeFunction init, typename GenericIODevice::ShutdownFunction shutdown) {
 		installIODevice(std::make_shared<GenericIODevice>(start, end, read, write, init, shutdown));
-
 	}
 }

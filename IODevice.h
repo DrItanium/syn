@@ -5,6 +5,8 @@
 #define IRIS_IO_DEVICE_H_
 #include <tuple>
 #include <functional>
+#include <memory>
+#include "Problem.h"
 #include "Device.h"
 namespace iris {
 template<typename Data, typename Address = Data>
@@ -14,21 +16,24 @@ class IODevice : public Device {
 		using DataType = Data;
 		using AddressRange = std::tuple<Address, Address>;
 	public:
-		IODevice(Address begin, Address end) : _begin(begin), _end(end) { }
+		IODevice(Address base, Address count) : _base(base), _count(count) { }
+		IODevice(Address word) : IODevice(word, 1) { }
 		virtual ~IODevice() { }
 		virtual AddressRange getResponseRange() const noexcept;
-		virtual bool respondsTo(Address targetAddress) const noexcept ;
-		virtual Address size() const noexcept { return _end - _begin; }
-		virtual Address beginAddress() const noexcept { return _begin; }
-		virtual Address endAddress() const noexcept { return _end; }
+		virtual bool respondsTo(Address targetAddress, Address length = 1) const;
+		virtual bool respondsTo(IODevice<Data,Address>& other) const;
+		virtual bool respondsTo(const std::shared_ptr<IODevice<Data,Address>>& other) const;
+		inline virtual Address size() const noexcept { return _count; }
+		inline virtual Address baseAddress() const noexcept { return _base; }
+		inline virtual Address endAddress() const noexcept { return _base + _count; }
 
 		virtual Data read(Address targetAddress) = 0;
 		virtual void write(Address targetAddress, Data value) = 0;
 		virtual void initialize() override;
 		virtual void shutdown() override;
 	protected:
-		Address _begin;
-		Address _end;
+		Address _base;
+		Address _count;
 };
 
 template<typename D, typename A>
@@ -42,13 +47,41 @@ void IODevice<D, A>::shutdown() {
 }
 template<typename Data, typename Address>
 typename IODevice<Data, Address>::AddressRange IODevice<Data, Address>::getResponseRange() const noexcept {
-	return std::make_tuple(_begin, _end);
+	return std::make_tuple(_base, endAddress());
 }
 
 template<typename Data, typename Address>
-bool IODevice<Data, Address>::respondsTo(Address targetAddress) const noexcept {
-	return targetAddress >= _begin && targetAddress <= _end;
+bool IODevice<Data, Address>::respondsTo(Address targetAddress, Address length) const {
+	auto check = [this](Address addr) { return addr >= _base && addr <= endAddress(); };
+	switch (length) {
+		case 0:
+			throw iris::Problem("Can't check if a zero length IO space is mappable. It doesn't make sense!");
+		case 1:
+			return check(targetAddress);
+		case 2:
+			return check(targetAddress) || check(targetAddress + 1);
+		case 3:
+			return check(targetAddress) || check(targetAddress + 1) || check(targetAddress + 2);
+		default:
+			for (auto i = targetAddress; i < targetAddress + length; ++i) {
+				if (check(targetAddress)) {
+					return true;
+				}
+			}
+			return false;
+	}
 }
+
+template<typename D, typename A>
+bool IODevice<D, A>::respondsTo(const std::shared_ptr<IODevice<D, A>>& other) const {
+	return respondsTo(other->_base, other->_count);
+}
+
+template<typename D, typename A>
+bool IODevice<D, A>::respondsTo(IODevice<D, A>& other) const {
+	return respondsTo(other._base, other._count);
+}
+
 
 template<typename Data, typename Addr = Data>
 void initNothing() { }

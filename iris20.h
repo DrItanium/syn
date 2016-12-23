@@ -129,6 +129,7 @@ namespace iris20 {
 			using IOShutdownFunction = GenericIODevice::ShutdownFunction;
             void installIODevice(std::shared_ptr<IODevice> device);
 			void installIODevice(word start, word end, IOReadFunction read, IOWriteFunction write, IOInitFunction init = iris::initNothing<typename GenericIODevice::DataType, typename GenericIODevice::AddressType>, IOShutdownFunction shutdown = iris::shutdownNothing<typename GenericIODevice::DataType, typename GenericIODevice::AddressType>);
+			void installIODevice(word address, IOReadFunction read, IOWriteFunction write, IOInitFunction init = iris::initNothing<typename GenericIODevice::DataType, typename GenericIODevice::AddressType>, IOShutdownFunction shutdown = iris::shutdownNothing<typename GenericIODevice::DataType, typename GenericIODevice::AddressType>);
 	};
 
 	Core* newCore() noexcept;
