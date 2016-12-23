@@ -344,13 +344,14 @@ namespace iris20 {
 		_devices.initialize();
 		memory.zero();
 		// install memory handlers
-		installIODevice(ArchitectureConstants::IOTerminate, ArchitectureConstants::IOTerminate, iris::readNothing<typename GenericIODevice::DataType>,
+		installIODevice(ArchitectureConstants::IOTerminate, 1, iris::readNothing<typename GenericIODevice::DataType>,
 					[this](word addr, word value) {
 						execute = false;
 						advanceIp = false;
 					});
-		installIODevice(ArchitectureConstants::IOGetC, ArchitectureConstants::IOGetC, readFromStandardIn, iris::writeNothing<typename GenericIODevice::DataType>);
-		installIODevice(ArchitectureConstants::IOPutC, ArchitectureConstants::IOPutC, iris::readNothing<typename GenericIODevice::DataType>, writeToStandardOut);
+		installIODevice(ArchitectureConstants::IOGetC, 1, readFromStandardIn, iris::writeNothing<typename GenericIODevice::DataType>);
+		installIODevice(ArchitectureConstants::IOPutC, 1, iris::readNothing<typename GenericIODevice::DataType>, writeToStandardOut);
+		installIODevice(ArchitectureConstants::IOGetMemorySize, 1, [](word addr) { return static_cast<word>(ArchitectureConstants::AddressMax) + 1; }, iris::writeNothing<typename GenericIODevice::DataType>);
 	}
 
     void Core::operandSet(byte target, word value) {
