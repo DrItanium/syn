@@ -354,18 +354,13 @@ namespace iris20 {
 	void Core::initialize() {
 		memory.zero();
 		// install memory handlers
-		installIODevice(std::make_shared<GenericIODevice>(ArchitectureConstants::IOGetC, ArchitectureConstants::IOGetC, 
-					readFromStandardIn, 
-					iris::writeNothing<typename GenericIODevice::DataType>));
-		installIODevice(std::make_shared<GenericIODevice>(ArchitectureConstants::IOPutC, ArchitectureConstants::IOPutC, 
-					iris::readNothing<typename GenericIODevice::DataType>,
-					writeToStandardOut));
-		installIODevice(std::make_shared<GenericIODevice>(ArchitectureConstants::IOTerminate, ArchitectureConstants::IOTerminate,
-					iris::readNothing<typename GenericIODevice::DataType>,
+		installIODevice(ArchitectureConstants::IOTerminate, ArchitectureConstants::IOTerminate, iris::readNothing<typename GenericIODevice::DataType>,
 					[this](word addr, word value) {
 						execute = false;
 						advanceIp = false;
-					}));
+					});
+		installIODevice(ArchitectureConstants::IOGetC, ArchitectureConstants::IOGetC, readFromStandardIn, iris::writeNothing<typename GenericIODevice::DataType>);
+		installIODevice(ArchitectureConstants::IOPutC, ArchitectureConstants::IOPutC, iris::readNothing<typename GenericIODevice::DataType>, writeToStandardOut);
 	}
 
     void Core::operandSet(byte target, word value) {
@@ -474,5 +469,9 @@ namespace iris20 {
 			}
 			_devices.emplace_back(device);
 		}
+	}
+	void Core::installIODevice(word start, word end, typename GenericIODevice::ReadFunction read, typename GenericIODevice::WriteFunction write, typename GenericIODevice::InitializeFunction init, typename GenericIODevice::ShutdownFunction shutdown) {
+		installIODevice(std::make_shared<GenericIODevice>(start, end, read, write, init, shutdown));
+
 	}
 }

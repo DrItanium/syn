@@ -32,6 +32,7 @@ namespace iris20 {
 		IOTerminate = 0, 		// If we write to this address then terminate the cpu, it will be an error code
         IOGetC, 		 		// read from thie address and we get a 64-bit value from the keyboard
         IOPutC,                 // write to this address and we print to the screen
+		IOGetMemorySize, 		// Will always return the size of actual memory
         IOUserDeviceBegin,
 	};
 	// iris20 operates on 2 atom molecules, these atoms are both executed
@@ -122,7 +123,12 @@ namespace iris20 {
             /**
              * Install a given device at the given address as an offset of the IOBaseAddress given in the architecture constants
              */
+			using IOReadFunction = GenericIODevice::ReadFunction;
+			using IOWriteFunction = GenericIODevice::WriteFunction;
+			using IOInitFunction = GenericIODevice::InitializeFunction;
+			using IOShutdownFunction = GenericIODevice::ShutdownFunction;
             void installIODevice(std::shared_ptr<IODevice> device);
+			void installIODevice(word start, word end, IOReadFunction read, IOWriteFunction write, IOInitFunction init = iris::initNothing<typename GenericIODevice::DataType, typename GenericIODevice::AddressType>, IOShutdownFunction shutdown = iris::shutdownNothing<typename GenericIODevice::DataType, typename GenericIODevice::AddressType>);
 	};
 
 	Core* newCore() noexcept;
