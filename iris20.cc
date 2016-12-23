@@ -372,8 +372,7 @@ namespace iris20 {
             --data;
             memory[data] = value;
         };
-		auto storeData = [this, address = data](word value) {
-			word caddr = static_cast<word>(address);
+		auto storeData = [this, caddr = static_cast<word>(data)](word value) {
 			if (_devices.respondsTo(caddr)) {
 				_devices.write(caddr, value);
 			} else {
@@ -406,13 +405,8 @@ namespace iris20 {
             ++data;
             return outcome;
         };
-        auto loadData = [this, data]() {
-			word caddr = static_cast<word>(data);
-			if (_devices.respondsTo(caddr)) {
-				return _devices.read(caddr);
-			} else {
-				return memory[caddr];
-			}
+        auto loadData = [this, caddr = static_cast<word>(data)]() {
+			return _devices.respondsTo(caddr) ? _devices.read(caddr) : memory[caddr];
         };
         switch(type) {
             case SectionType::Register:
