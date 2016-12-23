@@ -9,11 +9,7 @@ namespace iris20 {
 	}
 
 
-	Core::~Core() {
-		for (auto & dev : _devices) {
-			dev->shutdown();
-		}
-	}
+	Core::~Core() { }
 
 	void Core::installprogram(std::istream& stream) {
 		auto encodeWord = [](char* buf) { return iris20::encodeWord(buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]); };

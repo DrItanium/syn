@@ -2,7 +2,7 @@
 #define _TARGET_IRIS20_IRIS_H
 #include "iris_base.h"
 #include "iris_xunits.h"
-#include "IODevice.h"
+#include "IOController.h"
 #include "Core.h"
 #include <cstdint>
 #include <memory>
@@ -118,6 +118,7 @@ namespace iris20 {
 			RegisterFile gpr;
 			MemorySpace memory;
 			InstructionMolecule current;
+
 			std::vector<std::shared_ptr<IODevice>> _devices;
         public:
             /**
