@@ -132,11 +132,11 @@ namespace iris20 {
             }
         };
 		auto jumpOperation = [this, dispatch, immediate]() {
-			auto ifthenelse = false, conditional = false, iffalse = false, link = false, wide48 = false;
-			std::tie(ifthenelse, conditional, iffalse, link, wide48) = decomposeMoleculeJumpByte(dispatch);
 			if (!immediate) {
 				throw iris::Problem("register based jump instructions don't exist in wide mode");
 			}
+			auto ifthenelse = false, conditional = false, iffalse = false, link = false, wide48 = false;
+			std::tie(ifthenelse, conditional, iffalse, link, wide48) = decomposeMoleculeJumpByte(dispatch);
 			auto newAddr = static_cast<word>(0);
 			auto cond = true;
 			advanceIp = false;

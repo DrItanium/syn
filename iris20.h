@@ -119,8 +119,7 @@ namespace iris20 {
 			RegisterFile gpr;
 			MemorySpace memory;
 			InstructionMolecule current;
-
-			iris::IOController<word> _devices;
+			IOController _devices;
         public:
             /**
              * Install a given device at the given address as an offset of the IOBaseAddress given in the architecture constants
@@ -134,6 +133,5 @@ namespace iris20 {
 	};
 
 	Core* newCore() noexcept;
-	void assemble(FILE* input, std::ostream* output);
 }
 #endif
