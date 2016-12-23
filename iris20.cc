@@ -360,6 +360,12 @@ namespace iris20 {
 		installIODevice(std::make_shared<GenericIODevice>(ArchitectureConstants::IOPutC, ArchitectureConstants::IOPutC, 
 					iris::readNothing<typename GenericIODevice::DataType>,
 					writeToStandardOut));
+		installIODevice(std::make_shared<GenericIODevice>(ArchitectureConstants::IOTerminate, ArchitectureConstants::IOTerminate,
+					iris::readNothing<typename GenericIODevice::DataType>,
+					[this](word addr, word value) {
+						execute = false;
+						advanceIp = false;
+					}));
 	}
 
     void Core::operandSet(byte target, word value) {
@@ -373,12 +379,7 @@ namespace iris20 {
         };
 		auto storeData = [this, address = data](word value) {
 			word caddr = static_cast<word>(address);
-			if (caddr == static_cast<word>(ArchitectureConstants::IOTerminate)) {
-				// specially marked location which will cause termination to
-				// occur
-				execute = false;
-				advanceIp = false;
-			} else if (caddr >= static_cast<word>(ArchitectureConstants::IOAddressBase)) {
+			if (caddr >= static_cast<word>(ArchitectureConstants::IOAddressBase)) {
 				caddr -= ArchitectureConstants::IOAddressBase;
 				auto found = false;
 				// need to make sure that we are in a legal device address
@@ -424,10 +425,7 @@ namespace iris20 {
         };
         auto loadData = [this, data]() {
 			word caddr = static_cast<word>(data);
-			if (caddr == static_cast<word>(ArchitectureConstants::IOTerminate)) {
-				// do nothing, since reading does nothing
-				return static_cast<word>(0);
-			} else if (caddr >= static_cast<word>(ArchitectureConstants::IOAddressBase)) {
+			if (caddr >= static_cast<word>(ArchitectureConstants::IOAddressBase)) {
 				caddr -= ArchitectureConstants::IOAddressBase;
 				for (auto& dev : _devices) {
 					if (dev->respondsTo(caddr)) {

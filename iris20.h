@@ -29,8 +29,8 @@ namespace iris20 {
         IOAddressSize = 0x0000000000FFFFFF,
         IOAddressEnd = IOAddressBase + IOAddressSize,
         // builtin addresses
-		IOTerminate = ArchitectureConstants::IOAddressEnd, // If we write to this address then terminate the cpu, it will be an error code
-        IOGetC = 0, // read from thie address and we get a 64-bit value from the keyboard
+		IOTerminate = 0, 		// If we write to this address then terminate the cpu, it will be an error code
+        IOGetC, 		 		// read from thie address and we get a 64-bit value from the keyboard
         IOPutC,                 // write to this address and we print to the screen
         IOUserDeviceBegin,
 	};
