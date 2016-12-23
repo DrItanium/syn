@@ -2,6 +2,7 @@
 #ifndef _IRIS_XUNITS_H
 #define _IRIS_XUNITS_H
 #include "iris_base.h"
+#include "IODevice.h"
 #include <iostream>
 #include <cmath>
 namespace iris {
@@ -164,12 +165,12 @@ class Comparator {
 };
 
 template<typename Word, typename Address = Word>
-class LoadStoreUnit {
+class LoadStoreUnit : public IODevice<Word, Address> {
 	public:
 		using WordType = Word;
 		using AddressType = Address;
 	public:
-		LoadStoreUnit(Address size) : _memory(std::move(std::make_unique<Word[]>(size))), _size(size) { }
+		LoadStoreUnit(Address size, Address base = 0) : IODevice<Word, Address>(base, size), _memory(std::move(std::make_unique<Word[]>(size))), _size(size) { }
 		LoadStoreUnit() : LoadStoreUnit(0) { }
 		virtual ~LoadStoreUnit() { }
 		inline void zero() noexcept {
@@ -188,12 +189,21 @@ class LoadStoreUnit {
 				throw iris::Problem("Provided address is not legal");
 			}
 		}
-		Word& operator[](Address addr) {
+		inline Word& retrieveMemory(Address addr) {
 			if (legalAddress(addr)) {
 				return _memory[addr];
 			} else {
-				throw iris::Problem("Provided address is not legal!");
+				throw iris::Problem("Provided address is not legal");
 			}
+		}
+		virtual Word read(Address addr) override {
+			return retrieveMemory(addr);
+		}
+		virtual void write(Address addr, Word value) override {
+			retrieveMemory(addr) = value;
+		}
+		Word& operator[](Address addr) {
+			return retrieveMemory(addr);
 		}
 		void swap(Address a, Address b) {
 			iris::swap<Word>(_memory[a], _memory[b]);
