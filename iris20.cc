@@ -4,10 +4,9 @@
 #include <vector>
 
 namespace iris20 {
-	Core* newCore() noexcept {
-		return new iris20::Core();
-	}
 
+
+	Core::Core() noexcept : _devices(ArchitectureConstants::IOAddressBase, ArchitectureConstants::IOAddressSize) { }
 
 	Core::~Core() { }
 
@@ -48,7 +47,6 @@ namespace iris20 {
 		ALU,
 		CompareUnit,
 		BranchUnit,
-		MiscUnit,
 		MoveUnit,
 	};
 	// target, subcommand, immediate?
@@ -183,7 +181,6 @@ namespace iris20 {
 	}
 
 	void Core::executeAtom(InstructionAtom atom) {
-		auto operation = getOperation(atom);
 		static std::map<Operation, DispatchTableEntry> table = {
 				{ Operation::Add, aluEntry(ALU::Operation::Add, false) },
 				{ Operation::Sub, aluEntry(ALU::Operation::Subtract, false ) },
@@ -240,7 +237,7 @@ namespace iris20 {
 				{ Operation::Swap, moveEntry(Operation::Swap, false) },
 				{ Operation::Set16, moveEntry(Operation::Set16, true) },
 		};
-		auto result = table.find(operation);
+		auto result = table.find(getOperation(atom));
 		if (result == table.end()) {
 			throw iris::Problem("Illegal single atom instruction!");
 		}
@@ -263,9 +260,6 @@ namespace iris20 {
 			} else {
 				throw iris::Problem("Registered but unimplemented move unit operation!");
 			}
-		};
-		auto miscOperation = [this, operation, immediate, atom]() {
-			throw iris::Problem("Registered but undefined misc operation requested!");
 		};
 		auto jumpOperation = [this, subAction, immediate, atom]() {
 			auto ifthenelse = false, conditional = false, iffalse = false, link = false;
@@ -300,9 +294,6 @@ namespace iris20 {
 				break;
 			case ExecutionUnitTarget::CompareUnit:
 				performOperation(_compare, static_cast<CompareUnit::Operation>(subAction), immediate, atom);
-				break;
-			case ExecutionUnitTarget::MiscUnit:
-				miscOperation();
 				break;
 			case ExecutionUnitTarget::BranchUnit:
 				jumpOperation();
@@ -340,7 +331,6 @@ namespace iris20 {
 		}
 	}
 
-	Core::Core() noexcept : _devices(ArchitectureConstants::IOAddressBase, ArchitectureConstants::IOAddressSize) { }
 	word readFromStandardIn(word address) {
 		auto value = static_cast<byte>(0);
 		std::cin >> std::noskipws >> value;
@@ -425,5 +415,9 @@ namespace iris20 {
 	}
 	void Core::installIODevice(word start, word length, typename GenericIODevice::ReadFunction read, typename GenericIODevice::WriteFunction write, typename GenericIODevice::InitializeFunction init, typename GenericIODevice::ShutdownFunction shutdown) {
 		installIODevice(std::make_shared<GenericIODevice>(start, length, read, write, init, shutdown));
+	}
+
+	Core* newCore() noexcept {
+		return new iris20::Core();
 	}
 }
