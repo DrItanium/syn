@@ -472,7 +472,7 @@ namespace iris20 {
 			device->initialize(); // setup the device as well
 		}
 	}
-	void Core::installIODevice(word start, word end, typename GenericIODevice::ReadFunction read, typename GenericIODevice::WriteFunction write, typename GenericIODevice::InitializeFunction init, typename GenericIODevice::ShutdownFunction shutdown) {
-		installIODevice(std::make_shared<GenericIODevice>(start, end, read, write, init, shutdown));
+	void Core::installIODevice(word start, word length, typename GenericIODevice::ReadFunction read, typename GenericIODevice::WriteFunction write, typename GenericIODevice::InitializeFunction init, typename GenericIODevice::ShutdownFunction shutdown) {
+		installIODevice(std::make_shared<GenericIODevice>(start, length, read, write, init, shutdown));
 	}
 }
