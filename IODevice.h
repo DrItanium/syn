@@ -10,15 +10,20 @@ namespace iris {
 template<typename Data, typename Address = Data>
 class IODevice : public Device {
 	public:
+		using AddressType = Address;
+		using DataType = Data;
 		using AddressRange = std::tuple<Address, Address>;
 	public:
 		IODevice(Address begin, Address end) : _begin(begin), _end(end) { }
 		virtual ~IODevice() { }
-		virtual AddressRange getResponseRange() const;
+		virtual AddressRange getResponseRange() const noexcept;
+		virtual bool respondsTo(Address targetAddress) const noexcept ;
+		virtual Address size() const noexcept { return _end - _begin; }
+		virtual Address beginAddress() const noexcept { return _begin; }
+		virtual Address endAddress() const noexcept { return _end; }
 
 		virtual Data read(Address targetAddress) = 0;
 		virtual void write(Address targetAddress, Data value) = 0;
-		virtual bool respondsTo(Address targetAddress) const;
 		virtual void initialize() override;
 		virtual void shutdown() override;
 	protected:
@@ -36,19 +41,25 @@ void IODevice<D, A>::shutdown() {
 	// do nothing
 }
 template<typename Data, typename Address>
-typename IODevice<Data, Address>::AddressRange IODevice<Data, Address>::getResponseRange() const {
+typename IODevice<Data, Address>::AddressRange IODevice<Data, Address>::getResponseRange() const noexcept {
 	return std::make_tuple(_begin, _end);
 }
 
 template<typename Data, typename Address>
-bool IODevice<Data, Address>::respondsTo(Address targetAddress) const {
+bool IODevice<Data, Address>::respondsTo(Address targetAddress) const noexcept {
 	return targetAddress >= _begin && targetAddress <= _end;
 }
 
-/**
- * Generic function useful as a "nop"
- */
-void doNothing() { }
+template<typename Data, typename Addr = Data>
+void initNothing() { }
+
+template<typename Data, typename Addr = Data>
+void shutdownNothing() { }
+
+template<typename Data, typename Addr = Data>
+void writeNothing(Addr address, Data value) { }
+template<typename Data, typename Addr = Data>
+Data readNothing(Addr address) { return static_cast<Data>(0); }
 
 template<typename Data, typename Address = Data>
 class LambdaIODevice : public IODevice<Data, Address> {
@@ -58,7 +69,7 @@ class LambdaIODevice : public IODevice<Data, Address> {
 		using InitializeFunction = std::function<void()>;
 		using ShutdownFunction = std::function<void()>;
 	public:
-		LambdaIODevice(Address begin, Address end, ReadFunction onRead, WriteFunction onWrite, InitializeFunction init = doNothing, ShutdownFunction shutdown = doNothing);
+		LambdaIODevice(Address begin, Address end, ReadFunction onRead, WriteFunction onWrite, InitializeFunction init = initNothing<Data, Address>, ShutdownFunction shutdown = shutdownNothing<Data, Address>);
 		virtual ~LambdaIODevice();
 		virtual Data read(Address targetAddress) override;
 		virtual void write(Address targetAddress, Data value) override;

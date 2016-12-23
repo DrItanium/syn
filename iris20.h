@@ -6,6 +6,7 @@
 #include "Core.h"
 #include <cstdint>
 #include <memory>
+#include <vector>
 namespace iris20 {
 	using word = int64_t;
     using uword = uint64_t;
@@ -116,7 +117,7 @@ namespace iris20 {
 			RegisterFile gpr;
 			MemorySpace memory;
 			InstructionMolecule current;
-            std::map<word, std::shared_ptr<IODevice>> _devices;
+			std::vector<std::shared_ptr<IODevice>> _devices;
         public:
             /**
              * Install a given device at the given address as an offset of the IOBaseAddress given in the architecture constants

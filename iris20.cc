@@ -341,26 +341,25 @@ namespace iris20 {
 		}
 	}
 
-	Core::Core() noexcept { }
-	word readFromStandardIn() {
+	Core::Core() noexcept  { }
+	word readFromStandardIn(word address) {
 		auto value = static_cast<byte>(0);
 		std::cin >> std::noskipws >> value;
 		return static_cast<word>(value);
 	}
-	void writeToStandardOut(word value) {
+	void writeToStandardOut(word address, word value) {
 		// read register 0 and register 1
 		std::cout.put(static_cast<char>(value));
-	}
-	void writeNothing(word address) {
-	}
-	word readNothing() { 
-		return 0; 
 	}
 	void Core::initialize() {
 		memory.zero();
 		// install memory handlers
-		installIODevice(ArchitectureConstants::IOGetC, std::make_shared<GenericIODevice>(readFromStandardIn, writeNothing));
-		installIODevice(ArchitectureConstants::IOPutC, std::make_shared<GenericIODevice>(readNothing, writeToStandardOut));
+		installIODevice(std::make_shared<GenericIODevice>(ArchitectureConstants::IOGetC, ArchitectureConstants::IOGetC, 
+					readFromStandardIn, 
+					iris::writeNothing<typename GenericIODevice::DataType>));
+		installIODevice(std::make_shared<GenericIODevice>(ArchitectureConstants::IOPutC, ArchitectureConstants::IOPutC, 
+					iris::readNothing<typename GenericIODevice::DataType>,
+					writeToStandardOut));
 	}
 
     void Core::operandSet(byte target, word value) {
@@ -381,12 +380,17 @@ namespace iris20 {
 				advanceIp = false;
 			} else if (caddr >= static_cast<word>(ArchitectureConstants::IOAddressBase)) {
 				caddr -= ArchitectureConstants::IOAddressBase;
+				auto found = false;
 				// need to make sure that we are in a legal device address
-				auto result = _devices.find(caddr);
-				if (result == _devices.end()) {
+				for (auto & a : _devices) {
+					if (a->respondsTo(caddr)) {
+						a->write(caddr, value);
+						found = true;
+						break;
+					}
+				}
+				if (!found) {
 					throw iris::Problem("Illegal IO memory access");
-				} else {
-					result->second->write(value);
 				}
 			} else {
 				memory[caddr] = value;
@@ -407,18 +411,6 @@ namespace iris20 {
         }
     }
 
-	void Core::installIODevice(word address, std::shared_ptr<IODevice> device) {
-		// combine with IOBaseAddress
-		static constexpr auto maximumAddr = static_cast<word>(ArchitectureConstants::IOAddressSize);
-		if (address >= 0 && address <= maximumAddr) {;
-			// compute the actual address by subtracting the base address from
-			// the offset
-			_devices.emplace(address, device);
-		} else {
-			throw iris::Problem("Offset into IO address out of range!");
-		}
-		
-	}
 
     word Core::operandGet(byte target) {
         SectionType type;
@@ -437,12 +429,12 @@ namespace iris20 {
 				return static_cast<word>(0);
 			} else if (caddr >= static_cast<word>(ArchitectureConstants::IOAddressBase)) {
 				caddr -= ArchitectureConstants::IOAddressBase;
-				auto result = _devices.find(caddr);
-				if (result == _devices.end()) {
-					throw iris::Problem("Illegal IO memory access!");
-				} else {
-					return result->second->read();
+				for (auto& dev : _devices) {
+					if (dev->respondsTo(caddr)) {
+						return dev->read(caddr);
+					}
 				}
+				throw iris::Problem("Illegal IO memory access!");
 			} else {
 				return memory[data];
 			}
@@ -459,11 +451,30 @@ namespace iris20 {
         }
     }
 
-	word GenericIODevice::read() {
-		return _read();
+	void Core::installIODevice(std::shared_ptr<IODevice> device) {
+		// combine with IOBaseAddress
+		static constexpr auto maximumAddr = static_cast<word>(ArchitectureConstants::IOAddressSize);
+		auto size = device->size();
+		if (size == 0) {
+			throw iris::Problem("Can't have an IO device with no size!");
+		} else if (size < 0) {
+			throw iris::Problem("Can't have a backwards IO device address range!");
+		} else if (size > maximumAddr) {
+			throw iris::Problem("Requested io device memory area is larger than entire io space!");
+		} else {
+			// right now, we leave address conflict resolution on the part of
+			// the device itself. So just check and make sure we don't have an
+			// address conflict.
+			for(auto const& installedDevice : _devices) {
+				// super slow but I've never done this before so it'll be a
+				// good starting place!
+				for (auto i = device->beginAddress(); i <= device->endAddress(); ++i) {
+					if (installedDevice->respondsTo(i)) {
+						throw iris::Problem("Address conflict found!");
+					}
+				}
+			}
+			_devices.emplace_back(device);
+		}
 	}
-	void GenericIODevice::write(word address) {
-		_write(address);
-	}
-
 }

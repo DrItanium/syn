@@ -11,7 +11,6 @@ namespace iris {
 			virtual void dump(std::ostream& stream) = 0;
 			virtual void run() = 0;
 			virtual void link(std::istream& input) = 0;
-
 	 };
 }
 #endif
