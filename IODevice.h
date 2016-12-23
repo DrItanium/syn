@@ -26,7 +26,6 @@ class IODevice : public Device {
 		virtual Address size() const noexcept { return _count; }
 		virtual Address baseAddress() const noexcept { return _base; }
 		virtual Address endAddress() const noexcept { return _base + _count; }
-
 		virtual Data read(Address targetAddress) = 0;
 		virtual void write(Address targetAddress, Data value) = 0;
 		virtual void initialize() override;
@@ -102,7 +101,11 @@ class LambdaIODevice : public IODevice<Data, Address> {
 		using InitializeFunction = std::function<void()>;
 		using ShutdownFunction = std::function<void()>;
 	public:
-		LambdaIODevice(Address begin, Address end, ReadFunction onRead, WriteFunction onWrite, InitializeFunction init = initNothing<Data, Address>, ShutdownFunction shutdown = shutdownNothing<Data, Address>);
+		LambdaIODevice(Address begin, Address end, 
+				ReadFunction onRead, 
+				WriteFunction onWrite, 
+				InitializeFunction init = initNothing<Data, Address>, 
+				ShutdownFunction shutdown = shutdownNothing<Data, Address>);
 		virtual ~LambdaIODevice();
 		virtual Data read(Address targetAddress) override;
 		virtual void write(Address targetAddress, Data value) override;

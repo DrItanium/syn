@@ -53,6 +53,7 @@ namespace iris20 {
 	using MemorySpace = WordMemorySpace<ArchitectureConstants::AddressMax>;
 	using DecodedOperand = std::tuple<SectionType, byte>;
 	using DecomposedInstructionMolecule = std::tuple<InstructionAtom, InstructionAtom>;
+	using MemoryController = iris::MemoryController<word>;
 	inline constexpr DecomposedInstructionMolecule decomposeMolecule(InstructionMolecule molecule) noexcept { return std::make_tuple(decodeFirstAtom(molecule), decodeSecondAtom(molecule)); }
 	inline constexpr InstructionAtom getFirstAtom(InstructionMolecule molecule) noexcept { return decodeFirstAtom(molecule); }
 	inline constexpr InstructionAtom getSecondAtom(InstructionMolecule molecule) noexcept { return decodeSecondAtom(molecule); }
@@ -117,9 +118,10 @@ namespace iris20 {
 			CompareUnit _compare;
 			ALU _alu;
 			RegisterFile gpr;
-			MemorySpace memory;
 			InstructionMolecule current;
-			IOController _devices;
+			MemoryController _controller;
+			// TODO: come up with storage to dump images to within the confines
+			// of the system (no dump command!).
         public:
             /**
              * Install a given device at the given address as an offset of the IOBaseAddress given in the architecture constants
@@ -128,7 +130,7 @@ namespace iris20 {
 			using IOWriteFunction = GenericIODevice::WriteFunction;
 			using IOInitFunction = GenericIODevice::InitializeFunction;
 			using IOShutdownFunction = GenericIODevice::ShutdownFunction;
-            void installIODevice(IOController::SharedIONodePtr device);
+            void installDevice(IOController::SharedIONodePtr device);
 			void installIODevice(word start, word length, IOReadFunction read, IOWriteFunction write, IOInitFunction init = iris::initNothing<typename GenericIODevice::DataType, typename GenericIODevice::AddressType>, IOShutdownFunction shutdown = iris::shutdownNothing<typename GenericIODevice::DataType, typename GenericIODevice::AddressType>);
 	};
 

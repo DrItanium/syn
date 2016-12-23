@@ -88,6 +88,8 @@ class IOController : public IODevice<D, A> {
 		std::vector<SharedIONodePtr> _devices;
 };
 
+template<typename D, typename A = D>
+using MemoryController = IOController<D, A>;
 
 } // end namespace iris
 #endif // end IRIS_IO_CONTROLLER_H_

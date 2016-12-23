@@ -6,21 +6,23 @@
 namespace iris20 {
 
 
-	Core::Core() noexcept : _devices(ArchitectureConstants::IOAddressBase, ArchitectureConstants::IOAddressSize) { }
+	//full 64bit addr space
+	Core::Core() noexcept : _controller(0, 0xFFFFFFFFFFFFFFFF) { }
 
 	Core::~Core() { }
 
 	void Core::installprogram(std::istream& stream) {
 		auto encodeWord = [](char* buf) { return iris20::encodeWord(buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]); };
 		gpr.install(stream, encodeWord);
-		memory.install(stream, encodeWord);
+		//memory.install(stream, encodeWord);
 	}
 
 	void Core::dump(std::ostream& stream) {
 
 		auto decodeWord = [](word value, char* buf) { iris::decodeInt64LE(value, (byte*)buf); };
 		gpr.dump(stream, decodeWord);
-		memory.dump(stream, decodeWord);
+		//memory.dump(stream, decodeWord);
+		
 	}
 	void Core::run() {
 		while(execute) {
@@ -35,7 +37,7 @@ namespace iris20 {
 	}
 	void Core::dispatch() {
 		// TODO: add checks for dispatching on one or two atom molecules
-		current = memory[getInstructionPointer()];
+		current = _controller.read(getInstructionPointer());
 		if (decodeMoleculeContainsOneInstruction(current)) {
 			executeMolecule();
 		} else {
@@ -327,7 +329,7 @@ namespace iris20 {
 			if (debugEnabled()) {
 				std::cerr << "addr: 0x " << std::hex << address << ": value: 0x" << std::hex << value << std::endl;
 			}
-			memory[address] = value;
+			_controller.write(address, value);
 		}
 	}
 
@@ -340,16 +342,23 @@ namespace iris20 {
 		// read register 0 and register 1
 		std::cout.put(static_cast<char>(value));
 	}
+	//Core::Core() noexcept : _devices(ArchitectureConstants::IOAddressBase, ArchitectureConstants::IOAddressSize) { }
+	void Core::installDevice(MemoryController::SharedIONodePtr device) {
+		_controller.install(device);
+	}
 	void Core::initialize() {
-		_devices.initialize();
-		memory.zero();
+		_controller.initialize();
+		auto mem = std::make_shared<MemorySpace>(0, ArchitectureConstants::AddressMax + 1);
+		mem->initialize();
+		mem->zero();
+		_controller.install(mem);
 		// install memory handlers
 		auto rNothing = iris::readNothing<typename GenericIODevice::DataType>;
 		auto wNothing = iris::writeNothing<typename GenericIODevice::DataType>;
 		installIODevice(ArchitectureConstants::IOTerminate, 1, rNothing,
 					[this](word addr, word value) {
-						execute = false;
-						advanceIp = false;
+					execute = false;
+					advanceIp = false;
 					});
 		installIODevice(ArchitectureConstants::IOGetC, 1, readFromStandardIn, wNothing);
 		installIODevice(ArchitectureConstants::IOPutC, 1, rNothing, writeToStandardOut);
@@ -361,26 +370,14 @@ namespace iris20 {
         byte index;
         std::tie(type, index) = getOperand(target);
         auto& data = gpr[index];
-		auto storeData = [this](word caddr, word value) {
-			if (_devices.respondsTo(caddr)) {
-				_devices.write(caddr, value);
-			} else {
-				memory[caddr] = value;
-			}
-		};
-        auto pushValue = [this, storeData](word& caddr, word value) {
-			--caddr;
-			storeData(caddr, value);
-        };
         switch(type) {
+            case SectionType::Stack:
+				--data;
+            case SectionType::Memory:
+				_controller.write(data, value);
+                break;
             case SectionType::Register:
                 data = value;
-                break;
-            case SectionType::Memory:
-				storeData(data, value);
-                break;
-            case SectionType::Stack:
-                pushValue(data, value);
                 break;
             default:
                 throw iris::Problem("Undefined section type specified!");
@@ -393,11 +390,8 @@ namespace iris20 {
         byte index;
         std::tie(type, index) = getOperand(target);
         auto& data = gpr[index];
-        auto loadData = [this](word caddr) {
-			return _devices.respondsTo(caddr) ? _devices.read(caddr) : memory[caddr];
-        };
-        auto popData = [this, loadData](word& caddr) {
-			auto outcome = loadData(caddr);
+        auto popData = [this](word& caddr) {
+			auto outcome = _controller.read(caddr);
             ++caddr;
             return outcome;
         };
@@ -407,17 +401,14 @@ namespace iris20 {
             case SectionType::Stack:
                 return popData(data);
             case SectionType::Memory:
-                return loadData(data);
+				return _controller.read(data);
             default:
                 throw iris::Problem("Undefined section type specified!");
         }
     }
 
-	void Core::installIODevice(IOController::SharedIONodePtr device) {
-		_devices.install(device);
-	}
 	void Core::installIODevice(word start, word length, typename GenericIODevice::ReadFunction read, typename GenericIODevice::WriteFunction write, typename GenericIODevice::InitializeFunction init, typename GenericIODevice::ShutdownFunction shutdown) {
-		installIODevice(std::make_shared<GenericIODevice>(start, length, read, write, init, shutdown));
+		installDevice(std::make_shared<GenericIODevice>(ArchitectureConstants::IOAddressBase + start, length, read, write, init, shutdown));
 	}
 
 	Core* newCore() noexcept {

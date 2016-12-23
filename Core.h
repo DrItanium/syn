@@ -7,8 +7,8 @@ namespace iris {
 	 // Generic iris core interface
 	 class Core : public Device {
 		public:
-			virtual void installprogram(std::istream& stream) = 0;
 			virtual void dump(std::ostream& stream) = 0;
+			virtual void installprogram(std::istream& stream) = 0;
 			virtual void run() = 0;
 			virtual void link(std::istream& input) = 0;
 	 };

@@ -3,6 +3,7 @@
  */
 #ifndef IRIS_DEVICE_H_
 #define IRIS_DEVICE_H_
+#include <iostream>
 namespace iris {
 class Device {
 	public:
