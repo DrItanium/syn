@@ -340,7 +340,7 @@ namespace iris20 {
 		}
 	}
 
-	Core::Core() noexcept  { }
+	Core::Core() noexcept : _devices(ArchitectureConstants::IOAddressBase, ArchitectureConstants::IOAddressSize) { }
 	word readFromStandardIn(word address) {
 		auto value = static_cast<byte>(0);
 		std::cin >> std::noskipws >> value;
@@ -351,6 +351,7 @@ namespace iris20 {
 		std::cout.put(static_cast<char>(value));
 	}
 	void Core::initialize() {
+		_devices.initialize();
 		memory.zero();
 		// install memory handlers
 		installIODevice(ArchitectureConstants::IOTerminate, ArchitectureConstants::IOTerminate, iris::readNothing<typename GenericIODevice::DataType>,
@@ -373,20 +374,8 @@ namespace iris20 {
         };
 		auto storeData = [this, address = data](word value) {
 			word caddr = static_cast<word>(address);
-			if (caddr >= static_cast<word>(ArchitectureConstants::IOAddressBase)) {
-				caddr -= ArchitectureConstants::IOAddressBase;
-				auto found = false;
-				// need to make sure that we are in a legal device address
-				for (auto & a : _devices) {
-					if (a->respondsTo(caddr)) {
-						a->write(caddr, value);
-						found = true;
-						break;
-					}
-				}
-				if (!found) {
-					throw iris::Problem("Illegal IO memory access");
-				}
+			if (_devices.respondsTo(caddr)) {
+				_devices.write(caddr, value);
 			} else {
 				memory[caddr] = value;
 			}
@@ -419,16 +408,10 @@ namespace iris20 {
         };
         auto loadData = [this, data]() {
 			word caddr = static_cast<word>(data);
-			if (caddr >= static_cast<word>(ArchitectureConstants::IOAddressBase)) {
-				caddr -= ArchitectureConstants::IOAddressBase;
-				for (auto& dev : _devices) {
-					if (dev->respondsTo(caddr)) {
-						return dev->read(caddr);
-					}
-				}
-				throw iris::Problem("Illegal IO memory access!");
+			if (_devices.respondsTo(caddr)) {
+				return _devices.read(caddr);
 			} else {
-				return memory[data];
+				return memory[caddr];
 			}
         };
         switch(type) {
@@ -443,30 +426,8 @@ namespace iris20 {
         }
     }
 
-	void Core::installIODevice(std::shared_ptr<IODevice> device) {
-		// combine with IOBaseAddress
-		static constexpr auto maximumAddr = static_cast<word>(ArchitectureConstants::IOAddressSize);
-		auto size = device->size();
-		if (size == 0) {
-			throw iris::Problem("Can't have an IO device with no size!");
-		} else if (size < 0) {
-			throw iris::Problem("Can't have a backwards IO device address range!");
-		} else if (size > maximumAddr) {
-			throw iris::Problem("Requested io device memory area is larger than entire io space!");
-		} else {
-			// right now, we leave address conflict resolution on the part of
-			// the device itself. So just check and make sure we don't have an
-			// address conflict.
-			for(auto const& installedDevice : _devices) {
-				// super slow but I've never done this before so it'll be a
-				// good starting place!
-				if (device->respondsTo(installedDevice)) {
-					throw iris::Problem("Address conflict found!");
-				}
-			}
-			_devices.emplace_back(device);
-			device->initialize(); // setup the device as well
-		}
+	void Core::installIODevice(IOController::SharedIONodePtr device) {
+		_devices.install(device);
 	}
 	void Core::installIODevice(word start, word length, typename GenericIODevice::ReadFunction read, typename GenericIODevice::WriteFunction write, typename GenericIODevice::InitializeFunction init, typename GenericIODevice::ShutdownFunction shutdown) {
 		installIODevice(std::make_shared<GenericIODevice>(start, length, read, write, init, shutdown));

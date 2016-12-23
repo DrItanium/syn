@@ -27,11 +27,11 @@ class IOController : public IODevice<D, A> {
 
 		}
 		virtual D read(A addr) override {
-			if (respondsTo(addr)) {
+			if (this->respondsTo(addr)) {
 				auto caddr = addr - this->baseAddress(); // make sure that we adjust it to be a "flat" model
-				auto dev = findResponsiveChild(addr);
+				auto dev = findResponsiveChild(caddr);
 				if (dev) {
-					return dev->read(addr);
+					return dev->read(caddr);
 				} else {
 					throw iris::Problem("Provided address is not mapped to anything");
 				}
@@ -40,11 +40,11 @@ class IOController : public IODevice<D, A> {
 			}
 		}
 		virtual void write(A addr, D value) override {
-			if (respondsTo(addr)) {
+			if (this->respondsTo(addr)) {
 				auto caddr = addr - this->baseAddress(); // make sure that we adjust it to be a "flat" model
-				auto dev = findResponsiveChild(addr);
+				auto dev = findResponsiveChild(caddr);
 				if (dev) {
-					dev->write(addr, value);
+					dev->write(caddr, value);
 				} else {
 					throw iris::Problem("Provided address is not mapped to anything");
 				}
@@ -74,7 +74,7 @@ class IOController : public IODevice<D, A> {
 			return childrenRespondTo(ptr->baseAddress(), ptr->size());
 		}
 		bool childrenRespondTo(A addr, A length = 1) {
-			return findResponsiveChild(addr, length);
+			return static_cast<bool>(findResponsiveChild(addr, length));
 		}
 		SharedIONodePtr findResponsiveChild(A addr, A length = 1) {
 			for (auto & dev : _devices) {

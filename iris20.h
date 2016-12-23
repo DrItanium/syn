@@ -71,6 +71,7 @@ namespace iris20 {
 	inline constexpr Operation getOperation(InstructionAtom atom) noexcept { return decodeOperation(atom); }
 	using IODevice = iris::IODevice<word>;
 	using GenericIODevice = iris::LambdaIODevice<word>;
+	using IOController = iris::IOController<word>;
 	class Core : public iris::Core {
 		public:
 			Core() noexcept;
@@ -119,7 +120,7 @@ namespace iris20 {
 			MemorySpace memory;
 			InstructionMolecule current;
 
-			std::vector<std::shared_ptr<IODevice>> _devices;
+			iris::IOController<word> _devices;
         public:
             /**
              * Install a given device at the given address as an offset of the IOBaseAddress given in the architecture constants
@@ -128,9 +129,8 @@ namespace iris20 {
 			using IOWriteFunction = GenericIODevice::WriteFunction;
 			using IOInitFunction = GenericIODevice::InitializeFunction;
 			using IOShutdownFunction = GenericIODevice::ShutdownFunction;
-            void installIODevice(std::shared_ptr<IODevice> device);
-			void installIODevice(word start, word end, IOReadFunction read, IOWriteFunction write, IOInitFunction init = iris::initNothing<typename GenericIODevice::DataType, typename GenericIODevice::AddressType>, IOShutdownFunction shutdown = iris::shutdownNothing<typename GenericIODevice::DataType, typename GenericIODevice::AddressType>);
-			void installIODevice(word address, IOReadFunction read, IOWriteFunction write, IOInitFunction init = iris::initNothing<typename GenericIODevice::DataType, typename GenericIODevice::AddressType>, IOShutdownFunction shutdown = iris::shutdownNothing<typename GenericIODevice::DataType, typename GenericIODevice::AddressType>);
+            void installIODevice(IOController::SharedIONodePtr device);
+			void installIODevice(word start, word length, IOReadFunction read, IOWriteFunction write, IOInitFunction init = iris::initNothing<typename GenericIODevice::DataType, typename GenericIODevice::AddressType>, IOShutdownFunction shutdown = iris::shutdownNothing<typename GenericIODevice::DataType, typename GenericIODevice::AddressType>);
 	};
 
 	Core* newCore() noexcept;
