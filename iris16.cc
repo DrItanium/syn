@@ -39,6 +39,12 @@ namespace iris16 {
 			}
 		}
 	}
+	template<typename T>
+	using UnitDescription = std::tuple<typename T::Operation, bool>;
+	template<typename T>
+	UnitDescription<T> makeDesc(typename T::Operation operation, bool immediate) noexcept {
+		return std::make_tuple(operation, immediate);
+	}
 	void Core::dispatch() {
 		auto group = static_cast<InstructionGroup>(getGroup());
 		auto makeProblem = [this](const std::string& message, auto operation) {
@@ -52,25 +58,25 @@ namespace iris16 {
 			makeProblem("Illegal " + type, getOperation());
 		};
 		if (group == InstructionGroup::Arithmetic) {
-			static std::map<ArithmeticOp, std::tuple<ALU::Operation, bool>> table = {
-				{ ArithmeticOp::Add, std::make_tuple(ALU::Operation::Add , false) },
-				{ ArithmeticOp::Sub, std::make_tuple(ALU::Operation::Subtract , false ) },
-				{ ArithmeticOp::Mul, std::make_tuple(ALU::Operation::Multiply , false ) } ,
-				{ ArithmeticOp::Div, std::make_tuple(ALU::Operation::Divide , false ) },
-				{ ArithmeticOp::Rem, std::make_tuple(ALU::Operation::Remainder , false ) },
-				{ ArithmeticOp::ShiftLeft, std::make_tuple(ALU::Operation::ShiftLeft , false ) },
-				{ ArithmeticOp::ShiftRight, std::make_tuple(ALU::Operation::ShiftRight , false ) },
-				{ ArithmeticOp::BinaryAnd, std::make_tuple(ALU::Operation::BinaryAnd , false ) },
-				{ ArithmeticOp::BinaryOr, std::make_tuple(ALU::Operation::BinaryOr , false ) },
-				{ ArithmeticOp::BinaryNot, std::make_tuple(ALU::Operation::UnaryNot , false) },
-				{ ArithmeticOp::BinaryXor, std::make_tuple(ALU::Operation::BinaryXor , false ) },
-				{ ArithmeticOp::AddImmediate, std::make_tuple(ALU::Operation::Add , true  ) },
-				{ ArithmeticOp::SubImmediate, std::make_tuple(ALU::Operation::Subtract , true  ) },
-				{ ArithmeticOp::MulImmediate, std::make_tuple(ALU::Operation::Multiply , true  ) } ,
-				{ ArithmeticOp::DivImmediate, std::make_tuple(ALU::Operation::Divide , true  ) },
-				{ ArithmeticOp::RemImmediate, std::make_tuple(ALU::Operation::Remainder , true  ) },
-				{ ArithmeticOp::ShiftLeftImmediate, std::make_tuple(ALU::Operation::ShiftLeft , true ) },
-				{ ArithmeticOp::ShiftRightImmediate, std::make_tuple(ALU::Operation::ShiftRight , true ) },
+			static std::map<ArithmeticOp, UnitDescription<ALU>> table = {
+				{ ArithmeticOp::Add, makeDesc<ALU>(ALU::Operation::Add , false) },
+				{ ArithmeticOp::Sub, makeDesc<ALU>(ALU::Operation::Subtract , false ) },
+				{ ArithmeticOp::Mul, makeDesc<ALU>(ALU::Operation::Multiply , false ) } ,
+				{ ArithmeticOp::Div, makeDesc<ALU>(ALU::Operation::Divide , false ) },
+				{ ArithmeticOp::Rem, makeDesc<ALU>(ALU::Operation::Remainder , false ) },
+				{ ArithmeticOp::ShiftLeft, makeDesc<ALU>(ALU::Operation::ShiftLeft , false ) },
+				{ ArithmeticOp::ShiftRight, makeDesc<ALU>(ALU::Operation::ShiftRight , false ) },
+				{ ArithmeticOp::BinaryAnd, makeDesc<ALU>(ALU::Operation::BinaryAnd , false ) },
+				{ ArithmeticOp::BinaryOr, makeDesc<ALU>(ALU::Operation::BinaryOr , false ) },
+				{ ArithmeticOp::BinaryNot, makeDesc<ALU>(ALU::Operation::UnaryNot , false) },
+				{ ArithmeticOp::BinaryXor, makeDesc<ALU>(ALU::Operation::BinaryXor , false ) },
+				{ ArithmeticOp::AddImmediate, makeDesc<ALU>(ALU::Operation::Add , true  ) },
+				{ ArithmeticOp::SubImmediate, makeDesc<ALU>(ALU::Operation::Subtract , true  ) },
+				{ ArithmeticOp::MulImmediate, makeDesc<ALU>(ALU::Operation::Multiply , true  ) } ,
+				{ ArithmeticOp::DivImmediate, makeDesc<ALU>(ALU::Operation::Divide , true  ) },
+				{ ArithmeticOp::RemImmediate, makeDesc<ALU>(ALU::Operation::Remainder , true  ) },
+				{ ArithmeticOp::ShiftLeftImmediate, makeDesc<ALU>(ALU::Operation::ShiftLeft , true ) },
+				{ ArithmeticOp::ShiftRightImmediate, makeDesc<ALU>(ALU::Operation::ShiftRight , true ) },
 			};
 			auto result = table.find(static_cast<ArithmeticOp>(getOperation()));
 			if (result == table.end()) {
@@ -79,45 +85,25 @@ namespace iris16 {
 				performOperation(_alu, result->second);
 			}
 		} else if (group == InstructionGroup::Compare) {
-			static std::map<CompareOp, std::tuple<CompareUnit::Operation, bool>> translationTable = {
-				{ CompareOp::LessThan, std::make_tuple(CompareUnit::Operation::LessThan, false) },
-				{ CompareOp::LessThanImm, std::make_tuple(CompareUnit::Operation::LessThan, true) },
-				{ CompareOp::LessThanOrEqualTo, std::make_tuple(CompareUnit::Operation::LessThanOrEqualTo, false) },
-				{ CompareOp::LessThanOrEqualToImm, std::make_tuple(CompareUnit::Operation::LessThanOrEqualTo, true) },
-				{ CompareOp::GreaterThan, std::make_tuple(CompareUnit::Operation::GreaterThan, false) },
-				{ CompareOp::GreaterThanImm, std::make_tuple(CompareUnit::Operation::GreaterThan, true) },
-				{ CompareOp::GreaterThanOrEqualTo, std::make_tuple(CompareUnit::Operation::GreaterThanOrEqualTo, false) },
-				{ CompareOp::GreaterThanOrEqualToImm, std::make_tuple(CompareUnit::Operation::GreaterThanOrEqualTo, true) },
-				{ CompareOp::Eq, std::make_tuple(CompareUnit::Operation::Eq, false) },
-				{ CompareOp::EqImm, std::make_tuple(CompareUnit::Operation::Eq, true) },
-				{ CompareOp::Neq, std::make_tuple(CompareUnit::Operation::Neq, false) },
-				{ CompareOp::NeqImm, std::make_tuple(CompareUnit::Operation::Neq, true) },
+			static std::map<CompareOp, UnitDescription<CompareUnit>> translationTable = {
+				{ CompareOp::LessThan, makeDesc<CompareUnit>(CompareUnit::Operation::LessThan, false) },
+				{ CompareOp::LessThanImm, makeDesc<CompareUnit>(CompareUnit::Operation::LessThan, true) },
+				{ CompareOp::LessThanOrEqualTo, makeDesc<CompareUnit>(CompareUnit::Operation::LessThanOrEqualTo, false) },
+				{ CompareOp::LessThanOrEqualToImm, makeDesc<CompareUnit>(CompareUnit::Operation::LessThanOrEqualTo, true) },
+				{ CompareOp::GreaterThan, makeDesc<CompareUnit>(CompareUnit::Operation::GreaterThan, false) },
+				{ CompareOp::GreaterThanImm, makeDesc<CompareUnit>(CompareUnit::Operation::GreaterThan, true) },
+				{ CompareOp::GreaterThanOrEqualTo, makeDesc<CompareUnit>(CompareUnit::Operation::GreaterThanOrEqualTo, false) },
+				{ CompareOp::GreaterThanOrEqualToImm, makeDesc<CompareUnit>(CompareUnit::Operation::GreaterThanOrEqualTo, true) },
+				{ CompareOp::Eq, makeDesc<CompareUnit>(CompareUnit::Operation::Eq, false) },
+				{ CompareOp::EqImm, makeDesc<CompareUnit>(CompareUnit::Operation::Eq, true) },
+				{ CompareOp::Neq, makeDesc<CompareUnit>(CompareUnit::Operation::Neq, false) },
+				{ CompareOp::NeqImm, makeDesc<CompareUnit>(CompareUnit::Operation::Neq, true) },
 			};
 			auto result = translationTable.find(static_cast<CompareOp>(getOperation()));
 			if (result == translationTable.end()) {
 				makeIllegalOperationMessage("compare code");
 			} else {
 				performOperation(_compare, result->second);
-			}
-		} else if (group == InstructionGroup::Misc) {
-			auto op = static_cast<MiscOp>(getOperation());
-			if (op == MiscOp::SystemCall) {
-				auto target = static_cast<SystemCalls>(getDestination());
-				if (target == SystemCalls::Terminate) {
-					execute = false;
-					advanceIp = false;
-				} else if (target == SystemCalls::PutC) {
-					// read register 0 and register 1
-					std::cout.put(static_cast<char>(source0Register()));
-				} else if (target == SystemCalls::GetC) {
-					auto value = static_cast<byte>(0);
-					std::cin >> std::noskipws >> value;
-					source0Register() = static_cast<word>(value);
-				} else {
-					makeProblem("Illegal system call", getDestination());
-				}
-			} else {
-				makeIllegalOperationMessage("misc code");
 			}
 		} else if (group == InstructionGroup::Jump) {
 			// ifthenelse?, conditional?, iffalse?, immediate?, link?
@@ -252,11 +238,33 @@ namespace iris16 {
 
 
 	void Core::initialize() {
+		execute = true;
+		advanceIp = true;
 		gpr.initialize();
 		data.initialize();
 		instruction.initialize();
 		stack.initialize();
 		_io.initialize();
+		auto readNothing = iris::readNothing<typename LambdaIODevice::DataType, typename LambdaIODevice::AddressType>;
+		auto writeNothing = iris::writeNothing<typename LambdaIODevice::DataType, typename LambdaIODevice::AddressType>;
+
+		// terminate
+		_io.install(std::make_shared<LambdaIODevice>(0, 1, readNothing, 
+					[this](word address, word value) { 
+						execute = false; 
+						advanceIp = false; 
+					}));
+		// getc
+		_io.install(std::make_shared<LambdaIODevice>(1, 1, 
+					[](word address) {
+						auto value = static_cast<byte>(0);
+						std::cin >> std::noskipws >> value;
+						return static_cast<word>(value);
+					}, 
+					writeNothing));
+		// putc
+		_io.install(std::make_shared<LambdaIODevice>(2, 1, readNothing, [](word address, word value) { std::cout.put(static_cast<char>(value)); }));
+
 	}
 
 	void Core::shutdown() {

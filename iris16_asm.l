@@ -87,7 +87,6 @@ omni [a-zA-Z0-9._]
 "gti" { return COMPARE_OP_GREATERTHAN_IMMEDIATE; }
 "lei" { return COMPARE_OP_LESSTHANOREQUALTO_IMMEDIATE; }
 "gei" { return COMPARE_OP_GREATERTHANOREQUALTO_IMMEDIATE; }
-"system" { return MISC_OP_SYSTEMCALL; }
 "push" { return MOVE_OP_PUSH; }
 "pushi" { return MOVE_OP_PUSHIMMEDIATE; }
 "pop" { return MOVE_OP_POP; }

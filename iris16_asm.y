@@ -136,7 +136,6 @@ bool resolve_op(dynamicop* dop);
 %token COMPARE_OP_GREATERTHAN_IMMEDIATE
 %token COMPARE_OP_LESSTHANOREQUALTO_IMMEDIATE
 %token COMPARE_OP_GREATERTHANOREQUALTO_IMMEDIATE
-%token MISC_OP_SYSTEMCALL
 %token ARITHMETIC_MACRO_OP_INCR
 %token ARITHMETIC_MACRO_OP_DECR
 %token ARITHMETIC_MACRO_OP_HALVE
@@ -266,12 +265,10 @@ label:
      }
    ;
 operation:
-         arithmetic_op { iris16::curri.group = (byte)iris16::InstructionGroup::Arithmetic; } |
-         move_op { iris16::curri.group = (byte)iris16::InstructionGroup::Move; } |
-         jump_op { iris16::curri.group = (byte)iris16::InstructionGroup::Jump; } |
-         compare_op { iris16::curri.group = (byte)iris16::InstructionGroup::Compare; } |
-         misc_op { iris16::curri.group = (byte)iris16::InstructionGroup::Misc; }
-         ;
+         arithmetic_op { iris16::curri.group = static_cast<byte>(iris16::InstructionGroup::Arithmetic); } |
+         move_op { iris16::curri.group = static_cast<byte>(iris16::InstructionGroup::Move); } |
+         jump_op { iris16::curri.group = static_cast<byte>(iris16::InstructionGroup::Jump); } |
+         compare_op { iris16::curri.group = static_cast<byte>(iris16::InstructionGroup::Compare); };
 arithmetic_op:
              aop REGISTER REGISTER REGISTER {
                   iris16::curri.reg0 = $2;
@@ -384,18 +381,6 @@ compare_op:
 			iris16::curri.reg2 = $4;
 		  }
           ;
-misc_op:
-       MISC_OP_SYSTEMCALL IMMEDIATE REGISTER REGISTER 
-       { 
-         iris16::curri.op = (byte)iris16::MiscOp::SystemCall; 
-         if($2 > 255) {
-            iris16error("system call offset out of range!");
-         }
-         iris16::curri.reg0 = $2;
-         iris16::curri.reg1 = $3;
-         iris16::curri.reg2 = $4;
-       } 
-       ;
 aop:
    ARITHMETIC_OP_ADD { iris16::curri.op = (byte)iris16::ArithmeticOp::Add; } |
    ARITHMETIC_OP_SUB { iris16::curri.op = (byte)iris16::ArithmeticOp::Sub; } |

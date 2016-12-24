@@ -65,10 +65,6 @@
                           ShiftRightImmediate))
           (enum (cast-to byte)
                 (max-size "ArchitectureConstants::MaxOperations")
-                (name MiscOp)
-                (children SystemCall))
-          (enum (cast-to byte)
-                (max-size "ArchitectureConstants::MaxOperations")
                 (name JumpOp)
                 (children UnconditionalImmediate
                           UnconditionalImmediateLink
@@ -86,12 +82,6 @@
                           IfThenElseNormalPredFalse
                           IfThenElseLinkPredTrue
                           IfThenElseLinkPredFalse))
-          (enum (cast-to byte)
-                (max-size "ArchitectureConstants::MaxOperations")
-                (name SystemCalls)
-                (children Terminate
-                          GetC
-                          PutC))
           (enum (cast-to byte)
                 (max-size "ArchitectureConstants::MaxOperations")
                 (name MoveOp)
