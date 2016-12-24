@@ -10,6 +10,7 @@
 #include "iris_base.h"
 #include "Problem.h"
 #include "Device.h"
+#include "Core.h"
 namespace iris {
 template<typename Data, typename Address = Data>
 class IODevice : public Device {
@@ -54,7 +55,7 @@ typename IODevice<Data, Address>::AddressRange IODevice<Data, Address>::getRespo
 template<typename Data, typename Address>
 bool IODevice<Data, Address>::respondsTo(Address targetAddress, Address length) const {
 	for (auto i = targetAddress; i < targetAddress + length; ++i) {
-		if (targetAddress >= _base && targetAddress < endAddress()) {
+		if (iris::inRangeExcludingMaximum<Address>(targetAddress, _base, endAddress())) {
 			return true;
 		}
 	}
@@ -168,6 +169,7 @@ class StandardInputOutputDevice : public IODevice<D, A> {
 			}
 		}
 };
+
 
 } // end namespace iris
 #endif // end IRIS_IO_DEVICE_H_

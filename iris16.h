@@ -14,7 +14,8 @@ namespace iris16 {
 	typedef word immediate;
 	enum ArchitectureConstants  {
 		RegisterCount = 256,
-		AddressMax = 65535,
+		AddressMax = 0xFFFF,
+		RegisterMax = 0xFF,
 		InstructionPointerIndex = RegisterCount - 1,
 		LinkRegisterIndex = RegisterCount - 2,
 		StackPointerIndex = RegisterCount - 3,
@@ -104,7 +105,42 @@ namespace iris16 {
 			IOSpace _io;
 			raw_instruction current = 0;
 	};
+	template<typename Address>
+	class ExposedCoreDataMemory : public iris::IODevice<word, Address> {
+		public:
+			static constexpr Address computeSizeFactor() noexcept {
+				return sizeof(raw_instruction) / sizeof(word);
+			}
+			enum MemoryMap : Address {
+				Start = 0x00000, // make sure that we can rearrange this in the future if we so desire
+				DataStart = Start,
+				DataEnd = DataStart + ArchitectureConstants::AddressMax,
+				Length = DataEnd + 1,
+			};
+			ExposedCoreDataMemory(Core* core, Address base) : IODevice(base, MemoryMap::Length), _core(core) { }
+			virtual ~ExposedCoreDataMemory() { }
+			virtual void write(Address address, word value) override {
+				_core->writeDataMemory(static_cast<word>(tryComputeActualAddress(address)), value);
+			}
+			virtual word read(Address address) override {
+				return _core->readDataMemory(static_cast<word>(tryComputeActualAddress(address)));
+			}
+		private:
+			Address tryComputeActualAddress(Address address) {
+				auto actualAddress = address - this->baseAddress();
+				if (actualAddress < MemoryMap::Start) {
+					throw iris::Problem("Given address is less than the base address");
+				} else if (actualAddress >= MemoryMap::Length) {
+					throw iris::Problem("Given address is beyond the memory space!");
+				} else {
+					return actualAddress;
+				}
+			}
 
+		private:
+			Core* _core;
+
+	};
 	Core* newCore() noexcept;
 	void assemble(FILE* input, std::ostream* output);
 }

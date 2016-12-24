@@ -465,5 +465,15 @@ inline void swap(T& a, T& b) {
     a = c;
 }
 
+template<typename T>
+inline constexpr bool inRangeInclusive(T value, T minimum, T maximum) noexcept {
+	return value >= minimum && value <= maximum;
+}
+
+template<typename T>
+inline constexpr bool inRangeExcludingMaximum(T value, T minimum, T maximum) noexcept {
+	return value >= minimum && value < maximum;
+}
+
 }
 #endif
