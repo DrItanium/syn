@@ -121,12 +121,12 @@ namespace iris16 {
 			static constexpr word computeInternalAddress(Address addr) noexcept {
 				return static_cast<word>(addr * computeScaleFactor());
 			}
-			ExposedCoreDataMemory(Core* core, Address base, Address length = computeDataLength()) : IODevice(base, length), _core(core) { }
+			ExposedCoreDataMemory(Core* core, Address base, Address length = computeDataLength()) : iris::IODevice<Data, Address>(base, length), _core(core) { }
 			virtual ~ExposedCoreDataMemory() { }
 			virtual void write(Address address, Data value) override {
 				auto addr = computeInternalAddress(tryComputeActualAddress(address));
-				static_assert(computeScaleFactor() == 0, "The size of the provided data element is smaller than the iris16 word! Please provide a custom implementation of write!");
-				static_assert(computeScaleFactor() > 4, "The size of the provided data value is too large for the default write implementation! Please provide a custom implementation of write!");
+				static_assert(computeScaleFactor() != 0, "The size of the provided data element is smaller than the iris16 word! Please provide a custom implementation of write!");
+				static_assert(computeScaleFactor() <= 4, "The size of the provided data value is too large for the default write implementation! Please provide a custom implementation of write!");
 				switch(computeScaleFactor()) {
 					case 4:
 						_core->writeDataMemory(addr + 3, iris::decodeBits<Data, word, static_cast<Data>(0xFFFF000000000000), 48>(value));
@@ -147,8 +147,8 @@ namespace iris16 {
 			virtual Data read(Address address) override {
 				// get the address factor computed
 				auto addr = computeInternalAddress(tryComputeActualAddress(address));
-				static_assert(computeScaleFactor() == 0, "The size of the provided data element is smaller than the iris16 word! Please provide a custom implementation of read!");
-				static_assert(computeScaleFactor() > 4, "The size of the provided data value is too large for the default read implementation! Please provide a custom implementation of read!");
+				static_assert(computeScaleFactor() != 0, "The size of the provided data element is smaller than the iris16 word! Please provide a custom implementation of read!");
+				static_assert(computeScaleFactor() <= 4, "The size of the provided data value is too large for the default read implementation! Please provide a custom implementation of read!");
 				if (computeScaleFactor() == 1) {
 					return static_cast<Data>(_core->readDataMemory(addr));
 				} else if (computeScaleFactor() == 2) {
@@ -178,6 +178,10 @@ namespace iris16 {
 	template<typename Data, typename Address>
 	std::shared_ptr<ExposedCoreDataMemory<Data, Address>> mapData(Core* core, Address base) {
 		return std::make_shared<ExposedCoreDataMemory<Data, Address>>(core, base);
+	}
+	template<typename Data, typename Address>
+	std::shared_ptr<ExposedCoreDataMemory<Data, Address>> mapData(Core* core, Address base, Address length) {
+		return std::make_shared<ExposedCoreDataMemory<Data, Address>>(core, base, length);
 	}
 	Core* newCore() noexcept;
 	void assemble(FILE* input, std::ostream* output);

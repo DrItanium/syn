@@ -8,6 +8,8 @@ namespace machine {
 		_secondary.initialize();
 		// now we need to install stuff into the primary and secondary so they
 		// can communicate with one another
+		auto mapping = iris16::mapData<iris20::word, iris20::word>(&_secondary, iris20::ArchitectureConstants::AddressMax + 1);
+		_primary.installDevice(mapping);
 		//_primary.installDevice(iris16::mapData<iris20::word>(&_secondary, iris20::ArchitectureConstants::AddressMax + 1));
 	}
 	void LockStepMachine::shutdown() {
