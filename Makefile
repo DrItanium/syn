@@ -3,7 +3,7 @@
 # See LICENSE file for copyright and license details.
 
 include config.mk
-MACHINE_OBJECTS = LockStepMachine.o
+MACHINE_OBJECTS = 
 ARCH_OBJECTS = iris17.o \
 			   iris16.o \
 			   iris18.o \
@@ -234,8 +234,6 @@ iris20_defines.h: iris_repl def/iris20/instruction.clp cmd/deffield.clp lib/cort
 	@./deffield.sh -f2 def/iris20/instruction.clp -f2 lib/reset-run-exit.clp > iris20_defines.h
 	@./deffunction.sh -f2 def/iris20/instruction.clp -f2 lib/reset-run-exit.clp > iris20_defines.clp
 
-
-
 asm_interact.o: asm_interact.cc asm_interact.h iris18.h iris_base.h \
  Problem.h iris_xunits.h IODevice.h Device.h Core.h sim_registration.h \
  iris18_defines.h def/iris18/instruction.def def/iris18/misc.def \
@@ -325,15 +323,12 @@ iris_sim.o: iris_sim.cc Problem.h Core.h Device.h sim_registration.h \
  iris18.h iris_base.h iris_xunits.h IODevice.h iris18_defines.h \
  def/iris18/instruction.def def/iris18/misc.def def/iris18/ops.def \
  iris16.h IOController.h iris16_defines.h
-LockStepMachine.o: LockStepMachine.cc iris_machine.h iris_base.h \
- Problem.h iris_xunits.h IODevice.h Device.h Core.h iris16.h \
- IOController.h iris16_defines.h iris20.h iris20_defines.h
 sim_registration.o: sim_registration.cc sim_registration.h Core.h \
  Device.h iris18.h iris_base.h Problem.h iris_xunits.h IODevice.h \
  iris18_defines.h def/iris18/instruction.def def/iris18/misc.def \
  def/iris18/ops.def iris16.h IOController.h iris16_defines.h iris17.h \
  iris17_defines.h iris19.h iris19_defines.h def/iris19/ops.def iris20.h \
- iris20_defines.h iris_machine.h
+ iris20_defines.h iris_machine.h LockStepMachine.h
 
 
 iris16_asm.tab.o: iris16_asm.tab.c asm_interact.h iris16.h iris_base.h \

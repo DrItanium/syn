@@ -166,7 +166,7 @@ namespace iris16 {
 				auto actualAddress = address - this->baseAddress();
 				if (actualAddress < 0) {
 					throw iris::Problem("Given address is less than the base address");
-				} else if (actualAddress >= computeDataMemoryEnd()) {
+				} else if (actualAddress > computeDataMemoryEnd()) {
 					throw iris::Problem("Given address is beyond the memory space!");
 				} else {
 					return actualAddress;
