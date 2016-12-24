@@ -276,6 +276,7 @@ namespace iris17 {
 
 	}
 	bool Core::cycle() {
+		// this will execute an instruction on each thread before terminating
 		for (auto cthread : threads) {
 			if (!execute) {
 				break;
@@ -291,15 +292,13 @@ namespace iris17 {
 			std::cerr << "{" << std::endl;
 			std::cerr << "current thread " << std::hex << thread.get() << std::endl;
 		}
-		if (!thread->advanceIp) {
-			thread->advanceIp = true;
-		}
+		thread->advanceIp = true;
 		dispatch();
 		if (thread->advanceIp) {
 			++thread->getInstructionPointer();
-			if (thread->getInstructionPointer() >= memory.getSize()) {
-				thread->getInstructionPointer() = 0;
-			}
+		}
+		if (thread->getInstructionPointer() >= memory.getSize()) {
+			thread->getInstructionPointer() = 0;
 		}
 		if (debugEnabled()) {
 			std::cerr << "}" << std::endl;
