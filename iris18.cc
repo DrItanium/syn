@@ -87,10 +87,10 @@ namespace iris18 {
 	}
 
 	bool Core::cycle() {
-#ifdef DEBUG
-		std::cout << "Current Instruction Location: " << std::hex << getInstructionPointer() << std::endl;
-		std::cout << "\tCurrent word value: " << std::hex << getCurrentCodeWord() << std::endl;
-#endif
+		if (debugEnabled()) {
+			std::cout << "Current Instruction Location: " << std::hex << getInstructionPointer() << std::endl;
+			std::cout << "\tCurrent word value: " << std::hex << getCurrentCodeWord() << std::endl;
+		}
 		DecodedInstruction di(getCurrentCodeWord());
 		dispatch(std::move(di));
 		if (advanceIp) {
