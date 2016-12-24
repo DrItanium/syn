@@ -29,14 +29,12 @@ namespace iris16 {
 	}
 	void Core::run() {
 		while(execute) {
-			if (!advanceIp) {
-				advanceIp = true;
-			}
+			advanceIp = true;
 			current = instruction[getInstructionPointer()];
 			dispatch();
 			if (advanceIp) {
 				++getInstructionPointer();
-			}
+			} 
 		}
 	}
 	template<typename T>
@@ -152,39 +150,56 @@ namespace iris16 {
 			}
 		} else if (group == InstructionGroup::Move) {
 			auto op = static_cast<MoveOp>(getOperation());
-			if (op == MoveOp::Move) {
-				gpr.copy(getDestination(), getSource0());
-			} else if (op == MoveOp::Set) {
-				gpr.set(getDestination(), getImmediate());
-			} else if (op == MoveOp::Swap) {
-				gpr.swap(getDestination(), getSource0());
-			} else if (op == MoveOp::Load) {
-				gpr.set(getDestination(), data[source0Register()]);
-			} else if (op == MoveOp::LoadImmediate) {
-				gpr.set(getDestination(), data[getImmediate()]);
-			} else if (op == MoveOp::Store) {
-				data.set(destinationRegister(), source0Register());
-			} else if (op == MoveOp::Memset) {
-				data.set(destinationRegister(), getImmediate());
-			} else if (op == MoveOp::Push) {
-				stack[++getStackPointer()] = destinationRegister();
-			} else if (op == MoveOp::PushImmediate) {
-				stack[++getStackPointer()] = getImmediate();
-			} else if (op == MoveOp::Pop) {
-				destinationRegister() = stack[getStackPointer()];
-				--getStackPointer();
-			} else if (op == MoveOp::LoadCode) {
-				auto result = instruction[destinationRegister()];
-				source0Register() = iris::getLowerHalf(result);
-				source1Register() = iris::getUpperHalf(result);
-			} else if (op == MoveOp::StoreCode) {
-				instruction[destinationRegister()] = encodeDword(source0Register(), source1Register());
-			} else if (op == MoveOp::IOWrite) {
-				_io.write(destinationRegister(), source0Register());
-			} else if (op == MoveOp::IORead) {
-				destinationRegister() = _io.read(source0Register());
-			} else {
-				makeIllegalOperationMessage("move code");
+			raw_instruction codeStorage = 0u;
+			switch(op) {
+				case MoveOp::Move:
+					gpr.copy(getDestination(), getSource0());
+					break;
+				case MoveOp::Set:
+					gpr.set(getDestination(), getImmediate());
+					break;
+				case MoveOp::Swap:
+					gpr.swap(getDestination(), getSource0());
+					break;
+				case MoveOp::Load:
+					gpr.set(getDestination(), data[source0Register()]);
+					break;
+				case MoveOp::LoadImmediate:
+					gpr.set(getDestination(), data[getImmediate()]);
+					break;
+				case MoveOp::Store:
+					data.set(destinationRegister(), source0Register());
+					break;
+				case MoveOp::Memset:
+					data.set(destinationRegister(), getImmediate());
+					break;
+				case MoveOp::Push:
+					stack[++getStackPointer()] = destinationRegister();
+					break;
+				case MoveOp::PushImmediate:
+					stack[++getStackPointer()] = getImmediate();
+					break;
+				case MoveOp::Pop:
+					destinationRegister() = stack[getStackPointer()];
+					--getStackPointer();
+					break;
+				case MoveOp::LoadCode:
+					codeStorage = instruction[destinationRegister()];
+					source0Register() = iris::getLowerHalf(codeStorage);
+					source1Register() = iris::getUpperHalf(codeStorage);
+					break;
+				case MoveOp::StoreCode:
+					instruction[destinationRegister()] = encodeDword(source0Register(), source1Register());
+					break;
+				case MoveOp::IOWrite:
+					_io.write(destinationRegister(), source0Register());
+					break;
+				case MoveOp::IORead:
+					destinationRegister() = _io.read(source0Register());
+					break;
+				default:
+					makeIllegalOperationMessage("move code");
+					break;
 			}
 		} else {
 			makeProblem("Illegal instruction group", getGroup());
