@@ -8,6 +8,7 @@
 #include <iostream>
 #include <vector>
 #include <map>
+#include <sstream>
 #include "asm_interact.h"
 #include "iris16.h"
 
@@ -35,7 +36,7 @@ struct dynamicop {
    byte reg0;
    byte reg1;
    byte reg2;
-   int hassymbol;
+   bool hasSymbol;
    std::string symbol;
 };
 struct asmstate {
@@ -141,46 +142,6 @@ bool resolve_op(dynamicop* dop);
 %token ARITHMETIC_MACRO_OP_HALVE
 %token ARITHMETIC_MACRO_OP_DOUBLE
 
-/*
-%token COMPARE_OP_EQAND
-%token COMPARE_OP_EQOR
-%token COMPARE_OP_EQXOR
-%token COMPARE_OP_NEQAND
-%token COMPARE_OP_NEQOR
-%token COMPARE_OP_NEQXOR
-%token COMPARE_OP_LESSTHANAND
-%token COMPARE_OP_LESSTHANOR
-%token COMPARE_OP_LESSTHANXOR
-%token COMPARE_OP_GREATERTHANOREQUALTOAND
-%token COMPARE_OP_GREATERTHANOREQUALTOOR
-%token COMPARE_OP_GREATERTHANOREQUALTOXOR
-%token COMPARE_OP_LESSTHANOREQUALTOAND
-%token COMPARE_OP_LESSTHANOREQUALTOOR
-%token COMPARE_OP_LESSTHANOREQUALTOXOR
-%token COMPARE_OP_GREATERTHANAND
-%token COMPARE_OP_GREATERTHANOR
-%token COMPARE_OP_GREATERTHANXOR
-// from cop
-   COMPARE_OP_EQAND { iris16::curri.op = (byte)iris16::CompareOp::EqAnd; } |
-   COMPARE_OP_EQOR { iris16::curri.op = (byte)iris16::CompareOp::EqOr; } |
-   COMPARE_OP_EQXOR { iris16::curri.op = (byte)iris16::CompareOp::EqXor; } |
-   COMPARE_OP_NEQAND { iris16::curri.op = (byte)iris16::CompareOp::NeqAnd; } |
-   COMPARE_OP_NEQOR { iris16::curri.op = (byte)iris16::CompareOp::NeqOr; } |
-   COMPARE_OP_NEQXOR { iris16::curri.op = (byte)iris16::CompareOp::NeqXor; } |
-   COMPARE_OP_LESSTHANAND { iris16::curri.op = (byte)iris16::CompareOp::LessThanAnd; } |
-   COMPARE_OP_LESSTHANOR { iris16::curri.op = (byte)iris16::CompareOp::LessThanOr; } |
-   COMPARE_OP_LESSTHANXOR { iris16::curri.op = (byte)iris16::CompareOp::LessThanXor; } |
-   COMPARE_OP_GREATERTHANAND { iris16::curri.op = (byte)iris16::CompareOp::GreaterThanAnd; } |
-   COMPARE_OP_GREATERTHANOR { iris16::curri.op = (byte)iris16::CompareOp::GreaterThanOr; } |
-   COMPARE_OP_GREATERTHANXOR { iris16::curri.op = (byte)iris16::CompareOp::GreaterThanXor; } |
-   COMPARE_OP_LESSTHANOREQUALTOAND { iris16::curri.op = (byte)iris16::CompareOp::LessThanOrEqualToAnd; } |
-   COMPARE_OP_LESSTHANOREQUALTOOR { iris16::curri.op = (byte)iris16::CompareOp::LessThanOrEqualToOr; } |
-   COMPARE_OP_LESSTHANOREQUALTOXOR { iris16::curri.op = (byte)iris16::CompareOp::LessThanOrEqualToXor; } |
-   COMPARE_OP_GREATERTHANOREQUALTOAND { iris16::curri.op = (byte)iris16::CompareOp::GreaterThanOrEqualToAnd; } |
-   COMPARE_OP_GREATERTHANOREQUALTOOR { iris16::curri.op = (byte)iris16::CompareOp::GreaterThanOrEqualToOr; } |
-   COMPARE_OP_GREATERTHANOREQUALTOXOR { iris16::curri.op = (byte)iris16::CompareOp::GreaterThanOrEqualToXor; } |
-*/
-
 %token <rval> REGISTER
 %token <ival> IMMEDIATE
 %token <sval> IRIS16_SYMBOL
@@ -198,7 +159,7 @@ F:
       iris16::curri.reg0 = 0;
       iris16::curri.reg1 = 0;
       iris16::curri.reg2 = 0;
-      iris16::curri.hassymbol = 0;
+      iris16::curri.hasSymbol = false;
       iris16::curri.symbol = "";
    } | 
    asm {
@@ -209,7 +170,7 @@ F:
       iris16::curri.reg0 = 0;
       iris16::curri.reg1 = 0;
       iris16::curri.reg2 = 0;
-      iris16::curri.hassymbol = 0;
+      iris16::curri.hasSymbol = false;
       iris16::curri.symbol = "";
    }
    ;
@@ -463,7 +424,7 @@ icop:
    COMPARE_OP_GREATERTHANOREQUALTO_IMMEDIATE { iris16::curri.op = (byte)iris16::CompareOp::GreaterThanOrEqualToImm; }
 ;
 lexeme:
-      IRIS16_SYMBOL { iris16::curri.hassymbol = 1; 
+      IRIS16_SYMBOL { iris16::curri.hasSymbol = true; 
                iris16::curri.symbol = $1; } | 
       IMMEDIATE { 
             iris16::curri.reg1 = (byte)(($1 & 0x00FF));
@@ -499,7 +460,7 @@ void persist_dynamic_op(void) {
 }
 
 void save_encoding(void) {
-   if(iris16::curri.hassymbol) {
+   if(iris16::curri.hasSymbol) {
 	  persist_dynamic_op();
    } else {
 	  write_dynamic_op(&curri); 
@@ -510,21 +471,21 @@ void write_dynamic_op(dynamicop* dop) {
    /* little endian build up */
    char* buf = new char[8];
    buf[0] = 0;
-   buf[1] = (char)dop->segment;
-   buf[2] = (char)(dop->address & 0x00FF);
-   buf[3] = (char)((dop->address & 0xFF00) >> 8);
+   buf[1] = static_cast<char>(dop->segment);
+   buf[2] = static_cast<char>((dop->address & 0x00FF));
+   buf[3] = static_cast<char>(((dop->address & 0xFF00) >> 8));
    switch(dop->segment) {
 		case iris16::Segment::Code:
-			buf[4] = (char)iris::encodeBits<byte, byte, 0b11111000, 3>(
+			buf[4] = static_cast<char>(iris::encodeBits<byte, byte, 0b11111000, 3>(
 								iris::encodeBits<byte, byte, 0b00000111, 0>((byte)0, dop->group),
-								dop->op);
-			buf[5] = (char)dop->reg0;
-			buf[6] = (char)dop->reg1;
-			buf[7] = (char)dop->reg2;
+								dop->op));
+			buf[5] = static_cast<char>(dop->reg0);
+			buf[6] = static_cast<char>(dop->reg1);
+			buf[7] = static_cast<char>(dop->reg2);
 			break;
 		case iris16::Segment::Data:
-			buf[4] = (char)dop->reg1;
-			buf[5] = (char)dop->reg2;
+			buf[4] = static_cast<char>(dop->reg1);
+			buf[5] = static_cast<char>(dop->reg2);
 			buf[6] = 0;
 			buf[7] = 0;
 			break;
@@ -541,7 +502,10 @@ void resolve_labels() {
 	  the label with the corresponding address */
    for(std::vector<dynamicop>::iterator it = iris16::state.dynops.begin(); it != iris16::state.dynops.end(); ++it) {
 		if (!resolve_op(&(*it))) {
-			std::cerr << "panic: couldn't find label " << it->symbol << std::endl;
+			std::stringstream ss;
+			ss << "panic: couldn't find label " << it->symbol;
+			auto str = ss.str();
+			iris16error(str.c_str());
 			exit(1);
 		} else {
 			write_dynamic_op(&(*it));
@@ -571,6 +535,6 @@ void initialize(std::ostream* output, FILE* input) {
    iris16::curri.reg0 = 0;
    iris16::curri.reg1 = 0;
    iris16::curri.reg2 = 0;
-   iris16::curri.hassymbol = 0;
+   iris16::curri.hasSymbol = false;
 }
 }

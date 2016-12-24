@@ -1,5 +1,5 @@
 (deffacts iris16
-          (input-type word)
+          (input-type raw_instruction)
           (title _iris16_decl)
           (namespace iris16)
           (field (name Control)

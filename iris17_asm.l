@@ -101,8 +101,7 @@ r{digit}+ { iris17lval.rval = iris17::getregister(); return REGISTER; }
 0b[01]+ { iris17lval.ival = iris17::getbinaryimmediate(); return IMMEDIATE; }
 
 {omni}+ { 
-	std::string contents(iris17text);
-	iris17lval.sval = (char*)contents.c_str();
+	iris17lval.sval = iris17text;
 	return IRIS17_SYMBOL;
 		}
 %%

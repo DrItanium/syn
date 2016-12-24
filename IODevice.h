@@ -51,24 +51,12 @@ typename IODevice<Data, Address>::AddressRange IODevice<Data, Address>::getRespo
 
 template<typename Data, typename Address>
 bool IODevice<Data, Address>::respondsTo(Address targetAddress, Address length) const {
-	auto check = [this](Address addr) { return addr >= _base && addr <= endAddress(); };
-	switch (length) {
-		case 0:
-			throw iris::Problem("Can't check if a zero length IO space is mappable. It doesn't make sense!");
-		case 1:
-			return check(targetAddress);
-		case 2:
-			return check(targetAddress) || check(targetAddress + 1);
-		case 3:
-			return check(targetAddress) || check(targetAddress + 1) || check(targetAddress + 2);
-		default:
-			for (auto i = targetAddress; i < targetAddress + length; ++i) {
-				if (check(targetAddress)) {
-					return true;
-				}
-			}
-			return false;
+	for (auto i = targetAddress; i < targetAddress + length; ++i) {
+		if (targetAddress >= _base && targetAddress < endAddress()) {
+			return true;
+		}
 	}
+	return false;
 }
 
 template<typename D, typename A>
