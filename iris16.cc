@@ -29,13 +29,16 @@ namespace iris16 {
 	}
 	void Core::run() {
 		while(execute) {
-			advanceIp = true;
-			current = instruction[getInstructionPointer()];
-			dispatch();
-			if (advanceIp) {
-				++getInstructionPointer();
-			} 
+			execute = cycle();
 		}
+	}
+	bool Core::cycle() {
+		advanceIp = true;
+		dispatch();
+		if (advanceIp) {
+			++getInstructionPointer();
+		}
+		return execute;
 	}
 	template<typename T>
 	using UnitDescription = std::tuple<typename T::Operation, bool>;
@@ -44,6 +47,7 @@ namespace iris16 {
 		return std::make_tuple(operation, immediate);
 	}
 	void Core::dispatch() {
+		current = instruction[getInstructionPointer()];
 		auto group = static_cast<InstructionGroup>(getGroup());
 		auto makeProblem = [this](const std::string& message, auto operation) {
 			std::stringstream stream;

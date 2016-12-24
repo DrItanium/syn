@@ -65,6 +65,7 @@ namespace iris16 {
 			void installIODevice(std::shared_ptr<IODevice> dev);
 			void writeRegister(byte index, word value);
 			word readRegister(byte index);
+			bool cycle();
 		private:
 			word& getStackPointer() noexcept { return gpr[ArchitectureConstants::StackPointerIndex]; }
 			word& getInstructionPointer() noexcept { return gpr[ArchitectureConstants::InstructionPointerIndex]; }

@@ -6,6 +6,9 @@
 #include "Core.h"
 #include <cstdint>
 #include <memory>
+#include "IODevice.h"
+#include "iris16.h"
+#include "iris20.h"
 namespace iris {
 	namespace machine {
 		using MemoryWord = int64_t;
