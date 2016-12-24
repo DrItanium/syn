@@ -34,6 +34,8 @@ namespace iris16 {
 } // end namespace iris16
 #include "iris16_defines.h"
 
+template<typename Data, typename Address>
+class ExposedCoreDataMemory;
 namespace iris16 {
 	using IOSpace = iris::IOController<word>;
 	template<word capacity>
@@ -174,6 +176,10 @@ namespace iris16 {
 		private:
 			Core* _core;
 	};
+	template<typename Data, typename Address>
+	std::shared_ptr<ExposedCoreDataMemory<Data, Address>> mapData(Core* core, Address base) {
+		return std::make_shared<ExposedCoreDataMemory<Data, Address>>(core, base);
+	}
 	Core* newCore() noexcept;
 	void assemble(FILE* input, std::ostream* output);
 }
