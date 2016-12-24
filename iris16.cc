@@ -278,6 +278,10 @@ namespace iris16 {
 		_io.shutdown();
 	}
 
+	void Core::installIODevice(std::shared_ptr<IODevice> dev) {
+		_io.install(dev);
+	}
+
 	Core* newCore() noexcept {
 		return new iris16::Core();
 	}

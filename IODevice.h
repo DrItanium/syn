@@ -92,7 +92,7 @@ class LambdaIODevice : public IODevice<Data, Address> {
 		using InitializeFunction = std::function<void()>;
 		using ShutdownFunction = std::function<void()>;
 	public:
-		LambdaIODevice(Address begin, Address end, 
+		LambdaIODevice(Address begin, Address length, 
 				ReadFunction onRead, 
 				WriteFunction onWrite, 
 				InitializeFunction init = initNothing<Data, Address>, 
@@ -110,8 +110,12 @@ class LambdaIODevice : public IODevice<Data, Address> {
 };
 
 template<typename Data, typename Address>
-LambdaIODevice<Data, Address>::LambdaIODevice(Address begin, Address end, ReadFunction onRead, WriteFunction onWrite, InitializeFunction init, ShutdownFunction shutdown) : 
-	IODevice<Data, Address>(begin, end), 
+LambdaIODevice<Data, Address>::LambdaIODevice(Address begin, Address length, 
+		ReadFunction onRead, 
+		WriteFunction onWrite, 
+		InitializeFunction init, 
+		ShutdownFunction shutdown) : 
+	IODevice<Data, Address>(begin, length), 
 	_onRead(onRead), 
 	_onWrite(onWrite),
 	_init(init),
@@ -138,6 +142,29 @@ void LambdaIODevice<D, A>::initialize() {
 template<typename D, typename A>
 void LambdaIODevice<D, A>::shutdown() {
 	_shutdown();
+}
+
+template<typename D, typename A = D>
+using LambdaIODeviceReadFunction = typename LambdaIODevice<D, A>::ReadFunction;
+
+template<typename D, typename A = D>
+using LambdaIODeviceWriteFunction = typename LambdaIODevice<D, A>::WriteFunction;
+
+template<typename D, typename A = D>
+using LambdaIODeviceInitializeFunction = typename LambdaIODevice<D, A>::InitializeFunction;
+
+template<typename D, typename A = D>
+using LambdaIODeviceShutdownFunction = typename LambdaIODevice<D, A>::ShutdownFunction;
+
+template<typename D, typename A = D>
+using SharedLambdaIODevice = typename std::shared_ptr<LambdaIODevice<D, A>>;
+
+template<typename D, typename A = D>
+SharedLambdaIODevice<D, A> makeLambdaDevice(A begin, A length, LambdaIODeviceReadFunction<D, A> onRead,
+		LambdaIODeviceWriteFunction<D, A> onWrite, 
+		LambdaIODeviceInitializeFunction<D, A> onInit = initNothing<D, A>,
+		LambdaIODeviceShutdownFunction<D, A> onShutdown = shutdownNothing<D, A>) {
+	return std::make_shared<LambdaIODevice<D, A>>(begin, length, onRead, onWrite, onInit, onShutdown);
 }
 
 template<typename D, typename A = D>

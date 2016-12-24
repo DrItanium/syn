@@ -414,4 +414,8 @@ namespace iris20 {
 	Core* newCore() noexcept {
 		return new iris20::Core();
 	}
+
+	word& Core::getRegister(byte index) noexcept {
+		return gpr[std::get<byte>(getOperand(index))];
+	}
 }
