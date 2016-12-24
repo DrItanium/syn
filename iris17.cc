@@ -275,17 +275,16 @@ namespace iris17 {
 	void Core::shutdown() {
 
 	}
-	void Core::run() {
-		while (execute) {
-			for (auto cthread : threads) {
-				if (!execute) {
-					return;
-				} else {
-					thread = cthread;
-					execBody();
-				}
+	bool Core::cycle() {
+		for (auto cthread : threads) {
+			if (!execute) {
+				break;
+			} else {
+				thread = cthread;
+				execBody();
 			}
 		}
+		return execute;
 	}
 	void Core::execBody() {
 		if (debugEnabled()) {

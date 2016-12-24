@@ -86,12 +86,7 @@ namespace iris18 {
 		memory.dump(stream, [](Word value, char* buf) { iris::decodeUint16LE(value, (byte*)buf); });
 	}
 
-	void Core::run() {
-		while(execute) {
-			cycle();
-		}
-	}
-	void Core::cycle() {
+	bool Core::cycle() {
 #ifdef DEBUG
 		std::cout << "Current Instruction Location: " << std::hex << getInstructionPointer() << std::endl;
 		std::cout << "\tCurrent word value: " << std::hex << getCurrentCodeWord() << std::endl;
@@ -104,6 +99,7 @@ namespace iris18 {
 			// just re-enable it
 			advanceIp = true;
 		}
+		return execute;
 	}
     inline void mask24(RegisterValue& ref) noexcept {
         ref &= bitmask24;

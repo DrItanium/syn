@@ -2,7 +2,6 @@
 #define _TARGET_IRIS16_IRIS_H
 #include "iris_base.h"
 #include "iris_xunits.h"
-#include "iris_machine.h"
 #include "Core.h"
 #include "IOController.h"
 #include <cstdint>
@@ -54,7 +53,6 @@ namespace iris16 {
 			virtual void installprogram(std::istream& stream) override;
 			virtual void shutdown() override;
 			virtual void dump(std::ostream& stream) override;
-			virtual void run() override;
 			virtual void link(std::istream& input) override;
 			inline void writeInstructionMemory(word address, dword value) noexcept { instruction[address] = value; }
 			inline void writeDataMemory(word address, word value) noexcept         { data[address] = value; }
@@ -65,7 +63,7 @@ namespace iris16 {
 			void installIODevice(std::shared_ptr<IODevice> dev);
 			void writeRegister(byte index, word value);
 			word readRegister(byte index);
-			bool cycle();
+			virtual bool cycle() override;
 		private:
 			word& getStackPointer() noexcept { return gpr[ArchitectureConstants::StackPointerIndex]; }
 			word& getInstructionPointer() noexcept { return gpr[ArchitectureConstants::InstructionPointerIndex]; }

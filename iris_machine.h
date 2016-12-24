@@ -9,12 +9,15 @@
 #include "IODevice.h"
 #include "iris16.h"
 #include "iris20.h"
-namespace iris {
-	namespace machine {
-		using MemoryWord = int64_t;
-		using MemoryAddress = uint64_t;
-	} // end namespace machine
-} // end namespace iris
+namespace machine {
+	using MemoryWord = int64_t;
+	using MemoryAddress = uint64_t;
+	class Machine : public iris::Core {
+		public:
+			Machine()
+		private:
+	};
+} // end namespace machine
 
 
 #endif // end _IRIS_MACHINE_H

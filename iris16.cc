@@ -27,11 +27,6 @@ namespace iris16 {
 		instruction.dump(stream, decodeDword);
 		stack.dump(stream, decodeWord);
 	}
-	void Core::run() {
-		while(execute) {
-			execute = cycle();
-		}
-	}
 	bool Core::cycle() {
 		advanceIp = true;
 		dispatch();

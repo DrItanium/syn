@@ -165,10 +165,9 @@ namespace iris18 {
 			virtual void installprogram(std::istream& stream) override;
 			virtual void shutdown() override;
 			virtual void dump(std::ostream& stream) override;
-			virtual void run() override;
 			virtual void link(std::istream& stream) override;
 			void installSystemHandler(byte index, SystemFunction fn);
-			void cycle();
+			virtual bool cycle() override;
 			bool shouldExecute() const { return execute; }
 		private:
 			void pushWord(Word value);

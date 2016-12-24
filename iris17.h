@@ -66,14 +66,14 @@ class Core : public iris::Core {
     public:
         Core(word memorySize, byte numThreads) noexcept;
         ~Core() noexcept;
-        virtual void initialize();
-        virtual void installprogram(std::istream& stream);
-        virtual void shutdown();
-        virtual void dump(std::ostream& stream);
-        virtual void run();
-        virtual void link(std::istream& input);
+        virtual void initialize() override;
+        virtual void installprogram(std::istream& stream) override;
+        virtual void shutdown() override;
+        virtual void dump(std::ostream& stream) override;
+        virtual void link(std::istream& input) override;
         void write(word address, word value);
         word read(word address);
+		virtual bool cycle() override;
     private:
         void execBody();
         void decode();

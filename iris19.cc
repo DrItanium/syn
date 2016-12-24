@@ -94,16 +94,11 @@ namespace iris19 {
 		memory.dump(stream, [](Word v, char* buf) { iris::decodeUint32LE(v, (byte*)buf); });
 	}
 
-	void Core::run() {
-		while(execute) {
-			cycle();
+	bool Core::cycle() {
+		if (this->debugEnabled()) {
+			std::cout << "Current Instruction Location: " << std::hex << getInstructionPointer() << std::endl;
+			std::cout << "\tCurrent word value: " << std::hex << getCurrentCodeWord() << std::endl;
 		}
-	}
-	void Core::cycle() {
-#ifdef DEBUG
-		std::cout << "Current Instruction Location: " << std::hex << getInstructionPointer() << std::endl;
-		std::cout << "\tCurrent word value: " << std::hex << getCurrentCodeWord() << std::endl;
-#endif
 		Instruction di(getCurrentCodeWord());
 		dispatch(std::move(di));
 		if (advanceIp) {
@@ -112,6 +107,7 @@ namespace iris19 {
 			// just re-enable it
 			advanceIp = true;
 		}
+		return execute;
 	}
 	inline void maskMemory(RegisterValue& ref) noexcept {
 		ref &= memoryMaxBitmask;

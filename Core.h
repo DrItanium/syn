@@ -9,8 +9,17 @@ namespace iris {
 		public:
 			virtual void dump(std::ostream& stream) = 0;
 			virtual void installprogram(std::istream& stream) = 0;
-			virtual void run() = 0;
+			virtual void run() {
+				do {
+					execute = cycle();
+				} while(execute);
+			}
+
 			virtual void link(std::istream& input) = 0;
+			virtual bool cycle() = 0;
+			inline bool shouldExecute() const { return execute; }
+		protected:
+			bool execute = true;
 	 };
 }
 #endif

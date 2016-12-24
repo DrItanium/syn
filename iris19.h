@@ -141,11 +141,9 @@ namespace iris19 {
 			virtual void installprogram(std::istream& stream) override;
 			virtual void shutdown() override;
 			virtual void dump(std::ostream& stream) override;
-			virtual void run() override;
 			virtual void link(std::istream& stream) override;
 			void installSystemHandler(byte index, SystemFunction fn);
-			void cycle();
-			bool shouldExecute() const { return execute; }
+			virtual bool cycle() override;
 		private:
 			void push(RegisterValue value, RegisterValue& ptr);
 			void pushWord(Word value);
@@ -194,8 +192,7 @@ namespace iris19 {
             void baseALUOperation(Instruction&& current, ALU::Operation op, RegisterValue s0, RegisterValue s1);
 
 		private:
-			bool execute = true,
-				 advanceIp = true;
+			bool advanceIp = true;
             RegisterFile gpr;
             MemorySpace memory;
             CompareUnit _compare;
