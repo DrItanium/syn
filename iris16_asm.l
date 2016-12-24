@@ -56,8 +56,8 @@ omni [a-zA-Z0-9._]
 "ldc" { return MOVE_OP_LOAD_CODE; }
 "st" { return MOVE_OP_STORE; }
 "stc" { return MOVE_OP_STORE_CODE; }
-"ldx" { return MOVE_OP_LOAD_EXTENDED; }
-"stx" { return MOVE_OP_STORE_EXTENDED; }
+"ldio" { return MOVE_OP_LOAD_IO; }
+"stio" { return MOVE_OP_STORE_IO; }
 "memset" { return MOVE_OP_STOREIMM; }
 "j" 		{ return JUMP_OP_UNCONDITIONALIMMEDIATE; }
 "jl" 		{ return JUMP_OP_UNCONDITIONALIMMEDIATELINK; }

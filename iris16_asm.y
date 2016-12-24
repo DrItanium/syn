@@ -71,7 +71,7 @@ bool resolve_op(dynamicop* dop);
 
 
 %token DIRECTIVE_ORG DIRECTIVE_CODE DIRECTIVE_DATA LABEL DIRECTIVE_DECLARE
-%token MOVE_OP_STORE_EXTENDED MOVE_OP_LOAD_EXTENDED
+%token MOVE_OP_STORE_IO MOVE_OP_LOAD_IO
 %token ARITHMETIC_OP_ADD
 %token ARITHMETIC_OP_SUB
 %token ARITHMETIC_OP_MUL
@@ -337,17 +337,15 @@ move_op:
 		iris16::curri.reg1 = $3;
 		iris16::curri.reg2 = $4;
 	   } |
-	   MOVE_OP_LOAD_EXTENDED REGISTER REGISTER REGISTER {
-	    iris16::curri.op = static_cast<byte>(iris16::MoveOp::ExtendedMemoryRead);
+	   MOVE_OP_LOAD_IO REGISTER REGISTER {
+	    iris16::curri.op = static_cast<byte>(iris16::MoveOp::IORead);
 	   	iris16::curri.reg0 = $2;
 		iris16::curri.reg1 = $3;
-		iris16::curri.reg2 = $4;
 	   } |
-	   MOVE_OP_STORE_EXTENDED REGISTER REGISTER REGISTER {
-	    iris16::curri.op = static_cast<byte>(iris16::MoveOp::ExtendedMemoryWrite);
+	   MOVE_OP_STORE_IO REGISTER REGISTER {
+	    iris16::curri.op = static_cast<byte>(iris16::MoveOp::IOWrite);
 	   	iris16::curri.reg0 = $2;
 		iris16::curri.reg1 = $3;
-		iris16::curri.reg2 = $4;
 	   } 
        ;
 

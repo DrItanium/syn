@@ -348,7 +348,7 @@ namespace iris20 {
 	}
 	void Core::initialize() {
 		_controller.initialize();
-		auto mem = std::make_shared<MemorySpace>(0, ArchitectureConstants::AddressMax + 1);
+		auto mem = std::make_shared<MemorySpace>();
 		mem->initialize();
 		mem->zero();
 		_controller.install(mem);
