@@ -26,17 +26,18 @@ namespace iris20 {
 	}
 	void Core::run() {
 		while(execute) {
-			if (!advanceIp) {
-				advanceIp = true;
-			}
-			dispatch();
-			if (advanceIp) {
-				++getInstructionPointer();
-			}
+			execute = cycle();
 		}
 	}
+	bool Core::cycle() {
+		advanceIp = true;
+		dispatch();
+		if (advanceIp) {
+			++getInstructionPointer();
+		}
+		return execute;
+	}
 	void Core::dispatch() {
-		// TODO: add checks for dispatching on one or two atom molecules
 		current = _controller.read(getInstructionPointer());
 		if (decodeMoleculeContainsOneInstruction(current)) {
 			executeMolecule();

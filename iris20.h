@@ -83,6 +83,7 @@ namespace iris20 {
 			virtual void dump(std::ostream& stream) override;
 			virtual void run() override;
 			virtual void link(std::istream& input) override;
+			bool cycle();
 		private:
 			word operandGet(byte index);
 			void operandSet(byte index, word value);
