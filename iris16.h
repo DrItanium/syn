@@ -105,41 +105,74 @@ namespace iris16 {
 			IOSpace _io;
 			raw_instruction current = 0;
 	};
-	template<typename Address>
-	class ExposedCoreDataMemory : public iris::IODevice<word, Address> {
+	template<typename Data, typename Address>
+	class ExposedCoreDataMemory : public iris::IODevice<Data, Address> {
 		public:
-			static constexpr Address computeSizeFactor() noexcept {
-				return sizeof(raw_instruction) / sizeof(word);
+			static constexpr Address computeScaleFactor() noexcept {
+				return sizeof(Data) / sizeof(word);
 			}
-			enum MemoryMap : Address {
-				Start = 0x00000, // make sure that we can rearrange this in the future if we so desire
-				DataStart = Start,
-				DataEnd = DataStart + ArchitectureConstants::AddressMax,
-				Length = DataEnd + 1,
-			};
-			ExposedCoreDataMemory(Core* core, Address base) : IODevice(base, MemoryMap::Length), _core(core) { }
+			static constexpr Address computeDataLength() noexcept {
+				return (ArchitectureConstants::AddressMax + 1) / computeScaleFactor();
+			}
+			static constexpr Address computeDataMemoryEnd() noexcept {
+				return computeDataLength() - 1;
+			}
+			static constexpr word computeInternalAddress(Address addr) noexcept {
+				return static_cast<word>(addr * computeScaleFactor());
+			}
+			ExposedCoreDataMemory(Core* core, Address base) : IODevice(base, computeDataLength()), _core(core) { }
 			virtual ~ExposedCoreDataMemory() { }
-			virtual void write(Address address, word value) override {
+			virtual void write(Address address, Data value) override {
+				auto addr = computeInternalAddress(tryComputeActualAddress(address));
+				static_assert(computeScaleFactor() == 0, "The size of the provided data element is smaller than the iris16 word! Please provide a custom implementation of write!");
+				static_assert(computeScaleFactor() > 4, "The size of the provided data value is too large for the default write implementation! Please provide a custom implementation of write!");
+				switch(computeScaleFactor()) {
+					case 4:
+						_core->writeDataMemory(addr + 3, iris::decodeBits<Data, word, static_cast<Data>(0xFFFF000000000000), 48>(value));
+					case 3:
+						_core->writeDataMemory(addr + 2, iris::decodeBits<Data, word, static_cast<Data>(0x0000FFFF00000000), 32>(value));
+					case 2:
+						_core->writeDataMemory(addr + 1, iris::decodeBits<Data, word, static_cast<Data>(0x00000000FFFF0000), 16>(value));
+					case 1:
+						_core->writeDataMemory(addr, iris::decodeBits<Data, word, static_cast<Data>(0x000000000000FFFF), 0>(value));
+						break;
+					case 0:
+						throw iris::Problem("Can't have a scale factor of zero!");
+					default:
+						throw iris::Problem("Illegal scale factor, please make a custom implementation!");
+				}
 				_core->writeDataMemory(static_cast<word>(tryComputeActualAddress(address)), value);
 			}
-			virtual word read(Address address) override {
-				return _core->readDataMemory(static_cast<word>(tryComputeActualAddress(address)));
+			virtual Data read(Address address) override {
+				// get the address factor computed
+				auto addr = computeInternalAddress(tryComputeActualAddress(address));
+				static_assert(computeScaleFactor() == 0, "The size of the provided data element is smaller than the iris16 word! Please provide a custom implementation of read!");
+				static_assert(computeScaleFactor() > 4, "The size of the provided data value is too large for the default read implementation! Please provide a custom implementation of read!");
+				if (computeScaleFactor() == 1) {
+					return static_cast<Data>(_core->readDataMemory(addr));
+				} else if (computeScaleFactor() == 2) {
+					return iris::encodeValueLE<Data>(_core->readDataMemory(addr), _core->readDataMemory(addr + 1));
+				} else if (computeScaleFactor() == 3) {
+					return iris::encodeValueLE<Data>(_core->readDataMemory(addr), _core->readDataMemory(addr + 1), _core->readDataMemory(addr + 2), 0);
+				} else if (computeScaleFactor() == 4) {
+					return iris::encodeValueLE<Data>(_core->readDataMemory(addr), _core->readDataMemory(addr + 1), _core->readDataMemory(addr + 2), _core->readDataMemory(addr + 3));
+				} else {
+					throw iris::Problem("Please provide a custom implementation of write!");
+				}
 			}
 		private:
 			Address tryComputeActualAddress(Address address) {
 				auto actualAddress = address - this->baseAddress();
-				if (actualAddress < MemoryMap::Start) {
+				if (actualAddress < 0) {
 					throw iris::Problem("Given address is less than the base address");
-				} else if (actualAddress >= MemoryMap::Length) {
+				} else if (actualAddress >= computeDataMemoryEnd()) {
 					throw iris::Problem("Given address is beyond the memory space!");
 				} else {
 					return actualAddress;
 				}
 			}
-
 		private:
 			Core* _core;
-
 	};
 	Core* newCore() noexcept;
 	void assemble(FILE* input, std::ostream* output);
