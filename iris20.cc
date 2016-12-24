@@ -360,8 +360,7 @@ namespace iris20 {
 					execute = false;
 					advanceIp = false;
 					});
-		installIODevice(ArchitectureConstants::IOGetC, 1, readFromStandardIn, wNothing);
-		installIODevice(ArchitectureConstants::IOPutC, 1, rNothing, writeToStandardOut);
+		installDevice(std::make_shared<iris::StandardInputOutputDevice<word>>(ArchitectureConstants::IOAddressBase + 1));
 		installIODevice(ArchitectureConstants::IOGetMemorySize, 1, [](word addr) { return static_cast<word>(ArchitectureConstants::AddressMax) + 1; }, wNothing);
 	}
 
