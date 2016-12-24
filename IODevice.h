@@ -5,7 +5,9 @@
 #define IRIS_IO_DEVICE_H_
 #include <tuple>
 #include <functional>
+#include <iostream>
 #include <memory>
+#include "iris_base.h"
 #include "Problem.h"
 #include "Device.h"
 namespace iris {
@@ -136,6 +138,36 @@ template<typename D, typename A>
 void LambdaIODevice<D, A>::shutdown() {
 	_shutdown();
 }
+
+template<typename D, typename A = D>
+class StandardInputOutputDevice : public IODevice<D, A> {
+	public:
+		enum Addresses : A {
+			Get,
+			Put,
+			Count,
+		};
+		StandardInputOutputDevice(A base) : IODevice<D, A>(base, static_cast<A>(Addresses::Count)) { }
+		virtual ~StandardInputOutputDevice() { }
+		virtual D read(A addr) override {
+			auto actualAddr = addr - this->baseAddress();
+			if (actualAddr == static_cast<A>(Addresses::Get)) {
+				auto value = static_cast<byte>(0);
+				std::cin >> std::noskipws >> value;
+				return static_cast<D>(value);
+			} else {
+				throw iris::Problem("Illegal address to read from!");
+			}
+		}
+		virtual void write(A addr, D value) override {
+			auto actualAddr = addr - this->baseAddress();
+			if (actualAddr == static_cast<A>(Addresses::Put)) {
+				std::cout.put(static_cast<char>(value));
+			} else {
+				throw iris::Problem("Illegal address to write to!");
+			}
+		}
+};
 
 } // end namespace iris
 #endif // end IRIS_IO_DEVICE_H_

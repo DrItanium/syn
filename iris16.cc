@@ -261,25 +261,14 @@ namespace iris16 {
 		stack.initialize();
 		_io.initialize();
 		auto readNothing = iris::readNothing<typename LambdaIODevice::DataType, typename LambdaIODevice::AddressType>;
-		auto writeNothing = iris::writeNothing<typename LambdaIODevice::DataType, typename LambdaIODevice::AddressType>;
-
 		// terminate
 		_io.install(std::make_shared<LambdaIODevice>(0, 1, readNothing, 
 					[this](word address, word value) { 
 						execute = false; 
 						advanceIp = false; 
 					}));
-		// getc
-		_io.install(std::make_shared<LambdaIODevice>(1, 1, 
-					[](word address) {
-						auto value = static_cast<byte>(0);
-						std::cin >> std::noskipws >> value;
-						return static_cast<word>(value);
-					}, 
-					writeNothing));
-		// putc
-		_io.install(std::make_shared<LambdaIODevice>(2, 1, readNothing, [](word address, word value) { std::cout.put(static_cast<char>(value)); }));
-
+		// getc and putc
+		_io.install(std::make_shared<iris::StandardInputOutputDevice<word>>(1));
 	}
 
 	void Core::shutdown() {

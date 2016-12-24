@@ -2,6 +2,7 @@
 #define _TARGET_IRIS16_IRIS_H
 #include "iris_base.h"
 #include "iris_xunits.h"
+#include "iris_machine.h"
 #include "Core.h"
 #include "IOController.h"
 #include <cstdint>
