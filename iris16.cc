@@ -4,10 +4,8 @@
 #include <vector>
 
 namespace iris16 {
-	Core* newCore() noexcept {
-		return new iris16::Core();
-	}
 
+	Core::Core() noexcept : _io(0, 0xFFFF) { }
 
 	Core::~Core() { 
 	}
@@ -43,6 +41,16 @@ namespace iris16 {
 	}
 	void Core::dispatch() {
 		auto group = static_cast<InstructionGroup>(getGroup());
+		auto makeProblem = [this](const std::string& message, auto operation) {
+			std::stringstream stream;
+			stream << message << " 0x" << std::hex << operation;
+			execute = false;
+			advanceIp = false;
+			throw iris::Problem(stream.str());
+		};
+		auto makeIllegalOperationMessage = [this, makeProblem](const std::string& type) {
+			makeProblem("Illegal " + type, getOperation());
+		};
 		if (group == InstructionGroup::Arithmetic) {
 			static std::map<ArithmeticOp, std::tuple<ALU::Operation, bool>> table = {
 				{ ArithmeticOp::Add, std::make_tuple(ALU::Operation::Add , false) },
@@ -66,10 +74,7 @@ namespace iris16 {
 			};
 			auto result = table.find(static_cast<ArithmeticOp>(getOperation()));
 			if (result == table.end()) {
-				std::stringstream stream;
-				stream << "Illegal arithmetic operation " << getOperation();
-				execute = false;
-				throw iris::Problem(stream.str());
+				makeIllegalOperationMessage("arithmetic operation");
 			} else {
 				performOperation(_alu, result->second);
 			}
@@ -90,11 +95,7 @@ namespace iris16 {
 			};
 			auto result = translationTable.find(static_cast<CompareOp>(getOperation()));
 			if (result == translationTable.end()) {
-				std::stringstream stream;
-				stream << "Illegal compare code " << getOperation();
-				execute = false;
-				advanceIp = false;
-				throw iris::Problem(stream.str());
+				makeIllegalOperationMessage("compare code");
 			} else {
 				performOperation(_compare, result->second);
 			}
@@ -112,24 +113,11 @@ namespace iris16 {
 					auto value = static_cast<byte>(0);
 					std::cin >> std::noskipws >> value;
 					source0Register() = static_cast<word>(value);
-				} else if (target == SystemCalls::InitializeXMem) {
-					// just load the given storage size into r0 and r1
-					auto xSize = extendedData->getSize();
-					source0Register() = iris::getLowerHalf(xSize);
-					source1Register() = iris::getUpperHalf(xSize);
 				} else {
-					std::stringstream stream;
-					stream << "Illegal system call " << std::hex << getDestination();
-					execute = false;
-					advanceIp = false;
-					throw iris::Problem(stream.str());
+					makeProblem("Illegal system call", getDestination());
 				}
 			} else {
-				std::stringstream ss;
-				ss << "Illegal misc code " << getOperation();
-				execute = false;
-				advanceIp = false;
-				throw iris::Problem(ss.str());
+				makeIllegalOperationMessage("misc code");
 			}
 		} else if (group == InstructionGroup::Jump) {
 			// ifthenelse?, conditional?, iffalse?, immediate?, link?
@@ -154,10 +142,7 @@ namespace iris16 {
 			auto ifthenelse = false, conditional = false, iffalse = false, immediate = false,  link = false;
 			auto result = translationTable.find(static_cast<JumpOp>(getOperation()));
 			if (result == translationTable.end()) {
-				std::stringstream ss;
-				ss << "Illegal jump code " << std::hex << static_cast<int>(getOperation());
-				execute =  false;
-				throw iris::Problem(ss.str());
+				makeIllegalOperationMessage("jump code");
 			}
 			std::tie(ifthenelse, conditional, iffalse, immediate, link) = result->second;
 			auto newAddr = static_cast<word>(0);
@@ -208,30 +193,15 @@ namespace iris16 {
 				source1Register() = iris::getUpperHalf(result);
 			} else if (op == MoveOp::StoreCode) {
 				instruction[destinationRegister()] = encodeDword(source0Register(), source1Register());
-			} else if (op == MoveOp::ExtendedMemoryWrite) {
-				// store destination in the address described by source0 and source1
-				auto result = destinationRegister();
-				auto lower = source0Register();
-				auto upper = source1Register();
-				// build an address out of this
-				setExtendedDataMemory(iris::encodeUint32LE(lower, upper), result);
-			} else if (op == MoveOp::ExtendedMemoryRead) {
-				auto lower = source0Register();
-				auto upper = source1Register();
-				// build an address out of this
-				destinationRegister() = getExtendedDataMemory(iris::encodeUint32LE(lower, upper));
+			} else if (op == MoveOp::IOWrite) {
+				_io.write(destinationRegister(), source0Register());
+			} else if (op == MoveOp::IORead) {
+				destinationRegister() = _io.read(source0Register());
 			} else {
-				std::stringstream ss;
-				ss << "Illegal move code " << getOperation();
-				execute = false;
-				advanceIp = false;
-				throw iris::Problem(ss.str());
+				makeIllegalOperationMessage("move code");
 			}
 		} else {
-			std::stringstream stream;
-			stream << "Illegal instruction group " << getGroup();
-			execute = false;
-			throw iris::Problem(stream.str());
+			makeProblem("Illegal instruction group", getGroup());
 		}
 	}
 
@@ -264,13 +234,13 @@ namespace iris16 {
 				if (debugEnabled()) {
 					std::cerr << " code result: 0x" << std::hex << result << std::endl;
 				}
-				setInstructionMemory(address, result);
+				writeInstructionMemory(address, result);
 			} else if (target == Segment::Data) {
 				auto result = iris16::encodeWord(buf[4], buf[5]);
 				if (debugEnabled()) {
 					std::cerr << " data result: 0x" << std::hex << result << std::endl;
 				}
-				setDataMemory(address, result);
+				writeDataMemory(address, result);
 			} else {
 				std::stringstream str;
 				str << "error: line " << lineNumber << ", unknown segment " << static_cast<int>(target) << "/" << static_cast<int>(buf[1]) << std::endl;
@@ -280,14 +250,24 @@ namespace iris16 {
 		}
 	}
 
-	Core::Core() noexcept { }
-	Core::Core(SharedExtendedDataMemory xData) noexcept : extendedData(xData) { }
 
-	void Core::setExtendedDataMemory(dword address, word value) {
-		extendedData->operator[](address) = value;
+	void Core::initialize() {
+		gpr.initialize();
+		data.initialize();
+		instruction.initialize();
+		stack.initialize();
+		_io.initialize();
 	}
 
-	word Core::getExtendedDataMemory(dword address) {
-		return extendedData->operator[](address);
+	void Core::shutdown() {
+		gpr.shutdown();
+		data.shutdown();
+		instruction.shutdown();
+		stack.shutdown();
+		_io.shutdown();
+	}
+
+	Core* newCore() noexcept {
+		return new iris16::Core();
 	}
 }

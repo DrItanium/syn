@@ -3,6 +3,7 @@
 #include "iris_base.h"
 #include "iris_xunits.h"
 #include "Core.h"
+#include "IOController.h"
 #include <cstdint>
 #include <memory>
 namespace iris16 {
@@ -32,32 +33,32 @@ namespace iris16 {
 #include "iris16_defines.h"
 
 namespace iris16 {
-	using ExtendedDataMemory = iris::LoadStoreUnit<word, dword>;
-	using SharedExtendedDataMemory = std::shared_ptr<ExtendedDataMemory>;
+	using IOSpace = iris::IOController<word>;
 	template<word capacity>
 	using WordMemorySpace = iris::FixedSizeLoadStoreUnit<word, word, capacity>;
 	using WordMemorySpace64k = WordMemorySpace<ArchitectureConstants::AddressMax>;
 	using ALU = iris::ALU<word>;
 	using CompareUnit = iris::Comparator<word>;
 	using RegisterFile = WordMemorySpace<ArchitectureConstants::RegisterCount>;
+	using IODevice = iris::IODevice<word>;
+	using LambdaIODevice = iris::LambdaIODevice<word>;
 	class Core : public iris::Core {
 		public:
 			Core() noexcept;
-			Core(SharedExtendedDataMemory xData) noexcept;
 			virtual ~Core();
-			virtual void initialize() override { }
+			virtual void initialize() override;
 			virtual void installprogram(std::istream& stream) override;
-			virtual void shutdown() override { }
+			virtual void shutdown() override;
 			virtual void dump(std::ostream& stream) override;
 			virtual void run() override;
 			virtual void link(std::istream& input) override;
-			inline void setInstructionMemory(word address, dword value) noexcept { instruction[address] = value; }
-			inline void setDataMemory(word address, word value) noexcept         { data[address] = value; }
-			inline dword getInstructionMemory(word address) noexcept             { return instruction[address]; }
-			inline word getDataMemory(word address) noexcept                     { return data[address]; }
-			// TODO: add support for installing externally defined system calls
-			void setExtendedDataMemory(dword address, word value);
-			word getExtendedDataMemory(dword address);
+			inline void writeInstructionMemory(word address, dword value) noexcept { instruction[address] = value; }
+			inline void writeDataMemory(word address, word value) noexcept         { data[address] = value; }
+			inline dword readInstructionMemory(word address) noexcept             { return instruction[address]; }
+			inline word readDataMemory(word address) noexcept                     { return data[address]; }
+			void writeIOMemory(word address, word value);
+			word readIOMemory(word address);
+			void installIODevice(std::shared_ptr<IODevice> dev);
 		private:
 			word& getStackPointer() noexcept { return gpr[ArchitectureConstants::StackPointerIndex]; }
 			word& getInstructionPointer() noexcept { return gpr[ArchitectureConstants::InstructionPointerIndex]; }
@@ -97,7 +98,7 @@ namespace iris16 {
 			WordMemorySpace64k data;
 			iris::FixedSizeLoadStoreUnit<dword, word, ArchitectureConstants::AddressMax> instruction;
 			WordMemorySpace64k stack;
-			SharedExtendedDataMemory extendedData;
+			IOSpace _io;
 			raw_instruction current = 0;
 	};
 

@@ -91,8 +91,7 @@
                 (name SystemCalls)
                 (children Terminate
                           GetC
-                          PutC
-                          InitializeXMem))
+                          PutC))
           (enum (cast-to byte)
                 (max-size "ArchitectureConstants::MaxOperations")
                 (name MoveOp)
@@ -108,8 +107,8 @@
                           Pop
                           LoadCode
                           StoreCode
-                          ExtendedMemoryWrite
-                          ExtendedMemoryRead))
+                          IOWrite
+                          IORead))
           (enum (cast-to byte)
                 (max-size "ArchitectureConstants::MaxOperations")
                 (name CompareOp)
