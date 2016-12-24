@@ -121,7 +121,7 @@ namespace iris16 {
 			static constexpr word computeInternalAddress(Address addr) noexcept {
 				return static_cast<word>(addr * computeScaleFactor());
 			}
-			ExposedCoreDataMemory(Core* core, Address base) : IODevice(base, computeDataLength()), _core(core) { }
+			ExposedCoreDataMemory(Core* core, Address base, Address length = computeDataLength()) : IODevice(base, length), _core(core) { }
 			virtual ~ExposedCoreDataMemory() { }
 			virtual void write(Address address, Data value) override {
 				auto addr = computeInternalAddress(tryComputeActualAddress(address));

@@ -75,6 +75,8 @@ namespace iris20 {
 	using IOController = iris::IOController<word>;
 	class Core : public iris::Core {
 		public:
+			using word = iris20::word;
+		public:
 			Core() noexcept;
 			virtual ~Core();
 			virtual void initialize() override;
@@ -83,7 +85,7 @@ namespace iris20 {
 			virtual void dump(std::ostream& stream) override;
 			virtual void run() override;
 			virtual void link(std::istream& input) override;
-			bool cycle();
+			virtual bool cycle() override;
 		private:
 			word operandGet(byte index);
 			void operandSet(byte index, word value);

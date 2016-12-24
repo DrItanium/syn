@@ -12,10 +12,22 @@
 namespace machine {
 	using MemoryWord = int64_t;
 	using MemoryAddress = uint64_t;
-	class Machine : public iris::Core {
+	class LockStepMachine : public iris::Core {
 		public:
-			Machine()
+			static LockStepMachine* newCore() noexcept {
+				return new LockStepMachine();
+			}
+			LockStepMachine() noexcept;
+			virtual ~LockStepMachine();
+			virtual void initialize() override;
+			virtual void installprogram(std::istream& stream) override;
+			virtual void dump(std::ostream& stream) override;
+			virtual void link(std::istream& input) override;
+			virtual bool cycle() override;
+			virtual void shutdown() override;
 		private:
+			iris20::Core _primary;
+			iris16::Core _secondary;
 	};
 } // end namespace machine
 

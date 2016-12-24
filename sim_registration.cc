@@ -6,6 +6,7 @@
 #include "iris17.h"
 #include "iris19.h"
 #include "iris20.h"
+#include "iris_machine.h"
 
 namespace iris {
 	static std::map<std::string, std::function<Core*()>> cores = {
@@ -14,6 +15,7 @@ namespace iris {
 		{ "iris18", iris18::newCore },
 		{ "iris17", iris17::newCore },
 		{ "iris16", iris16::newCore },
+		{ "LockStepMachine0", machine::LockStepMachine::newCore },
 	};
     Core* getCore(const std::string& name) {
 		auto loc = cores.find(name);
