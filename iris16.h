@@ -59,6 +59,8 @@ namespace iris16 {
 			void writeIOMemory(word address, word value);
 			word readIOMemory(word address);
 			void installIODevice(std::shared_ptr<IODevice> dev);
+			void writeRegister(byte index, word value);
+			word readRegister(byte index);
 		private:
 			word& getStackPointer() noexcept { return gpr[ArchitectureConstants::StackPointerIndex]; }
 			word& getInstructionPointer() noexcept { return gpr[ArchitectureConstants::InstructionPointerIndex]; }
@@ -68,7 +70,7 @@ namespace iris16 {
             inline byte getDestination() const noexcept { return decodeDestination(current); }
             inline byte getSource0() const noexcept { return decodeSource0(current); }
             inline byte getSource1() const noexcept { return decodeSource1(current); }
-			inline word getHalfImmediate() const noexcept { return static_cast<word>(getSource1()); }
+			inline word getHalfImmediate() const noexcept { return decodeHalfImmediate(current); }
             inline word getImmediate() const noexcept { return decodeImmediate(current); }
             inline byte getOperation() const noexcept { return decodeOperation(current); }
             inline byte getGroup() const noexcept { return decodeGroup(current); }

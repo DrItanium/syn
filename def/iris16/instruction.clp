@@ -21,7 +21,7 @@
           (field (name HalfImmediate)
                  (mask 0xFF000000)
                  (shift 24)
-                 (output-type byte))
+                 (output-type word))
           (field (name Immediate)
                  (mask 0xFFFF0000)
                  (shift 16)
