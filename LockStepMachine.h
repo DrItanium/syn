@@ -130,9 +130,12 @@ namespace machine {
 				baseDRegister += 2;
 				properBaseAddress += 0x2;
 			}
-			
 			++index;
 		}
+		_primary.installDevice(iris::makeLambdaDevice<iris20::word, iris20::word>(addressStart, 1, 
+					[this](auto address) -> auto { return pcycle; },
+					[this](auto a, auto v) { }));
+		addressStart++;
 	}
 	template<byte count, byte cycle, byte pcycle>
 	void LockStepMachine<count, cycle, pcycle>::shutdown() {
