@@ -10,7 +10,7 @@
 #include "iris16.h"
 #include "iris20.h"
 namespace machine {
-	template<byte secondaryCoreCount = 1, byte secondaryCycleCount = 4>
+	template<byte secondaryCoreCount = 1, byte secondaryCycleCount = 4, byte primaryCycleCount = secondaryCoreCount>
 	class LockStepMachine : public iris::Core {
 		public:
 			static constexpr byte MaxSecondaryCoreCount = 16;
@@ -20,6 +20,7 @@ namespace machine {
 			static_assert(secondaryCoreCount != 0, "Can't have zero secondary cores!");
 			static_assert(secondaryCoreCount <= MaxSecondaryCoreCount, "Too many cores declared, max is 8");
 			static_assert(secondaryCycleCount != 0, "The secondary cores can't be disabled by setting the core counts to zero");
+			static_assert(primaryCycleCount != 0, "The number of cycles per machine cycle for the primary iris20 core must be greater than zero!");
 			LockStepMachine() noexcept { }
 			virtual ~LockStepMachine() { }
 			virtual void initialize() override;
@@ -36,8 +37,8 @@ namespace machine {
 			iris16::Core _secondary[secondaryCoreCount];
 	};
 
-	template<byte count, byte cycles>
-	void LockStepMachine<count, cycles>::initialize() {
+	template<byte count, byte cycles, byte pcycle>
+	void LockStepMachine<count, cycles, pcycle>::initialize() {
 		_primary.initialize();
 		auto addressStart = iris20::ArchitectureConstants::AddressMax + 1;
 		auto register0Id = 15;
@@ -80,19 +81,28 @@ namespace machine {
 		// now we need to install stuff into the primary and secondary so they
 		// can communicate with one another
 		int index = 0;
+		constexpr auto iris16BaseCRegisterIndex = 128;
+		constexpr auto iris16BaseDRegisterIndex = 129;
 		for (auto &c : _secondary) {
+			auto properBaseAddress = static_cast<iris16::word>(0x3);
 			c.initialize();
 			_primary.installDevice(iris16::mapData<iris20::word, iris20::word>(&c, addressStart));
-			c.installIODevice(makeRegisterMapping(register0Id, 0x3));
-			c.installIODevice(makeRegisterMapping(register1Id, 0x7));
+			c.installIODevice(makeRegisterMapping(register0Id, properBaseAddress));
+			properBaseAddress += 0x4;
+			c.installIODevice(makeRegisterMapping(register1Id, properBaseAddress));
+			properBaseAddress += 0x4;
+			c.installIODevice(iris::makeLambdaDevice<iris16::word, iris16::word>(properBaseAddress, 1, 
+						[this](auto addr) -> auto { return static_cast<iris16::word>(cycles); },
+						[this](auto addr, auto value) { }));
+			properBaseAddress++;
 			register0Id+=2;
 			register1Id+=2;
 			addressStart += memoryLength;
 			int innerIndex = 0;
-			auto baseCRegister = 128;
-			auto baseDRegister = 129;
+			auto baseCRegister = iris16BaseCRegisterIndex;
+			auto baseDRegister = iris16BaseDRegisterIndex;
 			for (auto &other : _secondary) {
-				auto base = 0xB + (2 * innerIndex);
+				auto base = properBaseAddress;
 				auto creg = static_cast<byte>(baseCRegister);
 				auto dreg = static_cast<byte>(baseDRegister);
 				if (index != innerIndex) {
@@ -118,21 +128,22 @@ namespace machine {
 				++innerIndex;
 				baseCRegister += 2;
 				baseDRegister += 2;
+				properBaseAddress += 0x2;
 			}
 			
 			++index;
 		}
 	}
-	template<byte count, byte cycle>
-	void LockStepMachine<count, cycle>::shutdown() {
+	template<byte count, byte cycle, byte pcycle>
+	void LockStepMachine<count, cycle, pcycle>::shutdown() {
 		for (auto & _c : _secondary) {
 			_c.shutdown();
 		}
 		_primary.shutdown();
 	}
 
-	template<byte count, byte cycleCount>
-	bool LockStepMachine<count, cycleCount>::cycle() {
+	template<byte count, byte cycleCount, byte pcycle>
+	bool LockStepMachine<count, cycleCount, pcycle>::cycle() {
 		auto tryInvokeCore = [this](auto& core) {
 			if (core.shouldExecute()) {
 				core.cycle();
@@ -140,7 +151,9 @@ namespace machine {
 			}
 		};
 		execute = false;
-		tryInvokeCore(_primary);
+		for (auto i = 0; i < pcycle; ++i) {
+			tryInvokeCore(_primary);
+		}
 		for (auto i = 0; i < count; ++i) {
 			auto & _c = _secondary[i];
 			for (byte j = 0; j < cycleCount ; ++i) {
@@ -150,16 +163,16 @@ namespace machine {
 		return execute;
 	}
 
-	template<byte count, byte cycleCount>
-	void LockStepMachine<count, cycleCount>::dump(std::ostream& output) {
+	template<byte count, byte cycleCount, byte pcycle>
+	void LockStepMachine<count, cycleCount, pcycle>::dump(std::ostream& output) {
 		_primary.dump(output);
 		for (auto & c : _secondary) {
 			c.dump(output);
 		}
 	}
 
-	template<byte count, byte cycleCount>
-	void LockStepMachine<count, cycleCount>::installprogram(std::istream& stream) {
+	template<byte count, byte cycleCount, byte pcycle>
+	void LockStepMachine<count, cycleCount, pcycle>::installprogram(std::istream& stream) {
 		_primary.installprogram(stream);
 		for (auto & c : _secondary) {
 			c.installprogram(stream);
