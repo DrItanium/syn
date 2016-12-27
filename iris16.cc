@@ -285,4 +285,11 @@ namespace iris16 {
 	Core* newCore() noexcept {
 		return new iris16::Core();
 	}
+	void Core::writeRegister(byte index, word value) {
+		gpr.write(index, value);
+	}
+
+	word Core::readRegister(byte index) {
+		return gpr.read(index);
+	}
 }
