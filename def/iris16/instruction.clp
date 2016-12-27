@@ -100,7 +100,9 @@
                           LoadCode
                           StoreCode
                           IOWrite
-                          IORead))
+                          IORead
+                          IOWriteWithOffset
+                          IOReadWithOffset))
           (enum (cast-to byte)
                 (max-size "ArchitectureConstants::MaxOperations")
                 (name CompareOp)

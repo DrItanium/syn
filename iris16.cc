@@ -202,6 +202,12 @@ namespace iris16 {
 				case MoveOp::IORead:
 					destinationRegister() = _io.read(source0Register());
 					break;
+				case MoveOp::IOReadWithOffset:
+					destinationRegister() = _io.read(source0Register() + getHalfImmediate());
+					break;
+				case MoveOp::IOWriteWithOffset:
+					_io.write(destinationRegister() + getHalfImmediate(), source0Register());
+					break;
 				default:
 					makeIllegalOperationMessage("move code");
 					break;
