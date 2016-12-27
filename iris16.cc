@@ -166,8 +166,14 @@ namespace iris16 {
 				case MoveOp::LoadImmediate:
 					gpr.set(getDestination(), data[getImmediate()]);
 					break;
+				case MoveOp::LoadWithOffset:
+					gpr.set(getDestination(), data[source0Register() + getHalfImmediate()]);
+					break;
 				case MoveOp::Store:
 					data.set(destinationRegister(), source0Register());
+					break;
+				case MoveOp::StoreWithOffset:
+					data.set(destinationRegister() + getHalfImmediate(), source0Register());
 					break;
 				case MoveOp::Memset:
 					data.set(destinationRegister(), getImmediate());

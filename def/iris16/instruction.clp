@@ -90,8 +90,10 @@
                           Swap
                           Load
                           LoadImmediate
+                          LoadWithOffset
                           Store
                           Memset
+                          StoreWithOffset
                           Push
                           PushImmediate
                           Pop
