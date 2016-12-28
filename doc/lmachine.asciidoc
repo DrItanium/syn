@@ -89,3 +89,22 @@ the same too!
 | 3       | 0x0012     | r135
 |========================================
 
+Each iris16 core is the same, the only difference is which core it is. For
+instance, core 3's r134 and r135 are mapped into its own io memory space at
+0x0011 and 0x0012 respectively. This design also allows messages to be passed
+from the core to itself. 
+
+iris20's four cycles per machine cycle
+--------------------------------------
+
+Unlike the RISC esque design of iris16, iris20 is a RISC/CISC hybrid. A 64-bit
+word in iris20 can have 1 or 2 instructions within it. When this happens it is
+possible to perform 8 instructions in four cycles and process commands from the
+secondary cores in quick succession. 
+
+Uses for the Different Secondary Cores
+--------------------------------------
+
+The +lsm0+ is a constantly evolving machine. The four secondary cores are
+complete CPUs that can operate separately from the main iris20 core. Because of
+this, each iris16 core can be used for different purposes. 
