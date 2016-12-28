@@ -67,7 +67,7 @@ using ThreadCache = std::vector<SharedExecState>;
 class Core : public iris::Core {
     public:
         Core(word memorySize, byte numThreads) noexcept;
-        ~Core() noexcept;
+        virtual ~Core() noexcept;
         virtual void initialize() override;
         virtual void installprogram(std::istream& stream) override;
         virtual void shutdown() override;

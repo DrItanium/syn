@@ -64,6 +64,14 @@ careful not to cause unintended side effects in the process.
 | 2       | 0x0007        | 0x000A                  | r20
 | 3 	  | 0x0003        | 0x0006                  | r21
 | 3       | 0x0007        | 0x000A                  | r22
+| 4 	  | 0x0003        | 0x0006                  | r23
+| 4       | 0x0007        | 0x000A                  | r24
+| 5 	  | 0x0003        | 0x0006                  | r25
+| 5       | 0x0007        | 0x000A                  | r26
+| 6 	  | 0x0003        | 0x0006                  | r27
+| 6       | 0x0007        | 0x000A                  | r28
+| 7 	  | 0x0003        | 0x0006                  | r29
+| 7       | 0x0007        | 0x000A                  | r30
 |======================================================================
 
 To facilitate communication across the different iris16 cores, some of the
@@ -91,6 +99,14 @@ the same too!
 | 2       | 0x0010     | r133
 | 3       | 0x0011     | r134
 | 3       | 0x0012     | r135
+| 4       | 0x0013     | r136
+| 4       | 0x0014     | r137
+| 5       | 0x0015     | r138
+| 5       | 0x0016     | r139
+| 6       | 0x0017     | r140
+| 6       | 0x0018     | r141
+| 7       | 0x0019     | r142
+| 7       | 0x001A     | r143
 |========================================
 
 Each iris16 core is the same, the only difference is which core it is. For
@@ -112,5 +128,4 @@ Uses for the Different Secondary Cores
 The +lsm0+ is a constantly evolving machine. The four secondary cores are
 complete CPUs that can operate separately from the main iris20 core. Because of
 this, each iris16 core can be used for different purposes. However, each iris16
-cpu has a different purposes. However, each iris16 core has the same things
-bound into it. 
+cpu has a different purposes. 

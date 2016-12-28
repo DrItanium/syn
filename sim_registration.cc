@@ -15,7 +15,7 @@ namespace iris {
 		{ "iris18", iris18::newCore },
 		{ "iris17", iris17::newCore },
 		{ "iris16", iris16::newCore },
-		{ "LockStepMachine-type0", machine::LockStepMachine<4>::newCore },
+		{ "LockStepMachine-type0", machine::LockStepMachine<8>::newCore },
 	};
     Core* getCore(const std::string& name) {
 		auto loc = cores.find(name);
