@@ -1,8 +1,8 @@
 LockStepMachine type 0
 ======================
 
-The LockStepMachine type0 or +lsm0+ is a system consisting of 1 iris20 core and
-4 iris16 secondary cores. As the title of the machine states, it is a system
+The LockStepMachine type0 or +lsm0+ is a system consisting of 4 iris20 core and
+eight iris16 secondary cores. As the title of the machine states, it is a system
 which executes all of its cores in a lock step fashion per "cycle". 
 
 The iris20 core is a 64-bit RISC/CISC cpu with 64 registers and 64 megawords
@@ -23,6 +23,10 @@ In the case of iris20 the following memory map exists:
 | 0x0000000004004000 | 0x0000000004007FFF      | Read & Write | iris16 Core 1 Data RAM
 | 0x0000000004008000 | 0x000000000400BFFF      | Read & Write | iris16 Core 2 Data RAM
 | 0x000000000400C000 | 0x000000000400FFFF      | Read & Write | iris16 Core 3 Data RAM
+| 0x0000000004010000 | 0x0000000004013FFF      | Read & Write | iris16 Core 4 Data RAM
+| 0x0000000004014000 | 0x0000000004017FFF      | Read & Write | iris16 Core 5 Data RAM
+| 0x0000000004018000 | 0x000000000401BFFF      | Read & Write | iris16 Core 6 Data RAM
+| 0x000000000401C000 | 0x000000000401FFFF      | Read & Write | iris16 Core 7 Data RAM
 | 0x0000000004010000 | 0x0000000004010000      | Read Only    | iris20 Cycles Per Machine Cycle 
 | 0xFFFFFFFFFF000000 | 0xFFFFFFFFFFFFFFFF      | Read & Write | iris20 IO Space 
 | 0xFFFFFFFFFF000000 | 0xFFFFFFFFFF000000      | Write        | iris20 Shutdown Core
@@ -107,4 +111,6 @@ Uses for the Different Secondary Cores
 
 The +lsm0+ is a constantly evolving machine. The four secondary cores are
 complete CPUs that can operate separately from the main iris20 core. Because of
-this, each iris16 core can be used for different purposes. 
+this, each iris16 core can be used for different purposes. However, each iris16
+cpu has a different purposes. However, each iris16 core has the same things
+bound into it. 

@@ -9,8 +9,8 @@ class Device {
 	public:
 		virtual void initialize() = 0;
 		virtual void shutdown() = 0;
-		inline bool debugEnabled() const { return _debug; }
-		void toggleDebug() 				 { _debug = !_debug; }
+		virtual bool debugEnabled() const { return _debug; }
+		virtual void toggleDebug() 		  { _debug = !_debug; }
 	private:
 		bool _debug = false;
 

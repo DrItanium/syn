@@ -10,7 +10,7 @@
 #include "iris16.h"
 #include "iris20.h"
 namespace machine {
-	template<byte secondaryCoreCount = 1, byte secondaryCycleCount = 4, byte primaryCycleCount = secondaryCoreCount>
+	template<byte secondaryCoreCount, byte secondaryCycleCount = 4, byte primaryCycleCount = secondaryCoreCount>
 	class LockStepMachine : public iris::Core {
 		public:
 			static constexpr byte MaxSecondaryCoreCount = 16;
@@ -29,6 +29,13 @@ namespace machine {
 			virtual void link(std::istream& input) override { }
 			virtual bool cycle() override;
 			virtual void shutdown() override;
+			virtual void toggleDebug() override {
+				iris::Core::toggleDebug();
+				_primary.toggleDebug();
+				for(auto &c : _secondary) {
+					c.toggleDebug();
+				}
+			}
 			byte getSecondaryCycleCount() const {
 				return secondaryCycleCount;
 			}

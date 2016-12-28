@@ -61,6 +61,8 @@ struct ExecState {
 };
 
 using SharedExecState = std::shared_ptr<ExecState>;
+using LoadStoreUnit = iris::LoadStoreUnit<word, word>;
+using ThreadCache = std::vector<SharedExecState>;
 
 class Core : public iris::Core {
     public:
@@ -88,9 +90,9 @@ class Core : public iris::Core {
     private:
 		ALU _alu;
 		CompareUnit _compare;
-		iris::LoadStoreUnit<word, word> memory;
+		LoadStoreUnit memory;
 		SharedExecState thread;
-        std::vector<SharedExecState> threads;
+		ThreadCache threads;
         bool execute = true;
 };
 
