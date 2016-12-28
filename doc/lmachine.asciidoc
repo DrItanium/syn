@@ -1,17 +1,33 @@
 LockStepMachine type 0
+======================
 
-A system consisting of 1 iris20 core and 4 iris16 secondary cores. As the
-title of the machine states, it is a system which executes all of its cores in
-a lock step fashion per "cycle". 
+The LockStepMachine type0 or +lsm0+ is a system consisting of 1 iris20 core and
+4 iris16 secondary cores. As the title of the machine states, it is a system
+which executes all of its cores in a lock step fashion per "cycle". 
 
-The iris20 core is a 64-bit RISC/CISC cpu with 64 registers and 67108864
-(0x4000000) words (64 megawords) worth of RAM. Each word in this core is 64-bits signed. 
-This translate to 512 megabytes worth of ram. Each iris20 word can contain 1
-(64-bit molecule) or 2 (32-bit atom) instructions. It will execute 4
-instructions before yielding clock time to the other 4 cores (each of them
-getting 4 cycles each). 
+The iris20 core is a 64-bit RISC/CISC cpu with 64 registers and 64 megawords
+worth of RAM. Each word in this core is 64-bits signed.  This translate to 512
+megabytes worth of ram. Each iris20 word can contain 1 (64-bit molecule) or 2
+(32-bit atom) instructions. It will execute 4 instructions before yielding
+clock time to the other 4 cores (each of them getting 4 cycles each). 
 
 Communication between these cores is facilitated via memory mapped addresses.
 In the case of iris20 the following memory map exists:
 
-Address | 
+.iris20 Memory Map
+[options="header,footer"]
+|===========================================================================
+| Start Address      | End Address (inclusive) | Read/Write   | Description 
+| 0x0000000000000000 | 0x0000000003FFFFFF      | Read & Write | iris20 RAM
+| 0x0000000004000000 | 0x0000000004003FFF      | Read & Write | iris16 Core 0 Data RAM
+| 0x0000000004004000 | 0x0000000004007FFF      | Read & Write | iris16 Core 1 Data RAM
+| 0x0000000004008000 | 0x000000000400BFFF      | Read & Write | iris16 Core 2 Data RAM
+| 0x000000000400C000 | 0x000000000400FFFF      | Read & Write | iris16 Core 3 Data RAM
+| 0x0000000004010000 | 0x0000000004010000      | Read Only    | iris20 Cycles Per Machine Cycle 
+| 0xFFFFFFFFFF000000 | 0xFFFFFFFFFFFFFFFF      | Read & Write | iris20 IO Space 
+| 0xFFFFFFFFFF000000 | 0xFFFFFFFFFF000000      | Write        | iris20 Shutdown Core
+| 0xFFFFFFFFFF000001 | 0xFFFFFFFFFF000001      | Read         | iris20 Read Character from keyboard
+| 0xFFFFFFFFFF000002 | 0xFFFFFFFFFF000002      | Write        | iris20 Print Character to Screen
+| 0xFFFFFFFFFF000003 | 0xFFFFFFFFFF000003      | Read         | iris20 RAM Size (End Address + 1)
+|===========================================================================
+
