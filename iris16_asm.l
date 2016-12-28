@@ -119,6 +119,9 @@ omni [a-zA-Z0-9._]
 "dataCacheAddressLower" { iris16lval.rval = 10; return REGISTER; }
 "dataCacheAddressUpper" { iris16lval.rval = 11; return REGISTER; }
 
+"@low"	{ return TAG_LOW; }
+"@high" { return TAG_HI; }
+
 "outptr" { iris16lval.rval = 227; return REGISTER; }
 "inptr"  { iris16lval.rval = 228; return REGISTER; }
 "fdcur"  { iris16lval.rval = 229; return REGISTER; }

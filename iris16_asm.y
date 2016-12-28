@@ -143,6 +143,7 @@ bool resolve_op(dynamicop* dop);
 %token ARITHMETIC_MACRO_OP_DOUBLE
 %token MOVE_OP_LOAD_OFFSET MOVE_OP_STORE_OFFSET
 %token MOVE_OP_LOAD_IO_OFFSET MOVE_OP_STORE_IO_OFFSET
+%token TAG_LOW TAG_HI
 
 %token <rval> REGISTER
 %token <ival> IMMEDIATE
@@ -233,23 +234,9 @@ operation:
          jump_op { iris16::curri.group = static_cast<byte>(iris16::InstructionGroup::Jump); } |
          compare_op { iris16::curri.group = static_cast<byte>(iris16::InstructionGroup::Compare); };
 arithmetic_op:
-             aop REGISTER REGISTER REGISTER {
-                  iris16::curri.reg0 = $2;
-                  iris16::curri.reg1 = $3;
-                  iris16::curri.reg2 = $4;
-             }|
-             ARITHMETIC_OP_BINARYNOT REGISTER REGISTER {
-                  iris16::curri.reg0 = $2;
-                  iris16::curri.reg1 = $3;
-             } |
-             aop_imm REGISTER REGISTER IMMEDIATE {
-               if($4 > 255) {
-                  iris16error("immediate value offset out of range!");
-               }
-               iris16::curri.reg0 = $2;
-               iris16::curri.reg1 = $3;
-               iris16::curri.reg2 = $4;
-             } |
+             aop THREE_REGISTERS |
+             ARITHMETIC_OP_BINARYNOT TWO_REGISTERS |
+			 aop_imm TWO_REGISTERS_WITH_OFFSET |
 			 aop_single_macro REGISTER {
 			 	iris16::curri.reg0 = $2;
 				iris16::curri.reg1 = $2;
@@ -274,46 +261,24 @@ aop_single_macro:
    }
    ;
 move_op:
-       mop_reg REGISTER REGISTER {
-            iris16::curri.reg0 = $2;
-            iris16::curri.reg1 = $3;
-       } |
-       mop_mixed REGISTER lexeme { iris16::curri.reg0 = $2; } |
-       mop_single REGISTER {
-         iris16::curri.reg0 = $2;
-       } |
-	   mop_offset REGISTER REGISTER IMMEDIATE {
-	   		if ($4 > 255) {
-				iris16error("immediate value offset out of range!");
-			}
-            iris16::curri.reg0 = $2;
-            iris16::curri.reg1 = $3;
-			iris16::curri.reg2 = $4;
-	   } |
+	   mop_reg TWO_REGISTERS |
+       mop_mixed DESTINATION_REGISTER lexeme |
+       mop_single ONE_REGISTER |
+	   mop_offset TWO_REGISTERS_WITH_OFFSET |
        MOVE_OP_PUSHIMMEDIATE lexeme { 
          iris16::curri.op = (byte)iris16::MoveOp::PushImmediate;
        } |
-	   MOVE_OP_STORE_CODE REGISTER REGISTER REGISTER {
+	   MOVE_OP_STORE_CODE THREE_REGISTERS {
 	    iris16::curri.op = static_cast<byte>(iris16::MoveOp::StoreCode);
-		iris16::curri.reg0 = $2;
-		iris16::curri.reg1 = $3;
-		iris16::curri.reg2 = $4;
 	   } |
-	   MOVE_OP_LOAD_CODE REGISTER REGISTER REGISTER {
+	   MOVE_OP_LOAD_CODE THREE_REGISTERS {
 	    iris16::curri.op = static_cast<byte>(iris16::MoveOp::LoadCode);
-	   	iris16::curri.reg0 = $2;
-		iris16::curri.reg1 = $3;
-		iris16::curri.reg2 = $4;
 	   } |
-	   MOVE_OP_LOAD_IO REGISTER REGISTER {
+	   MOVE_OP_LOAD_IO TWO_REGISTERS {
 	    iris16::curri.op = static_cast<byte>(iris16::MoveOp::IORead);
-	   	iris16::curri.reg0 = $2;
-		iris16::curri.reg1 = $3;
 	   } |
-	   MOVE_OP_STORE_IO REGISTER REGISTER {
+	   MOVE_OP_STORE_IO TWO_REGISTERS {
 	    iris16::curri.op = static_cast<byte>(iris16::MoveOp::IOWrite);
-	   	iris16::curri.reg0 = $2;
-		iris16::curri.reg1 = $3;
 	   } 
        ;
 
@@ -321,36 +286,17 @@ jump_op:
        JUMP_OP_UNCONDITIONALIMMEDIATE lexeme { 
          iris16::curri.op = (byte)iris16::JumpOp::UnconditionalImmediate; 
          } | 
-       JUMP_OP_UNCONDITIONALREGISTER REGISTER { 
+       JUMP_OP_UNCONDITIONALREGISTER ONE_REGISTER { 
          iris16::curri.op = (byte)iris16::JumpOp::UnconditionalRegister; 
-         iris16::curri.reg0 = $2;
        } |
-       jop_reg_reg REGISTER REGISTER {
-            iris16::curri.reg0 = $2;
-            iris16::curri.reg1 = $3;
-       } |
-       jop_reg_imm REGISTER lexeme { iris16::curri.reg0 = $2; } |
-       jop_reg_reg_reg REGISTER REGISTER REGISTER {
-            iris16::curri.reg0 = $2;
-            iris16::curri.reg1 = $3;
-            iris16::curri.reg2 = $4;
-       }
-       ;
+       jop_reg_reg TWO_REGISTERS |
+       jop_reg_imm DESTINATION_REGISTER lexeme |
+       jop_reg_reg_reg THREE_REGISTERS
+	   ;
 
 compare_op:
-          cop REGISTER REGISTER REGISTER {
-               iris16::curri.reg0 = $2;
-               iris16::curri.reg1 = $3;
-               iris16::curri.reg2 = $4;
-          } |
-		  icop REGISTER REGISTER IMMEDIATE {
-		  	if ($4 > 255) {
-                  iris16error("immediate value offset out of range!");
-			}
-			iris16::curri.reg0 = $2;
-			iris16::curri.reg1 = $3;
-			iris16::curri.reg2 = $4;
-		  }
+		  cop THREE_REGISTERS |
+		  icop TWO_REGISTERS_WITH_OFFSET 
           ;
 aop:
    ARITHMETIC_OP_ADD { iris16::curri.op = (byte)iris16::ArithmeticOp::Add; } |
@@ -444,10 +390,44 @@ lexeme:
       IRIS16_SYMBOL { iris16::curri.hasSymbol = true; 
                iris16::curri.symbol = $1; } | 
       IMMEDIATE { 
-            iris16::curri.reg1 = (byte)(($1 & 0x00FF));
-            iris16::curri.reg2 = (byte)(($1 & 0xFF00) >> 8);
+	  		iris16::curri.reg1 = iris::decodeBits<iris16::word, byte, 0x00FF, 0>($1);
+			iris16::curri.reg2 = iris::decodeBits<iris16::word, byte, 0xFF00, 8>($1);
       }
 ;
+half_immediate:
+				IMMEDIATE {
+	   				if ($1 > 255) {
+						iris16error("immediate value offset out of range!");
+					}
+					iris16::curri.reg2 = $1;
+				} | 
+				TAG_LOW IMMEDIATE {
+					iris16::curri.reg2 = iris::decodeBits<iris16::word, byte, 0x00FF, 0>($2);
+				} |
+				TAG_HI IMMEDIATE {
+					iris16::curri.reg2 = iris::decodeBits<iris16::word, byte, 0xFF00, 8>($2);
+				} ;
+
+DESTINATION_REGISTER:
+					REGISTER { iris16::curri.reg0 = $1; };
+
+SOURCE0_REGISTER:
+				REGISTER { iris16::curri.reg1 = $1; };
+
+SOURCE1_REGISTER:
+				REGISTER { iris16::curri.reg2 = $1; };
+
+ONE_REGISTER: 
+			DESTINATION_REGISTER;
+TWO_REGISTERS:
+			 DESTINATION_REGISTER SOURCE0_REGISTER;
+
+TWO_REGISTERS_WITH_OFFSET:
+				TWO_REGISTERS half_immediate;
+
+THREE_REGISTERS:
+			   TWO_REGISTERS SOURCE1_REGISTER;
+
 %%
 void iris16error(const char* s) {
    printf("%d: %s\n", iris16lineno, s);
