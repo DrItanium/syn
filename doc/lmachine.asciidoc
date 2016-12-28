@@ -31,3 +31,61 @@ In the case of iris20 the following memory map exists:
 | 0xFFFFFFFFFF000003 | 0xFFFFFFFFFF000003      | Read         | iris20 RAM Size (End Address + 1)
 |===========================================================================
 
+
+To allow bidirectional communication the iris20 core and iris16 cores have
+parts of each other mapped into them. From the perspective of the iris20 core,
+each iris16 core has it's data ram mapped into the iris20 memory space. The
+iris20 core also dedicates two registers to each secondary core and has these
+registers mapped into the specific iris16 core's io space!. To allow the iris16
+cores to communicate with each other, two registers are devoted in each core
+for each other core. They are mapped in each core in the same layout to
+simplify the design. The following tables show how the mappings are laid out.
+
+In the following table, the iris20 register is broken up into four different
+parts (mapping a 64-bit register into a 16-bit memory space!). This is done in
+a little endian design. In these cases the addresses of these exposed registers
+are always the same for the sake of simplicity. It should also be noted that
+these registers can still be used internally by the iris20 core. Just be
+careful not to cause unintended side effects in the process.
+
+.iris16 views of the iris20 exposed registers in IO space
+[options="header,footer"]
+|======================================================================
+| Core ID | Start Address | End Address (inclusive) | iris20 Register 
+| 0 	  | 0x0003        | 0x0006                  | r15
+| 0       | 0x0007        | 0x000A                  | r16
+| 1 	  | 0x0003        | 0x0006                  | r17
+| 1       | 0x0007        | 0x000A                  | r18
+| 2 	  | 0x0003        | 0x0006                  | r19
+| 2       | 0x0007        | 0x000A                  | r20
+| 3 	  | 0x0003        | 0x0006                  | r21
+| 3       | 0x0007        | 0x000A                  | r22
+|======================================================================
+
+To facilitate communication across the different iris16 cores, some of the
+registers of each core is exposed via memory mapping to the other cores. The
+mapping is always the same as well regardless of core. If the destination core
+is the same as the source core then the operations are the equivalent of
+performing a move instruction. The following table details the memory addresses
+and corresponding registers. Regardless of which core you are invoking from the
+memory map stays the same. This means that each core is aware of its own core
+id!
+
+Also, each core has access to two registers of another core. They are always
+the same too!
+
+
+.iris16 core to core mapped registers and addresses
+[options="header,footer"]
+|========================================
+| Core ID | IO Address | Mapped Register
+| 0       | 0x000B     | r128
+| 0       | 0x000C     | r129
+| 1       | 0x000D     | r130
+| 1       | 0x000E     | r131
+| 2       | 0x000F     | r132
+| 2       | 0x0010     | r133
+| 3       | 0x0011     | r134
+| 3       | 0x0012     | r135
+|========================================
+
