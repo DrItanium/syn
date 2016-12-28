@@ -141,6 +141,8 @@ bool resolve_op(dynamicop* dop);
 %token ARITHMETIC_MACRO_OP_DECR
 %token ARITHMETIC_MACRO_OP_HALVE
 %token ARITHMETIC_MACRO_OP_DOUBLE
+%token MOVE_OP_LOAD_OFFSET MOVE_OP_STORE_OFFSET
+%token MOVE_OP_LOAD_IO_OFFSET MOVE_OP_STORE_IO_OFFSET
 
 %token <rval> REGISTER
 %token <ival> IMMEDIATE
@@ -280,6 +282,14 @@ move_op:
        mop_single REGISTER {
          iris16::curri.reg0 = $2;
        } |
+	   mop_offset REGISTER REGISTER IMMEDIATE {
+	   		if ($4 > 255) {
+				iris16error("immediate value offset out of range!");
+			}
+            iris16::curri.reg0 = $2;
+            iris16::curri.reg1 = $3;
+			iris16::curri.reg2 = $4;
+	   } |
        MOVE_OP_PUSHIMMEDIATE lexeme { 
          iris16::curri.op = (byte)iris16::MoveOp::PushImmediate;
        } |
@@ -377,6 +387,13 @@ mop_mixed:
    MOVE_OP_STOREIMM { iris16::curri.op = (byte)iris16::MoveOp::Memset; } |
    MOVE_OP_LOADMEM { iris16::curri.op = (byte)iris16::MoveOp::LoadImmediate; } 
    ;
+
+mop_offset:
+	MOVE_OP_STORE_IO_OFFSET { iris16::curri.op = static_cast<byte>(iris16::MoveOp::IOWriteWithOffset); } |
+	MOVE_OP_LOAD_IO_OFFSET { iris16::curri.op = static_cast<byte>(iris16::MoveOp::IOReadWithOffset); } |
+	MOVE_OP_STORE_OFFSET { iris16::curri.op = static_cast<byte>(iris16::MoveOp::StoreWithOffset); } |
+	MOVE_OP_LOAD_OFFSET { iris16::curri.op = static_cast<byte>(iris16::MoveOp::LoadWithOffset); }
+	;
 
 mop_single:
    MOVE_OP_PUSH { iris16::curri.op = (byte)iris16::MoveOp::Push; } |

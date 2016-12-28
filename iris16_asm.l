@@ -53,11 +53,15 @@ omni [a-zA-Z0-9._]
 "ld" { return MOVE_OP_LOAD; }
 "ldi" { return MOVE_OP_LOADMEM; }
 "ldm" { return MOVE_OP_LOADMEM; }
+"ldwo" { return MOVE_OP_LOAD_OFFSET; }
 "ldc" { return MOVE_OP_LOAD_CODE; }
 "st" { return MOVE_OP_STORE; }
 "stc" { return MOVE_OP_STORE_CODE; }
+"stwo" { return MOVE_OP_STORE_OFFSET; }
 "ldio" { return MOVE_OP_LOAD_IO; }
 "stio" { return MOVE_OP_STORE_IO; }
+"ldiowo" { return MOVE_OP_LOAD_IO_OFFSET; }
+"stiowo" { return MOVE_OP_STORE_IO_OFFSET; }
 "memset" { return MOVE_OP_STOREIMM; }
 "j" 		{ return JUMP_OP_UNCONDITIONALIMMEDIATE; }
 "jl" 		{ return JUMP_OP_UNCONDITIONALIMMEDIATELINK; }
