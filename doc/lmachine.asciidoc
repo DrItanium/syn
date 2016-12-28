@@ -1,0 +1,17 @@
+LockStepMachine type 0
+
+A system consisting of 1 iris20 core and 4 iris16 secondary cores. As the
+title of the machine states, it is a system which executes all of its cores in
+a lock step fashion per "cycle". 
+
+The iris20 core is a 64-bit RISC/CISC cpu with 64 registers and 67108864
+(0x4000000) words (64 megawords) worth of RAM. Each word in this core is 64-bits signed. 
+This translate to 512 megabytes worth of ram. Each iris20 word can contain 1
+(64-bit molecule) or 2 (32-bit atom) instructions. It will execute 4
+instructions before yielding clock time to the other 4 cores (each of them
+getting 4 cycles each). 
+
+Communication between these cores is facilitated via memory mapped addresses.
+In the case of iris20 the following memory map exists:
+
+Address | 
