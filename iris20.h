@@ -25,7 +25,7 @@ namespace iris20 {
 		StackSection = 0b10000000,
 		UndefinedSection = 0b11000000,
 		SectionBitsMask = 0b11000000,
-		IOAddressBase = 0xFFFFFFFFFF000000, // way up above everything else, we inject our io space
+		IOAddressBase = 0x7FFFFFFFFF000000, // way up above everything else, we inject our io space
         IOAddressSize = 0x0000000000FFFFFF,
         IOAddressEnd = IOAddressBase + IOAddressSize,
         // builtin addresses

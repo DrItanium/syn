@@ -28,7 +28,13 @@ class IODevice : public Device {
 		virtual bool respondsTo(const std::shared_ptr<IODevice<Data,Address>>& other) const;
 		virtual Address size() const noexcept { return _count; }
 		virtual Address baseAddress() const noexcept { return _base; }
-		virtual Address endAddress() const noexcept { return _base + _count; }
+		virtual Address endAddress() const noexcept { 
+			if (_base == 0) {
+				return _count;
+			} else {
+				return _base + _count;
+			}
+		}
 		virtual Data read(Address targetAddress) = 0;
 		virtual void write(Address targetAddress, Data value) = 0;
 		virtual void initialize() override;

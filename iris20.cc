@@ -7,7 +7,7 @@ namespace iris20 {
 
 
 	//full 64bit addr space
-	Core::Core() noexcept : _controller(0, 0xFFFFFFFFFFFFFFFF) { }
+	Core::Core() noexcept : _controller(0, 0x7FFFFFFFFFFFFFFF) { }
 
 	Core::~Core() { }
 
