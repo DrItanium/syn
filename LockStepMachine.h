@@ -98,10 +98,6 @@ namespace machine {
 			properBaseAddress += 0x4;
 			c.installIODevice(makeRegisterMapping(register1Id, properBaseAddress));
 			properBaseAddress += 0x4;
-			c.installIODevice(iris::makeLambdaDevice<iris16::word, iris16::word>(properBaseAddress, 1, 
-						[this](auto addr) -> auto { return static_cast<iris16::word>(cycles); },
-						[this](auto addr, auto value) { }));
-			properBaseAddress++;
 			register0Id+=2;
 			register1Id+=2;
 			addressStart += memoryLength;
@@ -137,6 +133,14 @@ namespace machine {
 				baseDRegister += 2;
 				properBaseAddress += 0x2;
 			}
+			c.installIODevice(iris::makeLambdaDevice<iris16::word, iris16::word>(properBaseAddress, 1, 
+						[this](auto addr) -> auto { return static_cast<iris16::word>(cycles); },
+						[](auto addr, auto value) { }));
+			properBaseAddress++;
+			c.installIODevice(iris::makeLambdaDevice<iris16::word, iris16::word>(properBaseAddress, 1,
+						[this, index](auto addr) -> auto { return static_cast<iris16::word>(index); },
+						[](auto addr, auto value) { }));
+			properBaseAddress++;
 			++index;
 		}
 		_primary.installDevice(iris::makeLambdaDevice<iris20::word, iris20::word>(addressStart, 1, 

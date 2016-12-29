@@ -65,7 +65,6 @@ namespace iris16 {
 			word readRegister(byte index);
 			virtual bool cycle() override;
 		private:
-			word& getStackPointer() noexcept { return gpr[ArchitectureConstants::StackPointerIndex]; }
 			word& getInstructionPointer() noexcept { return gpr[ArchitectureConstants::InstructionPointerIndex]; }
 			word& getLinkRegister() noexcept { return gpr[ArchitectureConstants::LinkRegisterIndex]; }
 		private:

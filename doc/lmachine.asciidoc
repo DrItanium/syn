@@ -114,6 +114,17 @@ instance, core 3's r134 and r135 are mapped into its own io memory space at
 0x0011 and 0x0012 respectively. This design also allows messages to be passed
 from the core to itself. 
 
+Each iris16 core also contains its cycle count and core id in its own io space.
+
+.iris16 core io constants
+[options="header,footer"]
+|========================================
+| IO Address | Description
+| 0x001B     | Number of individual cycles per machine cycle
+| 0x001C     | Current Core ID 
+|========================================
+
+
 iris20's four cycles per machine cycle
 --------------------------------------
 

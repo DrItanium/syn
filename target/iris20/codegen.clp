@@ -16,10 +16,6 @@
              (?id)
              (enum->int ?id
                         ?*iris20-enumOperation*))
-(deffunction MAIN::system-call->int
-             (?id)
-             (enum->int ?id
-                        ?*iris20-enumSystemCalls*))
 
 (defmethod MAIN::iris20-encode-Operation
   ((?value INTEGER)
@@ -792,7 +788,6 @@
      BranchConditionalTrueRegisterLink
      BranchConditionalFalseRegisterLink)
 (map build-specific-operation-three-arg
-     SystemCall
      Add
      Sub
      Mul
@@ -1022,29 +1017,6 @@
                                     ?result
                                     ?self:src1)))
                     ?result)
-(defmethod MAIN::op:systemcall
-  ((?destination SYMBOL)
-   (?source0 INTEGER)
-   (?source1 INTEGER))
-  (op:systemcall (system-call->int ?destination)
-                 ?source0
-                 ?source1))
-
-(deffunction MAIN::sys-terminate
-             ()
-             (op:systemcall Terminate
-                            (register:r0)
-                            (register:r0)))
-(deffunction MAIN::sys-getc
-             (?destination)
-             (op:systemcall GetC
-                            ?destination
-                            (register:r0)))
-(deffunction MAIN::sys-putc
-             (?source)
-             (op:systemcall PutC
-                            ?source
-                            (register:r0)))
 ;--------------------------------------------------------------------------------
 
 (defgeneric MAIN::func)

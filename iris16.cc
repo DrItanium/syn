@@ -179,14 +179,14 @@ namespace iris16 {
 					data.set(destinationRegister(), getImmediate());
 					break;
 				case MoveOp::Push:
-					stack[++getStackPointer()] = destinationRegister();
+					stack[++destinationRegister()] = source0Register();
 					break;
 				case MoveOp::PushImmediate:
-					stack[++getStackPointer()] = getImmediate();
+					stack[++destinationRegister()] = getImmediate();
 					break;
 				case MoveOp::Pop:
-					destinationRegister() = stack[getStackPointer()];
-					--getStackPointer();
+					destinationRegister() = stack[source0Register()];
+					--source0Register();
 					break;
 				case MoveOp::LoadCode:
 					codeStorage = instruction[destinationRegister()];

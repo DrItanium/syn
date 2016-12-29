@@ -263,9 +263,8 @@ aop_single_macro:
 move_op:
 	   mop_reg TWO_REGISTERS |
        mop_mixed DESTINATION_REGISTER lexeme |
-       mop_single ONE_REGISTER |
 	   mop_offset TWO_REGISTERS_WITH_OFFSET |
-       MOVE_OP_PUSHIMMEDIATE lexeme { 
+       MOVE_OP_PUSHIMMEDIATE DESTINATION_REGISTER lexeme { 
          iris16::curri.op = (byte)iris16::MoveOp::PushImmediate;
        } |
 	   MOVE_OP_STORE_CODE THREE_REGISTERS {
@@ -326,6 +325,8 @@ mop_reg:
    MOVE_OP_SWAP { iris16::curri.op = (byte)iris16::MoveOp::Swap; } |
    MOVE_OP_LOAD { iris16::curri.op = (byte)iris16::MoveOp::Load; } |
    MOVE_OP_STORE { iris16::curri.op = (byte)iris16::MoveOp::Store; } |
+   MOVE_OP_PUSH { iris16::curri.op = (byte)iris16::MoveOp::Push; } |
+   MOVE_OP_POP { iris16::curri.op = (byte)iris16::MoveOp::Pop; }
    ;
 
 mop_mixed:
@@ -341,10 +342,6 @@ mop_offset:
 	MOVE_OP_LOAD_OFFSET { iris16::curri.op = static_cast<byte>(iris16::MoveOp::LoadWithOffset); }
 	;
 
-mop_single:
-   MOVE_OP_PUSH { iris16::curri.op = (byte)iris16::MoveOp::Push; } |
-   MOVE_OP_POP { iris16::curri.op = (byte)iris16::MoveOp::Pop; } 
-   ;
 
 jop_reg_imm:
    JUMP_OP_UNCONDITIONALIMMEDIATELINK { iris16::curri.op = (byte)iris16::JumpOp::UnconditionalImmediateLink; } |
