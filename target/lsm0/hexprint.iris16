@@ -1,0 +1,58 @@
+; Routine for printing the contents of a register!
+
+@code
+@label TRANSLATE_LOWER4_TO_HEX
+	; translate the lower 4 bits of the register
+	set r0 0x000F
+	and r32 r32 r0
+	set r0 HEX_PRINT_TRANSLATION_TABLE
+	add r32 r32 r0
+	ld r64 r32
+	jr lr
+
+@label PRINT_REGISTER_AS_HEX 
+	   push sp lr
+	   shri r96 r32 12
+	   shri r97 r32 8
+	   shri r98 r32 4
+	   move r99 r32
+	   ; now do the other stuffs
+	   move r32 r96
+	   jl PRINT_HEX_CHARACTER_FROM_LOWER4
+	   move r32 r97
+	   jl PRINT_HEX_CHARACTER_FROM_LOWER4
+	   move r32 r98
+	   jl PRINT_HEX_CHARACTER_FROM_LOWER4
+	   move r32 r99
+	   jl PRINT_HEX_CHARACTER_FROM_LOWER4
+	   pop lr sp
+	   jr lr
+@label PRINT_HEX_CHARACTER_FROM_LOWER4
+	push sp lr
+	jl TRANSLATE_LOWER4_TO_HEX
+	pop lr sp
+	move r32 r64
+@label PRINT_CHARACTER
+	set r0 0x0002
+	stio r0 r32
+	jr lr
+@data
+; in the last page, first section, we have the ascii table
+@org 0xF100
+@label HEX_PRINT_TRANSLATION_TABLE
+@declare 0x30
+@declare 0x31
+@declare 0x32
+@declare 0x33
+@declare 0x34
+@declare 0x35
+@declare 0x36
+@declare 0x37
+@declare 0x38
+@declare 0x39
+@declare 0x41
+@declare 0x42
+@declare 0x43
+@declare 0x44
+@declare 0x45
+@declare 0x46
