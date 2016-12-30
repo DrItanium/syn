@@ -3,41 +3,52 @@
 @code
 
 @label PRINT_CODE_AS_HEX
-	   push sp lr
-	   push sp r32				; save r32 to the stack since it is the lower half
-	   move r32 r33				; r33 is now r32 since it is the upper half, needs to be printed first
-	   jl PRINT_REGISTER_AS_HEX ; Perform the print
-	   pop r32 sp				; restore r32
-	   jl PRINT_REGISTER_AS_HEX ; printout the lower half
-	   pop lr sp
-	   jr lr
+	push sp lr
+	push sp r32				; save r32 to the stack since it is the lower half
+	move r32 r33				; r33 is now r32 since it is the upper half, needs to be printed first
+	jl PRINT_REGISTER_AS_HEX ; Perform the print
+	pop r32 sp				; restore r32
+	jl PRINT_REGISTER_AS_HEX ; printout the lower half
+	pop lr sp
+	jr lr
 
 @label TRANSLATE_LOWER4_TO_HEX
 	; translate the lower 4 bits of the register
-	set r0 0x000F
-	and r32 r32 r0
-	set r0 HEX_PRINT_TRANSLATION_TABLE
-	add r32 r32 r0
+	push sp r96
+	set r96 0x000F
+	and r32 r32 r96
+	set r96 HEX_PRINT_TRANSLATION_TABLE
+	add r32 r32 r96
 	ld r64 r32
+	pop r96 sp
 	jr lr
 
 @label PRINT_REGISTER_AS_HEX 
-	   push sp lr
-	   shri r96 r32 12
-	   shri r97 r32 8
-	   shri r98 r32 4
-	   move r99 r32
-	   ; now do the other stuffs
-	   move r32 r96
-	   jl PRINT_HEX_CHARACTER_FROM_LOWER4
-	   move r32 r97
-	   jl PRINT_HEX_CHARACTER_FROM_LOWER4
-	   move r32 r98
-	   jl PRINT_HEX_CHARACTER_FROM_LOWER4
-	   move r32 r99
-	   jl PRINT_HEX_CHARACTER_FROM_LOWER4
-	   pop lr sp
-	   jr lr
+	push sp lr
+	push sp r96
+	push sp r97
+	push sp r98
+	push sp r99
+	shri r96 r32 12
+	shri r97 r32 8
+	shri r98 r32 4
+	move r99 r32
+	; now do the other stuffs
+	move r32 r96
+	jl PRINT_HEX_CHARACTER_FROM_LOWER4
+	move r32 r97
+	jl PRINT_HEX_CHARACTER_FROM_LOWER4
+	move r32 r98
+	jl PRINT_HEX_CHARACTER_FROM_LOWER4
+	move r32 r99
+	jl PRINT_HEX_CHARACTER_FROM_LOWER4
+	pop r99 sp
+	pop r98 sp
+	pop r97 sp
+	pop r96 sp
+	pop lr sp
+	jr lr
+
 @label PRINT_HEX_CHARACTER_FROM_LOWER4
 	push sp lr
 	jl TRANSLATE_LOWER4_TO_HEX
@@ -48,40 +59,68 @@
 	set r32 0xa
 	j PRINT_CHARACTER
 @label PRINT_CHARACTER
-	set r0 0x0002
-	stio r0 r32
-	jr lr
+	set r33 0x0002
+	j IO_WRITE
+@label TERMINATE_EXECUTION
+	set r33 0x0000
+	j IO_WRITE
 @label READ_CHARACTER
-	set r0 0x0003
-	ldio r64 r0
-	jr lr
+	set r32 0x0003
+	j IO_READ
 @label HEX_CHAR_TO_NUMBER
 	; convert a given value to binary hex
-	set r0 0x0030
-	set r1 0x000F
-	set r2 0x00FF
-	and r32 r32 r2		; make sure we're not overflowed
-	sub r32 r32 r0		; subtract 0x30
-	and r64 r32 r1		; get the lowest 4 bits
+	push sp r96
+	set r96 0x00FF
+	and r32 r32 r97		; make sure we're not overflowed
+	set r96 HEX_PRINT_TRANSLATION_TABLE
+	add r32 r32 r96		; add the base translation table offset
+	ld r64 r32			; Load the corresponding offset from memory
+	pop r96 sp
+	jr lr
+
+@label IO_READ
+	ldio r64 r32
+	jr lr
+@label IO_WRITE
+	stio r33 r32
 	jr lr
 
 @data
 ; in the last page, first section, we have the ascii table
 @org 0xF100
-@label HEX_PRINT_TRANSLATION_TABLE
-@declare 0x30
-@declare 0x31
-@declare 0x32
-@declare 0x33
-@declare 0x34
-@declare 0x35
-@declare 0x36
-@declare 0x37
-@declare 0x38
-@declare 0x39
-@declare 0x41
-@declare 0x42
-@declare 0x43
-@declare 0x44
-@declare 0x45
-@declare 0x46
+	@label HEX_PRINT_TRANSLATION_TABLE
+	@declare 0x30
+	@declare 0x31
+	@declare 0x32
+	@declare 0x33
+	@declare 0x34
+	@declare 0x35
+	@declare 0x36
+	@declare 0x37
+	@declare 0x38
+	@declare 0x39
+	@declare 0x41
+	@declare 0x42
+	@declare 0x43
+	@declare 0x44
+	@declare 0x45
+	@declare 0x46
+	; 0xF110
+@org 0xF130
+	@declare 0x0
+	@declare 0x1
+	@declare 0x2
+	@declare 0x3
+	@declare 0x4
+	@declare 0x5
+	@declare 0x6
+	@declare 0x7
+	@declare 0x8
+	@declare 0x9
+@org 0xF141
+	@declare 0xA
+	@declare 0xB
+	@declare 0xC
+	@declare 0xD
+	@declare 0xE
+	@declare 0xF
