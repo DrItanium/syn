@@ -100,7 +100,14 @@ namespace iris16 {
 			if (result == translationTable.end()) {
 				makeIllegalOperationMessage("compare code");
 			} else {
-				performOperation(_compare, result->second);
+				typename decltype(_compare)::Operation op;
+				bool immediate = false;
+				std::tie(op, immediate) = result->second;
+				auto result = _compare.performOperation(op, source0Register(), immediate ? getHalfImmediate() : source1Register()) != 0;
+				predicateResult() = result;
+				if (getPredicateResult() != getPredicateInverse()) {
+					predicateInverseResult() = !result;
+				}
 			}
 		} else if (group == InstructionGroup::Jump) {
 			// ifthenelse?, conditional?, iffalse?, immediate?, link?
@@ -138,22 +145,22 @@ namespace iris16 {
 						getLinkRegister() = temporaryAddress;
 						break;
 					case JumpOp::ConditionalTrueJumpLinkRegister:
-						cond = destinationRegister() != 0;
+						cond = predicateResult();
 						getInstructionPointer() = cond ? getLinkRegister() : getInstructionPointer() + 1;
 						break;
 					case JumpOp::ConditionalTrueJumpLinkRegisterLink:
 						temporaryAddress = getInstructionPointer() + 1;
-						cond = destinationRegister() != 0;
+						cond = predicateResult();
 						getInstructionPointer() = cond ? getLinkRegister() : getInstructionPointer() + 1;
 						getLinkRegister() = cond ? getInstructionPointer() + 1 : getLinkRegister();
 						break;
 					case JumpOp::ConditionalFalseJumpLinkRegister:
-						cond = destinationRegister() == 0;
+						cond = !predicateResult();
 						getInstructionPointer() = cond ? getLinkRegister() : getInstructionPointer() + 1;
 						break;
 					case JumpOp::ConditionalFalseJumpLinkRegisterLink:
 						temporaryAddress = getInstructionPointer() + 1;
-						cond = destinationRegister() == 0;
+						cond = !predicateResult() ;
 						getInstructionPointer() = cond ? getLinkRegister() : getInstructionPointer() + 1;
 						getLinkRegister() = cond ? getInstructionPointer() + 1 : getLinkRegister();
 						break;
@@ -168,8 +175,8 @@ namespace iris16 {
 				advanceIp = false;
 				auto ip = getInstructionPointer();
 				if (conditional) {
-					auto dest = destinationRegister();
-					cond = (iffalse ? (dest == 0) : (dest != 0));
+					auto dest = predicateResult();
+					cond = (iffalse ? dest : !dest);
 					if (ifthenelse) {
 						newAddr = gpr[cond ? getSource0() : getSource1()];
 					} else {
@@ -261,9 +268,71 @@ namespace iris16 {
 					makeIllegalOperationMessage("move code");
 					break;
 			}
+		} else if (group == InstructionGroup::ConditionalRegister) {
+			static std::map<ConditionRegisterOp, UnitDescription<PredicateComparator>> translationTable = {
+				{ ConditionRegisterOp::CRAnd, makeDesc<PredicateComparator>(PredicateComparator::Operation::BinaryAnd, false) },
+				{ ConditionRegisterOp::CROr, makeDesc<PredicateComparator>(PredicateComparator::Operation::BinaryOr, false) },
+				{ ConditionRegisterOp::CRNand, makeDesc<PredicateComparator>(PredicateComparator::Operation::BinaryNand, false) },
+				{ ConditionRegisterOp::CRNor, makeDesc<PredicateComparator>(PredicateComparator::Operation::BinaryNor, false) },
+				{ ConditionRegisterOp::CRXor, makeDesc<PredicateComparator>(PredicateComparator::Operation::BinaryXor, false) },
+				{ ConditionRegisterOp::CRNot, makeDesc<PredicateComparator>(PredicateComparator::Operation::BinaryXor, false) },
+			};
+			auto op = static_cast<ConditionRegisterOp>(getOperation());
+			auto result = translationTable.find(op);
+			if (result  == translationTable.end()) {
+				word tempStorage = 0u;
+				switch(op) {
+					case ConditionRegisterOp::CRSwap:
+						iris::swap<bool>(predicateResult(), predicateInverseResult());
+						break;
+					case ConditionRegisterOp::CRMove:
+						predicateResult() = predicateInverseResult();
+						break;
+					case ConditionRegisterOp::SaveCRs:
+						destinationRegister() = savePredicateRegisters(getImmediate());
+						break;
+					case ConditionRegisterOp::RestoreCRs:
+						restorePredicateRegisters(destinationRegister(), getImmediate());
+						break;
+					default:
+						throw iris::Problem("Defined but unimplemented condition register operation!");
+				}
+			} else {
+				typename decltype(_pcompare)::Operation pop;
+				bool immediate = false;
+				std::tie(pop, immediate) = result->second;
+				auto result = _pcompare.performOperation(pop, predicateSource0(), predicateSource1());
+				predicateResult() = result;
+				if (getPredicateResult() != getPredicateInverse()) {
+					predicateInverseResult() = !result;
+				}
+			}
 		} else {
 			makeProblem("Illegal instruction group", getGroup());
 		}
+	}
+
+	void Core::restorePredicateRegisters(word input, word mask) noexcept {
+		tryRestorePredicateRegisterBit<15>(input, mask);
+		tryRestorePredicateRegisterBit<14>(input, mask);
+		tryRestorePredicateRegisterBit<13>(input, mask);
+		tryRestorePredicateRegisterBit<12>(input, mask);
+		tryRestorePredicateRegisterBit<11>(input, mask);
+		tryRestorePredicateRegisterBit<10>(input, mask);
+		tryRestorePredicateRegisterBit<9>(input, mask);
+		tryRestorePredicateRegisterBit<8>(input, mask);
+		tryRestorePredicateRegisterBit<7>(input, mask);
+		tryRestorePredicateRegisterBit<6>(input, mask);
+		tryRestorePredicateRegisterBit<5>(input, mask);
+		tryRestorePredicateRegisterBit<4>(input, mask);
+		tryRestorePredicateRegisterBit<3>(input, mask);
+		tryRestorePredicateRegisterBit<2>(input, mask);
+		tryRestorePredicateRegisterBit<1>(input, mask);
+		tryRestorePredicateRegisterBit<0>(input, mask);
+	}
+
+	word Core::savePredicateRegisters(word mask) noexcept {
+		return auto_trySetPredicateRegisterBit<15>(mask);
 	}
 
 	enum class Segment  {
@@ -329,6 +398,9 @@ namespace iris16 {
 					}));
 		// getc and putc
 		_io.install(std::make_shared<iris::StandardInputOutputDevice<word>>(1));
+		for (auto i = 0; i < _cr.getSize(); ++i) {
+			_cr[i] = false;
+		}
 	}
 
 	void Core::shutdown() {
@@ -352,5 +424,9 @@ namespace iris16 {
 
 	word Core::readRegister(byte index) {
 		return gpr.read(index);
+	}
+
+	bool& Core::getPredicateRegister(byte index) {
+		return _cr[index];
 	}
 }

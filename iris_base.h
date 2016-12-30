@@ -324,83 +324,115 @@ inline T rem(T numerator, T denominator) {
 		return numerator % denominator;
 	}
 }
-template<typename T>
-inline constexpr bool eq(T a, T b) noexcept {
-	return a == b;
+template<typename T, typename R = bool>
+inline constexpr R eq(T a, T b) noexcept {
+	return static_cast<R>(a == b);
 }
 
-template<typename T>
-inline constexpr bool neq(T a, T b) noexcept {
-	return a != b;
+template<typename T, typename R = bool>
+inline constexpr R neq(T a, T b) noexcept {
+	return static_cast<R>(a != b);
 }
 
-template<typename T>
-inline constexpr bool lt(T a, T b) noexcept {
-	return a < b;
+template<typename T, typename R = bool>
+inline constexpr R lt(T a, T b) noexcept {
+	return static_cast<R>(a < b);
 }
 
-template<typename T>
-inline constexpr bool gt(T a, T b) noexcept {
-	return a > b;
+template<typename T, typename R = bool>
+inline constexpr R gt(T a, T b) noexcept {
+	return static_cast<R>(a > b);
 }
 
-template<typename T>
-inline constexpr bool le(T a, T b) noexcept {
-	return a <= b;
+template<typename T, typename R = bool>
+inline constexpr R le(T a, T b) noexcept {
+	return static_cast<R>(a <= b);
 }
 
-template<typename T>
-inline constexpr bool ge(T a, T b) noexcept {
-	return a >= b;
+template<typename T, typename R = bool>
+inline constexpr R ge(T a, T b) noexcept {
+	return static_cast<R>(a >= b);
 }
 
-template<typename T>
-inline constexpr T shiftLeft(T a, T b) noexcept {
-	return a << b;
+template<typename T, typename R = T>
+inline constexpr R shiftLeft(T a, T b) noexcept {
+	return static_cast<R>(a << b);
 }
 
-template<typename T>
-inline constexpr T shiftRight(T a, T b) noexcept {
-	return a >> b;
+template<typename T, typename R = T>
+inline constexpr R shiftRight(T a, T b) noexcept {
+	return static_cast<R>(a >> b);
 }
 
-template<typename T>
-inline constexpr T binaryAnd(T a, T b) noexcept {
-	return a & b;
+template<typename T, typename R = T>
+inline constexpr R binaryAnd(T a, T b) noexcept {
+	return static_cast<R>(a & b);
 }
 
-template<typename T>
-inline constexpr T binaryOr(T a, T b) noexcept {
-	return a | b;
+template<>
+inline constexpr bool binaryAnd<bool, bool>(bool a, bool b) noexcept {
+	return a && b;
 }
 
-template<typename T>
-inline constexpr T binaryNot(T a) noexcept {
-	return ~a;
+
+
+template<typename T, typename R = T>
+inline constexpr R binaryOr(T a, T b) noexcept {
+	return static_cast<R>(a | b);
 }
 
-template<typename T>
-inline constexpr T binaryXor(T a, T b) noexcept {
-	return a ^ b;
+template<>
+inline constexpr bool binaryOr<bool, bool>(bool a, bool b) noexcept {
+	return a || b;
 }
 
-template<typename T>
-inline constexpr T binaryNand(T a, T b) noexcept {
-	return ~(a & b);
+template<typename T, typename R = T>
+inline constexpr R binaryNot(T a) noexcept {
+	return static_cast<R>(~a);
 }
 
-template<typename T>
-inline constexpr T circularShiftLeft(T value, T shift) noexcept {
+template<>
+inline constexpr bool binaryNot<bool, bool>(bool a) noexcept {
+	return !a;
+}
+
+template<typename T, typename R = T>
+inline constexpr R binaryXor(T a, T b) noexcept {
+	return static_cast<R>(a ^ b);
+}
+
+template<typename T, typename R = T>
+inline constexpr R binaryNand(T a, T b) noexcept {
+	return static_cast<R>(~(a & b));
+}
+
+template<>
+inline constexpr bool binaryNand(bool a, bool b) noexcept {
+	return !(a && b);
+}
+
+template<typename T, typename R = T>
+inline constexpr R binaryNor(T a, T b) noexcept {
+	return ~(a | b);
+}
+
+template<>
+inline constexpr bool binaryNor(bool a, bool b) noexcept {
+	return !(a || b);
+}
+
+template<typename T, typename R = T>
+inline constexpr R circularShiftLeft(T value, T shift) noexcept {
     constexpr T width = (CHAR_BIT * sizeof(T)) - 1;
     // taken from the wikipedia entry on circular shifts
-    return (value << shift) | (value >> ((-shift) & width));
+    return static_cast<R>((value << shift) | (value >> ((-shift) & width)));
 }
 
-template<typename T>
-inline constexpr T circularShiftRight(T value, T shift) noexcept {
+template<typename T, typename R = T>
+inline constexpr R circularShiftRight(T value, T shift) noexcept {
     constexpr T width = (CHAR_BIT * sizeof(T)) - 1;
     // taken from the wikipedia entry on circular shifts
-    return (value >> shift) | (value << ((-shift) & width));
+	return static_cast<R>( (value >> shift) | (value << ((-shift) & width)));
 }
 
 template<typename T, T index>

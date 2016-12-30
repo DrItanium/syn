@@ -100,10 +100,11 @@ class ALU {
         }
 };
 
-template<typename Word>
+template<typename Word, typename Return = Word>
 class Comparator {
     public:
 		using WordType = Word;
+		using ReturnType = Return;
         enum class Operation {
             Eq,
             Neq,
@@ -121,47 +122,93 @@ class Comparator {
             ShiftRight,
             CircularShiftLeft,
             CircularShiftRight,
+			BinaryNor,
             Count,
         };
     public:
         Comparator() { }
         virtual ~Comparator() { }
-        inline Word performOperation(Operation op, Word a, Word b) const {
+        inline Return performOperation(Operation op, Word a, Word b) const {
             switch(op) {
                 case Operation::Eq:
-                    return iris::eq<Word>(a, b);
+                    return iris::eq<Word, Return>(a, b);
                 case Operation::Neq:
-                    return iris::neq<Word>(a, b);
+                    return iris::neq<Word, Return>(a, b);
                 case Operation::LessThan:
-                    return iris::lt<Word>(a, b);
+                    return iris::lt<Word, Return>(a, b);
                 case Operation::GreaterThan:
-                    return iris::gt<Word>(a, b);
+                    return iris::gt<Word, Return>(a, b);
                 case Operation::LessThanOrEqualTo:
-                    return iris::le<Word>(a, b);
+                    return iris::le<Word, Return>(a, b);
                 case Operation::GreaterThanOrEqualTo:
-                    return iris::ge<Word>(a, b);
+                    return iris::ge<Word, Return>(a, b);
                 case Operation::BinaryAnd:
-                    return iris::binaryAnd<Word>(a, b);
+                    return iris::binaryAnd<Word, Return>(a, b);
                 case Operation::BinaryOr:
-                    return iris::binaryOr<Word>(a, b);
+                    return iris::binaryOr<Word, Return>(a, b);
                 case Operation::UnaryNot:
-                    return iris::binaryNot<Word>(a);
+                    return iris::binaryNot<Word, Return>(a);
                 case Operation::BinaryXor:
-                    return iris::binaryXor<Word>(a, b);
+                    return iris::binaryXor<Word, Return>(a, b);
                 case Operation::BinaryNand:
-                    return iris::binaryNand<Word>(a, b);
+                    return iris::binaryNand<Word, Return>(a, b);
                 case Operation::ShiftLeft:
-                    return iris::shiftLeft<Word>(a, b);
+                    return iris::shiftLeft<Word, Return>(a, b);
                 case Operation::ShiftRight:
-                    return iris::shiftRight<Word>(a, b);
+                    return iris::shiftRight<Word, Return>(a, b);
+				case Operation::BinaryNor:
+					return iris::binaryNor<Word, Return>(a, b);
                 case Operation::CircularShiftLeft:
-                    return iris::circularShiftLeft<Word>(a, b);
+                    return iris::circularShiftLeft<Word, Return>(a, b);
                 case Operation::CircularShiftRight:
-                    return iris::circularShiftRight<Word>(a, b);
+                    return iris::circularShiftRight<Word, Return>(a, b);
                 default:
                     throw iris::Problem("Undefined Comparison operation!");
             }
         }
+};
+
+template<>
+class Comparator<bool, bool> {
+	public:
+		using WordType = bool;
+		using ReturnType = bool;
+		enum class Operation {
+			Eq,
+			Neq,
+			BinaryAnd,
+			BinaryOr,
+			UnaryNot,
+			BinaryXor,
+			BinaryNand,
+			BinaryNor,
+			Count,
+		};
+	public:
+		Comparator() { }
+		virtual ~Comparator() { }
+		inline bool performOperation(Operation op, bool a, bool b) const {
+			switch(op) {
+				case Operation::Eq:
+					return iris::eq<bool>(a, b);
+				case Operation::Neq:
+					return iris::neq<bool>(a, b);
+				case Operation::BinaryAnd:
+					return iris::binaryAnd<bool>(a, b);
+				case Operation::BinaryOr:
+					return iris::binaryOr<bool>(a, b);
+				case Operation::BinaryXor:
+					return iris::binaryXor<bool>(a, b);
+				case Operation::UnaryNot:
+					return iris::binaryNot<bool>(a);
+				case Operation::BinaryNand:
+					return iris::binaryNand<bool>(a, b);
+				case Operation::BinaryNor:
+					return iris::binaryNor<bool>(a, b);
+				default:
+					throw iris::Problem("Undefined boolean comparison operation!");
+			}
+		}
 };
 
 template<typename Word, typename Address = Word>

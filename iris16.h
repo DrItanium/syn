@@ -15,6 +15,7 @@ namespace iris16 {
 		RegisterCount = 256,
 		AddressMax = 0xFFFF,
 		RegisterMax = 0xFF,
+		ConditionRegisterCount = 16,
 		StackPointerIndex = RegisterCount - 1,
 		MaxGroups = 0b00000111,
 		MaxOperations = 0b00011111,
@@ -43,6 +44,8 @@ namespace iris16 {
 	using RegisterFile = WordMemorySpace<ArchitectureConstants::RegisterCount>;
 	using IODevice = iris::IODevice<word>;
 	using LambdaIODevice = iris::LambdaIODevice<word>;
+	using PredicateRegisterFile = iris::FixedSizeLoadStoreUnit<bool, byte, 16>;
+	using PredicateComparator = iris::Comparator<bool, bool>;
 	class Core : public iris::Core {
 		public:
 			Core() noexcept;
@@ -65,6 +68,7 @@ namespace iris16 {
 		private:
 			word& getInstructionPointer() noexcept { return _ip; }
 			word& getLinkRegister() noexcept { return _lr; }
+			bool& getPredicateRegister(byte index);
 		private:
 			void dispatch();
             inline byte getDestination() const noexcept { return decodeDestination(current); }
@@ -74,9 +78,17 @@ namespace iris16 {
             inline word getImmediate() const noexcept { return decodeImmediate(current); }
             inline byte getOperation() const noexcept { return decodeOperation(current); }
             inline byte getGroup() const noexcept { return decodeGroup(current); }
+			inline byte getPredicateResult() const noexcept { return decodePredicateResult(current); }
+			inline byte getPredicateInverse() const noexcept { return decodePredicateInverseResult(current); }
+			inline byte getPredicateSource0() const noexcept { return decodePredicateSource0(current); }
+			inline byte getPredicateSource1() const noexcept { return decodePredicateSource1(current); }
 			inline word& destinationRegister() noexcept { return gpr[getDestination()]; }
 			inline word& source0Register() noexcept { return gpr[getSource0()]; }
 			inline word& source1Register() noexcept { return gpr[getSource1()]; }
+			inline bool& predicateResult() noexcept { return getPredicateRegister(getPredicateResult()); }
+			inline bool& predicateInverseResult() noexcept { return getPredicateRegister(getPredicateInverse()); }
+			inline bool& predicateSource0() noexcept { return getPredicateRegister(getPredicateSource0()); }
+			inline bool& predicateSource1() noexcept { return getPredicateRegister(getPredicateSource1()); }
 
 		private:
 			template<typename Unit>
@@ -90,6 +102,47 @@ namespace iris16 {
 				std::tie(op, immediate) = tuple;
 				performOperation(unit, op, immediate);
 			}
+			template<word index>
+			word setPredicateRegisterBit(word input) noexcept {
+				static_assert(index < 16, "Provided predicate register is out of range!");
+				return iris::setBit<word, index>(input, getPredicateRegister(index));
+			}
+			template<word index>
+			word trySetPredicateRegisterBit(word input, word mask) noexcept {
+				static_assert(index < 16, "Provided predicate register is out of range!");
+				if (iris::getBit<word, index>(mask)) {
+					return setPredicateRegisterBit<index>(input);
+				} else {
+					return input;
+				}
+			}
+			template<word index> 
+			struct PredicateSaverInstantiator {
+				static PredicateSaverInstantiator<index - 1> next;
+				static word invoke(Core* c, word mask) {
+					return c->trySetPredicateRegisterBit<index>(next.invoke(c, mask), mask);
+				}
+			};
+			template<word index>
+				word auto_trySetPredicateRegisterBit(word mask) {
+					return PredicateSaverInstantiator<index>::invoke(this, mask);
+				}
+
+			template<word index>
+			void restorePredicateRegisterBit(word input) {
+				static_assert(index < 16, "Provided predicate register is out of range!");
+				getPredicateRegister(index) = iris::getBit<word, index>(input);
+			}
+			template<word index>
+			void tryRestorePredicateRegisterBit(word input, word mask) {
+				static_assert(index < 16, "Provided predicate register is out of range!");
+				if (iris::getBit<word, index>(mask)) {
+					restorePredicateRegisterBit<index>(input);
+				}
+			}
+
+			void restorePredicateRegisters(word input, word mask) noexcept;
+			word savePredicateRegisters(word mask) noexcept;
 
 		private:
 			bool execute = true,
@@ -104,7 +157,15 @@ namespace iris16 {
 			raw_instruction current = 0;
 			word _ip = 0;
 			word _lr = 0;
+			PredicateRegisterFile _cr;
+			PredicateComparator _pcompare;
 	};
+	template<> 
+		struct Core::PredicateSaverInstantiator<0> {
+			static word invoke(Core* c, word mask) {
+				return c->trySetPredicateRegisterBit<0>(0, mask);
+			}
+		};
 	template<typename Data, typename Address>
 	class ExposedCoreDataMemory : public iris::IODevice<Data, Address> {
 		public:

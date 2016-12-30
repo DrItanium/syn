@@ -34,12 +34,28 @@
                  (mask 0x000000F8)
                  (shift 3)
                  (output-type byte))
+          (field (name PredicateResult)
+                 (mask 0x00000F00)
+                 (shift 8)
+                 (output-type byte))
+          (field (name PredicateInverseResult)
+                 (mask 0x0000F000)
+                 (shift 12)
+                 (output-type byte))
+          (field (name PredicateSource0)
+                 (mask 0x000F0000)
+                 (shift 16)
+                 (output-type byte))
+          (field (name PredicateSource1)
+                 (mask 0x00F00000)
+                 (shift 20)
+                 (output-type byte))
           (enum (name InstructionGroup)
                 (children Arithmetic
                           Move
                           Jump
                           Compare
-                          Misc)
+                          ConditionalRegister)
                 (cast-to byte)
                 (max-size "ArchitectureConstants::MaxGroups"))
           (enum (cast-to byte)
@@ -56,6 +72,8 @@
                           BinaryOr
                           BinaryNot
                           BinaryXor
+                          BinaryNand
+                          BinaryNor
                           AddImmediate
                           SubImmediate
                           MulImmediate
@@ -128,5 +146,19 @@
                           LessThanOrEqualTo
                           LessThanOrEqualToImm
                           GreaterThanOrEqualTo
-                          GreaterThanOrEqualToImm)))
+                          GreaterThanOrEqualToImm))
+          (enum (cast-to byte)
+                (max-size "ArchitectureConstants::MaxOperations")
+                (name ConditionRegisterOp)
+                (children SaveCRs
+                          RestoreCRs
+                          CRXor
+                          CRNot
+                          CRAnd
+                          CROr
+                          CRNand
+                          CRNor
+                          CRSwap
+                          CRMove
+                          )))
 
