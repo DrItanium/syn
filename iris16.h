@@ -102,58 +102,30 @@ namespace iris16 {
 				std::tie(op, immediate) = tuple;
 				performOperation(unit, op, immediate);
 			}
-			template<word index>
-			word setPredicateRegisterBit(word input) noexcept {
-				static_assert(index < 16, "Provided predicate register is out of range!");
-				return iris::setBit<word, index>(input, getPredicateRegister(index));
-			}
-			template<word index>
-			word trySetPredicateRegisterBit(word input, word mask) noexcept {
-				static_assert(index < 16, "Provided predicate register is out of range!");
-				if (iris::getBit<word, index>(mask)) {
-					return setPredicateRegisterBit<index>(input);
-				} else {
-					return input;
-				}
-			}
 			template<word index> 
-			struct PredicateSaverInstantiator {
+			struct PredicateRegisterEncoder {
 				static_assert(index < 16, "Provided predicate register is out of range!");
-				static PredicateSaverInstantiator<index - 1> next;
+				static PredicateRegisterEncoder<index - 1> next;
 				static word invoke(Core* c, word mask) {
-					return c->trySetPredicateRegisterBit<index>(next.invoke(c, mask), mask);
+					auto result = next.invoke(c, mask);
+					if (iris::getBit<word,index>(mask)) {
+						return iris::setBit<word, index>(result, c->getPredicateRegister(index));
+					} else {
+						return result;
+					}
 				}
 			};
 			template<word index>
-				word auto_trySetPredicateRegisterBit(word mask) {
-					return PredicateSaverInstantiator<index>::invoke(this, mask);
-				}
-			template<word index>
-			void restorePredicateRegisterBit(word input) {
-				static_assert(index < 16, "Provided predicate register is out of range!");
-				getPredicateRegister(index) = iris::getBit<word, index>(input);
-			}
-			template<word index>
-			void tryRestorePredicateRegisterBit(word input, word mask) {
-				static_assert(index < 16, "Provided predicate register is out of range!");
-				if (iris::getBit<word, index>(mask)) {
-					restorePredicateRegisterBit<index>(input);
-				}
-			}
-			template<word index>
-			struct PredicateRestorerInstantiator {
+			struct PredicateRegisterDecoder {
 				static_assert(index < 16, "Provided predicate register index is too large!");
-				static PredicateRestorerInstantiator<index - 1> next;
+				static PredicateRegisterDecoder<index - 1> next;
 				static void invoke(Core* c, word input, word mask) noexcept {
-					c->tryRestorePredicateRegisterBit<index>(input, mask);
+					if (iris::getBit<word, index>(mask)) {
+						c->getPredicateRegister(index) = iris::getBit<word, index>(input);
+					}
 					next.invoke(c, input, mask);
 				}
 			};
-			template<word index>
-			void auto_restorePredicateRegisters(word input, word mask) noexcept {
-				PredicateRestorerInstantiator<index>::invoke(this, input, mask);
-			}
-
 			void restorePredicateRegisters(word input, word mask) noexcept;
 			word savePredicateRegisters(word mask) noexcept;
 
@@ -174,15 +146,21 @@ namespace iris16 {
 			PredicateComparator _pcompare;
 	};
 	template<> 
-		struct Core::PredicateSaverInstantiator<0> {
+		struct Core::PredicateRegisterEncoder<0> {
 			static word invoke(Core* c, word mask) {
-				return c->trySetPredicateRegisterBit<0>(0, mask);
+				if (iris::getBit<word, 0>(mask)) {
+					return static_cast<word>(c->getPredicateRegister(0) ? 1 : 0);
+				} else {
+					return 0;
+				}
 			}
 		};
 	template<>
-		struct Core::PredicateRestorerInstantiator<0> {
+		struct Core::PredicateRegisterDecoder<0> {
 			static void invoke(Core* c, word input, word mask) noexcept {
-				c->tryRestorePredicateRegisterBit<0>(input, mask);
+				if (iris::getBit<word, 0>(mask)) {
+					c->getPredicateRegister(0) = iris::getBit<word, 0>(input);
+				}
 			}
 		};
 	template<typename Data, typename Address>
