@@ -1,6 +1,17 @@
 ; Routine for printing the contents of a register!
 
 @code
+
+@label PRINT_CODE_AS_HEX
+	   push sp lr
+	   push sp r32				; save r32 to the stack since it is the lower half
+	   move r32 r33				; r33 is now r32 since it is the upper half, needs to be printed first
+	   jl PRINT_REGISTER_AS_HEX ; Perform the print
+	   pop r32 sp				; restore r32
+	   jl PRINT_REGISTER_AS_HEX ; printout the lower half
+	   pop lr sp
+	   jr lr
+
 @label TRANSLATE_LOWER4_TO_HEX
 	; translate the lower 4 bits of the register
 	set r0 0x000F
@@ -32,10 +43,28 @@
 	jl TRANSLATE_LOWER4_TO_HEX
 	pop lr sp
 	move r32 r64
+	j PRINT_CHARACTER
+@label PRINT_NEWLINE
+	set r32 0xa
+	j PRINT_CHARACTER
 @label PRINT_CHARACTER
 	set r0 0x0002
 	stio r0 r32
 	jr lr
+@label READ_CHARACTER
+	set r0 0x0003
+	ldio r64 r0
+	jr lr
+@label HEX_CHAR_TO_NUMBER
+	; convert a given value to binary hex
+	set r0 0x0030
+	set r1 0x000F
+	set r2 0x00FF
+	and r32 r32 r2		; make sure we're not overflowed
+	sub r32 r32 r0		; subtract 0x30
+	and r64 r32 r1		; get the lowest 4 bits
+	jr lr
+
 @data
 ; in the last page, first section, we have the ascii table
 @org 0xF100
