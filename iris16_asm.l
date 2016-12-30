@@ -99,58 +99,20 @@ omni [a-zA-Z0-9._]
 "decr" { return ARITHMETIC_MACRO_OP_DECR; }
 "halve" { return ARITHMETIC_MACRO_OP_HALVE; }
 "double" { return ARITHMETIC_MACRO_OP_DOUBLE; }
+"return" { return JUMP_MACRO_OP_RETURN; }
 
 "@label" { return LABEL; }
 "@data"  { return DIRECTIVE_DATA; }
 "@code"  { return DIRECTIVE_CODE; }
 "@org"   { return DIRECTIVE_ORG; }
 "@declare" { return DIRECTIVE_DECLARE; }
-; // registers for the storage controller
-"storageSizeLower"      { iris16lval.rval = 0; return REGISTER; }
-"storageSizeUpper"      { iris16lval.rval = 1; return REGISTER; }
-"storageBandSize"		{ iris16lval.rval = 2; return REGISTER; }
-"xstorage" { iris16lval.rval = 3; return REGISTER; } 
-"dataLower"   {iris16lval.rval = 4; return REGISTER; }
-"dataUpper"   {iris16lval.rval = 5; return REGISTER; }
-"localStorage" {iris16lval.rval = 6; return REGISTER; }
-"toCall"    { iris16lval.rval = 7; return REGISTER; }
-"dataCacheStart" { iris16lval.rval = 8; return REGISTER; }
-"dataCacheEnd" { iris16lval.rval = 9; return REGISTER; }
-"dataCacheAddressLower" { iris16lval.rval = 10; return REGISTER; }
-"dataCacheAddressUpper" { iris16lval.rval = 11; return REGISTER; }
 
 "@low"	{ return TAG_LOW; }
 "@high" { return TAG_HI; }
 
-"outptr" { iris16lval.rval = 227; return REGISTER; }
-"inptr"  { iris16lval.rval = 228; return REGISTER; }
-"fdcur"  { iris16lval.rval = 229; return REGISTER; }
-"zero"   { iris16lval.rval = 230; return REGISTER; }
-"stmp7"  { iris16lval.rval = 231; return REGISTER; }
-"wlen"   { iris16lval.rval = 232; return REGISTER; }
-"stmp6"  { iris16lval.rval = 233; return REGISTER; }
-"stmp5"  { iris16lval.rval = 234; return REGISTER; }
-"stmp4"  { iris16lval.rval = 235; return REGISTER; }
-"space"  { iris16lval.rval = 236; return REGISTER; }
-"stmp3"  { iris16lval.rval = 237; return REGISTER; }
-"stmp2"  { iris16lval.rval = 238; return REGISTER; }
-"stmp1"  { iris16lval.rval = 239; return REGISTER; }
-"stmp0"  { iris16lval.rval = 240; return REGISTER; }
-"sres3"  { iris16lval.rval = 241; return REGISTER; }
-"sres2"  { iris16lval.rval = 242; return REGISTER; }
-"sres1"  { iris16lval.rval = 243; return REGISTER; }
-"sres0"  { iris16lval.rval = 244; return REGISTER; }
-"spar3"  { iris16lval.rval = 245; return REGISTER; }
-"spar2"  { iris16lval.rval = 246; return REGISTER; }
-"spar1"  { iris16lval.rval = 247; return REGISTER; }
-"spar0"  { iris16lval.rval = 248; return REGISTER; }
-"rend"	 { iris16lval.rval = 249; return REGISTER; }
-"rtop"	 { iris16lval.rval = 250; return REGISTER; }
-"pend"	 { iris16lval.rval = 251; return REGISTER; }
-"ptop"	 { iris16lval.rval = 252; return REGISTER; }
-"sp"	 { iris16lval.rval = 253; return REGISTER; }
-"lr"	 { iris16lval.rval = 254; return REGISTER; }
-"ip"	 { iris16lval.rval = 255; return REGISTER; }
+"sp"	 { iris16lval.rval = 255; return REGISTER; }
+"lr"	 { return LINK_REGISTER; }
+"ip"	 { return INSTRUCTION_POINTER; }
 [ \t\n]     ;
 [;].*       ; // comments
 r{digit}+ { iris16lval.rval = iris16::getregister(); return REGISTER; }
