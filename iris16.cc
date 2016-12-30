@@ -280,7 +280,6 @@ namespace iris16 {
 			auto op = static_cast<ConditionRegisterOp>(getOperation());
 			auto result = translationTable.find(op);
 			if (result  == translationTable.end()) {
-				word tempStorage = 0u;
 				switch(op) {
 					case ConditionRegisterOp::CRSwap:
 						iris::swap<bool>(predicateResult(), predicateInverseResult());
@@ -313,22 +312,7 @@ namespace iris16 {
 	}
 
 	void Core::restorePredicateRegisters(word input, word mask) noexcept {
-		tryRestorePredicateRegisterBit<15>(input, mask);
-		tryRestorePredicateRegisterBit<14>(input, mask);
-		tryRestorePredicateRegisterBit<13>(input, mask);
-		tryRestorePredicateRegisterBit<12>(input, mask);
-		tryRestorePredicateRegisterBit<11>(input, mask);
-		tryRestorePredicateRegisterBit<10>(input, mask);
-		tryRestorePredicateRegisterBit<9>(input, mask);
-		tryRestorePredicateRegisterBit<8>(input, mask);
-		tryRestorePredicateRegisterBit<7>(input, mask);
-		tryRestorePredicateRegisterBit<6>(input, mask);
-		tryRestorePredicateRegisterBit<5>(input, mask);
-		tryRestorePredicateRegisterBit<4>(input, mask);
-		tryRestorePredicateRegisterBit<3>(input, mask);
-		tryRestorePredicateRegisterBit<2>(input, mask);
-		tryRestorePredicateRegisterBit<1>(input, mask);
-		tryRestorePredicateRegisterBit<0>(input, mask);
+		auto_restorePredicateRegisters<15>(input, mask);
 	}
 
 	word Core::savePredicateRegisters(word mask) noexcept {
