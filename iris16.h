@@ -15,9 +15,7 @@ namespace iris16 {
 		RegisterCount = 256,
 		AddressMax = 0xFFFF,
 		RegisterMax = 0xFF,
-		InstructionPointerIndex = RegisterCount - 1,
-		LinkRegisterIndex = RegisterCount - 2,
-		StackPointerIndex = RegisterCount - 3,
+		StackPointerIndex = RegisterCount - 1,
 		MaxGroups = 0b00000111,
 		MaxOperations = 0b00011111,
 	};
@@ -65,8 +63,8 @@ namespace iris16 {
 			word readRegister(byte index);
 			virtual bool cycle() override;
 		private:
-			word& getInstructionPointer() noexcept { return gpr[ArchitectureConstants::InstructionPointerIndex]; }
-			word& getLinkRegister() noexcept { return gpr[ArchitectureConstants::LinkRegisterIndex]; }
+			word& getInstructionPointer() noexcept { return _ip; }
+			word& getLinkRegister() noexcept { return _lr; }
 		private:
 			void dispatch();
             inline byte getDestination() const noexcept { return decodeDestination(current); }
@@ -104,6 +102,8 @@ namespace iris16 {
 			WordMemorySpace64k stack;
 			IOSpace _io;
 			raw_instruction current = 0;
+			word _ip = 0;
+			word _lr = 0;
 	};
 	template<typename Data, typename Address>
 	class ExposedCoreDataMemory : public iris::IODevice<Data, Address> {

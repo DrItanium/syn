@@ -122,30 +122,66 @@ namespace iris16 {
 				{ JumpOp:: IfThenElseLinkPredTrue , std::make_tuple( true, true, false, false, true) } ,
 				{ JumpOp:: IfThenElseLinkPredFalse , std::make_tuple( true, true, true, false, true) } ,
 			};
-			auto ifthenelse = false, conditional = false, iffalse = false, immediate = false,  link = false;
-			auto result = translationTable.find(static_cast<JumpOp>(getOperation()));
+			auto operation = static_cast<JumpOp>(getOperation());
+			auto result = translationTable.find(operation);
 			if (result == translationTable.end()) {
-				makeIllegalOperationMessage("jump code");
-			}
-			std::tie(ifthenelse, conditional, iffalse, immediate, link) = result->second;
-			auto newAddr = static_cast<word>(0);
-			auto cond = true;
-			advanceIp = false;
-			auto ip = getInstructionPointer();
-			if (conditional) {
-				auto dest = destinationRegister();
-				cond = (iffalse ? (dest == 0) : (dest != 0));
-				if (ifthenelse) {
-					newAddr = gpr[cond ? getSource0() : getSource1()];
-				} else {
-					newAddr = cond ? (immediate ? getImmediate() : source0Register()) : ip + 1;
+				word temporaryAddress = 0;
+				bool cond = false;
+				advanceIp = false;
+				switch(operation) {
+					case JumpOp::UnconditionalJumpLinkRegister:
+						getInstructionPointer() = getLinkRegister();
+						break;
+					case JumpOp::UnconditionalJumpLinkRegisterLink:
+						temporaryAddress = getInstructionPointer() + 1;
+						getInstructionPointer() = getLinkRegister();
+						getLinkRegister() = temporaryAddress;
+						break;
+					case JumpOp::ConditionalTrueJumpLinkRegister:
+						cond = destinationRegister() != 0;
+						getInstructionPointer() = cond ? getLinkRegister() : getInstructionPointer() + 1;
+						break;
+					case JumpOp::ConditionalTrueJumpLinkRegisterLink:
+						temporaryAddress = getInstructionPointer() + 1;
+						cond = destinationRegister() != 0;
+						getInstructionPointer() = cond ? getLinkRegister() : getInstructionPointer() + 1;
+						getLinkRegister() = cond ? getInstructionPointer() + 1 : getLinkRegister();
+						break;
+					case JumpOp::ConditionalFalseJumpLinkRegister:
+						cond = destinationRegister() == 0;
+						getInstructionPointer() = cond ? getLinkRegister() : getInstructionPointer() + 1;
+						break;
+					case JumpOp::ConditionalFalseJumpLinkRegisterLink:
+						temporaryAddress = getInstructionPointer() + 1;
+						cond = destinationRegister() == 0;
+						getInstructionPointer() = cond ? getLinkRegister() : getInstructionPointer() + 1;
+						getLinkRegister() = cond ? getInstructionPointer() + 1 : getLinkRegister();
+						break;
+					default:
+						throw iris::Problem("defined but unimplemented operation!");
 				}
 			} else {
-				newAddr = immediate ? getImmediate() : destinationRegister();
-			}
-			getInstructionPointer() = newAddr;
-			if (link && cond) {
-				getLinkRegister() = ip + 1;
+				auto ifthenelse = false, conditional = false, iffalse = false, immediate = false,  link = false;
+				std::tie(ifthenelse, conditional, iffalse, immediate, link) = result->second;
+				auto newAddr = static_cast<word>(0);
+				auto cond = true;
+				advanceIp = false;
+				auto ip = getInstructionPointer();
+				if (conditional) {
+					auto dest = destinationRegister();
+					cond = (iffalse ? (dest == 0) : (dest != 0));
+					if (ifthenelse) {
+						newAddr = gpr[cond ? getSource0() : getSource1()];
+					} else {
+						newAddr = cond ? (immediate ? getImmediate() : source0Register()) : ip + 1;
+					}
+				} else {
+					newAddr = immediate ? getImmediate() : destinationRegister();
+				}
+				getInstructionPointer() = newAddr;
+				if (link && cond) {
+					getLinkRegister() = ip + 1;
+				}
 			}
 		} else if (group == InstructionGroup::Move) {
 			auto op = static_cast<MoveOp>(getOperation());
@@ -207,6 +243,19 @@ namespace iris16 {
 					break;
 				case MoveOp::IOWriteWithOffset:
 					_io.write(destinationRegister() + getHalfImmediate(), source0Register());
+					break;
+				case MoveOp::MoveFromIP:
+					destinationRegister() = getInstructionPointer();
+					break;
+				case MoveOp::MoveToIP:
+					getInstructionPointer() = destinationRegister();
+					advanceIp = false;
+					break;
+				case MoveOp::MoveFromLinkRegister:
+					destinationRegister() = getLinkRegister();
+					break;
+				case MoveOp::MoveToLinkRegister:
+					getLinkRegister() = destinationRegister();
 					break;
 				default:
 					makeIllegalOperationMessage("move code");

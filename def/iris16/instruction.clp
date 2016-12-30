@@ -81,7 +81,14 @@
                           IfThenElseNormalPredTrue
                           IfThenElseNormalPredFalse
                           IfThenElseLinkPredTrue
-                          IfThenElseLinkPredFalse))
+                          IfThenElseLinkPredFalse
+                          UnconditionalJumpLinkRegister
+                          UnconditionalJumpLinkRegisterLink
+                          ConditionalTrueJumpLinkRegister
+                          ConditionalTrueJumpLinkRegisterLink
+                          ConditionalFalseJumpLinkRegister
+                          ConditionalFalseJumpLinkRegisterLink
+                          ))
           (enum (cast-to byte)
                 (max-size "ArchitectureConstants::MaxOperations")
                 (name MoveOp)
@@ -102,7 +109,11 @@
                           IOWrite
                           IORead
                           IOWriteWithOffset
-                          IOReadWithOffset))
+                          IOReadWithOffset
+                          MoveFromIP
+                          MoveToIP
+                          MoveFromLinkRegister
+                          MoveToLinkRegister))
           (enum (cast-to byte)
                 (max-size "ArchitectureConstants::MaxOperations")
                 (name CompareOp)

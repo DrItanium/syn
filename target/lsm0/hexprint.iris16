@@ -84,6 +84,134 @@
 @label IO_WRITE
 	stio r33 r32
 	jr lr
+@label OP_ADD
+	add r64 r32 r33
+	jr lr
+@label OP_SUB
+	sub r64 r32 r33
+	jr lr
+@label OP_MUL
+	mul r64 r32 r33
+	jr lr
+@label OP_DIV
+	div r64 r32 r33
+	jr lr
+@label OP_REM
+	rem r64 r32 r33
+	jr lr
+@label OP_SHIFT_LEFT
+	shl r64 r32 r33
+	jr lr
+@label OP_SHIFT_RIGHT
+	shr r64 r32 r33
+	jr lr
+@label OP_BINARY_AND
+	and r64 r32 r33
+	jr lr
+@label OP_BINARY_OR
+	or r64 r32 r33
+	jr lr
+@label OP_UNARY_NOT
+	not r64 r32
+	jr lr
+@label OP_BINARY_XOR
+	xor r64 r32 r33
+	jr lr
+@label CALL
+	jr r31
+@label RETURN 
+	jr lr
+
+@label OP_NAND
+	and r64 r32 r33
+	not r64 r64
+	jr lr
+
+@label OP_NOR
+	or r64 r32 r33
+	not r64 r64
+	jr lr
+
+@label OP_LOAD
+	; r32 - address
+	; r33 - memory space
+	; r64 - error?
+	; r65 - ret0
+	; r66 - ret1
+	push sp r96
+	set r64 0x0
+	set r65 0x0
+	set r66 0x0
+	eqi r96 r33 0 ; data
+	jt r96 OP_DATA_LOAD
+	eqi r96 r33 1
+	jt r96 OP_CODE_LOAD
+	eqi r96 r33 2
+	jt r96 OP_IO_LOAD
+	set r64 0x1
+	j OP_LOAD_FAILURE
+	@label OP_DATA_LOAD
+		ld r65 r32
+		j OP_LOAD_SUCCESSFUL
+	@label OP_CODE_LOAD
+		ldc r32 r65 r66
+		j OP_LOAD_SUCCESSFUL
+	@label OP_IO_LOAD
+		ldio r65 r32
+		j OP_SUCCESSFUL
+	@label OP_LOAD_FAILURE
+	@label OP_LOAD_SUCCESSFUL
+	@label OP_LOAD_DONE
+		pop r96 sp
+		jr lr
+
+@label OP_STORE
+	; r32 - memory space
+	; r33 - address
+	; r34 - lower half / value
+	; r35 - upper half (used only in code writes)
+	; r64 - error?
+	push sp r96
+	set r64 0x0
+	eqi r96 r32 0 ; data
+	jt r96 OP_DATA_STORE
+	eqi r96 r32 1
+	jt r96 OP_CODE_STORE
+	eqi r96 r32 2
+	jt r96 OP_IO_STORE
+	set r64 0x1
+	j OP_STORE_FAILURE
+	@label OP_DATA_STORE
+		st r33 r34
+		j OP_STORE_SUCCESSFUL
+	@label OP_CODE_STORE
+		stc r33 r34 r35
+		j OP_STORE_SUCCESSFUL
+	@label OP_IO_STORE
+		stio r33 r34
+		j OP_SUCCESSFUL
+	@label OP_STORE_FAILURE
+	@label OP_STORE_SUCCESSFUL
+	@label OP_STORE_DONE
+		pop r96 sp
+		jr lr
+	
+	
+@label OP_IF_TRUE
+	; r32 - condition
+	; r33 - on true
+	; r34 - on false
+	ift r32 r33 r34
+@label OP_IF_FALSE
+	; r32 - condition
+	; r33 - on true
+	; r34 - on false
+	iff r32 r33 r34
+
+@label OP_BRANCH_EQ
+	; r32 - v0
+	; r33 - v1
+	
 
 @data
 ; in the last page, first section, we have the ascii table
