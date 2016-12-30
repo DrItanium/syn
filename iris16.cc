@@ -312,11 +312,11 @@ namespace iris16 {
 	}
 
 	void Core::restorePredicateRegisters(word input, word mask) noexcept {
-		decodePredicateRegisters<15>(input, mask);
+		Core::PredicateRegisterDecoder<15>::invoke(this, input, mask);
 	}
 
 	word Core::savePredicateRegisters(word mask) noexcept {
-		return encodePredicateRegisters<15>(mask);
+		return Core::PredicateRegisterEncoder<15>::invoke(this, mask);
 	}
 
 	enum class Segment  {
