@@ -7,7 +7,7 @@
 
 namespace iris18 {
 	/*
-	 * Iris17 is a variable length encoding 16 bit architecture.
+	 * Iris18 is a variable length encoding 16 bit architecture.
 	 * It has a 24 bit memory space across 256 16-bit sections. The variable length
 	 * encoding comes from different register choices. The reserved registers are
 	 * used to compress the encoding.
@@ -635,28 +635,36 @@ namespace iris18 {
 
 	InstructionEncoder::Encoding InstructionEncoder::encode() {
 		// always encode the type
+		switch (type) {
 #define DefEnum(a, b)
 #define EndDefEnum(a, b, c)
-#define EnumEntry(compareType) if (type == Operation:: compareType) { return encode ## compareType () ; }
+#define EnumEntry(compareType) case Operation:: compareType : return encode ## compareType () ; 
 #include "def/iris18/ops.def"
 #undef DefEnum
 #undef EndDefEnum
 #undef EnumEntry
-		throw iris::Problem("Illegal type to encode!");
+			default:
+				throw iris::Problem("Illegal type to encode!");
+		}
 	}
 
 	int instructionSizeFromImmediateMask(byte bitmask) {
-
-#define X(bits) if (bitmask == bits) { return instructionSizeFromImmediateMask<bits>(); }
+		switch(bitmask) {
+#define X(bits) case bits : return instructionSizeFromImmediateMask< bits > () ; 
 #include "def/iris18/bitmask4bit.def"
 #undef X
+			default:
 		throw iris::Problem("Illegal bitmask provided!");
+		}
 	}
 	RegisterValue getMask(byte bitmask) {
-#define X(bits) if (bitmask == bits) { return SetBitmaskToWordMask<bits>::mask; }
+		switch(bitmask) {
+#define X(bits) case bits : return SetBitmaskToWordMask< bits > :: mask ; 
 #include "def/iris18/bitmask4bit.def"
 #undef X
+			default:
 		throw iris::Problem("Illegal bitmask provided!");
+		}
 	}
 	int InstructionEncoder::numWords() {
 		return std::get<0>(encode());
