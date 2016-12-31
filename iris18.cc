@@ -16,30 +16,30 @@ namespace iris18 {
 		return new Core();
 	}
 	constexpr RegisterValue encodeRegisterValue(byte a, byte b, byte c, byte d) noexcept {
-		return iris::encodeUint32LE(a, b, c, d);
+		return stdiris::encodeUint32LE(a, b, c, d);
 	}
 	constexpr Word encodeWord(byte a, byte b) noexcept {
-		return iris::encodeUint16LE(a, b);
+		return stdiris::encodeUint16LE(a, b);
 	}
 	void decodeWord(Word value, byte* storage) noexcept {
-		return iris::decodeUint32LE(value, storage);
+		return stdiris::decodeUint32LE(value, storage);
 	}
 	void decodeWord(RegisterValue value, byte* storage) noexcept {
-		return iris::decodeInt32LE(value, storage);
+		return stdiris::decodeInt32LE(value, storage);
 	}
 
 	Word decodeUpperHalf(RegisterValue value) noexcept {
-		return iris::decodeBits<RegisterValue, Word, upper16Mask, 16>(value);
+		return stdiris::decodeBits<RegisterValue, Word, upper16Mask, 16>(value);
 	}
 	Word decodeLowerHalf(RegisterValue value) noexcept {
-		return iris::decodeBits<RegisterValue, Word, lower16Mask, 16>(value);
+		return stdiris::decodeBits<RegisterValue, Word, lower16Mask, 16>(value);
 	}
 
 	constexpr RegisterValue encodeUpperHalf(RegisterValue value, Word upperHalf) noexcept {
-		return iris::encodeBits<RegisterValue, Word, upper16Mask, 16>(value, upperHalf);
+		return stdiris::encodeBits<RegisterValue, Word, upper16Mask, 16>(value, upperHalf);
 	}
 	constexpr RegisterValue encodeLowerHalf(RegisterValue value, Word lowerHalf) noexcept {
-		return iris::encodeBits<RegisterValue, Word, lower16Mask, 0>(value, lowerHalf);
+		return stdiris::encodeBits<RegisterValue, Word, lower16Mask, 0>(value, lowerHalf);
 	}
 
 	constexpr RegisterValue encodeRegisterValue(Word upper, Word lower) noexcept {
@@ -52,7 +52,7 @@ namespace iris18 {
 #include "def/iris18/bitmask4bit.def"
 #undef X
 			default:
-				throw iris::Problem("Illegal bitmask defined!");
+				throw stdiris::Problem("Illegal bitmask defined!");
 		}
 	}
 
@@ -70,20 +70,20 @@ namespace iris18 {
 	}
 
 	void Core::defaultSystemHandler(Core* core, DecodedInstruction&& inst) {
-		throw iris::Problem("Unimplemented system call!");
+		throw stdiris::Problem("Unimplemented system call!");
 	}
 
 
 	void Core::shutdown() { }
 
 	void Core::installprogram(std::istream& stream) {
-		gpr.install(stream, [](char* buf) { return iris::encodeUint32LE((byte*)buf); });
-		memory.install(stream, [](char* buf) { return iris::encodeUint16LE((byte*)buf); });
+		gpr.install(stream, [](char* buf) { return stdiris::encodeUint32LE((byte*)buf); });
+		memory.install(stream, [](char* buf) { return stdiris::encodeUint16LE((byte*)buf); });
 	}
 
 	void Core::dump(std::ostream& stream) {
-		gpr.dump(stream, [](RegisterValue value, char* buf) { iris::decodeUint32LE(value, (byte*)buf); });
-		memory.dump(stream, [](Word value, char* buf) { iris::decodeUint16LE(value, (byte*)buf); });
+		gpr.dump(stream, [](RegisterValue value, char* buf) { stdiris::decodeUint32LE(value, (byte*)buf); });
+		memory.dump(stream, [](Word value, char* buf) { stdiris::decodeUint16LE(value, (byte*)buf); });
 	}
 
 	bool Core::cycle() {
@@ -133,7 +133,7 @@ namespace iris18 {
 		auto tControl = current.getControl();
 		auto throwIfNotFound = [](auto result, auto& table, const std::string& msg) {
 			if (result == table.end()) {
-				throw iris::Problem(msg);
+				throw stdiris::Problem(msg);
 			}
 		};
 		if (tControl == Operation::Shift) {
@@ -191,7 +191,7 @@ namespace iris18 {
 			auto& dest = registerValue(source0);
 			dest = _logicalOps.performOperation(op, dest, source1);
 		} else if (tControl == Operation::Move) {
-			registerValue(current.getMoveRegister0()) = iris::decodeBits<RegisterValue, RegisterValue>( registerValue(current.getMoveRegister1()), mask(current.getMoveBitmask()), 0);
+			registerValue(current.getMoveRegister0()) = stdiris::decodeBits<RegisterValue, RegisterValue>( registerValue(current.getMoveRegister1()), mask(current.getMoveBitmask()), 0);
 		} else if (tControl == Operation::Set) {
 			registerValue(current.getSetDestination()) = retrieveImmediate(current.getSetBitmask());
 		} else if (tControl == Operation::Memory) {
@@ -220,7 +220,7 @@ namespace iris18 {
 					}
 					lower = useLower ? encodeLowerHalf(0, loadWord(address)) : 0u;
 					upper = useUpper ? encodeUpperHalf(0, loadWord(address + 1)) : 0u;
-					value = iris::encodeBits<RegisterValue, RegisterValue>(0u, lower | upper, fullMask, 0);
+					value = stdiris::encodeBits<RegisterValue, RegisterValue>(0u, lower | upper, fullMask, 0);
 				}
 			} else if (rawType == MemoryOperation::Store) {
 				static constexpr auto maskCheck = 0x0000FFFF;
@@ -246,7 +246,7 @@ namespace iris18 {
 				}
 			} else if (rawType == MemoryOperation::Push) {
 				if (indirect) {
-					throw iris::Problem("Indirect bit not supported in push operations!");
+					throw stdiris::Problem("Indirect bit not supported in push operations!");
 				} else {
 					// update the target stack to something different
 					auto pushToStack = registerValue(offset);
@@ -261,7 +261,7 @@ namespace iris18 {
 				}
 			} else if (rawType == MemoryOperation::Pop) {
 				if (indirect) {
-					throw iris::Problem("Indirect bit not supported in pop operations!");
+					throw stdiris::Problem("Indirect bit not supported in pop operations!");
 				} else {
 					auto &stackPointer = readNext ? registerValue(next.getMemoryAddress()) : getStackPointer();
 					if (useLower) {
@@ -277,7 +277,7 @@ namespace iris18 {
 					advanceIp = offset != ArchitectureConstants::InstructionPointer;
 				}
 			} else {
-				throw iris::Problem("Illegal memory operation!");
+				throw stdiris::Problem("Illegal memory operation!");
 			}
 		} else if (tControl == Operation::Branch) {
 			auto isIf = current.getBranchFlagIsIfForm();
@@ -338,7 +338,7 @@ namespace iris18 {
 				{ CompareStyle::GreaterThan, CompareUnit::Operation::GreaterThan },
 				{ CompareStyle::GreaterThanOrEqualTo, CompareUnit::Operation::GreaterThanOrEqualTo },
 			};
-			using CombineOp = iris::BooleanCombineUnit::Operation;
+			using CombineOp = stdiris::BooleanCombineUnit::Operation;
 			static std::map<CompareCombine, CombineOp> combineTranslation = {
 				{ CompareCombine::None, CombineOp::None },
 				{ CompareCombine::Xor, CombineOp::Xor },
@@ -357,7 +357,7 @@ namespace iris18 {
 						getConditionRegister() != 0));
 		} else if (tControl == Operation::SystemCall) {
 			if (getAddressRegister() >= ArchitectureConstants::MaxSystemCalls) {
-				throw iris::Problem("ERROR: system call index out of range!");
+				throw stdiris::Problem("ERROR: system call index out of range!");
 			} else {
 				systemHandlers[current.getSystemAction()](this, std::move(current));
 			}
@@ -368,7 +368,7 @@ namespace iris18 {
 			str << "Illegal instruction " << std::hex << static_cast<int>(current.getControl()) << std::endl;
 			str << "Location: " << std::hex << getInstructionPointer() << std::endl;
 			execute = false;
-			throw iris::Problem(str.str());
+			throw stdiris::Problem(str.str());
 		}
 	}
 
@@ -377,7 +377,7 @@ namespace iris18 {
 		if (type == ComplexSubTypes::Encoding) {
 			encodingOperation(std::move(inst));
 		} else {
-			throw iris::Problem("Undefined complex subtype!");
+			throw stdiris::Problem("Undefined complex subtype!");
 		}
 	}
 	RegisterValue notOperation(ALU & unit, RegisterValue v0) {
@@ -391,9 +391,9 @@ namespace iris18 {
 		if (type == EncodingOperation::Decode) {
 			// connect the result of the logical operations alu to the
 			// shifter alu then store the result in the value register
-			getValueRegister() = iris::decodeBits<RegisterValue, RegisterValue>(getAddressRegister(), getMaskRegister(), getShiftRegister());
+			getValueRegister() = stdiris::decodeBits<RegisterValue, RegisterValue>(getAddressRegister(), getMaskRegister(), getShiftRegister());
 		} else if (type == EncodingOperation::Encode) {
-			getAddressRegister() = iris::encodeBits<RegisterValue, RegisterValue>(getAddressRegister(), getValueRegister(), getMaskRegister(), getShiftRegister());
+			getAddressRegister() = stdiris::encodeBits<RegisterValue, RegisterValue>(getAddressRegister(), getValueRegister(), getMaskRegister(), getShiftRegister());
 
 		} else if (type == EncodingOperation::BitSet) {
 			getConditionRegister() = _compare.performOperation(CompareUnit::Operation::Eq, 
@@ -408,7 +408,7 @@ namespace iris18 {
 							getAddressRegister(),
 							getFieldRegister()), 0x1), 1);
 		} else {
-			throw iris::Problem("Illegal complex encoding operation defined!");
+			throw stdiris::Problem("Illegal complex encoding operation defined!");
 		}
     }
 
@@ -437,7 +437,7 @@ namespace iris18 {
 			if (input.gcount() == 0) {
 				break;
 			} else if (input.gcount() != bufSize) {
-				throw iris::Problem("unaligned object file found");
+				throw stdiris::Problem("unaligned object file found");
 			} else {
 				// use the first byte to determine what sort of installation
 				// should occur
@@ -449,7 +449,7 @@ namespace iris18 {
 						gpr[static_cast<byte>(buf[1])] = encodeRegisterValue(buf[2], buf[3], buf[4], buf[5]);
 						break;
 					default:
-						throw iris::Problem("undefined link class!");
+						throw stdiris::Problem("undefined link class!");
 				}
 			}
 		}
@@ -467,16 +467,16 @@ namespace iris18 {
 		return memory[address];
 	}
 	RegisterValue Core::loadRegisterValue(RegisterValue address) {
-		return iris::encodeBits<RegisterValue, Word, bitmask32, 16>(static_cast<RegisterValue>(loadWord(address)), loadWord(address + 1));
+		return stdiris::encodeBits<RegisterValue, Word, bitmask32, 16>(static_cast<RegisterValue>(loadWord(address)), loadWord(address + 1));
 	}
 	void Core::storeRegisterValue(RegisterValue address, RegisterValue value) {
-		storeWord(address, iris::decodeBits<RegisterValue, Word, lower16Mask, 0>(value));
-		storeWord(address + 1, iris::decodeBits<RegisterValue, Word, upper16Mask, 16>(value));
+		storeWord(address, stdiris::decodeBits<RegisterValue, Word, lower16Mask, 0>(value));
+		storeWord(address + 1, stdiris::decodeBits<RegisterValue, Word, upper16Mask, 16>(value));
 	}
 
 	void Core::installSystemHandler(byte index, Core::SystemFunction func) {
 		if (index >= ArchitectureConstants::MaxSystemCalls) {
-			throw iris::Problem("Can't install to out of range system handler index!");
+			throw stdiris::Problem("Can't install to out of range system handler index!");
 		} else {
 			systemHandlers[index] = func;
 		}
@@ -630,7 +630,7 @@ namespace iris18 {
             first = encodeComplexClassEncoding_Type(first, static_cast<EncodingOperation>(bitmask));
             return std::make_tuple(1, first, 0, 0);
         } else {
-            throw iris::Problem("Attempted to encode an unsupported value as a complex type!");
+            throw stdiris::Problem("Attempted to encode an unsupported value as a complex type!");
         }
     }
 
@@ -645,7 +645,7 @@ namespace iris18 {
 #undef EndDefEnum
 #undef EnumEntry
 			default:
-				throw iris::Problem("Illegal type to encode!");
+				throw stdiris::Problem("Illegal type to encode!");
 		}
 	}
 
@@ -655,7 +655,7 @@ namespace iris18 {
 #include "def/iris18/bitmask4bit.def"
 #undef X
 			default:
-		throw iris::Problem("Illegal bitmask provided!");
+		throw stdiris::Problem("Illegal bitmask provided!");
 		}
 	}
 	RegisterValue getMask(byte bitmask) {
@@ -664,7 +664,7 @@ namespace iris18 {
 #include "def/iris18/bitmask4bit.def"
 #undef X
 			default:
-		throw iris::Problem("Illegal bitmask provided!");
+		throw stdiris::Problem("Illegal bitmask provided!");
 		}
 	}
 	int InstructionEncoder::numWords() {

@@ -5,7 +5,7 @@
 #include "IODevice.h"
 #include <iostream>
 #include <cmath>
-namespace iris {
+namespace stdiris {
 
 template<typename Word>
 class FPU {
@@ -25,17 +25,17 @@ class FPU {
         inline Word performOperation(Operation op, Word a, Word b) const {
             switch(op) {
                 case Operation::Add:
-                    return iris::add<Word>(a, b);
+                    return stdiris::add<Word>(a, b);
                 case Operation::Subtract:
-                    return iris::sub<Word>(a, b);
+                    return stdiris::sub<Word>(a, b);
                 case Operation::Multiply:
-                    return iris::mul<Word>(a, b);
+                    return stdiris::mul<Word>(a, b);
                 case Operation::Divide:
-                    return iris::div<Word>(a, b);
+                    return stdiris::div<Word>(a, b);
                 case Operation::SquareRoot:
                     return static_cast<Word>(sqrt(static_cast<double>(a)));
                 default:
-                    throw iris::Problem("Undefined fpu operation!");
+                    throw stdiris::Problem("Undefined fpu operation!");
             }
         }
 };
@@ -67,35 +67,35 @@ class ALU {
         inline Word performOperation(Operation op, Word a, Word b) const {
             switch(op) {
                 case Operation::Add:
-                    return iris::add<Word>(a, b);
+                    return stdiris::add<Word>(a, b);
                 case Operation::Subtract:
-                    return iris::sub<Word>(a, b);
+                    return stdiris::sub<Word>(a, b);
                 case Operation::Multiply:
-                    return iris::mul<Word>(a, b);
+                    return stdiris::mul<Word>(a, b);
                 case Operation::Divide:
-                    return iris::div<Word>(a, b);
+                    return stdiris::div<Word>(a, b);
                 case Operation::Remainder:
-                    return iris::rem<Word>(a, b);
+                    return stdiris::rem<Word>(a, b);
                 case Operation::ShiftLeft:
-                    return iris::shiftLeft<Word>(a, b);
+                    return stdiris::shiftLeft<Word>(a, b);
                 case Operation::ShiftRight:
-                    return iris::shiftRight<Word>(a, b);
+                    return stdiris::shiftRight<Word>(a, b);
                 case Operation::BinaryAnd:
-                    return iris::binaryAnd<Word>(a, b);
+                    return stdiris::binaryAnd<Word>(a, b);
                 case Operation::BinaryOr:
-                    return iris::binaryOr<Word>(a, b);
+                    return stdiris::binaryOr<Word>(a, b);
                 case Operation::UnaryNot:
-                    return iris::binaryNot<Word>(a);
+                    return stdiris::binaryNot<Word>(a);
                 case Operation::BinaryXor:
-                    return iris::binaryXor<Word>(a, b);
+                    return stdiris::binaryXor<Word>(a, b);
                 case Operation::BinaryNand:
-                    return iris::binaryNand<Word>(a, b);
+                    return stdiris::binaryNand<Word>(a, b);
                 case Operation::CircularShiftLeft:
-                    return iris::circularShiftLeft<Word>(a, b);
+                    return stdiris::circularShiftLeft<Word>(a, b);
                 case Operation::CircularShiftRight:
-                    return iris::circularShiftRight<Word>(a, b);
+                    return stdiris::circularShiftRight<Word>(a, b);
                 default:
-                    throw iris::Problem("Undefined ALU operation!");
+                    throw stdiris::Problem("Undefined ALU operation!");
             }
         }
 };
@@ -131,39 +131,39 @@ class Comparator {
         inline Return performOperation(Operation op, Word a, Word b) const {
             switch(op) {
                 case Operation::Eq:
-                    return iris::eq<Word, Return>(a, b);
+                    return stdiris::eq<Word, Return>(a, b);
                 case Operation::Neq:
-                    return iris::neq<Word, Return>(a, b);
+                    return stdiris::neq<Word, Return>(a, b);
                 case Operation::LessThan:
-                    return iris::lt<Word, Return>(a, b);
+                    return stdiris::lt<Word, Return>(a, b);
                 case Operation::GreaterThan:
-                    return iris::gt<Word, Return>(a, b);
+                    return stdiris::gt<Word, Return>(a, b);
                 case Operation::LessThanOrEqualTo:
-                    return iris::le<Word, Return>(a, b);
+                    return stdiris::le<Word, Return>(a, b);
                 case Operation::GreaterThanOrEqualTo:
-                    return iris::ge<Word, Return>(a, b);
+                    return stdiris::ge<Word, Return>(a, b);
                 case Operation::BinaryAnd:
-                    return iris::binaryAnd<Word, Return>(a, b);
+                    return stdiris::binaryAnd<Word, Return>(a, b);
                 case Operation::BinaryOr:
-                    return iris::binaryOr<Word, Return>(a, b);
+                    return stdiris::binaryOr<Word, Return>(a, b);
                 case Operation::UnaryNot:
-                    return iris::binaryNot<Word, Return>(a);
+                    return stdiris::binaryNot<Word, Return>(a);
                 case Operation::BinaryXor:
-                    return iris::binaryXor<Word, Return>(a, b);
+                    return stdiris::binaryXor<Word, Return>(a, b);
                 case Operation::BinaryNand:
-                    return iris::binaryNand<Word, Return>(a, b);
+                    return stdiris::binaryNand<Word, Return>(a, b);
                 case Operation::ShiftLeft:
-                    return iris::shiftLeft<Word, Return>(a, b);
+                    return stdiris::shiftLeft<Word, Return>(a, b);
                 case Operation::ShiftRight:
-                    return iris::shiftRight<Word, Return>(a, b);
+                    return stdiris::shiftRight<Word, Return>(a, b);
 				case Operation::BinaryNor:
-					return iris::binaryNor<Word, Return>(a, b);
+					return stdiris::binaryNor<Word, Return>(a, b);
                 case Operation::CircularShiftLeft:
-                    return iris::circularShiftLeft<Word, Return>(a, b);
+                    return stdiris::circularShiftLeft<Word, Return>(a, b);
                 case Operation::CircularShiftRight:
-                    return iris::circularShiftRight<Word, Return>(a, b);
+                    return stdiris::circularShiftRight<Word, Return>(a, b);
                 default:
-                    throw iris::Problem("Undefined Comparison operation!");
+                    throw stdiris::Problem("Undefined Comparison operation!");
             }
         }
 };
@@ -190,23 +190,23 @@ class Comparator<bool, bool> {
 		inline bool performOperation(Operation op, bool a, bool b) const {
 			switch(op) {
 				case Operation::Eq:
-					return iris::eq<bool>(a, b);
+					return stdiris::eq<bool>(a, b);
 				case Operation::Neq:
-					return iris::neq<bool>(a, b);
+					return stdiris::neq<bool>(a, b);
 				case Operation::BinaryAnd:
-					return iris::binaryAnd<bool>(a, b);
+					return stdiris::binaryAnd<bool>(a, b);
 				case Operation::BinaryOr:
-					return iris::binaryOr<bool>(a, b);
+					return stdiris::binaryOr<bool>(a, b);
 				case Operation::BinaryXor:
-					return iris::binaryXor<bool>(a, b);
+					return stdiris::binaryXor<bool>(a, b);
 				case Operation::UnaryNot:
-					return iris::binaryNot<bool>(a);
+					return stdiris::binaryNot<bool>(a);
 				case Operation::BinaryNand:
-					return iris::binaryNand<bool>(a, b);
+					return stdiris::binaryNand<bool>(a, b);
 				case Operation::BinaryNor:
-					return iris::binaryNor<bool>(a, b);
+					return stdiris::binaryNor<bool>(a, b);
 				default:
-					throw iris::Problem("Undefined boolean comparison operation!");
+					throw stdiris::Problem("Undefined boolean comparison operation!");
 			}
 		}
 };
@@ -233,14 +233,14 @@ class LoadStoreUnit : public IODevice<Word, Address> {
 			if (legalAddress(addr)) {
 				_memory[addr] = value;
 			} else {
-				throw iris::Problem("Provided address is not legal");
+				throw stdiris::Problem("Provided address is not legal");
 			}
 		}
 		inline Word& retrieveMemory(Address addr) {
 			if (legalAddress(addr)) {
 				return _memory[addr];
 			} else {
-				throw iris::Problem("Provided address is not legal");
+				throw stdiris::Problem("Provided address is not legal");
 			}
 		}
 		virtual Word read(Address addr) override {
@@ -253,7 +253,7 @@ class LoadStoreUnit : public IODevice<Word, Address> {
 			return retrieveMemory(addr);
 		}
 		void swap(Address a, Address b) {
-			iris::swap<Word>(_memory[a], _memory[b]);
+			stdiris::swap<Word>(_memory[a], _memory[b]);
 		}
 		void copy(Address a, Address b) {
 			_memory[a] = _memory[b];
@@ -313,10 +313,10 @@ class BooleanCombineUnit {
 				case Operation::Xnor:
 					return !(oldValue ^ newValue);
 				default:
-					throw iris::Problem("Undefined boolean operation!");
+					throw stdiris::Problem("Undefined boolean operation!");
 			}
 		}
 };
 
-} // end namespace iris
+} // end namespace stdiris
 #endif // end _IRIS_XUNITS_H

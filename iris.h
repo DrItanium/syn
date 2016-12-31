@@ -6,7 +6,7 @@
 #include "IOController.h"
 #include <cstdint>
 #include <memory>
-namespace iris16 {
+namespace iris {
 	typedef uint16_t word;
 	typedef uint32_t dword;
 	typedef dword raw_instruction;
@@ -21,32 +21,32 @@ namespace iris16 {
 		MaxOperations = 0b00011111,
 	};
 	inline constexpr dword encodeDword(byte a, byte b, byte c, byte d) noexcept {
-		return iris::encodeUint32LE(a, b, c, d);
+		return stdiris::encodeUint32LE(a, b, c, d);
 	}
 	inline constexpr word encodeWord(byte a, byte b) noexcept {
-		return iris::encodeUint16LE(a, b);
+		return stdiris::encodeUint16LE(a, b);
 	}
 	inline constexpr dword encodeDword(word lower, word upper) noexcept {
-		return iris::encodeUint32LE(lower, upper);
+		return stdiris::encodeUint32LE(lower, upper);
 	}
-} // end namespace iris16
-#include "iris16_defines.h"
+} // end namespace iris
+#include "iris_defines.h"
 
 template<typename Data, typename Address>
 class ExposedCoreDataMemory;
-namespace iris16 {
-	using IOSpace = iris::IOController<word>;
+namespace iris {
+	using IOSpace = stdiris::IOController<word>;
 	template<word capacity>
-	using WordMemorySpace = iris::FixedSizeLoadStoreUnit<word, word, capacity>;
+	using WordMemorySpace = stdiris::FixedSizeLoadStoreUnit<word, word, capacity>;
 	using WordMemorySpace64k = WordMemorySpace<ArchitectureConstants::AddressMax>;
-	using ALU = iris::ALU<word>;
-	using CompareUnit = iris::Comparator<word>;
+	using ALU = stdiris::ALU<word>;
+	using CompareUnit = stdiris::Comparator<word>;
 	using RegisterFile = WordMemorySpace<ArchitectureConstants::RegisterCount>;
-	using IODevice = iris::IODevice<word>;
-	using LambdaIODevice = iris::LambdaIODevice<word>;
-	using PredicateRegisterFile = iris::FixedSizeLoadStoreUnit<bool, byte, 16>;
-	using PredicateComparator = iris::Comparator<bool, bool>;
-	class Core : public iris::Core {
+	using IODevice = stdiris::IODevice<word>;
+	using LambdaIODevice = stdiris::LambdaIODevice<word>;
+	using PredicateRegisterFile = stdiris::FixedSizeLoadStoreUnit<bool, byte, 16>;
+	using PredicateComparator = stdiris::Comparator<bool, bool>;
+	class Core : public stdiris::Core {
 		public:
 			Core() noexcept;
 			virtual ~Core();
@@ -108,8 +108,8 @@ namespace iris16 {
 				static PredicateRegisterEncoder<index - 1> next;
 				static word invoke(Core* c, word mask) {
 					auto result = next.invoke(c, mask);
-					if (iris::getBit<word,index>(mask)) {
-						return iris::setBit<word, index>(result, c->getPredicateRegister(index));
+					if (stdiris::getBit<word,index>(mask)) {
+						return stdiris::setBit<word, index>(result, c->getPredicateRegister(index));
 					} else {
 						return result;
 					}
@@ -120,8 +120,8 @@ namespace iris16 {
 				static_assert(index < 16, "Provided predicate register index is too large!");
 				static PredicateRegisterDecoder<index - 1> next;
 				static void invoke(Core* c, word input, word mask) noexcept {
-					if (iris::getBit<word, index>(mask)) {
-						c->getPredicateRegister(index) = iris::getBit<word, index>(input);
+					if (stdiris::getBit<word, index>(mask)) {
+						c->getPredicateRegister(index) = stdiris::getBit<word, index>(input);
 					}
 					next.invoke(c, input, mask);
 				}
@@ -136,7 +136,7 @@ namespace iris16 {
 			ALU _alu;
 			RegisterFile gpr;
 			WordMemorySpace64k data;
-			iris::FixedSizeLoadStoreUnit<dword, word, ArchitectureConstants::AddressMax> instruction;
+			stdiris::FixedSizeLoadStoreUnit<dword, word, ArchitectureConstants::AddressMax> instruction;
 			WordMemorySpace64k stack;
 			IOSpace _io;
 			raw_instruction current = 0;
@@ -148,7 +148,7 @@ namespace iris16 {
 	template<> 
 		struct Core::PredicateRegisterEncoder<0> {
 			static word invoke(Core* c, word mask) {
-				if (iris::getBit<word, 0>(mask)) {
+				if (stdiris::getBit<word, 0>(mask)) {
 					return static_cast<word>(c->getPredicateRegister(0) ? 1 : 0);
 				} else {
 					return 0;
@@ -158,13 +158,13 @@ namespace iris16 {
 	template<>
 		struct Core::PredicateRegisterDecoder<0> {
 			static void invoke(Core* c, word input, word mask) noexcept {
-				if (iris::getBit<word, 0>(mask)) {
-					c->getPredicateRegister(0) = iris::getBit<word, 0>(input);
+				if (stdiris::getBit<word, 0>(mask)) {
+					c->getPredicateRegister(0) = stdiris::getBit<word, 0>(input);
 				}
 			}
 		};
 	template<typename Data, typename Address>
-	class ExposedCoreDataMemory : public iris::IODevice<Data, Address> {
+	class ExposedCoreDataMemory : public stdiris::IODevice<Data, Address> {
 		public:
 			static constexpr Address computeScaleFactor() noexcept {
 				return sizeof(Data) / sizeof(word);
@@ -178,53 +178,53 @@ namespace iris16 {
 			static constexpr word computeInternalAddress(Address addr) noexcept {
 				return static_cast<word>(addr * computeScaleFactor());
 			}
-			ExposedCoreDataMemory(Core* core, Address base, Address length = computeDataLength()) : iris::IODevice<Data, Address>(base, length), _core(core) { }
+			ExposedCoreDataMemory(Core* core, Address base, Address length = computeDataLength()) : stdiris::IODevice<Data, Address>(base, length), _core(core) { }
 			virtual ~ExposedCoreDataMemory() { }
 			virtual void write(Address address, Data value) override {
 				auto addr = computeInternalAddress(tryComputeActualAddress(address));
-				static_assert(computeScaleFactor() != 0, "The size of the provided data element is smaller than the iris16 word! Please provide a custom implementation of write!");
+				static_assert(computeScaleFactor() != 0, "The size of the provided data element is smaller than the iris word! Please provide a custom implementation of write!");
 				static_assert(computeScaleFactor() <= 4, "The size of the provided data value is too large for the default write implementation! Please provide a custom implementation of write!");
 				switch(computeScaleFactor()) {
 					case 4:
-						_core->writeDataMemory(addr + 3, iris::decodeBits<Data, word, static_cast<Data>(0xFFFF000000000000), 48>(value));
+						_core->writeDataMemory(addr + 3, stdiris::decodeBits<Data, word, static_cast<Data>(0xFFFF000000000000), 48>(value));
 					case 3:
-						_core->writeDataMemory(addr + 2, iris::decodeBits<Data, word, static_cast<Data>(0x0000FFFF00000000), 32>(value));
+						_core->writeDataMemory(addr + 2, stdiris::decodeBits<Data, word, static_cast<Data>(0x0000FFFF00000000), 32>(value));
 					case 2:
-						_core->writeDataMemory(addr + 1, iris::decodeBits<Data, word, static_cast<Data>(0x00000000FFFF0000), 16>(value));
+						_core->writeDataMemory(addr + 1, stdiris::decodeBits<Data, word, static_cast<Data>(0x00000000FFFF0000), 16>(value));
 					case 1:
-						_core->writeDataMemory(addr, iris::decodeBits<Data, word, static_cast<Data>(0x000000000000FFFF), 0>(value));
+						_core->writeDataMemory(addr, stdiris::decodeBits<Data, word, static_cast<Data>(0x000000000000FFFF), 0>(value));
 						break;
 					case 0:
-						throw iris::Problem("Can't have a scale factor of zero!");
+						throw stdiris::Problem("Can't have a scale factor of zero!");
 					default:
-						throw iris::Problem("Illegal scale factor, please make a custom implementation!");
+						throw stdiris::Problem("Illegal scale factor, please make a custom implementation!");
 				}
 				_core->writeDataMemory(static_cast<word>(tryComputeActualAddress(address)), value);
 			}
 			virtual Data read(Address address) override {
 				// get the address factor computed
 				auto addr = computeInternalAddress(tryComputeActualAddress(address));
-				static_assert(computeScaleFactor() != 0, "The size of the provided data element is smaller than the iris16 word! Please provide a custom implementation of read!");
+				static_assert(computeScaleFactor() != 0, "The size of the provided data element is smaller than the iris word! Please provide a custom implementation of read!");
 				static_assert(computeScaleFactor() <= 4, "The size of the provided data value is too large for the default read implementation! Please provide a custom implementation of read!");
 				if (computeScaleFactor() == 1) {
 					return static_cast<Data>(_core->readDataMemory(addr));
 				} else if (computeScaleFactor() == 2) {
-					return iris::encodeValueLE<Data>(_core->readDataMemory(addr), _core->readDataMemory(addr + 1));
+					return stdiris::encodeValueLE<Data>(_core->readDataMemory(addr), _core->readDataMemory(addr + 1));
 				} else if (computeScaleFactor() == 3) {
-					return iris::encodeValueLE<Data>(_core->readDataMemory(addr), _core->readDataMemory(addr + 1), _core->readDataMemory(addr + 2), 0);
+					return stdiris::encodeValueLE<Data>(_core->readDataMemory(addr), _core->readDataMemory(addr + 1), _core->readDataMemory(addr + 2), 0);
 				} else if (computeScaleFactor() == 4) {
-					return iris::encodeValueLE<Data>(_core->readDataMemory(addr), _core->readDataMemory(addr + 1), _core->readDataMemory(addr + 2), _core->readDataMemory(addr + 3));
+					return stdiris::encodeValueLE<Data>(_core->readDataMemory(addr), _core->readDataMemory(addr + 1), _core->readDataMemory(addr + 2), _core->readDataMemory(addr + 3));
 				} else {
-					throw iris::Problem("Please provide a custom implementation of write!");
+					throw stdiris::Problem("Please provide a custom implementation of write!");
 				}
 			}
 		private:
 			Address tryComputeActualAddress(Address address) {
 				auto actualAddress = address - this->baseAddress();
 				if (actualAddress < 0) {
-					throw iris::Problem("Given address is less than the base address");
+					throw stdiris::Problem("Given address is less than the base address");
 				} else if (actualAddress > computeDataMemoryEnd()) {
-					throw iris::Problem("Given address is beyond the memory space!");
+					throw stdiris::Problem("Given address is beyond the memory space!");
 				} else {
 					return actualAddress;
 				}

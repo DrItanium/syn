@@ -10,7 +10,7 @@ namespace iris17 {
 		return new iris17::Core(iris17::ArchitectureConstants::AddressMax, 8);
 	}
 	constexpr word encodeWord(byte a, byte b, byte c, byte d)  noexcept {
-		return iris::encodeInt32LE(a, b, c, d);
+		return stdiris::encodeInt32LE(a, b, c, d);
 	}
 	DecodedInstruction::DecodedInstruction(word inst) noexcept : raw(inst) { }
 	DecodedInstruction::~DecodedInstruction() noexcept { }
@@ -29,7 +29,7 @@ namespace iris17 {
 
 	auto throwIfNotFound = [](auto result, auto& table, const std::string& msg) {
 		if (result == table.end()) {
-			throw iris::Problem(msg);
+			throw stdiris::Problem(msg);
 		}
 	};
 	void Core::installprogram(std::istream& stream) {
@@ -61,7 +61,7 @@ namespace iris17 {
 		}
 	}
 	void Core::dump(std::ostream& stream) {
-		memory.dump(stream, [](word value, char* buf) { iris::decodeInt32LE(value, (byte*)buf); });
+		memory.dump(stream, [](word value, char* buf) { stdiris::decodeInt32LE(value, (byte*)buf); });
 	}
 	// jump operations
 	//template<bool ifthenelse, bool conditional, bool iffalse, bool immediate, bool link>
@@ -134,13 +134,13 @@ namespace iris17 {
 		} else if (op == MoveOp::Move) {
 			dest = thread->gpr[inst.getSource0()];
 		} else if (op == MoveOp::SetLower) {
-			dest = iris::setLowerHalf(dest, inst.getImmediate());
+			dest = stdiris::setLowerHalf(dest, inst.getImmediate());
 		} else if (op == MoveOp::SetUpper) {
-			dest = iris::setUpperHalf(dest, inst.getImmediate());
+			dest = stdiris::setUpperHalf(dest, inst.getImmediate());
 		} else if (op == MoveOp::Swap) {
 			thread->gpr.swap(inst.getDestination(), inst.getSource0());
 		} else {
-			throw iris::Problem("Illegal move code!");
+			throw stdiris::Problem("Illegal move code!");
 		}
 	}
 	template<typename Operation>
@@ -218,10 +218,10 @@ namespace iris17 {
 			} else {
 				std::stringstream stream;
 				stream << "Illegal system call " << std::hex << inst.getDestination();
-				throw iris::Problem(stream.str());
+				throw stdiris::Problem(stream.str());
 			}
 		} else {
-			throw iris::Problem("Illegal misc op!");
+			throw stdiris::Problem("Illegal misc op!");
 		}
 	}
 
@@ -262,7 +262,7 @@ namespace iris17 {
 				move(std::move(decoded));
 				break;
 			default:
-				throw iris::Problem("Undefined control!");
+				throw stdiris::Problem("Undefined control!");
 		}
 	}
 	void Core::initialize() {
@@ -306,7 +306,7 @@ namespace iris17 {
 	}
 
 	void Core::link(std::istream& input) {
-		throw iris::Problem("iris17 does not require explicit linking!");
+		throw stdiris::Problem("iris17 does not require explicit linking!");
 	}
 
 } // end namespace iris17

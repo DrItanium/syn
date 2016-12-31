@@ -1,9 +1,9 @@
-#include "iris16.h"
+#include "iris.h"
 #include <functional>
 #include <sstream>
 #include <vector>
 
-namespace iris16 {
+namespace iris {
 
 	Core::Core() noexcept : _io(0, 0xFFFF) { }
 
@@ -11,8 +11,8 @@ namespace iris16 {
 	}
 
 	void Core::installprogram(std::istream& stream) {
-		auto encodeWord = [](char* buf) { return iris16::encodeWord(buf[0], buf[1]); };
-		auto encodeDword = [](char* buf) { return iris16::encodeDword(buf[0], buf[1], buf[2], buf[3]); };
+		auto encodeWord = [](char* buf) { return iris::encodeWord(buf[0], buf[1]); };
+		auto encodeDword = [](char* buf) { return iris::encodeDword(buf[0], buf[1], buf[2], buf[3]); };
 		gpr.install(stream, encodeWord);
 		data.install(stream, encodeWord);
 		instruction.install(stream, encodeDword);
@@ -20,8 +20,8 @@ namespace iris16 {
 	}
 
 	void Core::dump(std::ostream& stream) {
-		auto decodeWord = [](word value, char* buf) { iris::decodeUint16LE(value, (byte*)buf); };
-		auto decodeDword = [](dword value, char* buf) { iris::decodeUint32LE(value, (byte*)buf); };
+		auto decodeWord = [](word value, char* buf) { stdiris::decodeUint16LE(value, (byte*)buf); };
+		auto decodeDword = [](dword value, char* buf) { stdiris::decodeUint32LE(value, (byte*)buf); };
 		gpr.dump(stream, decodeWord);
 		data.dump(stream, decodeWord);
 		instruction.dump(stream, decodeDword);
@@ -49,7 +49,7 @@ namespace iris16 {
 			stream << message << " 0x" << std::hex << operation;
 			execute = false;
 			advanceIp = false;
-			throw iris::Problem(stream.str());
+			throw stdiris::Problem(stream.str());
 		};
 		auto makeIllegalOperationMessage = [this, makeProblem](const std::string& type) {
 			makeProblem("Illegal " + type, getOperation());
@@ -165,7 +165,7 @@ namespace iris16 {
 						getLinkRegister() = cond ? getInstructionPointer() + 1 : getLinkRegister();
 						break;
 					default:
-						throw iris::Problem("defined but unimplemented operation!");
+						throw stdiris::Problem("defined but unimplemented operation!");
 				}
 			} else {
 				auto ifthenelse = false, conditional = false, iffalse = false, immediate = false,  link = false;
@@ -233,8 +233,8 @@ namespace iris16 {
 					break;
 				case MoveOp::LoadCode:
 					codeStorage = instruction[destinationRegister()];
-					source0Register() = iris::getLowerHalf(codeStorage);
-					source1Register() = iris::getUpperHalf(codeStorage);
+					source0Register() = stdiris::getLowerHalf(codeStorage);
+					source1Register() = stdiris::getUpperHalf(codeStorage);
 					break;
 				case MoveOp::StoreCode:
 					instruction[destinationRegister()] = encodeDword(source0Register(), source1Register());
@@ -282,7 +282,7 @@ namespace iris16 {
 			if (result  == translationTable.end()) {
 				switch(op) {
 					case ConditionRegisterOp::CRSwap:
-						iris::swap<bool>(predicateResult(), predicateInverseResult());
+						stdiris::swap<bool>(predicateResult(), predicateInverseResult());
 						break;
 					case ConditionRegisterOp::CRMove:
 						predicateResult() = predicateInverseResult();
@@ -294,7 +294,7 @@ namespace iris16 {
 						restorePredicateRegisters(destinationRegister(), getImmediate());
 						break;
 					default:
-						throw iris::Problem("Defined but unimplemented condition register operation!");
+						throw stdiris::Problem("Defined but unimplemented condition register operation!");
 				}
 			} else {
 				typename decltype(_pcompare)::Operation pop;
@@ -329,28 +329,28 @@ namespace iris16 {
 		for(auto lineNumber = static_cast<int>(0); input.good(); ++lineNumber) {
 			input.read(buf, 8);
 			if (input.gcount() < 8 && input.gcount() > 0) {
-				throw iris::Problem("unaligned object file found!");
+				throw stdiris::Problem("unaligned object file found!");
 			} else if (input.gcount() == 0) {
 				if (input.eof()) {
 					break;
 				} else {
-					throw iris::Problem("Something bad happened while reading input file!");
+					throw stdiris::Problem("Something bad happened while reading input file!");
 				}
 			}
 			//ignore the first byte, it is always zero
 			auto target = static_cast<Segment>(buf[1]);
-			auto address = iris16::encodeWord(buf[2], buf[3]);
+			auto address = iris::encodeWord(buf[2], buf[3]);
 			if (debugEnabled()) {
 				std::cerr << "current target = " << static_cast<int>(target) << "\tcurrent address = 0x" << std::hex << address << std::endl;
 			}
 			if (target == Segment::Code) {
-				auto result = iris16::encodeDword(buf[4], buf[5], buf[6], buf[7]);
+				auto result = iris::encodeDword(buf[4], buf[5], buf[6], buf[7]);
 				if (debugEnabled()) {
 					std::cerr << " code result: 0x" << std::hex << result << std::endl;
 				}
 				writeInstructionMemory(address, result);
 			} else if (target == Segment::Data) {
-				auto result = iris16::encodeWord(buf[4], buf[5]);
+				auto result = iris::encodeWord(buf[4], buf[5]);
 				if (debugEnabled()) {
 					std::cerr << " data result: 0x" << std::hex << result << std::endl;
 				}
@@ -359,7 +359,7 @@ namespace iris16 {
 				std::stringstream str;
 				str << "error: line " << lineNumber << ", unknown segment " << static_cast<int>(target) << "/" << static_cast<int>(buf[1]) << std::endl;
 				str << "current address: " << std::hex << address << std::endl;
-				throw iris::Problem(str.str());
+				throw stdiris::Problem(str.str());
 			}
 		}
 	}
@@ -373,7 +373,7 @@ namespace iris16 {
 		instruction.initialize();
 		stack.initialize();
 		_io.initialize();
-		auto readNothing = iris::readNothing<typename LambdaIODevice::DataType, typename LambdaIODevice::AddressType>;
+		auto readNothing = stdiris::readNothing<typename LambdaIODevice::DataType, typename LambdaIODevice::AddressType>;
 		// terminate
 		_io.install(std::make_shared<LambdaIODevice>(0, 1, readNothing, 
 					[this](word address, word value) { 
@@ -381,7 +381,7 @@ namespace iris16 {
 						advanceIp = false; 
 					}));
 		// getc and putc
-		_io.install(std::make_shared<iris::StandardInputOutputDevice<word>>(1));
+		_io.install(std::make_shared<stdiris::StandardInputOutputDevice<word>>(1));
 		for (auto i = 0; i < _cr.getSize(); ++i) {
 			_cr[i] = false;
 		}
@@ -400,7 +400,7 @@ namespace iris16 {
 	}
 
 	Core* newCore() noexcept {
-		return new iris16::Core();
+		return new iris::Core();
 	}
 	void Core::writeRegister(byte index, word value) {
 		gpr.write(index, value);

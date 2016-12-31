@@ -1,7 +1,7 @@
 (deffacts iris16
           (input-type raw_instruction)
-          (title _iris16_decl)
-          (namespace iris16)
+          (title _iris_decl)
+          (namespace iris)
           (field (name Control)
                  (mask 0x000000FF)
                  (shift 0)

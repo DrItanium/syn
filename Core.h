@@ -3,8 +3,8 @@
 #include <iostream>
 #include <typeinfo>
 #include "Device.h"
-namespace iris {
-	 // Generic iris core interface
+namespace stdiris {
+	 // Generic stdiris core interface
 	 class Core : public Device {
 		public:
 			virtual void dump(std::ostream& stream) = 0;
@@ -17,5 +17,5 @@ namespace iris {
 		protected:
 			bool execute = true;
 	 };
-}
+} // end namespace stdiris
 #endif

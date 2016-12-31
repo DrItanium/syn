@@ -20,14 +20,14 @@ namespace iris19 {
 	using immediate = HWord;
 	using RegisterValue = DWord;
 	inline constexpr Word encodeWord (byte b0, byte b1, byte b2, byte b3) noexcept {
-		return iris::encodeUint32LE(b0, b1, b2, b3);
+		return stdiris::encodeUint32LE(b0, b1, b2, b3);
 	}
 	inline constexpr RegisterValue encodeRegisterValue(byte b0, byte b1, byte b2, byte b3, byte b4, byte b5, byte b6, byte b7) noexcept {
-		return iris::encodeUint64LE(b0, b1, b2, b3, b4, b5, b6, b7);
+		return stdiris::encodeUint64LE(b0, b1, b2, b3, b4, b5, b6, b7);
 	}
 	inline void decodeRegisterValue(RegisterValue value, byte* storage) noexcept;
 	inline constexpr RegisterValue encodeRegisterValue(Word lower, Word upper) noexcept {
-		return iris::encodeUint64LE(lower, upper);
+		return stdiris::encodeUint64LE(lower, upper);
 	}
 	enum ArchitectureConstants  {
 		RegisterCount = 64,
@@ -89,22 +89,22 @@ namespace iris19 {
 	};
 
     inline constexpr Word encodeWord(bool lower, bool upperLower, bool lowerUpper, bool upperMost) noexcept {
-        return iris::expandUInt32LE(lower, upperLower, lowerUpper, upperMost);
+        return stdiris::expandUInt32LE(lower, upperLower, lowerUpper, upperMost);
     }
 	inline constexpr Word lowerMask(byte bitmask) {
-        return encodeWord(iris::getBit<byte, 0>(bitmask), iris::getBit<byte, 1>(bitmask), iris::getBit<byte, 2>(bitmask), iris::getBit<byte, 3>(bitmask));
+        return encodeWord(stdiris::getBit<byte, 0>(bitmask), stdiris::getBit<byte, 1>(bitmask), stdiris::getBit<byte, 2>(bitmask), stdiris::getBit<byte, 3>(bitmask));
 	}
 	inline constexpr Word upperMask(byte bitmask) {
-        return encodeWord(iris::getBit<byte, 4>(bitmask), iris::getBit<byte, 5>(bitmask), iris::getBit<byte, 6>(bitmask), iris::getBit<byte, 7>(bitmask));
+        return encodeWord(stdiris::getBit<byte, 4>(bitmask), stdiris::getBit<byte, 5>(bitmask), stdiris::getBit<byte, 6>(bitmask), stdiris::getBit<byte, 7>(bitmask));
 	}
-	inline constexpr RegisterValue mask(byte bitmask) { return iris::encodeUint64LE(lowerMask(bitmask), upperMask(bitmask)); }
-	inline constexpr bool readLower(byte bitmask) noexcept { return iris::getLowerHalf(bitmask) > 0; }
-	inline constexpr bool readUpper(byte bitmask) noexcept { return iris::getUpperHalf(bitmask) > 0; }
-	inline constexpr byte registerGetActualIndex(byte value) { return iris::decodeBits<byte, byte, 0b00111111, 0>(value); }
-	inline constexpr bool registerIsMarkedIndirect(byte value) { return iris::getBit<byte, 6>(value); }
-	inline constexpr bool registerIsMarkedStack(byte value) { return iris::getBit<byte, 7>(value); }
+	inline constexpr RegisterValue mask(byte bitmask) { return stdiris::encodeUint64LE(lowerMask(bitmask), upperMask(bitmask)); }
+	inline constexpr bool readLower(byte bitmask) noexcept { return stdiris::getLowerHalf(bitmask) > 0; }
+	inline constexpr bool readUpper(byte bitmask) noexcept { return stdiris::getUpperHalf(bitmask) > 0; }
+	inline constexpr byte registerGetActualIndex(byte value) { return stdiris::decodeBits<byte, byte, 0b00111111, 0>(value); }
+	inline constexpr bool registerIsMarkedIndirect(byte value) { return stdiris::getBit<byte, 6>(value); }
+	inline constexpr bool registerIsMarkedStack(byte value) { return stdiris::getBit<byte, 7>(value); }
 	inline constexpr byte encodeRegisterIndex(byte index, bool indirect, bool stack) {
-		return iris::setBit<byte, 7>(iris::setBit<byte, 6>(iris::encodeBits<byte, byte, 0b00111111, 0>(0, index), indirect), stack);
+		return stdiris::setBit<byte, 7>(stdiris::setBit<byte, 6>(stdiris::encodeBits<byte, byte, 0b00111111, 0>(0, index), indirect), stack);
 	}
 	constexpr auto bitmask64 = mask(0b11111111);
 	constexpr auto memoryMaxBitmask = 0b00001111111111111111111111111111;
@@ -112,20 +112,20 @@ namespace iris19 {
 	constexpr auto upper32Mask = mask(0b11110000);
 
 	inline constexpr Word decodeUpperHalf(RegisterValue value) noexcept {
-		return iris::decodeBits<RegisterValue, Word, upper32Mask, 32>(value);
+		return stdiris::decodeBits<RegisterValue, Word, upper32Mask, 32>(value);
 	}
 	inline constexpr Word decodeLowerHalf(RegisterValue value) noexcept {
-		return iris::decodeBits<RegisterValue, Word, lower32Mask, 0>(value);
+		return stdiris::decodeBits<RegisterValue, Word, lower32Mask, 0>(value);
 	}
 
 	int instructionSizeFromImmediateMask(byte bitmask);
 
-    using RegisterFile = iris::FixedSizeLoadStoreUnit<RegisterValue, byte, ArchitectureConstants::RegisterCount>;
-    using MemorySpace = iris::FixedSizeLoadStoreUnit<Word, RegisterValue, ArchitectureConstants::AddressMax>;
-    using CompareUnit = iris::Comparator<RegisterValue>;
-    using ALU = iris::ALU<RegisterValue>;
+    using RegisterFile = stdiris::FixedSizeLoadStoreUnit<RegisterValue, byte, ArchitectureConstants::RegisterCount>;
+    using MemorySpace = stdiris::FixedSizeLoadStoreUnit<Word, RegisterValue, ArchitectureConstants::AddressMax>;
+    using CompareUnit = stdiris::Comparator<RegisterValue>;
+    using ALU = stdiris::ALU<RegisterValue>;
 
-	class Core : public iris::Core {
+	class Core : public stdiris::Core {
 		public:
 			using SystemFunction = std::function<void(Core*, Instruction&&)>;
 			enum DefaultHandlers {

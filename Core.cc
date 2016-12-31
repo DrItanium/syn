@@ -1,11 +1,11 @@
 #include "Core.h"
 
-namespace iris {
+namespace stdiris {
 
 void Core::run() {
 	while(execute) {
 		execute = cycle();
 	}
 }
-} // end namespace iris
+} // end namespace stdiris
 

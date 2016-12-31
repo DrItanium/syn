@@ -47,9 +47,9 @@ class DecodedInstruction {
     private:
         word raw;
 };
-using RegisterFile = iris::FixedSizeLoadStoreUnit<word, word, ArchitectureConstants::RegisterCount>;
-using ALU = iris::ALU<word>;
-using CompareUnit = iris::Comparator<word>;
+using RegisterFile = stdiris::FixedSizeLoadStoreUnit<word, word, ArchitectureConstants::RegisterCount>;
+using ALU = stdiris::ALU<word>;
+using CompareUnit = stdiris::Comparator<word>;
 /// Represents the execution state of a thread of execution
 struct ExecState {
     bool advanceIp = true;
@@ -61,10 +61,10 @@ struct ExecState {
 };
 
 using SharedExecState = std::shared_ptr<ExecState>;
-using LoadStoreUnit = iris::LoadStoreUnit<word, word>;
+using LoadStoreUnit = stdiris::LoadStoreUnit<word, word>;
 using ThreadCache = std::vector<SharedExecState>;
 
-class Core : public iris::Core {
+class Core : public stdiris::Core {
     public:
         Core(word memorySize, byte numThreads) noexcept;
         virtual ~Core() noexcept;

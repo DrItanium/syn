@@ -11,7 +11,7 @@
 #include "Device.h"
 #include "IODevice.h"
 
-namespace iris {
+namespace stdiris {
 
 template<typename D, typename A = D>
 class IOController : public IODevice<D, A> {
@@ -33,10 +33,10 @@ class IOController : public IODevice<D, A> {
 				if (dev) {
 					return dev->read(caddr);
 				} else {
-					throw iris::Problem("Provided address is not mapped to anything");
+					throw stdiris::Problem("Provided address is not mapped to anything");
 				}
 			} else {
-				throw iris::Problem("Provided base address is out of range!");
+				throw stdiris::Problem("Provided base address is out of range!");
 			}
 		}
 		virtual void write(A addr, D value) override {
@@ -46,24 +46,24 @@ class IOController : public IODevice<D, A> {
 				if (dev) {
 					dev->write(caddr, value);
 				} else {
-					throw iris::Problem("Provided address is not mapped to anything");
+					throw stdiris::Problem("Provided address is not mapped to anything");
 				}
 			} else {
-				throw iris::Problem("Provided base address is out of range!");
+				throw stdiris::Problem("Provided base address is out of range!");
 			}
 		}
 		void install(SharedIONodePtr ptr) {
 			if (ptr->baseAddress() < this->baseAddress()) {
-				throw iris::Problem("Base address of provided device starts out of range of the IO space!");
+				throw stdiris::Problem("Base address of provided device starts out of range of the IO space!");
 			} else if (ptr->baseAddress() > this->endAddress()) {
-				throw iris::Problem("Base address of provided device starts out after the range of the IO space!");
+				throw stdiris::Problem("Base address of provided device starts out after the range of the IO space!");
 			} else if (ptr->endAddress() > this->endAddress()) {
-				throw iris::Problem("End address of provided device ends beyond the IO space!");
+				throw stdiris::Problem("End address of provided device ends beyond the IO space!");
 			} else if (ptr->endAddress() < this->baseAddress()) {
-				throw iris::Problem("End address of provided device ends before the beginning of IO space!");
+				throw stdiris::Problem("End address of provided device ends before the beginning of IO space!");
 			} else {
 				if (childrenRespondTo(ptr)) {
-					throw iris::Problem("Provided device installation will interfere with already installed device!");
+					throw stdiris::Problem("Provided device installation will interfere with already installed device!");
 				}
 				_devices.emplace_back(ptr);
 				ptr->initialize();
@@ -91,5 +91,5 @@ class IOController : public IODevice<D, A> {
 template<typename D, typename A = D>
 using MemoryController = IOController<D, A>;
 
-} // end namespace iris
+} // end namespace stdiris
 #endif // end IRIS_IO_CONTROLLER_H_

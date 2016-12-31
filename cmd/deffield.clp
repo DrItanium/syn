@@ -56,7 +56,7 @@
 (deffunction generate-encode-decode-ops
              (?t ?name ?value ?mask ?shift)
              (format t
-                     "inline constexpr %s decode%s(%s value) noexcept { return iris::decodeBits<%s, %s, %s, %s>(value); }%n"
+                     "inline constexpr %s decode%s(%s value) noexcept { return stdiris::decodeBits<%s, %s, %s, %s>(value); }%n"
                      ?t
                      ?name
                      ?value
@@ -65,7 +65,7 @@
                      (str-cat ?mask)
                      (str-cat ?shift))
              (format t
-                     "inline constexpr %s encode%s(%s value, %s field) noexcept { return iris::encodeBits<%s, %s, %s, %s>(value, field); }%n"
+                     "inline constexpr %s encode%s(%s value, %s field) noexcept { return stdiris::encodeBits<%s, %s, %s, %s>(value, field); }%n"
                      ?value
                      ?name
                      ?value

@@ -40,20 +40,20 @@ namespace iris20 {
 	// branch delay slot if the programmer so chooses.
 	using InstructionMolecule = uint64_t;
 	inline constexpr word encodeWord(byte a, byte b, byte c, byte d, byte e, byte f, byte g, byte h) noexcept {
-		return iris::encodeInt64LE(a, b, c, d, e, f, g, h);
+		return stdiris::encodeInt64LE(a, b, c, d, e, f, g, h);
 	}
 } // end namespace iris20
 #include "iris20_defines.h"
 namespace iris20 {
 	template<word capacity>
-	using WordMemorySpace = iris::FixedSizeLoadStoreUnit<word, word, capacity>;
-	using ALU = iris::ALU<word>;
-	using CompareUnit = iris::Comparator<word>;
+	using WordMemorySpace = stdiris::FixedSizeLoadStoreUnit<word, word, capacity>;
+	using ALU = stdiris::ALU<word>;
+	using CompareUnit = stdiris::Comparator<word>;
 	using RegisterFile = WordMemorySpace<ArchitectureConstants::RegisterCount>;
 	using MemorySpace = WordMemorySpace<ArchitectureConstants::AddressMax>;
 	using DecodedOperand = std::tuple<SectionType, byte>;
 	using DecomposedInstructionMolecule = std::tuple<InstructionAtom, InstructionAtom>;
-	using MemoryController = iris::MemoryController<word>;
+	using MemoryController = stdiris::MemoryController<word>;
 	inline constexpr DecomposedInstructionMolecule decomposeMolecule(InstructionMolecule molecule) noexcept { return std::make_tuple(decodeFirstAtom(molecule), decodeSecondAtom(molecule)); }
 	inline constexpr InstructionAtom getFirstAtom(InstructionMolecule molecule) noexcept { return decodeFirstAtom(molecule); }
 	inline constexpr InstructionAtom getSecondAtom(InstructionMolecule molecule) noexcept { return decodeSecondAtom(molecule); }
@@ -70,10 +70,10 @@ namespace iris20 {
 	inline constexpr word getImmediate32(InstructionMolecule molecule) noexcept { return decodeImmediate32(molecule); }
 	inline constexpr word getImmediate48(InstructionMolecule molecule) noexcept { return decodeImmediate48(molecule); }
 	inline constexpr Operation getOperation(InstructionAtom atom) noexcept { return decodeOperation(atom); }
-	using IODevice = iris::IODevice<word>;
-	using GenericIODevice = iris::LambdaIODevice<word>;
-	using IOController = iris::IOController<word>;
-	class Core : public iris::Core {
+	using IODevice = stdiris::IODevice<word>;
+	using GenericIODevice = stdiris::LambdaIODevice<word>;
+	using IOController = stdiris::IOController<word>;
+	class Core : public stdiris::Core {
 		public:
 			using word = iris20::word;
 		public:
@@ -135,7 +135,7 @@ namespace iris20 {
 			using IOInitFunction = GenericIODevice::InitializeFunction;
 			using IOShutdownFunction = GenericIODevice::ShutdownFunction;
             void installDevice(IOController::SharedIONodePtr device);
-			void installIODevice(word start, word length, IOReadFunction read, IOWriteFunction write, IOInitFunction init = iris::initNothing<typename GenericIODevice::DataType, typename GenericIODevice::AddressType>, IOShutdownFunction shutdown = iris::shutdownNothing<typename GenericIODevice::DataType, typename GenericIODevice::AddressType>);
+			void installIODevice(word start, word length, IOReadFunction read, IOWriteFunction write, IOInitFunction init = stdiris::initNothing<typename GenericIODevice::DataType, typename GenericIODevice::AddressType>, IOShutdownFunction shutdown = stdiris::shutdownNothing<typename GenericIODevice::DataType, typename GenericIODevice::AddressType>);
 	};
 
 	Core* newCore() noexcept;

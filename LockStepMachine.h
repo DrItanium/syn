@@ -7,11 +7,11 @@
 #include <cstdint>
 #include <memory>
 #include "IODevice.h"
-#include "iris16.h"
+#include "iris.h"
 #include "iris20.h"
 namespace machine {
 	template<byte secondaryCoreCount, byte secondaryCycleCount = 4, byte primaryCycleCount = secondaryCoreCount>
-	class LockStepMachine : public iris::Core {
+	class LockStepMachine : public stdiris::Core {
 		public:
 			static constexpr byte MaxSecondaryCoreCount = 16;
 			static LockStepMachine* newCore() noexcept {
@@ -30,7 +30,7 @@ namespace machine {
 			virtual bool cycle() override;
 			virtual void shutdown() override;
 			virtual void toggleDebug() override {
-				iris::Core::toggleDebug();
+				stdiris::Core::toggleDebug();
 				_primary.toggleDebug();
 				for(auto &c : _secondary) {
 					c.toggleDebug();
@@ -41,7 +41,7 @@ namespace machine {
 			}
 		private:
 			iris20::Core _primary;
-			iris16::Core _secondary[secondaryCoreCount];
+			iris::Core _secondary[secondaryCoreCount];
 	};
 
 	template<byte count, byte cycles, byte pcycle>
@@ -50,37 +50,37 @@ namespace machine {
 		auto addressStart = iris20::ArchitectureConstants::AddressMax + 1;
 		auto register0Id = 15;
 		auto register1Id = 16;
-		auto memoryLength = iris16::ExposedCoreDataMemory<iris20::word, iris20::word>::computeDataLength();
+		auto memoryLength = iris::ExposedCoreDataMemory<iris20::word, iris20::word>::computeDataLength();
 		auto makeRegisterMapping = [this](auto registerIndex, auto base) -> auto {
-			return iris::makeLambdaDevice<iris16::word, iris16::word>(base, 4,
+			return stdiris::makeLambdaDevice<iris::word, iris::word>(base, 4,
 					[this, base, registerIndex](auto addr) -> auto {
 						auto reg = _primary.getRegister(registerIndex);
 						switch(addr - base) {
 							case 0:
-								return iris::decodeBits<iris20::word, iris16::word, 0x000000000000FFFF, 0>(reg);
+								return stdiris::decodeBits<iris20::word, iris::word, 0x000000000000FFFF, 0>(reg);
 							case 1:
-								return iris::decodeBits<iris20::word, iris16::word, 0x00000000FFFF0000, 16>(reg);
+								return stdiris::decodeBits<iris20::word, iris::word, 0x00000000FFFF0000, 16>(reg);
 							case 2:
-								return iris::decodeBits<iris20::word, iris16::word, 0x0000FFFF00000000, 32>(reg);
+								return stdiris::decodeBits<iris20::word, iris::word, 0x0000FFFF00000000, 32>(reg);
 							case 3:
-								return iris::decodeBits<iris20::word, iris16::word, static_cast<iris20::word>(0xFFFF000000000000), 48>(reg);
+								return stdiris::decodeBits<iris20::word, iris::word, static_cast<iris20::word>(0xFFFF000000000000), 48>(reg);
 							default:
-								throw iris::Problem("Illegal address provided!");
+								throw stdiris::Problem("Illegal address provided!");
 						}
 					},
 					[this, base, registerIndex](auto addr, auto value) {
 						auto & reg = _primary.getRegister(registerIndex);
 						switch(addr - base) {
 							case 0:
-								reg = iris::encodeBits<iris20::word, iris16::word, 0x000000000000FFFF, 0>(reg, value);
+								reg = stdiris::encodeBits<iris20::word, iris::word, 0x000000000000FFFF, 0>(reg, value);
 							case 1:
-								reg = iris::encodeBits<iris20::word, iris16::word, 0x00000000FFFF0000, 16>(reg, value);
+								reg = stdiris::encodeBits<iris20::word, iris::word, 0x00000000FFFF0000, 16>(reg, value);
 							case 2:
-								reg = iris::encodeBits<iris20::word, iris16::word, 0x0000FFFF00000000, 32>(reg, value);
+								reg = stdiris::encodeBits<iris20::word, iris::word, 0x0000FFFF00000000, 32>(reg, value);
 							case 3:
-								reg = iris::encodeBits<iris20::word, iris16::word, static_cast<iris20::word>(0xFFFF000000000000), 48>(reg, value);
+								reg = stdiris::encodeBits<iris20::word, iris::word, static_cast<iris20::word>(0xFFFF000000000000), 48>(reg, value);
 							default:
-								throw iris::Problem("Illegal address provided!");
+								throw stdiris::Problem("Illegal address provided!");
 						}
 
 					});
@@ -91,9 +91,9 @@ namespace machine {
 		constexpr auto iris16BaseCRegisterIndex = 128;
 		constexpr auto iris16BaseDRegisterIndex = 129;
 		for (auto &c : _secondary) {
-			auto properBaseAddress = static_cast<iris16::word>(0x3);
+			auto properBaseAddress = static_cast<iris::word>(0x3);
 			c.initialize();
-			_primary.installDevice(iris16::mapData<iris20::word, iris20::word>(&c, addressStart));
+			_primary.installDevice(iris::mapData<iris20::word, iris20::word>(&c, addressStart));
 			c.installIODevice(makeRegisterMapping(register0Id, properBaseAddress));
 			properBaseAddress += 0x4;
 			c.installIODevice(makeRegisterMapping(register1Id, properBaseAddress));
@@ -110,7 +110,7 @@ namespace machine {
 				auto dreg = static_cast<byte>(baseDRegister);
 				if (index != innerIndex) {
 					// start the registration process
-					c.installIODevice(iris::makeLambdaDevice<iris16::word, iris16::word>(base, 2, 
+					c.installIODevice(stdiris::makeLambdaDevice<iris::word, iris::word>(base, 2, 
 								[this, base, &other, creg, dreg ](auto addr) -> auto {
 									// address 0 is generally the command port
 									return other.readRegister(((addr - base) == 0) ? creg : dreg);
@@ -119,7 +119,7 @@ namespace machine {
 									other.writeRegister(((addr - base) == 0) ? creg : dreg, value);
 								}));
 				} else {
-					c.installIODevice(iris::makeLambdaDevice<iris16::word, iris16::word>(base, 2, 
+					c.installIODevice(stdiris::makeLambdaDevice<iris::word, iris::word>(base, 2, 
 								[this, base, &c, creg, dreg] (auto addr) -> auto {
 									// address 0 is generally the command port
 									return c.readRegister(((addr - base) == 0) ? creg : dreg);
@@ -133,17 +133,17 @@ namespace machine {
 				baseDRegister += 2;
 				properBaseAddress += 0x2;
 			}
-			c.installIODevice(iris::makeLambdaDevice<iris16::word, iris16::word>(properBaseAddress, 1, 
-						[this](auto addr) -> auto { return static_cast<iris16::word>(cycles); },
+			c.installIODevice(stdiris::makeLambdaDevice<iris::word, iris::word>(properBaseAddress, 1, 
+						[this](auto addr) -> auto { return static_cast<iris::word>(cycles); },
 						[](auto addr, auto value) { }));
 			properBaseAddress++;
-			c.installIODevice(iris::makeLambdaDevice<iris16::word, iris16::word>(properBaseAddress, 1,
-						[this, index](auto addr) -> auto { return static_cast<iris16::word>(index); },
+			c.installIODevice(stdiris::makeLambdaDevice<iris::word, iris::word>(properBaseAddress, 1,
+						[this, index](auto addr) -> auto { return static_cast<iris::word>(index); },
 						[](auto addr, auto value) { }));
 			properBaseAddress++;
 			++index;
 		}
-		_primary.installDevice(iris::makeLambdaDevice<iris20::word, iris20::word>(addressStart, 1, 
+		_primary.installDevice(stdiris::makeLambdaDevice<iris20::word, iris20::word>(addressStart, 1, 
 					[this](auto address) -> auto { return pcycle; },
 					[this](auto a, auto v) { }));
 		addressStart++;

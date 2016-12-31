@@ -18,7 +18,7 @@ using uint32 = uint32_t;
 using int64 = int64_t;
 using uint64 = uint64_t;
 
-namespace iris {
+namespace stdiris {
 
 	constexpr int32 fields[8] = {
 		0,
@@ -310,7 +310,7 @@ inline constexpr T mul(T a, T b) noexcept {
 template<typename T>
 inline T div(T numerator, T denominator) {
 	if (denominator == 0) {
-		throw iris::Problem("Denominator is zero");
+		throw stdiris::Problem("Denominator is zero");
 	} else {
 		return numerator / denominator;
 	}
@@ -319,7 +319,7 @@ inline T div(T numerator, T denominator) {
 template<typename T>
 inline T rem(T numerator, T denominator) {
 	if (denominator == 0) {
-		throw iris::Problem("Denominator is zero");
+		throw stdiris::Problem("Denominator is zero");
 	} else {
 		return numerator % denominator;
 	}
@@ -446,7 +446,7 @@ inline constexpr byte expandBit(bool value) noexcept {
 
 template<typename T, T index>
 inline constexpr T setBit(T value, bool bit) noexcept {
-    return iris::encodeBits<T, bool, 1 << index, index>(value, bit);
+    return stdiris::encodeBits<T, bool, 1 << index, index>(value, bit);
 }
 inline constexpr uint32 expandUInt32LE(bool lowest, bool lowerUpper, bool upperLower, bool upperMost) noexcept {
     return encodeUint32LE(expandBit(lowest), expandBit(lowerUpper), expandBit(upperLower), expandBit(upperMost));
@@ -464,25 +464,25 @@ inline constexpr typename UpperLowerPair<T>::HalfType getUpperHalf(T value) noex
     using InputType = T;
     using DataPair = UpperLowerPair<T>;
     using OutputType = typename DataPair::HalfType;
-    return iris::decodeBits<InputType, OutputType, DataPair::upperMask, DataPair::shiftCount>(value);
+    return stdiris::decodeBits<InputType, OutputType, DataPair::upperMask, DataPair::shiftCount>(value);
 }
 template<typename T>
 inline constexpr typename UpperLowerPair<T>::HalfType getLowerHalf(T value) noexcept {
     using InputType = T;
     using DataPair = UpperLowerPair<T>;
     using OutputType = typename DataPair::HalfType;
-    return iris::decodeBits<InputType, OutputType, DataPair::lowerMask, 0>(value);
+    return stdiris::decodeBits<InputType, OutputType, DataPair::lowerMask, 0>(value);
 }
 
 template<typename T>
 inline constexpr T setLowerHalf(T value, typename UpperLowerPair<T>::HalfType lower) noexcept {
     using DataPair = UpperLowerPair<T>;
-    return iris::encodeBits<T, typename DataPair::HalfType, DataPair::lowerMask, 0>(value, lower);
+    return stdiris::encodeBits<T, typename DataPair::HalfType, DataPair::lowerMask, 0>(value, lower);
 }
 template<typename T>
 inline constexpr T setUpperHalf(T value, typename UpperLowerPair<T>::HalfType upper) noexcept {
     using DataPair = UpperLowerPair<T>;
-    return iris::encodeBits<T, typename DataPair::HalfType, DataPair::lowerMask, DataPair::shiftCount>(value, upper);
+    return stdiris::encodeBits<T, typename DataPair::HalfType, DataPair::lowerMask, DataPair::shiftCount>(value, upper);
 }
 
 template<typename T>

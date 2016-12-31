@@ -9,7 +9,7 @@ extern "C" {
 	#include "clips.h"
 }
 
-namespace iris {
+namespace stdiris {
 void installExtensions(void* theEnv);
 
 template<typename T>
@@ -24,7 +24,7 @@ struct ExternalAddressRegistrar {
 			if (found != _cache.end()) {
 				return found->second;
 			} else {
-				throw iris::Problem("unregistered external address type!");
+				throw stdiris::Problem("unregistered external address type!");
 			}
 		}
 		static void registerExternalAddressId(void* env, unsigned int value) {

@@ -85,17 +85,17 @@ namespace iris18 {
 		struct SetBitmaskToWordMask {
 			static_assert(bitmask <= ArchitectureConstants::Bitmask, "Bitmask is too large and must be less than or equals to 0b1111");
 			static constexpr bool decomposedBits[] = {
-                iris::getBit<byte, 0>(bitmask),
-                iris::getBit<byte, 1>(bitmask),
-                iris::getBit<byte, 2>(bitmask),
-                iris::getBit<byte, 3>(bitmask),
+                stdiris::getBit<byte, 0>(bitmask),
+                stdiris::getBit<byte, 1>(bitmask),
+                stdiris::getBit<byte, 2>(bitmask),
+                stdiris::getBit<byte, 3>(bitmask),
 			};
 			static constexpr Word encodeWord(bool upper, bool lower) noexcept {
-				return iris::encodeUint16LE(iris::expandBit(lower), iris::expandBit(upper));
+				return stdiris::encodeUint16LE(stdiris::expandBit(lower), stdiris::expandBit(upper));
 			}
 			static constexpr Word lowerMask = encodeWord(decomposedBits[1], decomposedBits[0]);
 			static constexpr Word upperMask = encodeWord(decomposedBits[3], decomposedBits[2]);
-			static constexpr RegisterValue mask = iris::encodeUint32LE(lowerMask, upperMask);
+			static constexpr RegisterValue mask = stdiris::encodeUint32LE(lowerMask, upperMask);
 
 			static constexpr bool readLower = decomposedBits[1] || decomposedBits[0];
 			static constexpr bool readUpper = decomposedBits[2] || decomposedBits[3];
@@ -112,16 +112,16 @@ namespace iris18 {
 		inline constexpr bool readUpper() noexcept { return SetBitmaskToWordMask<bitmask>::readUpper; }
 
 	inline constexpr Word lowerMask(byte bitmask) noexcept {
-		return iris::encodeUint16LE(iris::expandBit(iris::getBit<byte, 0>(bitmask)),
-									iris::expandBit(iris::getBit<byte, 1>(bitmask)));
+		return stdiris::encodeUint16LE(stdiris::expandBit(stdiris::getBit<byte, 0>(bitmask)),
+									stdiris::expandBit(stdiris::getBit<byte, 1>(bitmask)));
 	}
 	inline constexpr Word upperMask(byte bitmask) noexcept {
-		return iris::encodeUint16LE(iris::expandBit(iris::getBit<byte, 2>(bitmask)),
-									iris::expandBit(iris::getBit<byte, 3>(bitmask)));
+		return stdiris::encodeUint16LE(stdiris::expandBit(stdiris::getBit<byte, 2>(bitmask)),
+									stdiris::expandBit(stdiris::getBit<byte, 3>(bitmask)));
 	}
 
 	inline constexpr RegisterValue mask(byte bitmask) noexcept {
-		return iris::encodeUint32LE(lowerMask(bitmask), upperMask(bitmask));
+		return stdiris::encodeUint32LE(lowerMask(bitmask), upperMask(bitmask));
 	}
 
 	inline constexpr bool readLower(byte bitmask) noexcept {
@@ -145,11 +145,11 @@ namespace iris18 {
 			return 1 + (readLower<bitmask>() ? 1 : 0) + (readUpper<bitmask>() ? 1 : 0);
 		}
 
-	using ALU = iris::ALU<RegisterValue>;
-	using CompareUnit = iris::Comparator<RegisterValue>;
-	using RegisterFile = iris::FixedSizeLoadStoreUnit<RegisterValue, byte, ArchitectureConstants::RegisterCount>;
-	using MemorySpace = iris::FixedSizeLoadStoreUnit<Word, DWord, ArchitectureConstants::AddressMax>;
-	class Core : public iris::Core {
+	using ALU = stdiris::ALU<RegisterValue>;
+	using CompareUnit = stdiris::Comparator<RegisterValue>;
+	using RegisterFile = stdiris::FixedSizeLoadStoreUnit<RegisterValue, byte, ArchitectureConstants::RegisterCount>;
+	using MemorySpace = stdiris::FixedSizeLoadStoreUnit<Word, DWord, ArchitectureConstants::AddressMax>;
+	class Core : public stdiris::Core {
 		public:
 			using SystemFunction = std::function<void(Core*, DecodedInstruction&&)>;
 			enum DefaultHandlers {
@@ -257,7 +257,7 @@ namespace iris18 {
 			ALU _shifter;
 			ALU _logicalOps;
 			CompareUnit _compare;
-			iris::BooleanCombineUnit _bCombine;
+			stdiris::BooleanCombineUnit _bCombine;
 			MemorySpace memory;
 			SystemFunction systemHandlers[ArchitectureConstants::MaxSystemCalls] =  { 0 };
 	};

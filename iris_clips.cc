@@ -13,7 +13,7 @@ extern "C" {
 #include "clips.h"
 }
 
-namespace iris {
+namespace stdiris {
 	void CLIPS_translateBitmask(UDFContext* context, CLIPSValue* ret) {
 		CLIPSValue value;
 		if (!UDFFirstArgument(context, LEXEME_TYPES, &value)) {
@@ -289,7 +289,7 @@ namespace iris {
 				errorMessage(env, "NEW", 1, funcErrorPrefix, " function new expected no arguments besides type!");
 				CVSetBoolean(ret, false);
 			}
-		} catch(iris::Problem p) {
+		} catch(stdiris::Problem p) {
 			CVSetBoolean(ret, false);
 			std::stringstream s;
 			s << "an exception was thrown: " << p.what();
@@ -476,19 +476,19 @@ namespace iris {
 								ArithmeticOperation fn;
 								switch(op) {
 									case MemoryBlockOp::Combine:
-										fn = iris::add<CLIPSInteger>;
+										fn = stdiris::add<CLIPSInteger>;
 										break;
 									case MemoryBlockOp::Difference:
-										fn = iris::sub<CLIPSInteger>;
+										fn = stdiris::sub<CLIPSInteger>;
 										break;
 									case MemoryBlockOp::Product:
-										fn = iris::mul<CLIPSInteger>;
+										fn = stdiris::mul<CLIPSInteger>;
 										break;
 									case MemoryBlockOp::Divide:
-										fn = iris::div<CLIPSInteger>;
+										fn = stdiris::div<CLIPSInteger>;
 										break;
 									case MemoryBlockOp::Remainder:
-										fn = iris::rem<CLIPSInteger>;
+										fn = stdiris::rem<CLIPSInteger>;
 										break;
 									default:
 										return callErrorMessage(str, "<- legal but unimplemented arithmetic operation!");
@@ -497,7 +497,7 @@ namespace iris {
 									auto val0 = ptr->getMemoryCellValue(addr0);
 									auto val1 = ptr->getMemoryCellValue(addr1);
 									CVSetInteger(ret, fn(val0, val1));
-								} catch (iris::Problem p) {
+								} catch (stdiris::Problem p) {
 									check = false;
 									CVSetBoolean(ret, false);
 									std::stringstream s;
@@ -530,7 +530,7 @@ namespace iris {
 			auto integer = CVToInteger(&number);
 			using IType = decltype(integer);
 			byte container[sizeof(IType)] = { 0 };
-			iris::decodeInt64LE(integer, container);
+			stdiris::decodeInt64LE(integer, container);
 			ret->type = MULTIFIELD;
 			ret->begin = 0;
 			ret->end = sizeof(IType) -1;

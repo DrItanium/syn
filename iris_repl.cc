@@ -8,7 +8,7 @@ static void *mainEnv;
 int main(int argc, char* argv[]) {
 	mainEnv = CreateEnvironment();
 	// install features here
-	iris::installExtensions(mainEnv);
+	stdiris::installExtensions(mainEnv);
 	RerouteStdin(mainEnv, argc, argv);
 	CommandLoop(mainEnv);
 	DestroyEnvironment(mainEnv);
