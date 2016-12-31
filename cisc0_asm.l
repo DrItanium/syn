@@ -8,7 +8,7 @@
 #include <cstdint>
 #include "cisc0.h"
 #include "cisc0_asm.tab.h"
-#include "iris_asm_base.h"
+#include "syn_asm_base.h"
 #define _POSIX_SOURCE 1
 
 extern void cisc0error(const char* c);
@@ -108,23 +108,23 @@ omni [a-zA-Z0-9._]
 [ \t\n,]     ;
 [;].*       ; // comments
 r{digit}+   { 
-	cisc0lval.rval = stdiris::getRegister<byte, cisc0::ArchitectureConstants::RegisterCount>(cisc0text, reportIris18Error);
+	cisc0lval.rval = syn::getRegister<byte, cisc0::ArchitectureConstants::RegisterCount>(cisc0text, reportIris18Error);
 	return REGISTER;
 }
 {digit}+ { 
-	cisc0lval.ival = stdiris::getDecimalImmediate<cisc0::Word>(cisc0text, reportIris18Error);
+	cisc0lval.ival = syn::getDecimalImmediate<cisc0::Word>(cisc0text, reportIris18Error);
 	return IMMEDIATE; 
 }
 0x{xdigit}+ { 
-	cisc0lval.ival = stdiris::getHexImmediate<cisc0::Word>(cisc0text, reportIris18Error);
+	cisc0lval.ival = syn::getHexImmediate<cisc0::Word>(cisc0text, reportIris18Error);
 	return IMMEDIATE;
 }
 0b[01]+ {
-	cisc0lval.ival = stdiris::getBinaryImmediate<cisc0::Word>(cisc0text, reportIris18Error);
+	cisc0lval.ival = syn::getBinaryImmediate<cisc0::Word>(cisc0text, reportIris18Error);
 	return IMMEDIATE;
 }
 0m[01][01][01][01] {
-	cisc0lval.ival = stdiris::decodeBits<cisc0::Word, byte, 0x0000000F, 0>(stdiris::getBinaryImmediate<cisc0::Word>(cisc0text, reportIris18Error));
+	cisc0lval.ival = syn::decodeBits<cisc0::Word, byte, 0x0000000F, 0>(syn::getBinaryImmediate<cisc0::Word>(cisc0text, reportIris18Error));
 	return BITMASK4;
 }
 [?]{omni}+    { cisc0lval.sval = cisc0text; return ALIAS; }

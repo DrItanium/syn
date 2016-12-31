@@ -4,7 +4,7 @@
 #include <cstdio>
 #include <iostream>
 #include <functional>
-namespace stdiris {
+namespace syn {
 	void assemble(const std::string& target, FILE* input, std::ostream* output);
 	void forEachAssembler(std::function<void(const std::string&)> fn);
 }

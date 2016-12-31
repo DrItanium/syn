@@ -28,7 +28,7 @@ namespace iris20 {
     byte encodeRegisterOperation(byte registerIndex, bool memory, bool stack) {
         auto descript = SectionType::Undefined;
         if (memory && stack) {
-            throw stdiris::Problem("Register operation can't be both memory and stack");
+            throw syn::Problem("Register operation can't be both memory and stack");
         } else if (memory) {
             descript = SectionType::Memory;
         } else if (stack) {
@@ -238,9 +238,9 @@ namespace iris20 {
     InstructionTriCompound set64(byte dest, word value, InstructionAtom leftOverSlot) noexcept {
         return std::make_tuple(
                 molecule(set16(registerOperation(temporaryRegister0),
-                        stdiris::getUpperHalf(stdiris::getUpperHalf(value))),
+                        syn::getUpperHalf(syn::getUpperHalf(value))),
                     shiftLeft(temporaryRegister0, temporaryRegister0, 48, true)),
-                set48(dest, stdiris::decodeBits<word, word, 0x0000FFFFFFFFFFFF, 0>(value)),
+                set48(dest, syn::decodeBits<word, word, 0x0000FFFFFFFFFFFF, 0>(value)),
                 molecule(add(dest, dest, temporaryRegister0, false),
                     leftOverSlot));
     }
@@ -368,7 +368,7 @@ namespace iris20 {
 	void emit(const MoleculeList& elements, std::ostream& out) noexcept {
 		byte storage[sizeof(InstructionMolecule)] = { 0 };
 		for (const auto& a : elements) {
-			stdiris::decodeUint64LE(a, storage);
+			syn::decodeUint64LE(a, storage);
 			out.write((char*)storage, sizeof(InstructionMolecule));
 		}
 	}

@@ -9,7 +9,7 @@
 #include "Problem.h"
 
 static void usage(char* arg0);
-stdiris::Core* core = nullptr;
+syn::Core* core = nullptr;
 auto debug = false;
 
 int main(int argc, char* argv[]) {
@@ -93,9 +93,9 @@ int main(int argc, char* argv[]) {
 		}
 	}
 	try {
-		core = stdiris::getCore(target);
+		core = syn::getCore(target);
 		if (!core) {
-			throw stdiris::Problem("core initialization for target '" + target + "' failed!");
+			throw syn::Problem("core initialization for target '" + target + "' failed!");
 		} else {
 			if(output && input) {
 				if (debug) {
@@ -119,7 +119,7 @@ int main(int argc, char* argv[]) {
 				usage(argv[0]);
 			}
 		}
-	} catch(stdiris::Problem p) {
+	} catch(syn::Problem p) {
 		std::cerr << "PROBLEM: " << p.what() << std::endl;
 		return 1;
 	}
@@ -128,5 +128,5 @@ int main(int argc, char* argv[]) {
 void usage(char* arg0) {
 	std::cerr << "usage: " << arg0 << " -t <target> [-d] [-o <file>] <file>" << std::endl;
 	std::cerr << "Supported Targets:" << std::endl;
-	stdiris::forEachCoreName([](const std::string& name) { std::cerr << "\t" << name << std::endl; });
+	syn::forEachCoreName([](const std::string& name) { std::cerr << "\t" << name << std::endl; });
 }

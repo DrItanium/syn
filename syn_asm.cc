@@ -83,7 +83,7 @@ int main(int argc, char* argv[]) {
 	}
 	if(output && input) {
 		try {
-			stdiris::assemble(target, input, output);
+			syn::assemble(target, input, output);
 			if (closeOutput) {
 				static_cast<std::ofstream*>(output)->close();
 				delete output;
@@ -93,7 +93,7 @@ int main(int argc, char* argv[]) {
 				fclose(input);
 				input = 0;
 			}
-		} catch (stdiris::Problem pb) {
+		} catch (syn::Problem pb) {
 			std::cerr << pb.what() << std::endl;
 			return 1;
 		}
@@ -106,5 +106,5 @@ int main(int argc, char* argv[]) {
 void usage(char* arg0) {
 	std::cerr << "usage: " << arg0 << " -t <target> [-o <file>] <file>" << std::endl;
 	std::cerr << "Supported Targets:" << std::endl;
-	stdiris::forEachAssembler([](const std::string& name) { std::cerr << "\t" << name << std::endl; });
+	syn::forEachAssembler([](const std::string& name) { std::cerr << "\t" << name << std::endl; });
 }

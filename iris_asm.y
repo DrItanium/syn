@@ -146,8 +146,8 @@ void setRegister0(byte value) noexcept {
 }
 
 void setFullImmediate(word value) noexcept {
-	setRegister1(stdiris::getLowerHalf<word>(value));
-	setRegister2(stdiris::getUpperHalf<word>(value));
+	setRegister1(syn::getLowerHalf<word>(value));
+	setRegister2(syn::getUpperHalf<word>(value));
 }
 %}
 
@@ -514,10 +514,10 @@ half_immediate:
 					setRegister2($1);
 				} | 
 				TAG_LOW IMMEDIATE {
-					setRegister2(stdiris::getLowerHalf<word>($2));
+					setRegister2(syn::getLowerHalf<word>($2));
 				} |
 				TAG_HI IMMEDIATE {
-					setRegister2(stdiris::getUpperHalf<word>($2));
+					setRegister2(syn::getUpperHalf<word>($2));
 				} ;
 
 DESTINATION_GPR:
@@ -583,8 +583,8 @@ void write_dynamic_op(dynamicop* dop) {
    buf[3] = static_cast<char>(((dop->address & 0xFF00) >> 8));
    switch(dop->segment) {
 		case iris::Segment::Code:
-			buf[4] = static_cast<char>(stdiris::encodeBits<byte, byte, 0b11111000, 3>(
-								stdiris::encodeBits<byte, byte, 0b00000111, 0>((byte)0, dop->group),
+			buf[4] = static_cast<char>(syn::encodeBits<byte, byte, 0b11111000, 3>(
+								syn::encodeBits<byte, byte, 0b00000111, 0>((byte)0, dop->group),
 								dop->op));
 			buf[5] = static_cast<char>(dop->reg0);
 			buf[6] = static_cast<char>(dop->reg1);
@@ -622,8 +622,8 @@ void resolve_labels() {
 bool resolve_op(dynamicop* dop) {
    if(iris::state.labels.count(dop->symbol) == 1) {
 		word addr = iris::state.labels[dop->symbol];
-		dop->reg1 = stdiris::decodeField<word, byte, 0>(addr);
-		dop->reg2 = stdiris::decodeField<word, byte, 1>(addr);
+		dop->reg1 = syn::decodeField<word, byte, 0>(addr);
+		dop->reg2 = syn::decodeField<word, byte, 1>(addr);
 		return true;
    }
    return false;

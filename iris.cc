@@ -20,8 +20,8 @@ namespace iris {
 	}
 
 	void Core::dump(std::ostream& stream) {
-		auto decodeWord = [](word value, char* buf) { stdiris::decodeUint16LE(value, (byte*)buf); };
-		auto decodeDword = [](dword value, char* buf) { stdiris::decodeUint32LE(value, (byte*)buf); };
+		auto decodeWord = [](word value, char* buf) { syn::decodeUint16LE(value, (byte*)buf); };
+		auto decodeDword = [](dword value, char* buf) { syn::decodeUint32LE(value, (byte*)buf); };
 		gpr.dump(stream, decodeWord);
 		data.dump(stream, decodeWord);
 		instruction.dump(stream, decodeDword);
@@ -49,7 +49,7 @@ namespace iris {
 			stream << message << " 0x" << std::hex << operation;
 			execute = false;
 			advanceIp = false;
-			throw stdiris::Problem(stream.str());
+			throw syn::Problem(stream.str());
 		};
 		auto makeIllegalOperationMessage = [this, makeProblem](const std::string& type) {
 			makeProblem("Illegal " + type, getOperation());
@@ -165,7 +165,7 @@ namespace iris {
 						getLinkRegister() = cond ? getInstructionPointer() + 1 : getLinkRegister();
 						break;
 					default:
-						throw stdiris::Problem("defined but unimplemented operation!");
+						throw syn::Problem("defined but unimplemented operation!");
 				}
 			} else {
 				auto ifthenelse = false, conditional = false, iffalse = false, immediate = false,  link = false;
@@ -233,8 +233,8 @@ namespace iris {
 					break;
 				case MoveOp::LoadCode:
 					codeStorage = instruction[destinationRegister()];
-					source0Register() = stdiris::getLowerHalf(codeStorage);
-					source1Register() = stdiris::getUpperHalf(codeStorage);
+					source0Register() = syn::getLowerHalf(codeStorage);
+					source1Register() = syn::getUpperHalf(codeStorage);
 					break;
 				case MoveOp::StoreCode:
 					instruction[destinationRegister()] = encodeDword(source0Register(), source1Register());
@@ -282,7 +282,7 @@ namespace iris {
 			if (result  == translationTable.end()) {
 				switch(op) {
 					case ConditionRegisterOp::CRSwap:
-						stdiris::swap<bool>(predicateResult(), predicateInverseResult());
+						syn::swap<bool>(predicateResult(), predicateInverseResult());
 						break;
 					case ConditionRegisterOp::CRMove:
 						predicateResult() = predicateInverseResult();
@@ -294,7 +294,7 @@ namespace iris {
 						restorePredicateRegisters(destinationRegister(), getImmediate());
 						break;
 					default:
-						throw stdiris::Problem("Defined but unimplemented condition register operation!");
+						throw syn::Problem("Defined but unimplemented condition register operation!");
 				}
 			} else {
 				typename decltype(_pcompare)::Operation pop;
@@ -329,12 +329,12 @@ namespace iris {
 		for(auto lineNumber = static_cast<int>(0); input.good(); ++lineNumber) {
 			input.read(buf, 8);
 			if (input.gcount() < 8 && input.gcount() > 0) {
-				throw stdiris::Problem("unaligned object file found!");
+				throw syn::Problem("unaligned object file found!");
 			} else if (input.gcount() == 0) {
 				if (input.eof()) {
 					break;
 				} else {
-					throw stdiris::Problem("Something bad happened while reading input file!");
+					throw syn::Problem("Something bad happened while reading input file!");
 				}
 			}
 			//ignore the first byte, it is always zero
@@ -359,7 +359,7 @@ namespace iris {
 				std::stringstream str;
 				str << "error: line " << lineNumber << ", unknown segment " << static_cast<int>(target) << "/" << static_cast<int>(buf[1]) << std::endl;
 				str << "current address: " << std::hex << address << std::endl;
-				throw stdiris::Problem(str.str());
+				throw syn::Problem(str.str());
 			}
 		}
 	}
@@ -373,7 +373,7 @@ namespace iris {
 		instruction.initialize();
 		stack.initialize();
 		_io.initialize();
-		auto readNothing = stdiris::readNothing<typename LambdaIODevice::DataType, typename LambdaIODevice::AddressType>;
+		auto readNothing = syn::readNothing<typename LambdaIODevice::DataType, typename LambdaIODevice::AddressType>;
 		// terminate
 		_io.install(std::make_shared<LambdaIODevice>(0, 1, readNothing, 
 					[this](word address, word value) { 
@@ -381,7 +381,7 @@ namespace iris {
 						advanceIp = false; 
 					}));
 		// getc and putc
-		_io.install(std::make_shared<stdiris::StandardInputOutputDevice<word>>(1));
+		_io.install(std::make_shared<syn::StandardInputOutputDevice<word>>(1));
 		for (auto i = 0; i < _cr.getSize(); ++i) {
 			_cr[i] = false;
 		}

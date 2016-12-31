@@ -19,7 +19,7 @@ namespace iris20 {
 
 	void Core::dump(std::ostream& stream) {
 
-		auto decodeWord = [](word value, char* buf) { stdiris::decodeInt64LE(value, (byte*)buf); };
+		auto decodeWord = [](word value, char* buf) { syn::decodeInt64LE(value, (byte*)buf); };
 		gpr.dump(stream, decodeWord);
 		//memory.dump(stream, decodeWord);
 		
@@ -62,17 +62,17 @@ namespace iris20 {
         return makeDispatchEntry(target, static_cast<byte>(value), immediate);
     }
 	constexpr inline byte makeJumpByte(bool ifthenelse, bool conditional, bool iffalse, bool link) noexcept {
-		return stdiris::encodeFlag<byte, 0b00001000, 3>(
-				stdiris::encodeFlag<byte, 0b00000100, 2>(
-					stdiris::encodeFlag<byte, 0b00000010, 1>(
-						stdiris::encodeFlag<byte, 0b00000001, 0>(0u,
+		return syn::encodeFlag<byte, 0b00001000, 3>(
+				syn::encodeFlag<byte, 0b00000100, 2>(
+					syn::encodeFlag<byte, 0b00000010, 1>(
+						syn::encodeFlag<byte, 0b00000001, 0>(0u,
 							ifthenelse),
 						conditional),
 					iffalse),
 				link);
 	}
 	constexpr inline byte makeMoleculeJumpByte(bool ifthenelse, bool conditional, bool iffalse, bool link, bool wide48) noexcept {
-		return stdiris::encodeFlag<byte, 0b00010000, 4>(makeJumpByte(ifthenelse, conditional, iffalse, link), wide48);
+		return syn::encodeFlag<byte, 0b00010000, 4>(makeJumpByte(ifthenelse, conditional, iffalse, link), wide48);
 	}
 	constexpr inline DispatchTableEntry makeJumpConstant(bool ifthenelse, bool conditional, bool iffalse, bool immediate, bool link) noexcept {
         return makeDispatchEntry(ExecutionUnitTarget::BranchUnit, makeJumpByte(ifthenelse, conditional, iffalse, link), immediate);
@@ -81,10 +81,10 @@ namespace iris20 {
 		return makeDispatchEntry(ExecutionUnitTarget::BranchUnit, makeMoleculeJumpByte(ifthenelse, conditional, iffalse, link, wide48), immediate);
 	}
 	constexpr inline std::tuple<bool, bool, bool, bool> decomposeJumpByte(byte input) noexcept {
-		return std::make_tuple(stdiris::decodeFlag<byte, 0b00000001>(input), stdiris::decodeFlag<byte, 0b00000010>(input), stdiris::decodeFlag<byte, 0b00000100>(input), stdiris::decodeFlag<byte, 0b00001000>(input));
+		return std::make_tuple(syn::decodeFlag<byte, 0b00000001>(input), syn::decodeFlag<byte, 0b00000010>(input), syn::decodeFlag<byte, 0b00000100>(input), syn::decodeFlag<byte, 0b00001000>(input));
 	}
 	constexpr inline std::tuple<bool, bool, bool, bool, bool> decomposeMoleculeJumpByte(byte input) noexcept {
-		return std::make_tuple(stdiris::decodeFlag<byte, 0b00000001>(input), stdiris::decodeFlag<byte, 0b00000010>(input), stdiris::decodeFlag<byte, 0b00000100>(input), stdiris::decodeFlag<byte, 0b00001000>(input), stdiris::decodeFlag<byte, 0b00010000>(input));
+		return std::make_tuple(syn::decodeFlag<byte, 0b00000001>(input), syn::decodeFlag<byte, 0b00000010>(input), syn::decodeFlag<byte, 0b00000100>(input), syn::decodeFlag<byte, 0b00001000>(input), syn::decodeFlag<byte, 0b00010000>(input));
 	}
     void Core::executeMolecule() {
         // decode the operation first!
@@ -106,7 +106,7 @@ namespace iris20 {
         };
 		auto result = table.find(decodeMoleculeOperation(current));
 		if (result == table.end()) {
-			throw stdiris::Problem("Illegal molecule instruction!");
+			throw syn::Problem("Illegal molecule instruction!");
 		}
         ExecutionUnitTarget unit;
         byte dispatch;
@@ -121,22 +121,22 @@ namespace iris20 {
                     case Operation::Set48:
                         return decodeImmediate48(current);
                     default:
-                        throw stdiris::Problem("Illegal operation to get a word from!");
+                        throw syn::Problem("Illegal operation to get a word from!");
                 }
             };
             if (immediate) {
                 if (isSet(op)) {
                     operandSet(decodeMoleculeDestination(current), getImmediateWord(op));
                 } else {
-                    throw stdiris::Problem("unimplemented move operation specified!");
+                    throw syn::Problem("unimplemented move operation specified!");
                 }
             } else {
-                throw stdiris::Problem("no immediate operations currently defined!");
+                throw syn::Problem("no immediate operations currently defined!");
             }
         };
 		auto jumpOperation = [this, dispatch, immediate]() {
 			if (!immediate) {
-				throw stdiris::Problem("register based jump instructions don't exist in wide mode");
+				throw syn::Problem("register based jump instructions don't exist in wide mode");
 			}
 			auto ifthenelse = false, conditional = false, iffalse = false, link = false, wide48 = false;
 			std::tie(ifthenelse, conditional, iffalse, link, wide48) = decomposeMoleculeJumpByte(dispatch);
@@ -150,7 +150,7 @@ namespace iris20 {
 				cond = (iffalse ? (dest == 0) : (dest != 0));
 				if (ifthenelse) {
 					//newAddr = operandGet(cond ? src0Ind : src1Ind);
-					throw stdiris::Problem("ifthenelse not supported in wide mode!");
+					throw syn::Problem("ifthenelse not supported in wide mode!");
 				} else {
 					newAddr = cond ? (ip + immediateSelector(current)) : ip + 1;
 				}
@@ -170,7 +170,7 @@ namespace iris20 {
 				jumpOperation();
 				break;
             default:
-                throw stdiris::Problem("Provided unit does not have molecule sized instructions!");
+                throw syn::Problem("Provided unit does not have molecule sized instructions!");
         }
     }
 	DispatchTableEntry aluEntry(ALU::Operation op, bool immediate) noexcept {
@@ -242,7 +242,7 @@ namespace iris20 {
 		};
 		auto result = table.find(getOperation(atom));
 		if (result == table.end()) {
-			throw stdiris::Problem("Illegal single atom instruction!");
+			throw syn::Problem("Illegal single atom instruction!");
 		}
 		auto tuple = result->second;
 		ExecutionUnitTarget target;
@@ -261,7 +261,7 @@ namespace iris20 {
 				operandSet(dest, operandGet(src));
 				operandSet(src, tmp);
 			} else {
-				throw stdiris::Problem("Registered but unimplemented move unit operation!");
+				throw syn::Problem("Registered but unimplemented move unit operation!");
 			}
 		};
 		auto jumpOperation = [this, subAction, immediate, atom]() {
@@ -305,7 +305,7 @@ namespace iris20 {
 				moveOperation();
 				break;
 			default:
-				throw stdiris::Problem("Registered execution unit target is not yet implemented!");
+				throw syn::Problem("Registered execution unit target is not yet implemented!");
 		}
 	}
 
@@ -316,12 +316,12 @@ namespace iris20 {
 			input.read(buf, bufSize);
             auto gcount = input.gcount();
 			if (gcount < static_cast<decltype(gcount)>(bufSize) && gcount > 0) {
-				throw stdiris::Problem("unaligned object file found!");
+				throw syn::Problem("unaligned object file found!");
 			} else if (gcount == 0) {
 				if (input.eof()) {
 					break;
 				} else {
-					throw stdiris::Problem("Something bad happened while reading input file!");
+					throw syn::Problem("Something bad happened while reading input file!");
 				}
 			}
 			// first 8 bytes are an address, second 8 are a value
@@ -354,14 +354,14 @@ namespace iris20 {
 		mem->zero();
 		_controller.install(mem);
 		// install memory handlers
-		auto rNothing = stdiris::readNothing<typename GenericIODevice::DataType>;
-		auto wNothing = stdiris::writeNothing<typename GenericIODevice::DataType>;
+		auto rNothing = syn::readNothing<typename GenericIODevice::DataType>;
+		auto wNothing = syn::writeNothing<typename GenericIODevice::DataType>;
 		installIODevice(ArchitectureConstants::IOTerminate, 1, rNothing,
 					[this](word addr, word value) {
 					execute = false;
 					advanceIp = false;
 					});
-		installDevice(std::make_shared<stdiris::StandardInputOutputDevice<word>>(ArchitectureConstants::IOAddressBase + 1));
+		installDevice(std::make_shared<syn::StandardInputOutputDevice<word>>(ArchitectureConstants::IOAddressBase + 1));
 		installIODevice(ArchitectureConstants::IOGetMemorySize, 1, [](word addr) { return static_cast<word>(ArchitectureConstants::AddressMax) + 1; }, wNothing);
 	}
 
@@ -380,7 +380,7 @@ namespace iris20 {
                 data = value;
                 break;
             default:
-                throw stdiris::Problem("Undefined section type specified!");
+                throw syn::Problem("Undefined section type specified!");
         }
     }
 	
@@ -403,7 +403,7 @@ namespace iris20 {
             case SectionType::Memory:
 				return _controller.read(data);
             default:
-                throw stdiris::Problem("Undefined section type specified!");
+                throw syn::Problem("Undefined section type specified!");
         }
     }
 

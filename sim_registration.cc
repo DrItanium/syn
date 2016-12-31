@@ -6,7 +6,7 @@
 #include "iris20.h"
 #include "iris_machine.h"
 
-namespace stdiris {
+namespace syn {
 	static std::map<std::string, std::function<Core*()>> cores = {
         { "iris20", iris20::newCore },
 		{ "cisc0", cisc0::newCore },
@@ -20,7 +20,7 @@ namespace stdiris {
 		} else {
 			std::stringstream stream;
 			stream << "Tried to create a non-existent core: " << name << "!!!";
-			throw stdiris::Problem(stream.str());
+			throw syn::Problem(stream.str());
 		}
     }
     void forEachCoreName(std::function<void(const std::string&)> fn) {

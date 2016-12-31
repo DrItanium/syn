@@ -9,7 +9,7 @@
 std::istream* input = nullptr;
 auto close = false;
 auto debug = false;
-stdiris::Core* core = nullptr;
+syn::Core* core = nullptr;
 static void usage(char* arg0);
 std::string target;
 int main(int argc, char* argv[]) {
@@ -62,7 +62,7 @@ int main(int argc, char* argv[]) {
 	}
 	// now check the target:
 	try {
-		core = stdiris::getCore(target);
+		core = syn::getCore(target);
 		if (!core) {
 			std::cerr << "PROBLEM: core initialization for target '" << target << "' failed!" << std::endl;
 			return 1;
@@ -83,7 +83,7 @@ int main(int argc, char* argv[]) {
 				usage(argv[0]);
 			}
 		}
-	} catch(stdiris::Problem p) {
+	} catch(syn::Problem p) {
 		std::cerr << "PROBLEM: " << p.what() << std::endl;
 		return 1;
 	}
@@ -92,5 +92,5 @@ int main(int argc, char* argv[]) {
 void usage(char* arg0) {
 	std::cerr << "usage: " << arg0 << " -h | -d -t <type> [file | -]" << std::endl;
 	std::cerr << "Supported Targets:" << std::endl;
-	stdiris::forEachCoreName([](const std::string& name) { std::cerr << "\t" << name << std::endl; });
+	syn::forEachCoreName([](const std::string& name) { std::cerr << "\t" << name << std::endl; });
 }

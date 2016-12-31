@@ -2,7 +2,7 @@
 #ifndef IRIS_PROBLEM_H
 #define IRIS_PROBLEM_H
 #include <string>
-namespace stdiris {
+namespace syn {
 
 	class Problem {
 		public:

@@ -8,7 +8,7 @@
 #include <cstdint>
 #include "iris.h"
 #include "iris_asm.tab.h"
-#include "iris_asm_base.h"
+#include "syn_asm_base.h"
 #define _POSIX_SOURCE 1
 
 extern void iriserror(const char* c);
@@ -132,23 +132,23 @@ omni [a-zA-Z0-9._]
 [ \t\n]     ;
 [;].*       ; // comments
 r{digit}+ { 
-	irislval.rval = stdiris::getRegister<byte, 256>(iristext, reportIris16Error); 
+	irislval.rval = syn::getRegister<byte, 256>(iristext, reportIris16Error); 
 	return GPR;
 }
 c{digit}+ { 
-	irislval.rval = stdiris::getRegister<byte, 16>(iristext, reportIris16Error);
+	irislval.rval = syn::getRegister<byte, 16>(iristext, reportIris16Error);
 	return PREDICATE_REGISTER;
 }
 {digit}+ { 
-	irislval.ival = stdiris::getDecimalImmediate<iris::word>(iristext, reportIris16Error);
+	irislval.ival = syn::getDecimalImmediate<iris::word>(iristext, reportIris16Error);
 	return IMMEDIATE; 
 }
 0x{xdigit}+ { 
-	irislval.ival = stdiris::getHexImmediate<iris::word>(iristext, reportIris16Error);
+	irislval.ival = syn::getHexImmediate<iris::word>(iristext, reportIris16Error);
 	return IMMEDIATE;
 }
 0b[01]+ {
-	irislval.ival = stdiris::getBinaryImmediate<iris::word>(iristext, reportIris16Error);
+	irislval.ival = syn::getBinaryImmediate<iris::word>(iristext, reportIris16Error);
 	return IMMEDIATE;
 }
 {omni}+ { 

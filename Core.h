@@ -3,8 +3,8 @@
 #include <iostream>
 #include <typeinfo>
 #include "Device.h"
-namespace stdiris {
-	 // Generic stdiris core interface
+namespace syn {
+	 // Generic syn core interface
 	 class Core : public Device {
 		public:
 			virtual void dump(std::ostream& stream) = 0;
@@ -17,5 +17,5 @@ namespace stdiris {
 		protected:
 			bool execute = true;
 	 };
-} // end namespace stdiris
+} // end namespace syn
 #endif

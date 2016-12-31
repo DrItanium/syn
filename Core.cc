@@ -1,11 +1,11 @@
 #include "Core.h"
 
-namespace stdiris {
+namespace syn {
 
 void Core::run() {
 	while(execute) {
 		execute = cycle();
 	}
 }
-} // end namespace stdiris
+} // end namespace syn
 

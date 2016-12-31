@@ -1,6 +1,6 @@
 #ifndef __IRIS_INSTRUCTION_H
 #define __IRIS_INSTRUCTION_H
-#include "iris_base.h"
+#include "syn_base.h"
 namespace iris {
 	template<typename Word, typename Operation>
 	class Instruction {

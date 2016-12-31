@@ -1,7 +1,7 @@
 #ifndef _TARGET_CISC0_IRIS_H
 #define _TARGET_CISC0_IRIS_H
-#include "iris_base.h"
-#include "iris_xunits.h"
+#include "syn_base.h"
+#include "syn_xunits.h"
 #include "Core.h"
 #include "Problem.h"
 #include <cstdint>
@@ -85,17 +85,17 @@ namespace cisc0 {
 		struct SetBitmaskToWordMask {
 			static_assert(bitmask <= ArchitectureConstants::Bitmask, "Bitmask is too large and must be less than or equals to 0b1111");
 			static constexpr bool decomposedBits[] = {
-                stdiris::getBit<byte, 0>(bitmask),
-                stdiris::getBit<byte, 1>(bitmask),
-                stdiris::getBit<byte, 2>(bitmask),
-                stdiris::getBit<byte, 3>(bitmask),
+                syn::getBit<byte, 0>(bitmask),
+                syn::getBit<byte, 1>(bitmask),
+                syn::getBit<byte, 2>(bitmask),
+                syn::getBit<byte, 3>(bitmask),
 			};
 			static constexpr Word encodeWord(bool upper, bool lower) noexcept {
-				return stdiris::encodeUint16LE(stdiris::expandBit(lower), stdiris::expandBit(upper));
+				return syn::encodeUint16LE(syn::expandBit(lower), syn::expandBit(upper));
 			}
 			static constexpr Word lowerMask = encodeWord(decomposedBits[1], decomposedBits[0]);
 			static constexpr Word upperMask = encodeWord(decomposedBits[3], decomposedBits[2]);
-			static constexpr RegisterValue mask = stdiris::encodeUint32LE(lowerMask, upperMask);
+			static constexpr RegisterValue mask = syn::encodeUint32LE(lowerMask, upperMask);
 
 			static constexpr bool readLower = decomposedBits[1] || decomposedBits[0];
 			static constexpr bool readUpper = decomposedBits[2] || decomposedBits[3];
@@ -112,16 +112,16 @@ namespace cisc0 {
 		inline constexpr bool readUpper() noexcept { return SetBitmaskToWordMask<bitmask>::readUpper; }
 
 	inline constexpr Word lowerMask(byte bitmask) noexcept {
-		return stdiris::encodeUint16LE(stdiris::expandBit(stdiris::getBit<byte, 0>(bitmask)),
-									stdiris::expandBit(stdiris::getBit<byte, 1>(bitmask)));
+		return syn::encodeUint16LE(syn::expandBit(syn::getBit<byte, 0>(bitmask)),
+									syn::expandBit(syn::getBit<byte, 1>(bitmask)));
 	}
 	inline constexpr Word upperMask(byte bitmask) noexcept {
-		return stdiris::encodeUint16LE(stdiris::expandBit(stdiris::getBit<byte, 2>(bitmask)),
-									stdiris::expandBit(stdiris::getBit<byte, 3>(bitmask)));
+		return syn::encodeUint16LE(syn::expandBit(syn::getBit<byte, 2>(bitmask)),
+									syn::expandBit(syn::getBit<byte, 3>(bitmask)));
 	}
 
 	inline constexpr RegisterValue mask(byte bitmask) noexcept {
-		return stdiris::encodeUint32LE(lowerMask(bitmask), upperMask(bitmask));
+		return syn::encodeUint32LE(lowerMask(bitmask), upperMask(bitmask));
 	}
 
 	inline constexpr bool readLower(byte bitmask) noexcept {
@@ -145,11 +145,11 @@ namespace cisc0 {
 			return 1 + (readLower<bitmask>() ? 1 : 0) + (readUpper<bitmask>() ? 1 : 0);
 		}
 
-	using ALU = stdiris::ALU<RegisterValue>;
-	using CompareUnit = stdiris::Comparator<RegisterValue>;
-	using RegisterFile = stdiris::FixedSizeLoadStoreUnit<RegisterValue, byte, ArchitectureConstants::RegisterCount>;
-	using MemorySpace = stdiris::FixedSizeLoadStoreUnit<Word, DWord, ArchitectureConstants::AddressMax>;
-	class Core : public stdiris::Core {
+	using ALU = syn::ALU<RegisterValue>;
+	using CompareUnit = syn::Comparator<RegisterValue>;
+	using RegisterFile = syn::FixedSizeLoadStoreUnit<RegisterValue, byte, ArchitectureConstants::RegisterCount>;
+	using MemorySpace = syn::FixedSizeLoadStoreUnit<Word, DWord, ArchitectureConstants::AddressMax>;
+	class Core : public syn::Core {
 		public:
 			using SystemFunction = std::function<void(Core*, DecodedInstruction&&)>;
 			enum DefaultHandlers {
@@ -257,7 +257,7 @@ namespace cisc0 {
 			ALU _shifter;
 			ALU _logicalOps;
 			CompareUnit _compare;
-			stdiris::BooleanCombineUnit _bCombine;
+			syn::BooleanCombineUnit _bCombine;
 			MemorySpace memory;
 			SystemFunction systemHandlers[ArchitectureConstants::MaxSystemCalls] =  { 0 };
 	};

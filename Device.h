@@ -4,7 +4,7 @@
 #ifndef IRIS_DEVICE_H_
 #define IRIS_DEVICE_H_
 #include <iostream>
-namespace stdiris {
+namespace syn {
 class Device {
 	public:
 		virtual void initialize() = 0;
@@ -15,5 +15,5 @@ class Device {
 		bool _debug = false;
 
 };
-} // end namespace stdiris
+} // end namespace syn
 #endif // end IRIS_DEVICE_H_

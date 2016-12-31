@@ -5,9 +5,9 @@
 
 #include <map>
 
-namespace stdiris {
+namespace syn {
 	static std::map<std::string, std::function<void(FILE*, std::ostream*)>> assemblers = {
-        { "iris20", [](auto a, auto b) { throw stdiris::Problem("Assembler is done through clips!"); }, },
+        { "iris20", [](auto a, auto b) { throw syn::Problem("Assembler is done through clips!"); }, },
 		{ "cisc0", cisc0::assemble },
 		{ "iris", iris::assemble },
 	};
@@ -18,7 +18,7 @@ namespace stdiris {
 		} else {
 			std::stringstream stream;
 			stream << "Tried to assemble code for non-existent core: " << name << "!!!";
-			throw stdiris::Problem(stream.str());
+			throw syn::Problem(stream.str());
 		}
 	}
 

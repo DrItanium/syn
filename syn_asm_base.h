@@ -1,11 +1,11 @@
-// Basic assembler routines that all stdiris targets use
+// Basic assembler routines that all syn targets use
 #ifndef IRIS_ASM_BASE_H
 #define IRIS_ASM_BASE_H
 #include <functional>
 #include <sstream>
-#include "iris_base.h"
+#include "syn_base.h"
 #include <bitset>
-namespace stdiris { 
+namespace syn { 
 	using ErrorReportingFunction = std::function<void(const std::string&)>;
 	template<typename T, T count> 
 	T getRegister(const char* text, ErrorReportingFunction onError) noexcept {
@@ -29,8 +29,8 @@ namespace stdiris {
 		std::string temp(text);
 		// always replace the second element as it is always the b, x, etc
 		temp[1] = '0';
-		constexpr auto width = stdiris::bitwidth<T>();
-		static_assert(width <= stdiris::bitwidth<unsigned long long>(), "Please provide custom implementation of getBinaryImmediate since type is too large to fit in a unsigned long long!");
+		constexpr auto width = syn::bitwidth<T>();
+		static_assert(width <= syn::bitwidth<unsigned long long>(), "Please provide custom implementation of getBinaryImmediate since type is too large to fit in a unsigned long long!");
 		std::bitset<width> bits(temp);
 		return static_cast<T>(bits.to_ullong());
 	}
@@ -63,7 +63,7 @@ namespace stdiris {
 		ss >> std::dec >> value;
 		return static_cast<T>(value);
 	}
-} // end namespace stdiris
+} // end namespace syn
 
 
 #endif // end IRIS_ASM_BASE_H

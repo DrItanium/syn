@@ -1,8 +1,8 @@
 // this is a default 
 #ifndef _IRIS_LOCKSTEP_MACHINE_H
 #define _IRIS_LOCKSTEP_MACHINE_H
-#include "iris_base.h"
-#include "iris_xunits.h"
+#include "syn_base.h"
+#include "syn_xunits.h"
 #include "Core.h"
 #include <cstdint>
 #include <memory>
@@ -11,7 +11,7 @@
 #include "iris20.h"
 namespace machine {
 	template<byte secondaryCoreCount, byte secondaryCycleCount = 4, byte primaryCycleCount = secondaryCoreCount>
-	class LockStepMachine : public stdiris::Core {
+	class LockStepMachine : public syn::Core {
 		public:
 			static constexpr byte MaxSecondaryCoreCount = 16;
 			static LockStepMachine* newCore() noexcept {
@@ -30,7 +30,7 @@ namespace machine {
 			virtual bool cycle() override;
 			virtual void shutdown() override;
 			virtual void toggleDebug() override {
-				stdiris::Core::toggleDebug();
+				syn::Core::toggleDebug();
 				_primary.toggleDebug();
 				for(auto &c : _secondary) {
 					c.toggleDebug();
@@ -52,35 +52,35 @@ namespace machine {
 		auto register1Id = 16;
 		auto memoryLength = iris::ExposedCoreDataMemory<iris20::word, iris20::word>::computeDataLength();
 		auto makeRegisterMapping = [this](auto registerIndex, auto base) -> auto {
-			return stdiris::makeLambdaDevice<iris::word, iris::word>(base, 4,
+			return syn::makeLambdaDevice<iris::word, iris::word>(base, 4,
 					[this, base, registerIndex](auto addr) -> auto {
 						auto reg = _primary.getRegister(registerIndex);
 						switch(addr - base) {
 							case 0:
-								return stdiris::decodeBits<iris20::word, iris::word, 0x000000000000FFFF, 0>(reg);
+								return syn::decodeBits<iris20::word, iris::word, 0x000000000000FFFF, 0>(reg);
 							case 1:
-								return stdiris::decodeBits<iris20::word, iris::word, 0x00000000FFFF0000, 16>(reg);
+								return syn::decodeBits<iris20::word, iris::word, 0x00000000FFFF0000, 16>(reg);
 							case 2:
-								return stdiris::decodeBits<iris20::word, iris::word, 0x0000FFFF00000000, 32>(reg);
+								return syn::decodeBits<iris20::word, iris::word, 0x0000FFFF00000000, 32>(reg);
 							case 3:
-								return stdiris::decodeBits<iris20::word, iris::word, static_cast<iris20::word>(0xFFFF000000000000), 48>(reg);
+								return syn::decodeBits<iris20::word, iris::word, static_cast<iris20::word>(0xFFFF000000000000), 48>(reg);
 							default:
-								throw stdiris::Problem("Illegal address provided!");
+								throw syn::Problem("Illegal address provided!");
 						}
 					},
 					[this, base, registerIndex](auto addr, auto value) {
 						auto & reg = _primary.getRegister(registerIndex);
 						switch(addr - base) {
 							case 0:
-								reg = stdiris::encodeBits<iris20::word, iris::word, 0x000000000000FFFF, 0>(reg, value);
+								reg = syn::encodeBits<iris20::word, iris::word, 0x000000000000FFFF, 0>(reg, value);
 							case 1:
-								reg = stdiris::encodeBits<iris20::word, iris::word, 0x00000000FFFF0000, 16>(reg, value);
+								reg = syn::encodeBits<iris20::word, iris::word, 0x00000000FFFF0000, 16>(reg, value);
 							case 2:
-								reg = stdiris::encodeBits<iris20::word, iris::word, 0x0000FFFF00000000, 32>(reg, value);
+								reg = syn::encodeBits<iris20::word, iris::word, 0x0000FFFF00000000, 32>(reg, value);
 							case 3:
-								reg = stdiris::encodeBits<iris20::word, iris::word, static_cast<iris20::word>(0xFFFF000000000000), 48>(reg, value);
+								reg = syn::encodeBits<iris20::word, iris::word, static_cast<iris20::word>(0xFFFF000000000000), 48>(reg, value);
 							default:
-								throw stdiris::Problem("Illegal address provided!");
+								throw syn::Problem("Illegal address provided!");
 						}
 
 					});
@@ -110,7 +110,7 @@ namespace machine {
 				auto dreg = static_cast<byte>(baseDRegister);
 				if (index != innerIndex) {
 					// start the registration process
-					c.installIODevice(stdiris::makeLambdaDevice<iris::word, iris::word>(base, 2, 
+					c.installIODevice(syn::makeLambdaDevice<iris::word, iris::word>(base, 2, 
 								[this, base, &other, creg, dreg ](auto addr) -> auto {
 									// address 0 is generally the command port
 									return other.readRegister(((addr - base) == 0) ? creg : dreg);
@@ -119,7 +119,7 @@ namespace machine {
 									other.writeRegister(((addr - base) == 0) ? creg : dreg, value);
 								}));
 				} else {
-					c.installIODevice(stdiris::makeLambdaDevice<iris::word, iris::word>(base, 2, 
+					c.installIODevice(syn::makeLambdaDevice<iris::word, iris::word>(base, 2, 
 								[this, base, &c, creg, dreg] (auto addr) -> auto {
 									// address 0 is generally the command port
 									return c.readRegister(((addr - base) == 0) ? creg : dreg);
@@ -133,17 +133,17 @@ namespace machine {
 				baseDRegister += 2;
 				properBaseAddress += 0x2;
 			}
-			c.installIODevice(stdiris::makeLambdaDevice<iris::word, iris::word>(properBaseAddress, 1, 
+			c.installIODevice(syn::makeLambdaDevice<iris::word, iris::word>(properBaseAddress, 1, 
 						[this](auto addr) -> auto { return static_cast<iris::word>(cycles); },
 						[](auto addr, auto value) { }));
 			properBaseAddress++;
-			c.installIODevice(stdiris::makeLambdaDevice<iris::word, iris::word>(properBaseAddress, 1,
+			c.installIODevice(syn::makeLambdaDevice<iris::word, iris::word>(properBaseAddress, 1,
 						[this, index](auto addr) -> auto { return static_cast<iris::word>(index); },
 						[](auto addr, auto value) { }));
 			properBaseAddress++;
 			++index;
 		}
-		_primary.installDevice(stdiris::makeLambdaDevice<iris20::word, iris20::word>(addressStart, 1, 
+		_primary.installDevice(syn::makeLambdaDevice<iris20::word, iris20::word>(addressStart, 1, 
 					[this](auto address) -> auto { return pcycle; },
 					[this](auto a, auto v) { }));
 		addressStart++;

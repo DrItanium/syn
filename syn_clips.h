@@ -1,6 +1,6 @@
 #ifndef __IRIS_CLIPS_H
 #define __IRIS_CLIPS_H
-#include "iris_base.h"
+#include "syn_base.h"
 #include "Problem.h"
 #include <map>
 #include <memory>
@@ -9,7 +9,7 @@ extern "C" {
 	#include "clips.h"
 }
 
-namespace stdiris {
+namespace syn {
 void installExtensions(void* theEnv);
 
 template<typename T>
@@ -24,7 +24,7 @@ struct ExternalAddressRegistrar {
 			if (found != _cache.end()) {
 				return found->second;
 			} else {
-				throw stdiris::Problem("unregistered external address type!");
+				throw syn::Problem("unregistered external address type!");
 			}
 		}
 		static void registerExternalAddressId(void* env, unsigned int value) {

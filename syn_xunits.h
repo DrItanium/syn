@@ -1,11 +1,11 @@
 // define Execution Units to cut down on the amount of repeated actions
 #ifndef _IRIS_XUNITS_H
 #define _IRIS_XUNITS_H
-#include "iris_base.h"
+#include "syn_base.h"
 #include "IODevice.h"
 #include <iostream>
 #include <cmath>
-namespace stdiris {
+namespace syn {
 
 template<typename Word>
 class FPU {
@@ -25,17 +25,17 @@ class FPU {
         inline Word performOperation(Operation op, Word a, Word b) const {
             switch(op) {
                 case Operation::Add:
-                    return stdiris::add<Word>(a, b);
+                    return syn::add<Word>(a, b);
                 case Operation::Subtract:
-                    return stdiris::sub<Word>(a, b);
+                    return syn::sub<Word>(a, b);
                 case Operation::Multiply:
-                    return stdiris::mul<Word>(a, b);
+                    return syn::mul<Word>(a, b);
                 case Operation::Divide:
-                    return stdiris::div<Word>(a, b);
+                    return syn::div<Word>(a, b);
                 case Operation::SquareRoot:
                     return static_cast<Word>(sqrt(static_cast<double>(a)));
                 default:
-                    throw stdiris::Problem("Undefined fpu operation!");
+                    throw syn::Problem("Undefined fpu operation!");
             }
         }
 };
@@ -67,35 +67,35 @@ class ALU {
         inline Word performOperation(Operation op, Word a, Word b) const {
             switch(op) {
                 case Operation::Add:
-                    return stdiris::add<Word>(a, b);
+                    return syn::add<Word>(a, b);
                 case Operation::Subtract:
-                    return stdiris::sub<Word>(a, b);
+                    return syn::sub<Word>(a, b);
                 case Operation::Multiply:
-                    return stdiris::mul<Word>(a, b);
+                    return syn::mul<Word>(a, b);
                 case Operation::Divide:
-                    return stdiris::div<Word>(a, b);
+                    return syn::div<Word>(a, b);
                 case Operation::Remainder:
-                    return stdiris::rem<Word>(a, b);
+                    return syn::rem<Word>(a, b);
                 case Operation::ShiftLeft:
-                    return stdiris::shiftLeft<Word>(a, b);
+                    return syn::shiftLeft<Word>(a, b);
                 case Operation::ShiftRight:
-                    return stdiris::shiftRight<Word>(a, b);
+                    return syn::shiftRight<Word>(a, b);
                 case Operation::BinaryAnd:
-                    return stdiris::binaryAnd<Word>(a, b);
+                    return syn::binaryAnd<Word>(a, b);
                 case Operation::BinaryOr:
-                    return stdiris::binaryOr<Word>(a, b);
+                    return syn::binaryOr<Word>(a, b);
                 case Operation::UnaryNot:
-                    return stdiris::binaryNot<Word>(a);
+                    return syn::binaryNot<Word>(a);
                 case Operation::BinaryXor:
-                    return stdiris::binaryXor<Word>(a, b);
+                    return syn::binaryXor<Word>(a, b);
                 case Operation::BinaryNand:
-                    return stdiris::binaryNand<Word>(a, b);
+                    return syn::binaryNand<Word>(a, b);
                 case Operation::CircularShiftLeft:
-                    return stdiris::circularShiftLeft<Word>(a, b);
+                    return syn::circularShiftLeft<Word>(a, b);
                 case Operation::CircularShiftRight:
-                    return stdiris::circularShiftRight<Word>(a, b);
+                    return syn::circularShiftRight<Word>(a, b);
                 default:
-                    throw stdiris::Problem("Undefined ALU operation!");
+                    throw syn::Problem("Undefined ALU operation!");
             }
         }
 };
@@ -131,39 +131,39 @@ class Comparator {
         inline Return performOperation(Operation op, Word a, Word b) const {
             switch(op) {
                 case Operation::Eq:
-                    return stdiris::eq<Word, Return>(a, b);
+                    return syn::eq<Word, Return>(a, b);
                 case Operation::Neq:
-                    return stdiris::neq<Word, Return>(a, b);
+                    return syn::neq<Word, Return>(a, b);
                 case Operation::LessThan:
-                    return stdiris::lt<Word, Return>(a, b);
+                    return syn::lt<Word, Return>(a, b);
                 case Operation::GreaterThan:
-                    return stdiris::gt<Word, Return>(a, b);
+                    return syn::gt<Word, Return>(a, b);
                 case Operation::LessThanOrEqualTo:
-                    return stdiris::le<Word, Return>(a, b);
+                    return syn::le<Word, Return>(a, b);
                 case Operation::GreaterThanOrEqualTo:
-                    return stdiris::ge<Word, Return>(a, b);
+                    return syn::ge<Word, Return>(a, b);
                 case Operation::BinaryAnd:
-                    return stdiris::binaryAnd<Word, Return>(a, b);
+                    return syn::binaryAnd<Word, Return>(a, b);
                 case Operation::BinaryOr:
-                    return stdiris::binaryOr<Word, Return>(a, b);
+                    return syn::binaryOr<Word, Return>(a, b);
                 case Operation::UnaryNot:
-                    return stdiris::binaryNot<Word, Return>(a);
+                    return syn::binaryNot<Word, Return>(a);
                 case Operation::BinaryXor:
-                    return stdiris::binaryXor<Word, Return>(a, b);
+                    return syn::binaryXor<Word, Return>(a, b);
                 case Operation::BinaryNand:
-                    return stdiris::binaryNand<Word, Return>(a, b);
+                    return syn::binaryNand<Word, Return>(a, b);
                 case Operation::ShiftLeft:
-                    return stdiris::shiftLeft<Word, Return>(a, b);
+                    return syn::shiftLeft<Word, Return>(a, b);
                 case Operation::ShiftRight:
-                    return stdiris::shiftRight<Word, Return>(a, b);
+                    return syn::shiftRight<Word, Return>(a, b);
 				case Operation::BinaryNor:
-					return stdiris::binaryNor<Word, Return>(a, b);
+					return syn::binaryNor<Word, Return>(a, b);
                 case Operation::CircularShiftLeft:
-                    return stdiris::circularShiftLeft<Word, Return>(a, b);
+                    return syn::circularShiftLeft<Word, Return>(a, b);
                 case Operation::CircularShiftRight:
-                    return stdiris::circularShiftRight<Word, Return>(a, b);
+                    return syn::circularShiftRight<Word, Return>(a, b);
                 default:
-                    throw stdiris::Problem("Undefined Comparison operation!");
+                    throw syn::Problem("Undefined Comparison operation!");
             }
         }
 };
@@ -190,23 +190,23 @@ class Comparator<bool, bool> {
 		inline bool performOperation(Operation op, bool a, bool b) const {
 			switch(op) {
 				case Operation::Eq:
-					return stdiris::eq<bool>(a, b);
+					return syn::eq<bool>(a, b);
 				case Operation::Neq:
-					return stdiris::neq<bool>(a, b);
+					return syn::neq<bool>(a, b);
 				case Operation::BinaryAnd:
-					return stdiris::binaryAnd<bool>(a, b);
+					return syn::binaryAnd<bool>(a, b);
 				case Operation::BinaryOr:
-					return stdiris::binaryOr<bool>(a, b);
+					return syn::binaryOr<bool>(a, b);
 				case Operation::BinaryXor:
-					return stdiris::binaryXor<bool>(a, b);
+					return syn::binaryXor<bool>(a, b);
 				case Operation::UnaryNot:
-					return stdiris::binaryNot<bool>(a);
+					return syn::binaryNot<bool>(a);
 				case Operation::BinaryNand:
-					return stdiris::binaryNand<bool>(a, b);
+					return syn::binaryNand<bool>(a, b);
 				case Operation::BinaryNor:
-					return stdiris::binaryNor<bool>(a, b);
+					return syn::binaryNor<bool>(a, b);
 				default:
-					throw stdiris::Problem("Undefined boolean comparison operation!");
+					throw syn::Problem("Undefined boolean comparison operation!");
 			}
 		}
 };
@@ -233,14 +233,14 @@ class LoadStoreUnit : public IODevice<Word, Address> {
 			if (legalAddress(addr)) {
 				_memory[addr] = value;
 			} else {
-				throw stdiris::Problem("Provided address is not legal");
+				throw syn::Problem("Provided address is not legal");
 			}
 		}
 		inline Word& retrieveMemory(Address addr) {
 			if (legalAddress(addr)) {
 				return _memory[addr];
 			} else {
-				throw stdiris::Problem("Provided address is not legal");
+				throw syn::Problem("Provided address is not legal");
 			}
 		}
 		virtual Word read(Address addr) override {
@@ -253,7 +253,7 @@ class LoadStoreUnit : public IODevice<Word, Address> {
 			return retrieveMemory(addr);
 		}
 		void swap(Address a, Address b) {
-			stdiris::swap<Word>(_memory[a], _memory[b]);
+			syn::swap<Word>(_memory[a], _memory[b]);
 		}
 		void copy(Address a, Address b) {
 			_memory[a] = _memory[b];
@@ -313,10 +313,10 @@ class BooleanCombineUnit {
 				case Operation::Xnor:
 					return !(oldValue ^ newValue);
 				default:
-					throw stdiris::Problem("Undefined boolean operation!");
+					throw syn::Problem("Undefined boolean operation!");
 			}
 		}
 };
 
-} // end namespace stdiris
+} // end namespace syn
 #endif // end _IRIS_XUNITS_H

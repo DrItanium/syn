@@ -40,7 +40,7 @@ struct InstructionFieldInformation<InstructionFields :: _title> { \
 
 template<InstructionFields field>
 typename InstructionFieldInformation<field>::AssociatedType encodeInstruction(RawInstruction base, typename InstructionFieldInformation<field>::AssociatedType value) {
-	return stdiris::encodeBits<RawInstruction, InstructionFieldInformation<field>::AssociatedType, InstructionFieldInformation<field>::mask, InstructionFieldInformation<field>::shiftCount>(base, value);
+	return syn::encodeBits<RawInstruction, InstructionFieldInformation<field>::AssociatedType, InstructionFieldInformation<field>::mask, InstructionFieldInformation<field>::shiftCount>(base, value);
 }
 struct data_registration
 {
@@ -103,7 +103,7 @@ void asmstate::registerDynamicOperation(InstructionEncoder op) {
 }
 void asmstate::setRegisterAtStartup(byte index, RegisterValue value) {
 	if (index >= ArchitectureConstants::RegisterCount)  {
-		throw stdiris::Problem("Out of range register set!");
+		throw syn::Problem("Out of range register set!");
 	} else {
 		registerStartupValues[index] = value;
 	}
@@ -116,7 +116,7 @@ void asmstate::registerConstant(const std::string& text, RegisterValue value) {
 	} else {
 		std::stringstream stream;
 		stream << "Redefining constant: " << text << " to " << std::hex << value << "!";
-		throw stdiris::Problem(stream.str());
+		throw syn::Problem(stream.str());
 	}
 
 }
@@ -127,7 +127,7 @@ RegisterValue asmstate::getConstantValue(const std::string& text) {
 	} else {
 		std::stringstream stream;
 		stream << "Undefined constant " << text << "!";
-		throw stdiris::Problem(stream.str());
+		throw syn::Problem(stream.str());
 	}
 }
 
@@ -156,7 +156,7 @@ namespace cisc0 {
 				if (!state.labels.count(label)) {
 					std::stringstream stream;
 					stream << op.currentLine << ": label " << label << " does not exist!\n";
-					throw stdiris::Problem(stream.str());
+					throw syn::Problem(stream.str());
 				}
 				op.fullImmediate = state.labels[label];
 			}
@@ -166,7 +166,7 @@ namespace cisc0 {
 				if (!state.labels.count(reg.label)) {
 					std::stringstream stream;
 					stream << reg.currentLine << ": label " << reg.label << " does not exist!\n";
-					throw stdiris::Problem(stream.str());
+					throw syn::Problem(stream.str());
 				} else {
 					reg.immediate = state.labels[reg.label];
 				}
@@ -212,7 +212,7 @@ namespace cisc0 {
 					std::stringstream stream;
 					stream << reg.currentLine << ": given data declaration has an unexpected width of " << reg.width << " words!\n";
 					auto str = stream.str();
-					throw stdiris::Problem(str);
+					throw syn::Problem(str);
 				}
 			}
 		}
@@ -231,7 +231,7 @@ namespace cisc0 {
 					std::stringstream stream;
 					stream << op.currentLine << ": given operation has an unexpected width of " << std::get<0>(encoding) << " words!\n";
 					auto str = stream.str();
-					throw stdiris::Problem(str);
+					throw syn::Problem(str);
 				}
 			}
 		}
@@ -297,7 +297,7 @@ directive:
 	DIRECTIVE_CONSTANT IMMEDIATE ALIAS {
 		try {
 			cisc0::state.registerConstant($3, $2);
-		} catch(stdiris::Problem err) {
+		} catch(syn::Problem err) {
 			cisc0error(err.what().c_str());
 		}
 	};
@@ -379,7 +379,7 @@ compare_args:
 		 uses_immediate destination_register ALIAS {
 				try {
 					cisc0::op.arg1 = static_cast<byte>(cisc0::state.getConstantValue($3));
-				} catch(stdiris::Problem err) {
+				} catch(syn::Problem err) {
 					cisc0error(err.what().c_str());
 				}
 		 } |
@@ -516,7 +516,7 @@ immediate_or_alias:
 		ALIAS {
 				try {
 					cisc0::op.arg0 = static_cast<byte>(cisc0::state.getConstantValue($1));
-				} catch(stdiris::Problem err) {
+				} catch(syn::Problem err) {
 					cisc0error(err.what().c_str());
 				}
 		};
@@ -639,7 +639,7 @@ lexeme:
 		cisc0::op.isLabel = false;
 		try {
 			cisc0::op.fullImmediate = cisc0::state.getConstantValue($1);
-		} catch(stdiris::Problem err) {
+		} catch(syn::Problem err) {
 			cisc0error(err.what().c_str());
 		}
 	} |

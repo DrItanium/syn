@@ -1,5 +1,5 @@
-#include "iris_clips.h"
-#include "iris_base.h"
+#include "syn_clips.h"
+#include "syn_base.h"
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include <cstdint>
@@ -13,7 +13,7 @@ extern "C" {
 #include "clips.h"
 }
 
-namespace stdiris {
+namespace syn {
 	void CLIPS_translateBitmask(UDFContext* context, CLIPSValue* ret) {
 		CLIPSValue value;
 		if (!UDFFirstArgument(context, LEXEME_TYPES, &value)) {
@@ -289,7 +289,7 @@ namespace stdiris {
 				errorMessage(env, "NEW", 1, funcErrorPrefix, " function new expected no arguments besides type!");
 				CVSetBoolean(ret, false);
 			}
-		} catch(stdiris::Problem p) {
+		} catch(syn::Problem p) {
 			CVSetBoolean(ret, false);
 			std::stringstream s;
 			s << "an exception was thrown: " << p.what();
@@ -301,7 +301,7 @@ namespace stdiris {
 		static bool init = true;
 		static std::string funcStr;
 		static std::string funcErrorPrefix;
-#include "iris_memory_block_defines.h"
+#include "syn_memory_block_defines.h"
 		auto isArithmeticOp = [](MemoryBlockOp op) {
 			switch(op) {
 				case MemoryBlockOp::Combine:
@@ -476,19 +476,19 @@ namespace stdiris {
 								ArithmeticOperation fn;
 								switch(op) {
 									case MemoryBlockOp::Combine:
-										fn = stdiris::add<CLIPSInteger>;
+										fn = syn::add<CLIPSInteger>;
 										break;
 									case MemoryBlockOp::Difference:
-										fn = stdiris::sub<CLIPSInteger>;
+										fn = syn::sub<CLIPSInteger>;
 										break;
 									case MemoryBlockOp::Product:
-										fn = stdiris::mul<CLIPSInteger>;
+										fn = syn::mul<CLIPSInteger>;
 										break;
 									case MemoryBlockOp::Divide:
-										fn = stdiris::div<CLIPSInteger>;
+										fn = syn::div<CLIPSInteger>;
 										break;
 									case MemoryBlockOp::Remainder:
-										fn = stdiris::rem<CLIPSInteger>;
+										fn = syn::rem<CLIPSInteger>;
 										break;
 									default:
 										return callErrorMessage(str, "<- legal but unimplemented arithmetic operation!");
@@ -497,7 +497,7 @@ namespace stdiris {
 									auto val0 = ptr->getMemoryCellValue(addr0);
 									auto val1 = ptr->getMemoryCellValue(addr1);
 									CVSetInteger(ret, fn(val0, val1));
-								} catch (stdiris::Problem p) {
+								} catch (syn::Problem p) {
 									check = false;
 									CVSetBoolean(ret, false);
 									std::stringstream s;
@@ -530,7 +530,7 @@ namespace stdiris {
 			auto integer = CVToInteger(&number);
 			using IType = decltype(integer);
 			byte container[sizeof(IType)] = { 0 };
-			stdiris::decodeInt64LE(integer, container);
+			syn::decodeInt64LE(integer, container);
 			ret->type = MULTIFIELD;
 			ret->begin = 0;
 			ret->end = sizeof(IType) -1;

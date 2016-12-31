@@ -7,11 +7,11 @@
 #include <functional>
 #include <iostream>
 #include <memory>
-#include "iris_base.h"
+#include "syn_base.h"
 #include "Problem.h"
 #include "Device.h"
 #include "Core.h"
-namespace stdiris {
+namespace syn {
 template<typename Data, typename Address = Data>
 class IODevice : public Device {
 	public:
@@ -61,7 +61,7 @@ typename IODevice<Data, Address>::AddressRange IODevice<Data, Address>::getRespo
 template<typename Data, typename Address>
 bool IODevice<Data, Address>::respondsTo(Address targetAddress, Address length) const {
 	for (auto i = targetAddress; i < targetAddress + length; ++i) {
-		if (stdiris::inRangeExcludingMaximum<Address>(targetAddress, _base, endAddress())) {
+		if (syn::inRangeExcludingMaximum<Address>(targetAddress, _base, endAddress())) {
 			return true;
 		}
 	}
@@ -190,7 +190,7 @@ class StandardInputOutputDevice : public IODevice<D, A> {
 				std::cin >> std::noskipws >> value;
 				return static_cast<D>(value);
 			} else {
-				throw stdiris::Problem("Illegal address to read from!");
+				throw syn::Problem("Illegal address to read from!");
 			}
 		}
 		virtual void write(A addr, D value) override {
@@ -198,12 +198,12 @@ class StandardInputOutputDevice : public IODevice<D, A> {
 			if (actualAddr == static_cast<A>(Addresses::Put)) {
 				std::cout.put(static_cast<char>(value));
 			} else {
-				throw stdiris::Problem("Illegal address to write to!");
+				throw syn::Problem("Illegal address to write to!");
 			}
 		}
 };
 
 
-} // end namespace stdiris
+} // end namespace syn
 #endif // end IRIS_IO_DEVICE_H_
 
