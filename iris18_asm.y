@@ -40,7 +40,7 @@ struct InstructionFieldInformation<InstructionFields :: _title> { \
 
 template<InstructionFields field>
 typename InstructionFieldInformation<field>::AssociatedType encodeInstruction(RawInstruction base, typename InstructionFieldInformation<field>::AssociatedType value) {
-	return iris::encodeBits<RawInstruction, InstructionFieldInformation<field>::AssociatedType, InstructionFieldInformation<field>::mask, InstructionFieldInformation<field>::shiftCount>(base, value);
+	return stdiris::encodeBits<RawInstruction, InstructionFieldInformation<field>::AssociatedType, InstructionFieldInformation<field>::mask, InstructionFieldInformation<field>::shiftCount>(base, value);
 }
 struct data_registration
 {
@@ -103,7 +103,7 @@ void asmstate::registerDynamicOperation(InstructionEncoder op) {
 }
 void asmstate::setRegisterAtStartup(byte index, RegisterValue value) {
 	if (index >= ArchitectureConstants::RegisterCount)  {
-		throw iris::Problem("Out of range register set!");
+		throw stdiris::Problem("Out of range register set!");
 	} else {
 		registerStartupValues[index] = value;
 	}
@@ -116,7 +116,7 @@ void asmstate::registerConstant(const std::string& text, RegisterValue value) {
 	} else {
 		std::stringstream stream;
 		stream << "Redefining constant: " << text << " to " << std::hex << value << "!";
-		throw iris::Problem(stream.str());
+		throw stdiris::Problem(stream.str());
 	}
 
 }
@@ -127,7 +127,7 @@ RegisterValue asmstate::getConstantValue(const std::string& text) {
 	} else {
 		std::stringstream stream;
 		stream << "Undefined constant " << text << "!";
-		throw iris::Problem(stream.str());
+		throw stdiris::Problem(stream.str());
 	}
 }
 
@@ -156,7 +156,7 @@ namespace iris18 {
 				if (!state.labels.count(label)) {
 					std::stringstream stream;
 					stream << op.currentLine << ": label " << label << " does not exist!\n";
-					throw iris::Problem(stream.str());
+					throw stdiris::Problem(stream.str());
 				}
 				op.fullImmediate = state.labels[label];
 			}
@@ -166,7 +166,7 @@ namespace iris18 {
 				if (!state.labels.count(reg.label)) {
 					std::stringstream stream;
 					stream << reg.currentLine << ": label " << reg.label << " does not exist!\n";
-					throw iris::Problem(stream.str());
+					throw stdiris::Problem(stream.str());
 				} else {
 					reg.immediate = state.labels[reg.label];
 				}
@@ -212,7 +212,7 @@ namespace iris18 {
 					std::stringstream stream;
 					stream << reg.currentLine << ": given data declaration has an unexpected width of " << reg.width << " words!\n";
 					auto str = stream.str();
-					throw iris::Problem(str);
+					throw stdiris::Problem(str);
 				}
 			}
 		}
@@ -231,7 +231,7 @@ namespace iris18 {
 					std::stringstream stream;
 					stream << op.currentLine << ": given operation has an unexpected width of " << std::get<0>(encoding) << " words!\n";
 					auto str = stream.str();
-					throw iris::Problem(str);
+					throw stdiris::Problem(str);
 				}
 			}
 		}
@@ -297,7 +297,7 @@ directive:
 	DIRECTIVE_CONSTANT IMMEDIATE ALIAS {
 		try {
 			iris18::state.registerConstant($3, $2);
-		} catch(iris::Problem err) {
+		} catch(stdiris::Problem err) {
 			iris18error(err.what().c_str());
 		}
 	};
@@ -379,7 +379,7 @@ compare_args:
 		 uses_immediate destination_register ALIAS {
 				try {
 					iris18::op.arg1 = static_cast<byte>(iris18::state.getConstantValue($3));
-				} catch(iris::Problem err) {
+				} catch(stdiris::Problem err) {
 					iris18error(err.what().c_str());
 				}
 		 } |
@@ -516,7 +516,7 @@ immediate_or_alias:
 		ALIAS {
 				try {
 					iris18::op.arg0 = static_cast<byte>(iris18::state.getConstantValue($1));
-				} catch(iris::Problem err) {
+				} catch(stdiris::Problem err) {
 					iris18error(err.what().c_str());
 				}
 		};
@@ -639,7 +639,7 @@ lexeme:
 		iris18::op.isLabel = false;
 		try {
 			iris18::op.fullImmediate = iris18::state.getConstantValue($1);
-		} catch(iris::Problem err) {
+		} catch(stdiris::Problem err) {
 			iris18error(err.what().c_str());
 		}
 	} |

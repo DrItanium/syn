@@ -2,7 +2,6 @@
 #include "Core.h"
 #include <map>
 #include "iris.h"
-#include "iris17.h"
 #include "iris18.h"
 #include "iris19.h"
 #include "iris20.h"
@@ -13,7 +12,6 @@ namespace stdiris {
         { "iris20", iris20::newCore },
 		{ "iris19", iris19::newCore },
 		{ "iris18", iris18::newCore },
-		{ "iris17", iris17::newCore },
 		{ "iris", iris::newCore },
 		{ "LockStepMachine-type0", machine::LockStepMachine<8>::newCore },
 	};

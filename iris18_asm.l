@@ -108,23 +108,23 @@ omni [a-zA-Z0-9._]
 [ \t\n,]     ;
 [;].*       ; // comments
 r{digit}+   { 
-	iris18lval.rval = iris::getRegister<byte, iris18::ArchitectureConstants::RegisterCount>(iris18text, reportIris18Error);
+	iris18lval.rval = stdiris::getRegister<byte, iris18::ArchitectureConstants::RegisterCount>(iris18text, reportIris18Error);
 	return REGISTER;
 }
 {digit}+ { 
-	iris18lval.ival = iris::getDecimalImmediate<iris18::Word>(iris18text, reportIris18Error);
+	iris18lval.ival = stdiris::getDecimalImmediate<iris18::Word>(iris18text, reportIris18Error);
 	return IMMEDIATE; 
 }
 0x{xdigit}+ { 
-	iris18lval.ival = iris::getHexImmediate<iris18::Word>(iris18text, reportIris18Error);
+	iris18lval.ival = stdiris::getHexImmediate<iris18::Word>(iris18text, reportIris18Error);
 	return IMMEDIATE;
 }
 0b[01]+ {
-	iris18lval.ival = iris::getBinaryImmediate<iris18::Word>(iris18text, reportIris18Error);
+	iris18lval.ival = stdiris::getBinaryImmediate<iris18::Word>(iris18text, reportIris18Error);
 	return IMMEDIATE;
 }
 0m[01][01][01][01] {
-	iris18lval.ival = iris::decodeBits<iris18::Word, byte, 0x0000000F, 0>(iris::getBinaryImmediate<iris18::Word>(iris18text, reportIris18Error));
+	iris18lval.ival = stdiris::decodeBits<iris18::Word, byte, 0x0000000F, 0>(stdiris::getBinaryImmediate<iris18::Word>(iris18text, reportIris18Error));
 	return BITMASK4;
 }
 [?]{omni}+    { iris18lval.sval = iris18text; return ALIAS; }
