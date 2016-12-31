@@ -3,14 +3,12 @@
 #include <map>
 #include "iris.h"
 #include "iris18.h"
-#include "iris19.h"
 #include "iris20.h"
 #include "iris_machine.h"
 
 namespace stdiris {
 	static std::map<std::string, std::function<Core*()>> cores = {
         { "iris20", iris20::newCore },
-		{ "iris19", iris19::newCore },
 		{ "iris18", iris18::newCore },
 		{ "iris", iris::newCore },
 		{ "LockStepMachine-type0", machine::LockStepMachine<8>::newCore },
