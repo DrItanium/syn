@@ -8,10 +8,10 @@ v.img
 
 *.padd
 *.pail
-iris_sim
-iris_asm
-iris_link
-iris_repl
+syn_sim
+syn_asm
+syn_link
+syn_repl
 iris20_bootstrap
 maya
 
