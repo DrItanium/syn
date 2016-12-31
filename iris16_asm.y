@@ -344,15 +344,12 @@ move_op:
 	   MOVE_OP_LOAD_CODE THREE_GPRS { setOperation(iris16::MoveOp::LoadCode); } |
 	   MOVE_OP_LOAD_IO TWO_GPRS { setOperation(iris16::MoveOp::IORead); } |
 	   MOVE_OP_STORE_IO TWO_GPRS { setOperation(iris16::MoveOp::IOWrite); } 
+	   OP_MOVE_TO_IP DESTINATION_GPR { setOperation(iris16::MoveOp::MoveToIP); } |
+	   OP_MOVE_FROM_IP DESTINATION_GPR { setOperation(iris16::MoveOp::MoveFromIP); } |
+	   OP_MOVE_TO_LR DESTINATION_GPR { setOperation(iris16::MoveOp::MoveToLinkRegister); } |
+	   OP_MOVE_FROM_LR DESTINATION_GPR { setOperation(iris16::MoveOp::MoveFromLinkRegister); }
        ;
 
-jump_op:
-       JUMP_OP_UNCONDITIONALIMMEDIATE lexeme { setOperation(iris16::JumpOp::UnconditionalImmediate); } | 
-       JUMP_OP_UNCONDITIONALREGISTER ONE_GPR { setOperation(iris16::JumpOp::UnconditionalRegister); } |
-       jop_reg_reg TWO_GPRS |
-       jop_reg_imm DESTINATION_GPR lexeme |
-       jop_reg_reg_reg THREE_GPRS
-	   ;
 
 aop:
    ARITHMETIC_OP_ADD { setOperation(iris16::ArithmeticOp::Add); } |
@@ -399,9 +396,33 @@ mop_offset:
 	MOVE_OP_LOAD_OFFSET { setOperation(iris16::MoveOp::LoadWithOffset); }
 	;
 
+jump_op:
+	   jop_imm lexeme |
+	   jop_reg DESTINATION_GPR |
+	   jop_cond_reg PREDICATE_REGISTER_RESULT SOURCE0_GPR |
+	   jop_cond_imm PREDICATE_REGISTER_RESULT lexeme |
+	   jop_cond_reg_reg PREDICATE_REGISTER_RESULT SOURCE0_GPR SOURCE1_GPR |
+	   jop_no_args |
+	   jop_only_cond PREDICATE_REGISTER_RESULT
+	   ;
+jop_only_cond:
+		COND_TRUE_BRANCH_LR { setOperation(iris16::JumpOp::ConditionalTrueJumpLinkRegister); } |
+		COND_TRUE_BRANCH_LR_LINK { setOperation(iris16::JumpOp::ConditionalTrueJumpLinkRegisterLink); } |
+		COND_FALSE_BRANCH_LR { setOperation(iris16::JumpOp::ConditionalFalseJumpLinkRegister); } |
+		COND_FALSE_BRANCH_LR_LINK { setOperation(iris16::JumpOp::ConditionalFalseJumpLinkRegisterLink); };
+jop_no_args:
+	   BRANCH_LR_LINK { setOperation(iris16::JumpOp::UnconditionalJumpLinkRegisterLink); } |
+	   BRANCH_LR { setOperation(iris16::JumpOp::UnconditionalJumpLinkRegister); } 
+	   ;
 
-jop_reg_imm:
-   JUMP_OP_UNCONDITIONALIMMEDIATELINK { setOperation(iris16::JumpOp::UnconditionalImmediateLink); } |
+jop_imm:
+       JUMP_OP_UNCONDITIONALIMMEDIATE { setOperation(iris16::JumpOp::UnconditionalImmediate); } | 
+       JUMP_OP_UNCONDITIONALIMMEDIATELINK { setOperation(iris16::JumpOp::UnconditionalImmediateLink); };
+jop_reg:
+       JUMP_OP_UNCONDITIONALREGISTER { setOperation(iris16::JumpOp::UnconditionalRegister); } |
+       JUMP_OP_UNCONDITIONALREGISTERLINK { setOperation(iris16::JumpOp::UnconditionalRegisterLink); }
+	   ;
+jop_cond_imm:
    JUMP_OP_CONDITIONALTRUEIMMEDIATE { setOperation(iris16::JumpOp::ConditionalTrueImmediate); } |
    JUMP_OP_CONDITIONALTRUEIMMEDIATELINK { setOperation(iris16::JumpOp::ConditionalTrueImmediateLink); } |
    JUMP_OP_CONDITIONALFALSEIMMEDIATE { setOperation(iris16::JumpOp::ConditionalFalseImmediate); } |
@@ -409,15 +430,14 @@ jop_reg_imm:
    ;
 
 
-jop_reg_reg:
-   JUMP_OP_UNCONDITIONALREGISTERLINK { setOperation(iris16::JumpOp::UnconditionalRegisterLink); } |
+jop_cond_reg:
+   JUMP_OP_CONDITIONALTRUEREGISTERLINK { setOperation(iris16::JumpOp::ConditionalTrueRegisterLink); } |
+   JUMP_OP_CONDITIONALFALSEREGISTERLINK { setOperation(iris16::JumpOp::ConditionalFalseRegisterLink); } |
    JUMP_OP_CONDITIONALTRUEREGISTER { setOperation(iris16::JumpOp::ConditionalTrueRegister); } |
    JUMP_OP_CONDITIONALFALSEREGISTER { setOperation(iris16::JumpOp::ConditionalFalseRegister); }
    ;
 
-jop_reg_reg_reg:
-   JUMP_OP_CONDITIONALTRUEREGISTERLINK { setOperation(iris16::JumpOp::ConditionalTrueRegisterLink); } |
-   JUMP_OP_CONDITIONALFALSEREGISTERLINK { setOperation(iris16::JumpOp::ConditionalFalseRegisterLink); } |
+jop_cond_reg_reg:
    JUMP_OP_IFTHENELSENORMALPREDTRUE { setOperation(iris16::JumpOp::IfThenElseNormalPredTrue); } |
    JUMP_OP_IFTHENELSENORMALPREDFALSE { setOperation(iris16::JumpOp::IfThenElseNormalPredFalse); } |
    JUMP_OP_IFTHENELSELINKPREDTRUE { setOperation(iris16::JumpOp::IfThenElseLinkPredTrue); } |
@@ -471,8 +491,12 @@ lexeme:
 	  		setFullImmediate($1);
       }
 ;
+PREDICATE_REGISTER_RESULT:
+						 PREDICATE_REGISTER { setRegister0(iris16::encodePredicateResult(iris16::curri.reg0, $1)); };
+PREDICATE_REGISTER_INVERSE:
+						  PREDICATE_REGISTER { setRegister0(iris16::encodePredicateInverseResult(iris16::curri.reg0, $1)); };
 DESTINATION_PREDICATE_REGISTERS:
-							   PREDICATE_REGISTER PREDICATE_REGISTER { iris16::curri.reg0 = iris16::encodePredicateInverseResult(iris16::encodePredicateResult(0, $1), $2); };
+							   PREDICATE_REGISTER_RESULT PREDICATE_REGISTER_INVERSE;
 
 SOURCE0_PREDICATE_REGISTER:
 						 PREDICATE_REGISTER { iris16::curri.reg1 = iris16::encodePredicateSource0(iris16::curri.reg1, $1); };
@@ -505,8 +529,6 @@ SOURCE0_GPR:
 SOURCE1_GPR:
 				GPR { setRegister2($1); };
 
-ONE_GPR: 
-			DESTINATION_GPR;
 TWO_GPRS:
 			 DESTINATION_GPR SOURCE0_GPR;
 
