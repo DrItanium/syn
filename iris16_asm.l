@@ -11,9 +11,10 @@
 #define _POSIX_SOURCE 1
 
 namespace iris16 {
-	static byte getregister(void);
-	static unsigned long getdecimalimmediate(void);
-	static unsigned long getheximmediate(void);
+	byte getRegister(void);
+	byte getPredicateRegister(void);
+	unsigned long getDecimalImmediate(void);
+	unsigned long getHexImmediate(void);
 }
 extern void iris16error(const char* c);
 %}
@@ -63,18 +64,18 @@ omni [a-zA-Z0-9._]
 "ldiowo" { return MOVE_OP_LOAD_IO_OFFSET; }
 "stiowo" { return MOVE_OP_STORE_IO_OFFSET; }
 "memset" { return MOVE_OP_STOREIMM; }
-"j" 		{ return JUMP_OP_UNCONDITIONALIMMEDIATE; }
-"jl" 		{ return JUMP_OP_UNCONDITIONALIMMEDIATELINK; }
-"jr" 		{ return JUMP_OP_UNCONDITIONALREGISTER; }
-"jrl" 		{ return JUMP_OP_UNCONDITIONALREGISTERLINK; }
-"jt" 		{ return JUMP_OP_CONDITIONALTRUEIMMEDIATE; }
-"jtl" 		{ return JUMP_OP_CONDITIONALTRUEIMMEDIATELINK; }
-"jrt" 		{ return JUMP_OP_CONDITIONALTRUEREGISTER; }
-"jrtl" 		{ return JUMP_OP_CONDITIONALTRUEREGISTERLINK; }
-"jf" 		{ return JUMP_OP_CONDITIONALFALSEIMMEDIATE; }
-"jfl" 		{ return JUMP_OP_CONDITIONALFALSEIMMEDIATELINK; }
-"jrf" 		{ return JUMP_OP_CONDITIONALFALSEREGISTER; }
-"jrfl" 		{ return JUMP_OP_CONDITIONALFALSEREGISTERLINK; }
+"bi" 		{ return JUMP_OP_UNCONDITIONALIMMEDIATE; }
+"bil" 		{ return JUMP_OP_UNCONDITIONALIMMEDIATELINK; }
+"b" 		{ return JUMP_OP_UNCONDITIONALREGISTER; }
+"bl" 		{ return JUMP_OP_UNCONDITIONALREGISTERLINK; }
+"bit" 		{ return JUMP_OP_CONDITIONALTRUEIMMEDIATE; }
+"bitl" 		{ return JUMP_OP_CONDITIONALTRUEIMMEDIATELINK; }
+"bt" 		{ return JUMP_OP_CONDITIONALTRUEREGISTER; }
+"btl" 		{ return JUMP_OP_CONDITIONALTRUEREGISTERLINK; }
+"bif" 		{ return JUMP_OP_CONDITIONALFALSEIMMEDIATE; }
+"bifl" 		{ return JUMP_OP_CONDITIONALFALSEIMMEDIATELINK; }
+"bf" 		{ return JUMP_OP_CONDITIONALFALSEREGISTER; }
+"bfl" 		{ return JUMP_OP_CONDITIONALFALSEREGISTERLINK; }
 "ift" 		{ return JUMP_OP_IFTHENELSENORMALPREDTRUE; }
 "iff" 		{ return JUMP_OP_IFTHENELSENORMALPREDFALSE; }
 "iftl" { return JUMP_OP_IFTHENELSELINKPREDTRUE; }
@@ -94,12 +95,31 @@ omni [a-zA-Z0-9._]
 "push" { return MOVE_OP_PUSH; }
 "pushi" { return MOVE_OP_PUSHIMMEDIATE; }
 "pop" { return MOVE_OP_POP; }
+"mtip" { return OP_MOVE_TO_IP; }
+"mfip" { return OP_MOVE_FROM_IP; }
+"mtlr" { return OP_MOVE_TO_LR; }
+"mflr" { return OP_MOVE_FROM_LR; }
+"svcr" { return OP_SAVE_CR; }
+"recr" { return OP_RESTORE_CR; }
+"crxor" { return OP_CR_XOR; }
+"crnot" { return OP_CR_NOT; }
+"crand" { return OP_CR_AND; }
+"cror" { return OP_CR_OR; }
+"crnand" { return OP_CR_NAND; }
+"crnor" { return OP_CR_NOR; }
+"crswap" { return OP_CR_SWAP; }
+"crmove" { return OP_CR_MOVE; }
+"blr" { return BRANCH_LR; }
+"blrl" { return BRANCH_LR_LINK; }
+"blrt" { return COND_TRUE_BRANCH_LR; }
+"blrtl" { return COND_TRUE_BRANCH_LR_LINK; }
+"blrf" { return COND_FALSE_BRANCH_LR; }
+"blrfl" { return COND_FALSE_BRANCH_LR_LINK; }
 
 "incr" { return ARITHMETIC_MACRO_OP_INCR; }
 "decr" { return ARITHMETIC_MACRO_OP_DECR; }
 "halve" { return ARITHMETIC_MACRO_OP_HALVE; }
 "double" { return ARITHMETIC_MACRO_OP_DOUBLE; }
-"return" { return JUMP_MACRO_OP_RETURN; }
 
 "@label" { return LABEL; }
 "@data"  { return DIRECTIVE_DATA; }
@@ -110,36 +130,41 @@ omni [a-zA-Z0-9._]
 "@low"	{ return TAG_LOW; }
 "@high" { return TAG_HI; }
 
-"sp"	 { iris16lval.rval = 255; return REGISTER; }
-"lr"	 { return LINK_REGISTER; }
-"ip"	 { return INSTRUCTION_POINTER; }
+"sp"	 { iris16lval.rval = 255; return GPR; }
 [ \t\n]     ;
 [;].*       ; // comments
-r{digit}+ { iris16lval.rval = iris16::getregister(); return REGISTER; }
-{digit}+ { iris16lval.ival = iris16::getdecimalimmediate(); return IMMEDIATE; }
-0x{xdigit}+ { iris16lval.ival = iris16::getheximmediate(); return IMMEDIATE; }
+r{digit}+ { iris16lval.rval = iris16::getRegister(); return GPR; }
+c{digit}+ { iris16lval.rval = iris16::getPredicateRegister(); return PREDICATE_REGISTER; }
+{digit}+ { iris16lval.ival = iris16::getDecimalImmediate(); return IMMEDIATE; }
+0x{xdigit}+ { iris16lval.ival = iris16::getHexImmediate(); return IMMEDIATE; }
 {omni}+ { 
 	iris16lval.sval = iris16text;
 	return IRIS16_SYMBOL;
 }
 %%
 namespace iris16 {
-byte getregister(void) {
-   int c;
-
-   iris16text[0] = '0';
-   c = atoi(iris16text);
-   if(c > 255 || c < 0) {
-      iris16error("target register is too large");
-      return 0;
-   } else {
-      return (byte)c;
-   }
+template<byte max>
+byte getGenericRegister(const std::string& errorMessage) {
+	int c;
+	iris16text[0] = '0';
+	c = atoi(iris16text);
+	if (c >= max || c < 0) {
+		iris16error(errorMessage.c_str());
+		return 0;
+	} else {
+		return static_cast<byte>(c);
+	}
+}
+byte getRegister(void) {
+	return getGenericRegister<256>("target register index is too large!");
+}
+byte getPredicateRegister(void) {
+	return getGenericRegister<16>("target predicate register index is too large!");
 }
 
-unsigned long getdecimalimmediate() {
-   unsigned long tmp;
-   tmp = strtoul(iris16text, NULL, 10);
+unsigned long getGenericImmediate(int base) {
+	unsigned long tmp;
+	tmp = strtoul(iris16text, NULL, base);
    if(tmp == ULONG_MAX && errno == ERANGE) {
       iris16error("number is too large and overflowed!");
       return 0;
@@ -153,20 +178,12 @@ unsigned long getdecimalimmediate() {
    }
 }
 
-unsigned long getheximmediate() {
-   unsigned long tmp;
-   tmp = strtoul(iris16text, NULL, 16);
-   if(tmp == ULONG_MAX && errno == ERANGE) {
-      iris16error("number is too large and overflowed!");
-      return 0;
-   } else {
-      if(tmp > 65535 || tmp < 0) {
-         iris16error("provided number is larger than 16-bits!");
-         return 0;
-      } else {
-         return tmp;
-      }
-   }
+unsigned long getDecimalImmediate() {
+	return getGenericImmediate(10);
+}
+
+unsigned long getHexImmediate() {
+	return getGenericImmediate(16);
 }
 
 }

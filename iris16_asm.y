@@ -72,7 +72,7 @@ bool resolve_op(dynamicop* dop);
 
 
 %token DIRECTIVE_ORG DIRECTIVE_CODE DIRECTIVE_DATA LABEL DIRECTIVE_DECLARE
-%token MOVE_OP_STORE_IO MOVE_OP_LOAD_IO INSTRUCTION_POINTER LINK_REGISTER
+%token MOVE_OP_STORE_IO MOVE_OP_LOAD_IO 
 %token ARITHMETIC_OP_ADD
 %token ARITHMETIC_OP_SUB
 %token ARITHMETIC_OP_MUL
@@ -144,8 +144,17 @@ bool resolve_op(dynamicop* dop);
 %token MOVE_OP_LOAD_OFFSET MOVE_OP_STORE_OFFSET
 %token MOVE_OP_LOAD_IO_OFFSET MOVE_OP_STORE_IO_OFFSET
 %token TAG_LOW TAG_HI
+%token OP_MOVE_TO_IP OP_MOVE_FROM_IP OP_MOVE_TO_LR OP_MOVE_FROM_LR
+%token OP_SAVE_CR OP_RESTORE_CR
+%token OP_CR_XOR OP_CR_NOT OP_CR_AND OP_CR_OR OP_CR_NAND OP_CR_NOR OP_CR_SWAP
+%token OP_CR_MOVE
+%token BRANCH_LR BRANCH_LR_LINK
+%token COND_TRUE_BRANCH_LR COND_TRUE_BRANCH_LR_LINK
+%token COND_FALSE_BRANCH_LR COND_FALSE_BRANCH_LR_LINK
 
-%token <rval> REGISTER
+
+%token <rval> GPR
+%token <rval> PREDICATE_REGISTER
 %token <ival> IMMEDIATE
 %token <sval> IRIS16_SYMBOL
 
@@ -234,10 +243,10 @@ operation:
          jump_op { iris16::curri.group = static_cast<byte>(iris16::InstructionGroup::Jump); } |
          compare_op { iris16::curri.group = static_cast<byte>(iris16::InstructionGroup::Compare); };
 arithmetic_op:
-             aop THREE_REGISTERS |
-             ARITHMETIC_OP_BINARYNOT TWO_REGISTERS |
-			 aop_imm TWO_REGISTERS_WITH_OFFSET |
-			 aop_single_macro REGISTER {
+             aop THREE_GPRS |
+             ARITHMETIC_OP_BINARYNOT TWO_GPRS |
+			 aop_imm TWO_GPRS_WITH_OFFSET |
+			 aop_single_macro GPR {
 			 	iris16::curri.reg0 = $2;
 				iris16::curri.reg1 = $2;
 			 }
@@ -261,22 +270,22 @@ aop_single_macro:
    }
    ;
 move_op:
-	   mop_reg TWO_REGISTERS |
-       mop_mixed DESTINATION_REGISTER lexeme |
-	   mop_offset TWO_REGISTERS_WITH_OFFSET |
-       MOVE_OP_PUSHIMMEDIATE DESTINATION_REGISTER lexeme { 
+	   mop_reg TWO_GPRS |
+       mop_mixed DESTINATION_GPR lexeme |
+	   mop_offset TWO_GPRS_WITH_OFFSET |
+       MOVE_OP_PUSHIMMEDIATE DESTINATION_GPR lexeme { 
          iris16::curri.op = (byte)iris16::MoveOp::PushImmediate;
        } |
-	   MOVE_OP_STORE_CODE THREE_REGISTERS {
+	   MOVE_OP_STORE_CODE THREE_GPRS {
 	    iris16::curri.op = static_cast<byte>(iris16::MoveOp::StoreCode);
 	   } |
-	   MOVE_OP_LOAD_CODE THREE_REGISTERS {
+	   MOVE_OP_LOAD_CODE THREE_GPRS {
 	    iris16::curri.op = static_cast<byte>(iris16::MoveOp::LoadCode);
 	   } |
-	   MOVE_OP_LOAD_IO TWO_REGISTERS {
+	   MOVE_OP_LOAD_IO TWO_GPRS {
 	    iris16::curri.op = static_cast<byte>(iris16::MoveOp::IORead);
 	   } |
-	   MOVE_OP_STORE_IO TWO_REGISTERS {
+	   MOVE_OP_STORE_IO TWO_GPRS {
 	    iris16::curri.op = static_cast<byte>(iris16::MoveOp::IOWrite);
 	   } 
        ;
@@ -285,17 +294,17 @@ jump_op:
        JUMP_OP_UNCONDITIONALIMMEDIATE lexeme { 
          iris16::curri.op = (byte)iris16::JumpOp::UnconditionalImmediate; 
          } | 
-       JUMP_OP_UNCONDITIONALREGISTER ONE_REGISTER { 
+       JUMP_OP_UNCONDITIONALREGISTER ONE_GPR { 
          iris16::curri.op = (byte)iris16::JumpOp::UnconditionalRegister; 
        } |
-       jop_reg_reg TWO_REGISTERS |
-       jop_reg_imm DESTINATION_REGISTER lexeme |
-       jop_reg_reg_reg THREE_REGISTERS
+       jop_reg_reg TWO_GPRS |
+       jop_reg_imm DESTINATION_GPR lexeme |
+       jop_reg_reg_reg THREE_GPRS
 	   ;
 
 compare_op:
-		  cop THREE_REGISTERS |
-		  icop TWO_REGISTERS_WITH_OFFSET 
+		  cop THREE_GPRS |
+		  icop TWO_GPRS_WITH_OFFSET 
           ;
 aop:
    ARITHMETIC_OP_ADD { iris16::curri.op = (byte)iris16::ArithmeticOp::Add; } |
@@ -405,25 +414,25 @@ half_immediate:
 					iris16::curri.reg2 = iris::decodeBits<iris16::word, byte, 0xFF00, 8>($2);
 				} ;
 
-DESTINATION_REGISTER:
-					REGISTER { iris16::curri.reg0 = $1; };
+DESTINATION_GPR:
+					GPR { iris16::curri.reg0 = $1; };
 
-SOURCE0_REGISTER:
-				REGISTER { iris16::curri.reg1 = $1; };
+SOURCE0_GPR:
+				GPR { iris16::curri.reg1 = $1; };
 
-SOURCE1_REGISTER:
-				REGISTER { iris16::curri.reg2 = $1; };
+SOURCE1_GPR:
+				GPR { iris16::curri.reg2 = $1; };
 
-ONE_REGISTER: 
-			DESTINATION_REGISTER;
-TWO_REGISTERS:
-			 DESTINATION_REGISTER SOURCE0_REGISTER;
+ONE_GPR: 
+			DESTINATION_GPR;
+TWO_GPRS:
+			 DESTINATION_GPR SOURCE0_GPR;
 
-TWO_REGISTERS_WITH_OFFSET:
-				TWO_REGISTERS half_immediate;
+TWO_GPRS_WITH_OFFSET:
+				TWO_GPRS half_immediate;
 
-THREE_REGISTERS:
-			   TWO_REGISTERS SOURCE1_REGISTER;
+THREE_GPRS:
+			   TWO_GPRS SOURCE1_GPR;
 
 %%
 void iris16error(const char* s) {
