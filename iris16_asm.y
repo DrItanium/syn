@@ -38,6 +38,14 @@ struct dynamicop {
    byte reg2;
    bool hasSymbol;
    std::string symbol;
+   template<typename T>
+   void setOperation(T value) noexcept {
+		op = static_cast<byte>(value);
+   }
+   template<typename T>
+   void setGroup(T value) noexcept {
+   		group = static_cast<byte>(value);
+   }
 };
 struct asmstate {
 	
@@ -238,10 +246,13 @@ label:
      }
    ;
 operation:
-         arithmetic_op { iris16::curri.group = static_cast<byte>(iris16::InstructionGroup::Arithmetic); } |
-         move_op { iris16::curri.group = static_cast<byte>(iris16::InstructionGroup::Move); } |
-         jump_op { iris16::curri.group = static_cast<byte>(iris16::InstructionGroup::Jump); } |
-         compare_op { iris16::curri.group = static_cast<byte>(iris16::InstructionGroup::Compare); };
+         arithmetic_op { iris16::curri.setGroup(iris16::InstructionGroup::Arithmetic); } |
+         move_op { iris16::curri.setGroup(iris16::InstructionGroup::Move); } |
+         jump_op { iris16::curri.setGroup(iris16::InstructionGroup::Jump); } |
+         compare_op { iris16::curri.setGroup(iris16::InstructionGroup::Compare); } |
+		 cond_reg_op { iris16::curri.setGroup(iris16::InstructionGroup::ConditionalRegister); }
+		 ;
+
 arithmetic_op:
              aop THREE_GPRS |
              ARITHMETIC_OP_BINARYNOT TWO_GPRS |
@@ -273,133 +284,146 @@ move_op:
 	   mop_reg TWO_GPRS |
        mop_mixed DESTINATION_GPR lexeme |
 	   mop_offset TWO_GPRS_WITH_OFFSET |
-       MOVE_OP_PUSHIMMEDIATE DESTINATION_GPR lexeme { 
-         iris16::curri.op = (byte)iris16::MoveOp::PushImmediate;
-       } |
-	   MOVE_OP_STORE_CODE THREE_GPRS {
-	    iris16::curri.op = static_cast<byte>(iris16::MoveOp::StoreCode);
-	   } |
-	   MOVE_OP_LOAD_CODE THREE_GPRS {
-	    iris16::curri.op = static_cast<byte>(iris16::MoveOp::LoadCode);
-	   } |
-	   MOVE_OP_LOAD_IO TWO_GPRS {
-	    iris16::curri.op = static_cast<byte>(iris16::MoveOp::IORead);
-	   } |
-	   MOVE_OP_STORE_IO TWO_GPRS {
-	    iris16::curri.op = static_cast<byte>(iris16::MoveOp::IOWrite);
-	   } 
+       MOVE_OP_PUSHIMMEDIATE DESTINATION_GPR lexeme { iris16::curri.setOperation(iris16::MoveOp::PushImmediate); } |
+	   MOVE_OP_STORE_CODE THREE_GPRS { iris16::curri.setOperation(iris16::MoveOp::StoreCode); } |
+	   MOVE_OP_LOAD_CODE THREE_GPRS { iris16::curri.setOperation(iris16::MoveOp::LoadCode); } |
+	   MOVE_OP_LOAD_IO TWO_GPRS { iris16::curri.setOperation(iris16::MoveOp::IORead); } |
+	   MOVE_OP_STORE_IO TWO_GPRS { iris16::curri.setOperation(iris16::MoveOp::IOWrite); } 
        ;
 
 jump_op:
-       JUMP_OP_UNCONDITIONALIMMEDIATE lexeme { 
-         iris16::curri.op = (byte)iris16::JumpOp::UnconditionalImmediate; 
-         } | 
-       JUMP_OP_UNCONDITIONALREGISTER ONE_GPR { 
-         iris16::curri.op = (byte)iris16::JumpOp::UnconditionalRegister; 
-       } |
+       JUMP_OP_UNCONDITIONALIMMEDIATE lexeme { iris16::curri.setOperation(iris16::JumpOp::UnconditionalImmediate); } | 
+       JUMP_OP_UNCONDITIONALREGISTER ONE_GPR { iris16::curri.setOperation(iris16::JumpOp::UnconditionalRegister); } |
        jop_reg_reg TWO_GPRS |
        jop_reg_imm DESTINATION_GPR lexeme |
        jop_reg_reg_reg THREE_GPRS
 	   ;
 
-compare_op:
-		  cop THREE_GPRS |
-		  icop TWO_GPRS_WITH_OFFSET 
-          ;
 aop:
-   ARITHMETIC_OP_ADD { iris16::curri.op = (byte)iris16::ArithmeticOp::Add; } |
-   ARITHMETIC_OP_SUB { iris16::curri.op = (byte)iris16::ArithmeticOp::Sub; } |
-   ARITHMETIC_OP_MUL { iris16::curri.op = (byte)iris16::ArithmeticOp::Mul; } |
-   ARITHMETIC_OP_DIV { iris16::curri.op = (byte)iris16::ArithmeticOp::Div; } |
-   ARITHMETIC_OP_REM { iris16::curri.op = (byte)iris16::ArithmeticOp::Rem; } |
-   ARITHMETIC_OP_SHIFTLEFT { iris16::curri.op = (byte)iris16::ArithmeticOp::ShiftLeft; } |
-   ARITHMETIC_OP_SHIFTRIGHT { iris16::curri.op = (byte)iris16::ArithmeticOp::ShiftRight; } |
-   ARITHMETIC_OP_BINARYAND { iris16::curri.op = (byte)iris16::ArithmeticOp::BinaryAnd; } |
-   ARITHMETIC_OP_BINARYOR { iris16::curri.op = (byte)iris16::ArithmeticOp::BinaryOr; } |
-   ARITHMETIC_OP_BINARYXOR { iris16::curri.op = (byte)iris16::ArithmeticOp::BinaryXor; } 
+   ARITHMETIC_OP_ADD { iris16::curri.setOperation(iris16::ArithmeticOp::Add); } |
+   ARITHMETIC_OP_SUB { iris16::curri.setOperation(iris16::ArithmeticOp::Sub); } |
+   ARITHMETIC_OP_MUL { iris16::curri.setOperation(iris16::ArithmeticOp::Mul); } |
+   ARITHMETIC_OP_DIV { iris16::curri.setOperation(iris16::ArithmeticOp::Div); } |
+   ARITHMETIC_OP_REM { iris16::curri.setOperation(iris16::ArithmeticOp::Rem); } |
+   ARITHMETIC_OP_SHIFTLEFT { iris16::curri.setOperation(iris16::ArithmeticOp::ShiftLeft); } |
+   ARITHMETIC_OP_SHIFTRIGHT { iris16::curri.setOperation(iris16::ArithmeticOp::ShiftRight); } |
+   ARITHMETIC_OP_BINARYAND { iris16::curri.setOperation(iris16::ArithmeticOp::BinaryAnd); } |
+   ARITHMETIC_OP_BINARYOR { iris16::curri.setOperation(iris16::ArithmeticOp::BinaryOr); } |
+   ARITHMETIC_OP_BINARYXOR { iris16::curri.setOperation(iris16::ArithmeticOp::BinaryXor); } 
    ;
 
 aop_imm:
-   ARITHMETIC_OP_ADD_IMM { iris16::curri.op = (byte)iris16::ArithmeticOp::AddImmediate; } |
-   ARITHMETIC_OP_SUB_IMM { iris16::curri.op = (byte)iris16::ArithmeticOp::SubImmediate; } |
-   ARITHMETIC_OP_MUL_IMM { iris16::curri.op = (byte)iris16::ArithmeticOp::MulImmediate; } | 
-   ARITHMETIC_OP_DIV_IMM { iris16::curri.op = (byte)iris16::ArithmeticOp::DivImmediate; } |
-   ARITHMETIC_OP_REM_IMM { iris16::curri.op = (byte)iris16::ArithmeticOp::RemImmediate; } |
-   ARITHMETIC_OP_SHIFTLEFT_IMM { iris16::curri.op = (byte)iris16::ArithmeticOp::ShiftLeftImmediate; } |
-   ARITHMETIC_OP_SHIFTRIGHT_IMM { iris16::curri.op = (byte)iris16::ArithmeticOp::ShiftRightImmediate; } 
+   ARITHMETIC_OP_ADD_IMM { iris16::curri.setOperation(iris16::ArithmeticOp::AddImmediate); } |
+   ARITHMETIC_OP_SUB_IMM { iris16::curri.setOperation(iris16::ArithmeticOp::SubImmediate); } |
+   ARITHMETIC_OP_MUL_IMM { iris16::curri.setOperation(iris16::ArithmeticOp::MulImmediate); } | 
+   ARITHMETIC_OP_DIV_IMM { iris16::curri.setOperation(iris16::ArithmeticOp::DivImmediate); } |
+   ARITHMETIC_OP_REM_IMM { iris16::curri.setOperation(iris16::ArithmeticOp::RemImmediate); } |
+   ARITHMETIC_OP_SHIFTLEFT_IMM { iris16::curri.setOperation(iris16::ArithmeticOp::ShiftLeftImmediate); } |
+   ARITHMETIC_OP_SHIFTRIGHT_IMM { iris16::curri.setOperation(iris16::ArithmeticOp::ShiftRightImmediate); } 
    ;
 
 mop_reg:
-   MOVE_OP_MOVE { iris16::curri.op = (byte)iris16::MoveOp::Move; } |
-   MOVE_OP_SWAP { iris16::curri.op = (byte)iris16::MoveOp::Swap; } |
-   MOVE_OP_LOAD { iris16::curri.op = (byte)iris16::MoveOp::Load; } |
-   MOVE_OP_STORE { iris16::curri.op = (byte)iris16::MoveOp::Store; } |
-   MOVE_OP_PUSH { iris16::curri.op = (byte)iris16::MoveOp::Push; } |
-   MOVE_OP_POP { iris16::curri.op = (byte)iris16::MoveOp::Pop; }
+   MOVE_OP_MOVE { iris16::curri.setOperation(iris16::MoveOp::Move); } |
+   MOVE_OP_SWAP { iris16::curri.setOperation(iris16::MoveOp::Swap); } |
+   MOVE_OP_LOAD { iris16::curri.setOperation(iris16::MoveOp::Load); } |
+   MOVE_OP_STORE { iris16::curri.setOperation(iris16::MoveOp::Store); } |
+   MOVE_OP_PUSH { iris16::curri.setOperation(iris16::MoveOp::Push); } |
+   MOVE_OP_POP { iris16::curri.setOperation(iris16::MoveOp::Pop); }
    ;
 
 mop_mixed:
-   MOVE_OP_SET { iris16::curri.op = (byte)iris16::MoveOp::Set; } |
-   MOVE_OP_STOREIMM { iris16::curri.op = (byte)iris16::MoveOp::Memset; } |
-   MOVE_OP_LOADMEM { iris16::curri.op = (byte)iris16::MoveOp::LoadImmediate; } 
+   MOVE_OP_SET { iris16::curri.setOperation(iris16::MoveOp::Set); } |
+   MOVE_OP_STOREIMM { iris16::curri.setOperation(iris16::MoveOp::Memset); } |
+   MOVE_OP_LOADMEM { iris16::curri.setOperation(iris16::MoveOp::LoadImmediate); } 
    ;
 
 mop_offset:
-	MOVE_OP_STORE_IO_OFFSET { iris16::curri.op = static_cast<byte>(iris16::MoveOp::IOWriteWithOffset); } |
-	MOVE_OP_LOAD_IO_OFFSET { iris16::curri.op = static_cast<byte>(iris16::MoveOp::IOReadWithOffset); } |
-	MOVE_OP_STORE_OFFSET { iris16::curri.op = static_cast<byte>(iris16::MoveOp::StoreWithOffset); } |
-	MOVE_OP_LOAD_OFFSET { iris16::curri.op = static_cast<byte>(iris16::MoveOp::LoadWithOffset); }
+	MOVE_OP_STORE_IO_OFFSET { iris16::curri.setOperation(iris16::MoveOp::IOWriteWithOffset); } |
+	MOVE_OP_LOAD_IO_OFFSET { iris16::curri.setOperation(iris16::MoveOp::IOReadWithOffset); } |
+	MOVE_OP_STORE_OFFSET { iris16::curri.setOperation(iris16::MoveOp::StoreWithOffset); } |
+	MOVE_OP_LOAD_OFFSET { iris16::curri.setOperation(iris16::MoveOp::LoadWithOffset); }
 	;
 
 
 jop_reg_imm:
-   JUMP_OP_UNCONDITIONALIMMEDIATELINK { iris16::curri.op = (byte)iris16::JumpOp::UnconditionalImmediateLink; } |
-   JUMP_OP_CONDITIONALTRUEIMMEDIATE { iris16::curri.op = (byte)iris16::JumpOp::ConditionalTrueImmediate; } |
-   JUMP_OP_CONDITIONALTRUEIMMEDIATELINK { iris16::curri.op = (byte)iris16::JumpOp::ConditionalTrueImmediateLink; } |
-   JUMP_OP_CONDITIONALFALSEIMMEDIATE { iris16::curri.op = (byte)iris16::JumpOp::ConditionalFalseImmediate; } |
-   JUMP_OP_CONDITIONALFALSEIMMEDIATELINK { iris16::curri.op = (byte)iris16::JumpOp::ConditionalFalseImmediateLink; } 
+   JUMP_OP_UNCONDITIONALIMMEDIATELINK { iris16::curri.setOperation(iris16::JumpOp::UnconditionalImmediateLink); } |
+   JUMP_OP_CONDITIONALTRUEIMMEDIATE { iris16::curri.setOperation(iris16::JumpOp::ConditionalTrueImmediate); } |
+   JUMP_OP_CONDITIONALTRUEIMMEDIATELINK { iris16::curri.setOperation(iris16::JumpOp::ConditionalTrueImmediateLink); } |
+   JUMP_OP_CONDITIONALFALSEIMMEDIATE { iris16::curri.setOperation(iris16::JumpOp::ConditionalFalseImmediate); } |
+   JUMP_OP_CONDITIONALFALSEIMMEDIATELINK { iris16::curri.setOperation(iris16::JumpOp::ConditionalFalseImmediateLink); } 
    ;
 
 
 jop_reg_reg:
-   JUMP_OP_UNCONDITIONALREGISTERLINK { iris16::curri.op = (byte)iris16::JumpOp::UnconditionalRegisterLink; } |
-   JUMP_OP_CONDITIONALTRUEREGISTER { iris16::curri.op = (byte)iris16::JumpOp::ConditionalTrueRegister; } |
-   JUMP_OP_CONDITIONALFALSEREGISTER { iris16::curri.op = (byte)iris16::JumpOp::ConditionalFalseRegister; }
+   JUMP_OP_UNCONDITIONALREGISTERLINK { iris16::curri.setOperation(iris16::JumpOp::UnconditionalRegisterLink); } |
+   JUMP_OP_CONDITIONALTRUEREGISTER { iris16::curri.setOperation(iris16::JumpOp::ConditionalTrueRegister); } |
+   JUMP_OP_CONDITIONALFALSEREGISTER { iris16::curri.setOperation(iris16::JumpOp::ConditionalFalseRegister); }
    ;
 
 jop_reg_reg_reg:
-   JUMP_OP_CONDITIONALTRUEREGISTERLINK { iris16::curri.op = (byte)iris16::JumpOp::ConditionalTrueRegisterLink; } |
-   JUMP_OP_CONDITIONALFALSEREGISTERLINK { iris16::curri.op = (byte)iris16::JumpOp::ConditionalFalseRegisterLink; } |
-   JUMP_OP_IFTHENELSENORMALPREDTRUE { iris16::curri.op = (byte)iris16::JumpOp::IfThenElseNormalPredTrue; } |
-   JUMP_OP_IFTHENELSENORMALPREDFALSE { iris16::curri.op = (byte)iris16::JumpOp::IfThenElseNormalPredFalse; } |
-   JUMP_OP_IFTHENELSELINKPREDTRUE { iris16::curri.op = (byte)iris16::JumpOp::IfThenElseLinkPredTrue; } |
-   JUMP_OP_IFTHENELSELINKPREDFALSE { iris16::curri.op = (byte)iris16::JumpOp::IfThenElseLinkPredFalse; }
+   JUMP_OP_CONDITIONALTRUEREGISTERLINK { iris16::curri.setOperation(iris16::JumpOp::ConditionalTrueRegisterLink); } |
+   JUMP_OP_CONDITIONALFALSEREGISTERLINK { iris16::curri.setOperation(iris16::JumpOp::ConditionalFalseRegisterLink); } |
+   JUMP_OP_IFTHENELSENORMALPREDTRUE { iris16::curri.setOperation(iris16::JumpOp::IfThenElseNormalPredTrue); } |
+   JUMP_OP_IFTHENELSENORMALPREDFALSE { iris16::curri.setOperation(iris16::JumpOp::IfThenElseNormalPredFalse); } |
+   JUMP_OP_IFTHENELSELINKPREDTRUE { iris16::curri.setOperation(iris16::JumpOp::IfThenElseLinkPredTrue); } |
+   JUMP_OP_IFTHENELSELINKPREDFALSE { iris16::curri.setOperation(iris16::JumpOp::IfThenElseLinkPredFalse); }
 ;
 
+compare_op:
+		  cop DESTINATION_PREDICATE_REGISTERS SOURCE0_GPR SOURCE1_GPR |
+		  icop DESTINATION_PREDICATE_REGISTERS SOURCE0_GPR half_immediate;
 cop:
-   COMPARE_OP_EQ { iris16::curri.op = (byte)iris16::CompareOp::Eq; } |
-   COMPARE_OP_NEQ { iris16::curri.op = (byte)iris16::CompareOp::Neq; } |
-   COMPARE_OP_LESSTHAN { iris16::curri.op = (byte)iris16::CompareOp::LessThan; } |
-   COMPARE_OP_GREATERTHAN { iris16::curri.op = (byte)iris16::CompareOp::GreaterThan; } |
-   COMPARE_OP_LESSTHANOREQUALTO { iris16::curri.op = (byte)iris16::CompareOp::LessThanOrEqualTo; } |
-   COMPARE_OP_GREATERTHANOREQUALTO { iris16::curri.op = (byte)iris16::CompareOp::GreaterThanOrEqualTo; } 
+   COMPARE_OP_EQ { iris16::curri.setOperation(iris16::CompareOp::Eq); } |
+   COMPARE_OP_NEQ { iris16::curri.setOperation(iris16::CompareOp::Neq); } |
+   COMPARE_OP_LESSTHAN { iris16::curri.setOperation(iris16::CompareOp::LessThan); } |
+   COMPARE_OP_GREATERTHAN { iris16::curri.setOperation(iris16::CompareOp::GreaterThan); } |
+   COMPARE_OP_LESSTHANOREQUALTO { iris16::curri.setOperation(iris16::CompareOp::LessThanOrEqualTo); } |
+   COMPARE_OP_GREATERTHANOREQUALTO { iris16::curri.setOperation(iris16::CompareOp::GreaterThanOrEqualTo); } 
 ;
 icop:
-   COMPARE_OP_EQ_IMMEDIATE { iris16::curri.op = (byte)iris16::CompareOp::EqImm; } |
-   COMPARE_OP_NEQ_IMMEDIATE { iris16::curri.op = (byte)iris16::CompareOp::NeqImm; } |
-   COMPARE_OP_LESSTHAN_IMMEDIATE { iris16::curri.op = (byte)iris16::CompareOp::LessThanImm; } |
-   COMPARE_OP_GREATERTHAN_IMMEDIATE { iris16::curri.op = (byte)iris16::CompareOp::GreaterThanImm; } |
-   COMPARE_OP_LESSTHANOREQUALTO_IMMEDIATE { iris16::curri.op = (byte)iris16::CompareOp::LessThanOrEqualToImm; } |
-   COMPARE_OP_GREATERTHANOREQUALTO_IMMEDIATE { iris16::curri.op = (byte)iris16::CompareOp::GreaterThanOrEqualToImm; }
+   COMPARE_OP_EQ_IMMEDIATE { iris16::curri.setOperation(iris16::CompareOp::EqImm); } |
+   COMPARE_OP_NEQ_IMMEDIATE { iris16::curri.setOperation(iris16::CompareOp::NeqImm); } |
+   COMPARE_OP_LESSTHAN_IMMEDIATE { iris16::curri.setOperation(iris16::CompareOp::LessThanImm); } |
+   COMPARE_OP_GREATERTHAN_IMMEDIATE { iris16::curri.setOperation(iris16::CompareOp::GreaterThanImm); } |
+   COMPARE_OP_LESSTHANOREQUALTO_IMMEDIATE { iris16::curri.setOperation(iris16::CompareOp::LessThanOrEqualToImm); } |
+   COMPARE_OP_GREATERTHANOREQUALTO_IMMEDIATE { iris16::curri.setOperation(iris16::CompareOp::GreaterThanOrEqualToImm); }
 ;
+
+cond_reg_op: 
+	cond_save_restore_op DESTINATION_GPR lexeme |
+	cond_four_arg DESTINATION_PREDICATE_REGISTERS TWO_ARG_PREDICATE_REGISTER |
+	cond_three_arg DESTINATION_PREDICATE_REGISTERS SOURCE0_PREDICATE_REGISTER ;
+cond_save_restore_op:
+		OP_SAVE_CR { iris16::curri.setOperation(iris16::ConditionRegisterOp::SaveCRs); } |
+		OP_RESTORE_CR { iris16::curri.setOperation(iris16::ConditionRegisterOp::RestoreCRs); } ;
+cond_three_arg:
+		OP_CR_NOT { iris16::curri.setOperation(iris16::ConditionRegisterOp::CRNot); }
+		;
+cond_four_arg:
+			 OP_CR_XOR { iris16::curri.setOperation(iris16::ConditionRegisterOp::CRXor); } |
+			 OP_CR_AND { iris16::curri.setOperation(iris16::ConditionRegisterOp::CRAnd); } 
+			 ;
 lexeme:
       IRIS16_SYMBOL { iris16::curri.hasSymbol = true; 
                iris16::curri.symbol = $1; } | 
       IMMEDIATE { 
-	  		iris16::curri.reg1 = iris::decodeBits<iris16::word, byte, 0x00FF, 0>($1);
-			iris16::curri.reg2 = iris::decodeBits<iris16::word, byte, 0xFF00, 8>($1);
+	  		iris16::curri.reg1 = iris::getLowerHalf<iris16::word>($1);
+			iris16::curri.reg2 = iris::getUpperHalf<iris16::word>($1);
+	  		//iris16::curri.reg1 = iris::decodeBits<iris16::word, byte, 0x00FF, 0>($1);
+			//iris16::curri.reg2 = iris::decodeBits<iris16::word, byte, 0xFF00, 8>($1);
       }
 ;
+DESTINATION_PREDICATE_REGISTERS:
+							   PREDICATE_REGISTER PREDICATE_REGISTER { iris16::curri.reg0 = iris16::encodePredicateInverseResult(iris16::encodePredicateResult(0, $1), $2); };
+
+SOURCE0_PREDICATE_REGISTER:
+						 PREDICATE_REGISTER { iris16::curri.reg2 = iris16::encodePredicateSource0(iris16::curri.reg1, $1); };
+SOURCE1_PREDICATE_REGISTER:
+						  PREDICATE_REGISTER { iris16::curri.reg2 = iris16::encodePredicateSource1(iris16::curri.reg1, $1); };
+TWO_ARG_PREDICATE_REGISTER:
+						  SOURCE0_PREDICATE_REGISTER SOURCE1_PREDICATE_REGISTER;
+
+
 half_immediate:
 				IMMEDIATE {
 	   				if ($1 > 255) {
