@@ -1,9 +1,0 @@
-// title, id, operation, action
-DefEnum(Operation, byte)
-	EnumEntry(Arithmetic)
-	EnumEntry(Shift)
-	EnumEntry(Logical)
-	EnumEntry(Compare)
-	EnumEntry(Branch)
-	EnumEntry(Move)
-EndDefEnum(Operation, byte, ArchitectureConstants::MaxInstructionCount)

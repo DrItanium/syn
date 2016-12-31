@@ -1,8 +1,0 @@
-
-DefEnum(LogicalOps, byte)
-	EnumEntry(And)
-	EnumEntry(Or)
-	EnumEntry(Xor)
-	EnumEntry(Nand)
-	EnumEntry(Not)
-EndDefEnum(LogicalOps, byte, 8)
