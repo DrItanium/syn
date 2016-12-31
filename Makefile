@@ -4,8 +4,7 @@
 
 include config.mk
 MACHINE_OBJECTS = 
-ARCH_OBJECTS = iris17.o \
-			   iris.o \
+ARCH_OBJECTS = iris.o \
 			   iris18.o \
 			   iris19.o \
 			   iris20.o \
@@ -29,8 +28,6 @@ SIM_BINARY = iris_sim
 
 ASM_PARSERS_OBJECTS = iris_lex.yy.o \
 					  iris_asm.tab.o \
-					  iris17_lex.yy.o \
-					  iris17_asm.tab.o \
 					  iris18_lex.yy.o \
 					  iris18_asm.tab.o \
 					  iris19_lex.yy.o \
@@ -52,9 +49,6 @@ REPL_OBJECTS= iris_repl.o \
 ASM_PARSERS = iris_lex.yy.c \
 			  iris_asm.tab.c \
 			  iris_asm.tab.h \
-			  iris17_lex.yy.c \
-			  iris17_asm.tab.c \
-			  iris17_asm.tab.h \
 			  iris18_lex.yy.c \
 			  iris18_asm.tab.c \
 			  iris18_asm.tab.h \
@@ -79,14 +73,12 @@ ALL_BINARIES = ${SIM_BINARY} \
 
 DEFINE_OBJECTS = iris19_defines.h \
 				 iris_defines.h \
-				 iris17_defines.h \
 				 iris18_defines.h \
 				 iris20_defines.h \
 				 iris_memory_block_defines.h
 
 DEFINE_CLPS = iris19_defines.clp \
 				 iris_defines.clp \
-				 iris17_defines.clp \
 				 iris18_defines.clp \
 				 iris20_defines.clp 
 
@@ -214,10 +206,6 @@ iris_defines.h: iris_repl def/iris/instruction.clp cmd/deffield.clp lib/cortex.c
 	@./deffield.sh -f2 def/iris/instruction.clp -f2 lib/reset-run-exit.clp > iris_defines.h
 	@./deffunction.sh -f2 def/iris/instruction.clp -f2 lib/reset-run-exit.clp > iris_defines.clp
 
-iris17_defines.h: iris_repl def/iris17/instruction.clp cmd/deffield.clp lib/cortex.clp lib/reset-run-exit.clp iris_base.h cmd/deffunctions.clp
-	@echo "Generating encoders, decoders and enumerations for iris17..."
-	@./deffield.sh -f2 def/iris17/instruction.clp -f2 lib/reset-run-exit.clp > iris17_defines.h
-	@./deffunction.sh -f2 def/iris17/instruction.clp -f2 lib/reset-run-exit.clp > iris17_defines.clp
 
 iris18_defines.h: iris_repl def/iris18/instruction.clp cmd/deffield.clp lib/cortex.clp lib/reset-run-exit.clp iris_base.h cmd/deffunctions.clp
 	@echo "Generating encoders, decoders and enumerations for iris18..."
@@ -237,14 +225,12 @@ iris20_defines.h: iris_repl def/iris20/instruction.clp cmd/deffield.clp lib/cort
 asm_interact.o: asm_interact.cc asm_interact.h iris18.h iris_base.h \
  Problem.h iris_xunits.h IODevice.h Device.h Core.h sim_registration.h \
  iris18_defines.h def/iris18/instruction.def def/iris18/misc.def \
- def/iris18/ops.def iris.h IOController.h iris_defines.h iris17.h \
- iris17_defines.h iris19.h iris19_defines.h def/iris19/ops.def iris20.h \
+ def/iris18/ops.def iris.h IOController.h iris_defines.h \
+ iris19.h iris19_defines.h def/iris19/ops.def iris20.h \
  iris20_defines.h
 Core.o: Core.cc Core.h Device.h
 iris.o: iris.cc iris.h iris_base.h Problem.h iris_xunits.h \
  IODevice.h Device.h Core.h IOController.h iris_defines.h
-iris17.o: iris17.cc iris17.h iris_base.h Problem.h iris_xunits.h \
- IODevice.h Device.h Core.h iris17_defines.h
 iris18.o: iris18.cc iris18.h iris_base.h Problem.h iris_xunits.h \
  IODevice.h Device.h Core.h sim_registration.h iris18_defines.h \
  def/iris18/instruction.def def/iris18/misc.def def/iris18/ops.def \
@@ -326,8 +312,8 @@ iris_sim.o: iris_sim.cc Problem.h Core.h Device.h sim_registration.h \
 sim_registration.o: sim_registration.cc sim_registration.h Core.h \
  Device.h iris18.h iris_base.h Problem.h iris_xunits.h IODevice.h \
  iris18_defines.h def/iris18/instruction.def def/iris18/misc.def \
- def/iris18/ops.def iris.h IOController.h iris_defines.h iris17.h \
- iris17_defines.h iris19.h iris19_defines.h def/iris19/ops.def iris20.h \
+ def/iris18/ops.def iris.h IOController.h iris_defines.h \
+ iris19.h iris19_defines.h def/iris19/ops.def iris20.h \
  iris20_defines.h iris_machine.h LockStepMachine.h
 
 
@@ -337,12 +323,6 @@ iris_asm.tab.o: iris_asm.tab.c asm_interact.h iris.h iris_base.h \
 iris_lex.yy.o: iris_lex.yy.c iris.h iris_base.h Problem.h \
  iris_xunits.h IODevice.h Device.h Core.h IOController.h iris_defines.h \
  iris_asm.tab.h
-iris17_asm.tab.o: iris17_asm.tab.c asm_interact.h iris17.h iris_base.h \
- Problem.h iris_xunits.h IODevice.h Device.h Core.h iris17_defines.h \
- iris17_asm.tab.h
-iris17_lex.yy.o: iris17_lex.yy.c iris17.h iris_base.h Problem.h \
- iris_xunits.h IODevice.h Device.h Core.h iris17_defines.h \
- iris17_asm.tab.h
 iris18_asm.tab.o: iris18_asm.tab.c iris18.h iris_base.h Problem.h \
  iris_xunits.h IODevice.h Device.h Core.h sim_registration.h \
  iris18_defines.h def/iris18/instruction.def def/iris18/misc.def \
