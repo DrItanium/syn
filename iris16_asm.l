@@ -11,12 +11,6 @@
 #include "iris_asm_base.h"
 #define _POSIX_SOURCE 1
 
-namespace iris16 {
-	byte getRegister(void);
-	byte getPredicateRegister(void);
-	unsigned long getDecimalImmediate(void);
-	unsigned long getHexImmediate(void);
-}
 extern void iris16error(const char* c);
 void reportIris16Error(const std::string& str) {
 	iris16error(str.c_str());
@@ -162,48 +156,3 @@ c{digit}+ {
 	return IRIS16_SYMBOL;
 }
 %%
-namespace iris16 {
-template<byte max>
-byte getGenericRegister(const std::string& errorMessage) {
-	int c;
-	iris16text[0] = '0';
-	c = atoi(iris16text);
-	if (c >= max || c < 0) {
-		iris16error(errorMessage.c_str());
-		return 0;
-	} else {
-		return static_cast<byte>(c);
-	}
-}
-byte getRegister(void) {
-	return getGenericRegister<256>("target register index is too large!");
-}
-byte getPredicateRegister(void) {
-	return getGenericRegister<16>("target predicate register index is too large!");
-}
-
-unsigned long getGenericImmediate(int base) {
-	unsigned long tmp;
-	tmp = strtoul(iris16text, NULL, base);
-   if(tmp == ULONG_MAX && errno == ERANGE) {
-      iris16error("number is too large and overflowed!");
-      return 0;
-   } else {
-      if(tmp > 65535 || tmp < 0) {
-         iris16error("provided number is larger than 16-bits!");
-         return 0;
-      } else {
-         return tmp;
-      }
-   }
-}
-
-unsigned long getDecimalImmediate() {
-	return getGenericImmediate(10);
-}
-
-unsigned long getHexImmediate() {
-	return getGenericImmediate(16);
-}
-
-}
