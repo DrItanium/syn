@@ -35,6 +35,8 @@ ASM_PARSERS_OBJECTS = iris16_lex.yy.o \
 					  iris18_asm.tab.o \
 					  iris19_lex.yy.o \
 					  iris19_asm.tab.o \
+					  iris20_lex.yy.o \
+					  iris20_asm.tab.o \
 
 ASM_OBJECTS = iris_asm.o \
 			  asm_interact.o \
@@ -358,3 +360,11 @@ iris19_asm.tab.o: iris19_asm.tab.c iris19.h iris_base.h Problem.h Core.h \
 iris19_lex.yy.o: iris19_lex.yy.c iris19.h iris_base.h Problem.h Core.h \
  Device.h sim_registration.h iris_xunits.h IODevice.h iris19_defines.h \
  def/iris19/ops.def iris19_asm.tab.h
+
+iris20_asm.tab.o: iris20_asm.tab.c iris20.h iris_base.h Problem.h Core.h \
+ Device.h sim_registration.h iris_xunits.h IODevice.h iris20_defines.h \
+ asm_interact.h iris20_asm.tab.h 
+
+iris20_lex.yy.o: iris20_lex.yy.c iris20.h iris_base.h Problem.h Core.h \
+ Device.h sim_registration.h iris_xunits.h IODevice.h iris20_defines.h \
+ iris20_asm.tab.h
