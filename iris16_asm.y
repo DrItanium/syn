@@ -78,6 +78,77 @@ template<typename T>
 void setGroup(T value) noexcept {
 	iris16::curri.setGroup<T>(value);
 }
+
+void setStateSegment(iris16::Segment value) noexcept {
+	iris16::state.segment = value;
+}
+void setCurrentInstructionSegment(iris16::Segment value) noexcept {
+	iris16::curri.segment = value; 
+}
+
+
+
+void addLabelEntry(const std::string& name, iris16::word address) {
+	iris16::add_label_entry(name, address);
+}
+void clearCurrentInstruction() noexcept {
+	  iris16::curri.segment = iris16::Segment::Code;
+	  iris16::curri.address = 0;
+	  iris16::curri.group = 0;
+	  iris16::curri.op = 0;
+	  iris16::curri.reg0 = 0;
+	  iris16::curri.reg1 = 0;
+	  iris16::curri.reg2 = 0;
+	  iris16::curri.hasSymbol = false;
+	  iris16::curri.symbol = "";
+}
+iris16::Segment getStateSegment() noexcept {
+	  return iris16::state.segment;
+}
+template<typename T, T value>
+bool isEqualTo(T input) noexcept {
+	return input == value;
+}
+bool stateInDataSegment() noexcept {
+	return isEqualTo<iris16::Segment, iris16::Segment::Data>(getStateSegment());
+}
+bool stateInCodeSegment() noexcept {
+	return isEqualTo<iris16::Segment, iris16::Segment::Code>(getStateSegment());
+}
+using word = iris16::word;
+word performActionOnStateObject(std::function<word()> data, std::function<word()> code, std::function<word(const std::string&)> unknownSegment) {
+	if (stateInDataSegment()) {
+		return data();
+	} else if (stateInCodeSegment()) {
+		return code();
+	} else {
+		return unknownSegment("State current in unknown segment!");
+	}
+}
+word getAppropriateStateAddress() noexcept {
+	return performActionOnStateObject([]() { return iris16::state.data_address; }, []() { return iris16::state.code_address; }, [](auto msg) { iris16error(msg.c_str()); return 0; });
+}
+void incrementAppropriateStateAddress() noexcept {
+	performActionOnStateObject([]() { ++iris16::state.data_address; return 0; }, []() { ++iris16::state.code_address; return 0; }, [](auto msg) { iris16error(msg.c_str()); return 0; });
+}
+void assignAppropriateAddressToCurrentInstruction() noexcept {
+	iris16::curri.segment = iris16::state.segment;
+	iris16::curri.address = getAppropriateStateAddress();
+}
+void setRegister2(byte value) noexcept {
+	iris16::curri.reg2 = value;
+}
+void setRegister1(byte value) noexcept {
+	iris16::curri.reg1 = value;
+}
+void setRegister0(byte value) noexcept {
+	iris16::curri.reg0 = value;
+}
+
+void setFullImmediate(word value) noexcept {
+	setRegister1(iris::getLowerHalf<word>(value));
+	setRegister2(iris::getUpperHalf<word>(value));
+}
 %}
 
 %union {
@@ -180,26 +251,10 @@ Q: /* empty */ |
 ;
 F:
    F asm {
-      iris16::curri.segment = iris16::Segment::Code;
-      iris16::curri.address = 0;
-      iris16::curri.group = 0;
-      iris16::curri.op = 0;
-      iris16::curri.reg0 = 0;
-      iris16::curri.reg1 = 0;
-      iris16::curri.reg2 = 0;
-      iris16::curri.hasSymbol = false;
-      iris16::curri.symbol = "";
+   	  clearCurrentInstruction(); 
    } | 
    asm {
-      iris16::curri.segment = iris16::Segment::Code;
-      iris16::curri.address = 0;
-      iris16::curri.group = 0;
-      iris16::curri.op = 0;
-      iris16::curri.reg0 = 0;
-      iris16::curri.reg1 = 0;
-      iris16::curri.reg2 = 0;
-      iris16::curri.hasSymbol = false;
-      iris16::curri.symbol = "";
+	  clearCurrentInstruction();
    }
    ;
 asm:
@@ -208,9 +263,9 @@ asm:
    ;
 directive:
          DIRECTIVE_ORG IMMEDIATE {
-            if(iris16::state.segment == iris16::Segment::Code) {
+		 	if (stateInCodeSegment()) {
                iris16::state.code_address = $2;
-            } else if(iris16::state.segment == iris16::Segment::Data) {
+            } else if(stateInDataSegment()) {
                iris16::state.data_address = $2;
             } else {
                iris16error("Invalid segment!");
@@ -219,11 +274,10 @@ directive:
       DIRECTIVE_CODE { iris16::state.segment = iris16::Segment::Code; } |
       DIRECTIVE_DATA { iris16::state.segment = iris16::Segment::Data; } |
       DIRECTIVE_DECLARE lexeme { 
-            if(iris16::state.segment == iris16::Segment::Data) {
-               iris16::curri.segment = iris16::Segment::Data;
-               iris16::curri.address = iris16::state.data_address;
+	  		if (stateInDataSegment()) {
+			   assignAppropriateAddressToCurrentInstruction();
                iris16::save_encoding();
-               iris16::state.data_address++;
+			   incrementAppropriateStateAddress();
             } else {
                iris16error("Declaration in non-data segment!");
             }
@@ -232,11 +286,10 @@ directive:
 statement:
          label { iris16::curri.segment = iris16::state.segment; }|
          operation {
-            if(iris16::state.segment == iris16::Segment::Code) {
-               iris16::curri.segment = iris16::Segment::Code;
-               iris16::curri.address = iris16::state.code_address;
+		 	if (stateInCodeSegment()) {
+			   assignAppropriateAddressToCurrentInstruction();
                iris16::save_encoding();
-               iris16::state.code_address++;
+			   incrementAppropriateStateAddress();
             } else {
                iris16error("operation in an invalid segment!");
             }
@@ -244,13 +297,7 @@ statement:
          ;
 label:
      LABEL IRIS16_SYMBOL { 
-      if(iris16::state.segment == iris16::Segment::Code) {
-          iris16::add_label_entry($2, iris16::state.code_address);
-      } else if (iris16::state.segment == iris16::Segment::Data) {
-          iris16::add_label_entry($2, iris16::state.data_address);
-      } else {
-          iris16error("label in invalid segment!");
-      }
+	 	addLabelEntry($2, getAppropriateStateAddress());
      }
    ;
 operation:
@@ -266,26 +313,26 @@ arithmetic_op:
              ARITHMETIC_OP_BINARYNOT TWO_GPRS |
 			 aop_imm TWO_GPRS_WITH_OFFSET |
 			 aop_single_macro GPR {
-			 	iris16::curri.reg0 = $2;
-				iris16::curri.reg1 = $2;
+			 	setRegister0($2);
+				setRegister1($2);
 			 }
       ;
 aop_single_macro:
    ARITHMETIC_MACRO_OP_INCR { 
-     iris16::curri.op = (byte)iris16::ArithmeticOp::AddImmediate;
-     iris16::curri.reg2 = 1;
+   	 setOperation(iris16::ArithmeticOp::AddImmediate);
+	 setRegister2(1);
    } |
    ARITHMETIC_MACRO_OP_DECR { 
-     iris16::curri.op = (byte)iris16::ArithmeticOp::SubImmediate;  
-	 iris16::curri.reg2 = 1;
+	 setOperation(iris16::ArithmeticOp::SubImmediate);
+	 setRegister2(1);
    } |
    ARITHMETIC_MACRO_OP_HALVE { 
-     iris16::curri.op = (byte)iris16::ArithmeticOp::DivImmediate; 
-     iris16::curri.reg2 = 2;
+	 setOperation(iris16::ArithmeticOp::DivImmediate);
+	 setRegister2(2);
    } |
    ARITHMETIC_MACRO_OP_DOUBLE {
-     iris16::curri.op = (byte)iris16::ArithmeticOp::MulImmediate; 
-     iris16::curri.reg2 = 2;
+   	 setOperation(iris16::ArithmeticOp::MulImmediate);
+	 setRegister2(2);
    }
    ;
 move_op:
@@ -421,19 +468,16 @@ lexeme:
       IRIS16_SYMBOL { iris16::curri.hasSymbol = true; 
                iris16::curri.symbol = $1; } | 
       IMMEDIATE { 
-	  		iris16::curri.reg1 = iris::getLowerHalf<iris16::word>($1);
-			iris16::curri.reg2 = iris::getUpperHalf<iris16::word>($1);
-	  		//iris16::curri.reg1 = iris::decodeBits<iris16::word, byte, 0x00FF, 0>($1);
-			//iris16::curri.reg2 = iris::decodeBits<iris16::word, byte, 0xFF00, 8>($1);
+	  		setFullImmediate($1);
       }
 ;
 DESTINATION_PREDICATE_REGISTERS:
 							   PREDICATE_REGISTER PREDICATE_REGISTER { iris16::curri.reg0 = iris16::encodePredicateInverseResult(iris16::encodePredicateResult(0, $1), $2); };
 
 SOURCE0_PREDICATE_REGISTER:
-						 PREDICATE_REGISTER { iris16::curri.reg2 = iris16::encodePredicateSource0(iris16::curri.reg1, $1); };
+						 PREDICATE_REGISTER { iris16::curri.reg1 = iris16::encodePredicateSource0(iris16::curri.reg1, $1); };
 SOURCE1_PREDICATE_REGISTER:
-						  PREDICATE_REGISTER { iris16::curri.reg2 = iris16::encodePredicateSource1(iris16::curri.reg1, $1); };
+						  PREDICATE_REGISTER { iris16::curri.reg1 = iris16::encodePredicateSource1(iris16::curri.reg1, $1); };
 TWO_ARG_PREDICATE_REGISTER:
 						  SOURCE0_PREDICATE_REGISTER SOURCE1_PREDICATE_REGISTER;
 
@@ -443,23 +487,23 @@ half_immediate:
 	   				if ($1 > 255) {
 						iris16error("immediate value offset out of range!");
 					}
-					iris16::curri.reg2 = $1;
+					setRegister2($1);
 				} | 
 				TAG_LOW IMMEDIATE {
-					iris16::curri.reg2 = iris::decodeBits<iris16::word, byte, 0x00FF, 0>($2);
+					setRegister2(iris::getLowerHalf<word>($2));
 				} |
 				TAG_HI IMMEDIATE {
-					iris16::curri.reg2 = iris::decodeBits<iris16::word, byte, 0xFF00, 8>($2);
+					setRegister2(iris::getUpperHalf<word>($2));
 				} ;
 
 DESTINATION_GPR:
-					GPR { iris16::curri.reg0 = $1; };
+					GPR { setRegister0($1); };
 
 SOURCE0_GPR:
-				GPR { iris16::curri.reg1 = $1; };
+				GPR { setRegister1($1); };
 
 SOURCE1_GPR:
-				GPR { iris16::curri.reg2 = $1; };
+				GPR { setRegister2($1); };
 
 ONE_GPR: 
 			DESTINATION_GPR;
