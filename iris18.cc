@@ -223,6 +223,7 @@ namespace iris18 {
 					value = iris::encodeBits<RegisterValue, RegisterValue>(0u, lower | upper, fullMask, 0);
 				}
 			} else if (rawType == MemoryOperation::Store) {
+				static constexpr auto maskCheck = 0x0000FFFF;
 				auto addr = readNext ? registerValue(next.getMemoryAddress()) : getAddressRegister();
 				auto value = readNext ? registerValue(next.getMemoryValue()) : getValueRegister();
 				auto address = addr + offset;
@@ -230,14 +231,14 @@ namespace iris18 {
 					address = encodeRegisterValue(loadWord(address + 1), loadWord(address)) & bitmask24;
 				}
 				if (useLower) {
-					if (lmask == 0x0000FFFF) {
+					if (lmask == maskCheck) {
 						storeWord(address, value);
 					} else {
 						storeWord(address, (lmask & value) | (loadWord(address) & ~lmask));
 					}
 				}
 				if (useUpper) {
-					if (umask == 0x0000FFFF) {
+					if (umask == maskCheck) {
 						storeWord(address + 1, value);
 					} else {
 						storeWord(address + 1, (umask & value) | (loadWord(address + 1) & ~umask));
