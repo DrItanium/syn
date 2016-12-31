@@ -1,5 +1,5 @@
-#ifndef _TARGET_IRIS18_IRIS_H
-#define _TARGET_IRIS18_IRIS_H
+#ifndef _TARGET_CISC0_IRIS_H
+#define _TARGET_CISC0_IRIS_H
 #include "iris_base.h"
 #include "iris_xunits.h"
 #include "Core.h"
@@ -11,7 +11,7 @@
 #include <tuple>
 #include "sim_registration.h"
 
-namespace iris18 {
+namespace cisc0 {
 	using HWord = uint8_t;
 	using Word = uint16_t;
 	using DWord = uint32_t;
@@ -64,18 +64,18 @@ namespace iris18 {
 		ShiftRegister = R9,
 		FieldRegister = R9,
 	};
-} // end namespace iris18
+} // end namespace cisc0
 
-#include "iris18_defines.h"
+#include "cisc0_defines.h"
 
-namespace iris18 {
+namespace cisc0 {
 	class DecodedInstruction {
 		public:
 			DecodedInstruction(RawInstruction input) noexcept : _rawValue(input) { }
 			DecodedInstruction(const DecodedInstruction&) = delete;
 			RawInstruction getRawValue() const noexcept { return _rawValue; }
 #define X(title, mask, shift, type, post) inline type get ## title () const noexcept { return decode ## title ( _rawValue ); }
-#include "def/iris18/instruction.def"
+#include "def/cisc0/instruction.def"
 #undef X
 		private:
 			RawInstruction _rawValue;
@@ -183,7 +183,7 @@ namespace iris18 {
 			SystemFunction getSystemHandler(byte index);
 			void dispatch(DecodedInstruction&& inst);
 #define X(title, func) void func ();
-#include "def/iris18/misc.def"
+#include "def/cisc0/misc.def"
 #undef X
 			template<byte rindex>
 				inline RegisterValue& registerValue() noexcept {
@@ -291,13 +291,13 @@ namespace iris18 {
 #define DefEnum(a, b)
 #define EndDefEnum(a, b, c)
 #define EnumEntry(type) Encoding encode ## type ();
-#include "def/iris18/ops.def"
+#include "def/cisc0/ops.def"
 #undef DefEnum
 #undef EndDefEnum
 #undef EnumEntry
 	};
 	Core* newCore() noexcept;
 	void assemble(FILE* input, std::ostream* output);
-} // end namespace iris18
+} // end namespace cisc0
 
-#endif // end _TARGET_IRIS18_IRIS_H
+#endif // end _TARGET_CISC0_IRIS_H

@@ -5,8 +5,6 @@
 #include "Problem.h"
 #include "Core.h"
 #include "sim_registration.h"
-#include "iris18.h"
-#include "iris.h"
 
 std::istream* input = nullptr;
 auto close = false;

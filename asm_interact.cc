@@ -1,6 +1,6 @@
 #include "asm_interact.h"
 #include "iris.h"
-#include "iris18.h"
+#include "cisc0.h"
 #include "iris20.h"
 
 #include <map>
@@ -8,7 +8,7 @@
 namespace stdiris {
 	static std::map<std::string, std::function<void(FILE*, std::ostream*)>> assemblers = {
         { "iris20", [](auto a, auto b) { throw stdiris::Problem("Assembler is done through clips!"); }, },
-		{ "iris18", iris18::assemble },
+		{ "cisc0", cisc0::assemble },
 		{ "iris", iris::assemble },
 	};
 	void assemble(const std::string& name, FILE* input, std::ostream* output) {

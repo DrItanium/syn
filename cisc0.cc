@@ -1,11 +1,11 @@
-#include "iris18.h"
+#include "cisc0.h"
 #include <functional>
 #include <sstream>
 #include "Problem.h"
 #include <utility>
 #include <map>
 
-namespace iris18 {
+namespace cisc0 {
 	/*
 	 * Iris18 is a variable length encoding 16 bit architecture.
 	 * It has a 24 bit memory space across 256 16-bit sections. The variable length
@@ -49,7 +49,7 @@ namespace iris18 {
 	RegisterValue Core::retrieveImmediate(byte bitmask) noexcept {
 		switch(bitmask) {
 #define X(value) case value : return retrieveImmediate<value>();
-#include "def/iris18/bitmask4bit.def"
+#include "def/cisc0/bitmask4bit.def"
 #undef X
 			default:
 				throw stdiris::Problem("Illegal bitmask defined!");
@@ -570,7 +570,7 @@ namespace iris18 {
 		first = encodeMemoryFlagType(first, static_cast<MemoryOperation>(subType));
 		first = encodeMemoryFlagBitmask(first, bitmask);
 		first = encodeMemoryFlagIndirect(first, indirect);
-		first = iris18::encodeMemoryFlagReadNextWord(first, readNextWord);
+		first = cisc0::encodeMemoryFlagReadNextWord(first, readNextWord);
 		// the register and offset occupy the same space
 		first = encodeMemoryOffset(first, arg0);
 		// be lazy and set up the second word even if it isn't used. Reduces
@@ -640,7 +640,7 @@ namespace iris18 {
 #define DefEnum(a, b)
 #define EndDefEnum(a, b, c)
 #define EnumEntry(compareType) case Operation:: compareType : return encode ## compareType () ; 
-#include "def/iris18/ops.def"
+#include "def/cisc0/ops.def"
 #undef DefEnum
 #undef EndDefEnum
 #undef EnumEntry
@@ -652,7 +652,7 @@ namespace iris18 {
 	int instructionSizeFromImmediateMask(byte bitmask) {
 		switch(bitmask) {
 #define X(bits) case bits : return instructionSizeFromImmediateMask< bits > () ; 
-#include "def/iris18/bitmask4bit.def"
+#include "def/cisc0/bitmask4bit.def"
 #undef X
 			default:
 		throw stdiris::Problem("Illegal bitmask provided!");
@@ -661,7 +661,7 @@ namespace iris18 {
 	RegisterValue getMask(byte bitmask) {
 		switch(bitmask) {
 #define X(bits) case bits : return SetBitmaskToWordMask< bits > :: mask ; 
-#include "def/iris18/bitmask4bit.def"
+#include "def/cisc0/bitmask4bit.def"
 #undef X
 			default:
 		throw stdiris::Problem("Illegal bitmask provided!");

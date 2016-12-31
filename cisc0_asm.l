@@ -1,4 +1,4 @@
-%option prefix="iris18"
+%option prefix="cisc0"
 %{
 #include <stdlib.h>
 #include <stdio.h>
@@ -6,14 +6,14 @@
 #include <errno.h>
 #include <limits.h>
 #include <cstdint>
-#include "iris18.h"
-#include "iris18_asm.tab.h"
+#include "cisc0.h"
+#include "cisc0_asm.tab.h"
 #include "iris_asm_base.h"
 #define _POSIX_SOURCE 1
 
-extern void iris18error(const char* c);
+extern void cisc0error(const char* c);
 void reportIris18Error(const std::string& msg) {
-	iris18error(msg.c_str());
+	cisc0error(msg.c_str());
 }
 %}
 %option yylineno
@@ -95,41 +95,41 @@ omni [a-zA-Z0-9._]
 "@startup"  { return DIRECTIVE_REGISTER_AT_START; }
 "@constant" { return DIRECTIVE_CONSTANT; }
 
-"ip"           { iris18lval.rval = iris18::ArchitectureConstants::InstructionPointer; return REGISTER; }
-"sp"           { iris18lval.rval = iris18::ArchitectureConstants::StackPointer; return REGISTER; }
-"addr"         { iris18lval.rval = iris18::ArchitectureConstants::AddressRegister; return REGISTER; }
-"value"        { iris18lval.rval = iris18::ArchitectureConstants::ValueRegister; return REGISTER; }
-"mask"         { iris18lval.rval = iris18::ArchitectureConstants::MaskRegister; return REGISTER; }
-"shift_width"  { iris18lval.rval = iris18::ArchitectureConstants::ShiftRegister; return REGISTER; }
-"field"        { iris18lval.rval = iris18::ArchitectureConstants::FieldRegister; return REGISTER; }
-"cr"           { iris18lval.rval = iris18::ArchitectureConstants::ConditionRegister; return REGISTER; }
+"ip"           { cisc0lval.rval = cisc0::ArchitectureConstants::InstructionPointer; return REGISTER; }
+"sp"           { cisc0lval.rval = cisc0::ArchitectureConstants::StackPointer; return REGISTER; }
+"addr"         { cisc0lval.rval = cisc0::ArchitectureConstants::AddressRegister; return REGISTER; }
+"value"        { cisc0lval.rval = cisc0::ArchitectureConstants::ValueRegister; return REGISTER; }
+"mask"         { cisc0lval.rval = cisc0::ArchitectureConstants::MaskRegister; return REGISTER; }
+"shift_width"  { cisc0lval.rval = cisc0::ArchitectureConstants::ShiftRegister; return REGISTER; }
+"field"        { cisc0lval.rval = cisc0::ArchitectureConstants::FieldRegister; return REGISTER; }
+"cr"           { cisc0lval.rval = cisc0::ArchitectureConstants::ConditionRegister; return REGISTER; }
 
 
 [ \t\n,]     ;
 [;].*       ; // comments
 r{digit}+   { 
-	iris18lval.rval = stdiris::getRegister<byte, iris18::ArchitectureConstants::RegisterCount>(iris18text, reportIris18Error);
+	cisc0lval.rval = stdiris::getRegister<byte, cisc0::ArchitectureConstants::RegisterCount>(cisc0text, reportIris18Error);
 	return REGISTER;
 }
 {digit}+ { 
-	iris18lval.ival = stdiris::getDecimalImmediate<iris18::Word>(iris18text, reportIris18Error);
+	cisc0lval.ival = stdiris::getDecimalImmediate<cisc0::Word>(cisc0text, reportIris18Error);
 	return IMMEDIATE; 
 }
 0x{xdigit}+ { 
-	iris18lval.ival = stdiris::getHexImmediate<iris18::Word>(iris18text, reportIris18Error);
+	cisc0lval.ival = stdiris::getHexImmediate<cisc0::Word>(cisc0text, reportIris18Error);
 	return IMMEDIATE;
 }
 0b[01]+ {
-	iris18lval.ival = stdiris::getBinaryImmediate<iris18::Word>(iris18text, reportIris18Error);
+	cisc0lval.ival = stdiris::getBinaryImmediate<cisc0::Word>(cisc0text, reportIris18Error);
 	return IMMEDIATE;
 }
 0m[01][01][01][01] {
-	iris18lval.ival = stdiris::decodeBits<iris18::Word, byte, 0x0000000F, 0>(stdiris::getBinaryImmediate<iris18::Word>(iris18text, reportIris18Error));
+	cisc0lval.ival = stdiris::decodeBits<cisc0::Word, byte, 0x0000000F, 0>(stdiris::getBinaryImmediate<cisc0::Word>(cisc0text, reportIris18Error));
 	return BITMASK4;
 }
-[?]{omni}+    { iris18lval.sval = iris18text; return ALIAS; }
+[?]{omni}+    { cisc0lval.sval = cisc0text; return ALIAS; }
 {omni}+     {
-    iris18lval.sval = iris18text;
+    cisc0lval.sval = cisc0text;
 	return IRIS18_SYMBOL;
 }
 %%
