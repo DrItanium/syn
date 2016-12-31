@@ -8,16 +8,13 @@
 #include <cstdint>
 #include "iris18.h"
 #include "iris18_asm.tab.h"
+#include "iris_asm_base.h"
 #define _POSIX_SOURCE 1
 
-namespace iris18 {
-	byte getregister();
-	unsigned long getdecimalimmediate();
-	unsigned long getheximmediate();
-	unsigned long getbinaryimmediate();
-	unsigned long getbitmask4();
-}
 extern void iris18error(const char* c);
+void reportIris18Error(const std::string& msg) {
+	iris18error(msg.c_str());
+}
 %}
 %option yylineno
 %option noyywrap
@@ -110,101 +107,29 @@ omni [a-zA-Z0-9._]
 
 [ \t\n,]     ;
 [;].*       ; // comments
-r{digit}+   { iris18lval.rval = iris18::getregister(); return REGISTER; }
-{digit}+    { iris18lval.ival = iris18::getdecimalimmediate(); return IMMEDIATE; }
-0x{xdigit}+ { iris18lval.ival = iris18::getheximmediate(); return IMMEDIATE; }
-0b[01]+     { iris18lval.ival = iris18::getbinaryimmediate(); return IMMEDIATE; }
-0m[01][01][01][01] { iris18lval.ival = iris18::getbitmask4(); return BITMASK4; }
+r{digit}+   { 
+	iris18lval.rval = iris::getRegister<byte, iris18::ArchitectureConstants::RegisterCount>(iris18text, reportIris18Error);
+	return REGISTER;
+}
+{digit}+ { 
+	iris18lval.ival = iris::getDecimalImmediate<iris18::Word>(iris18text, reportIris18Error);
+	return IMMEDIATE; 
+}
+0x{xdigit}+ { 
+	iris18lval.ival = iris::getHexImmediate<iris18::Word>(iris18text, reportIris18Error);
+	return IMMEDIATE;
+}
+0b[01]+ {
+	iris18lval.ival = iris::getBinaryImmediate<iris18::Word>(iris18text, reportIris18Error);
+	return IMMEDIATE;
+}
+0m[01][01][01][01] {
+	iris18lval.ival = iris::decodeBits<iris18::Word, byte, 0x0000000F, 0>(iris::getBinaryImmediate<iris18::Word>(iris18text, reportIris18Error));
+	return BITMASK4;
+}
 [?]{omni}+    { iris18lval.sval = iris18text; return ALIAS; }
 {omni}+     {
     iris18lval.sval = iris18text;
 	return IRIS18_SYMBOL;
 }
 %%
-namespace iris18 {
-byte getregister(void) {
-   int c;
-
-   iris18text[0] = '0';
-   c = atoi(iris18text);
-   if(c > ArchitectureConstants::RegisterCount || c < 0) {
-      iris18error("target register is too large");
-      return 0;
-   } else {
-      return (byte)c;
-   }
-}
-
-unsigned long getdecimalimmediate() {
-   unsigned long tmp;
-   std::string str(iris18text);
-   tmp = strtoul(str.c_str(), NULL, 10);
-   if(tmp == ULONG_MAX && errno == ERANGE) {
-      iris18error("number is too large and overflowed!");
-      return 0;
-   } else {
-      if(tmp > 0xFFFFFFFF || tmp < 0) {
-         iris18error("provided number is larger than 32-bits!");
-         return 0;
-      } else {
-         return tmp;
-      }
-   }
-}
-
-unsigned long getheximmediate() {
-   unsigned long tmp;
-   std::string str(iris18text);
-   str[1] = '0';
-   tmp = strtoul(str.c_str(), NULL, 16);
-   if(tmp == ULONG_MAX && errno == ERANGE) {
-      iris18error("number is too large and overflowed!");
-      return 0;
-   } else {
-      if(tmp > 0xFFFFFFFF || tmp < 0) {
-         iris18error("provided number is larger than 32-bits!");
-         return 0;
-      } else {
-         return tmp;
-      }
-   }
-}
-
-unsigned long getbinaryimmediate() {
-   unsigned long tmp;
-   std::string str(iris18text);
-   str[1] = '0';
-   tmp = strtoul(str.c_str(), NULL, 2);
-   if(tmp == ULONG_MAX && errno == ERANGE) {
-      iris18error("number is too large and overflowed!");
-      return 0;
-   } else {
-      if(tmp > 0xFFFFFFFF || tmp < 0) {
-         iris18error("provided number is larger than 32-bits!");
-         return 0;
-      } else {
-         return tmp;
-      }
-   }
-}
-
-unsigned long getbitmask4() {
-	unsigned long tmp = 0;
-	std::string mask(iris18text);
-	// replace the code with the binary symbol
-	mask.at(1) = '0';
-	tmp = strtoul(mask.c_str(), NULL, 2);
-	if(tmp == ULONG_MAX && errno == ERANGE) {
-		iris18error("number is too large and overflowed!");
-		return 0;
-	} else {
-		if(tmp > 0xFFFFFFFF || tmp < 0) {
-			iris18error("provided number is larger than 32-bits!");
-			return 0;
-		} else {
-			return tmp;
-		}
-	}
-}
-
-}
