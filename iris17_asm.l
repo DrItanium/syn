@@ -8,15 +8,13 @@
 #include <cstdint>
 #include "iris17.h"
 #include "iris17_asm.tab.h"
+#include "iris_asm_base.h"
 #define _POSIX_SOURCE 1
 
-namespace iris17 {
-static byte getregister(void);
-static word getdecimalimmediate(void);
-static word getheximmediate(void);
-static word getbinaryimmediate(void);
-}
 extern void iris17error(const char* c);
+void reportIris17Error(const std::string& msg) {
+	iris17error(msg.c_str());
+}
 %}
 %option yylineno
 %option noyywrap
@@ -95,58 +93,13 @@ omni [a-zA-Z0-9._]
 "ip"	 { iris17lval.rval = 255; return REGISTER; }
 [ \t\n]     ;
 [;].*       ; // comments
-r{digit}+ { iris17lval.rval = iris17::getregister(); return REGISTER; }
-{digit}+ { iris17lval.ival = iris17::getdecimalimmediate(); return IMMEDIATE; }
-0x{xdigit}+ { iris17lval.ival = iris17::getheximmediate(); return IMMEDIATE; }
-0b[01]+ { iris17lval.ival = iris17::getbinaryimmediate(); return IMMEDIATE; }
+r{digit}+ { iris17lval.rval = iris::getRegister<byte, 256>(iris17text, reportIris17Error); return REGISTER; }
+{digit}+ { iris17lval.ival = iris::getDecimalImmediate<iris17::word>(iris17text, reportIris17Error); return REGISTER; }
+0x{xdigit}+ { iris17lval.ival = iris::getHexImmediate<iris17::word>(iris17text, reportIris17Error); return IMMEDIATE; }
+0b[01]+ { iris17lval.ival = iris::getBinaryImmediate<iris17::word>(iris17text, reportIris17Error); return IMMEDIATE; }
 
 {omni}+ { 
 	iris17lval.sval = iris17text;
 	return IRIS17_SYMBOL;
 		}
 %%
-namespace iris17 {
-byte getregister(void) {
-	int c;
-
-	iris17text[0] = '0';
-	c = atoi(iris17text);
-	if(c > 255 || c < 0) {
-		iris17error("target register is too large");
-		return 0;
-	} else {
-		return (byte)c;
-	}
-}
-word getbinaryimmediate() {
-	uint32_t tmp;
-	tmp = strtoul(iris17text, NULL, 2);
-	if(tmp == ULONG_MAX && errno == ERANGE) {
-		iris17error("number is too large and overflowed!");
-		return 0;
-	} else {
-		return word(tmp);
-	}
-}
-word getdecimalimmediate() {
-	uint32_t tmp;
-	tmp = strtoul(iris17text, NULL, 10);
-	if(tmp == ULONG_MAX && errno == ERANGE) {
-		iris17error("number is too large and overflowed!");
-		return 0;
-	} else {
-		return word(tmp);
-	}
-}
-
-word getheximmediate() {
-	uint32_t tmp;
-	tmp = strtoul(iris17text, NULL, 16);
-	if(tmp == ULONG_MAX && errno == ERANGE) {
-		iris17error("number is too large and overflowed!");
-		return 0;
-	} else {
-		return word(tmp);
-	}
-}
-}
