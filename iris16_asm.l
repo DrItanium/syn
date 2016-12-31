@@ -8,6 +8,7 @@
 #include <cstdint>
 #include "iris16.h"
 #include "iris16_asm.tab.h"
+#include "iris_asm_base.h"
 #define _POSIX_SOURCE 1
 
 namespace iris16 {
@@ -17,6 +18,9 @@ namespace iris16 {
 	unsigned long getHexImmediate(void);
 }
 extern void iris16error(const char* c);
+void reportIris16Error(const std::string& str) {
+	iris16error(str.c_str());
+}
 %}
 %option yylineno
 %option noyywrap
@@ -133,10 +137,26 @@ omni [a-zA-Z0-9._]
 "sp"	 { iris16lval.rval = 255; return GPR; }
 [ \t\n]     ;
 [;].*       ; // comments
-r{digit}+ { iris16lval.rval = iris16::getRegister(); return GPR; }
-c{digit}+ { iris16lval.rval = iris16::getPredicateRegister(); return PREDICATE_REGISTER; }
-{digit}+ { iris16lval.ival = iris16::getDecimalImmediate(); return IMMEDIATE; }
-0x{xdigit}+ { iris16lval.ival = iris16::getHexImmediate(); return IMMEDIATE; }
+r{digit}+ { 
+	iris16lval.rval = iris::getRegister<byte, 256>(iris16text, reportIris16Error); 
+	return GPR;
+}
+c{digit}+ { 
+	iris16lval.rval = iris::getRegister<byte, 16>(iris16text, reportIris16Error);
+	return PREDICATE_REGISTER;
+}
+{digit}+ { 
+	iris16lval.ival = iris::getDecimalImmediate<iris16::word>(iris16text, reportIris16Error);
+	return IMMEDIATE; 
+}
+0x{xdigit}+ { 
+	iris16lval.ival = iris::getHexImmediate<iris16::word>(iris16text, reportIris16Error);
+	return IMMEDIATE;
+}
+0b[01]+ {
+	iris16lval.ival = iris::getBinaryImmediate<iris16::word>(iris16text, reportIris16Error);
+	return IMMEDIATE;
+}
 {omni}+ { 
 	iris16lval.sval = iris16text;
 	return IRIS16_SYMBOL;
