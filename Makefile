@@ -20,6 +20,7 @@ BOOTSTRAP_BINARY = hybrid0_bootstrap
 
 SIM_OBJECTS = syn_sim.o \
 			  sim_registration.o \
+			  syn_cores.o \
 			  ${ARCH_OBJECTS} \
 			  ${COMMON_THINGS}
 
@@ -35,6 +36,7 @@ ASM_OBJECTS = syn_asm.o \
 			  ${COMMON_THINGS} \
 				${ARCH_OBJECTS} \
 				sim_registration.o \
+				syn_cores.o \
 			  ${ASM_PARSERS_OBJECTS}
 
 REPL_BINARY = syn_repl

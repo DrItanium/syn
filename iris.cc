@@ -413,4 +413,5 @@ namespace iris {
 	bool& Core::getPredicateRegister(byte index) {
 		return _cr[index];
 	}
+
 }

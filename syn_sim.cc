@@ -62,7 +62,7 @@ int main(int argc, char* argv[]) {
 	}
 	// now check the target:
 	try {
-		core = syn::getCore(target);
+		core = syn::registry.getCore(target);
 		if (!core) {
 			std::cerr << "PROBLEM: core initialization for target '" << target << "' failed!" << std::endl;
 			return 1;
@@ -92,5 +92,5 @@ int main(int argc, char* argv[]) {
 void usage(char* arg0) {
 	std::cerr << "usage: " << arg0 << " -h | -d -t <type> [file | -]" << std::endl;
 	std::cerr << "Supported Targets:" << std::endl;
-	syn::forEachCoreName([](const std::string& name) { std::cerr << "\t" << name << std::endl; });
+	syn::registry.forEachCoreName([](const std::string& name) { std::cerr << "\t" << name << std::endl; });
 }
