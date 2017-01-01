@@ -1,5 +1,5 @@
 ;-----------------------------------------------------------------------------
-; Generate the basic boot code for an iris20 system
+; Generate the basic boot code for an hybrid0 system
 ;-----------------------------------------------------------------------------
 (defclass MAIN::program
   (is-a USER)
@@ -11,16 +11,16 @@
 (deffunction MAIN::section-descriptor->int
              (?symbol)
              (enum->int ?symbol
-                        ?*iris20-enumSectionType*))
+                        ?*hybrid0-enumSectionType*))
 (deffunction MAIN::operation->int
              (?id)
              (enum->int ?id
-                        ?*iris20-enumOperation*))
+                        ?*hybrid0-enumOperation*))
 
-(defmethod MAIN::iris20-encode-Operation
+(defmethod MAIN::hybrid0-encode-Operation
   ((?value INTEGER)
    (?field SYMBOL))
-  (iris20-encode-Operation ?value
+  (hybrid0-encode-Operation ?value
                            (operation->int ?field)))
 (defgeneric MAIN::encode)
 (defgeneric MAIN::decode)
@@ -84,7 +84,7 @@
                      (lowcase ?title)
                      ?title))
 (map build-register-encoder
-     (expand$ ?*iris20-enumSectionType*))
+     (expand$ ?*hybrid0-enumSectionType*))
 
 (build-stubbed-message-handler INTEGER
                                encode)
