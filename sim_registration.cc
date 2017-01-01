@@ -3,12 +3,12 @@
 #include <map>
 #include "iris.h"
 #include "cisc0.h"
-#include "iris20.h"
+#include "hybrid0.h"
 #include "iris_machine.h"
 
 namespace syn {
 	static std::map<std::string, std::function<Core*()>> cores = {
-        { "iris20", iris20::newCore },
+        { "hybrid0", hybrid0::newCore },
 		{ "cisc0", cisc0::newCore },
 		{ "iris", iris::newCore },
 		{ "LockStepMachine-type0", machine::LockStepMachine<8>::newCore },

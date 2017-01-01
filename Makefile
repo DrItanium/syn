@@ -6,17 +6,17 @@ include config.mk
 MACHINE_OBJECTS = 
 ARCH_OBJECTS = iris.o \
 			   cisc0.o \
-			   iris20.o \
+			   hybrid0.o \
 			   ${MACHINE_OBJECTS}
 
 COMMON_THINGS = libmaya.a \
 				Core.o
 
-BOOTSTRAP_OBJECTS = iris20_bootstrap.o \
+BOOTSTRAP_OBJECTS = hybrid0_bootstrap.o \
 					${ARCH_OBJECTS} \
 					${COMMON_THINGS}
 
-BOOTSTRAP_BINARY = iris20_bootstrap
+BOOTSTRAP_BINARY = hybrid0_bootstrap
 
 SIM_OBJECTS = syn_sim.o \
 			  sim_registration.o \
@@ -67,12 +67,12 @@ ALL_BINARIES = ${SIM_BINARY} \
 
 DEFINE_OBJECTS = iris_defines.h \
 				 cisc0_defines.h \
-				 iris20_defines.h \
+				 hybrid0_defines.h \
 				 syn_memory_block_defines.h
 
 DEFINE_CLPS = iris_defines.clp \
 			  cisc0_defines.clp \
-			  iris20_defines.clp 
+			  hybrid0_defines.clp 
 
 ALL_OBJECTS = ${COMMON_THINGS} \
 			  ${SIM_OBJECTS} \
@@ -204,16 +204,16 @@ cisc0_defines.h: syn_repl def/cisc0/instruction.clp cmd/deffield.clp lib/cortex.
 	@./deffield.sh -f2 def/cisc0/instruction.clp -f2 lib/reset-run-exit.clp > cisc0_defines.h
 	@./deffunction.sh -f2 def/cisc0/instruction.clp -f2 lib/reset-run-exit.clp > cisc0_defines.clp
 
-iris20_defines.h: syn_repl def/iris20/instruction.clp cmd/deffield.clp lib/cortex.clp lib/reset-run-exit.clp syn_base.h cmd/deffunctions.clp
-	@echo "Generating encoders, decoders and enumerations for iris20..."
-	@./deffield.sh -f2 def/iris20/instruction.clp -f2 lib/reset-run-exit.clp > iris20_defines.h
-	@./deffunction.sh -f2 def/iris20/instruction.clp -f2 lib/reset-run-exit.clp > iris20_defines.clp
+hybrid0_defines.h: syn_repl def/hybrid0/instruction.clp cmd/deffield.clp lib/cortex.clp lib/reset-run-exit.clp syn_base.h cmd/deffunctions.clp
+	@echo "Generating encoders, decoders and enumerations for hybrid0..."
+	@./deffield.sh -f2 def/hybrid0/instruction.clp -f2 lib/reset-run-exit.clp > hybrid0_defines.h
+	@./deffunction.sh -f2 def/hybrid0/instruction.clp -f2 lib/reset-run-exit.clp > hybrid0_defines.clp
 
 asm_interact.o: asm_interact.cc asm_interact.h cisc0.h syn_base.h \
  Problem.h syn_xunits.h IODevice.h Device.h Core.h sim_registration.h \
  cisc0_defines.h def/cisc0/instruction.def def/cisc0/misc.def \
  def/cisc0/ops.def iris.h IOController.h iris_defines.h \
- iris20.h iris20_defines.h
+ hybrid0.h hybrid0_defines.h
 Core.o: Core.cc Core.h Device.h
 iris.o: iris.cc iris.h syn_base.h Problem.h syn_xunits.h \
  IODevice.h Device.h Core.h IOController.h iris_defines.h
@@ -221,10 +221,10 @@ cisc0.o: cisc0.cc cisc0.h syn_base.h Problem.h syn_xunits.h \
  IODevice.h Device.h Core.h sim_registration.h cisc0_defines.h \
  def/cisc0/instruction.def def/cisc0/misc.def def/cisc0/ops.def \
  def/cisc0/bitmask4bit.def
-iris20_bootstrap.o: iris20_bootstrap.cc iris20.h syn_base.h Problem.h \
- syn_xunits.h IODevice.h Device.h Core.h IOController.h iris20_defines.h
-iris20.o: iris20.cc iris20.h syn_base.h Problem.h syn_xunits.h \
- IODevice.h Device.h Core.h IOController.h iris20_defines.h
+hybrid0_bootstrap.o: hybrid0_bootstrap.cc hybrid0.h syn_base.h Problem.h \
+ syn_xunits.h IODevice.h Device.h Core.h IOController.h hybrid0_defines.h
+hybrid0.o: hybrid0.cc hybrid0.h syn_base.h Problem.h syn_xunits.h \
+ IODevice.h Device.h Core.h IOController.h hybrid0_defines.h
 syn_asm.o: syn_asm.cc Problem.h asm_interact.h
 syn_clips.o: syn_clips.cc syn_clips.h syn_base.h Problem.h \
  misc/maya/clips.h misc/maya/setup.h misc/maya/os_shim.h \
@@ -296,7 +296,7 @@ sim_registration.o: sim_registration.cc sim_registration.h Core.h \
  Device.h cisc0.h syn_base.h Problem.h syn_xunits.h IODevice.h \
  cisc0_defines.h def/cisc0/instruction.def def/cisc0/misc.def \
  def/cisc0/ops.def iris.h IOController.h iris_defines.h \
- iris20.h iris20_defines.h iris_machine.h LockStepMachine.h
+ hybrid0.h hybrid0_defines.h iris_machine.h LockStepMachine.h
 
 
 iris_asm.tab.o: iris_asm.tab.c asm_interact.h iris.h syn_base.h \

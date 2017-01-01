@@ -1,7 +1,7 @@
-(deffacts iris20
+(deffacts hybrid0
           (input-type InstructionAtom)
-          (title _iris20_decl)
-          (namespace iris20)
+          (title _hybrid0_decl)
+          (namespace hybrid0)
           (field (name MoleculeContainsOneInstruction)
                  (mask 0x0000000000000001)
                  (shift 0)
@@ -92,12 +92,6 @@
                           Stack
                           Memory
                           Undefined))
-          ;(enum (cast-to byte)
-          ;      (max-size "ArchitectureConstants::MaxOperations")
-          ;      (name SystemCalls)
-          ;      (children Terminate
-          ;                GetC
-          ;                PutC))
           (enum (cast-to byte)
                 (max-size "ArchitectureConstants::MaxOperations")
                 (name Operation)
@@ -119,7 +113,6 @@
                           RemImmediate
                           ShiftLeftImmediate
                           ShiftRightImmediate
-                          ;SystemCall
                           BranchUnconditionalImmediate
                           BranchUnconditionalImmediateLink
                           BranchUnconditionalRegister

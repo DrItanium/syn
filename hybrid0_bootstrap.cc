@@ -1,13 +1,13 @@
 /**
- * Define the initial program load for the iris20 architecture inside of C++
+ * Define the initial program load for the hybrid0 architecture inside of C++
  * itself. This will construct binary as its output
  */
-#include "iris20.h"
+#include "hybrid0.h"
 #include <vector>
 #include <iostream>
 #include <bitset>
 
-namespace iris20 {
+namespace hybrid0 {
     using InstructionBiCompound = std::tuple<InstructionMolecule, InstructionMolecule>;
     using InstructionTriCompound = std::tuple<InstructionMolecule, InstructionMolecule, InstructionMolecule>;
     constexpr byte temporaryRegister0 = 0;
@@ -458,14 +458,14 @@ namespace iris20 {
 		memoryBlockCode(m);
 		setupEvaluationLoop(m, addr);
 		setupSimpleFunctions(m, addr);
-		iris20::emit(m);
+		hybrid0::emit(m);
 	}
-} // end namespace iris20
+} // end namespace hybrid0
 
 
 int main() {
-    iris20::MoleculeList molecules;
-	iris20::AddressTable labels;
-	iris20::bootcode(molecules, labels);
+    hybrid0::MoleculeList molecules;
+	hybrid0::AddressTable labels;
+	hybrid0::bootcode(molecules, labels);
     return 0;
 }

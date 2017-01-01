@@ -1,13 +1,13 @@
 #include "asm_interact.h"
 #include "iris.h"
 #include "cisc0.h"
-#include "iris20.h"
+#include "hybrid0.h"
 
 #include <map>
 
 namespace syn {
 	static std::map<std::string, std::function<void(FILE*, std::ostream*)>> assemblers = {
-        { "iris20", [](auto a, auto b) { throw syn::Problem("Assembler is done through clips!"); }, },
+        { "hybrid0", [](auto a, auto b) { throw syn::Problem("Assembler is done through clips!"); }, },
 		{ "cisc0", cisc0::assemble },
 		{ "iris", iris::assemble },
 	};
