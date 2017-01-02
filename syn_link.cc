@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <fstream>
 #include "Core.h"
-#include "sim_registration.h"
+#include "CoreRegistrar.h"
 #include "Problem.h"
 
 static void usage(char* arg0);

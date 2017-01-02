@@ -1,5 +1,5 @@
 #include "Problem.h"
-#include "sim_registration.h"
+#include "CoreRegistrar.h"
 #include "Core.h"
 #include <map>
 #include <sstream>

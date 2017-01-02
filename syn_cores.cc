@@ -2,7 +2,7 @@
 // of these kinds of registrations
 #include "Problem.h"
 #include "RegisterEntry.h"
-#include "sim_registration.h"
+#include "CoreRegistrar.h"
 #include "iris.h"
 #include "cisc0.h"
 #include "hybrid0.h"

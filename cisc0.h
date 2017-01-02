@@ -9,7 +9,6 @@
 #include <memory>
 #include <vector>
 #include <tuple>
-#include "sim_registration.h"
 
 namespace cisc0 {
 	using HWord = uint8_t;

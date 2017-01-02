@@ -19,7 +19,7 @@ BOOTSTRAP_OBJECTS = hybrid0_bootstrap.o \
 BOOTSTRAP_BINARY = hybrid0_bootstrap
 
 SIM_OBJECTS = syn_sim.o \
-			  sim_registration.o \
+			  CoreRegistrar.o \
 			  syn_cores.o \
 			  ${ARCH_OBJECTS} \
 			  ${COMMON_THINGS}
@@ -36,7 +36,7 @@ ASM_OBJECTS = syn_asm.o \
 			  syn_assemblers.o \
 			  ${COMMON_THINGS} \
 				${ARCH_OBJECTS} \
-				sim_registration.o \
+				CoreRegistrar.o \
 				syn_cores.o \
 			  ${ASM_PARSERS_OBJECTS}
 
@@ -57,7 +57,7 @@ ASM_BINARY = syn_asm
 
 LINK_OBJECTS = syn_link.o \
 				${ARCH_OBJECTS} \
-				sim_registration.o \
+				CoreRegistrar.o \
 			  ${COMMON_THINGS}
 
 LINK_BINARY = syn_link
@@ -220,11 +220,11 @@ hybrid0_defines.h: ${REPL_BINARY} ${COMMON_GEN_ENCODER_DECODER_FILES} def/hybrid
 
 asm_interact.o: asm_interact.cc asm_interact.h iris.h syn_base.h \
  Problem.h syn_xunits.h IODevice.h Device.h Core.h IOController.h \
- iris_defines.h cisc0.h sim_registration.h cisc0_defines.h \
+ iris_defines.h cisc0.h CoreRegistrar.h cisc0_defines.h \
  def/cisc0/instruction.def def/cisc0/misc.def def/cisc0/ops.def hybrid0.h \
  hybrid0_defines.h
 cisc0.o: cisc0.cc cisc0.h syn_base.h Problem.h syn_xunits.h IODevice.h \
- Device.h Core.h sim_registration.h cisc0_defines.h \
+ Device.h Core.h CoreRegistrar.h cisc0_defines.h \
  def/cisc0/instruction.def def/cisc0/misc.def def/cisc0/ops.def \
  def/cisc0/bitmask4bit.def
 Core.o: Core.cc Core.h Device.h
@@ -234,12 +234,12 @@ hybrid0.o: hybrid0.cc hybrid0.h syn_base.h Problem.h syn_xunits.h \
  IODevice.h Device.h Core.h IOController.h hybrid0_defines.h
 iris.o: iris.cc iris.h syn_base.h Problem.h syn_xunits.h IODevice.h \
  Device.h Core.h IOController.h iris_defines.h
-sim_registration.o: sim_registration.cc Problem.h sim_registration.h \
+CoreRegistrar.o: CoreRegistrar.cc Problem.h CoreRegistrar.h \
  Core.h Device.h
 syn_asm.o: syn_asm.cc Problem.h asm_interact.h
 syn_assemblers.o: syn_assemblers.cc Problem.h RegisterEntry.h \
  asm_interact.h iris.h syn_base.h syn_xunits.h IODevice.h Device.h Core.h \
- IOController.h iris_defines.h cisc0.h sim_registration.h cisc0_defines.h \
+ IOController.h iris_defines.h cisc0.h CoreRegistrar.h cisc0_defines.h \
  def/cisc0/instruction.def def/cisc0/misc.def def/cisc0/ops.def hybrid0.h \
  hybrid0_defines.h
 syn_clips.o: syn_clips.cc syn_clips.h syn_base.h Problem.h \
@@ -273,11 +273,11 @@ syn_clips.o: syn_clips.cc syn_clips.h syn_base.h Problem.h \
  misc/maya/inscom.h misc/maya/insfun.h misc/maya/insfile.h \
  misc/maya/msgcom.h misc/maya/msgpass.h misc/maya/objrtmch.h \
  syn_memory_block_defines.h
-syn_cores.o: syn_cores.cc Problem.h RegisterEntry.h sim_registration.h \
+syn_cores.o: syn_cores.cc Problem.h RegisterEntry.h CoreRegistrar.h \
  iris.h syn_base.h syn_xunits.h IODevice.h Device.h Core.h IOController.h \
  iris_defines.h cisc0.h cisc0_defines.h def/cisc0/instruction.def \
  def/cisc0/misc.def def/cisc0/ops.def hybrid0.h hybrid0_defines.h
-syn_link.o: syn_link.cc Core.h Device.h sim_registration.h Problem.h
+syn_link.o: syn_link.cc Core.h Device.h CoreRegistrar.h Problem.h
 syn_repl.o: syn_repl.cc misc/maya/clips.h misc/maya/setup.h \
  misc/maya/os_shim.h misc/maya/platform.h misc/maya/envrnmnt.h \
  misc/maya/symbol.h misc/maya/usrsetup.h misc/maya/argacces.h \
@@ -308,15 +308,15 @@ syn_repl.o: syn_repl.cc misc/maya/clips.h misc/maya/setup.h \
  misc/maya/defins.h misc/maya/inscom.h misc/maya/insfun.h \
  misc/maya/insfile.h misc/maya/msgcom.h misc/maya/msgpass.h \
  misc/maya/objrtmch.h syn_clips.h syn_base.h Problem.h
-syn_sim.o: syn_sim.cc Problem.h Core.h Device.h sim_registration.h
+syn_sim.o: syn_sim.cc Problem.h Core.h Device.h CoreRegistrar.h
 
 
 cisc0_asm.tab.o: cisc0_asm.tab.c cisc0.h syn_base.h Problem.h \
- syn_xunits.h IODevice.h Device.h Core.h sim_registration.h \
+ syn_xunits.h IODevice.h Device.h Core.h CoreRegistrar.h \
  cisc0_defines.h def/cisc0/instruction.def def/cisc0/misc.def \
  def/cisc0/ops.def asm_interact.h cisc0_asm.tab.h
 cisc0_lex.yy.o: cisc0_lex.yy.c cisc0.h syn_base.h Problem.h syn_xunits.h \
- IODevice.h Device.h Core.h sim_registration.h cisc0_defines.h \
+ IODevice.h Device.h Core.h CoreRegistrar.h cisc0_defines.h \
  def/cisc0/instruction.def def/cisc0/misc.def def/cisc0/ops.def \
  cisc0_asm.tab.h syn_asm_base.h
 iris_asm.tab.o: iris_asm.tab.c asm_interact.h iris.h syn_base.h Problem.h \
