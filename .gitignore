@@ -12,7 +12,7 @@ syn_sim
 syn_asm
 syn_link
 syn_repl
-iris20_bootstrap
+hybrid0_bootstrap
 maya
 
 *.tab.c
