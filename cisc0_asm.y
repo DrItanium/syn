@@ -9,7 +9,7 @@
 #include <iostream>
 #include <vector>
 #include <map>
-#include "asm_interact.h"
+#include "AssemblerRegistrar.h"
 
 #include "cisc0_asm.tab.h"
 #define YYERROR_VERBOSE 1

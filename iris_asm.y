@@ -9,7 +9,7 @@
 #include <vector>
 #include <map>
 #include <sstream>
-#include "asm_interact.h"
+#include "AssemblerRegistrar.h"
 #include "iris.h"
 
 #include "iris_asm.tab.h"

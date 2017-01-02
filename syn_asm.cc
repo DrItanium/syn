@@ -8,7 +8,7 @@
 #include <map>
 
 #include "Problem.h"
-#include "asm_interact.h"
+#include "AssemblerRegistrar.h"
 
 void usage(char* arg0);
 

@@ -1,4 +1,4 @@
-#include "asm_interact.h"
+#include "AssemblerRegistrar.h"
 #include "iris.h"
 #include "cisc0.h"
 #include "hybrid0.h"
