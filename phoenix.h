@@ -36,7 +36,7 @@ namespace phoenix {
 	enum ArchitectureConstants  {
 		RegisterCount = 256,
 		AddressMax = 0x7FFFFFF,
-		MaxOperations = 0x7FFF,
+		MaxOperations = 0x0040,
 		IOAddressBase = 0x7FFFFFFFFF000000, // way up above everything else, we inject our io space
         IOAddressSize = 0x0000000000FFFFFF,
         IOAddressEnd = IOAddressBase + IOAddressSize,

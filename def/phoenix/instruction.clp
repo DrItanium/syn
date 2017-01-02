@@ -21,7 +21,19 @@
           (field (name RawOperation)
                  (mask 0b1111111111111110)
                  (shift 1)
-                 (output-type Operation))
+                 (output-type InstructionFragment))
+          (field (name OperandWidth)
+                 (mask 0b1110000000000000)
+                 (shift 13)
+                 (output-type OperationWidth))
+          (field (name OperationIsImmediate)
+                 (mask 0b0001000000000000)
+                 (shift 12)
+                 (output-type bool))
+          (field (name Operation)
+                 (mask 0b0000000011111110)
+                 (shift 1)
+                 (output-type OperationType))
           (field (name RawOperand)
                  (mask 0b1111111111111110)
                  (shift 1)
@@ -58,61 +70,42 @@
                  (mask 0b0000000000000010)
                  (shift 1)
                  (output-type bool))
+          (enum (cast-to byte)
+                (max-size 8)
+                (name OperationWidth)
+                (children (generate-bit-versions Width)))
           (enum (cast-to uint16_t)
                 (max-size "ArchitectureConstants::MaxOperations")
-                (name Operation)
+                (name OperationType)
                 (children Nop
-                          (map generate-bit-versions
-                               Add
-                               Sub
-                               Mul
-                               Div
-                               Rem
-                               ShiftLeft
-                               ShiftRight
-                               BinaryAnd
-                               BinaryOr
-                               BinaryNot
-                               BinaryXor
-                               BinaryNand
-                               BinaryNor
-                               BinaryAndImmediate
-                               BinaryOrImmediate
-                               BinaryXorImmediate
-                               BinaryNandImmediate
-                               BinaryNorImmediate
-                               AddImmediate
-                               SubImmediate
-                               MulImmediate
-                               DivImmediate
-                               RemImmediate
-                               ShiftLeftImmediate
-                               ShiftRightImmediate
-                               Push
-                               Pop
-                               Load
-                               LoadWithOffset
-                               Store
-                               StoreWithOffset
-                               Move
-                               Set
-                               Swap
-                               Eq
-                               Neq
-                               LessThan
-                               GreaterThan
-                               LessThanOrEqualTo
-                               GreaterThanOrEqualTo
-                               EqImmediate
-                               NeqImmediate
-                               LessThanImmediate
-                               GreaterThanImmediate
-                               LessThanOrEqualToImmediate
-                               GreaterThanOrEqualToImmediate
-                               CallImmediate
-                               CallRegister
-                               BranchSelect
-                               BranchRegister
-                               ConditionalBranchImmediate
-                               ConditionalBranchRegister))))
+                          Add
+                          Sub
+                          Mul
+                          Div
+                          Rem
+                          ShiftLeft
+                          ShiftRight
+                          BinaryAnd
+                          BinaryOr
+                          BinaryNot
+                          BinaryXor
+                          BinaryNand
+                          BinaryNor
+                          Push
+                          Pop
+                          Load
+                          Store
+                          Move
+                          Set
+                          Swap
+                          Eq
+                          Neq
+                          LessThan
+                          GreaterThan
+                          LessThanOrEqualTo
+                          GreaterThanOrEqualTo
+                          Call
+                          BranchSelect
+                          Branch
+                          ConditionalBranch)))
 
