@@ -87,6 +87,13 @@ ALL_OBJECTS = ${COMMON_THINGS} \
 			  ${BOOTSTRAP_OBJECTS} \
 			  ${DEFINE_CLPS}
 
+COMMON_CLP_FILES = lib/reset-run-exit.clp
+COMMON_GEN_ENCODER_DECODER_FILES= ${COMMON_CLP_FILES} \
+								  cmd/deffield.clp \
+								  cmd/deffunctions.clp \
+								  lib/cortex.clp \
+								  syn_base.h
+
 all: options bootstrap ${SIM_BINARY} ${ASM_BINARY} ${LINK_BINARY} ${BOOTSTRAP_BINARY}
 
 maya:
@@ -191,23 +198,22 @@ uninstall:
 
 bootstrap: ${REPL_BINARY} ${DEFINE_OBJECTS}
 # generate the syn_memory_block_defines.h prior to generating syn_clips.h
-syn_memory_block_defines.h: maya def/memory-block-ops.clp lib/reset-run-exit.clp
+syn_memory_block_defines.h: maya ${COMMON_CLP_FILES} def/memory-block-ops.clp 
 	@echo "Generating memory block call operations..."
 	@./maya -f2 def/memory-block-ops.clp -f2 lib/reset-run-exit.clp > syn_memory_block_defines.h
 
-
-iris_defines.h: ${REPL_BINARY} def/iris/instruction.clp cmd/deffield.clp lib/cortex.clp lib/reset-run-exit.clp syn_base.h cmd/deffunctions.clp
+iris_defines.h: ${REPL_BINARY} ${COMMON_GEN_ENCODER_DECODER_FILES} def/iris/instruction.clp 
 	@echo "Generating encoders, decoders and enumerations for iris..."
 	@./deffield.sh -f2 def/iris/instruction.clp -f2 lib/reset-run-exit.clp > iris_defines.h
 	@./deffunction.sh -f2 def/iris/instruction.clp -f2 lib/reset-run-exit.clp > iris_defines.clp
 
 
-cisc0_defines.h: ${REPL_BINARY} def/cisc0/instruction.clp cmd/deffield.clp lib/cortex.clp lib/reset-run-exit.clp syn_base.h cmd/deffunctions.clp
+cisc0_defines.h: ${REPL_BINARY} ${COMMON_GEN_ENCODER_DECODER_FILES} def/cisc0/instruction.clp 
 	@echo "Generating encoders, decoders and enumerations for cisc0..."
 	@./deffield.sh -f2 def/cisc0/instruction.clp -f2 lib/reset-run-exit.clp > cisc0_defines.h
 	@./deffunction.sh -f2 def/cisc0/instruction.clp -f2 lib/reset-run-exit.clp > cisc0_defines.clp
 
-hybrid0_defines.h: ${REPL_BINARY} def/hybrid0/instruction.clp cmd/deffield.clp lib/cortex.clp lib/reset-run-exit.clp syn_base.h cmd/deffunctions.clp
+hybrid0_defines.h: ${REPL_BINARY} ${COMMON_GEN_ENCODER_DECODER_FILES} def/hybrid0/instruction.clp 
 	@echo "Generating encoders, decoders and enumerations for hybrid0..."
 	@./deffield.sh -f2 def/hybrid0/instruction.clp -f2 lib/reset-run-exit.clp > hybrid0_defines.h
 	@./deffunction.sh -f2 def/hybrid0/instruction.clp -f2 lib/reset-run-exit.clp > hybrid0_defines.clp
