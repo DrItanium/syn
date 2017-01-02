@@ -10,18 +10,18 @@
              ?output)
 
 (deffacts phoenix
-          (input-type uint16_t)
+          (input-type InstructionFragment)
           (title _phoenix_decl)
           (namespace phoenix)
           (field (name FieldIsOperand)
                  (mask 0b0000000000000001)
                  (shift 0)
-                 (input-type uint16_t)
+                 (input-type InstructionFragment)
                  (output-type bool))
           (field (name RawOperation)
                  (mask 0b1111111111111110)
                  (shift 1)
-                 (output-type uint16_t))
+                 (output-type Operation))
           (field (name RawOperand)
                  (mask 0b1111111111111110)
                  (shift 1)
@@ -33,35 +33,36 @@
           (field (name RegisterIndex32)
                  (mask 0b1111111110000000)
                  (shift 7)
-                 (output-type uint16_t))
+                 (output-type RegisterIndex))
           (field (name RegisterIndex16)
                  (mask 0b1111111111000000)
                  (shift 6)
-                 (output-type uint16_t))
+                 (output-type RegisterIndex))
           (field (name RegisterIndex8)
                  (mask 0b1111111111100000)
                  (shift 5)
-                 (output-type uint16_t))
+                 (output-type RegisterIndex))
           (field (name RegisterIndex4)
                  (mask 0b1111111111110000)
                  (shift 4)
-                 (output-type uint16_t))
+                 (output-type RegisterIndex))
           (field (name RegisterIndex2)
                  (mask 0b1111111111111000)
                  (shift 3)
-                 (output-type uint16_t))
+                 (output-type RegisterIndex))
           (field (name RegisterIndex1)
                  (mask 0b1111111111111100)
                  (shift 2)
-                 (output-type uint16_t))
+                 (output-type RegisterIndex))
           (field (name IndirectBit)
                  (mask 0b0000000000000010)
                  (shift 1)
                  (output-type bool))
-          (enum (cast-to byte)
+          (enum (cast-to uint16_t)
                 (max-size "ArchitectureConstants::MaxOperations")
                 (name Operation)
-                (children (map generate-bit-versions
+                (children Nop
+                          (map generate-bit-versions
                                Add
                                Sub
                                Mul
@@ -113,5 +114,5 @@
                                BranchSelect
                                BranchRegister
                                ConditionalBranchImmediate
-                               ConditionalBranchRegister)))
+                               ConditionalBranchRegister))))
 

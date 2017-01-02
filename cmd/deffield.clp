@@ -125,7 +125,7 @@
                (max-size ?size)
                (children $?children))
          =>
-         (printout t "enum class " ?name " {" crlf)
+         (printout t "enum class " ?name " : " ?ct " {" crlf)
          (progn$ (?c ?children)
                  (format t
                          "%s, // %d %n"
