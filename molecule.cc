@@ -1,9 +1,9 @@
-#include "hybrid0.h"
+#include "molecule.h"
 #include <functional>
 #include <sstream>
 #include <vector>
 
-namespace hybrid0 {
+namespace molecule {
 
 
 	//full 64bit addr space
@@ -12,7 +12,7 @@ namespace hybrid0 {
 	Core::~Core() { }
 
 	void Core::installprogram(std::istream& stream) {
-		auto encodeWord = [](char* buf) { return hybrid0::encodeWord(buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]); };
+		auto encodeWord = [](char* buf) { return molecule::encodeWord(buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]); };
 		gpr.install(stream, encodeWord);
 		//memory.install(stream, encodeWord);
 	}
@@ -325,8 +325,8 @@ namespace hybrid0 {
 				}
 			}
 			// first 8 bytes are an address, second 8 are a value
-			auto address = hybrid0::encodeWord(buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]);
-			auto value = hybrid0::encodeWord(buf[8], buf[9], buf[10], buf[11], buf[12], buf[13], buf[14], buf[15]);
+			auto address = molecule::encodeWord(buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]);
+			auto value = molecule::encodeWord(buf[8], buf[9], buf[10], buf[11], buf[12], buf[13], buf[14], buf[15]);
 			if (debugEnabled()) {
 				std::cerr << "addr: 0x " << std::hex << address << ": value: 0x" << std::hex << value << std::endl;
 			}
@@ -412,7 +412,7 @@ namespace hybrid0 {
 	}
 
 	Core* newCore() noexcept {
-		return new hybrid0::Core();
+		return new molecule::Core();
 	}
 
 	word& Core::getRegister(byte index) noexcept {

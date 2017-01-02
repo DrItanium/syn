@@ -8,7 +8,7 @@
 #include <memory>
 #include "IODevice.h"
 #include "iris.h"
-#include "hybrid0.h"
+#include "molecule.h"
 namespace machine {
 	template<byte secondaryCoreCount, byte secondaryCycleCount = 4, byte primaryCycleCount = secondaryCoreCount>
 	class LockStepMachine : public syn::Core {
@@ -20,7 +20,7 @@ namespace machine {
 			static_assert(secondaryCoreCount != 0, "Can't have zero secondary cores!");
 			static_assert(secondaryCoreCount <= MaxSecondaryCoreCount, "Too many cores declared, max is 8");
 			static_assert(secondaryCycleCount != 0, "The secondary cores can't be disabled by setting the core counts to zero");
-			static_assert(primaryCycleCount != 0, "The number of cycles per machine cycle for the primary hybrid0 core must be greater than zero!");
+			static_assert(primaryCycleCount != 0, "The number of cycles per machine cycle for the primary molecule core must be greater than zero!");
 			LockStepMachine() noexcept { }
 			virtual ~LockStepMachine() { }
 			virtual void initialize() override;
@@ -40,30 +40,30 @@ namespace machine {
 				return secondaryCycleCount;
 			}
 		private:
-			hybrid0::Core _primary;
+			molecule::Core _primary;
 			iris::Core _secondary[secondaryCoreCount];
 	};
 
 	template<byte count, byte cycles, byte pcycle>
 	void LockStepMachine<count, cycles, pcycle>::initialize() {
 		_primary.initialize();
-		auto addressStart = hybrid0::ArchitectureConstants::AddressMax + 1;
+		auto addressStart = molecule::ArchitectureConstants::AddressMax + 1;
 		auto register0Id = 15;
 		auto register1Id = 16;
-		auto memoryLength = iris::ExposedCoreDataMemory<hybrid0::word, hybrid0::word>::computeDataLength();
+		auto memoryLength = iris::ExposedCoreDataMemory<molecule::word, molecule::word>::computeDataLength();
 		auto makeRegisterMapping = [this](auto registerIndex, auto base) -> auto {
 			return syn::makeLambdaDevice<iris::word, iris::word>(base, 4,
 					[this, base, registerIndex](auto addr) -> auto {
 						auto reg = _primary.getRegister(registerIndex);
 						switch(addr - base) {
 							case 0:
-								return syn::decodeBits<hybrid0::word, iris::word, 0x000000000000FFFF, 0>(reg);
+								return syn::decodeBits<molecule::word, iris::word, 0x000000000000FFFF, 0>(reg);
 							case 1:
-								return syn::decodeBits<hybrid0::word, iris::word, 0x00000000FFFF0000, 16>(reg);
+								return syn::decodeBits<molecule::word, iris::word, 0x00000000FFFF0000, 16>(reg);
 							case 2:
-								return syn::decodeBits<hybrid0::word, iris::word, 0x0000FFFF00000000, 32>(reg);
+								return syn::decodeBits<molecule::word, iris::word, 0x0000FFFF00000000, 32>(reg);
 							case 3:
-								return syn::decodeBits<hybrid0::word, iris::word, static_cast<hybrid0::word>(0xFFFF000000000000), 48>(reg);
+								return syn::decodeBits<molecule::word, iris::word, static_cast<molecule::word>(0xFFFF000000000000), 48>(reg);
 							default:
 								throw syn::Problem("Illegal address provided!");
 						}
@@ -72,13 +72,13 @@ namespace machine {
 						auto & reg = _primary.getRegister(registerIndex);
 						switch(addr - base) {
 							case 0:
-								reg = syn::encodeBits<hybrid0::word, iris::word, 0x000000000000FFFF, 0>(reg, value);
+								reg = syn::encodeBits<molecule::word, iris::word, 0x000000000000FFFF, 0>(reg, value);
 							case 1:
-								reg = syn::encodeBits<hybrid0::word, iris::word, 0x00000000FFFF0000, 16>(reg, value);
+								reg = syn::encodeBits<molecule::word, iris::word, 0x00000000FFFF0000, 16>(reg, value);
 							case 2:
-								reg = syn::encodeBits<hybrid0::word, iris::word, 0x0000FFFF00000000, 32>(reg, value);
+								reg = syn::encodeBits<molecule::word, iris::word, 0x0000FFFF00000000, 32>(reg, value);
 							case 3:
-								reg = syn::encodeBits<hybrid0::word, iris::word, static_cast<hybrid0::word>(0xFFFF000000000000), 48>(reg, value);
+								reg = syn::encodeBits<molecule::word, iris::word, static_cast<molecule::word>(0xFFFF000000000000), 48>(reg, value);
 							default:
 								throw syn::Problem("Illegal address provided!");
 						}
@@ -93,7 +93,7 @@ namespace machine {
 		for (auto &c : _secondary) {
 			auto properBaseAddress = static_cast<iris::word>(0x3);
 			c.initialize();
-			_primary.installDevice(iris::mapData<hybrid0::word, hybrid0::word>(&c, addressStart));
+			_primary.installDevice(iris::mapData<molecule::word, molecule::word>(&c, addressStart));
 			c.installIODevice(makeRegisterMapping(register0Id, properBaseAddress));
 			properBaseAddress += 0x4;
 			c.installIODevice(makeRegisterMapping(register1Id, properBaseAddress));
@@ -143,7 +143,7 @@ namespace machine {
 			properBaseAddress++;
 			++index;
 		}
-		_primary.installDevice(syn::makeLambdaDevice<hybrid0::word, hybrid0::word>(addressStart, 1, 
+		_primary.installDevice(syn::makeLambdaDevice<molecule::word, molecule::word>(addressStart, 1, 
 					[this](auto address) -> auto { return pcycle; },
 					[this](auto a, auto v) { }));
 		addressStart++;

@@ -6,17 +6,17 @@ include config.mk
 MACHINE_OBJECTS = 
 ARCH_OBJECTS = iris.o \
 			   cisc0.o \
-			   hybrid0.o \
+			   molecule.o \
 			   ${MACHINE_OBJECTS}
 
 COMMON_THINGS = libmaya.a \
 				Core.o
 
-BOOTSTRAP_OBJECTS = hybrid0_bootstrap.o \
+BOOTSTRAP_OBJECTS = molecule_bootstrap.o \
 					${ARCH_OBJECTS} \
 					${COMMON_THINGS}
 
-BOOTSTRAP_BINARY = hybrid0_bootstrap
+BOOTSTRAP_BINARY = molecule_bootstrap
 
 SIM_OBJECTS = syn_sim.o \
 			  CoreRegistrar.o \
@@ -71,12 +71,12 @@ ALL_BINARIES = ${SIM_BINARY} \
 
 DEFINE_OBJECTS = iris_defines.h \
 				 cisc0_defines.h \
-				 hybrid0_defines.h \
+				 molecule_defines.h \
 				 syn_memory_block_defines.h
 
 DEFINE_CLPS = iris_defines.clp \
 			  cisc0_defines.clp \
-			  hybrid0_defines.clp 
+			  molecule_defines.clp 
 
 ALL_OBJECTS = ${COMMON_THINGS} \
 			  ${SIM_OBJECTS} \
@@ -214,10 +214,10 @@ cisc0_defines.h: ${REPL_BINARY} ${COMMON_GEN_ENCODER_DECODER_FILES} def/cisc0/in
 	@./deffield.sh -f2 def/cisc0/instruction.clp -f2 lib/reset-run-exit.clp > cisc0_defines.h
 	@./deffunction.sh -f2 def/cisc0/instruction.clp -f2 lib/reset-run-exit.clp > cisc0_defines.clp
 
-hybrid0_defines.h: ${REPL_BINARY} ${COMMON_GEN_ENCODER_DECODER_FILES} def/hybrid0/instruction.clp 
-	@echo "Generating encoders, decoders and enumerations for hybrid0..."
-	@./deffield.sh -f2 def/hybrid0/instruction.clp -f2 lib/reset-run-exit.clp > hybrid0_defines.h
-	@./deffunction.sh -f2 def/hybrid0/instruction.clp -f2 lib/reset-run-exit.clp > hybrid0_defines.clp
+molecule_defines.h: ${REPL_BINARY} ${COMMON_GEN_ENCODER_DECODER_FILES} def/molecule/instruction.clp 
+	@echo "Generating encoders, decoders and enumerations for molecule..."
+	@./deffield.sh -f2 def/molecule/instruction.clp -f2 lib/reset-run-exit.clp > molecule_defines.h
+	@./deffunction.sh -f2 def/molecule/instruction.clp -f2 lib/reset-run-exit.clp > molecule_defines.clp
 
 cisc0_asm.tab.o: cisc0_asm.tab.c cisc0.h syn_base.h Problem.h \
  syn_xunits.h IODevice.h Device.h Core.h cisc0_defines.h \
@@ -237,26 +237,26 @@ iris_lex.yy.o: iris_lex.yy.c iris.h syn_base.h Problem.h syn_xunits.h \
 AssemblerRegistrar.o: AssemblerRegistrar.cc AssemblerRegistrar.h iris.h \
  syn_base.h Problem.h syn_xunits.h IODevice.h Device.h Core.h \
  IOController.h iris_defines.h cisc0.h cisc0_defines.h \
- def/cisc0/instruction.def def/cisc0/misc.def def/cisc0/ops.def hybrid0.h \
- hybrid0_defines.h
+ def/cisc0/instruction.def def/cisc0/misc.def def/cisc0/ops.def molecule.h \
+ molecule_defines.h
 cisc0.o: cisc0.cc cisc0.h syn_base.h Problem.h syn_xunits.h IODevice.h \
  Device.h Core.h cisc0_defines.h def/cisc0/instruction.def \
  def/cisc0/misc.def def/cisc0/ops.def def/cisc0/bitmask4bit.def
 Core.o: Core.cc Core.h Device.h
 CoreRegistrar.o: CoreRegistrar.cc Problem.h CoreRegistrar.h Core.h \
  Device.h
-hybrid0_bootstrap.o: hybrid0_bootstrap.cc hybrid0.h syn_base.h Problem.h \
- syn_xunits.h IODevice.h Device.h Core.h IOController.h hybrid0_defines.h
-hybrid0.o: hybrid0.cc hybrid0.h syn_base.h Problem.h syn_xunits.h \
- IODevice.h Device.h Core.h IOController.h hybrid0_defines.h
+molecule_bootstrap.o: molecule_bootstrap.cc molecule.h syn_base.h Problem.h \
+ syn_xunits.h IODevice.h Device.h Core.h IOController.h molecule_defines.h
+molecule.o: molecule.cc molecule.h syn_base.h Problem.h syn_xunits.h \
+ IODevice.h Device.h Core.h IOController.h molecule_defines.h
 iris.o: iris.cc iris.h syn_base.h Problem.h syn_xunits.h IODevice.h \
  Device.h Core.h IOController.h iris_defines.h
 syn_asm.o: syn_asm.cc Problem.h AssemblerRegistrar.h
 syn_assemblers.o: syn_assemblers.cc Problem.h RegisterEntry.h \
  AssemblerRegistrar.h iris.h syn_base.h syn_xunits.h IODevice.h Device.h \
  Core.h IOController.h iris_defines.h cisc0.h cisc0_defines.h \
- def/cisc0/instruction.def def/cisc0/misc.def def/cisc0/ops.def hybrid0.h \
- hybrid0_defines.h
+ def/cisc0/instruction.def def/cisc0/misc.def def/cisc0/ops.def molecule.h \
+ molecule_defines.h
 syn_clips.o: syn_clips.cc syn_clips.h syn_base.h Problem.h \
  misc/maya/clips.h misc/maya/setup.h misc/maya/os_shim.h \
  misc/maya/platform.h misc/maya/envrnmnt.h misc/maya/symbol.h \
@@ -291,7 +291,7 @@ syn_clips.o: syn_clips.cc syn_clips.h syn_base.h Problem.h \
 syn_cores.o: syn_cores.cc Problem.h RegisterEntry.h CoreRegistrar.h \
  iris.h syn_base.h syn_xunits.h IODevice.h Device.h Core.h IOController.h \
  iris_defines.h cisc0.h cisc0_defines.h def/cisc0/instruction.def \
- def/cisc0/misc.def def/cisc0/ops.def hybrid0.h hybrid0_defines.h \
+ def/cisc0/misc.def def/cisc0/ops.def molecule.h molecule_defines.h \
  syn_machines.h LockStepMachine.h
 syn_link.o: syn_link.cc Core.h Device.h CoreRegistrar.h Problem.h
 syn_repl.o: syn_repl.cc misc/maya/clips.h misc/maya/setup.h \

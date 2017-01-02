@@ -1,7 +1,7 @@
-(deffacts hybrid0
+(deffacts molecule
           (input-type InstructionAtom)
-          (title _hybrid0_decl)
-          (namespace hybrid0)
+          (title _molecule_decl)
+          (namespace molecule)
           (field (name MoleculeContainsOneInstruction)
                  (mask 0x0000000000000001)
                  (shift 0)

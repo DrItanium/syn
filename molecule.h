@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <memory>
 #include <vector>
-namespace hybrid0 {
+namespace molecule {
 	using word = int64_t;
     using uword = uint64_t;
 	using InstructionImmediate = int16_t;
@@ -35,16 +35,16 @@ namespace hybrid0 {
 		IOGetMemorySize, 		// Will always return the size of actual memory
         IOUserDeviceBegin,
 	};
-	// hybrid0 operates on 2 atom molecules, these atoms are both executed
+	// molecule operates on 2 atom molecules, these atoms are both executed
 	// before the cycle counter continues. This means that there is an implicit
 	// branch delay slot if the programmer so chooses.
 	using InstructionMolecule = uint64_t;
 	inline constexpr word encodeWord(byte a, byte b, byte c, byte d, byte e, byte f, byte g, byte h) noexcept {
 		return syn::encodeInt64LE(a, b, c, d, e, f, g, h);
 	}
-} // end namespace hybrid0
-#include "hybrid0_defines.h"
-namespace hybrid0 {
+} // end namespace molecule
+#include "molecule_defines.h"
+namespace molecule {
 	template<word capacity>
 	using WordMemorySpace = syn::FixedSizeLoadStoreUnit<word, word, capacity>;
 	using ALU = syn::ALU<word>;
@@ -75,7 +75,7 @@ namespace hybrid0 {
 	using IOController = syn::IOController<word>;
 	class Core : public syn::Core {
 		public:
-			using word = hybrid0::word;
+			using word = molecule::word;
 		public:
 			Core() noexcept;
 			virtual ~Core();

@@ -1,13 +1,13 @@
 /**
- * Define the initial program load for the hybrid0 architecture inside of C++
+ * Define the initial program load for the molecule architecture inside of C++
  * itself. This will construct binary as its output
  */
-#include "hybrid0.h"
+#include "molecule.h"
 #include <vector>
 #include <iostream>
 #include <bitset>
 
-namespace hybrid0 {
+namespace molecule {
     using InstructionBiCompound = std::tuple<InstructionMolecule, InstructionMolecule>;
     using InstructionTriCompound = std::tuple<InstructionMolecule, InstructionMolecule, InstructionMolecule>;
     constexpr byte temporaryRegister0 = 0;
@@ -458,14 +458,14 @@ namespace hybrid0 {
 		memoryBlockCode(m);
 		setupEvaluationLoop(m, addr);
 		setupSimpleFunctions(m, addr);
-		hybrid0::emit(m);
+		molecule::emit(m);
 	}
-} // end namespace hybrid0
+} // end namespace molecule
 
 
 int main() {
-    hybrid0::MoleculeList molecules;
-	hybrid0::AddressTable labels;
-	hybrid0::bootcode(molecules, labels);
+    molecule::MoleculeList molecules;
+	molecule::AddressTable labels;
+	molecule::bootcode(molecules, labels);
     return 0;
 }
