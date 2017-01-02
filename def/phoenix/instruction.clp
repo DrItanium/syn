@@ -31,7 +31,7 @@
                  (shift 12)
                  (output-type bool))
           (field (name Operation)
-                 (mask 0b0000000011111110)
+                 (mask 0b0000000001111110)
                  (shift 1)
                  (output-type OperationType))
           (field (name RawOperand)
