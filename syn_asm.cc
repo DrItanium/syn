@@ -83,7 +83,7 @@ int main(int argc, char* argv[]) {
 	}
 	if(output && input) {
 		try {
-			syn::assemble(target, input, output);
+			syn::assemblerRegistry.assemble(target, input, output);
 			if (closeOutput) {
 				static_cast<std::ofstream*>(output)->close();
 				delete output;
@@ -106,5 +106,5 @@ int main(int argc, char* argv[]) {
 void usage(char* arg0) {
 	std::cerr << "usage: " << arg0 << " -t <target> [-o <file>] <file>" << std::endl;
 	std::cerr << "Supported Targets:" << std::endl;
-	syn::forEachAssembler([](const std::string& name) { std::cerr << "\t" << name << std::endl; });
+	syn::assemblerRegistry.forEachAssembler([](const std::string& name) { std::cerr << "\t" << name << std::endl; });
 }

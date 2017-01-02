@@ -31,7 +31,7 @@ namespace syn {
             fn(entry.first);
         }
     }
-	void CoreRegistrar::registerCore(const std::string& name, typename CoreRegistrar::CoreInstantiator make) {
+	void CoreRegistrar::addToRegistry(const std::string& name, CoreRegistrar::Operation make) {
 		cores.emplace(name, make);
 	}
 

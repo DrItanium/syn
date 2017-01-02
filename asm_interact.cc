@@ -6,12 +6,7 @@
 #include <map>
 
 namespace syn {
-	static std::map<std::string, std::function<void(FILE*, std::ostream*)>> assemblers = {
-        { "hybrid0", [](auto a, auto b) { throw syn::Problem("Assembler is done through clips!"); }, },
-		{ "cisc0", cisc0::assemble },
-		{ "iris", iris::assemble },
-	};
-	void assemble(const std::string& name, FILE* input, std::ostream* output) {
+	void AssemblerRegistrar::assemble(const std::string& name, FILE* input, std::ostream* output) {
 		auto loc = assemblers.find(name);
 		if (loc != assemblers.end()) {
 			loc->second(input, output);
@@ -22,10 +17,17 @@ namespace syn {
 		}
 	}
 
-	void forEachAssembler(std::function<void(const std::string&)> fn) {
+	void AssemblerRegistrar::forEachAssembler(AssemblerRegistrar::OnEachEntry fn) {
 		for(auto const& entry : assemblers) {
 			fn(entry.first);
 		}
-
 	}
+	void AssemblerRegistrar::addToRegistry(const std::string& name, AssemblerRegistrar::Operation op) {
+		assemblers.emplace(name, op);
+	}
+
+	AssemblerRegistrar::AssemblerRegistrar() { }
+	AssemblerRegistrar::~AssemblerRegistrar() { }
+
+	AssemblerRegistrar assemblerRegistry;
 }

@@ -11,23 +11,16 @@ namespace syn {
 	class CoreRegistrar {
 		public:
 			using CoreNameOperator = std::function<void(const std::string&)>;
-			using CoreInstantiator = std::function<Core*()>;
-			using CoreRegistry = std::map<std::string, CoreInstantiator>;
+			using Operation = std::function<Core*()>;
+			using CoreRegistry = std::map<std::string, Operation>;
 		public:
 			CoreRegistrar();
 			virtual ~CoreRegistrar();
 			Core* getCore(const std::string& name);
 			void forEachCoreName(CoreNameOperator fn);
-			void registerCore(const std::string& name, CoreInstantiator make);
+			void addToRegistry(const std::string& name, Operation make);
 		private:
 			CoreRegistry cores;
-	};
-	template<typename T>
-	class RegisterCore {
-		public:
-			RegisterCore(CoreRegistrar& reg, const std::string& name, typename CoreRegistrar::CoreInstantiator make) {
-				reg.registerCore(name, make);
-			}
 	};
 	extern CoreRegistrar registry;
 }
