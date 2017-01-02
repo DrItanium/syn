@@ -1,5 +1,5 @@
 ;-----------------------------------------------------------------------------
-; Generate the basic boot code for an hybrid0 system
+; Generate the basic boot code for an molecule system
 ;-----------------------------------------------------------------------------
 (defclass MAIN::program
   (is-a USER)
@@ -11,16 +11,16 @@
 (deffunction MAIN::section-descriptor->int
              (?symbol)
              (enum->int ?symbol
-                        ?*hybrid0-enumSectionType*))
+                        ?*molecule-enumSectionType*))
 (deffunction MAIN::operation->int
              (?id)
              (enum->int ?id
-                        ?*hybrid0-enumOperation*))
+                        ?*molecule-enumOperation*))
 
-(defmethod MAIN::hybrid0-encode-Operation
+(defmethod MAIN::molecule-encode-Operation
   ((?value INTEGER)
    (?field SYMBOL))
-  (hybrid0-encode-Operation ?value
+  (molecule-encode-Operation ?value
                            (operation->int ?field)))
 (defgeneric MAIN::encode)
 (defgeneric MAIN::decode)
@@ -84,7 +84,7 @@
                      (lowcase ?title)
                      ?title))
 (map build-register-encoder
-     (expand$ ?*hybrid0-enumSectionType*))
+     (expand$ ?*molecule-enumSectionType*))
 
 (build-stubbed-message-handler INTEGER
                                encode)

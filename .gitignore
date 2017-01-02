@@ -12,7 +12,7 @@ syn_sim
 syn_asm
 syn_link
 syn_repl
-hybrid0_bootstrap
+molecule_bootstrap
 maya
 
 *.tab.c
