@@ -8,12 +8,31 @@
 #include <memory>
 #include <vector>
 namespace phoenix {
-	using word = int16_t;
-	using uword = uint16_t;
+	using Bit = bool;
+	using BitPair = byte;
+	using Nybble = byte;
+	using Byte = byte;
+	using Qword = uint16_t;
+	using Hword = uint32_t;
+	using Word = uint64_t;
 	using InstructionFragment = uint16_t;
 	using RegisterIndex = uint16_t;
 	using Register = int64_t;
 	using Address = uint64_t;
+
+	Bit getBit(Register value, byte index) noexcept;
+	Register setBit(Register value, byte index, Bit b) noexcept;
+	BitPair getBitPair(Register value, byte index) noexcept;
+	Register setBitPair(Register value, byte index, BitPair b) noexcept;
+	Nybble getNybble(Register value, byte index) noexcept;
+	Register setNybble(Register value, byte index, Nybble b) noexcept;
+	Byte getByte(Register value, byte index) noexcept;
+	Register setByte(Register value, byte index, Byte b) noexcept;
+	Qword getQword(Register value, byte index) noexcept;
+	Register setQword(Register value, byte index, Qword b) noexcept;
+	Hword getHword(Register value, byte index) noexcept;
+	Register setHword(Register value, byte index, Hword b) noexcept;
+
 	enum ArchitectureConstants  {
 		RegisterCount = 256,
 		AddressMax = 0x7FFFFFF,
@@ -28,12 +47,8 @@ namespace phoenix {
 		IOGetMemorySize, 		// Will always return the size of actual memory
         IOUserDeviceBegin,
 	};
-	using InstructionAtom = uint16_t;
-	inline constexpr word encodeWord(byte lower, byte upper) noexcept {
-		return syn::encodeInt16LE(lower, upper);
-	}
 	inline constexpr Address encodeAddress(byte a, byte b, byte c, byte d, byte e, byte f, byte g, byte h) noexcept {
-		return syn::encodeInt64LE(a, b, c, d, e, f, g, h);
+		return syn::encodeUint64LE(a, b, c, d, e, f, g, h);
 	}
 } // end namespace phoenix
 #include "phoenix_defines.h"
@@ -47,13 +62,10 @@ namespace phoenix {
 	using DecomposedInstructionMolecule = std::tuple<InstructionAtom, InstructionAtom>;
 	using MemoryController = syn::MemoryController<word>;
 
-	inline constexpr Operation getOperation(word atom) noexcept { return decodeOperation(atom); }
 	using IODevice = syn::IODevice<word>;
 	using GenericIODevice = syn::LambdaIODevice<word>;
 	using IOController = syn::IOController<word>;
 	class Core : public syn::Core {
-		public:
-			using word = molecule::word;
 		public:
 			Core() noexcept;
 			virtual ~Core();
@@ -98,6 +110,7 @@ namespace phoenix {
 			bool execute = true,
 				 advanceIp = true;
 			CompareUnit _compare;
+			syn::ALU<
 			ALU _alu;
 			RegisterFile gpr;
 			InstructionMolecule current;

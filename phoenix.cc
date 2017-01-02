@@ -1,10 +1,82 @@
-#include "molecule.h"
+#include "phoenix.h"
 #include <functional>
 #include <sstream>
 #include <vector>
 
-namespace molecule {
+namespace phoenix {
 
+
+	template<byte mask, byte shift = 0>
+	constexpr byte maskCorrectly(byte input) noexcept {
+		return syn::decodeBits<byte, byte, mask, shift>(input);
+	}
+	constexpr byte mask64(byte input) noexcept {
+		return maskCorrectly<0b00111111>(input);
+	}
+	constexpr byte mask32(byte input) noexcept {
+		return maskCorrectly<0b00011111>(input);
+	}
+	constexpr byte mask16(byte input) noexcept {
+		return maskCorrectly<0b00001111>(input);
+	}
+	constexpr byte mask8(byte input) noexcept {
+		return maskCorrectly<0b00000111>(input);
+	}
+	constexpr byte mask4(byte input) noexcept {
+		return maskCorrectly<0b00000011>(input);
+	}
+	constexpr byte mask2(byte input) noexcept {
+		return maskCorrectly<0b00000001>(input);
+	}
+	Bit getBit(Register value, byte index) noexcept {
+		auto correctMask = mask64(index);
+		return syn::decodeBits<Register, Bit>(value, 0x1 << correctMask, correctMask);
+	}
+	Register setBit(Register value, byte index, Bit b) noexcept {
+		auto correctMask = mask64(index);
+		return syn::encodeBits<Register, Bit>(value, b, 0x1 << correctMask, correctMask);
+	}
+
+	BitPair getBitPair(Register value, byte index) noexcept {
+		auto correctMask = mask32(index)* 2;
+		return syn::decodeBits<Register, BitPair>(value, 0x3 << correctMask, correctMask);
+	}
+	Register setBitPair(Register value, byte index, BitPair b) noexcept {
+		auto correctMask = mask32(index) * 2;
+		return syn::encodeBits<Register, BitPair>(value, b, 0x3 << correctMask, correctMask);
+	}
+	Nybble getNybble(Register value, byte index) noexcept {
+		auto correctMask = mask16(index) * 4;
+		return syn::decodeBits<Register, Nybble>(value, 0xF << correctMask, correctMask);
+	}
+	Register setNybble(Register value, byte index, Nybble b) noexcept {
+		auto correctMask = mask16(index) * 4;
+		return syn::encodeBits<Register, Nybble>(value, b, 0xF << correctMask, correctMask);
+	}
+	Byte getByte(Register value, byte index) noexcept {
+		auto correctMask = mask8(index) * 8;
+		return syn::decodeBits<Register, Byte>(value, 0xFF << correctMask, correctMask);
+	}
+	Register setByte(Register value, byte index, Byte b) noexcept {
+		auto correctMask = mask8(index) * 8;
+		return syn::encodeBits<Register, Byte>(value, b, 0xFF << correctMask, correctMask);
+	}
+	Qword getQword(Register value, byte index) noexcept {
+		auto correctMask = mask4(index) * 16;
+		return syn::decodeBits<Register, Qword>(value, 0xFFFF << correctMask, correctMask);
+	}
+	Register setQword(Register value, byte index, Qword b) noexcept {
+		auto correctMask = mask8(index) * 16;
+		return syn::encodeBits<Register, Qword>(value, b, 0xFFFF << correctMask, correctMask);
+	}
+	Hword getHword(Register value, byte index) noexcept {
+		auto correctMask = mask2(index) * 32;
+		return syn::decodeBits<Register, Hword>(value, 0xFFFFFFFF << correctMask, correctMask);
+	}
+	Register setHword(Register value, byte index, Hword b) noexcept {
+		auto correctMask = mask2(index) * 32;
+		return syn::encodeBits<Register, Hword>(value, b, 0xFFFFFFFF << correctMask, correctMask);
+	}
 
 	//full 64bit addr space
 	Core::Core() noexcept : _controller(0, 0x7FFFFFFFFFFFFFFF) { }
@@ -12,7 +84,7 @@ namespace molecule {
 	Core::~Core() { }
 
 	void Core::installprogram(std::istream& stream) {
-		auto encodeWord = [](char* buf) { return molecule::encodeWord(buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]); };
+		auto encodeWord = [](char* buf) { return phoenix::encodeWord(buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]); };
 		gpr.install(stream, encodeWord);
 		//memory.install(stream, encodeWord);
 	}
@@ -106,7 +178,7 @@ namespace molecule {
         };
 		auto result = table.find(decodeMoleculeOperation(current));
 		if (result == table.end()) {
-			throw syn::Problem("Illegal molecule instruction!");
+			throw syn::Problem("Illegal phoenix instruction!");
 		}
         ExecutionUnitTarget unit;
         byte dispatch;
@@ -170,7 +242,7 @@ namespace molecule {
 				jumpOperation();
 				break;
             default:
-                throw syn::Problem("Provided unit does not have molecule sized instructions!");
+                throw syn::Problem("Provided unit does not have phoenix sized instructions!");
         }
     }
 	DispatchTableEntry aluEntry(ALU::Operation op, bool immediate) noexcept {
@@ -325,8 +397,8 @@ namespace molecule {
 				}
 			}
 			// first 8 bytes are an address, second 8 are a value
-			auto address = molecule::encodeWord(buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]);
-			auto value = molecule::encodeWord(buf[8], buf[9], buf[10], buf[11], buf[12], buf[13], buf[14], buf[15]);
+			auto address = phoenix::encodeWord(buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]);
+			auto value = phoenix::encodeWord(buf[8], buf[9], buf[10], buf[11], buf[12], buf[13], buf[14], buf[15]);
 			if (debugEnabled()) {
 				std::cerr << "addr: 0x " << std::hex << address << ": value: 0x" << std::hex << value << std::endl;
 			}
@@ -412,7 +484,7 @@ namespace molecule {
 	}
 
 	Core* newCore() noexcept {
-		return new molecule::Core();
+		return new phoenix::Core();
 	}
 
 	word& Core::getRegister(byte index) noexcept {
