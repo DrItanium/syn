@@ -6,9 +6,11 @@
 #include "iris.h"
 #include "cisc0.h"
 #include "hybrid0.h"
+#include "syn_machines.h"
 
 template<typename T>
 using RegisterCore = syn::RegisterEntry<syn::CoreRegistrar, T>;
 static RegisterCore<iris::Core> iris16Core(syn::registry, "iris", iris::newCore);
 static RegisterCore<cisc0::Core> cisc0Core(syn::registry, "cisc0", cisc0::newCore);
 static RegisterCore<hybrid0::Core> hybrid0Core(syn::registry, "hybrid0", hybrid0::newCore);
+static RegisterCore<machine::LockStepMachine<8>> lockStepMachine_8(syn::registry, "lsm0", machine::LockStepMachine<8>::newCore);
