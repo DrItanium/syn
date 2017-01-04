@@ -30,7 +30,7 @@
 (deffunction potential-convert
              (?value)
              (if (lexemep ?value) then
-               (if (hexp ?value) then 
+               (if (hexp ?value) then
                  (hex->int ?value)
                  else
                  (if (binaryp ?value) then
@@ -42,7 +42,7 @@
 
 (deffunction generate-encode-decode-ops
              (?n ?name ?value ?mask ?shift)
-             (bind ?m 
+             (bind ?m
                    (str-cat (potential-convert ?mask)))
              (bind ?s
                    (str-cat (potential-convert ?shift)))
@@ -55,17 +55,17 @@
                    (format nil
                            ?base-name
                            encode))
-             (bind ?decode-name 
-                   (format nil 
+             (bind ?decode-name
+                   (format nil
                            ?base-name
                            decode))
 
-             (format t 
+             (format t
                      "(defgeneric MAIN::%s)%n(defgeneric MAIN::%s)%n"
                      ?encode-name
                      ?decode-name)
-             (format t 
-                     "(defmethod MAIN::%s 
+             (format t
+                     "(defmethod MAIN::%s
                         ((?value INTEGER))
                         (decode-bits ?value
                                      %s
@@ -86,6 +86,33 @@
                      ?s))
 
 
+(deftemplate flag
+             (slot name
+                   (type SYMBOL)
+                   (default ?NONE))
+             (slot mask
+                   (default ?NONE))
+             (slot shift
+                   (type INTEGER)
+                   (default ?NONE))
+             (slot input-type
+                   (type LEXEME)
+                   (default FALSE)))
+(defrule MAIN::replace-flags-for-fields
+         (declare (salience ?*priority:first*))
+         ?f <- (flag (name ?name)
+                     (mask ?mask)
+                     (shift ?shift)
+                     (input-type ?type))
+         =>
+         (retract ?f)
+         (assert (field (name (sym-cat ?name
+                                       Flag))
+
+                        (mask ?mask)
+                        (shift ?shift)
+                        (input-type ?type)
+                        (output-type bool))))
 
 
 (defrule MAIN::generate-field:clips:use-input-type
@@ -139,13 +166,13 @@
                (children $?children))
          (namespace ?n)
          =>
-         (bind ?output 
+         (bind ?output
                (create$))
          (progn$ (?c ?children)
                  (bind ?output
                        ?output
                        (sym-cat ?c)))
-         (format t 
+         (format t
                  "(defglobal MAIN ?*%s-enum%s* = (create$ %s))%n"
                  ?n
                  ?name

@@ -18,6 +18,33 @@
              (slot output-type
                    (type LEXEME)
                    (default ?NONE)))
+(deftemplate flag
+             (slot name
+                   (type SYMBOL)
+                   (default ?NONE))
+             (slot mask
+                   (default ?NONE))
+             (slot shift
+                   (type INTEGER)
+                   (default ?NONE))
+             (slot input-type
+                   (type LEXEME)
+                   (default FALSE)))
+(defrule MAIN::replace-flags-for-fields
+         (declare (salience ?*priority:first*))
+         ?f <- (flag (name ?name)
+                     (mask ?mask)
+                     (shift ?shift)
+                     (input-type ?type))
+         =>
+         (retract ?f)
+         (assert (field (name (sym-cat ?name
+                                       Flag))
+
+                        (mask ?mask)
+                        (shift ?shift)
+                        (input-type ?type)
+                        (output-type bool))))
 (defrule MAIN::generate-ifndef-header
          (declare (salience ?*priority:first*))
          (title ?name)
