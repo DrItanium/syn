@@ -23,8 +23,6 @@ namespace phoenix {
 
 	Bit getBit(Register value, byte index) noexcept;
 	Register setBit(Register value, byte index, Bit b) noexcept;
-	BitPair getBitPair(Register value, byte index) noexcept;
-	Register setBitPair(Register value, byte index, BitPair b) noexcept;
 	Nybble getNybble(Register value, byte index) noexcept;
 	Register setNybble(Register value, byte index, Nybble b) noexcept;
 	Byte getByte(Register value, byte index) noexcept;
@@ -35,7 +33,7 @@ namespace phoenix {
 	Register setHword(Register value, byte index, Hword b) noexcept;
 
 	enum ArchitectureConstants  {
-		RegisterCount = 256,
+		RegisterCount = 64,
 		AddressMax = 0x7FFFFFF,
 		AddressSize = AddressMax + 1,
 		MaxOperations = 0x0040,
@@ -97,7 +95,6 @@ namespace phoenix {
 			RegisterFile _gpr;
 			MemoryController _controller;
 			RAM _ram;
-			//MemoryController _controller;
 			Register _ip;
 			Register _linkRegister;
 			Register _countRegister;

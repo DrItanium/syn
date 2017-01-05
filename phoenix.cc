@@ -37,14 +37,6 @@ namespace phoenix {
 		return syn::encodeBits<Register, Bit>(value, b, 0x1 << correctMask, correctMask);
 	}
 
-	BitPair getBitPair(Register value, byte index) noexcept {
-		auto correctMask = mask32(index)* 2;
-		return syn::decodeBits<Register, BitPair>(value, 0x3 << correctMask, correctMask);
-	}
-	Register setBitPair(Register value, byte index, BitPair b) noexcept {
-		auto correctMask = mask32(index) * 2;
-		return syn::encodeBits<Register, BitPair>(value, b, 0x3 << correctMask, correctMask);
-	}
 	Nybble getNybble(Register value, byte index) noexcept {
 		auto correctMask = mask16(index) * 4;
 		return syn::decodeBits<Register, Nybble>(value, 0xF << correctMask, correctMask);
@@ -87,7 +79,7 @@ namespace phoenix {
 	}
 
 	void Core::dump(std::ostream& stream) {
-		
+
 	}
 	bool Core::cycle() {
 		advanceIp = true;
