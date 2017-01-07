@@ -7,6 +7,8 @@
 namespace syn {
 class Device {
 	public:
+        Device() { }
+        virtual ~Device() { }
 		virtual void initialize() = 0;
 		virtual void shutdown() = 0;
 		virtual bool debugEnabled() const { return _debug; }

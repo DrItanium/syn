@@ -5,6 +5,7 @@
 #include <string>
 #include <functional>
 #include <map>
+#include <iostream>
 
 namespace syn {
 	class Core;
@@ -18,6 +19,7 @@ namespace syn {
 			virtual ~CoreRegistrar();
 			Core* getCore(const std::string& name);
 			void forEachCoreName(CoreNameOperator fn);
+            void printEachCoreName(std::ostream& out);
 			void addToRegistry(const std::string& name, Operation make);
 		private:
 			CoreRegistry cores;

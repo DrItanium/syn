@@ -8,11 +8,11 @@
 #include "CoreRegistrar.h"
 #include "Problem.h"
 
-static void usage(char* arg0);
-syn::Core* core = nullptr;
-auto debug = false;
+void usage(char* arg0);
 
 int main(int argc, char* argv[]) {
+    syn::Core* core = nullptr;
+    auto debug = false;
 	std::string line("v.img");
 	std::string target;
 	std::istream* input = nullptr;
@@ -43,6 +43,8 @@ int main(int argc, char* argv[]) {
 						target = argv[i];
 						break;
 					case 'h':
+                        usage(argv[0]);
+                        return 0;
 					default:
 						errorfree = false;
 						break;
@@ -74,7 +76,7 @@ int main(int argc, char* argv[]) {
 				}
 				/* open the output */
 				if(line.size() == 1 && line[0] == '-') {
-					output = &std::cout; 
+					output = &std::cout;
 					closeOutput = false;
 				} else {
 					output = new std::ofstream(line.c_str(), std::ofstream::out | std::ofstream::binary);
@@ -94,31 +96,28 @@ int main(int argc, char* argv[]) {
 	}
 	try {
 		core = syn::registry.getCore(target);
-		if (!core) {
-			throw syn::Problem("core initialization for target '" + target + "' failed!");
-		} else {
-			if(output && input) {
-				if (debug) {
-					core->toggleDebug();
-				}
-				core->initialize();
-				core->link(*input);
-				core->dump(*output);
-				core->shutdown();
-				if (closeInput) {
-					static_cast<std::ifstream*>(input)->close();
-					delete input;
-					input = 0;
-				}
-				if (closeOutput) {
-					static_cast<std::ofstream*>(output)->close();
-					delete output;
-					output = 0;
-				}
-			} else {
-				usage(argv[0]);
-			}
-		}
+        if(output && input) {
+            if (debug) {
+                core->toggleDebug();
+            }
+            core->initialize();
+            core->link(*input);
+            core->dump(*output);
+            core->shutdown();
+            if (closeInput) {
+                static_cast<std::ifstream*>(input)->close();
+                delete input;
+                input = 0;
+            }
+            if (closeOutput) {
+                static_cast<std::ofstream*>(output)->close();
+                delete output;
+                output = 0;
+            }
+            delete core;
+        } else {
+            usage(argv[0]);
+        }
 	} catch(syn::Problem p) {
 		std::cerr << "PROBLEM: " << p.what() << std::endl;
 		return 1;
@@ -128,5 +127,5 @@ int main(int argc, char* argv[]) {
 void usage(char* arg0) {
 	std::cerr << "usage: " << arg0 << " -t <target> [-d] [-o <file>] <file>" << std::endl;
 	std::cerr << "Supported Targets:" << std::endl;
-	syn::registry.forEachCoreName([](const std::string& name) { std::cerr << "\t" << name << std::endl; });
+    syn::registry.printEachCoreName(std::cerr);
 }

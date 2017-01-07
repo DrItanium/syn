@@ -3,6 +3,7 @@
 #include "Core.h"
 #include <map>
 #include <sstream>
+#include <iostream>
 
 namespace syn {
 	CoreRegistrar registry;
@@ -27,4 +28,7 @@ namespace syn {
 
 	CoreRegistrar::CoreRegistrar() { }
 	CoreRegistrar::~CoreRegistrar() { }
+    void CoreRegistrar::printEachCoreName(std::ostream& out) {
+        return forEachCoreName([&out](const std::string& str) { out << "\t" << str << std::endl; });
+    }
 }

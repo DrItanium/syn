@@ -2,6 +2,7 @@
 #ifndef IRIS_PROBLEM_H
 #define IRIS_PROBLEM_H
 #include <string>
+#include <iostream>
 namespace syn {
 
 	class Problem {
@@ -11,7 +12,7 @@ namespace syn {
 		private:
 			std::string _msg;
 	};
-	
+
 }
 
 #endif // end IRIS_PROBLEM_H

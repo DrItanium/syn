@@ -40,6 +40,9 @@ int main(int argc, char* argv[]) {
 						++i;
 						line = argv[i];
 						break;
+                    case 'h':
+                        usage(argv[0]);
+                        return 0;
 					default:
 						errorfree = false;
 						break;
@@ -65,7 +68,7 @@ int main(int argc, char* argv[]) {
 				}
 				/* open the output */
 				if(line.size() == 1 && line[0] == '-') {
-					output = &std::cout; 
+					output = &std::cout;
 					closeOutput = false;
 				} else {
 					output = new std::ofstream(line.c_str(), std::ofstream::out | std::ofstream::binary);
