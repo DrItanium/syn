@@ -58,7 +58,7 @@ define(`nor', `or $1 $2 $3 not $1 $1')dnl
 define(`xnor', `xor $1 $2 $3 not $1 $1')dnl
 define(`nand', `and $1 $2 $3 not $1 $1')dnl
 
-define(`immcmp', `$1 vp0 $2 $3')
+define(`immcmp', `$1 vp0 vp0 $2 $3')
 define(`bigen', `immcmp($1, $2, $3) bit vp0 $4')dnl
 define(`bilgen', `immcmp($1, $2, $3) bitl vp0 $4')dnl
 define(`bgen', `immcmp($1, $2, $3) bt vp0 $4')dnl

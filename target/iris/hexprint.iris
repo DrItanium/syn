@@ -49,19 +49,19 @@
 	bil TRANSLATE_LOWER4_TO_HEX
     restorelr(sp)
 	move arg0 return0
-	b PRINT_CHARACTER
+	bi PRINT_CHARACTER
 @label PRINT_NEWLINE
 	set arg0 0xa
-	b PRINT_CHARACTER
+	bi PRINT_CHARACTER
 @label PRINT_CHARACTER
 	set arg1 0x0002
-	b IO_WRITE
+	bi IO_WRITE
 @label TERMINATE_EXECUTION
 	set arg1 0x0000
-	b IO_WRITE
+	bi IO_WRITE
 @label READ_CHARACTER
 	set arg0 0x0003
-	b IO_READ
+	bi IO_READ
 @label HEX_CHAR_TO_NUMBER
 	; convert a given value to binary hex
     andiw(arg0, arg0, 0x00FF) ; make sure we're not overflowed
@@ -72,9 +72,11 @@
 @label IO_READ
 	ldio return0 arg0
 	ret
+
 @label IO_WRITE
 	stio arg1 arg0
 	ret
+
 @label OP_ADD
 	add return0 arg0 arg1
 	ret
@@ -109,7 +111,7 @@
 	xor return0 arg0 arg1
 	ret
 @label CALL
-	jr r31
+	b r31
 @label RETURN 
 	ret
 
@@ -133,16 +135,16 @@
     bieqi(arg1, 1, OP_CODE_LOAD)
     bieqi(arg1, 2, OP_IO_LOAD)
 	set return0 0x1
-	b OP_LOAD_FAILURE
+	bi OP_LOAD_FAILURE
 	@label OP_DATA_LOAD
 		ld return1 arg0
-		b OP_LOAD_SUCCESSFUL
+		bi OP_LOAD_SUCCESSFUL
 	@label OP_CODE_LOAD
 		ldc arg0 return1 return2
-		b OP_LOAD_SUCCESSFUL
+		bi OP_LOAD_SUCCESSFUL
 	@label OP_IO_LOAD
 		ldio return1 arg0
-		b OP_SUCCESSFUL
+		bi OP_STORE_SUCCESSFUL
 	@label OP_LOAD_FAILURE
 	@label OP_LOAD_SUCCESSFUL
 	@label OP_LOAD_DONE
@@ -159,33 +161,21 @@
     bieqi(arg0, 1, OP_CODE_STORE)
     bieqi(arg0, 2, OP_IO_STORE)
 	set return0 0x1
-	b OP_STORE_FAILURE
+	bi OP_STORE_FAILURE
 	@label OP_DATA_STORE
 		st arg1 r34
-		b OP_STORE_SUCCESSFUL
+		bi OP_STORE_SUCCESSFUL
 	@label OP_CODE_STORE
 		stc arg1 r34 r35
-		b OP_STORE_SUCCESSFUL
+		bi OP_STORE_SUCCESSFUL
 	@label OP_IO_STORE
 		stio arg1 r34
-		b OP_SUCCESSFUL
+		bi OP_STORE_SUCCESSFUL
 	@label OP_STORE_FAILURE
 	@label OP_STORE_SUCCESSFUL
 	@label OP_STORE_DONE
 		ret
 	
-	
-@label OP_IF_TRUE
-	; arg0 - condition
-	; arg1 - on true
-	; r34 - on false
-	ift arg0 arg1 r34
-@label OP_IF_FALSE
-	; arg0 - condition
-	; arg1 - on true
-	; r34 - on false
-	iff arg0 arg1 r34
-
 @data
 ; in the last page, first section, we have the ascii table
 @org 0xF100

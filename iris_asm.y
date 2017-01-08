@@ -18,6 +18,7 @@ extern int yylex();
 extern int yyparse();
 extern FILE* irisin;
 extern int irislineno;
+extern char* iristext;
 
 void iriserror(const char* s);
 
@@ -316,13 +317,12 @@ move_op:
 	   MOVE_OP_STORE_CODE THREE_GPRS { setOperation(iris::MoveOp::StoreCode); } |
 	   MOVE_OP_LOAD_CODE THREE_GPRS { setOperation(iris::MoveOp::LoadCode); } |
 	   MOVE_OP_LOAD_IO TWO_GPRS { setOperation(iris::MoveOp::IORead); } |
-	   MOVE_OP_STORE_IO TWO_GPRS { setOperation(iris::MoveOp::IOWrite); } 
+	   MOVE_OP_STORE_IO TWO_GPRS { setOperation(iris::MoveOp::IOWrite); } |
 	   OP_MOVE_TO_IP DESTINATION_GPR { setOperation(iris::MoveOp::MoveToIP); } |
 	   OP_MOVE_FROM_IP DESTINATION_GPR { setOperation(iris::MoveOp::MoveFromIP); } |
 	   OP_MOVE_TO_LR DESTINATION_GPR { setOperation(iris::MoveOp::MoveToLinkRegister); } |
 	   OP_MOVE_FROM_LR DESTINATION_GPR { setOperation(iris::MoveOp::MoveFromLinkRegister); }
        ;
-
 
 aop:
    ARITHMETIC_OP_ADD { setOperation(iris::ArithmeticOp::Add); } |
@@ -370,12 +370,12 @@ mop_offset:
 	;
 
 jump_op:
+       jop_no_args |
 	   jop_imm lexeme |
 	   jop_reg DESTINATION_GPR |
 	   jop_cond_reg PREDICATE_REGISTER_RESULT SOURCE0_GPR |
 	   jop_cond_imm PREDICATE_REGISTER_RESULT lexeme |
 	   jop_cond_reg_reg PREDICATE_REGISTER_RESULT SOURCE0_GPR SOURCE1_GPR |
-	   jop_no_args |
 	   jop_only_cond PREDICATE_REGISTER_RESULT
 	   ;
 jop_only_cond:
@@ -514,6 +514,7 @@ THREE_GPRS:
 %%
 void iriserror(const char* s) {
    printf("%d: %s\n", irislineno, s);
+   printf("\t%s\n", iristext);
    exit(-1);
 }
 

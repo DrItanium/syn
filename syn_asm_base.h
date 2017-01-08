@@ -14,7 +14,7 @@ namespace syn {
 		std::string wrapper(text);
 		wrapper[0] = '0';
 		std::istringstream ss(wrapper);
-		ss >> value;
+		ss >> std::dec >> value;
 		if (value >= count) {
 			onError("target register is too large!");
 			return static_cast<T>(0);

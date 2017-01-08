@@ -127,11 +127,13 @@ omni [a-zA-Z0-9._]
 [ \t\n]     ;
 [;].*       ; // comments
 r{digit}+ { 
-	irislval.rval = static_cast<byte>(syn::getRegister<uint16_t, 256>(iristext, reportIris16Error));
+	auto value = (syn::getRegister<int, 256>(iristext, reportIris16Error));
+	irislval.rval = static_cast<byte>(value);
 	return GPR;
 }
-c{digit}+ { 
-	irislval.rval = syn::getRegister<byte, 16>(iristext, reportIris16Error);
+p{digit}+ { 
+	auto value = (syn::getRegister<int, 16>(iristext, reportIris16Error));
+	irislval.rval = static_cast<byte>(value);
 	return PREDICATE_REGISTER;
 }
 {digit}+ { 
