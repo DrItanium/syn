@@ -62,18 +62,6 @@
                  (mask 0x7F000000)
                  (shift 24)
                  (output-type byte))
-          (field (name Destination64)
-                 (mask 0x00003F00)
-                 (shift 8)
-                 (output-type byte))
-          (field (name Source0_64)
-                 (mask 0x003F0000)
-                 (shift 16)
-                 (output-type byte))
-          (field (name Source1_64)
-                 (mask 0x3F000000)
-                 (shift 24)
-                 (output-type byte))
           (enum (name InstructionGroup)
                 (children Arithmetic
                           Move
@@ -157,16 +145,8 @@
                           MoveToIP
                           MoveToPageRegister
                           MoveFromPageRegister
-                          MoveToChapterRegister
-                          MoveFromChapterRegister
-                          MoveToVolumeRegister
-                          MoveFromVolumeRegister
                           MoveFromLinkRegister
                           MoveToLinkRegister
-                          MoveFromLinkRegisterVolume
-                          MoveToLinkRegisterVolume
-                          MoveFromLinkRegisterChapter
-                          MoveToLinkRegisterChapter
                           MoveFromLinkRegisterPage
                           MoveToLinkRegisterPage
                           ))
@@ -230,38 +210,5 @@
                           LessThan32
                           GreaterThan32
                           LessThanOrEqualTo32
-                          GreaterThanOrEqualTo32))
-          (enum (cast-to byte)
-                (max-size "ArchitectureConstants::MaxOperations")
-                (name Instruction64BitOp)
-                (children Add64
-                          Sub64
-                          Mul64
-                          Div64
-                          Remainder64
-                          ShiftLeft64
-                          ShiftRight64
-                          And64
-                          Or64
-                          Xor64
-                          Not64
-                          ;Load64
-                          ;Store64
-                          ;LoadCode
-                          ;StoreCode
-                          ;Push64
-                          ;Pop64
-                          Move64
-                          Swap64
-                          BranchConditionalImmediate64
-                          BranchConditionalRegister64
-                          BranchUnconditionalImmediate64
-                          BranchUnconditionalRegister64
-                          Eq64
-                          Neq64
-                          LessThan64
-                          GreaterThan64
-                          LessThanOrEqualTo64
-                          GreaterThanOrEqualTo64))
-          )
+                          GreaterThanOrEqualTo32)))
 

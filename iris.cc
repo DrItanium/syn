@@ -312,12 +312,6 @@ namespace iris {
                 default:
                     throw syn::Problem("Undefined 32 bit operation!");
             }
-        } else if (group == InstructionGroup::Operation64) {
-            auto op = getOperation<Instruction64BitOp>();
-            switch(op) {
-                default:
-                    throw syn::Problem("Undefined 64 bit operation!");
-            }
 		} else {
 			makeProblem("Illegal instruction group", getGroup());
 		}
@@ -339,13 +333,6 @@ namespace iris {
         auto rBase = index << 1;
         gpr[rBase] = syn::getLowerHalf(value);
         gpr[rBase + 1] = syn::getUpperHalf(value);
-    }
-    void Core::setQuadRegister(byte index, qword value) {
-        auto rBase = index << 2;
-        gpr[rBase] = syn::getLowerHalf(syn::getLowerHalf(value));
-        gpr[rBase+1] = syn::getUpperHalf(syn::getLowerHalf(value));
-        gpr[rBase+2] = syn::getLowerHalf(syn::getUpperHalf(value));
-        gpr[rBase+3] = syn::getUpperHalf(syn::getUpperHalf(value));
     }
 
 	enum class Segment  {
