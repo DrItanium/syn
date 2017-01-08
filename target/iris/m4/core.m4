@@ -1,2 +1,2 @@
-# Basic functions for the iris assembler
 changecom(`;')
+; Basic iris assembler macros and routines

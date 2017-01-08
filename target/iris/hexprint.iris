@@ -1,73 +1,22 @@
 ; Routine for printing the contents of a register!
-#define sp r255
-#define v0 r0
-#define v1 r1
-#define v2 r2
-#define v3 r3
-#define return0 r64
-#define return1 r65
-#define return2 r66
-#define arg0 r32
-#define arg1 r33
-#define arg2 r34
-#define arg3 r35
-#define temp0 r96
-#define temp1 r97
-#define temp2 r98
-#define temp3 r99
-#define vp0 p15
-#define vp1 p14
-
-#define savelr(stack) \
-        mflr v0 \
-        push stack v0
-#define restorelr(stack) \
-        pop v0 stack \
-        mtlr v0
-#define fnret blr
-
-#define bteqia(src0, immediate, destination) \
-        set v0 immediate \
-        eq vp0 src0 v0 \
-        bt vp0 destination 
-#define bteqir(src0, immediate, destination) \
-        set v0 immediate \
-        eq vp0 src0 v0 \
-        bt vp0 destination
-        
-#define clear(reg) set reg 0x0000
-#define increment(reg) addi reg reg 0x1
-#define decrement(reg) subi reg reg 0x1
-#define double(reg) muli reg reg 0x2
-#define halve(reg) divi reg reg 0x2
-
-
-#define wideImmediateInstruction(op, dest, src0, immediate) \
-    set v0 immediate \
-    op dest src0 v0 
-#define addiw(dest, src0, immediate) wideImmediateInstruction(add, dest, src0, immediate)
-#define andiw(dest, src0, immediate) wideImmediateInstruction(and, dest, src0, immediate)
-
-
-
 @code
 
 @label PRINT_CODE_AS_HEX
     savelr(sp)
 	push sp arg0				; save arg0 to the stack since it is the lower half
 	move arg0 arg1				; arg1 is now arg0 since it is the upper half, needs to be printed first
-	jl PRINT_REGISTER_AS_HEX ; Perform the print
+	bil PRINT_REGISTER_AS_HEX ; Perform the print
 	pop arg0 sp				; restore arg0
-	jl PRINT_REGISTER_AS_HEX ; printout the lower half
+	bil PRINT_REGISTER_AS_HEX ; printout the lower half
     restorelr(sp)
-    fnret
+	ret
 
 @label TRANSLATE_LOWER4_TO_HEX
 	; translate the lower 4 bits of the register
     andiw(arg0, arg0, 0x000F)
     addiw(arg0, arg0, HEX_PRINT_TRANSLATION_TABLE)
 	ld return0 arg0
-	fnret
+	ret
 
 @label PRINT_REGISTER_AS_HEX 
     savelr(sp)
@@ -81,23 +30,23 @@
 	move temp3 arg0
 	; now do the other stuffs
 	move arg0 temp0
-	jl PRINT_HEX_CHARACTER_FROM_LOWER4
+	bil PRINT_HEX_CHARACTER_FROM_LOWER4
 	move arg0 temp1
-	jl PRINT_HEX_CHARACTER_FROM_LOWER4
+	bil PRINT_HEX_CHARACTER_FROM_LOWER4
 	move arg0 temp2
-	jl PRINT_HEX_CHARACTER_FROM_LOWER4
+	bil PRINT_HEX_CHARACTER_FROM_LOWER4
 	move arg0 temp3
-	jl PRINT_HEX_CHARACTER_FROM_LOWER4
+	bil PRINT_HEX_CHARACTER_FROM_LOWER4
 	pop temp3 sp
 	pop temp2 sp
 	pop temp1 sp
 	pop temp0 sp
     restorelr(sp)
-	fnret
+	ret
 
 @label PRINT_HEX_CHARACTER_FROM_LOWER4
     savelr(sp)
-	jl TRANSLATE_LOWER4_TO_HEX
+	bil TRANSLATE_LOWER4_TO_HEX
     restorelr(sp)
 	move arg0 return0
 	b PRINT_CHARACTER
@@ -118,61 +67,59 @@
     andiw(arg0, arg0, 0x00FF) ; make sure we're not overflowed
     addiw(arg0, arg0, HEX_PRINT_TRANSLATION_TABLE)
 	ld return0 arg0			; Load the corresponding offset from memory
-	fnret
+	ret
 
 @label IO_READ
 	ldio return0 arg0
-	fnret
+	ret
 @label IO_WRITE
 	stio arg1 arg0
-	fnret
+	ret
 @label OP_ADD
 	add return0 arg0 arg1
-	fnret
+	ret
 @label OP_SUB
 	sub return0 arg0 arg1
-	fnret
+	ret
 @label OP_MUL
 	mul return0 arg0 arg1
-	fnret
+	ret
 @label OP_DIV
 	div return0 arg0 arg1
-	fnret
+	ret
 @label OP_REM
 	rem return0 arg0 arg1
-	fnret
+	ret
 @label OP_SHIFT_LEFT
 	shl return0 arg0 arg1
-	fnret
+	ret
 @label OP_SHIFT_RIGHT
 	shr return0 arg0 arg1
-	fnret
+	ret
 @label OP_BINARY_AND
 	and return0 arg0 arg1
-	fnret
+	ret
 @label OP_BINARY_OR
 	or return0 arg0 arg1
-	fnret
+	ret
 @label OP_UNARY_NOT
 	not return0 arg0
-	fnret
+	ret
 @label OP_BINARY_XOR
 	xor return0 arg0 arg1
-	fnret
+	ret
 @label CALL
 	jr r31
 @label RETURN 
-	fnret
+	ret
 
 @label OP_NAND
-	and return0 arg0 arg1
-	not return0 return0
-	fnret
-
+	nand(return0, arg0, arg1)
+	ret
 @label OP_NOR
-	or return0 arg0 arg1
-	not return0 return0
-	fnret
+	nor(return0, arg0, arg1)
+	ret
+
 @label OP_LOAD
 	; arg0 - address
 	; arg1 - memory space
@@ -182,9 +129,9 @@
     clear(return0)
     clear(return1)
     clear(return2)
-    bteqia(arg1, 0, OP_DATA_LOAD)
-    bteqia(arg1, 1, OP_CODE_LOAD)
-    bteqia(arg1, 2, OP_IO_LOAD)
+    bieqi(arg1, 0, OP_DATA_LOAD)
+    bieqi(arg1, 1, OP_CODE_LOAD)
+    bieqi(arg1, 2, OP_IO_LOAD)
 	set return0 0x1
 	b OP_LOAD_FAILURE
 	@label OP_DATA_LOAD
@@ -199,7 +146,7 @@
 	@label OP_LOAD_FAILURE
 	@label OP_LOAD_SUCCESSFUL
 	@label OP_LOAD_DONE
-		fnret
+		ret
 
 @label OP_STORE
 	; arg0 - memory space
@@ -208,9 +155,9 @@
 	; r35 - upper half (used only in code writes)
 	; return0 - error?
 	set return0 0x0
-    bteqia(arg0, 0, OP_DATA_STORE) ; data
-    bteqia(arg0, 1, OP_CODE_STORE)
-    bteqia(arg0, 2, OP_IO_STORE)
+    bieqi(arg0, 0, OP_DATA_STORE) ; data
+    bieqi(arg0, 1, OP_CODE_STORE)
+    bieqi(arg0, 2, OP_IO_STORE)
 	set return0 0x1
 	b OP_STORE_FAILURE
 	@label OP_DATA_STORE
@@ -225,7 +172,7 @@
 	@label OP_STORE_FAILURE
 	@label OP_STORE_SUCCESSFUL
 	@label OP_STORE_DONE
-		fnret
+		ret
 	
 	
 @label OP_IF_TRUE

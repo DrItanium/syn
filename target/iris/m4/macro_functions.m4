@@ -71,36 +71,76 @@ define(`beq', `bgen(eq, $1, $2, $3)')dnl
 define(`beql', `blgen(eq, $1, $2, $3)')dnl
 define(`beqlr', `blrgen(eq, $1, $2, $3)')dnl
 define(`beqlrl', `blrlgen(eq, $1, $2, $3)')dnl
+define(`bieqi', `bigen(eqi, $1, $2, $3)')dnl
+define(`bieqil', `bilgen(eqi, $1, $2, $3)')dnl
+define(`beqi', `bgen(eqi, $1, $2, $3)')dnl
+define(`beqil', `blgen(eqi, $1, $2, $3)')dnl
+define(`beqilr', `blrgen(eqi, $1, $2, $3)')dnl
+define(`beqilrl', `blrlgen(eqi, $1, $2, $3)')dnl
 define(`bine', `bigen(ne, $1, $2, $3)')dnl
 define(`binel', `bilgen(ne, $1, $2, $3)')dnl
 define(`bne', `bgen(ne, $1, $2, $3)')dnl
 define(`bnel', `blgen(ne, $1, $2, $3)')dnl
 define(`bnelr', `blrgen(ne, $1, $2, $3)')dnl
 define(`bnelrl', `blrlgen(ne, $1, $2, $3)')dnl
+define(`binei', `bigen(nei, $1, $2, $3)')dnl
+define(`bineil', `bilgen(nei, $1, $2, $3)')dnl
+define(`bnei', `bgen(nei, $1, $2, $3)')dnl
+define(`bneil', `blgen(nei, $1, $2, $3)')dnl
+define(`bneilr', `blrgen(nei, $1, $2, $3)')dnl
+define(`bneilrl', `blrlgen(nei, $1, $2, $3)')dnl
 define(`bilt', `bigen(lt, $1, $2, $3)')dnl
 define(`biltl', `bilgen(lt, $1, $2, $3)')dnl
 define(`blt', `bgen(lt, $1, $2, $3)')dnl
 define(`bltl', `blgen(lt, $1, $2, $3)')dnl
 define(`bltlr', `blrgen(lt, $1, $2, $3)')dnl
 define(`bltlrl', `blrlgen(lt, $1, $2, $3)')dnl
+define(`bilti', `bigen(lti, $1, $2, $3)')dnl
+define(`biltil', `bilgen(lti, $1, $2, $3)')dnl
+define(`blti', `bgen(lti, $1, $2, $3)')dnl
+define(`bltil', `blgen(lti, $1, $2, $3)')dnl
+define(`bltilr', `blrgen(lti, $1, $2, $3)')dnl
+define(`bltilrl', `blrlgen(lti, $1, $2, $3)')dnl
 define(`bigt', `bigen(gt, $1, $2, $3)')dnl
 define(`bigtl', `bilgen(gt, $1, $2, $3)')dnl
 define(`bgt', `bgen(gt, $1, $2, $3)')dnl
 define(`bgtl', `blgen(gt, $1, $2, $3)')dnl
 define(`bgtlr', `blrgen(gt, $1, $2, $3)')dnl
 define(`bgtlrl', `blrlgen(gt, $1, $2, $3)')dnl
+define(`bigti', `bigen(gti, $1, $2, $3)')dnl
+define(`bigtil', `bilgen(gti, $1, $2, $3)')dnl
+define(`bgti', `bgen(gti, $1, $2, $3)')dnl
+define(`bgtil', `blgen(gti, $1, $2, $3)')dnl
+define(`bgtilr', `blrgen(gti, $1, $2, $3)')dnl
+define(`bgtilrl', `blrlgen(gti, $1, $2, $3)')dnl
 define(`bile', `bigen(le, $1, $2, $3)')dnl
 define(`bilel', `bilgen(le, $1, $2, $3)')dnl
 define(`ble', `bgen(le, $1, $2, $3)')dnl
 define(`blel', `blgen(le, $1, $2, $3)')dnl
 define(`blelr', `blrgen(le, $1, $2, $3)')dnl
 define(`blelrl', `blrlgen(le, $1, $2, $3)')dnl
+define(`bilei', `bigen(lei, $1, $2, $3)')dnl
+define(`bileil', `bilgen(lei, $1, $2, $3)')dnl
+define(`blei', `bgen(lei, $1, $2, $3)')dnl
+define(`bleil', `blgen(lei, $1, $2, $3)')dnl
+define(`bleilr', `blrgen(lei, $1, $2, $3)')dnl
+define(`bleilrl', `blrlgen(lei, $1, $2, $3)')dnl
 define(`bige', `bigen(ge, $1, $2, $3)')dnl
 define(`bigel', `bilgen(ge, $1, $2, $3)')dnl
 define(`bge', `bgen(ge, $1, $2, $3)')dnl
 define(`bgel', `blgen(ge, $1, $2, $3)')dnl
 define(`bgelr', `blrgen(ge, $1, $2, $3)')dnl
 define(`bgelrl', `blrlgen(ge, $1, $2, $3)')dnl
+define(`bigei', `bigen(gei, $1, $2, $3)')dnl
+define(`bigeil', `bilgen(gei, $1, $2, $3)')dnl
+define(`bgei', `bgen(gei, $1, $2, $3)')dnl
+define(`bgeil', `blgen(gei, $1, $2, $3)')dnl
+define(`bgeilr', `blrgen(gei, $1, $2, $3)')dnl
+define(`bgeilrl', `blrlgen(gei, $1, $2, $3)')dnl
 dnl
 define(`crnand', `crand $1 $1 $3 $4 crnot $1 $2 $1')dnl
 define(`crnor', `cror $1 $1 $3 $4 crnot $1 $2 $1')dnl
+define(`clear', `set $1 0x0000')dnl
+define(`ret', `blr')dnl
+define(`savelr', `mflr v0 push $1 v0')dnl
+define(`restorelr', `pop v0 $1 mtlr v0')dnl
