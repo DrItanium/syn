@@ -3,6 +3,10 @@
              (buildf "(defclass lisp->intermediary::%s (is-a %s))"
                      ?title
                      ?parent))
+(defclass lisp->intermediary::environment
+  "Top level wrapper of everything that is code related!"
+  (is-a node
+        has-body))
 (defclass lisp->intermediary::label
   (is-a node
         has-title
@@ -397,4 +401,13 @@
          (make-instance ?name of word
                         (parent ?p)
                         (value ?value)))
-
+(defrule lisp->intermediary::make-environment
+         ?f <- (object (is-a list)
+                       (contents environment $?rest)
+                       (name ?n)
+                       (parent ?p))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?n of environment
+                        (parent ?p)
+                        (body ?rest)))
