@@ -30,3 +30,27 @@ registerAlias(temp6, r102)
 registerAlias(temp7, r103)
 registerAlias(vp0, p15)
 registerAlias(vp1, p14)
+
+define(`incr', `addi $1 $1 0x1')
+define(`decr', `subi $1 $1 0x1')
+define(`halve', `divi $1 $1 0x2')
+define(`double', `muli $1 $2 0x3')
+dnl wideform has several arguments
+dnl 1) the operation to invoke
+dnl 2) The destination register
+dnl 3) the first source register
+dnl 4) the full immediate
+dnl define(`immwideform', `define(`$1iw', `set v0 `$3' $1 `1' `$2' v0')')
+dnl I'm not sure how to get the above line to work so right now, it will have
+dnl to be hand generated
+define(`addiw', `set v0 $3 add $1 $2 v0')
+define(`subiw', `set v0 $3 sub $1 $2 v0')
+define(`muliw', `set v0 $3 mul $1 $2 v0')
+define(`diviw', `set v0 $3 div $1 $2 v0')
+define(`remiw', `set v0 $3 rem $1 $2 v0')
+define(`shliw', `set v0 $3 shl $1 $2 v0')
+define(`shriw', `set v0 $3 shr $1 $2 v0')
+define(`andiw', `set v0 $3 and $1 $2 v0')
+define(`oriw', `set v0 $3 or $1 $2 v0')
+define(`notiw', `set v0 $2 not $1 v0')
+
