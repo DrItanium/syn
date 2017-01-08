@@ -180,8 +180,14 @@ namespace iris {
 			WordMemorySpace64k stack;
 			IOSpace _io;
 			raw_instruction current = 0;
-			word _ip = 0;
+			word _ip = 0; // 16
+            word _page = 0; // 16-31
+            word _chapter = 0; // 32-47
+            word _volume = 0; // 48-63
 			word _lr = 0;
+            word _lrpage = 0;
+            word _lrchapter = 0;
+            word _lrvolume = 0;
 			PredicateRegisterFile _cr;
 			PredicateComparator _pcompare;
 	};

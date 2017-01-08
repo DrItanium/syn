@@ -155,8 +155,21 @@
                           IOReadWithOffset
                           MoveFromIP
                           MoveToIP
+                          MoveToPageRegister
+                          MoveFromPageRegister
+                          MoveToChapterRegister
+                          MoveFromChapterRegister
+                          MoveToVolumeRegister
+                          MoveFromVolumeRegister
                           MoveFromLinkRegister
-                          MoveToLinkRegister))
+                          MoveToLinkRegister
+                          MoveFromLinkRegisterVolume
+                          MoveToLinkRegisterVolume
+                          MoveFromLinkRegisterChapter
+                          MoveToLinkRegisterChapter
+                          MoveFromLinkRegisterPage
+                          MoveToLinkRegisterPage
+                          ))
           (enum (cast-to byte)
                 (max-size "ArchitectureConstants::MaxOperations")
                 (name CompareOp)
