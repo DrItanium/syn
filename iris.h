@@ -8,13 +8,10 @@
 #include <memory>
 namespace iris {
 	using word = uint16_t;
-    using sword = int16_t;
     using dword = uint32_t;
-    using sdword = int32_t;
     using qword = uint64_t;
-    using sqword = int64_t;
-	typedef dword raw_instruction;
-	typedef word immediate;
+    using raw_instruction = dword;
+    using immediate = word;
 	enum ArchitectureConstants  {
 		RegisterCount = 256,
 		AddressMax = 0xFFFF,
@@ -44,7 +41,6 @@ namespace iris {
 	using WordMemorySpace = syn::FixedSizeLoadStoreUnit<word, word, capacity>;
 	using WordMemorySpace64k = WordMemorySpace<ArchitectureConstants::AddressMax>;
 	using ALU = syn::ALU<qword>;
-    using SignedALU = syn::ALU<sqword>;
 	using CompareUnit = syn::Comparator<qword>;
 	using RegisterFile = WordMemorySpace<ArchitectureConstants::RegisterCount>;
 	using IODevice = syn::IODevice<word>;
@@ -143,7 +139,6 @@ namespace iris {
 				 advanceIp = true;
 			CompareUnit _compare;
 			ALU _alu;
-            SignedALU _salu;
 			RegisterFile gpr;
 			WordMemorySpace64k data;
 			syn::FixedSizeLoadStoreUnit<dword, word, ArchitectureConstants::AddressMax> instruction;

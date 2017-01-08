@@ -306,6 +306,8 @@ namespace iris {
 					predicateInverseResult() = !result;
 				}
 			}
+        } else if (group == InstructionGroup::Operation32) {
+        } else if (group == InstructionGroup::Operation64) {
 		} else {
 			makeProblem("Illegal instruction group", getGroup());
 		}
