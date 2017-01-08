@@ -224,10 +224,6 @@ void setFullImmediate(word value) noexcept {
 %token COMPARE_OP_GREATERTHAN_IMMEDIATE
 %token COMPARE_OP_LESSTHANOREQUALTO_IMMEDIATE
 %token COMPARE_OP_GREATERTHANOREQUALTO_IMMEDIATE
-%token ARITHMETIC_MACRO_OP_INCR
-%token ARITHMETIC_MACRO_OP_DECR
-%token ARITHMETIC_MACRO_OP_HALVE
-%token ARITHMETIC_MACRO_OP_DOUBLE
 %token MOVE_OP_LOAD_OFFSET MOVE_OP_STORE_OFFSET
 %token MOVE_OP_LOAD_IO_OFFSET MOVE_OP_STORE_IO_OFFSET
 %token TAG_LOW TAG_HI
@@ -311,30 +307,7 @@ operation:
 arithmetic_op:
              aop THREE_GPRS |
              ARITHMETIC_OP_BINARYNOT TWO_GPRS |
-			 aop_imm TWO_GPRS_WITH_OFFSET |
-			 aop_single_macro GPR {
-			 	setRegister0($2);
-				setRegister1($2);
-			 }
-      ;
-aop_single_macro:
-   ARITHMETIC_MACRO_OP_INCR { 
-   	 setOperation(iris::ArithmeticOp::AddImmediate);
-	 setRegister2(1);
-   } |
-   ARITHMETIC_MACRO_OP_DECR { 
-	 setOperation(iris::ArithmeticOp::SubImmediate);
-	 setRegister2(1);
-   } |
-   ARITHMETIC_MACRO_OP_HALVE { 
-	 setOperation(iris::ArithmeticOp::DivImmediate);
-	 setRegister2(2);
-   } |
-   ARITHMETIC_MACRO_OP_DOUBLE {
-   	 setOperation(iris::ArithmeticOp::MulImmediate);
-	 setRegister2(2);
-   }
-   ;
+			 aop_imm TWO_GPRS_WITH_OFFSET ;
 move_op:
 	   mop_reg TWO_GPRS |
        mop_mixed DESTINATION_GPR lexeme |

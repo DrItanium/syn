@@ -9,6 +9,7 @@ namespace syn {
 	using ErrorReportingFunction = std::function<void(const std::string&)>;
 	template<typename T, T count> 
 	T getRegister(const char* text, ErrorReportingFunction onError) noexcept {
+        static_assert(count > 0, "Can't have zero registers!");
 		T value = 0;
 		std::string wrapper(text);
 		wrapper[0] = '0';

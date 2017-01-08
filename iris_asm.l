@@ -114,11 +114,6 @@ omni [a-zA-Z0-9._]
 "blrf" { return COND_FALSE_BRANCH_LR; }
 "blrfl" { return COND_FALSE_BRANCH_LR_LINK; }
 
-"incr" { return ARITHMETIC_MACRO_OP_INCR; }
-"decr" { return ARITHMETIC_MACRO_OP_DECR; }
-"halve" { return ARITHMETIC_MACRO_OP_HALVE; }
-"double" { return ARITHMETIC_MACRO_OP_DOUBLE; }
-
 "@label" { return LABEL; }
 "@data"  { return DIRECTIVE_DATA; }
 "@code"  { return DIRECTIVE_CODE; }
@@ -132,7 +127,7 @@ omni [a-zA-Z0-9._]
 [ \t\n]     ;
 [;].*       ; // comments
 r{digit}+ { 
-	irislval.rval = syn::getRegister<byte, 256>(iristext, reportIris16Error); 
+	irislval.rval = static_cast<byte>(syn::getRegister<uint16_t, 256>(iristext, reportIris16Error));
 	return GPR;
 }
 c{digit}+ { 

@@ -1,217 +1,243 @@
 ; Routine for printing the contents of a register!
+#define sp r255
+#define v0 r0
+#define v1 r1
+#define v2 r2
+#define v3 r3
+#define return0 r64
+#define return1 r65
+#define return2 r66
+#define arg0 r32
+#define arg1 r33
+#define arg2 r34
+#define arg3 r35
+#define temp0 r96
+#define temp1 r97
+#define temp2 r98
+#define temp3 r99
+#define vp0 p15
+#define vp1 p14
+
+#define savelr(stack) \
+        mflr v0 \
+        push stack v0
+#define restorelr(stack) \
+        pop v0 stack \
+        mtlr v0
+#define fnret blr
+
+#define bteqia(src0, immediate, destination) \
+        set v0 immediate \
+        eq vp0 src0 v0 \
+        bt vp0 destination 
+#define bteqir(src0, immediate, destination) \
+        set v0 immediate \
+        eq vp0 src0 v0 \
+        bt vp0 destination
+        
+#define clear(reg) set reg 0x0000
+#define increment(reg) addi reg reg 0x1
+#define decrement(reg) subi reg reg 0x1
+#define double(reg) muli reg reg 0x2
+#define halve(reg) divi reg reg 0x2
+
+
+#define wideImmediateInstruction(op, dest, src0, immediate) \
+    set v0 immediate \
+    op dest src0 v0 
+#define addiw(dest, src0, immediate) wideImmediateInstruction(add, dest, src0, immediate)
+#define andiw(dest, src0, immediate) wideImmediateInstruction(and, dest, src0, immediate)
+
+
 
 @code
 
 @label PRINT_CODE_AS_HEX
-	push sp lr
-	push sp r32				; save r32 to the stack since it is the lower half
-	move r32 r33				; r33 is now r32 since it is the upper half, needs to be printed first
+    savelr(sp)
+	push sp arg0				; save arg0 to the stack since it is the lower half
+	move arg0 arg1				; arg1 is now arg0 since it is the upper half, needs to be printed first
 	jl PRINT_REGISTER_AS_HEX ; Perform the print
-	pop r32 sp				; restore r32
+	pop arg0 sp				; restore arg0
 	jl PRINT_REGISTER_AS_HEX ; printout the lower half
-	pop lr sp
-	jr lr
+    restorelr(sp)
+    fnret
 
 @label TRANSLATE_LOWER4_TO_HEX
 	; translate the lower 4 bits of the register
-	push sp r96
-	set r96 0x000F
-	and r32 r32 r96
-	set r96 HEX_PRINT_TRANSLATION_TABLE
-	add r32 r32 r96
-	ld r64 r32
-	pop r96 sp
-	jr lr
+    andiw(arg0, arg0, 0x000F)
+    addiw(arg0, arg0, HEX_PRINT_TRANSLATION_TABLE)
+	ld return0 arg0
+	fnret
 
 @label PRINT_REGISTER_AS_HEX 
-	push sp lr
-	push sp r96
-	push sp r97
-	push sp r98
-	push sp r99
-	shri r96 r32 12
-	shri r97 r32 8
-	shri r98 r32 4
-	move r99 r32
+    savelr(sp)
+	push sp temp0
+	push sp temp1
+	push sp temp2
+	push sp temp3
+	shri temp0 arg0 12
+	shri temp1 arg0 8
+	shri temp2 arg0 4
+	move temp3 arg0
 	; now do the other stuffs
-	move r32 r96
+	move arg0 temp0
 	jl PRINT_HEX_CHARACTER_FROM_LOWER4
-	move r32 r97
+	move arg0 temp1
 	jl PRINT_HEX_CHARACTER_FROM_LOWER4
-	move r32 r98
+	move arg0 temp2
 	jl PRINT_HEX_CHARACTER_FROM_LOWER4
-	move r32 r99
+	move arg0 temp3
 	jl PRINT_HEX_CHARACTER_FROM_LOWER4
-	pop r99 sp
-	pop r98 sp
-	pop r97 sp
-	pop r96 sp
-	pop lr sp
-	jr lr
+	pop temp3 sp
+	pop temp2 sp
+	pop temp1 sp
+	pop temp0 sp
+    restorelr(sp)
+	fnret
 
 @label PRINT_HEX_CHARACTER_FROM_LOWER4
-	push sp lr
+    savelr(sp)
 	jl TRANSLATE_LOWER4_TO_HEX
-	pop lr sp
-	move r32 r64
-	j PRINT_CHARACTER
+    restorelr(sp)
+	move arg0 return0
+	b PRINT_CHARACTER
 @label PRINT_NEWLINE
-	set r32 0xa
-	j PRINT_CHARACTER
+	set arg0 0xa
+	b PRINT_CHARACTER
 @label PRINT_CHARACTER
-	set r33 0x0002
-	j IO_WRITE
+	set arg1 0x0002
+	b IO_WRITE
 @label TERMINATE_EXECUTION
-	set r33 0x0000
-	j IO_WRITE
+	set arg1 0x0000
+	b IO_WRITE
 @label READ_CHARACTER
-	set r32 0x0003
-	j IO_READ
+	set arg0 0x0003
+	b IO_READ
 @label HEX_CHAR_TO_NUMBER
 	; convert a given value to binary hex
-	push sp r96
-	set r96 0x00FF
-	and r32 r32 r97		; make sure we're not overflowed
-	set r96 HEX_PRINT_TRANSLATION_TABLE
-	add r32 r32 r96		; add the base translation table offset
-	ld r64 r32			; Load the corresponding offset from memory
-	pop r96 sp
-	jr lr
+    andiw(arg0, arg0, 0x00FF) ; make sure we're not overflowed
+    addiw(arg0, arg0, HEX_PRINT_TRANSLATION_TABLE)
+	ld return0 arg0			; Load the corresponding offset from memory
+	fnret
 
 @label IO_READ
-	ldio r64 r32
-	jr lr
+	ldio return0 arg0
+	fnret
 @label IO_WRITE
-	stio r33 r32
-	jr lr
+	stio arg1 arg0
+	fnret
 @label OP_ADD
-	add r64 r32 r33
-	jr lr
+	add return0 arg0 arg1
+	fnret
 @label OP_SUB
-	sub r64 r32 r33
-	jr lr
+	sub return0 arg0 arg1
+	fnret
 @label OP_MUL
-	mul r64 r32 r33
-	jr lr
+	mul return0 arg0 arg1
+	fnret
 @label OP_DIV
-	div r64 r32 r33
-	jr lr
+	div return0 arg0 arg1
+	fnret
 @label OP_REM
-	rem r64 r32 r33
-	jr lr
+	rem return0 arg0 arg1
+	fnret
 @label OP_SHIFT_LEFT
-	shl r64 r32 r33
-	jr lr
+	shl return0 arg0 arg1
+	fnret
 @label OP_SHIFT_RIGHT
-	shr r64 r32 r33
-	jr lr
+	shr return0 arg0 arg1
+	fnret
 @label OP_BINARY_AND
-	and r64 r32 r33
-	jr lr
+	and return0 arg0 arg1
+	fnret
 @label OP_BINARY_OR
-	or r64 r32 r33
-	jr lr
+	or return0 arg0 arg1
+	fnret
 @label OP_UNARY_NOT
-	not r64 r32
-	jr lr
+	not return0 arg0
+	fnret
 @label OP_BINARY_XOR
-	xor r64 r32 r33
-	jr lr
+	xor return0 arg0 arg1
+	fnret
 @label CALL
 	jr r31
 @label RETURN 
-	jr lr
+	fnret
 
 @label OP_NAND
-	and r64 r32 r33
-	not r64 r64
-	jr lr
+	and return0 arg0 arg1
+	not return0 return0
+	fnret
 
 @label OP_NOR
-	or r64 r32 r33
-	not r64 r64
-	jr lr
-
+	or return0 arg0 arg1
+	not return0 return0
+	fnret
 @label OP_LOAD
-	; r32 - address
-	; r33 - memory space
-	; r64 - error?
-	; r65 - ret0
-	; r66 - ret1
-	push sp r96
-	set r64 0x0
-	set r65 0x0
-	set r66 0x0
-	eqi r96 r33 0 ; data
-	jt r96 OP_DATA_LOAD
-	eqi r96 r33 1
-	jt r96 OP_CODE_LOAD
-	eqi r96 r33 2
-	jt r96 OP_IO_LOAD
-	set r64 0x1
-	j OP_LOAD_FAILURE
+	; arg0 - address
+	; arg1 - memory space
+	; return0 - error?
+	; return1 - ret0
+	; return2 - ret1
+    clear(return0)
+    clear(return1)
+    clear(return2)
+    bteqia(arg1, 0, OP_DATA_LOAD)
+    bteqia(arg1, 1, OP_CODE_LOAD)
+    bteqia(arg1, 2, OP_IO_LOAD)
+	set return0 0x1
+	b OP_LOAD_FAILURE
 	@label OP_DATA_LOAD
-		ld r65 r32
-		j OP_LOAD_SUCCESSFUL
+		ld return1 arg0
+		b OP_LOAD_SUCCESSFUL
 	@label OP_CODE_LOAD
-		ldc r32 r65 r66
-		j OP_LOAD_SUCCESSFUL
+		ldc arg0 return1 return2
+		b OP_LOAD_SUCCESSFUL
 	@label OP_IO_LOAD
-		ldio r65 r32
-		j OP_SUCCESSFUL
+		ldio return1 arg0
+		b OP_SUCCESSFUL
 	@label OP_LOAD_FAILURE
 	@label OP_LOAD_SUCCESSFUL
 	@label OP_LOAD_DONE
-		pop r96 sp
-		jr lr
+		fnret
 
 @label OP_STORE
-	; r32 - memory space
-	; r33 - address
+	; arg0 - memory space
+	; arg1 - address
 	; r34 - lower half / value
 	; r35 - upper half (used only in code writes)
-	; r64 - error?
-	push sp r96
-	set r64 0x0
-	eqi r96 r32 0 ; data
-	jt r96 OP_DATA_STORE
-	eqi r96 r32 1
-	jt r96 OP_CODE_STORE
-	eqi r96 r32 2
-	jt r96 OP_IO_STORE
-	set r64 0x1
-	j OP_STORE_FAILURE
+	; return0 - error?
+	set return0 0x0
+    bteqia(arg0, 0, OP_DATA_STORE) ; data
+    bteqia(arg0, 1, OP_CODE_STORE)
+    bteqia(arg0, 2, OP_IO_STORE)
+	set return0 0x1
+	b OP_STORE_FAILURE
 	@label OP_DATA_STORE
-		st r33 r34
-		j OP_STORE_SUCCESSFUL
+		st arg1 r34
+		b OP_STORE_SUCCESSFUL
 	@label OP_CODE_STORE
-		stc r33 r34 r35
-		j OP_STORE_SUCCESSFUL
+		stc arg1 r34 r35
+		b OP_STORE_SUCCESSFUL
 	@label OP_IO_STORE
-		stio r33 r34
-		j OP_SUCCESSFUL
+		stio arg1 r34
+		b OP_SUCCESSFUL
 	@label OP_STORE_FAILURE
 	@label OP_STORE_SUCCESSFUL
 	@label OP_STORE_DONE
-		pop r96 sp
-		jr lr
+		fnret
 	
 	
 @label OP_IF_TRUE
-	; r32 - condition
-	; r33 - on true
+	; arg0 - condition
+	; arg1 - on true
 	; r34 - on false
-	ift r32 r33 r34
+	ift arg0 arg1 r34
 @label OP_IF_FALSE
-	; r32 - condition
-	; r33 - on true
+	; arg0 - condition
+	; arg1 - on true
 	; r34 - on false
-	iff r32 r33 r34
-
-@label OP_BRANCH_EQ
-	; r32 - v0
-	; r33 - v1
-	
+	iff arg0 arg1 r34
 
 @data
 ; in the last page, first section, we have the ascii table
