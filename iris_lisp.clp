@@ -3,6 +3,10 @@
              (buildf "(defclass lisp->intermediary::%s (is-a %s))"
                      ?title
                      ?parent))
+(defclass lisp->intermediary::label
+  (is-a node
+        has-title
+        has-body))
 (defclass lisp->intermediary::action
   (is-a node
         has-arguments)
@@ -15,6 +19,13 @@
   (is-a node
         has-title
         has-body))
+(defclass lisp->intermediary::org
+  (is-a node
+        has-body)
+  (slot address
+        (storage local)
+        (visibility public)
+        (default ?NONE)))
 
 (defclass lisp->intermediary::alias
   (is-a node)
@@ -42,6 +53,42 @@
 (defsimple-symbol general-purpose-register)
 (defsimple-symbol predicate-register)
 
+(defclass lisp->intermediary::macro
+  (is-a node
+        has-title
+        has-arguments
+        has-body))
+(defclass lisp->intermediary::macro-call
+  (is-a reference
+        has-arguments))
+(defclass lisp->intermediary::if-condition
+  (is-a node)
+  (slot condition
+        (type INSTANCE)
+        (allowed-classes predicate-register)
+        (visibility public)
+        (storage local)
+        (default ?NONE))
+  (slot link
+        (type SYMBOL)
+        (allowed-symbols FALSE
+                         TRUE)
+        (visibility public)
+        (storage local))
+  (slot on-true
+        (type INSTANCE)
+        (allowed-classes general-purpose-register)
+        (visibility public)
+        (storage local)
+        (default ?NONE))
+  (slot on-false
+        (type INSTANCE)
+        (allowed-classes general-purpose-register)
+        (visibility public)
+        (storage local)
+        (default ?NONE)))
+(defclass lisp->intermediary::word
+  (is-a scalar-node))
 
 (deffunction lisp->intermediary::make-range
              (?prefix ?count)
@@ -66,13 +113,25 @@
                                       not
                                       xor
                                       nand
-                                      bind
                                       move
+                                      set
                                       pop
                                       push
                                       load
                                       store
                                       ; more to follow
+                                      call
+                                      goto
+                                      stio
+                                      ldio
+                                      stc
+                                      ldc
+                                      jlr
+                                      call-lr
+
+                                      mflr
+                                      mtlr
+
                                       )
            ?*predicate-registers* = (make-range p
                                                 16)
@@ -142,7 +201,7 @@
                                                    (value ?register))
                                     ?b)))
 (defrule lisp->intermediary::make-alias
-         (declare (salience 1))
+         (declare (salience ?*priority:right-after-first*))
          ?f <- (object (is-a list)
                        (contents alias
                                  ?alias
@@ -196,7 +255,146 @@
 
 
 
+(defrule lisp->intermediary::make-org-directive
+         ?f <- (object (is-a list)
+                       (contents org
+                                 ?address
+                                 $?rest)
+                       (name ?name)
+                       (parent ?p))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?name of org
+                        (parent ?p)
+                        (address ?address)
+                        (body $?rest)))
+
+(defrule lisp->intermediary::mark-alias-reference-in-action
+         ?f <- (object (is-a action)
+                       (arguments $?a ?alias $?b)
+                       (name ?action))
+         (object (is-a alias)
+                 (alias ?alias)
+                 (name ?target))
+         =>
+         (modify-instance ?f
+                          (arguments ?a
+                                     (make-instance of reference
+                                                    (parent ?action)
+                                                    (value ?target)
+                                                    (expand TRUE))
+                                     ?b)))
+
+(defrule lisp->intermediary::make-macro
+         ?f <- (object (is-a list)
+                       (name ?name)
+                       (parent ?p)
+                       (contents macro 
+                                 ?title
+                                 ?args
+                                 $?body))
+         ?f2 <- (object (is-a list)
+                        (name ?args)
+                        (contents $?children))
+         =>
+         (progn$ (?c ?children) 
+                 (send ?c 
+                       put-parent
+                       ?name))
+         (unmake-instance ?f 
+                          ?f2)
+         (make-instance ?name of macro
+                        (parent ?p)
+                        (title ?title)
+                        (arguments ?children)
+                        (body ?body)))
 
 
+(defrule lisp->intermediary::mark-macro-call
+         ?f <- (object (is-a list)
+                       (contents ?macro-op
+                                 $?arguments)
+                       (name ?n)
+                       (parent ?p))
+         (object (is-a macro)
+                 (title ?macro-op)
+                 (name ?mac))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?n of macro-call
+                        (parent ?p)
+                        (value ?mac)
+                        (arguments ?arguments)))
 
+(defrule lisp->intermediary::mark-if-conditional
+         ?f <- (object (is-a list)
+                       (contents if 
+                                 ?predicate 
+                                 then 
+                                 ?on-true 
+                                 else 
+                                 ?on-false)
+                       (name ?name)
+                       (parent ?p))
+         (object (is-a predicate-register)
+                 (name ?predicate))
+         (object (is-a general-purpose-register)
+                 (name ?on-true))
+         (object (is-a general-purpose-register)
+                 (name ?on-false))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?name of if-condition
+                        (parent ?p)
+                        (condition ?predicate)
+                        (on-true ?on-true)
+                        (on-false ?on-false)))
+(defrule lisp->intermediary::mark-if-conditional-link
+         ?f <- (object (is-a list)
+                       (contents if 
+                                 ?predicate 
+                                 then 
+                                 call ?on-true 
+                                 else 
+                                 call ?on-false)
+                       (name ?name)
+                       (parent ?p))
+         (object (is-a predicate-register)
+                 (name ?predicate))
+         (object (is-a general-purpose-register)
+                 (name ?on-true))
+         (object (is-a general-purpose-register)
+                 (name ?on-false))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?name of if-condition
+                        (parent ?p)
+                        (link TRUE)
+                        (condition ?predicate)
+                        (on-true ?on-true)
+                        (on-false ?on-false)))
+(defrule lisp->intermediary::make-label
+         ?f <- (object (is-a list)
+                       (contents label
+                                 ?label
+                                 $?body)
+                       (name ?name)
+                       (parent ?p))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?name of label
+                        (parent ?p)
+                        (title ?label)
+                        (body $?body)))
+(defrule lisp->intermediary::make-word
+         ?f <- (object (is-a list)
+                       (contents word
+                                 ?value)
+                       (name ?name)
+                       (parent ?p))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?name of word
+                        (parent ?p)
+                        (value ?value)))
 
