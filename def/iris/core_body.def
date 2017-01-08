@@ -1,7 +1,0 @@
-
-#define X(title, mask, shift, type, is_register, post) \
-			inline type get ## title () const noexcept { \
-				return iris::decodeBits<raw_instruction, type, mask, shift>(current); \
-			} 
-#include "instruction.def"
-#undef X
