@@ -55,7 +55,9 @@
                           Move
                           Jump
                           Compare
-                          ConditionalRegister)
+                          ConditionalRegister
+                          Operation32
+                          Operation64)
                 (cast-to byte)
                 (max-size "ArchitectureConstants::MaxGroups"))
           (enum (cast-to byte)
@@ -160,5 +162,69 @@
                           CRNor
                           CRSwap
                           CRMove
-                          )))
+                          ))
+          (enum (cast-to byte)
+                (max-size "ArchitectureConstants::MaxOperations")
+                (name Instruction32BitOp)
+                (children Add32
+                          Sub32
+                          Mul32
+                          Div32
+                          Remainder32
+                          ShiftLeft32
+                          ShiftRight32
+                          And32
+                          Or32
+                          Xor32
+                          Not32
+                          Load32
+                          Store32
+                          LoadCode
+                          StoreCode
+                          Push32
+                          Pop32
+                          Swap32
+                          BranchConditionalImmediate32
+                          BranchConditionalRegister32
+                          BranchUnconditionalImmediate32
+                          BranchUnconditionalRegister32
+                          Eq32
+                          Neq32
+                          LessThan32
+                          GreaterThan32
+                          LessThanOrEqualTo32
+                          GreaterThanOrEqualTo32))
+          (enum (cast-to byte)
+                (max-size "ArchitectureConstants::MaxOperations")
+                (name Instruction64BitOp)
+                (children Add64
+                          Sub64
+                          Mul64
+                          Div64
+                          Remainder64
+                          ShiftLeft64
+                          ShiftRight64
+                          And64
+                          Or64
+                          Xor64
+                          Not64
+                          Load64
+                          Store64
+                          LoadCode
+                          StoreCode
+                          Push64
+                          Pop64
+                          Swap64
+                          BranchConditionalImmediate64
+                          BranchConditionalRegister64
+                          BranchUnconditionalImmediate64
+                          BranchUnconditionalRegister64
+                          Eq64
+                          Neq64
+                          LessThan64
+                          GreaterThan64
+                          LessThanOrEqualTo64
+                          GreaterThanOrEqualTo64))
+
+          )
 
