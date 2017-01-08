@@ -275,7 +275,7 @@ namespace iris {
 				{ ConditionRegisterOp::CRNand, makeDesc<PredicateComparator>(PredicateComparator::Operation::BinaryNand, false) },
 				{ ConditionRegisterOp::CRNor, makeDesc<PredicateComparator>(PredicateComparator::Operation::BinaryNor, false) },
 				{ ConditionRegisterOp::CRXor, makeDesc<PredicateComparator>(PredicateComparator::Operation::BinaryXor, false) },
-				{ ConditionRegisterOp::CRNot, makeDesc<PredicateComparator>(PredicateComparator::Operation::BinaryXor, false) },
+				{ ConditionRegisterOp::CRNot, makeDesc<PredicateComparator>(PredicateComparator::Operation::UnaryNot, false) },
 			};
 			auto op = static_cast<ConditionRegisterOp>(getOperation());
 			auto result = translationTable.find(op);
