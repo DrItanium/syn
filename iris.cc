@@ -191,7 +191,7 @@ namespace iris {
 				}
 			}
 		} else if (group == InstructionGroup::Move) {
-			auto op = static_cast<MoveOp>(getOperation());
+			auto op = getOperation<MoveOp>();
 			raw_instruction codeStorage = 0u;
 			switch(op) {
 				case MoveOp::Move:
@@ -330,6 +330,23 @@ namespace iris {
 	word Core::savePredicateRegisters(word mask) noexcept {
 		return Core::PredicateRegisterEncoder<15>::invoke(this, mask);
 	}
+
+    dword Core::getDoubleRegister(byte index) {
+        auto rBase = index << 1;
+        return static_cast<dword>(syn::encodeUint32LE(gpr[rBase], gpr[rBase + 1]));
+    }
+    void Core::setDoubleRegister(byte index, dword value) {
+        auto rBase = index << 1;
+        gpr[rBase] = syn::getLowerHalf(value);
+        gpr[rBase + 1] = syn::getUpperHalf(value);
+    }
+    void Core::setQuadRegister(byte index, qword value) {
+        auto rBase = index << 2;
+        gpr[rBase] = syn::getLowerHalf(syn::getLowerHalf(value));
+        gpr[rBase+1] = syn::getUpperHalf(syn::getLowerHalf(value));
+        gpr[rBase+2] = syn::getLowerHalf(syn::getUpperHalf(value));
+        gpr[rBase+3] = syn::getUpperHalf(syn::getUpperHalf(value));
+    }
 
 	enum class Segment  {
 		Code,
