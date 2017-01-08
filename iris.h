@@ -7,8 +7,12 @@
 #include <cstdint>
 #include <memory>
 namespace iris {
-	typedef uint16_t word;
-	typedef uint32_t dword;
+	using word = uint16_t;
+    using sword = int16_t;
+    using dword = uint32_t;
+    using sdword = int32_t;
+    using qword = uint64_t;
+    using sqword = int64_t;
 	typedef dword raw_instruction;
 	typedef word immediate;
 	enum ArchitectureConstants  {
@@ -39,8 +43,9 @@ namespace iris {
 	template<word capacity>
 	using WordMemorySpace = syn::FixedSizeLoadStoreUnit<word, word, capacity>;
 	using WordMemorySpace64k = WordMemorySpace<ArchitectureConstants::AddressMax>;
-	using ALU = syn::ALU<word>;
-	using CompareUnit = syn::Comparator<word>;
+	using ALU = syn::ALU<qword>;
+    using SignedALU = syn::ALU<sqword>;
+	using CompareUnit = syn::Comparator<qword>;
 	using RegisterFile = WordMemorySpace<ArchitectureConstants::RegisterCount>;
 	using IODevice = syn::IODevice<word>;
 	using LambdaIODevice = syn::LambdaIODevice<word>;
@@ -69,6 +74,10 @@ namespace iris {
 			word& getInstructionPointer() noexcept { return _ip; }
 			word& getLinkRegister() noexcept { return _lr; }
 			bool& getPredicateRegister(byte index);
+            dword getDoubleRegister(byte index);
+            void setDoubleRegister(byte index, dword value);
+            qword getQuadRegister(byte index);
+            void setQuadRegister(byte index, qword value);
 		private:
 			void dispatch();
             inline byte getDestination() const noexcept { return decodeDestination(current); }
@@ -134,6 +143,7 @@ namespace iris {
 				 advanceIp = true;
 			CompareUnit _compare;
 			ALU _alu;
+            SignedALU _salu;
 			RegisterFile gpr;
 			WordMemorySpace64k data;
 			syn::FixedSizeLoadStoreUnit<dword, word, ArchitectureConstants::AddressMax> instruction;

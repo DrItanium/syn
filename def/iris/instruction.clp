@@ -107,8 +107,7 @@
                           ConditionalTrueJumpLinkRegister
                           ConditionalTrueJumpLinkRegisterLink
                           ConditionalFalseJumpLinkRegister
-                          ConditionalFalseJumpLinkRegisterLink
-                          ))
+                          ConditionalFalseJumpLinkRegisterLink))
           (enum (cast-to byte)
                 (max-size "ArchitectureConstants::MaxOperations")
                 (name MoveOp)
