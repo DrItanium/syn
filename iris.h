@@ -40,8 +40,12 @@ namespace iris {
 	template<word capacity>
 	using WordMemorySpace = syn::FixedSizeLoadStoreUnit<word, word, capacity>;
 	using WordMemorySpace64k = WordMemorySpace<ArchitectureConstants::AddressMax>;
-	using ALU = syn::ALU<qword>;
-	using CompareUnit = syn::Comparator<qword>;
+	using ALU = syn::ALU<word>;
+    using QALU = syn::ALU<qword>;
+    using DALU = syn::ALU<dword>;
+	using CompareUnit = syn::Comparator<word>;
+    using DCompareUnit = syn::Comparator<dword>;
+    using QCompareUnit = syn::Comparator<qword>;
 	using RegisterFile = WordMemorySpace<ArchitectureConstants::RegisterCount>;
 	using IODevice = syn::IODevice<word>;
 	using LambdaIODevice = syn::LambdaIODevice<word>;
@@ -94,18 +98,47 @@ namespace iris {
 			inline bool& predicateInverseResult() noexcept { return getPredicateRegister(getPredicateInverse()); }
 			inline bool& predicateSource0() noexcept { return getPredicateRegister(getPredicateSource0()); }
 			inline bool& predicateSource1() noexcept { return getPredicateRegister(getPredicateSource1()); }
-
+            inline byte getDestination32() const noexcept { return decodeDestination32(current); }
+            inline byte getSource0_32() const noexcept { return decodeSource0_32(current); }
+            inline byte getSource1_32() const noexcept { return decodeSource1_32(current); }
+            inline byte getDestination64() const noexcept { return decodeDestination64(current); }
+            inline byte getSource0_64() const noexcept { return decodeSource0_64(current); }
+            inline byte getSource1_64() const noexcept { return decodeSource1_64(current); }
+            template<typename T>
+            inline T getOperation() const noexcept { return static_cast<T>(decodeOperation(current)); }
 		private:
 			template<typename Unit>
 			void performOperation(Unit& unit, typename Unit::Operation op, bool immediate) {
 				destinationRegister() = unit.performOperation(op, source0Register(), (immediate ? getHalfImmediate() : source1Register()));
 			}
+            template<typename Unit>
+            void performOperation32(Unit& unit, typename Unit::Operation op, bool immediate) {
+                setDoubleRegister(getDestination32(), unit.performOperation(op, getDoubleRegister(getSource0_32()), (immediate ? static_cast<dword>(getHalfImmediate()) : getDoubleRegister(getSource1_32()))));
+            }
+            template<typename Unit>
+            void performOperation64(Unit& unit, typename Unit::Operation op, bool immediate) {
+                setQuadRegister(getDestination32(), unit.performOperation(op, getQuadRegister(getSource0_32()), (immediate ? static_cast<qword>(getHalfImmediate()) : getQuadRegister(getSource1_32()))));
+            }
 			template<typename Unit>
 			inline void performOperation(Unit& unit, std::tuple<typename Unit::Operation, bool>& tuple) {
 				typename Unit::Operation op;
 				bool immediate = false;
 				std::tie(op, immediate) = tuple;
 				performOperation(unit, op, immediate);
+			}
+			template<typename Unit>
+			inline void performOperation32(Unit& unit, std::tuple<typename Unit::Operation, bool>& tuple) {
+				typename Unit::Operation op;
+				bool immediate = false;
+				std::tie(op, immediate) = tuple;
+				performOperation32(unit, op, immediate);
+			}
+			template<typename Unit>
+			inline void performOperation64(Unit& unit, std::tuple<typename Unit::Operation, bool>& tuple) {
+				typename Unit::Operation op;
+				bool immediate = false;
+				std::tie(op, immediate) = tuple;
+				performOperation64(unit, op, immediate);
 			}
 			template<word index> 
 			struct PredicateRegisterEncoder {
@@ -139,6 +172,8 @@ namespace iris {
 				 advanceIp = true;
 			CompareUnit _compare;
 			ALU _alu;
+            DALU _dalu;
+            QALU _qalu;
 			RegisterFile gpr;
 			WordMemorySpace64k data;
 			syn::FixedSizeLoadStoreUnit<dword, word, ArchitectureConstants::AddressMax> instruction;

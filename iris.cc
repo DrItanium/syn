@@ -307,7 +307,17 @@ namespace iris {
 				}
 			}
         } else if (group == InstructionGroup::Operation32) {
+            auto op = getOperation<Instruction32BitOp>();
+            switch(op) {
+                default:
+                    throw syn::Problem("Undefined 32 bit operation!");
+            }
         } else if (group == InstructionGroup::Operation64) {
+            auto op = getOperation<Instruction64BitOp>();
+            switch(op) {
+                default:
+                    throw syn::Problem("Undefined 64 bit operation!");
+            }
 		} else {
 			makeProblem("Illegal instruction group", getGroup());
 		}

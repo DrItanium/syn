@@ -200,17 +200,18 @@
                           Or32
                           Xor32
                           Not32
-                          Load32
-                          Store32
-                          LoadCode
-                          StoreCode
-                          Push32
-                          Pop32
+                          ;Load32
+                          ;Store32
+                          ;LoadCode
+                          ;StoreCode
+                          ;Push32
+                          ;Pop32
                           Swap32
                           BranchConditionalImmediate32
                           BranchConditionalRegister32
                           BranchUnconditionalImmediate32
                           BranchUnconditionalRegister32
+                          Move32
                           Eq32
                           Neq32
                           LessThan32
@@ -231,12 +232,13 @@
                           Or64
                           Xor64
                           Not64
-                          Load64
-                          Store64
-                          LoadCode
-                          StoreCode
-                          Push64
-                          Pop64
+                          ;Load64
+                          ;Store64
+                          ;LoadCode
+                          ;StoreCode
+                          ;Push64
+                          ;Pop64
+                          Move64
                           Swap64
                           BranchConditionalImmediate64
                           BranchConditionalRegister64
@@ -248,6 +250,5 @@
                           GreaterThan64
                           LessThanOrEqualTo64
                           GreaterThanOrEqualTo64))
-
           )
 
