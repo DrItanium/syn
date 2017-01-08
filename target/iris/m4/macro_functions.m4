@@ -1,36 +1,3 @@
-define(`registerAlias', `define($1, $2)')dnl
-registerAlias(sp, r255)dnl
-registerAlias(v0, r0)dnl
-registerAlias(v1, r1)dnl
-registerAlias(v2, r2)dnl
-registerAlias(v3, r3)dnl
-registerAlias(v4, r4)dnl
-registerAlias(v5, r5)dnl
-registerAlias(v6, r6)dnl
-registerAlias(v7, r7)dnl
-registerAlias(arg0, r32)dnl
-registerAlias(arg1, r33)dnl
-registerAlias(arg2, r34)dnl
-registerAlias(arg3, r35)dnl
-registerAlias(return0, r64)dnl
-registerAlias(return1, r65)dnl
-registerAlias(return2, r66)dnl
-registerAlias(return3, r67)dnl
-registerAlias(return4, r68)dnl
-registerAlias(return5, r69)dnl
-registerAlias(return6, r70)dnl
-registerAlias(return7, r71)dnl
-registerAlias(temp0, r96)dnl
-registerAlias(temp1, r97)dnl
-registerAlias(temp2, r98)dnl
-registerAlias(temp3, r99)dnl
-registerAlias(temp4, r100)dnl
-registerAlias(temp5, r101)dnl
-registerAlias(temp6, r102)dnl
-registerAlias(temp7, r103)dnl
-registerAlias(vp0, p15)dnl
-registerAlias(vp1, p14)dnl
-dnl
 define(`incr', `addi $1 $1 0x1')dnl
 define(`decr', `subi $1 $1 0x1')dnl
 define(`halve', `divi $1 $1 0x2')dnl
@@ -57,7 +24,7 @@ define(`notiw', `immset($2) not $1 v0')dnl
 define(`nor', `or $1 $2 $3 not $1 $1')dnl
 define(`xnor', `xor $1 $2 $3 not $1 $1')dnl
 define(`nand', `and $1 $2 $3 not $1 $1')dnl
-
+dnl
 define(`immcmp', `$1 vp0 vp0 $2 $3')
 define(`bigen', `immcmp($1, $2, $3) bit vp0 $4')dnl
 define(`bilgen', `immcmp($1, $2, $3) bitl vp0 $4')dnl
