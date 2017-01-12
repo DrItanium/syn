@@ -25,6 +25,10 @@ namespace iris {
     struct SymbolRemImmediate : public pegtl_string_t( "remi" ) { };
     struct SymbolShiftLeftImmediate : public pegtl_string_t("shli") { };
     struct SymbolShiftRightImmediate : public pegtl_string_t("shri") { };
+    struct SymbolArithmeticKeyword : public pegtl::sor<SymbolAdd, SymbolSub, SymbolMul, SymbolDiv, SymbolRem, SymbolShiftLeft, SymbolShiftRight, SymbolAnd, SymbolOr, SymbolNot, SymbolXor, SymbolAddImmediate, SymbolSubImmediate, SymbolMulImmediate, SymbolDivImmediate, SymbolRemImmediate, SymbolShiftLeftImmediate, SymbolShiftRightImmediate> { };
+
+#define DefSymbol(title, str) \
+    struct Symbol ## title : public pegtl_string_t( #str ) { }
     struct SymbolMove : public pegtl_string_t("move") { };
     struct SymbolSwap : public pegtl_string_t("swap") { };
     struct SymbolSet : public pegtl_string_t("set") { };
@@ -37,9 +41,20 @@ namespace iris {
     struct SymbolStoreImmediate : public pegtl_string_t("memset") { };
     struct SymbolStoreWithOffset : public pegtl_string_t("stwo") { };
     struct SymbolStoreCode : public pegtl_string_t("stc") { };
-#define DefSymbol(title, str) \
-    struct Symbol ## title : public pegtl_string_t( #str ) { }
+    DefSymbol(LoadIO, ldio);
+    DefSymbol(StoreIO, stio);
+    DefSymbol(LoadIOWithOffset, ldiowo);
+    DefSymbol(StoreIOWithOffset, stiowo);
+    DefSymbol(MoveToIP, mtip);
+    DefSymbol(MoveFromIP, mfip);
+    DefSymbol(MoveToLR, mtlr);
+    DefSymbol(MoveFromLR, mflr);
+    DefSymbol(Push, push);
+    DefSymbol(PushImmediate, pushi);
+    DefSymbol(Pop, pop);
+    struct SymbolManipulationKeyword : public pegtl::sor<SymbolMove, SymbolSwap, SymbolSet, SymbolLoad, SymbolLoadImmediate, SymbolLoadMemory, SymbolLoadWithOffset, SymbolLoadCode, SymbolStore, SymbolStoreImmediate, SymbolStoreWithOffset, SymbolStoreCode, SymbolLoadIO, SymbolStoreIO, SymbolLoadIOWithOffset, SymbolStoreIOWithOffset, SymbolMoveToIP, SymbolMoveFromIP, SymbolMoveToLR, SymbolMoveFromLR, SymbolPush, SymbolPushImmediate, SymbolPop> { };
 
+    // branch
     DefSymbol(BranchUnconditionalImmediate, bi);
     DefSymbol(BranchUnconditionalImmediateLink, bil);
     DefSymbol(BranchUnconditional, b);
@@ -56,6 +71,13 @@ namespace iris {
     DefSymbol(IfThenElseFalse, iff);
     DefSymbol(IfThenElseTrueLink, iftl);
     DefSymbol(IfThenElseFalseLink, iffl);
+    DefSymbol(BranchLR, blr);
+    DefSymbol(BranchLRLink, blrl);
+    DefSymbol(BranchLRTrue, blrt);
+    DefSymbol(BranchLRTrueLink, blrtl);
+    DefSymbol(BranchLRFalse, blrf);
+    DefSymbol(BranchLRFalseLink, blrfl);
+    // compare operations
     DefSymbol(Eq, eq);
     DefSymbol(Neq, ne);
     DefSymbol(Lt, lt);
@@ -68,13 +90,8 @@ namespace iris {
     DefSymbol(GtImmediate, gti);
     DefSymbol(LeImmediate, lei);
     DefSymbol(GeImmediate, gei);
-    DefSymbol(Push, push);
-    DefSymbol(PushImmediate, pushi);
-    DefSymbol(Pop, pop);
-    DefSymbol(MoveToIP, mtip);
-    DefSymbol(MoveFromIP, mfip);
-    DefSymbol(MoveToLR, mtlr);
-    DefSymbol(MoveFromLR, mflr);
+
+    // conditional register actions
     DefSymbol(SaveCRs, svcr);
     DefSymbol(RestoreCRs, recr);
     DefSymbol(CRXor, crxor);
@@ -85,11 +102,14 @@ namespace iris {
     DefSymbol(CRNor, crnor);
     DefSymbol(CRSwap, crswap);
     DefSymbol(CRMove, crmove);
-    DefSymbol(BranchLR, blr);
-    DefSymbol(BranchLRLink, blrl);
-    DefSymbol(BranchLRTrue, blrt);
-    DefSymbol(BranchLRTrueLink, blrtl);
-    DefSymbol(BranchLRFalse, blrf);
-    DefSymbol(BranchLRFalseLink, blrfl);
+    // directives
+    DefSymbol(LabelDirective, @label);
+    DefSymbol(DataDirective, @data);
+    DefSymbol(CodeDirective, @code);
+    DefSymbol(OrgDirective, @org);
+    DefSymbol(DeclareDirective, @declare);
+    DefSymbol(HiDirective, @hi);
+    DefSymbol(LoDirective, @lo);
+    struct SymbolDirective : public pegtl::sor<SymbolLabelDirective, SymbolDataDirective, SymbolCodeDirective, SymbolOrgDirective, SymbolDeclareDirective, SymbolHiDirective, SymbolLoDirective> { };
 #undef DefSymbol
 }
