@@ -28,6 +28,8 @@ omni [a-zA-Z0-9._]
 
 
 %%
+"min" { return ARITHMETIC_OP_MIN; }
+"max" { return ARITHMETIC_OP_MAX; }
 "add" { return ARITHMETIC_OP_ADD; }
 "sub" { return ARITHMETIC_OP_SUB; }
 "mul" { return ARITHMETIC_OP_MUL; }
@@ -126,21 +128,21 @@ omni [a-zA-Z0-9._]
 "sp"	 { irislval.rval = 255; return GPR; }
 [ \t\n]     ;
 [;].*       ; // comments
-r{digit}+ { 
+r{digit}+ {
 	auto value = (syn::getRegister<int, 256>(iristext, reportIris16Error));
 	irislval.rval = static_cast<byte>(value);
 	return GPR;
 }
-p{digit}+ { 
+p{digit}+ {
 	auto value = (syn::getRegister<int, 16>(iristext, reportIris16Error));
 	irislval.rval = static_cast<byte>(value);
 	return PREDICATE_REGISTER;
 }
-{digit}+ { 
+{digit}+ {
 	irislval.ival = syn::getDecimalImmediate<iris::word>(iristext, reportIris16Error);
-	return IMMEDIATE; 
+	return IMMEDIATE;
 }
-0x{xdigit}+ { 
+0x{xdigit}+ {
 	irislval.ival = syn::getHexImmediate<iris::word>(iristext, reportIris16Error);
 	return IMMEDIATE;
 }
@@ -148,7 +150,7 @@ p{digit}+ {
 	irislval.ival = syn::getBinaryImmediate<iris::word>(iristext, reportIris16Error);
 	return IMMEDIATE;
 }
-{omni}+ { 
+{omni}+ {
 	irislval.sval = iristext;
 	return IRIS16_SYMBOL;
 }

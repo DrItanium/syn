@@ -7,7 +7,7 @@ namespace iris {
 
 	Core::Core() noexcept : _io(0, 0xFFFF) { }
 
-	Core::~Core() { 
+	Core::~Core() {
 	}
 
 	void Core::installprogram(std::istream& stream) {
@@ -75,9 +75,19 @@ namespace iris {
 				{ ArithmeticOp::ShiftLeftImmediate, makeDesc<ALU>(ALU::Operation::ShiftLeft , true ) },
 				{ ArithmeticOp::ShiftRightImmediate, makeDesc<ALU>(ALU::Operation::ShiftRight , true ) },
 			};
-			auto result = table.find(static_cast<ArithmeticOp>(getOperation()));
+            auto op = static_cast<ArithmeticOp>(getOperation());
+			auto result = table.find(op);
 			if (result == table.end()) {
-				makeIllegalOperationMessage("arithmetic operation");
+                switch(op) {
+                    case ArithmeticOp::Min:
+                        destinationRegister() = source0Register() < source1Register() ? source0Register() : source1Register();
+                        break;
+                    case ArithmeticOp::Max:
+                        destinationRegister() = source0Register() > source1Register() ? source0Register() : source1Register();
+                        break;
+                    default:
+				        makeIllegalOperationMessage("arithmetic operation");
+                }
 			} else {
 				performOperation(_alu, result->second);
 			}
@@ -375,10 +385,10 @@ namespace iris {
 		_io.initialize();
 		auto readNothing = syn::readNothing<typename LambdaIODevice::DataType, typename LambdaIODevice::AddressType>;
 		// terminate
-		_io.install(std::make_shared<LambdaIODevice>(0, 1, readNothing, 
-					[this](word address, word value) { 
-						execute = false; 
-						advanceIp = false; 
+		_io.install(std::make_shared<LambdaIODevice>(0, 1, readNothing,
+					[this](word address, word value) {
+						execute = false;
+						advanceIp = false;
 					}));
 		// getc and putc
 		_io.install(std::make_shared<syn::StandardInputOutputDevice<word>>(1));

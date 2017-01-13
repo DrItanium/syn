@@ -49,7 +49,7 @@ struct dynamicop {
    }
 };
 struct asmstate {
-	
+
    ~asmstate() {
    }
    Segment segment;
@@ -84,7 +84,7 @@ void setStateSegment(iris::Segment value) noexcept {
 	iris::state.segment = value;
 }
 void setCurrentInstructionSegment(iris::Segment value) noexcept {
-	iris::curri.segment = value; 
+	iris::curri.segment = value;
 }
 
 
@@ -160,7 +160,7 @@ void setFullImmediate(word value) noexcept {
 
 
 %token DIRECTIVE_ORG DIRECTIVE_CODE DIRECTIVE_DATA LABEL DIRECTIVE_DECLARE
-%token MOVE_OP_STORE_IO MOVE_OP_LOAD_IO 
+%token MOVE_OP_STORE_IO MOVE_OP_LOAD_IO
 %token ARITHMETIC_OP_ADD
 %token ARITHMETIC_OP_SUB
 %token ARITHMETIC_OP_MUL
@@ -179,6 +179,7 @@ void setFullImmediate(word value) noexcept {
 %token ARITHMETIC_OP_REM_IMM
 %token ARITHMETIC_OP_SHIFTLEFT_IMM
 %token ARITHMETIC_OP_SHIFTRIGHT_IMM
+%token ARITHMETIC_OP_MIN ARITHMETIC_OP_MAX
 %token MOVE_OP_MOVE
 %token MOVE_OP_SWAP
 %token MOVE_OP_SWAPREGADDR
@@ -244,12 +245,12 @@ void setFullImmediate(word value) noexcept {
 
 %%
 Q: /* empty */ |
-   F 
+   F
 ;
 F:
    F asm {
-   	  clearCurrentInstruction(); 
-   } | 
+   	  clearCurrentInstruction();
+   } |
    asm {
 	  clearCurrentInstruction();
    }
@@ -267,10 +268,10 @@ directive:
             } else {
                iriserror("Invalid segment!");
             }
-            } | 
+            } |
       DIRECTIVE_CODE { iris::state.segment = iris::Segment::Code; } |
       DIRECTIVE_DATA { iris::state.segment = iris::Segment::Data; } |
-      DIRECTIVE_DECLARE lexeme { 
+      DIRECTIVE_DECLARE lexeme {
 	  		if (stateInDataSegment()) {
 			   assignAppropriateAddressToCurrentInstruction();
                iris::save_encoding();
@@ -293,7 +294,7 @@ statement:
          }
          ;
 label:
-     LABEL IRIS16_SYMBOL { 
+     LABEL IRIS16_SYMBOL {
 	 	addLabelEntry($2, getAppropriateStateAddress());
      }
    ;
@@ -334,17 +335,19 @@ aop:
    ARITHMETIC_OP_SHIFTRIGHT { setOperation(iris::ArithmeticOp::ShiftRight); } |
    ARITHMETIC_OP_BINARYAND { setOperation(iris::ArithmeticOp::BinaryAnd); } |
    ARITHMETIC_OP_BINARYOR { setOperation(iris::ArithmeticOp::BinaryOr); } |
-   ARITHMETIC_OP_BINARYXOR { setOperation(iris::ArithmeticOp::BinaryXor); } 
+   ARITHMETIC_OP_BINARYXOR { setOperation(iris::ArithmeticOp::BinaryXor); } |
+   ARITHMETIC_OP_MIN { setOperation(iris::ArithmeticOp::Min); } |
+   ARITHMETIC_OP_MAX { setOperation(iris::ArithmeticOp::Max); }
    ;
 
 aop_imm:
    ARITHMETIC_OP_ADD_IMM { setOperation(iris::ArithmeticOp::AddImmediate); } |
    ARITHMETIC_OP_SUB_IMM { setOperation(iris::ArithmeticOp::SubImmediate); } |
-   ARITHMETIC_OP_MUL_IMM { setOperation(iris::ArithmeticOp::MulImmediate); } | 
+   ARITHMETIC_OP_MUL_IMM { setOperation(iris::ArithmeticOp::MulImmediate); } |
    ARITHMETIC_OP_DIV_IMM { setOperation(iris::ArithmeticOp::DivImmediate); } |
    ARITHMETIC_OP_REM_IMM { setOperation(iris::ArithmeticOp::RemImmediate); } |
    ARITHMETIC_OP_SHIFTLEFT_IMM { setOperation(iris::ArithmeticOp::ShiftLeftImmediate); } |
-   ARITHMETIC_OP_SHIFTRIGHT_IMM { setOperation(iris::ArithmeticOp::ShiftRightImmediate); } 
+   ARITHMETIC_OP_SHIFTRIGHT_IMM { setOperation(iris::ArithmeticOp::ShiftRightImmediate); }
    ;
 
 mop_reg:
@@ -359,7 +362,7 @@ mop_reg:
 mop_mixed:
    MOVE_OP_SET { setOperation(iris::MoveOp::Set); } |
    MOVE_OP_STOREIMM { setOperation(iris::MoveOp::Memset); } |
-   MOVE_OP_LOADMEM { setOperation(iris::MoveOp::LoadImmediate); } 
+   MOVE_OP_LOADMEM { setOperation(iris::MoveOp::LoadImmediate); }
    ;
 
 mop_offset:
@@ -385,11 +388,11 @@ jop_only_cond:
 		COND_FALSE_BRANCH_LR_LINK { setOperation(iris::JumpOp::ConditionalFalseJumpLinkRegisterLink); };
 jop_no_args:
 	   BRANCH_LR_LINK { setOperation(iris::JumpOp::UnconditionalJumpLinkRegisterLink); } |
-	   BRANCH_LR { setOperation(iris::JumpOp::UnconditionalJumpLinkRegister); } 
+	   BRANCH_LR { setOperation(iris::JumpOp::UnconditionalJumpLinkRegister); }
 	   ;
 
 jop_imm:
-       JUMP_OP_UNCONDITIONALIMMEDIATE { setOperation(iris::JumpOp::UnconditionalImmediate); } | 
+       JUMP_OP_UNCONDITIONALIMMEDIATE { setOperation(iris::JumpOp::UnconditionalImmediate); } |
        JUMP_OP_UNCONDITIONALIMMEDIATELINK { setOperation(iris::JumpOp::UnconditionalImmediateLink); };
 jop_reg:
        JUMP_OP_UNCONDITIONALREGISTER { setOperation(iris::JumpOp::UnconditionalRegister); } |
@@ -399,7 +402,7 @@ jop_cond_imm:
    JUMP_OP_CONDITIONALTRUEIMMEDIATE { setOperation(iris::JumpOp::ConditionalTrueImmediate); } |
    JUMP_OP_CONDITIONALTRUEIMMEDIATELINK { setOperation(iris::JumpOp::ConditionalTrueImmediateLink); } |
    JUMP_OP_CONDITIONALFALSEIMMEDIATE { setOperation(iris::JumpOp::ConditionalFalseImmediate); } |
-   JUMP_OP_CONDITIONALFALSEIMMEDIATELINK { setOperation(iris::JumpOp::ConditionalFalseImmediateLink); } 
+   JUMP_OP_CONDITIONALFALSEIMMEDIATELINK { setOperation(iris::JumpOp::ConditionalFalseImmediateLink); }
    ;
 
 
@@ -426,7 +429,7 @@ cop:
    COMPARE_OP_LESSTHAN { setOperation(iris::CompareOp::LessThan); } |
    COMPARE_OP_GREATERTHAN { setOperation(iris::CompareOp::GreaterThan); } |
    COMPARE_OP_LESSTHANOREQUALTO { setOperation(iris::CompareOp::LessThanOrEqualTo); } |
-   COMPARE_OP_GREATERTHANOREQUALTO { setOperation(iris::CompareOp::GreaterThanOrEqualTo); } 
+   COMPARE_OP_GREATERTHANOREQUALTO { setOperation(iris::CompareOp::GreaterThanOrEqualTo); }
 ;
 icop:
    COMPARE_OP_EQ_IMMEDIATE { setOperation(iris::CompareOp::EqImm); } |
@@ -437,7 +440,7 @@ icop:
    COMPARE_OP_GREATERTHANOREQUALTO_IMMEDIATE { setOperation(iris::CompareOp::GreaterThanOrEqualToImm); }
 ;
 
-cond_reg_op: 
+cond_reg_op:
 	cond_save_restore_op DESTINATION_GPR lexeme |
 	cond_two_arg DESTINATION_PREDICATE_REGISTERS |
 	cond_four_arg DESTINATION_PREDICATE_REGISTERS TWO_ARG_PREDICATE_REGISTER |
@@ -458,9 +461,9 @@ cond_four_arg:
 			 OP_CR_NOR { setOperation(iris::ConditionRegisterOp::CRNor); }
 			 ;
 lexeme:
-      IRIS16_SYMBOL { iris::curri.hasSymbol = true; 
-               iris::curri.symbol = $1; } | 
-      IMMEDIATE { 
+      IRIS16_SYMBOL { iris::curri.hasSymbol = true;
+               iris::curri.symbol = $1; } |
+      IMMEDIATE {
 	  		setFullImmediate($1);
       }
 ;
@@ -485,7 +488,7 @@ half_immediate:
 						iriserror("immediate value offset out of range!");
 					}
 					setRegister2($1);
-				} | 
+				} |
 				TAG_LOW IMMEDIATE {
 					setRegister2(syn::getLowerHalf<word>($2));
 				} |
@@ -544,7 +547,7 @@ void save_encoding(void) {
    if(iris::curri.hasSymbol) {
 	  persist_dynamic_op();
    } else {
-	  write_dynamic_op(&curri); 
+	  write_dynamic_op(&curri);
    }
 }
 void write_dynamic_op(dynamicop* dop) {

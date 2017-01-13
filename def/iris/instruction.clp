@@ -80,7 +80,9 @@
                           DivImmediate
                           RemImmediate
                           ShiftLeftImmediate
-                          ShiftRightImmediate))
+                          ShiftRightImmediate
+                          Min
+                          Max))
           (enum (cast-to byte)
                 (max-size "ArchitectureConstants::MaxOperations")
                 (name JumpOp)
