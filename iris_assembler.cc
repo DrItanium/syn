@@ -27,8 +27,8 @@ namespace iris {
     struct Register : public pegtl::sor<GeneralPurposeRegister, PredicateRegister> { };
     struct HexadecimalNumber : public pegtl::if_must<pegtl::istring< '0', 'x'>, pegtl::plus<pegtl::xdigit>> { };
     struct BinaryNumber : public pegtl::if_must<pegtl::istring<  '0', 'b' >, pegtl::plus<pegtl::abnf::BIT>> { };
-    struct DecimalNumber : public pegtl::seq<pegtl::plus<pegtl::digit>> { };
-    struct Number : public pegtl::sor<HexadecimalNumber, DecimalNumber, Number> { };
+    struct DecimalNumber : public pegtl::plus<pegtl::digit> { };
+    struct Number : public pegtl::sor<HexadecimalNumber, DecimalNumber, BinaryNumber> { };
     struct Lexeme : public pegtl::identifier { };
     struct LexemeOrNumber : public pegtl::sor<Lexeme, Number> { };
 #define DefSymbol(title, str) \
@@ -58,12 +58,15 @@ namespace iris {
 
     struct OrgDirective : public OneArgumentDirective<SymbolOrgDirective, Number> {
     };
-    struct LabelDirective : public OneArgumentDirective<LabelDirective, Lexeme> {
+    struct LabelDirective : public OneArgumentDirective<SymbolLabelDirective, Lexeme> {
     };
 
     template<typename T>
     struct LexemeOrNumberDirective : public OneArgumentDirective<T, LexemeOrNumber> { };
     struct DeclareDirective : public LexemeOrNumberDirective<SymbolDeclareDirective> {
+    };
+    struct Directive : public pegtl::sor<OrgDirective, LabelDirective, CodeDirective, DataDirective> {
+
     };
     struct HiDirective : public LexemeOrNumberDirective<SymbolHiDirective> {
     };
@@ -232,7 +235,23 @@ namespace iris {
 
 #undef DefSymbol
     struct Instruction : public pegtl::sor<ArithmeticInstruction, MoveInstruction, BranchInstruction, CompareInstruction, PredicateInstruction> { };
+    struct Statement : public pegtl::sor<Instruction, Directive> {
+    };
 
-    //struct Directive { };
-    //struct Statement : public pegtl::sor<Instruction, Directive> { };
+    struct Atom : public pegtl::sor<pegtl::space, SingleLineComment, Statement> { };
+
+    struct Main : public pegtl::until<pegtl::eof, pegtl::must<Atom>> { };
+
+    template<typename Rule > struct Action : pegtl::nothing<Rule> { };
+
+}
+
+int main(int argc, char** argv) {
+    pegtl::analyze<iris::Main>();
+
+    for(int i = 1; i < argc; ++i) {
+        std::string fn;
+        pegtl::parse_arg<iris::Main, iris::Action>(i, argv, fn);
+    }
+    return 0;
 }

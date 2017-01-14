@@ -3,7 +3,7 @@
 # See LICENSE file for copyright and license details.
 
 include config.mk
-MACHINE_OBJECTS = 
+MACHINE_OBJECTS =
 ARCH_OBJECTS = iris.o \
 			   cisc0.o \
 			   molecule.o \
@@ -63,11 +63,17 @@ LINK_OBJECTS = syn_link.o \
 
 LINK_BINARY = syn_link
 
+IRIS_ASSEMBLER_OBJECTS = iris_assembler.o \
+						 iris.o
+
+IRIS_ASSEMBLER_BINARY = iris_assembler
+
 ALL_BINARIES = ${SIM_BINARY} \
 			   ${ASM_BINARY} \
 			   ${LINK_BINARY} \
 			   ${REPL_BINARY} \
-			   ${BOOTSTRAP_BINARY}
+			   ${BOOTSTRAP_BINARY} \
+			   ${IRIS_ASSEMBLER_BINARY}
 
 DEFINE_OBJECTS = iris_defines.h \
 				 cisc0_defines.h \
@@ -76,7 +82,7 @@ DEFINE_OBJECTS = iris_defines.h \
 
 DEFINE_CLPS = iris_defines.clp \
 			  cisc0_defines.clp \
-			  molecule_defines.clp 
+			  molecule_defines.clp
 
 ALL_OBJECTS = ${COMMON_THINGS} \
 			  ${SIM_OBJECTS} \
@@ -86,7 +92,10 @@ ALL_OBJECTS = ${COMMON_THINGS} \
 			  ${REPL_OBJECTS} \
 			  ${DEFINE_OBJECTS} \
 			  ${BOOTSTRAP_OBJECTS} \
-			  ${DEFINE_CLPS}
+			  ${DEFINE_CLPS} \
+			  ${IRIS_ASSEMBLER_OBJECTS} \
+
+
 
 COMMON_CLP_FILES = lib/reset-run-exit.clp
 COMMON_GEN_ENCODER_DECODER_FILES= ${COMMON_CLP_FILES} \
@@ -95,7 +104,7 @@ COMMON_GEN_ENCODER_DECODER_FILES= ${COMMON_CLP_FILES} \
 								  lib/cortex.clp \
 								  syn_base.h
 
-all: options bootstrap ${SIM_BINARY} ${ASM_BINARY} ${LINK_BINARY} ${BOOTSTRAP_BINARY}
+all: options bootstrap ${ALL_BINARIES}
 
 maya:
 	@echo "Buidling maya..."
@@ -199,27 +208,27 @@ uninstall:
 
 bootstrap: ${REPL_BINARY} ${DEFINE_OBJECTS}
 # generate the syn_memory_block_defines.h prior to generating syn_clips.h
-syn_memory_block_defines.h: maya ${COMMON_CLP_FILES} def/memory-block-ops.clp 
+syn_memory_block_defines.h: maya ${COMMON_CLP_FILES} def/memory-block-ops.clp
 	@echo "Generating memory block call operations..."
 	@./maya -f2 def/memory-block-ops.clp -f2 lib/reset-run-exit.clp > syn_memory_block_defines.h
 
-iris_defines.h: ${REPL_BINARY} ${COMMON_GEN_ENCODER_DECODER_FILES} def/iris/instruction.clp 
+iris_defines.h: ${REPL_BINARY} ${COMMON_GEN_ENCODER_DECODER_FILES} def/iris/instruction.clp
 	@echo "Generating encoders, decoders and enumerations for iris..."
 	@./deffield.sh -f2 def/iris/instruction.clp -f2 lib/reset-run-exit.clp > iris_defines.h
 	@./deffunction.sh -f2 def/iris/instruction.clp -f2 lib/reset-run-exit.clp > iris_defines.clp
 
 
-cisc0_defines.h: ${REPL_BINARY} ${COMMON_GEN_ENCODER_DECODER_FILES} def/cisc0/instruction.clp 
+cisc0_defines.h: ${REPL_BINARY} ${COMMON_GEN_ENCODER_DECODER_FILES} def/cisc0/instruction.clp
 	@echo "Generating encoders, decoders and enumerations for cisc0..."
 	@./deffield.sh -f2 def/cisc0/instruction.clp -f2 lib/reset-run-exit.clp > cisc0_defines.h
 	@./deffunction.sh -f2 def/cisc0/instruction.clp -f2 lib/reset-run-exit.clp > cisc0_defines.clp
 
-molecule_defines.h: ${REPL_BINARY} ${COMMON_GEN_ENCODER_DECODER_FILES} def/molecule/instruction.clp 
+molecule_defines.h: ${REPL_BINARY} ${COMMON_GEN_ENCODER_DECODER_FILES} def/molecule/instruction.clp
 	@echo "Generating encoders, decoders and enumerations for molecule..."
 	@./deffield.sh -f2 def/molecule/instruction.clp -f2 lib/reset-run-exit.clp > molecule_defines.h
 	@./deffunction.sh -f2 def/molecule/instruction.clp -f2 lib/reset-run-exit.clp > molecule_defines.clp
 
-phoenix_defines.h: ${REPL_BINARY} ${COMMON_GEN_ENCODER_DECODER_FILES} def/phoenix/instruction.clp 
+phoenix_defines.h: ${REPL_BINARY} ${COMMON_GEN_ENCODER_DECODER_FILES} def/phoenix/instruction.clp
 	@echo "Generating encoders, decoders and enumerations for phoenix..."
 	@./deffield.sh -f2 def/phoenix/instruction.clp -f2 lib/reset-run-exit.clp > phoenix_defines.h
 	@./deffunction.sh -f2 def/phoenix/instruction.clp -f2 lib/reset-run-exit.clp > phoenix_defines.clp
