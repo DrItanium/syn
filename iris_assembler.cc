@@ -227,6 +227,16 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
     struct LoDirective : public LexemeOrNumberDirective<SymbolLoDirective> { };
     struct Immediate : public pegtl::sor<LexemeOrNumber, HiDirective, LoDirective> { };
     struct HalfImmediate : public pegtl::sor<Number, HiDirective, LoDirective> { };
+
+	template<typename Operation, typename Operands> 
+	using GenericInstruction = syn::Instruction<Operation, Operands>;
+
+	template<typename Operation>
+	using OneGPRInstruction = GenericInstruction<Operation, OneGPR>;
+	template<typename Operation>
+	using ThreeGPRInstruction = GenericInstruction<Operation, ThreeGPR>;
+	template<typename Operation>
+	using TwoGPRInstruction = GenericInstruction<Operation, TwoGPR>;
     DefSymbol(Add, add);
     DefSymbol(Sub, sub);
     DefSymbol(Mul, mul);
@@ -240,10 +250,10 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
     DefSymbol(Min, min);
     DefSymbol(Max, max);
     struct OperationArithmeticThreeGPR : public pegtl::sor<SymbolAdd, SymbolSub, SymbolMul, SymbolDiv, SymbolRem, SymbolShiftLeft, SymbolShiftRight, SymbolAnd, SymbolOr, SymbolXor, SymbolMin, SymbolMax> { };
-    struct ArithmeticThreeGPRInstruction : public pegtl::seq<OperationArithmeticThreeGPR, Separator, ThreeGPR> { };
+	struct ArithmeticThreeGPRInstruction : public ThreeGPRInstruction<OperationArithmeticThreeGPR> { };
     DefSymbol(Not, not);
     struct OperationArithmeticTwoGPR : public pegtl::sor<SymbolNot> { };
-    struct ArithmeticTwoGPRInstruction : public pegtl::seq<OperationArithmeticTwoGPR, Separator, TwoGPR> { };
+    struct ArithmeticTwoGPRInstruction : public TwoGPRInstruction<OperationArithmeticTwoGPR> { };
 
     DefSymbol(AddImmediate, addi);
     DefSymbol(SubImmediate, subi);
@@ -257,12 +267,15 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
 
     struct ArithmeticInstruction : public pegtl::sor<ArithmeticTwoGPRHalfImmediateInstruction, ArithmeticTwoGPRInstruction, ArithmeticThreeGPRInstruction> { };
 
+#define DefGroupSet(rule, group) DefAction( rule ) { DefApply { state.setGroup(InstructionGroup:: group ); } }
+	DefGroupSet(ArithmeticInstruction, Arithmetic);
+
     DefSymbol(MoveToIP, mtip);
     DefSymbol(MoveFromIP, mfip);
     DefSymbol(MoveToLR, mtlr);
     DefSymbol(MoveFromLR, mflr);
     struct OperationMoveOneGPR : public pegtl::sor<SymbolMoveToIP, SymbolMoveFromIP, SymbolMoveToLR, SymbolMoveFromLR> { };
-    struct MoveOneGPRInstruction : public pegtl::sor<OperationMoveOneGPR, Separator, OneGPR> { };
+    struct MoveOneGPRInstruction : public OneGPRInstruction<OperationMoveOneGPR> { };
     DefSymbol(Move, move);
     DefSymbol(Swap, swap);
     DefSymbol(Load, ld);
@@ -272,7 +285,7 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
     DefSymbol(Push, push);
     DefSymbol(Pop, pop);
     struct OperationMoveTwoGPR : public pegtl::sor<SymbolMove, SymbolSwap, SymbolLoadIO, SymbolStoreIO, SymbolLoad, SymbolStore, SymbolPush, SymbolPop> { };
-    struct MoveTwoGPRInstruction : public pegtl::seq<OperationMoveTwoGPR, Separator, TwoGPR> { };
+    struct MoveTwoGPRInstruction : public TwoGPRInstruction<OperationMoveTwoGPR> { };
     DefSymbol(LoadWithOffset, ldwo);
     DefSymbol(StoreWithOffset, stwo);
     DefSymbol(LoadIOWithOffset, ldiowo);
@@ -283,7 +296,7 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
     DefSymbol(LoadCode, ldc);
     DefSymbol(StoreCode, stc);
     struct OperationMoveThreeGPR : public pegtl::sor<SymbolLoadCode, SymbolStoreCode> { };
-    struct MoveThreeGPRInstruction : public pegtl::seq<OperationMoveThreeGPR, Separator, ThreeGPR> { };
+    struct MoveThreeGPRInstruction : public ThreeGPRInstruction<OperationMoveThreeGPR> { };
 
     DefSymbol(PushImmediate, pushi);
     DefSymbol(Set, set);
@@ -298,6 +311,7 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
     struct MoveGPRImmediateInstruction : public pegtl::seq<OperationMoveGPRImmediate, Separator, DestinationGPR, Separator, Immediate> { };
 
     struct MoveInstruction : public pegtl::sor<MoveGPRImmediateInstruction, MoveThreeGPRInstruction, MoveTwoGPRHalfImmediateInstruction, MoveTwoGPRInstruction, MoveOneGPRInstruction> { };
+	DefGroupSet(MoveInstruction, Move);
 
     // branch
 	template<typename Op, typename S>
@@ -344,6 +358,7 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
     struct BranchNoArgsInstruction : public pegtl::seq<OperationBranchNoArgs> { };
 
     struct BranchInstruction : public pegtl::sor<GroupBranchUnconditional, BranchConditionalGPRInstruction, BranchConditionalImmediateInstruction, BranchIfInstruction, BranchConditionalNoArgsInstruction, BranchNoArgsInstruction> { };
+	DefGroupSet(BranchInstruction, Jump);
 
     // compare operations
     DefSymbol(Eq, eq);
@@ -363,6 +378,7 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
     struct CompareRegisterInstruction : public pegtl::seq<CompareRegisterOperation, Separator, DestinationPredicates, Separator, SourceRegisters> { };
     struct CompareImmediateInstruction : public pegtl::seq<CompareImmediateOperation, Separator, DestinationPredicates, Separator, Source0GPR, Separator, HalfImmediate> { };
     struct CompareInstruction : public pegtl::sor<CompareRegisterInstruction, CompareImmediateInstruction> { };
+	DefGroupSet(CompareInstruction, Compare);
 
     // conditional register actions
     DefSymbol(SaveCRs, svcr);
@@ -384,27 +400,25 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
     struct PredicateInstructionThreeArgs : public pegtl::seq<OperationPredicateThreeArgs, DestinationPredicates, Source0Predicate> { };
     struct PredicateInstructionFourArgs : public pegtl::seq<OperationPredicateFourArgs, DestinationPredicates, Source0Predicate, Source1Predicate> { };
     struct PredicateInstruction : public pegtl::sor<PredicateInstructionTwoArgs, PredicateInstructionThreeArgs, PredicateInstructionFourArgs> { };
+	DefGroupSet(PredicateInstruction, ConditionalRegister);
 
 
+#undef DefGroupSet
 
     // registers
     // basic define
 
 #undef DefSymbol
     struct Instruction : public pegtl::sor<ArithmeticInstruction, MoveInstruction, BranchInstruction, CompareInstruction, PredicateInstruction> { };
-	template<>
-	struct Action<Instruction> {
-		template<typename I>
-		static void apply(const I& in, AssemblerState& state) {
+	DefAction(Instruction) {
+		DefApply {
 			state.saveToFinished();
 			state.incrementCurrentAddress();
 		}
 	};
     struct Statement : public pegtl::sor<Instruction, Directive> { };
-
 	struct Anything : public pegtl::sor<Separator, SingleLineComment,Statement> { };
-
-	struct Main : public pegtl::until<pegtl::eof, pegtl::must<Anything>> { };
+	struct Main : public syn::MainFileParser<Anything> { };
 
 	void AssemblerState::setCurrentAddress(word value) noexcept {
 		if (inData) {

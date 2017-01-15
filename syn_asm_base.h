@@ -123,6 +123,13 @@ namespace syn {
     template<typename Other>
     struct LexemeOr : public pegtl::sor<Lexeme, Other> { };
 
+    template<typename Operation, typename Operands, typename Separator = AsmSeparator>
+    struct Instruction : public pegtl::seq<Operation, Separator, Operands> { };
+
+
+    template<typename Entry>
+    struct MainFileParser :  public pegtl::until<pegtl::eof, pegtl::must<Entry>> { };
+
 } // end namespace syn
 
 
