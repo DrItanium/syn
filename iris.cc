@@ -122,22 +122,22 @@ namespace iris {
 		} else if (group == InstructionGroup::Jump) {
 			// ifthenelse?, conditional?, iffalse?, immediate?, link?
 			static std::map<JumpOp, std::tuple<bool, bool, bool, bool, bool>> translationTable = {
-				{ JumpOp:: UnconditionalImmediate , std::make_tuple( false, false, false, true, false) } ,
-				{ JumpOp:: UnconditionalImmediateLink , std::make_tuple( false, false, false, true, true) } ,
-				{ JumpOp:: UnconditionalRegister , std::make_tuple( false, false, false, false, false) } ,
-				{ JumpOp:: UnconditionalRegisterLink , std::make_tuple( false, false, false, false, true) } ,
-				{ JumpOp:: ConditionalTrueImmediate , std::make_tuple( false, true, false, true, false) } ,
-				{ JumpOp:: ConditionalTrueImmediateLink , std::make_tuple( false, true, false, true, true) } ,
-				{ JumpOp:: ConditionalTrueRegister , std::make_tuple( false, true, false, false, false) } ,
-				{ JumpOp:: ConditionalTrueRegisterLink , std::make_tuple( false, true, false, false, true) } ,
-				{ JumpOp:: ConditionalFalseImmediate , std::make_tuple( false, true, true, true, false) } ,
-				{ JumpOp:: ConditionalFalseImmediateLink , std::make_tuple( false, true, true, true, true) } ,
-				{ JumpOp:: ConditionalFalseRegister , std::make_tuple( false, true, true, false, false) } ,
-				{ JumpOp:: ConditionalFalseRegisterLink , std::make_tuple( false, true, true, false, true) } ,
-				{ JumpOp:: IfThenElseNormalPredTrue , std::make_tuple( true, true, false, false, false) } ,
-				{ JumpOp:: IfThenElseNormalPredFalse , std::make_tuple( true, true, true, false, false) } ,
-				{ JumpOp:: IfThenElseLinkPredTrue , std::make_tuple( true, true, false, false, true) } ,
-				{ JumpOp:: IfThenElseLinkPredFalse , std::make_tuple( true, true, true, false, true) } ,
+				{ JumpOp:: BranchUnconditionalImmediate , std::make_tuple( false, false, false, true, false) } ,
+				{ JumpOp:: BranchUnconditionalImmediateLink , std::make_tuple( false, false, false, true, true) } ,
+				{ JumpOp:: BranchUnconditional , std::make_tuple( false, false, false, false, false) } ,
+				{ JumpOp:: BranchUnconditionalLink , std::make_tuple( false, false, false, false, true) } ,
+				{ JumpOp:: BranchConditionalTrueImmediate , std::make_tuple( false, true, false, true, false) } ,
+				{ JumpOp:: BranchConditionalTrueImmediateLink , std::make_tuple( false, true, false, true, true) } ,
+				{ JumpOp:: BranchConditionalTrue , std::make_tuple( false, true, false, false, false) } ,
+				{ JumpOp:: BranchConditionalTrueLink , std::make_tuple( false, true, false, false, true) } ,
+				{ JumpOp:: BranchConditionalFalseImmediate , std::make_tuple( false, true, true, true, false) } ,
+				{ JumpOp:: BranchConditionalFalseImmediateLink , std::make_tuple( false, true, true, true, true) } ,
+				{ JumpOp:: BranchConditionalFalse , std::make_tuple( false, true, true, false, false) } ,
+				{ JumpOp:: BranchConditionalFalseLink , std::make_tuple( false, true, true, false, true) } ,
+				{ JumpOp:: IfThenElseTrue, std::make_tuple( true, true, false, false, false) } ,
+				{ JumpOp:: IfThenElseFalse, std::make_tuple( true, true, true, false, false) } ,
+				{ JumpOp:: IfThenElseTrueLink, std::make_tuple( true, true, false, false, true) } ,
+				{ JumpOp:: IfThenElseFalseLink , std::make_tuple( true, true, true, false, true) } ,
 			};
 			auto operation = static_cast<JumpOp>(getOperation());
 			auto result = translationTable.find(operation);
@@ -146,29 +146,29 @@ namespace iris {
 				bool cond = false;
 				advanceIp = false;
 				switch(operation) {
-					case JumpOp::UnconditionalJumpLinkRegister:
+					case JumpOp::BranchUnconditionalLR:
 						getInstructionPointer() = getLinkRegister();
 						break;
-					case JumpOp::UnconditionalJumpLinkRegisterLink:
+					case JumpOp::BranchUnconditionalLRAndLink:
 						temporaryAddress = getInstructionPointer() + 1;
 						getInstructionPointer() = getLinkRegister();
 						getLinkRegister() = temporaryAddress;
 						break;
-					case JumpOp::ConditionalTrueJumpLinkRegister:
+					case JumpOp::BranchConditionalTrueLR:
 						cond = predicateResult();
 						getInstructionPointer() = cond ? getLinkRegister() : getInstructionPointer() + 1;
 						break;
-					case JumpOp::ConditionalTrueJumpLinkRegisterLink:
+					case JumpOp::BranchConditionalTrueLRAndLink:
 						temporaryAddress = getInstructionPointer() + 1;
 						cond = predicateResult();
 						getInstructionPointer() = cond ? getLinkRegister() : getInstructionPointer() + 1;
 						getLinkRegister() = cond ? getInstructionPointer() + 1 : getLinkRegister();
 						break;
-					case JumpOp::ConditionalFalseJumpLinkRegister:
+					case JumpOp::BranchConditionalFalseLR:
 						cond = !predicateResult();
 						getInstructionPointer() = cond ? getLinkRegister() : getInstructionPointer() + 1;
 						break;
-					case JumpOp::ConditionalFalseJumpLinkRegisterLink:
+					case JumpOp::BranchConditionalFalseLRAndLink:
 						temporaryAddress = getInstructionPointer() + 1;
 						cond = !predicateResult() ;
 						getInstructionPointer() = cond ? getLinkRegister() : getInstructionPointer() + 1;
@@ -268,10 +268,10 @@ namespace iris {
 					getInstructionPointer() = destinationRegister();
 					advanceIp = false;
 					break;
-				case MoveOp::MoveFromLinkRegister:
+				case MoveOp::MoveFromLR:
 					destinationRegister() = getLinkRegister();
 					break;
-				case MoveOp::MoveToLinkRegister:
+				case MoveOp::MoveToLR:
 					getLinkRegister() = destinationRegister();
 					break;
 				default:

@@ -26,10 +26,10 @@ SIM_OBJECTS = syn_sim.o \
 
 SIM_BINARY = syn_sim
 
-ASM_PARSERS_OBJECTS = iris_lex.yy.o \
-					  iris_asm.tab.o \
-					  cisc0_lex.yy.o \
+ASM_PARSERS_OBJECTS = cisc0_lex.yy.o \
 					  cisc0_asm.tab.o \
+					  #iris_lex.yy.o \
+					  #iris_asm.tab.o \
 
 ASM_OBJECTS = syn_asm.o \
 			  AssemblerRegistrar.o \
@@ -46,12 +46,12 @@ REPL_OBJECTS= syn_repl.o \
 			  syn_clips.o \
 			  ${COMMON_THINGS}
 
-ASM_PARSERS = iris_lex.yy.c \
-			  iris_asm.tab.c \
-			  iris_asm.tab.h \
-			  cisc0_lex.yy.c \
+ASM_PARSERS = cisc0_lex.yy.c \
 			  cisc0_asm.tab.c \
 			  cisc0_asm.tab.h \
+			  #iris_lex.yy.c \
+			  #iris_asm.tab.c \
+			  #iris_asm.tab.h \
 
 ASM_BINARY = syn_asm
 

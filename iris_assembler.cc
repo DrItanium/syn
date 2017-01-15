@@ -284,9 +284,9 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
 
     DefOperationSameTitle(MoveToIP, mtip);
     DefOperationSameTitle(MoveFromIP, mfip);
-    DefOperationSameTitle(MoveToLinkRegister, mtlr);
-    DefOperationSameTitle(MoveFromLinkRegister, mflr);
-    struct OperationMoveOneGPR : public pegtl::sor<SymbolMoveToIP, SymbolMoveFromIP, SymbolMoveToLinkRegister, SymbolMoveFromLinkRegister> { };
+    DefOperationSameTitle(MoveToLR, mtlr);
+    DefOperationSameTitle(MoveFromLR, mflr);
+    struct OperationMoveOneGPR : public pegtl::sor<SymbolMoveToIP, SymbolMoveFromIP, SymbolMoveToLR, SymbolMoveFromLR> { };
     struct MoveOneGPRInstruction : public OneGPRInstruction<OperationMoveOneGPR> { };
     DefOperationSameTitle(Move, move);
     DefOperationSameTitle(Swap, swap);
@@ -305,19 +305,21 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
     struct OperationMoveTwoGPRHalfImmediate : public pegtl::sor<SymbolLoadWithOffset, SymbolStoreWithOffset, SymbolLoadIOWithOffset, SymbolStoreIOWithOffset> { };
     struct MoveTwoGPRHalfImmediateInstruction : public pegtl::seq<OperationMoveTwoGPRHalfImmediate, Separator, TwoGPR, Separator, HalfImmediate> { };
 
-    DefSymbol(LoadCode, ldc);
-    DefSymbol(StoreCode, stc);
+    DefOperationSameTitle(LoadCode, ldc);
+    DefOperationSameTitle(StoreCode, stc);
     struct OperationMoveThreeGPR : public pegtl::sor<SymbolLoadCode, SymbolStoreCode> { };
     struct MoveThreeGPRInstruction : public ThreeGPRInstruction<OperationMoveThreeGPR> { };
 
-    DefSymbol(PushImmediate, pushi);
-    DefSymbol(Set, set);
+    DefOperationSameTitle(PushImmediate, pushi);
+    DefOperationSameTitle(Set, set);
     DefSymbol(LoadImmediatePrimary, ldi);
     DefSymbol(LoadImmediateSecondary, ldm);
     struct SymbolLoadImmediate : public pegtl::sor<SymbolLoadImmediatePrimary, SymbolLoadImmediateSecondary> { };
+	DefAction(SymbolLoadImmediate) { DefApply { state.setOperation<CURRENT_TYPE>(CURRENT_TYPE :: LoadImmediate); } };
     DefSymbol(StoreImmediatePrimary, sti);
     DefSymbol(StoreImmediateAlternateTitle, memset);
     struct SymbolStoreImmediate : public pegtl::sor<SymbolStoreImmediatePrimary, SymbolStoreImmediateAlternateTitle> { };
+	DefAction(SymbolStoreImmediate) { DefApply { state.setOperation<CURRENT_TYPE>(CURRENT_TYPE :: Memset); } };
     struct OperationMoveGPRImmediate : public pegtl::sor<SymbolStoreImmediate, SymbolLoadImmediate, SymbolSet, SymbolPushImmediate> { };
 
     struct MoveGPRImmediateInstruction : public pegtl::seq<OperationMoveGPRImmediate, Separator, DestinationGPR, Separator, Immediate> { };
@@ -329,22 +331,22 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
     // branch
 	template<typename Op, typename S>
 	struct BranchUnconditional : public pegtl::seq<Op, Separator, S> { };
-    DefSymbol(BranchUnconditional, b);
-    DefSymbol(BranchUnconditionalLink, bl);
+    DefOperationSameTitle(BranchUnconditional, b);
+    DefOperationSameTitle(BranchUnconditionalLink, bl);
     struct OperationBranchOneGPR : public pegtl::sor<SymbolBranchUnconditional, SymbolBranchUnconditionalLink> { };
     struct BranchOneGPRInstruciton : public BranchUnconditional<OperationBranchOneGPR, DestinationGPR> { };
-    DefSymbol(BranchUnconditionalImmediate, bi);
-    DefSymbol(BranchUnconditionalImmediateLink, bil);
+    DefOperationSameTitle(BranchUnconditionalImmediate, bi);
+    DefOperationSameTitle(BranchUnconditionalImmediateLink, bil);
     struct OperationBranchImmediate : public pegtl::sor<SymbolBranchUnconditionalImmediateLink, SymbolBranchUnconditionalImmediate> { };
     struct BranchImmediateInstruction : public BranchUnconditional<OperationBranchImmediate, Immediate> { };
 
 	struct GroupBranchUnconditional : public pegtl::sor<BranchOneGPRInstruciton, BranchImmediateInstruction> { };
     template<typename Op, typename S>
     struct BranchConditional : public pegtl::seq<Op, Separator, DestinationPredicateRegister, Separator, S> { };
-    DefSymbol(BranchConditionalTrue, bt);
-    DefSymbol(BranchConditionalTrueLink, btl);
-    DefSymbol(BranchConditionalFalse, bf);
-    DefSymbol(BranchConditionalFalseLink, bfl);
+    DefOperationSameTitle(BranchConditionalTrue, bt);
+    DefOperationSameTitle(BranchConditionalTrueLink, btl);
+    DefOperationSameTitle(BranchConditionalFalse, bf);
+    DefOperationSameTitle(BranchConditionalFalseLink, bfl);
     struct OperationBranchConditionalGPR : public pegtl::sor<SymbolBranchConditionalFalseLink, SymbolBranchConditionalTrueLink, SymbolBranchConditionalFalse, SymbolBranchConditionalTrue> { };
     struct BranchConditionalGPRInstruction : public BranchConditional<OperationBranchConditionalGPR, Source0GPR> { };
     DefSymbol(BranchConditionalTrueImmediate, bit);

@@ -96,28 +96,28 @@
           (enum (cast-to byte)
                 (max-size "ArchitectureConstants::MaxOperations")
                 (name JumpOp)
-                (children UnconditionalImmediate
-                          UnconditionalImmediateLink
-                          UnconditionalRegister
-                          UnconditionalRegisterLink
-                          ConditionalTrueImmediate
-                          ConditionalTrueImmediateLink
-                          ConditionalTrueRegister
-                          ConditionalTrueRegisterLink
-                          ConditionalFalseImmediate
-                          ConditionalFalseImmediateLink
-                          ConditionalFalseRegister
-                          ConditionalFalseRegisterLink
-                          IfThenElseNormalPredTrue
-                          IfThenElseNormalPredFalse
-                          IfThenElseLinkPredTrue
-                          IfThenElseLinkPredFalse
-                          UnconditionalJumpLinkRegister
-                          UnconditionalJumpLinkRegisterLink
-                          ConditionalTrueJumpLinkRegister
-                          ConditionalTrueJumpLinkRegisterLink
-                          ConditionalFalseJumpLinkRegister
-                          ConditionalFalseJumpLinkRegisterLink
+                (children BranchUnconditionalImmediate
+                          BranchUnconditionalImmediateLink
+                          BranchUnconditional
+                          BranchUnconditionalLink
+                          BranchConditionalTrueImmediate
+                          BranchConditionalTrueImmediateLink
+                          BranchConditionalTrue
+                          BranchConditionalTrueLink
+                          BranchConditionalFalseImmediate
+                          BranchConditionalFalseImmediateLink
+                          BranchConditionalFalse
+                          BranchConditionalFalseLink
+                          IfThenElseTrue
+                          IfThenElseFalse
+                          IfThenElseTrueLink
+                          IfThenElseFalseLink
+                          BranchUnconditionalLR
+                          BranchUnconditionalLRAndLink
+                          BranchConditionalTrueLR
+                          BranchConditionalTrueLRAndLink
+                          BranchConditionalFalseLR
+                          BranchConditionalFalseLRAndLink
                           ))
           (enum (cast-to byte)
                 (max-size "ArchitectureConstants::MaxOperations")
@@ -142,8 +142,8 @@
                           IOReadWithOffset
                           MoveFromIP
                           MoveToIP
-                          MoveFromLinkRegister
-                          MoveToLinkRegister))
+                          MoveFromLR
+                          MoveToLR))
           (enum (cast-to byte)
                 (max-size "ArchitectureConstants::MaxOperations")
                 (name CompareOp)
