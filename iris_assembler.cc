@@ -66,8 +66,8 @@ namespace iris {
 		void resetCurrentData() noexcept;
 		void setImmediate(word value) noexcept;
 		void setHalfImmediate(byte value) noexcept;
-		void setHiHalfImmediate(word value) noexcept;
-		void setLoHalfImmediate(word value) noexcept;
+		//void setHiHalfImmediate(word value) noexcept;
+		//void setLoHalfImmediate(word value) noexcept;
 		void setGroup(InstructionGroup value) noexcept;
 		template<typename T>
 		void setOperation(T value) noexcept {
@@ -507,12 +507,12 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
 	void AssemblerState::setHalfImmediate(byte value) noexcept {
 		current.source1 = value;
 	}
-	void AssemblerState::setHiHalfImmediate(word value) noexcept {
-		setHalfImmediate(syn::getUpperHalf(value));
-	}
-	void AssemblerState::setLoHalfImmediate(word value) noexcept {
-		setHalfImmediate(syn::getLowerHalf(value));
-	}
+	//void AssemblerState::setHiHalfImmediate(word value) noexcept {
+	//	setHalfImmediate(syn::getUpperHalf(value));
+	//}
+	//void AssemblerState::setLoHalfImmediate(word value) noexcept {
+	//	setHalfImmediate(syn::getLowerHalf(value));
+	//}
 
 
 	void AssemblerState::resetCurrentData() noexcept {
