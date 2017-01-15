@@ -32,7 +32,8 @@ namespace iris {
 		byte source1;
 		bool hasLexeme;
 		std::string currentLexeme;
-		bool getLow, getHigh;
+		bool fullImmediate;
+		//bool getLow, getHigh;
 		void reset() noexcept;
 	};
 	void AssemblerData::reset() noexcept {
@@ -46,8 +47,10 @@ namespace iris {
 		source1 = 0;
 		hasLexeme = false;
 		currentLexeme.clear();
-		getLow = false;
-		getHigh = false;
+		fullImmediate = false;
+		//getLow = false;
+		//getHigh = false;
+		
 	}
 	struct AssemblerState {
 		AssemblerState() : currentDataIndex(0), currentCodeIndex(0), inData(false) { }
@@ -57,7 +60,6 @@ namespace iris {
 		word temporaryWord;
 		byte temporaryByte;
 		AssemblerData current;
-		Core core;
 		std::map<std::string, word> labelMap;
 		std::vector<AssemblerData> finishedData;
 		void resetCurrentData() noexcept;
@@ -191,8 +193,8 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
     DefSymbol(CodeDirective, .code);
     DefSymbol(OrgDirective, .org);
     DefSymbol(DeclareDirective, .declare);
-    DefSymbol(HiDirective, @hi);
-    DefSymbol(LoDirective, @lo);
+    //DefSymbol(HiDirective, @hi);
+    //DefSymbol(LoDirective, @lo);
 #define DefOperation(title, str, type) \
 	DefSymbol(title, str); \
 	DefAction(Symbol ## title ) { \
@@ -236,16 +238,32 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
 				if (!state.current.hasLexeme) {
 					state.current.dataValue = state.temporaryWord;
 				} 
+				state.saveToFinished();
+				state.incrementCurrentAddress();
 			} else {
 				throw syn::Problem("can't use a declare in a non data section!");
 			}
 		}
 	};
     struct Directive : public pegtl::sor<OrgDirective, LabelDirective, CodeDirective, DataDirective, DeclareDirective> { };
-    struct HiDirective : public LexemeOrNumberDirective<SymbolHiDirective> { };
-    struct LoDirective : public LexemeOrNumberDirective<SymbolLoDirective> { };
-    struct Immediate : public pegtl::sor<LexemeOrNumber, HiDirective, LoDirective> { };
-    struct HalfImmediate : public pegtl::sor<Number, HiDirective, LoDirective> { };
+    //struct HiDirective : public LexemeOrNumberDirective<SymbolHiDirective> { };
+    //struct LoDirective : public LexemeOrNumberDirective<SymbolLoDirective> { };
+    struct Immediate : public pegtl::sor<LexemeOrNumber /*, HiDirective, LoDirective*/> { };
+	DefAction(Immediate) {
+		DefApply {
+			state.current.fullImmediate = true;
+			if (!state.current.hasLexeme) {
+				state.setImmediate(state.temporaryWord);
+			} 
+		}
+	};
+    struct HalfImmediate : public pegtl::sor<Number/*, HiDirective, LoDirective*/> { };
+	DefAction(HalfImmediate) {
+		DefApply {
+			state.current.fullImmediate = false;
+			state.setHalfImmediate(state.temporaryWord);
+		}
+	};
 
 	template<typename Operation, typename Operands> 
 	using GenericInstruction = syn::Instruction<Operation, Operands>;
@@ -444,6 +462,7 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
 	DefAction(Instruction) {
 		DefApply {
 			if (state.inCodeSection()) {
+				state.current.instruction = true;
 				state.saveToFinished();
 				state.incrementCurrentAddress();
 			} else {
