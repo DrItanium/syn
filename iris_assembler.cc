@@ -229,6 +229,18 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
     template<typename T>
     struct LexemeOrNumberDirective : public OneArgumentDirective<T, LexemeOrNumber> { };
     struct DeclareDirective : public LexemeOrNumberDirective<SymbolDeclareDirective> { };
+	DefAction(DeclareDirective) {
+		DefApply {
+			if (state.inDataSection()) {
+				state.current.instruction = false;
+				if (!state.current.hasLexeme) {
+					state.current.dataValue = state.temporaryWord;
+				} 
+			} else {
+				throw syn::Problem("can't use a declare in a non data section!");
+			}
+		}
+	};
     struct Directive : public pegtl::sor<OrgDirective, LabelDirective, CodeDirective, DataDirective, DeclareDirective> { };
     struct HiDirective : public LexemeOrNumberDirective<SymbolHiDirective> { };
     struct LoDirective : public LexemeOrNumberDirective<SymbolLoDirective> { };
@@ -431,8 +443,12 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
     struct Instruction : public pegtl::sor<ArithmeticInstruction, MoveInstruction, BranchInstruction, CompareInstruction, PredicateInstruction> { };
 	DefAction(Instruction) {
 		DefApply {
-			state.saveToFinished();
-			state.incrementCurrentAddress();
+			if (state.inCodeSection()) {
+				state.saveToFinished();
+				state.incrementCurrentAddress();
+			} else {
+				throw syn::Problem("Can't construct instructions in the data section");
+			}
 		}
 	};
     struct Statement : public pegtl::sor<Instruction, Directive> { };
@@ -494,7 +510,9 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
 		}
 	}
 	void AssemblerState::saveToFinished() noexcept {
-		finishedData.emplace_back(current);
+		current.address = getCurrentAddress();
+		auto copy = current;
+		finishedData.emplace_back(copy);
 		resetCurrentData();
 	}
 
