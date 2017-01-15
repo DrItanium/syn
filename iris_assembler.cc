@@ -167,21 +167,17 @@ namespace iris {
 		}
 	};
     struct Number : public pegtl::sor<HexadecimalNumber, DecimalNumber, BinaryNumber> { };
-	template<>
-	struct Action<Number> {
-		template<typename Input>
-		static void apply(const Input& in, AssemblerState& state) {
+	DefAction(Number) {
+		DefApply {
 			state.current.hasLexeme = false;
 		}
 	};
     struct Lexeme : public pegtl::identifier { };
-	template<>
-	struct Action<Lexeme> {
-		template<typename Input>
-		static void apply(const Input& in, AssemblerState& state) {
+	DefAction(Lexeme) {
+		DefApply {
 			state.current.hasLexeme = true;
 			state.current.currentLexeme = in.string();
-		};
+		}
 	};
     struct LexemeOrNumber : public pegtl::sor<Lexeme, Number> { };
 #define DefSymbol(title, str) \
@@ -204,35 +200,15 @@ namespace iris {
 
 
     struct CodeDirective : public ZeroArgumentDirective<SymbolCodeDirective> { };
-	template<>
-	struct Action<CodeDirective> {
-		template<typename Input>
-		static void apply(const Input& in, AssemblerState & state) {
-			state.nowInCodeSection();
-		}
-	};
+	DefAction(CodeDirective) { DefApply { state.nowInCodeSection(); } };
     struct DataDirective : public ZeroArgumentDirective<SymbolDataDirective> { };
+	DefAction(DataDirective) { DefApply { state.nowInDataSection(); } };
 
-	template<>
-	struct Action<DataDirective> {
-		template<typename Input>
-		static void apply(const Input& in, AssemblerState & state) {
-			state.nowInDataSection();
-		}
-	};
 
-    struct OrgDirective : public OneArgumentDirective<SymbolOrgDirective, Number> {
-    };
-	template<>
-	struct Action<OrgDirective> {
-		template<typename I>
-		static void apply(const I& in, AssemblerState& state) {
-			//state.setCurrentAddress
-			state.setCurrentAddress(state.current.dataValue);
-		}
-	};
-    struct LabelDirective : public OneArgumentDirective<SymbolLabelDirective, Lexeme> {
-    };
+    struct OrgDirective : public OneArgumentDirective<SymbolOrgDirective, Number> { };
+	DefAction(OrgDirective) { DefApply { state.setCurrentAddress(state.temporaryWord); } };
+
+    struct LabelDirective : public OneArgumentDirective<SymbolLabelDirective, Lexeme> { };
 	template<>
 	struct Action<LabelDirective> {
 		template<typename I>
@@ -244,15 +220,10 @@ namespace iris {
 
     template<typename T>
     struct LexemeOrNumberDirective : public OneArgumentDirective<T, LexemeOrNumber> { };
-    struct DeclareDirective : public LexemeOrNumberDirective<SymbolDeclareDirective> {
-    };
-    struct Directive : public pegtl::sor<OrgDirective, LabelDirective, CodeDirective, DataDirective, DeclareDirective> {
-
-    };
-    struct HiDirective : public LexemeOrNumberDirective<SymbolHiDirective> {
-    };
-    struct LoDirective : public LexemeOrNumberDirective<SymbolLoDirective> {
-    };
+    struct DeclareDirective : public LexemeOrNumberDirective<SymbolDeclareDirective> { };
+    struct Directive : public pegtl::sor<OrgDirective, LabelDirective, CodeDirective, DataDirective, DeclareDirective> { };
+    struct HiDirective : public LexemeOrNumberDirective<SymbolHiDirective> { };
+    struct LoDirective : public LexemeOrNumberDirective<SymbolLoDirective> { };
     struct Immediate : public pegtl::sor<LexemeOrNumber, HiDirective, LoDirective> { };
     struct HalfImmediate : public pegtl::sor<Number, HiDirective, LoDirective> { };
     DefSymbol(Add, add);
