@@ -652,7 +652,7 @@ destination_register: REGISTER { cisc0::op.arg0 = $1; };
 source_register: REGISTER { cisc0::op.arg1 = $1; };
 %%
 namespace cisc0 {
-	void assemble(FILE* input, std::ostream* output) {
+	void assemble(const std::string& ifile, FILE* input, std::ostream* output) {
       initialize(output, input);
       do {
          yyparse();

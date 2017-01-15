@@ -16,6 +16,7 @@ int main(int argc, char* argv[]) {
 	FILE* input = nullptr;
 	std::string line("v.obj");
 	std::string target;
+	std::string inputFile("stdin");
 
 	std::ostream* output = nullptr;
 	auto closeOutput = false,
@@ -61,6 +62,7 @@ int main(int argc, char* argv[]) {
 				} else if (tline.size() >= 1) {
 					if ((input = fopen(tline.c_str(), "r")) != NULL) {
 						closeInput = true;
+						inputFile = tline;
 					} else {
 						std::cerr << "Couldn't open " << tline << " for reading!" << std::endl;
 						exit(1);
@@ -86,7 +88,7 @@ int main(int argc, char* argv[]) {
 	}
 	if(output && input) {
 		try {
-			syn::assemblerRegistry.assemble(target, input, output);
+			syn::assemblerRegistry.assemble(target, inputFile, input, output);
 			if (closeOutput) {
 				static_cast<std::ofstream*>(output)->close();
 				delete output;

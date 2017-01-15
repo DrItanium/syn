@@ -296,7 +296,7 @@ namespace cisc0 {
 #undef EnumEntry
 	};
 	Core* newCore() noexcept;
-	void assemble(FILE* input, std::ostream* output);
+	void assemble(const std::string& iName, FILE* input, std::ostream* output);
 } // end namespace cisc0
 
 #endif // end _TARGET_CISC0_IRIS_H

@@ -12,6 +12,7 @@
 #include <pegtl/file_parser.hh>
 #include <pegtl/contrib/raw_string.hh>
 #include <pegtl/contrib/abnf.hh>
+#include <pegtl/parse.hh>
 #include <vector>
 
 namespace iris {
@@ -538,18 +539,10 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
 		finishedData.emplace_back(copy);
 		resetCurrentData();
 	}
-
-}
-
-int main(int argc, char** argv) {
-    pegtl::analyze<iris::Main>();
-	iris::AssemblerState state;
-    for(int i = 1; i < argc; ++i) {
-		pegtl::file_parser(argv[i]).parse<iris::Main, iris::Action>(state);
-    }
+	void resolveLabels(AssemblerState& state, std::ostream* output) {
 	// now that we have instructions, we need to print them out as hex values
 	for (auto & value : state.finishedData) {
-		std::cout << std::hex << value.address << " ";
+		*output << std::hex << value.address << " ";
 		if (value.instruction) {
 			iris::raw_instruction tmp = 0;
 			tmp = iris::encodeGroup(tmp, value.group);
@@ -569,11 +562,17 @@ int main(int argc, char** argv) {
 			}
 			tmp = iris::encodeSource0(tmp, value.source0);
 			tmp = iris::encodeSource1(tmp, value.source1);
-			std::cout << "code " << std::hex << tmp << std::endl;
+			*output << "code " << std::hex << tmp << std::endl;
 		} else {
-			std::cout << "data " << std::hex << value.dataValue << std::endl;
+			*output << "data " << std::hex << value.dataValue << std::endl;
 		}
 	}
-	
-    return 0;
+	}
+
+	void assemble(const std::string& iName, FILE* input, std::ostream* output) {
+		iris::AssemblerState state;
+    	pegtl::analyze<iris::Main>();
+		pegtl::parse_cstream<iris::Main, iris::Action>(input, iName.c_str(), 2048, state);
+		resolveLabels(state, output);
+	}
 }

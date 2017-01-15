@@ -6,10 +6,10 @@
 #include <map>
 
 namespace syn {
-	void AssemblerRegistrar::assemble(const std::string& name, FILE* input, std::ostream* output) {
+	void AssemblerRegistrar::assemble(const std::string& name, const std::string& inputFilePath, FILE* input, std::ostream* output) {
 		auto loc = assemblers.find(name);
 		if (loc != assemblers.end()) {
-			loc->second(input, output);
+			loc->second(inputFilePath, input, output);
 		} else {
 			std::stringstream stream;
 			stream << "Tried to assemble code for non-existent core: " << name << "!!!";
