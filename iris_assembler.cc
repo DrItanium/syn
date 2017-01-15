@@ -123,29 +123,46 @@ namespace iris {
     struct TwoGPR : public pegtl::seq<DestinationGPR, Separator, Source0GPR> { };
     struct ThreeGPR : public pegtl::seq<DestinationGPR, Separator, SourceRegisters> { };
     struct DestinationPredicateRegister : public pegtl::seq<PredicateRegister> { };
+	DefAction(DestinationPredicateRegister) {
+		DefApply {
+			state.current.destination = iris::encodeLower4Bits(state.current.destination, state.temporaryByte);
+		}
+	};
     struct DestinationPredicateInverseRegister : public pegtl::seq<PredicateRegister> { };
+	DefAction(DestinationPredicateInverseRegister) {
+		DefApply {
+			state.current.destination = iris::encodeUpper4Bits(state.current.destination, state.temporaryByte);
+		}
+	};
     struct DestinationPredicate : public pegtl::seq<DestinationPredicateRegister, Separator, DestinationPredicateInverseRegister> { };
     struct Source0Predicate : public pegtl::seq<PredicateRegister> { };
+	DefAction(Source0Predicate) {
+		DefApply {
+			state.current.source0 = iris::encodeLower4Bits(state.current.source0, state.temporaryByte);
+		}
+	};
     struct Source1Predicate : public pegtl::seq<PredicateRegister> { };
+	DefAction(Source1Predicate) {
+		DefApply {
+			state.current.source0 = iris::encodeUpper4Bits(state.current.source0, state.temporaryByte);
+		}
+	};
 
     struct HexadecimalNumber : public pegtl::if_must<pegtl::istring< '0', 'x'>, pegtl::plus<pegtl::xdigit>> { };
 	DefAction(HexadecimalNumber) {
 		DefApply {
-			std::cout << "HexNumber" << std::endl;
-			state.temporaryWord = syn::getHexImmediate<word>(in.string().c_str(), reportError);
+			state.temporaryWord = syn::getHexImmediate<word>(in.string(), reportError);
 		}
 	};
     struct BinaryNumber : public pegtl::if_must<pegtl::istring<  '0', 'b' >, pegtl::plus<pegtl::abnf::BIT>> { };
 	DefAction(BinaryNumber) {
 		DefApply {
-			std::cout << "BinaryNumber" << std::endl;
-			state.temporaryWord = syn::getBinaryImmediate<word>(in.string().c_str(), reportError);
+			state.temporaryWord = syn::getBinaryImmediate<word>(in.string(), reportError);
 		}
 	};
     struct DecimalNumber : public pegtl::plus<pegtl::digit> { };
 	DefAction(DecimalNumber) {
 		DefApply {
-			std::cout << "DecimalNumber" << std::endl;
 			state.temporaryWord = syn::getDecimalImmediate<word>(in.string().c_str(), reportError);
 		}
 	};
