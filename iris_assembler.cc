@@ -15,6 +15,7 @@
 #include <vector>
 
 namespace iris {
+    template<typename Rule > struct Action : public pegtl::nothing<Rule> { };
 	void reportError(const std::string& msg) {
 		throw syn::Problem(msg);
 	}
@@ -79,82 +80,84 @@ namespace iris {
 		void incrementCurrentAddress() noexcept;
 		void saveToFinished() noexcept;
 	};
-    template<typename Rule > struct Action : public pegtl::nothing<Rule> { };
 #define DefAction(rule) template<> struct Action < rule > 
 #define DefApply template<typename Input> static void apply(const Input& in, AssemblerState& state) 
-    struct Comment : public pegtl::until<pegtl::eolf> { };
-    struct SingleLineComment : public pegtl::disable<pegtl::one<';'>, Comment> { };
-	struct Separator : public pegtl::plus<pegtl::ascii::space> { };
-	template<char prefix>
-	struct GenericRegister : public pegtl::if_must<pegtl::one<prefix>, pegtl::plus<pegtl::digit>> { };
-    struct GeneralPurposeRegister : public GenericRegister<'r'> { };
+	using Separator = syn::AsmSeparator;
+	using SingleLineComment = syn::SingleLineComment<';'>;
+	struct GeneralPurposeRegister : public syn::GenericRegister<'r'> { };
+	struct PredicateRegister : public syn::GenericRegister<'p'> { };
 	DefAction(GeneralPurposeRegister) {
 		DefApply {
 			state.temporaryByte = syn::getRegister<word, ArchitectureConstants::RegisterCount>(in.string(), reportError);
 		}
 	};
-    struct PredicateRegister : public GenericRegister<'p'> { };
 	DefAction(PredicateRegister) {
 		DefApply {
 			state.temporaryByte = syn::getRegister<word, ArchitectureConstants::ConditionRegisterCount>(in.string(), reportError);
 		}
 	};
-
-    struct DestinationGPR : public pegtl::seq<GeneralPurposeRegister> { };
+	using IndirectGPR = syn::Indirection<GeneralPurposeRegister>;
+#define DefIndirectGPR(title) \
+	struct title : public IndirectGPR { }
+	DefIndirectGPR(DestinationGPR);
 	DefAction(DestinationGPR) {
 		DefApply {
 			state.current.destination = state.temporaryByte;
 		}
 	};
-    struct Source0GPR : public pegtl::seq<GeneralPurposeRegister> { };
+	DefIndirectGPR(Source0GPR);
 	DefAction(Source0GPR) {
 		DefApply {
 			state.current.source0 = state.temporaryByte;
 		}
 	};
-    struct Source1GPR : public pegtl::seq<GeneralPurposeRegister> { };
+    struct Source1GPR : public IndirectGPR { };
 	DefAction(Source1GPR) {
 		DefApply {
 			state.current.source1 = state.temporaryByte;
 		}
 	};
-    struct SourceRegisters : public pegtl::seq<Source0GPR, Separator, Source1GPR> { };
-    struct OneGPR : public pegtl::seq<DestinationGPR> { };
-    struct TwoGPR : public pegtl::seq<DestinationGPR, Separator, Source0GPR> { };
-    struct ThreeGPR : public pegtl::seq<DestinationGPR, Separator, SourceRegisters> { };
-    struct DestinationPredicateRegister : public pegtl::seq<PredicateRegister> { };
+#undef DefIndirectGPR
+	using SourceRegisters = syn::SourceRegisters<Source0GPR, Source1GPR>;
+	struct OneGPR : public syn::OneRegister<DestinationGPR> { };
+    struct TwoGPR : public syn::TwoRegister<DestinationGPR, Source0GPR> { };
+	struct ThreeGPR : public syn::TwoRegister<DestinationGPR, SourceRegisters> { };
+using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
+    struct DestinationPredicateRegister : public IndirectPredicateRegister { };
 	DefAction(DestinationPredicateRegister) {
 		DefApply {
 			state.current.destination = iris::encodeLower4Bits(state.current.destination, state.temporaryByte);
 		}
 	};
-    struct DestinationPredicateInverseRegister : public pegtl::seq<PredicateRegister> { };
+    struct DestinationPredicateInverseRegister : public IndirectPredicateRegister { };
 	DefAction(DestinationPredicateInverseRegister) {
 		DefApply {
 			state.current.destination = iris::encodeUpper4Bits(state.current.destination, state.temporaryByte);
 		}
 	};
-    struct DestinationPredicate : public pegtl::seq<DestinationPredicateRegister, Separator, DestinationPredicateInverseRegister> { };
-    struct Source0Predicate : public pegtl::seq<PredicateRegister> { };
+	struct DestinationPredicates : public syn::TwoRegister<DestinationPredicateRegister, DestinationPredicateInverseRegister> { };
+	struct Source0Predicate : public IndirectPredicateRegister { };
 	DefAction(Source0Predicate) {
 		DefApply {
 			state.current.source0 = iris::encodeLower4Bits(state.current.source0, state.temporaryByte);
 		}
 	};
-    struct Source1Predicate : public pegtl::seq<PredicateRegister> { };
+	struct Source1Predicate : public IndirectPredicateRegister { };
 	DefAction(Source1Predicate) {
 		DefApply {
 			state.current.source0 = iris::encodeUpper4Bits(state.current.source0, state.temporaryByte);
 		}
 	};
 
-    struct HexadecimalNumber : public pegtl::if_must<pegtl::istring< '0', 'x'>, pegtl::plus<pegtl::xdigit>> { };
+	template<char delim, typename T>
+	using Numeral = syn::GenericNumeral<delim, T>;
+    struct HexadecimalNumber : public Numeral<'x', pegtl::xdigit> { };
 	DefAction(HexadecimalNumber) {
 		DefApply {
 			state.temporaryWord = syn::getHexImmediate<word>(in.string(), reportError);
 		}
 	};
-    struct BinaryNumber : public pegtl::if_must<pegtl::istring<  '0', 'b' >, pegtl::plus<pegtl::abnf::BIT>> { };
+    struct BinaryNumber : public Numeral<'b', pegtl::abnf::BIT> { };
 	DefAction(BinaryNumber) {
 		DefApply {
 			state.temporaryWord = syn::getBinaryImmediate<word>(in.string(), reportError);
@@ -172,14 +175,14 @@ namespace iris {
 			state.current.hasLexeme = false;
 		}
 	};
-    struct Lexeme : public pegtl::identifier { };
+	using Lexeme = syn::Lexeme;
 	DefAction(Lexeme) {
 		DefApply {
 			state.current.hasLexeme = true;
 			state.current.currentLexeme = in.string();
 		}
 	};
-    struct LexemeOrNumber : public pegtl::sor<Lexeme, Number> { };
+	struct LexemeOrNumber : public syn::LexemeOr<Number> { };
 #define DefSymbol(title, str) \
     struct Symbol ## title : public pegtl_string_t( #str ) { }
     // directives
@@ -194,8 +197,8 @@ namespace iris {
     template<typename T>
     struct ZeroArgumentDirective : public pegtl::seq<T> { };
 
-    template<typename T, typename F>
-    struct OneArgumentDirective : public pegtl::seq<T, Separator, F> { };
+	template<typename T, typename F>
+	using OneArgumentDirective = syn::TwoPartComponent<T, F, Separator>;
 
 
 
@@ -209,10 +212,8 @@ namespace iris {
 	DefAction(OrgDirective) { DefApply { state.setCurrentAddress(state.temporaryWord); } };
 
     struct LabelDirective : public OneArgumentDirective<SymbolLabelDirective, Lexeme> { };
-	template<>
-	struct Action<LabelDirective> {
-		template<typename I>
-		static void apply(const I& in, AssemblerState& state) {
+	DefAction(LabelDirective) {
+		DefApply {
 			state.registerLabel(state.current.currentLexeme);
 			state.resetCurrentData();
 		}
@@ -359,8 +360,8 @@ namespace iris {
     DefSymbol(GeImmediate, gei);
     struct CompareRegisterOperation : public pegtl::sor< SymbolEq, SymbolNeq, SymbolLt, SymbolGt, SymbolLe, SymbolGe> { };
     struct CompareImmediateOperation : public pegtl::sor<SymbolEqImmediate, SymbolNeqImmediate, SymbolLtImmediate, SymbolGtImmediate, SymbolLeImmediate, SymbolGeImmediate> { };
-    struct CompareRegisterInstruction : public pegtl::seq<CompareRegisterOperation, Separator, DestinationPredicate, Separator, SourceRegisters> { };
-    struct CompareImmediateInstruction : public pegtl::seq<CompareImmediateOperation, Separator, DestinationPredicate, Separator, Source0GPR, Separator, HalfImmediate> { };
+    struct CompareRegisterInstruction : public pegtl::seq<CompareRegisterOperation, Separator, DestinationPredicates, Separator, SourceRegisters> { };
+    struct CompareImmediateInstruction : public pegtl::seq<CompareImmediateOperation, Separator, DestinationPredicates, Separator, Source0GPR, Separator, HalfImmediate> { };
     struct CompareInstruction : public pegtl::sor<CompareRegisterInstruction, CompareImmediateInstruction> { };
 
     // conditional register actions
@@ -379,9 +380,9 @@ namespace iris {
     struct OperationPredicateOneGPR : public pegtl::sor<SymbolSaveCRs, SymbolRestoreCRs> { };
     struct OperationPredicateFourArgs : public pegtl::sor<SymbolCRXor, SymbolCRAnd, SymbolCROr, SymbolCRNand, SymbolCRNor> { };
     struct PredicateInstructionOneGPR : public pegtl::seq<OperationPredicateOneGPR, DestinationGPR> { };
-    struct PredicateInstructionTwoArgs : public pegtl::seq<OperationPredicateTwoArgs, DestinationPredicate> { };
-    struct PredicateInstructionThreeArgs : public pegtl::seq<OperationPredicateThreeArgs, DestinationPredicate, Source0Predicate> { };
-    struct PredicateInstructionFourArgs : public pegtl::seq<OperationPredicateFourArgs, DestinationPredicate, Source0Predicate, Source1Predicate> { };
+    struct PredicateInstructionTwoArgs : public pegtl::seq<OperationPredicateTwoArgs, DestinationPredicates> { };
+    struct PredicateInstructionThreeArgs : public pegtl::seq<OperationPredicateThreeArgs, DestinationPredicates, Source0Predicate> { };
+    struct PredicateInstructionFourArgs : public pegtl::seq<OperationPredicateFourArgs, DestinationPredicates, Source0Predicate, Source1Predicate> { };
     struct PredicateInstruction : public pegtl::sor<PredicateInstructionTwoArgs, PredicateInstructionThreeArgs, PredicateInstructionFourArgs> { };
 
 
@@ -395,7 +396,6 @@ namespace iris {
 	struct Action<Instruction> {
 		template<typename I>
 		static void apply(const I& in, AssemblerState& state) {
-			std::cout << "Instruction fired!" << std::endl;
 			state.saveToFinished();
 			state.incrementCurrentAddress();
 		}
