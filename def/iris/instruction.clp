@@ -50,6 +50,16 @@
                  (mask 0x00F00000)
                  (shift 20)
                  (output-type byte))
+          (field (name PredicateResultByte)
+                 (mask 0x0F)
+                 (shift 0)
+                 (input-type byte)
+                 (output-type byte))
+          (field (name PredicateInverseResultByte)
+                 (mask 0xF0)
+                 (shift 4)
+                 (input-type byte)
+                 (output-type byte))
           (enum (name InstructionGroup)
                 (children Arithmetic
                           Move

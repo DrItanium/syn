@@ -1,26 +1,64 @@
 // iris_assembler rewritten to use pegtl
+#include <sstream>
+#include <typeinfo>
 #include <iostream>
+#include <map>
 #include "syn_base.h"
+#include "syn_asm_base.h"
+#include "Problem.h"
 #include "iris.h"
 #include <pegtl.hh>
 #include <pegtl/analyze.hh>
 #include <pegtl/file_parser.hh>
 #include <pegtl/contrib/raw_string.hh>
 #include <pegtl/contrib/abnf.hh>
+#include <vector>
 
 namespace iris {
-	struct AssemblerState {
-		AssemblerState() : currentDataIndex(0), currentCodeIndex(0), inData(false), currentDataValue(0), group(static_cast<InstructionGroup>(0)), operation(0), destination(0), source0(0), source1(0)  { }
-		word currentDataIndex;
-		word currentCodeIndex;
-		bool inData;
-		word currentDataValue;
-		InstructionGroup group;
+	void reportError(const std::string& msg) {
+		throw syn::Problem(msg);
+	}
+	struct AssemblerData {
+		AssemblerData() : instruction(false), address(0) { }
+		bool instruction;
+		word address;
+		word dataValue;
+
+		byte group;
 		byte operation;
 		byte destination;
 		byte source0;
 		byte source1;
+		bool hasLexeme;
+		std::string currentLexeme;
+		bool getLow, getHigh;
+		void reset() noexcept;
+	};
+	void AssemblerData::reset() noexcept {
+		instruction = false;
+		address = 0;
+		dataValue = 0;
+		group = 0;
+		operation = 0;
+		destination = 0;
+		source0 = 0;
+		source1 = 0;
+		hasLexeme = false;
+		currentLexeme.clear();
+		getLow = false;
+		getHigh = false;
+	}
+	struct AssemblerState {
+		AssemblerState() : currentDataIndex(0), currentCodeIndex(0), inData(false) { }
+		word currentDataIndex;
+		word currentCodeIndex;
+		bool inData;
+		word temporaryWord;
+		byte temporaryByte;
+		AssemblerData current;
 		Core core;
+		std::map<std::string, word> labelMap;
+		std::vector<AssemblerData> finishedData;
 		void resetCurrentData() noexcept;
 		void setImmediate(word value) noexcept;
 		void setHalfImmediate(byte value) noexcept;
@@ -29,23 +67,57 @@ namespace iris {
 		void setGroup(InstructionGroup value) noexcept;
 		template<typename T>
 		void setOperation(T value) noexcept {
-			operation = static_cast<byte>(value);
+			current.operation = static_cast<byte>(value);
 		}
 		bool inCodeSection() const noexcept;
 		bool inDataSection() const noexcept;
 		void nowInCodeSection() noexcept;
 		void nowInDataSection() noexcept;
 		void setCurrentAddress(word value) noexcept;
+		void registerLabel(const std::string& label) noexcept;
+		word getCurrentAddress() noexcept;
+		void incrementCurrentAddress() noexcept;
+		void saveToFinished() noexcept;
 	};
     template<typename Rule > struct Action : public pegtl::nothing<Rule> { };
+#define DefAction(rule) template<> struct Action < rule > 
+#define DefApply template<typename Input> static void apply(const Input& in, AssemblerState& state) 
     struct Comment : public pegtl::until<pegtl::eolf> { };
     struct SingleLineComment : public pegtl::disable<pegtl::one<';'>, Comment> { };
 	struct Separator : public pegtl::plus<pegtl::ascii::space> { };
-    struct GeneralPurposeRegister : public pegtl::if_must<pegtl::one<'r'>, pegtl::plus<pegtl::digit>> { };
-    struct PredicateRegister : public pegtl::if_must<pegtl::one<'p'>, pegtl::plus<pegtl::digit>> { };
+	template<char prefix>
+	struct GenericRegister : public pegtl::if_must<pegtl::one<prefix>, pegtl::plus<pegtl::digit>> { };
+    struct GeneralPurposeRegister : public GenericRegister<'r'> { };
+	DefAction(GeneralPurposeRegister) {
+		DefApply {
+			state.temporaryByte = syn::getRegister<word, ArchitectureConstants::RegisterCount>(in.string(), reportError);
+		}
+	};
+    struct PredicateRegister : public GenericRegister<'p'> { };
+	DefAction(PredicateRegister) {
+		DefApply {
+			state.temporaryByte = syn::getRegister<word, ArchitectureConstants::ConditionRegisterCount>(in.string(), reportError);
+		}
+	};
+
     struct DestinationGPR : public pegtl::seq<GeneralPurposeRegister> { };
+	DefAction(DestinationGPR) {
+		DefApply {
+			state.current.destination = state.temporaryByte;
+		}
+	};
     struct Source0GPR : public pegtl::seq<GeneralPurposeRegister> { };
+	DefAction(Source0GPR) {
+		DefApply {
+			state.current.source0 = state.temporaryByte;
+		}
+	};
     struct Source1GPR : public pegtl::seq<GeneralPurposeRegister> { };
+	DefAction(Source1GPR) {
+		DefApply {
+			state.current.source1 = state.temporaryByte;
+		}
+	};
     struct SourceRegisters : public pegtl::seq<Source0GPR, Separator, Source1GPR> { };
     struct OneGPR : public pegtl::seq<DestinationGPR> { };
     struct TwoGPR : public pegtl::seq<DestinationGPR, Separator, Source0GPR> { };
@@ -57,10 +129,43 @@ namespace iris {
     struct Source1Predicate : public pegtl::seq<PredicateRegister> { };
 
     struct HexadecimalNumber : public pegtl::if_must<pegtl::istring< '0', 'x'>, pegtl::plus<pegtl::xdigit>> { };
+	DefAction(HexadecimalNumber) {
+		DefApply {
+			std::cout << "HexNumber" << std::endl;
+			state.temporaryWord = syn::getHexImmediate<word>(in.string().c_str(), reportError);
+		}
+	};
     struct BinaryNumber : public pegtl::if_must<pegtl::istring<  '0', 'b' >, pegtl::plus<pegtl::abnf::BIT>> { };
+	DefAction(BinaryNumber) {
+		DefApply {
+			std::cout << "BinaryNumber" << std::endl;
+			state.temporaryWord = syn::getBinaryImmediate<word>(in.string().c_str(), reportError);
+		}
+	};
     struct DecimalNumber : public pegtl::plus<pegtl::digit> { };
+	DefAction(DecimalNumber) {
+		DefApply {
+			std::cout << "DecimalNumber" << std::endl;
+			state.temporaryWord = syn::getDecimalImmediate<word>(in.string().c_str(), reportError);
+		}
+	};
     struct Number : public pegtl::sor<HexadecimalNumber, DecimalNumber, BinaryNumber> { };
+	template<>
+	struct Action<Number> {
+		template<typename Input>
+		static void apply(const Input& in, AssemblerState& state) {
+			state.current.hasLexeme = false;
+		}
+	};
     struct Lexeme : public pegtl::identifier { };
+	template<>
+	struct Action<Lexeme> {
+		template<typename Input>
+		static void apply(const Input& in, AssemblerState& state) {
+			state.current.hasLexeme = true;
+			state.current.currentLexeme = in.string();
+		};
+	};
     struct LexemeOrNumber : public pegtl::sor<Lexeme, Number> { };
 #define DefSymbol(title, str) \
     struct Symbol ## title : public pegtl_string_t( #str ) { }
@@ -86,7 +191,6 @@ namespace iris {
 	struct Action<CodeDirective> {
 		template<typename Input>
 		static void apply(const Input& in, AssemblerState & state) {
-			std::cout << "now in a code section!" << std::endl;
 			state.nowInCodeSection();
 		}
 	};
@@ -96,7 +200,6 @@ namespace iris {
 	struct Action<DataDirective> {
 		template<typename Input>
 		static void apply(const Input& in, AssemblerState & state) {
-			std::cout << "now in a data section!" << std::endl;
 			state.nowInDataSection();
 		}
 	};
@@ -108,11 +211,19 @@ namespace iris {
 		template<typename I>
 		static void apply(const I& in, AssemblerState& state) {
 			//state.setCurrentAddress
-			std::cout << "org directive!" << std::endl;
+			state.setCurrentAddress(state.current.dataValue);
 		}
 	};
     struct LabelDirective : public OneArgumentDirective<SymbolLabelDirective, Lexeme> {
     };
+	template<>
+	struct Action<LabelDirective> {
+		template<typename I>
+		static void apply(const I& in, AssemblerState& state) {
+			state.registerLabel(state.current.currentLexeme);
+			state.resetCurrentData();
+		}
+	};
 
     template<typename T>
     struct LexemeOrNumberDirective : public OneArgumentDirective<T, LexemeOrNumber> { };
@@ -292,17 +403,20 @@ namespace iris {
 
 #undef DefSymbol
     struct Instruction : public pegtl::sor<ArithmeticInstruction, MoveInstruction, BranchInstruction, CompareInstruction, PredicateInstruction> { };
-    struct Statement : public pegtl::sor<Instruction, Directive> {
-    };
-
-   //template< typename E >
-   //struct statement_list : pegtl::seq< seps, pegtl::until< pegtl::sor< E, pegtl::if_must< key_return, statement_return, E > >, statement, seps > > {};
+	template<>
+	struct Action<Instruction> {
+		template<typename I>
+		static void apply(const I& in, AssemblerState& state) {
+			std::cout << "Instruction fired!" << std::endl;
+			state.saveToFinished();
+			state.incrementCurrentAddress();
+		}
+	};
+    struct Statement : public pegtl::sor<Instruction, Directive> { };
 
 	struct Anything : public pegtl::sor<Separator, SingleLineComment,Statement> { };
 
 	struct Main : public pegtl::until<pegtl::eof, pegtl::must<Anything>> { };
-
-    //struct Main : public pegtl::must<pegtl::seq<Separators, pegtl::until<pegtl::eof, Statement, Separators>>> { };
 
 	void AssemblerState::setCurrentAddress(word value) noexcept {
 		if (inData) {
@@ -324,14 +438,14 @@ namespace iris {
 		return inData;
 	}
 	void AssemblerState::setImmediate(word value) noexcept {
-		source0 = syn::getLowerHalf<word>(value);
-		source1 = syn::getUpperHalf<word>(value);
+		current.source0 = syn::getLowerHalf<word>(value);
+		current.source1 = syn::getUpperHalf<word>(value);
 	}
-	void AssemblerState::setGroup(InstructionGroup  value) noexcept {
-		group = value;
+	void AssemblerState::setGroup(InstructionGroup value) noexcept {
+		current.group = static_cast<byte>(value);
 	}
 	void AssemblerState::setHalfImmediate(byte value) noexcept {
-		source1 = value;
+		current.source1 = value;
 	}
 	void AssemblerState::setHiHalfImmediate(word value) noexcept {
 		setHalfImmediate(syn::getUpperHalf(value));
@@ -342,15 +456,25 @@ namespace iris {
 
 
 	void AssemblerState::resetCurrentData() noexcept {
+		current.reset();
+	}
+
+	void AssemblerState::registerLabel(const std::string& value) noexcept {
+		labelMap.emplace(value, getCurrentAddress());
+	}
+	word AssemblerState::getCurrentAddress() noexcept {
+		return inData ? currentDataIndex : currentCodeIndex;
+	}
+	void AssemblerState::incrementCurrentAddress() noexcept {
 		if (inData) {
-			currentDataValue = 0;
+			++currentDataIndex;
 		} else {
-			group = static_cast<InstructionGroup>(0);
-			operation = 0;
-			destination = 0;
-			source0 = 0;
-			source1 = 0;
+			++currentCodeIndex;
 		}
+	}
+	void AssemblerState::saveToFinished() noexcept {
+		finishedData.emplace_back(current);
+		resetCurrentData();
 	}
 
 }
@@ -361,5 +485,6 @@ int main(int argc, char** argv) {
     for(int i = 1; i < argc; ++i) {
 		pegtl::file_parser(argv[i]).parse<iris::Main, iris::Action>(state);
     }
+	
     return 0;
 }

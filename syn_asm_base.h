@@ -7,6 +7,10 @@
 #include <bitset>
 namespace syn { 
 	using ErrorReportingFunction = std::function<void(const std::string&)>;
+    template<typename T, T count>
+    T getRegister(const std::string& text, ErrorReportingFunction onError) noexcept {
+        return getRegister<T,count>(text.c_str(), onError);
+    }
 	template<typename T, T count> 
 	T getRegister(const char* text, ErrorReportingFunction onError) noexcept {
         static_assert(count > 0, "Can't have zero registers!");
@@ -35,6 +39,10 @@ namespace syn {
 		std::bitset<width> bits(temp);
 		return static_cast<T>(bits.to_ullong());
 	}
+    template<typename T>
+    T getBinaryImmediate(const std::string& text, ErrorReportingFunction onError) noexcept {
+        return getBinaryImmediate<T>(text.c_str(), onError);
+    }
 
 	template<typename T>
 	T getHexImmediate(const char* text, ErrorReportingFunction onError) noexcept {
@@ -45,6 +53,10 @@ namespace syn {
 		ss >> std::hex >> value;
 		return static_cast<T>(value);
 	}
+    template<typename T>
+    T getHexImmediate(const std::string& text, ErrorReportingFunction onError) noexcept {
+        return getHexImmediate<T>(text.c_str(), onError);
+    }
 
 	template<typename T>
 	T getOctalImmediate(const char* text, ErrorReportingFunction onError) noexcept {
@@ -55,6 +67,10 @@ namespace syn {
 		ss >> std::oct >> value;
 		return static_cast<T>(value);
 	}
+    template<typename T>
+    T getOctalImmediate(const std::string& text, ErrorReportingFunction onError) noexcept {
+        return getOctalImmediate<T>(text.c_str(), onError);
+    }
 
 	template<typename T>
 	T getDecimalImmediate(const char* text, ErrorReportingFunction onError) noexcept {
@@ -64,6 +80,10 @@ namespace syn {
 		ss >> std::dec >> value;
 		return static_cast<T>(value);
 	}
+    template<typename T>
+    T getDecimalImmediate(const std::string& text, ErrorReportingFunction onError) noexcept {
+        return getDecimalImmediate<T>(text.c_str(), onError);
+    }
 } // end namespace syn
 
 
