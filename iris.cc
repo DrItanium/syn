@@ -94,17 +94,17 @@ namespace iris {
 		} else if (group == InstructionGroup::Compare) {
 			static std::map<CompareOp, UnitDescription<CompareUnit>> translationTable = {
 				{ CompareOp::LessThan, makeDesc<CompareUnit>(CompareUnit::Operation::LessThan, false) },
-				{ CompareOp::LessThanImm, makeDesc<CompareUnit>(CompareUnit::Operation::LessThan, true) },
+				{ CompareOp::LessThanImmediate, makeDesc<CompareUnit>(CompareUnit::Operation::LessThan, true) },
 				{ CompareOp::LessThanOrEqualTo, makeDesc<CompareUnit>(CompareUnit::Operation::LessThanOrEqualTo, false) },
-				{ CompareOp::LessThanOrEqualToImm, makeDesc<CompareUnit>(CompareUnit::Operation::LessThanOrEqualTo, true) },
+				{ CompareOp::LessThanOrEqualToImmediate, makeDesc<CompareUnit>(CompareUnit::Operation::LessThanOrEqualTo, true) },
 				{ CompareOp::GreaterThan, makeDesc<CompareUnit>(CompareUnit::Operation::GreaterThan, false) },
-				{ CompareOp::GreaterThanImm, makeDesc<CompareUnit>(CompareUnit::Operation::GreaterThan, true) },
+				{ CompareOp::GreaterThanImmediate, makeDesc<CompareUnit>(CompareUnit::Operation::GreaterThan, true) },
 				{ CompareOp::GreaterThanOrEqualTo, makeDesc<CompareUnit>(CompareUnit::Operation::GreaterThanOrEqualTo, false) },
-				{ CompareOp::GreaterThanOrEqualToImm, makeDesc<CompareUnit>(CompareUnit::Operation::GreaterThanOrEqualTo, true) },
+				{ CompareOp::GreaterThanOrEqualToImmediate, makeDesc<CompareUnit>(CompareUnit::Operation::GreaterThanOrEqualTo, true) },
 				{ CompareOp::Eq, makeDesc<CompareUnit>(CompareUnit::Operation::Eq, false) },
-				{ CompareOp::EqImm, makeDesc<CompareUnit>(CompareUnit::Operation::Eq, true) },
+				{ CompareOp::EqImmediate, makeDesc<CompareUnit>(CompareUnit::Operation::Eq, true) },
 				{ CompareOp::Neq, makeDesc<CompareUnit>(CompareUnit::Operation::Neq, false) },
-				{ CompareOp::NeqImm, makeDesc<CompareUnit>(CompareUnit::Operation::Neq, true) },
+				{ CompareOp::NeqImmediate, makeDesc<CompareUnit>(CompareUnit::Operation::Neq, true) },
 			};
 			auto result = translationTable.find(static_cast<CompareOp>(getOperation()));
 			if (result == translationTable.end()) {

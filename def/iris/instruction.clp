@@ -148,17 +148,17 @@
                 (max-size "ArchitectureConstants::MaxOperations")
                 (name CompareOp)
                 (children Eq
-                          EqImm
+                          EqImmediate
                           Neq
-                          NeqImm
+                          NeqImmediate
                           LessThan
-                          LessThanImm
+                          LessThanImmediate
                           GreaterThan
-                          GreaterThanImm
+                          GreaterThanImmediate
                           LessThanOrEqualTo
-                          LessThanOrEqualToImm
+                          LessThanOrEqualToImmediate
                           GreaterThanOrEqualTo
-                          GreaterThanOrEqualToImm))
+                          GreaterThanOrEqualToImmediate))
           (enum (cast-to byte)
                 (max-size "ArchitectureConstants::MaxOperations")
                 (name ConditionRegisterOp)
