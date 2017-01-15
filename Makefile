@@ -64,7 +64,8 @@ LINK_OBJECTS = syn_link.o \
 LINK_BINARY = syn_link
 
 IRIS_ASSEMBLER_OBJECTS = iris_assembler.o \
-						 iris.o
+						 iris.o \
+						 Core.o
 
 IRIS_ASSEMBLER_BINARY = iris_assembler
 
@@ -179,6 +180,11 @@ ${REPL_BINARY}: ${REPL_OBJECTS}
 ${BOOTSTRAP_BINARY}: ${BOOTSTRAP_OBJECTS}
 	@echo -n Building ${BOOTSTRAP_BINARY} binary out of $^...
 	@${CXX} ${LIBS} -o ${BOOTSTRAP_BINARY} ${BOOTSTRAP_OBJECTS}
+	@echo done.
+
+${IRIS_ASSEMBLER_BINARY}: ${IRIS_ASSEMBLER_OBJECTS}
+	@echo -n Building ${IRIS_ASSEMBLER_BINARY} binary out of $^...
+	@${CXX} ${LIBS} -o ${IRIS_ASSEMBLER_BINARY} ${IRIS_ASSEMBLER_OBJECTS}
 	@echo done.
 
 clean:

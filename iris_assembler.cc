@@ -1,5 +1,6 @@
 // iris_assembler rewritten to use pegtl
 #include <iostream>
+#include "syn_base.h"
 #include "iris.h"
 #include <pegtl.hh>
 #include <pegtl/analyze.hh>
@@ -8,6 +9,7 @@
 #include <pegtl/contrib/abnf.hh>
 
 namespace iris {
+    template<typename Rule > struct Action : public pegtl::nothing<Rule> { };
     struct Comment : public pegtl::until<pegtl::eolf> { };
     struct SingleLineComment : public pegtl::disable<pegtl::one<';'>, Comment> { };
 	struct Separator : public pegtl::plus<pegtl::ascii::space> { };
@@ -251,16 +253,89 @@ namespace iris {
 
     //struct Main : public pegtl::must<pegtl::seq<Separators, pegtl::until<pegtl::eof, Statement, Separators>>> { };
 
+	struct AssemblerState {
+		AssemblerState() : currentDataIndex(0), currentCodeIndex(0), inData(false), currentDataValue(0), group(0), operation(0), destination(0), source0(0), source1(0)  { }
+		word currentDataIndex;
+		word currentCodeIndex;
+		bool inData;
+		word currentDataValue;
+		InstructionGroup group;
+		byte operation;
+		byte destination;
+		byte source0;
+		byte source1;
+		Core core;
+		void resetCurrentData() noexcept;
+		void setImmediate(word value) noexcept;
+		void setHalfImmediate(byte value) noexcept;
+		void setHiHalfImmediate(word value) noexcept;
+		void setLoHalfImmediate(word value) noexcept;
+		void setGroup(InstructionGroup value) noexcept;
+		template<typename T>
+		void setOperation(T value) noexcept {
+			operation = static_cast<byte>(value);
+		}
+		bool inCodeSection() const noexcept;
+		bool inDataSection() const noexcept;
+		void nowInCodeSection() noexcept;
+		void nowInDataSection() noexcept;
+		void setCurrentAddress(word value) noexcept;
+	};
+	void AssemblerState::setCurrentAddress(word value) noexcept {
+		if (inData) {
+			currentDataIndex = value;
+		} else {
+			currentCodeIndex = value;
+		}
+	}
+	void AssemblerState::nowInCodeSection() noexcept {
+		inData = false;
+	}
+	void AssemblerState::nowInDataSection() noexcept {
+		inData = true;
+	}
+	bool AssemblerState::inCodeSection() const noexcept {
+		return !inData;
+	}
+	bool AssemblerState::inDataSection() const noexcept {
+		return inData;
+	}
+	void AssemblerState::setImmediate(word value) noexcept {
+		source0 = syn::getLowerHalf<word>(value);
+		source1 = syn::getUpperHalf<word>(value);
+	}
+	void AssemblerState::setGroup(InstructionGroup  value) noexcept {
+		group = value;
+	}
+	void AssemblerState::setHalfImmediate(byte value) noexcept {
+		source1 = value;
+	}
+	void AssemblerState::setHiHalfImmediate(word value) noexcept {
+		setHalfImmediate(syn::getUpperHalf(value));
+	}
+	void AssemblerState::setLoHalfImmediate(word value) noexcept {
+		setHalfImmediate(syn::getLowerHalf(value));
+	}
 
-    template<typename Rule > struct Action : public pegtl::nothing<Rule> { };
+
+	void AssemblerState::resetCurrentData() noexcept {
+		if (inData) {
+			currentDataValue = 0;
+		} else {
+			control = 0;
+			destination = 0;
+			source0 = 0;
+			source1 = 0;
+		}
+	}
 
 }
 
 int main(int argc, char** argv) {
     pegtl::analyze<iris::Main>();
+	iris::AssemblerState state;
     for(int i = 1; i < argc; ++i) {
-		std::string func;
-		pegtl::file_parser(argv[i]).parse<iris::Main, iris::Action>(func);
+		pegtl::file_parser(argv[i]).parse<iris::Main, iris::Action>(state);
     }
     return 0;
 }
