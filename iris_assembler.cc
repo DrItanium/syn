@@ -35,6 +35,7 @@ namespace iris {
 		bool fullImmediate;
 		//bool getLow, getHigh;
 		void reset() noexcept;
+		void setImmediate(word value) noexcept;
 	};
 	void AssemblerData::reset() noexcept {
 		instruction = false;
@@ -494,8 +495,11 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
 		return inData;
 	}
 	void AssemblerState::setImmediate(word value) noexcept {
-		current.source0 = syn::getLowerHalf<word>(value);
-		current.source1 = syn::getUpperHalf<word>(value);
+		current.setImmediate(value);
+	}
+	void AssemblerData::setImmediate(word value) noexcept {
+		source0 = syn::getLowerHalf<word>(value);
+		source1 = syn::getUpperHalf<word>(value);
 	}
 	void AssemblerState::setGroup(InstructionGroup value) noexcept {
 		current.group = static_cast<byte>(value);
@@ -543,6 +547,33 @@ int main(int argc, char** argv) {
     for(int i = 1; i < argc; ++i) {
 		pegtl::file_parser(argv[i]).parse<iris::Main, iris::Action>(state);
     }
+	// now that we have instructions, we need to print them out as hex values
+	for (auto & value : state.finishedData) {
+		std::cout << std::hex << value.address << " ";
+		if (value.instruction) {
+			iris::raw_instruction tmp = 0;
+			tmp = iris::encodeGroup(tmp, value.group);
+			tmp = iris::encodeOperation(tmp, value.operation);
+			tmp = iris::encodeDestination(tmp, value.destination);
+			if (value.fullImmediate && value.hasLexeme) {
+				// look up the target label name
+				auto result = state.labelMap.find(value.currentLexeme);
+				if (result == state.labelMap.end()) {
+					std::stringstream msg;
+					msg << "ERROR: label " << value.currentLexeme << " is undefined!" << std::endl;
+					auto str = msg.str();
+					throw syn::Problem(str);
+				} else {
+					value.setImmediate(result->second);
+				}
+			}
+			tmp = iris::encodeSource0(tmp, value.source0);
+			tmp = iris::encodeSource1(tmp, value.source1);
+			std::cout << "code " << std::hex << tmp << std::endl;
+		} else {
+			std::cout << "data " << std::hex << value.dataValue << std::endl;
+		}
+	}
 	
     return 0;
 }
