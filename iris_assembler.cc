@@ -193,10 +193,17 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
     DefSymbol(DeclareDirective, .declare);
     DefSymbol(HiDirective, @hi);
     DefSymbol(LoDirective, @lo);
+#define DefOperation(title, str, type) \
+	DefSymbol(title, str); \
+	DefAction(Symbol ## title ) { \
+		DefApply { \
+			state.setOperation< CURRENT_TYPE >( CURRENT_TYPE :: type ) ; \
+		} \
+	}
 
+#define DefOperationSameTitle(title, str) DefOperation(title, str, title) 
     template<typename T>
-    struct ZeroArgumentDirective : public pegtl::seq<T> { };
-
+    using ZeroArgumentDirective = pegtl::seq<T>;
 	template<typename T, typename F>
 	using OneArgumentDirective = syn::TwoPartComponent<T, F, Separator>;
 
@@ -237,31 +244,34 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
 	using ThreeGPRInstruction = GenericInstruction<Operation, ThreeGPR>;
 	template<typename Operation>
 	using TwoGPRInstruction = GenericInstruction<Operation, TwoGPR>;
-    DefSymbol(Add, add);
-    DefSymbol(Sub, sub);
-    DefSymbol(Mul, mul);
-    DefSymbol(Div, div);
-    DefSymbol(Rem, rem);
-    DefSymbol(ShiftLeft, shl);
-    DefSymbol(ShiftRight, shr);
-    DefSymbol(And, and);
-    DefSymbol(Or, or);
-    DefSymbol(Xor, xor);
-    DefSymbol(Min, min);
-    DefSymbol(Max, max);
+#define CURRENT_TYPE ArithmeticOp
+    DefOperationSameTitle(Add, add);
+    DefOperationSameTitle(Sub, sub);
+    DefOperationSameTitle(Mul, mul);
+    DefOperationSameTitle(Div, div);
+    DefOperationSameTitle(Rem, rem);
+    DefOperationSameTitle(ShiftLeft, shl);
+    DefOperationSameTitle(ShiftRight, shr);
+    DefOperation(And, and, BinaryAnd);
+    DefOperation(Or, or, BinaryOr);
+    DefOperation(Xor, xor, BinaryXor);
+    DefOperation(Nand, nand, BinaryNand);
+    DefOperation(Nor, nor, BinaryNor);
+    DefOperationSameTitle(Min, min);
+    DefOperationSameTitle(Max, max);
     struct OperationArithmeticThreeGPR : public pegtl::sor<SymbolAdd, SymbolSub, SymbolMul, SymbolDiv, SymbolRem, SymbolShiftLeft, SymbolShiftRight, SymbolAnd, SymbolOr, SymbolXor, SymbolMin, SymbolMax> { };
 	struct ArithmeticThreeGPRInstruction : public ThreeGPRInstruction<OperationArithmeticThreeGPR> { };
-    DefSymbol(Not, not);
+    DefOperation(Not, not, BinaryNot);
     struct OperationArithmeticTwoGPR : public pegtl::sor<SymbolNot> { };
     struct ArithmeticTwoGPRInstruction : public TwoGPRInstruction<OperationArithmeticTwoGPR> { };
 
-    DefSymbol(AddImmediate, addi);
-    DefSymbol(SubImmediate, subi);
-    DefSymbol(MulImmediate, muli);
-    DefSymbol(DivImmediate, divi);
-    DefSymbol(RemImmediate, remi);
-    DefSymbol(ShiftLeftImmediate, shli);
-    DefSymbol(ShiftRightImmediate, shri);
+    DefOperationSameTitle(AddImmediate, addi);
+    DefOperationSameTitle(SubImmediate, subi);
+    DefOperationSameTitle(MulImmediate, muli);
+    DefOperationSameTitle(DivImmediate, divi);
+    DefOperationSameTitle(RemImmediate, remi);
+    DefOperationSameTitle(ShiftLeftImmediate, shli);
+    DefOperationSameTitle(ShiftRightImmediate, shri);
     struct OperationArithmeticTwoGPRHalfImmediate : public pegtl::sor< SymbolAddImmediate, SymbolSubImmediate, SymbolMulImmediate, SymbolDivImmediate, SymbolRemImmediate, SymbolShiftLeftImmediate, SymbolShiftRightImmediate> { };
     struct ArithmeticTwoGPRHalfImmediateInstruction : public pegtl::seq<OperationArithmeticTwoGPRHalfImmediate, Separator, TwoGPR, Separator, HalfImmediate> { };
 
@@ -269,27 +279,29 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
 
 #define DefGroupSet(rule, group) DefAction( rule ) { DefApply { state.setGroup(InstructionGroup:: group ); } }
 	DefGroupSet(ArithmeticInstruction, Arithmetic);
+#undef CURRENT_TYPE
+#define CURRENT_TYPE MoveOp
 
-    DefSymbol(MoveToIP, mtip);
-    DefSymbol(MoveFromIP, mfip);
-    DefSymbol(MoveToLR, mtlr);
-    DefSymbol(MoveFromLR, mflr);
-    struct OperationMoveOneGPR : public pegtl::sor<SymbolMoveToIP, SymbolMoveFromIP, SymbolMoveToLR, SymbolMoveFromLR> { };
+    DefOperationSameTitle(MoveToIP, mtip);
+    DefOperationSameTitle(MoveFromIP, mfip);
+    DefOperationSameTitle(MoveToLinkRegister, mtlr);
+    DefOperationSameTitle(MoveFromLinkRegister, mflr);
+    struct OperationMoveOneGPR : public pegtl::sor<SymbolMoveToIP, SymbolMoveFromIP, SymbolMoveToLinkRegister, SymbolMoveFromLinkRegister> { };
     struct MoveOneGPRInstruction : public OneGPRInstruction<OperationMoveOneGPR> { };
-    DefSymbol(Move, move);
-    DefSymbol(Swap, swap);
-    DefSymbol(Load, ld);
-    DefSymbol(Store, st);
-    DefSymbol(LoadIO, ldio);
-    DefSymbol(StoreIO, stio);
-    DefSymbol(Push, push);
-    DefSymbol(Pop, pop);
+    DefOperationSameTitle(Move, move);
+    DefOperationSameTitle(Swap, swap);
+    DefOperationSameTitle(Load, ld);
+    DefOperationSameTitle(Store, st);
+    DefOperation(LoadIO, ldio, IORead);
+    DefOperation(StoreIO, stio, IOWrite);
+    DefOperationSameTitle(Push, push);
+    DefOperationSameTitle(Pop, pop);
     struct OperationMoveTwoGPR : public pegtl::sor<SymbolMove, SymbolSwap, SymbolLoadIO, SymbolStoreIO, SymbolLoad, SymbolStore, SymbolPush, SymbolPop> { };
     struct MoveTwoGPRInstruction : public TwoGPRInstruction<OperationMoveTwoGPR> { };
-    DefSymbol(LoadWithOffset, ldwo);
-    DefSymbol(StoreWithOffset, stwo);
-    DefSymbol(LoadIOWithOffset, ldiowo);
-    DefSymbol(StoreIOWithOffset, stiowo);
+    DefOperationSameTitle(LoadWithOffset, ldwo);
+    DefOperationSameTitle(StoreWithOffset, stwo);
+    DefOperation(LoadIOWithOffset, ldiowo, IOReadWithOffset);
+    DefOperation(StoreIOWithOffset, stiowo, IOWriteWithOffset);
     struct OperationMoveTwoGPRHalfImmediate : public pegtl::sor<SymbolLoadWithOffset, SymbolStoreWithOffset, SymbolLoadIOWithOffset, SymbolStoreIOWithOffset> { };
     struct MoveTwoGPRHalfImmediateInstruction : public pegtl::seq<OperationMoveTwoGPRHalfImmediate, Separator, TwoGPR, Separator, HalfImmediate> { };
 
@@ -312,7 +324,8 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
 
     struct MoveInstruction : public pegtl::sor<MoveGPRImmediateInstruction, MoveThreeGPRInstruction, MoveTwoGPRHalfImmediateInstruction, MoveTwoGPRInstruction, MoveOneGPRInstruction> { };
 	DefGroupSet(MoveInstruction, Move);
-
+#undef CURRENT_TYPE
+#define CURRENT_TYPE JumpOp
     // branch
 	template<typename Op, typename S>
 	struct BranchUnconditional : public pegtl::seq<Op, Separator, S> { };
