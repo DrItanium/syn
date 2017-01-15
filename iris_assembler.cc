@@ -9,6 +9,34 @@
 #include <pegtl/contrib/abnf.hh>
 
 namespace iris {
+	struct AssemblerState {
+		AssemblerState() : currentDataIndex(0), currentCodeIndex(0), inData(false), currentDataValue(0), group(static_cast<InstructionGroup>(0)), operation(0), destination(0), source0(0), source1(0)  { }
+		word currentDataIndex;
+		word currentCodeIndex;
+		bool inData;
+		word currentDataValue;
+		InstructionGroup group;
+		byte operation;
+		byte destination;
+		byte source0;
+		byte source1;
+		Core core;
+		void resetCurrentData() noexcept;
+		void setImmediate(word value) noexcept;
+		void setHalfImmediate(byte value) noexcept;
+		void setHiHalfImmediate(word value) noexcept;
+		void setLoHalfImmediate(word value) noexcept;
+		void setGroup(InstructionGroup value) noexcept;
+		template<typename T>
+		void setOperation(T value) noexcept {
+			operation = static_cast<byte>(value);
+		}
+		bool inCodeSection() const noexcept;
+		bool inDataSection() const noexcept;
+		void nowInCodeSection() noexcept;
+		void nowInDataSection() noexcept;
+		void setCurrentAddress(word value) noexcept;
+	};
     template<typename Rule > struct Action : public pegtl::nothing<Rule> { };
     struct Comment : public pegtl::until<pegtl::eolf> { };
     struct SingleLineComment : public pegtl::disable<pegtl::one<';'>, Comment> { };
@@ -53,13 +81,36 @@ namespace iris {
 
 
 
-    struct CodeDirective : public ZeroArgumentDirective<SymbolCodeDirective> {
-    };
-    struct DataDirective : public ZeroArgumentDirective<SymbolDataDirective> {
-    };
+    struct CodeDirective : public ZeroArgumentDirective<SymbolCodeDirective> { };
+	template<>
+	struct Action<CodeDirective> {
+		template<typename Input>
+		static void apply(const Input& in, AssemblerState & state) {
+			std::cout << "now in a code section!" << std::endl;
+			state.nowInCodeSection();
+		}
+	};
+    struct DataDirective : public ZeroArgumentDirective<SymbolDataDirective> { };
+
+	template<>
+	struct Action<DataDirective> {
+		template<typename Input>
+		static void apply(const Input& in, AssemblerState & state) {
+			std::cout << "now in a data section!" << std::endl;
+			state.nowInDataSection();
+		}
+	};
 
     struct OrgDirective : public OneArgumentDirective<SymbolOrgDirective, Number> {
     };
+	template<>
+	struct Action<OrgDirective> {
+		template<typename I>
+		static void apply(const I& in, AssemblerState& state) {
+			//state.setCurrentAddress
+			std::cout << "org directive!" << std::endl;
+		}
+	};
     struct LabelDirective : public OneArgumentDirective<SymbolLabelDirective, Lexeme> {
     };
 
@@ -253,34 +304,6 @@ namespace iris {
 
     //struct Main : public pegtl::must<pegtl::seq<Separators, pegtl::until<pegtl::eof, Statement, Separators>>> { };
 
-	struct AssemblerState {
-		AssemblerState() : currentDataIndex(0), currentCodeIndex(0), inData(false), currentDataValue(0), group(0), operation(0), destination(0), source0(0), source1(0)  { }
-		word currentDataIndex;
-		word currentCodeIndex;
-		bool inData;
-		word currentDataValue;
-		InstructionGroup group;
-		byte operation;
-		byte destination;
-		byte source0;
-		byte source1;
-		Core core;
-		void resetCurrentData() noexcept;
-		void setImmediate(word value) noexcept;
-		void setHalfImmediate(byte value) noexcept;
-		void setHiHalfImmediate(word value) noexcept;
-		void setLoHalfImmediate(word value) noexcept;
-		void setGroup(InstructionGroup value) noexcept;
-		template<typename T>
-		void setOperation(T value) noexcept {
-			operation = static_cast<byte>(value);
-		}
-		bool inCodeSection() const noexcept;
-		bool inDataSection() const noexcept;
-		void nowInCodeSection() noexcept;
-		void nowInDataSection() noexcept;
-		void setCurrentAddress(word value) noexcept;
-	};
 	void AssemblerState::setCurrentAddress(word value) noexcept {
 		if (inData) {
 			currentDataIndex = value;
@@ -322,7 +345,8 @@ namespace iris {
 		if (inData) {
 			currentDataValue = 0;
 		} else {
-			control = 0;
+			group = static_cast<InstructionGroup>(0);
+			operation = 0;
 			destination = 0;
 			source0 = 0;
 			source1 = 0;
