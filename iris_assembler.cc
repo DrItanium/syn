@@ -34,9 +34,9 @@ namespace iris {
 		bool hasLexeme;
 		std::string currentLexeme;
 		bool fullImmediate;
-		//bool getLow, getHigh;
 		void reset() noexcept;
 		void setImmediate(word value) noexcept;
+		bool shouldResolveLabel() noexcept;
 	};
 	void AssemblerData::reset() noexcept {
 		instruction = false;
@@ -50,9 +50,6 @@ namespace iris {
 		hasLexeme = false;
 		currentLexeme.clear();
 		fullImmediate = false;
-		//getLow = false;
-		//getHigh = false;
-		
 	}
 	struct AssemblerState {
 		AssemblerState() : currentDataIndex(0), currentCodeIndex(0), inData(false) { }
@@ -67,8 +64,6 @@ namespace iris {
 		void resetCurrentData() noexcept;
 		void setImmediate(word value) noexcept;
 		void setHalfImmediate(byte value) noexcept;
-		//void setHiHalfImmediate(word value) noexcept;
-		//void setLoHalfImmediate(word value) noexcept;
 		void setGroup(InstructionGroup value) noexcept;
 		template<typename T>
 		void setOperation(T value) noexcept {
@@ -195,8 +190,6 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
     DefSymbol(CodeDirective, .code);
     DefSymbol(OrgDirective, .org);
     DefSymbol(DeclareDirective, .declare);
-    //DefSymbol(HiDirective, @hi);
-    //DefSymbol(LoDirective, @lo);
 #define DefOperation(title, str, type) \
 	DefSymbol(title, str); \
 	DefAction(Symbol ## title ) { \
@@ -248,9 +241,7 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
 		}
 	};
     struct Directive : public pegtl::sor<OrgDirective, LabelDirective, CodeDirective, DataDirective, DeclareDirective> { };
-    //struct HiDirective : public LexemeOrNumberDirective<SymbolHiDirective> { };
-    //struct LoDirective : public LexemeOrNumberDirective<SymbolLoDirective> { };
-    struct Immediate : public pegtl::sor<LexemeOrNumber /*, HiDirective, LoDirective*/> { };
+    struct Immediate : public pegtl::sor<LexemeOrNumber> { };
 	DefAction(Immediate) {
 		DefApply {
 			state.current.fullImmediate = true;
@@ -259,7 +250,7 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
 			} 
 		}
 	};
-    struct HalfImmediate : public pegtl::sor<Number/*, HiDirective, LoDirective*/> { };
+    struct HalfImmediate : public pegtl::sor<Number> { };
 	DefAction(HalfImmediate) {
 		DefApply {
 			state.current.fullImmediate = false;
@@ -508,13 +499,6 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
 	void AssemblerState::setHalfImmediate(byte value) noexcept {
 		current.source1 = value;
 	}
-	//void AssemblerState::setHiHalfImmediate(word value) noexcept {
-	//	setHalfImmediate(syn::getUpperHalf(value));
-	//}
-	//void AssemblerState::setLoHalfImmediate(word value) noexcept {
-	//	setHalfImmediate(syn::getLowerHalf(value));
-	//}
-
 
 	void AssemblerState::resetCurrentData() noexcept {
 		current.reset();
@@ -542,6 +526,17 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
 	void resolveLabels(AssemblerState& state, std::ostream& output) {
 		// now that we have instructions, we need to print them out as hex values
 		char buf[8] = { 0 };
+		auto resolveLabel = [&state](AssemblerData& data) {
+			auto result = state.labelMap.find(data.currentLexeme);
+			if (result == state.labelMap.end()) {
+				std::stringstream msg;
+				msg << "ERROR: label " << data.currentLexeme << " is undefined!" << std::endl;
+				auto str = msg.str();
+				throw syn::Problem(str);
+			} else {
+				return result->second;
+			}
+		};
 		for (auto & value : state.finishedData) {
 			buf[0] = 0;
 			buf[2] = static_cast<char>(syn::getLowerHalf<word>(value.address));
@@ -551,22 +546,16 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
 				buf[1] = 0;
 				buf[4] = static_cast<char>(iris::encodeOperationByte(iris::encodeGroupByte(0, value.group), value.operation));
 				buf[5] = static_cast<char>(value.destination);
-				if (value.fullImmediate && value.hasLexeme) {
-					// look up the target label name
-					auto result = state.labelMap.find(value.currentLexeme);
-					if (result == state.labelMap.end()) {
-						std::stringstream msg;
-						msg << "ERROR: label " << value.currentLexeme << " is undefined!" << std::endl;
-						auto str = msg.str();
-						throw syn::Problem(str);
-					} else {
-						value.setImmediate(result->second);
-					}
+				if (value.shouldResolveLabel()) {
+					value.setImmediate(resolveLabel(value));
 				}
 				buf[6] = static_cast<char>(value.source0);
 				buf[7] = static_cast<char>(value.source1);
 			} else {
 				buf[1] = 1;
+				if (value.shouldResolveLabel()) {
+					value.dataValue = resolveLabel(value);
+				}
 				buf[4] = syn::getLowerHalf<word>(value.dataValue);
 				buf[5] = syn::getUpperHalf<word>(value.dataValue);
 				buf[6] = 0;
@@ -582,5 +571,8 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
 		// put a sufficently large amount of space to read from the cstream
 		pegtl::parse_cstream<iris::Main, iris::Action>(input, iName.c_str(), 16777216, state);
 		resolveLabels(state, *output);
+	}
+	bool AssemblerData::shouldResolveLabel() noexcept {
+		return fullImmediate && hasLexeme;
 	}
 }
