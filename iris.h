@@ -241,6 +241,6 @@ namespace iris {
 		return std::make_shared<ExposedCoreDataMemory<Data, Address>>(core, base, length);
 	}
 	Core* newCore() noexcept;
-	void assemble(FILE* input, std::ostream* output);
+	void assemble(const std::string& inputFileName, FILE* input, std::ostream* output);
 }
 #endif

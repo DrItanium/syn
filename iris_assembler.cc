@@ -539,10 +539,10 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
 		finishedData.emplace_back(copy);
 		resetCurrentData();
 	}
-	void resolveLabels(AssemblerState& state, std::ostream* output) {
+	void resolveLabels(AssemblerState& state, std::ostream& output) {
 	// now that we have instructions, we need to print them out as hex values
 	for (auto & value : state.finishedData) {
-		*output << std::hex << value.address << " ";
+		output << std::hex << value.address << " ";
 		if (value.instruction) {
 			iris::raw_instruction tmp = 0;
 			tmp = iris::encodeGroup(tmp, value.group);
@@ -562,9 +562,9 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
 			}
 			tmp = iris::encodeSource0(tmp, value.source0);
 			tmp = iris::encodeSource1(tmp, value.source1);
-			*output << "code " << std::hex << tmp << std::endl;
+			output << "code " << std::hex << tmp << std::endl;
 		} else {
-			*output << "data " << std::hex << value.dataValue << std::endl;
+			output << "data " << std::hex << value.dataValue << std::endl;
 		}
 	}
 	}
@@ -572,7 +572,8 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
 	void assemble(const std::string& iName, FILE* input, std::ostream* output) {
 		iris::AssemblerState state;
     	pegtl::analyze<iris::Main>();
-		pegtl::parse_cstream<iris::Main, iris::Action>(input, iName.c_str(), 2048, state);
-		resolveLabels(state, output);
+		// put a sufficently large amount of space to read from the cstream
+		pegtl::parse_cstream<iris::Main, iris::Action>(input, iName.c_str(), 16777216, state);
+		resolveLabels(state, *output);
 	}
 }

@@ -28,8 +28,7 @@ SIM_BINARY = syn_sim
 
 ASM_PARSERS_OBJECTS = cisc0_lex.yy.o \
 					  cisc0_asm.tab.o \
-					  #iris_lex.yy.o \
-					  #iris_asm.tab.o \
+					  iris_assembler.o \
 
 ASM_OBJECTS = syn_asm.o \
 			  AssemblerRegistrar.o \
@@ -48,10 +47,7 @@ REPL_OBJECTS= syn_repl.o \
 
 ASM_PARSERS = cisc0_lex.yy.c \
 			  cisc0_asm.tab.c \
-			  cisc0_asm.tab.h \
-			  #iris_lex.yy.c \
-			  #iris_asm.tab.c \
-			  #iris_asm.tab.h \
+			  cisc0_asm.tab.h 
 
 ASM_BINARY = syn_asm
 
@@ -63,18 +59,12 @@ LINK_OBJECTS = syn_link.o \
 
 LINK_BINARY = syn_link
 
-IRIS_ASSEMBLER_OBJECTS = iris_assembler.o \
-						 iris.o \
-						 Core.o
-
-IRIS_ASSEMBLER_BINARY = iris_assembler
 
 ALL_BINARIES = ${SIM_BINARY} \
 			   ${ASM_BINARY} \
 			   ${LINK_BINARY} \
 			   ${REPL_BINARY} \
-			   ${BOOTSTRAP_BINARY} \
-			   ${IRIS_ASSEMBLER_BINARY}
+			   ${BOOTSTRAP_BINARY}
 
 DEFINE_OBJECTS = iris_defines.h \
 				 cisc0_defines.h \
@@ -93,8 +83,7 @@ ALL_OBJECTS = ${COMMON_THINGS} \
 			  ${REPL_OBJECTS} \
 			  ${DEFINE_OBJECTS} \
 			  ${BOOTSTRAP_OBJECTS} \
-			  ${DEFINE_CLPS} \
-			  ${IRIS_ASSEMBLER_OBJECTS} \
+			  ${DEFINE_CLPS}
 
 
 
@@ -182,11 +171,6 @@ ${BOOTSTRAP_BINARY}: ${BOOTSTRAP_OBJECTS}
 	@${CXX} ${LIBS} -o ${BOOTSTRAP_BINARY} ${BOOTSTRAP_OBJECTS}
 	@echo done.
 
-${IRIS_ASSEMBLER_BINARY}: ${IRIS_ASSEMBLER_OBJECTS}
-	@echo -n Building ${IRIS_ASSEMBLER_BINARY} binary out of $^...
-	@${CXX} ${LIBS} -o ${IRIS_ASSEMBLER_BINARY} ${IRIS_ASSEMBLER_OBJECTS}
-	@echo done.
-
 clean:
 	@echo -n Cleaning...
 	@rm -f ${ALL_OBJECTS} ${ALL_BINARIES} ${ASM_PARSERS} scheme init.scm maya libmaya.a
@@ -246,13 +230,6 @@ cisc0_asm.tab.o: cisc0_asm.tab.c cisc0.h syn_base.h Problem.h \
 cisc0_lex.yy.o: cisc0_lex.yy.c cisc0.h syn_base.h Problem.h syn_xunits.h \
  IODevice.h Device.h Core.h cisc0_defines.h def/cisc0/instruction.def \
  def/cisc0/misc.def def/cisc0/ops.def cisc0_asm.tab.h syn_asm_base.h
-iris_asm.tab.o: iris_asm.tab.c AssemblerRegistrar.h iris.h syn_base.h \
- Problem.h syn_xunits.h IODevice.h Device.h Core.h IOController.h \
- iris_defines.h iris_asm.tab.h
-iris_lex.yy.o: iris_lex.yy.c iris.h syn_base.h Problem.h syn_xunits.h \
- IODevice.h Device.h Core.h IOController.h iris_defines.h iris_asm.tab.h \
- syn_asm_base.h
-
 
 AssemblerRegistrar.o: AssemblerRegistrar.cc AssemblerRegistrar.h iris.h \
  syn_base.h Problem.h syn_xunits.h IODevice.h Device.h Core.h \
@@ -265,6 +242,9 @@ cisc0.o: cisc0.cc cisc0.h syn_base.h Problem.h syn_xunits.h IODevice.h \
 Core.o: Core.cc Core.h Device.h
 CoreRegistrar.o: CoreRegistrar.cc Problem.h CoreRegistrar.h Core.h \
  Device.h
+iris_assembler.o: iris_assembler.cc syn_base.h Problem.h syn_asm_base.h \
+ iris.h syn_xunits.h IODevice.h Device.h Core.h IOController.h \
+ iris_defines.h
 iris.o: iris.cc iris.h syn_base.h Problem.h syn_xunits.h IODevice.h \
  Device.h Core.h IOController.h iris_defines.h
 molecule_bootstrap.o: molecule_bootstrap.cc molecule.h syn_base.h \
@@ -272,8 +252,8 @@ molecule_bootstrap.o: molecule_bootstrap.cc molecule.h syn_base.h \
  molecule_defines.h
 molecule.o: molecule.cc molecule.h syn_base.h Problem.h syn_xunits.h \
  IODevice.h Device.h Core.h IOController.h molecule_defines.h
-phoenix.o: phoenix.cc molecule.h syn_base.h Problem.h syn_xunits.h \
- IODevice.h Device.h Core.h IOController.h molecule_defines.h
+phoenix.o: phoenix.cc phoenix.h syn_base.h Problem.h syn_xunits.h \
+ IODevice.h Device.h Core.h IOController.h phoenix_defines.h
 syn_asm.o: syn_asm.cc Problem.h AssemblerRegistrar.h
 syn_assemblers.o: syn_assemblers.cc Problem.h RegisterEntry.h \
  AssemblerRegistrar.h iris.h syn_base.h syn_xunits.h IODevice.h Device.h \
