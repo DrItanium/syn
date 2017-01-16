@@ -540,33 +540,40 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
 		resetCurrentData();
 	}
 	void resolveLabels(AssemblerState& state, std::ostream& output) {
-	// now that we have instructions, we need to print them out as hex values
-	for (auto & value : state.finishedData) {
-		output << std::hex << value.address << " ";
-		if (value.instruction) {
-			iris::raw_instruction tmp = 0;
-			tmp = iris::encodeGroup(tmp, value.group);
-			tmp = iris::encodeOperation(tmp, value.operation);
-			tmp = iris::encodeDestination(tmp, value.destination);
-			if (value.fullImmediate && value.hasLexeme) {
-				// look up the target label name
-				auto result = state.labelMap.find(value.currentLexeme);
-				if (result == state.labelMap.end()) {
-					std::stringstream msg;
-					msg << "ERROR: label " << value.currentLexeme << " is undefined!" << std::endl;
-					auto str = msg.str();
-					throw syn::Problem(str);
-				} else {
-					value.setImmediate(result->second);
+		// now that we have instructions, we need to print them out as hex values
+		char buf[8] = { 0 };
+		for (auto & value : state.finishedData) {
+			buf[0] = 0;
+			buf[2] = static_cast<char>(syn::getLowerHalf<word>(value.address));
+			buf[3] = static_cast<char>(syn::getUpperHalf<word>(value.address));
+			output << std::hex << value.address << " ";
+			if (value.instruction) {
+				buf[1] = 0;
+				buf[4] = static_cast<char>(iris::encodeOperationByte(iris::encodeGroupByte(0, value.group), value.operation));
+				buf[5] = static_cast<char>(value.destination);
+				if (value.fullImmediate && value.hasLexeme) {
+					// look up the target label name
+					auto result = state.labelMap.find(value.currentLexeme);
+					if (result == state.labelMap.end()) {
+						std::stringstream msg;
+						msg << "ERROR: label " << value.currentLexeme << " is undefined!" << std::endl;
+						auto str = msg.str();
+						throw syn::Problem(str);
+					} else {
+						value.setImmediate(result->second);
+					}
 				}
+				buf[6] = static_cast<char>(value.source0);
+				buf[7] = static_cast<char>(value.source1);
+			} else {
+				buf[1] = 1;
+				buf[4] = syn::getLowerHalf<word>(value.dataValue);
+				buf[5] = syn::getUpperHalf<word>(value.dataValue);
+				buf[6] = 0;
+				buf[7] = 0;
 			}
-			tmp = iris::encodeSource0(tmp, value.source0);
-			tmp = iris::encodeSource1(tmp, value.source1);
-			output << "code " << std::hex << tmp << std::endl;
-		} else {
-			output << "data " << std::hex << value.dataValue << std::endl;
+			output.write(static_cast<char*>(buf), sizeof(buf));
 		}
-	}
 	}
 
 	void assemble(const std::string& iName, FILE* input, std::ostream* output) {

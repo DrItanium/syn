@@ -60,6 +60,17 @@
                  (shift 4)
                  (input-type byte)
                  (output-type byte))
+          (field (name GroupByte)
+                 (mask 0x00000007)
+                 (shift 0)
+                 (input-type byte)
+                 (output-type byte))
+          (field (name OperationByte)
+                 (mask 0x000000F8)
+                 (shift 3)
+                 (input-type byte)
+                 (output-type byte))
+
           (enum (name InstructionGroup)
                 (children Arithmetic
                           Move
