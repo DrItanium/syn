@@ -115,20 +115,20 @@
                           BranchConditionalTrueImmediateLink
                           BranchConditionalTrue
                           BranchConditionalTrueLink
-                          BranchConditionalFalseImmediate
-                          BranchConditionalFalseImmediateLink
-                          BranchConditionalFalse
-                          BranchConditionalFalseLink
+                          ;BranchConditionalFalseImmediate
+                          ;BranchConditionalFalseImmediateLink
+                          ;BranchConditionalFalse
+                          ;BranchConditionalFalseLink
                           IfThenElseTrue
-                          IfThenElseFalse
+                          ;IfThenElseFalse
                           IfThenElseTrueLink
-                          IfThenElseFalseLink
+                          ;IfThenElseFalseLink
                           BranchUnconditionalLR
                           BranchUnconditionalLRAndLink
                           BranchConditionalTrueLR
                           BranchConditionalTrueLRAndLink
-                          BranchConditionalFalseLR
-                          BranchConditionalFalseLRAndLink
+                          ;BranchConditionalFalseLR
+                          ;BranchConditionalFalseLRAndLink
                           ))
           (enum (cast-to byte)
                 (max-size "ArchitectureConstants::MaxOperations")

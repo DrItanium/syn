@@ -79,8 +79,8 @@ namespace iris {
 		void incrementCurrentAddress() noexcept;
 		void saveToFinished() noexcept;
 	};
-#define DefAction(rule) template<> struct Action < rule > 
-#define DefApply template<typename Input> static void apply(const Input& in, AssemblerState& state) 
+#define DefAction(rule) template<> struct Action < rule >
+#define DefApply template<typename Input> static void apply(const Input& in, AssemblerState& state)
 	using Separator = syn::AsmSeparator;
 	using SingleLineComment = syn::SingleLineComment<';'>;
 	struct GeneralPurposeRegister : public syn::GenericRegister<'r'> { };
@@ -198,7 +198,7 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
 		} \
 	}
 
-#define DefOperationSameTitle(title, str) DefOperation(title, str, title) 
+#define DefOperationSameTitle(title, str) DefOperation(title, str, title)
     template<typename T>
     using ZeroArgumentDirective = pegtl::seq<T>;
 	template<typename T, typename F>
@@ -232,7 +232,7 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
 				state.current.instruction = false;
 				if (!state.current.hasLexeme) {
 					state.current.dataValue = state.temporaryWord;
-				} 
+				}
 				state.saveToFinished();
 				state.incrementCurrentAddress();
 			} else {
@@ -247,7 +247,7 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
 			state.current.fullImmediate = true;
 			if (!state.current.hasLexeme) {
 				state.setImmediate(state.temporaryWord);
-			} 
+			}
 		}
 	};
     struct HalfImmediate : public pegtl::sor<Number> { };
@@ -258,7 +258,7 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
 		}
 	};
 
-	template<typename Operation, typename Operands> 
+	template<typename Operation, typename Operands>
 	using GenericInstruction = syn::Instruction<Operation, Operands>;
 
 	template<typename Operation>
@@ -368,27 +368,47 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
     struct BranchConditional : public pegtl::seq<Op, Separator, DestinationPredicateRegister, Separator, S> { };
     DefOperationSameTitle(BranchConditionalTrue, bt);
     DefOperationSameTitle(BranchConditionalTrueLink, btl);
-    DefOperationSameTitle(BranchConditionalFalse, bf);
-    DefOperationSameTitle(BranchConditionalFalseLink, bfl);
-    struct OperationBranchConditionalGPR : public pegtl::sor<SymbolBranchConditionalFalseLink, SymbolBranchConditionalTrueLink, SymbolBranchConditionalFalse, SymbolBranchConditionalTrue> { };
+    //DefOperationSameTitle(BranchConditionalFalse, bf);
+    //DefOperationSameTitle(BranchConditionalFalseLink, bfl);
+    struct OperationBranchConditionalGPR : public pegtl::sor<
+                                           //SymbolBranchConditionalFalseLink,
+                                           SymbolBranchConditionalTrueLink,
+                                           //SymbolBranchConditionalFalse,
+                                           SymbolBranchConditionalTrue
+                                           > { };
     struct BranchConditionalGPRInstruction : public BranchConditional<OperationBranchConditionalGPR, Source0GPR> { };
     DefOperationSameTitle(BranchConditionalTrueImmediate, bit);
     DefOperationSameTitle(BranchConditionalTrueImmediateLink, bitl);
-    DefOperationSameTitle(BranchConditionalFalseImmediate, bif);
-    DefOperationSameTitle(BranchConditionalFalseImmediateLink, bifl);
-    struct OperationBranchConditionalImmediate : public pegtl::sor<SymbolBranchConditionalTrueImmediateLink, SymbolBranchConditionalFalseImmediateLink, SymbolBranchConditionalTrueImmediate, SymbolBranchConditionalFalseImmediate> { };
+    //DefOperationSameTitle(BranchConditionalFalseImmediate, bif);
+    //DefOperationSameTitle(BranchConditionalFalseImmediateLink, bifl);
+    struct OperationBranchConditionalImmediate : public pegtl::sor<
+                                                 SymbolBranchConditionalTrueImmediateLink,
+                                                 //SymbolBranchConditionalFalseImmediateLink,
+                                                 SymbolBranchConditionalTrueImmediate
+                                                 //SymbolBranchConditionalFalseImmediate
+                                                 > { };
     struct BranchConditionalImmediateInstruction : public BranchConditional<OperationBranchConditionalImmediate, Immediate> { };
     DefOperationSameTitle(IfThenElseTrue, ift);
-    DefOperationSameTitle(IfThenElseFalse, iff);
+    //DefOperationSameTitle(IfThenElseFalse, iff);
     DefOperationSameTitle(IfThenElseTrueLink, iftl);
-    DefOperationSameTitle(IfThenElseFalseLink, iffl);
-    struct OperationBranchIfStatement : public pegtl::sor<SymbolIfThenElseTrue, SymbolIfThenElseTrueLink, SymbolIfThenElseFalse, SymbolIfThenElseFalseLink> { };
+    //DefOperationSameTitle(IfThenElseFalseLink, iffl);
+    struct OperationBranchIfStatement : public pegtl::sor<
+                                        SymbolIfThenElseTrue,
+                                        SymbolIfThenElseTrueLink
+                                        //SymbolIfThenElseFalse,
+                                        //SymbolIfThenElseFalseLink
+                                        > { };
     struct BranchIfInstruction : public BranchConditional<OperationBranchIfStatement, SourceRegisters> { };
     DefOperationSameTitle(BranchConditionalTrueLR, blrt);
     DefOperationSameTitle(BranchConditionalTrueLRAndLink, blrtl);
-    DefOperationSameTitle(BranchConditionalFalseLR, blrf);
-    DefOperationSameTitle(BranchConditionalFalseLRAndLink, blrfl);
-    struct OperationBranchCondtionalNoArgs : public pegtl::sor<SymbolBranchConditionalTrueLR, SymbolBranchConditionalTrueLRAndLink, SymbolBranchConditionalFalseLR, SymbolBranchConditionalFalseLRAndLink> { };
+    //DefOperationSameTitle(BranchConditionalFalseLR, blrf);
+    //DefOperationSameTitle(BranchConditionalFalseLRAndLink, blrfl);
+    struct OperationBranchCondtionalNoArgs : public pegtl::sor<
+                                             SymbolBranchConditionalTrueLR,
+                                             SymbolBranchConditionalTrueLRAndLink
+                                             //SymbolBranchConditionalFalseLR,
+                                             //SymbolBranchConditionalFalseLRAndLink
+                                             > { };
     struct BranchConditionalNoArgsInstruction : public pegtl::seq<OperationBranchCondtionalNoArgs, Separator, DestinationPredicateRegister> { };
     DefOperationSameTitle(BranchUnconditionalLR, blr);
     DefOperationSameTitle(BranchUnconditionalLRAndLink, blrl);

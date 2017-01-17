@@ -130,14 +130,14 @@ namespace iris {
 				{ JumpOp:: BranchConditionalTrueImmediateLink , std::make_tuple( false, true, false, true, true) } ,
 				{ JumpOp:: BranchConditionalTrue , std::make_tuple( false, true, false, false, false) } ,
 				{ JumpOp:: BranchConditionalTrueLink , std::make_tuple( false, true, false, false, true) } ,
-				{ JumpOp:: BranchConditionalFalseImmediate , std::make_tuple( false, true, true, true, false) } ,
-				{ JumpOp:: BranchConditionalFalseImmediateLink , std::make_tuple( false, true, true, true, true) } ,
-				{ JumpOp:: BranchConditionalFalse , std::make_tuple( false, true, true, false, false) } ,
-				{ JumpOp:: BranchConditionalFalseLink , std::make_tuple( false, true, true, false, true) } ,
+				//{ JumpOp:: BranchConditionalFalseImmediate , std::make_tuple( false, true, true, true, false) } ,
+				//{ JumpOp:: BranchConditionalFalseImmediateLink , std::make_tuple( false, true, true, true, true) } ,
+				//{ JumpOp:: BranchConditionalFalse , std::make_tuple( false, true, true, false, false) } ,
+				//{ JumpOp:: BranchConditionalFalseLink , std::make_tuple( false, true, true, false, true) } ,
 				{ JumpOp:: IfThenElseTrue, std::make_tuple( true, true, false, false, false) } ,
-				{ JumpOp:: IfThenElseFalse, std::make_tuple( true, true, true, false, false) } ,
+				//{ JumpOp:: IfThenElseFalse, std::make_tuple( true, true, true, false, false) } ,
 				{ JumpOp:: IfThenElseTrueLink, std::make_tuple( true, true, false, false, true) } ,
-				{ JumpOp:: IfThenElseFalseLink , std::make_tuple( true, true, true, false, true) } ,
+				//{ JumpOp:: IfThenElseFalseLink , std::make_tuple( true, true, true, false, true) } ,
 			};
 			auto operation = static_cast<JumpOp>(getOperation());
 			auto result = translationTable.find(operation);
@@ -164,16 +164,16 @@ namespace iris {
 						getInstructionPointer() = cond ? getLinkRegister() : getInstructionPointer() + 1;
 						getLinkRegister() = cond ? getInstructionPointer() + 1 : getLinkRegister();
 						break;
-					case JumpOp::BranchConditionalFalseLR:
-						cond = !predicateResult();
-						getInstructionPointer() = cond ? getLinkRegister() : getInstructionPointer() + 1;
-						break;
-					case JumpOp::BranchConditionalFalseLRAndLink:
-						temporaryAddress = getInstructionPointer() + 1;
-						cond = !predicateResult() ;
-						getInstructionPointer() = cond ? getLinkRegister() : getInstructionPointer() + 1;
-						getLinkRegister() = cond ? getInstructionPointer() + 1 : getLinkRegister();
-						break;
+					//case JumpOp::BranchConditionalFalseLR:
+					//	cond = !predicateResult();
+					//	getInstructionPointer() = cond ? getLinkRegister() : getInstructionPointer() + 1;
+					//	break;
+					//case JumpOp::BranchConditionalFalseLRAndLink:
+					//	temporaryAddress = getInstructionPointer() + 1;
+					//	cond = !predicateResult() ;
+					//	getInstructionPointer() = cond ? getLinkRegister() : getInstructionPointer() + 1;
+					//	getLinkRegister() = cond ? getInstructionPointer() + 1 : getLinkRegister();
+					//	break;
 					default:
 						throw syn::Problem("defined but unimplemented operation!");
 				}
