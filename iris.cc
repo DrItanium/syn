@@ -62,6 +62,85 @@ namespace iris {
 				auto group = static_cast<QuadInstructionGroup>(syn::encodeBits<byte, byte, 0x0C, 2>(decodeQuadExtraBit0(current), decodeQuadExtraBit1(current)));
 
 		};
+        auto moveOperation = [this, makeIllegalOperationMessage]() {
+            auto op = static_cast<MoveOp>(getOperation());
+            raw_instruction codeStorage = 0u;
+            switch(op) {
+                case MoveOp::Move:
+                    gpr.copy(getDestination(), getSource0());
+                    break;
+                case MoveOp::Set:
+                    gpr.set(getDestination(), getImmediate());
+                    break;
+                case MoveOp::Swap:
+                    gpr.swap(getDestination(), getSource0());
+                    break;
+                case MoveOp::Load:
+                    gpr.set(getDestination(), data[source0Register()]);
+                    break;
+                case MoveOp::LoadImmediate:
+                    gpr.set(getDestination(), data[getImmediate()]);
+                    break;
+                case MoveOp::LoadWithOffset:
+                    gpr.set(getDestination(), data[source0Register() + getHalfImmediate()]);
+                    break;
+                case MoveOp::Store:
+                    data.set(destinationRegister(), source0Register());
+                    break;
+                case MoveOp::StoreWithOffset:
+                    data.set(destinationRegister() + getHalfImmediate(), source0Register());
+                    break;
+                case MoveOp::Memset:
+                    data.set(destinationRegister(), getImmediate());
+                    break;
+                case MoveOp::Push:
+                    stack[++destinationRegister()] = source0Register();
+                    break;
+                case MoveOp::PushImmediate:
+                    stack[++destinationRegister()] = getImmediate();
+                    break;
+                case MoveOp::Pop:
+                    destinationRegister() = stack[source0Register()];
+                    --source0Register();
+                    break;
+                case MoveOp::LoadCode:
+                    codeStorage = instruction[destinationRegister()];
+                    source0Register() = syn::getLowerHalf(codeStorage);
+                    source1Register() = syn::getUpperHalf(codeStorage);
+                    break;
+                case MoveOp::StoreCode:
+                    instruction[destinationRegister()] = encodeDword(source0Register(), source1Register());
+                    break;
+                case MoveOp::IOWrite:
+                    _io.write(destinationRegister(), source0Register());
+                    break;
+                case MoveOp::IORead:
+                    destinationRegister() = _io.read(source0Register());
+                    break;
+                case MoveOp::IOReadWithOffset:
+                    destinationRegister() = _io.read(source0Register() + getHalfImmediate());
+                    break;
+                case MoveOp::IOWriteWithOffset:
+                    _io.write(destinationRegister() + getHalfImmediate(), source0Register());
+                    break;
+                case MoveOp::MoveFromIP:
+                    destinationRegister() = getInstructionPointer();
+                    break;
+                case MoveOp::MoveToIP:
+                    getInstructionPointer() = destinationRegister();
+                    advanceIp = false;
+                    break;
+                case MoveOp::MoveFromLR:
+                    destinationRegister() = getLinkRegister();
+                    break;
+                case MoveOp::MoveToLR:
+                    getLinkRegister() = destinationRegister();
+                    break;
+                default:
+                    makeIllegalOperationMessage("move code");
+                    break;
+            }
+        };
 		if (group == InstructionGroup::Arithmetic) {
 			static std::map<ArithmeticOp, UnitDescription<ALU>> table = {
 				{ ArithmeticOp::Add, makeDesc<ALU>(ALU::Operation::Add , false) },
@@ -231,84 +310,7 @@ namespace iris {
 				}
 			}
 		} else if (group == InstructionGroup::Move) {
-			auto op = static_cast<MoveOp>(getOperation());
-			raw_instruction codeStorage = 0u;
-			switch(op) {
-				case MoveOp::Move:
-					gpr.copy(getDestination(), getSource0());
-					break;
-				case MoveOp::Set:
-					gpr.set(getDestination(), getImmediate());
-					break;
-				case MoveOp::Swap:
-					gpr.swap(getDestination(), getSource0());
-					break;
-				case MoveOp::Load:
-					gpr.set(getDestination(), data[source0Register()]);
-					break;
-				case MoveOp::LoadImmediate:
-					gpr.set(getDestination(), data[getImmediate()]);
-					break;
-				case MoveOp::LoadWithOffset:
-					gpr.set(getDestination(), data[source0Register() + getHalfImmediate()]);
-					break;
-				case MoveOp::Store:
-					data.set(destinationRegister(), source0Register());
-					break;
-				case MoveOp::StoreWithOffset:
-					data.set(destinationRegister() + getHalfImmediate(), source0Register());
-					break;
-				case MoveOp::Memset:
-					data.set(destinationRegister(), getImmediate());
-					break;
-				case MoveOp::Push:
-					stack[++destinationRegister()] = source0Register();
-					break;
-				case MoveOp::PushImmediate:
-					stack[++destinationRegister()] = getImmediate();
-					break;
-				case MoveOp::Pop:
-					destinationRegister() = stack[source0Register()];
-					--source0Register();
-					break;
-				case MoveOp::LoadCode:
-					codeStorage = instruction[destinationRegister()];
-					source0Register() = syn::getLowerHalf(codeStorage);
-					source1Register() = syn::getUpperHalf(codeStorage);
-					break;
-				case MoveOp::StoreCode:
-					instruction[destinationRegister()] = encodeDword(source0Register(), source1Register());
-					break;
-				case MoveOp::IOWrite:
-					_io.write(destinationRegister(), source0Register());
-					break;
-				case MoveOp::IORead:
-					destinationRegister() = _io.read(source0Register());
-					break;
-				case MoveOp::IOReadWithOffset:
-					destinationRegister() = _io.read(source0Register() + getHalfImmediate());
-					break;
-				case MoveOp::IOWriteWithOffset:
-					_io.write(destinationRegister() + getHalfImmediate(), source0Register());
-					break;
-				case MoveOp::MoveFromIP:
-					destinationRegister() = getInstructionPointer();
-					break;
-				case MoveOp::MoveToIP:
-					getInstructionPointer() = destinationRegister();
-					advanceIp = false;
-					break;
-				case MoveOp::MoveFromLR:
-					destinationRegister() = getLinkRegister();
-					break;
-				case MoveOp::MoveToLR:
-					getLinkRegister() = destinationRegister();
-					break;
-				default:
-					makeIllegalOperationMessage("move code");
-					break;
-			}
-		} else if (group == InstructionGroup::ConditionalRegister) {
+            moveOperation();
 		} else if (group == InstructionGroup::DoubleWord) {
 			dispatch32();
 		} else if (group == InstructionGroup::QuadWord) {

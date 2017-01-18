@@ -115,7 +115,6 @@
                           Move
                           Jump
                           Compare
-                          ConditionalRegister
                           DoubleWord
                           QuadWord)
                 (cast-to byte)
