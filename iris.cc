@@ -126,10 +126,10 @@ namespace iris {
 				{ JumpOp:: BranchUnconditionalImmediateLink ,   std::make_tuple(false, true, true) } ,
 				{ JumpOp:: BranchUnconditional ,                std::make_tuple(false, false, false) } ,
 				{ JumpOp:: BranchUnconditionalLink ,            std::make_tuple(false, false, true) } ,
-				{ JumpOp:: BranchConditionalTrueImmediate ,     std::make_tuple(true, true, false) } ,
-				{ JumpOp:: BranchConditionalTrueImmediateLink , std::make_tuple(true, true, true) } ,
-				{ JumpOp:: BranchConditionalTrue ,              std::make_tuple(true, false, false) } ,
-				{ JumpOp:: BranchConditionalTrueLink ,          std::make_tuple(true, false, true) } ,
+				{ JumpOp:: BranchConditionalImmediate ,     std::make_tuple(true, true, false) } ,
+				{ JumpOp:: BranchConditionalImmediateLink , std::make_tuple(true, true, true) } ,
+				{ JumpOp:: BranchConditional ,              std::make_tuple(true, false, false) } ,
+				{ JumpOp:: BranchConditionalLink ,          std::make_tuple(true, false, true) } ,
 			};
 			auto operation = static_cast<JumpOp>(getOperation());
 			auto result = translationTable.find(operation);
@@ -138,11 +138,11 @@ namespace iris {
 				bool cond = false;
 				advanceIp = false;
 				switch(operation) {
-                    case JumpOp::IfThenElseTrue:
+                    case JumpOp::IfThenElse:
                         cond = predicateResult();
                         getInstructionPointer() = gpr[cond ? getSource0() : getSource1()];
                         break;
-                    case JumpOp::IfThenElseTrueLink:
+                    case JumpOp::IfThenElseLink:
                         cond = predicateResult();
                         getLinkRegister() = getInstructionPointer() + 1;
                         getInstructionPointer() = gpr[cond ? getSource0() : getSource1()];
@@ -155,11 +155,11 @@ namespace iris {
 						getInstructionPointer() = getLinkRegister();
 						getLinkRegister() = temporaryAddress;
 						break;
-					case JumpOp::BranchConditionalTrueLR:
+					case JumpOp::BranchConditionalLR:
 						cond = predicateResult();
 						getInstructionPointer() = cond ? getLinkRegister() : getInstructionPointer() + 1;
 						break;
-					case JumpOp::BranchConditionalTrueLRAndLink:
+					case JumpOp::BranchConditionalLRAndLink:
 						temporaryAddress = getInstructionPointer() + 1;
 						cond = predicateResult();
 						getInstructionPointer() = cond ? getLinkRegister() : temporaryAddress;

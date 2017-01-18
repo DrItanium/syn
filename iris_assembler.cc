@@ -366,32 +366,32 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
 	struct GroupBranchUnconditional : public pegtl::sor<BranchOneGPRInstruciton, BranchImmediateInstruction> { };
     template<typename Op, typename S>
     struct BranchConditional : public pegtl::seq<Op, Separator, DestinationPredicateRegister, Separator, S> { };
-    DefOperationSameTitle(BranchConditionalTrue, bc);
-    DefOperationSameTitle(BranchConditionalTrueLink, bcl);
+    DefOperationSameTitle(BranchConditional, bc);
+    DefOperationSameTitle(BranchConditionalLink, bcl);
     struct OperationBranchConditionalGPR : public pegtl::sor<
-                                           SymbolBranchConditionalTrueLink,
-                                           SymbolBranchConditionalTrue
+                                           SymbolBranchConditionalLink,
+                                           SymbolBranchConditional
                                            > { };
     struct BranchConditionalGPRInstruction : public BranchConditional<OperationBranchConditionalGPR, Source0GPR> { };
-    DefOperationSameTitle(BranchConditionalTrueImmediate, bic);
-    DefOperationSameTitle(BranchConditionalTrueImmediateLink, bicl);
+    DefOperationSameTitle(BranchConditionalImmediate, bic);
+    DefOperationSameTitle(BranchConditionalImmediateLink, bicl);
     struct OperationBranchConditionalImmediate : public pegtl::sor<
-                                                 SymbolBranchConditionalTrueImmediateLink,
-                                                 SymbolBranchConditionalTrueImmediate
+                                                 SymbolBranchConditionalImmediateLink,
+                                                 SymbolBranchConditionalImmediate
                                                  > { };
     struct BranchConditionalImmediateInstruction : public BranchConditional<OperationBranchConditionalImmediate, Immediate> { };
-    DefOperationSameTitle(IfThenElseTrue, "if");
-    DefOperationSameTitle(IfThenElseTrueLink, ifl);
+    DefOperationSameTitle(IfThenElse, "if");
+    DefOperationSameTitle(IfThenElseLink, ifl);
     struct OperationBranchIfStatement : public pegtl::sor<
-                                        SymbolIfThenElseTrue,
-                                        SymbolIfThenElseTrueLink
+                                        SymbolIfThenElse,
+                                        SymbolIfThenElseLink
                                         > { };
     struct BranchIfInstruction : public BranchConditional<OperationBranchIfStatement, SourceRegisters> { };
-    DefOperationSameTitle(BranchConditionalTrueLR, blrc);
-    DefOperationSameTitle(BranchConditionalTrueLRAndLink, blrcl);
+    DefOperationSameTitle(BranchConditionalLR, blrc);
+    DefOperationSameTitle(BranchConditionalLRAndLink, blrcl);
     struct OperationBranchCondtionalNoArgs : public pegtl::sor<
-                                             SymbolBranchConditionalTrueLR,
-                                             SymbolBranchConditionalTrueLRAndLink
+                                             SymbolBranchConditionalLR,
+                                             SymbolBranchConditionalLRAndLink
                                              > { };
     struct BranchConditionalNoArgsInstruction : public pegtl::seq<OperationBranchCondtionalNoArgs, Separator, DestinationPredicateRegister> { };
     DefOperationSameTitle(BranchUnconditionalLR, blr);
