@@ -120,18 +120,16 @@ namespace iris {
 				}
 			}
 		} else if (group == InstructionGroup::Jump) {
-			// ifthenelse?, conditional?, immediate?, link?
-			static std::map<JumpOp, std::tuple<bool, bool, bool, bool>> translationTable = {
-				{ JumpOp:: BranchUnconditionalImmediate , std::make_tuple( false, false, true, false) } ,
-				{ JumpOp:: BranchUnconditionalImmediateLink , std::make_tuple( false, false, true, true) } ,
-				{ JumpOp:: BranchUnconditional , std::make_tuple( false, false, false, false) } ,
-				{ JumpOp:: BranchUnconditionalLink , std::make_tuple( false, false, false, true) } ,
-				{ JumpOp:: BranchConditionalTrueImmediate , std::make_tuple( false, true, true, false) } ,
-				{ JumpOp:: BranchConditionalTrueImmediateLink , std::make_tuple( false, true, true, true) } ,
-				{ JumpOp:: BranchConditionalTrue , std::make_tuple( false, true, false, false) } ,
-				{ JumpOp:: BranchConditionalTrueLink , std::make_tuple( false, true, false, true) } ,
-				{ JumpOp:: IfThenElseTrue, std::make_tuple( true, true, false, false) } ,
-				{ JumpOp:: IfThenElseTrueLink, std::make_tuple( true, true, false, true) } ,
+			// conditional?, immediate?, link?
+			static std::map<JumpOp, std::tuple<bool, bool, bool>> translationTable = {
+				{ JumpOp:: BranchUnconditionalImmediate ,       std::make_tuple(false, true, false) } ,
+				{ JumpOp:: BranchUnconditionalImmediateLink ,   std::make_tuple(false, true, true) } ,
+				{ JumpOp:: BranchUnconditional ,                std::make_tuple(false, false, false) } ,
+				{ JumpOp:: BranchUnconditionalLink ,            std::make_tuple(false, false, true) } ,
+				{ JumpOp:: BranchConditionalTrueImmediate ,     std::make_tuple(true, true, false) } ,
+				{ JumpOp:: BranchConditionalTrueImmediateLink , std::make_tuple(true, true, true) } ,
+				{ JumpOp:: BranchConditionalTrue ,              std::make_tuple(true, false, false) } ,
+				{ JumpOp:: BranchConditionalTrueLink ,          std::make_tuple(true, false, true) } ,
 			};
 			auto operation = static_cast<JumpOp>(getOperation());
 			auto result = translationTable.find(operation);
@@ -140,6 +138,15 @@ namespace iris {
 				bool cond = false;
 				advanceIp = false;
 				switch(operation) {
+                    case JumpOp::IfThenElseTrue:
+                        cond = predicateResult();
+                        getInstructionPointer() = gpr[cond ? getSource0() : getSource1()];
+                        break;
+                    case JumpOp::IfThenElseTrueLink:
+                        cond = predicateResult();
+                        getLinkRegister() = getInstructionPointer() + 1;
+                        getInstructionPointer() = gpr[cond ? getSource0() : getSource1()];
+                        break;
 					case JumpOp::BranchUnconditionalLR:
 						getInstructionPointer() = getLinkRegister();
 						break;
@@ -155,26 +162,22 @@ namespace iris {
 					case JumpOp::BranchConditionalTrueLRAndLink:
 						temporaryAddress = getInstructionPointer() + 1;
 						cond = predicateResult();
-						getInstructionPointer() = cond ? getLinkRegister() : getInstructionPointer() + 1;
-						getLinkRegister() = cond ? getInstructionPointer() + 1 : getLinkRegister();
+						getInstructionPointer() = cond ? getLinkRegister() : temporaryAddress;
+						getLinkRegister() = cond ? temporaryAddress : getLinkRegister();
 						break;
 					default:
 						throw syn::Problem("defined but unimplemented operation!");
 				}
 			} else {
-				auto ifthenelse = false, conditional = false, immediate = false,  link = false;
-				std::tie(ifthenelse, conditional, immediate, link) = result->second;
+				auto conditional = false, immediate = false,  link = false;
+				std::tie(conditional, immediate, link) = result->second;
 				auto newAddr = static_cast<word>(0);
 				auto cond = true;
 				advanceIp = false;
 				auto ip = getInstructionPointer();
 				if (conditional) {
 					auto cond = predicateResult();
-					if (ifthenelse) {
-						newAddr = gpr[cond ? getSource0() : getSource1()];
-					} else {
-						newAddr = cond ? (immediate ? getImmediate() : source0Register()) : ip + 1;
-					}
+					newAddr = cond ? (immediate ? getImmediate() : source0Register()) : ip + 1;
 				} else {
 					newAddr = immediate ? getImmediate() : destinationRegister();
 				}
