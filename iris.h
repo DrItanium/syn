@@ -13,12 +13,17 @@ namespace iris {
 	typedef word immediate;
 	enum ArchitectureConstants  {
 		RegisterCount = 256,
+		DoubleRegisterCount = RegisterCount / 2,
+		QuadRegisterCount = RegisterCount / 4, 
 		AddressMax = 0xFFFF,
 		RegisterMax = 0xFF,
 		ConditionRegisterCount = 16,
 		StackPointerIndex = RegisterCount - 1,
-		MaxGroups = 0b00000111,
-		MaxOperations = 0b00011111,
+		MaxGroups =           0b00000111,
+		MaxOperations =       0b00011111,
+		MaxGroups32 =         0b00000011, 
+		MaxGroups64 =         0b00001111,
+		MaxOperations32 =     0b00011111,
 	};
 	inline constexpr dword encodeDword(byte a, byte b, byte c, byte d) noexcept {
 		return syn::encodeUint32LE(a, b, c, d);

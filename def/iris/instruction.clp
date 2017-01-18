@@ -70,15 +70,68 @@
                  (shift 3)
                  (input-type byte)
                  (output-type byte))
-
+          (field (name DoubleDestination)
+                 (mask 0x0000FE00)
+                 (shift 8)
+                 (output-type byte))
+          (field (name DoubleSource0)
+                 (mask 0x00FE0000)
+                 (shift 16)
+                 (output-type byte))
+          (field (name DoubleSource1)
+                 (mask 0xFE000000)
+                 (shift 24)
+                 (output-type byte))
+          (field (name DoubleExtraBit0)
+                 (mask 0x00010000)
+                 (shift 16)
+                 (output-type byte))
+          (field (name DoubleExtraBit1)
+                 (mask 0x01000000)
+                 (shift 24)
+                 (output-type byte))
+          (field (name QuadDestination)
+                 (mask 0x0000FC00)
+                 (shift 8)
+                 (output-type byte))
+          (field (name QuadSource0)
+                 (mask 0x00FC0000)
+                 (shift 16)
+                 (output-type byte))
+          (field (name QuadSource1)
+                 (mask 0xFC000000)
+                 (shift 24)
+                 (output-type byte))
+          (field (name QuadExtraBit0)
+                 (mask 0x00030000)
+                 (shift 16)
+                 (output-type byte))
+          (field (name QuadExtraBit1)
+                 (mask 0x03000000)
+                 (shift 24)
+                 (output-type byte))
           (enum (name InstructionGroup)
                 (children Arithmetic
                           Move
                           Jump
                           Compare
-                          ConditionalRegister)
+                          ConditionalRegister
+                          DoubleWord
+                          QuadWord)
                 (cast-to byte)
                 (max-size "ArchitectureConstants::MaxGroups"))
+          (enum (name InstructionGroup32)
+                (children Arithmetic
+                          Move
+                          Compare)
+                (cast-to byte)
+                (max-size "ArchitectureConstants::MaxGroups32"))
+          (enum (name InstructionGroup64)
+                (children Arithmetic
+                          Move
+                          Compare)
+                (cast-to byte)
+                (max-size "ArchitectureConstants::MaxGroups64"))
           (enum (cast-to byte)
                 (max-size "ArchitectureConstants::MaxOperations")
                 (name ArithmeticOp)
@@ -104,6 +157,29 @@
                           ShiftRightImmediate
                           Min
                           Max))
+          (enum (cast-to byte)
+                (max-size "ArchitectureConstants::MaxOperations32")
+                (name DwordOp)
+                (children Add32
+                          Sub32
+                          Div32
+                          Rem32
+                          ShiftLeft32
+                          ShiftRight32
+                          BinaryAnd32
+                          BinaryOr32
+                          BinaryNot32
+                          BinaryXor32
+                          BinaryNand32
+                          BinaryNor32
+                          AddImmediate32
+                          SubImmediate32
+                          DivImmediate32
+                          RemImmediate32
+                          ShiftLeftImmediate32
+                          ShiftRightImmediate32
+                          Min32
+                          Max32))
           (enum (cast-to byte)
                 (max-size "ArchitectureConstants::MaxOperations")
                 (name JumpOp)
