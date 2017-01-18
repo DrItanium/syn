@@ -366,48 +366,32 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
 	struct GroupBranchUnconditional : public pegtl::sor<BranchOneGPRInstruciton, BranchImmediateInstruction> { };
     template<typename Op, typename S>
     struct BranchConditional : public pegtl::seq<Op, Separator, DestinationPredicateRegister, Separator, S> { };
-    DefOperationSameTitle(BranchConditionalTrue, bt);
-    DefOperationSameTitle(BranchConditionalTrueLink, btl);
-    //DefOperationSameTitle(BranchConditionalFalse, bf);
-    //DefOperationSameTitle(BranchConditionalFalseLink, bfl);
+    DefOperationSameTitle(BranchConditionalTrue, bc);
+    DefOperationSameTitle(BranchConditionalTrueLink, bcl);
     struct OperationBranchConditionalGPR : public pegtl::sor<
-                                           //SymbolBranchConditionalFalseLink,
                                            SymbolBranchConditionalTrueLink,
-                                           //SymbolBranchConditionalFalse,
                                            SymbolBranchConditionalTrue
                                            > { };
     struct BranchConditionalGPRInstruction : public BranchConditional<OperationBranchConditionalGPR, Source0GPR> { };
-    DefOperationSameTitle(BranchConditionalTrueImmediate, bit);
-    DefOperationSameTitle(BranchConditionalTrueImmediateLink, bitl);
-    //DefOperationSameTitle(BranchConditionalFalseImmediate, bif);
-    //DefOperationSameTitle(BranchConditionalFalseImmediateLink, bifl);
+    DefOperationSameTitle(BranchConditionalTrueImmediate, bic);
+    DefOperationSameTitle(BranchConditionalTrueImmediateLink, bicl);
     struct OperationBranchConditionalImmediate : public pegtl::sor<
                                                  SymbolBranchConditionalTrueImmediateLink,
-                                                 //SymbolBranchConditionalFalseImmediateLink,
                                                  SymbolBranchConditionalTrueImmediate
-                                                 //SymbolBranchConditionalFalseImmediate
                                                  > { };
     struct BranchConditionalImmediateInstruction : public BranchConditional<OperationBranchConditionalImmediate, Immediate> { };
-    DefOperationSameTitle(IfThenElseTrue, ift);
-    //DefOperationSameTitle(IfThenElseFalse, iff);
-    DefOperationSameTitle(IfThenElseTrueLink, iftl);
-    //DefOperationSameTitle(IfThenElseFalseLink, iffl);
+    DefOperationSameTitle(IfThenElseTrue, "if");
+    DefOperationSameTitle(IfThenElseTrueLink, ifl);
     struct OperationBranchIfStatement : public pegtl::sor<
                                         SymbolIfThenElseTrue,
                                         SymbolIfThenElseTrueLink
-                                        //SymbolIfThenElseFalse,
-                                        //SymbolIfThenElseFalseLink
                                         > { };
     struct BranchIfInstruction : public BranchConditional<OperationBranchIfStatement, SourceRegisters> { };
-    DefOperationSameTitle(BranchConditionalTrueLR, blrt);
-    DefOperationSameTitle(BranchConditionalTrueLRAndLink, blrtl);
-    //DefOperationSameTitle(BranchConditionalFalseLR, blrf);
-    //DefOperationSameTitle(BranchConditionalFalseLRAndLink, blrfl);
+    DefOperationSameTitle(BranchConditionalTrueLR, blrc);
+    DefOperationSameTitle(BranchConditionalTrueLRAndLink, blrcl);
     struct OperationBranchCondtionalNoArgs : public pegtl::sor<
                                              SymbolBranchConditionalTrueLR,
                                              SymbolBranchConditionalTrueLRAndLink
-                                             //SymbolBranchConditionalFalseLR,
-                                             //SymbolBranchConditionalFalseLRAndLink
                                              > { };
     struct BranchConditionalNoArgsInstruction : public pegtl::seq<OperationBranchCondtionalNoArgs, Separator, DestinationPredicateRegister> { };
     DefOperationSameTitle(BranchUnconditionalLR, blr);
