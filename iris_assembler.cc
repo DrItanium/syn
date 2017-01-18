@@ -417,17 +417,6 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
     DefOperationSameTitle(GreaterThanImmediate, gti);
     DefOperationSameTitle(LessThanOrEqualToImmediate, lei);
     DefOperationSameTitle(GreaterThanOrEqualToImmediate, gei);
-    struct CompareRegisterOperation : public pegtl::sor< SymbolEq, SymbolNeq, SymbolLessThan, SymbolGreaterThan, SymbolLessThanOrEqualTo, SymbolGreaterThanOrEqualTo> { };
-    struct CompareImmediateOperation : public pegtl::sor<SymbolEqImmediate, SymbolNeqImmediate, SymbolLessThanImmediate, SymbolGreaterThanImmediate, SymbolLessThanOrEqualToImmediate, SymbolGreaterThanOrEqualToImmediate> { };
-    struct CompareRegisterInstruction : public pegtl::seq<CompareRegisterOperation, Separator, DestinationPredicates, Separator, SourceRegisters> { };
-    struct CompareImmediateInstruction : public pegtl::seq<CompareImmediateOperation, Separator, DestinationPredicates, Separator, Source0GPR, Separator, HalfImmediate> { };
-    struct CompareInstruction : public pegtl::sor<CompareRegisterInstruction, CompareImmediateInstruction> { };
-	DefGroupSet(CompareInstruction, Compare);
-
-#undef CURRENT_TYPE
-#define CURRENT_TYPE ConditionRegisterOp
-
-    // conditional register actions
     DefOperationSameTitle(SaveCRs, svcr);
     DefOperationSameTitle(RestoreCRs, recr);
     DefOperationSameTitle(CRXor, crxor);
@@ -438,6 +427,10 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
     DefOperationSameTitle(CRNor, crnor);
     DefOperationSameTitle(CRSwap, crswap);
     DefOperationSameTitle(CRMove, crmove);
+    struct CompareRegisterOperation : public pegtl::sor< SymbolEq, SymbolNeq, SymbolLessThan, SymbolGreaterThan, SymbolLessThanOrEqualTo, SymbolGreaterThanOrEqualTo> { };
+    struct CompareImmediateOperation : public pegtl::sor<SymbolEqImmediate, SymbolNeqImmediate, SymbolLessThanImmediate, SymbolGreaterThanImmediate, SymbolLessThanOrEqualToImmediate, SymbolGreaterThanOrEqualToImmediate> { };
+    struct CompareRegisterInstruction : public pegtl::seq<CompareRegisterOperation, Separator, DestinationPredicates, Separator, SourceRegisters> { };
+    struct CompareImmediateInstruction : public pegtl::seq<CompareImmediateOperation, Separator, DestinationPredicates, Separator, Source0GPR, Separator, HalfImmediate> { };
     struct OperationPredicateTwoArgs : public pegtl::sor<SymbolCRSwap, SymbolCRMove> { };
     struct OperationPredicateThreeArgs : public pegtl::sor<SymbolCRNot> { };
     struct OperationPredicateOneGPR : public pegtl::sor<SymbolSaveCRs, SymbolRestoreCRs> { };
@@ -447,8 +440,8 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
     struct PredicateInstructionThreeArgs : public pegtl::seq<OperationPredicateThreeArgs, DestinationPredicates, Source0Predicate> { };
     struct PredicateInstructionFourArgs : public pegtl::seq<OperationPredicateFourArgs, DestinationPredicates, Source0Predicate, Source1Predicate> { };
     struct PredicateInstruction : public pegtl::sor<PredicateInstructionTwoArgs, PredicateInstructionThreeArgs, PredicateInstructionFourArgs> { };
-	DefGroupSet(PredicateInstruction, ConditionalRegister);
-
+    struct CompareInstruction : public pegtl::sor<CompareRegisterInstruction, CompareImmediateInstruction, PredicateInstruction> { };
+	DefGroupSet(CompareInstruction, Compare);
 
 #undef DefGroupSet
 #undef DefOperation

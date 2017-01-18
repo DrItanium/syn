@@ -114,9 +114,45 @@ namespace iris {
 				{ CompareOp::Neq, makeDesc<CompareUnit>(CompareUnit::Operation::Neq, false) },
 				{ CompareOp::NeqImmediate, makeDesc<CompareUnit>(CompareUnit::Operation::Neq, true) },
 			};
-			auto result = translationTable.find(static_cast<CompareOp>(getOperation()));
+            auto op = static_cast<CompareOp>(getOperation());
+			auto result = translationTable.find(op);
 			if (result == translationTable.end()) {
-				makeIllegalOperationMessage("compare code");
+                static std::map<CompareOp, UnitDescription<PredicateComparator>> predicateOperations = {
+                    { CompareOp::CRAnd, makeDesc<PredicateComparator>(PredicateComparator::Operation::BinaryAnd, false) },
+                    { CompareOp::CROr, makeDesc<PredicateComparator>(PredicateComparator::Operation::BinaryOr, false) },
+                    { CompareOp::CRNand, makeDesc<PredicateComparator>(PredicateComparator::Operation::BinaryNand, false) },
+                    { CompareOp::CRNor, makeDesc<PredicateComparator>(PredicateComparator::Operation::BinaryNor, false) },
+                    { CompareOp::CRXor, makeDesc<PredicateComparator>(PredicateComparator::Operation::BinaryXor, false) },
+                    { CompareOp::CRNot, makeDesc<PredicateComparator>(PredicateComparator::Operation::UnaryNot, false) },
+                };
+                auto result = predicateOperations.find(op);
+                if (result == predicateOperations.end()) {
+                    switch(op) {
+                        case CompareOp::CRSwap:
+                            syn::swap<bool>(predicateResult(), predicateInverseResult());
+                            break;
+                        case CompareOp::CRMove:
+                            predicateResult() = predicateInverseResult();
+                            break;
+                        case CompareOp::SaveCRs:
+                            destinationRegister() = savePredicateRegisters(getImmediate());
+                            break;
+                        case CompareOp::RestoreCRs:
+                            restorePredicateRegisters(destinationRegister(), getImmediate());
+                            break;
+                        default:
+                            throw syn::Problem("Defined but unimplemented condition register operation!");
+                    }
+                } else {
+                    typename decltype(_pcompare)::Operation pop;
+                    bool immediate = false;
+                    std::tie(pop, immediate) = result->second;
+                    auto result = _pcompare.performOperation(pop, predicateSource0(), predicateSource1());
+                    predicateResult() = result;
+                    if (getPredicateResult() != getPredicateInverse()) {
+                        predicateInverseResult() = !result;
+                    }
+                }
 			} else {
 				typename decltype(_compare)::Operation op;
 				bool immediate = false;
@@ -273,43 +309,6 @@ namespace iris {
 					break;
 			}
 		} else if (group == InstructionGroup::ConditionalRegister) {
-			static std::map<ConditionRegisterOp, UnitDescription<PredicateComparator>> translationTable = {
-				{ ConditionRegisterOp::CRAnd, makeDesc<PredicateComparator>(PredicateComparator::Operation::BinaryAnd, false) },
-				{ ConditionRegisterOp::CROr, makeDesc<PredicateComparator>(PredicateComparator::Operation::BinaryOr, false) },
-				{ ConditionRegisterOp::CRNand, makeDesc<PredicateComparator>(PredicateComparator::Operation::BinaryNand, false) },
-				{ ConditionRegisterOp::CRNor, makeDesc<PredicateComparator>(PredicateComparator::Operation::BinaryNor, false) },
-				{ ConditionRegisterOp::CRXor, makeDesc<PredicateComparator>(PredicateComparator::Operation::BinaryXor, false) },
-				{ ConditionRegisterOp::CRNot, makeDesc<PredicateComparator>(PredicateComparator::Operation::UnaryNot, false) },
-			};
-			auto op = static_cast<ConditionRegisterOp>(getOperation());
-			auto result = translationTable.find(op);
-			if (result  == translationTable.end()) {
-				switch(op) {
-					case ConditionRegisterOp::CRSwap:
-						syn::swap<bool>(predicateResult(), predicateInverseResult());
-						break;
-					case ConditionRegisterOp::CRMove:
-						predicateResult() = predicateInverseResult();
-						break;
-					case ConditionRegisterOp::SaveCRs:
-						destinationRegister() = savePredicateRegisters(getImmediate());
-						break;
-					case ConditionRegisterOp::RestoreCRs:
-						restorePredicateRegisters(destinationRegister(), getImmediate());
-						break;
-					default:
-						throw syn::Problem("Defined but unimplemented condition register operation!");
-				}
-			} else {
-				typename decltype(_pcompare)::Operation pop;
-				bool immediate = false;
-				std::tie(pop, immediate) = result->second;
-				auto result = _pcompare.performOperation(pop, predicateSource0(), predicateSource1());
-				predicateResult() = result;
-				if (getPredicateResult() != getPredicateInverse()) {
-					predicateInverseResult() = !result;
-				}
-			}
 		} else if (group == InstructionGroup::DoubleWord) {
 			dispatch32();
 		} else if (group == InstructionGroup::QuadWord) {

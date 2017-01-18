@@ -202,11 +202,8 @@
                           LessThanOrEqualTo
                           LessThanOrEqualToImmediate
                           GreaterThanOrEqualTo
-                          GreaterThanOrEqualToImmediate))
-          (enum (cast-to byte)
-                (max-size "ArchitectureConstants::MaxOperations")
-                (name ConditionRegisterOp)
-                (children SaveCRs
+                          GreaterThanOrEqualToImmediate
+                          SaveCRs
                           RestoreCRs
                           CRXor
                           CRNot
