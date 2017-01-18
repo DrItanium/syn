@@ -120,18 +120,6 @@
                           QuadWord)
                 (cast-to byte)
                 (max-size "ArchitectureConstants::MaxGroups"))
-          (enum (name InstructionGroup32)
-                (children Arithmetic
-                          Move
-                          Compare)
-                (cast-to byte)
-                (max-size "ArchitectureConstants::MaxGroups32"))
-          (enum (name InstructionGroup64)
-                (children Arithmetic
-                          Move
-                          Compare)
-                (cast-to byte)
-                (max-size "ArchitectureConstants::MaxGroups64"))
           (enum (cast-to byte)
                 (max-size "ArchitectureConstants::MaxOperations")
                 (name ArithmeticOp)
@@ -157,29 +145,6 @@
                           ShiftRightImmediate
                           Min
                           Max))
-          (enum (cast-to byte)
-                (max-size "ArchitectureConstants::MaxOperations32")
-                (name DwordOp)
-                (children Add32
-                          Sub32
-                          Div32
-                          Rem32
-                          ShiftLeft32
-                          ShiftRight32
-                          BinaryAnd32
-                          BinaryOr32
-                          BinaryNot32
-                          BinaryXor32
-                          BinaryNand32
-                          BinaryNor32
-                          AddImmediate32
-                          SubImmediate32
-                          DivImmediate32
-                          RemImmediate32
-                          ShiftLeftImmediate32
-                          ShiftRightImmediate32
-                          Min32
-                          Max32))
           (enum (cast-to byte)
                 (max-size "ArchitectureConstants::MaxOperations")
                 (name JumpOp)
@@ -251,5 +216,69 @@
                           CRNor
                           CRSwap
                           CRMove
-                          )))
+                          ))
+          (enum (name DoubleInstructionGroup)
+                (children Arithmetic
+                          Move
+                          Compare)
+                (cast-to byte)
+                (max-size "ArchitectureConstants::MaxGroups32"))
+          (enum (cast-to byte)
+                (max-size "ArchitectureConstants::MaxOperations")
+                (name DoubleArithmeticOp)
+                (children Add
+                          Sub
+                          Div
+                          Rem
+                          ShiftLeft
+                          ShiftRight
+                          BinaryAnd
+                          BinaryOr
+                          BinaryNot
+                          BinaryXor
+                          BinaryNand
+                          BinaryNor
+                          AddImmediate
+                          SubImmediate
+                          DivImmediate
+                          RemImmediate
+                          ShiftLeftImmediate
+                          ShiftRightImmediate
+                          Min
+                          Max))
+          (enum (cast-to byte)
+                (max-size "ArchitectureConstants::MaxOperations")
+                (name DoubleCompareOp)
+                (children Eq
+                          EqImmediate
+                          Neq
+                          NeqImmediate
+                          LessThan
+                          LessThanImmediate
+                          GreaterThan
+                          GreaterThanImmediate
+                          LessThanOrEqualTo
+                          LessThanOrEqualToImmediate
+                          GreaterThanOrEqualTo
+                          GreaterThanOrEqualToImmediate))
+          (enum (cast-to byte)
+                (max-size "ArchitectureConstants::MaxOperations")
+                (name DoubleMoveOp)
+                (children Move
+                          Swap
+                          Load
+                          LoadWithOffset
+                          Store
+                          StoreWithOffset
+                          Push
+                          Pop
+                          LoadCode
+                          StoreCode))
+          (enum (name QuadInstructionGroup)
+                (children Arithmetic
+                          Move
+                          Compare)
+                (cast-to byte)
+                (max-size "ArchitectureConstants::MaxGroups64"))
 
+                          )
