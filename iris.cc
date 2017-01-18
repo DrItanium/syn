@@ -302,6 +302,8 @@ namespace iris {
 					predicateInverseResult() = !result;
 				}
 			}
+		} else if (group == InstructionGroup::DoubleWord) {
+		} else if (group == InstructionGroup::QuadWord) {
 		} else {
 			makeProblem("Illegal instruction group", getGroup());
 		}
