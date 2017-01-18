@@ -76,12 +76,6 @@ namespace iris {
 			bool& getPredicateRegister(byte index);
 		private:
 			void dispatch();
-			inline DoubleInstructionGroup getDoubleInstructionGroup() const noexcept {
-				return static_cast<DoubleInstructionGroup>(syn::encodeBits<byte, byte, 0x02, 1>(decodeDoubleExtraBit0(current), decodeDoubleExtraBit1(current)));
-			}
-			inline QuadInstructionGroup getQuadInstructionGroup() const noexcept {
-				return static_cast<QuadInstructionGroup>(syn::encodeBits<byte, byte, 0x0C, 2>(decodeQuadExtraBit0(current), decodeQuadExtraBit1(current)));
-			}
             inline byte getDestination() const noexcept { return decodeDestination(current); }
             inline byte getSource0() const noexcept { return decodeSource0(current); }
             inline byte getSource1() const noexcept { return decodeSource1(current); }
@@ -106,10 +100,6 @@ namespace iris {
             inline byte getQuadDestination() const noexcept { return decodeQuadDestination(current); }
             inline byte getQuadSource0() const noexcept { return decodeQuadSource0(current); }
             inline byte getQuadSource1() const noexcept { return decodeQuadSource1(current); }
-		private:
-			void dispatch32();
-			void dispatch64();
-
 		private:
 			template<typename Unit>
 			void performOperation(Unit& unit, typename Unit::Operation op, bool immediate) {

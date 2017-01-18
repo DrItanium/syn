@@ -54,6 +54,14 @@ namespace iris {
 		auto makeIllegalOperationMessage = [this, makeProblem](const std::string& type) {
 			makeProblem("Illegal " + type, getOperation());
 		};
+		auto dispatch32 = [this]() {
+				auto group = static_cast<DoubleInstructionGroup>(syn::encodeBits<byte, byte, 0x02, 1>(decodeDoubleExtraBit0(current), decodeDoubleExtraBit1(current)));
+		};
+
+		auto dispatch64 = [this]() {
+				auto group = static_cast<QuadInstructionGroup>(syn::encodeBits<byte, byte, 0x0C, 2>(decodeQuadExtraBit0(current), decodeQuadExtraBit1(current)));
+
+		};
 		if (group == InstructionGroup::Arithmetic) {
 			static std::map<ArithmeticOp, UnitDescription<ALU>> table = {
 				{ ArithmeticOp::Add, makeDesc<ALU>(ALU::Operation::Add , false) },
@@ -303,7 +311,9 @@ namespace iris {
 				}
 			}
 		} else if (group == InstructionGroup::DoubleWord) {
+			dispatch32();
 		} else if (group == InstructionGroup::QuadWord) {
+			dispatch64();
 		} else {
 			makeProblem("Illegal instruction group", getGroup());
 		}
