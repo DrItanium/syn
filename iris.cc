@@ -120,24 +120,18 @@ namespace iris {
 				}
 			}
 		} else if (group == InstructionGroup::Jump) {
-			// ifthenelse?, conditional?, iffalse?, immediate?, link?
-			static std::map<JumpOp, std::tuple<bool, bool, bool, bool, bool>> translationTable = {
-				{ JumpOp:: BranchUnconditionalImmediate , std::make_tuple( false, false, false, true, false) } ,
-				{ JumpOp:: BranchUnconditionalImmediateLink , std::make_tuple( false, false, false, true, true) } ,
-				{ JumpOp:: BranchUnconditional , std::make_tuple( false, false, false, false, false) } ,
-				{ JumpOp:: BranchUnconditionalLink , std::make_tuple( false, false, false, false, true) } ,
-				{ JumpOp:: BranchConditionalTrueImmediate , std::make_tuple( false, true, false, true, false) } ,
-				{ JumpOp:: BranchConditionalTrueImmediateLink , std::make_tuple( false, true, false, true, true) } ,
-				{ JumpOp:: BranchConditionalTrue , std::make_tuple( false, true, false, false, false) } ,
-				{ JumpOp:: BranchConditionalTrueLink , std::make_tuple( false, true, false, false, true) } ,
-				//{ JumpOp:: BranchConditionalFalseImmediate , std::make_tuple( false, true, true, true, false) } ,
-				//{ JumpOp:: BranchConditionalFalseImmediateLink , std::make_tuple( false, true, true, true, true) } ,
-				//{ JumpOp:: BranchConditionalFalse , std::make_tuple( false, true, true, false, false) } ,
-				//{ JumpOp:: BranchConditionalFalseLink , std::make_tuple( false, true, true, false, true) } ,
-				{ JumpOp:: IfThenElseTrue, std::make_tuple( true, true, false, false, false) } ,
-				//{ JumpOp:: IfThenElseFalse, std::make_tuple( true, true, true, false, false) } ,
-				{ JumpOp:: IfThenElseTrueLink, std::make_tuple( true, true, false, false, true) } ,
-				//{ JumpOp:: IfThenElseFalseLink , std::make_tuple( true, true, true, false, true) } ,
+			// ifthenelse?, conditional?, immediate?, link?
+			static std::map<JumpOp, std::tuple<bool, bool, bool, bool>> translationTable = {
+				{ JumpOp:: BranchUnconditionalImmediate , std::make_tuple( false, false, true, false) } ,
+				{ JumpOp:: BranchUnconditionalImmediateLink , std::make_tuple( false, false, true, true) } ,
+				{ JumpOp:: BranchUnconditional , std::make_tuple( false, false, false, false) } ,
+				{ JumpOp:: BranchUnconditionalLink , std::make_tuple( false, false, false, true) } ,
+				{ JumpOp:: BranchConditionalTrueImmediate , std::make_tuple( false, true, true, false) } ,
+				{ JumpOp:: BranchConditionalTrueImmediateLink , std::make_tuple( false, true, true, true) } ,
+				{ JumpOp:: BranchConditionalTrue , std::make_tuple( false, true, false, false) } ,
+				{ JumpOp:: BranchConditionalTrueLink , std::make_tuple( false, true, false, true) } ,
+				{ JumpOp:: IfThenElseTrue, std::make_tuple( true, true, false, false) } ,
+				{ JumpOp:: IfThenElseTrueLink, std::make_tuple( true, true, false, true) } ,
 			};
 			auto operation = static_cast<JumpOp>(getOperation());
 			auto result = translationTable.find(operation);
@@ -164,29 +158,18 @@ namespace iris {
 						getInstructionPointer() = cond ? getLinkRegister() : getInstructionPointer() + 1;
 						getLinkRegister() = cond ? getInstructionPointer() + 1 : getLinkRegister();
 						break;
-					//case JumpOp::BranchConditionalFalseLR:
-					//	cond = !predicateResult();
-					//	getInstructionPointer() = cond ? getLinkRegister() : getInstructionPointer() + 1;
-					//	break;
-					//case JumpOp::BranchConditionalFalseLRAndLink:
-					//	temporaryAddress = getInstructionPointer() + 1;
-					//	cond = !predicateResult() ;
-					//	getInstructionPointer() = cond ? getLinkRegister() : getInstructionPointer() + 1;
-					//	getLinkRegister() = cond ? getInstructionPointer() + 1 : getLinkRegister();
-					//	break;
 					default:
 						throw syn::Problem("defined but unimplemented operation!");
 				}
 			} else {
-				auto ifthenelse = false, conditional = false, iffalse = false, immediate = false,  link = false;
-				std::tie(ifthenelse, conditional, iffalse, immediate, link) = result->second;
+				auto ifthenelse = false, conditional = false, immediate = false,  link = false;
+				std::tie(ifthenelse, conditional, immediate, link) = result->second;
 				auto newAddr = static_cast<word>(0);
 				auto cond = true;
 				advanceIp = false;
 				auto ip = getInstructionPointer();
 				if (conditional) {
-					auto dest = predicateResult();
-					cond = (iffalse ? dest : !dest);
+					auto cond = predicateResult();
 					if (ifthenelse) {
 						newAddr = gpr[cond ? getSource0() : getSource1()];
 					} else {
