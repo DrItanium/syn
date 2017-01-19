@@ -41,6 +41,14 @@ namespace iris {
 	UnitDescription<T> makeDesc(typename T::Operation operation, bool immediate) noexcept {
 		return std::make_tuple(operation, immediate);
 	}
+    void Core::setDoubleRegister(byte index, dword value) {
+        // this is actually an unstable check
+        gpr[index] = syn::getLowerHalf(value);
+        gpr[index + 1] = syn::getUpperHalf(value);
+    }
+    dword Core::getDoubleRegister(byte index) {
+        return syn::setUpperHalf(syn::setLowerHalf<dword>(0, gpr[index]), gpr[index + 1]);
+    }
 	void Core::dispatch() {
 		current = instruction[getInstructionPointer()];
 		auto group = static_cast<InstructionGroup>(getGroup());
@@ -54,13 +62,96 @@ namespace iris {
 		auto makeIllegalOperationMessage = [this, makeProblem](const std::string& type) {
 			makeProblem("Illegal " + type, getOperation());
 		};
-		auto dispatch32 = [this]() {
+		auto dispatch32 = [this, makeIllegalOperationMessage]() {
 				auto group = static_cast<DoubleInstructionGroup>(syn::encodeBits<byte, byte, 0x02, 1>(decodeDoubleExtraBit0(current), decodeDoubleExtraBit1(current)));
-		};
-
-		auto dispatch64 = [this]() {
-				auto group = static_cast<QuadInstructionGroup>(syn::encodeBits<byte, byte, 0x0C, 2>(decodeQuadExtraBit0(current), decodeQuadExtraBit1(current)));
-
+                auto arithmeticOperation = [this, makeIllegalOperationMessage]() {
+                    static std::map<DoubleArithmeticOp, UnitDescription<DWordALU>> table = {
+                        { DoubleArithmeticOp::Add, makeDesc<DWordALU>(DWordALU::Operation::Add , false) },
+                        { DoubleArithmeticOp::Sub, makeDesc<DWordALU>(DWordALU::Operation::Subtract , false ) },
+                        { DoubleArithmeticOp::Mul, makeDesc<DWordALU>(DWordALU::Operation::Multiply , false ) } ,
+                        { DoubleArithmeticOp::Div, makeDesc<DWordALU>(DWordALU::Operation::Divide , false ) },
+                        { DoubleArithmeticOp::Rem, makeDesc<DWordALU>(DWordALU::Operation::Remainder , false ) },
+                        { DoubleArithmeticOp::ShiftLeft, makeDesc<DWordALU>(DWordALU::Operation::ShiftLeft , false ) },
+                        { DoubleArithmeticOp::ShiftRight, makeDesc<DWordALU>(DWordALU::Operation::ShiftRight , false ) },
+                        { DoubleArithmeticOp::BinaryAnd, makeDesc<DWordALU>(DWordALU::Operation::BinaryAnd , false ) },
+                        { DoubleArithmeticOp::BinaryOr, makeDesc<DWordALU>(DWordALU::Operation::BinaryOr , false ) },
+                        { DoubleArithmeticOp::BinaryNot, makeDesc<DWordALU>(DWordALU::Operation::UnaryNot , false) },
+                        { DoubleArithmeticOp::BinaryXor, makeDesc<DWordALU>(DWordALU::Operation::BinaryXor , false ) },
+                        { DoubleArithmeticOp::AddImmediate, makeDesc<DWordALU>(DWordALU::Operation::Add , true  ) },
+                        { DoubleArithmeticOp::SubImmediate, makeDesc<DWordALU>(DWordALU::Operation::Subtract , true  ) },
+                        { DoubleArithmeticOp::MulImmediate, makeDesc<DWordALU>(DWordALU::Operation::Multiply , true  ) } ,
+                        { DoubleArithmeticOp::DivImmediate, makeDesc<DWordALU>(DWordALU::Operation::Divide , true  ) },
+                        { DoubleArithmeticOp::RemImmediate, makeDesc<DWordALU>(DWordALU::Operation::Remainder , true  ) },
+                        { DoubleArithmeticOp::ShiftLeftImmediate, makeDesc<DWordALU>(DWordALU::Operation::ShiftLeft , true ) },
+                        { DoubleArithmeticOp::ShiftRightImmediate, makeDesc<DWordALU>(DWordALU::Operation::ShiftRight , true ) },
+                    };
+                    auto op = static_cast<DoubleArithmeticOp>(getOperation());
+                    auto result = table.find(op);
+                    auto destination = 0u;
+                    auto ds0 = getDoubleRegister(getDoubleSource0());
+                    auto ds1 = getDoubleRegister(getDoubleSource1());
+                    if (result == table.end()) {
+                        switch(op) {
+                            case DoubleArithmeticOp::Min:
+                                destination = ds0 < ds1 ? ds0 : ds1;
+                                break;
+                            case DoubleArithmeticOp::Max:
+                                destination = ds0 > ds1 ? ds0 : ds1;
+                                break;
+                            default:
+                                makeIllegalOperationMessage("arithmetic operation");
+                        }
+                    } else {
+                        bool immediate;
+                        DWordALU::Operation op;
+                        std::tie(op, immediate) = result->second;
+                        destination = _alu2.performOperation(op, ds0, immediate ? static_cast<dword>(getHalfImmediate()) : ds1);
+                    }
+                    setDoubleRegister(getDoubleDestination(), destination);
+                };
+                auto compare = [this, makeIllegalOperationMessage]() {
+                    static std::map<DoubleCompareOp, UnitDescription<DWordCompareUnit>> translationTable = {
+                        { DoubleCompareOp::LessThan, makeDesc<DWordCompareUnit>(DWordCompareUnit::Operation::LessThan, false) },
+                        { DoubleCompareOp::LessThanImmediate, makeDesc<DWordCompareUnit>(DWordCompareUnit::Operation::LessThan, true) },
+                        { DoubleCompareOp::LessThanOrEqualTo, makeDesc<DWordCompareUnit>(DWordCompareUnit::Operation::LessThanOrEqualTo, false) },
+                        { DoubleCompareOp::LessThanOrEqualToImmediate, makeDesc<DWordCompareUnit>(DWordCompareUnit::Operation::LessThanOrEqualTo, true) },
+                        { DoubleCompareOp::GreaterThan, makeDesc<DWordCompareUnit>(DWordCompareUnit::Operation::GreaterThan, false) },
+                        { DoubleCompareOp::GreaterThanImmediate, makeDesc<DWordCompareUnit>(DWordCompareUnit::Operation::GreaterThan, true) },
+                        { DoubleCompareOp::GreaterThanOrEqualTo, makeDesc<DWordCompareUnit>(DWordCompareUnit::Operation::GreaterThanOrEqualTo, false) },
+                        { DoubleCompareOp::GreaterThanOrEqualToImmediate, makeDesc<DWordCompareUnit>(DWordCompareUnit::Operation::GreaterThanOrEqualTo, true) },
+                        { DoubleCompareOp::Eq, makeDesc<DWordCompareUnit>(DWordCompareUnit::Operation::Eq, false) },
+                        { DoubleCompareOp::EqImmediate, makeDesc<DWordCompareUnit>(DWordCompareUnit::Operation::Eq, true) },
+                        { DoubleCompareOp::Neq, makeDesc<DWordCompareUnit>(DWordCompareUnit::Operation::Neq, false) },
+                        { DoubleCompareOp::NeqImmediate, makeDesc<DWordCompareUnit>(DWordCompareUnit::Operation::Neq, true) },
+                    };
+                    auto op = static_cast<DoubleCompareOp>(getOperation());
+                    auto result = translationTable.find(op);
+                    if (result == translationTable.end()) {
+                        makeIllegalOperationMessage("illegal wide compare operation!");
+                    } else {
+                        auto ds0 = getDoubleRegister(getDoubleSource0());
+                        auto ds1 = getDoubleRegister(getDoubleSource1());
+                        typename decltype(_compare2)::Operation op;
+                        bool immediate = false;
+                        std::tie(op, immediate) = result->second;
+                        auto result = _compare2.performOperation(op, ds0, immediate ? static_cast<dword>(getHalfImmediate()) : ds1) != 0;
+                        predicateResult() = result;
+                        if (getPredicateResult() != getPredicateInverse()) {
+                            predicateInverseResult() = !result;
+                        }
+                    }
+                };
+                switch(group) {
+                    case DoubleInstructionGroup::Arithmetic:
+                        arithmeticOperation();
+                        break;
+                    case DoubleInstructionGroup::Compare:
+                        compare();
+                        break;
+                    case DoubleInstructionGroup::Move:
+                    default:
+                        makeIllegalOperationMessage("Illegal or unimplemented operation!");
+                }
 		};
 		if (group == InstructionGroup::Arithmetic) {
 			static std::map<ArithmeticOp, UnitDescription<ALU>> table = {
@@ -310,8 +401,6 @@ namespace iris {
 			}
 		} else if (group == InstructionGroup::DoubleWord) {
 			dispatch32();
-		} else if (group == InstructionGroup::QuadWord) {
-			dispatch64();
 		} else {
 			makeProblem("Illegal instruction group", getGroup());
 		}

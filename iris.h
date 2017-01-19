@@ -14,15 +14,13 @@ namespace iris {
 	enum ArchitectureConstants  {
 		RegisterCount = 256,
 		DoubleRegisterCount = RegisterCount / 2,
-		QuadRegisterCount = RegisterCount / 4, 
 		AddressMax = 0xFFFF,
 		RegisterMax = 0xFF,
 		ConditionRegisterCount = 16,
 		StackPointerIndex = RegisterCount - 1,
 		MaxGroups =           0b00000111,
 		MaxOperations =       0b00011111,
-		MaxGroups32 =         0b00000011, 
-		MaxGroups64 =         0b00001111,
+		MaxGroups32 =         0b00000011,
 		MaxOperations32 =     0b00011111,
 	};
 	inline constexpr dword encodeDword(byte a, byte b, byte c, byte d) noexcept {
@@ -45,7 +43,9 @@ namespace iris {
 	using WordMemorySpace = syn::FixedSizeLoadStoreUnit<word, word, capacity>;
 	using WordMemorySpace64k = WordMemorySpace<ArchitectureConstants::AddressMax>;
 	using ALU = syn::ALU<word>;
+    using DWordALU = syn::ALU<dword>;
 	using CompareUnit = syn::Comparator<word>;
+    using DWordCompareUnit = syn::Comparator<dword>;
 	using RegisterFile = WordMemorySpace<ArchitectureConstants::RegisterCount>;
 	using IODevice = syn::IODevice<word>;
 	using LambdaIODevice = syn::LambdaIODevice<word>;
@@ -74,6 +74,8 @@ namespace iris {
 			word& getInstructionPointer() noexcept { return _ip; }
 			word& getLinkRegister() noexcept { return _lr; }
 			bool& getPredicateRegister(byte index);
+            dword getDoubleRegister(byte index);
+            void setDoubleRegister(byte index, dword value);
 		private:
 			void dispatch();
             inline byte getDestination() const noexcept { return decodeDestination(current); }
@@ -97,9 +99,6 @@ namespace iris {
             inline byte getDoubleDestination() const noexcept { return decodeDoubleDestination(current); }
             inline byte getDoubleSource0() const noexcept { return decodeDoubleSource0(current); }
             inline byte getDoubleSource1() const noexcept { return decodeDoubleSource1(current); }
-            inline byte getQuadDestination() const noexcept { return decodeQuadDestination(current); }
-            inline byte getQuadSource0() const noexcept { return decodeQuadSource0(current); }
-            inline byte getQuadSource1() const noexcept { return decodeQuadSource1(current); }
 		private:
 			template<typename Unit>
 			void performOperation(Unit& unit, typename Unit::Operation op, bool immediate) {
@@ -112,7 +111,7 @@ namespace iris {
 				std::tie(op, immediate) = tuple;
 				performOperation(unit, op, immediate);
 			}
-			template<word index> 
+			template<word index>
 			struct PredicateRegisterEncoder {
 				static_assert(index < 16, "Provided predicate register is out of range!");
 				static PredicateRegisterEncoder<index - 1> next;
@@ -143,7 +142,9 @@ namespace iris {
 			bool execute = true,
 				 advanceIp = true;
 			CompareUnit _compare;
+            DWordCompareUnit _compare2;
 			ALU _alu;
+            DWordALU _alu2;
 			RegisterFile gpr;
 			WordMemorySpace64k data;
 			syn::FixedSizeLoadStoreUnit<dword, word, ArchitectureConstants::AddressMax> instruction;
@@ -155,7 +156,7 @@ namespace iris {
 			PredicateRegisterFile _cr;
 			PredicateComparator _pcompare;
 	};
-	template<> 
+	template<>
 		struct Core::PredicateRegisterEncoder<0> {
 			static word invoke(Core* c, word mask) {
 				if (syn::getBit<word, 0>(mask)) {

@@ -90,33 +90,12 @@
                  (mask 0x01000000)
                  (shift 24)
                  (output-type byte))
-          (field (name QuadDestination)
-                 (mask 0x0000FC00)
-                 (shift 8)
-                 (output-type byte))
-          (field (name QuadSource0)
-                 (mask 0x00FC0000)
-                 (shift 16)
-                 (output-type byte))
-          (field (name QuadSource1)
-                 (mask 0xFC000000)
-                 (shift 24)
-                 (output-type byte))
-          (field (name QuadExtraBit0)
-                 (mask 0x00030000)
-                 (shift 16)
-                 (output-type byte))
-          (field (name QuadExtraBit1)
-                 (mask 0x03000000)
-                 (shift 24)
-                 (output-type byte))
           (enum (name InstructionGroup)
                 (children Arithmetic
                           Move
                           Jump
                           Compare
-                          DoubleWord
-                          QuadWord)
+                          DoubleWord)
                 (cast-to byte)
                 (max-size "ArchitectureConstants::MaxGroups"))
           (enum (cast-to byte)
@@ -186,7 +165,8 @@
                           MoveFromIP
                           MoveToIP
                           MoveFromLR
-                          MoveToLR))
+                          MoveToLR
+                          ))
           (enum (cast-to byte)
                 (max-size "ArchitectureConstants::MaxOperations")
                 (name CompareOp)
@@ -224,6 +204,7 @@
                 (name DoubleArithmeticOp)
                 (children Add
                           Sub
+                          Mul
                           Div
                           Rem
                           ShiftLeft
@@ -236,6 +217,7 @@
                           BinaryNor
                           AddImmediate
                           SubImmediate
+                          MulImmediate
                           DivImmediate
                           RemImmediate
                           ShiftLeftImmediate
@@ -270,11 +252,4 @@
                           Pop
                           LoadCode
                           StoreCode))
-          (enum (name QuadInstructionGroup)
-                (children Arithmetic
-                          Move
-                          Compare)
-                (cast-to byte)
-                (max-size "ArchitectureConstants::MaxGroups64"))
-
                           )
