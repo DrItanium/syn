@@ -84,17 +84,23 @@ namespace iris {
 	using Separator = syn::AsmSeparator;
 	using SingleLineComment = syn::SingleLineComment<';'>;
 	struct GeneralPurposeRegister : public syn::GenericRegister<'r'> { };
-	struct PredicateRegister : public syn::GenericRegister<'p'> { };
 	DefAction(GeneralPurposeRegister) {
 		DefApply {
 			state.temporaryByte = syn::getRegister<word, ArchitectureConstants::RegisterCount>(in.string(), reportError);
 		}
 	};
+	struct PredicateRegister : public syn::GenericRegister<'p'> { };
 	DefAction(PredicateRegister) {
 		DefApply {
 			state.temporaryByte = syn::getRegister<word, ArchitectureConstants::ConditionRegisterCount>(in.string(), reportError);
 		}
 	};
+    struct DoubleGeneralPurposeRegister : public syn::GenericRegister<'d'> { };
+    DefAction(DoubleGeneralPurposeRegister) {
+        DefApply {
+            state.temporaryByte = syn::getRegister<word, ArchitectureConstants::DoubleRegisterCount>(in.string(), reportError);
+        }
+    };
 	using IndirectGPR = syn::Indirection<GeneralPurposeRegister>;
 #define DefIndirectGPR(title) \
 	struct title : public IndirectGPR { }
