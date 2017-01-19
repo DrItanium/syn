@@ -243,13 +243,4 @@
                 (max-size "ArchitectureConstants::MaxOperations")
                 (name DoubleMoveOp)
                 (children Move
-                          Swap
-                          Load
-                          LoadWithOffset
-                          Store
-                          StoreWithOffset
-                          Push
-                          Pop
-                          LoadCode
-                          StoreCode))
-                          )
+                          Swap)))

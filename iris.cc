@@ -141,6 +141,23 @@ namespace iris {
                         }
                     }
                 };
+                auto moveOperation = [this, makeIllegalOperationMessage]() {
+                    auto swap = [this]() {
+                        auto dest = getDoubleRegister(getDoubleDestination());
+                        setDoubleRegister(getDoubleDestination(), getDoubleRegister(getDoubleSource0()));
+                        setDoubleRegister(getDoubleSource0(), dest);
+                    };
+                    switch(static_cast<DoubleMoveOp>(getOperation())) {
+                        case DoubleMoveOp::Move:
+                            setDoubleRegister(getDoubleDestination(), getDoubleRegister(getDoubleSource0()));
+                            break;
+                        case DoubleMoveOp::Swap:
+                            swap();
+                            break;
+                        default:
+                            makeIllegalOperationMessage("illegal wide move operation!");
+                    }
+                };
                 switch(group) {
                     case DoubleInstructionGroup::Arithmetic:
                         arithmeticOperation();
@@ -149,6 +166,8 @@ namespace iris {
                         compare();
                         break;
                     case DoubleInstructionGroup::Move:
+                        moveOperation();
+                        break;
                     default:
                         makeIllegalOperationMessage("Illegal or unimplemented operation!");
                 }
