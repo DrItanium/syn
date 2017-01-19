@@ -126,6 +126,9 @@ namespace iris {
     using IndirectDGPR = syn::Indirection<DoubleGeneralPurposeRegister>;
 #define DefIndirectDGPR(title) \
     struct title : public IndirectDGPR { }
+    DefIndirectDGPR(DestinationDGPR);
+    DefIndirectDGPR(Source0DGPR);
+    DefIndirectDGPR(Source1DGPR);
 #undef DefIndirectDGPR
     using SourceRegisters = syn::SourceRegisters<Source0GPR, Source1GPR>;
     struct OneGPR : public syn::OneRegister<DestinationGPR> { };
