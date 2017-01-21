@@ -41,12 +41,12 @@ namespace iris {
 	UnitDescription<T> makeDesc(typename T::Operation operation, bool immediate) noexcept {
 		return std::make_tuple(operation, immediate);
 	}
-    void Core::setDoubleRegister(byte index, dword value) {
+    void Core::setDoubleWideRegister(byte index, dword value) {
         // this is actually an unstable check
         gpr[index] = syn::getLowerHalf(value);
         gpr[index + 1] = syn::getUpperHalf(value);
     }
-    dword Core::getDoubleRegister(byte index) {
+    dword Core::getDoubleWideRegister(byte index) {
         return syn::setUpperHalf(syn::setLowerHalf<dword>(0, gpr[index]), gpr[index + 1]);
     }
 	void Core::dispatch() {

@@ -70,19 +70,23 @@
                  (shift 3)
                  (input-type byte)
                  (output-type byte))
-          (field (name DoubleOperation)
+          (field (name DoubleWideOperation)
                  (mask 0b00000000000000000000001111111000)
                  (shift 3)
                  (output-type byte))
-          (field (name DoubleDestination)
+          (field (name DoubleWidePredicate)
+                 (mask 0b00000000000000111111110000000000)
+                 (shift 10)
+                 (output-type byte))
+          (field (name DoubleWideDestination)
                  (mask 0b00000000000000111111100000000000)
                  (shift 11)
                  (output-type byte))
-          (field (name DoubleSource0)
+          (field (name DoubleWideSource0)
                  (mask 0b00000001111111000000000000000000)
                  (shift 18)
                  (output-type byte))
-          (field (name DoubleSource1)
+          (field (name DoubleWideSource1)
                  (mask 0b11111110000000000000000000000000)
                  (shift 25)
                  (output-type byte))
@@ -91,7 +95,7 @@
                           Move
                           Jump
                           Compare
-                          DoubleWord)
+                          DoubleWideWord)
                 (cast-to byte)
                 (max-size "ArchitectureConstants::MaxGroups"))
           (enum (cast-to byte)
@@ -189,7 +193,7 @@
                           CRSwap
                           CRMove
                           ))
-          (enum (name DoubleOperation)
+          (enum (name DoubleWideOperation)
                 (cast-to byte)
                 (max-size 128)
                 (children Add

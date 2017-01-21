@@ -28,13 +28,13 @@ namespace iris {
 
         byte group;
         byte operation;
-        byte subGroup;
         byte destination;
         byte source0;
         byte source1;
         bool hasLexeme;
         std::string currentLexeme;
         bool fullImmediate;
+        bool usesPredicates;
         void reset() noexcept;
         void setImmediate(word value) noexcept;
         bool shouldResolveLabel() noexcept;
@@ -51,6 +51,7 @@ namespace iris {
         hasLexeme = false;
         currentLexeme.clear();
         fullImmediate = false;
+        usesPredicates = false;
     }
     struct AssemblerState {
         AssemblerState() : currentDataIndex(0), currentCodeIndex(0), inData(false) { }
@@ -118,23 +119,27 @@ namespace iris {
         }
     };
 #undef DefIndirectGPR
-    struct DoubleGeneralPurposeRegister : public syn::GenericRegister<'d'> { };
-    DefAction(DoubleGeneralPurposeRegister) {
+    struct DoubleWideGeneralPurposeRegister : public syn::GenericRegister<'d'> { };
+    DefAction(DoubleWideGeneralPurposeRegister) {
         DefApply {
-            state.temporaryByte = syn::getRegister<word, ArchitectureConstants::DoubleRegisterCount>(in.string(), reportError);
+            state.temporaryByte = syn::getRegister<word, ArchitectureConstants::DoubleWideRegisterCount>(in.string(), reportError);
         }
     };
-    using IndirectDGPR = syn::Indirection<DoubleGeneralPurposeRegister>;
-#define DefIndirectDGPR(title) \
-    struct title : public IndirectDGPR { }
-    DefIndirectDGPR(DestinationDGPR);
-    DefIndirectDGPR(Source0DGPR);
-    DefIndirectDGPR(Source1DGPR);
-#undef DefIndirectDGPR
-    using SourceRegisters = syn::SourceRegisters<Source0GPR, Source1GPR>;
+    using IndirectDWGPR = syn::Indirection<DoubleWideGeneralPurposeRegister>;
+#define DefIndirectDWGPR(title) \
+    struct title : public IndirectDWGPR { }
+    DefIndirectDWGPR(DestinationDWGPR);
+    DefIndirectDWGPR(Source0DWGPR);
+    DefIndirectDWGPR(Source1DWGPR);
+    using SourceDWGPRs = syn::SourceRegisters<Source0DWGPR, Source1DWGPR>;
+    struct OneDWGPR : syn::OneRegister<DestinationDWGPR> { };
+    struct TwoDWGPR : syn::TwoRegister<DestinationDWGPR, Source0DWGPR> { };
+    struct ThreeDWGPR : syn::TwoRegister<DestinationDWGPR, SourceDWGPRs> { };
+#undef DefIndirectDWGPR
+    using SourceGPRs = syn::SourceRegisters<Source0GPR, Source1GPR>;
     struct OneGPR : public syn::OneRegister<DestinationGPR> { };
     struct TwoGPR : public syn::TwoRegister<DestinationGPR, Source0GPR> { };
-    struct ThreeGPR : public syn::TwoRegister<DestinationGPR, SourceRegisters> { };
+    struct ThreeGPR : public syn::TwoRegister<DestinationGPR, SourceGPRs> { };
     using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
     struct DestinationPredicateRegister : public IndirectPredicateRegister { };
     DefAction(DestinationPredicateRegister) {
@@ -281,6 +286,12 @@ namespace iris {
         using ThreeGPRInstruction = GenericInstruction<Operation, ThreeGPR>;
     template<typename Operation>
         using TwoGPRInstruction = GenericInstruction<Operation, TwoGPR>;
+    template<typename Operation>
+        using OneDWGPRInstruction = GenericInstruction<Operation, OneDWGPR>;
+    template<typename Operation>
+        using ThreeDWGPRInstruction = GenericInstruction<Operation, ThreeDWGPR>;
+    template<typename Operation>
+        using TwoDWGPRInstruction = GenericInstruction<Operation, TwoDWGPR>;
 #define CURRENT_TYPE ArithmeticOp
     DefOperationSameTitle(Add, add);
     DefOperationSameTitle(Sub, sub);
@@ -400,7 +411,7 @@ namespace iris {
                                         SymbolIfThenElse,
                                         SymbolIfThenElseLink
                                         > { };
-    struct BranchIfInstruction : public BranchConditional<OperationBranchIfStatement, SourceRegisters> { };
+    struct BranchIfInstruction : public BranchConditional<OperationBranchIfStatement, SourceGPRs> { };
     DefOperationSameTitle(BranchConditionalLR, blrc);
     DefOperationSameTitle(BranchConditionalLRAndLink, blrcl);
     struct OperationBranchCondtionalNoArgs : public pegtl::sor<
@@ -443,7 +454,7 @@ namespace iris {
     DefOperationSameTitle(CRMove, crmove);
     struct CompareRegisterOperation : public pegtl::sor< SymbolEq, SymbolNeq, SymbolLessThan, SymbolGreaterThan, SymbolLessThanOrEqualTo, SymbolGreaterThanOrEqualTo> { };
     struct CompareImmediateOperation : public pegtl::sor<SymbolEqImmediate, SymbolNeqImmediate, SymbolLessThanImmediate, SymbolGreaterThanImmediate, SymbolLessThanOrEqualToImmediate, SymbolGreaterThanOrEqualToImmediate> { };
-    struct CompareRegisterInstruction : public pegtl::seq<CompareRegisterOperation, Separator, DestinationPredicates, Separator, SourceRegisters> { };
+    struct CompareRegisterInstruction : public pegtl::seq<CompareRegisterOperation, Separator, DestinationPredicates, Separator, SourceGPRs> { };
     struct CompareImmediateInstruction : public pegtl::seq<CompareImmediateOperation, Separator, DestinationPredicates, Separator, Source0GPR, Separator, HalfImmediate> { };
     struct OperationPredicateTwoArgs : public pegtl::sor<SymbolCRSwap, SymbolCRMove> { };
     struct OperationPredicateThreeArgs : public pegtl::sor<SymbolCRNot> { };
@@ -457,127 +468,141 @@ namespace iris {
     struct CompareInstruction : public pegtl::sor<CompareRegisterInstruction, CompareImmediateInstruction, PredicateInstruction> { };
     DefGroupSet(CompareInstruction, Compare);
 #undef CURRENT_TYPE
-#define CURRENT_TYPE DoubleOperation
-    DefOperation(DoubleAdd, addw, Add);
-    DefOperation(DoubleSub, subw, Sub);
-    DefOperation(DoubleMul, mulw, Mul);
-    DefOperation(DoubleDiv, divw, Div);
-    DefOperation(DoubleRem, remw, Rem);
-    DefOperation(DoubleShiftLeft, shlw, ShiftLeft);
-    DefOperation(DoubleShiftRight, shrw, ShiftRight);
-    DefOperation(DoubleAnd, andw, BinaryAnd);
-    DefOperation(DoubleOr, orw, BinaryOr);
-    DefOperation(DoubleXor, xorw, BinaryXor);
-    DefOperation(DoubleNand, nandw, BinaryNand);
-    DefOperation(DoubleNor, norw, BinaryNor);
-    DefOperation(DoubleMin, min, Min);
-    DefOperation(DoubleMax, max, Max);
-    struct OperationDoubleArithmeticThreeGPR : public pegtl::sor<
-                                         SymbolDoubleAdd,
-                                         SymbolDoubleSub,
-                                         SymbolDoubleMul,
-                                         SymbolDoubleDiv,
-                                         SymbolDoubleRem,
-                                         SymbolDoubleShiftLeft,
-                                         SymbolDoubleShiftRight,
-                                         SymbolDoubleAnd,
-                                         SymbolDoubleOr,
-                                         SymbolDoubleXor,
-                                         SymbolDoubleMin,
-                                         SymbolDoubleMax
+#define CURRENT_TYPE DoubleWideOperation
+    DefOperation(DoubleWideAdd, addw, Add);
+    DefOperation(DoubleWideSub, subw, Sub);
+    DefOperation(DoubleWideMul, mulw, Mul);
+    DefOperation(DoubleWideDiv, divw, Div);
+    DefOperation(DoubleWideRem, remw, Rem);
+    DefOperation(DoubleWideShiftLeft, shlw, ShiftLeft);
+    DefOperation(DoubleWideShiftRight, shrw, ShiftRight);
+    DefOperation(DoubleWideAnd, andw, BinaryAnd);
+    DefOperation(DoubleWideOr, orw, BinaryOr);
+    DefOperation(DoubleWideXor, xorw, BinaryXor);
+    DefOperation(DoubleWideNand, nandw, BinaryNand);
+    DefOperation(DoubleWideNor, norw, BinaryNor);
+    DefOperation(DoubleWideMin, min, Min);
+    DefOperation(DoubleWideMax, max, Max);
+    struct OperationDoubleWideArithmeticThreeDWGPR : public pegtl::sor<
+                                         SymbolDoubleWideAdd,
+                                         SymbolDoubleWideSub,
+                                         SymbolDoubleWideMul,
+                                         SymbolDoubleWideDiv,
+                                         SymbolDoubleWideRem,
+                                         SymbolDoubleWideShiftLeft,
+                                         SymbolDoubleWideShiftRight,
+                                         SymbolDoubleWideAnd,
+                                         SymbolDoubleWideOr,
+                                         SymbolDoubleWideXor,
+                                         SymbolDoubleWideMin,
+                                         SymbolDoubleWideMax
                > { };
-    struct DoubleArithmeticThreeGPRInstruction : public ThreeGPRInstruction<OperationDoubleArithmeticThreeGPR> { };
-    DefOperation(DoubleNot, notw, BinaryNot);
-    struct OperationDoubleArithmeticTwoGPR : public pegtl::sor<SymbolDoubleNot> { };
-    struct DoubleArithmeticTwoGPRInstruction : public TwoGPRInstruction<OperationDoubleArithmeticTwoGPR> { };
+    struct DoubleWideArithmeticThreeDWGPRInstruction : public ThreeDWGPRInstruction<OperationDoubleWideArithmeticThreeDWGPR> { };
+    DefOperation(DoubleWideNot, notw, BinaryNot);
+    struct OperationDoubleWideArithmeticTwoDWGPR : public pegtl::sor<SymbolDoubleWideNot> { };
+    struct DoubleWideArithmeticTwoDWGPRInstruction : public TwoDWGPRInstruction<OperationDoubleWideArithmeticTwoDWGPR> { };
 
-    DefOperation(DoubleAddImmediate, addwi, AddImmediate);
-    DefOperation(DoubleSubImmediate, subwi, SubImmediate);
-    DefOperation(DoubleMulImmediate, mulwi, MulImmediate);
-    DefOperation(DoubleDivImmediate, divwi, DivImmediate);
-    DefOperation(DoubleRemImmediate, remwi, RemImmediate);
-    DefOperation(DoubleShiftLeftImmediate, shlwi, ShiftLeftImmediate);
-    DefOperation(DoubleShiftRightImmediate, shrwi, ShiftRightImmediate);
-    struct OperationDoubleArithmeticTwoGPRHalfImmediate : public pegtl::sor<
-                                                    SymbolDoubleAddImmediate,
-                                                    SymbolDoubleSubImmediate,
-                                                    SymbolDoubleMulImmediate,
-                                                    SymbolDoubleDivImmediate,
-                                                    SymbolDoubleRemImmediate,
-                                                    SymbolDoubleShiftLeftImmediate,
-                                                    SymbolDoubleShiftRightImmediate
+    DefOperation(DoubleWideAddImmediate, addwi, AddImmediate);
+    DefOperation(DoubleWideSubImmediate, subwi, SubImmediate);
+    DefOperation(DoubleWideMulImmediate, mulwi, MulImmediate);
+    DefOperation(DoubleWideDivImmediate, divwi, DivImmediate);
+    DefOperation(DoubleWideRemImmediate, remwi, RemImmediate);
+    DefOperation(DoubleWideShiftLeftImmediate, shlwi, ShiftLeftImmediate);
+    DefOperation(DoubleWideShiftRightImmediate, shrwi, ShiftRightImmediate);
+    struct OperationDoubleWideArithmeticTwoDWGPRHalfImmediate : public pegtl::sor<
+                                                    SymbolDoubleWideAddImmediate,
+                                                    SymbolDoubleWideSubImmediate,
+                                                    SymbolDoubleWideMulImmediate,
+                                                    SymbolDoubleWideDivImmediate,
+                                                    SymbolDoubleWideRemImmediate,
+                                                    SymbolDoubleWideShiftLeftImmediate,
+                                                    SymbolDoubleWideShiftRightImmediate
                                                     > { };
-    struct DoubleArithmeticTwoGPRHalfImmediateInstruction : public pegtl::seq<
-                                                      OperationDoubleArithmeticTwoGPRHalfImmediate,
+    struct DoubleWideArithmeticTwoDWGPRHalfImmediateInstruction : public pegtl::seq<
+                                                      OperationDoubleWideArithmeticTwoDWGPRHalfImmediate,
                                                       Separator,
-                                                      TwoGPR,
+                                                      TwoDWGPR,
                                                       Separator,
                                                       HalfImmediate
                                                       > { };
 
-    struct DoubleArithmeticInstruction : public pegtl::sor<
-                                         DoubleArithmeticTwoGPRHalfImmediateInstruction,
-                                         DoubleArithmeticTwoGPRInstruction,
-                                         DoubleArithmeticThreeGPRInstruction
+    struct DoubleWideArithmeticInstruction : public pegtl::sor<
+                                         DoubleWideArithmeticTwoDWGPRHalfImmediateInstruction,
+                                         DoubleWideArithmeticTwoDWGPRInstruction,
+                                         DoubleWideArithmeticThreeDWGPRInstruction
                                          > { };
     // compare operations
-    DefOperation(DoubleEq, eqw, Eq);
-    DefOperation(DoubleNeq, new, Neq);
-    DefOperation(DoubleLessThan, ltw, LessThan);
-    DefOperation(DoubleGreaterThan, gtw, GreaterThan);
-    DefOperation(DoubleLessThanOrEqualTo, lew, LessThanOrEqualTo);
-    DefOperation(DoubleGreaterThanOrEqualTo, gew, GreaterThanOrEqualTo);
-    DefOperation(DoubleEqImmediate, eqwi, EqImmediate);
-    DefOperation(DoubleNeqImmediate, newi, NeqImmediate);
-    DefOperation(DoubleLessThanImmediate, ltwi, LessThanImmediate);
-    DefOperation(DoubleGreaterThanImmediate, gtwi, GreaterThanImmediate);
-    DefOperation(DoubleLessThanOrEqualToImmediate, lewi, LessThanOrEqualToImmediate);
-    DefOperation(DoubleGreaterThanOrEqualToImmediate, gewi, GreaterThanOrEqualToImmediate);
-    struct DoubleCompareRegisterOperation : public pegtl::sor<
-                                            SymbolDoubleEq,
-                                            SymbolDoubleNeq,
-                                            SymbolDoubleLessThan,
-                                            SymbolDoubleGreaterThan,
-                                            SymbolDoubleLessThanOrEqualTo,
-                                            SymbolDoubleGreaterThanOrEqualTo
+    DefOperation(DoubleWideEq, eqw, Eq);
+    DefOperation(DoubleWideNeq, new, Neq);
+    DefOperation(DoubleWideLessThan, ltw, LessThan);
+    DefOperation(DoubleWideGreaterThan, gtw, GreaterThan);
+    DefOperation(DoubleWideLessThanOrEqualTo, lew, LessThanOrEqualTo);
+    DefOperation(DoubleWideGreaterThanOrEqualTo, gew, GreaterThanOrEqualTo);
+    DefOperation(DoubleWideEqImmediate, eqwi, EqImmediate);
+    DefOperation(DoubleWideNeqImmediate, newi, NeqImmediate);
+    DefOperation(DoubleWideLessThanImmediate, ltwi, LessThanImmediate);
+    DefOperation(DoubleWideGreaterThanImmediate, gtwi, GreaterThanImmediate);
+    DefOperation(DoubleWideLessThanOrEqualToImmediate, lewi, LessThanOrEqualToImmediate);
+    DefOperation(DoubleWideGreaterThanOrEqualToImmediate, gewi, GreaterThanOrEqualToImmediate);
+    struct DoubleWideCompareRegisterOperation : public pegtl::sor<
+                                            SymbolDoubleWideEq,
+                                            SymbolDoubleWideNeq,
+                                            SymbolDoubleWideLessThan,
+                                            SymbolDoubleWideGreaterThan,
+                                            SymbolDoubleWideLessThanOrEqualTo,
+                                            SymbolDoubleWideGreaterThanOrEqualTo
                                             > { };
-    struct DoubleCompareImmediateOperation : public pegtl::sor<
-                                             SymbolDoubleEqImmediate,
-                                             SymbolDoubleNeqImmediate,
-                                             SymbolDoubleLessThanImmediate,
-                                             SymbolDoubleGreaterThanImmediate,
-                                             SymbolDoubleLessThanOrEqualToImmediate,
-                                             SymbolDoubleGreaterThanOrEqualToImmediate
+    struct DoubleWideCompareImmediateOperation : public pegtl::sor<
+                                             SymbolDoubleWideEqImmediate,
+                                             SymbolDoubleWideNeqImmediate,
+                                             SymbolDoubleWideLessThanImmediate,
+                                             SymbolDoubleWideGreaterThanImmediate,
+                                             SymbolDoubleWideLessThanOrEqualToImmediate,
+                                             SymbolDoubleWideGreaterThanOrEqualToImmediate
                                              > { };
-    struct DoubleCompareRegisterInstruction : public pegtl::seq<
-                                              DoubleCompareRegisterOperation,
+    struct DoubleWideCompareRegisterInstruction : public pegtl::seq<
+                                              DoubleWideCompareRegisterOperation,
                                               Separator,
                                               DestinationPredicates,
                                               Separator,
-                                              SourceRegisters
+                                              SourceDWGPRs
                                               > { };
-    struct DoubleCompareImmediateInstruction : public pegtl::seq<
-                                               DoubleCompareImmediateOperation,
+    struct DoubleWideCompareImmediateInstruction : public pegtl::seq<
+                                               DoubleWideCompareImmediateOperation,
                                                Separator,
                                                DestinationPredicates,
                                                Separator,
-                                               Source0GPR,
+                                               Source0DWGPR,
                                                Separator,
                                                HalfImmediate
                                                > { };
-    struct DoubleCompareInstruction : public pegtl::sor<
+    struct DoubleWideCompareInstruction : public pegtl::sor<
                                       CompareRegisterInstruction,
-                                      CompareImmediateInstruction,
-                                      PredicateInstruction
-                                      > { };
-#undef CURRENT_TYPE
-    struct DoubleWordInstruction : public pegtl::sor<
-                                   DoubleArithmeticInstruction,
-                                   DoubleCompareInstruction
-                                   > { };
-    DefAction(DoubleWordInstruction) {
+                                      CompareImmediateInstruction > { };
+    DefAction(DoubleWideCompareInstruction) {
         DefApply {
-            state.setGroup(InstructionGroup::DoubleWord);
+            state.current.usesPredicates = true;
+        }
+    };
+    DefOperation(DoubleWideMove, movew, Move);
+    DefOperation(DoubleWideSwap, swapw, Swap);
+
+    struct DoubleWideOperationMoveTwoDWGPR : public pegtl::sor<
+                                 SymbolDoubleWideMove,
+                                 SymbolDoubleWideSwap
+                                 > { };
+    struct MoveTwoDWGPRInstruction : public TwoDWGPRInstruction<DoubleWideOperationMoveTwoDWGPR> { };
+    struct DoubleWideMoveInstruction : public pegtl::sor<MoveTwoDWGPRInstruction> { };
+
+#undef CURRENT_TYPE
+    struct DoubleWideWordInstruction : public pegtl::sor<
+                                   DoubleWideArithmeticInstruction,
+                                   DoubleWideCompareInstruction,
+                                   DoubleWideMoveInstruction
+                                   > { };
+    DefAction(DoubleWideWordInstruction) {
+        DefApply {
+            state.setGroup(InstructionGroup::DoubleWideWord);
         }
     };
 
@@ -591,7 +616,7 @@ namespace iris {
                          BranchInstruction,
                          CompareInstruction,
                          PredicateInstruction,
-                         DoubleWordInstruction
+                         DoubleWideWordInstruction
                          > { };
     DefAction(Instruction) {
         DefApply {
@@ -685,19 +710,41 @@ namespace iris {
             output << std::hex << value.address << " ";
             if (value.instruction) {
                 buf[1] = 0;
-                buf[4] = static_cast<char>(iris::encodeOperationByte(iris::encodeGroupByte(0, value.group), value.operation));
-                if (InstructionGroup::DoubleWord == static_cast<InstructionGroup>(value.group)) {
-                    buf[5] = static_cast<char>(iris::encodeDoubleRegisterField(0, value.destination));
-                    buf[6] = static_cast<char>(iris::encodeDoubleRegisterField(0, value.source0));
-                    buf[7] = static_cast<char>(iris::encodeDoubleRegisterField(0, value.source1));
+                /// @todo: Build the corresponding 32bit instruction and then break it apart
+                raw_instruction temp = 0;
+                temp = encodeGroup(temp, value.group);
+                if (InstructionGroup::DoubleWideWord == static_cast<InstructionGroup>(value.group)) {
+                    temp = encodeDoubleWideOperation(temp, value.operation);
+                    if (value.usesPredicates) {
+                        temp = encodeDoubleWidePredicate(temp, value.destination);
+                    } else {
+                        temp = encodeDoubleWideDestination(temp, value.destination);
+                    }
+                    temp = encodeDoubleWideDestination(temp, value.destination);
+                    temp = encodeDoubleWideSource0(temp, value.source0);
+                    temp = encodeDoubleWideSource1(temp, value.source1);
                 } else {
-                    buf[5] = static_cast<char>(value.destination);
+                    temp = encodeOperation(temp, value.operation);
+                    temp = encodeDestination(temp, value.destination);
                     if (value.shouldResolveLabel()) {
                         value.setImmediate(resolveLabel(value));
                     }
-                    buf[6] = static_cast<char>(value.source0);
-                    buf[7] = static_cast<char>(value.source1);
+                    temp = encodeSource0(temp, value.source0);
+                    temp = encodeSource1(temp, value.source1);
                 }
+                //buf[4] = static_cast<char>(iris::encodeOperationByte(iris::encodeGroupByte(0, value.group), value.operation));
+                //if (InstructionGroup::DoubleWideWord == static_cast<InstructionGroup>(value.group)) {
+                //    buf[5] = static_cast<char>(iris::encodeDoubleWideRegisterField(0, value.destination));
+                //    buf[6] = static_cast<char>(iris::encodeDoubleWideRegisterField(0, value.source0));
+                //    buf[7] = static_cast<char>(iris::encodeDoubleWideRegisterField(0, value.source1));
+                //} else {
+                //    buf[5] = static_cast<char>(value.destination);
+                //    if (value.shouldResolveLabel()) {
+                //        value.setImmediate(resolveLabel(value));
+                //    }
+                //    buf[6] = static_cast<char>(value.source0);
+                //    buf[7] = static_cast<char>(value.source1);
+                //}
             } else {
                 buf[1] = 1;
                 if (value.shouldResolveLabel()) {

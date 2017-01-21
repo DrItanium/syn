@@ -13,7 +13,7 @@ namespace iris {
 	typedef word immediate;
 	enum ArchitectureConstants  {
 		RegisterCount = 256,
-		DoubleRegisterCount = RegisterCount / 2,
+		DoubleWideRegisterCount = RegisterCount / 2,
 		AddressMax = 0xFFFF,
 		RegisterMax = 0xFF,
 		ConditionRegisterCount = 16,
@@ -74,8 +74,8 @@ namespace iris {
 			word& getInstructionPointer() noexcept { return _ip; }
 			word& getLinkRegister() noexcept { return _lr; }
 			bool& getPredicateRegister(byte index);
-            dword getDoubleRegister(byte index);
-            void setDoubleRegister(byte index, dword value);
+            dword getDoubleWideRegister(byte index);
+            void setDoubleWideRegister(byte index, dword value);
 		private:
 			void dispatch();
             inline byte getDestination() const noexcept { return decodeDestination(current); }
@@ -96,9 +96,9 @@ namespace iris {
 			inline bool& predicateInverseResult() noexcept { return getPredicateRegister(getPredicateInverse()); }
 			inline bool& predicateSource0() noexcept { return getPredicateRegister(getPredicateSource0()); }
 			inline bool& predicateSource1() noexcept { return getPredicateRegister(getPredicateSource1()); }
-            inline byte getDoubleDestination() const noexcept { return decodeDoubleDestination(current); }
-            inline byte getDoubleSource0() const noexcept { return decodeDoubleSource0(current); }
-            inline byte getDoubleSource1() const noexcept { return decodeDoubleSource1(current); }
+            inline byte getDoubleWideDestination() const noexcept { return decodeDoubleWideDestination(current); }
+            inline byte getDoubleWideSource0() const noexcept { return decodeDoubleWideSource0(current); }
+            inline byte getDoubleWideSource1() const noexcept { return decodeDoubleWideSource1(current); }
 		private:
 			template<typename Unit>
 			void performOperation(Unit& unit, typename Unit::Operation op, bool immediate) {
