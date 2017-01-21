@@ -70,25 +70,21 @@
                  (shift 3)
                  (input-type byte)
                  (output-type byte))
+          (field (name DoubleOperation)
+                 (mask 0b00000000000000000000001111111000)
+                 (shift 3)
+                 (output-type byte))
           (field (name DoubleDestination)
-                 (mask 0x0000FE00)
-                 (shift 8)
+                 (mask 0b00000000000000111111100000000000)
+                 (shift 11)
                  (output-type byte))
           (field (name DoubleSource0)
-                 (mask 0x00FE0000)
-                 (shift 16)
+                 (mask 0b00000001111111000000000000000000)
+                 (shift 18)
                  (output-type byte))
           (field (name DoubleSource1)
-                 (mask 0xFE000000)
-                 (shift 24)
-                 (output-type byte))
-          (field (name DoubleExtraBit0)
-                 (mask 0x00010000)
-                 (shift 16)
-                 (output-type byte))
-          (field (name DoubleExtraBit1)
-                 (mask 0x01000000)
-                 (shift 24)
+                 (mask 0b11111110000000000000000000000000)
+                 (shift 25)
                  (output-type byte))
           (enum (name InstructionGroup)
                 (children Arithmetic
@@ -193,15 +189,9 @@
                           CRSwap
                           CRMove
                           ))
-          (enum (name DoubleInstructionGroup)
-                (children Arithmetic
-                          Move
-                          Compare)
+          (enum (name DoubleOperation)
                 (cast-to byte)
-                (max-size "ArchitectureConstants::MaxGroups32"))
-          (enum (cast-to byte)
-                (max-size "ArchitectureConstants::MaxOperations")
-                (name DoubleArithmeticOp)
+                (max-size 128)
                 (children Add
                           Sub
                           Mul
@@ -223,11 +213,8 @@
                           ShiftLeftImmediate
                           ShiftRightImmediate
                           Min
-                          Max))
-          (enum (cast-to byte)
-                (max-size "ArchitectureConstants::MaxOperations")
-                (name DoubleCompareOp)
-                (children Eq
+                          Max
+                          Eq
                           EqImmediate
                           Neq
                           NeqImmediate
@@ -238,9 +225,6 @@
                           LessThanOrEqualTo
                           LessThanOrEqualToImmediate
                           GreaterThanOrEqualTo
-                          GreaterThanOrEqualToImmediate))
-          (enum (cast-to byte)
-                (max-size "ArchitectureConstants::MaxOperations")
-                (name DoubleMoveOp)
-                (children Move
+                          GreaterThanOrEqualToImmediate
+                          Move
                           Swap)))
