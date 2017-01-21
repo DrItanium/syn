@@ -87,6 +87,8 @@ namespace iris {
             inline byte getGroup() const noexcept { return decodeGroup(current); }
 			inline byte getPredicateResult() const noexcept { return decodePredicateResult(current); }
 			inline byte getPredicateInverse() const noexcept { return decodePredicateInverseResult(current); }
+			inline byte getPredicateWideResult() const noexcept { return decodeLower4Bits(decodeDoubleWidePredicate(current)); }
+			inline byte getPredicateWideInverse() const noexcept { return decodeUpper4Bits(decodeDoubleWidePredicate(current)); }
 			inline byte getPredicateSource0() const noexcept { return decodePredicateSource0(current); }
 			inline byte getPredicateSource1() const noexcept { return decodePredicateSource1(current); }
 			inline word& destinationRegister() noexcept { return gpr[getDestination()]; }
@@ -96,9 +98,12 @@ namespace iris {
 			inline bool& predicateInverseResult() noexcept { return getPredicateRegister(getPredicateInverse()); }
 			inline bool& predicateSource0() noexcept { return getPredicateRegister(getPredicateSource0()); }
 			inline bool& predicateSource1() noexcept { return getPredicateRegister(getPredicateSource1()); }
+            inline bool& predicateWideResult() noexcept { return getPredicateRegister(getPredicateWideResult()); }
+            inline bool& predicateWideInverseResult() noexcept { return getPredicateRegister(getPredicateWideInverse()); }
             inline byte getDoubleWideDestination() const noexcept { return decodeDoubleWideDestination(current); }
             inline byte getDoubleWideSource0() const noexcept { return decodeDoubleWideSource0(current); }
             inline byte getDoubleWideSource1() const noexcept { return decodeDoubleWideSource1(current); }
+            inline DoubleWideOperation getDoubleWideOperation() const noexcept { return static_cast<DoubleWideOperation>(decodeDoubleWideOperation(current)); }
 		private:
 			template<typename Unit>
 			void performOperation(Unit& unit, typename Unit::Operation op, bool immediate) {
