@@ -732,19 +732,10 @@ namespace iris {
                     temp = encodeSource0(temp, value.source0);
                     temp = encodeSource1(temp, value.source1);
                 }
-                //buf[4] = static_cast<char>(iris::encodeOperationByte(iris::encodeGroupByte(0, value.group), value.operation));
-                //if (InstructionGroup::DoubleWideWord == static_cast<InstructionGroup>(value.group)) {
-                //    buf[5] = static_cast<char>(iris::encodeDoubleWideRegisterField(0, value.destination));
-                //    buf[6] = static_cast<char>(iris::encodeDoubleWideRegisterField(0, value.source0));
-                //    buf[7] = static_cast<char>(iris::encodeDoubleWideRegisterField(0, value.source1));
-                //} else {
-                //    buf[5] = static_cast<char>(value.destination);
-                //    if (value.shouldResolveLabel()) {
-                //        value.setImmediate(resolveLabel(value));
-                //    }
-                //    buf[6] = static_cast<char>(value.source0);
-                //    buf[7] = static_cast<char>(value.source1);
-                //}
+                buf[4] = syn::decodeBits<raw_instruction, char, 0x000000FF, 0>(temp);
+                buf[5] = syn::decodeBits<raw_instruction, char, 0x0000FF00, 8>(temp);
+                buf[6] = syn::decodeBits<raw_instruction, char, 0x00FF0000, 16>(temp);
+                buf[7] = syn::decodeBits<raw_instruction, char, 0xFF000000, 24>(temp);
             } else {
                 buf[1] = 1;
                 if (value.shouldResolveLabel()) {
