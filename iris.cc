@@ -71,8 +71,8 @@ namespace iris {
 		auto group = static_cast<InstructionGroup>(getGroup());
 		auto updateStatusRegister = [this](auto fn, bool value) { _error = fn(_error, value); };
 		auto enableStatusRegisterBit = [this, updateStatusRegister](auto fn) { updateStatusRegister(fn, true); };
-		auto makeIllegalOperationMessage = [this, enableStatusRegisterBit](const std::string& type) { enableStatusRegisterBit(encodeStatusIllegalOperation); };
-		auto arithmeticOperation = [this, updateStatusRegister, enableStatusRegisterBit, makeIllegalOperationMessage]() {
+		auto makeIllegalInstructionMessage = [this, enableStatusRegisterBit](const std::string& type) { enableStatusRegisterBit(encodeStatusIllegalInstruction); };
+		auto arithmeticOperation = [this, updateStatusRegister, enableStatusRegisterBit, makeIllegalInstructionMessage]() {
 			static std::map<ArithmeticOp, UnitDescription<ALU>> table = {
 				{ ArithmeticOp::Add, makeDesc<ALU>(ALU::Operation::Add , false) },
 				{ ArithmeticOp::Sub, makeDesc<ALU>(ALU::Operation::Subtract , false ) },
@@ -128,13 +128,13 @@ namespace iris {
                         destinationRegister() = source0Register() > source1Register() ? source0Register() : source1Register();
                         break;
                     default:
-				        makeIllegalOperationMessage("arithmetic operation");
+				        makeIllegalInstructionMessage("arithmetic operation");
                 }
 			} else {
 				performOperation(_alu, result->second);
 			}
 		};
-		auto compareOperation = [this, makeIllegalOperationMessage]() {
+		auto compareOperation = [this, makeIllegalInstructionMessage]() {
 			static std::map<CompareOp, UnitDescription<CompareUnit>> translationTable = {
 				{ CompareOp::LessThan, makeDesc<CompareUnit>(CompareUnit::Operation::LessThan, false) },
 				{ CompareOp::LessThanImmediate, makeDesc<CompareUnit>(CompareUnit::Operation::LessThan, true) },
@@ -151,7 +151,7 @@ namespace iris {
 			};
 			auto result = translationTable.find(getOperation<CompareOp>());
 			if (result == translationTable.end()) {
-				makeIllegalOperationMessage("compare code");
+				makeIllegalInstructionMessage("compare code");
 			} else {
 				typename decltype(_compare)::Operation op;
 				bool immediate = false;
@@ -163,7 +163,7 @@ namespace iris {
 				}
 			}
 		};
-		auto jumpOperation = [this, makeIllegalOperationMessage]() {
+		auto jumpOperation = [this, makeIllegalInstructionMessage]() {
 			// conditional?, immediate?, link?
 			static std::map<JumpOp, std::tuple<bool, bool, bool>> translationTable = {
 				{ JumpOp:: BranchUnconditionalImmediate ,       std::make_tuple(false, true, false) } ,
@@ -220,7 +220,7 @@ namespace iris {
 						returnFromError();
 						break;
 					default:
-						makeIllegalOperationMessage("defined but unimplemented operation!");
+						makeIllegalInstructionMessage("defined but unimplemented operation!");
 						break;
 				}
 			} else {
@@ -242,7 +242,7 @@ namespace iris {
 				}
 			}
 		};
-		auto moveOperation = [this, makeIllegalOperationMessage]() {
+		auto moveOperation = [this, makeIllegalInstructionMessage]() {
 			auto op = getOperation<MoveOp>();
 			raw_instruction codeStorage = 0u;
 			switch(op) {
@@ -317,11 +317,11 @@ namespace iris {
 					getLinkRegister() = destinationRegister();
 					break;
 				default:
-					makeIllegalOperationMessage("move code");
+					makeIllegalInstructionMessage("move code");
 					break;
 			}
 		};
-		auto conditionalRegisterOperation = [this, makeIllegalOperationMessage]() {
+		auto conditionalRegisterOperation = [this, makeIllegalInstructionMessage]() {
 			static std::map<ConditionRegisterOp, UnitDescription<PredicateComparator>> translationTable = {
 				{ ConditionRegisterOp::CRAnd, makeDesc<PredicateComparator>(PredicateComparator::Operation::BinaryAnd, false) },
 				{ ConditionRegisterOp::CROr, makeDesc<PredicateComparator>(PredicateComparator::Operation::BinaryOr, false) },
@@ -347,7 +347,7 @@ namespace iris {
 						restorePredicateRegisters(destinationRegister(), getImmediate());
 						break;
 					default:
-						makeIllegalOperationMessage("Predicate operation!");
+						makeIllegalInstructionMessage("Predicate operation!");
 						break;
 				}
 			} else {
@@ -379,7 +379,7 @@ namespace iris {
 				conditionalRegisterOperation();
 				break;
 			default:
-				_error = encodeStatusIllegalGroup(_error, true);
+				makeIllegalInstructionMessage("Illegal group!");
 				break;
 		}
 	}
