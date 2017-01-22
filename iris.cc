@@ -44,10 +44,10 @@ namespace iris {
 	void Core::dispatch() noexcept {
 		current = instruction[getInstructionPointer()];
 		auto group = static_cast<InstructionGroup>(getGroup());
-		auto makeIllegalOperationMessage = [this](const std::string& type) {
-			_status = encodeStatusIllegalOperation(_status, true);
-		};
-		auto arithmeticOperation = [this, makeIllegalOperationMessage]() {
+		auto updateStatusRegister = [this](auto fn, bool value) { _status = fn(_status, value); };
+		auto enableStatusRegisterBit = [this, updateStatusRegister](auto fn) { updateStatusRegister(fn, true); };
+		auto makeIllegalOperationMessage = [this, enableStatusRegisterBit](const std::string& type) { enableStatusRegisterBit(encodeStatusIllegalOperation); };
+		auto arithmeticOperation = [this, updateStatusRegister, enableStatusRegisterBit, makeIllegalOperationMessage]() {
 			static std::map<ArithmeticOp, UnitDescription<ALU>> table = {
 				{ ArithmeticOp::Add, makeDesc<ALU>(ALU::Operation::Add , false) },
 				{ ArithmeticOp::Sub, makeDesc<ALU>(ALU::Operation::Subtract , false ) },
@@ -67,8 +67,6 @@ namespace iris {
 			auto op = getOperation<ArithmeticOp>();
 			auto result = table.find(op);
 			auto denominatorIsZero = [](auto src1) { return src1 == 0; };
-			auto updateStatusRegister = [this](auto fn, bool value) { _status = fn(_status, value); };
-			auto enableStatusRegisterBit = [this, updateStatusRegister](auto fn) { updateStatusRegister(fn, true); };
 			auto markDivideByZero = [this, enableStatusRegisterBit]() { enableStatusRegisterBit(encodeStatusDivideByZero); };
 			auto divide = [this, denominatorIsZero, markDivideByZero](word denominator) {
 				if (denominatorIsZero(denominator)) {
