@@ -90,7 +90,10 @@
                           Move
                           Jump
                           Compare
-                          ConditionalRegister)
+                          ConditionalRegister
+                          Unused0
+                          Unused1
+                          CustomInstructionReserved)
                 (cast-to byte)
                 (max-size "ArchitectureConstants::MaxGroups"))
           (enum (cast-to byte)

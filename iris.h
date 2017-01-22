@@ -17,9 +17,11 @@ namespace iris {
 		RegisterMax = 0xFF,
 		ConditionRegisterCount = 16,
 		StackPointerIndex = RegisterCount - 1,
-		MaxGroups = 0b00000111,
-		MaxOperations = 0b00011111,
-		ErrorDispatchVectorBase = 0xFFF0,
+		MaxGroups = 8,
+		MaxOperations = 32,
+		ErrorDispatchVectorBase = 0xFFFF,
+		RegistersToSaveOnError = 18,
+		ErrorRegisterStart = 255,
 	};
 	inline constexpr dword encodeDword(byte a, byte b, byte c, byte d) noexcept {
 		return syn::encodeUint32LE(a, b, c, d);
@@ -47,6 +49,7 @@ namespace iris {
 	using LambdaIODevice = syn::LambdaIODevice<word>;
 	using PredicateRegisterFile = syn::FixedSizeLoadStoreUnit<bool, byte, 16>;
 	using PredicateComparator = syn::Comparator<bool, bool>;
+	using ErrorStorage = WordMemorySpace<ArchitectureConstants::RegistersToSaveOnError>;
 	class Core : public syn::Core {
 		public:
 			Core() noexcept;
@@ -142,6 +145,7 @@ namespace iris {
 			bool execute;
 			bool advanceIp;
 			raw_instruction current;
+
 			word _ip;
 			word _lr;
 			word _error;
@@ -154,6 +158,9 @@ namespace iris {
 			WordMemorySpace64k stack;
 			PredicateRegisterFile _cr;
 			PredicateComparator _pcompare;
+			ErrorStorage _onError;
+			bool _saveAdvanceIp = false;
+			bool _saveExecute = false;
 	};
 	template<> 
 		struct Core::PredicateRegisterEncoder<0> {

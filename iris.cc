@@ -27,6 +27,35 @@ namespace iris {
 		instruction.dump(stream, decodeDword);
 		stack.dump(stream, decodeWord);
 	}
+	void Core::saveSystemState() noexcept {
+		_saveAdvanceIp = advanceIp;
+		_saveExecute = execute;
+		_onError[0] = _ip;
+		_onError[1] = _lr;
+		for(int i = ArchitectureConstants::ErrorRegisterStart, j = 2; j < ArchitectureConstants::RegistersToSaveOnError; --i, ++j) {
+			_onError[j] = gpr[i];
+		}
+	}
+	void Core::restoreSystemState() noexcept {
+		advanceIp = _saveAdvanceIp;
+		execute = _saveExecute;
+		_ip = _onError[0];
+		_lr = _onError[1];
+		for(int i = ArchitectureConstants::ErrorRegisterStart, j = 2; j < ArchitectureConstants::RegistersToSaveOnError; --i, ++j) {
+			gpr[i] = _onError[j];
+		}
+	}
+	void Core::dispatchErrorHandler() noexcept {
+		_ip = data[ArchitectureConstants::ErrorDispatchVectorBase];
+		gpr[255] = _error;
+		gpr[254] = getGroup();
+		gpr[253] = getOperationByte();
+		gpr[252] = getDestination();
+		gpr[251] = getSource0();
+		gpr[250] = getSource1();
+		gpr[249] = getImmediate();
+		advanceIp = false;
+	}
 	bool Core::cycle() {
 		if (!decodeStatusInError(_error)) {
 			advanceIp = true;
@@ -35,7 +64,6 @@ namespace iris {
 				++getInstructionPointer();
 			}
 			if (_error != 0) {
-				_error = encodeStatusInError(_error, true);
 				saveSystemState();
 				// figure out which system handler to jump to and how to setup
 				// the registers accordingly
@@ -44,8 +72,9 @@ namespace iris {
 		} else {
 			advanceIp = true;
 			auto oldStatus = _error;
-			if (!decodeStatusInError(_error)) {
-				// we've left the interrupt handler
+			dispatch();
+			if (_error == 0) {
+				// we've left the instruction handler
 				restoreSystemState();
 			} else {
 				if (oldStatus != _error) {
