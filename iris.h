@@ -19,6 +19,7 @@ namespace iris {
 		StackPointerIndex = RegisterCount - 1,
 		MaxGroups = 0b00000111,
 		MaxOperations = 0b00011111,
+		ErrorDispatchVectorBase = 0xFFF0,
 	};
 	inline constexpr dword encodeDword(byte a, byte b, byte c, byte d) noexcept {
 		return syn::encodeUint32LE(a, b, c, d);
@@ -93,7 +94,10 @@ namespace iris {
 			inline bool& predicateInverseResult() noexcept { return getPredicateRegister(getPredicateInverse()); }
 			inline bool& predicateSource0() noexcept { return getPredicateRegister(getPredicateSource0()); }
 			inline bool& predicateSource1() noexcept { return getPredicateRegister(getPredicateSource1()); }
-			//inline bool divideByZeroError() noexcept { return getPredicat
+		private:
+			void saveSystemState() noexcept;
+			void restoreSystemState() noexcept;
+			void dispatchErrorHandler() noexcept;
 
 		private:
 			template<typename Unit>
@@ -140,7 +144,7 @@ namespace iris {
 			raw_instruction current;
 			word _ip;
 			word _lr;
-			word _status;
+			word _error;
 			IOSpace _io;
 			CompareUnit _compare;
 			ALU _alu;

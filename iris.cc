@@ -5,7 +5,7 @@
 
 namespace iris {
 
-	Core::Core() noexcept : execute(true), advanceIp(true), current(0), _ip(0), _lr(0), _status(0), _io(0, 0xFFFF) { }
+	Core::Core() noexcept : execute(true), advanceIp(true), current(0), _ip(0), _lr(0), _error(0), _io(0, 0xFFFF) { }
 
 	Core::~Core() {
 	}
@@ -28,10 +28,35 @@ namespace iris {
 		stack.dump(stream, decodeWord);
 	}
 	bool Core::cycle() {
-		advanceIp = true;
-		dispatch();
-		if (advanceIp) {
-			++getInstructionPointer();
+		if (!decodeStatusInError(_error)) {
+			advanceIp = true;
+			dispatch();
+			if (advanceIp) {
+				++getInstructionPointer();
+			}
+			if (_error != 0) {
+				_error = encodeStatusInError(_error, true);
+				saveSystemState();
+				// figure out which system handler to jump to and how to setup
+				// the registers accordingly
+				dispatchErrorHandler();
+			}
+		} else {
+			advanceIp = true;
+			auto oldStatus = _error;
+			if (!decodeStatusInError(_error)) {
+				// we've left the interrupt handler
+				restoreSystemState();
+			} else {
+				if (oldStatus != _error) {
+					// we've hit another interrupt,  we need to terminate
+					// because something horrible has happened
+					throw syn::Problem("Hit another error within the interrupt handler");
+				}
+				if (advanceIp) {
+					++getInstructionPointer();
+				}
+			}
 		}
 		return execute;
 	}
@@ -44,7 +69,7 @@ namespace iris {
 	void Core::dispatch() noexcept {
 		current = instruction[getInstructionPointer()];
 		auto group = static_cast<InstructionGroup>(getGroup());
-		auto updateStatusRegister = [this](auto fn, bool value) { _status = fn(_status, value); };
+		auto updateStatusRegister = [this](auto fn, bool value) { _error = fn(_error, value); };
 		auto enableStatusRegisterBit = [this, updateStatusRegister](auto fn) { updateStatusRegister(fn, true); };
 		auto makeIllegalOperationMessage = [this, enableStatusRegisterBit](const std::string& type) { enableStatusRegisterBit(encodeStatusIllegalOperation); };
 		auto arithmeticOperation = [this, updateStatusRegister, enableStatusRegisterBit, makeIllegalOperationMessage]() {
@@ -156,6 +181,13 @@ namespace iris {
 				word temporaryAddress = 0;
 				bool cond = false;
 				advanceIp = false;
+				auto returnFromError = [this]() {
+					if (decodeStatusInError(_error)) {
+						_error = 0; // clear the status register to allow the system to restore itself when we return to dispatch
+					} else {
+						throw syn::Problem("ATTEMPTED TO RETURN FROM AN INTERRUPT WHEN NOT IN ONE!!!!");
+					}
+				};
 				switch(operation) {
                     case JumpOp::IfThenElse:
                         cond = predicateResult();
@@ -183,6 +215,9 @@ namespace iris {
 						cond = predicateResult();
 						getInstructionPointer() = cond ? getLinkRegister() : temporaryAddress;
 						getLinkRegister() = cond ? temporaryAddress : getLinkRegister();
+						break;
+					case JumpOp::ReturnFromError:
+						returnFromError();
 						break;
 					default:
 						makeIllegalOperationMessage("defined but unimplemented operation!");
@@ -344,7 +379,7 @@ namespace iris {
 				conditionalRegisterOperation();
 				break;
 			default:
-				_status = encodeStatusIllegalGroup(_status, true);
+				_error = encodeStatusIllegalGroup(_error, true);
 				break;
 		}
 	}
