@@ -135,7 +135,6 @@ namespace iris {
 			raw_instruction current;
 			word _ip;
 			word _lr;
-			word _count;
 			IOSpace _io;
 			CompareUnit _compare;
 			ALU _alu;

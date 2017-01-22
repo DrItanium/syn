@@ -103,7 +103,8 @@
                           ShiftLeftImmediate
                           ShiftRightImmediate
                           Min
-                          Max))
+                          Max
+                          ))
           (enum (cast-to byte)
                 (max-size "ArchitectureConstants::MaxOperations")
                 (name JumpOp)
