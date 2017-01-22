@@ -41,7 +41,7 @@ namespace iris {
 	UnitDescription<T> makeDesc(typename T::Operation operation, bool immediate) noexcept {
 		return std::make_tuple(operation, immediate);
 	}
-	void Core::dispatch() {
+	void Core::dispatch() noexcept {
 		current = instruction[getInstructionPointer()];
 		auto group = static_cast<InstructionGroup>(getGroup());
 		auto makeIllegalOperationMessage = [this](const std::string& type) {
@@ -66,20 +66,19 @@ namespace iris {
 			};
 			auto op = getOperation<ArithmeticOp>();
 			auto result = table.find(op);
-			auto divide = [this](word src1) {
-				try {
-					destinationRegister() = syn::div<word>(source0Register(), src1);
-				} catch (syn::Problem problem) {
-					// have to setup the status register!
+			auto denominatorIsZero = [](auto src1) { return src1 == 0; };
+			auto divide = [this, denominatorIsZero](word denominator) {
+				if (denominatorIsZero(denominator)) {
 					_status = encodeStatusDivideByZero(_status, true);
+				} else {
+					destinationRegister() = source0Register() / denominator;
 				}
 			};
-			auto remainder = [this](word src1) {
-				try {
-					destinationRegister() = syn::rem<word>(source0Register(), src1);
-				} catch(syn::Problem problem) {
+			auto remainder = [this, denominatorIsZero](word denominator) {
+				if (denominatorIsZero(denominator)) {
 					_status = encodeStatusDivideByZero(_status, true);
-					// have to setup the status register!
+				} else {
+					destinationRegister() = source0Register() % denominator;
 				}
 			};
 			if (result == table.end()) {
@@ -185,7 +184,8 @@ namespace iris {
 						getLinkRegister() = cond ? temporaryAddress : getLinkRegister();
 						break;
 					default:
-						throw syn::Problem("defined but unimplemented operation!");
+						makeIllegalOperationMessage("defined but unimplemented operation!");
+						break;
 				}
 			} else {
 				auto conditional = false, immediate = false,  link = false;

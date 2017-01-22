@@ -70,7 +70,7 @@ namespace iris {
 			word& getLinkRegister() noexcept { return _lr; }
 			bool& getPredicateRegister(byte index);
 		private:
-			void dispatch();
+			void dispatch() noexcept;
             inline byte getDestination() const noexcept { return decodeDestination(current); }
             inline byte getSource0() const noexcept { return decodeSource0(current); }
             inline byte getSource1() const noexcept { return decodeSource1(current); }
