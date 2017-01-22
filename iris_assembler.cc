@@ -396,7 +396,8 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
     struct BranchConditionalNoArgsInstruction : public pegtl::seq<OperationBranchCondtionalNoArgs, Separator, DestinationPredicateRegister> { };
     DefOperationSameTitle(BranchUnconditionalLR, blr);
     DefOperationSameTitle(BranchUnconditionalLRAndLink, blrl);
-    struct OperationBranchNoArgs : public pegtl::sor<SymbolBranchUnconditionalLR,  SymbolBranchUnconditionalLRAndLink> { };
+	DefOperation(BranchReturnFromError, rfe, ReturnFromError);
+    struct OperationBranchNoArgs : public pegtl::sor<SymbolBranchUnconditionalLR,  SymbolBranchUnconditionalLRAndLink, SymbolBranchReturnFromError> { };
     struct BranchNoArgsInstruction : public pegtl::seq<OperationBranchNoArgs> { };
 
     struct BranchInstruction : public pegtl::sor<GroupBranchUnconditional, BranchConditionalGPRInstruction, BranchConditionalImmediateInstruction, BranchIfInstruction, BranchConditionalNoArgsInstruction, BranchNoArgsInstruction> { };
