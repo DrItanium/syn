@@ -67,16 +67,19 @@ namespace iris {
 			auto op = getOperation<ArithmeticOp>();
 			auto result = table.find(op);
 			auto denominatorIsZero = [](auto src1) { return src1 == 0; };
-			auto divide = [this, denominatorIsZero](word denominator) {
+			auto updateStatusRegister = [this](auto fn, bool value) { _status = fn(_status, value); };
+			auto enableStatusRegisterBit = [this, updateStatusRegister](auto fn) { updateStatusRegister(fn, true); };
+			auto markDivideByZero = [this, enableStatusRegisterBit]() { enableStatusRegisterBit(encodeStatusDivideByZero); };
+			auto divide = [this, denominatorIsZero, markDivideByZero](word denominator) {
 				if (denominatorIsZero(denominator)) {
-					_status = encodeStatusDivideByZero(_status, true);
+					markDivideByZero();
 				} else {
 					destinationRegister() = source0Register() / denominator;
 				}
 			};
-			auto remainder = [this, denominatorIsZero](word denominator) {
+			auto remainder = [this, denominatorIsZero, markDivideByZero](word denominator) {
 				if (denominatorIsZero(denominator)) {
-					_status = encodeStatusDivideByZero(_status, true);
+					markDivideByZero();
 				} else {
 					destinationRegister() = source0Register() % denominator;
 				}
