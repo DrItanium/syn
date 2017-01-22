@@ -126,10 +126,10 @@ namespace iris {
 				{ JumpOp:: BranchUnconditionalImmediateLink ,   std::make_tuple(false, true, true) } ,
 				{ JumpOp:: BranchUnconditional ,                std::make_tuple(false, false, false) } ,
 				{ JumpOp:: BranchUnconditionalLink ,            std::make_tuple(false, false, true) } ,
-				{ JumpOp:: BranchConditionalImmediate ,     std::make_tuple(true, true, false) } ,
-				{ JumpOp:: BranchConditionalImmediateLink , std::make_tuple(true, true, true) } ,
-				{ JumpOp:: BranchConditional ,              std::make_tuple(true, false, false) } ,
-				{ JumpOp:: BranchConditionalLink ,          std::make_tuple(true, false, true) } ,
+				{ JumpOp:: BranchConditionalImmediate ,         std::make_tuple(true, true, false) } ,
+				{ JumpOp:: BranchConditionalImmediateLink ,     std::make_tuple(true, true, true) } ,
+				{ JumpOp:: BranchConditional ,                  std::make_tuple(true, false, false) } ,
+				{ JumpOp:: BranchConditionalLink ,              std::make_tuple(true, false, true) } ,
 			};
 			auto operation = static_cast<JumpOp>(getOperation());
 			auto result = translationTable.find(operation);
