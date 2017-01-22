@@ -70,7 +70,21 @@
                  (shift 3)
                  (input-type byte)
                  (output-type byte))
-
+         (field (name StatusDivideByZero)
+                (mask 0b0000000000000001)
+                (shift 0)
+                (input-type word)
+                (output-type bool))
+         (field (name StatusIllegalOperation)
+                (mask 0b0000000000000010)
+                (shift 1)
+                (input-type word)
+                (output-type bool))
+         (field (name StatusIllegalGroup)
+                (mask 0b0000000000000100)
+                (shift 2)
+                (input-type word)
+                (output-type bool))
           (enum (name InstructionGroup)
                 (children Arithmetic
                           Move

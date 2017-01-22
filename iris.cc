@@ -5,7 +5,7 @@
 
 namespace iris {
 
-	Core::Core() noexcept : execute(true), advanceIp(true), current(0), _ip(0), _lr(0), _io(0, 0xFFFF) { }
+	Core::Core() noexcept : execute(true), advanceIp(true), current(0), _ip(0), _lr(0), _status(0), _io(0, 0xFFFF) { }
 
 	Core::~Core() {
 	}
@@ -44,23 +44,14 @@ namespace iris {
 	void Core::dispatch() {
 		current = instruction[getInstructionPointer()];
 		auto group = static_cast<InstructionGroup>(getGroup());
-		auto makeProblem = [this](const std::string& message, auto operation) {
-			std::stringstream stream;
-			stream << message << " 0x" << std::hex << operation;
-			execute = false;
-			advanceIp = false;
-			throw syn::Problem(stream.str());
+		auto makeIllegalOperationMessage = [this](const std::string& type) {
+			_status = encodeStatusIllegalOperation(_status, true);
 		};
-		auto makeIllegalOperationMessage = [this, makeProblem](const std::string& type) {
-			makeProblem("Illegal " + type, getOperation());
-		};
-		if (group == InstructionGroup::Arithmetic) {
+		auto arithmeticOperation = [this, makeIllegalOperationMessage]() {
 			static std::map<ArithmeticOp, UnitDescription<ALU>> table = {
 				{ ArithmeticOp::Add, makeDesc<ALU>(ALU::Operation::Add , false) },
 				{ ArithmeticOp::Sub, makeDesc<ALU>(ALU::Operation::Subtract , false ) },
 				{ ArithmeticOp::Mul, makeDesc<ALU>(ALU::Operation::Multiply , false ) } ,
-				{ ArithmeticOp::Div, makeDesc<ALU>(ALU::Operation::Divide , false ) },
-				{ ArithmeticOp::Rem, makeDesc<ALU>(ALU::Operation::Remainder , false ) },
 				{ ArithmeticOp::ShiftLeft, makeDesc<ALU>(ALU::Operation::ShiftLeft , false ) },
 				{ ArithmeticOp::ShiftRight, makeDesc<ALU>(ALU::Operation::ShiftRight , false ) },
 				{ ArithmeticOp::BinaryAnd, makeDesc<ALU>(ALU::Operation::BinaryAnd , false ) },
@@ -70,15 +61,41 @@ namespace iris {
 				{ ArithmeticOp::AddImmediate, makeDesc<ALU>(ALU::Operation::Add , true  ) },
 				{ ArithmeticOp::SubImmediate, makeDesc<ALU>(ALU::Operation::Subtract , true  ) },
 				{ ArithmeticOp::MulImmediate, makeDesc<ALU>(ALU::Operation::Multiply , true  ) } ,
-				{ ArithmeticOp::DivImmediate, makeDesc<ALU>(ALU::Operation::Divide , true  ) },
-				{ ArithmeticOp::RemImmediate, makeDesc<ALU>(ALU::Operation::Remainder , true  ) },
 				{ ArithmeticOp::ShiftLeftImmediate, makeDesc<ALU>(ALU::Operation::ShiftLeft , true ) },
 				{ ArithmeticOp::ShiftRightImmediate, makeDesc<ALU>(ALU::Operation::ShiftRight , true ) },
 			};
-            auto op = static_cast<ArithmeticOp>(getOperation());
+			auto op = getOperation<ArithmeticOp>();
 			auto result = table.find(op);
+			auto divide = [this](word src1) {
+				try {
+					destinationRegister() = syn::div<word>(source0Register(), src1);
+				} catch (syn::Problem problem) {
+					// have to setup the status register!
+					_status = encodeStatusDivideByZero(_status, true);
+				}
+			};
+			auto remainder = [this](word src1) {
+				try {
+					destinationRegister() = syn::rem<word>(source0Register(), src1);
+				} catch(syn::Problem problem) {
+					_status = encodeStatusDivideByZero(_status, true);
+					// have to setup the status register!
+				}
+			};
 			if (result == table.end()) {
                 switch(op) {
+					case ArithmeticOp::Div:
+						divide(source1Register());
+						break;
+					case ArithmeticOp::DivImmediate:
+						divide(getHalfImmediate());
+						break;
+					case ArithmeticOp::Rem:
+						remainder(source1Register());
+						break;
+					case ArithmeticOp::RemImmediate:
+						remainder(getHalfImmediate());
+						break;
                     case ArithmeticOp::Min:
                         destinationRegister() = source0Register() < source1Register() ? source0Register() : source1Register();
                         break;
@@ -91,7 +108,8 @@ namespace iris {
 			} else {
 				performOperation(_alu, result->second);
 			}
-		} else if (group == InstructionGroup::Compare) {
+		};
+		auto compareOperation = [this, makeIllegalOperationMessage]() {
 			static std::map<CompareOp, UnitDescription<CompareUnit>> translationTable = {
 				{ CompareOp::LessThan, makeDesc<CompareUnit>(CompareUnit::Operation::LessThan, false) },
 				{ CompareOp::LessThanImmediate, makeDesc<CompareUnit>(CompareUnit::Operation::LessThan, true) },
@@ -106,7 +124,7 @@ namespace iris {
 				{ CompareOp::Neq, makeDesc<CompareUnit>(CompareUnit::Operation::Neq, false) },
 				{ CompareOp::NeqImmediate, makeDesc<CompareUnit>(CompareUnit::Operation::Neq, true) },
 			};
-			auto result = translationTable.find(static_cast<CompareOp>(getOperation()));
+			auto result = translationTable.find(getOperation<CompareOp>());
 			if (result == translationTable.end()) {
 				makeIllegalOperationMessage("compare code");
 			} else {
@@ -119,7 +137,8 @@ namespace iris {
 					predicateInverseResult() = !result;
 				}
 			}
-		} else if (group == InstructionGroup::Jump) {
+		};
+		auto jumpOperation = [this, makeIllegalOperationMessage]() {
 			// conditional?, immediate?, link?
 			static std::map<JumpOp, std::tuple<bool, bool, bool>> translationTable = {
 				{ JumpOp:: BranchUnconditionalImmediate ,       std::make_tuple(false, true, false) } ,
@@ -131,7 +150,7 @@ namespace iris {
 				{ JumpOp:: BranchConditional ,                  std::make_tuple(true, false, false) } ,
 				{ JumpOp:: BranchConditionalLink ,              std::make_tuple(true, false, true) } ,
 			};
-			auto operation = static_cast<JumpOp>(getOperation());
+			auto operation = getOperation<JumpOp>();
 			auto result = translationTable.find(operation);
 			if (result == translationTable.end()) {
 				word temporaryAddress = 0;
@@ -186,8 +205,9 @@ namespace iris {
 					getLinkRegister() = ip + 1;
 				}
 			}
-		} else if (group == InstructionGroup::Move) {
-			auto op = static_cast<MoveOp>(getOperation());
+		};
+		auto moveOperation = [this, makeIllegalOperationMessage]() {
+			auto op = getOperation<MoveOp>();
 			raw_instruction codeStorage = 0u;
 			switch(op) {
 				case MoveOp::Move:
@@ -264,7 +284,8 @@ namespace iris {
 					makeIllegalOperationMessage("move code");
 					break;
 			}
-		} else if (group == InstructionGroup::ConditionalRegister) {
+		};
+		auto conditionalRegisterOperation = [this, makeIllegalOperationMessage]() {
 			static std::map<ConditionRegisterOp, UnitDescription<PredicateComparator>> translationTable = {
 				{ ConditionRegisterOp::CRAnd, makeDesc<PredicateComparator>(PredicateComparator::Operation::BinaryAnd, false) },
 				{ ConditionRegisterOp::CROr, makeDesc<PredicateComparator>(PredicateComparator::Operation::BinaryOr, false) },
@@ -273,7 +294,7 @@ namespace iris {
 				{ ConditionRegisterOp::CRXor, makeDesc<PredicateComparator>(PredicateComparator::Operation::BinaryXor, false) },
 				{ ConditionRegisterOp::CRNot, makeDesc<PredicateComparator>(PredicateComparator::Operation::UnaryNot, false) },
 			};
-			auto op = static_cast<ConditionRegisterOp>(getOperation());
+			auto op = getOperation<ConditionRegisterOp>();
 			auto result = translationTable.find(op);
 			if (result  == translationTable.end()) {
 				switch(op) {
@@ -290,7 +311,8 @@ namespace iris {
 						restorePredicateRegisters(destinationRegister(), getImmediate());
 						break;
 					default:
-						throw syn::Problem("Defined but unimplemented condition register operation!");
+						makeIllegalOperationMessage("Predicate operation!");
+						break;
 				}
 			} else {
 				typename decltype(_pcompare)::Operation pop;
@@ -302,8 +324,27 @@ namespace iris {
 					predicateInverseResult() = !result;
 				}
 			}
-		} else {
-			makeProblem("Illegal instruction group", getGroup());
+
+		};
+		switch(group) {
+			case InstructionGroup::Arithmetic:
+				arithmeticOperation();
+				break;
+			case InstructionGroup::Compare:
+				compareOperation();
+				break;
+			case InstructionGroup::Jump:
+				jumpOperation();
+				break;
+			case InstructionGroup::Move:
+				moveOperation();
+				break;
+			case InstructionGroup::ConditionalRegister:
+				conditionalRegisterOperation();
+				break;
+			default:
+				_status = encodeStatusIllegalGroup(_status, true);
+				break;
 		}
 	}
 

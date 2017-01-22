@@ -76,7 +76,11 @@ namespace iris {
             inline byte getSource1() const noexcept { return decodeSource1(current); }
 			inline word getHalfImmediate() const noexcept { return decodeHalfImmediate(current); }
             inline word getImmediate() const noexcept { return decodeImmediate(current); }
-            inline byte getOperation() const noexcept { return decodeOperation(current); }
+            inline byte getOperationByte() const noexcept { return decodeOperation(current); }
+			template<typename T>
+			inline T getOperation() const noexcept {
+				return static_cast<T>(getOperationByte());
+			}
             inline byte getGroup() const noexcept { return decodeGroup(current); }
 			inline byte getPredicateResult() const noexcept { return decodePredicateResult(current); }
 			inline byte getPredicateInverse() const noexcept { return decodePredicateInverseResult(current); }
@@ -89,6 +93,7 @@ namespace iris {
 			inline bool& predicateInverseResult() noexcept { return getPredicateRegister(getPredicateInverse()); }
 			inline bool& predicateSource0() noexcept { return getPredicateRegister(getPredicateSource0()); }
 			inline bool& predicateSource1() noexcept { return getPredicateRegister(getPredicateSource1()); }
+			//inline bool divideByZeroError() noexcept { return getPredicat
 
 		private:
 			template<typename Unit>
@@ -135,6 +140,7 @@ namespace iris {
 			raw_instruction current;
 			word _ip;
 			word _lr;
+			word _status;
 			IOSpace _io;
 			CompareUnit _compare;
 			ALU _alu;
