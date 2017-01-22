@@ -5,7 +5,7 @@
 
 namespace iris {
 
-	Core::Core() noexcept : _io(0, 0xFFFF) { }
+	Core::Core() noexcept : execute(true), advanceIp(true), current(0), _ip(0), _lr(0), _io(0, 0xFFFF) { }
 
 	Core::~Core() {
 	}

@@ -130,18 +130,18 @@ namespace iris {
 			word savePredicateRegisters(word mask) noexcept;
 
 		private:
-			bool execute = true,
-				 advanceIp = true;
+			bool execute;
+			bool advanceIp;
+			raw_instruction current;
+			word _ip;
+			word _lr;
+			IOSpace _io;
 			CompareUnit _compare;
 			ALU _alu;
 			RegisterFile gpr;
 			WordMemorySpace64k data;
 			syn::FixedSizeLoadStoreUnit<dword, word, ArchitectureConstants::AddressMax> instruction;
 			WordMemorySpace64k stack;
-			IOSpace _io;
-			raw_instruction current = 0;
-			word _ip = 0;
-			word _lr = 0;
 			PredicateRegisterFile _cr;
 			PredicateComparator _pcompare;
 	};
