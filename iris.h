@@ -114,7 +114,7 @@ namespace iris {
 				std::tie(op, immediate) = tuple;
 				performOperation(unit, op, immediate);
 			}
-			template<word index> 
+			template<word index>
 			struct PredicateRegisterEncoder {
 				static_assert(index < 16, "Provided predicate register is out of range!");
 				static PredicateRegisterEncoder<index - 1> next;
@@ -162,7 +162,7 @@ namespace iris {
 			bool _saveAdvanceIp = false;
 			bool _saveExecute = false;
 	};
-	template<> 
+	template<>
 		struct Core::PredicateRegisterEncoder<0> {
 			static word invoke(Core* c, word mask) {
 				if (syn::getBit<word, 0>(mask)) {
