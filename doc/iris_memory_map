@@ -2,7 +2,7 @@ This is a basic idea of how an iris cpu would be able to reference it's
 different memory spaces in a single layout. All addresses are 16-bit based
 instead of 8-bit
 
-0x00000-0x1FFFF : Code Section (32-bit words)
+0x00000-0x1FFFF : Code Section (2 words per instruction)
 0x20000-0x2FFFF : Data Section
 0x30000-0x3FFFF : Stack Section
 0x40000-0x4FFFF : IO Section
@@ -10,7 +10,7 @@ instead of 8-bit
 
 If we add the GPU into the mix then we need to add the following:
 
-0x50000-0x5FFFF : GPU Memory (R, G, B, I)
+0x50000-0x5FFFF : GPU Memory (R, G, B, I) [bit plane overlay mode]
 0x60000-0xFFFFF : Unmapped
 
 
