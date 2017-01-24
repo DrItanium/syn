@@ -14,3 +14,20 @@ If we add the GPU into the mix then we need to add the following:
 0x60000-0xFFFFF : Unmapped
 
 
+
+| Mode ID | Pixels Per Word Per Plain | Lookup entries | Single Screen Max Resolution | Title |
+| 0 | 16 | 16 | 1024 x 1024 | High Resolution Mode |
+| 1 | 8 | 256 | 1024 x 512 | 256 Resolution Mode |
+| 2 | 4 | 64k | 512 x 512 | 64k Color Mode |
+| 3 | 2 | 4 Billion | 512 x 256 | 32-bit color Mode |
+| 4 | 1 | 2^64 | 256 x 256 | Absolute color mode |
+
+
+Cores for the GPU, each operates in parallel
+
+R (iris)
+G (iris)
+B (iris)
+I (iris)
+
+
