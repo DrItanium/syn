@@ -28,7 +28,7 @@ SIM_BINARY = syn_sim
 
 ASM_PARSERS_OBJECTS = cisc0_lex.yy.o \
 					  cisc0_asm.tab.o \
-					  iris_assembler.o \
+					  IrisCoreAssembler.o \
 
 ASM_OBJECTS = Assembler.o \
 			  AssemblerRegistrar.o \
@@ -241,7 +241,7 @@ cisc0.o: cisc0.cc cisc0.h Base.h Problem.h ExecutionUnits.h IODevice.h \
 Core.o: Core.cc Core.h Device.h
 CoreRegistrar.o: CoreRegistrar.cc Problem.h CoreRegistrar.h Core.h \
  Device.h
-iris_assembler.o: iris_assembler.cc Base.h Problem.h AssemblerBase.h \
+IrisCoreAssembler.o: IrisCoreAssembler.cc Base.h Problem.h AssemblerBase.h \
  iris.h ExecutionUnits.h IODevice.h Device.h Core.h IOController.h \
  iris_defines.h
 iris.o: iris.cc iris.h Base.h Problem.h ExecutionUnits.h IODevice.h \

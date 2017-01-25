@@ -1,4 +1,4 @@
-// iris_assembler rewritten to use pegtl
+// IrisCoreAssembler rewritten to use pegtl
 #include <sstream>
 #include <typeinfo>
 #include <iostream>
