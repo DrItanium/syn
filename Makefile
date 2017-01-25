@@ -224,39 +224,39 @@ phoenix_defines.h: ${REPL_BINARY} ${COMMON_GEN_ENCODER_DECODER_FILES} def/phoeni
 	@./deffunction.sh -f2 def/phoenix/instruction.clp -f2 lib/reset-run-exit.clp > phoenix_defines.clp
 
 cisc0_asm.tab.o: cisc0_asm.tab.c cisc0.h syn_base.h Problem.h \
- syn_xunits.h IODevice.h Device.h Core.h cisc0_defines.h \
+ ExecutionUnits.h IODevice.h Device.h Core.h cisc0_defines.h \
  def/cisc0/instruction.def def/cisc0/misc.def def/cisc0/ops.def \
  AssemblerRegistrar.h cisc0_asm.tab.h
-cisc0_lex.yy.o: cisc0_lex.yy.c cisc0.h syn_base.h Problem.h syn_xunits.h \
+cisc0_lex.yy.o: cisc0_lex.yy.c cisc0.h syn_base.h Problem.h ExecutionUnits.h \
  IODevice.h Device.h Core.h cisc0_defines.h def/cisc0/instruction.def \
  def/cisc0/misc.def def/cisc0/ops.def cisc0_asm.tab.h syn_asm_base.h
 
 AssemblerRegistrar.o: AssemblerRegistrar.cc AssemblerRegistrar.h iris.h \
- syn_base.h Problem.h syn_xunits.h IODevice.h Device.h Core.h \
+ syn_base.h Problem.h ExecutionUnits.h IODevice.h Device.h Core.h \
  IOController.h iris_defines.h cisc0.h cisc0_defines.h \
  def/cisc0/instruction.def def/cisc0/misc.def def/cisc0/ops.def \
  molecule.h molecule_defines.h
-cisc0.o: cisc0.cc cisc0.h syn_base.h Problem.h syn_xunits.h IODevice.h \
+cisc0.o: cisc0.cc cisc0.h syn_base.h Problem.h ExecutionUnits.h IODevice.h \
  Device.h Core.h cisc0_defines.h def/cisc0/instruction.def \
  def/cisc0/misc.def def/cisc0/ops.def def/cisc0/bitmask4bit.def
 Core.o: Core.cc Core.h Device.h
 CoreRegistrar.o: CoreRegistrar.cc Problem.h CoreRegistrar.h Core.h \
  Device.h
 iris_assembler.o: iris_assembler.cc syn_base.h Problem.h syn_asm_base.h \
- iris.h syn_xunits.h IODevice.h Device.h Core.h IOController.h \
+ iris.h ExecutionUnits.h IODevice.h Device.h Core.h IOController.h \
  iris_defines.h
-iris.o: iris.cc iris.h syn_base.h Problem.h syn_xunits.h IODevice.h \
+iris.o: iris.cc iris.h syn_base.h Problem.h ExecutionUnits.h IODevice.h \
  Device.h Core.h IOController.h iris_defines.h
 molecule_bootstrap.o: molecule_bootstrap.cc molecule.h syn_base.h \
- Problem.h syn_xunits.h IODevice.h Device.h Core.h IOController.h \
+ Problem.h ExecutionUnits.h IODevice.h Device.h Core.h IOController.h \
  molecule_defines.h
-molecule.o: molecule.cc molecule.h syn_base.h Problem.h syn_xunits.h \
+molecule.o: molecule.cc molecule.h syn_base.h Problem.h ExecutionUnits.h \
  IODevice.h Device.h Core.h IOController.h molecule_defines.h
-phoenix.o: phoenix.cc phoenix.h syn_base.h Problem.h syn_xunits.h \
+phoenix.o: phoenix.cc phoenix.h syn_base.h Problem.h ExecutionUnits.h \
  IODevice.h Device.h Core.h IOController.h phoenix_defines.h
 syn_asm.o: syn_asm.cc Problem.h AssemblerRegistrar.h
 syn_assemblers.o: syn_assemblers.cc Problem.h RegisterEntry.h \
- AssemblerRegistrar.h iris.h syn_base.h syn_xunits.h IODevice.h Device.h \
+ AssemblerRegistrar.h iris.h syn_base.h ExecutionUnits.h IODevice.h Device.h \
  Core.h IOController.h iris_defines.h cisc0.h cisc0_defines.h \
  def/cisc0/instruction.def def/cisc0/misc.def def/cisc0/ops.def \
  molecule.h molecule_defines.h
@@ -292,7 +292,7 @@ syn_clips.o: syn_clips.cc syn_clips.h syn_base.h Problem.h \
  misc/maya/msgcom.h misc/maya/msgpass.h misc/maya/objrtmch.h \
  syn_memory_block_defines.h
 syn_cores.o: syn_cores.cc Problem.h RegisterEntry.h CoreRegistrar.h \
- iris.h syn_base.h syn_xunits.h IODevice.h Device.h Core.h IOController.h \
+ iris.h syn_base.h ExecutionUnits.h IODevice.h Device.h Core.h IOController.h \
  iris_defines.h cisc0.h cisc0_defines.h def/cisc0/instruction.def \
  def/cisc0/misc.def def/cisc0/ops.def molecule.h molecule_defines.h \
  syn_machines.h LockStepMachine.h

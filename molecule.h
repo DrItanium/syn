@@ -1,7 +1,7 @@
 #ifndef _TARGET_IRIS20_IRIS_H
 #define _TARGET_IRIS20_IRIS_H
 #include "syn_base.h"
-#include "syn_xunits.h"
+#include "ExecutionUnits.h"
 #include "IOController.h"
 #include "Core.h"
 #include <cstdint>

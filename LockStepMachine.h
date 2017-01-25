@@ -2,7 +2,7 @@
 #ifndef _IRIS_LOCKSTEP_MACHINE_H
 #define _IRIS_LOCKSTEP_MACHINE_H
 #include "syn_base.h"
-#include "syn_xunits.h"
+#include "ExecutionUnits.h"
 #include "Core.h"
 #include <cstdint>
 #include <memory>
