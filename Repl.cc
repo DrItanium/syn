@@ -1,7 +1,7 @@
 extern "C" {
 	#include "clips.h"
 }
-#include "Clips.h"
+#include "ClipsExtensions.h"
 
 static void *mainEnv;
 

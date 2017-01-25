@@ -42,7 +42,7 @@ ASM_OBJECTS = Assembler.o \
 REPL_BINARY = syn_repl
 
 REPL_OBJECTS= Repl.o \
-			  Clips.o \
+			  ClipsExtensions.o \
 			  ${COMMON_THINGS}
 
 ASM_PARSERS = cisc0_lex.yy.c \
@@ -196,7 +196,7 @@ uninstall:
 .PHONY: all options clean install uninstall
 
 bootstrap: ${REPL_BINARY} ${DEFINE_OBJECTS}
-# generate the syn_memory_block_defines.h prior to generating Clips.h
+# generate the syn_memory_block_defines.h prior to generating ClipsExtensions.h
 syn_memory_block_defines.h: maya ${COMMON_CLP_FILES} def/memory-block-ops.clp
 	@echo "Generating memory block call operations..."
 	@./maya -f2 def/memory-block-ops.clp -f2 lib/reset-run-exit.clp > syn_memory_block_defines.h
@@ -259,7 +259,7 @@ RegisteredAssemblers.o: RegisteredAssemblers.cc Problem.h RegisterEntry.h \
  Core.h IOController.h iris_defines.h cisc0.h cisc0_defines.h \
  def/cisc0/instruction.def def/cisc0/misc.def def/cisc0/ops.def \
  MoleculeCore.h molecule_defines.h
-Clips.o: Clips.cc Clips.h Base.h Problem.h \
+ClipsExtensions.o: ClipsExtensions.cc ClipsExtensions.h Base.h Problem.h \
  misc/maya/clips.h misc/maya/setup.h misc/maya/os_shim.h \
  misc/maya/platform.h misc/maya/envrnmnt.h misc/maya/symbol.h \
  misc/maya/usrsetup.h misc/maya/argacces.h misc/maya/expressn.h \
@@ -325,5 +325,5 @@ Repl.o: Repl.cc misc/maya/clips.h misc/maya/setup.h \
  misc/maya/classinf.h misc/maya/classini.h misc/maya/classpsr.h \
  misc/maya/defins.h misc/maya/inscom.h misc/maya/insfun.h \
  misc/maya/insfile.h misc/maya/msgcom.h misc/maya/msgpass.h \
- misc/maya/objrtmch.h Clips.h Base.h Problem.h
+ misc/maya/objrtmch.h ClipsExtensions.h Base.h Problem.h
 Simulator.o: Simulator.cc Problem.h Core.h Device.h CoreRegistrar.h

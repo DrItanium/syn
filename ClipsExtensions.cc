@@ -1,4 +1,4 @@
-#include "Clips.h"
+#include "ClipsExtensions.h"
 #include "Base.h"
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/trim.hpp>
