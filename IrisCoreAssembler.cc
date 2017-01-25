@@ -6,7 +6,7 @@
 #include "Base.h"
 #include "AssemblerBase.h"
 #include "Problem.h"
-#include "iris.h"
+#include "IrisCore.h"
 #include <pegtl.hh>
 #include <pegtl/analyze.hh>
 #include <pegtl/file_parser.hh>

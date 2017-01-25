@@ -1,4 +1,4 @@
-#include "iris.h"
+#include "IrisCore.h"
 #include <functional>
 #include <sstream>
 #include <vector>

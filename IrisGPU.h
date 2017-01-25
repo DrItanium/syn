@@ -2,7 +2,7 @@
 #ifndef IRIS_GPU_H
 #define IRIS_GPU_H
 #include "Device.h"
-#include "iris.h"
+#include "IrisCore.h"
 namespace iris {
     template<typename Bus>
     class GPU : public syn::Device {

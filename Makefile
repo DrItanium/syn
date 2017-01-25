@@ -4,7 +4,7 @@
 
 include config.mk
 MACHINE_OBJECTS =
-ARCH_OBJECTS = iris.o \
+ARCH_OBJECTS = IrisCore.o \
 			   cisc0.o \
 			   MoleculeCore.o \
 			   ${MACHINE_OBJECTS}
@@ -230,7 +230,7 @@ cisc0_lex.yy.o: cisc0_lex.yy.c cisc0.h Base.h Problem.h ExecutionUnits.h \
  IODevice.h Device.h Core.h cisc0_defines.h def/cisc0/instruction.def \
  def/cisc0/misc.def def/cisc0/ops.def cisc0_asm.tab.h AssemblerBase.h
 
-AssemblerRegistrar.o: AssemblerRegistrar.cc AssemblerRegistrar.h iris.h \
+AssemblerRegistrar.o: AssemblerRegistrar.cc AssemblerRegistrar.h IrisCore.h \
  Base.h Problem.h ExecutionUnits.h IODevice.h Device.h Core.h \
  IOController.h iris_defines.h cisc0.h cisc0_defines.h \
  def/cisc0/instruction.def def/cisc0/misc.def def/cisc0/ops.def \
@@ -242,9 +242,9 @@ Core.o: Core.cc Core.h Device.h
 CoreRegistrar.o: CoreRegistrar.cc Problem.h CoreRegistrar.h Core.h \
  Device.h
 IrisCoreAssembler.o: IrisCoreAssembler.cc Base.h Problem.h AssemblerBase.h \
- iris.h ExecutionUnits.h IODevice.h Device.h Core.h IOController.h \
+ IrisCore.h ExecutionUnits.h IODevice.h Device.h Core.h IOController.h \
  iris_defines.h
-iris.o: iris.cc iris.h Base.h Problem.h ExecutionUnits.h IODevice.h \
+IrisCore.o: IrisCore.cc IrisCore.h Base.h Problem.h ExecutionUnits.h IODevice.h \
  Device.h Core.h IOController.h iris_defines.h
 MoleculeCoreBootstrap.o: MoleculeCoreBootstrap.cc MoleculeCore.h Base.h \
  Problem.h ExecutionUnits.h IODevice.h Device.h Core.h IOController.h \
@@ -255,7 +255,7 @@ phoenix.o: phoenix.cc phoenix.h Base.h Problem.h ExecutionUnits.h \
  IODevice.h Device.h Core.h IOController.h phoenix_defines.h
 Assembler.o: Assembler.cc Problem.h AssemblerRegistrar.h
 RegisteredAssemblers.o: RegisteredAssemblers.cc Problem.h RegisterEntry.h \
- AssemblerRegistrar.h iris.h Base.h ExecutionUnits.h IODevice.h Device.h \
+ AssemblerRegistrar.h IrisCore.h Base.h ExecutionUnits.h IODevice.h Device.h \
  Core.h IOController.h iris_defines.h cisc0.h cisc0_defines.h \
  def/cisc0/instruction.def def/cisc0/misc.def def/cisc0/ops.def \
  MoleculeCore.h molecule_defines.h
@@ -291,7 +291,7 @@ ClipsExtensions.o: ClipsExtensions.cc ClipsExtensions.h Base.h Problem.h \
  misc/maya/msgcom.h misc/maya/msgpass.h misc/maya/objrtmch.h \
  syn_memory_block_defines.h
 RegisteredCores.o: RegisteredCores.cc Problem.h RegisterEntry.h CoreRegistrar.h \
- iris.h Base.h ExecutionUnits.h IODevice.h Device.h Core.h IOController.h \
+ IrisCore.h Base.h ExecutionUnits.h IODevice.h Device.h Core.h IOController.h \
  iris_defines.h cisc0.h cisc0_defines.h def/cisc0/instruction.def \
  def/cisc0/misc.def def/cisc0/ops.def MoleculeCore.h molecule_defines.h \
  RegisteredMachines.h LockStepMachine.h

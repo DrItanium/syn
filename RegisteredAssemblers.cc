@@ -3,7 +3,7 @@
 #include "Problem.h"
 #include "RegisterEntry.h"
 #include "AssemblerRegistrar.h"
-#include "iris.h"
+#include "IrisCore.h"
 #include "cisc0.h"
 #include "MoleculeCore.h"
 
