@@ -1,4 +1,4 @@
-#include "molecule.h"
+#include "MoleculeCore.h"
 #include <functional>
 #include <sstream>
 #include <vector>

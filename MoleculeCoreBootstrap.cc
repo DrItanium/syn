@@ -2,7 +2,7 @@
  * Define the initial program load for the molecule architecture inside of C++
  * itself. This will construct binary as its output
  */
-#include "molecule.h"
+#include "MoleculeCore.h"
 #include <vector>
 #include <iostream>
 #include <bitset>

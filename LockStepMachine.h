@@ -8,7 +8,7 @@
 #include <memory>
 #include "IODevice.h"
 #include "iris.h"
-#include "molecule.h"
+#include "MoleculeCore.h"
 namespace machine {
 	template<byte secondaryCoreCount, byte secondaryCycleCount = 4, byte primaryCycleCount = secondaryCoreCount>
 	class LockStepMachine : public syn::Core {

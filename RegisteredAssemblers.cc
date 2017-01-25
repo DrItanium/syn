@@ -5,7 +5,7 @@
 #include "AssemblerRegistrar.h"
 #include "iris.h"
 #include "cisc0.h"
-#include "molecule.h"
+#include "MoleculeCore.h"
 
 template<typename T>
 using RegisterAssembler = syn::RegisterEntry<syn::AssemblerRegistrar, T>;
