@@ -1,4 +1,4 @@
-#include "syn_clips.h"
+#include "Clips.h"
 #include "Base.h"
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/trim.hpp>

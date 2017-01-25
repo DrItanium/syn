@@ -1,7 +1,7 @@
 extern "C" {
 	#include "clips.h"
 }
-#include "syn_clips.h"
+#include "Clips.h"
 
 static void *mainEnv;
 
