@@ -12,6 +12,7 @@ syn_sim
 syn_asm
 syn_link
 syn_repl
+MoleculeCoreBootstrap
 molecule_bootstrap
 maya
 
