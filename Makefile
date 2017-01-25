@@ -47,18 +47,17 @@ REPL_OBJECTS= syn_repl.o \
 
 ASM_PARSERS = cisc0_lex.yy.c \
 			  cisc0_asm.tab.c \
-			  cisc0_asm.tab.h 
+			  cisc0_asm.tab.h
 
 ASM_BINARY = syn_asm
 
-LINK_OBJECTS = syn_link.o \
+LINK_OBJECTS = Linker.o \
 				${ARCH_OBJECTS} \
 				CoreRegistrar.o \
 				syn_cores.o \
 			  ${COMMON_THINGS}
 
-LINK_BINARY = syn_link
-
+LINK_BINARY = syn_linker
 
 ALL_BINARIES = ${SIM_BINARY} \
 			   ${ASM_BINARY} \
@@ -296,7 +295,7 @@ syn_cores.o: syn_cores.cc Problem.h RegisterEntry.h CoreRegistrar.h \
  iris_defines.h cisc0.h cisc0_defines.h def/cisc0/instruction.def \
  def/cisc0/misc.def def/cisc0/ops.def molecule.h molecule_defines.h \
  syn_machines.h LockStepMachine.h
-syn_link.o: syn_link.cc Core.h Device.h CoreRegistrar.h Problem.h
+Linker.o: Linker.cc Core.h Device.h CoreRegistrar.h Problem.h
 syn_repl.o: syn_repl.cc misc/maya/clips.h misc/maya/setup.h \
  misc/maya/os_shim.h misc/maya/platform.h misc/maya/envrnmnt.h \
  misc/maya/symbol.h misc/maya/usrsetup.h misc/maya/argacces.h \
