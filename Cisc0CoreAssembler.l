@@ -6,8 +6,8 @@
 #include <errno.h>
 #include <limits.h>
 #include <cstdint>
-#include "cisc0.h"
-#include "cisc0_asm.tab.h"
+#include "Cisc0Core.h"
+#include "Cisc0CoreAssembler.tab.h"
 #include "AssemblerBase.h"
 #define _POSIX_SOURCE 1
 
@@ -107,15 +107,15 @@ omni [a-zA-Z0-9._]
 
 [ \t\n,]     ;
 [;].*       ; // comments
-r{digit}+   { 
+r{digit}+   {
 	cisc0lval.rval = syn::getRegister<byte, cisc0::ArchitectureConstants::RegisterCount>(cisc0text, reportIris18Error);
 	return REGISTER;
 }
-{digit}+ { 
+{digit}+ {
 	cisc0lval.ival = syn::getDecimalImmediate<cisc0::Word>(cisc0text, reportIris18Error);
-	return IMMEDIATE; 
+	return IMMEDIATE;
 }
-0x{xdigit}+ { 
+0x{xdigit}+ {
 	cisc0lval.ival = syn::getHexImmediate<cisc0::Word>(cisc0text, reportIris18Error);
 	return IMMEDIATE;
 }

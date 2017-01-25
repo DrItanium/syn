@@ -1,4 +1,4 @@
-#include "cisc0.h"
+#include "Cisc0Core.h"
 #include <functional>
 #include <sstream>
 #include "Problem.h"
@@ -321,7 +321,7 @@ namespace cisc0 {
 					if ((isCond && choice) || !isCond) {
 						advanceIp = false;
 						getInstructionPointer() = bitmask24 & (current.getUpper() | static_cast<RegisterValue>(getCurrentCodeWord()) << 8);
-					} 
+					}
 				} else {
 					if ((isCond && choice) || !isCond) {
 						advanceIp = false;
@@ -352,7 +352,7 @@ namespace cisc0 {
 			throwIfNotFound(compareResult, translationTable, "Illegal compare type!");
 			auto combineResult = combineTranslation.find(current.getCompareCombineFlag());
 			throwIfNotFound(combineResult, combineTranslation, "Illegal compare combine operation!");
-			getConditionRegister() = static_cast<RegisterValue>(_bCombine.performOperation(combineResult->second, 
+			getConditionRegister() = static_cast<RegisterValue>(_bCombine.performOperation(combineResult->second,
 						_compare.performOperation(compareResult->second, first, second),
 						getConditionRegister() != 0));
 		} else if (tControl == Operation::SystemCall) {
@@ -396,7 +396,7 @@ namespace cisc0 {
 			getAddressRegister() = syn::encodeBits<RegisterValue, RegisterValue>(getAddressRegister(), getValueRegister(), getMaskRegister(), getShiftRegister());
 
 		} else if (type == EncodingOperation::BitSet) {
-			getConditionRegister() = _compare.performOperation(CompareUnit::Operation::Eq, 
+			getConditionRegister() = _compare.performOperation(CompareUnit::Operation::Eq,
 					_logicalOps.performOperation(ALU::Operation::BinaryAnd,
 						_shifter.performOperation(ALU::Operation::ShiftRight, getAddressRegister(),
 							getFieldRegister()), 0x1), 1);
@@ -404,7 +404,7 @@ namespace cisc0 {
 		} else if (type == EncodingOperation::BitUnset) {
 			getConditionRegister() = _compare.performOperation(CompareUnit::Operation::Neq,
 					_logicalOps.performOperation(ALU::Operation::BinaryAnd,
-						_shifter.performOperation(ALU::Operation::ShiftRight, 
+						_shifter.performOperation(ALU::Operation::ShiftRight,
 							getAddressRegister(),
 							getFieldRegister()), 0x1), 1);
 		} else {
@@ -639,7 +639,7 @@ namespace cisc0 {
 		switch (type) {
 #define DefEnum(a, b)
 #define EndDefEnum(a, b, c)
-#define EnumEntry(compareType) case Operation:: compareType : return encode ## compareType () ; 
+#define EnumEntry(compareType) case Operation:: compareType : return encode ## compareType () ;
 #include "def/cisc0/ops.def"
 #undef DefEnum
 #undef EndDefEnum
@@ -651,7 +651,7 @@ namespace cisc0 {
 
 	int instructionSizeFromImmediateMask(byte bitmask) {
 		switch(bitmask) {
-#define X(bits) case bits : return instructionSizeFromImmediateMask< bits > () ; 
+#define X(bits) case bits : return instructionSizeFromImmediateMask< bits > () ;
 #include "def/cisc0/bitmask4bit.def"
 #undef X
 			default:
@@ -660,7 +660,7 @@ namespace cisc0 {
 	}
 	RegisterValue getMask(byte bitmask) {
 		switch(bitmask) {
-#define X(bits) case bits : return SetBitmaskToWordMask< bits > :: mask ; 
+#define X(bits) case bits : return SetBitmaskToWordMask< bits > :: mask ;
 #include "def/cisc0/bitmask4bit.def"
 #undef X
 			default:

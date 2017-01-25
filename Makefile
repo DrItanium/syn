@@ -5,7 +5,7 @@
 include config.mk
 MACHINE_OBJECTS =
 ARCH_OBJECTS = IrisCore.o \
-			   cisc0.o \
+			   Cisc0Core.o \
 			   MoleculeCore.o \
 			   ${MACHINE_OBJECTS}
 
@@ -26,8 +26,8 @@ SIM_OBJECTS = Simulator.o \
 
 SIM_BINARY = syn_sim
 
-ASM_PARSERS_OBJECTS = cisc0_lex.yy.o \
-					  cisc0_asm.tab.o \
+ASM_PARSERS_OBJECTS = Cisc0Core_lex.yy.o \
+					  Cisc0CoreAssembler.tab.o \
 					  IrisCoreAssembler.o \
 
 ASM_OBJECTS = Assembler.o \
@@ -45,9 +45,9 @@ REPL_OBJECTS= Repl.o \
 			  ClipsExtensions.o \
 			  ${COMMON_THINGS}
 
-ASM_PARSERS = cisc0_lex.yy.c \
-			  cisc0_asm.tab.c \
-			  cisc0_asm.tab.h
+ASM_PARSERS = Cisc0Core_lex.yy.c \
+			  Cisc0CoreAssembler.tab.c \
+			  Cisc0CoreAssembler.tab.h
 
 ASM_BINARY = syn_asm
 
@@ -135,9 +135,9 @@ options:
 	@${CXX} ${CXXFLAGS} -c $< -o $@
 	@echo done
 
-%_lex.yy.c: %_asm.l %_asm.tab.h
+%_lex.yy.c: %Assembler.l %Assembler.tab.h
 	@echo -n Constructing Lexer from $< ...
-	@${LEX} -o $*_lex.yy.c $*_asm.l
+	@${LEX} -o $*_lex.yy.c $*Assembler.l
 	@echo done
 
 %.yy.o: %.yy.c
@@ -222,20 +222,20 @@ phoenix_defines.h: ${REPL_BINARY} ${COMMON_GEN_ENCODER_DECODER_FILES} def/phoeni
 	@./deffield.sh -f2 def/phoenix/instruction.clp -f2 lib/reset-run-exit.clp > phoenix_defines.h
 	@./deffunction.sh -f2 def/phoenix/instruction.clp -f2 lib/reset-run-exit.clp > phoenix_defines.clp
 
-cisc0_asm.tab.o: cisc0_asm.tab.c cisc0.h Base.h Problem.h \
+Cisc0CoreAssembler.tab.o: Cisc0CoreAssembler.tab.c Cisc0Core.h Base.h Problem.h \
  ExecutionUnits.h IODevice.h Device.h Core.h cisc0_defines.h \
  def/cisc0/instruction.def def/cisc0/misc.def def/cisc0/ops.def \
- AssemblerRegistrar.h cisc0_asm.tab.h
-cisc0_lex.yy.o: cisc0_lex.yy.c cisc0.h Base.h Problem.h ExecutionUnits.h \
+ AssemblerRegistrar.h Cisc0CoreAssembler.tab.h
+Cisc0Core_lex.yy.o: Cisc0Core_lex.yy.c Cisc0Core.h Base.h Problem.h ExecutionUnits.h \
  IODevice.h Device.h Core.h cisc0_defines.h def/cisc0/instruction.def \
- def/cisc0/misc.def def/cisc0/ops.def cisc0_asm.tab.h AssemblerBase.h
+ def/cisc0/misc.def def/cisc0/ops.def Cisc0CoreAssembler.tab.h AssemblerBase.h
 
 AssemblerRegistrar.o: AssemblerRegistrar.cc AssemblerRegistrar.h IrisCore.h \
  Base.h Problem.h ExecutionUnits.h IODevice.h Device.h Core.h \
- IOController.h iris_defines.h cisc0.h cisc0_defines.h \
+ IOController.h iris_defines.h Cisc0Core.h cisc0_defines.h \
  def/cisc0/instruction.def def/cisc0/misc.def def/cisc0/ops.def \
  MoleculeCore.h molecule_defines.h
-cisc0.o: cisc0.cc cisc0.h Base.h Problem.h ExecutionUnits.h IODevice.h \
+Cisc0Core.o: Cisc0Core.cc Cisc0Core.h Base.h Problem.h ExecutionUnits.h IODevice.h \
  Device.h Core.h cisc0_defines.h def/cisc0/instruction.def \
  def/cisc0/misc.def def/cisc0/ops.def def/cisc0/bitmask4bit.def
 Core.o: Core.cc Core.h Device.h
@@ -256,7 +256,7 @@ phoenix.o: phoenix.cc phoenix.h Base.h Problem.h ExecutionUnits.h \
 Assembler.o: Assembler.cc Problem.h AssemblerRegistrar.h
 RegisteredAssemblers.o: RegisteredAssemblers.cc Problem.h RegisterEntry.h \
  AssemblerRegistrar.h IrisCore.h Base.h ExecutionUnits.h IODevice.h Device.h \
- Core.h IOController.h iris_defines.h cisc0.h cisc0_defines.h \
+ Core.h IOController.h iris_defines.h Cisc0Core.h cisc0_defines.h \
  def/cisc0/instruction.def def/cisc0/misc.def def/cisc0/ops.def \
  MoleculeCore.h molecule_defines.h
 ClipsExtensions.o: ClipsExtensions.cc ClipsExtensions.h Base.h Problem.h \
@@ -292,7 +292,7 @@ ClipsExtensions.o: ClipsExtensions.cc ClipsExtensions.h Base.h Problem.h \
  syn_memory_block_defines.h
 RegisteredCores.o: RegisteredCores.cc Problem.h RegisterEntry.h CoreRegistrar.h \
  IrisCore.h Base.h ExecutionUnits.h IODevice.h Device.h Core.h IOController.h \
- iris_defines.h cisc0.h cisc0_defines.h def/cisc0/instruction.def \
+ iris_defines.h Cisc0Core.h cisc0_defines.h def/cisc0/instruction.def \
  def/cisc0/misc.def def/cisc0/ops.def MoleculeCore.h molecule_defines.h \
  RegisteredMachines.h LockStepMachine.h
 Linker.o: Linker.cc Core.h Device.h CoreRegistrar.h Problem.h

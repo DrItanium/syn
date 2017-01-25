@@ -4,14 +4,14 @@
 #include <cstdio>
 #include <string>
 #include <cstdint>
-#include "cisc0.h"
+#include "Cisc0Core.h"
 #include <fstream>
 #include <iostream>
 #include <vector>
 #include <map>
 #include "AssemblerRegistrar.h"
 
-#include "cisc0_asm.tab.h"
+#include "Cisc0CoreAssembler.tab.h"
 #define YYERROR_VERBOSE 1
 extern int yylex();
 extern int yyparse();
@@ -496,11 +496,11 @@ memory_op:
 
 stack_operation_choose:
 		destination_register { cisc0::op.readNextWord = false; } |
-		destination_register source_register { 
+		destination_register source_register {
 			// check and see if we are looking at sp
 			// no need to waste a word so just use the default version
 			// implicitly. SourceRegister in this case is the stack pointer stand in
-			auto target_sp = cisc0::op.arg1; 
+			auto target_sp = cisc0::op.arg1;
 			cisc0::op.readNextWord = (target_sp != cisc0::ArchitectureConstants::StackPointer);
 		};
 
@@ -520,7 +520,7 @@ immediate_or_alias:
 					cisc0error(err.what().c_str());
 				}
 		};
-read_next_word: 
+read_next_word:
 		REGISTER REGISTER {
 			cisc0::op.arg1 = $1;
 			cisc0::op.arg2 = $2;
@@ -536,7 +536,7 @@ read_next_word:
 #ifdef DEBUG
 			std::cout << "\tUsing implicit registers!" << std::endl;
 #endif
-		}; 
+		};
 
 
 load_store_op:
@@ -613,16 +613,16 @@ macro_op:
 			cisc0::op.subType = static_cast<byte>(cisc0::ArithmeticOps::Div);
 			cisc0::op.arg1 = 0x2;
 		} |
-		COMPARE_OP_EQ destination_register source_register { 
+		COMPARE_OP_EQ destination_register source_register {
 			cisc0::op.type = cisc0::Operation::Compare;
-			cisc0::op.subType = static_cast<byte>(cisc0::CompareStyle::Equals); 
-			cisc0::op.combineType = cisc0::CompareCombine::None; 
+			cisc0::op.subType = static_cast<byte>(cisc0::CompareStyle::Equals);
+			cisc0::op.combineType = cisc0::CompareCombine::None;
 			cisc0::op.immediate = false;
 		} |
 		COMPARE_OP_NEQ destination_register source_register {
 			cisc0::op.type = cisc0::Operation::Compare;
-			cisc0::op.subType = static_cast<byte>(cisc0::CompareStyle::NotEquals); 
-			cisc0::op.combineType = cisc0::CompareCombine::None; 
+			cisc0::op.subType = static_cast<byte>(cisc0::CompareStyle::NotEquals);
+			cisc0::op.combineType = cisc0::CompareCombine::None;
 			cisc0::op.immediate = false;
 		};
 bitmask:

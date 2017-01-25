@@ -4,7 +4,7 @@
 #include "RegisterEntry.h"
 #include "AssemblerRegistrar.h"
 #include "IrisCore.h"
-#include "cisc0.h"
+#include "Cisc0Core.h"
 #include "MoleculeCore.h"
 
 template<typename T>
