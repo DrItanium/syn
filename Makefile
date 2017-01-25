@@ -6,7 +6,7 @@ include config.mk
 MACHINE_OBJECTS =
 ARCH_OBJECTS = iris.o \
 			   cisc0.o \
-			   molecule.o \
+			   MoleculeCore.o \
 			   ${MACHINE_OBJECTS}
 
 COMMON_THINGS = libmaya.a \
@@ -249,7 +249,7 @@ iris.o: iris.cc iris.h Base.h Problem.h ExecutionUnits.h IODevice.h \
 MoleculeCoreBootstrap.o: MoleculeCoreBootstrap.cc MoleculeCore.h Base.h \
  Problem.h ExecutionUnits.h IODevice.h Device.h Core.h IOController.h \
  molecule_defines.h
-molecule.o: molecule.cc MoleculeCore.h Base.h Problem.h ExecutionUnits.h \
+MoleculeCore.o: MoleculeCore.cc MoleculeCore.h Base.h Problem.h ExecutionUnits.h \
  IODevice.h Device.h Core.h IOController.h molecule_defines.h
 phoenix.o: phoenix.cc phoenix.h Base.h Problem.h ExecutionUnits.h \
  IODevice.h Device.h Core.h IOController.h phoenix_defines.h
