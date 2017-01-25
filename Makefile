@@ -12,11 +12,11 @@ ARCH_OBJECTS = iris.o \
 COMMON_THINGS = libmaya.a \
 				Core.o
 
-BOOTSTRAP_OBJECTS = molecule_bootstrap.o \
+BOOTSTRAP_OBJECTS = MoleculeCoreBootstrap.o \
 					${ARCH_OBJECTS} \
 					${COMMON_THINGS}
 
-BOOTSTRAP_BINARY = molecule_bootstrap
+BOOTSTRAP_BINARY = MoleculeCoreBootstrap
 
 SIM_OBJECTS = Simulator.o \
 			  CoreRegistrar.o \
@@ -246,7 +246,7 @@ IrisCoreAssembler.o: IrisCoreAssembler.cc Base.h Problem.h AssemblerBase.h \
  iris_defines.h
 iris.o: iris.cc iris.h Base.h Problem.h ExecutionUnits.h IODevice.h \
  Device.h Core.h IOController.h iris_defines.h
-molecule_bootstrap.o: molecule_bootstrap.cc molecule.h Base.h \
+MoleculeCoreBootstrap.o: MoleculeCoreBootstrap.cc molecule.h Base.h \
  Problem.h ExecutionUnits.h IODevice.h Device.h Core.h IOController.h \
  molecule_defines.h
 molecule.o: molecule.cc molecule.h Base.h Problem.h ExecutionUnits.h \
