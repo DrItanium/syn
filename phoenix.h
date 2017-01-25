@@ -1,6 +1,6 @@
 #ifndef _TARGET_PHOENIX_IRIS_H
 #define _TARGET_PHOENIX_IRIS_H
-#include "syn_base.h"
+#include "Base.h"
 #include "ExecutionUnits.h"
 #include "IOController.h"
 #include "Core.h"

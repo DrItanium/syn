@@ -1,6 +1,6 @@
 #ifndef __IRIS_CLIPS_H
 #define __IRIS_CLIPS_H
-#include "syn_base.h"
+#include "Base.h"
 #include "Problem.h"
 #include <map>
 #include <memory>

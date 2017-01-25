@@ -54,7 +54,7 @@
                    "// NOTE: this file is auto generated, DO NOT MODIFY!" crlf
                    "#ifndef " (upcase ?name) crlf
                    "#define " (upcase ?name) crlf
-                   "#include \"syn_base.h\"" crlf))
+                   "#include \"Base.h\"" crlf))
 (defrule MAIN::generate-namespace-contents
          (declare (salience ?*priority:right-after-first*))
          (check-for-namespace)

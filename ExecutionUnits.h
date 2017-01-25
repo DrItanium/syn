@@ -1,7 +1,7 @@
 // define Execution Units to cut down on the amount of repeated actions
 #ifndef _IRIS_XUNITS_H
 #define _IRIS_XUNITS_H
-#include "syn_base.h"
+#include "Base.h"
 #include "IODevice.h"
 #include <iostream>
 #include <cmath>

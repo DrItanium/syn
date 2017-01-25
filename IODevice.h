@@ -7,7 +7,7 @@
 #include <functional>
 #include <iostream>
 #include <memory>
-#include "syn_base.h"
+#include "Base.h"
 #include "Problem.h"
 #include "Device.h"
 #include "Core.h"

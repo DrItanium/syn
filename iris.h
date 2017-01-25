@@ -1,6 +1,6 @@
 #ifndef _TARGET_IRIS16_IRIS_H
 #define _TARGET_IRIS16_IRIS_H
-#include "syn_base.h"
+#include "Base.h"
 #include "ExecutionUnits.h"
 #include "Core.h"
 #include "IOController.h"

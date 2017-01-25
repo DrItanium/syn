@@ -3,7 +3,7 @@
 #define IRIS_ASM_BASE_H
 #include <functional>
 #include <sstream>
-#include "syn_base.h"
+#include "Base.h"
 #include <bitset>
 #include <pegtl.hh>
 #include <pegtl/contrib/raw_string.hh>

@@ -3,7 +3,7 @@
 #include <typeinfo>
 #include <iostream>
 #include <map>
-#include "syn_base.h"
+#include "Base.h"
 #include "syn_asm_base.h"
 #include "Problem.h"
 #include "iris.h"
