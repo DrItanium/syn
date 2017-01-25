@@ -18,7 +18,7 @@ BOOTSTRAP_OBJECTS = molecule_bootstrap.o \
 
 BOOTSTRAP_BINARY = molecule_bootstrap
 
-SIM_OBJECTS = syn_sim.o \
+SIM_OBJECTS = Simulator.o \
 			  CoreRegistrar.o \
 			  syn_cores.o \
 			  ${ARCH_OBJECTS} \
@@ -57,7 +57,7 @@ LINK_OBJECTS = Linker.o \
 				syn_cores.o \
 			  ${COMMON_THINGS}
 
-LINK_BINARY = syn_linker
+LINK_BINARY = syn_link
 
 ALL_BINARIES = ${SIM_BINARY} \
 			   ${ASM_BINARY} \
@@ -326,4 +326,4 @@ syn_repl.o: syn_repl.cc misc/maya/clips.h misc/maya/setup.h \
  misc/maya/defins.h misc/maya/inscom.h misc/maya/insfun.h \
  misc/maya/insfile.h misc/maya/msgcom.h misc/maya/msgpass.h \
  misc/maya/objrtmch.h syn_clips.h Base.h Problem.h
-syn_sim.o: syn_sim.cc Problem.h Core.h Device.h CoreRegistrar.h
+Simulator.o: Simulator.cc Problem.h Core.h Device.h CoreRegistrar.h
