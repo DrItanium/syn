@@ -41,7 +41,7 @@ ASM_OBJECTS = Assembler.o \
 
 REPL_BINARY = syn_repl
 
-REPL_OBJECTS= syn_repl.o \
+REPL_OBJECTS= Repl.o \
 			  syn_clips.o \
 			  ${COMMON_THINGS}
 
@@ -296,7 +296,7 @@ RegisteredCores.o: RegisteredCores.cc Problem.h RegisterEntry.h CoreRegistrar.h 
  def/cisc0/misc.def def/cisc0/ops.def molecule.h molecule_defines.h \
  syn_machines.h LockStepMachine.h
 Linker.o: Linker.cc Core.h Device.h CoreRegistrar.h Problem.h
-syn_repl.o: syn_repl.cc misc/maya/clips.h misc/maya/setup.h \
+Repl.o: Repl.cc misc/maya/clips.h misc/maya/setup.h \
  misc/maya/os_shim.h misc/maya/platform.h misc/maya/envrnmnt.h \
  misc/maya/symbol.h misc/maya/usrsetup.h misc/maya/argacces.h \
  misc/maya/expressn.h misc/maya/exprnops.h misc/maya/exprnpsr.h \
