@@ -6,7 +6,7 @@
 #include "iris.h"
 #include "cisc0.h"
 #include "molecule.h"
-#include "syn_machines.h"
+#include "RegisteredMachines.h"
 
 template<typename T>
 using RegisterCore = syn::RegisterEntry<syn::CoreRegistrar, T>;

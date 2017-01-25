@@ -294,7 +294,7 @@ RegisteredCores.o: RegisteredCores.cc Problem.h RegisterEntry.h CoreRegistrar.h 
  iris.h Base.h ExecutionUnits.h IODevice.h Device.h Core.h IOController.h \
  iris_defines.h cisc0.h cisc0_defines.h def/cisc0/instruction.def \
  def/cisc0/misc.def def/cisc0/ops.def molecule.h molecule_defines.h \
- syn_machines.h LockStepMachine.h
+ RegisteredMachines.h LockStepMachine.h
 Linker.o: Linker.cc Core.h Device.h CoreRegistrar.h Problem.h
 Repl.o: Repl.cc misc/maya/clips.h misc/maya/setup.h \
  misc/maya/os_shim.h misc/maya/platform.h misc/maya/envrnmnt.h \
