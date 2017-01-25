@@ -8,7 +8,7 @@
 #include <cstdint>
 #include "cisc0.h"
 #include "cisc0_asm.tab.h"
-#include "syn_asm_base.h"
+#include "AssemblerBase.h"
 #define _POSIX_SOURCE 1
 
 extern void cisc0error(const char* c);

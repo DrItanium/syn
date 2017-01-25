@@ -229,7 +229,7 @@ cisc0_asm.tab.o: cisc0_asm.tab.c cisc0.h Base.h Problem.h \
  AssemblerRegistrar.h cisc0_asm.tab.h
 cisc0_lex.yy.o: cisc0_lex.yy.c cisc0.h Base.h Problem.h ExecutionUnits.h \
  IODevice.h Device.h Core.h cisc0_defines.h def/cisc0/instruction.def \
- def/cisc0/misc.def def/cisc0/ops.def cisc0_asm.tab.h syn_asm_base.h
+ def/cisc0/misc.def def/cisc0/ops.def cisc0_asm.tab.h AssemblerBase.h
 
 AssemblerRegistrar.o: AssemblerRegistrar.cc AssemblerRegistrar.h iris.h \
  Base.h Problem.h ExecutionUnits.h IODevice.h Device.h Core.h \
@@ -242,7 +242,7 @@ cisc0.o: cisc0.cc cisc0.h Base.h Problem.h ExecutionUnits.h IODevice.h \
 Core.o: Core.cc Core.h Device.h
 CoreRegistrar.o: CoreRegistrar.cc Problem.h CoreRegistrar.h Core.h \
  Device.h
-iris_assembler.o: iris_assembler.cc Base.h Problem.h syn_asm_base.h \
+iris_assembler.o: iris_assembler.cc Base.h Problem.h AssemblerBase.h \
  iris.h ExecutionUnits.h IODevice.h Device.h Core.h IOController.h \
  iris_defines.h
 iris.o: iris.cc iris.h Base.h Problem.h ExecutionUnits.h IODevice.h \

@@ -4,7 +4,7 @@
 #include <iostream>
 #include <map>
 #include "Base.h"
-#include "syn_asm_base.h"
+#include "AssemblerBase.h"
 #include "Problem.h"
 #include "iris.h"
 #include <pegtl.hh>
