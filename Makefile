@@ -32,7 +32,7 @@ ASM_PARSERS_OBJECTS = cisc0_lex.yy.o \
 
 ASM_OBJECTS = Assembler.o \
 			  AssemblerRegistrar.o \
-			  syn_assemblers.o \
+			  AssemblerTargets.o \
 			  ${COMMON_THINGS} \
 				${ARCH_OBJECTS} \
 				CoreRegistrar.o \
@@ -254,7 +254,7 @@ molecule.o: molecule.cc molecule.h Base.h Problem.h ExecutionUnits.h \
 phoenix.o: phoenix.cc phoenix.h Base.h Problem.h ExecutionUnits.h \
  IODevice.h Device.h Core.h IOController.h phoenix_defines.h
 Assembler.o: Assembler.cc Problem.h AssemblerRegistrar.h
-syn_assemblers.o: syn_assemblers.cc Problem.h RegisterEntry.h \
+AssemblerTargets.o: AssemblerTargets.cc Problem.h RegisterEntry.h \
  AssemblerRegistrar.h iris.h Base.h ExecutionUnits.h IODevice.h Device.h \
  Core.h IOController.h iris_defines.h cisc0.h cisc0_defines.h \
  def/cisc0/instruction.def def/cisc0/misc.def def/cisc0/ops.def \
