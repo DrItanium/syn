@@ -913,7 +913,7 @@
                        (parent ?p))
          =>
          (unmake-instance ?f)
-         (make-instance ?n of two-argument-operation
+         (make-instance ?n of two-argument-instruction
                         (parent ?p)
                         (title set)
                         (destination-register ?target)
