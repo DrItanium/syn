@@ -1,3 +1,9 @@
+(defmessage-handler NUMBER resolve primary
+                    ()
+                    ?self)
+(defmessage-handler LEXEME resolve primary
+                    ()
+                    ?self)
 (defclass lisp->intermediary::register
   (is-a node)
   (slot alias-to
@@ -647,8 +653,10 @@
 (defmessage-handler lisp->intermediary::instruction resolve primary
                     ()
                     (format nil 
-                            "%s"
-                            (dynamic-get title)))
+                            "%s %s"
+                            (dynamic-get title)
+                            (send ?self 
+                                  resolve-arguments)))
 
 (defclass lisp->intermediary::has-destination-register
   (is-a USER)
@@ -678,38 +686,143 @@
         (storage local)
         (default ?NONE)))
 
-(defclass lisp->intermediary::two-argument-instruction
+(defclass lisp->intermediary::instruction-with-destination
   (is-a instruction
-        has-destination-register
-        has-source-register0))
+        has-destination-register))
 
-(defmessage-handler lisp->intermediary::two-argument-instruction resolve primary
+(defmessage-handler lisp->intermediary::instruction-with-destination resolve-arguments primary
                     ()
                     (format nil
-                            "%s %s %s"
-                            (call-next-handler)
-                            (send ?self:destination-register 
-                                  resolve)
-                            (send ?self:source-register0 
+                            "%s"
+                            (send ?self:destination-register
                                   resolve)))
 
+(defclass lisp->intermediary::one-argument-instruction
+  (is-a instruction-with-destination))
+
 (defclass lisp->intermediary::set-instruction
-  (is-a instruction
-        has-destination-register
+  (is-a instruction-with-destination 
         has-full-immediate)
   (slot title
         (source composite)
         (storage shared)
         (default set)))
-(defmessage-handler lisp->intermediary::set-instruction resolve primary
+(defmessage-handler lisp->intermediary::set-instruction resolve-arguments primary
                     ()
                     (format nil
-                            "%s %s %s"
+                            "%s %s"
                             (call-next-handler)
-                            (send ?self:destination-register
-                                  resolve)
-                            (str-cat ?self:full-immediate)))
+                            (send ?self:full-immediate
+                                  resolve)))
 
+(defclass lisp->intermediary::instruction-with-destination-and-source0
+  (is-a instruction-with-destination
+        has-source-register0))
+
+(defmessage-handler lisp->intermediary::instruction-with-destination-and-source0 resolve-arguments primary
+                    ()
+                    (format nil
+                            "%s %s"
+                            (call-next-handler)
+                            (send ?self:source-register0
+                                  resolve)))
+
+(defclass lisp->intermediary::two-argument-instruction
+  (is-a instruction-with-destination-and-source0))
+
+(defclass lisp->intermediary::instruction-with-destination-source0-and-source1
+  (is-a instruction-with-destination-and-source0
+        has-source-register1))
+
+(defmessage-handler lisp->intermediary::instruction-with-destination-source0-and-source1 resolve-arguments primary
+                    ()
+                    (format nil
+                            "%s %s"
+                            (call-next-handler)
+                            (send ?self:source-register1 
+                                  resolve)))
+
+(defclass lisp->intermediary::three-argument-instruction
+  (is-a instruction-with-destination-source0-and-source1))
+
+(deffacts lisp->intermediary::register-operations
+          (three-register-operation add)
+          (three-register-operation sub)
+          (three-register-operation mul)
+          (three-register-operation div)
+          (three-register-operation rem)
+          (three-register-operation shl)
+          (three-register-operation shr)
+          (three-register-operation and)
+          (three-register-operation or)
+          (three-register-operation xor)
+          (three-register-operation nand)
+          (three-register-operation nor)
+          (three-register-operation min)
+          (three-register-operation max)
+          (one-register-operation mtip)
+          (one-register-operation mfip)
+          (one-register-operation mtlr)
+          (one-register-operation mflr)
+          (one-register-operation svcr)
+          (one-register-operation recr)
+          (one-register-operation b)
+          (one-register-operation bl)
+          (two-register-operation swap)
+          (two-register-operation move)
+          (two-register-operation not)
+          (two-register-operation ld)
+          (two-register-operation st)
+          (two-register-operation push)
+          (two-register-operation pop)
+          )
+
+(defrule lisp->intermediary::construct-one-register-instruction
+         ?f <- (object (is-a list)
+                       (contents ?operation
+                                 ?destination)
+                       (name ?n)
+                       (parent ?p))
+         (one-register-operation ?operation)
+         =>
+         (unmake-instance ?f)
+         (make-instance ?n of one-argument-instruction 
+                        (parent ?p)
+                        (title ?operation)
+                        (destination-register ?destination)))
+(defrule lisp->intermediary::construct-three-register-instruction
+         ?f <- (object (is-a list)
+                       (contents ?operation
+                                 ?destination
+                                 ?source0
+                                 ?source1)
+                       (name ?n)
+                       (parent ?p))
+         (three-register-operation ?operation)
+         =>
+         (unmake-instance ?f)
+         (make-instance ?n of three-argument-instruction
+                        (parent ?p)
+                        (title ?operation)
+                        (destination-register ?destination)
+                        (source-register0 ?source0)
+                        (source-register1 ?source1)))
+
+(defrule lisp->intermediary::construct-two-register-instruction
+         ?f <- (object (is-a list)
+                       (contents ?operation
+                                 ?destination
+                                 ?source0)
+                       (name ?n)
+                       (parent ?p))
+         (two-register-operation ?operation)
+         =>
+         (unmake-instance ?f)
+         (make-instance ?n of two-argument-instruction
+                        (parent ?p)
+                        (title ?operation)
+                        (destination-register ?destination)
+                        (source-register0 ?source0)))
 
 (defrule lisp->intermediary::parse-push-operation-style0
          ?f <- (object (is-a list)
@@ -856,4 +969,4 @@
          =>
          (progn$ (?l (send ?f resolve))
                  (printout t ?l crlf)))
-         
+
