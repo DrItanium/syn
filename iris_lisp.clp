@@ -579,13 +579,7 @@
                   (contents alias
                             r238
                             as
-                            sp))
-              (of list
-                  (parent FALSE)
-                  (contents alias
-                            r237
-                            as
-                            predicates)))
+                            sp)))
 
 
 
@@ -1374,7 +1368,7 @@
                                                        ?stack
                                                        iv0)))))
 
-(defrule lisp->intermediary::parse-using-block:has-register-to-preserve
+(defrule lisp->intermediary::parse-using-block
          ?f <- (object (is-a list)
                        (contents using
                                  ?stack-info
@@ -1418,3 +1412,52 @@
                         (body ?pre
                               ?body
                               ?post)))
+
+(defrule lisp->intermediary::pop-predicate-registers
+         (declare (salience 1))
+         ?f <- (object (is-a list)
+                       (contents pop
+                                 predicates
+                                 ?stack)
+                       (name ?n)
+                       (parent ?p))
+         (object (is-a register)
+                 (name ?stack))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?n of simple-container
+                        (parent ?p)
+                        (body (make-instance of list
+                                             (parent ?n)
+                                             (contents pop
+                                                       iv0
+                                                       ?stack))
+                              (make-instance of list
+                                             (parent ?n)
+                                             (contents recr 
+                                                       iv0)))))
+
+
+(defrule lisp->intermediary::push-predicate-registers
+         (declare (salience 1))
+         ?f <- (object (is-a list)
+                       (contents push
+                                 ?stack
+                                 predicates)
+                       (name ?n)
+                       (parent ?p))
+         (object (is-a register)
+                 (name ?stack))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?n of simple-container
+                        (parent ?p)
+                        (body (make-instance of list
+                                             (parent ?n)
+                                             (contents svcr
+                                                       iv0))
+                              (make-instance of list
+                                             (parent ?n)
+                                             (contents push
+                                                       ?stack
+                                                       iv0)))))
