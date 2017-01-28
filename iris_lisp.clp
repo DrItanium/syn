@@ -39,11 +39,9 @@
                        (contents alias
                                  ?target
                                  as
-                                 ?alias)
+                                 ?alias&:(symbolp ?alias))
                        (name ?name)
                        (parent ?parent))
-         (test (and (symbolp ?target)
-                    (symbolp ?alias)))
          =>
          (unmake-instance ?f)
          (make-instance ?alias of register
@@ -71,7 +69,7 @@
          (declare (salience 1))
          ?f <- (object (is-a list)
                        (contents $?a
-                                 ?register
+                                 ?register&:(symbolp ?register)
                                  $?b))
          (object (is-a register)
                  (name =(symbol-to-instance-name ?register)))
