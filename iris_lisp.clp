@@ -724,6 +724,106 @@
         (visibility public)
         (storage local)
         (default ?NONE)))
+(defclass lisp->intermediary::four-argument-instruction
+ (is-a instruction-with-destination-source0-source1-and-source2))
+
+(defrule lisp->intermediary::construct-alias
+         ?f <- (object (is-a list)
+                       (contents alias
+                                 ?target
+                                 as
+                                 ?alias&:(symbolp ?alias))
+                       (name ?name)
+                       (parent ?parent))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?alias of register
+                        (parent ?parent)
+                        (alias-to (if (symbolp ?target) then
+                                    (symbol-to-instance-name ?target)
+                                    else
+                                    ?target))))
+
+(defrule lisp->intermediary::mark-register
+         (declare (salience 1))
+         ?f <- (object (is-a list)
+                       (contents $?a
+                                 ?register&:(symbolp ?register)
+                                 $?b))
+         (object (is-a register)
+                 (name =(symbol-to-instance-name ?register)))
+         =>
+         (modify-instance ?f
+                          (contents ?a
+                                    (symbol-to-instance-name ?register)
+                                    ?b)))
+
+(defrule lisp->intermediary::construct-section
+         ?f <- (object (is-a list)
+                       (contents section
+                                 ?section&:(not (neq ?section
+                                                     code
+                                                     data))
+                                 $?body)
+                       (name ?name)
+                       (parent ?p))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?name of section
+                        (body ?body)
+                        (section ?section)
+                        (parent ?p)))
+
+(defrule lisp->intermediary::make-org
+         ?f <- (object (is-a list)
+                       (contents org
+                                 ?address
+                                 $?body)
+                       (name ?name)
+                       (parent ?p))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?name of org
+                        (address ?address)
+                        (parent ?p)
+                        (body ?body)))
+(defrule lisp->intermediary::make-label
+         ?f <- (object (is-a list)
+                       (contents label
+                                 ?title
+                                 $?body)
+                       (name ?n)
+                       (parent ?p))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?n of label
+                        (parent ?p)
+                        (title ?title)
+                        (body ?body)))
+
+
+
+(defrule lisp->intermediary::make-word
+         ?f <- (object (is-a list)
+                       (contents word
+                                 ?value)
+                       (name ?n)
+                       (parent ?p))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?n of word
+                        (parent ?p)
+                        (value ?value)))
+
+(defrule lisp->intermediary::construct-output-string
+         (declare (salience -1000))
+         (object (is-a file)
+                 (name ?file))
+         ?f <- (object (is-a section)
+                       (parent ?file))
+         =>
+         (progn$ (?l (send ?f resolve))
+                 (printout t ?l crlf)))
 
 (deffacts lisp->intermediary::register-operations
           (four-register-operation eq)
@@ -836,6 +936,23 @@
                         (parent ?p)
                         (title ?operation)
                         (destination-register ?destination)))
+
+(defrule lisp->intermediary::construct-two-register-instruction
+         ?f <- (object (is-a list)
+                       (contents ?operation
+                                 ?destination
+                                 ?source0)
+                       (name ?n)
+                       (parent ?p))
+         (two-register-operation ?operation)
+         =>
+         (unmake-instance ?f)
+         (make-instance ?n of two-argument-instruction
+                        (parent ?p)
+                        (title ?operation)
+                        (destination-register ?destination)
+                        (source-register0 ?source0)))
+
 (defrule lisp->intermediary::construct-three-register-instruction
          ?f <- (object (is-a list)
                        (contents ?operation
@@ -854,23 +971,27 @@
                         (source-register0 ?source0)
                         (source-register1 ?source1)))
 
-(defrule lisp->intermediary::construct-two-register-instruction
+(defrule lisp->intermediary::construct-four-register-instruction
          ?f <- (object (is-a list)
                        (contents ?operation
                                  ?destination
-                                 ?source0)
+                                 ?source0
+                                 ?source1
+                                 ?source2)
                        (name ?n)
                        (parent ?p))
-         (two-register-operation ?operation)
+         (four-register-operation ?operation)
          =>
          (unmake-instance ?f)
-         (make-instance ?n of two-argument-instruction
+         (make-instance ?n of four-argument-instruction
                         (parent ?p)
                         (title ?operation)
                         (destination-register ?destination)
-                        (source-register0 ?source0)))
+                        (source-register0 ?source0)
+                        (source-register1 ?source1)
+                        (source-register2 ?source2)))
 
-(defrule lisp->intermediary::parse-push-operation-style0
+(defrule lisp->intermediary::parse-push-operation-style1
          ?f <- (object (is-a list)
                        (contents push
                                  ?target
@@ -886,7 +1007,7 @@
                         (destination-register ?stack)
                         (source-register0 ?target)))
 
-(defrule lisp->intermediary::parse-pop-operation-style0
+(defrule lisp->intermediary::parse-pop-operation-style1
          ?f <- (object (is-a list)
                        (contents pop
                                  ?stack
@@ -918,101 +1039,4 @@
                         (destination-register ?target)
                         (source-register0 ?value)))
 
-(defrule lisp->intermediary::construct-alias
-         ?f <- (object (is-a list)
-                       (contents alias
-                                 ?target
-                                 as
-                                 ?alias&:(symbolp ?alias))
-                       (name ?name)
-                       (parent ?parent))
-         =>
-         (unmake-instance ?f)
-         (make-instance ?alias of register
-                        (parent ?parent)
-                        (alias-to (if (symbolp ?target) then
-                                    (symbol-to-instance-name ?target)
-                                    else
-                                    ?target))))
-
-(defrule lisp->intermediary::mark-register
-         (declare (salience 1))
-         ?f <- (object (is-a list)
-                       (contents $?a
-                                 ?register&:(symbolp ?register)
-                                 $?b))
-         (object (is-a register)
-                 (name =(symbol-to-instance-name ?register)))
-         =>
-         (modify-instance ?f
-                          (contents ?a
-                                    (symbol-to-instance-name ?register)
-                                    ?b)))
-
-(defrule lisp->intermediary::construct-section
-         ?f <- (object (is-a list)
-                       (contents section
-                                 ?section&:(not (neq ?section
-                                                     code
-                                                     data))
-                                 $?body)
-                       (name ?name)
-                       (parent ?p))
-         =>
-         (unmake-instance ?f)
-         (make-instance ?name of section
-                        (body ?body)
-                        (section ?section)
-                        (parent ?p)))
-
-(defrule lisp->intermediary::make-org
-         ?f <- (object (is-a list)
-                       (contents org
-                                 ?address
-                                 $?body)
-                       (name ?name)
-                       (parent ?p))
-         =>
-         (unmake-instance ?f)
-         (make-instance ?name of org
-                        (address ?address)
-                        (parent ?p)
-                        (body ?body)))
-(defrule lisp->intermediary::make-label
-         ?f <- (object (is-a list)
-                       (contents label
-                                 ?title
-                                 $?body)
-                       (name ?n)
-                       (parent ?p))
-         =>
-         (unmake-instance ?f)
-         (make-instance ?n of label
-                        (parent ?p)
-                        (title ?title)
-                        (body ?body)))
-
-
-
-(defrule lisp->intermediary::make-word
-         ?f <- (object (is-a list)
-                       (contents word
-                                 ?value)
-                       (name ?n)
-                       (parent ?p))
-         =>
-         (unmake-instance ?f)
-         (make-instance ?n of word
-                        (parent ?p)
-                        (value ?value)))
-
-(defrule lisp->intermediary::construct-output-string
-         (declare (salience -1000))
-         (object (is-a file)
-                 (name ?file))
-         ?f <- (object (is-a section)
-                       (parent ?file))
-         =>
-         (progn$ (?l (send ?f resolve))
-                 (printout t ?l crlf)))
 
