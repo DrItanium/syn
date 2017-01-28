@@ -567,6 +567,28 @@
                     (parent FALSE))
               (r255 of register
                     (parent FALSE)))
+(definstances lisp->intermediary::predefined-statements
+          (of list
+              (parent FALSE)
+              (contents alias 
+                        r239
+                        as
+                        iv0))
+          (of list
+              (parent FALSE)
+              (contents alias
+                        r238
+                        as
+                        sp))
+          (of list
+              (parent FALSE)
+              (contents alias
+                        r237
+                        as
+                        predicates)))
+
+
+
 (defclass lisp->intermediary::section
   (is-a node
         has-body)
@@ -619,6 +641,7 @@
         (storage local)
         (default ?NONE))
   (message-handler resolve primary))
+
 (defmessage-handler lisp->intermediary::org resolve primary
                     ()
                     (bind ?output
@@ -631,6 +654,7 @@
                                   (send ?b
                                         resolve)))
                     ?output)
+
 (defclass lisp->intermediary::word
   (is-a node)
   (slot value
@@ -726,6 +750,21 @@
         (default ?NONE)))
 (defclass lisp->intermediary::four-argument-instruction
   (is-a instruction-with-destination-source0-source1-and-source2))
+
+(defclass lisp->intermediary::simple-container
+  (is-a node
+        has-body))
+
+(defmessage-handler lisp->intermediary::simple-container resolve primary
+                    ()
+                    (bind ?output
+                          (create$))
+                    (progn$ (?b ?self:body)
+                            (bind ?output
+                                  ?output
+                                  (send ?b 
+                                        resolve)))
+                    ?output)
 
 (defrule lisp->intermediary::construct-alias
          ?f <- (object (is-a list)
@@ -1116,5 +1155,170 @@
                           (contents mfip
                                     ?register)))
 
+(deffunction lisp->intermediary::make-swap-lr
+             (?parent ?reg)
+             (create$ (make-instance of list
+                                     (parent ?parent)
+                                     (body mflr
+                                           iv0))
+                      (make-instance of list
+                                     (parent ?parent)
+                                     (body swap
+                                           iv0
+                                           ?reg))
+                      (make-instance of list
+                                     (parent ?parent)
+                                     (body mtlr
+                                           iv0))))
+(defrule lisp->intermediary::make-swap-lr-register-lr-first
+         (declare (salience 1))
+         ?f <- (object (is-a list)
+                       (contents swap
+                                 lr
+                                 ?register)
+                       (name ?name)
+                       (parent ?p))
+         (object (is-a register)
+                 (name ?register))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?name of simple-container
+                        (parent ?p)
+                        (body (make-swap-lr ?name
+                                            ?register))))
+
+(defrule lisp->intermediary::make-swap-lr-register-lr-second
+         (declare (salience 2))
+         ?f <- (object (is-a list)
+                       (contents swap
+                                 ?register
+                                 lr)
+                       (name ?name)
+                       (parent ?p))
+         (object (is-a register)
+                 (name ?register))
+         =>
+         (modify-instance ?f 
+                          (contents swap
+                                    lr
+                                    ?register)))
+(deffacts lisp->intermediary::nary-register-macros
+          (nary-register-macro add)
+          (nary-register-macro sub)
+          (nary-register-macro mul)
+          (nary-register-macro div)
+          (nary-register-macro rem)
+          (nary-register-macro shl)
+          (nary-register-macro shr)
+          (nary-register-macro and)
+          (nary-register-macro or)
+          (nary-register-macro xor)
+          (nary-register-macro nand)
+          (nary-register-macro nor)
+          (nary-register-macro min)
+          (nary-register-macro max))
+
+(defrule lisp->intermediary::parse-nary-argument-macro
+         ?f <- (object (is-a list)
+                       (contents ?operation
+                                 ?destination
+                                 ?source0
+                                 ?source1
+                                 $?rest
+                                 ?sourceN)
+                       (name ?name)
+                       (parent ?p))
+         (nary-register-macro ?operation)
+         =>
+         (unmake-instance ?f)
+         (make-instance ?name of simple-container
+                        (parent ?p)
+                        (body (make-instance of list
+                                             (parent ?name)
+                                             (contents ?operation
+                                                       iv0
+                                                       ?source0
+                                                       ?source1
+                                                       $?rest))
+                              (make-instance of list
+                                             (parent ?name)
+                                             (contents ?operation
+                                                       ?destination
+                                                       iv0
+                                                       ?sourceN)))))
+
+(defrule lisp->intermediary::parse-increment-macro
+         ?f <- (object (is-a list)
+                       (contents incr
+                                 ?destination
+                                 ?register))
+         (object (is-a register)
+                 (name ?register))
+         =>
+         (modify-instance ?f
+                          (contents addi
+                                    ?destination
+                                    ?register
+                                    1)))
+
+(defrule lisp->intermediary::parse-decrement-macro
+         ?f <- (object (is-a list)
+                       (contents decr
+                                 ?destination
+                                 ?register))
+         (object (is-a register)
+                 (name ?register))
+         =>
+         (modify-instance ?f
+                          (contents subi
+                                    ?destination
+                                    ?register
+                                    1)))
+(defrule lisp->intermediary::parse-double-macro
+         ?f <- (object (is-a list)
+                       (contents double
+                                 ?destination
+                                 ?register))
+         =>
+         (modify-instance ?f
+                          (contents add
+                                    ?destination
+                                    ?register
+                                    ?register)))
+
+(defrule lisp->intermediary::parse-halve-macro
+         ?f <- (object (is-a list)
+                       (contents halve
+                                 ?destination
+                                 ?register))
+         =>
+         (modify-instance ?f
+                          (contents divi
+                                    ?destination
+                                    ?register
+                                    2)))
+(defrule lisp->intermediary::parse-square-macro
+         ?f <- (object (is-a list)
+             (contents square
+                       ?destination
+                       ?register))
+         =>
+         (modify-instance ?f
+                          (contents mul
+                                    ?destination
+                                    ?register
+                                    ?register)))
+(defrule lisp->intermediary::parse-cube-macro
+         ?f <- (object (is-a list)
+                       (contents cube
+                                 ?destination
+                                 ?register))
+         =>
+         (modify-instance ?f
+                          (contents mul
+                                    ?destination
+                                    ?register
+                                    ?register
+                                    ?register)))
 
 

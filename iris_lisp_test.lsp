@@ -2,8 +2,6 @@
 (alias r1 as v1)
 (alias r2 as v2)
 (alias r3 as v3)
-(alias r255 as sp)
-(alias r254 as predicates)
 
 (section code
          (org 0x0000
@@ -11,6 +9,11 @@
                      (set sp to 0xfded)
                      (push r0 onto sp)
                      (pop sp into r0)
+                     (add r0 r1 r2 r3)
+                     (sub r0 r1 r2 r3)
+                     (mul r0 r1 r2 r3 r4)
+                     (cube r0 r1)
+                     (square r0 r1)
                      )))
 
 (section data
