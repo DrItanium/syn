@@ -657,6 +657,12 @@
                             (dynamic-get title)
                             (send ?self 
                                   resolve-arguments)))
+(defmessage-handler lisp->intermediary::instruction resolve-arguments primary
+ ()
+ "")
+
+(defclass lisp->intermediary::zero-argument-instruction
+ (is-a instruction))
 
 (defclass lisp->intermediary::has-destination-register
   (is-a USER)
@@ -760,6 +766,35 @@
           (three-register-operation nor)
           (three-register-operation min)
           (three-register-operation max)
+          (three-register-operation addi)
+          (three-register-operation subi)
+          (three-register-operation muli)
+          (three-register-operation divi)
+          (three-register-operation remi)
+          (three-register-operation shli)
+          (three-register-operation shri)
+          (three-register-operation ldc)
+          (three-register-operation stc)
+          (three-register-operation ldio)
+          (three-register-operation stio)
+          (three-register-operation ldwo)
+          (three-register-operation stwo)
+          (three-register-operation ldiwo)
+          (three-register-operation stiwo)
+          (three-register-operation if)
+          (three-register-operation ifl)
+          (two-register-operation set)
+          (two-register-operation swap)
+          (two-register-operation move)
+          (two-register-operation not)
+          (two-register-operation ld)
+          (two-register-operation st)
+          (two-register-operation push)
+          (two-register-operation pop)
+          (two-register-operation bc)
+          (two-register-operation bcl)
+          (two-register-operation bic)
+          (two-register-operation bicl)
           (one-register-operation mtip)
           (one-register-operation mfip)
           (one-register-operation mtlr)
@@ -768,13 +803,12 @@
           (one-register-operation recr)
           (one-register-operation b)
           (one-register-operation bl)
-          (two-register-operation swap)
-          (two-register-operation move)
-          (two-register-operation not)
-          (two-register-operation ld)
-          (two-register-operation st)
-          (two-register-operation push)
-          (two-register-operation pop)
+          (one-register-operation bi)
+          (one-register-operation bil)
+          (one-register-operation blrc)
+          (one-register-operation blrcl)
+          (zero-register-operation blr)
+          (zero-register-operation blrl)
           )
 
 (defrule lisp->intermediary::construct-one-register-instruction
@@ -787,6 +821,19 @@
          =>
          (unmake-instance ?f)
          (make-instance ?n of one-argument-instruction 
+                        (parent ?p)
+                        (title ?operation)
+                        (destination-register ?destination)))
+(defrule lisp->intermediary::construct-zero-register-instruction
+         ?f <- (object (is-a list)
+                       (contents ?operation
+                                 ?destination)
+                       (name ?n)
+                       (parent ?p))
+         (zero-register-operation ?operation)
+         =>
+         (unmake-instance ?f)
+         (make-instance ?n of zero-argument-instruction 
                         (parent ?p)
                         (title ?operation)
                         (destination-register ?destination)))
@@ -856,7 +903,7 @@
                         (destination-register ?target)
                         (source-register0 ?stack)))
 
-(defrule lisp->intermediary::parse-set-operation-style0
+(defrule lisp->intermediary::parse-set-operation-alternate-style
          ?f <- (object (is-a list)
                        (contents set
                                  ?target
@@ -866,11 +913,11 @@
                        (parent ?p))
          =>
          (unmake-instance ?f)
-         (make-instance ?n of set-instruction
+         (make-instance ?n of two-argument-operation
                         (parent ?p)
                         (title set)
                         (destination-register ?target)
-                        (full-immediate ?value)))
+                        (source-register0 ?value)))
 
 (defrule lisp->intermediary::construct-alias
          ?f <- (object (is-a list)
