@@ -8,12 +8,12 @@ Some stats:
   - 64k instruction words (code domain)
   - 64k data words (data domain)
   - 64k stack words (stack domain)
+  - 64k io words (io domain)
   - Instruction words are 32-bits in length
   - Data words are 16-bits in length
   - 64k data words circular stack (can't overflow into external memory but will
     wraparound by design) which grows down (from address zero downward).
-- CISC design for compact code representation
-   - Relatively simple decoder logic
+- RISC / CISC hybrid design
 - Has three unused execution groups for extension purposes
 
 The general format of the instructions are as follows:
@@ -37,7 +37,7 @@ following form:
 It is important to note that immediate values will ALWAYS be in bits 16-31 in
 the instructions which require them. The first register space can sometimes go
 unused in the case of some instructions. It is also important to note that one
-of improvements to iris is this simplification to how bits are used. 
+of improvements to iris is this simplification to how bits are used.
 
 Iris has support for up to eight instruction groups where only five are
 actually in use. The five modes are:
@@ -46,10 +46,10 @@ actually in use. The five modes are:
 1: Move
 2: Jump
 3: Compare
-4: Misc 
+4: Misc
 5-7: Undefined (will cause a panic in the simulator at this point in time)
 
-The operation bits are different for each major operation group. 
+The operation bits are different for each major operation group.
 
 -------------------------------------------------------------------
 
@@ -142,7 +142,7 @@ Assembly Command: set reg_dest $immediate
 Description: Sets the contents of the destination register to the supplied
              immediate value.
 
->>>>>> Load 
+>>>>>> Load
 Assembly Command: ld reg_dest reg_src
 Description: Sets the contents of the destination register to the contents of
              memory pointed at by the contents of the source register.
@@ -155,7 +155,7 @@ Description: Sets the contents of the destination register to the contents of
 >>>>>> Store
 Assembly Command: st dest_reg source_reg
 Description: Stores the contents of the source register into memory at the
-             address contained in the destination register. 
+             address contained in the destination register.
 
 >>>>>> Memory Set using Immediate Value and Register
 Assembly Command: memset dest_reg $immediate
@@ -163,23 +163,23 @@ Description: Stores the contents of memory found at the address contained in
              the source register into memory at the address described in the
              destination register.
 
->>>>>> Push Register Contents onto Stack 
-Assembly Command: push reg 
+>>>>>> Push Register Contents onto Stack
+Assembly Command: push reg
 Description: Increments the contents of the implicit stack pointer register
              (default is r254) and stores the contents of reg at this address
-             on the stack. The updated address is written to the stack pointer 
+             on the stack. The updated address is written to the stack pointer
              at the end.
 
->>>>>> Push Immediate onto Stack 
-Assembly Command: pushi $immediate 
+>>>>>> Push Immediate onto Stack
+Assembly Command: pushi $immediate
 Description: Increments the contents of the implicit stack pointer register
              (default is r254) and stores the immediate value at this address
-             on the stack. The updated address is written to the stack pointer 
+             on the stack. The updated address is written to the stack pointer
              at the end.
 
->>>>>> Pop Value Off Stack and Store In Register 
-Assembly Command: pop reg 
-Description: Saves the value at the top of the stack into reg, 
+>>>>>> Pop Value Off Stack and Store In Register
+Assembly Command: pop reg
+Description: Saves the value at the top of the stack into reg,
              decrements the stack pointer address, and then saves this updated
              stack pointer address back into the stack pointer.
 
@@ -194,7 +194,7 @@ For Jump operations, we have three major groups:
 When dealing with immediate values, the jump operation is called a goto
 When dealing with registers, the jump operation is called a jump.
 
->>>>>> Jump Unconditional Immediate 
+>>>>>> Jump Unconditional Immediate
 Assembly Command: j $immediate
 Description: Jumps to the target address
 Layout:
@@ -211,7 +211,7 @@ Layout:
    Byte 1 : Index to store current address in (useful for returns)
    Byte 2-3 : immediate value, little endian
 
->>>>>> Jump Unconditional Register 
+>>>>>> Jump Unconditional Register
 Assembly Command: jr <addr_register>
 Description: Jumps to the target address
 Layout:
@@ -234,20 +234,20 @@ Description: Jumps to the target address provided that the given predicate
              register contains a value which is not zero
 Layout:
    Byte 0 : Group + Opcode
-   Byte 1 : Index of Predicate Register 
+   Byte 1 : Index of Predicate Register
    Byte 2-3 : immediate value, little endian
 
 >>>>>> Jump Immediate If True and Link
 Assembly Command: jtl <link_register> $immediate
 Description: Jumps to the target address provided that the contents of the
              predicate register (Index defined via implied register) is not
-             zero. The current address is stored in the link_register. 
+             zero. The current address is stored in the link_register.
 Layout:
    Byte 0 : Group + Opcode
    Byte 1 : Index to store current address in (useful for returns)
    Byte 2-3 : immediate value, little endian
 
->>>>>> Jump Register If True 
+>>>>>> Jump Register If True
 Assembly Command: jrt <predicate_reg> <addr_register>
 Description: Jumps to the target address provided the contents of the predicate
              register are not zero.
@@ -260,13 +260,13 @@ Layout:
 >>>>>> Jump Register If True and Link
 Assembly Command: jrtl <predicate> <addr> <link>
 Description: Jumps to the target address provided the contents of the predicate
-             are not zero and saves the current location to the provided link 
+             are not zero and saves the current location to the provided link
              register.
 Layout:
    Byte 0 : Group + Opcode
    Byte 1 : Index of Predicate Register
    Byte 2 : Index of Address Register
-   Byte 3 : Index of Link Register 
+   Byte 3 : Index of Link Register
 
 >>>>>> Jump Immediate If False
 Assembly Command: jf $immediate
@@ -274,14 +274,14 @@ Description: Jumps to the target address provided that the given predicate
              register contains a value which is zero
 Layout:
    Byte 0 : Group + Opcode
-   Byte 1 : Index of Predicate Register 
+   Byte 1 : Index of Predicate Register
    Byte 2-3 : immediate value, little endian
 
 >>>>>> Jump Immediate If False and Link
 Assembly Command: jfl <link_register> $immediate
 Description: Jumps to the target address provided that the contents of the
-             predicate register (Index defined via implied register) is zero. 
-             The current address is stored in the link_register. 
+             predicate register (Index defined via implied register) is zero.
+             The current address is stored in the link_register.
 Layout:
    Byte 0 : Group + Opcode
    Byte 1 : Index to store current address in (useful for returns)
@@ -300,56 +300,56 @@ Layout:
 >>>>>> Jump Register If False and Link
 Assembly Command: jrfl <predicate> <addr> <link>
 Description: Jumps to the target address provided the contents of the predicate
-             are zero and saves the current location to the provided link 
+             are zero and saves the current location to the provided link
              register.
 Layout:
    Byte 0 : Group + Opcode
    Byte 1 : Index of Predicate Register
    Byte 2 : Index of Address Register
-   Byte 3 : Index of Link Register 
+   Byte 3 : Index of Link Register
 
->>>>>> If True Then Else 
-Assembly Command: ift <predicate> <ontrue> <onfalse> 
+>>>>>> If True Then Else
+Assembly Command: ift <predicate> <ontrue> <onfalse>
 Description: If the contents of the predicate register are not zero then jump
              to the address contained in the ontrue register else jump to the
              on false register
 Layout:
    Byte 0 : Group + Opcode
-   Byte 1 : Index of Predicate Register 
+   Byte 1 : Index of Predicate Register
    Byte 2 : Index of On True Register
    Byte 3 : Index of On False Register
 
->>>>>> If False Then Else 
-Assembly Command: iff <predicate> <ontrue> <onfalse> 
-Description: If the contents of the predicate register are zero then jump to 
+>>>>>> If False Then Else
+Assembly Command: iff <predicate> <ontrue> <onfalse>
+Description: If the contents of the predicate register are zero then jump to
              the address contained in the ontrue register else jump to the
              on false register
 Layout:
    Byte 0 : Group + Opcode
-   Byte 1 : Index of Predicate Register 
+   Byte 1 : Index of Predicate Register
    Byte 2 : Index of On True Register
    Byte 3 : Index of On False Register
 
 >>>>>> If True Then Else and Link
-Assembly Command: iftl <link_register> <ontrue> <onfalse> 
+Assembly Command: iftl <link_register> <ontrue> <onfalse>
 Description: If the contents of the predicate register are not zero (implied
-             register) then jump to the address contained in the ontrue 
+             register) then jump to the address contained in the ontrue
              register else jump to the on false register and save the current
              location to the link register
 Layout:
    Byte 0 : Group + Opcode
-   Byte 1 : Index of Link Register 
+   Byte 1 : Index of Link Register
    Byte 2 : Index of On True Register
    Byte 3 : Index of On False Register
 
 >>>>>> If False Then Else and Link
-Assembly Command: iffl <link_register> <ontrue> <onfalse> 
-Description: If the contents of the predicate register (implied register) are 
-             zero then jump to the address contained in the ontrue register 
-             else jump to the on false register and save the current location 
+Assembly Command: iffl <link_register> <ontrue> <onfalse>
+Description: If the contents of the predicate register (implied register) are
+             zero then jump to the address contained in the ontrue register
+             else jump to the on false register and save the current location
 Layout:
    Byte 0 : Group + Opcode
-   Byte 1 : Index of Link Register 
+   Byte 1 : Index of Link Register
    Byte 2 : Index of On True Register
    Byte 3 : Index of On False Register
 
@@ -361,33 +361,33 @@ byte 1 : Destination Register
 byte 2 : Source Register 0
 byte 3 : Source Register 1
 
->>>>>> Equals 
-Assembly Command: eq <dest> <src0> <src1> 
+>>>>>> Equals
+Assembly Command: eq <dest> <src0> <src1>
 Description: Checks to see if the contents of src0 == src1 and stores the
              result in dest
 
->>>>>> Not Equals 
-Assembly Command: ne <dest> <src0> <src1> 
+>>>>>> Not Equals
+Assembly Command: ne <dest> <src0> <src1>
 Description: Checks to see if the contents of src0 != src1 and stores the
              result in dest
 
->>>>>> Less Than 
-Assembly Command: lt <dest> <src0> <src1> 
+>>>>>> Less Than
+Assembly Command: lt <dest> <src0> <src1>
 Description: Checks to see if the contents of src0 < src1 and stores the
              result in dest
 
->>>>>> Greater Than 
-Assembly Command: gt <dest> <src0> <src1> 
+>>>>>> Greater Than
+Assembly Command: gt <dest> <src0> <src1>
 Description: Checks to see if the contents of src0 > src1 and stores the
              result in dest
 
->>>>>> Less Than Or Equal To 
-Assembly Command: le <dest> <src0> <src1> 
+>>>>>> Less Than Or Equal To
+Assembly Command: le <dest> <src0> <src1>
 Description: Checks to see if the contents of src0 <= src1 and stores the
              result in dest
 
->>>>>> Greater Than Or Equal To 
-Assembly Command: ge <dest> <src0> <src1> 
+>>>>>> Greater Than Or Equal To
+Assembly Command: ge <dest> <src0> <src1>
 Description: Checks to see if the contents of src0 >= src1 and stores the
              result in dest
 
@@ -426,9 +426,9 @@ The misc op group has the following operations:
 
 >>>>>> System Call
 Opcode: 0
-Assembly Command: system $<operation> <reg> <reg> 
+Assembly Command: system $<operation> <reg> <reg>
 Description: Performs a system call which taps into system calls described by
-             the simulator (at this point there is no trap handler nor trap 
+             the simulator (at this point there is no trap handler nor trap
              instructions). Takes in an index and two registers used as
              arguments.
 Layout:
@@ -439,8 +439,8 @@ Layout:
 System Operations (this list may not always be up to date, see source to make
                    sure)
    1) Halt - Terminates the simulator or system
-   2) getc - Gets a character from standard input and stores the result in reg0 
-   3) putc - prints the character stored in reg0 to standard out 
+   2) getc - Gets a character from standard input and stores the result in reg0
+   3) putc - prints the character stored in reg0 to standard out
    4-255) Undefined
 
 
