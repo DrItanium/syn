@@ -6,17 +6,49 @@
         (visibility public)
         (storage local)
         (allowed-symbols FALSE))
-  (message-handler get-title primary))
+  (message-handler resolve primary))
 
 
-(defmessage-handler lisp->intermediary::register get-title primary
+(defmessage-handler lisp->intermediary::register resolve primary
                     ()
                     (if (instancep ?self:alias-to) then
-                        (send ?self:alias-to
-                              get-title)
-                        else
-                        (instance-name-to-symbol (instance-name ?self))))
+                      (send ?self:alias-to
+                            resolve)
+                      else
+                      (instance-name-to-symbol (instance-name ?self))))
 (definstances lisp->intermediary::registers
+              (p0 of register
+                  (parent FALSE))
+              (p1 of register
+                  (parent FALSE))
+              (p2 of register
+                  (parent FALSE))
+              (p3 of register
+                  (parent FALSE))
+              (p4 of register
+                  (parent FALSE))
+              (p5 of register
+                  (parent FALSE))
+              (p6 of register
+                  (parent FALSE))
+              (p7 of register
+                  (parent FALSE))
+              (p8 of register
+                  (parent FALSE))
+              (p9 of register
+                  (parent FALSE))
+              (p10 of register
+                   (parent FALSE))
+              (p11 of register
+                   (parent FALSE))
+              (p12 of register
+                   (parent FALSE))
+              (p13 of register
+                   (parent FALSE))
+              (p14 of register
+                   (parent FALSE))
+              (p15 of register
+                   (parent FALSE))
               (r0 of register
                   (parent FALSE))
               (r1 of register
@@ -538,37 +570,93 @@
                          data)
         (visibility public)
         (storage local)
-        (default ?NONE)))
+        (default ?NONE))
+  (message-handler resolve primary))
+
+(defmessage-handler lisp->intermediary::section resolve primary
+                    ()
+                    (bind ?output
+                          (format nil
+                                  ".%s"
+                                  ?self:section))
+                    (progn$ (?b ?self:body)
+                            (bind ?output
+                                  ?output
+                                  (send ?b 
+                                        resolve)))
+                    ?output)
+
 
 (defclass lisp->intermediary::label
   (is-a node
         has-title
-        has-body))
+        has-body)
+  (message-handler resolve primary))
+
+(defmessage-handler lisp->intermediary::label resolve primary
+                    ()
+                    (bind ?output
+                          (format nil
+                                  ".label %s"
+                                  (dynamic-get title)))
+                    (progn$ (?b ?self:body)
+                            (bind ?output
+                                  ?output
+                                  (send ?b
+                                        resolve)))
+                    ?output)
 (defclass lisp->intermediary::org
   (is-a node
         has-body)
   (slot address
         (visibility public)
         (storage local)
-        (default ?NONE)))
+        (default ?NONE))
+  (message-handler resolve primary))
+(defmessage-handler lisp->intermediary::org resolve primary
+                    ()
+                    (bind ?output
+                          (format nil
+                                  ".org %s"
+                                  (dynamic-get address)))
+                    (progn$ (?b ?self:body)
+                            (bind ?output
+                                  ?output
+                                  (send ?b
+                                        resolve)))
+                    ?output)
 (defclass lisp->intermediary::word
-          (is-a node)
-          (slot value
-                (visibility public)
-                (storage local)
-                (default ?NONE)))
+  (is-a node)
+  (slot value
+        (visibility public)
+        (storage local)
+        (default ?NONE))
+  (message-handler resolve primary))
+
+(defmessage-handler lisp->intermediary::word resolve primary
+                    ()
+                    (format nil
+                            ".word %s"
+                            (dynamic-get value)))
 
 (defclass lisp->intermediary::instruction
   (is-a node
         has-title)
   (message-handler resolve primary))
 
+(defmessage-handler lisp->intermediary::instruction resolve primary
+                    ()
+                    (format nil 
+                            "%s"
+                            (dynamic-get title)))
+
 (defclass lisp->intermediary::has-destination-register
-   (is-a USER)
-   (slot destination-register
-         (visibility public)
-         (storage local)
-         (default ?NONE)))
+  (is-a USER)
+  (slot destination-register
+        (visibility public)
+        (storage local)
+        (default ?NONE)))
+
 (defclass lisp->intermediary::has-full-immediate
   (is-a USER)
   (slot full-immediate
@@ -595,10 +683,32 @@
         has-destination-register
         has-source-register0))
 
+(defmessage-handler lisp->intermediary::two-argument-instruction resolve primary
+                    ()
+                    (format nil
+                            "%s %s %s"
+                            (call-next-handler)
+                            (send ?self:destination-register 
+                                  resolve)
+                            (send ?self:source-register0 
+                                  resolve)))
+
 (defclass lisp->intermediary::set-instruction
   (is-a instruction
         has-destination-register
-        has-full-immediate))
+        has-full-immediate)
+  (slot title
+        (source composite)
+        (storage shared)
+        (default set)))
+(defmessage-handler lisp->intermediary::set-instruction resolve primary
+                    ()
+                    (format nil
+                            "%s %s %s"
+                            (call-next-handler)
+                            (send ?self:destination-register
+                                  resolve)
+                            (str-cat ?self:full-immediate)))
 
 
 (defrule lisp->intermediary::parse-push-operation-style0
@@ -736,3 +846,14 @@
          (make-instance ?n of word
                         (parent ?p)
                         (value ?value)))
+
+(defrule lisp->intermediary::construct-output-string
+         (declare (salience -1000))
+         (object (is-a file)
+                 (name ?file))
+         ?f <- (object (is-a section)
+                       (parent ?file))
+         =>
+         (progn$ (?l (send ?f resolve))
+                 (printout t ?l crlf)))
+         
