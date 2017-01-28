@@ -8,10 +8,15 @@
 (section code
          (org 0x0000
               (label startup
+                     (set sp to 0xfded)
+                     (push r0 onto sp)
+                     (pop sp into r0)
                      )))
 
 (section data
-         (org 0x0000)
+         (org 0x0000
+              (word 0x0000))
+
          (org 0x00FF))
 
 

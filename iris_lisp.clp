@@ -551,6 +551,103 @@
         (visibility public)
         (storage local)
         (default ?NONE)))
+(defclass lisp->intermediary::word
+          (is-a node)
+          (slot value
+                (visibility public)
+                (storage local)
+                (default ?NONE)))
+
+(defclass lisp->intermediary::instruction
+  (is-a node
+        has-title)
+  (message-handler resolve primary))
+
+(defclass lisp->intermediary::has-destination-register
+   (is-a USER)
+   (slot destination-register
+         (visibility public)
+         (storage local)
+         (default ?NONE)))
+(defclass lisp->intermediary::has-full-immediate
+  (is-a USER)
+  (slot full-immediate
+        (visibility public)
+        (storage local)
+        (default ?NONE)))
+
+(defclass lisp->intermediary::has-source-register0
+  (is-a USER)
+  (slot source-register0
+        (visibility public)
+        (storage local)
+        (default ?NONE)))
+
+(defclass lisp->intermediary::has-source-register1
+  (is-a USER)
+  (slot source-register1
+        (visibility public)
+        (storage local)
+        (default ?NONE)))
+
+(defclass lisp->intermediary::two-argument-instruction
+  (is-a instruction
+        has-destination-register
+        has-source-register0))
+
+(defclass lisp->intermediary::set-instruction
+  (is-a instruction
+        has-destination-register
+        has-full-immediate))
+
+
+(defrule lisp->intermediary::parse-push-operation-style0
+         ?f <- (object (is-a list)
+                       (contents push
+                                 ?target
+                                 onto
+                                 ?stack)
+                       (name ?n)
+                       (parent ?p))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?n of two-argument-instruction
+                        (parent ?p)
+                        (title push)
+                        (destination-register ?stack)
+                        (source-register0 ?target)))
+
+(defrule lisp->intermediary::parse-pop-operation-style0
+         ?f <- (object (is-a list)
+                       (contents pop
+                                 ?stack
+                                 into
+                                 ?target)
+                       (name ?n)
+                       (parent ?p))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?n of two-argument-instruction
+                        (parent ?p)
+                        (title pop)
+                        (destination-register ?target)
+                        (source-register0 ?stack)))
+
+(defrule lisp->intermediary::parse-set-operation-style0
+         ?f <- (object (is-a list)
+                       (contents set
+                                 ?target
+                                 to
+                                 ?value)
+                       (name ?n)
+                       (parent ?p))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?n of set-instruction
+                        (parent ?p)
+                        (title set)
+                        (destination-register ?target)
+                        (full-immediate ?value)))
 
 (defrule lisp->intermediary::construct-alias
          ?f <- (object (is-a list)
@@ -628,5 +725,14 @@
 
 
 
-
-
+(defrule lisp->intermediary::make-word
+         ?f <- (object (is-a list)
+                       (contents word
+                                 ?value)
+                       (name ?n)
+                       (parent ?p))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?n of word
+                        (parent ?p)
+                        (value ?value)))
