@@ -1,0 +1,7 @@
+The iris lisp language is a very simple wrapper over the iris architecture, it
+contains very few of the features normally seen inside of a LISP language. This
+is done to make the language a translation language instead of a full
+programming language which defines its own abstract machine to program against.
+
+
+The abstract machine already exists and doesn't need to be reimplemented.
