@@ -648,6 +648,7 @@
 (defclass lisp->intermediary::instruction
   (is-a node
         has-title)
+  (message-handler resolve-arguments primary)
   (message-handler resolve primary))
 
 (defmessage-handler lisp->intermediary::instruction resolve primary
@@ -664,37 +665,12 @@
 (defclass lisp->intermediary::zero-argument-instruction
  (is-a instruction))
 
-(defclass lisp->intermediary::has-destination-register
-  (is-a USER)
+(defclass lisp->intermediary::instruction-with-destination
+  (is-a instruction)
   (slot destination-register
         (visibility public)
         (storage local)
         (default ?NONE)))
-
-(defclass lisp->intermediary::has-full-immediate
-  (is-a USER)
-  (slot full-immediate
-        (visibility public)
-        (storage local)
-        (default ?NONE)))
-
-(defclass lisp->intermediary::has-source-register0
-  (is-a USER)
-  (slot source-register0
-        (visibility public)
-        (storage local)
-        (default ?NONE)))
-
-(defclass lisp->intermediary::has-source-register1
-  (is-a USER)
-  (slot source-register1
-        (visibility public)
-        (storage local)
-        (default ?NONE)))
-
-(defclass lisp->intermediary::instruction-with-destination
-  (is-a instruction
-        has-destination-register))
 
 (defmessage-handler lisp->intermediary::instruction-with-destination resolve-arguments primary
                     ()
@@ -706,24 +682,12 @@
 (defclass lisp->intermediary::one-argument-instruction
   (is-a instruction-with-destination))
 
-(defclass lisp->intermediary::set-instruction
-  (is-a instruction-with-destination 
-        has-full-immediate)
-  (slot title
-        (source composite)
-        (storage shared)
-        (default set)))
-(defmessage-handler lisp->intermediary::set-instruction resolve-arguments primary
-                    ()
-                    (format nil
-                            "%s %s"
-                            (call-next-handler)
-                            (send ?self:full-immediate
-                                  resolve)))
-
 (defclass lisp->intermediary::instruction-with-destination-and-source0
-  (is-a instruction-with-destination
-        has-source-register0))
+  (is-a instruction-with-destination)
+  (slot source-register0
+        (visibility public)
+        (storage local)
+        (default ?NONE)))
 
 (defmessage-handler lisp->intermediary::instruction-with-destination-and-source0 resolve-arguments primary
                     ()
@@ -737,8 +701,11 @@
   (is-a instruction-with-destination-and-source0))
 
 (defclass lisp->intermediary::instruction-with-destination-source0-and-source1
-  (is-a instruction-with-destination-and-source0
-        has-source-register1))
+  (is-a instruction-with-destination-and-source0)
+  (slot source-register1
+        (visibility public)
+        (storage local)
+        (default ?NONE)))
 
 (defmessage-handler lisp->intermediary::instruction-with-destination-source0-and-source1 resolve-arguments primary
                     ()
@@ -751,7 +718,31 @@
 (defclass lisp->intermediary::three-argument-instruction
   (is-a instruction-with-destination-source0-and-source1))
 
+(defclass lisp->intermediary::instruction-with-destination-source0-source1-and-source2
+  (is-a instruction-with-destination-source0-and-source1)
+  (slot source-register2
+        (visibility public)
+        (storage local)
+        (default ?NONE)))
+
 (deffacts lisp->intermediary::register-operations
+          (four-register-operation eq)
+          (four-register-operation eqi)
+          (four-register-operation ne)
+          (four-register-operation nei)
+          (four-register-operation le)
+          (four-register-operation lei)
+          (four-register-operation ge)
+          (four-register-operation gei)
+          (four-register-operation lt)
+          (four-register-operation lti)
+          (four-register-operation gt)
+          (four-register-operation gti)
+          (four-register-operation crxor)
+          (four-register-operation crand)
+          (four-register-operation cror)
+          (four-register-operation crnand)
+          (four-register-operation crnor)
           (three-register-operation add)
           (three-register-operation sub)
           (three-register-operation mul)
@@ -783,18 +774,26 @@
           (three-register-operation stiwo)
           (three-register-operation if)
           (three-register-operation ifl)
+          (three-register-operation crnot)
+          (two-register-operation sti)
+          (two-register-operation memset)
+          (two-register-operation ldi)
+          (two-register-operation ldm)
+          (two-register-operation not)
           (two-register-operation set)
           (two-register-operation swap)
           (two-register-operation move)
-          (two-register-operation not)
           (two-register-operation ld)
           (two-register-operation st)
           (two-register-operation push)
+          (two-register-operation pushi)
           (two-register-operation pop)
           (two-register-operation bc)
           (two-register-operation bcl)
           (two-register-operation bic)
           (two-register-operation bicl)
+          (two-register-operation crswap)
+          (two-register-operation crmove)
           (one-register-operation mtip)
           (one-register-operation mfip)
           (one-register-operation mtlr)
