@@ -1,22 +1,3 @@
-(defclass lisp->intermediary::function
-  (is-a node
-        has-title
-        has-body))
-(defclass lisp->intermediary::label
-  (is-a node
-        has-title))
-(defclass lisp->intermediary::section
-  (is-a node
-        has-body)
-  (slot section
-        (type SYMBOL)
-        (allowed-symbols code
-                         data)
-        (visibility public)
-        (storage local)
-        (default ?NONE)))
-
-
 (defclass lisp->intermediary::register
   (is-a node)
   (slot alias-to
@@ -25,76 +6,16 @@
         (visibility public)
         (storage local)
         (allowed-symbols FALSE))
-  (message-handler resolve-actual-title primary))
+  (message-handler get-title primary))
 
-(defmessage-handler lisp->intermediary::register resolve-actual-title primary
+
+(defmessage-handler lisp->intermediary::register get-title primary
                     ()
                     (if (instancep ?self:alias-to) then
-                        (send ?self:alias-to resolve-actual-title)
+                        (send ?self:alias-to
+                              get-title)
                         else
                         (instance-name-to-symbol (instance-name ?self))))
-
-(defrule lisp->intermediary::construct-alias
-         ?f <- (object (is-a list)
-                       (contents alias
-                                 ?target
-                                 as
-                                 ?alias&:(symbolp ?alias))
-                       (name ?name)
-                       (parent ?parent))
-         =>
-         (unmake-instance ?f)
-         (make-instance ?alias of register
-                        (parent ?parent)
-                        (alias-to (if (symbolp ?target) then
-                                    (symbol-to-instance-name ?target)
-                                    else
-                                    ?target))))
-
-(defrule lisp->intermediary::construct-function
-         ?f <- (object (is-a list)
-                       (contents defn
-                                 ?title
-                                 $?body)
-                       (name ?name)
-                       (parent ?parent))
-         =>
-         (unmake-instance ?f)
-         (make-instance ?name of function
-                        (parent ?parent)
-                        (title ?title)
-                        (body $?body)))
-
-(defrule lisp->intermediary::mark-register
-         (declare (salience 1))
-         ?f <- (object (is-a list)
-                       (contents $?a
-                                 ?register&:(symbolp ?register)
-                                 $?b))
-         (object (is-a register)
-                 (name =(symbol-to-instance-name ?register)))
-         =>
-         (modify-instance ?f
-                          (contents ?a
-                                    (symbol-to-instance-name ?register)
-                                    ?b)))
-
-(defrule lisp->intermediary::construct-section
-         ?f <- (object (is-a list)
-                       (contents section
-                                 ?section&:(not (neq ?section
-                                                     code
-                                                     data))
-                                 $?body)
-                       (name ?name)
-                       (parent ?p))
-         =>
-         (unmake-instance ?f)
-         (make-instance ?name of section
-                        (body ?body)
-                        (section ?section)
-                        (parent ?p)))
-
 (definstances lisp->intermediary::registers
               (r0 of register
                   (parent FALSE))
@@ -608,3 +529,104 @@
                     (parent FALSE))
               (r255 of register
                     (parent FALSE)))
+(defclass lisp->intermediary::section
+  (is-a node
+        has-body)
+  (slot section
+        (type SYMBOL)
+        (allowed-symbols code
+                         data)
+        (visibility public)
+        (storage local)
+        (default ?NONE)))
+
+(defclass lisp->intermediary::label
+  (is-a node
+        has-title
+        has-body))
+(defclass lisp->intermediary::org
+  (is-a node
+        has-body)
+  (slot address
+        (visibility public)
+        (storage local)
+        (default ?NONE)))
+
+(defrule lisp->intermediary::construct-alias
+         ?f <- (object (is-a list)
+                       (contents alias
+                                 ?target
+                                 as
+                                 ?alias&:(symbolp ?alias))
+                       (name ?name)
+                       (parent ?parent))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?alias of register
+                        (parent ?parent)
+                        (alias-to (if (symbolp ?target) then
+                                    (symbol-to-instance-name ?target)
+                                    else
+                                    ?target))))
+
+(defrule lisp->intermediary::mark-register
+         (declare (salience 1))
+         ?f <- (object (is-a list)
+                       (contents $?a
+                                 ?register&:(symbolp ?register)
+                                 $?b))
+         (object (is-a register)
+                 (name =(symbol-to-instance-name ?register)))
+         =>
+         (modify-instance ?f
+                          (contents ?a
+                                    (symbol-to-instance-name ?register)
+                                    ?b)))
+
+(defrule lisp->intermediary::construct-section
+         ?f <- (object (is-a list)
+                       (contents section
+                                 ?section&:(not (neq ?section
+                                                     code
+                                                     data))
+                                 $?body)
+                       (name ?name)
+                       (parent ?p))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?name of section
+                        (body ?body)
+                        (section ?section)
+                        (parent ?p)))
+
+(defrule lisp->intermediary::make-org
+         ?f <- (object (is-a list)
+                       (contents org
+                                 ?address
+                                 $?body)
+                       (name ?name)
+                       (parent ?p))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?name of org
+                        (address ?address)
+                        (parent ?p)
+                        (body ?body)))
+(defrule lisp->intermediary::make-label
+         ?f <- (object (is-a list)
+                       (contents label
+                                 ?title
+                                 $?body)
+                       (name ?n)
+                       (parent ?p))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?n of label
+                        (parent ?p)
+                        (title ?title)
+                        (body ?body)))
+
+
+
+
+

@@ -5,8 +5,13 @@
 (alias r255 as sp)
 (alias r254 as predicates)
 
-(section code)
+(section code
+         (org 0x0000
+              (label startup
+                     )))
 
-(section data)
+(section data
+         (org 0x0000)
+         (org 0x00FF))
 
 
