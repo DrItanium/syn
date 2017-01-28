@@ -4,6 +4,11 @@
 (defmessage-handler LEXEME resolve primary
                     ()
                     ?self)
+(deffunction lisp->intermediary::mk-list
+             (?parent $?contents)
+             (make-instance of list
+                            (parent ?parent)
+                            (contents ?contents)))
 (defclass lisp->intermediary::register
   (is-a node)
   (slot alias-to
@@ -579,7 +584,13 @@
                   (contents alias
                             r238
                             as
-                            sp)))
+                            sp))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r237
+                            as
+                            iv1)))
 
 
 
@@ -748,6 +759,12 @@
 (defclass lisp->intermediary::simple-container
   (is-a node
         has-body))
+
+(deffunction lisp->intermediary::mk-container
+             (?name ?parent $?body)
+             (make-instance ?name of simple-container
+                            (parent ?parent)
+                            (body ?body)))
 
 (defmessage-handler lisp->intermediary::simple-container resolve primary
                     ()
@@ -1549,15 +1566,15 @@
          (make-instance ?n of simple-container
                         (parent ?p)
                         (body (make-instance of list
-                               (parent ?n)
-                               (contents ld
-                                         iv0
-                                         ?address))
-                         (make-instance of list
-                          (parent ?p)
-                          (contents move
-                                    predicates
-                                    iv0)))))
+                                             (parent ?n)
+                                             (contents ld
+                                                       iv0
+                                                       ?address))
+                              (make-instance of list
+                                             (parent ?p)
+                                             (contents move
+                                                       predicates
+                                                       iv0)))))
 
 (defrule lisp->intermediary::load-lr
          (declare (salience 1))
@@ -1572,12 +1589,41 @@
          (make-instance ?n of simple-container
                         (parent ?p)
                         (body (make-instance of list
-                               (parent ?n)
-                               (contents ld
-                                         iv0
-                                         ?address))
-                         (make-instance of list
-                          (parent ?p)
-                          (contents move
-                                    lr
-                                    iv0)))))
+                                             (parent ?n)
+                                             (contents ld
+                                                       iv0
+                                                       ?address))
+                              (make-instance of list
+                                             (parent ?p)
+                                             (contents move
+                                                       lr
+                                                       iv0)))))
+
+(defrule lisp->intermediary::memswap-data
+         (declare (salience 1))
+         ?f <- (object (is-a list)
+                       (contents memswap
+                                 ?register0
+                                 ?register1)
+                       (name ?n)
+                       (parent ?p))
+         =>
+         (unmake-instance ?f)
+         (mk-container ?n 
+                       ?p
+                       (mk-list ?n 
+                                ld 
+                                iv0 
+                                ?register0)
+                       (mk-list ?n 
+                                ld 
+                                iv1 
+                                ?register1)
+                       (mk-list ?n
+                                st 
+                                ?register1 
+                                iv0)
+                       (mk-list ?n 
+                                st 
+                                ?register0 
+                                iv1)))

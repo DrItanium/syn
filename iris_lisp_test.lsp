@@ -16,6 +16,7 @@
                      (square r0 r1)
                      (push lr into sp)
                      (pop sp into lr)
+                     (memswap r32 r33)
                      (using (save-to sp)
                             (predicates r0 r1 r2 r3)
                             then
