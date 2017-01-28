@@ -659,11 +659,11 @@
                             (send ?self 
                                   resolve-arguments)))
 (defmessage-handler lisp->intermediary::instruction resolve-arguments primary
- ()
- "")
+                    ()
+                    "")
 
 (defclass lisp->intermediary::zero-argument-instruction
- (is-a instruction))
+  (is-a instruction))
 
 (defclass lisp->intermediary::instruction-with-destination
   (is-a instruction)
@@ -725,7 +725,7 @@
         (storage local)
         (default ?NONE)))
 (defclass lisp->intermediary::four-argument-instruction
- (is-a instruction-with-destination-source0-source1-and-source2))
+  (is-a instruction-with-destination-source0-source1-and-source2))
 
 (defrule lisp->intermediary::construct-alias
          ?f <- (object (is-a list)
@@ -745,7 +745,7 @@
                                     ?target))))
 
 (defrule lisp->intermediary::mark-register
-         (declare (salience 1))
+         (declare (salience 100))
          ?f <- (object (is-a list)
                        (contents $?a
                                  ?register&:(symbolp ?register)
@@ -1038,5 +1038,83 @@
                         (title set)
                         (destination-register ?target)
                         (source-register0 ?value)))
+
+(defrule lisp->intermediary::parse-call-unconditional-operation-register-version
+         ?f <- (object (is-a list)
+                       (contents call
+                                 ?register))
+         (object (is-a register)
+                 (name ?register))
+         =>
+         (modify-instance ?f 
+                          (contents bl
+                                    ?register)))
+
+(defrule lisp->intermediary::parse-call-unconditional-operation-immediate-version
+         ?f <- (object (is-a list)
+                       (contents call
+                                 ?target&:(or (symbolp ?target)
+                                              (numberp ?target))))
+         =>
+         (modify-instance ?f 
+                          (contents bil
+                                    ?target)))
+
+(defrule lisp->intermediary::parse-return-instruction
+         ?f <- (object (is-a list)
+                       (contents ret))
+         =>
+         (modify-instance ?f
+                          (contents blr)))
+
+(defrule lisp->intermediary::parse-call-lr
+         ?f <- (object (is-a list)
+                       (contents call lr))
+         =>
+         (modify-instance ?f
+                          (contents blrl)))
+
+(defrule lisp->intermediary::parse-move-to-lr-alt
+         (declare (salience 1))
+         ?f <- (object (is-a list)
+                       (contents move
+                                 lr
+                                 ?register))
+         =>
+         (modify-instance ?f
+                          (contents mtlr 
+                                    ?register)))
+(defrule lisp->intermediary::parse-move-from-lr-alt
+         (declare (salience 1))
+         ?f <- (object (is-a list)
+                       (contents move
+                                 ?register
+                                 lr))
+         =>
+         (modify-instance ?f
+                          (contents mflr
+                                    ?register)))
+
+(defrule lisp->intermediary::parse-move-to-ip-alt
+         (declare (salience 1))
+         ?f <- (object (is-a list)
+                       (contents move
+                                 ip
+                                 ?register))
+         =>
+         (modify-instance ?f
+                          (contents mtip 
+                                    ?register)))
+(defrule lisp->intermediary::parse-move-from-ip-alt
+         (declare (salience 1))
+         ?f <- (object (is-a list)
+                       (contents move
+                                 ?register
+                                 ip))
+         =>
+         (modify-instance ?f
+                          (contents mfip
+                                    ?register)))
+
 
 
