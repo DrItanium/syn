@@ -14,6 +14,11 @@
                      (mul r0 r1 r2 r3 r4)
                      (cube r0 r1)
                      (square r0 r1)
+                     (using (save-to sp)
+                            (r0 r1 r2 r3 lr)
+                            then
+                            (add r0 r1 r2)
+                            (add r2 r3 r3))
                      )))
 
 (section data

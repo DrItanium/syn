@@ -568,24 +568,24 @@
               (r255 of register
                     (parent FALSE)))
 (definstances lisp->intermediary::predefined-statements
-          (of list
-              (parent FALSE)
-              (contents alias 
-                        r239
-                        as
-                        iv0))
-          (of list
-              (parent FALSE)
-              (contents alias
-                        r238
-                        as
-                        sp))
-          (of list
-              (parent FALSE)
-              (contents alias
-                        r237
-                        as
-                        predicates)))
+              (of list
+                  (parent FALSE)
+                  (contents alias 
+                            r239
+                            as
+                            iv0))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r238
+                            as
+                            sp))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r237
+                            as
+                            predicates)))
 
 
 
@@ -905,8 +905,6 @@
           (three-register-operation shri)
           (three-register-operation ldc)
           (three-register-operation stc)
-          (three-register-operation ldio)
-          (three-register-operation stio)
           (three-register-operation ldwo)
           (three-register-operation stwo)
           (three-register-operation ldiwo)
@@ -914,6 +912,8 @@
           (three-register-operation if)
           (three-register-operation ifl)
           (three-register-operation crnot)
+          (two-register-operation ldio)
+          (two-register-operation stio)
           (two-register-operation sti)
           (two-register-operation memset)
           (two-register-operation ldi)
@@ -1029,22 +1029,20 @@
                         (source-register0 ?source0)
                         (source-register1 ?source1)
                         (source-register2 ?source2)))
-
+;---------------------------------------------------------
+; macros and shorthand operations
+;---------------------------------------------------------
 (defrule lisp->intermediary::parse-push-operation-style1
          ?f <- (object (is-a list)
                        (contents push
                                  ?target
                                  onto
-                                 ?stack)
-                       (name ?n)
-                       (parent ?p))
+                                 ?stack))
          =>
-         (unmake-instance ?f)
-         (make-instance ?n of two-argument-instruction
-                        (parent ?p)
-                        (title push)
-                        (destination-register ?stack)
-                        (source-register0 ?target)))
+         (modify-instance ?f
+                          (contents push
+                                    ?stack
+                                    ?target)))
 
 (defrule lisp->intermediary::parse-pop-operation-style1
          ?f <- (object (is-a list)
@@ -1055,12 +1053,10 @@
                        (name ?n)
                        (parent ?p))
          =>
-         (unmake-instance ?f)
-         (make-instance ?n of two-argument-instruction
-                        (parent ?p)
-                        (title pop)
-                        (destination-register ?target)
-                        (source-register0 ?stack)))
+         (modify-instance ?f
+                          (contents pop
+                                    ?target
+                                    ?stack)))
 
 (defrule lisp->intermediary::parse-set-operation-alternate-style
          ?f <- (object (is-a list)
@@ -1107,6 +1103,7 @@
                           (contents blr)))
 
 (defrule lisp->intermediary::parse-call-lr
+         (declare (salience 1))
          ?f <- (object (is-a list)
                        (contents call lr))
          =>
@@ -1286,6 +1283,18 @@
                                     ?register
                                     ?register)))
 
+(defrule lisp->intermediary::parse-triple-macro
+         ?f <- (object (is-a list)
+                       (contents triple 
+                                 ?destination
+                                 ?register))
+         =>
+         (modify-instance ?f
+                          (contents muli
+                                    ?destination
+                                    ?register
+                                    3)))
+
 (defrule lisp->intermediary::parse-halve-macro
          ?f <- (object (is-a list)
                        (contents halve
@@ -1299,9 +1308,9 @@
                                     2)))
 (defrule lisp->intermediary::parse-square-macro
          ?f <- (object (is-a list)
-             (contents square
-                       ?destination
-                       ?register))
+                       (contents square
+                                 ?destination
+                                 ?register))
          =>
          (modify-instance ?f
                           (contents mul
@@ -1321,4 +1330,91 @@
                                     ?register
                                     ?register)))
 
+(defrule lisp->intermediary::pop-lr
+         (declare (salience 1))
+         ?f <- (object (is-a list)
+                       (contents pop
+                                 lr
+                                 ?stack)
+                       (name ?n)
+                       (parent ?p))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?n of simple-container
+                        (parent ?p)
+                        (body (make-instance of list
+                                             (parent ?n)
+                                             (contents pop
+                                                       iv0
+                                                       ?stack))
+                              (make-instance of list
+                                             (parent ?n)
+                                             (contents mtlr
+                                                       iv0)))))
 
+(defrule lisp->intermediary::push-lr
+         (declare (salience 1))
+         ?f <- (object (is-a list)
+                       (contents push
+                                 ?stack
+                                 lr)
+                       (name ?n)
+                       (parent ?p))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?n of simple-container
+                        (parent ?p)
+                        (body (make-instance of list
+                                             (parent ?n)
+                                             (contents mflr
+                                                       iv0))
+                              (make-instance of list
+                                             (parent ?n)
+                                             (contents push
+                                                       ?stack
+                                                       iv0)))))
+
+(defrule lisp->intermediary::parse-using-block:has-register-to-preserve
+         ?f <- (object (is-a list)
+                       (contents using
+                                 ?stack-info
+                                 ?registers-to-preserve
+                                 then
+                                 $?body)
+                       (name ?n)
+                       (parent ?p))
+         ?f2 <- (object (is-a list)
+                        (name ?stack-info)
+                        (contents save-to 
+                                  ?stack))
+         ?f3 <- (object (is-a list)
+                        (name ?registers-to-preserve)
+                        (contents $?registers))
+         =>
+         (unmake-instance ?f 
+                          ?f2 
+                          ?f3)
+         (bind ?pre
+               (create$))
+         (bind ?post
+               (create$))
+         (progn$ (?a $?registers)
+                 (bind ?pre
+                       ?pre
+                       (make-instance of list
+                                      (parent ?n)
+                                      (contents push 
+                                                ?stack 
+                                                ?a)))
+                 (bind ?post
+                       (make-instance of list
+                                      (parent ?n)
+                                      (contents pop
+                                                ?a
+                                                ?stack))
+                       ?post))
+         (make-instance ?n of simple-container
+                        (parent ?p)
+                        (body ?pre
+                              ?body
+                              ?post)))
