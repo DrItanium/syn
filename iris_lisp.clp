@@ -1030,7 +1030,7 @@
          ?f <- (object (is-a list)
                        (contents push
                                  ?target
-                                 onto
+                                 into|onto
                                  ?stack))
          =>
          (modify-instance ?f
@@ -1150,8 +1150,9 @@
              (?parent ?reg)
              (create$ (make-instance of list
                                      (parent ?parent)
-                                     (body mflr
-                                           iv0))
+                                     (body move
+                                           iv0
+                                           lr))
                       (make-instance of list
                                      (parent ?parent)
                                      (body swap
@@ -1159,7 +1160,8 @@
                                            ?reg))
                       (make-instance of list
                                      (parent ?parent)
-                                     (body mtlr
+                                     (body move
+                                           lr
                                            iv0))))
 (defrule lisp->intermediary::make-swap-lr-register-lr-first
          (declare (salience 1))
@@ -1343,7 +1345,8 @@
                                                        ?stack))
                               (make-instance of list
                                              (parent ?n)
-                                             (contents mtlr
+                                             (contents move
+                                                       lr
                                                        iv0)))))
 
 (defrule lisp->intermediary::push-lr
@@ -1360,8 +1363,9 @@
                         (parent ?p)
                         (body (make-instance of list
                                              (parent ?n)
-                                             (contents mflr
-                                                       iv0))
+                                             (contents move
+                                                       iv0
+                                                       lr))
                               (make-instance of list
                                              (parent ?n)
                                              (contents push
@@ -1434,9 +1438,32 @@
                                                        ?stack))
                               (make-instance of list
                                              (parent ?n)
-                                             (contents recr 
+                                             (contents move
+                                                       predicates
                                                        iv0)))))
 
+
+(defrule lisp->intermediary::move-predicates-to-register
+         (declare (salience 1))
+         ?f <- (object (is-a list)
+                       (contents move
+                                 ?register
+                                 predicates))
+         =>
+         (modify-instance ?f
+                          (contents svcr
+                                    ?register)))
+
+(defrule lisp->intermediary::move-register-to-predicates
+         (declare (salience 1))
+         ?f <- (object (is-a list)
+                       (contents move
+                                 predicates
+                                 ?register))
+         =>
+         (modify-instance ?f
+                          (contents recr 
+                                    ?register)))
 
 (defrule lisp->intermediary::push-predicate-registers
          (declare (salience 1))
@@ -1454,10 +1481,103 @@
                         (parent ?p)
                         (body (make-instance of list
                                              (parent ?n)
-                                             (contents svcr
-                                                       iv0))
+                                             (contents move
+                                                       iv0
+                                                       predicates))
                               (make-instance of list
                                              (parent ?n)
                                              (contents push
                                                        ?stack
                                                        iv0)))))
+
+(defrule lisp->intermediary::store-predicate-registers
+         (declare (salience 1))
+         ?f <- (object (is-a list)
+                       (contents st
+                                 ?address
+                                 predicates)
+                       (name ?n)
+                       (parent ?p))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?n of simple-container
+                        (parent ?p)
+                        (body (make-instance of list
+                                             (parent ?n)
+                                             (contents move
+                                                       iv0
+                                                       predicates))
+                              (make-instance of list
+                                             (parent ?n)
+                                             (contents st
+                                                       ?address
+                                                       iv0)))))
+
+(defrule lisp->intermediary::store-lr
+         (declare (salience 1))
+         ?f <- (object (is-a list)
+                       (contents st
+                                 ?address
+                                 lr)
+                       (name ?n)
+                       (parent ?p))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?n of simple-container
+                        (parent ?p)
+                        (body (make-instance of list
+                                             (parent ?n)
+                                             (contents move
+                                                       iv0
+                                                       lr))
+                              (make-instance of list
+                                             (parent ?n)
+                                             (contents st
+                                                       ?address
+                                                       iv0)))))
+
+(defrule lisp->intermediary::load-predicate-registers
+         (declare (salience 1))
+         ?f <- (object (is-a list)
+                       (contents ld
+                                 predicates
+                                 ?address)
+                       (name ?n)
+                       (parent ?p))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?n of simple-container
+                        (parent ?p)
+                        (body (make-instance of list
+                               (parent ?n)
+                               (contents ld
+                                         iv0
+                                         ?address))
+                         (make-instance of list
+                          (parent ?p)
+                          (contents move
+                                    predicates
+                                    iv0)))))
+
+(defrule lisp->intermediary::load-lr
+         (declare (salience 1))
+         ?f <- (object (is-a list)
+                       (contents ld
+                                 lr
+                                 ?address)
+                       (name ?n)
+                       (parent ?p))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?n of simple-container
+                        (parent ?p)
+                        (body (make-instance of list
+                               (parent ?n)
+                               (contents ld
+                                         iv0
+                                         ?address))
+                         (make-instance of list
+                          (parent ?p)
+                          (contents move
+                                    lr
+                                    iv0)))))

@@ -14,6 +14,8 @@
                      (mul r0 r1 r2 r3 r4)
                      (cube r0 r1)
                      (square r0 r1)
+                     (push lr into sp)
+                     (pop sp into lr)
                      (using (save-to sp)
                             (predicates r0 r1 r2 r3)
                             then
