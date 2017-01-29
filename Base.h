@@ -134,7 +134,7 @@ constexpr inline bool decodeFlag(T input) noexcept {
 
 template<typename T, typename F, T bitmask, T shiftcount>
 constexpr inline T encodeBits(T input, F value) noexcept {
-	return static_cast<T>((input & ~bitmask) | (static_cast<T>(value) << shiftcount));
+	return static_cast<T>((input & ~bitmask) | ((static_cast<T>(value) << shiftcount) & bitmask));
 }
 
 template<typename T, T mask, T shift>
@@ -289,7 +289,7 @@ inline constexpr F decodeBits(T value, T mask, T shiftcount) noexcept {
 
 template<typename T, typename F>
 inline constexpr T encodeBits(T input, F value, T bitmask, T shiftcount) noexcept {
-	return static_cast<T>((input & ~bitmask) | (static_cast<T>(value) << shiftcount));
+	return static_cast<T>((input & ~bitmask) | ((static_cast<T>(value) << shiftcount) & bitmask));
 }
 
 template<typename T>
