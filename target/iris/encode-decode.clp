@@ -17,14 +17,12 @@
                ; arg1 -> bitmask
                ; arg2 -> shiftcount
                ; ret0 -> decoded value from input
-               (using (save-to sp)
-                      (temp0)
-                      (and temp0
-                           arg0
-                           arg1)
-                      (shr ret0
-                           temp0
-                           arg2)))
+               (and ret0
+                    arg0
+                    arg1)
+               (shr ret0
+                    ret0
+                    arg2))
           (func EncodeBits
                 ; encode a series of bits into another word using the following formula
                 ; (input & ~bitmask) | ((value << shiftcount) & bitmask)
