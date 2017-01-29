@@ -20,7 +20,6 @@
                      (func foo
                            (using (save-to sp)
                                   (predicates r0 r1 r2 r3)
-                                  then
                                   (add r0 r1 r2)
                                   (add r2 r3 r3)))
                      )))
