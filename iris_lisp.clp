@@ -741,8 +741,8 @@
                     (format nil
                             "%s %s"
                             (call-next-handler)
-                            (send ?self:source-register1 
-                                  resolve)))
+                            (str-cat (send ?self:source-register1 
+                                           resolve))))
 
 (defclass lisp->intermediary::three-argument-instruction
   (is-a instruction-with-destination-source0-and-source1))
@@ -778,6 +778,7 @@
                     ?output)
 
 (defrule lisp->intermediary::construct-alias
+         (declare (salience ?*priority:first*))
          ?f <- (object (is-a list)
                        (contents alias
                                  ?target
@@ -1392,7 +1393,6 @@
                        (contents using
                                  ?stack-info
                                  ?registers-to-preserve
-                                 then
                                  $?body)
                        (name ?n)
                        (parent ?p))
@@ -1414,23 +1414,21 @@
          (progn$ (?a $?registers)
                  (bind ?pre
                        ?pre
-                       (make-instance of list
-                                      (parent ?n)
-                                      (contents push 
-                                                ?stack 
-                                                ?a)))
+                       (mk-list ?n
+                                push
+                                ?stack
+                                ?a))
                  (bind ?post
-                       (make-instance of list
-                                      (parent ?n)
-                                      (contents pop
-                                                ?a
-                                                ?stack))
+                       (mk-list ?n
+                                pop
+                                ?a
+                                ?stack)
                        ?post))
-         (make-instance ?n of simple-container
-                        (parent ?p)
-                        (body ?pre
-                              ?body
-                              ?post)))
+         (mk-container ?n
+                       ?p
+                       ?pre
+                       ?body
+                       ?post))
 
 (defrule lisp->intermediary::pop-predicate-registers
          (declare (salience 1))
