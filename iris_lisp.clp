@@ -975,8 +975,7 @@
                         (destination-register ?destination)))
 (defrule lisp->intermediary::construct-zero-register-instruction
          ?f <- (object (is-a list)
-                       (contents ?operation
-                                 ?destination)
+                       (contents ?operation)
                        (name ?n)
                        (parent ?p))
          (zero-register-operation ?operation)
@@ -984,8 +983,7 @@
          (unmake-instance ?f)
          (make-instance ?n of zero-argument-instruction 
                         (parent ?p)
-                        (title ?operation)
-                        (destination-register ?destination)))
+                        (title ?operation)))
 
 (defrule lisp->intermediary::construct-two-register-instruction
          ?f <- (object (is-a list)

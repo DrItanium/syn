@@ -17,11 +17,12 @@
                      (push lr into sp)
                      (pop sp into lr)
                      (memswap r32 r33)
-                     (using (save-to sp)
-                            (predicates r0 r1 r2 r3)
-                            then
-                            (add r0 r1 r2)
-                            (add r2 r3 r3))
+                     (func foo
+                           (using (save-to sp)
+                                  (predicates r0 r1 r2 r3)
+                                  then
+                                  (add r0 r1 r2)
+                                  (add r2 r3 r3)))
                      )))
 
 (section data
