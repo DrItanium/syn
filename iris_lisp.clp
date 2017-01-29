@@ -1563,18 +1563,17 @@
                        (parent ?p))
          =>
          (unmake-instance ?f)
-         (make-instance ?n of simple-container
-                        (parent ?p)
-                        (body (make-instance of list
-                                             (parent ?n)
-                                             (contents ld
-                                                       iv0
-                                                       ?address))
-                              (make-instance of list
-                                             (parent ?p)
-                                             (contents move
-                                                       predicates
-                                                       iv0)))))
+         (mk-container ?n
+                       ?p
+                       (mk-list ?n
+                                ld
+                                iv0
+                                ?address)
+                       (mk-list ?n
+                                move
+                                predicates
+                                iv0)))
+
 
 (defrule lisp->intermediary::load-lr
          (declare (salience 1))
@@ -1586,18 +1585,16 @@
                        (parent ?p))
          =>
          (unmake-instance ?f)
-         (make-instance ?n of simple-container
-                        (parent ?p)
-                        (body (make-instance of list
-                                             (parent ?n)
-                                             (contents ld
-                                                       iv0
-                                                       ?address))
-                              (make-instance of list
-                                             (parent ?p)
-                                             (contents move
-                                                       lr
-                                                       iv0)))))
+         (mk-container ?n
+                       ?p
+                       (mk-list ?n
+                                ld
+                                iv0
+                                ?address)
+                       (mk-list ?n
+                                move
+                                lr
+                                iv0)))
 
 (defrule lisp->intermediary::memswap-data
          (declare (salience 1))
@@ -1627,3 +1624,76 @@
                                 st 
                                 ?register0 
                                 iv1)))
+
+(defrule lisp->intermediary::terminate
+         ?f <- (object (is-a list)
+                       (contents terminate)
+                       (name ?n)
+                       (parent ?p))
+         =>
+         (unmake-instance ?f)
+         (mk-container ?n
+                       ?p
+                       (mk-list ?n
+                                set
+                                iv0
+                                0x0000)
+                       (mk-list ?n
+                                stio
+                                iv0
+                                iv0)))
+
+(defrule lisp->intermediary::putc
+         ?f <- (object (is-a list)
+                       (contents putc
+                                 ?register)
+                       (name ?n)
+                       (parent ?p))
+         =>
+         (unmake-instance ?f)
+         (mk-container ?n
+                       ?p
+                       (mk-list ?n
+                                set
+                                iv0
+                                0x0001)
+                       (mk-list ?n
+                                stio
+                                iv0
+                                ?register)))
+
+(defrule lisp->intermediary::getc
+         ?f <- (object (is-a list)
+                       (contents getc
+                                 ?register)
+                       (name ?n)
+                       (parent ?p))
+         =>
+         (unmake-instance ?f)
+         (mk-container ?n
+                       ?p
+                       (mk-list ?n
+                                set
+                                iv0
+                                0x0001)
+                       (mk-list ?n
+                                ldio
+                                ?register
+                                iv0)))
+
+
+(defrule lisp->intermediary::parse-func
+         ?f <- (object (is-a list)
+                       (contents func
+                                 ?name
+                                 $?body)
+                       (name ?n)
+                       (parent ?p))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?n of label
+                        (parent ?p)
+                        (title ?name)
+                        (body ?body
+                              (mk-list ?n
+                                       ret))))
