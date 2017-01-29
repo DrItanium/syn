@@ -1,6 +1,6 @@
 ; lower from lisp structures to a simpler format
 
-(defmodule lisp->intermediary
+(defmodule lower
            (import cortex
                    ?ALL)
            (import lisp-parse

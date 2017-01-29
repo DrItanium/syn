@@ -1,4 +1,4 @@
-(defclass lisp->intermediary::has-reference
+(defclass lower::has-reference
   (is-a thing)
   (slot reference
         (type INSTANCE)
@@ -10,19 +10,19 @@
                     ()
                     ?self)
 
-(defclass lisp->intermediary::reference-node
+(defclass lower::reference-node
   (is-a node
         has-title
         has-reference))
-(defclass lisp->intermediary::composite-reference-node
+(defclass lower::composite-reference-node
   (is-a reference-node
         composite-node))
-(defclass lisp->intermediary::body
+(defclass lower::body
   (is-a composite-node
         has-title))
-(defclass lisp->intermediary::molecule
+(defclass lower::molecule
   (is-a composite-node))
-(defclass lisp->intermediary::atom
+(defclass lower::atom
   (is-a composite-node
         has-title)
   (slot double-wide
@@ -31,51 +31,51 @@
                          TRUE)
         (visibility public)
         (storage local)))
-(defclass lisp->intermediary::has-destination
+(defclass lower::has-destination
   (is-a thing)
   (slot destination
         (visibility public)
         (storage local)
         (default ?NONE)))
 
-(defclass lisp->intermediary::has-source0
+(defclass lower::has-source0
   (is-a thing)
   (slot source0
         (visibility public)
         (storage local)
         (default ?NONE)))
 
-(defclass lisp->intermediary::has-source1
+(defclass lower::has-source1
   (is-a thing)
   (slot source1
         (visibility public)
         (storage local)
         (default ?NONE)))
 
-(defclass lisp->intermediary::two-argument-operation
+(defclass lower::two-argument-operation
   (is-a atom
         has-destination
         has-source0))
 
-(defclass lisp->intermediary::one-argument-operation
+(defclass lower::one-argument-operation
   (is-a atom
         has-destination))
 
-(defclass lisp->intermediary::three-argument-operation
+(defclass lower::three-argument-operation
   (is-a atom
         has-destination
         has-source0
         has-source1))
 
 
-(defclass lisp->intermediary::special-register-action
+(defclass lower::special-register-action
   (is-a node
         has-title)
   (slot target-register
         (visibility public)
         (storage local)
         (default ?NONE)))
-(defclass lisp->intermediary::data-value
+(defclass lower::data-value
   (is-a node
         has-title)
   (slot value
@@ -83,7 +83,7 @@
         (storage local)
         (default ?NONE)))
 
-(deffacts lisp->intermediary::three-argument-ops
+(deffacts lower::three-argument-ops
           (three-argument-instruction add aliases: !add)
           (three-argument-instruction sub aliases: !sub)
           (three-argument-instruction div aliases: !div)
@@ -106,7 +106,7 @@
           (three-argument-instruction system-call aliases: !sys))
 
 
-(deffacts lisp->intermediary::two-argument-ops
+(deffacts lower::two-argument-ops
           (two-argument-instruction swap aliases: !swap)
           (two-argument-instruction set aliases: !set)
           (two-argument-instruction move aliases: !move)
@@ -114,10 +114,10 @@
           (two-argument-instruction conditional-branch aliases: !branch-if)
           (two-argument-instruction conditional-branch-link aliases: !branch-if-link))
 
-(deffacts lisp->intermediary::one-argument-ops
+(deffacts lower::one-argument-ops
           (one-argument-instruction unconditional-branch aliases: !branch))
 
-(defrule lisp->intermediary::construct-body
+(defrule lower::construct-body
          ?f <- (object (is-a list)
                        (parent ?p)
                        (contents body ?title
@@ -129,7 +129,7 @@
                         (parent ?p)
                         (title ?title)
                         (contents $?children)))
-(defrule lisp->intermediary::construct-molecule
+(defrule lower::construct-molecule
          ?f <- (object (is-a list)
                        (parent ?p)
                        (contents molecule $?rest)
@@ -140,7 +140,7 @@
                         (parent ?p)
                         (contents ?rest)))
 
-(defrule lisp->intermediary::construct-atom
+(defrule lower::construct-atom
          ?f <- (object (is-a list)
                        (parent ?molecule)
                        (contents ?title $?rest)
@@ -154,7 +154,7 @@
                         (title ?title)
                         (contents $?rest)))
 
-(defrule lisp->intermediary::mark-atom-double-wide-operation-from-immediate
+(defrule lower::mark-atom-double-wide-operation-from-immediate
          ?f <- (object (is-a atom)
                        (double-wide FALSE)
                        (contents $? ?wide-op))
@@ -167,7 +167,7 @@
 
 
 
-(defrule lisp->intermediary::mark-special-register-action
+(defrule lower::mark-special-register-action
          ?f <- (object (is-a list)
                        (parent ?atom)
                        (contents ?title&stack|memory ?target)
@@ -179,7 +179,7 @@
                         (title ?title)
                         (target-register ?target)))
 
-(defrule lisp->intermediary::mark-data-value
+(defrule lower::mark-data-value
          ?f <- (object (is-a list)
                        (parent ?p)
                        (contents ?width&:(not (neq ?width
@@ -204,7 +204,7 @@
                         (title ?width)
                         (value ?value)))
 
-(defrule lisp->intermediary::mark-atom-double-wide-operation-from-immediate
+(defrule lower::mark-atom-double-wide-operation-from-immediate
          ?f <- (object (is-a atom)
                        (double-wide FALSE)
                        (source0 ?wide-op))
@@ -216,7 +216,7 @@
                           (double-wide TRUE)))
 
 
-(defrule lisp->intermediary::generate-three-argument-operation:atom
+(defrule lower::generate-three-argument-operation:atom
          (declare (salience 2))
          ?f <- (object (is-a atom)
                        (title ?title)
@@ -239,7 +239,7 @@
                         (source1 ?src1)
                         (contents $?rest)))
 
-(defrule lisp->intermediary::generate-two-argument-operation:atom
+(defrule lower::generate-two-argument-operation:atom
          (declare (salience 2))
          ?f <- (object (is-a atom)
                        (title ?title)
@@ -260,7 +260,7 @@
                         (source0 ?src)
                         (contents $?rest)))
 
-(defrule lisp->intermediary::generate-one-argument-operation:atom
+(defrule lower::generate-one-argument-operation:atom
          (declare (salience 2))
          ?f <- (object (is-a atom)
                        (title ?title)
@@ -279,7 +279,7 @@
                         (destination ?dest)
                         (contents $?rest)))
 
-(defrule lisp->intermediary::generate-three-argument-operation:list
+(defrule lower::generate-three-argument-operation:list
          (declare (salience 2))
          ?f <- (object (is-a list)
                        (parent ?p)
@@ -300,7 +300,7 @@
                         (source1 ?src1)
                         (contents $?rest)))
 
-(defrule lisp->intermediary::generate-two-argument-operation:list
+(defrule lower::generate-two-argument-operation:list
          (declare (salience 2))
          ?f <- (object (is-a list)
                        (parent ?p)
@@ -319,7 +319,7 @@
                         (source0 ?src)
                         (contents $?rest)))
 
-(defrule lisp->intermediary::generate-one-argument-operation:list
+(defrule lower::generate-one-argument-operation:list
          (declare (salience 2))
          ?f <- (object (is-a list)
                        (parent ?p)
@@ -337,15 +337,15 @@
                         (contents $?rest)))
 
 
-(defclass lisp->intermediary::macro
+(defclass lower::macro
   (is-a composite-node
         has-title)
   (multislot arguments))
 
-(defclass lisp->intermediary::macro-call
+(defclass lower::macro-call
   (is-a composite-reference-node))
 
-(defrule lisp->intermediary::parse-macro
+(defrule lower::parse-macro
          (declare (salience 2))
          ?f <- (object (is-a list)
                        (parent ?nocare)
@@ -370,7 +370,7 @@
                         (parent ?nocare)
                         (contents $?rest)))
 
-(defrule lisp->intermediary::identify-macro-call
+(defrule lower::identify-macro-call
          (declare (salience 3))
          ?f <- (object (is-a list)
                        (parent ?nocare)
@@ -398,7 +398,7 @@
                         (reference ?raw-macro)))
 
 
-(defclass lisp->intermediary::alias
+(defclass lower::alias
   (is-a node
         has-title)
   (slot value
@@ -406,22 +406,22 @@
         (storage local)
         (default ?NONE))
   (message-handler resolve-alias primary))
-(defmessage-handler lisp->intermediary::alias resolve-alias primary
+(defmessage-handler lower::alias resolve-alias primary
                     ()
                     (send ?self:value
                           resolve-alias))
 
-(defclass lisp->intermediary::alias-reference
+(defclass lower::alias-reference
   (is-a node
         has-title
         has-reference)
   (message-handler resolve-alias primary))
-(defmessage-handler lisp->intermediary::alias-reference resolve-alias primary
+(defmessage-handler lower::alias-reference resolve-alias primary
                     ()
                     (send ?self:reference
                           resolve-alias))
 
-(defrule lisp->intermediary::parse-alias
+(defrule lower::parse-alias
          (declare (salience 2))
          ?f <- (object (is-a list)
                        (contents alias
@@ -437,7 +437,7 @@
                         (value ?name)))
 
 
-(defrule lisp->intermediary::identify-alias:list
+(defrule lower::identify-alias:list
          (declare (salience 4))
          (object (is-a list)
                  (contents ?f $?a ?item&:(symbolp ?item) $?b)
@@ -463,7 +463,7 @@
                                                    (reference ?alias))
                                     ?b)))
 
-(defrule lisp->intermediary::identify-alias:source0
+(defrule lower::identify-alias:source0
          (declare (salience 4))
          (object (is-a has-source0)
                  (source0 ?item&:(lexemep ?item))
@@ -486,7 +486,7 @@
                                                   (title ?item)
                                                   (reference ?alias)))))
 
-(defrule lisp->intermediary::identify-alias:source1
+(defrule lower::identify-alias:source1
          (declare (salience 4))
          (object (is-a has-source1)
                  (source1 ?item&:(lexemep ?item))
@@ -509,7 +509,7 @@
                                                   (title ?item)
                                                   (reference ?alias)))))
 
-(defrule lisp->intermediary::identify-alias:destination
+(defrule lower::identify-alias:destination
          (declare (salience 4))
          (object (is-a has-destination)
                  (destination ?item&:(lexemep ?item))
@@ -532,7 +532,7 @@
                                                       (title ?item)
                                                       (reference ?alias)))))
 
-(defrule lisp->intermediary::identify-alias:alias
+(defrule lower::identify-alias:alias
          (declare (salience 4))
          ?f <- (object (is-a alias)
                        (value ?v))
@@ -544,10 +544,10 @@
                           (value ?other)))
 
 
-(defclass lisp->intermediary::macro-argument-reference
+(defclass lower::macro-argument-reference
   (is-a reference-node))
 
-(defrule lisp->intermediary::make-macro-argument-reference:composite-node
+(defrule lower::make-macro-argument-reference:composite-node
          (object (is-a macro)
                  (arguments $? ?aref $?)
                  (name ?macro))
@@ -571,7 +571,7 @@
                         (title ?arg)
                         (reference ?aref)))
 
-(defrule lisp->intermediary::make-macro-argument-reference:list
+(defrule lower::make-macro-argument-reference:list
          (object (is-a macro)
                  (arguments $? ?aref $?)
                  (name ?macro))
@@ -595,7 +595,7 @@
                         (title ?arg)
                         (reference ?aref)))
 
-;(defmessage-handler lisp->intermediary::macro copy-body primary
+;(defmessage-handler lower::macro copy-body primary
 ;                    (?parent $?args)
 ;                    ; first bind the args to the arguments inside the class
 ;                    ; temporarily

@@ -4,12 +4,12 @@
 (defmessage-handler LEXEME resolve primary
                     ()
                     ?self)
-(deffunction lisp->intermediary::mk-list
+(deffunction lower::mk-list
              (?parent $?contents)
              (make-instance of list
                             (parent ?parent)
                             (contents ?contents)))
-(defclass lisp->intermediary::register
+(defclass lower::register
   (is-a node)
   (slot alias-to
         (type SYMBOL
@@ -20,14 +20,14 @@
   (message-handler resolve primary))
 
 
-(defmessage-handler lisp->intermediary::register resolve primary
+(defmessage-handler lower::register resolve primary
                     ()
                     (if (instancep ?self:alias-to) then
                       (send ?self:alias-to
                             resolve)
                       else
                       (instance-name-to-symbol (instance-name ?self))))
-(definstances lisp->intermediary::registers
+(definstances lower::registers
               (p0 of register
                   (parent FALSE))
               (p1 of register
@@ -572,7 +572,7 @@
                     (parent FALSE))
               (r255 of register
                     (parent FALSE)))
-(definstances lisp->intermediary::predefined-statements
+(definstances lower::predefined-statements
               (of list
                   (parent FALSE)
                   (contents alias 
@@ -594,7 +594,7 @@
 
 
 
-(defclass lisp->intermediary::section
+(defclass lower::section
   (is-a node
         has-body)
   (slot section
@@ -606,7 +606,7 @@
         (default ?NONE))
   (message-handler resolve primary))
 
-(defmessage-handler lisp->intermediary::section resolve primary
+(defmessage-handler lower::section resolve primary
                     ()
                     (bind ?output
                           (format nil
@@ -620,13 +620,13 @@
                     ?output)
 
 
-(defclass lisp->intermediary::label
+(defclass lower::label
   (is-a node
         has-title
         has-body)
   (message-handler resolve primary))
 
-(defmessage-handler lisp->intermediary::label resolve primary
+(defmessage-handler lower::label resolve primary
                     ()
                     (bind ?output
                           (format nil
@@ -638,7 +638,7 @@
                                   (send ?b
                                         resolve)))
                     ?output)
-(defclass lisp->intermediary::org
+(defclass lower::org
   (is-a node
         has-body)
   (slot address
@@ -647,7 +647,7 @@
         (default ?NONE))
   (message-handler resolve primary))
 
-(defmessage-handler lisp->intermediary::org resolve primary
+(defmessage-handler lower::org resolve primary
                     ()
                     (bind ?output
                           (format nil
@@ -660,7 +660,7 @@
                                         resolve)))
                     ?output)
 
-(defclass lisp->intermediary::word
+(defclass lower::word
   (is-a node)
   (slot value
         (visibility public)
@@ -668,57 +668,57 @@
         (default ?NONE))
   (message-handler resolve primary))
 
-(defmessage-handler lisp->intermediary::word resolve primary
+(defmessage-handler lower::word resolve primary
                     ()
                     (format nil
                             ".word %s"
                             (dynamic-get value)))
 
-(defclass lisp->intermediary::instruction
+(defclass lower::instruction
   (is-a node
         has-title)
   (message-handler resolve-arguments primary)
   (message-handler resolve primary))
 
-(defmessage-handler lisp->intermediary::instruction resolve primary
+(defmessage-handler lower::instruction resolve primary
                     ()
                     (format nil 
                             "%s %s"
                             (dynamic-get title)
                             (send ?self 
                                   resolve-arguments)))
-(defmessage-handler lisp->intermediary::instruction resolve-arguments primary
+(defmessage-handler lower::instruction resolve-arguments primary
                     ()
                     "")
 
-(defclass lisp->intermediary::zero-argument-instruction
+(defclass lower::zero-argument-instruction
   (is-a instruction))
 
-(defclass lisp->intermediary::instruction-with-destination
+(defclass lower::instruction-with-destination
   (is-a instruction)
   (slot destination-register
         (visibility public)
         (storage local)
         (default ?NONE)))
 
-(defmessage-handler lisp->intermediary::instruction-with-destination resolve-arguments primary
+(defmessage-handler lower::instruction-with-destination resolve-arguments primary
                     ()
                     (format nil
                             "%s"
                             (send ?self:destination-register
                                   resolve)))
 
-(defclass lisp->intermediary::one-argument-instruction
+(defclass lower::one-argument-instruction
   (is-a instruction-with-destination))
 
-(defclass lisp->intermediary::instruction-with-destination-and-source0
+(defclass lower::instruction-with-destination-and-source0
   (is-a instruction-with-destination)
   (slot source-register0
         (visibility public)
         (storage local)
         (default ?NONE)))
 
-(defmessage-handler lisp->intermediary::instruction-with-destination-and-source0 resolve-arguments primary
+(defmessage-handler lower::instruction-with-destination-and-source0 resolve-arguments primary
                     ()
                     (format nil
                             "%s %s"
@@ -726,17 +726,17 @@
                             (send ?self:source-register0
                                   resolve)))
 
-(defclass lisp->intermediary::two-argument-instruction
+(defclass lower::two-argument-instruction
   (is-a instruction-with-destination-and-source0))
 
-(defclass lisp->intermediary::instruction-with-destination-source0-and-source1
+(defclass lower::instruction-with-destination-source0-and-source1
   (is-a instruction-with-destination-and-source0)
   (slot source-register1
         (visibility public)
         (storage local)
         (default ?NONE)))
 
-(defmessage-handler lisp->intermediary::instruction-with-destination-source0-and-source1 resolve-arguments primary
+(defmessage-handler lower::instruction-with-destination-source0-and-source1 resolve-arguments primary
                     ()
                     (format nil
                             "%s %s"
@@ -744,29 +744,29 @@
                             (str-cat (send ?self:source-register1 
                                            resolve))))
 
-(defclass lisp->intermediary::three-argument-instruction
+(defclass lower::three-argument-instruction
   (is-a instruction-with-destination-source0-and-source1))
 
-(defclass lisp->intermediary::instruction-with-destination-source0-source1-and-source2
+(defclass lower::instruction-with-destination-source0-source1-and-source2
   (is-a instruction-with-destination-source0-and-source1)
   (slot source-register2
         (visibility public)
         (storage local)
         (default ?NONE)))
-(defclass lisp->intermediary::four-argument-instruction
+(defclass lower::four-argument-instruction
   (is-a instruction-with-destination-source0-source1-and-source2))
 
-(defclass lisp->intermediary::simple-container
+(defclass lower::simple-container
   (is-a node
         has-body))
 
-(deffunction lisp->intermediary::mk-container
+(deffunction lower::mk-container
              (?name ?parent $?body)
              (make-instance ?name of simple-container
                             (parent ?parent)
                             (body ?body)))
 
-(defmessage-handler lisp->intermediary::simple-container resolve primary
+(defmessage-handler lower::simple-container resolve primary
                     ()
                     (bind ?output
                           (create$))
@@ -777,7 +777,7 @@
                                         resolve)))
                     ?output)
 
-(defrule lisp->intermediary::construct-alias
+(defrule lower::construct-alias
          (declare (salience ?*priority:first*))
          ?f <- (object (is-a list)
                        (contents alias
@@ -795,7 +795,7 @@
                                     else
                                     ?target))))
 
-(defrule lisp->intermediary::mark-register
+(defrule lower::mark-register
          (declare (salience 100))
          ?f <- (object (is-a list)
                        (contents $?a
@@ -809,7 +809,7 @@
                                     (symbol-to-instance-name ?register)
                                     ?b)))
 
-(defrule lisp->intermediary::construct-section
+(defrule lower::construct-section
          ?f <- (object (is-a list)
                        (contents section
                                  ?section&:(not (neq ?section
@@ -825,7 +825,7 @@
                         (section ?section)
                         (parent ?p)))
 
-(defrule lisp->intermediary::make-org
+(defrule lower::make-org
          ?f <- (object (is-a list)
                        (contents org
                                  ?address
@@ -838,7 +838,7 @@
                         (address ?address)
                         (parent ?p)
                         (body ?body)))
-(defrule lisp->intermediary::make-label
+(defrule lower::make-label
          ?f <- (object (is-a list)
                        (contents label
                                  ?title
@@ -854,7 +854,7 @@
 
 
 
-(defrule lisp->intermediary::make-word
+(defrule lower::make-word
          ?f <- (object (is-a list)
                        (contents word
                                  ?value)
@@ -866,7 +866,7 @@
                         (parent ?p)
                         (value ?value)))
 
-(defrule lisp->intermediary::construct-output-string
+(defrule lower::construct-output-string
          (declare (salience -1000))
          (object (is-a file)
                  (name ?file))
@@ -876,7 +876,7 @@
          (progn$ (?l (send ?f resolve))
                  (printout t ?l crlf)))
 
-(deffacts lisp->intermediary::register-operations
+(deffacts lower::register-operations
           (four-register-operation eq)
           (four-register-operation eqi)
           (four-register-operation ne)
@@ -961,7 +961,7 @@
           (zero-register-operation blrl)
           )
 
-(defrule lisp->intermediary::construct-one-register-instruction
+(defrule lower::construct-one-register-instruction
          ?f <- (object (is-a list)
                        (contents ?operation
                                  ?destination)
@@ -974,7 +974,7 @@
                         (parent ?p)
                         (title ?operation)
                         (destination-register ?destination)))
-(defrule lisp->intermediary::construct-zero-register-instruction
+(defrule lower::construct-zero-register-instruction
          ?f <- (object (is-a list)
                        (contents ?operation)
                        (name ?n)
@@ -986,7 +986,7 @@
                         (parent ?p)
                         (title ?operation)))
 
-(defrule lisp->intermediary::construct-two-register-instruction
+(defrule lower::construct-two-register-instruction
          ?f <- (object (is-a list)
                        (contents ?operation
                                  ?destination
@@ -1002,7 +1002,7 @@
                         (destination-register ?destination)
                         (source-register0 ?source0)))
 
-(defrule lisp->intermediary::construct-three-register-instruction
+(defrule lower::construct-three-register-instruction
          ?f <- (object (is-a list)
                        (contents ?operation
                                  ?destination
@@ -1020,7 +1020,7 @@
                         (source-register0 ?source0)
                         (source-register1 ?source1)))
 
-(defrule lisp->intermediary::construct-four-register-instruction
+(defrule lower::construct-four-register-instruction
          ?f <- (object (is-a list)
                        (contents ?operation
                                  ?destination
@@ -1042,7 +1042,7 @@
 ;---------------------------------------------------------
 ; macros and shorthand operations
 ;---------------------------------------------------------
-(defrule lisp->intermediary::parse-push-operation-style1
+(defrule lower::parse-push-operation-style1
          ?f <- (object (is-a list)
                        (contents push
                                  ?target
@@ -1054,7 +1054,7 @@
                                     ?stack
                                     ?target)))
 
-(defrule lisp->intermediary::parse-pop-operation-style1
+(defrule lower::parse-pop-operation-style1
          ?f <- (object (is-a list)
                        (contents pop
                                  ?stack
@@ -1068,7 +1068,7 @@
                                     ?target
                                     ?stack)))
 
-(defrule lisp->intermediary::parse-set-operation-alternate-style
+(defrule lower::parse-set-operation-alternate-style
          ?f <- (object (is-a list)
                        (contents set
                                  ?target
@@ -1084,7 +1084,7 @@
                         (destination-register ?target)
                         (source-register0 ?value)))
 
-(defrule lisp->intermediary::parse-call-unconditional-operation-register-version
+(defrule lower::parse-call-unconditional-operation-register-version
          ?f <- (object (is-a list)
                        (contents call
                                  ?register))
@@ -1095,7 +1095,7 @@
                           (contents bl
                                     ?register)))
 
-(defrule lisp->intermediary::parse-call-unconditional-operation-immediate-version
+(defrule lower::parse-call-unconditional-operation-immediate-version
          ?f <- (object (is-a list)
                        (contents call
                                  ?target&:(or (symbolp ?target)
@@ -1105,14 +1105,14 @@
                           (contents bil
                                     ?target)))
 
-(defrule lisp->intermediary::parse-return-instruction
+(defrule lower::parse-return-instruction
          ?f <- (object (is-a list)
                        (contents ret))
          =>
          (modify-instance ?f
                           (contents blr)))
 
-(defrule lisp->intermediary::parse-call-lr
+(defrule lower::parse-call-lr
          (declare (salience 1))
          ?f <- (object (is-a list)
                        (contents call lr))
@@ -1120,7 +1120,7 @@
          (modify-instance ?f
                           (contents blrl)))
 
-(defrule lisp->intermediary::parse-move-to-lr-alt
+(defrule lower::parse-move-to-lr-alt
          (declare (salience 1))
          ?f <- (object (is-a list)
                        (contents move
@@ -1130,7 +1130,7 @@
          (modify-instance ?f
                           (contents mtlr 
                                     ?register)))
-(defrule lisp->intermediary::parse-move-from-lr-alt
+(defrule lower::parse-move-from-lr-alt
          (declare (salience 1))
          ?f <- (object (is-a list)
                        (contents move
@@ -1141,7 +1141,7 @@
                           (contents mflr
                                     ?register)))
 
-(defrule lisp->intermediary::parse-move-to-ip-alt
+(defrule lower::parse-move-to-ip-alt
          (declare (salience 1))
          ?f <- (object (is-a list)
                        (contents move
@@ -1151,7 +1151,7 @@
          (modify-instance ?f
                           (contents mtip 
                                     ?register)))
-(defrule lisp->intermediary::parse-move-from-ip-alt
+(defrule lower::parse-move-from-ip-alt
          (declare (salience 1))
          ?f <- (object (is-a list)
                        (contents move
@@ -1162,7 +1162,7 @@
                           (contents mfip
                                     ?register)))
 
-(deffunction lisp->intermediary::make-swap-lr
+(deffunction lower::make-swap-lr
              (?parent ?reg)
              (create$ (make-instance of list
                                      (parent ?parent)
@@ -1179,7 +1179,7 @@
                                      (body move
                                            lr
                                            iv0))))
-(defrule lisp->intermediary::make-swap-lr-register-lr-first
+(defrule lower::make-swap-lr-register-lr-first
          (declare (salience 1))
          ?f <- (object (is-a list)
                        (contents swap
@@ -1196,7 +1196,7 @@
                         (body (make-swap-lr ?name
                                             ?register))))
 
-(defrule lisp->intermediary::make-swap-lr-register-lr-second
+(defrule lower::make-swap-lr-register-lr-second
          (declare (salience 2))
          ?f <- (object (is-a list)
                        (contents swap
@@ -1211,7 +1211,7 @@
                           (contents swap
                                     lr
                                     ?register)))
-(deffacts lisp->intermediary::nary-register-macros
+(deffacts lower::nary-register-macros
           (nary-register-macro add)
           (nary-register-macro sub)
           (nary-register-macro mul)
@@ -1227,7 +1227,7 @@
           (nary-register-macro min)
           (nary-register-macro max))
 
-(defrule lisp->intermediary::parse-nary-argument-macro
+(defrule lower::parse-nary-argument-macro
          ?f <- (object (is-a list)
                        (contents ?operation
                                  ?destination
@@ -1256,7 +1256,7 @@
                                                        iv0
                                                        ?sourceN)))))
 
-(defrule lisp->intermediary::parse-increment-macro
+(defrule lower::parse-increment-macro
          ?f <- (object (is-a list)
                        (contents incr
                                  ?destination
@@ -1270,7 +1270,7 @@
                                     ?register
                                     1)))
 
-(defrule lisp->intermediary::parse-decrement-macro
+(defrule lower::parse-decrement-macro
          ?f <- (object (is-a list)
                        (contents decr
                                  ?destination
@@ -1283,7 +1283,7 @@
                                     ?destination
                                     ?register
                                     1)))
-(defrule lisp->intermediary::parse-double-macro
+(defrule lower::parse-double-macro
          ?f <- (object (is-a list)
                        (contents double
                                  ?destination
@@ -1295,7 +1295,7 @@
                                     ?register
                                     ?register)))
 
-(defrule lisp->intermediary::parse-triple-macro
+(defrule lower::parse-triple-macro
          ?f <- (object (is-a list)
                        (contents triple 
                                  ?destination
@@ -1307,7 +1307,7 @@
                                     ?register
                                     3)))
 
-(defrule lisp->intermediary::parse-halve-macro
+(defrule lower::parse-halve-macro
          ?f <- (object (is-a list)
                        (contents halve
                                  ?destination
@@ -1318,7 +1318,7 @@
                                     ?destination
                                     ?register
                                     2)))
-(defrule lisp->intermediary::parse-square-macro
+(defrule lower::parse-square-macro
          ?f <- (object (is-a list)
                        (contents square
                                  ?destination
@@ -1329,7 +1329,7 @@
                                     ?destination
                                     ?register
                                     ?register)))
-(defrule lisp->intermediary::parse-cube-macro
+(defrule lower::parse-cube-macro
          ?f <- (object (is-a list)
                        (contents cube
                                  ?destination
@@ -1342,7 +1342,7 @@
                                     ?register
                                     ?register)))
 
-(defrule lisp->intermediary::pop-lr
+(defrule lower::pop-lr
          (declare (salience 1))
          ?f <- (object (is-a list)
                        (contents pop
@@ -1365,7 +1365,7 @@
                                                        lr
                                                        iv0)))))
 
-(defrule lisp->intermediary::push-lr
+(defrule lower::push-lr
          (declare (salience 1))
          ?f <- (object (is-a list)
                        (contents push
@@ -1388,7 +1388,7 @@
                                                        ?stack
                                                        iv0)))))
 
-(defrule lisp->intermediary::parse-using-block
+(defrule lower::parse-using-block
          ?f <- (object (is-a list)
                        (contents using
                                  ?stack-info
@@ -1430,7 +1430,7 @@
                        ?body
                        ?post))
 
-(defrule lisp->intermediary::pop-predicate-registers
+(defrule lower::pop-predicate-registers
          (declare (salience 1))
          ?f <- (object (is-a list)
                        (contents pop
@@ -1456,7 +1456,7 @@
                                                        iv0)))))
 
 
-(defrule lisp->intermediary::move-predicates-to-register
+(defrule lower::move-predicates-to-register
          (declare (salience 1))
          ?f <- (object (is-a list)
                        (contents move
@@ -1467,7 +1467,7 @@
                           (contents svcr
                                     ?register)))
 
-(defrule lisp->intermediary::move-register-to-predicates
+(defrule lower::move-register-to-predicates
          (declare (salience 1))
          ?f <- (object (is-a list)
                        (contents move
@@ -1478,7 +1478,7 @@
                           (contents recr 
                                     ?register)))
 
-(defrule lisp->intermediary::push-predicate-registers
+(defrule lower::push-predicate-registers
          (declare (salience 1))
          ?f <- (object (is-a list)
                        (contents push
@@ -1503,7 +1503,7 @@
                                                        ?stack
                                                        iv0)))))
 
-(defrule lisp->intermediary::store-predicate-registers
+(defrule lower::store-predicate-registers
          (declare (salience 1))
          ?f <- (object (is-a list)
                        (contents st
@@ -1526,7 +1526,7 @@
                                                        ?address
                                                        iv0)))))
 
-(defrule lisp->intermediary::store-lr
+(defrule lower::store-lr
          (declare (salience 1))
          ?f <- (object (is-a list)
                        (contents st
@@ -1549,7 +1549,7 @@
                                                        ?address
                                                        iv0)))))
 
-(defrule lisp->intermediary::load-predicate-registers
+(defrule lower::load-predicate-registers
          (declare (salience 1))
          ?f <- (object (is-a list)
                        (contents ld
@@ -1571,7 +1571,7 @@
                                 iv0)))
 
 
-(defrule lisp->intermediary::load-lr
+(defrule lower::load-lr
          (declare (salience 1))
          ?f <- (object (is-a list)
                        (contents ld
@@ -1592,7 +1592,7 @@
                                 lr
                                 iv0)))
 
-(defrule lisp->intermediary::memswap-data
+(defrule lower::memswap-data
          (declare (salience 1))
          ?f <- (object (is-a list)
                        (contents memswap
@@ -1621,7 +1621,7 @@
                                 ?register0 
                                 iv1)))
 
-(defrule lisp->intermediary::terminate
+(defrule lower::terminate
          ?f <- (object (is-a list)
                        (contents terminate)
                        (name ?n)
@@ -1639,7 +1639,7 @@
                                 iv0
                                 iv0)))
 
-(defrule lisp->intermediary::putc
+(defrule lower::putc
          ?f <- (object (is-a list)
                        (contents putc
                                  ?register)
@@ -1658,7 +1658,7 @@
                                 iv0
                                 ?register)))
 
-(defrule lisp->intermediary::getc
+(defrule lower::getc
          ?f <- (object (is-a list)
                        (contents getc
                                  ?register)
@@ -1678,7 +1678,7 @@
                                 iv0)))
 
 
-(defrule lisp->intermediary::parse-func
+(defrule lower::parse-func
          ?f <- (object (is-a list)
                        (contents func
                                  ?name

@@ -3,13 +3,13 @@
                    ?ALL)
            (import lisp-parse
                    ?ALL)
-           (import lisp->intermediary
+           (import lower
                    ?ALL))
 (deffunction MAIN::parse-file
              (?path)
              (assert (parse-request (path ?path)))
              (focus lisp-parse
-                    lisp->intermediary)
+                    lower)
              (run)
              TRUE)
 
