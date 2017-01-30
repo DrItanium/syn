@@ -7,10 +7,11 @@
 #include <cstdint>
 #include <memory>
 namespace iris {
-	typedef uint16_t word;
-	typedef uint32_t dword;
-	typedef dword raw_instruction;
-	typedef word immediate;
+    using word = uint16_t;
+    using dword = uint32_t;
+    using raw_instruction = dword;
+    using immediate = word;
+    using QuadWord = uint64_t;
 	enum ArchitectureConstants  {
 		RegisterCount = 256,
 		AddressMax = 0xFFFF,
@@ -52,7 +53,7 @@ namespace iris {
 	using ErrorStorage = WordMemorySpace<ArchitectureConstants::RegistersToSaveOnError>;
 	class Core : public syn::Core {
 		public:
-			Core(uint64_t ipDataMask = 0x000000000000FFFF, uint64_t lrDataMask = 0x000000000000FFFF) noexcept;
+			Core(QuadWord ipDataMask = 0x000000000000FFFF, QuadWord lrDataMask = 0x000000000000FFFF) noexcept;
 			virtual ~Core();
 			virtual void initialize() override;
 			virtual void installprogram(std::istream& stream) override;
@@ -70,10 +71,10 @@ namespace iris {
 			word readRegister(byte index);
 			virtual bool cycle() override;
 		private:
-            uint64_t getInstructionPointer() const noexcept { return _ip; }
-            void setInstructionPointer(uint64_t value) noexcept { _ip = syn::decodeBits<uint64_t, uint64_t>(value, _ipDataMask, 0); }
-            uint64_t getLinkRegister() const noexcept { return _lr; }
-            void setLinkRegister(uint64_t value) noexcept { _lr = syn::decodeBits<uint64_t, uint64_t>(value, _lrDataMask, 0); }
+            QuadWord getInstructionPointer() const noexcept { return _ip; }
+            void setInstructionPointer(QuadWord value) noexcept { _ip = syn::decodeBits<QuadWord, QuadWord>(value, _ipDataMask, 0); }
+            QuadWord getLinkRegister() const noexcept { return _lr; }
+            void setLinkRegister(QuadWord value) noexcept { _lr = syn::decodeBits<QuadWord, QuadWord>(value, _lrDataMask, 0); }
 			bool& getPredicateRegister(byte index);
             void incrementInstructionPointer() noexcept { setInstructionPointer(getInstructionPointer() + 1); }
 
@@ -150,11 +151,11 @@ namespace iris {
 			bool advanceIp;
 			raw_instruction current;
 
-			uint64_t _ip;
-			uint64_t _lr;
+			QuadWord _ip;
+			QuadWord _lr;
 			word _error;
-            uint64_t _ipDataMask;
-            uint64_t _lrDataMask;
+            QuadWord _ipDataMask;
+            QuadWord _lrDataMask;
 			IOSpace _io;
 			CompareUnit _compare;
 			ALU _alu;

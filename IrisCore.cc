@@ -5,7 +5,7 @@
 
 namespace iris {
 
-	Core::Core(uint64_t ipDataMask, uint64_t lrDataMask) noexcept : execute(true), advanceIp(true), current(0), _ip(0), _lr(0), _error(0), _ipDataMask(ipDataMask), _lrDataMask(lrDataMask), _io(0, 0xFFFF) { }
+	Core::Core(QuadWord ipDataMask, QuadWord lrDataMask) noexcept : execute(true), advanceIp(true), current(0), _ip(0), _lr(0), _error(0), _ipDataMask(ipDataMask), _lrDataMask(lrDataMask), _io(0, 0xFFFF) { }
 
 	Core::~Core() {
 	}
