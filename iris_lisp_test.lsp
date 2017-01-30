@@ -22,7 +22,9 @@
                                   (predicates r0 r1 r2 r3)
                                   (add r0 r1 r2)
                                   (add r2 r3 r3)))
-                     )))
+                     )
+                     (swap lr lr)
+              ))
 
 (section data
          (org 0x0000

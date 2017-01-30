@@ -9,6 +9,13 @@
              (make-instance of list
                             (parent ?parent)
                             (contents ?contents)))
+(deffunction lower::mk-move-op
+             (?parent ?destination ?source)
+             (mk-list ?parent
+                      move
+                      ?destination
+                      ?source))
+
 (defclass lower::register
   (is-a node)
   (slot alias-to
@@ -1137,55 +1144,6 @@
                           (contents mfip
                                     ?register)))
 
-(deffunction lower::make-swap-lr
-             (?parent ?reg)
-             (create$ (make-instance of list
-                                     (parent ?parent)
-                                     (body move
-                                           iv0
-                                           lr))
-                      (make-instance of list
-                                     (parent ?parent)
-                                     (body swap
-                                           iv0
-                                           ?reg))
-                      (make-instance of list
-                                     (parent ?parent)
-                                     (body move
-                                           lr
-                                           iv0))))
-(defrule lower::make-swap-lr-register-lr-first
-         (declare (salience 1))
-         ?f <- (object (is-a list)
-                       (contents swap
-                                 lr
-                                 ?register)
-                       (name ?name)
-                       (parent ?p))
-         (object (is-a register)
-                 (name ?register))
-         =>
-         (unmake-instance ?f)
-         (make-instance ?name of simple-container
-                        (parent ?p)
-                        (body (make-swap-lr ?name
-                                            ?register))))
-
-(defrule lower::make-swap-lr-register-lr-second
-         (declare (salience 2))
-         ?f <- (object (is-a list)
-                       (contents swap
-                                 ?register
-                                 lr)
-                       (name ?name)
-                       (parent ?p))
-         (object (is-a register)
-                 (name ?register))
-         =>
-         (modify-instance ?f 
-                          (contents swap
-                                    lr
-                                    ?register)))
 (deffacts lower::nary-register-macros
           (nary-register-macro add)
           (nary-register-macro sub)
@@ -1362,73 +1320,6 @@
 
 
 
-(defrule lower::move-predicates-to-register
-         (declare (salience 1))
-         ?f <- (object (is-a list)
-                       (contents move
-                                 ?register
-                                 predicates))
-         =>
-         (modify-instance ?f
-                          (contents svcr
-                                    ?register)))
-
-(defrule lower::move-register-to-predicates
-         (declare (salience 1))
-         ?f <- (object (is-a list)
-                       (contents move
-                                 predicates
-                                 ?register))
-         =>
-         (modify-instance ?f
-                          (contents recr 
-                                    ?register)))
-
-
-(defrule lower::store-predicate-registers
-         (declare (salience 1))
-         ?f <- (object (is-a list)
-                       (contents st
-                                 ?address
-                                 predicates)
-                       (name ?n)
-                       (parent ?p))
-         =>
-         (unmake-instance ?f)
-         (make-instance ?n of simple-container
-                        (parent ?p)
-                        (body (make-instance of list
-                                             (parent ?n)
-                                             (contents move
-                                                       iv0
-                                                       predicates))
-                              (make-instance of list
-                                             (parent ?n)
-                                             (contents st
-                                                       ?address
-                                                       iv0)))))
-
-
-(defrule lower::load-predicate-registers
-         (declare (salience 1))
-         ?f <- (object (is-a list)
-                       (contents ld
-                                 predicates
-                                 ?address)
-                       (name ?n)
-                       (parent ?p))
-         =>
-         (unmake-instance ?f)
-         (mk-container ?n
-                       ?p
-                       (mk-list ?n
-                                ld
-                                iv0
-                                ?address)
-                       (mk-list ?n
-                                move
-                                predicates
-                                iv0)))
 
 
 
@@ -1533,3 +1424,35 @@
                         (body ?body
                               (mk-list ?n
                                        ret))))
+(defrule lower::generate-nop-from-tautology-swap-or-move
+         (declare (salience ?*priority:right-after-first*))
+         ?f <- (object (is-a list)
+                       (contents swap|move
+                                 ?same
+                                 ?same)
+                       (name ?n)
+                       (parent ?p))
+         =>
+         (modify-instance ?f
+                          (contents nop)))
+
+(defrule lower::nop-macro
+         ?f <- (object (is-a list)
+                       (contents nop))
+         =>
+         (modify-instance ?f
+                          (contents addi 
+                                    iv0 
+                                    iv0 
+                                    0)))
+(defrule lower::zero-register-macro
+         ?f <- (object (is-a list)
+                       (contents zero|clear
+                                 ?register))
+         =>
+         (modify-instance ?f
+                          (contents set 
+                                    ?register 
+                                    0x0000))
+                       
+                    
