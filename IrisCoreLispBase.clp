@@ -1408,28 +1408,6 @@
                                                        ?address
                                                        iv0)))))
 
-(defrule lower::store-lr
-         (declare (salience 1))
-         ?f <- (object (is-a list)
-                       (contents st
-                                 ?address
-                                 lr)
-                       (name ?n)
-                       (parent ?p))
-         =>
-         (unmake-instance ?f)
-         (make-instance ?n of simple-container
-                        (parent ?p)
-                        (body (make-instance of list
-                                             (parent ?n)
-                                             (contents move
-                                                       iv0
-                                                       lr))
-                              (make-instance of list
-                                             (parent ?n)
-                                             (contents st
-                                                       ?address
-                                                       iv0)))))
 
 (defrule lower::load-predicate-registers
          (declare (salience 1))
@@ -1453,26 +1431,6 @@
                                 iv0)))
 
 
-(defrule lower::load-lr
-         (declare (salience 1))
-         ?f <- (object (is-a list)
-                       (contents ld
-                                 lr
-                                 ?address)
-                       (name ?n)
-                       (parent ?p))
-         =>
-         (unmake-instance ?f)
-         (mk-container ?n
-                       ?p
-                       (mk-list ?n
-                                ld
-                                iv0
-                                ?address)
-                       (mk-list ?n
-                                move
-                                lr
-                                iv0)))
 
 (defrule lower::memswap-data
          (declare (salience 1))

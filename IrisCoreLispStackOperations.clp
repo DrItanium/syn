@@ -27,51 +27,6 @@
                                     ?target
                                     ?stack)))
 
-(defrule lower::pop-lr
-         (declare (salience 1))
-         ?f <- (object (is-a list)
-                       (contents pop
-                                 lr
-                                 ?stack)
-                       (name ?n)
-                       (parent ?p))
-         =>
-         (unmake-instance ?f)
-         (make-instance ?n of simple-container
-                        (parent ?p)
-                        (body (make-instance of list
-                                             (parent ?n)
-                                             (contents pop
-                                                       iv0
-                                                       ?stack))
-                              (make-instance of list
-                                             (parent ?n)
-                                             (contents move
-                                                       lr
-                                                       iv0)))))
-
-(defrule lower::push-lr
-         (declare (salience 1))
-         ?f <- (object (is-a list)
-                       (contents push
-                                 ?stack
-                                 lr)
-                       (name ?n)
-                       (parent ?p))
-         =>
-         (unmake-instance ?f)
-         (make-instance ?n of simple-container
-                        (parent ?p)
-                        (body (make-instance of list
-                                             (parent ?n)
-                                             (contents move
-                                                       iv0
-                                                       lr))
-                              (make-instance of list
-                                             (parent ?n)
-                                             (contents push
-                                                       ?stack
-                                                       iv0)))))
 
 (defrule lower::pop-predicate-registers
          (declare (salience 1))
