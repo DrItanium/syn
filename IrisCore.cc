@@ -5,7 +5,7 @@
 
 namespace iris {
 
-	Core::Core() noexcept : execute(true), advanceIp(true), current(0), _ip(0), _lr(0), _error(0), _io(0, 0xFFFF) { }
+	Core::Core(uint64_t ipDataMask, uint64_t lrDataMask) noexcept : execute(true), advanceIp(true), current(0), _ip(0), _lr(0), _error(0), _ipDataMask(ipDataMask), _lrDataMask(lrDataMask), _io(0, 0xFFFF) { }
 
 	Core::~Core() {
 	}
@@ -61,7 +61,7 @@ namespace iris {
 			advanceIp = true;
 			dispatch();
 			if (advanceIp) {
-				++getInstructionPointer();
+                incrementInstructionPointer();
 			}
 			if (_error != 0) {
 				saveSystemState();
@@ -83,7 +83,7 @@ namespace iris {
 					throw syn::Problem("Hit another error within the interrupt handler");
 				}
 				if (advanceIp) {
-					++getInstructionPointer();
+                    incrementInstructionPointer();
 				}
 			}
 		}
@@ -220,30 +220,30 @@ namespace iris {
 				switch(operation) {
                     case JumpOp::IfThenElse:
                         cond = predicateResult();
-                        getInstructionPointer() = gpr[cond ? getSource0() : getSource1()];
+                        setInstructionPointer(gpr[cond ? getSource0() : getSource1()]);
                         break;
                     case JumpOp::IfThenElseLink:
                         cond = predicateResult();
-                        getLinkRegister() = getInstructionPointer() + 1;
-                        getInstructionPointer() = gpr[cond ? getSource0() : getSource1()];
+                        setLinkRegister(getInstructionPointer() + 1);
+                        setInstructionPointer(gpr[cond ? getSource0() : getSource1()]);
                         break;
 					case JumpOp::BranchUnconditionalLR:
-						getInstructionPointer() = getLinkRegister();
+                        setInstructionPointer(getLinkRegister());
 						break;
 					case JumpOp::BranchUnconditionalLRAndLink:
 						temporaryAddress = getInstructionPointer() + 1;
-						getInstructionPointer() = getLinkRegister();
-						getLinkRegister() = temporaryAddress;
+                        setInstructionPointer(getLinkRegister());
+                        setLinkRegister(temporaryAddress);
 						break;
 					case JumpOp::BranchConditionalLR:
 						cond = predicateResult();
-						getInstructionPointer() = cond ? getLinkRegister() : getInstructionPointer() + 1;
+                        setInstructionPointer(cond ? getLinkRegister() : getInstructionPointer() + 1);
 						break;
 					case JumpOp::BranchConditionalLRAndLink:
 						temporaryAddress = getInstructionPointer() + 1;
 						cond = predicateResult();
-						getInstructionPointer() = cond ? getLinkRegister() : temporaryAddress;
-						getLinkRegister() = cond ? temporaryAddress : getLinkRegister();
+                        setInstructionPointer(cond ? getLinkRegister() : temporaryAddress);
+                        setLinkRegister(cond ? temporaryAddress : getLinkRegister());
 						break;
 					case JumpOp::ReturnFromError:
 						returnFromError();
@@ -265,9 +265,9 @@ namespace iris {
 				} else {
 					newAddr = immediate ? getImmediate() : destinationRegister();
 				}
-				getInstructionPointer() = newAddr;
+                setInstructionPointer(newAddr);
 				if (link && cond) {
-					getLinkRegister() = ip + 1;
+                    setLinkRegister(ip + 1);
 				}
 			}
 		};
@@ -336,14 +336,14 @@ namespace iris {
 					destinationRegister() = getInstructionPointer();
 					break;
 				case MoveOp::MoveToIP:
-					getInstructionPointer() = destinationRegister();
+                    setInstructionPointer(destinationRegister());
 					advanceIp = false;
 					break;
 				case MoveOp::MoveFromLR:
 					destinationRegister() = getLinkRegister();
 					break;
 				case MoveOp::MoveToLR:
-					getLinkRegister() = destinationRegister();
+                    setLinkRegister(destinationRegister());
 					break;
 				default:
 					makeIllegalInstructionMessage("move code");

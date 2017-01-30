@@ -52,7 +52,7 @@ namespace iris {
 	using ErrorStorage = WordMemorySpace<ArchitectureConstants::RegistersToSaveOnError>;
 	class Core : public syn::Core {
 		public:
-			Core() noexcept;
+			Core(uint64_t ipDataMask = 0x000000000000FFFF, uint64_t lrDataMask = 0x000000000000FFFF) noexcept;
 			virtual ~Core();
 			virtual void initialize() override;
 			virtual void installprogram(std::istream& stream) override;
@@ -70,9 +70,13 @@ namespace iris {
 			word readRegister(byte index);
 			virtual bool cycle() override;
 		private:
-			word& getInstructionPointer() noexcept { return _ip; }
-			word& getLinkRegister() noexcept { return _lr; }
+            uint64_t getInstructionPointer() const noexcept { return _ip; }
+            void setInstructionPointer(uint64_t value) noexcept { _ip = syn::decodeBits<uint64_t, uint64_t>(value, _ipDataMask, 0); }
+            uint64_t getLinkRegister() const noexcept { return _lr; }
+            void setLinkRegister(uint64_t value) noexcept { _lr = syn::decodeBits<uint64_t, uint64_t>(value, _lrDataMask, 0); }
 			bool& getPredicateRegister(byte index);
+            void incrementInstructionPointer() noexcept { setInstructionPointer(getInstructionPointer() + 1); }
+
 		private:
 			void dispatch() noexcept;
             inline byte getDestination() const noexcept { return decodeDestination(current); }
@@ -146,9 +150,11 @@ namespace iris {
 			bool advanceIp;
 			raw_instruction current;
 
-			word _ip;
-			word _lr;
+			uint64_t _ip;
+			uint64_t _lr;
 			word _error;
+            uint64_t _ipDataMask;
+            uint64_t _lrDataMask;
 			IOSpace _io;
 			CompareUnit _compare;
 			ALU _alu;
