@@ -51,9 +51,11 @@ namespace iris {
 	using PredicateRegisterFile = syn::FixedSizeLoadStoreUnit<bool, byte, 16>;
 	using PredicateComparator = syn::Comparator<bool, bool>;
 	using ErrorStorage = WordMemorySpace<ArchitectureConstants::RegistersToSaveOnError>;
+    using InstructionPointer = syn::Register<QuadWord, ArchitectureConstants::AddressMax>;
+    using LinkRegister = syn::Register<QuadWord, ArchitectureConstants::AddressMax>;
 	class Core : public syn::Core {
 		public:
-			Core(QuadWord ipDataMask = 0x000000000000FFFF, QuadWord lrDataMask = 0x000000000000FFFF) noexcept;
+			Core() noexcept;
 			virtual ~Core();
 			virtual void initialize() override;
 			virtual void installprogram(std::istream& stream) override;
@@ -71,10 +73,10 @@ namespace iris {
 			word readRegister(byte index);
 			virtual bool cycle() override;
 		private:
-            QuadWord getInstructionPointer() const noexcept { return _ip; }
-            void setInstructionPointer(QuadWord value) noexcept { _ip = syn::decodeBits<QuadWord, QuadWord>(value, _ipDataMask, 0); }
-            QuadWord getLinkRegister() const noexcept { return _lr; }
-            void setLinkRegister(QuadWord value) noexcept { _lr = syn::decodeBits<QuadWord, QuadWord>(value, _lrDataMask, 0); }
+            QuadWord getInstructionPointer() const noexcept { return _ip.get(); }
+            void setInstructionPointer(QuadWord value) noexcept { _ip.set(value); }
+            QuadWord getLinkRegister() const noexcept { return _lr.get(); }
+            void setLinkRegister(QuadWord value) noexcept { _lr.set(value); }
 			bool& getPredicateRegister(byte index);
             void incrementInstructionPointer() noexcept { setInstructionPointer(getInstructionPointer() + 1); }
 
@@ -150,12 +152,9 @@ namespace iris {
 			bool execute;
 			bool advanceIp;
 			raw_instruction current;
-
-			QuadWord _ip;
-			QuadWord _lr;
+            InstructionPointer _ip;
+            LinkRegister _lr;
 			word _error;
-            QuadWord _ipDataMask;
-            QuadWord _lrDataMask;
 			IOSpace _io;
 			CompareUnit _compare;
 			ALU _alu;

@@ -5,7 +5,7 @@
 
 namespace iris {
 
-	Core::Core(QuadWord ipDataMask, QuadWord lrDataMask) noexcept : execute(true), advanceIp(true), current(0), _ip(0), _lr(0), _error(0), _ipDataMask(ipDataMask), _lrDataMask(lrDataMask), _io(0, 0xFFFF) { }
+	Core::Core() noexcept : execute(true), advanceIp(true), current(0), _ip(0), _lr(0), _error(0), _io(0, 0xFFFF) { }
 
 	Core::~Core() {
 	}
@@ -30,8 +30,8 @@ namespace iris {
 	void Core::saveSystemState() noexcept {
 		_saveAdvanceIp = advanceIp;
 		_saveExecute = execute;
-		_onError[0] = _ip;
-		_onError[1] = _lr;
+		_onError[0] = getInstructionPointer();
+		_onError[1] = getLinkRegister();
 		for(int i = ArchitectureConstants::ErrorRegisterStart, j = 2; j < ArchitectureConstants::RegistersToSaveOnError; --i, ++j) {
 			_onError[j] = gpr[i];
 		}
@@ -39,14 +39,14 @@ namespace iris {
 	void Core::restoreSystemState() noexcept {
 		advanceIp = _saveAdvanceIp;
 		execute = _saveExecute;
-		_ip = _onError[0];
-		_lr = _onError[1];
+		setInstructionPointer(_onError[0]);
+		setLinkRegister(_onError[1]);
 		for(int i = ArchitectureConstants::ErrorRegisterStart, j = 2; j < ArchitectureConstants::RegistersToSaveOnError; --i, ++j) {
 			gpr[i] = _onError[j];
 		}
 	}
 	void Core::dispatchErrorHandler() noexcept {
-		_ip = data[ArchitectureConstants::ErrorDispatchVectorBase];
+        setInstructionPointer(data[ArchitectureConstants::ErrorDispatchVectorBase]);
 		gpr[255] = _error;
 		gpr[254] = getGroup();
 		gpr[253] = getOperationByte();

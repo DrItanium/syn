@@ -6,6 +6,32 @@
 #include <iostream>
 #include <cmath>
 namespace syn {
+template<typename T, T addressMask>
+class Register {
+    public:
+        using AddressType = T;
+        using Self = Register<T, addressMask>;
+        static constexpr T getAddressMask() noexcept { return addressMask; }
+        static constexpr T generateProperAddress(T value) noexcept { return syn::decodeBits<T, T, getAddressMask(), 0>(value); }
+    public:
+        Register(T value) noexcept : _value(value) { }
+        virtual ~Register() { }
+        inline T get() const noexcept { return _value; }
+        inline void set(T value) noexcept { _value = generateProperAddress(value); }
+        inline void increment() noexcept { set(get() + 1); }
+        inline void decrement() noexcept { set(get() - 1); }
+        inline Self& operator++() {
+            increment();
+            return *this;
+        }
+        inline Self& operator--() {
+            decrement();
+            return *this;
+        }
+    private:
+        T _value;
+
+};
 
 template<typename Word>
 class FPU {

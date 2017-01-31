@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <memory>
 namespace generic {
-    // TODO: add support for
+    template<
     template<typename DataType, typename RegisterType, typename AddressType, typename InstructionType, AddressType ipMask, AddressType dataMask, AddressType registerCount, AddressType codeSectionSize, AddressType dataSectionSize, bool performStaticAssertChecks= true>
     class HarvardCore : public syn::Core {
         static_assert(performStaticAssertChecks ? ipMask >= codeSectionSize : true , "The instruction pointer can't address all of the code section memory!");
@@ -48,5 +48,6 @@ namespace generic {
     };
     template<typename DataType, typename RegisterType, typename AddressType, typename InstructionType, AddressType ipMask, AddressType registerCount, bool performStaticAssertChecks = true>
     using BalancedHarvardCore = HarvardCore<DataType, RegisterType, AddressType, InstructionType, ipMask, ipMask, registerCount, ipMask, ipMask, performStaticAssertChecks>;
+
 } // end namespace generic
 #endif
