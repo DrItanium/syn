@@ -1,0 +1,5 @@
+(batch* IrisCoreLispBase.clp)
+(batch* IrisCoreLispConstantDeclaration.clp)
+(batch* IrisCoreLispLinkRegisterMacros.clp)
+(batch* IrisCoreLispPredicateRegisterMacros.clp)
+(batch* IrisCoreLispStackOperations.clp)

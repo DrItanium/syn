@@ -582,7 +582,7 @@
 (definstances lower::predefined-statements
               (of list
                   (parent FALSE)
-                  (contents alias 
+                  (contents alias
                             r239
                             as
                             iv0))
@@ -622,7 +622,7 @@
                     (progn$ (?b ?self:body)
                             (bind ?output
                                   ?output
-                                  (send ?b 
+                                  (send ?b
                                         resolve)))
                     ?output)
 
@@ -689,10 +689,10 @@
 
 (defmessage-handler lower::instruction resolve primary
                     ()
-                    (format nil 
+                    (format nil
                             "%s %s"
                             (dynamic-get title)
-                            (send ?self 
+                            (send ?self
                                   resolve-arguments)))
 (defmessage-handler lower::instruction resolve-arguments primary
                     ()
@@ -748,7 +748,7 @@
                     (format nil
                             "%s %s"
                             (call-next-handler)
-                            (str-cat (send ?self:source-register1 
+                            (str-cat (send ?self:source-register1
                                            resolve))))
 
 (defclass lower::three-argument-instruction
@@ -780,7 +780,7 @@
                     (progn$ (?b ?self:body)
                             (bind ?output
                                   ?output
-                                  (send ?b 
+                                  (send ?b
                                         resolve)))
                     ?output)
 
@@ -977,7 +977,7 @@
          (one-register-operation ?operation)
          =>
          (unmake-instance ?f)
-         (make-instance ?n of one-argument-instruction 
+         (make-instance ?n of one-argument-instruction
                         (parent ?p)
                         (title ?operation)
                         (destination-register ?destination)))
@@ -989,7 +989,7 @@
          (zero-register-operation ?operation)
          =>
          (unmake-instance ?f)
-         (make-instance ?n of zero-argument-instruction 
+         (make-instance ?n of zero-argument-instruction
                         (parent ?p)
                         (title ?operation)))
 
@@ -1073,7 +1073,7 @@
          (object (is-a register)
                  (name ?register))
          =>
-         (modify-instance ?f 
+         (modify-instance ?f
                           (contents bl
                                     ?register)))
 
@@ -1083,7 +1083,7 @@
                                  ?target&:(or (symbolp ?target)
                                               (numberp ?target))))
          =>
-         (modify-instance ?f 
+         (modify-instance ?f
                           (contents bil
                                     ?target)))
 
@@ -1110,7 +1110,7 @@
                                  ?register))
          =>
          (modify-instance ?f
-                          (contents mtlr 
+                          (contents mtlr
                                     ?register)))
 (defrule lower::parse-move-from-lr-alt
          (declare (salience 1))
@@ -1131,7 +1131,7 @@
                                  ?register))
          =>
          (modify-instance ?f
-                          (contents mtip 
+                          (contents mtip
                                     ?register)))
 (defrule lower::parse-move-from-ip-alt
          (declare (salience 1))
@@ -1230,7 +1230,7 @@
 
 (defrule lower::parse-triple-macro
          ?f <- (object (is-a list)
-                       (contents triple 
+                       (contents triple
                                  ?destination
                                  ?register))
          =>
@@ -1286,14 +1286,14 @@
                        (parent ?p))
          ?f2 <- (object (is-a list)
                         (name ?stack-info)
-                        (contents save-to 
+                        (contents save-to
                                   ?stack))
          ?f3 <- (object (is-a list)
                         (name ?registers-to-preserve)
                         (contents $?registers))
          =>
-         (unmake-instance ?f 
-                          ?f2 
+         (unmake-instance ?f
+                          ?f2
                           ?f3)
          (bind ?pre
                (create$))
@@ -1333,23 +1333,23 @@
                        (parent ?p))
          =>
          (unmake-instance ?f)
-         (mk-container ?n 
+         (mk-container ?n
                        ?p
-                       (mk-list ?n 
-                                ld 
-                                iv0 
+                       (mk-list ?n
+                                ld
+                                iv0
                                 ?register0)
-                       (mk-list ?n 
-                                ld 
-                                iv1 
+                       (mk-list ?n
+                                ld
+                                iv1
                                 ?register1)
                        (mk-list ?n
-                                st 
-                                ?register1 
+                                st
+                                ?register1
                                 iv0)
-                       (mk-list ?n 
-                                st 
-                                ?register0 
+                       (mk-list ?n
+                                st
+                                ?register0
                                 iv1)))
 
 (defrule lower::terminate
@@ -1441,9 +1441,9 @@
                        (contents nop))
          =>
          (modify-instance ?f
-                          (contents addi 
-                                    iv0 
-                                    iv0 
+                          (contents addi
+                                    iv0
+                                    iv0
                                     0)))
 (defrule lower::zero-register-macro
          ?f <- (object (is-a list)
@@ -1451,8 +1451,6 @@
                                  ?register))
          =>
          (modify-instance ?f
-                          (contents set 
-                                    ?register 
+                          (contents set
+                                    ?register
                                     0x0000))
-                       
-                    
