@@ -4,3 +4,5 @@
 (batch* IrisCoreLispLinkRegisterMacros.clp)
 (batch* IrisCoreLispPredicateRegisterMacros.clp)
 (batch* IrisCoreLispStackOperations.clp)
+(batch* IrisCoreLispRegisters.clp)
+(batch* IrisCoreLispPredefinedStatements.clp)
