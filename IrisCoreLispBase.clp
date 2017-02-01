@@ -4,6 +4,10 @@
 (defmessage-handler LEXEME resolve primary
                     ()
                     ?self)
+(deffunction lower::call-resolve
+             (?obj)
+             (send ?obj
+                   resolve))
 (deffunction lower::mk-list
              (?parent $?contents)
              (make-instance of list
@@ -50,17 +54,10 @@
 
 (defmessage-handler lower::section resolve primary
                     ()
-                    (bind ?output
-                          (format nil
-                                  ".%s"
-                                  ?self:section))
-                    (progn$ (?b ?self:body)
-                            (bind ?output
-                                  ?output
-                                  (send ?b
-                                        resolve)))
-                    ?output)
-
+                    (create$ (str-cat .
+                                      ?self:section)
+                             (map call-resolve
+                                  (expand$ ?self:body))))
 
 (defclass lower::label
   (is-a node
