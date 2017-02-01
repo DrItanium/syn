@@ -26,7 +26,6 @@
         (allowed-symbols FALSE))
   (message-handler resolve primary))
 
-
 (defmessage-handler lower::register resolve primary
                     ()
                     (if (instancep ?self:alias-to) then
@@ -659,7 +658,8 @@
                     (bind ?output
                           (format nil
                                   ".org %s"
-                                  (dynamic-get address)))
+                                  (str-cat (send (dynamic-get address)
+                                                 resolve))))
                     (progn$ (?b ?self:body)
                             (bind ?output
                                   ?output
