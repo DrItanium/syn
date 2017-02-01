@@ -67,16 +67,11 @@
 
 (defmessage-handler lower::label resolve primary
                     ()
-                    (bind ?output
-                          (format nil
-                                  ".label %s"
-                                  (dynamic-get title)))
-                    (progn$ (?b ?self:body)
-                            (bind ?output
-                                  ?output
-                                  (send ?b
-                                        resolve)))
-                    ?output)
+                    (create$ (str-cat ".label "
+                                      (dynamic-get title))
+                             (map call-resolve
+                                  (expand$ ?self:body))))
+
 (defclass lower::org
   (is-a node
         has-body)
@@ -88,17 +83,11 @@
 
 (defmessage-handler lower::org resolve primary
                     ()
-                    (bind ?output
-                          (format nil
-                                  ".org %s"
-                                  (str-cat (send (dynamic-get address)
-                                                 resolve))))
-                    (progn$ (?b ?self:body)
-                            (bind ?output
-                                  ?output
-                                  (send ?b
-                                        resolve)))
-                    ?output)
+                    (create$ (str-cat ".org "
+                                      (send (dynamic-get address)
+                                            resolve))
+                             (map call-resolve
+                                  (expand$ ?self:body))))
 
 (defclass lower::word
   (is-a node)
@@ -110,9 +99,8 @@
 
 (defmessage-handler lower::word resolve primary
                     ()
-                    (format nil
-                            ".word %s"
-                            (dynamic-get value)))
+                    (str-cat ".word "
+                             (dynamic-get value)))
 
 (defclass lower::instruction
   (is-a node
@@ -122,11 +110,11 @@
 
 (defmessage-handler lower::instruction resolve primary
                     ()
-                    (format nil
-                            "%s %s"
-                            (dynamic-get title)
-                            (send ?self
-                                  resolve-arguments)))
+                    (str-cat (dynamic-get title)
+                             " "
+                             (send ?self
+                                   resolve-arguments)))
+
 (defmessage-handler lower::instruction resolve-arguments primary
                     ()
                     "")
@@ -158,11 +146,10 @@
 
 (defmessage-handler lower::instruction-with-destination-and-source0 resolve-arguments primary
                     ()
-                    (format nil
-                            "%s %s"
-                            (call-next-handler)
-                            (send ?self:source-register0
-                                  resolve)))
+                    (str-cat (call-next-handler)
+                             " "
+                             (send ?self:source-register0
+                                   resolve)))
 
 (defclass lower::two-argument-instruction
   (is-a instruction-with-destination-and-source0))
@@ -176,11 +163,10 @@
 
 (defmessage-handler lower::instruction-with-destination-source0-and-source1 resolve-arguments primary
                     ()
-                    (format nil
-                            "%s %s"
-                            (call-next-handler)
-                            (str-cat (send ?self:source-register1
-                                           resolve))))
+                    (str-cat (call-next-handler)
+                             " "
+                             (send ?self:source-register1
+                                   resolve)))
 
 (defclass lower::three-argument-instruction
   (is-a instruction-with-destination-source0-and-source1))
@@ -191,6 +177,7 @@
         (visibility public)
         (storage local)
         (default ?NONE)))
+
 (defclass lower::four-argument-instruction
   (is-a instruction-with-destination-source0-source1-and-source2))
 
@@ -206,14 +193,8 @@
 
 (defmessage-handler lower::simple-container resolve primary
                     ()
-                    (bind ?output
-                          (create$))
-                    (progn$ (?b ?self:body)
-                            (bind ?output
-                                  ?output
-                                  (send ?b
-                                        resolve)))
-                    ?output)
+                    (map call-resolve
+                         (expand$ ?self:body)))
 
 (defrule lower::construct-alias
          (declare (salience ?*priority:first*))
@@ -520,21 +501,19 @@
          (nary-register-macro ?operation)
          =>
          (unmake-instance ?f)
-         (make-instance ?name of simple-container
-                        (parent ?p)
-                        (body (make-instance of list
-                                             (parent ?name)
-                                             (contents ?operation
-                                                       iv0
-                                                       ?source0
-                                                       ?source1
-                                                       $?rest))
-                              (make-instance of list
-                                             (parent ?name)
-                                             (contents ?operation
-                                                       ?destination
-                                                       iv0
-                                                       ?sourceN)))))
+         (mk-container ?name
+                       ?p
+                       (mk-list ?name
+                                ?operation
+                                iv0
+                                ?source0
+                                ?source1
+                                $?rest)
+                       (mk-list ?name
+                                ?operation
+                                ?destination
+                                iv0
+                                ?sourceN)))
 
 (defrule lower::parse-increment-macro
          ?f <- (object (is-a list)
