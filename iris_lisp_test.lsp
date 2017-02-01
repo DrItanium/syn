@@ -2,9 +2,10 @@
 (alias r1 as v1)
 (alias r2 as v2)
 (alias r3 as v3)
+(let ZeroAddress be 0x0000)
 
 (section code
-         (org 0x0000
+         (org ZeroAddress
               (label startup
                      (set sp to 0xfded)
                      (push r0 onto sp)
