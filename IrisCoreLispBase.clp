@@ -146,10 +146,8 @@
 
 (defmessage-handler lower::instruction-with-destination resolve-arguments primary
                     ()
-                    (format nil
-                            "%s"
-                            (send ?self:destination-register
-                                  resolve)))
+                    (str-cat (send ?self:destination-register
+                                   resolve)))
 
 (defclass lower::one-argument-instruction
   (is-a instruction-with-destination))
