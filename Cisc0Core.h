@@ -17,6 +17,7 @@ namespace cisc0 {
 	using RawInstruction = Word; // this is more of a packet!
 	using immediate = HWord;
 	using RegisterValue = DWord;
+    using Address = DWord;
 	inline constexpr Word encodeWord (byte a, byte b) noexcept;
 	inline constexpr RegisterValue encodeRegisterValue(byte a, byte b, byte c, byte d) noexcept;
 	inline void decodeWord(Word value, byte* storage) noexcept;
@@ -147,7 +148,7 @@ namespace cisc0 {
 	using ALU = syn::ALU<RegisterValue>;
 	using CompareUnit = syn::Comparator<RegisterValue>;
 	using RegisterFile = syn::FixedSizeLoadStoreUnit<RegisterValue, byte, ArchitectureConstants::RegisterCount>;
-	using MemorySpace = syn::FixedSizeLoadStoreUnit<Word, DWord, ArchitectureConstants::AddressMax>;
+	using MemorySpace = syn::FixedSizeLoadStoreUnit<Word, Address, ArchitectureConstants::AddressMax>;
 	class Core : public syn::Core {
 		public:
 			using SystemFunction = std::function<void(Core*, DecodedInstruction&&)>;
