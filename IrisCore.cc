@@ -483,6 +483,7 @@ namespace iris {
 					}));
 		// getc and putc
 		_io.install(std::make_shared<syn::StandardInputOutputDevice<word>>(1));
+		_io.install(std::make_shared<syn::RandomDevice<word, word>>(3));
 		for (auto i = 0; i < _cr.getSize(); ++i) {
 			_cr[i] = false;
 		}
