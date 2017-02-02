@@ -546,7 +546,6 @@ using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
 			buf[0] = 0;
 			buf[2] = static_cast<char>(syn::getLowerHalf<word>(value.address));
 			buf[3] = static_cast<char>(syn::getUpperHalf<word>(value.address));
-			output << std::hex << value.address << " ";
 			if (value.instruction) {
 				buf[1] = 0;
 				buf[4] = static_cast<char>(iris::encodeOperationByte(iris::encodeGroupByte(0, value.group), value.operation));

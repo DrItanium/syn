@@ -57,8 +57,8 @@ namespace iris {
 		advanceIp = false;
 	}
 	bool Core::cycle() {
+        advanceIp = true;
 		if (!decodeStatusInError(_error)) {
-			advanceIp = true;
 			dispatch();
 			if (advanceIp) {
                 incrementInstructionPointer();
@@ -70,7 +70,6 @@ namespace iris {
 				dispatchErrorHandler();
 			}
 		} else {
-			advanceIp = true;
 			auto oldStatus = _error;
 			dispatch();
 			if (_error == 0) {
