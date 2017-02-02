@@ -37,6 +37,24 @@ namespace cisc0 {
             bool _isLabel;
             std::string _label;
     };
+
+#define DefSymbol(title, str) \
+    struct Symbol ## title : public pegtl_string_t( #str ) { }
+//DefSymbol(Nop, nop);
+DefSymbol(Arithmetic, arithmetic);
+DefSymbol(Shift, shift);
+DefSymbol(Logical, logical);
+DefSymbol(Compare, compare);
+DefSymbol(Branch, branch);
+//DefSymbol(Return, return);
+DefSymbol(System, system);
+DefSymbol(Move, move);
+DefSymbol(Set, set);
+DefSymbol(Swap, swap);
+DefSymbol(Memory, memory);
+DefSymbol(Complex, complex);
+
+
 }
 
 
