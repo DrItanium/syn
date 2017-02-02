@@ -31,3 +31,13 @@ B (iris)
 I (iris)
 
 
+
+IO Space Memory Map
+-------------------
+0x0000 - Terminate execution (write)
+0x0001 - Get Character from Input (read)
+0x0002 - Put Character to Display(write)
+0x0003 - Seed Random Number Generator (write)
+0x0004 - Get Random Number (read)
+0x0005 - Discard N results from random number generator (write)
+
