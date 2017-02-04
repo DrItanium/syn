@@ -40,26 +40,27 @@ namespace cisc0 {
 			bool _isLabel;
 			std::string _label;
 	};
-	struct AssemblerState { };
-	struct InstructionEncoderWrapper : public InstructionEncoder {
-		template<typename Input, typename ... States> 
-			InstructionEncoderWrapper(const Input& in, States && ... ) : InstructionEncoder() { 
-				std::cout << "make: input = " << in.string() << std::endl;
-			};
-		template<typename Input, typename ... States>
-		void success(const Input& in, States && ... st) {
-			std::cout << "success: input = " << in.string() << std::endl;
-		}
+	struct AssemblerState { 
+		cisc0::Address currentAddress = 0;
+		std::vector<cisc0::InstructionEncoder> instructions;
+		cisc0::InstructionEncoder current;
 	};
 #define DefSymbol(title, str) \
 	struct Symbol ## title : public pegtl_string_t( #str ) { }
-#define DefAction(rule) template<> struct Action < rule >
+#define DefAction(rule) template<> struct Action < rule > 
 #define DefApplyGeneric(type) template<typename Input> static void apply(const Input& in, type& state)
-#define DefApplyInstruction DefApplyGeneric(cisc0::InstructionEncoderWrapper)
+#define DefApplyInstruction DefApplyGeneric(cisc0::InstructionEncoder)
+#define DefApplyAsmState DefApplyGeneric(cisc0::AssemblerState)
+#define DefDefaultTransfer \
+	DefApplyAsmState { \
+		apply<Input>(in, state.current); \
+	}
+
 #define DefGroup(title, str) \
 	DefSymbol(title, str); \
 	struct Group ## title : syn::Indirection<Symbol ## title> { }; \
 	DefAction(Group ## title) { \
+		DefDefaultTransfer \
 		DefApplyInstruction { \
 			state.type = Operation:: title ; \
 		} \
@@ -88,6 +89,7 @@ namespace cisc0 {
 	struct UsesImmediate : pegtl::seq<SymbolImmediate> { };
 
 	DefAction(UsesImmediate) {
+		DefDefaultTransfer
 		DefApplyInstruction {
 			state.immediate = true;
 		}
@@ -97,24 +99,28 @@ namespace cisc0 {
 		using Numeral = syn::GenericNumeral<delim, T>;
 	struct HexadecimalNumber : public Numeral<'x', pegtl::xdigit> { };
 	DefAction(HexadecimalNumber) {
+		DefDefaultTransfer
 		DefApplyInstruction {
 			state.fullImmediate = syn::getHexImmediate<RegisterValue>(in.string(), reportError);
 		}
 	};
 	struct BinaryNumber : public Numeral<'b', pegtl::abnf::BIT> { };
 	DefAction(BinaryNumber) {
+		DefDefaultTransfer
 		DefApplyInstruction {
 			state.fullImmediate = syn::getBinaryImmediate<RegisterValue>(in.string(), reportError);
 		}
 	};
 	struct DecimalNumber : public pegtl::plus<pegtl::digit> { };
 	DefAction(DecimalNumber) {
+		DefDefaultTransfer
 		DefApplyInstruction {
 			state.fullImmediate = syn::getDecimalImmediate<RegisterValue>(in.string().c_str(), reportError);
 		}
 	};
 	struct Number : public pegtl::sor<HexadecimalNumber, DecimalNumber, BinaryNumber> { };
 	DefAction(Number) {
+		DefDefaultTransfer
 		DefApplyInstruction {
 			state.isLabel = false;
 		}
@@ -123,12 +129,14 @@ namespace cisc0 {
 	struct BitmaskNumber : public Numeral<'m', pegtl::abnf::BIT> { };
 
 	DefAction(BitmaskNumber) {
+		DefDefaultTransfer
 		DefApplyInstruction {
 			state.bitmask = syn::decodeBits<RegisterValue, byte, 0x000000FF, 0>(syn::getBinaryImmediate<RegisterValue>(in.string(), reportError));
 		}
 	};
 	using Lexeme = syn::Lexeme;
 	DefAction(Lexeme) {
+		DefDefaultTransfer
 		DefApplyInstruction {
 			state.labelValue = in.string();
 			state.fullImmediate = 0;
@@ -144,6 +152,7 @@ namespace cisc0 {
 
 	DefIndirectGPR(DestinationRegister);
 	DefAction(DestinationRegister) {
+		DefDefaultTransfer
 		DefApplyInstruction {
 			state.arg0 = syn::getRegister<Word, ArchitectureConstants::RegisterCount>(in.string(), reportError);
 		}
@@ -151,6 +160,7 @@ namespace cisc0 {
 
 	DefIndirectGPR(SourceRegister);
 	DefAction(SourceRegister) {
+		DefDefaultTransfer
 		DefApplyInstruction {
 			state.arg1 = syn::getRegister<Word, ArchitectureConstants::RegisterCount>(in.string(), reportError);
 		}
@@ -159,6 +169,7 @@ namespace cisc0 {
 		struct TwoArgumentOperation : pegtl::seq<DestinationRegister, Separator, S> { };
 	struct TwoGPRs : TwoArgumentOperation<SourceRegister> { };
 	DefAction(TwoGPRs) {
+		DefDefaultTransfer
 		DefApplyInstruction {
 			state.immediate = false;
 		}
@@ -170,6 +181,7 @@ namespace cisc0 {
 	struct ShiftLeftOrRight : pegtl::sor<SymbolLeft, SymbolRight> { };
 
 	DefAction(ShiftLeftOrRight) {
+		DefDefaultTransfer
 		DefApplyInstruction {
 			state.shiftLeft = (in.string() == "left");
 		}
@@ -182,6 +194,7 @@ namespace cisc0 {
 
 	struct ShiftImmediateValue : pegtl::seq<Number> { };
 	DefAction(ShiftImmediateValue) {
+		DefDefaultTransfer
 		DefApplyInstruction {
 			state.arg1 = static_cast<byte>(state.fullImmediate) & 0b11111;
 		}
@@ -192,6 +205,7 @@ namespace cisc0 {
 
 	struct ByteCastImmediate : pegtl::seq<Number> { };
 	DefAction(ByteCastImmediate) {
+		DefDefaultTransfer
 		DefApplyInstruction {
 			state.arg1 = static_cast<byte>(state.fullImmediate);
 		}
@@ -199,6 +213,7 @@ namespace cisc0 {
 #define DefSubType(title, str, subgroup) \
 	struct SubGroup ## subgroup ## title : syn::Indirection<Symbol ## title> { }; \
 	DefAction(SubGroup ## subgroup ## title) { \
+		DefDefaultTransfer \
 		DefApplyInstruction { \
 			state.subType = static_cast < decltype(state.subType) > ( cisc0 :: subgroup :: title ) ; \
 		} \
@@ -228,6 +243,7 @@ namespace cisc0 {
 	struct CompareArgs : pegtl::sor<TwoGPRs, ImmediateOperationArgs<ByteCastImmediate>> { };
 	struct CompareOperation : pegtl::seq<GroupCompare, Separator, CompareType, Separator, CompareArgs> { };
 	DefAction(CompareOperation) {
+		DefDefaultTransfer
 		DefApplyInstruction {
 			// Just disable the combine ability since it is dumb
 			//state.combineType = CompareCombine::None;
@@ -255,6 +271,7 @@ namespace cisc0 {
 
 	struct Arg0ImmediateValue : pegtl::seq<Number> { };
 	DefAction(Arg0ImmediateValue) {
+		DefDefaultTransfer
 		DefApplyInstruction {
 			state.arg0 = static_cast<byte>(state.fullImmediate) & 0b1111;
 		}
@@ -302,6 +319,7 @@ namespace cisc0 {
 						   SubGroupMemoryOperationStore> { };
 	struct StackOperationFull : pegtl::seq<TwoGPRs> { };
 	DefAction(StackOperationFull) {
+		DefDefaultTransfer
 		DefApplyInstruction {
 			// check and see if we are looking at sp
 			// no need to waste a word so just use the default version
@@ -321,6 +339,7 @@ namespace cisc0 {
 	DefSymbol(Indirect, indirect);
 	struct FlagIndirect : public syn::Indirection<SymbolIndirect> { };
 	DefAction(FlagIndirect) {
+		DefDefaultTransfer
 		DefApplyInstruction {
 			state.indirect = true;
 		}
@@ -328,6 +347,7 @@ namespace cisc0 {
 	DefSymbol(Direct, direct);
 	struct FlagDirect : public syn::Indirection<SymbolDirect> { };
 	DefAction(FlagDirect) {
+		DefDefaultTransfer
 		DefApplyInstruction {
 			state.indirect = false;
 		}
@@ -345,6 +365,7 @@ namespace cisc0 {
 								TwoGPRs> { };
 
 	DefAction(LoadStoreOperation) {
+		DefDefaultTransfer
 		DefApplyInstruction {
 			state.readNextWord = (state.arg1 != ArchitectureConstants::AddressRegister) &&
 				(state.arg2 != ArchitectureConstants::ValueRegister);
@@ -424,6 +445,7 @@ namespace cisc0 {
 
 	struct BranchFlagIf : public syn::Indirection<SymbolIf> { };
 	DefAction(BranchFlagIf) {
+		DefDefaultTransfer
 		DefApplyInstruction {
 			state.isIf = true;
 			state.isConditional = false;
@@ -432,6 +454,7 @@ namespace cisc0 {
 
 	struct BranchFlagCall : public syn::Indirection<SymbolCall> { };
 	DefAction(BranchFlagCall) {
+		DefDefaultTransfer
 		DefApplyInstruction {
 			state.isCall = true;
 		}
@@ -439,6 +462,7 @@ namespace cisc0 {
 
 	struct BranchFlagNoCall : public syn::Indirection<SymbolNoCall> { };
 	DefAction(BranchFlagNoCall) {
+		DefDefaultTransfer
 		DefApplyInstruction {
 			state.isCall = false;
 		}
@@ -448,6 +472,7 @@ namespace cisc0 {
 
 	struct BranchFlagConditional : public syn::Indirection<SymbolConditional> { };
 	DefAction(BranchFlagConditional) {
+		DefDefaultTransfer
 		DefApplyInstruction {
 			state.isConditional = true;
 		}
@@ -455,6 +480,7 @@ namespace cisc0 {
 
 	struct BranchFlagUnconditional : public syn::Indirection<SymbolUnconditional> { };
 	DefAction(BranchFlagUnconditional) {
+		DefDefaultTransfer
 		DefApplyInstruction {
 			state.isConditional = false;
 		}
@@ -490,9 +516,7 @@ namespace cisc0 {
 							 BranchCallOperation,
 							 BranchJumpOperation>> { };
 
-	struct Instructions : pegtl::state<
-						  InstructionEncoderWrapper,
-						  pegtl::sor<
+	struct Instructions : pegtl::sor<
 									 BranchOperation,
 									 ComplexOperation,
 									 MemoryInstruction,
@@ -503,7 +527,7 @@ namespace cisc0 {
 									 ShiftOperation,
 									 CompareOperation,
 									 SystemCallOperation,
-									 LogicalOperation>> { };
+									 LogicalOperation> { };
 	struct Statement : pegtl::sor<
 					   Instructions> { };
 	struct Anything : pegtl::sor<
