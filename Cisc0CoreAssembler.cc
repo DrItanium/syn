@@ -349,5 +349,30 @@ namespace cisc0 {
 
 #define DefLogicalOperation(title, str) \
     DefSubTypeWithSymbol(title, str, LogicalOps)
+    DefLogicalOperation(And, and);
+    DefLogicalOperation(Or, or);
+    DefLogicalOperation(Not, not);
+    DefLogicalOperation(Xor, xor);
+    DefLogicalOperation(Nand, nand);
+
+
+    struct LogicalOpsType : pegtl::sor<
+                            SubGroupLogicalOpsAnd,
+                            SubGroupLogicalOpsOr,
+                            SubGroupLogicalOpsNot,
+                            SubGroupLogicalOpsXor,
+                            SubGroupLogicalOpsNand> { };
+    struct LogicalArgs : pegtl::sor<
+                         TwoGPRs,
+                         ImmediateOperationArgsWithBitmask<LexemeOrNumber>> { };
+    struct LogicalOperation : pegtl::seq<
+                              GroupLogical,
+                              Separator,
+                              LogicalOpsType,
+                              Separator,
+                              LogicalArgs> { };
+
+
+
 
 }
