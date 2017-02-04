@@ -55,13 +55,13 @@ namespace cisc0 {
             state.type = Operation:: title ; \
         } \
     }
-
+    // done
     DefGroup(Shift, shift);
     DefGroup(Compare, compare);
+    DefGroup(Logical, logical);
 
     //Still left to do
     DefGroup(Arithmetic, arithmetic);
-    DefGroup(Logical, logical);
     DefGroup(Branch, branch);
     DefGroup(SystemCall, system);
     DefGroup(Move, move);
@@ -172,11 +172,13 @@ namespace cisc0 {
         } \
     }
 
+#define DefSubTypeWithSymbol(title, str, subgroup) \
+    DefSymbol(title, str); \
+    DefSubType(title, str, subgroup)
+
 #define DefCompareStyle(title, str) DefSubType(title, str, CompareStyle)
 
-#define DefCompareStyleWithSymbol(title, str) \
-    DefSymbol(title, str); \
-    DefCompareStyle(title, str)
+#define DefCompareStyleWithSymbol(title, str) DefSubTypeWithSymbol(title, str, CompareStyle)
 
     DefCompareStyleWithSymbol(Equals, ==);
     DefCompareStyleWithSymbol(NotEquals, !=);
@@ -192,20 +194,27 @@ namespace cisc0 {
                          SubGroupCompareStyleGreaterThan,
                          SubGroupCompareStyleGreaterThanOrEqualTo> { };
     struct CompareArgs : pegtl::sor<TwoGPRs, ImmediateOperationArgs<ByteCastImmediate>> { };
-#define DefCompareCombine(title, str) DefSubType(title, str, CompareCombine)
-#define DefCompareCombineWithSymbol(title, str) \
-    DefSymbol(title, str); \
-    DefCompareCombine(title, str)
-    DefCompareCombineWithSymbol(None, none);
-    DefCompareCombineWithSymbol(And, and);
-    DefCompareCombineWithSymbol(Or, or);
-    DefCompareCombineWithSymbol(Xor, xor);
-    struct CombineType : pegtl::sor<
-                         SubGroupCompareCombineNone,
-                         SubGroupCompareCombineAnd,
-                         SubGroupCompareCombineOr,
-                         SubGroupCompareCombineXor> { };
-    struct CompareOperation : pegtl::seq<GroupCompare, Separator, CompareType, Separator, CombineType, Separator, CompareArgs> { };
+    struct CompareOperation : pegtl::seq<GroupCompare, Separator, CompareType, Separator, CompareArgs> { };
+    DefAction(CompareOperation) {
+        DefApplyInstruction {
+            // Just disable the combine ability since it is dumb
+            state.combineType = CompareCombine::None;
+        }
+    };
+
+#define DefLogicalOps(title, str) DefSubType(title, str, LogicalOps)
+#define DefImmediateLogicalOps(title, str) DefSubType(title, str, ImmediateLogicalOps)
+    DefSubTypeWithSymbol(Not, not, LogicalOps);
+
+    struct LogicalNotOperation : pegtl::seq<SubGroupLogicalOpsNot, Separator, DestinationRegister> { };
+    DefAction(LogicalNotOperation) {
+        DefApplyInstruction {
+            state.immediate = false;
+        }
+    };
+
+    //DefLogicalOps(
+    //struct LogicalOperation : pegtl::seq<GroupLogical, Separator, LogicalActions> { };
 }
 
 
