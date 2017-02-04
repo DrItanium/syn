@@ -347,7 +347,7 @@ operation:
 		OP_SYSTEM system_op { cisc0::op.type = cisc0::Operation::SystemCall; }|
 		OP_MOVE move_op { cisc0::op.type = cisc0::Operation::Move; } |
 		OP_SET set_op { cisc0::op.type = cisc0::Operation::Set; } |
-		OP_SWAP swap_op { cisc0::op.type = cisc0::Operation::Swap; } |
+		OP_SWAP two_args { cisc0::op.type = cisc0::Operation::Swap; } |
 		OP_MEMORY memory_op { cisc0::op.type = cisc0::Operation::Memory; } |
 		OP_NOP {
             cisc0::op.type = cisc0::Operation::Swap;
@@ -383,7 +383,7 @@ compare_args:
 					cisc0error(err.what().c_str());
 				}
 		 } |
-		 destination_register source_register { cisc0::op.immediate = false; };
+         two_args;
 
 compare_type:
 		COMPARE_OP_EQ { cisc0::op.subType = static_cast<byte>(cisc0::CompareStyle::Equals); } |
@@ -410,7 +410,7 @@ logical_op:
 
 logical_args:
 		uses_immediate bitmask destination_register lexeme |
-		destination_register source_register { cisc0::op.immediate = false; };
+        two_args;
 
 logical_subop:
 		ACTION_AND {
@@ -435,20 +435,17 @@ shift_op:
 
 shift_args:
 		uses_immediate destination_register IMMEDIATE { cisc0::op.arg1 = $3 & 0b11111; } |
-		destination_register source_register { cisc0::op.immediate = false; };
+        two_args;
 
 shift_left_or_right:
 		SHIFT_FLAG_LEFT { cisc0::op.shiftLeft = true; } |
 		SHIFT_FLAG_RIGHT { cisc0::op.shiftLeft = false; };
 
 
-move_op: bitmask destination_register source_register;
+move_op: bitmask two_args;
 
 set_op:
 	  bitmask destination_register lexeme;
-
-swap_op:
-	   destination_register source_register;
 
 branch_op:
 		 branch;
@@ -456,7 +453,6 @@ branch_op:
 branch:
 	  	BRANCH_FLAG_IF if_op {
 			cisc0::op.isIf = true;
-			cisc0::op.immediate = false;
 			cisc0::op.isConditional = false;
 		} |
 		jump_op {
@@ -469,26 +465,19 @@ branch:
 			cisc0::op.isConditional = false;
 		};
 if_op:
-	 if_uses_call destination_register source_register;
+	 if_uses_call two_args;
 if_uses_call:
 	BRANCH_FLAG_CALL { cisc0::op.isCall = true; } |
 	{ cisc0::op.isCall = false; };
 call_op:
 	   uses_immediate lexeme |
-	   destination_register {
-			cisc0::op.immediate = false;
-	   };
+	   destination_register { cisc0::op.immediate = false; };
 jump_op:
 	cond_decl uses_immediate lexeme |
-	cond_decl destination_register {
-		cisc0::op.immediate = false;
-	};
+	cond_decl destination_register { cisc0::op.immediate = false; };
 cond_decl:
-		 BRANCH_FLAG_COND {
-			cisc0::op.isConditional = true;
-		 } | {
-		 	cisc0::op.isConditional = false;
-		 };
+		 BRANCH_FLAG_COND { cisc0::op.isConditional = true; } |
+         { cisc0::op.isConditional = false; };
 memory_op:
 		load_store_combined { cisc0::op.indirect = false; } |
 		load_store_combined TAG_INDIRECT { cisc0::op.indirect = true; } |
@@ -540,47 +529,22 @@ read_next_word:
 
 
 load_store_op:
-			 MEMORY_OP_LOAD {
-				cisc0::op.subType = static_cast<byte>(cisc0::MemoryOperation::Load);
-			 } |
-			 MEMORY_OP_STORE {
-				cisc0::op.subType = static_cast<byte>(cisc0::MemoryOperation::Store);
-			 };
+			 MEMORY_OP_LOAD { cisc0::op.subType = static_cast<byte>(cisc0::MemoryOperation::Load); } |
+			 MEMORY_OP_STORE { cisc0::op.subType = static_cast<byte>(cisc0::MemoryOperation::Store); };
 stack_operation:
-			   MEMORY_OP_PUSH {
-					cisc0::op.subType = static_cast<byte>(cisc0::MemoryOperation::Push);
-			   } |
-			   MEMORY_OP_POP {
-					cisc0::op.subType = static_cast<byte>(cisc0::MemoryOperation::Pop);
-			   };
+			   MEMORY_OP_PUSH { cisc0::op.subType = static_cast<byte>(cisc0::MemoryOperation::Push); } |
+			   MEMORY_OP_POP { cisc0::op.subType = static_cast<byte>(cisc0::MemoryOperation::Pop); };
 arithmetic_op:
-		arithmetic_subop uses_immediate REGISTER IMMEDIATE {
-			cisc0::op.arg0 = $3;
-			cisc0::op.arg1 = $4;
-		} |
-		arithmetic_subop REGISTER REGISTER {
-			cisc0::op.immediate = false;
-			cisc0::op.arg0 = $2;
-			cisc0::op.arg1 = $3;
-		};
+		arithmetic_subop uses_immediate destination_register IMMEDIATE { cisc0::op.arg1 = $4; } |
+		arithmetic_subop two_args;
 arithmetic_subop:
-				ARITHMETIC_OP_ADD {
-					cisc0::op.subType = static_cast<byte>(cisc0::ArithmeticOps::Add);
-				} |
-				ARITHMETIC_OP_SUB {
-					cisc0::op.subType = static_cast<byte>(cisc0::ArithmeticOps::Sub);
-				} |
-				ARITHMETIC_OP_MUL {
-					cisc0::op.subType = static_cast<byte>(cisc0::ArithmeticOps::Mul);
-				} |
-				ARITHMETIC_OP_DIV {
-					cisc0::op.subType = static_cast<byte>(cisc0::ArithmeticOps::Div);
-				} |
-				ARITHMETIC_OP_REM {
-					cisc0::op.subType = static_cast<byte>(cisc0::ArithmeticOps::Rem);
-				};
+				ARITHMETIC_OP_ADD { cisc0::op.subType = static_cast<byte>(cisc0::ArithmeticOps::Add); } |
+				ARITHMETIC_OP_SUB { cisc0::op.subType = static_cast<byte>(cisc0::ArithmeticOps::Sub); } |
+				ARITHMETIC_OP_MUL { cisc0::op.subType = static_cast<byte>(cisc0::ArithmeticOps::Mul); } |
+				ARITHMETIC_OP_DIV { cisc0::op.subType = static_cast<byte>(cisc0::ArithmeticOps::Div); } |
+				ARITHMETIC_OP_REM { cisc0::op.subType = static_cast<byte>(cisc0::ArithmeticOps::Rem); };
 macro_op:
-		MACRO_OP_COPY destination_register source_register {
+		MACRO_OP_COPY two_args {
 			cisc0::op.type = cisc0::Operation::Move;
 			cisc0::op.bitmask = 0b1111;
 		} |
@@ -613,17 +577,15 @@ macro_op:
 			cisc0::op.subType = static_cast<byte>(cisc0::ArithmeticOps::Div);
 			cisc0::op.arg1 = 0x2;
 		} |
-		COMPARE_OP_EQ destination_register source_register {
+		COMPARE_OP_EQ two_args {
 			cisc0::op.type = cisc0::Operation::Compare;
 			cisc0::op.subType = static_cast<byte>(cisc0::CompareStyle::Equals);
 			cisc0::op.combineType = cisc0::CompareCombine::None;
-			cisc0::op.immediate = false;
 		} |
-		COMPARE_OP_NEQ destination_register source_register {
+		COMPARE_OP_NEQ two_args {
 			cisc0::op.type = cisc0::Operation::Compare;
 			cisc0::op.subType = static_cast<byte>(cisc0::CompareStyle::NotEquals);
 			cisc0::op.combineType = cisc0::CompareCombine::None;
-			cisc0::op.immediate = false;
 		};
 bitmask:
 	   BITMASK4 {
@@ -650,6 +612,7 @@ lexeme:
 uses_immediate: FLAG_IMMEDIATE { cisc0::op.immediate = true; };
 destination_register: REGISTER { cisc0::op.arg0 = $1; };
 source_register: REGISTER { cisc0::op.arg1 = $1; };
+two_args: destination_register source_register { cisc0::op.immediate = false; };
 %%
 namespace cisc0 {
 	void assemble(const std::string& ifile, FILE* input, std::ostream* output) {
