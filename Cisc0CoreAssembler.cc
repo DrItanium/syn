@@ -1,4 +1,5 @@
 // Cisc0CoreAssembler rewritten to use pegtl
+#include <string>
 #include <sstream>
 #include <typeinfo>
 #include <iostream>
@@ -27,11 +28,11 @@ namespace cisc0 {
             AssemblerWord(Address currAddress, Word value) : _currAddress(currAddress), _value(value), _isLabel(false) { }
             AssemblerWord(Address currAddress, const std::string& labelTitle) : _currAddress(currAddress), _value(0), _isLabel(true), _label(labelTitle) { }
             virtual ~AssemblerWord() { }
-            Address getAddress() noexcept const { return _currAddress; }
-            Word getValue() noexcept const { return _value; }
+            Address getAddress() const noexcept { return _currAddress; }
+            Word getValue() const noexcept { return _value; }
             void setValue(Word value) noexcept { _value = value; }
-            bool isLabel() noexcept const { return _isLabel; }
-            std::string getLabel() noexcept const { return _label; }
+            bool isLabel() const noexcept { return _isLabel; }
+            std::string getLabel() const noexcept { return _label; }
         private:
             Address _currAddress;
             Word _value;
@@ -55,105 +56,133 @@ namespace cisc0 {
         } \
     }
 
-//DefSymbol(Nop, nop);
-DefGroup(Shift, shift);
-DefGroup(Arithmetic, arithmetic);
-DefGroup(Logical, logical);
-DefGroup(Compare, compare);
-DefGroup(Branch, branch);
-//DefSymbol(Return, return);
-DefGroup(System, system);
-DefGroup(Move, move);
-DefGroup(Set, set);
-DefGroup(Swap, swap);
-DefGroup(Memory, memory);
-//DefSymbol(Complex, complex);
+    DefGroup(Shift, shift);
+    DefGroup(Compare, compare);
 
-DefSymbol(Immediate, immediate);
+    //Still left to do
+    DefGroup(Arithmetic, arithmetic);
+    DefGroup(Logical, logical);
+    DefGroup(Branch, branch);
+    DefGroup(SystemCall, system);
+    DefGroup(Move, move);
+    DefGroup(Set, set);
+    DefGroup(Swap, swap);
+    DefGroup(Memory, memory);
+    DefGroup(Complex, complex);
+
+    //DefSymbol(Nop, nop);
+    //DefSymbol(Return, return);
+    DefSymbol(Immediate, immediate);
 
 
 
-struct UsesImmediate : pegtl::seq<SymbolImmediate> { };
+    struct UsesImmediate : pegtl::seq<SymbolImmediate> { };
 
-DefAction(UsesImmediate) {
-    DefApplyInstruction {
-        state.immediate = true;
-    }
-};
+    DefAction(UsesImmediate) {
+        DefApplyInstruction {
+            state.immediate = true;
+        }
+    };
 
-	template<char delim, typename T>
-	using Numeral = syn::GenericNumeral<delim, T>;
+    template<char delim, typename T>
+        using Numeral = syn::GenericNumeral<delim, T>;
     struct HexadecimalNumber : public Numeral<'x', pegtl::xdigit> { };
-	DefAction(HexadecimalNumber) {
-		DefApplyInstruction {
-			state.fullImmediate = syn::getHexImmediate<RegisterValue>(in.string(), reportError);
-		}
-	};
+    DefAction(HexadecimalNumber) {
+        DefApplyInstruction {
+            state.fullImmediate = syn::getHexImmediate<RegisterValue>(in.string(), reportError);
+        }
+    };
     struct BinaryNumber : public Numeral<'b', pegtl::abnf::BIT> { };
-	DefAction(BinaryNumber) {
-		DefApplyInstruction {
-			state.fullImmediate = syn::getBinaryImmediate<RegisterValue>(in.string(), reportError);
-		}
-	};
+    DefAction(BinaryNumber) {
+        DefApplyInstruction {
+            state.fullImmediate = syn::getBinaryImmediate<RegisterValue>(in.string(), reportError);
+        }
+    };
     struct DecimalNumber : public pegtl::plus<pegtl::digit> { };
-	DefAction(DecimalNumber) {
-		DefApplyInstruction {
-			state.fullImmediate = syn::getDecimalImmediate<RegisterValue>(in.string().c_str(), reportError);
-		}
-	};
+    DefAction(DecimalNumber) {
+        DefApplyInstruction {
+            state.fullImmediate = syn::getDecimalImmediate<RegisterValue>(in.string().c_str(), reportError);
+        }
+    };
     struct Number : public pegtl::sor<HexadecimalNumber, DecimalNumber, BinaryNumber> { };
-	DefAction(Number) {
-		DefApplyInstruction {
-			//state.current.hasLexeme = false;
-		}
-	};
+    DefAction(Number) {
+        DefApplyInstruction {
+            //state.current.hasLexeme = false;
+        }
+    };
 
-	struct GeneralPurposeRegister : public syn::GenericRegister<'r'> { };
-	using IndirectGPR = syn::Indirection<GeneralPurposeRegister>;
+    struct GeneralPurposeRegister : public syn::GenericRegister<'r'> { };
+    using IndirectGPR = syn::Indirection<GeneralPurposeRegister>;
 #define DefIndirectGPR(title) \
-	struct title : public IndirectGPR { }
+    struct title : public IndirectGPR { }
 
     DefIndirectGPR(DestinationRegister);
-	DefAction(DestinationRegister) {
-		DefApplyInstruction {
+    DefAction(DestinationRegister) {
+        DefApplyInstruction {
             state.arg0 = syn::getRegister<Word, ArchitectureConstants::RegisterCount>(in.string(), reportError);
-		}
-	};
+        }
+    };
 
     DefIndirectGPR(SourceRegister);
-	DefAction(SourceRegister) {
-		DefApplyInstruction {
+    DefAction(SourceRegister) {
+        DefApplyInstruction {
             state.arg1 = syn::getRegister<Word, ArchitectureConstants::RegisterCount>(in.string(), reportError);
-		}
-	};
+        }
+    };
     struct TwoGPRs : pegtl::seq<DestinationRegister, Separator, SourceRegister> { };
-DefSymbol(Left, left);
-DefSymbol(Right, right);
+    DefAction(TwoGPRs) {
+        DefApplyInstruction {
+            state.immediate = false;
+        }
+    };
+    DefSymbol(Left, left);
+    DefSymbol(Right, right);
 
-struct ShiftLeftOrRight : pegtl::sor<SymbolLeft, SymbolRight> { };
+    struct ShiftLeftOrRight : pegtl::sor<SymbolLeft, SymbolRight> { };
 
-DefAction(ShiftLeftOrRight) {
-    DefApplyInstruction {
-        state.shiftLeft = (in.string() == "left");
+    DefAction(ShiftLeftOrRight) {
+        DefApplyInstruction {
+            state.shiftLeft = (in.string() == "left");
+        }
+    };
+    template<typename Source>
+        struct ImmediateOperationArgs : pegtl::seq<UsesImmediate, Separator, DestinationRegister, Separator, Source> { };
+
+    struct ShiftImmediateValue : pegtl::seq<Number> { };
+    DefAction(ShiftImmediateValue) {
+        DefApplyInstruction {
+            state.arg1 = static_cast<byte>(state.fullImmediate) & 0b11111;
+        }
+    };
+    struct ShiftArgs : pegtl::sor<TwoGPRs, ImmediateOperationArgs<ShiftImmediateValue>> { };
+
+    struct ShiftOperation : pegtl::seq<GroupShift, Separator, ShiftLeftOrRight, Separator, ShiftArgs> { };
+
+    struct ByteCastImmediate : pegtl::seq<Number> { };
+    DefAction(ByteCastImmediate) {
+        DefApplyInstruction {
+            state.arg1 = static_cast<byte>(state.fullImmediate);
+        }
+    };
+#define DefSubType(title, str, subgroup) \
+    DefSymbol(title, str); \
+    struct SubGroup ## subgroup ## title : syn::Indirection<Symbol ## title> { }; \
+    DefAction(SubGroup ## subgroup ## title) { \
+        DefApplyInstruction { \
+            state.subType = static_cast < decltype(state.subType) > ( cisc0 :: subgroup :: title ) ; \
+        } \
     }
-};
-struct ShiftImmediateArgs : pegtl::seq<UsesImmediate, Separator, DestinationRegister, Separator, Number> { };
-DefAction(ShiftImmediateArgs) {
-    DefApplyInstruction {
-        state.arg1 = static_cast<byte>(state.fullImmediate) & 0b11111;
-    }
-};
-struct ShiftRegisterArgs : TwoGPRs { };
-DefAction(ShiftRegisterArgs) {
-    DefApplyInstruction {
-        state.immediate = false;
-    }
-};
-struct ShiftArgs : pegtl::sor<ShiftRegisterArgs, ShiftImmediateArgs> { };
 
-struct ShiftOperation : pegtl::seq<GroupShift, Separator, ShiftLeftOrRight, Separator, ShiftArgs> { };
+#define DefCompareStyle(title, str) DefSubType(title, str, CompareStyle)
 
-
+    DefCompareStyle(Equals, ==);
+    DefCompareStyle(NotEquals, !=);
+    DefCompareStyle(LessThan, <);
+    DefCompareStyle(LessThanOrEqualTo, <=);
+    DefCompareStyle(GreaterThan, >);
+    DefCompareStyle(GreaterThanOrEqualTo, >=);
+    struct CompareArgs : pegtl::sor<TwoGPRs, ImmediateOperationArgs<ByteCastImmediate>> { };
+    struct CompareOperation : pegtl::seq<GroupCompare, Separator, CompareType, Separator, CombineType, Separator, CompareArgs> { };
 }
 
 
