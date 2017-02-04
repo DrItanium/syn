@@ -66,9 +66,9 @@ namespace cisc0 {
     DefGroup(Memory, memory);
     DefGroup(Logical, logical);
     DefGroup(Complex, complex);
+    DefGroup(Branch, branch);
 
     //Still left to do
-    DefGroup(Branch, branch);
 
     //DefSymbol(Nop, nop);
     //DefSymbol(Return, return);
@@ -310,24 +310,26 @@ namespace cisc0 {
                             Separator,
                             StackOperationFull> { };
     DefSymbol(Indirect, indirect);
-    DefAction(SymbolIndirect) {
+    struct FlagIndirect : public syn::Indirection<SymbolIndirect> { };
+    DefAction(FlagIndirect) {
         DefApplyInstruction {
             state.indirect = true;
         }
     };
     DefSymbol(Direct, direct);
-    DefAction(SymbolDirect) {
+    struct FlagDirect : public syn::Indirection<SymbolDirect> { };
+    DefAction(FlagDirect) {
         DefApplyInstruction {
             state.indirect = false;
         }
     };
+    struct FlagDirectOrIndirect : pegtl::sor<FlagDirect, FlagIndirect> { };
     struct LoadStoreOperation : pegtl::seq<
                                 LoadStoreType,
                                 Separator,
                                 BitmaskNumber,
                                 Separator,
-                                pegtl::sor<SymbolIndirect,
-                                SymbolDirect>,
+                                FlagDirectOrIndirect,
                                 Separator,
                                 Arg0ImmediateValue,
                                 Separator,
@@ -341,11 +343,11 @@ namespace cisc0 {
     };
 
     struct MemoryInstruction : pegtl::seq<
-                             GroupMemory,
-                             Separator,
-                             pegtl::sor<
-                             StackOperation,
-                             LoadStoreOperation>> { };
+                               GroupMemory,
+                               Separator,
+                               pegtl::sor<
+                               StackOperation,
+                               LoadStoreOperation>> { };
 
 #define DefLogicalOperation(title, str) \
     DefSubTypeWithSymbol(title, str, LogicalOps)
@@ -381,10 +383,10 @@ namespace cisc0 {
     DefEncodingSubType(Encode, encode);
     DefEncodingSubType(Decode, decode);
     struct ComplexEncodingSubOperation : pegtl::sor<
-                                      SubGroupEncodingOperationDecode,
-                                      SubGroupEncodingOperationEncode,
-                                      SubGroupEncodingOperationBitSet,
-                                      SubGroupEncodingOperationBitUnset> { };
+                                         SubGroupEncodingOperationDecode,
+                                         SubGroupEncodingOperationEncode,
+                                         SubGroupEncodingOperationBitSet,
+                                         SubGroupEncodingOperationBitUnset> { };
 #define DefComplexOperation(title, str) \
     DefSubTypeWithSymbol(title, str, ComplexSubTypes)
     DefComplexOperation(Encoding, encoding);
@@ -401,5 +403,93 @@ namespace cisc0 {
                               GroupComplex,
                               Separator,
                               ComplexSubOperations> { };
+
+    DefSymbol(If, if);
+    DefSymbol(Call, call);
+    DefSymbol(NoCall, nocall);
+    DefSymbol(Conditional, conditional);
+    DefSymbol(Unconditional, unconditional);
+
+    template<typename T, typename F>
+        struct ChoiceFlag : pegtl::sor<T, F> { };
+
+    struct BranchFlagIf : public syn::Indirection<SymbolIf> { };
+    DefAction(BranchFlagIf) {
+        DefApplyInstruction {
+            state.isIf = true;
+            state.isConditional = false;
+        }
+    };
+
+    struct BranchFlagCall : public syn::Indirection<SymbolCall> { };
+    DefAction(BranchFlagCall) {
+        DefApplyInstruction {
+            state.isCall = true;
+        }
+    };
+
+    struct BranchFlagNoCall : public syn::Indirection<SymbolNoCall> { };
+    DefAction(BranchFlagNoCall) {
+        DefApplyInstruction {
+            state.isCall = false;
+        }
+    };
+
+    struct ChooseBranchFlagCall : ChoiceFlag<BranchFlagCall, BranchFlagNoCall> { };
+
+    struct BranchFlagConditional : public syn::Indirection<SymbolConditional> { };
+    DefAction(BranchFlagConditional) {
+        DefApplyInstruction {
+            state.isConditional = true;
+        }
+    };
+
+    struct BranchFlagUnconditional : public syn::Indirection<SymbolUnconditional> { };
+    DefAction(BranchFlagUnconditional) {
+        DefApplyInstruction {
+            state.isConditional = false;
+        }
+    };
+
+    struct ChooseBranchFlagUsePredicate : ChoiceFlag<BranchFlagConditional, BranchFlagUnconditional> { };
+
+    struct BranchIfOperation : pegtl::seq<
+                               BranchFlagIf,
+                               Separator,
+                               ChooseBranchFlagCall,
+                               Separator,
+                               TwoGPRs> { };
+    struct BranchNormalArgs : pegtl::sor<
+                              pegtl::seq<
+                              UsesImmediate,
+                              Separator,
+                              LexemeOrNumber>,
+                              DestinationRegister> { };
+    struct BranchCallOperation : pegtl::seq<BranchFlagCall,
+    Separator,
+    BranchNormalArgs> { };
+    struct BranchJumpOperation : pegtl::seq<ChooseBranchFlagUsePredicate,
+    Separator,
+    BranchNormalArgs> { };
+
+    struct BranchOperation : pegtl::seq<
+                             GroupBranch,
+                             Separator,
+                             pegtl::sor<BranchIfOperation,
+                             BranchCallOperation,
+                             BranchJumpOperation>> { };
+
+    struct Instructions : pegtl::sor<
+                          BranchOperation,
+                          ComplexOperation,
+                          MemoryInstruction,
+                          MoveOperation,
+                          SetOperation,
+                          SwapOperation,
+                          ArithmeticOperation,
+                          ShiftOperation,
+                          CompareOperation,
+                          SystemCallOperation,
+                          LogicalOperation> { };
 
 }
