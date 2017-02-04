@@ -19,7 +19,6 @@
           (field (name ArithmeticSource) (mask 0b1111000000000000) (shift 12) (output-type byte))
           (field (name ArithmeticSignature) (mask 0b0000000011110000) (shift 4) (output-type byte))
           (field (name LogicalFlagImmediate) (mask 0b0000000000010000) (shift 4) (output-type bool))
-          (field (name LogicalFlagImmediateType) (mask 0b0000000001100000) (shift 5) (output-type ImmediateLogicalOps))
           (field (name LogicalFlagImmediateMask) (mask 0b0000111100000000) (shift 8) (output-type byte))
           (field (name LogicalImmediateDestination) (mask 0b1111000000000000) (shift 12) (output-type byte))
           (field (name LogicalImmediateLower16) (mask 0b1111111111111111) (shift 0) (output-type Word))
@@ -99,12 +98,6 @@
                                       LessThanOrEqualTo
                                       GreaterThanOrEqualTo
                                       ) (cast-to byte) (max-size "8"))
-          (enum (name ImmediateLogicalOps) (children
-                                             And
-                                             Or
-                                             Xor
-                                             Nand
-                                             ) (cast-to byte) (max-size "4"))
           (enum (name LogicalOps) (children
                                     And
                                     Or
