@@ -58,15 +58,15 @@ namespace cisc0 {
     // done
     DefGroup(Shift, shift);
     DefGroup(Compare, compare);
-    DefGroup(Logical, logical);
-
-    //Still left to do
-    DefGroup(Arithmetic, arithmetic);
-    DefGroup(Branch, branch);
-    DefGroup(SystemCall, system);
     DefGroup(Move, move);
     DefGroup(Set, set);
     DefGroup(Swap, swap);
+
+    //Still left to do
+    DefGroup(Logical, logical);
+    DefGroup(Arithmetic, arithmetic);
+    DefGroup(Branch, branch);
+    DefGroup(SystemCall, system);
     DefGroup(Memory, memory);
     DefGroup(Complex, complex);
 
@@ -107,9 +107,26 @@ namespace cisc0 {
     struct Number : public pegtl::sor<HexadecimalNumber, DecimalNumber, BinaryNumber> { };
     DefAction(Number) {
         DefApplyInstruction {
-            //state.current.hasLexeme = false;
+            state.isLabel = false;
         }
     };
+
+    struct BitmaskNumber : public Numeral<'m', pegtl::abnf::BIT> { };
+
+    DefAction(BitmaskNumber) {
+        DefApplyInstruction {
+            state.bitmask = syn::decodeBits<RegisterValue, byte, 0x000000FF, 0>(syn::getBinaryImmediate<RegisterValue>(in.string(), reportError));
+        }
+    };
+	using Lexeme = syn::Lexeme;
+	DefAction(Lexeme) {
+		DefApplyInstruction {
+            state.labelValue = in.string();
+            state.fullImmediate = 0;
+            state.isLabel = true;
+		}
+	};
+	struct LexemeOrNumber : public syn::LexemeOr<Number> { };
 
     struct GeneralPurposeRegister : public syn::GenericRegister<'r'> { };
     using IndirectGPR = syn::Indirection<GeneralPurposeRegister>;
@@ -129,7 +146,9 @@ namespace cisc0 {
             state.arg1 = syn::getRegister<Word, ArchitectureConstants::RegisterCount>(in.string(), reportError);
         }
     };
-    struct TwoGPRs : pegtl::seq<DestinationRegister, Separator, SourceRegister> { };
+    template<typename S>
+    struct TwoArgumentOperation : pegtl::seq<DestinationRegister, Separator, S> { };
+    struct TwoGPRs : TwoArgumentOperation<SourceRegister> { };
     DefAction(TwoGPRs) {
         DefApplyInstruction {
             state.immediate = false;
@@ -145,8 +164,11 @@ namespace cisc0 {
             state.shiftLeft = (in.string() == "left");
         }
     };
+
     template<typename Source>
-        struct ImmediateOperationArgs : pegtl::seq<UsesImmediate, Separator, DestinationRegister, Separator, Source> { };
+    struct ImmediateOperationArgs : pegtl::seq<UsesImmediate, Separator, TwoArgumentOperation<Source>> { };
+    template<typename Source>
+    struct ImmediateOperationArgsWithBitmask : pegtl::seq<UsesImmediate, Separator, BitmaskNumber, Separator, TwoArgumentOperation<Source>> { };
 
     struct ShiftImmediateValue : pegtl::seq<Number> { };
     DefAction(ShiftImmediateValue) {
@@ -202,19 +224,35 @@ namespace cisc0 {
         }
     };
 
-#define DefLogicalOps(title, str) DefSubType(title, str, LogicalOps)
-#define DefImmediateLogicalOps(title, str) DefSubType(title, str, ImmediateLogicalOps)
-    DefSubTypeWithSymbol(Not, not, LogicalOps);
+    struct MoveOperation : pegtl::seq<
+                           GroupMove,
+                           Separator,
+                           BitmaskNumber,
+                           Separator,
+                           TwoGPRs> { };
+    struct SetOperation : pegtl::seq<
+                          GroupSet,
+                          Separator,
+                          BitmaskNumber,
+                          Separator,
+                          LexemeOrNumber> { };
 
-    struct LogicalNotOperation : pegtl::seq<SubGroupLogicalOpsNot, Separator, DestinationRegister> { };
-    DefAction(LogicalNotOperation) {
-        DefApplyInstruction {
-            state.immediate = false;
-        }
-    };
+    struct SwapOperation : pegtl::seq<
+                           GroupSwap,
+                           Separator,
+                           TwoGPRs> { };
 
-    //DefLogicalOps(
-    //struct LogicalOperation : pegtl::seq<GroupLogical, Separator, LogicalActions> { };
+//#define DefLogicalOps(title, str) DefSubType(title, str, LogicalOps)
+//#define DefLogicalOpsWithSymbol(title, str) DefSubTypeWithSymbol(title, str, LogicalOps)
+//    DefLogicalOpsWithSymbol(Not, not);
+//    DefLogicalOpsWithSymbol(Nand, nand);
+//    DefLogicalOpsWithSymbol(And, and);
+//    DefLogicalOpsWithSymbol(Or, or);
+//    DefLogicalOpsWithSymbol(Xor, xor);
+//    struct LogicalLexeme : pegtl::seq<LexemeOrNumber> { };
+//    struct LogicalArgs : pegtl::sor<TwoGPRs, ImmediateOperationArgsWithBitmask<LogicalLexeme>> { };
+//    //struct LogicalOperation : pegtl::seq<GroupLogical, Separator, LogicalActions> { };
+
 }
 
 
