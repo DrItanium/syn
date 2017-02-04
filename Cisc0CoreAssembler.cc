@@ -42,8 +42,9 @@ namespace cisc0 {
 	};
 	struct AssemblerState { 
 		cisc0::Address currentAddress = 0;
-		std::vector<cisc0::InstructionEncoder> instructions;
 		cisc0::InstructionEncoder current;
+		std::vector<AssemblerWord> finalWords;
+		std::map<std::string, RegisterValue> labels;
 	};
 #define DefSymbol(title, str) \
 	struct Symbol ## title : public pegtl_string_t( #str ) { }
@@ -528,6 +529,11 @@ namespace cisc0 {
 									 CompareOperation,
 									 SystemCallOperation,
 									 LogicalOperation> { };
+	DefAction(Instructions) {
+		DefApplyAsmState {
+			
+		}
+	};
 	struct Statement : pegtl::sor<
 					   Instructions> { };
 	struct Anything : pegtl::sor<
