@@ -494,10 +494,6 @@ stack_operation_choose:
 		};
 
 
-system_op:
-		IMMEDIATE source_register {
-            cisc0::op.arg0 = ($1 & 0b1111);
-        };
 load_store_combined:
 			load_store_op bitmask immediate_or_alias read_next_word;
 immediate_or_alias:
@@ -509,6 +505,11 @@ immediate_or_alias:
 					cisc0error(err.what().c_str());
 				}
 		};
+
+system_op:
+		IMMEDIATE source_register {
+            cisc0::op.arg0 = ($1 & 0b1111);
+        };
 read_next_word:
 		REGISTER REGISTER {
 			cisc0::op.arg1 = $1;

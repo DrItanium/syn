@@ -63,11 +63,11 @@ namespace cisc0 {
     DefGroup(Swap, swap);
     DefGroup(SystemCall, system);
     DefGroup(Arithmetic, arithmetic);
+    DefGroup(Memory, memory);
 
     //Still left to do
     DefGroup(Logical, logical);
     DefGroup(Branch, branch);
-    DefGroup(Memory, memory);
     DefGroup(Complex, complex);
 
     //DefSymbol(Nop, nop);
@@ -244,8 +244,8 @@ namespace cisc0 {
                            Separator,
                            TwoGPRs> { };
 
-    struct SystemCallImmediateValue : pegtl::seq<Number> { };
-    DefAction(SystemCallImmediateValue) {
+    struct Arg0ImmediateValue : pegtl::seq<Number> { };
+    DefAction(Arg0ImmediateValue) {
         DefApplyInstruction {
             state.arg0 = static_cast<byte>(state.fullImmediate) & 0b1111;
         }
@@ -253,7 +253,7 @@ namespace cisc0 {
     struct SystemCallOperation : pegtl::seq<
                                  GroupSystemCall,
                                  Separator,
-                                 SystemCallImmediateValue,
+                                 Arg0ImmediateValue,
                                  Separator,
                                  SourceRegister> { };
 #define DefArithmeticOperation(title, str) \
@@ -281,19 +281,69 @@ namespace cisc0 {
                                  Separator,
                                  ArithmeticArgs> { };
 
-    //#define DefLogicalOps(title, str) DefSubType(title, str, LogicalOps)
-    //#define DefLogicalOpsWithSymbol(title, str) DefSubTypeWithSymbol(title, str, LogicalOps)
-    //    DefLogicalOpsWithSymbol(Not, not);
-    //    DefLogicalOpsWithSymbol(Nand, nand);
-    //    DefLogicalOpsWithSymbol(And, and);
-    //    DefLogicalOpsWithSymbol(Or, or);
-    //    DefLogicalOpsWithSymbol(Xor, xor);
-    //    struct LogicalLexeme : pegtl::seq<LexemeOrNumber> { };
-    //    struct LogicalArgs : pegtl::sor<TwoGPRs, ImmediateOperationArgsWithBitmask<LogicalLexeme>> { };
-    //    //struct LogicalOperation : pegtl::seq<GroupLogical, Separator, LogicalActions> { };
+#define DefMemoryOperation(title, str) \
+    DefSubTypeWithSymbol(title, str, MemoryOperation)
+    DefMemoryOperation(Load, load);
+    DefMemoryOperation(Store, store);
+    DefMemoryOperation(Push, push);
+    DefMemoryOperation(Pop, pop);
 
+    struct LoadStoreType : pegtl::sor<
+                           SubGroupMemoryOperationLoad,
+                           SubGroupMemoryOperationStore> { };
+    struct StackOperationFull : pegtl::seq<TwoGPRs> { };
+    DefAction(StackOperationFull) {
+        DefApplyInstruction {
+            // check and see if we are looking at sp
+            // no need to waste a word so just use the default version
+            // implicitly. SourceRegister in this case is the stack pointer stand in
+            state.readNextWord = (state.arg1 != ArchitectureConstants::StackPointer);
+        }
+    };
+    struct StackMemoryType : pegtl::sor<
+                             SubGroupMemoryOperationPush,
+                             SubGroupMemoryOperationPop> { };
+    struct StackOperation : pegtl::seq<
+                            StackMemoryType,
+                            Separator,
+                            BitmaskNumber,
+                            Separator,
+                            StackOperationFull> { };
+    DefSymbol(Indirect, indirect);
+    DefAction(SymbolIndirect) {
+        DefApplyInstruction {
+            state.indirect = true;
+        }
+    };
+    DefSymbol(Direct, direct);
+    DefAction(SymbolDirect) {
+        DefApplyInstruction {
+            state.indirect = false;
+        }
+    };
+    struct LoadStoreOperation : pegtl::seq<
+                                LoadStoreType,
+                                Separator,
+                                BitmaskNumber,
+                                Separator,
+                                pegtl::sor<SymbolIndirect,
+                                SymbolDirect>,
+                                Separator,
+                                Arg0ImmediateValue,
+                                Separator,
+                                TwoGPRs> { };
 
+    DefAction(LoadStoreOperation) {
+        DefApplyInstruction {
+            state.readNextWord = (state.arg1 != ArchitectureConstants::AddressRegister) &&
+                (state.arg2 != ArchitectureConstants::ValueRegister);
+        }
+    };
+
+    struct MemoryInstruction : pegtl::seq<
+                             GroupMemory,
+                             Separator,
+                             pegtl::sor<
+                             StackOperation,
+                             LoadStoreOperation>> { };
 }
-
-
-
