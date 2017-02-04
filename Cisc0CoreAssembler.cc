@@ -64,9 +64,9 @@ namespace cisc0 {
     DefGroup(SystemCall, system);
     DefGroup(Arithmetic, arithmetic);
     DefGroup(Memory, memory);
+    DefGroup(Logical, logical);
 
     //Still left to do
-    DefGroup(Logical, logical);
     DefGroup(Branch, branch);
     DefGroup(Complex, complex);
 
@@ -346,4 +346,8 @@ namespace cisc0 {
                              pegtl::sor<
                              StackOperation,
                              LoadStoreOperation>> { };
+
+#define DefLogicalOperation(title, str) \
+    DefSubTypeWithSymbol(title, str, LogicalOps)
+
 }

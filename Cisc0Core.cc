@@ -162,32 +162,23 @@ namespace cisc0 {
 			ALU::Operation op;
 			RegisterValue source1 = 0;
 			byte source0 = 0u;
-			if (current.getLogicalFlagImmediate()) {
-				static std::map<ImmediateLogicalOps, ALU::Operation> immediateTranslation = {
-					{ ImmediateLogicalOps::Or, ALU::Operation::BinaryOr },
-					{ ImmediateLogicalOps::And, ALU::Operation::BinaryAnd },
-					{ ImmediateLogicalOps::Xor, ALU::Operation::BinaryXor },
-					{ ImmediateLogicalOps::Nand, ALU::Operation::BinaryNand },
-				};
-				auto result = immediateTranslation.find(current.getLogicalFlagImmediateType());
-				throwIfNotFound(result, immediateTranslation, "Illegal immediate logical flag type");
-				op = result->second;
-				source1 = retrieveImmediate(current.getLogicalFlagImmediateMask());
-				source0 = current.getLogicalImmediateDestination();
-			} else {
-				static std::map<LogicalOps, ALU::Operation> nonImmediateTranslation = {
-					{ LogicalOps::Not, ALU::Operation::UnaryNot },
-					{ LogicalOps::Or, ALU::Operation::BinaryOr },
-					{ LogicalOps::And, ALU::Operation::BinaryAnd },
-					{ LogicalOps::Xor, ALU::Operation::BinaryXor },
-					{ LogicalOps::Nand, ALU::Operation::BinaryNand },
-				};
-				auto result = nonImmediateTranslation.find(current.getLogicalFlagType());
-				throwIfNotFound(result, nonImmediateTranslation, "Illegal indirect logical operation!");
-				op = result->second;
-				source0 = current.getLogicalRegister0();
-				source1 = registerValue(current.getLogicalRegister1());
-			}
+            static std::map<LogicalOps, ALU::Operation> dispatchTable = {
+                { LogicalOps::Not, ALU::Operation::UnaryNot },
+                { LogicalOps::Or, ALU::Operation::BinaryOr },
+                { LogicalOps::And, ALU::Operation::BinaryAnd },
+                { LogicalOps::Xor, ALU::Operation::BinaryXor },
+                { LogicalOps::Nand, ALU::Operation::BinaryNand },
+            };
+            auto result = dispatchTable.find(current.getLogicalFlagType());
+            throwIfNotFound(result, dispatchTable, "Illegal logical operation!");
+            op = result->second;
+            if (current.getLogicalFlagImmediate()) {
+                source1 = retrieveImmediate(current.getLogicalFlagImmediateMask());
+                source0 = current.getLogicalImmediateDestination();
+            } else {
+                source0 = current.getLogicalRegister0();
+                source1 = registerValue(current.getLogicalRegister1());
+            }
 			auto& dest = registerValue(source0);
 			dest = _logicalOps.performOperation(op, dest, source1);
 		} else if (tControl == Operation::Move) {
@@ -583,8 +574,8 @@ namespace cisc0 {
 	InstructionEncoder::Encoding InstructionEncoder::encodeLogical() {
 		auto first = encodeControl(0, type);
 		first = encodeLogicalFlagImmediate(first, immediate);
+        first = encodeLogicalFlagType(first, static_cast<LogicalOps>(subType));
 		if (immediate) {
-			first = encodeLogicalFlagImmediateType(first, static_cast<ImmediateLogicalOps>(subType));
 			first = encodeLogicalFlagImmediateMask(first, bitmask);
 			first = encodeLogicalImmediateDestination(first, arg0);
 			auto maskedImmediate = getMask(bitmask) & fullImmediate;
@@ -592,7 +583,6 @@ namespace cisc0 {
 			auto third = static_cast<Word>(maskedImmediate >> 16);
 			return std::make_tuple(instructionSizeFromImmediateMask(bitmask), first, second, third);
 		} else {
-			first = encodeLogicalFlagType(first, static_cast<LogicalOps>(subType));
 			first = encodeLogicalRegister0(first, arg0);
 			first = encodeLogicalRegister1(first, arg1);
 			return std::make_tuple(1, first, 0, 0);
