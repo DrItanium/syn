@@ -165,7 +165,6 @@ namespace cisc0 {
         }
     };
 #define DefSubType(title, str, subgroup) \
-    DefSymbol(title, str); \
     struct SubGroup ## subgroup ## title : syn::Indirection<Symbol ## title> { }; \
     DefAction(SubGroup ## subgroup ## title) { \
         DefApplyInstruction { \
@@ -175,13 +174,37 @@ namespace cisc0 {
 
 #define DefCompareStyle(title, str) DefSubType(title, str, CompareStyle)
 
-    DefCompareStyle(Equals, ==);
-    DefCompareStyle(NotEquals, !=);
-    DefCompareStyle(LessThan, <);
-    DefCompareStyle(LessThanOrEqualTo, <=);
-    DefCompareStyle(GreaterThan, >);
-    DefCompareStyle(GreaterThanOrEqualTo, >=);
+#define DefCompareStyleWithSymbol(title, str) \
+    DefSymbol(title, str); \
+    DefCompareStyle(title, str)
+
+    DefCompareStyleWithSymbol(Equals, ==);
+    DefCompareStyleWithSymbol(NotEquals, !=);
+    DefCompareStyleWithSymbol(LessThan, <);
+    DefCompareStyleWithSymbol(LessThanOrEqualTo, <=);
+    DefCompareStyleWithSymbol(GreaterThan, >);
+    DefCompareStyleWithSymbol(GreaterThanOrEqualTo, >=);
+    struct CompareType : pegtl::sor<
+                         SubGroupCompareStyleEquals,
+                         SubGroupCompareStyleNotEquals,
+                         SubGroupCompareStyleLessThan,
+                         SubGroupCompareStyleLessThanOrEqualTo,
+                         SubGroupCompareStyleGreaterThan,
+                         SubGroupCompareStyleGreaterThanOrEqualTo> { };
     struct CompareArgs : pegtl::sor<TwoGPRs, ImmediateOperationArgs<ByteCastImmediate>> { };
+#define DefCompareCombine(title, str) DefSubType(title, str, CompareCombine)
+#define DefCompareCombineWithSymbol(title, str) \
+    DefSymbol(title, str); \
+    DefCompareCombine(title, str)
+    DefCompareCombineWithSymbol(None, none);
+    DefCompareCombineWithSymbol(And, and);
+    DefCompareCombineWithSymbol(Or, or);
+    DefCompareCombineWithSymbol(Xor, xor);
+    struct CombineType : pegtl::sor<
+                         SubGroupCompareCombineNone,
+                         SubGroupCompareCombineAnd,
+                         SubGroupCompareCombineOr,
+                         SubGroupCompareCombineXor> { };
     struct CompareOperation : pegtl::seq<GroupCompare, Separator, CompareType, Separator, CombineType, Separator, CompareArgs> { };
 }
 
