@@ -18,6 +18,7 @@
 
 namespace cisc0 {
 	using Separator = syn::AsmSeparator;
+	using SingleLineComment = syn::SingleLineComment<';'>;
 	template<typename R> struct Action : pegtl::nothing<R> { };
 	void reportError(const std::string& msg) {
 		throw syn::Problem(msg);
@@ -491,5 +492,16 @@ namespace cisc0 {
 						  CompareOperation,
 						  SystemCallOperation,
 						  LogicalOperation> { };
+	struct Statement : pegtl::sor<
+					   Instructions> { };
+	struct Anything : pegtl::sor<
+					  Separator, 
+					  SingleLineComment, 
+					  Statement> { };
 
+	struct Main : public syn::MainFileParser<Anything> { };
+
+	void assemble (const std::string& iName, FILE* input, std::ostream* output) {
+		pegtl::analyze<cisc0::Main>();
+	}
 }
