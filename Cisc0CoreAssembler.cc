@@ -65,10 +65,10 @@ namespace cisc0 {
     DefGroup(Arithmetic, arithmetic);
     DefGroup(Memory, memory);
     DefGroup(Logical, logical);
+    DefGroup(Complex, complex);
 
     //Still left to do
     DefGroup(Branch, branch);
-    DefGroup(Complex, complex);
 
     //DefSymbol(Nop, nop);
     //DefSymbol(Return, return);
@@ -374,5 +374,32 @@ namespace cisc0 {
 
 
 
+#define DefEncodingSubType(title, str) \
+    DefSubTypeWithSymbol(title, str, EncodingOperation)
+    DefEncodingSubType(BitSet, bitset);
+    DefEncodingSubType(BitUnset, bitunset);
+    DefEncodingSubType(Encode, encode);
+    DefEncodingSubType(Decode, decode);
+    struct ComplexEncodingSubOperation : pegtl::sor<
+                                      SubGroupEncodingOperationDecode,
+                                      SubGroupEncodingOperationEncode,
+                                      SubGroupEncodingOperationBitSet,
+                                      SubGroupEncodingOperationBitUnset> { };
+#define DefComplexOperation(title, str) \
+    DefSubTypeWithSymbol(title, str, ComplexSubTypes)
+    DefComplexOperation(Encoding, encoding);
+
+
+    struct ComplexEncodingOperation : pegtl::seq<
+                                      SubGroupComplexSubTypesEncoding,
+                                      Separator,
+                                      ComplexEncodingSubOperation> { };
+    struct ComplexSubOperations : pegtl::sor<
+                                  ComplexEncodingOperation> { };
+
+    struct ComplexOperation : pegtl::seq<
+                              GroupComplex,
+                              Separator,
+                              ComplexSubOperations> { };
 
 }
