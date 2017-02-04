@@ -40,14 +40,22 @@ namespace cisc0 {
 			bool _isLabel;
 			std::string _label;
 	};
-	class AssemblerState {
-		cisc0::InstructionEncoder current;
+	struct AssemblerState { };
+	struct InstructionEncoderWrapper : public InstructionEncoder {
+		template<typename Input, typename ... States> 
+			InstructionEncoderWrapper(const Input& in, States && ... ) : InstructionEncoder() { 
+				std::cout << "make: input = " << in.string() << std::endl;
+			};
+		template<typename Input, typename ... States>
+		void success(const Input& in, States && ... st) {
+			std::cout << "success: input = " << in.string() << std::endl;
+		}
 	};
 #define DefSymbol(title, str) \
 	struct Symbol ## title : public pegtl_string_t( #str ) { }
 #define DefAction(rule) template<> struct Action < rule >
 #define DefApplyGeneric(type) template<typename Input> static void apply(const Input& in, type& state)
-#define DefApplyInstruction DefApplyGeneric(cisc0::InstructionEncoder)
+#define DefApplyInstruction DefApplyGeneric(cisc0::InstructionEncoderWrapper)
 #define DefGroup(title, str) \
 	DefSymbol(title, str); \
 	struct Group ## title : syn::Indirection<Symbol ## title> { }; \
@@ -466,12 +474,14 @@ namespace cisc0 {
 										 Separator,
 										 LexemeOrNumber>,
 										 DestinationRegister> { };
-	struct BranchCallOperation : pegtl::seq<BranchFlagCall,
-	Separator,
-	BranchNormalArgs> { };
-	struct BranchJumpOperation : pegtl::seq<ChooseBranchFlagUsePredicate,
-	Separator,
-	BranchNormalArgs> { };
+	struct BranchCallOperation : pegtl::seq<
+								 BranchFlagCall,
+								 Separator,
+								 BranchNormalArgs> { };
+	struct BranchJumpOperation : pegtl::seq<
+								 ChooseBranchFlagUsePredicate,
+								 Separator,
+								 BranchNormalArgs> { };
 
 	struct BranchOperation : pegtl::seq<
 							 GroupBranch,
@@ -480,18 +490,20 @@ namespace cisc0 {
 							 BranchCallOperation,
 							 BranchJumpOperation>> { };
 
-	struct Instructions : pegtl::sor<
-						  BranchOperation,
-						  ComplexOperation,
-						  MemoryInstruction,
-						  MoveOperation,
-						  SetOperation,
-						  SwapOperation,
-						  ArithmeticOperation,
-						  ShiftOperation,
-						  CompareOperation,
-						  SystemCallOperation,
-						  LogicalOperation> { };
+	struct Instructions : pegtl::state<
+						  InstructionEncoderWrapper,
+						  pegtl::sor<
+									 BranchOperation,
+									 ComplexOperation,
+									 MemoryInstruction,
+									 MoveOperation,
+									 SetOperation,
+									 SwapOperation,
+									 ArithmeticOperation,
+									 ShiftOperation,
+									 CompareOperation,
+									 SystemCallOperation,
+									 LogicalOperation>> { };
 	struct Statement : pegtl::sor<
 					   Instructions> { };
 	struct Anything : pegtl::sor<
@@ -503,5 +515,7 @@ namespace cisc0 {
 
 	void assemble (const std::string& iName, FILE* input, std::ostream* output) {
 		pegtl::analyze<cisc0::Main>();
+		AssemblerState as;
+		pegtl::parse_cstream<cisc0::Main, cisc0::Action>(input, iName.c_str(), 16777216, as);
 	}
 }

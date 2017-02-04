@@ -26,8 +26,7 @@ SIM_OBJECTS = Simulator.o \
 
 SIM_BINARY = syn_sim
 
-ASM_PARSERS_OBJECTS = Cisc0Core_lex.yy.o \
-					  Cisc0CoreAssembler.tab.o \
+ASM_PARSERS_OBJECTS = Cisc0CoreAssembler.o \
 					  IrisCoreAssembler.o \
 
 ASM_OBJECTS = Assembler.o \
@@ -45,9 +44,7 @@ REPL_OBJECTS= Repl.o \
 			  ClipsExtensions.o \
 			  ${COMMON_THINGS}
 
-ASM_PARSERS = Cisc0Core_lex.yy.c \
-			  Cisc0CoreAssembler.tab.c \
-			  Cisc0CoreAssembler.tab.h
+ASM_PARSERS = 
 
 ASM_BINARY = syn_asm
 
@@ -226,9 +223,9 @@ Cisc0CoreAssembler.tab.o: Cisc0CoreAssembler.tab.c Cisc0Core.h Base.h Problem.h 
  ExecutionUnits.h IODevice.h Device.h Core.h cisc0_defines.h \
  def/cisc0/instruction.def def/cisc0/misc.def def/cisc0/ops.def \
  AssemblerRegistrar.h Cisc0CoreAssembler.tab.h
-Cisc0Core_lex.yy.o: Cisc0Core_lex.yy.c Cisc0Core.h Base.h Problem.h ExecutionUnits.h \
- IODevice.h Device.h Core.h cisc0_defines.h def/cisc0/instruction.def \
- def/cisc0/misc.def def/cisc0/ops.def Cisc0CoreAssembler.tab.h AssemblerBase.h
+#Cisc0Core_lex.yy.o: Cisc0Core_lex.yy.c Cisc0Core.h Base.h Problem.h ExecutionUnits.h \
+# IODevice.h Device.h Core.h cisc0_defines.h def/cisc0/instruction.def \
+# def/cisc0/misc.def def/cisc0/ops.def Cisc0CoreAssembler.tab.h AssemblerBase.h
 
 AssemblerRegistrar.o: AssemblerRegistrar.cc AssemblerRegistrar.h IrisCore.h \
  Base.h Problem.h ExecutionUnits.h IODevice.h Device.h Core.h \
