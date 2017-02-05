@@ -130,6 +130,31 @@ namespace syn {
     template<typename Entry>
     struct MainFileParser :  public pegtl::until<pegtl::eof, pegtl::must<Entry>> { };
 
+
+	/**
+	 * Used to store the final numeric representation of a system word,
+	 * instructions are a multiple of the system word so this class makes it
+	 * simpler to install instructions into a core or whatever else.
+	 */
+	template<typename Word, typename Address = Word>
+	class AssemblerWord {
+		public:
+			AssemblerWord(Address currAddress, Word value) : _currAddress(currAddress), _value(value), _isLabel(false) { }
+			AssemblerWord(Address currAddress, const std::string& label) : _currAddress(currAddress), _value(0), _isLabel(true), _label(label) { }
+			virtual ~AssemblerWord() { }
+			inline Address getAddress() const noexcept { return _currAddress; }
+			inline Word getValue() const noexcept { return _value; }
+			inline void setValue(Word value) noexcept { _value = value; }
+			inline bool isLabel() const noexcept { return _isLabel; }
+			inline std::string getLabel() const noexcept { return _label; }
+		protected:
+			Address _currAddress;
+			Word _value;
+			bool _isLabel;
+			bool _resolveLabel;
+			std::string _label;
+	};
+
 } // end namespace syn
 
 
