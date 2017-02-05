@@ -29,9 +29,11 @@ namespace cisc0 {
 		cisc0::Address currentAddress = 0;
 		cisc0::InstructionEncoder current;
 		std::vector<InstructionEncoder> finishedInstructions;
-		std::vector<AssemblerWord> finalWords;
 		std::map<std::string, RegisterValue> labels;
+		std::vector<AssemblerWord> finalWords;
+		std::vector<AssemblerWord> wordsToResolve;
 		void installInstruction() noexcept;
+		void setCurrentAddress(Address addr) noexcept;
 	};
 	void AssemblerState::installInstruction() noexcept {
 		int count;
@@ -533,8 +535,71 @@ namespace cisc0 {
 			state.installInstruction();
 		}
 	};
+	template<typename Symbol, typename Value>
+	struct SingleArgumentDirective : pegtl::seq<Symbol, Separator, Value> { };
+
+	DefSymbol(Org, .org);
+	struct OrgDirective : SingleArgumentDirective<SymbolOrg, Number> { };
+	DefAction(OrgDirective) {
+		DefApplyAsmState {
+			state.currentAddress = static_cast<Address>(state.current.fullImmediate);
+		}
+	};
+
+	DefSymbol(Label, .label);
+	struct LabelDirective : SingleArgumentDirective<SymbolLabel, Lexeme> { };
+
+	DefAction(LabelDirective) {
+		DefApplyAsmState {
+			state.labels.emplace(state.current.labelValue, state.currentAddress);
+		}
+	};
+
+	template<typename Symbol>
+	struct LexemeOrNumberDirective : SingleArgumentDirective<Symbol, LexemeOrNumber> { };
+	DefSymbol(Word, .word);
+	struct WordDirective : LexemeOrNumberDirective<SymbolWord> { };
+
+	DefAction(WordDirective) {
+		DefApplyAsmState {
+			if (state.current.isLabel) {
+				state.wordsToResolve.emplace_back(state.currentAddress, state.current.labelValue, 1);
+			} else {
+				state.wordsToResolve.emplace_back(state.currentAddress, state.current.fullImmediate, 1);
+			}
+			++state.currentAddress;
+		}
+	};
+
+	DefSymbol(Dword, .dword);
+	struct DwordDirective : LexemeOrNumberDirective<SymbolDword> { };
+	DefAction(DwordDirective) {
+		DefApplyAsmState {
+			if (state.current.isLabel) {
+				state.wordsToResolve.emplace_back(state.currentAddress, state.current.labelValue, 2);
+			} else {
+				state.wordsToResolve.emplace_back(state.currentAddress, state.current.fullImmediate, 2);
+			}
+			state.currentAddress +=2;
+		}
+	};
+	
+
+	struct Directive : pegtl::sor<
+					   OrgDirective, 
+					   LabelDirective,
+					   WordDirective,
+					   DwordDirective> { };
+
+	DefAction(Directive) {
+		DefApplyAsmState {
+			state.current.clear();
+		}
+	};
+
 	struct Statement : pegtl::sor<
-					   Instructions> { };
+					   Instructions,
+					   Directive> { };
 	struct Anything : pegtl::sor<
 					  Separator, 
 					  SingleLineComment, 

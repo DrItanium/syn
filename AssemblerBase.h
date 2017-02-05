@@ -139,15 +139,17 @@ namespace syn {
 	template<typename Word, typename Address = Word>
 	class AssemblerWord {
 		public:
-			AssemblerWord(Address currAddress, Word value) : _currAddress(currAddress), _value(value), _isLabel(false) { }
-			AssemblerWord(Address currAddress, const std::string& label) : _currAddress(currAddress), _value(0), _isLabel(true), _label(label) { }
+			AssemblerWord(Address currAddress, Word value, int width = 1) : _width(width), _currAddress(currAddress), _value(value), _isLabel(false) { }
+			AssemblerWord(Address currAddress, const std::string& label, int width = 1) : _width(width), _currAddress(currAddress), _value(0), _isLabel(true), _label(label) { }
 			virtual ~AssemblerWord() { }
 			inline Address getAddress() const noexcept { return _currAddress; }
 			inline Word getValue() const noexcept { return _value; }
 			inline void setValue(Word value) noexcept { _value = value; }
 			inline bool isLabel() const noexcept { return _isLabel; }
 			inline std::string getLabel() const noexcept { return _label; }
+			inline int getWidth() const noexcept { return _width; }
 		protected:
+			int _width;
 			Address _currAddress;
 			Word _value;
 			bool _isLabel;

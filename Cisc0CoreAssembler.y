@@ -68,7 +68,6 @@ struct data_registration
 	bool setImmediate = false;
 	std::string label;
 	int currentLine;
-
 };
 /* used to store ops which require a second pass */
 struct asmstate {
