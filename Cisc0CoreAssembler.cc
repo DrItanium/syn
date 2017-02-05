@@ -24,28 +24,27 @@ namespace cisc0 {
 		throw syn::Problem(msg);
 	}
 
-	class AssemblerWord {
-		public:
-			AssemblerWord(Address currAddress, Word value) : _currAddress(currAddress), _value(value), _isLabel(false) { }
-			AssemblerWord(Address currAddress, const std::string& labelTitle) : _currAddress(currAddress), _value(0), _isLabel(true), _label(labelTitle) { }
-			virtual ~AssemblerWord() { }
-			Address getAddress() const noexcept { return _currAddress; }
-			Word getValue() const noexcept { return _value; }
-			void setValue(Word value) noexcept { _value = value; }
-			bool isLabel() const noexcept { return _isLabel; }
-			std::string getLabel() const noexcept { return _label; }
-		private:
-			Address _currAddress;
-			Word _value;
-			bool _isLabel;
-			std::string _label;
-	};
+	using AssemblerWord = syn::AssemblerWord<Word, Address>;
 	struct AssemblerState { 
 		cisc0::Address currentAddress = 0;
 		cisc0::InstructionEncoder current;
+		std::vector<InstructionEncoder> finishedInstructions;
 		std::vector<AssemblerWord> finalWords;
 		std::map<std::string, RegisterValue> labels;
+		void installInstruction() noexcept;
 	};
+	void AssemblerState::installInstruction() noexcept {
+		int count;
+		Word first, second, third;
+		std::tie(count, first, second, third) = current.encode();
+		if (count < 1 || count > 3) {
+			throw syn::Problem("Number of cells described is less than 1 or greater than 3!");
+		}
+		current.address = currentAddress;
+		finishedInstructions.emplace_back(current);
+		currentAddress += count;
+		current.clear();
+	}
 #define DefSymbol(title, str) \
 	struct Symbol ## title : public pegtl_string_t( #str ) { }
 #define DefAction(rule) template<> struct Action < rule > 
@@ -531,7 +530,7 @@ namespace cisc0 {
 									 LogicalOperation> { };
 	DefAction(Instructions) {
 		DefApplyAsmState {
-			
+			state.installInstruction();
 		}
 	};
 	struct Statement : pegtl::sor<
