@@ -88,7 +88,6 @@ namespace syn {
     T getDecimalImmediate(const std::string& text, ErrorReportingFunction onError) noexcept {
         return getDecimalImmediate<T>(text.c_str(), onError);
     }
-
 	template<char prefix>
 	struct GenericRegister : public pegtl::if_must<pegtl::one<prefix>, pegtl::plus<pegtl::digit>> { };
 
@@ -115,6 +114,17 @@ namespace syn {
     template<char delimiter, typename SymbolClass>
     struct GenericNumeral : public pegtl::if_must<pegtl::istring<'0', delimiter>, pegtl::plus<SymbolClass>> { };
 
+	template<char delim>
+	struct Base16Number : GenericNumeral<delim, pegtl::xdigit> { };
+
+
+	template<char delim>
+	struct Base2Number : GenericNumeral<delim, pegtl::abnf::BIT> { };
+	using HexadecimalNumber = Base16Number<'x'>;
+	using BinaryNumber = Base2Number<'b'>;
+
+	struct Base10Number : pegtl::plus<pegtl::digit> { };
+
     template<typename Src0, typename Src1, typename Separator = AsmSeparator>
     struct SourceRegisters : public TwoRegister<Src0, Src1, Separator> { };
 
@@ -129,6 +139,33 @@ namespace syn {
 
     template<typename Entry>
     struct MainFileParser :  public pegtl::until<pegtl::eof, pegtl::must<Entry>> { };
+
+
+	/**
+	 * Used to store the final numeric representation of a system word,
+	 * instructions are a multiple of the system word so this class makes it
+	 * simpler to install instructions into a core or whatever else.
+	 */
+	template<typename Word, typename Address = Word>
+	class AssemblerWord {
+		public:
+			AssemblerWord(Address currAddress, Word value, int width = 1) : _width(width), _currAddress(currAddress), _value(value), _isLabel(false) { }
+			AssemblerWord(Address currAddress, const std::string& label, int width = 1) : _width(width), _currAddress(currAddress), _value(0), _isLabel(true), _label(label) { }
+			virtual ~AssemblerWord() { }
+			inline Address getAddress() const noexcept { return _currAddress; }
+			inline Word getValue() const noexcept { return _value; }
+			inline void setValue(Word value) noexcept { _value = value; }
+			inline bool isLabel() const noexcept { return _isLabel; }
+			inline std::string getLabel() const noexcept { return _label; }
+			inline int getWidth() const noexcept { return _width; }
+		protected:
+			int _width;
+			Address _currAddress;
+			Word _value;
+			bool _isLabel;
+			bool _resolveLabel;
+			std::string _label;
+	};
 
 } // end namespace syn
 

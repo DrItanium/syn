@@ -121,7 +121,7 @@ namespace iris {
 	struct OneGPR : public syn::OneRegister<DestinationGPR> { };
     struct TwoGPR : public syn::TwoRegister<DestinationGPR, Source0GPR> { };
 	struct ThreeGPR : public syn::TwoRegister<DestinationGPR, SourceRegisters> { };
-using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
+    using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
     struct DestinationPredicateRegister : public IndirectPredicateRegister { };
 	DefAction(DestinationPredicateRegister) {
 		DefApply {
