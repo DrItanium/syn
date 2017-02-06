@@ -114,11 +114,14 @@ namespace syn {
     template<char delimiter, typename SymbolClass>
     struct GenericNumeral : public pegtl::if_must<pegtl::istring<'0', delimiter>, pegtl::plus<SymbolClass>> { };
 
-	template<char delim = 'x'>
-	struct HexadecimalNumeral : GenericNumeral<delim, pegtl::xdigit> { };
+	template<char delim>
+	struct Base16Number : GenericNumeral<delim, pegtl::xdigit> { };
 
-	template<char delim = 'b'>
-	struct BinaryNumeral : GenericNumeral<delim, pegtl::abnf::BIT> { };
+
+	template<char delim>
+	struct Base2Number : GenericNumeral<delim, pegtl::abnf::BIT> { };
+	using HexadecimalNumber = Base16Number<'x'>;
+	using BinaryNumber = Base2Number<'b'>;
 
 	struct Base10Number : pegtl::plus<pegtl::digit> { };
 

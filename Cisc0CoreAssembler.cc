@@ -159,14 +159,14 @@ namespace cisc0 {
 		}
 	};
 
-	using HexadecimalNumber = syn::HexadecimalNumeral<>;
+	using HexadecimalNumber = syn::HexadecimalNumber;
 	DefAction(HexadecimalNumber) {
 		DefDefaultTransfer
 		DefApplyInstruction {
 			state.fullImmediate = syn::getHexImmediate<RegisterValue>(in.string(), reportError);
 		}
 	};
-	using BinaryNumber = syn::BinaryNumeral<>;
+	using BinaryNumber = syn::BinaryNumber;
 	DefAction(BinaryNumber) {
 		DefDefaultTransfer
 		DefApplyInstruction {
