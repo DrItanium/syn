@@ -24,7 +24,7 @@ namespace cisc0 {
 		throw syn::Problem(msg);
 	}
 
-	using AssemblerWord = syn::AssemblerWord<Word, Address>;
+	using AssemblerWord = syn::AssemblerWord<RegisterValue>;
 	struct AssemblerState { 
 		cisc0::Address currentAddress = 0;
 		cisc0::InstructionEncoder current;
@@ -34,7 +34,65 @@ namespace cisc0 {
 		std::vector<AssemblerWord> wordsToResolve;
 		void installInstruction() noexcept;
 		void setCurrentAddress(Address addr) noexcept;
+		void output(std::ostream* out) noexcept;
+		void resolveInstructions();
+		void resolveDeclarations();
 	};
+	void AssemblerState::resolveInstructions() {
+		for (auto & op : finishedInstructions) {
+			if (op.isLabel) {
+				auto label = op.labelValue;
+				auto f = labels.find(label);
+				if (f == labels.end()) {
+					std::stringstream stream;
+					stream << "label " << label << " does not exist!\n";
+					throw syn::Problem(stream.str());
+				}
+				op.fullImmediate = f->second;
+			}
+			// now that it has been resolved, we need to go through and setup
+			// the encoding correctly!
+			auto address = op.address;
+			int count;
+			Word first, second, third;
+			std::tie(count, first, second, third) = op.encode();
+			switch(count) {
+				case 3:
+					finalWords.emplace_back(address + 2, third);
+				case 2:
+					finalWords.emplace_back(address + 1, second);
+				case 1:
+					finalWords.emplace_back(address, first);
+					break;
+				default:
+					throw syn::Problem("Number of words described is not possible!");
+			}
+		}
+	}
+	void AssemblerState::resolveDeclarations() {
+		for (auto & op: wordsToResolve) {
+			if (op.isLabel()) {
+				auto label = op.getLabel();
+				auto f = labels.find(label);
+				if (f == labels.end()) {
+					std::stringstream stream;
+					stream << "label " << label << " does not exist!\n";
+					throw syn::Problem(stream.str());
+				}
+				op.setValue(f->second);
+			}
+			switch(op.getWidth()) {
+				case 2:
+					finalWords.emplace_back(op.getAddress() + 1, syn::getUpperHalf(op.getValue()));
+				case 1:
+					finalWords.emplace_back(op.getAddress(), syn::getLowerHalf(op.getValue()));
+					break;
+				default:
+					throw syn::Problem("Got a declaration of with a width that was not 1 or 2");
+			}
+		}
+	}
+
 	void AssemblerState::installInstruction() noexcept {
 		int count;
 		Word first, second, third;
@@ -611,5 +669,24 @@ namespace cisc0 {
 		pegtl::analyze<cisc0::Main>();
 		AssemblerState as;
 		pegtl::parse_cstream<cisc0::Main, cisc0::Action>(input, iName.c_str(), 16777216, as);
+		// then go through and resolve everything!
+		as.resolveDeclarations();
+		as.resolveInstructions();
+		as.output(output);
+	}
+
+	void AssemblerState::output(std::ostream* out) noexcept {
+		char buf[8] = { 0 };
+		for(auto const & address : finalWords) {
+			buf[0] = 0;
+			buf[1] = 0;
+			buf[2] = static_cast<char>(address.getAddress());
+			buf[3] = static_cast<char>(address.getAddress() >> 8);
+			buf[4] = static_cast<char>(address.getAddress() >> 16);
+			buf[5] = static_cast<char>(address.getAddress() >> 24);
+			buf[6] = static_cast<char>(address.getValue());
+			buf[7] = static_cast<char>(address.getValue() >> 8);
+			out->write(buf, 8);
+		}
 	}
 }
