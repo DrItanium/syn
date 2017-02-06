@@ -88,7 +88,6 @@ namespace syn {
     T getDecimalImmediate(const std::string& text, ErrorReportingFunction onError) noexcept {
         return getDecimalImmediate<T>(text.c_str(), onError);
     }
-
 	template<char prefix>
 	struct GenericRegister : public pegtl::if_must<pegtl::one<prefix>, pegtl::plus<pegtl::digit>> { };
 
@@ -114,6 +113,14 @@ namespace syn {
 
     template<char delimiter, typename SymbolClass>
     struct GenericNumeral : public pegtl::if_must<pegtl::istring<'0', delimiter>, pegtl::plus<SymbolClass>> { };
+
+	template<char delim = 'x'>
+	struct HexadecimalNumeral : GenericNumeral<delim, pegtl::xdigit> { };
+
+	template<char delim = 'b'>
+	struct BinaryNumeral : GenericNumeral<delim, pegtl::abnf::BIT> { };
+
+	struct Base10Number : pegtl::plus<pegtl::digit> { };
 
     template<typename Src0, typename Src1, typename Separator = AsmSeparator>
     struct SourceRegisters : public TwoRegister<Src0, Src1, Separator> { };

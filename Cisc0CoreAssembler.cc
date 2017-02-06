@@ -159,23 +159,21 @@ namespace cisc0 {
 		}
 	};
 
-	template<char delim, typename T>
-		using Numeral = syn::GenericNumeral<delim, T>;
-	struct HexadecimalNumber : public Numeral<'x', pegtl::xdigit> { };
+	using HexadecimalNumber = syn::HexadecimalNumeral<>;
 	DefAction(HexadecimalNumber) {
 		DefDefaultTransfer
 		DefApplyInstruction {
 			state.fullImmediate = syn::getHexImmediate<RegisterValue>(in.string(), reportError);
 		}
 	};
-	struct BinaryNumber : public Numeral<'b', pegtl::abnf::BIT> { };
+	using BinaryNumber = syn::BinaryNumeral<>;
 	DefAction(BinaryNumber) {
 		DefDefaultTransfer
 		DefApplyInstruction {
 			state.fullImmediate = syn::getBinaryImmediate<RegisterValue>(in.string(), reportError);
 		}
 	};
-	struct DecimalNumber : public pegtl::plus<pegtl::digit> { };
+	using DecimalNumber = syn::Base10Number;
 	DefAction(DecimalNumber) {
 		DefDefaultTransfer
 		DefApplyInstruction {
@@ -190,7 +188,7 @@ namespace cisc0 {
 		}
 	};
 
-	struct BitmaskNumber : public Numeral<'m', pegtl::abnf::BIT> { };
+	struct BitmaskNumber : syn::GenericNumeral<'m', pegtl::abnf::BIT> { };
 
 	DefAction(BitmaskNumber) {
 		DefDefaultTransfer
