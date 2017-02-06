@@ -56,6 +56,10 @@ namespace cisc0 {
 			int count;
 			Word first, second, third;
 			std::tie(count, first, second, third) = op.encode();
+			std::cerr << "count = " << count << std::endl;
+			std::cerr << "- first = " << std::hex << first << std::endl;
+			std::cerr << "- second = " << std::hex << second << std::endl;
+			std::cerr << "- third = " << std::hex << third << std::endl;
 			switch(count) {
 				case 3:
 					finalWords.emplace_back(address + 2, third);
@@ -205,7 +209,43 @@ namespace cisc0 {
 	};
 	struct LexemeOrNumber : public syn::LexemeOr<Number> { };
 
-	struct GeneralPurposeRegister : public syn::GenericRegister<'r'> { };
+	struct NormalRegister : public syn::GenericRegister<'r'> { };
+	DefSymbol(AddrRegister, addr);
+	DefSymbol(StackPointer, sp);
+	DefSymbol(InstructionPointer, ip);
+	DefSymbol(ConditionRegister, cr);
+	DefSymbol(ValueRegister, value);
+	DefSymbol(MaskRegister, mask);
+	DefSymbol(FieldRegister, field);
+	struct GeneralPurposeRegister : pegtl::sor<
+									NormalRegister,
+									SymbolAddrRegister,
+									SymbolStackPointer,
+									SymbolInstructionPointer,
+									SymbolConditionRegister,
+									SymbolValueRegister,
+									SymbolMaskRegister,
+									SymbolFieldRegister> { };
+	Word translateRegister(const std::string& input) {
+		if (input == "addr") {
+			return static_cast<Word>(ArchitectureConstants::AddressRegister);
+		} else if (input == "ip") {
+			return static_cast<Word>(ArchitectureConstants::InstructionPointer);
+		} else if (input == "sp") {
+			return static_cast<Word>(ArchitectureConstants::StackPointer);
+		} else if (input == "value") {
+			return static_cast<Word>(ArchitectureConstants::ValueRegister);
+		} else if (input == "mask") {
+			return static_cast<Word>(ArchitectureConstants::MaskRegister);
+		} else if (input == "shift") {
+			return static_cast<Word>(ArchitectureConstants::ShiftRegister);
+		} else if (input == "field") {
+			return static_cast<Word>(ArchitectureConstants::FieldRegister);
+		} else {
+			return syn::getRegister<Word, ArchitectureConstants::RegisterCount>(input, reportError);
+		}
+	}
+
 	using IndirectGPR = syn::Indirection<GeneralPurposeRegister>;
 #define DefIndirectGPR(title) \
 	struct title : public IndirectGPR { }
@@ -214,7 +254,7 @@ namespace cisc0 {
 	DefAction(DestinationRegister) {
 		DefDefaultTransfer
 		DefApplyInstruction {
-			state.arg0 = syn::getRegister<Word, ArchitectureConstants::RegisterCount>(in.string(), reportError);
+			state.arg0 = translateRegister(in.string());
 		}
 	};
 
@@ -222,7 +262,15 @@ namespace cisc0 {
 	DefAction(SourceRegister) {
 		DefDefaultTransfer
 		DefApplyInstruction {
-			state.arg1 = syn::getRegister<Word, ArchitectureConstants::RegisterCount>(in.string(), reportError);
+			state.arg1 = translateRegister(in.string());
+		}
+	};
+
+	DefIndirectGPR(SourceRegister1);
+	DefAction(SourceRegister1) {
+		DefDefaultTransfer
+		DefApplyInstruction {
+			state.arg2 = translateRegister(in.string());
 		}
 	};
 	template<typename S>
@@ -339,9 +387,7 @@ namespace cisc0 {
 	struct SystemCallOperation : pegtl::seq<
 								 GroupSystemCall,
 								 Separator,
-								 Arg0ImmediateValue,
-								 Separator,
-								 SourceRegister> { };
+								 DestinationRegister> { };
 #define DefArithmeticOperation(title, str) \
 	DefSubTypeWithSymbol(title, str, ArithmeticOps)
 
@@ -377,16 +423,6 @@ namespace cisc0 {
 	struct LoadStoreType : pegtl::sor<
 						   SubGroupMemoryOperationLoad,
 						   SubGroupMemoryOperationStore> { };
-	struct StackOperationFull : pegtl::seq<TwoGPRs> { };
-	DefAction(StackOperationFull) {
-		DefDefaultTransfer
-		DefApplyInstruction {
-			// check and see if we are looking at sp
-			// no need to waste a word so just use the default version
-			// implicitly. SourceRegister in this case is the stack pointer stand in
-			state.readNextWord = (state.arg1 != ArchitectureConstants::StackPointer);
-		}
-	};
 	struct StackMemoryType : pegtl::sor<
 							 SubGroupMemoryOperationPush,
 							 SubGroupMemoryOperationPop> { };
@@ -395,7 +431,7 @@ namespace cisc0 {
 							Separator,
 							BitmaskNumber,
 							Separator,
-							StackOperationFull> { };
+							DestinationRegister> { };
 	DefSymbol(Indirect, indirect);
 	struct FlagIndirect : public syn::Indirection<SymbolIndirect> { };
 	DefAction(FlagIndirect) {
@@ -420,17 +456,7 @@ namespace cisc0 {
 								Separator,
 								FlagDirectOrIndirect,
 								Separator,
-								Arg0ImmediateValue,
-								Separator,
-								TwoGPRs> { };
-
-	DefAction(LoadStoreOperation) {
-		DefDefaultTransfer
-		DefApplyInstruction {
-			state.readNextWord = (state.arg1 != ArchitectureConstants::AddressRegister) &&
-				(state.arg2 != ArchitectureConstants::ValueRegister);
-		}
-	};
+								Arg0ImmediateValue> { };
 
 	struct MemoryInstruction : pegtl::seq<
 							   GroupMemory,

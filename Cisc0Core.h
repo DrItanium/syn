@@ -281,7 +281,6 @@ namespace cisc0 {
 		bool isLabel;
 		std::string labelValue;
 		byte subType;
-		CompareCombine combineType;
 		RegisterValue fullImmediate;
 		using Encoding = std::tuple<int, Word, Word, Word>;
 		int numWords();

@@ -7,7 +7,6 @@
           (field (name Upper) (mask 0b1111111100000000) (shift 8) (output-type byte))
           (field (name Lower) (mask 0b0000000011111111) (shift 0) (output-type byte))
           (field (name CompareImmediateFlag) (mask 0b0010000000000000) (shift 0) (output-type bool))
-          (field (name CompareCombineFlag) (mask 0b0001100000000000) (shift 11) (output-type CompareCombine))
           (field (name CompareType) (mask 0b0000011100000000) (shift 8) (output-type CompareStyle))
           (field (name CompareRegister0) (mask 0b0000000000001111) (shift 0) (output-type byte))
           (field (name CompareRegister1) (mask 0b0000000011110000) (shift 4) (output-type byte))
@@ -45,7 +44,6 @@
           (field (name MemoryFlagType) (mask 0b0000000000110000) (shift 4) (output-type MemoryOperation))
           (field (name MemoryFlagBitmask) (mask 0b0000111100000000) (shift 8) (output-type byte))
           (field (name MemoryFlagIndirect) (mask 0b0000000001000000) (shift 6) (output-type bool))
-          (field (name MemoryFlagReadNextWord) (mask 0b0000000010000000) (shift 7) (output-type bool))
           (field (name MemoryOffset) (mask 0b1111000000000000) (shift 12) (output-type byte))
           (field (name MemoryRegister) (mask 0b1111000000000000) (shift 12) (output-type byte))
           (field (name MemorySignature) (mask 0b0000111111110000) (shift 4) (output-type byte))
@@ -60,8 +58,7 @@
           (field (name SetSignature) (mask 0b0000111111110000) (shift 4) (output-type byte))
           (field (name SwapDestination) (mask 0b0000111100000000) (shift 8) (output-type byte))
           (field (name SwapSource) (mask 0b1111000000000000) (shift 12) (output-type byte))
-          (field (name SystemAction) (mask 0b0000001111110000) (shift 4) (output-type byte))
-          (field (name SystemArg0) (mask 0b0011110000000000) (shift 8) (output-type byte))
+          (field (name SystemArg0) (mask 0b0000001111110000) (shift 4) (output-type byte))
           (field (name ComplexSubClass) (mask 0b0000000011110000) (shift 4) (output-type ComplexSubTypes))
           (field (name ComplexClassEncoding_Type) (mask 0b0000011100000000) (shift 8) (output-type EncodingOperation))
           (enum (name Operation) (children
@@ -84,12 +81,6 @@
                                        Div
                                        Rem
                                        ) (cast-to byte) (max-size "8"))
-          (enum (name CompareCombine) (children
-                                        None
-                                        And
-                                        Or
-                                        Xor
-                                        ) (cast-to byte) (max-size "4"))
           (enum (name CompareStyle) (children
                                       Equals
                                       NotEquals

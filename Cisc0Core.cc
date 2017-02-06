@@ -187,21 +187,25 @@ namespace cisc0 {
 			registerValue(current.getSetDestination()) = retrieveImmediate(current.getSetBitmask());
 		} else if (tControl == Operation::Memory) {
 			auto indirect = current.getMemoryFlagIndirect();
-			auto readNext = current.getMemoryFlagReadNextWord();
 			auto rawMask = current.getMemoryFlagBitmask();
 			auto useLower = readLower(rawMask);
 			auto useUpper = readUpper(rawMask);
 			auto fullMask = mask(rawMask);
 			auto rawType = current.getMemoryFlagType();
 			auto offset = current.getMemoryOffset();
+			auto memoryRegister = current.getMemoryRegister();
 			auto lmask = lowerMask(rawMask);
 			auto umask = upperMask(rawMask);
 			auto upper = 0u;
 			auto lower = 0u;
-			DecodedInstruction next(tryReadNext(readNext));
 			if (rawType == MemoryOperation::Load) {
-				auto addr = readNext ? registerValue(next.getMemoryAddress()) : getAddressRegister();
-				auto& value = readNext ? registerValue(next.getMemoryValue()) : getValueRegister();
+				auto addr = getAddressRegister();
+				auto& value = getValueRegister();
+				if (debugEnabled()) {
+					std::cerr << "- SubType: Load" << std::endl;
+					std::cerr << "-- Address: " << std::hex << addr << std::endl;
+					std::cerr << "-- value: " << std::hex << value << std::endl;
+				}
 				if (!useLower && !useUpper) {
 					value = 0;
 				} else {
@@ -212,11 +216,16 @@ namespace cisc0 {
 					lower = useLower ? encodeLowerHalf(0, loadWord(address)) : 0u;
 					upper = useUpper ? encodeUpperHalf(0, loadWord(address + 1)) : 0u;
 					value = syn::encodeBits<RegisterValue, RegisterValue>(0u, lower | upper, fullMask, 0);
+					if (debugEnabled()) {
+						std::cerr << "-- lower " << std::hex << lower << std::endl;
+						std::cerr << "-- upper " << std::hex << upper << std::endl;
+						std::cerr << "-- value " << std::hex << value << std::endl;
+					}
 				}
 			} else if (rawType == MemoryOperation::Store) {
 				static constexpr auto maskCheck = 0x0000FFFF;
-				auto addr = readNext ? registerValue(next.getMemoryAddress()) : getAddressRegister();
-				auto value = readNext ? registerValue(next.getMemoryValue()) : getValueRegister();
+				auto addr = getAddressRegister();
+				auto value = getValueRegister();
 				auto address = addr + offset;
 				if (indirect) {
 					address = encodeRegisterValue(loadWord(address + 1), loadWord(address)) & bitmask24;
@@ -240,8 +249,8 @@ namespace cisc0 {
 					throw syn::Problem("Indirect bit not supported in push operations!");
 				} else {
 					// update the target stack to something different
-					auto pushToStack = registerValue(offset);
-					auto &stackPointer = readNext ? registerValue(next.getMemoryAddress()) : getStackPointer();
+					auto pushToStack = registerValue(memoryRegister);
+					auto &stackPointer = getStackPointer();
 					// read backwards because the stack grows upward towards zero
 					if (useUpper) {
 						pushWord(umask & decodeUpperHalf(pushToStack), stackPointer);
@@ -254,14 +263,14 @@ namespace cisc0 {
 				if (indirect) {
 					throw syn::Problem("Indirect bit not supported in pop operations!");
 				} else {
-					auto &stackPointer = readNext ? registerValue(next.getMemoryAddress()) : getStackPointer();
+					auto &stackPointer = getStackPointer();
 					if (useLower) {
 						lower = lmask & popWord(stackPointer);
 					}
 					if (useUpper) {
 						upper = umask & popWord(stackPointer);
 					}
-					registerValue(offset) = encodeRegisterValue(upper, lower);
+					registerValue(memoryRegister) = encodeRegisterValue(upper, lower);
 					// can't think of a case where we should
 					// restore the instruction pointer and then
 					// immediate advance so just don't do it
@@ -329,28 +338,18 @@ namespace cisc0 {
 				{ CompareStyle::GreaterThan, CompareUnit::Operation::GreaterThan },
 				{ CompareStyle::GreaterThanOrEqualTo, CompareUnit::Operation::GreaterThanOrEqualTo },
 			};
-			using CombineOp = syn::BooleanCombineUnit::Operation;
-			static std::map<CompareCombine, CombineOp> combineTranslation = {
-				{ CompareCombine::None, CombineOp::None },
-				{ CompareCombine::Xor, CombineOp::Xor },
-				{ CompareCombine::Or, CombineOp::Or },
-				{ CompareCombine::And, CombineOp::And },
-			};
 			DecodedInstruction next(tryReadNext<true>());
 			auto first = registerValue(next.getCompareRegister0());
 			auto second = current.getCompareImmediateFlag() ? next.getUpper() : registerValue(next.getCompareRegister1());
 			auto compareResult = translationTable.find(current.getCompareType());
 			throwIfNotFound(compareResult, translationTable, "Illegal compare type!");
-			auto combineResult = combineTranslation.find(current.getCompareCombineFlag());
-			throwIfNotFound(combineResult, combineTranslation, "Illegal compare combine operation!");
-			getConditionRegister() = static_cast<RegisterValue>(_bCombine.performOperation(combineResult->second,
-						_compare.performOperation(compareResult->second, first, second),
-						getConditionRegister() != 0));
+			getConditionRegister() = _compare.performOperation(compareResult->second, first, second);
 		} else if (tControl == Operation::SystemCall) {
+			auto action = getAddressRegister();
 			if (getAddressRegister() >= ArchitectureConstants::MaxSystemCalls) {
 				throw syn::Problem("ERROR: system call index out of range!");
 			} else {
-				systemHandlers[current.getSystemAction()](this, std::move(current));
+				systemHandlers[action](this, std::move(current));
 			}
         } else if (tControl == Operation::Complex) {
             complexOperation(std::move(current));
@@ -409,7 +408,17 @@ namespace cisc0 {
 	}
 
 	void Core::putc(Core* core, DecodedInstruction&& current) {
-		std::cout.put(static_cast<char>(core->registerValue(current.getSystemArg0())));
+		auto target = current.getSystemArg0();
+		auto ch = static_cast<char>(core->registerValue(target));
+		if (core->debugEnabled()) {
+			std::cerr << __PRETTY_FUNCTION__ << " called" << std::endl;
+			std::cerr << "- register " << std::hex << int(target) << std::endl;
+			std::cerr << "- going to print '" << ch << "'(" << std::hex << static_cast<int>(ch) << ")" << std::endl;
+		}
+		std::cout << ch;
+		if (core->debugEnabled()) {
+			std::cerr << "Leaving " << __PRETTY_FUNCTION__ << std::endl;
+		}
 	}
 	void Core::getc(Core* core, DecodedInstruction&& current) {
 		byte value = 0;
@@ -528,15 +537,13 @@ namespace cisc0 {
 
 	InstructionEncoder::Encoding InstructionEncoder::encodeSystemCall() {
         auto first = encodeControl(0, type);
-        first = encodeSystemAction(first, arg0);
-        first = encodeSystemArg0(first, arg1);
+        first = encodeSystemArg0(first, arg0);
         return std::make_tuple(1, first, 0, 0);
 	}
 
 	InstructionEncoder::Encoding InstructionEncoder::encodeCompare() {
 		auto first = encodeControl(0, type);
 		first = encodeCompareType(first, static_cast<CompareStyle>(subType));
-		first = encodeCompareCombineFlag(first, combineType);
 		first = encodeCompareImmediateFlag(first, immediate);
 		auto second = encodeCompareRegister0(0, arg0);
 		second = immediate ? encodeCompareImmediate(second, arg1) : encodeCompareRegister1(second, arg1);
@@ -561,7 +568,6 @@ namespace cisc0 {
 		first = encodeMemoryFlagType(first, static_cast<MemoryOperation>(subType));
 		first = encodeMemoryFlagBitmask(first, bitmask);
 		first = encodeMemoryFlagIndirect(first, indirect);
-		first = cisc0::encodeMemoryFlagReadNextWord(first, readNextWord);
 		// the register and offset occupy the same space
 		first = encodeMemoryOffset(first, arg0);
 		// be lazy and set up the second word even if it isn't used. Reduces
@@ -676,7 +682,6 @@ namespace cisc0 {
 		isLabel = false;
 		labelValue.clear();
 		subType = 0;
-		combineType = CompareCombine::Xor;
 		fullImmediate = 0;
 		indirect = false;
 		readNextWord = false;
