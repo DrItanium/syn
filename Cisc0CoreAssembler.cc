@@ -112,10 +112,10 @@ namespace cisc0 {
             int count;
             Word first, second, third;
             std::tie(count, first, second, third) = op.encode();
-            std::cerr << "count = " << count << std::endl;
-            std::cerr << "- first = " << std::hex << first << std::endl;
-            std::cerr << "- second = " << std::hex << second << std::endl;
-            std::cerr << "- third = " << std::hex << third << std::endl;
+            //std::cerr << "count = " << count << std::endl;
+            //std::cerr << "- first = " << std::hex << first << std::endl;
+            //std::cerr << "- second = " << std::hex << second << std::endl;
+            //std::cerr << "- third = " << std::hex << third << std::endl;
             switch(count) {
                 case 3:
                     finalWords.emplace_back(address + 2, third);
@@ -200,14 +200,8 @@ namespace cisc0 {
         static auto parseHex(const std::string& str) {
             return syn::getHexImmediate<RegisterValue>(str, reportError);
         }
-        DefApplyInstruction {
-            state.fullImmediate = parseHex(in.string());
-        }
-        DefApplyGeneric(ChangeCurrentAddress) {
-            state.address = parseHex(in.string());
-        }
-        DefApplyGeneric(RegisterLabel) {
-            state._address = parseHex(in.string());
+        DefApplyGeneric(NumberContainer) {
+            state._value = parseHex(in.string());
         }
     };
     using BinaryNumber = syn::BinaryNumber;
@@ -215,12 +209,8 @@ namespace cisc0 {
         static auto parseBinary(const std::string& str) {
             return syn::getBinaryImmediate<RegisterValue>(str, reportError);
         }
-        DefApplyInstruction {
-            state.fullImmediate = parseBinary(in.string());
-        }
-        DefApplyGeneric(ChangeCurrentAddress) {
-            state.address = syn::getBinaryImmediate<
-            state.address = syn::getBinaryImmediate<RegisterValue>(in.string(), reportError);
+        DefApplyGeneric(NumberContainer) {
+            state._value = parseBinary(in.string());
         }
     };
     using DecimalNumber = syn::Base10Number;
@@ -228,18 +218,16 @@ namespace cisc0 {
         static auto parseDecimalImmediate(const std::string& input) {
             return syn::getDecimalImmediate<RegisterValue>(input.c_str(), reportError);
         }
-        DefApplyInstruction {
-            state.fullImmediate = parseDecimalImmediate(in.string());
+        DefApplyGeneric(NumberContainer) {
+            state._value = parseDecimalImmediate(in.string());
         }
-        DefApplyGeneric(ChangeCurrentAddress) {
-            state.address = parseDecimalImmediate(in.string());
-        }
-
     };
-    struct Number : public pegtl::sor<HexadecimalNumber, DecimalNumber, BinaryNumber> { };
+    struct Number : public pegtl::state<NumberContainer, pegtl::sor<HexadecimalNumber, DecimalNumber, BinaryNumber > > { };
     DefAction(Number) {
         DefApplyInstruction {
             state.isLabel = false;
+        }
+        DefApplyGeneric(ChangeCurrentAddress) {
         }
     };
 
@@ -256,6 +244,9 @@ namespace cisc0 {
             state.labelValue = in.string();
             state.fullImmediate = 0;
             state.isLabel = true;
+        }
+        DefApplyGeneric(RegisterLabel) {
+            state._title = in.string();
         }
     };
     struct LexemeOrNumber : public syn::LexemeOr<Number> { };
@@ -695,12 +686,6 @@ namespace cisc0 {
                        //WordDirective,
                        //DwordDirective
                        > { };
-
-    DefAction(Directive) {
-        DefApplyAsmState {
-            state.current.clear();
-        }
-    };
 
     struct Statement : pegtl::sor<
                        Instructions,
