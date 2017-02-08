@@ -54,7 +54,6 @@ namespace cisc0 {
             bool _isLabel;
             std::string _label;
             RegisterValue _value;
-
     };
     using WordCreator = AssemblerWordCreator<1>;
     using DwordCreator = AssemblerWordCreator<2>;
@@ -288,13 +287,17 @@ namespace cisc0 {
         DefApplyGeneric(RegisterLabel) {
             state._title = in.string();
         }
-        DefApplyGeneric(WordCreator) {
+        template<typename Input, int width>
+        void applyToWordCreator(const Input& in, AssemblerWordCreator<width>& state) {
             state._label = in.string();
             state._isLabel = true;
         }
+
+        DefApplyGeneric(WordCreator) {
+            applyToWordCreator<Input, 1>(in, state);
+        }
         DefApplyGeneric(DwordCreator) {
-            state._label = in.string();
-            state._isLabel = true;
+            applyToWordCreator<Input, 2>(in, state);
         }
     };
     struct LexemeOrNumber : public syn::LexemeOr<Number> { };
