@@ -36,6 +36,29 @@ namespace cisc0 {
         void resolveInstructions();
         void resolveDeclarations();
     };
+    template<int width>
+    struct AssemblerWordCreator {
+            static_assert(width > 0, "Can't have a width of zero or less!");
+            template<typename Input>
+            AssemblerWordCreator(const Input& in, AssemblerState& parent) { }
+            virtual ~AssemblerWordCreator() { }
+            template<typename Input>
+            void success(const Input& in, AssemblerState& parent) {
+                if (_isLabel) {
+                    parent.wordsToResolve.emplace_back(parent.currentAddress, _label, width);
+                } else {
+                    parent.wordsToResolve.emplace_back(parent.currentAddress, _value, width);
+                }
+                parent.currentAddress += width;
+            }
+            bool _isLabel;
+            std::string _label;
+            RegisterValue _value;
+
+    };
+    using WordCreator = AssemblerWordCreator<1>;
+    using DwordCreator = AssemblerWordCreator<2>;
+
     struct ChangeCurrentAddress {
         template<typename Input>
         ChangeCurrentAddress(const Input& in, AssemblerState& parent) { }
@@ -90,6 +113,23 @@ namespace cisc0 {
         template<typename Input>
         void success(const Input& in, ChangeCurrentAddress& parent) {
             parent.address = _value;
+        }
+
+        template<typename Input>
+        void success(const Input& in, AssemblerWord& parent) {
+            parent.setValue(_value);
+        }
+
+        template<typename Input>
+        void success(const Input& in, WordCreator& parent) {
+            parent._value = _value;
+            parent._isLabel = false;
+        }
+
+        template<typename Input>
+        void success(const Input& in, DwordCreator& parent) {
+            parent._value = _value;
+            parent._isLabel = false;
         }
 
         RegisterValue _value;
@@ -248,6 +288,14 @@ namespace cisc0 {
         DefApplyGeneric(RegisterLabel) {
             state._title = in.string();
         }
+        DefApplyGeneric(WordCreator) {
+            state._label = in.string();
+            state._isLabel = true;
+        }
+        DefApplyGeneric(DwordCreator) {
+            state._label = in.string();
+            state._isLabel = true;
+        }
     };
     struct LexemeOrNumber : public syn::LexemeOr<Number> { };
 
@@ -269,22 +317,20 @@ namespace cisc0 {
                                     SymbolMaskRegister,
                                     SymbolFieldRegister> { };
     Word translateRegister(const std::string& input) {
-        if (input == "addr") {
-            return static_cast<Word>(ArchitectureConstants::AddressRegister);
-        } else if (input == "ip") {
-            return static_cast<Word>(ArchitectureConstants::InstructionPointer);
-        } else if (input == "sp") {
-            return static_cast<Word>(ArchitectureConstants::StackPointer);
-        } else if (input == "value") {
-            return static_cast<Word>(ArchitectureConstants::ValueRegister);
-        } else if (input == "mask") {
-            return static_cast<Word>(ArchitectureConstants::MaskRegister);
-        } else if (input == "shift") {
-            return static_cast<Word>(ArchitectureConstants::ShiftRegister);
-        } else if (input == "field") {
-            return static_cast<Word>(ArchitectureConstants::FieldRegister);
-        } else {
+        static std::map<std::string, Word> builtinAliases = {
+            { "addr", static_cast<Word>(ArchitectureConstants::AddressRegister) },
+            { "ip", static_cast<Word>(ArchitectureConstants::InstructionPointer) },
+            { "sp", static_cast<Word>(ArchitectureConstants::StackPointer) },
+            { "value", static_cast<Word>(ArchitectureConstants::ValueRegister) },
+            { "mask", static_cast<Word>(ArchitectureConstants::MaskRegister) },
+            { "shift", static_cast<Word>(ArchitectureConstants::ShiftRegister) },
+            { "field", static_cast<Word>(ArchitectureConstants::FieldRegister) },
+        };
+        auto result = builtinAliases.find(input);
+        if (result == builtinAliases.end()) {
             return syn::getRegister<Word, ArchitectureConstants::RegisterCount>(input, reportError);
+        } else {
+            return result->second;
         }
     }
 
@@ -644,40 +690,10 @@ namespace cisc0 {
     DefSymbol(Label, .label);
     struct LabelDirective : pegtl::state<RegisterLabel, SingleArgumentDirective<SymbolLabel, Lexeme>> { };
 
-    //DefAction(LabelDirective) {
-    //    DefApplyAsmState {
-    //        state.labels.emplace(state.current.labelValue, state.currentAddress);
-    //    }
-    //};
-
-    //template<typename Symbol>
-    //    struct LexemeOrNumberDirective : SingleArgumentDirective<Symbol, LexemeOrNumber> { };
-    //DefSymbol(Word, .word);
-    //struct WordDirective : pegtl::state<AssemblerWord, LexemeOrNumberDirective<SymbolWord> { };
-
-    //DefAction(WordDirective) {
-    //    DefApplyGeneric(AssemblerWord) {
-    //        if (state.isLabel()) {
-    //            state.wordsToResolve.emplace_back(state.currentAddress, state.current.labelValue, 1);
-    //        } else {
-    //            state.wordsToResolve.emplace_back(state.currentAddress, state.current.fullImmediate, 1);
-    //        }
-    //        ++state.currentAddress;
-    //    }
-    //};
-
-    //DefSymbol(Dword, .dword);
-    //struct DwordDirective : LexemeOrNumberDirective<SymbolDword> { };
-    //DefAction(DwordDirective) {
-    //    DefApplyAsmState {
-    //        if (state.current.isLabel) {
-    //            state.wordsToResolve.emplace_back(state.currentAddress, state.current.labelValue, 2);
-    //        } else {
-    //            state.wordsToResolve.emplace_back(state.currentAddress, state.current.fullImmediate, 2);
-    //        }
-    //        state.currentAddress +=2;
-    //    }
-    //};
+    DefSymbol(Word, .word);
+    DefSymbol(Dword, .dword);
+    struct WordDirective : pegtl::state<WordCreator, SingleArgumentDirective<SymbolWord, LexemeOrNumber>> { };
+    struct DwordDirective : pegtl::state<DwordCreator, SingleArgumentDirective<SymbolDword, LexemeOrNumber>> { };
 
 
     struct Directive : pegtl::sor<
