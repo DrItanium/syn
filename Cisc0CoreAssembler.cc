@@ -84,6 +84,7 @@ namespace cisc0 {
     struct AssemblerInstruction : public InstructionEncoder {
         template<typename Input>
             AssemblerInstruction(const Input& in, AssemblerState& parent) {
+                clear();
                 address = parent.currentAddress;
             }
 
@@ -137,6 +138,7 @@ namespace cisc0 {
         for (auto & op : finishedInstructions) {
             if (op.isLabel) {
                 auto label = op.labelValue;
+                std::cerr << "label: " << label << std::endl;
                 auto f = labels.find(label);
                 if (f == labels.end()) {
                     std::stringstream stream;
@@ -266,8 +268,9 @@ namespace cisc0 {
         DefApplyInstruction {
             state.isLabel = false;
         }
-        DefApplyGeneric(ChangeCurrentAddress) {
-        }
+        DefApplyGeneric(ChangeCurrentAddress) { }
+        DefApplyGeneric(WordCreator) { }
+        DefApplyGeneric(DwordCreator) { }
     };
 
     struct BitmaskNumber : syn::GenericNumeral<'m', pegtl::abnf::BIT> { };
@@ -288,7 +291,7 @@ namespace cisc0 {
             state._title = in.string();
         }
         template<typename Input, int width>
-        void applyToWordCreator(const Input& in, AssemblerWordCreator<width>& state) {
+        static void applyToWordCreator(const Input& in, AssemblerWordCreator<width>& state) {
             state._label = in.string();
             state._isLabel = true;
         }
@@ -701,9 +704,9 @@ namespace cisc0 {
 
     struct Directive : pegtl::sor<
                        OrgDirective,
-                       LabelDirective
-                       //WordDirective,
-                       //DwordDirective
+                       LabelDirective,
+                       WordDirective,
+                       DwordDirective
                        > { };
 
     struct Statement : pegtl::sor<
