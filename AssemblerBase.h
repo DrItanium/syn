@@ -8,9 +8,9 @@
 #include <pegtl.hh>
 #include <pegtl/contrib/raw_string.hh>
 #include <pegtl/contrib/abnf.hh>
-namespace syn { 
+namespace syn {
 	using ErrorReportingFunction = std::function<void(const std::string&)>;
-	template<typename T, T count> 
+	template<typename T, T count>
 	T getRegister(const char* text, ErrorReportingFunction onError) noexcept {
         static_assert(count > 0, "Can't have zero registers!");
 		T value = 0;
@@ -166,6 +166,28 @@ namespace syn {
 			bool _resolveLabel;
 			std::string _label;
 	};
+
+    template<typename Word>
+    class NumberContainer {
+        public:
+            template<typename Input, typename ... States>
+                NumberContainer(const Input& in, States&& ...) { }
+            virtual ~NumberContainer() { }
+            Word getValue() const noexcept { return _value; }
+            void setValue(Word value) noexcept { _value = value; }
+        private:
+            Word _value;
+    };
+    template<typename Word, Word numberOfRegisters>
+    class RegisterContainer : public NumberContainer<Word> {
+        public:
+            using NumberContainer<Word>::NumberContainer;
+            virtual ~RegisterContainer() { }
+            template<typename Input>
+            void parseRegister(const Input& in, ErrorReportingFunction onError) {
+                setValue(getRegister<Word, numberOfRegisters>(in.string(), onError));
+            }
+    };
 
 } // end namespace syn
 
