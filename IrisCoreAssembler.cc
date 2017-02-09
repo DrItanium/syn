@@ -38,6 +38,7 @@ namespace iris {
 		void setImmediate(word value) noexcept;
 		bool shouldResolveLabel() noexcept;
 	};
+
 	void AssemblerData::reset() noexcept {
 		instruction = false;
 		address = 0;
@@ -80,7 +81,8 @@ namespace iris {
 		void saveToFinished() noexcept;
 	};
 #define DefAction(rule) template<> struct Action < rule >
-#define DefApply template<typename Input> static void apply(const Input& in, AssemblerState& state)
+#define DefApplyGeneric(type) template<typename Input> static void apply(const Input& in, type & state)
+#define DefApply DefApplyGeneric(AssemblerState)
 	using Separator = syn::AsmSeparator;
 	using SingleLineComment = syn::SingleLineComment<';'>;
 	struct GeneralPurposeRegister : public syn::GenericRegister<'r'> { };

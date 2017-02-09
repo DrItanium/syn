@@ -96,32 +96,31 @@ namespace cisc0 {
             }
     };
 
-    struct NumberContainer {
-        template<typename Input, typename ... States>
-        NumberContainer(const Input& in, States && ...) { }
+    struct NumberContainer : public syn::NumberContainer<RegisterValue> {
+        using syn::NumberContainer<RegisterValue>::NumberContainer;
 
         template<typename Input>
         void success(const Input& in, AssemblerInstruction& parent) {
-            parent.fullImmediate = _value;
+            parent.fullImmediate = getValue();
         }
 
         template<typename Input>
         void success(const Input& in, RegisterLabel& parent) {
-            parent._address = _value;
+            parent._address = getValue();
         }
 
         template<typename Input>
         void success(const Input& in, ChangeCurrentAddress& parent) {
-            parent.address = _value;
+            parent.address = getValue();
         }
 
         template<typename Input>
         void success(const Input& in, AssemblerWord& parent) {
-            parent.setValue(_value);
+            parent.setValue(getValue());
         }
         template<typename Input, int width>
         void success(const Input& in, AssemblerWordCreator<width>& parent) {
-            parent._value = _value;
+            parent._value = getValue();
             parent._isLabel = false;
         }
         template<typename Input>
@@ -133,7 +132,6 @@ namespace cisc0 {
         void success(const Input& in, DwordCreator& parent) {
             success<Input, 2>(in, parent);
         }
-        RegisterValue _value;
     };
     void AssemblerState::resolveInstructions() {
         for (auto & op : finishedInstructions) {
@@ -242,7 +240,7 @@ namespace cisc0 {
             return syn::getHexImmediate<RegisterValue>(str, reportError);
         }
         DefApplyGeneric(NumberContainer) {
-            state._value = parseHex(in.string());
+            state.setValue(parseHex(in.string()));
         }
     };
     using BinaryNumber = syn::BinaryNumber;
@@ -251,7 +249,7 @@ namespace cisc0 {
             return syn::getBinaryImmediate<RegisterValue>(str, reportError);
         }
         DefApplyGeneric(NumberContainer) {
-            state._value = parseBinary(in.string());
+            state.setValue(parseBinary(in.string()));
         }
     };
     using DecimalNumber = syn::Base10Number;
@@ -260,7 +258,7 @@ namespace cisc0 {
             return syn::getDecimalImmediate<RegisterValue>(input.c_str(), reportError);
         }
         DefApplyGeneric(NumberContainer) {
-            state._value = parseDecimalImmediate(in.string());
+            state.setValue(parseDecimalImmediate(in.string()));
         }
     };
     struct Number : public pegtl::state<NumberContainer, pegtl::sor<HexadecimalNumber, DecimalNumber, BinaryNumber > > { };
