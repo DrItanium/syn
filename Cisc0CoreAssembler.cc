@@ -119,19 +119,20 @@ namespace cisc0 {
         void success(const Input& in, AssemblerWord& parent) {
             parent.setValue(_value);
         }
-
-        template<typename Input>
-        void success(const Input& in, WordCreator& parent) {
+        template<typename Input, int width>
+        void success(const Input& in, AssemblerWordCreator<width>& parent) {
             parent._value = _value;
             parent._isLabel = false;
+        }
+        template<typename Input>
+        void success(const Input& in, WordCreator& parent) {
+            success<Input, 1>(in, parent);
         }
 
         template<typename Input>
         void success(const Input& in, DwordCreator& parent) {
-            parent._value = _value;
-            parent._isLabel = false;
+            success<Input, 2>(in, parent);
         }
-
         RegisterValue _value;
     };
     void AssemblerState::resolveInstructions() {
