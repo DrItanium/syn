@@ -138,7 +138,6 @@ namespace cisc0 {
         for (auto & op : finishedInstructions) {
             if (op.isLabel) {
                 auto label = op.labelValue;
-                std::cerr << "label: " << label << std::endl;
                 auto f = labels.find(label);
                 if (f == labels.end()) {
                     std::stringstream stream;
