@@ -37,13 +37,36 @@
               )
          (org HandlerCodeBase
               (label HandlerDiagnoseIssue
-                     ; save the predicate registers to one of the emergency
-                     ; predicates
+                     ; save the predicate registers to the emergency predicate
+                     ; storage
                      (set estack
                           ErrorStack)
                      (using (save-to estack)
                             (predicates)
-                            )
+                            (eqi p0 p1
+                                 error-id
+                                 0x5)
+                            (bci p0
+                                 HandleCustomInstruction)
+                            (eqi p0 p1
+                                 error-id
+                                 0x3)
+                            (bci p0
+                                 HandleDivideByZero)
+                            (divi r248
+                                  r248
+                                  0x0) ; force a divide by zero to terminate the CPU
+                            (label HandlerDone))
+                     (rfe))
+              (label HandleCustomInstruction
 
-                     (rfe)
-                     )))
+                     (bi HandlerDone))
+              (label HandleDivideByZero
+                     ;TODO: figure out how the handler should work at this
+                     ;      point
+                     (divi r248
+                           r248
+                           0x0) ; terminate the cpu at this point
+
+                     (bi HandlerDone))
+              ))
