@@ -101,6 +101,12 @@
                      ;      point
                      (bi CrashCPUInHandler)
                      (bi HandlerDone))
+              (label GracefullyShutdownInHandler
+                     (xor etmp0
+                          etmp0
+                          etmp0)
+                     (stio etmp0
+                           etmp0))
               (label CrashCPUInHandler
                      (divi r248
                            r248
