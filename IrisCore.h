@@ -15,12 +15,13 @@ namespace iris {
 	enum ArchitectureConstants  {
 		RegisterCount = 256,
 		AddressMax = 0xFFFF,
+        AddressCount = AddressMax + 1,
 		RegisterMax = 0xFF,
 		ConditionRegisterCount = 16,
 		StackPointerIndex = RegisterCount - 1,
 		MaxGroups = 8,
 		MaxOperations = 32,
-		ErrorDispatchVectorBase = 0xFFFF,
+		ErrorDispatchVectorBase = 0x00FF,
 		RegistersToSaveOnError = 18,
 		ErrorRegisterStart = 255,
 	};
@@ -40,9 +41,9 @@ template<typename Data, typename Address>
 class ExposedCoreDataMemory;
 namespace iris {
 	using IOSpace = syn::IOController<word>;
-	template<word capacity>
-	using WordMemorySpace = syn::FixedSizeLoadStoreUnit<word, word, capacity>;
-	using WordMemorySpace64k = WordMemorySpace<ArchitectureConstants::AddressMax>;
+	template<dword capacity>
+	using WordMemorySpace = syn::FixedSizeLoadStoreUnit<word, dword, capacity>;
+	using WordMemorySpace64k = WordMemorySpace<ArchitectureConstants::AddressMax + 1>;
 	using ALU = syn::ALU<word>;
 	using CompareUnit = syn::Comparator<word>;
 	using RegisterFile = WordMemorySpace<ArchitectureConstants::RegisterCount>;
@@ -107,7 +108,7 @@ namespace iris {
 		private:
 			void saveSystemState() noexcept;
 			void restoreSystemState() noexcept;
-			void dispatchErrorHandler() noexcept;
+			void dispatchInterruptHandler() noexcept;
 
 		private:
 			template<typename Unit>
@@ -167,6 +168,7 @@ namespace iris {
 			ErrorStorage _onError;
 			bool _saveAdvanceIp = false;
 			bool _saveExecute = false;
+            bool _inInterruptHandler = false;
 	};
 	template<>
 		struct Core::PredicateRegisterEncoder<0> {

@@ -45,7 +45,13 @@ namespace iris {
 			gpr[i] = _onError[j];
 		}
 	}
-	void Core::dispatchErrorHandler() noexcept {
+	void Core::dispatchInterruptHandler() noexcept {
+        if (_inInterruptHandler) {
+            throw syn::Problem("Double interrupt fault!");
+        }
+        _inInterruptHandler = true;
+        saveSystemState();
+        _error = encodeStatusInError(_error, true);
         setInstructionPointer(data[ArchitectureConstants::ErrorDispatchVectorBase]);
 		gpr[255] = _error;
 		gpr[254] = getGroup();
@@ -55,37 +61,22 @@ namespace iris {
 		gpr[250] = getSource1();
 		gpr[249] = getImmediate();
 		advanceIp = false;
+        _error = 0; // clear out the error field now that we have transferred it
+        // now we have to perform the normal work of the cycle
+        while(_inInterruptHandler && execute) {
+            execute = cycle();
+        }
+        restoreSystemState();
 	}
 	bool Core::cycle() {
         advanceIp = true;
-		if (!decodeStatusInError(_error)) {
-			dispatch();
-			if (advanceIp) {
-                incrementInstructionPointer();
-			}
-			if (_error != 0) {
-				saveSystemState();
-				// figure out which system handler to jump to and how to setup
-				// the registers accordingly
-				dispatchErrorHandler();
-			}
-		} else {
-			auto oldStatus = _error;
-			dispatch();
-			if (_error == 0) {
-				// we've left the instruction handler
-				restoreSystemState();
-			} else {
-				if (oldStatus != _error) {
-					// we've hit another interrupt,  we need to terminate
-					// because something horrible has happened
-					throw syn::Problem("Hit another error within the interrupt handler");
-				}
-				if (advanceIp) {
-                    incrementInstructionPointer();
-				}
-			}
-		}
+        dispatch();
+        if (advanceIp) {
+            incrementInstructionPointer();
+        }
+        if (_error != 0) {
+            dispatchInterruptHandler();
+        }
 		return execute;
 	}
 	template<typename T>
@@ -210,8 +201,8 @@ namespace iris {
 				bool cond = false;
 				advanceIp = false;
 				auto returnFromError = [this]() {
-					if (decodeStatusInError(_error)) {
-						_error = 0; // clear the status register to allow the system to restore itself when we return to dispatch
+                    if (_inInterruptHandler) {
+                        _inInterruptHandler = false;
 					} else {
 						throw syn::Problem("ATTEMPTED TO RETURN FROM AN INTERRUPT WHEN NOT IN ONE!!!!");
 					}
