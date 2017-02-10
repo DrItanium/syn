@@ -358,14 +358,14 @@ namespace iris {
 	struct BranchUnconditional : public pegtl::seq<Op, Separator, S> { };
     DefOperationSameTitle(BranchUnconditional, b);
     DefOperationSameTitle(BranchUnconditionalLink, bl);
-    struct OperationBranchOneGPR : public pegtl::sor<SymbolBranchUnconditional, SymbolBranchUnconditionalLink> { };
-    struct BranchOneGPRInstruciton : public BranchUnconditional<OperationBranchOneGPR, DestinationGPR> { };
+    struct OperationBranchOneGPR : public pegtl::sor<SymbolBranchUnconditionalLink, SymbolBranchUnconditional> { };
+    struct BranchOneGPRInstruction : public BranchUnconditional<OperationBranchOneGPR, DestinationGPR> { };
     DefOperationSameTitle(BranchUnconditionalImmediate, bi);
     DefOperationSameTitle(BranchUnconditionalImmediateLink, bil);
     struct OperationBranchImmediate : public pegtl::sor<SymbolBranchUnconditionalImmediateLink, SymbolBranchUnconditionalImmediate> { };
     struct BranchImmediateInstruction : public BranchUnconditional<OperationBranchImmediate, Immediate> { };
 
-	struct GroupBranchUnconditional : public pegtl::sor<BranchOneGPRInstruciton, BranchImmediateInstruction> { };
+	struct GroupBranchUnconditional : public pegtl::sor<BranchOneGPRInstruction, BranchImmediateInstruction> { };
     template<typename Op, typename S>
     struct BranchConditional : public pegtl::seq<Op, Separator, DestinationPredicateRegister, Separator, S> { };
     DefOperationSameTitle(BranchConditional, bc);
@@ -445,11 +445,11 @@ namespace iris {
     struct OperationPredicateThreeArgs : public pegtl::sor<SymbolCRNot> { };
     struct OperationPredicateOneGPR : public pegtl::sor<SymbolSaveCRs, SymbolRestoreCRs> { };
     struct OperationPredicateFourArgs : public pegtl::sor<SymbolCRXor, SymbolCRAnd, SymbolCROr, SymbolCRNand, SymbolCRNor> { };
-    struct PredicateInstructionOneGPR : public pegtl::seq<OperationPredicateOneGPR, DestinationGPR> { };
-    struct PredicateInstructionTwoArgs : public pegtl::seq<OperationPredicateTwoArgs, DestinationPredicates> { };
-    struct PredicateInstructionThreeArgs : public pegtl::seq<OperationPredicateThreeArgs, DestinationPredicates, Source0Predicate> { };
-    struct PredicateInstructionFourArgs : public pegtl::seq<OperationPredicateFourArgs, DestinationPredicates, Source0Predicate, Source1Predicate> { };
-    struct PredicateInstruction : public pegtl::sor<PredicateInstructionTwoArgs, PredicateInstructionThreeArgs, PredicateInstructionFourArgs> { };
+    struct PredicateInstructionOneGPR : public pegtl::seq<OperationPredicateOneGPR, Separator, DestinationGPR> { };
+    struct PredicateInstructionTwoArgs : public pegtl::seq<OperationPredicateTwoArgs, Separator, DestinationPredicates> { };
+    struct PredicateInstructionThreeArgs : public pegtl::seq<OperationPredicateThreeArgs, Separator, DestinationPredicates, Separator, Source0Predicate> { };
+    struct PredicateInstructionFourArgs : public pegtl::seq<OperationPredicateFourArgs, Separator, DestinationPredicates, Separator, Source0Predicate, Separator, Source1Predicate> { };
+    struct PredicateInstruction : public pegtl::sor<PredicateInstructionOneGPR, PredicateInstructionTwoArgs, PredicateInstructionThreeArgs, PredicateInstructionFourArgs> { };
 	DefGroupSet(PredicateInstruction, ConditionalRegister);
 
 
