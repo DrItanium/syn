@@ -178,6 +178,13 @@
         (storage local)
         (default ?NONE)))
 
+(defmessage-handler lower::instruction-with-destination-source0-source1-and-source2 resolve-arguments primary
+                    ()
+                    (str-cat (call-next-handler)
+                             " "
+                             (send ?self:source-register2
+                                   resolve)))
+
 (defclass lower::four-argument-instruction
   (is-a instruction-with-destination-source0-source1-and-source2))
 
