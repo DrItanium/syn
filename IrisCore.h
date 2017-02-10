@@ -108,7 +108,7 @@ namespace iris {
 		private:
 			void saveSystemState() noexcept;
 			void restoreSystemState() noexcept;
-			void dispatchInterruptHandler() noexcept;
+			void dispatchInterruptHandler();
 
 		private:
 			template<typename Unit>

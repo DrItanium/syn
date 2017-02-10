@@ -45,7 +45,7 @@ namespace iris {
 			gpr[i] = _onError[j];
 		}
 	}
-	void Core::dispatchInterruptHandler() noexcept {
+	void Core::dispatchInterruptHandler() {
         if (_inInterruptHandler) {
             throw syn::Problem("Double interrupt fault!");
         }
