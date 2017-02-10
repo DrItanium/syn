@@ -628,4 +628,5 @@
           (one-register-operation blrcl)
           (zero-register-operation blr)
           (zero-register-operation blrl)
+          (zero-register-operation rfe)
           )
