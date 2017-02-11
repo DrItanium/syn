@@ -6,17 +6,11 @@ include config.mk
 MACHINE_OBJECTS =
 ARCH_OBJECTS = IrisCore.o \
 			   Cisc0Core.o \
-			   MoleculeCore.o \
 			   ${MACHINE_OBJECTS}
 
 COMMON_THINGS = libmaya.a \
 				Core.o
 
-BOOTSTRAP_OBJECTS = MoleculeCoreBootstrap.o \
-					${ARCH_OBJECTS} \
-					${COMMON_THINGS}
-
-BOOTSTRAP_BINARY = MoleculeCoreBootstrap
 
 SIM_OBJECTS = Simulator.o \
 			  CoreRegistrar.o \
@@ -44,7 +38,7 @@ REPL_OBJECTS= Repl.o \
 			  ClipsExtensions.o \
 			  ${COMMON_THINGS}
 
-ASM_PARSERS = 
+ASM_PARSERS =
 
 ASM_BINARY = syn_asm
 
@@ -64,12 +58,10 @@ ALL_BINARIES = ${SIM_BINARY} \
 
 DEFINE_OBJECTS = iris_defines.h \
 				 cisc0_defines.h \
-				 molecule_defines.h \
 				 syn_memory_block_defines.h
 
 DEFINE_CLPS = iris_defines.clp \
-			  cisc0_defines.clp \
-			  molecule_defines.clp
+			  cisc0_defines.clp
 
 ALL_OBJECTS = ${COMMON_THINGS} \
 			  ${SIM_OBJECTS} \
@@ -209,32 +201,17 @@ cisc0_defines.h: ${REPL_BINARY} ${COMMON_GEN_ENCODER_DECODER_FILES} def/cisc0/in
 	@./deffield.sh -f2 def/cisc0/instruction.clp -f2 lib/reset-run-exit.clp > cisc0_defines.h
 	@./deffunction.sh -f2 def/cisc0/instruction.clp -f2 lib/reset-run-exit.clp > cisc0_defines.clp
 
-molecule_defines.h: ${REPL_BINARY} ${COMMON_GEN_ENCODER_DECODER_FILES} def/molecule/instruction.clp
-	@echo "Generating encoders, decoders and enumerations for molecule..."
-	@./deffield.sh -f2 def/molecule/instruction.clp -f2 lib/reset-run-exit.clp > molecule_defines.h
-	@./deffunction.sh -f2 def/molecule/instruction.clp -f2 lib/reset-run-exit.clp > molecule_defines.clp
-
 phoenix_defines.h: ${REPL_BINARY} ${COMMON_GEN_ENCODER_DECODER_FILES} def/phoenix/instruction.clp
 	@echo "Generating encoders, decoders and enumerations for phoenix..."
 	@./deffield.sh -f2 def/phoenix/instruction.clp -f2 lib/reset-run-exit.clp > phoenix_defines.h
 	@./deffunction.sh -f2 def/phoenix/instruction.clp -f2 lib/reset-run-exit.clp > phoenix_defines.clp
 
-#Cisc0CoreAssembler.tab.o: Cisc0CoreAssembler.tab.c Cisc0Core.h Base.h Problem.h \
-# ExecutionUnits.h IODevice.h Device.h Core.h cisc0_defines.h \
-# def/cisc0/instruction.def def/cisc0/misc.def def/cisc0/ops.def \
-# AssemblerRegistrar.h Cisc0CoreAssembler.tab.h
-#Cisc0Core_lex.yy.o: Cisc0Core_lex.yy.c Cisc0Core.h Base.h Problem.h ExecutionUnits.h \
-# IODevice.h Device.h Core.h cisc0_defines.h def/cisc0/instruction.def \
-# def/cisc0/misc.def def/cisc0/ops.def Cisc0CoreAssembler.tab.h AssemblerBase.h
-
-
-
 Assembler.o: Assembler.cc Problem.h AssemblerRegistrar.h
 AssemblerRegistrar.o: AssemblerRegistrar.cc AssemblerRegistrar.h \
  IrisCore.h Base.h Problem.h ExecutionUnits.h IODevice.h Device.h Core.h \
  IOController.h iris_defines.h Cisc0Core.h cisc0_defines.h \
- def/cisc0/instruction.def def/cisc0/misc.def def/cisc0/ops.def \
- MoleculeCore.h molecule_defines.h
+ def/cisc0/instruction.def def/cisc0/misc.def def/cisc0/ops.def
+
 Cisc0CoreAssembler.o: Cisc0CoreAssembler.cc Base.h Problem.h \
  AssemblerBase.h Cisc0Core.h ExecutionUnits.h IODevice.h Device.h Core.h \
  cisc0_defines.h def/cisc0/instruction.def def/cisc0/misc.def \
@@ -282,22 +259,16 @@ IrisCoreAssembler.o: IrisCoreAssembler.cc Base.h Problem.h \
 IrisCore.o: IrisCore.cc IrisCore.h Base.h Problem.h ExecutionUnits.h \
  IODevice.h Device.h Core.h IOController.h iris_defines.h
 Linker.o: Linker.cc Core.h Device.h CoreRegistrar.h Problem.h
-MoleculeCoreBootstrap.o: MoleculeCoreBootstrap.cc MoleculeCore.h Base.h \
- Problem.h ExecutionUnits.h IODevice.h Device.h Core.h IOController.h \
- molecule_defines.h
-MoleculeCore.o: MoleculeCore.cc MoleculeCore.h Base.h Problem.h \
- ExecutionUnits.h IODevice.h Device.h Core.h IOController.h \
- molecule_defines.h
 RegisteredAssemblers.o: RegisteredAssemblers.cc Problem.h RegisterEntry.h \
  AssemblerRegistrar.h IrisCore.h Base.h ExecutionUnits.h IODevice.h \
  Device.h Core.h IOController.h iris_defines.h Cisc0Core.h \
  cisc0_defines.h def/cisc0/instruction.def def/cisc0/misc.def \
- def/cisc0/ops.def MoleculeCore.h molecule_defines.h
+ def/cisc0/ops.def
 RegisteredCores.o: RegisteredCores.cc Problem.h RegisterEntry.h \
  CoreRegistrar.h IrisCore.h Base.h ExecutionUnits.h IODevice.h Device.h \
  Core.h IOController.h iris_defines.h Cisc0Core.h cisc0_defines.h \
  def/cisc0/instruction.def def/cisc0/misc.def def/cisc0/ops.def \
- MoleculeCore.h molecule_defines.h RegisteredMachines.h LockStepMachine.h
+ RegisteredMachines.h LockStepMachine.h
 Repl.o: Repl.cc misc/maya/clips.h misc/maya/setup.h misc/maya/os_shim.h \
  misc/maya/platform.h misc/maya/envrnmnt.h misc/maya/symbol.h \
  misc/maya/usrsetup.h misc/maya/argacces.h misc/maya/expressn.h \
