@@ -201,11 +201,6 @@ cisc0_defines.h: ${REPL_BINARY} ${COMMON_GEN_ENCODER_DECODER_FILES} def/cisc0/in
 	@./deffield.sh -f2 def/cisc0/instruction.clp -f2 lib/reset-run-exit.clp > cisc0_defines.h
 	@./deffunction.sh -f2 def/cisc0/instruction.clp -f2 lib/reset-run-exit.clp > cisc0_defines.clp
 
-phoenix_defines.h: ${REPL_BINARY} ${COMMON_GEN_ENCODER_DECODER_FILES} def/phoenix/instruction.clp
-	@echo "Generating encoders, decoders and enumerations for phoenix..."
-	@./deffield.sh -f2 def/phoenix/instruction.clp -f2 lib/reset-run-exit.clp > phoenix_defines.h
-	@./deffunction.sh -f2 def/phoenix/instruction.clp -f2 lib/reset-run-exit.clp > phoenix_defines.clp
-
 Assembler.o: Assembler.cc Problem.h AssemblerRegistrar.h
 AssemblerRegistrar.o: AssemblerRegistrar.cc AssemblerRegistrar.h \
  IrisCore.h Base.h Problem.h ExecutionUnits.h IODevice.h Device.h Core.h \
@@ -259,16 +254,18 @@ IrisCoreAssembler.o: IrisCoreAssembler.cc Base.h Problem.h \
 IrisCore.o: IrisCore.cc IrisCore.h Base.h Problem.h ExecutionUnits.h \
  IODevice.h Device.h Core.h IOController.h iris_defines.h
 Linker.o: Linker.cc Core.h Device.h CoreRegistrar.h Problem.h
+
 RegisteredAssemblers.o: RegisteredAssemblers.cc Problem.h RegisterEntry.h \
  AssemblerRegistrar.h IrisCore.h Base.h ExecutionUnits.h IODevice.h \
  Device.h Core.h IOController.h iris_defines.h Cisc0Core.h \
  cisc0_defines.h def/cisc0/instruction.def def/cisc0/misc.def \
  def/cisc0/ops.def
+
 RegisteredCores.o: RegisteredCores.cc Problem.h RegisterEntry.h \
  CoreRegistrar.h IrisCore.h Base.h ExecutionUnits.h IODevice.h Device.h \
  Core.h IOController.h iris_defines.h Cisc0Core.h cisc0_defines.h \
- def/cisc0/instruction.def def/cisc0/misc.def def/cisc0/ops.def \
- RegisteredMachines.h LockStepMachine.h
+ def/cisc0/instruction.def def/cisc0/misc.def def/cisc0/ops.def
+
 Repl.o: Repl.cc misc/maya/clips.h misc/maya/setup.h misc/maya/os_shim.h \
  misc/maya/platform.h misc/maya/envrnmnt.h misc/maya/symbol.h \
  misc/maya/usrsetup.h misc/maya/argacces.h misc/maya/expressn.h \

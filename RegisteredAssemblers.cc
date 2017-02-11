@@ -5,10 +5,8 @@
 #include "AssemblerRegistrar.h"
 #include "IrisCore.h"
 #include "Cisc0Core.h"
-#include "MoleculeCore.h"
 
 template<typename T>
 using RegisterAssembler = syn::RegisterEntry<syn::AssemblerRegistrar, T>;
 static RegisterAssembler<iris::Core> iris16Core(syn::assemblerRegistry, "iris", iris::assemble);
 static RegisterAssembler<cisc0::Core> cisc0Core(syn::assemblerRegistry, "cisc0", cisc0::assemble);
-static RegisterAssembler<molecule::Core> moleculeCore(syn::assemblerRegistry, "molecule", [](auto a, auto b, auto c) { throw syn::Problem("Assembler is done through clips!"); });

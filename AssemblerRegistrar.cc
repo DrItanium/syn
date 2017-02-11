@@ -1,7 +1,6 @@
+#include <sstream>
+#include "Problem.h"
 #include "AssemblerRegistrar.h"
-#include "IrisCore.h"
-#include "Cisc0Core.h"
-#include "MoleculeCore.h"
 
 #include <map>
 
