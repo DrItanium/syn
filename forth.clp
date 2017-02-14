@@ -16,17 +16,20 @@
 (alias r1 as scratch1)
 (alias r2 as scratch2)
 (alias r3 as scratch3)
-(alias r32 as internal-stack)
-(alias r64 as counter0)
-(alias r65 as counter1)
-(alias p14 as rompredicate-true)
-(alias p15 as rompredicate-false)
+(alias r4 as scratch4)
+(alias r5 as scratch5)
+(alias r6 as scratch6)
+(alias r7 as scratch7)
+(alias r8 as internal-stack)
+(alias r9 as count0)
+(alias r10 as count1)
+(alias r11 as retval0)
+(alias r12 as retval1)
+(alias r13 as retval2)
+(alias r14 as retval3)
+
 ; in case our internal routines require return values, keep it off of the
 ; visible stack
-(alias r96 as retval0)
-(alias r97 as retval1)
-(alias r98 as retval2)
-(alias r99 as retval3)
 
 (alias r128 as romscratch0)
 (alias r129 as romscratch1)
@@ -40,6 +43,9 @@
 (alias r136 as romret1)
 (alias r137 as romret2)
 (alias r138 as romret3)
+
+(alias p14 as rompredicate-true)
+(alias p15 as rompredicate-false)
 
 (section code
          (org ROMRoutines
