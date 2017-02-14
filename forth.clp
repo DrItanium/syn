@@ -17,6 +17,8 @@
 (alias r2 as scratch2)
 (alias r3 as scratch3)
 (alias r32 as internal-stack)
+(alias r64 as counter0)
+(alias r65 as counter1)
 (alias p14 as rompredicate-true)
 (alias p15 as rompredicate-false)
 ; in case our internal routines require return values, keep it off of the
@@ -26,52 +28,56 @@
 (alias r98 as retval2)
 (alias r99 as retval3)
 
-(alias r128 as scratchrom0)
-(alias r129 as scratchrom1)
-(alias r130 as scratchrom2)
-(alias r131 as scratchrom3)
+(alias r128 as romscratch0)
+(alias r129 as romscratch1)
+(alias r130 as romscratch2)
+(alias r131 as romscratch3)
 (alias r132 as romarg0)
 (alias r133 as romarg1)
 (alias r134 as romarg2)
 (alias r135 as romarg3)
+(alias r135 as romret0)
+(alias r136 as romret1)
+(alias r137 as romret2)
+(alias r138 as romret3)
 
 (section code
          (org ROMRoutines
-              (label TerminateExecution
+              (label ROMTerminateExecution
                      ; if we are at this point then we can easily just use
                      ; whatever register we want!
-                     (xor scratchrom0
-                          scratchrom0
-                          scratchrom0)
+                     (xor romscratch0
+                          romscratch0
+                          romscratch0)
                      ; don't waste the space for the return
-                     (stio scratchrom0
-                           scratchrom0))
-              (label ReadCharacter
+                     (stio romscratch0
+                           romscratch0))
+              (label ROMReadCharacter
                      (push internal-stack
-                           scratchrom0)
-                     (set scratchrom0
+                           romscratch0)
+                     (set romscratch0
                           GetCAddress)
-                     (ldio retval0
-                           scratchrom0)
-                     (pop scratchrom0
+                     (ldio romret0
+                           romscratch0)
+                     (pop romscratch0
                           internal-stack)
                      (blr))
-              (label WriteCharacter
+              (label ROMWriteCharacter
                      (push internal-stack
-                           scratchrom0)
-                     (set scratchrom0
+                           romscratch0)
+                     (set romscratch0
                           PutCAddress)
-                     (stio scratchrom0
+                     (stio romscratch0
                            romarg0)
-                     (pop scratchrom0
+                     (pop romscratch0
                           internal-stack)
                      (blr))
-              (label ForceDivideByZero
-                     (divi scratchrom0
-                           scratchrom0
+              (label ROMForceDivideByZero
+                     (divi romscratch0
+                           romscratch0
                            0x0)
                      (blr))
-              (label IsSpace
+              (label ROMIsSpace
                      (eqi rompredicate-true
                           rompredicate-false
                           romarg0
