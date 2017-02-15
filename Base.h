@@ -533,5 +533,14 @@ inline constexpr bool inRangeExcludingMaximum(T value, T minimum, T maximum) noe
 	return value >= minimum && value < maximum;
 }
 
+template<typename T>
+union BinaryContainer {
+    T value;
+    byte bytes[sizeof(T)];
+};
+using BinaryFloat = BinaryContainer<float>;
+using BinaryDouble = BinaryContainer<double>;
+using BinaryLongDouble = BinaryContainer<long double>;
+
 }
 #endif
