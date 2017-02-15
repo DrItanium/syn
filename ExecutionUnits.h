@@ -25,8 +25,8 @@
 
 
 // define Execution Units to cut down on the amount of repeated actions
-#ifndef _IRIS_XUNITS_H
-#define _IRIS_XUNITS_H
+#ifndef _SYN_XUNITS_H
+#define _SYN_XUNITS_H
 #include "Base.h"
 #include "IODevice.h"
 #include <iostream>
@@ -44,8 +44,8 @@ class Register {
         virtual ~Register() { }
         inline T get() const noexcept { return _value; }
         inline void set(T value) noexcept { _value = generateProperAddress(value); }
-        inline void increment() noexcept { set(get() + 1); }
-        inline void decrement() noexcept { set(get() - 1); }
+        inline void increment(T value = 1) noexcept { set(get() + value); }
+        inline void decrement(T value = 1) noexcept { set(get() - value); }
         inline Self& operator++() {
             increment();
             return *this;
@@ -371,4 +371,4 @@ class BooleanCombineUnit {
 };
 
 } // end namespace syn
-#endif // end _IRIS_XUNITS_H
+#endif // end _SYN_XUNITS_H
