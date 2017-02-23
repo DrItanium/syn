@@ -56,13 +56,16 @@ namespace syn {
 				virtual bool respondsTo(const std::shared_ptr<IODevice<Data,Address>>& other) const;
 				virtual Address size() const noexcept { return _count; }
 				virtual Address baseAddress() const noexcept { return _base; }
-				virtual Address endAddress() const noexcept { 
+				virtual Address endAddress() const noexcept {
 					if (_base == 0) {
 						return _count;
 					} else {
 						return _base + _count;
 					}
 				}
+                virtual Address computeInternalAddress(Address addr) const noexcept {
+                    return addr - _base;
+                }
 				virtual Data read(Address targetAddress) = 0;
 				virtual void write(Address targetAddress, Data value) = 0;
 				virtual void initialize() override;
@@ -126,10 +129,10 @@ namespace syn {
 				using InitializeFunction = std::function<void()>;
 				using ShutdownFunction = std::function<void()>;
 			public:
-				LambdaIODevice(Address begin, Address length, 
-						ReadFunction onRead, 
-						WriteFunction onWrite, 
-						InitializeFunction init = initNothing<Data, Address>, 
+				LambdaIODevice(Address begin, Address length,
+						ReadFunction onRead,
+						WriteFunction onWrite,
+						InitializeFunction init = initNothing<Data, Address>,
 						ShutdownFunction shutdown = shutdownNothing<Data, Address>);
 				virtual ~LambdaIODevice();
 				virtual Data read(Address targetAddress) override;
@@ -144,13 +147,13 @@ namespace syn {
 		};
 
 	template<typename Data, typename Address>
-		LambdaIODevice<Data, Address>::LambdaIODevice(Address begin, Address length, 
-				ReadFunction onRead, 
-				WriteFunction onWrite, 
-				InitializeFunction init, 
-				ShutdownFunction shutdown) : 
-			IODevice<Data, Address>(begin, length), 
-			_onRead(onRead), 
+		LambdaIODevice<Data, Address>::LambdaIODevice(Address begin, Address length,
+				ReadFunction onRead,
+				WriteFunction onWrite,
+				InitializeFunction init,
+				ShutdownFunction shutdown) :
+			IODevice<Data, Address>(begin, length),
+			_onRead(onRead),
 			_onWrite(onWrite),
 			_init(init),
 			_shutdown(shutdown) { }
@@ -195,7 +198,7 @@ namespace syn {
 
 	template<typename D, typename A = D>
 		SharedLambdaIODevice<D, A> makeLambdaDevice(A begin, A length, LambdaIODeviceReadFunction<D, A> onRead,
-				LambdaIODeviceWriteFunction<D, A> onWrite, 
+				LambdaIODeviceWriteFunction<D, A> onWrite,
 				LambdaIODeviceInitializeFunction<D, A> onInit = initNothing<D, A>,
 				LambdaIODeviceShutdownFunction<D, A> onShutdown = shutdownNothing<D, A>) {
 			return std::make_shared<LambdaIODevice<D, A>>(begin, length, onRead, onWrite, onInit, onShutdown);
@@ -240,7 +243,7 @@ namespace syn {
 					SkipRandom,
 					Count,
 				};
-				RandomDevice(A base) : IODevice<D, A>(base, static_cast<A>(Addresses::Count)) { 
+				RandomDevice(A base) : IODevice<D, A>(base, static_cast<A>(Addresses::Count)) {
 					_next = std::async(std::launch::async, [this]() { return _engine(); });
 				}
 				virtual ~RandomDevice() { }

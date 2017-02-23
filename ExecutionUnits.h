@@ -331,6 +331,8 @@ class LoadStoreUnit : public IODevice<Word, Address> {
 
 template<typename Word, typename Address, Address capacity>
 class FixedSizeLoadStoreUnit : public LoadStoreUnit<Word, Address> {
+    public:
+        static constexpr Address count = capacity;
 	public:
 		FixedSizeLoadStoreUnit() : LoadStoreUnit<Word, Address>(capacity) { }
 		virtual ~FixedSizeLoadStoreUnit() { }
