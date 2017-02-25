@@ -299,7 +299,7 @@ class LoadStoreUnit : public IODevice<Word, Address> {
 			return retrieveMemory(addr);
 		}
 		virtual void write(Address addr, Word value) override {
-			retrieveMemory(addr) = value;
+			set(addr, value);
 		}
 		Word& operator[](Address addr) {
 			return retrieveMemory(addr);

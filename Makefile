@@ -4,8 +4,10 @@
 
 include config.mk
 MACHINE_OBJECTS =
+DEVICES = IrisCoreSecondaryStorageController.o 
 ARCH_OBJECTS = IrisCore.o \
 			   Cisc0Core.o \
+			   ${DEVICES} \
 			   ${MACHINE_OBJECTS}
 
 COMMON_THINGS = libmaya.a \
@@ -248,11 +250,6 @@ ClipsExtensions.o: ClipsExtensions.cc ClipsExtensions.h Base.h Problem.h \
 Core.o: Core.cc Core.h Device.h
 CoreRegistrar.o: CoreRegistrar.cc Problem.h CoreRegistrar.h Core.h \
  Device.h
-IrisCoreAssembler.o: IrisCoreAssembler.cc Base.h Problem.h \
- AssemblerBase.h IrisCore.h ExecutionUnits.h IODevice.h Device.h Core.h \
- IOController.h iris_defines.h
-IrisCore.o: IrisCore.cc IrisCore.h Base.h Problem.h ExecutionUnits.h \
- IODevice.h Device.h Core.h IOController.h iris_defines.h
 Linker.o: Linker.cc Core.h Device.h CoreRegistrar.h Problem.h
 
 RegisteredAssemblers.o: RegisteredAssemblers.cc Problem.h RegisterEntry.h \
@@ -298,3 +295,14 @@ Repl.o: Repl.cc misc/maya/clips.h misc/maya/setup.h misc/maya/os_shim.h \
  ClipsExtensions.h Base.h Problem.h
 Simulator.o: Simulator.cc Problem.h Core.h Device.h CoreRegistrar.h
 
+
+IrisCoreAssembler.o: IrisCoreAssembler.cc Base.h Problem.h \
+ AssemblerBase.h IrisCore.h ExecutionUnits.h IODevice.h Device.h Core.h \
+ IOController.h IrisCoreTypes.h IrisCoreSecondaryStorageController.h \
+ iris_defines.h
+IrisCore.o: IrisCore.cc IrisCore.h Base.h Problem.h ExecutionUnits.h \
+ IODevice.h Device.h Core.h IOController.h IrisCoreTypes.h \
+ IrisCoreSecondaryStorageController.h iris_defines.h
+IrisCoreSecondaryStorageController.o: \
+ IrisCoreSecondaryStorageController.cc IrisCoreTypes.h \
+ IrisCoreSecondaryStorageController.h

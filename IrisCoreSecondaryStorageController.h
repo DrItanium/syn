@@ -23,7 +23,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef IRIS_SECONDARY_STORAGE_CONTROLLER_H__
+#ifndef IRIS_SECONDARY_STORAGE_CONTROLLER_H__
 #define IRIS_SECONDARY_STORAGE_CONTROLLER_H__
 #include "Base.h"
 #include "IrisCoreTypes.h"
@@ -36,10 +36,10 @@ namespace iris {
 	 * Simple wrapper interface over secondary storage media which the cpu
 	 * interacts with
 	 */
-	class SecondaryStorageController : public IODevice<word> {
+	class SecondaryStorageController : public syn::IODevice<word> {
 		public:
-			using Sector = FixedSizeLoadStoreUnit<word, word, 256>;
-			using Media = FixedSizeLoadStoreUnit<Sector, word, 0xFFFF>;
+			using Sector = syn::FixedSizeLoadStoreUnit<word, word, 0xFF>;
+			static constexpr uint32_t sectorCount = 0x10000;
 			enum class Mapping {
 				SectorAddress = 0x0000,
 				InnerOffset = 0x0001,
@@ -53,7 +53,7 @@ namespace iris {
 		private:
 			word _sectorAddress;
 			word _innerOffset;
-			Media _media;
+			std::unique_ptr<Sector[]> _media;
 	};
 
 

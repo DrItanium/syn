@@ -28,6 +28,7 @@
 #include <functional>
 #include <sstream>
 #include <vector>
+#include "IrisCoreSecondaryStorageController.h"
 
 namespace iris {
 
@@ -504,7 +505,7 @@ namespace iris {
 		// getc and putc
 		_io.install(std::make_shared<syn::StandardInputOutputDevice<word>>(1));
 		_io.install(std::make_shared<syn::RandomDevice<word, word>>(3));
-		_io.install(std::make_shared<iris::SecondaryStorageController>(0xA));
+		_io.install(std::make_shared<SecondaryStorageController>(0xA));
 	}
 
 	void Core::shutdown() {

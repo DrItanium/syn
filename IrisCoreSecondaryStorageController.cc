@@ -26,8 +26,8 @@
 #include "IrisCoreSecondaryStorageController.h"
 
 namespace iris {
-	SecondaryStorageController::SecondaryStorageController(word address) : IODevice<word>(address, 3), _sectorAddress(0), _innerOffset(0) { }
-	virtual word SecondaryStorageController::read(word targetAddress) override {
+	SecondaryStorageController::SecondaryStorageController(word address) : IODevice<word>(address, 3), _sectorAddress(0), _innerOffset(0), _media(std::move(std::make_unique<Sector[]>(sectorCount)))  { }
+	word SecondaryStorageController::read(word targetAddress) {
 		auto address = computeInternalAddress(targetAddress);
 		switch(static_cast<Mapping>(address)) {
 			case Mapping::SectorAddress:
@@ -35,12 +35,12 @@ namespace iris {
 			case Mapping::InnerOffset:
 				return _innerOffset;
 			case Mapping::AccessNode:
-				return _media[_sectorAddress][_innerOffset];
+				return _media[_sectorAddress].read(_innerOffset);
 			default:
 				throw syn::Problem("Undefined action!");
 		}
 	}
-	virtual void SecondaryStorageController::write(word address, word value) override {
+	void SecondaryStorageController::write(word address, word value) {
 		auto modAddr = computeInternalAddress(address);
 		switch(static_cast<Mapping>(modAddr)) {
 			case Mapping::SectorAddress:
@@ -50,17 +50,21 @@ namespace iris {
 				_innerOffset = syn::decodeBits<word, byte, 0x00FF, 0>(value);
 				break;
 			case Mapping::AccessNode:
-				_media[_sectorAddress][_innerOffset] = value;
+				_media[_sectorAddress].write(_innerOffset, value);
 				break;
 			default:
 				throw syn::Problem("Undefined action!");
 		}
 
 	}
-	virtual void SecondaryStorageController::initialize() override {
-		_media.initialize();
+	void SecondaryStorageController::initialize() {
+		for (auto i = 0u ; i < sectorCount; ++i) {
+			_media[i].initialize();
+		}
 	}
-	virtual void SecondaryStorageController::shutdown() override {
-		_media.shutdown();
+	void SecondaryStorageController::shutdown() {
+		for (auto i = 0u ; i < sectorCount; ++i) {
+			_media[i].shutdown();
+		}
 	}
 } // end namespace iris
