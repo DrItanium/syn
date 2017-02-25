@@ -22,40 +22,45 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
-#ifdef IRIS_SECONDARY_STORAGE_CONTROLLER_H__
-#define IRIS_SECONDARY_STORAGE_CONTROLLER_H__
-#include "Base.h"
 #include "IrisCoreTypes.h"
-#include "ExecutionUnits.h"
-#include <memory>
-#include "IODevice.h"
+#include "IrisCoreSecondaryStorageController.h"
+
 namespace iris {
+	SecondaryStorageController::SecondaryStorageController(word address) : IODevice<word>(address, 3), _sectorAddress(0), _innerOffset(0) { }
+	virtual word SecondaryStorageController::read(word targetAddress) override {
+		auto address = computeInternalAddress(targetAddress);
+		switch(static_cast<Mapping>(address)) {
+			case Mapping::SectorAddress:
+				return _sectorAddress;
+			case Mapping::InnerOffset:
+				return _innerOffset;
+			case Mapping::AccessNode:
+				return _media[_sectorAddress][_innerOffset];
+			default:
+				throw syn::Problem("Undefined action!");
+		}
+	}
+	virtual void SecondaryStorageController::write(word address, word value) override {
+		auto modAddr = computeInternalAddress(address);
+		switch(static_cast<Mapping>(modAddr)) {
+			case Mapping::SectorAddress:
+				_sectorAddress = value;
+				break;
+			case Mapping::InnerOffset:
+				_innerOffset = syn::decodeBits<word, byte, 0x00FF, 0>(value);
+				break;
+			case Mapping::AccessNode:
+				_media[_sectorAddress][_innerOffset] = value;
+				break;
+			default:
+				throw syn::Problem("Undefined action!");
+		}
 
-	/**
-	 * Simple wrapper interface over secondary storage media which the cpu
-	 * interacts with
-	 */
-	class SecondaryStorageController : public IODevice<word> {
-		public:
-			using Sector = FixedSizeLoadStoreUnit<word, word, 256>;
-			using Media = FixedSizeLoadStoreUnit<Sector, word, 0xFFFF>;
-			enum class Mapping {
-				SectorAddress = 0x0000,
-				InnerOffset = 0x0001,
-				AccessNode = 0x0002,
-			};
-			SecondaryStorageController(word address);
-			virtual word read(word targetAddress) override;
-			virtual void write(word targetAddress, word value) override;
-			virtual void initialize() override;
-			virtual void shutdown() override;
-		private:
-			word _sectorAddress;
-			word _innerOffset;
-			Media _media;
-	};
-
-
+	}
+	virtual void SecondaryStorageController::initialize() override {
+		_media.initialize();
+	}
+	virtual void SecondaryStorageController::shutdown() override {
+		_media.shutdown();
+	}
 } // end namespace iris
-#endif // end IRIS_SECONDARY_STORAGE_CONTROLLER_H__

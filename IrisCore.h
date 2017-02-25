@@ -32,12 +32,9 @@
 #include "IOController.h"
 #include <cstdint>
 #include <memory>
+#include "IrisCoreTypes.h"
+#include "IrisCoreSecondaryStorageController.h"
 namespace iris {
-    using word = uint16_t;
-    using dword = uint32_t;
-    using raw_instruction = dword;
-    using immediate = word;
-    using QuadWord = uint64_t;
 	enum ArchitectureConstants  {
 		RegisterCount = 256,
 		AddressMax = 0xFFFF,

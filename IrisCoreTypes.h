@@ -23,39 +23,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef IRIS_SECONDARY_STORAGE_CONTROLLER_H__
-#define IRIS_SECONDARY_STORAGE_CONTROLLER_H__
-#include "Base.h"
-#include "IrisCoreTypes.h"
-#include "ExecutionUnits.h"
-#include <memory>
-#include "IODevice.h"
+
+#ifndef IRIS_CORE_TYPES_H__ 
+#define IRIS_CORE_TYPES_H__ 
+#include <cstdint>
 namespace iris {
-
-	/**
-	 * Simple wrapper interface over secondary storage media which the cpu
-	 * interacts with
-	 */
-	class SecondaryStorageController : public IODevice<word> {
-		public:
-			using Sector = FixedSizeLoadStoreUnit<word, word, 256>;
-			using Media = FixedSizeLoadStoreUnit<Sector, word, 0xFFFF>;
-			enum class Mapping {
-				SectorAddress = 0x0000,
-				InnerOffset = 0x0001,
-				AccessNode = 0x0002,
-			};
-			SecondaryStorageController(word address);
-			virtual word read(word targetAddress) override;
-			virtual void write(word targetAddress, word value) override;
-			virtual void initialize() override;
-			virtual void shutdown() override;
-		private:
-			word _sectorAddress;
-			word _innerOffset;
-			Media _media;
-	};
-
+    using word = uint16_t;
+    using dword = uint32_t;
+    using raw_instruction = dword;
+    using immediate = word;
+    using QuadWord = uint64_t;
 
 } // end namespace iris
-#endif // end IRIS_SECONDARY_STORAGE_CONTROLLER_H__
+
+
+#endif // end IRIS_CORE_TYPES_H__

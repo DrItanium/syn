@@ -491,6 +491,9 @@ namespace iris {
 		instruction.initialize();
 		stack.initialize();
 		_io.initialize();
+		for (auto i = 0; i < _cr.getSize(); ++i) {
+			_cr[i] = false;
+		}
 		auto readNothing = syn::readNothing<typename LambdaIODevice::DataType, typename LambdaIODevice::AddressType>;
 		// terminate
 		_io.install(std::make_shared<LambdaIODevice>(0, 1, readNothing,
@@ -501,9 +504,7 @@ namespace iris {
 		// getc and putc
 		_io.install(std::make_shared<syn::StandardInputOutputDevice<word>>(1));
 		_io.install(std::make_shared<syn::RandomDevice<word, word>>(3));
-		for (auto i = 0; i < _cr.getSize(); ++i) {
-			_cr[i] = false;
-		}
+		_io.install(std::make_shared<iris::SecondaryStorageController>(0xA));
 	}
 
 	void Core::shutdown() {
