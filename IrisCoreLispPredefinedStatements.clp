@@ -20,10 +20,8 @@
 ; ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-(defglobal lower
-           ?*primary-secondary-storage-base* = 0x000A)
 
-(definstances lower::predefined-statements
+(definstances lower::predefined-aliases
               (of list
                   (parent FALSE)
                   (contents alias
@@ -150,36 +148,81 @@
                             zero-register
                             as
                             zr))
+              )
+(defglobal lower
+           ?*primary-secondary-storage-base* = 0x000A
+           ?*error-dispatch-vector-address* = 0x00FF
+           ?*unused0-dispatch-vector-address* = 0x00FE
+           ?*unused1-dispatch-vector-address* = 0x00FD
+           ?*custom-instruction-dispatch-vector* = 0x00FC
+           ?*divide-by-zero-dispatch-vector* = 0x00FB
+           ?*terminate-port-address* = 0x0000
+           ?*get-c-port-address* = 0x0001
+           ?*put-c-port-address* = 0x0002
+           ?*seed-random-port-address* = 0x0003
+           ?*next-random-port-address* = 0x0004)
+
+(definstances lower::predefined-let-statements
+              (of list
+                  (parent FALSE)
+                  (contents let
+                            ZeroAddress
+                            be
+                            0x0000))
+              (of list
+                  (parent FALSE)
+                  (contents let
+                            ErrorDispatchVector
+                            be
+                            ?*error-dispatch-vector-address*))
+              (of list
+                  (parent FALSE)
+                  (contents let
+                            Unused0DispatchVector 
+                            be
+                            ?*unused0-dispatch-vector-address*))
+              (of list
+                  (parent FALSE)
+                  (contents let
+                            Unused1DispatchVector 
+                            be
+                            ?*unused1-dispatch-vector-address*))
+              (of list
+                  (parent FALSE)
+                  (contents let
+                            CustomInstructionDispatchVector
+                            be
+                            ?*custom-instruction-dispatch-vector*))
               (of list
                   (parent FALSE)
                   (contents let
                             TerminatePort 
                             be 
-                            0x0000))
+                            ?*terminate-port-address*))
               (of list
                   (parent FALSE)
                   (contents let
                             GetCPort
                             be
-                            0x0001))
+                            ?*get-c-port-address*))
               (of list
                   (parent FALSE)
                   (contents let
                             PutCPort
                             be
-                            0x0002))
+                            ?*put-c-port-address*))
               (of list
                   (parent FALSE)
                   (contents let 
                             SeedRandomPort 
                             be 
-                            0x0003))
+                            ?*seed-random-port-address*))
               (of list
                   (parent FALSE)
                   (contents let 
                             NextRandomPort 
                             be 
-                            0x0004))
+                            ?*next-random-port-address*))
               (of list
                   (parent FALSE)
                   (contents let 
@@ -191,20 +234,19 @@
                   (contents let
                             PrimarySecondaryStorageSectorPort
                             be
-                            (int->hex (+ (hex->int ?*primary-secondary-storage-base*)
-                                           0))))
+                            ?*primary-secondary-storage-base*))
               (of list
                   (parent FALSE)
                   (contents let
                             PrimarySecondaryStorageIndexPort
                             be
                             (int->hex (+ (hex->int ?*primary-secondary-storage-base*)
-                                           1))))
+                                         1))))
               (of list
                   (parent FALSE)
                   (contents let
-                            PrimarySecondaryStorageIndexPort
+                            PrimarySecondaryStorageDataPort
                             be
                             (int->hex (+ (hex->int ?*primary-secondary-storage-base*)
-                                           2))))
+                                         2))))
               )
