@@ -169,6 +169,16 @@
 (alias fixed-purpose-register5 as max-word-length)
 (alias max-word-length as wlen)
 
+; Used during the dictionary search
+(alias r136 as internal-register8)
+(alias internal-register8 as context-register)
+(alias context-register as context)
+
+; Used to walk any code segments we are curious about
+(alias r137 as internal-register9)
+(alias internal-register0 as interpreter-location)
+(alias interpreter-location as il)
+
 (section code
          (org 0x0000
               (label Startup
@@ -180,6 +190,8 @@
                           CallStackStart)
                      (set ds
                           DataStackStart)
+                     (move context
+                           zero)
                      ; TODO: more registers to setup
                      )
               (label DONE               ; top of our control loop
@@ -271,169 +283,148 @@
                                  TerminatePort)
                             (stio scratch0
                                   scratch0)))
-              (label WORD
-                     ;-----------------------------------------------------------------------------
-                     ; WORD: Read the next word in the input
-                     ;	sarg0 - pointer to temporary storage to save the current word
-                     ;-----------------------------------------------------------------------------
-                     (move scratch2 sarg0)                  ; Copy the pointer address to temporary storage so we can mess with it
-                     (set scratch3 WORD_read_data)          ; where to jump if we see a space
-                     (set scratch4 WORD_reassign_jumps)     ; where to jump to when wanting to handle storage
-                     (move scratch5 zero)                   ; The number of characters in the word
-                     (set scratch6 GetCPort)                ; The IO Port to load the next character from
-                     (label WORD_read_data
-                            (ldio scratch0 scratch6)        ; call "getc"
-                            (eq scratch-true
-                                scratch-false
-                                scratch0
-                                ascii-space)                ; Are we looking at a space?
-                            ; If we are looking at a space then goto WORD_read_data (start the loop up again). This is done to 
-                            ; "trim" the input of any number of spaces preceeding it
-                            ; If we aren't looking at a space then we need to rebuild the jump table and then 
-                            (if scratch-true
-                              scratch3
-                              scratch4)
-                            (label WORD_reassign_jumps
-                                   ; this code should only be executed once. We now terminate if we see another space at this point!
-                                   (set scratch3
-                                        WORD_done_reading)  
-                                   (set scratch4
-                                        WORD_store_word))
-                            (label WORD_store_word
-                                   ; the actual save operation, 
-                                   (st scratch2 
-                                       scratch0)   ; store the extracted character into the character buffer
-                                   (incr scratch2) ; next character
-                                   (gt scratch-true
-                                       scratch-false
-                                       scratch5
-                                       wlen) ; did we go over the maximum word length?
-                                   (bic scratch-true
-                                        WORD_too_large_word_ERROR) ; welp, this is fucked get out of here!
-                                   (incr scratch5)                 ; increment the word length count since we didn't error out
-                                   (bi WORD_read_data)             ; check the next character
-                                   ))
-                     (label WORD_too_large_word_ERROR
-                            ; we need to setup the pointers for error states since we got here!
-                            (st scratch2
-                                zero)     ; rewrite zero to the end of word entry
-                            (set sarg1
-                                 errmsg_WORD_too_large_word) ; load the error message
-                            (bi ERROR))
-                     (label WORD_done_reading
-                            (st scratch2
-                                zero)                ; put a zero in the current cell, or the last one
-                            (blr)))
-              (label TRANSLATE_HEX_DIGIT
-                     ;-----------------------------------------------------------------------------
-                     ; SUBROUTINE
-                     ; Convert a hex digit to its numeric representation
-                     ; sarg0 - the character to inspect
-                     ;-----------------------------------------------------------------------------
-                     (push sp
-                           scratch0)
-                     ; first check and see if the number is in 0-9
-                     (label DONE_TRANSLATE_HEXDIGIT
-                            (pop scratch0
-                                 sp)
-                            (blr)))
-              (label NUMBER
-                     ;-----------------------------------------------------------------------------
-                     ; SUBROUTINE
-                     ; Parse an unsigned hexadecimal number and construct a number out of it
-                     ;-----------------------------------------------------------------------------
-                     (push sp
-                           lr)
-                     (push sp
-                           inptr)
-                     (move inptr
-                           sarg0)
-                     (set scratch0
-                          0x58) ; Capital X
-                     ; be super lazy and just load all six characters
-                     (bil Fetch) ; Load the first character and see if we're looking at a x or X
-                     (eq scratch-true
-                         scratch-false
-                         fdcurr
-                         scratch0) ; are we looking at an x?
-                     (bic scratch-true
-                          HEXPARSE_LOOP) ; we are so parse the number!
-                     (label NATURAL
-                            (label NATURAL_CHECK_CHARACTER
-                                   (bil Fetch)
-                                   (subi scratch0
-                                         fdcurr 
-                                         0x30)
-                                   (gti is-number
-                                        is-not-number
-                                        scratch0
-                                        0x9) ; if the result is greater than 9 (unsigned wraparound)
-                                   (bic is-not-number
-                                        END_NATURAL)
-                                   (muli scratch1
-                                         scratch1
-                                         10)
-                                   (add scratch1
-                                        scratch1
-                                        scratch0)
-                                   (bi NATURAL_CHECK_CHARACTER)))
-                     (label END_NATURAL
-                            (move sres0
-                                  scratch1)
-                            (bi NUMBER_CHECK))
-                     ; we aren't looking at any of that
-                     (label HEXPARSE_LOOP
-                            ; let's start parsing the hex loop and looking at four digits (must be four digits)
-                            (bil Fetch) ; get the most significant digit
-                            (subi scratch0
-                                  fdcurr
-                                  0x30) 
-                            (lti is-number
-                                 is-not-number
-                                 scratch0
-                                 0xA)  ; is it a natural digit?
-                            (bic is-number
-                                 COMBINE_NUMBER) ; it was successful so save it
-                            (subi scratch0
-                                  fdcurr
-                                  0x41) ; see if it is a capital letter
-                            (lti is-number
-                                 is-not-number
-                                 scratch0
-                                 0x6)
-                            (bic is-not-number
-                                 CHECK_FOR_NOT_NUMBER_STATUS) ; we found an upper case digit
-                            ; add 10 (0xA) to the number since it is a digit
-                            (addi scratch0
-                                  scratch0
-                                  0xA) ; 
-                            (bi COMBINE_NUMBER)
-                            (label CHECK_FOR_NOT_NUMBER_STATUS
-                                   (bic is-not-number
-                                        NUMBER_END))
-                            (label COMBINE_NUMBER
-                                   (shli scratch1
-                                         scratch1
-                                         0x4)
-                                   (or scratch1
+              (func WORD
+                    ;-----------------------------------------------------------------------------
+                    ; WORD: Read the next word in the input
+                    ;	sarg0 - pointer to temporary storage to save the current word
+                    ;-----------------------------------------------------------------------------
+                    (move scratch2 sarg0)                  ; Copy the pointer address to temporary storage so we can mess with it
+                    (set scratch3 WORD_read_data)          ; where to jump if we see a space
+                    (set scratch4 WORD_reassign_jumps)     ; where to jump to when wanting to handle storage
+                    (move scratch5 zero)                   ; The number of characters in the word
+                    (set scratch6 GetCPort)                ; The IO Port to load the next character from
+                    (label WORD_read_data
+                           (ldio scratch0 scratch6)        ; call "getc"
+                           (eq scratch-true
+                               scratch-false
+                               scratch0
+                               ascii-space)                ; Are we looking at a space?
+                           ; If we are looking at a space then goto WORD_read_data (start the loop up again). This is done to 
+                           ; "trim" the input of any number of spaces preceeding it
+                           ; If we aren't looking at a space then we need to rebuild the jump table and then 
+                           (if scratch-true
+                             scratch3
+                             scratch4)
+                           (label WORD_reassign_jumps
+                                  ; this code should only be executed once. We now terminate if we see another space at this point!
+                                  (set scratch3
+                                       WORD_done_reading)  
+                                  (set scratch4
+                                       WORD_store_word))
+                           (label WORD_store_word
+                                  ; the actual save operation, 
+                                  (st scratch2 
+                                      scratch0)   ; store the extracted character into the character buffer
+                                  (incr scratch2) ; next character
+                                  (gt scratch-true
+                                      scratch-false
+                                      scratch5
+                                      wlen) ; did we go over the maximum word length?
+                                  (bic scratch-true
+                                       WORD_too_large_word_ERROR) ; welp, this is fucked get out of here!
+                                  (incr scratch5)                 ; increment the word length count since we didn't error out
+                                  (bi WORD_read_data)             ; check the next character
+                                  ))
+                    (label WORD_too_large_word_ERROR
+                           ; we need to setup the pointers for error states since we got here!
+                           (st scratch2
+                               zero)     ; rewrite zero to the end of word entry
+                           (set sarg1
+                                errmsg_WORD_too_large_word) ; load the error message
+                           (bi ERROR))
+                    (label WORD_done_reading
+                           (st scratch2
+                               zero)))                ; put a zero in the current cell, or the last one
+              (func NUMBER
+                    ;-----------------------------------------------------------------------------
+                    ; SUBROUTINE
+                    ; Parse an unsigned hexadecimal number and construct a number out of it
+                    ;-----------------------------------------------------------------------------
+                    (using (save-to sp)
+                           (lr inptr)
+                           (move inptr
+                                 sarg0)
+                           (set scratch0
+                                0x58) ; Capital X
+                           ; be super lazy and just load all six characters
+                           (bil Fetch) ; Load the first character and see if we're looking at a x or X
+                           (eq scratch-true
+                               scratch-false
+                               fdcurr
+                               scratch0) ; are we looking at an x?
+                           (bic scratch-true
+                                HEXPARSE_LOOP) ; we are so parse the number!
+                           (label NATURAL
+                                  (label NATURAL_CHECK_CHARACTER
+                                         (bil Fetch)
+                                         (subi scratch0
+                                               fdcurr 
+                                               0x30)
+                                         (gti is-number
+                                              is-not-number
+                                              scratch0
+                                              0x9) ; if the result is greater than 9 (unsigned wraparound)
+                                         (bic is-not-number
+                                              END_NATURAL)
+                                         (muli scratch1
+                                               scratch1
+                                               10)
+                                         (add scratch1
+                                              scratch1
+                                              scratch0)
+                                         (bi NATURAL_CHECK_CHARACTER)))
+                           (label END_NATURAL
+                                  (move sres0
+                                        scratch1)
+                                  (bi NUMBER_CHECK))
+                           ; we aren't looking at any of that
+                           (label HEXPARSE_LOOP
+                                  ; let's start parsing the hex loop and looking at four digits (must be four digits)
+                                  (bil Fetch) ; get the most significant digit
+                                  (subi scratch0
+                                        fdcurr
+                                        0x30) 
+                                  (lti is-number
+                                       is-not-number
                                        scratch0
-                                       scratch1))
-                            (bi HEXPARSE_LOOP))
-                     (label NUMBER_CHECK
-                            (eq is-number
-                                is-not-number
-                                fdcurr
-                                ascii-space)
-                            (move sres0
-                                  scratch1))
-                     (label NUMBER_END
-                            (move sres0
-                                  scratch1)
-                            (pop inptr
-                                 sp)
-                            (pop lr
-                                 sp)
-                            (blr)))
+                                       0xA)  ; is it a natural digit?
+                                  (bic is-number
+                                       COMBINE_NUMBER) ; it was successful so save it
+                                  (subi scratch0
+                                        fdcurr
+                                        0x41) ; see if it is a capital letter
+                                  (lti is-number
+                                       is-not-number
+                                       scratch0
+                                       0x6)
+                                  (bic is-not-number
+                                       CHECK_FOR_NOT_NUMBER_STATUS) ; we found an upper case digit
+                                  ; add 10 (0xA) to the number since it is a digit
+                                  (addi scratch0
+                                        scratch0
+                                        0xA) ; 
+                                  (bi COMBINE_NUMBER)
+                                  (label CHECK_FOR_NOT_NUMBER_STATUS
+                                         (bic is-not-number
+                                              NUMBER_END))
+                                  (label COMBINE_NUMBER
+                                         (shli scratch1
+                                               scratch1
+                                               0x4)
+                                         (or scratch1
+                                             scratch0
+                                             scratch1))
+                                  (bi HEXPARSE_LOOP))
+                           (label NUMBER_CHECK
+                                  (eq is-number
+                                      is-not-number
+                                      fdcurr
+                                      ascii-space)
+                                  (move sres0
+                                        scratch1))
+                           (label NUMBER_END
+                                  (move sres0
+                                        scratch1))))
               ; TODO: Numeric Output Conversion (3.4.3)
               (label Fetch
                      ;-----------------------------------------------------------------------------
@@ -509,5 +500,131 @@
                            second) ; push lower
                      (blr))
 
+              (label NEXT
+                     ;-----------------------------------------------------------------------------
+                     ; Goto the next instruction in the token list (outer execution list, il)
+                     ;-----------------------------------------------------------------------------
+                     (incr il)
+                     (ld scratch0
+                         il)
+                     (mtip scratch0))
+              (label DOLIT
+                     ;-----------------------------------------------------------------------------
+                     ; Load a literal onto the stack from the ip list. This is necessary since the 
+                     ; ip list contains a set of instructions instead of the usual 
+                     ;-----------------------------------------------------------------------------
+                     (ld top
+                         il)
+                     (push ds
+                           top)
+                     (incr il)
+                     (bi NEXT))
+              (label DOCON
+                     ;-----------------------------------------------------------------------------
+                     ; Run time routine for CONSTANT, VARIABLE, and CREATE.
+                     ;-----------------------------------------------------------------------------
+                     (pop top
+                          cs)
+                     (ld top
+                         top)
+                     (push ds
+                           top)
+                     (bi NEXT))
+              (label DOLST
+                     ;-----------------------------------------------------------------------------
+                     ; Process colon list
+                     ;-----------------------------------------------------------------------------
+                     (move scratch0
+                           il)
+                     (pop il
+                          cs)
+                     (push cs
+                           scratch0)
+                     (bi NEXT))
+              (label EXIT
+                     ;-----------------------------------------------------------------------------
+                     ; Terminate a colon list
+                     ;-----------------------------------------------------------------------------
+                     (pop il
+                          cs)
+                     (bi NEXT))
+              (label EXECUTE
+                     ;-----------------------------------------------------------------------------
+                     ; Execute the top of the data stack 
+                     ;-----------------------------------------------------------------------------
+                     (pop top
+                          ds)
+                     (b top))
+              (label EXECUTE_INDIRECT
+                     ;-----------------------------------------------------------------------------
+                     ; Load the value from data memory using the address stored in the data stack
+                     ; then jump to this loaded value
+                     ;-----------------------------------------------------------------------------
+                     (pop top
+                          ds)
+                     (ld top
+                         top) ; load the address out of memory
+                     (b top))
+              (label BRANCH
+                     ;-----------------------------------------------------------------------------
+                     ; Unconditional branch to address
+                     ;-----------------------------------------------------------------------------
+                     (ld il
+                         il)
+                     (incr il)
+                     (bi NEXT))
+              (label COND_BRANCH
+                     ;-----------------------------------------------------------------------------
+                     ; Branch if flag is zero
+                     ;-----------------------------------------------------------------------------
+                     (pop top
+                          ds)
+                     (eqi scratch-true
+                          scratch-false
+                          top
+                          0x00)
+                     (bic scratch-true
+                          BRANCH)
+                     (bi SKIP))
+
               )
          )
+(let DictionaryBase be 0x7FFF)
+(section data
+         (org DictionaryBase
+              (label DictionaryDrop
+                     (word 0x0000)
+                     (word 0x0104)
+                     (word 0x44)
+                     (word 0x52)
+                     (word 0x4f)
+                     (word 0x50)
+                     (word 0x20)
+                     (word WordDrop))
+              (label DictionaryDup
+                     (word DictionaryDrop)
+                     (word 0x0103)
+                     (word 0x44)
+                     (word 0x55)
+                     (word 0x50)
+                     (word 0x20)
+                     (word WordDup))
+              (label DictionarySwap
+                     (word DictionaryDup)
+                     (word 0x0104)
+                     (word 0x53)
+                     (word 0x57)
+                     (word 0x41)
+                     (word 0x50)
+                     (word 0x20)
+                     (word WordSwap))
+              (label DictionaryOver
+                     (word DictionarySwap)
+                     (word 0x0104)
+                     (word 0x4f)
+                     (word 0x56)
+                     (word 0x45)
+                     (word 0x52)
+                     (word 0x20)
+                     (word WordOver))))
+
