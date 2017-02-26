@@ -217,8 +217,6 @@
                     ; Inputs:
                     ;	sarg0 - what to print out
                     ;-----------------------------------------------------------------------------
-                    (set scratch1
-                         PutCPort)
                     (loop PrintLoop
                            (ld scratch0
                                sarg0)        ; load the current char from memory
@@ -228,8 +226,8 @@
                                zero)         ; first check to see if we should stop printing (zero means stop)
                            (bic scratch-true
                                 PrintDone)
-                           (stio scratch1
-                                 scratch0)  ; write it into io memory at the PutC port
+                           ; this will cause many more cycles to be performed on unnecessary sets but it is more readable so that wins out
+                           (putc scratch0) ; write it into io memory at the PutC port
                            (incr sarg0))
                     (label PrintDone))
               (func AtVerb
