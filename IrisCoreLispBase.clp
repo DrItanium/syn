@@ -559,6 +559,19 @@
                                     ?destination
                                     ?register
                                     1)))
+(defrule lower::parse-increment-self-macro
+         ?f <- (object (is-a list)
+                       (contents incr
+                                 ?register))
+         (object (is-a register)
+                 (name ?register))
+         =>
+         (modify-instance ?f
+                          (contents incr
+                                    ?register
+                                    ?register)))
+                                    
+
 
 (defrule lower::parse-decrement-macro
          ?f <- (object (is-a list)
