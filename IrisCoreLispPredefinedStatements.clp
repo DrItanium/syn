@@ -426,6 +426,118 @@
                             as
                             error-stack))
               )
+(definstances lower::predefined-predicate-register-aliases
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            p0
+                            as
+                            cond0-true))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            p1
+                            as
+                            cond0-false))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            p2
+                            as
+                            cond1-true))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            p3
+                            as
+                            cond1-false))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            p4
+                            as
+                            cond2-true))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            p5
+                            as
+                            cond2-false))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            p5
+                            as
+                            cond3-true))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            p6
+                            as
+                            cond3-false))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            p6
+                            as
+                            cond4-true))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            p7
+                            as
+                            cond4-false))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            p8
+                            as
+                            cond5-true))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            p9
+                            as
+                            cond5-false))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            p10
+                            as 
+                            cond6-true))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            p11
+                            as 
+                            cond6-false))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            p12
+                            as 
+                            cond7-true))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            p13
+                            as 
+                            cond7-false))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            p14
+                            as 
+                            cond8-true))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            p15
+                            as 
+                            cond8-false)))
+
+
+
 (defglobal lower
            ?*primary-secondary-storage-base* = 0x000A
            ?*error-dispatch-vector-address* = 0x00FF

@@ -110,12 +110,6 @@
 (alias scratch-register7 as scratch7)
 
 
-(alias p0 as cond0-true)
-(alias p1 as cond0-false)
-(alias p2 as cond1-true)
-(alias p3 as cond1-false)
-(alias p4 as cond2-true)
-(alias p5 as cond2-false)
 (alias cond0-true as is-number)
 (alias cond0-false as is-not-number)
 (alias cond1-true as scratch-true)
