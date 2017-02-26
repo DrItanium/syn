@@ -57,6 +57,11 @@
 (alias r1 as scratch-register1)
 (alias r2 as scratch-register2)
 (alias r3 as scratch-register3)
+(alias r4 as scratch-register4)
+(alias r5 as scratch-register5)
+(alias r6 as scratch-register6)
+(alias r7 as scratch-register7)
+
 (alias r32 as global-register0)
 (alias r33 as global-register1)
 (alias r34 as global-register2)
@@ -102,10 +107,14 @@
 (alias safe-temp2 as stmp2)
 (alias safe-temp3 as stmp3)
 
-(alias safe-temp0 as scratch0)
-(alias safe-temp1 as scratch1)
-(alias safe-temp2 as scratch2)
-(alias safe-temp3 as scratch3)
+(alias scratch-register0 as scratch0)
+(alias scratch-register1 as scratch1)
+(alias scratch-register2 as scratch2)
+(alias scratch-register3 as scratch3)
+(alias scratch-register4 as scratch4)
+(alias scratch-register5 as scratch5)
+(alias scratch-register6 as scratch6)
+(alias scratch-register7 as scratch7)
 
 
 (alias p0 as cond0-true)
@@ -119,11 +128,16 @@
 (alias cond1-true as scratch-true)
 (alias cond1-false as scratch-false)
 
+
+(alias scratch0 as top)
+(alias scratch1 as second)
+
 (let InternalStackStart be 0xFFFF)
 (let DataStackStart be 0x3FFF)
 (let CallStackStart be 0x7FFF)
 (let SpaceChar be 0x20)
 (let WordLength be 62)
+(let TerminatePort be 0x0000)
 (let GetCPort be 0x0001)
 (let PutCPort be 0x0002)
 (let SeedRandomPort be 0x0003)
@@ -132,9 +146,36 @@
 (let SecondaryStorageSectorPortOffset be 0x0000)
 (let SecondaryStorageIndexPortOffset be 0x0001)
 (let SecondaryStorageDataPortOffset be 0x0002)
+
+(alias r224 as fixed-purpose-register0)
+(alias fixed-purpose-register0 as fetch-deposit-current)
+(alias fetch-deposit-current as fdcurr)
+
+(alias r223 as fixed-purpose-register1)
+(alias fixed-purpose-register1 as input-pointer)
+(alias input-pointer as inptr)
+
+(alias r222 as fixed-purpose-register2)
+(alias fixed-purpose-register2 as output-pointer)
+(alias output-pointer as outptr)
+
+(alias r221 as fixed-purpose-register3)
+(alias fixed-purpose-register3 as zero)
+
+(alias r220 as fixed-purpose-register4)
+(alias fixed-purpose-register4 as ascii-space)
+
+(alias r219 as fixed-purpose-register5)
+(alias fixed-purpose-register5 as max-word-length)
+(alias max-word-length as wlen)
+
+
+
 (section code
          (org 0x0000
               (label Startup
+                     (set zero
+                          0x0000)
                      (set sp
                           InternalStackStart)
                      (set cs
@@ -172,17 +213,15 @@
                      (label PrintLoop
                             (ld scratch0
                                 sarg0)        ; load the current char from memory
-                            (eqi scratch-true
-                                 scratch-false
-                                 scratch0
-                                 0x00)        ; first check to see if we should stop printing (zero means stop)
+                            (eq scratch-true
+                                scratch-false
+                                scratch0
+                                zero)         ; first check to see if we should stop printing (zero means stop)
                             (bic scratch-true
                                  PrintDone)
                             (stwo scratch1
                                   scratch0)  ; write it into io memory at the PutC port
-                            (addi sarg0
-                                  sarg0
-                                  0x1)
+                            (incr sarg0)
                             (bi PrintLoop))
                      (label PrintDone
                             (blr)))
@@ -191,13 +230,174 @@
                      ; Treat the top of the stack as an address and loads its contents in place of
                      ; the original address
                      ;-----------------------------------------------------------------------------
-                     (pop scratch0
-                          ds)
-                     (ld scratch0
-                         scratch0)
+                     (pop top ds)   ; get the top element
+                     (ld top 
+                         top)
                      (push ds
-                           scratch0)
+                           top)
+                     (blr))
+              (label EqualsVerb
+                     ;-----------------------------------------------------------------------------
+                     ; Store second in memory at the address stored in top
+                     ;-----------------------------------------------------------------------------
+                     (pop top
+                          ds) ; get the top element (address)
+                     (pop second
+                          ds) ; get the second element (value)
+                     (st top
+                         second) ; data[top] = second
+                     (blr))
+              (label ERROR
+                     ;-----------------------------------------------------------------------------
+                     ; Takes in the offending word, an error message, prints them, then clears the
+                     ; stacks and then calls DONE.
+                     ; Inputs are on r32, r33 for this routine
+                     ;   sarg0 - word that did a bad thing
+                     ;   sarg1 - error type
+                     ;-----------------------------------------------------------------------------
+                     ; error routine when something goes wrong!
+                     (set ds
+                          DataStackStart) ; overwrite the current parameter stack location with the bottom
+                     (set cs
+                          CallStackStart) ; overwrite the current return stack location with the bottom
+                     (bil Print)          ; print the offending word that did the bad thing
+                     (move sarg0 
+                           sarg1)         ; need to print the error type so setup the arguments
+                     (bil Print)          
+                     (bi DONE)            ; And we're done!
+                     )
+              (label Shutdown
+                     ; End the program and shutdown the machine
+                     (label Die
+                            (set scratch0
+                                 TerminatePort)
+                            (stio scratch0
+                                  scratch0)))
+              (label WORD
+                     ;-----------------------------------------------------------------------------
+                     ; WORD: Read the next word in the input
+                     ;	sarg0 - pointer to temporary storage to save the current word
+                     ;-----------------------------------------------------------------------------
+                     (move scratch2 sarg0)                  ; Copy the pointer address to temporary storage so we can mess with it
+                     (set scratch3 WORD_read_data)          ; where to jump if we see a space
+                     (set scratch4 WORD_reassign_jumps)     ; where to jump to when wanting to handle storage
+                     (move scratch5 zero)                   ; The number of characters in the word
+                     (set scratch6 GetCPort)                ; The IO Port to load the next character from
+                     (label WORD_read_data
+                            (ldio scratch0 scratch6)        ; call "getc"
+                            (eq scratch-true
+                                scratch-false
+                                scratch0
+                                ascii-space)                ; Are we looking at a space?
+                            ; If we are looking at a space then goto WORD_read_data (start the loop up again). This is done to 
+                            ; "trim" the input of any number of spaces preceeding it
+                            ; If we aren't looking at a space then we need to rebuild the jump table and then 
+                            (if scratch-true
+                              scratch3
+                              scratch4)
+                            (label WORD_reassign_jumps
+                                  ; this code should only be executed once. We now terminate if we see another space at this point!
+                                   (set scratch3
+                                        WORD_done_reading)  
+                                   (set scratch4
+                                        WORD_store_word))
+                            (label WORD_store_word
+                             ; the actual save operation, 
+                                (st scratch2 
+                                    scratch0)   ; store the extracted character into the character buffer
+                                (incr scratch2) ; next character
+                                (gt scratch-true
+                                    scratch-false
+                                    scratch5
+                                    wlen) ; did we go over the maximum word length?
+                                (bic scratch-true
+                                     WORD_too_large_word_ERROR) ; welp, this is fucked get out of here!
+                                (incr scratch5)                 ; increment the word length count since we didn't error out
+                                (bi WORD_read_data)             ; check the next character
+                            ))
+                     (label WORD_too_large_word_ERROR
+                            ; we need to setup the pointers for error states since we got here!
+                            (st scratch2
+                                zero)     ; rewrite zero to the end of word entry
+                            (set sarg1
+                                 errmsg_WORD_too_large_word) ; load the error message
+                            (bi ERROR))
+                     (label WORD_done_reading
+                            (st scratch2
+                                zero)                ; put a zero in the current cell, or the last one
+                            (blr)))
+              (label Fetch
+                     ;-----------------------------------------------------------------------------
+                     ; SUBROUTINE
+                     ; Load the character defined by the input pointer into the fdcur register, 
+                     ; then advance inptr by one
+                     ;-----------------------------------------------------------------------------
+                     (ld fdcurr
+                         inptr)
+                     (incr inptr)
+                     (blr))
+              (label Deposit
+                     ;-----------------------------------------------------------------------------
+                     ; SUBROUTINE
+                     ; Store the character in fdcur in the address described by outptr, then 
+                     ; advance outptr by one
+                     ;-----------------------------------------------------------------------------
+                     (st outptr
+                         inptr)
+                     (incr outptr)
+                     (blr))
+              (label WordDrop
+                     ;-----------------------------------------------------------------------------
+                     ; SUBROUTINE
+                     ; Pop a word off the top of the parameter stack
+                     ;-----------------------------------------------------------------------------
+                     (pop top
+                          sp)
                      (blr))
 
-                        
+              (label WordDup
+                     ;-----------------------------------------------------------------------------
+                     ; SUBROUTINE
+                     ; duplicate the top of the parameter stack
+                     ;-----------------------------------------------------------------------------
+                     (pop top
+                          ds)
+                     (push ds 
+                           top)
+                     (push ds 
+                           top)
+                     (blr))
 
+              (label WordSwap
+                     ;-----------------------------------------------------------------------------
+                     ; SUBROUTINE
+                     ; swap the top of the parameter stack with the lower word
+                     ;-----------------------------------------------------------------------------
+                     (pop top
+                          ds) 
+                     (pop second
+                          ds)
+                     (push ds
+                           top)
+                     (push ds
+                           second)
+                     (blr))
+
+              (label WordOver
+                     ;-----------------------------------------------------------------------------
+                     ; SUBROUTINE
+                     ; push the lower word on the stack onto the stack (a b -- a b a)
+                     ;-----------------------------------------------------------------------------
+                     (pop top
+                          ds) ; get the top and second
+                     (pop second
+                          ds)
+                     (push ds 
+                           second) ; push lower
+                     (push ds
+                           top)    ; push top
+                     (push ds
+                           second) ; push lower
+                     (blr))
+              )
+         )
