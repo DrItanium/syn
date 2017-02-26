@@ -169,8 +169,6 @@
 (alias fixed-purpose-register5 as max-word-length)
 (alias max-word-length as wlen)
 
-
-
 (section code
          (org 0x0000
               (label Startup
@@ -296,25 +294,25 @@
                               scratch3
                               scratch4)
                             (label WORD_reassign_jumps
-                                  ; this code should only be executed once. We now terminate if we see another space at this point!
+                                   ; this code should only be executed once. We now terminate if we see another space at this point!
                                    (set scratch3
                                         WORD_done_reading)  
                                    (set scratch4
                                         WORD_store_word))
                             (label WORD_store_word
-                             ; the actual save operation, 
-                                (st scratch2 
-                                    scratch0)   ; store the extracted character into the character buffer
-                                (incr scratch2) ; next character
-                                (gt scratch-true
-                                    scratch-false
-                                    scratch5
-                                    wlen) ; did we go over the maximum word length?
-                                (bic scratch-true
-                                     WORD_too_large_word_ERROR) ; welp, this is fucked get out of here!
-                                (incr scratch5)                 ; increment the word length count since we didn't error out
-                                (bi WORD_read_data)             ; check the next character
-                            ))
+                                   ; the actual save operation, 
+                                   (st scratch2 
+                                       scratch0)   ; store the extracted character into the character buffer
+                                   (incr scratch2) ; next character
+                                   (gt scratch-true
+                                       scratch-false
+                                       scratch5
+                                       wlen) ; did we go over the maximum word length?
+                                   (bic scratch-true
+                                        WORD_too_large_word_ERROR) ; welp, this is fucked get out of here!
+                                   (incr scratch5)                 ; increment the word length count since we didn't error out
+                                   (bi WORD_read_data)             ; check the next character
+                                   ))
                      (label WORD_too_large_word_ERROR
                             ; we need to setup the pointers for error states since we got here!
                             (st scratch2
@@ -326,6 +324,137 @@
                             (st scratch2
                                 zero)                ; put a zero in the current cell, or the last one
                             (blr)))
+              (label TRANSLATE_HEX_DIGIT
+                     ;-----------------------------------------------------------------------------
+                     ; SUBROUTINE
+                     ; Convert a hex digit to its numeric representation
+                     ; sarg0 - the character to inspect
+                     ;-----------------------------------------------------------------------------
+                     (push sp
+                           scratch0)
+                     ; first check and see if the number is in 0-9
+                     (label DONE_TRANSLATE_HEXDIGIT
+                            (pop scratch0
+                                 sp)
+                            (blr)))
+              (label NUMBER
+                     ;-----------------------------------------------------------------------------
+                     ; SUBROUTINE
+                     ; Parse an unsigned hexadecimal number and construct a number out of it
+                     ;-----------------------------------------------------------------------------
+                     (push sp
+                           lr)
+                     (push sp
+                           inptr)
+                     (move inptr
+                           sarg0)
+                     (set scratch0
+                          0x78)  ; lowercase x
+                     (set scratch1
+                          0x58) ; Capital X
+                     ; be super lazy and just load all six characters
+                     (bil Fetch) ; Load the first character and see if we're looking at a x or X
+                     (eq scratch-true
+                         scratch-false
+                         fdcurr
+                         scratch0) ; are we looking at an x?
+                     (bic scratch-true
+                          HEXPARSE_LOOP) ; we are so parse the number!
+                     (eq scratch-true
+                         scratch-false
+                         fdcurr
+                         scratch1) ; are we looking at an X?
+                     (bic scratch-true
+                          HEXPARSE_LOOP) ; we are so parse the next four digits
+                     (label NATURAL
+                            (label NATURAL_CHECK_CHARACTER
+                                   (bil Fetch)
+                                   (subi scratch0
+                                         fdcurr 
+                                         0x30)
+                                   (gti is-number
+                                        is-not-number
+                                        scratch0
+                                        0x9) ; if the result is greater than 9 (unsigned wraparound)
+                                   (bic is-not-number
+                                        END_NATURAL)
+                                   (muli scratch1
+                                         scratch1
+                                         10)
+                                   (add scratch1
+                                        scratch1
+                                        scratch0)
+                                   (bi NATURAL_CHECK_CHARACTER)))
+                     (label END_NATURAL
+                            (move sres0
+                                  scratch1)
+                            (bi NUMBER_CHECK))
+                     ; we aren't looking at any of that
+                     (label HEXPARSE_LOOP
+                            ; let's start parsing the hex loop and looking at four digits (must be four digits)
+                            (bil Fetch) ; get the most significant digit
+                            (subi scratch0
+                                  fdcurr
+                                  0x30) 
+                            (lti is-number
+                                 is-not-number
+                                 scratch0
+                                 0xA)  ; is it a natural digit?
+                            (bic is-number
+                                 COMBINE_NUMBER) ; it was successful so save it
+                            (subi scratch0
+                                  fdcurr
+                                  0x41) ; see if it is a capital letter
+                            (lti is-number
+                                 is-not-number
+                                 scratch0
+                                 0x6)
+                            (bic is-number
+                                 FOUND_LETTER_DIGIT) ; we found an upper case digit
+                            (subi scratch0
+                                  fdcurr
+                                  0x61)    ; recompute the offset
+                            (lti is-number
+                                 is-not-number
+                                 scratch0
+                                 0x6) ;see if it is a lower case letter
+                            (bic is-number
+                                 FOUND_LETTER_DIGIT) ; it is a lower case digit
+                            ; it is not a legal digit at all
+                            (bi CHECK_FOR_NOT_NUMBER_STATUS)
+                            (label FOUND_LETTER_DIGIT
+                                   ; add 10 (0xA) to the number since it is a digit
+                                   (addi scratch0
+                                         scratch0
+                                         0xA))
+                            ; check the result of translating the hex digit
+                            (label CHECK_FOR_NOT_NUMBER_STATUS
+                                   (bic is-not-number
+                                        NUMBER_END))
+                            (label COMBINE_NUMBER
+                                   (shli scratch1
+                                         scratch1
+                                         0x4)
+                                   (or scratch1
+                                       scratch0
+                                       scratch1))
+                            (bi HEXPARSE_LOOP))
+                     (label NUMBER_CHECK
+                            (eq is-number
+                                is-not-number
+                                fdcurr
+                                ascii-space)
+                            (move sres0
+                                  scratch1))
+                     (label NUMBER_END
+                            (move sres0
+                                  scratch1)
+                            (pop inptr
+                                 sp)
+                            (pop lr
+                                 sp)
+                            (blr)))
+
               (label Fetch
                      ;-----------------------------------------------------------------------------
                      ; SUBROUTINE
