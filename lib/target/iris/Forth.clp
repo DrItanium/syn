@@ -49,10 +49,6 @@
 ; Startup the machine and perform initial partitioning and register layout
 ; The above register layouts are a suggestion not exact, I'll rewrite them as I go on!
 ;-----------------------------------------------------------------------------
-(alias r225 as call-stack)
-(alias call-stack as cs)
-(alias r226 as data-stack)
-(alias data-stack as ds)
 (alias r0 as scratch-register0)
 (alias r1 as scratch-register1)
 (alias r2 as scratch-register2)
@@ -66,10 +62,6 @@
 (alias r33 as global-register1)
 (alias r34 as global-register2)
 (alias r35 as global-register3)
-(alias r200 as v0)
-(alias r201 as v1)
-(alias r202 as v2)
-(alias r203 as v3)
 (alias r128 as internal-register0)
 (alias r129 as internal-register1)
 (alias r130 as internal-register2)
@@ -78,10 +70,11 @@
 (alias r133 as internal-register5)
 (alias r134 as internal-register6)
 (alias r135 as internal-register7)
-(alias internal-register0 as safe-param0)
-(alias internal-register1 as safe-param1)
-(alias internal-register2 as safe-param2)
-(alias internal-register3 as safe-param3)
+; implied register aliases
+(alias arg0 as safe-param0)
+(alias arg1 as safe-param1)
+(alias arg2 as safe-param2)
+(alias arg3 as safe-param3)
 (alias safe-param0 as spar0)
 (alias safe-param1 as spar1)
 (alias safe-param2 as spar2)
@@ -90,10 +83,10 @@
 (alias safe-param1 as sarg1)
 (alias safe-param2 as sarg2)
 (alias safe-param3 as sarg3)
-(alias internal-register4 as safe-result0)
-(alias internal-register5 as safe-result1)
-(alias internal-register6 as safe-result2)
-(alias internal-register7 as safe-result3)
+(alias ret0 as safe-result0)
+(alias ret1 as safe-result1)
+(alias ret2 as safe-result2)
+(alias ret3 as safe-result3)
 (alias safe-result0 as sres0)
 (alias safe-result1 as sres1)
 (alias safe-result2 as sres2)
@@ -159,9 +152,6 @@
 (alias fixed-purpose-register2 as output-pointer)
 (alias output-pointer as outptr)
 
-(alias r221 as fixed-purpose-register3)
-(alias fixed-purpose-register3 as zero)
-
 (alias r220 as fixed-purpose-register4)
 (alias fixed-purpose-register4 as ascii-space)
 
@@ -200,12 +190,11 @@
                      (NUMBER)     ; Check and see if we got a number from this input
                      (bic is-not-number
                           ParseWord)         ; If the is-not-number predicate register is true then it must be a word
-                     (bi PrintResult)        ; Print the number
+                     (goto PrintResult)        ; Print the number
                      (label ParseWord
                             (set sarg0
                                  WordBuffer) 
-                            (WORD) ; read the next word
-                            )
+                            (WORD)) ; read the next word
                      (label PrintResult
                             (Print)       ; print it out
                             (set sarg0
@@ -220,10 +209,9 @@
                     (loop PrintLoop
                            (ld scratch0
                                sarg0)        ; load the current char from memory
-                           (eq scratch-true
-                               scratch-false
-                               scratch0
-                               zero)         ; first check to see if we should stop printing (zero means stop)
+                           (is-zero scratch-true
+                                    scratch-false
+                                    scratch0) ; first check to see if we should stop printing (zero means stop)
                            (bic scratch-true
                                 PrintDone)
                            ; this will cause many more cycles to be performed on unnecessary sets but it is more readable so that wins out
@@ -562,10 +550,9 @@
                      ;-----------------------------------------------------------------------------
                      (pop top
                           ds)
-                     (eqi scratch-true
-                          scratch-false
-                          top
-                          0x00)
+                     (is-zero scratch-true
+                              scratch-false
+                              top)
                      (bic scratch-true
                           BRANCH)
                      (bi SKIP))

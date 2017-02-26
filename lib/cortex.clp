@@ -37,6 +37,14 @@
             "Increment the given number by 1")
 (defgeneric cortex::decrement
             "Decrement the given number by 1")
+(defgeneric cortex::int->hex
+            "Convert the given integer to a hex number!")
+
+(defmethod cortex::int->hex
+           ((?value INTEGER))
+           (sym-cat (format nil 
+                            "0x%x" 
+                            ?value)))
 
 (defmethod cortex::increment
   ((?value INTEGER))

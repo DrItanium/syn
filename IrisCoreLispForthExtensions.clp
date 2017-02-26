@@ -116,3 +116,32 @@
            else
            (printout werror "Couldn't open " ?file " for writing!" crlf)
            (halt)))
+
+(defrule lower::is-zero
+         "Macro for checking to see if a given number is equal to zero"
+         ?f <- (object (is-a list)
+                       (contents is-zero
+                                 ?on-true
+                                 ?on-false
+                                 ?register))
+         =>
+         (modify-instance ?f
+                          (contents eqi 
+                                    ?on-true 
+                                    ?on-false 
+                                    ?register 
+                                    0x00)))
+
+(defrule lower::is-not-zero
+         ?f <- (object (is-a list)
+                       (contents is-not-zero
+                                 ?on-true
+                                 ?on-false
+                                 ?register))
+         =>
+         (modify-instance ?f
+                          (contents nei
+                                    ?on-true
+                                    ?on-false
+                                    ?register
+                                    0x00)))

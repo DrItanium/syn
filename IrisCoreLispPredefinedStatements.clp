@@ -20,7 +20,8 @@
 ; ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
+(defglobal lower
+           ?*primary-secondary-storage-base* = 0x000A)
 
 (definstances lower::predefined-statements
               (of list
@@ -40,4 +41,170 @@
                   (contents alias
                             r237
                             as
-                            iv1)))
+                            iv1))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r236
+                            as
+                            arg0))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r235
+                            as
+                            arg1))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r234
+                            as
+                            arg2))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r233
+                            as
+                            arg3))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r232
+                            as
+                            ret0))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r231
+                            as
+                            ret1))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r230
+                            as
+                            ret2))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r229
+                            as
+                            ret3))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r228
+                            as
+                            code-stack))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            code-stack
+                            as
+                            return-stack))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            code-stack
+                            as
+                            cs))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            return-stack
+                            as
+                            rs))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r227
+                            as 
+                            data-stack))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            data-stack
+                            as
+                            ds))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            data-stack
+                            as
+                            parameter-stack))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            parameter-stack
+                            as
+                            ps))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r226
+                            as
+                            zero-register))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            zero-register
+                            as
+                            zr))
+              (of list
+                  (parent FALSE)
+                  (contents let
+                            TerminatePort 
+                            be 
+                            0x0000))
+              (of list
+                  (parent FALSE)
+                  (contents let
+                            GetCPort
+                            be
+                            0x0001))
+              (of list
+                  (parent FALSE)
+                  (contents let
+                            PutCPort
+                            be
+                            0x0002))
+              (of list
+                  (parent FALSE)
+                  (contents let 
+                            SeedRandomPort 
+                            be 
+                            0x0003))
+              (of list
+                  (parent FALSE)
+                  (contents let 
+                            NextRandomPort 
+                            be 
+                            0x0004))
+              (of list
+                  (parent FALSE)
+                  (contents let 
+                            PrimarySecondaryStorageBasePort 
+                            be 
+                            ?*primary-secondary-storage-base*))
+              (of list
+                  (parent FALSE)
+                  (contents let
+                            PrimarySecondaryStorageSectorPort
+                            be
+                            (int->hex (+ (hex->int ?*primary-secondary-storage-base*)
+                                           0))))
+              (of list
+                  (parent FALSE)
+                  (contents let
+                            PrimarySecondaryStorageIndexPort
+                            be
+                            (int->hex (+ (hex->int ?*primary-secondary-storage-base*)
+                                           1))))
+              (of list
+                  (parent FALSE)
+                  (contents let
+                            PrimarySecondaryStorageIndexPort
+                            be
+                            (int->hex (+ (hex->int ?*primary-secondary-storage-base*)
+                                           2))))
+              )
