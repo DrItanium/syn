@@ -349,8 +349,6 @@
                      (move inptr
                            sarg0)
                      (set scratch0
-                          0x78)  ; lowercase x
-                     (set scratch1
                           0x58) ; Capital X
                      ; be super lazy and just load all six characters
                      (bil Fetch) ; Load the first character and see if we're looking at a x or X
@@ -360,12 +358,6 @@
                          scratch0) ; are we looking at an x?
                      (bic scratch-true
                           HEXPARSE_LOOP) ; we are so parse the number!
-                     (eq scratch-true
-                         scratch-false
-                         fdcurr
-                         scratch1) ; are we looking at an X?
-                     (bic scratch-true
-                          HEXPARSE_LOOP) ; we are so parse the next four digits
                      (label NATURAL
                             (label NATURAL_CHECK_CHARACTER
                                    (bil Fetch)
@@ -409,25 +401,13 @@
                                  is-not-number
                                  scratch0
                                  0x6)
-                            (bic is-number
-                                 FOUND_LETTER_DIGIT) ; we found an upper case digit
-                            (subi scratch0
-                                  fdcurr
-                                  0x61)    ; recompute the offset
-                            (lti is-number
-                                 is-not-number
-                                 scratch0
-                                 0x6) ;see if it is a lower case letter
-                            (bic is-number
-                                 FOUND_LETTER_DIGIT) ; it is a lower case digit
-                            ; it is not a legal digit at all
-                            (bi CHECK_FOR_NOT_NUMBER_STATUS)
-                            (label FOUND_LETTER_DIGIT
-                                   ; add 10 (0xA) to the number since it is a digit
-                                   (addi scratch0
-                                         scratch0
-                                         0xA))
-                            ; check the result of translating the hex digit
+                            (bic is-not-number
+                                 CHECK_FOR_NOT_NUMBER_STATUS) ; we found an upper case digit
+                            ; add 10 (0xA) to the number since it is a digit
+                            (addi scratch0
+                                  scratch0
+                                  0xA) ; 
+                            (bi COMBINE_NUMBER)
                             (label CHECK_FOR_NOT_NUMBER_STATUS
                                    (bic is-not-number
                                         NUMBER_END))
@@ -454,7 +434,7 @@
                             (pop lr
                                  sp)
                             (blr)))
-
+              ; TODO: Numeric Output Conversion (3.4.3)
               (label Fetch
                      ;-----------------------------------------------------------------------------
                      ; SUBROUTINE
@@ -528,5 +508,6 @@
                      (push ds
                            second) ; push lower
                      (blr))
+
               )
          )
