@@ -183,15 +183,16 @@
                      ; TODO: more registers to setup
                      )
               (label DONE               ; top of our control loop
-                     (set spar0 WordBuffer)  ; load the front fo the word buffer
-                     (bil NumberRoutine)     ; Check and see if we got a number from this input
+                     (set sarg0 
+                          WordBuffer)  ; load the front fo the word buffer
+                     (bil NUMBER)     ; Check and see if we got a number from this input
                      (bic is-not-number
                           ParseWord)         ; If the is-not-number predicate register is true then it must be a word
                      (bi PrintResult)        ; Print the number
                      (label ParseWord
                             (set sarg0
                                  WordBuffer) 
-                            (bil WordRoutine) ; read the next word
+                            (bil WORD) ; read the next word
                             )
                      (label PrintResult
                             (bil Print)       ; print it out
@@ -199,7 +200,6 @@
                                  NewlineChar) 
                             (bil Print)       ; add a newline
                             (bi DONE)))
-
               (label Print
                      ;-----------------------------------------------------------------------------
                      ; Prints a string character by character until we see a \0
@@ -217,7 +217,7 @@
                                 zero)         ; first check to see if we should stop printing (zero means stop)
                             (bic scratch-true
                                  PrintDone)
-                            (stwo scratch1
+                            (stio scratch1
                                   scratch0)  ; write it into io memory at the PutC port
                             (incr sarg0)
                             (bi PrintLoop))
