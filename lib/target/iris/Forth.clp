@@ -194,7 +194,8 @@
                            zero)
                      ; TODO: more registers to setup
                      )
-              (label DONE               ; top of our control loop
+              (loop DONE
+                    ; top of our control loop
                      (set sarg0 
                           WordBuffer)  ; load the front fo the word buffer
                      (bil NUMBER)     ; Check and see if we got a number from this input
@@ -204,37 +205,34 @@
                      (label ParseWord
                             (set sarg0
                                  WordBuffer) 
-                            (bil WORD) ; read the next word
+                            (WORD) ; read the next word
                             )
                      (label PrintResult
-                            (bil Print)       ; print it out
+                            (Print)       ; print it out
                             (set sarg0
                                  NewlineChar) 
-                            (bil Print)       ; add a newline
-                            (bi DONE)))
-              (label Print
-                     ;-----------------------------------------------------------------------------
-                     ; Prints a string character by character until we see a \0
-                     ; Inputs:
-                     ;	sarg0 - what to print out
-                     ;-----------------------------------------------------------------------------
-                     (set scratch1
-                          PutCPort)
-                     (label PrintLoop
-                            (ld scratch0
-                                sarg0)        ; load the current char from memory
-                            (eq scratch-true
-                                scratch-false
-                                scratch0
-                                zero)         ; first check to see if we should stop printing (zero means stop)
-                            (bic scratch-true
-                                 PrintDone)
-                            (stio scratch1
-                                  scratch0)  ; write it into io memory at the PutC port
-                            (incr sarg0)
-                            (bi PrintLoop))
-                     (label PrintDone
-                            (blr)))
+                            (Print)))       ; add a newline
+              (func Print
+                    ;-----------------------------------------------------------------------------
+                    ; Prints a string character by character until we see a \0
+                    ; Inputs:
+                    ;	sarg0 - what to print out
+                    ;-----------------------------------------------------------------------------
+                    (set scratch1
+                         PutCPort)
+                    (loop PrintLoop
+                           (ld scratch0
+                               sarg0)        ; load the current char from memory
+                           (eq scratch-true
+                               scratch-false
+                               scratch0
+                               zero)         ; first check to see if we should stop printing (zero means stop)
+                           (bic scratch-true
+                                PrintDone)
+                           (stio scratch1
+                                 scratch0)  ; write it into io memory at the PutC port
+                           (incr sarg0))
+                    (label PrintDone))
               (label AtVerb
                      ;-----------------------------------------------------------------------------
                      ; Treat the top of the stack as an address and loads its contents in place of
@@ -274,15 +272,11 @@
                      (move sarg0 
                            sarg1)         ; need to print the error type so setup the arguments
                      (bil Print)          
-                     (bi DONE)            ; And we're done!
-                     )
+                     (goto DONE))          ; we're done
               (label Shutdown
                      ; End the program and shutdown the machine
                      (label Die
-                            (set scratch0
-                                 TerminatePort)
-                            (stio scratch0
-                                  scratch0)))
+                            (terminate)))
               (func WORD
                     ;-----------------------------------------------------------------------------
                     ; WORD: Read the next word in the input
@@ -291,10 +285,9 @@
                     (move scratch2 sarg0)                  ; Copy the pointer address to temporary storage so we can mess with it
                     (set scratch3 WORD_read_data)          ; where to jump if we see a space
                     (set scratch4 WORD_reassign_jumps)     ; where to jump to when wanting to handle storage
-                    (move scratch5 zero)                   ; The number of characters in the word
-                    (set scratch6 GetCPort)                ; The IO Port to load the next character from
+                    (clear scratch5)                        ; The number of characters in the word
                     (label WORD_read_data
-                           (ldio scratch0 scratch6)        ; call "getc"
+                           (getc scratch0)
                            (eq scratch-true
                                scratch-false
                                scratch0
@@ -347,7 +340,7 @@
                            (set scratch0
                                 0x58) ; Capital X
                            ; be super lazy and just load all six characters
-                           (bil Fetch) ; Load the first character and see if we're looking at a x or X
+                           (Fetch) ; Load the first character and see if we're looking at a x or X
                            (eq scratch-true
                                scratch-false
                                fdcurr
@@ -355,8 +348,8 @@
                            (bic scratch-true
                                 HEXPARSE_LOOP) ; we are so parse the number!
                            (label NATURAL
-                                  (label NATURAL_CHECK_CHARACTER
-                                         (bil Fetch)
+                                  (loop NATURAL_CHECK_CHARACTER
+                                         (Fetch)
                                          (subi scratch0
                                                fdcurr 
                                                0x30)
@@ -371,16 +364,15 @@
                                                10)
                                          (add scratch1
                                               scratch1
-                                              scratch0)
-                                         (bi NATURAL_CHECK_CHARACTER)))
+                                              scratch0)))
                            (label END_NATURAL
                                   (move sres0
                                         scratch1)
-                                  (bi NUMBER_CHECK))
+                                  (goto NUMBER_CHECK))
                            ; we aren't looking at any of that
-                           (label HEXPARSE_LOOP
+                           (loop HEXPARSE_LOOP
                                   ; let's start parsing the hex loop and looking at four digits (must be four digits)
-                                  (bil Fetch) ; get the most significant digit
+                                  (Fetch) ; get the most significant digit
                                   (subi scratch0
                                         fdcurr
                                         0x30) 
@@ -413,8 +405,7 @@
                                                0x4)
                                          (or scratch1
                                              scratch0
-                                             scratch1))
-                                  (bi HEXPARSE_LOOP))
+                                             scratch1)))
                            (label NUMBER_CHECK
                                   (eq is-number
                                       is-not-number
@@ -507,7 +498,8 @@
                      (incr il)
                      (ld scratch0
                          il)
-                     (mtip scratch0))
+                     (move ip
+                           scratch0))
               (label DOLIT
                      ;-----------------------------------------------------------------------------
                      ; Load a literal onto the stack from the ip list. This is necessary since the 
@@ -595,36 +587,21 @@
               (label DictionaryDrop
                      (word 0x0000)
                      (word 0x0104)
-                     (word 0x44)
-                     (word 0x52)
-                     (word 0x4f)
-                     (word 0x50)
-                     (word 0x20)
+                     (string DROP)
                      (word WordDrop))
               (label DictionaryDup
                      (word DictionaryDrop)
                      (word 0x0103)
-                     (word 0x44)
-                     (word 0x55)
-                     (word 0x50)
-                     (word 0x20)
+                     (string DUP)
                      (word WordDup))
               (label DictionarySwap
                      (word DictionaryDup)
                      (word 0x0104)
-                     (word 0x53)
-                     (word 0x57)
-                     (word 0x41)
-                     (word 0x50)
-                     (word 0x20)
+                     (string SWAP)
                      (word WordSwap))
               (label DictionaryOver
                      (word DictionarySwap)
                      (word 0x0104)
-                     (word 0x4f)
-                     (word 0x56)
-                     (word 0x45)
-                     (word 0x52)
-                     (word 0x20)
+                     (string OVER)
                      (word WordOver))))
 

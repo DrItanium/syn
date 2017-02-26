@@ -30,3 +30,4 @@
 (batch* IrisCoreLispStackOperations.clp)
 (batch* IrisCoreLispRegisters.clp)
 (batch* IrisCoreLispPredefinedStatements.clp)
+(batch* IrisCoreLispForthExtensions.clp)

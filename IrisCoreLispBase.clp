@@ -570,7 +570,7 @@
                           (contents incr
                                     ?register
                                     ?register)))
-                                    
+
 
 
 (defrule lower::parse-decrement-macro
@@ -817,10 +817,10 @@
                                     0)))
 (defrule lower::zero-register-macro
          ?f <- (object (is-a list)
-                       (contents zero|clear
+                       (contents clear
                                  ?register))
          =>
          (modify-instance ?f
                           (contents set
                                     ?register
-                                    0x0000))
+                                    0x0000)))
