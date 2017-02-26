@@ -190,15 +190,14 @@
                           CallStackStart)
                      (set ds
                           DataStackStart)
-                     (move context
-                           zero)
+                     (clear context)
                      ; TODO: more registers to setup
                      )
               (loop DONE
                     ; top of our control loop
                      (set sarg0 
                           WordBuffer)  ; load the front fo the word buffer
-                     (bil NUMBER)     ; Check and see if we got a number from this input
+                     (NUMBER)     ; Check and see if we got a number from this input
                      (bic is-not-number
                           ParseWord)         ; If the is-not-number predicate register is true then it must be a word
                      (bi PrintResult)        ; Print the number
@@ -233,7 +232,7 @@
                                  scratch0)  ; write it into io memory at the PutC port
                            (incr sarg0))
                     (label PrintDone))
-              (label AtVerb
+              (func AtVerb
                      ;-----------------------------------------------------------------------------
                      ; Treat the top of the stack as an address and loads its contents in place of
                      ; the original address
@@ -242,9 +241,8 @@
                      (ld top 
                          top)
                      (push ds
-                           top)
-                     (blr))
-              (label EqualsVerb
+                           top))
+              (func EqualsVerb
                      ;-----------------------------------------------------------------------------
                      ; Store second in memory at the address stored in top
                      ;-----------------------------------------------------------------------------
@@ -253,8 +251,7 @@
                      (pop second
                           ds) ; get the second element (value)
                      (st top
-                         second) ; data[top] = second
-                     (blr))
+                         second)) ; data[top] = second
               (label ERROR
                      ;-----------------------------------------------------------------------------
                      ; Takes in the offending word, an error message, prints them, then clears the
@@ -268,10 +265,10 @@
                           DataStackStart) ; overwrite the current parameter stack location with the bottom
                      (set cs
                           CallStackStart) ; overwrite the current return stack location with the bottom
-                     (bil Print)          ; print the offending word that did the bad thing
+                     (Print)          ; print the offending word that did the bad thing
                      (move sarg0 
                            sarg1)         ; need to print the error type so setup the arguments
-                     (bil Print)          
+                     (Print)
                      (goto DONE))          ; we're done
               (label Shutdown
                      ; End the program and shutdown the machine
@@ -286,38 +283,36 @@
                     (set scratch3 WORD_read_data)          ; where to jump if we see a space
                     (set scratch4 WORD_reassign_jumps)     ; where to jump to when wanting to handle storage
                     (clear scratch5)                        ; The number of characters in the word
-                    (label WORD_read_data
-                           (getc scratch0)
-                           (eq scratch-true
-                               scratch-false
-                               scratch0
-                               ascii-space)                ; Are we looking at a space?
-                           ; If we are looking at a space then goto WORD_read_data (start the loop up again). This is done to 
-                           ; "trim" the input of any number of spaces preceeding it
-                           ; If we aren't looking at a space then we need to rebuild the jump table and then 
-                           (if scratch-true
-                             scratch3
-                             scratch4)
-                           (label WORD_reassign_jumps
-                                  ; this code should only be executed once. We now terminate if we see another space at this point!
-                                  (set scratch3
-                                       WORD_done_reading)  
-                                  (set scratch4
-                                       WORD_store_word))
-                           (label WORD_store_word
-                                  ; the actual save operation, 
-                                  (st scratch2 
-                                      scratch0)   ; store the extracted character into the character buffer
-                                  (incr scratch2) ; next character
-                                  (gt scratch-true
-                                      scratch-false
-                                      scratch5
-                                      wlen) ; did we go over the maximum word length?
-                                  (bic scratch-true
-                                       WORD_too_large_word_ERROR) ; welp, this is fucked get out of here!
-                                  (incr scratch5)                 ; increment the word length count since we didn't error out
-                                  (bi WORD_read_data)             ; check the next character
-                                  ))
+                    (loop WORD_read_data
+                          (getc scratch0)
+                          (eq scratch-true
+                              scratch-false
+                              scratch0
+                              ascii-space)                ; Are we looking at a space?
+                          ; If we are looking at a space then goto WORD_read_data (start the loop up again). This is done to 
+                          ; "trim" the input of any number of spaces preceeding it
+                          ; If we aren't looking at a space then we need to rebuild the jump table and then 
+                          (if scratch-true
+                            scratch3
+                            scratch4)
+                          (label WORD_reassign_jumps
+                                 ; this code should only be executed once. We now terminate if we see another space at this point!
+                                 (set scratch3
+                                      WORD_done_reading)  
+                                 (set scratch4
+                                      WORD_store_word))
+                          (label WORD_store_word
+                                 ; the actual save operation, 
+                                 (st scratch2 
+                                     scratch0)   ; store the extracted character into the character buffer
+                                 (incr scratch2) ; next character
+                                 (gt scratch-true
+                                     scratch-false
+                                     scratch5
+                                     wlen) ; did we go over the maximum word length?
+                                 (bic scratch-true
+                                      WORD_too_large_word_ERROR) ; welp, this is fucked get out of here!
+                                 (incr scratch5)))                 ; increment the word length count since we didn't error out
                     (label WORD_too_large_word_ERROR
                            ; we need to setup the pointers for error states since we got here!
                            (st scratch2
@@ -337,14 +332,12 @@
                            (lr inptr)
                            (move inptr
                                  sarg0)
-                           (set scratch0
-                                0x58) ; Capital X
                            ; be super lazy and just load all six characters
                            (Fetch) ; Load the first character and see if we're looking at a x or X
                            (eq scratch-true
                                scratch-false
                                fdcurr
-                               scratch0) ; are we looking at an x?
+                               0x58) ; are we looking at an X?
                            (bic scratch-true
                                 HEXPARSE_LOOP) ; we are so parse the number!
                            (label NATURAL
@@ -417,7 +410,7 @@
                                   (move sres0
                                         scratch1))))
               ; TODO: Numeric Output Conversion (3.4.3)
-              (label Fetch
+              (func Fetch
                      ;-----------------------------------------------------------------------------
                      ; SUBROUTINE
                      ; Load the character defined by the input pointer into the fdcur register, 
@@ -425,9 +418,9 @@
                      ;-----------------------------------------------------------------------------
                      (ld fdcurr
                          inptr)
-                     (incr inptr)
-                     (blr))
-              (label Deposit
+                     (incr inptr))
+
+              (func Deposit
                      ;-----------------------------------------------------------------------------
                      ; SUBROUTINE
                      ; Store the character in fdcur in the address described by outptr, then 
@@ -435,8 +428,8 @@
                      ;-----------------------------------------------------------------------------
                      (st outptr
                          inptr)
-                     (incr outptr)
-                     (blr))
+                     (incr outptr))
+
               (label WordDrop
                      ;-----------------------------------------------------------------------------
                      ; SUBROUTINE
