@@ -148,6 +148,283 @@
                             zero-register
                             as
                             zr))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r255
+                            as
+                            error-register0))
+              (of list
+                  (parent FALSE)
+                  (contents
+                    alias
+                    r254
+                    as
+                    error-register1))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r253
+                            as
+                            error-register2))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r252
+                            as
+                            error-register3))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r251
+                            as
+                            error-register4))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r250
+                            as
+                            error-register5))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r249
+                            as
+                            error-register6))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r248
+                            as
+                            error-register7))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r247
+                            as
+                            error-register8))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r246
+                            as
+                            error-register9))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r245
+                            as
+                            error-register10))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r244
+                            as
+                            error-register11))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r243
+                            as
+                            error-register12))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r242
+                            as
+                            error-register13))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r241
+                            as
+                            error-register14))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r240
+                            as
+                            error-register15))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            error-register0
+                            as
+                            err0))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            error-register1
+                            as
+                            err1))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            error-register2
+                            as
+                            err2))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            error-register3
+                            as
+                            err3))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            error-register4
+                            as
+                            err4))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            error-register5
+                            as
+                            err5))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            error-register6
+                            as
+                            err6))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            error-register7
+                            as
+                            err7))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            error-register8
+                            as
+                            err8))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            error-register9
+                            as
+                            err9))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            error-register10
+                            as
+                            err10))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            error-register11
+                            as
+                            err11))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            error-register12
+                            as
+                            err12))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            error-register13
+                            as
+                            err13))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            error-register14
+                            as
+                            err14))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            error-register15
+                            as
+                            err15))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            err0
+                            as
+                            error-id))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            err1
+                            as
+                            error-inst-group))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            err2
+                            as
+                            error-inst-operation))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            err3
+                            as
+                            error-inst-destination))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            err4
+                            as
+                            error-inst-source0))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            err5
+                            as
+                            error-inst-source1))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            err6
+                            as
+                            error-inst-immediate))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            err7
+                            as
+                            error-temp0))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            err8
+                            as
+                            error-temp1))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            err9
+                            as
+                            error-temp2))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            err10
+                            as
+                            error-temp3))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            err11
+                            as
+                            error-temp4))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            err12
+                            as
+                            error-preds))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            err13
+                            as
+                            error-stack))
               )
 (defglobal lower
            ?*primary-secondary-storage-base* = 0x000A
