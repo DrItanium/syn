@@ -25,142 +25,15 @@
               (of list
                   (parent FALSE)
                   (contents alias
-                            r239
-                            as
-                            iv0))
-              (of list
-                  (parent FALSE)
-                  (contents alias
-                            r238
-                            as
-                            sp))
-              (of list
-                  (parent FALSE)
-                  (contents alias
-                            r237
-                            as
-                            iv1))
-              (of list
-                  (parent FALSE)
-                  (contents alias
-                            r236
-                            as
-                            arg0))
-              (of list
-                  (parent FALSE)
-                  (contents alias
-                            r235
-                            as
-                            arg1))
-              (of list
-                  (parent FALSE)
-                  (contents alias
-                            r234
-                            as
-                            arg2))
-              (of list
-                  (parent FALSE)
-                  (contents alias
-                            r233
-                            as
-                            arg3))
-              (of list
-                  (parent FALSE)
-                  (contents alias
-                            r232
-                            as
-                            ret0))
-              (of list
-                  (parent FALSE)
-                  (contents alias
-                            r231
-                            as
-                            ret1))
-              (of list
-                  (parent FALSE)
-                  (contents alias
-                            r230
-                            as
-                            ret2))
-              (of list
-                  (parent FALSE)
-                  (contents alias
-                            r229
-                            as
-                            ret3))
-              (of list
-                  (parent FALSE)
-                  (contents alias
-                            r228
-                            as
-                            code-stack))
-              (of list
-                  (parent FALSE)
-                  (contents alias
-                            code-stack
-                            as
-                            return-stack))
-              (of list
-                  (parent FALSE)
-                  (contents alias
-                            code-stack
-                            as
-                            cs))
-              (of list
-                  (parent FALSE)
-                  (contents alias
-                            return-stack
-                            as
-                            rs))
-              (of list
-                  (parent FALSE)
-                  (contents alias
-                            r227
-                            as 
-                            data-stack))
-              (of list
-                  (parent FALSE)
-                  (contents alias
-                            data-stack
-                            as
-                            ds))
-              (of list
-                  (parent FALSE)
-                  (contents alias
-                            data-stack
-                            as
-                            parameter-stack))
-              (of list
-                  (parent FALSE)
-                  (contents alias
-                            parameter-stack
-                            as
-                            ps))
-              (of list
-                  (parent FALSE)
-                  (contents alias
-                            r226
-                            as
-                            zero-register))
-              (of list
-                  (parent FALSE)
-                  (contents alias
-                            zero-register
-                            as
-                            zr))
-              (of list
-                  (parent FALSE)
-                  (contents alias
                             r255
                             as
                             error-register0))
               (of list
                   (parent FALSE)
-                  (contents
-                    alias
-                    r254
-                    as
-                    error-register1))
+                  (contents alias
+                            r254
+                            as
+                            error-register1))
               (of list
                   (parent FALSE)
                   (contents alias
@@ -425,6 +298,133 @@
                             err13
                             as
                             error-stack))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r239
+                            as
+                            iv0))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r238
+                            as
+                            sp))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r237
+                            as
+                            iv1))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r236
+                            as
+                            arg0))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r235
+                            as
+                            arg1))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r234
+                            as
+                            arg2))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r233
+                            as
+                            arg3))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r232
+                            as
+                            ret0))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r231
+                            as
+                            ret1))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r230
+                            as
+                            ret2))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r229
+                            as
+                            ret3))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r228
+                            as
+                            code-stack))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            code-stack
+                            as
+                            return-stack))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            code-stack
+                            as
+                            cs))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            return-stack
+                            as
+                            rs))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r227
+                            as 
+                            data-stack))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            data-stack
+                            as
+                            ds))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            data-stack
+                            as
+                            parameter-stack))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            parameter-stack
+                            as
+                            ps))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            r226
+                            as
+                            zero-register))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            zero-register
+                            as
+                            zr))
+              ; up until register r192 are we free to do what we desire
               )
 (definstances lower::predefined-predicate-register-aliases
               (of list
@@ -534,9 +534,117 @@
                   (contents alias
                             p15
                             as 
-                            cond8-false)))
+                            cond8-false))
+              (of list 
+                  (parent FALSE) 
+                  (contents alias
+                            cond0-true
+                            as
+                            c0t))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            cond0-false
+                            as
+                            c0f))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            cond1-true
+                            as
+                            c1t))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            cond1-false
+                            as
+                            c1f))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            cond2-true
+                            as
+                            c2t))
 
-
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            cond2-false
+                            as
+                            c2f))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            cond3-true
+                            as
+                            c3t))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            cond3-false
+                            as
+                            c3f))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            cond4-true
+                            as
+                            c4t))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            cond4-false
+                            as
+                            c4f))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            cond5-true
+                            as
+                            c5t))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            cond5-false
+                            as
+                            c5f))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            cond6-true
+                            as
+                            c6t))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            cond6-false
+                            as
+                            c6f))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            cond7-true
+                            as
+                            c7t))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            cond7-false
+                            as
+                            c7f))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            cond8-true
+                            as
+                            c8t))
+              (of list
+                  (parent FALSE)
+                  (contents alias
+                            cond8-false
+                            as
+                            c8f))
+              )
 
 (defglobal lower
            ?*primary-secondary-storage-base* = 0x000A

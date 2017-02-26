@@ -58,48 +58,6 @@
 (alias r6 as scratch-register6)
 (alias r7 as scratch-register7)
 
-(alias r32 as global-register0)
-(alias r33 as global-register1)
-(alias r34 as global-register2)
-(alias r35 as global-register3)
-(alias r128 as internal-register0)
-(alias r129 as internal-register1)
-(alias r130 as internal-register2)
-(alias r131 as internal-register3)
-(alias r132 as internal-register4)
-(alias r133 as internal-register5)
-(alias r134 as internal-register6)
-(alias r135 as internal-register7)
-; implied register aliases
-(alias arg0 as safe-param0)
-(alias arg1 as safe-param1)
-(alias arg2 as safe-param2)
-(alias arg3 as safe-param3)
-(alias safe-param0 as spar0)
-(alias safe-param1 as spar1)
-(alias safe-param2 as spar2)
-(alias safe-param3 as spar3)
-(alias safe-param0 as sarg0)
-(alias safe-param1 as sarg1)
-(alias safe-param2 as sarg2)
-(alias safe-param3 as sarg3)
-(alias ret0 as safe-result0)
-(alias ret1 as safe-result1)
-(alias ret2 as safe-result2)
-(alias ret3 as safe-result3)
-(alias safe-result0 as sres0)
-(alias safe-result1 as sres1)
-(alias safe-result2 as sres2)
-(alias safe-result3 as sres3)
-(alias scratch-register0 as safe-temp0)
-(alias scratch-register1 as safe-temp1)
-(alias scratch-register2 as safe-temp2)
-(alias scratch-register3 as safe-temp3)
-(alias safe-temp0 as stmp0)
-(alias safe-temp1 as stmp1)
-(alias safe-temp2 as stmp2)
-(alias safe-temp3 as stmp3)
-
 (alias scratch-register0 as scratch0)
 (alias scratch-register1 as scratch1)
 (alias scratch-register2 as scratch2)
@@ -109,6 +67,71 @@
 (alias scratch-register6 as scratch6)
 (alias scratch-register7 as scratch7)
 
+(alias r32 as global-register0)
+(alias r33 as global-register1)
+(alias r34 as global-register2)
+(alias r35 as global-register3)
+
+(alias global-register0 as g0)
+(alias global-register1 as g1)
+(alias global-register2 as g2)
+(alias global-register3 as g3)
+
+(alias r192 as internal-register0)
+(alias r191 as internal-register1)
+(alias r190 as internal-register2)
+(alias r189 as internal-register3)
+(alias r187 as internal-register4)
+(alias r186 as internal-register5)
+(alias r185 as internal-register6)
+
+(alias internal-register0 as fixed-purpose-register0)
+(alias internal-register1 as fixed-purpose-register1)
+(alias internal-register2 as fixed-purpose-register2)
+(alias internal-register3 as fixed-purpose-register3)
+(alias internal-register4 as fixed-purpose-register4)
+(alias internal-register5 as fixed-purpose-register5)
+(alias internal-register6 as fixed-purpose-register6)
+
+(alias fixed-purpose-register0 as fetch-deposit-current)
+(alias fetch-deposit-current as fdcurr)
+
+(alias fixed-purpose-register1 as input-pointer)
+(alias input-pointer as inptr)
+
+(alias fixed-purpose-register2 as output-pointer)
+(alias output-pointer as outptr)
+
+(alias fixed-purpose-register3 as ascii-space)
+
+(alias fixed-purpose-register4 as max-word-length)
+(alias max-word-length as wlen)
+
+; Used during the dictionary search
+(alias fixed-purpose-register5 as context-register)
+(alias context-register as context)
+
+; Used to walk any code segments we are curious about
+(alias fixed-purpose-register6 as interpreter-location)
+(alias interpreter-location as il)
+
+; implied register aliases
+(alias arg0 as sarg0)
+(alias arg1 as sarg1)
+(alias arg2 as sarg2)
+(alias arg3 as sarg3)
+(alias ret0 as sres0)
+(alias ret1 as sres1)
+(alias ret2 as sres2)
+(alias ret3 as sres3)
+(alias scratch-register0 as safe-temp0)
+(alias scratch-register1 as safe-temp1)
+(alias scratch-register2 as safe-temp2)
+(alias scratch-register3 as safe-temp3)
+(alias safe-temp0 as stmp0)
+(alias safe-temp1 as stmp1)
+(alias safe-temp2 as stmp2)
+(alias safe-temp3 as stmp3)
 
 (alias cond0-true as is-number)
 (alias cond0-false as is-not-number)
@@ -125,37 +148,9 @@
 (let SpaceChar be 0x20)
 (let WordLength be 62)
 
-(alias r224 as fixed-purpose-register0)
-(alias fixed-purpose-register0 as fetch-deposit-current)
-(alias fetch-deposit-current as fdcurr)
-
-(alias r223 as fixed-purpose-register1)
-(alias fixed-purpose-register1 as input-pointer)
-(alias input-pointer as inptr)
-
-(alias r222 as fixed-purpose-register2)
-(alias fixed-purpose-register2 as output-pointer)
-(alias output-pointer as outptr)
-
-(alias r220 as fixed-purpose-register4)
-(alias fixed-purpose-register4 as ascii-space)
-
-(alias r219 as fixed-purpose-register5)
-(alias fixed-purpose-register5 as max-word-length)
-(alias max-word-length as wlen)
-
-; Used during the dictionary search
-(alias r136 as internal-register8)
-(alias internal-register8 as context-register)
-(alias context-register as context)
-
-; Used to walk any code segments we are curious about
-(alias r137 as internal-register9)
-(alias internal-register0 as interpreter-location)
-(alias interpreter-location as il)
 
 (section code
-         (org 0x0000
+         (org ZeroAddress
               (label Startup
                      (set zero
                           0x0000)
