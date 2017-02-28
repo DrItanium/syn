@@ -467,3 +467,181 @@
                           (contents set
                                     ?register
                                     0x0000)))
+
+(defrule lower::store-io-immediate-address-macro
+         ?f <- (object (is-a list)
+                       (contents stio
+                                 immediate
+                                 ?address
+                                 ?register)
+                       (name ?n)
+                       (parent ?p))
+         =>
+         (unmake-instance ?f)
+         (mk-container ?n
+                       ?p
+                       (mk-list ?n
+                                set
+                                iv0
+                                ?address)
+                       (mk-list ?n
+                                stio
+                                iv0
+                                ?register)))
+
+(defrule lower::store-io-immediate-value-macro
+         ?f <- (object (is-a list)
+                       (contents stio
+                                 ?register
+                                 immediate
+                                 ?value)
+                       (name ?n)
+                       (parent ?p))
+         =>
+         (unmake-instance ?f)
+         (mk-container ?n
+                       ?p
+                       (mk-list ?n
+                                set
+                                iv0
+                                ?value)
+                       (mk-list ?n
+                                stio
+                                ?register
+                                iv0)))
+
+
+
+(defrule lower::store-data-immediate-address-macro
+         ?f <- (object (is-a list)
+                       (contents st
+                                 immediate
+                                 ?address
+                                 ?value)
+                       (name ?n)
+                       (parent ?p))
+         =>
+         (unmake-instance ?f)
+         (mk-container ?n
+                       ?p
+                       (mk-list ?n
+                                set
+                                iv0
+                                ?address)
+                       (mk-list ?n
+                                st
+                                iv0
+                                ?value)))
+
+(defrule lower::load-io-immediate-address-macro
+         ?f <- (object (is-a list)
+                       (contents ldio
+                                 ?destination
+                                 immediate
+                                 ?address)
+                       (name ?n)
+                       (parent ?p))
+         =>
+         (unmake-instance ?f)
+         (mk-container ?n
+                       ?p
+                       (mk-list ?n
+                                set
+                                iv0
+                                ?address)
+                       (mk-list ?n
+                                ldio
+                                ?destination
+                                iv0)))
+
+(defrule lower::store-data-immediate-value-macro
+         ?f <- (object (is-a list)
+                       (contents st
+                                 ?register
+                                 immediate
+                                 ?value)
+                       (name ?n)
+                       (parent ?p))
+         =>
+         (modify-instance ?f
+                          (contents sti
+                                    ?register
+                                    ?value)))
+
+(defrule lower::load-data-immediate-address
+         ?f <- (object (is-a list)
+                       (contents ld
+                                 ?register
+                                 immediate
+                                 ?value))
+         =>
+         (modify-instance ?f
+                          (contents ldi
+                                    ?register
+                                    ?value)))
+
+(defrule lower::memswap-data
+         (declare (salience 1))
+         ?f <- (object (is-a list)
+                       (contents memswap
+                                 ?register0
+                                 ?register1)
+                       (name ?n)
+                       (parent ?p))
+         =>
+         (unmake-instance ?f)
+         (mk-container ?n
+                       ?p
+                       (mk-list ?n
+                                ld
+                                iv0
+                                ?register0)
+                       (mk-list ?n
+                                ld
+                                iv1
+                                ?register1)
+                       (mk-list ?n
+                                st
+                                ?register1
+                                iv0)
+                       (mk-list ?n
+                                st
+                                ?register0
+                                iv1)))
+
+(defrule lower::terminate
+         ?f <- (object (is-a list)
+                       (contents terminate)
+                       (name ?n)
+                       (parent ?p))
+         =>
+         (modify-instance ?f
+                          (contents stio
+                                    immediate
+                                    0x0000
+                                    iv0)))
+
+(defrule lower::putc
+         ?f <- (object (is-a list)
+                       (contents putc
+                                 ?register)
+                       (name ?n)
+                       (parent ?p))
+         =>
+         (modify-instance ?f
+                          (contents stio
+                                    immediate
+                                    0x0001
+                                    ?register)))
+(defrule lower::getc
+         ?f <- (object (is-a list)
+                       (contents getc
+                                 ?register)
+                       (name ?n)
+                       (parent ?p))
+         =>
+         (modify-instance ?f
+                          (contents ldio
+                                    ?register
+                                    immediate
+                                    0x0001)))
