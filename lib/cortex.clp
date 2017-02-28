@@ -42,8 +42,8 @@
 
 (defmethod cortex::int->hex
            ((?value INTEGER))
-           (sym-cat (format nil 
-                            "0x%x" 
+           (sym-cat (format nil
+                            "0x%x"
                             ?value)))
 
 (defmethod cortex::increment

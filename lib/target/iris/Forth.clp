@@ -165,20 +165,21 @@
                      )
               (loop DONE
                     ; top of our control loop
-                     (set sarg0 
+                     (set sarg0
                           WordBuffer)  ; load the front fo the word buffer
                      (NUMBER)     ; Check and see if we got a number from this input
-                     (bic is-not-number
-                          ParseWord)         ; If the is-not-number predicate register is true then it must be a word
+                     (when is-not-number
+                           goto
+                           ParseWord) ; If the is-not-number predicate register is true then it must be a word
                      (goto PrintResult)        ; Print the number
                      (label ParseWord
                             (set sarg0
-                                 WordBuffer) 
+                                 WordBuffer)
                             (WORD)) ; read the next word
                      (label PrintResult
                             (Print)       ; print it out
                             (set sarg0
-                                 NewlineChar) 
+                                 NewlineChar)
                             (Print)))       ; add a newline
               (func Print
                     ;-----------------------------------------------------------------------------
@@ -192,8 +193,9 @@
                            (is-zero scratch-true
                                     scratch-false
                                     scratch0) ; first check to see if we should stop printing (zero means stop)
-                           (bic scratch-true
-                                PrintDone)
+                           (when scratch-true
+                             goto
+                             PrintDone)
                            ; this will cause many more cycles to be performed on unnecessary sets but it is more readable so that wins out
                            (putc scratch0) ; write it into io memory at the PutC port
                            (incr sarg0))
@@ -204,7 +206,7 @@
                      ; the original address
                      ;-----------------------------------------------------------------------------
                      (pop top ds)   ; get the top element
-                     (ld top 
+                     (ld top
                          top)
                      (push ds
                            top))
@@ -232,7 +234,7 @@
                      (set cs
                           CallStackStart) ; overwrite the current return stack location with the bottom
                      (Print)          ; print the offending word that did the bad thing
-                     (move sarg0 
+                     (copy sarg0
                            sarg1)         ; need to print the error type so setup the arguments
                      (Print)
                      (goto DONE))          ; we're done
@@ -255,29 +257,30 @@
                               scratch-false
                               scratch0
                               ascii-space)                ; Are we looking at a space?
-                          ; If we are looking at a space then goto WORD_read_data (start the loop up again). This is done to 
+                          ; If we are looking at a space then goto WORD_read_data (start the loop up again). This is done to
                           ; "trim" the input of any number of spaces preceeding it
-                          ; If we aren't looking at a space then we need to rebuild the jump table and then 
+                          ; If we aren't looking at a space then we need to rebuild the jump table and then
                           (if scratch-true
                             scratch3
                             scratch4)
                           (label WORD_reassign_jumps
                                  ; this code should only be executed once. We now terminate if we see another space at this point!
                                  (set scratch3
-                                      WORD_done_reading)  
+                                      WORD_done_reading)
                                  (set scratch4
                                       WORD_store_word))
                           (label WORD_store_word
-                                 ; the actual save operation, 
-                                 (st scratch2 
+                                 ; the actual save operation,
+                                 (st scratch2
                                      scratch0)   ; store the extracted character into the character buffer
                                  (incr scratch2) ; next character
                                  (gt scratch-true
                                      scratch-false
                                      scratch5
                                      wlen) ; did we go over the maximum word length?
-                                 (bic scratch-true
-                                      WORD_too_large_word_ERROR) ; welp, this is fucked get out of here!
+                                 (when scratch-true
+                                   goto
+                                   WORD_too_large_word_ERROR) ; welp, this is fucked get out of here!
                                  (incr scratch5)))                 ; increment the word length count since we didn't error out
                     (label WORD_too_large_word_ERROR
                            ; we need to setup the pointers for error states since we got here!
@@ -304,20 +307,18 @@
                                scratch-false
                                fdcurr
                                0x58) ; are we looking at an X?
-                           (bic scratch-true
-                                HEXPARSE_LOOP) ; we are so parse the number!
+                           (when scratch-true goto HEXPARSE_LOOP) ; we are so parse the number!
                            (label NATURAL
                                   (loop NATURAL_CHECK_CHARACTER
                                          (Fetch)
                                          (subi scratch0
-                                               fdcurr 
+                                               fdcurr
                                                0x30)
                                          (gti is-number
                                               is-not-number
                                               scratch0
                                               0x9) ; if the result is greater than 9 (unsigned wraparound)
-                                         (bic is-not-number
-                                              END_NATURAL)
+                                         (when is-not-number goto END_NATURAL)
                                          (muli scratch1
                                                scratch1
                                                10)
@@ -334,13 +335,12 @@
                                   (Fetch) ; get the most significant digit
                                   (subi scratch0
                                         fdcurr
-                                        0x30) 
+                                        0x30)
                                   (lti is-number
                                        is-not-number
                                        scratch0
                                        0xA)  ; is it a natural digit?
-                                  (bic is-number
-                                       COMBINE_NUMBER) ; it was successful so save it
+                                  (when is-number goto COMBINE_NUMBER) ; it was successful so save it
                                   (subi scratch0
                                         fdcurr
                                         0x41) ; see if it is a capital letter
@@ -348,16 +348,14 @@
                                        is-not-number
                                        scratch0
                                        0x6)
-                                  (bic is-not-number
-                                       CHECK_FOR_NOT_NUMBER_STATUS) ; we found an upper case digit
+                                  (when is-not-number goto CHECK_FOR_NOT_NUMBER_STATUS) ; we found an upper case digit
                                   ; add 10 (0xA) to the number since it is a digit
                                   (addi scratch0
                                         scratch0
-                                        0xA) ; 
+                                        0xA) ;
                                   (bi COMBINE_NUMBER)
                                   (label CHECK_FOR_NOT_NUMBER_STATUS
-                                         (bic is-not-number
-                                              NUMBER_END))
+                                         (when is-not-number goto NUMBER_END))
                                   (label COMBINE_NUMBER
                                          (shli scratch1
                                                scratch1
@@ -379,7 +377,7 @@
               (func Fetch
                      ;-----------------------------------------------------------------------------
                      ; SUBROUTINE
-                     ; Load the character defined by the input pointer into the fdcur register, 
+                     ; Load the character defined by the input pointer into the fdcur register,
                      ; then advance inptr by one
                      ;-----------------------------------------------------------------------------
                      (ld fdcurr
@@ -389,7 +387,7 @@
               (func Deposit
                      ;-----------------------------------------------------------------------------
                      ; SUBROUTINE
-                     ; Store the character in fdcur in the address described by outptr, then 
+                     ; Store the character in fdcur in the address described by outptr, then
                      ; advance outptr by one
                      ;-----------------------------------------------------------------------------
                      (st outptr
@@ -412,9 +410,9 @@
                      ;-----------------------------------------------------------------------------
                      (pop top
                           ds)
-                     (push ds 
+                     (push ds
                            top)
-                     (push ds 
+                     (push ds
                            top)
                      (blr))
 
@@ -424,7 +422,7 @@
                      ; swap the top of the parameter stack with the lower word
                      ;-----------------------------------------------------------------------------
                      (pop top
-                          ds) 
+                          ds)
                      (pop second
                           ds)
                      (push ds
@@ -442,7 +440,7 @@
                           ds) ; get the top and second
                      (pop second
                           ds)
-                     (push ds 
+                     (push ds
                            second) ; push lower
                      (push ds
                            top)    ; push top
@@ -461,8 +459,8 @@
                            scratch0))
               (label DOLIT
                      ;-----------------------------------------------------------------------------
-                     ; Load a literal onto the stack from the ip list. This is necessary since the 
-                     ; ip list contains a set of instructions instead of the usual 
+                     ; Load a literal onto the stack from the ip list. This is necessary since the
+                     ; ip list contains a set of instructions instead of the usual
                      ;-----------------------------------------------------------------------------
                      (ld top
                          il)
@@ -501,7 +499,7 @@
                      (bi NEXT))
               (label EXECUTE
                      ;-----------------------------------------------------------------------------
-                     ; Execute the top of the data stack 
+                     ; Execute the top of the data stack
                      ;-----------------------------------------------------------------------------
                      (pop top
                           ds)
@@ -533,10 +531,8 @@
                      (is-zero scratch-true
                               scratch-false
                               top)
-                     (bic scratch-true
-                          BRANCH)
+                     (when scratch-true goto BRANCH)
                      (bi SKIP))
-
               )
          )
 (let DictionaryBase be 0x7FFF)

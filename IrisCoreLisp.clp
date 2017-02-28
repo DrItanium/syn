@@ -31,3 +31,4 @@
 (batch* IrisCoreLispRegisters.clp)
 (batch* IrisCoreLispPredefinedStatements.clp)
 (batch* IrisCoreLispForthExtensions.clp)
+(batch* IrisCoreLispExtendedFeatures.clp)
