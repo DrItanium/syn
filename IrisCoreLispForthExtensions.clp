@@ -21,3 +21,36 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+
+(defrule lower::parse-native-dictionary-entry
+         "Parse an entry as described in the forth dictionary"
+         ?f <- (object (is-a list)
+                       (contents native-dict-entry
+                                 ?label-title
+                                 ?word
+                                 ?next
+                                 ?code)
+                       (name ?n)
+                       (parent ?p))
+         =>
+         (modify-instance ?f
+                          (contents label ?label-title
+                                    (mk-list ?n
+                                             word
+                                             ?next)
+                                    (mk-list ?n
+                                             word
+                                             (str-cat "0x01"
+                                                      (format nil
+                                                              "%x"
+                                                              (str-length ?word))))
+                                    (mk-list ?n
+                                             string
+                                             ?word)
+                                    (mk-list ?n
+                                             word
+                                             ?code))))
+
+; TODO: add support for dictionary-entries defined using other dictionary
+;       entries
+
