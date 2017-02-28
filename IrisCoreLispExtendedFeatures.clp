@@ -386,3 +386,84 @@
                                     ?on-false
                                     ?register
                                     0x00)))
+
+(defrule lower::greater-than-macro
+         ?f <- (object (is-a list)
+                       (contents >
+                                 ?on-true
+                                 ?on-false
+                                 ?registerA
+                                 ?registerB))
+         =>
+         (modify-instance ?f
+                          (contents gt
+                                    ?on-true
+                                    ?on-false
+                                    ?registerA
+                                    ?registerB)))
+
+(defrule lower::greater-than-immediate-macro
+         ?f <- (object (is-a list)
+                       (contents >
+                                 ?on-true
+                                 ?on-false
+                                 ?registerA
+                                 immediate
+                                 ?immediate))
+         =>
+         (modify-instance ?f
+                          (contents gti
+                                    ?on-true
+                                    ?on-false
+                                    ?registerA
+                                    ?immediate)))
+
+(defrule lower::less-than-macro
+         ?f <- (object (is-a list)
+                       (contents <
+                                 ?on-true
+                                 ?on-false
+                                 ?registerA
+                                 ?registerB))
+         =>
+         (modify-instance ?f
+                          (contents lt
+                                    ?on-true
+                                    ?on-false
+                                    ?registerA
+                                    ?registerB)))
+
+(defrule lower::less-than-immediate-macro
+         ?f <- (object (is-a list)
+                       (contents <
+                                 ?on-true
+                                 ?on-false
+                                 ?registerA
+                                 immediate
+                                 ?immediate))
+         =>
+         (modify-instance ?f
+                          (contents lti
+                                    ?on-true
+                                    ?on-false
+                                    ?registerA
+                                    ?immediate)))
+
+(defrule lower::nop-macro
+         ?f <- (object (is-a list)
+                       (contents nop))
+         =>
+         (modify-instance ?f
+                          (contents addi
+                                    iv0
+                                    iv0
+                                    0)))
+(defrule lower::zero-register-macro
+         ?f <- (object (is-a list)
+                       (contents clear
+                                 ?register))
+         =>
+         (modify-instance ?f
+                          (contents set
+                                    ?register
+                                    0x0000)))

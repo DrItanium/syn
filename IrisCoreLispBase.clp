@@ -708,21 +708,3 @@
          (modify-instance ?f
                           (contents nop)))
 
-(defrule lower::nop-macro
-         ?f <- (object (is-a list)
-                       (contents nop))
-         =>
-         (modify-instance ?f
-                          (contents addi
-                                    iv0
-                                    iv0
-                                    0)))
-(defrule lower::zero-register-macro
-         ?f <- (object (is-a list)
-                       (contents clear
-                                 ?register))
-         =>
-         (modify-instance ?f
-                          (contents set
-                                    ?register
-                                    0x0000)))
