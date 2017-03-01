@@ -251,23 +251,30 @@
           (bitmask 0m1110)
           (bitmask 0m1111))
 
+(defrule lower::build-bitmasks
+         (declare (salience ?*priority:first*))
+         ?f <- (bitmask ?title)
+         =>
+         (retract ?f)
+         (make-instance ?title of bitmask
+                        (parent FALSE)
+                        (value ?title)))
+
 (defrule lower::tag-bitmasks
          (declare (salience 2000))
          ?f <- (object (is-a list)
                        (contents $?pre
-                                 ?bitmask
+                                 ?bitmask&:(symbolp ?bitmask)
                                  $?post)
                        (name ?n))
-         (bitmask ?bitmask)
+         (object (is-a bitmask)
+                 (name =(symbol-to-instance-name ?bitmask)))
          =>
-         ;TODO: replace individual instances of bitmasks to fixed instances
-         ;      instead!
          (modify-instance ?f
                           (contents ?pre
-                                    (make-instance of bitmask
-                                                   (parent ?n)
-                                                   (value ?bitmask))
+                                    (symbol-to-instance-name ?bitmask)
                                     ?post)))
+
 (defrule lower::construct-alias
          (declare (salience ?*priority:first*))
          ?f <- (object (is-a list)
@@ -825,51 +832,91 @@
 ;------------------------------------------------------------------------------
 ; Macros
 ;------------------------------------------------------------------------------
+(deffacts lower::zero-argument-simple-macros
+          "Simple macros which take in no arguments inside the instruction itself"
+          (simple-macro 0 nop -> swap r0 r0)
+          (simple-macro 0 istore -> indirect-store)
+          (simple-macro 0 iload -> indirect-load)
+          (simple-macro 0 store -> direct-store)
+          (simple-macro 0 load -> direct-load)
+          (simple-macro 0 bitset -> complex encoding bitset)
+          (simple-macro 0 bitunset -> complex encoding bitunset)
+          (simple-macro 0 encode -> complex encoding encode)
+          (simple-macro 0 decode -> complex encoding decode)
+          (simple-macro 0 return -> pop ip)
+          (simple-macro 0 indirect-store -> memory store 0m1111 indirect 0x00)
+          (simple-macro 0 indirect-load -> memory load 0m1111 indirect 0x00)
+          (simple-macro 0 direct-store -> memory store 0m1111 direct 0x00)
+          (simple-macro 0 direct-load -> memory load 0m1111 direct 0x00))
 
-(defrule lower::nop-macro
+(defrule lower::zero-argument-simple-macro-modify
+         "In the cases where the instruction has no arguments and is a single
+         symbol then we can define facts in place of special rules to handle
+         the replacement!"
          ?f <- (object (is-a list)
-                       (contents nop))
+                       (contents ?target))
+         (simple-macro 0
+                       ?target -> $?replacement)
          =>
          (modify-instance ?f
-                          (contents swap
-                                    r0
-                                    r0)))
+                          (contents $?replacement)))
 
-(defrule lower::set32-macro
+(deffacts lower::simple-one-arg-macros
+          (simple-macro 1 push -> push32)
+          (simple-macro 1 pop -> pop32)
+          ; not sure if these are going to match correctly!
+          ; they should since they are distinct!
+          (simple-macro 1 load -> direct-load)
+          (simple-macro 1 store -> direct-store)
+          (simple-macro 1 iload -> indirect-load)
+          (simple-macro 1 istore -> indirect-store)
+          (simple-macro 1 direct-load -> memory load 0m1111 direct)
+          (simple-macro 1 direct-store -> memory store 0m1111 direct)
+          (simple-macro 1 indirect-load -> memory load 0m1111 indirect)
+          (simple-macro 1 indirect-store -> memory store 0m1111 indirect)
+          (simple-macro 1 push16u -> push16 upper)
+          (simple-macro 1 push16l -> push16 lower)
+          ; TODO: merge the hand written pop16 rules into this fact set
+          (simple-macro 1 pop16u -> pop16 upper)
+          (simple-macro 1 pop16l -> pop16 lower)
+          (simple-macro 1 pop32 -> memory pop 0m1111)
+          (simple-macro 1 push32 -> memory push 0m1111))
+
+(defrule lower::translate-simple-one-arg-macro
          ?f <- (object (is-a list)
-                       (contents set32
-                                 ?register
-                                 ?value))
+                       (contents ?operation
+                                 ?argument))
+         (simple-macro 1 ?operation -> $?replacement)
          =>
          (modify-instance ?f
-                          (contents set
-                                    0m1111
-                                    ?register
-                                    ?value)))
-(deffacts lower::set16-types
-          (flag set16
-                upper
-                0m1100)
-          (flag set16
-                lower
-                0m0011))
+                          (contents ?replacement
+                                    ?argument)))
 
-(defrule lower::set16-macro
+(deffacts lower::two-argument-simple-macros
+          (simple-macro 2 set32 -> set 0m1111)
+          (simple-macro 2 set24 -> set24l)
+          (simple-macro 2 set24l -> set 0m0111)
+          (simple-macro 2 set24u -> set 0m1110)
+          (simple-macro 2 set8 -> set8ll)
+          (simple-macro 2 set8ll -> set 0m0001)
+          (simple-macro 2 set8lu -> set 0m0010)
+          (simple-macro 2 set8ul -> set 0m0100)
+          (simple-macro 2 set8uu -> set 0m1000)
+          (simple-macro 2 set16 -> set16l)
+          (simple-macro 2 set16l -> set 0m0011)
+          (simple-macro 2 set16u -> set 0m1100))
+
+(defrule lower::handle-two-argument-simple-macros
          ?f <- (object (is-a list)
-                       (contents set16
-                                 ?half
-                                 ?register
-                                 ?value))
-         (flag set16
-               ?half
-               ?bitmask)
+                       (contents ?operation
+                                 ?arg0
+                                 ?arg1))
+         (simple-macro 2 ?operation -> $?replacement)
          =>
          (modify-instance ?f
-                          (contents set
-                                    ?bitmask
-                                    ?register
-                                    ?value)))
-
+                          (contents $?replacement
+                                    ?arg0
+                                    ?arg1)))
 (defrule lower::not-self-macro
          ?f <- (object (is-a list)
                        (contents not
@@ -880,6 +927,30 @@
                                     not
                                     ?register
                                     ?register)))
+
+(defrule lower::incr-macro
+         ?f <- (object (is-a list)
+                       (contents incr
+                                 ?register))
+         =>
+         (modify-instance ?f
+                          (contents arithmetic
+                                    add
+                                    immediate
+                                    ?register
+                                    0x1)))
+
+(defrule lower::decr-macro
+         ?f <- (object (is-a list)
+                       (contents decr
+                                 ?register))
+         =>
+         (modify-instance ?f
+                          (contents arithmetic
+                                    sub
+                                    immediate
+                                    ?register
+                                    0x1)))
 
 
 (defrule lower::clear-register-macro
@@ -893,26 +964,6 @@
                                     ?register
                                     0x00000000)))
 
-(defrule lower::push-value-macro
-         ?f <- (object (is-a list)
-                       (contents push
-                                 ?register))
-         =>
-         (modify-instance ?f
-                          (contents memory
-                                    push
-                                    0m1111
-                                    ?register)))
-(defrule lower::pop-value-macro
-         ?f <- (object (is-a list)
-                       (contents pop
-                                 ?register))
-         =>
-         (modify-instance ?f
-                          (contents memory
-                                    pop
-                                    0m1111
-                                    ?register)))
 
 (deffacts lower::pop/push16-types
           (flag pop16
@@ -955,20 +1006,6 @@
                                     push
                                     ?bitmask
                                     ?register)))
-(deffacts lower::simple-one-arg-macros
-          (simple-macro 1 push16u -> push16 upper)
-          (simple-macro 1 push16l -> push16 lower)
-          (simple-macro 1 pop16u -> pop16 upper)
-          (simple-macro 1 pop16l -> pop16 lower))
-(defrule lower::translate-simple-one-arg-macro
-         ?f <- (object (is-a list)
-                       (contents ?operation
-                                 ?argument))
-         (simple-macro 1 ?operation -> $?replacement)
-         =>
-         (modify-instance ?f
-                          (contents ?replacement
-                                    ?argument)))
 
 (definstances lower::registers
               (r0 of register
@@ -1038,4 +1075,38 @@
                                 swap
                                 sp
                                 ?target)))
+
+(defrule lower::save-registers-block
+         ?f <- (object (is-a list)
+                       (contents use-registers
+                                 ?registers
+                                 $?body)
+                       (name ?n)
+                       (parent ?p))
+         ?f2 <- (object (is-a list)
+                        (name ?registers)
+                        (contents $?regs))
+         =>
+         (unmake-instance ?f
+                          ?f2)
+         (bind ?pre
+               (create$))
+         (bind ?post
+               (create$))
+         (progn$ (?reg $?regs)
+                 (bind ?pre
+                       ?pre
+                       (mk-list ?n
+                                push
+                                ?reg))
+                 (bind ?post
+                       (mk-list ?n
+                                pop
+                                ?reg)
+                       ?post))
+         (mk-container ?n
+                       ?p
+                       ?pre
+                       ?body
+                       ?post))
 
