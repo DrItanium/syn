@@ -822,6 +822,9 @@
                         (operation ?cond)
                         (flags immediate)
                         (destination ?r0)))
+;------------------------------------------------------------------------------
+; Macros
+;------------------------------------------------------------------------------
 
 (defrule lower::nop-macro
          ?f <- (object (is-a list)
@@ -832,43 +835,207 @@
                                     r0
                                     r0)))
 
-(defrule lower::construct-one-register-instruction
+(defrule lower::set32-macro
          ?f <- (object (is-a list)
-                       (contents ?operation
-                                 ?destination)
-                       (name ?n)
-                       (parent ?p))
-         (one-register-operation ?operation)
+                       (contents set32
+                                 ?register
+                                 ?value))
          =>
-         (unmake-instance ?f)
-         (make-instance ?n of one-argument-instruction
-                        (parent ?p)
-                        (title ?operation)
-                        (destination-register ?destination)))
-(defrule lower::construct-zero-register-instruction
-         ?f <- (object (is-a list)
-                       (contents ?operation)
-                       (name ?n)
-                       (parent ?p))
-         (zero-register-operation ?operation)
-         =>
-         (unmake-instance ?f)
-         (make-instance ?n of zero-argument-instruction
-                        (parent ?p)
-                        (title ?operation)))
+         (modify-instance ?f
+                          (contents set
+                                    0m1111
+                                    ?register
+                                    ?value)))
+(deffacts lower::set16-types
+          (flag set16
+                upper
+                0m1100)
+          (flag set16
+                lower
+                0m0011))
 
-(defrule lower::construct-two-register-instruction
+(defrule lower::set16-macro
+         ?f <- (object (is-a list)
+                       (contents set16
+                                 ?half
+                                 ?register
+                                 ?value))
+         (flag set16
+               ?half
+               ?bitmask)
+         =>
+         (modify-instance ?f
+                          (contents set
+                                    ?bitmask
+                                    ?register
+                                    ?value)))
+
+(defrule lower::not-self-macro
+         ?f <- (object (is-a list)
+                       (contents not
+                                 ?register))
+         =>
+         (modify-instance ?f
+                          (contents logical
+                                    not
+                                    ?register
+                                    ?register)))
+
+
+(defrule lower::clear-register-macro
+         ?f <- (object (is-a list)
+                       (contents clear
+                                 ?register))
+         =>
+         (modify-instance ?f
+                          (contents set
+                                    0m0000
+                                    ?register
+                                    0x00000000)))
+
+(defrule lower::push-value-macro
+         ?f <- (object (is-a list)
+                       (contents push
+                                 ?register))
+         =>
+         (modify-instance ?f
+                          (contents memory
+                                    push
+                                    0m1111
+                                    ?register)))
+(defrule lower::pop-value-macro
+         ?f <- (object (is-a list)
+                       (contents pop
+                                 ?register))
+         =>
+         (modify-instance ?f
+                          (contents memory
+                                    pop
+                                    0m1111
+                                    ?register)))
+
+(deffacts lower::pop/push16-types
+          (flag pop16
+                upper
+                0m1100)
+          (flag pop16
+                lower
+                0m0011)
+          (flag push16
+                upper
+                0m1100)
+          (flag push16
+                lower
+                0m0011))
+(defrule lower::pop16-macro
+         ?f <- (object (is-a list)
+                       (contents pop16
+                                 ?half
+                                 ?register))
+         (flag pop16
+               ?half
+               ?bitmask)
+         =>
+         (modify-instance ?f
+                          (contents memory
+                                    pop
+                                    ?bitmask
+                                    ?register)))
+(defrule lower::pop16-macro
+         ?f <- (object (is-a list)
+                       (contents push16
+                                 ?half
+                                 ?register))
+         (flag push16
+               ?half
+               ?bitmask)
+         =>
+         (modify-instance ?f
+                          (contents memory
+                                    push
+                                    ?bitmask
+                                    ?register)))
+(deffacts lower::simple-one-arg-macros
+          (simple-macro 1 push16u -> push16 upper)
+          (simple-macro 1 push16l -> push16 lower)
+          (simple-macro 1 pop16u -> pop16 upper)
+          (simple-macro 1 pop16l -> pop16 lower))
+(defrule lower::translate-simple-one-arg-macro
          ?f <- (object (is-a list)
                        (contents ?operation
-                                 ?destination
-                                 ?source0)
+                                 ?argument))
+         (simple-macro 1 ?operation -> $?replacement)
+         =>
+         (modify-instance ?f
+                          (contents ?replacement
+                                    ?argument)))
+
+(definstances lower::registers
+              (r0 of register
+                  (parent FALSE))
+              (r1 of register
+                  (parent FALSE))
+              (r2 of register
+                  (parent FALSE))
+              (r3 of register
+                  (parent FALSE))
+              (r4 of register
+                  (parent FALSE))
+              (r5 of register
+                  (parent FALSE))
+              (r6 of register
+                  (parent FALSE))
+              (r7 of register
+                  (parent FALSE))
+              (r8 of register
+                  (parent FALSE))
+              (r9 of register
+                  (parent FALSE))
+              (r10 of register
+                   (parent FALSE))
+              (r11 of register
+                   (parent FALSE))
+              (r12 of register
+                   (parent FALSE))
+              (r13 of register
+                   (parent FALSE))
+              (r14 of register
+                   (parent FALSE))
+              (r15 of register
+                   (parent FALSE))
+              (addr of register
+                    (parent FALSE))
+              (ip of register
+                  (parent FALSE))
+              (sp of register
+                  (parent FALSE))
+              (value of register
+                     (parent FALSE))
+              (mask of register
+                    (parent FALSE))
+              (shift of register
+                     (parent FALSE))
+              (field of register
+                     (parent FALSE)))
+
+(defrule lower::change-stack-pointer-block
+         ?f <- (object (is-a list)
+                       (contents change-stack-pointer
+                                 ?target
+                                 $?rest)
                        (name ?n)
                        (parent ?p))
-         (two-register-operation ?operation)
          =>
          (unmake-instance ?f)
-         (make-instance ?n of two-argument-instruction
-                        (parent ?p)
-                        (title ?operation)
-                        (destination-register ?destination)
-                        (source-register0 ?source0)))
+         (mk-container ?n
+                       ?p
+                       (mk-list ?n
+                                swap
+                                sp
+                                ?target)
+                       $?rest
+                       (mk-list ?n
+                                swap
+                                sp
+                                ?target)))
+
