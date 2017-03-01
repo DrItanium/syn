@@ -650,6 +650,188 @@
                         (destination ?dest)
                         (source0 ?src0)))
 
+(deffacts lower::compare-operations
+          (operation compare
+                     ==)
+          (operation compare
+                     !=)
+          (operation compare
+                     <)
+          (operation compare
+                     <=)
+          (operation compare
+                     >)
+          (operation compare
+                     >=))
+(defrule lower::construct-compare-operation
+         ?f <- (object (is-a list)
+                       (contents compare
+                                 ?operation
+                                 ?dest
+                                 ?src0)
+                       (name ?n)
+                       (parent ?p))
+         (operation compare
+                    ?operation)
+         =>
+         (unmake-instance ?f)
+         (make-instance ?n of two-argument-instruction
+                        (parent ?p)
+                        (group compare)
+                        (operation ?operation)
+                        (flags)
+                        (destination ?dest)
+                        (source0 ?src0)))
+
+(defrule lower::construct-compare-operation:immediate
+         ?f <- (object (is-a list)
+                       (contents compare
+                                 ?operation
+                                 immediate
+                                 ?dest
+                                 ?src0)
+                       (name ?n)
+                       (parent ?p))
+         (operation compare
+                    ?operation)
+         =>
+         (unmake-instance ?f)
+         (make-instance ?n of two-argument-instruction
+                        (parent ?p)
+                        (group compare)
+                        (operation ?operation)
+                        (flags immediate)
+                        (destination ?dest)
+                        (source0 ?src0)))
+(deffacts lower::legal-complex-operations
+          (operation complex
+                     encoding)
+          (operation encoding
+                     decode)
+          (operation encoding
+                     encode)
+          (operation encoding
+                     bitset)
+          (operation encoding
+                     bitunset))
+(defrule lower::construct-complex-encoding-operation
+         ?f <- (object (is-a list)
+                       (contents complex
+                                 encoding
+                                 ?sub-operation)
+                       (name ?n)
+                       (parent ?p))
+         (operation encoding
+                    ?sub-operation)
+         =>
+         (unmake-instance ?f)
+         (make-instance ?n of zero-argument-instruction
+                        (parent ?p)
+                        (group complex)
+                        (operation encoding)
+                        (flags ?sub-operation)))
+(deffacts lower::legal-branch-operations
+          (call-or-no-call-flag call)
+          (call-or-no-call-flag nocall)
+          (conditional-or-unconditional-flag conditional)
+          (conditional-or-unconditional-flag unconditional))
+(defrule lower::construct-branch-encoding:if
+         ?f <- (object (is-a list)
+                       (contents branch
+                                 if
+                                 ?call-flag
+                                 ?r0
+                                 ?r1)
+                       (name ?n)
+                       (parent ?p))
+         (call-or-no-call-flag ?call-flag)
+         =>
+         (unmake-instance ?f)
+         (make-instance ?n of two-argument-instruction
+                        (parent ?p)
+                        (group branch)
+                        (operation if)
+                        (flags ?call-flag)
+                        (destination ?r0)
+                        (source0 ?r1)))
+
+(defrule lower::construct-branch-encoding:call
+         ?f <- (object (is-a list)
+                       (contents branch
+                                 call
+                                 ?r0)
+                       (name ?n)
+                       (parent ?p))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?n of one-argument-instruction
+                        (parent ?p)
+                        (group branch)
+                        (operation call)
+                        (flags)
+                        (destination ?r0)))
+
+(defrule lower::construct-branch-encoding:call-immediate
+         ?f <- (object (is-a list)
+                       (contents branch
+                                 call
+                                 immediate
+                                 ?r0)
+                       (name ?n)
+                       (parent ?p))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?n of one-argument-instruction
+                        (parent ?p)
+                        (group branch)
+                        (operation call)
+                        (flags immediate)
+                        (destination ?r0)))
+
+(defrule lower::construct-branch-encoding:jump
+         ?f <- (object (is-a list)
+                       (contents branch
+                                 ?cond
+                                 ?r0)
+                       (name ?n)
+                       (parent ?p))
+         (conditional-or-unconditional-flag ?cond)
+         =>
+         (unmake-instance ?f)
+         (make-instance ?n of one-argument-instruction
+                        (parent ?p)
+                        (group branch)
+                        (operation ?cond)
+                        (flags)
+                        (destination ?r0)))
+
+(defrule lower::construct-branch-encoding:jump-immediate
+         ?f <- (object (is-a list)
+                       (contents branch
+                                 ?cond
+                                 immediate
+                                 ?r0)
+                       (name ?n)
+                       (parent ?p))
+         (conditional-or-unconditional-flag ?cond)
+         =>
+         (unmake-instance ?f)
+         (make-instance ?n of one-argument-instruction
+                        (parent ?p)
+                        (group branch)
+                        (operation ?cond)
+                        (flags immediate)
+                        (destination ?r0)))
+
+(defrule lower::nop-macro
+         ?f <- (object (is-a list)
+                       (contents nop))
+         =>
+         (modify-instance ?f
+                          (contents swap
+                                    r0
+                                    r0)))
+
 (defrule lower::construct-one-register-instruction
          ?f <- (object (is-a list)
                        (contents ?operation
