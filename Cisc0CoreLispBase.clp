@@ -541,6 +541,114 @@
                         (operation ?operation)
                         (flags ?bitmask)
                         (destination ?destination)))
+(deffacts lower::arithmetic-operations
+          (operation arithmetic
+                     add)
+          (operation arithmetic
+                     sub)
+          (operation arithmetic
+                     mul)
+          (operation arithmetic
+                     div)
+          (operation arithmetic
+                     rem))
+
+(defrule lower::construct-arithmetic-operation
+         ?f <- (object (is-a list)
+                       (contents arithmetic
+                                 ?operation
+                                 ?destination
+                                 ?source)
+                       (name ?n)
+                       (parent ?p))
+         (operation arithmetic
+                    ?operation)
+         =>
+         (unmake-instance ?f)
+         (make-instance ?n of two-argument-instruction
+                        (parent ?p)
+                        (group arithmetic)
+                        (operation ?operation)
+                        (flags)
+                        (destination ?destination)
+                        (source0 ?source)))
+
+(defrule lower::construct-arithmetic-operation
+         ?f <- (object (is-a list)
+                       (contents arithmetic
+                                 ?operation
+                                 immediate
+                                 ?destination
+                                 ?source)
+                       (name ?n)
+                       (parent ?p))
+         (operation arithmetic
+                    ?operation)
+         =>
+         (unmake-instance ?f)
+         (make-instance ?n of two-argument-instruction
+                        (parent ?p)
+                        (group arithmetic)
+                        (operation ?operation)
+                        (flags immediate)
+                        (destination ?destination)
+                        (source0 ?source)))
+(defrule lower::construct-swap-operation
+         ?f <- (object (is-a list)
+                       (contents swap
+                                 ?dest
+                                 ?src0)
+                       (name ?n)
+                       (parent ?p))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?n of two-argument-instruction
+                        (parent ?p)
+                        (group swap)
+                        (operation "")
+                        (flags)
+                        (destination ?dest)
+                        (source0 ?src0)))
+
+(defrule lower::construct-move-operation
+         ?f <- (object (is-a list)
+                       (contents move
+                                 ?bitmask
+                                 ?dest
+                                 ?src0)
+                       (name ?n)
+                       (parent ?p))
+         (object (is-a bitmask)
+                 (name ?bitmask))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?n of two-argument-instruction
+                        (parent ?p)
+                        (group move)
+                        (operation "")
+                        (flags ?bitmask)
+                        (destination ?dest)
+                        (source0 ?src0)))
+
+(defrule lower::construct-set-operation
+         ?f <- (object (is-a list)
+                       (contents set
+                                 ?bitmask
+                                 ?dest
+                                 ?src0)
+                       (name ?n)
+                       (parent ?p))
+         (object (is-a bitmask)
+                 (name ?bitmask))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?n of two-argument-instruction
+                        (parent ?p)
+                        (group set)
+                        (operation "")
+                        (flags ?bitmask)
+                        (destination ?dest)
+                        (source0 ?src0)))
 
 (defrule lower::construct-one-register-instruction
          ?f <- (object (is-a list)
