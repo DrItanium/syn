@@ -560,6 +560,13 @@
           (operation arithmetic
                      rem))
 
+(defrule lower::generate-simple-macro-arithmetic-cmd
+         (declare (salience ?*priority:first*))
+         (operation arithmetic
+                    ?id)
+         =>
+         (assert (simple-macro 2 ?id -> arithmetic ?id)))
+
 (defrule lower::construct-arithmetic-operation
          ?f <- (object (is-a list)
                        (contents arithmetic
@@ -670,6 +677,13 @@
                      >)
           (operation compare
                      >=))
+(defrule lower::generate-compare-operation-simple-macro
+         (declare (salience ?*priority:first*))
+         (operation compare
+                    ?id)
+         =>
+         (assert (simple-macro 2 ?id -> compare ?id)))
+
 (defrule lower::construct-compare-operation
          ?f <- (object (is-a list)
                        (contents compare
@@ -881,6 +895,7 @@
           (simple-macro 1 pop16l -> pop16 lower)
           (simple-macro 1 pop32 -> memory pop 0m1111)
           (simple-macro 1 push32 -> memory push 0m1111))
+
 
 (defrule lower::translate-simple-one-arg-macro
          ?f <- (object (is-a list)
