@@ -251,6 +251,18 @@
           (bitmask 0m1110)
           (bitmask 0m1111))
 
+(defglobal lower 
+           ?*bitmask0* = 0m0000
+           ?*bitmask32* = 0m1111
+           ?*bitmask24l* = 0m0111
+           ?*bitmask24u* = 0m1110
+           ?*bitmask8ll* = 0m0001
+           ?*bitmask8lu* = 0m0010
+           ?*bitmask8ul* = 0m0100
+           ?*bitmask8uu* = 0m1000
+           ?*bitmask16l* = 0m0011
+           ?*bitmask16u* = 0m1100)
+
 (defrule lower::build-bitmasks
          (declare (salience ?*priority:first*))
          ?f <- (bitmask ?title)
@@ -487,15 +499,15 @@
          ; We can construct extra simple macros which are two arguments which fix the bitmask
          (assert (simple-macro 2 ?op -> logical ?op)
                  (simple-macro 3 ?base-immediate -> logical ?op immediate)
-                 (simple-macro 2 (sym-cat ?base-immediate 8ll) -> ?base-immediate 0m0001)
-                 (simple-macro 2 (sym-cat ?base-immediate 8lu) -> ?base-immediate 0m0010)
-                 (simple-macro 2 (sym-cat ?base-immediate 8ul) -> ?base-immediate 0m0100)
-                 (simple-macro 2 (sym-cat ?base-immediate 8uu) -> ?base-immediate 0m1000)
-                 (simple-macro 2 (sym-cat ?base-immediate 16l) -> ?base-immediate 0m0011)
-                 (simple-macro 2 (sym-cat ?base-immediate 16u) -> ?base-immediate 0m1100)
-                 (simple-macro 2 (sym-cat ?base-immediate 24l) -> ?base-immediate 0m0111)
-                 (simple-macro 2 (sym-cat ?base-immediate 24u) -> ?base-immediate 0m1110)
-                 (simple-macro 2 (sym-cat ?base-immediate 32) -> ?base-immediate 0m1111)))
+                 (simple-macro 2 (sym-cat ?base-immediate 8ll) -> ?base-immediate ?*bitmask8ll*)
+                 (simple-macro 2 (sym-cat ?base-immediate 8lu) -> ?base-immediate ?*bitmask8lu*)
+                 (simple-macro 2 (sym-cat ?base-immediate 8ul) -> ?base-immediate ?*bitmask8ul*)
+                 (simple-macro 2 (sym-cat ?base-immediate 8uu) -> ?base-immediate ?*bitmask8uu*)
+                 (simple-macro 2 (sym-cat ?base-immediate 16l) -> ?base-immediate ?*bitmask16l*)
+                 (simple-macro 2 (sym-cat ?base-immediate 16u) -> ?base-immediate ?*bitmask16u*)
+                 (simple-macro 2 (sym-cat ?base-immediate 24l) -> ?base-immediate ?*bitmask24l*)
+                 (simple-macro 2 (sym-cat ?base-immediate 24u) -> ?base-immediate ?*bitmask24u*)
+                 (simple-macro 2 (sym-cat ?base-immediate 32) -> ?base-immediate ?*bitmask32*)))
 
 (defrule lower::handle-simple-macro-replacement
          ?f <- (object (is-a list)
@@ -1052,25 +1064,25 @@
 
 
 (deffacts lower::simple-one-arg-macros
-          (simple-macro 1 push -> push 0m1111)
-          (simple-macro 1 pop -> pop 0m1111)
+          (simple-macro 1 push -> push ?*bitmask32*)
+          (simple-macro 1 pop -> pop ?*bitmask32*)
           ; not sure if these are going to match correctly!
           ; they should since they are distinct!
           (simple-macro 1 load -> direct-load)
           (simple-macro 1 store -> direct-store)
           (simple-macro 1 iload -> indirect-load)
           (simple-macro 1 istore -> indirect-store)
-          (simple-macro 1 direct-load -> direct-load 0m1111)
-          (simple-macro 1 direct-store -> direct-store 0m1111)
-          (simple-macro 1 indirect-load -> indirect-load 0m1111)
-          (simple-macro 1 indirect-store -> indirect-store 0m1111)
-          (simple-macro 1 push16u -> push 0m1100)
-          (simple-macro 1 push16l -> push 0m0011)
+          (simple-macro 1 direct-load -> direct-load ?*bitmask32*)
+          (simple-macro 1 direct-store -> direct-store ?*bitmask32*)
+          (simple-macro 1 indirect-load -> indirect-load ?*bitmask32*)
+          (simple-macro 1 indirect-store -> indirect-store ?*bitmask32*)
+          (simple-macro 1 push16u -> push ?*bitmask16u*)
+          (simple-macro 1 push16l -> push ?*bitmask16l*)
           ; TODO: merge the hand written pop16 rules into this fact set
-          (simple-macro 1 pop16u -> pop 0m1100)
-          (simple-macro 1 pop16l -> pop 0m0011)
-          (simple-macro 1 pop32 -> pop 0m1111)
-          (simple-macro 1 push32 -> push 0m1111))
+          (simple-macro 1 pop16u -> pop ?*bitmask16u*)
+          (simple-macro 1 pop16l -> pop ?*bitmask16l*)
+          (simple-macro 1 pop32 -> pop ?*bitmask32*)
+          (simple-macro 1 push32 -> push ?*bitmask32*))
 (defrule lower::handle-direct-load-macro
          ?f <- (object (is-a list)
                        (contents direct-load
@@ -1078,7 +1090,7 @@
                                  ?offset))
          =>
          (modify-instance ?f 
-                          (contents memory load ?bitmask direct ?offset)))
+                          (contents load ?bitmask direct ?offset)))
 
 (defrule lower::handle-direct-store-macro
          ?f <- (object (is-a list)
@@ -1087,7 +1099,7 @@
                                  ?offset))
          =>
          (modify-instance ?f 
-                          (contents memory store ?bitmask direct ?offset)))
+                          (contents store ?bitmask direct ?offset)))
 
 
 (defrule lower::handle-indirect-load-macro
@@ -1097,7 +1109,7 @@
                                  ?offset))
          =>
          (modify-instance ?f 
-                          (contents memory load ?bitmask indirect ?offset)))
+                          (contents load ?bitmask indirect ?offset)))
 
 (defrule lower::handle-indirect-store-macro
          ?f <- (object (is-a list)
@@ -1106,23 +1118,26 @@
                                  ?offset))
          =>
          (modify-instance ?f 
-                          (contents memory store ?bitmask indirect ?offset)))
-
-(deffacts lower::two-argument-simple-macros
+                          (contents store ?bitmask indirect ?offset)))
+(deffacts lower::base-memory-simple-macros
           (simple-macro 2 push -> memory push)
           (simple-macro 2 pop -> memory pop)
-          (simple-macro 2 set32 -> set 0m1111)
+          (simple-macro 3 load -> memory load)
+          (simple-macro 3 store -> memory store))
+
+(deffacts lower::two-argument-simple-macros
+          (simple-macro 2 set32 -> set ?*bitmask32*)
           (simple-macro 2 set24 -> set24l)
-          (simple-macro 2 set24l -> set 0m0111)
-          (simple-macro 2 set24u -> set 0m1110)
+          (simple-macro 2 set24l -> set ?*bitmask24l*)
+          (simple-macro 2 set24u -> set ?*bitmask24u*)
           (simple-macro 2 set8 -> set8ll)
-          (simple-macro 2 set8ll -> set 0m0001)
-          (simple-macro 2 set8lu -> set 0m0010)
-          (simple-macro 2 set8ul -> set 0m0100)
-          (simple-macro 2 set8uu -> set 0m1000)
+          (simple-macro 2 set8ll -> set ?*bitmask8ll*)
+          (simple-macro 2 set8lu -> set ?*bitmask8lu*)
+          (simple-macro 2 set8ul -> set ?*bitmask8ul*)
+          (simple-macro 2 set8uu -> set ?*bitmask8uu*)
           (simple-macro 2 set16 -> set16l)
-          (simple-macro 2 set16l -> set 0m0011)
-          (simple-macro 2 set16u -> set 0m1100))
+          (simple-macro 2 set16l -> set ?*bitmask16l*)
+          (simple-macro 2 set16u -> set ?*bitmask16u*))
 
 (defrule lower::not-self-macro
          ?f <- (object (is-a list)
@@ -1167,7 +1182,7 @@
          =>
          (modify-instance ?f
                           (contents set
-                                    0m0000
+                                    ?*bitmask0*
                                     ?register
                                     0x00000000)))
 
