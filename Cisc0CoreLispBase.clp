@@ -389,8 +389,22 @@
 
 
 (deffacts lower::legal-shift-operations
-          (operation shift right)
-          (operation shift left))
+          (operation shift 
+                     right)
+          (operation shift 
+                     left))
+
+(defrule lower::construct-shift-simple-macros
+         (declare (salience ?*priority:first*))
+         (operation shift
+                    ?direction)
+         =>
+         (bind ?base-title
+               (sym-cat shift- 
+                        ?direction))
+         (assert (simple-macro 2 ?base-title -> shift ?direction)
+                 (simple-macro 2 (sym-cat ?base-title
+                                          -immediate) -> shift ?direction immediate)))
 
 (defrule lower::construct-shift-instruction:with-immediate
          ?f <- (object (is-a list)
@@ -431,6 +445,24 @@
                         (flags ?direction)
                         (destination ?dest)
                         (source0 ?src)))
+(deffunction lower::print-message-about-offending-object
+             (?name)
+             (create$ tab "See " ?name " for more information!"))
+
+(defrule lower::illegal-shift-operation
+         (object (is-a list)
+                 (contents shift
+                           ?direction
+                           $?rest)
+                 (name ?name))
+         (not (operation shift
+                         ?direction))
+         =>
+         (printout werror 
+                   "ERROR: Shift instruction has illegal direction: " ?direction "!" crlf
+                   (print-message-about-offending-object ?name) crlf)
+
+         (halt))
 
 (deffacts lower::legal-logical-operations
           (operation logical
@@ -443,6 +475,15 @@
                      xor)
           (operation logical
                      nand))
+
+(defrule lower::construct-logical-group-simple-macros
+         (declare (salience ?*priority:first*))
+         (operation logical
+                    ?op)
+         =>
+         (assert (simple-macro 2 ?op -> logical ?op)
+                 (simple-macro 2 (sym-cat ?op i) -> logical ?op immediate)))
+
 (defrule lower::construct-logical-instruction
          ?f <- (object (is-a list)
                        (contents logical
@@ -488,6 +529,20 @@
                                ?bitmask)
                         (destination ?destination)
                         (source0 ?value)))
+(defrule lower::illegal-logical-instruction
+         ?f <- (object (is-a list)
+                       (contents logical
+                                 ?operation
+                                 $?rest)
+                       (name ?name))
+         (not (operation logical
+                         ?operation))
+         =>
+         (printout werror
+                   "ERROR: logical group instruction has illegal operation: " ?operation "!" crlf
+                   (print-message-about-offending-object ?name) crlf)
+         (halt))
+
 (deffacts lower::memory-operations
           (operation memory
                      load)
@@ -548,6 +603,20 @@
                         (operation ?operation)
                         (flags ?bitmask)
                         (destination ?destination)))
+(defrule lower::illegal-memory-operation
+         ?f <- (object (is-a list)
+                       (contents memory
+                                 ?operation
+                                 $?)
+                       (name ?name))
+         (not (operation memory
+                         ?operation))
+         =>
+         (printout werror
+                   "ERROR: illegal memory operation " ?operation "!" crlf
+                   (print-message-about-offending-object ?name) crlf)
+         (halt))
+
 (deffacts lower::arithmetic-operations
           (operation arithmetic
                      add)
@@ -561,11 +630,13 @@
                      rem))
 
 (defrule lower::generate-simple-macro-arithmetic-cmd
+         "Generate the simple-macros automatically on startup"
          (declare (salience ?*priority:first*))
          (operation arithmetic
                     ?id)
          =>
-         (assert (simple-macro 2 ?id -> arithmetic ?id)))
+         (assert (simple-macro 2 ?id -> arithmetic ?id)
+                 (simple-macro 2 (sym-cat ?id i) -> arithmetic ?id immediate)))
 
 (defrule lower::construct-arithmetic-operation
          ?f <- (object (is-a list)
@@ -677,12 +748,39 @@
                      >)
           (operation compare
                      >=))
+(deffacts lower::compare-translation-macros
+          (simple-macro 2 eq -> ==)
+          (simple-macro 2 eqi -> ==i)
+          (simple-macro 2 neq -> !=)
+          (simple-macro 2 neqi -> !=i)
+          (simple-macro 2 lt -> <)
+          (simple-macro 2 lti -> <i)
+          (simple-macro 2 gt -> >)
+          (simple-macro 2 gti -> >i)
+          (simple-macro 2 le -> <=)
+          (simple-macro 2 lei -> <=i)
+          (simple-macro 2 ge -> >=)
+          (simple-macro 2 gei -> >=i)
+          (simple-macro 2 equals -> eq)
+          (simple-macro 2 equals-imm -> eqi)
+          (simple-macro 2 not-equals -> neq)
+          (simple-macro 2 not-equals-imm -> neqi)
+          (simple-macro 2 less-than -> lt)
+          (simple-macro 2 less-than-imm -> lti)
+          (simple-macro 2 greater-than -> gt)
+          (simple-macro 2 greater-than-imm -> gti)
+          (simple-macro 2 less-than-or-equal-to -> le)
+          (simple-macro 2 less-than-or-equal-to-imm -> lei)
+          (simple-macro 2 greater-than-or-equal-to -> ge)
+          (simple-macro 2 greater-than-or-equal-to-imm -> gei))
+
 (defrule lower::generate-compare-operation-simple-macro
          (declare (salience ?*priority:first*))
          (operation compare
                     ?id)
          =>
-         (assert (simple-macro 2 ?id -> compare ?id)))
+         (assert (simple-macro 2 ?id -> compare ?id)
+                 (simple-macro 2 (sym-cat ?id i) -> compare ?id immediate)))
 
 (defrule lower::construct-compare-operation
          ?f <- (object (is-a list)
@@ -724,6 +822,7 @@
                         (flags immediate)
                         (destination ?dest)
                         (source0 ?src0)))
+
 (deffacts lower::legal-complex-operations
           (operation complex
                      encoding)
@@ -735,6 +834,13 @@
                      bitset)
           (operation encoding
                      bitunset))
+(defrule lower::generate-encoding-simple-macros
+         (declare (salience ?*priority:first*))
+         (operation encoding
+                    ?op)
+         =>
+         (assert (simple-macro 0 ?op -> complex encoding ?op)))
+
 (defrule lower::construct-complex-encoding-operation
          ?f <- (object (is-a list)
                        (contents complex
@@ -756,6 +862,7 @@
           (call-or-no-call-flag nocall)
           (conditional-or-unconditional-flag conditional)
           (conditional-or-unconditional-flag unconditional))
+
 (defrule lower::construct-branch-encoding:if
          ?f <- (object (is-a list)
                        (contents branch
@@ -853,10 +960,6 @@
           (simple-macro 0 iload -> indirect-load)
           (simple-macro 0 store -> direct-store)
           (simple-macro 0 load -> direct-load)
-          (simple-macro 0 bitset -> complex encoding bitset)
-          (simple-macro 0 bitunset -> complex encoding bitunset)
-          (simple-macro 0 encode -> complex encoding encode)
-          (simple-macro 0 decode -> complex encoding decode)
           (simple-macro 0 return -> pop ip)
           (simple-macro 0 indirect-store -> memory store 0m1111 indirect 0x00)
           (simple-macro 0 indirect-load -> memory load 0m1111 indirect 0x00)
@@ -888,11 +991,11 @@
           (simple-macro 1 direct-store -> memory store 0m1111 direct)
           (simple-macro 1 indirect-load -> memory load 0m1111 indirect)
           (simple-macro 1 indirect-store -> memory store 0m1111 indirect)
-          (simple-macro 1 push16u -> push16 upper)
-          (simple-macro 1 push16l -> push16 lower)
+          (simple-macro 1 push16u -> memory push 0m1100)
+          (simple-macro 1 push16l -> memory push 0m0011)
           ; TODO: merge the hand written pop16 rules into this fact set
-          (simple-macro 1 pop16u -> pop16 upper)
-          (simple-macro 1 pop16l -> pop16 lower)
+          (simple-macro 1 pop16u -> memory pop 0m1100)
+          (simple-macro 1 pop16l -> memory pop 0m0011)
           (simple-macro 1 pop32 -> memory pop 0m1111)
           (simple-macro 1 push32 -> memory push 0m1111))
 
@@ -979,48 +1082,6 @@
                                     ?register
                                     0x00000000)))
 
-
-(deffacts lower::pop/push16-types
-          (flag pop16
-                upper
-                0m1100)
-          (flag pop16
-                lower
-                0m0011)
-          (flag push16
-                upper
-                0m1100)
-          (flag push16
-                lower
-                0m0011))
-(defrule lower::pop16-macro
-         ?f <- (object (is-a list)
-                       (contents pop16
-                                 ?half
-                                 ?register))
-         (flag pop16
-               ?half
-               ?bitmask)
-         =>
-         (modify-instance ?f
-                          (contents memory
-                                    pop
-                                    ?bitmask
-                                    ?register)))
-(defrule lower::pop16-macro
-         ?f <- (object (is-a list)
-                       (contents push16
-                                 ?half
-                                 ?register))
-         (flag push16
-               ?half
-               ?bitmask)
-         =>
-         (modify-instance ?f
-                          (contents memory
-                                    push
-                                    ?bitmask
-                                    ?register)))
 
 (definstances lower::registers
               (r0 of register
@@ -1124,4 +1185,3 @@
                        ?pre
                        ?body
                        ?post))
-
