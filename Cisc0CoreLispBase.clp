@@ -481,8 +481,31 @@
          (operation logical
                     ?op)
          =>
+         (bind ?base-immediate
+               (sym-cat ?op i))
+         ; The immediate versions accept three arguments (bitmask, destination, immediate)
+         ; We can construct extra simple macros which are two arguments which fix the bitmask
          (assert (simple-macro 2 ?op -> logical ?op)
-                 (simple-macro 2 (sym-cat ?op i) -> logical ?op immediate)))
+                 (simple-macro 3 ?base-immediate -> logical ?op immediate)
+                 (simple-macro 2 (sym-cat ?base-immediate 8ll) -> ?base-immediate 0m0001)
+                 (simple-macro 2 (sym-cat ?base-immediate 8lu) -> ?base-immediate 0m0010)
+                 (simple-macro 2 (sym-cat ?base-immediate 8ul) -> ?base-immediate 0m0100)
+                 (simple-macro 2 (sym-cat ?base-immediate 8uu) -> ?base-immediate 0m1000)
+                 (simple-macro 2 (sym-cat ?base-immediate 16l) -> ?base-immediate 0m0011)
+                 (simple-macro 2 (sym-cat ?base-immediate 16u) -> ?base-immediate 0m1100)
+                 (simple-macro 2 (sym-cat ?base-immediate 24l) -> ?base-immediate 0m0111)
+                 (simple-macro 2 (sym-cat ?base-immediate 24u) -> ?base-immediate 0m1110)
+                 (simple-macro 2 (sym-cat ?base-immediate 32) -> ?base-immediate 0m1111)))
+
+(defrule lower::handle-simple-macro-replacement
+         ?f <- (object (is-a list)
+                       (contents ?title
+                                 $?rest))
+         (simple-macro =(length$ ?rest)
+                       ?title -> $?replacement)
+         =>
+         (modify-instance ?f 
+                          (contents ?replacement ?rest)))
 
 (defrule lower::construct-logical-instruction
          ?f <- (object (is-a list)
@@ -782,6 +805,55 @@
          (assert (simple-macro 2 ?id -> compare ?id)
                  (simple-macro 2 (sym-cat ?id i) -> compare ?id immediate)))
 
+(defrule lower::compare-equals-zero
+         ?f <- (object (is-a list)
+                       (contents ==0
+                                 ?dest))
+         =>
+         (modify-instance ?f
+                          (contents eqi ?dest 0x0)))
+
+(defrule lower::compare-not-equals-zero
+         ?f <- (object (is-a list)
+                       (contents !=0
+                                 ?dest))
+         =>
+         (modify-instance ?f
+                          (contents neqi
+                                    ?dest
+                                    0x0)))
+(defrule lower::compare-greater-than-zero
+         ?f <- (object (is-a list)
+                       (contents >0 
+                                 ?dest))
+         =>
+         (modify-instance ?f
+                          (contents gti ?dest 0x0)))
+
+(defrule lower::compare-less-than-zero
+         ?f <- (object (is-a list)
+                       (contents <0 
+                                 ?dest))
+         =>
+         (modify-instance ?f
+                          (contents lti ?dest 0x0)))
+
+(defrule lower::compare-greater-than-or-equal-to-zero
+         ?f <- (object (is-a list)
+                       (contents >=0 
+                                 ?dest))
+         =>
+         (modify-instance ?f
+                          (contents gei ?dest 0x0)))
+
+(defrule lower::compare-less-than-or-equal-to-zero
+         ?f <- (object (is-a list)
+                       (contents <=0
+                                 ?dest))
+         =>
+         (modify-instance ?f
+                          (contents lei ?dest 0x0)))
+
 (defrule lower::construct-compare-operation
          ?f <- (object (is-a list)
                        (contents compare
@@ -966,17 +1038,6 @@
           (simple-macro 0 direct-store -> memory store 0m1111 direct 0x00)
           (simple-macro 0 direct-load -> memory load 0m1111 direct 0x00))
 
-(defrule lower::zero-argument-simple-macro-modify
-         "In the cases where the instruction has no arguments and is a single
-         symbol then we can define facts in place of special rules to handle
-         the replacement!"
-         ?f <- (object (is-a list)
-                       (contents ?target))
-         (simple-macro 0
-                       ?target -> $?replacement)
-         =>
-         (modify-instance ?f
-                          (contents $?replacement)))
 
 (deffacts lower::simple-one-arg-macros
           (simple-macro 1 push -> push32)
@@ -999,17 +1060,6 @@
           (simple-macro 1 pop32 -> memory pop 0m1111)
           (simple-macro 1 push32 -> memory push 0m1111))
 
-
-(defrule lower::translate-simple-one-arg-macro
-         ?f <- (object (is-a list)
-                       (contents ?operation
-                                 ?argument))
-         (simple-macro 1 ?operation -> $?replacement)
-         =>
-         (modify-instance ?f
-                          (contents ?replacement
-                                    ?argument)))
-
 (deffacts lower::two-argument-simple-macros
           (simple-macro 2 set32 -> set 0m1111)
           (simple-macro 2 set24 -> set24l)
@@ -1024,17 +1074,6 @@
           (simple-macro 2 set16l -> set 0m0011)
           (simple-macro 2 set16u -> set 0m1100))
 
-(defrule lower::handle-two-argument-simple-macros
-         ?f <- (object (is-a list)
-                       (contents ?operation
-                                 ?arg0
-                                 ?arg1))
-         (simple-macro 2 ?operation -> $?replacement)
-         =>
-         (modify-instance ?f
-                          (contents $?replacement
-                                    ?arg0
-                                    ?arg1)))
 (defrule lower::not-self-macro
          ?f <- (object (is-a list)
                        (contents not
