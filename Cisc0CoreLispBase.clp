@@ -795,7 +795,19 @@
           (simple-macro 2 less-than-or-equal-to -> le)
           (simple-macro 2 less-than-or-equal-to-imm -> lei)
           (simple-macro 2 greater-than-or-equal-to -> ge)
-          (simple-macro 2 greater-than-or-equal-to-imm -> gei))
+          (simple-macro 2 greater-than-or-equal-to-imm -> gei)
+          (simple-macro 1 greater-than-zero -> >0)
+          (simple-macro 1 less-than-zero -> <0)
+          (simple-macro 1 greater-than-or-equal-to-zero -> >=0)
+          (simple-macro 1 less-than-or-equal-to-zero -> <=0)
+          (simple-macro 1 equal-to-zero -> ==0)
+          (simple-macro 1 not-equal-to-zero -> !=0)
+          (simple-macro 1 eqz -> equal-to-zero)
+          (simple-macro 1 neqz -> not-equal-to-zero)
+          (simple-macro 1 ltz -> less-than-zero)
+          (simple-macro 1 gtz -> greater-than-zero)
+          (simple-macro 1 gez -> greater-than-or-equal-to-zero)
+          (simple-macro 1 lez -> less-than-or-equal-to-zero))
 
 (defrule lower::generate-compare-operation-simple-macro
          (declare (salience ?*priority:first*))
@@ -1033,34 +1045,72 @@
           (simple-macro 0 store -> direct-store)
           (simple-macro 0 load -> direct-load)
           (simple-macro 0 return -> pop ip)
-          (simple-macro 0 indirect-store -> memory store 0m1111 indirect 0x00)
-          (simple-macro 0 indirect-load -> memory load 0m1111 indirect 0x00)
-          (simple-macro 0 direct-store -> memory store 0m1111 direct 0x00)
-          (simple-macro 0 direct-load -> memory load 0m1111 direct 0x00))
+          (simple-macro 0 indirect-store -> indirect-store 0x00)
+          (simple-macro 0 indirect-load -> indirect-load 0x00)
+          (simple-macro 0 direct-store -> direct-store 0x00)
+          (simple-macro 0 direct-load -> direct-load 0x00))
 
 
 (deffacts lower::simple-one-arg-macros
-          (simple-macro 1 push -> push32)
-          (simple-macro 1 pop -> pop32)
+          (simple-macro 1 push -> push 0m1111)
+          (simple-macro 1 pop -> pop 0m1111)
           ; not sure if these are going to match correctly!
           ; they should since they are distinct!
           (simple-macro 1 load -> direct-load)
           (simple-macro 1 store -> direct-store)
           (simple-macro 1 iload -> indirect-load)
           (simple-macro 1 istore -> indirect-store)
-          (simple-macro 1 direct-load -> memory load 0m1111 direct)
-          (simple-macro 1 direct-store -> memory store 0m1111 direct)
-          (simple-macro 1 indirect-load -> memory load 0m1111 indirect)
-          (simple-macro 1 indirect-store -> memory store 0m1111 indirect)
-          (simple-macro 1 push16u -> memory push 0m1100)
-          (simple-macro 1 push16l -> memory push 0m0011)
+          (simple-macro 1 direct-load -> direct-load 0m1111)
+          (simple-macro 1 direct-store -> direct-store 0m1111)
+          (simple-macro 1 indirect-load -> indirect-load 0m1111)
+          (simple-macro 1 indirect-store -> indirect-store 0m1111)
+          (simple-macro 1 push16u -> push 0m1100)
+          (simple-macro 1 push16l -> push 0m0011)
           ; TODO: merge the hand written pop16 rules into this fact set
-          (simple-macro 1 pop16u -> memory pop 0m1100)
-          (simple-macro 1 pop16l -> memory pop 0m0011)
-          (simple-macro 1 pop32 -> memory pop 0m1111)
-          (simple-macro 1 push32 -> memory push 0m1111))
+          (simple-macro 1 pop16u -> pop 0m1100)
+          (simple-macro 1 pop16l -> pop 0m0011)
+          (simple-macro 1 pop32 -> pop 0m1111)
+          (simple-macro 1 push32 -> push 0m1111))
+(defrule lower::handle-direct-load-macro
+         ?f <- (object (is-a list)
+                       (contents direct-load
+                                 ?bitmask
+                                 ?offset))
+         =>
+         (modify-instance ?f 
+                          (contents memory load ?bitmask direct ?offset)))
+
+(defrule lower::handle-direct-store-macro
+         ?f <- (object (is-a list)
+                       (contents direct-store
+                                 ?bitmask
+                                 ?offset))
+         =>
+         (modify-instance ?f 
+                          (contents memory store ?bitmask direct ?offset)))
+
+
+(defrule lower::handle-indirect-load-macro
+         ?f <- (object (is-a list)
+                       (contents indirect-load
+                                 ?bitmask
+                                 ?offset))
+         =>
+         (modify-instance ?f 
+                          (contents memory load ?bitmask indirect ?offset)))
+
+(defrule lower::handle-indirect-store-macro
+         ?f <- (object (is-a list)
+                       (contents indirect-store
+                                 ?bitmask
+                                 ?offset))
+         =>
+         (modify-instance ?f 
+                          (contents memory store ?bitmask indirect ?offset)))
 
 (deffacts lower::two-argument-simple-macros
+          (simple-macro 2 push -> memory push)
+          (simple-macro 2 pop -> memory pop)
           (simple-macro 2 set32 -> set 0m1111)
           (simple-macro 2 set24 -> set24l)
           (simple-macro 2 set24l -> set 0m0111)
