@@ -1180,54 +1180,62 @@
                           (contents ?replacement 
                                     ?register 
                                     ?constant)))
+(defrule lower::make-base-register
+         (declare (salience ?*priority:first*))
+         ?f <- (base-register ?title)
+         =>
+         (retract ?f)
+         (make-instance ?title of register
+                        (parent FALSE)))
 
-(definstances lower::registers
-              (r0 of register
-                  (parent FALSE))
-              (r1 of register
-                  (parent FALSE))
-              (r2 of register
-                  (parent FALSE))
-              (r3 of register
-                  (parent FALSE))
-              (r4 of register
-                  (parent FALSE))
-              (r5 of register
-                  (parent FALSE))
-              (r6 of register
-                  (parent FALSE))
-              (r7 of register
-                  (parent FALSE))
-              (r8 of register
-                  (parent FALSE))
-              (r9 of register
-                  (parent FALSE))
-              (r10 of register
-                   (parent FALSE))
-              (r11 of register
-                   (parent FALSE))
-              (r12 of register
-                   (parent FALSE))
-              (r13 of register
-                   (parent FALSE))
-              (r14 of register
-                   (parent FALSE))
-              (r15 of register
-                   (parent FALSE))
-              (addr of register
-                    (parent FALSE))
-              (ip of register
-                  (parent FALSE))
-              (sp of register
-                  (parent FALSE))
-              (value of register
-                     (parent FALSE))
-              (mask of register
-                    (parent FALSE))
-              (shift of register
-                     (parent FALSE))
-              (field of register
-                     (parent FALSE)))
+(deffacts lower::base-registers
+          (base-register r0)
+          (base-register r1)
+          (base-register r2)
+          (base-register r3)
+          (base-register r4)
+          (base-register r5)
+          (base-register r6)
+          (base-register r7)
+          (base-register r8)
+          (base-register r9)
+          (base-register r10)
+          (base-register r11)
+          (base-register r12)
+          (base-register r13)
+          (base-register r14)
+          (base-register r15))
+
+(defrule lower::parse-hardcoded-alias-facts:front
+         (declare (salience ?*priority:second*))
+         ?f <- (alias ?a <- ?b <- $?rest)
+         =>
+         (retract ?f)
+         (assert (alias ?a <- ?b))
+         (if (not (empty$ ?rest)) then
+           (assert (alias ?b <- $?rest))))
+
+(defrule lower::parse-hardcoded-alias-facts
+         (declare (salience ?*priority:second*))
+         ?f <- (alias ?a <- ?b)
+         =>
+         (retract ?f)
+         (mk-list FALSE
+                  alias
+                  ?a
+                  as
+                  ?b))
+
+(deffacts lower::aliases
+          (alias r15 <- instruction-pointer <- ip)
+          (alias r14 <- stack-pointer <- sp)
+          (alias r13 <- condition-register <- cond)
+          (alias r12 <- address-register <- addr)
+          (alias r11 <- value-register <- value)
+          (alias r10 <- mask-register <- mask)
+          (alias r9 <- shift-register <- shift)
+          (alias r9 <- field-register <- field))
+
 
 (defrule lower::change-stack-pointer-block
          ?f <- (object (is-a list)
@@ -1283,3 +1291,29 @@
                        ?pre
                        ?body
                        ?post))
+
+(deffacts lower::move-macros
+          "common action macros!"
+          (simple-macro 2 move32 -> move ?*bitmask32*)
+          (simple-macro 2 move16u -> move ?*bitmask16u*)
+          (simple-macro 2 move16l -> move ?*bitmask16l*)
+          (simple-macro 2 move16 -> move16l)
+          (simple-macro 2 move8ll -> move ?*bitmask8ll*)
+          (simple-macro 2 move8lu -> move ?*bitmask8lu*)
+          (simple-macro 2 move8ul -> move ?*bitmask8ul*)
+          (simple-macro 2 move8uu -> move ?*bitmask8uu*)
+          (simple-macro 2 move8 -> move8ll)
+          (simple-macro 2 move24u -> move ?*bitmask24u*)
+          (simple-macro 2 move24l -> move ?*bitmask24l*)
+          (simple-macro 2 move24 -> move24l)
+          (simple-macro 2 copy -> move32)
+          (simple-macro 2 copy-lower16 -> move16l)
+          (simple-macro 2 copy16 -> move16)
+          (simple-macro 2 copy-upper16 -> move16u)
+          (simple-macro 2 copy-upper24 -> move24u)
+          (simple-macro 2 copy-lower24 -> move24l)
+          (simple-macro 2 cast16 -> move16)
+          (simple-macro 2 cast8 -> move8)
+          (simple-macro 2 cast24 -> move24)
+          (simple-macro 2 make-data-address -> move24))
+
