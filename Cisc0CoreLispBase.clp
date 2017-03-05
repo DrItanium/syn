@@ -75,8 +75,6 @@
         has-body)
   (slot section
         (type SYMBOL)
-        (allowed-symbols code
-                         data)
         (visibility public)
         (storage local)
         (default ?NONE))
@@ -84,8 +82,8 @@
 
 (defmessage-handler lower::section resolve primary
                     ()
-                    (create$ (str-cat .
-                                      ?self:section)
+                    (create$ (str-cat "; Section " 
+                                      (dynamic-get section))
                              (map call-resolve
                                   (expand$ ?self:body))))
 
