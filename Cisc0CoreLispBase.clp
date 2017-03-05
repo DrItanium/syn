@@ -145,6 +145,10 @@
         (source composite)
         (default .dword)))
 
+(deffacts lower::construct-data-storage-declaration
+          (data-storage-decl word -> word)
+          (data-storage-decl dword -> dword))
+
 
 (defclass lower::instruction
   (is-a node)
@@ -229,9 +233,19 @@
         (visibility public)
         (default ?NONE))
   (message-handler resolve primary))
+
 (defmessage-handler lower::bitmask resolve primary
                     ()
                     (dynamic-get value))
+
+(deftemplate lower::macro-with-constant-immediate
+             (slot match 
+                   (type SYMBOL)
+                   (default ?NONE))
+             (multislot replacement 
+                        (default ?NONE))
+             (multislot constant 
+                        (default ?NONE)))
 
 (deffacts lower::legal-bitmasks
           (bitmask 0m0000)
@@ -364,29 +378,18 @@
                         (body ?body)))
 
 
-
-(defrule lower::make-word
+(defrule lower::make-data-storage-declaration
          ?f <- (object (is-a list)
-                       (contents word
+                       (contents ?decl
                                  ?value)
                        (name ?n)
                        (parent ?p))
+         (data-storage-decl ?decl -> ?class)
          =>
          (unmake-instance ?f)
-         (make-instance ?n of word
+         (make-instance ?n of ?class
                         (parent ?p)
                         (value ?value)))
-(defrule lower::make-dword
-         ?f <- (object (is-a list)
-                       (contents dword
-                                 ?value)
-                       (name ?n)
-                       (parent ?p))
-         =>
-         (unmake-instance ?f)
-         (make-instance ?n of dword
-                        (parent ?p)
-                        (value /value)))
 
 
 (defrule lower::construct-output-string
@@ -693,7 +696,7 @@
                         (destination ?destination)
                         (source0 ?source)))
 
-(defrule lower::construct-arithmetic-operation
+(defrule lower::construct-arithmetic-operation:immediate
          ?f <- (object (is-a list)
                        (contents arithmetic
                                  ?operation
@@ -807,7 +810,35 @@
           (simple-macro 2 less-than-or-equal-to -> le)
           (simple-macro 2 less-than-or-equal-to-imm -> lei)
           (simple-macro 2 greater-than-or-equal-to -> ge)
-          (simple-macro 2 greater-than-or-equal-to-imm -> gei)
+          (simple-macro 2 greater-than-or-equal-to-imm -> gei))
+
+(defrule lower::generate-compare-operation-simple-macro
+         (declare (salience ?*priority:first*))
+         (operation compare
+                    ?id)
+         =>
+         (assert (simple-macro 2 ?id -> compare ?id)
+                 (simple-macro 2 (sym-cat ?id i) -> compare ?id immediate)))
+
+(deffacts lower::macros-with-constant-immediates
+          (macro-with-constant-immediate (match ==0)
+                                         (replacement eqi)
+                                         (constant 0x0))
+          (macro-with-constant-immediate (match !=0)
+                                         (replacement neqi)
+                                         (constant 0x0))
+          (macro-with-constant-immediate (match <0)
+                                         (replacement lti)
+                                         (constant 0x0))
+          (macro-with-constant-immediate (match >0)
+                                         (replacement gti)
+                                         (constant 0x0))
+          (macro-with-constant-immediate (match >=0)
+                                         (replacement gei)
+                                         (constant 0x0))
+          (macro-with-constant-immediate (match <=0)
+                                         (replacement lei)
+                                         (constant 0x0))
           (simple-macro 1 greater-than-zero -> >0)
           (simple-macro 1 less-than-zero -> <0)
           (simple-macro 1 greater-than-or-equal-to-zero -> >=0)
@@ -820,63 +851,6 @@
           (simple-macro 1 gtz -> greater-than-zero)
           (simple-macro 1 gez -> greater-than-or-equal-to-zero)
           (simple-macro 1 lez -> less-than-or-equal-to-zero))
-
-(defrule lower::generate-compare-operation-simple-macro
-         (declare (salience ?*priority:first*))
-         (operation compare
-                    ?id)
-         =>
-         (assert (simple-macro 2 ?id -> compare ?id)
-                 (simple-macro 2 (sym-cat ?id i) -> compare ?id immediate)))
-
-(defrule lower::compare-equals-zero
-         ?f <- (object (is-a list)
-                       (contents ==0
-                                 ?dest))
-         =>
-         (modify-instance ?f
-                          (contents eqi ?dest 0x0)))
-
-(defrule lower::compare-not-equals-zero
-         ?f <- (object (is-a list)
-                       (contents !=0
-                                 ?dest))
-         =>
-         (modify-instance ?f
-                          (contents neqi
-                                    ?dest
-                                    0x0)))
-(defrule lower::compare-greater-than-zero
-         ?f <- (object (is-a list)
-                       (contents >0 
-                                 ?dest))
-         =>
-         (modify-instance ?f
-                          (contents gti ?dest 0x0)))
-
-(defrule lower::compare-less-than-zero
-         ?f <- (object (is-a list)
-                       (contents <0 
-                                 ?dest))
-         =>
-         (modify-instance ?f
-                          (contents lti ?dest 0x0)))
-
-(defrule lower::compare-greater-than-or-equal-to-zero
-         ?f <- (object (is-a list)
-                       (contents >=0 
-                                 ?dest))
-         =>
-         (modify-instance ?f
-                          (contents gei ?dest 0x0)))
-
-(defrule lower::compare-less-than-or-equal-to-zero
-         ?f <- (object (is-a list)
-                       (contents <=0
-                                 ?dest))
-         =>
-         (modify-instance ?f
-                          (contents lei ?dest 0x0)))
 
 (defrule lower::construct-compare-operation
          ?f <- (object (is-a list)
@@ -1150,42 +1124,56 @@
                                     ?register
                                     ?register)))
 
-(defrule lower::incr-macro
+(deffacts lower::macros-with-constant-immediates
+          (macro-with-constant-immediate (match decrement-value)
+                                         (replacement subi)
+                                         (constant 0x1))
+          (macro-with-constant-immediate (match increment-value)
+                                         (replacement addi)
+                                         (constant 0x1))
+          (macro-with-constant-immediate (match double-value)
+                                         (replacement muli)
+                                         (constant 0x2))
+          (macro-with-constant-immediate (match halve-value)
+                                         (replacement divi)
+                                         (constant 0x2))
+          (macro-with-constant-immediate (match mod2-value)
+                                         (replacement remi)
+                                         (constant 0x2))
+          (macro-with-constant-immediate (match clear-register)
+                                         (replacement set ?*bitmask0*)
+                                         (constant 0x00000000))
+
+          (simple-macro 1 incr -> increment)
+          (simple-macro 1 decr -> decrement)
+          (simple-macro 1 1+ -> increment)
+          (simple-macro 1 1- -> decrement)
+          (simple-macro 1 increment -> increment-value)
+          (simple-macro 1 decrement -> decrement-value)
+          (simple-macro 1 2* -> double)
+          (simple-macro 1 double -> double-value)
+          (simple-macro 1 2/ -> halve)
+          (simple-macro 1 halve -> halve-value)
+          (simple-macro 1 2% -> mod2)
+          (simple-macro 1 mod2 -> mod2-value)
+          (simple-macro 1 clear -> clear-register)
+          (simple-macro 1 clr -> clear))
+
+(defrule lower::translate-constant-immediate-macro
+         "Macros like increment and decrement are really another operation with a constant second argument. 
+         Instead of having to write a new rule for each macro I want, it is easier to just declare facts which 
+         make the code far more flexible in generation (it also allows runtime generation of new macros!)"
          ?f <- (object (is-a list)
-                       (contents incr
+                       (contents ?title
                                  ?register))
+         (macro-with-constant-immediate (match ?title)
+                                        (replacement $?replacement)
+                                        (constant $?constant))
          =>
          (modify-instance ?f
-                          (contents arithmetic
-                                    add
-                                    immediate
-                                    ?register
-                                    0x1)))
-
-(defrule lower::decr-macro
-         ?f <- (object (is-a list)
-                       (contents decr
-                                 ?register))
-         =>
-         (modify-instance ?f
-                          (contents arithmetic
-                                    sub
-                                    immediate
-                                    ?register
-                                    0x1)))
-
-
-(defrule lower::clear-register-macro
-         ?f <- (object (is-a list)
-                       (contents clear
-                                 ?register))
-         =>
-         (modify-instance ?f
-                          (contents set
-                                    ?*bitmask0*
-                                    ?register
-                                    0x00000000)))
-
+                          (contents ?replacement 
+                                    ?register 
+                                    ?constant)))
 
 (definstances lower::registers
               (r0 of register
