@@ -157,6 +157,11 @@
         (storage local)
         (visibility public)
         (default ?NONE))
+  (slot operation
+        (type SYMBOL)
+        (storage local)
+        (visibility public)
+        (default ?NONE))
   (multislot flags
              (storage local)
              (visibility public)
@@ -437,8 +442,8 @@
          (make-instance ?n of two-argument-instruction
                         (parent ?p)
                         (group shift)
-                        (flags ?direction
-                               immediate)
+                        (operation ?direction)
+                        (flags immediate)
                         (destination ?dest)
                         (source0 ?src)))
 
@@ -457,7 +462,8 @@
          (make-instance ?n of two-argument-instruction
                         (parent ?p)
                         (group shift)
-                        (flags ?direction)
+                        (operation ?direction)
+                        (flags)
                         (destination ?dest)
                         (source0 ?src)))
 (deffunction lower::print-message-about-offending-object
