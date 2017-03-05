@@ -94,6 +94,9 @@ namespace cisc0 {
 		installSystemHandler(Core::DefaultHandlers::Terminate, Core::terminate);
 		installSystemHandler(Core::DefaultHandlers::GetC, Core::getc);
 		installSystemHandler(Core::DefaultHandlers::PutC, Core::putc);
+		installSystemHandler(Core::DefaultHandlers::SeedRandom, Core::seedRandom);
+		installSystemHandler(Core::DefaultHandlers::NextRandom, Core::nextRandom);
+		installSystemHandler(Core::DefaultHandlers::SkipRandom, Core::skipRandom);
 	}
 
 	void Core::defaultSystemHandler(Core* core, DecodedInstruction&& inst) {
@@ -435,11 +438,10 @@ namespace cisc0 {
 	}
 
 	void Core::putc(Core* core, DecodedInstruction&& current) {
-		auto target = current.getSystemArg0();
-		auto ch = static_cast<char>(core->registerValue(target));
+		auto ch = static_cast<char>(core->registerValue(current.getSystemArg0()));
 		if (core->debugEnabled()) {
 			std::cerr << __PRETTY_FUNCTION__ << " called" << std::endl;
-			std::cerr << "- register " << std::hex << int(target) << std::endl;
+			std::cerr << "- register " << std::hex << static_cast<int>(current.getSystemArg0()) << std::endl;
 			std::cerr << "- going to print '" << ch << "'(" << std::hex << static_cast<int>(ch) << ")" << std::endl;
 		}
 		std::cout << ch;
@@ -450,7 +452,19 @@ namespace cisc0 {
 	void Core::getc(Core* core, DecodedInstruction&& current) {
 		byte value = 0;
 		std::cin >> std::noskipws >> value;
-		core->registerValue(current.getSystemArg0()) = static_cast<Word>(value);
+		core->registerValue(current.getSystemArg0()) = static_cast<RegisterValue>(value);
+	}
+
+	void Core::seedRandom(Core* core, DecodedInstruction&& current) {
+		// call the seed routine inside the _rng
+		//core->_rng.write(RandomNumberGenerator::SeedRandom)
+		core->_rng.write(RandomNumberGenerator::SeedRandom, core->registerValue(current.getSystemArg0()));
+	}
+	void Core::nextRandom(Core* core, DecodedInstruction&& current) {
+		core->registerValue(current.getSystemArg0()) = core->_rng.read(RandomNumberGenerator::NextRandom);
+	}
+	void Core::skipRandom(Core* core, DecodedInstruction&& current) {
+		core->_rng.write(RandomNumberGenerator::SkipRandom, core->registerValue(current.getSystemArg0()));
 	}
 
 
@@ -565,6 +579,8 @@ namespace cisc0 {
 	InstructionEncoder::Encoding InstructionEncoder::encodeSystemCall() {
         auto first = encodeControl(0, type);
         first = encodeSystemArg0(first, arg0);
+		first = encodeSystemArg1(first, arg1);
+		first = encodeSystemArg2(first, arg2);
         return std::make_tuple(1, first, 0, 0);
 	}
 

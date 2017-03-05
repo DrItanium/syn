@@ -177,15 +177,25 @@ namespace cisc0 {
 	using CompareUnit = syn::Comparator<RegisterValue>;
 	using RegisterFile = syn::FixedSizeLoadStoreUnit<RegisterValue, byte, ArchitectureConstants::RegisterCount>;
 	using MemorySpace = syn::FixedSizeLoadStoreUnit<Word, Address, ArchitectureConstants::AddressMax>;
+	using RandomNumberGenerator = syn::RandomDevice<RegisterValue, Address>;
 	class Core : public syn::Core {
 		public:
 			using SystemFunction = std::function<void(Core*, DecodedInstruction&&)>;
+			// These are built in addresses
 			enum DefaultHandlers {
 				Terminate,
 				GetC,
 				PutC,
+				SeedRandom,
+				NextRandom,
+				SkipRandom,
+				SecondaryStorage0_Read,
+				SecondaryStorage0_Write,
+				SecondaryStorage1_Read,
+				SecondaryStorage1_Write,
 				Count,
 			};
+			static_assert(static_cast<Word>(DefaultHandlers::Count) <= static_cast<Word>(ArchitectureConstants::MaxSystemCalls), "Too many handlers defined!");
 		public:
 			Core() noexcept;
 			virtual ~Core() noexcept;
@@ -208,6 +218,9 @@ namespace cisc0 {
 			static void terminate(Core* core, DecodedInstruction&& inst);
 			static void getc(Core* core, DecodedInstruction&& inst);
 			static void putc(Core* core, DecodedInstruction&& inst);
+			static void seedRandom(Core* core, DecodedInstruction&& inst);
+			static void nextRandom(Core* core, DecodedInstruction&& inst);
+			static void skipRandom(Core* core, DecodedInstruction&& inst);
 			SystemFunction getSystemHandler(byte index);
 			void dispatch(DecodedInstruction&& inst);
 #define X(title, func) void func ();
@@ -288,6 +301,7 @@ namespace cisc0 {
 			syn::BooleanCombineUnit _bCombine;
 			MemorySpace memory;
 			SystemFunction systemHandlers[ArchitectureConstants::MaxSystemCalls] =  { 0 };
+			RandomNumberGenerator _rng;
 	};
 
 

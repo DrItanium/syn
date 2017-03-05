@@ -490,7 +490,11 @@ namespace cisc0 {
 	struct SystemCallOperation : pegtl::seq<
 								 GroupSystemCall,
 								 Separator,
-								 DestinationRegister> { };
+								 DestinationRegister,
+								 Separator,
+								 SourceRegister,
+								 Separator,
+								 SourceRegister1> { };
 #define DefArithmeticOperation(title, str) \
 	DefSubTypeWithSymbol(title, str, ArithmeticOps)
 

@@ -82,57 +82,66 @@
           (field (name SetSignature) (mask 0b0000111111110000) (shift 4) (output-type byte))
           (field (name SwapDestination) (mask 0b0000111100000000) (shift 8) (output-type byte))
           (field (name SwapSource) (mask 0b1111000000000000) (shift 12) (output-type byte))
-          (field (name SystemArg0) (mask 0b1111111111110000) (shift 4) (output-type Word))
+          (field (name SystemArg0) (mask 0b0000000011110000) (shift 4) (output-type byte))
+          (field (name SystemArg1) (mask 0b0000111100000000) (shift 8) (output-type byte))
+          (field (name SystemArg2) (mask 0b1111000000000000) (shift 12) (output-type byte))
           (field (name ComplexSubClass) (mask 0b0000000011110000) (shift 4) (output-type ComplexSubTypes))
           (field (name ComplexClassEncoding_Type) (mask 0b0000011100000000) (shift 8) (output-type EncodingOperation))
-          (enum (name Operation) (children
-                                   Memory
-                                   Arithmetic
-                                   Shift
-                                   Logical
-                                   Compare
-                                   Branch
-                                   SystemCall
-                                   Move
-                                   Set
-                                   Swap
-                                   Complex
-                                   ) (cast-to byte) (max-size "ArchitectureConstants::MaxInstructionCount"))
-          (enum (name ArithmeticOps) (children
-                                       Add
-                                       Sub
-                                       Mul
-                                       Div
-                                       Rem
-                                       ) (cast-to byte) (max-size "8"))
-          (enum (name CompareStyle) (children
-                                      Equals
-                                      NotEquals
-                                      LessThan
-                                      GreaterThan
-                                      LessThanOrEqualTo
-                                      GreaterThanOrEqualTo
-                                      ) (cast-to byte) (max-size "8"))
-          (enum (name LogicalOps) (children
-                                    And
-                                    Or
-                                    Xor
-                                    Nand
-                                    Not
-                                    ) (cast-to byte) (max-size "8"))
-          (enum (name MemoryOperation) (children
-                                         Load
-                                         Store
-                                         Push
-                                         Pop
-                                         ) (cast-to byte) (max-size "4"))
-          (enum (name ComplexSubTypes) (children
-                                         Encoding
-                                         ) (cast-to byte) (max-size "16"))
-          (enum (name EncodingOperation) (children
-                                           Encode
-                                           Decode
-                                           BitSet
-                                           BitUnset
-                                           ) (cast-to byte) (max-size "8"))
+          (enum (name Operation) 
+                (children Memory
+                          Arithmetic
+                          Shift
+                          Logical
+                          Compare
+                          Branch
+                          SystemCall
+                          Move
+                          Set
+                          Swap
+                          Complex) 
+                (cast-to byte) 
+                (max-size "ArchitectureConstants::MaxInstructionCount"))
+          (enum (name ArithmeticOps) 
+                (children Add
+                          Sub
+                          Mul
+                          Div
+                          Rem) 
+                (cast-to byte) 
+                (max-size "8"))
+          (enum (name CompareStyle) 
+                (children Equals
+                          NotEquals
+                          LessThan
+                          GreaterThan
+                          LessThanOrEqualTo
+                          GreaterThanOrEqualTo) 
+                (cast-to byte) 
+                (max-size "8"))
+          (enum (name LogicalOps) 
+                (children And
+                          Or
+                          Xor
+                          Nand
+                          Not) 
+                (cast-to byte) 
+                (max-size "8"))
+          (enum (name MemoryOperation) 
+                (children Load
+                          Store
+                          Push
+                          Pop) 
+                (cast-to byte) 
+                (max-size "4"))
+          (enum (name ComplexSubTypes) 
+                (children Encoding) 
+                (cast-to byte) 
+                (max-size "16"))
+          (enum (name EncodingOperation) 
+                (children Encode
+                          Decode
+                          BitSet
+                          BitUnset) 
+                (cast-to byte) 
+                (max-size "8"))
           )

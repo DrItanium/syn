@@ -37,6 +37,12 @@
              (make-instance of list
                             (parent ?parent)
                             (contents ?contents)))
+
+(deffunction lower::mk-list-with-title
+             (?title ?parent $?contents)
+             (make-instance ?title of list
+                            (parent ?parent)
+                            (contents ?contents)))
 (deffunction lower::mk-move-op
              (?parent ?destination ?source)
              (mk-list ?parent
@@ -216,6 +222,22 @@
 
 (defclass lower::two-argument-instruction
   (is-a instruction-with-destination-and-source0))
+
+(defclass lower::instruction-with-dest-src0-and-src1
+  (is-a instruction-with-destination-and-source0)
+  (slot source-register1
+        (visibility public)
+        (storage local)
+        (default ?NONE)))
+
+(defmessage-handler lower::instruction-with-dest-src0-and-src1 resolve-arguments primary
+                    ()
+                    (str-cat (call-next-handler)
+                             " "
+                             (send ?self:source-register1
+                                   resolve)))
+(defclass lower::three-argument-instruction
+  (is-a instruction-with-dest-src0-and-src1))
 
 (defclass lower::simple-container
   (is-a node
@@ -1316,4 +1338,214 @@
           (simple-macro 2 cast8 -> move8)
           (simple-macro 2 cast24 -> move24)
           (simple-macro 2 make-data-address -> move24))
+
+(defrule lower::handle-system-call
+         ?f <- (object (is-a list)
+                       (contents system
+                                 ?reg0
+                                 ?reg1
+                                 ?reg2)
+                       (name ?name)
+                       (parent ?p))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?name of three-argument-instruction
+                        (parent ?p)
+                        (group system)
+                        (operation "")
+                        (flags)
+                        (destination ?reg0)
+                        (source-register0 ?reg1)
+                        (source-register1 ?reg2)))
+
+(defrule lower::handle-two-argument-system-call
+         ?f <- (object (is-a list)
+                       (contents system
+                                 ?reg0
+                                 ?reg1))
+         =>
+         (modify-instance ?f
+                          (contents system
+                                    ?reg0
+                                    ?reg1
+                                    r0)))
+(defrule lower::handle-one-argument-system-call
+         ?f <- (object (is-a list)
+                       (contents system
+                                 ?reg0))
+         =>
+         (modify-instance ?f
+                          (contents system
+                                    ?reg0
+                                    r0)))
+
+(defrule lower::handle-zero-argument-system-call
+         ?f <- (object (is-a list)
+                       (contents system))
+         =>
+         (modify-instance ?f
+                          (contents system
+                                    r0)))
+
+(deffacts lower::system-call-aliases
+          (simple-macro 0 syscall -> system)
+          (simple-macro 1 syscall -> system)
+          (simple-macro 2 syscall -> system)
+          (simple-macro 3 syscall -> system))
+(deffunction lower::mk-use-registers-block
+             (?name ?p ?registers $?contents)
+             (mk-list-with-title ?name
+                                 ?p
+                                 use-registers
+                                 (mk-list ?id
+                                          ?registers)
+                                 $?contents))
+(defgeneric lower::mk-system-call-block)
+
+(defmethod lower::mk-system-call-block
+  ((?name SYMBOL
+          INSTANCE-NAME)
+   (?parent SYMBOL
+            INSTANCE-NAME)
+   (?address LEXEME
+             INTEGER)
+   (?arg0 LEXEME
+          INSTANCE-NAME)
+   (?arg1 LEXEME
+          INSTANCE-NAME)
+   (?arg2 LEXEME
+          INSTANCE-NAME))
+  (mk-use-registers-block ?name
+                          ?parent
+                          (create$ addr)
+                          (mk-list ?name
+                                   set16l
+                                   addr
+                                   ?address)
+                          (mk-list ?name
+                                   system
+                                   ?arg0
+                                   ?arg1
+                                   ?arg2)))
+
+(defmethod lower::mk-system-call-block
+  ((?name SYMBOL
+          INSTANCE-NAME)
+   (?parent SYMBOL
+            INSTANCE-NAME)
+   (?address LEXEME
+             INTEGER)
+   (?arg0 LEXEME
+          INSTANCE-NAME)
+   (?arg1 LEXEME
+          INSTANCE-NAME))
+  (mk-system-call-block ?name
+                        ?parent
+                        ?address
+                        ?arg0
+                        ?arg1
+                        r0))
+
+(defmethod lower::mk-system-call-block
+  ((?name SYMBOL
+          INSTANCE-NAME)
+   (?parent SYMBOL
+            INSTANCE-NAME)
+   (?address LEXEME
+             INTEGER)
+   (?arg0 LEXEME
+          INSTANCE-NAME))
+  (mk-system-call-block ?name
+                        ?parent
+                        ?address
+                        ?arg0
+                        r0))
+
+(defmethod lower::mk-system-call-block
+  ((?name SYMBOL
+          INSTANCE-NAME)
+   (?parent SYMBOL
+            INSTANCE-NAME)
+   (?address LEXEME
+             INTEGER))
+  (mk-system-call-block ?name
+                        ?parent
+                        ?address
+                        r0))
+
+(deffacts lower::system-calls
+          (system-call 0 terminate 0x0)
+          (system-call 1 getc 0x1)
+          (system-call 1 putc 0x2)
+          (system-call 1 seed-random 0x3)
+          (system-call 1 next-random 0x4)
+          (system-call 0 skip-random 0x5))
+
+(defrule lower::system-call-block-macro:zero-args
+         ?f <- (object (is-a list)
+                       (contents ?op)
+                       (name ?name)
+                       (parent ?parent))
+         (system-call 0 
+                      ?op 
+                      ?address)
+         =>
+         (unmake-instance ?f)
+         (mk-system-call-block ?name
+                               ?parent
+                               ?address))
+
+(defrule lower::system-call-block-macro:one-arg
+         ?f <- (object (is-a list)
+                       (contents ?op
+                                 ?arg0)
+                       (name ?name)
+                       (parent ?parent))
+         (system-call 1 
+                      ?op 
+                      ?address)
+         =>
+         (unmake-instance ?f)
+         (mk-system-call-block ?name
+                               ?parent
+                               ?address
+                               ?arg0))
+
+(defrule lower::system-call-block-macro:two-arg
+         ?f <- (object (is-a list)
+                       (contents ?op
+                                 ?arg0
+                                 ?arg1)
+                       (name ?name)
+                       (parent ?parent))
+         (system-call 2 
+                      ?op 
+                      ?address)
+         =>
+         (unmake-instance ?f)
+         (mk-system-call-block ?name
+                               ?parent
+                               ?address
+                               ?arg0
+                               ?arg1))
+
+(defrule lower::system-call-block-macro:three-arg
+         ?f <- (object (is-a list)
+                       (contents ?op
+                                 ?arg0
+                                 ?arg1
+                                 ?arg2)
+                       (name ?name)
+                       (parent ?parent))
+         (system-call 3 
+                      ?op 
+                      ?address)
+         =>
+         (unmake-instance ?f)
+         (mk-system-call-block ?name
+                               ?parent
+                               ?address
+                               ?arg0
+                               ?arg1
+                               ?arg2))
 
