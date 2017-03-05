@@ -82,7 +82,7 @@
           (field (name SetSignature) (mask 0b0000111111110000) (shift 4) (output-type byte))
           (field (name SwapDestination) (mask 0b0000111100000000) (shift 8) (output-type byte))
           (field (name SwapSource) (mask 0b1111000000000000) (shift 12) (output-type byte))
-          (field (name SystemArg0) (mask 0b0000001111110000) (shift 4) (output-type byte))
+          (field (name SystemArg0) (mask 0b1111111111110000) (shift 4) (output-type Word))
           (field (name ComplexSubClass) (mask 0b0000000011110000) (shift 4) (output-type ComplexSubTypes))
           (field (name ComplexClassEncoding_Type) (mask 0b0000011100000000) (shift 8) (output-type EncodingOperation))
           (enum (name Operation) (children

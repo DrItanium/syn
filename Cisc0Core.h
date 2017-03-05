@@ -35,6 +35,7 @@
 #include <memory>
 #include <vector>
 #include <tuple>
+#include "IODevice.h"
 
 namespace cisc0 {
 	using HWord = uint8_t;
@@ -59,7 +60,7 @@ namespace cisc0 {
 		SegmentCount = 256,
 		AddressMax = 65536 * SegmentCount,
 		MaxInstructionCount = 16,
-		MaxSystemCalls = 64,
+		MaxSystemCalls = 0x1000,
 		Bitmask = 0b1111,
 		// unlike iris16 and iris32, there is a limited set of registers with
 		// a majority of them marked for explicit usage, instructions

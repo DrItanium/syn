@@ -30,6 +30,7 @@
 #include "Problem.h"
 #include <utility>
 #include <map>
+#include "IrisCoreSecondaryStorageController.h"
 
 namespace cisc0 {
 	/*
@@ -82,7 +83,7 @@ namespace cisc0 {
 		}
 	}
 
-	Core::Core() noexcept { }
+	Core::Core() noexcept : _rng(0) { }
 	Core::~Core() noexcept { }
 
 	void Core::initialize() {
