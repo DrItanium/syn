@@ -1684,11 +1684,13 @@
 
 (deffacts lower::lower-eight-registers:parameter-passing-conventions
           (alias r7 <- result-register <- result)
-          (alias r6 <- temporary-register4 <- temp4 <- t4)
-          (alias r5 <- temporary-register3 <- temp3 <- t3)
-          (alias r4 <- temporary-register2 <- temp2 <- t2)
-          (alias r3 <- temporary-register1 <- temp1 <- t1)
-          (alias r2 <- temporary-register0 <- temp0 <- t0)
-          (alias r1 <- argument-register1 <- arg1 <- rest-parameter)
+          (alias r6 <- temporary-register3 <- temp3 <- t3)
+          (alias r5 <- temporary-register2 <- temp2 <- t2)
+          (alias r4 <- temporary-register1 <- temp1 <- t1)
+          (alias r3 <- temporary-register0 <- temp0 <- t0)
+          (alias r2 <- argument-register2 <- arg2 <- third-parameter <- rest-parameter)
+          (alias r1 <- argument-register1 <- arg1 <- second-parameter)
           (alias r0 <- argument-register0 <- arg0 <- first-parameter))
+
+; now we need to provide macros for loading arguments into registers from the rest-parameter
 
