@@ -373,7 +373,10 @@ namespace cisc0 {
 			auto second = current.getCompareImmediateFlag() ? next.getUpper() : registerValue(next.getCompareRegister1());
 			auto compareResult = translationTable.find(current.getCompareType());
 			throwIfNotFound(compareResult, translationTable, "Illegal compare type!");
-			getConditionRegister() = _compare.performOperation(compareResult->second, first, second);
+			auto result = _compare.performOperation(compareResult->second, first, second);
+			// make sure that the condition takes up the entire width of the
+			// register, that way normal operations will make sense!
+			getConditionRegister() = result != 0 ? 0xFFFFFFFF : 0x00000000;
 		} else if (tControl == Operation::SystemCall) {
 			auto action = getAddressRegister();
 			if (getAddressRegister() >= ArchitectureConstants::MaxSystemCalls) {
