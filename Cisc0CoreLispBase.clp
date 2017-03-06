@@ -1046,6 +1046,11 @@
                         (operation ?cond)
                         (flags immediate)
                         (destination ?r0)))
+(deffacts lower::branch-simple-macros
+          (simple-macro 1 branch-unconditional-immediate -> branch unconditional immediate)
+          (simple-macro 1 bui -> branch-unconditional-immediate)
+          (simple-macro 1 branch-conditional-immediate -> branch conditional immediate)
+          (simple-macro 1 bci -> branch-conditional-immediate))
 ;------------------------------------------------------------------------------
 ; Macros
 ;------------------------------------------------------------------------------
@@ -1169,7 +1174,6 @@
           (macro-with-constant-immediate (match clear-register)
                                          (replacement set ?*bitmask0*)
                                          (constant 0x00000000))
-
           (simple-macro 1 incr -> increment)
           (simple-macro 1 decr -> decrement)
           (simple-macro 1 1+ -> increment)
@@ -1227,7 +1231,7 @@
           (base-register r15))
 
 (defrule lower::parse-hardcoded-alias-facts:front
-         (declare (salience ?*priority:second*))
+         (declare (salience ?*priority:two*))
          ?f <- (alias ?a <- ?b <- $?rest)
          =>
          (retract ?f)
@@ -1236,7 +1240,7 @@
            (assert (alias ?b <- $?rest))))
 
 (defrule lower::parse-hardcoded-alias-facts
-         (declare (salience ?*priority:second*))
+         (declare (salience ?*priority:two*))
          ?f <- (alias ?a <- ?b)
          =>
          (retract ?f)
@@ -1395,7 +1399,7 @@
              (mk-list-with-title ?name
                                  ?p
                                  use-registers
-                                 (mk-list ?id
+                                 (mk-list ?name
                                           ?registers)
                                  $?contents))
 (defgeneric lower::mk-system-call-block)
@@ -1589,4 +1593,68 @@
                                     $?body
                                     (mk-list ?name
                                              return))))
+
+(deffacts lower::assembler-temporary-declaration
+          (alias r8 <- assembler-temporary <- at)
+          (alias assembler-temporary <- asm-temp)
+          (alias assembler-temporary <- atmp))
+
+(defrule lower::loop-macro-default
+         "Construct a sub section with a body and a branch back to the target label!"
+         ?f <- (object (is-a list)
+                       (contents loop
+                                 ?loop-title
+                                 $?body)
+                       (name ?name))
+         =>
+         (modify-instance ?f
+                          (contents label
+                                    ?loop-title
+                                    $?body
+                                    (mk-list ?name
+                                             bui
+                                             ?loop-title))))
+
+
+(defrule lower::loop-macro-gensym*
+         "Generate a loop body without caring about the title of the loop, this means that you can only restart the loop at the bottom!"
+         (declare (salience 1))
+         ?f <- (object (is-a list)
+                       (contents loop
+                                 ?loop-title
+                                 $?body)
+                       (name ?name))
+         (object (is-a list)
+                 (name ?loop-title)
+                 (contents gensym*))
+         =>
+         ; delete it 
+         (unmake-instance ?loop-title)
+         (modify-instance ?f
+                          (contents loop
+                                    (gensym*)
+                                    $?body)))
+(defrule lower::parse-ascii-constant-immediate-check
+         (declare (salience ?*priority:first*))
+         ?f <- (ascii-check-macro ?title ?value)
+         =>
+         (retract ?f)
+         (assert (macro-with-constant-immediate (match ?title)
+                                                (replacement eqi)
+                                                (constant ?value))))
+(deffacts lower::ascii-check-macros
+          (ascii-check-macro is-left-paren 0x28)
+          (ascii-check-macro is-right-paren 0x29)
+          (simple-macro 1 is-lparen -> is-left-paren)
+          (simple-macro 1 is-rparent -> is-right-paren)
+          (simple-macro 1 is-open-paren -> is-lparen)
+          (simple-macro 1 is-close-parent -> is-rparen)
+          (simple-macro 1 lparenp -> is-lparen)
+          (simple-macro 1 rparenp -> is-rparen)
+          (simple-macro 1 open-parenp -> is-open-paren)
+          (simple-macro 1 close-parenp -> is-close-paren)
+          (ascii-check-macro is-space 0x20)
+          (ascii-check-macro is-new-line 0x0a)
+          (ascii-check-macro is-null-char 0x00)
+          (simple-macro 1 is-null -> is-null-char))
 
