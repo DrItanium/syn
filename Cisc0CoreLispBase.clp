@@ -1658,3 +1658,27 @@
           (ascii-check-macro is-null-char 0x00)
           (simple-macro 1 is-null -> is-null-char))
 
+(defrule lower::parse-multiply-accumulate-operation
+         ?f <- (object (is-a list)
+                       (contents multiply-accumulate
+                                 ?dest
+                                 ?src0
+                                 ?src1)
+                       (name ?name)
+                       (parent ?p))
+         =>
+         (unmake-instance ?f)
+         (mk-container ?name 
+                       ?p
+                       (mk-list ?name
+                                mul
+                                ?dest
+                                ?src0)
+                       (mk-list ?name
+                                add
+                                ?dest
+                                ?src1)))
+(deffacts lower::multiply-accumulate-macros
+          (simple-macro 3 mac -> multiply-accumulate))
+
+
