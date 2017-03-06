@@ -1565,15 +1565,28 @@
                           ?f2)
          (assert (simple-macro ?count ?title -> $?symbols)))
 
-
 (defrule lower::def-systemcall
          (declare (salience ?*priority:first*))
          ?f <- (object (is-a list)
-             (contents defsystemcall
-                       ?title
-                       ?num-args
-                       ?address))
+                       (contents defsystemcall
+                                 ?title
+                                 ?num-args
+                                 ?address))
          =>
          (unmake-instance ?f)
          (assert (system-call ?num-args ?title ?address)))
+
+(defrule lower::defunc-basic
+         ?f <- (object (is-a list)
+                       (contents defunc-basic
+                                 ?title
+                                 $?body)
+                       (name ?name))
+         =>
+         (modify-instance ?f
+                          (contents label 
+                                    ?title
+                                    $?body
+                                    (mk-list ?name
+                                             return))))
 
