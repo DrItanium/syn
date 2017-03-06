@@ -1546,4 +1546,34 @@
                                ?arg0
                                ?arg1
                                ?arg2))
+;------------------------------------------------------------------------------
+; Simple macro declaration inside a program!
+;------------------------------------------------------------------------------
+(defrule lower::def-simple-macro
+         (declare (salience ?*priority:first*))
+         ?f <- (object (is-a list)
+                       (contents defsimplemacro 
+                                 ?title
+                                 ?count
+                                 ?replacement))
+         ?f2 <- (object (is-a list)
+                        (name ?replacement)
+                        (contents replace-with
+                                  $?symbols))
+         =>
+         (unmake-instance ?f 
+                          ?f2)
+         (assert (simple-macro ?count ?title -> $?symbols)))
+
+
+(defrule lower::def-systemcall
+         (declare (salience ?*priority:first*))
+         ?f <- (object (is-a list)
+             (contents defsystemcall
+                       ?title
+                       ?num-args
+                       ?address))
+         =>
+         (unmake-instance ?f)
+         (assert (system-call ?num-args ?title ?address)))
 
