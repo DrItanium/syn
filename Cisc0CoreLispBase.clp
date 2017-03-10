@@ -2073,8 +2073,22 @@
                                  $?arguments)
                        (name ?name))
          (test (> (length$ ?arguments)
-                8))
+                  8))
          =>
          (printout werror 
-          "ERROR: found a funcall statement with too many arguments, offending object is " ?name)
+                   "ERROR: found a funcall statement with too many arguments, offending object is " ?name)
+         (halt))
+
+(defrule lower::funcall-code:too-many-arguments:immediate
+         ?f <- (object (is-a list)
+                       (contents funcall
+                                 immediate
+                                 ?
+                                 $?arguments)
+                       (name ?name))
+         (test (> (length$ ?arguments)
+                  8))
+         =>
+         (printout werror 
+                   "ERROR: found a funcall statement with too many arguments, offending object is " ?name)
          (halt))
