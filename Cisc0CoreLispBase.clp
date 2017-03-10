@@ -1971,3 +1971,89 @@
          (unmake-instance ?f)
          (progn$ (?register $?registers)
                  (assert (basic-register ?register))))
+
+;-----------------------------------------------------------------------------
+; Funcall related operations
+;-----------------------------------------------------------------------------
+; When dealing with a function call, we have to setup the argument memory space
+; used during function calls. This means that we have to have a memory
+; allocator setup ahead of time to do this! While this is hyper dumb, it does
+; make for a very interesting and challenging design!
+;-----------------------------------------------------------------------------
+(defrule lower::funcall-code
+         ?f <- (object (is-a list)
+                       (contents funcall
+                                 ?symbol
+                                 $?arguments)
+                       (name ?name)
+                       (parent ?parent))
+         (test (<= 0 (length$ ?arguments) 8))
+         =>
+         ; since we have between 0 and 8 arguments, we have to allocate a
+         ; memory block useful for our purposes which is 16 words in size
+         (unmake-instance ?f)
+         (bind ?children
+               (create$))
+         (bind ?invocation
+               (symbol-to-instance-name (gensym*)))
+         (progn$ (?arg ?arguments)
+                 (bind ?children
+                       ?children
+                       (mk-list ?invocation
+                                (sym-cat starg
+                                         (- ?arg-index
+                                            1))
+                                ?arg)))
+         (mk-use-registers-block ?name
+                                 ?parent
+                                 (create$ args)
+                                 (mk-list-with-title ?invocation
+                                                     ?name
+                                                     load-arguments
+                                                     ?children
+                                                     (mk-list ?invocation
+                                                              branch
+                                                              call
+                                                              ?symbol))))
+
+
+
+
+(defrule lower::funcall-code:immediate
+         ?f <- (object (is-a list)
+                       (contents funcall
+                                 immediate
+                                 ?symbol
+                                 $?arguments)
+                       (name ?name)
+                       (parent ?parent))
+         (test (<= 0 (length$ ?arguments) 8))
+         =>
+         ; since we have between 0 and 8 arguments, we have to allocate a
+         ; memory block useful for our purposes which is 16 words in size
+         (unmake-instance ?f)
+         (bind ?children
+               (create$))
+         (bind ?invocation
+               (symbol-to-instance-name (gensym*)))
+         (progn$ (?arg ?arguments)
+                 (bind ?children
+                       ?children
+                       (mk-list ?invocation
+                                (sym-cat starg
+                                         (- ?arg-index
+                                            1))
+                                ?arg)))
+         (mk-use-registers-block ?name
+                                 ?parent
+                                 (create$ args)
+                                 (mk-list-with-title ?invocation
+                                                     ?name
+                                                     load-arguments
+                                                     ?children
+                                                     (mk-list ?invocation
+                                                              branch
+                                                              call
+                                                              immediate
+                                                              ?symbol))))
+
