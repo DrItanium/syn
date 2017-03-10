@@ -425,12 +425,20 @@
          (progn$ (?l (send ?f resolve))
                  (printout t ?l crlf)))
 
-
+(defrule lower::convert-operations-fact-to-mass-operation-facts
+         "Construct many operation facts from a single operations fact!"
+         (declare (salience ?*priority:first*))
+         ?f <- (operations ?group
+                           $?sub-ops)
+         =>
+         (retract ?f)
+         (progn$ (?sub-op $?sub-ops)
+                 (assert (operation ?group
+                                    ?sub-op))))
 (deffacts lower::legal-shift-operations
-          (operation shift
-                     right)
-          (operation shift
-                     left))
+          (operations shift
+                      left
+                      right))
 
 (defrule lower::construct-shift-simple-macros
          (declare (salience ?*priority:first*))
@@ -506,16 +514,12 @@
          (halt))
 
 (deffacts lower::legal-logical-operations
-          (operation logical
-                     and)
-          (operation logical
-                     or)
-          (operation logical
-                     not)
-          (operation logical
-                     xor)
-          (operation logical
-                     nand))
+          (operations logical
+                      and
+                      or
+                      not
+                      xor
+                      nand))
 
 (defrule lower::construct-logical-group-simple-macros
          (declare (salience ?*priority:first*))
@@ -608,14 +612,11 @@
          (halt))
 
 (deffacts lower::memory-operations
-          (operation memory
-                     load)
-          (operation memory
-                     store)
-          (operation memory
-                     push)
-          (operation memory
-                     pop)
+          (operations memory
+                      load
+                      store
+                      push
+                      pop)
           (stack-operation push)
           (stack-operation pop)
           (load-store-operation load)
@@ -682,16 +683,12 @@
          (halt))
 
 (deffacts lower::arithmetic-operations
-          (operation arithmetic
-                     add)
-          (operation arithmetic
-                     sub)
-          (operation arithmetic
-                     mul)
-          (operation arithmetic
-                     div)
-          (operation arithmetic
-                     rem))
+          (operations arithmetic
+                      add
+                      sub
+                      mul
+                      div
+                      rem))
 
 (defrule lower::generate-simple-macro-arithmetic-cmd
          "Generate the simple-macros automatically on startup"
@@ -759,8 +756,9 @@
                         (destination ?dest)
                         (source0 ?src0)))
 (deffacts lower::simple-operation-with-bitmask
-          (simple-operation-with-bitmask move)
-          (simple-operation-with-bitmask set))
+          (operations simple-operation-with-bitmask
+                      move
+                      set))
 
 (defrule lower::construct-simple-operation-with-bitmask
          ?f <- (object (is-a list)
@@ -772,7 +770,8 @@
                        (parent ?p))
          (object (is-a bitmask)
                  (name ?bitmask))
-         (simple-operation-with-bitmask ?operation)
+         (operation simple-operation-with-bitmask
+                    ?operation)
          =>
          (unmake-instance ?f)
          (make-instance ?n of two-argument-instruction
@@ -784,18 +783,13 @@
                         (source0 ?src0)))
 
 (deffacts lower::compare-operations
-          (operation compare
-                     ==)
-          (operation compare
-                     !=)
-          (operation compare
-                     <)
-          (operation compare
-                     <=)
-          (operation compare
-                     >)
-          (operation compare
-                     >=))
+          (operations compare
+                      ==
+                      !=
+                      <
+                      <=
+                      >
+                      >=))
 (deffacts lower::compare-translation-macros
           (simple-macro 2 eq -> ==)
           (simple-macro 2 eqi -> ==i)
@@ -904,16 +898,14 @@
                         (source0 ?src0)))
 
 (deffacts lower::legal-complex-operations
-          (operation complex
-                     encoding)
-          (operation encoding
-                     decode)
-          (operation encoding
-                     encode)
-          (operation encoding
-                     bitset)
-          (operation encoding
-                     bitunset))
+          (operations complex
+                      encoding)
+          (operations encoding
+                      decode
+                      encode
+                      bitset
+                      bitunset))
+
 (defrule lower::generate-encoding-simple-macros
          (declare (salience ?*priority:first*))
          (operation encoding
