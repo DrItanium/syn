@@ -361,9 +361,7 @@
 (defrule lower::construct-section
          ?f <- (object (is-a list)
                        (contents section
-                                 ?section&:(not (neq ?section
-                                                     code
-                                                     data))
+                                 ?section&:(symbolp ?section)
                                  $?body)
                        (name ?name)
                        (parent ?p))
@@ -439,12 +437,14 @@
          (operation shift
                     ?direction)
          =>
-         (bind ?base-title
-               (sym-cat shift-
-                        ?direction))
-         (assert (simple-macro 2 ?base-title -> shift ?direction)
+         (bind ?base-outcome
+               shift
+               ?direction)
+         (assert (simple-macro 2 (bind ?base-title
+                                       (sym-cat shift-
+                                                ?direction)) -> ?base-outcome)
                  (simple-macro 2 (sym-cat ?base-title
-                                          -immediate) -> shift ?direction immediate)))
+                                          -immediate) -> ?base-outcome immediate)))
 
 (defrule lower::construct-shift-instruction:with-immediate
          ?f <- (object (is-a list)
@@ -1917,8 +1917,7 @@
           (simple-macro 1 starg4 -> store-argument4)
           (simple-macro 1 starg5 -> store-argument5)
           (simple-macro 1 starg6 -> store-argument6)
-          (simple-macro 1 starg7 -> store-argument7)
-          )
+          (simple-macro 1 starg7 -> store-argument7))
 
 (defrule lower::argument-manipulation-block
          "Preserve the old arguments register and load r6 into addr for loading"
@@ -1935,4 +1934,63 @@
                                  (mk-load-args-register ?n)
                                  $?body))
 
+;-----------------------------------------------------------------------------
+; Bootstrap rules, makes it possible to manipulate the set of simple macros
+; easily at runtime.
+;-----------------------------------------------------------------------------
+(defrule lower::runtime-generate-simple-macros
+         ?f <- (object (is-a list)
+                       (contents simple-macro
+                                 ?count
+                                 ?name
+                                 ->
+                                 $?replacement))
+         =>
+         (unmake-instance ?f)
+         (assert (simple-macro ?count ?name -> $?replacement)))
 
+(defrule lower::runtime-ungenerate-simple-macros
+         ?f <- (object (is-a list)
+                       (contents delete
+                                 simple-macro
+                                 ?count
+                                 ?name))
+         ?f2 <- (simple-macro ?count ?name -> $?)
+         =>
+         (retract ?f2)
+         (unmake-instance ?f))
+(defrule lower::runtime-ungenerate-simple-macros:no-exist
+         ?f <- (object (is-a list)
+                       (contents delete
+                                 simple-macro
+                                 ?count
+                                 ?name))
+         (not (simple-macro ?count ?name -> $?))
+         =>
+         (printout werror
+                   "ERROR: couldn't delete simple-macro " ?count " " ?name " because it doesn't exist!" crlf)
+         (halt))
+
+(defrule lower::runtime-make-alias
+         ?f <- (object (is-a list)
+                       (contents aliases
+                                 $?aliases))
+         =>
+         (unmake-instance ?f)
+         (assert (aliases $?aliases)))
+
+(defrule lower::make-basic-register-declaration
+         ?f <- (object (is-a list)
+                       (contents basic-register
+                                 ?title))
+         =>
+         (unmake-instance ?f)
+         (assert (basic-register ?title)))
+(defrule lower::mass-basic-register-declarations
+         ?f <- (object (is-a list)
+                       (contents basic-registers
+                                 $?registers))
+         =>
+         (unmake-instance ?f)
+         (progn$ (?register $?registers)
+                 (assert (basic-register ?register))))
