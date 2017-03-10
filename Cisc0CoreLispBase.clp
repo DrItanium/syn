@@ -175,9 +175,19 @@
 
 (defmessage-handler lower::instruction resolve primary
                     ()
+                    (bind ?rflags
+                          (create$))
+                    (progn$ (?flag (dynamic-get flags))
+                            (bind ?rflags
+                                  ?rflags
+                                  (send ?flag
+                                        resolve)))
+
                     (str-cat (dynamic-get group)
                              " "
-                             (implode$ (dynamic-get flags))
+                             (dynamic-get operation)
+                             " "
+                             (implode$ ?rflags)
                              " "
                              (send ?self
                                    resolve-arguments)))
@@ -472,8 +482,8 @@
                         (group shift)
                         (operation ?direction)
                         (flags immediate)
-                        (destination ?dest)
-                        (source0 ?src)))
+                        (destination-register ?dest)
+                        (source-register0 ?src)))
 
 (defrule lower::construct-shift-instruction
          ?f <- (object (is-a list)
@@ -492,8 +502,8 @@
                         (group shift)
                         (operation ?direction)
                         (flags)
-                        (destination ?dest)
-                        (source0 ?src)))
+                        (destination-register ?dest)
+                        (source-register0 ?src)))
 (deffunction lower::print-message-about-offending-object
              (?name)
              (create$ tab "See " ?name " for more information!"))
@@ -569,8 +579,8 @@
                         (group logical)
                         (operation ?operation)
                         (flags)
-                        (destination ?dest)
-                        (source0 ?src)))
+                        (destination-register ?dest)
+                        (source-register0 ?src)))
 
 
 (defrule lower::construct-logical-instruction:immediate
@@ -595,8 +605,8 @@
                         (operation ?operation)
                         (flags immediate
                                ?bitmask)
-                        (destination ?destination)
-                        (source0 ?value)))
+                        (destination-register ?destination)
+                        (source-register0 ?value)))
 (defrule lower::illegal-logical-instruction
          ?f <- (object (is-a list)
                        (contents logical
@@ -647,7 +657,7 @@
                         (operation ?operation)
                         (flags ?bitmask
                                ?direct)
-                        (destination ?immediate-value)))
+                        (destination-register ?immediate-value)))
 
 (defrule lower::construct-memory-operation::stack-operation
          ?f <- (object (is-a list)
@@ -667,7 +677,7 @@
                         (group memory)
                         (operation ?operation)
                         (flags ?bitmask)
-                        (destination ?destination)))
+                        (destination-register ?destination)))
 (defrule lower::illegal-memory-operation
          ?f <- (object (is-a list)
                        (contents memory
@@ -716,8 +726,8 @@
                         (group arithmetic)
                         (operation ?operation)
                         (flags)
-                        (destination ?destination)
-                        (source0 ?source)))
+                        (destination-register ?destination)
+                        (source-register0 ?source)))
 
 (defrule lower::construct-arithmetic-operation:immediate
          ?f <- (object (is-a list)
@@ -737,8 +747,8 @@
                         (group arithmetic)
                         (operation ?operation)
                         (flags immediate)
-                        (destination ?destination)
-                        (source0 ?source)))
+                        (destination-register ?destination)
+                        (source-register0 ?source)))
 (defrule lower::construct-swap-operation
          ?f <- (object (is-a list)
                        (contents swap
@@ -753,8 +763,8 @@
                         (group swap)
                         (operation "")
                         (flags)
-                        (destination ?dest)
-                        (source0 ?src0)))
+                        (destination-register ?dest)
+                        (source-register0 ?src0)))
 (deffacts lower::simple-operation-with-bitmask
           (operations simple-operation-with-bitmask
                       move
@@ -779,8 +789,8 @@
                         (group ?operation)
                         (operation "")
                         (flags ?bitmask)
-                        (destination ?dest)
-                        (source0 ?src0)))
+                        (destination-register ?dest)
+                        (source-register0 ?src0)))
 
 (deffacts lower::compare-operations
           (operations compare
@@ -873,8 +883,8 @@
                         (group compare)
                         (operation ?operation)
                         (flags)
-                        (destination ?dest)
-                        (source0 ?src0)))
+                        (destination-register ?dest)
+                        (source-register0 ?src0)))
 
 (defrule lower::construct-compare-operation:immediate
          ?f <- (object (is-a list)
@@ -894,8 +904,8 @@
                         (group compare)
                         (operation ?operation)
                         (flags immediate)
-                        (destination ?dest)
-                        (source0 ?src0)))
+                        (destination-register ?dest)
+                        (source-register0 ?src0)))
 
 (deffacts lower::legal-complex-operations
           (operations complex
@@ -952,8 +962,8 @@
                         (group branch)
                         (operation if)
                         (flags ?call-flag)
-                        (destination ?r0)
-                        (source0 ?r1)))
+                        (destination-register ?r0)
+                        (source-register0 ?r1)))
 
 (defrule lower::construct-branch-encoding:call
          ?f <- (object (is-a list)
@@ -969,7 +979,7 @@
                         (group branch)
                         (operation call)
                         (flags)
-                        (destination ?r0)))
+                        (destination-register ?r0)))
 
 (defrule lower::construct-branch-encoding:call-immediate
          ?f <- (object (is-a list)
@@ -986,7 +996,7 @@
                         (group branch)
                         (operation call)
                         (flags immediate)
-                        (destination ?r0)))
+                        (destination-register ?r0)))
 
 (defrule lower::construct-branch-encoding:jump
          ?f <- (object (is-a list)
@@ -1003,7 +1013,7 @@
                         (group branch)
                         (operation ?cond)
                         (flags)
-                        (destination ?r0)))
+                        (destination-register ?r0)))
 
 (defrule lower::construct-branch-encoding:jump-immediate
          ?f <- (object (is-a list)
@@ -1021,7 +1031,7 @@
                         (group branch)
                         (operation ?cond)
                         (flags immediate)
-                        (destination ?r0)))
+                        (destination-register ?r0)))
 (deffacts lower::branch-simple-macros
           (simple-macro 1 branch-unconditional-immediate -> branch unconditional immediate)
           (simple-macro 1 bui -> branch-unconditional-immediate)
@@ -1400,7 +1410,7 @@
                         (group system)
                         (operation "")
                         (flags)
-                        (destination ?reg0)
+                        (destination-register ?reg0)
                         (source-register0 ?reg1)
                         (source-register1 ?reg2)))
 
@@ -2056,4 +2066,15 @@
                                                               call
                                                               immediate
                                                               ?symbol))))
-
+(defrule lower::funcall-code:too-many-arguments
+         ?f <- (object (is-a list)
+                       (contents funcall
+                                 ?
+                                 $?arguments)
+                       (name ?name))
+         (test (> (length$ ?arguments)
+                8))
+         =>
+         (printout werror 
+          "ERROR: found a funcall statement with too many arguments, offending object is " ?name)
+         (halt))
