@@ -1990,6 +1990,69 @@
 ; allocator setup ahead of time to do this! While this is hyper dumb, it does
 ; make for a very interesting and challenging design!
 ;-----------------------------------------------------------------------------
+(deffunction lower::allocate-stack-space
+             (?parent ?size)
+             (mk-list ?parent
+                      subi
+                      sp
+                      ?size))
+(deffunction lower::copy-register
+             (?parent ?destination ?source)
+             (mk-list ?parent
+                      move32
+                      ?destination
+                      ?source))
+
+(deffunction lower::allocate-argument-space
+             (?parent)
+             (create$ (allocate-stack-space ?parent
+                                            0x0f)
+                      (copy-register ?parent
+                                     args
+                                     sp)))
+
+(deffunction lower::mk-store-argument
+             (?parent ?index ?argument)
+             (mk-list ?parent
+                      (sym-cat starg
+                               ?index)
+                      ?argument))
+(deffunction lower::mk-store-argument-list
+             (?parent $?arguments)
+             (bind ?children
+                   (create$))
+             (progn$ (?arg ?arguments)
+                     (bind ?children
+                           ?children
+                           (mk-store-argument ?parent
+                                              (- ?arg-index 1)
+                                              ?arg)))
+             ?children)
+
+(deffunction lower::mk-funcall-block
+             (?name ?parent ?arguments ?flags ?destination)
+             (bind ?sub-parent
+                   (symbol-to-instance-name (gensym*)))
+             (bind ?children
+                   (mk-store-argument-list ?sub-parent
+                                           ?arguments))
+             (mk-use-registers-block ?name
+                                     ?parent
+                                     (create$ args
+                                              sp)
+                                     ; use stack space via subtraction
+                                     (allocate-argument-space ?name)
+                                     (mk-list-with-title ?sub-parent
+                                                         ?name
+                                                         load-arguments
+                                                         ?children
+                                                         (mk-list ?sub-parent
+                                                                  branch
+                                                                  call
+                                                                  $?flags
+                                                                  ?destination))
+                                     ; the act of returning will cause the stack to be reconstituted!
+                                     ))
 (defrule lower::funcall-code
          ?f <- (object (is-a list)
                        (contents funcall
@@ -2002,32 +2065,11 @@
          ; since we have between 0 and 8 arguments, we have to allocate a
          ; memory block useful for our purposes which is 16 words in size
          (unmake-instance ?f)
-         (bind ?children
-               (create$))
-         (bind ?invocation
-               (symbol-to-instance-name (gensym*)))
-         (progn$ (?arg ?arguments)
-                 (bind ?children
-                       ?children
-                       (mk-list ?invocation
-                                (sym-cat starg
-                                         (- ?arg-index
-                                            1))
-                                ?arg)))
-         (mk-use-registers-block ?name
-                                 ?parent
-                                 (create$ args)
-                                 (mk-list-with-title ?invocation
-                                                     ?name
-                                                     load-arguments
-                                                     ?children
-                                                     (mk-list ?invocation
-                                                              branch
-                                                              call
-                                                              ?symbol))))
-
-
-
+         (mk-funcall-block ?name
+                           ?parent
+                           ?arguments
+                           (create$)
+                           ?symbol))
 
 (defrule lower::funcall-code:immediate
          ?f <- (object (is-a list)
@@ -2042,30 +2084,12 @@
          ; since we have between 0 and 8 arguments, we have to allocate a
          ; memory block useful for our purposes which is 16 words in size
          (unmake-instance ?f)
-         (bind ?children
-               (create$))
-         (bind ?invocation
-               (symbol-to-instance-name (gensym*)))
-         (progn$ (?arg ?arguments)
-                 (bind ?children
-                       ?children
-                       (mk-list ?invocation
-                                (sym-cat starg
-                                         (- ?arg-index
-                                            1))
-                                ?arg)))
-         (mk-use-registers-block ?name
-                                 ?parent
-                                 (create$ args)
-                                 (mk-list-with-title ?invocation
-                                                     ?name
-                                                     load-arguments
-                                                     ?children
-                                                     (mk-list ?invocation
-                                                              branch
-                                                              call
-                                                              immediate
-                                                              ?symbol))))
+         (mk-funcall-block ?name
+                           ?parent
+                           ?arguments
+                           (create$ immediate)
+                           ?symbol))
+
 (defrule lower::funcall-code:too-many-arguments
          ?f <- (object (is-a list)
                        (contents funcall
