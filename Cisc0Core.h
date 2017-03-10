@@ -204,7 +204,7 @@ namespace cisc0 {
 			virtual void shutdown() override;
 			virtual void dump(std::ostream& stream) override;
 			virtual void link(std::istream& stream) override;
-			void installSystemHandler(byte index, SystemFunction fn);
+			void installSystemHandler(Word index, SystemFunction fn);
 			virtual bool cycle() override;
 			bool shouldExecute() const { return execute; }
 		private:
@@ -289,7 +289,14 @@ namespace cisc0 {
 			void complexOperation(DecodedInstruction&& inst);
 			void encodingOperation(DecodedInstruction&& inst);
 			void performEncodeOp(DecodedInstruction&& inst);
-			void memoryManipulationOperation(DecodedInstruction&& inst);
+        private:
+            void compareOperation(DecodedInstruction&& inst);
+            void systemCallOperation(DecodedInstruction&& inst);
+            void branchOperation(DecodedInstruction&& inst);
+            void memoryOperation(DecodedInstruction&& inst);
+            void logicalOperation(DecodedInstruction&& inst);
+            void arithmeticOperation(DecodedInstruction&& inst);
+            void shiftOperation(DecodedInstruction&& inst);
 		private:
 			bool execute = true,
 				 advanceIp = true;
