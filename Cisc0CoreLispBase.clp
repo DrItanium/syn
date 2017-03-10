@@ -758,10 +758,13 @@
                         (flags)
                         (destination ?dest)
                         (source0 ?src0)))
+(deffacts lower::simple-operation-with-bitmask
+          (simple-operation-with-bitmask move)
+          (simple-operation-with-bitmask set))
 
-(defrule lower::construct-move-operation
+(defrule lower::construct-simple-operation-with-bitmask
          ?f <- (object (is-a list)
-                       (contents move
+                       (contents ?operation
                                  ?bitmask
                                  ?dest
                                  ?src0)
@@ -769,31 +772,12 @@
                        (parent ?p))
          (object (is-a bitmask)
                  (name ?bitmask))
+         (simple-operation-with-bitmask ?operation)
          =>
          (unmake-instance ?f)
          (make-instance ?n of two-argument-instruction
                         (parent ?p)
-                        (group move)
-                        (operation "")
-                        (flags ?bitmask)
-                        (destination ?dest)
-                        (source0 ?src0)))
-
-(defrule lower::construct-set-operation
-         ?f <- (object (is-a list)
-                       (contents set
-                                 ?bitmask
-                                 ?dest
-                                 ?src0)
-                       (name ?n)
-                       (parent ?p))
-         (object (is-a bitmask)
-                 (name ?bitmask))
-         =>
-         (unmake-instance ?f)
-         (make-instance ?n of two-argument-instruction
-                        (parent ?p)
-                        (group set)
+                        (group ?operation)
                         (operation "")
                         (flags ?bitmask)
                         (destination ?dest)
@@ -1319,6 +1303,7 @@
 
 (deffacts lower::aliases
           (alias r15 <- instruction-pointer <- ip)
+          (alias instruction-pointer <- program-counter <- pc)
           (alias r14 <- stack-pointer <- sp)
           (alias r13 <- condition-register <- cond)
           (alias r12 <- address-register <- addr)
@@ -1977,7 +1962,7 @@
                                  $?aliases))
          =>
          (unmake-instance ?f)
-         (assert (aliases $?aliases)))
+         (assert (alias $?aliases)))
 
 (defrule lower::make-basic-register-declaration
          ?f <- (object (is-a list)
