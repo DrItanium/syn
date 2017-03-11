@@ -131,16 +131,16 @@ namespace cisc0 {
         }
         return execute;
     }
-    inline void mask24(RegisterValue& ref) noexcept {
-        ref &= bitmask24;
+    inline constexpr RegisterValue mask24(RegisterValue value) noexcept {
+        return value & bitmask24;
     }
     void Core::incrementAddress(RegisterValue& ptr) noexcept {
         ++ptr;
-        mask24(ptr);
+        ptr = mask24(ptr);
     }
     void Core::decrementAddress(RegisterValue& ptr) noexcept {
         --ptr;
-        mask24(ptr);
+        ptr = mask24(ptr);
     }
     void Core::incrementInstructionPointer() noexcept {
         incrementAddress(getInstructionPointer());
@@ -223,7 +223,7 @@ namespace cisc0 {
             advanceIp = false;
             if (isCall) {
                 // push the instruction pointer onto the stack
-                pushDword((getInstructionPointer() + 1) & bitmask24);
+                pushDword(mask24(getInstructionPointer() + 1));
             }
             if (choice) {
                 getInstructionPointer() = registerValue(inst.getBranchIfOnTrue());
@@ -235,7 +235,7 @@ namespace cisc0 {
             advanceIp = false;
             // determine next
             auto length = isImm ? 2 : 1;
-            pushDword((getInstructionPointer() + length) & bitmask24);
+            pushDword(mask24(getInstructionPointer() + length));
 
             auto address = 0u;
             if (isImm) {
@@ -246,19 +246,19 @@ namespace cisc0 {
             } else {
                 address = registerValue(inst.getBranchIndirectDestination());
             }
-            getInstructionPointer() = bitmask24 & address;
+            getInstructionPointer() = mask24(address);
         } else {
             // jump instruction
             if (isImm) {
                 incrementInstructionPointer();
                 if ((isCond && choice) || !isCond) {
                     advanceIp = false;
-                    getInstructionPointer() = bitmask24 & (inst.getUpper() | static_cast<RegisterValue>(getCurrentCodeWord()) << 8);
+                    getInstructionPointer() = mask24(inst.getUpper() | static_cast<RegisterValue>(getCurrentCodeWord()) << 8);
                 }
             } else {
                 if ((isCond && choice) || !isCond) {
                     advanceIp = false;
-                    getInstructionPointer() = bitmask24 & registerValue(inst.getBranchIndirectDestination());
+                    getInstructionPointer() = mask24(registerValue(inst.getBranchIndirectDestination()));
                 }
             }
         }
@@ -317,7 +317,7 @@ namespace cisc0 {
             } else {
                 auto address = addr + offset;
                 if (indirect) {
-                    address = encodeRegisterValue(loadWord(address + 1), loadWord(address)) & bitmask24;
+                    address = mask24(encodeRegisterValue(loadWord(address + 1), loadWord(address)));
                 }
                 lower = useLower ? encodeLowerHalf(0, loadWord(address)) : 0u;
                 upper = useUpper ? encodeUpperHalf(0, loadWord(address + 1)) : 0u;
@@ -334,7 +334,7 @@ namespace cisc0 {
             auto value = getValueRegister();
             auto address = addr + offset;
             if (indirect) {
-                address = encodeRegisterValue(loadWord(address + 1), loadWord(address)) & bitmask24;
+                address = mask24(encodeRegisterValue(loadWord(address + 1), loadWord(address)));;
             }
             if (useLower) {
                 if (lmask == maskCheck) {
