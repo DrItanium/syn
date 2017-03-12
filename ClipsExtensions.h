@@ -143,6 +143,7 @@ class ExternalAddressWrapper {
 		std::unique_ptr<T> _value;
 };
 
+bool errorMessage(void* env, const std::string& idClass, int idIndex, const std::string& msgPrefix, const std::string& msg) noexcept;
 
 }
 #endif

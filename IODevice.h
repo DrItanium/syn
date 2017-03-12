@@ -280,14 +280,40 @@ namespace syn {
 				std::mt19937_64 _engine;
 		};
 
-	template<typename Word, typename Address = Word>
+	template<typename Word, typename Address = byte>
 	class WrappedGenericRandomDevice : public ExternalAddressWrapper<RandomDevice<Word, Address>> {
 		public:
 			using Device = RandomDevice<Word, Address>;
 			using Parent = ExternalAddressWrapper<Device>;
 			using Self = WrappedGenericRandomDevice<Word, Address>;
 			static void newFunction(void* env, DATA_OBJECT* ret) {
-				
+				static bool init = true;
+				static std::string funcStr;
+				static std::string funcErrorPrefix;
+				if (init) {
+					init = false;
+					std::stringstream ss, ss2;
+					ss << "new (" << Self::getType() << ")";
+					funcStr = ss.str();
+					ss2 << "Function " << funcStr;
+					funcErrorPrefix = ss2.str();
+				}
+				try {
+					if (EnvRtnArgCount(env) == 1) {
+						auto idIndex = Self::getAssocuiatedEnvironmentId(env);
+						ret->bitType = EXTERNAL_ADDRESS_TYPE;
+						SetpType(ret, EXTERNAL_ADDRESS);
+						SetpValue(ret, EnvAddExternalAddress(env, Self::make(), idIndex));
+					} else {
+						errorMessage(env, "NEW", 1, funcErrorPrefix, " no arguments should be provided for function new!");
+					}
+				} catch(syn::Problem p) {
+					CVSetBoolean(ret, false);
+					std::stringstream s;
+					s << "an exception was thrown: " << p.what();
+					auto str = s.str();
+					errorMessage(env, "NEW", 2, funcErrorPrefix, str);
+				}
 			}
 			static bool callFunction(void* env, DATA_OBJECT* value, DATA_OBJECT* ret) {
 				return false;
@@ -297,6 +323,9 @@ namespace syn {
 			}
 			static void registerWithEnvironment(void* env) {
 				registerWithEnvironment(env, Parent::getType());
+			}
+			static Self* make() noexcept {
+				return new Self();
 			}
 		public:
 			enum Operations {

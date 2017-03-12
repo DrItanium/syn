@@ -298,7 +298,7 @@ namespace syn {
 	}
 #define argCheck(storage, position, type) EnvArgTypeCheck(env, funcStr.c_str(), position, type, storage)
 	void ManagedMemoryBlock::newFunction(void* env, DATA_OBJECT* ret) {
-		static bool init = false;
+		static bool init = true;
 		static std::string funcStr;
 		static std::string funcErrorPrefix;
 		if (init) {
