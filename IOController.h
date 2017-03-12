@@ -136,6 +136,7 @@ class CLIPSIOController : public IODevice<D, A> {
 			EnvAddUDF(theEnv, "io-controller:get-base-address", "l", [this](UDFContext* context, CLIPSValue* ret) { CVSetInteger(ret, this->baseAddress()); }, "CustomLambdaFunction", 0, 0, "", nullptr);
 			EnvAddUDF(theEnv, "io-controller:get-end-address", "l", [this](UDFContext* context, CLIPSValue* ret) { CVSetInteger(ret, this->endAddress()); }, "CustomLambdaFunction", 0, 0, "", nullptr);
 			EnvAddUDF(theEnv, "io-controller:get-address-size", "l", [this](UDFContext* context, CLIPSValue* ret) { CVSetInteger(ret, this->size()); }, "CustomLambdaFunction", 0, 0, "", nullptr);
+			CLIPS_installDefaultIODevices(_env);
 			if (!EnvBatchStar(theEnv, _bootstrapLocation.c_str())) {
 				std::stringstream msg;
 				msg << "Could not load the bootstrap microcode file " << _bootstrapLocation << "! Make sure the file exists and is accessible!";
