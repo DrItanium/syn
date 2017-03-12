@@ -286,8 +286,14 @@ namespace syn {
 			using Device = RandomDevice<Word, Address>;
 			using Parent = ExternalAddressWrapper<Device>;
 			using Self = WrappedGenericRandomDevice<Word, Address>;
+			using Self_Ptr = Self*;
+			enum Operations {
+				Seed,
+				Next,
+				Skip,
+			};
 			static void newFunction(void* env, DATA_OBJECT* ret) {
-				static bool init = true;
+				static auto init = true;
 				static std::string funcStr;
 				static std::string funcErrorPrefix;
 				if (init) {
@@ -316,6 +322,78 @@ namespace syn {
 				}
 			}
 			static bool callFunction(void* env, DATA_OBJECT* value, DATA_OBJECT* ret) {
+				static auto init = true;
+				static std::string funcStr;
+				static std::string funcErrorPrefix;
+				static std::map<std::string, Operations> opTranslation = {
+					{ "seed", Operations::Seed },
+					{ "next", Operations::Next },
+					{ "skip", Operations::Skip },
+				};
+				static std::map<Operations, int> argCounts = {
+					{ Operations::Seed, 1 },
+					{ Operations::Next, 0 },
+					{ Operations::Skip, 0 },
+				};
+				if (init) {
+					init = false;
+					std::stringstream ss, ss2;
+					ss << "call (" << Self::getType() << ")";
+					funcStr = ss.str();
+					ss2 << "Function " << funcStr;
+					funcErrorPrefix = ss2.str();
+				}
+
+				auto callErrorMessage = [env, ret](const std::string& subOp, const std::string& rest) {
+					CVSetBoolean(ret, false);
+					std::stringstream stm;
+					stm << " " << subOp << ": " << rest << std::endl;
+					auto msg = stm.str();
+					return errorMessage(env, "CALL", 3, funcErrorPrefix, msg);
+				};
+
+				if (GetpType(value) == EXTERNAL_ADDRESS) {
+					auto ptr = static_cast<Self_Ptr>(DOPToExternalAddress(value));
+					CLIPSValue op;
+					if (!EnvArgTypeCheck(env, funcStr.c_str(), 2, SYMBOL, &op)) {
+						return errorMessage(env, "CALL", 2, funcErrorPrefix, "expected a function name to call!");
+					} else {
+						std::string str(EnvDOToString(env, op));
+						auto result = opTranslation.find(str);
+						if (result == opTranslation.end()) {
+							CVSetBoolean(ret, false);
+							return callErrorMessage(str, "<- unknown operation requested!");
+						} else {
+							auto theOp = result->second;
+							auto countResult = argCounts.find(theOp);
+							if (countResult == argCounts.end()) {
+								CVSetBoolean(ret, false);
+								return callErrorMessage(str, "<- unknown argument count, not registered!!!");
+							} 
+							auto count = 2 + countResult->second;
+							if (count != EnvRtnArgCount(env)) {
+								CVSetBoolean(ret, false);
+								return callErrorMessage(str, " too many arguments provided!");
+							}
+							switch(theOp) {
+								case Operations::Seed:
+									return ptr->seedRandom(env, ret, funcStr, funcErrorPrefix);
+								case Operations::Next:
+									CVSetInteger(ret, ptr->nextRandom());
+									return true;
+								case Operations::Skip:
+									ptr->skipRandom();
+									return true;
+								default:
+									CVSetBoolean(ret, false);
+									return callErrorMessage(str, "<- unimplemented operation!!!!");
+							}
+						}
+					}
+				} else {
+					return errorMessage(env, "CALL", 1, funcErrorPrefix, "Function call expected an external address as the first argument!");
+				}
+
 				return false;
 			}
 			static void registerWithEnvironment(void* env, const char* title) {
@@ -328,12 +406,17 @@ namespace syn {
 				return new Self();
 			}
 		public:
-			enum Operations {
-				Seed,
-				Next,
-				Skip,
-			};
 			WrappedGenericRandomDevice() : ExternalAddressWrapper<Device>(std::move(std::make_unique<Device>(0))) { }
+			inline bool seedRandom(void* env, CLIPSValue* ret, const std::string& funcStr, const std::string& funcErrorPrefix) {
+				CLIPSValue tmp;
+				if (!EnvArgTypeCheck(env, funcStr.c_str(), 3, INTEGER, &tmp)) {
+					CVSetBoolean(ret, false);
+					return errorMessage(env, "CALL", 3, funcErrorPrefix, "seed argument is not an integer!");
+				} else {
+					seedRandom(static_cast<Word>(EnvDOToLong(env, tmp)));
+					return true;
+				}
+			}
 			inline void seedRandom(Word value) {
 				this->_value->write(Device::Addresses::SeedRandom, value);
 			}

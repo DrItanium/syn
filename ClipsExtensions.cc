@@ -404,7 +404,10 @@ namespace syn {
 					// TODO: clean this up when we migrate to c++17 and use the
 					// inline if variable declarations
 					auto findOpCount = opArgCounts.find(op);
-					if (findOpCount != opArgCounts.end()) {
+					if (findOpCount == opArgCounts.end()) {
+						CVSetBoolean(ret, false);
+						return callErrorMessage(str, "<- unknown argument count, not registered!!!!!");
+					} else {
 						// if it is registered then check the length
 						auto argCount = 2 /* always have two arguments */  + findOpCount->second;
 						if (argCount != EnvRtnArgCount(env)) {
