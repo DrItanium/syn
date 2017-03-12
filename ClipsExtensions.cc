@@ -66,59 +66,51 @@ namespace syn {
 			}
 		}
 	}
-	void CLIPS_translateBinary(UDFContext* context, CLIPSValue* ret) {
+	constexpr unsigned long long maximumIntegerValue = 0xFFFFFFFFFFFFFFFF;
+	void CLIPS_errorMessageGeneric(UDFContext* context, CLIPSValue* ret, const char* msg) noexcept {
+		UDFInvalidArgumentMessage(context, msg);
+		CVSetBoolean(ret, false);
+	}
+	void CLIPS_errorMessageGeneric(UDFContext* context, CLIPSValue* ret, const std::string& msg) noexcept {
+		CLIPS_errorMessageGeneric(context, ret, msg.c_str());
+	}
+	void CLIPS_errorOverflowedNumber(UDFContext* context, CLIPSValue* ret) noexcept {
+		CLIPS_errorMessageGeneric(context, ret, "number is too large and overflowed");
+	}
+	void CLIPS_errorNumberLargerThan64Bits(UDFContext* context, CLIPSValue* ret) noexcept {
+		CLIPS_errorMessageGeneric(context, ret, "provided number is larger than 64-bits!");
+	}
+
+	void CLIPS_translateNumberBase(UDFContext* context, CLIPSValue* ret, const std::string& prefix, int base, const std::string& badPrefix) noexcept {
 		CLIPSValue value;
 		if (!UDFFirstArgument(context, LEXEME_TYPES, &value)) {
 			CVSetBoolean(ret, false);
 		} else {
 			std::string str(CVToString(&value));
-			if (boost::starts_with(str, "0b")) {
-				str.at(1) = '0';
-				auto tmp = strtoull(str.c_str(), NULL, 2);
+			if (boost::starts_with(str, prefix)) {
+				auto tmp = strtoull(str.c_str(), nullptr, base);
 				if (tmp == ULLONG_MAX && errno == ERANGE) {
-					UDFInvalidArgumentMessage(context, "number is too large and overflowed");
-					CVSetBoolean(ret, false);
+					CLIPS_errorOverflowedNumber(context, ret);
 				} else {
-					if (tmp > 0xFFFFFFFFFFFFFFFF) {
-						UDFInvalidArgumentMessage(context, "provided number is larger than 64-bits!");
-						CVSetBoolean(ret, false);
+					if (tmp > maximumIntegerValue) {
+						CLIPS_errorNumberLargerThan64Bits(context, ret);
 					} else {
 						CVSetInteger(ret, static_cast<CLIPSInteger>(tmp));
 					}
 				}
 			} else {
-				UDFInvalidArgumentMessage(context, "Binary must start with 0b");
-				CVSetBoolean(ret, false);
+				CLIPS_errorMessageGeneric(context, ret, badPrefix);
 			}
 		}
+	}
+	void CLIPS_translateBinary(UDFContext* context, CLIPSValue* ret) noexcept {
+		CLIPS_translateNumberBase(context, ret, "0b", 2, "Binary must start with 0b");
 	}
 
 	void CLIPS_translateHex(UDFContext* context, CLIPSValue* ret) {
-		CLIPSValue value;
-		if (!UDFFirstArgument(context, LEXEME_TYPES, &value)) {
-			CVSetBoolean(ret, false);
-		} else {
-			std::string str(CVToString(&value));
-			if (boost::starts_with(str, "0x")) {
-				str.at(1) = '0';
-				auto tmp = strtoull(str.c_str(), NULL, 16);
-				if (tmp == ULLONG_MAX && errno == ERANGE) {
-					UDFInvalidArgumentMessage(context, "number is too large and overflowed");
-					CVSetBoolean(ret, false);
-				} else {
-					if (tmp > 0xFFFFFFFFFFFFFFFF) {
-						UDFInvalidArgumentMessage(context, "provided number is larger than 64-bits!");
-						CVSetBoolean(ret, false);
-					} else {
-						CVSetInteger(ret, static_cast<CLIPSInteger>(tmp));
-					}
-				}
-			} else {
-				UDFInvalidArgumentMessage(context, "Hex must start with 0x");
-				CVSetBoolean(ret, false);
-			}
-		}
+		CLIPS_translateNumberBase(context, ret, "0x", 16, "Hex must start with 0x");
 	}
+	
 
 	void CLIPS_binaryNot(UDFContext* context, CLIPSValue* ret) {
 		CLIPSValue number;
@@ -335,19 +327,6 @@ namespace syn {
 				case MemoryBlockOp::Product:
 				case MemoryBlockOp::Divide:
 				case MemoryBlockOp::Remainder:
-					return true;
-				default:
-					return false;
-			}
-		};
-		auto isCompareOp = [](MemoryBlockOp op) {
-			switch(op) {
-				case MemoryBlockOp::Equals:
-				case MemoryBlockOp::NotEquals:
-				case MemoryBlockOp::LessThan:
-				case MemoryBlockOp::GreaterThan:
-				case MemoryBlockOp::LessThanOrEqualTo:
-				case MemoryBlockOp::GreaterThanOrEqualTo:
 					return true;
 				default:
 					return false;
