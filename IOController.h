@@ -117,5 +117,57 @@ class IOController : public IODevice<D, A> {
 template<typename D, typename A = D>
 using MemoryController = IOController<D, A>;
 
+template<typename D, typename A = D>
+class CLIPSIOController : public IODevice<D, A> {
+	public:
+		using Parent = IODevice<D, A>;
+		using Self = CLIPSIOController<D, A>;
+		using SharedSelf = std::shared_ptr<Self>;
+	public:
+		CLIPSIOController(const std::string& bootstrapFileLocation, A base, A length) : IODevice<D, A>(base, length), _bootstrapLocation(bootstrapFileLocation) {
+			_env = CreateEnvironment();
+		}
+		virtual ~CLIPSIOController() {
+			DestroyEnvironment(_env);
+		}
+		virtual void initialize() override {
+			auto theEnv = static_cast<Environment*>(_env);
+			// install custom functions into the environment
+			EnvAddUDF(theEnv, "io-controller:get-base-address", "l", [this](UDFContext* context, CLIPSValue* ret) { CVSetInteger(ret, this->baseAddress()); }, "CustomLambdaFunction", 0, 0, "", nullptr);
+			EnvAddUDF(theEnv, "io-controller:get-end-address", "l", [this](UDFContext* context, CLIPSValue* ret) { CVSetInteger(ret, this->endAddress()); }, "CustomLambdaFunction", 0, 0, "", nullptr);
+			EnvAddUDF(theEnv, "io-controller:get-address-size", "l", [this](UDFContext* context, CLIPSValue* ret) { CVSetInteger(ret, this->size()); }, "CustomLambdaFunction", 0, 0, "", nullptr);
+			if (!EnvBatchStar(theEnv, _bootstrapLocation.c_str())) {
+				std::stringstream msg;
+				msg << "Could not load the bootstrap microcode file " << _bootstrapLocation << "! Make sure the file exists and is accessible!";
+				auto str = msg.str();
+				throw syn::Problem(str);
+			}
+		}
+		virtual D read(A addr) override {
+			std::stringstream args;
+			args << addr;
+			auto str = args.str();
+			CLIPSValue result;
+			if (!EnvFunctionCall(_env, "read-from-io-address", str.c_str(), &result)) {
+				throw syn::Problem("Calling read-from-io-address failed!");
+			} else {
+				return static_cast<D>(CVToInteger(&result));
+			}
+		}
+		virtual void write(A addr, D value) override {
+			std::stringstream args;
+			args << addr << " " << value;
+			auto str = args.str();
+			CLIPSValue result;
+			if (!EnvFunctionCall(_env, "write-to-io-address", str.c_str(), &result)) {
+				throw syn::Problem("Calling write-to-io-address failed!");
+			}
+		}
+	private:
+		std::string _bootstrapLocation;
+		void* _env;
+};
+
+
 } // end namespace syn
 #endif // end IRIS_IO_CONTROLLER_H_

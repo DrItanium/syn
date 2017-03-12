@@ -33,6 +33,7 @@
 #include <cstdint>
 #include <memory>
 #include "IrisCoreTypes.h"
+#include "ClipsExtensions.h"
 namespace iris {
 	enum ArchitectureConstants  {
 		RegisterCount = 256,
