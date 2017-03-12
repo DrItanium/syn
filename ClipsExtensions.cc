@@ -120,45 +120,63 @@ namespace syn {
 			CVSetInteger(ret, binaryNot<CLIPSInteger>(CVToInteger(&number)));
 		}
 	}
-	void CLIPS_binaryAnd(UDFContext* context, CLIPSValue* ret) {
+	enum CLIPS_BinaryOperations {
+		And,
+		Or,
+		Xor,
+		Nand,
+		ShiftLeft,
+		ShiftRight,
+	};
+
+	template<CLIPS_BinaryOperations op>
+	void CLIPS_genericBinaryIntegerOperation(UDFContext* context, CLIPSValue* ret) noexcept {
 		CLIPSValue a, b;
 		if (!UDFFirstArgument(context, NUMBER_TYPES, &a)) {
 			CVSetBoolean(ret, false);
 		} else if (!UDFNextArgument(context, NUMBER_TYPES, &b)) {
 			CVSetBoolean(ret, false);
 		} else {
-			CVSetInteger(ret, binaryAnd<CLIPSInteger>(CVToInteger(&a), CVToInteger(&b)));
+			CLIPSInteger result = 0;
+			auto first = CVToInteger(&a);
+			auto second = CVToInteger(&b);
+			switch(op) {
+				case CLIPS_BinaryOperations::And:
+					result = binaryAnd<CLIPSInteger>(first, second);
+					break;
+				case CLIPS_BinaryOperations::Or:
+					result = binaryOr<CLIPSInteger>(first, second);
+					break;
+				case CLIPS_BinaryOperations::Xor:
+					result = binaryXor<CLIPSInteger>(first, second);
+					break;
+				case CLIPS_BinaryOperations::Nand:
+					result = binaryNand<CLIPSInteger>(first, second);
+					break;
+				case CLIPS_BinaryOperations::ShiftLeft:
+					result = shiftLeft<CLIPSInteger>(first, second);
+					break;
+				case CLIPS_BinaryOperations::ShiftRight:
+					result = shiftRight<CLIPSInteger>(first, second);
+					break;
+				default:
+					CVSetBoolean(ret, false);
+					return;
+			}
+			CVSetInteger(ret, result);
 		}
 	}
-	void CLIPS_binaryOr(UDFContext* context, CLIPSValue* ret) {
-		CLIPSValue a, b;
-		if (!UDFFirstArgument(context, NUMBER_TYPES, &a)) {
-			CVSetBoolean(ret, false);
-		} else if (!UDFNextArgument(context, NUMBER_TYPES, &b)) {
-			CVSetBoolean(ret, false);
-		} else {
-			CVSetInteger(ret, binaryOr<CLIPSInteger>(CVToInteger(&a), CVToInteger(&b)));
-		}
+	void CLIPS_binaryAnd(UDFContext* context, CLIPSValue* ret) noexcept {
+		CLIPS_genericBinaryIntegerOperation<CLIPS_BinaryOperations::And>(context, ret);
 	}
-	void CLIPS_binaryXor(UDFContext* context, CLIPSValue* ret) {
-		CLIPSValue a, b;
-		if (!UDFFirstArgument(context, NUMBER_TYPES, &a)) {
-			CVSetBoolean(ret, false);
-		} else if (!UDFNextArgument(context, NUMBER_TYPES, &b)) {
-			CVSetBoolean(ret, false);
-		} else {
-			CVSetInteger(ret, binaryXor<CLIPSInteger>(CVToInteger(&a), CVToInteger(&b)));
-		}
+	void CLIPS_binaryOr(UDFContext* context, CLIPSValue* ret) noexcept {
+		CLIPS_genericBinaryIntegerOperation<CLIPS_BinaryOperations::Or>(context, ret);
 	}
-	void CLIPS_binaryNand(UDFContext* context, CLIPSValue* ret) {
-		CLIPSValue a, b;
-		if (!UDFFirstArgument(context, NUMBER_TYPES, &a)) {
-			CVSetBoolean(ret, false);
-		} else if (!UDFNextArgument(context, NUMBER_TYPES, &b)) {
-			CVSetBoolean(ret, false);
-		} else {
-			CVSetInteger(ret, binaryNand<CLIPSInteger>(CVToInteger(&a), CVToInteger(&b)));
-		}
+	void CLIPS_binaryXor(UDFContext* context, CLIPSValue* ret) noexcept {
+		CLIPS_genericBinaryIntegerOperation<CLIPS_BinaryOperations::Xor>(context, ret);
+	}
+	void CLIPS_binaryNand(UDFContext* context, CLIPSValue* ret) noexcept {
+		CLIPS_genericBinaryIntegerOperation<CLIPS_BinaryOperations::Nand>(context, ret);
 	}
 	void CLIPS_expandBit(UDFContext* context, CLIPSValue* ret) {
 		CLIPSValue a;
@@ -167,6 +185,23 @@ namespace syn {
 		} else {
 			CVSetInteger(ret, static_cast<CLIPSInteger>(expandBit(CVIsTrueSymbol(&a))));
 		}
+	}
+	void CLIPS_shiftLeft(UDFContext* context, CLIPSValue* ret) {
+		CLIPS_genericBinaryIntegerOperation<CLIPS_BinaryOperations::ShiftLeft>(context, ret);
+	}
+	void CLIPS_shiftRight(UDFContext* context, CLIPSValue* ret) {
+		CLIPS_genericBinaryIntegerOperation<CLIPS_BinaryOperations::ShiftRight>(context, ret);
+	}
+
+	void CLIPS_basePrintAddress(void* env, const char* logicalName, void* theValue, const char* func, const char* majorType) {
+		std::stringstream ss;
+		void* ptr = EnvValueToExternalAddress(env, theValue);
+		ss << "<" << majorType << "-" << func << "-" << std::hex << ((ptr) ? ptr : theValue) << ">";
+		auto str = ss.str();
+		EnvPrintRouter(env, logicalName, str.c_str());
+	}
+	inline void CLIPS_basePrintAddress_Pointer(void* env, const char* logicalName, void* theValue, const char* func) noexcept {
+		CLIPS_basePrintAddress(env, logicalName, theValue, func, "Pointer");
 	}
 	void CLIPS_decodeBits(UDFContext* context, CLIPSValue* ret) {
 		CLIPSValue value, mask, shift;
@@ -193,37 +228,6 @@ namespace syn {
 		} else {
 			CVSetInteger(ret, encodeBits<CLIPSInteger, CLIPSInteger>(CVToInteger(&input), CVToInteger(&value), CVToInteger(&mask), CVToInteger(&shift)));
 		}
-	}
-	void CLIPS_shiftLeft(UDFContext* context, CLIPSValue* ret) {
-		CLIPSValue input, shift;
-		if (!UDFFirstArgument(context, NUMBER_TYPES, &input)) {
-			CVSetBoolean(ret, false);
-		} else if (!UDFNextArgument(context, NUMBER_TYPES, &shift)) {
-			CVSetBoolean(ret, false);
-		} else {
-			CVSetInteger(ret, shiftLeft<CLIPSInteger>(CVToInteger(&input), CVToInteger(&shift)));
-		}
-	}
-	void CLIPS_shiftRight(UDFContext* context, CLIPSValue* ret) {
-		CLIPSValue input, shift;
-		if (!UDFFirstArgument(context, NUMBER_TYPES, &input)) {
-			CVSetBoolean(ret, false);
-		} else if (!UDFNextArgument(context, NUMBER_TYPES, &shift)) {
-			CVSetBoolean(ret, false);
-		} else {
-			CVSetInteger(ret, shiftRight<CLIPSInteger>(CVToInteger(&input), CVToInteger(&shift)));
-		}
-	}
-
-	void CLIPS_basePrintAddress(void* env, const char* logicalName, void* theValue, const char* func, const char* majorType) {
-		std::stringstream ss;
-		void* ptr = EnvValueToExternalAddress(env, theValue);
-		ss << "<" << majorType << "-" << func << "-" << std::hex << ((ptr) ? ptr : theValue) << ">";
-		auto str = ss.str();
-		EnvPrintRouter(env, logicalName, str.c_str());
-	}
-	inline void CLIPS_basePrintAddress_Pointer(void* env, const char* logicalName, void* theValue, const char* func) noexcept {
-		CLIPS_basePrintAddress(env, logicalName, theValue, func, "Pointer");
 	}
 
 	bool errorMessage(void* env, const std::string& idClass, int idIndex, const std::string& msgPrefix, const std::string& msg) noexcept {
