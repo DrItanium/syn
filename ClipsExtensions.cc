@@ -112,13 +112,29 @@ namespace syn {
 	}
 	
 
-	void CLIPS_binaryNot(UDFContext* context, CLIPSValue* ret) {
+	enum CLIPS_UnaryOperations {
+		Not,
+		ExpandBits,
+	};
+	template<CLIPS_UnaryOperations op>
+	void CLIPS_genericUnaryIntegerOperation(UDFContext* context, CLIPSValue* ret) noexcept {
 		CLIPSValue number;
 		if (!UDFFirstArgument(context, NUMBER_TYPES, &number)) {
 			CVSetBoolean(ret, false);
 		} else {
-			CVSetInteger(ret, binaryNot<CLIPSInteger>(CVToInteger(&number)));
+			switch(op) {
+				case CLIPS_UnaryOperations::Not:
+					CVSetInteger(ret, binaryNot<CLIPSInteger>(CVToInteger(&number)));
+					break;
+				case CLIPS_UnaryOperations::ExpandBits:
+					CVSetInteger(ret, static_cast<CLIPSInteger>(expandBit(CVIsTrueSymbol(&number))));
+					break;
+				default:
+					CVSetBoolean(ret, false);
+					break;
+			}
 		}
+
 	}
 	enum CLIPS_BinaryOperations {
 		And,
@@ -178,19 +194,21 @@ namespace syn {
 	void CLIPS_binaryNand(UDFContext* context, CLIPSValue* ret) noexcept {
 		CLIPS_genericBinaryIntegerOperation<CLIPS_BinaryOperations::Nand>(context, ret);
 	}
-	void CLIPS_expandBit(UDFContext* context, CLIPSValue* ret) {
-		CLIPSValue a;
-		if (!UDFFirstArgument(context, ANY_TYPE, &a)) {
-			CVSetBoolean(ret, false);
-		} else {
-			CVSetInteger(ret, static_cast<CLIPSInteger>(expandBit(CVIsTrueSymbol(&a))));
-		}
-	}
-	void CLIPS_shiftLeft(UDFContext* context, CLIPSValue* ret) {
+
+	void CLIPS_shiftLeft(UDFContext* context, CLIPSValue* ret) noexcept {
 		CLIPS_genericBinaryIntegerOperation<CLIPS_BinaryOperations::ShiftLeft>(context, ret);
 	}
-	void CLIPS_shiftRight(UDFContext* context, CLIPSValue* ret) {
+
+	void CLIPS_shiftRight(UDFContext* context, CLIPSValue* ret) noexcept {
 		CLIPS_genericBinaryIntegerOperation<CLIPS_BinaryOperations::ShiftRight>(context, ret);
+	}
+
+	void CLIPS_binaryNot(UDFContext* context, CLIPSValue* ret) noexcept {
+		CLIPS_genericUnaryIntegerOperation<CLIPS_UnaryOperations::Not>(context, ret);
+	}
+
+	void CLIPS_expandBit(UDFContext* context, CLIPSValue* ret) noexcept {
+		CLIPS_genericUnaryIntegerOperation<CLIPS_UnaryOperations::ExpandBits>(context, ret);
 	}
 
 	void CLIPS_basePrintAddress(void* env, const char* logicalName, void* theValue, const char* func, const char* majorType) {
@@ -215,7 +233,7 @@ namespace syn {
 			CVSetInteger(ret, decodeBits<CLIPSInteger, CLIPSInteger>(CVToInteger(&value), CVToInteger(&mask), CVToInteger(&shift)));
 		}
 	}
-	void CLIPS_encodeBits(UDFContext* context, CLIPSValue* ret) {
+	void CLIPS_encodeBits(UDFContext* context, CLIPSValue* ret) noexcept {
 		CLIPSValue input, value, mask, shift;
 		if (!UDFFirstArgument(context, NUMBER_TYPES, &input)) {
 			CVSetBoolean(ret, false);
