@@ -63,7 +63,8 @@ namespace iris {
 template<typename Data, typename Address>
 class ExposedCoreDataMemory;
 namespace iris {
-	using IOSpace = syn::IOController<word>;
+	using IOSpace = syn::CLIPSIOController<word, CLIPSInteger>;
+	//using IOSpace = syn::IOController<word>;
 	template<dword capacity>
 	using WordMemorySpace = syn::FixedSizeLoadStoreUnit<word, dword, capacity>;
 	using WordMemorySpace64k = WordMemorySpace<ArchitectureConstants::AddressMax + 1>;

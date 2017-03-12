@@ -433,12 +433,18 @@ namespace syn {
 
 	using RandomNumberGenerator64bitDevice = RandomDevice<uint64_t, CLIPSInteger>;
 	using RandomNumberGeneratorSigned64bitDevice = RandomDevice<int64_t, CLIPSInteger>;
+	using RandomNumberGenerator16bitDevice = RandomDevice<uint16_t, CLIPSInteger>;
+	using RandomNumberGeneratorSigned16bitDevice = RandomDevice<int16_t, CLIPSInteger>;
 
 	DefWrapperSymbolicName(RandomNumberGenerator64bitDevice, "random-number-generator:uint64");
 	DefWrapperSymbolicName(RandomNumberGeneratorSigned64bitDevice, "random-number-generator:int64");
+	DefWrapperSymbolicName(RandomNumberGenerator16bitDevice, "random-number-generator:uint16");
+	DefWrapperSymbolicName(RandomNumberGeneratorSigned16bitDevice, "random-number-generator:int16");
 
 	using WrappedRandomNumberGenerator64bitDevice = WrappedGenericRandomDevice<uint64_t>;
 	using WrappedRandomNumberGeneratorSigned64bitDevice = WrappedGenericRandomDevice<int64_t>;
+	using WrappedRandomNumberGenerator16bitDevice = WrappedGenericRandomDevice<uint16_t>;
+	using WrappedRandomNumberGeneratorSigned16bitDevice = WrappedGenericRandomDevice<int16_t>;
 
 	void CLIPS_installDefaultIODevices(void* theEnv);
 
