@@ -284,6 +284,8 @@ namespace syn {
 	class WrappedGenericRandomDevice : public ExternalAddressWrapper<RandomDevice<Word, Address>> {
 		public:
 			using Device = RandomDevice<Word, Address>;
+			using Parent = ExternalAddressWrapper<Device>;
+			using Self = WrappedGenericRandomDevice<Word, Address>;
 			static void newFunction(void* env, DATA_OBJECT* ret) {
 				
 			}
@@ -291,7 +293,10 @@ namespace syn {
 				return false;
 			}
 			static void registerWithEnvironment(void* env, const char* title) {
-				ExternalAddressWrapper<Device>::registerWithEnvironment(env, title, newFunction, callFunction);
+				Parent::registerWithEnvironment(env, title, newFunction, callFunction);
+			}
+			static void registerWithEnvironment(void* env) {
+				registerWithEnvironment(env, Parent::getType());
 			}
 		public:
 			enum Operations {
@@ -311,6 +316,13 @@ namespace syn {
 			}
 	};
 
+	using RandomNumberGenerator64bitDevice = RandomDevice<uint64_t>;
+	using RandomNumberGeneratorSigned64bitDevice = RandomDevice<int64_t>;
+
+	DefWrapperSymbolicName(RandomNumberGenerator64bitDevice, "random-number-generator:uint64");
+	DefWrapperSymbolicName(RandomNumberGeneratorSigned64bitDevice, "random-number-generator:int64");
+
+	void CLIPS_installDefaultIODevices(void* theEnv);
 
 } // end namespace syn
 #endif // end IRIS_IO_DEVICE_H_
