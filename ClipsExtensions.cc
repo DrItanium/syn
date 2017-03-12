@@ -215,7 +215,7 @@ namespace syn {
 		auto str = ss.str();
 		EnvPrintRouter(env, logicalName, str.c_str());
 	}
-	inline void CLIPS_basePrintAddress_Pointer(void* env, const char* logicalName, void* theValue, const char* func) noexcept {
+	void CLIPS_basePrintAddress_Pointer(void* env, const char* logicalName, void* theValue, const char* func) noexcept {
 		CLIPS_basePrintAddress(env, logicalName, theValue, func, "Pointer");
 	}
 	void CLIPS_decodeBits(UDFContext* context, CLIPSValue* ret) {

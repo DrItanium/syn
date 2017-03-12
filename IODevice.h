@@ -280,7 +280,7 @@ namespace syn {
 				std::mt19937_64 _engine;
 		};
 
-	template<typename Word, typename Address = byte>
+	template<typename Word, typename Address = CLIPSInteger>
 	class WrappedGenericRandomDevice : public ExternalAddressWrapper<RandomDevice<Word, Address>> {
 		public:
 			using Device = RandomDevice<Word, Address>;
@@ -306,7 +306,7 @@ namespace syn {
 				}
 				try {
 					if (EnvRtnArgCount(env) == 1) {
-						auto idIndex = Self::getAssocuiatedEnvironmentId(env);
+						auto idIndex = Self::getAssociatedEnvironmentId(env);
 						ret->bitType = EXTERNAL_ADDRESS_TYPE;
 						SetpType(ret, EXTERNAL_ADDRESS);
 						SetpValue(ret, EnvAddExternalAddress(env, Self::make(), idIndex));
@@ -399,6 +399,9 @@ namespace syn {
 			static void registerWithEnvironment(void* env, const char* title) {
 				Parent::registerWithEnvironment(env, title, newFunction, callFunction);
 			}
+			static void registerWithEnvironment(void* env, const std::string& str) {
+				registerWithEnvironment(env, str.c_str());
+			}
 			static void registerWithEnvironment(void* env) {
 				registerWithEnvironment(env, Parent::getType());
 			}
@@ -428,11 +431,14 @@ namespace syn {
 			}
 	};
 
-	using RandomNumberGenerator64bitDevice = RandomDevice<uint64_t>;
-	using RandomNumberGeneratorSigned64bitDevice = RandomDevice<int64_t>;
+	using RandomNumberGenerator64bitDevice = RandomDevice<uint64_t, CLIPSInteger>;
+	using RandomNumberGeneratorSigned64bitDevice = RandomDevice<int64_t, CLIPSInteger>;
 
 	DefWrapperSymbolicName(RandomNumberGenerator64bitDevice, "random-number-generator:uint64");
 	DefWrapperSymbolicName(RandomNumberGeneratorSigned64bitDevice, "random-number-generator:int64");
+
+	using WrappedRandomNumberGenerator64bitDevice = WrappedGenericRandomDevice<uint64_t>;
+	using WrappedRandomNumberGeneratorSigned64bitDevice = WrappedGenericRandomDevice<int64_t>;
 
 	void CLIPS_installDefaultIODevices(void* theEnv);
 
