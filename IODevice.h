@@ -39,6 +39,7 @@
 #include "Core.h"
 #include <random>
 #include <future>
+#include "ClipsExtensions.h"
 namespace syn {
 	template<typename Data, typename Address = Data>
 		class IODevice : public Device {
@@ -278,6 +279,37 @@ namespace syn {
 				std::future<std::mt19937_64::result_type> _next;
 				std::mt19937_64 _engine;
 		};
+
+	template<typename Word, typename Address = Word>
+	class WrappedGenericRandomDevice : public ExternalAddressWrapper<RandomDevice<Word, Address>> {
+		public:
+			using Device = RandomDevice<Word, Address>;
+			static void newFunction(void* env, DATA_OBJECT* ret) {
+				
+			}
+			static bool callFunction(void* env, DATA_OBJECT* value, DATA_OBJECT* ret) {
+				return false;
+			}
+			static void registerWithEnvironment(void* env, const char* title) {
+				ExternalAddressWrapper<Device>::registerWithEnvironment(env, title, newFunction, callFunction);
+			}
+		public:
+			enum Operations {
+				Seed,
+				Next,
+				Skip,
+			};
+			WrappedGenericRandomDevice() : ExternalAddressWrapper<Device>(std::move(std::make_unique<Device>(0))) { }
+			inline void seedRandom(Word value) {
+				this->_value->write(Device::Addresses::SeedRandom, value);
+			}
+			inline void skipRandom() {
+				this->_value->write(Device::Addresses::SkipRandom, 0u);
+			}
+			inline Word nextRandom() {
+				return this->_value->read(Device::Addresses::NextRandom);
+			}
+	};
 
 
 } // end namespace syn
