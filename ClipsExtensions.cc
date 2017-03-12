@@ -40,33 +40,6 @@ extern "C" {
 }
 
 namespace syn {
-	void CLIPS_translateBitmask(UDFContext* context, CLIPSValue* ret) {
-		CLIPSValue value;
-		if (!UDFFirstArgument(context, LEXEME_TYPES, &value)) {
-			CVSetBoolean(ret, false);
-		} else {
-			std::string str(CVToString(&value));
-			if (boost::starts_with(str, "0m")) {
-				str.at(1) = '0';
-				auto tmp = strtoul(str.c_str(), NULL, 2);
-				if (tmp == ULONG_MAX && errno == ERANGE) {
-					UDFInvalidArgumentMessage(context, "number is too large and overflowed");
-					CVSetBoolean(ret, false);
-				} else {
-					if (tmp > 0xFF) {
-						UDFInvalidArgumentMessage(context, "provided number is larger than 8-bits!");
-						CVSetBoolean(ret, false);
-					} else {
-						CVSetInteger(ret, static_cast<CLIPSInteger>(static_cast<byte>(tmp)));
-					}
-				}
-			} else {
-				UDFInvalidArgumentMessage(context, "Bitmask must start with 0m");
-				CVSetBoolean(ret, false);
-			}
-		}
-	}
-	constexpr unsigned long long maximumIntegerValue = 0xFFFFFFFFFFFFFFFF;
 	void CLIPS_errorMessageGeneric(UDFContext* context, CLIPSValue* ret, const char* msg) noexcept {
 		UDFInvalidArgumentMessage(context, msg);
 		CVSetBoolean(ret, false);
@@ -77,6 +50,30 @@ namespace syn {
 	void CLIPS_errorOverflowedNumber(UDFContext* context, CLIPSValue* ret) noexcept {
 		CLIPS_errorMessageGeneric(context, ret, "number is too large and overflowed");
 	}
+	void CLIPS_translateBitmask(UDFContext* context, CLIPSValue* ret) noexcept {
+		CLIPSValue value;
+		if (!UDFFirstArgument(context, LEXEME_TYPES, &value)) {
+			CVSetBoolean(ret, false);
+		} else {
+			std::string str(CVToString(&value));
+			if (boost::starts_with(str, "0m")) {
+				str.at(1) = '0';
+				auto tmp = strtoul(str.c_str(), NULL, 2);
+				if (tmp == ULONG_MAX && errno == ERANGE) {
+					CLIPS_errorOverflowedNumber(context, ret);
+				} else {
+					if (tmp > 0xFF) {
+						CLIPS_errorMessageGeneric(context, ret, "provided number is larger than 8-bits!");
+					} else {
+						CVSetInteger(ret, static_cast<CLIPSInteger>(static_cast<byte>(tmp)));
+					}
+				}
+			} else {
+				CLIPS_errorMessageGeneric(context, ret, "Bitmask must start with 0m");
+			}
+		}
+	}
+	constexpr unsigned long long maximumIntegerValue = 0xFFFFFFFFFFFFFFFF;
 	void CLIPS_errorNumberLargerThan64Bits(UDFContext* context, CLIPSValue* ret) noexcept {
 		CLIPS_errorMessageGeneric(context, ret, "provided number is larger than 64-bits!");
 	}
@@ -299,6 +296,7 @@ namespace syn {
 	ManagedMemoryBlock* ManagedMemoryBlock::make(CLIPSInteger capacity) noexcept {
 		return new ManagedMemoryBlock(capacity); 
 	}
+#define argCheck(storage, position, type) EnvArgTypeCheck(env, funcStr.c_str(), position, type, storage)
 	void ManagedMemoryBlock::newFunction(void* env, DATA_OBJECT* ret) {
 		static bool init = false;
 		static std::string funcStr;
@@ -315,7 +313,7 @@ namespace syn {
 		try {
 			if (EnvRtnArgCount(env) == 2) {
 				CLIPSValue capacity;
-				if (EnvArgTypeCheck(env, funcStr.c_str(), 2, INTEGER, &capacity) == FALSE) {
+				if (!argCheck(&capacity, 2, INTEGER)) {
 					CVSetBoolean(ret, false);
 					errorMessage(env, "NEW", 1, funcErrorPrefix, " expected an integer for capacity!");
 				} else {
@@ -364,7 +362,6 @@ namespace syn {
 		}
 		if (GetpType(value) == EXTERNAL_ADDRESS) {
 			auto ptr = static_cast<ManagedMemoryBlock_Ptr>(DOPToExternalAddress(value));
-#define argCheck(storage, position, type) EnvArgTypeCheck(env, funcStr.c_str(), position, type, storage)
 			auto callErrorMessage = [env, ret](const std::string& subOp, const std::string& rest) {
 				CVSetBoolean(ret, false);
 				std::stringstream stm;
@@ -378,7 +375,7 @@ namespace syn {
 				return callErrorMessage(subOp, ss.str());
 			};
 			CLIPSValue operation;
-			if (EnvArgTypeCheck(env, funcStr.c_str(), 2, SYMBOL, &operation) == FALSE) {
+			if (!argCheck(&operation, 2, SYMBOL)) {
 				return errorMessage(env, "CALL", 2, funcErrorPrefix, "expected a function name to call!");
 			} else {
 				std::string str(EnvDOToString(env, operation));
