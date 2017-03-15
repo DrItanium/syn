@@ -21,35 +21,6 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
-(defmessage-handler NUMBER resolve primary
-                    ()
-                    ?self)
-(defmessage-handler LEXEME resolve primary
-                    ()
-                    ?self)
-(deffunction lower::call-resolve
-             (?obj)
-             (send ?obj
-                   resolve))
-(deffunction lower::mk-list
-             (?parent $?contents)
-             (make-instance of list
-                            (parent ?parent)
-                            (contents ?contents)))
-
-(deffunction lower::mk-list-with-title
-             (?title ?parent $?contents)
-             (make-instance ?title of list
-                            (parent ?parent)
-                            (contents ?contents)))
-(deffunction lower::mk-move-op
-             (?parent ?destination ?source)
-             (mk-list ?parent
-                      move
-                      ?destination
-                      ?source))
-
 (defclass lower::register
   (is-a node)
   (slot alias-to
@@ -2099,7 +2070,7 @@
          (test (> (length$ ?arguments)
                   8))
          =>
-         (printout werror 
+         (printout werror
                    "ERROR: found a funcall statement with too many arguments, offending object is " ?name)
          (halt))
 
@@ -2113,6 +2084,6 @@
          (test (> (length$ ?arguments)
                   8))
          =>
-         (printout werror 
+         (printout werror
                    "ERROR: found a funcall statement with too many arguments, offending object is " ?name)
          (halt))
