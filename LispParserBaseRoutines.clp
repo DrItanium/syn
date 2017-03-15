@@ -21,14 +21,24 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+(defmessage-handler NUMBER resolve primary
+                    ()
+                    ?self)
+(defmessage-handler LEXEME resolve primary
+                    ()
+                    ?self)
+(deffunction lower::call-resolve
+             (?obj)
+             (send ?obj
+                   resolve))
+(deffunction lower::mk-list
+             (?parent $?contents)
+             (make-instance of list
+                            (parent ?parent)
+                            (contents ?contents)))
 
-; Keep this file up to date with the file to load when we want to parse code
-(batch* LispParserBaseRoutines.clp)
-(batch* IrisCoreLispBase.clp)
-(batch* LispConstantDeclaration.clp)
-(batch* IrisCoreLispLinkRegisterMacros.clp)
-(batch* IrisCoreLispPredicateRegisterMacros.clp)
-(batch* IrisCoreLispStackOperations.clp)
-(batch* IrisCoreLispRegisters.clp)
-(batch* IrisCoreLispPredefinedStatements.clp)
-(batch* IrisCoreLispExtendedFeatures.clp)
+(deffunction lower::mk-list-with-title
+             (?title ?parent $?contents)
+             (make-instance ?title of list
+                            (parent ?parent)
+                            (contents ?contents)))

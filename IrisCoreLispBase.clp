@@ -22,21 +22,6 @@
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-(defmessage-handler NUMBER resolve primary
-                    ()
-                    ?self)
-(defmessage-handler LEXEME resolve primary
-                    ()
-                    ?self)
-(deffunction lower::call-resolve
-             (?obj)
-             (send ?obj
-                   resolve))
-(deffunction lower::mk-list
-             (?parent $?contents)
-             (make-instance of list
-                            (parent ?parent)
-                            (contents ?contents)))
 (deffunction lower::mk-move-op
              (?parent ?destination ?source)
              (mk-list ?parent
