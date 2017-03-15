@@ -177,21 +177,6 @@
 (defclass lower::four-argument-instruction
   (is-a instruction-with-destination-source0-source1-and-source2))
 
-(defclass lower::simple-container
-  (is-a node
-        has-body))
-
-(deffunction lower::mk-container
-             (?name ?parent $?body)
-             (make-instance ?name of simple-container
-                            (parent ?parent)
-                            (body ?body)))
-
-(defmessage-handler lower::simple-container resolve primary
-                    ()
-                    (map call-resolve
-                         (expand$ ?self:body)))
-
 (defrule lower::mark-register
          (declare (salience 100))
          ?f <- (object (is-a list)

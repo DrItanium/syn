@@ -38,3 +38,18 @@
                             resolve)
                       else
                       (instance-name-to-symbol (instance-name ?self))))
+
+(defclass lower::simple-container
+  (is-a node
+        has-body))
+
+(deffunction lower::mk-container
+             (?name ?parent $?body)
+             (make-instance ?name of simple-container
+                            (parent ?parent)
+                            (body ?body)))
+
+(defmessage-handler lower::simple-container resolve primary
+                    ()
+                    (map call-resolve
+                         (expand$ ?self:body)))

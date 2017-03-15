@@ -21,23 +21,6 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(defclass lower::register
-  (is-a node)
-  (slot alias-to
-        (type SYMBOL
-              INSTANCE)
-        (visibility public)
-        (storage local)
-        (allowed-symbols FALSE))
-  (message-handler resolve primary))
-
-(defmessage-handler lower::register resolve primary
-                    ()
-                    (if (instancep ?self:alias-to) then
-                      (send ?self:alias-to
-                            resolve)
-                      else
-                      (instance-name-to-symbol (instance-name ?self))))
 
 
 
@@ -218,20 +201,6 @@
 (defclass lower::three-argument-instruction
   (is-a instruction-with-dest-src0-and-src1))
 
-(defclass lower::simple-container
-  (is-a node
-        has-body))
-
-(deffunction lower::mk-container
-             (?name ?parent $?body)
-             (make-instance ?name of simple-container
-                            (parent ?parent)
-                            (body ?body)))
-
-(defmessage-handler lower::simple-container resolve primary
-                    ()
-                    (map call-resolve
-                         (expand$ ?self:body)))
 (defclass lower::bitmask
   (is-a node)
   (slot value
@@ -1211,13 +1180,6 @@
                           (contents ?replacement
                                     ?register
                                     ?constant)))
-(defrule lower::make-base-register
-         (declare (salience ?*priority:first*))
-         ?f <- (base-register ?title)
-         =>
-         (retract ?f)
-         (make-instance ?title of register
-                        (parent FALSE)))
 
 (deffacts lower::base-registers
           (base-register r0)

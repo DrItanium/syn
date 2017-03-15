@@ -38,3 +38,11 @@
                                     (symbol-to-instance-name ?target)
                                     else
                                     ?target))))
+
+(defrule lower::make-base-register
+         (declare (salience ?*priority:first*))
+         ?f <- (base-register ?title)
+         =>
+         (retract ?f)
+         (make-instance ?title of register
+                        (parent FALSE)))
