@@ -24,5 +24,7 @@
 
 ; Keep this file up to date with the file to load when we want to parse code
 (batch* LispParserBaseRoutines.clp)
+(batch* LispParserBaseClasses.clp)
 (batch* Cisc0CoreLispBase.clp)
 (batch* LispConstantDeclaration.clp)
+(batch* LispParserConstructAliasRules.clp)

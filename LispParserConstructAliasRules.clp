@@ -21,16 +21,20 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
-; Keep this file up to date with the file to load when we want to parse code
-(batch* LispParserBaseRoutines.clp)
-(batch* LispParserBaseClasses.clp)
-(batch* IrisCoreLispBase.clp)
-(batch* LispConstantDeclaration.clp)
-(batch* IrisCoreLispLinkRegisterMacros.clp)
-(batch* IrisCoreLispPredicateRegisterMacros.clp)
-(batch* IrisCoreLispStackOperations.clp)
-(batch* IrisCoreLispRegisters.clp)
-(batch* IrisCoreLispPredefinedStatements.clp)
-(batch* IrisCoreLispExtendedFeatures.clp)
-(batch* LispParserConstructAliasRules.clp)
+(defrule lower::construct-alias
+         (declare (salience ?*priority:first*))
+         ?f <- (object (is-a list)
+                       (contents alias
+                                 ?target
+                                 as
+                                 ?alias&:(symbolp ?alias))
+                       (name ?name)
+                       (parent ?parent))
+         =>
+         (unmake-instance ?f)
+         (make-instance ?alias of register
+                        (parent ?parent)
+                        (alias-to (if (symbolp ?target) then
+                                    (symbol-to-instance-name ?target)
+                                    else
+                                    ?target))))

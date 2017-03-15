@@ -21,16 +21,20 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+(defclass lower::register
+  (is-a node)
+  (slot alias-to
+        (type SYMBOL
+              INSTANCE)
+        (visibility public)
+        (storage local)
+        (allowed-symbols FALSE))
+  (message-handler resolve primary))
 
-; Keep this file up to date with the file to load when we want to parse code
-(batch* LispParserBaseRoutines.clp)
-(batch* LispParserBaseClasses.clp)
-(batch* IrisCoreLispBase.clp)
-(batch* LispConstantDeclaration.clp)
-(batch* IrisCoreLispLinkRegisterMacros.clp)
-(batch* IrisCoreLispPredicateRegisterMacros.clp)
-(batch* IrisCoreLispStackOperations.clp)
-(batch* IrisCoreLispRegisters.clp)
-(batch* IrisCoreLispPredefinedStatements.clp)
-(batch* IrisCoreLispExtendedFeatures.clp)
-(batch* LispParserConstructAliasRules.clp)
+(defmessage-handler lower::register resolve primary
+                    ()
+                    (if (instancep ?self:alias-to) then
+                      (send ?self:alias-to
+                            resolve)
+                      else
+                      (instance-name-to-symbol (instance-name ?self))))

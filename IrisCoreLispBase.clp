@@ -29,26 +29,6 @@
                       ?destination
                       ?source))
 
-(defclass lower::register
-  (is-a node)
-  (slot alias-to
-        (type SYMBOL
-              INSTANCE)
-        (visibility public)
-        (storage local)
-        (allowed-symbols FALSE))
-  (message-handler resolve primary))
-
-(defmessage-handler lower::register resolve primary
-                    ()
-                    (if (instancep ?self:alias-to) then
-                      (send ?self:alias-to
-                            resolve)
-                      else
-                      (instance-name-to-symbol (instance-name ?self))))
-
-
-
 (defclass lower::section
   (is-a node
         has-body)
@@ -211,24 +191,6 @@
                     ()
                     (map call-resolve
                          (expand$ ?self:body)))
-
-(defrule lower::construct-alias
-         (declare (salience ?*priority:first*))
-         ?f <- (object (is-a list)
-                       (contents alias
-                                 ?target
-                                 as
-                                 ?alias&:(symbolp ?alias))
-                       (name ?name)
-                       (parent ?parent))
-         =>
-         (unmake-instance ?f)
-         (make-instance ?alias of register
-                        (parent ?parent)
-                        (alias-to (if (symbolp ?target) then
-                                    (symbol-to-instance-name ?target)
-                                    else
-                                    ?target))))
 
 (defrule lower::mark-register
          (declare (salience 100))

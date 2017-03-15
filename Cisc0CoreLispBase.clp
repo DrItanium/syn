@@ -307,23 +307,6 @@
                                     (symbol-to-instance-name ?bitmask)
                                     ?post)))
 
-(defrule lower::construct-alias
-         (declare (salience ?*priority:first*))
-         ?f <- (object (is-a list)
-                       (contents alias
-                                 ?target
-                                 as
-                                 ?alias&:(symbolp ?alias))
-                       (name ?name)
-                       (parent ?parent))
-         =>
-         (unmake-instance ?f)
-         (make-instance ?alias of register
-                        (parent ?parent)
-                        (alias-to (if (symbolp ?target) then
-                                    (symbol-to-instance-name ?target)
-                                    else
-                                    ?target))))
 
 (defrule lower::mark-register
          (declare (salience 100))
