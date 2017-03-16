@@ -39,7 +39,7 @@ namespace syn {
 			virtual bool cycle() = 0;
 
 			virtual void run();
-			inline bool shouldExecute() const { return execute; }
+			inline bool shouldExecute() const noexcept { return execute; }
 		protected:
 			bool execute = true;
 	 };

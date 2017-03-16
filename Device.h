@@ -29,7 +29,6 @@
  */
 #ifndef IRIS_DEVICE_H_
 #define IRIS_DEVICE_H_
-#include <iostream>
 namespace syn {
 class Device {
 	public:
@@ -37,8 +36,8 @@ class Device {
         virtual ~Device() { }
 		virtual void initialize() = 0;
 		virtual void shutdown() = 0;
-		virtual bool debugEnabled() const { return _debug; }
-		virtual void toggleDebug() 		  { _debug = !_debug; }
+		virtual bool debugEnabled() const noexcept { return _debug; }
+		virtual void toggleDebug() noexcept { _debug = !_debug; }
 	private:
 		bool _debug = false;
 

@@ -29,7 +29,6 @@
 #define _SYN_XUNITS_H
 #include "Base.h"
 #include "IODevice.h"
-#include <iostream>
 #include <cmath>
 namespace syn {
 template<typename T, T addressMask>
