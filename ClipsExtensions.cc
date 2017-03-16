@@ -107,7 +107,7 @@ namespace syn {
 	void CLIPS_translateHex(UDFContext* context, CLIPSValue* ret) {
 		CLIPS_translateNumberBase(context, ret, "0x", 16, "Hex must start with 0x");
 	}
-	
+
 
 	enum CLIPS_UnaryOperations {
 		Not,
@@ -259,8 +259,8 @@ namespace syn {
 		public:
 			using Word = CLIPSInteger;
 			static ManagedMemoryBlock* make(CLIPSInteger capacity) noexcept;
-			static void newFunction(void* env, DATA_OBJECT* ret); 
-			static bool callFunction(void* env, DATA_OBJECT* value, DATA_OBJECT* ret);
+			static void newFunction(void* env, DataObjectPtr ret);
+			static bool callFunction(void* env, DataObjectPtr value, DataObjectPtr ret);
 			static void registerWithEnvironment(void* env, const char* title) { ExternalAddressWrapper<Word[]>::registerWithEnvironment(env, title, newFunction, callFunction); }
 			static void registerWithEnvironment(void* env) { registerWithEnvironment(env, "memory-block"); }
 		public:
@@ -294,10 +294,10 @@ namespace syn {
 	using ManagedMemoryBlock_Ptr = ManagedMemoryBlock*;
 
 	ManagedMemoryBlock* ManagedMemoryBlock::make(CLIPSInteger capacity) noexcept {
-		return new ManagedMemoryBlock(capacity); 
+		return new ManagedMemoryBlock(capacity);
 	}
 #define argCheck(storage, position, type) EnvArgTypeCheck(env, funcStr.c_str(), position, type, storage)
-	void ManagedMemoryBlock::newFunction(void* env, DATA_OBJECT* ret) {
+	void ManagedMemoryBlock::newFunction(void* env, DataObjectPtr ret) {
 		static bool init = false;
 		static std::string funcStr;
 		static std::string funcErrorPrefix;
@@ -335,7 +335,7 @@ namespace syn {
 			errorMessage(env, "NEW", 2, funcErrorPrefix, str);
 		}
 	}
-	bool ManagedMemoryBlock::callFunction(void* env, DATA_OBJECT* value, DATA_OBJECT* ret) {
+	bool ManagedMemoryBlock::callFunction(void* env, DataObjectPtr value, DataObjectPtr ret) {
 		static bool init = true;
 		static std::string funcStr;
 		static std::string funcErrorPrefix;
@@ -398,7 +398,7 @@ namespace syn {
 					auto checkArg1 = [checkArg, &arg1, env, &str](unsigned int type, const std::string& msg) { return checkArg(4, type, msg, &arg1); };
 					auto oneCheck = [checkArg0](unsigned int type, const std::string& msg) { return checkArg0(type, msg); };
 					auto twoCheck = [checkArg0, checkArg1](unsigned int type0, const std::string& msg0, unsigned int type1, const std::string& msg1) {
-						return checkArg0(type0, msg0) && checkArg1(type1, msg1); 
+						return checkArg0(type0, msg0) && checkArg1(type1, msg1);
 					};
 					auto op = result->second;
 					// TODO: clean this up when we migrate to c++17 and use the
@@ -440,7 +440,7 @@ namespace syn {
 						auto check = oneCheck(INTEGER, "First argument must be an INTEGER value to populate all of the memory cells with!");
 						if (check) {
 							ptr->setMemoryToSingleValue(EnvDOToLong(env, arg0));
-						} 
+						}
 						return check;
 					} else if (op == MemoryBlockOp::Increment || op == MemoryBlockOp::Decrement) {
 						auto check = oneCheck(INTEGER, "First argument must be an address");
@@ -552,17 +552,14 @@ namespace syn {
 		} else {
 			auto env = UDFContextEnvironment(context);
 			auto integer = CVToInteger(&number);
-			using IType = decltype(integer);
-			byte container[sizeof(IType)] = { 0 };
+            static constexpr auto iTypeSize = sizeof(decltype(integer));
+			byte container[iTypeSize] = { 0 };
 			syn::decodeInt64LE(integer, container);
-			ret->type = MULTIFIELD;
-			ret->begin = 0;
-			ret->end = sizeof(IType) -1;
-			ret->value = EnvCreateMultifield(env, sizeof(IType));
-			for (int i = 0, j = 1; i < static_cast<int>(sizeof(IType)); ++i, ++j) {
-				SetMFType(ret->value, j, INTEGER);
-				SetMFValue(ret->value, j, EnvAddLong(env, container[i]));
+            MultifieldBuilder mf(env, iTypeSize);
+			for (int i = 0, j = 1; i < static_cast<int>(iTypeSize); ++i, ++j) {
+                mf.setField(j, INTEGER, EnvAddLong(env, container[i]));
 			}
+            mf.assign(ret);
 		}
 	}
 	void installExtensions(void* theEnv) {
@@ -585,5 +582,24 @@ namespace syn {
 
 		ManagedMemoryBlock::registerWithEnvironment(theEnv, "memory-space");
 	}
+
+    MultifieldBuilder::MultifieldBuilder(void* env, long capacity) : _size(capacity), _rawMultifield(EnvCreateMultifield(env, capacity)) { }
+
+    void MultifieldBuilder::setField(int index, int type, void* value) {
+        if (index <= 0) {
+            throw syn::Problem("Can't set a value to a field with a negative index!");
+        } else if (index > _size) {
+            throw syn::Problem("Attempted to set a field which was out of range of the multifield!");
+        } else {
+            SetMFType(_rawMultifield, index, type);
+            SetMFValue(_rawMultifield, index, value);
+        }
+    }
+        void MultifieldBuilder::assign(DataObjectPtr ptr) noexcept {
+            ptr->type = MULTIFIELD;
+            ptr->begin = 0;
+            ptr->end = _size - 1;
+            ptr->value = _rawMultifield;
+        }
 
 }

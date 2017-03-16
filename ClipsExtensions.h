@@ -36,6 +36,8 @@ extern "C" {
 }
 
 namespace syn {
+using DataObject = DATA_OBJECT;
+using DataObjectPtr = DATA_OBJECT_PTR;
 void installExtensions(void* theEnv);
 
 template<typename T>
@@ -56,7 +58,7 @@ struct ExternalAddressRegistrar {
 		static void registerExternalAddressId(void* env, unsigned int value) noexcept {
 			_cache.emplace(env, value);
 		}
-		static bool isOfType(void* env, DATA_OBJECT* ptr) {
+		static bool isOfType(void* env, DataObjectPtr ptr) {
 			return static_cast<struct externalAddressHashNode*>(ptr->value)->type == getExternalAddressId(env);
 		}
 	private:
@@ -97,8 +99,8 @@ void CLIPS_basePrintAddress(void* env, const char* logicalName, void* theValue) 
 // everything breaks
 typedef void PrintFunction(void*, const char*, void*);
 typedef bool DeleteFunction(void*, void*);
-typedef bool CallFunction(void*, DATA_OBJECT*, DATA_OBJECT*);
-typedef void NewFunction(void*, DATA_OBJECT*);
+typedef bool CallFunction(void*, DataObjectPtr, DataObjectPtr);
+typedef void NewFunction(void*, DataObjectPtr);
 
 
 template<typename T>
@@ -133,7 +135,7 @@ class ExternalAddressWrapper {
 			};
 			registerWithEnvironment(env, &tmp);
 		}
-		static bool isOfType(void* env, DATA_OBJECT* ptr) noexcept {
+		static bool isOfType(void* env, DataObjectPtr ptr) noexcept {
 			return ExternalAddressRegistrar<InternalType>::isOfType(env, ptr);
 		}
 	public:
@@ -144,6 +146,59 @@ class ExternalAddressWrapper {
 		std::unique_ptr<T> _value;
 };
 
+class MultifieldBuilder {
+    public:
+        MultifieldBuilder(void* env, long capacity);
+        virtual ~MultifieldBuilder() noexcept { }
+        void setField(int index, int type, void* value);
+        long getSize() const noexcept { return _size; }
+        void* getRawMultifield() const noexcept { return _rawMultifield; }
+        void assign(DataObjectPtr ptr) noexcept;
+    private:
+        long _size;
+        void* _rawMultifield;
+};
+
+template<long capacity>
+class FixedSizeMultifieldBuilder {
+    public:
+        FixedSizeMultifieldBuilder(void* env) noexcept : _rawMultifield(EnvCreateMultifield(env, capacity)) { }
+        virtual ~FixedSizeMultifieldBuilder() noexcept { }
+        static constexpr long getSize() noexcept { return capacity; }
+        void* getRawMultifield() const noexcept { return _rawMultifield; }
+        void assign(DataObjectPtr ptr) noexcept {
+            ptr->type = MULTIFIELD;
+            ptr->begin = 0;
+            ptr->end = capacity - 1;
+            ptr->value = _rawMultifield;
+        }
+
+        void setField(int index, int type, void* value) {
+            if (index <= 0) {
+                throw syn::Problem("Can't set a value to a field with a negative index!");
+            } else if (index > capacity) {
+                throw syn::Problem("Attempted to set a field which was out of range of the multifield!");
+            } else {
+                SetMFType(_rawMultifield, index, type);
+                SetMFValue(_rawMultifield, index, value);
+            }
+        }
+        template<int index>
+        void setField(int type, void* value) noexcept {
+            static_assert(index > 0, "Negative index or zero index not allowed!");
+            static_assert(index <= capacity, "Provided index is out of range!");
+            SetMFType(_rawMultifield, index, type);
+            SetMFValue(_rawMultifield, index, value);
+        }
+        void setFirst(int type, void* value) noexcept {
+            setField<1>(type, value);
+        }
+        void setSecond(int type, void* value) noexcept {
+            setField<2>(type, value);
+        }
+    private:
+        void* _rawMultifield;
+};
 
 }
 #endif
