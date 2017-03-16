@@ -217,9 +217,7 @@ namespace syn {
 				virtual D read(A addr) override {
 					auto actualAddr = addr - this->baseAddress();
 					if (actualAddr == static_cast<A>(Addresses::Get)) {
-						auto value = static_cast<byte>(0);
-						std::cin >> std::noskipws >> value;
-						return static_cast<D>(value);
+                        return getc<D>();
 					} else {
 						throw syn::Problem("Illegal address to read from!");
 					}
@@ -227,7 +225,7 @@ namespace syn {
 				virtual void write(A addr, D value) override {
 					auto actualAddr = addr - this->baseAddress();
 					if (actualAddr == static_cast<A>(Addresses::Put)) {
-						std::cout.put(static_cast<char>(value));
+                        putc<D>(value);
 					} else {
 						throw syn::Problem("Illegal address to write to!");
 					}

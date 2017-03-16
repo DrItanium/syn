@@ -542,5 +542,17 @@ using BinaryFloat = BinaryContainer<float>;
 using BinaryDouble = BinaryContainer<double>;
 using BinaryLongDouble = BinaryContainer<long double>;
 
+template<typename T>
+T getc() noexcept {
+    byte value = 0;
+    std::cin >> std::noskipws >> value;
+    return static_cast<T>(value);
+}
+
+template<typename T>
+void putc(T value) noexcept {
+    std::cout << static_cast<char>(value);
+}
+
 }
 #endif

@@ -474,21 +474,10 @@ namespace cisc0 {
     }
 
     void Core::putc(Core* core, DecodedInstruction&& current) {
-        auto ch = static_cast<char>(core->registerValue(current.getSystemArg0()));
-        if (core->debugEnabled()) {
-            std::cerr << __PRETTY_FUNCTION__ << " called" << std::endl;
-            std::cerr << "- register " << std::hex << static_cast<int>(current.getSystemArg0()) << std::endl;
-            std::cerr << "- going to print '" << ch << "'(" << std::hex << static_cast<int>(ch) << ")" << std::endl;
-        }
-        std::cout << ch;
-        if (core->debugEnabled()) {
-            std::cerr << "Leaving " << __PRETTY_FUNCTION__ << std::endl;
-        }
+        syn::putc<RegisterValue>(core->registerValue(current.getSystemArg0()));
     }
     void Core::getc(Core* core, DecodedInstruction&& current) {
-        byte value = 0;
-        std::cin >> std::noskipws >> value;
-        core->registerValue(current.getSystemArg0()) = static_cast<RegisterValue>(value);
+        core->registerValue(current.getSystemArg0()) = syn::getc<RegisterValue>();
     }
 
     void Core::seedRandom(Core* core, DecodedInstruction&& current) {
