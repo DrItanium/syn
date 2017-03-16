@@ -48,7 +48,7 @@ namespace syn {
             fn(entry.first);
         }
     }
-	void CoreRegistrar::addToRegistry(const std::string& name, CoreRegistrar::Operation make) {
+	void CoreRegistrar::addToRegistry(const std::string& name, CoreRegistrar::Operation make) noexcept {
 		cores.emplace(name, make);
 	}
 

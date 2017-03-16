@@ -46,7 +46,7 @@ namespace syn {
 			Core* getCore(const std::string& name);
 			void forEachCoreName(CoreNameOperator fn);
             void printEachCoreName(std::ostream& out);
-			void addToRegistry(const std::string& name, Operation make);
+			void addToRegistry(const std::string& name, Operation make) noexcept;
 		private:
 			CoreRegistry cores;
 	};

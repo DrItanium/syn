@@ -53,7 +53,7 @@ struct ExternalAddressRegistrar {
 				throw syn::Problem("unregistered external address type!");
 			}
 		}
-		static void registerExternalAddressId(void* env, unsigned int value) {
+		static void registerExternalAddressId(void* env, unsigned int value) noexcept {
 			_cache.emplace(env, value);
 		}
 		static bool isOfType(void* env, DATA_OBJECT* ptr) {
@@ -95,7 +95,7 @@ void CLIPS_basePrintAddress(void* env, const char* logicalName, void* theValue) 
 
 // Have to do it this way because std::function's will go out of scope and
 // everything breaks
-typedef void PrintFunction(void*, const char*, void*); 
+typedef void PrintFunction(void*, const char*, void*);
 typedef bool DeleteFunction(void*, void*);
 typedef bool CallFunction(void*, DATA_OBJECT*, DATA_OBJECT*);
 typedef void NewFunction(void*, DATA_OBJECT*);
@@ -106,9 +106,9 @@ class ExternalAddressWrapper {
 	public:
 		using InternalType = T;
 		using BaseClass = ExternalAddressWrapper<T>;
-		static std::string getType() { return TypeToName<InternalType>::getSymbolicName(); }
+		static std::string getType() noexcept { return TypeToName<InternalType>::getSymbolicName(); }
 		static unsigned int getAssociatedEnvironmentId(void* env) { return ExternalAddressRegistrar<InternalType>::getExternalAddressId(env); }
-		static void registerWithEnvironment(void* env, externalAddressType* description) { 
+		static void registerWithEnvironment(void* env, externalAddressType* description) noexcept {
 			ExternalAddressRegistrar<InternalType>::registerExternalAddressId(env, InstallExternalAddressType(env, description));
 		}
 		static void printAddress(void* env, const char* logicalName, void* theValue) {
@@ -123,7 +123,7 @@ class ExternalAddressWrapper {
 		}
 		static void registerWithEnvironment(void* env, const char* title, NewFunction _new, CallFunction _call, DeleteFunction _delete = deleteWrapper, PrintFunction _print = printAddress) {
 
-			externalAddressType tmp = { 
+			externalAddressType tmp = {
 				title,
 				_print,
 				_print,
@@ -133,12 +133,13 @@ class ExternalAddressWrapper {
 			};
 			registerWithEnvironment(env, &tmp);
 		}
-		static bool isOfType(void* env, DATA_OBJECT* ptr) {
+		static bool isOfType(void* env, DATA_OBJECT* ptr) noexcept {
 			return ExternalAddressRegistrar<InternalType>::isOfType(env, ptr);
 		}
 	public:
 		ExternalAddressWrapper(std::unique_ptr<T>&& value) : _value(std::move(value)) { }
 		inline T* get() const noexcept { return _value.get(); }
+        T* operator->() const noexcept { return get(); }
 	protected:
 		std::unique_ptr<T> _value;
 };
