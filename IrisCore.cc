@@ -336,17 +336,17 @@ namespace iris {
 				case MoveOp::StoreCode:
 					instruction[destinationRegister()] = encodeDword(source0Register(), source1Register());
 					break;
-				case MoveOp::IOWrite:
-					_io.write(destinationRegister(), source0Register());
-					break;
 				case MoveOp::IORead:
-					destinationRegister() = _io.read(source0Register());
+                    destinationRegister() = ioSpaceRead(source0Register());
 					break;
 				case MoveOp::IOReadWithOffset:
-					destinationRegister() = _io.read(source0Register() + getHalfImmediate());
+                    destinationRegister() = ioSpaceRead(source0Register() + getHalfImmediate());
+					break;
+				case MoveOp::IOWrite:
+                    ioSpaceWrite(destinationRegister(), source0Register());
 					break;
 				case MoveOp::IOWriteWithOffset:
-					_io.write(destinationRegister() + getHalfImmediate(), source0Register());
+                    ioSpaceWrite(destinationRegister() + getHalfImmediate(), source0Register());
 					break;
 				case MoveOp::MoveFromIP:
 					destinationRegister() = getInstructionPointer();
@@ -539,6 +539,20 @@ namespace iris {
     }
     raw_instruction encodeInstruction(byte group, byte operation, byte dest, word immediate) {
         return encodeInstruction(group, operation, dest, syn::getLowerHalf(immediate), syn::getUpperHalf(immediate));
+    }
+
+    word Core::ioSpaceRead(word address) noexcept {
+        return address == 0 ? 0 : _io.read(address);
+    }
+    void Core::ioSpaceWrite(word address, word value) noexcept {
+        if (address == 0) {
+            // this is execution termination if you write to address zero in IO
+            // space!
+            execute = false;
+            advanceIp = false;
+        } else {
+            _io.write(address, value);
+        }
     }
 
 }

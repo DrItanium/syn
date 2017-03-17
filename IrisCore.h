@@ -60,9 +60,9 @@ namespace iris {
 } // end namespace iris
 #include "iris_defines.h"
 
-template<typename Data, typename Address>
-class ExposedCoreDataMemory;
 namespace iris {
+    template<typename Data, typename Address>
+    class ExposedCoreDataMemory;
 	using IOSpace = syn::CLIPSIOController<word, CLIPSInteger>;
 	//using IOSpace = syn::IOController<word>;
 	template<dword capacity>
@@ -133,7 +133,8 @@ namespace iris {
 			void saveSystemState() noexcept;
 			void restoreSystemState() noexcept;
 			void dispatchInterruptHandler();
-
+            void ioSpaceWrite(word address, word value) noexcept;
+            word ioSpaceRead(word address) noexcept;
 		private:
 			template<typename Unit>
 			void performOperation(Unit& unit, typename Unit::Operation op, bool immediate) {
@@ -215,6 +216,8 @@ namespace iris {
 	template<typename Data, typename Address>
 	class ExposedCoreDataMemory : public syn::IODevice<Data, Address> {
 		public:
+            using Self = ExposedCoreDataMemory<Data, Address>;
+            using Parent = syn::IODevice<Data, Address>;
 			static constexpr Address computeScaleFactor() noexcept {
 				return sizeof(Data) / sizeof(word);
 			}
@@ -227,7 +230,8 @@ namespace iris {
 			static constexpr word computeInternalAddress(Address addr) noexcept {
 				return static_cast<word>(addr * computeScaleFactor());
 			}
-			ExposedCoreDataMemory(Core* core, Address base, Address length = computeDataLength()) : syn::IODevice<Data, Address>(base, length), _core(core) { }
+        public:
+			ExposedCoreDataMemory(Core* core, Address base, Address length = computeDataLength()) : Parent(base, length), _core(core) { }
 			virtual ~ExposedCoreDataMemory() { }
 			virtual void write(Address address, Data value) override {
 				auto addr = computeInternalAddress(tryComputeActualAddress(address));
