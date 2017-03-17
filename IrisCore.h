@@ -93,7 +93,7 @@ namespace iris {
 			inline word readDataMemory(word address) noexcept                     { return data[address]; }
 			void writeIOMemory(word address, word value);
 			word readIOMemory(word address);
-			void installIODevice(std::shared_ptr<IODevice> dev);
+			//void installIODevice(std::shared_ptr<IODevice> dev);
 			void writeRegister(byte index, word value);
 			word readRegister(byte index);
 			virtual bool cycle() override;

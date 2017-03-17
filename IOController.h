@@ -117,12 +117,17 @@ class IOController : public IODevice<D, A> {
 template<typename D, typename A = D>
 using MemoryController = IOController<D, A>;
 
+#define IO_CONTROLLER_REFERENCE USER_ENVIRONMENT_DATA
 template<typename D, typename A = D>
 class CLIPSIOController : public IODevice<D, A> {
 	public:
 		using Parent = IODevice<D, A>;
 		using Self = CLIPSIOController<D, A>;
 		using SharedSelf = std::shared_ptr<Self>;
+        static Self* unpackFromEnvironment(UDFContext* context) noexcept {
+           auto env = UDFContextEnvironment(context);
+            return static_cast<Self*>(GetEnvironmentData(env, IO_CONTROLLER_REFERENCE));
+        }
 	public:
 		CLIPSIOController(A base, A length, const std::string& bootstrapFileLocation) : IODevice<D, A>(base, length), _bootstrapLocation(bootstrapFileLocation), _env(CreateEnvironment()) { }
 		virtual ~CLIPSIOController() {
@@ -131,9 +136,12 @@ class CLIPSIOController : public IODevice<D, A> {
 		virtual void initialize() override {
 			auto theEnv = static_cast<Environment*>(_env);
 			// install custom functions into the environment
-			EnvAddUDF(theEnv, "io-controller:get-base-address", "l", [this](UDFContext* context, CLIPSValue* ret) { CVSetInteger(ret, this->baseAddress()); }, "CustomLambdaFunction", 0, 0, "", nullptr);
-			EnvAddUDF(theEnv, "io-controller:get-end-address", "l", [this](UDFContext* context, CLIPSValue* ret) { CVSetInteger(ret, this->endAddress()); }, "CustomLambdaFunction", 0, 0, "", nullptr);
-			EnvAddUDF(theEnv, "io-controller:get-address-size", "l", [this](UDFContext* context, CLIPSValue* ret) { CVSetInteger(ret, this->size()); }, "CustomLambdaFunction", 0, 0, "", nullptr);
+			EnvAddUDF(theEnv, "io-controller:get-base-address", "l", [](UDFContext* context, CLIPSValue* ret) { CVSetInteger(ret, unpackFromEnvironment(context)->baseAddress()); } , "CustomLambdaFunction", 0, 0, "", nullptr);
+			EnvAddUDF(theEnv, "io-controller:get-end-address", "l", [](UDFContext* context, CLIPSValue* ret) { CVSetInteger(ret, unpackFromEnvironment(context)->endAddress()); }, "CustomLambdaFunction", 0, 0, "", nullptr);
+			EnvAddUDF(theEnv, "io-controller:get-address-size", "l", [](UDFContext* context, CLIPSValue* ret) { CVSetInteger(ret, unpackFromEnvironment(context)->size()); }, "CustomLambdaFunction", 0, 0, "", nullptr);
+            // save self into the environment as a form of callback!
+            AllocateEnvironmentData(_env, IO_CONTROLLER_REFERENCE, sizeof(Self*), NULL);
+            SetEnvironmentData(_env, IO_CONTROLLER_REFERENCE, this);
 			CLIPS_installDefaultIODevices(_env);
 			if (!EnvBatchStar(theEnv, _bootstrapLocation.c_str())) {
 				std::stringstream msg;
@@ -166,6 +174,7 @@ class CLIPSIOController : public IODevice<D, A> {
 		std::string _bootstrapLocation;
 		void* _env;
 };
+
 
 
 } // end namespace syn
