@@ -9,7 +9,7 @@ set r1 0 		; load cell
 set r2 0 		; predicate cell
 set r3 0 		; zero cell
 set r4 2		; putc io address
-set r5 0 		; terminate io address
+set r5 0xFFFF 		; terminate io address
 .label continue
 ld r1 r0
 ne p0 p1 r1 r3

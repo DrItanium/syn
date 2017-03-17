@@ -542,10 +542,10 @@ namespace iris {
     }
 
     word Core::ioSpaceRead(word address) noexcept {
-        return address == 0 ? 0 : _io.read(address);
+        return address == 0xFFFF ? 0 : _io.read(address);
     }
     void Core::ioSpaceWrite(word address, word value) noexcept {
-        if (address == 0) {
+        if (address == 0xFFFF) {
             // this is execution termination if you write to address zero in IO
             // space!
             execute = false;

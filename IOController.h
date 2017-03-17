@@ -168,7 +168,7 @@ class CLIPSIOController : public IODevice<D, A> {
 			args << addr;
 			auto str = args.str();
 			CLIPSValue result;
-			if (!EnvFunctionCall(_env, "read-from-io-address", str.c_str(), &result)) {
+			if (EnvFunctionCall(_env, "read-from-io-address", str.c_str(), &result)) {
 				throw syn::Problem("Calling read-from-io-address failed!");
 			} else {
 				return static_cast<D>(CVToInteger(&result));
@@ -179,7 +179,7 @@ class CLIPSIOController : public IODevice<D, A> {
 			args << addr << " " << value;
 			auto str = args.str();
 			CLIPSValue result;
-			if (!EnvFunctionCall(_env, "write-to-io-address", str.c_str(), &result)) {
+			if (EnvFunctionCall(_env, "write-to-io-address", str.c_str(), &result)) {
 				throw syn::Problem("Calling write-to-io-address failed!");
 			}
 		}
