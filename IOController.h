@@ -124,9 +124,7 @@ class CLIPSIOController : public IODevice<D, A> {
 		using Self = CLIPSIOController<D, A>;
 		using SharedSelf = std::shared_ptr<Self>;
 	public:
-		CLIPSIOController(const std::string& bootstrapFileLocation, A base, A length) : IODevice<D, A>(base, length), _bootstrapLocation(bootstrapFileLocation) {
-			_env = CreateEnvironment();
-		}
+		CLIPSIOController(A base, A length, const std::string& bootstrapFileLocation) : IODevice<D, A>(base, length), _bootstrapLocation(bootstrapFileLocation), _env(CreateEnvironment()) { }
 		virtual ~CLIPSIOController() {
 			DestroyEnvironment(_env);
 		}
