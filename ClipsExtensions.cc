@@ -215,7 +215,7 @@ namespace syn {
 		auto str = ss.str();
 		EnvPrintRouter(env, logicalName, str.c_str());
 	}
-	inline void CLIPS_basePrintAddress_Pointer(void* env, const char* logicalName, void* theValue, const char* func) noexcept {
+	void CLIPS_basePrintAddress_Pointer(void* env, const char* logicalName, void* theValue, const char* func) noexcept {
 		CLIPS_basePrintAddress(env, logicalName, theValue, func, "Pointer");
 	}
 	void CLIPS_decodeBits(UDFContext* context, CLIPSValue* ret) {
@@ -298,7 +298,7 @@ namespace syn {
 	}
 #define argCheck(storage, position, type) EnvArgTypeCheck(env, funcStr.c_str(), position, type, storage)
 	void ManagedMemoryBlock::newFunction(void* env, DataObjectPtr ret) {
-		static bool init = false;
+		static bool init = true;
 		static std::string funcStr;
 		static std::string funcErrorPrefix;
 		if (init) {
@@ -404,7 +404,10 @@ namespace syn {
 					// TODO: clean this up when we migrate to c++17 and use the
 					// inline if variable declarations
 					auto findOpCount = opArgCounts.find(op);
-					if (findOpCount != opArgCounts.end()) {
+					if (findOpCount == opArgCounts.end()) {
+						CVSetBoolean(ret, false);
+						return callErrorMessage(str, "<- unknown argument count, not registered!!!!!");
+					} else {
 						// if it is registered then check the length
 						auto argCount = 2 /* always have two arguments */  + findOpCount->second;
 						if (argCount != EnvRtnArgCount(env)) {

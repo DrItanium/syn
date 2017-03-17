@@ -31,8 +31,7 @@
 #include "IrisCoreSecondaryStorageController.h"
 
 namespace iris {
-
-	Core::Core() noexcept : execute(true), advanceIp(true), current(0), _ip(0), _lr(0), _error(0), _io(0, 0xFFFF) { }
+	Core::Core() noexcept : execute(true), advanceIp(true), current(0), _ip(0), _lr(0), _error(0), _io(0, 0xFFFF, "IrisCoreIOBootstrap.clp") { }
 
 	Core::~Core() {
 	}
@@ -337,17 +336,17 @@ namespace iris {
 				case MoveOp::StoreCode:
 					instruction[destinationRegister()] = encodeDword(source0Register(), source1Register());
 					break;
-				case MoveOp::IOWrite:
-					_io.write(destinationRegister(), source0Register());
-					break;
 				case MoveOp::IORead:
-					destinationRegister() = _io.read(source0Register());
+                    destinationRegister() = ioSpaceRead(source0Register());
 					break;
 				case MoveOp::IOReadWithOffset:
-					destinationRegister() = _io.read(source0Register() + getHalfImmediate());
+                    destinationRegister() = ioSpaceRead(source0Register() + getHalfImmediate());
+					break;
+				case MoveOp::IOWrite:
+                    ioSpaceWrite(destinationRegister(), source0Register());
 					break;
 				case MoveOp::IOWriteWithOffset:
-					_io.write(destinationRegister() + getHalfImmediate(), source0Register());
+                    ioSpaceWrite(destinationRegister() + getHalfImmediate(), source0Register());
 					break;
 				case MoveOp::MoveFromIP:
 					destinationRegister() = getInstructionPointer();
@@ -495,17 +494,17 @@ namespace iris {
 		for (auto i = 0; i < _cr.getSize(); ++i) {
 			_cr[i] = false;
 		}
-		auto readNothing = syn::readNothing<typename LambdaIODevice::DataType, typename LambdaIODevice::AddressType>;
+		//auto readNothing = syn::readNothing<typename LambdaIODevice::DataType, typename LambdaIODevice::AddressType>;
 		// terminate
-		_io.install(std::make_shared<LambdaIODevice>(0, 1, readNothing,
-					[this](word address, word value) {
-						execute = false;
-						advanceIp = false;
-					}));
-		// getc and putc
-		_io.install(std::make_shared<syn::StandardInputOutputDevice<word>>(1));
-		_io.install(std::make_shared<syn::RandomDevice<word, word>>(3));
-		_io.install(std::make_shared<SecondaryStorageController>(0xA));
+		//_io.install(std::make_shared<LambdaIODevice>(0, 1, readNothing,
+		//			[this](word address, word value) {
+		//				execute = false;
+		//				advanceIp = false;
+		//			}));
+		//// getc and putc
+		//_io.install(std::make_shared<syn::StandardInputOutputDevice<word>>(1));
+		//_io.install(std::make_shared<syn::RandomDevice<word, word>>(3));
+		//_io.install(std::make_shared<SecondaryStorageController>(0xA));
 	}
 
 	void Core::shutdown() {
@@ -516,9 +515,9 @@ namespace iris {
 		_io.shutdown();
 	}
 
-	void Core::installIODevice(std::shared_ptr<IODevice> dev) {
-		_io.install(dev);
-	}
+	//void Core::installIODevice(std::shared_ptr<IODevice> dev) {
+	//	_io.install(dev);
+	//}
 
 	Core* newCore() noexcept {
 		return new iris::Core();
@@ -540,6 +539,20 @@ namespace iris {
     }
     raw_instruction encodeInstruction(byte group, byte operation, byte dest, word immediate) {
         return encodeInstruction(group, operation, dest, syn::getLowerHalf(immediate), syn::getUpperHalf(immediate));
+    }
+
+    word Core::ioSpaceRead(word address) noexcept {
+        return address == 0xFFFF ? 0 : _io.read(address);
+    }
+    void Core::ioSpaceWrite(word address, word value) noexcept {
+        if (address == 0xFFFF) {
+            // this is execution termination if you write to address zero in IO
+            // space!
+            execute = false;
+            advanceIp = false;
+        } else {
+            _io.write(address, value);
+        }
     }
 
 }

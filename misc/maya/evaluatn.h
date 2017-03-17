@@ -182,7 +182,11 @@ typedef struct entityRecord * ENTITY_RECORD_PTR;
 #define GetNextArgument(ep)          (ep->nextArg)
 
 #define MAXIMUM_PRIMITIVES 150
+#ifndef MAXIMUM_EXTERNAL_ADDRESS_TYPES
+// make this customizable by the build system instead of having to hack this
+// file everytime!
 #define MAXIMUM_EXTERNAL_ADDRESS_TYPES 10
+#endif // end MAXIMUM_EXTERNAL_ADDRESS_TYPES
 
 #define BITS_PER_BYTE    8
 

@@ -117,5 +117,79 @@ class IOController : public IODevice<D, A> {
 template<typename D, typename A = D>
 using MemoryController = IOController<D, A>;
 
+#define IO_CONTROLLER_REFERENCE USER_ENVIRONMENT_DATA
+struct IOControllerWrapper {
+    CLIPSInteger baseAddress;
+    CLIPSInteger endAddress;
+    CLIPSInteger size;
+};
+
+void getCLIPSIOControllerBaseAddress(UDFContext* context, CLIPSValue* ret);
+void getCLIPSIOControllerEndAddress(UDFContext* context, CLIPSValue* ret);
+void getCLIPSIOControllerSize(UDFContext* context, CLIPSValue* ret);
+
+template<typename D, typename A = D>
+class CLIPSIOController : public IODevice<D, A> {
+	public:
+		using Parent = IODevice<D, A>;
+		using Self = CLIPSIOController<D, A>;
+		using SharedSelf = std::shared_ptr<Self>;
+	public:
+		CLIPSIOController(A base, A length, const std::string& bootstrapFileLocation) : IODevice<D, A>(base, length), _bootstrapLocation(bootstrapFileLocation) {
+            _env = CreateEnvironment();
+        }
+		virtual ~CLIPSIOController() {
+            if (_env) {
+			    DestroyEnvironment(_env);
+            }
+		}
+		virtual void initialize() override {
+			auto theEnv = static_cast<Environment*>(_env);
+			// install custom functions into the environment
+			EnvAddUDF(theEnv, "io-controller:get-base-address", "l", getCLIPSIOControllerBaseAddress, "getCLIPSIOControllerBaseAddress", 0, 0, "", nullptr);
+			EnvAddUDF(theEnv, "io-controller:get-end-address", "l", getCLIPSIOControllerEndAddress, "getCLIPSIOControllerEndAddress", 0, 0, "", nullptr);
+			EnvAddUDF(theEnv, "io-controller:get-address-size", "l", getCLIPSIOControllerSize, "getCLIPSIOControllerSize", 0, 0, "", nullptr);
+            // save self into the environment as a form of callback!
+            AllocateEnvironmentData(_env, IO_CONTROLLER_REFERENCE, sizeof(IOControllerWrapper), NULL);
+            auto wrap = static_cast<IOControllerWrapper*>(GetEnvironmentData(_env, IO_CONTROLLER_REFERENCE));
+            wrap->baseAddress = this->baseAddress();
+            wrap->endAddress = this->endAddress();
+            wrap->size = this->size();
+			CLIPS_installDefaultIODevices(_env);
+			if (!EnvBatchStar(theEnv, _bootstrapLocation.c_str())) {
+				std::stringstream msg;
+				msg << "Could not load the bootstrap microcode file " << _bootstrapLocation << "! Make sure the file exists and is accessible!";
+				auto str = msg.str();
+				throw syn::Problem(str);
+			}
+		}
+		virtual D read(A addr) override {
+			std::stringstream args;
+			args << addr;
+			auto str = args.str();
+			CLIPSValue result;
+			if (EnvFunctionCall(_env, "read-from-io-address", str.c_str(), &result)) {
+				throw syn::Problem("Calling read-from-io-address failed!");
+			} else {
+				return static_cast<D>(CVToInteger(&result));
+			}
+		}
+		virtual void write(A addr, D value) override {
+			std::stringstream args;
+			args << addr << " " << value;
+			auto str = args.str();
+			CLIPSValue result;
+			if (EnvFunctionCall(_env, "write-to-io-address", str.c_str(), &result)) {
+				throw syn::Problem("Calling write-to-io-address failed!");
+			}
+		}
+	private:
+		std::string _bootstrapLocation;
+		void* _env;
+};
+
+
+
+
 } // end namespace syn
 #endif // end IRIS_IO_CONTROLLER_H_
