@@ -367,7 +367,7 @@ namespace syn {
 							if (countResult == argCounts.end()) {
 								CVSetBoolean(ret, false);
 								return callErrorMessage(str, "<- unknown argument count, not registered!!!");
-							} 
+							}
 							auto count = 2 + countResult->second;
 							if (count != EnvRtnArgCount(env)) {
 								CVSetBoolean(ret, false);
@@ -401,7 +401,7 @@ namespace syn {
 				registerWithEnvironment(env, str.c_str());
 			}
 			static void registerWithEnvironment(void* env) {
-				registerWithEnvironment(env, Parent::getType());
+				registerWithEnvironment(env, Self::getType());
 			}
 			static Self* make() noexcept {
 				return new Self();

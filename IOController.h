@@ -145,6 +145,7 @@ class CLIPSIOController : public IODevice<D, A> {
 		}
 		virtual void initialize() override {
 			auto theEnv = static_cast<Environment*>(_env);
+			CLIPS_installDefaultIODevices(_env);
 			// install custom functions into the environment
 			EnvAddUDF(theEnv, "io-controller:get-base-address", "l", getCLIPSIOControllerBaseAddress, "getCLIPSIOControllerBaseAddress", 0, 0, "", nullptr);
 			EnvAddUDF(theEnv, "io-controller:get-end-address", "l", getCLIPSIOControllerEndAddress, "getCLIPSIOControllerEndAddress", 0, 0, "", nullptr);
@@ -155,7 +156,6 @@ class CLIPSIOController : public IODevice<D, A> {
             wrap->baseAddress = this->baseAddress();
             wrap->endAddress = this->endAddress();
             wrap->size = this->size();
-			CLIPS_installDefaultIODevices(_env);
 			if (!EnvBatchStar(theEnv, _bootstrapLocation.c_str())) {
 				std::stringstream msg;
 				msg << "Could not load the bootstrap microcode file " << _bootstrapLocation << "! Make sure the file exists and is accessible!";

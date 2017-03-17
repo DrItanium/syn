@@ -1,21 +1,180 @@
-(deffunction write-char
-             (?value)
-             (put-char ?value))
-(deffunction read-char
+(defglobal MAIN
+           ?*rng* = (new random-number-generator:uint16))
+(defclass MAIN::io-device
+  (is-a USER)
+  (slot index
+        (type INTEGER)
+        (range 0 ?VARIABLE)
+        (storage local)
+        (visibility public)
+        (default ?NONE))
+  (slot length
+        (type INTEGER)
+        (range 1 ?VARIABLE)
+        (storage local)
+        (visibility public)
+        (default-dynamic 1))
+  (message-handler responds-to primary)
+  (message-handler read primary)
+  (message-handler write primary))
+(defmessage-handler MAIN::io-device responds-to primary
+                    (?address)
+                    (and (<= ?self:index
+                             ?address)
+                         (< ?address
+                            (+ ?self:index
+                               (dynamic-get length)))))
+
+(defmessage-handler MAIN::io-device read primary
+                    (?address)
+                    0)
+
+(defmessage-handler MAIN::io-device write primary
+                    (?address ?value))
+
+(defclass MAIN::native-io-device
+  (is-a io-device)
+  (slot native-reference
+        (type EXTERNAL-ADDRESS)
+        (storage local)
+        (visibility public))
+  (slot native-type
+        (type SYMBOL)
+        (storage shared)
+        (visibility public)
+        (default PLEASE_REIMPLEMENT_THIS))
+  (message-handler init after))
+
+(defmessage-handler MAIN::native-io-device init after
+                    ()
+                    (printout werror
+                              "native-type: " (dynamic-get native-type)
+                              crlf)
+                    (bind ?self:native-reference
+                          (new (dynamic-get native-type))))
+
+(defclass MAIN::stdin/out-device
+  (is-a io-device)
+  (message-handler read primary)
+  (message-handler write primary))
+
+(defmessage-handler MAIN::stdin/out-device read primary
+                    (?address)
+                    (get-char))
+
+(defmessage-handler MAIN::stdin/out-device write primary
+                    (?address ?value)
+                    (put-char ?value))
+(definstances MAIN::default-non-native-devices
+              ([keyboard] of stdin/out-device
+                          (index 2)))
+
+(defclass MAIN::random-number-generator
+  (is-a native-io-device)
+  (slot native-type
+        (source composite)
+        (default random-number-generator:uint16))
+  (slot length
+        (source composite)
+        (storage shared)
+        (default 3))
+  (message-handler read primary)
+  (message-handler write primary))
+
+(defmessage-handler MAIN::random-number-generator read primary
+                    (?address)
+                    (bind ?adjusted-address
+                          (- ?address
+                             ?self:index))
+                    (if (= ?adjusted-address
+                           1) then
+                      (call ?self:native-reference
+                            next)
+                      else
+                      0))
+(defmessage-handler MAIN::random-number-generator write primary
+                    (?address ?value)
+                    (bind ?adjusted-address
+                          (- ?address
+                             ?self:index))
+                    (switch ?adjusted-address
+                            (case 0 then
+                              (call ?self:native-reference
+                                    seed
+                                    ?value))
+                            (case 2 then
+                              (call ?self:native-reference
+                                    skip))
+                            (default 0)))
+
+(definstances MAIN::native-io-devices
+              ([rng0] of random-number-generator
+                      (index 3)))
+(defglobal MAIN
+           ?*result* = 0)
+
+(defrule MAIN::perform-read-operation
+         ?f <- (read ?address)
+         ?q <- (object (is-a io-device))
+         (test (send ?q
+                     responds-to
+                     ?address))
+         =>
+         (retract ?f)
+         (bind ?*result*
+               (send ?q
+                     read
+                     ?address)))
+
+(defrule MAIN::perform-write-operation
+         ?f <- (write ?address
+                      ?value)
+         ?q <- (object (is-a io-device))
+         (test (send ?q
+                     responds-to
+                     ?address))
+         =>
+         (retract ?f)
+         (send ?q
+               write
+               ?address
+               ?value))
+
+(defrule MAIN::no-read-match
+         (declare (salience -1))
+         ?f <- (read ?address)
+         =>
+         (retract ?f)
+         (printout werror
+                   "Can't read from " ?address crlf)
+         (funcall illegal-read-operation))
+
+(defrule MAIN::no-write-match
+         (declare (salience -1))
+         ?f <- (write ?address
+                      ?)
+         =>
+         (retract ?f)
+         (printout werror
+                   "Can't write to " ?address crlf)
+         (funcall illegal-write-operation))
+
+(deffunction MAIN::process-io-event
              ()
-             (get-char))
+             (run)
+             ?*result*)
+
 (deffunction read-from-io-address
              (?address)
-             (if (= ?address 2) then
-                 (read-char)
-                 else
-                 0))
+             (assert (read ?address))
+             (process-io-event))
 
 (deffunction write-to-io-address
              (?address ?value)
-             (if (= ?address 2) then
-                 (write-char ?value)
-                 else
-                 0))
+             (assert (write ?address
+                            ?value))
+             (process-io-event))
 
 
+;(watch all)
+(reset)
