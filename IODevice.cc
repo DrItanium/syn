@@ -32,5 +32,7 @@ namespace syn {
 		WrappedRandomNumberGeneratorSigned32bitDevice::registerWithEnvironment(theEnv);
 		WrappedRandomNumberGenerator16bitDevice::registerWithEnvironment(theEnv);
 		WrappedRandomNumberGeneratorSigned16bitDevice::registerWithEnvironment(theEnv);
+		WrappedRandomNumberGenerator8bitDevice::registerWithEnvironment(theEnv);
+		WrappedRandomNumberGeneratorSigned8bitDevice::registerWithEnvironment(theEnv);
 	}
 } // end namespace syn
