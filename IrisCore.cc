@@ -494,17 +494,6 @@ namespace iris {
 		for (auto i = 0; i < _cr.getSize(); ++i) {
 			_cr[i] = false;
 		}
-		//auto readNothing = syn::readNothing<typename LambdaIODevice::DataType, typename LambdaIODevice::AddressType>;
-		// terminate
-		//_io.install(std::make_shared<LambdaIODevice>(0, 1, readNothing,
-		//			[this](word address, word value) {
-		//				execute = false;
-		//				advanceIp = false;
-		//			}));
-		//// getc and putc
-		//_io.install(std::make_shared<syn::StandardInputOutputDevice<word>>(1));
-		//_io.install(std::make_shared<syn::RandomDevice<word, word>>(3));
-		//_io.install(std::make_shared<SecondaryStorageController>(0xA));
 	}
 
 	void Core::shutdown() {
@@ -514,10 +503,6 @@ namespace iris {
 		stack.shutdown();
 		_io.shutdown();
 	}
-
-	//void Core::installIODevice(std::shared_ptr<IODevice> dev) {
-	//	_io.install(dev);
-	//}
 
 	Core* newCore() noexcept {
 		return new iris::Core();
@@ -542,10 +527,10 @@ namespace iris {
     }
 
     word Core::ioSpaceRead(word address) noexcept {
-        return address == 0xFFFF ? 0 : _io.read(address);
+        return address == ArchitectureConstants::TerminateIOAddress ? 0 : _io.read(address);
     }
     void Core::ioSpaceWrite(word address, word value) noexcept {
-        if (address == 0xFFFF) {
+        if (address == ArchitectureConstants::TerminateIOAddress) {
             // this is execution termination if you write to address zero in IO
             // space!
             execute = false;

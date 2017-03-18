@@ -47,6 +47,7 @@ namespace iris {
 		ErrorDispatchVectorBase = 0x00FF,
 		RegistersToSaveOnError = 18,
 		ErrorRegisterStart = 255,
+        TerminateIOAddress = 0xFFFF,
 	};
 	inline constexpr dword encodeDword(byte a, byte b, byte c, byte d) noexcept {
 		return syn::encodeUint32LE(a, b, c, d);
@@ -73,7 +74,7 @@ namespace iris {
 	using RegisterFile = WordMemorySpace<ArchitectureConstants::RegisterCount>;
 	using IODevice = syn::IODevice<word>;
 	using LambdaIODevice = syn::LambdaIODevice<word>;
-	using PredicateRegisterFile = syn::FixedSizeLoadStoreUnit<bool, byte, 16>;
+	using PredicateRegisterFile = syn::FixedSizeLoadStoreUnit<bool, byte, ArchitectureConstants::ConditionRegisterCount>;
 	using PredicateComparator = syn::Comparator<bool, bool>;
 	using ErrorStorage = WordMemorySpace<ArchitectureConstants::RegistersToSaveOnError>;
     using InstructionPointer = syn::Register<QuadWord, ArchitectureConstants::AddressMax>;
@@ -285,14 +286,7 @@ namespace iris {
 		private:
 			Core* _core;
 	};
-	template<typename Data, typename Address>
-	std::shared_ptr<ExposedCoreDataMemory<Data, Address>> mapData(Core* core, Address base) {
-		return std::make_shared<ExposedCoreDataMemory<Data, Address>>(core, base);
-	}
-	template<typename Data, typename Address>
-	std::shared_ptr<ExposedCoreDataMemory<Data, Address>> mapData(Core* core, Address base, Address length) {
-		return std::make_shared<ExposedCoreDataMemory<Data, Address>>(core, base, length);
-	}
+
 	Core* newCore() noexcept;
 	void assemble(const std::string& inputFileName, FILE* input, std::ostream* output);
     raw_instruction encodeInstruction(byte group, byte operation, byte dest, byte src0, byte src1);
