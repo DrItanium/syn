@@ -401,7 +401,13 @@ namespace syn {
 				registerWithEnvironment(env, str.c_str());
 			}
 			static void registerWithEnvironment(void* env) {
-				registerWithEnvironment(env, Self::getType());
+                bool init = true;
+                static std::string typeString;
+                if (init) {
+                    init = false;
+                    typeString = Self::getType();
+                }
+				registerWithEnvironment(env, typeString);
 			}
 			static Self* make() noexcept {
 				return new Self();

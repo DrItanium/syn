@@ -145,6 +145,7 @@ class CLIPSIOController : public IODevice<D, A> {
 		}
 		virtual void initialize() override {
 			auto theEnv = static_cast<Environment*>(_env);
+            installExtensions(_env);
 			CLIPS_installDefaultIODevices(_env);
 			// install custom functions into the environment
 			EnvAddUDF(theEnv, "io-controller:get-base-address", "l", getCLIPSIOControllerBaseAddress, "getCLIPSIOControllerBaseAddress", 0, 0, "", nullptr);

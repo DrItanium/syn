@@ -78,8 +78,9 @@ template<typename T> struct TypeToName { };
 #define DefWrapperSymbolicName(t, name) \
 	template<> \
 	struct TypeToName < t > { \
-		static std::string getSymbolicName() noexcept { return name; } \
+		static std::string getSymbolicName() noexcept { return { name }; } \
 	}
+
 
 
 void CLIPS_basePrintAddress(void* env, const char* logicalName, void* theValue, const char* func, const char* majorType);
@@ -124,7 +125,6 @@ class ExternalAddressWrapper {
 			return true;
 		}
 		static void registerWithEnvironment(void* env, const char* title, NewFunction _new, CallFunction _call, DeleteFunction _delete = deleteWrapper, PrintFunction _print = printAddress) {
-
 			externalAddressType tmp = {
 				title,
 				_print,

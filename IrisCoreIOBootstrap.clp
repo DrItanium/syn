@@ -1,5 +1,3 @@
-(defglobal MAIN
-           ?*rng* = (new random-number-generator:uint16))
 (defclass MAIN::io-device
   (is-a USER)
   (slot index
@@ -47,9 +45,6 @@
 
 (defmessage-handler MAIN::native-io-device init after
                     ()
-                    (printout werror
-                              "native-type: " (dynamic-get native-type)
-                              crlf)
                     (bind ?self:native-reference
                           (new (dynamic-get native-type))))
 
@@ -176,5 +171,4 @@
              (process-io-event))
 
 
-;(watch all)
 (reset)
