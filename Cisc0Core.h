@@ -223,9 +223,6 @@ namespace cisc0 {
 			static void skipRandom(Core* core, DecodedInstruction&& inst);
 			SystemFunction getSystemHandler(byte index);
 			void dispatch(DecodedInstruction&& inst);
-#define X(title, func) void func ();
-#include "def/cisc0/misc.def"
-#undef X
 			template<byte rindex>
 				inline RegisterValue& registerValue() noexcept {
 					static_assert(rindex < ArchitectureConstants::RegisterCount, "Not a legal register index!");
