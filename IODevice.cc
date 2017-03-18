@@ -28,6 +28,8 @@ namespace syn {
 	void CLIPS_installDefaultIODevices(void* theEnv) {
 		WrappedRandomNumberGenerator64bitDevice::registerWithEnvironment(theEnv);
 		WrappedRandomNumberGeneratorSigned64bitDevice::registerWithEnvironment(theEnv);
+		WrappedRandomNumberGenerator32bitDevice::registerWithEnvironment(theEnv);
+		WrappedRandomNumberGeneratorSigned32bitDevice::registerWithEnvironment(theEnv);
 		WrappedRandomNumberGenerator16bitDevice::registerWithEnvironment(theEnv);
 		WrappedRandomNumberGeneratorSigned16bitDevice::registerWithEnvironment(theEnv);
 	}
