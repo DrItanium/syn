@@ -49,8 +49,8 @@ namespace cisc0 {
 	constexpr RegisterValue encodeRegisterValue(byte a, byte b, byte c, byte d) noexcept;
 	void decodeWord(Word value, byte* storage) noexcept;
 	void decodeRegisterValue(RegisterValue value, byte* storage) noexcept;
-	Word decodeUpperHalf(RegisterValue value) noexcept;
-	Word decodeLowerHalf(RegisterValue value) noexcept;
+	constexpr Word decodeUpperHalf(RegisterValue value) noexcept;
+	constexpr Word decodeLowerHalf(RegisterValue value) noexcept;
 	constexpr RegisterValue encodeUpperHalf(RegisterValue value, Word upperHalf) noexcept;
 	constexpr RegisterValue encodeLowerHalf(RegisterValue value, Word lowerHalf) noexcept;
 	constexpr RegisterValue encodeRegisterValue(Word upper, Word lower) noexcept;
@@ -110,24 +110,24 @@ namespace cisc0 {
 	};
 
 	template<byte bitmask>
-		struct SetBitmaskToWordMask {
-			static_assert(bitmask <= ArchitectureConstants::Bitmask, "Bitmask is too large and must be less than or equals to 0b1111");
-			static constexpr bool decomposedBits[] = {
-                syn::getBit<byte, 0>(bitmask),
-                syn::getBit<byte, 1>(bitmask),
-                syn::getBit<byte, 2>(bitmask),
-                syn::getBit<byte, 3>(bitmask),
-			};
-			static constexpr Word encodeWord(bool upper, bool lower) noexcept {
-				return syn::encodeUint16LE(syn::expandBit(lower), syn::expandBit(upper));
-			}
-			static constexpr Word lowerMask = encodeWord(decomposedBits[1], decomposedBits[0]);
-			static constexpr Word upperMask = encodeWord(decomposedBits[3], decomposedBits[2]);
-			static constexpr RegisterValue mask = syn::encodeUint32LE(lowerMask, upperMask);
-
-			static constexpr bool readLower = decomposedBits[1] || decomposedBits[0];
-			static constexpr bool readUpper = decomposedBits[2] || decomposedBits[3];
+	struct SetBitmaskToWordMask {
+		static_assert(bitmask <= ArchitectureConstants::Bitmask, "Bitmask is too large and must be less than or equals to 0b1111");
+		static constexpr bool decomposedBits[] = {
+            syn::getBit<byte, 0>(bitmask),
+            syn::getBit<byte, 1>(bitmask),
+            syn::getBit<byte, 2>(bitmask),
+            syn::getBit<byte, 3>(bitmask),
 		};
+		static constexpr Word encodeWord(bool upper, bool lower) noexcept {
+			return syn::encodeUint16LE(syn::expandBit(lower), syn::expandBit(upper));
+		}
+		static constexpr Word lowerMask = encodeWord(decomposedBits[1], decomposedBits[0]);
+		static constexpr Word upperMask = encodeWord(decomposedBits[3], decomposedBits[2]);
+		static constexpr RegisterValue mask = syn::encodeUint32LE(lowerMask, upperMask);
+
+		static constexpr bool readLower = decomposedBits[1] || decomposedBits[0];
+		static constexpr bool readUpper = decomposedBits[2] || decomposedBits[3];
+    };
 	template<byte bitmask>
 		inline constexpr RegisterValue mask() noexcept { return SetBitmaskToWordMask<bitmask>::mask; }
 	template<byte bitmask>

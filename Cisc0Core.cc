@@ -55,10 +55,10 @@ namespace cisc0 {
         return syn::decodeInt32LE(value, storage);
     }
 
-    Word decodeUpperHalf(RegisterValue value) noexcept {
+    constexpr Word decodeUpperHalf(RegisterValue value) noexcept {
         return syn::decodeBits<RegisterValue, Word, upper16Mask, 16>(value);
     }
-    Word decodeLowerHalf(RegisterValue value) noexcept {
+    constexpr Word decodeLowerHalf(RegisterValue value) noexcept {
         return syn::decodeBits<RegisterValue, Word, lower16Mask, 16>(value);
     }
 
@@ -536,8 +536,8 @@ namespace cisc0 {
         return syn::encodeBits<RegisterValue, Word, bitmask32, 16>(static_cast<RegisterValue>(loadWord(address)), loadWord(address + 1));
     }
     void Core::storeRegisterValue(RegisterValue address, RegisterValue value) {
-        storeWord(address, syn::decodeBits<RegisterValue, Word, lower16Mask, 0>(value));
-        storeWord(address + 1, syn::decodeBits<RegisterValue, Word, upper16Mask, 16>(value));
+        storeWord(address, decodeLowerHalf(value));
+        storeWord(address + 1, decodeUpperHalf(value));
     }
 
     void Core::installSystemHandler(Word index, Core::SystemFunction func) {
