@@ -271,6 +271,7 @@ namespace syn {
 				}
 			private:
 				void generateNextValue() noexcept {
+                    (void)_next.get();
 					_next = std::async(std::launch::async, [this]() { return _engine(); });
 				}
 			private:
