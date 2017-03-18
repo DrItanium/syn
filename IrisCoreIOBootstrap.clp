@@ -41,12 +41,20 @@
         (storage shared)
         (visibility public)
         (default PLEASE_REIMPLEMENT_THIS))
+  (message-handler get-native-construction-args primary)
   (message-handler init after))
 
 (defmessage-handler MAIN::native-io-device init after
                     ()
                     (bind ?self:native-reference
-                          (new (dynamic-get native-type))))
+                          (new (dynamic-get native-type)
+                               (expand$ (send ?self
+                                              get-native-construction-args)))))
+
+(defmessage-handler MAIN::native-io-device get-native-construction-args primary
+                    ()
+                    (create$))
+
 
 (defclass MAIN::stdin/out-device
   (is-a io-device)
@@ -101,10 +109,53 @@
                               (call ?self:native-reference
                                     skip))
                             (default 0)))
+(defclass MAIN::memory
+          "Concept of memory used to store data in it."
+          (is-a native-io-device)
+          (slot native-type
+                (source composite)
+                (default memory-space))
+          (slot length
+                (source composite)
+                (default ?NONE))
+          (message-handler get-native-construction-args after)
+          (message-handler read primary)
+          (message-handler write primary))
+
+(defmessage-handler MAIN::memory get-native-construction-args primary
+                    ()
+                    (create$ (dynamic-get length)))
+
+(defmessage-handler MAIN::memory read primary
+                    (?address)
+                    (call ?self:native-reference
+                          get
+                          ?address))
+
+(defmessage-handler MAIN::memory write primary
+                    (?address ?value)
+                    (call ?self:native-reference
+                          set
+                          ?address
+                          ?value))
+
+(defclass MAIN::unconnected-memory
+  "Memory which will not respond to io requests directly!"
+  (is-a memory)
+  (slot index
+        (source composite)
+        (default 0))
+  (message-handler responds-to primary))
+
+(defmessage-handler MAIN::unconnected-memory responds-to primary
+                    (?address)
+                    FALSE)
 
 (definstances MAIN::native-io-devices
               ([rng0] of random-number-generator
-                      (index 3)))
+                      (index 3))
+              ([bank0] of unconnected-memory
+                       (length (hex->int 0x1000000))))
 (defglobal MAIN
            ?*result* = 0)
 
@@ -156,6 +207,7 @@
 
 (deffunction MAIN::process-io-event
              ()
+             (system "sleep 10")
              (run)
              ?*result*)
 
