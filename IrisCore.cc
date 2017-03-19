@@ -428,13 +428,12 @@ namespace iris {
 				break;
 		}
 	}
-
 	void Core::restorePredicateRegisters(word input, word mask) noexcept {
-		Core::PredicateRegisterDecoder<15>::invoke(this, input, mask);
+		Core::PredicateRegisterDecoder<ArchitectureConstants::ConditionRegisterCount - 1>::invoke(this, input, mask);
 	}
 
 	word Core::savePredicateRegisters(word mask) noexcept {
-		return Core::PredicateRegisterEncoder<15>::invoke(this, mask);
+		return Core::PredicateRegisterEncoder<ArchitectureConstants::ConditionRegisterCount - 1>::invoke(this, mask);
 	}
 
 	enum class Segment  {
@@ -443,10 +442,11 @@ namespace iris {
 		Count,
 	};
 	void Core::link(std::istream& input) {
-		char buf[8] = {0};
+        static constexpr auto fieldWidth = 8;
+		char buf[fieldWidth] = {0};
 		for(auto lineNumber = static_cast<int>(0); input.good(); ++lineNumber) {
-			input.read(buf, 8);
-			if (input.gcount() < 8 && input.gcount() > 0) {
+			input.read(buf, fieldWidth);
+			if (input.gcount() < fieldWidth && input.gcount() > 0) {
 				throw syn::Problem("unaligned object file found!");
 			} else if (input.gcount() == 0) {
 				if (input.eof()) {

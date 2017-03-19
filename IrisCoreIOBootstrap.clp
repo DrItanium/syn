@@ -40,7 +40,7 @@
         (type SYMBOL)
         (storage shared)
         (visibility public)
-        (default PLEASE_REIMPLEMENT_THIS))
+        (default PLEASE-REIMPLEMENT-THIS))
   (message-handler get-native-construction-args primary)
   (message-handler init after))
 
@@ -153,9 +153,8 @@
 
 (definstances MAIN::native-io-devices
               ([rng0] of random-number-generator
-                      (index 3))
-              ([bank0] of unconnected-memory
-                       (length (hex->int 0x1000000))))
+                      (index 3)))
+
 (defglobal MAIN
            ?*result* = 0)
 
@@ -207,7 +206,6 @@
 
 (deffunction MAIN::process-io-event
              ()
-             (system "sleep 10")
              (run)
              ?*result*)
 

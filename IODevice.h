@@ -279,6 +279,188 @@ namespace syn {
 				std::mt19937_64 _engine;
 		};
 
+    template<typename Data, typename Address, template<typename, typename> class T>
+    class WrappedIODevice : public ExternalAddressWrapper<T<Data, Address>> {
+        public: 
+            using InternalType = T<Data, Address>;
+            using Self = WrappedIODevice<Data, Address, T>;
+            using Parent = ExternalAddressWrapper<InternalType>;
+            using Self_Ptr = Self*;
+            enum Operations {
+                Type,
+                Read,
+                Write,
+                Initialize,
+                Shutdown,
+                Count,
+            };
+            static void newFunction(void* env, CLIPSValue* ret) {
+                static auto init = true;
+                static std::string funcStr;
+                static std::string funcErrorPrefix;
+                if (init) {
+                    init = false;
+                    std::stringstream ss, ss2;
+					ss << "new (" << Self::getType() << ")";
+					funcStr = ss.str();
+					ss2 << "Function " << funcStr;
+					funcErrorPrefix = ss2.str();
+                }
+                try {
+                    if (EnvRtnArgCount(env) == 1) {
+                        auto idIndex = Self::getAssociatedEnvironmentId(env);
+                        ret->bitType = EXTERNAL_ADDRESS_TYPE;
+                        SetpType(ret, EXTERNAL_ADDRESS);
+                        SetpValue(ret, EnvAddExternalAddress(env, Self::make(), idIndex));
+                    } else {
+                        errorMessage(env, "NEW", 1, funcErrorPrefix, " no arguments should be provided for function new!");
+                    }
+                } catch(syn::Problem p) {
+                    CVSetBoolean(ret, false);
+                    std::stringstream s;
+                    s << "an exception was thrown: " << p.what();
+                    auto str = s.str();
+                    errorMessage(env, "NEW", 2, funcErrorPrefix, str);
+                }
+            }
+            static bool callFunction(void* env, CLIPSValue* value, CLIPSValue* ret) {
+                static auto init = true;
+                static std::string funcStr;
+                static std::string funcErrorPrefix;
+                static std::map<std::string, Operations> opTranslation = {
+                    { "read", Operations::Read },
+                    { "write", Operations::Write },
+                    { "type",  Operations::Type },
+                    { "initialize", Operations::Initialize },
+                    { "shutdown", Operations::Shutdown },
+                };
+                static std::map<Operations, int> argCounts = {
+                    { Operations::Type, 0 },
+                    { Operations::Read, 1 },
+                    { Operations::Write, 2 },
+                };
+				if (init) {
+					init = false;
+					std::stringstream ss, ss2;
+					ss << "call (" << Self::getType() << ")";
+					funcStr = ss.str();
+					ss2 << "Function " << funcStr;
+					funcErrorPrefix = ss2.str();
+				}
+				auto callErrorMessage = [env, ret](const std::string& subOp, const std::string& rest) {
+					CVSetBoolean(ret, false);
+					std::stringstream stm;
+					stm << " " << subOp << ": " << rest << std::endl;
+					auto msg = stm.str();
+					return errorMessage(env, "CALL", 3, funcErrorPrefix, msg);
+				};
+
+				if (GetpType(value) == EXTERNAL_ADDRESS) {
+					auto ptr = static_cast<Self_Ptr>(DOPToExternalAddress(value));
+					CLIPSValue op;
+					if (!EnvArgTypeCheck(env, funcStr.c_str(), 2, SYMBOL, &op)) {
+						return errorMessage(env, "CALL", 2, funcErrorPrefix, "expected a function name to call!");
+					} else {
+						std::string str(EnvDOToString(env, op));
+						auto result = opTranslation.find(str);
+						if (result == opTranslation.end()) {
+							CVSetBoolean(ret, false);
+							return callErrorMessage(str, "<- unknown operation requested!");
+						} else {
+							auto theOp = result->second;
+							auto countResult = argCounts.find(theOp);
+							if (countResult == argCounts.end()) {
+								CVSetBoolean(ret, false);
+								return callErrorMessage(str, "<- unknown argument count, not registered!!!");
+							}
+							auto count = 2 + countResult->second;
+							if (count != EnvRtnArgCount(env)) {
+								CVSetBoolean(ret, false);
+								return callErrorMessage(str, " too many arguments provided!");
+							}
+                            auto readOperation = [ptr, ret, env]() { 
+				                CLIPSValue tmp;
+                                if (!EnvArgTypeCheck(env, funcStr.c_str(), 3, INTEGER, &tmp)) {
+                                    CVSetBoolean(ret, false);
+                                    return errorMessage(env, "CALL", 3, funcErrorPrefix, "provided address is not an integer!");
+                                } else {
+                                    auto address = static_cast<Address>(EnvDOToLong(env, tmp));
+                                    auto response = ptr->respondsTo(address);
+                                    if (response) {
+                                        CVSetInteger(ret, ptr->read(address));
+                                    } else {
+                                        CVSetBoolean(ret, false);
+                                    }
+                                    return response;
+                                }
+                            };
+                            auto writeOperation = [ptr, ret, env]() {
+                                CLIPSValue t0, t1;
+                                if (!EnvArgTypeCheck(env, funcStr.c_str(), 3, INTEGER, &t0)) {
+                                    CVSetBoolean(ret, false);
+                                    return errorMessage(env, "CALL", 3, funcErrorPrefix, "provided address is not an integer!");
+                                } else if (!EnvArgTypeCheck(env, funcStr.c_str(), 4, INTEGER, &t1)) {
+                                    CVSetBoolean(ret, false);
+                                    return errorMessage(env, "CALL", 3, funcErrorPrefix, "provided value is not an integer!");
+                                } else {
+                                    CVSetBoolean(ret, true);
+                                    auto address = static_cast<Address>(EnvDOToLong(env, t0));
+                                    auto value = static_cast<Data>(EnvDOToLong(env, t1));
+                                    ptr->write(address, value);
+                                    return true;
+                                }
+                            };
+
+
+							switch(theOp) {
+                                case Operations::Type:
+                                    CVSetString(ret, Self::getType().c_str());
+                                    return true;
+                                case Operations::Shutdown:
+                                    CVSetBoolean(ret, true);
+                                    ptr->shutdown();
+                                    return true;
+                                case Operations::Initialize:
+                                    CVSetBoolean(ret, true);
+                                    ptr->initialize();
+                                    return true;
+								case Operations::Read:
+                                    return readOperation();
+                                case Operations::Write:
+                                    return writeOperation();
+								default:
+									CVSetBoolean(ret, false);
+									return callErrorMessage(str, "<- unimplemented operation!!!!");
+							}
+						}
+					}
+				} else {
+					return errorMessage(env, "CALL", 1, funcErrorPrefix, "Function call expected an external address as the first argument!");
+				}
+
+				return false;
+            }
+			static void registerWithEnvironment(void* env, const char* title) {
+				Parent::registerWithEnvironment(env, title, newFunction, callFunction);
+			}
+			static void registerWithEnvironment(void* env, const std::string& str) {
+				registerWithEnvironment(env, str.c_str());
+			}
+			static void registerWithEnvironment(void* env) {
+                bool init = true;
+                static std::string typeString;
+                if (init) {
+                    init = false;
+                    typeString = Self::getType();
+                }
+				registerWithEnvironment(env, typeString);
+			}
+			static Self* make() noexcept {
+				return new Self();
+			}
+        public:
+            WrappedIODevice() : Parent(std::move(std::make_unique<InternalType>(0))) { }
+    };
 	template<typename Word, typename Address = CLIPSInteger>
 	class WrappedGenericRandomDevice : public ExternalAddressWrapper<RandomDevice<Word, Address>> {
 		public:
