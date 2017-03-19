@@ -73,7 +73,6 @@ namespace iris {
 	using CompareUnit = syn::Comparator<word>;
 	using RegisterFile = WordMemorySpace<ArchitectureConstants::RegisterCount>;
 	using IODevice = syn::IODevice<word>;
-	using LambdaIODevice = syn::LambdaIODevice<word>;
 	using PredicateRegisterFile = syn::FixedSizeLoadStoreUnit<bool, byte, ArchitectureConstants::ConditionRegisterCount>;
 	using PredicateComparator = syn::Comparator<bool, bool>;
 	using ErrorStorage = WordMemorySpace<ArchitectureConstants::RegistersToSaveOnError>;
