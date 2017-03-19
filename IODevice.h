@@ -122,89 +122,6 @@ namespace syn {
 	template<typename Data, typename Addr = Data>
 		Data readNothing(Addr address) { return static_cast<Data>(0); }
 
-	template<typename Data, typename Address = Data>
-		class LambdaIODevice : public IODevice<Data, Address> {
-			public:
-				using ReadFunction = std::function<Data(Address)>;
-				using WriteFunction = std::function<void(Address, Data)>;
-				using InitializeFunction = std::function<void()>;
-				using ShutdownFunction = std::function<void()>;
-			public:
-				LambdaIODevice(Address begin, Address length,
-						ReadFunction onRead,
-						WriteFunction onWrite,
-						InitializeFunction init = initNothing<Data, Address>,
-						ShutdownFunction shutdown = shutdownNothing<Data, Address>);
-				virtual ~LambdaIODevice();
-				virtual Data read(Address targetAddress) override;
-				virtual void write(Address targetAddress, Data value) override;
-				virtual void initialize() override;
-				virtual void shutdown() override;
-			private:
-				ReadFunction _onRead;
-				WriteFunction _onWrite;
-				InitializeFunction _init;
-				ShutdownFunction _shutdown;
-		};
-
-	template<typename Data, typename Address>
-		LambdaIODevice<Data, Address>::LambdaIODevice(Address begin, Address length,
-				ReadFunction onRead,
-				WriteFunction onWrite,
-				InitializeFunction init,
-				ShutdownFunction shutdown) :
-			IODevice<Data, Address>(begin, length),
-			_onRead(onRead),
-			_onWrite(onWrite),
-			_init(init),
-			_shutdown(shutdown) { }
-
-	template<typename D, typename A>
-		LambdaIODevice<D, A>::~LambdaIODevice() { }
-
-	template<typename D, typename A>
-		D LambdaIODevice<D, A>::read(A addr) {
-			return _onRead(addr);
-		}
-
-	template<typename D, typename A>
-		void LambdaIODevice<D, A>::write(A addr, D value) {
-			_onWrite(addr, value);
-		}
-
-	template<typename D, typename A>
-		void LambdaIODevice<D, A>::initialize() {
-			_init();
-		}
-
-	template<typename D, typename A>
-		void LambdaIODevice<D, A>::shutdown() {
-			_shutdown();
-		}
-
-	template<typename D, typename A = D>
-		using LambdaIODeviceReadFunction = typename LambdaIODevice<D, A>::ReadFunction;
-
-	template<typename D, typename A = D>
-		using LambdaIODeviceWriteFunction = typename LambdaIODevice<D, A>::WriteFunction;
-
-	template<typename D, typename A = D>
-		using LambdaIODeviceInitializeFunction = typename LambdaIODevice<D, A>::InitializeFunction;
-
-	template<typename D, typename A = D>
-		using LambdaIODeviceShutdownFunction = typename LambdaIODevice<D, A>::ShutdownFunction;
-
-	template<typename D, typename A = D>
-		using SharedLambdaIODevice = typename std::shared_ptr<LambdaIODevice<D, A>>;
-
-	template<typename D, typename A = D>
-		SharedLambdaIODevice<D, A> makeLambdaDevice(A begin, A length, LambdaIODeviceReadFunction<D, A> onRead,
-				LambdaIODeviceWriteFunction<D, A> onWrite,
-				LambdaIODeviceInitializeFunction<D, A> onInit = initNothing<D, A>,
-				LambdaIODeviceShutdownFunction<D, A> onShutdown = shutdownNothing<D, A>) {
-			return std::make_shared<LambdaIODevice<D, A>>(begin, length, onRead, onWrite, onInit, onShutdown);
-		}
-
 	template<typename D, typename A = D>
 		class StandardInputOutputDevice : public IODevice<D, A> {
 			public:
@@ -461,6 +378,7 @@ namespace syn {
         public:
             WrappedIODevice() : Parent(std::move(std::make_unique<InternalType>(0))) { }
     };
+
 	template<typename Word, typename Address = CLIPSInteger>
 	class WrappedGenericRandomDevice : public ExternalAddressWrapper<RandomDevice<Word, Address>> {
 		public:
