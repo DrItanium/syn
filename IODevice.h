@@ -46,34 +46,13 @@ namespace syn {
 			public:
 				using AddressType = Address;
 				using DataType = Data;
-				using AddressRange = std::tuple<Address, Address>;
 			public:
-				IODevice(Address base, Address count) : _base(base), _count(count) { }
-				IODevice(Address word) : IODevice(word, 1) { }
+				IODevice() { }
 				virtual ~IODevice() { }
-				virtual AddressRange getResponseRange() const noexcept;
-				virtual bool respondsTo(Address targetAddress, Address length = 1) const;
-				virtual bool respondsTo(IODevice<Data,Address>& other) const;
-				virtual bool respondsTo(const std::shared_ptr<IODevice<Data,Address>>& other) const;
-				virtual Address size() const noexcept { return _count; }
-				virtual Address baseAddress() const noexcept { return _base; }
-				virtual Address endAddress() const noexcept {
-					if (_base == 0) {
-						return _count;
-					} else {
-						return _base + _count;
-					}
-				}
-                virtual Address computeInternalAddress(Address addr) const noexcept {
-                    return addr - _base;
-                }
 				virtual Data read(Address targetAddress) = 0;
 				virtual void write(Address targetAddress, Data value) = 0;
 				virtual void initialize() override;
 				virtual void shutdown() override;
-			protected:
-				Address _base;
-				Address _count;
 		};
 
 	template<typename D, typename A>
@@ -85,70 +64,75 @@ namespace syn {
 		void IODevice<D, A>::shutdown() {
 			// do nothing
 		}
-	template<typename Data, typename Address>
-		typename IODevice<Data, Address>::AddressRange IODevice<Data, Address>::getResponseRange() const noexcept {
-			return std::make_tuple(_base, endAddress());
-		}
-
-	template<typename Data, typename Address>
-		bool IODevice<Data, Address>::respondsTo(Address targetAddress, Address length) const {
-			for (auto i = targetAddress; i < targetAddress + length; ++i) {
-				if (syn::inRangeExcludingMaximum<Address>(targetAddress, _base, endAddress())) {
-					return true;
+	template<typename Data, typename Address = Data>
+	class AddressableIODevice : public IODevice<Data, Address> {
+		public:
+			using Parent = IODevice<Data, Address>;
+		public:
+			AddressableIODevice(Address base, Address length = 1) : Parent(), _base(base), _length(length) { }
+			virtual ~AddressableIODevice() { }
+			virtual Address baseAddress() const noexcept { return _base; }
+			virtual Address endAddress() const noexcept { return _base == 0 ? _length : (_base + _length); }
+			virtual Address size() const noexcept { return _length; }
+			virtual bool respondsTo(Address targetAddress, Address length = 1) const noexcept {
+				for (auto i = targetAddress; i < targetAddress + length; ++i) {
+					if (syn::inRangeExcludingMaximum<Address>(targetAddress, _base, endAddress())) {
+						return true;
+					}
 				}
+				return false;
 			}
-			return false;
+			virtual Address computeInternalAddress(Address addr) const noexcept {
+				return addr - _base;
+			}
+		protected:
+			Address _base;
+			Address _length;
+	};
+	/**
+	 * Wrap another IODevice in this class and perform address checks before
+	 * passing the data off to the device itself. It will also perform the
+	 * address flattening as well
+	 */
+	template<typename T>
+	class CaptiveAddressableIODevice : public AddressableIODevice<typename T::DataType, typename T::AddressType> {
+		public:
+			using Parent = AddressableIODevice<typename T::DataType, typename T::AddressType>;
+			using CapturedType = T;
+			using Address = typename Parent::AddressType;
+			using Data = typename Parent::DataType;
+		public:
+			CaptiveAddressableIODevice(Address base, Address length = 1) : Parent(base, length) { }
+			virtual ~CaptiveAddressableIODevice() { }
+			virtual Data read(Address targetAddress) override;
+			virtual void write(Address targetAddress, Data value) override;
+			virtual void initialize() override {
+				_this.initialize();
+			}
+			virtual void shutdown() override {
+				_this.shutdown();
+			}
+		private:
+			T _this;
+	};
+
+	template<typename T>
+	typename CaptiveAddressableIODevice<T>::Data CaptiveAddressableIODevice<T>::read(CaptiveAddressableIODevice<T>::Address targetAddress) {
+		if (this->respondsTo(targetAddress)) {
+			return _this.read(this->computeInternalAddress(targetAddress));
+		} else {
+			throw syn::Problem("IODevice error! Provided device does not respond to the given address!");
 		}
-
-	template<typename D, typename A>
-		bool IODevice<D, A>::respondsTo(const std::shared_ptr<IODevice<D, A>>& other) const {
-			return respondsTo(other->_base, other->_count);
+	}
+	template<typename T>
+	void CaptiveAddressableIODevice<T>::write(CaptiveAddressableIODevice<T>::Address targetAddress, CaptiveAddressableIODevice<T>::Data value) {
+		if (this->respondsTo(targetAddress)) {
+			_this.write(this->computeInternalAddress(targetAddress), value);
+		} else {
+			throw syn::Problem("IODevice error! Provided device does not respond to the given address!");
 		}
+	}
 
-	template<typename D, typename A>
-		bool IODevice<D, A>::respondsTo(IODevice<D, A>& other) const {
-			return respondsTo(other._base, other._count);
-		}
-
-
-	template<typename Data, typename Addr = Data>
-		void initNothing() { }
-
-	template<typename Data, typename Addr = Data>
-		void shutdownNothing() { }
-
-	template<typename Data, typename Addr = Data>
-		void writeNothing(Addr address, Data value) { }
-	template<typename Data, typename Addr = Data>
-		Data readNothing(Addr address) { return static_cast<Data>(0); }
-
-	template<typename D, typename A = D>
-		class StandardInputOutputDevice : public IODevice<D, A> {
-			public:
-				enum Addresses : A {
-					Get,
-					Put,
-					Count,
-				};
-				StandardInputOutputDevice(A base) : IODevice<D, A>(base, static_cast<A>(Addresses::Count)) { }
-				virtual ~StandardInputOutputDevice() { }
-				virtual D read(A addr) override {
-					auto actualAddr = addr - this->baseAddress();
-					if (actualAddr == static_cast<A>(Addresses::Get)) {
-                        return getc<D>();
-					} else {
-						throw syn::Problem("Illegal address to read from!");
-					}
-				}
-				virtual void write(A addr, D value) override {
-					auto actualAddr = addr - this->baseAddress();
-					if (actualAddr == static_cast<A>(Addresses::Put)) {
-                        putc<D>(value);
-					} else {
-						throw syn::Problem("Illegal address to write to!");
-					}
-				}
-		};
 
 	template<typename D, typename A = D>
 		class RandomDevice : public IODevice<D, A> {
@@ -159,13 +143,13 @@ namespace syn {
 					SkipRandom,
 					Count,
 				};
-				RandomDevice(A base) : IODevice<D, A>(base, static_cast<A>(Addresses::Count)) {
+				using Operations = Addresses;
+				RandomDevice() : IODevice<D, A>() {
 					_next = std::async(std::launch::async, [this]() { return _engine(); });
 				}
 				virtual ~RandomDevice() { }
 				virtual D read(A addr) override {
-					auto actualAddr = addr - this->baseAddress();
-					if (actualAddr == static_cast<A>(Addresses::NextRandom)) {
+					if (addr == static_cast<A>(Addresses::NextRandom)) {
 						auto result = static_cast<D>(_next.get());
 						_next = std::async(std::launch::async, [this]() { return _engine(); });
 						return result;
@@ -175,11 +159,10 @@ namespace syn {
 				}
 
 				virtual void write(A addr, D value) override {
-					auto actualAddr = addr - this->baseAddress();
-					if (actualAddr == static_cast<A>(Addresses::SeedRandom)) {
+					if (addr == static_cast<A>(Addresses::SeedRandom)) {
 						_engine.seed(value);
 						generateNextValue();
-					} else if (actualAddr == static_cast<A>(Addresses::SkipRandom)) {
+					} else if (addr == static_cast<A>(Addresses::SkipRandom)) {
 						_engine.discard(value);
 						generateNextValue();
 					} else {
@@ -301,14 +284,14 @@ namespace syn {
                                     CVSetBoolean(ret, false);
                                     return errorMessage(env, "CALL", 3, funcErrorPrefix, "provided address is not an integer!");
                                 } else {
-                                    auto address = static_cast<Address>(EnvDOToLong(env, tmp));
-                                    auto response = ptr->respondsTo(address);
-                                    if (response) {
-                                        CVSetInteger(ret, ptr->read(address));
-                                    } else {
-                                        CVSetBoolean(ret, false);
-                                    }
-                                    return response;
+									try {
+										auto address = static_cast<Address>(EnvDOToLong(env, tmp));
+										CVSetInteger(ret, ptr->_value->read(address));
+										return true;
+									} catch(syn::Problem p) {
+										CVSetBoolean(ret, false);
+										return errorMessage(env, "CALL", 3, funcErrorPrefix, p.what());
+									}
                                 }
                             };
                             auto writeOperation = [ptr, ret, env]() {
@@ -320,26 +303,29 @@ namespace syn {
                                     CVSetBoolean(ret, false);
                                     return errorMessage(env, "CALL", 3, funcErrorPrefix, "provided value is not an integer!");
                                 } else {
-                                    CVSetBoolean(ret, true);
-                                    auto address = static_cast<Address>(EnvDOToLong(env, t0));
-                                    auto value = static_cast<Data>(EnvDOToLong(env, t1));
-                                    ptr->write(address, value);
-                                    return true;
+									try {
+										CVSetBoolean(ret, true);
+										auto address = static_cast<Address>(EnvDOToLong(env, t0));
+										auto value = static_cast<Data>(EnvDOToLong(env, t1));
+										ptr->_value->write(address, value);
+										return true;
+									} catch(syn::Problem p) {
+										CVSetBoolean(ret, false);
+										return errorMessage(env, "CALL", 3, funcErrorPrefix, p.what());
+									}
                                 }
                             };
-
-
 							switch(theOp) {
                                 case Operations::Type:
                                     CVSetString(ret, Self::getType().c_str());
                                     return true;
                                 case Operations::Shutdown:
                                     CVSetBoolean(ret, true);
-                                    ptr->shutdown();
+                                    ptr->_value->shutdown();
                                     return true;
                                 case Operations::Initialize:
                                     CVSetBoolean(ret, true);
-                                    ptr->initialize();
+                                    ptr->_value->initialize();
                                     return true;
 								case Operations::Read:
                                     return readOperation();
@@ -376,9 +362,13 @@ namespace syn {
 				return new Self();
 			}
         public:
-            WrappedIODevice() : Parent(std::move(std::make_unique<InternalType>(0))) { }
+            WrappedIODevice() : Parent(std::move(std::make_unique<InternalType>())) { }
     };
 
+	template<typename Word, typename Address = CLIPSInteger>
+	using WrappedGenericRandomDevice = WrappedIODevice<Word, Address, RandomDevice>;
+
+	/*
 	template<typename Word, typename Address = CLIPSInteger>
 	class WrappedGenericRandomDevice : public ExternalAddressWrapper<RandomDevice<Word, Address>> {
 		public:
@@ -534,7 +524,9 @@ namespace syn {
 			inline Word nextRandom() {
 				return this->_value->read(Device::Addresses::NextRandom);
 			}
+
 	};
+*/
 
 	using RandomNumberGenerator64bitDevice = RandomDevice<uint64_t, CLIPSInteger>;
 	using RandomNumberGeneratorSigned64bitDevice = RandomDevice<int64_t, CLIPSInteger>;

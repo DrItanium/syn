@@ -51,13 +51,13 @@ void getCLIPSIOControllerEndAddress(UDFContext* context, CLIPSValue* ret);
 void getCLIPSIOControllerSize(UDFContext* context, CLIPSValue* ret);
 
 template<typename D, typename A = D>
-class CLIPSIOController : public IODevice<D, A> {
+class CLIPSIOController : public AddressableIODevice<D, A> {
 	public:
-		using Parent = IODevice<D, A>;
+		using Parent = AddressableIODevice<D, A>;
 		using Self = CLIPSIOController<D, A>;
 		using SharedSelf = std::shared_ptr<Self>;
 	public:
-		CLIPSIOController(A base, A length, const std::string& bootstrapFileLocation) : IODevice<D, A>(base, length), _bootstrapLocation(bootstrapFileLocation) {
+		CLIPSIOController(A base, A length, const std::string& bootstrapFileLocation) : Parent(base, length), _bootstrapLocation(bootstrapFileLocation) {
             _env = CreateEnvironment();
         }
 		virtual ~CLIPSIOController() {

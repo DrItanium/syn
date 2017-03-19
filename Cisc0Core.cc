@@ -480,16 +480,17 @@ namespace cisc0 {
         core->registerValue(current.getSystemArg0()) = syn::getc<RegisterValue>();
     }
 
+	using RNGOperations = RandomNumberGenerator::CapturedType::Operations;
     void Core::seedRandom(Core* core, DecodedInstruction&& current) {
         // call the seed routine inside the _rng
         //core->_rng.write(RandomNumberGenerator::SeedRandom)
-        core->_rng.write(RandomNumberGenerator::SeedRandom, core->registerValue(current.getSystemArg0()));
+        core->_rng.write(RNGOperations::SeedRandom, core->registerValue(current.getSystemArg0()));
     }
     void Core::nextRandom(Core* core, DecodedInstruction&& current) {
-        core->registerValue(current.getSystemArg0()) = core->_rng.read(RandomNumberGenerator::NextRandom);
+        core->registerValue(current.getSystemArg0()) = core->_rng.read(RNGOperations::NextRandom);
     }
     void Core::skipRandom(Core* core, DecodedInstruction&& current) {
-        core->_rng.write(RandomNumberGenerator::SkipRandom, core->registerValue(current.getSystemArg0()));
+        core->_rng.write(RNGOperations::SkipRandom, core->registerValue(current.getSystemArg0()));
     }
 
 

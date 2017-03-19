@@ -263,12 +263,13 @@ class Comparator<bool, bool> {
 };
 
 template<typename Word, typename Address = Word>
-class LoadStoreUnit : public IODevice<Word, Address> {
+class LoadStoreUnit : public AddressableIODevice<Word, Address> {
 	public:
 		using WordType = Word;
 		using AddressType = Address;
+		using Parent = AddressableIODevice<Word, Address>;
 	public:
-		LoadStoreUnit(Address size, Address base = 0) : IODevice<Word, Address>(base, size), _memory(std::move(std::make_unique<Word[]>(size))), _size(size) { }
+		LoadStoreUnit(Address size, Address base = 0) : Parent(base, size), _memory(std::move(std::make_unique<Word[]>(size))), _size(size) { }
 		LoadStoreUnit() : LoadStoreUnit(0) { }
 		virtual ~LoadStoreUnit() { }
 		inline void zero() noexcept {

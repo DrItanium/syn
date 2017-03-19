@@ -177,7 +177,7 @@ namespace cisc0 {
 	using CompareUnit = syn::Comparator<RegisterValue>;
 	using RegisterFile = syn::FixedSizeLoadStoreUnit<RegisterValue, byte, ArchitectureConstants::RegisterCount>;
 	using MemorySpace = syn::FixedSizeLoadStoreUnit<Word, Address, ArchitectureConstants::AddressMax>;
-	using RandomNumberGenerator = syn::RandomDevice<RegisterValue, Address>;
+	using RandomNumberGenerator = syn::CaptiveAddressableIODevice<syn::RandomDevice<RegisterValue, Address>>;
 	class Core : public syn::Core {
 		public:
 			using SystemFunction = std::function<void(Core*, DecodedInstruction&&)>;
