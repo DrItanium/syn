@@ -36,9 +36,10 @@ namespace iris {
 	 * Simple wrapper interface over secondary storage media which the cpu
 	 * interacts with
 	 */
-	class SecondaryStorageController : public syn::IODevice<word> {
+	class SecondaryStorageController : public syn::AddressableIODevice<word> {
 		public:
 			using Sector = syn::FixedSizeLoadStoreUnit<word, word, 0xFF>;
+			using Parent = syn::AddressableIODevice<word>;
 			static constexpr uint32_t sectorCount = 0x10000;
 			enum class Mapping {
 				SectorAddress = 0x0000,

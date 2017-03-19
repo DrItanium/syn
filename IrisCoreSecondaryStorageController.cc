@@ -26,7 +26,7 @@
 #include "IrisCoreSecondaryStorageController.h"
 
 namespace iris {
-	SecondaryStorageController::SecondaryStorageController(word address) : IODevice<word>(address, 3), _sectorAddress(0), _innerOffset(0), _media(std::move(std::make_unique<Sector[]>(sectorCount)))  { }
+	SecondaryStorageController::SecondaryStorageController(word address) : Parent(address, 3), _sectorAddress(0), _innerOffset(0), _media(std::move(std::make_unique<Sector[]>(sectorCount)))  { }
 	word SecondaryStorageController::read(word targetAddress) {
 		auto address = computeInternalAddress(targetAddress);
 		switch(static_cast<Mapping>(address)) {
