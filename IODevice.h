@@ -238,6 +238,8 @@ namespace syn {
                     { Operations::Type, 0 },
                     { Operations::Read, 1 },
                     { Operations::Write, 2 },
+					{ Operations::Initialize, 0 },
+					{ Operations::Shutdown, 0 },
                 };
 				if (init) {
 					init = false;

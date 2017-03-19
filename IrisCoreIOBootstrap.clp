@@ -41,19 +41,52 @@
         (storage shared)
         (visibility public)
         (default PLEASE-REIMPLEMENT-THIS))
+  (message-handler native-call primary)
+  (message-handler native-type primary)
+  (message-handler write primary)
+  (message-handler read primary)
   (message-handler get-native-construction-args primary)
-  (message-handler init after))
+  (message-handler init after)
+  (message-handler delete before))
 
+(defmessage-handler MAIN::native-io-device native-call primary
+                    (?operation $?args)
+                    (call ?self:native-reference
+                          ?operation
+                          (expand$ ?args)))
+
+(defmessage-handler MAIN::native-io-device native-type primary
+                    ()
+                    (call ?self:native-reference
+                          type))
+(defmessage-handler MAIN::native-io-device read primary
+                    (?address)
+                    (call ?self:native-reference
+                          read
+                          (- ?address
+                             (dynamic-get index))))
+(defmessage-handler MAIN::native-io-device write primary
+                    (?address ?value)
+                    (call ?self:native-reference
+                          write
+                          (- ?address
+                             (dynamic-get index))
+                          ?value))
 (defmessage-handler MAIN::native-io-device init after
                     ()
-                    (bind ?self:native-reference
-                          (new (dynamic-get native-type)
-                               (expand$ (send ?self
-                                              get-native-construction-args)))))
+                    (call (bind ?self:native-reference
+                                (new (dynamic-get native-type)
+                                     (expand$ (send ?self
+                                                    get-native-construction-args))))
+                          initialize))
 
 (defmessage-handler MAIN::native-io-device get-native-construction-args primary
                     ()
                     (create$))
+(defmessage-handler MAIN::native-io-device delete before
+                    ()
+                    (call ?self:native-reference
+                          shutdown))
 
 
 (defclass MAIN::stdin/out-device
@@ -80,35 +113,8 @@
   (slot length
         (source composite)
         (storage shared)
-        (default 3))
-  (message-handler read primary)
-  (message-handler write primary))
+        (default 3)))
 
-(defmessage-handler MAIN::random-number-generator read primary
-                    (?address)
-                    (bind ?adjusted-address
-                          (- ?address
-                             ?self:index))
-                    (if (= ?adjusted-address
-                           1) then
-                      (call ?self:native-reference
-                            next)
-                      else
-                      0))
-(defmessage-handler MAIN::random-number-generator write primary
-                    (?address ?value)
-                    (bind ?adjusted-address
-                          (- ?address
-                             ?self:index))
-                    (switch ?adjusted-address
-                            (case 0 then
-                              (call ?self:native-reference
-                                    seed
-                                    ?value))
-                            (case 2 then
-                              (call ?self:native-reference
-                                    skip))
-                            (default 0)))
 (defclass MAIN::memory
           "Concept of memory used to store data in it."
           (is-a native-io-device)
