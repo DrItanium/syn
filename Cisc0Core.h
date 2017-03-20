@@ -169,7 +169,7 @@ namespace cisc0 {
 	int instructionSizeFromImmediateMask(byte bitmask);
 
 	template<byte bitmask>
-		static constexpr int instructionSizeFromImmediateMask() {
+		static constexpr int instructionSizeFromImmediateMask() noexcept {
 			return 1 + (readLower<bitmask>() ? 1 : 0) + (readUpper<bitmask>() ? 1 : 0);
 		}
 
