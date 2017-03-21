@@ -322,7 +322,7 @@ namespace iris {
 
 	Core* newCore() noexcept;
 	void assemble(const std::string& inputFileName, FILE* input, std::ostream* output);
-    raw_instruction encodeInstruction(byte group, byte operation, byte dest, byte src0, byte src1);
-    raw_instruction encodeInstruction(byte group, byte operation, byte dest, word immediate);
+    constexpr raw_instruction encodeInstruction(byte group, byte operation, byte dest, byte src0, byte src1) noexcept;
+    constexpr raw_instruction encodeInstruction(byte group, byte operation, byte dest, word immediate) noexcept;
 }
 #endif

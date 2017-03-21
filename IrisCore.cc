@@ -519,10 +519,10 @@ namespace iris {
 		return _cr[index];
 	}
 
-    raw_instruction encodeInstruction(byte group, byte operation, byte dest, byte src0, byte src1) {
+    constexpr raw_instruction encodeInstruction(byte group, byte operation, byte dest, byte src0, byte src1) noexcept {
         return encodeSource1( encodeSource0( encodeDestination(encodeOperation( encodeGroup(0, group), operation), dest), src0), src1);
     }
-    raw_instruction encodeInstruction(byte group, byte operation, byte dest, word immediate) {
+    constexpr raw_instruction encodeInstruction(byte group, byte operation, byte dest, word immediate) noexcept {
         return encodeInstruction(group, operation, dest, syn::getLowerHalf(immediate), syn::getUpperHalf(immediate));
     }
 
