@@ -194,15 +194,15 @@ namespace cisc0 {
                 complexOperation(std::move(current));
                 break;
             case Operation::Swap:
-                if (current.getSwapDestination() != current.getSwapSource()) {
-                    gpr.swap(current.getSwapDestination(), current.getSwapSource());
+                if (current.getSwapRegister<0>() != current.getSwapRegister<1>()) {
+                    gpr.swap(current.getSwapRegister<0>(), current.getSwapRegister<1>());
                 }
                 break;
             case Operation::Move:
-                registerValue(current.getMoveRegister0()) = syn::decodeBits<RegisterValue, RegisterValue>( registerValue(current.getMoveRegister1()), mask(current.getMoveBitmask()), 0);
+                registerValue(current.getMoveRegister<0>()) = syn::decodeBits<RegisterValue, RegisterValue>( registerValue(current.getMoveRegister<1>()), mask(current.getBitmask<Operation::Move>()), 0);
                 break;
             case Operation::Set:
-                registerValue(current.getSetDestination()) = retrieveImmediate(current.getSetBitmask());
+                registerValue(current.getSetDestination()) = retrieveImmediate(current.getBitmask<Operation::Set>());
                 break;
             default: {
                          std::stringstream str;
@@ -215,10 +215,9 @@ namespace cisc0 {
         }
     }
     void Core::branchOperation(DecodedInstruction&& inst) {
-        auto isIf = inst.getBranchFlagIsIfForm();
-        auto isCall = inst.getBranchFlagIsCallForm();
-        auto isImm = inst.getBranchFlagIsImmediate();
-        auto isCond = inst.getBranchFlagIsConditional();
+        auto isImm = inst.getImmediateFlag<Operation::Branch>();
+        bool isIf, isCall, isCond;
+        std::tie(isIf, isCall, isCond) = inst.getOtherBranchFlags();
         advanceIp = true;
         auto choice = getConditionRegister() != 0;
         if (isIf) {
@@ -228,9 +227,9 @@ namespace cisc0 {
                 pushDword(mask24(getInstructionPointer() + 1));
             }
             if (choice) {
-                getInstructionPointer() = registerValue(inst.getBranchIfOnTrue());
+                getInstructionPointer() = registerValue(inst.getBranchIfPathRegister<true>());
             } else {
-                getInstructionPointer() = registerValue(inst.getBranchIfOnFalse());
+                getInstructionPointer() = registerValue(inst.getBranchIfPathRegister<false>());
             }
         } else if (isCall) {
             // call instruction
@@ -283,9 +282,9 @@ namespace cisc0 {
             { CompareStyle::GreaterThanOrEqualTo, CompareUnit::Operation::GreaterThanOrEqualTo },
         };
         DecodedInstruction next(tryReadNext<true>());
-        auto first = registerValue(next.getCompareRegister0());
-        auto second = inst.getCompareImmediateFlag() ? next.getUpper() : registerValue(next.getCompareRegister1());
-        auto compareResult = translationTable.find(inst.getCompareType());
+        auto first = registerValue(next.getCompareRegister<0>());
+        auto second = inst.getImmediateFlag<Operation::Compare>() ? next.getUpper() : registerValue(next.getCompareRegister<1>());
+        auto compareResult = translationTable.find(inst.getSubtype<Operation::Compare>());
         throwIfNotFound(compareResult, translationTable, "Illegal compare type!");
         auto result = _compare.performOperation(compareResult->second, first, second);
         // make sure that the condition takes up the entire width of the
@@ -294,12 +293,12 @@ namespace cisc0 {
     }
 
     void Core::memoryOperation(DecodedInstruction&& inst) {
-        auto indirect = inst.getMemoryFlagIndirect();
-        auto rawMask = inst.getMemoryFlagBitmask();
+        auto indirect = inst.isIndirectOperation();
+        auto rawMask = inst.getBitmask<Operation::Memory>();
         auto useLower = readLower(rawMask);
         auto useUpper = readUpper(rawMask);
         auto fullMask = mask(rawMask);
-        auto rawType = inst.getMemoryFlagType();
+        auto rawType = inst.getSubtype<Operation::Memory>();
         auto offset = inst.getMemoryOffset();
         auto memoryRegister = inst.getMemoryRegister();
         auto lmask = lowerMask(rawMask);
@@ -391,7 +390,7 @@ namespace cisc0 {
     }
 
     void Core::complexOperation(DecodedInstruction&& inst) {
-        auto type = inst.getComplexSubClass();
+        auto type = inst.getSubtype<Operation::Complex>();
         if (type == ComplexSubTypes::Encoding) {
             encodingOperation(std::move(inst));
         } else {
@@ -400,9 +399,9 @@ namespace cisc0 {
     }
 
     void Core::shiftOperation(DecodedInstruction&& inst) {
-        auto &destination = registerValue(inst.getShiftRegister0());
-        auto source = (inst.getShiftFlagImmediate() ? static_cast<RegisterValue>(inst.getShiftImmediate()) : registerValue(inst.getShiftRegister1()));
-        destination = _shifter.performOperation( inst.getShiftFlagLeft() ? ALU::Operation::ShiftLeft : ALU::Operation::ShiftRight, destination, source);
+        auto &destination = registerValue(inst.getShiftRegister<0>());
+        auto source = (inst.getImmediateFlag<Operation::Shift>() ? static_cast<RegisterValue>(inst.getImmediate<Operation::Shift>()) : registerValue(inst.getShiftRegister<1>()));
+        destination = _shifter.performOperation( inst.shouldShiftLeft() ? ALU::Operation::ShiftLeft : ALU::Operation::ShiftRight, destination, source);
     }
     void Core::arithmeticOperation(DecodedInstruction&& inst) {
         static std::map<ArithmeticOps, ALU::Operation> translationTable = {
@@ -412,11 +411,11 @@ namespace cisc0 {
             { ArithmeticOps::Div, ALU::Operation::Divide},
             { ArithmeticOps::Rem, ALU::Operation::Remainder},
         };
-        auto result = translationTable.find(inst.getArithmeticFlagType());
+        auto result = translationTable.find(inst.getSubtype<Operation::Arithmetic>());
         throwIfNotFound(result, translationTable, "Illegal arithmetic operation!");
         auto op = result->second;
-        auto src = inst.getArithmeticImmediate() ? inst.getArithmeticImmediate() : registerValue(inst.getArithmeticSource());
-        auto& dest = registerValue(inst.getArithmeticDestination());
+        auto src = inst.getImmediateFlag<Operation::Arithmetic>() ? inst.getImmediate<Operation::Arithmetic>() : registerValue(inst.getArithmeticRegister<1>());
+        auto& dest = registerValue(inst.getArithmeticRegister<0>());
         dest = _alu.performOperation(op, dest, src);
     }
     void Core::logicalOperation(DecodedInstruction&& inst) {
@@ -430,22 +429,21 @@ namespace cisc0 {
             { LogicalOps::Xor, ALU::Operation::BinaryXor },
             { LogicalOps::Nand, ALU::Operation::BinaryNand },
         };
-        auto result = dispatchTable.find(inst.getLogicalFlagType());
+        auto result = dispatchTable.find(inst.getSubtype<Operation::Logical>());
         throwIfNotFound(result, dispatchTable, "Illegal logical operation!");
         op = result->second;
-        if (inst.getLogicalFlagImmediate()) {
-            source1 = retrieveImmediate(inst.getLogicalFlagImmediateMask());
-            source0 = inst.getLogicalImmediateDestination();
+        if (inst.getImmediateFlag<Operation::Logical>()) {
+            source1 = retrieveImmediate(inst.getBitmask<Operation::Logical>());
         } else {
-            source0 = inst.getLogicalRegister0();
-            source1 = registerValue(inst.getLogicalRegister1());
+            source1 = registerValue(inst.getLogicalRegister<1>());
         }
+        source0 = inst.getLogicalRegister<0>();
         auto& dest = registerValue(source0);
         dest = _logicalOps.performOperation(op, dest, source1);
     }
 
     void Core::encodingOperation(DecodedInstruction&& inst) {
-        auto type = inst.getComplexClassEncoding_Type();
+        auto type = inst.getEncodingOperation();
         if (type == EncodingOperation::Decode) {
             // connect the result of the logical operations alu to the
             // shifter alu then store the result in the value register
@@ -476,23 +474,23 @@ namespace cisc0 {
     }
 
     void Core::putc(Core* core, DecodedInstruction&& current) {
-        syn::putc<RegisterValue>(core->registerValue(current.getSystemArg0()));
+        syn::putc<RegisterValue>(core->registerValue(current.getSystemArg<0>()));
     }
     void Core::getc(Core* core, DecodedInstruction&& current) {
-        core->registerValue(current.getSystemArg0()) = syn::getc<RegisterValue>();
+        core->registerValue(current.getSystemArg<0>()) = syn::getc<RegisterValue>();
     }
 
 	using RNGOperations = Core::RandomNumberGenerator::CapturedType::Operations;
     void Core::seedRandom(Core* core, DecodedInstruction&& current) {
         // call the seed routine inside the _rng
         //core->_rng.write(RandomNumberGenerator::SeedRandom)
-        core->_rng.write(RNGOperations::SeedRandom, core->registerValue(current.getSystemArg0()));
+        core->_rng.write(RNGOperations::SeedRandom, core->registerValue(current.getSystemArg<0>()));
     }
     void Core::nextRandom(Core* core, DecodedInstruction&& current) {
-        core->registerValue(current.getSystemArg0()) = core->_rng.read(RNGOperations::NextRandom);
+        core->registerValue(current.getSystemArg<0>()) = core->_rng.read(RNGOperations::NextRandom);
     }
     void Core::skipRandom(Core* core, DecodedInstruction&& current) {
-        core->_rng.write(RNGOperations::SkipRandom, core->registerValue(current.getSystemArg0()));
+        core->_rng.write(RNGOperations::SkipRandom, core->registerValue(current.getSystemArg<0>()));
     }
 
 
@@ -758,5 +756,11 @@ namespace cisc0 {
         fullImmediate = 0;
         indirect = false;
         readNextWord = false;
+    }
+
+    DecodedInstruction::BranchFlags DecodedInstruction::getOtherBranchFlags() const noexcept {
+        return std::make_tuple(decodeBranchFlagIsIfForm(_rawValue),
+                               decodeBranchFlagIsCallForm(_rawValue),
+                               decodeBranchFlagIsConditional(_rawValue));
     }
 }

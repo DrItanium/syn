@@ -102,9 +102,193 @@ namespace cisc0 {
 			DecodedInstruction(const DecodedInstruction&) = delete;
             virtual ~DecodedInstruction() { }
 			RawInstruction getRawValue() const noexcept { return _rawValue; }
-#define X(title, mask, shift, type, post) inline type get ## title () const noexcept { return decode ## title ( _rawValue ); }
-#include "def/cisc0/instruction.def"
-#undef X
+            using BranchFlags = std::tuple<bool, bool, bool>;
+            inline byte getUpper() const noexcept { return decodeUpper(_rawValue); }
+            inline Operation getControl() const noexcept { return decodeControl(_rawValue); }
+            inline byte getSetDestination() const noexcept { return decodeSetDestination(_rawValue); }
+            inline byte getMemoryRegister() const noexcept { return decodeMemoryRegister(_rawValue); }
+            inline byte getBranchIndirectDestination() const noexcept { return decodeBranchIndirectDestination(_rawValue); }
+            inline bool shouldShiftLeft() const noexcept { return decodeShiftFlagLeft(_rawValue); }
+            inline bool isIndirectOperation() const noexcept { return decodeMemoryFlagIndirect(_rawValue); }
+            inline byte getMemoryOffset() const noexcept { return decodeMemoryOffset(_rawValue); }
+            BranchFlags getOtherBranchFlags() const noexcept;
+            inline EncodingOperation getEncodingOperation() const noexcept { return decodeComplexClassEncoding_Type(_rawValue); }
+
+            template<int index>
+            inline byte getShiftRegister() const noexcept {
+                static_assert(index >= 0 && index < 2, "Illegal shift register index!");
+                if (index == 0) {
+                    return decodeShiftRegister0(_rawValue);
+                } else {
+                    return decodeShiftRegister1(_rawValue);
+                }
+            }
+            template<int index>
+            inline byte getSystemArg() const noexcept {
+                static_assert(index >= 0 && index < 3, "Illegal system arg index!");
+                if (index == 0) {
+                    return decodeSystemArg0(_rawValue);
+                } else if (index == 1) {
+                    return decodeSystemArg1(_rawValue);
+                } else {
+                    return decodeSystemArg2(_rawValue);
+                }
+            }
+            template<int index>
+            inline byte getMoveRegister() const noexcept {
+                static_assert(index >= 0 && index < 2, "Illegal move register index!");
+                if (index == 0) {
+                    return decodeMoveRegister0(_rawValue);
+                } else {
+                    return decodeMoveRegister1(_rawValue);
+                }
+            }
+            template<int index>
+            inline byte getSwapRegister() const noexcept {
+                static_assert(index >= 0 && index < 2, "Illegal swap register index!");
+                if (index == 0) {
+                    return decodeSwapDestination(_rawValue);
+                } else {
+                    return decodeSwapSource(_rawValue);
+                }
+            }
+            template<int index>
+            inline byte getCompareRegister() const noexcept {
+                static_assert(index >= 0 && index < 2, "Illegal compare register index!");
+                if (index == 0) {
+                    return decodeCompareRegister0(_rawValue);
+                } else {
+                    return decodeCompareRegister1(_rawValue);
+                }
+            }
+            template<int index>
+            inline byte getArithmeticRegister() const noexcept {
+                static_assert(index >= 0 && index < 2, "Illegal arithmetic register index!");
+                if (index == 0) {
+                    return decodeArithmeticDestination(_rawValue);
+                } else {
+                    return decodeArithmeticSource(_rawValue);
+                }
+            }
+            static constexpr bool hasBitmask(Operation op) noexcept {
+                return op == Operation::Set ||
+                       op == Operation::Memory ||
+                       op == Operation::Move ||
+                       op == Operation::Logical;
+            }
+            template<Operation op>
+            inline byte getBitmask() const noexcept {
+                static_assert(hasBitmask(op), "provided operation does not use a bitmask!");
+                switch(op) {
+                    case Operation::Set:
+                        return decodeSetBitmask(_rawValue);
+                    case Operation::Memory:
+                        return decodeMemoryFlagBitmask(_rawValue);
+                    case Operation::Move:
+                        return decodeMoveBitmask(_rawValue);
+                    case Operation::Logical:
+                        return decodeLogicalFlagImmediateMask(_rawValue);
+                    default:
+                        return 0;
+                }
+            }
+            static constexpr bool hasImmediateFlag(Operation op) noexcept {
+                return op == Operation::Shift ||
+                       op == Operation::Arithmetic ||
+                       op == Operation::Logical ||
+                       op == Operation::Branch ||
+                       op == Operation::Compare;
+            }
+            template<Operation op>
+            inline bool getImmediateFlag() const noexcept {
+                static_assert(hasImmediateFlag(op), "provided operation does not have an immediate flag!");
+                switch(op) {
+                    case Operation::Shift:
+                        return decodeShiftFlagImmediate(_rawValue);
+                    case Operation::Arithmetic:
+                        return decodeArithmeticFlagImmediate(_rawValue);
+                    case Operation::Logical:
+                        return decodeLogicalFlagImmediate(_rawValue);
+                    case Operation::Branch:
+                        return decodeBranchFlagIsImmediate(_rawValue);
+                    case Operation::Compare:
+                        return decodeCompareImmediateFlag(_rawValue);
+                    default:
+                        return false;
+                }
+            }
+            static constexpr bool hasImmediateValue(Operation op) noexcept {
+                return op == Operation::Shift ||
+                      op == Operation::Arithmetic;
+            }
+            template<Operation op>
+            inline byte getImmediate() const noexcept {
+                static_assert(hasImmediateValue(op), "provided operation cannot contain an immediate value!");
+                switch(op) {
+                    case Operation::Shift:
+                        return decodeShiftImmediate(_rawValue);
+                    case Operation::Arithmetic:
+                        return decodeArithmeticImmediate(_rawValue);
+                    default:
+                        return 0;
+                }
+            }
+            template<int index>
+            inline byte getLogicalRegister() const noexcept {
+                static_assert(index >= 0 && index < 2, "Illegal logical register index!");
+                if (index == 0) {
+                    if (getImmediateFlag<Operation::Logical>()) {
+                        return decodeLogicalImmediateDestination(_rawValue);
+                    } else {
+                        return decodeLogicalRegister0(_rawValue);
+                    }
+                } else {
+                    if (getImmediateFlag<Operation::Logical>()) {
+                        throw syn::Problem("There is no second register argument for an immediate logical operation!");
+                    } else {
+                        return decodeLogicalRegister1(_rawValue);
+                    }
+                }
+            }
+            template<bool path>
+            inline byte getBranchIfPathRegister() const noexcept {
+                if (path) {
+                    return decodeBranchIfOnTrue(_rawValue);
+                } else {
+                    return decodeBranchIfOnFalse(_rawValue);
+                }
+            }
+            static constexpr bool hasSubtype(Operation op) noexcept {
+                return op == Operation::Compare ||
+                    op == Operation::Memory ||
+                    op == Operation::Arithmetic ||
+                    op == Operation::Complex ||
+                    op == Operation::Logical;
+
+            }
+            template<Operation op>
+            struct SubtypeConversion { };
+
+            template<Operation op>
+            inline typename SubtypeConversion<op>::ResultantType getSubtype() const noexcept {
+                static_assert(hasSubtype(op), "There is no subtype for the given operation!");
+                using CurrentType = typename SubtypeConversion<op>::ResultantType;
+                switch(op) {
+                    case Operation::Compare:
+                        return static_cast<CurrentType>(decodeCompareType(_rawValue));
+                    case Operation::Arithmetic:
+                        return static_cast<CurrentType>(decodeArithmeticFlagType(_rawValue));
+                    case Operation::Memory:
+                        return static_cast<CurrentType>(decodeCompareType(_rawValue));
+                    case Operation::Complex:
+                        return static_cast<CurrentType>(decodeComplexSubClass(_rawValue));
+                    case Operation::Logical:
+                        return static_cast<CurrentType>(decodeLogicalFlagType(_rawValue));
+                    default:
+                        return static_cast<CurrentType>(0);
+                }
+            }
+
 		private:
 			RawInstruction _rawValue;
 	};
@@ -291,6 +475,11 @@ namespace cisc0 {
 	};
 	Core* newCore() noexcept;
 	void assemble(const std::string& iName, FILE* input, std::ostream* output);
+    template<> struct DecodedInstruction::SubtypeConversion<Operation::Compare> { using ResultantType = CompareStyle; };
+    template<> struct DecodedInstruction::SubtypeConversion<Operation::Arithmetic> { using ResultantType = ArithmeticOps; };
+    template<> struct DecodedInstruction::SubtypeConversion<Operation::Memory> { using ResultantType = MemoryOperation; };
+    template<> struct DecodedInstruction::SubtypeConversion<Operation::Complex> { using ResultantType = ComplexSubTypes; };
+    template<> struct DecodedInstruction::SubtypeConversion<Operation::Logical> { using ResultantType = LogicalOps; };
 } // end namespace cisc0
 
 #endif // end _TARGET_CISC0_IRIS_H
