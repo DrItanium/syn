@@ -56,8 +56,15 @@ namespace syn {
 		48,
 		56
 	};
-	template<typename T, int index>
-	struct FieldData  { };
+
+	template<typename T, int32 index>
+	struct FieldData  {
+        FieldData() = delete;
+        FieldData(const FieldData&) = delete;
+        FieldData(FieldData&&) = delete;
+        ~FieldData() = delete;
+    };
+
 #define DefFieldData(type, index, mask) \
 	template<> \
 	struct FieldData<type, index> { \
