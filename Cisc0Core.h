@@ -136,13 +136,13 @@ namespace cisc0 {
 
 	int instructionSizeFromImmediateMask(byte bitmask) noexcept;
 
-	using ALU = syn::ALU<RegisterValue>;
-	using CompareUnit = syn::Comparator<RegisterValue>;
-	using RegisterFile = syn::FixedSizeLoadStoreUnit<RegisterValue, byte, ArchitectureConstants::RegisterCount>;
-	using MemorySpace = syn::FixedSizeLoadStoreUnit<Word, Address, ArchitectureConstants::AddressMax>;
-	using RandomNumberGenerator = syn::CaptiveAddressableIODevice<syn::RandomDevice<RegisterValue, Address>>;
 	class Core : public syn::Core {
 		public:
+            using ALU = syn::ALU<RegisterValue>;
+            using CompareUnit = syn::Comparator<RegisterValue>;
+            using RegisterFile = syn::FixedSizeLoadStoreUnit<RegisterValue, byte, ArchitectureConstants::RegisterCount>;
+            using MemorySpace = syn::FixedSizeLoadStoreUnit<Word, Address, ArchitectureConstants::AddressMax>;
+            using RandomNumberGenerator = syn::CaptiveAddressableIODevice<syn::RandomDevice<RegisterValue, Address>>;
 			using SystemFunction = std::function<void(Core*, DecodedInstruction&&)>;
 			// These are built in addresses
 			enum DefaultHandlers {
@@ -200,13 +200,7 @@ namespace cisc0 {
                     return 0;
                 }
             }
-			inline Word tryReadNext(bool readNext) noexcept {
-				if (readNext) {
-					return tryReadNext<true>();
-				} else {
-					return tryReadNext<false>();
-				}
-			}
+            Word tryReadNext(bool readNext) noexcept;
 			RegisterValue retrieveImmediate(byte bitmask) noexcept;
 
 			RegisterValue& registerValue(byte index);

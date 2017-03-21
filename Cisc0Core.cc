@@ -482,7 +482,7 @@ namespace cisc0 {
         core->registerValue(current.getSystemArg0()) = syn::getc<RegisterValue>();
     }
 
-	using RNGOperations = RandomNumberGenerator::CapturedType::Operations;
+	using RNGOperations = Core::RandomNumberGenerator::CapturedType::Operations;
     void Core::seedRandom(Core* core, DecodedInstruction&& current) {
         // call the seed routine inside the _rng
         //core->_rng.write(RandomNumberGenerator::SeedRandom)
@@ -572,6 +572,13 @@ namespace cisc0 {
         auto result = loadWord(ptr);
         incrementStackPointer(ptr);
         return result;
+    }
+    Word Core::tryReadNext(bool readNext) noexcept {
+        if (readNext) {
+            return tryReadNext<true>();
+        } else {
+            return tryReadNext<false>();
+        }
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeArithmetic() const {
