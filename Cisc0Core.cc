@@ -701,16 +701,26 @@ namespace cisc0 {
 
     InstructionEncoder::Encoding InstructionEncoder::encode() {
         // always encode the type
-        switch (type) {
-#define DefEnum(a, b)
-#define EndDefEnum(a, b, c)
-#define EnumEntry(compareType) case Operation:: compareType : return encode ## compareType () ;
-#include "def/cisc0/ops.def"
-#undef DefEnum
-#undef EndDefEnum
-#undef EnumEntry
-            default:
-                throw syn::Problem("Illegal type to encode!");
+        static auto testMemFn = std::mem_fn(&InstructionEncoder::encode);
+        static std::map<Operation, decltype(testMemFn)> dispatchTable = {
+            { Operation::Memory, std::mem_fn(&InstructionEncoder::encodeMemory) },
+            { Operation::Arithmetic, std::mem_fn(&InstructionEncoder::encodeArithmetic) },
+            { Operation::Shift, std::mem_fn(&InstructionEncoder::encodeShift) },
+            { Operation::Logical, std::mem_fn(&InstructionEncoder::encodeLogical) },
+            { Operation::Compare, std::mem_fn(&InstructionEncoder::encodeCompare) },
+            { Operation::Branch, std::mem_fn(&InstructionEncoder::encodeBranch) },
+            { Operation::SystemCall, std::mem_fn(&InstructionEncoder::encodeSystemCall) },
+            { Operation::Move, std::mem_fn(&InstructionEncoder::encodeMove) },
+            { Operation::Set, std::mem_fn(&InstructionEncoder::encodeSet) },
+            { Operation::Swap, std::mem_fn(&InstructionEncoder::encodeSwap) },
+            { Operation::Complex, std::mem_fn(&InstructionEncoder::encodeComplex) },
+        };
+
+        auto result = dispatchTable.find(type);
+        if (result == dispatchTable.end()) {
+            throw syn::Problem("Illegal type to encode!");
+        } else {
+            return result->second(this);
         }
     }
 
