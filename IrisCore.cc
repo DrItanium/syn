@@ -82,9 +82,9 @@ namespace iris {
 		gpr[255] = _error;
 		gpr[254] = getGroup();
 		gpr[253] = getOperationByte();
-		gpr[252] = getDestination();
-		gpr[251] = getSource0();
-		gpr[250] = getSource1();
+		gpr[252] = getDestinationIndex();
+		gpr[251] = getSource0Index();
+		gpr[250] = getSource1Index();
 		gpr[249] = getImmediate();
 		advanceIp = false;
         _error = 0; // clear out the error field now that we have transferred it
@@ -203,7 +203,7 @@ namespace iris {
 				std::tie(op, immediate) = result->second;
 				auto result = _compare.performOperation(op, source0Register(), immediate ? getHalfImmediate() : source1Register()) != 0;
 				predicateResult() = result;
-				if (getPredicateResult() != getPredicateInverse()) {
+				if (getPredicateResultIndex() != getPredicateInverseResultIndex()) {
 					predicateInverseResult() = !result;
 				}
 			}
@@ -236,12 +236,12 @@ namespace iris {
 				switch(operation) {
                     case JumpOp::IfThenElse:
                         cond = predicateResult();
-                        setInstructionPointer(gpr[cond ? getSource0() : getSource1()]);
+                        setInstructionPointer(gpr[cond ? getSource0Index() : getSource1Index()]);
                         break;
                     case JumpOp::IfThenElseLink:
                         cond = predicateResult();
                         setLinkRegister(getInstructionPointer() + 1);
-                        setInstructionPointer(gpr[cond ? getSource0() : getSource1()]);
+                        setInstructionPointer(gpr[cond ? getSource0Index() : getSource1Index()]);
                         break;
 					case JumpOp::BranchUnconditionalLR:
                         setInstructionPointer(getLinkRegister());
@@ -292,22 +292,22 @@ namespace iris {
 			raw_instruction codeStorage = 0u;
 			switch(op) {
 				case MoveOp::Move:
-					gpr.copy(getDestination(), getSource0());
+					gpr.copy(getDestinationIndex(), getSource0Index());
 					break;
 				case MoveOp::Set:
-					gpr.set(getDestination(), getImmediate());
+					gpr.set(getDestinationIndex(), getImmediate());
 					break;
 				case MoveOp::Swap:
-					gpr.swap(getDestination(), getSource0());
+					gpr.swap(getDestinationIndex(), getSource0Index());
 					break;
 				case MoveOp::Load:
-					gpr.set(getDestination(), data[source0Register()]);
+					gpr.set(getDestinationIndex(), data[source0Register()]);
 					break;
 				case MoveOp::LoadImmediate:
-					gpr.set(getDestination(), data[getImmediate()]);
+					gpr.set(getDestinationIndex(), data[getImmediate()]);
 					break;
 				case MoveOp::LoadWithOffset:
-					gpr.set(getDestination(), data[source0Register() + getHalfImmediate()]);
+					gpr.set(getDestinationIndex(), data[source0Register() + getHalfImmediate()]);
 					break;
 				case MoveOp::Store:
 					data.set(destinationRegister(), source0Register());
@@ -401,7 +401,7 @@ namespace iris {
 				std::tie(pop, immediate) = result->second;
 				auto result = _pcompare.performOperation(pop, predicateSource0(), predicateSource1());
 				predicateResult() = result;
-				if (getPredicateResult() != getPredicateInverse()) {
+				if (getPredicateResultIndex() != getPredicateInverseResultIndex()) {
 					predicateInverseResult() = !result;
 				}
 			}

@@ -107,28 +107,62 @@ namespace iris {
 
 		private:
 			void dispatch() noexcept;
-            inline byte getDestination() const noexcept { return decodeDestination(current); }
-            inline byte getSource0() const noexcept { return decodeSource0(current); }
-            inline byte getSource1() const noexcept { return decodeSource1(current); }
-			inline word getHalfImmediate() const noexcept { return decodeHalfImmediate(current); }
-            inline word getImmediate() const noexcept { return decodeImmediate(current); }
-            inline byte getOperationByte() const noexcept { return decodeOperation(current); }
+            template<int index>
+            inline byte getRegisterIndex() const noexcept {
+                static_assert(index >= 0 && index < 3, "Illegal register index!");
+                if (index == 0) {
+                    return decodeDestination(current);
+                } else if (index == 1) {
+                    return decodeSource0(current);
+                } else {
+                    return decodeSource1(current);
+                }
+            }
+            inline byte getDestinationIndex() const noexcept { return getRegisterIndex<0>(); }
+            inline byte getSource0Index() const noexcept { return getRegisterIndex<1>(); }
+            inline byte getSource1Index() const noexcept { return getRegisterIndex<2>(); }
 			template<typename T>
 			inline T getOperation() const noexcept {
 				return static_cast<T>(getOperationByte());
 			}
+			inline word getHalfImmediate() const noexcept { return decodeHalfImmediate(current); }
+            inline word getImmediate() const noexcept { return decodeImmediate(current); }
+            inline byte getOperationByte() const noexcept { return decodeOperation(current); }
             inline byte getGroup() const noexcept { return decodeGroup(current); }
-			inline byte getPredicateResult() const noexcept { return decodePredicateResult(current); }
-			inline byte getPredicateInverse() const noexcept { return decodePredicateInverseResult(current); }
-			inline byte getPredicateSource0() const noexcept { return decodePredicateSource0(current); }
-			inline byte getPredicateSource1() const noexcept { return decodePredicateSource1(current); }
-			inline word& destinationRegister() noexcept { return gpr[getDestination()]; }
-			inline word& source0Register() noexcept { return gpr[getSource0()]; }
-			inline word& source1Register() noexcept { return gpr[getSource1()]; }
-			inline bool& predicateResult() noexcept { return getPredicateRegister(getPredicateResult()); }
-			inline bool& predicateInverseResult() noexcept { return getPredicateRegister(getPredicateInverse()); }
-			inline bool& predicateSource0() noexcept { return getPredicateRegister(getPredicateSource0()); }
-			inline bool& predicateSource1() noexcept { return getPredicateRegister(getPredicateSource1()); }
+            template<int index>
+            inline word& getRegister() noexcept {
+                return gpr[getRegisterIndex<index>()];
+            }
+            inline word& destinationRegister() noexcept { return getRegister<0>(); }
+            inline word& source0Register() noexcept { return getRegister<1>(); }
+            inline word& source1Register() noexcept { return getRegister<2>(); }
+            template<int index>
+            inline byte getPredicateIndex() const noexcept {
+                static_assert(index >= 0 && index < 4, "Illegal predicate field index!");
+                switch(index) {
+                    case 0:
+                        return decodePredicateResult(current);
+                    case 1:
+                        return decodePredicateInverseResult(current);
+                    case 2:
+                        return decodePredicateSource0(current);
+                    case 3:
+                        return decodePredicateSource1(current);
+                    default:
+                        throw syn::Problem("Illegal index!!!!");
+                }
+            }
+            inline byte getPredicateResultIndex() const noexcept { return getPredicateIndex<0>(); }
+            inline byte getPredicateInverseResultIndex() const noexcept { return getPredicateIndex<1>(); }
+
+            template<int index>
+            inline bool& getPredicate() noexcept {
+                return getPredicateRegister(getPredicateIndex<index>());
+            }
+			inline bool& predicateResult() noexcept { return getPredicate<0>(); }
+			inline bool& predicateInverseResult() noexcept { return getPredicate<1>(); }
+			inline bool& predicateSource0() noexcept { return getPredicate<2>(); }
+			inline bool& predicateSource1() noexcept { return getPredicate<3>(); }
 		private:
 			void saveSystemState() noexcept;
 			void restoreSystemState() noexcept;
