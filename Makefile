@@ -240,8 +240,7 @@ Cisc0CoreAssembler.o: Cisc0CoreAssembler.cc Base.h Problem.h \
  misc/maya/classinf.h misc/maya/classini.h misc/maya/classpsr.h \
  misc/maya/defins.h misc/maya/inscom.h misc/maya/insfun.h \
  misc/maya/insfile.h misc/maya/msgcom.h misc/maya/msgpass.h \
- misc/maya/objrtmch.h cisc0_defines.h def/cisc0/instruction.def \
- def/cisc0/misc.def def/cisc0/ops.def
+ misc/maya/objrtmch.h cisc0_defines.h
 Cisc0Core.o: Cisc0Core.cc Cisc0Core.h Base.h Problem.h ExecutionUnits.h \
  IODevice.h Device.h Core.h ClipsExtensions.h misc/maya/clips.h \
  misc/maya/setup.h misc/maya/os_shim.h misc/maya/platform.h \
@@ -273,9 +272,8 @@ Cisc0Core.o: Cisc0Core.cc Cisc0Core.h Base.h Problem.h ExecutionUnits.h \
  misc/maya/classpsr.h misc/maya/defins.h misc/maya/inscom.h \
  misc/maya/insfun.h misc/maya/insfile.h misc/maya/msgcom.h \
  misc/maya/msgpass.h misc/maya/objrtmch.h cisc0_defines.h \
- def/cisc0/instruction.def def/cisc0/misc.def def/cisc0/ops.def \
- IrisCoreSecondaryStorageController.h IrisCoreTypes.h \
- def/cisc0/bitmask4bit.def
+ IrisCoreSecondaryStorageController.h IrisCoreTypes.h
+
 ClipsExtensions.o: ClipsExtensions.cc ClipsExtensions.h Base.h Problem.h \
  misc/maya/clips.h misc/maya/setup.h misc/maya/os_shim.h \
  misc/maya/platform.h misc/maya/envrnmnt.h misc/maya/symbol.h \
@@ -471,8 +469,7 @@ RegisteredAssemblers.o: RegisteredAssemblers.cc Problem.h RegisterEntry.h \
  misc/maya/defins.h misc/maya/inscom.h misc/maya/insfun.h \
  misc/maya/insfile.h misc/maya/msgcom.h misc/maya/msgpass.h \
  misc/maya/objrtmch.h IOController.h IrisCoreTypes.h iris_defines.h \
- Cisc0Core.h cisc0_defines.h def/cisc0/instruction.def def/cisc0/misc.def \
- def/cisc0/ops.def
+ Cisc0Core.h cisc0_defines.h
 RegisteredCores.o: RegisteredCores.cc Problem.h RegisterEntry.h \
  CoreRegistrar.h IrisCore.h Base.h ExecutionUnits.h IODevice.h Device.h \
  Core.h ClipsExtensions.h misc/maya/clips.h misc/maya/setup.h \
@@ -505,8 +502,7 @@ RegisteredCores.o: RegisteredCores.cc Problem.h RegisterEntry.h \
  misc/maya/defins.h misc/maya/inscom.h misc/maya/insfun.h \
  misc/maya/insfile.h misc/maya/msgcom.h misc/maya/msgpass.h \
  misc/maya/objrtmch.h IOController.h IrisCoreTypes.h iris_defines.h \
- Cisc0Core.h cisc0_defines.h def/cisc0/instruction.def def/cisc0/misc.def \
- def/cisc0/ops.def
+ Cisc0Core.h cisc0_defines.h
 Repl.o: Repl.cc misc/maya/clips.h misc/maya/setup.h misc/maya/os_shim.h \
  misc/maya/platform.h misc/maya/envrnmnt.h misc/maya/symbol.h \
  misc/maya/usrsetup.h misc/maya/argacces.h misc/maya/expressn.h \
