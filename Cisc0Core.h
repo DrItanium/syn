@@ -158,15 +158,12 @@ namespace cisc0 {
 	inline constexpr bool readUpper(byte bitmask) noexcept {
 		return upperMask(bitmask) != 0;
 	}
+	constexpr auto bitmask32 =   mask(ArchitectureConstants::Bitmask);
+	constexpr auto bitmask24 =   mask(0b0111);
+	constexpr auto upper16Mask = mask(0b1100);
+	constexpr auto lower16Mask = mask(0b0011);
 
-	constexpr auto bitmask32 =   SetBitmaskToWordMask<ArchitectureConstants::Bitmask>::mask;
-	constexpr auto bitmask24 =   SetBitmaskToWordMask<0b0111>::mask;
-	constexpr auto upper16Mask = SetBitmaskToWordMask<0b1100>::mask;
-	constexpr auto lower16Mask = SetBitmaskToWordMask<0b0011>::mask;
-
-	RegisterValue getMask(byte bitmask);
-
-	int instructionSizeFromImmediateMask(byte bitmask);
+	int instructionSizeFromImmediateMask(byte bitmask) noexcept;
 
 	template<byte bitmask>
 		static constexpr int instructionSizeFromImmediateMask() noexcept {

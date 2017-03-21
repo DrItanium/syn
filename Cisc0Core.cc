@@ -74,12 +74,14 @@ namespace cisc0 {
     }
 
     RegisterValue Core::retrieveImmediate(byte bitmask) noexcept {
-        switch(bitmask) {
-#define X(value) case value : return retrieveImmediate<value>();
-#include "def/cisc0/bitmask4bit.def"
-#undef X
-            default:
-                throw syn::Problem("Illegal bitmask defined!");
+        auto useLower = readLower(bitmask);
+        auto useUpper = readUpper(bitmask);
+        if (!useLower && !useUpper) {
+            return 0;
+        } else {
+            auto lower = tryReadNext(useLower);
+            auto upper = static_cast<RegisterValue>(tryReadNext(useUpper)) << 16;
+            return mask(bitmask) & (lower | upper);
         }
     }
 
@@ -626,7 +628,7 @@ namespace cisc0 {
         first = encodeSetDestination(first, arg0);
         // use the mask during encoding since we know how many Words the
         // instruction is made up of
-        auto maskedValue = getMask(bitmask) & fullImmediate;
+        auto maskedValue = mask(bitmask) & fullImmediate;
         auto second = static_cast<Word>(maskedValue);
         auto third = static_cast<Word>(maskedValue >> 16);
         return std::make_tuple(count, first, second, third);
@@ -653,7 +655,7 @@ namespace cisc0 {
         if (immediate) {
             first = encodeLogicalFlagImmediateMask(first, bitmask);
             first = encodeLogicalImmediateDestination(first, arg0);
-            auto maskedImmediate = getMask(bitmask) & fullImmediate;
+            auto maskedImmediate = mask(bitmask) & fullImmediate;
             auto second = static_cast<Word>(maskedImmediate);
             auto third = static_cast<Word>(maskedImmediate >> 16);
             return std::make_tuple(instructionSizeFromImmediateMask(bitmask), first, second, third);
@@ -724,23 +726,8 @@ namespace cisc0 {
         }
     }
 
-    int instructionSizeFromImmediateMask(byte bitmask) {
-        switch(bitmask) {
-#define X(bits) case bits : return instructionSizeFromImmediateMask< bits > () ;
-#include "def/cisc0/bitmask4bit.def"
-#undef X
-            default:
-                throw syn::Problem("Illegal bitmask provided!");
-        }
-    }
-    RegisterValue getMask(byte bitmask) {
-        switch(bitmask) {
-#define X(bits) case bits : return SetBitmaskToWordMask< bits > :: mask ;
-#include "def/cisc0/bitmask4bit.def"
-#undef X
-            default:
-                throw syn::Problem("Illegal bitmask provided!");
-        }
+    int instructionSizeFromImmediateMask(byte bitmask) noexcept {
+        return 1 + (readLower(bitmask) ? 1 : 0) + (readUpper(bitmask) ? 1 : 0);
     }
     int InstructionEncoder::numWords() const {
         return std::get<0>(encode());
