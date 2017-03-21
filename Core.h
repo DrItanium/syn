@@ -37,7 +37,6 @@ namespace syn {
 			virtual void installprogram(std::istream& stream) = 0;
 			virtual void link(std::istream& input) = 0;
 			virtual bool cycle() = 0;
-
 			virtual void run();
 			inline bool shouldExecute() const noexcept { return execute; }
 		protected:

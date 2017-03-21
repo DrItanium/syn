@@ -36,11 +36,11 @@ class Device {
         virtual ~Device() { }
 		virtual void initialize() = 0;
 		virtual void shutdown() = 0;
-		virtual bool debugEnabled() const noexcept { return _debug; }
-		virtual void toggleDebug() noexcept { _debug = !_debug; }
+		bool debugEnabled() const noexcept { return _debug; }
+		void toggleDebug() noexcept { _debug = !_debug; }
 	private:
 		bool _debug = false;
-
 };
+
 } // end namespace syn
 #endif // end IRIS_DEVICE_H_

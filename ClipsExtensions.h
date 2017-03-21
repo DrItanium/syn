@@ -74,10 +74,19 @@ inline constexpr bool inRange(T capacity, T address) noexcept {
 	return address >= 0 && address < capacity;
 }
 
-template<typename T> struct TypeToName { };
+template<typename T> struct TypeToName {
+        TypeToName() = delete;
+        TypeToName(const TypeToName&) = delete;
+        TypeToName(TypeToName&&) = delete;
+        ~TypeToName() = delete;
+};
 #define DefWrapperSymbolicName(t, name) \
 	template<> \
 	struct TypeToName < t > { \
+        TypeToName() = delete; \
+        TypeToName(const TypeToName&) = delete; \
+        TypeToName(TypeToName&&) = delete;  \
+        ~TypeToName() = delete;  \
 		static std::string getSymbolicName() noexcept { return { name }; } \
 	}
 

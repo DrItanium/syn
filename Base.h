@@ -61,9 +61,14 @@ namespace syn {
 #define DefFieldData(type, index, mask) \
 	template<> \
 	struct FieldData<type, index> { \
-	static constexpr type Value = mask ;  \
-	static constexpr type FieldIndex = static_cast<type>(fields[index]); \
-}
+        FieldData() = delete; \
+        FieldData(const FieldData&) = delete; \
+        FieldData(FieldData&&) = delete; \
+        ~FieldData() = delete; \
+        using DataType = type; \
+	    static constexpr DataType Value = mask ;  \
+	    static constexpr DataType FieldIndex = static_cast<DataType>(fields[index]); \
+    }
 	DefFieldData(int16, 0, 0x00FF);
 	DefFieldData(int16, 1, static_cast<int16>(0xFF00));
 
@@ -104,10 +109,15 @@ namespace syn {
     #define DefUpperLowerPair(type, halfType, up, low, shift) \
     template<> \
     struct UpperLowerPair<type> { \
+        UpperLowerPair() = delete; \
+        UpperLowerPair(const UpperLowerPair&) = delete; \
+        UpperLowerPair(UpperLowerPair&&) = delete; \
+        ~UpperLowerPair() = delete; \
         using HalfType = halfType; \
-        static constexpr type upperMask = static_cast<type>(up); \
-        static constexpr type lowerMask = static_cast<type>(low); \
-        static constexpr type shiftCount = static_cast<type>(shift); \
+        using DataType = type; \
+        static constexpr DataType upperMask = static_cast<type>(up); \
+        static constexpr DataType lowerMask = static_cast<type>(low); \
+        static constexpr DataType shiftCount = static_cast<type>(shift); \
     }
     DefUpperLowerPair(uint8, uint8, 0xF0, 0x0F, 4);
     DefUpperLowerPair(int8, int8, 0xF0, 0x0F, 4);
