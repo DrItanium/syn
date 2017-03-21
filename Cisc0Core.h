@@ -109,36 +109,6 @@ namespace cisc0 {
 			RawInstruction _rawValue;
 	};
 
-	template<byte bitmask>
-	struct SetBitmaskToWordMask {
-		static_assert(bitmask <= ArchitectureConstants::Bitmask, "Bitmask is too large and must be less than or equals to 0b1111");
-		static constexpr bool decomposedBits[] = {
-            syn::getBit<byte, 0>(bitmask),
-            syn::getBit<byte, 1>(bitmask),
-            syn::getBit<byte, 2>(bitmask),
-            syn::getBit<byte, 3>(bitmask),
-		};
-		static constexpr Word encodeWord(bool upper, bool lower) noexcept {
-			return syn::encodeUint16LE(syn::expandBit(lower), syn::expandBit(upper));
-		}
-		static constexpr Word lowerMask = encodeWord(decomposedBits[1], decomposedBits[0]);
-		static constexpr Word upperMask = encodeWord(decomposedBits[3], decomposedBits[2]);
-		static constexpr RegisterValue mask = syn::encodeUint32LE(lowerMask, upperMask);
-
-		static constexpr bool readLower = decomposedBits[1] || decomposedBits[0];
-		static constexpr bool readUpper = decomposedBits[2] || decomposedBits[3];
-    };
-	template<byte bitmask>
-		inline constexpr RegisterValue mask() noexcept { return SetBitmaskToWordMask<bitmask>::mask; }
-	template<byte bitmask>
-		inline constexpr Word lowerMask() noexcept { return SetBitmaskToWordMask<bitmask>::lowerMask; }
-	template<byte bitmask>
-		inline constexpr Word upperMask() noexcept { return SetBitmaskToWordMask<bitmask>::upperMask; }
-	template<byte bitmask>
-		inline constexpr bool readLower() noexcept { return SetBitmaskToWordMask<bitmask>::readLower; }
-	template<byte bitmask>
-		inline constexpr bool readUpper() noexcept { return SetBitmaskToWordMask<bitmask>::readUpper; }
-
 	inline constexpr Word lowerMask(byte bitmask) noexcept {
 		return syn::encodeUint16LE(syn::expandBit(syn::getBit<byte, 0>(bitmask)),
 									syn::expandBit(syn::getBit<byte, 1>(bitmask)));
@@ -155,6 +125,7 @@ namespace cisc0 {
 	inline constexpr bool readLower(byte bitmask) noexcept {
 		return lowerMask(bitmask) != 0;
 	}
+
 	inline constexpr bool readUpper(byte bitmask) noexcept {
 		return upperMask(bitmask) != 0;
 	}
@@ -164,11 +135,6 @@ namespace cisc0 {
 	constexpr auto lower16Mask = mask(0b0011);
 
 	int instructionSizeFromImmediateMask(byte bitmask) noexcept;
-
-	template<byte bitmask>
-		static constexpr int instructionSizeFromImmediateMask() noexcept {
-			return 1 + (readLower<bitmask>() ? 1 : 0) + (readUpper<bitmask>() ? 1 : 0);
-		}
 
 	using ALU = syn::ALU<RegisterValue>;
 	using CompareUnit = syn::Comparator<RegisterValue>;
@@ -241,19 +207,6 @@ namespace cisc0 {
 					return tryReadNext<false>();
 				}
 			}
-			template<byte bitmask>
-				RegisterValue retrieveImmediate() noexcept {
-					static_assert(bitmask <= ArchitectureConstants::Bitmask, "Wider masks are being provided to retrieveImmediate!");
-					static constexpr auto useLower = readLower<bitmask>();
-					static constexpr auto useUpper = readUpper<bitmask>();
-					if (!useLower && !useUpper) {
-						return 0;
-					} else {
-						auto lower = tryReadNext<useLower>();
-						auto upper = static_cast<RegisterValue>(tryReadNext<useUpper>()) << 16;
-						return mask<bitmask>() & (lower | upper);
-					}
-				}
 			RegisterValue retrieveImmediate(byte bitmask) noexcept;
 
 			RegisterValue& registerValue(byte index);
