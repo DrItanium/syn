@@ -329,17 +329,21 @@ namespace cisc0 {
 		byte subType;
 		RegisterValue fullImmediate;
 		using Encoding = std::tuple<int, Word, Word, Word>;
-		int numWords();
-		Encoding encode();
+		int numWords() const;
+		Encoding encode() const;
 		void clear();
 		private:
-#define DefEnum(a, b)
-#define EndDefEnum(a, b, c)
-#define EnumEntry(type) Encoding encode ## type ();
-#include "def/cisc0/ops.def"
-#undef DefEnum
-#undef EndDefEnum
-#undef EnumEntry
+            Encoding encodeMemory() const;
+            Encoding encodeArithmetic() const;
+            Encoding encodeShift() const;
+            Encoding encodeLogical() const;
+            Encoding encodeCompare() const;
+            Encoding encodeBranch() const;
+            Encoding encodeSystemCall() const;
+            Encoding encodeMove() const;
+            Encoding encodeSet() const;
+            Encoding encodeSwap() const;
+            Encoding encodeComplex() const;
 	};
 	Core* newCore() noexcept;
 	void assemble(const std::string& iName, FILE* input, std::ostream* output);

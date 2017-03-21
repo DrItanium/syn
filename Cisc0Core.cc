@@ -572,7 +572,7 @@ namespace cisc0 {
         return result;
     }
 
-    InstructionEncoder::Encoding InstructionEncoder::encodeArithmetic() {
+    InstructionEncoder::Encoding InstructionEncoder::encodeArithmetic() const {
         auto first = encodeControl(0, type);
         first = encodeArithmeticFlagImmediate(first, immediate);
         first = encodeArithmeticFlagType(first, static_cast<ArithmeticOps>(subType));
@@ -581,7 +581,7 @@ namespace cisc0 {
         return std::make_tuple(1, first, 0, 0);
     }
 
-    InstructionEncoder::Encoding InstructionEncoder::encodeMove() {
+    InstructionEncoder::Encoding InstructionEncoder::encodeMove() const {
         auto first = encodeControl(0, type);
         first = encodeMoveBitmask(first, bitmask);
         first = encodeMoveRegister0(first, arg0);
@@ -589,11 +589,11 @@ namespace cisc0 {
         return std::make_tuple(1, first, 0, 0);
     }
 
-    InstructionEncoder::Encoding InstructionEncoder::encodeSwap() {
+    InstructionEncoder::Encoding InstructionEncoder::encodeSwap() const {
         return std::make_tuple(1, encodeSwapSource( encodeSwapDestination( encodeControl(0, type), arg0), arg1), 0, 0);
     }
 
-    InstructionEncoder::Encoding InstructionEncoder::encodeShift() {
+    InstructionEncoder::Encoding InstructionEncoder::encodeShift() const {
         auto first = encodeControl(0, type);
         first = encodeShiftFlagImmediate(first, immediate);
         first = encodeShiftFlagLeft(first, shiftLeft);
@@ -602,7 +602,7 @@ namespace cisc0 {
         return std::make_tuple(1, first, 0, 0);
     }
 
-    InstructionEncoder::Encoding InstructionEncoder::encodeSystemCall() {
+    InstructionEncoder::Encoding InstructionEncoder::encodeSystemCall() const {
         auto first = encodeControl(0, type);
         first = encodeSystemArg0(first, arg0);
         first = encodeSystemArg1(first, arg1);
@@ -610,7 +610,7 @@ namespace cisc0 {
         return std::make_tuple(1, first, 0, 0);
     }
 
-    InstructionEncoder::Encoding InstructionEncoder::encodeCompare() {
+    InstructionEncoder::Encoding InstructionEncoder::encodeCompare() const {
         auto first = encodeControl(0, type);
         first = encodeCompareType(first, static_cast<CompareStyle>(subType));
         first = encodeCompareImmediateFlag(first, immediate);
@@ -619,7 +619,7 @@ namespace cisc0 {
         return std::make_tuple(2, first, second, 0);
     }
 
-    InstructionEncoder::Encoding InstructionEncoder::encodeSet() {
+    InstructionEncoder::Encoding InstructionEncoder::encodeSet() const {
         int count = instructionSizeFromImmediateMask(bitmask);
         auto first = encodeControl(0, type);
         first = encodeSetBitmask(first, bitmask);
@@ -632,7 +632,7 @@ namespace cisc0 {
         return std::make_tuple(count, first, second, third);
     }
 
-    InstructionEncoder::Encoding InstructionEncoder::encodeMemory() {
+    InstructionEncoder::Encoding InstructionEncoder::encodeMemory() const {
         auto first = encodeControl(0, type);
         first = encodeMemoryFlagType(first, static_cast<MemoryOperation>(subType));
         first = encodeMemoryFlagBitmask(first, bitmask);
@@ -646,7 +646,7 @@ namespace cisc0 {
         return std::make_tuple(readNextWord ? 2 : 1, first, second, 0);
     }
 
-    InstructionEncoder::Encoding InstructionEncoder::encodeLogical() {
+    InstructionEncoder::Encoding InstructionEncoder::encodeLogical() const {
         auto first = encodeControl(0, type);
         first = encodeLogicalFlagImmediate(first, immediate);
         first = encodeLogicalFlagType(first, static_cast<LogicalOps>(subType));
@@ -664,7 +664,7 @@ namespace cisc0 {
         }
     }
 
-    InstructionEncoder::Encoding InstructionEncoder::encodeBranch() {
+    InstructionEncoder::Encoding InstructionEncoder::encodeBranch() const {
         auto first = encodeControl(0, type);
         first = encodeBranchFlagIsConditional(first, isConditional);
         first = encodeBranchFlagIsIfForm(first, isIf);
@@ -686,7 +686,7 @@ namespace cisc0 {
             }
         }
     }
-    InstructionEncoder::Encoding InstructionEncoder::encodeComplex() {
+    InstructionEncoder::Encoding InstructionEncoder::encodeComplex() const {
         auto sType = static_cast<ComplexSubTypes>(subType);
         auto first = encodeControl(0, type);
         first = encodeComplexSubClass(first, sType);
@@ -699,7 +699,7 @@ namespace cisc0 {
         }
     }
 
-    InstructionEncoder::Encoding InstructionEncoder::encode() {
+    InstructionEncoder::Encoding InstructionEncoder::encode() const {
         // always encode the type
         static auto testMemFn = std::mem_fn(&InstructionEncoder::encode);
         static std::map<Operation, decltype(testMemFn)> dispatchTable = {
@@ -742,7 +742,7 @@ namespace cisc0 {
                 throw syn::Problem("Illegal bitmask provided!");
         }
     }
-    int InstructionEncoder::numWords() {
+    int InstructionEncoder::numWords() const {
         return std::get<0>(encode());
     }
     void InstructionEncoder::clear() {
