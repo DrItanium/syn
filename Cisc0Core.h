@@ -267,7 +267,12 @@ namespace cisc0 {
 
             }
             template<Operation op>
-            struct SubtypeConversion { };
+            struct SubtypeConversion {
+                SubtypeConversion() = delete;
+                SubtypeConversion(const SubtypeConversion&) = delete;
+                SubtypeConversion(SubtypeConversion&&) = delete;
+                ~SubtypeConversion() = delete;
+            };
 
             template<Operation op>
             inline typename SubtypeConversion<op>::ResultantType getSubtype() const noexcept {
@@ -438,6 +443,7 @@ namespace cisc0 {
 
 
 	struct InstructionEncoder {
+		using Encoding = std::tuple<int, Word, Word, Word>;
 		int currentLine;
 		RegisterValue address;
 		Operation type;
@@ -456,7 +462,6 @@ namespace cisc0 {
 		std::string labelValue;
 		byte subType;
 		RegisterValue fullImmediate;
-		using Encoding = std::tuple<int, Word, Word, Word>;
 		int numWords() const;
 		Encoding encode() const;
 		void clear();
@@ -475,11 +480,21 @@ namespace cisc0 {
 	};
 	Core* newCore() noexcept;
 	void assemble(const std::string& iName, FILE* input, std::ostream* output);
-    template<> struct DecodedInstruction::SubtypeConversion<Operation::Compare> { using ResultantType = CompareStyle; };
-    template<> struct DecodedInstruction::SubtypeConversion<Operation::Arithmetic> { using ResultantType = ArithmeticOps; };
-    template<> struct DecodedInstruction::SubtypeConversion<Operation::Memory> { using ResultantType = MemoryOperation; };
-    template<> struct DecodedInstruction::SubtypeConversion<Operation::Complex> { using ResultantType = ComplexSubTypes; };
-    template<> struct DecodedInstruction::SubtypeConversion<Operation::Logical> { using ResultantType = LogicalOps; };
+#define DefSubtypeConversion(op, type) \
+    template<> \
+    struct DecodedInstruction::SubtypeConversion<Operation:: op > { \
+                SubtypeConversion() = delete; \
+                SubtypeConversion(const SubtypeConversion&) = delete; \
+                SubtypeConversion(SubtypeConversion&&) = delete; \
+                ~SubtypeConversion() = delete; \
+        using ResultantType = type; \
+    }
+DefSubtypeConversion(Compare, CompareStyle);
+DefSubtypeConversion(Arithmetic, ArithmeticOps);
+DefSubtypeConversion(Memory, MemoryOperation);
+DefSubtypeConversion(Complex, ComplexSubTypes);
+DefSubtypeConversion(Logical, LogicalOps);
+#undef DefSubtypeConversion
 } // end namespace cisc0
 
 #endif // end _TARGET_CISC0_IRIS_H
