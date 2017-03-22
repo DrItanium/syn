@@ -178,7 +178,30 @@ namespace syn {
 				std::future<std::mt19937_64::result_type> _next;
 				std::mt19937_64 _engine;
 		};
-
+    /**
+     * Extract out all of the different routines which will _NOT_ change from
+     * instantiation to instantiation of WrappedIODevice.
+     */
+    struct WrappedIODeviceConstants {
+        WrappedIODeviceConstants() = delete;
+        WrappedIODeviceConstants(const WrappedIODeviceConstants&) = delete;
+        WrappedIODeviceConstants(WrappedIODeviceConstants&&) = delete;
+        ~WrappedIODeviceConstants() = delete;
+        enum Operations {
+            Type,
+            Read,
+            Write,
+            Initialize,
+            Shutdown,
+            ListCommands,
+            Count,
+            Error = Count,
+        };
+        static std::string operationsName(Operations op) noexcept;
+        static Operations nameToOperation(const std::string& title) noexcept;
+        static int getArgCount(Operations op) noexcept;
+        static bool getCommandList(void* env, CLIPSValuePtr ret) noexcept;
+    };
     template<typename Data, typename Address, template<typename, typename> class T>
     class WrappedIODevice : public ExternalAddressWrapper<T<Data, Address>> {
         public:
@@ -186,28 +209,7 @@ namespace syn {
             using Self = WrappedIODevice<Data, Address, T>;
             using Parent = ExternalAddressWrapper<InternalType>;
             using Self_Ptr = Self*;
-            enum Operations {
-                Type,
-                Read,
-                Write,
-                Initialize,
-                Shutdown,
-                ListCommands,
-                Count,
-            };
-       private:
-            template<Operations op>
-            static inline std::string operationsName() noexcept {
-                switch (op) {
-                    case Operations::Type: return "type";
-                    case Operations::Read: return "read";
-                    case Operations::Write: return "write";
-                    case Operations::Initialize: return "initialize";
-                    case Operations::Shutdown: return "shutdown";
-                    case Operations::ListCommands: return "list-commands";
-                    default: throw "Unimplemented operation!";
-                }
-            }
+            using Operations = WrappedIODeviceConstants::Operations;
        public:
             static void newFunction(void* env, CLIPSValue* ret) {
                 static auto init = true;
@@ -242,30 +244,6 @@ namespace syn {
                 static auto init = true;
                 static std::string funcStr;
                 static std::string funcErrorPrefix;
-                static std::map<std::string, Operations> opTranslation = {
-                    { operationsName<Operations::Read>(), Operations::Read },
-                    { operationsName<Operations::Write>(), Operations::Write },
-                    { operationsName<Operations::Type>(),  Operations::Type },
-                    { operationsName<Operations::Initialize>(), Operations::Initialize },
-                    { operationsName<Operations::Shutdown>(), Operations::Shutdown },
-                    { operationsName<Operations::ListCommands>(), Operations::ListCommands },
-                };
-                static std::map<Operations, int> argCounts = {
-                    { Operations::Type, 0 },
-                    { Operations::Read, 1 },
-                    { Operations::Write, 2 },
-					{ Operations::Initialize, 0 },
-					{ Operations::Shutdown, 0 },
-					{ Operations::ListCommands, 0 },
-                };
-                static std::map<Operations, std::string> reverseNameLookup = {
-                    { Operations::Read, operationsName<Operations::Read>() },
-                    { Operations::Write, operationsName<Operations::Write>() },
-                    { Operations::Type, operationsName<Operations::Type>() },
-                    { Operations::Initialize, operationsName<Operations::Initialize>() },
-                    { Operations::Shutdown, operationsName<Operations::Shutdown>() },
-                    { Operations::ListCommands, operationsName<Operations::ListCommands>() },
-                };
 				if (init) {
 					init = false;
 					std::stringstream ss, ss2;
@@ -283,28 +261,28 @@ namespace syn {
 				};
 
 				if (GetpType(value) == EXTERNAL_ADDRESS) {
-					auto ptr = static_cast<Self_Ptr>(DOPToExternalAddress(value));
 					CLIPSValue op;
 					if (!EnvArgTypeCheck(env, funcStr.c_str(), 2, SYMBOL, &op)) {
 						return errorMessage(env, "CALL", 2, funcErrorPrefix, "expected a function name to call!");
 					} else {
 						std::string str(EnvDOToString(env, op));
-						auto result = opTranslation.find(str);
-						if (result == opTranslation.end()) {
+                        auto result = WrappedIODeviceConstants::nameToOperation(str);
+                        if (result == Operations::Error) {
 							CVSetBoolean(ret, false);
 							return callErrorMessage(str, "<- unknown operation requested!");
 						} else {
-							auto theOp = result->second;
-							auto countResult = argCounts.find(theOp);
-							if (countResult == argCounts.end()) {
+							auto theOp = result;
+                            auto countResult = WrappedIODeviceConstants::getArgCount(theOp);
+                            if (countResult == -1) {
 								CVSetBoolean(ret, false);
 								return callErrorMessage(str, "<- unknown argument count, not registered!!!");
 							}
-							auto count = 2 + countResult->second;
+							auto count = 2 + countResult;
 							if (count != EnvRtnArgCount(env)) {
 								CVSetBoolean(ret, false);
 								return callErrorMessage(str, " too many arguments provided!");
 							}
+                            auto ptr = static_cast<Self_Ptr>(DOPToExternalAddress(value));
                             auto readOperation = [ptr, ret, env]() {
 				                CLIPSValue tmp;
                                 if (!EnvArgTypeCheck(env, funcStr.c_str(), 3, INTEGER, &tmp)) {
@@ -342,20 +320,6 @@ namespace syn {
 									}
                                 }
                             };
-                            auto listCommands = [ptr, ret, env]() {
-                                FixedSizeMultifieldBuilder<static_cast<long>(Operations::Count)> mb(env);
-                                auto setField = [&mb, env](int index, Operations op) {
-                                    mb.setField(index, SYMBOL, EnvAddSymbol(env, reverseNameLookup[op].c_str()));
-                                };
-                                setField(1, Operations::Read);
-                                setField(2, Operations::Write);
-                                setField(3, Operations::Type);
-                                setField(4, Operations::Initialize);
-                                setField(5, Operations::Shutdown);
-                                setField(6, Operations::ListCommands);
-                                mb.assign(ret);
-                                return true;
-                            };
 							switch(theOp) {
                                 case Operations::Type:
                                     CVSetString(ret, Self::getType().c_str());
@@ -373,7 +337,7 @@ namespace syn {
                                 case Operations::Write:
                                     return writeOperation();
                                 case Operations::ListCommands:
-                                    return listCommands();
+                                    return WrappedIODeviceConstants::getCommandList(env, ret);
 								default:
 									CVSetBoolean(ret, false);
 									return callErrorMessage(str, "<- unimplemented operation!!!!");
