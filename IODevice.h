@@ -143,10 +143,17 @@ namespace syn {
 					SkipRandom,
 					Count,
 				};
+                using Parent = IODevice<D, A>;
 				using Operations = Addresses;
-				RandomDevice() : IODevice<D, A>() {
+                using RandomEngine = std::mt19937_64;
+            public:
+				RandomDevice() : Parent() {
 					_next = std::async(std::launch::async, [this]() { return _engine(); });
 				}
+                RandomDevice(RandomEngine::result_type initialSeed) : Parent() {
+                    _engine.seed(initialSeed);
+                    _next = std::async(std::launch::async, [this]() { return _engine(); });
+                }
 				virtual ~RandomDevice() { }
 				virtual D read(A addr) override {
 					if (addr == static_cast<A>(Addresses::NextRandom)) {
@@ -175,8 +182,8 @@ namespace syn {
 					_next = std::async(std::launch::async, [this]() { return _engine(); });
 				}
 			private:
-				std::future<std::mt19937_64::result_type> _next;
-				std::mt19937_64 _engine;
+                std::future<RandomEngine::result_type> _next;
+                RandomEngine _engine;
 		};
 } // end namespace syn
 #endif // end IRIS_IO_DEVICE_H_
