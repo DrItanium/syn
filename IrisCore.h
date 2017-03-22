@@ -63,7 +63,6 @@ namespace iris {
 
 namespace iris {
 	using IOSpace = syn::CLIPSIOController<word, CLIPSInteger>;
-	//using IOSpace = syn::IOController<word>;
 	template<dword capacity>
 	using WordMemorySpace = syn::FixedSizeLoadStoreUnit<word, dword, capacity>;
 	using WordMemorySpace64k = WordMemorySpace<ArchitectureConstants::AddressMax + 1>;
@@ -246,10 +245,10 @@ namespace iris {
 			}
 		};
 	template<typename Data, typename Address>
-	class ExposedCoreDataMemory : public syn::IODevice<Data, Address> {
+	class ExposedCoreDataMemory : public syn::AddressableIODevice<Data, Address> {
 		public:
             using Self = ExposedCoreDataMemory<Data, Address>;
-            using Parent = syn::IODevice<Data, Address>;
+            using Parent = syn::AddressableIODevice<Data, Address>;
 			static constexpr Address computeScaleFactor() noexcept {
 				return sizeof(Data) / sizeof(word);
 			}
@@ -259,14 +258,14 @@ namespace iris {
 			static constexpr Address computeDataMemoryEnd() noexcept {
 				return computeDataLength() - 1;
 			}
-			static constexpr word computeInternalAddress(Address addr) noexcept {
+			static constexpr word computeScaledInternalAddress(Address addr) noexcept {
 				return static_cast<word>(addr * computeScaleFactor());
 			}
         public:
 			ExposedCoreDataMemory(Core* core, Address base, Address length = computeDataLength()) : Parent(base, length), _core(core) { }
 			virtual ~ExposedCoreDataMemory() { }
 			virtual void write(Address address, Data value) override {
-				auto addr = computeInternalAddress(tryComputeActualAddress(address));
+				auto addr = computeScaledInternalAddress(tryComputeActualAddress(address));
 				static_assert(computeScaleFactor() != 0, "The size of the provided data element is smaller than the iris word! Please provide a custom implementation of write!");
 				static_assert(computeScaleFactor() <= 4, "The size of the provided data value is too large for the default write implementation! Please provide a custom implementation of write!");
 				switch(computeScaleFactor()) {
@@ -288,7 +287,7 @@ namespace iris {
 			}
 			virtual Data read(Address address) override {
 				// get the address factor computed
-				auto addr = computeInternalAddress(tryComputeActualAddress(address));
+				auto addr = computeScaledInternalAddress(tryComputeActualAddress(address));
 				static_assert(computeScaleFactor() != 0, "The size of the provided data element is smaller than the iris word! Please provide a custom implementation of read!");
 				static_assert(computeScaleFactor() <= 4, "The size of the provided data value is too large for the default read implementation! Please provide a custom implementation of read!");
 				if (computeScaleFactor() == 1) {
@@ -317,6 +316,8 @@ namespace iris {
 		private:
 			Core* _core;
 	};
+    template<typename Data, typename Address = CLIPSInteger>
+    using WrappedExposedDataCoreMemory = syn::WrappedIODevice<Data, Address, ExposedCoreDataMemory>;
 
 	Core* newCore() noexcept;
 	void assemble(const std::string& inputFileName, FILE* input, std::ostream* output);

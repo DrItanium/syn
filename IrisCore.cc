@@ -540,4 +540,14 @@ namespace iris {
         }
     }
 
+    void testConstruction() noexcept {
+        // this becomes dead code but it is a great way to test class
+        // instantiations
+        Core c;
+        c.initialize();
+        WrappedExposedDataCoreMemory<word> tmp(&c, 0);
+        tmp.initialize();
+        tmp.shutdown();
+        c.shutdown();
+    }
 }

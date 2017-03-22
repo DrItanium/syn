@@ -74,7 +74,8 @@ namespace syn {
             using Self = WrappedIODevice<Data, Address, T>;
             using Parent = ExternalAddressWrapper<InternalType>;
             using Self_Ptr = Self*;
-            using Operations = WrappedIODeviceConstants::Operations;
+            using Constants = WrappedIODeviceConstants;
+            using Operations = Constants::Operations;
        public:
             static void newFunction(void* env, CLIPSValue* ret) {
                 static auto init = true;
@@ -131,13 +132,13 @@ namespace syn {
 						return errorMessage(env, "CALL", 2, funcErrorPrefix, "expected a function name to call!");
 					} else {
 						std::string str(EnvDOToString(env, op));
-                        auto result = WrappedIODeviceConstants::nameToOperation(str);
+                        auto result = Constants::nameToOperation(str);
                         if (result == Operations::Error) {
 							CVSetBoolean(ret, false);
 							return callErrorMessage(str, "<- unknown operation requested!");
 						} else {
 							auto theOp = result;
-                            auto countResult = WrappedIODeviceConstants::getArgCount(theOp);
+                            auto countResult = Constants::getArgCount(theOp);
                             if (countResult == -1) {
 								CVSetBoolean(ret, false);
 								return callErrorMessage(str, "<- unknown argument count, not registered!!!");
@@ -202,7 +203,7 @@ namespace syn {
                                 case Operations::Write:
                                     return writeOperation();
                                 case Operations::ListCommands:
-                                    return WrappedIODeviceConstants::getCommandList(env, ret);
+                                    return Constants::getCommandList(env, ret);
 								default:
 									CVSetBoolean(ret, false);
 									return callErrorMessage(str, "<- unimplemented operation!!!!");
@@ -235,6 +236,8 @@ namespace syn {
 			}
         public:
             WrappedIODevice() : Parent(std::move(std::make_unique<InternalType>())) { }
+            template<typename ... Args>
+            WrappedIODevice(Args ... args) : Parent(std::move(std::make_unique<InternalType>(args...))) { }
             Data read(Address addr) { return this->_value->read(addr); }
             void write(Address addr, Data value) { this->_value->write(addr, value); }
             void initialize() { this->_value->initialize(); }
