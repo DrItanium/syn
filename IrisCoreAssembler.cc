@@ -62,7 +62,7 @@ namespace iris {
 		bool fullImmediate;
 		void reset() noexcept;
 		void setImmediate(word value) noexcept;
-		bool shouldResolveLabel() noexcept;
+		bool shouldResolveLabel() noexcept { return fullImmediate && hasLexeme; }
 	};
 
 	void AssemblerData::reset() noexcept {
@@ -96,10 +96,10 @@ namespace iris {
 		void setOperation(T value) noexcept {
 			current.operation = static_cast<byte>(value);
 		}
-		bool inCodeSection() const noexcept;
-		bool inDataSection() const noexcept;
-		void nowInCodeSection() noexcept;
-		void nowInDataSection() noexcept;
+		bool inCodeSection() const noexcept { return !inData; }
+		bool inDataSection() const noexcept { return inData; }
+		void nowInCodeSection() noexcept { inData = false; }
+		void nowInDataSection() noexcept { inData = true; }
 		void setCurrentAddress(word value) noexcept;
 		void registerLabel(const std::string& label) noexcept;
 		word getCurrentAddress() noexcept;
@@ -153,26 +153,26 @@ namespace iris {
     struct DestinationPredicateRegister : public IndirectPredicateRegister { };
 	DefAction(DestinationPredicateRegister) {
 		DefApply {
-			state.current.destination = iris::encodeLower4Bits(state.current.destination, state.temporaryByte);
+			state.current.destination = iris::encode4Bits<false>(state.current.destination, state.temporaryByte);
 		}
 	};
     struct DestinationPredicateInverseRegister : public IndirectPredicateRegister { };
 	DefAction(DestinationPredicateInverseRegister) {
 		DefApply {
-			state.current.destination = iris::encodeUpper4Bits(state.current.destination, state.temporaryByte);
+			state.current.destination = iris::encode4Bits<true>(state.current.destination, state.temporaryByte);
 		}
 	};
 	struct DestinationPredicates : public syn::TwoRegister<DestinationPredicateRegister, DestinationPredicateInverseRegister> { };
 	struct Source0Predicate : public IndirectPredicateRegister { };
 	DefAction(Source0Predicate) {
 		DefApply {
-			state.current.source0 = iris::encodeLower4Bits(state.current.source0, state.temporaryByte);
+            state.current.source0 = iris::encode4Bits<false>(state.current.source0, state.temporaryByte);
 		}
 	};
 	struct Source1Predicate : public IndirectPredicateRegister { };
 	DefAction(Source1Predicate) {
 		DefApply {
-			state.current.source0 = iris::encodeUpper4Bits(state.current.source0, state.temporaryByte);
+            state.current.source0 = iris::encode4Bits<true>(state.current.source0, state.temporaryByte);
 		}
 	};
 
@@ -507,18 +507,6 @@ namespace iris {
 			currentCodeIndex = value;
 		}
 	}
-	void AssemblerState::nowInCodeSection() noexcept {
-		inData = false;
-	}
-	void AssemblerState::nowInDataSection() noexcept {
-		inData = true;
-	}
-	bool AssemblerState::inCodeSection() const noexcept {
-		return !inData;
-	}
-	bool AssemblerState::inDataSection() const noexcept {
-		return inData;
-	}
 	void AssemblerState::setImmediate(word value) noexcept {
 		current.setImmediate(value);
 	}
@@ -603,8 +591,5 @@ namespace iris {
 		// put a sufficently large amount of space to read from the cstream
 		pegtl::parse_cstream<iris::Main, iris::Action>(input, iName.c_str(), 16777216, state);
 		resolveLabels(state, *output);
-	}
-	bool AssemblerData::shouldResolveLabel() noexcept {
-		return fullImmediate && hasLexeme;
 	}
 }

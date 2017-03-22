@@ -62,8 +62,6 @@ namespace iris {
 #include "iris_defines.h"
 
 namespace iris {
-    template<typename Data, typename Address>
-    class ExposedCoreDataMemory;
 	using IOSpace = syn::CLIPSIOController<word, CLIPSInteger>;
 	//using IOSpace = syn::IOController<word>;
 	template<dword capacity>
@@ -324,5 +322,14 @@ namespace iris {
 	void assemble(const std::string& inputFileName, FILE* input, std::ostream* output);
     constexpr raw_instruction encodeInstruction(byte group, byte operation, byte dest, byte src0, byte src1) noexcept;
     constexpr raw_instruction encodeInstruction(byte group, byte operation, byte dest, word immediate) noexcept;
+    template<bool upper>
+    inline byte encode4Bits(byte dest, byte value) noexcept {
+        if (upper) {
+            return encodeUpper4Bits(dest, value);
+        } else {
+            return encodeLower4Bits(dest, value);
+        }
+    }
+
 }
 #endif
