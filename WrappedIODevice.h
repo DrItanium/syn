@@ -276,6 +276,19 @@ namespace syn {
         }
         return nullptr;
     }
+    template<typename Word, typename Address = CLIPSInteger>
+    using WrappedGenericRandomDeviceBuilder = WrappedIODeviceBuilder<Word, Address, RandomDevice>;
+    template<typename Data, typename Address>
+    struct WrappedIODeviceBuilder<Data, Address, RandomDevice> {
+        WrappedIODeviceBuilder() = delete;
+        ~WrappedIODeviceBuilder() = delete;
+        WrappedIODeviceBuilder(const WrappedIODeviceBuilder&) = delete;
+        WrappedIODeviceBuilder(WrappedIODeviceBuilder&&) = delete;
+        using InternalType = RandomDevice<Data, Address>;
+        static InternalType* invokeNewFunction(void* env, CLIPSValue* ret, const std::string& prefix) noexcept {
+            return nullptr;
+        }
+    };
 
 	void CLIPS_installDefaultIODevices(void* theEnv);
 
