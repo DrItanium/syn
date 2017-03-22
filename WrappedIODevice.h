@@ -68,6 +68,15 @@ namespace syn {
         static bool getCommandList(void* env, CLIPSValuePtr ret) noexcept;
     };
     template<typename Data, typename Address, template<typename, typename> class T>
+    struct WrappedIODeviceBuilder {
+        WrappedIODeviceBuilder() = delete;
+        ~WrappedIODeviceBuilder() = delete;
+        WrappedIODeviceBuilder(const WrappedIODeviceBuilder&) = delete;
+        WrappedIODeviceBuilder(WrappedIODeviceBuilder&&) = delete;
+        // by default, any wrapped IO device can accept zero arguments
+        static T<Data, Address>* invokeNewFunction(void* env, CLIPSValuePtr ret, const std::string& funcErrorPrefix) noexcept;
+    };
+    template<typename Data, typename Address, template<typename, typename> class T>
     class WrappedIODevice : public ExternalAddressWrapper<T<Data, Address>> {
         public:
             using InternalType = T<Data, Address>;
@@ -84,26 +93,20 @@ namespace syn {
                 if (init) {
                     init = false;
                     std::stringstream ss, ss2;
-					ss << "new (" << Self::getType() << ")";
-					funcStr = ss.str();
-					ss2 << "Function " << funcStr;
-					funcErrorPrefix = ss2.str();
+                    ss << "new (" << Self::getType() << ")";
+                    funcStr = ss.str();
+                    ss2 << "Function " << funcStr;
+                    funcErrorPrefix = ss2.str();
                 }
-                try {
-                    if (EnvRtnArgCount(env) == 1) {
-                        auto idIndex = Self::getAssociatedEnvironmentId(env);
-                        ret->bitType = EXTERNAL_ADDRESS_TYPE;
-                        SetpType(ret, EXTERNAL_ADDRESS);
-                        SetpValue(ret, EnvAddExternalAddress(env, Self::make(), idIndex));
-                    } else {
-                        errorMessage(env, "NEW", 1, funcErrorPrefix, " no arguments should be provided for function new!");
-                    }
-                } catch(syn::Problem p) {
+                // build the internal object first!
+                auto ptr = WrappedIODeviceBuilder<Data, Address, T>::invokeNewFunction(env, ret, funcErrorPrefix);
+                if (ptr) {
+                    auto idIndex = Self::getAssociatedEnvironmentId(env);
+                    ret->bitType = EXTERNAL_ADDRESS_TYPE;
+                    SetpType(ret, EXTERNAL_ADDRESS);
+                    SetpValue(ret, EnvAddExternalAddress(env, Self::make(ptr), idIndex));
+                } else {
                     CVSetBoolean(ret, false);
-                    std::stringstream s;
-                    s << "an exception was thrown: " << p.what();
-                    auto str = s.str();
-                    errorMessage(env, "NEW", 2, funcErrorPrefix, str);
                 }
             }
             static bool callFunction(void* env, CLIPSValue* value, CLIPSValue* ret) {
@@ -234,10 +237,18 @@ namespace syn {
 			static Self* make() noexcept {
 				return new Self();
 			}
+            template<typename ... Args>
+            static Self* make(Args ... args) noexcept {
+                return new Self(args...);
+            }
+            static Self* make(InternalType* ptr) noexcept {
+                return new Self(ptr);
+            }
         public:
             WrappedIODevice() : Parent(std::move(std::make_unique<InternalType>())) { }
             template<typename ... Args>
             WrappedIODevice(Args ... args) : Parent(std::move(std::make_unique<InternalType>(args...))) { }
+            WrappedIODevice(InternalType* ptr) : Parent(std::move(std::unique_ptr<InternalType>(ptr))) { }
             Data read(Address addr) { return this->_value->read(addr); }
             void write(Address addr, Data value) { this->_value->write(addr, value); }
             void initialize() { this->_value->initialize(); }
@@ -247,6 +258,24 @@ namespace syn {
 	template<typename Word, typename Address = CLIPSInteger>
 	using WrappedGenericRandomDevice = WrappedIODevice<Word, Address, RandomDevice>;
 
+    template<typename Data, typename Address, template<typename, typename> class T>
+    T<Data, Address>* WrappedIODeviceBuilder<Data, Address, T>::invokeNewFunction(void* env, CLIPSValue* ret, const std::string& funcErrorPrefix) noexcept {
+        using InternalType = T<Data, Address>;
+        try {
+            if (EnvRtnArgCount(env) == 1) {
+                return new InternalType();
+            } else {
+                errorMessage(env, "NEW", 1, funcErrorPrefix, " no arguments should be provided for function new!");
+            }
+        } catch(syn::Problem p) {
+            CVSetBoolean(ret, false);
+            std::stringstream s;
+            s << "an exception was thrown: " << p.what();
+            auto str = s.str();
+            errorMessage(env, "NEW", 2, funcErrorPrefix, str);
+        }
+        return nullptr;
+    }
 
 	void CLIPS_installDefaultIODevices(void* theEnv);
 
