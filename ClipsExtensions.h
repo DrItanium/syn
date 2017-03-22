@@ -171,9 +171,11 @@ class MultifieldBuilder {
 template<long capacity>
 class FixedSizeMultifieldBuilder {
     public:
+        using CapacityType = long;
+    public:
         FixedSizeMultifieldBuilder(void* env) noexcept : _rawMultifield(EnvCreateMultifield(env, capacity)) { }
         virtual ~FixedSizeMultifieldBuilder() noexcept { }
-        static constexpr long getSize() noexcept { return capacity; }
+        static constexpr CapacityType getSize() noexcept { return capacity; }
         void* getRawMultifield() const noexcept { return _rawMultifield; }
         void assign(DataObjectPtr ptr) noexcept {
             ptr->type = MULTIFIELD;
