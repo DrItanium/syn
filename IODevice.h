@@ -195,6 +195,20 @@ namespace syn {
                 ListCommands,
                 Count,
             };
+       private:
+            template<Operations op>
+            static inline std::string operationsName() noexcept {
+                switch (op) {
+                    case Operations::Type: return "type";
+                    case Operations::Read: return "read";
+                    case Operations::Write: return "write";
+                    case Operations::Initialize: return "initialize";
+                    case Operations::Shutdown: return "shutdown";
+                    case Operations::ListCommands: return "list-commands";
+                    default: throw "Unimplemented operation!";
+                }
+            }
+       public:
             static void newFunction(void* env, CLIPSValue* ret) {
                 static auto init = true;
                 static std::string funcStr;
@@ -229,12 +243,12 @@ namespace syn {
                 static std::string funcStr;
                 static std::string funcErrorPrefix;
                 static std::map<std::string, Operations> opTranslation = {
-                    { "read", Operations::Read },
-                    { "write", Operations::Write },
-                    { "type",  Operations::Type },
-                    { "initialize", Operations::Initialize },
-                    { "shutdown", Operations::Shutdown },
-                    { "list-commands", Operations::ListCommands },
+                    { operationsName<Operations::Read>(), Operations::Read },
+                    { operationsName<Operations::Write>(), Operations::Write },
+                    { operationsName<Operations::Type>(),  Operations::Type },
+                    { operationsName<Operations::Initialize>(), Operations::Initialize },
+                    { operationsName<Operations::Shutdown>(), Operations::Shutdown },
+                    { operationsName<Operations::ListCommands>(), Operations::ListCommands },
                 };
                 static std::map<Operations, int> argCounts = {
                     { Operations::Type, 0 },
@@ -245,12 +259,12 @@ namespace syn {
 					{ Operations::ListCommands, 0 },
                 };
                 static std::map<Operations, std::string> reverseNameLookup = {
-                    { Operations::Read, "read" },
-                    { Operations::Write, "write" },
-                    { Operations::Type, "type" },
-                    { Operations::Initialize, "initialize" },
-                    { Operations::Shutdown, "shutdown" },
-                    { Operations::ListCommands, "list-commands" },
+                    { Operations::Read, operationsName<Operations::Read>() },
+                    { Operations::Write, operationsName<Operations::Write>() },
+                    { Operations::Type, operationsName<Operations::Type>() },
+                    { Operations::Initialize, operationsName<Operations::Initialize>() },
+                    { Operations::Shutdown, operationsName<Operations::Shutdown>() },
+                    { Operations::ListCommands, operationsName<Operations::ListCommands>() },
                 };
 				if (init) {
 					init = false;
