@@ -11,7 +11,7 @@ ARCH_OBJECTS = IrisCore.o \
 			   ${MACHINE_OBJECTS}
 
 COMMON_THINGS = Core.o \
-				IODevice.o \
+				WrappedIODevice.o \
 				IOController.o \
 				ClipsExtensions.o \
 				libmaya.a

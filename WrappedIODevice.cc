@@ -23,7 +23,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "IODevice.h"
+#include "WrappedIODevice.h"
 namespace syn {
     using RandomNumberGenerator64bitDevice = RandomDevice<uint64_t, CLIPSInteger>;
     using RandomNumberGeneratorSigned64bitDevice = RandomDevice<int64_t, CLIPSInteger>;
