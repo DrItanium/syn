@@ -299,7 +299,7 @@ namespace syn {
                                 } else {
 									try {
 										auto address = static_cast<Address>(EnvDOToLong(env, tmp));
-										CVSetInteger(ret, ptr->_value->read(address));
+										CVSetInteger(ret, ptr->read(address));
 										return true;
 									} catch(syn::Problem p) {
 										CVSetBoolean(ret, false);
@@ -320,7 +320,7 @@ namespace syn {
 										CVSetBoolean(ret, true);
 										auto address = static_cast<Address>(EnvDOToLong(env, t0));
 										auto value = static_cast<Data>(EnvDOToLong(env, t1));
-										ptr->_value->write(address, value);
+                                        ptr->write(address, value);
 										return true;
 									} catch(syn::Problem p) {
 										CVSetBoolean(ret, false);
@@ -348,11 +348,11 @@ namespace syn {
                                     return true;
                                 case Operations::Shutdown:
                                     CVSetBoolean(ret, true);
-                                    ptr->_value->shutdown();
+                                    ptr->shutdown();
                                     return true;
                                 case Operations::Initialize:
                                     CVSetBoolean(ret, true);
-                                    ptr->_value->initialize();
+                                    ptr->initialize();
                                     return true;
 								case Operations::Read:
                                     return readOperation();
@@ -392,6 +392,10 @@ namespace syn {
 			}
         public:
             WrappedIODevice() : Parent(std::move(std::make_unique<InternalType>())) { }
+            Data read(Address addr) { return this->_value->read(addr); }
+            void write(Address addr, Data value) { this->_value->write(addr, value); }
+            void initialize() { this->_value->initialize(); }
+            void shutdown() { this->_value->shutdown(); }
     };
 
 	template<typename Word, typename Address = CLIPSInteger>
