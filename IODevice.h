@@ -181,7 +181,7 @@ namespace syn {
 
     template<typename Data, typename Address, template<typename, typename> class T>
     class WrappedIODevice : public ExternalAddressWrapper<T<Data, Address>> {
-        public: 
+        public:
             using InternalType = T<Data, Address>;
             using Self = WrappedIODevice<Data, Address, T>;
             using Parent = ExternalAddressWrapper<InternalType>;
@@ -192,6 +192,7 @@ namespace syn {
                 Write,
                 Initialize,
                 Shutdown,
+                ListCommands,
                 Count,
             };
             static void newFunction(void* env, CLIPSValue* ret) {
@@ -233,6 +234,7 @@ namespace syn {
                     { "type",  Operations::Type },
                     { "initialize", Operations::Initialize },
                     { "shutdown", Operations::Shutdown },
+                    { "list-commands", Operations::ListCommands },
                 };
                 static std::map<Operations, int> argCounts = {
                     { Operations::Type, 0 },
@@ -240,6 +242,15 @@ namespace syn {
                     { Operations::Write, 2 },
 					{ Operations::Initialize, 0 },
 					{ Operations::Shutdown, 0 },
+					{ Operations::ListCommands, 0 },
+                };
+                static std::map<Operations, std::string> reverseNameLookup = {
+                    { Operations::Read, "read" },
+                    { Operations::Write, "write" },
+                    { Operations::Type, "type" },
+                    { Operations::Initialize, "initialize" },
+                    { Operations::Shutdown, "shutdown" },
+                    { Operations::ListCommands, "list-commands" },
                 };
 				if (init) {
 					init = false;
@@ -280,7 +291,7 @@ namespace syn {
 								CVSetBoolean(ret, false);
 								return callErrorMessage(str, " too many arguments provided!");
 							}
-                            auto readOperation = [ptr, ret, env]() { 
+                            auto readOperation = [ptr, ret, env]() {
 				                CLIPSValue tmp;
                                 if (!EnvArgTypeCheck(env, funcStr.c_str(), 3, INTEGER, &tmp)) {
                                     CVSetBoolean(ret, false);
@@ -317,6 +328,20 @@ namespace syn {
 									}
                                 }
                             };
+                            auto listCommands = [ptr, ret, env]() {
+                                FixedSizeMultifieldBuilder<static_cast<long>(Operations::Count)> mb(env);
+                                auto setField = [&mb, env](int index, Operations op) {
+                                    mb.setField(index, SYMBOL, EnvAddSymbol(env, reverseNameLookup[op].c_str()));
+                                };
+                                setField(1, Operations::Read);
+                                setField(2, Operations::Write);
+                                setField(3, Operations::Type);
+                                setField(4, Operations::Initialize);
+                                setField(5, Operations::Shutdown);
+                                setField(6, Operations::ListCommands);
+                                mb.assign(ret);
+                                return true;
+                            };
 							switch(theOp) {
                                 case Operations::Type:
                                     CVSetString(ret, Self::getType().c_str());
@@ -333,6 +358,8 @@ namespace syn {
                                     return readOperation();
                                 case Operations::Write:
                                     return writeOperation();
+                                case Operations::ListCommands:
+                                    return listCommands();
 								default:
 									CVSetBoolean(ret, false);
 									return callErrorMessage(str, "<- unimplemented operation!!!!");
