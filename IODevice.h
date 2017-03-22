@@ -148,11 +148,7 @@ namespace syn {
                 using RandomEngine = std::mt19937_64;
                 using SeedType = RandomEngine::result_type;
             public:
-				RandomDevice() : Parent() {
-					_next = std::async(std::launch::async, [this]() { return _engine(); });
-				}
-                RandomDevice(SeedType initialSeed) : Parent() {
-                    _engine.seed(initialSeed);
+                RandomDevice(SeedType initialSeed = RandomEngine::default_seed) : Parent(), _engine(initialSeed) {
                     _next = std::async(std::launch::async, [this]() { return _engine(); });
                 }
 				virtual ~RandomDevice() { }
