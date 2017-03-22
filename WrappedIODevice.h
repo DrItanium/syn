@@ -74,7 +74,7 @@ namespace syn {
         WrappedIODeviceBuilder(const WrappedIODeviceBuilder&) = delete;
         WrappedIODeviceBuilder(WrappedIODeviceBuilder&&) = delete;
         // by default, any wrapped IO device can accept zero arguments
-        static T<Data, Address>* invokeNewFunction(void* env, CLIPSValuePtr ret, const std::string& funcErrorPrefix) noexcept;
+        static T<Data, Address>* invokeNewFunction(void* env, CLIPSValuePtr ret, const std::string& funcErrorPrefix, const std::string& function) noexcept;
     };
     template<typename Data, typename Address, template<typename, typename> class T>
     class WrappedIODevice : public ExternalAddressWrapper<T<Data, Address>> {
@@ -99,7 +99,7 @@ namespace syn {
                     funcErrorPrefix = ss2.str();
                 }
                 // build the internal object first!
-                auto ptr = WrappedIODeviceBuilder<Data, Address, T>::invokeNewFunction(env, ret, funcErrorPrefix);
+                auto ptr = WrappedIODeviceBuilder<Data, Address, T>::invokeNewFunction(env, ret, funcErrorPrefix, funcStr);
                 if (ptr) {
                     auto idIndex = Self::getAssociatedEnvironmentId(env);
                     ret->bitType = EXTERNAL_ADDRESS_TYPE;
@@ -259,7 +259,7 @@ namespace syn {
 	using WrappedGenericRandomDevice = WrappedIODevice<Word, Address, RandomDevice>;
 
     template<typename Data, typename Address, template<typename, typename> class T>
-    T<Data, Address>* WrappedIODeviceBuilder<Data, Address, T>::invokeNewFunction(void* env, CLIPSValue* ret, const std::string& funcErrorPrefix) noexcept {
+    T<Data, Address>* WrappedIODeviceBuilder<Data, Address, T>::invokeNewFunction(void* env, CLIPSValue* ret, const std::string& funcErrorPrefix, const std::string& function) noexcept {
         using InternalType = T<Data, Address>;
         try {
             if (EnvRtnArgCount(env) == 1) {
@@ -276,19 +276,42 @@ namespace syn {
         }
         return nullptr;
     }
-    template<typename Word, typename Address = CLIPSInteger>
-    using WrappedGenericRandomDeviceBuilder = WrappedIODeviceBuilder<Word, Address, RandomDevice>;
+
     template<typename Data, typename Address>
-    struct WrappedIODeviceBuilder<Data, Address, RandomDevice> {
-        WrappedIODeviceBuilder() = delete;
-        ~WrappedIODeviceBuilder() = delete;
-        WrappedIODeviceBuilder(const WrappedIODeviceBuilder&) = delete;
-        WrappedIODeviceBuilder(WrappedIODeviceBuilder&&) = delete;
-        using InternalType = RandomDevice<Data, Address>;
-        static InternalType* invokeNewFunction(void* env, CLIPSValue* ret, const std::string& prefix) noexcept {
-            return nullptr;
-        }
-    };
+        struct WrappedIODeviceBuilder<Data, Address, RandomDevice> {
+            WrappedIODeviceBuilder() = delete;
+            ~WrappedIODeviceBuilder() = delete;
+            WrappedIODeviceBuilder(const WrappedIODeviceBuilder&) = delete;
+            WrappedIODeviceBuilder(WrappedIODeviceBuilder&&) = delete;
+            using InternalType = RandomDevice<Data, Address>;
+            static InternalType* invokeNewFunction(void* env, CLIPSValue* ret, const std::string& prefix, const std::string& function) noexcept {
+                try {
+                    auto count = EnvRtnArgCount(env);
+                    if (count == 1) {
+                        return new InternalType();
+                    } else if (count == 2) {
+                        CLIPSValue val;
+                        if (!EnvArgTypeCheck(env, function.c_str(), 2, INTEGER, &val)) {
+                            CVSetBoolean(ret, false);
+                            errorMessage(env, "NEW", 2, prefix, "first argument must be an integer to seed with!");
+                            return nullptr;
+                        } else {
+                            return new InternalType(static_cast<typename InternalType::SeedType>(EnvDOToLong(env, val)));
+                        }
+                    } else {
+                        errorMessage(env, "NEW", 1, prefix, " too many arguments are provided for function new!");
+                        return nullptr;
+                    }
+                } catch(syn::Problem p) {
+                    CVSetBoolean(ret, false);
+                    std::stringstream s;
+                    s << "an exception was thrown: " << p.what();
+                    auto str = s.str();
+                    errorMessage(env, "NEW", 2, prefix, str);
+                    return nullptr;
+                }
+            }
+        };
 
 	void CLIPS_installDefaultIODevices(void* theEnv);
 

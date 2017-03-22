@@ -146,11 +146,12 @@ namespace syn {
                 using Parent = IODevice<D, A>;
 				using Operations = Addresses;
                 using RandomEngine = std::mt19937_64;
+                using SeedType = RandomEngine::result_type;
             public:
 				RandomDevice() : Parent() {
 					_next = std::async(std::launch::async, [this]() { return _engine(); });
 				}
-                RandomDevice(RandomEngine::result_type initialSeed) : Parent() {
+                RandomDevice(SeedType initialSeed) : Parent() {
                     _engine.seed(initialSeed);
                     _next = std::async(std::launch::async, [this]() { return _engine(); });
                 }
