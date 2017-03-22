@@ -36,6 +36,7 @@
 #include "Problem.h"
 #include "Device.h"
 #include "IODevice.h"
+#include "WrappedIODevice.h"
 
 namespace syn {
 
