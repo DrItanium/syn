@@ -66,6 +66,50 @@ namespace iris {
 	using ErrorStorage = WordMemorySpace<ArchitectureConstants::RegistersToSaveOnError>;
     using InstructionPointer = syn::Register<QuadWord, ArchitectureConstants::AddressMax>;
     using LinkRegister = syn::Register<QuadWord, ArchitectureConstants::AddressMax>;
+    struct InstructionDecoder {
+        InstructionDecoder() = delete;
+        ~InstructionDecoder() = delete;
+        InstructionDecoder(const InstructionDecoder&) = delete;
+        InstructionDecoder(InstructionDecoder&&) = delete;
+        static inline constexpr byte getDestinationIndex(raw_instruction value) noexcept { return decodeDestination(value); }
+        static inline constexpr byte getSource0Index(raw_instruction value) noexcept { return decodeSource0(value); }
+        static inline constexpr byte getSource1Index(raw_instruction value) noexcept { return decodeSource1(value); }
+        static inline constexpr byte getOperationByte(raw_instruction value) noexcept { return decodeOperation(value); }
+        static inline constexpr byte getGroup(raw_instruction value) noexcept { return decodeGroup(value); }
+        static inline constexpr word getHalfImmediate(raw_instruction value) noexcept { return decodeHalfImmediate(value); }
+        static inline constexpr word getImmediate(raw_instruction value) noexcept { return decodeImmediate(value); }
+        template<typename T>
+        static inline constexpr T getOperation(raw_instruction value) noexcept {
+            return static_cast<T>(getOperationByte(value));
+        }
+        template<int index>
+        static inline constexpr byte getRegisterIndex(raw_instruction value) noexcept {
+            static_assert(index >= 0 && index < 3, "Illegal register index!");
+            if (index == 0) {
+                return getDestinationIndex(value);
+            } else if (index == 1) {
+                return getSource0Index(value);
+            } else {
+                return getSource1Index(value);
+            }
+        }
+        static inline constexpr byte getPredicateResultIndex(raw_instruction value) noexcept { return decodePredicateResult(value); }
+        static inline constexpr byte getPredicateInverseResultIndex(raw_instruction value) noexcept { return decodePredicateInverseResult(value); }
+        static inline constexpr byte getPredicateSource0Index(raw_instruction value) noexcept { return decodePredicateSource0(value); }
+        static inline constexpr byte getPredicateSource1Index(raw_instruction value) noexcept { return decodePredicateSource1(value); }
+        template<int index>
+        static inline constexpr byte getPredicateIndex(raw_instruction value) noexcept {
+            static_assert(index >= 0 && index < 4, "Illegal predicate field index!");
+            switch(index) {
+                case 0: return getPredicateResultIndex(value);
+                case 1: return getPredicateInverseResultIndex(value);
+                case 2: return getPredicateSource0Index(value);
+                case 3: return getPredicateSource1Index(value);
+                default:
+                    throw syn::Problem("Illegal index!!!!");
+            }
+        }
+    };
 	class Core : public syn::Core {
 		public:
 			Core() noexcept;
@@ -96,61 +140,26 @@ namespace iris {
 		private:
 			void dispatch() noexcept;
             template<int index>
-            inline byte getRegisterIndex() const noexcept {
-                static_assert(index >= 0 && index < 3, "Illegal register index!");
-                if (index == 0) {
-                    return decodeDestination(current);
-                } else if (index == 1) {
-                    return decodeSource0(current);
-                } else {
-                    return decodeSource1(current);
-                }
-            }
-            inline byte getDestinationIndex() const noexcept { return getRegisterIndex<0>(); }
-            inline byte getSource0Index() const noexcept { return getRegisterIndex<1>(); }
-            inline byte getSource1Index() const noexcept { return getRegisterIndex<2>(); }
-			template<typename T>
-			inline T getOperation() const noexcept {
-				return static_cast<T>(getOperationByte());
-			}
-			inline word getHalfImmediate() const noexcept { return decodeHalfImmediate(current); }
-            inline word getImmediate() const noexcept { return decodeImmediate(current); }
-            inline byte getOperationByte() const noexcept { return decodeOperation(current); }
-            inline byte getGroup() const noexcept { return decodeGroup(current); }
-            template<int index>
             inline word& getRegister() noexcept {
-                return gpr[getRegisterIndex<index>()];
+                return gpr[InstructionDecoder::getRegisterIndex<index>(current)];
             }
             inline word& destinationRegister() noexcept { return getRegister<0>(); }
             inline word& source0Register() noexcept { return getRegister<1>(); }
             inline word& source1Register() noexcept { return getRegister<2>(); }
-            template<int index>
-            inline byte getPredicateIndex() const noexcept {
-                static_assert(index >= 0 && index < 4, "Illegal predicate field index!");
-                switch(index) {
-                    case 0:
-                        return decodePredicateResult(current);
-                    case 1:
-                        return decodePredicateInverseResult(current);
-                    case 2:
-                        return decodePredicateSource0(current);
-                    case 3:
-                        return decodePredicateSource1(current);
-                    default:
-                        throw syn::Problem("Illegal index!!!!");
-                }
-            }
-            inline byte getPredicateResultIndex() const noexcept { return getPredicateIndex<0>(); }
-            inline byte getPredicateInverseResultIndex() const noexcept { return getPredicateIndex<1>(); }
 
             template<int index>
             inline bool& getPredicate() noexcept {
-                return getPredicateRegister(getPredicateIndex<index>());
+                return getPredicateRegister(InstructionDecoder::getPredicateIndex<index>(current));
             }
 			inline bool& predicateResult() noexcept { return getPredicate<0>(); }
 			inline bool& predicateInverseResult() noexcept { return getPredicate<1>(); }
 			inline bool& predicateSource0() noexcept { return getPredicate<2>(); }
 			inline bool& predicateSource1() noexcept { return getPredicate<3>(); }
+
+            template<typename T>
+            inline T getOperation() noexcept {
+                return InstructionDecoder::getOperation<T>(current);
+            }
 		private:
 			void saveSystemState() noexcept;
 			void restoreSystemState() noexcept;
@@ -160,7 +169,7 @@ namespace iris {
 		private:
 			template<typename Unit>
 			void performOperation(Unit& unit, typename Unit::Operation op, bool immediate) {
-				destinationRegister() = unit(op, source0Register(), (immediate ? getHalfImmediate() : source1Register()));
+				destinationRegister() = unit(op, source0Register(), (immediate ? InstructionDecoder::getHalfImmediate(current) : source1Register()));
 			}
 			template<typename Unit>
 			inline void performOperation(Unit& unit, std::tuple<typename Unit::Operation, bool>& tuple) {

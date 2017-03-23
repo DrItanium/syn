@@ -89,12 +89,12 @@ namespace iris {
         _error = encodeStatusInError(_error, true);
         setInstructionPointer(data[ArchitectureConstants::ErrorDispatchVectorBase]);
 		gpr[255] = _error;
-		gpr[254] = getGroup();
-		gpr[253] = getOperationByte();
-		gpr[252] = getDestinationIndex();
-		gpr[251] = getSource0Index();
-		gpr[250] = getSource1Index();
-		gpr[249] = getImmediate();
+		gpr[254] = InstructionDecoder::getGroup(current);
+		gpr[253] = InstructionDecoder::getOperationByte(current);
+		gpr[252] = InstructionDecoder::getDestinationIndex(current);
+		gpr[251] = InstructionDecoder::getSource0Index(current);
+		gpr[250] = InstructionDecoder::getSource1Index(current);
+		gpr[249] = InstructionDecoder::getImmediate(current);
 		advanceIp = false;
         _error = 0; // clear out the error field now that we have transferred it
         // now we have to perform the normal work of the cycle
@@ -122,11 +122,13 @@ namespace iris {
 	}
 	void Core::dispatch() noexcept {
 		current = instruction[getInstructionPointer()];
-		auto group = static_cast<InstructionGroup>(getGroup());
+        auto getHalfImmediate = [this]() { return InstructionDecoder::getHalfImmediate(current); };
+        auto getImmediate = [this]() { return InstructionDecoder::getImmediate(current); };
+		auto group = static_cast<InstructionGroup>(InstructionDecoder::getGroup(current));
 		auto updateStatusRegister = [this](auto fn, bool value) { _error = fn(_error, value); };
 		auto enableStatusRegisterBit = [this, updateStatusRegister](auto fn) { updateStatusRegister(fn, true); };
 		auto makeIllegalInstructionMessage = [this, enableStatusRegisterBit](const std::string& type) { enableStatusRegisterBit(encodeStatusIllegalInstruction); };
-		auto arithmeticOperation = [this, updateStatusRegister, enableStatusRegisterBit, makeIllegalInstructionMessage]() {
+		auto arithmeticOperation = [this, getHalfImmediate, updateStatusRegister, enableStatusRegisterBit, makeIllegalInstructionMessage]() {
 			static std::map<ArithmeticOp, UnitDescription<ALU>> table = {
 				{ ArithmeticOp::Add, makeDesc<ALU>(ALU::Operation::Add , false) },
 				{ ArithmeticOp::Sub, makeDesc<ALU>(ALU::Operation::Subtract , false ) },
@@ -188,7 +190,7 @@ namespace iris {
 				performOperation(_alu, result->second);
 			}
 		};
-		auto compareOperation = [this, makeIllegalInstructionMessage]() {
+		auto compareOperation = [this, getHalfImmediate, makeIllegalInstructionMessage]() {
 			static std::map<CompareOp, UnitDescription<CompareUnit>> translationTable = {
 				{ CompareOp::LessThan, makeDesc<CompareUnit>(CompareUnit::Operation::LessThan, false) },
 				{ CompareOp::LessThanImmediate, makeDesc<CompareUnit>(CompareUnit::Operation::LessThan, true) },
@@ -212,12 +214,12 @@ namespace iris {
 				std::tie(op, immediate) = result->second;
 				auto result = _compare(op, source0Register(), immediate ? getHalfImmediate() : source1Register()) != 0;
 				predicateResult() = result;
-				if (getPredicateResultIndex() != getPredicateInverseResultIndex()) {
+                if (InstructionDecoder::getPredicateResultIndex(current) != InstructionDecoder::getPredicateInverseResultIndex(current)) {
 					predicateInverseResult() = !result;
 				}
 			}
 		};
-		auto jumpOperation = [this, makeIllegalInstructionMessage]() {
+		auto jumpOperation = [this, getImmediate, makeIllegalInstructionMessage]() {
 			// conditional?, immediate?, link?
 			static std::map<JumpOp, std::tuple<bool, bool, bool>> translationTable = {
 				{ JumpOp:: BranchUnconditionalImmediate ,       std::make_tuple(false, true, false) } ,
@@ -229,6 +231,9 @@ namespace iris {
 				{ JumpOp:: BranchConditional ,                  std::make_tuple(true, false, false) } ,
 				{ JumpOp:: BranchConditionalLink ,              std::make_tuple(true, false, true) } ,
 			};
+            auto chooseRegister = [this](auto cond) {
+                return cond ? InstructionDecoder::getSource0Index(current) : InstructionDecoder::getSource1Index(current);
+            };
 			auto operation = getOperation<JumpOp>();
 			auto result = translationTable.find(operation);
 			if (result == translationTable.end()) {
@@ -245,12 +250,12 @@ namespace iris {
 				switch(operation) {
                     case JumpOp::IfThenElse:
                         cond = predicateResult();
-                        setInstructionPointer(gpr[cond ? getSource0Index() : getSource1Index()]);
+                        setInstructionPointer(gpr[chooseRegister(cond)]);
                         break;
                     case JumpOp::IfThenElseLink:
                         cond = predicateResult();
                         setLinkRegister(getInstructionPointer() + 1);
-                        setInstructionPointer(gpr[cond ? getSource0Index() : getSource1Index()]);
+                        setInstructionPointer(gpr[chooseRegister(cond)]);
                         break;
 					case JumpOp::BranchUnconditionalLR:
                         setInstructionPointer(getLinkRegister());
@@ -296,7 +301,9 @@ namespace iris {
 				}
 			}
 		};
-		auto moveOperation = [this, makeIllegalInstructionMessage]() {
+		auto moveOperation = [this, getHalfImmediate, getImmediate, makeIllegalInstructionMessage]() {
+            auto getDestinationIndex = [this]() { return InstructionDecoder::getDestinationIndex(current); };
+            auto getSource0Index = [this]() { return InstructionDecoder::getImmediate(current); };
 			auto op = getOperation<MoveOp>();
 			raw_instruction codeStorage = 0u;
 			switch(op) {
@@ -375,7 +382,7 @@ namespace iris {
 					break;
 			}
 		};
-		auto conditionalRegisterOperation = [this, makeIllegalInstructionMessage]() {
+		auto conditionalRegisterOperation = [this, makeIllegalInstructionMessage, getImmediate]() {
 			static std::map<ConditionRegisterOp, UnitDescription<PredicateComparator>> translationTable = {
 				{ ConditionRegisterOp::CRAnd, makeDesc<PredicateComparator>(PredicateComparator::Operation::BinaryAnd, false) },
 				{ ConditionRegisterOp::CROr, makeDesc<PredicateComparator>(PredicateComparator::Operation::BinaryOr, false) },
@@ -410,7 +417,7 @@ namespace iris {
 				std::tie(pop, immediate) = result->second;
 				auto result = _pcompare(pop, predicateSource0(), predicateSource1());
 				predicateResult() = result;
-				if (getPredicateResultIndex() != getPredicateInverseResultIndex()) {
+                if (InstructionDecoder::getPredicateResultIndex(current) != InstructionDecoder::getPredicateInverseResultIndex(current)) {
 					predicateInverseResult() = !result;
 				}
 			}
