@@ -165,7 +165,6 @@ namespace syn {
 				virtual void write(A addr, D value) override {
 					if (addr == static_cast<A>(Addresses::SeedRandom)) {
 						_engine.seed(value);
-						generateNextValue();
                         skipToNextValue();
 					} else if (addr == static_cast<A>(Addresses::SkipRandom)) {
 						_engine.discard(value);
