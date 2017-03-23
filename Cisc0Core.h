@@ -38,11 +38,9 @@
 #include "IODevice.h"
 
 namespace cisc0 {
-	using HWord = uint8_t;
 	using Word = uint16_t;
 	using DWord = uint32_t;
 	using RawInstruction = Word; // this is more of a packet!
-	using immediate = HWord;
 	using RegisterValue = DWord;
     using Address = DWord;
 
@@ -52,7 +50,6 @@ namespace cisc0 {
 		AddressMax = 65536 * SegmentCount,
 		MaxInstructionCount = 16,
 		MaxSystemCalls = 0x1000,
-		Bitmask = 0b1111,
 		// unlike iris16 and iris32, there is a limited set of registers with
 		// a majority of them marked for explicit usage, instructions
 		// themselves are still 16 bits wide but 32bits are extracted per

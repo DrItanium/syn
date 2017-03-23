@@ -60,7 +60,7 @@ namespace cisc0 {
 	inline constexpr bool readUpper(byte bitmask) noexcept {
 		return upperMask(bitmask) != 0;
 	}
-	constexpr auto bitmask32 =   mask(ArchitectureConstants::Bitmask);
+	constexpr auto bitmask32 =   mask(0b1111);
 	constexpr auto bitmask24 =   mask(0b0111);
 	constexpr auto upper16Mask = mask(0b1100);
 	constexpr auto lower16Mask = mask(0b0011);
