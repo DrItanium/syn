@@ -89,7 +89,7 @@ namespace iris {
         _error = encodeStatusInError(_error, true);
         setInstructionPointer(data[ArchitectureConstants::ErrorDispatchVectorBase]);
 		gpr[255] = _error;
-		gpr[254] = InstructionDecoder::getGroup(current);
+		gpr[254] = InstructionDecoder::getGroupByte(current);
 		gpr[253] = InstructionDecoder::getOperationByte(current);
 		gpr[252] = InstructionDecoder::getDestinationIndex(current);
 		gpr[251] = InstructionDecoder::getSource0Index(current);
@@ -124,7 +124,7 @@ namespace iris {
 		current = instruction[getInstructionPointer()];
         auto getHalfImmediate = [this]() { return InstructionDecoder::getHalfImmediate(current); };
         auto getImmediate = [this]() { return InstructionDecoder::getImmediate(current); };
-		auto group = static_cast<InstructionGroup>(InstructionDecoder::getGroup(current));
+		auto group = InstructionDecoder::getGroup(current);
 		auto updateStatusRegister = [this](auto fn, bool value) { _error = fn(_error, value); };
 		auto enableStatusRegisterBit = [this, updateStatusRegister](auto fn) { updateStatusRegister(fn, true); };
 		auto makeIllegalInstructionMessage = [this, enableStatusRegisterBit](const std::string& type) { enableStatusRegisterBit(encodeStatusIllegalInstruction); };
@@ -145,7 +145,7 @@ namespace iris {
 				{ ArithmeticOp::ShiftLeftImmediate, makeDesc<ALU>(ALU::Operation::ShiftLeft , true ) },
 				{ ArithmeticOp::ShiftRightImmediate, makeDesc<ALU>(ALU::Operation::ShiftRight , true ) },
 			};
-			auto op = getOperation<ArithmeticOp>();
+			auto op = InstructionDecoder::getOperation<ArithmeticOp>(current);
 			auto result = table.find(op);
 			auto denominatorIsZero = [](auto src1) { return src1 == 0; };
 			auto markDivideByZero = [this, enableStatusRegisterBit]() { enableStatusRegisterBit(encodeStatusDivideByZero); };
@@ -205,7 +205,7 @@ namespace iris {
 				{ CompareOp::Neq, makeDesc<CompareUnit>(CompareUnit::Operation::Neq, false) },
 				{ CompareOp::NeqImmediate, makeDesc<CompareUnit>(CompareUnit::Operation::Neq, true) },
 			};
-			auto result = translationTable.find(getOperation<CompareOp>());
+			auto result = translationTable.find(InstructionDecoder::getOperation<CompareOp>(current));
 			if (result == translationTable.end()) {
 				makeIllegalInstructionMessage("compare code");
 			} else {
@@ -234,7 +234,7 @@ namespace iris {
             auto chooseRegister = [this](auto cond) {
                 return cond ? InstructionDecoder::getSource0Index(current) : InstructionDecoder::getSource1Index(current);
             };
-			auto operation = getOperation<JumpOp>();
+			auto operation = InstructionDecoder::getOperation<JumpOp>(current);
 			auto result = translationTable.find(operation);
 			if (result == translationTable.end()) {
 				word temporaryAddress = 0;
@@ -304,7 +304,7 @@ namespace iris {
 		auto moveOperation = [this, getHalfImmediate, getImmediate, makeIllegalInstructionMessage]() {
             auto getDestinationIndex = [this]() { return InstructionDecoder::getDestinationIndex(current); };
             auto getSource0Index = [this]() { return InstructionDecoder::getImmediate(current); };
-			auto op = getOperation<MoveOp>();
+			auto op = InstructionDecoder::getOperation<MoveOp>(current);
 			raw_instruction codeStorage = 0u;
 			switch(op) {
 				case MoveOp::Move:
@@ -391,7 +391,7 @@ namespace iris {
 				{ ConditionRegisterOp::CRXor, makeDesc<PredicateComparator>(PredicateComparator::Operation::BinaryXor, false) },
 				{ ConditionRegisterOp::CRNot, makeDesc<PredicateComparator>(PredicateComparator::Operation::UnaryNot, false) },
 			};
-			auto op = getOperation<ConditionRegisterOp>();
+			auto op = InstructionDecoder::getOperation<ConditionRegisterOp>(current);
 			auto result = translationTable.find(op);
 			if (result  == translationTable.end()) {
 				switch(op) {

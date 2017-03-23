@@ -75,7 +75,8 @@ namespace iris {
         static inline constexpr byte getSource0Index(raw_instruction value) noexcept { return decodeSource0(value); }
         static inline constexpr byte getSource1Index(raw_instruction value) noexcept { return decodeSource1(value); }
         static inline constexpr byte getOperationByte(raw_instruction value) noexcept { return decodeOperation(value); }
-        static inline constexpr byte getGroup(raw_instruction value) noexcept { return decodeGroup(value); }
+        static inline constexpr byte getGroupByte(raw_instruction value) noexcept { return decodeGroup(value); }
+        static inline constexpr InstructionGroup getGroup(raw_instruction value) noexcept { return static_cast<InstructionGroup>(getGroupByte(value)); }
         static inline constexpr word getHalfImmediate(raw_instruction value) noexcept { return decodeHalfImmediate(value); }
         static inline constexpr word getImmediate(raw_instruction value) noexcept { return decodeImmediate(value); }
         template<typename T>
@@ -156,10 +157,6 @@ namespace iris {
 			inline bool& predicateSource0() noexcept { return getPredicate<2>(); }
 			inline bool& predicateSource1() noexcept { return getPredicate<3>(); }
 
-            template<typename T>
-            inline T getOperation() noexcept {
-                return InstructionDecoder::getOperation<T>(current);
-            }
 		private:
 			void saveSystemState() noexcept;
 			void restoreSystemState() noexcept;
