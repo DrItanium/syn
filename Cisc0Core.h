@@ -49,8 +49,6 @@ namespace cisc0 {
 	constexpr RegisterValue encodeRegisterValue(byte a, byte b, byte c, byte d) noexcept;
 	void decodeWord(Word value, byte* storage) noexcept;
 	void decodeRegisterValue(RegisterValue value, byte* storage) noexcept;
-	constexpr Word decodeUpperHalf(RegisterValue value) noexcept;
-	constexpr Word decodeLowerHalf(RegisterValue value) noexcept;
 	constexpr RegisterValue encodeUpperHalf(RegisterValue value, Word upperHalf) noexcept;
 	constexpr RegisterValue encodeLowerHalf(RegisterValue value, Word lowerHalf) noexcept;
 	constexpr RegisterValue encodeRegisterValue(Word upper, Word lower) noexcept;

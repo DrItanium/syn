@@ -55,10 +55,10 @@ namespace cisc0 {
         return syn::decodeInt32LE(value, storage);
     }
 
-    constexpr Word decodeUpperHalf(RegisterValue value) noexcept {
+    inline constexpr Word decodeUpperHalf(RegisterValue value) noexcept {
         return syn::decodeBits<RegisterValue, Word, upper16Mask, 16>(value);
     }
-    constexpr Word decodeLowerHalf(RegisterValue value) noexcept {
+    inline constexpr Word decodeLowerHalf(RegisterValue value) noexcept {
         return syn::decodeBits<RegisterValue, Word, lower16Mask, 16>(value);
     }
 
@@ -74,6 +74,9 @@ namespace cisc0 {
     }
     inline constexpr RegisterValue normalizeCondition(RegisterValue input) noexcept {
         return input != 0 ? 0xFFFFFFFF : 0x00000000;
+    }
+    inline constexpr RegisterValue mask24(RegisterValue value) noexcept {
+        return value & bitmask24;
     }
 
     RegisterValue Core::retrieveImmediate(byte bitmask) noexcept {
@@ -135,9 +138,6 @@ namespace cisc0 {
             advanceIp = true;
         }
         return execute;
-    }
-    inline constexpr RegisterValue mask24(RegisterValue value) noexcept {
-        return value & bitmask24;
     }
     void Core::incrementAddress(RegisterValue& ptr) noexcept {
         ++ptr;
