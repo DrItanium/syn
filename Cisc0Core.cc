@@ -780,4 +780,31 @@ namespace cisc0 {
                                decodeBranchFlagIsCallForm(_rawValue),
                                decodeBranchFlagIsConditional(_rawValue));
     }
+
+    constexpr bool DecodedInstruction::hasBitmask(Operation op) noexcept {
+        return op == Operation::Set ||
+            op == Operation::Memory ||
+            op == Operation::Move ||
+            op == Operation::Logical;
+    }
+
+    constexpr bool DecodedInstruction::hasImmediateFlag(Operation op) noexcept {
+        return op == Operation::Shift ||
+            op == Operation::Arithmetic ||
+            op == Operation::Logical ||
+            op == Operation::Branch ||
+            op == Operation::Compare;
+    }
+    constexpr bool DecodedInstruction::hasImmediateValue(Operation op) noexcept {
+        return op == Operation::Shift ||
+            op == Operation::Arithmetic;
+    }
+    constexpr bool DecodedInstruction::hasSubtype(Operation op) noexcept {
+        return op == Operation::Compare ||
+            op == Operation::Memory ||
+            op == Operation::Arithmetic ||
+            op == Operation::Complex ||
+            op == Operation::Logical;
+
+    }
 }

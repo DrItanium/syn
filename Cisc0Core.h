@@ -86,11 +86,17 @@ namespace cisc0 {
 namespace cisc0 {
 	class DecodedInstruction {
 		public:
+            using BranchFlags = std::tuple<bool, bool, bool>;
+        private:
+            static constexpr bool hasBitmask(Operation op) noexcept;
+            static constexpr bool hasImmediateFlag(Operation op) noexcept;
+            static constexpr bool hasImmediateValue(Operation op) noexcept;
+            static constexpr bool hasSubtype(Operation op) noexcept;
+        public:
 			DecodedInstruction(RawInstruction input) noexcept : _rawValue(input) { }
 			DecodedInstruction(const DecodedInstruction&) = delete;
             virtual ~DecodedInstruction() { }
 			RawInstruction getRawValue() const noexcept { return _rawValue; }
-            using BranchFlags = std::tuple<bool, bool, bool>;
             inline byte getUpper() const noexcept { return decodeUpper(_rawValue); }
             inline Operation getControl() const noexcept { return decodeControl(_rawValue); }
             inline byte getSetDestination() const noexcept { return decodeSetDestination(_rawValue); }
@@ -158,12 +164,6 @@ namespace cisc0 {
                     return decodeArithmeticSource(_rawValue);
                 }
             }
-            static constexpr bool hasBitmask(Operation op) noexcept {
-                return op == Operation::Set ||
-                       op == Operation::Memory ||
-                       op == Operation::Move ||
-                       op == Operation::Logical;
-            }
             template<Operation op>
             inline byte getBitmask() const noexcept {
                 static_assert(hasBitmask(op), "provided operation does not use a bitmask!");
@@ -179,13 +179,6 @@ namespace cisc0 {
                     default:
                         return 0;
                 }
-            }
-            static constexpr bool hasImmediateFlag(Operation op) noexcept {
-                return op == Operation::Shift ||
-                       op == Operation::Arithmetic ||
-                       op == Operation::Logical ||
-                       op == Operation::Branch ||
-                       op == Operation::Compare;
             }
             template<Operation op>
             inline bool getImmediateFlag() const noexcept {
@@ -204,10 +197,6 @@ namespace cisc0 {
                     default:
                         return false;
                 }
-            }
-            static constexpr bool hasImmediateValue(Operation op) noexcept {
-                return op == Operation::Shift ||
-                      op == Operation::Arithmetic;
             }
             template<Operation op>
             inline byte getImmediate() const noexcept {
@@ -246,14 +235,6 @@ namespace cisc0 {
                     return decodeBranchIfOnFalse(_rawValue);
                 }
             }
-            static constexpr bool hasSubtype(Operation op) noexcept {
-                return op == Operation::Compare ||
-                    op == Operation::Memory ||
-                    op == Operation::Arithmetic ||
-                    op == Operation::Complex ||
-                    op == Operation::Logical;
-
-            }
             template<Operation op>
             struct SubtypeConversion {
                 SubtypeConversion() = delete;
@@ -281,7 +262,6 @@ namespace cisc0 {
                         return static_cast<CurrentType>(0);
                 }
             }
-
 		private:
 			RawInstruction _rawValue;
 	};
