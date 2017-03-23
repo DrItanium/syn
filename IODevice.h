@@ -179,6 +179,11 @@ namespace syn {
                     generateNextValue();
 				}
                 void generateNextValue() noexcept {
+                    // This function contains the only async call in the class
+                    // to cut down on the size of the object. If we were to
+                    // update _next in different locations then more
+                    // instantiations of the std::async backends would be
+                    // created for no reason.
 					_next = std::async(std::launch::async, [this]() { return _engine(); });
                 }
 			private:
