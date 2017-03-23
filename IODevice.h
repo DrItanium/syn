@@ -149,7 +149,7 @@ namespace syn {
                 using SeedType = RandomEngine::result_type;
             public:
                 RandomDevice(SeedType initialSeed = RandomEngine::default_seed) : Parent(), _engine(initialSeed) {
-                    _next = std::async(std::launch::async, [this]() { return _engine(); });
+                    generateNextValue();
                 }
 				virtual ~RandomDevice() { }
 				virtual D read(A addr) override {
