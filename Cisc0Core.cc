@@ -229,11 +229,8 @@ namespace cisc0 {
                 // push the instruction pointer onto the stack
                 pushDword(mask24(getInstructionPointer() + 1));
             }
-            if (choice) {
-                getInstructionPointer() = registerValue(inst.getBranchIfPathRegister<true>());
-            } else {
-                getInstructionPointer() = registerValue(inst.getBranchIfPathRegister<false>());
-            }
+            auto reg = choice ? inst.getBranchIfPathRegister<true>() : inst.getBranchIfPathRegister<false>();
+            getInstructionPointer() = registerValue(reg);
         } else if (isCall) {
             // call instruction
             advanceIp = false;
@@ -244,7 +241,8 @@ namespace cisc0 {
             auto address = 0u;
             if (isImm) {
                 // make a 24 bit number
-                auto upper16 = static_cast<RegisterValue>(tryReadNext(isImm)) << 8;
+                // we should always read the next value
+                auto upper16 = static_cast<RegisterValue>(tryReadNext<true>()) << 8;
                 auto lower8 = static_cast<RegisterValue>(inst.getUpper());
                 address = upper16 | lower8;
             } else {
@@ -269,7 +267,7 @@ namespace cisc0 {
     }
     void Core::systemCallOperation(DecodedInstruction&& inst) {
         auto action = getAddressRegister();
-        if (getAddressRegister() >= ArchitectureConstants::MaxSystemCalls) {
+        if (action >= ArchitectureConstants::MaxSystemCalls) {
             throw syn::Problem("ERROR: system call index out of range!");
         } else {
             systemHandlers[action](this, std::move(inst));
