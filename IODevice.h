@@ -155,7 +155,7 @@ namespace syn {
 				virtual D read(A addr) override {
 					if (addr == static_cast<A>(Addresses::NextRandom)) {
 						auto result = static_cast<D>(_next.get());
-						_next = std::async(std::launch::async, [this]() { return _engine(); });
+                        generateNextValue();
 						return result;
 					} else {
 						throw syn::Problem("Illegal random device address to read from");
@@ -166,18 +166,22 @@ namespace syn {
 					if (addr == static_cast<A>(Addresses::SeedRandom)) {
 						_engine.seed(value);
 						generateNextValue();
+                        skipToNextValue();
 					} else if (addr == static_cast<A>(Addresses::SkipRandom)) {
 						_engine.discard(value);
-						generateNextValue();
+                        skipToNextValue();
 					} else {
 						throw syn::Problem("Illegal random device address to write to");
 					}
 				}
 			private:
-				void generateNextValue() noexcept {
+				void skipToNextValue() noexcept {
                     (void)_next.get();
-					_next = std::async(std::launch::async, [this]() { return _engine(); });
+                    generateNextValue();
 				}
+                void generateNextValue() noexcept {
+					_next = std::async(std::launch::async, [this]() { return _engine(); });
+                }
 			private:
                 std::future<RandomEngine::result_type> _next;
                 RandomEngine _engine;
