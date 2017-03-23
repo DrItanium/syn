@@ -31,6 +31,15 @@
 #include "IrisCoreSecondaryStorageController.h"
 
 namespace iris {
+	inline constexpr dword encodeDword(byte a, byte b, byte c, byte d) noexcept {
+		return syn::encodeUint32LE(a, b, c, d);
+	}
+	inline constexpr word encodeWord(byte a, byte b) noexcept {
+		return syn::encodeUint16LE(a, b);
+	}
+	inline constexpr dword encodeDword(word lower, word upper) noexcept {
+		return syn::encodeUint32LE(lower, upper);
+	}
 	Core::Core() noexcept : execute(true), advanceIp(true), current(0), _ip(0), _lr(0), _error(0), _io(0, 0xFFFF, "IrisCoreIOBootstrap.clp") { }
 
 	Core::~Core() {

@@ -49,15 +49,6 @@ namespace iris {
 		ErrorRegisterStart = 255,
         TerminateIOAddress = 0xFFFF,
 	};
-	inline constexpr dword encodeDword(byte a, byte b, byte c, byte d) noexcept {
-		return syn::encodeUint32LE(a, b, c, d);
-	}
-	inline constexpr word encodeWord(byte a, byte b) noexcept {
-		return syn::encodeUint16LE(a, b);
-	}
-	inline constexpr dword encodeDword(word lower, word upper) noexcept {
-		return syn::encodeUint32LE(lower, upper);
-	}
 } // end namespace iris
 #include "iris_defines.h"
 
