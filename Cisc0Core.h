@@ -289,32 +289,6 @@ namespace cisc0 {
 			RawInstruction _rawValue;
 	};
 
-	inline constexpr Word lowerMask(byte bitmask) noexcept {
-		return syn::encodeUint16LE(syn::expandBit(syn::getBit<byte, 0>(bitmask)),
-									syn::expandBit(syn::getBit<byte, 1>(bitmask)));
-	}
-	inline constexpr Word upperMask(byte bitmask) noexcept {
-		return syn::encodeUint16LE(syn::expandBit(syn::getBit<byte, 2>(bitmask)),
-									syn::expandBit(syn::getBit<byte, 3>(bitmask)));
-	}
-
-	inline constexpr RegisterValue mask(byte bitmask) noexcept {
-		return syn::encodeUint32LE(lowerMask(bitmask), upperMask(bitmask));
-	}
-
-	inline constexpr bool readLower(byte bitmask) noexcept {
-		return lowerMask(bitmask) != 0;
-	}
-
-	inline constexpr bool readUpper(byte bitmask) noexcept {
-		return upperMask(bitmask) != 0;
-	}
-	constexpr auto bitmask32 =   mask(ArchitectureConstants::Bitmask);
-	constexpr auto bitmask24 =   mask(0b0111);
-	constexpr auto upper16Mask = mask(0b1100);
-	constexpr auto lower16Mask = mask(0b0011);
-
-	int instructionSizeFromImmediateMask(byte bitmask) noexcept;
 
 	class Core : public syn::Core {
 		public:

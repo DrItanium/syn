@@ -39,6 +39,31 @@ namespace cisc0 {
      * encoding comes from different register choices. The reserved registers are
      * used to compress the encoding.
      */
+
+	inline constexpr Word lowerMask(byte bitmask) noexcept {
+		return syn::encodeUint16LE(syn::expandBit(syn::getBit<byte, 0>(bitmask)),
+									syn::expandBit(syn::getBit<byte, 1>(bitmask)));
+	}
+	inline constexpr Word upperMask(byte bitmask) noexcept {
+		return syn::encodeUint16LE(syn::expandBit(syn::getBit<byte, 2>(bitmask)),
+									syn::expandBit(syn::getBit<byte, 3>(bitmask)));
+	}
+
+	inline constexpr RegisterValue mask(byte bitmask) noexcept {
+		return syn::encodeUint32LE(lowerMask(bitmask), upperMask(bitmask));
+	}
+
+	inline constexpr bool readLower(byte bitmask) noexcept {
+		return lowerMask(bitmask) != 0;
+	}
+
+	inline constexpr bool readUpper(byte bitmask) noexcept {
+		return upperMask(bitmask) != 0;
+	}
+	constexpr auto bitmask32 =   mask(ArchitectureConstants::Bitmask);
+	constexpr auto bitmask24 =   mask(0b0111);
+	constexpr auto upper16Mask = mask(0b1100);
+	constexpr auto lower16Mask = mask(0b0011);
     inline constexpr RegisterValue encodeRegisterValue(byte a, byte b, byte c, byte d) noexcept {
         return syn::encodeUint32LE(a, b, c, d);
     }
@@ -68,6 +93,10 @@ namespace cisc0 {
     }
     inline constexpr RegisterValue mask24(RegisterValue value) noexcept {
         return value & bitmask24;
+    }
+
+    inline constexpr int instructionSizeFromImmediateMask(byte bitmask) noexcept {
+        return 1 + (readLower(bitmask) ? 1 : 0) + (readUpper(bitmask) ? 1 : 0);
     }
 
     Core* newCore() noexcept {
@@ -722,9 +751,6 @@ namespace cisc0 {
         }
     }
 
-    int instructionSizeFromImmediateMask(byte bitmask) noexcept {
-        return 1 + (readLower(bitmask) ? 1 : 0) + (readUpper(bitmask) ? 1 : 0);
-    }
     int InstructionEncoder::numWords() const {
         return std::get<0>(encode());
     }
