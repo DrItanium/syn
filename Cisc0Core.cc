@@ -72,6 +72,9 @@ namespace cisc0 {
     constexpr RegisterValue encodeRegisterValue(Word upper, Word lower) noexcept {
         return encodeUpperHalf(encodeLowerHalf(0, lower), upper);
     }
+    inline constexpr RegisterValue normalizeCondition(RegisterValue input) noexcept {
+        return input != 0 ? 0xFFFFFFFF : 0x00000000;
+    }
 
     RegisterValue Core::retrieveImmediate(byte bitmask) noexcept {
         auto useLower = readLower(bitmask);
@@ -289,7 +292,7 @@ namespace cisc0 {
         auto result = _compare(compareResult->second, first, second);
         // make sure that the condition takes up the entire width of the
         // register, that way normal operations will make sense!
-        getConditionRegister() = result != 0 ? 0xFFFFFFFF : 0x00000000;
+        getConditionRegister() = normalizeCondition(result);
     }
 
     void Core::memoryOperation(DecodedInstruction&& inst) {
@@ -421,7 +424,6 @@ namespace cisc0 {
     void Core::logicalOperation(DecodedInstruction&& inst) {
         ALU::Operation op;
         RegisterValue source1 = 0;
-        byte source0 = 0u;
         static std::map<LogicalOps, ALU::Operation> dispatchTable = {
             { LogicalOps::Not, ALU::Operation::UnaryNot },
             { LogicalOps::Or, ALU::Operation::BinaryOr },
@@ -437,34 +439,35 @@ namespace cisc0 {
         } else {
             source1 = registerValue(inst.getLogicalRegister<1>());
         }
-        source0 = inst.getLogicalRegister<0>();
-        auto& dest = registerValue(source0);
+        auto& dest = registerValue(inst.getLogicalRegister<0>());
         dest = _logicalOps(op, dest, source1);
     }
 
     void Core::encodingOperation(DecodedInstruction&& inst) {
-        auto type = inst.getEncodingOperation();
-        if (type == EncodingOperation::Decode) {
-            // connect the result of the logical operations alu to the
-            // shifter alu then store the result in the value register
-            getValueRegister() = syn::decodeBits<RegisterValue, RegisterValue>(getAddressRegister(), getMaskRegister(), getShiftRegister());
-        } else if (type == EncodingOperation::Encode) {
-            getAddressRegister() = syn::encodeBits<RegisterValue, RegisterValue>(getAddressRegister(), getValueRegister(), getMaskRegister(), getShiftRegister());
-
-        } else if (type == EncodingOperation::BitSet) {
-            getConditionRegister() = _compare(CompareUnit::Operation::Eq,
-                    _logicalOps(ALU::Operation::BinaryAnd,
-                        _shifter(ALU::Operation::ShiftRight, getAddressRegister(),
-                            getFieldRegister()), 0x1), 1);
-
-        } else if (type == EncodingOperation::BitUnset) {
-            getConditionRegister() = _compare(CompareUnit::Operation::Neq,
-                    _logicalOps(ALU::Operation::BinaryAnd,
-                        _shifter(ALU::Operation::ShiftRight,
-                            getAddressRegister(),
-                            getFieldRegister()), 0x1), 1);
-        } else {
-            throw syn::Problem("Illegal complex encoding operation defined!");
+        auto sliceBitAndCheck = [this](CompareUnit::Operation op) {
+            return normalizeCondition(_compare(op,
+                        _logicalOps(ALU::Operation::BinaryAnd,
+                            _shifter(ALU::Operation::ShiftRight,
+                                getAddressRegister(),
+                                getFieldRegister()), 0x1), 1));
+        };
+        switch(inst.getEncodingOperation()) {
+            case EncodingOperation::Decode:
+                // connect the result of the logical operations alu to the
+                // shifter alu then store the result in the value register
+                getValueRegister() = syn::decodeBits<RegisterValue, RegisterValue>(getAddressRegister(), getMaskRegister(), getShiftRegister());
+                break;
+            case EncodingOperation::Encode:
+                getAddressRegister() = syn::encodeBits<RegisterValue, RegisterValue>(getAddressRegister(), getValueRegister(), getMaskRegister(), getShiftRegister());
+                break;
+            case EncodingOperation::BitSet:
+                getConditionRegister() = sliceBitAndCheck(CompareUnit::Operation::Eq);
+                break;
+            case EncodingOperation::BitUnset:
+                getConditionRegister() = sliceBitAndCheck(CompareUnit::Operation::Neq);
+                break;
+            default:
+                throw syn::Problem("Illegal complex encoding operation defined!");
         }
     }
 
