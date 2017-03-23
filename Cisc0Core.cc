@@ -328,7 +328,7 @@ namespace cisc0 {
                 address = loadIndirectAddress(address);
             }
             if (useLower) {
-                auto lowerValue = static_cast<Word>(value);
+                auto lowerValue = decodeLowerHalf(value);
                 if (lmask == maskCheck) {
                     storeWord(address, lowerValue);
                 } else {
@@ -338,7 +338,7 @@ namespace cisc0 {
             if (useUpper) {
                 auto newAddress = address + 1;
                 // pull the upper 16 bits out into a separate variable
-                auto upperValue = static_cast<Word>(value >> 16);
+                auto upperValue = decodeUpperHalf(value);
                 if (umask == maskCheck) {
                     // store the top half of the value into memory
                     storeWord(newAddress, upperValue);
