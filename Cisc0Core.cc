@@ -296,67 +296,61 @@ namespace cisc0 {
     }
 
     void Core::memoryOperation(DecodedInstruction&& inst) {
-        auto indirect = inst.isIndirectOperation();
         auto rawMask = inst.getBitmask<Operation::Memory>();
         auto useLower = readLower(rawMask);
         auto useUpper = readUpper(rawMask);
         auto fullMask = mask(rawMask);
         auto rawType = inst.getSubtype<Operation::Memory>();
-        auto offset = inst.getMemoryOffset();
         auto memoryRegister = inst.getMemoryRegister();
         auto lmask = lowerMask(rawMask);
         auto umask = upperMask(rawMask);
         auto upper = 0u;
         auto lower = 0u;
+        auto loadIndirectAddress = [this](auto address) {
+            return mask24(encodeRegisterValue(loadWord(address + 1), loadWord(address)));
+        };
         if (rawType == MemoryOperation::Load) {
-            auto addr = getAddressRegister();
             auto& value = getValueRegister();
-            if (debugEnabled()) {
-                std::cerr << "- SubType: Load" << std::endl;
-                std::cerr << "-- Address: " << std::hex << addr << std::endl;
-                std::cerr << "-- value: " << std::hex << value << std::endl;
-            }
             if (!useLower && !useUpper) {
                 value = 0;
             } else {
-                auto address = addr + offset;
-                if (indirect) {
-                    address = mask24(encodeRegisterValue(loadWord(address + 1), loadWord(address)));
+                auto address = getAddressRegister() + inst.getMemoryOffset();
+                if (inst.isIndirectOperation()) {
+                    address = loadIndirectAddress(address);
                 }
                 lower = useLower ? encodeLowerHalf(0, loadWord(address)) : 0u;
                 upper = useUpper ? encodeUpperHalf(0, loadWord(address + 1)) : 0u;
                 value = syn::encodeBits<RegisterValue, RegisterValue>(0u, lower | upper, fullMask, 0);
-                if (debugEnabled()) {
-                    std::cerr << "-- lower " << std::hex << lower << std::endl;
-                    std::cerr << "-- upper " << std::hex << upper << std::endl;
-                    std::cerr << "-- value " << std::hex << value << std::endl;
-                }
             }
         } else if (rawType == MemoryOperation::Store) {
-            static constexpr auto maskCheck = 0x0000FFFF;
-            auto addr = getAddressRegister();
+            static constexpr Word maskCheck = 0xFFFF;
             auto value = getValueRegister();
-            auto address = addr + offset;
-            if (indirect) {
-                address = mask24(encodeRegisterValue(loadWord(address + 1), loadWord(address)));;
+            auto address = getAddressRegister() + inst.getMemoryOffset();
+            if (inst.isIndirectOperation()) {
+                address = loadIndirectAddress(address);
             }
             if (useLower) {
+                auto lowerValue = static_cast<Word>(value);
                 if (lmask == maskCheck) {
-                    storeWord(address, value);
+                    storeWord(address, lowerValue);
                 } else {
-                    storeWord(address, (lmask & value) | (loadWord(address) & ~lmask));
+                    storeWord(address, (lmask & lowerValue) | (loadWord(address) & ~lmask));
                 }
             }
             if (useUpper) {
                 auto newAddress = address + 1;
+                // pull the upper 16 bits out into a separate variable
+                auto upperValue = static_cast<Word>(value >> 16);
                 if (umask == maskCheck) {
-                    storeWord(newAddress, value);
+                    // store the top half of the value into memory
+                    storeWord(newAddress, upperValue);
                 } else {
-                    storeWord(newAddress, (umask & value) | (loadWord(newAddress) & ~umask));
+                    // needs to be the masked value instead!
+                    storeWord(newAddress, (umask & upperValue) | (loadWord(newAddress) & ~umask));
                 }
             }
         } else if (rawType == MemoryOperation::Push) {
-            if (indirect) {
+            if (inst.isIndirectOperation()) {
                 throw syn::Problem("Indirect bit not supported in push operations!");
             } else {
                 // update the target stack to something different
@@ -371,7 +365,7 @@ namespace cisc0 {
                 }
             }
         } else if (rawType == MemoryOperation::Pop) {
-            if (indirect) {
+            if (inst.isIndirectOperation()) {
                 throw syn::Problem("Indirect bit not supported in pop operations!");
             } else {
                 auto &stackPointer = getStackPointer();
@@ -385,7 +379,7 @@ namespace cisc0 {
                 // can't think of a case where we should
                 // restore the instruction pointer and then
                 // immediate advance so just don't do it
-                advanceIp = offset != ArchitectureConstants::InstructionPointer;
+                advanceIp = memoryRegister != ArchitectureConstants::InstructionPointer;
             }
         } else {
             throw syn::Problem("Illegal memory operation!");
