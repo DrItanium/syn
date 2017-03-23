@@ -348,10 +348,11 @@ namespace cisc0 {
                 }
             }
             if (useUpper) {
+                auto newAddress = address + 1;
                 if (umask == maskCheck) {
-                    storeWord(address + 1, value);
+                    storeWord(newAddress, value);
                 } else {
-                    storeWord(address + 1, (umask & value) | (loadWord(address + 1) & ~umask));
+                    storeWord(newAddress, (umask & value) | (loadWord(newAddress) & ~umask));
                 }
             }
         } else if (rawType == MemoryOperation::Push) {
