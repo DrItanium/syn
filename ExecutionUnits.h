@@ -353,7 +353,7 @@ class LoadStoreUnit : public AddressableIODevice<Word, Address> {
 template<typename Word, typename Address, Address capacity>
 class FixedSizeLoadStoreUnit : public LoadStoreUnit<Word, Address> {
     public:
-        static constexpr Address count = capacity;
+        static constexpr auto count = capacity;
         using Parent = LoadStoreUnit<Word, Address>;
 	public:
 		FixedSizeLoadStoreUnit(Address base = 0) : Parent(capacity, base) { }
