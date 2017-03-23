@@ -286,7 +286,7 @@ namespace cisc0 {
         auto second = inst.getImmediateFlag<Operation::Compare>() ? next.getUpper() : registerValue(next.getCompareRegister<1>());
         auto compareResult = translationTable.find(inst.getSubtype<Operation::Compare>());
         throwIfNotFound(compareResult, translationTable, "Illegal compare type!");
-        auto result = _compare.performOperation(compareResult->second, first, second);
+        auto result = _compare(compareResult->second, first, second);
         // make sure that the condition takes up the entire width of the
         // register, that way normal operations will make sense!
         getConditionRegister() = result != 0 ? 0xFFFFFFFF : 0x00000000;
@@ -401,7 +401,7 @@ namespace cisc0 {
     void Core::shiftOperation(DecodedInstruction&& inst) {
         auto &destination = registerValue(inst.getShiftRegister<0>());
         auto source = (inst.getImmediateFlag<Operation::Shift>() ? static_cast<RegisterValue>(inst.getImmediate<Operation::Shift>()) : registerValue(inst.getShiftRegister<1>()));
-        destination = _shifter.performOperation( inst.shouldShiftLeft() ? ALU::Operation::ShiftLeft : ALU::Operation::ShiftRight, destination, source);
+        destination = _shifter( inst.shouldShiftLeft() ? ALU::Operation::ShiftLeft : ALU::Operation::ShiftRight, destination, source);
     }
     void Core::arithmeticOperation(DecodedInstruction&& inst) {
         static std::map<ArithmeticOps, ALU::Operation> translationTable = {
@@ -416,7 +416,7 @@ namespace cisc0 {
         auto op = result->second;
         auto src = inst.getImmediateFlag<Operation::Arithmetic>() ? inst.getImmediate<Operation::Arithmetic>() : registerValue(inst.getArithmeticRegister<1>());
         auto& dest = registerValue(inst.getArithmeticRegister<0>());
-        dest = _alu.performOperation(op, dest, src);
+        dest = _alu(op, dest, src);
     }
     void Core::logicalOperation(DecodedInstruction&& inst) {
         ALU::Operation op;
@@ -439,7 +439,7 @@ namespace cisc0 {
         }
         source0 = inst.getLogicalRegister<0>();
         auto& dest = registerValue(source0);
-        dest = _logicalOps.performOperation(op, dest, source1);
+        dest = _logicalOps(op, dest, source1);
     }
 
     void Core::encodingOperation(DecodedInstruction&& inst) {
@@ -452,15 +452,15 @@ namespace cisc0 {
             getAddressRegister() = syn::encodeBits<RegisterValue, RegisterValue>(getAddressRegister(), getValueRegister(), getMaskRegister(), getShiftRegister());
 
         } else if (type == EncodingOperation::BitSet) {
-            getConditionRegister() = _compare.performOperation(CompareUnit::Operation::Eq,
-                    _logicalOps.performOperation(ALU::Operation::BinaryAnd,
-                        _shifter.performOperation(ALU::Operation::ShiftRight, getAddressRegister(),
+            getConditionRegister() = _compare(CompareUnit::Operation::Eq,
+                    _logicalOps(ALU::Operation::BinaryAnd,
+                        _shifter(ALU::Operation::ShiftRight, getAddressRegister(),
                             getFieldRegister()), 0x1), 1);
 
         } else if (type == EncodingOperation::BitUnset) {
-            getConditionRegister() = _compare.performOperation(CompareUnit::Operation::Neq,
-                    _logicalOps.performOperation(ALU::Operation::BinaryAnd,
-                        _shifter.performOperation(ALU::Operation::ShiftRight,
+            getConditionRegister() = _compare(CompareUnit::Operation::Neq,
+                    _logicalOps(ALU::Operation::BinaryAnd,
+                        _shifter(ALU::Operation::ShiftRight,
                             getAddressRegister(),
                             getFieldRegister()), 0x1), 1);
         } else {

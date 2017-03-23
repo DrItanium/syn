@@ -58,6 +58,7 @@ class Register {
 
 };
 
+
 template<typename Word>
 class FPU {
     public:
@@ -88,6 +89,9 @@ class FPU {
                 default:
                     throw syn::Problem("Undefined fpu operation!");
             }
+        }
+        inline Word operator()(Operation op, Word a, Word b) const {
+            return this->performOperation(op, a, b);
         }
 };
 
@@ -148,6 +152,9 @@ class ALU {
                 default:
                     throw syn::Problem("Undefined ALU operation!");
             }
+        }
+        inline Word operator()(Operation op, Word a, Word b) const {
+            return this->performOperation(op, a, b);
         }
 };
 
@@ -217,6 +224,9 @@ class Comparator {
                     throw syn::Problem("Undefined Comparison operation!");
             }
         }
+        inline Word operator()(Operation op, Word a, Word b) const {
+            return this->performOperation(op, a, b);
+        }
 };
 
 template<>
@@ -260,6 +270,9 @@ class Comparator<bool, bool> {
 					throw syn::Problem("Undefined boolean comparison operation!");
 			}
 		}
+        inline bool operator()(Operation op, bool a, bool b) const {
+            return this->performOperation(op, a, b);
+        }
 };
 
 template<typename Word, typename Address = Word>

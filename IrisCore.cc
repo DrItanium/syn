@@ -201,7 +201,7 @@ namespace iris {
 				typename decltype(_compare)::Operation op;
 				bool immediate = false;
 				std::tie(op, immediate) = result->second;
-				auto result = _compare.performOperation(op, source0Register(), immediate ? getHalfImmediate() : source1Register()) != 0;
+				auto result = _compare(op, source0Register(), immediate ? getHalfImmediate() : source1Register()) != 0;
 				predicateResult() = result;
 				if (getPredicateResultIndex() != getPredicateInverseResultIndex()) {
 					predicateInverseResult() = !result;
@@ -399,7 +399,7 @@ namespace iris {
 				typename decltype(_pcompare)::Operation pop;
 				bool immediate = false;
 				std::tie(pop, immediate) = result->second;
-				auto result = _pcompare.performOperation(pop, predicateSource0(), predicateSource1());
+				auto result = _pcompare(pop, predicateSource0(), predicateSource1());
 				predicateResult() = result;
 				if (getPredicateResultIndex() != getPredicateInverseResultIndex()) {
 					predicateInverseResult() = !result;

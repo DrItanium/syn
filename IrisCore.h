@@ -169,7 +169,7 @@ namespace iris {
 		private:
 			template<typename Unit>
 			void performOperation(Unit& unit, typename Unit::Operation op, bool immediate) {
-				destinationRegister() = unit.performOperation(op, source0Register(), (immediate ? getHalfImmediate() : source1Register()));
+				destinationRegister() = unit(op, source0Register(), (immediate ? getHalfImmediate() : source1Register()));
 			}
 			template<typename Unit>
 			inline void performOperation(Unit& unit, std::tuple<typename Unit::Operation, bool>& tuple) {
