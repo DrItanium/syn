@@ -346,8 +346,9 @@ template<typename Word, typename Address, Address capacity>
 class FixedSizeLoadStoreUnit : public LoadStoreUnit<Word, Address> {
     public:
         static constexpr Address count = capacity;
+        using Parent = LoadStoreUnit<Word, Address>;
 	public:
-		FixedSizeLoadStoreUnit() : LoadStoreUnit<Word, Address>(capacity) { }
+		FixedSizeLoadStoreUnit() : Parent(capacity) { }
 		virtual ~FixedSizeLoadStoreUnit() { }
 };
 
