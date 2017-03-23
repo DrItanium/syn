@@ -39,20 +39,11 @@ namespace cisc0 {
      * encoding comes from different register choices. The reserved registers are
      * used to compress the encoding.
      */
-    Core* newCore() noexcept {
-        return new Core();
-    }
-    constexpr RegisterValue encodeRegisterValue(byte a, byte b, byte c, byte d) noexcept {
+    inline constexpr RegisterValue encodeRegisterValue(byte a, byte b, byte c, byte d) noexcept {
         return syn::encodeUint32LE(a, b, c, d);
     }
-    constexpr Word encodeWord(byte a, byte b) noexcept {
+    inline constexpr Word encodeWord(byte a, byte b) noexcept {
         return syn::encodeUint16LE(a, b);
-    }
-    void decodeWord(Word value, byte* storage) noexcept {
-        return syn::decodeUint32LE(value, storage);
-    }
-    void decodeWord(RegisterValue value, byte* storage) noexcept {
-        return syn::decodeInt32LE(value, storage);
     }
 
     inline constexpr Word decodeUpperHalf(RegisterValue value) noexcept {
@@ -62,14 +53,14 @@ namespace cisc0 {
         return syn::decodeBits<RegisterValue, Word, lower16Mask, 16>(value);
     }
 
-    constexpr RegisterValue encodeUpperHalf(RegisterValue value, Word upperHalf) noexcept {
+    inline constexpr RegisterValue encodeUpperHalf(RegisterValue value, Word upperHalf) noexcept {
         return syn::encodeBits<RegisterValue, Word, upper16Mask, 16>(value, upperHalf);
     }
-    constexpr RegisterValue encodeLowerHalf(RegisterValue value, Word lowerHalf) noexcept {
+    inline constexpr RegisterValue encodeLowerHalf(RegisterValue value, Word lowerHalf) noexcept {
         return syn::encodeBits<RegisterValue, Word, lower16Mask, 0>(value, lowerHalf);
     }
 
-    constexpr RegisterValue encodeRegisterValue(Word upper, Word lower) noexcept {
+    inline constexpr RegisterValue encodeRegisterValue(Word upper, Word lower) noexcept {
         return encodeUpperHalf(encodeLowerHalf(0, lower), upper);
     }
     inline constexpr RegisterValue normalizeCondition(RegisterValue input) noexcept {
@@ -77,6 +68,10 @@ namespace cisc0 {
     }
     inline constexpr RegisterValue mask24(RegisterValue value) noexcept {
         return value & bitmask24;
+    }
+
+    Core* newCore() noexcept {
+        return new Core();
     }
 
     RegisterValue Core::retrieveImmediate(byte bitmask) noexcept {

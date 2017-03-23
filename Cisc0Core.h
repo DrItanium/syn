@@ -45,13 +45,6 @@ namespace cisc0 {
 	using immediate = HWord;
 	using RegisterValue = DWord;
     using Address = DWord;
-	constexpr Word encodeWord (byte a, byte b) noexcept;
-	constexpr RegisterValue encodeRegisterValue(byte a, byte b, byte c, byte d) noexcept;
-	void decodeWord(Word value, byte* storage) noexcept;
-	void decodeRegisterValue(RegisterValue value, byte* storage) noexcept;
-	constexpr RegisterValue encodeUpperHalf(RegisterValue value, Word upperHalf) noexcept;
-	constexpr RegisterValue encodeLowerHalf(RegisterValue value, Word lowerHalf) noexcept;
-	constexpr RegisterValue encodeRegisterValue(Word upper, Word lower) noexcept;
 
 	enum ArchitectureConstants  {
 		RegisterCount = 16,
