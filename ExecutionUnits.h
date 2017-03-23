@@ -281,6 +281,14 @@ class LoadStoreUnit : public AddressableIODevice<Word, Address> {
 		using WordType = Word;
 		using AddressType = Address;
 		using Parent = AddressableIODevice<Word, Address>;
+        enum class Operation {
+            Zero,
+            Swap,
+            Load,
+            Store,
+            Copy,
+            Count,
+        };
 	public:
 		LoadStoreUnit(Address size, Address base = 0) : Parent(base, size), _memory(std::move(std::make_unique<Word[]>(size))), _size(size) { }
 		LoadStoreUnit() : LoadStoreUnit(0) { }
@@ -348,7 +356,7 @@ class FixedSizeLoadStoreUnit : public LoadStoreUnit<Word, Address> {
         static constexpr Address count = capacity;
         using Parent = LoadStoreUnit<Word, Address>;
 	public:
-		FixedSizeLoadStoreUnit() : Parent(capacity) { }
+		FixedSizeLoadStoreUnit(Address base = 0) : Parent(capacity, base) { }
 		virtual ~FixedSizeLoadStoreUnit() { }
 };
 
