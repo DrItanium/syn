@@ -78,33 +78,102 @@ namespace iris {
 		currentLexeme.clear();
 		fullImmediate = false;
 	}
-	struct AssemblerState {
-		AssemblerState() : currentDataIndex(0), currentCodeIndex(0), inData(false) { }
-		word currentDataIndex;
-		word currentCodeIndex;
-		bool inData;
-		word temporaryWord;
-		byte temporaryByte;
-		AssemblerData current;
-		std::map<std::string, word> labelMap;
-		std::vector<AssemblerData> finishedData;
-		void resetCurrentData() noexcept;
-		void setImmediate(word value) noexcept;
-		void setHalfImmediate(byte value) noexcept;
-		void setGroup(InstructionGroup value) noexcept;
-		template<typename T>
-		void setOperation(T value) noexcept {
-			current.operation = static_cast<byte>(value);
-		}
-		bool inCodeSection() const noexcept { return !inData; }
-		bool inDataSection() const noexcept { return inData; }
-		void nowInCodeSection() noexcept { inData = false; }
-		void nowInDataSection() noexcept { inData = true; }
-		void setCurrentAddress(word value) noexcept;
-		void registerLabel(const std::string& label) noexcept;
-		word getCurrentAddress() noexcept;
-		void incrementCurrentAddress() noexcept;
-		void saveToFinished() noexcept;
+	class AssemblerState {
+		public:
+			using LabelMap = std::map<std::string, word>;
+			using LabelIterator = LabelMap::iterator;
+			using ConstLabelIterator = LabelMap::const_iterator;
+		public:
+			AssemblerState() : currentDataIndex(0), currentCodeIndex(0), inData(false) { }
+			void resetCurrentData() noexcept;
+			void setImmediate(word value) noexcept;
+			void setHalfImmediate(byte value) noexcept;
+			void setGroup(InstructionGroup value) noexcept;
+			template<typename T>
+				void setOperation(T value) noexcept {
+					current.operation = static_cast<byte>(value);
+				}
+			bool inCodeSection() const noexcept { return !inData; }
+			bool inDataSection() const noexcept { return inData; }
+			void nowInCodeSection() noexcept { inData = false; }
+			void nowInDataSection() noexcept { inData = true; }
+			void setCurrentAddress(word value) noexcept;
+			void registerLabel(const std::string& label) noexcept;
+			word getCurrentAddress() noexcept;
+			void incrementCurrentAddress() noexcept;
+			void saveToFinished() noexcept;
+			void setTemporaryByte(byte value) noexcept { temporaryByte = value; }
+			byte getTemporaryByte() const noexcept { return temporaryByte; }
+			void setTemporaryWord(word value) noexcept { temporaryWord = value; }
+			byte getTemporaryWord() const noexcept { return temporaryWord; }
+			void setDestination(byte destination) noexcept { current.destination = destination; }
+			void setSource0(byte destination) noexcept { current.source0 = destination; }
+			void setSource1(byte destination) noexcept { current.source1 = destination; }
+			void stashTemporaryByteInDestination() noexcept { setDestination(temporaryByte); }
+			void stashTemporaryByteInSource0() noexcept { setSource0(temporaryByte); }
+			void stashTemporaryByteInSource1() noexcept { setSource1(temporaryByte); }
+			template<bool upper>
+			void encodeDestinationPredicate() noexcept {
+				setDestination(iris::encode4Bits<upper>(current.destination, temporaryByte));
+			}
+			template<bool upper>
+			void encodeSource0Predicate() noexcept {
+				setSource0(iris::encode4Bits<upper>(current.source0, temporaryByte));
+			}
+			void markHasLexeme() noexcept {
+				current.hasLexeme = true;
+			}
+			void markNotLexeme() noexcept {
+				current.hasLexeme = false;
+			}
+			void setLexeme(const std::string& lexeme) noexcept {
+				markHasLexeme();
+				current.currentLexeme = lexeme;
+			}
+			void markIsInstruction() noexcept {
+				current.instruction = true;
+			}
+			void markIsNotInstruction() noexcept {
+				current.instruction = false;
+			}
+			bool hasLexeme() const noexcept { return current.hasLexeme; }
+			void setDataValue(word value) noexcept {
+				current.dataValue = value;
+			}
+			void stashTemporaryWordIntoDataValue() noexcept {
+				setDataValue(getTemporaryWord());
+			}
+			void markHasFullImmediate() noexcept {
+				current.fullImmediate = true;
+			}
+			void markNotFullImmediate() noexcept {
+				current.fullImmediate = false;
+			}
+			std::string getCurrentLexeme() const noexcept {
+				return current.currentLexeme;
+			}
+			LabelIterator findLabel(const std::string& k) {
+				return labelMap.find(k);
+			}
+			ConstLabelIterator findLabel(const std::string& k) const {
+				return labelMap.find(k);
+			}
+			LabelIterator endLabel() { return labelMap.end(); }
+			ConstLabelIterator endLabel() const { return labelMap.end(); }
+			void applyToFinishedData(std::function<void(AssemblerData&)> fn) {
+				for(auto & value : finishedData) {
+					fn(value);
+				}
+			}
+		private:
+			word currentDataIndex;
+			word currentCodeIndex;
+			bool inData;
+			word temporaryWord;
+			byte temporaryByte;
+			AssemblerData current;
+			LabelMap labelMap;
+			std::vector<AssemblerData> finishedData;
 	};
 #define DefAction(rule) template<> struct Action < rule >
 #define DefApplyGeneric(type) template<typename Input> static void apply(const Input& in, type & state)
@@ -115,12 +184,12 @@ namespace iris {
 	struct PredicateRegister : public syn::GenericRegister<'p'> { };
 	DefAction(GeneralPurposeRegister) {
 		DefApply {
-			state.temporaryByte = syn::getRegister<word, ArchitectureConstants::RegisterCount>(in.string(), reportError);
+			state.setTemporaryByte(syn::getRegister<word, ArchitectureConstants::RegisterCount>(in.string(), reportError));
 		}
 	};
 	DefAction(PredicateRegister) {
 		DefApply {
-			state.temporaryByte = syn::getRegister<word, ArchitectureConstants::ConditionRegisterCount>(in.string(), reportError);
+			state.setTemporaryByte(syn::getRegister<word, ArchitectureConstants::ConditionRegisterCount>(in.string(), reportError));
 		}
 	};
 	using IndirectGPR = syn::Indirection<GeneralPurposeRegister>;
@@ -129,19 +198,19 @@ namespace iris {
 	DefIndirectGPR(DestinationGPR);
 	DefAction(DestinationGPR) {
 		DefApply {
-			state.current.destination = state.temporaryByte;
+			state.stashTemporaryByteInDestination();
 		}
 	};
 	DefIndirectGPR(Source0GPR);
 	DefAction(Source0GPR) {
 		DefApply {
-			state.current.source0 = state.temporaryByte;
+			state.stashTemporaryByteInSource0();
 		}
 	};
     struct Source1GPR : public IndirectGPR { };
 	DefAction(Source1GPR) {
 		DefApply {
-			state.current.source1 = state.temporaryByte;
+			state.stashTemporaryByteInSource1();
 		}
 	};
 #undef DefIndirectGPR
@@ -153,26 +222,26 @@ namespace iris {
     struct DestinationPredicateRegister : public IndirectPredicateRegister { };
 	DefAction(DestinationPredicateRegister) {
 		DefApply {
-			state.current.destination = iris::encode4Bits<false>(state.current.destination, state.temporaryByte);
+			state.encodeDestinationPredicate<false>();
 		}
 	};
     struct DestinationPredicateInverseRegister : public IndirectPredicateRegister { };
 	DefAction(DestinationPredicateInverseRegister) {
 		DefApply {
-			state.current.destination = iris::encode4Bits<true>(state.current.destination, state.temporaryByte);
+			state.encodeDestinationPredicate<true>();
 		}
 	};
 	struct DestinationPredicates : public syn::TwoRegister<DestinationPredicateRegister, DestinationPredicateInverseRegister> { };
 	struct Source0Predicate : public IndirectPredicateRegister { };
 	DefAction(Source0Predicate) {
 		DefApply {
-            state.current.source0 = iris::encode4Bits<false>(state.current.source0, state.temporaryByte);
+			state.encodeSource0Predicate<false>();
 		}
 	};
 	struct Source1Predicate : public IndirectPredicateRegister { };
 	DefAction(Source1Predicate) {
 		DefApply {
-            state.current.source0 = iris::encode4Bits<true>(state.current.source0, state.temporaryByte);
+			state.encodeSource0Predicate<true>();
 		}
 	};
 
@@ -181,32 +250,31 @@ namespace iris {
     struct HexadecimalNumber : public Numeral<'x', pegtl::xdigit> { };
 	DefAction(HexadecimalNumber) {
 		DefApply {
-			state.temporaryWord = syn::getHexImmediate<word>(in.string(), reportError);
+			state.setTemporaryWord(syn::getHexImmediate<word>(in.string(), reportError));
 		}
 	};
     struct BinaryNumber : public Numeral<'b', pegtl::abnf::BIT> { };
 	DefAction(BinaryNumber) {
 		DefApply {
-			state.temporaryWord = syn::getBinaryImmediate<word>(in.string(), reportError);
+			state.setTemporaryWord(syn::getBinaryImmediate<word>(in.string(), reportError));
 		}
 	};
     struct DecimalNumber : public pegtl::plus<pegtl::digit> { };
 	DefAction(DecimalNumber) {
 		DefApply {
-			state.temporaryWord = syn::getDecimalImmediate<word>(in.string().c_str(), reportError);
+			state.setTemporaryWord(syn::getDecimalImmediate<word>(in.string().c_str(), reportError));
 		}
 	};
     struct Number : public pegtl::sor<HexadecimalNumber, DecimalNumber, BinaryNumber> { };
 	DefAction(Number) {
 		DefApply {
-			state.current.hasLexeme = false;
+			state.markNotLexeme();
 		}
 	};
 	using Lexeme = syn::Lexeme;
 	DefAction(Lexeme) {
 		DefApply {
-			state.current.hasLexeme = true;
-			state.current.currentLexeme = in.string();
+			state.setLexeme(in.string());
 		}
 	};
 	struct LexemeOrNumber : public syn::LexemeOr<Number> { };
@@ -241,12 +309,12 @@ namespace iris {
 
 
     struct OrgDirective : public OneArgumentDirective<SymbolOrgDirective, Number> { };
-	DefAction(OrgDirective) { DefApply { state.setCurrentAddress(state.temporaryWord); } };
+	DefAction(OrgDirective) { DefApply { state.setCurrentAddress(state.getTemporaryWord()); } };
 
     struct LabelDirective : public OneArgumentDirective<SymbolLabelDirective, Lexeme> { };
 	DefAction(LabelDirective) {
 		DefApply {
-			state.registerLabel(state.current.currentLexeme);
+			state.registerLabel(state.getCurrentLexeme());
 			state.resetCurrentData();
 		}
 	};
@@ -257,9 +325,9 @@ namespace iris {
 	DefAction(DeclareDirective) {
 		DefApply {
 			if (state.inDataSection()) {
-				state.current.instruction = false;
-				if (!state.current.hasLexeme) {
-					state.current.dataValue = state.temporaryWord;
+				state.markIsNotInstruction();
+				if (!state.hasLexeme()) {
+					state.stashTemporaryWordIntoDataValue();
 				}
 				state.saveToFinished();
 				state.incrementCurrentAddress();
@@ -272,17 +340,17 @@ namespace iris {
     struct Immediate : public pegtl::sor<LexemeOrNumber> { };
 	DefAction(Immediate) {
 		DefApply {
-			state.current.fullImmediate = true;
-			if (!state.current.hasLexeme) {
-				state.setImmediate(state.temporaryWord);
+			state.markHasFullImmediate();
+			if (!state.hasLexeme()) {
+				state.setImmediate(state.getTemporaryWord());
 			}
 		}
 	};
     struct HalfImmediate : public pegtl::sor<Number> { };
 	DefAction(HalfImmediate) {
 		DefApply {
-			state.current.fullImmediate = false;
-			state.setHalfImmediate(state.temporaryWord);
+			state.markNotFullImmediate();
+			state.setHalfImmediate(state.getTemporaryWord());
 		}
 	};
 
@@ -488,7 +556,7 @@ namespace iris {
 	DefAction(Instruction) {
 		DefApply {
 			if (state.inCodeSection()) {
-				state.current.instruction = true;
+				state.markIsInstruction();
 				state.saveToFinished();
 				state.incrementCurrentAddress();
 			} else {
@@ -548,8 +616,8 @@ namespace iris {
 		// now that we have instructions, we need to print them out as hex values
 		char buf[8] = { 0 };
 		auto resolveLabel = [&state](AssemblerData& data) {
-			auto result = state.labelMap.find(data.currentLexeme);
-			if (result == state.labelMap.end()) {
+			auto result = state.findLabel(data.currentLexeme);
+			if (result == state.endLabel()) {
 				std::stringstream msg;
 				msg << "ERROR: label " << data.currentLexeme << " is undefined!" << std::endl;
 				auto str = msg.str();
@@ -558,31 +626,28 @@ namespace iris {
 				return result->second;
 			}
 		};
-		for (auto & value : state.finishedData) {
-			buf[0] = 0;
-			buf[2] = static_cast<char>(syn::getLowerHalf<word>(value.address));
-			buf[3] = static_cast<char>(syn::getUpperHalf<word>(value.address));
-			if (value.instruction) {
-				buf[1] = 0;
-				buf[4] = static_cast<char>(iris::encodeOperationByte(iris::encodeGroupByte(0, value.group), value.operation));
-				buf[5] = static_cast<char>(value.destination);
-				if (value.shouldResolveLabel()) {
-					value.setImmediate(resolveLabel(value));
-				}
-				buf[6] = static_cast<char>(value.source0);
-				buf[7] = static_cast<char>(value.source1);
-			} else {
-				buf[1] = 1;
-				if (value.shouldResolveLabel()) {
-					value.dataValue = resolveLabel(value);
-				}
-				buf[4] = syn::getLowerHalf<word>(value.dataValue);
-				buf[5] = syn::getUpperHalf<word>(value.dataValue);
-				buf[6] = 0;
-				buf[7] = 0;
-			}
-			output.write(static_cast<char*>(buf), sizeof(buf));
-		}
+		state.applyToFinishedData([&buf, &output, resolveLabel](auto value) {
+					buf[0] = 0;
+					buf[1] = value.instruction ? 0 : 1;
+					buf[2] = static_cast<char>(syn::getLowerHalf<word>(value.address));
+					buf[3] = static_cast<char>(syn::getUpperHalf<word>(value.address));
+					if (value.instruction) {
+						buf[4] = static_cast<char>(iris::encodeOperationByte(iris::encodeGroupByte(0, value.group), value.operation));
+						buf[5] = static_cast<char>(value.destination);
+						if (value.shouldResolveLabel()) {
+							value.setImmediate(resolveLabel(value));
+						}
+					} else {
+						if (value.shouldResolveLabel()) {
+							value.dataValue = resolveLabel(value);
+						}
+						buf[4] = syn::getLowerHalf<word>(value.dataValue);
+						buf[5] = syn::getUpperHalf<word>(value.dataValue);
+					}
+					buf[6] = value.instruction ? static_cast<char>(value.source0) : 0;
+					buf[7] = value.instruction ? static_cast<char>(value.source1) : 0;
+					output.write(static_cast<char*>(buf), sizeof(buf));
+				});
 	}
 
 	void assemble(const std::string& iName, FILE* input, std::ostream* output) {
