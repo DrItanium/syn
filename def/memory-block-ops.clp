@@ -7,8 +7,8 @@
           (translation populate -> Populate)
           (translation type -> Type)
           (translation size -> Size)
-          (translation get -> Get)
-          (translation set -> Set)
+          (translation get read load -> Get)
+          (translation set write store -> Set)
           (translation clear zero -> Clear)
           (translation increment ++ -> Increment)
           (translation decrement -- -> Decrement)
@@ -25,10 +25,14 @@
           (translation gt greater-than > -> GreaterThan)
           (translation lte less-than-or-equal-to <= -> LessThanOrEqualTo)
           (translation gte greater-than-or-equal-to >= -> GreaterThanOrEqualTo)
+          (translation initialize -> Initialize)
+          (translation shutdown -> Shutdown)
           (defarg-count 0
                         Clear
                         Type
-                        Size)
+                        Size
+                        Initialize
+                        Shutdown)
           (defarg-count  2
                          Combine 
                          Difference 

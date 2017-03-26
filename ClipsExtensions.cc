@@ -427,6 +427,10 @@ namespace syn {
 						CVSetInteger(ret, ptr->size());
 					} else if (op == MemoryBlockOp::Clear) {
 						ptr->setMemoryToSingleValue(0);
+					} else if (op == MemoryBlockOp::Initialize) {
+						ptr->setMemoryToSingleValue(0);
+					} else if (op == MemoryBlockOp::Shutdown) {
+						// do nothing right now
 					} else if (op == MemoryBlockOp::Get) {
 						auto check = oneCheck(INTEGER, "Argument 0 must be an integer address!");
 						if (check) {

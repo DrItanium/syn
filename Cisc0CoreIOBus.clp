@@ -34,6 +34,13 @@
              (?index)
              (+ ?*io-bus-start*
                 ?index))
+;------------------------------------------------------------------------------
+; IO Controller Mapping Layout
+;------------------------------------------------------------------------------
+; 0x00000000 - 0x00FFFFFF : Main Memory
+; 0xFE000000 - 0xFEFFFFFF : BOOT ROM
+; 0xFF000000 - 0xFFFFFFFF : IO SPACE
+;------------------------------------------------------------------------------
 ; currently, the memory space is comprised of 64-bit signed words! 
 ; This means we are wasting a ton of space per word for this architecture. 
 ; This can lead to some cool ideas in the future though
@@ -49,3 +56,4 @@
 (batch* io-bus-execution-loop.clp)
 
 (reset)
+(facts)

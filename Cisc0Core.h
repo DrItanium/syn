@@ -51,6 +51,7 @@ namespace cisc0 {
 		AddressMax = 65536 * SegmentCount,
 		MaxInstructionCount = 16,
 		TerminateAddress = 0xFFFFFFFF,
+		StartingIPAddress = 0xFE000000,
 		// unlike iris16 and iris32, there is a limited set of registers with
 		// a majority of them marked for explicit usage, instructions
 		// themselves are still 16 bits wide but 32bits are extracted per

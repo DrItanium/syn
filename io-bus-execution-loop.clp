@@ -45,6 +45,8 @@
                      ?address))
          =>
          (retract ?f)
+         (bind ?*result* 
+               0)
          (send ?q
                write
                ?address
@@ -57,7 +59,8 @@
          (retract ?f)
          (printout werror
                    "Can't read from " ?address crlf)
-         (funcall illegal-read-operation))
+         (bind ?*result*
+               FALSE))
 
 (defrule MAIN::no-write-match
          (declare (salience -1))
@@ -67,12 +70,16 @@
          (retract ?f)
          (printout werror
                    "Can't write to " ?address crlf)
-         (funcall illegal-write-operation))
+         (bind ?*result* 
+               FALSE))
 
 (deffunction MAIN::process-io-event
              ()
              (run)
-             ?*result*)
+             (if (not ?*result*) then
+                 (halt)
+                 else
+                 ?*result*))
 
 (deffunction MAIN::read-from-io-address
              (?address)

@@ -61,7 +61,6 @@ namespace cisc0 {
 		return upperMask(bitmask) != 0;
 	}
 	constexpr auto bitmask32 =   mask(0b1111);
-	constexpr auto bitmask24 =   mask(0b0111);
 	constexpr auto upper16Mask = mask(0b1100);
 	constexpr auto lower16Mask = mask(0b0011);
     inline constexpr RegisterValue encodeRegisterValue(byte a, byte b, byte c, byte d) noexcept {
@@ -91,9 +90,6 @@ namespace cisc0 {
     inline constexpr RegisterValue normalizeCondition(RegisterValue input) noexcept {
         return input != 0 ? 0xFFFFFFFF : 0x00000000;
     }
-    inline constexpr RegisterValue mask24(RegisterValue value) noexcept {
-        return value & bitmask24;
-    }
 
     inline constexpr int instructionSizeFromImmediateMask(byte bitmask) noexcept {
         return 1 + (readLower(bitmask) ? 1 : 0) + (readUpper(bitmask) ? 1 : 0);
@@ -119,7 +115,9 @@ namespace cisc0 {
     Core::~Core() noexcept { }
 
     void Core::initialize() {
+		gpr.initialize();
 		_bus.initialize();
+		getInstructionPointer() = ArchitectureConstants::StartingIPAddress;
     }
 
     void Core::shutdown() { 
@@ -127,13 +125,13 @@ namespace cisc0 {
 	}
 
     void Core::installprogram(std::istream& stream) {
-        gpr.install(stream, [](char* buf) { return syn::encodeUint32LE((byte*)buf); });
+        //gpr.install(stream, [](char* buf) { return syn::encodeUint32LE((byte*)buf); });
 		// the installation of a program is handled by the io bus now!
 		// TODO: figure out how to do a program install...
     }
 
     void Core::dump(std::ostream& stream) {
-        gpr.dump(stream, [](RegisterValue value, char* buf) { syn::decodeUint32LE(value, (byte*)buf); });
+        //gpr.dump(stream, [](RegisterValue value, char* buf) { syn::decodeUint32LE(value, (byte*)buf); });
 		// the io bus must handle dumping stuff to disk
     }
 
@@ -154,11 +152,9 @@ namespace cisc0 {
     }
     void Core::incrementAddress(RegisterValue& ptr) noexcept {
         ++ptr;
-        ptr = mask24(ptr);
     }
     void Core::decrementAddress(RegisterValue& ptr) noexcept {
         --ptr;
-        ptr = mask24(ptr);
     }
     void Core::incrementInstructionPointer() noexcept {
         incrementAddress(getInstructionPointer());
@@ -308,7 +304,7 @@ namespace cisc0 {
         auto upper = 0u;
         auto lower = 0u;
         auto loadIndirectAddress = [this](auto address) {
-            return mask24(encodeRegisterValue(loadWord(address + 1), loadWord(address)));
+			return encodeRegisterValue(loadWord(address + 1), loadWord(address));
         };
         if (rawType == MemoryOperation::Load) {
             auto& value = getValueRegister();
