@@ -34,6 +34,9 @@
              (?index)
              (+ ?*io-bus-start*
                 ?index))
+; currently, the memory space is comprised of 64-bit signed words! 
+; This means we are wasting a ton of space per word for this architecture. 
+; This can lead to some cool ideas in the future though
 (definstances MAIN::io-map
               ([main-memory] of memory 
                              (index 0)
