@@ -253,19 +253,30 @@ namespace syn {
 		EnvSetEvaluationError(env, true);
 		return false;
 	}
-
-	DefWrapperSymbolicName(CLIPSInteger[], "memory-block");
-	class ManagedMemoryBlock : public ExternalAddressWrapper<CLIPSInteger[]> {
+	template<typename T>
+	using Block = T[];
+	using CLIPSIntegerBlock = Block<CLIPSInteger>;
+	DefWrapperSymbolicName(CLIPSIntegerBlock, "memory-block");
+	class ManagedMemoryBlock : public ExternalAddressWrapper<CLIPSIntegerBlock> {
 		public:
 			using Word = CLIPSInteger;
+			using WordBlock = Block<Word>;
+			using Parent = ExternalAddressWrapper<CLIPSIntegerBlock>;
 			static ManagedMemoryBlock* make(CLIPSInteger capacity) noexcept;
 			static void newFunction(void* env, DataObjectPtr ret);
 			static bool callFunction(void* env, DataObjectPtr value, DataObjectPtr ret);
 			static void registerWithEnvironment(void* env, const char* title) { ExternalAddressWrapper<Word[]>::registerWithEnvironment(env, title, newFunction, callFunction); }
-			static void registerWithEnvironment(void* env) { registerWithEnvironment(env, "memory-block"); }
+			static void registerWithEnvironment(void* env) { 
+				static bool init = true;
+				static std::string func;
+				if (init) {
+					init = false;
+					func = getType();
+				}
+				registerWithEnvironment(env, func.c_str()); 
+			}
 		public:
-			ManagedMemoryBlock(CLIPSInteger capacity) :
-				ExternalAddressWrapper<Word[]>(std::move(std::make_unique<Word[]>(capacity))), _capacity(capacity) { }
+			ManagedMemoryBlock(CLIPSInteger capacity) : Parent(std::move(std::make_unique<WordBlock>(capacity))), _capacity(capacity) { }
 			inline CLIPSInteger size() const noexcept                                    { return _capacity; }
 			inline bool legalAddress(CLIPSInteger idx) const noexcept                    { return inRange<CLIPSInteger>(_capacity, idx); }
 			inline Word getMemoryCellValue(CLIPSInteger addr) noexcept                   { return this->_value.get()[addr]; }

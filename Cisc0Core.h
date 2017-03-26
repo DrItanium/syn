@@ -260,7 +260,7 @@ namespace cisc0 {
 
 	class Core : public syn::Core {
 		public:
-			using IOBus = syn::CLIPSIOController<Word, Address>;
+			using IOBus = syn::CLIPSIOController<Word, CLIPSInteger>;
             using ALU = syn::ALU<RegisterValue>;
             using CompareUnit = syn::Comparator<RegisterValue>;
             using RegisterFile = syn::FixedSizeLoadStoreUnit<RegisterValue, byte, ArchitectureConstants::RegisterCount>;

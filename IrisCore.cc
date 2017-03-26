@@ -555,20 +555,4 @@ namespace iris {
             _io.write(address, value);
         }
     }
-
-#ifdef TESTING
-    void testConstruction() noexcept {
-        // this becomes dead code but it is a great way to test class
-        // instantiations
-        Core c;
-        WrappedExposedDataCoreMemory<word> tmp(&c, 0);
-        WrappedExposedDataCoreMemory<word> tmp2(&c, 0x0, 0x100);
-        c.initialize();
-        tmp.initialize();
-        tmp2.initialize();
-        tmp.shutdown();
-        tmp2.shutdown();
-        c.shutdown();
-    }
-#endif // end TESTING
 }
