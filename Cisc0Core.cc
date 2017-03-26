@@ -115,37 +115,26 @@ namespace cisc0 {
         }
     }
 
-    Core::Core() noexcept : _rng(0) { }
+    Core::Core() noexcept : _bus(0x00000000, 0xFFFFFFFF, "Cisc0CoreIOBus.clp")  { }
     Core::~Core() noexcept { }
 
     void Core::initialize() {
-        // setup the default system handlers
-        for (auto i = 0; i < ArchitectureConstants::MaxSystemCalls; ++i) {
-            installSystemHandler(i, Core::defaultSystemHandler);
-        }
-        installSystemHandler(Core::DefaultHandlers::Terminate, Core::terminate);
-        installSystemHandler(Core::DefaultHandlers::GetC, Core::getc);
-        installSystemHandler(Core::DefaultHandlers::PutC, Core::putc);
-        installSystemHandler(Core::DefaultHandlers::SeedRandom, Core::seedRandom);
-        installSystemHandler(Core::DefaultHandlers::NextRandom, Core::nextRandom);
-        installSystemHandler(Core::DefaultHandlers::SkipRandom, Core::skipRandom);
+		_bus.initialize();
     }
 
-    void Core::defaultSystemHandler(Core* core, DecodedInstruction&& inst) {
-        throw syn::Problem("Unimplemented system call!");
-    }
-
-
-    void Core::shutdown() { }
+    void Core::shutdown() { 
+		_bus.shutdown();
+	}
 
     void Core::installprogram(std::istream& stream) {
         gpr.install(stream, [](char* buf) { return syn::encodeUint32LE((byte*)buf); });
-        memory.install(stream, [](char* buf) { return syn::encodeUint16LE((byte*)buf); });
+		// the installation of a program is handled by the io bus now!
+		// TODO: figure out how to do a program install...
     }
 
     void Core::dump(std::ostream& stream) {
         gpr.dump(stream, [](RegisterValue value, char* buf) { syn::decodeUint32LE(value, (byte*)buf); });
-        memory.dump(stream, [](Word value, char* buf) { syn::decodeUint16LE(value, (byte*)buf); });
+		// the io bus must handle dumping stuff to disk
     }
 
     bool Core::cycle() {
@@ -213,9 +202,6 @@ namespace cisc0 {
                 break;
             case Operation::Compare:
                 compareOperation(std::move(current));
-                break;
-            case Operation::SystemCall:
-                systemCallOperation(std::move(current));
                 break;
             case Operation::Complex:
                 complexOperation(std::move(current));
@@ -287,14 +273,6 @@ namespace cisc0 {
                     getInstructionPointer() = mask24(registerValue(inst.getBranchIndirectDestination()));
                 }
             }
-        }
-    }
-    void Core::systemCallOperation(DecodedInstruction&& inst) {
-        auto action = getAddressRegister();
-        if (action >= ArchitectureConstants::MaxSystemCalls) {
-            throw syn::Problem("ERROR: system call index out of range!");
-        } else {
-            systemHandlers[action](this, std::move(inst));
         }
     }
     void Core::compareOperation(DecodedInstruction&& inst) {
@@ -493,27 +471,6 @@ namespace cisc0 {
         core->advanceIp = false;
     }
 
-    void Core::putc(Core* core, DecodedInstruction&& current) {
-        syn::putc<RegisterValue>(core->registerValue(current.getSystemArg<0>()));
-    }
-    void Core::getc(Core* core, DecodedInstruction&& current) {
-        core->registerValue(current.getSystemArg<0>()) = syn::getc<RegisterValue>();
-    }
-
-	using RNGOperations = Core::RandomNumberGenerator::CapturedType::Operations;
-    void Core::seedRandom(Core* core, DecodedInstruction&& current) {
-        // call the seed routine inside the _rng
-        //core->_rng.write(RandomNumberGenerator::SeedRandom)
-        core->_rng.write(RNGOperations::SeedRandom, core->registerValue(current.getSystemArg<0>()));
-    }
-    void Core::nextRandom(Core* core, DecodedInstruction&& current) {
-        core->registerValue(current.getSystemArg<0>()) = core->_rng.read(RNGOperations::NextRandom);
-    }
-    void Core::skipRandom(Core* core, DecodedInstruction&& current) {
-        core->_rng.write(RNGOperations::SkipRandom, core->registerValue(current.getSystemArg<0>()));
-    }
-
-
     void Core::link(std::istream& input) {
         // we have some more data to read through
         // two address system, 1 RegisterValue -> address, 1 Word -> value
@@ -545,13 +502,18 @@ namespace cisc0 {
         return gpr[index];
     }
     Word Core::getCurrentCodeWord() noexcept {
-        return memory[getInstructionPointer()];
+		return _bus.read(getInstructionPointer());
     }
     void Core::storeWord(RegisterValue address, Word value) {
-        memory[address] = value;
+		if (address == ArchitectureConstants::TerminateAddress) {
+			execute = false;
+			advanceIp = false;
+		} else {
+			_bus.write(address, value);
+		}
     }
     Word Core::loadWord(RegisterValue address) {
-        return memory[address];
+		return _bus.read(address);
     }
     RegisterValue Core::loadRegisterValue(RegisterValue address) {
         return syn::encodeBits<RegisterValue, Word, bitmask32, 16>(static_cast<RegisterValue>(loadWord(address)), loadWord(address + 1));
@@ -561,13 +523,6 @@ namespace cisc0 {
         storeWord(address + 1, decodeUpperHalf(value));
     }
 
-    void Core::installSystemHandler(Word index, Core::SystemFunction func) {
-        if (index >= ArchitectureConstants::MaxSystemCalls) {
-            throw syn::Problem("Can't install to out of range system handler index!");
-        } else {
-            systemHandlers[index] = func;
-        }
-    }
     void Core::pushWord(Word value) {
         pushWord(value, getStackPointer());
     }
@@ -626,14 +581,6 @@ namespace cisc0 {
         first = encodeShiftFlagLeft(first, shiftLeft);
         first = encodeShiftRegister0(first, arg0);
         first = immediate ? encodeShiftImmediate(first, arg1) : encodeShiftRegister1(first, arg1);
-        return std::make_tuple(1, first, 0, 0);
-    }
-
-    InstructionEncoder::Encoding InstructionEncoder::encodeSystemCall() const {
-        auto first = encodeControl(0, type);
-        first = encodeSystemArg0(first, arg0);
-        first = encodeSystemArg1(first, arg1);
-        first = encodeSystemArg2(first, arg2);
         return std::make_tuple(1, first, 0, 0);
     }
 
@@ -736,7 +683,6 @@ namespace cisc0 {
             { Operation::Logical, std::mem_fn(&InstructionEncoder::encodeLogical) },
             { Operation::Compare, std::mem_fn(&InstructionEncoder::encodeCompare) },
             { Operation::Branch, std::mem_fn(&InstructionEncoder::encodeBranch) },
-            { Operation::SystemCall, std::mem_fn(&InstructionEncoder::encodeSystemCall) },
             { Operation::Move, std::mem_fn(&InstructionEncoder::encodeMove) },
             { Operation::Set, std::mem_fn(&InstructionEncoder::encodeSet) },
             { Operation::Swap, std::mem_fn(&InstructionEncoder::encodeSwap) },

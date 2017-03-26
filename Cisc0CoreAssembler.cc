@@ -239,7 +239,6 @@ namespace cisc0 {
 	DefGroup(Move, move);
 	DefGroup(Set, set);
 	DefGroup(Swap, swap);
-	DefGroup(SystemCall, system);
 	DefGroup(Arithmetic, arithmetic);
 	DefGroup(Memory, memory);
 	DefGroup(Logical, logical);
@@ -487,14 +486,6 @@ namespace cisc0 {
 			state.arg0 = static_cast<byte>(state.fullImmediate) & 0b1111;
 		}
 	};
-	struct SystemCallOperation : pegtl::seq<
-								 GroupSystemCall,
-								 Separator,
-								 DestinationRegister,
-								 Separator,
-								 SourceRegister,
-								 Separator,
-								 SourceRegister1> { };
 #define DefArithmeticOperation(title, str) \
 	DefSubTypeWithSymbol(title, str, ArithmeticOps)
 
@@ -713,7 +704,6 @@ namespace cisc0 {
 			   ArithmeticOperation,
 			   ShiftOperation,
 			   CompareOperation,
-			   SystemCallOperation,
 			   LogicalOperation>
 								> { };
 	template<typename Symbol, typename Value>

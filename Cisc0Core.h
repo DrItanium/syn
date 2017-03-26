@@ -36,6 +36,7 @@
 #include <vector>
 #include <tuple>
 #include "IODevice.h"
+#include "IOController.h"
 
 namespace cisc0 {
 	using Word = uint16_t;
@@ -49,7 +50,7 @@ namespace cisc0 {
 		SegmentCount = 256,
 		AddressMax = 65536 * SegmentCount,
 		MaxInstructionCount = 16,
-		MaxSystemCalls = 0x1000,
+		TerminateAddress = 0xFFFFFFFF,
 		// unlike iris16 and iris32, there is a limited set of registers with
 		// a majority of them marked for explicit usage, instructions
 		// themselves are still 16 bits wide but 32bits are extracted per
@@ -115,17 +116,6 @@ namespace cisc0 {
                     return decodeShiftRegister0(_rawValue);
                 } else {
                     return decodeShiftRegister1(_rawValue);
-                }
-            }
-            template<int index>
-            inline byte getSystemArg() const noexcept {
-                static_assert(index >= 0 && index < 3, "Illegal system arg index!");
-                if (index == 0) {
-                    return decodeSystemArg0(_rawValue);
-                } else if (index == 1) {
-                    return decodeSystemArg1(_rawValue);
-                } else {
-                    return decodeSystemArg2(_rawValue);
                 }
             }
             template<int index>
@@ -269,27 +259,10 @@ namespace cisc0 {
 
 	class Core : public syn::Core {
 		public:
+			using IOBus = syn::CLIPSIOController<Word, Address>;
             using ALU = syn::ALU<RegisterValue>;
             using CompareUnit = syn::Comparator<RegisterValue>;
             using RegisterFile = syn::FixedSizeLoadStoreUnit<RegisterValue, byte, ArchitectureConstants::RegisterCount>;
-            using MemorySpace = syn::FixedSizeLoadStoreUnit<Word, Address, ArchitectureConstants::AddressMax>;
-            using RandomNumberGenerator = syn::CaptiveAddressableIODevice<syn::RandomDevice<RegisterValue, Address>>;
-			using SystemFunction = std::function<void(Core*, DecodedInstruction&&)>;
-			// These are built in addresses
-			enum DefaultHandlers {
-				Terminate,
-				GetC,
-				PutC,
-				SeedRandom,
-				NextRandom,
-				SkipRandom,
-				SecondaryStorage0_Read,
-				SecondaryStorage0_Write,
-				SecondaryStorage1_Read,
-				SecondaryStorage1_Write,
-				Count,
-			};
-			static_assert(static_cast<Word>(DefaultHandlers::Count) <= static_cast<Word>(ArchitectureConstants::MaxSystemCalls), "Too many handlers defined!");
 		public:
 			Core() noexcept;
 			virtual ~Core() noexcept;
@@ -298,7 +271,6 @@ namespace cisc0 {
 			virtual void shutdown() override;
 			virtual void dump(std::ostream& stream) override;
 			virtual void link(std::istream& stream) override;
-			void installSystemHandler(Word index, SystemFunction fn);
 			virtual bool cycle() override;
 			bool shouldExecute() const { return execute; }
 		private:
@@ -308,14 +280,7 @@ namespace cisc0 {
             void pushDword(DWord value, RegisterValue& ptr);
 			Word popWord();
 			Word popWord(RegisterValue& ptr);
-			static void defaultSystemHandler(Core* core, DecodedInstruction&& inst);
 			static void terminate(Core* core, DecodedInstruction&& inst);
-			static void getc(Core* core, DecodedInstruction&& inst);
-			static void putc(Core* core, DecodedInstruction&& inst);
-			static void seedRandom(Core* core, DecodedInstruction&& inst);
-			static void nextRandom(Core* core, DecodedInstruction&& inst);
-			static void skipRandom(Core* core, DecodedInstruction&& inst);
-			SystemFunction getSystemHandler(byte index);
 			void dispatch(DecodedInstruction&& inst);
 			template<byte rindex>
 				inline RegisterValue& registerValue() noexcept {
@@ -378,9 +343,7 @@ namespace cisc0 {
 			ALU _logicalOps;
 			CompareUnit _compare;
 			syn::BooleanCombineUnit _bCombine;
-			MemorySpace memory;
-			SystemFunction systemHandlers[ArchitectureConstants::MaxSystemCalls] =  { 0 };
-			RandomNumberGenerator _rng;
+			IOBus _bus;
 	};
 
 
@@ -414,7 +377,6 @@ namespace cisc0 {
             Encoding encodeLogical() const;
             Encoding encodeCompare() const;
             Encoding encodeBranch() const;
-            Encoding encodeSystemCall() const;
             Encoding encodeMove() const;
             Encoding encodeSet() const;
             Encoding encodeSwap() const;
