@@ -38,7 +38,6 @@
               ([main-memory] of memory 
                              (index 0)
                              (length ?*main-memory-size*))
-
               ([keyboard] of stdin/out-device 
                           (index (in-io-space 2)))
               ([rng0] of random-number-generator
