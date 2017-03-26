@@ -585,6 +585,9 @@ namespace syn {
 	DefMemoryBlock("memory-block:uint16", uint16_t, ManagedMemoryBlock_uint16);
 	DefMemoryBlock("memory-block:uint32", uint32_t, ManagedMemoryBlock_uint32);
 	DefMemoryBlock("memory-block:uint8", uint8_t, ManagedMemoryBlock_uint8);
+	DefMemoryBlock("memory-block:int16", int16_t, ManagedMemoryBlock_int16);
+	DefMemoryBlock("memory-block:int32", int32_t, ManagedMemoryBlock_int32);
+	DefMemoryBlock("memory-block:int8", int8_t, ManagedMemoryBlock_int8);
 #undef DefMemoryBlock
 
 	void installExtensions(void* theEnv) {
@@ -608,6 +611,9 @@ namespace syn {
 		ManagedMemoryBlock_uint8::registerWithEnvironment(theEnv);
 		ManagedMemoryBlock_uint16::registerWithEnvironment(theEnv);
 		ManagedMemoryBlock_uint32::registerWithEnvironment(theEnv);
+		ManagedMemoryBlock_int8::registerWithEnvironment(theEnv);
+		ManagedMemoryBlock_int16::registerWithEnvironment(theEnv);
+		ManagedMemoryBlock_int32::registerWithEnvironment(theEnv);
 	}
 
     MultifieldBuilder::MultifieldBuilder(void* env, long capacity) : _size(capacity), _rawMultifield(EnvCreateMultifield(env, capacity)) { }
