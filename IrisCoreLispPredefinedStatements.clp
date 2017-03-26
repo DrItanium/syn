@@ -653,11 +653,12 @@
            ?*unused1-dispatch-vector-address* = 0x00FD
            ?*custom-instruction-dispatch-vector* = 0x00FC
            ?*divide-by-zero-dispatch-vector* = 0x00FB
-           ?*terminate-port-address* = 0x0000
+           ?*terminate-port-address* = 0xFFFF
            ?*get-c-port-address* = 0x0001
            ?*put-c-port-address* = 0x0002
            ?*seed-random-port-address* = 0x0003
-           ?*next-random-port-address* = 0x0004)
+           ?*next-random-port-address* = 0x0004
+           ?*skip-random-port-address* = 0x0005)
 
 (definstances lower::predefined-let-statements
               (of list
@@ -720,6 +721,12 @@
                             NextRandomPort 
                             be 
                             ?*next-random-port-address*))
+              (of list
+                  (parent FALSE)
+                  (contents let
+                            SkipNextRandomWord
+                            be
+                            ?*skip-random-port-address*))
               (of list
                   (parent FALSE)
                   (contents let 
