@@ -21,15 +21,44 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(defclass MAIN::stdin/out-device
-  (is-a io-device)
-  (message-handler read primary)
-  (message-handler write primary))
+(defclass MAIN::memory
+          "Concept of memory used to store data in it."
+          (is-a native-io-device)
+          (slot native-type
+                (source composite)
+                (default memory-space))
+          (slot length
+                (source composite)
+                (default ?NONE))
+          (message-handler get-native-construction-args after)
+          (message-handler read primary)
+          (message-handler write primary))
 
-(defmessage-handler MAIN::stdin/out-device read primary
+(defmessage-handler MAIN::memory get-native-construction-args primary
+                    ()
+                    (create$ (dynamic-get length)))
+
+(defmessage-handler MAIN::memory read primary
                     (?address)
-                    (get-char))
+                    (call ?self:native-reference
+                          get
+                          ?address))
 
-(defmessage-handler MAIN::stdin/out-device write primary
+(defmessage-handler MAIN::memory write primary
                     (?address ?value)
-                    (put-char ?value))
+                    (call ?self:native-reference
+                          set
+                          ?address
+                          ?value))
+
+(defclass MAIN::unconnected-memory
+  "Memory which will not respond to io requests directly!"
+  (is-a memory)
+  (slot index
+        (source composite)
+        (default 0))
+  (message-handler responds-to primary))
+
+(defmessage-handler MAIN::unconnected-memory responds-to primary
+                    (?address)
+                    FALSE)
