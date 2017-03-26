@@ -237,7 +237,7 @@ namespace cisc0 {
             advanceIp = false;
             if (isCall) {
                 // push the instruction pointer onto the stack
-                pushDword(mask24(getInstructionPointer() + 1));
+				pushDword(getInstructionPointer() + 1);
             }
             auto reg = choice ? inst.getBranchIfPathRegister<true>() : inst.getBranchIfPathRegister<false>();
             getInstructionPointer() = registerValue(reg);
@@ -246,31 +246,32 @@ namespace cisc0 {
             advanceIp = false;
             // determine next
             auto length = isImm ? 2 : 1;
-            pushDword(mask24(getInstructionPointer() + length));
+			pushDword(getInstructionPointer() + length);
 
             auto address = 0u;
             if (isImm) {
                 // make a 24 bit number
                 // we should always read the next value
-                auto upper16 = static_cast<RegisterValue>(tryReadNext<true>()) << 8;
-                auto lower8 = static_cast<RegisterValue>(inst.getUpper());
-                address = upper16 | lower8;
+                auto lower16 = static_cast<RegisterValue>(tryReadNext<true>());
+				auto upper16 = static_cast<RegisterValue>(tryReadNext<true>()) << 16;
+                address = upper16 | lower16;
             } else {
                 address = registerValue(inst.getBranchIndirectDestination());
             }
-            getInstructionPointer() = mask24(address);
+            getInstructionPointer() = address;
         } else {
             // jump instruction
             if (isImm) {
-                incrementInstructionPointer();
                 if ((isCond && choice) || !isCond) {
                     advanceIp = false;
-                    getInstructionPointer() = mask24(inst.getUpper() | static_cast<RegisterValue>(getCurrentCodeWord()) << 8);
+					auto lower16 = static_cast<RegisterValue>(tryReadNext<true>());
+					auto upper16 = static_cast<RegisterValue>(tryReadNext<true>()) << 16;
+                    getInstructionPointer() = upper16 | lower16;
                 }
             } else {
                 if ((isCond && choice) || !isCond) {
                     advanceIp = false;
-                    getInstructionPointer() = mask24(registerValue(inst.getBranchIndirectDestination()));
+                    getInstructionPointer() = registerValue(inst.getBranchIndirectDestination());
                 }
             }
         }
@@ -651,9 +652,9 @@ namespace cisc0 {
         } else {
             if (immediate) {
                 // encode the 24-bit number
-                first = encodeUpper(first, static_cast<byte>(fullImmediate));
-                auto second = static_cast<Word>(fullImmediate >> 8);
-                return std::make_tuple(2, first, second, 0);
+                auto second = static_cast<Word>(fullImmediate);
+				auto third = static_cast<Word>(fullImmediate >> 16);
+                return std::make_tuple(3, first, second, third);
             } else {
                 first = encodeBranchIndirectDestination(first, arg0);
                 return std::make_tuple(1, first, 0, 0);
