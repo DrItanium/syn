@@ -293,11 +293,9 @@ namespace syn {
 				static std::string funcErrorPrefix;
 				if (init) {
 					init = false;
-					std::stringstream ss, ss2;
-					ss << "new (" << Parent::getType() << ")";
-					funcStr = ss.str();
-					ss2 << "Function " << funcStr;
-					funcErrorPrefix = ss2.str();
+                    auto functions = syn::retrieveFunctionNames<WordBlock>("new");
+                    funcStr = std::get<1>(functions);
+                    funcErrorPrefix = std::get<2>(functions);
 				}
 
 				try {
@@ -345,12 +343,10 @@ namespace syn {
 				};
 				if (init) {
 					init = false;
-					func = Parent::getType();
-					std::stringstream ss, ss2;
-					ss << "call (" << func << ")";
-					funcStr = ss.str();
-					ss2 << "Function " << funcStr;
-					funcErrorPrefix = ss2.str();
+                    auto t = retrieveFunctionNames<WordBlock>("call");
+                    func = std::get<0>(t);
+                    funcStr = std::get<1>(t);
+                    funcErrorPrefix = std::get<2>(t);
 				}
 				if (GetpType(value) == EXTERNAL_ADDRESS) {
 					auto ptr = static_cast<Self_Ptr>(DOPToExternalAddress(value));

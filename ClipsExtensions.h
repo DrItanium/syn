@@ -140,6 +140,17 @@ struct WrappedNewCallBuilder {
         return nullptr;
     }
 };
+using FunctionStrings = std::tuple<std::string, std::string, std::string>;
+template<typename T>
+static FunctionStrings retrieveFunctionNames(const std::string& action) noexcept {
+    auto title = TypeToName<T>::getSymbolicName();
+    std::stringstream ss, ss2;
+    ss << action << " (" << title << ")";
+    auto str0 = ss.str();
+    ss2 << "Function " << str0;
+    auto str1 = ss2.str();
+    return std::make_tuple(title, str0, str1);
+}
 template<typename T>
 class ExternalAddressWrapper {
 	public:
@@ -167,11 +178,9 @@ class ExternalAddressWrapper {
             static std::string funcErrorPrefix;
             if (init) {
                 init = false;
-                std::stringstream ss, ss2;
-                ss << "new (" << getType() << ")";
-                funcStr = ss.str();
-                ss2 << "Function " << funcStr;
-                funcErrorPrefix = ss2.str();
+                auto functions = retrieveFunctionNames<InternalType>("new");
+                funcStr = std::get<1>(functions);
+                funcErrorPrefix = std::get<2>(functions);
             }
             auto ptr = WrappedNewCallBuilder<InternalType>::invokeNewFunction(env, ret, funcErrorPrefix, funcStr);
             if (ptr) {

@@ -777,6 +777,26 @@ namespace cisc0 {
             static Self* make() noexcept {
                 return new Self();
             }
+            static void registerWithEnvironment(void* env, const char* title) {
+                Parent::registerWithEnvironment(env, title, callFunction);
+            }
+            static bool callFunction(void* env, syn::DataObjectPtr value, syn::DataObjectPtr ret) {
+                static bool init = true;
+                static std::string funcStr;
+                static std::string funcErrorPrefix;
+
+                if (init) {
+                    init = false;
+                    auto functions = syn::retrieveFunctionNames<AssemblerState>("call");
+                    funcStr = std::get<1>(functions);
+                    funcErrorPrefix = std::get<2>(functions);
+                }
+                if (GetpType(value) == EXTERNAL_ADDRESS) {
+                    return false;
+                } else {
+                    return syn::errorMessage(env, "CALL", 1, funcErrorPrefix, "Function call expected an external address as the first argument!");
+                }
+            }
         public:
             AssemblerStateWrapper() : Parent(std::move(std::make_unique<AssemblerState>())) { }
     };

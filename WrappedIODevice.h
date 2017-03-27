@@ -94,11 +94,9 @@ namespace syn {
                 static std::string funcErrorPrefix;
                 if (init) {
                     init = false;
-                    std::stringstream ss, ss2;
-                    ss << "new (" << Self::getType() << ")";
-                    funcStr = ss.str();
-                    ss2 << "Function " << funcStr;
-                    funcErrorPrefix = ss2.str();
+                    auto t = retrieveFunctionNames<InternalType>("new");
+                    funcStr = std::get<1>(t);
+                    funcErrorPrefix = std::get<2>(t);
                 }
                 // build the internal object first!
                 auto ptr = WrappedIODeviceBuilder<Data, Address, T>::invokeNewFunction(env, ret, funcErrorPrefix, funcStr);
@@ -117,11 +115,9 @@ namespace syn {
                 static std::string funcErrorPrefix;
 				if (init) {
 					init = false;
-					std::stringstream ss, ss2;
-					ss << "call (" << Self::getType() << ")";
-					funcStr = ss.str();
-					ss2 << "Function " << funcStr;
-					funcErrorPrefix = ss2.str();
+                    auto t = retrieveFunctionNames<InternalType>("call");
+                    funcStr = std::get<1>(t);
+                    funcErrorPrefix = std::get<2>(t);
 				}
 				auto callErrorMessage = [env, ret](const std::string& subOp, const std::string& rest) {
 					CVSetBoolean(ret, false);
