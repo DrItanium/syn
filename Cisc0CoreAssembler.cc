@@ -868,6 +868,7 @@ namespace cisc0 {
                     case Operations::Parse:
                         return parseLine();
                     case Operations::Resolve:
+                        CVSetBoolean(ret, true);
                         return ptr->resolve();
                         return true;
                     case Operations::Get:
