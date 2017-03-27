@@ -49,8 +49,6 @@ REPL_FINAL_BINARY = syn_repl
 REPL_FINAL_OBJECTS = Repl.o \
 					 ${COMMON_THINGS} \
 					 ${ARCH_OBJECTS} \
-					 RegisteredExternalAddressAssemblers.o \
-					 AssemblerExternalAddressRegistrar.o \
 					 ${ASM_PARSERS_OBJECTS} \
 
 ASM_BINARY = syn_asm

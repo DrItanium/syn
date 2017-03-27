@@ -28,8 +28,6 @@
 #include "Problem.h"
 #include "AssemblerExternalAddressRegistrar.h"
 
-#include <map>
-
 namespace syn {
     void AssemblerExternalAddressRegistrar::install(void* env) {
         for (auto a : assemblers) {
@@ -37,8 +35,8 @@ namespace syn {
         }
     }
 
-	void AssemblerExternalAddressRegistrar::registerExternalAddress(const std::string& name, AssemblerExternalAddressRegistrar::Operation op) {
-		assemblers.emplace(name, op);
+	void AssemblerExternalAddressRegistrar::addToRegistry(const std::string& name, AssemblerExternalAddressRegistrar::Operation op) {
+        assemblers.emplace(name, op);
 	}
 
 	AssemblerExternalAddressRegistrar::AssemblerExternalAddressRegistrar() { }

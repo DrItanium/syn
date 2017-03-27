@@ -28,7 +28,7 @@ extern "C" {
 	#include "clips.h"
 }
 #include "ClipsExtensions.h"
-#include "AssemblerExternalAddressRegistrar.h"
+#include "Cisc0ClipsExtensions.h"
 
 static void *mainEnv;
 
@@ -36,7 +36,7 @@ int main(int argc, char* argv[]) {
 	mainEnv = CreateEnvironment();
 	// install features here
 	syn::installExtensions(mainEnv);
-    syn::externalAddressInstallerRegistry.install(mainEnv);
+    cisc0::installAssemblerParsingState(mainEnv);
 	RerouteStdin(mainEnv, argc, argv);
 	CommandLoop(mainEnv);
 	DestroyEnvironment(mainEnv);

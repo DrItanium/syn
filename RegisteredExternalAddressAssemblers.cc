@@ -34,4 +34,4 @@
 
 template<typename T>
 using RegisterExternalAddressAssembler = syn::RegisterEntry<syn::AssemblerExternalAddressRegistrar, T>;
-static RegisterExternalAddressAssembler<cisc0::Core> cisc0Core(syn::externalAddressInstallerRegistry, "cisc0", cisc0::installAssemblerParsingState);
+static RegisterExternalAddressAssembler<cisc0::Core> cisc0ExternalAddress(syn::externalAddressInstallerRegistry, "cisc0", cisc0::installAssemblerParsingState);
