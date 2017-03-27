@@ -26,26 +26,9 @@
 
 #ifndef SYN_ASSEMBLER_EXTERNAL_ADDRESSES_H
 #define SYN_ASSEMBLER_EXTERNAL_ADDRESSES_H
-#include <string>
-#include <cstdio>
-#include <iostream>
-#include <functional>
-#include <map>
 
 namespace syn {
-	class AssemblerExternalAddressRegistrar {
-		public:
-            using Operation = std::function<void(void*)>;
-            using AssemblerList = std::map<std::string, Operation>;
-			AssemblerExternalAddressRegistrar();
-			virtual ~AssemblerExternalAddressRegistrar();
-            void install(void* env);
-			void addToRegistry(const std::string& target, Operation op);
-		private:
-			AssemblerList assemblers;
-	};
-
-	extern AssemblerExternalAddressRegistrar externalAddressInstallerRegistry;
-}
+    void installExternalAddressAssemblers(void* env);
+} // end namespace syn
 
 #endif // end SYN_ASSEMBLER_EXTERNAL_ADDRESSES_H

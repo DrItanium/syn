@@ -26,12 +26,11 @@
 
 // register all of the machine cores here since the cores should not be aware
 // of these kinds of registrations
-#include "Problem.h"
-#include "RegisterEntry.h"
 #include "AssemblerExternalAddressRegistrar.h"
 #include "Cisc0ClipsExtensions.h"
-#include "Cisc0Core.h"
 
-template<typename T>
-using RegisterExternalAddressAssembler = syn::RegisterEntry<syn::AssemblerExternalAddressRegistrar, T>;
-static RegisterExternalAddressAssembler<cisc0::Core> cisc0ExternalAddress(syn::externalAddressInstallerRegistry, "cisc0", cisc0::installAssemblerParsingState);
+namespace syn {
+    void installExternalAddressAssemblers(void* env) {
+        cisc0::installAssemblerParsingState(env);
+    }
+}
