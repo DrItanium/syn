@@ -127,95 +127,89 @@ namespace syn {
 					return errorMessage(env, "CALL", 3, funcErrorPrefix, msg);
 				};
 
-				if (GetpType(value) == EXTERNAL_ADDRESS) {
-					CLIPSValue op;
-					if (!EnvArgTypeCheck(env, funcStr.c_str(), 2, SYMBOL, &op)) {
-						return errorMessage(env, "CALL", 2, funcErrorPrefix, "expected a function name to call!");
-					} else {
-						std::string str(EnvDOToString(env, op));
-                        auto result = Constants::nameToOperation(str);
-                        if (result == Operations::Error) {
-							CVSetBoolean(ret, false);
-							return callErrorMessage(str, "<- unknown operation requested!");
-						} else {
-							auto theOp = result;
-                            auto countResult = Constants::getArgCount(theOp);
-                            if (countResult == -1) {
-								CVSetBoolean(ret, false);
-								return callErrorMessage(str, "<- unknown argument count, not registered!!!");
-							}
-							auto count = 2 + countResult;
-							if (count != EnvRtnArgCount(env)) {
-								CVSetBoolean(ret, false);
-								return callErrorMessage(str, " too many arguments provided!");
-							}
-                            auto ptr = static_cast<Self_Ptr>(DOPToExternalAddress(value));
-                            auto readOperation = [ptr, ret, env]() {
-				                CLIPSValue tmp;
-                                if (!EnvArgTypeCheck(env, funcStr.c_str(), 3, INTEGER, &tmp)) {
-                                    CVSetBoolean(ret, false);
-                                    return errorMessage(env, "CALL", 3, funcErrorPrefix, "provided address is not an integer!");
-                                } else {
-									try {
-										auto address = static_cast<Address>(EnvDOToLong(env, tmp));
-										CVSetInteger(ret, ptr->read(address));
-										return true;
-									} catch(syn::Problem p) {
-										CVSetBoolean(ret, false);
-										return errorMessage(env, "CALL", 3, funcErrorPrefix, p.what());
-									}
-                                }
-                            };
-                            auto writeOperation = [ptr, ret, env]() {
-                                CLIPSValue t0, t1;
-                                if (!EnvArgTypeCheck(env, funcStr.c_str(), 3, INTEGER, &t0)) {
-                                    CVSetBoolean(ret, false);
-                                    return errorMessage(env, "CALL", 3, funcErrorPrefix, "provided address is not an integer!");
-                                } else if (!EnvArgTypeCheck(env, funcStr.c_str(), 4, INTEGER, &t1)) {
-                                    CVSetBoolean(ret, false);
-                                    return errorMessage(env, "CALL", 3, funcErrorPrefix, "provided value is not an integer!");
-                                } else {
-									try {
-										CVSetBoolean(ret, true);
-										auto address = static_cast<Address>(EnvDOToLong(env, t0));
-										auto value = static_cast<Data>(EnvDOToLong(env, t1));
-                                        ptr->write(address, value);
-										return true;
-									} catch(syn::Problem p) {
-										CVSetBoolean(ret, false);
-										return errorMessage(env, "CALL", 3, funcErrorPrefix, p.what());
-									}
-                                }
-                            };
-							switch(theOp) {
-                                case Operations::Type:
-                                    CVSetString(ret, Self::getType().c_str());
-                                    return true;
-                                case Operations::Shutdown:
-                                    CVSetBoolean(ret, true);
-                                    ptr->shutdown();
-                                    return true;
-                                case Operations::Initialize:
-                                    CVSetBoolean(ret, true);
-                                    ptr->initialize();
-                                    return true;
-								case Operations::Read:
-                                    return readOperation();
-                                case Operations::Write:
-                                    return writeOperation();
-                                case Operations::ListCommands:
-                                    return Constants::getCommandList(env, ret);
-								default:
-									CVSetBoolean(ret, false);
-									return callErrorMessage(str, "<- unimplemented operation!!!!");
-							}
-						}
-					}
-				} else {
-					return errorMessage(env, "CALL", 1, funcErrorPrefix, "Function call expected an external address as the first argument!");
-				}
-
-				return false;
+				if (GetpType(value) != EXTERNAL_ADDRESS) {
+                    return errorMessage(env, "CALL", 1, funcErrorPrefix, "Function call expected an external address as the first argument!");
+                }
+                CLIPSValue op;
+                if (!EnvArgTypeCheck(env, funcStr.c_str(), 2, SYMBOL, &op)) {
+                    return errorMessage(env, "CALL", 2, funcErrorPrefix, "expected a function name to call!");
+                }
+                std::string str(EnvDOToString(env, op));
+                auto result = Constants::nameToOperation(str);
+                if (result == Operations::Error) {
+                    CVSetBoolean(ret, false);
+                    return callErrorMessage(str, "<- unknown operation requested!");
+                }
+                auto theOp = result;
+                auto countResult = Constants::getArgCount(theOp);
+                if (countResult == -1) {
+                    CVSetBoolean(ret, false);
+                    return callErrorMessage(str, "<- unknown argument count, not registered!!!");
+                }
+                auto count = 2 + countResult;
+                if (count != EnvRtnArgCount(env)) {
+                    CVSetBoolean(ret, false);
+                    return callErrorMessage(str, " too many arguments provided!");
+                }
+                auto ptr = static_cast<Self_Ptr>(DOPToExternalAddress(value));
+                auto readOperation = [ptr, ret, env]() {
+                    CLIPSValue tmp;
+                    if (!EnvArgTypeCheck(env, funcStr.c_str(), 3, INTEGER, &tmp)) {
+                        CVSetBoolean(ret, false);
+                        return errorMessage(env, "CALL", 3, funcErrorPrefix, "provided address is not an integer!");
+                    }
+                    try {
+                        auto address = static_cast<Address>(EnvDOToLong(env, tmp));
+                        CVSetInteger(ret, ptr->read(address));
+                        return true;
+                    } catch(syn::Problem p) {
+                        CVSetBoolean(ret, false);
+                        return errorMessage(env, "CALL", 3, funcErrorPrefix, p.what());
+                    }
+                };
+                auto writeOperation = [ptr, ret, env]() {
+                    CLIPSValue t0, t1;
+                    if (!EnvArgTypeCheck(env, funcStr.c_str(), 3, INTEGER, &t0)) {
+                        CVSetBoolean(ret, false);
+                        return errorMessage(env, "CALL", 3, funcErrorPrefix, "provided address is not an integer!");
+                    } else if (!EnvArgTypeCheck(env, funcStr.c_str(), 4, INTEGER, &t1)) {
+                        CVSetBoolean(ret, false);
+                        return errorMessage(env, "CALL", 3, funcErrorPrefix, "provided value is not an integer!");
+                    } else {
+                        try {
+                            CVSetBoolean(ret, true);
+                            auto address = static_cast<Address>(EnvDOToLong(env, t0));
+                            auto value = static_cast<Data>(EnvDOToLong(env, t1));
+                            ptr->write(address, value);
+                            return true;
+                        } catch(syn::Problem p) {
+                            CVSetBoolean(ret, false);
+                            return errorMessage(env, "CALL", 3, funcErrorPrefix, p.what());
+                        }
+                    }
+                };
+                switch(theOp) {
+                    case Operations::Type:
+                        CVSetString(ret, Self::getType().c_str());
+                        return true;
+                    case Operations::Shutdown:
+                        CVSetBoolean(ret, true);
+                        ptr->shutdown();
+                        return true;
+                    case Operations::Initialize:
+                        CVSetBoolean(ret, true);
+                        ptr->initialize();
+                        return true;
+                    case Operations::Read:
+                        return readOperation();
+                    case Operations::Write:
+                        return writeOperation();
+                    case Operations::ListCommands:
+                        return Constants::getCommandList(env, ret);
+                    default:
+                        CVSetBoolean(ret, false);
+                        return callErrorMessage(str, "<- unimplemented operation!!!!");
+                }
             }
 			static void registerWithEnvironment(void* env, const char* title) {
 				Parent::registerWithEnvironment(env, title, callFunction, newFunction);

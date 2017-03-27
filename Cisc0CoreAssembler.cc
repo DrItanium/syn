@@ -66,6 +66,7 @@ namespace cisc0 {
 		std::vector<AssemblerWord> wordsToResolve;
 		void setCurrentAddress(Address addr) noexcept;
 		void output(std::ostream* out) noexcept;
+        void output(void* env, CLIPSValue* ret) noexcept;
 		void resolveInstructions();
 		void resolveDeclarations();
 	};
@@ -774,16 +775,48 @@ namespace cisc0 {
             using Self = AssemblerStateWrapper;
             using Parent = syn::ExternalAddressWrapper<AssemblerState>;
         public:
+            enum Operations {
+                Parse,
+                Resolve,
+                Get,
+                Count,
+            };
             static Self* make() noexcept {
                 return new Self();
             }
             static void registerWithEnvironment(void* env, const char* title) {
                 Parent::registerWithEnvironment(env, title, callFunction);
             }
+            static void registerWithEnvironment(void* env) {
+                static bool init = true;
+                static std::string func;
+                if (init) {
+                    init = false;
+                    func = Self::getType();
+                }
+                registerWithEnvironment(env, func.c_str());
+            }
             static bool callFunction(void* env, syn::DataObjectPtr value, syn::DataObjectPtr ret) {
                 static bool init = true;
                 static std::string funcStr;
                 static std::string funcErrorPrefix;
+                static std::map<std::string, Operations> ops = {
+                    { "parse", Operations::Parse },
+                    { "resolve", Operations::Resolve },
+                    { "get", Operations::Get },
+                };
+                static std::map<Operations, int> opArgCount = {
+                    { Operations::Parse, 1 },
+                    { Operations::Resolve, 0 },
+                    { Operations::Get, 0 },
+                };
+				auto callErrorMessage = [env, ret](const std::string& subOp, const std::string& rest) {
+					CVSetBoolean(ret, false);
+					std::stringstream stm;
+					stm << " " << subOp << ": " << rest << std::endl;
+					auto msg = stm.str();
+					return syn::errorMessage(env, "CALL", 3, funcErrorPrefix, msg);
+				};
 
                 if (init) {
                     init = false;
@@ -791,20 +824,97 @@ namespace cisc0 {
                     funcStr = std::get<1>(functions);
                     funcErrorPrefix = std::get<2>(functions);
                 }
-                if (GetpType(value) == EXTERNAL_ADDRESS) {
-                    return false;
-                } else {
+                if (GetpType(value) != EXTERNAL_ADDRESS) {
                     return syn::errorMessage(env, "CALL", 1, funcErrorPrefix, "Function call expected an external address as the first argument!");
                 }
+                CLIPSValue operation;
+                if (!EnvArgTypeCheck(env, funcStr.c_str(), 2, SYMBOL, &operation)) {
+                    return syn::errorMessage(env, "CALL", 2, funcErrorPrefix, "expected a function name to call!");
+                }
+                std::string str(EnvDOToString(env, operation));
+                auto result = ops.find(str);
+                if (result == ops.end()) {
+                    CVSetBoolean(ret, false);
+                    return callErrorMessage(str, " <- unknown operation requested!");
+                }
+                auto theOp = result->second;
+                auto cResult = opArgCount.find(theOp);
+                if (cResult == opArgCount.end()) {
+                    CVSetBoolean(ret, false);
+                    return callErrorMessage(str, " <- illegal argument count!");
+                }
+                auto aCount = 2 + cResult->second;
+                if (aCount != EnvRtnArgCount(env)) {
+                    CVSetBoolean(ret, false);
+                    return callErrorMessage(str, " too many arguments provided!");
+                }
+                auto ptr = static_cast<Self*>(DOPToExternalAddress(value));
+                auto parseLine = [env, ret, ptr]() {
+                    CLIPSValue line;
+                    if (!EnvArgTypeCheck(env, funcStr.c_str(), 3, STRING, &line)) {
+                        CVSetBoolean(ret, false);
+                        return syn::errorMessage(env, "CALL", 3, funcErrorPrefix, "provided assembly line is not a string!");
+                    }
+                    std::string str(EnvDOToString(env, line));
+                    auto result = ptr->parseLine(str);
+                    CVSetBoolean(ret, result);
+                    if (!result) {
+                        syn::errorMessage(env, "CALL", 3, funcErrorPrefix, "parse: error during parsing!");
+                    }
+                    return result;
+                };
+                switch(theOp) {
+                    case Operations::Parse:
+                        return parseLine();
+                    case Operations::Resolve:
+                        return ptr->resolve();
+                        return true;
+                    case Operations::Get:
+                        ptr-> getMultifield(env, ret);
+                        return true;
+                    default:
+                        CVSetBoolean(ret, false);
+                        return callErrorMessage(str, "<- unimlemented operation!!!!");
+                }
+                return false;
             }
         public:
             AssemblerStateWrapper() : Parent(std::move(std::make_unique<AssemblerState>())) { }
+            bool parseLine(const std::string& line);
+            bool resolve();
+            void getMultifield(void* env, CLIPSValuePtr ret);
+
     };
+    void AssemblerStateWrapper::getMultifield(void* env, CLIPSValuePtr ret) {
+        get()->output(env, ret);
+    }
+    bool AssemblerStateWrapper::resolve() {
+        get()->resolveDeclarations();
+        get()->resolveInstructions();
+        return true;
+    }
+    bool AssemblerStateWrapper::parseLine(const std::string& line) {
+        auto& ref = *(get());
+        return pegtl::parse_string<cisc0::Main, cisc0::Action>(line, "clips-input", ref);
+    }
+    void AssemblerState::output(void* env, CLIPSValue* ret) noexcept {
+        // we need to build a multifield out of the finalWords
+        syn::MultifieldBuilder f(env, finalWords.size() * 2);
+        int i = 1;
+        for (auto q : finalWords) {
+            // add them two at a time!
+            f.setField(i, INTEGER, EnvAddLong(env, q.getAddress()));
+            f.setField(i + 1, INTEGER, EnvAddLong(env, q.getValue()));
+            i += 2;
+        }
+        f.assign(ret);
+    }
     void installAssemblerParsingState(void* env) {
         // AssemblerState needs to be an external address and we can have
         // multiple assembler states sitting around too!
         pegtl::analyze<cisc0::Main>();
         // make sure that the parser is still valid before we go any further!
+        AssemblerStateWrapper::registerWithEnvironment(env);
 
     }
 
