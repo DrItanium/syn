@@ -849,5 +849,7 @@ namespace iris {
     void installAssemblerParsingState(void* env) {
         pegtl::analyze<iris::Main>();
         AssemblerStateWrapper::registerWithEnvironment(env);
+        AssemblerStateWrapper::registerWithEnvironment(env, "iris-asm-parser");
+        AssemblerStateWrapper::registerWithEnvironment(env, "iris-assembler");
     }
 }

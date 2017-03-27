@@ -917,6 +917,7 @@ namespace cisc0 {
         // make sure that the parser is still valid before we go any further!
         AssemblerStateWrapper::registerWithEnvironment(env);
         AssemblerStateWrapper::registerWithEnvironment(env, "cisc0-asm-parser");
+        AssemblerStateWrapper::registerWithEnvironment(env, "cisc0-assembler");
     }
 
 }
