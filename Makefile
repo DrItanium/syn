@@ -10,6 +10,9 @@ ARCH_OBJECTS = IrisCore.o \
 			   ${DEVICES} \
 			   ${MACHINE_OBJECTS}
 
+ASM_PARSERS_OBJECTS = Cisc0CoreAssembler.o \
+					  IrisCoreAssembler.o \
+
 COMMON_THINGS = Core.o \
 				WrappedIODevice.o \
 				IOController.o \
@@ -21,12 +24,11 @@ SIM_OBJECTS = Simulator.o \
 			  CoreRegistrar.o \
 			  RegisteredCores.o \
 			  ${ARCH_OBJECTS} \
+			  ${ASM_PARSERS_OBJECTS} \
 			  ${COMMON_THINGS}
 
 SIM_BINARY = syn_sim
 
-ASM_PARSERS_OBJECTS = Cisc0CoreAssembler.o \
-					  IrisCoreAssembler.o \
 
 ASM_OBJECTS = Assembler.o \
 			  AssemblerRegistrar.o \
@@ -57,6 +59,7 @@ LINK_OBJECTS = Linker.o \
 				${ARCH_OBJECTS} \
 				CoreRegistrar.o \
 				RegisteredCores.o \
+				${ASM_PARSERS_OBJECTS} \
 			  ${COMMON_THINGS}
 
 LINK_BINARY = syn_link
