@@ -273,6 +273,8 @@ namespace syn {
 	}
 	template<typename T>
 	using Block = T[];
+
+#define argCheck(storage, position, type) EnvArgTypeCheck(env, funcStr.c_str(), position, type, storage)
 	template<typename Word>
 	class ManagedMemoryBlock : public ExternalAddressWrapper<Block<Word>> {
 		public:
@@ -285,7 +287,6 @@ namespace syn {
 				return new ManagedMemoryBlock(capacity);
 			}
 			using ManagedMemoryBlock_Ptr = ManagedMemoryBlock*;
-#define argCheck(storage, position, type) EnvArgTypeCheck(env, funcStr.c_str(), position, type, storage)
 			static void newFunction(void* env, DataObjectPtr ret) {
 				static bool init = true;
 				static std::string funcStr;
@@ -544,18 +545,18 @@ namespace syn {
 			}
 #undef argCheck
 
-			static void registerWithEnvironment(void* env, const char* title) { 
-				Parent::registerWithEnvironment(env, title, newFunction, callFunction); 
+			static void registerWithEnvironment(void* env, const char* title) {
+				Parent::registerWithEnvironment(env, title, callFunction, newFunction);
 			}
 
-			static void registerWithEnvironment(void* env) { 
+			static void registerWithEnvironment(void* env) {
 				static bool init = true;
 				static std::string func;
 				if (init) {
 					init = false;
 					func = Parent::getType();
 				}
-				registerWithEnvironment(env, func.c_str()); 
+				registerWithEnvironment(env, func.c_str());
 			}
 		public:
 			ManagedMemoryBlock(Address capacity) : Parent(std::move(std::make_unique<WordBlock>(capacity))), _capacity(capacity) { }
@@ -585,7 +586,7 @@ namespace syn {
 	using StandardManagedMemoryBlock = ManagedMemoryBlock<CLIPSInteger>;
 #define DefMemoryBlock(name, type, alias) \
 	DefWrapperSymbolicName(Block< type > , name ); \
-	using alias = ManagedMemoryBlock< type > 
+	using alias = ManagedMemoryBlock< type >
 	DefMemoryBlock("memory-block:uint16", uint16_t, ManagedMemoryBlock_uint16);
 #undef DefMemoryBlock
 

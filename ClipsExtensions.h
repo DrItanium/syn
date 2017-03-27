@@ -105,6 +105,8 @@ void CLIPS_basePrintAddress(void* env, const char* logicalName, void* theValue) 
 	CLIPS_basePrintAddress(env, logicalName, theValue, func.c_str(), "Wrapper");
 }
 
+bool errorMessage(void* env, const std::string& idClass, int idIndex, const std::string& msgPrefix, const std::string& msg) noexcept;
+
 // Have to do it this way because std::function's will go out of scope and
 // everything breaks
 typedef void PrintFunction(void*, const char*, void*);
@@ -114,10 +116,36 @@ typedef void NewFunction(void*, DataObjectPtr);
 
 
 template<typename T>
+struct WrappedNewCallBuilder {
+    WrappedNewCallBuilder() = delete;
+    ~WrappedNewCallBuilder() = delete;
+    WrappedNewCallBuilder(const WrappedNewCallBuilder&) = delete;
+    WrappedNewCallBuilder(WrappedNewCallBuilder&&) = delete;
+    // by default, any wrapped IO device can accept zero arguments
+    static T* invokeNewFunction(void* env, CLIPSValuePtr ret, const std::string& funcErrorPrefix, const std::string& function) noexcept {
+        using InternalType = T;
+        try {
+            if (EnvRtnArgCount(env) == 1) {
+                return new InternalType();
+            } else {
+                errorMessage(env, "NEW", 2, funcErrorPrefix, " no arguments should be provided for function new!");
+            }
+        } catch (syn::Problem p) {
+            CVSetBoolean(ret, false);
+            std::stringstream s;
+            s << "an exception was thrown: " << p.what();
+            auto str = s.str();
+            errorMessage(env, "NEW", 2, funcErrorPrefix, str);
+        }
+        return nullptr;
+    }
+};
+template<typename T>
 class ExternalAddressWrapper {
 	public:
 		using InternalType = T;
 		using BaseClass = ExternalAddressWrapper<T>;
+        using Self = BaseClass;
 		static std::string getType() noexcept { return TypeToName<InternalType>::getSymbolicName(); }
 		static unsigned int getAssociatedEnvironmentId(void* env) { return ExternalAddressRegistrar<InternalType>::getExternalAddressId(env); }
 		static void registerWithEnvironment(void* env, externalAddressType* description) noexcept {
@@ -133,7 +161,29 @@ class ExternalAddressWrapper {
 			}
 			return true;
 		}
-		static void registerWithEnvironment(void* env, const char* title, NewFunction _new, CallFunction _call, DeleteFunction _delete = deleteWrapper, PrintFunction _print = printAddress) {
+        static void newFunction(void* env, CLIPSValue* ret) {
+            static auto init = true;
+            static std::string funcStr;
+            static std::string funcErrorPrefix;
+            if (init) {
+                init = false;
+                std::stringstream ss, ss2;
+                ss << "new (" << getType() << ")";
+                funcStr = ss.str();
+                ss2 << "Function " << funcStr;
+                funcErrorPrefix = ss2.str();
+            }
+            auto ptr = WrappedNewCallBuilder<InternalType>::invokeNewFunction(env, ret, funcErrorPrefix, funcStr);
+            if (ptr) {
+                auto idIndex = Self::getAssociatedEnvironmentId(env);
+                ret->bitType = EXTERNAL_ADDRESS_TYPE;
+                SetpType(ret, EXTERNAL_ADDRESS);
+                SetpValue(ret, EnvAddExternalAddress(env, new Self(ptr), idIndex));
+            } else {
+                CVSetBoolean(ret, false);
+            }
+        }
+		static void registerWithEnvironment(void* env, const char* title, CallFunction _call, NewFunction _new = newFunction, DeleteFunction _delete = deleteWrapper, PrintFunction _print = printAddress) {
 			externalAddressType tmp = {
 				title,
 				_print,
@@ -149,6 +199,7 @@ class ExternalAddressWrapper {
 		}
 	public:
 		ExternalAddressWrapper(std::unique_ptr<T>&& value) : _value(std::move(value)) { }
+        ExternalAddressWrapper(T* ptr) : _value(std::move(std::unique_ptr<T>(ptr))) { }
 		inline T* get() const noexcept { return _value.get(); }
         T* operator->() const noexcept { return get(); }
 	protected:
@@ -211,7 +262,6 @@ class FixedSizeMultifieldBuilder {
         void* _rawMultifield;
 };
 
-bool errorMessage(void* env, const std::string& idClass, int idIndex, const std::string& msgPrefix, const std::string& msg) noexcept;
 
 }
 #endif

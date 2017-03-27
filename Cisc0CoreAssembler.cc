@@ -41,7 +41,14 @@
 #include <pegtl/contrib/abnf.hh>
 #include <pegtl/parse.hh>
 #include <vector>
+#include "ClipsExtensions.h"
 
+namespace cisc0 {
+    struct AssemblerState;
+}
+namespace syn {
+    DefWrapperSymbolicName(cisc0::AssemblerState, "cisc0:assembly-parsing-state");
+}
 namespace cisc0 {
 	using Separator = syn::AsmSeparator;
 	using SingleLineComment = syn::SingleLineComment<';'>;
@@ -762,4 +769,23 @@ namespace cisc0 {
 			out->write(buf, 8);
 		}
 	}
+    class AssemblerStateWrapper : public syn::ExternalAddressWrapper<AssemblerState> {
+        public:
+            using Self = AssemblerStateWrapper;
+            using Parent = syn::ExternalAddressWrapper<AssemblerState>;
+        public:
+            static Self* make() noexcept {
+                return new Self();
+            }
+        public:
+            AssemblerStateWrapper() : Parent(std::move(std::make_unique<AssemblerState>())) { }
+    };
+    void installAssemblerParsingState(void* env) {
+        // AssemblerState needs to be an external address and we can have
+        // multiple assembler states sitting around too!
+        pegtl::analyze<cisc0::Main>();
+        // make sure that the parser is still valid before we go any further!
+
+    }
+
 }

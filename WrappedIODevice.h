@@ -222,7 +222,7 @@ namespace syn {
 				return false;
             }
 			static void registerWithEnvironment(void* env, const char* title) {
-				Parent::registerWithEnvironment(env, title, newFunction, callFunction);
+				Parent::registerWithEnvironment(env, title, callFunction, newFunction);
 			}
 			static void registerWithEnvironment(void* env, const std::string& str) {
 				registerWithEnvironment(env, str.c_str());
