@@ -24,21 +24,14 @@
  */
 
 
-extern "C" {
-	#include "clips.h"
-}
-#include "ClipsExtensions.h"
+// register all of the machine cores here since the cores should not be aware
+// of these kinds of registrations
+#include "Problem.h"
+#include "RegisterEntry.h"
 #include "AssemblerExternalAddressRegistrar.h"
+#include "Cisc0ClipsExtensions.h"
+#include "Cisc0Core.h"
 
-static void *mainEnv;
-
-int main(int argc, char* argv[]) {
-	mainEnv = CreateEnvironment();
-	// install features here
-	syn::installExtensions(mainEnv);
-    syn::externalAddressInstallerRegistry.install(mainEnv);
-	RerouteStdin(mainEnv, argc, argv);
-	CommandLoop(mainEnv);
-	DestroyEnvironment(mainEnv);
-	return -1;
-}
+template<typename T>
+using RegisterExternalAddressAssembler = syn::RegisterEntry<syn::AssemblerExternalAddressRegistrar, T>;
+static RegisterExternalAddressAssembler<cisc0::Core> cisc0Core(syn::externalAddressInstallerRegistry, "cisc0", cisc0::installAssemblerParsingState);

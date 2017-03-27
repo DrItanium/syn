@@ -24,21 +24,25 @@
  */
 
 
-extern "C" {
-	#include "clips.h"
-}
-#include "ClipsExtensions.h"
+#include <sstream>
+#include "Problem.h"
 #include "AssemblerExternalAddressRegistrar.h"
 
-static void *mainEnv;
+#include <map>
 
-int main(int argc, char* argv[]) {
-	mainEnv = CreateEnvironment();
-	// install features here
-	syn::installExtensions(mainEnv);
-    syn::externalAddressInstallerRegistry.install(mainEnv);
-	RerouteStdin(mainEnv, argc, argv);
-	CommandLoop(mainEnv);
-	DestroyEnvironment(mainEnv);
-	return -1;
+namespace syn {
+    void AssemblerExternalAddressRegistrar::install(void* env) {
+        for (auto a : assemblers) {
+            a.second(env);
+        }
+    }
+
+	void AssemblerExternalAddressRegistrar::registerExternalAddress(const std::string& name, AssemblerExternalAddressRegistrar::Operation op) {
+		assemblers.emplace(name, op);
+	}
+
+	AssemblerExternalAddressRegistrar::AssemblerExternalAddressRegistrar() { }
+	AssemblerExternalAddressRegistrar::~AssemblerExternalAddressRegistrar() { }
+
+	AssemblerExternalAddressRegistrar externalAddressInstallerRegistry;
 }

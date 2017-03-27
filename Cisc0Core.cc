@@ -31,6 +31,7 @@
 #include <utility>
 #include <map>
 #include "IrisCoreSecondaryStorageController.h"
+#include "Cisc0ClipsExtensions.h"
 
 namespace cisc0 {
     /*
@@ -115,12 +116,13 @@ namespace cisc0 {
     Core::~Core() noexcept { }
 
     void Core::initialize() {
+        cisc0::installAssemblerParsingState(_bus.getRawEnvironment());
 		gpr.initialize();
 		_bus.initialize();
 		getInstructionPointer() = ArchitectureConstants::StartingIPAddress;
     }
 
-    void Core::shutdown() { 
+    void Core::shutdown() {
 		_bus.shutdown();
 	}
 

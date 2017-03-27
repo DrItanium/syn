@@ -42,6 +42,7 @@
 #include <pegtl/parse.hh>
 #include <vector>
 #include "ClipsExtensions.h"
+#include "Cisc0ClipsExtensions.h"
 
 namespace cisc0 {
     struct AssemblerState;
@@ -915,7 +916,6 @@ namespace cisc0 {
         pegtl::analyze<cisc0::Main>();
         // make sure that the parser is still valid before we go any further!
         AssemblerStateWrapper::registerWithEnvironment(env);
-
     }
 
 }

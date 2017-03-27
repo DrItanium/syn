@@ -24,21 +24,29 @@
  */
 
 
-extern "C" {
-	#include "clips.h"
-}
-#include "ClipsExtensions.h"
-#include "AssemblerExternalAddressRegistrar.h"
+#ifndef SYN_ASSEMBLER_EXTERNAL_ADDRESSES_H
+#define SYN_ASSEMBLER_EXTERNAL_ADDRESSES_H
+#include <string>
+#include <cstdio>
+#include <iostream>
+#include <functional>
+#include <map>
+namespace syn {
+	class AssemblerExternalAddressRegistrar {
+		public:
+            using Operation = std::function<void(void*)>;
+			using AssemblerList = std::map<std::string, Operation>;
+			AssemblerExternalAddressRegistrar();
+			virtual ~AssemblerExternalAddressRegistrar();
+            void install(void* env);
+			void registerExternalAddress(const std::string& target, Operation op);
+            // shim so that the register entry class can be used as is
+            void addToRegistry(const std::string& target, Operation op) { registerExternalAddress(target, op); }
+		private:
+			AssemblerList assemblers;
+	};
 
-static void *mainEnv;
-
-int main(int argc, char* argv[]) {
-	mainEnv = CreateEnvironment();
-	// install features here
-	syn::installExtensions(mainEnv);
-    syn::externalAddressInstallerRegistry.install(mainEnv);
-	RerouteStdin(mainEnv, argc, argv);
-	CommandLoop(mainEnv);
-	DestroyEnvironment(mainEnv);
-	return -1;
+	extern AssemblerExternalAddressRegistrar externalAddressInstallerRegistry;
 }
+
+#endif // end SYN_ASSEMBLER_EXTERNAL_ADDRESSES_H

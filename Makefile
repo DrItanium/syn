@@ -32,17 +32,24 @@ ASM_OBJECTS = Assembler.o \
 			  AssemblerRegistrar.o \
 			  RegisteredAssemblers.o \
 			  ${COMMON_THINGS} \
-				${ARCH_OBJECTS} \
-				CoreRegistrar.o \
-				RegisteredCores.o \
+			  ${ARCH_OBJECTS} \
+			  CoreRegistrar.o \
+			  RegisteredCores.o \
 			  ${ASM_PARSERS_OBJECTS}
 
-REPL_BINARY = syn_repl
+REPL_BINARY = xsyn_repl
 
-REPL_OBJECTS= Repl.o \
+REPL_OBJECTS= ReplBootstrap.o \
 			  ${COMMON_THINGS}
 
-ASM_PARSERS =
+REPL_FINAL_BINARY = syn_repl
+
+REPL_FINAL_OBJECTS = Repl.o \
+					 ${COMMON_THINGS} \
+					 ${ARCH_OBJECTS} \
+					 RegisteredExternalAddressAssemblers.o \
+					 AssemblerExternalAddressRegistrar.o \
+					 ${ASM_PARSERS_OBJECTS} \
 
 ASM_BINARY = syn_asm
 
@@ -58,7 +65,8 @@ ALL_BINARIES = ${SIM_BINARY} \
 			   ${ASM_BINARY} \
 			   ${LINK_BINARY} \
 			   ${REPL_BINARY} \
-			   ${BOOTSTRAP_BINARY}
+			   ${BOOTSTRAP_BINARY} \
+			   ${REPL_FINAL_BINARY}
 
 DEFINE_OBJECTS = iris_defines.h \
 				 cisc0_defines.h \
@@ -75,7 +83,8 @@ ALL_OBJECTS = ${COMMON_THINGS} \
 			  ${REPL_OBJECTS} \
 			  ${DEFINE_OBJECTS} \
 			  ${BOOTSTRAP_OBJECTS} \
-			  ${DEFINE_CLPS}
+			  ${DEFINE_CLPS} \
+			  ${REPL_FINAL_OBJECTS}
 
 
 
@@ -158,6 +167,11 @@ ${REPL_BINARY}: ${REPL_OBJECTS}
 	@${CXX} ${LIBS} -o ${REPL_BINARY} ${REPL_OBJECTS}
 	@echo done.
 
+${REPL_FINAL_BINARY}: ${REPL_BINARY} ${REPL_FINAL_OBJECTS}
+	@echo -n Building ${REPL_FINAL_BINARY} binary out of $^...
+	@${CXX} ${LDFLAGS} -o ${REPL_FINAL_BINARY} ${REPL_FINAL_OBJECTS}
+	@echo done.
+
 ${BOOTSTRAP_BINARY}: ${BOOTSTRAP_OBJECTS}
 	@echo -n Building ${BOOTSTRAP_BINARY} binary out of $^...
 	@${CXX} ${LIBS} -o ${BOOTSTRAP_BINARY} ${BOOTSTRAP_OBJECTS}
@@ -165,7 +179,7 @@ ${BOOTSTRAP_BINARY}: ${BOOTSTRAP_OBJECTS}
 
 clean:
 	@echo -n Cleaning...
-	@rm -f ${ALL_OBJECTS} ${ALL_BINARIES} ${ASM_PARSERS} scheme init.scm maya libmaya.a
+	@rm -f ${ALL_OBJECTS} ${ALL_BINARIES} maya libmaya.a
 	@echo done.
 	@echo "Cleaning maya..."
 	@cd misc/maya && $(MAKE) clean
@@ -207,6 +221,9 @@ cisc0_defines.h: ${REPL_BINARY} ${COMMON_GEN_ENCODER_DECODER_FILES} def/cisc0/in
 
 
 Assembler.o: Assembler.cc Problem.h AssemblerRegistrar.h
+AssemblerBase.o: AssemblerBase.cc
+AssemblerExternalAddressRegistrar.o: AssemblerExternalAddressRegistrar.cc \
+ Problem.h AssemblerExternalAddressRegistrar.h
 AssemblerRegistrar.o: AssemblerRegistrar.cc Problem.h \
  AssemblerRegistrar.h
 Cisc0Core.o: Cisc0Core.cc Cisc0Core.h Base.h Problem.h ExecutionUnits.h \
@@ -239,8 +256,9 @@ Cisc0Core.o: Cisc0Core.cc Cisc0Core.h Base.h Problem.h ExecutionUnits.h \
  misc/maya/classexm.h misc/maya/classinf.h misc/maya/classini.h \
  misc/maya/classpsr.h misc/maya/defins.h misc/maya/inscom.h \
  misc/maya/insfun.h misc/maya/insfile.h misc/maya/msgcom.h \
- misc/maya/msgpass.h misc/maya/objrtmch.h cisc0_defines.h \
- IrisCoreSecondaryStorageController.h IrisCoreTypes.h
+ misc/maya/msgpass.h misc/maya/objrtmch.h IOController.h \
+ WrappedIODevice.h cisc0_defines.h IrisCoreSecondaryStorageController.h \
+ IrisCoreTypes.h Cisc0ClipsExtensions.h
 Cisc0CoreAssembler.o: Cisc0CoreAssembler.cc Base.h Problem.h \
  AssemblerBase.h Cisc0Core.h ExecutionUnits.h IODevice.h Device.h Core.h \
  ClipsExtensions.h misc/maya/clips.h misc/maya/setup.h \
@@ -272,7 +290,8 @@ Cisc0CoreAssembler.o: Cisc0CoreAssembler.cc Base.h Problem.h \
  misc/maya/classinf.h misc/maya/classini.h misc/maya/classpsr.h \
  misc/maya/defins.h misc/maya/inscom.h misc/maya/insfun.h \
  misc/maya/insfile.h misc/maya/msgcom.h misc/maya/msgpass.h \
- misc/maya/objrtmch.h cisc0_defines.h
+ misc/maya/objrtmch.h IOController.h WrappedIODevice.h cisc0_defines.h \
+ Cisc0ClipsExtensions.h
 ClipsExtensions.o: ClipsExtensions.cc ClipsExtensions.h Base.h Problem.h \
  misc/maya/clips.h misc/maya/setup.h misc/maya/os_shim.h \
  misc/maya/platform.h misc/maya/envrnmnt.h misc/maya/symbol.h \
@@ -504,6 +523,9 @@ RegisteredCores.o: RegisteredCores.cc Problem.h RegisterEntry.h \
  misc/maya/insfile.h misc/maya/msgcom.h misc/maya/msgpass.h \
  misc/maya/objrtmch.h IOController.h WrappedIODevice.h IrisCoreTypes.h \
  iris_defines.h Cisc0Core.h cisc0_defines.h
+RegisteredExternalAddressAssemblers.o: \
+ RegisteredExternalAddressAssemblers.cc Problem.h RegisterEntry.h \
+ AssemblerExternalAddressRegistrar.h Cisc0ClipsExtensions.h
 Repl.o: Repl.cc misc/maya/clips.h misc/maya/setup.h misc/maya/os_shim.h \
  misc/maya/platform.h misc/maya/envrnmnt.h misc/maya/symbol.h \
  misc/maya/usrsetup.h misc/maya/argacces.h misc/maya/expressn.h \

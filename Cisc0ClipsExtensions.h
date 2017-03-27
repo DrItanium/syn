@@ -22,23 +22,11 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#ifndef CISC0_CLIPS_EXTENSIONS_H
+#define CISC0_CLIPS_EXTENSIONS_H
 
-
-extern "C" {
-	#include "clips.h"
+namespace cisc0 {
+    void installAssemblerParsingState(void* env);
 }
-#include "ClipsExtensions.h"
-#include "AssemblerExternalAddressRegistrar.h"
 
-static void *mainEnv;
-
-int main(int argc, char* argv[]) {
-	mainEnv = CreateEnvironment();
-	// install features here
-	syn::installExtensions(mainEnv);
-    syn::externalAddressInstallerRegistry.install(mainEnv);
-	RerouteStdin(mainEnv, argc, argv);
-	CommandLoop(mainEnv);
-	DestroyEnvironment(mainEnv);
-	return -1;
-}
+#endif

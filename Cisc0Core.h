@@ -385,7 +385,6 @@ namespace cisc0 {
 	};
 	Core* newCore() noexcept;
 	void assemble(const std::string& iName, FILE* input, std::ostream* output);
-    void installAssemblerParsingState(void* env);
 #define DefSubtypeConversion(op, type) \
     template<> \
     struct DecodedInstruction::SubtypeConversion<Operation:: op > { \
