@@ -40,7 +40,15 @@
 #include <pegtl/contrib/abnf.hh>
 #include <pegtl/parse.hh>
 #include <vector>
+#include "IrisClipsExtensions.h"
+#include "ClipsExtensions.h"
 
+namespace iris {
+    class AssemblerState;
+}
+namespace syn {
+    DefWrapperSymbolicName(iris::AssemblerState, "iris:assembly-parsing-state");
+}
 namespace iris {
     template<typename Rule > struct Action : public pegtl::nothing<Rule> { };
 	void reportError(const std::string& msg) {
@@ -63,6 +71,9 @@ namespace iris {
 		void reset() noexcept;
 		void setImmediate(word value) noexcept;
 		bool shouldResolveLabel() noexcept { return fullImmediate && hasLexeme; }
+        dword encode();
+
+
 	};
 
 	void AssemblerData::reset() noexcept {
@@ -161,10 +172,18 @@ namespace iris {
 			LabelIterator endLabel() { return labelMap.end(); }
 			ConstLabelIterator endLabel() const { return labelMap.end(); }
 			void applyToFinishedData(std::function<void(AssemblerData&)> fn) {
-				for(auto & value : finishedData) {
-					fn(value);
-				}
+                applyToFinishedData([fn](AssemblerData& value, size_t _) { fn(value); });
 			}
+            void applyToFinishedData(std::function<void(AssemblerData&, size_t)> fn) {
+                size_t index = 0;
+				for(auto & value : finishedData) {
+					fn(value, index);
+                    ++index;
+				}
+            }
+            size_t getNumberOfFinishedElements() const {
+                return finishedData.size();
+            }
 		private:
 			word currentDataIndex;
 			word currentCodeIndex;
@@ -612,6 +631,13 @@ namespace iris {
 		finishedData.emplace_back(copy);
 		resetCurrentData();
 	}
+    raw_instruction AssemblerData::encode() {
+        if (instruction) {
+            return iris::encodeInstruction(group, operation, destination, source0, source1);
+        } else {
+            return dataValue;
+        }
+    }
 	void resolveLabels(AssemblerState& state, std::ostream& output) {
 		// now that we have instructions, we need to print them out as hex values
 		char buf[8] = { 0 };
@@ -657,4 +683,171 @@ namespace iris {
 		pegtl::parse_cstream<iris::Main, iris::Action>(input, iName.c_str(), 16777216, state);
 		resolveLabels(state, *output);
 	}
+
+    class AssemblerStateWrapper : public syn::ExternalAddressWrapper<AssemblerState> {
+
+        public:
+            using Self = AssemblerStateWrapper;
+            using Parent = syn::ExternalAddressWrapper<AssemblerState>;
+            static Self* make() noexcept { return new Self(); }
+            static void registerWithEnvironment(void* env, const char* title) {
+                Parent::registerWithEnvironment(env, title, callFunction);
+            }
+            static void registerWithEnvironment(void* env) {
+                static bool init = true;
+                static std::string func;
+                if (init) {
+                    init = false;
+                    func = Self::getType();
+                }
+                registerWithEnvironment(env, func.c_str());
+            }
+            static bool callFunction(void* env, syn::DataObjectPtr value, syn::DataObjectPtr ret) {
+                static bool init = true;
+                static std::string funcStr;
+                static std::string funcErrorPrefix;
+                static std::map<std::string, Operations> ops = {
+                    { "parse", Operations::Parse },
+                    { "resolve", Operations::Resolve },
+                    { "get", Operations::Get },
+                };
+                static std::map<Operations, int> opArgCount = {
+                    { Operations::Parse, 1 },
+                    { Operations::Resolve, 0 },
+                    { Operations::Get, 0 },
+                };
+				auto callErrorMessage = [env, ret](const std::string& subOp, const std::string& rest) {
+					CVSetBoolean(ret, false);
+					std::stringstream stm;
+					stm << " " << subOp << ": " << rest << std::endl;
+					auto msg = stm.str();
+					return syn::errorMessage(env, "CALL", 3, funcErrorPrefix, msg);
+				};
+
+                if (init) {
+                    init = false;
+                    auto functions = syn::retrieveFunctionNames<AssemblerState>("call");
+                    funcStr = std::get<1>(functions);
+                    funcErrorPrefix = std::get<2>(functions);
+                }
+                if (GetpType(value) != EXTERNAL_ADDRESS) {
+                    return syn::errorMessage(env, "CALL", 1, funcErrorPrefix, "Function call expected an external address as the first argument!");
+                }
+                CLIPSValue operation;
+                if (!EnvArgTypeCheck(env, funcStr.c_str(), 2, SYMBOL, &operation)) {
+                    return syn::errorMessage(env, "CALL", 2, funcErrorPrefix, "expected a function name to call!");
+                }
+                std::string str(EnvDOToString(env, operation));
+                auto result = ops.find(str);
+                if (result == ops.end()) {
+                    CVSetBoolean(ret, false);
+                    return callErrorMessage(str, " <- unknown operation requested!");
+                }
+                auto theOp = result->second;
+                auto cResult = opArgCount.find(theOp);
+                if (cResult == opArgCount.end()) {
+                    CVSetBoolean(ret, false);
+                    return callErrorMessage(str, " <- illegal argument count!");
+                }
+                auto aCount = 2 + cResult->second;
+                if (aCount != EnvRtnArgCount(env)) {
+                    CVSetBoolean(ret, false);
+                    return callErrorMessage(str, " too many arguments provided!");
+                }
+                auto ptr = static_cast<Self*>(DOPToExternalAddress(value));
+                auto parseLine = [env, ret, ptr]() {
+                    CLIPSValue line;
+                    if (!EnvArgTypeCheck(env, funcStr.c_str(), 3, STRING, &line)) {
+                        CVSetBoolean(ret, false);
+                        return syn::errorMessage(env, "CALL", 3, funcErrorPrefix, "provided assembly line is not a string!");
+                    }
+                    std::string str(EnvDOToString(env, line));
+                    auto result = ptr->parseLine(str);
+                    CVSetBoolean(ret, result);
+                    if (!result) {
+                        syn::errorMessage(env, "CALL", 3, funcErrorPrefix, "parse: error during parsing!");
+                    }
+                    return result;
+                };
+                switch(theOp) {
+                    case Operations::Parse:
+                        return parseLine();
+                    case Operations::Resolve:
+                        return ptr->resolve();
+                        return true;
+                    case Operations::Get:
+                        ptr-> getMultifield(env, ret);
+                        return true;
+                    default:
+                        CVSetBoolean(ret, false);
+                        return callErrorMessage(str, "<- unimlemented operation!!!!");
+                }
+                return false;
+            }
+        public:
+            enum Operations {
+                Parse,
+                Resolve,
+                Get,
+                Count,
+            };
+         public:
+            AssemblerStateWrapper() : Parent(std::move(std::make_unique<AssemblerState>())) { }
+            bool parseLine(const std::string& line);
+            bool resolve();
+            void getMultifield(void* env, CLIPSValuePtr ret);
+         private:
+            void output(void* env, CLIPSValue* ret) noexcept;
+    };
+
+    void AssemblerStateWrapper::getMultifield(void* env, CLIPSValuePtr ret) {
+        //get()->output(env, ret);
+        output(env, ret);
+    }
+    bool AssemblerStateWrapper::resolve() {
+        auto & state = *(get());
+		auto resolveLabel = [&state](AssemblerData& data) {
+			auto result = state.findLabel(data.currentLexeme);
+			if (result == state.endLabel()) {
+				std::stringstream msg;
+				msg << "ERROR: label " << data.currentLexeme << " is undefined!" << std::endl;
+				auto str = msg.str();
+				throw syn::Problem(str);
+			} else {
+				return result->second;
+			}
+		};
+        state.applyToFinishedData([resolveLabel](auto value, auto index) {
+                    if (value.shouldResolveLabel()) {
+                        if (value.instruction) {
+                            value.setImmediate(resolveLabel(value));
+                        } else {
+                            value.dataValue = resolveLabel(value);
+                        }
+                    }
+                });
+        return true;
+    }
+    bool AssemblerStateWrapper::parseLine(const std::string& line) {
+        auto& ref = *(get());
+        return pegtl::parse_string<iris::Main, iris::Action>(line, "clips-input", ref);
+    }
+    void AssemblerStateWrapper::output(void* env, CLIPSValue* ret) noexcept {
+        // we need to build a multifield out of the finalWords
+        auto & state = *(get());
+        syn::MultifieldBuilder f(env, state.getNumberOfFinishedElements() * 3);
+        auto body = [&f, env, ret](auto value, auto baseIndex) {
+            auto i = (3 * baseIndex) + 1;
+            f.setField(i + 0, INTEGER, EnvAddLong(env, value.instruction ? 0 : 1));
+            f.setField(i + 1, INTEGER, EnvAddLong(env, value.address));
+            f.setField(i + 2, INTEGER, EnvAddLong(env, value.encode()));
+        };
+        state.applyToFinishedData(body);
+        f.assign(ret);
+    }
+
+    void installAssemblerParsingState(void* env) {
+        pegtl::analyze<iris::Main>();
+        AssemblerStateWrapper::registerWithEnvironment(env);
+    }
 }

@@ -29,6 +29,7 @@
 #include <sstream>
 #include <vector>
 #include "IrisCoreSecondaryStorageController.h"
+#include "IrisClipsExtensions.h"
 
 namespace iris {
 	inline constexpr dword encodeDword(byte a, byte b, byte c, byte d) noexcept {
@@ -507,6 +508,7 @@ namespace iris {
 		instruction.initialize();
 		stack.initialize();
 		_io.initialize();
+        installAssemblerParsingState(_io.getRawEnvironment());
 		for (auto i = 0; i < _cr.getSize(); ++i) {
 			_cr[i] = false;
 		}
@@ -535,16 +537,10 @@ namespace iris {
 		return _cr[index];
 	}
 
-    constexpr raw_instruction encodeInstruction(byte group, byte operation, byte dest, byte src0, byte src1) noexcept {
-        return encodeSource1( encodeSource0( encodeDestination(encodeOperation( encodeGroup(0, group), operation), dest), src0), src1);
-    }
-    constexpr raw_instruction encodeInstruction(byte group, byte operation, byte dest, word immediate) noexcept {
-        return encodeInstruction(group, operation, dest, syn::getLowerHalf(immediate), syn::getUpperHalf(immediate));
-    }
-
     word Core::ioSpaceRead(word address) noexcept {
         return address == ArchitectureConstants::TerminateIOAddress ? 0 : _io.read(address);
     }
+
     void Core::ioSpaceWrite(word address, word value) noexcept {
         if (address == ArchitectureConstants::TerminateIOAddress) {
             // this is execution termination if you write to address zero in IO

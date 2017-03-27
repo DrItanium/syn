@@ -389,7 +389,7 @@ IrisCore.o: IrisCore.cc IrisCore.h Base.h Problem.h ExecutionUnits.h \
  misc/maya/insfun.h misc/maya/insfile.h misc/maya/msgcom.h \
  misc/maya/msgpass.h misc/maya/objrtmch.h IOController.h \
  WrappedIODevice.h IrisCoreTypes.h iris_defines.h \
- IrisCoreSecondaryStorageController.h
+ IrisCoreSecondaryStorageController.h IrisClipsExtensions.h
 IrisCoreAssembler.o: IrisCoreAssembler.cc Base.h Problem.h \
  AssemblerBase.h IrisCore.h ExecutionUnits.h IODevice.h Device.h Core.h \
  ClipsExtensions.h misc/maya/clips.h misc/maya/setup.h \
@@ -422,7 +422,7 @@ IrisCoreAssembler.o: IrisCoreAssembler.cc Base.h Problem.h \
  misc/maya/defins.h misc/maya/inscom.h misc/maya/insfun.h \
  misc/maya/insfile.h misc/maya/msgcom.h misc/maya/msgpass.h \
  misc/maya/objrtmch.h IOController.h WrappedIODevice.h IrisCoreTypes.h \
- iris_defines.h
+ iris_defines.h IrisClipsExtensions.h
 IrisCoreSecondaryStorageController.o: \
  IrisCoreSecondaryStorageController.cc IrisCoreTypes.h \
  IrisCoreSecondaryStorageController.h Base.h Problem.h ExecutionUnits.h \
@@ -525,7 +525,8 @@ RegisteredCores.o: RegisteredCores.cc Problem.h RegisterEntry.h \
  iris_defines.h Cisc0Core.h cisc0_defines.h
 RegisteredExternalAddressAssemblers.o: \
  RegisteredExternalAddressAssemblers.cc \
- AssemblerExternalAddressRegistrar.h Cisc0ClipsExtensions.h
+ AssemblerExternalAddressRegistrar.h Cisc0ClipsExtensions.h \
+ IrisClipsExtensions.h
 Repl.o: Repl.cc misc/maya/clips.h misc/maya/setup.h misc/maya/os_shim.h \
  misc/maya/platform.h misc/maya/envrnmnt.h misc/maya/symbol.h \
  misc/maya/usrsetup.h misc/maya/argacces.h misc/maya/expressn.h \

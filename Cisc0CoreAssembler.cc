@@ -916,6 +916,7 @@ namespace cisc0 {
         pegtl::analyze<cisc0::Main>();
         // make sure that the parser is still valid before we go any further!
         AssemblerStateWrapper::registerWithEnvironment(env);
+        AssemblerStateWrapper::registerWithEnvironment(env, "cisc0-asm-parser");
     }
 
 }

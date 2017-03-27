@@ -243,8 +243,12 @@ namespace iris {
 		};
 	Core* newCore() noexcept;
 	void assemble(const std::string& inputFileName, FILE* input, std::ostream* output);
-    constexpr raw_instruction encodeInstruction(byte group, byte operation, byte dest, byte src0, byte src1) noexcept;
-    constexpr raw_instruction encodeInstruction(byte group, byte operation, byte dest, word immediate) noexcept;
+    constexpr raw_instruction encodeInstruction(byte group, byte operation, byte dest, byte src0, byte src1) noexcept {
+        return encodeSource1( encodeSource0( encodeDestination(encodeOperation( encodeGroup(0, group), operation), dest), src0), src1);
+    }
+    constexpr raw_instruction encodeInstruction(byte group, byte operation, byte dest, word immediate) noexcept {
+        return encodeInstruction(group, operation, dest, syn::getLowerHalf(immediate), syn::getUpperHalf(immediate));
+    }
     template<bool upper>
     inline byte encode4Bits(byte dest, byte value) noexcept {
         if (upper) {

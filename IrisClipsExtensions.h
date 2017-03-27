@@ -22,17 +22,11 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#ifndef IRIS_CLIPS_EXTENSIONS_H
+#define IRIS_CLIPS_EXTENSIONS_H
 
-
-// register all of the machine cores here since the cores should not be aware
-// of these kinds of registrations
-#include "AssemblerExternalAddressRegistrar.h"
-#include "Cisc0ClipsExtensions.h"
-#include "IrisClipsExtensions.h"
-
-namespace syn {
-    void installExternalAddressAssemblers(void* env) {
-        cisc0::installAssemblerParsingState(env);
-        iris::installAssemblerParsingState(env);
-    }
+namespace iris {
+    void installAssemblerParsingState(void* env);
 }
+
+#endif
