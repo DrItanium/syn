@@ -113,6 +113,8 @@ class CLIPSIOController : public AddressableIODevice<D, A> {
 				throw syn::Problem("Calling write-to-io-address failed!");
 			}
 		}
+        std::string getBootstrapLocation() const noexcept { return _bootstrapLocation; }
+        void* getRawEnvironment() const noexcept { return _env; }
 	private:
 		std::string _bootstrapLocation;
 		void* _env;
