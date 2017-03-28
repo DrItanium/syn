@@ -257,8 +257,7 @@ Cisc0Core.o: Cisc0Core.cc Cisc0Core.h Base.h Problem.h ExecutionUnits.h \
  misc/maya/classpsr.h misc/maya/defins.h misc/maya/inscom.h \
  misc/maya/insfun.h misc/maya/insfile.h misc/maya/msgcom.h \
  misc/maya/msgpass.h misc/maya/objrtmch.h IOController.h \
- WrappedIODevice.h cisc0_defines.h \
- IrisCoreTypes.h Cisc0ClipsExtensions.h
+ WrappedIODevice.h cisc0_defines.h Cisc0ClipsExtensions.h
 Cisc0CoreAssembler.o: Cisc0CoreAssembler.cc Base.h Problem.h \
  AssemblerBase.h Cisc0Core.h ExecutionUnits.h IODevice.h Device.h Core.h \
  ClipsExtensions.h misc/maya/clips.h misc/maya/setup.h \
@@ -388,8 +387,7 @@ IrisCore.o: IrisCore.cc IrisCore.h Base.h Problem.h ExecutionUnits.h \
  misc/maya/classpsr.h misc/maya/defins.h misc/maya/inscom.h \
  misc/maya/insfun.h misc/maya/insfile.h misc/maya/msgcom.h \
  misc/maya/msgpass.h misc/maya/objrtmch.h IOController.h \
- WrappedIODevice.h IrisCoreTypes.h iris_defines.h \
-	IrisClipsExtensions.h
+ WrappedIODevice.h IrisCoreTypes.h iris_defines.h IrisClipsExtensions.h
 IrisCoreAssembler.o: IrisCoreAssembler.cc Base.h Problem.h \
  AssemblerBase.h IrisCore.h ExecutionUnits.h IODevice.h Device.h Core.h \
  ClipsExtensions.h misc/maya/clips.h misc/maya/setup.h \
