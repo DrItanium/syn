@@ -256,6 +256,7 @@ namespace cisc0 {
         }
     }
     void Core::compareOperation(DecodedInstruction&& inst) {
+        static constexpr auto group = Operation::Compare;
         static std::map<CompareStyle, CompareUnit::Operation> translationTable = {
             { CompareStyle::Equals, CompareUnit::Operation::Eq },
             { CompareStyle::NotEquals, CompareUnit::Operation::Neq },
@@ -266,8 +267,8 @@ namespace cisc0 {
         };
         DecodedInstruction next(tryReadNext<true>());
         auto first = registerValue(next.getCompareRegister<0>());
-        auto second = inst.getImmediateFlag<Operation::Compare>() ? next.getUpper() : registerValue(next.getCompareRegister<1>());
-        auto compareResult = translationTable.find(inst.getSubtype<Operation::Compare>());
+        auto second = inst.getImmediateFlag<group>() ? next.getUpper() : registerValue(next.getCompareRegister<1>());
+        auto compareResult = translationTable.find(inst.getSubtype<group>());
         throwIfNotFound(compareResult, translationTable, "Illegal compare type!");
         auto result = _compare(compareResult->second, first, second);
         // make sure that the condition takes up the entire width of the
@@ -276,11 +277,12 @@ namespace cisc0 {
     }
 
     void Core::memoryOperation(DecodedInstruction&& inst) {
-        auto rawMask = inst.getBitmask<Operation::Memory>();
+        static constexpr auto group = Operation::Memory;
+        auto rawMask = inst.getBitmask<group>();
         auto useLower = readLower(rawMask);
         auto useUpper = readUpper(rawMask);
         auto fullMask = mask(rawMask);
-        auto rawType = inst.getSubtype<Operation::Memory>();
+        auto rawType = inst.getSubtype<group>();
         auto memoryRegister = inst.getMemoryRegister();
         auto lmask = lowerMask(rawMask);
         auto umask = upperMask(rawMask);
@@ -377,8 +379,9 @@ namespace cisc0 {
     }
 
     void Core::shiftOperation(DecodedInstruction&& inst) {
+        static constexpr auto group = Operation::Shift;
         auto &destination = registerValue(inst.getShiftRegister<0>());
-        auto source = (inst.getImmediateFlag<Operation::Shift>() ? static_cast<RegisterValue>(inst.getImmediate<Operation::Shift>()) : registerValue(inst.getShiftRegister<1>()));
+        auto source = (inst.getImmediateFlag<group>() ? static_cast<RegisterValue>(inst.getImmediate<group>()) : registerValue(inst.getShiftRegister<1>()));
         destination = _shifter( inst.shouldShiftLeft() ? ALU::Operation::ShiftLeft : ALU::Operation::ShiftRight, destination, source);
     }
     void Core::arithmeticOperation(DecodedInstruction&& inst) {
@@ -389,16 +392,15 @@ namespace cisc0 {
             { ArithmeticOps::Div, ALU::Operation::Divide},
             { ArithmeticOps::Rem, ALU::Operation::Remainder},
         };
+        static constexpr auto group = Operation::Arithmetic;
         auto result = translationTable.find(inst.getSubtype<Operation::Arithmetic>());
         throwIfNotFound(result, translationTable, "Illegal arithmetic operation!");
         auto op = result->second;
-        auto src = inst.getImmediateFlag<Operation::Arithmetic>() ? inst.getImmediate<Operation::Arithmetic>() : registerValue(inst.getArithmeticRegister<1>());
+        auto src = inst.getImmediateFlag<group>() ? inst.getImmediate<group>() : registerValue(inst.getArithmeticRegister<1>());
         auto& dest = registerValue(inst.getArithmeticRegister<0>());
         dest = _alu(op, dest, src);
     }
     void Core::logicalOperation(DecodedInstruction&& inst) {
-        ALU::Operation op;
-        RegisterValue source1 = 0;
         static std::map<LogicalOps, ALU::Operation> dispatchTable = {
             { LogicalOps::Not, ALU::Operation::UnaryNot },
             { LogicalOps::Or, ALU::Operation::BinaryOr },
@@ -406,14 +408,11 @@ namespace cisc0 {
             { LogicalOps::Xor, ALU::Operation::BinaryXor },
             { LogicalOps::Nand, ALU::Operation::BinaryNand },
         };
+        static constexpr auto group = Operation::Logical;
         auto result = dispatchTable.find(inst.getSubtype<Operation::Logical>());
         throwIfNotFound(result, dispatchTable, "Illegal logical operation!");
-        op = result->second;
-        if (inst.getImmediateFlag<Operation::Logical>()) {
-            source1 = retrieveImmediate(inst.getBitmask<Operation::Logical>());
-        } else {
-            source1 = registerValue(inst.getLogicalRegister<1>());
-        }
+        auto op = result->second;
+        auto source1 = inst.getImmediateFlag<group>() ? retrieveImmediate(inst.getBitmask<group>()) : registerValue(inst.getLogicalRegister<1>());
         auto& dest = registerValue(inst.getLogicalRegister<0>());
         dest = _logicalOps(op, dest, source1);
     }

@@ -122,13 +122,12 @@ namespace iris {
 	}
 	void Core::dispatch() noexcept {
 		current = instruction[getInstructionPointer()];
-        auto getHalfImmediate = [this]() { return InstructionDecoder::getHalfImmediate(current); };
         auto getImmediate = [this]() { return InstructionDecoder::getImmediate(current); };
 		auto group = InstructionDecoder::getGroup(current);
 		auto updateStatusRegister = [this](auto fn, bool value) { _error = fn(_error, value); };
 		auto enableStatusRegisterBit = [this, updateStatusRegister](auto fn) { updateStatusRegister(fn, true); };
 		auto makeIllegalInstructionMessage = [this, enableStatusRegisterBit](const std::string& type) { enableStatusRegisterBit(encodeStatusIllegalInstruction); };
-		auto arithmeticOperation = [this, getHalfImmediate, updateStatusRegister, enableStatusRegisterBit, makeIllegalInstructionMessage]() {
+		auto arithmeticOperation = [this, updateStatusRegister, enableStatusRegisterBit, makeIllegalInstructionMessage]() {
 			static std::map<ArithmeticOp, UnitDescription<ALU>> table = {
 				{ ArithmeticOp::Add, makeDesc<ALU>(ALU::Operation::Add , false) },
 				{ ArithmeticOp::Sub, makeDesc<ALU>(ALU::Operation::Subtract , false ) },
@@ -190,7 +189,7 @@ namespace iris {
 				performOperation(_alu, result->second);
 			}
 		};
-		auto compareOperation = [this, getHalfImmediate, makeIllegalInstructionMessage]() {
+		auto compareOperation = [this, makeIllegalInstructionMessage]() {
 			static std::map<CompareOp, UnitDescription<CompareUnit>> translationTable = {
 				{ CompareOp::LessThan, makeDesc<CompareUnit>(CompareUnit::Operation::LessThan, false) },
 				{ CompareOp::LessThanImmediate, makeDesc<CompareUnit>(CompareUnit::Operation::LessThan, true) },
@@ -301,7 +300,7 @@ namespace iris {
 				}
 			}
 		};
-		auto moveOperation = [this, getHalfImmediate, getImmediate, makeIllegalInstructionMessage]() {
+		auto moveOperation = [this, getImmediate, makeIllegalInstructionMessage]() {
             auto getDestinationIndex = [this]() { return InstructionDecoder::getDestinationIndex(current); };
             auto getSource0Index = [this]() { return InstructionDecoder::getImmediate(current); };
 			auto op = InstructionDecoder::getOperation<MoveOp>(current);

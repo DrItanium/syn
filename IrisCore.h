@@ -157,6 +157,9 @@ namespace iris {
 			inline bool& predicateSource0() noexcept { return getPredicate<2>(); }
 			inline bool& predicateSource1() noexcept { return getPredicate<3>(); }
 
+            inline word getHalfImmediate() noexcept {
+                return InstructionDecoder::getHalfImmediate(current);
+            }
 		private:
 			void saveSystemState() noexcept;
 			void restoreSystemState() noexcept;
@@ -166,7 +169,7 @@ namespace iris {
 		private:
 			template<typename Unit>
 			void performOperation(Unit& unit, typename Unit::Operation op, bool immediate) {
-				destinationRegister() = unit(op, source0Register(), (immediate ? InstructionDecoder::getHalfImmediate(current) : source1Register()));
+				destinationRegister() = unit(op, source0Register(), (immediate ? getHalfImmediate() : source1Register()));
 			}
 			template<typename Unit>
 			inline void performOperation(Unit& unit, std::tuple<typename Unit::Operation, bool>& tuple) {
