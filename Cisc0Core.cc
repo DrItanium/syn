@@ -227,6 +227,11 @@ namespace cisc0 {
         std::tie(isIf, isCall, isCond) = inst.getOtherBranchFlags();
         advanceIp = true;
         auto choice = getConditionRegister() != 0;
+        auto readAddress = [this]() {
+            auto lower = static_cast<RegisterValue>(tryReadNext<true>());
+            auto upper = static_cast<RegisterValue>(tryReadNext<true>()) << 16;
+            return lower | upper;
+        };
         if (isIf) {
             advanceIp = false;
             if (isCall) {
@@ -241,32 +246,12 @@ namespace cisc0 {
             // determine next
             auto length = isImm ? 2 : 1;
 			pushDword(getInstructionPointer() + length);
-
-            auto address = 0u;
-            if (isImm) {
-                // make a 24 bit number
-                // we should always read the next value
-                auto lower16 = static_cast<RegisterValue>(tryReadNext<true>());
-				auto upper16 = static_cast<RegisterValue>(tryReadNext<true>()) << 16;
-                address = upper16 | lower16;
-            } else {
-                address = registerValue(inst.getBranchIndirectDestination());
-            }
-            getInstructionPointer() = address;
+            getInstructionPointer() = isImm ? readAddress() : registerValue(inst.getBranchIndirectDestination());
         } else {
             // jump instruction
-            if (isImm) {
-                if ((isCond && choice) || !isCond) {
-                    advanceIp = false;
-					auto lower16 = static_cast<RegisterValue>(tryReadNext<true>());
-					auto upper16 = static_cast<RegisterValue>(tryReadNext<true>()) << 16;
-                    getInstructionPointer() = upper16 | lower16;
-                }
-            } else {
-                if ((isCond && choice) || !isCond) {
-                    advanceIp = false;
-                    getInstructionPointer() = registerValue(inst.getBranchIndirectDestination());
-                }
+            if ((isCond && choice) || !isCond) {
+                 advanceIp = false;
+                 getInstructionPointer() = isImm ? readAddress() : registerValue(inst.getBranchIndirectDestination());
             }
         }
     }
