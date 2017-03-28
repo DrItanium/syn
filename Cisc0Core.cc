@@ -30,7 +30,6 @@
 #include "Problem.h"
 #include <utility>
 #include <map>
-#include "IrisCoreSecondaryStorageController.h"
 #include "Cisc0ClipsExtensions.h"
 
 namespace cisc0 {
