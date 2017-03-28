@@ -114,15 +114,9 @@ typedef bool DeleteFunction(void*, void*);
 typedef bool CallFunction(void*, DataObjectPtr, DataObjectPtr);
 typedef void NewFunction(void*, DataObjectPtr);
 
-
-template<typename T>
-struct WrappedNewCallBuilder {
-    WrappedNewCallBuilder() = delete;
-    ~WrappedNewCallBuilder() = delete;
-    WrappedNewCallBuilder(const WrappedNewCallBuilder&) = delete;
-    WrappedNewCallBuilder(WrappedNewCallBuilder&&) = delete;
-    // by default, any wrapped IO device can accept zero arguments
-    static T* invokeNewFunction(void* env, CLIPSValuePtr ret, const std::string& funcErrorPrefix, const std::string& function) noexcept {
+namespace WrappedNewCallBuilder {
+    template<typename T>
+    T* invokeNewFunction(void* env, CLIPSValuePtr ret, const std::string funcErrorPrefix, const std::string& function) noexcept {
         using InternalType = T;
         try {
             if (EnvRtnArgCount(env) == 1) {
@@ -139,7 +133,8 @@ struct WrappedNewCallBuilder {
         }
         return nullptr;
     }
-};
+
+}
 using FunctionStrings = std::tuple<std::string, std::string, std::string>;
 template<typename T>
 static FunctionStrings retrieveFunctionNames(const std::string& action) noexcept {
@@ -182,7 +177,7 @@ class ExternalAddressWrapper {
                 funcStr = std::get<1>(functions);
                 funcErrorPrefix = std::get<2>(functions);
             }
-            auto ptr = WrappedNewCallBuilder<InternalType>::invokeNewFunction(env, ret, funcErrorPrefix, funcStr);
+            auto ptr = WrappedNewCallBuilder::invokeNewFunction<InternalType>(env, ret, funcErrorPrefix, funcStr);
             if (ptr) {
                 auto idIndex = Self::getAssociatedEnvironmentId(env);
                 ret->bitType = EXTERNAL_ADDRESS_TYPE;
