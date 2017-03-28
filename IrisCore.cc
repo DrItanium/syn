@@ -94,7 +94,7 @@ namespace iris {
 		gpr[252] = InstructionDecoder::getDestinationIndex(current);
 		gpr[251] = InstructionDecoder::getSource0Index(current);
 		gpr[250] = InstructionDecoder::getSource1Index(current);
-		gpr[249] = InstructionDecoder::getImmediate(current);
+		gpr[249] = getImmediate();
 		advanceIp = false;
         _error = 0; // clear out the error field now that we have transferred it
         // now we have to perform the normal work of the cycle
@@ -229,9 +229,6 @@ namespace iris {
 				{ JumpOp:: BranchConditional ,                  std::make_tuple(true, false, false) } ,
 				{ JumpOp:: BranchConditionalLink ,              std::make_tuple(true, false, true) } ,
 			};
-            auto chooseRegister = [this](auto cond) {
-                return cond ? InstructionDecoder::getSource0Index(current) : InstructionDecoder::getSource1Index(current);
-            };
 			auto operation = InstructionDecoder::getOperation<JumpOp>(current);
 			auto result = translationTable.find(operation);
 			if (result == translationTable.end()) {
@@ -248,12 +245,12 @@ namespace iris {
 				switch(operation) {
                     case JumpOp::IfThenElse:
                         cond = predicateResult();
-                        setInstructionPointer(gpr[chooseRegister(cond)]);
+                        setInstructionPointer(gpr[InstructionDecoder::chooseRegister(current, cond)]);
                         break;
                     case JumpOp::IfThenElseLink:
                         cond = predicateResult();
                         setLinkRegister(getInstructionPointer() + 1);
-                        setInstructionPointer(gpr[chooseRegister(cond)]);
+                        setInstructionPointer(gpr[InstructionDecoder::chooseRegister(current, cond)]);
                         break;
 					case JumpOp::BranchUnconditionalLR:
                         setInstructionPointer(getLinkRegister());

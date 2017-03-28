@@ -109,6 +109,9 @@ namespace iris {
         constexpr bool samePredicateDestinations(raw_instruction value) noexcept {
             return getPredicateResultIndex(value) == getPredicateInverseResultIndex(value);
         }
+        constexpr byte chooseRegister(raw_instruction value, bool cond) noexcept {
+            return cond ? getSource0Index(value) : getSource1Index(value);
+        }
     };
 	class Core : public syn::Core {
 		public:
