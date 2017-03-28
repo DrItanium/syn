@@ -40,55 +40,55 @@ namespace cisc0 {
      * used to compress the encoding.
      */
 
-	inline constexpr Word lowerMask(byte bitmask) noexcept {
+	constexpr Word lowerMask(byte bitmask) noexcept {
 		return syn::encodeUint16LE(syn::expandBit(syn::getBit<byte, 0>(bitmask)),
 									syn::expandBit(syn::getBit<byte, 1>(bitmask)));
 	}
-	inline constexpr Word upperMask(byte bitmask) noexcept {
+	constexpr Word upperMask(byte bitmask) noexcept {
 		return syn::encodeUint16LE(syn::expandBit(syn::getBit<byte, 2>(bitmask)),
 									syn::expandBit(syn::getBit<byte, 3>(bitmask)));
 	}
 
-	inline constexpr RegisterValue mask(byte bitmask) noexcept {
+	constexpr RegisterValue mask(byte bitmask) noexcept {
 		return syn::encodeUint32LE(lowerMask(bitmask), upperMask(bitmask));
 	}
 
-	inline constexpr bool readLower(byte bitmask) noexcept {
+	constexpr bool readLower(byte bitmask) noexcept {
 		return lowerMask(bitmask) != 0;
 	}
 
-	inline constexpr bool readUpper(byte bitmask) noexcept {
+	constexpr bool readUpper(byte bitmask) noexcept {
 		return upperMask(bitmask) != 0;
 	}
-    inline constexpr RegisterValue encodeRegisterValue(byte a, byte b, byte c, byte d) noexcept {
+    constexpr RegisterValue encodeRegisterValue(byte a, byte b, byte c, byte d) noexcept {
         return syn::encodeUint32LE(a, b, c, d);
     }
-    inline constexpr Word encodeWord(byte a, byte b) noexcept {
+    constexpr Word encodeWord(byte a, byte b) noexcept {
         return syn::encodeUint16LE(a, b);
     }
 
-    inline constexpr Word decodeUpperHalf(RegisterValue value) noexcept {
+    constexpr Word decodeUpperHalf(RegisterValue value) noexcept {
         return syn::decodeBits<RegisterValue, Word, mask(0b1100), 16>(value);
     }
-    inline constexpr Word decodeLowerHalf(RegisterValue value) noexcept {
+    constexpr Word decodeLowerHalf(RegisterValue value) noexcept {
         return syn::decodeBits<RegisterValue, Word, mask(0b0011), 0>(value);
     }
 
-    inline constexpr RegisterValue encodeUpperHalf(RegisterValue value, Word upperHalf) noexcept {
+    constexpr RegisterValue encodeUpperHalf(RegisterValue value, Word upperHalf) noexcept {
         return syn::encodeBits<RegisterValue, Word, mask(0b1100), 16>(value, upperHalf);
     }
-    inline constexpr RegisterValue encodeLowerHalf(RegisterValue value, Word lowerHalf) noexcept {
+    constexpr RegisterValue encodeLowerHalf(RegisterValue value, Word lowerHalf) noexcept {
         return syn::encodeBits<RegisterValue, Word, mask(0b0011), 0>(value, lowerHalf);
     }
 
-    inline constexpr RegisterValue encodeRegisterValue(Word upper, Word lower) noexcept {
+    constexpr RegisterValue encodeRegisterValue(Word upper, Word lower) noexcept {
         return encodeUpperHalf(encodeLowerHalf(0, lower), upper);
     }
-    inline constexpr RegisterValue normalizeCondition(RegisterValue input) noexcept {
+    constexpr RegisterValue normalizeCondition(RegisterValue input) noexcept {
         return input != 0 ? 0xFFFFFFFF : 0x00000000;
     }
 
-    inline constexpr int instructionSizeFromImmediateMask(byte bitmask) noexcept {
+    constexpr int instructionSizeFromImmediateMask(byte bitmask) noexcept {
         return 1 + (readLower(bitmask) ? 1 : 0) + (readUpper(bitmask) ? 1 : 0);
     }
 

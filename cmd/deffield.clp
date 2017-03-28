@@ -107,7 +107,7 @@
 (deffunction generate-encode-decode-ops
              (?t ?name ?value ?mask ?shift)
              (format t
-                     "inline constexpr %s decode%s(%s value) noexcept { return syn::decodeBits<%s, %s, %s, %s>(value); }%n"
+                     "constexpr %s decode%s(%s value) noexcept { return syn::decodeBits<%s, %s, %s, %s>(value); }%n"
                      ?t
                      ?name
                      ?value
@@ -116,7 +116,7 @@
                      (str-cat ?mask)
                      (str-cat ?shift))
              (format t
-                     "inline constexpr %s encode%s(%s value, %s field) noexcept { return syn::encodeBits<%s, %s, %s, %s>(value, field); }%n"
+                     "constexpr %s encode%s(%s value, %s field) noexcept { return syn::encodeBits<%s, %s, %s, %s>(value, field); }%n"
                      ?value
                      ?name
                      ?value
