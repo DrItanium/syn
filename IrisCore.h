@@ -157,9 +157,8 @@ namespace iris {
 			inline bool& predicateSource0() noexcept { return getPredicate<2>(); }
 			inline bool& predicateSource1() noexcept { return getPredicate<3>(); }
 
-            inline word getHalfImmediate() noexcept {
-                return InstructionDecoder::getHalfImmediate(current);
-            }
+            inline word getHalfImmediate() noexcept { return InstructionDecoder::getHalfImmediate(current); }
+            inline word getImmediate() noexcept { return InstructionDecoder::getImmediate(current); }
 		private:
 			void saveSystemState() noexcept;
 			void restoreSystemState() noexcept;

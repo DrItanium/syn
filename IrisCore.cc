@@ -122,7 +122,6 @@ namespace iris {
 	}
 	void Core::dispatch() noexcept {
 		current = instruction[getInstructionPointer()];
-        auto getImmediate = [this]() { return InstructionDecoder::getImmediate(current); };
 		auto group = InstructionDecoder::getGroup(current);
 		auto updateStatusRegister = [this](auto fn, bool value) { _error = fn(_error, value); };
 		auto enableStatusRegisterBit = [this, updateStatusRegister](auto fn) { updateStatusRegister(fn, true); };
@@ -218,7 +217,7 @@ namespace iris {
 				}
 			}
 		};
-		auto jumpOperation = [this, getImmediate, makeIllegalInstructionMessage]() {
+		auto jumpOperation = [this, makeIllegalInstructionMessage]() {
 			// conditional?, immediate?, link?
 			static std::map<JumpOp, std::tuple<bool, bool, bool>> translationTable = {
 				{ JumpOp:: BranchUnconditionalImmediate ,       std::make_tuple(false, true, false) } ,
@@ -300,9 +299,9 @@ namespace iris {
 				}
 			}
 		};
-		auto moveOperation = [this, getImmediate, makeIllegalInstructionMessage]() {
+		auto moveOperation = [this, makeIllegalInstructionMessage]() {
             auto getDestinationIndex = [this]() { return InstructionDecoder::getDestinationIndex(current); };
-            auto getSource0Index = [this]() { return InstructionDecoder::getImmediate(current); };
+            auto getSource0Index = [this]() { return InstructionDecoder::getSource0Index(current); };
 			auto op = InstructionDecoder::getOperation<MoveOp>(current);
 			raw_instruction codeStorage = 0u;
 			switch(op) {
@@ -381,7 +380,7 @@ namespace iris {
 					break;
 			}
 		};
-		auto conditionalRegisterOperation = [this, makeIllegalInstructionMessage, getImmediate]() {
+		auto conditionalRegisterOperation = [this, makeIllegalInstructionMessage]() {
 			static std::map<ConditionRegisterOp, UnitDescription<PredicateComparator>> translationTable = {
 				{ ConditionRegisterOp::CRAnd, makeDesc<PredicateComparator>(PredicateComparator::Operation::BinaryAnd, false) },
 				{ ConditionRegisterOp::CROr, makeDesc<PredicateComparator>(PredicateComparator::Operation::BinaryOr, false) },
