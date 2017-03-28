@@ -864,15 +864,25 @@ namespace cisc0 {
                     }
                     return result;
                 };
+                auto resolve = [env, ret, ptr]() {
+                    try {
+                        CVSetBoolean(ret, true);
+                        return ptr->resolve();
+                    } catch (syn::Problem p) {
+                        CVSetBoolean(ret, false);
+                        std::stringstream ss;
+                        ss << "error during resolve: " << p.what();
+                        auto str = ss.str();
+                        return syn::errorMessage(env, "CALL", 3, funcErrorPrefix, str);
+                    }
+                };
                 switch(theOp) {
                     case Operations::Parse:
                         return parseLine();
                     case Operations::Resolve:
-                        CVSetBoolean(ret, true);
-                        return ptr->resolve();
-                        return true;
+                        return resolve();
                     case Operations::Get:
-                        ptr-> getMultifield(env, ret);
+                        ptr->getMultifield(env, ret);
                         return true;
                     default:
                         CVSetBoolean(ret, false);
@@ -893,6 +903,7 @@ namespace cisc0 {
     bool AssemblerStateWrapper::resolve() {
         get()->resolveDeclarations();
         get()->resolveInstructions();
+            return true;
         return true;
     }
     bool AssemblerStateWrapper::parseLine(const std::string& line) {
