@@ -60,9 +60,6 @@ namespace cisc0 {
 	inline constexpr bool readUpper(byte bitmask) noexcept {
 		return upperMask(bitmask) != 0;
 	}
-	constexpr auto bitmask32 =   mask(0b1111);
-	constexpr auto upper16Mask = mask(0b1100);
-	constexpr auto lower16Mask = mask(0b0011);
     inline constexpr RegisterValue encodeRegisterValue(byte a, byte b, byte c, byte d) noexcept {
         return syn::encodeUint32LE(a, b, c, d);
     }
@@ -71,17 +68,17 @@ namespace cisc0 {
     }
 
     inline constexpr Word decodeUpperHalf(RegisterValue value) noexcept {
-        return syn::decodeBits<RegisterValue, Word, upper16Mask, 16>(value);
+        return syn::decodeBits<RegisterValue, Word, mask(0b1100), 16>(value);
     }
     inline constexpr Word decodeLowerHalf(RegisterValue value) noexcept {
-        return syn::decodeBits<RegisterValue, Word, lower16Mask, 16>(value);
+        return syn::decodeBits<RegisterValue, Word, mask(0b0011), 0>(value);
     }
 
     inline constexpr RegisterValue encodeUpperHalf(RegisterValue value, Word upperHalf) noexcept {
-        return syn::encodeBits<RegisterValue, Word, upper16Mask, 16>(value, upperHalf);
+        return syn::encodeBits<RegisterValue, Word, mask(0b1100), 16>(value, upperHalf);
     }
     inline constexpr RegisterValue encodeLowerHalf(RegisterValue value, Word lowerHalf) noexcept {
-        return syn::encodeBits<RegisterValue, Word, lower16Mask, 0>(value, lowerHalf);
+        return syn::encodeBits<RegisterValue, Word, mask(0b0011), 0>(value, lowerHalf);
     }
 
     inline constexpr RegisterValue encodeRegisterValue(Word upper, Word lower) noexcept {
@@ -514,7 +511,7 @@ namespace cisc0 {
 		return _bus.read(address);
     }
     RegisterValue Core::loadRegisterValue(RegisterValue address) {
-        return syn::encodeBits<RegisterValue, Word, bitmask32, 16>(static_cast<RegisterValue>(loadWord(address)), loadWord(address + 1));
+        return syn::encodeBits<RegisterValue, Word, mask(0b1111), 16>(static_cast<RegisterValue>(loadWord(address)), loadWord(address + 1));
     }
     void Core::storeRegisterValue(RegisterValue address, RegisterValue value) {
         storeWord(address, decodeLowerHalf(value));
