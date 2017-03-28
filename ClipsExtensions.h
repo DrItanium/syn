@@ -74,23 +74,23 @@ inline constexpr bool inRange(T capacity, T address) noexcept {
 	return address >= 0 && address < capacity;
 }
 
-template<typename T> struct TypeToName {
-        TypeToName() = delete;
-        TypeToName(const TypeToName&) = delete;
-        TypeToName(TypeToName&&) = delete;
-        ~TypeToName() = delete;
-};
+namespace TypeToName {
+    template<typename T>
+    constexpr bool hasSymbolicImplementation() noexcept {
+        return false;
+    }
+    template<typename T>
+    std::string getSymbolicName() noexcept {
+        static_assert(hasSymbolicImplementation<T>(), "Provided type does not have a symbolic name");
+        return "";
+    }
+
+}
 #define DefWrapperSymbolicName(t, name) \
-	template<> \
-	struct TypeToName < t > { \
-        TypeToName() = delete; \
-        TypeToName(const TypeToName&) = delete; \
-        TypeToName(TypeToName&&) = delete;  \
-        ~TypeToName() = delete;  \
-		static std::string getSymbolicName() noexcept { return { name }; } \
-	}
-
-
+    namespace TypeToName { \
+        template<> constexpr bool hasSymbolicImplementation < t > () noexcept { return true; } \
+        template<> std::string getSymbolicName < t > () noexcept { return name; } \
+    }
 
 void CLIPS_basePrintAddress(void* env, const char* logicalName, void* theValue, const char* func, const char* majorType);
 
@@ -100,7 +100,7 @@ void CLIPS_basePrintAddress(void* env, const char* logicalName, void* theValue) 
 	static std::string func;
 	if (init) {
 		init = false;
-		func = TypeToName<T>::getSymbolicName();
+		func = TypeToName::getSymbolicName<T>();
 	}
 	CLIPS_basePrintAddress(env, logicalName, theValue, func.c_str(), "Wrapper");
 }
@@ -143,7 +143,7 @@ struct WrappedNewCallBuilder {
 using FunctionStrings = std::tuple<std::string, std::string, std::string>;
 template<typename T>
 static FunctionStrings retrieveFunctionNames(const std::string& action) noexcept {
-    auto title = TypeToName<T>::getSymbolicName();
+    auto title = TypeToName::getSymbolicName<T>();
     std::stringstream ss, ss2;
     ss << action << " (" << title << ")";
     auto str0 = ss.str();
@@ -157,7 +157,7 @@ class ExternalAddressWrapper {
 		using InternalType = T;
 		using BaseClass = ExternalAddressWrapper<T>;
         using Self = BaseClass;
-		static std::string getType() noexcept { return TypeToName<InternalType>::getSymbolicName(); }
+		static std::string getType() noexcept { return TypeToName::getSymbolicName<InternalType>(); }
 		static unsigned int getAssociatedEnvironmentId(void* env) { return ExternalAddressRegistrar<InternalType>::getExternalAddressId(env); }
 		static void registerWithEnvironment(void* env, externalAddressType* description) noexcept {
 			ExternalAddressRegistrar<InternalType>::registerExternalAddressId(env, InstallExternalAddressType(env, description));
