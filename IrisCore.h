@@ -66,25 +66,21 @@ namespace iris {
 	using ErrorStorage = WordMemorySpace<ArchitectureConstants::RegistersToSaveOnError>;
     using InstructionPointer = syn::Register<QuadWord, ArchitectureConstants::AddressMax>;
     using LinkRegister = syn::Register<QuadWord, ArchitectureConstants::AddressMax>;
-    struct InstructionDecoder {
-        InstructionDecoder() = delete;
-        ~InstructionDecoder() = delete;
-        InstructionDecoder(const InstructionDecoder&) = delete;
-        InstructionDecoder(InstructionDecoder&&) = delete;
-        static inline constexpr byte getDestinationIndex(raw_instruction value) noexcept { return decodeDestination(value); }
-        static inline constexpr byte getSource0Index(raw_instruction value) noexcept { return decodeSource0(value); }
-        static inline constexpr byte getSource1Index(raw_instruction value) noexcept { return decodeSource1(value); }
-        static inline constexpr byte getOperationByte(raw_instruction value) noexcept { return decodeOperation(value); }
-        static inline constexpr byte getGroupByte(raw_instruction value) noexcept { return decodeGroup(value); }
-        static inline constexpr InstructionGroup getGroup(raw_instruction value) noexcept { return static_cast<InstructionGroup>(getGroupByte(value)); }
-        static inline constexpr word getHalfImmediate(raw_instruction value) noexcept { return decodeHalfImmediate(value); }
-        static inline constexpr word getImmediate(raw_instruction value) noexcept { return decodeImmediate(value); }
+    namespace InstructionDecoder {
+        constexpr byte getDestinationIndex(raw_instruction value) noexcept { return decodeDestination(value); }
+        constexpr byte getSource0Index(raw_instruction value) noexcept { return decodeSource0(value); }
+        constexpr byte getSource1Index(raw_instruction value) noexcept { return decodeSource1(value); }
+        constexpr byte getOperationByte(raw_instruction value) noexcept { return decodeOperation(value); }
+        constexpr byte getGroupByte(raw_instruction value) noexcept { return decodeGroup(value); }
+        constexpr InstructionGroup getGroup(raw_instruction value) noexcept { return static_cast<InstructionGroup>(getGroupByte(value)); }
+        constexpr word getHalfImmediate(raw_instruction value) noexcept { return decodeHalfImmediate(value); }
+        constexpr word getImmediate(raw_instruction value) noexcept { return decodeImmediate(value); }
         template<typename T>
-        static inline constexpr T getOperation(raw_instruction value) noexcept {
+        constexpr T getOperation(raw_instruction value) noexcept {
             return static_cast<T>(getOperationByte(value));
         }
         template<int index>
-        static inline constexpr byte getRegisterIndex(raw_instruction value) noexcept {
+        constexpr byte getRegisterIndex(raw_instruction value) noexcept {
             static_assert(index >= 0 && index < 3, "Illegal register index!");
             if (index == 0) {
                 return getDestinationIndex(value);
@@ -94,12 +90,12 @@ namespace iris {
                 return getSource1Index(value);
             }
         }
-        static inline constexpr byte getPredicateResultIndex(raw_instruction value) noexcept { return decodePredicateResult(value); }
-        static inline constexpr byte getPredicateInverseResultIndex(raw_instruction value) noexcept { return decodePredicateInverseResult(value); }
-        static inline constexpr byte getPredicateSource0Index(raw_instruction value) noexcept { return decodePredicateSource0(value); }
-        static inline constexpr byte getPredicateSource1Index(raw_instruction value) noexcept { return decodePredicateSource1(value); }
+        constexpr byte getPredicateResultIndex(raw_instruction value) noexcept { return decodePredicateResult(value); }
+        constexpr byte getPredicateInverseResultIndex(raw_instruction value) noexcept { return decodePredicateInverseResult(value); }
+        constexpr byte getPredicateSource0Index(raw_instruction value) noexcept { return decodePredicateSource0(value); }
+        constexpr byte getPredicateSource1Index(raw_instruction value) noexcept { return decodePredicateSource1(value); }
         template<int index>
-        static inline constexpr byte getPredicateIndex(raw_instruction value) noexcept {
+        constexpr byte getPredicateIndex(raw_instruction value) noexcept {
             static_assert(index >= 0 && index < 4, "Illegal predicate field index!");
             switch(index) {
                 case 0: return getPredicateResultIndex(value);
@@ -109,6 +105,9 @@ namespace iris {
                 default:
                     throw syn::Problem("Illegal index!!!!");
             }
+        }
+        constexpr bool samePredicateDestinations(raw_instruction value) noexcept {
+            return getPredicateResultIndex(value) == getPredicateInverseResultIndex(value);
         }
     };
 	class Core : public syn::Core {

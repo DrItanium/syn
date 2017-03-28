@@ -212,7 +212,7 @@ namespace iris {
 				std::tie(op, immediate) = result->second;
 				auto result = _compare(op, source0Register(), immediate ? getHalfImmediate() : source1Register()) != 0;
 				predicateResult() = result;
-                if (InstructionDecoder::getPredicateResultIndex(current) != InstructionDecoder::getPredicateInverseResultIndex(current)) {
+                if (!InstructionDecoder::samePredicateDestinations(current)) {
 					predicateInverseResult() = !result;
 				}
 			}
@@ -415,7 +415,7 @@ namespace iris {
 				std::tie(pop, immediate) = result->second;
 				auto result = _pcompare(pop, predicateSource0(), predicateSource1());
 				predicateResult() = result;
-                if (InstructionDecoder::getPredicateResultIndex(current) != InstructionDecoder::getPredicateInverseResultIndex(current)) {
+                if (!InstructionDecoder::samePredicateDestinations(current)) {
 					predicateInverseResult() = !result;
 				}
 			}
