@@ -50,7 +50,7 @@ namespace syn {
     DefWrapperSymbolicName(iris::AssemblerState, "iris:assembly-parsing-state");
 }
 namespace iris {
-    template<typename Rule > struct Action : public pegtl::nothing<Rule> { };
+	template<typename R> struct Action : syn::Action<R> { };
 	struct AssemblerData {
 		AssemblerData() : instruction(false), address(0) { }
 		bool instruction;
@@ -261,21 +261,19 @@ namespace iris {
 		}
 	};
 
-	template<char delim, typename T>
-	using Numeral = syn::GenericNumeral<delim, T>;
-    struct HexadecimalNumber : public Numeral<'x', pegtl::xdigit> { };
+	using HexadecimalNumber = syn::HexadecimalNumber;
 	DefAction(HexadecimalNumber) {
 		DefApply {
 			state.setTemporaryWord(syn::getHexImmediate<word>(in.string(), syn::reportError));
 		}
 	};
-    struct BinaryNumber : public Numeral<'b', pegtl::abnf::BIT> { };
+	using BinaryNumber = syn::BinaryNumber;
 	DefAction(BinaryNumber) {
 		DefApply {
 			state.setTemporaryWord(syn::getBinaryImmediate<word>(in.string(), syn::reportError));
 		}
 	};
-    struct DecimalNumber : public pegtl::plus<pegtl::digit> { };
+	using DecimalNumber = syn::Base10Number;
 	DefAction(DecimalNumber) {
 		DefApply {
 			state.setTemporaryWord(syn::getDecimalImmediate<word>(in.string().c_str(), syn::reportError));
@@ -310,8 +308,6 @@ namespace iris {
 
     };
     // directives
-    DefSymbol(DataDirective, .data);
-    DefSymbol(CodeDirective, .code);
 #define DefOperation(title, str, type) \
 	DefSymbol(title, str); \
 	DefAction(Symbol ## title ) { \
@@ -321,6 +317,8 @@ namespace iris {
 	}
 
 #define DefOperationSameTitle(title, str) DefOperation(title, str, title)
+    DefSymbol(DataDirective, .data);
+    DefSymbol(CodeDirective, .code);
     struct CodeDirective : syn::StatefulIndirection<ModifySection<true>, SymbolCodeDirective> { };
     struct DataDirective : syn::StatefulIndirection<ModifySection<false>, SymbolDataDirective> { };
 
