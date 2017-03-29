@@ -115,33 +115,33 @@ namespace syn {
         return getDecimalImmediate<T>(text.c_str(), onError);
     }
 	template<char prefix>
-	struct GenericRegister : public pegtl::if_must<pegtl::one<prefix>, pegtl::plus<pegtl::digit>> { };
+	struct GenericRegister : pegtl::if_must<pegtl::one<prefix>, pegtl::plus<pegtl::digit>> { };
 
-    struct EndOfLineComment : public pegtl::until<pegtl::eolf> { };
+    struct EndOfLineComment : pegtl::until<pegtl::eolf> { };
     template<char tag>
-    struct SingleLineComment : public pegtl::disable<pegtl::one<tag>, EndOfLineComment> { };
+    struct SingleLineComment : pegtl::disable<pegtl::one<tag>, EndOfLineComment> { };
 
-	struct AsmSeparator : public pegtl::plus<pegtl::ascii::space> { };
+	struct AsmSeparator : pegtl::plus<pegtl::ascii::space> { };
 
     template<typename Rule>
-    struct Indirection : public pegtl::seq<Rule> { };
+    struct Indirection : pegtl::seq<Rule> { };
 
     template<typename C0, typename C1, typename Separator = AsmSeparator>
-    struct TwoPartComponent : public pegtl::seq<C0, Separator, C1> { };
+    struct TwoPartComponent : pegtl::seq<C0, Separator, C1> { };
 
     template<typename State, typename C0, typename C1, typename Separator = AsmSeparator>
     struct StatefulTwoPartComponent : pegtl::state<State, TwoPartComponent<C0, C1, Separator>> { };
 
     template<typename Register>
-    struct OneRegister : public pegtl::seq<Register> { };
+    struct OneRegister : pegtl::seq<Register> { };
     template<typename R0, typename R1, typename Separator = AsmSeparator>
-    struct TwoRegister : public TwoPartComponent<R0, R1, Separator> { };
+    struct TwoRegister : TwoPartComponent<R0, R1, Separator> { };
     template<typename R0, typename R1, typename R2, typename Separator0 = AsmSeparator, typename Separator1 = AsmSeparator>
-    struct ThreeRegister : public pegtl::seq<R0, Separator0, R1, Separator1, R2> { };
+    struct ThreeRegister : pegtl::seq<R0, Separator0, R1, Separator1, R2> { };
 
 
     template<char delimiter, typename SymbolClass>
-    struct GenericNumeral : public pegtl::if_must<pegtl::istring<'0', delimiter>, pegtl::plus<SymbolClass>> { };
+    struct GenericNumeral : pegtl::if_must<pegtl::istring<'0', delimiter>, pegtl::plus<SymbolClass>> { };
 
 	template<char delim>
 	struct Base16Number : GenericNumeral<delim, pegtl::xdigit> { };
@@ -152,24 +152,24 @@ namespace syn {
 	using HexadecimalNumber = Base16Number<'x'>;
 	using BinaryNumber = Base2Number<'b'>;
 
-	
+
 
 	struct Base10Number : pegtl::plus<pegtl::digit> { };
 
     template<typename Src0, typename Src1, typename Separator = AsmSeparator>
-    struct SourceRegisters : public TwoRegister<Src0, Src1, Separator> { };
+    struct SourceRegisters : TwoRegister<Src0, Src1, Separator> { };
 
-    struct Lexeme : public pegtl::identifier { };
+    struct Lexeme : pegtl::identifier { };
 
     template<typename Other>
-    struct LexemeOr : public pegtl::sor<Lexeme, Other> { };
+    struct LexemeOr : pegtl::sor<Lexeme, Other> { };
 
     template<typename Operation, typename Operands, typename Separator = AsmSeparator>
-    struct Instruction : public pegtl::seq<Operation, Separator, Operands> { };
+    struct Instruction : pegtl::seq<Operation, Separator, Operands> { };
 
 
     template<typename Entry>
-    struct MainFileParser :  public pegtl::until<pegtl::eof, pegtl::must<Entry>> { };
+    struct MainFileParser :  pegtl::until<pegtl::eof, pegtl::must<Entry>> { };
 
 
 	/**

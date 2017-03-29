@@ -241,12 +241,13 @@ namespace iris {
 #define DefApply DefApplyGeneric(AssemblerState)
 	using Separator = syn::AsmSeparator;
 	using SingleLineComment = syn::SingleLineComment<';'>;
-	struct GeneralPurposeRegister : public syn::GenericRegister<'r'> { };
-	struct PredicateRegister : public syn::GenericRegister<'p'> { };
+	struct GeneralPurposeRegister : syn::GenericRegister<'r'> { };
+	struct PredicateRegister : syn::GenericRegister<'p'> { };
 	DefAction(GeneralPurposeRegister) {
-		DefApply {
-			state.setTemporaryByte(syn::getRegister<word, ArchitectureConstants::RegisterCount>(in.string(), syn::reportError));
+		DefApplyGeneric(RegisterIndexContainer) {
+            state.setValue(syn::getRegister<word, ArchitectureConstants::RegisterCount>(in.string(), syn::reportError));
 		}
+        DefApply { }
 	};
 	DefAction(PredicateRegister) {
 		DefApply {
@@ -255,32 +256,36 @@ namespace iris {
 	};
 	using IndirectGPR = syn::Indirection<GeneralPurposeRegister>;
 #define DefIndirectGPR(title) \
-	struct title : public IndirectGPR { }
+	struct title : IndirectGPR { }
 	DefIndirectGPR(DestinationGPR);
 	DefAction(DestinationGPR) {
-		DefApply {
-			state.stashTemporaryByteInDestination();
+		DefApplyGeneric(RegisterIndexContainer) {
+            state._index = 0;
 		}
+        DefApply { }
 	};
 	DefIndirectGPR(Source0GPR);
 	DefAction(Source0GPR) {
-		DefApply {
-			state.stashTemporaryByteInSource0();
+		DefApplyGeneric(RegisterIndexContainer) {
+            state._index = 1;
 		}
+        DefApply { }
 	};
-    struct Source1GPR : public IndirectGPR { };
+    DefIndirectGPR(Source1GPR);
 	DefAction(Source1GPR) {
-		DefApply {
-			state.stashTemporaryByteInSource1();
+		DefApplyGeneric(RegisterIndexContainer) {
+            state._index = 2;
 		}
+        DefApply { }
 	};
+    using StatefulDestinationGPR = pegtl::state<RegisterIndexContainer, DestinationGPR>;
 #undef DefIndirectGPR
 	using SourceRegisters = syn::SourceRegisters<Source0GPR, Source1GPR>;
-	struct OneGPR : public syn::OneRegister<DestinationGPR> { };
-    struct TwoGPR : public syn::TwoRegister<DestinationGPR, Source0GPR> { };
-	struct ThreeGPR : public syn::TwoRegister<DestinationGPR, SourceRegisters> { };
+	struct OneGPR : pegtl::state<RegisterIndexContainer, syn::OneRegister<DestinationGPR>> { };
+    struct TwoGPR : pegtl::state<RegisterIndexContainer, syn::TwoRegister<DestinationGPR, Source0GPR>> { };
+	struct ThreeGPR : pegtl::state<RegisterIndexContainer, syn::TwoRegister<DestinationGPR, SourceRegisters>> { };
     using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
-    struct DestinationPredicateRegister : public IndirectPredicateRegister { };
+    struct DestinationPredicateRegister : IndirectPredicateRegister { };
 	DefAction(DestinationPredicateRegister) {
 		DefApply {
 			state.encodeDestinationPredicate<false>();
@@ -498,7 +503,7 @@ namespace iris {
 	DefAction(SymbolStoreImmediate) { DefApply { state.setOperation<CURRENT_TYPE>(CURRENT_TYPE :: Memset); } };
     struct OperationMoveGPRImmediate : public pegtl::sor<SymbolStoreImmediate, SymbolLoadImmediate, SymbolSet, SymbolPushImmediate> { };
 
-    struct MoveGPRImmediateInstruction : public pegtl::seq<OperationMoveGPRImmediate, Separator, DestinationGPR, Separator, Immediate> { };
+    struct MoveGPRImmediateInstruction : public pegtl::seq<OperationMoveGPRImmediate, Separator, StatefulDestinationGPR, Separator, Immediate> { };
 
     struct MoveInstruction : public pegtl::sor<MoveGPRImmediateInstruction, MoveThreeGPRInstruction, MoveTwoGPRHalfImmediateInstruction, MoveTwoGPRInstruction, MoveOneGPRInstruction> { };
 	DefGroupSet(MoveInstruction, Move);
@@ -510,7 +515,7 @@ namespace iris {
     DefOperationSameTitle(BranchUnconditional, b);
     DefOperationSameTitle(BranchUnconditionalLink, bl);
     struct OperationBranchOneGPR : public pegtl::sor<SymbolBranchUnconditionalLink, SymbolBranchUnconditional> { };
-    struct BranchOneGPRInstruction : public BranchUnconditional<OperationBranchOneGPR, DestinationGPR> { };
+    struct BranchOneGPRInstruction : public BranchUnconditional<OperationBranchOneGPR, StatefulDestinationGPR> { };
     DefOperationSameTitle(BranchUnconditionalImmediate, bi);
     DefOperationSameTitle(BranchUnconditionalImmediateLink, bil);
     struct OperationBranchImmediate : public pegtl::sor<SymbolBranchUnconditionalImmediateLink, SymbolBranchUnconditionalImmediate> { };
@@ -596,7 +601,7 @@ namespace iris {
     struct OperationPredicateThreeArgs : public pegtl::sor<SymbolCRNot> { };
     struct OperationPredicateOneGPR : public pegtl::sor<SymbolSaveCRs, SymbolRestoreCRs> { };
     struct OperationPredicateFourArgs : public pegtl::sor<SymbolCRXor, SymbolCRAnd, SymbolCROr, SymbolCRNand, SymbolCRNor> { };
-    struct PredicateInstructionOneGPR : public pegtl::seq<OperationPredicateOneGPR, Separator, DestinationGPR> { };
+    struct PredicateInstructionOneGPR : public pegtl::seq<OperationPredicateOneGPR, Separator, StatefulDestinationGPR> { };
     struct PredicateInstructionTwoArgs : public pegtl::seq<OperationPredicateTwoArgs, Separator, DestinationPredicates> { };
     struct PredicateInstructionThreeArgs : public pegtl::seq<OperationPredicateThreeArgs, Separator, DestinationPredicates, Separator, Source0Predicate> { };
     struct PredicateInstructionFourArgs : public pegtl::seq<OperationPredicateFourArgs, Separator, DestinationPredicates, Separator, Source0Predicate, Separator, Source1Predicate> { };
