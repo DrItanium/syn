@@ -51,9 +51,6 @@ namespace syn {
 }
 namespace iris {
     template<typename Rule > struct Action : public pegtl::nothing<Rule> { };
-	void reportError(const std::string& msg) {
-		throw syn::Problem(msg);
-	}
 	struct AssemblerData {
 		AssemblerData() : instruction(false), address(0) { }
 		bool instruction;
@@ -203,12 +200,12 @@ namespace iris {
 	struct PredicateRegister : public syn::GenericRegister<'p'> { };
 	DefAction(GeneralPurposeRegister) {
 		DefApply {
-			state.setTemporaryByte(syn::getRegister<word, ArchitectureConstants::RegisterCount>(in.string(), reportError));
+			state.setTemporaryByte(syn::getRegister<word, ArchitectureConstants::RegisterCount>(in.string(), syn::reportError));
 		}
 	};
 	DefAction(PredicateRegister) {
 		DefApply {
-			state.setTemporaryByte(syn::getRegister<word, ArchitectureConstants::ConditionRegisterCount>(in.string(), reportError));
+			state.setTemporaryByte(syn::getRegister<word, ArchitectureConstants::ConditionRegisterCount>(in.string(), syn::reportError));
 		}
 	};
 	using IndirectGPR = syn::Indirection<GeneralPurposeRegister>;
@@ -269,19 +266,19 @@ namespace iris {
     struct HexadecimalNumber : public Numeral<'x', pegtl::xdigit> { };
 	DefAction(HexadecimalNumber) {
 		DefApply {
-			state.setTemporaryWord(syn::getHexImmediate<word>(in.string(), reportError));
+			state.setTemporaryWord(syn::getHexImmediate<word>(in.string(), syn::reportError));
 		}
 	};
     struct BinaryNumber : public Numeral<'b', pegtl::abnf::BIT> { };
 	DefAction(BinaryNumber) {
 		DefApply {
-			state.setTemporaryWord(syn::getBinaryImmediate<word>(in.string(), reportError));
+			state.setTemporaryWord(syn::getBinaryImmediate<word>(in.string(), syn::reportError));
 		}
 	};
     struct DecimalNumber : public pegtl::plus<pegtl::digit> { };
 	DefAction(DecimalNumber) {
 		DefApply {
-			state.setTemporaryWord(syn::getDecimalImmediate<word>(in.string().c_str(), reportError));
+			state.setTemporaryWord(syn::getDecimalImmediate<word>(in.string().c_str(), syn::reportError));
 		}
 	};
     struct Number : public pegtl::sor<HexadecimalNumber, DecimalNumber, BinaryNumber> { };
