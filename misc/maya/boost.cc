@@ -121,7 +121,8 @@ void FileExists(UDFContext* context, CLIPSValue* ret) {
 	if (!UDFFirstArgument(context, LEXEME_TYPES, &path)) {
 		CVSetBoolean(ret, false);
 	} else {
-		CVSetBoolean(ret, boost::filesystem::exists(CVToString(&path)));
+        std::string p(CVToString(&path));
+		CVSetBoolean(ret, boost::filesystem::exists(p));
 	}
 }
 
@@ -130,7 +131,8 @@ void IsDirectory(UDFContext* context, CLIPSValue* ret) {
 	if (!UDFFirstArgument(context, LEXEME_TYPES, &path)) {
 		CVSetBoolean(ret, false);
 	} else {
-		CVSetBoolean(ret, boost::filesystem::is_directory(CVToString(&path)));
+        std::string p(CVToString(&path));
+		CVSetBoolean(ret, boost::filesystem::is_directory(p));
 	}
 }
 
@@ -139,7 +141,8 @@ void IsRegularFile(UDFContext* context, CLIPSValue* ret) {
 	if (!UDFFirstArgument(context, LEXEME_TYPES, &path)) {
 		CVSetBoolean(ret, false);
 	} else {
-		CVSetBoolean(ret, boost::filesystem::is_regular_file(CVToString(&path)));
+        std::string p(CVToString(&path));
+		CVSetBoolean(ret, boost::filesystem::is_regular_file(p));
 	}
 }
 
