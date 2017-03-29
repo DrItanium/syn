@@ -160,6 +160,10 @@ constexpr T getShiftCount() noexcept {
 }
 
 
+template<typename T, T bitmask>
+constexpr T mask(T input) noexcept {
+    return input & bitmask;
+}
 template<typename T, typename F, T bitmask, T shiftcount>
 constexpr F decodeBits(T input) noexcept {
 	return static_cast<F>((input & bitmask) >> shiftcount);
@@ -483,6 +487,11 @@ constexpr bool getBit(T value) noexcept {
     return decodeBits<T, bool, 1 << index, index>(value);
 }
 
+template<typename T, T index>
+constexpr bool bitIsSet(T value) noexcept {
+    return mask<T, 1 << index>(value) != 0;
+}
+
 constexpr byte expandBit(bool value) noexcept {
     return value ? 0xFF : 0x00;
 }
@@ -491,9 +500,11 @@ template<typename T, T index>
 constexpr T setBit(T value, bool bit) noexcept {
     return syn::encodeBits<T, bool, 1 << index, index>(value, bit);
 }
+
 constexpr uint32 expandUInt32LE(bool lowest, bool lowerUpper, bool upperLower, bool upperMost) noexcept {
     return encodeUint32LE(expandBit(lowest), expandBit(lowerUpper), expandBit(upperLower), expandBit(upperMost));
 }
+
 constexpr uint16 expandUInt16LE(bool lower, bool upper) noexcept {
     return encodeUint16LE(expandBit(lower), expandBit(upper));
 }
