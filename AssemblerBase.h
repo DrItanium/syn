@@ -257,6 +257,45 @@ namespace syn {
 	struct Action : pegtl::nothing<R> { };
 
 	void reportError(const std::string& msg);
+	template<typename T>
+	T parseHex(const std::string& str) {
+		return getHexImmediate<T>(str, reportError);
+	}
+
+	template<typename T>
+	T parseBinary(const std::string& str) {
+		return getBinaryImmediate<T>(str, reportError);
+	}
+
+	template<typename T>
+	T parseDecimal(const std::string& str) {
+		return getDecimalImmediate<T>(str, reportError);
+	}
+
+	enum class KnownNumberTypes {
+		Decimal,
+		Binary,
+		Hexadecimal,
+	};
+	template<typename T, KnownNumberTypes type>
+	void populateContainer(const std::string& str, NumberContainer<T>& parent) {
+		switch(type) {
+			case KnownNumberTypes::Decimal:
+				parent.setValue(parseDecimal<T>(str));
+				break;
+			case KnownNumberTypes::Hexadecimal:
+				parent.setValue(parseHex<T>(str));
+				break;
+			case KnownNumberTypes::Binary:
+				parent.setValue(parseBinary<T>(str));
+				break;
+			default:
+				reportError("Unimplemented known number type!");
+		}
+	}
+
+
+
 } // end namespace syn
 
 

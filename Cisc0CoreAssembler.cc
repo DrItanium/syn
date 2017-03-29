@@ -260,35 +260,11 @@ namespace cisc0 {
 		}
 	};
 
-	using HexadecimalNumber = syn::HexadecimalNumber;
-
-	DefAction(HexadecimalNumber) {
-		static auto parseHex(const std::string& str) {
-			return syn::getHexImmediate<RegisterValue>(str, syn::reportError);
-		}
-		DefApplyGeneric(NumberContainer) {
-			state.setValue(parseHex(in.string()));
-		}
-	};
-	using BinaryNumber = syn::BinaryNumber;
-	DefAction(BinaryNumber) {
-		static auto parseBinary(const std::string& str) {
-			return syn::getBinaryImmediate<RegisterValue>(str, syn::reportError);
-		}
-		DefApplyGeneric(NumberContainer) {
-			state.setValue(parseBinary(in.string()));
-		}
-	};
+	DefAction(syn::HexadecimalNumber) { DefApplyGeneric(NumberContainer) { syn::populateContainer<RegisterValue, syn::KnownNumberTypes::Hexadecimal>(in.string(), state); } };
+	DefAction(syn::BinaryNumber) { DefApplyGeneric(NumberContainer) { syn::populateContainer<RegisterValue, syn::KnownNumberTypes::Binary>(in.string(), state); } };
 	using DecimalNumber = syn::Base10Number;
-	DefAction(DecimalNumber) {
-		static auto parseDecimalImmediate(const std::string& input) {
-			return syn::getDecimalImmediate<RegisterValue>(input.c_str(), syn::reportError);
-		}
-		DefApplyGeneric(NumberContainer) {
-			state.setValue(parseDecimalImmediate(in.string()));
-		}
-	};
-	struct Number : public pegtl::state<NumberContainer, pegtl::sor<HexadecimalNumber, DecimalNumber, BinaryNumber > > { };
+	DefAction(DecimalNumber) { DefApplyGeneric(NumberContainer) { syn::populateContainer<RegisterValue, syn::KnownNumberTypes::Decimal>(in.string(), state); } };
+	struct Number : public pegtl::state<NumberContainer, pegtl::sor<syn::HexadecimalNumber, DecimalNumber, syn::BinaryNumber > > { };
 	DefAction(Number) {
 		DefApplyInstruction {
 			state.isLabel = false;
