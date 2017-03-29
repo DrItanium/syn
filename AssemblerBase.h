@@ -219,16 +219,6 @@ namespace syn {
 			std::string _title;
 	};
 
-    template<typename Word, Word numberOfRegisters>
-    class RegisterContainer : public NumberContainer<Word> {
-        public:
-            using NumberContainer<Word>::NumberContainer;
-            virtual ~RegisterContainer() { }
-            template<typename Input>
-            void parseRegister(const Input& in, ErrorReportingFunction onError) {
-                setValue(getRegister<Word, numberOfRegisters>(in.string(), onError));
-            }
-    };
 #define DefSymbol(title, str) \
     struct Symbol ## title : public pegtl_string_t ( #str ) { }
 

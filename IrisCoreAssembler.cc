@@ -86,6 +86,7 @@ namespace iris {
 		currentLexeme.clear();
 		fullImmediate = false;
 	}
+
 	class AssemblerState {
 		public:
 			using LabelMap = std::map<std::string, word>;
@@ -113,7 +114,7 @@ namespace iris {
 			void setTemporaryByte(byte value) noexcept { temporaryByte = value; }
 			byte getTemporaryByte() const noexcept { return temporaryByte; }
 			void setTemporaryWord(word value) noexcept { temporaryWord = value; }
-			byte getTemporaryWord() const noexcept { return temporaryWord; }
+			word getTemporaryWord() const noexcept { return temporaryWord; }
 			void setDestination(byte destination) noexcept { current.destination = destination; }
 			void setSource0(byte destination) noexcept { current.source0 = destination; }
 			void setSource1(byte destination) noexcept { current.source1 = destination; }
@@ -191,6 +192,50 @@ namespace iris {
 			LabelMap labelMap;
 			std::vector<AssemblerData> finishedData;
 	};
+	struct ImmediateContainer : syn::NumberContainer<word> {
+		using syn::NumberContainer<word>::NumberContainer;
+		template<typename Input>
+		void success(const Input& in, AssemblerState& parent) {
+			parent.markNotLexeme();
+			parent.setTemporaryWord(getValue());
+		}
+	};
+	struct RegisterIndexContainer : syn::NumberContainer<byte> {
+		using syn::NumberContainer<byte>::NumberContainer;
+		template<typename Input>
+			void success(const Input& in, AssemblerData& parent) {
+				switch(_index) {
+					case 0:
+						parent.destination = getValue();
+						break;
+					case 1:
+						parent.source0 = getValue();
+						break;
+					case 2:
+						parent.source1 = getValue();
+						break;
+					default:
+						syn::reportError("Illegal index provided!");
+				}
+			}
+		template<typename Input>
+			void success(const Input& in, AssemblerState& parent) {
+				switch(_index) {
+					case 0:
+						parent.setDestination(getValue());
+						break;
+					case 1:
+						parent.setSource0(getValue());
+						break;
+					case 2:
+						parent.setSource1(getValue());
+						break;
+					default:
+						syn::reportError("Illegal index provided!");
+				}
+			}
+		unsigned int _index;
+	};
 #define DefAction(rule) template<> struct Action < rule >
 #define DefApplyGeneric(type) template<typename Input> static void apply(const Input& in, type & state)
 #define DefApply DefApplyGeneric(AssemblerState)
@@ -263,28 +308,26 @@ namespace iris {
 
 	using HexadecimalNumber = syn::HexadecimalNumber;
 	DefAction(HexadecimalNumber) {
-		DefApply {
-			state.setTemporaryWord(syn::getHexImmediate<word>(in.string(), syn::reportError));
+		template<typename Input>
+		static void apply(const Input& in, ImmediateContainer& parent) {
+			syn::populateContainer<word, syn::KnownNumberTypes::Hexadecimal>(in.string(), parent);
 		}
 	};
 	using BinaryNumber = syn::BinaryNumber;
 	DefAction(BinaryNumber) {
-		DefApply {
-			state.setTemporaryWord(syn::getBinaryImmediate<word>(in.string(), syn::reportError));
+		template<typename Input>
+		static void apply(const Input& in, ImmediateContainer& parent) {
+			syn::populateContainer<word, syn::KnownNumberTypes::Binary>(in.string(), parent);
 		}
 	};
 	using DecimalNumber = syn::Base10Number;
 	DefAction(DecimalNumber) {
-		DefApply {
-			state.setTemporaryWord(syn::getDecimalImmediate<word>(in.string().c_str(), syn::reportError));
+		template<typename Input>
+		static void apply(const Input& in, ImmediateContainer& parent) {
+			syn::populateContainer<word, syn::KnownNumberTypes::Decimal>(in.string(), parent);
 		}
 	};
-    struct Number : public pegtl::sor<HexadecimalNumber, DecimalNumber, BinaryNumber> { };
-	DefAction(Number) {
-		DefApply {
-			state.markNotLexeme();
-		}
-	};
+    struct Number : public pegtl::state<ImmediateContainer, pegtl::sor<HexadecimalNumber, DecimalNumber, BinaryNumber>> { };
 	using Lexeme = syn::Lexeme;
 	DefAction(Lexeme) {
 		DefApply {
