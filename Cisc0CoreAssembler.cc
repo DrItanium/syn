@@ -93,15 +93,13 @@ namespace cisc0 {
 	using WordCreator = AssemblerWordCreator<1>;
 	using DwordCreator = AssemblerWordCreator<2>;
 
-	struct ChangeCurrentAddress {
-		template<typename Input>
-			ChangeCurrentAddress(const Input& in, AssemblerState& parent) { }
+	struct ChangeCurrentAddress : public syn::NumberContainer<RegisterValue> {
+		using syn::NumberContainer<RegisterValue>::NumberContainer;
 
 		template<typename Input>
 			void success(const Input& in, AssemblerState& parent) {
-				parent.currentAddress = address;
+				parent.currentAddress = getValue();
 			}
-		RegisterValue address;
 	};
 	struct RegisterLabel {
 		template<typename Input>
@@ -146,7 +144,7 @@ namespace cisc0 {
 
 		template<typename Input>
 			void success(const Input& in, ChangeCurrentAddress& parent) {
-				parent.address = getValue();
+                parent.setValue(getValue());
 			}
 
 		template<typename Input>
