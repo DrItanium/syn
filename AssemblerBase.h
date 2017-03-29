@@ -152,6 +152,8 @@ namespace syn {
 	using HexadecimalNumber = Base16Number<'x'>;
 	using BinaryNumber = Base2Number<'b'>;
 
+	
+
 	struct Base10Number : pegtl::plus<pegtl::digit> { };
 
     template<typename Src0, typename Src1, typename Separator = AsmSeparator>
@@ -207,6 +209,16 @@ namespace syn {
         private:
             Word _value;
     };
+	template<typename Address>
+	class NameToAddressMapping : public NumberContainer<Address> {
+		public:
+			using NumberContainer<Address>::NumberContainer;
+			std::string getTitle() const noexcept { return _title; }
+			void setTitle(const std::string& value) noexcept { _title = value; }
+		private:
+			std::string _title;
+	};
+
     template<typename Word, Word numberOfRegisters>
     class RegisterContainer : public NumberContainer<Word> {
         public:
@@ -240,6 +252,11 @@ namespace syn {
     template<typename State, typename C>
     struct StatefulIndirection : pegtl::state<State, Indirection<C>> { };
 
+
+	template<typename R>
+	struct Action : pegtl::nothing<R> { };
+
+	void reportError(const std::string& msg);
 } // end namespace syn
 
 

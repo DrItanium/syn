@@ -53,10 +53,7 @@ namespace syn {
 namespace cisc0 {
 	using Separator = syn::AsmSeparator;
 	using SingleLineComment = syn::SingleLineComment<';'>;
-	template<typename R> struct Action : pegtl::nothing<R> { };
-	void reportError(const std::string& msg) {
-		throw syn::Problem(msg);
-	}
+	template<typename R> struct Action : syn::Action<R> { };
 
 	using AssemblerWord = syn::AssemblerWord<RegisterValue>;
 	struct AssemblerState {
@@ -101,18 +98,17 @@ namespace cisc0 {
 				parent.currentAddress = getValue();
 			}
 	};
-	struct RegisterLabel {
+	struct RegisterLabel : public syn::NameToAddressMapping<Address> {
+		using Parent = syn::NameToAddressMapping<Address>;
 		template<typename Input>
-			RegisterLabel(const Input& in, AssemblerState& parent) : _address(parent.currentAddress) {
+			RegisterLabel(const Input& in, AssemblerState& parent) : Parent(in, parent) {
+				setValue(parent.currentAddress);
 			}
 
 		template<typename Input>
 			void success(const Input& in, AssemblerState& parent) {
-				parent.labels.emplace(_title, _address);
+				parent.labels.emplace(getTitle(), getValue());
 			}
-		Address _address;
-		std::string _title;
-
 	};
 	struct AssemblerInstruction : public InstructionEncoder {
 		template<typename Input>
@@ -139,7 +135,7 @@ namespace cisc0 {
 
 		template<typename Input>
 			void success(const Input& in, RegisterLabel& parent) {
-				parent._address = getValue();
+				parent.setValue(getValue());
 			}
 
 		template<typename Input>
@@ -265,9 +261,10 @@ namespace cisc0 {
 	};
 
 	using HexadecimalNumber = syn::HexadecimalNumber;
+
 	DefAction(HexadecimalNumber) {
 		static auto parseHex(const std::string& str) {
-			return syn::getHexImmediate<RegisterValue>(str, reportError);
+			return syn::getHexImmediate<RegisterValue>(str, syn::reportError);
 		}
 		DefApplyGeneric(NumberContainer) {
 			state.setValue(parseHex(in.string()));
@@ -276,7 +273,7 @@ namespace cisc0 {
 	using BinaryNumber = syn::BinaryNumber;
 	DefAction(BinaryNumber) {
 		static auto parseBinary(const std::string& str) {
-			return syn::getBinaryImmediate<RegisterValue>(str, reportError);
+			return syn::getBinaryImmediate<RegisterValue>(str, syn::reportError);
 		}
 		DefApplyGeneric(NumberContainer) {
 			state.setValue(parseBinary(in.string()));
@@ -285,7 +282,7 @@ namespace cisc0 {
 	using DecimalNumber = syn::Base10Number;
 	DefAction(DecimalNumber) {
 		static auto parseDecimalImmediate(const std::string& input) {
-			return syn::getDecimalImmediate<RegisterValue>(input.c_str(), reportError);
+			return syn::getDecimalImmediate<RegisterValue>(input.c_str(), syn::reportError);
 		}
 		DefApplyGeneric(NumberContainer) {
 			state.setValue(parseDecimalImmediate(in.string()));
@@ -305,7 +302,7 @@ namespace cisc0 {
 
 	DefAction(BitmaskNumber) {
 		DefApplyInstruction {
-			state.bitmask = syn::decodeBits<RegisterValue, byte, 0x000000FF, 0>(syn::getBinaryImmediate<RegisterValue>(in.string(), reportError));
+			state.bitmask = syn::decodeBits<RegisterValue, byte, 0x000000FF, 0>(syn::getBinaryImmediate<RegisterValue>(in.string(), syn::reportError));
 		}
 	};
 	using Lexeme = syn::Lexeme;
@@ -316,7 +313,7 @@ namespace cisc0 {
 			state.isLabel = true;
 		}
 		DefApplyGeneric(RegisterLabel) {
-			state._title = in.string();
+			state.setTitle(in.string());
 		}
 		template<typename Input, int width>
 			static void applyToWordCreator(const Input& in, AssemblerWordCreator<width>& state) {
@@ -363,7 +360,7 @@ namespace cisc0 {
 		};
 		auto result = builtinAliases.find(input);
 		if (result == builtinAliases.end()) {
-			return syn::getRegister<Word, ArchitectureConstants::RegisterCount>(input, reportError);
+			return syn::getRegister<Word, ArchitectureConstants::RegisterCount>(input, syn::reportError);
 		} else {
 			return result->second;
 		}
