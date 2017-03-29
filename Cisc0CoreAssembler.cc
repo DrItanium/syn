@@ -227,8 +227,6 @@ namespace cisc0 {
 		}
 	}
 
-#define DefSymbol(title, str) \
-	struct Symbol ## title : public pegtl_string_t( #str ) { }
 #define DefAction(rule) template<> struct Action < rule >
 #define DefApplyGeneric(type) template<typename Input> static void apply(const Input& in, type& state)
 #define DefApplyInstruction DefApplyGeneric(cisc0::AssemblerInstruction)
@@ -715,20 +713,10 @@ namespace cisc0 {
 			   CompareOperation,
 			   LogicalOperation>
 								> { };
-	template<typename Symbol, typename Value>
-		struct SingleArgumentDirective : pegtl::seq<Symbol, Separator, Value> { };
-
-	DefSymbol(Org, .org);
-	struct OrgDirective : pegtl::state<ChangeCurrentAddress, SingleArgumentDirective<SymbolOrg, Number>> { };
-
-	DefSymbol(Label, .label);
-	struct LabelDirective : pegtl::state<RegisterLabel, SingleArgumentDirective<SymbolLabel, Lexeme>> { };
-
-	DefSymbol(Word, .word);
-	DefSymbol(Dword, .dword);
-	struct WordDirective : pegtl::state<WordCreator, SingleArgumentDirective<SymbolWord, LexemeOrNumber>> { };
-	struct DwordDirective : pegtl::state<DwordCreator, SingleArgumentDirective<SymbolDword, LexemeOrNumber>> { };
-
+    using OrgDirective = syn::StatefulOrgDirective<ChangeCurrentAddress, Number>;
+    using LabelDirective = syn::StatefulLabelDirective<RegisterLabel, Lexeme>;
+    struct WordDirective : syn::StatefulOneArgumentDirective<WordCreator, syn::SymbolWordDirective, LexemeOrNumber> { };
+    struct DwordDirective : syn::StatefulOneArgumentDirective<DwordCreator, syn::SymbolDwordDirective, LexemeOrNumber> { };
 
 	struct Directive : pegtl::sor<
 					   OrgDirective,

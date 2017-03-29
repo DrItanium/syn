@@ -129,6 +129,9 @@ namespace syn {
     template<typename C0, typename C1, typename Separator = AsmSeparator>
     struct TwoPartComponent : public pegtl::seq<C0, Separator, C1> { };
 
+    template<typename State, typename C0, typename C1, typename Separator = AsmSeparator>
+    struct StatefulTwoPartComponent : pegtl::state<State, TwoPartComponent<C0, C1, Separator>> { };
+
     template<typename Register>
     struct OneRegister : public pegtl::seq<Register> { };
     template<typename R0, typename R1, typename Separator = AsmSeparator>
@@ -214,7 +217,28 @@ namespace syn {
                 setValue(getRegister<Word, numberOfRegisters>(in.string(), onError));
             }
     };
+#define DefSymbol(title, str) \
+    struct Symbol ## title : public pegtl_string_t ( #str ) { }
 
+    DefSymbol(OrgDirective, .org);
+    DefSymbol(LabelDirective, .label);
+    DefSymbol(WordDirective, .word);
+    DefSymbol(DwordDirective, .dword);
+
+    template<typename Symbol, typename Value, typename Separator = AsmSeparator>
+    struct OneArgumentDirective : TwoPartComponent<Symbol, Value, Separator> { };
+
+    template<typename State, typename Symbol, typename Value, typename Separator = AsmSeparator>
+    struct StatefulOneArgumentDirective : StatefulTwoPartComponent<State, Symbol, Value, Separator> { };
+
+    template<typename State, typename Number, typename Separator = AsmSeparator>
+    struct StatefulOrgDirective : StatefulOneArgumentDirective<State, SymbolOrgDirective, Number, Separator> { };
+
+    template<typename State, typename Lexeme, typename Separator = AsmSeparator>
+    struct StatefulLabelDirective : StatefulOneArgumentDirective<State, SymbolLabelDirective, Lexeme, Separator> { };
+
+    template<typename State, typename C>
+    struct StatefulIndirection : pegtl::state<State, Indirection<C>> { };
 
 } // end namespace syn
 

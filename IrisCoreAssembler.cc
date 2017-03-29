@@ -297,14 +297,24 @@ namespace iris {
 		}
 	};
 	struct LexemeOrNumber : public syn::LexemeOr<Number> { };
-#define DefSymbol(title, str) \
-    struct Symbol ## title : public pegtl_string_t( #str ) { }
+    template<bool toCode>
+    struct ModifySection {
+        template<typename Input>
+        ModifySection(const Input& in, AssemblerState& parent) { }
+
+        template<typename Input>
+        void success(const Input& in, AssemblerState& parent) {
+            if (toCode) {
+                parent.nowInCodeSection();
+            } else {
+                parent.nowInDataSection();
+            }
+        }
+
+    };
     // directives
-    DefSymbol(LabelDirective, .label);
     DefSymbol(DataDirective, .data);
     DefSymbol(CodeDirective, .code);
-    DefSymbol(OrgDirective, .org);
-    DefSymbol(DeclareDirective, .declare);
 #define DefOperation(title, str, type) \
 	DefSymbol(title, str); \
 	DefAction(Symbol ## title ) { \
@@ -314,23 +324,13 @@ namespace iris {
 	}
 
 #define DefOperationSameTitle(title, str) DefOperation(title, str, title)
-    template<typename T>
-    using ZeroArgumentDirective = pegtl::seq<T>;
-	template<typename T, typename F>
-	using OneArgumentDirective = syn::TwoPartComponent<T, F, Separator>;
+    struct CodeDirective : syn::StatefulIndirection<ModifySection<true>, SymbolCodeDirective> { };
+    struct DataDirective : syn::StatefulIndirection<ModifySection<false>, SymbolDataDirective> { };
 
-
-
-    struct CodeDirective : public ZeroArgumentDirective<SymbolCodeDirective> { };
-	DefAction(CodeDirective) { DefApply { state.nowInCodeSection(); } };
-    struct DataDirective : public ZeroArgumentDirective<SymbolDataDirective> { };
-	DefAction(DataDirective) { DefApply { state.nowInDataSection(); } };
-
-
-    struct OrgDirective : public OneArgumentDirective<SymbolOrgDirective, Number> { };
+    struct OrgDirective : syn::OneArgumentDirective<syn::SymbolOrgDirective, Number> { };
 	DefAction(OrgDirective) { DefApply { state.setCurrentAddress(state.getTemporaryWord()); } };
 
-    struct LabelDirective : public OneArgumentDirective<SymbolLabelDirective, Lexeme> { };
+    struct LabelDirective : syn::OneArgumentDirective<syn::SymbolLabelDirective, Lexeme> { };
 	DefAction(LabelDirective) {
 		DefApply {
 			state.registerLabel(state.getCurrentLexeme());
@@ -339,8 +339,8 @@ namespace iris {
 	};
 
     template<typename T>
-    struct LexemeOrNumberDirective : public OneArgumentDirective<T, LexemeOrNumber> { };
-    struct DeclareDirective : public LexemeOrNumberDirective<SymbolDeclareDirective> { };
+    struct LexemeOrNumberDirective : public syn::OneArgumentDirective<T, LexemeOrNumber> { };
+    struct DeclareDirective : public LexemeOrNumberDirective<syn::SymbolWordDirective> { };
 	DefAction(DeclareDirective) {
 		DefApply {
 			if (state.inDataSection()) {
