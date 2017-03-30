@@ -117,6 +117,10 @@ namespace syn {
 	template<char prefix>
 	struct GenericRegister : pegtl::if_must<pegtl::one<prefix>, pegtl::plus<pegtl::digit>> { };
 
+    using GPR = GenericRegister<'r'>;
+    using FloatRegister = GenericRegister<'f'>;
+    using PredicateRegister = GenericRegister<'p'>;
+
     struct EndOfLineComment : pegtl::until<pegtl::eolf> { };
     template<char tag>
     struct SingleLineComment : pegtl::disable<pegtl::one<tag>, EndOfLineComment> { };
@@ -226,6 +230,14 @@ namespace syn {
     DefSymbol(LabelDirective, .label);
     DefSymbol(WordDirective, .word);
     DefSymbol(DwordDirective, .dword);
+    DefSymbol(AndKeyword, and);
+    DefSymbol(OrKeyword, or);
+    DefSymbol(NotKeyword, not);
+    DefSymbol(AddKeyword, add);
+    DefSymbol(SubKeyword, sub);
+    DefSymbol(MulKeyword, mul);
+    DefSymbol(DivKeyword, div);
+    DefSymbol(RemKeyword, rem);
 
     template<typename Symbol, typename Value, typename Separator = AsmSeparator>
     struct OneArgumentDirective : TwoPartComponent<Symbol, Value, Separator> { };

@@ -306,7 +306,7 @@ namespace cisc0 {
 	};
 	struct LexemeOrNumber : public syn::LexemeOr<Number> { };
 
-	struct NormalRegister : public syn::GenericRegister<'r'> { };
+    using NormalRegister = syn::GPR;
 	DefSymbol(AddrRegister, addr);
 	DefSymbol(StackPointer, sp);
 	DefSymbol(InstructionPointer, ip);
@@ -465,7 +465,8 @@ namespace cisc0 {
 		}
 	};
 #define DefArithmeticOperation(title, str) \
-	DefSubTypeWithSymbol(title, str, ArithmeticOps)
+    using Symbol ## title = syn:: Symbol ## title ## Keyword; \
+    DefSubType(title, str, ArithmeticOps)
 
 	DefArithmeticOperation(Add, add);
 	DefArithmeticOperation(Sub, sub);

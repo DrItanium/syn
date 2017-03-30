@@ -270,8 +270,8 @@ namespace iris {
 #define DefApply DefApplyGeneric(AssemblerState)
 	using Separator = syn::AsmSeparator;
 	using SingleLineComment = syn::SingleLineComment<';'>;
-	struct GeneralPurposeRegister : syn::GenericRegister<'r'> { };
-	struct PredicateRegister : syn::GenericRegister<'p'> { };
+    using GeneralPurposeRegister = syn::GPR;
+    using PredicateRegister = syn::PredicateRegister;
 	DefAction(GeneralPurposeRegister) {
 		DefApplyGeneric(RegisterIndexContainer) {
             state.setValue(syn::getRegister<word, ArchitectureConstants::RegisterCount>(in.string(), syn::reportError));
@@ -332,22 +332,23 @@ namespace iris {
         }
 		DefApply { }
 	};
-    struct DestinationPredicateInverseRegister : public IndirectPredicateRegister { };
+    struct DestinationPredicateInverseRegister : IndirectPredicateRegister { };
 	DefAction(DestinationPredicateInverseRegister) {
         DefApplyGeneric(RegisterIndexContainer) {
             state._index = RegisterIndexContainer::Type::PredicateInverseDestination;
         }
 		DefApply { }
 	};
-	struct DestinationPredicates : public syn::TwoRegister<StatefulRegister<DestinationPredicateRegister>, StatefulRegister<DestinationPredicateInverseRegister>> { };
-	struct Source0Predicate : public IndirectPredicateRegister { };
+	struct DestinationPredicates : syn::TwoRegister<StatefulRegister<DestinationPredicateRegister>, StatefulRegister<DestinationPredicateInverseRegister>> { };
+
+	struct Source0Predicate : IndirectPredicateRegister { };
 	DefAction(Source0Predicate) {
         DefApplyGeneric(RegisterIndexContainer) {
             state._index = RegisterIndexContainer::Type::PredicateSource0;
         }
 		DefApply { }
 	};
-	struct Source1Predicate : public IndirectPredicateRegister { };
+	struct Source1Predicate : IndirectPredicateRegister { };
 	DefAction(Source1Predicate) {
         DefApplyGeneric(RegisterIndexContainer) {
             state._index = RegisterIndexContainer::Type::PredicateSource1;
@@ -376,14 +377,14 @@ namespace iris {
 			syn::populateContainer<word, syn::KnownNumberTypes::Decimal>(in.string(), parent);
 		}
 	};
-    struct Number : public pegtl::state<ImmediateContainer, pegtl::sor<HexadecimalNumber, DecimalNumber, BinaryNumber>> { };
+    struct Number : pegtl::state<ImmediateContainer, pegtl::sor<HexadecimalNumber, DecimalNumber, BinaryNumber>> { };
 	using Lexeme = syn::Lexeme;
 	DefAction(Lexeme) {
 		DefApply {
 			state.setLexeme(in.string());
 		}
 	};
-	struct LexemeOrNumber : public syn::LexemeOr<Number> { };
+	struct LexemeOrNumber : syn::LexemeOr<Number> { };
     template<bool toCode>
     struct ModifySection {
         template<typename Input>
@@ -400,13 +401,16 @@ namespace iris {
 
     };
     // directives
+#define ConstructOperationSetter(title, type) \
+    DefAction(Symbol ## title ) { \
+        DefApply { \
+            state.setOperation< CURRENT_TYPE >(CURRENT_TYPE :: type ) ; \
+        } \
+    }
+
 #define DefOperation(title, str, type) \
 	DefSymbol(title, str); \
-	DefAction(Symbol ## title ) { \
-		DefApply { \
-			state.setOperation< CURRENT_TYPE >( CURRENT_TYPE :: type ) ; \
-		} \
-	}
+    ConstructOperationSetter(title, type)
 
 #define DefOperationSameTitle(title, str) DefOperation(title, str, title)
     DefSymbol(DataDirective, .data);
@@ -442,8 +446,8 @@ namespace iris {
 			}
 		}
 	};
-    struct Directive : public pegtl::sor<OrgDirective, LabelDirective, CodeDirective, DataDirective, DeclareDirective> { };
-    struct Immediate : public pegtl::sor<LexemeOrNumber> { };
+    struct Directive : pegtl::sor<OrgDirective, LabelDirective, CodeDirective, DataDirective, DeclareDirective> { };
+    struct Immediate : pegtl::sor<LexemeOrNumber> { };
 	DefAction(Immediate) {
 		DefApply {
 			state.markHasFullImmediate();
@@ -452,7 +456,7 @@ namespace iris {
 			}
 		}
 	};
-    struct HalfImmediate : public pegtl::sor<Number> { };
+    struct HalfImmediate : pegtl::sor<Number> { };
 	DefAction(HalfImmediate) {
 		DefApply {
 			state.markNotFullImmediate();
@@ -470,11 +474,15 @@ namespace iris {
 	template<typename Operation>
 	using TwoGPRInstruction = GenericInstruction<Operation, TwoGPR>;
 #define CURRENT_TYPE ArithmeticOp
-    DefOperationSameTitle(Add, add);
-    DefOperationSameTitle(Sub, sub);
-    DefOperationSameTitle(Mul, mul);
-    DefOperationSameTitle(Div, div);
-    DefOperationSameTitle(Rem, rem);
+#define DefActionUsingPredefinedSymbol(title) \
+    using Symbol ## title = syn:: Symbol ## title ## Keyword ; \
+    ConstructOperationSetter(title, title)
+
+    DefActionUsingPredefinedSymbol(Add);
+    DefActionUsingPredefinedSymbol(Sub);
+    DefActionUsingPredefinedSymbol(Mul);
+    DefActionUsingPredefinedSymbol(Div);
+    DefActionUsingPredefinedSymbol(Rem);
     DefOperationSameTitle(ShiftLeft, shl);
     DefOperationSameTitle(ShiftRight, shr);
     DefOperation(And, and, BinaryAnd);
