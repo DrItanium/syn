@@ -121,13 +121,21 @@ namespace iris {
 			void stashTemporaryByteInDestination() noexcept { setDestination(temporaryByte); }
 			void stashTemporaryByteInSource0() noexcept { setSource0(temporaryByte); }
 			void stashTemporaryByteInSource1() noexcept { setSource1(temporaryByte); }
+            template<bool upper>
+            void encodeDestinationPredicate(byte value) noexcept {
+				setDestination(iris::encode4Bits<upper>(current.destination, value));
+            }
 			template<bool upper>
 			void encodeDestinationPredicate() noexcept {
-				setDestination(iris::encode4Bits<upper>(current.destination, temporaryByte));
+                encodeDestinationPredicate<upper>(temporaryByte);
+			}
+			template<bool upper>
+			void encodeSource0Predicate(byte value) noexcept {
+				setSource0(iris::encode4Bits<upper>(current.source0, value));
 			}
 			template<bool upper>
 			void encodeSource0Predicate() noexcept {
-				setSource0(iris::encode4Bits<upper>(current.source0, temporaryByte));
+                encodeSource0Predicate<upper>(temporaryByte);
 			}
 			void markHasLexeme() noexcept {
 				current.hasLexeme = true;
@@ -202,16 +210,25 @@ namespace iris {
 	};
 	struct RegisterIndexContainer : syn::NumberContainer<byte> {
 		using syn::NumberContainer<byte>::NumberContainer;
+        enum class Type {
+            DestinationGPR,
+            Source0GPR,
+            Source1GPR,
+            PredicateDestination,
+            PredicateInverseDestination,
+            PredicateSource0,
+            PredicateSource1,
+        };
 		template<typename Input>
 			void success(const Input& in, AssemblerData& parent) {
 				switch(_index) {
-					case 0:
+					case Type::DestinationGPR:
 						parent.destination = getValue();
 						break;
-					case 1:
+					case Type::Source0GPR:
 						parent.source0 = getValue();
 						break;
-					case 2:
+                    case Type::Source1GPR:
 						parent.source1 = getValue();
 						break;
 					default:
@@ -221,20 +238,32 @@ namespace iris {
 		template<typename Input>
 			void success(const Input& in, AssemblerState& parent) {
 				switch(_index) {
-					case 0:
+					case Type::DestinationGPR:
 						parent.setDestination(getValue());
 						break;
-					case 1:
+					case Type::Source0GPR:
 						parent.setSource0(getValue());
 						break;
-					case 2:
+                    case Type::Source1GPR:
 						parent.setSource1(getValue());
 						break;
+                    case Type::PredicateDestination:
+                        parent.encodeDestinationPredicate<false>(getValue());
+                        break;
+                    case Type::PredicateInverseDestination:
+                        parent.encodeDestinationPredicate<true>(getValue());
+                        break;
+                    case Type::PredicateSource0:
+                        parent.encodeSource0Predicate<false>(getValue());
+                        break;
+                    case Type::PredicateSource1:
+                        parent.encodeSource0Predicate<true>(getValue());
+                        break;
 					default:
 						syn::reportError("Illegal index provided!");
 				}
 			}
-		unsigned int _index;
+		Type _index;
 	};
 #define DefAction(rule) template<> struct Action < rule >
 #define DefApplyGeneric(type) template<typename Input> static void apply(const Input& in, type & state)
@@ -250,8 +279,11 @@ namespace iris {
         DefApply { }
 	};
 	DefAction(PredicateRegister) {
+		DefApplyGeneric(RegisterIndexContainer) {
+            state.setValue(syn::getRegister<word, ArchitectureConstants::ConditionRegisterCount>(in.string(), syn::reportError));
+		}
 		DefApply {
-			state.setTemporaryByte(syn::getRegister<word, ArchitectureConstants::ConditionRegisterCount>(in.string(), syn::reportError));
+			//state.setTemporaryByte(syn::getRegister<word, ArchitectureConstants::ConditionRegisterCount>(in.string(), syn::reportError));
 		}
 	};
 	using IndirectGPR = syn::Indirection<GeneralPurposeRegister>;
@@ -260,55 +292,67 @@ namespace iris {
 	DefIndirectGPR(DestinationGPR);
 	DefAction(DestinationGPR) {
 		DefApplyGeneric(RegisterIndexContainer) {
-            state._index = 0;
+            state._index = RegisterIndexContainer::Type::DestinationGPR;
 		}
-        DefApply { }
+        DefApply {
+            //state.stashTemporaryByteInDestination();
+        }
 	};
 	DefIndirectGPR(Source0GPR);
 	DefAction(Source0GPR) {
 		DefApplyGeneric(RegisterIndexContainer) {
-            state._index = 1;
+            state._index = RegisterIndexContainer::Type::Source0GPR;
 		}
-        DefApply { }
+        DefApply {
+            //state.stashTemporaryByteInSource0();
+        }
 	};
     DefIndirectGPR(Source1GPR);
 	DefAction(Source1GPR) {
 		DefApplyGeneric(RegisterIndexContainer) {
-            state._index = 2;
+            state._index = RegisterIndexContainer::Type::Source1GPR;
 		}
-        DefApply { }
+        DefApply {
+            //state.stashTemporaryByteInSource1();
+        }
 	};
-    using StatefulDestinationGPR = pegtl::state<RegisterIndexContainer, DestinationGPR>;
+    template<typename T>
+    using StatefulRegister = pegtl::state<RegisterIndexContainer, T>;
+    using StatefulDestinationGPR = StatefulRegister<DestinationGPR>;
 #undef DefIndirectGPR
-	using SourceRegisters = syn::SourceRegisters<Source0GPR, Source1GPR>;
-	struct OneGPR : pegtl::state<RegisterIndexContainer, syn::OneRegister<DestinationGPR>> { };
-    struct TwoGPR : pegtl::state<RegisterIndexContainer, syn::TwoRegister<DestinationGPR, Source0GPR>> { };
-	struct ThreeGPR : pegtl::state<RegisterIndexContainer, syn::TwoRegister<DestinationGPR, SourceRegisters>> { };
+	using SourceRegisters = syn::SourceRegisters<StatefulRegister<Source0GPR>, StatefulRegister<Source1GPR>>;
+	struct OneGPR :  syn::OneRegister<StatefulDestinationGPR> { };
+    struct TwoGPR : syn::TwoRegister<StatefulDestinationGPR, StatefulRegister<Source0GPR>> { };
+	struct ThreeGPR : syn::TwoRegister<StatefulDestinationGPR, SourceRegisters> { };
     using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
     struct DestinationPredicateRegister : IndirectPredicateRegister { };
 	DefAction(DestinationPredicateRegister) {
-		DefApply {
-			state.encodeDestinationPredicate<false>();
-		}
+        DefApplyGeneric(RegisterIndexContainer) {
+            state._index = RegisterIndexContainer::Type::PredicateDestination;
+        }
+		DefApply { }
 	};
     struct DestinationPredicateInverseRegister : public IndirectPredicateRegister { };
 	DefAction(DestinationPredicateInverseRegister) {
-		DefApply {
-			state.encodeDestinationPredicate<true>();
-		}
+        DefApplyGeneric(RegisterIndexContainer) {
+            state._index = RegisterIndexContainer::Type::PredicateInverseDestination;
+        }
+		DefApply { }
 	};
-	struct DestinationPredicates : public syn::TwoRegister<DestinationPredicateRegister, DestinationPredicateInverseRegister> { };
+	struct DestinationPredicates : public syn::TwoRegister<StatefulRegister<DestinationPredicateRegister>, StatefulRegister<DestinationPredicateInverseRegister>> { };
 	struct Source0Predicate : public IndirectPredicateRegister { };
 	DefAction(Source0Predicate) {
-		DefApply {
-			state.encodeSource0Predicate<false>();
-		}
+        DefApplyGeneric(RegisterIndexContainer) {
+            state._index = RegisterIndexContainer::Type::PredicateSource0;
+        }
+		DefApply { }
 	};
 	struct Source1Predicate : public IndirectPredicateRegister { };
 	DefAction(Source1Predicate) {
-		DefApply {
-			state.encodeSource0Predicate<true>();
-		}
+        DefApplyGeneric(RegisterIndexContainer) {
+            state._index = RegisterIndexContainer::Type::PredicateSource1;
+        }
+		DefApply { }
 	};
 
 	using HexadecimalNumber = syn::HexadecimalNumber;
@@ -603,8 +647,8 @@ namespace iris {
     struct OperationPredicateFourArgs : public pegtl::sor<SymbolCRXor, SymbolCRAnd, SymbolCROr, SymbolCRNand, SymbolCRNor> { };
     struct PredicateInstructionOneGPR : public pegtl::seq<OperationPredicateOneGPR, Separator, StatefulDestinationGPR> { };
     struct PredicateInstructionTwoArgs : public pegtl::seq<OperationPredicateTwoArgs, Separator, DestinationPredicates> { };
-    struct PredicateInstructionThreeArgs : public pegtl::seq<OperationPredicateThreeArgs, Separator, DestinationPredicates, Separator, Source0Predicate> { };
-    struct PredicateInstructionFourArgs : public pegtl::seq<OperationPredicateFourArgs, Separator, DestinationPredicates, Separator, Source0Predicate, Separator, Source1Predicate> { };
+    struct PredicateInstructionThreeArgs : public pegtl::seq<OperationPredicateThreeArgs, Separator, DestinationPredicates, Separator, StatefulRegister<Source0Predicate>> { };
+    struct PredicateInstructionFourArgs : public pegtl::seq<OperationPredicateFourArgs, Separator, DestinationPredicates, Separator, StatefulRegister<Source0Predicate>, Separator, StatefulRegister<Source1Predicate>> { };
     struct PredicateInstruction : public pegtl::sor<PredicateInstructionOneGPR, PredicateInstructionTwoArgs, PredicateInstructionThreeArgs, PredicateInstructionFourArgs> { };
 	DefGroupSet(PredicateInstruction, ConditionalRegister);
 
