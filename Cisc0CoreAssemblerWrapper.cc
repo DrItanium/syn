@@ -28,37 +28,33 @@
 #include "Cisc0ClipsExtensions.h"
 #include "Cisc0CoreAssembler.h"
 
-namespace syn {
-    DefWrapperSymbolicName(cisc0::AssemblerState, "cisc0:assembly-parsing-state");
-}
 namespace cisc0 {
 
+	void installAssemblerParsingState(void* env) {
+		// AssemblerState needs to be an external address and we can have
+		// multiple assembler states sitting around too!
+		pegtl::analyze<cisc0::Main>();
+		// make sure that the parser is still valid before we go any further!
+		AssemblerStateWrapper::registerWithEnvironment(env);
+		AssemblerStateWrapper::registerWithEnvironment(env, "cisc0-asm-parser");
+		AssemblerStateWrapper::registerWithEnvironment(env, "cisc0-assembler");
+	}
 	AssemblerStateWrapper::Self* AssemblerStateWrapper::make() noexcept {
 		return new AssemblerStateWrapper::Self();
 	}
-    void AssemblerStateWrapper::getMultifield(void* env, CLIPSValuePtr ret) {
-        get()->output(env, ret);
-    }
-    bool AssemblerStateWrapper::resolve() {
-        get()->resolveDeclarations();
-        get()->resolveInstructions();
-            return true;
-        return true;
-    }
-    bool AssemblerStateWrapper::parseLine(const std::string& line) {
-        auto& ref = *(get());
-        return pegtl::parse_string<cisc0::Main, cisc0::Action>(line, "clips-input", ref);
-    }
+	void AssemblerStateWrapper::getMultifield(void* env, CLIPSValuePtr ret) {
+		get()->output(env, ret);
+	}
+	bool AssemblerStateWrapper::resolve() {
+		get()->resolveDeclarations();
+		get()->resolveInstructions();
+		return true;
+	}
+	bool AssemblerStateWrapper::parseLine(const std::string& line) {
+		auto& ref = *(get());
+		return pegtl::parse_string<cisc0::Main, cisc0::Action>(line, "clips-input", ref);
+	}
 
-    void installAssemblerParsingState(void* env) {
-        // AssemblerState needs to be an external address and we can have
-        // multiple assembler states sitting around too!
-        pegtl::analyze<cisc0::Main>();
-        // make sure that the parser is still valid before we go any further!
-        AssemblerStateWrapper::registerWithEnvironment(env);
-        AssemblerStateWrapper::registerWithEnvironment(env, "cisc0-asm-parser");
-        AssemblerStateWrapper::registerWithEnvironment(env, "cisc0-assembler");
-    }
 
 	void AssemblerStateWrapper::registerWithEnvironment(void* env, const char* title) {
 		AssemblerStateWrapper::Parent::registerWithEnvironment(env, title, callFunction);

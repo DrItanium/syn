@@ -652,4 +652,7 @@ namespace cisc0 {
     };
 
 }
+namespace syn {
+	DefWrapperSymbolicName(cisc0::AssemblerState, "cisc0:assembly-parsing-state");
+}
 #endif 
