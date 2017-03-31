@@ -384,6 +384,8 @@ template<typename T, typename R = T>
 inline R div(T numerator, T denominator) {
 	if (denominator == 0) {
 		throw syn::Problem("Denominator is zero");
+    } else if (denominator == 1) {
+        return static_cast<R>(numerator);
 	} else {
 		return static_cast<R>(numerator / denominator);
 	}
@@ -393,6 +395,8 @@ template<typename T, typename R = T>
 inline R rem(T numerator, T denominator) {
 	if (denominator == 0) {
 		throw syn::Problem("Denominator is zero");
+    } else if (denominator == 1) {
+        return static_cast<R>(numerator);
 	} else {
 		return static_cast<R>(numerator % denominator);
 	}
@@ -553,6 +557,9 @@ constexpr typename UpperLowerPair<T>::HalfType getLowerHalf(T value) noexcept {
     using OutputType = typename DataPair::HalfType;
     return syn::decodeBits<InputType, OutputType, DataPair::lowerMask, 0>(value);
 }
+template<> constexpr byte getLowerHalf<uint16>(uint16 value) noexcept { return static_cast<byte>(value); }
+template<> constexpr uint16 getLowerHalf<uint32>(uint32 value) noexcept { return static_cast<uint16>(value); }
+template<> constexpr uint32 getLowerHalf<uint64>(uint64 value) noexcept { return static_cast<uint32>(value); }
 
 template<typename T>
 constexpr T setLowerHalf(T value, typename UpperLowerPair<T>::HalfType lower) noexcept {

@@ -274,7 +274,15 @@ namespace syn {
 	template<typename T>
 	using Block = T[];
 
-#define argCheck(storage, position, type) EnvArgTypeCheck(env, funcStr.c_str(), position, type, storage)
+    bool PerformArgCheck(void* env, int position, unsigned int type, CLIPSValuePtr storage, const std::string& funcStr) noexcept {
+        return EnvArgTypeCheck(env, funcStr.c_str(), position, type, storage);
+    }
+    bool Arg2IsInteger(void* env, CLIPSValuePtr storage, const std::string& funcStr) noexcept {
+        return PerformArgCheck(env, 2, INTEGER, storage, funcStr);
+    }
+    bool Arg2IsSymbol(void* env, CLIPSValuePtr storage, const std::string& funcStr) noexcept {
+        return PerformArgCheck(env, 2, SYMBOL, storage, funcStr);
+    }
 	template<typename Word>
 	class ManagedMemoryBlock : public ExternalAddressWrapper<Block<Word>> {
 		public:
@@ -301,7 +309,7 @@ namespace syn {
 				try {
 					if (EnvRtnArgCount(env) == 2) {
 						CLIPSValue capacity;
-						if (!argCheck(&capacity, 2, INTEGER)) {
+                        if (!Arg2IsInteger(env, &capacity, funcStr)) {
 							CVSetBoolean(ret, false);
 							errorMessage(env, "NEW", 1, funcErrorPrefix, " expected an integer for capacity!");
 						} else {
@@ -363,7 +371,7 @@ namespace syn {
 						return callErrorMessage(subOp, ss.str());
 					};
 					CLIPSValue operation;
-					if (!argCheck(&operation, 2, SYMBOL)) {
+                    if (!Arg2IsSymbol(env, &operation, funcStr)) {
 						return errorMessage(env, "CALL", 2, funcErrorPrefix, "expected a function name to call!");
 					} else {
 						std::string str(EnvDOToString(env, operation));
@@ -372,175 +380,170 @@ namespace syn {
 						if (result == opTranslation.end()) {
 							CVSetBoolean(ret, false);
 							return callErrorMessage(str, "<- unknown operation requested!");
-						} else {
-							auto rangeViolation = [errOutOfRange, ptr, &str](Address addr) { errOutOfRange(str, ptr->size(), addr); };
-							CLIPSValue arg0, arg1;
-							auto checkArg = [callErrorMessage, &str, env](unsigned int index, unsigned int type, const std::string& msg, CLIPSValue* dat) {
-								if (!argCheck(dat, index, type)) {
-									return callErrorMessage(str, msg);
-								} else {
-									return true;
-								}
-							};
-							auto checkArg0 = [checkArg, &arg0, env, &str](unsigned int type, const std::string& msg) { return checkArg(3, type, msg, &arg0); };
-							auto checkArg1 = [checkArg, &arg1, env, &str](unsigned int type, const std::string& msg) { return checkArg(4, type, msg, &arg1); };
-							auto oneCheck = [checkArg0](unsigned int type, const std::string& msg) { return checkArg0(type, msg); };
-							auto twoCheck = [checkArg0, checkArg1](unsigned int type0, const std::string& msg0, unsigned int type1, const std::string& msg1) {
-								return checkArg0(type0, msg0) && checkArg1(type1, msg1);
-							};
-							auto op = result->second;
-							// TODO: clean this up when we migrate to c++17 and use the
-							// inline if variable declarations
-							auto findOpCount = opArgCounts.find(op);
-							if (findOpCount == opArgCounts.end()) {
-								CVSetBoolean(ret, false);
-								return callErrorMessage(str, "<- unknown argument count, not registered!!!!!");
-							} else {
-								// if it is registered then check the length
-								auto argCount = 2 /* always have two arguments */  + findOpCount->second;
-								if (argCount != EnvRtnArgCount(env)) {
-									std::stringstream ss;
-									ss << " expected " << std::dec << argCount << " arguments";
-									CVSetBoolean(ret, false);
-									auto tmp = ss.str();
-									return callErrorMessage(str, tmp);
-								}
-							}
-							CVSetBoolean(ret, true);
-							// now check and see if we are looking at a legal
-							// instruction count
-							if (op == MemoryBlockOp::Type) {
-								CVSetSymbol(ret, func.c_str());
-							} else if (op == MemoryBlockOp::Size) {
-								CVSetInteger(ret, ptr->size());
-							} else if (op == MemoryBlockOp::Clear) {
-								ptr->setMemoryToSingleValue(0);
-							} else if (op == MemoryBlockOp::Initialize) {
-								ptr->setMemoryToSingleValue(0);
-							} else if (op == MemoryBlockOp::Shutdown) {
-								// do nothing right now
-							} else if (op == MemoryBlockOp::Get) {
-								auto check = oneCheck(INTEGER, "Argument 0 must be an integer address!");
-								if (check) {
-									auto addr = EnvDOToLong(env, arg0);
-									if (!ptr->legalAddress(addr)) {
-										rangeViolation(addr);
-										check = false;
-									} else {
-										CVSetInteger(ret, ptr->getMemoryCellValue(addr));
-									}
-								}
-								return check;
-							} else if (op == MemoryBlockOp::Populate) {
-								auto check = oneCheck(INTEGER, "First argument must be an INTEGER value to populate all of the memory cells with!");
-								if (check) {
-									ptr->setMemoryToSingleValue(EnvDOToLong(env, arg0));
-								}
-								return check;
-							} else if (op == MemoryBlockOp::Increment || op == MemoryBlockOp::Decrement) {
-								auto check = oneCheck(INTEGER, "First argument must be an address");
-								if (check) {
-									auto addr = EnvDOToLong(env, arg0);
-									if (!ptr->legalAddress(addr)) {
-										check = false;
-										rangeViolation(addr);
-									} else {
-										if (op == MemoryBlockOp::Increment) {
-											ptr->incrementMemoryCell(addr);
-										} else {
-											ptr->decrementMemoryCell(addr);
-										}
-									}
-								}
-								return check;
-							} else if (op == MemoryBlockOp::Set || op == MemoryBlockOp::Swap || op == MemoryBlockOp::Move) {
-								auto check = twoCheck(INTEGER, "First argument must be an address", INTEGER, "Second argument must be an address");
-								if (check) {
-									auto addr0 = EnvDOToLong(env, arg0);
-									auto addr1 = EnvDOToLong(env, arg1);
-									if (!ptr->legalAddress(addr0)) {
-										check = false;
-										rangeViolation(addr0);
-									} else {
-										if (op == MemoryBlockOp::Set) {
-											ptr->setMemoryCell(addr0, addr1);
-										} else {
-											if (!ptr->legalAddress(addr1)) {
-												check = false;
-												rangeViolation(addr1);
-											} else {
-												if (op == MemoryBlockOp::Swap) {
-													ptr->swapMemoryCells(addr0, addr1);
-												} else {
-													ptr->copyMemoryCell(addr0, addr1);
-												}
-											}
-										}
-									}
-								}
-								return check;
-							} else if (isArithmeticOp(op)) {
-								auto check = twoCheck(INTEGER, "First argument must be an address", INTEGER, "Second argument must be an address!");
-								if (check) {
-									auto addr0 = EnvDOToLong(env, arg0);
-									auto addr1 = EnvDOToLong(env, arg1);
-									if (!ptr->legalAddress(addr0)) {
-										check = false;
-										rangeViolation(addr0);
-									} else if (!ptr->legalAddress(addr1)) {
-										check = false;
-										rangeViolation(addr1);
-									} else {
-										using ArithmeticOperation = std::function<Word(Word, Word)>;
-										ArithmeticOperation fn;
-										switch(op) {
-											case MemoryBlockOp::Combine:
-												fn = syn::add<Word>;
-												break;
-											case MemoryBlockOp::Difference:
-												fn = syn::sub<Word>;
-												break;
-											case MemoryBlockOp::Product:
-												fn = syn::mul<Word>;
-												break;
-											case MemoryBlockOp::Divide:
-												fn = syn::div<Word>;
-												break;
-											case MemoryBlockOp::Remainder:
-												fn = syn::rem<Word>;
-												break;
-											default:
-												return callErrorMessage(str, "<- legal but unimplemented arithmetic operation!");
-										}
-										try {
-											auto val0 = ptr->getMemoryCellValue(addr0);
-											auto val1 = ptr->getMemoryCellValue(addr1);
-											CVSetInteger(ret, fn(val0, val1));
-										} catch (syn::Problem p) {
-											check = false;
-											CVSetBoolean(ret, false);
-											std::stringstream s;
-											s << "an exception was thrown: " << p.what();
-											auto str = s.str();
-											errorMessage(env, "CALL", 2, funcErrorPrefix, str);
-										}
-									}
-								} else {
-									CVSetBoolean(ret, false);
-								}
-								return check;
-							} else {
-								return callErrorMessage(str, "<- legal but unimplemented operation!");
-							}
-							return true;
 						}
-					}
+                        auto rangeViolation = [errOutOfRange, ptr, &str](Address addr) { errOutOfRange(str, ptr->size(), addr); };
+                        CLIPSValue arg0, arg1;
+                        auto checkArg = [callErrorMessage, &str, env](unsigned int index, unsigned int type, const std::string& msg, CLIPSValue* dat) {
+                            if (!PerformArgCheck(env, index, type, dat, funcStr)) {
+                                return callErrorMessage(str, msg);
+                            }
+                            return true;
+                        };
+                        auto checkArg0 = [checkArg, &arg0, env, &str](unsigned int type, const std::string& msg) { return checkArg(3, type, msg, &arg0); };
+                        auto checkArg1 = [checkArg, &arg1, env, &str](unsigned int type, const std::string& msg) { return checkArg(4, type, msg, &arg1); };
+                        auto oneCheck = [checkArg0](unsigned int type, const std::string& msg) { return checkArg0(type, msg); };
+                        auto twoCheck = [checkArg0, checkArg1](unsigned int type0, const std::string& msg0, unsigned int type1, const std::string& msg1) {
+                            return checkArg0(type0, msg0) && checkArg1(type1, msg1);
+                        };
+                        auto op = result->second;
+                        // TODO: clean this up when we migrate to c++17 and use the
+                        // inline if variable declarations
+                        auto findOpCount = opArgCounts.find(op);
+                        if (findOpCount == opArgCounts.end()) {
+                            CVSetBoolean(ret, false);
+                            return callErrorMessage(str, "<- unknown argument count, not registered!!!!!");
+                        }
+                        // if it is registered then check the length
+                        auto argCount = 2 /* always have two arguments */  + findOpCount->second;
+                        if (argCount != EnvRtnArgCount(env)) {
+                            std::stringstream ss;
+                            ss << " expected " << std::dec << argCount << " arguments";
+                            CVSetBoolean(ret, false);
+                            auto tmp = ss.str();
+                            return callErrorMessage(str, tmp);
+                        }
+                        CVSetBoolean(ret, true);
+                        // now check and see if we are looking at a legal
+                        // instruction count
+                        if (op == MemoryBlockOp::Type) {
+                            CVSetSymbol(ret, func.c_str());
+                        } else if (op == MemoryBlockOp::Size) {
+                            CVSetInteger(ret, ptr->size());
+                        } else if (op == MemoryBlockOp::Clear) {
+                            ptr->setMemoryToSingleValue(0);
+                        } else if (op == MemoryBlockOp::Initialize) {
+                            ptr->setMemoryToSingleValue(0);
+                        } else if (op == MemoryBlockOp::Shutdown) {
+                            // do nothing right now
+                        } else if (op == MemoryBlockOp::Get) {
+                            auto check = oneCheck(INTEGER, "Argument 0 must be an integer address!");
+                            if (check) {
+                                auto addr = EnvDOToLong(env, arg0);
+                                if (!ptr->legalAddress(addr)) {
+                                    rangeViolation(addr);
+                                    check = false;
+                                } else {
+                                    CVSetInteger(ret, ptr->getMemoryCellValue(addr));
+                                }
+                            }
+                            return check;
+                        } else if (op == MemoryBlockOp::Populate) {
+                            auto check = oneCheck(INTEGER, "First argument must be an INTEGER value to populate all of the memory cells with!");
+                            if (check) {
+                                ptr->setMemoryToSingleValue(EnvDOToLong(env, arg0));
+                            }
+                            return check;
+                        } else if (op == MemoryBlockOp::Increment || op == MemoryBlockOp::Decrement) {
+                            auto check = oneCheck(INTEGER, "First argument must be an address");
+                            if (check) {
+                                auto addr = EnvDOToLong(env, arg0);
+                                if (!ptr->legalAddress(addr)) {
+                                    check = false;
+                                    rangeViolation(addr);
+                                } else {
+                                    if (op == MemoryBlockOp::Increment) {
+                                        ptr->incrementMemoryCell(addr);
+                                    } else {
+                                        ptr->decrementMemoryCell(addr);
+                                    }
+                                }
+                            }
+                            return check;
+                        } else if (op == MemoryBlockOp::Set || op == MemoryBlockOp::Swap || op == MemoryBlockOp::Move) {
+                            auto check = twoCheck(INTEGER, "First argument must be an address", INTEGER, "Second argument must be an address");
+                            if (check) {
+                                auto addr0 = EnvDOToLong(env, arg0);
+                                auto addr1 = EnvDOToLong(env, arg1);
+                                if (!ptr->legalAddress(addr0)) {
+                                    check = false;
+                                    rangeViolation(addr0);
+                                } else {
+                                    if (op == MemoryBlockOp::Set) {
+                                        ptr->setMemoryCell(addr0, addr1);
+                                    } else {
+                                        if (!ptr->legalAddress(addr1)) {
+                                            check = false;
+                                            rangeViolation(addr1);
+                                        } else {
+                                            if (op == MemoryBlockOp::Swap) {
+                                                ptr->swapMemoryCells(addr0, addr1);
+                                            } else {
+                                                ptr->copyMemoryCell(addr0, addr1);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            return check;
+                        } else if (isArithmeticOp(op)) {
+                            auto check = twoCheck(INTEGER, "First argument must be an address", INTEGER, "Second argument must be an address!");
+                            if (check) {
+                                auto addr0 = EnvDOToLong(env, arg0);
+                                auto addr1 = EnvDOToLong(env, arg1);
+                                if (!ptr->legalAddress(addr0)) {
+                                    check = false;
+                                    rangeViolation(addr0);
+                                } else if (!ptr->legalAddress(addr1)) {
+                                    check = false;
+                                    rangeViolation(addr1);
+                                } else {
+                                    using ArithmeticOperation = std::function<Word(Word, Word)>;
+                                    ArithmeticOperation fn;
+                                    switch(op) {
+                                        case MemoryBlockOp::Combine:
+                                            fn = syn::add<Word>;
+                                            break;
+                                        case MemoryBlockOp::Difference:
+                                            fn = syn::sub<Word>;
+                                            break;
+                                        case MemoryBlockOp::Product:
+                                            fn = syn::mul<Word>;
+                                            break;
+                                        case MemoryBlockOp::Divide:
+                                            fn = syn::div<Word>;
+                                            break;
+                                        case MemoryBlockOp::Remainder:
+                                            fn = syn::rem<Word>;
+                                            break;
+                                        default:
+                                            return callErrorMessage(str, "<- legal but unimplemented arithmetic operation!");
+                                    }
+                                    try {
+                                        auto val0 = ptr->getMemoryCellValue(addr0);
+                                        auto val1 = ptr->getMemoryCellValue(addr1);
+                                        CVSetInteger(ret, fn(val0, val1));
+                                    } catch (syn::Problem p) {
+                                        check = false;
+                                        CVSetBoolean(ret, false);
+                                        std::stringstream s;
+                                        s << "an exception was thrown: " << p.what();
+                                        auto str = s.str();
+                                        errorMessage(env, "CALL", 2, funcErrorPrefix, str);
+                                    }
+                                }
+                            } else {
+                                CVSetBoolean(ret, false);
+                            }
+                            return check;
+                        } else {
+                            return callErrorMessage(str, "<- legal but unimplemented operation!");
+                        }
+                        return true;
+                    }
 				} else {
 					return errorMessage(env, "CALL", 1, funcErrorPrefix, "Function call expected an external address as the first argument!");
 				}
 			}
-#undef argCheck
-
 			static void registerWithEnvironment(void* env, const char* title) {
 				Parent::registerWithEnvironment(env, title, callFunction, newFunction);
 			}
