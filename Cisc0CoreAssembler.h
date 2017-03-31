@@ -47,12 +47,6 @@
 #include "Cisc0ClipsExtensions.h"
 
 namespace cisc0 {
-    struct AssemblerState;
-}
-namespace syn {
-    DefWrapperSymbolicName(cisc0::AssemblerState, "cisc0:assembly-parsing-state");
-}
-namespace cisc0 {
 	using Separator = syn::AsmSeparator;
 	using SingleLineComment = syn::SingleLineComment<';'>;
 	template<typename R> struct Action : syn::Action<R> { };
@@ -650,7 +644,7 @@ namespace cisc0 {
             static void registerWithEnvironment(void* env);
             static bool callFunction(void* env, syn::DataObjectPtr value, syn::DataObjectPtr ret);
         public:
-            AssemblerStateWrapper() : Parent(std::move(std::make_unique<AssemblerState>())) { }
+			AssemblerStateWrapper();
             bool parseLine(const std::string& line);
             bool resolve();
             void getMultifield(void* env, CLIPSValuePtr ret);

@@ -24,6 +24,7 @@ COMMON_THINGS = Core.o \
 SIM_OBJECTS = Simulator.o \
 			  CoreRegistrar.o \
 			  RegisteredCores.o \
+			  Cisc0CoreAssemblerWrapper.o \
 			  ${ARCH_OBJECTS} \
 			  ${ASM_PARSERS_OBJECTS} \
 			  ${COMMON_THINGS}
@@ -34,10 +35,9 @@ SIM_BINARY = syn_sim
 ASM_OBJECTS = Assembler.o \
 			  AssemblerRegistrar.o \
 			  RegisteredAssemblers.o \
+			  Cisc0CoreAssemblerAssembleOperation.o \
+			  IrisCore.o \
 			  ${COMMON_THINGS} \
-			  ${ARCH_OBJECTS} \
-			  CoreRegistrar.o \
-			  RegisteredCores.o \
 			  ${ASM_PARSERS_OBJECTS}
 
 REPL_BINARY = xsyn_repl
@@ -49,6 +49,7 @@ REPL_FINAL_BINARY = syn_repl
 
 REPL_FINAL_OBJECTS = Repl.o \
 					 RegisteredExternalAddressAssemblers.o \
+					 Cisc0CoreAssemblerWrapper.o \
 					 ${COMMON_THINGS} \
 					 ${ARCH_OBJECTS} \
 					 ${ASM_PARSERS_OBJECTS} \
@@ -57,6 +58,7 @@ ASM_BINARY = syn_asm
 
 LINK_OBJECTS = Linker.o \
 				${ARCH_OBJECTS} \
+				Cisc0CoreAssemblerWrapper.o \
 				CoreRegistrar.o \
 				RegisteredCores.o \
 				${ASM_PARSERS_OBJECTS} \
