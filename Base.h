@@ -159,14 +159,34 @@ constexpr T getShiftCount() noexcept {
     return UpperLowerPair<T>::shiftCount;
 }
 
+template<typename T>
+constexpr size_t bitwidth() noexcept {
+	return CHAR_BIT * sizeof(T);
+}
 
 template<typename T, T bitmask>
 constexpr T mask(T input) noexcept {
     return input & bitmask;
 }
+template<> constexpr uint8 mask<uint8, 0xFF>(uint8 value) noexcept { return value; }
+template<> constexpr uint8 mask<uint8, 0x00>(uint8 value) noexcept { return 0; }
+
+template<> constexpr uint16 mask<uint16, 0xFFFF>(uint16 value) noexcept { return value; }
+template<> constexpr uint16 mask<uint16, 0x0000>(uint16 value) noexcept { return 0; }
+
+template<> constexpr uint32 mask<uint32, 0xFFFFFFFF>(uint32 value) noexcept { return value; }
+template<> constexpr uint32 mask<uint32, 0x00000000>(uint32 value) noexcept { return 0; }
+
+template<> constexpr uint64 mask<uint64, 0xFFFFFFFFFFFFFFFF>(uint64 value) noexcept { return value; }
+template<> constexpr uint64 mask<uint64, 0x0000000000000000>(uint64 value) noexcept { return 0; }
+
 template<typename T, typename F, T bitmask, T shiftcount>
 constexpr F decodeBits(T input) noexcept {
-	return static_cast<F>((input & bitmask) >> shiftcount);
+    auto result = mask<T, bitmask>(input);
+    if (shiftcount != 0) {
+        result >>= shiftcount;
+    }
+    return static_cast<F>(result);
 }
 
 template<typename T, typename F, int field>
@@ -181,7 +201,13 @@ constexpr bool decodeFlag(T input) noexcept {
 
 template<typename T, typename F, T bitmask, T shiftcount>
 constexpr T encodeBits(T input, F value) noexcept {
-	return static_cast<T>((input & ~bitmask) | ((static_cast<T>(value) << shiftcount) & bitmask));
+    auto valueToInject = static_cast<T>(value);
+    auto maskedValue = input & ~bitmask;
+    if (shiftcount != 0) {
+        valueToInject <<= shiftcount;
+    }
+    valueToInject &= bitmask;
+    return static_cast<T>(maskedValue | valueToInject);
 }
 
 template<typename T, T mask, T shift>
@@ -339,36 +365,36 @@ constexpr T encodeBits(T input, F value, T bitmask, T shiftcount) noexcept {
 	return static_cast<T>((input & ~bitmask) | ((static_cast<T>(value) << shiftcount) & bitmask));
 }
 
-template<typename T>
-constexpr T add(T a, T b) noexcept {
-	return a + b;
+template<typename T, typename R = T>
+constexpr R add(T a, T b) noexcept {
+	return static_cast<R>(a + b);
 }
 
-template<typename T>
-constexpr T sub(T a, T b) noexcept {
-	return a - b;
+template<typename T, typename R = T>
+constexpr R sub(T a, T b) noexcept {
+	return static_cast<R>(a - b);
 }
 
-template<typename T>
-constexpr T mul(T a, T b) noexcept {
-	return a * b;
+template<typename T, typename R = T>
+constexpr R mul(T a, T b) noexcept {
+	return static_cast<R>(a * b);
 }
 
-template<typename T>
-inline T div(T numerator, T denominator) {
+template<typename T, typename R = T>
+inline R div(T numerator, T denominator) {
 	if (denominator == 0) {
 		throw syn::Problem("Denominator is zero");
 	} else {
-		return numerator / denominator;
+		return static_cast<R>(numerator / denominator);
 	}
 }
 
-template<typename T>
-inline T rem(T numerator, T denominator) {
+template<typename T, typename R = T>
+inline R rem(T numerator, T denominator) {
 	if (denominator == 0) {
 		throw syn::Problem("Denominator is zero");
 	} else {
-		return numerator % denominator;
+		return static_cast<R>(numerator % denominator);
 	}
 }
 template<typename T, typename R = bool>
@@ -470,14 +496,14 @@ constexpr bool binaryNor(bool a, bool b) noexcept {
 
 template<typename T, typename R = T>
 constexpr R circularShiftLeft(T value, T shift) noexcept {
-    constexpr T width = (CHAR_BIT * sizeof(T)) - 1;
+    constexpr T width = bitwidth<T>() - 1;
     // taken from the wikipedia entry on circular shifts
     return static_cast<R>((value << shift) | (value >> ((-shift) & width)));
 }
 
 template<typename T, typename R = T>
 constexpr R circularShiftRight(T value, T shift) noexcept {
-    constexpr T width = (CHAR_BIT * sizeof(T)) - 1;
+    constexpr T width = bitwidth<T>() - 1;
     // taken from the wikipedia entry on circular shifts
 	return static_cast<R>( (value >> shift) | (value << ((-shift) & width)));
 }
@@ -487,10 +513,10 @@ constexpr bool getBit(T value) noexcept {
     return decodeBits<T, bool, 1 << index, index>(value);
 }
 
-template<typename T, T index>
-constexpr bool bitIsSet(T value) noexcept {
-    return mask<T, 1 << index>(value) != 0;
-}
+template<> constexpr bool getBit<byte, 0>(byte value) noexcept { return (0b1 & value) != 0; }
+template<> constexpr bool getBit<byte, 1>(byte value) noexcept { return (0b10 & value) != 0; }
+template<> constexpr bool getBit<byte, 2>(byte value) noexcept { return (0b100 & value) != 0; }
+template<> constexpr bool getBit<byte, 3>(byte value) noexcept { return (0b1000 & value) != 0; }
 
 constexpr byte expandBit(bool value) noexcept {
     return value ? 0xFF : 0x00;
@@ -539,10 +565,6 @@ constexpr T setUpperHalf(T value, typename UpperLowerPair<T>::HalfType upper) no
     return syn::encodeBits<T, typename DataPair::HalfType, DataPair::lowerMask, DataPair::shiftCount>(value, upper);
 }
 
-template<typename T>
-constexpr size_t bitwidth() noexcept {
-	return CHAR_BIT * sizeof(T);
-}
 
 template<typename T>
 inline void swap(T& a, T& b) {
