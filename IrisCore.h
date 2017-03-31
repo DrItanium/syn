@@ -51,6 +51,8 @@ namespace iris {
     using InstructionPointer = syn::Register<QuadWord, ArchitectureConstants::AddressMax>;
     using LinkRegister = syn::Register<QuadWord, ArchitectureConstants::AddressMax>;
 	class Core : public syn::Core {
+        public:
+            static void assemble(const std::string& inputFileName, FILE* input, std::ostream* output);
 		public:
 			Core() noexcept;
 			virtual ~Core();
@@ -65,13 +67,12 @@ namespace iris {
 			inline word readDataMemory(word address) noexcept                     { return data[address]; }
 			void writeIOMemory(word address, word value);
 			word readIOMemory(word address);
-			//void installIODevice(std::shared_ptr<IODevice> dev);
 			void writeRegister(byte index, word value);
 			word readRegister(byte index);
 			virtual bool cycle() override;
 		private:
-            QuadWord getInstructionPointer() const noexcept;
-            QuadWord getLinkRegister() const noexcept;
+            inline QuadWord getInstructionPointer() const noexcept { return _ip.get(); }
+            inline QuadWord getLinkRegister() const noexcept { return _lr.get(); }
             void setInstructionPointer(QuadWord value) noexcept;
             void setLinkRegister(QuadWord value) noexcept;
 			bool& getPredicateRegister(byte index);
@@ -83,21 +84,19 @@ namespace iris {
             inline word& getRegister() noexcept {
                 return gpr[InstructionDecoder::getRegisterIndex<index>(current)];
             }
-            word& destinationRegister() noexcept;
-            word& source0Register() noexcept;
-            word& source1Register() noexcept;
-
             template<int index>
             inline bool& getPredicate() noexcept {
                 return getPredicateRegister(InstructionDecoder::getPredicateIndex<index>(current));
             }
+            word& destinationRegister() noexcept;
+            word& source0Register() noexcept;
+            word& source1Register() noexcept;
             bool& predicateResult() noexcept;
 			bool& predicateInverseResult() noexcept;
 			bool& predicateSource0() noexcept;
 			bool& predicateSource1() noexcept;
-
-            word getHalfImmediate() noexcept;
-            word getImmediate() noexcept;
+            inline word getHalfImmediate() const noexcept { return InstructionDecoder::getHalfImmediate(current); }
+            inline word getImmediate() const noexcept { return InstructionDecoder::getImmediate(current); }
 		private:
 			void saveSystemState() noexcept;
 			void restoreSystemState() noexcept;
@@ -124,7 +123,7 @@ namespace iris {
                 PredicateRegisterEncoder(PredicateRegisterEncoder&&) = delete;
 				static_assert(index < 16, "Provided predicate register is out of range!");
 				static PredicateRegisterEncoder<index - 1> next;
-				static word invoke(Core* c, word mask) {
+				static word invoke(Core* c, word mask) noexcept {
 					auto result = next.invoke(c, mask);
 					if (syn::getBit<word,index>(mask)) {
 						return syn::setBit<word, index>(result, c->getPredicateRegister(index));
@@ -178,7 +177,7 @@ namespace iris {
                 ~PredicateRegisterEncoder() = delete;
                 PredicateRegisterEncoder(const PredicateRegisterEncoder&) = delete;
                 PredicateRegisterEncoder(PredicateRegisterEncoder&&) = delete;
-			static word invoke(Core* c, word mask) {
+			static word invoke(Core* c, word mask) noexcept {
 				if (syn::getBit<word, 0>(mask)) {
 					return static_cast<word>(c->getPredicateRegister(0) ? 1 : 0);
 				} else {
@@ -199,6 +198,5 @@ namespace iris {
 			}
 		};
 	Core* newCore() noexcept;
-	void assemble(const std::string& inputFileName, FILE* input, std::ostream* output);
 }
 #endif

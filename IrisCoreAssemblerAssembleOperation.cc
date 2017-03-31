@@ -43,7 +43,7 @@
 #include "IrisCoreAssembler.h"
 
 namespace iris {
-	void assemble(const std::string& iName, FILE* input, std::ostream* output) {
+	void Core::assemble(const std::string& iName, FILE* input, std::ostream* output) {
 		iris::AssemblerState state;
     	pegtl::analyze<iris::Main>();
 		// put a sufficently large amount of space to read from the cstream

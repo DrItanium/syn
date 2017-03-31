@@ -33,6 +33,19 @@
 #include "Cisc0Core.h"
 
 template<typename T>
-using RegisterAssembler = syn::RegisterEntry<syn::AssemblerRegistrar, T>;
-static RegisterAssembler<iris::Core> iris16Core(syn::assemblerRegistry, "iris", iris::assemble);
+void assemble(const std::string& file, FILE* ptr, std::ostream* output) {
+    T::assemble(file, ptr, output);
+}
+template<typename T>
+class RegisterAssembler : public syn::RegisterEntry<syn::AssemblerRegistrar, T> {
+    public:
+        using Self = RegisterAssembler<T>;
+        using Parent = syn::RegisterEntry<syn::AssemblerRegistrar, T>;
+        using Operation = syn::AssemblerRegistrar::Operation;
+    public:
+        RegisterAssembler(syn::AssemblerRegistrar& reg, const std::string& name, Operation op) : Parent(reg, name, op) { }
+        RegisterAssembler(syn::AssemblerRegistrar& reg, const std::string& name) : Self(reg, name, assemble<T>) { }
+};
+
+static RegisterAssembler<iris::Core> iris16Core(syn::assemblerRegistry, "iris");
 static RegisterAssembler<cisc0::Core> cisc0Core(syn::assemblerRegistry, "cisc0", cisc0::assemble);
