@@ -113,5 +113,12 @@ namespace syn {
         return true;
     }
 
+    void handleProblem(void* env, syn::Problem& p, CLIPSValue* ret, const std::string& funcErrorPrefix, const char* type, int code) noexcept {
+        CVSetBoolean(ret, false);
+        std::stringstream s;
+        s << "an exception was thrown: " << p.what();
+        auto str = s.str();
+        errorMessage(env, type, code, funcErrorPrefix, str);
+    }
 
 } // end namespace syn

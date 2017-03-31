@@ -58,222 +58,230 @@ class Register {
 
 };
 
-
-template<typename Word>
-class FPU {
-    public:
-        using WordType = Word;
-        enum class Operation {
-            Add,
-            Subtract,
-            Multiply,
-            Divide,
-            SquareRoot,
-            Count,
+namespace FPU {
+    enum class StandardOperations {
+        Add,
+        Subtract,
+        Multiply,
+        Divide,
+        SquareRoot,
+        Count,
+    };
+    template<typename Word>
+        class Unit {
+            public:
+                using WordType = Word;
+                using Operation = StandardOperations;
+            public:
+                Unit() { }
+                virtual ~Unit() { }
+                inline Word performOperation(Operation op, Word a, Word b) const {
+                    switch(op) {
+                        case Operation::Add:
+                            return syn::add<Word>(a, b);
+                        case Operation::Subtract:
+                            return syn::sub<Word>(a, b);
+                        case Operation::Multiply:
+                            return syn::mul<Word>(a, b);
+                        case Operation::Divide:
+                            return syn::div<Word>(a, b);
+                        case Operation::SquareRoot:
+                            return static_cast<Word>(sqrt(static_cast<double>(a)));
+                        default:
+                            throw syn::Problem("Undefined fpu operation!");
+                    }
+                }
+                inline Word operator()(Operation op, Word a, Word b) const {
+                    return this->performOperation(op, a, b);
+                }
         };
-    public:
-        FPU() { }
-        virtual ~FPU() { }
-        inline Word performOperation(Operation op, Word a, Word b) const {
-            switch(op) {
-                case Operation::Add:
-                    return syn::add<Word>(a, b);
-                case Operation::Subtract:
-                    return syn::sub<Word>(a, b);
-                case Operation::Multiply:
-                    return syn::mul<Word>(a, b);
-                case Operation::Divide:
-                    return syn::div<Word>(a, b);
-                case Operation::SquareRoot:
-                    return static_cast<Word>(sqrt(static_cast<double>(a)));
-                default:
-                    throw syn::Problem("Undefined fpu operation!");
-            }
-        }
-        inline Word operator()(Operation op, Word a, Word b) const {
-            return this->performOperation(op, a, b);
-        }
-};
+}
 
-template<typename Word>
-class ALU {
-    public:
-		using WordType = Word;
-        enum class Operation {
-            Add,
-            Subtract,
-            Multiply,
-            Divide,
-            Remainder,
-            ShiftLeft,
-            ShiftRight,
-            BinaryAnd,
-            BinaryOr,
-            UnaryNot,
-            BinaryXor,
-            BinaryNand,
-            CircularShiftLeft,
-            CircularShiftRight,
-            Count,
-        };
-    public:
-        ALU() { }
-        virtual ~ALU() { }
-        inline Word performOperation(Operation op, Word a, Word b) const {
-            switch(op) {
-                case Operation::Add:
-                    return syn::add<Word>(a, b);
-                case Operation::Subtract:
-                    return syn::sub<Word>(a, b);
-                case Operation::Multiply:
-                    return syn::mul<Word>(a, b);
-                case Operation::Divide:
-                    return syn::div<Word>(a, b);
-                case Operation::Remainder:
-                    return syn::rem<Word>(a, b);
-                case Operation::ShiftLeft:
-                    return syn::shiftLeft<Word>(a, b);
-                case Operation::ShiftRight:
-                    return syn::shiftRight<Word>(a, b);
-                case Operation::BinaryAnd:
-                    return syn::binaryAnd<Word>(a, b);
-                case Operation::BinaryOr:
-                    return syn::binaryOr<Word>(a, b);
-                case Operation::UnaryNot:
-                    return syn::binaryNot<Word>(a);
-                case Operation::BinaryXor:
-                    return syn::binaryXor<Word>(a, b);
-                case Operation::BinaryNand:
-                    return syn::binaryNand<Word>(a, b);
-                case Operation::CircularShiftLeft:
-                    return syn::circularShiftLeft<Word>(a, b);
-                case Operation::CircularShiftRight:
-                    return syn::circularShiftRight<Word>(a, b);
-                default:
-                    throw syn::Problem("Undefined ALU operation!");
+namespace ALU {
+    enum class StandardOperations {
+        Add,
+        Subtract,
+        Multiply,
+        Divide,
+        Remainder,
+        ShiftLeft,
+        ShiftRight,
+        BinaryAnd,
+        BinaryOr,
+        UnaryNot,
+        BinaryXor,
+        BinaryNand,
+        CircularShiftLeft,
+        CircularShiftRight,
+        Count,
+    };
+    template<typename Word>
+    class Unit {
+        public:
+            using WordType = Word;
+            using Operation = StandardOperations;
+        public:
+            Unit() { }
+            virtual ~Unit() { }
+            inline Word performOperation(Operation op, Word a, Word b) const {
+                switch(op) {
+                    case Operation::Add:
+                        return syn::add<Word>(a, b);
+                    case Operation::Subtract:
+                        return syn::sub<Word>(a, b);
+                    case Operation::Multiply:
+                        return syn::mul<Word>(a, b);
+                    case Operation::Divide:
+                        return syn::div<Word>(a, b);
+                    case Operation::Remainder:
+                        return syn::rem<Word>(a, b);
+                    case Operation::ShiftLeft:
+                        return syn::shiftLeft<Word>(a, b);
+                    case Operation::ShiftRight:
+                        return syn::shiftRight<Word>(a, b);
+                    case Operation::BinaryAnd:
+                        return syn::binaryAnd<Word>(a, b);
+                    case Operation::BinaryOr:
+                        return syn::binaryOr<Word>(a, b);
+                    case Operation::UnaryNot:
+                        return syn::binaryNot<Word>(a);
+                    case Operation::BinaryXor:
+                        return syn::binaryXor<Word>(a, b);
+                    case Operation::BinaryNand:
+                        return syn::binaryNand<Word>(a, b);
+                    case Operation::CircularShiftLeft:
+                        return syn::circularShiftLeft<Word>(a, b);
+                    case Operation::CircularShiftRight:
+                        return syn::circularShiftRight<Word>(a, b);
+                    default:
+                        throw syn::Problem("Undefined ALU operation!");
+                }
             }
-        }
-        inline Word operator()(Operation op, Word a, Word b) const {
-            return this->performOperation(op, a, b);
-        }
-};
-
-template<typename Word, typename Return = Word>
-class Comparator {
-    public:
-		using WordType = Word;
-		using ReturnType = Return;
-        enum class Operation {
-            Eq,
-            Neq,
-            LessThan,
-            GreaterThan,
-            LessThanOrEqualTo,
-            GreaterThanOrEqualTo,
-            // extended operations!
-            BinaryAnd,
-            BinaryOr,
-            UnaryNot,
-            BinaryXor,
-            BinaryNand,
-            ShiftLeft,
-            ShiftRight,
-            CircularShiftLeft,
-            CircularShiftRight,
-			BinaryNor,
-            Count,
-        };
-    public:
-        Comparator() { }
-        virtual ~Comparator() { }
-        inline Return performOperation(Operation op, Word a, Word b) const {
-            switch(op) {
-                case Operation::Eq:
-                    return syn::eq<Word, Return>(a, b);
-                case Operation::Neq:
-                    return syn::neq<Word, Return>(a, b);
-                case Operation::LessThan:
-                    return syn::lt<Word, Return>(a, b);
-                case Operation::GreaterThan:
-                    return syn::gt<Word, Return>(a, b);
-                case Operation::LessThanOrEqualTo:
-                    return syn::le<Word, Return>(a, b);
-                case Operation::GreaterThanOrEqualTo:
-                    return syn::ge<Word, Return>(a, b);
-                case Operation::BinaryAnd:
-                    return syn::binaryAnd<Word, Return>(a, b);
-                case Operation::BinaryOr:
-                    return syn::binaryOr<Word, Return>(a, b);
-                case Operation::UnaryNot:
-                    return syn::binaryNot<Word, Return>(a);
-                case Operation::BinaryXor:
-                    return syn::binaryXor<Word, Return>(a, b);
-                case Operation::BinaryNand:
-                    return syn::binaryNand<Word, Return>(a, b);
-                case Operation::ShiftLeft:
-                    return syn::shiftLeft<Word, Return>(a, b);
-                case Operation::ShiftRight:
-                    return syn::shiftRight<Word, Return>(a, b);
-				case Operation::BinaryNor:
-					return syn::binaryNor<Word, Return>(a, b);
-                case Operation::CircularShiftLeft:
-                    return syn::circularShiftLeft<Word, Return>(a, b);
-                case Operation::CircularShiftRight:
-                    return syn::circularShiftRight<Word, Return>(a, b);
-                default:
-                    throw syn::Problem("Undefined Comparison operation!");
+            inline Word operator()(Operation op, Word a, Word b) const {
+                return this->performOperation(op, a, b);
             }
-        }
-        inline Word operator()(Operation op, Word a, Word b) const {
-            return this->performOperation(op, a, b);
-        }
-};
+    };
+} // end namespace ALU
 
-template<>
-class Comparator<bool, bool> {
-	public:
-		using WordType = bool;
-		using ReturnType = bool;
-		enum class Operation {
-			Eq,
-			Neq,
-			BinaryAnd,
-			BinaryOr,
-			UnaryNot,
-			BinaryXor,
-			BinaryNand,
-			BinaryNor,
-			Count,
-		};
-	public:
-		Comparator() { }
-		virtual ~Comparator() { }
-		inline bool performOperation(Operation op, bool a, bool b) const {
-			switch(op) {
-				case Operation::Eq:
-					return syn::eq<bool>(a, b);
-				case Operation::Neq:
-					return syn::neq<bool>(a, b);
-				case Operation::BinaryAnd:
-					return syn::binaryAnd<bool>(a, b);
-				case Operation::BinaryOr:
-					return syn::binaryOr<bool>(a, b);
-				case Operation::BinaryXor:
-					return syn::binaryXor<bool>(a, b);
-				case Operation::UnaryNot:
-					return syn::binaryNot<bool>(a);
-				case Operation::BinaryNand:
-					return syn::binaryNand<bool>(a, b);
-				case Operation::BinaryNor:
-					return syn::binaryNor<bool>(a, b);
-				default:
-					throw syn::Problem("Undefined boolean comparison operation!");
-			}
-		}
-        inline bool operator()(Operation op, bool a, bool b) const {
-            return this->performOperation(op, a, b);
-        }
-};
+namespace Comparator {
+    enum class StandardOperations {
+        Eq,
+        Neq,
+        LessThan,
+        GreaterThan,
+        LessThanOrEqualTo,
+        GreaterThanOrEqualTo,
+        // extended operations!
+        BinaryAnd,
+        BinaryOr,
+        UnaryNot,
+        BinaryXor,
+        BinaryNand,
+        ShiftLeft,
+        ShiftRight,
+        CircularShiftLeft,
+        CircularShiftRight,
+        BinaryNor,
+        Count,
+    };
+    template<typename Word, typename Return = Word>
+    class Unit {
+        public:
+    		using WordType = Word;
+    		using ReturnType = Return;
+            using Operation = StandardOperations;
+        public:
+            Unit() { }
+            virtual ~Unit() { }
+            inline Return performOperation(Operation op, Word a, Word b) const {
+                switch(op) {
+                    case Operation::Eq:
+                        return syn::eq<Word, Return>(a, b);
+                    case Operation::Neq:
+                        return syn::neq<Word, Return>(a, b);
+                    case Operation::LessThan:
+                        return syn::lt<Word, Return>(a, b);
+                    case Operation::GreaterThan:
+                        return syn::gt<Word, Return>(a, b);
+                    case Operation::LessThanOrEqualTo:
+                        return syn::le<Word, Return>(a, b);
+                    case Operation::GreaterThanOrEqualTo:
+                        return syn::ge<Word, Return>(a, b);
+                    case Operation::BinaryAnd:
+                        return syn::binaryAnd<Word, Return>(a, b);
+                    case Operation::BinaryOr:
+                        return syn::binaryOr<Word, Return>(a, b);
+                    case Operation::UnaryNot:
+                        return syn::binaryNot<Word, Return>(a);
+                    case Operation::BinaryXor:
+                        return syn::binaryXor<Word, Return>(a, b);
+                    case Operation::BinaryNand:
+                        return syn::binaryNand<Word, Return>(a, b);
+                    case Operation::ShiftLeft:
+                        return syn::shiftLeft<Word, Return>(a, b);
+                    case Operation::ShiftRight:
+                        return syn::shiftRight<Word, Return>(a, b);
+    				case Operation::BinaryNor:
+    					return syn::binaryNor<Word, Return>(a, b);
+                    case Operation::CircularShiftLeft:
+                        return syn::circularShiftLeft<Word, Return>(a, b);
+                    case Operation::CircularShiftRight:
+                        return syn::circularShiftRight<Word, Return>(a, b);
+                    default:
+                        throw syn::Problem("Undefined Comparison operation!");
+                }
+            }
+            inline Word operator()(Operation op, Word a, Word b) const {
+                return this->performOperation(op, a, b);
+            }
+    };
+
+    template<>
+    class Unit<bool, bool> {
+    	public:
+    		using WordType = bool;
+    		using ReturnType = bool;
+    		enum class Operation {
+    			Eq,
+    			Neq,
+    			BinaryAnd,
+    			BinaryOr,
+    			UnaryNot,
+    			BinaryXor,
+    			BinaryNand,
+    			BinaryNor,
+    			Count,
+    		};
+    	public:
+    		Unit() { }
+    		virtual ~Unit() { }
+    		inline bool performOperation(Operation op, bool a, bool b) const {
+    			switch(op) {
+    				case Operation::Eq:
+    					return syn::eq<bool>(a, b);
+    				case Operation::Neq:
+    					return syn::neq<bool>(a, b);
+    				case Operation::BinaryAnd:
+    					return syn::binaryAnd<bool>(a, b);
+    				case Operation::BinaryOr:
+    					return syn::binaryOr<bool>(a, b);
+    				case Operation::BinaryXor:
+    					return syn::binaryXor<bool>(a, b);
+    				case Operation::UnaryNot:
+    					return syn::binaryNot<bool>(a);
+    				case Operation::BinaryNand:
+    					return syn::binaryNand<bool>(a, b);
+    				case Operation::BinaryNor:
+    					return syn::binaryNor<bool>(a, b);
+    				default:
+    					throw syn::Problem("Undefined boolean comparison operation!");
+    			}
+    		}
+            inline bool operator()(Operation op, bool a, bool b) const {
+                return this->performOperation(op, a, b);
+            }
+    };
+} // end namespace Comparator
 
 template<typename Word, typename Address = Word>
 class LoadStoreUnit : public AddressableIODevice<Word, Address> {

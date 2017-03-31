@@ -68,6 +68,7 @@ namespace syn {
         static bool getCommandList(void* env, CLIPSValuePtr ret) noexcept;
     };
 
+    void handleProblem(void* env, syn::Problem& p, CLIPSValue* ret, const std::string& funcErrorPrefix, const char* type, int code) noexcept;
     template<typename Data, typename Address, template<typename, typename> class T>
     struct WrappedIODeviceBuilder {
         WrappedIODeviceBuilder() = delete;
@@ -224,7 +225,7 @@ namespace syn {
                     init = false;
                     typeString = Self::getType();
                 }
-				registerWithEnvironment(env, typeString);
+				registerWithEnvironment(env, typeString.c_str());
 			}
 			static Self* make() noexcept {
 				return new Self();
@@ -250,6 +251,7 @@ namespace syn {
 	template<typename Word, typename Address = CLIPSInteger>
 	using WrappedGenericRandomDevice = WrappedIODevice<Word, Address, RandomDevice>;
 
+
     template<typename Data, typename Address, template<typename, typename> class T>
     T<Data, Address>* WrappedIODeviceBuilder<Data, Address, T>::invokeNewFunction(void* env, CLIPSValue* ret, const std::string& funcErrorPrefix, const std::string& function) noexcept {
         using InternalType = T<Data, Address>;
@@ -260,11 +262,7 @@ namespace syn {
                 errorMessage(env, "NEW", 1, funcErrorPrefix, " no arguments should be provided for function new!");
             }
         } catch(syn::Problem p) {
-            CVSetBoolean(ret, false);
-            std::stringstream s;
-            s << "an exception was thrown: " << p.what();
-            auto str = s.str();
-            errorMessage(env, "NEW", 2, funcErrorPrefix, str);
+            handleProblem(env, p, ret, funcErrorPrefix, "NEW", 2);
         }
         return nullptr;
     }
@@ -295,11 +293,7 @@ namespace syn {
                         return nullptr;
                     }
                 } catch(syn::Problem p) {
-                    CVSetBoolean(ret, false);
-                    std::stringstream s;
-                    s << "an exception was thrown: " << p.what();
-                    auto str = s.str();
-                    errorMessage(env, "NEW", 2, prefix, str);
+                    handleProblem(env, p, ret, prefix, "NEW", 2);
                     return nullptr;
                 }
             }

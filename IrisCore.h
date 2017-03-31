@@ -41,12 +41,12 @@ namespace iris {
 	template<dword capacity>
 	using WordMemorySpace = syn::FixedSizeLoadStoreUnit<word, dword, capacity>;
 	using WordMemorySpace64k = WordMemorySpace<ArchitectureConstants::AddressMax + 1>;
-	using ALU = syn::ALU<word>;
-	using CompareUnit = syn::Comparator<word>;
+	using ALU = syn::ALU::Unit<word>;
+	using CompareUnit = syn::Comparator::Unit<word>;
 	using RegisterFile = WordMemorySpace<ArchitectureConstants::RegisterCount>;
 	using IODevice = syn::IODevice<word>;
 	using PredicateRegisterFile = syn::FixedSizeLoadStoreUnit<bool, byte, ArchitectureConstants::ConditionRegisterCount>;
-	using PredicateComparator = syn::Comparator<bool, bool>;
+	using PredicateComparator = syn::Comparator::Unit<bool, bool>;
 	using ErrorStorage = WordMemorySpace<ArchitectureConstants::RegistersToSaveOnError>;
     using InstructionPointer = syn::Register<QuadWord, ArchitectureConstants::AddressMax>;
     using LinkRegister = syn::Register<QuadWord, ArchitectureConstants::AddressMax>;

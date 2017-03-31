@@ -261,8 +261,8 @@ namespace cisc0 {
 	class Core : public syn::Core {
 		public:
 			using IOBus = syn::CLIPSIOController<Word, CLIPSInteger>;
-            using ALU = syn::ALU<RegisterValue>;
-            using CompareUnit = syn::Comparator<RegisterValue>;
+            using ALU = syn::ALU::Unit<RegisterValue>;
+            using CompareUnit = syn::Comparator::Unit<RegisterValue>;
             using RegisterFile = syn::FixedSizeLoadStoreUnit<RegisterValue, byte, ArchitectureConstants::RegisterCount>;
         public:
 	        static void assemble(const std::string& iName, FILE* input, std::ostream* output);
