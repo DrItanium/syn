@@ -34,23 +34,7 @@
 #include <memory>
 #include "IrisCoreTypes.h"
 #include "ClipsExtensions.h"
-namespace iris {
-	enum ArchitectureConstants  {
-		RegisterCount = 256,
-		AddressMax = 0xFFFF,
-        AddressCount = AddressMax + 1,
-		RegisterMax = 0xFF,
-		ConditionRegisterCount = 16,
-		StackPointerIndex = RegisterCount - 1,
-		MaxGroups = 8,
-		MaxOperations = 32,
-		ErrorDispatchVectorBase = 0x00FF,
-		RegistersToSaveOnError = 18,
-		ErrorRegisterStart = 255,
-        TerminateIOAddress = 0xFFFF,
-	};
-} // end namespace iris
-#include "iris_defines.h"
+#include "IrisCoreEncodingOperations.h"
 
 namespace iris {
 	using IOSpace = syn::CLIPSIOController<word, CLIPSInteger>;
@@ -66,53 +50,6 @@ namespace iris {
 	using ErrorStorage = WordMemorySpace<ArchitectureConstants::RegistersToSaveOnError>;
     using InstructionPointer = syn::Register<QuadWord, ArchitectureConstants::AddressMax>;
     using LinkRegister = syn::Register<QuadWord, ArchitectureConstants::AddressMax>;
-    namespace InstructionDecoder {
-        constexpr byte getDestinationIndex(raw_instruction value) noexcept { return decodeDestination(value); }
-        constexpr byte getSource0Index(raw_instruction value) noexcept { return decodeSource0(value); }
-        constexpr byte getSource1Index(raw_instruction value) noexcept { return decodeSource1(value); }
-        constexpr byte getOperationByte(raw_instruction value) noexcept { return decodeOperation(value); }
-        constexpr byte getGroupByte(raw_instruction value) noexcept { return decodeGroup(value); }
-        constexpr InstructionGroup getGroup(raw_instruction value) noexcept { return static_cast<InstructionGroup>(getGroupByte(value)); }
-        constexpr word getHalfImmediate(raw_instruction value) noexcept { return decodeHalfImmediate(value); }
-        constexpr word getImmediate(raw_instruction value) noexcept { return decodeImmediate(value); }
-        template<typename T>
-        constexpr T getOperation(raw_instruction value) noexcept {
-            return static_cast<T>(getOperationByte(value));
-        }
-        template<int index>
-        constexpr byte getRegisterIndex(raw_instruction value) noexcept {
-            static_assert(index >= 0 && index < 3, "Illegal register index!");
-            if (index == 0) {
-                return getDestinationIndex(value);
-            } else if (index == 1) {
-                return getSource0Index(value);
-            } else {
-                return getSource1Index(value);
-            }
-        }
-        constexpr byte getPredicateResultIndex(raw_instruction value) noexcept { return decodePredicateResult(value); }
-        constexpr byte getPredicateInverseResultIndex(raw_instruction value) noexcept { return decodePredicateInverseResult(value); }
-        constexpr byte getPredicateSource0Index(raw_instruction value) noexcept { return decodePredicateSource0(value); }
-        constexpr byte getPredicateSource1Index(raw_instruction value) noexcept { return decodePredicateSource1(value); }
-        template<int index>
-        constexpr byte getPredicateIndex(raw_instruction value) noexcept {
-            static_assert(index >= 0 && index < 4, "Illegal predicate field index!");
-            switch(index) {
-                case 0: return getPredicateResultIndex(value);
-                case 1: return getPredicateInverseResultIndex(value);
-                case 2: return getPredicateSource0Index(value);
-                case 3: return getPredicateSource1Index(value);
-                default:
-                    throw syn::Problem("Illegal index!!!!");
-            }
-        }
-        constexpr bool samePredicateDestinations(raw_instruction value) noexcept {
-            return getPredicateResultIndex(value) == getPredicateInverseResultIndex(value);
-        }
-        constexpr byte chooseRegister(raw_instruction value, bool cond) noexcept {
-            return cond ? getSource0Index(value) : getSource1Index(value);
-        }
-    };
 	class Core : public syn::Core {
 		public:
 			Core() noexcept;
@@ -247,20 +184,5 @@ namespace iris {
 		};
 	Core* newCore() noexcept;
 	void assemble(const std::string& inputFileName, FILE* input, std::ostream* output);
-    constexpr raw_instruction encodeInstruction(byte group, byte operation, byte dest, byte src0, byte src1) noexcept {
-        return encodeSource1( encodeSource0( encodeDestination(encodeOperation( encodeGroup(0, group), operation), dest), src0), src1);
-    }
-    constexpr raw_instruction encodeInstruction(byte group, byte operation, byte dest, word immediate) noexcept {
-        return encodeInstruction(group, operation, dest, syn::getLowerHalf(immediate), syn::getUpperHalf(immediate));
-    }
-    template<bool upper>
-    inline byte encode4Bits(byte dest, byte value) noexcept {
-        if (upper) {
-            return encodeUpper4Bits(dest, value);
-        } else {
-            return encodeLower4Bits(dest, value);
-        }
-    }
-
 }
 #endif
