@@ -24,9 +24,9 @@
  */
 
 
-// Cisc0CoreAssembler rewritten to use pegtl
 #ifndef CISC0_CORE_ASSEMBLER_H__
 #define CISC0_CORE_ASSEMBLER_H__
+
 #include <string>
 #include <sstream>
 #include <typeinfo>
@@ -627,32 +627,5 @@ namespace cisc0 {
 					  Statement> { };
 
 	struct Main : public syn::MainFileParser<Anything> { };
-
-    class AssemblerStateWrapper : public syn::ExternalAddressWrapper<AssemblerState> {
-        public:
-            using Self = AssemblerStateWrapper;
-            using Parent = syn::ExternalAddressWrapper<AssemblerState>;
-        public:
-            enum Operations {
-                Parse,
-                Resolve,
-                Get,
-                Count,
-            };
-			static Self* make() noexcept;
-            static void registerWithEnvironment(void* env, const char* title);
-            static void registerWithEnvironment(void* env);
-            static bool callFunction(void* env, syn::DataObjectPtr value, syn::DataObjectPtr ret);
-        public:
-			AssemblerStateWrapper();
-            bool parseLine(const std::string& line);
-            bool resolve();
-            void getMultifield(void* env, CLIPSValuePtr ret);
-
-    };
-
-}
-namespace syn {
-	DefWrapperSymbolicName(cisc0::AssemblerState, "cisc0:assembly-parsing-state");
-}
-#endif 
+} // end namespace cisc0
+#endif  // end CISC0_CORE_ASSEMBLER_H__

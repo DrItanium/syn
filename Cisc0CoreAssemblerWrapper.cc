@@ -27,6 +27,7 @@
 // Cisc0CoreAssembler rewritten to use pegtl
 #include "Cisc0ClipsExtensions.h"
 #include "Cisc0CoreAssembler.h"
+#include "Cisc0CoreAssemblerWrapper.h"
 
 namespace cisc0 {
 
@@ -39,8 +40,8 @@ namespace cisc0 {
 		AssemblerStateWrapper::registerWithEnvironment(env, "cisc0-asm-parser");
 		AssemblerStateWrapper::registerWithEnvironment(env, "cisc0-assembler");
 	}
-	AssemblerStateWrapper::Self* AssemblerStateWrapper::make() noexcept {
-		return new AssemblerStateWrapper::Self();
+	AssemblerStateWrapper* AssemblerStateWrapper::make() noexcept {
+		return new AssemblerStateWrapper();
 	}
 	void AssemblerStateWrapper::getMultifield(void* env, CLIPSValuePtr ret) {
 		get()->output(env, ret);
