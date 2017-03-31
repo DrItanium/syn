@@ -545,4 +545,18 @@ namespace iris {
             _io.write(address, value);
         }
     }
+    bool& Core::predicateResult() noexcept { return getPredicate<0>(); }
+    bool& Core::predicateInverseResult() noexcept { return getPredicate<1>(); }
+    bool& Core::predicateSource0() noexcept { return getPredicate<2>(); }
+    bool& Core::predicateSource1() noexcept { return getPredicate<3>(); }
+    word Core::getHalfImmediate() noexcept { return InstructionDecoder::getHalfImmediate(current); }
+    word Core::getImmediate() noexcept { return InstructionDecoder::getImmediate(current); }
+    word& Core::destinationRegister() noexcept { return getRegister<0>(); }
+    word& Core::source0Register() noexcept { return getRegister<1>(); }
+    word& Core::source1Register() noexcept { return getRegister<2>(); }
+    QuadWord Core::getInstructionPointer() const noexcept { return _ip.get(); }
+    QuadWord Core::getLinkRegister() const noexcept { return _lr.get(); }
+    void Core::setInstructionPointer(QuadWord value) noexcept { _ip.set(value); }
+    void Core::setLinkRegister(QuadWord value) noexcept { _lr.set(value); }
+    void Core::incrementInstructionPointer() noexcept { setInstructionPointer(getInstructionPointer() + 1); }
 }

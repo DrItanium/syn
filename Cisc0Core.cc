@@ -82,6 +82,9 @@ namespace cisc0 {
     }
 
     constexpr RegisterValue encodeRegisterValue(Word upper, Word lower) noexcept {
+        if (upper == 0 && lower == 0) {
+            return 0;
+        }
         return encodeUpperHalf(encodeLowerHalf(0, lower), upper);
     }
     constexpr RegisterValue normalizeCondition(RegisterValue input) noexcept {

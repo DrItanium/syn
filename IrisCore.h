@@ -70,12 +70,12 @@ namespace iris {
 			word readRegister(byte index);
 			virtual bool cycle() override;
 		private:
-            QuadWord getInstructionPointer() const noexcept { return _ip.get(); }
-            void setInstructionPointer(QuadWord value) noexcept { _ip.set(value); }
-            QuadWord getLinkRegister() const noexcept { return _lr.get(); }
-            void setLinkRegister(QuadWord value) noexcept { _lr.set(value); }
+            QuadWord getInstructionPointer() const noexcept;
+            QuadWord getLinkRegister() const noexcept;
+            void setInstructionPointer(QuadWord value) noexcept;
+            void setLinkRegister(QuadWord value) noexcept;
 			bool& getPredicateRegister(byte index);
-            void incrementInstructionPointer() noexcept { setInstructionPointer(getInstructionPointer() + 1); }
+            void incrementInstructionPointer() noexcept;
 
 		private:
 			void dispatch() noexcept;
@@ -83,21 +83,21 @@ namespace iris {
             inline word& getRegister() noexcept {
                 return gpr[InstructionDecoder::getRegisterIndex<index>(current)];
             }
-            inline word& destinationRegister() noexcept { return getRegister<0>(); }
-            inline word& source0Register() noexcept { return getRegister<1>(); }
-            inline word& source1Register() noexcept { return getRegister<2>(); }
+            word& destinationRegister() noexcept;
+            word& source0Register() noexcept;
+            word& source1Register() noexcept;
 
             template<int index>
             inline bool& getPredicate() noexcept {
                 return getPredicateRegister(InstructionDecoder::getPredicateIndex<index>(current));
             }
-			inline bool& predicateResult() noexcept { return getPredicate<0>(); }
-			inline bool& predicateInverseResult() noexcept { return getPredicate<1>(); }
-			inline bool& predicateSource0() noexcept { return getPredicate<2>(); }
-			inline bool& predicateSource1() noexcept { return getPredicate<3>(); }
+            bool& predicateResult() noexcept;
+			bool& predicateInverseResult() noexcept;
+			bool& predicateSource0() noexcept;
+			bool& predicateSource1() noexcept;
 
-            inline word getHalfImmediate() noexcept { return InstructionDecoder::getHalfImmediate(current); }
-            inline word getImmediate() noexcept { return InstructionDecoder::getImmediate(current); }
+            word getHalfImmediate() noexcept;
+            word getImmediate() noexcept;
 		private:
 			void saveSystemState() noexcept;
 			void restoreSystemState() noexcept;
@@ -118,6 +118,10 @@ namespace iris {
 			}
 			template<word index>
 			struct PredicateRegisterEncoder {
+                PredicateRegisterEncoder() = delete;
+                ~PredicateRegisterEncoder() = delete;
+                PredicateRegisterEncoder(const PredicateRegisterEncoder&) = delete;
+                PredicateRegisterEncoder(PredicateRegisterEncoder&&) = delete;
 				static_assert(index < 16, "Provided predicate register is out of range!");
 				static PredicateRegisterEncoder<index - 1> next;
 				static word invoke(Core* c, word mask) {
@@ -131,6 +135,10 @@ namespace iris {
 			};
 			template<word index>
 			struct PredicateRegisterDecoder {
+                PredicateRegisterDecoder() = delete;
+                ~PredicateRegisterDecoder() = delete;
+                PredicateRegisterDecoder(const PredicateRegisterDecoder&) = delete;
+                PredicateRegisterDecoder(PredicateRegisterDecoder&&) = delete;
 				static_assert(index < 16, "Provided predicate register index is too large!");
 				static PredicateRegisterDecoder<index - 1> next;
 				static void invoke(Core* c, word input, word mask) noexcept {
@@ -166,6 +174,10 @@ namespace iris {
 	};
 	template<>
 		struct Core::PredicateRegisterEncoder<0> {
+                PredicateRegisterEncoder() = delete;
+                ~PredicateRegisterEncoder() = delete;
+                PredicateRegisterEncoder(const PredicateRegisterEncoder&) = delete;
+                PredicateRegisterEncoder(PredicateRegisterEncoder&&) = delete;
 			static word invoke(Core* c, word mask) {
 				if (syn::getBit<word, 0>(mask)) {
 					return static_cast<word>(c->getPredicateRegister(0) ? 1 : 0);
@@ -176,6 +188,10 @@ namespace iris {
 		};
 	template<>
 		struct Core::PredicateRegisterDecoder<0> {
+                PredicateRegisterDecoder() = delete;
+                ~PredicateRegisterDecoder() = delete;
+                PredicateRegisterDecoder(const PredicateRegisterDecoder&) = delete;
+                PredicateRegisterDecoder(PredicateRegisterDecoder&&) = delete;
 			static void invoke(Core* c, word input, word mask) noexcept {
 				if (syn::getBit<word, 0>(mask)) {
 					c->getPredicateRegister(0) = syn::getBit<word, 0>(input);
