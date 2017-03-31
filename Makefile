@@ -39,9 +39,7 @@ ASM_OBJECTS = Assembler.o \
 			  RegisteredAssemblers.o \
 			  Cisc0CoreAssemblerAssembleOperation.o \
 			  Cisc0CoreInstructionEncoder.o \
-			  IrisCore.o \
-			  IrisCoreAssemblerStateWrapper.o \
-			  ${COMMON_THINGS} \
+			  Core.o \
 			  ${ASM_PARSERS_OBJECTS}
 
 REPL_BINARY = xsyn_repl

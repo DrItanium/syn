@@ -34,7 +34,7 @@
 #include "Base.h"
 #include "AssemblerBase.h"
 #include "Problem.h"
-#include "IrisCore.h"
+#include "IrisCoreEncodingOperations.h"
 #include <pegtl.hh>
 #include <pegtl/analyze.hh>
 #include <pegtl/file_parser.hh>

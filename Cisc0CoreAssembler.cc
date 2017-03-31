@@ -103,18 +103,6 @@ namespace cisc0 {
 		}
 	}
 
-    void AssemblerState::output(void* env, CLIPSValue* ret) noexcept {
-        // we need to build a multifield out of the finalWords
-        syn::MultifieldBuilder f(env, finalWords.size() * 2);
-        int i = 1;
-        for (auto q : finalWords) {
-            // add them two at a time!
-            f.setField(i, INTEGER, EnvAddLong(env, q.getAddress()));
-            f.setField(i + 1, INTEGER, EnvAddLong(env, q.getValue()));
-            i += 2;
-        }
-        f.assign(ret);
-    }
 	Word translateRegister(const std::string& input) {
 		static std::map<std::string, Word> builtinAliases = {
 			{ "addr", static_cast<Word>(ArchitectureConstants::AddressRegister) },
