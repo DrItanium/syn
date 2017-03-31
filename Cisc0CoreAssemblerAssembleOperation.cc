@@ -29,7 +29,7 @@
 #include "Cisc0CoreAssembler.h"
 
 namespace cisc0 {
-	void assemble (const std::string& iName, FILE* input, std::ostream* output) {
+	void Core::assemble (const std::string& iName, FILE* input, std::ostream* output) {
 		pegtl::analyze<cisc0::Main>();
 		AssemblerState as;
 		pegtl::parse_cstream<cisc0::Main, cisc0::Action>(input, iName.c_str(), 16777216, as);

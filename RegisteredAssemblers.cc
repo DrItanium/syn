@@ -48,4 +48,4 @@ class RegisterAssembler : public syn::RegisterEntry<syn::AssemblerRegistrar, T> 
 };
 
 static RegisterAssembler<iris::Core> iris16Core(syn::assemblerRegistry, "iris");
-static RegisterAssembler<cisc0::Core> cisc0Core(syn::assemblerRegistry, "cisc0", cisc0::assemble);
+static RegisterAssembler<cisc0::Core> cisc0Core(syn::assemblerRegistry, "cisc0");

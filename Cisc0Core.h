@@ -264,6 +264,8 @@ namespace cisc0 {
             using ALU = syn::ALU<RegisterValue>;
             using CompareUnit = syn::Comparator<RegisterValue>;
             using RegisterFile = syn::FixedSizeLoadStoreUnit<RegisterValue, byte, ArchitectureConstants::RegisterCount>;
+        public:
+	        static void assemble(const std::string& iName, FILE* input, std::ostream* output);
 		public:
 			Core() noexcept;
 			virtual ~Core() noexcept;
@@ -384,7 +386,6 @@ namespace cisc0 {
             Encoding encodeComplex() const;
 	};
 	Core* newCore() noexcept;
-	void assemble(const std::string& iName, FILE* input, std::ostream* output);
 #define DefSubtypeConversion(op, type) \
     template<> \
     struct DecodedInstruction::SubtypeConversion<Operation:: op > { \
