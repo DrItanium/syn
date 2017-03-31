@@ -26,6 +26,7 @@ SIM_OBJECTS = Simulator.o \
 			  RegisteredCores.o \
 			  Cisc0CoreAssemblerWrapper.o \
 			  Cisc0CoreInstructionEncoder.o \
+			  IrisCoreAssemblerStateWrapper.o \
 			  ${ARCH_OBJECTS} \
 			  ${ASM_PARSERS_OBJECTS} \
 			  ${COMMON_THINGS}
