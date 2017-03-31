@@ -149,12 +149,4 @@ namespace iris {
 				});
 	}
 
-	void assemble(const std::string& iName, FILE* input, std::ostream* output) {
-		iris::AssemblerState state;
-    	pegtl::analyze<iris::Main>();
-		// put a sufficently large amount of space to read from the cstream
-		pegtl::parse_cstream<iris::Main, iris::Action>(input, iName.c_str(), 16777216, state);
-		resolveLabels(state, *output);
-	}
-
 } // end namespace iris
