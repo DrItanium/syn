@@ -172,8 +172,10 @@ namespace syn {
     struct Instruction : pegtl::seq<Operation, Separator, Operands> { };
 
 
+    template<typename End, typename Entry>
+    struct MainParser : pegtl::until<End, pegtl::must<Entry>> { };
     template<typename Entry>
-    struct MainFileParser :  pegtl::until<pegtl::eof, pegtl::must<Entry>> { };
+    struct MainFileParser :  MainParser<pegtl::eof, Entry> { };
 
 
 	/**
