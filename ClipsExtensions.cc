@@ -291,6 +291,11 @@ namespace syn {
         auto str = s.str();
         errorMessage(env, "CALL", 2, funcErrorPrefix, str);
     }
+
+    int getArgCount(void* env) noexcept {
+        return EnvRtnArgCount(env);
+    }
+
 	template<typename Word>
 	class ManagedMemoryBlock : public ExternalAddressWrapper<Block<Word>> {
 		public:
@@ -315,7 +320,7 @@ namespace syn {
 				}
 
 				try {
-					if (EnvRtnArgCount(env) == 2) {
+                    if (getArgCount(env) == 2) {
 						CLIPSValue capacity;
                         if (!Arg2IsInteger(env, &capacity, funcStr)) {
 							CVSetBoolean(ret, false);
@@ -341,18 +346,13 @@ namespace syn {
 				static std::string funcErrorPrefix;
 				static std::string func;
 #include "syn_memory_block_defines.h"
-				auto isArithmeticOp = [](MemoryBlockOp op) {
-					switch(op) {
-						case MemoryBlockOp::Combine:
-						case MemoryBlockOp::Difference:
-						case MemoryBlockOp::Product:
-						case MemoryBlockOp::Divide:
-						case MemoryBlockOp::Remainder:
-							return true;
-						default:
-							return false;
-					}
-				};
+                static constexpr auto isArithmeticOp = [](MemoryBlockOp op) {
+                    return op == MemoryBlockOp::Combine ||
+                           op == MemoryBlockOp::Difference ||
+                           op == MemoryBlockOp::Product ||
+                           op == MemoryBlockOp::Divide ||
+                           op == MemoryBlockOp::Remainder;
+                };
 				if (init) {
 					init = false;
                     auto t = retrieveFunctionNames<WordBlock>("call");
@@ -409,7 +409,7 @@ namespace syn {
                         }
                         // if it is registered then check the length
                         auto argCount = 2 /* always have two arguments */  + findOpCount->second;
-                        if (argCount != EnvRtnArgCount(env)) {
+                        if (argCount != getArgCount(env)) {
                             std::stringstream ss;
                             ss << " expected " << std::dec << argCount << " arguments";
                             CVSetBoolean(ret, false);
@@ -432,6 +432,13 @@ namespace syn {
                             return check;
 
                         };
+                        auto memorySet = [oneCheck, env, &arg0, ptr]() {
+                            auto check = oneCheck(INTEGER, "First argument must be an INTEGER value to populate all of the memory cells with!");
+                            if (check) {
+                                ptr->setMemoryToSingleValue(EnvDOToLong(env, arg0));
+                            }
+                            return check;
+                        };
                         if (op == MemoryBlockOp::Type) {
                             CVSetSymbol(ret, func.c_str());
                         } else if (op == MemoryBlockOp::Size) {
@@ -445,24 +452,19 @@ namespace syn {
                         } else if (op == MemoryBlockOp::Get) {
                             return memoryGet();
                         } else if (op == MemoryBlockOp::Populate) {
-                            auto check = oneCheck(INTEGER, "First argument must be an INTEGER value to populate all of the memory cells with!");
-                            if (check) {
-                                ptr->setMemoryToSingleValue(EnvDOToLong(env, arg0));
-                            }
-                            return check;
+                            return memorySet();
                         } else if (op == MemoryBlockOp::Increment || op == MemoryBlockOp::Decrement) {
                             auto check = oneCheck(INTEGER, "First argument must be an address");
                             if (check) {
                                 auto addr = EnvDOToLong(env, arg0);
                                 if (!ptr->legalAddress(addr)) {
-                                    check = false;
                                     rangeViolation(addr);
+                                    return false;
+                                }
+                                if (op == MemoryBlockOp::Increment) {
+                                    ptr->incrementMemoryCell(addr);
                                 } else {
-                                    if (op == MemoryBlockOp::Increment) {
-                                        ptr->incrementMemoryCell(addr);
-                                    } else {
-                                        ptr->decrementMemoryCell(addr);
-                                    }
+                                    ptr->decrementMemoryCell(addr);
                                 }
                             }
                             return check;
