@@ -65,8 +65,6 @@ namespace iris {
 		void setImmediate(word value) noexcept;
 		bool shouldResolveLabel() noexcept { return fullImmediate && hasLexeme; }
         dword encode();
-
-
 	};
 
 	class AssemblerState {
@@ -281,7 +279,7 @@ namespace iris {
     using StatefulDestinationGPR = StatefulRegister<DestinationGPR>;
 #undef DefIndirectGPR
 	using SourceRegisters = syn::SourceRegisters<StatefulRegister<Source0GPR>, StatefulRegister<Source1GPR>>;
-	struct OneGPR :  syn::OneRegister<StatefulDestinationGPR> { };
+	struct OneGPR : syn::OneRegister<StatefulDestinationGPR> { };
     struct TwoGPR : syn::TwoRegister<StatefulDestinationGPR, StatefulRegister<Source0GPR>> { };
 	struct ThreeGPR : syn::TwoRegister<StatefulDestinationGPR, SourceRegisters> { };
     using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
@@ -390,8 +388,8 @@ namespace iris {
 	};
 
     template<typename T>
-    struct LexemeOrNumberDirective : public syn::OneArgumentDirective<T, LexemeOrNumber> { };
-    struct DeclareDirective : public LexemeOrNumberDirective<syn::SymbolWordDirective> { };
+    struct LexemeOrNumberDirective : syn::OneArgumentDirective<T, LexemeOrNumber> { };
+    struct DeclareDirective : LexemeOrNumberDirective<syn::SymbolWordDirective> { };
 	DefAction(DeclareDirective) {
 		DefApply {
 			if (state.inDataSection()) {
@@ -452,11 +450,11 @@ namespace iris {
     DefOperation(Nor, nor, BinaryNor);
     DefOperationSameTitle(Min, min);
     DefOperationSameTitle(Max, max);
-    struct OperationArithmeticThreeGPR : public pegtl::sor<SymbolAdd, SymbolSub, SymbolMul, SymbolDiv, SymbolRem, SymbolShiftLeft, SymbolShiftRight, SymbolAnd, SymbolOr, SymbolXor, SymbolMin, SymbolMax> { };
-	struct ArithmeticThreeGPRInstruction : public ThreeGPRInstruction<OperationArithmeticThreeGPR> { };
+    struct OperationArithmeticThreeGPR : pegtl::sor<SymbolAdd, SymbolSub, SymbolMul, SymbolDiv, SymbolRem, SymbolShiftLeft, SymbolShiftRight, SymbolAnd, SymbolOr, SymbolXor, SymbolMin, SymbolMax> { };
+	struct ArithmeticThreeGPRInstruction : ThreeGPRInstruction<OperationArithmeticThreeGPR> { };
     DefOperation(Not, not, BinaryNot);
-    struct OperationArithmeticTwoGPR : public pegtl::sor<SymbolNot> { };
-    struct ArithmeticTwoGPRInstruction : public TwoGPRInstruction<OperationArithmeticTwoGPR> { };
+    struct OperationArithmeticTwoGPR : pegtl::sor<SymbolNot> { };
+    struct ArithmeticTwoGPRInstruction : TwoGPRInstruction<OperationArithmeticTwoGPR> { };
 
     DefOperationSameTitle(AddImmediate, addi);
     DefOperationSameTitle(SubImmediate, subi);
@@ -465,10 +463,9 @@ namespace iris {
     DefOperationSameTitle(RemImmediate, remi);
     DefOperationSameTitle(ShiftLeftImmediate, shli);
     DefOperationSameTitle(ShiftRightImmediate, shri);
-    struct OperationArithmeticTwoGPRHalfImmediate : public pegtl::sor< SymbolAddImmediate, SymbolSubImmediate, SymbolMulImmediate, SymbolDivImmediate, SymbolRemImmediate, SymbolShiftLeftImmediate, SymbolShiftRightImmediate> { };
-    struct ArithmeticTwoGPRHalfImmediateInstruction : public pegtl::seq<OperationArithmeticTwoGPRHalfImmediate, Separator, TwoGPR, Separator, HalfImmediate> { };
-
-    struct ArithmeticInstruction : public pegtl::sor<ArithmeticTwoGPRHalfImmediateInstruction, ArithmeticTwoGPRInstruction, ArithmeticThreeGPRInstruction> { };
+    struct OperationArithmeticTwoGPRHalfImmediate : pegtl::sor< SymbolAddImmediate, SymbolSubImmediate, SymbolMulImmediate, SymbolDivImmediate, SymbolRemImmediate, SymbolShiftLeftImmediate, SymbolShiftRightImmediate> { };
+    struct ArithmeticTwoGPRHalfImmediateInstruction : pegtl::seq<OperationArithmeticTwoGPRHalfImmediate, Separator, TwoGPR, Separator, HalfImmediate> { };
+    struct ArithmeticInstruction : pegtl::sor<ArithmeticTwoGPRHalfImmediateInstruction, ArithmeticTwoGPRInstruction, ArithmeticThreeGPRInstruction> { };
 
 #define DefGroupSet(rule, group) DefAction( rule ) { DefApply { state.setGroup(InstructionGroup:: group ); } }
 	DefGroupSet(ArithmeticInstruction, Arithmetic);
@@ -479,8 +476,8 @@ namespace iris {
     DefOperationSameTitle(MoveFromIP, mfip);
     DefOperationSameTitle(MoveToLR, mtlr);
     DefOperationSameTitle(MoveFromLR, mflr);
-    struct OperationMoveOneGPR : public pegtl::sor<SymbolMoveToIP, SymbolMoveFromIP, SymbolMoveToLR, SymbolMoveFromLR> { };
-    struct MoveOneGPRInstruction : public OneGPRInstruction<OperationMoveOneGPR> { };
+    struct OperationMoveOneGPR : pegtl::sor<SymbolMoveToIP, SymbolMoveFromIP, SymbolMoveToLR, SymbolMoveFromLR> { };
+    struct MoveOneGPRInstruction : OneGPRInstruction<OperationMoveOneGPR> { };
     DefOperationSameTitle(Move, move);
     DefOperationSameTitle(Swap, swap);
     DefOperationSameTitle(Load, ld);
@@ -489,91 +486,93 @@ namespace iris {
     DefOperation(StoreIO, stio, IOWrite);
     DefOperationSameTitle(Push, push);
     DefOperationSameTitle(Pop, pop);
-    struct OperationMoveTwoGPR : public pegtl::sor<SymbolMove, SymbolSwap, SymbolLoadIO, SymbolStoreIO, SymbolLoad, SymbolStore, SymbolPush, SymbolPop> { };
-    struct MoveTwoGPRInstruction : public TwoGPRInstruction<OperationMoveTwoGPR> { };
+    struct OperationMoveTwoGPR : pegtl::sor<SymbolMove, SymbolSwap, SymbolLoadIO, SymbolStoreIO, SymbolLoad, SymbolStore, SymbolPush, SymbolPop> { };
+    struct MoveTwoGPRInstruction : TwoGPRInstruction<OperationMoveTwoGPR> { };
     DefOperationSameTitle(LoadWithOffset, ldwo);
     DefOperationSameTitle(StoreWithOffset, stwo);
     DefOperation(LoadIOWithOffset, ldiowo, IOReadWithOffset);
     DefOperation(StoreIOWithOffset, stiowo, IOWriteWithOffset);
-    struct OperationMoveTwoGPRHalfImmediate : public pegtl::sor<SymbolLoadWithOffset, SymbolStoreWithOffset, SymbolLoadIOWithOffset, SymbolStoreIOWithOffset> { };
-    struct MoveTwoGPRHalfImmediateInstruction : public pegtl::seq<OperationMoveTwoGPRHalfImmediate, Separator, TwoGPR, Separator, HalfImmediate> { };
+    struct OperationMoveTwoGPRHalfImmediate : pegtl::sor<SymbolLoadWithOffset, SymbolStoreWithOffset, SymbolLoadIOWithOffset, SymbolStoreIOWithOffset> { };
+    struct MoveTwoGPRHalfImmediateInstruction : pegtl::seq<OperationMoveTwoGPRHalfImmediate, Separator, TwoGPR, Separator, HalfImmediate> { };
 
     DefOperationSameTitle(LoadCode, ldc);
     DefOperationSameTitle(StoreCode, stc);
-    struct OperationMoveThreeGPR : public pegtl::sor<SymbolLoadCode, SymbolStoreCode> { };
-    struct MoveThreeGPRInstruction : public ThreeGPRInstruction<OperationMoveThreeGPR> { };
+    struct OperationMoveThreeGPR : pegtl::sor<SymbolLoadCode, SymbolStoreCode> { };
+    struct MoveThreeGPRInstruction : ThreeGPRInstruction<OperationMoveThreeGPR> { };
 
     DefOperationSameTitle(PushImmediate, pushi);
     DefOperationSameTitle(Set, set);
     DefSymbol(LoadImmediatePrimary, ldi);
     DefSymbol(LoadImmediateSecondary, ldm);
-    struct SymbolLoadImmediate : public pegtl::sor<SymbolLoadImmediatePrimary, SymbolLoadImmediateSecondary> { };
+    struct SymbolLoadImmediate : pegtl::sor<SymbolLoadImmediatePrimary, SymbolLoadImmediateSecondary> { };
 	DefAction(SymbolLoadImmediate) { DefApply { state.setOperation<CURRENT_TYPE>(CURRENT_TYPE :: LoadImmediate); } };
     DefSymbol(StoreImmediatePrimary, sti);
     DefSymbol(StoreImmediateAlternateTitle, memset);
-    struct SymbolStoreImmediate : public pegtl::sor<SymbolStoreImmediatePrimary, SymbolStoreImmediateAlternateTitle> { };
+    struct SymbolStoreImmediate : pegtl::sor<SymbolStoreImmediatePrimary, SymbolStoreImmediateAlternateTitle> { };
 	DefAction(SymbolStoreImmediate) { DefApply { state.setOperation<CURRENT_TYPE>(CURRENT_TYPE :: Memset); } };
-    struct OperationMoveGPRImmediate : public pegtl::sor<SymbolStoreImmediate, SymbolLoadImmediate, SymbolSet, SymbolPushImmediate> { };
+    struct OperationMoveGPRImmediate : pegtl::sor<SymbolStoreImmediate, SymbolLoadImmediate, SymbolSet, SymbolPushImmediate> { };
 
-    struct MoveGPRImmediateInstruction : public pegtl::seq<OperationMoveGPRImmediate, Separator, StatefulDestinationGPR, Separator, Immediate> { };
+    struct MoveGPRImmediateInstruction : pegtl::seq<OperationMoveGPRImmediate, Separator, StatefulDestinationGPR, Separator, Immediate> { };
 
-    struct MoveInstruction : public pegtl::sor<MoveGPRImmediateInstruction, MoveThreeGPRInstruction, MoveTwoGPRHalfImmediateInstruction, MoveTwoGPRInstruction, MoveOneGPRInstruction> { };
+    struct MoveInstruction : pegtl::sor<MoveGPRImmediateInstruction, MoveThreeGPRInstruction, MoveTwoGPRHalfImmediateInstruction, MoveTwoGPRInstruction, MoveOneGPRInstruction> { };
 	DefGroupSet(MoveInstruction, Move);
 #undef CURRENT_TYPE
 #define CURRENT_TYPE JumpOp
     // branch
 	template<typename Op, typename S>
-	struct BranchUnconditional : public pegtl::seq<Op, Separator, S> { };
+	struct BranchUnconditional : pegtl::seq<Op, Separator, S> { };
     DefOperationSameTitle(BranchUnconditional, b);
     DefOperationSameTitle(BranchUnconditionalLink, bl);
-    struct OperationBranchOneGPR : public pegtl::sor<SymbolBranchUnconditionalLink, SymbolBranchUnconditional> { };
-    struct BranchOneGPRInstruction : public BranchUnconditional<OperationBranchOneGPR, StatefulDestinationGPR> { };
+    struct OperationBranchOneGPR : pegtl::sor<SymbolBranchUnconditionalLink, SymbolBranchUnconditional> { };
+    struct BranchOneGPRInstruction : BranchUnconditional<OperationBranchOneGPR, StatefulDestinationGPR> { };
     DefOperationSameTitle(BranchUnconditionalImmediate, bi);
     DefOperationSameTitle(BranchUnconditionalImmediateLink, bil);
-    struct OperationBranchImmediate : public pegtl::sor<SymbolBranchUnconditionalImmediateLink, SymbolBranchUnconditionalImmediate> { };
-    struct BranchImmediateInstruction : public BranchUnconditional<OperationBranchImmediate, Immediate> { };
+    struct OperationBranchImmediate : pegtl::sor<SymbolBranchUnconditionalImmediateLink, SymbolBranchUnconditionalImmediate> { };
+    struct BranchImmediateInstruction : BranchUnconditional<OperationBranchImmediate, Immediate> { };
 
-	struct GroupBranchUnconditional : public pegtl::sor<BranchOneGPRInstruction, BranchImmediateInstruction> { };
+	struct GroupBranchUnconditional : pegtl::sor<BranchOneGPRInstruction, BranchImmediateInstruction> { };
     template<typename Op, typename S>
-    struct BranchConditional : public pegtl::seq<Op, Separator, DestinationPredicateRegister, Separator, S> { };
+    struct BranchConditional : pegtl::seq<Op, Separator, DestinationPredicateRegister, Separator, S> { };
     DefOperationSameTitle(BranchConditional, bc);
     DefOperationSameTitle(BranchConditionalLink, bcl);
-    struct OperationBranchConditionalGPR : public pegtl::sor<
+    struct OperationBranchConditionalGPR : pegtl::sor<
                                            SymbolBranchConditionalLink,
                                            SymbolBranchConditional
                                            > { };
-    struct BranchConditionalGPRInstruction : public BranchConditional<OperationBranchConditionalGPR, Source0GPR> { };
+    struct BranchConditionalGPRInstruction : BranchConditional<OperationBranchConditionalGPR, Source0GPR> { };
     DefOperationSameTitle(BranchConditionalImmediate, bic);
     DefOperationSameTitle(BranchConditionalImmediateLink, bicl);
-    struct OperationBranchConditionalImmediate : public pegtl::sor<
+    struct OperationBranchConditionalImmediate : pegtl::sor<
                                                  SymbolBranchConditionalImmediateLink,
                                                  SymbolBranchConditionalImmediate
                                                  > { };
-    struct BranchConditionalImmediateInstruction : public BranchConditional<OperationBranchConditionalImmediate, Immediate> { };
+    struct BranchConditionalImmediateInstruction : BranchConditional<OperationBranchConditionalImmediate, Immediate> { };
     DefOperationSameTitle(IfThenElse, "if");
     DefOperationSameTitle(IfThenElseLink, ifl);
-    struct OperationBranchIfStatement : public pegtl::sor<
+    struct OperationBranchIfStatement : pegtl::sor<
                                         SymbolIfThenElse,
                                         SymbolIfThenElseLink
                                         > { };
-    struct BranchIfInstruction : public BranchConditional<OperationBranchIfStatement, SourceRegisters> { };
+    struct BranchIfInstruction : BranchConditional<OperationBranchIfStatement, SourceRegisters> { };
     DefOperationSameTitle(BranchConditionalLR, blrc);
     DefOperationSameTitle(BranchConditionalLRAndLink, blrcl);
-    struct OperationBranchCondtionalNoArgs : public pegtl::sor<
+    struct OperationBranchConditionalNoArgs : pegtl::sor<
                                              SymbolBranchConditionalLR,
                                              SymbolBranchConditionalLRAndLink
                                              > { };
-    struct BranchConditionalNoArgsInstruction : public pegtl::seq<OperationBranchCondtionalNoArgs, Separator, DestinationPredicateRegister> { };
+    struct BranchConditionalNoArgsInstruction : pegtl::seq<OperationBranchConditionalNoArgs, Separator, DestinationPredicateRegister> { };
     DefOperationSameTitle(BranchUnconditionalLR, blr);
     DefOperationSameTitle(BranchUnconditionalLRAndLink, blrl);
 	DefOperation(BranchReturnFromError, rfe, ReturnFromError);
-    struct OperationBranchNoArgs : public pegtl::sor<SymbolBranchUnconditionalLR,  SymbolBranchUnconditionalLRAndLink, SymbolBranchReturnFromError> { };
-    struct BranchNoArgsInstruction : public pegtl::seq<OperationBranchNoArgs> { };
+    struct BranchNoArgsInstruction : pegtl::sor<SymbolBranchUnconditionalLR,  SymbolBranchUnconditionalLRAndLink, SymbolBranchReturnFromError> { };
 
-    struct BranchInstruction : public pegtl::sor<GroupBranchUnconditional, BranchConditionalGPRInstruction, BranchConditionalImmediateInstruction, BranchIfInstruction, BranchConditionalNoArgsInstruction, BranchNoArgsInstruction> { };
+    struct BranchInstruction : pegtl::sor<GroupBranchUnconditional, BranchConditionalGPRInstruction, BranchConditionalImmediateInstruction, BranchIfInstruction, BranchConditionalNoArgsInstruction, BranchNoArgsInstruction> { };
 	DefGroupSet(BranchInstruction, Jump);
 
 #undef CURRENT_TYPE
+    template<typename T>
+    struct ThenField : pegtl::seq<Separator, T> { };
+    struct ThenDestinationPredicates : ThenField<DestinationPredicates> { };
 #define CURRENT_TYPE CompareOp
     // compare operations
     DefOperationSameTitle(Eq, eq);
@@ -588,11 +587,11 @@ namespace iris {
     DefOperationSameTitle(GreaterThanImmediate, gti);
     DefOperationSameTitle(LessThanOrEqualToImmediate, lei);
     DefOperationSameTitle(GreaterThanOrEqualToImmediate, gei);
-    struct CompareRegisterOperation : public pegtl::sor< SymbolEq, SymbolNeq, SymbolLessThan, SymbolGreaterThan, SymbolLessThanOrEqualTo, SymbolGreaterThanOrEqualTo> { };
-    struct CompareImmediateOperation : public pegtl::sor<SymbolEqImmediate, SymbolNeqImmediate, SymbolLessThanImmediate, SymbolGreaterThanImmediate, SymbolLessThanOrEqualToImmediate, SymbolGreaterThanOrEqualToImmediate> { };
-    struct CompareRegisterInstruction : public pegtl::seq<CompareRegisterOperation, Separator, DestinationPredicates, Separator, SourceRegisters> { };
-    struct CompareImmediateInstruction : public pegtl::seq<CompareImmediateOperation, Separator, DestinationPredicates, Separator, Source0GPR, Separator, HalfImmediate> { };
-    struct CompareInstruction : public pegtl::sor<CompareRegisterInstruction, CompareImmediateInstruction> { };
+    struct CompareRegisterOperation : pegtl::sor< SymbolEq, SymbolNeq, SymbolLessThan, SymbolGreaterThan, SymbolLessThanOrEqualTo, SymbolGreaterThanOrEqualTo> { };
+    struct CompareImmediateOperation : pegtl::sor<SymbolEqImmediate, SymbolNeqImmediate, SymbolLessThanImmediate, SymbolGreaterThanImmediate, SymbolLessThanOrEqualToImmediate, SymbolGreaterThanOrEqualToImmediate> { };
+    struct CompareRegisterInstruction : pegtl::seq<CompareRegisterOperation, ThenDestinationPredicates, ThenField<SourceRegisters>> { };
+    struct CompareImmediateInstruction : pegtl::seq<CompareImmediateOperation, ThenDestinationPredicates, ThenField<Source0GPR>, ThenField<HalfImmediate>> { };
+    struct CompareInstruction : pegtl::sor<CompareRegisterInstruction, CompareImmediateInstruction> { };
 	DefGroupSet(CompareInstruction, Compare);
 
 #undef CURRENT_TYPE
@@ -609,15 +608,15 @@ namespace iris {
     DefOperationSameTitle(CRNor, crnor);
     DefOperationSameTitle(CRSwap, crswap);
     DefOperationSameTitle(CRMove, crmove);
-    struct OperationPredicateTwoArgs : public pegtl::sor<SymbolCRSwap, SymbolCRMove> { };
-    struct OperationPredicateThreeArgs : public pegtl::sor<SymbolCRNot> { };
-    struct OperationPredicateOneGPR : public pegtl::sor<SymbolSaveCRs, SymbolRestoreCRs> { };
-    struct OperationPredicateFourArgs : public pegtl::sor<SymbolCRXor, SymbolCRAnd, SymbolCROr, SymbolCRNand, SymbolCRNor> { };
-    struct PredicateInstructionOneGPR : public pegtl::seq<OperationPredicateOneGPR, Separator, StatefulDestinationGPR> { };
-    struct PredicateInstructionTwoArgs : public pegtl::seq<OperationPredicateTwoArgs, Separator, DestinationPredicates> { };
-    struct PredicateInstructionThreeArgs : public pegtl::seq<OperationPredicateThreeArgs, Separator, DestinationPredicates, Separator, StatefulRegister<Source0Predicate>> { };
-    struct PredicateInstructionFourArgs : public pegtl::seq<OperationPredicateFourArgs, Separator, DestinationPredicates, Separator, StatefulRegister<Source0Predicate>, Separator, StatefulRegister<Source1Predicate>> { };
-    struct PredicateInstruction : public pegtl::sor<PredicateInstructionOneGPR, PredicateInstructionTwoArgs, PredicateInstructionThreeArgs, PredicateInstructionFourArgs> { };
+    struct ThenSource0Predicate : ThenField<StatefulRegister<Source0Predicate>> { };
+    struct OperationPredicateTwoArgs : pegtl::sor<SymbolCRSwap, SymbolCRMove> { };
+    struct OperationPredicateOneGPR : pegtl::sor<SymbolSaveCRs, SymbolRestoreCRs> { };
+    struct OperationPredicateFourArgs : pegtl::sor<SymbolCRXor, SymbolCRAnd, SymbolCROr, SymbolCRNand, SymbolCRNor> { };
+    struct PredicateInstructionOneGPR : pegtl::seq<OperationPredicateOneGPR, ThenField<StatefulDestinationGPR>> { };
+    struct PredicateInstructionTwoArgs : pegtl::seq<OperationPredicateTwoArgs, ThenDestinationPredicates> { };
+    struct PredicateInstructionThreeArgs : pegtl::seq<SymbolCRNot, ThenDestinationPredicates, ThenSource0Predicate> { };
+    struct PredicateInstructionFourArgs : pegtl::seq<OperationPredicateFourArgs, ThenDestinationPredicates, ThenSource0Predicate, ThenField<StatefulRegister<Source1Predicate>>> { };
+    struct PredicateInstruction : pegtl::sor<PredicateInstructionOneGPR, PredicateInstructionTwoArgs, PredicateInstructionThreeArgs, PredicateInstructionFourArgs> { };
 	DefGroupSet(PredicateInstruction, ConditionalRegister);
 
 
@@ -626,7 +625,7 @@ namespace iris {
 #undef DefOperationSameTitle
 #undef CURRENT_TYPE
 #undef DefSymbol
-    struct Instruction : public pegtl::sor<ArithmeticInstruction, MoveInstruction, BranchInstruction, CompareInstruction, PredicateInstruction> { };
+    struct Instruction : pegtl::sor<ArithmeticInstruction, MoveInstruction, BranchInstruction, CompareInstruction, PredicateInstruction> { };
 	DefAction(Instruction) {
 		DefApply {
 			if (state.inCodeSection()) {
@@ -638,9 +637,9 @@ namespace iris {
 			}
 		}
 	};
-    struct Statement : public pegtl::sor<Instruction, Directive> { };
-	struct Anything : public pegtl::sor<Separator, SingleLineComment,Statement> { };
-	struct Main : public syn::MainFileParser<Anything> { };
+    struct Statement : pegtl::sor<Instruction, Directive> { };
+	struct Anything : pegtl::sor<Separator, SingleLineComment,Statement> { };
+	struct Main : syn::MainFileParser<Anything> { };
 
 	void resolveLabels(AssemblerState& state, std::ostream& output);
 } // end namespace iris
