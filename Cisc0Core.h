@@ -38,6 +38,10 @@
 #include "IODevice.h"
 #include "IOController.h"
 
+extern "C" {
+	#include "clips.h"
+}
+
 namespace cisc0 {
 	using Word = uint16_t;
 	using DWord = uint32_t;
@@ -266,6 +270,7 @@ namespace cisc0 {
             using RegisterFile = syn::FixedSizeLoadStoreUnit<RegisterValue, byte, ArchitectureConstants::RegisterCount>;
         public:
 	        static void assemble(const std::string& iName, FILE* input, std::ostream* output);
+			static Core* make() noexcept;
 		public:
 			Core() noexcept;
 			virtual ~Core() noexcept;
@@ -276,6 +281,7 @@ namespace cisc0 {
 			virtual void link(std::istream& stream) override;
 			virtual bool cycle() override;
 			bool shouldExecute() const { return execute; }
+			void handleOperation(UDFContext* env, CLIPSValue* ret);
 		private:
 			void pushWord(Word value);
             void pushWord(Word value, RegisterValue& ptr);
