@@ -281,7 +281,7 @@ namespace cisc0 {
 			virtual void link(std::istream& stream) override;
 			virtual bool cycle() override;
 			bool shouldExecute() const { return execute; }
-			void handleOperation(UDFContext* env, CLIPSValue* ret);
+			bool handleOperation(void* env, CLIPSValue* ret);
 		private:
 			void pushWord(Word value);
             void pushWord(Word value, RegisterValue& ptr);
