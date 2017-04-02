@@ -33,6 +33,17 @@ namespace cisc0 {
 		public:
 			using Parent = syn::ExternalAddressWrapper<Core>;
 			using Self = CoreWrapper;
+			enum class Operations {
+				Initialize,
+				Shutdown,
+				Run,
+				Cycle,
+				WriteMemory,
+				ReadMemory,
+				GetRegister,
+				SetRegister,
+				Count,
+			};
 		public:
 			static bool callFunction(void* env, syn::DataObjectPtr value, syn::DataObjectPtr ret);
 			static void registerWithEnvironment(void* env, const char* title) {
@@ -51,6 +62,19 @@ namespace cisc0 {
 			CoreWrapper() : Parent(std::move(std::make_unique<Core>())) { }
 			virtual ~CoreWrapper() { }
 	};
+	bool CoreWrapper::callFunction(void* env, syn::DataObjectPtr value, syn::DataObjectPtr ret) {
+		// unpack the object and do the magic
+		static bool init = true;
+		static std::string funcStr;
+		static std::string funcErrorPrefix;
+		static std::map<std::string, CoreWrapper::Operations> ops = {
+			{ "initialize", Operations::Initialize },
+			{ "shutdown", Operations::Shutdown},
+			{ "run", Operations::Run },
+			{ "cycle", Operations::Cycle },
+		};
+		return true;
+	}
 	void installCoreWrapper(void* env) {
 		CoreWrapper::registerWithEnvironment(env);
 	}
