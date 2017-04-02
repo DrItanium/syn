@@ -61,21 +61,8 @@ REPL_FINAL_OBJECTS = Repl.o \
 
 ASM_BINARY = syn_asm
 
-LINK_OBJECTS = Linker.o \
-				${ARCH_OBJECTS} \
-				Cisc0CoreAssemblerWrapper.o \
-				Cisc0CoreInstructionEncoder.o \
-				CoreRegistrar.o \
-				RegisteredCores.o \
-				IrisCoreAssemblerStateWrapper.o \
-				${ASM_PARSERS_OBJECTS} \
-			    ${COMMON_THINGS}
-
-LINK_BINARY = syn_link
-
 ALL_BINARIES = ${SIM_BINARY} \
 			   ${ASM_BINARY} \
-			   ${LINK_BINARY} \
 			   ${REPL_BINARY} \
 			   ${BOOTSTRAP_BINARY} \
 			   ${REPL_FINAL_BINARY}
@@ -90,7 +77,6 @@ DEFINE_CLPS = iris_defines.clp \
 ALL_OBJECTS = ${COMMON_THINGS} \
 			  ${SIM_OBJECTS} \
 			  ${ASM_OBJECTS} \
-			  ${LINK_OBJECTS} \
 			  ${ARCH_OBJECTS} \
 			  ${REPL_OBJECTS} \
 			  ${DEFINE_OBJECTS} \
@@ -162,11 +148,6 @@ options:
 ${SIM_BINARY}: ${SIM_OBJECTS}
 	@echo -n Building ${SIM_BINARY} binary out of $^...
 	@${CXX} ${LDFLAGS} -o ${SIM_BINARY} $^
-	@echo done.
-
-${LINK_BINARY}: ${LINK_OBJECTS}
-	@echo -n Building ${LINK_BINARY} binary out of $^...
-	@${CXX} ${LDFLAGS} -o ${LINK_BINARY} $^
 	@echo done.
 
 ${ASM_BINARY}: ${ASM_OBJECTS}
