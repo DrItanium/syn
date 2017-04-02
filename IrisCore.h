@@ -103,6 +103,7 @@ namespace iris {
 			void dispatchInterruptHandler();
             void ioSpaceWrite(word address, word value) noexcept;
             word ioSpaceRead(word address) noexcept;
+			void handleCiscInstructions();
 		private:
 			template<typename Unit>
 			void performOperation(Unit& unit, typename Unit::Operation op, bool immediate) {

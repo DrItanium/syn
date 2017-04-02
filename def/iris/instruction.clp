@@ -115,8 +115,8 @@
                           Jump
                           Compare
                           ConditionalRegister
+                          CiscInstructions
                           Unused0
-                          Unused1
                           CustomInstructionReserved)
                 (cast-to byte)
                 (max-size "ArchitectureConstants::MaxGroups"))
@@ -217,5 +217,13 @@
                           CRNor
                           CRSwap
                           CRMove
-                          )))
+                          ))
+          (enum (cast-to byte)
+                (max-size "ArchitectureConstants::MaxOperations")
+                (name CiscOp)
+                (children SaveRegistersToStack
+                          RestoreRegistersFromStack
+                          CountTillZero
+                          ))
 
+    )
