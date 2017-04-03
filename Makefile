@@ -37,8 +37,9 @@ REPL_FINAL_OBJECTS = Repl.o \
 					 Cisc0CoreAssemblerWrapper.o \
 					 Cisc0CoreInstructionEncoder.o \
 					 IrisCoreAssemblerStateWrapper.o \
-					 ClipsExtensions.o \
-					 libmaya.a \
+					 Cisc0CoreWrapper.o \
+					 ${COMMON_THINGS} \
+					 ${ARCH_OBJECTS} \
 					 ${ASM_PARSERS_OBJECTS} \
 
 ASM_BINARY = syn_asm

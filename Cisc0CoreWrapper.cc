@@ -230,6 +230,6 @@ namespace cisc0 {
 } // end namespace cisc0
 
 namespace syn {
-	DefWrapperSymbolicName(cisc0::CoreWrapper,  "cisc0-core");
+	DefWrapperSymbolicName(cisc0::Core,  "cisc0-core");
 } // end namespace syn
 

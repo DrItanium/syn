@@ -529,7 +529,8 @@ Repl.o: Repl.cc misc/maya/clips.h misc/maya/setup.h misc/maya/os_shim.h \
  misc/maya/classini.h misc/maya/classpsr.h misc/maya/defins.h \
  misc/maya/inscom.h misc/maya/insfun.h misc/maya/insfile.h \
  misc/maya/msgcom.h misc/maya/msgpass.h misc/maya/objrtmch.h \
- ClipsExtensions.h Base.h Problem.h AssemblerExternalAddressRegistrar.h
+ ClipsExtensions.h Base.h Problem.h AssemblerExternalAddressRegistrar.h \
+ Cisc0CoreWrapper.h
 WrappedIODevice.o: WrappedIODevice.cc WrappedIODevice.h Base.h Problem.h \
  Device.h Core.h ClipsExtensions.h misc/maya/clips.h misc/maya/setup.h \
  misc/maya/os_shim.h misc/maya/platform.h misc/maya/envrnmnt.h \
