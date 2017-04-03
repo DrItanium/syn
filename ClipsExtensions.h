@@ -107,6 +107,11 @@ void CLIPS_basePrintAddress(void* env, const char* logicalName, void* theValue) 
 
 bool errorMessage(void* env, const std::string& idClass, int idIndex, const std::string& msgPrefix, const std::string& msg) noexcept;
 
+template<typename T>
+T* unwrapExternalAddress(CLIPSValue* value) noexcept {
+	return static_cast<T*>(DOPToExternalAddress(value));
+}
+
 // Have to do it this way because std::function's will go out of scope and
 // everything breaks
 typedef void PrintFunction(void*, const char*, void*);
