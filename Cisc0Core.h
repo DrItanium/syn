@@ -351,7 +351,6 @@ namespace cisc0 {
 			ALU _shifter;
 			ALU _logicalOps;
 			CompareUnit _compare;
-			syn::BooleanCombineUnit _bCombine;
 			IOBus _bus;
 	};
 

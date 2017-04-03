@@ -31,31 +31,20 @@
 #include "IODevice.h"
 #include <cmath>
 namespace syn {
-template<typename T, T addressMask>
-class Register {
-    public:
-        using AddressType = T;
-        using Self = Register<T, addressMask>;
-        static constexpr T getAddressMask() noexcept { return addressMask; }
-        static constexpr T generateProperAddress(T value) noexcept { return syn::decodeBits<T, T, getAddressMask(), 0>(value); }
-    public:
-        Register(T value) noexcept : _value(value) { }
-        virtual ~Register() { }
-        inline T get() const noexcept { return _value; }
-        inline void set(T value) noexcept { _value = generateProperAddress(value); }
-        inline void increment(T value = 1) noexcept { set(get() + value); }
-        inline void decrement(T value = 1) noexcept { set(get() - value); }
-        inline Self& operator++() {
-            increment();
-            return *this;
-        }
-        inline Self& operator--() {
-            decrement();
-            return *this;
-        }
-    private:
-        T _value;
 
+template<typename T, typename Op, typename R = T>
+class BinaryOperationUnit {
+    public:
+        using WordType = T;
+        using ReturnType = R;
+        using Operation = Op;
+    public:
+        BinaryOperationUnit() { }
+        virtual ~BinaryOperationUnit() { }
+        virtual ReturnType performOperation(Operation op, WordType a, WordType b) const = 0;
+        inline ReturnType operator()(Operation op, WordType a, WordType b) const {
+            return this->performOperation(op, a, b);
+        }
 };
 
 namespace FPU {
@@ -68,14 +57,13 @@ namespace FPU {
         Count,
     };
     template<typename Word>
-        class Unit {
+        class Unit : public BinaryOperationUnit<Word, StandardOperations>{
             public:
-                using WordType = Word;
-                using Operation = StandardOperations;
+                using Parent = BinaryOperationUnit<Word, StandardOperations>;
+                using Operation = typename Parent::Operation;
             public:
-                Unit() { }
-                virtual ~Unit() { }
-                inline Word performOperation(Operation op, Word a, Word b) const {
+                using Parent::Parent;
+                virtual Word performOperation(Operation op, Word a, Word b) const override {
                     switch(op) {
                         case Operation::Add:
                             return syn::add<Word>(a, b);
@@ -90,9 +78,6 @@ namespace FPU {
                         default:
                             throw syn::Problem("Undefined fpu operation!");
                     }
-                }
-                inline Word operator()(Operation op, Word a, Word b) const {
-                    return this->performOperation(op, a, b);
                 }
         };
 }
@@ -116,14 +101,13 @@ namespace ALU {
         Count,
     };
     template<typename Word>
-    class Unit {
+    class Unit : public BinaryOperationUnit<Word, StandardOperations> {
         public:
-            using WordType = Word;
-            using Operation = StandardOperations;
+            using Parent = BinaryOperationUnit<Word, StandardOperations>;
+            using Operation = typename Parent::Operation;
         public:
-            Unit() { }
-            virtual ~Unit() { }
-            inline Word performOperation(Operation op, Word a, Word b) const {
+            using Parent::Parent;
+            virtual Word performOperation(Operation op, Word a, Word b) const override {
                 switch(op) {
                     case Operation::Add:
                         return syn::add<Word>(a, b);
@@ -156,10 +140,7 @@ namespace ALU {
                     default:
                         throw syn::Problem("Undefined ALU operation!");
                 }
-            }
-            inline Word operator()(Operation op, Word a, Word b) const {
-                return this->performOperation(op, a, b);
-            }
+        }
     };
 } // end namespace ALU
 
@@ -185,15 +166,13 @@ namespace Comparator {
         Count,
     };
     template<typename Word, typename Return = Word>
-    class Unit {
+    class Unit : public BinaryOperationUnit<Word, StandardOperations, Return> {
         public:
-    		using WordType = Word;
-    		using ReturnType = Return;
-            using Operation = StandardOperations;
+            using Parent = BinaryOperationUnit<Word, StandardOperations, Return>;
+            using Operation = typename Parent::Operation;
         public:
-            Unit() { }
-            virtual ~Unit() { }
-            inline Return performOperation(Operation op, Word a, Word b) const {
+            using Parent::Parent;
+            virtual Return performOperation(Operation op, Word a, Word b) const override {
                 switch(op) {
                     case Operation::Eq:
                         return syn::eq<Word, Return>(a, b);
@@ -230,9 +209,6 @@ namespace Comparator {
                     default:
                         throw syn::Problem("Undefined Comparison operation!");
                 }
-            }
-            inline Word operator()(Operation op, Word a, Word b) const {
-                return this->performOperation(op, a, b);
             }
     };
 
@@ -368,38 +344,31 @@ class FixedSizeLoadStoreUnit : public LoadStoreUnit<Word, Address> {
 		virtual ~FixedSizeLoadStoreUnit() { }
 };
 
-class BooleanCombineUnit {
-	public:
-		enum class Operation {
-			None,
-			And,
-			Or,
-			Xor,
-			Nand,
-			Nor,
-			Xnor,
-		};
-	public:
-		bool performOperation(Operation op, bool newValue, bool oldValue) {
-			switch(op) {
-				case Operation::None:
-					return newValue;
-				case Operation::And:
-					return oldValue && newValue;
-				case Operation::Or:
-					return oldValue || newValue;
-				case Operation::Xor:
-					return oldValue ^ newValue;
-				case Operation::Nand:
-					return !(oldValue && newValue);
-				case Operation::Nor:
-					return !(oldValue || newValue);
-				case Operation::Xnor:
-					return !(oldValue ^ newValue);
-				default:
-					throw syn::Problem("Undefined boolean operation!");
-			}
-		}
+template<typename T, T addressMask>
+class Register {
+    public:
+        using AddressType = T;
+        using Self = Register<T, addressMask>;
+        static constexpr T getAddressMask() noexcept { return addressMask; }
+        static constexpr T generateProperAddress(T value) noexcept { return syn::decodeBits<T, T, getAddressMask(), 0>(value); }
+    public:
+        Register(T value) noexcept : _value(value) { }
+        virtual ~Register() { }
+        inline T get() const noexcept { return _value; }
+        inline void set(T value) noexcept { _value = generateProperAddress(value); }
+        inline void increment(T value = 1) noexcept { set(get() + value); }
+        inline void decrement(T value = 1) noexcept { set(get() - value); }
+        inline Self& operator++() {
+            increment();
+            return *this;
+        }
+        inline Self& operator--() {
+            decrement();
+            return *this;
+        }
+    private:
+        T _value;
+
 };
 
 } // end namespace syn
