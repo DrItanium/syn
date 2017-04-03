@@ -29,6 +29,7 @@ extern "C" {
 }
 #include "ClipsExtensions.h"
 #include "AssemblerExternalAddressRegistrar.h"
+#include "Cisc0CoreWrapper.h"
 
 static void *mainEnv;
 
@@ -37,6 +38,7 @@ int main(int argc, char* argv[]) {
 	// install features here
 	syn::installExtensions(mainEnv);
     syn::installExternalAddressAssemblers(mainEnv);
+	cisc0::installCoreWrapper(mainEnv);
 	RerouteStdin(mainEnv, argc, argv);
 	CommandLoop(mainEnv);
 	DestroyEnvironment(mainEnv);

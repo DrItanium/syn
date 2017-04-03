@@ -23,16 +23,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+// expose the cisc0 core to a CLIPS instance
+//
+#ifndef CISC0_CORE_WRAPPER_H__
+#define CISC0_CORE_WRAPPER_H__
 
-// register all of the machine cores here since the cores should not be aware
-// of these kinds of registrations
-#include "Problem.h"
-#include "RegisterEntry.h"
-#include "CoreRegistrar.h"
-#include "IrisCore.h"
-#include "Cisc0Core.h"
+namespace cisc0 {
+	/**
+	 * Expose the ability to create cores to CLIPS
+	 */
+	void installCoreWrapper(void* env);
 
-template<typename T>
-using RegisterCore = syn::RegisterEntry<syn::CoreRegistrar, T>;
-static RegisterCore<iris::Core> iris16Core(syn::registry, "iris", iris::newCore);
-static RegisterCore<cisc0::Core> cisc0Core(syn::registry, "cisc0", cisc0::newCore);
+} //end namespace cisc0
+
+#endif // end CISC0_CORE_WRAPPER_H__

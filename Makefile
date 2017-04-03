@@ -3,12 +3,8 @@
 # See LICENSE file for copyright and license details.
 
 include config.mk
-MACHINE_OBJECTS =
-DEVICES =
 ARCH_OBJECTS = IrisCore.o \
-			   Cisc0Core.o \
-			   ${DEVICES} \
-			   ${MACHINE_OBJECTS}
+			   Cisc0Core.o
 
 ASM_PARSERS_OBJECTS = Cisc0CoreAssembler.o \
 					  IrisCoreAssembler.o \
@@ -19,20 +15,6 @@ COMMON_THINGS = Core.o \
 				IOController.o \
 				ClipsExtensions.o \
 				libmaya.a
-
-
-SIM_OBJECTS = Simulator.o \
-			  CoreRegistrar.o \
-			  RegisteredCores.o \
-			  Cisc0CoreAssemblerWrapper.o \
-			  Cisc0CoreInstructionEncoder.o \
-			  IrisCoreAssemblerStateWrapper.o \
-			  ${ARCH_OBJECTS} \
-			  ${ASM_PARSERS_OBJECTS} \
-			  ${COMMON_THINGS}
-
-SIM_BINARY = syn_sim
-
 
 ASM_OBJECTS = Assembler.o \
 			  AssemblerRegistrar.o \
@@ -55,27 +37,14 @@ REPL_FINAL_OBJECTS = Repl.o \
 					 Cisc0CoreAssemblerWrapper.o \
 					 Cisc0CoreInstructionEncoder.o \
 					 IrisCoreAssemblerStateWrapper.o \
-					 ClipsExtensions.o \
-					 libmaya.a \
+					 Cisc0CoreWrapper.o \
+					 ${COMMON_THINGS} \
+					 ${ARCH_OBJECTS} \
 					 ${ASM_PARSERS_OBJECTS} \
 
 ASM_BINARY = syn_asm
 
-LINK_OBJECTS = Linker.o \
-				${ARCH_OBJECTS} \
-				Cisc0CoreAssemblerWrapper.o \
-				Cisc0CoreInstructionEncoder.o \
-				CoreRegistrar.o \
-				RegisteredCores.o \
-				IrisCoreAssemblerStateWrapper.o \
-				${ASM_PARSERS_OBJECTS} \
-			    ${COMMON_THINGS}
-
-LINK_BINARY = syn_link
-
-ALL_BINARIES = ${SIM_BINARY} \
-			   ${ASM_BINARY} \
-			   ${LINK_BINARY} \
+ALL_BINARIES = ${ASM_BINARY} \
 			   ${REPL_BINARY} \
 			   ${BOOTSTRAP_BINARY} \
 			   ${REPL_FINAL_BINARY}
@@ -88,9 +57,7 @@ DEFINE_CLPS = iris_defines.clp \
 			  cisc0_defines.clp
 
 ALL_OBJECTS = ${COMMON_THINGS} \
-			  ${SIM_OBJECTS} \
 			  ${ASM_OBJECTS} \
-			  ${LINK_OBJECTS} \
 			  ${ARCH_OBJECTS} \
 			  ${REPL_OBJECTS} \
 			  ${DEFINE_OBJECTS} \
@@ -158,16 +125,6 @@ options:
 	@echo -n Compiling $< into $@ ...
 	@${CXX} ${CXXFLAGS} -D_POSIX_SOURCE -c $< -o $@
 	@echo done
-
-${SIM_BINARY}: ${SIM_OBJECTS}
-	@echo -n Building ${SIM_BINARY} binary out of $^...
-	@${CXX} ${LDFLAGS} -o ${SIM_BINARY} $^
-	@echo done.
-
-${LINK_BINARY}: ${LINK_OBJECTS}
-	@echo -n Building ${LINK_BINARY} binary out of $^...
-	@${CXX} ${LDFLAGS} -o ${LINK_BINARY} $^
-	@echo done.
 
 ${ASM_BINARY}: ${ASM_OBJECTS}
 	@echo -n Building ${ASM_BINARY} binary out of $^...

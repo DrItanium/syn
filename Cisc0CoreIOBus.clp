@@ -45,13 +45,25 @@
 ; This means we are wasting a ton of space per word for this architecture. 
 ; This can lead to some cool ideas in the future though
 (definstances MAIN::io-map
-              ([main-memory] of memory 
+              ([/dev/ram0] of memory 
                              (index 0)
                              (length ?*main-memory-size*))
-              ([keyboard] of stdin/out-device 
-                          (index (in-io-space 2)))
-              ([rng0] of random-number-generator
-                      (index (in-io-space 3))))
+              ([/dev/ram1] of memory
+                            (index ?*main-memory-size*)
+                            (length ?*main-memory-size*))
+              ([/dev/ram2] of memory
+                            (index (* 2 ?*main-memory-size*))
+                            (length ?*main-memory-size*))
+              ([/dev/ram2] of memory
+                            (index (* 3 ?*main-memory-size*))
+                            (length ?*main-memory-size*))
+              ([/dev/rom0] of memory
+                           (index (hex->int 0xFE000000))
+                           (length ?*main-memory-size*))
+              ([/dev/stdin-out] of stdin/out-device 
+                          (index (in-io-space 0)))
+              ([/dev/rng0] of random-number-generator
+                           (index (in-io-space 1))))
 
 (batch* io-bus-execution-loop.clp)
 

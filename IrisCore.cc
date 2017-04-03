@@ -434,6 +434,9 @@ namespace iris {
 			case InstructionGroup::ConditionalRegister:
 				conditionalRegisterOperation();
 				break;
+			case InstructionGroup::CiscInstructions:
+				handleCiscInstructions();
+				break;
 			default:
 				makeIllegalInstructionMessage("Illegal group!");
 				break;
@@ -555,4 +558,34 @@ namespace iris {
     void Core::setInstructionPointer(QuadWord value) noexcept { _ip.set(value); }
     void Core::setLinkRegister(QuadWord value) noexcept { _lr.set(value); }
     void Core::incrementInstructionPointer() noexcept { setInstructionPointer(getInstructionPointer() + 1); }
+
+	void Core::handleCiscInstructions() {
+		auto subgroup = InstructionDecoder::getOperation<CiscOp>(current);
+		if (subgroup == CiscOp::SaveRegistersToStack) {
+			auto& target = destinationRegister();
+			for(int i = 0; i < ArchitectureConstants::RegisterCount; ++i) {
+				stack[++target] = gpr[i];
+			}
+		} else if (subgroup == CiscOp::RestoreRegistersFromStack) {
+			auto& target = destinationRegister();
+			for (int i = ArchitectureConstants::RegisterCount - 1; i > 0; --i) {
+				gpr[i] = stack[target];
+				--target;
+			}
+			gpr[0] = stack[target];
+			--target;
+		} else if (subgroup == CiscOp::CountTillZero) {
+			auto& counter = destinationRegister();
+			counter = 0;
+			auto& address = source0Register();
+			auto target = data[address];
+			while(target != 0) {
+				++counter;
+				++address;
+				target = data[address];
+			}
+		} else {
+			throw syn::Problem("Illegal cisc instruction!");
+		}
+	}
 }

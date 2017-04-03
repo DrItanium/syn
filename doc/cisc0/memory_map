@@ -1,0 +1,20 @@
+The memory map of the cisc0 CPU is divided into 255 24-bit pages. Each page
+contains a maximum of 16 megawords worth of addresses. 
+
+- 0x00000000 - 0x00FFFFFF : RAM
+- 0x01000000 - 0x01FFFFFF : RAM
+- 0x02000000 - 0x02FFFFFF : RAM
+- 0x03000000 - 0x03FFFFFF : RAM
+- 0x04000000 - 0xFDFFFFFF : Unused
+- 0xFE000000 - 0xFEFFFFFF : ROM
+- 0xFF000000 - 0xFFFFFFFF : Device MMIO
+  - 0x000 : STDIN (read) / STDOUT (write)
+  - 0x001 - 0x003 : Random Number Generator
+  - 0x004 - 0x006 : Secondary storage registers
+  - 0x100 - 0x1FF : Secondary storage disk cache
+
+The RAM is presented as four separate sections because it is built that way on
+the IO Bus!
+
+
+
