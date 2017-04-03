@@ -34,11 +34,11 @@
                         Initialize
                         Shutdown)
           (defarg-count  2
-                         Combine 
-                         Difference 
-                         Product 
-                         Divide 
-                         Remainder 
+                         Combine
+                         Difference
+                         Product
+                         Divide
+                         Remainder
                          Equals
                          NotEquals
                          LessThan
@@ -66,33 +66,23 @@
          (progn$ (?t ?types)
                  (assert (count ?t -> ?count))))
 (deffunction MAIN::make-translation-entry
-             (?title ?enum)
-             (format nil 
-                     "{ \"%s\", MemoryBlockOp:: %s },"
+             (?title ?enum ?count)
+             (format nil
+                     "{ \"%s\", std::make_tuple(MemoryBlockOp:: %s , %d) },"
                      ?title
-                     ?enum))
+                     ?enum
+                     ?count))
 (defrule MAIN::process-translation
          (declare (salience 2))
          ?f <- (translation ?first $?rest -> ?enum)
+         ?f2 <- (count ?enum -> ?count)
          =>
-         (retract ?f)
+         (retract ?f ?f2)
          (assert (enum-entry (str-cat ?enum ,))
                  (translation-entry (make-translation-entry ?first
-                                                            ?enum)))
-         (progn$ (?title ?rest) 
-                 (assert (translation-entry (make-translation-entry ?title
-                                                                    ?enum)))))
-
-(defrule MAIN::process-arg-count
-         (declare (salience 2))
-         ?f <- (count ?enum -> ?count)
-         =>
-         (retract ?f)
-         (assert (enum-entry (str-cat ?enum ,))
-                 (arg-count-entry (format nil
-                                          "{ MemoryBlockOp:: %s, %d },"
-                                          ?enum
-                                          ?count))))
+                                                            ?enum
+                                                            ?count))
+                 (translation $?rest -> ?enum)))
 
 (defrule MAIN::implant-arg-count-entry
          (declare (salience 1))
@@ -101,7 +91,7 @@
                        (arg-counts $?ac))
          =>
          (retract ?f)
-         (modify-instance ?q 
+         (modify-instance ?q
                           (arg-counts ?ac
                                       ?str)))
 (defrule MAIN::implant-enum-entry
@@ -111,7 +101,7 @@
                        (enum-entries $?ee))
          =>
          (retract ?f)
-         (modify-instance ?q 
+         (modify-instance ?q
                           (enum-entries $?ee ?msg)))
 
 (defrule MAIN::implant-translation
@@ -121,7 +111,7 @@
                        (translations $?ee))
          =>
          (retract ?f)
-         (modify-instance ?q 
+         (modify-instance ?q
                           (translations $?ee ?msg)))
 
 (defrule MAIN::generate-final-output
@@ -135,13 +125,14 @@
          (progn$ (?e $?ee)
                  (printout t ?e crlf))
          (printout t "};" crlf)
-         (printout t "static std::map<std::string, MemoryBlockOp> opTranslation = {" crlf)
-         (progn$ (?t ?tt) 
+         (printout t "static std::map<std::string, std::tuple<MemoryBlockOp, int>> opTranslation = {" crlf)
+         (progn$ (?t ?tt)
                  (printout t ?t crlf))
          (printout t "};" crlf)
-         (printout t "static std::map<MemoryBlockOp, int> opArgCounts = {" crlf)
-         (progn$ (?a ?ac)
-                 (printout t ?a crlf))
-         (printout t "};" crlf))
+         ;(printout t "static std::map<MemoryBlockOp, int> opArgCounts = {" crlf)
+         ;(progn$ (?a ?ac)
+         ;        (printout t ?a crlf))
+         ;(printout t "};" crlf)
+         )
 
 

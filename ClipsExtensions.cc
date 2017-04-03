@@ -399,16 +399,11 @@ namespace syn {
                         auto twoCheck = [checkArg0, checkArg1](unsigned int type0, const std::string& msg0, unsigned int type1, const std::string& msg1) {
                             return checkArg0(type0, msg0) && checkArg1(type1, msg1);
                         };
-                        auto op = result->second;
-                        // TODO: clean this up when we migrate to c++17 and use the
-                        // inline if variable declarations
-                        auto findOpCount = opArgCounts.find(op);
-                        if (findOpCount == opArgCounts.end()) {
-                            CVSetBoolean(ret, false);
-                            return callErrorMessage(str, "<- unknown argument count, not registered!!!!!");
-                        }
+                        MemoryBlockOp op;
+                        int aCount;
+                        std::tie(op, aCount) = result->second;
                         // if it is registered then check the length
-                        auto argCount = 2 /* always have two arguments */  + findOpCount->second;
+                        auto argCount = 2 /* always have two arguments */  + aCount;
                         if (argCount != getArgCount(env)) {
                             std::stringstream ss;
                             ss << " expected " << std::dec << argCount << " arguments";
