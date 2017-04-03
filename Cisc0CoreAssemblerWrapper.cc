@@ -86,15 +86,11 @@ namespace cisc0 {
 		static bool init = true;
 		static std::string funcStr;
 		static std::string funcErrorPrefix;
-		static std::map<std::string, Operations> ops = {
-			{ "parse", Operations::Parse },
-			{ "resolve", Operations::Resolve },
-			{ "get", Operations::Get },
-		};
-		static std::map<Operations, int> opArgCount = {
-			{ Operations::Parse, 1 },
-			{ Operations::Resolve, 0 },
-			{ Operations::Get, 0 },
+        using MapOpToArgCount = std::tuple<Operations, int>;
+		static std::map<std::string, MapOpToArgCount> ops = {
+			{ "parse", std::make_tuple(Operations::Parse, 1) },
+			{ "resolve", std::make_tuple(Operations::Resolve, 0) },
+			{ "get", std::make_tuple(Operations::Get, 0) },
 		};
 		auto callErrorMessage = [env, ret](const std::string& subOp, const std::string& rest) {
 			CVSetBoolean(ret, false);
@@ -123,13 +119,10 @@ namespace cisc0 {
 			CVSetBoolean(ret, false);
 			return callErrorMessage(str, " <- unknown operation requested!");
 		}
-		auto theOp = result->second;
-		auto cResult = opArgCount.find(theOp);
-		if (cResult == opArgCount.end()) {
-			CVSetBoolean(ret, false);
-			return callErrorMessage(str, " <- illegal argument count!");
-		}
-		auto aCount = 2 + cResult->second;
+        Operations theOp;
+        int argCount;
+        std::tie(theOp, argCount) = result->second;
+		auto aCount = 2 + argCount;
 		if (aCount != EnvRtnArgCount(env)) {
 			CVSetBoolean(ret, false);
 			return callErrorMessage(str, " too many arguments provided!");
