@@ -81,8 +81,11 @@
          (assert (enum-entry (str-cat ?enum ,))
                  (translation-entry (make-translation-entry ?first
                                                             ?enum
-                                                            ?count))
-                 (translation $?rest -> ?enum)))
+                                                            ?count)))
+         (progn$ (?title ?rest)
+                 (assert (translation-entry (make-translation-entry ?title
+                                                                    ?enum
+                                                                    ?count)))))
 
 (defrule MAIN::implant-arg-count-entry
          (declare (salience 1))
@@ -128,11 +131,6 @@
          (printout t "static std::map<std::string, std::tuple<MemoryBlockOp, int>> opTranslation = {" crlf)
          (progn$ (?t ?tt)
                  (printout t ?t crlf))
-         (printout t "};" crlf)
-         ;(printout t "static std::map<MemoryBlockOp, int> opArgCounts = {" crlf)
-         ;(progn$ (?a ?ac)
-         ;        (printout t ?a crlf))
-         ;(printout t "};" crlf)
-         )
+         (printout t "};" crlf))
 
 
