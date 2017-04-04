@@ -353,11 +353,15 @@ class Register {
         static constexpr T generateProperAddress(T value) noexcept { return syn::decodeBits<T, T, getAddressMask(), 0>(value); }
     public:
         Register(T value) noexcept : _value(value) { }
+        Register() noexcept : _value(static_cast<T>(0)) { }
+        Register(Register&& other) noexcept : _value(std::move(other._value)) { }
+        Register(const Register& other) noexcept : _value(other.get()) { }
         virtual ~Register() { }
         inline T get() const noexcept { return _value; }
         inline void set(T value) noexcept { _value = generateProperAddress(value); }
         inline void increment(T value = 1) noexcept { set(get() + value); }
         inline void decrement(T value = 1) noexcept { set(get() - value); }
+
         inline Self& operator++() {
             increment();
             return *this;
@@ -366,10 +370,65 @@ class Register {
             decrement();
             return *this;
         }
+        template<T index>
+        bool getBit() const noexcept {
+            static_assert(index < syn::bitwidth<T>(), "Provided index is too large!");
+            static_assert(index >= 0, "Provided index is less than zero!");
+            return syn::getBit<T, index>(_value);
+        }
+        template<T index>
+        void setBit(bool value) noexcept {
+            static_assert(index < syn::bitwidth<T>(), "Provided index is too large!");
+            static_assert(index >= 0, "Provided index is less than zero!");
+            set(syn::setBit<T, index>(_value, value));
+        }
+        template<T mask, T shift>
+        inline T decode() const noexcept {
+            return syn::decodeBits<T, T, mask, shift>(_value);
+        }
+        template<typename Input, T mask, T shift>
+        inline void encode(Input value) noexcept {
+            set(syn::encodeBits<T, Input, mask, shift>(_value));
+        }
+        inline bool operator<(const Self& b) const noexcept {
+            return _value < b._value;
+        }
+        inline bool operator>(const Self& b) const noexcept {
+            return _value > b._value;
+        }
+        inline bool operator<=(const Self& b) const noexcept {
+            return _value <= b._value;
+        }
+        inline bool operator>=(const Self& b) const noexcept {
+            return _value >= b._value;
+        }
     private:
         T _value;
-
 };
+
+template<uint64 mask = 0xFFFFFFFFFFFFFFFF>
+using RegisterUint64 = Register<uint64, mask>;
+
+template<uint32 mask = 0xFFFFFFFF>
+using RegisterUint32 = Register<uint32, mask>;
+
+template<uint16 mask = 0xFFFF>
+using RegisterUint16 = Register<uint16, mask>;
+
+template<uint8 mask = 0xFF>
+using RegisterUint8 = Register<uint8, mask>;
+
+template<int64 mask = static_cast<int64>(0xFFFFFFFFFFFFFFFF)>
+using RegisterInt64 = Register<int64, mask>;
+
+template<int32 mask = static_cast<int32>(0xFFFFFFFF)>
+using RegisterInt32 = Register<int32, mask>;
+
+template<int16 mask = static_cast<int16>(0xFFFF)>
+using RegisterInt16 = Register<int16, mask>;
+
+template<int8 mask = static_cast<int8>(0xFF)>
+using RegisterInt8 = Register<int8, mask>;
 
 } // end namespace syn
 #endif // end _SYN_XUNITS_H
