@@ -45,23 +45,7 @@ namespace iris {
 	Core::~Core() {
 	}
 
-	void Core::installprogram(std::istream& stream) {
-		auto encodeWord = [](char* buf) { return iris::encodeWord(buf[0], buf[1]); };
-		auto encodeDword = [](char* buf) { return iris::encodeDword(buf[0], buf[1], buf[2], buf[3]); };
-		gpr.install(stream, encodeWord);
-		data.install(stream, encodeWord);
-		instruction.install(stream, encodeDword);
-		stack.install(stream, encodeWord);
-	}
 
-	void Core::dump(std::ostream& stream) {
-		auto decodeWord = [](word value, char* buf) { syn::decodeUint16LE(value, (byte*)buf); };
-		auto decodeDword = [](dword value, char* buf) { syn::decodeUint32LE(value, (byte*)buf); };
-		gpr.dump(stream, decodeWord);
-		data.dump(stream, decodeWord);
-		instruction.dump(stream, decodeDword);
-		stack.dump(stream, decodeWord);
-	}
 	void Core::saveSystemState() noexcept {
 		_saveAdvanceIp = advanceIp;
 		_saveExecute = execute;
@@ -450,51 +434,6 @@ namespace iris {
 		return Core::PredicateRegisterEncoder<ArchitectureConstants::ConditionRegisterCount - 1>::invoke(this, mask);
 	}
 
-	enum class Segment  {
-		Code,
-		Data,
-		Count,
-	};
-	void Core::link(std::istream& input) {
-        static constexpr auto fieldWidth = 8;
-		char buf[fieldWidth] = {0};
-		for(auto lineNumber = static_cast<int>(0); input.good(); ++lineNumber) {
-			input.read(buf, fieldWidth);
-			if (input.gcount() < fieldWidth && input.gcount() > 0) {
-				throw syn::Problem("unaligned object file found!");
-			} else if (input.gcount() == 0) {
-				if (input.eof()) {
-					break;
-				} else {
-					throw syn::Problem("Something bad happened while reading input file!");
-				}
-			}
-			//ignore the first byte, it is always zero
-			auto target = static_cast<Segment>(buf[1]);
-			auto address = iris::encodeWord(buf[2], buf[3]);
-			if (debugEnabled()) {
-				std::cerr << "current target = " << static_cast<int>(target) << "\tcurrent address = 0x" << std::hex << address << std::endl;
-			}
-			if (target == Segment::Code) {
-				auto result = iris::encodeDword(buf[4], buf[5], buf[6], buf[7]);
-				if (debugEnabled()) {
-					std::cerr << " code result: 0x" << std::hex << result << std::endl;
-				}
-				writeInstructionMemory(address, result);
-			} else if (target == Segment::Data) {
-				auto result = iris::encodeWord(buf[4], buf[5]);
-				if (debugEnabled()) {
-					std::cerr << " data result: 0x" << std::hex << result << std::endl;
-				}
-				writeDataMemory(address, result);
-			} else {
-				std::stringstream str;
-				str << "error: line " << lineNumber << ", unknown segment " << static_cast<int>(target) << "/" << static_cast<int>(buf[1]) << std::endl;
-				str << "current address: " << std::hex << address << std::endl;
-				throw syn::Problem(str.str());
-			}
-		}
-	}
 
 
 	void Core::initialize() {

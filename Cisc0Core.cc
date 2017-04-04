@@ -121,17 +121,6 @@ namespace cisc0 {
 		_bus.shutdown();
 	}
 
-    void Core::installprogram(std::istream& stream) {
-        //gpr.install(stream, [](char* buf) { return syn::encodeUint32LE((byte*)buf); });
-		// the installation of a program is handled by the io bus now!
-		// TODO: figure out how to do a program install...
-    }
-
-    void Core::dump(std::ostream& stream) {
-        //gpr.dump(stream, [](RegisterValue value, char* buf) { syn::decodeUint32LE(value, (byte*)buf); });
-		// the io bus must handle dumping stuff to disk
-    }
-
     bool Core::cycle() {
         if (debugEnabled()) {
             std::cout << "Current Instruction Location: " << std::hex << getInstructionPointer() << std::endl;
@@ -449,33 +438,6 @@ namespace cisc0 {
         core->advanceIp = false;
     }
 
-    void Core::link(std::istream& input) {
-        // we have some more data to read through
-        // two address system, 1 RegisterValue -> address, 1 Word -> value
-        static constexpr int bufSize = 8;
-        char buf[bufSize] = { 0 };
-        for(int lineNumber = 0; input.good(); ++lineNumber) {
-            input.read(buf, bufSize);
-            if (input.gcount() == 0) {
-                break;
-            } else if (input.gcount() != bufSize) {
-                throw syn::Problem("unaligned object file found");
-            } else {
-                // use the first byte to determine what sort of installation
-                // should occur
-                switch (buf[0]) {
-                    case 0: // memory value
-                        storeWord(encodeRegisterValue(buf[2], buf[3], buf[4], buf[5]), encodeWord(buf[6], buf[7]));
-                        break;
-                    case 1: // register value
-                        gpr[static_cast<byte>(buf[1])] = encodeRegisterValue(buf[2], buf[3], buf[4], buf[5]);
-                        break;
-                    default:
-                        throw syn::Problem("undefined link class!");
-                }
-            }
-        }
-    }
     RegisterValue& Core::registerValue(byte index) {
         return gpr[index];
     }

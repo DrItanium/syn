@@ -57,10 +57,7 @@ namespace iris {
 			Core() noexcept;
 			virtual ~Core();
 			virtual void initialize() override;
-			virtual void installprogram(std::istream& stream) override;
 			virtual void shutdown() override;
-			virtual void dump(std::ostream& stream) override;
-			virtual void link(std::istream& input) override;
 			inline void writeInstructionMemory(word address, dword value) noexcept { instruction[address] = value; }
 			inline void writeDataMemory(word address, word value) noexcept         { data[address] = value; }
 			inline dword readInstructionMemory(word address) noexcept             { return instruction[address]; }

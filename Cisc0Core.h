@@ -275,10 +275,7 @@ namespace cisc0 {
 			Core() noexcept;
 			virtual ~Core() noexcept;
 			virtual void initialize() override;
-			virtual void installprogram(std::istream& stream) override;
 			virtual void shutdown() override;
-			virtual void dump(std::ostream& stream) override;
-			virtual void link(std::istream& stream) override;
 			virtual bool cycle() override;
 			bool shouldExecute() const { return execute; }
 			bool handleOperation(void* env, CLIPSValue* ret);
