@@ -189,6 +189,15 @@ constexpr F decodeBits(T input) noexcept {
     return static_cast<F>(result);
 }
 
+template<> constexpr uint8 decodeBits<uint8, uint8, 0xFF, 0>(uint8 input) noexcept { return input; }
+template<> constexpr uint8 decodeBits<uint8, uint8, 0x00, 0>(uint8 input) noexcept { return 0; }
+template<> constexpr uint16 decodeBits<uint16, uint16, 0xFFFF, 0>(uint16 input) noexcept { return input; }
+template<> constexpr uint16 decodeBits<uint16, uint16, 0x0000, 0>(uint16 input) noexcept { return 0; }
+template<> constexpr uint32 decodeBits<uint32, uint32, 0xFFFFFFFF, 0>(uint32 input) noexcept { return input; }
+template<> constexpr uint32 decodeBits<uint32, uint32, 0x00000000, 0>(uint32 input) noexcept { return 0; }
+template<> constexpr uint64 decodeBits<uint64, uint64, 0xFFFFFFFFFFFFFFFF, 0>(uint64 input) noexcept { return input; }
+template<> constexpr uint64 decodeBits<uint64, uint64, 0x0000000000000000, 0>(uint64 input) noexcept { return 0; }
+
 template<typename T, typename F, int field>
 constexpr F decodeField(T input) noexcept {
 	return decodeBits<T, F, FieldData<T, field>::Value, FieldData<T, field>::FieldIndex>(input);
@@ -209,6 +218,14 @@ constexpr T encodeBits(T input, F value) noexcept {
     valueToInject &= bitmask;
     return static_cast<T>(maskedValue | valueToInject);
 }
+template<> constexpr uint8 encodeBits<uint8, uint8, 0xFF, 0>(uint8 input, uint8 value) noexcept { return value; }
+template<> constexpr uint16 encodeBits<uint16, uint16, 0xFFFF, 0>(uint16 input, uint16 value) noexcept { return value; }
+template<> constexpr uint32 encodeBits<uint32, uint32, 0xFFFFFFFF, 0>(uint32 input, uint32 value) noexcept { return value; }
+template<> constexpr uint64 encodeBits<uint64, uint64, 0xFFFFFFFFFFFFFFFF, 0>(uint64 input, uint64 value) noexcept { return value; }
+template<> constexpr uint8 encodeBits<uint8, uint8, 0x00, 0>(uint8 input, uint8 value) noexcept { return input; }
+template<> constexpr uint16 encodeBits<uint16, uint16, 0x0000, 0>(uint16 input, uint16 value) noexcept { return input; }
+template<> constexpr uint32 encodeBits<uint32, uint32, 0x00000000, 0>(uint32 input, uint32 value) noexcept { return input; }
+template<> constexpr uint64 encodeBits<uint64, uint64, 0x0000000000000000, 0>(uint64 input, uint64 value) noexcept { return input; }
 
 template<typename T, T mask, T shift>
 constexpr T encodeFlag(T input, bool value) noexcept {
@@ -610,6 +627,11 @@ template<typename T>
 void putc(T value) noexcept {
     std::cout << static_cast<char>(value);
 }
+
+template<typename T>
+constexpr T multiplyAdd(T a, T b, T c) noexcept {
+    return (a * b) + c;
+};
 
 }
 #endif
