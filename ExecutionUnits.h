@@ -403,11 +403,11 @@ class Register {
             return _value >= b._value;
         }
         inline Self& operator+=(const Self& other) const noexcept {
-            set(_value + other._value);
+            increment(other._value);
             return *this;
         }
         inline Self& operator-=(const Self& other) const noexcept {
-            set(_value - other._value);
+            decrement(other._value);
             return *this;
         }
         inline Self& operator*=(const Self& other) const noexcept {

@@ -493,7 +493,7 @@ namespace iris {
     word& Core::source1Register() noexcept { return getRegister<2>(); }
     void Core::setInstructionPointer(QuadWord value) noexcept { _ip.set(value); }
     void Core::setLinkRegister(QuadWord value) noexcept { _lr.set(value); }
-    void Core::incrementInstructionPointer() noexcept { setInstructionPointer(getInstructionPointer() + 1); }
+    void Core::incrementInstructionPointer() noexcept { ++_ip; }
 
 	void Core::handleCiscInstructions() {
 		auto subgroup = InstructionDecoder::getOperation<CiscOp>(current);
