@@ -402,6 +402,22 @@ class Register {
         inline bool operator>=(const Self& b) const noexcept {
             return _value >= b._value;
         }
+        inline Self& operator+=(const Self& other) const noexcept {
+            set(_value + other._value);
+            return *this;
+        }
+        inline Self& operator-=(const Self& other) const noexcept {
+            set(_value - other._value);
+            return *this;
+        }
+        inline Self& operator*=(const Self& other) const noexcept {
+            set(_value * other._value);
+            return *this;
+        }
+        inline Self& operator/=(const Self& other) const noexcept {
+            set(_value / other._value);
+            return *this;
+        }
     private:
         T _value;
 };
