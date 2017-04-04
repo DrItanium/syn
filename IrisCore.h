@@ -195,6 +195,5 @@ namespace iris {
 				}
 			}
 		};
-	Core* newCore() noexcept;
 }
 #endif

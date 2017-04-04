@@ -91,10 +91,6 @@ namespace cisc0 {
         return input != 0 ? 0xFFFFFFFF : 0x00000000;
     }
 
-    Core* newCore() noexcept {
-        return new Core();
-    }
-
     RegisterValue Core::retrieveImmediate(byte bitmask) noexcept {
         auto useLower = readLower(bitmask);
         auto useUpper = readUpper(bitmask);

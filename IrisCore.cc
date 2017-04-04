@@ -458,9 +458,6 @@ namespace iris {
 		_io.shutdown();
 	}
 
-	Core* newCore() noexcept {
-		return new iris::Core();
-	}
 	void Core::writeRegister(byte index, word value) {
 		gpr.write(index, value);
 	}

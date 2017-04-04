@@ -387,7 +387,6 @@ namespace cisc0 {
             Encoding encodeSwap() const;
             Encoding encodeComplex() const;
 	};
-	Core* newCore() noexcept;
 #define DefSubtypeConversion(op, type) \
     template<> \
     struct DecodedInstruction::SubtypeConversion<Operation:: op > { \
