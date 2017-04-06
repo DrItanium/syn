@@ -149,7 +149,7 @@ namespace cisc0 {
 				CVSetBoolean(ret, false);
 				return syn::errorMessage(env, "CALL", 3, funcErrorPrefix, "Must provide an integer index to retrieve a register value!");
 			}
-			auto i = CVToInteger(&index);
+			auto i = EnvDOToLong(env, index);
 			if (i >= ArchitectureConstants::RegisterCount || i < 0) {
 				CVSetBoolean(ret, false);
 				return syn::errorMessage(env, "CALL", 3, funcErrorPrefix, "Illegal register index!");
@@ -163,7 +163,7 @@ namespace cisc0 {
 				CVSetBoolean(ret, false);
 				return syn::errorMessage(env, "CALL", 3, funcErrorPrefix, "Must provide an integer index to assign a register value!");
 			}
-			auto ind = CVToInteger(&index);
+			auto ind = EnvDOToLong(env, index);
 			if (ind >= ArchitectureConstants::RegisterCount || ind < 0) {
 				CVSetBoolean(ret, false);
 				return syn::errorMessage(env, "CALL", 3, funcErrorPrefix, "Illegal register index!");
@@ -172,7 +172,7 @@ namespace cisc0 {
 				CVSetBoolean(ret, false);
 				return syn::errorMessage(env, "CALL", 3, funcErrorPrefix, "Must provide an integer value to assign to the given register!");
 			}
-			registerValue(static_cast<byte>(ind)) = static_cast<RegisterValue>(CVToInteger(&value));
+			registerValue(static_cast<byte>(ind)) = static_cast<RegisterValue>(EnvDOToLong(env, value));
 			CVSetBoolean(ret, true);
 			return true;
 		};
@@ -182,7 +182,7 @@ namespace cisc0 {
 				CVSetBoolean(ret, false);
 				return syn::errorMessage(env, "CALL", 3, funcErrorPrefix, "Must provide an integer index to retrieve a memory value!");
 			}
-			CVSetInteger(ret, loadWord(static_cast<RegisterValue>(CVToInteger(&index))));
+			CVSetInteger(ret, loadWord(static_cast<RegisterValue>(EnvDOToLong(env, index))));
 			CVSetBoolean(ret, true);
 			return true;
 		};
@@ -192,12 +192,12 @@ namespace cisc0 {
 				CVSetBoolean(ret, false);
 				return syn::errorMessage(env, "CALL", 3, funcErrorPrefix, "Must provide an integer index to assign a register value!");
 			}
-			auto ind = static_cast<Address>(CVToInteger(&index));
+			auto ind = static_cast<Address>(EnvDOToLong(env, index));
 			if(!EnvArgTypeCheck(env, funcStr.c_str(), 4, INTEGER, &value)) {
 				CVSetBoolean(ret, false);
 				return syn::errorMessage(env, "CALL", 3, funcErrorPrefix, "Must provide an integer value to assign to the given register!");
 			}
-			storeWord(ind, static_cast<Word>(CVToInteger(&value)));
+			storeWord(ind, static_cast<Word>(EnvDOToLong(env, value)));
 			CVSetBoolean(ret, true);
 			return true;
 		};

@@ -81,10 +81,6 @@ namespace iris {
 	};
 } // end namespace iris
 
-namespace syn {
-    DefExternalAddressWrapperType(iris::Core, iris::CoreWrapper);
-} // end namespace syn
-
 namespace iris {
 	bool CoreWrapper::callFunction(void* env, syn::DataObjectPtr value, syn::DataObjectPtr ret) {
 		// unpack the object and do the magic
@@ -179,7 +175,7 @@ namespace iris {
 				CVSetBoolean(ret, false);
 				return syn::errorMessage(env, "CALL", 3, funcErrorPrefix, "Must provide an integer index to retrieve a register value!");
 			}
-			auto i = CVToInteger(&index);
+			auto i = EnvDOToLong(env, index);
             if (i < 0) {
                 CVSetBoolean(ret, false);
                 return syn::errorMessage(env, "CALL", 3, funcErrorPrefix, "Was given a negative register index!");
@@ -217,7 +213,7 @@ namespace iris {
 				CVSetBoolean(ret, false);
 				return syn::errorMessage(env, "CALL", 3, funcErrorPrefix, "Must provide an integer index to assign a register value!");
 			}
-			auto ind = CVToInteger(&index);
+			auto ind = EnvDOToLong(env, index);
             if (ind < 0) {
                 CVSetBoolean(ret, false);
                 return syn::errorMessage(env, "CALL", 3, funcErrorPrefix, "Was given a negative address!");
@@ -235,13 +231,14 @@ namespace iris {
 				return syn::errorMessage(env, "CALL", 3, funcErrorPrefix, "Must provide an integer value to assign to the given register!");
 			}
             try {
+                auto theValue = EnvDOToLong(env, value);
                 switch(space) {
                     case TargetSpace::GPR:
-                        gpr[static_cast<byte>(ind)] = static_cast<word>(CVToInteger(&value));
+                        gpr[static_cast<byte>(ind)] = static_cast<word>(theValue);
                         CVSetBoolean(ret, true);
                         return true;
                     case TargetSpace::Predicates:
-                        getPredicateRegister(static_cast<byte>(ind)) = static_cast<word>(CVToInteger(&value)) != 0;
+                        getPredicateRegister(static_cast<byte>(ind)) = static_cast<word>(theValue);
                         CVSetBoolean(ret, true);
                         return true;
                     default:
@@ -268,7 +265,7 @@ namespace iris {
 				return syn::errorMessage(env, "CALL", 3, funcErrorPrefix, "Must provide an integer index to retrieve a memory value!");
 			}
             try {
-                auto address = static_cast<word>(CVToInteger(&index));
+                auto address = static_cast<word>(EnvDOToLong(env, index));
                 switch(space) {
                     case TargetSpace::Data:
                         CVSetInteger(ret, data[address]);
@@ -307,13 +304,14 @@ namespace iris {
 				CVSetBoolean(ret, false);
 				return syn::errorMessage(env, "CALL", 3, funcErrorPrefix, "Must provide an integer index to assign a register value!");
 			}
-			auto ind = static_cast<word>(CVToInteger(&index));
+			auto ind = static_cast<word>(EnvDOToLong(env, index));
 			if(!EnvArgTypeCheck(env, funcStr.c_str(), 4, INTEGER, &value)) {
 				CVSetBoolean(ret, false);
 				return syn::errorMessage(env, "CALL", 3, funcErrorPrefix, "Must provide an integer value to assign to the given register!");
 			}
             try {
-                auto valueToWrite = CVToInteger(&value);
+                auto valueToWrite = EnvDOToLong(env, value);
+                std::cout << "value to write " << valueToWrite << std::endl;
                 switch(space) {
                     case TargetSpace::Code:
                         instruction[ind] = static_cast<raw_instruction>(valueToWrite);
@@ -386,5 +384,6 @@ namespace iris {
 
 namespace syn {
 	DefWrapperSymbolicName(iris::Core,  "iris-core");
+    DefExternalAddressWrapperType(iris::Core, iris::CoreWrapper);
 } // end namespace syn
 
