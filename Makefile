@@ -16,15 +16,6 @@ COMMON_THINGS = Core.o \
 				ClipsExtensions.o \
 				libmaya.a
 
-ASM_OBJECTS = Assembler.o \
-			  AssemblerRegistrar.o \
-			  RegisteredAssemblers.o \
-			  Cisc0CoreAssemblerAssembleOperation.o \
-			  Cisc0CoreInstructionEncoder.o \
-			  IrisCoreAssemblerAssembleOperation.o \
-			  Core.o \
-			  ${ASM_PARSERS_OBJECTS}
-
 REPL_BINARY = xsyn_repl
 
 REPL_OBJECTS= ReplBootstrap.o \
@@ -42,8 +33,6 @@ REPL_FINAL_OBJECTS = Repl.o \
 					 ${ARCH_OBJECTS} \
 					 ${ASM_PARSERS_OBJECTS} \
 
-ASM_BINARY = syn_asm
-
 ALL_BINARIES = ${ASM_BINARY} \
 			   ${REPL_BINARY} \
 			   ${BOOTSTRAP_BINARY} \
@@ -57,7 +46,6 @@ DEFINE_CLPS = iris_defines.clp \
 			  cisc0_defines.clp
 
 ALL_OBJECTS = ${COMMON_THINGS} \
-			  ${ASM_OBJECTS} \
 			  ${ARCH_OBJECTS} \
 			  ${REPL_OBJECTS} \
 			  ${DEFINE_OBJECTS} \
@@ -125,11 +113,6 @@ options:
 	@echo -n Compiling $< into $@ ...
 	@${CXX} ${CXXFLAGS} -D_POSIX_SOURCE -c $< -o $@
 	@echo done
-
-${ASM_BINARY}: ${ASM_OBJECTS}
-	@echo -n Building ${ASM_BINARY} binary out of $^...
-	@${CXX} ${LDFLAGS} -o ${ASM_BINARY} ${ASM_OBJECTS}
-	@echo done.
 
 ${REPL_BINARY}: ${REPL_OBJECTS}
 	@echo -n Building ${REPL_BINARY} binary out of $^...
