@@ -108,8 +108,20 @@ void CLIPS_basePrintAddress(void* env, const char* logicalName, void* theValue) 
 bool errorMessage(void* env, const std::string& idClass, int idIndex, const std::string& msgPrefix, const std::string& msg) noexcept;
 
 template<typename T>
+class ExternalAddressWrapper;
+template<typename T>
+struct ExternalAddressWrapperType {
+    ExternalAddressWrapperType() = delete;
+    ~ExternalAddressWrapperType() = delete;
+    ExternalAddressWrapperType(const ExternalAddressWrapperType&) = delete;
+    ExternalAddressWrapperType(ExternalAddressWrapperType&&) = delete;
+    using TheType = ExternalAddressWrapper<T>;
+};
+template<typename T>
 T* unwrapExternalAddress(CLIPSValue* value) noexcept {
-	return static_cast<T*>(DOPToExternalAddress(value));
+    auto result = DOPToExternalAddress(value);
+    auto cast = static_cast<typename ExternalAddressWrapperType<T>::TheType *>(result);
+    return cast;
 }
 
 // Have to do it this way because std::function's will go out of scope and
@@ -151,6 +163,19 @@ static FunctionStrings retrieveFunctionNames(const std::string& action) noexcept
     auto str1 = ss2.str();
     return std::make_tuple(title, str0, str1);
 }
+
+
+#define DefExternalAddressWrapperType(internalType, theWrapperType) \
+    template<> \
+    struct ExternalAddressWrapperType< internalType > { \
+        using Self = ExternalAddressWrapperType< internalType >; \
+        ExternalAddressWrapperType() = delete; \
+        ~ExternalAddressWrapperType() = delete; \
+        ExternalAddressWrapperType(const ExternalAddressWrapperType < internalType > &) = delete; \
+        ExternalAddressWrapperType(ExternalAddressWrapperType< internalType >&&) = delete; \
+        using TheType = theWrapperType ; \
+    }
+
 template<typename T>
 class ExternalAddressWrapper {
 	public:
@@ -167,7 +192,7 @@ class ExternalAddressWrapper {
 		}
 		static bool deleteWrapper(void* env, void* obj) {
 			if (obj != nullptr) {
-				auto result = static_cast<ExternalAddressWrapper<T>*>(obj);
+				auto result = static_cast<typename ExternalAddressWrapperType<T>::TheType*>(obj);
 				delete result;
 			}
 			return true;
@@ -182,12 +207,11 @@ class ExternalAddressWrapper {
                 funcStr = std::get<1>(functions);
                 funcErrorPrefix = std::get<2>(functions);
             }
-            auto ptr = WrappedNewCallBuilder::invokeNewFunction<InternalType>(env, ret, funcErrorPrefix, funcStr);
+            T* ptr = WrappedNewCallBuilder::invokeNewFunction<InternalType>(env, ret, funcErrorPrefix, funcStr);
             if (ptr) {
-                auto idIndex = Self::getAssociatedEnvironmentId(env);
-                ret->bitType = EXTERNAL_ADDRESS_TYPE;
-                SetpType(ret, EXTERNAL_ADDRESS);
-                SetpValue(ret, EnvAddExternalAddress(env, new Self(ptr), idIndex));
+                using CorrespondingType = typename ExternalAddressWrapperType<T>::TheType;
+                auto s = new CorrespondingType(ptr);
+                CVSetExternalAddress(ret, s, Self::getAssociatedEnvironmentId(env));
             } else {
                 CVSetBoolean(ret, false);
             }

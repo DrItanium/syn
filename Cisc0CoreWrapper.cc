@@ -59,7 +59,8 @@ namespace cisc0 {
 				registerWithEnvironment(env, func.c_str());
 			}
 		public:
-			CoreWrapper() : Parent(std::move(std::make_unique<Core>())) { }
+            CoreWrapper(Core* core) : Parent(core), _testValue(127) { }
+			CoreWrapper() : Parent(new Core()), _testValue(128) { }
 			virtual ~CoreWrapper() { }
 		private:
 			void initialize() { get()->initialize(); }
@@ -67,7 +68,16 @@ namespace cisc0 {
 			void run() { get()->run(); }
 			void cycle() { get()->cycle(); }
 			void haveCorePerformInternalAction(void* env, CLIPSValue* ret, Operations op);
+        private:
+            int _testValue;
 	};
+} // end namespace cisc0
+
+namespace syn {
+    DefExternalAddressWrapperType(cisc0::Core, cisc0::CoreWrapper);
+} // end namespace syn
+
+namespace cisc0 {
 	bool CoreWrapper::callFunction(void* env, syn::DataObjectPtr value, syn::DataObjectPtr ret) {
 		// unpack the object and do the magic
 		static bool init = true;
@@ -79,8 +89,8 @@ namespace cisc0 {
 		}
 		if (GetpType(value) != EXTERNAL_ADDRESS) {
 			return syn::errorMessage(env, "CALL", 1, funcErrorPrefix, "Function call expected an external address as the first argument!");
-		}  
-		auto ptr = syn::unwrapExternalAddress<Self>(value);
+		}
+        auto ptr = static_cast<CoreWrapper*>(EnvDOPToExternalAddress(value));
 		return ptr->get()->handleOperation(env, ret);
 	}
 	void installCoreWrapper(void* env) {

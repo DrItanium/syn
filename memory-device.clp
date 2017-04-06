@@ -26,7 +26,7 @@
           (is-a native-io-device)
           (slot native-type
                 (source composite)
-                (default memory-space))
+                (default memory-block))
           (slot length
                 (source composite)
                 (default ?NONE))

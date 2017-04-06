@@ -328,9 +328,7 @@ namespace syn {
 						} else {
 							auto size = EnvDOToLong(env, capacity);
 							auto idIndex = Self::getAssociatedEnvironmentId(env);
-							ret->bitType = EXTERNAL_ADDRESS_TYPE;
-							SetpType(ret, EXTERNAL_ADDRESS);
-							SetpValue(ret, EnvAddExternalAddress(env, Self::make(size), idIndex));
+                            CVSetExternalAddress(ret, Self::make(size), idIndex);
 						}
 					} else {
 						errorMessage(env, "NEW", 1, funcErrorPrefix, " function new expected no arguments besides type!");

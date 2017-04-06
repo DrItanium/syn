@@ -20,7 +20,6 @@
 ; ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 (batch* IODevice.clp)
 (batch* keyboard-device.clp)
 (batch* random-number-generator-device.clp)
@@ -41,11 +40,11 @@
 ; 0xFE000000 - 0xFEFFFFFF : BOOT ROM
 ; 0xFF000000 - 0xFFFFFFFF : IO SPACE
 ;------------------------------------------------------------------------------
-; currently, the memory space is comprised of 64-bit signed words! 
-; This means we are wasting a ton of space per word for this architecture. 
+; currently, the memory space is comprised of 64-bit signed words!
+; This means we are wasting a ton of space per word for this architecture.
 ; This can lead to some cool ideas in the future though
 (definstances MAIN::io-map
-              ([/dev/ram0] of memory 
+              ([/dev/ram0] of memory
                              (index 0)
                              (length ?*main-memory-size*))
               ([/dev/ram1] of memory
@@ -60,7 +59,7 @@
               ([/dev/rom0] of memory
                            (index (hex->int 0xFE000000))
                            (length ?*main-memory-size*))
-              ([/dev/stdin-out] of stdin/out-device 
+              ([/dev/stdin-out] of stdin/out-device
                           (index (in-io-space 0)))
               ([/dev/rng0] of random-number-generator
                            (index (in-io-space 1))))
@@ -68,4 +67,3 @@
 (batch* io-bus-execution-loop.clp)
 
 (reset)
-(facts)
