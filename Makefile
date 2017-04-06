@@ -29,6 +29,7 @@ REPL_FINAL_OBJECTS = Repl.o \
 					 Cisc0CoreInstructionEncoder.o \
 					 IrisCoreAssemblerStateWrapper.o \
 					 Cisc0CoreWrapper.o \
+					 IrisCoreWrapper.o \
 					 ${COMMON_THINGS} \
 					 ${ARCH_OBJECTS} \
 					 ${ASM_PARSERS_OBJECTS} \

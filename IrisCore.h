@@ -51,6 +51,8 @@ namespace iris {
     using InstructionPointer = syn::Register<QuadWord, ArchitectureConstants::AddressMax>;
     using LinkRegister = syn::Register<QuadWord, ArchitectureConstants::AddressMax>;
 	class Core : public syn::Core {
+        public:
+            static Core* make() noexcept;
 		public:
 			Core() noexcept;
 			virtual ~Core();
@@ -65,6 +67,7 @@ namespace iris {
 			void writeRegister(byte index, word value);
 			word readRegister(byte index);
 			virtual bool cycle() override;
+			bool handleOperation(void* env, CLIPSValue* ret);
 		private:
             inline QuadWord getInstructionPointer() const noexcept { return _ip.get(); }
             inline QuadWord getLinkRegister() const noexcept { return _lr.get(); }

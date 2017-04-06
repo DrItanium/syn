@@ -23,26 +23,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+// expose the iris core to a CLIPS instance
+//
+#ifndef IRIS_CORE_WRAPPER_H__
+#define IRIS_CORE_WRAPPER_H__
 
-extern "C" {
-	#include "clips.h"
-}
-#include "ClipsExtensions.h"
-#include "AssemblerExternalAddressRegistrar.h"
-#include "Cisc0CoreWrapper.h"
-#include "IrisCoreWrapper.h"
+namespace iris {
+	/**
+	 * Expose the ability to create cores to CLIPS
+	 */
+	void installCoreWrapper(void* env);
 
-static void *mainEnv;
+} //end namespace iris
 
-int main(int argc, char* argv[]) {
-	mainEnv = CreateEnvironment();
-	// install features here
-	syn::installExtensions(mainEnv);
-    syn::installExternalAddressAssemblers(mainEnv);
-	cisc0::installCoreWrapper(mainEnv);
-    iris::installCoreWrapper(mainEnv);
-	RerouteStdin(mainEnv, argc, argv);
-	CommandLoop(mainEnv);
-	DestroyEnvironment(mainEnv);
-	return -1;
-}
+#endif // end IRIS_CORE_WRAPPER_H__
