@@ -269,7 +269,6 @@ namespace cisc0 {
             using CompareUnit = syn::Comparator::Unit<RegisterValue>;
             using RegisterFile = syn::FixedSizeLoadStoreUnit<RegisterValue, byte, ArchitectureConstants::RegisterCount>;
         public:
-	        static void assemble(const std::string& iName, FILE* input, std::ostream* output);
 			static Core* make() noexcept;
 		public:
 			Core() noexcept;

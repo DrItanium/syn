@@ -51,8 +51,6 @@ namespace iris {
     using InstructionPointer = syn::Register<QuadWord, ArchitectureConstants::AddressMax>;
     using LinkRegister = syn::Register<QuadWord, ArchitectureConstants::AddressMax>;
 	class Core : public syn::Core {
-        public:
-            static void assemble(const std::string& inputFileName, FILE* input, std::ostream* output);
 		public:
 			Core() noexcept;
 			virtual ~Core();
