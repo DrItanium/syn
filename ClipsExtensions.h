@@ -194,7 +194,6 @@ class ExternalAddressWrapper {
 		static bool deleteWrapper(void* env, void* obj) {
 			if (obj != nullptr) {
 				auto result = static_cast<typename ExternalAddressWrapperType<T>::TheType*>(obj);
-                std::cout << "deleted a " << typeid(result).name() << std::endl;
 				delete result;
                 result = nullptr;
 			}

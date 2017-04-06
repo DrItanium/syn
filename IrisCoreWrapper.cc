@@ -311,7 +311,6 @@ namespace iris {
 			}
             try {
                 auto valueToWrite = EnvDOToLong(env, value);
-                std::cout << "value to write " << valueToWrite << std::endl;
                 switch(space) {
                     case TargetSpace::Code:
                         instruction[ind] = static_cast<raw_instruction>(valueToWrite);
