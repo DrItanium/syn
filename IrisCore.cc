@@ -474,14 +474,6 @@ namespace iris {
 		_io.shutdown();
 	}
 
-	void Core::writeRegister(byte index, word value) {
-		gpr.write(index, value);
-	}
-
-	word Core::readRegister(byte index) {
-		return gpr.read(index);
-	}
-
 	bool Core::getPredicateRegister(byte index) const {
         return _cr.getBit(index);
 	}

@@ -37,33 +37,25 @@
 #include "IrisCoreEncodingOperations.h"
 
 namespace iris {
-	using IOSpace = syn::CLIPSIOController<word, CLIPSInteger>;
-	template<dword capacity>
-	using WordMemorySpace = syn::FixedSizeLoadStoreUnit<word, dword, capacity>;
-	using WordMemorySpace64k = WordMemorySpace<ArchitectureConstants::AddressMax + 1>;
-	using RegisterFile = WordMemorySpace<ArchitectureConstants::RegisterCount>;
-	using IODevice = syn::IODevice<word>;
-	using PredicateRegisterFile = syn::FixedSizeLoadStoreUnit<bool, byte, ArchitectureConstants::ConditionRegisterCount>;
-	using ErrorStorage = WordMemorySpace<ArchitectureConstants::RegistersToSaveOnError>;
-    using InstructionPointer = syn::Register<QuadWord, ArchitectureConstants::AddressMax>;
-    using LinkRegister = syn::Register<QuadWord, ArchitectureConstants::AddressMax>;
-    using PredicateRegisterBlock = syn::Register<word, AddressMax>;
 	class Core : public syn::Core {
         public:
             static Core* make() noexcept;
+            using IOSpace = syn::CLIPSIOController<word, CLIPSInteger>;
+            template<dword capacity>
+            using WordMemorySpace = syn::FixedSizeLoadStoreUnit<word, dword, capacity>;
+            using WordMemorySpace64k = WordMemorySpace<ArchitectureConstants::AddressMax + 1>;
+            using RegisterFile = WordMemorySpace<ArchitectureConstants::RegisterCount>;
+            using IODevice = syn::IODevice<word>;
+            using PredicateRegisterFile = syn::FixedSizeLoadStoreUnit<bool, byte, ArchitectureConstants::ConditionRegisterCount>;
+            using ErrorStorage = WordMemorySpace<ArchitectureConstants::RegistersToSaveOnError>;
+            using InstructionPointer = syn::Register<QuadWord, ArchitectureConstants::AddressMax>;
+            using LinkRegister = syn::Register<QuadWord, ArchitectureConstants::AddressMax>;
+            using PredicateRegisterBlock = syn::Register<word, AddressMax>;
 		public:
 			Core() noexcept;
 			virtual ~Core();
 			virtual void initialize() override;
 			virtual void shutdown() override;
-			inline void writeInstructionMemory(word address, dword value) noexcept { instruction[address] = value; }
-			inline void writeDataMemory(word address, word value) noexcept         { data[address] = value; }
-			inline dword readInstructionMemory(word address) noexcept             { return instruction[address]; }
-			inline word readDataMemory(word address) noexcept                     { return data[address]; }
-			void writeIOMemory(word address, word value);
-			word readIOMemory(word address);
-			void writeRegister(byte index, word value);
-			word readRegister(byte index);
 			virtual bool cycle() override;
 			bool handleOperation(void* env, CLIPSValue* ret);
 		private:
@@ -118,18 +110,6 @@ namespace iris {
 			void dispatchInterruptHandler();
             void ioSpaceWrite(word address, word value) noexcept;
             word ioSpaceRead(word address) noexcept;
-		private:
-			template<typename Unit>
-			void performOperation(Unit& unit, typename Unit::Operation op, bool immediate) {
-				destinationRegister() = unit(op, source0Register(), (immediate ? getHalfImmediate() : source1Register()));
-			}
-			template<typename Unit>
-			inline void performOperation(Unit& unit, std::tuple<typename Unit::Operation, bool>& tuple) {
-				typename Unit::Operation op;
-				bool immediate = false;
-				std::tie(op, immediate) = tuple;
-				performOperation(unit, op, immediate);
-			}
 			void restorePredicateRegisters(word input, word mask) noexcept;
 			word savePredicateRegisters(word mask) noexcept;
 
@@ -143,7 +123,7 @@ namespace iris {
 			IOSpace _io;
 			RegisterFile gpr;
 			WordMemorySpace64k data;
-			syn::FixedSizeLoadStoreUnit<dword, word, ArchitectureConstants::AddressMax> instruction;
+			syn::FixedSizeLoadStoreUnit<dword, dword, ArchitectureConstants::AddressMax + 1> instruction;
 			WordMemorySpace64k stack;
 			PredicateRegisterBlock _cr;
 			ErrorStorage _onError;

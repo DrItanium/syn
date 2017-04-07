@@ -573,11 +573,6 @@ namespace syn {
 	DefWrapperSymbolicName(Block< type > , name ); \
 	using alias = ManagedMemoryBlock< type >
 	DefMemoryBlock("memory-block:uint16", uint16_t, ManagedMemoryBlock_uint16);
-	DefMemoryBlock("memory-block:int16", int16_t, ManagedMemoryBlock_int16);
-	DefMemoryBlock("memory-block:uint8", uint8_t, ManagedMemoryBlock_uint8);
-	DefMemoryBlock("memory-block:int8", int8_t, ManagedMemoryBlock_int8);
-	DefMemoryBlock("memory-block:uint32", uint32_t, ManagedMemoryBlock_uint32);
-	DefMemoryBlock("memory-block:int32", int32_t, ManagedMemoryBlock_int32);
 #undef DefMemoryBlock
 
 	void installExtensions(void* theEnv) {
@@ -598,12 +593,7 @@ namespace syn {
 		EnvAddUDF(env, "right-shift", "l", CLIPS_shiftRight, "CLIPS_shiftRight", 2, 2, "l;l", nullptr);
 		EnvAddUDF(env, "break-apart-number", "m", CLIPS_breakApartNumber, "CLIPS_breakApartNumber", 1, 1, "l", nullptr);
 		StandardManagedMemoryBlock::registerWithEnvironment(theEnv);
-        ManagedMemoryBlock_int16::registerWithEnvironment(theEnv);
 		ManagedMemoryBlock_uint16::registerWithEnvironment(theEnv);
-        ManagedMemoryBlock_int8::registerWithEnvironment(theEnv);
-        ManagedMemoryBlock_uint8::registerWithEnvironment(theEnv);
-        ManagedMemoryBlock_int32::registerWithEnvironment(theEnv);
-        ManagedMemoryBlock_uint32::registerWithEnvironment(theEnv);
 	}
 
     MultifieldBuilder::MultifieldBuilder(void* env, long capacity) : _size(capacity), _rawMultifield(EnvCreateMultifield(env, capacity)) { }
