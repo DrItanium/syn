@@ -241,20 +241,21 @@ namespace cisc0 {
     }
     void Core::compareOperation(DecodedInstruction&& inst) {
         static constexpr auto group = Operation::Compare;
-        static std::map<CompareStyle, CompareUnit::Operation> translationTable = {
-            { CompareStyle::Equals, CompareUnit::Operation::Eq },
-            { CompareStyle::NotEquals, CompareUnit::Operation::Neq },
-            { CompareStyle::LessThan, CompareUnit::Operation::LessThan },
-            { CompareStyle::LessThanOrEqualTo, CompareUnit::Operation::LessThanOrEqualTo },
-            { CompareStyle::GreaterThan, CompareUnit::Operation::GreaterThan },
-            { CompareStyle::GreaterThanOrEqualTo, CompareUnit::Operation::GreaterThanOrEqualTo },
+        using CompareOperation = syn::Comparator::StandardOperations;
+        static std::map<CompareStyle, CompareOperation> translationTable = {
+            { CompareStyle::Equals, CompareOperation::Eq },
+            { CompareStyle::NotEquals, CompareOperation::Neq },
+            { CompareStyle::LessThan, CompareOperation::LessThan },
+            { CompareStyle::LessThanOrEqualTo, CompareOperation::LessThanOrEqualTo },
+            { CompareStyle::GreaterThan, CompareOperation::GreaterThan },
+            { CompareStyle::GreaterThanOrEqualTo, CompareOperation::GreaterThanOrEqualTo },
         };
         DecodedInstruction next(tryReadNext<true>());
         auto first = registerValue(next.getCompareRegister<0>());
         auto second = inst.getImmediateFlag<group>() ? next.getUpper() : registerValue(next.getCompareRegister<1>());
         auto compareResult = translationTable.find(inst.getSubtype<group>());
         throwIfNotFound(compareResult, translationTable, "Illegal compare type!");
-        auto result = _compare(compareResult->second, first, second);
+        auto result = syn::Comparator::performOperation(compareResult->second, first, second);
         // make sure that the condition takes up the entire width of the
         // register, that way normal operations will make sense!
         getConditionRegister() = normalizeCondition(result);
@@ -402,8 +403,8 @@ namespace cisc0 {
     }
 
     void Core::encodingOperation(DecodedInstruction&& inst) {
-        auto sliceBitAndCheck = [this](CompareUnit::Operation op) {
-            return normalizeCondition(_compare(op,
+        auto sliceBitAndCheck = [this](syn::Comparator::StandardOperations op) {
+            return normalizeCondition(syn::Comparator::performOperation<RegisterValue>(op,
                         _logicalOps(ALU::Operation::BinaryAnd,
                             _shifter(ALU::Operation::ShiftRight,
                                 getAddressRegister(),
@@ -419,10 +420,10 @@ namespace cisc0 {
                 getAddressRegister() = syn::encodeBits<RegisterValue, RegisterValue>(getAddressRegister(), getValueRegister(), getMaskRegister(), getShiftRegister());
                 break;
             case EncodingOperation::BitSet:
-                getConditionRegister() = sliceBitAndCheck(CompareUnit::Operation::Eq);
+                getConditionRegister() = sliceBitAndCheck(syn::Comparator::StandardOperations::Eq);
                 break;
             case EncodingOperation::BitUnset:
-                getConditionRegister() = sliceBitAndCheck(CompareUnit::Operation::Neq);
+                getConditionRegister() = sliceBitAndCheck(syn::Comparator::StandardOperations::Neq);
                 break;
             default:
                 throw syn::Problem("Illegal complex encoding operation defined!");

@@ -42,11 +42,9 @@ namespace iris {
 	using WordMemorySpace = syn::FixedSizeLoadStoreUnit<word, dword, capacity>;
 	using WordMemorySpace64k = WordMemorySpace<ArchitectureConstants::AddressMax + 1>;
 	using ALU = syn::ALU::Unit<word>;
-	using CompareUnit = syn::Comparator::Unit<word>;
 	using RegisterFile = WordMemorySpace<ArchitectureConstants::RegisterCount>;
 	using IODevice = syn::IODevice<word>;
 	using PredicateRegisterFile = syn::FixedSizeLoadStoreUnit<bool, byte, ArchitectureConstants::ConditionRegisterCount>;
-	using PredicateComparator = syn::Comparator::Unit<bool, bool>;
 	using ErrorStorage = WordMemorySpace<ArchitectureConstants::RegistersToSaveOnError>;
     using InstructionPointer = syn::Register<QuadWord, ArchitectureConstants::AddressMax>;
     using LinkRegister = syn::Register<QuadWord, ArchitectureConstants::AddressMax>;
@@ -157,14 +155,12 @@ namespace iris {
             LinkRegister _lr;
 			word _error;
 			IOSpace _io;
-			CompareUnit _compare;
 			ALU _alu;
 			RegisterFile gpr;
 			WordMemorySpace64k data;
 			syn::FixedSizeLoadStoreUnit<dword, word, ArchitectureConstants::AddressMax> instruction;
 			WordMemorySpace64k stack;
 			PredicateRegisterFile _cr;
-			PredicateComparator _pcompare;
 			ErrorStorage _onError;
 			bool _saveAdvanceIp = false;
 			bool _saveExecute = false;

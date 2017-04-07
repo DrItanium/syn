@@ -173,28 +173,30 @@ namespace iris {
 			}
 		};
 		auto compareOperation = [this, makeIllegalInstructionMessage]() {
-			static std::map<CompareOp, UnitDescription<CompareUnit>> translationTable = {
-				{ CompareOp::LessThan, makeDesc<CompareUnit>(CompareUnit::Operation::LessThan, false) },
-				{ CompareOp::LessThanImmediate, makeDesc<CompareUnit>(CompareUnit::Operation::LessThan, true) },
-				{ CompareOp::LessThanOrEqualTo, makeDesc<CompareUnit>(CompareUnit::Operation::LessThanOrEqualTo, false) },
-				{ CompareOp::LessThanOrEqualToImmediate, makeDesc<CompareUnit>(CompareUnit::Operation::LessThanOrEqualTo, true) },
-				{ CompareOp::GreaterThan, makeDesc<CompareUnit>(CompareUnit::Operation::GreaterThan, false) },
-				{ CompareOp::GreaterThanImmediate, makeDesc<CompareUnit>(CompareUnit::Operation::GreaterThan, true) },
-				{ CompareOp::GreaterThanOrEqualTo, makeDesc<CompareUnit>(CompareUnit::Operation::GreaterThanOrEqualTo, false) },
-				{ CompareOp::GreaterThanOrEqualToImmediate, makeDesc<CompareUnit>(CompareUnit::Operation::GreaterThanOrEqualTo, true) },
-				{ CompareOp::Eq, makeDesc<CompareUnit>(CompareUnit::Operation::Eq, false) },
-				{ CompareOp::EqImmediate, makeDesc<CompareUnit>(CompareUnit::Operation::Eq, true) },
-				{ CompareOp::Neq, makeDesc<CompareUnit>(CompareUnit::Operation::Neq, false) },
-				{ CompareOp::NeqImmediate, makeDesc<CompareUnit>(CompareUnit::Operation::Neq, true) },
+            using UnitDescription = std::tuple<syn::Comparator::StandardOperations, bool>;
+            static auto makeDesc = [](syn::Comparator::StandardOperations op, bool immediate) { return std::make_tuple(op, immediate); };
+			static std::map<CompareOp, UnitDescription> translationTable = {
+				{ CompareOp::LessThan, makeDesc(syn::Comparator::StandardOperations::LessThan, false) },
+				{ CompareOp::LessThanImmediate, makeDesc(syn::Comparator::StandardOperations::LessThan, true) },
+				{ CompareOp::LessThanOrEqualTo, makeDesc(syn::Comparator::StandardOperations::LessThanOrEqualTo, false) },
+				{ CompareOp::LessThanOrEqualToImmediate, makeDesc(syn::Comparator::StandardOperations::LessThanOrEqualTo, true) },
+				{ CompareOp::GreaterThan, makeDesc(syn::Comparator::StandardOperations::GreaterThan, false) },
+				{ CompareOp::GreaterThanImmediate, makeDesc(syn::Comparator::StandardOperations::GreaterThan, true) },
+				{ CompareOp::GreaterThanOrEqualTo, makeDesc(syn::Comparator::StandardOperations::GreaterThanOrEqualTo, false) },
+				{ CompareOp::GreaterThanOrEqualToImmediate, makeDesc(syn::Comparator::StandardOperations::GreaterThanOrEqualTo, true) },
+				{ CompareOp::Eq, makeDesc(syn::Comparator::StandardOperations::Eq, false) },
+				{ CompareOp::EqImmediate, makeDesc(syn::Comparator::StandardOperations::Eq, true) },
+				{ CompareOp::Neq, makeDesc(syn::Comparator::StandardOperations::Neq, false) },
+				{ CompareOp::NeqImmediate, makeDesc(syn::Comparator::StandardOperations::Neq, true) },
 			};
 			auto result = translationTable.find(InstructionDecoder::getOperation<CompareOp>(current));
 			if (result == translationTable.end()) {
 				makeIllegalInstructionMessage("compare code");
 			} else {
-				typename decltype(_compare)::Operation op;
+				syn::Comparator::StandardOperations op;
 				bool immediate = false;
 				std::tie(op, immediate) = result->second;
-				auto result = _compare(op, source0Register(), immediate ? getHalfImmediate() : source1Register()) != 0;
+                auto result = syn::Comparator::performOperation<word>(op, source0Register(), immediate ? getHalfImmediate() : source1Register()) != 0;
 				predicateResult() = result;
                 if (!InstructionDecoder::samePredicateDestinations(current)) {
 					predicateInverseResult() = !result;
@@ -362,13 +364,17 @@ namespace iris {
 			}
 		};
 		auto conditionalRegisterOperation = [this, makeIllegalInstructionMessage]() {
-			static std::map<ConditionRegisterOp, UnitDescription<PredicateComparator>> translationTable = {
-				{ ConditionRegisterOp::CRAnd, makeDesc<PredicateComparator>(PredicateComparator::Operation::BinaryAnd, false) },
-				{ ConditionRegisterOp::CROr, makeDesc<PredicateComparator>(PredicateComparator::Operation::BinaryOr, false) },
-				{ ConditionRegisterOp::CRNand, makeDesc<PredicateComparator>(PredicateComparator::Operation::BinaryNand, false) },
-				{ ConditionRegisterOp::CRNor, makeDesc<PredicateComparator>(PredicateComparator::Operation::BinaryNor, false) },
-				{ ConditionRegisterOp::CRXor, makeDesc<PredicateComparator>(PredicateComparator::Operation::BinaryXor, false) },
-				{ ConditionRegisterOp::CRNot, makeDesc<PredicateComparator>(PredicateComparator::Operation::UnaryNot, false) },
+            using UnitDescription = std::tuple<syn::Comparator::BooleanOperations, bool>;
+            static auto makeDesc = [](syn::Comparator::BooleanOperations op) {
+                return std::make_tuple(op, false);
+            };
+			static std::map<ConditionRegisterOp, UnitDescription> translationTable = {
+				{ ConditionRegisterOp::CRAnd, makeDesc(syn::Comparator::BooleanOperations::BinaryAnd) },
+				{ ConditionRegisterOp::CROr, makeDesc(syn::Comparator::BooleanOperations::BinaryOr) },
+				{ ConditionRegisterOp::CRNand, makeDesc(syn::Comparator::BooleanOperations::BinaryNand) },
+				{ ConditionRegisterOp::CRNor, makeDesc(syn::Comparator::BooleanOperations::BinaryNor) },
+				{ ConditionRegisterOp::CRXor, makeDesc(syn::Comparator::BooleanOperations::BinaryXor) },
+				{ ConditionRegisterOp::CRNot, makeDesc(syn::Comparator::BooleanOperations::UnaryNot) },
 			};
 			auto op = InstructionDecoder::getOperation<ConditionRegisterOp>(current);
 			auto result = translationTable.find(op);
@@ -391,10 +397,10 @@ namespace iris {
 						break;
 				}
 			} else {
-				typename decltype(_pcompare)::Operation pop;
+                syn::Comparator::BooleanOperations pop;
 				bool immediate = false;
 				std::tie(pop, immediate) = result->second;
-				auto result = _pcompare(pop, predicateSource0(), predicateSource1());
+                auto result = syn::Comparator::performOperation<bool, bool, syn::Comparator::BooleanOperations>(pop, predicateSource0(), predicateSource1());
 				predicateResult() = result;
                 if (!InstructionDecoder::samePredicateDestinations(current)) {
 					predicateInverseResult() = !result;

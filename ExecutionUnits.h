@@ -165,98 +165,80 @@ namespace Comparator {
         BinaryNor,
         Count,
     };
-    template<typename Word, typename Return = Word>
-    class Unit : public BinaryOperationUnit<Word, StandardOperations, Return> {
-        public:
-            using Parent = BinaryOperationUnit<Word, StandardOperations, Return>;
-            using Operation = typename Parent::Operation;
-        public:
-            using Parent::Parent;
-            virtual Return performOperation(Operation op, Word a, Word b) const override {
-                switch(op) {
-                    case Operation::Eq:
-                        return syn::eq<Word, Return>(a, b);
-                    case Operation::Neq:
-                        return syn::neq<Word, Return>(a, b);
-                    case Operation::LessThan:
-                        return syn::lt<Word, Return>(a, b);
-                    case Operation::GreaterThan:
-                        return syn::gt<Word, Return>(a, b);
-                    case Operation::LessThanOrEqualTo:
-                        return syn::le<Word, Return>(a, b);
-                    case Operation::GreaterThanOrEqualTo:
-                        return syn::ge<Word, Return>(a, b);
-                    case Operation::BinaryAnd:
-                        return syn::binaryAnd<Word, Return>(a, b);
-                    case Operation::BinaryOr:
-                        return syn::binaryOr<Word, Return>(a, b);
-                    case Operation::UnaryNot:
-                        return syn::binaryNot<Word, Return>(a);
-                    case Operation::BinaryXor:
-                        return syn::binaryXor<Word, Return>(a, b);
-                    case Operation::BinaryNand:
-                        return syn::binaryNand<Word, Return>(a, b);
-                    case Operation::ShiftLeft:
-                        return syn::shiftLeft<Word, Return>(a, b);
-                    case Operation::ShiftRight:
-                        return syn::shiftRight<Word, Return>(a, b);
-    				case Operation::BinaryNor:
-    					return syn::binaryNor<Word, Return>(a, b);
-                    case Operation::CircularShiftLeft:
-                        return syn::circularShiftLeft<Word, Return>(a, b);
-                    case Operation::CircularShiftRight:
-                        return syn::circularShiftRight<Word, Return>(a, b);
-                    default:
-                        throw syn::Problem("Undefined Comparison operation!");
-                }
-            }
+    template<typename Word, typename Return = Word, typename Operation = StandardOperations>
+    constexpr Return performOperation(Operation op, Word a, Word b) noexcept {
+        switch(op) {
+            case Operation::Eq:
+                return syn::eq<Word, Return>(a, b);
+            case Operation::Neq:
+                return syn::neq<Word, Return>(a, b);
+            case Operation::LessThan:
+                return syn::lt<Word, Return>(a, b);
+            case Operation::GreaterThan:
+                return syn::gt<Word, Return>(a, b);
+            case Operation::LessThanOrEqualTo:
+                return syn::le<Word, Return>(a, b);
+            case Operation::GreaterThanOrEqualTo:
+                return syn::ge<Word, Return>(a, b);
+            case Operation::BinaryAnd:
+                return syn::binaryAnd<Word, Return>(a, b);
+            case Operation::BinaryOr:
+                return syn::binaryOr<Word, Return>(a, b);
+            case Operation::UnaryNot:
+                return syn::binaryNot<Word, Return>(a);
+            case Operation::BinaryXor:
+                return syn::binaryXor<Word, Return>(a, b);
+            case Operation::BinaryNand:
+                return syn::binaryNand<Word, Return>(a, b);
+            case Operation::ShiftLeft:
+                return syn::shiftLeft<Word, Return>(a, b);
+            case Operation::ShiftRight:
+                return syn::shiftRight<Word, Return>(a, b);
+            case Operation::BinaryNor:
+                return syn::binaryNor<Word, Return>(a, b);
+            case Operation::CircularShiftLeft:
+                return syn::circularShiftLeft<Word, Return>(a, b);
+            case Operation::CircularShiftRight:
+                return syn::circularShiftRight<Word, Return>(a, b);
+            default:
+                return static_cast<Return>(0);
+        }
+    }
+    enum class BooleanOperations {
+        Eq,
+        Neq,
+        BinaryAnd,
+        BinaryOr,
+        UnaryNot,
+        BinaryXor,
+        BinaryNand,
+        BinaryNor,
+        Count,
     };
-
     template<>
-    class Unit<bool, bool> {
-    	public:
-    		using WordType = bool;
-    		using ReturnType = bool;
-    		enum class Operation {
-    			Eq,
-    			Neq,
-    			BinaryAnd,
-    			BinaryOr,
-    			UnaryNot,
-    			BinaryXor,
-    			BinaryNand,
-    			BinaryNor,
-    			Count,
-    		};
-    	public:
-    		Unit() { }
-    		virtual ~Unit() { }
-    		inline bool performOperation(Operation op, bool a, bool b) const {
-    			switch(op) {
-    				case Operation::Eq:
-    					return syn::eq<bool>(a, b);
-    				case Operation::Neq:
-    					return syn::neq<bool>(a, b);
-    				case Operation::BinaryAnd:
-    					return syn::binaryAnd<bool>(a, b);
-    				case Operation::BinaryOr:
-    					return syn::binaryOr<bool>(a, b);
-    				case Operation::BinaryXor:
-    					return syn::binaryXor<bool>(a, b);
-    				case Operation::UnaryNot:
-    					return syn::binaryNot<bool>(a);
-    				case Operation::BinaryNand:
-    					return syn::binaryNand<bool>(a, b);
-    				case Operation::BinaryNor:
-    					return syn::binaryNor<bool>(a, b);
-    				default:
-    					throw syn::Problem("Undefined boolean comparison operation!");
-    			}
-    		}
-            inline bool operator()(Operation op, bool a, bool b) const {
-                return this->performOperation(op, a, b);
-            }
-    };
+    constexpr bool performOperation<bool, bool, BooleanOperations>(BooleanOperations op, bool a, bool b) noexcept {
+        using Operation = BooleanOperations;
+        switch(op) {
+            case Operation::Eq:
+                return syn::eq<bool>(a, b);
+            case Operation::Neq:
+                return syn::neq<bool>(a, b);
+            case Operation::BinaryAnd:
+                return syn::binaryAnd<bool>(a, b);
+            case Operation::BinaryOr:
+                return syn::binaryOr<bool>(a, b);
+            case Operation::BinaryXor:
+                return syn::binaryXor<bool>(a, b);
+            case Operation::UnaryNot:
+                return syn::binaryNot<bool>(a);
+            case Operation::BinaryNand:
+                return syn::binaryNand<bool>(a, b);
+            case Operation::BinaryNor:
+                return syn::binaryNor<bool>(a, b);
+            default:
+                return false;
+        }
+    }
 } // end namespace Comparator
 
 template<typename Word, typename Address = Word>

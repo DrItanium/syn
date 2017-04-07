@@ -266,7 +266,6 @@ namespace cisc0 {
 		public:
 			using IOBus = syn::CLIPSIOController<Word, CLIPSInteger>;
             using ALU = syn::ALU::Unit<RegisterValue>;
-            using CompareUnit = syn::Comparator::Unit<RegisterValue>;
             using RegisterFile = syn::FixedSizeLoadStoreUnit<RegisterValue, byte, ArchitectureConstants::RegisterCount>;
         public:
 			static Core* make() noexcept;
@@ -346,7 +345,6 @@ namespace cisc0 {
 			ALU _alu;
 			ALU _shifter;
 			ALU _logicalOps;
-			CompareUnit _compare;
 			IOBus _bus;
 	};
 
