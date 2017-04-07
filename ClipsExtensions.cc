@@ -34,6 +34,7 @@
 #include <memory>
 #include <map>
 #include <iostream>
+#include "ExecutionUnits.h"
 
 extern "C" {
 #include "clips.h"
@@ -497,13 +498,12 @@ namespace syn {
                                     rangeViolation(addr1);
                                     return false;
                                 }
-                                using ArithmeticOperation = std::function<Word(Word, Word)>;
-                                static std::map<MemoryBlockOp, ArithmeticOperation> callTable = {
-                                    { MemoryBlockOp::Combine, syn::add<Word> },
-                                    { MemoryBlockOp::Difference, syn::sub<Word> },
-                                    { MemoryBlockOp::Product, syn::mul<Word> },
-                                    { MemoryBlockOp::Divide, syn::div<Word> },
-                                    { MemoryBlockOp::Remainder, syn::rem<Word> },
+                                static std::map<MemoryBlockOp, syn::ALU::StandardOperations> callTable = {
+                                    { MemoryBlockOp::Combine, syn::ALU::StandardOperations::Add },
+                                    { MemoryBlockOp::Difference, syn::ALU::StandardOperations::Subtract },
+                                    { MemoryBlockOp::Product, syn::ALU::StandardOperations::Multiply },
+                                    { MemoryBlockOp::Divide, syn::ALU::StandardOperations::Divide },
+                                    { MemoryBlockOp::Remainder, syn::ALU::StandardOperations::Remainder },
                                 };
                                 try {
                                     auto pCall = callTable.find(op);
@@ -512,7 +512,7 @@ namespace syn {
                                     }
                                     auto val0 = ptr->getMemoryCellValue(addr0);
                                     auto val1 = ptr->getMemoryCellValue(addr1);
-                                    CVSetInteger(ret, pCall->second(val0, val1));
+                                    CVSetInteger(ret, syn::ALU::performOperation<Word>(pCall->second, val0, val1));
                                 } catch (syn::Problem p) {
                                     handleProblem(env, ret, p, funcErrorPrefix);
                                     return false;
