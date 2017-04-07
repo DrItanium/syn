@@ -363,19 +363,20 @@ namespace cisc0 {
         }
     }
 
+    using ALUOperation = syn::ALU::StandardOperations;
     void Core::shiftOperation(DecodedInstruction&& inst) {
         static constexpr auto group = Operation::Shift;
         auto &destination = registerValue(inst.getShiftRegister<0>());
         auto source = (inst.getImmediateFlag<group>() ? static_cast<RegisterValue>(inst.getImmediate<group>()) : registerValue(inst.getShiftRegister<1>()));
-        destination = _shifter( inst.shouldShiftLeft() ? ALU::Operation::ShiftLeft : ALU::Operation::ShiftRight, destination, source);
+        destination = syn::ALU::performOperation<RegisterValue>( inst.shouldShiftLeft() ? ALUOperation::ShiftLeft : ALUOperation::ShiftRight, destination, source);
     }
     void Core::arithmeticOperation(DecodedInstruction&& inst) {
-        static std::map<ArithmeticOps, ALU::Operation> translationTable = {
-            { ArithmeticOps::Add, ALU::Operation::Add },
-            { ArithmeticOps::Sub, ALU::Operation::Subtract },
-            { ArithmeticOps::Mul, ALU::Operation::Multiply },
-            { ArithmeticOps::Div, ALU::Operation::Divide},
-            { ArithmeticOps::Rem, ALU::Operation::Remainder},
+        static std::map<ArithmeticOps, ALUOperation> translationTable = {
+            { ArithmeticOps::Add, ALUOperation::Add },
+            { ArithmeticOps::Sub, ALUOperation::Subtract },
+            { ArithmeticOps::Mul, ALUOperation::Multiply },
+            { ArithmeticOps::Div, ALUOperation::Divide},
+            { ArithmeticOps::Rem, ALUOperation::Remainder},
         };
         static constexpr auto group = Operation::Arithmetic;
         auto result = translationTable.find(inst.getSubtype<Operation::Arithmetic>());
@@ -383,15 +384,15 @@ namespace cisc0 {
         auto op = result->second;
         auto src = inst.getImmediateFlag<group>() ? inst.getImmediate<group>() : registerValue(inst.getArithmeticRegister<1>());
         auto& dest = registerValue(inst.getArithmeticRegister<0>());
-        dest = _alu(op, dest, src);
+        dest = syn::ALU::performOperation<RegisterValue>(op, dest, src);
     }
     void Core::logicalOperation(DecodedInstruction&& inst) {
-        static std::map<LogicalOps, ALU::Operation> dispatchTable = {
-            { LogicalOps::Not, ALU::Operation::UnaryNot },
-            { LogicalOps::Or, ALU::Operation::BinaryOr },
-            { LogicalOps::And, ALU::Operation::BinaryAnd },
-            { LogicalOps::Xor, ALU::Operation::BinaryXor },
-            { LogicalOps::Nand, ALU::Operation::BinaryNand },
+        static std::map<LogicalOps, ALUOperation> dispatchTable = {
+            { LogicalOps::Not, ALUOperation::UnaryNot },
+            { LogicalOps::Or, ALUOperation::BinaryOr },
+            { LogicalOps::And, ALUOperation::BinaryAnd },
+            { LogicalOps::Xor, ALUOperation::BinaryXor },
+            { LogicalOps::Nand, ALUOperation::BinaryNand },
         };
         static constexpr auto group = Operation::Logical;
         auto result = dispatchTable.find(inst.getSubtype<Operation::Logical>());
@@ -399,14 +400,14 @@ namespace cisc0 {
         auto op = result->second;
         auto source1 = inst.getImmediateFlag<group>() ? retrieveImmediate(inst.getBitmask<group>()) : registerValue(inst.getLogicalRegister<1>());
         auto& dest = registerValue(inst.getLogicalRegister<0>());
-        dest = _logicalOps(op, dest, source1);
+        dest = syn::ALU::performOperation<RegisterValue>(op, dest, source1);
     }
 
     void Core::encodingOperation(DecodedInstruction&& inst) {
         auto sliceBitAndCheck = [this](syn::Comparator::StandardOperations op) {
             return normalizeCondition(syn::Comparator::performOperation<RegisterValue>(op,
-                        _logicalOps(ALU::Operation::BinaryAnd,
-                            _shifter(ALU::Operation::ShiftRight,
+                        syn::ALU::performOperation<RegisterValue>(ALUOperation::BinaryAnd,
+                            syn::ALU::performOperation<RegisterValue>(ALUOperation::ShiftRight,
                                 getAddressRegister(),
                                 getFieldRegister()), 0x1), 1));
         };

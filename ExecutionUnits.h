@@ -100,48 +100,41 @@ namespace ALU {
         CircularShiftRight,
         Count,
     };
-    template<typename Word>
-    class Unit : public BinaryOperationUnit<Word, StandardOperations> {
-        public:
-            using Parent = BinaryOperationUnit<Word, StandardOperations>;
-            using Operation = typename Parent::Operation;
-        public:
-            using Parent::Parent;
-            virtual Word performOperation(Operation op, Word a, Word b) const override {
-                switch(op) {
-                    case Operation::Add:
-                        return syn::add<Word>(a, b);
-                    case Operation::Subtract:
-                        return syn::sub<Word>(a, b);
-                    case Operation::Multiply:
-                        return syn::mul<Word>(a, b);
-                    case Operation::Divide:
-                        return syn::div<Word>(a, b);
-                    case Operation::Remainder:
-                        return syn::rem<Word>(a, b);
-                    case Operation::ShiftLeft:
-                        return syn::shiftLeft<Word>(a, b);
-                    case Operation::ShiftRight:
-                        return syn::shiftRight<Word>(a, b);
-                    case Operation::BinaryAnd:
-                        return syn::binaryAnd<Word>(a, b);
-                    case Operation::BinaryOr:
-                        return syn::binaryOr<Word>(a, b);
-                    case Operation::UnaryNot:
-                        return syn::binaryNot<Word>(a);
-                    case Operation::BinaryXor:
-                        return syn::binaryXor<Word>(a, b);
-                    case Operation::BinaryNand:
-                        return syn::binaryNand<Word>(a, b);
-                    case Operation::CircularShiftLeft:
-                        return syn::circularShiftLeft<Word>(a, b);
-                    case Operation::CircularShiftRight:
-                        return syn::circularShiftRight<Word>(a, b);
-                    default:
-                        throw syn::Problem("Undefined ALU operation!");
-                }
+    template<typename Word, typename Return = Word, typename Operation = StandardOperations>
+    Return performOperation(Operation op, Word a, Word b) {
+        switch(op) {
+            case Operation::Add:
+                return syn::add<Word, Return>(a, b);
+            case Operation::Subtract:
+                return syn::sub<Word, Return>(a, b);
+            case Operation::Multiply:
+                return syn::mul<Word, Return>(a, b);
+            case Operation::Divide:
+                return syn::div<Word, Return>(a, b);
+            case Operation::Remainder:
+                return syn::rem<Word, Return>(a, b);
+            case Operation::ShiftLeft:
+                return syn::shiftLeft<Word, Return>(a, b);
+            case Operation::ShiftRight:
+                return syn::shiftRight<Word, Return>(a, b);
+            case Operation::BinaryAnd:
+                return syn::binaryAnd<Word, Return>(a, b);
+            case Operation::BinaryOr:
+                return syn::binaryOr<Word, Return>(a, b);
+            case Operation::UnaryNot:
+                return syn::binaryNot<Word, Return>(a);
+            case Operation::BinaryXor:
+                return syn::binaryXor<Word, Return>(a, b);
+            case Operation::BinaryNand:
+                return syn::binaryNand<Word, Return>(a, b);
+            case Operation::CircularShiftLeft:
+                return syn::circularShiftLeft<Word, Return>(a, b);
+            case Operation::CircularShiftRight:
+                return syn::circularShiftRight<Word, Return>(a, b);
+            default:
+                throw syn::Problem("Undefined ALU operation!");
         }
-    };
+    }
 } // end namespace ALU
 
 namespace Comparator {
@@ -166,7 +159,7 @@ namespace Comparator {
         Count,
     };
     template<typename Word, typename Return = Word, typename Operation = StandardOperations>
-    constexpr Return performOperation(Operation op, Word a, Word b) noexcept {
+    Return performOperation(Operation op, Word a, Word b) {
         switch(op) {
             case Operation::Eq:
                 return syn::eq<Word, Return>(a, b);
@@ -201,7 +194,7 @@ namespace Comparator {
             case Operation::CircularShiftRight:
                 return syn::circularShiftRight<Word, Return>(a, b);
             default:
-                return static_cast<Return>(0);
+                throw syn::Problem("Illegal compare operation!");
         }
     }
     enum class BooleanOperations {
@@ -216,7 +209,7 @@ namespace Comparator {
         Count,
     };
     template<>
-    constexpr bool performOperation<bool, bool, BooleanOperations>(BooleanOperations op, bool a, bool b) noexcept {
+    inline bool performOperation<bool, bool, BooleanOperations>(BooleanOperations op, bool a, bool b) {
         using Operation = BooleanOperations;
         switch(op) {
             case Operation::Eq:
@@ -236,7 +229,7 @@ namespace Comparator {
             case Operation::BinaryNor:
                 return syn::binaryNor<bool>(a, b);
             default:
-                return false;
+                throw syn::Problem("Illegal boolean compare operation!");
         }
     }
 } // end namespace Comparator

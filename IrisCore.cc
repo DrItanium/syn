@@ -104,6 +104,7 @@ namespace iris {
 	UnitDescription<T> makeDesc(typename T::Operation operation, bool immediate) noexcept {
 		return std::make_tuple(operation, immediate);
 	}
+    using ALUOperation = syn::ALU::StandardOperations;
 	void Core::dispatch() noexcept {
 		current = instruction[getInstructionPointer()];
 		auto group = InstructionDecoder::getGroup(current);
@@ -111,21 +112,25 @@ namespace iris {
 		auto enableStatusRegisterBit = [this, updateStatusRegister](auto fn) { updateStatusRegister(fn, true); };
 		auto makeIllegalInstructionMessage = [this, enableStatusRegisterBit](const std::string& type) { enableStatusRegisterBit(encodeStatusIllegalInstruction); };
 		auto arithmeticOperation = [this, updateStatusRegister, enableStatusRegisterBit, makeIllegalInstructionMessage]() {
-			static std::map<ArithmeticOp, UnitDescription<ALU>> table = {
-				{ ArithmeticOp::Add, makeDesc<ALU>(ALU::Operation::Add , false) },
-				{ ArithmeticOp::Sub, makeDesc<ALU>(ALU::Operation::Subtract , false ) },
-				{ ArithmeticOp::Mul, makeDesc<ALU>(ALU::Operation::Multiply , false ) } ,
-				{ ArithmeticOp::ShiftLeft, makeDesc<ALU>(ALU::Operation::ShiftLeft , false ) },
-				{ ArithmeticOp::ShiftRight, makeDesc<ALU>(ALU::Operation::ShiftRight , false ) },
-				{ ArithmeticOp::BinaryAnd, makeDesc<ALU>(ALU::Operation::BinaryAnd , false ) },
-				{ ArithmeticOp::BinaryOr, makeDesc<ALU>(ALU::Operation::BinaryOr , false ) },
-				{ ArithmeticOp::BinaryNot, makeDesc<ALU>(ALU::Operation::UnaryNot , false) },
-				{ ArithmeticOp::BinaryXor, makeDesc<ALU>(ALU::Operation::BinaryXor , false ) },
-				{ ArithmeticOp::AddImmediate, makeDesc<ALU>(ALU::Operation::Add , true  ) },
-				{ ArithmeticOp::SubImmediate, makeDesc<ALU>(ALU::Operation::Subtract , true  ) },
-				{ ArithmeticOp::MulImmediate, makeDesc<ALU>(ALU::Operation::Multiply , true  ) } ,
-				{ ArithmeticOp::ShiftLeftImmediate, makeDesc<ALU>(ALU::Operation::ShiftLeft , true ) },
-				{ ArithmeticOp::ShiftRightImmediate, makeDesc<ALU>(ALU::Operation::ShiftRight , true ) },
+            using UnitDescription = std::tuple<ALUOperation, bool>;
+            static auto makeDesc = [](auto op, auto immediate) {
+                return std::make_tuple(op, immediate);
+            };
+			static std::map<ArithmeticOp, UnitDescription> table = {
+				{ ArithmeticOp::Add, makeDesc(ALUOperation::Add , false) },
+				{ ArithmeticOp::Sub, makeDesc(ALUOperation::Subtract , false ) },
+				{ ArithmeticOp::Mul, makeDesc(ALUOperation::Multiply , false ) } ,
+				{ ArithmeticOp::ShiftLeft, makeDesc(ALUOperation::ShiftLeft , false ) },
+				{ ArithmeticOp::ShiftRight, makeDesc(ALUOperation::ShiftRight , false ) },
+				{ ArithmeticOp::BinaryAnd, makeDesc(ALUOperation::BinaryAnd , false ) },
+				{ ArithmeticOp::BinaryOr, makeDesc(ALUOperation::BinaryOr , false ) },
+				{ ArithmeticOp::BinaryNot, makeDesc(ALUOperation::UnaryNot , false) },
+				{ ArithmeticOp::BinaryXor, makeDesc(ALUOperation::BinaryXor , false ) },
+				{ ArithmeticOp::AddImmediate, makeDesc(ALUOperation::Add , true  ) },
+				{ ArithmeticOp::SubImmediate, makeDesc(ALUOperation::Subtract , true  ) },
+				{ ArithmeticOp::MulImmediate, makeDesc(ALUOperation::Multiply , true  ) } ,
+				{ ArithmeticOp::ShiftLeftImmediate, makeDesc(ALUOperation::ShiftLeft , true ) },
+				{ ArithmeticOp::ShiftRightImmediate, makeDesc(ALUOperation::ShiftRight , true ) },
 			};
 			auto op = InstructionDecoder::getOperation<ArithmeticOp>(current);
 			auto result = table.find(op);
@@ -169,7 +174,10 @@ namespace iris {
 				        makeIllegalInstructionMessage("arithmetic operation");
                 }
 			} else {
-				performOperation(_alu, result->second);
+                ALUOperation theOp;
+                bool isImmediate;
+                std::tie(theOp, isImmediate);
+                destinationRegister() = syn::ALU::performOperation<word>(theOp, source0Register(), isImmediate ? getHalfImmediate() : source1Register());
 			}
 		};
 		auto compareOperation = [this, makeIllegalInstructionMessage]() {

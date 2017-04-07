@@ -41,7 +41,6 @@ namespace iris {
 	template<dword capacity>
 	using WordMemorySpace = syn::FixedSizeLoadStoreUnit<word, dword, capacity>;
 	using WordMemorySpace64k = WordMemorySpace<ArchitectureConstants::AddressMax + 1>;
-	using ALU = syn::ALU::Unit<word>;
 	using RegisterFile = WordMemorySpace<ArchitectureConstants::RegisterCount>;
 	using IODevice = syn::IODevice<word>;
 	using PredicateRegisterFile = syn::FixedSizeLoadStoreUnit<bool, byte, ArchitectureConstants::ConditionRegisterCount>;
@@ -155,7 +154,6 @@ namespace iris {
             LinkRegister _lr;
 			word _error;
 			IOSpace _io;
-			ALU _alu;
 			RegisterFile gpr;
 			WordMemorySpace64k data;
 			syn::FixedSizeLoadStoreUnit<dword, word, ArchitectureConstants::AddressMax> instruction;

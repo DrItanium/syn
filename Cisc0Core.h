@@ -265,7 +265,6 @@ namespace cisc0 {
 	class Core : public syn::Core {
 		public:
 			using IOBus = syn::CLIPSIOController<Word, CLIPSInteger>;
-            using ALU = syn::ALU::Unit<RegisterValue>;
             using RegisterFile = syn::FixedSizeLoadStoreUnit<RegisterValue, byte, ArchitectureConstants::RegisterCount>;
         public:
 			static Core* make() noexcept;
@@ -342,9 +341,6 @@ namespace cisc0 {
 			bool execute = true,
 				 advanceIp = true;
 			RegisterFile gpr;
-			ALU _alu;
-			ALU _shifter;
-			ALU _logicalOps;
 			IOBus _bus;
 	};
 
