@@ -32,21 +32,6 @@
 #include <cmath>
 namespace syn {
 
-template<typename T, typename Op, typename R = T>
-class BinaryOperationUnit {
-    public:
-        using WordType = T;
-        using ReturnType = R;
-        using Operation = Op;
-    public:
-        BinaryOperationUnit() { }
-        virtual ~BinaryOperationUnit() { }
-        virtual ReturnType performOperation(Operation op, WordType a, WordType b) const = 0;
-        inline ReturnType operator()(Operation op, WordType a, WordType b) const {
-            return this->performOperation(op, a, b);
-        }
-};
-
 namespace FPU {
     enum class StandardOperations {
         Add,
@@ -56,30 +41,23 @@ namespace FPU {
         SquareRoot,
         Count,
     };
-    template<typename Word>
-        class Unit : public BinaryOperationUnit<Word, StandardOperations>{
-            public:
-                using Parent = BinaryOperationUnit<Word, StandardOperations>;
-                using Operation = typename Parent::Operation;
-            public:
-                using Parent::Parent;
-                virtual Word performOperation(Operation op, Word a, Word b) const override {
-                    switch(op) {
-                        case Operation::Add:
-                            return syn::add<Word>(a, b);
-                        case Operation::Subtract:
-                            return syn::sub<Word>(a, b);
-                        case Operation::Multiply:
-                            return syn::mul<Word>(a, b);
-                        case Operation::Divide:
-                            return syn::div<Word>(a, b);
-                        case Operation::SquareRoot:
-                            return static_cast<Word>(sqrt(static_cast<double>(a)));
-                        default:
-                            throw syn::Problem("Undefined fpu operation!");
-                    }
-                }
-        };
+    template<typename Word, typename Return = Word, typename Operation = StandardOperations>
+    Return performOperation(Operation op, Word a, Word b) {
+        switch(op) {
+            case Operation::Add:
+                return syn::add<Word, Return>(a, b);
+            case Operation::Subtract:
+                return syn::sub<Word, Return>(a, b);
+            case Operation::Multiply:
+                return syn::mul<Word, Return>(a, b);
+            case Operation::Divide:
+                return syn::div<Word, Return>(a, b);
+            case Operation::SquareRoot:
+                return static_cast<Return>(sqrt(static_cast<double>(a)));
+            default:
+                throw syn::Problem("Undefined fpu operation!");
+        }
+    }
 }
 
 namespace ALU {
