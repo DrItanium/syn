@@ -534,6 +534,11 @@ constexpr bool getBit(T value) noexcept {
     return decodeBits<T, bool, 1 << index, index>(value);
 }
 
+template<typename T>
+constexpr bool getBit(T value, T index) noexcept {
+    return decodeBits<T, bool>(value, 1 << index, index);
+}
+
 template<> constexpr bool getBit<byte, 0>(byte value) noexcept { return (0b1 & value) != 0; }
 template<> constexpr bool getBit<byte, 1>(byte value) noexcept { return (0b10 & value) != 0; }
 template<> constexpr bool getBit<byte, 2>(byte value) noexcept { return (0b100 & value) != 0; }
@@ -546,6 +551,11 @@ constexpr byte expandBit(bool value) noexcept {
 template<typename T, T index>
 constexpr T setBit(T value, bool bit) noexcept {
     return syn::encodeBits<T, bool, 1 << index, index>(value, bit);
+}
+
+template<typename T>
+constexpr T setBit(T value, bool bit, T index) noexcept {
+    return encodeBits<T, bool>(value, bit, 1 << index, index);
 }
 
 constexpr uint32 expandUInt32LE(bool lowest, bool lowerUpper, bool upperLower, bool upperMost) noexcept {

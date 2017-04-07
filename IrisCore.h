@@ -47,6 +47,7 @@ namespace iris {
 	using ErrorStorage = WordMemorySpace<ArchitectureConstants::RegistersToSaveOnError>;
     using InstructionPointer = syn::Register<QuadWord, ArchitectureConstants::AddressMax>;
     using LinkRegister = syn::Register<QuadWord, ArchitectureConstants::AddressMax>;
+    using PredicateRegisterBlock = syn::Register<word, AddressMax>;
 	class Core : public syn::Core {
         public:
             static Core* make() noexcept;
@@ -70,7 +71,8 @@ namespace iris {
             inline QuadWord getLinkRegister() const noexcept { return _lr.get(); }
             void setInstructionPointer(QuadWord value) noexcept;
             void setLinkRegister(QuadWord value) noexcept;
-			bool& getPredicateRegister(byte index);
+			bool getPredicateRegister(byte index) const;
+            void setPredicateRegister(byte index, bool value);
             void incrementInstructionPointer() noexcept;
 
 		private:
@@ -80,16 +82,34 @@ namespace iris {
                 return gpr[InstructionDecoder::getRegisterIndex<index>(current)];
             }
             template<int index>
-            inline bool& getPredicate() noexcept {
-                return getPredicateRegister(InstructionDecoder::getPredicateIndex<index>(current));
+            inline byte getPredicateIndex() const noexcept {
+                return InstructionDecoder::getPredicateIndex<index>(current);
+            }
+
+            template<int index>
+            inline bool getPredicate() const noexcept {
+                return getPredicateRegister(getPredicateIndex<index>());
+            }
+            template<int index>
+            inline void setPredicate(bool value) noexcept {
+                setPredicateRegister(getPredicateIndex<index>(), value);
             }
             word& destinationRegister() noexcept;
             word& source0Register() noexcept;
             word& source1Register() noexcept;
-            bool& predicateResult() noexcept;
-			bool& predicateInverseResult() noexcept;
-			bool& predicateSource0() noexcept;
-			bool& predicateSource1() noexcept;
+
+            bool getPredicateResult() const noexcept;
+			bool getPredicateInverseResult() const noexcept;
+			bool getPredicateSource0() const noexcept;
+			bool getPredicateSource1() const noexcept;
+            byte getPredicateResultIndex() const noexcept;
+			byte getPredicateInverseResultIndex() const noexcept;
+			byte getPredicateSource0Index() const noexcept;
+			byte getPredicateSource1Index() const noexcept;
+            void setPredicateResult(bool value) noexcept;
+			void setPredicateInverseResult(bool value) noexcept;
+			void setPredicateSource0(bool value) noexcept;
+			void setPredicateSource1(bool value) noexcept;
             inline word getHalfImmediate() const noexcept { return InstructionDecoder::getHalfImmediate(current); }
             inline word getImmediate() const noexcept { return InstructionDecoder::getImmediate(current); }
 		private:
@@ -110,38 +130,6 @@ namespace iris {
 				std::tie(op, immediate) = tuple;
 				performOperation(unit, op, immediate);
 			}
-			template<word index>
-			struct PredicateRegisterEncoder {
-                PredicateRegisterEncoder() = delete;
-                ~PredicateRegisterEncoder() = delete;
-                PredicateRegisterEncoder(const PredicateRegisterEncoder&) = delete;
-                PredicateRegisterEncoder(PredicateRegisterEncoder&&) = delete;
-				static_assert(index < 16, "Provided predicate register is out of range!");
-				static PredicateRegisterEncoder<index - 1> next;
-				static word invoke(Core* c, word mask) noexcept {
-					auto result = next.invoke(c, mask);
-					if (syn::getBit<word,index>(mask)) {
-						return syn::setBit<word, index>(result, c->getPredicateRegister(index));
-					} else {
-						return result;
-					}
-				}
-			};
-			template<word index>
-			struct PredicateRegisterDecoder {
-                PredicateRegisterDecoder() = delete;
-                ~PredicateRegisterDecoder() = delete;
-                PredicateRegisterDecoder(const PredicateRegisterDecoder&) = delete;
-                PredicateRegisterDecoder(PredicateRegisterDecoder&&) = delete;
-				static_assert(index < 16, "Provided predicate register index is too large!");
-				static PredicateRegisterDecoder<index - 1> next;
-				static void invoke(Core* c, word input, word mask) noexcept {
-					if (syn::getBit<word, index>(mask)) {
-						c->getPredicateRegister(index) = syn::getBit<word, index>(input);
-					}
-					next.invoke(c, input, mask);
-				}
-			};
 			void restorePredicateRegisters(word input, word mask) noexcept;
 			word savePredicateRegisters(word mask) noexcept;
 
@@ -157,37 +145,11 @@ namespace iris {
 			WordMemorySpace64k data;
 			syn::FixedSizeLoadStoreUnit<dword, word, ArchitectureConstants::AddressMax> instruction;
 			WordMemorySpace64k stack;
-			PredicateRegisterFile _cr;
+			PredicateRegisterBlock _cr;
 			ErrorStorage _onError;
 			bool _saveAdvanceIp = false;
 			bool _saveExecute = false;
             bool _inInterruptHandler = false;
 	};
-	template<>
-		struct Core::PredicateRegisterEncoder<0> {
-                PredicateRegisterEncoder() = delete;
-                ~PredicateRegisterEncoder() = delete;
-                PredicateRegisterEncoder(const PredicateRegisterEncoder&) = delete;
-                PredicateRegisterEncoder(PredicateRegisterEncoder&&) = delete;
-			static word invoke(Core* c, word mask) noexcept {
-				if (syn::getBit<word, 0>(mask)) {
-					return static_cast<word>(c->getPredicateRegister(0) ? 1 : 0);
-				} else {
-					return 0;
-				}
-			}
-		};
-	template<>
-		struct Core::PredicateRegisterDecoder<0> {
-                PredicateRegisterDecoder() = delete;
-                ~PredicateRegisterDecoder() = delete;
-                PredicateRegisterDecoder(const PredicateRegisterDecoder&) = delete;
-                PredicateRegisterDecoder(PredicateRegisterDecoder&&) = delete;
-			static void invoke(Core* c, word input, word mask) noexcept {
-				if (syn::getBit<word, 0>(mask)) {
-					c->getPredicateRegister(0) = syn::getBit<word, 0>(input);
-				}
-			}
-		};
 }
 #endif

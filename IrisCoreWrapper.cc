@@ -238,7 +238,7 @@ namespace iris {
                         CVSetBoolean(ret, true);
                         return true;
                     case TargetSpace::Predicates:
-                        getPredicateRegister(static_cast<byte>(ind)) = static_cast<word>(theValue);
+                        setPredicateRegister(static_cast<byte>(ind), static_cast<word>(theValue));
                         CVSetBoolean(ret, true);
                         return true;
                     default:

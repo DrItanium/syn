@@ -198,9 +198,9 @@ namespace iris {
 				bool immediate = false;
 				std::tie(op, immediate) = result->second;
                 auto result = syn::Comparator::performOperation<word>(op, source0Register(), immediate ? getHalfImmediate() : source1Register()) != 0;
-				predicateResult() = result;
+                setPredicateResult(result);
                 if (!InstructionDecoder::samePredicateDestinations(current)) {
-					predicateInverseResult() = !result;
+                    setPredicateInverseResult(!result);
 				}
 			}
 		};
@@ -231,11 +231,11 @@ namespace iris {
 				};
 				switch(operation) {
                     case JumpOp::IfThenElse:
-                        cond = predicateResult();
+                        cond = getPredicateResult();
                         setInstructionPointer(gpr[InstructionDecoder::chooseRegister(current, cond)]);
                         break;
                     case JumpOp::IfThenElseLink:
-                        cond = predicateResult();
+                        cond = getPredicateResult();
                         setLinkRegister(getInstructionPointer() + 1);
                         setInstructionPointer(gpr[InstructionDecoder::chooseRegister(current, cond)]);
                         break;
@@ -248,12 +248,12 @@ namespace iris {
                         setLinkRegister(temporaryAddress);
 						break;
 					case JumpOp::BranchConditionalLR:
-						cond = predicateResult();
+                        cond = getPredicateResult();
                         setInstructionPointer(cond ? getLinkRegister() : getInstructionPointer() + 1);
 						break;
 					case JumpOp::BranchConditionalLRAndLink:
 						temporaryAddress = getInstructionPointer() + 1;
-						cond = predicateResult();
+						cond = getPredicateResult();
                         setInstructionPointer(cond ? getLinkRegister() : temporaryAddress);
                         setLinkRegister(cond ? temporaryAddress : getLinkRegister());
 						break;
@@ -272,7 +272,7 @@ namespace iris {
 				advanceIp = false;
 				auto ip = getInstructionPointer();
 				if (conditional) {
-					auto cond = predicateResult();
+					cond = getPredicateResult();
 					newAddr = cond ? (immediate ? getImmediate() : source0Register()) : ip + 1;
 				} else {
 					newAddr = immediate ? getImmediate() : destinationRegister();
@@ -382,10 +382,10 @@ namespace iris {
 			if (result  == translationTable.end()) {
 				switch(op) {
 					case ConditionRegisterOp::CRSwap:
-						syn::swap<bool>(predicateResult(), predicateInverseResult());
+                        _cr.swapBits(getPredicateResultIndex(), getPredicateInverseResultIndex());
 						break;
 					case ConditionRegisterOp::CRMove:
-						predicateResult() = predicateInverseResult();
+						setPredicateResult(getPredicateInverseResult());
 						break;
 					case ConditionRegisterOp::SaveCRs:
 						destinationRegister() = savePredicateRegisters(getImmediate());
@@ -401,10 +401,10 @@ namespace iris {
                 syn::Comparator::BooleanOperations pop;
 				bool immediate = false;
 				std::tie(pop, immediate) = result->second;
-                auto result = syn::Comparator::performOperation<bool, bool, syn::Comparator::BooleanOperations>(pop, predicateSource0(), predicateSource1());
-				predicateResult() = result;
+                auto result = syn::Comparator::performOperation<bool, bool, syn::Comparator::BooleanOperations>(pop, getPredicateSource0(), getPredicateSource1());
+                setPredicateResult(result);
                 if (!InstructionDecoder::samePredicateDestinations(current)) {
-					predicateInverseResult() = !result;
+                    setPredicateInverseResult(!result);
 				}
 			}
 
@@ -431,11 +431,25 @@ namespace iris {
 		}
 	}
 	void Core::restorePredicateRegisters(word input, word mask) noexcept {
-		Core::PredicateRegisterDecoder<ArchitectureConstants::ConditionRegisterCount - 1>::invoke(this, input, mask);
+        if (mask == 0x0000) {
+            return;
+        }
+        if (mask == 0xFFFF) {
+            _cr.set(input);
+        } else {
+            _cr.encode<word>(input, mask, 0);
+        }
 	}
 
 	word Core::savePredicateRegisters(word mask) noexcept {
-		return Core::PredicateRegisterEncoder<ArchitectureConstants::ConditionRegisterCount - 1>::invoke(this, mask);
+        if (mask == 0) {
+            return 0;
+        }
+        if (mask == 0xFFFF) {
+            return _cr.get();
+        } else {
+            return _cr.decode(mask, 0);
+        }
 	}
 
 
@@ -449,9 +463,7 @@ namespace iris {
 		stack.initialize();
 		_io.initialize();
         installAssemblerParsingState(_io.getRawEnvironment());
-		for (auto i = 0; i < _cr.getSize(); ++i) {
-			_cr[i] = false;
-		}
+        _cr.set(0);
 	}
 
 	void Core::shutdown() {
@@ -470,9 +482,13 @@ namespace iris {
 		return gpr.read(index);
 	}
 
-	bool& Core::getPredicateRegister(byte index) {
-		return _cr[index];
+	bool Core::getPredicateRegister(byte index) const {
+        return _cr.getBit(index);
 	}
+
+    void Core::setPredicateRegister(byte index, bool bit) {
+        _cr.setBit(index, bit);
+    }
 
     word Core::ioSpaceRead(word address) noexcept {
         return address == ArchitectureConstants::TerminateIOAddress ? 0 : _io.read(address);
@@ -488,10 +504,18 @@ namespace iris {
             _io.write(address, value);
         }
     }
-    bool& Core::predicateResult() noexcept { return getPredicate<0>(); }
-    bool& Core::predicateInverseResult() noexcept { return getPredicate<1>(); }
-    bool& Core::predicateSource0() noexcept { return getPredicate<2>(); }
-    bool& Core::predicateSource1() noexcept { return getPredicate<3>(); }
+    bool Core::getPredicateResult() const noexcept { return getPredicate<0>(); }
+    bool Core::getPredicateInverseResult() const noexcept { return getPredicate<1>(); }
+    bool Core::getPredicateSource0() const noexcept { return getPredicate<2>(); }
+    bool Core::getPredicateSource1() const noexcept { return getPredicate<3>(); }
+    byte Core::getPredicateResultIndex() const noexcept { return getPredicateIndex<0>(); }
+    byte Core::getPredicateInverseResultIndex() const noexcept { return getPredicateIndex<1>(); }
+    byte Core::getPredicateSource0Index() const noexcept { return getPredicateIndex<2>(); }
+    byte Core::getPredicateSource1Index() const noexcept { return getPredicateIndex<3>(); }
+    void Core::setPredicateResult(bool bit) noexcept { setPredicate<0>(bit); }
+    void Core::setPredicateInverseResult(bool bit) noexcept { setPredicate<1>(bit); }
+    void Core::setPredicateSource0(bool bit) noexcept { setPredicate<2>(bit); }
+    void Core::setPredicateSource1(bool bit) noexcept { setPredicate<3>(bit); }
     word& Core::destinationRegister() noexcept { return getRegister<0>(); }
     word& Core::source0Register() noexcept { return getRegister<1>(); }
     word& Core::source1Register() noexcept { return getRegister<2>(); }
