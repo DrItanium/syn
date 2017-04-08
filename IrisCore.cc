@@ -122,7 +122,7 @@ namespace iris {
 		auto updateStatusRegister = [this](auto fn, bool value) { _error = fn(_error, value); };
 		auto enableStatusRegisterBit = [this, updateStatusRegister](auto fn) { updateStatusRegister(fn, true); };
 		auto makeIllegalInstructionMessage = [this, enableStatusRegisterBit](const std::string& type) { enableStatusRegisterBit(encodeStatusIllegalInstruction); };
-		auto arithmeticOperation = [this, updateStatusRegister, enableStatusRegisterBit, makeIllegalInstructionMessage]() {
+		auto arithmeticOperation = [this, enableStatusRegisterBit, makeIllegalInstructionMessage]() {
 			static std::map<ArithmeticOp, ALUOperation> table = {
 				{ ArithmeticOp::Add, (ALUOperation::Add ) },
 				{ ArithmeticOp::Sub, (ALUOperation::Subtract ) },
@@ -373,17 +373,13 @@ namespace iris {
 			}
 		};
 		auto conditionalRegisterOperation = [this, makeIllegalInstructionMessage]() {
-            using UnitDescription = std::tuple<syn::Comparator::BooleanOperations, bool>;
-            static auto makeDesc = [](syn::Comparator::BooleanOperations op) {
-                return std::make_tuple(op, false);
-            };
-			static std::map<ConditionRegisterOp, UnitDescription> translationTable = {
-				{ ConditionRegisterOp::CRAnd, makeDesc(syn::Comparator::BooleanOperations::BinaryAnd) },
-				{ ConditionRegisterOp::CROr, makeDesc(syn::Comparator::BooleanOperations::BinaryOr) },
-				{ ConditionRegisterOp::CRNand, makeDesc(syn::Comparator::BooleanOperations::BinaryNand) },
-				{ ConditionRegisterOp::CRNor, makeDesc(syn::Comparator::BooleanOperations::BinaryNor) },
-				{ ConditionRegisterOp::CRXor, makeDesc(syn::Comparator::BooleanOperations::BinaryXor) },
-				{ ConditionRegisterOp::CRNot, makeDesc(syn::Comparator::BooleanOperations::UnaryNot) },
+			static std::map<ConditionRegisterOp, syn::Comparator::BooleanOperations> translationTable = {
+				{ ConditionRegisterOp::CRAnd, (syn::Comparator::BooleanOperations::BinaryAnd) },
+				{ ConditionRegisterOp::CROr, (syn::Comparator::BooleanOperations::BinaryOr) },
+				{ ConditionRegisterOp::CRNand, (syn::Comparator::BooleanOperations::BinaryNand) },
+				{ ConditionRegisterOp::CRNor, (syn::Comparator::BooleanOperations::BinaryNor) },
+				{ ConditionRegisterOp::CRXor, (syn::Comparator::BooleanOperations::BinaryXor) },
+				{ ConditionRegisterOp::CRNot, (syn::Comparator::BooleanOperations::UnaryNot) },
 			};
 			auto op = InstructionDecoder::getOperation<ConditionRegisterOp>(current);
 			auto result = translationTable.find(op);
@@ -406,9 +402,7 @@ namespace iris {
 						break;
 				}
 			} else {
-                syn::Comparator::BooleanOperations pop;
-				bool immediate = false;
-				std::tie(pop, immediate) = result->second;
+                syn::Comparator::BooleanOperations pop = result->second;
                 auto result = syn::Comparator::performOperation<bool, bool, syn::Comparator::BooleanOperations>(pop, getPredicateSource0(), getPredicateSource1());
                 setPredicateResult(result);
                 if (!InstructionDecoder::samePredicateDestinations(current)) {
