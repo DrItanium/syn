@@ -226,7 +226,7 @@ ClipsExtensions.o: ClipsExtensions.cc ClipsExtensions.h Base.h Problem.h \
  misc/maya/classini.h misc/maya/classpsr.h misc/maya/defins.h \
  misc/maya/inscom.h misc/maya/insfun.h misc/maya/insfile.h \
  misc/maya/msgcom.h misc/maya/msgpass.h misc/maya/objrtmch.h \
- syn_memory_block_defines.h
+ ExecutionUnits.h IODevice.h Device.h Core.h syn_memory_block_defines.h
 Core.o: Core.cc Core.h Device.h
 CoreRegistrar.o: CoreRegistrar.cc Problem.h CoreRegistrar.h Core.h \
  Device.h
