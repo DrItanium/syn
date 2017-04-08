@@ -113,6 +113,48 @@ namespace ALU {
                 throw syn::Problem("Undefined ALU operation!");
         }
     }
+    /**
+     * Special version of performOperation where the StandardOperations is
+     * hardcoded at compile time!
+     */
+    template<StandardOperations op, typename Word, typename Return = Word>
+    constexpr Return performOperation(Word a, Word b) noexcept {
+        static_assert(op != StandardOperations::Count, "Illegal operation!");
+        using Operation = StandardOperations;
+        switch(op) {
+            case Operation::Add:
+                return syn::add<Word, Return>(a, b);
+            case Operation::Subtract:
+                return syn::sub<Word, Return>(a, b);
+            case Operation::Multiply:
+                return syn::mul<Word, Return>(a, b);
+            case Operation::Divide:
+                return syn::div<Word, Return>(a, b);
+            case Operation::Remainder:
+                return syn::rem<Word, Return>(a, b);
+            case Operation::ShiftLeft:
+                return syn::shiftLeft<Word, Return>(a, b);
+            case Operation::ShiftRight:
+                return syn::shiftRight<Word, Return>(a, b);
+            case Operation::BinaryAnd:
+                return syn::binaryAnd<Word, Return>(a, b);
+            case Operation::BinaryOr:
+                return syn::binaryOr<Word, Return>(a, b);
+            case Operation::UnaryNot:
+                return syn::binaryNot<Word, Return>(a);
+            case Operation::BinaryXor:
+                return syn::binaryXor<Word, Return>(a, b);
+            case Operation::BinaryNand:
+                return syn::binaryNand<Word, Return>(a, b);
+            case Operation::CircularShiftLeft:
+                return syn::circularShiftLeft<Word, Return>(a, b);
+            case Operation::CircularShiftRight:
+                return syn::circularShiftRight<Word, Return>(a, b);
+            default:
+                // this will cause the world to hose itself!
+                throw syn::Problem("Undefined ALU operation!");
+        }
+    }
 } // end namespace ALU
 
 namespace Comparator {
