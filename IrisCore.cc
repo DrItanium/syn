@@ -46,6 +46,23 @@ namespace iris {
 	}
 
 
+    constexpr bool isImmediate(CompareOp op) noexcept {
+        return op == CompareOp::LessThanOrEqualToImmediate ||
+            op == CompareOp::GreaterThanImmediate ||
+            op == CompareOp::LessThanImmediate ||
+            op == CompareOp::GreaterThanOrEqualToImmediate ||
+            op == CompareOp::EqImmediate ||
+            op == CompareOp::NeqImmediate;
+    }
+    constexpr bool isImmediate(ArithmeticOp op) noexcept {
+        return op == ArithmeticOp::ShiftLeftImmediate ||
+            op == ArithmeticOp::ShiftRightImmediate ||
+            op == ArithmeticOp::AddImmediate ||
+            op == ArithmeticOp::SubImmediate ||
+            op == ArithmeticOp::MulImmediate ||
+            op == ArithmeticOp::DivImmediate ||
+            op == ArithmeticOp::RemImmediate;
+    }
 	void Core::saveSystemState() noexcept {
 		_saveAdvanceIp = advanceIp;
 		_saveExecute = execute;
@@ -106,25 +123,21 @@ namespace iris {
 		auto enableStatusRegisterBit = [this, updateStatusRegister](auto fn) { updateStatusRegister(fn, true); };
 		auto makeIllegalInstructionMessage = [this, enableStatusRegisterBit](const std::string& type) { enableStatusRegisterBit(encodeStatusIllegalInstruction); };
 		auto arithmeticOperation = [this, updateStatusRegister, enableStatusRegisterBit, makeIllegalInstructionMessage]() {
-            using UnitDescription = std::tuple<ALUOperation, bool>;
-            static auto makeDesc = [](auto op, auto immediate) {
-                return std::make_tuple(op, immediate);
-            };
-			static std::map<ArithmeticOp, UnitDescription> table = {
-				{ ArithmeticOp::Add, makeDesc(ALUOperation::Add , false) },
-				{ ArithmeticOp::Sub, makeDesc(ALUOperation::Subtract , false ) },
-				{ ArithmeticOp::Mul, makeDesc(ALUOperation::Multiply , false ) } ,
-				{ ArithmeticOp::ShiftLeft, makeDesc(ALUOperation::ShiftLeft , false ) },
-				{ ArithmeticOp::ShiftRight, makeDesc(ALUOperation::ShiftRight , false ) },
-				{ ArithmeticOp::BinaryAnd, makeDesc(ALUOperation::BinaryAnd , false ) },
-				{ ArithmeticOp::BinaryOr, makeDesc(ALUOperation::BinaryOr , false ) },
-				{ ArithmeticOp::BinaryNot, makeDesc(ALUOperation::UnaryNot , false) },
-				{ ArithmeticOp::BinaryXor, makeDesc(ALUOperation::BinaryXor , false ) },
-				{ ArithmeticOp::AddImmediate, makeDesc(ALUOperation::Add , true  ) },
-				{ ArithmeticOp::SubImmediate, makeDesc(ALUOperation::Subtract , true  ) },
-				{ ArithmeticOp::MulImmediate, makeDesc(ALUOperation::Multiply , true  ) } ,
-				{ ArithmeticOp::ShiftLeftImmediate, makeDesc(ALUOperation::ShiftLeft , true ) },
-				{ ArithmeticOp::ShiftRightImmediate, makeDesc(ALUOperation::ShiftRight , true ) },
+			static std::map<ArithmeticOp, ALUOperation> table = {
+				{ ArithmeticOp::Add, (ALUOperation::Add ) },
+				{ ArithmeticOp::Sub, (ALUOperation::Subtract ) },
+				{ ArithmeticOp::Mul, (ALUOperation::Multiply ) } ,
+				{ ArithmeticOp::ShiftLeft, (ALUOperation::ShiftLeft ) },
+				{ ArithmeticOp::ShiftRight, (ALUOperation::ShiftRight ) },
+				{ ArithmeticOp::BinaryAnd, (ALUOperation::BinaryAnd ) },
+				{ ArithmeticOp::BinaryOr, (ALUOperation::BinaryOr ) },
+				{ ArithmeticOp::BinaryNot, (ALUOperation::UnaryNot ) },
+				{ ArithmeticOp::BinaryXor, (ALUOperation::BinaryXor ) },
+				{ ArithmeticOp::AddImmediate, (ALUOperation::Add ) },
+				{ ArithmeticOp::SubImmediate, (ALUOperation::Subtract ) },
+				{ ArithmeticOp::MulImmediate, (ALUOperation::Multiply ) } ,
+				{ ArithmeticOp::ShiftLeftImmediate, (ALUOperation::ShiftLeft ) },
+				{ ArithmeticOp::ShiftRightImmediate, (ALUOperation::ShiftRight ) },
 			};
 			auto op = InstructionDecoder::getOperation<ArithmeticOp>(current);
 			auto result = table.find(op);
@@ -167,40 +180,35 @@ namespace iris {
 				        makeIllegalInstructionMessage("arithmetic operation");
                 }
 			} else {
-                ALUOperation theOp;
-                bool isImmediate;
-                std::tie(theOp, isImmediate) = result->second;
-                destinationRegister() = syn::ALU::performOperation<word>(theOp, source0Register(), isImmediate ? getHalfImmediate() : source1Register());
+                ALUOperation theOp = result->second;
+                destinationRegister() = syn::ALU::performOperation<word>(theOp, source0Register(), isImmediate(op) ? getHalfImmediate() : source1Register());
 			}
 		};
 		auto compareOperation = [this, makeIllegalInstructionMessage]() {
-            using UnitDescription = std::tuple<syn::Comparator::StandardOperations, bool>;
-            static auto makeDesc = [](syn::Comparator::StandardOperations op, bool immediate) { return std::make_tuple(op, immediate); };
-			static std::map<CompareOp, UnitDescription> translationTable = {
-				{ CompareOp::LessThan, makeDesc(syn::Comparator::StandardOperations::LessThan, false) },
-				{ CompareOp::LessThanImmediate, makeDesc(syn::Comparator::StandardOperations::LessThan, true) },
-				{ CompareOp::LessThanOrEqualTo, makeDesc(syn::Comparator::StandardOperations::LessThanOrEqualTo, false) },
-				{ CompareOp::LessThanOrEqualToImmediate, makeDesc(syn::Comparator::StandardOperations::LessThanOrEqualTo, true) },
-				{ CompareOp::GreaterThan, makeDesc(syn::Comparator::StandardOperations::GreaterThan, false) },
-				{ CompareOp::GreaterThanImmediate, makeDesc(syn::Comparator::StandardOperations::GreaterThan, true) },
-				{ CompareOp::GreaterThanOrEqualTo, makeDesc(syn::Comparator::StandardOperations::GreaterThanOrEqualTo, false) },
-				{ CompareOp::GreaterThanOrEqualToImmediate, makeDesc(syn::Comparator::StandardOperations::GreaterThanOrEqualTo, true) },
-				{ CompareOp::Eq, makeDesc(syn::Comparator::StandardOperations::Eq, false) },
-				{ CompareOp::EqImmediate, makeDesc(syn::Comparator::StandardOperations::Eq, true) },
-				{ CompareOp::Neq, makeDesc(syn::Comparator::StandardOperations::Neq, false) },
-				{ CompareOp::NeqImmediate, makeDesc(syn::Comparator::StandardOperations::Neq, true) },
+			static std::map<CompareOp, syn::Comparator::StandardOperations> translationTable = {
+				{ CompareOp::LessThan, (syn::Comparator::StandardOperations::LessThan) },
+				{ CompareOp::LessThanImmediate, (syn::Comparator::StandardOperations::LessThan) },
+				{ CompareOp::LessThanOrEqualTo, (syn::Comparator::StandardOperations::LessThanOrEqualTo) },
+				{ CompareOp::LessThanOrEqualToImmediate, (syn::Comparator::StandardOperations::LessThanOrEqualTo) },
+				{ CompareOp::GreaterThan, (syn::Comparator::StandardOperations::GreaterThan) },
+				{ CompareOp::GreaterThanImmediate, (syn::Comparator::StandardOperations::GreaterThan) },
+				{ CompareOp::GreaterThanOrEqualTo, (syn::Comparator::StandardOperations::GreaterThanOrEqualTo) },
+				{ CompareOp::GreaterThanOrEqualToImmediate, (syn::Comparator::StandardOperations::GreaterThanOrEqualTo) },
+				{ CompareOp::Eq, (syn::Comparator::StandardOperations::Eq) },
+				{ CompareOp::EqImmediate, (syn::Comparator::StandardOperations::Eq) },
+				{ CompareOp::Neq, (syn::Comparator::StandardOperations::Neq) },
+				{ CompareOp::NeqImmediate, (syn::Comparator::StandardOperations::Neq) },
 			};
-			auto result = translationTable.find(InstructionDecoder::getOperation<CompareOp>(current));
+            auto cop = InstructionDecoder::getOperation<CompareOp>(current);
+			auto result = translationTable.find(cop);
 			if (result == translationTable.end()) {
 				makeIllegalInstructionMessage("compare code");
 			} else {
-				syn::Comparator::StandardOperations op;
-				bool immediate = false;
-				std::tie(op, immediate) = result->second;
-                auto result = syn::Comparator::performOperation<word>(op, source0Register(), immediate ? getHalfImmediate() : source1Register()) != 0;
-                setPredicateResult(result);
+				syn::Comparator::StandardOperations op = result->second;
+                auto outcome = syn::Comparator::performOperation<word>(op, source0Register(), isImmediate(cop) ? getHalfImmediate() : source1Register()) != 0;
+                setPredicateResult(outcome);
                 if (!InstructionDecoder::samePredicateDestinations(current)) {
-                    setPredicateInverseResult(!result);
+                    setPredicateInverseResult(!outcome);
 				}
 			}
 		};
