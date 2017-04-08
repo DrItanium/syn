@@ -169,7 +169,7 @@ namespace iris {
 			} else {
                 ALUOperation theOp;
                 bool isImmediate;
-                std::tie(theOp, isImmediate);
+                std::tie(theOp, isImmediate) = result->second;
                 destinationRegister() = syn::ALU::performOperation<word>(theOp, source0Register(), isImmediate ? getHalfImmediate() : source1Register());
 			}
 		};
