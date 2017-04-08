@@ -229,11 +229,11 @@ namespace syn {
 		} else {
 			auto env = UDFContextEnvironment(context);
 			auto integer = CVToInteger(&number);
-            static constexpr auto iTypeSize = sizeof(decltype(integer));
+            static constexpr auto iTypeSize = static_cast<int>(sizeof(decltype(integer)));
 			byte container[iTypeSize] = { 0 };
 			syn::decodeInt64LE(integer, container);
             MultifieldBuilder mf(env, iTypeSize);
-			for (int i = 0, j = 1; i < static_cast<int>(iTypeSize); ++i, ++j) {
+			for (int i = 0, j = 1; i < iTypeSize; ++i, ++j) {
                 mf.setField(j, INTEGER, EnvAddLong(env, container[i]));
 			}
             mf.assign(ret);
