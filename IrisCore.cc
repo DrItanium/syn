@@ -116,6 +116,64 @@ namespace iris {
 		return execute;
 	}
     using ALUOperation = syn::ALU::StandardOperations;
+    constexpr bool isNormalBranchInstruction(JumpOp op) noexcept {
+			//static std::map<JumpOp, std::tuple<bool, bool, bool>> translationTable = {
+			//	{ JumpOp:: BranchUnconditionalImmediate ,       std::make_tuple(false, true, false) } ,
+			//	{ JumpOp:: BranchUnconditionalImmediateLink ,   std::make_tuple(false, true, true) } ,
+			//	{ JumpOp:: BranchUnconditional ,                std::make_tuple(false, false, false) } ,
+			//	{ JumpOp:: BranchUnconditionalLink ,            std::make_tuple(false, false, true) } ,
+			//	{ JumpOp:: BranchConditionalImmediate ,         std::make_tuple(true, true, false) } ,
+			//	{ JumpOp:: BranchConditionalImmediateLink ,     std::make_tuple(true, true, true) } ,
+			//	{ JumpOp:: BranchConditional ,                  std::make_tuple(true, false, false) } ,
+			//	{ JumpOp:: BranchConditionalLink ,              std::make_tuple(true, false, true) } ,
+			//};
+            switch(op) {
+                case JumpOp::BranchUnconditionalImmediate:
+                case JumpOp::BranchUnconditionalImmediateLink:
+                case JumpOp::BranchUnconditionalLink:
+                case JumpOp::BranchUnconditional:
+                case JumpOp::BranchConditionalImmediate:
+                case JumpOp::BranchConditionalImmediateLink:
+                case JumpOp::BranchConditionalLink:
+                case JumpOp::BranchConditional:
+                    return true;
+                default:
+                    return false;
+            }
+    }
+    constexpr bool isConditionalBranchInstruction(JumpOp op) noexcept {
+        switch(op) {
+            case JumpOp::BranchConditionalImmediate:
+            case JumpOp::BranchConditionalImmediateLink:
+            case JumpOp::BranchConditionalLink:
+            case JumpOp::BranchConditional:
+                return true;
+            default:
+                return false;
+        }
+    }
+    constexpr bool isLinkBranchInstruction(JumpOp op) noexcept {
+        switch(op) {
+            case JumpOp::BranchUnconditionalImmediateLink:
+            case JumpOp::BranchUnconditionalLink:
+            case JumpOp::BranchConditionalImmediateLink:
+            case JumpOp::BranchConditionalLink:
+                return true;
+            default:
+                return false;
+        }
+    }
+    constexpr bool isImmediateBranchInstruction(JumpOp op) noexcept {
+        switch(op) {
+            case JumpOp::BranchUnconditionalImmediate:
+            case JumpOp::BranchConditionalImmediate:
+            case JumpOp::BranchUnconditionalImmediateLink:
+            case JumpOp::BranchConditionalImmediateLink:
+                return true;
+            default:
+                return false;
+        }
+    }
 	void Core::dispatch() noexcept {
 		current = instruction[getInstructionPointer()];
 		auto group = InstructionDecoder::getGroup(current);
@@ -214,19 +272,19 @@ namespace iris {
 		};
 		auto jumpOperation = [this, makeIllegalInstructionMessage]() {
 			// conditional?, immediate?, link?
-			static std::map<JumpOp, std::tuple<bool, bool, bool>> translationTable = {
-				{ JumpOp:: BranchUnconditionalImmediate ,       std::make_tuple(false, true, false) } ,
-				{ JumpOp:: BranchUnconditionalImmediateLink ,   std::make_tuple(false, true, true) } ,
-				{ JumpOp:: BranchUnconditional ,                std::make_tuple(false, false, false) } ,
-				{ JumpOp:: BranchUnconditionalLink ,            std::make_tuple(false, false, true) } ,
-				{ JumpOp:: BranchConditionalImmediate ,         std::make_tuple(true, true, false) } ,
-				{ JumpOp:: BranchConditionalImmediateLink ,     std::make_tuple(true, true, true) } ,
-				{ JumpOp:: BranchConditional ,                  std::make_tuple(true, false, false) } ,
-				{ JumpOp:: BranchConditionalLink ,              std::make_tuple(true, false, true) } ,
-			};
+			//static std::map<JumpOp, std::tuple<bool, bool, bool>> translationTable = {
+			//	{ JumpOp:: BranchUnconditionalImmediate ,       std::make_tuple(false, true, false) } ,
+			//	{ JumpOp:: BranchUnconditionalImmediateLink ,   std::make_tuple(false, true, true) } ,
+			//	{ JumpOp:: BranchUnconditional ,                std::make_tuple(false, false, false) } ,
+			//	{ JumpOp:: BranchUnconditionalLink ,            std::make_tuple(false, false, true) } ,
+			//	{ JumpOp:: BranchConditionalImmediate ,         std::make_tuple(true, true, false) } ,
+			//	{ JumpOp:: BranchConditionalImmediateLink ,     std::make_tuple(true, true, true) } ,
+			//	{ JumpOp:: BranchConditional ,                  std::make_tuple(true, false, false) } ,
+			//	{ JumpOp:: BranchConditionalLink ,              std::make_tuple(true, false, true) } ,
+			//};
 			auto operation = InstructionDecoder::getOperation<JumpOp>(current);
-			auto result = translationTable.find(operation);
-			if (result == translationTable.end()) {
+			//auto result = translationTable.find(operation);
+			if (!isNormalBranchInstruction(operation)) {
 				word temporaryAddress = 0;
 				bool cond = false;
 				advanceIp = false;
@@ -273,8 +331,12 @@ namespace iris {
 						break;
 				}
 			} else {
-				auto conditional = false, immediate = false,  link = false;
-				std::tie(conditional, immediate, link) = result->second;
+				//auto conditional = false, immediate = false,  link = false;
+				//std::tie(conditional, immediate, link) = result->second;
+
+                auto conditional = isConditionalBranchInstruction(operation);
+                auto immediate = isImmediateBranchInstruction(operation);
+                auto link = isLinkBranchInstruction(operation);
 				auto newAddr = static_cast<word>(0);
 				auto cond = true;
 				advanceIp = false;
