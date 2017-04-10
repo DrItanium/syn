@@ -46,23 +46,6 @@ namespace iris {
 	}
 
 
-    constexpr bool isImmediate(CompareOp op) noexcept {
-        return op == CompareOp::LessThanOrEqualToImmediate ||
-            op == CompareOp::GreaterThanImmediate ||
-            op == CompareOp::LessThanImmediate ||
-            op == CompareOp::GreaterThanOrEqualToImmediate ||
-            op == CompareOp::EqImmediate ||
-            op == CompareOp::NeqImmediate;
-    }
-    constexpr bool isImmediate(ArithmeticOp op) noexcept {
-        return op == ArithmeticOp::ShiftLeftImmediate ||
-            op == ArithmeticOp::ShiftRightImmediate ||
-            op == ArithmeticOp::AddImmediate ||
-            op == ArithmeticOp::SubImmediate ||
-            op == ArithmeticOp::MulImmediate ||
-            op == ArithmeticOp::DivImmediate ||
-            op == ArithmeticOp::RemImmediate;
-    }
 	void Core::saveSystemState() noexcept {
 		_saveAdvanceIp = advanceIp;
 		_saveExecute = execute;
@@ -200,6 +183,23 @@ namespace iris {
                 return false;
         }
     }
+    constexpr bool isImmediate(CompareOp op) noexcept {
+        return op == CompareOp::LessThanOrEqualToImmediate ||
+            op == CompareOp::GreaterThanImmediate ||
+            op == CompareOp::LessThanImmediate ||
+            op == CompareOp::GreaterThanOrEqualToImmediate ||
+            op == CompareOp::EqImmediate ||
+            op == CompareOp::NeqImmediate;
+    }
+    constexpr bool isImmediate(ArithmeticOp op) noexcept {
+        return op == ArithmeticOp::ShiftLeftImmediate ||
+            op == ArithmeticOp::ShiftRightImmediate ||
+            op == ArithmeticOp::AddImmediate ||
+            op == ArithmeticOp::SubImmediate ||
+            op == ArithmeticOp::MulImmediate ||
+            op == ArithmeticOp::DivImmediate ||
+            op == ArithmeticOp::RemImmediate;
+    }
     constexpr syn::Comparator::StandardOperations translate(CompareOp op) noexcept {
         switch(op) {
             case CompareOp::LessThan:
@@ -224,6 +224,37 @@ namespace iris {
                 return syn::Comparator::StandardOperations::Count;
         }
     }
+    using CRUnitOp = syn::Comparator::BooleanOperations;
+    constexpr CRUnitOp translate(ConditionRegisterOp op) noexcept {
+        switch(op) {
+            case ConditionRegisterOp::CRAnd:
+                return CRUnitOp::BinaryAnd;
+            case ConditionRegisterOp::CROr:
+                return CRUnitOp::BinaryOr;
+            case ConditionRegisterOp::CRNand:
+                return CRUnitOp::BinaryNand;
+            case ConditionRegisterOp::CRNor:
+                return CRUnitOp::BinaryNor;
+            case ConditionRegisterOp::CRXor:
+                return CRUnitOp::BinaryXor;
+            case ConditionRegisterOp::CRNot:
+                return CRUnitOp::UnaryNot;
+            default:
+                return CRUnitOp::Count;
+        }
+    }
+    template<bool invokeMin>
+    constexpr word minOrMax(word a, word b) noexcept {
+        return (invokeMin ? (a < b) : (a > b))? a : b;
+    }
+    template<bool invokeRemainder>
+    void tryDivOrRem(word& result, word numerator, word denominator, std::function<void()> markDivideByZero) noexcept {
+        if (denominator == 0) {
+            markDivideByZero();
+        } else {
+            result = invokeRemainder ? (numerator % denominator) : (numerator / denominator);
+        }
+    }
 	void Core::dispatch() noexcept {
 		current = instruction[getInstructionPointer()];
 		auto group = InstructionDecoder::getGroup(current);
@@ -235,38 +266,20 @@ namespace iris {
             auto result = translate(op);
             if (result == ALUOperation::Count) {
                 auto markDivideByZero = [this, enableStatusRegisterBit]() { enableStatusRegisterBit(encodeStatusDivideByZero); };
-                auto divide = [this, markDivideByZero](word denominator) {
-                    if (denominator == 0) {
-                        markDivideByZero();
-                    } else {
-                        destinationRegister() = source0Register() / denominator;
-                    }
-                };
-                auto remainder = [this, markDivideByZero](word denominator) {
-                    if (denominator == 0) {
-                        markDivideByZero();
-                    } else {
-                        destinationRegister() = source0Register() % denominator;
-                    }
-                };
                 switch(op) {
 					case ArithmeticOp::Div:
-						divide(source1Register());
-						break;
-					case ArithmeticOp::DivImmediate:
-						divide(getHalfImmediate());
+                    case ArithmeticOp::DivImmediate:
+                        tryDivOrRem<false>(destinationRegister(), source0Register(), isImmediate(op) ? getHalfImmediate() : source1Register(), markDivideByZero);
 						break;
 					case ArithmeticOp::Rem:
-						remainder(source1Register());
-						break;
-					case ArithmeticOp::RemImmediate:
-						remainder(getHalfImmediate());
+                    case ArithmeticOp::RemImmediate:
+                        tryDivOrRem<true>(destinationRegister(), source0Register(), isImmediate(op) ? getHalfImmediate() : source1Register(), markDivideByZero);
 						break;
                     case ArithmeticOp::Min:
-                        destinationRegister() = source0Register() < source1Register() ? source0Register() : source1Register();
+                        destinationRegister() = minOrMax<true>(source0Register(), source1Register());
                         break;
                     case ArithmeticOp::Max:
-                        destinationRegister() = source0Register() > source1Register() ? source0Register() : source1Register();
+                        destinationRegister() = minOrMax<false>(source0Register(), source1Register());
                         break;
                     default:
 				        makeIllegalInstructionMessage("arithmetic operation");
@@ -444,36 +457,28 @@ namespace iris {
 			}
 		};
 		auto conditionalRegisterOperation = [this, makeIllegalInstructionMessage]() {
-			static std::map<ConditionRegisterOp, syn::Comparator::BooleanOperations> translationTable = {
-				{ ConditionRegisterOp::CRAnd, (syn::Comparator::BooleanOperations::BinaryAnd) },
-				{ ConditionRegisterOp::CROr, (syn::Comparator::BooleanOperations::BinaryOr) },
-				{ ConditionRegisterOp::CRNand, (syn::Comparator::BooleanOperations::BinaryNand) },
-				{ ConditionRegisterOp::CRNor, (syn::Comparator::BooleanOperations::BinaryNor) },
-				{ ConditionRegisterOp::CRXor, (syn::Comparator::BooleanOperations::BinaryXor) },
-				{ ConditionRegisterOp::CRNot, (syn::Comparator::BooleanOperations::UnaryNot) },
-			};
 			auto op = InstructionDecoder::getOperation<ConditionRegisterOp>(current);
-			auto result = translationTable.find(op);
-			if (result  == translationTable.end()) {
-				switch(op) {
-					case ConditionRegisterOp::CRSwap:
+			auto result = translate(op);
+            if (result == CRUnitOp::Count) {
+                switch(op) {
+                    case ConditionRegisterOp::CRSwap:
                         _cr.swapBits(getPredicateResultIndex(), getPredicateInverseResultIndex());
-						break;
-					case ConditionRegisterOp::CRMove:
-						setPredicateResult(getPredicateInverseResult());
-						break;
-					case ConditionRegisterOp::SaveCRs:
-						destinationRegister() = savePredicateRegisters(getImmediate());
-						break;
-					case ConditionRegisterOp::RestoreCRs:
-						restorePredicateRegisters(destinationRegister(), getImmediate());
-						break;
-					default:
-						makeIllegalInstructionMessage("Predicate operation!");
-						break;
-				}
+                        break;
+                    case ConditionRegisterOp::CRMove:
+                        setPredicateResult(getPredicateInverseResult());
+                        break;
+                    case ConditionRegisterOp::SaveCRs:
+                        destinationRegister() = savePredicateRegisters(getImmediate());
+                        break;
+                    case ConditionRegisterOp::RestoreCRs:
+                        restorePredicateRegisters(destinationRegister(), getImmediate());
+                        break;
+                    default:
+                        makeIllegalInstructionMessage("Predicate operation!");
+                        break;
+                }
 			} else {
-                syn::Comparator::BooleanOperations pop = result->second;
+                syn::Comparator::BooleanOperations pop = result;
                 auto result = syn::Comparator::performOperation<bool, bool, syn::Comparator::BooleanOperations>(pop, getPredicateSource0(), getPredicateSource1());
                 setPredicateResult(result);
                 if (!InstructionDecoder::samePredicateDestinations(current)) {

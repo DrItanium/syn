@@ -113,6 +113,7 @@ namespace iris {
 			void restorePredicateRegisters(word input, word mask) noexcept;
 			word savePredicateRegisters(word mask) noexcept;
 
+
 		private:
 			bool execute;
 			bool advanceIp;
