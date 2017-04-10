@@ -116,17 +116,43 @@ namespace iris {
 		return execute;
 	}
     using ALUOperation = syn::ALU::StandardOperations;
-    constexpr bool isNormalBranchInstruction(JumpOp op) noexcept {
-			//static std::map<JumpOp, std::tuple<bool, bool, bool>> translationTable = {
-			//	{ JumpOp:: BranchUnconditionalImmediate ,       std::make_tuple(false, true, false) } ,
-			//	{ JumpOp:: BranchUnconditionalImmediateLink ,   std::make_tuple(false, true, true) } ,
-			//	{ JumpOp:: BranchUnconditional ,                std::make_tuple(false, false, false) } ,
-			//	{ JumpOp:: BranchUnconditionalLink ,            std::make_tuple(false, false, true) } ,
-			//	{ JumpOp:: BranchConditionalImmediate ,         std::make_tuple(true, true, false) } ,
-			//	{ JumpOp:: BranchConditionalImmediateLink ,     std::make_tuple(true, true, true) } ,
-			//	{ JumpOp:: BranchConditional ,                  std::make_tuple(true, false, false) } ,
-			//	{ JumpOp:: BranchConditionalLink ,              std::make_tuple(true, false, true) } ,
+    constexpr ALUOperation translate(ArithmeticOp op) noexcept {
+			//static std::map<ArithmeticOp, ALUOperation> table = {
+			//	{ ArithmeticOp::BinaryAnd, (ALUOperation::BinaryAnd ) },
+			//	{ ArithmeticOp::BinaryOr, (ALUOperation::BinaryOr ) },
+			//	{ ArithmeticOp::BinaryNot, (ALUOperation::UnaryNot ) },
+			//	{ ArithmeticOp::BinaryXor, (ALUOperation::BinaryXor ) },
 			//};
+            switch(op) {
+                case ArithmeticOp::Add:
+                case ArithmeticOp::AddImmediate:
+                    return ALUOperation::Add;
+                case ArithmeticOp::Sub:
+                case ArithmeticOp::SubImmediate:
+                    return ALUOperation::Subtract;
+                case ArithmeticOp::Mul:
+                case ArithmeticOp::MulImmediate:
+                    return ALUOperation::Multiply;
+                case ArithmeticOp::ShiftLeft:
+                case ArithmeticOp::ShiftLeftImmediate:
+                     return ALUOperation::ShiftLeft;
+                case ArithmeticOp::ShiftRight:
+                case ArithmeticOp::ShiftRightImmediate:
+                     return ALUOperation::ShiftRight;
+                case ArithmeticOp::BinaryAnd:
+                     return ALUOperation::BinaryAnd;
+                case ArithmeticOp::BinaryOr:
+                     return ALUOperation::BinaryOr;
+                case ArithmeticOp::BinaryXor:
+                     return ALUOperation::BinaryXor;
+                case ArithmeticOp::BinaryNot:
+                     return ALUOperation::UnaryNot;
+                default:
+                     return ALUOperation::Count;
+
+            }
+    }
+    constexpr bool isNormalBranchInstruction(JumpOp op) noexcept {
             switch(op) {
                 case JumpOp::BranchUnconditionalImmediate:
                 case JumpOp::BranchUnconditionalImmediateLink:
@@ -163,7 +189,7 @@ namespace iris {
                 return false;
         }
     }
-    constexpr bool isImmediateBranchInstruction(JumpOp op) noexcept {
+    constexpr bool isImmediate(JumpOp op) noexcept {
         switch(op) {
             case JumpOp::BranchUnconditionalImmediate:
             case JumpOp::BranchConditionalImmediate:
@@ -174,6 +200,30 @@ namespace iris {
                 return false;
         }
     }
+    constexpr syn::Comparator::StandardOperations translate(CompareOp op) noexcept {
+        switch(op) {
+            case CompareOp::LessThan:
+            case CompareOp::LessThanImmediate:
+                return syn::Comparator::StandardOperations::LessThan;
+            case CompareOp::LessThanOrEqualTo:
+            case CompareOp::LessThanOrEqualToImmediate:
+                return syn::Comparator::StandardOperations::LessThanOrEqualTo;
+            case CompareOp::GreaterThan:
+            case CompareOp::GreaterThanImmediate:
+                return syn::Comparator::StandardOperations::GreaterThan;
+            case CompareOp::GreaterThanOrEqualTo:
+            case CompareOp::GreaterThanOrEqualToImmediate:
+                return syn::Comparator::StandardOperations::GreaterThanOrEqualTo;
+            case CompareOp::Eq:
+            case CompareOp::EqImmediate:
+                return syn::Comparator::StandardOperations::Eq;
+            case CompareOp::Neq:
+            case CompareOp::NeqImmediate:
+                return syn::Comparator::StandardOperations::Neq;
+            default:
+                return syn::Comparator::StandardOperations::Count;
+        }
+    }
 	void Core::dispatch() noexcept {
 		current = instruction[getInstructionPointer()];
 		auto group = InstructionDecoder::getGroup(current);
@@ -181,40 +231,24 @@ namespace iris {
 		auto enableStatusRegisterBit = [this, updateStatusRegister](auto fn) { updateStatusRegister(fn, true); };
 		auto makeIllegalInstructionMessage = [this, enableStatusRegisterBit](const std::string& type) { enableStatusRegisterBit(encodeStatusIllegalInstruction); };
 		auto arithmeticOperation = [this, enableStatusRegisterBit, makeIllegalInstructionMessage]() {
-			static std::map<ArithmeticOp, ALUOperation> table = {
-				{ ArithmeticOp::Add, (ALUOperation::Add ) },
-				{ ArithmeticOp::Sub, (ALUOperation::Subtract ) },
-				{ ArithmeticOp::Mul, (ALUOperation::Multiply ) } ,
-				{ ArithmeticOp::ShiftLeft, (ALUOperation::ShiftLeft ) },
-				{ ArithmeticOp::ShiftRight, (ALUOperation::ShiftRight ) },
-				{ ArithmeticOp::BinaryAnd, (ALUOperation::BinaryAnd ) },
-				{ ArithmeticOp::BinaryOr, (ALUOperation::BinaryOr ) },
-				{ ArithmeticOp::BinaryNot, (ALUOperation::UnaryNot ) },
-				{ ArithmeticOp::BinaryXor, (ALUOperation::BinaryXor ) },
-				{ ArithmeticOp::AddImmediate, (ALUOperation::Add ) },
-				{ ArithmeticOp::SubImmediate, (ALUOperation::Subtract ) },
-				{ ArithmeticOp::MulImmediate, (ALUOperation::Multiply ) } ,
-				{ ArithmeticOp::ShiftLeftImmediate, (ALUOperation::ShiftLeft ) },
-				{ ArithmeticOp::ShiftRightImmediate, (ALUOperation::ShiftRight ) },
-			};
 			auto op = InstructionDecoder::getOperation<ArithmeticOp>(current);
-			auto result = table.find(op);
-			auto markDivideByZero = [this, enableStatusRegisterBit]() { enableStatusRegisterBit(encodeStatusDivideByZero); };
-			auto divide = [this, markDivideByZero](word denominator) {
-                if (denominator == 0) {
-					markDivideByZero();
-				} else {
-					destinationRegister() = source0Register() / denominator;
-				}
-			};
-			auto remainder = [this, markDivideByZero](word denominator) {
-                if (denominator == 0) {
-					markDivideByZero();
-				} else {
-					destinationRegister() = source0Register() % denominator;
-				}
-			};
-			if (result == table.end()) {
+            auto result = translate(op);
+            if (result == ALUOperation::Count) {
+                auto markDivideByZero = [this, enableStatusRegisterBit]() { enableStatusRegisterBit(encodeStatusDivideByZero); };
+                auto divide = [this, markDivideByZero](word denominator) {
+                    if (denominator == 0) {
+                        markDivideByZero();
+                    } else {
+                        destinationRegister() = source0Register() / denominator;
+                    }
+                };
+                auto remainder = [this, markDivideByZero](word denominator) {
+                    if (denominator == 0) {
+                        markDivideByZero();
+                    } else {
+                        destinationRegister() = source0Register() % denominator;
+                    }
+                };
                 switch(op) {
 					case ArithmeticOp::Div:
 						divide(source1Register());
@@ -238,31 +272,17 @@ namespace iris {
 				        makeIllegalInstructionMessage("arithmetic operation");
                 }
 			} else {
-                ALUOperation theOp = result->second;
+                ALUOperation theOp = result;
                 destinationRegister() = syn::ALU::performOperation<word>(theOp, source0Register(), isImmediate(op) ? getHalfImmediate() : source1Register());
 			}
 		};
 		auto compareOperation = [this, makeIllegalInstructionMessage]() {
-			static std::map<CompareOp, syn::Comparator::StandardOperations> translationTable = {
-				{ CompareOp::LessThan, (syn::Comparator::StandardOperations::LessThan) },
-				{ CompareOp::LessThanImmediate, (syn::Comparator::StandardOperations::LessThan) },
-				{ CompareOp::LessThanOrEqualTo, (syn::Comparator::StandardOperations::LessThanOrEqualTo) },
-				{ CompareOp::LessThanOrEqualToImmediate, (syn::Comparator::StandardOperations::LessThanOrEqualTo) },
-				{ CompareOp::GreaterThan, (syn::Comparator::StandardOperations::GreaterThan) },
-				{ CompareOp::GreaterThanImmediate, (syn::Comparator::StandardOperations::GreaterThan) },
-				{ CompareOp::GreaterThanOrEqualTo, (syn::Comparator::StandardOperations::GreaterThanOrEqualTo) },
-				{ CompareOp::GreaterThanOrEqualToImmediate, (syn::Comparator::StandardOperations::GreaterThanOrEqualTo) },
-				{ CompareOp::Eq, (syn::Comparator::StandardOperations::Eq) },
-				{ CompareOp::EqImmediate, (syn::Comparator::StandardOperations::Eq) },
-				{ CompareOp::Neq, (syn::Comparator::StandardOperations::Neq) },
-				{ CompareOp::NeqImmediate, (syn::Comparator::StandardOperations::Neq) },
-			};
             auto cop = InstructionDecoder::getOperation<CompareOp>(current);
-			auto result = translationTable.find(cop);
-			if (result == translationTable.end()) {
+            auto result = translate(cop);
+            if (result == syn::Comparator::StandardOperations::Count) {
 				makeIllegalInstructionMessage("compare code");
 			} else {
-				syn::Comparator::StandardOperations op = result->second;
+				syn::Comparator::StandardOperations op = result;
                 auto outcome = syn::Comparator::performOperation<word>(op, source0Register(), isImmediate(cop) ? getHalfImmediate() : source1Register()) != 0;
                 setPredicateResult(outcome);
                 if (!InstructionDecoder::samePredicateDestinations(current)) {
@@ -271,17 +291,6 @@ namespace iris {
 			}
 		};
 		auto jumpOperation = [this, makeIllegalInstructionMessage]() {
-			// conditional?, immediate?, link?
-			//static std::map<JumpOp, std::tuple<bool, bool, bool>> translationTable = {
-			//	{ JumpOp:: BranchUnconditionalImmediate ,       std::make_tuple(false, true, false) } ,
-			//	{ JumpOp:: BranchUnconditionalImmediateLink ,   std::make_tuple(false, true, true) } ,
-			//	{ JumpOp:: BranchUnconditional ,                std::make_tuple(false, false, false) } ,
-			//	{ JumpOp:: BranchUnconditionalLink ,            std::make_tuple(false, false, true) } ,
-			//	{ JumpOp:: BranchConditionalImmediate ,         std::make_tuple(true, true, false) } ,
-			//	{ JumpOp:: BranchConditionalImmediateLink ,     std::make_tuple(true, true, true) } ,
-			//	{ JumpOp:: BranchConditional ,                  std::make_tuple(true, false, false) } ,
-			//	{ JumpOp:: BranchConditionalLink ,              std::make_tuple(true, false, true) } ,
-			//};
 			auto operation = InstructionDecoder::getOperation<JumpOp>(current);
 			//auto result = translationTable.find(operation);
 			if (!isNormalBranchInstruction(operation)) {
@@ -335,7 +344,7 @@ namespace iris {
 				//std::tie(conditional, immediate, link) = result->second;
 
                 auto conditional = isConditionalBranchInstruction(operation);
-                auto immediate = isImmediateBranchInstruction(operation);
+                auto immediate = isImmediate(operation);
                 auto link = isLinkBranchInstruction(operation);
 				auto newAddr = static_cast<word>(0);
 				auto cond = true;
