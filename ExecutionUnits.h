@@ -294,6 +294,31 @@ namespace Comparator {
                 throw syn::Problem("Illegal boolean compare operation!");
         }
     }
+    template<BooleanOperations op>
+    inline bool performOperation(bool a, bool b) {
+        static_assert(!syn::isErrorState(op), "Illegal operation!");
+        using Operation = BooleanOperations;
+        switch(op) {
+            case Operation::Eq:
+                return syn::eq<bool>(a, b);
+            case Operation::Neq:
+                return syn::neq<bool>(a, b);
+            case Operation::BinaryAnd:
+                return syn::binaryAnd<bool>(a, b);
+            case Operation::BinaryOr:
+                return syn::binaryOr<bool>(a, b);
+            case Operation::BinaryXor:
+                return syn::binaryXor<bool>(a, b);
+            case Operation::UnaryNot:
+                return syn::binaryNot<bool>(a);
+            case Operation::BinaryNand:
+                return syn::binaryNand<bool>(a, b);
+            case Operation::BinaryNor:
+                return syn::binaryNor<bool>(a, b);
+            default:
+                throw syn::Problem("Illegal boolean compare operation!");
+        }
+    }
 } // end namespace Comparator
 
 template<typename Word, typename Address = Word>
