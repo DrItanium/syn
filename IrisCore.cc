@@ -268,7 +268,7 @@ namespace iris {
 		auto arithmeticOperation = [this, enableStatusRegisterBit, makeIllegalInstructionMessage]() {
 			auto op = InstructionDecoder::getOperation<ArithmeticOp>(current);
             auto result = translate(op);
-            if (syn::isEnumErrorState(result)) {
+            if (syn::isErrorState(result)) {
                 auto markDivideByZero = [this, enableStatusRegisterBit]() { enableStatusRegisterBit(encodeStatusDivideByZero); };
                 switch(op) {
 					case ArithmeticOp::Div:
@@ -296,7 +296,7 @@ namespace iris {
 		auto compareOperation = [this, makeIllegalInstructionMessage]() {
             auto cop = InstructionDecoder::getOperation<CompareOp>(current);
             auto result = translate(cop);
-            if (syn::isEnumErrorState(result)) {
+            if (syn::isErrorState(result)) {
 				makeIllegalInstructionMessage("compare code");
 			} else {
 				syn::Comparator::StandardOperations op = result;
@@ -463,7 +463,7 @@ namespace iris {
 		auto conditionalRegisterOperation = [this, makeIllegalInstructionMessage]() {
 			auto op = InstructionDecoder::getOperation<ConditionRegisterOp>(current);
 			auto result = translate(op);
-            if (syn::isEnumErrorState(result)) {
+            if (syn::isErrorState(result)) {
                 switch(op) {
                     case ConditionRegisterOp::CRSwap:
                         _cr.swapBits(getPredicateResultIndex(), getPredicateInverseResultIndex());

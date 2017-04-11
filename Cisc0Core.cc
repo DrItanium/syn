@@ -156,7 +156,7 @@ namespace cisc0 {
     }
     template<typename T>
     void throwOnCount(T result, const std::string& msg) {
-        if (syn::isEnumErrorState(result)) {
+        if (syn::isErrorState(result)) {
             throw syn::Problem(msg);
         }
     }

@@ -645,7 +645,7 @@ template<typename T>
 constexpr T defaultErrorState = T::Count;
 
 template<typename T>
-constexpr bool isEnumErrorState(T op) noexcept {
+constexpr bool isErrorState(T op) noexcept {
     return op == defaultErrorState<T>;
 }
 

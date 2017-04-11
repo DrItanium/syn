@@ -120,7 +120,7 @@ namespace ALU {
      */
     template<StandardOperations op, typename Word, typename Return = Word>
     constexpr Return performOperation(Word a, Word b) noexcept {
-        static_assert(op != StandardOperations::Count, "Illegal operation!");
+        static_assert(!isErrorState(op), "Illegal operation!");
         using Operation = StandardOperations;
         switch(op) {
             case Operation::Add:
@@ -220,7 +220,7 @@ namespace Comparator {
     }
     template<StandardOperations op, typename Word, typename Return = Word>
     Return performOperation(Word a, Word b) {
-        static_assert(!syn::isEnumErrorState(op), "Illegal operation!");
+        static_assert(!syn::isErrorState(op), "Illegal operation!");
         using Operation = StandardOperations;
         switch(op) {
             case Operation::Eq:
