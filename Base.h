@@ -166,17 +166,18 @@ template<typename T, T bitmask>
 constexpr T mask(T input) noexcept {
     return input & bitmask;
 }
+
 template<> constexpr uint8 mask<uint8, 0xFF>(uint8 value) noexcept { return value; }
-template<> constexpr uint8 mask<uint8, 0x00>(uint8 value) noexcept { return 0; }
+template<> constexpr uint8 mask<uint8, 0>(uint8 value) noexcept { return 0; }
 
 template<> constexpr uint16 mask<uint16, 0xFFFF>(uint16 value) noexcept { return value; }
-template<> constexpr uint16 mask<uint16, 0x0000>(uint16 value) noexcept { return 0; }
+template<> constexpr uint16 mask<uint16, 0>(uint16 value) noexcept { return 0; }
 
 template<> constexpr uint32 mask<uint32, 0xFFFFFFFF>(uint32 value) noexcept { return value; }
-template<> constexpr uint32 mask<uint32, 0x00000000>(uint32 value) noexcept { return 0; }
+template<> constexpr uint32 mask<uint32, 0>(uint32 value) noexcept { return 0; }
 
 template<> constexpr uint64 mask<uint64, 0xFFFFFFFFFFFFFFFF>(uint64 value) noexcept { return value; }
-template<> constexpr uint64 mask<uint64, 0x0000000000000000>(uint64 value) noexcept { return 0; }
+template<> constexpr uint64 mask<uint64, 0>(uint64 value) noexcept { return 0; }
 
 template<typename T, typename F, T bitmask, T shiftcount>
 constexpr F decodeBits(T input) noexcept {
@@ -188,13 +189,13 @@ constexpr F decodeBits(T input) noexcept {
 }
 
 template<> constexpr uint8 decodeBits<uint8, uint8, 0xFF, 0>(uint8 input) noexcept { return input; }
-template<> constexpr uint8 decodeBits<uint8, uint8, 0x00, 0>(uint8 input) noexcept { return 0; }
+template<> constexpr uint8 decodeBits<uint8, uint8, 0, 0>(uint8 input) noexcept { return 0; }
 template<> constexpr uint16 decodeBits<uint16, uint16, 0xFFFF, 0>(uint16 input) noexcept { return input; }
-template<> constexpr uint16 decodeBits<uint16, uint16, 0x0000, 0>(uint16 input) noexcept { return 0; }
+template<> constexpr uint16 decodeBits<uint16, uint16, 0, 0>(uint16 input) noexcept { return 0; }
 template<> constexpr uint32 decodeBits<uint32, uint32, 0xFFFFFFFF, 0>(uint32 input) noexcept { return input; }
-template<> constexpr uint32 decodeBits<uint32, uint32, 0x00000000, 0>(uint32 input) noexcept { return 0; }
+template<> constexpr uint32 decodeBits<uint32, uint32, 0, 0>(uint32 input) noexcept { return 0; }
 template<> constexpr uint64 decodeBits<uint64, uint64, 0xFFFFFFFFFFFFFFFF, 0>(uint64 input) noexcept { return input; }
-template<> constexpr uint64 decodeBits<uint64, uint64, 0x0000000000000000, 0>(uint64 input) noexcept { return 0; }
+template<> constexpr uint64 decodeBits<uint64, uint64, 0, 0>(uint64 input) noexcept { return 0; }
 
 template<typename T, typename F, int field>
 constexpr F decodeField(T input) noexcept {
@@ -220,10 +221,10 @@ template<> constexpr uint8 encodeBits<uint8, uint8, 0xFF, 0>(uint8 input, uint8 
 template<> constexpr uint16 encodeBits<uint16, uint16, 0xFFFF, 0>(uint16 input, uint16 value) noexcept { return value; }
 template<> constexpr uint32 encodeBits<uint32, uint32, 0xFFFFFFFF, 0>(uint32 input, uint32 value) noexcept { return value; }
 template<> constexpr uint64 encodeBits<uint64, uint64, 0xFFFFFFFFFFFFFFFF, 0>(uint64 input, uint64 value) noexcept { return value; }
-template<> constexpr uint8 encodeBits<uint8, uint8, 0x00, 0>(uint8 input, uint8 value) noexcept { return input; }
-template<> constexpr uint16 encodeBits<uint16, uint16, 0x0000, 0>(uint16 input, uint16 value) noexcept { return input; }
-template<> constexpr uint32 encodeBits<uint32, uint32, 0x00000000, 0>(uint32 input, uint32 value) noexcept { return input; }
-template<> constexpr uint64 encodeBits<uint64, uint64, 0x0000000000000000, 0>(uint64 input, uint64 value) noexcept { return input; }
+template<> constexpr uint8 encodeBits<uint8, uint8, 0, 0>(uint8 input, uint8 value) noexcept { return input; }
+template<> constexpr uint16 encodeBits<uint16, uint16, 0, 0>(uint16 input, uint16 value) noexcept { return input; }
+template<> constexpr uint32 encodeBits<uint32, uint32, 0, 0>(uint32 input, uint32 value) noexcept { return input; }
+template<> constexpr uint64 encodeBits<uint64, uint64, 0, 0>(uint64 input, uint64 value) noexcept { return input; }
 
 template<typename T, T mask, T shift>
 constexpr T encodeFlag(T input, bool value) noexcept {
@@ -639,11 +640,13 @@ void putc(T value) noexcept {
 template<typename T>
 constexpr T multiplyAdd(T a, T b, T c) noexcept {
     return (a * b) + c;
-};
+}
+template<typename T>
+constexpr T defaultErrorState = T::Count;
 
 template<typename T>
 constexpr bool isEnumErrorState(T op) noexcept {
-    return op == T::Count;
+    return op == defaultErrorState<T>;
 }
 
 }
