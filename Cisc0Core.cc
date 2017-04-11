@@ -436,15 +436,17 @@ namespace cisc0 {
         auto& dest = registerValue(inst.getLogicalRegister<0>());
         dest = syn::ALU::performOperation<RegisterValue>(op, dest, source1);
     }
+    template<syn::Comparator::StandardOperations op>
+    constexpr RegisterValue sliceBitAndCheck(RegisterValue a, RegisterValue b) noexcept {
+        return syn::Comparator::performOperation<op, RegisterValue>(
+                syn::ALU::performOperation<ALUOperation::BinaryAnd, RegisterValue>(
+                    syn::ALU::performOperation<ALUOperation::ShiftRight, RegisterValue>(
+                        a,
+                        b), 0x1), 1);
+    }
+
 
     void Core::encodingOperation(DecodedInstruction&& inst) {
-        auto sliceBitAndCheck = [this](syn::Comparator::StandardOperations op) {
-            return normalizeCondition(syn::Comparator::performOperation<RegisterValue>(op,
-                        syn::ALU::performOperation<RegisterValue>(ALUOperation::BinaryAnd,
-                            syn::ALU::performOperation<RegisterValue>(ALUOperation::ShiftRight,
-                                getAddressRegister(),
-                                getFieldRegister()), 0x1), 1));
-        };
         switch(inst.getEncodingOperation()) {
             case EncodingOperation::Decode:
                 // connect the result of the logical operations alu to the
@@ -455,10 +457,10 @@ namespace cisc0 {
                 getAddressRegister() = syn::encodeBits<RegisterValue, RegisterValue>(getAddressRegister(), getValueRegister(), getMaskRegister(), getShiftRegister());
                 break;
             case EncodingOperation::BitSet:
-                getConditionRegister() = sliceBitAndCheck(syn::Comparator::StandardOperations::Eq);
+                getConditionRegister() = normalizeCondition(sliceBitAndCheck<syn::Comparator::StandardOperations::Eq>(getAddressRegister(), getFieldRegister()));
                 break;
             case EncodingOperation::BitUnset:
-                getConditionRegister() = sliceBitAndCheck(syn::Comparator::StandardOperations::Neq);
+                getConditionRegister() = normalizeCondition(sliceBitAndCheck<syn::Comparator::StandardOperations::Neq>(getAddressRegister(), getFieldRegister()));
                 break;
             default:
                 throw syn::Problem("Illegal complex encoding operation defined!");

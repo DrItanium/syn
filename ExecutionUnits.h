@@ -218,6 +218,47 @@ namespace Comparator {
                 throw syn::Problem("Illegal compare operation!");
         }
     }
+    template<StandardOperations op, typename Word, typename Return = Word>
+    Return performOperation(Word a, Word b) {
+        static_assert(!syn::isEnumErrorState(op), "Illegal operation!");
+        using Operation = StandardOperations;
+        switch(op) {
+            case Operation::Eq:
+                return syn::eq<Word, Return>(a, b);
+            case Operation::Neq:
+                return syn::neq<Word, Return>(a, b);
+            case Operation::LessThan:
+                return syn::lt<Word, Return>(a, b);
+            case Operation::GreaterThan:
+                return syn::gt<Word, Return>(a, b);
+            case Operation::LessThanOrEqualTo:
+                return syn::le<Word, Return>(a, b);
+            case Operation::GreaterThanOrEqualTo:
+                return syn::ge<Word, Return>(a, b);
+            case Operation::BinaryAnd:
+                return syn::binaryAnd<Word, Return>(a, b);
+            case Operation::BinaryOr:
+                return syn::binaryOr<Word, Return>(a, b);
+            case Operation::UnaryNot:
+                return syn::binaryNot<Word, Return>(a);
+            case Operation::BinaryXor:
+                return syn::binaryXor<Word, Return>(a, b);
+            case Operation::BinaryNand:
+                return syn::binaryNand<Word, Return>(a, b);
+            case Operation::ShiftLeft:
+                return syn::shiftLeft<Word, Return>(a, b);
+            case Operation::ShiftRight:
+                return syn::shiftRight<Word, Return>(a, b);
+            case Operation::BinaryNor:
+                return syn::binaryNor<Word, Return>(a, b);
+            case Operation::CircularShiftLeft:
+                return syn::circularShiftLeft<Word, Return>(a, b);
+            case Operation::CircularShiftRight:
+                return syn::circularShiftRight<Word, Return>(a, b);
+            default:
+                throw syn::Problem("Illegal compare operation!");
+        }
+    }
     enum class BooleanOperations {
         Eq,
         Neq,
