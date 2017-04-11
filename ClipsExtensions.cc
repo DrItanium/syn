@@ -328,6 +328,22 @@ namespace syn {
                            op == MemoryBlockOp::Divide ||
                            op == MemoryBlockOp::Remainder;
                 };
+                static constexpr auto translateArithmeticOperation = [](MemoryBlockOp op) {
+                    switch(op) {
+                        case MemoryBlockOp::Combine:
+                            return syn::ALU::StandardOperations::Add;
+                        case MemoryBlockOp::Difference:
+                            return syn::ALU::StandardOperations::Subtract;
+                        case MemoryBlockOp::Product:
+                            return syn::ALU::StandardOperations::Multiply;
+                        case MemoryBlockOp::Divide:
+                            return syn::ALU::StandardOperations::Divide;
+                        case MemoryBlockOp::Remainder:
+                            return syn::ALU::StandardOperations::Remainder;
+                        default:
+                            return syn::ALU::StandardOperations::Count;
+                    }
+                };
 				if (init) {
 					init = false;
                     auto t = retrieveFunctionNames<WordBlock>("call");
@@ -474,21 +490,14 @@ namespace syn {
                                     rangeViolation(addr1);
                                     return false;
                                 }
-                                static std::map<MemoryBlockOp, syn::ALU::StandardOperations> callTable = {
-                                    { MemoryBlockOp::Combine, syn::ALU::StandardOperations::Add },
-                                    { MemoryBlockOp::Difference, syn::ALU::StandardOperations::Subtract },
-                                    { MemoryBlockOp::Product, syn::ALU::StandardOperations::Multiply },
-                                    { MemoryBlockOp::Divide, syn::ALU::StandardOperations::Divide },
-                                    { MemoryBlockOp::Remainder, syn::ALU::StandardOperations::Remainder },
-                                };
                                 try {
-                                    auto pCall = callTable.find(op);
-                                    if (pCall == callTable.end()) {
+                                    auto pCall = translateArithmeticOperation(op);
+                                    if (pCall == syn::ALU::StandardOperations::Count) {
                                         return callErrorMessage(str, "<- not an arithmetic operation!");
                                     }
                                     auto val0 = ptr->getMemoryCellValue(addr0);
                                     auto val1 = ptr->getMemoryCellValue(addr1);
-                                    CVSetInteger(ret, syn::ALU::performOperation<Word>(pCall->second, val0, val1));
+                                    CVSetInteger(ret, syn::ALU::performOperation<Word>(pCall, val0, val1));
                                 } catch (syn::Problem p) {
                                     handleProblem(env, ret, p, funcErrorPrefix);
                                     return false;
