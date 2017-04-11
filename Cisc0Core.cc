@@ -154,6 +154,12 @@ namespace cisc0 {
     void Core::decrementStackPointer(RegisterValue& ptr) noexcept {
         decrementAddress(ptr);
     }
+    template<typename T>
+    void throwOnCount(T result, const std::string& msg) {
+        if (result == T::Count) {
+            throw syn::Problem(msg);
+        }
+    }
     auto throwIfNotFound = [](auto result, auto& table, const std::string& msg) {
         if (result == table.end()) {
             throw syn::Problem(msg);
@@ -239,23 +245,33 @@ namespace cisc0 {
             }
         }
     }
+    using CompareOperation = syn::Comparator::StandardOperations;
+    constexpr CompareOperation translate(CompareStyle cs) noexcept {
+        switch(cs) {
+            case CompareStyle::Equals:
+                return CompareOperation::Eq;
+            case CompareStyle::NotEquals:
+                return CompareOperation::Neq;
+            case CompareStyle::LessThan:
+                return CompareOperation::LessThan;
+            case CompareStyle::LessThanOrEqualTo:
+                return CompareOperation::LessThanOrEqualTo;
+            case CompareStyle::GreaterThan:
+                return CompareOperation::GreaterThan;
+            case CompareStyle::GreaterThanOrEqualTo:
+                return CompareOperation::GreaterThanOrEqualTo;
+            default:
+                return CompareOperation::Count;
+        }
+    }
     void Core::compareOperation(DecodedInstruction&& inst) {
         static constexpr auto group = Operation::Compare;
-        using CompareOperation = syn::Comparator::StandardOperations;
-        static std::map<CompareStyle, CompareOperation> translationTable = {
-            { CompareStyle::Equals, CompareOperation::Eq },
-            { CompareStyle::NotEquals, CompareOperation::Neq },
-            { CompareStyle::LessThan, CompareOperation::LessThan },
-            { CompareStyle::LessThanOrEqualTo, CompareOperation::LessThanOrEqualTo },
-            { CompareStyle::GreaterThan, CompareOperation::GreaterThan },
-            { CompareStyle::GreaterThanOrEqualTo, CompareOperation::GreaterThanOrEqualTo },
-        };
+        auto compareResult = translate(inst.getSubtype<group>());
+        throwOnCount(compareResult, "Illegal compare type!");
         DecodedInstruction next(tryReadNext<true>());
         auto first = registerValue(next.getCompareRegister<0>());
         auto second = inst.getImmediateFlag<group>() ? next.getUpper() : registerValue(next.getCompareRegister<1>());
-        auto compareResult = translationTable.find(inst.getSubtype<group>());
-        throwIfNotFound(compareResult, translationTable, "Illegal compare type!");
-        auto result = syn::Comparator::performOperation(compareResult->second, first, second);
+        auto result = syn::Comparator::performOperation(compareResult, first, second);
         // make sure that the condition takes up the entire width of the
         // register, that way normal operations will make sense!
         getConditionRegister() = normalizeCondition(result);
@@ -370,34 +386,52 @@ namespace cisc0 {
         auto source = (inst.getImmediateFlag<group>() ? static_cast<RegisterValue>(inst.getImmediate<group>()) : registerValue(inst.getShiftRegister<1>()));
         destination = syn::ALU::performOperation<RegisterValue>( inst.shouldShiftLeft() ? ALUOperation::ShiftLeft : ALUOperation::ShiftRight, destination, source);
     }
+    constexpr ALUOperation translate(ArithmeticOps op) noexcept {
+        switch(op) {
+            case ArithmeticOps::Add:
+                return ALUOperation::Add;
+            case ArithmeticOps::Sub:
+                return ALUOperation::Subtract;
+            case ArithmeticOps::Mul:
+                return ALUOperation::Multiply;
+            case ArithmeticOps::Div:
+                return ALUOperation::Divide;
+            case ArithmeticOps::Rem:
+                return ALUOperation::Remainder;
+            default:
+                return ALUOperation::Count;
+        }
+    }
     void Core::arithmeticOperation(DecodedInstruction&& inst) {
-        static std::map<ArithmeticOps, ALUOperation> translationTable = {
-            { ArithmeticOps::Add, ALUOperation::Add },
-            { ArithmeticOps::Sub, ALUOperation::Subtract },
-            { ArithmeticOps::Mul, ALUOperation::Multiply },
-            { ArithmeticOps::Div, ALUOperation::Divide},
-            { ArithmeticOps::Rem, ALUOperation::Remainder},
-        };
         static constexpr auto group = Operation::Arithmetic;
-        auto result = translationTable.find(inst.getSubtype<Operation::Arithmetic>());
-        throwIfNotFound(result, translationTable, "Illegal arithmetic operation!");
-        auto op = result->second;
+        auto result = translate(inst.getSubtype<group>());
+        throwOnCount(result, "Illegal arithmetic operation!");
+        auto op = result;
         auto src = inst.getImmediateFlag<group>() ? inst.getImmediate<group>() : registerValue(inst.getArithmeticRegister<1>());
         auto& dest = registerValue(inst.getArithmeticRegister<0>());
         dest = syn::ALU::performOperation<RegisterValue>(op, dest, src);
     }
+    constexpr ALUOperation translate(LogicalOps op) noexcept {
+        switch(op) {
+            case LogicalOps::Not:
+                return ALUOperation::UnaryNot;
+            case LogicalOps::Or:
+                return ALUOperation::BinaryOr;
+            case LogicalOps::And:
+                return ALUOperation::BinaryAnd;
+            case LogicalOps::Xor:
+                return ALUOperation::BinaryXor;
+            case LogicalOps::Nand:
+                return ALUOperation::BinaryNand;
+            default:
+                return ALUOperation::Count;
+        }
+    }
     void Core::logicalOperation(DecodedInstruction&& inst) {
-        static std::map<LogicalOps, ALUOperation> dispatchTable = {
-            { LogicalOps::Not, ALUOperation::UnaryNot },
-            { LogicalOps::Or, ALUOperation::BinaryOr },
-            { LogicalOps::And, ALUOperation::BinaryAnd },
-            { LogicalOps::Xor, ALUOperation::BinaryXor },
-            { LogicalOps::Nand, ALUOperation::BinaryNand },
-        };
         static constexpr auto group = Operation::Logical;
-        auto result = dispatchTable.find(inst.getSubtype<Operation::Logical>());
-        throwIfNotFound(result, dispatchTable, "Illegal logical operation!");
-        auto op = result->second;
+        auto result = translate(inst.getSubtype<group>());
+        throwOnCount(result, "Illegal logical operation!");
+        auto op = result;
         auto source1 = inst.getImmediateFlag<group>() ? retrieveImmediate(inst.getBitmask<group>()) : registerValue(inst.getLogicalRegister<1>());
         auto& dest = registerValue(inst.getLogicalRegister<0>());
         dest = syn::ALU::performOperation<RegisterValue>(op, dest, source1);
