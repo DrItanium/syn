@@ -283,7 +283,6 @@ namespace cisc0 {
             void pushDword(DWord value, RegisterValue& ptr);
 			Word popWord();
 			Word popWord(RegisterValue& ptr);
-			static void terminate(Core* core, DecodedInstruction&& inst);
 			void dispatch(DecodedInstruction&& inst);
 			template<byte rindex>
 				inline RegisterValue& registerValue() noexcept {

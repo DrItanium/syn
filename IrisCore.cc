@@ -100,12 +100,6 @@ namespace iris {
 	}
     using ALUOperation = syn::ALU::StandardOperations;
     constexpr ALUOperation translate(ArithmeticOp op) noexcept {
-			//static std::map<ArithmeticOp, ALUOperation> table = {
-			//	{ ArithmeticOp::BinaryAnd, (ALUOperation::BinaryAnd ) },
-			//	{ ArithmeticOp::BinaryOr, (ALUOperation::BinaryOr ) },
-			//	{ ArithmeticOp::BinaryNot, (ALUOperation::UnaryNot ) },
-			//	{ ArithmeticOp::BinaryXor, (ALUOperation::BinaryXor ) },
-			//};
             switch(op) {
                 case ArithmeticOp::Add:
                 case ArithmeticOp::AddImmediate:
@@ -184,21 +178,31 @@ namespace iris {
         }
     }
     constexpr bool isImmediate(CompareOp op) noexcept {
-        return op == CompareOp::LessThanOrEqualToImmediate ||
-            op == CompareOp::GreaterThanImmediate ||
-            op == CompareOp::LessThanImmediate ||
-            op == CompareOp::GreaterThanOrEqualToImmediate ||
-            op == CompareOp::EqImmediate ||
-            op == CompareOp::NeqImmediate;
+        switch(op) {
+            case CompareOp::LessThanOrEqualToImmediate :
+            case CompareOp::GreaterThanImmediate :
+            case CompareOp::LessThanImmediate :
+            case CompareOp::GreaterThanOrEqualToImmediate :
+            case CompareOp::EqImmediate :
+            case CompareOp::NeqImmediate :
+                return true;
+            default:
+                return false;
+        }
     }
     constexpr bool isImmediate(ArithmeticOp op) noexcept {
-        return op == ArithmeticOp::ShiftLeftImmediate ||
-            op == ArithmeticOp::ShiftRightImmediate ||
-            op == ArithmeticOp::AddImmediate ||
-            op == ArithmeticOp::SubImmediate ||
-            op == ArithmeticOp::MulImmediate ||
-            op == ArithmeticOp::DivImmediate ||
-            op == ArithmeticOp::RemImmediate;
+        switch (op) {
+            case ArithmeticOp::ShiftLeftImmediate:
+            case ArithmeticOp::ShiftRightImmediate:
+            case ArithmeticOp::AddImmediate:
+            case ArithmeticOp::SubImmediate:
+            case ArithmeticOp::MulImmediate:
+            case ArithmeticOp::DivImmediate:
+            case ArithmeticOp::RemImmediate:
+                return true;
+            default:
+                return false;
+        }
     }
     constexpr syn::Comparator::StandardOperations translate(CompareOp op) noexcept {
         switch(op) {

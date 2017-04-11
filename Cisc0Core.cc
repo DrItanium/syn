@@ -465,11 +465,6 @@ namespace cisc0 {
         }
     }
 
-    void Core::terminate(Core* core, DecodedInstruction&& inst) {
-        core->execute = false;
-        core->advanceIp = false;
-    }
-
     RegisterValue& Core::registerValue(byte index) {
         return gpr[index];
     }
@@ -534,29 +529,48 @@ namespace cisc0 {
     }
 
     constexpr bool DecodedInstruction::hasBitmask(Operation op) noexcept {
-        return op == Operation::Set ||
-            op == Operation::Memory ||
-            op == Operation::Move ||
-            op == Operation::Logical;
+        switch(op) {
+            case Operation::Set:
+            case Operation::Memory:
+            case Operation::Move:
+            case Operation::Logical:
+                return true;
+            default:
+                return false;
+        }
     }
 
     constexpr bool DecodedInstruction::hasImmediateFlag(Operation op) noexcept {
-        return op == Operation::Shift ||
-            op == Operation::Arithmetic ||
-            op == Operation::Logical ||
-            op == Operation::Branch ||
-            op == Operation::Compare;
+        switch(op) {
+            case Operation::Shift:
+            case Operation::Logical:
+            case Operation::Branch:
+            case Operation::Compare:
+            case Operation::Arithmetic:
+                return true;
+            default:
+                return false;
+        }
     }
     constexpr bool DecodedInstruction::hasImmediateValue(Operation op) noexcept {
-        return op == Operation::Shift ||
-            op == Operation::Arithmetic;
+        switch (op) {
+            case Operation::Shift:
+            case Operation::Arithmetic:
+                return true;
+            default:
+                return false;
+        }
     }
     constexpr bool DecodedInstruction::hasSubtype(Operation op) noexcept {
-        return op == Operation::Compare ||
-            op == Operation::Memory ||
-            op == Operation::Arithmetic ||
-            op == Operation::Complex ||
-            op == Operation::Logical;
-
+        switch(op) {
+            case Operation::Compare:
+            case Operation::Memory:
+            case Operation::Arithmetic:
+            case Operation::Complex:
+            case Operation::Logical:
+                return true;
+            default:
+                return false;
+        }
     }
 }
