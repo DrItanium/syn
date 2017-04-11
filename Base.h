@@ -46,7 +46,7 @@ using uint64 = uint64_t;
 
 namespace syn {
 
-	constexpr int32 fields[8] = {
+	constexpr uint8 fields[8] = {
 		0,
 		8,
 		16,
