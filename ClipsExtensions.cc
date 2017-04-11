@@ -425,6 +425,13 @@ namespace syn {
                             }
                             return check;
                         };
+                        auto checkAddr = [ptr, rangeViolation](auto addr) {
+                            if (!ptr->legalAddress(addr)) {
+                                rangeViolation(addr);
+                                return false;
+                            }
+                            return true;
+                        };
                         if (op == MemoryBlockOp::Type) {
                             CVSetSymbol(ret, func.c_str());
                         } else if (op == MemoryBlockOp::Size) {
@@ -439,43 +446,50 @@ namespace syn {
                             return memoryGet();
                         } else if (op == MemoryBlockOp::Populate) {
                             return memorySet();
-                        } else if (op == MemoryBlockOp::Increment || op == MemoryBlockOp::Decrement) {
+                        } else if (op == MemoryBlockOp::Increment) {
                             auto check = oneCheck(INTEGER, "First argument must be an address");
                             if (check) {
                                 auto addr = EnvDOToLong(env, arg0);
-                                if (!ptr->legalAddress(addr)) {
-                                    rangeViolation(addr);
+                                if (!checkAddr(addr)) {
                                     return false;
                                 }
-                                if (op == MemoryBlockOp::Increment) {
-                                    ptr->incrementMemoryCell(addr);
-                                } else {
-                                    ptr->decrementMemoryCell(addr);
-                                }
+                                ptr->incrementMemoryCell(addr);
                             }
                             return check;
-                        } else if (op == MemoryBlockOp::Set || op == MemoryBlockOp::Swap || op == MemoryBlockOp::Move) {
+                        } else if (op == MemoryBlockOp::Decrement) {
+                            auto check = oneCheck(INTEGER, "First argument must be an address");
+                            if (check) {
+                                auto addr = EnvDOToLong(env, arg0);
+                                if (!checkAddr(addr)) {
+                                    return false;
+                                }
+                                ptr->decrementMemoryCell(addr);
+                            }
+                            return check;
+                        } else if (op == MemoryBlockOp::Swap || op == MemoryBlockOp::Move) {
                             auto check = twoCheck(INTEGER, "First argument must be an address", INTEGER, "Second argument must be an address");
                             if (check) {
                                 auto addr0 = EnvDOToLong(env, arg0);
-                                if (!ptr->legalAddress(addr0)) {
-                                    rangeViolation(addr0);
+                                auto addr1 = EnvDOToLong(env, arg1);
+                                if (!checkAddr(addr0) || !checkAddr(addr1)) {
+                                    return false;
+                                }
+                                if (op == MemoryBlockOp::Swap) {
+                                    ptr->swapMemoryCells(addr0, addr1);
+                                } else {
+                                    ptr->copyMemoryCell(addr0, addr1);
+                                }
+                            }
+                            return check;
+                        } else if (op == MemoryBlockOp::Set) {
+                            auto check = twoCheck(INTEGER, "First argument must be an address", INTEGER, "Second argument must be an address");
+                            if (check) {
+                                auto addr0 = EnvDOToLong(env, arg0);
+                                if (!checkAddr(addr0)) {
                                     return false;
                                 }
                                 auto addr1 = EnvDOToLong(env, arg1);
-                                if (op == MemoryBlockOp::Set) {
-                                    ptr->setMemoryCell(addr0, addr1);
-                                } else {
-                                    if (!ptr->legalAddress(addr1)) {
-                                        rangeViolation(addr1);
-                                        return false;
-                                    }
-                                    if (op == MemoryBlockOp::Swap) {
-                                        ptr->swapMemoryCells(addr0, addr1);
-                                    } else {
-                                        ptr->copyMemoryCell(addr0, addr1);
-                                    }
-                                }
+                                ptr->setMemoryCell(addr0, addr1);
                             }
                             return check;
                         } else if (isArithmeticOp(op)) {
@@ -483,11 +497,7 @@ namespace syn {
                             if (check) {
                                 auto addr0 = EnvDOToLong(env, arg0);
                                 auto addr1 = EnvDOToLong(env, arg1);
-                                if (!ptr->legalAddress(addr0)) {
-                                    rangeViolation(addr0);
-                                    return false;
-                                } else if (!ptr->legalAddress(addr1)) {
-                                    rangeViolation(addr1);
+                                if (!checkAddr(addr0) || !checkAddr(addr1)) {
                                     return false;
                                 }
                                 try {
