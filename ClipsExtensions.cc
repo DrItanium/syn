@@ -360,7 +360,6 @@ namespace syn {
 				if (GetpType(value) != EXTERNAL_ADDRESS) {
 					return errorMessage(env, "CALL", 1, funcErrorPrefix, "Function call expected an external address as the first argument!");
                 }
-                auto ptr = static_cast<Self_Ptr>(DOPToExternalAddress(value));
                 auto callErrorMessage = [env, ret](const std::string& subOp, const std::string& rest) {
                     CVSetBoolean(ret, false);
                     std::stringstream stm;
@@ -384,6 +383,7 @@ namespace syn {
                     CVSetBoolean(ret, false);
                     return callErrorMessage(str, "<- unknown operation requested!");
                 }
+                auto ptr = static_cast<Self_Ptr>(DOPToExternalAddress(value));
                 auto rangeViolation = [errOutOfRange, ptr, &str](Address addr) { errOutOfRange(str, ptr->size(), addr); };
                 CLIPSValue arg0, arg1;
                 auto checkArg = [callErrorMessage, &str, env](unsigned int index, unsigned int type, const std::string& msg, CLIPSValue* dat) {
@@ -420,25 +420,6 @@ namespace syn {
                     }
                     return result;
                 };
-                auto memoryGet = [checkAddr, oneCheck, env, &arg0, ret, ptr]() {
-                    auto check = oneCheck(INTEGER, "Argument 0 must be an integer address!");
-                    if (check) {
-                        auto addr = EnvDOToLong(env, arg0);
-                        if (!checkAddr(addr)) {
-                            return false;
-                        }
-                        CVSetInteger(ret, ptr->getMemoryCellValue(addr));
-                    }
-                    return check;
-
-                };
-                auto memorySet = [oneCheck, env, &arg0, ptr]() {
-                    auto check = oneCheck(INTEGER, "First argument must be an INTEGER value to populate all of the memory cells with!");
-                    if (check) {
-                        ptr->setMemoryToSingleValue(EnvDOToLong(env, arg0));
-                    }
-                    return check;
-                };
                 auto commonSingleIntegerBody = [oneCheck, checkAddr, env, &arg0, ptr](auto fn) {
                     auto check = oneCheck(INTEGER, "First argument must be an address");
                     if (check) {
@@ -455,15 +436,27 @@ namespace syn {
                 } else if (op == MemoryBlockOp::Size) {
                     CVSetInteger(ret, ptr->size());
                 } else if (op == MemoryBlockOp::Clear) {
-                    ptr->setMemoryToSingleValue(0);
+                    ptr->clearMemory();
                 } else if (op == MemoryBlockOp::Initialize) {
                     ptr->setMemoryToSingleValue(0);
                 } else if (op == MemoryBlockOp::Shutdown) {
                     // do nothing right now
                 } else if (op == MemoryBlockOp::Get) {
-                    return memoryGet();
+                    auto check = oneCheck(INTEGER, "Argument 0 must be an integer address!");
+                    if (check) {
+                        auto addr = EnvDOToLong(env, arg0);
+                        if (!checkAddr(addr)) {
+                            return false;
+                        }
+                        CVSetInteger(ret, ptr->getMemoryCellValue(addr));
+                    }
+                    return check;
                 } else if (op == MemoryBlockOp::Populate) {
-                    return memorySet();
+                    auto check = oneCheck(INTEGER, "First argument must be an INTEGER value to populate all of the memory cells with!");
+                    if (check) {
+                        ptr->setMemoryToSingleValue(EnvDOToLong(env, arg0));
+                    }
+                    return check;
                 } else if (op == MemoryBlockOp::Increment) {
                     return commonSingleIntegerBody([](auto ptr, auto addr) { ptr->incrementMemoryCell(addr); });
                 } else if (op == MemoryBlockOp::Decrement) {
@@ -542,9 +535,10 @@ namespace syn {
 			inline bool legalAddress(Address idx) const noexcept                    { return inRange<Address>(_capacity, idx); }
 			inline Word getMemoryCellValue(Address addr) noexcept                   { return this->_value.get()[addr]; }
 			inline void setMemoryCell(Address addr0, Word value) noexcept           { this->_value.get()[addr0] = value; }
-			inline void swapMemoryCells(Address addr0, Address addr1) noexcept { swap<Word>(this->_value.get()[addr0], this->_value.get()[addr1]); }
+			inline void swapMemoryCells(Address addr0, Address addr1) noexcept      { swap<Word>(this->_value.get()[addr0], this->_value.get()[addr1]); }
 			inline void decrementMemoryCell(Address address) noexcept               { --this->_value.get()[address]; }
 			inline void incrementMemoryCell(Address address) noexcept               { ++this->_value.get()[address]; }
+            inline void clearMemory() noexcept                                      { setMemoryToSingleValue(0); }
 
 			inline void copyMemoryCell(Address from, Address to) noexcept {
 				auto ptr = this->_value.get();
