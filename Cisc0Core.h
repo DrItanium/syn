@@ -274,7 +274,7 @@ namespace cisc0 {
 			virtual void initialize() override;
 			virtual void shutdown() override;
 			virtual bool cycle() override;
-			bool shouldExecute() const { return execute; }
+			bool shouldExecute() const noexcept { return execute; }
 			bool handleOperation(void* env, CLIPSValue* ret);
 		private:
 			void pushWord(Word value);
