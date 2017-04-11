@@ -125,7 +125,7 @@ namespace iris {
                 case ArithmeticOp::BinaryNot:
                      return ALUOperation::UnaryNot;
                 default:
-                     return ALUOperation::Count;
+                     return syn::defaultErrorState<ALUOperation>;
 
             }
     }
@@ -225,7 +225,7 @@ namespace iris {
             case CompareOp::NeqImmediate:
                 return syn::Comparator::StandardOperations::Neq;
             default:
-                return syn::Comparator::StandardOperations::Count;
+                return syn::defaultErrorState<syn::Comparator::StandardOperations>;
         }
     }
     using CRUnitOp = syn::Comparator::BooleanOperations;
@@ -244,7 +244,7 @@ namespace iris {
             case ConditionRegisterOp::CRNot:
                 return CRUnitOp::UnaryNot;
             default:
-                return CRUnitOp::Count;
+                return syn::defaultErrorState<CRUnitOp>;
         }
     }
     template<bool invokeMin>

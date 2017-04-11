@@ -261,7 +261,7 @@ namespace cisc0 {
             case CompareStyle::GreaterThanOrEqualTo:
                 return CompareOperation::GreaterThanOrEqualTo;
             default:
-                return CompareOperation::Count;
+                return syn::defaultErrorState<CompareOperation>;
         }
     }
     void Core::compareOperation(DecodedInstruction&& inst) {
@@ -399,7 +399,7 @@ namespace cisc0 {
             case ArithmeticOps::Rem:
                 return ALUOperation::Remainder;
             default:
-                return ALUOperation::Count;
+                return syn::defaultErrorState<ALUOperation>;
         }
     }
     void Core::arithmeticOperation(DecodedInstruction&& inst) {
@@ -424,7 +424,7 @@ namespace cisc0 {
             case LogicalOps::Nand:
                 return ALUOperation::BinaryNand;
             default:
-                return ALUOperation::Count;
+                return syn::defaultErrorState<ALUOperation>;
         }
     }
     void Core::logicalOperation(DecodedInstruction&& inst) {

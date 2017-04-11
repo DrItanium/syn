@@ -58,6 +58,25 @@ namespace FPU {
                 throw syn::Problem("Undefined fpu operation!");
         }
     }
+    template<StandardOperations op, typename Word, typename Return = Word>
+    Return performOperation(Word a, Word b) {
+        static_assert(!isErrorState(op), "Illegal FPU operation!");
+        using Operation = StandardOperations;
+        switch(op) {
+            case Operation::Add:
+                return syn::add<Word, Return>(a, b);
+            case Operation::Subtract:
+                return syn::sub<Word, Return>(a, b);
+            case Operation::Multiply:
+                return syn::mul<Word, Return>(a, b);
+            case Operation::Divide:
+                return syn::div<Word, Return>(a, b);
+            case Operation::SquareRoot:
+                return static_cast<Return>(sqrt(static_cast<double>(a)));
+            default:
+                throw syn::Problem("Undefined fpu operation!");
+        }
+    }
 }
 
 namespace ALU {
