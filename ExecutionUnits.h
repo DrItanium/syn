@@ -78,6 +78,7 @@ namespace ALU {
         CircularShiftRight,
         Count,
     };
+
     template<typename Word, typename Return = Word, typename Operation = StandardOperations>
     Return performOperation(Operation op, Word a, Word b) {
         switch(op) {

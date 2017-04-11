@@ -112,6 +112,12 @@ namespace cisc0 {
 			{ "get-register", std::make_tuple(WrappedOp::GetRegister, 1 ) },
 			{ "set-register", std::make_tuple(WrappedOp::SetRegister, 2 ) },
 		};
+		if (init) {
+			init = false;
+			auto functions = syn::retrieveFunctionNames<Core>("call");
+			funcStr = std::get<1>(functions);
+			funcErrorPrefix = std::get<2>(functions);
+		}
 		auto callErrorMessage = [env, ret](const std::string& subOp, const std::string& rest) {
 			CVSetBoolean(ret, false);
 			std::stringstream stm;
@@ -119,12 +125,6 @@ namespace cisc0 {
 			auto msg = stm.str();
 			return syn::errorMessage(env, "CALL", 3, funcErrorPrefix, msg);
 		};
-		if (init) {
-			init = false;
-			auto functions = syn::retrieveFunctionNames<Core>("call");
-			funcStr = std::get<1>(functions);
-			funcErrorPrefix = std::get<2>(functions);
-		}
 		CLIPSValue operation;
 		if (!EnvArgTypeCheck(env, funcStr.c_str(), 2, SYMBOL, &operation)) {
 			return syn::errorMessage(env, "CALL", 2, funcErrorPrefix, "expected a function name to call!");

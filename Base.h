@@ -643,5 +643,10 @@ constexpr T multiplyAdd(T a, T b, T c) noexcept {
     return (a * b) + c;
 };
 
+template<typename T>
+constexpr bool isEnumErrorState(T op) noexcept {
+    return op == T::Count;
+}
+
 }
 #endif
