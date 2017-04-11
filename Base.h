@@ -160,9 +160,7 @@ constexpr T getShiftCount() noexcept {
 }
 
 template<typename T>
-constexpr size_t bitwidth() noexcept {
-	return CHAR_BIT * sizeof(T);
-}
+constexpr size_t bitwidth = CHAR_BIT * sizeof(T);
 
 template<typename T, T bitmask>
 constexpr T mask(T input) noexcept {
@@ -517,14 +515,14 @@ constexpr bool binaryNor(bool a, bool b) noexcept {
 
 template<typename T, typename R = T>
 constexpr R circularShiftLeft(T value, T shift) noexcept {
-    constexpr T width = bitwidth<T>() - 1;
+    constexpr T width = bitwidth<T> - 1;
     // taken from the wikipedia entry on circular shifts
     return static_cast<R>((value << shift) | (value >> ((-shift) & width)));
 }
 
 template<typename T, typename R = T>
 constexpr R circularShiftRight(T value, T shift) noexcept {
-    constexpr T width = bitwidth<T>() - 1;
+    constexpr T width = bitwidth<T> - 1;
     // taken from the wikipedia entry on circular shifts
 	return static_cast<R>( (value >> shift) | (value << ((-shift) & width)));
 }

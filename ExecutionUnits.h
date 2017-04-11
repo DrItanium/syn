@@ -409,12 +409,12 @@ class Register {
         }
         template<T index>
         bool getBit() const noexcept {
-            static_assert(index < syn::bitwidth<T>(), "Provided index is too large!");
+            static_assert(index < syn::bitwidth<T>, "Provided index is too large!");
             static_assert(index >= 0, "Provided index is less than zero!");
             return syn::getBit<T, index>(_value);
         }
         bool getBit(T index) const {
-            if (index >= syn::bitwidth<T>()) {
+            if (index >= syn::bitwidth<T>) {
                 throw syn::Problem("Provided index is too large!");
             } else if (index < 0) {
                 throw syn::Problem("Provided index is less than zero!");
@@ -424,12 +424,12 @@ class Register {
         }
         template<T index>
         void setBit(bool value) noexcept {
-            static_assert(index < syn::bitwidth<T>(), "Provided index is too large!");
+            static_assert(index < syn::bitwidth<T>, "Provided index is too large!");
             static_assert(index >= 0, "Provided index is less than zero!");
             set(syn::setBit<T, index>(_value, value));
         }
         void setBit(T index, bool value) noexcept {
-            if (index >= syn::bitwidth<T>()) {
+            if (index >= syn::bitwidth<T>) {
                 throw syn::Problem("Provided index is too large!");
             } else if (index < 0) {
                 throw syn::Problem("Provided index is less than zero!");
@@ -483,7 +483,7 @@ class Register {
         }
         inline void swapBits(T index0, T index1) {
             if (index0 != index1) {
-                constexpr auto width = syn::bitwidth<T>();
+                constexpr auto width = syn::bitwidth<T>;
                 if (index0 >= width || index1 >= width) {
                     throw syn::Problem("Provided index is not legal!");
                 } else if (index1 < 0 || index0 < 0) {

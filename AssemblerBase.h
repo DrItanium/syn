@@ -63,8 +63,8 @@ namespace syn {
 		std::string temp(text);
 		// always replace the second element as it is always the b, x, etc
 		temp[1] = '0';
-		constexpr auto width = syn::bitwidth<T>();
-		static_assert(width <= syn::bitwidth<unsigned long long>(), "Please provide custom implementation of getBinaryImmediate since type is too large to fit in a unsigned long long!");
+		constexpr auto width = syn::bitwidth<T>;
+		static_assert(width <= syn::bitwidth<unsigned long long>, "Please provide custom implementation of getBinaryImmediate since type is too large to fit in a unsigned long long!");
 		std::bitset<width> bits(temp);
 		return static_cast<T>(bits.to_ullong());
 	}
