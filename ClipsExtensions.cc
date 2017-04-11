@@ -414,11 +414,11 @@ namespace syn {
                 // now check and see if we are looking at a legal
                 // instruction count
                 auto checkAddr = [ptr, rangeViolation](auto addr) {
-                    if (!ptr->legalAddress(addr)) {
+                    auto result = ptr->legalAddress(addr);
+                    if (!result) {
                         rangeViolation(addr);
-                        return false;
                     }
-                    return true;
+                    return result;
                 };
                 auto memoryGet = [checkAddr, oneCheck, env, &arg0, ret, ptr]() {
                     auto check = oneCheck(INTEGER, "Argument 0 must be an integer address!");
@@ -439,6 +439,17 @@ namespace syn {
                     }
                     return check;
                 };
+                auto commonSingleIntegerBody = [oneCheck, checkAddr, env, &arg0, ptr](auto fn) {
+                    auto check = oneCheck(INTEGER, "First argument must be an address");
+                    if (check) {
+                        auto addr = EnvDOToLong(env, arg0);
+                        if (!checkAddr(addr)) {
+                            return false;
+                        }
+                        fn(ptr, addr);
+                    }
+                    return check;
+                };
                 if (op == MemoryBlockOp::Type) {
                     CVSetSymbol(ret, func.c_str());
                 } else if (op == MemoryBlockOp::Size) {
@@ -454,25 +465,9 @@ namespace syn {
                 } else if (op == MemoryBlockOp::Populate) {
                     return memorySet();
                 } else if (op == MemoryBlockOp::Increment) {
-                    auto check = oneCheck(INTEGER, "First argument must be an address");
-                    if (check) {
-                        auto addr = EnvDOToLong(env, arg0);
-                        if (!checkAddr(addr)) {
-                            return false;
-                        }
-                        ptr->incrementMemoryCell(addr);
-                    }
-                    return check;
+                    return commonSingleIntegerBody([](auto ptr, auto addr) { ptr->incrementMemoryCell(addr); });
                 } else if (op == MemoryBlockOp::Decrement) {
-                    auto check = oneCheck(INTEGER, "First argument must be an address");
-                    if (check) {
-                        auto addr = EnvDOToLong(env, arg0);
-                        if (!checkAddr(addr)) {
-                            return false;
-                        }
-                        ptr->decrementMemoryCell(addr);
-                    }
-                    return check;
+                    return commonSingleIntegerBody([](auto ptr, auto addr) { ptr->decrementMemoryCell(addr); });
                 } else if (op == MemoryBlockOp::Swap || op == MemoryBlockOp::Move) {
                     auto check = twoCheck(INTEGER, "First argument must be an address", INTEGER, "Second argument must be an address");
                     if (check) {
