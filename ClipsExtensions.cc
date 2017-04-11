@@ -489,6 +489,7 @@ namespace syn {
                     return check;
                 } else if (isArithmeticOperation(op)) {
                     auto check = twoCheck(INTEGER, "First argument must be an address", INTEGER, "Second argument must be an address!");
+                    CVSetBoolean(ret, false);
                     if (check) {
                         auto addr0 = EnvDOToLong(env, arg0);
                         auto addr1 = EnvDOToLong(env, arg1);
@@ -507,8 +508,6 @@ namespace syn {
                             handleProblem(env, ret, p, funcErrorPrefix);
                             return false;
                         }
-                    } else {
-                        CVSetBoolean(ret, false);
                     }
                     return check;
                 } else {

@@ -102,8 +102,8 @@ namespace iris {
 			void setPredicateInverseResult(bool value) noexcept;
 			void setPredicateSource0(bool value) noexcept;
 			void setPredicateSource1(bool value) noexcept;
-            inline word getHalfImmediate() const noexcept { return InstructionDecoder::getHalfImmediate(current); }
-            inline word getImmediate() const noexcept { return InstructionDecoder::getImmediate(current); }
+            word getHalfImmediate() const noexcept;
+            word getImmediate() const noexcept;
 		private:
 			void saveSystemState() noexcept;
 			void restoreSystemState() noexcept;

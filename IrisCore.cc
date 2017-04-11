@@ -592,4 +592,6 @@ namespace iris {
     void Core::setInstructionPointer(QuadWord value) noexcept { _ip.set(value); }
     void Core::setLinkRegister(QuadWord value) noexcept { _lr.set(value); }
     void Core::incrementInstructionPointer() noexcept { ++_ip; }
+    word Core::getHalfImmediate() const noexcept { return InstructionDecoder::getHalfImmediate(current); }
+    word Core::getImmediate() const noexcept { return InstructionDecoder::getImmediate(current); }
 }
