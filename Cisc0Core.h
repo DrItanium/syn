@@ -237,11 +237,12 @@ namespace cisc0 {
                 SubtypeConversion(SubtypeConversion&&) = delete;
                 ~SubtypeConversion() = delete;
             };
-
             template<Operation op>
-            inline typename SubtypeConversion<op>::ResultantType getSubtype() const noexcept {
+            using SubtypeType = typename SubtypeConversion<op>::ResultantType;
+            template<Operation op>
+            inline SubtypeType<op> getSubtype() const noexcept {
                 static_assert(hasSubtype(op), "There is no subtype for the given operation!");
-                using CurrentType = typename SubtypeConversion<op>::ResultantType;
+                using CurrentType = SubtypeType<op>;
                 switch(op) {
                     case Operation::Compare:
                         return static_cast<CurrentType>(decodeCompareType(_rawValue));
