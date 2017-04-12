@@ -94,13 +94,11 @@ class CLIPSIOController : public AddressableIODevice<D, A> {
 			CLIPSValue result;
 			if (EnvFunctionCall(_env, "read-from-io-address", str.c_str(), &result)) {
 				throw syn::Problem("Calling read-from-io-address failed!");
-			} else {
-				if (CVIsType(&result, INTEGER)) {
-					return static_cast<D>(CVToInteger(&result));
-				} else {
-					throw syn::Problem("Calling read-from-io-address failed!");
-				}
 			}
+            if (!CVIsType(&result, INTEGER)) {
+                throw syn::Problem("Calling read-from-io-address failed!");
+            }
+            return static_cast<D>(CVToInteger(&result));
 		}
 		virtual void write(A addr, D value) override {
 			std::stringstream args;
