@@ -74,12 +74,12 @@ namespace syn {
 			}
 		}
 	}
-	constexpr unsigned long long maximumIntegerValue = 0xFFFFFFFFFFFFFFFF;
 	void CLIPS_errorNumberLargerThan64Bits(UDFContext* context, CLIPSValue* ret) noexcept {
 		CLIPS_errorMessageGeneric(context, ret, "provided number is larger than 64-bits!");
 	}
 
 	void CLIPS_translateNumberBase(UDFContext* context, CLIPSValue* ret, const std::string& prefix, int base, const std::string& badPrefix) noexcept {
+        constexpr unsigned long long maximumIntegerValue = 0xFFFFFFFFFFFFFFFF;
 		CLIPSValue value;
 		if (!UDFFirstArgument(context, LEXEME_TYPES, &value)) {
 			CVSetBoolean(ret, false);
@@ -132,19 +132,20 @@ namespace syn {
 					break;
 			}
 		}
-
 	}
-    constexpr bool isLegalBinaryIntegerOperation(syn::ALU::StandardOperations op) noexcept {
-        return op == syn::ALU::StandardOperations::BinaryAnd ||
-               op == syn::ALU::StandardOperations::BinaryOr ||
-               op == syn::ALU::StandardOperations::BinaryXor ||
-               op == syn::ALU::StandardOperations::BinaryNand ||
-               op == syn::ALU::StandardOperations::ShiftLeft ||
-               op == syn::ALU::StandardOperations::ShiftRight;
-    }
+
+    template<syn::ALU::StandardOperations op>
+    constexpr bool isBinaryIntegerOperation = false;
+    template<> constexpr bool isBinaryIntegerOperation<syn::ALU::StandardOperations::BinaryAnd> = true;
+    template<> constexpr bool isBinaryIntegerOperation<syn::ALU::StandardOperations::BinaryOr> = true;
+    template<> constexpr bool isBinaryIntegerOperation<syn::ALU::StandardOperations::BinaryXor> = true;
+    template<> constexpr bool isBinaryIntegerOperation<syn::ALU::StandardOperations::BinaryNand> = true;
+    template<> constexpr bool isBinaryIntegerOperation<syn::ALU::StandardOperations::ShiftLeft> = true;
+    template<> constexpr bool isBinaryIntegerOperation<syn::ALU::StandardOperations::ShiftRight> = true;
+
 	template<syn::ALU::StandardOperations op>
 	inline void CLIPS_genericBinaryIntegerOperation(UDFContext* context, CLIPSValue* ret) noexcept {
-        static_assert(isLegalBinaryIntegerOperation(op), "Illegal clips binary operation!");
+        static_assert(isBinaryIntegerOperation<op>, "Illegal clips binary operation!");
 		CLIPSValue a, b;
 		if (!UDFFirstArgument(context, NUMBER_TYPES, &a)) {
 			CVSetBoolean(ret, false);
@@ -587,10 +588,9 @@ namespace syn {
             throw syn::Problem("Can't set a value to a field with a negative index!");
         } else if (index > _size) {
             throw syn::Problem("Attempted to set a field which was out of range of the multifield!");
-        } else {
-            SetMFType(_rawMultifield, index, type);
-            SetMFValue(_rawMultifield, index, value);
         }
+        SetMFType(_rawMultifield, index, type);
+        SetMFValue(_rawMultifield, index, value);
     }
 	void MultifieldBuilder::assign(DataObjectPtr ptr) noexcept {
 		ptr->type = MULTIFIELD;
