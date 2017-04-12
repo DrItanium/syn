@@ -299,7 +299,7 @@ namespace syn {
             case T::Remainder:
                 return syn::ALU::StandardOperations::Remainder;
             default:
-                return syn::ALU::StandardOperations::Count;
+                return defaultErrorState<syn::ALU::StandardOperations>;
         }
     }
 	template<typename Word>
@@ -498,7 +498,7 @@ namespace syn {
                         }
                         try {
                             auto pCall = translateArithmeticOperation(op);
-                            if (pCall == syn::ALU::StandardOperations::Count) {
+                            if (syn::isErrorState(pCall)) {
                                 return callErrorMessage(str, "<- not an arithmetic operation!");
                             }
                             auto val0 = ptr->getMemoryCellValue(addr0);

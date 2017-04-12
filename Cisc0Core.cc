@@ -33,13 +33,6 @@
 #include "Cisc0ClipsExtensions.h"
 
 namespace cisc0 {
-    /*
-     * Iris18 is a variable length encoding 16 bit architecture.
-     * It has a 24 bit memory space across 256 16-bit sections. The variable length
-     * encoding comes from different register choices. The reserved registers are
-     * used to compress the encoding.
-     */
-
 	constexpr Word lowerMask(byte bitmask) noexcept {
 		return syn::encodeUint16LE(syn::expandBit(syn::getBit<byte, 0>(bitmask)),
 									syn::expandBit(syn::getBit<byte, 1>(bitmask)));

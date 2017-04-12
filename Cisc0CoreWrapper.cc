@@ -96,6 +96,7 @@ namespace cisc0 {
 	void installCoreWrapper(void* env) {
 		CoreWrapper::registerWithEnvironment(env);
 	}
+
 	bool Core::handleOperation(void* env, CLIPSValue* ret) {
 		static bool init = true;
 		static std::string funcStr;
