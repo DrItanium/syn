@@ -74,22 +74,19 @@ template<typename T>
 inline constexpr bool inRange(T capacity, T address) noexcept {
 	return address >= 0 && address < capacity;
 }
-
 namespace TypeToName {
     template<typename T>
-    constexpr bool hasSymbolicImplementation() noexcept {
-        return false;
-    }
+    constexpr bool hasSymbolicImplementation = false;
     template<typename T>
     std::string getSymbolicName() noexcept {
-        static_assert(hasSymbolicImplementation<T>(), "Provided type does not have a symbolic name");
+        static_assert(hasSymbolicImplementation<T>, "Provided type does not have a symbolic name");
         return "";
     }
 
 }
 #define DefWrapperSymbolicName(t, name) \
     namespace TypeToName { \
-        template<> constexpr bool hasSymbolicImplementation < t > () noexcept { return true; } \
+        template<> constexpr bool hasSymbolicImplementation < t > = true; \
         template<> std::string getSymbolicName < t > () noexcept { return name; } \
     }
 
