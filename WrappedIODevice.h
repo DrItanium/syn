@@ -63,7 +63,6 @@ namespace syn {
             Error = Count,
         };
         static const char* operationsName(Operations op) noexcept;
-        static std::string operationToNameString(Operations op) noexcept;
         static Operations nameToOperation(const std::string& title) noexcept;
         static constexpr int getArgCount(Operations op) noexcept;
         static bool getCommandList(void* env, CLIPSValuePtr ret) noexcept;

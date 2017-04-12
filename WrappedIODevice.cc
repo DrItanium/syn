@@ -83,18 +83,20 @@ namespace syn {
         };
         auto result = reverseNameLookup.find(op);
         if (result == reverseNameLookup.end()) {
-            return "";
+            return nullptr;
         } else {
             return result->second.c_str();
         }
-    }
-    std::string WrappedIODeviceConstants::operationToNameString(WrappedIODeviceConstants::Operations op) noexcept {
-        return std::string(operationsName(op));
     }
 
     bool WrappedIODeviceConstants::getCommandList(void* env, CLIPSValuePtr ret) noexcept {
         FixedSizeMultifieldBuilder<static_cast<long>(Operations::Count)> mb(env);
         auto setField = [&mb, env](int index, Operations op) {
+            auto result = operationsName(op);
+            if (!result) {
+                // We want this to barf out and terminate execution!
+                throw syn::Problem("Undefined operation!");
+            }
             mb.setField(index, SYMBOL, EnvAddSymbol(env, operationsName(op)));
         };
         setField(1, Operations::Read);
