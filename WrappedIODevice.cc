@@ -25,18 +25,23 @@
 
 #include "WrappedIODevice.h"
 namespace syn {
+
 	using CLIPSRandomNumberGeneratorDevice = RandomDevice<CLIPSInteger, CLIPSInteger>;
-    using RandomNumberGenerator16bitDevice = RandomDevice<uint16_t, CLIPSInteger>;
-
 	DefWrapperSymbolicName(CLIPSRandomNumberGeneratorDevice, "random-number-generator");
-    DefWrapperSymbolicName(RandomNumberGenerator16bitDevice, "random-number-generator:uint16");
-
 	using WrappedCLIPSRandomNumberGeneratorDevice = WrappedGenericRandomDevice<CLIPSInteger>;
+
+    using RandomNumberGenerator16bitDevice = RandomDevice<uint16_t, CLIPSInteger>;
+    DefWrapperSymbolicName(RandomNumberGenerator16bitDevice, "random-number-generator:uint16");
     using WrappedRandomNumberGenerator16bitDevice = WrappedGenericRandomDevice<uint16_t>;
+
+    using RandomNumberGenerator32bitDevice = RandomDevice<uint32_t, CLIPSInteger>;
+    DefWrapperSymbolicName(RandomNumberGenerator32bitDevice, "random-number-generator:uint32");
+    using WrappedRandomNumberGenerator32bitDevice = WrappedGenericRandomDevice<uint32_t>;
 
     void CLIPS_installDefaultIODevices(void* theEnv) {
 		WrappedCLIPSRandomNumberGeneratorDevice::registerWithEnvironment(theEnv);
         WrappedRandomNumberGenerator16bitDevice::registerWithEnvironment(theEnv);
+        WrappedRandomNumberGenerator32bitDevice::registerWithEnvironment(theEnv);
     }
     constexpr int WrappedIODeviceConstants::getArgCount(WrappedIODeviceConstants::Operations op) noexcept {
         using Op = WrappedIODeviceConstants::Operations;
