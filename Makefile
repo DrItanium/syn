@@ -19,7 +19,8 @@ COMMON_THINGS = Core.o \
 REPL_BINARY = xsyn_repl
 
 REPL_OBJECTS= ReplBootstrap.o \
-			  ${COMMON_THINGS}
+			  ClipsExtensions.o \
+			  libmaya.a
 
 REPL_FINAL_BINARY = syn_repl
 
