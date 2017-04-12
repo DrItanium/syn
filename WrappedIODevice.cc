@@ -38,20 +38,20 @@ namespace syn {
 		WrappedCLIPSRandomNumberGeneratorDevice::registerWithEnvironment(theEnv);
         WrappedRandomNumberGenerator16bitDevice::registerWithEnvironment(theEnv);
     }
-    int WrappedIODeviceConstants::getArgCount(WrappedIODeviceConstants::Operations op) noexcept {
-        static std::map<Operations, int> argCounts = {
-            { WrappedIODeviceConstants::Operations::Type, 0 },
-            { WrappedIODeviceConstants::Operations::Read, 1 },
-            { WrappedIODeviceConstants::Operations::Write, 2 },
-            { WrappedIODeviceConstants::Operations::Initialize, 0 },
-            { WrappedIODeviceConstants::Operations::Shutdown, 0 },
-            { WrappedIODeviceConstants::Operations::ListCommands, 0 },
-        };
-        auto result = argCounts.find(op);
-        if (result == argCounts.end()) {
-            return -1;
-        } else {
-            return result->second;
+    constexpr int WrappedIODeviceConstants::getArgCount(WrappedIODeviceConstants::Operations op) noexcept {
+        using Op = WrappedIODeviceConstants::Operations;
+        switch(op) {
+            case Op::Type:
+            case Op::Initialize:
+            case Op::Shutdown:
+            case Op::ListCommands:
+                return 0;
+            case Op::Read:
+                return 1;
+            case Op::Write:
+                return 2;
+            default:
+                return -1;
         }
     }
     WrappedIODeviceConstants::Operations WrappedIODeviceConstants::nameToOperation(const std::string& title) noexcept {
@@ -65,7 +65,7 @@ namespace syn {
         };
         auto result = opTranslation.find(title);
         if (result == opTranslation.end()) {
-            return Operations::Error; // error state
+            return defaultErrorState<Operations>;
         } else {
             return result->second;
         }
@@ -109,7 +109,6 @@ namespace syn {
         setField(5, Operations::Shutdown);
         setField(6, Operations::ListCommands);
         mb.assign(ret);
-        return true;
         return true;
     }
 

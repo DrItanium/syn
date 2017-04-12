@@ -64,9 +64,11 @@ namespace syn {
         };
         static std::string operationsName(Operations op) noexcept;
         static Operations nameToOperation(const std::string& title) noexcept;
-        static int getArgCount(Operations op) noexcept;
+        static constexpr int getArgCount(Operations op) noexcept;
         static bool getCommandList(void* env, CLIPSValuePtr ret) noexcept;
     };
+    template<>
+    constexpr auto defaultErrorState<WrappedIODeviceConstants::Operations> = WrappedIODeviceConstants::Error;
 
     void handleProblem(void* env, syn::Problem& p, CLIPSValue* ret, const std::string& funcErrorPrefix, const char* type, int code) noexcept;
     template<typename Data, typename Address, template<typename, typename> class T>
@@ -137,7 +139,7 @@ namespace syn {
                 }
                 std::string str(EnvDOToString(env, op));
                 auto result = Constants::nameToOperation(str);
-                if (result == Operations::Error) {
+                if (isErrorState(result)) {
                     CVSetBoolean(ret, false);
                     return callErrorMessage(str, "<- unknown operation requested!");
                 }
