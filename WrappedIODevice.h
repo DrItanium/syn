@@ -122,22 +122,23 @@ namespace syn {
                     funcStr = std::get<1>(t);
                     funcErrorPrefix = std::get<2>(t);
 				}
-				auto callErrorMessage = [env, ret](const std::string& subOp, const std::string& rest) {
-					CVSetBoolean(ret, false);
+                auto badArgument = [env, ret](auto code, auto msg) {
+                    CVSetBoolean(ret, false);
+                    return syn::errorMessage(env, "CALL", code, funcErrorPrefix, msg);
+                };
+				auto callErrorMessage = [badArgument](const std::string& subOp, const std::string& rest) {
 					std::stringstream stm;
 					stm << " " << subOp << ": " << rest << std::endl;
 					auto msg = stm.str();
-					return errorMessage(env, "CALL", 3, funcErrorPrefix, msg);
+                    return badArgument(3, msg);
 				};
 
 				if (GetpType(value) != EXTERNAL_ADDRESS) {
-                    CVSetBoolean(ret, false);
-                    return errorMessage(env, "CALL", 1, funcErrorPrefix, "Function call expected an external address as the first argument!");
+                    return badArgument(1, "Function call expected an external address as the first argument!");
                 }
                 CLIPSValue op;
                 if (!EnvArgTypeCheck(env, funcStr.c_str(), 2, SYMBOL, &op)) {
-                    CVSetBoolean(ret, false);
-                    return errorMessage(env, "CALL", 2, funcErrorPrefix, "expected a function name to call!");
+                    return badArgument(2, "expected a function name to call!");
                 }
                 std::string str(EnvDOToString(env, op));
                 auto result = Constants::nameToOperation(str);
@@ -154,33 +155,25 @@ namespace syn {
                     return callErrorMessage(str, " too many arguments provided!");
                 }
                 auto ptr = static_cast<Self_Ptr>(DOPToExternalAddress(value));
-                auto readOperation = [ptr, ret, env]() {
-                    auto badArgument = [env, ret](auto msg) {
-                        CVSetBoolean(ret, false);
-                        return errorMessage(env, "CALL", 3, funcErrorPrefix, msg);
-                    };
+                auto readOperation = [ptr, ret, env, badArgument]() {
                     CLIPSValue tmp;
                     if (!EnvArgTypeCheck(env, funcStr.c_str(), 3, INTEGER, &tmp)) {
-                        return badArgument("provided address is not an integer!");
+                        return badArgument(3, "provided address is not an integer!");
                     }
                     try {
                         auto address = static_cast<Address>(EnvDOToLong(env, tmp));
                         CVSetInteger(ret, ptr->read(address));
                         return true;
                     } catch(syn::Problem p) {
-                        return badArgument(p.what());
+                        return badArgument(3, p.what());
                     }
                 };
-                auto writeOperation = [ptr, ret, env]() {
+                auto writeOperation = [ptr, ret, env, badArgument]() {
                     CLIPSValue t0, t1;
-                    auto badArgument = [env, ret](auto msg) {
-                        CVSetBoolean(ret, false);
-                        return errorMessage(env, "CALL", 3, funcErrorPrefix, msg);
-                    };
                     if (!EnvArgTypeCheck(env, funcStr.c_str(), 3, INTEGER, &t0)) {
-                        return badArgument("provided address is not an integer!");
+                        return badArgument(3, "provided address is not an integer!");
                     } else if (!EnvArgTypeCheck(env, funcStr.c_str(), 4, INTEGER, &t1)) {
-                        return badArgument("provided value is not an integer!");
+                        return badArgument(3, "provided value is not an integer!");
                     }
                     try {
                         CVSetBoolean(ret, true);
@@ -189,7 +182,7 @@ namespace syn {
                         ptr->write(address, value);
                         return true;
                     } catch(syn::Problem p) {
-                        return badArgument(p.what());
+                        return badArgument(3, p.what());
                     }
                 };
                 switch(theOp) {
