@@ -70,7 +70,7 @@ namespace syn {
             return result->second;
         }
     }
-    std::string WrappedIODeviceConstants::operationsName(WrappedIODeviceConstants::Operations op) noexcept {
+    const char* WrappedIODeviceConstants::operationsName(WrappedIODeviceConstants::Operations op) noexcept {
 
         // update this list of names only! everything else is dependent on it!
         static std::map<Operations, std::string> reverseNameLookup = {
@@ -85,22 +85,17 @@ namespace syn {
         if (result == reverseNameLookup.end()) {
             return "";
         } else {
-            return result->second;
+            return result->second.c_str();
         }
-
     }
+    std::string WrappedIODeviceConstants::operationToNameString(WrappedIODeviceConstants::Operations op) noexcept {
+        return std::string(operationsName(op));
+    }
+
     bool WrappedIODeviceConstants::getCommandList(void* env, CLIPSValuePtr ret) noexcept {
-        static std::map<Operations, std::string> reverseNameLookup = {
-            { Operations::Read, WrappedIODeviceConstants::operationsName(Operations::Read) },
-            { Operations::Write, WrappedIODeviceConstants::operationsName(Operations::Write) },
-            { Operations::Type, WrappedIODeviceConstants::operationsName(Operations::Type) },
-            { Operations::Initialize, WrappedIODeviceConstants::operationsName(Operations::Initialize) },
-            { Operations::Shutdown, WrappedIODeviceConstants::operationsName(Operations::Shutdown) },
-            { Operations::ListCommands, WrappedIODeviceConstants::operationsName(Operations::ListCommands) },
-        };
         FixedSizeMultifieldBuilder<static_cast<long>(Operations::Count)> mb(env);
         auto setField = [&mb, env](int index, Operations op) {
-            mb.setField(index, SYMBOL, EnvAddSymbol(env, reverseNameLookup[op].c_str()));
+            mb.setField(index, SYMBOL, EnvAddSymbol(env, operationsName(op)));
         };
         setField(1, Operations::Read);
         setField(2, Operations::Write);
