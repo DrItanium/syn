@@ -349,8 +349,7 @@ namespace iris {
 			}
 			return true;
 		} catch(syn::Problem p) {
-			CVSetBoolean(ret, false);
-			return syn::errorMessage(env, "CALL", 2, funcErrorPrefix, p.what());
+            return badArgument(2, p.what());
 		}
 	}
 	Core* Core::make() noexcept {

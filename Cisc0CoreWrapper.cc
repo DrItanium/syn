@@ -179,7 +179,6 @@ namespace cisc0 {
                 return badArgument(3, "Must provide an integer index to retrieve a memory value!");
 			}
 			CVSetInteger(ret, loadWord(static_cast<RegisterValue>(EnvDOToLong(env, index))));
-			CVSetBoolean(ret, true);
 			return true;
 		};
 		auto writeMemory = [this, env, ret, badArgument]() {
