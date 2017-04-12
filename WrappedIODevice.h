@@ -142,18 +142,15 @@ namespace syn {
                 std::string str(EnvDOToString(env, op));
                 auto result = Constants::nameToOperation(str);
                 if (isErrorState(result)) {
-                    CVSetBoolean(ret, false);
                     return callErrorMessage(str, "<- unknown operation requested!");
                 }
                 auto theOp = result;
                 auto countResult = Constants::getArgCount(theOp);
                 if (countResult == -1) {
-                    CVSetBoolean(ret, false);
                     return callErrorMessage(str, "<- unknown argument count, not registered!!!");
                 }
                 auto count = 2 + countResult;
                 if (count != EnvRtnArgCount(env)) {
-                    CVSetBoolean(ret, false);
                     return callErrorMessage(str, " too many arguments provided!");
                 }
                 auto ptr = static_cast<Self_Ptr>(DOPToExternalAddress(value));
@@ -214,7 +211,6 @@ namespace syn {
                     case Operations::ListCommands:
                         return Constants::getCommandList(env, ret);
                     default:
-                        CVSetBoolean(ret, false);
                         return callErrorMessage(str, "<- unimplemented operation!!!!");
                 }
             }
