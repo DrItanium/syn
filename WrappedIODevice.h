@@ -52,7 +52,7 @@ namespace syn {
         WrappedIODeviceConstants(const WrappedIODeviceConstants&) = delete;
         WrappedIODeviceConstants(WrappedIODeviceConstants&&) = delete;
         ~WrappedIODeviceConstants() = delete;
-        enum Operations {
+        enum class Operations {
             Type,
             Read,
             Write,
@@ -68,7 +68,7 @@ namespace syn {
         static bool getCommandList(void* env, CLIPSValuePtr ret) noexcept;
     };
     template<>
-    constexpr auto defaultErrorState<WrappedIODeviceConstants::Operations> = WrappedIODeviceConstants::Error;
+    constexpr auto defaultErrorState<WrappedIODeviceConstants::Operations> = WrappedIODeviceConstants::Operations::Error;
 
     void handleProblem(void* env, syn::Problem& p, CLIPSValue* ret, const std::string& funcErrorPrefix, const char* type, int code) noexcept;
     template<typename Data, typename Address, template<typename, typename> class T>
