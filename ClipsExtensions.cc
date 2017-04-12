@@ -348,12 +348,10 @@ namespace syn {
 				static bool init = true;
 				static std::string funcStr;
 				static std::string funcErrorPrefix;
-				static std::string func;
 #include "syn_memory_block_defines.h"
 				if (init) {
 					init = false;
                     auto t = retrieveFunctionNames<WordBlock>("call");
-                    func = std::get<0>(t);
                     funcStr = std::get<1>(t);
                     funcErrorPrefix = std::get<2>(t);
 				}
@@ -432,7 +430,7 @@ namespace syn {
                     return check;
                 };
                 if (op == MemoryBlockOp::Type) {
-                    CVSetSymbol(ret, func.c_str());
+                    Self::getType(ret);
                 } else if (op == MemoryBlockOp::Size) {
                     CVSetInteger(ret, ptr->size());
                 } else if (op == MemoryBlockOp::Clear) {

@@ -166,6 +166,7 @@ static FunctionStrings retrieveFunctionNames(const std::string& action) noexcept
 }
 
 
+
 #define DefExternalAddressWrapperType(internalType, theWrapperType) \
     template<> \
     struct ExternalAddressWrapperType< internalType > { \
@@ -184,6 +185,15 @@ class ExternalAddressWrapper {
 		using BaseClass = ExternalAddressWrapper<T>;
         using Self = BaseClass;
 		static std::string getType() noexcept { return TypeToName::getSymbolicName<InternalType>(); }
+        static void getType(CLIPSValue* ret) noexcept {
+            static bool init = true;
+            static std::string name;
+            if (init) {
+                init = false;
+                name = getType();
+            }
+            CVSetString(ret, name.c_str());
+        }
 		static unsigned int getAssociatedEnvironmentId(void* env) { return ExternalAddressRegistrar<InternalType>::getExternalAddressId(env); }
 		static void registerWithEnvironment(void* env, externalAddressType* description) noexcept {
 			ExternalAddressRegistrar<InternalType>::registerExternalAddressId(env, InstallExternalAddressType(env, description));
@@ -296,7 +306,6 @@ class FixedSizeMultifieldBuilder {
     private:
         void* _rawMultifield;
 };
-
 
 }
 #endif

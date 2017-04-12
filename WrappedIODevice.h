@@ -131,10 +131,12 @@ namespace syn {
 				};
 
 				if (GetpType(value) != EXTERNAL_ADDRESS) {
+                    CVSetBoolean(ret, false);
                     return errorMessage(env, "CALL", 1, funcErrorPrefix, "Function call expected an external address as the first argument!");
                 }
                 CLIPSValue op;
                 if (!EnvArgTypeCheck(env, funcStr.c_str(), 2, SYMBOL, &op)) {
+                    CVSetBoolean(ret, false);
                     return errorMessage(env, "CALL", 2, funcErrorPrefix, "expected a function name to call!");
                 }
                 std::string str(EnvDOToString(env, op));
@@ -156,44 +158,46 @@ namespace syn {
                 }
                 auto ptr = static_cast<Self_Ptr>(DOPToExternalAddress(value));
                 auto readOperation = [ptr, ret, env]() {
+                    auto badArgument = [env, ret](auto msg) {
+                        CVSetBoolean(ret, false);
+                        return errorMessage(env, "CALL", 3, funcErrorPrefix, msg);
+                    };
                     CLIPSValue tmp;
                     if (!EnvArgTypeCheck(env, funcStr.c_str(), 3, INTEGER, &tmp)) {
-                        CVSetBoolean(ret, false);
-                        return errorMessage(env, "CALL", 3, funcErrorPrefix, "provided address is not an integer!");
+                        return badArgument("provided address is not an integer!");
                     }
                     try {
                         auto address = static_cast<Address>(EnvDOToLong(env, tmp));
                         CVSetInteger(ret, ptr->read(address));
                         return true;
                     } catch(syn::Problem p) {
-                        CVSetBoolean(ret, false);
-                        return errorMessage(env, "CALL", 3, funcErrorPrefix, p.what());
+                        return badArgument(p.what());
                     }
                 };
                 auto writeOperation = [ptr, ret, env]() {
                     CLIPSValue t0, t1;
+                    auto badArgument = [env, ret](auto msg) {
+                        CVSetBoolean(ret, false);
+                        return errorMessage(env, "CALL", 3, funcErrorPrefix, msg);
+                    };
                     if (!EnvArgTypeCheck(env, funcStr.c_str(), 3, INTEGER, &t0)) {
-                        CVSetBoolean(ret, false);
-                        return errorMessage(env, "CALL", 3, funcErrorPrefix, "provided address is not an integer!");
+                        return badArgument("provided address is not an integer!");
                     } else if (!EnvArgTypeCheck(env, funcStr.c_str(), 4, INTEGER, &t1)) {
-                        CVSetBoolean(ret, false);
-                        return errorMessage(env, "CALL", 3, funcErrorPrefix, "provided value is not an integer!");
-                    } else {
-                        try {
-                            CVSetBoolean(ret, true);
-                            auto address = static_cast<Address>(EnvDOToLong(env, t0));
-                            auto value = static_cast<Data>(EnvDOToLong(env, t1));
-                            ptr->write(address, value);
-                            return true;
-                        } catch(syn::Problem p) {
-                            CVSetBoolean(ret, false);
-                            return errorMessage(env, "CALL", 3, funcErrorPrefix, p.what());
-                        }
+                        return badArgument("provided value is not an integer!");
+                    }
+                    try {
+                        CVSetBoolean(ret, true);
+                        auto address = static_cast<Address>(EnvDOToLong(env, t0));
+                        auto value = static_cast<Data>(EnvDOToLong(env, t1));
+                        ptr->write(address, value);
+                        return true;
+                    } catch(syn::Problem p) {
+                        return badArgument(p.what());
                     }
                 };
                 switch(theOp) {
                     case Operations::Type:
-                        CVSetString(ret, Self::getType().c_str());
+                        Self::getType(ret);
                         return true;
                     case Operations::Shutdown:
                         CVSetBoolean(ret, true);
@@ -216,9 +220,6 @@ namespace syn {
             }
 			static void registerWithEnvironment(void* env, const char* title) {
 				Parent::registerWithEnvironment(env, title, callFunction, newFunction);
-			}
-			static void registerWithEnvironment(void* env, const std::string& str) {
-				registerWithEnvironment(env, str.c_str());
 			}
 			static void registerWithEnvironment(void* env) {
                 bool init = true;
