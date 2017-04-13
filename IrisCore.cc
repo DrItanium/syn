@@ -302,24 +302,41 @@ namespace iris {
     constexpr word minOrMax(word a, word b) noexcept {
         return (invokeMin ? (a < b) : (a > b))? a : b;
     }
+    template<bool invokeRemainder, word onRemainder, word onDivide>
+    constexpr word specialCaseDivOrRem(word numerator) noexcept {
+        return invokeRemainder ? (numerator & onRemainder) : (numerator >> onDivide);
+    }
     template<bool invokeRemainder>
     void tryDivOrRem(word& result, word numerator, word denominator, std::function<void()> markDivideByZero) noexcept {
-        if (denominator == 0) {
-            markDivideByZero();
-        } else if (denominator == 1) {
-            result = invokeRemainder ? 0 : numerator;
-        } else if (denominator == 2) {
-            result = invokeRemainder ? (numerator & 1) : numerator >> 1;
-        } else if (denominator == 4) {
-            result = invokeRemainder ? (numerator & 3) : numerator >> 2;
-        } else if (denominator == 8) {
-            result = invokeRemainder ? (numerator & 7) : numerator >> 3;
-        } else if (denominator == 16) {
-            result = invokeRemainder ? (numerator & 15) : numerator >> 4;
-        } else if (denominator == 32) {
-            result = invokeRemainder ? (numerator & 31) : numerator >> 5;
-        } else {
-            result = invokeRemainder ? (numerator % denominator) : (numerator / denominator);
+        switch(denominator) {
+            case 0:
+                markDivideByZero();
+                break;
+            case 1:
+                result = invokeRemainder ? 0 : numerator;
+                break;
+            case 2:
+                result = specialCaseDivOrRem<invokeRemainder, 1, 1>(numerator);
+                break;
+            case 4:
+                result = specialCaseDivOrRem<invokeRemainder, 3, 2>(numerator);
+                break;
+            case 8:
+                result = specialCaseDivOrRem<invokeRemainder, 7, 3>(numerator);
+                break;
+            case 16:
+                result = specialCaseDivOrRem<invokeRemainder, 15, 4>(numerator);
+                break;
+            case 32:
+                result = specialCaseDivOrRem<invokeRemainder, 31, 5>(numerator);
+                break;
+            case 64:
+                result = specialCaseDivOrRem<invokeRemainder, 63, 6>(numerator);
+                break;
+            default:
+                result = invokeRemainder ? (numerator % denominator) : (numerator / denominator);
+                break;
+
         }
     }
 	void Core::dispatch() noexcept {
