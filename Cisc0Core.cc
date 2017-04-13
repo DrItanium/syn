@@ -33,6 +33,9 @@
 #include "Cisc0ClipsExtensions.h"
 
 namespace cisc0 {
+    template<typename T, T value>
+    constexpr auto toExecutionUnitValue = syn::defaultErrorState<T>;
+
 	constexpr Word lowerMask(byte bitmask) noexcept {
 		return syn::encodeUint16LE(syn::expandBit(syn::getBit<byte, 0>(bitmask)),
 									syn::expandBit(syn::getBit<byte, 1>(bitmask)));
@@ -239,20 +242,27 @@ namespace cisc0 {
         }
     }
     using CompareOperation = syn::Comparator::StandardOperations;
+    template<> constexpr auto toExecutionUnitValue<CompareStyle, CompareStyle::Equals> = CompareOperation::Eq;
+    template<> constexpr auto toExecutionUnitValue<CompareStyle, CompareStyle::NotEquals> = CompareOperation::Neq;
+    template<> constexpr auto toExecutionUnitValue<CompareStyle, CompareStyle::LessThan> = CompareOperation::LessThan;
+    template<> constexpr auto toExecutionUnitValue<CompareStyle, CompareStyle::LessThanOrEqualTo> = CompareOperation::LessThanOrEqualTo;
+    template<> constexpr auto toExecutionUnitValue<CompareStyle, CompareStyle::GreaterThan> = CompareOperation::GreaterThan;
+    template<> constexpr auto toExecutionUnitValue<CompareStyle, CompareStyle::GreaterThanOrEqualTo> = CompareOperation::GreaterThanOrEqualTo;
     constexpr CompareOperation translate(CompareStyle cs) noexcept {
+        using T = CompareStyle;
         switch(cs) {
-            case CompareStyle::Equals:
-                return CompareOperation::Eq;
-            case CompareStyle::NotEquals:
-                return CompareOperation::Neq;
-            case CompareStyle::LessThan:
-                return CompareOperation::LessThan;
-            case CompareStyle::LessThanOrEqualTo:
-                return CompareOperation::LessThanOrEqualTo;
-            case CompareStyle::GreaterThan:
-                return CompareOperation::GreaterThan;
-            case CompareStyle::GreaterThanOrEqualTo:
-                return CompareOperation::GreaterThanOrEqualTo;
+            case T::Equals:
+                return toExecutionUnitValue<T, T::Equals>;
+            case T::NotEquals:
+                return toExecutionUnitValue<T, T::NotEquals>;
+            case T::LessThan:
+                return toExecutionUnitValue<T, T::LessThan>;
+            case T::LessThanOrEqualTo:
+                return toExecutionUnitValue<T, T::LessThanOrEqualTo>;
+            case T::GreaterThan:
+                return toExecutionUnitValue<T, T::GreaterThan>;
+            case T::GreaterThanOrEqualTo:
+                return toExecutionUnitValue<T, T::GreaterThanOrEqualTo>;
             default:
                 return syn::defaultErrorState<CompareOperation>;
         }
@@ -379,18 +389,25 @@ namespace cisc0 {
         auto source = (inst.getImmediateFlag<group>() ? static_cast<RegisterValue>(inst.getImmediate<group>()) : registerValue(inst.getShiftRegister<1>()));
         destination = syn::ALU::performOperation<RegisterValue>( inst.shouldShiftLeft() ? ALUOperation::ShiftLeft : ALUOperation::ShiftRight, destination, source);
     }
+    template<> const auto toExecutionUnitValue<ArithmeticOps, ArithmeticOps::Add> = ALUOperation::Add;
+    template<> const auto toExecutionUnitValue<ArithmeticOps, ArithmeticOps::Sub> = ALUOperation::Subtract;
+    template<> const auto toExecutionUnitValue<ArithmeticOps, ArithmeticOps::Mul> = ALUOperation::Multiply;
+    template<> const auto toExecutionUnitValue<ArithmeticOps, ArithmeticOps::Div> = ALUOperation::Divide;
+    template<> const auto toExecutionUnitValue<ArithmeticOps, ArithmeticOps::Rem> = ALUOperation::Remainder;
+
     constexpr ALUOperation translate(ArithmeticOps op) noexcept {
+        using T = ArithmeticOps;
         switch(op) {
-            case ArithmeticOps::Add:
-                return ALUOperation::Add;
-            case ArithmeticOps::Sub:
-                return ALUOperation::Subtract;
-            case ArithmeticOps::Mul:
-                return ALUOperation::Multiply;
-            case ArithmeticOps::Div:
-                return ALUOperation::Divide;
-            case ArithmeticOps::Rem:
-                return ALUOperation::Remainder;
+            case T::Add:
+                return toExecutionUnitValue<T, T::Add>;
+            case T::Sub:
+                return toExecutionUnitValue<T, T::Sub>;
+            case T::Mul:
+                return toExecutionUnitValue<T, T::Mul>;
+            case T::Div:
+                return toExecutionUnitValue<T, T::Div>;
+            case T::Rem:
+                return toExecutionUnitValue<T, T::Rem>;
             default:
                 return syn::defaultErrorState<ALUOperation>;
         }
@@ -404,18 +421,25 @@ namespace cisc0 {
         auto& dest = registerValue(inst.getArithmeticRegister<0>());
         dest = syn::ALU::performOperation<RegisterValue>(op, dest, src);
     }
+
+    template<> constexpr auto toExecutionUnitValue<LogicalOps, LogicalOps::Not> = ALUOperation::UnaryNot;
+    template<> constexpr auto toExecutionUnitValue<LogicalOps, LogicalOps::Or> = ALUOperation::BinaryOr;
+    template<> constexpr auto toExecutionUnitValue<LogicalOps, LogicalOps::And> = ALUOperation::BinaryAnd;
+    template<> constexpr auto toExecutionUnitValue<LogicalOps, LogicalOps::Xor> = ALUOperation::BinaryXor;
+    template<> constexpr auto toExecutionUnitValue<LogicalOps, LogicalOps::Nand> = ALUOperation::BinaryNand;
+
     constexpr ALUOperation translate(LogicalOps op) noexcept {
         switch(op) {
             case LogicalOps::Not:
-                return ALUOperation::UnaryNot;
+                return toExecutionUnitValue<LogicalOps, LogicalOps::Not>;
             case LogicalOps::Or:
-                return ALUOperation::BinaryOr;
+                return toExecutionUnitValue<LogicalOps, LogicalOps::Or>;
             case LogicalOps::And:
-                return ALUOperation::BinaryAnd;
+                return toExecutionUnitValue<LogicalOps, LogicalOps::And>;
             case LogicalOps::Xor:
-                return ALUOperation::BinaryXor;
+                return toExecutionUnitValue<LogicalOps, LogicalOps::Xor>;
             case LogicalOps::Nand:
-                return ALUOperation::BinaryNand;
+                return toExecutionUnitValue<LogicalOps, LogicalOps::Nand>;
             default:
                 return syn::defaultErrorState<ALUOperation>;
         }
