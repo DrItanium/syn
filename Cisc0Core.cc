@@ -243,21 +243,23 @@ namespace cisc0 {
     template<> constexpr auto toExecutionUnitValue<CompareStyle, CompareStyle::LessThanOrEqualTo> = CompareOperation::LessThanOrEqualTo;
     template<> constexpr auto toExecutionUnitValue<CompareStyle, CompareStyle::GreaterThan> = CompareOperation::GreaterThan;
     template<> constexpr auto toExecutionUnitValue<CompareStyle, CompareStyle::GreaterThanOrEqualTo> = CompareOperation::GreaterThanOrEqualTo;
+    template<CompareStyle op>
+    constexpr auto translateCompare = toExecutionUnitValue<decltype(op), op>;
     constexpr CompareOperation translate(CompareStyle cs) noexcept {
         using T = CompareStyle;
         switch(cs) {
             case T::Equals:
-                return toExecutionUnitValue<T, T::Equals>;
+                return translateCompare<T::Equals>;
             case T::NotEquals:
-                return toExecutionUnitValue<T, T::NotEquals>;
+                return translateCompare<T::NotEquals>;
             case T::LessThan:
-                return toExecutionUnitValue<T, T::LessThan>;
+                return translateCompare<T::LessThan>;
             case T::LessThanOrEqualTo:
-                return toExecutionUnitValue<T, T::LessThanOrEqualTo>;
+                return translateCompare<T::LessThanOrEqualTo>;
             case T::GreaterThan:
-                return toExecutionUnitValue<T, T::GreaterThan>;
+                return translateCompare<T::GreaterThan>;
             case T::GreaterThanOrEqualTo:
-                return toExecutionUnitValue<T, T::GreaterThanOrEqualTo>;
+                return translateCompare<T::GreaterThanOrEqualTo>;
             default:
                 return syn::defaultErrorState<CompareOperation>;
         }
@@ -384,25 +386,28 @@ namespace cisc0 {
         auto source = (inst.getImmediateFlag<group>() ? static_cast<RegisterValue>(inst.getImmediate<group>()) : registerValue(inst.getShiftRegister<1>()));
         destination = syn::ALU::performOperation<RegisterValue>( inst.shouldShiftLeft() ? ALUOperation::ShiftLeft : ALUOperation::ShiftRight, destination, source);
     }
-    template<> const auto toExecutionUnitValue<ArithmeticOps, ArithmeticOps::Add> = ALUOperation::Add;
-    template<> const auto toExecutionUnitValue<ArithmeticOps, ArithmeticOps::Sub> = ALUOperation::Subtract;
-    template<> const auto toExecutionUnitValue<ArithmeticOps, ArithmeticOps::Mul> = ALUOperation::Multiply;
-    template<> const auto toExecutionUnitValue<ArithmeticOps, ArithmeticOps::Div> = ALUOperation::Divide;
-    template<> const auto toExecutionUnitValue<ArithmeticOps, ArithmeticOps::Rem> = ALUOperation::Remainder;
+    template<> constexpr auto toExecutionUnitValue<ArithmeticOps, ArithmeticOps::Add> = ALUOperation::Add;
+    template<> constexpr auto toExecutionUnitValue<ArithmeticOps, ArithmeticOps::Sub> = ALUOperation::Subtract;
+    template<> constexpr auto toExecutionUnitValue<ArithmeticOps, ArithmeticOps::Mul> = ALUOperation::Multiply;
+    template<> constexpr auto toExecutionUnitValue<ArithmeticOps, ArithmeticOps::Div> = ALUOperation::Divide;
+    template<> constexpr auto toExecutionUnitValue<ArithmeticOps, ArithmeticOps::Rem> = ALUOperation::Remainder;
+    template<ArithmeticOps op>
+    constexpr auto translateArithmetic = toExecutionUnitValue<decltype(op), op>;
+
 
     constexpr ALUOperation translate(ArithmeticOps op) noexcept {
         using T = ArithmeticOps;
         switch(op) {
             case T::Add:
-                return toExecutionUnitValue<T, T::Add>;
+                return translateArithmetic<T::Add>;
             case T::Sub:
-                return toExecutionUnitValue<T, T::Sub>;
+                return translateArithmetic<T::Sub>;
             case T::Mul:
-                return toExecutionUnitValue<T, T::Mul>;
+                return translateArithmetic<T::Mul>;
             case T::Div:
-                return toExecutionUnitValue<T, T::Div>;
+                return translateArithmetic<T::Div>;
             case T::Rem:
-                return toExecutionUnitValue<T, T::Rem>;
+                return translateArithmetic<T::Rem>;
             default:
                 return syn::defaultErrorState<ALUOperation>;
         }
@@ -422,19 +427,21 @@ namespace cisc0 {
     template<> constexpr auto toExecutionUnitValue<LogicalOps, LogicalOps::And> = ALUOperation::BinaryAnd;
     template<> constexpr auto toExecutionUnitValue<LogicalOps, LogicalOps::Xor> = ALUOperation::BinaryXor;
     template<> constexpr auto toExecutionUnitValue<LogicalOps, LogicalOps::Nand> = ALUOperation::BinaryNand;
+    template<LogicalOps op>
+    constexpr auto translateLogical = toExecutionUnitValue<decltype(op), op>;
 
     constexpr ALUOperation translate(LogicalOps op) noexcept {
         switch(op) {
             case LogicalOps::Not:
-                return toExecutionUnitValue<LogicalOps, LogicalOps::Not>;
+                return translateLogical<LogicalOps::Not>;
             case LogicalOps::Or:
-                return toExecutionUnitValue<LogicalOps, LogicalOps::Or>;
+                return translateLogical<LogicalOps::Or>;
             case LogicalOps::And:
-                return toExecutionUnitValue<LogicalOps, LogicalOps::And>;
+                return translateLogical<LogicalOps::And>;
             case LogicalOps::Xor:
-                return toExecutionUnitValue<LogicalOps, LogicalOps::Xor>;
+                return translateLogical<LogicalOps::Xor>;
             case LogicalOps::Nand:
-                return toExecutionUnitValue<LogicalOps, LogicalOps::Nand>;
+                return translateLogical<LogicalOps::Nand>;
             default:
                 return syn::defaultErrorState<ALUOperation>;
         }
@@ -451,7 +458,7 @@ namespace cisc0 {
     template<syn::Comparator::StandardOperations op>
     constexpr RegisterValue sliceBitAndCheck(RegisterValue a, RegisterValue b) noexcept {
         return syn::Comparator::performOperation<op, RegisterValue>(
-                syn::ALU::performOperation<ALUOperation::BinaryAnd, RegisterValue>(
+                syn::ALU::performOperation<translate(LogicalOps::And), RegisterValue>(
                     syn::ALU::performOperation<ALUOperation::ShiftRight, RegisterValue>(
                         a,
                         b), 0x1), 1);
