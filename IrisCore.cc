@@ -314,6 +314,8 @@ namespace iris {
             result = invokeRemainder ? (numerator & 3) : numerator >> 2;
         } else if (denominator == 8) {
             result = invokeRemainder ? (numerator & 7) : numerator >> 3;
+        } else if (denominator == 16) {
+            result = invokeRemainder ? (numerator & 15) : numerator >> 4;
         } else {
             result = invokeRemainder ? (numerator % denominator) : (numerator / denominator);
         }
