@@ -306,6 +306,14 @@ namespace iris {
     void tryDivOrRem(word& result, word numerator, word denominator, std::function<void()> markDivideByZero) noexcept {
         if (denominator == 0) {
             markDivideByZero();
+        } else if (denominator == 1) {
+            result = invokeRemainder ? 0 : numerator;
+        } else if (denominator == 2) {
+            result = invokeRemainder ? (numerator & 1) : numerator >> 1;
+        } else if (denominator == 4) {
+            result = invokeRemainder ? (numerator & 3) : numerator >> 2;
+        } else if (denominator == 8) {
+            result = invokeRemainder ? (numerator & 7) : numerator >> 3;
         } else {
             result = invokeRemainder ? (numerator % denominator) : (numerator / denominator);
         }
