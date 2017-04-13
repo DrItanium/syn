@@ -98,35 +98,58 @@ namespace iris {
         }
 		return execute;
 	}
+    template<typename T, T v>
+    constexpr auto toExecutionUnitValue = syn::defaultErrorState<T>;
+
     using ALUOperation = syn::ALU::StandardOperations;
+    template<> constexpr auto toExecutionUnitValue<ArithmeticOp, ArithmeticOp::Add> = ALUOperation::Add;
+    template<> constexpr auto toExecutionUnitValue<ArithmeticOp, ArithmeticOp::AddImmediate> = ALUOperation::Add;
+    template<> constexpr auto toExecutionUnitValue<ArithmeticOp, ArithmeticOp::Sub> = ALUOperation::Subtract;
+    template<> constexpr auto toExecutionUnitValue<ArithmeticOp, ArithmeticOp::SubImmediate> = ALUOperation::Subtract;
+    template<> constexpr auto toExecutionUnitValue<ArithmeticOp, ArithmeticOp::Mul> = ALUOperation::Multiply;
+    template<> constexpr auto toExecutionUnitValue<ArithmeticOp, ArithmeticOp::MulImmediate> = ALUOperation::Multiply;
+    template<> constexpr auto toExecutionUnitValue<ArithmeticOp, ArithmeticOp::ShiftLeft> = ALUOperation::ShiftLeft;
+    template<> constexpr auto toExecutionUnitValue<ArithmeticOp, ArithmeticOp::ShiftLeftImmediate> = ALUOperation::ShiftLeft;
+    template<> constexpr auto toExecutionUnitValue<ArithmeticOp, ArithmeticOp::ShiftRight> = ALUOperation::ShiftRight;
+    template<> constexpr auto toExecutionUnitValue<ArithmeticOp, ArithmeticOp::ShiftRightImmediate> = ALUOperation::ShiftRight;
+    template<> constexpr auto toExecutionUnitValue<ArithmeticOp, ArithmeticOp::BinaryAnd> = ALUOperation::BinaryAnd;
+    template<> constexpr auto toExecutionUnitValue<ArithmeticOp, ArithmeticOp::BinaryOr> = ALUOperation::BinaryOr;
+    template<> constexpr auto toExecutionUnitValue<ArithmeticOp, ArithmeticOp::BinaryXor> = ALUOperation::BinaryXor;
+    template<> constexpr auto toExecutionUnitValue<ArithmeticOp, ArithmeticOp::BinaryNot> = ALUOperation::UnaryNot;
+    template<ArithmeticOp op>
+    constexpr auto aluTranslation = toExecutionUnitValue<decltype(op), op>;
     constexpr ALUOperation translate(ArithmeticOp op) noexcept {
             switch(op) {
                 case ArithmeticOp::Add:
+                    return aluTranslation<ArithmeticOp::Add>;
                 case ArithmeticOp::AddImmediate:
-                    return ALUOperation::Add;
+                    return aluTranslation<ArithmeticOp::AddImmediate>;
                 case ArithmeticOp::Sub:
+                    return aluTranslation<ArithmeticOp::Sub>;
                 case ArithmeticOp::SubImmediate:
-                    return ALUOperation::Subtract;
+                    return aluTranslation<ArithmeticOp::SubImmediate>;
                 case ArithmeticOp::Mul:
+                    return aluTranslation<ArithmeticOp::Mul>;
                 case ArithmeticOp::MulImmediate:
-                    return ALUOperation::Multiply;
+                    return aluTranslation<ArithmeticOp::MulImmediate>;
                 case ArithmeticOp::ShiftLeft:
+                    return aluTranslation<ArithmeticOp::ShiftLeft>;
                 case ArithmeticOp::ShiftLeftImmediate:
-                     return ALUOperation::ShiftLeft;
+                    return aluTranslation<ArithmeticOp::ShiftLeftImmediate>;
                 case ArithmeticOp::ShiftRight:
+                    return aluTranslation<ArithmeticOp::ShiftRight>;
                 case ArithmeticOp::ShiftRightImmediate:
-                     return ALUOperation::ShiftRight;
+                    return aluTranslation<ArithmeticOp::ShiftRightImmediate>;
                 case ArithmeticOp::BinaryAnd:
-                     return ALUOperation::BinaryAnd;
+                    return aluTranslation<ArithmeticOp::BinaryAnd>;
                 case ArithmeticOp::BinaryOr:
-                     return ALUOperation::BinaryOr;
+                    return aluTranslation<ArithmeticOp::BinaryOr>;
                 case ArithmeticOp::BinaryXor:
-                     return ALUOperation::BinaryXor;
+                    return aluTranslation<ArithmeticOp::BinaryXor>;
                 case ArithmeticOp::BinaryNot:
-                     return ALUOperation::UnaryNot;
+                    return aluTranslation<ArithmeticOp::BinaryNot>;
                 default:
                      return syn::defaultErrorState<ALUOperation>;
-
             }
     }
     constexpr bool isNormalBranchInstruction(JumpOp op) noexcept {
@@ -204,45 +227,73 @@ namespace iris {
                 return false;
         }
     }
+    template<> constexpr auto toExecutionUnitValue<CompareOp, CompareOp::LessThan> = syn::Comparator::StandardOperations::LessThan;
+    template<> constexpr auto toExecutionUnitValue<CompareOp, CompareOp::LessThanImmediate> = syn::Comparator::StandardOperations::LessThan;
+    template<> constexpr auto toExecutionUnitValue<CompareOp, CompareOp::LessThanOrEqualTo> = syn::Comparator::StandardOperations::LessThanOrEqualTo;
+    template<> constexpr auto toExecutionUnitValue<CompareOp, CompareOp::LessThanOrEqualToImmediate> = syn::Comparator::StandardOperations::LessThanOrEqualTo;
+    template<> constexpr auto toExecutionUnitValue<CompareOp, CompareOp::GreaterThan> = syn::Comparator::StandardOperations::GreaterThan;
+    template<> constexpr auto toExecutionUnitValue<CompareOp, CompareOp::GreaterThanImmediate> = syn::Comparator::StandardOperations::GreaterThan;
+    template<> constexpr auto toExecutionUnitValue<CompareOp, CompareOp::GreaterThanOrEqualTo> = syn::Comparator::StandardOperations::GreaterThanOrEqualTo;
+    template<> constexpr auto toExecutionUnitValue<CompareOp, CompareOp::GreaterThanOrEqualToImmediate> = syn::Comparator::StandardOperations::GreaterThanOrEqualTo;
+    template<> constexpr auto toExecutionUnitValue<CompareOp, CompareOp::Eq> = syn::Comparator::StandardOperations::Eq;
+    template<> constexpr auto toExecutionUnitValue<CompareOp, CompareOp::EqImmediate> = syn::Comparator::StandardOperations::Eq;
+    template<> constexpr auto toExecutionUnitValue<CompareOp, CompareOp::Neq> = syn::Comparator::StandardOperations::Neq;
+    template<> constexpr auto toExecutionUnitValue<CompareOp, CompareOp::NeqImmediate> = syn::Comparator::StandardOperations::Neq;
+    template<CompareOp op>
+    constexpr auto compareOpConversion = toExecutionUnitValue<CompareOp, op>;
     constexpr syn::Comparator::StandardOperations translate(CompareOp op) noexcept {
         switch(op) {
             case CompareOp::LessThan:
+                return compareOpConversion<CompareOp::LessThan>;
             case CompareOp::LessThanImmediate:
-                return syn::Comparator::StandardOperations::LessThan;
+                return compareOpConversion<CompareOp::LessThanImmediate>;
             case CompareOp::LessThanOrEqualTo:
+                return compareOpConversion<CompareOp::LessThanOrEqualTo>;
             case CompareOp::LessThanOrEqualToImmediate:
-                return syn::Comparator::StandardOperations::LessThanOrEqualTo;
+                return compareOpConversion<CompareOp::LessThanOrEqualToImmediate>;
             case CompareOp::GreaterThan:
+                return compareOpConversion<CompareOp::GreaterThan>;
             case CompareOp::GreaterThanImmediate:
-                return syn::Comparator::StandardOperations::GreaterThan;
+                return compareOpConversion<CompareOp::GreaterThanImmediate>;
             case CompareOp::GreaterThanOrEqualTo:
+                return compareOpConversion<CompareOp::GreaterThanOrEqualTo>;
             case CompareOp::GreaterThanOrEqualToImmediate:
-                return syn::Comparator::StandardOperations::GreaterThanOrEqualTo;
+                return compareOpConversion<CompareOp::GreaterThanOrEqualToImmediate>;
             case CompareOp::Eq:
+                return compareOpConversion<CompareOp::Eq>;
             case CompareOp::EqImmediate:
-                return syn::Comparator::StandardOperations::Eq;
+                return compareOpConversion<CompareOp::EqImmediate>;
             case CompareOp::Neq:
+                return compareOpConversion<CompareOp::Neq>;
             case CompareOp::NeqImmediate:
-                return syn::Comparator::StandardOperations::Neq;
+                return compareOpConversion<CompareOp::NeqImmediate>;
             default:
                 return syn::defaultErrorState<syn::Comparator::StandardOperations>;
         }
     }
     using CRUnitOp = syn::Comparator::BooleanOperations;
+    template<> constexpr auto toExecutionUnitValue<ConditionRegisterOp, ConditionRegisterOp::CRAnd> = CRUnitOp::BinaryAnd;
+    template<> constexpr auto toExecutionUnitValue<ConditionRegisterOp, ConditionRegisterOp::CROr> = CRUnitOp::BinaryOr;
+    template<> constexpr auto toExecutionUnitValue<ConditionRegisterOp, ConditionRegisterOp::CRNand> = CRUnitOp::BinaryNand;
+    template<> constexpr auto toExecutionUnitValue<ConditionRegisterOp, ConditionRegisterOp::CRNor> = CRUnitOp::BinaryNor;
+    template<> constexpr auto toExecutionUnitValue<ConditionRegisterOp, ConditionRegisterOp::CRXor> = CRUnitOp::BinaryXor;
+    template<> constexpr auto toExecutionUnitValue<ConditionRegisterOp, ConditionRegisterOp::CRNot> = CRUnitOp::UnaryNot;
+    template<ConditionRegisterOp op>
+    constexpr auto convertTranslationUnitOp = toExecutionUnitValue<decltype(op), op>;
     constexpr CRUnitOp translate(ConditionRegisterOp op) noexcept {
         switch(op) {
             case ConditionRegisterOp::CRAnd:
-                return CRUnitOp::BinaryAnd;
+                return convertTranslationUnitOp<ConditionRegisterOp::CRAnd>;
             case ConditionRegisterOp::CROr:
-                return CRUnitOp::BinaryOr;
+                return convertTranslationUnitOp<ConditionRegisterOp::CROr>;
             case ConditionRegisterOp::CRNand:
-                return CRUnitOp::BinaryNand;
+                return convertTranslationUnitOp<ConditionRegisterOp::CRNand>;
             case ConditionRegisterOp::CRNor:
-                return CRUnitOp::BinaryNor;
+                return convertTranslationUnitOp<ConditionRegisterOp::CRNor>;
             case ConditionRegisterOp::CRXor:
-                return CRUnitOp::BinaryXor;
+                return convertTranslationUnitOp<ConditionRegisterOp::CRXor>;
             case ConditionRegisterOp::CRNot:
-                return CRUnitOp::UnaryNot;
+                return convertTranslationUnitOp<ConditionRegisterOp::CRNot>;
             default:
                 return syn::defaultErrorState<CRUnitOp>;
         }

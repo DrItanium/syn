@@ -156,11 +156,6 @@ namespace cisc0 {
             throw syn::Problem(msg);
         }
     }
-    auto throwIfNotFound = [](auto result, auto& table, const std::string& msg) {
-        if (result == table.end()) {
-            throw syn::Problem(msg);
-        }
-    };
 
     void Core::dispatch(DecodedInstruction&& current) {
         auto tControl = current.getControl();
