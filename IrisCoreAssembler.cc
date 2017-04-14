@@ -111,42 +111,4 @@ namespace iris {
             return dataValue;
         }
     }
-	void resolveLabels(AssemblerState& state, std::ostream& output) {
-		// now that we have instructions, we need to print them out as hex values
-		char buf[8] = { 0 };
-		auto resolveLabel = [&state](AssemblerData& data) {
-			auto result = state.findLabel(data.currentLexeme);
-			if (result == state.endLabel()) {
-				std::stringstream msg;
-				msg << "ERROR: label " << data.currentLexeme << " is undefined!" << std::endl;
-				auto str = msg.str();
-				throw syn::Problem(str);
-			} else {
-				return result->second;
-			}
-		};
-		state.applyToFinishedData([&buf, &output, resolveLabel](auto value) {
-					buf[0] = 0;
-					buf[1] = value.instruction ? 0 : 1;
-					buf[2] = static_cast<char>(syn::getLowerHalf<word>(value.address));
-					buf[3] = static_cast<char>(syn::getUpperHalf<word>(value.address));
-					if (value.instruction) {
-						buf[4] = static_cast<char>(iris::encodeOperationByte(iris::encodeGroupByte(0, value.group), value.operation));
-						buf[5] = static_cast<char>(value.destination);
-						if (value.shouldResolveLabel()) {
-							value.setImmediate(resolveLabel(value));
-						}
-					} else {
-						if (value.shouldResolveLabel()) {
-							value.dataValue = resolveLabel(value);
-						}
-						buf[4] = syn::getLowerHalf<word>(value.dataValue);
-						buf[5] = syn::getUpperHalf<word>(value.dataValue);
-					}
-					buf[6] = value.instruction ? static_cast<char>(value.source0) : 0;
-					buf[7] = value.instruction ? static_cast<char>(value.source1) : 0;
-					output.write(static_cast<char*>(buf), sizeof(buf));
-				});
-	}
-
 } // end namespace iris

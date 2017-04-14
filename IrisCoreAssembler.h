@@ -641,6 +641,5 @@ namespace iris {
 	struct Anything : pegtl::sor<Separator, SingleLineComment,Statement> { };
 	struct Main : syn::MainFileParser<Anything> { };
 
-	void resolveLabels(AssemblerState& state, std::ostream& output);
 } // end namespace iris
 #endif // end IRIS_CORE_ASSEMBLER_H__

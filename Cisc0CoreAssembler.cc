@@ -47,10 +47,6 @@ namespace cisc0 {
 			int count;
 			Word first, second, third;
 			std::tie(count, first, second, third) = op.encode();
-			//std::cerr << "count = " << count << std::endl;
-			//std::cerr << "- first = " << std::hex << first << std::endl;
-			//std::cerr << "- second = " << std::hex << second << std::endl;
-			//std::cerr << "- third = " << std::hex << third << std::endl;
 			switch(count) {
 				case 3:
 					finalWords.emplace_back(address + 2, third);
@@ -85,21 +81,6 @@ namespace cisc0 {
 				default:
 					throw syn::Problem("Got a declaration of with a width that was not 1 or 2");
 			}
-		}
-	}
-
-	void AssemblerState::output(std::ostream* out) noexcept {
-		char buf[8] = { 0 };
-		for(auto const & address : finalWords) {
-			buf[0] = 0;
-			buf[1] = 0;
-			buf[2] = static_cast<char>(address.getAddress());
-			buf[3] = static_cast<char>(address.getAddress() >> 8);
-			buf[4] = static_cast<char>(address.getAddress() >> 16);
-			buf[5] = static_cast<char>(address.getAddress() >> 24);
-			buf[6] = static_cast<char>(address.getValue());
-			buf[7] = static_cast<char>(address.getValue() >> 8);
-			out->write(buf, 8);
 		}
 	}
 

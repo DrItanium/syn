@@ -59,7 +59,6 @@ namespace cisc0 {
 		std::vector<AssemblerWord> finalWords;
 		std::vector<AssemblerWord> wordsToResolve;
 		void setCurrentAddress(Address addr) noexcept;
-		void output(std::ostream* out) noexcept;
         void output(void* env, CLIPSValue* ret) noexcept;
 		void resolveInstructions();
 		void resolveDeclarations();
@@ -261,7 +260,7 @@ namespace cisc0 {
 									SymbolValueRegister,
 									SymbolMaskRegister,
 									SymbolFieldRegister> { };
-	Word translateRegister(const std::string& input); 
+	Word translateRegister(const std::string& input);
 
 	using IndirectGPR = syn::Indirection<GeneralPurposeRegister>;
 #define DefIndirectGPR(title) \
