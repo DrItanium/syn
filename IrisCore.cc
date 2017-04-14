@@ -333,6 +333,12 @@ namespace iris {
             case 64:
                 result = specialCaseDivOrRem<invokeRemainder, 63, 6>(numerator);
                 break;
+            case 128:
+                result = specialCaseDivOrRem<invokeRemainder, 127, 7>(numerator);
+                break;
+            case 256:
+                result = specialCaseDivOrRem<invokeRemainder, 255, 8>(numerator);
+                break;
             default:
                 result = invokeRemainder ? (numerator % denominator) : (numerator / denominator);
                 break;
