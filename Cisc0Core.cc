@@ -31,6 +31,43 @@
 #include <utility>
 #include <map>
 #include "Cisc0ClipsExtensions.h"
+namespace syn {
+    template<>
+    cisc0::RegisterValue div<cisc0::RegisterValue, cisc0::RegisterValue>(cisc0::RegisterValue numerator, cisc0::RegisterValue denominator) {
+        switch(denominator) {
+            case 0:
+                throw syn::Problem("Divide by zero!");
+            case 1:
+                return numerator;
+            case 2:
+                return numerator >> 1;
+            case 4:
+                return numerator >> 2;
+            case 8:
+                return numerator >> 3;
+            case 16:
+                return numerator >> 4;
+            case 32:
+                return numerator >> 5;
+            case 64:
+                return numerator >> 6;
+            case 128:
+                return numerator >> 7;
+            case 256:
+                return numerator >> 8;
+            case 512:
+                return numerator >> 9;
+            case 1024:
+                return numerator >> 10;
+            case 2048:
+                return numerator >> 11;
+            case 4096:
+                return numerator >> 12;
+            default:
+                return numerator / denominator;
+        }
+    }
+}
 
 namespace cisc0 {
     template<typename T, T value>
