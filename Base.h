@@ -412,7 +412,7 @@ inline R rem(T numerator, T denominator) {
 	if (denominator == 0) {
 		throw syn::Problem("Denominator is zero");
     } else if (denominator == 1) {
-        return static_cast<R>(numerator);
+        return static_cast<R>(0);
 	} else {
 		return static_cast<R>(numerator % denominator);
 	}
