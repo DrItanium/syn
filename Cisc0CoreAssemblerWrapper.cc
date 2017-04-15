@@ -128,19 +128,24 @@ namespace cisc0 {
 			return callErrorMessage(str, " too many arguments provided!");
 		}
 		auto ptr = static_cast<Self*>(DOPToExternalAddress(value));
-		auto parseLine = [env, ret, ptr]() {
+		auto parseLine = [env, ret, ptr, callErrorMessage]() {
 			CLIPSValue line;
 			if (!EnvArgTypeCheck(env, funcStr.c_str(), 3, STRING, &line)) {
 				CVSetBoolean(ret, false);
 				return syn::errorMessage(env, "CALL", 3, funcErrorPrefix, "provided assembly line is not a string!");
 			}
 			std::string str(EnvDOToString(env, line));
-			auto result = ptr->parseLine(str);
-			CVSetBoolean(ret, result);
-			if (!result) {
-				syn::errorMessage(env, "CALL", 3, funcErrorPrefix, "parse: error during parsing!");
+			try {
+				auto result = ptr->parseLine(str);
+				CVSetBoolean(ret, result);
+				if (!result) {
+					syn::errorMessage(env, "CALL", 3, funcErrorPrefix, "parse: error during parsing!");
+				}
+				return result;
+			} catch(pegtl::basic_parse_error<pegtl::position_info> e) {
+				CVSetBoolean(ret, false);
+				return callErrorMessage(str, e.what());
 			}
-			return result;
 		};
 		auto resolve = [env, ret, ptr]() {
 			try {
