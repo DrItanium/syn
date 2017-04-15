@@ -23,6 +23,7 @@
 (batch* lib/cortex.clp)
 (set-current-module MAIN)
 (batch* SynCores.clp)
+(batch* SynAssemblers.clp)
 
 (definstances MAIN::core-init
  (c0 of cisc0-core
