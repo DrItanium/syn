@@ -46,36 +46,31 @@ using uint64 = uint64_t;
 
 namespace syn {
 
-	constexpr uint8 fields[8] = {
-		0,
-		8,
-		16,
-		24,
-		32,
-		40,
-		48,
-		56
-	};
+    namespace FieldData {
+        constexpr uint8 fields[8] = {
+            0,
+            8,
+            16,
+            24,
+            32,
+            40,
+            48,
+            56
+        };
 
-	template<typename T, int32 index>
-	struct FieldData  {
-        FieldData() = delete;
-        FieldData(const FieldData&) = delete;
-        FieldData(FieldData&&) = delete;
-        ~FieldData() = delete;
-    };
+        template<typename T, int32 index>
+        constexpr auto Value = static_cast<T>(0);
+
+        template<typename T, int32 index>
+        constexpr auto FieldIndex = static_cast<T>(fields[index]);
+    } // end namespace FieldData
+
 
 #define DefFieldData(type, index, mask) \
-	template<> \
-	struct FieldData<type, index> { \
-        FieldData() = delete; \
-        FieldData(const FieldData&) = delete; \
-        FieldData(FieldData&&) = delete; \
-        ~FieldData() = delete; \
-        using DataType = type; \
-	    static constexpr DataType Value = mask ;  \
-	    static constexpr DataType FieldIndex = static_cast<DataType>(fields[index]); \
+    namespace FieldData { \
+        template<> constexpr auto Value<type, index>  = static_cast<type>(mask); \
     }
+
 	DefFieldData(int16, 0, 0x00FF);
 	DefFieldData(int16, 1, static_cast<int16>(0xFF00));
 
@@ -111,21 +106,36 @@ namespace syn {
 	DefFieldData(uint64, 7, 0xFF00000000000000);
 #undef DefFieldData
 
-    template<typename T>
-    struct UpperLowerPair { };
+    namespace UpperLowerPair {
+        template<typename T>
+        struct TypeData {
+            TypeData() = delete;
+            TypeData(const TypeData&) = delete;
+            TypeData(TypeData&&) = delete;
+            ~TypeData() = delete;
+        };
+        template<typename T>
+        constexpr auto upperMask = static_cast<T>(0);
+        template<typename T>
+        constexpr auto lowerMask = static_cast<T>(0);
+        template<typename T>
+        constexpr auto shiftCount = static_cast<T>(0);
+    } // end namespace UpperLowerPair
     #define DefUpperLowerPair(type, halfType, up, low, shift) \
-    template<> \
-    struct UpperLowerPair<type> { \
-        UpperLowerPair() = delete; \
-        UpperLowerPair(const UpperLowerPair&) = delete; \
-        UpperLowerPair(UpperLowerPair&&) = delete; \
-        ~UpperLowerPair() = delete; \
-        using HalfType = halfType; \
-        using DataType = type; \
-        static constexpr DataType upperMask = static_cast<type>(up); \
-        static constexpr DataType lowerMask = static_cast<type>(low); \
-        static constexpr DataType shiftCount = static_cast<type>(shift); \
+    namespace UpperLowerPair { \
+        template<> struct TypeData<type> { \
+            TypeData() = delete; \
+            TypeData(const TypeData&) = delete; \
+            TypeData(TypeData&&) = delete; \
+            ~TypeData() = delete; \
+            using HalfType = halfType; \
+            using DataType = type; \
+        }; \
+        template<> constexpr auto upperMask<type> = static_cast< type > ( up ); \
+        template<> constexpr auto lowerMask<type> = static_cast< type > ( low ) ; \
+        template<> constexpr auto shiftCount<type> = static_cast< type > ( shift ); \
     }
+
     DefUpperLowerPair(uint8, uint8, 0xF0, 0x0F, 4);
     DefUpperLowerPair(int8, int8, 0xF0, 0x0F, 4);
     DefUpperLowerPair(uint16, byte, 0xFF00, 0x00FF, 8);
@@ -137,7 +147,7 @@ namespace syn {
 #undef DefUpperLowerPair
 
 template<typename T>
-using HalfType = typename UpperLowerPair<T>::HalfType;
+using HalfType = typename UpperLowerPair::TypeData<T>::HalfType;
 
 template<typename T>
 using QuarterType = HalfType<HalfType<T>>;
@@ -147,16 +157,16 @@ using EighthType = HalfType<QuarterType<T>>;
 
 template<typename T>
 constexpr T getUpperMask() noexcept {
-    return UpperLowerPair<T>::upperMask;
+    return UpperLowerPair::upperMask<T>;
 }
 template<typename T>
 constexpr T getLowerMask() noexcept {
-    return UpperLowerPair<T>::lowerMask;
+    return UpperLowerPair::lowerMask<T>;
 }
 
 template<typename T>
 constexpr T getShiftCount() noexcept {
-    return UpperLowerPair<T>::shiftCount;
+    return UpperLowerPair::shiftCount<T>;
 }
 
 template<typename T>
@@ -199,7 +209,7 @@ template<> constexpr uint64 decodeBits<uint64, uint64, 0, 0>(uint64 input) noexc
 
 template<typename T, typename F, int field>
 constexpr F decodeField(T input) noexcept {
-	return decodeBits<T, F, FieldData<T, field>::Value, FieldData<T, field>::FieldIndex>(input);
+	return decodeBits<T, F, FieldData::Value<T, field>, FieldData::FieldIndex<T, field>>(input);
 }
 
 template<typename T, T mask>
@@ -233,7 +243,7 @@ constexpr T encodeFlag(T input, bool value) noexcept {
 
 template<typename T, typename F, int field>
 constexpr T encodeField(T input, F value) noexcept {
-	return encodeBits<T, F, FieldData<T, field>::Value, FieldData<T, field>::FieldIndex>(input, value);
+	return encodeBits<T, F, FieldData::Value<T, field>, FieldData::FieldIndex<T, field>>(input, value);
 }
 
 template<typename T>
@@ -789,8 +799,6 @@ constexpr bool binaryAnd<bool, bool>(bool a, bool b) noexcept {
 	return a && b;
 }
 
-
-
 template<typename T, typename R = T>
 constexpr R binaryOr(T a, T b) noexcept {
 	return static_cast<R>(a | b);
@@ -800,6 +808,7 @@ template<>
 constexpr bool binaryOr<bool, bool>(bool a, bool b) noexcept {
 	return a || b;
 }
+
 
 template<typename T, typename R = T>
 constexpr R binaryNot(T a) noexcept {
@@ -892,32 +901,32 @@ constexpr uint64 expandUInt64LE(bool b0, bool b1, bool b2, bool b3, bool b4, boo
 }
 
 template<typename T>
-constexpr typename UpperLowerPair<T>::HalfType getUpperHalf(T value) noexcept {
+constexpr typename UpperLowerPair::TypeData<T>::HalfType getUpperHalf(T value) noexcept {
     using InputType = T;
-    using DataPair = UpperLowerPair<T>;
+    using DataPair = UpperLowerPair::TypeData<T>;
     using OutputType = typename DataPair::HalfType;
-    return syn::decodeBits<InputType, OutputType, DataPair::upperMask, DataPair::shiftCount>(value);
+    return syn::decodeBits<InputType, OutputType, UpperLowerPair::upperMask<T>, UpperLowerPair::shiftCount<T>>(value);
 }
 template<typename T>
-constexpr typename UpperLowerPair<T>::HalfType getLowerHalf(T value) noexcept {
+constexpr typename UpperLowerPair::TypeData<T>::HalfType getLowerHalf(T value) noexcept {
     using InputType = T;
-    using DataPair = UpperLowerPair<T>;
+    using DataPair = UpperLowerPair::TypeData<T>;
     using OutputType = typename DataPair::HalfType;
-    return syn::decodeBits<InputType, OutputType, DataPair::lowerMask, 0>(value);
+    return syn::decodeBits<InputType, OutputType, UpperLowerPair::lowerMask<T>, 0>(value);
 }
 template<> constexpr byte getLowerHalf<uint16>(uint16 value) noexcept { return static_cast<byte>(value); }
 template<> constexpr uint16 getLowerHalf<uint32>(uint32 value) noexcept { return static_cast<uint16>(value); }
 template<> constexpr uint32 getLowerHalf<uint64>(uint64 value) noexcept { return static_cast<uint32>(value); }
 
 template<typename T>
-constexpr T setLowerHalf(T value, typename UpperLowerPair<T>::HalfType lower) noexcept {
-    using DataPair = UpperLowerPair<T>;
-    return syn::encodeBits<T, typename DataPair::HalfType, DataPair::lowerMask, 0>(value, lower);
+constexpr T setLowerHalf(T value, typename UpperLowerPair::TypeData<T>::HalfType lower) noexcept {
+    using DataPair = UpperLowerPair::TypeData<T>;
+    return syn::encodeBits<T, typename DataPair::HalfType, UpperLowerPair::lowerMask<T>, 0>(value, lower);
 }
 template<typename T>
-constexpr T setUpperHalf(T value, typename UpperLowerPair<T>::HalfType upper) noexcept {
-    using DataPair = UpperLowerPair<T>;
-    return syn::encodeBits<T, typename DataPair::HalfType, DataPair::lowerMask, DataPair::shiftCount>(value, upper);
+constexpr T setUpperHalf(T value, typename UpperLowerPair::TypeData<T>::HalfType upper) noexcept {
+    using DataPair = UpperLowerPair::TypeData<T>;
+    return syn::encodeBits<T, typename DataPair::HalfType, UpperLowerPair::lowerMask<T>, UpperLowerPair::shiftCount<T>>(value, upper);
 }
 
 
@@ -969,6 +978,13 @@ constexpr T defaultErrorState = T::Count;
 template<typename T>
 constexpr bool isErrorState(T op) noexcept {
     return op == defaultErrorState<T>;
+}
+
+template<typename T>
+constexpr void throwOnErrorState(T value, const std::string& msg) noexcept {
+    if (isErrorState<T>(value)) {
+        throw syn::Problem(msg);
+    }
 }
 
 }

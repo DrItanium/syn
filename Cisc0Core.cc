@@ -267,7 +267,7 @@ namespace cisc0 {
     void Core::compareOperation(DecodedInstruction&& inst) {
         static constexpr auto group = Operation::Compare;
         auto compareResult = translate(inst.getSubtype<group>());
-        throwOnCount(compareResult, "Illegal compare type!");
+        syn::throwOnErrorState(compareResult, "Illegal compare type!");
         DecodedInstruction next(tryReadNext<true>());
         auto first = registerValue(next.getCompareRegister<0>());
         auto second = inst.getImmediateFlag<group>() ? next.getUpper() : registerValue(next.getCompareRegister<1>());
@@ -415,7 +415,7 @@ namespace cisc0 {
     void Core::arithmeticOperation(DecodedInstruction&& inst) {
         static constexpr auto group = Operation::Arithmetic;
         auto result = translate(inst.getSubtype<group>());
-        throwOnCount(result, "Illegal arithmetic operation!");
+        syn::throwOnErrorState(result, "Illegal arithmetic operation!");
         auto op = result;
         auto src = inst.getImmediateFlag<group>() ? inst.getImmediate<group>() : registerValue(inst.getArithmeticRegister<1>());
         auto& dest = registerValue(inst.getArithmeticRegister<0>());
@@ -449,7 +449,7 @@ namespace cisc0 {
     void Core::logicalOperation(DecodedInstruction&& inst) {
         static constexpr auto group = Operation::Logical;
         auto result = translate(inst.getSubtype<group>());
-        throwOnCount(result, "Illegal logical operation!");
+        syn::throwOnErrorState(result, "Illegal logical operation!");
         auto op = result;
         auto source1 = inst.getImmediateFlag<group>() ? retrieveImmediate(inst.getBitmask<group>()) : registerValue(inst.getLogicalRegister<1>());
         auto& dest = registerValue(inst.getLogicalRegister<0>());
