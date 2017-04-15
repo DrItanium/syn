@@ -95,8 +95,8 @@ class CLIPSIOController : public AddressableIODevice<D, A> {
 			if (EnvFunctionCall(_env, "read-from-io-address", str.c_str(), &result)) {
 				throw syn::Problem("Calling read-from-io-address failed!");
 			}
-            if (!CVIsType(&result, INTEGER)) {
-                throw syn::Problem("Calling read-from-io-address failed!");
+			if (result.type != INTEGER) {
+				throw syn::Problem("Resultant type from read call is not an integer!");
             }
             return static_cast<D>(CVToInteger(&result));
 		}
@@ -107,7 +107,7 @@ class CLIPSIOController : public AddressableIODevice<D, A> {
 			CLIPSValue result;
 			if (EnvFunctionCall(_env, "write-to-io-address", str.c_str(), &result)) {
 				throw syn::Problem("Calling write-to-io-address failed!");
-			} else if (!CVIsType(&result, INTEGER)) {
+			} else if (result.type != INTEGER) {
 				throw syn::Problem("Calling write-to-io-address failed!");
 			}
 		}

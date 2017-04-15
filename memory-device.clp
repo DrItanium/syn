@@ -42,13 +42,15 @@
                     (?address)
                     (call ?self:native-reference
                           get
-                          ?address))
+                          (- ?address
+                             (dynamic-get index))))
 
 (defmessage-handler MAIN::memory write primary
                     (?address ?value)
                     (call ?self:native-reference
                           set
-                          ?address
+                          (- ?address
+                             (dynamic-get index))
                           ?value))
 
 (defclass MAIN::unconnected-memory
