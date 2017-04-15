@@ -37,17 +37,16 @@
   (multislot init-arguments
              (visibility public)
              (storage local)
-             (default-dynamic ?NONE))
+             (default ?NONE))
   (message-handler init after)
   (message-handler delete before)
   (message-handler call primary))
 
 (defmessage-handler MAIN::core init after
                     ()
-                    (bind ?self:reference
-                          (new (dynamic-get type)
-                               (dynamic-get init-arguments)))
-                    (call ?self:reference
+                    (call (bind ?self:reference
+                                (new (dynamic-get type)
+                                     (expand$ (dynamic-get init-arguments))))
                           initialize))
 (defmessage-handler MAIN::core delete before
                     ()
