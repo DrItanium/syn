@@ -38,6 +38,8 @@
              (visibility public)
              (storage local)
              (default ?NONE))
+  (message-handler cycle primary)
+  (message-handler run primary)
   (message-handler init after)
   (message-handler delete before)
   (message-handler call primary))
@@ -58,6 +60,46 @@
                     (call ?self:reference
                           ?operation
                           (expand$ ?args)))
+(defmessage-handler MAIN::core cycle primary
+                    ()
+                    (call ?self:reference
+                          cycle))
+
+(defmessage-handler MAIN::core run primary
+                    ()
+                    (call ?self:reference
+                          run))
+(defclass MAIN::register-core
+  (is-a core)
+  (message-handler get-register primary)
+  (message-handler set-register primary)
+  (message-handler read-memory primary)
+  (message-handler write-memory primary))
+
+(defmessage-handler MAIN::register-core get-register primary
+                    (?index)
+                    (call ?self:reference
+                          get-register
+                          ?index))
+(defmessage-handler MAIN::register-core set-register primary
+                    (?index ?value)
+                    (call ?self:reference
+                          set-register
+                          ?index
+                          ?value))
+
+(defmessage-handler MAIN::register-core read-memory primary
+                    (?address)
+                    (call ?self:reference
+                          read-memory
+                          ?address))
+(defmessage-handler MAIN::register-core write-memory primary
+                    (?address ?value)
+                    (call ?self:reference
+                          write-memory
+                          ?address
+                          ?value))
+
 
 (defclass MAIN::cisc0-core
   (is-a core)
@@ -69,4 +111,98 @@
   (is-a core)
   (slot type
         (source composite)
-        (default iris-core)))
+        (default iris-core))
+  (message-handler get-predicate-register primary)
+  (message-handler set-predicate-register primary)
+  (message-handler read-memory primary)
+  (message-handler write-memory primary)
+  (message-handler read-io-memory primary)
+  (message-handler write-io-memory primary)
+  (message-handler read-data-memory primary)
+  (message-handler write-data-memory primary)
+  (message-handler read-code-memory primary)
+  (message-handler write-code-memory primary)
+  (message-handler read-stack-memory primary)
+  (message-handler write-stack-memory primary))
+
+(defmessage-handler MAIN::iris-core read-memory primary
+                    (?address)
+                    (call ?self:reference 
+                          read-data-memory
+                          ?address))
+
+
+(defmessage-handler MAIN::iris-core write-memory primary
+                    (?address ?value)
+                    (call ?self:reference 
+                          write-data-memory
+                          ?address
+                          ?value))
+
+(defmessage-handler MAIN::iris-core read-data-memory primary
+                    (?address)
+                    (call ?self:reference 
+                          read-data-memory
+                          ?address))
+
+
+(defmessage-handler MAIN::iris-core write-data-memory primary
+                    (?address ?value)
+                    (call ?self:reference 
+                          write-data-memory
+                          ?address
+                          ?value))
+(defmessage-handler MAIN::iris-core read-stack-memory primary
+                    (?address)
+                    (call ?self:reference 
+                          read-stack-memory
+                          ?address))
+
+
+(defmessage-handler MAIN::iris-core write-stack-memory primary
+                    (?address ?value)
+                    (call ?self:reference 
+                          write-stack-memory
+                          ?address
+                          ?value))
+(defmessage-handler MAIN::iris-core read-io-memory primary
+                    (?address)
+                    (call ?self:reference 
+                          read-io-memory
+                          ?address))
+
+
+(defmessage-handler MAIN::iris-core write-io-memory primary
+                    (?address ?value)
+                    (call ?self:reference 
+                          write-io-memory
+                          ?address
+                          ?value))
+
+(defmessage-handler MAIN::iris-core read-code-memory primary
+                    (?address)
+                    (call ?self:reference 
+                          read-code-memory
+                          ?address))
+
+
+(defmessage-handler MAIN::iris-core write-code-memory primary
+                    (?address ?value)
+                    (call ?self:reference 
+                          write-code-memory
+                          ?address
+                          ?value))
+
+(defmessage-handler MAIN::iris-core get-predicate-register primary
+                    (?address)
+                    (call ?self:reference 
+                          get-predicate-register
+                          ?address))
+
+
+(defmessage-handler MAIN::iris-core set-predicate-register primary
+                    (?address ?value)
+                    (call ?self:reference 
+                          set-predicate-register
+                          ?address
+                          ?value))
