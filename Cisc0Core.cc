@@ -150,12 +150,6 @@ namespace cisc0 {
     void Core::decrementStackPointer(RegisterValue& ptr) noexcept {
         decrementAddress(ptr);
     }
-    template<typename T>
-    void throwOnCount(T result, const std::string& msg) {
-        if (syn::isErrorState(result)) {
-            throw syn::Problem(msg);
-        }
-    }
 
     void Core::dispatch(DecodedInstruction&& current) {
         auto tControl = current.getControl();
