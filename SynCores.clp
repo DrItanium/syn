@@ -102,13 +102,13 @@
 
 
 (defclass MAIN::cisc0-core
-  (is-a core)
+  (is-a register-core)
   (slot type
         (source composite)
         (default cisc0-core)))
 
 (defclass MAIN::iris-core
-  (is-a core)
+  (is-a register-core)
   (slot type
         (source composite)
         (default iris-core))
