@@ -136,3 +136,29 @@
         (source composite)
         (default iris-assembler)))
 
+(defgeneric MAIN::parse-file)
+
+(defmethod MAIN::parse-file
+  ((?target SYMBOL)
+   (?file LEXEME))
+  (bind ?router
+        (gensym*))
+  (if (open ?file 
+            ?router 
+            "r") then
+    (bind ?tmp
+          (new-assembly-parser ?target))
+    (if (not ?tmp) then
+        (return FALSE))
+    (while (neq (bind ?line
+                      (readline ?router))
+                EOF) do
+           (if (not (parse-assembly-line ?tmp
+                                         ?line)) then 
+             (return FALSE)))
+    (close ?router)
+    (resolve-assembly ?tmp)
+    (get-converted-assembly ?tmp)
+    else
+    (printout werror "Couldn't open " ?file " for reading!" crlf)
+    FALSE))
