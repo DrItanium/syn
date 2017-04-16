@@ -141,15 +141,15 @@
 (defmethod MAIN::parse-file
   ((?target SYMBOL)
    (?file LEXEME))
+  (bind ?tmp
+        (new-assembly-parser ?target))
+  (if (not ?tmp) then
+    (return FALSE))
   (bind ?router
         (gensym*))
   (if (open ?file 
             ?router 
             "r") then
-    (bind ?tmp
-          (new-assembly-parser ?target))
-    (if (not ?tmp) then
-        (return FALSE))
     (while (neq (bind ?line
                       (readline ?router))
                 EOF) do

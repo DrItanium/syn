@@ -23,6 +23,69 @@
 
 ; Define the base wrapper classes for the different cores
 
+(deffunction MAIN::inform-then-halt
+             ($?msg)
+             (printout werror
+                       (expand$ ?msg)
+                       crlf)
+             (halt)
+             FALSE)
+(defgeneric MAIN::new-core)
+(defgeneric MAIN::shutdown-core)
+(defgeneric MAIN::initialize-core)
+(defgeneric MAIN::call-core)
+(defgeneric MAIN::cycle-core
+            "Run a single core cycle!")
+(defgeneric MAIN::run-core
+            "Run the core until it finishes itself! Cannot be interrupted!")
+
+(defmethod MAIN::new-core
+  ((?title SYMBOL)
+   (?args MULTIFIELD))
+  (new ?title
+       (expand$ ?args)))
+
+(defmethod MAIN::new-core
+  ((?title SYMBOL)
+   $?args)
+  (new-core ?title
+            ?args))
+
+(defmethod MAIN::initialize-core
+  ((?core EXTERNAL-ADDRESS))
+  (call ?core
+        initialize))
+(defmethod MAIN::shutdown-core
+  ((?core EXTERNAL-ADDRESS))
+  (call ?core
+        shutdown))
+
+(defmethod MAIN::call-core
+  ((?core EXTERNAL-ADDRESS)
+   (?operation SYMBOL)
+   (?arguments MULTIFIELD))
+  (call ?core
+        ?operation
+        (expand$ ?arguments)))
+
+(defmethod MAIN::call-core
+  ((?core EXTERNAL-ADDRESS)
+   (?operation SYMBOL)
+   $?args)
+  (call-core ?core
+             ?operation
+             ?args))
+
+(defmethod MAIN::cycle-core
+  ((?core EXTERNAL-ADDRESS))
+  (call ?core 
+        cycle))
+
+(defmethod MAIN::run-core
+  ((?core EXTERNAL-ADDRESS))
+  (call ?core
+        run))
+
 (defclass MAIN::core
   (is-a USER)
   (slot reference
@@ -46,31 +109,32 @@
 
 (defmessage-handler MAIN::core init after
                     ()
-                    (call (bind ?self:reference
-                                (new (dynamic-get type)
-                                     (expand$ (dynamic-get init-arguments))))
-                          initialize))
+                    (initialize-core (bind ?self:reference
+                                           (new-core (dynamic-get type)
+                                                     (dynamic-get init-arguments)))))
+
 (defmessage-handler MAIN::core delete before
                     ()
-                    (call ?self:reference
-                          shutdown))
+                    (shutdown-core ?self:reference))
 
 (defmessage-handler MAIN::core call primary
                     (?operation $?args)
-                    (call ?self:reference
-                          ?operation
-                          (expand$ ?args)))
+                    (call-core ?self:reference
+                               ?operation
+                               ?args))
+
 (defmessage-handler MAIN::core cycle primary
                     ()
-                    (call ?self:reference
-                          cycle))
+                    (cycle-core ?self:reference))
 
 (defmessage-handler MAIN::core run primary
                     ()
-                    (call ?self:reference
-                          run))
+                    (run-core ?self:reference))
+
+
 (defclass MAIN::register-core
   (is-a core)
+  (message-handler install-values primary)
   (message-handler get-register primary)
   (message-handler set-register primary)
   (message-handler read-memory primary)
@@ -105,13 +169,43 @@
   (is-a register-core)
   (slot type
         (source composite)
-        (default cisc0-core)))
+        (default cisc0-core))
+  (message-handler install-values primary))
+
+(defmessage-handler MAIN::cisc0-core install-values primary
+                    ($?values)
+                    (if (oddp (length$ ?values)) then
+                      (return (inform-then-halt "Invalid value list!")))
+                    (bind ?list
+                          ?values)
+                    (while (> (length$ ?list) 0) do
+                           (bind ?address
+                                 (nth$ 1 
+                                       ?list))
+                           (bind ?value
+                                 (nth$ 2
+                                       ?list))
+                           (if (not (call ?self:reference
+                                          write-memory
+                                          ?address
+                                          ?value)) then
+                             (return (inform-then-halt "Couldn't write " 
+                                                       ?value 
+                                                       " to "
+                                                       ?address
+                                                       "!")))
+                           (bind ?list
+                                 (delete$ ?list
+                                          1 
+                                          2)))
+                    TRUE)
 
 (defclass MAIN::iris-core
   (is-a register-core)
   (slot type
         (source composite)
         (default iris-core))
+  (message-handler install-values primary)
   (message-handler get-predicate-register primary)
   (message-handler set-predicate-register primary)
   (message-handler read-memory primary)
@@ -124,6 +218,7 @@
   (message-handler write-code-memory primary)
   (message-handler read-stack-memory primary)
   (message-handler write-stack-memory primary))
+
 
 (defmessage-handler MAIN::iris-core read-memory primary
                     (?address)
@@ -206,3 +301,39 @@
                           set-predicate-register
                           ?address
                           ?value))
+(defmessage-handler MAIN::iris-core install-values primary
+                    ($?values)
+                    (if (or (evenp (length$ ?values))
+                            (<> (mod (length$ ?values) 
+                                     3)
+                                0)) then
+                      (return (inform-then-halt "Invalid value list!")))
+                    (bind ?list
+                          ?values)
+                    (while (> (length$ ?list) 0) do
+                           (if (not (bind ?target-operation 
+                                          (switch (nth$ 1 
+                                                        ?list)
+                                                  (case 0 then write-code-memory)
+                                                  (case 1 then write-data-memory)
+                                                  (case 2 then write-stack-memory)
+                                                  (case 3 then write-io-memory)
+                                                  (default FALSE)))) then 
+                             (return (inform-then-halt "Invalid code space!")))
+                           (bind ?address
+                                 (nth$ 2 
+                                       ?list))
+                           (bind ?value
+                                 (nth$ 3
+                                       ?list))
+                           (if (not (call ?self:reference
+                                          ?target-operation
+                                          ?address
+                                          ?value)) then
+                             (return (inform-then-halt "Invalid action occurred!")))
+                           (bind ?list
+                                 (delete$ ?list 
+                                          1 
+                                          3)))
+
+                    TRUE)
