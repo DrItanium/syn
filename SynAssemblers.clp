@@ -121,22 +121,8 @@
 
 (defmessage-handler MAIN::assembler parse-lines primary
                     ($?lines)
-                    (progn$ (?line $?lines) 
-                            (if (not (parse-assembly-line ?self:reference
-                                                          ?line)) then
-                              (return FALSE)))
-                    TRUE)
-
-(defmessage-handler MAIN::assembler parse-router primary
-                    (?router)
-                    (while (neq (bind ?line
-                                      (readline ?router)) 
-                                EOF) do
-                           (if (not (parse-assembly-line ?self:reference
-                                                         ?line)) then
-                             (return FALSE)))
-                    TRUE)
-
+                    (parse-assembly-lines ?self:reference
+                                          ?lines))
 
 (defclass MAIN::cisc0-assembler
   (is-a assembler)
