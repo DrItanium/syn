@@ -48,40 +48,41 @@ namespace cisc0 {
 	using RawInstruction = Word; // this is more of a packet!
 	using RegisterValue = DWord;
     using Address = DWord;
-    namespace ArchitectureConstants {
-        constexpr auto RegisterCount = 16;
-		constexpr auto MaxInstructionCount = 16;
-		constexpr auto TerminateAddress = 0xFFFFFFFF;
-		constexpr auto StartingIPAddress = 0xFE000000;
+
+	enum ArchitectureConstants  {
+		RegisterCount = 16,
+		MaxInstructionCount = 16,
+		TerminateAddress = 0xFFFFFFFF,
+		StartingIPAddress = 0xFE000000,
 		// unlike iris16 and iris32, there is a limited set of registers with
 		// a majority of them marked for explicit usage, instructions
 		// themselves are still 16 bits wide but 32bits are extracted per
 		// packet.
-		constexpr auto R15 = RegisterCount - 1;
-		constexpr auto R14 = RegisterCount - 2;
-		constexpr auto R13 = RegisterCount - 3;
-		constexpr auto R12 = RegisterCount - 4;
-		constexpr auto R11 = RegisterCount - 5;
-		constexpr auto R10 = RegisterCount - 6;
-		constexpr auto R9  = RegisterCount - 7;
-		constexpr auto R8  = RegisterCount - 8;
-		constexpr auto R7  = RegisterCount - 9;
-		constexpr auto R6  = RegisterCount - 10;
-		constexpr auto R5  = RegisterCount - 11;
-		constexpr auto R4  = RegisterCount - 12;
-		constexpr auto R3  = RegisterCount - 13;
-		constexpr auto R2  = RegisterCount - 14;
-		constexpr auto R1  = RegisterCount - 15;
-		constexpr auto R0  = RegisterCount - 16;
-		constexpr auto InstructionPointer = R15;
-		constexpr auto StackPointer = R14;
-		constexpr auto ConditionRegister = R13;
-		constexpr auto AddressRegister = R12;
-		constexpr auto ValueRegister = R11;
-		constexpr auto MaskRegister = R10;
-		constexpr auto ShiftRegister = R9;
-		constexpr auto FieldRegister = R9;
-    } // end namespace ArchitectureConstants
+		R15 = RegisterCount - 1,
+		R14 = RegisterCount - 2,
+		R13 = RegisterCount - 3,
+		R12 = RegisterCount - 4,
+		R11 = RegisterCount - 5,
+		R10 = RegisterCount - 6,
+		R9  = RegisterCount - 7,
+		R8  = RegisterCount - 8,
+		R7  = RegisterCount - 9,
+		R6  = RegisterCount - 10,
+		R5  = RegisterCount - 11,
+		R4  = RegisterCount - 12,
+		R3  = RegisterCount - 13,
+		R2  = RegisterCount - 14,
+		R1  = RegisterCount - 15,
+		R0  = RegisterCount - 16,
+		InstructionPointer = R15,
+		StackPointer = R14,
+		ConditionRegister = R13,
+		AddressRegister = R12,
+		ValueRegister = R11,
+		MaskRegister = R10,
+		ShiftRegister = R9,
+		FieldRegister = R9,
+	};
 } // end namespace cisc0
 
 #include "cisc0_defines.h"

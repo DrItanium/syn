@@ -33,20 +33,21 @@ namespace iris {
     using raw_instruction = dword;
     using immediate = word;
     using QuadWord = uint64_t;
-    namespace ArchitectureConstants {
-        constexpr auto RegisterCount = 256;
-        constexpr auto AddressMax = 0xFFFF;
-        constexpr auto AddressCount = AddressMax + 1;
-        constexpr auto RegisterMax = 0xFF;
-        constexpr auto ConditionRegisterCount = 16;
-        constexpr auto StackPointerIndex = RegisterCount - 1;
-        constexpr auto MaxGroups = 8;
-        constexpr auto MaxOperations = 32;
-        constexpr auto ErrorDispatchVectorBase = 0x00FF;
-        constexpr auto RegistersToSaveOnError = 18;
-        constexpr auto ErrorRegisterStart = 255;
-        constexpr auto TerminateIOAddress = 0xFFFF;
-    } // end namespace ArchitectureConstants
+	enum ArchitectureConstants  {
+		RegisterCount = 256,
+		AddressMax = 0xFFFF,
+        AddressCount = AddressMax + 1,
+		RegisterMax = 0xFF,
+		ConditionRegisterCount = 16,
+		StackPointerIndex = RegisterCount - 1,
+		MaxGroups = 8,
+		MaxOperations = 32,
+		ErrorDispatchVectorBase = 0x00FF,
+		RegistersToSaveOnError = 18,
+		ErrorRegisterStart = 255,
+        TerminateIOAddress = 0xFFFF,
+	};
+
 } // end namespace iris
 
 
