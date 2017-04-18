@@ -47,11 +47,7 @@ namespace syn {
      * Extract out all of the different routines which will _NOT_ change from
      * instantiation to instantiation of WrappedIODevice.
      */
-    struct WrappedIODeviceConstants {
-        WrappedIODeviceConstants() = delete;
-        WrappedIODeviceConstants(const WrappedIODeviceConstants&) = delete;
-        WrappedIODeviceConstants(WrappedIODeviceConstants&&) = delete;
-        ~WrappedIODeviceConstants() = delete;
+    namespace WrappedIODeviceConstants {
         enum class Operations {
             Type,
             Read,
@@ -62,10 +58,10 @@ namespace syn {
             Count,
             Error = Count,
         };
-        static const char* operationsName(Operations op) noexcept;
-        static Operations nameToOperation(const std::string& title) noexcept;
-        static constexpr int getArgCount(Operations op) noexcept;
-        static bool getCommandList(void* env, CLIPSValuePtr ret) noexcept;
+        const char* operationsName(Operations op) noexcept;
+        Operations nameToOperation(const std::string& title) noexcept;
+        constexpr int getArgCount(Operations op) noexcept;
+        bool getCommandList(void* env, CLIPSValuePtr ret) noexcept;
     };
     template<>
     constexpr auto defaultErrorState<WrappedIODeviceConstants::Operations> = WrappedIODeviceConstants::Operations::Error;
@@ -88,8 +84,7 @@ namespace syn {
             using Self = WrappedIODevice<Data, Address, T>;
             using Parent = ExternalAddressWrapper<InternalType>;
             using Self_Ptr = Self*;
-            using Constants = WrappedIODeviceConstants;
-            using Operations = Constants::Operations;
+            using Operations = WrappedIODeviceConstants::Operations;
        public:
             static void newFunction(void* env, CLIPSValue* ret) {
                 static auto init = true;
@@ -141,12 +136,12 @@ namespace syn {
                     return badArgument(2, "expected a function name to call!");
                 }
                 std::string str(syn::extractLexeme(env, op));
-                auto result = Constants::nameToOperation(str);
+                auto result = WrappedIODeviceConstants::nameToOperation(str);
                 if (isErrorState(result)) {
                     return callErrorMessage(str, "<- unknown operation requested!");
                 }
                 auto theOp = result;
-                auto countResult = Constants::getArgCount(theOp);
+                auto countResult = WrappedIODeviceConstants::getArgCount(theOp);
                 if (countResult == -1) {
                     return callErrorMessage(str, "<- unknown argument count, not registered!!!");
                 }
@@ -202,7 +197,7 @@ namespace syn {
                     case Operations::Write:
                         return writeOperation();
                     case Operations::ListCommands:
-                        return Constants::getCommandList(env, ret);
+                        return WrappedIODeviceConstants::getCommandList(env, ret);
                     default:
                         return callErrorMessage(str, "<- unimplemented operation!!!!");
                 }

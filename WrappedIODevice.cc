@@ -38,76 +38,78 @@ namespace syn {
 		WrappedCLIPSRandomNumberGeneratorDevice::registerWithEnvironment(theEnv);
         WrappedRandomNumberGenerator16bitDevice::registerWithEnvironment(theEnv);
     }
-    constexpr int WrappedIODeviceConstants::getArgCount(WrappedIODeviceConstants::Operations op) noexcept {
-        using Op = WrappedIODeviceConstants::Operations;
-        switch(op) {
-            case Op::Type:
-            case Op::Initialize:
-            case Op::Shutdown:
-            case Op::ListCommands:
-                return 0;
-            case Op::Read:
-                return 1;
-            case Op::Write:
-                return 2;
-            default:
-                return -1;
-        }
-    }
-    WrappedIODeviceConstants::Operations WrappedIODeviceConstants::nameToOperation(const std::string& title) noexcept {
-        static std::map<std::string, Operations> opTranslation = {
-            { WrappedIODeviceConstants::operationsName(Operations::Read), Operations::Read },
-            { WrappedIODeviceConstants::operationsName(Operations::Write), Operations::Write },
-            { WrappedIODeviceConstants::operationsName(Operations::Type),  Operations::Type },
-            { WrappedIODeviceConstants::operationsName(Operations::Initialize), Operations::Initialize },
-            { WrappedIODeviceConstants::operationsName(Operations::Shutdown), Operations::Shutdown },
-            { WrappedIODeviceConstants::operationsName(Operations::ListCommands), Operations::ListCommands },
-        };
-        auto result = opTranslation.find(title);
-        if (result == opTranslation.end()) {
-            return defaultErrorState<Operations>;
-        } else {
-            return result->second;
-        }
-    }
-    const char* WrappedIODeviceConstants::operationsName(WrappedIODeviceConstants::Operations op) noexcept {
-
-        // update this list of names only! everything else is dependent on it!
-        static std::map<Operations, std::string> reverseNameLookup = {
-            { Operations::Read, "read" },
-            { Operations::Write, "write" },
-            { Operations::Type, "type" },
-            { Operations::Initialize, "initialize" },
-            { Operations::Shutdown, "shutdown" },
-            { Operations::ListCommands, "list-commands" },
-        };
-        auto result = reverseNameLookup.find(op);
-        if (result == reverseNameLookup.end()) {
-            return nullptr;
-        } else {
-            return result->second.c_str();
-        }
-    }
-
-    bool WrappedIODeviceConstants::getCommandList(void* env, CLIPSValuePtr ret) noexcept {
-        FixedSizeMultifieldBuilder<static_cast<long>(Operations::Count)> mb(env);
-        auto setField = [&mb, env](int index, Operations op) {
-            auto result = operationsName(op);
-            if (!result) {
-                // We want this to barf out and terminate execution!
-                throw syn::Problem("Undefined operation!");
+    namespace WrappedIODeviceConstants {
+        constexpr int getArgCount(WrappedIODeviceConstants::Operations op) noexcept {
+            using Op = WrappedIODeviceConstants::Operations;
+            switch(op) {
+                case Op::Type:
+                case Op::Initialize:
+                case Op::Shutdown:
+                case Op::ListCommands:
+                    return 0;
+                case Op::Read:
+                    return 1;
+                case Op::Write:
+                    return 2;
+                default:
+                    return -1;
             }
-            mb.setField(index, SYMBOL, EnvAddSymbol(env, operationsName(op)));
-        };
-        setField(1, Operations::Read);
-        setField(2, Operations::Write);
-        setField(3, Operations::Type);
-        setField(4, Operations::Initialize);
-        setField(5, Operations::Shutdown);
-        setField(6, Operations::ListCommands);
-        mb.assign(ret);
-        return true;
-    }
+        }
+        Operations nameToOperation(const std::string& title) noexcept {
+            static std::map<std::string, Operations> opTranslation = {
+                { operationsName(Operations::Read), Operations::Read },
+                { operationsName(Operations::Write), Operations::Write },
+                { operationsName(Operations::Type),  Operations::Type },
+                { operationsName(Operations::Initialize), Operations::Initialize },
+                { operationsName(Operations::Shutdown), Operations::Shutdown },
+                { operationsName(Operations::ListCommands), Operations::ListCommands },
+            };
+            auto result = opTranslation.find(title);
+            if (result == opTranslation.end()) {
+                return defaultErrorState<Operations>;
+            } else {
+                return result->second;
+            }
+        }
+        const char* operationsName(Operations op) noexcept {
+
+            // update this list of names only! everything else is dependent on it!
+            static std::map<Operations, std::string> reverseNameLookup = {
+                { Operations::Read, "read" },
+                { Operations::Write, "write" },
+                { Operations::Type, "type" },
+                { Operations::Initialize, "initialize" },
+                { Operations::Shutdown, "shutdown" },
+                { Operations::ListCommands, "list-commands" },
+            };
+            auto result = reverseNameLookup.find(op);
+            if (result == reverseNameLookup.end()) {
+                return nullptr;
+            } else {
+                return result->second.c_str();
+            }
+        }
+
+        bool getCommandList(void* env, CLIPSValuePtr ret) noexcept {
+            FixedSizeMultifieldBuilder<static_cast<long>(Operations::Count)> mb(env);
+            auto setField = [&mb, env](int index, Operations op) {
+                auto result = operationsName(op);
+                if (!result) {
+                    // We want this to barf out and terminate execution!
+                    throw syn::Problem("Undefined operation!");
+                }
+                mb.setField(index, SYMBOL, EnvAddSymbol(env, operationsName(op)));
+            };
+            setField(1, Operations::Read);
+            setField(2, Operations::Write);
+            setField(3, Operations::Type);
+            setField(4, Operations::Initialize);
+            setField(5, Operations::Shutdown);
+            setField(6, Operations::ListCommands);
+            mb.assign(ret);
+            return true;
+        }
+    } // end namespace WrappedIODeviceConstants
 
     void handleProblem(void* env, syn::Problem& p, CLIPSValue* ret, const std::string& funcErrorPrefix, const char* type, int code) noexcept {
         CVSetBoolean(ret, false);
