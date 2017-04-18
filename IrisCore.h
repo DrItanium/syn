@@ -50,7 +50,7 @@ namespace iris {
             using ErrorStorage = WordMemorySpace<ArchitectureConstants::RegistersToSaveOnError>;
             using InstructionPointer = syn::Register<QuadWord, ArchitectureConstants::AddressMax>;
             using LinkRegister = syn::Register<QuadWord, ArchitectureConstants::AddressMax>;
-            using PredicateRegisterBlock = syn::Register<word, AddressMax>;
+            using PredicateRegisterBlock = syn::Register<word, ArchitectureConstants::AddressMax>;
 		public:
 			Core() noexcept;
 			virtual ~Core();
