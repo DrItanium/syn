@@ -41,6 +41,21 @@ using DataObject = DATA_OBJECT;
 using DataObjectPtr = DATA_OBJECT_PTR;
 void installExtensions(void* theEnv);
 
+int getArgCount(void* env) noexcept;
+bool hasCorrectArgCount(void* env, int compare) noexcept;
+bool isExternalAddress(DataObjectPtr value) noexcept;
+
+CLIPSInteger extractLong(void* env, DataObjectPtr value) noexcept;
+CLIPSInteger extractLong(void* env, DataObject& value) noexcept;
+const char* extractLexeme(void* env, DataObjectPtr value) noexcept;
+const char* extractLexeme(void* env, DataObject& value) noexcept;
+
+bool checkThenGetArgument(void* env, const std::string& function, int position, int type, DataObjectPtr saveTo) noexcept;
+bool tryGetArgumentAsInteger(void* env, const std::string& function, int position, DataObjectPtr saveTo) noexcept;
+bool tryGetArgumentAsSymbol(void* env, const std::string& function, int position, DataObjectPtr saveTo) noexcept;
+bool tryGetArgumentAsString(void* env, const std::string& function, int position, DataObjectPtr saveTo) noexcept;
+
+
 template<typename T>
 struct ExternalAddressRegistrar {
 	public:
@@ -65,13 +80,6 @@ struct ExternalAddressRegistrar {
 	private:
 		static std::map<void*, unsigned int> _cache;
 };
-
-bool isExternalAddress(DataObjectPtr value) noexcept;
-
-CLIPSInteger extractLong(void* env, DataObjectPtr value) noexcept;
-CLIPSInteger extractLong(void* env, DataObject& value) noexcept;
-const char* extractLexeme(void* env, DataObjectPtr value) noexcept;
-const char* extractLexeme(void* env, DataObject& value) noexcept;
 
 
 template<typename T>
@@ -141,7 +149,7 @@ namespace WrappedNewCallBuilder {
     T* invokeNewFunction(void* env, CLIPSValuePtr ret, const std::string funcErrorPrefix, const std::string& function) noexcept {
         using InternalType = T;
         try {
-            if (EnvRtnArgCount(env) == 1) {
+            if (getArgCount(env) == 1) {
                 return new InternalType();
             } else {
                 errorMessage(env, "NEW", 2, funcErrorPrefix, " no arguments should be provided for function new!");

@@ -252,15 +252,11 @@ namespace syn {
 	template<typename T>
 	using Block = T[];
 
-    bool PerformArgCheck(void* env, int position, unsigned int type, CLIPSValuePtr storage, const std::string& funcStr) noexcept {
-        return EnvArgTypeCheck(env, funcStr.c_str(), position, type, storage);
-    }
-
     bool Arg2IsInteger(void* env, CLIPSValuePtr storage, const std::string& funcStr) noexcept {
-        return PerformArgCheck(env, 2, INTEGER, storage, funcStr);
+        return tryGetArgumentAsInteger(env, funcStr, 2, storage);
     }
     bool Arg2IsSymbol(void* env, CLIPSValuePtr storage, const std::string& funcStr) noexcept {
-        return PerformArgCheck(env, 2, SYMBOL, storage, funcStr);
+        return tryGetArgumentAsSymbol(env, funcStr, 2, storage);
     }
     void handleProblem(void* env, CLIPSValuePtr ret, syn::Problem& p, const std::string funcErrorPrefix) noexcept {
         CVSetBoolean(ret, false);
@@ -270,9 +266,6 @@ namespace syn {
         errorMessage(env, "CALL", 2, funcErrorPrefix, str);
     }
 
-    int getArgCount(void* env) noexcept {
-        return EnvRtnArgCount(env);
-    }
     template<typename T>
     constexpr bool isArithmeticOperation(T value) noexcept {
         switch(value) {
@@ -327,7 +320,7 @@ namespace syn {
 				}
 
 				try {
-                    if (getArgCount(env) == 2) {
+                    if (hasCorrectArgCount(env, 2)) {
 						CLIPSValue capacity;
                         if (!Arg2IsInteger(env, &capacity, funcStr)) {
 							CVSetBoolean(ret, false);
@@ -386,7 +379,7 @@ namespace syn {
                 auto rangeViolation = [errOutOfRange, ptr, &str](Address addr) { errOutOfRange(str, ptr->size(), addr); };
                 CLIPSValue arg0, arg1;
                 auto checkArg = [callErrorMessage, &str, env](unsigned int index, unsigned int type, const std::string& msg, CLIPSValue* dat) {
-                    if (!PerformArgCheck(env, index, type, dat, funcStr)) {
+                    if (!checkThenGetArgument(env, funcStr, index, type, dat)) {
                         return callErrorMessage(str, msg);
                     }
                     return true;
@@ -402,7 +395,7 @@ namespace syn {
                 std::tie(op, aCount) = result->second;
                 // if it is registered then check the length
                 auto argCount = 2 /* always have two arguments */  + aCount;
-                if (argCount != getArgCount(env)) {
+                if (!hasCorrectArgCount(env, argCount)) {
                     std::stringstream ss;
                     ss << " expected " << std::dec << argCount << " arguments";
                     CVSetBoolean(ret, false);
@@ -614,5 +607,26 @@ namespace syn {
     }
     const char* extractLexeme(void* env, DataObject& value) noexcept {
         return EnvDOToString(env, value);
+    }
+
+    bool checkThenGetArgument(void* env, const std::string& function, int position, int type, DataObjectPtr saveTo) noexcept {
+        return EnvArgTypeCheck(env, function.c_str(), position, type, saveTo);
+    }
+
+    bool tryGetArgumentAsInteger(void* env, const std::string& function, int position, DataObjectPtr saveTo) noexcept {
+        return checkThenGetArgument(env, function, position, INTEGER, saveTo);
+    }
+
+    bool tryGetArgumentAsSymbol(void* env, const std::string& function, int position, DataObjectPtr saveTo) noexcept {
+        return checkThenGetArgument(env, function, position, SYMBOL, saveTo);
+    }
+    bool tryGetArgumentAsString(void* env, const std::string& function, int position, DataObjectPtr saveTo) noexcept {
+        return checkThenGetArgument(env, function, position, STRING, saveTo);
+    }
+    bool hasCorrectArgCount(void* env, int compare) noexcept {
+        return compare == getArgCount(env);
+    }
+    int getArgCount(void* env) noexcept {
+        return EnvRtnArgCount(env);
     }
 }

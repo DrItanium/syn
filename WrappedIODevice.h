@@ -137,10 +137,10 @@ namespace syn {
                     return badArgument(1, "Function call expected an external address as the first argument!");
                 }
                 CLIPSValue op;
-                if (!EnvArgTypeCheck(env, funcStr.c_str(), 2, SYMBOL, &op)) {
+                if (!syn::tryGetArgumentAsSymbol(env, funcStr, 2, &op)) {
                     return badArgument(2, "expected a function name to call!");
                 }
-                std::string str(EnvDOToString(env, op));
+                std::string str(syn::extractLexeme(env, op));
                 auto result = Constants::nameToOperation(str);
                 if (isErrorState(result)) {
                     return callErrorMessage(str, "<- unknown operation requested!");
@@ -151,13 +151,13 @@ namespace syn {
                     return callErrorMessage(str, "<- unknown argument count, not registered!!!");
                 }
                 auto count = 2 + countResult;
-                if (count != EnvRtnArgCount(env)) {
+                if (!syn::hasCorrectArgCount(env, count)) {
                     return callErrorMessage(str, " too many arguments provided!");
                 }
                 auto ptr = static_cast<Self_Ptr>(DOPToExternalAddress(value));
                 auto readOperation = [ptr, ret, env, badArgument]() {
                     CLIPSValue tmp;
-                    if (!EnvArgTypeCheck(env, funcStr.c_str(), 3, INTEGER, &tmp)) {
+                    if (!syn::tryGetArgumentAsInteger(env, funcStr, 3, &tmp)) {
                         return badArgument(3, "provided address is not an integer!");
                     }
                     try {
@@ -170,9 +170,9 @@ namespace syn {
                 };
                 auto writeOperation = [ptr, ret, env, badArgument]() {
                     CLIPSValue t0, t1;
-                    if (!EnvArgTypeCheck(env, funcStr.c_str(), 3, INTEGER, &t0)) {
+                    if (!syn::tryGetArgumentAsInteger(env, funcStr, 3, &t0)) {
                         return badArgument(3, "provided address is not an integer!");
-                    } else if (!EnvArgTypeCheck(env, funcStr.c_str(), 4, INTEGER, &t1)) {
+                    } else if (!syn::tryGetArgumentAsInteger(env, funcStr, 4, &t1)) {
                         return badArgument(3, "provided value is not an integer!");
                     }
                     try {
@@ -248,7 +248,7 @@ namespace syn {
     T<Data, Address>* WrappedIODeviceBuilder<Data, Address, T>::invokeNewFunction(void* env, CLIPSValue* ret, const std::string& funcErrorPrefix, const std::string& function) noexcept {
         using InternalType = T<Data, Address>;
         try {
-            if (EnvRtnArgCount(env) == 1) {
+            if (!syn::hasCorrectArgCount(env, 1)) {
                 return new InternalType();
             } else {
                 errorMessage(env, "NEW", 1, funcErrorPrefix, " no arguments should be provided for function new!");
@@ -268,12 +268,12 @@ namespace syn {
             using InternalType = RandomDevice<Data, Address>;
             static InternalType* invokeNewFunction(void* env, CLIPSValue* ret, const std::string& prefix, const std::string& function) noexcept {
                 try {
-                    auto count = EnvRtnArgCount(env);
+                    auto count = syn::getArgCount(env);
                     if (count == 1) {
                         return new InternalType();
                     } else if (count == 2) {
                         CLIPSValue val;
-                        if (!EnvArgTypeCheck(env, function.c_str(), 2, INTEGER, &val)) {
+                        if (!syn::tryGetArgumentAsInteger(env, function, 2, &val)) {
                             CVSetBoolean(ret, false);
                             errorMessage(env, "NEW", 2, prefix, "first argument must be an integer to seed with!");
                             return nullptr;

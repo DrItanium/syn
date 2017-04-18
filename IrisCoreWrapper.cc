@@ -148,7 +148,7 @@ namespace iris {
 			funcErrorPrefix = std::get<2>(functions);
 		}
 		CLIPSValue operation;
-		if (!EnvArgTypeCheck(env, funcStr.c_str(), 2, SYMBOL, &operation)) {
+        if (!syn::tryGetArgumentAsSymbol(env, funcStr, 2, &operation)) {
             return badArgument(2, "expected a function name to call!");
 		}
 		std::string opStr(syn::extractLexeme(env, operation));
@@ -161,7 +161,7 @@ namespace iris {
         TargetSpace space;
 		std::tie(fop, argCount, space) = result->second;
 		auto aCount = 2 + argCount;
-		if (aCount != EnvRtnArgCount(env)) {
+        if (!syn::hasCorrectArgCount(env, aCount)) {
 			return callErrorMessage(opStr, " too many arguments provided!");
 		}
 		auto getRegister = [this, env, ret, badArgument](TargetSpace space) {
@@ -169,7 +169,7 @@ namespace iris {
                 return badArgument(4, "Illegal space provided for retrieving a register from!");
             }
 			CLIPSValue index;
-			if (!EnvArgTypeCheck(env, funcStr.c_str(), 3, INTEGER, &index)) {
+            if (!syn::tryGetArgumentAsInteger(env, funcStr, 3, &index)) {
                 return badArgument(3, "Must provide an integer index to retrieve a register value!");
 			}
 			auto i = syn::extractLong(env, index);
@@ -202,7 +202,7 @@ namespace iris {
                 return badArgument(4, "Illegal space provided for setting a register!");
             }
 			CLIPSValue index, value;
-			if (!EnvArgTypeCheck(env, funcStr.c_str(), 3, INTEGER, &index)) {
+            if (!syn::tryGetArgumentAsInteger(env, funcStr, 3, &index)) {
                 return badArgument(3, "Must provide an integer index to assign a register value!");
 			}
 			auto ind = syn::extractLong(env, index);
@@ -215,7 +215,7 @@ namespace iris {
 			if (space == TargetSpace::Predicates && ind >= ArchitectureConstants::ConditionRegisterCount)  {
                 return badArgument(3, "Illegal condition register index!");
 			}
-			if(!EnvArgTypeCheck(env, funcStr.c_str(), 4, INTEGER, &value)) {
+            if (!syn::tryGetArgumentAsInteger(env, funcStr, 4, &value)) {
                 return badArgument(3, "Must provide an integer value to assign to the given register!");
 			}
             try {
@@ -246,7 +246,7 @@ namespace iris {
                     break;
             }
 			CLIPSValue index;
-			if (!EnvArgTypeCheck(env, funcStr.c_str(), 3, INTEGER, &index)) {
+            if (!syn::tryGetArgumentAsInteger(env, funcStr, 3, &index)) {
                 return badArgument(3, "Must provide an integer index to retrieve a memory value!");
 			}
             try {
@@ -282,11 +282,11 @@ namespace iris {
                     break;
             }
 			CLIPSValue index, value;
-			if (!EnvArgTypeCheck(env, funcStr.c_str(), 3, INTEGER, &index)) {
+            if (!syn::tryGetArgumentAsInteger(env, funcStr, 3, &index)) {
                 return badArgument(3, "Must provide an integer index to assign a register value!");
 			}
 			auto ind = static_cast<word>(syn::extractLong(env, index));
-			if(!EnvArgTypeCheck(env, funcStr.c_str(), 4, INTEGER, &value)) {
+            if (!syn::tryGetArgumentAsInteger(env, funcStr, 4, &value)) {
                 return badArgument(3, "Must provide an integer value to assign to the given register!");
 			}
             try {

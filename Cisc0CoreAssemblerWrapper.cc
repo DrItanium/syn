@@ -110,7 +110,7 @@ namespace cisc0 {
 			return syn::errorMessage(env, "CALL", 1, funcErrorPrefix, "Function call expected an external address as the first argument!");
 		}
 		CLIPSValue operation;
-		if (!EnvArgTypeCheck(env, funcStr.c_str(), 2, SYMBOL, &operation)) {
+        if (!syn::tryGetArgumentAsSymbol(env, funcStr, 2, &operation)) {
 			return syn::errorMessage(env, "CALL", 2, funcErrorPrefix, "expected a function name to call!");
 		}
 		std::string str(syn::extractLexeme(env, operation));
@@ -123,14 +123,14 @@ namespace cisc0 {
         int argCount;
         std::tie(theOp, argCount) = result->second;
 		auto aCount = 2 + argCount;
-		if (aCount != EnvRtnArgCount(env)) {
+        if (!syn::hasCorrectArgCount(env, aCount)) {
 			CVSetBoolean(ret, false);
 			return callErrorMessage(str, " too many arguments provided!");
 		}
 		auto ptr = static_cast<Self*>(DOPToExternalAddress(value));
 		auto parseLine = [env, ret, ptr, callErrorMessage]() {
 			CLIPSValue line;
-			if (!EnvArgTypeCheck(env, funcStr.c_str(), 3, STRING, &line)) {
+            if (!syn::tryGetArgumentAsString(env, funcStr, 3, &line)) {
 				CVSetBoolean(ret, false);
 				return syn::errorMessage(env, "CALL", 3, funcErrorPrefix, "provided assembly line is not a string!");
 			}
