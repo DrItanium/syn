@@ -59,8 +59,8 @@ namespace cisc0 {
 				registerWithEnvironment(env, func.c_str());
 			}
 		public:
-            CoreWrapper(Core* core) : Parent(core), _testValue(127) { }
-			CoreWrapper() : Parent(new Core()), _testValue(128) { }
+            CoreWrapper(Core* core) : Parent(core) { }
+			CoreWrapper() : Parent(new Core()) { }
 			virtual ~CoreWrapper() { }
 		private:
 			void initialize() { get()->initialize(); }
@@ -68,8 +68,6 @@ namespace cisc0 {
 			void run() { get()->run(); }
 			void cycle() { get()->cycle(); }
 			void haveCorePerformInternalAction(void* env, CLIPSValue* ret, Operations op);
-        private:
-            int _testValue;
 	};
 } // end namespace cisc0
 
