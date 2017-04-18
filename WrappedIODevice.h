@@ -277,9 +277,8 @@ namespace syn {
                             CVSetBoolean(ret, false);
                             errorMessage(env, "NEW", 2, prefix, "first argument must be an integer to seed with!");
                             return nullptr;
-                        } else {
-                            return new InternalType(static_cast<typename InternalType::SeedType>(syn::extractLong(env, val)));
                         }
+                        return new InternalType(static_cast<typename InternalType::SeedType>(syn::extractLong(env, val)));
                     } else {
                         errorMessage(env, "NEW", 1, prefix, " too many arguments are provided for function new!");
                         return nullptr;
