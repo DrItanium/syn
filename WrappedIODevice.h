@@ -62,7 +62,8 @@ namespace syn {
         Operations nameToOperation(const std::string& title) noexcept;
         constexpr int getArgCount(Operations op) noexcept;
         bool getCommandList(void* env, CLIPSValuePtr ret) noexcept;
-    };
+    } // end namespace WrappedIODeviceConstants
+
     template<>
     constexpr auto defaultErrorState<WrappedIODeviceConstants::Operations> = WrappedIODeviceConstants::Operations::Error;
 

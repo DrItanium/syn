@@ -39,8 +39,8 @@ namespace syn {
         WrappedRandomNumberGenerator16bitDevice::registerWithEnvironment(theEnv);
     }
     namespace WrappedIODeviceConstants {
-        constexpr int getArgCount(WrappedIODeviceConstants::Operations op) noexcept {
-            using Op = WrappedIODeviceConstants::Operations;
+        constexpr int getArgCount(Operations op) noexcept {
+            using Op = Operations;
             switch(op) {
                 case Op::Type:
                 case Op::Initialize:

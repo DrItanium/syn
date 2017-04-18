@@ -51,8 +51,6 @@ namespace cisc0 {
 
 	enum ArchitectureConstants  {
 		RegisterCount = 16,
-		SegmentCount = 256,
-		AddressMax = 65536 * SegmentCount,
 		MaxInstructionCount = 16,
 		TerminateAddress = 0xFFFFFFFF,
 		StartingIPAddress = 0xFE000000,
@@ -237,8 +235,10 @@ namespace cisc0 {
                 SubtypeConversion(SubtypeConversion&&) = delete;
                 ~SubtypeConversion() = delete;
             };
+
             template<Operation op>
             using SubtypeType = typename SubtypeConversion<op>::ResultantType;
+
             template<Operation op>
             inline SubtypeType<op> getSubtype() const noexcept {
                 static_assert(hasSubtype(op), "There is no subtype for the given operation!");
