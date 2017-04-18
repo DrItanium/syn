@@ -286,10 +286,10 @@ namespace cisc0 {
 			Word popWord(RegisterValue& ptr);
 			void dispatch(DecodedInstruction&& inst);
 			template<byte rindex>
-				inline RegisterValue& registerValue() noexcept {
-					static_assert(rindex < ArchitectureConstants::RegisterCount, "Not a legal register index!");
-					return gpr[rindex];
-				}
+			inline RegisterValue& registerValue() noexcept {
+				static_assert(rindex < ArchitectureConstants::RegisterCount, "Not a legal register index!");
+				return gpr[rindex];
+			}
             template<bool readNext>
             inline Word tryReadNext() noexcept {
                 if (readNext) {

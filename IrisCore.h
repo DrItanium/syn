@@ -43,7 +43,7 @@ namespace iris {
             using IOSpace = syn::CLIPSIOController<word, CLIPSInteger>;
             template<dword capacity>
             using WordMemorySpace = syn::FixedSizeLoadStoreUnit<word, dword, capacity>;
-            using WordMemorySpace64k = WordMemorySpace<ArchitectureConstants::AddressMax + 1>;
+            using WordMemorySpace64k = WordMemorySpace<ArchitectureConstants::AddressCount>;
             using RegisterFile = WordMemorySpace<ArchitectureConstants::RegisterCount>;
             using IODevice = syn::IODevice<word>;
             using PredicateRegisterFile = syn::FixedSizeLoadStoreUnit<bool, byte, ArchitectureConstants::ConditionRegisterCount>;
