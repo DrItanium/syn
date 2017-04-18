@@ -78,7 +78,7 @@
 
 (defmethod MAIN::cycle-core
   ((?core EXTERNAL-ADDRESS))
-  (call ?core 
+  (call ?core
         cycle))
 
 (defmethod MAIN::run-core
@@ -101,12 +101,18 @@
              (visibility public)
              (storage local)
              (default ?NONE))
+  (message-handler clear primary)
   (message-handler cycle primary)
   (message-handler run primary)
   (message-handler init after)
   (message-handler delete before)
   (message-handler call primary))
-
+(defmessage-handler MAIN::core clear primary
+                    ()
+                    (shutdown-core ?self:reference)
+                    (initialize-core (bind ?self:reference
+                                           (new-core (dynamic-get type)
+                                                     (dynamic-get init-arguments)))))
 (defmessage-handler MAIN::core init after
                     ()
                     (initialize-core (bind ?self:reference
@@ -180,7 +186,7 @@
                           ?values)
                     (while (> (length$ ?list) 0) do
                            (bind ?address
-                                 (nth$ 1 
+                                 (nth$ 1
                                        ?list))
                            (bind ?value
                                  (nth$ 2
@@ -189,14 +195,14 @@
                                           write-memory
                                           ?address
                                           ?value)) then
-                             (return (inform-then-halt "Couldn't write " 
-                                                       ?value 
+                             (return (inform-then-halt "Couldn't write "
+                                                       ?value
                                                        " to "
                                                        ?address
                                                        "!")))
                            (bind ?list
                                  (delete$ ?list
-                                          1 
+                                          1
                                           2)))
                     TRUE)
 
@@ -222,106 +228,106 @@
 
 (defmessage-handler MAIN::iris-core read-memory primary
                     (?address)
-                    (call ?self:reference 
+                    (call ?self:reference
                           read-data-memory
                           ?address))
 
 
 (defmessage-handler MAIN::iris-core write-memory primary
                     (?address ?value)
-                    (call ?self:reference 
+                    (call ?self:reference
                           write-data-memory
                           ?address
                           ?value))
 
 (defmessage-handler MAIN::iris-core read-data-memory primary
                     (?address)
-                    (call ?self:reference 
+                    (call ?self:reference
                           read-data-memory
                           ?address))
 
 
 (defmessage-handler MAIN::iris-core write-data-memory primary
                     (?address ?value)
-                    (call ?self:reference 
+                    (call ?self:reference
                           write-data-memory
                           ?address
                           ?value))
 (defmessage-handler MAIN::iris-core read-stack-memory primary
                     (?address)
-                    (call ?self:reference 
+                    (call ?self:reference
                           read-stack-memory
                           ?address))
 
 
 (defmessage-handler MAIN::iris-core write-stack-memory primary
                     (?address ?value)
-                    (call ?self:reference 
+                    (call ?self:reference
                           write-stack-memory
                           ?address
                           ?value))
 (defmessage-handler MAIN::iris-core read-io-memory primary
                     (?address)
-                    (call ?self:reference 
+                    (call ?self:reference
                           read-io-memory
                           ?address))
 
 
 (defmessage-handler MAIN::iris-core write-io-memory primary
                     (?address ?value)
-                    (call ?self:reference 
+                    (call ?self:reference
                           write-io-memory
                           ?address
                           ?value))
 
 (defmessage-handler MAIN::iris-core read-code-memory primary
                     (?address)
-                    (call ?self:reference 
+                    (call ?self:reference
                           read-code-memory
                           ?address))
 
 
 (defmessage-handler MAIN::iris-core write-code-memory primary
                     (?address ?value)
-                    (call ?self:reference 
+                    (call ?self:reference
                           write-code-memory
                           ?address
                           ?value))
 
 (defmessage-handler MAIN::iris-core get-predicate-register primary
                     (?address)
-                    (call ?self:reference 
+                    (call ?self:reference
                           get-predicate-register
                           ?address))
 
 
 (defmessage-handler MAIN::iris-core set-predicate-register primary
                     (?address ?value)
-                    (call ?self:reference 
+                    (call ?self:reference
                           set-predicate-register
                           ?address
                           ?value))
 (defmessage-handler MAIN::iris-core install-values primary
                     ($?values)
                     (if (or (evenp (length$ ?values))
-                            (<> (mod (length$ ?values) 
+                            (<> (mod (length$ ?values)
                                      3)
                                 0)) then
                       (return (inform-then-halt "Invalid value list!")))
                     (bind ?list
                           ?values)
                     (while (> (length$ ?list) 0) do
-                           (if (not (bind ?target-operation 
-                                          (switch (nth$ 1 
+                           (if (not (bind ?target-operation
+                                          (switch (nth$ 1
                                                         ?list)
                                                   (case 0 then write-code-memory)
                                                   (case 1 then write-data-memory)
                                                   (case 2 then write-stack-memory)
                                                   (case 3 then write-io-memory)
-                                                  (default FALSE)))) then 
+                                                  (default FALSE)))) then
                              (return (inform-then-halt "Invalid code space!")))
                            (bind ?address
-                                 (nth$ 2 
+                                 (nth$ 2
                                        ?list))
                            (bind ?value
                                  (nth$ 3
@@ -332,8 +338,8 @@
                                           ?value)) then
                              (return (inform-then-halt "Invalid action occurred!")))
                            (bind ?list
-                                 (delete$ ?list 
-                                          1 
+                                 (delete$ ?list
+                                          1
                                           3)))
 
                     TRUE)
