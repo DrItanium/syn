@@ -106,14 +106,14 @@ namespace cisc0 {
 			funcStr = std::get<1>(functions);
 			funcErrorPrefix = std::get<2>(functions);
 		}
-		if (GetpType(value) != EXTERNAL_ADDRESS) {
+        if (!syn::isExternalAddress(value)) {
 			return syn::errorMessage(env, "CALL", 1, funcErrorPrefix, "Function call expected an external address as the first argument!");
 		}
 		CLIPSValue operation;
 		if (!EnvArgTypeCheck(env, funcStr.c_str(), 2, SYMBOL, &operation)) {
 			return syn::errorMessage(env, "CALL", 2, funcErrorPrefix, "expected a function name to call!");
 		}
-		std::string str(EnvDOToString(env, operation));
+		std::string str(syn::extractLexeme(env, operation));
 		auto result = ops.find(str);
 		if (result == ops.end()) {
 			CVSetBoolean(ret, false);
@@ -134,7 +134,7 @@ namespace cisc0 {
 				CVSetBoolean(ret, false);
 				return syn::errorMessage(env, "CALL", 3, funcErrorPrefix, "provided assembly line is not a string!");
 			}
-			std::string str(EnvDOToString(env, line));
+			std::string str(syn::extractLexeme(env, line));
 			try {
 				auto result = ptr->parseLine(str);
 				CVSetBoolean(ret, result);

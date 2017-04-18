@@ -333,7 +333,7 @@ namespace syn {
 							CVSetBoolean(ret, false);
 							errorMessage(env, "NEW", 1, funcErrorPrefix, " expected an integer for capacity!");
 						} else {
-							auto size = EnvDOToLong(env, capacity);
+                            auto size = extractLong(env, capacity);
 							auto idIndex = Self::getAssociatedEnvironmentId(env);
                             CVSetExternalAddress(ret, Self::make(size), idIndex);
 						}
@@ -356,7 +356,7 @@ namespace syn {
                     funcStr = std::get<1>(t);
                     funcErrorPrefix = std::get<2>(t);
 				}
-				if (GetpType(value) != EXTERNAL_ADDRESS) {
+                if (!isExternalAddress(value)) {
 					return errorMessage(env, "CALL", 1, funcErrorPrefix, "Function call expected an external address as the first argument!");
                 }
                 auto callErrorMessage = [env, ret](const std::string& subOp, const std::string& rest) {
@@ -375,7 +375,7 @@ namespace syn {
                 if (!Arg2IsSymbol(env, &operation, funcStr)) {
                     return errorMessage(env, "CALL", 2, funcErrorPrefix, "expected a function name to call!");
                 }
-                std::string str(EnvDOToString(env, operation));
+                std::string str(extractLexeme(env, operation));
                 // translate the op to an enumeration
                 auto result = opTranslation.find(str);
                 if (result == opTranslation.end()) {
@@ -422,7 +422,7 @@ namespace syn {
                 auto commonSingleIntegerBody = [oneCheck, checkAddr, env, &arg0, ptr](auto fn) {
                     auto check = oneCheck(INTEGER, "First argument must be an address");
                     if (check) {
-                        auto addr = EnvDOToLong(env, arg0);
+                        auto addr = extractLong(env, arg0);
                         if (!checkAddr(addr)) {
                             return false;
                         }
@@ -443,7 +443,7 @@ namespace syn {
                 } else if (op == MemoryBlockOp::Get) {
                     auto check = oneCheck(INTEGER, "Argument 0 must be an integer address!");
                     if (check) {
-                        auto addr = EnvDOToLong(env, arg0);
+                        auto addr = extractLong(env, arg0);
                         if (!checkAddr(addr)) {
                             return false;
                         }
@@ -453,7 +453,7 @@ namespace syn {
                 } else if (op == MemoryBlockOp::Populate) {
                     auto check = oneCheck(INTEGER, "First argument must be an INTEGER value to populate all of the memory cells with!");
                     if (check) {
-                        ptr->setMemoryToSingleValue(EnvDOToLong(env, arg0));
+                        ptr->setMemoryToSingleValue(extractLong(env, arg0));
                     }
                     return check;
                 } else if (op == MemoryBlockOp::Increment) {
@@ -463,8 +463,8 @@ namespace syn {
                 } else if (op == MemoryBlockOp::Swap || op == MemoryBlockOp::Move) {
                     auto check = twoCheck(INTEGER, "First argument must be an address", INTEGER, "Second argument must be an address");
                     if (check) {
-                        auto addr0 = EnvDOToLong(env, arg0);
-                        auto addr1 = EnvDOToLong(env, arg1);
+                        auto addr0 = extractLong(env, arg0);
+                        auto addr1 = extractLong(env, arg1);
                         if (!checkAddr(addr0) || !checkAddr(addr1)) {
                             return false;
                         }
@@ -478,11 +478,11 @@ namespace syn {
                 } else if (op == MemoryBlockOp::Set) {
                     auto check = twoCheck(INTEGER, "First argument must be an address", INTEGER, "Second argument must be an address");
                     if (check) {
-                        auto addr0 = EnvDOToLong(env, arg0);
+                        auto addr0 = extractLong(env, arg0);
                         if (!checkAddr(addr0)) {
                             return false;
                         }
-                        auto addr1 = EnvDOToLong(env, arg1);
+                        auto addr1 = extractLong(env, arg1);
                         ptr->setMemoryCell(addr0, addr1);
                     }
                     return check;
@@ -490,8 +490,8 @@ namespace syn {
                     auto check = twoCheck(INTEGER, "First argument must be an address", INTEGER, "Second argument must be an address!");
                     CVSetBoolean(ret, false);
                     if (check) {
-                        auto addr0 = EnvDOToLong(env, arg0);
-                        auto addr1 = EnvDOToLong(env, arg1);
+                        auto addr0 = extractLong(env, arg0);
+                        auto addr1 = extractLong(env, arg1);
                         if (!checkAddr(addr0) || !checkAddr(addr1)) {
                             return false;
                         }
@@ -599,4 +599,20 @@ namespace syn {
 		ptr->value = _rawMultifield;
 	}
 
+    bool isExternalAddress(DataObjectPtr value) noexcept {
+        return GetpType(value) == EXTERNAL_ADDRESS;
+    }
+    CLIPSInteger extractLong(void* env, DataObjectPtr value) noexcept {
+        return EnvDOPToLong(env, value);
+    }
+    CLIPSInteger extractLong(void* env, DataObject& value) noexcept {
+        return EnvDOToLong(env, value);
+    }
+
+    const char* extractLexeme(void* env, DataObjectPtr value) noexcept {
+        return EnvDOPToString(env, value);
+    }
+    const char* extractLexeme(void* env, DataObject& value) noexcept {
+        return EnvDOToString(env, value);
+    }
 }

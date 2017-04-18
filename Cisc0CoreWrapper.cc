@@ -87,7 +87,7 @@ namespace cisc0 {
 			auto functions = syn::retrieveFunctionNames<Core>("call");
 			funcErrorPrefix = std::get<2>(functions);
 		}
-		if (GetpType(value) != EXTERNAL_ADDRESS) {
+        if (!syn::isExternalAddress(value)) {
 			return syn::errorMessage(env, "CALL", 1, funcErrorPrefix, "Function call expected an external address as the first argument!");
 		}
         auto ptr = static_cast<CoreWrapper*>(EnvDOPToExternalAddress(value));
@@ -133,7 +133,7 @@ namespace cisc0 {
 		if (!EnvArgTypeCheck(env, funcStr.c_str(), 2, SYMBOL, &operation)) {
             return badArgument(2, "expected a function name to call!");
 		}
-		std::string opStr(EnvDOToString(env, operation));
+		std::string opStr(syn::extractLexeme(env, operation));
 		auto result = ops.find(opStr);
 		if (result == ops.end()) {
 			return callErrorMessage(opStr, " <- unknown operation requested!");
@@ -150,7 +150,7 @@ namespace cisc0 {
 			if (!EnvArgTypeCheck(env, funcStr.c_str(), 3, INTEGER, &index)) {
                 return badArgument(3, "Must provide an integer index to retrieve a register value!");
 			}
-			auto i = EnvDOToLong(env, index);
+			auto i = syn::extractLong(env, index);
 			if (i >= ArchitectureConstants::RegisterCount || i < 0) {
                 return badArgument(3, "Illegal register index!");
 			}
@@ -162,14 +162,14 @@ namespace cisc0 {
 			if (!EnvArgTypeCheck(env, funcStr.c_str(), 3, INTEGER, &index)) {
                 return badArgument(3, "Must provide an integer index to assign a register value!");
 			}
-			auto ind = EnvDOToLong(env, index);
+			auto ind = syn::extractLong(env, index);
 			if (ind >= ArchitectureConstants::RegisterCount || ind < 0) {
                 return badArgument(3, "Illegal register index!");
 			}
 			if(!EnvArgTypeCheck(env, funcStr.c_str(), 4, INTEGER, &value)) {
                 return badArgument(3, "Must provide an integer value to assign to the given register!");
 			}
-			registerValue(static_cast<byte>(ind)) = static_cast<RegisterValue>(EnvDOToLong(env, value));
+			registerValue(static_cast<byte>(ind)) = static_cast<RegisterValue>(syn::extractLong(env, value));
 			CVSetBoolean(ret, true);
 			return true;
 		};
@@ -178,7 +178,7 @@ namespace cisc0 {
 			if (!EnvArgTypeCheck(env, funcStr.c_str(), 3, INTEGER, &index)) {
                 return badArgument(3, "Must provide an integer index to retrieve a memory value!");
 			}
-			CVSetInteger(ret, loadWord(static_cast<RegisterValue>(EnvDOToLong(env, index))));
+			CVSetInteger(ret, loadWord(static_cast<RegisterValue>(syn::extractLong(env, index))));
 			return true;
 		};
 		auto writeMemory = [this, env, ret, badArgument]() {
@@ -186,11 +186,11 @@ namespace cisc0 {
 			if (!EnvArgTypeCheck(env, funcStr.c_str(), 3, INTEGER, &index)) {
                 return badArgument(3, "Must provide an integer index to assign a register value!");
 			}
-			auto ind = static_cast<Address>(EnvDOToLong(env, index));
+			auto ind = static_cast<Address>(syn::extractLong(env, index));
 			if(!EnvArgTypeCheck(env, funcStr.c_str(), 4, INTEGER, &value)) {
                 return badArgument(3, "Must provide an integer value to assign to the given register!");
 			}
-			storeWord(ind, static_cast<Word>(EnvDOToLong(env, value)));
+			storeWord(ind, static_cast<Word>(syn::extractLong(env, value)));
 			CVSetBoolean(ret, true);
 			return true;
 		};

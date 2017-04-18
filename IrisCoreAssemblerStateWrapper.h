@@ -89,7 +89,7 @@ namespace iris {
                     funcStr = std::get<1>(functions);
                     funcErrorPrefix = std::get<2>(functions);
                 }
-                if (GetpType(value) != EXTERNAL_ADDRESS) {
+                if (!syn::isExternalAddress(value)) {
                     return syn::errorMessage(env, "CALL", 1, funcErrorPrefix, "Function call expected an external address as the first argument!");
                 }
                 CLIPSValue operation;

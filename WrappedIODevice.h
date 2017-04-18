@@ -133,7 +133,7 @@ namespace syn {
                     return badArgument(3, msg);
 				};
 
-				if (GetpType(value) != EXTERNAL_ADDRESS) {
+                if (!syn::isExternalAddress(value)) {
                     return badArgument(1, "Function call expected an external address as the first argument!");
                 }
                 CLIPSValue op;
@@ -161,7 +161,7 @@ namespace syn {
                         return badArgument(3, "provided address is not an integer!");
                     }
                     try {
-                        auto address = static_cast<Address>(EnvDOToLong(env, tmp));
+                        auto address = static_cast<Address>(syn::extractLong(env, tmp));
                         CVSetInteger(ret, ptr->read(address));
                         return true;
                     } catch(syn::Problem p) {
@@ -177,8 +177,8 @@ namespace syn {
                     }
                     try {
                         CVSetBoolean(ret, true);
-                        auto address = static_cast<Address>(EnvDOToLong(env, t0));
-                        auto value = static_cast<Data>(EnvDOToLong(env, t1));
+                        auto address = static_cast<Address>(syn::extractLong(env, t0));
+                        auto value = static_cast<Data>(syn::extractLong(env, t1));
                         ptr->write(address, value);
                         return true;
                     } catch(syn::Problem p) {
@@ -278,7 +278,7 @@ namespace syn {
                             errorMessage(env, "NEW", 2, prefix, "first argument must be an integer to seed with!");
                             return nullptr;
                         } else {
-                            return new InternalType(static_cast<typename InternalType::SeedType>(EnvDOToLong(env, val)));
+                            return new InternalType(static_cast<typename InternalType::SeedType>(syn::extractLong(env, val)));
                         }
                     } else {
                         errorMessage(env, "NEW", 1, prefix, " too many arguments are provided for function new!");

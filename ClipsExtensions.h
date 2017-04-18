@@ -66,6 +66,13 @@ struct ExternalAddressRegistrar {
 		static std::map<void*, unsigned int> _cache;
 };
 
+bool isExternalAddress(DataObjectPtr value) noexcept;
+
+CLIPSInteger extractLong(void* env, DataObjectPtr value) noexcept;
+CLIPSInteger extractLong(void* env, DataObject& value) noexcept;
+const char* extractLexeme(void* env, DataObjectPtr value) noexcept;
+const char* extractLexeme(void* env, DataObject& value) noexcept;
+
 
 template<typename T>
 std::map<void*, unsigned int> ExternalAddressRegistrar<T>::_cache;

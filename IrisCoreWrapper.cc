@@ -89,7 +89,7 @@ namespace iris {
 			auto functions = syn::retrieveFunctionNames<Core>("call");
 			funcErrorPrefix = std::get<2>(functions);
 		}
-		if (GetpType(value) != EXTERNAL_ADDRESS) {
+        if (!syn::isExternalAddress(value)) {
 			return syn::errorMessage(env, "CALL", 1, funcErrorPrefix, "Function call expected an external address as the first argument!");
 		}
         auto ptr = static_cast<CoreWrapper*>(EnvDOPToExternalAddress(value));
@@ -151,7 +151,7 @@ namespace iris {
 		if (!EnvArgTypeCheck(env, funcStr.c_str(), 2, SYMBOL, &operation)) {
             return badArgument(2, "expected a function name to call!");
 		}
-		std::string opStr(EnvDOToString(env, operation));
+		std::string opStr(syn::extractLexeme(env, operation));
 		auto result = ops.find(opStr);
 		if (result == ops.end()) {
 			return callErrorMessage(opStr, " <- unknown operation requested!");
@@ -172,7 +172,7 @@ namespace iris {
 			if (!EnvArgTypeCheck(env, funcStr.c_str(), 3, INTEGER, &index)) {
                 return badArgument(3, "Must provide an integer index to retrieve a register value!");
 			}
-			auto i = EnvDOToLong(env, index);
+			auto i = syn::extractLong(env, index);
             if (i < 0) {
                 return badArgument(3, "Was given a negative register index!");
             }
@@ -205,7 +205,7 @@ namespace iris {
 			if (!EnvArgTypeCheck(env, funcStr.c_str(), 3, INTEGER, &index)) {
                 return badArgument(3, "Must provide an integer index to assign a register value!");
 			}
-			auto ind = EnvDOToLong(env, index);
+			auto ind = syn::extractLong(env, index);
             if (ind < 0) {
                 return badArgument(3, "Was given a negative address!");
             }
@@ -219,7 +219,7 @@ namespace iris {
                 return badArgument(3, "Must provide an integer value to assign to the given register!");
 			}
             try {
-                auto theValue = EnvDOToLong(env, value);
+                auto theValue = syn::extractLong(env, value);
                 switch(space) {
                     case TargetSpace::GPR:
                         gpr[static_cast<byte>(ind)] = static_cast<word>(theValue);
@@ -250,7 +250,7 @@ namespace iris {
                 return badArgument(3, "Must provide an integer index to retrieve a memory value!");
 			}
             try {
-                auto address = static_cast<word>(EnvDOToLong(env, index));
+                auto address = static_cast<word>(syn::extractLong(env, index));
                 switch(space) {
                     case TargetSpace::Data:
                         CVSetInteger(ret, data[address]);
@@ -285,12 +285,12 @@ namespace iris {
 			if (!EnvArgTypeCheck(env, funcStr.c_str(), 3, INTEGER, &index)) {
                 return badArgument(3, "Must provide an integer index to assign a register value!");
 			}
-			auto ind = static_cast<word>(EnvDOToLong(env, index));
+			auto ind = static_cast<word>(syn::extractLong(env, index));
 			if(!EnvArgTypeCheck(env, funcStr.c_str(), 4, INTEGER, &value)) {
                 return badArgument(3, "Must provide an integer value to assign to the given register!");
 			}
             try {
-                auto valueToWrite = EnvDOToLong(env, value);
+                auto valueToWrite = syn::extractLong(env, value);
                 switch(space) {
                     case TargetSpace::Code:
                         instruction[ind] = static_cast<raw_instruction>(valueToWrite);
