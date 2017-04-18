@@ -168,7 +168,12 @@ namespace WrappedNewCallBuilder {
 using FunctionStrings = std::tuple<std::string, std::string, std::string>;
 template<typename T>
 static FunctionStrings retrieveFunctionNames(const std::string& action) noexcept {
-    auto title = TypeToName::getSymbolicName<T>();
+    static bool init = true;
+    static std::string title;
+    if (init) {
+        init = false;
+        title = TypeToName::getSymbolicName<T>();
+    }
     std::stringstream ss, ss2;
     ss << action << " (" << title << ")";
     auto str0 = ss.str();
@@ -196,7 +201,15 @@ class ExternalAddressWrapper {
 		using InternalType = T;
 		using BaseClass = ExternalAddressWrapper<T>;
         using Self = BaseClass;
-		static std::string getType() noexcept { return TypeToName::getSymbolicName<InternalType>(); }
+		static std::string getType() noexcept {
+            static bool init = true;
+            static std::string name;
+            if (init) {
+                init = false;
+                name = TypeToName::getSymbolicName<InternalType>();
+            }
+            return name;
+        }
         static void getType(CLIPSValue* ret) noexcept {
             static bool init = true;
             static std::string name;
