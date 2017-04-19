@@ -235,7 +235,7 @@ namespace syn {
 			syn::decodeInt64LE(integer, container);
             MultifieldBuilder mf(env, iTypeSize);
 			for (int i = 0, j = 1; i < iTypeSize; ++i, ++j) {
-                mf.setField(j, INTEGER, EnvAddLong(env, container[i]));
+                mf.setField(j, MayaType::Integer, EnvAddLong(env, container[i]));
 			}
             mf.assign(ret);
 		}
@@ -584,6 +584,9 @@ namespace syn {
         }
         SetMFType(_rawMultifield, index, type);
         SetMFValue(_rawMultifield, index, value);
+    }
+    void MultifieldBuilder::setField(int index, MayaType type, void* value) {
+        setField(index, static_cast<int>(type), value);
     }
 	void MultifieldBuilder::assign(DataObjectPtr ptr) noexcept {
 		ptr->type = MULTIFIELD;

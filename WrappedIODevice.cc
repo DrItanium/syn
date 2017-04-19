@@ -92,12 +92,12 @@ namespace syn {
 
         bool getCommandList(void* env, CLIPSValuePtr ret) noexcept {
             FixedSizeMultifieldBuilder<static_cast<long>(Operations::Count)> mb(env);
-            mb.setField<1>(SYMBOL, EnvAddSymbol(env, operationsName(Operations::Read)));
-            mb.setField<2>(SYMBOL, EnvAddSymbol(env, operationsName(Operations::Write)));
-            mb.setField<3>(SYMBOL, EnvAddSymbol(env, operationsName(Operations::Type)));
-            mb.setField<4>(SYMBOL, EnvAddSymbol(env, operationsName(Operations::Initialize)));
-            mb.setField<5>(SYMBOL, EnvAddSymbol(env, operationsName(Operations::Shutdown)));
-            mb.setField<6>(SYMBOL, EnvAddSymbol(env, operationsName(Operations::ListCommands)));
+            mb.setField<1, MayaType::Symbol>(EnvAddSymbol(env, operationsName(Operations::Read)));
+            mb.setField<2, MayaType::Symbol>(EnvAddSymbol(env, operationsName(Operations::Write)));
+            mb.setField<3, MayaType::Symbol>(EnvAddSymbol(env, operationsName(Operations::Type)));
+            mb.setField<4, MayaType::Symbol>(EnvAddSymbol(env, operationsName(Operations::Initialize)));
+            mb.setField<5, MayaType::Symbol>(EnvAddSymbol(env, operationsName(Operations::Shutdown)));
+            mb.setField<6, MayaType::Symbol>(EnvAddSymbol(env, operationsName(Operations::ListCommands)));
             mb.assign(ret);
             return true;
         }

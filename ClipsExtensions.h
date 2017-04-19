@@ -48,7 +48,9 @@ enum class MayaType {
     Symbol = SYMBOL,
     String = STRING,
     Lexeme = SYMBOL_OR_STRING,
+    Multifield = MULTIFIELD,
 };
+
 int getArgCount(void* env) noexcept;
 bool hasCorrectArgCount(void* env, int compare) noexcept;
 bool isExternalAddress(DataObjectPtr value) noexcept;
@@ -62,7 +64,6 @@ bool checkThenGetArgument(void* env, const std::string& function, int position, 
 bool tryGetArgumentAsInteger(void* env, const std::string& function, int position, DataObjectPtr saveTo) noexcept;
 bool tryGetArgumentAsSymbol(void* env, const std::string& function, int position, DataObjectPtr saveTo) noexcept;
 bool tryGetArgumentAsString(void* env, const std::string& function, int position, DataObjectPtr saveTo) noexcept;
-
 
 template<typename T>
 struct ExternalAddressRegistrar {
@@ -289,6 +290,7 @@ class MultifieldBuilder {
         MultifieldBuilder(void* env, long capacity);
         virtual ~MultifieldBuilder() noexcept { }
         void setField(int index, int type, void* value);
+        void setField(int index, MayaType type, void* value);
         long getSize() const noexcept { return _size; }
         void* getRawMultifield() const noexcept { return _rawMultifield; }
         void assign(DataObjectPtr ptr) noexcept;
@@ -323,6 +325,9 @@ class FixedSizeMultifieldBuilder {
                 SetMFValue(_rawMultifield, index, value);
             }
         }
+        void setField(int index, MayaType type, void* value) {
+            setField(index, static_cast<int>(type), value);
+        }
         template<int index>
         void setField(int type, void* value) noexcept {
             static_assert(index > 0, "Negative index or zero index not allowed!");
@@ -330,11 +335,25 @@ class FixedSizeMultifieldBuilder {
             SetMFType(_rawMultifield, index, type);
             SetMFValue(_rawMultifield, index, value);
         }
+        template<int index>
+        void setField(MayaType type, void* value) noexcept {
+            setField<index>(static_cast<int>(type), value);
+        }
+        template<int index, MayaType type>
+        void setField(void* value) noexcept {
+            setField<index>(type, value);
+        }
         void setFirst(int type, void* value) noexcept {
             setField<1>(type, value);
         }
+        void setFirst(MayaType type, void* value) noexcept {
+            setFirst(static_cast<int>(type), value);
+        }
         void setSecond(int type, void* value) noexcept {
             setField<2>(type, value);
+        }
+        void setSecond(MayaType type, void* value) noexcept {
+            setSecond(static_cast<int>(type), value);
         }
     private:
         void* _rawMultifield;
