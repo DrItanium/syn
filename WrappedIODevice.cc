@@ -92,20 +92,12 @@ namespace syn {
 
         bool getCommandList(void* env, CLIPSValuePtr ret) noexcept {
             FixedSizeMultifieldBuilder<static_cast<long>(Operations::Count)> mb(env);
-            auto setField = [&mb, env](int index, Operations op) {
-                auto result = operationsName(op);
-                if (!result) {
-                    // We want this to barf out and terminate execution!
-                    throw syn::Problem("Undefined operation!");
-                }
-                mb.setField(index, SYMBOL, EnvAddSymbol(env, operationsName(op)));
-            };
-            setField(1, Operations::Read);
-            setField(2, Operations::Write);
-            setField(3, Operations::Type);
-            setField(4, Operations::Initialize);
-            setField(5, Operations::Shutdown);
-            setField(6, Operations::ListCommands);
+            mb.setField<1>(SYMBOL, EnvAddSymbol(env, operationsName(Operations::Read)));
+            mb.setField<2>(SYMBOL, EnvAddSymbol(env, operationsName(Operations::Write)));
+            mb.setField<3>(SYMBOL, EnvAddSymbol(env, operationsName(Operations::Type)));
+            mb.setField<4>(SYMBOL, EnvAddSymbol(env, operationsName(Operations::Initialize)));
+            mb.setField<5>(SYMBOL, EnvAddSymbol(env, operationsName(Operations::Shutdown)));
+            mb.setField<6>(SYMBOL, EnvAddSymbol(env, operationsName(Operations::ListCommands)));
             mb.assign(ret);
             return true;
         }
