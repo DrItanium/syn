@@ -55,14 +55,25 @@ namespace syn {
                     return -1;
             }
         }
+
+        template<Operations op>
+        const char* fixedOperationName() noexcept {
+            static bool init = true;
+            static const char* name = nullptr;
+            if (init) {
+                init = false;
+                name = operationsName(op);
+            }
+            return name;
+        }
         Operations nameToOperation(const std::string& title) noexcept {
             static std::map<std::string, Operations> opTranslation = {
-                { operationsName(Operations::Read), Operations::Read },
-                { operationsName(Operations::Write), Operations::Write },
-                { operationsName(Operations::Type),  Operations::Type },
-                { operationsName(Operations::Initialize), Operations::Initialize },
-                { operationsName(Operations::Shutdown), Operations::Shutdown },
-                { operationsName(Operations::ListCommands), Operations::ListCommands },
+                { fixedOperationName<Operations::Read>(), Operations::Read },
+                { fixedOperationName<Operations::Write>(), Operations::Write },
+                { fixedOperationName<Operations::Type>(),  Operations::Type },
+                { fixedOperationName<Operations::Initialize>(), Operations::Initialize },
+                { fixedOperationName<Operations::Shutdown>(), Operations::Shutdown },
+                { fixedOperationName<Operations::ListCommands>(), Operations::ListCommands },
             };
             auto result = opTranslation.find(title);
             if (result == opTranslation.end()) {
@@ -92,12 +103,12 @@ namespace syn {
 
         bool getCommandList(void* env, CLIPSValuePtr ret) noexcept {
             FixedSizeMultifieldBuilder<static_cast<long>(Operations::Count)> mb(env);
-            mb.setField<1, MayaType::Symbol>(EnvAddSymbol(env, operationsName(Operations::Read)));
-            mb.setField<2, MayaType::Symbol>(EnvAddSymbol(env, operationsName(Operations::Write)));
-            mb.setField<3, MayaType::Symbol>(EnvAddSymbol(env, operationsName(Operations::Type)));
-            mb.setField<4, MayaType::Symbol>(EnvAddSymbol(env, operationsName(Operations::Initialize)));
-            mb.setField<5, MayaType::Symbol>(EnvAddSymbol(env, operationsName(Operations::Shutdown)));
-            mb.setField<6, MayaType::Symbol>(EnvAddSymbol(env, operationsName(Operations::ListCommands)));
+            mb.setField<1, MayaType::Symbol>(EnvAddSymbol(env, fixedOperationName<Operations::Read>()));
+            mb.setField<2, MayaType::Symbol>(EnvAddSymbol(env, fixedOperationName<Operations::Write>()));
+            mb.setField<3, MayaType::Symbol>(EnvAddSymbol(env, fixedOperationName<Operations::Type>()));
+            mb.setField<4, MayaType::Symbol>(EnvAddSymbol(env, fixedOperationName<Operations::Initialize>()));
+            mb.setField<5, MayaType::Symbol>(EnvAddSymbol(env, fixedOperationName<Operations::Shutdown>()));
+            mb.setField<6, MayaType::Symbol>(EnvAddSymbol(env, fixedOperationName<Operations::ListCommands>()));
             mb.assign(ret);
             return true;
         }
