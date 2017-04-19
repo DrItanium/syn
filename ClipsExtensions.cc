@@ -378,16 +378,16 @@ namespace syn {
                 auto ptr = static_cast<Self_Ptr>(DOPToExternalAddress(value));
                 auto rangeViolation = [errOutOfRange, ptr, &str](Address addr) { errOutOfRange(str, ptr->size(), addr); };
                 CLIPSValue arg0, arg1;
-                auto checkArg = [callErrorMessage, &str, env](unsigned int index, unsigned int type, const std::string& msg, CLIPSValue* dat) {
+                auto checkArg = [callErrorMessage, &str, env](unsigned int index, MayaType type, const std::string& msg, CLIPSValue* dat) {
                     if (!checkThenGetArgument(env, funcStr, index, type, dat)) {
                         return callErrorMessage(str, msg);
                     }
                     return true;
                 };
-                auto checkArg0 = [checkArg, &arg0, env, &str](unsigned int type, const std::string& msg) { return checkArg(3, type, msg, &arg0); };
-                auto checkArg1 = [checkArg, &arg1, env, &str](unsigned int type, const std::string& msg) { return checkArg(4, type, msg, &arg1); };
-                auto oneCheck = [checkArg0](unsigned int type, const std::string& msg) { return checkArg0(type, msg); };
-                auto twoCheck = [checkArg0, checkArg1](unsigned int type0, const std::string& msg0, unsigned int type1, const std::string& msg1) {
+                auto checkArg0 = [checkArg, &arg0, env, &str](MayaType type, const std::string& msg) { return checkArg(3, type, msg, &arg0); };
+                auto checkArg1 = [checkArg, &arg1, env, &str](MayaType type, const std::string& msg) { return checkArg(4, type, msg, &arg1); };
+                auto oneCheck = [checkArg0](MayaType type, const std::string& msg) { return checkArg0(type, msg); };
+                auto twoCheck = [checkArg0, checkArg1](MayaType type0, const std::string& msg0, MayaType type1, const std::string& msg1) {
                     return checkArg0(type0, msg0) && checkArg1(type1, msg1);
                 };
                 MemoryBlockOp op;
@@ -413,7 +413,7 @@ namespace syn {
                     return result;
                 };
                 auto commonSingleIntegerBody = [oneCheck, checkAddr, env, &arg0, ptr](auto fn) {
-                    auto check = oneCheck(INTEGER, "First argument must be an address");
+                    auto check = oneCheck(MayaType::Integer, "First argument must be an address");
                     if (check) {
                         auto addr = extractLong(env, arg0);
                         if (!checkAddr(addr)) {
@@ -434,7 +434,7 @@ namespace syn {
                 } else if (op == MemoryBlockOp::Shutdown) {
                     // do nothing right now
                 } else if (op == MemoryBlockOp::Get) {
-                    auto check = oneCheck(INTEGER, "Argument 0 must be an integer address!");
+                    auto check = oneCheck(MayaType::Integer, "Argument 0 must be an integer address!");
                     if (check) {
                         auto addr = extractLong(env, arg0);
                         if (!checkAddr(addr)) {
@@ -444,7 +444,7 @@ namespace syn {
                     }
                     return check;
                 } else if (op == MemoryBlockOp::Populate) {
-                    auto check = oneCheck(INTEGER, "First argument must be an INTEGER value to populate all of the memory cells with!");
+                    auto check = oneCheck(MayaType::Integer, "First argument must be an INTEGER value to populate all of the memory cells with!");
                     if (check) {
                         ptr->setMemoryToSingleValue(extractLong(env, arg0));
                     }
@@ -454,7 +454,7 @@ namespace syn {
                 } else if (op == MemoryBlockOp::Decrement) {
                     return commonSingleIntegerBody([](auto ptr, auto addr) { ptr->decrementMemoryCell(addr); });
                 } else if (op == MemoryBlockOp::Swap || op == MemoryBlockOp::Move) {
-                    auto check = twoCheck(INTEGER, "First argument must be an address", INTEGER, "Second argument must be an address");
+                    auto check = twoCheck(MayaType::Integer, "First argument must be an address", MayaType::Integer, "Second argument must be an address");
                     if (check) {
                         auto addr0 = extractLong(env, arg0);
                         auto addr1 = extractLong(env, arg1);
@@ -469,7 +469,7 @@ namespace syn {
                     }
                     return check;
                 } else if (op == MemoryBlockOp::Set) {
-                    auto check = twoCheck(INTEGER, "First argument must be an address", INTEGER, "Second argument must be an address");
+                    auto check = twoCheck(MayaType::Integer, "First argument must be an address", MayaType::Integer, "Second argument must be an address");
                     if (check) {
                         auto addr0 = extractLong(env, arg0);
                         if (!checkAddr(addr0)) {
@@ -480,7 +480,7 @@ namespace syn {
                     }
                     return check;
                 } else if (isArithmeticOperation(op)) {
-                    auto check = twoCheck(INTEGER, "First argument must be an address", INTEGER, "Second argument must be an address!");
+                    auto check = twoCheck(MayaType::Integer, "First argument must be an address", MayaType::Integer, "Second argument must be an address!");
                     CVSetBoolean(ret, false);
                     if (check) {
                         auto addr0 = extractLong(env, arg0);
@@ -609,19 +609,19 @@ namespace syn {
         return EnvDOToString(env, value);
     }
 
-    bool checkThenGetArgument(void* env, const std::string& function, int position, int type, DataObjectPtr saveTo) noexcept {
-        return EnvArgTypeCheck(env, function.c_str(), position, type, saveTo);
+    bool checkThenGetArgument(void* env, const std::string& function, int position, MayaType type, DataObjectPtr saveTo) noexcept {
+        return EnvArgTypeCheck(env, function.c_str(), position, static_cast<int>(type), saveTo);
     }
 
     bool tryGetArgumentAsInteger(void* env, const std::string& function, int position, DataObjectPtr saveTo) noexcept {
-        return checkThenGetArgument(env, function, position, INTEGER, saveTo);
+        return checkThenGetArgument(env, function, position, MayaType::Integer, saveTo);
     }
 
     bool tryGetArgumentAsSymbol(void* env, const std::string& function, int position, DataObjectPtr saveTo) noexcept {
-        return checkThenGetArgument(env, function, position, SYMBOL, saveTo);
+        return checkThenGetArgument(env, function, position, MayaType::Symbol, saveTo);
     }
     bool tryGetArgumentAsString(void* env, const std::string& function, int position, DataObjectPtr saveTo) noexcept {
-        return checkThenGetArgument(env, function, position, STRING, saveTo);
+        return checkThenGetArgument(env, function, position, MayaType::String, saveTo);
     }
     bool hasCorrectArgCount(void* env, int compare) noexcept {
         return compare == getArgCount(env);

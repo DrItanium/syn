@@ -41,6 +41,14 @@ using DataObject = DATA_OBJECT;
 using DataObjectPtr = DATA_OBJECT_PTR;
 void installExtensions(void* theEnv);
 
+enum class MayaType {
+    Integer = INTEGER,
+    Float = FLOAT,
+    ExternalAddress = EXTERNAL_ADDRESS,
+    Symbol = SYMBOL,
+    String = STRING,
+    Lexeme = SYMBOL_OR_STRING,
+};
 int getArgCount(void* env) noexcept;
 bool hasCorrectArgCount(void* env, int compare) noexcept;
 bool isExternalAddress(DataObjectPtr value) noexcept;
@@ -50,7 +58,7 @@ CLIPSInteger extractLong(void* env, DataObject& value) noexcept;
 const char* extractLexeme(void* env, DataObjectPtr value) noexcept;
 const char* extractLexeme(void* env, DataObject& value) noexcept;
 
-bool checkThenGetArgument(void* env, const std::string& function, int position, int type, DataObjectPtr saveTo) noexcept;
+bool checkThenGetArgument(void* env, const std::string& function, int position, MayaType type, DataObjectPtr saveTo) noexcept;
 bool tryGetArgumentAsInteger(void* env, const std::string& function, int position, DataObjectPtr saveTo) noexcept;
 bool tryGetArgumentAsSymbol(void* env, const std::string& function, int position, DataObjectPtr saveTo) noexcept;
 bool tryGetArgumentAsString(void* env, const std::string& function, int position, DataObjectPtr saveTo) noexcept;
