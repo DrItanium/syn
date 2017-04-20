@@ -35,9 +35,7 @@ REPL_FINAL_OBJECTS = Repl.o \
 					 ${ARCH_OBJECTS} \
 					 ${ASM_PARSERS_OBJECTS} \
 
-ALL_BINARIES = ${ASM_BINARY} \
-			   ${REPL_BINARY} \
-			   ${BOOTSTRAP_BINARY} \
+ALL_BINARIES = ${REPL_BINARY} \
 			   ${REPL_FINAL_BINARY}
 
 DEFINE_OBJECTS = iris_defines.h \
@@ -51,11 +49,8 @@ ALL_OBJECTS = ${COMMON_THINGS} \
 			  ${ARCH_OBJECTS} \
 			  ${REPL_OBJECTS} \
 			  ${DEFINE_OBJECTS} \
-			  ${BOOTSTRAP_OBJECTS} \
 			  ${DEFINE_CLPS} \
 			  ${REPL_FINAL_OBJECTS}
-
-
 
 COMMON_CLP_FILES = lib/reset-run-exit.clp
 COMMON_GEN_ENCODER_DECODER_FILES= ${COMMON_CLP_FILES} \
@@ -64,16 +59,16 @@ COMMON_GEN_ENCODER_DECODER_FILES= ${COMMON_CLP_FILES} \
 								  lib/cortex.clp \
 								  Base.h
 
+
 all: options bootstrap ${ALL_BINARIES}
 
 maya:
-	@echo "Buidling maya..."
+	@echo "Building maya..."
 	@cd misc/maya && $(MAKE)
 	@echo "Finished building maya"
-	@echo -n "Copying maya to root..."
+	@echo "Copying maya to root..."
 	@cp misc/maya/maya .
 	@cp misc/maya/libmaya.a .
-	@echo Done
 
 libmaya.a: maya
 
@@ -87,54 +82,26 @@ options:
 
 
 %.o: %.c
-	@echo -n Compiling $< into $@...
+	@echo CC $<
 	@${CC} ${CFLAGS} -c $< -o $@
-	@echo done.
 
 %.o: %.cc
-	@echo -n Compiling $< into $@...
-	@${CC} ${CXXFLAGS} -c $< -o $@
-	@echo done.
-
-%.tab.c %.tab.h: %.y
-	@echo -n Constructing Parser from $< ...
-	@${YACC} -o $*.tab.c -d $<
-	@echo done
-
-%.tab.o: %.tab.c
-	@echo -n Compiling $< into $@...
+	@echo CXX $<
 	@${CXX} ${CXXFLAGS} -c $< -o $@
-	@echo done
-
-%_lex.yy.c: %Assembler.l %Assembler.tab.h
-	@echo -n Constructing Lexer from $< ...
-	@${LEX} -o $*_lex.yy.c $*Assembler.l
-	@echo done
-
-%.yy.o: %.yy.c
-	@echo -n Compiling $< into $@ ...
-	@${CXX} ${CXXFLAGS} -D_POSIX_SOURCE -c $< -o $@
-	@echo done
 
 ${REPL_BINARY}: ${REPL_OBJECTS}
-	@echo -n Building ${REPL_BINARY} binary out of $^...
+	@echo Building ${REPL_BINARY}
 	@${CXX} ${LIBS} -o ${REPL_BINARY} ${REPL_OBJECTS}
-	@echo done.
 
 ${REPL_FINAL_BINARY}: ${REPL_BINARY} ${REPL_FINAL_OBJECTS}
-	@echo -n Building ${REPL_FINAL_BINARY} binary out of $^...
+	@echo Building ${REPL_FINAL_BINARY}
 	@${CXX} ${LDFLAGS} -o ${REPL_FINAL_BINARY} ${REPL_FINAL_OBJECTS}
-	@echo done.
-
-${BOOTSTRAP_BINARY}: ${BOOTSTRAP_OBJECTS}
-	@echo -n Building ${BOOTSTRAP_BINARY} binary out of $^...
-	@${CXX} ${LIBS} -o ${BOOTSTRAP_BINARY} ${BOOTSTRAP_OBJECTS}
-	@echo done.
 
 clean:
-	@echo -n Cleaning...
+	@echo Cleaning...
 	@rm -f ${ALL_OBJECTS} ${ALL_BINARIES} maya libmaya.a
-	@echo done.
+
+nuke: clean
 	@echo "Cleaning maya..."
 	@cd misc/maya && $(MAKE) clean
 
@@ -152,24 +119,33 @@ uninstall:
 		rm -f ${DESTDIR}${PREFIX}/bin/$$n ; \
 	done
 
-.SECONDARY: ${TEST_OBJECTS}
-
 .PHONY: all options clean install uninstall
 
 bootstrap: ${REPL_BINARY} ${DEFINE_OBJECTS}
+
 # generate the syn_memory_block_defines.h prior to generating ClipsExtensions.h
 syn_memory_block_defines.h: maya ${COMMON_CLP_FILES} def/memory-block-ops.clp
 	@echo "Generating memory block call operations..."
 	@./maya -f2 def/memory-block-ops.clp -f2 lib/reset-run-exit.clp > syn_memory_block_defines.h
 
+define generateFields
+	./deffield.sh -f2 $(1) -f2 lib/reset-run-exit.clp > $(2).h
+endef
+
+define generateFunctions
+	./deffunction.sh -f2 $(1) -f2 lib/reset-run-exit.clp > $(2).clp
+endef
+
+define generateDefines
+	echo "Generating encoders, decoders, and enumerations for $(1)..."
+	$(call generateFields,def/$(1)/instruction.clp,$(1)_defines)
+	$(call generateFunctions,def/$(1)/instruction.clp,$(1)_defines)
+endef
+
 iris_defines.h: ${REPL_BINARY} ${COMMON_GEN_ENCODER_DECODER_FILES} def/iris/instruction.clp
-	@echo "Generating encoders, decoders and enumerations for iris..."
-	@./deffield.sh -f2 def/iris/instruction.clp -f2 lib/reset-run-exit.clp > iris_defines.h
-	@./deffunction.sh -f2 def/iris/instruction.clp -f2 lib/reset-run-exit.clp > iris_defines.clp
+	@$(call generateDefines,iris)
 
 cisc0_defines.h: ${REPL_BINARY} ${COMMON_GEN_ENCODER_DECODER_FILES} def/cisc0/instruction.clp
-	@echo "Generating encoders, decoders and enumerations for cisc0..."
-	@./deffield.sh -f2 def/cisc0/instruction.clp -f2 lib/reset-run-exit.clp > cisc0_defines.h
-	@./deffunction.sh -f2 def/cisc0/instruction.clp -f2 lib/reset-run-exit.clp > cisc0_defines.clp
+	@$(call generateDefines,cisc0)
 
 include deps.make
