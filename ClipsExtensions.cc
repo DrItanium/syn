@@ -258,7 +258,7 @@ namespace syn {
     bool Arg2IsSymbol(void* env, CLIPSValuePtr storage, const std::string& funcStr) noexcept {
         return tryGetArgumentAsSymbol(env, funcStr, 2, storage);
     }
-    void handleProblem(void* env, CLIPSValuePtr ret, syn::Problem& p, const std::string funcErrorPrefix) noexcept {
+    void handleProblem(void* env, CLIPSValuePtr ret, const syn::Problem& p, const std::string funcErrorPrefix) noexcept {
         CVSetBoolean(ret, false);
         std::stringstream s;
         s << "an exception was thrown: " << p.what();
@@ -334,7 +334,7 @@ namespace syn {
 						errorMessage(env, "NEW", 1, funcErrorPrefix, " function new expected no arguments besides type!");
 						CVSetBoolean(ret, false);
 					}
-				} catch(syn::Problem p) {
+				} catch(const syn::Problem& p) {
                     handleProblem(env, ret, p, funcErrorPrefix);
 				}
 			}
@@ -496,7 +496,7 @@ namespace syn {
                             auto val0 = ptr->getMemoryCellValue(addr0);
                             auto val1 = ptr->getMemoryCellValue(addr1);
                             CVSetInteger(ret, syn::ALU::performOperation<Word>(pCall, val0, val1));
-                        } catch (syn::Problem p) {
+                        } catch (const syn::Problem& p) {
                             handleProblem(env, ret, p, funcErrorPrefix);
                             return false;
                         }

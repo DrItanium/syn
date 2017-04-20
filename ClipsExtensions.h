@@ -163,7 +163,7 @@ namespace WrappedNewCallBuilder {
             } else {
                 errorMessage(env, "NEW", 2, funcErrorPrefix, " no arguments should be provided for function new!");
             }
-        } catch (syn::Problem p) {
+        } catch (const syn::Problem& p) {
             CVSetBoolean(ret, false);
             std::stringstream s;
             s << "an exception was thrown: " << p.what();

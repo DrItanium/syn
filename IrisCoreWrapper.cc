@@ -193,7 +193,7 @@ namespace iris {
                     default:
                         return badArgument(4, "illegal space specified for retrieving registers!");
                 }
-            } catch(syn::Problem p) {
+            } catch(const syn::Problem& p) {
                 return badArgument(4, p.what());
             }
 		};
@@ -232,7 +232,7 @@ namespace iris {
                     default:
                         return badArgument(4, "illegal space specified for assigning registers!");
                 }
-            } catch(syn::Problem p) {
+            } catch(const syn::Problem& p) {
                 return badArgument(4, p.what());
             }
 		};
@@ -267,7 +267,7 @@ namespace iris {
                     default:
                         return badArgument(4, "Unimplemented target space found!");
                 }
-            } catch(syn::Problem p) {
+            } catch(const syn::Problem& p) {
                 return badArgument(4, p.what());
             }
 			return true;
@@ -307,7 +307,7 @@ namespace iris {
                     default:
                         return badArgument(4, "Unimplemented target space found!");
                 }
-            } catch(syn::Problem p) {
+            } catch(const syn::Problem& p) {
                 return badArgument(4, p.what());
             }
 			CVSetBoolean(ret, true);
@@ -348,7 +348,7 @@ namespace iris {
 					return callErrorMessage(opStr, " <- legal but unimplemented operation!");
 			}
 			return true;
-		} catch(syn::Problem p) {
+		} catch(const syn::Problem& p) {
             return badArgument(2, p.what());
 		}
 	}

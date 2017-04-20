@@ -68,7 +68,7 @@ namespace syn {
     template<>
     constexpr auto defaultErrorState<WrappedIODeviceConstants::Operations> = WrappedIODeviceConstants::Operations::Error;
 
-    void handleProblem(void* env, syn::Problem& p, CLIPSValue* ret, const std::string& funcErrorPrefix, const char* type, int code) noexcept;
+    void handleProblem(void* env, const syn::Problem& p, CLIPSValue* ret, const std::string& funcErrorPrefix, const char* type, int code) noexcept;
     template<typename Data, typename Address, template<typename, typename> class T>
     struct WrappedIODeviceBuilder {
         WrappedIODeviceBuilder() = delete;
@@ -161,7 +161,7 @@ namespace syn {
                         auto address = static_cast<Address>(syn::extractLong(env, tmp));
                         CVSetInteger(ret, ptr->read(address));
                         return true;
-                    } catch(syn::Problem p) {
+                    } catch(const syn::Problem& p) {
                         return badArgument(3, p.what());
                     }
                 };
@@ -178,7 +178,7 @@ namespace syn {
                         auto value = static_cast<Data>(syn::extractLong(env, t1));
                         ptr->write(address, value);
                         return true;
-                    } catch(syn::Problem p) {
+                    } catch(const syn::Problem& p) {
                         return badArgument(3, p.what());
                     }
                 };
@@ -250,7 +250,7 @@ namespace syn {
             } else {
                 errorMessage(env, "NEW", 1, funcErrorPrefix, " no arguments should be provided for function new!");
             }
-        } catch(syn::Problem p) {
+        } catch(const syn::Problem& p) {
             handleProblem(env, p, ret, funcErrorPrefix, "NEW", 2);
         }
         return nullptr;
@@ -280,7 +280,7 @@ namespace syn {
                         errorMessage(env, "NEW", 1, prefix, " too many arguments are provided for function new!");
                         return nullptr;
                     }
-                } catch(syn::Problem p) {
+                } catch(const syn::Problem& p) {
                     handleProblem(env, p, ret, prefix, "NEW", 2);
                     return nullptr;
                 }

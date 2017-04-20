@@ -219,7 +219,7 @@ namespace cisc0 {
 					return callErrorMessage(opStr, " <- legal but unimplemented operation!");
 			}
 			return true;
-		} catch(syn::Problem p) {
+		} catch(const syn::Problem& p) {
             return badArgument(2, p.what());
 		}
 	}

@@ -114,7 +114,7 @@ namespace syn {
         }
     } // end namespace WrappedIODeviceConstants
 
-    void handleProblem(void* env, syn::Problem& p, CLIPSValue* ret, const std::string& funcErrorPrefix, const char* type, int code) noexcept {
+    void handleProblem(void* env, const syn::Problem& p, CLIPSValue* ret, const std::string& funcErrorPrefix, const char* type, int code) noexcept {
         CVSetBoolean(ret, false);
         std::stringstream s;
         s << "an exception was thrown: " << p.what();

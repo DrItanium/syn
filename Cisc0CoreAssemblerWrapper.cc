@@ -142,7 +142,7 @@ namespace cisc0 {
 					syn::errorMessage(env, "CALL", 3, funcErrorPrefix, "parse: error during parsing!");
 				}
 				return result;
-			} catch(pegtl::basic_parse_error<pegtl::position_info> e) {
+			} catch(const pegtl::basic_parse_error<pegtl::position_info>& e) {
 				CVSetBoolean(ret, false);
 				return callErrorMessage(str, e.what());
 			}
@@ -151,7 +151,7 @@ namespace cisc0 {
 			try {
 				CVSetBoolean(ret, true);
 				return ptr->resolve();
-			} catch (syn::Problem p) {
+			} catch (const syn::Problem& p) {
 				CVSetBoolean(ret, false);
 				std::stringstream ss;
 				ss << "error during resolve: " << p.what();
