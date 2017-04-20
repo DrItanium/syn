@@ -33,18 +33,14 @@
               (label ReadChar
                      (set32 arg0
                             stdin-out)
-                     (label ReadWord
-                            ; arg0 - address to read from
-                            (push32 addr)
-                            (push32 value)
-                            (copy addr
-                                  arg0)
-                            (direct-load16l)
-                            (copy result
-                                  value)
-                            (pop32 value)
-                            (pop32 addr)
-                            (return)))
+                     (defunc-basic ReadWord
+                                   ; arg0 - address to read from
+                                   (use-registers (addr value)
+                                                  (copy addr
+                                                        arg0)
+                                                  (direct-load16l)
+                                                  (copy result
+                                                        value))))
               (label SkipRandom0
                      (set32 arg0
                             rng0)
@@ -70,172 +66,132 @@
                            arg0)
                      (set32 arg0
                             stdin-out)
-                     (label WriteWord
+                     (defunc-basic WriteWord
+                                   ; arg0 - address to write to
+                                   ; arg1 - value to write
+                                   (use-registers (addr value)
+                                                  (copy addr
+                                                        arg0)
+                                                  (copy value
+                                                        arg1)
+                                                  (direct-store16l))))
+              (defunc-basic ReadDword
+                            ; arg0 - address to read from (will read two addresses)
+                            (use-registers (addr value)
+                                           (copy addr
+                                                 arg0)
+                                           (direct-load32)
+                                           (copy result
+                                                 value)))
+              (defunc-basic WriteDword
                             ; arg0 - address to write to
                             ; arg1 - value to write
-                            (push32 addr)
-                            (push32 value)
-                            (copy addr
-                                  arg0)
-                            (copy value
-                                  arg1)
-                            (direct-store16l)
-                            (pop32 value)
-                            (pop32 addr)
-                            (return)))
-              (label ReadDword
-                     ; arg0 - address to read from (will read two addresses)
-                     (push32 addr)
-                     (push32 value)
-                     (copy addr
-                           arg0)
-                     (direct-load32)
-                     (copy result
-                           value)
-                     (pop32 value)
-                     (pop32 addr)
-                     (return))
-              (label WriteDword
-                     ; arg0 - address to write to
-                     ; arg1 - value to write
-                     (push32 addr)
-                     (push32 value)
-                     (copy addr
-                           arg0)
-                     (copy value
-                           arg1)
-                     (direct-store32)
-                     (pop32 value)
-                     (pop32 addr)
-                     (return))
-
-              (label ReadLine
-                     ; arg0 - address to store into
-                     (push32 addr)
-                     (push32 value)
-                     (set32 addr
-                            arg0)
-                     (label ReadLineLoopBody
-                            (branch call
-                                    immediate
-                                    ReadChar)
-                            (copy value
-                                  result)
-                            (direct-store16l)
-                            (incr addr)
-                            (is-new-line value)
-                            (not cond)
-                            (branch conditional
-                                    immediate
-                                    ReadLineLoopBody)
-                            (is-null-char value)
-                            (not cond)
-                            (branch conditional
-                                    immediate
-                                    ReadLineLoopBody))
-                     (copy result
-                           arg0)
-                     (pop32 value)
-                     (pop32 addr)
-                     (return))
-              (label WriteLine
-                     ; arg0 - address to read from
-                     (push32 addr)
-                     (push32 value)
-                     (set32 addr
-                            arg0)
-                     (label WriteLineLoopBody
-                            (direct-load16l)
-                            (copy arg0
-                                  value)
-                            (branch call
-                                    immediate
-                                    WriteChar)
-                            (incr addr)
-                            (is-null-char value)
-                            (not cond)
-                            (branch conditional
-                                    immediate
-                                    ReadLineLoopBody))
-                     (set16l arg0
-                             0x0a)
-                     (branch call
-                             immediate
-                             WriteChar)
-                     (pop32 value)
-                     (pop32 addr)
-                     (return))
-              (label DecodeDword
-                     ; arg0 - value
-                     ; arg1 - mask
-                     ; arg2 - shift
-                     (push32 addr)
-                     (copy addr
-                           arg0)
-                     (push32 mask)
-                     (copy mask
-                           arg1)
-                     (push32 shift)
-                     (copy shift
-                           arg2)
-                     (push32 value)
-                     (decode)
-                     (copy result
-                           value)
-                     (pop32 value)
-                     (pop32 shift)
-                     (pop32 mask)
-                     (pop32 addr)
-                     (return))
-              (label EncodeDword
-                     ; arg0 - value
-                     ; arg1 - insertion
-                     ; arg2 - mask
-                     ; arg3 - shift
-                     (push32 addr)
-                     (copy addr
-                           arg0)
-                     (push32 value)
-                     (copy value
-                           arg1)
-                     (push32 mask)
-                     (copy mask
-                           arg2)
-                     (push32 shift)
-                     (copy shift
-                           arg3)
-                     (encode)
-                     (copy result
-                           addr)
-                     (pop32 shift)
-                     (pop32 mask)
-                     (pop32 value)
-                     (pop32 addr)
-                     (return))
-              (label BitIsSet
-                     ; arg0 - value
-                     ; arg1 - index
-                     (push32 addr)
-                     (copy addr
-                           arg0)
-                     (push32 field)
-                     (copy field
-                           arg1)
-                     (push32 cond)
-                     (bitset)
-                     (copy result
-                           cond)
-                     (pop32 cond)
-                     (pop32 field)
-                     (pop32 addr)
-                     (return))
-
+                            (use-registers (addr value)
+                                           (copy addr
+                                                 arg0)
+                                           (copy value
+                                                 arg1)
+                                           (direct-store32)))
+              (defunc-basic ReadLine
+                            ; arg0 - address to store into
+                            (use-registers (addr value)
+                                           (set32 addr
+                                                  arg0)
+                                           (label ReadLineLoopBody
+                                                  (branch call
+                                                          immediate
+                                                          ReadChar)
+                                                  (copy value
+                                                        result)
+                                                  (direct-store16l)
+                                                  (incr addr)
+                                                  (is-new-line value)
+                                                  (not cond)
+                                                  (branch conditional
+                                                          immediate
+                                                          ReadLineLoopBody)
+                                                  (is-null-char value)
+                                                  (not cond)
+                                                  (branch conditional
+                                                          immediate
+                                                          ReadLineLoopBody))
+                                           (copy result
+                                                 arg0)))
+              (defunc-basic WriteLine
+                            ; arg0 - address to read from
+                            (use-registers (addr value)
+                                           (set32 addr
+                                                  arg0)
+                                           (label WriteLineLoopBody
+                                                  (direct-load16l)
+                                                  (copy arg0
+                                                        value)
+                                                  (branch call
+                                                          immediate
+                                                          WriteChar)
+                                                  (incr addr)
+                                                  (is-null-char value)
+                                                  (not cond)
+                                                  (branch conditional
+                                                          immediate
+                                                          ReadLineLoopBody))
+                                           (set16l arg0
+                                                   0x0a)
+                                           (branch call
+                                                   immediate
+                                                   WriteChar)))
+              (defunc-basic DecodeDword
+                            ; arg0 - value
+                            ; arg1 - mask
+                            ; arg2 - shift
+                            (use-registers (addr mask shift value)
+                                           (copy addr
+                                                 arg0)
+                                           (copy mask
+                                                 arg1)
+                                           (copy shift
+                                                 arg2)
+                                           (decode)
+                                           (copy result
+                                                 value)))
+              (defunc-basic EncodeDword
+                            ; arg0 - value
+                            ; arg1 - insertion
+                            ; arg2 - mask
+                            ; arg3 - shift
+                            (use-registers (addr value mask shift)
+                                           (copy addr
+                                                 arg0)
+                                           (copy value
+                                                 arg1)
+                                           (copy mask
+                                                 arg2)
+                                           (copy shift
+                                                 arg3)
+                                           (encode)
+                                           (copy result
+                                                 addr)))
+              (defunc-basic BitIsSet
+                            ; arg0 - value
+                            ; arg1 - index
+                            (use-registers (addr field cond)
+                                           (copy addr
+                                                 arg0)
+                                           (copy field
+                                                 arg1)
+                                           (bitset)
+                                           (copy result
+                                                 cond)))
+              (defunc-basic BitIsUnset
+                            ; arg0 - value
+                            ; arg1 - index
+                            (use-registers (addr field cond)
+                                           (copy addr
+                                                 arg0)
+                                           (copy field
+                                                 arg1)
+                                           (bitunset)
+                                           (copy result
+                                                 cond)))
               )
          )
-
-
-
-
-
-
-
