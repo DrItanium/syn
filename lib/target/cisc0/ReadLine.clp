@@ -1,8 +1,28 @@
 (let io-bus-start be 0xFF000000)
 (let rng0 be 0xFF000001)
+(let terminate-address be 0xFFFFFFFF)
 (alias io-bus-start as stdin-out)
 (section code
+         (org 0xFE000000
+              ; setup the seeding routines first
+              (set32 arg0
+                     0xFDEDABCD)
+              (branch call
+                      immediate
+                      SeedRandom0)
+
+              (branch unconditional
+                      immediate
+                      Shutdown))
          (org 0xFE010000
+              (label Shutdown
+                     (set32 arg0
+                            terminate-address)
+                     (set32 arg1
+                            0xD0CEDB00)
+                     (branch unconditional
+                             immediate
+                             WriteWord))
               (label NextRandom0
                      (set32 arg0
                             rng0)
@@ -145,6 +165,71 @@
                      (pop32 value)
                      (pop32 addr)
                      (return))
+              (label DecodeDword
+                     ; arg0 - value
+                     ; arg1 - mask
+                     ; arg2 - shift
+                     (push32 addr)
+                     (copy addr
+                           arg0)
+                     (push32 mask)
+                     (copy mask
+                           arg1)
+                     (push32 shift)
+                     (copy shift
+                           arg2)
+                     (push32 value)
+                     (decode)
+                     (copy result
+                           value)
+                     (pop32 value)
+                     (pop32 shift)
+                     (pop32 mask)
+                     (pop32 addr)
+                     (return))
+              (label EncodeDword
+                     ; arg0 - value
+                     ; arg1 - insertion
+                     ; arg2 - mask
+                     ; arg3 - shift
+                     (push32 addr)
+                     (copy addr
+                           arg0)
+                     (push32 value)
+                     (copy value
+                           arg1)
+                     (push32 mask)
+                     (copy mask
+                           arg2)
+                     (push32 shift)
+                     (copy shift
+                           arg3)
+                     (encode)
+                     (copy result
+                           addr)
+                     (pop32 shift)
+                     (pop32 mask)
+                     (pop32 value)
+                     (pop32 addr)
+                     (return))
+              (label BitIsSet
+                     ; arg0 - value
+                     ; arg1 - index
+                     (push32 addr)
+                     (copy addr
+                           arg0)
+                     (push32 field)
+                     (copy field
+                           arg1)
+                     (push32 cond)
+                     (bitset)
+                     (copy result
+                           cond)
+                     (pop32 cond)
+                     (pop32 field)
+                     (pop32 addr)
+                     (return))
+
               )
          )
 
