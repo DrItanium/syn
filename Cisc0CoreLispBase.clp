@@ -1204,9 +1204,14 @@
          ?f <- (alias ?a <- ?b <- $?rest)
          =>
          (retract ?f)
-         (assert (alias ?a <- ?b))
-         (if (not (empty$ ?rest)) then
-           (assert (alias ?b <- $?rest))))
+         (assert (alias ?a <- ?b)
+                 (alias ?b <- $?rest)))
+
+(defrule lower::retract-hardcoded-alias-facts
+         (declare (salience ?*priority:two*))
+         ?f <- (alias ? <-)
+         =>
+         (retract ?f))
 
 (defrule lower::parse-hardcoded-alias-facts
          (declare (salience ?*priority:two*))
