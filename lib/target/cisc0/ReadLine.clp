@@ -1,7 +1,15 @@
-(alias 0xFF000000 as io-bus-start)
+(let io-bus-start be 0xFF000000)
+(let rng0 be 0xFF000001)
 (alias io-bus-start as stdin-out)
 (section code
          (org 0xFE010000
+              (label NextRandom0
+                     (set32 arg0
+                            rng0)
+                     (incr arg0)
+                     (branch unconditional
+                             immediate
+                             ReadWord))
               (label ReadChar
                      (set32 arg0
                             stdin-out)
@@ -17,6 +25,25 @@
                             (pop32 value)
                             (pop32 addr)
                             (return)))
+              (label SkipRandom0
+                     (set32 arg0
+                            rng0)
+                     (addi arg0
+                           0x2)
+                     ; don't care what is inside arg1, we just want to write it
+                     ; as is!
+                     (branch unconditional
+                             immediate
+                             WriteWord))
+              (label SeedRandom0
+                     ; arg0 - the new seed value
+                     (copy arg1
+                           arg0)
+                     (set32 arg0
+                            rng0)
+                     (branch unconditional
+                             immediate
+                             WriteWord))
               (label WriteChar
                      ; arg0 - value to write
                      (copy arg1
