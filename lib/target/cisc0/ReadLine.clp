@@ -95,8 +95,8 @@
               (defunc-basic ReadLine
                             ; arg0 - address to store into
                             (use-registers (addr value)
-                                           (set32 addr
-                                                  arg0)
+                                           (copy addr
+                                                 arg0)
                                            (label ReadLineLoopBody
                                                   (branch call
                                                           immediate
@@ -117,12 +117,12 @@
                                                           ReadLineLoopBody))
                                            (copy result
                                                  arg0)))
-              (defunc-basic WriteLine
+              (defunc-basic PrintLine
                             ; arg0 - address to read from
                             (use-registers (addr value)
-                                           (set32 addr
-                                                  arg0)
-                                           (label WriteLineLoopBody
+                                           (copy addr
+                                                 arg0)
+                                           (label PrintLineLoopBody
                                                   (direct-load16l)
                                                   (copy arg0
                                                         value)
@@ -193,5 +193,7 @@
                                            (bitunset)
                                            (copy result
                                                  cond)))
+
+              (defunc-basic
               )
          )
