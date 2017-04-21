@@ -1411,6 +1411,9 @@
 (deffacts lower::ascii-check-macros
           (ascii-check-macro is-left-paren 0x28)
           (ascii-check-macro is-right-paren 0x29)
+          (ascii-check-macro is-space 0x20)
+          (ascii-check-macro is-new-line 0x0a)
+          (ascii-check-macro is-null-char 0x00)
           (simple-macro 1 is-lparen -> is-left-paren)
           (simple-macro 1 is-rparent -> is-right-paren)
           (simple-macro 1 is-open-paren -> is-lparen)
@@ -1419,9 +1422,6 @@
           (simple-macro 1 rparenp -> is-rparen)
           (simple-macro 1 open-parenp -> is-open-paren)
           (simple-macro 1 close-parenp -> is-close-paren)
-          (ascii-check-macro is-space 0x20)
-          (ascii-check-macro is-new-line 0x0a)
-          (ascii-check-macro is-null-char 0x00)
           (simple-macro 1 is-null -> is-null-char))
 
 (defrule lower::parse-multiply-accumulate-operation
@@ -1450,13 +1450,13 @@
 
 (deffacts lower::lower-eight-registers:parameter-passing-conventions
           (alias r7 <- result-register <- result)
-          (alias r6 <- arguments-base-address-register <- arg-base <- args)
-          (alias r5 <- temporary-register0 <- temporary0 <- temp0)
-          (alias r4 <- temporary-register1 <- temporary1 <- temp1)
-          (alias r3 <- temporary-register2 <- temporary2 <- temp2)
-          (alias r2 <- temporary-register3 <- temporary3 <- temp3)
-          (alias r1 <- temporary-register4 <- temporary4 <- temp4)
-          (alias r0 <- temporary-register5 <- temporary5 <- temp5))
+          (alias r6 <- temporary-register0 <- temporary0 <- temp0)
+          (alias r5 <- temporary-register1 <- temporary1 <- temp1)
+          (alias r4 <- temporary-register2 <- temporary2 <- temp2)
+          (alias r3 <- temporary-register3 <- temporary3 <- temp3)
+          (alias r2 <- temporary-register4 <- temporary4 <- temp4)
+          (alias r1 <- temporary-register5 <- temporary5 <- temp5)
+          (alias r0 <- temporary-register6 <- temporary6 <- temp6))
 
 (deffacts lower::special-set-macros
           (simple-macro 1 set-address-register -> set32 addr)
@@ -1466,141 +1466,17 @@
           (simple-macro 1 mtaddr -> move-to-addr))
 
 
-; now we need to provide macros for loading arguments into registers from the rest-parameter
-; You can pass a maximum of 8 arguments to a function in the current scheme.
-; All other arguments must use pointers, this enforces clean code
-; implementation. The results are returned via r7 and the base address of the
-; arguments is stored in r6.
-(deffunction lower::mk-move-to-address-register
-             (?parent ?register)
-             (mk-list ?parent
-                      move-to-address-register
-                      ?register))
-(deffunction lower::mk-load-args-register
-             (?parent)
-             (mk-move-to-address-register ?parent
-                                          args))
-
-(deffunction lower::mk-move-from-value-register
-             (?parent ?register)
-             (mk-list ?parent
-                      move32
-                      ?register
-                      value))
-(deffunction lower::mk-move-to-value-register
-             (?parent ?register)
-             (mk-list ?parent
-                      move32
-                      value
-                      ?register))
-
-
-(defrule lower::load-argument
-         "Generate code to load arguments from the addr register! This code assumes that you have already overwritten the address register!"
-         ?f <- (object (is-a list)
-                       (contents load-argument
-                                 ?index
-                                 ?register)
-                       (name ?n)
-                       (parent ?p))
-         =>
-         (unmake-instance ?f)
-         (mk-container ?n
-                       ?p
-                       (mk-list ?n
-                                direct-load32
-                                ?index)
-                       (mk-move-from-value-register ?n
-                                                    ?register)))
-(defrule lower::store-argument
-         "Generate code to store arguments to the memory pointed to by the addr register! This code assumes that you have already overwritten the address register!"
-         ?f <- (object (is-a list)
-                       (contents store-argument
-                                 ?index
-                                 ?register)
-                       (name ?n)
-                       (parent ?p))
-         =>
-         (unmake-instance ?f)
-         (mk-container ?n
-                       ?p
-                       (mk-move-to-value-register ?n
-                                                  ?register)
-                       (mk-list ?n
-                                direct-store32
-                                ?index)))
-
+; Pass arguments through registers! Four registers for arguments with three
+; temporaries.
 
 (deffacts lower::load-argument-macros
           (alias temp0 <- argument-register0 <- arg0)
           (alias temp1 <- argument-register1 <- arg1)
           (alias temp2 <- argument-register2 <- arg2)
-          (alias temp3 <- argument-register3 <- arg3)
-          (alias temp4 <- argument-register4 <- arg4)
-          (alias temp5 <- argument-register5 <- arg5)
-          (simple-macro 1 load-argument0 -> load-argument 0x0)
-          (simple-macro 1 load-argument1 -> load-argument 0x2)
-          (simple-macro 1 load-argument2 -> load-argument 0x4)
-          (simple-macro 1 load-argument3 -> load-argument 0x6)
-          (simple-macro 1 load-argument4 -> load-argument 0x8)
-          (simple-macro 1 load-argument5 -> load-argument 0xA)
-          (simple-macro 1 load-argument6 -> load-argument 0xC)
-          (simple-macro 1 load-argument7 -> load-argument 0xE)
-          (simple-macro 1 load-arg0 -> load-argument0)
-          (simple-macro 1 load-arg1 -> load-argument1)
-          (simple-macro 1 load-arg2 -> load-argument2)
-          (simple-macro 1 load-arg3 -> load-argument3)
-          (simple-macro 1 load-arg4 -> load-argument4)
-          (simple-macro 1 load-arg5 -> load-argument5)
-          (simple-macro 1 load-arg6 -> load-argument6)
-          (simple-macro 1 load-arg7 -> load-argument7)
-          (simple-macro 1 ldarg0 -> load-argument0)
-          (simple-macro 1 ldarg1 -> load-argument1)
-          (simple-macro 1 ldarg2 -> load-argument2)
-          (simple-macro 1 ldarg3 -> load-argument3)
-          (simple-macro 1 ldarg4 -> load-argument4)
-          (simple-macro 1 ldarg5 -> load-argument5)
-          (simple-macro 1 ldarg6 -> load-argument6)
-          (simple-macro 1 ldarg7 -> load-argument7)
-          (simple-macro 1 store-argument0 -> store-argument 0x0)
-          (simple-macro 1 store-argument1 -> store-argument 0x2)
-          (simple-macro 1 store-argument2 -> store-argument 0x4)
-          (simple-macro 1 store-argument3 -> store-argument 0x6)
-          (simple-macro 1 store-argument4 -> store-argument 0x8)
-          (simple-macro 1 store-argument5 -> store-argument 0xA)
-          (simple-macro 1 store-argument6 -> store-argument 0xC)
-          (simple-macro 1 store-argument7 -> store-argument 0xE)
-          (simple-macro 1 store-arg0 -> store-argument0)
-          (simple-macro 1 store-arg1 -> store-argument1)
-          (simple-macro 1 store-arg2 -> store-argument2)
-          (simple-macro 1 store-arg3 -> store-argument3)
-          (simple-macro 1 store-arg4 -> store-argument4)
-          (simple-macro 1 store-arg5 -> store-argument5)
-          (simple-macro 1 store-arg6 -> store-argument6)
-          (simple-macro 1 store-arg7 -> store-argument7)
-          (simple-macro 1 starg0 -> store-argument0)
-          (simple-macro 1 starg1 -> store-argument1)
-          (simple-macro 1 starg2 -> store-argument2)
-          (simple-macro 1 starg3 -> store-argument3)
-          (simple-macro 1 starg4 -> store-argument4)
-          (simple-macro 1 starg5 -> store-argument5)
-          (simple-macro 1 starg6 -> store-argument6)
-          (simple-macro 1 starg7 -> store-argument7))
-
-(defrule lower::argument-manipulation-block
-         "Preserve the old arguments register and load r6 into addr for loading"
-         ?f <- (object (is-a list)
-                       (contents load-arguments
-                                 $?body)
-                       (name ?n)
-                       (parent ?p))
-         =>
-         (unmake-instance ?f)
-         (mk-use-registers-block ?n
-                                 ?p
-                                 (create$ addr)
-                                 (mk-load-args-register ?n)
-                                 $?body))
+          (alias temp3 <- argument-register3 <- arg3 <- rest-param)
+          (alias temp4 <- local0)
+          (alias temp5 <- local1)
+          (alias temp6 <- local2))
 
 ;-----------------------------------------------------------------------------
 ; Bootstrap rules, makes it possible to manipulate the set of simple macros
@@ -1662,138 +1538,3 @@
          (unmake-instance ?f)
          (progn$ (?register $?registers)
                  (assert (basic-register ?register))))
-
-;-----------------------------------------------------------------------------
-; Funcall related operations
-;-----------------------------------------------------------------------------
-; When dealing with a function call, we have to setup the argument memory space
-; used during function calls. This means that we have to have a memory
-; allocator setup ahead of time to do this! While this is hyper dumb, it does
-; make for a very interesting and challenging design!
-;-----------------------------------------------------------------------------
-(deffunction lower::allocate-stack-space
-             (?parent ?size)
-             (mk-list ?parent
-                      subi
-                      sp
-                      ?size))
-(deffunction lower::copy-register
-             (?parent ?destination ?source)
-             (mk-list ?parent
-                      move32
-                      ?destination
-                      ?source))
-
-(deffunction lower::allocate-argument-space
-             (?parent)
-             (create$ (allocate-stack-space ?parent
-                                            0x0f)
-                      (copy-register ?parent
-                                     args
-                                     sp)))
-
-(deffunction lower::mk-store-argument
-             (?parent ?index ?argument)
-             (mk-list ?parent
-                      (sym-cat starg
-                               ?index)
-                      ?argument))
-(deffunction lower::mk-store-argument-list
-             (?parent $?arguments)
-             (bind ?children
-                   (create$))
-             (progn$ (?arg ?arguments)
-                     (bind ?children
-                           ?children
-                           (mk-store-argument ?parent
-                                              (- ?arg-index 1)
-                                              ?arg)))
-             ?children)
-
-(deffunction lower::mk-funcall-block
-             (?name ?parent ?arguments ?flags ?destination)
-             (bind ?sub-parent
-                   (symbol-to-instance-name (gensym*)))
-             (bind ?children
-                   (mk-store-argument-list ?sub-parent
-                                           ?arguments))
-             (mk-use-registers-block ?name
-                                     ?parent
-                                     (create$ args
-                                              sp)
-                                     ; use stack space via subtraction
-                                     (allocate-argument-space ?name)
-                                     (mk-list-with-title ?sub-parent
-                                                         ?name
-                                                         load-arguments
-                                                         ?children
-                                                         (mk-list ?sub-parent
-                                                                  branch
-                                                                  call
-                                                                  $?flags
-                                                                  ?destination))
-                                     ; the act of returning will cause the stack to be reconstituted!
-                                     ))
-(defrule lower::funcall-code
-         ?f <- (object (is-a list)
-                       (contents funcall
-                                 ?symbol
-                                 $?arguments)
-                       (name ?name)
-                       (parent ?parent))
-         (test (<= 0 (length$ ?arguments) 8))
-         =>
-         ; since we have between 0 and 8 arguments, we have to allocate a
-         ; memory block useful for our purposes which is 16 words in size
-         (unmake-instance ?f)
-         (mk-funcall-block ?name
-                           ?parent
-                           ?arguments
-                           (create$)
-                           ?symbol))
-
-(defrule lower::funcall-code:immediate
-         ?f <- (object (is-a list)
-                       (contents funcall
-                                 immediate
-                                 ?symbol
-                                 $?arguments)
-                       (name ?name)
-                       (parent ?parent))
-         (test (<= 0 (length$ ?arguments) 8))
-         =>
-         ; since we have between 0 and 8 arguments, we have to allocate a
-         ; memory block useful for our purposes which is 16 words in size
-         (unmake-instance ?f)
-         (mk-funcall-block ?name
-                           ?parent
-                           ?arguments
-                           (create$ immediate)
-                           ?symbol))
-
-(defrule lower::funcall-code:too-many-arguments
-         ?f <- (object (is-a list)
-                       (contents funcall
-                                 ?
-                                 $?arguments)
-                       (name ?name))
-         (test (> (length$ ?arguments)
-                  8))
-         =>
-         (printout werror
-                   "ERROR: found a funcall statement with too many arguments, offending object is " ?name)
-         (halt))
-
-(defrule lower::funcall-code:too-many-arguments:immediate
-         ?f <- (object (is-a list)
-                       (contents funcall
-                                 immediate
-                                 ?
-                                 $?arguments)
-                       (name ?name))
-         (test (> (length$ ?arguments)
-                  8))
-         =>
-         (printout werror
-                   "ERROR: found a funcall statement with too many arguments, offending object is " ?name)
-         (halt))
