@@ -53,7 +53,7 @@
               ([/dev/ram2] of memory
                             (index (* 2 ?*main-memory-size*))
                             (length ?*main-memory-size*))
-              ([/dev/ram2] of memory
+              ([/dev/ram3] of memory
                             (index (* 3 ?*main-memory-size*))
                             (length ?*main-memory-size*))
               ([/dev/rom0] of memory
