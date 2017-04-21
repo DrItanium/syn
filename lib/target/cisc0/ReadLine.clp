@@ -193,7 +193,5 @@
                                            (bitunset)
                                            (copy result
                                                  cond)))
-
-              (defunc-basic
               )
          )
