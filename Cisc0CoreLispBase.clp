@@ -1538,3 +1538,72 @@
          (unmake-instance ?f)
          (progn$ (?register $?registers)
                  (assert (basic-register ?register))))
+
+(defrule lower::parse-string
+         "write the target string to a file and then read it back in character by character"
+         ?f <- (object (is-a list)
+                       (contents string
+                                 ?child))
+         ?f2 <- (object (is-a string)
+                        (name ?child)
+                        (value ?str))
+         =>
+         (unmake-instance ?f2)
+         (bind ?file
+               (str-cat /tmp/
+                        (bind ?id
+                              (gensym*))))
+         (if (open ?file ?id "w") then
+           ; save the string to a file
+           (format ?id
+                   "%s"
+                   (str-cat ?str))
+           (close ?id)
+           (if (open ?file ?id "r") then
+             (bind ?contents
+                   (create$))
+             (while (<> (bind ?char
+                              (get-char ?id))
+                        -1) do
+                    (bind ?contents
+                          ?contents
+                          (sym-cat (format nil
+                                           "0x%x"
+                                           ?char))))
+             (close ?id)
+             (remove ?file)
+             (modify-instance ?f
+                              (contents words
+                                        ?contents
+                                        0x00))
+
+             else
+             (printout werror "Couldn't open " ?file " for reading!" crlf)
+             (halt))
+           else
+           (printout werror "Couldn't open " ?file " for writing!" crlf)
+           (halt)))
+
+(defrule lower::flatten-words
+         ?f <- (object (is-a list)
+                       (contents words
+                                 ?first
+                                 $?rest)
+                       (name ?n)
+                       (parent ?p))
+         =>
+         (unmake-instance ?f)
+         (bind ?contents
+               (create$ (mk-list ?n
+                                 word
+                                 ?first)))
+
+         (progn$ (?a $?rest)
+                 (bind ?contents
+                       ?contents
+                       (mk-list ?n
+                                word
+                                ?a)))
+         (mk-container ?n
+                       ?p
+                       ?contents))

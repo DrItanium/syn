@@ -5,19 +5,37 @@
 (alias io-bus-start as stdin-out)
 (section code
          (org 0xFE000000
-              ; use /dev/ram3 as the ram disk at boot up
-              (set32 sp
-                     ram3-base-address)
-              ; setup the seeding routines first
-              (set32 arg0
-                     0xFDEDABCD)
-              (branch call
-                      immediate
-                      SeedRandom0)
+              (label Startup
 
-              (branch unconditional
-                      immediate
-                      Shutdown))
+                     ; use /dev/ram3 as the ram disk at boot up
+                     (set32 sp
+                            ram3-base-address)
+                     (set32 addr
+                            ROM_Messages)
+                     (indirect-load32 0x00)
+                     (copy arg0
+                           value)
+                     (branch call
+                             immediate
+                             PrintLine)
+                     (indirect-load32 0x02)
+                     (copy arg0
+                           value)
+                     (branch call
+                             immediate
+                             PrintLine)
+                     ; setup the seeding routines first
+                     (set32 arg0
+                            0xFDEDABCD)
+                     (branch call
+                             immediate
+                             SeedRandom0)
+                     (indirect-load32 0x08)
+                     (copy arg0
+                           value)
+                     (branch unconditional
+                             immediate
+                             Shutdown)))
          (org 0xFE010000
               (label Shutdown
                      (set32 arg0
@@ -66,10 +84,10 @@
                              WriteWord))
               (label WriteChar
                      ; arg0 - value to write
-                     (copy arg1
-                           arg0)
-                     (set32 arg0
+                     (set32 arg1
                             stdin-out)
+                     (swap arg1
+                           arg0)
                      (defunc-basic WriteWord
                                    ; arg0 - address to write to
                                    ; arg1 - value to write
@@ -198,4 +216,45 @@
                                            (copy result
                                                  cond)))
               )
+         )
+(section data
+         (org 0xFE020000
+              (label ScratchStorage
+                     (dword 0)
+                     (dword 0)
+                     (dword 0)
+                     (dword 0)
+                     (dword 0)
+                     (dword 0)
+                     (dword 0)
+                     (dword 0)
+                     (dword 0)
+                     (dword 0)
+                     (dword 0)
+                     (dword 0)
+                     (dword 0)
+                     (dword 0)
+                     (dword 0)
+                     (dword 0)))
+         (org 0xFE020100
+              (label InterruptTable))
+         (org 0xFE0A0000
+              (label ROM_Strings
+                     (label Message0
+                            (string "Starting up machine..."))
+                     (label Message1
+                            (string "Seeding random..."))
+                     (label Message2
+                            (string "Please wait...."))
+                     (label Message3
+                            (string "Done"))
+                     (label Message4
+                            (string "Shutting Down!")))
+              (label ROM_Messages
+                     (dword Message0)
+                     (dword Message1)
+                     (dword Message2)
+                     (dword Message3)
+                     (dword Message4)))
+         ; data tables and such
          )
