@@ -71,39 +71,28 @@ namespace syn {
         template<> constexpr auto Value<type, index>  = static_cast<type>(mask); \
     }
 
-	DefFieldData(int16, 0, 0x00FF);
-	DefFieldData(int16, 1, static_cast<int16>(0xFF00));
+#define DefSignedAndUnsignedFieldData(type, index, mask) \
+    DefFieldData(type, index, mask) \
+    DefFieldData( u ## type, index, mask)
 
-	DefFieldData(int32, 0, 0x000000FF);
-	DefFieldData(int32, 1, 0x0000FF00);
-	DefFieldData(int32, 2, 0x00FF0000);
-	DefFieldData(int32, 3, static_cast<int32>(0xFF000000));
+    DefSignedAndUnsignedFieldData(int16, 0, 0x00FF);
+    DefSignedAndUnsignedFieldData(int16, 1, 0xFF00);
 
-	DefFieldData(int64,  0, 0x00000000000000FF);
-	DefFieldData(int64,  1, 0x000000000000FF00);
-	DefFieldData(int64,  2, 0x0000000000FF0000);
-	DefFieldData(int64,  3, 0x00000000FF000000);
-	DefFieldData(int64,  4, 0x000000FF00000000);
-	DefFieldData(int64,  5, 0x0000FF0000000000);
-	DefFieldData(int64,  6, 0x00FF000000000000);
-	DefFieldData(int64,  7, static_cast<int64>(0xFF00000000000000));
+	DefSignedAndUnsignedFieldData(int32, 0, 0x000000FF);
+	DefSignedAndUnsignedFieldData(int32, 1, 0x0000FF00);
+	DefSignedAndUnsignedFieldData(int32, 2, 0x00FF0000);
+	DefSignedAndUnsignedFieldData(int32, 3, 0xFF000000);
 
-	DefFieldData(uint16, 0, 0x00FF);
-	DefFieldData(uint16, 1, 0xFF00);
+	DefSignedAndUnsignedFieldData(int64,  0, 0x00000000000000FF);
+	DefSignedAndUnsignedFieldData(int64,  1, 0x000000000000FF00);
+	DefSignedAndUnsignedFieldData(int64,  2, 0x0000000000FF0000);
+	DefSignedAndUnsignedFieldData(int64,  3, 0x00000000FF000000);
+	DefSignedAndUnsignedFieldData(int64,  4, 0x000000FF00000000);
+	DefSignedAndUnsignedFieldData(int64,  5, 0x0000FF0000000000);
+	DefSignedAndUnsignedFieldData(int64,  6, 0x00FF000000000000);
+	DefSignedAndUnsignedFieldData(int64,  7, 0xFF00000000000000);
 
-	DefFieldData(uint32, 0, 0x000000FF);
-	DefFieldData(uint32, 1, 0x0000FF00);
-	DefFieldData(uint32, 2, 0x00FF0000);
-	DefFieldData(uint32, 3, 0xFF000000);
-
-	DefFieldData(uint64, 0, 0x00000000000000FF);
-	DefFieldData(uint64, 1, 0x000000000000FF00);
-	DefFieldData(uint64, 2, 0x0000000000FF0000);
-	DefFieldData(uint64, 3, 0x00000000FF000000);
-	DefFieldData(uint64, 4, 0x000000FF00000000);
-	DefFieldData(uint64, 5, 0x0000FF0000000000);
-	DefFieldData(uint64, 6, 0x00FF000000000000);
-	DefFieldData(uint64, 7, 0xFF00000000000000);
+#undef DefSignedAndUnsignedFieldData
 #undef DefFieldData
 
     namespace UpperLowerPair {
@@ -417,6 +406,17 @@ inline R div(T numerator, T denominator) {
 	}
 }
 
+template<typename T, typename R = T>
+inline R div(T numerator, T denominator, std::function<R()> markDivideByZero) {
+    if (denominator == 0) {
+        return markDivideByZero();
+    } else if (denominator == 1) {
+        return static_cast<R>(numerator);
+    } else {
+        return static_cast<R>(numerator / denominator);
+    }
+}
+
 template<>
 inline uint8_t div<uint8_t, uint8_t>(uint8_t numerator, uint8_t denominator) {
      switch(denominator) {
@@ -440,6 +440,31 @@ inline uint16_t div<uint16_t, uint16_t>(uint16_t numerator, uint16_t denominator
      switch(denominator) {
          case 0:
              throw syn::Problem("Denominator is zero!");
+         case 1: return numerator;
+         case 2: return numerator >> 1;
+         case 4: return numerator >> 2;
+         case 8: return numerator >> 3;
+         case 16: return numerator >> 4;
+         case 32: return numerator >> 5;
+         case 64: return numerator >> 6;
+         case 128: return numerator >> 7;
+         case 256: return numerator >> 8;
+         case 512: return numerator >> 9;
+         case 1024: return numerator >> 10;
+         case 2048: return numerator >> 11;
+         case 4096: return numerator >> 12;
+         case 8192: return numerator >> 13;
+         case 16384: return numerator >> 14;
+         case 32768: return numerator >> 15;
+         default:
+             return numerator / denominator;
+     }
+}
+
+template<>
+inline uint16_t div<uint16_t, uint16_t>(uint16_t numerator, uint16_t denominator, std::function<uint16_t()> markDivideByZero) {
+     switch(denominator) {
+         case 0: return markDivideByZero();
          case 1: return numerator;
          case 2: return numerator >> 1;
          case 4: return numerator >> 2;
@@ -571,7 +596,7 @@ inline uint64_t div<uint64_t, uint64_t>(uint64_t numerator, uint64_t denominator
          case 1152921504606846976: return numerator >> 60;
          case 2305843009213693952: return numerator >> 61;
          case 4611686018427387904: return numerator >> 62;
-         case 9223372036854775807: return numerator >> 63;
+         case 9223372036854775808u: return numerator >> 63;
          default:
              return numerator / denominator;
      }
@@ -582,6 +607,17 @@ template<typename T, typename R = T>
 inline R rem(T numerator, T denominator) {
 	if (denominator == 0) {
 		throw syn::Problem("Denominator is zero");
+    } else if (denominator == 1) {
+        return static_cast<R>(0);
+	} else {
+		return static_cast<R>(numerator % denominator);
+	}
+}
+
+template<typename T, typename R = T>
+inline R rem(T numerator, T denominator, std::function<R()> markDivideByZero) {
+	if (denominator == 0) {
+        return markDivideByZero();
     } else if (denominator == 1) {
         return static_cast<R>(0);
 	} else {
@@ -613,6 +649,31 @@ inline uint16_t rem<uint16_t, uint16_t>(uint16_t numerator, uint16_t denominator
             throw syn::Problem("Denominator is zero!");
         case 1:
             return 0;
+        case 2: return numerator & 1;
+        case 4: return numerator & 3;
+        case 8: return numerator & 7;
+        case 16: return numerator & 15;
+        case 32: return numerator & 31;
+        case 64: return numerator & 63;
+        case 128: return numerator & 127;
+        case 256: return numerator & 255;
+        case 512: return numerator & 511;
+        case 1024: return numerator & 1023;
+        case 2048: return numerator & 2047;
+        case 4096: return numerator & 4095;
+        case 8192: return numerator & 8191;
+        case 16384: return numerator & 16383;
+        case 32768: return numerator & 32767;
+        default:
+            return numerator % denominator;
+    }
+}
+
+template<>
+inline uint16_t rem<uint16_t, uint16_t>(uint16_t numerator, uint16_t denominator, std::function<uint16_t()> markDivideByZero) {
+    switch(denominator) {
+        case 0: return markDivideByZero();
+        case 1: return 0;
         case 2: return numerator & 1;
         case 4: return numerator & 3;
         case 8: return numerator & 7;
@@ -744,7 +805,7 @@ inline uint64_t rem<uint64_t, uint64_t>(uint64_t numerator, uint64_t denominator
         case 1152921504606846976: return numerator & 1152921504606846975;
         case 2305843009213693952: return numerator & 2305843009213693951;
         case 4611686018427387904: return numerator & 4611686018427387903;
-        case 9223372036854775807: return numerator & 9223372036854775807;
+        case 9223372036854775808u: return numerator & 9223372036854775807;
         default:
             return numerator % denominator;
     }
@@ -869,10 +930,10 @@ constexpr bool getBit(T value, T index) noexcept {
     return decodeBits<T, bool>(value, 1 << index, index);
 }
 
-template<> constexpr bool getBit<byte, 0>(byte value) noexcept { return (0b1 & value) != 0; }
-template<> constexpr bool getBit<byte, 1>(byte value) noexcept { return (0b10 & value) != 0; }
-template<> constexpr bool getBit<byte, 2>(byte value) noexcept { return (0b100 & value) != 0; }
-template<> constexpr bool getBit<byte, 3>(byte value) noexcept { return (0b1000 & value) != 0; }
+template<> constexpr bool getBit<byte, 0>(byte value) noexcept { return (0b00000001 & value) != 0; }
+template<> constexpr bool getBit<byte, 1>(byte value) noexcept { return (0b00000010 & value) != 0; }
+template<> constexpr bool getBit<byte, 2>(byte value) noexcept { return (0b00000100 & value) != 0; }
+template<> constexpr bool getBit<byte, 3>(byte value) noexcept { return (0b00001000 & value) != 0; }
 
 constexpr byte expandBit(bool value) noexcept {
     return value ? 0xFF : 0x00;

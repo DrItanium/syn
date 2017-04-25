@@ -33,7 +33,7 @@
 #include "Cisc0ClipsExtensions.h"
 
 namespace cisc0 {
-    template<typename T, T value>
+    template<typename T, T v>
     constexpr auto toExecutionUnitValue = syn::defaultErrorState<T>;
 
 	constexpr Word lowerMask(byte bitmask) noexcept {

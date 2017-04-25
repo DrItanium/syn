@@ -240,7 +240,7 @@ namespace iris {
     template<> constexpr auto toExecutionUnitValue<CompareOp, CompareOp::Neq> = syn::Comparator::StandardOperations::Neq;
     template<> constexpr auto toExecutionUnitValue<CompareOp, CompareOp::NeqImmediate> = syn::Comparator::StandardOperations::Neq;
     template<CompareOp op>
-    constexpr auto compareOpConversion = toExecutionUnitValue<CompareOp, op>;
+    constexpr auto compareOpConversion = toExecutionUnitValue<decltype(op), op>;
     constexpr syn::Comparator::StandardOperations translate(CompareOp op) noexcept {
         switch(op) {
             case CompareOp::LessThan:
@@ -302,47 +302,17 @@ namespace iris {
     constexpr word minOrMax(word a, word b) noexcept {
         return (invokeMin ? (a < b) : (a > b))? a : b;
     }
-    template<bool invokeRemainder, word onRemainder, word onDivide>
-    constexpr word specialCaseDivOrRem(word numerator) noexcept {
-        return invokeRemainder ? (numerator & onRemainder) : (numerator >> onDivide);
-    }
     template<bool invokeRemainder>
     void tryDivOrRem(word& result, word numerator, word denominator, std::function<void()> markDivideByZero) noexcept {
-        switch(denominator) {
-            case 0:
-                markDivideByZero();
-                break;
-            case 1:
-                result = invokeRemainder ? 0 : numerator;
-                break;
-            case 2:
-                result = specialCaseDivOrRem<invokeRemainder, 1, 1>(numerator);
-                break;
-            case 4:
-                result = specialCaseDivOrRem<invokeRemainder, 3, 2>(numerator);
-                break;
-            case 8:
-                result = specialCaseDivOrRem<invokeRemainder, 7, 3>(numerator);
-                break;
-            case 16:
-                result = specialCaseDivOrRem<invokeRemainder, 15, 4>(numerator);
-                break;
-            case 32:
-                result = specialCaseDivOrRem<invokeRemainder, 31, 5>(numerator);
-                break;
-            case 64:
-                result = specialCaseDivOrRem<invokeRemainder, 63, 6>(numerator);
-                break;
-            case 128:
-                result = specialCaseDivOrRem<invokeRemainder, 127, 7>(numerator);
-                break;
-            case 256:
-                result = specialCaseDivOrRem<invokeRemainder, 255, 8>(numerator);
-                break;
-            default:
-                result = invokeRemainder ? (numerator % denominator) : (numerator / denominator);
-                break;
-
+        bool divideMarkCalled = false;
+        auto fn = [&divideMarkCalled, markDivideByZero]() {
+            divideMarkCalled = true;
+            markDivideByZero();
+            return 0;
+        };
+        auto outcome = invokeRemainder ? syn::rem<word, word>(numerator, denominator, fn) : syn::div<word, word>(numerator, denominator, fn);
+        if (!divideMarkCalled) {
+            result = outcome;
         }
     }
 	void Core::dispatch() noexcept {
