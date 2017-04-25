@@ -33,14 +33,15 @@
 #include <functional>
 #include <iostream>
 #include <memory>
+#include <random>
+#include <future>
+
 #include "Base.h"
 #include "Problem.h"
 #include "Device.h"
 #include "Core.h"
-#include <random>
-#include <future>
-#include "ClipsExtensions.h"
 #include "IODevice.h"
+#include "ClipsExtensions.h"
 namespace syn {
 
     /**

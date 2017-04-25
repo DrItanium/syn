@@ -27,19 +27,19 @@
 /**
  * The concept of an IO devices which is mapped into memory
  */
-#ifndef IRIS_IO_DEVICE_H_
-#define IRIS_IO_DEVICE_H_
+#ifndef SYN_IO_DEVICE_H_
+#define SYN_IO_DEVICE_H_
 #include <tuple>
 #include <functional>
 #include <iostream>
 #include <memory>
-#include "Base.h"
-#include "Problem.h"
-#include "Device.h"
-#include "Core.h"
 #include <random>
 #include <future>
-#include "ClipsExtensions.h"
+
+#include "Problem.h"
+#include "BaseArithmetic.h"
+#include "Device.h"
+
 namespace syn {
 	template<typename Data, typename Address = Data>
 		class IODevice : public Device {
@@ -191,5 +191,5 @@ namespace syn {
                 RandomEngine _engine;
 		};
 } // end namespace syn
-#endif // end IRIS_IO_DEVICE_H_
+#endif // end SYN_IO_DEVICE_H_
 

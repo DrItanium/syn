@@ -26,12 +26,12 @@
 
 #ifndef __IRIS_CLIPS_H
 #define __IRIS_CLIPS_H
-#include "Base.h"
-#include "Problem.h"
 #include <map>
 #include <memory>
 #include <sstream>
 #include <iostream>
+#include "BaseArithmetic.h"
+#include "Problem.h"
 extern "C" {
 	#include "clips.h"
 }
