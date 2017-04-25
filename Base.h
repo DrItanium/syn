@@ -413,7 +413,7 @@ inline R defaultDenominatorCheck(OnDivideByZero<R> operation) {
     }
 }
 template<typename T, typename R = T>
-inline R div(T numerator, T denominator, OnDivideByZero<R> markDivideByZero = nullptr) {
+inline R div(T numerator, T denominator, OnDivideByZero<R> markDivideByZero) {
     if (denominator == 0) {
         return defaultDenominatorCheck<R>(markDivideByZero);
     } else if (denominator == 1) {
@@ -421,6 +421,21 @@ inline R div(T numerator, T denominator, OnDivideByZero<R> markDivideByZero = nu
     } else {
         return static_cast<R>(numerator / denominator);
     }
+}
+
+template<typename T, typename R = T>
+inline R div(T numerator, T denominator) {
+    return div<T, R>(numerator, denominator, nullptr);
+}
+
+template<>
+inline double div<double, double>(double numerator, double denominator) {
+    return numerator / denominator;
+}
+
+template<>
+inline float div<float, float>(float numerator, float denominator) {
+    return numerator / denominator;
 }
 
 template<>
@@ -582,7 +597,7 @@ inline uint64_t div<uint64_t, uint64_t>(uint64_t numerator, uint64_t denominator
 
 
 template<typename T, typename R = T>
-inline R rem(T numerator, T denominator, OnDivideByZero<R> markDivideByZero = nullptr) {
+inline R rem(T numerator, T denominator, OnDivideByZero<R> markDivideByZero) {
 	if (denominator == 0) {
         return defaultDenominatorCheck<R>(markDivideByZero);
     } else if (denominator == 1) {
@@ -590,6 +605,11 @@ inline R rem(T numerator, T denominator, OnDivideByZero<R> markDivideByZero = nu
 	} else {
 		return static_cast<R>(numerator % denominator);
 	}
+}
+
+template<typename T, typename R = T>
+inline R rem(T numerator, T denominator) {
+    return rem<T, R>(numerator, denominator, nullptr);
 }
 
 template<>

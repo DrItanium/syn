@@ -99,7 +99,7 @@ namespace ALU {
     };
 
     template<typename Word, typename Return = Word, typename Operation = StandardOperations>
-    Return performOperation(Operation op, Word a, Word b) {
+    Return performOperation(Operation op, Word a, Word b, syn::OnDivideByZero<Return> markDivideByZero = nullptr) {
         switch(op) {
             case Operation::Add:
                 return syn::add<Word, Return>(a, b);
@@ -108,9 +108,9 @@ namespace ALU {
             case Operation::Multiply:
                 return syn::mul<Word, Return>(a, b);
             case Operation::Divide:
-                return syn::div<Word, Return>(a, b);
+                return syn::div<Word, Return>(a, b, markDivideByZero);
             case Operation::Remainder:
-                return syn::rem<Word, Return>(a, b);
+                return syn::rem<Word, Return>(a, b, markDivideByZero);
             case Operation::ShiftLeft:
                 return syn::shiftLeft<Word, Return>(a, b);
             case Operation::ShiftRight:
@@ -138,7 +138,7 @@ namespace ALU {
      * hardcoded at compile time!
      */
     template<StandardOperations op, typename Word, typename Return = Word>
-    constexpr Return performOperation(Word a, Word b) noexcept {
+    constexpr Return performOperation(Word a, Word b, syn::OnDivideByZero<Return> markDivideByZero) noexcept {
         static_assert(!isErrorState(op), "Illegal operation!");
         using Operation = StandardOperations;
         switch(op) {
@@ -149,9 +149,9 @@ namespace ALU {
             case Operation::Multiply:
                 return syn::mul<Word, Return>(a, b);
             case Operation::Divide:
-                return syn::div<Word, Return>(a, b);
+                return syn::div<Word, Return>(a, b, markDivideByZero);
             case Operation::Remainder:
-                return syn::rem<Word, Return>(a, b);
+                return syn::rem<Word, Return>(a, b, markDivideByZero);
             case Operation::ShiftLeft:
                 return syn::shiftLeft<Word, Return>(a, b);
             case Operation::ShiftRight:
@@ -174,6 +174,15 @@ namespace ALU {
                 // this will cause the world to hose itself!
                 throw syn::Problem("Undefined ALU operation!");
         }
+    }
+
+    /**
+     * Special version of performOperation where the StandardOperations is
+     * hardcoded at compile time!
+     */
+    template<StandardOperations op, typename Word, typename Return = Word>
+    inline constexpr Return performOperation(Word a, Word b) noexcept {
+        return performOperation<op, Word, Return>(a, b, nullptr);
     }
 } // end namespace ALU
 
