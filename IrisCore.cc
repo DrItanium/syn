@@ -116,6 +116,10 @@ namespace iris {
     template<> constexpr auto toExecutionUnitValue<ArithmeticOp, ArithmeticOp::BinaryOr> = ALUOperation::BinaryOr;
     template<> constexpr auto toExecutionUnitValue<ArithmeticOp, ArithmeticOp::BinaryXor> = ALUOperation::BinaryXor;
     template<> constexpr auto toExecutionUnitValue<ArithmeticOp, ArithmeticOp::BinaryNot> = ALUOperation::UnaryNot;
+    template<> constexpr auto toExecutionUnitValue<ArithmeticOp, ArithmeticOp::Div> = ALUOperation::Divide;
+    template<> constexpr auto toExecutionUnitValue<ArithmeticOp, ArithmeticOp::DivImmediate> = ALUOperation::Divide;
+    template<> constexpr auto toExecutionUnitValue<ArithmeticOp, ArithmeticOp::Rem> = ALUOperation::Remainder;
+    template<> constexpr auto toExecutionUnitValue<ArithmeticOp, ArithmeticOp::RemImmediate> = ALUOperation::Remainder;
     template<ArithmeticOp op>
     constexpr auto aluTranslation = toExecutionUnitValue<decltype(op), op>;
     constexpr ALUOperation translate(ArithmeticOp op) noexcept {
@@ -148,6 +152,14 @@ namespace iris {
                     return aluTranslation<ArithmeticOp::BinaryXor>;
                 case ArithmeticOp::BinaryNot:
                     return aluTranslation<ArithmeticOp::BinaryNot>;
+                case ArithmeticOp::Div:
+                    return aluTranslation<ArithmeticOp::Div>;
+                case ArithmeticOp::DivImmediate:
+                    return aluTranslation<ArithmeticOp::DivImmediate>;
+                case ArithmeticOp::Rem:
+                    return aluTranslation<ArithmeticOp::Rem>;
+                case ArithmeticOp::RemImmediate:
+                    return aluTranslation<ArithmeticOp::RemImmediate>;
                 default:
                      return syn::defaultErrorState<ALUOperation>;
             }
@@ -303,19 +315,6 @@ namespace iris {
         return (invokeMin ? (a < b) : (a > b))? a : b;
     }
 
-    template<bool invokeRemainder>
-    void tryDivOrRem(word& result, word numerator, word denominator, std::function<void()> markDivideByZero) noexcept {
-        bool divideMarkCalled = false;
-        auto fn = [&divideMarkCalled, markDivideByZero]() {
-            divideMarkCalled = true;
-            markDivideByZero();
-            return 0;
-        };
-        auto outcome = invokeRemainder ? syn::rem<word, word>(numerator, denominator, fn) : syn::div<word, word>(numerator, denominator, fn);
-        if (!divideMarkCalled) {
-            result = outcome;
-        }
-    }
 	void Core::dispatch() noexcept {
 		current = instruction[getInstructionPointer()];
 		auto group = InstructionDecoder::getGroup(current);
@@ -326,16 +325,7 @@ namespace iris {
 			auto op = InstructionDecoder::getOperation<ArithmeticOp>(current);
             auto result = translate(op);
             if (syn::isErrorState(result)) {
-                auto markDivideByZero = [this, enableStatusRegisterBit]() { enableStatusRegisterBit(encodeStatusDivideByZero); };
                 switch(op) {
-					case ArithmeticOp::Div:
-                    case ArithmeticOp::DivImmediate:
-                        tryDivOrRem<false>(destinationRegister(), source0Register(), isImmediate(op) ? getHalfImmediate() : source1Register(), markDivideByZero);
-						break;
-					case ArithmeticOp::Rem:
-                    case ArithmeticOp::RemImmediate:
-                        tryDivOrRem<true>(destinationRegister(), source0Register(), isImmediate(op) ? getHalfImmediate() : source1Register(), markDivideByZero);
-						break;
                     case ArithmeticOp::Min:
                         destinationRegister() = minOrMax<true>(source0Register(), source1Register());
                         break;
@@ -346,8 +336,16 @@ namespace iris {
 				        makeIllegalInstructionMessage("arithmetic operation");
                 }
 			} else {
-                ALUOperation theOp = result;
-                destinationRegister() = syn::ALU::performOperation<word>(theOp, source0Register(), isImmediate(op) ? getHalfImmediate() : source1Register());
+                bool divByZeroHappened = false;
+                syn::OnDivideByZero<word> markDivideByZero = [this, enableStatusRegisterBit,&divByZeroHappened]() {
+                    divByZeroHappened = true;
+                    enableStatusRegisterBit(encodeStatusDivideByZero);
+                    return static_cast<word>(0);
+                };
+                auto outcome = syn::ALU::performOperation<word>(result, source0Register(), isImmediate(op) ? getHalfImmediate() : source1Register(), markDivideByZero);
+                if (!divByZeroHappened) {
+                    destinationRegister() = outcome;
+                }
 			}
 		};
 		auto compareOperation = [this, makeIllegalInstructionMessage]() {
