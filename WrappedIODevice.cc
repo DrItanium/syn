@@ -78,9 +78,8 @@ namespace syn {
             auto result = opTranslation.find(title);
             if (result == opTranslation.end()) {
                 return defaultErrorState<Operations>;
-            } else {
-                return result->second;
             }
+            return result->second;
         }
         const char* operationsName(Operations op) noexcept {
 
