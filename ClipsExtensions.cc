@@ -24,17 +24,19 @@
  */
 
 
+#include "BaseTypes.h"
 #include "ClipsExtensions.h"
 #include "Base.h"
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/algorithm/string/trim.hpp>
+#include "ExecutionUnits.h"
+
 #include <cstdint>
 #include <climits>
 #include <sstream>
 #include <memory>
 #include <map>
 #include <iostream>
-#include "ExecutionUnits.h"
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/trim.hpp>
 
 extern "C" {
 #include "clips.h"
@@ -549,7 +551,7 @@ namespace syn {
 #define DefMemoryBlock(name, type, alias) \
 	DefWrapperSymbolicName(Block< type > , name ); \
 	using alias = ManagedMemoryBlock< type >
-	DefMemoryBlock("memory-block:uint16", uint16_t, ManagedMemoryBlock_uint16);
+	DefMemoryBlock("memory-block:uint16", uint16, ManagedMemoryBlock_uint16);
 #undef DefMemoryBlock
 
 	void installExtensions(void* theEnv) {
