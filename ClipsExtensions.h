@@ -149,11 +149,10 @@ struct ExternalAddressWrapperType {
     ExternalAddressWrapperType(ExternalAddressWrapperType&&) = delete;
     using TheType = ExternalAddressWrapper<T>;
 };
+
 template<typename T>
 T* unwrapExternalAddress(CLIPSValue* value) noexcept {
-    auto result = DOPToExternalAddress(value);
-    auto cast = static_cast<typename ExternalAddressWrapperType<T>::TheType *>(result);
-    return cast;
+    return static_cast<typename ExternalAddressWrapperType<T>::TheType *>(DOPToExternalAddress(value));
 }
 
 // Have to do it this way because std::function's will go out of scope and
