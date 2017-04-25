@@ -27,7 +27,7 @@
 // define Execution Units to cut down on the amount of repeated actions
 #ifndef _SYN_XUNITS_H
 #define _SYN_XUNITS_H
-#include "Base.h"
+#include "BaseArithmetic.h"
 #include "IODevice.h"
 #include <cmath>
 namespace syn {

@@ -30,6 +30,7 @@
 #include <functional>
 #include <sstream>
 #include "Base.h"
+#include "BaseArithmetic.h"
 #include <bitset>
 #include <pegtl.hh>
 #include <pegtl/contrib/raw_string.hh>
