@@ -219,14 +219,15 @@ namespace iris {
                 return badArgument(3, "Must provide an integer value to assign to the given register!");
 			}
             try {
-                auto theValue = syn::extractLong(env, value);
+                auto theValue = syn::extractLong<word>(env, value);
+                auto rind = static_cast<byte>(ind);
                 switch(space) {
                     case TargetSpace::GPR:
-                        gpr[static_cast<byte>(ind)] = static_cast<word>(theValue);
+                        gpr[rind] = theValue;
                         CVSetBoolean(ret, true);
                         return true;
                     case TargetSpace::Predicates:
-                        setPredicateRegister(static_cast<byte>(ind), static_cast<word>(theValue));
+                        setPredicateRegister(rind, theValue);
                         CVSetBoolean(ret, true);
                         return true;
                     default:
@@ -250,7 +251,7 @@ namespace iris {
                 return badArgument(3, "Must provide an integer index to retrieve a memory value!");
 			}
             try {
-                auto address = static_cast<word>(syn::extractLong(env, index));
+                auto address = syn::extractLong<word>(env, index);
                 switch(space) {
                     case TargetSpace::Data:
                         CVSetInteger(ret, data[address]);
@@ -285,7 +286,7 @@ namespace iris {
             if (!syn::tryGetArgumentAsInteger(env, funcStr, 3, &index)) {
                 return badArgument(3, "Must provide an integer index to assign a register value!");
 			}
-			auto ind = static_cast<word>(syn::extractLong(env, index));
+			auto ind = syn::extractLong<word>(env, index);
             if (!syn::tryGetArgumentAsInteger(env, funcStr, 4, &value)) {
                 return badArgument(3, "Must provide an integer value to assign to the given register!");
 			}

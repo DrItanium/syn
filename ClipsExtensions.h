@@ -57,6 +57,16 @@ bool isExternalAddress(DataObjectPtr value) noexcept;
 
 CLIPSInteger extractLong(void* env, DataObjectPtr value) noexcept;
 CLIPSInteger extractLong(void* env, DataObject& value) noexcept;
+template<typename Ret>
+Ret extractLong(void* env, DataObjectPtr value) noexcept {
+    return static_cast<Ret>(extractLong(env, value));
+}
+
+template<typename Ret>
+Ret extractLong(void* env, DataObject& value) noexcept {
+    return static_cast<Ret>(extractLong(env, value));
+}
+
 const char* extractLexeme(void* env, DataObjectPtr value) noexcept;
 const char* extractLexeme(void* env, DataObject& value) noexcept;
 

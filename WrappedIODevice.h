@@ -158,7 +158,7 @@ namespace syn {
                         return badArgument(3, "provided address is not an integer!");
                     }
                     try {
-                        auto address = static_cast<Address>(syn::extractLong(env, tmp));
+                        auto address = syn::extractLong<Address>(env, tmp);
                         CVSetInteger(ret, ptr->read(address));
                         return true;
                     } catch(const syn::Problem& p) {
@@ -174,8 +174,8 @@ namespace syn {
                     }
                     try {
                         CVSetBoolean(ret, true);
-                        auto address = static_cast<Address>(syn::extractLong(env, t0));
-                        auto value = static_cast<Data>(syn::extractLong(env, t1));
+                        auto address = syn::extractLong<Address>(env, t0);
+                        auto value = syn::extractLong<Data>(env, t1);
                         ptr->write(address, value);
                         return true;
                     } catch(const syn::Problem& p) {
@@ -275,7 +275,7 @@ namespace syn {
                             errorMessage(env, "NEW", 2, prefix, "first argument must be an integer to seed with!");
                             return nullptr;
                         }
-                        return new InternalType(static_cast<typename InternalType::SeedType>(syn::extractLong(env, val)));
+                        return new InternalType(syn::extractLong<typename InternalType::SeedType>(env, val));
                     } else {
                         errorMessage(env, "NEW", 1, prefix, " too many arguments are provided for function new!");
                         return nullptr;

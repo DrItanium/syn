@@ -91,6 +91,7 @@ namespace cisc0 {
         auto ptr = static_cast<CoreWrapper*>(EnvDOPToExternalAddress(value));
 		return ptr->get()->handleOperation(env, ret);
 	}
+
 	void installCoreWrapper(void* env) {
 		CoreWrapper::registerWithEnvironment(env);
 	}
@@ -167,7 +168,7 @@ namespace cisc0 {
             if (!syn::tryGetArgumentAsInteger(env, funcStr, 4, &value)) {
                 return badArgument(3, "Must provide an integer value to assign to the given register!");
 			}
-			registerValue(static_cast<byte>(ind)) = static_cast<RegisterValue>(syn::extractLong(env, value));
+			registerValue(static_cast<byte>(ind)) = syn::extractLong<RegisterValue>(env, value);
 			CVSetBoolean(ret, true);
 			return true;
 		};
@@ -176,7 +177,7 @@ namespace cisc0 {
 			if (!syn::tryGetArgumentAsInteger(env, funcStr, 3, &index)) {
                 return badArgument(3, "Must provide an integer index to retrieve a memory value!");
 			}
-			CVSetInteger(ret, loadWord(static_cast<RegisterValue>(syn::extractLong(env, index))));
+			CVSetInteger(ret, loadWord(syn::extractLong<RegisterValue>(env, index)));
 			return true;
 		};
 		auto writeMemory = [this, env, ret, badArgument]() {
@@ -184,11 +185,11 @@ namespace cisc0 {
 			if (!syn::tryGetArgumentAsInteger(env, funcStr, 3, &index)) {
                 return badArgument(3, "Must provide an integer index to assign a register value!");
 			}
-			auto ind = static_cast<Address>(syn::extractLong(env, index));
+			auto ind = syn::extractLong<Address>(env, index);
             if (!syn::tryGetArgumentAsInteger(env, funcStr, 4, &value)) {
                 return badArgument(3, "Must provide an integer value to assign to the given register!");
 			}
-			storeWord(ind, static_cast<Word>(syn::extractLong(env, value)));
+			storeWord(ind, syn::extractLong<Word>(env, value));
 			CVSetBoolean(ret, true);
 			return true;
 		};
