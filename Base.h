@@ -395,21 +395,27 @@ constexpr R mul(T a, T b) noexcept {
 	return static_cast<R>(a * b);
 }
 
-template<typename T, typename R = T>
-inline R div(T numerator, T denominator) {
-	if (denominator == 0) {
-		throw syn::Problem("Denominator is zero");
-    } else if (denominator == 1) {
-        return static_cast<R>(numerator);
-	} else {
-		return static_cast<R>(numerator / denominator);
-	}
+template<typename T>
+using OnDivideByZero = std::function<T()>;
+
+template<typename R>
+R whenDenominatorIsZero() {
+    throw syn::Problem("Denominator is zero!");
+    return static_cast<R>(0);
 }
 
+template<typename R>
+inline R defaultDenominatorCheck(OnDivideByZero<R> operation) {
+    if (operation == nullptr) {
+        throw syn::Problem("Denominator is zero!");
+    } else {
+        return operation();
+    }
+}
 template<typename T, typename R = T>
-inline R div(T numerator, T denominator, std::function<R()> markDivideByZero) {
+inline R div(T numerator, T denominator, OnDivideByZero<R> markDivideByZero = nullptr) {
     if (denominator == 0) {
-        return markDivideByZero();
+        return defaultDenominatorCheck<R>(markDivideByZero);
     } else if (denominator == 1) {
         return static_cast<R>(numerator);
     } else {
@@ -418,10 +424,9 @@ inline R div(T numerator, T denominator, std::function<R()> markDivideByZero) {
 }
 
 template<>
-inline uint8_t div<uint8_t, uint8_t>(uint8_t numerator, uint8_t denominator) {
+inline uint8_t div<uint8_t, uint8_t>(uint8_t numerator, uint8_t denominator, OnDivideByZero<uint8_t> markDivideByZero) {
      switch(denominator) {
-         case 0:
-             throw syn::Problem("Denominator is zero!");
+         case 0: return defaultDenominatorCheck<uint8_t>(markDivideByZero);
          case 1: return numerator;
          case 2: return numerator >> 1;
          case 4: return numerator >> 2;
@@ -436,35 +441,9 @@ inline uint8_t div<uint8_t, uint8_t>(uint8_t numerator, uint8_t denominator) {
 }
 
 template<>
-inline uint16_t div<uint16_t, uint16_t>(uint16_t numerator, uint16_t denominator) {
+inline uint16_t div<uint16_t, uint16_t>(uint16_t numerator, uint16_t denominator, OnDivideByZero<uint16_t> markDivideByZero) {
      switch(denominator) {
-         case 0:
-             throw syn::Problem("Denominator is zero!");
-         case 1: return numerator;
-         case 2: return numerator >> 1;
-         case 4: return numerator >> 2;
-         case 8: return numerator >> 3;
-         case 16: return numerator >> 4;
-         case 32: return numerator >> 5;
-         case 64: return numerator >> 6;
-         case 128: return numerator >> 7;
-         case 256: return numerator >> 8;
-         case 512: return numerator >> 9;
-         case 1024: return numerator >> 10;
-         case 2048: return numerator >> 11;
-         case 4096: return numerator >> 12;
-         case 8192: return numerator >> 13;
-         case 16384: return numerator >> 14;
-         case 32768: return numerator >> 15;
-         default:
-             return numerator / denominator;
-     }
-}
-
-template<>
-inline uint16_t div<uint16_t, uint16_t>(uint16_t numerator, uint16_t denominator, std::function<uint16_t()> markDivideByZero) {
-     switch(denominator) {
-         case 0: return markDivideByZero();
+         case 0: return defaultDenominatorCheck<uint16_t>(markDivideByZero);
          case 1: return numerator;
          case 2: return numerator >> 1;
          case 4: return numerator >> 2;
@@ -487,10 +466,9 @@ inline uint16_t div<uint16_t, uint16_t>(uint16_t numerator, uint16_t denominator
 }
 
 template<>
-inline uint32_t div<uint32_t, uint32_t>(uint32_t numerator, uint32_t denominator) {
+inline uint32_t div<uint32_t, uint32_t>(uint32_t numerator, uint32_t denominator, OnDivideByZero<uint32_t> markDivideByZero) {
      switch(denominator) {
-         case 0:
-             throw syn::Problem("Denominator is zero!");
+         case 0: return defaultDenominatorCheck<uint32_t>(markDivideByZero);
          case 1: return numerator;
          case 2: return numerator >> 1;
          case 4: return numerator >> 2;
@@ -529,10 +507,9 @@ inline uint32_t div<uint32_t, uint32_t>(uint32_t numerator, uint32_t denominator
 }
 
 template<>
-inline uint64_t div<uint64_t, uint64_t>(uint64_t numerator, uint64_t denominator) {
+inline uint64_t div<uint64_t, uint64_t>(uint64_t numerator, uint64_t denominator, OnDivideByZero<uint64_t> markDivideByZero) {
      switch(denominator) {
-         case 0:
-             throw syn::Problem("Denominator is zero!");
+         case 0: return defaultDenominatorCheck<uint64_t>(markDivideByZero);
          case 1: return numerator;
          case 2: return numerator >> 1;
          case 4: return numerator >> 2;
@@ -603,10 +580,11 @@ inline uint64_t div<uint64_t, uint64_t>(uint64_t numerator, uint64_t denominator
 }
 
 
+
 template<typename T, typename R = T>
-inline R rem(T numerator, T denominator) {
+inline R rem(T numerator, T denominator, OnDivideByZero<R> markDivideByZero = nullptr) {
 	if (denominator == 0) {
-		throw syn::Problem("Denominator is zero");
+        return defaultDenominatorCheck<R>(markDivideByZero);
     } else if (denominator == 1) {
         return static_cast<R>(0);
 	} else {
@@ -614,21 +592,10 @@ inline R rem(T numerator, T denominator) {
 	}
 }
 
-template<typename T, typename R = T>
-inline R rem(T numerator, T denominator, std::function<R()> markDivideByZero) {
-	if (denominator == 0) {
-        return markDivideByZero();
-    } else if (denominator == 1) {
-        return static_cast<R>(0);
-	} else {
-		return static_cast<R>(numerator % denominator);
-	}
-}
 template<>
-inline uint8_t rem<uint8_t, uint8_t>(uint8_t numerator, uint8_t denominator) {
+inline uint8_t rem<uint8_t, uint8_t>(uint8_t numerator, uint8_t denominator, OnDivideByZero<uint8_t> markDivideByZero) {
     switch(denominator) {
-        case 0:
-            throw syn::Problem("Denominator is zero!");
+        case 0: return defaultDenominatorCheck<uint8_t>(markDivideByZero);
         case 1: return 0;
         case 2: return numerator & 1;
         case 4: return numerator & 3;
@@ -642,37 +609,11 @@ inline uint8_t rem<uint8_t, uint8_t>(uint8_t numerator, uint8_t denominator) {
     }
 }
 
-template<>
-inline uint16_t rem<uint16_t, uint16_t>(uint16_t numerator, uint16_t denominator) {
-    switch(denominator) {
-        case 0:
-            throw syn::Problem("Denominator is zero!");
-        case 1:
-            return 0;
-        case 2: return numerator & 1;
-        case 4: return numerator & 3;
-        case 8: return numerator & 7;
-        case 16: return numerator & 15;
-        case 32: return numerator & 31;
-        case 64: return numerator & 63;
-        case 128: return numerator & 127;
-        case 256: return numerator & 255;
-        case 512: return numerator & 511;
-        case 1024: return numerator & 1023;
-        case 2048: return numerator & 2047;
-        case 4096: return numerator & 4095;
-        case 8192: return numerator & 8191;
-        case 16384: return numerator & 16383;
-        case 32768: return numerator & 32767;
-        default:
-            return numerator % denominator;
-    }
-}
 
 template<>
-inline uint16_t rem<uint16_t, uint16_t>(uint16_t numerator, uint16_t denominator, std::function<uint16_t()> markDivideByZero) {
+inline uint16_t rem<uint16_t, uint16_t>(uint16_t numerator, uint16_t denominator, OnDivideByZero<uint16_t> markDivideByZero) {
     switch(denominator) {
-        case 0: return markDivideByZero();
+        case 0: return defaultDenominatorCheck<uint16_t>(markDivideByZero);
         case 1: return 0;
         case 2: return numerator & 1;
         case 4: return numerator & 3;
@@ -695,12 +636,10 @@ inline uint16_t rem<uint16_t, uint16_t>(uint16_t numerator, uint16_t denominator
 }
 
 template<>
-inline uint32_t rem<uint32_t, uint32_t>(uint32_t numerator, uint32_t denominator) {
+inline uint32_t rem<uint32_t, uint32_t>(uint32_t numerator, uint32_t denominator, OnDivideByZero<uint32_t> markDivideByZero) {
     switch(denominator) {
-        case 0:
-            throw syn::Problem("Denominator is zero!");
-        case 1:
-            return 0;
+        case 0: return defaultDenominatorCheck<uint32_t>(markDivideByZero);
+        case 1: return 0;
         case 2: return numerator & 1;
         case 4: return numerator & 3;
         case 8: return numerator & 7;
@@ -737,12 +676,10 @@ inline uint32_t rem<uint32_t, uint32_t>(uint32_t numerator, uint32_t denominator
     }
 }
 template<>
-inline uint64_t rem<uint64_t, uint64_t>(uint64_t numerator, uint64_t denominator) {
+inline uint64_t rem<uint64_t, uint64_t>(uint64_t numerator, uint64_t denominator, OnDivideByZero<uint64_t> markDivideByZero) {
     switch(denominator) {
-        case 0:
-            throw syn::Problem("Denominator is zero!");
-        case 1:
-            return 0;
+        case 0: return defaultDenominatorCheck<uint64_t>(markDivideByZero);
+        case 1: return 0;
         case 2: return numerator & 1;
         case 4: return numerator & 3;
         case 8: return numerator & 7;

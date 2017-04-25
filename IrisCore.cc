@@ -302,6 +302,7 @@ namespace iris {
     constexpr word minOrMax(word a, word b) noexcept {
         return (invokeMin ? (a < b) : (a > b))? a : b;
     }
+
     template<bool invokeRemainder>
     void tryDivOrRem(word& result, word numerator, word denominator, std::function<void()> markDivideByZero) noexcept {
         bool divideMarkCalled = false;
