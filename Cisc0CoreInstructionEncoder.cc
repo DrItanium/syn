@@ -26,10 +26,11 @@
 
 #include <functional>
 #include <sstream>
-#include "Problem.h"
 #include <utility>
 #include <map>
-#include "Cisc0Core.h"
+
+#include "Problem.h"
+#include "Cisc0CoreInstructionEncoder.h"
 
 namespace cisc0 {
 	constexpr Word lowerMask(byte bitmask) noexcept {

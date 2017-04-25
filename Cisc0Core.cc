@@ -194,7 +194,7 @@ namespace cisc0 {
             case Operation::Set:
                 registerValue(current.getSetDestination()) = retrieveImmediate(current.getBitmask<Operation::Set>());
                 break;
-            default: 
+            default:
                 execute = false;
                 illegalInstruction(std::move(current), getInstructionPointer());
                 break;
@@ -537,59 +537,6 @@ namespace cisc0 {
             return tryReadNext<true>();
         } else {
             return tryReadNext<false>();
-        }
-    }
-
-
-    DecodedInstruction::BranchFlags DecodedInstruction::getOtherBranchFlags() const noexcept {
-        return std::make_tuple(decodeBranchFlagIsIfForm(_rawValue),
-                               decodeBranchFlagIsCallForm(_rawValue),
-                               decodeBranchFlagIsConditional(_rawValue));
-    }
-
-    constexpr bool DecodedInstruction::hasBitmask(Operation op) noexcept {
-        switch(op) {
-            case Operation::Set:
-            case Operation::Memory:
-            case Operation::Move:
-            case Operation::Logical:
-                return true;
-            default:
-                return false;
-        }
-    }
-
-    constexpr bool DecodedInstruction::hasImmediateFlag(Operation op) noexcept {
-        switch(op) {
-            case Operation::Shift:
-            case Operation::Logical:
-            case Operation::Branch:
-            case Operation::Compare:
-            case Operation::Arithmetic:
-                return true;
-            default:
-                return false;
-        }
-    }
-    constexpr bool DecodedInstruction::hasImmediateValue(Operation op) noexcept {
-        switch (op) {
-            case Operation::Shift:
-            case Operation::Arithmetic:
-                return true;
-            default:
-                return false;
-        }
-    }
-    constexpr bool DecodedInstruction::hasSubtype(Operation op) noexcept {
-        switch(op) {
-            case Operation::Compare:
-            case Operation::Memory:
-            case Operation::Arithmetic:
-            case Operation::Complex:
-            case Operation::Logical:
-                return true;
-            default:
-                return false;
         }
     }
 }
