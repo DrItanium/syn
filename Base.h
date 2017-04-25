@@ -965,14 +965,21 @@ inline void swap(T& a, T& b) {
     a = c;
 }
 
-template<typename T>
-constexpr bool inRangeInclusive(T value, T minimum, T maximum) noexcept {
-	return value >= minimum && value <= maximum;
+
+template<typename T, bool includeMaximum = true, bool includeMinimum = true>
+constexpr bool valueIsInRange(T value, T minimum, T maximum) noexcept {
+    auto minimumCheck = includeMinimum ? value >= minimum : value > minimum;
+    auto maximumCheck = includeMaximum ? value <= maximum : value < maximum;
+    return minimumCheck && maximumCheck;
 }
 
 template<typename T>
+constexpr bool inRangeInclusive(T value, T minimum, T maximum) noexcept {
+    return valueIsInRange<T>(value, minimum, maximum);
+}
+template<typename T>
 constexpr bool inRangeExcludingMaximum(T value, T minimum, T maximum) noexcept {
-	return value >= minimum && value < maximum;
+    return valueIsInRange<T, false>(value, minimum, maximum);
 }
 
 template<typename T>
