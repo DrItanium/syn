@@ -37,10 +37,51 @@ namespace cisc0 {
 		public:
             using BranchFlags = std::tuple<bool, bool, bool>;
         private:
-            static constexpr bool hasBitmask(Operation op) noexcept;
-            static constexpr bool hasImmediateFlag(Operation op) noexcept;
-            static constexpr bool hasImmediateValue(Operation op) noexcept;
-            static constexpr bool hasSubtype(Operation op) noexcept;
+            static constexpr bool hasBitmask(Operation op) noexcept {
+                switch(op) {
+                    case Operation::Set:
+                    case Operation::Memory:
+                    case Operation::Move:
+                    case Operation::Logical:
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+
+            static constexpr bool hasImmediateFlag(Operation op) noexcept {
+                switch(op) {
+                    case Operation::Shift:
+                    case Operation::Logical:
+                    case Operation::Branch:
+                    case Operation::Compare:
+                    case Operation::Arithmetic:
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+            static constexpr bool hasImmediateValue(Operation op) noexcept {
+                switch (op) {
+                    case Operation::Shift:
+                    case Operation::Arithmetic:
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+            static constexpr bool hasSubtype(Operation op) noexcept {
+                switch(op) {
+                    case Operation::Compare:
+                    case Operation::Memory:
+                    case Operation::Arithmetic:
+                    case Operation::Complex:
+                    case Operation::Logical:
+                        return true;
+                    default:
+                        return false;
+                }
+            }
         public:
 			DecodedInstruction(RawInstruction input) noexcept : _rawValue(input) { }
 			DecodedInstruction(const DecodedInstruction&) = delete;

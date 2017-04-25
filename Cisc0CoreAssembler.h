@@ -32,10 +32,6 @@
 #include <typeinfo>
 #include <iostream>
 #include <map>
-#include "Base.h"
-#include "AssemblerBase.h"
-#include "Problem.h"
-#include "Cisc0Core.h"
 #include <pegtl.hh>
 #include <pegtl/analyze.hh>
 #include <pegtl/file_parser.hh>
@@ -43,7 +39,12 @@
 #include <pegtl/contrib/abnf.hh>
 #include <pegtl/parse.hh>
 #include <vector>
+
+#include "Base.h"
+#include "AssemblerBase.h"
+#include "Problem.h"
 #include "ClipsExtensions.h"
+#include "Cisc0CoreInstructionEncoder.h"
 #include "Cisc0ClipsExtensions.h"
 
 namespace cisc0 {
