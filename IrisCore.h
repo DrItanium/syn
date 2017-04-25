@@ -26,12 +26,14 @@
 
 #ifndef _TARGET_IRIS16_IRIS_H
 #define _TARGET_IRIS16_IRIS_H
+#include <cstdint>
+#include <memory>
+
 #include "Base.h"
+#include "Problem.h"
 #include "ExecutionUnits.h"
 #include "Core.h"
 #include "IOController.h"
-#include <cstdint>
-#include <memory>
 #include "IrisCoreTypes.h"
 #include "ClipsExtensions.h"
 #include "IrisCoreEncodingOperations.h"
