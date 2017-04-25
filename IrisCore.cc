@@ -364,7 +364,6 @@ namespace iris {
 		};
 		auto jumpOperation = [this, makeIllegalInstructionMessage]() {
 			auto operation = InstructionDecoder::getOperation<JumpOp>(current);
-			//auto result = translationTable.find(operation);
 			if (!isNormalBranchInstruction(operation)) {
 				word temporaryAddress = 0;
 				bool cond = false;
@@ -412,9 +411,6 @@ namespace iris {
 						break;
 				}
 			} else {
-				//auto conditional = false, immediate = false,  link = false;
-				//std::tie(conditional, immediate, link) = result->second;
-
                 auto conditional = isConditionalBranchInstruction(operation);
                 auto immediate = isImmediate(operation);
                 auto link = isLinkBranchInstruction(operation);
@@ -633,24 +629,29 @@ namespace iris {
             _io.write(address, value);
         }
     }
-    bool Core::getPredicateResult() const noexcept { return getPredicate<0>(); }
+    bool Core::getPredicateResult() const noexcept        { return getPredicate<0>(); }
     bool Core::getPredicateInverseResult() const noexcept { return getPredicate<1>(); }
-    bool Core::getPredicateSource0() const noexcept { return getPredicate<2>(); }
-    bool Core::getPredicateSource1() const noexcept { return getPredicate<3>(); }
+    bool Core::getPredicateSource0() const noexcept       { return getPredicate<2>(); }
+    bool Core::getPredicateSource1() const noexcept       { return getPredicate<3>(); }
+
     byte Core::getPredicateResultIndex() const noexcept { return getPredicateIndex<0>(); }
     byte Core::getPredicateInverseResultIndex() const noexcept { return getPredicateIndex<1>(); }
     byte Core::getPredicateSource0Index() const noexcept { return getPredicateIndex<2>(); }
     byte Core::getPredicateSource1Index() const noexcept { return getPredicateIndex<3>(); }
+
     void Core::setPredicateResult(bool bit) noexcept { setPredicate<0>(bit); }
     void Core::setPredicateInverseResult(bool bit) noexcept { setPredicate<1>(bit); }
     void Core::setPredicateSource0(bool bit) noexcept { setPredicate<2>(bit); }
     void Core::setPredicateSource1(bool bit) noexcept { setPredicate<3>(bit); }
+
     word& Core::destinationRegister() noexcept { return getRegister<0>(); }
     word& Core::source0Register() noexcept { return getRegister<1>(); }
     word& Core::source1Register() noexcept { return getRegister<2>(); }
+
     void Core::setInstructionPointer(QuadWord value) noexcept { _ip.set(value); }
     void Core::setLinkRegister(QuadWord value) noexcept { _lr.set(value); }
     void Core::incrementInstructionPointer() noexcept { ++_ip; }
+
     word Core::getHalfImmediate() const noexcept { return InstructionDecoder::getHalfImmediate(current); }
     word Core::getImmediate() const noexcept { return InstructionDecoder::getImmediate(current); }
 }
