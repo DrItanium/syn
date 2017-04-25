@@ -325,9 +325,11 @@ class FixedSizeMultifieldBuilder {
                 SetMFValue(_rawMultifield, index, value);
             }
         }
+
         void setField(int index, MayaType type, void* value) {
             setField(index, static_cast<int>(type), value);
         }
+
         template<int index>
         void setField(int type, void* value) noexcept {
             static_assert(index > 0, "Negative index or zero index not allowed!");

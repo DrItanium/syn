@@ -48,7 +48,7 @@
 namespace iris {
 	template<typename R> struct Action : syn::Action<R> { };
 	struct AssemblerData {
-		AssemblerData() : instruction(false), address(0) { }
+		AssemblerData() : instruction(false), address(0), dataValue(0), group(0), operation(0), destination(0), source0(0), source1(0), hasLexeme(false), fullImmediate(false) { }
 		bool instruction;
 		word address;
 		word dataValue;
@@ -59,8 +59,9 @@ namespace iris {
 		byte source0;
 		byte source1;
 		bool hasLexeme;
-		std::string currentLexeme;
 		bool fullImmediate;
+		std::string currentLexeme;
+
 		void reset() noexcept;
 		void setImmediate(word value) noexcept;
 		bool shouldResolveLabel() noexcept { return fullImmediate && hasLexeme; }
@@ -73,19 +74,27 @@ namespace iris {
 			using LabelIterator = LabelMap::iterator;
 			using ConstLabelIterator = LabelMap::const_iterator;
 		public:
-			AssemblerState() : currentDataIndex(0), currentCodeIndex(0), inData(false) { }
+			AssemblerState() : currentDataIndex(0), currentCodeIndex(0), inData(false), temporaryWord(0), temporaryByte(0) { }
 			void resetCurrentData() noexcept;
 			void setImmediate(word value) noexcept;
 			void setHalfImmediate(byte value) noexcept;
 			void setGroup(InstructionGroup value) noexcept;
 			template<typename T>
-				void setOperation(T value) noexcept {
-					current.operation = static_cast<byte>(value);
-				}
+			void setOperation(T value) noexcept {
+				current.operation = static_cast<byte>(value);
+			}
 			bool inCodeSection() const noexcept { return !inData; }
 			bool inDataSection() const noexcept { return inData; }
 			void nowInCodeSection() noexcept { inData = false; }
 			void nowInDataSection() noexcept { inData = true; }
+            template<bool toCodeSection>
+            void changeSection() noexcept {
+                if (toCodeSection) {
+                    nowInCodeSection();
+                } else {
+                    nowInDataSection();
+                }
+            }
 			void setCurrentAddress(word value) noexcept;
 			void registerLabel(const std::string& label) noexcept;
 			word getCurrentAddress() noexcept;
@@ -240,9 +249,7 @@ namespace iris {
 		DefApplyGeneric(RegisterIndexContainer) {
             state.setValue(syn::getRegister<word, ArchitectureConstants::ConditionRegisterCount>(in.string(), syn::reportError));
 		}
-		DefApply {
-			//state.setTemporaryByte(syn::getRegister<word, ArchitectureConstants::ConditionRegisterCount>(in.string(), syn::reportError));
-		}
+		DefApply { }
 	};
 	using IndirectGPR = syn::Indirection<GeneralPurposeRegister>;
 #define DefIndirectGPR(title) \
@@ -252,27 +259,21 @@ namespace iris {
 		DefApplyGeneric(RegisterIndexContainer) {
             state._index = RegisterIndexContainer::Type::DestinationGPR;
 		}
-        DefApply {
-            //state.stashTemporaryByteInDestination();
-        }
+        DefApply { }
 	};
 	DefIndirectGPR(Source0GPR);
 	DefAction(Source0GPR) {
 		DefApplyGeneric(RegisterIndexContainer) {
             state._index = RegisterIndexContainer::Type::Source0GPR;
 		}
-        DefApply {
-            //state.stashTemporaryByteInSource0();
-        }
+        DefApply { }
 	};
     DefIndirectGPR(Source1GPR);
 	DefAction(Source1GPR) {
 		DefApplyGeneric(RegisterIndexContainer) {
             state._index = RegisterIndexContainer::Type::Source1GPR;
 		}
-        DefApply {
-            //state.stashTemporaryByteInSource1();
-        }
+        DefApply { }
 	};
     template<typename T>
     using StatefulRegister = pegtl::state<RegisterIndexContainer, T>;
@@ -350,11 +351,7 @@ namespace iris {
 
         template<typename Input>
         void success(const Input& in, AssemblerState& parent) {
-            if (toCode) {
-                parent.nowInCodeSection();
-            } else {
-                parent.nowInDataSection();
-            }
+            parent.changeSection<toCode>();
         }
 
     };
@@ -505,11 +502,11 @@ namespace iris {
     DefSymbol(LoadImmediatePrimary, ldi);
     DefSymbol(LoadImmediateSecondary, ldm);
     struct SymbolLoadImmediate : pegtl::sor<SymbolLoadImmediatePrimary, SymbolLoadImmediateSecondary> { };
-	DefAction(SymbolLoadImmediate) { DefApply { state.setOperation<CURRENT_TYPE>(CURRENT_TYPE :: LoadImmediate); } };
+	DefAction(SymbolLoadImmediate) { DefApply { state.setOperation<MoveOp>(MoveOp :: LoadImmediate); } };
     DefSymbol(StoreImmediatePrimary, sti);
     DefSymbol(StoreImmediateAlternateTitle, memset);
     struct SymbolStoreImmediate : pegtl::sor<SymbolStoreImmediatePrimary, SymbolStoreImmediateAlternateTitle> { };
-	DefAction(SymbolStoreImmediate) { DefApply { state.setOperation<CURRENT_TYPE>(CURRENT_TYPE :: Memset); } };
+	DefAction(SymbolStoreImmediate) { DefApply { state.setOperation<MoveOp>(MoveOp :: Memset); } };
     struct OperationMoveGPRImmediate : pegtl::sor<SymbolStoreImmediate, SymbolLoadImmediate, SymbolSet, SymbolPushImmediate> { };
 
     struct MoveGPRImmediateInstruction : pegtl::seq<OperationMoveGPRImmediate, Separator, StatefulDestinationGPR, Separator, Immediate> { };
@@ -628,13 +625,12 @@ namespace iris {
     struct Instruction : pegtl::sor<ArithmeticInstruction, MoveInstruction, BranchInstruction, CompareInstruction, PredicateInstruction> { };
 	DefAction(Instruction) {
 		DefApply {
-			if (state.inCodeSection()) {
-				state.markIsInstruction();
-				state.saveToFinished();
-				state.incrementCurrentAddress();
-			} else {
-				throw syn::Problem("Can't construct instructions in the data section");
-			}
+            if (!state.inCodeSection()) {
+                throw syn::Problem("Can't construct instructions in the data section!");
+            }
+            state.markIsInstruction();
+            state.saveToFinished();
+            state.incrementCurrentAddress();
 		}
 	};
     struct Statement : pegtl::sor<Instruction, Directive> { };

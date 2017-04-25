@@ -222,23 +222,22 @@ namespace syn {
 			CVSetInteger(ret, encodeBits<CLIPSInteger, CLIPSInteger>(CVToInteger(&input), CVToInteger(&value), CVToInteger(&mask), CVToInteger(&shift)));
 		}
 	}
-
 	void CLIPS_breakApartNumber(UDFContext* context, CLIPSValue* ret) {
 		CLIPSValue number;
 		if (!UDFFirstArgument(context, NUMBER_TYPES, &number)) {
 			CVSetBoolean(ret, false);
-		} else {
-			auto env = UDFContextEnvironment(context);
-			auto integer = CVToInteger(&number);
-            static constexpr auto iTypeSize = static_cast<int>(sizeof(decltype(integer)));
-			byte container[iTypeSize] = { 0 };
-			syn::decodeInt64LE(integer, container);
-            MultifieldBuilder mf(env, iTypeSize);
-			for (int i = 0, j = 1; i < iTypeSize; ++i, ++j) {
-                mf.setField(j, MayaType::Integer, EnvAddLong(env, container[i]));
-			}
-            mf.assign(ret);
+            return;
 		}
+        auto env = UDFContextEnvironment(context);
+        auto integer = CVToInteger(&number);
+        static constexpr auto iTypeSize = static_cast<long>(sizeof(decltype(integer)));
+        byte container[iTypeSize] = { 0 };
+        syn::decodeInt64LE(integer, container);
+        FixedSizeMultifieldBuilder<iTypeSize> mf(env);
+        for (int i = 0, j = 1; i < iTypeSize; ++i, ++j) {
+            mf.setField(j, MayaType::Integer, EnvAddLong(env, container[i]));
+        }
+        mf.assign(ret);
 	}
 
 	bool errorMessage(void* env, const std::string& idClass, int idIndex, const std::string& msgPrefix, const std::string& msg) noexcept {

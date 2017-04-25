@@ -165,15 +165,14 @@ namespace cisc0 {
     }
     InstructionEncoder::Encoding InstructionEncoder::encodeComplex() const {
         auto sType = static_cast<ComplexSubTypes>(subType);
-        auto first = encodeControl(0, type);
-        first = encodeComplexSubClass(first, sType);
-        if (sType == ComplexSubTypes::Encoding) {
-            // right now it is a single word
-            first = encodeComplexClassEncoding_Type(first, static_cast<EncodingOperation>(bitmask));
-            return std::make_tuple(1, first, 0, 0);
-        } else {
+        if (sType != ComplexSubTypes::Encoding) {
             throw syn::Problem("Attempted to encode an unsupported value as a complex type!");
         }
+        auto first = encodeControl(0, type);
+        first = encodeComplexSubClass(first, sType);
+        // right now it is a single word
+        first = encodeComplexClassEncoding_Type(first, static_cast<EncodingOperation>(bitmask));
+        return std::make_tuple(1, first, 0, 0);
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encode() const {
