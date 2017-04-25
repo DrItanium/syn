@@ -135,6 +135,7 @@ namespace syn {
     DefUpperLowerPair(uint64, uint32, 0xFFFFFFFF00000000, 0x00000000FFFFFFFF, 32);
 #undef DefUpperLowerPair
 
+
 template<typename T>
 using HalfType = typename UpperLowerPair::TypeData<T>::HalfType;
 
@@ -160,6 +161,15 @@ constexpr T getShiftCount() noexcept {
 
 template<typename T>
 constexpr size_t bitwidth = CHAR_BIT * sizeof(T);
+
+
+template<typename T, T index>
+constexpr auto singleBitmaskValue = static_cast<T>(0x1 << index);
+
+template<typename T>
+constexpr T computeSingleBitmask(T index) noexcept {
+	return static_cast<T>(1 << index);
+}
 
 template<typename T, T bitmask>
 constexpr T mask(T input) noexcept {
@@ -879,18 +889,18 @@ constexpr R circularShiftRight(T value, T shift) noexcept {
 
 template<typename T, T index>
 constexpr bool getBit(T value) noexcept {
-    return decodeBits<T, bool, 1 << index, index>(value);
+    return decodeBits<T, bool, singleBitmaskValue<T, index>, index>(value);
 }
 
 template<typename T>
 constexpr bool getBit(T value, T index) noexcept {
-    return decodeBits<T, bool>(value, 1 << index, index);
+    return decodeBits<T, bool>(value, computeSingleBitmask<T>(index), index);
 }
 
-template<> constexpr bool getBit<byte, 0>(byte value) noexcept { return (0b00000001 & value) != 0; }
-template<> constexpr bool getBit<byte, 1>(byte value) noexcept { return (0b00000010 & value) != 0; }
-template<> constexpr bool getBit<byte, 2>(byte value) noexcept { return (0b00000100 & value) != 0; }
-template<> constexpr bool getBit<byte, 3>(byte value) noexcept { return (0b00001000 & value) != 0; }
+template<> constexpr bool getBit<byte, 0>(byte value) noexcept { return (singleBitmaskValue<byte, 0> & value) != 0; }
+template<> constexpr bool getBit<byte, 1>(byte value) noexcept { return (singleBitmaskValue<byte, 1> & value) != 0; }
+template<> constexpr bool getBit<byte, 2>(byte value) noexcept { return (singleBitmaskValue<byte, 2> & value) != 0; }
+template<> constexpr bool getBit<byte, 3>(byte value) noexcept { return (singleBitmaskValue<byte, 3> & value) != 0; }
 
 constexpr byte expandBit(bool value) noexcept {
     return value ? 0xFF : 0x00;
@@ -898,12 +908,12 @@ constexpr byte expandBit(bool value) noexcept {
 
 template<typename T, T index>
 constexpr T setBit(T value, bool bit) noexcept {
-    return syn::encodeBits<T, bool, 1 << index, index>(value, bit);
+    return syn::encodeBits<T, bool, singleBitmaskValue<T, index>, index>(value, bit);
 }
 
 template<typename T>
 constexpr T setBit(T value, bool bit, T index) noexcept {
-    return encodeBits<T, bool>(value, bit, 1 << index, index);
+    return encodeBits<T, bool>(value, bit, computeSingleBitmask<T>(index), index);
 }
 
 constexpr uint32 expandUInt32LE(bool lowest, bool lowerUpper, bool upperLower, bool upperMost) noexcept {
