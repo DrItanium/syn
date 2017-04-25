@@ -105,9 +105,30 @@ template<typename T>
 std::map<void*, unsigned int> ExternalAddressRegistrar<T>::_cache;
 
 template<typename T>
-inline constexpr bool inRange(T capacity, T address) noexcept {
+constexpr bool inRange(T capacity, T address) noexcept {
 	return address >= 0 && address < capacity;
 }
+
+template<>
+constexpr bool inRange<uint16_t>(uint16_t capacity, uint16_t address) noexcept {
+    return address < capacity;
+}
+
+template<>
+constexpr bool inRange<uint32_t>(uint32_t capacity, uint32_t address) noexcept {
+    return address < capacity;
+}
+
+template<>
+constexpr bool inRange<uint64_t>(uint64_t capacity, uint64_t address) noexcept {
+    return address < capacity;
+}
+
+template<>
+constexpr bool inRange<uint8_t>(uint8_t capacity, uint8_t address) noexcept {
+    return address < capacity;
+}
+
 namespace TypeToName {
     template<typename T>
     constexpr bool hasSymbolicImplementation = false;
