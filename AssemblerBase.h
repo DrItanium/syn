@@ -29,7 +29,6 @@
 #define IRIS_ASM_BASE_H
 #include <functional>
 #include <sstream>
-#include "Base.h"
 #include "BaseArithmetic.h"
 #include <bitset>
 #include <pegtl.hh>
