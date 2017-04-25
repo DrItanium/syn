@@ -466,38 +466,6 @@ inline void swap(T& a, T& b) {
 }
 
 
-template<typename T, bool includeMaximum = true, bool includeMinimum = true>
-constexpr bool valueIsInRange(T value, T minimum, T maximum) noexcept {
-    auto minimumCheck = includeMinimum ? value >= minimum : value > minimum;
-    auto maximumCheck = includeMaximum ? value <= maximum : value < maximum;
-    return minimumCheck && maximumCheck;
-}
-
-template<typename T, T minimum, T maximum, bool includeMaximum = true, bool includeMinimum = true>
-constexpr bool valueIsInRange(T value) noexcept {
-    auto minimumCheck = includeMinimum ? value >= minimum : value > minimum;
-    auto maximumCheck = includeMaximum ? value <= maximum : value < maximum;
-    return minimumCheck && maximumCheck;
-}
-
-template<typename T>
-constexpr bool inRangeInclusive(T value, T minimum, T maximum) noexcept {
-    return valueIsInRange<T>(value, minimum, maximum);
-}
-
-template<typename T, T minimum, T maximum>
-constexpr bool inRangeInclusive(T value) noexcept {
-    return valueIsInRange<T, minimum, maximum>(value);
-}
-template<typename T>
-constexpr bool inRangeExcludingMaximum(T value, T minimum, T maximum) noexcept {
-    return valueIsInRange<T, false>(value, minimum, maximum);
-}
-
-template<typename T, T min, T max>
-constexpr bool inRangeExcludingMaximum(T value) noexcept {
-    return valueIsInRange<T, min, max, false>(value);
-}
 
 template<typename T>
 union BinaryContainer {

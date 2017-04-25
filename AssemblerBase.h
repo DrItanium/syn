@@ -29,11 +29,12 @@
 #define IRIS_ASM_BASE_H
 #include <functional>
 #include <sstream>
-#include "BaseArithmetic.h"
 #include <bitset>
 #include <pegtl.hh>
 #include <pegtl/contrib/raw_string.hh>
 #include <pegtl/contrib/abnf.hh>
+
+#include "BaseArithmetic.h"
 namespace syn {
 	using ErrorReportingFunction = std::function<void(const std::string&)>;
 	template<typename T, T count>
