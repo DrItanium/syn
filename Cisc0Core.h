@@ -31,21 +31,17 @@
 #include <vector>
 #include <tuple>
 
-#include "Base.h"
-#include "ExecutionUnits.h"
-#include "Core.h"
 #include "Problem.h"
+#include "Base.h"
+#include "ClipsCore.h"
+#include "ExecutionUnits.h"
 #include "IODevice.h"
 #include "IOController.h"
 #include "Cisc0CoreConstants.h"
 #include "Cisc0CoreDecodedInstruction.h"
 
-extern "C" {
-	#include "clips.h"
-}
-
 namespace cisc0 {
-	class Core : public syn::Core {
+	class Core : public syn::ClipsCore {
 		public:
 			using IOBus = syn::CLIPSIOController<Word, CLIPSInteger>;
             using RegisterFile = syn::FixedSizeLoadStoreUnit<RegisterValue, byte, ArchitectureConstants::RegisterCount>;
@@ -58,7 +54,7 @@ namespace cisc0 {
 			virtual void shutdown() override;
 			virtual bool cycle() override;
 			bool shouldExecute() const noexcept { return execute; }
-			bool handleOperation(void* env, CLIPSValue* ret);
+			virtual bool handleOperation(void* env, CLIPSValue* ret) override;
 		private:
 			void pushWord(Word value);
             void pushWord(Word value, RegisterValue& ptr);

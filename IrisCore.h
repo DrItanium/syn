@@ -32,14 +32,14 @@
 #include "Base.h"
 #include "Problem.h"
 #include "ExecutionUnits.h"
-#include "Core.h"
+#include "ClipsCore.h"
 #include "IOController.h"
 #include "IrisCoreTypes.h"
 #include "ClipsExtensions.h"
 #include "IrisCoreEncodingOperations.h"
 
 namespace iris {
-	class Core : public syn::Core {
+	class Core : public syn::ClipsCore {
         public:
             static Core* make() noexcept;
             using IOSpace = syn::CLIPSIOController<word, CLIPSInteger>;
@@ -59,7 +59,7 @@ namespace iris {
 			virtual void initialize() override;
 			virtual void shutdown() override;
 			virtual bool cycle() override;
-			bool handleOperation(void* env, CLIPSValue* ret);
+			virtual bool handleOperation(void* env, CLIPSValue* ret) override;
 		private:
             inline QuadWord getInstructionPointer() const noexcept { return _ip.get(); }
             inline QuadWord getLinkRegister() const noexcept { return _lr.get(); }
