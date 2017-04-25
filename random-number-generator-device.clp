@@ -25,7 +25,7 @@
   (is-a native-io-device)
   (slot native-type
         (source composite)
-        (default random-number-generator:uint16))
+        (default random-number-generator))
   (slot length
         (source composite)
         (storage shared)

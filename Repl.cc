@@ -32,10 +32,8 @@ extern "C" {
 #include "Cisc0CoreWrapper.h"
 #include "IrisCoreWrapper.h"
 
-static void *mainEnv;
-
 int main(int argc, char* argv[]) {
-	mainEnv = CreateEnvironment();
+	void* mainEnv = CreateEnvironment();
 	// install features here
 	syn::installExtensions(mainEnv);
     syn::installExternalAddressAssemblers(mainEnv);

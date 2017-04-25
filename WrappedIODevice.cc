@@ -30,13 +30,8 @@ namespace syn {
 	DefWrapperSymbolicName(CLIPSRandomNumberGeneratorDevice, "random-number-generator");
 	using WrappedCLIPSRandomNumberGeneratorDevice = WrappedGenericRandomDevice<CLIPSInteger>;
 
-    using RandomNumberGenerator16bitDevice = RandomDevice<uint16, CLIPSInteger>;
-    DefWrapperSymbolicName(RandomNumberGenerator16bitDevice, "random-number-generator:uint16");
-    using WrappedRandomNumberGenerator16bitDevice = WrappedGenericRandomDevice<uint16>;
-
     void CLIPS_installDefaultIODevices(void* theEnv) {
 		WrappedCLIPSRandomNumberGeneratorDevice::registerWithEnvironment(theEnv);
-        WrappedRandomNumberGenerator16bitDevice::registerWithEnvironment(theEnv);
     }
     namespace WrappedIODeviceConstants {
         constexpr int getArgCount(Operations op) noexcept {
