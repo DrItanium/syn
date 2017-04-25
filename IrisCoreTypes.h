@@ -26,13 +26,13 @@
 
 #ifndef IRIS_CORE_TYPES_H__
 #define IRIS_CORE_TYPES_H__
-#include <cstdint>
+#include "BaseTypes.h"
 namespace iris {
-    using word = uint16_t;
-    using dword = uint32_t;
+    using word = uint16;
+    using dword = uint32;
     using raw_instruction = dword;
     using immediate = word;
-    using QuadWord = uint64_t;
+    using QuadWord = uint64;
 	enum ArchitectureConstants  {
 		RegisterCount = 256,
 		AddressMax = 0xFFFF,

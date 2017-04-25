@@ -26,7 +26,7 @@
 
 #ifndef _TARGET_CISC0_CONSTANTS_H
 #define _TARGET_CISC0_CONSTANTS_H
-#include "Base.h"
+#include "BaseTypes.h"
 
 namespace cisc0 {
 	using Word = uint16;
