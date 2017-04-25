@@ -24,8 +24,8 @@
  */
 
 
-#ifndef __IRIS_CLIPS_H
-#define __IRIS_CLIPS_H
+#ifndef __SYN_CLIPS_H
+#define __SYN_CLIPS_H
 #include <map>
 #include <memory>
 #include <sstream>
@@ -84,11 +84,10 @@ struct ExternalAddressRegistrar {
 		ExternalAddressRegistrar(ExternalAddressRegistrar&&) = delete;
 		static unsigned int getExternalAddressId(void* env) {
 			auto found = _cache.find(env);
-			if (found != _cache.end()) {
-				return found->second;
-			} else {
-				throw syn::Problem("unregistered external address type!");
-			}
+            if (found == _cache.end()) {
+                throw syn::Problem("unregistered external address type!");
+            }
+            return found->second;
 		}
 		static void registerExternalAddressId(void* env, unsigned int value) noexcept {
 			_cache.emplace(env, value);
