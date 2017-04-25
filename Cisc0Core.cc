@@ -151,6 +151,14 @@ namespace cisc0 {
         decrementAddress(ptr);
     }
 
+    void illegalInstruction(DecodedInstruction&& current, RegisterValue ip) {
+        std::stringstream str;
+        str << "Illegal instruction " << std::hex << static_cast<int>(current.getControl()) << std::endl;
+        str << "Location: " << std::hex << ip << std::endl;
+        auto s = str.str();
+        throw syn::Problem(s);
+    }
+
     void Core::dispatch(DecodedInstruction&& current) {
         auto tControl = current.getControl();
         switch(tControl) {
@@ -186,14 +194,10 @@ namespace cisc0 {
             case Operation::Set:
                 registerValue(current.getSetDestination()) = retrieveImmediate(current.getBitmask<Operation::Set>());
                 break;
-            default: {
-                         std::stringstream str;
-                         str << "Illegal instruction " << std::hex << static_cast<int>(current.getControl()) << std::endl;
-                         str << "Location: " << std::hex << getInstructionPointer() << std::endl;
-                         execute = false;
-                         throw syn::Problem(str.str());
-                     }
-
+            default: 
+                execute = false;
+                illegalInstruction(std::move(current), getInstructionPointer());
+                break;
         }
     }
     void Core::branchOperation(DecodedInstruction&& inst) {

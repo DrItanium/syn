@@ -355,6 +355,8 @@ class LoadStoreUnit : public AddressableIODevice<Word, Address> {
 		using WordType = Word;
 		using AddressType = Address;
 		using Parent = AddressableIODevice<Word, Address>;
+        using BadLoadHandler = std::function<Word&(Address)>;
+        using BadStoreHandler = std::function<void(Address, Word)>;
         enum class Operation {
             Zero,
             Swap,
@@ -363,9 +365,25 @@ class LoadStoreUnit : public AddressableIODevice<Word, Address> {
             Copy,
             Count,
         };
+        static Word& defaultBadLoadHandler(Address addr) {
+            static Word value = static_cast<Word>(0);
+            throw syn::Problem("Provided address is not legal!");
+            return value;
+        }
+        static void defaultBadStoreHandler(Address addr, Word value) {
+            throw syn::Problem("Provided address is not legal!");
+        }
 	public:
-		LoadStoreUnit(Address size, Address base = 0) : Parent(base, size), _memory(std::move(std::make_unique<Word[]>(size))), _size(size) { }
+		LoadStoreUnit(Address size, Address base = 0, BadLoadHandler onBadLoad = defaultBadLoadHandler, BadStoreHandler onBadStore = defaultBadStoreHandler) : Parent(base, size), _memory(std::move(std::make_unique<Word[]>(size))), _size(size), _onBadLoad(onBadLoad), _onBadStore(onBadStore) { }
 		LoadStoreUnit() : LoadStoreUnit(0) { }
+
+        void setLoadExceptionHandler(BadLoadHandler op) {
+            _onBadLoad = op;
+        }
+        void setStoreExceptionHandler(BadStoreHandler op) {
+            _onBadStore = op;
+        }
+
 		virtual ~LoadStoreUnit() { }
 		inline void zero() noexcept {
 			for (Address addr = 0; addr < _size; ++addr) {
@@ -380,15 +398,11 @@ class LoadStoreUnit : public AddressableIODevice<Word, Address> {
 			if (legalAddress(addr)) {
 				_memory[addr] = value;
 			} else {
-				throw syn::Problem("Provided address is not legal");
+                _onBadStore(addr, value);
 			}
 		}
 		inline Word& retrieveMemory(Address addr) {
-			if (legalAddress(addr)) {
-				return _memory[addr];
-			} else {
-				throw syn::Problem("Provided address is not legal");
-			}
+            return legalAddress(addr) ? _memory[addr] : _onBadLoad(addr);
 		}
 		virtual Word read(Address addr) override {
 			return retrieveMemory(addr);
@@ -403,7 +417,7 @@ class LoadStoreUnit : public AddressableIODevice<Word, Address> {
 			syn::swap<Word>(_memory[a], _memory[b]);
 		}
 		void copy(Address a, Address b) {
-			_memory[a] = _memory[b];
+            set(a, read(b));
 		}
 		void install(std::istream& stream, std::function<Word(char*)> decode) {
 			char buf[sizeof(Word)] = { 0 };
@@ -422,6 +436,8 @@ class LoadStoreUnit : public AddressableIODevice<Word, Address> {
 	private:
 		std::unique_ptr<Word[]> _memory;
 		Address _size;
+        BadLoadHandler _onBadLoad;
+        BadStoreHandler _onBadStore;
 };
 
 template<typename Word, typename Address, Address capacity>
@@ -430,7 +446,7 @@ class FixedSizeLoadStoreUnit : public LoadStoreUnit<Word, Address> {
         static constexpr auto count = capacity;
         using Parent = LoadStoreUnit<Word, Address>;
 	public:
-		FixedSizeLoadStoreUnit(Address base = 0) : Parent(capacity, base) { }
+		FixedSizeLoadStoreUnit(Address base = 0, typename Parent::BadLoadHandler onBadLoad = Parent::defaultBadLoadHandler, typename Parent::BadStoreHandler onBadStore = Parent::defaultBadStoreHandler) : Parent(capacity, base, onBadLoad, onBadStore) { }
 		virtual ~FixedSizeLoadStoreUnit() { }
 };
 
