@@ -26,8 +26,10 @@
 
 #ifndef SYN_BASE_ARITHMETIC_H__
 #define SYN_BASE_ARITHMETIC_H__
-#include <functional>
+#include "BaseTypes.h"
 #include "Problem.h"
+
+#include <functional>
 #include <climits>
 namespace syn {
 
@@ -93,9 +95,9 @@ inline float div<float, float>(float numerator, float denominator) {
 }
 
 template<>
-inline uint8_t div<uint8_t, uint8_t>(uint8_t numerator, uint8_t denominator, OnDivideByZero<uint8_t> markDivideByZero) {
+inline uint8 div<uint8, uint8>(uint8 numerator, uint8 denominator, OnDivideByZero<uint8> markDivideByZero) {
      switch(denominator) {
-         case 0: return defaultDenominatorCheck<uint8_t>(markDivideByZero);
+         case 0: return defaultDenominatorCheck<uint8>(markDivideByZero);
          case 1: return numerator;
          case 2: return numerator >> 1;
          case 4: return numerator >> 2;
@@ -110,9 +112,9 @@ inline uint8_t div<uint8_t, uint8_t>(uint8_t numerator, uint8_t denominator, OnD
 }
 
 template<>
-inline uint16_t div<uint16_t, uint16_t>(uint16_t numerator, uint16_t denominator, OnDivideByZero<uint16_t> markDivideByZero) {
+inline uint16 div<uint16, uint16>(uint16 numerator, uint16 denominator, OnDivideByZero<uint16> markDivideByZero) {
      switch(denominator) {
-         case 0: return defaultDenominatorCheck<uint16_t>(markDivideByZero);
+         case 0: return defaultDenominatorCheck<uint16>(markDivideByZero);
          case 1: return numerator;
          case 2: return numerator >> 1;
          case 4: return numerator >> 2;
@@ -135,9 +137,9 @@ inline uint16_t div<uint16_t, uint16_t>(uint16_t numerator, uint16_t denominator
 }
 
 template<>
-inline uint32_t div<uint32_t, uint32_t>(uint32_t numerator, uint32_t denominator, OnDivideByZero<uint32_t> markDivideByZero) {
+inline uint32 div<uint32, uint32>(uint32 numerator, uint32 denominator, OnDivideByZero<uint32> markDivideByZero) {
      switch(denominator) {
-         case 0: return defaultDenominatorCheck<uint32_t>(markDivideByZero);
+         case 0: return defaultDenominatorCheck<uint32>(markDivideByZero);
          case 1: return numerator;
          case 2: return numerator >> 1;
          case 4: return numerator >> 2;
@@ -176,9 +178,9 @@ inline uint32_t div<uint32_t, uint32_t>(uint32_t numerator, uint32_t denominator
 }
 
 template<>
-inline uint64_t div<uint64_t, uint64_t>(uint64_t numerator, uint64_t denominator, OnDivideByZero<uint64_t> markDivideByZero) {
+inline uint64 div<uint64, uint64>(uint64 numerator, uint64 denominator, OnDivideByZero<uint64> markDivideByZero) {
      switch(denominator) {
-         case 0: return defaultDenominatorCheck<uint64_t>(markDivideByZero);
+         case 0: return defaultDenominatorCheck<uint64>(markDivideByZero);
          case 1: return numerator;
          case 2: return numerator >> 1;
          case 4: return numerator >> 2;
@@ -267,9 +269,9 @@ inline R rem(T numerator, T denominator) {
 }
 
 template<>
-inline uint8_t rem<uint8_t, uint8_t>(uint8_t numerator, uint8_t denominator, OnDivideByZero<uint8_t> markDivideByZero) {
+inline uint8 rem<uint8, uint8>(uint8 numerator, uint8 denominator, OnDivideByZero<uint8> markDivideByZero) {
     switch(denominator) {
-        case 0: return defaultDenominatorCheck<uint8_t>(markDivideByZero);
+        case 0: return defaultDenominatorCheck<uint8>(markDivideByZero);
         case 1: return 0;
         case 2: return numerator & 1;
         case 4: return numerator & 3;
@@ -285,9 +287,9 @@ inline uint8_t rem<uint8_t, uint8_t>(uint8_t numerator, uint8_t denominator, OnD
 
 
 template<>
-inline uint16_t rem<uint16_t, uint16_t>(uint16_t numerator, uint16_t denominator, OnDivideByZero<uint16_t> markDivideByZero) {
+inline uint16 rem<uint16, uint16>(uint16 numerator, uint16 denominator, OnDivideByZero<uint16> markDivideByZero) {
     switch(denominator) {
-        case 0: return defaultDenominatorCheck<uint16_t>(markDivideByZero);
+        case 0: return defaultDenominatorCheck<uint16>(markDivideByZero);
         case 1: return 0;
         case 2: return numerator & 1;
         case 4: return numerator & 3;
@@ -310,9 +312,9 @@ inline uint16_t rem<uint16_t, uint16_t>(uint16_t numerator, uint16_t denominator
 }
 
 template<>
-inline uint32_t rem<uint32_t, uint32_t>(uint32_t numerator, uint32_t denominator, OnDivideByZero<uint32_t> markDivideByZero) {
+inline uint32 rem<uint32, uint32>(uint32 numerator, uint32 denominator, OnDivideByZero<uint32> markDivideByZero) {
     switch(denominator) {
-        case 0: return defaultDenominatorCheck<uint32_t>(markDivideByZero);
+        case 0: return defaultDenominatorCheck<uint32>(markDivideByZero);
         case 1: return 0;
         case 2: return numerator & 1;
         case 4: return numerator & 3;
@@ -350,9 +352,9 @@ inline uint32_t rem<uint32_t, uint32_t>(uint32_t numerator, uint32_t denominator
     }
 }
 template<>
-inline uint64_t rem<uint64_t, uint64_t>(uint64_t numerator, uint64_t denominator, OnDivideByZero<uint64_t> markDivideByZero) {
+inline uint64 rem<uint64, uint64>(uint64 numerator, uint64 denominator, OnDivideByZero<uint64> markDivideByZero) {
     switch(denominator) {
-        case 0: return defaultDenominatorCheck<uint64_t>(markDivideByZero);
+        case 0: return defaultDenominatorCheck<uint64>(markDivideByZero);
         case 1: return 0;
         case 2: return numerator & 1;
         case 4: return numerator & 3;

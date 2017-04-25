@@ -109,22 +109,22 @@ constexpr bool inRange(T capacity, T address) noexcept {
 }
 
 template<>
-constexpr bool inRange<uint16_t>(uint16_t capacity, uint16_t address) noexcept {
+constexpr bool inRange<uint16>(uint16 capacity, uint16 address) noexcept {
     return address < capacity;
 }
 
 template<>
-constexpr bool inRange<uint32_t>(uint32_t capacity, uint32_t address) noexcept {
+constexpr bool inRange<uint32>(uint32 capacity, uint32 address) noexcept {
     return address < capacity;
 }
 
 template<>
-constexpr bool inRange<uint64_t>(uint64_t capacity, uint64_t address) noexcept {
+constexpr bool inRange<uint64>(uint64 capacity, uint64 address) noexcept {
     return address < capacity;
 }
 
 template<>
-constexpr bool inRange<uint8_t>(uint8_t capacity, uint8_t address) noexcept {
+constexpr bool inRange<uint8>(uint8 capacity, uint8 address) noexcept {
     return address < capacity;
 }
 
