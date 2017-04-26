@@ -206,8 +206,6 @@ ClipsExtensions.o: ClipsExtensions.cc BaseTypes.h ClipsExtensions.h \
  misc/maya/objrtmch.h Base.h ExecutionUnits.h IODevice.h Device.h \
  syn_memory_block_defines.h
 Core.o: Core.cc Core.h Device.h
-CoreRegistrar.o: CoreRegistrar.cc Problem.h CoreRegistrar.h Core.h \
- Device.h
 IOController.o: IOController.cc IOController.h Problem.h Device.h \
  IODevice.h BaseArithmetic.h BaseTypes.h WrappedIODevice.h Base.h Core.h \
  ClipsExtensions.h misc/maya/clips.h misc/maya/setup.h \
