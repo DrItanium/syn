@@ -131,11 +131,11 @@ namespace iris {
 			{ "get-predicate-register", std::make_tuple(WrappedOp::GetRegister, 1, TargetSpace::Predicates ) },
 			{ "set-predicate-register", std::make_tuple(WrappedOp::SetRegister, 2, TargetSpace::Predicates) },
 		};
-        auto badArgument = [env, ret](auto code, auto msg) {
+        auto badArgument = [env, ret](auto code, auto msg) noexcept {
             CVSetBoolean(ret, false);
             return syn::errorMessage(env, "CALL", code, funcErrorPrefix, msg);
         };
-		auto callErrorMessage = [badArgument](const std::string& subOp, const std::string& rest) {
+		auto callErrorMessage = [badArgument](const std::string& subOp, const std::string& rest) noexcept {
 			std::stringstream stm;
 			stm << " " << subOp << ": " << rest << std::endl;
 			auto msg = stm.str();
@@ -164,7 +164,7 @@ namespace iris {
         if (!syn::hasCorrectArgCount(env, aCount)) {
 			return callErrorMessage(opStr, " too many arguments provided!");
 		}
-		auto getRegister = [this, env, ret, badArgument](TargetSpace space) {
+		auto getRegister = [this, env, ret, badArgument](TargetSpace space) noexcept {
             if (space != TargetSpace::GPR && space != TargetSpace::Predicates) {
                 return badArgument(4, "Illegal space provided for retrieving a register from!");
             }
@@ -197,7 +197,7 @@ namespace iris {
                 return badArgument(4, p.what());
             }
 		};
-		auto setRegister = [this, env, ret, badArgument](TargetSpace space) {
+		auto setRegister = [this, env, ret, badArgument](TargetSpace space) noexcept {
             if (space != TargetSpace::GPR && space != TargetSpace::Predicates) {
                 return badArgument(4, "Illegal space provided for setting a register!");
             }
@@ -237,7 +237,7 @@ namespace iris {
                 return badArgument(4, p.what());
             }
 		};
-		auto readMemory = [this, env, ret, badArgument](TargetSpace space) {
+		auto readMemory = [this, env, ret, badArgument](TargetSpace space) noexcept {
             switch(space) {
                 case TargetSpace::None:
                 case TargetSpace::GPR:
@@ -273,7 +273,7 @@ namespace iris {
             }
 			return true;
 		};
-		auto writeMemory = [this, env, ret, badArgument](TargetSpace space) {
+		auto writeMemory = [this, env, ret, badArgument](TargetSpace space) noexcept {
             switch(space) {
                 case TargetSpace::None:
                 case TargetSpace::GPR:

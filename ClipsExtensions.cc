@@ -353,14 +353,14 @@ namespace syn {
                 if (!isExternalAddress(value)) {
 					return errorMessage(env, "CALL", 1, funcErrorPrefix, "Function call expected an external address as the first argument!");
                 }
-                auto callErrorMessage = [env, ret](const std::string& subOp, const std::string& rest) {
+                auto callErrorMessage = [env, ret](const std::string& subOp, const std::string& rest) noexcept {
                     CVSetBoolean(ret, false);
                     std::stringstream stm;
                     stm << " " << subOp << ": " << rest << std::endl;
                     auto msg = stm.str();
                     return errorMessage(env, "CALL", 3, funcErrorPrefix, msg);
                 };
-                auto errOutOfRange = [callErrorMessage, env, ret](const std::string& subOp, CLIPSInteger capacity, Address address) {
+                auto errOutOfRange = [callErrorMessage, env, ret](const std::string& subOp, CLIPSInteger capacity, Address address) noexcept {
                     std::stringstream ss;
                     ss << funcErrorPrefix << ": Provided address " << std::hex << address << " is either less than zero or greater than " << std::hex << capacity << std::endl;
                     return callErrorMessage(subOp, ss.str());
@@ -379,16 +379,16 @@ namespace syn {
                 auto ptr = static_cast<Self_Ptr>(DOPToExternalAddress(value));
                 auto rangeViolation = [errOutOfRange, ptr, &str](Address addr) { errOutOfRange(str, ptr->size(), addr); };
                 CLIPSValue arg0, arg1;
-                auto checkArg = [callErrorMessage, &str, env](unsigned int index, MayaType type, const std::string& msg, CLIPSValue* dat) {
+                auto checkArg = [callErrorMessage, &str, env](unsigned int index, MayaType type, const std::string& msg, CLIPSValue* dat) noexcept {
                     if (!checkThenGetArgument(env, funcStr, index, type, dat)) {
                         return callErrorMessage(str, msg);
                     }
                     return true;
                 };
-                auto checkArg0 = [checkArg, &arg0, env, &str](MayaType type, const std::string& msg) { return checkArg(3, type, msg, &arg0); };
-                auto checkArg1 = [checkArg, &arg1, env, &str](MayaType type, const std::string& msg) { return checkArg(4, type, msg, &arg1); };
-                auto oneCheck = [checkArg0](MayaType type, const std::string& msg) { return checkArg0(type, msg); };
-                auto twoCheck = [checkArg0, checkArg1](MayaType type0, const std::string& msg0, MayaType type1, const std::string& msg1) {
+                auto checkArg0 = [checkArg, &arg0, env, &str](MayaType type, const std::string& msg) noexcept { return checkArg(3, type, msg, &arg0); };
+                auto checkArg1 = [checkArg, &arg1, env, &str](MayaType type, const std::string& msg) noexcept { return checkArg(4, type, msg, &arg1); };
+                auto oneCheck = [checkArg0](MayaType type, const std::string& msg) noexcept { return checkArg0(type, msg); };
+                auto twoCheck = [checkArg0, checkArg1](MayaType type0, const std::string& msg0, MayaType type1, const std::string& msg1) noexcept {
                     return checkArg0(type0, msg0) && checkArg1(type1, msg1);
                 };
                 MemoryBlockOp op;

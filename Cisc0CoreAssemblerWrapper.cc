@@ -92,7 +92,7 @@ namespace cisc0 {
 			{ "resolve", std::make_tuple(Operations::Resolve, 0) },
 			{ "get", std::make_tuple(Operations::Get, 0) },
 		};
-		auto callErrorMessage = [env, ret](const std::string& subOp, const std::string& rest) {
+		auto callErrorMessage = [env, ret](const std::string& subOp, const std::string& rest) noexcept {
 			CVSetBoolean(ret, false);
 			std::stringstream stm;
 			stm << " " << subOp << ": " << rest << std::endl;
@@ -128,7 +128,7 @@ namespace cisc0 {
 			return callErrorMessage(str, " too many arguments provided!");
 		}
 		auto ptr = static_cast<Self*>(DOPToExternalAddress(value));
-		auto parseLine = [env, ret, ptr, callErrorMessage]() {
+		auto parseLine = [env, ret, ptr, callErrorMessage]() noexcept {
 			CLIPSValue line;
             if (!syn::tryGetArgumentAsString(env, funcStr, 3, &line)) {
 				CVSetBoolean(ret, false);
@@ -147,7 +147,7 @@ namespace cisc0 {
 				return callErrorMessage(str, e.what());
 			}
 		};
-		auto resolve = [env, ret, ptr]() {
+		auto resolve = [env, ret, ptr]() noexcept {
 			try {
 				CVSetBoolean(ret, true);
 				return ptr->resolve();

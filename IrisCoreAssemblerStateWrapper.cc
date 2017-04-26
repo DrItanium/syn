@@ -73,10 +73,11 @@ namespace iris {
 		};
         state.applyToFinishedData([resolveLabel](auto value, auto index) {
                     if (value.shouldResolveLabel()) {
+                        auto result = resolveLabel(value);
                         if (value.instruction) {
-                            value.setImmediate(resolveLabel(value));
+                            value.setImmediate(result);
                         } else {
-                            value.dataValue = resolveLabel(value);
+                            value.dataValue = result;
                         }
                     }
                 });
@@ -90,7 +91,7 @@ namespace iris {
         // we need to build a multifield out of the finalWords
         auto & state = *(get());
         syn::MultifieldBuilder f(env, state.getNumberOfFinishedElements() * 3);
-        auto body = [&f, env, ret](auto value, auto baseIndex) {
+        auto body = [&f, env, ret](auto value, auto baseIndex) noexcept {
             auto i = (3 * baseIndex) + 1;
             f.setField(i + 0, INTEGER, EnvAddLong(env, value.instruction ? 0 : 1));
             f.setField(i + 1, INTEGER, EnvAddLong(env, value.address));
