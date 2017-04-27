@@ -217,4 +217,34 @@
                           CRSwap
                           CRMove
                           ))
-    )
+          )
+(defrule MAIN::perform-special-conversion:arithmetic->aluoperation
+         (declare (salience ?*priority:first*))
+         ?f <- (arithmetic->alu ?arith ?alu)
+         =>
+         (retract ?f)
+         (assert (to-execution-unit ArithmeticOp ?arith ->
+                                    ALUOperation ?alu)))
+
+(deffacts MAIN::execution-unit-conversion-routines
+          (include "ExecutionUnits.h")
+          (using ALUOperation
+                 syn::ALU::StandardOperations)
+          (arithmetic->alu Add Add)
+          (arithmetic->alu AddImmediate Add)
+          (arithmetic->alu Sub Subtract)
+          (arithmetic->alu SubImmediate Subtract)
+          (arithmetic->alu Mul Multiply)
+          (arithmetic->alu MulImmediate Multiply)
+          (arithmetic->alu Div Divide)
+          (arithmetic->alu DivImmediate Divide)
+          (arithmetic->alu Rem Remainder)
+          (arithmetic->alu RemImmediate Remainder)
+          (arithmetic->alu ShiftLeft ShiftLeft)
+          (arithmetic->alu ShiftLeftImmediate ShiftLeft)
+          (arithmetic->alu ShiftRight ShiftRight)
+          (arithmetic->alu ShiftRightImmediate ShiftRight)
+          (arithmetic->alu BinaryNot UnaryNot)
+          (arithmetic->alu BinaryOr BinaryOr)
+          (arithmetic->alu BinaryAnd BinaryAnd)
+          (arithmetic->alu BinaryXor BinaryXor))

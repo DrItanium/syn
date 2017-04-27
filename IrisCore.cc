@@ -99,65 +99,44 @@ namespace iris {
 		return execute;
 	}
 
-    using ALUOperation = syn::ALU::StandardOperations;
-    template<> constexpr auto toExecutionUnitValue<ArithmeticOp, ArithmeticOp::Add> = ALUOperation::Add;
-    template<> constexpr auto toExecutionUnitValue<ArithmeticOp, ArithmeticOp::AddImmediate> = ALUOperation::Add;
-    template<> constexpr auto toExecutionUnitValue<ArithmeticOp, ArithmeticOp::Sub> = ALUOperation::Subtract;
-    template<> constexpr auto toExecutionUnitValue<ArithmeticOp, ArithmeticOp::SubImmediate> = ALUOperation::Subtract;
-    template<> constexpr auto toExecutionUnitValue<ArithmeticOp, ArithmeticOp::Mul> = ALUOperation::Multiply;
-    template<> constexpr auto toExecutionUnitValue<ArithmeticOp, ArithmeticOp::MulImmediate> = ALUOperation::Multiply;
-    template<> constexpr auto toExecutionUnitValue<ArithmeticOp, ArithmeticOp::ShiftLeft> = ALUOperation::ShiftLeft;
-    template<> constexpr auto toExecutionUnitValue<ArithmeticOp, ArithmeticOp::ShiftLeftImmediate> = ALUOperation::ShiftLeft;
-    template<> constexpr auto toExecutionUnitValue<ArithmeticOp, ArithmeticOp::ShiftRight> = ALUOperation::ShiftRight;
-    template<> constexpr auto toExecutionUnitValue<ArithmeticOp, ArithmeticOp::ShiftRightImmediate> = ALUOperation::ShiftRight;
-    template<> constexpr auto toExecutionUnitValue<ArithmeticOp, ArithmeticOp::BinaryAnd> = ALUOperation::BinaryAnd;
-    template<> constexpr auto toExecutionUnitValue<ArithmeticOp, ArithmeticOp::BinaryOr> = ALUOperation::BinaryOr;
-    template<> constexpr auto toExecutionUnitValue<ArithmeticOp, ArithmeticOp::BinaryXor> = ALUOperation::BinaryXor;
-    template<> constexpr auto toExecutionUnitValue<ArithmeticOp, ArithmeticOp::BinaryNot> = ALUOperation::UnaryNot;
-    template<> constexpr auto toExecutionUnitValue<ArithmeticOp, ArithmeticOp::Div> = ALUOperation::Divide;
-    template<> constexpr auto toExecutionUnitValue<ArithmeticOp, ArithmeticOp::DivImmediate> = ALUOperation::Divide;
-    template<> constexpr auto toExecutionUnitValue<ArithmeticOp, ArithmeticOp::Rem> = ALUOperation::Remainder;
-    template<> constexpr auto toExecutionUnitValue<ArithmeticOp, ArithmeticOp::RemImmediate> = ALUOperation::Remainder;
-    template<ArithmeticOp op>
-    constexpr auto aluTranslation = toExecutionUnitValue<decltype(op), op>;
     constexpr ALUOperation translate(ArithmeticOp op) noexcept {
             switch(op) {
                 case ArithmeticOp::Add:
-                    return aluTranslation<ArithmeticOp::Add>;
+                    return translateArithmeticOp<ArithmeticOp::Add>;
                 case ArithmeticOp::AddImmediate:
-                    return aluTranslation<ArithmeticOp::AddImmediate>;
+                    return translateArithmeticOp<ArithmeticOp::AddImmediate>;
                 case ArithmeticOp::Sub:
-                    return aluTranslation<ArithmeticOp::Sub>;
+                    return translateArithmeticOp<ArithmeticOp::Sub>;
                 case ArithmeticOp::SubImmediate:
-                    return aluTranslation<ArithmeticOp::SubImmediate>;
+                    return translateArithmeticOp<ArithmeticOp::SubImmediate>;
                 case ArithmeticOp::Mul:
-                    return aluTranslation<ArithmeticOp::Mul>;
+                    return translateArithmeticOp<ArithmeticOp::Mul>;
                 case ArithmeticOp::MulImmediate:
-                    return aluTranslation<ArithmeticOp::MulImmediate>;
+                    return translateArithmeticOp<ArithmeticOp::MulImmediate>;
                 case ArithmeticOp::ShiftLeft:
-                    return aluTranslation<ArithmeticOp::ShiftLeft>;
+                    return translateArithmeticOp<ArithmeticOp::ShiftLeft>;
                 case ArithmeticOp::ShiftLeftImmediate:
-                    return aluTranslation<ArithmeticOp::ShiftLeftImmediate>;
+                    return translateArithmeticOp<ArithmeticOp::ShiftLeftImmediate>;
                 case ArithmeticOp::ShiftRight:
-                    return aluTranslation<ArithmeticOp::ShiftRight>;
+                    return translateArithmeticOp<ArithmeticOp::ShiftRight>;
                 case ArithmeticOp::ShiftRightImmediate:
-                    return aluTranslation<ArithmeticOp::ShiftRightImmediate>;
+                    return translateArithmeticOp<ArithmeticOp::ShiftRightImmediate>;
                 case ArithmeticOp::BinaryAnd:
-                    return aluTranslation<ArithmeticOp::BinaryAnd>;
+                    return translateArithmeticOp<ArithmeticOp::BinaryAnd>;
                 case ArithmeticOp::BinaryOr:
-                    return aluTranslation<ArithmeticOp::BinaryOr>;
+                    return translateArithmeticOp<ArithmeticOp::BinaryOr>;
                 case ArithmeticOp::BinaryXor:
-                    return aluTranslation<ArithmeticOp::BinaryXor>;
+                    return translateArithmeticOp<ArithmeticOp::BinaryXor>;
                 case ArithmeticOp::BinaryNot:
-                    return aluTranslation<ArithmeticOp::BinaryNot>;
+                    return translateArithmeticOp<ArithmeticOp::BinaryNot>;
                 case ArithmeticOp::Div:
-                    return aluTranslation<ArithmeticOp::Div>;
+                    return translateArithmeticOp<ArithmeticOp::Div>;
                 case ArithmeticOp::DivImmediate:
-                    return aluTranslation<ArithmeticOp::DivImmediate>;
+                    return translateArithmeticOp<ArithmeticOp::DivImmediate>;
                 case ArithmeticOp::Rem:
-                    return aluTranslation<ArithmeticOp::Rem>;
+                    return translateArithmeticOp<ArithmeticOp::Rem>;
                 case ArithmeticOp::RemImmediate:
-                    return aluTranslation<ArithmeticOp::RemImmediate>;
+                    return translateArithmeticOp<ArithmeticOp::RemImmediate>;
                 default:
                      return syn::defaultErrorState<ALUOperation>;
             }
