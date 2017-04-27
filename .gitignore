@@ -23,3 +23,6 @@ maya
 
 *_defines.h
 *_defines.clp
+
+# make sure that we don't accidentially commit this
+.gitconfig
