@@ -24,13 +24,14 @@
  */
 
 
-extern "C" {
-	#include "clips.h"
-}
 #include "ClipsExtensions.h"
 #include "AssemblerExternalAddressRegistrar.h"
 #include "Cisc0CoreWrapper.h"
 #include "IrisCoreWrapper.h"
+
+extern "C" {
+	#include "clips.h"
+}
 
 int main(int argc, char* argv[]) {
 	void* mainEnv = CreateEnvironment();
