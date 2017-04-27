@@ -324,6 +324,16 @@
                              ALUOperation Divide)
           (to-execution-unit ArithmeticOps Rem ->
                              ALUOperation Remainder)
+          (to-execution-unit LogicalOps Not ->
+                             ALUOperation UnaryNot)
+          (to-execution-unit LogicalOps Or ->
+                             ALUOperation BinaryOr)
+          (to-execution-unit LogicalOps And ->
+                             ALUOperation BinaryAnd)
+          (to-execution-unit LogicalOps Xor ->
+                             ALUOperation BinaryXor)
+          (to-execution-unit LogicalOps Nand ->
+                             ALUOperation BinaryNand)
           (using CompareUnitOperation
                  syn::Comparator::StandardOperations)
           (to-execution-unit CompareStyle Equals ->

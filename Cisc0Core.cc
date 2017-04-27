@@ -231,23 +231,22 @@ namespace cisc0 {
             }
         }
     }
-    template<CompareStyle op>
-    constexpr auto translateCompare = toExecutionUnitValue<decltype(op), op>;
+
     constexpr CompareUnitOperation translate(CompareStyle cs) noexcept {
         using T = CompareStyle;
         switch(cs) {
             case T::Equals:
-                return translateCompare<T::Equals>;
+                return translateCompareStyle<T::Equals>;
             case T::NotEquals:
-                return translateCompare<T::NotEquals>;
+                return translateCompareStyle<T::NotEquals>;
             case T::LessThan:
-                return translateCompare<T::LessThan>;
+                return translateCompareStyle<T::LessThan>;
             case T::LessThanOrEqualTo:
-                return translateCompare<T::LessThanOrEqualTo>;
+                return translateCompareStyle<T::LessThanOrEqualTo>;
             case T::GreaterThan:
-                return translateCompare<T::GreaterThan>;
+                return translateCompareStyle<T::GreaterThan>;
             case T::GreaterThanOrEqualTo:
-                return translateCompare<T::GreaterThanOrEqualTo>;
+                return translateCompareStyle<T::GreaterThanOrEqualTo>;
             default:
                 return syn::defaultErrorState<CompareUnitOperation>;
         }
@@ -401,26 +400,18 @@ namespace cisc0 {
         dest = syn::ALU::performOperation<RegisterValue>(op, dest, src);
     }
 
-    template<> constexpr auto toExecutionUnitValue<LogicalOps, LogicalOps::Not> = ALUOperation::UnaryNot;
-    template<> constexpr auto toExecutionUnitValue<LogicalOps, LogicalOps::Or> = ALUOperation::BinaryOr;
-    template<> constexpr auto toExecutionUnitValue<LogicalOps, LogicalOps::And> = ALUOperation::BinaryAnd;
-    template<> constexpr auto toExecutionUnitValue<LogicalOps, LogicalOps::Xor> = ALUOperation::BinaryXor;
-    template<> constexpr auto toExecutionUnitValue<LogicalOps, LogicalOps::Nand> = ALUOperation::BinaryNand;
-    template<LogicalOps op>
-    constexpr auto translateLogical = toExecutionUnitValue<decltype(op), op>;
-
     constexpr ALUOperation translate(LogicalOps op) noexcept {
         switch(op) {
             case LogicalOps::Not:
-                return translateLogical<LogicalOps::Not>;
+                return translateLogicalOps<LogicalOps::Not>;
             case LogicalOps::Or:
-                return translateLogical<LogicalOps::Or>;
+                return translateLogicalOps<LogicalOps::Or>;
             case LogicalOps::And:
-                return translateLogical<LogicalOps::And>;
+                return translateLogicalOps<LogicalOps::And>;
             case LogicalOps::Xor:
-                return translateLogical<LogicalOps::Xor>;
+                return translateLogicalOps<LogicalOps::Xor>;
             case LogicalOps::Nand:
-                return translateLogical<LogicalOps::Nand>;
+                return translateLogicalOps<LogicalOps::Nand>;
             default:
                 return syn::defaultErrorState<ALUOperation>;
         }
