@@ -213,7 +213,10 @@
                  (str-cat ?size)
                  (format nil
                          "Too many %s entries defined!"
-                         ?name)))
+                         ?name))
+         (printout t
+                   "template<" ?name " op>" crlf
+                   "constexpr auto translate" ?name " = toExecutionUnitValue<decltype(op), op>;" crlf))
 
 (defrule MAIN::generate-to-exec-unit-specialization
          ?f <- (to-execution-unit ?enum

@@ -373,23 +373,20 @@ namespace cisc0 {
         auto source = (inst.getImmediateFlag<group>() ? static_cast<RegisterValue>(inst.getImmediate<group>()) : registerValue(inst.getShiftRegister<1>()));
         destination = syn::ALU::performOperation<RegisterValue>( inst.shouldShiftLeft() ? ALUOperation::ShiftLeft : ALUOperation::ShiftRight, destination, source);
     }
-    template<ArithmeticOps op>
-    constexpr auto translateArithmetic = toExecutionUnitValue<decltype(op), op>;
-
 
     constexpr ALUOperation translate(ArithmeticOps op) noexcept {
         using T = ArithmeticOps;
         switch(op) {
             case T::Add:
-                return translateArithmetic<T::Add>;
+                return translateArithmeticOps<T::Add>;
             case T::Sub:
-                return translateArithmetic<T::Sub>;
+                return translateArithmeticOps<T::Sub>;
             case T::Mul:
-                return translateArithmetic<T::Mul>;
+                return translateArithmeticOps<T::Mul>;
             case T::Div:
-                return translateArithmetic<T::Div>;
+                return translateArithmeticOps<T::Div>;
             case T::Rem:
-                return translateArithmetic<T::Rem>;
+                return translateArithmeticOps<T::Rem>;
             default:
                 return syn::defaultErrorState<ALUOperation>;
         }
