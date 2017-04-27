@@ -80,8 +80,15 @@
                    "#define " (upcase ?name) crlf
                    "#include \"Base.h\"" crlf))
 
-(defrule MAIN::generate-namespace-contents
+(defrule MAIN::generate-extra-includes
          (declare (salience ?*priority:right-after-first*))
+         ?f <- (include ?title)
+         =>
+         (retract ?f)
+         (printout t
+                   "#include \"" ?title "\"" crlf))
+(defrule MAIN::generate-namespace-contents
+         (declare (salience ?*priority:two-after-first*))
          (check-for-namespace)
          (namespace ?ns)
          =>
@@ -91,6 +98,16 @@
                    "template<typename T, T op> " crlf
                    "constexpr auto toExecutionUnitValue = syn::defaultErrorState<T>;" crlf))
 
+(defrule MAIN::generate-using-decls
+         (declare (salience ?*priority:two-after-first*))
+         (close-namespace)
+         ?f <- (using ?title
+                      $?equals)
+         =>
+         (retract ?f)
+         (assert (made-using ?title))
+         (printout t
+                   "using " ?title " = " (expand$ ?equals) ";" crlf))
 
 (defrule MAIN::generate-closing-namespace-contents
          (declare (salience ?*priority:last*))
@@ -179,6 +196,7 @@
                (max-size ?size)
                (children $?children))
          =>
+         (assert (constructed enum ?name))
          (printout t "enum class " ?name " : " ?ct " {" crlf)
          (progn$ (?c ?children)
                  (format t
@@ -196,3 +214,18 @@
                  (format nil
                          "Too many %s entries defined!"
                          ?name)))
+
+(defrule MAIN::generate-to-exec-unit-specialization
+         ?f <- (to-execution-unit ?enum
+                                  ?name
+                                  ->
+                                  ?other-type
+                                  ?other-name)
+         (made-using ?other-type)
+         (constructed enum ?enum)
+         =>
+         (retract ?f)
+         (printout t
+                   "template<> constexpr auto toExecutionUnitValue<"
+                   ?enum " , " ?enum " :: " ?name "> = "
+                   ?other-type " :: " ?other-name ";" crlf))

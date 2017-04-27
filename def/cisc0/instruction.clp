@@ -311,4 +311,32 @@
                           BitUnset)
                 (cast-to byte)
                 (max-size "8"))
+          (include "ExecutionUnits.h")
+          (using ALUOperation
+                 syn::ALU::StandardOperations)
+          (to-execution-unit ArithmeticOps Add ->
+                             ALUOperation Add)
+          (to-execution-unit ArithmeticOps Sub ->
+                             ALUOperation Subtract)
+          (to-execution-unit ArithmeticOps Mul ->
+                             ALUOperation Multiply)
+          (to-execution-unit ArithmeticOps Div ->
+                             ALUOperation Divide)
+          (to-execution-unit ArithmeticOps Rem ->
+                             ALUOperation Remainder)
+          (using CompareUnitOperation
+                 syn::Comparator::StandardOperations)
+          (to-execution-unit CompareStyle Equals ->
+                             CompareUnitOperation Eq)
+          (to-execution-unit CompareStyle NotEquals ->
+                             CompareUnitOperation Neq)
+          (to-execution-unit CompareStyle LessThan ->
+                             CompareUnitOperation LessThan)
+          (to-execution-unit CompareStyle LessThanOrEqualTo ->
+                             CompareUnitOperation LessThanOrEqualTo)
+          (to-execution-unit CompareStyle GreaterThan ->
+                             CompareUnitOperation GreaterThan)
+          (to-execution-unit CompareStyle GreaterThanOrEqualTo ->
+                             CompareUnitOperation GreaterThanOrEqualTo)
+
           )

@@ -231,16 +231,9 @@ namespace cisc0 {
             }
         }
     }
-    using CompareOperation = syn::Comparator::StandardOperations;
-    template<> constexpr auto toExecutionUnitValue<CompareStyle, CompareStyle::Equals> = CompareOperation::Eq;
-    template<> constexpr auto toExecutionUnitValue<CompareStyle, CompareStyle::NotEquals> = CompareOperation::Neq;
-    template<> constexpr auto toExecutionUnitValue<CompareStyle, CompareStyle::LessThan> = CompareOperation::LessThan;
-    template<> constexpr auto toExecutionUnitValue<CompareStyle, CompareStyle::LessThanOrEqualTo> = CompareOperation::LessThanOrEqualTo;
-    template<> constexpr auto toExecutionUnitValue<CompareStyle, CompareStyle::GreaterThan> = CompareOperation::GreaterThan;
-    template<> constexpr auto toExecutionUnitValue<CompareStyle, CompareStyle::GreaterThanOrEqualTo> = CompareOperation::GreaterThanOrEqualTo;
     template<CompareStyle op>
     constexpr auto translateCompare = toExecutionUnitValue<decltype(op), op>;
-    constexpr CompareOperation translate(CompareStyle cs) noexcept {
+    constexpr CompareUnitOperation translate(CompareStyle cs) noexcept {
         using T = CompareStyle;
         switch(cs) {
             case T::Equals:
@@ -256,7 +249,7 @@ namespace cisc0 {
             case T::GreaterThanOrEqualTo:
                 return translateCompare<T::GreaterThanOrEqualTo>;
             default:
-                return syn::defaultErrorState<CompareOperation>;
+                return syn::defaultErrorState<CompareUnitOperation>;
         }
     }
     void Core::compareOperation(DecodedInstruction&& inst) {
@@ -374,18 +367,12 @@ namespace cisc0 {
         }
     }
 
-    using ALUOperation = syn::ALU::StandardOperations;
     void Core::shiftOperation(DecodedInstruction&& inst) {
         static constexpr auto group = Operation::Shift;
         auto &destination = registerValue(inst.getShiftRegister<0>());
         auto source = (inst.getImmediateFlag<group>() ? static_cast<RegisterValue>(inst.getImmediate<group>()) : registerValue(inst.getShiftRegister<1>()));
         destination = syn::ALU::performOperation<RegisterValue>( inst.shouldShiftLeft() ? ALUOperation::ShiftLeft : ALUOperation::ShiftRight, destination, source);
     }
-    template<> constexpr auto toExecutionUnitValue<ArithmeticOps, ArithmeticOps::Add> = ALUOperation::Add;
-    template<> constexpr auto toExecutionUnitValue<ArithmeticOps, ArithmeticOps::Sub> = ALUOperation::Subtract;
-    template<> constexpr auto toExecutionUnitValue<ArithmeticOps, ArithmeticOps::Mul> = ALUOperation::Multiply;
-    template<> constexpr auto toExecutionUnitValue<ArithmeticOps, ArithmeticOps::Div> = ALUOperation::Divide;
-    template<> constexpr auto toExecutionUnitValue<ArithmeticOps, ArithmeticOps::Rem> = ALUOperation::Remainder;
     template<ArithmeticOps op>
     constexpr auto translateArithmetic = toExecutionUnitValue<decltype(op), op>;
 
