@@ -333,35 +333,33 @@ namespace cisc0 {
         } else if (rawType == MemoryOperation::Push) {
             if (inst.isIndirectOperation()) {
                 throw syn::Problem("Indirect bit not supported in push operations!");
-            } else {
-                // update the target stack to something different
-                auto pushToStack = registerValue(memoryRegister);
-                auto &stackPointer = getStackPointer();
-                // read backwards because the stack grows upward towards zero
-                if (useUpper) {
-                    pushWord(umask & decodeUpperHalf(pushToStack), stackPointer);
-                }
-                if (useLower) {
-                    pushWord(lmask & decodeLowerHalf(pushToStack), stackPointer);
-                }
+            }
+            // update the target stack to something different
+            auto pushToStack = registerValue(memoryRegister);
+            auto &stackPointer = getStackPointer();
+            // read backwards because the stack grows upward towards zero
+            if (useUpper) {
+                pushWord(umask & decodeUpperHalf(pushToStack), stackPointer);
+            }
+            if (useLower) {
+                pushWord(lmask & decodeLowerHalf(pushToStack), stackPointer);
             }
         } else if (rawType == MemoryOperation::Pop) {
             if (inst.isIndirectOperation()) {
                 throw syn::Problem("Indirect bit not supported in pop operations!");
-            } else {
-                auto &stackPointer = getStackPointer();
-                if (useLower) {
-                    lower = lmask & popWord(stackPointer);
-                }
-                if (useUpper) {
-                    upper = umask & popWord(stackPointer);
-                }
-                registerValue(memoryRegister) = encodeRegisterValue(upper, lower);
-                // can't think of a case where we should
-                // restore the instruction pointer and then
-                // immediate advance so just don't do it
-                advanceIp = memoryRegister != ArchitectureConstants::InstructionPointer;
             }
+            auto &stackPointer = getStackPointer();
+            if (useLower) {
+                lower = lmask & popWord(stackPointer);
+            }
+            if (useUpper) {
+                upper = umask & popWord(stackPointer);
+            }
+            registerValue(memoryRegister) = encodeRegisterValue(upper, lower);
+            // can't think of a case where we should
+            // restore the instruction pointer and then
+            // immediate advance so just don't do it
+            advanceIp = memoryRegister != ArchitectureConstants::InstructionPointer;
         } else {
             throw syn::Problem("Illegal memory operation!");
         }
@@ -370,10 +368,12 @@ namespace cisc0 {
 
     void Core::complexOperation(DecodedInstruction&& inst) {
         auto type = inst.getSubtype<Operation::Complex>();
-        if (type == ComplexSubTypes::Encoding) {
-            encodingOperation(std::move(inst));
-        } else {
-            throw syn::Problem("Undefined complex subtype!");
+        switch(type) {
+            case ComplexSubTypes::Encoding:
+                encodingOperation(std::move(inst));
+                break;
+            default:
+                throw syn::Problem("Undefined complex subtype!");
         }
     }
 
