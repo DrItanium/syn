@@ -79,6 +79,7 @@
                    "#ifndef " (upcase ?name) crlf
                    "#define " (upcase ?name) crlf
                    "#include \"Base.h\"" crlf))
+
 (defrule MAIN::generate-namespace-contents
          (declare (salience ?*priority:right-after-first*))
          (check-for-namespace)
@@ -86,7 +87,9 @@
          =>
          (assert (close-namespace))
          (printout t
-                   "namespace " ?ns " { " crlf))
+                   "namespace " ?ns " { " crlf
+                   "template<typename T, T op> " crlf
+                   "constexpr auto toExecutionUnitValue = syn::defaultErrorState<T>;" crlf))
 
 
 (defrule MAIN::generate-closing-namespace-contents

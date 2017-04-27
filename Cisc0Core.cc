@@ -33,9 +33,6 @@
 #include "Cisc0ClipsExtensions.h"
 
 namespace cisc0 {
-    template<typename T, T v>
-    constexpr auto toExecutionUnitValue = syn::defaultErrorState<T>;
-
 	constexpr Word lowerMask(byte bitmask) noexcept {
 		return syn::encodeUint16LE(syn::expandBit(syn::getBit<byte, 0>(bitmask)),
 									syn::expandBit(syn::getBit<byte, 1>(bitmask)));

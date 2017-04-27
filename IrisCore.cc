@@ -98,8 +98,6 @@ namespace iris {
         }
 		return execute;
 	}
-    template<typename T, T v>
-    constexpr auto toExecutionUnitValue = syn::defaultErrorState<T>;
 
     using ALUOperation = syn::ALU::StandardOperations;
     template<> constexpr auto toExecutionUnitValue<ArithmeticOp, ArithmeticOp::Add> = ALUOperation::Add;
