@@ -80,6 +80,7 @@ namespace syn {
 		CLIPS_errorMessageGeneric(context, ret, "provided number is larger than 64-bits!");
 	}
 
+	template<bool zeroPositionOne = false>
 	void CLIPS_translateNumberBase(UDFContext* context, CLIPSValue* ret, const std::string& prefix, int base, const std::string& badPrefix) noexcept {
         constexpr unsigned long long maximumIntegerValue = 0xFFFFFFFFFFFFFFFF;
 		CLIPSValue value;
@@ -88,6 +89,9 @@ namespace syn {
 		} else {
 			std::string str(CVToString(&value));
 			if (boost::starts_with(str, prefix)) {
+				if (zeroPositionOne) {
+					str.at(1) = '0';
+				}
 				auto tmp = strtoull(str.c_str(), nullptr, base);
 				if (tmp == ULLONG_MAX && errno == ERANGE) {
 					CLIPS_errorOverflowedNumber(context, ret);
@@ -104,7 +108,7 @@ namespace syn {
 		}
 	}
 	void CLIPS_translateBinary(UDFContext* context, CLIPSValue* ret) noexcept {
-		CLIPS_translateNumberBase(context, ret, "0b", 2, "Binary must start with 0b");
+		CLIPS_translateNumberBase<true>(context, ret, "0b", 2, "Binary must start with 0b");
 	}
 
 	void CLIPS_translateHex(UDFContext* context, CLIPSValue* ret) {
