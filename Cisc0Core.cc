@@ -346,12 +346,12 @@ namespace cisc0 {
                 throw syn::Problem("Undefined complex subtype!");
         }
     }
-
     void Core::shiftOperation(DecodedInstruction&& inst) {
         static constexpr auto group = Operation::Shift;
         auto &destination = registerValue(inst.getShiftRegister<0>());
         auto source = (inst.getImmediateFlag<group>() ? static_cast<RegisterValue>(inst.getImmediate<group>()) : registerValue(inst.getShiftRegister<1>()));
-        destination = syn::ALU::performOperation<RegisterValue>( inst.shouldShiftLeft() ? ALUOperation::ShiftLeft : ALUOperation::ShiftRight, destination, source);
+		auto direction = inst.shouldShiftLeft() ? ALUOperation::ShiftLeft : ALUOperation::ShiftRight;
+        destination = syn::ALU::performOperation<RegisterValue>(direction, destination, source);
     }
 
     void Core::arithmeticOperation(DecodedInstruction&& inst) {
