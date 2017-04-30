@@ -29,12 +29,39 @@
                    ?ALL)
            (import lower
                    ?ALL))
-(deffunction MAIN::parse-file
-             (?path)
-             (assert (parse-request (path ?path)))
-             (focus lisp-parse
-                    lower)
-             (run)
-             TRUE)
+(defgeneric MAIN::translate-file)
+(defmethod MAIN::translate-file
+  ((?path LEXEME)
+   (?router SYMBOL))
+  (assert (parse-request (path ?path))
+          (output-router (name ?router)))
+  (focus lisp-parse
+         lower)
+  (run)
+  TRUE)
+
+(defmethod MAIN::translate-file
+  ((?path LEXEME))
+  (translate-file ?path
+                  t))
 
 
+(defgeneric MAIN::open-file-for-writing
+            "Open a new file for writing")
+
+(defmethod MAIN::open-file-for-writing
+ ((?path LEXEME)
+  (?router-name SYMBOL))
+ (if (open ?path 
+           ?router-name
+           "w") then
+     ?router-name
+     else
+     (printout werror 
+      "Could not open " ?path " for writing!" crlf)
+     FALSE))
+
+(defmethod MAIN::open-file-for-writing
+  ((?path LEXEME))
+  (open-file-for-writing ?path
+                         (gensym*)))

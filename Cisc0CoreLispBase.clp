@@ -354,9 +354,11 @@
                  (name ?file))
          ?f <- (object (is-a section)
                        (parent ?file))
+         (output-router (name ?out))
          =>
          (progn$ (?l (send ?f resolve))
-                 (printout t ?l crlf)))
+                 (printout ?out 
+                           ?l crlf)))
 
 (defrule lower::convert-operations-fact-to-mass-operation-facts
          "Construct many operation facts from a single operations fact!"

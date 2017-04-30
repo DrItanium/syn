@@ -31,3 +31,7 @@
                    ?ALL)
            (export ?ALL))
 
+(deftemplate lower::output-router
+             (slot name
+                   (type SYMBOL)
+                   (default ?NONE)))
