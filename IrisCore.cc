@@ -246,29 +246,20 @@ namespace iris {
                 return syn::defaultErrorState<syn::Comparator::StandardOperations>;
         }
     }
-    using CRUnitOp = syn::Comparator::BooleanOperations;
-    template<> constexpr auto toExecutionUnitValue<ConditionRegisterOp, ConditionRegisterOp::CRAnd> = CRUnitOp::BinaryAnd;
-    template<> constexpr auto toExecutionUnitValue<ConditionRegisterOp, ConditionRegisterOp::CROr> = CRUnitOp::BinaryOr;
-    template<> constexpr auto toExecutionUnitValue<ConditionRegisterOp, ConditionRegisterOp::CRNand> = CRUnitOp::BinaryNand;
-    template<> constexpr auto toExecutionUnitValue<ConditionRegisterOp, ConditionRegisterOp::CRNor> = CRUnitOp::BinaryNor;
-    template<> constexpr auto toExecutionUnitValue<ConditionRegisterOp, ConditionRegisterOp::CRXor> = CRUnitOp::BinaryXor;
-    template<> constexpr auto toExecutionUnitValue<ConditionRegisterOp, ConditionRegisterOp::CRNot> = CRUnitOp::UnaryNot;
-    template<ConditionRegisterOp op>
-    constexpr auto convertTranslationUnitOp = toExecutionUnitValue<decltype(op), op>;
     constexpr CRUnitOp translate(ConditionRegisterOp op) noexcept {
         switch(op) {
             case ConditionRegisterOp::CRAnd:
-                return convertTranslationUnitOp<ConditionRegisterOp::CRAnd>;
+                return translateConditionRegisterOp<ConditionRegisterOp::CRAnd>;
             case ConditionRegisterOp::CROr:
-                return convertTranslationUnitOp<ConditionRegisterOp::CROr>;
+                return translateConditionRegisterOp<ConditionRegisterOp::CROr>;
             case ConditionRegisterOp::CRNand:
-                return convertTranslationUnitOp<ConditionRegisterOp::CRNand>;
+                return translateConditionRegisterOp<ConditionRegisterOp::CRNand>;
             case ConditionRegisterOp::CRNor:
-                return convertTranslationUnitOp<ConditionRegisterOp::CRNor>;
+                return translateConditionRegisterOp<ConditionRegisterOp::CRNor>;
             case ConditionRegisterOp::CRXor:
-                return convertTranslationUnitOp<ConditionRegisterOp::CRXor>;
+                return translateConditionRegisterOp<ConditionRegisterOp::CRXor>;
             case ConditionRegisterOp::CRNot:
-                return convertTranslationUnitOp<ConditionRegisterOp::CRNot>;
+                return translateConditionRegisterOp<ConditionRegisterOp::CRNot>;
             default:
                 return syn::defaultErrorState<CRUnitOp>;
         }
