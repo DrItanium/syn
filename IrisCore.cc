@@ -216,46 +216,32 @@ namespace iris {
                 return false;
         }
     }
-    template<> constexpr auto toExecutionUnitValue<CompareOp, CompareOp::LessThan> = syn::Comparator::StandardOperations::LessThan;
-    template<> constexpr auto toExecutionUnitValue<CompareOp, CompareOp::LessThanImmediate> = syn::Comparator::StandardOperations::LessThan;
-    template<> constexpr auto toExecutionUnitValue<CompareOp, CompareOp::LessThanOrEqualTo> = syn::Comparator::StandardOperations::LessThanOrEqualTo;
-    template<> constexpr auto toExecutionUnitValue<CompareOp, CompareOp::LessThanOrEqualToImmediate> = syn::Comparator::StandardOperations::LessThanOrEqualTo;
-    template<> constexpr auto toExecutionUnitValue<CompareOp, CompareOp::GreaterThan> = syn::Comparator::StandardOperations::GreaterThan;
-    template<> constexpr auto toExecutionUnitValue<CompareOp, CompareOp::GreaterThanImmediate> = syn::Comparator::StandardOperations::GreaterThan;
-    template<> constexpr auto toExecutionUnitValue<CompareOp, CompareOp::GreaterThanOrEqualTo> = syn::Comparator::StandardOperations::GreaterThanOrEqualTo;
-    template<> constexpr auto toExecutionUnitValue<CompareOp, CompareOp::GreaterThanOrEqualToImmediate> = syn::Comparator::StandardOperations::GreaterThanOrEqualTo;
-    template<> constexpr auto toExecutionUnitValue<CompareOp, CompareOp::Eq> = syn::Comparator::StandardOperations::Eq;
-    template<> constexpr auto toExecutionUnitValue<CompareOp, CompareOp::EqImmediate> = syn::Comparator::StandardOperations::Eq;
-    template<> constexpr auto toExecutionUnitValue<CompareOp, CompareOp::Neq> = syn::Comparator::StandardOperations::Neq;
-    template<> constexpr auto toExecutionUnitValue<CompareOp, CompareOp::NeqImmediate> = syn::Comparator::StandardOperations::Neq;
-    template<CompareOp op>
-    constexpr auto compareOpConversion = toExecutionUnitValue<decltype(op), op>;
     constexpr syn::Comparator::StandardOperations translate(CompareOp op) noexcept {
         switch(op) {
             case CompareOp::LessThan:
-                return compareOpConversion<CompareOp::LessThan>;
+                return translateCompareOp<CompareOp::LessThan>;
             case CompareOp::LessThanImmediate:
-                return compareOpConversion<CompareOp::LessThanImmediate>;
+                return translateCompareOp<CompareOp::LessThanImmediate>;
             case CompareOp::LessThanOrEqualTo:
-                return compareOpConversion<CompareOp::LessThanOrEqualTo>;
+                return translateCompareOp<CompareOp::LessThanOrEqualTo>;
             case CompareOp::LessThanOrEqualToImmediate:
-                return compareOpConversion<CompareOp::LessThanOrEqualToImmediate>;
+                return translateCompareOp<CompareOp::LessThanOrEqualToImmediate>;
             case CompareOp::GreaterThan:
-                return compareOpConversion<CompareOp::GreaterThan>;
+                return translateCompareOp<CompareOp::GreaterThan>;
             case CompareOp::GreaterThanImmediate:
-                return compareOpConversion<CompareOp::GreaterThanImmediate>;
+                return translateCompareOp<CompareOp::GreaterThanImmediate>;
             case CompareOp::GreaterThanOrEqualTo:
-                return compareOpConversion<CompareOp::GreaterThanOrEqualTo>;
+                return translateCompareOp<CompareOp::GreaterThanOrEqualTo>;
             case CompareOp::GreaterThanOrEqualToImmediate:
-                return compareOpConversion<CompareOp::GreaterThanOrEqualToImmediate>;
+                return translateCompareOp<CompareOp::GreaterThanOrEqualToImmediate>;
             case CompareOp::Eq:
-                return compareOpConversion<CompareOp::Eq>;
+                return translateCompareOp<CompareOp::Eq>;
             case CompareOp::EqImmediate:
-                return compareOpConversion<CompareOp::EqImmediate>;
+                return translateCompareOp<CompareOp::EqImmediate>;
             case CompareOp::Neq:
-                return compareOpConversion<CompareOp::Neq>;
+                return translateCompareOp<CompareOp::Neq>;
             case CompareOp::NeqImmediate:
-                return compareOpConversion<CompareOp::NeqImmediate>;
+                return translateCompareOp<CompareOp::NeqImmediate>;
             default:
                 return syn::defaultErrorState<syn::Comparator::StandardOperations>;
         }

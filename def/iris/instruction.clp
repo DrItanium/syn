@@ -226,6 +226,14 @@
          (assert (to-execution-unit ArithmeticOp ?arith ->
                                     ALUOperation ?alu)))
 
+(defrule MAIN::perform-special-conversion:compare->compareop
+         (declare (salience ?*priority:first*))
+         ?f <- (compare->compareop ?cop ?comparator)
+         =>
+         (retract ?f)
+         (assert (to-execution-unit CompareOp ?cop ->
+                                    ComparatorOp ?comparator)))
+
 (deffacts MAIN::execution-unit-conversion-routines
           (include "ExecutionUnits.h")
           (using ALUOperation
@@ -247,4 +255,30 @@
           (arithmetic->alu BinaryNot UnaryNot)
           (arithmetic->alu BinaryOr BinaryOr)
           (arithmetic->alu BinaryAnd BinaryAnd)
-          (arithmetic->alu BinaryXor BinaryXor))
+          (arithmetic->alu BinaryXor BinaryXor)
+    (using ComparatorOp
+           syn::Comparator::StandardOperations)
+    (compare->compareop LessThan
+                        LessThan)
+    (compare->compareop LessThanImmediate
+                        LessThan)
+    (compare->compareop LessThanOrEqualTo
+                        LessThanOrEqualTo)
+    (compare->compareop LessThanOrEqualToImmediate
+                        LessThanOrEqualTo)
+    (compare->compareop GreaterThan
+                        GreaterThan)
+    (compare->compareop GreaterThanImmediate
+                        GreaterThan)
+    (compare->compareop GreaterThanOrEqualTo
+                        GreaterThanOrEqualTo)
+    (compare->compareop GreaterThanOrEqualToImmediate
+                        GreaterThanOrEqualTo)
+    (compare->compareop Eq
+                        Eq)
+    (compare->compareop EqImmediate
+                        Eq)
+    (compare->compareop Neq
+                        Neq)
+    (compare->compareop NeqImmediate
+                        Neq))
