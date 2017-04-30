@@ -188,6 +188,13 @@
              (multislot children
                         (default ?NONE)))
 
+(deftemplate translation-function-builder
+             (slot target-enum
+                   (type LEXEME)
+                   (default ?NONE))
+             (slot output-type
+                   (type LEXEME))
+             (multislot entries))
 
 (defrule MAIN::generate-enum:c++
          (declare (salience 1))
@@ -196,7 +203,8 @@
                (max-size ?size)
                (children $?children))
          =>
-         (assert (constructed enum ?name))
+         (assert (constructed enum ?name)
+                 (translation-function-builder (target-enum ?name)))
          (printout t "enum class " ?name " : " ?ct " {" crlf)
          (progn$ (?c ?children)
                  (format t
@@ -226,9 +234,40 @@
                                   ?other-name)
          (made-using ?other-type)
          (constructed enum ?enum)
+         ?f2 <- (translation-function-builder (target-enum ?enum)
+                                              (entries $?e))
          =>
          (retract ?f)
+         (modify ?f2 
+                 (output-type ?other-type)
+                 (entries $?e ?name))
          (printout t
                    "template<> constexpr auto toExecutionUnitValue<"
                    ?enum " , " ?enum " :: " ?name "> = "
                    ?other-type " :: " ?other-name ";" crlf))
+
+(defrule MAIN::generate-translation-function-has-no-elements
+         (declare (salience -1))
+         ?f <- (translation-function-builder (entries))
+         =>
+         (retract ?f))
+
+(defrule MAIN::generate-translation-function
+         (declare (salience -2))
+         ?f <- (translation-function-builder (target-enum ?name)
+                                             (output-type ?output)
+                                             (entries $?entries))
+         =>
+         (retract ?f)
+         (printout t
+                   "constexpr " ?output " translate(" ?name " op) noexcept {" crlf
+                   "switch(op) {" crlf)
+         (progn$ (?e $?entries)
+                 (printout t "case " ?name " :: " ?e ": return translate" ?name "<"?name " :: " ?e ">;" crlf))
+         (printout t
+                   "default: return syn::defaultErrorState<" ?output ">;" crlf
+                   "}" crlf
+                   "}" crlf))
+
+
+

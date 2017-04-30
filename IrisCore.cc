@@ -99,48 +99,6 @@ namespace iris {
 		return execute;
 	}
 
-    constexpr ALUOperation translate(ArithmeticOp op) noexcept {
-            switch(op) {
-                case ArithmeticOp::Add:
-                    return translateArithmeticOp<ArithmeticOp::Add>;
-                case ArithmeticOp::AddImmediate:
-                    return translateArithmeticOp<ArithmeticOp::AddImmediate>;
-                case ArithmeticOp::Sub:
-                    return translateArithmeticOp<ArithmeticOp::Sub>;
-                case ArithmeticOp::SubImmediate:
-                    return translateArithmeticOp<ArithmeticOp::SubImmediate>;
-                case ArithmeticOp::Mul:
-                    return translateArithmeticOp<ArithmeticOp::Mul>;
-                case ArithmeticOp::MulImmediate:
-                    return translateArithmeticOp<ArithmeticOp::MulImmediate>;
-                case ArithmeticOp::ShiftLeft:
-                    return translateArithmeticOp<ArithmeticOp::ShiftLeft>;
-                case ArithmeticOp::ShiftLeftImmediate:
-                    return translateArithmeticOp<ArithmeticOp::ShiftLeftImmediate>;
-                case ArithmeticOp::ShiftRight:
-                    return translateArithmeticOp<ArithmeticOp::ShiftRight>;
-                case ArithmeticOp::ShiftRightImmediate:
-                    return translateArithmeticOp<ArithmeticOp::ShiftRightImmediate>;
-                case ArithmeticOp::BinaryAnd:
-                    return translateArithmeticOp<ArithmeticOp::BinaryAnd>;
-                case ArithmeticOp::BinaryOr:
-                    return translateArithmeticOp<ArithmeticOp::BinaryOr>;
-                case ArithmeticOp::BinaryXor:
-                    return translateArithmeticOp<ArithmeticOp::BinaryXor>;
-                case ArithmeticOp::BinaryNot:
-                    return translateArithmeticOp<ArithmeticOp::BinaryNot>;
-                case ArithmeticOp::Div:
-                    return translateArithmeticOp<ArithmeticOp::Div>;
-                case ArithmeticOp::DivImmediate:
-                    return translateArithmeticOp<ArithmeticOp::DivImmediate>;
-                case ArithmeticOp::Rem:
-                    return translateArithmeticOp<ArithmeticOp::Rem>;
-                case ArithmeticOp::RemImmediate:
-                    return translateArithmeticOp<ArithmeticOp::RemImmediate>;
-                default:
-                     return syn::defaultErrorState<ALUOperation>;
-            }
-    }
     constexpr bool isNormalBranchInstruction(JumpOp op) noexcept {
             switch(op) {
                 case JumpOp::BranchUnconditionalImmediate:
@@ -214,54 +172,6 @@ namespace iris {
                 return true;
             default:
                 return false;
-        }
-    }
-    constexpr syn::Comparator::StandardOperations translate(CompareOp op) noexcept {
-        switch(op) {
-            case CompareOp::LessThan:
-                return translateCompareOp<CompareOp::LessThan>;
-            case CompareOp::LessThanImmediate:
-                return translateCompareOp<CompareOp::LessThanImmediate>;
-            case CompareOp::LessThanOrEqualTo:
-                return translateCompareOp<CompareOp::LessThanOrEqualTo>;
-            case CompareOp::LessThanOrEqualToImmediate:
-                return translateCompareOp<CompareOp::LessThanOrEqualToImmediate>;
-            case CompareOp::GreaterThan:
-                return translateCompareOp<CompareOp::GreaterThan>;
-            case CompareOp::GreaterThanImmediate:
-                return translateCompareOp<CompareOp::GreaterThanImmediate>;
-            case CompareOp::GreaterThanOrEqualTo:
-                return translateCompareOp<CompareOp::GreaterThanOrEqualTo>;
-            case CompareOp::GreaterThanOrEqualToImmediate:
-                return translateCompareOp<CompareOp::GreaterThanOrEqualToImmediate>;
-            case CompareOp::Eq:
-                return translateCompareOp<CompareOp::Eq>;
-            case CompareOp::EqImmediate:
-                return translateCompareOp<CompareOp::EqImmediate>;
-            case CompareOp::Neq:
-                return translateCompareOp<CompareOp::Neq>;
-            case CompareOp::NeqImmediate:
-                return translateCompareOp<CompareOp::NeqImmediate>;
-            default:
-                return syn::defaultErrorState<syn::Comparator::StandardOperations>;
-        }
-    }
-    constexpr CRUnitOp translate(ConditionRegisterOp op) noexcept {
-        switch(op) {
-            case ConditionRegisterOp::CRAnd:
-                return translateConditionRegisterOp<ConditionRegisterOp::CRAnd>;
-            case ConditionRegisterOp::CROr:
-                return translateConditionRegisterOp<ConditionRegisterOp::CROr>;
-            case ConditionRegisterOp::CRNand:
-                return translateConditionRegisterOp<ConditionRegisterOp::CRNand>;
-            case ConditionRegisterOp::CRNor:
-                return translateConditionRegisterOp<ConditionRegisterOp::CRNor>;
-            case ConditionRegisterOp::CRXor:
-                return translateConditionRegisterOp<ConditionRegisterOp::CRXor>;
-            case ConditionRegisterOp::CRNot:
-                return translateConditionRegisterOp<ConditionRegisterOp::CRNot>;
-            default:
-                return syn::defaultErrorState<CRUnitOp>;
         }
     }
     template<bool invokeMin>

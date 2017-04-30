@@ -232,25 +232,6 @@ namespace cisc0 {
         }
     }
 
-    constexpr CompareUnitOperation translate(CompareStyle cs) noexcept {
-        using T = CompareStyle;
-        switch(cs) {
-            case T::Equals:
-                return translateCompareStyle<T::Equals>;
-            case T::NotEquals:
-                return translateCompareStyle<T::NotEquals>;
-            case T::LessThan:
-                return translateCompareStyle<T::LessThan>;
-            case T::LessThanOrEqualTo:
-                return translateCompareStyle<T::LessThanOrEqualTo>;
-            case T::GreaterThan:
-                return translateCompareStyle<T::GreaterThan>;
-            case T::GreaterThanOrEqualTo:
-                return translateCompareStyle<T::GreaterThanOrEqualTo>;
-            default:
-                return syn::defaultErrorState<CompareUnitOperation>;
-        }
-    }
     void Core::compareOperation(DecodedInstruction&& inst) {
         static constexpr auto group = Operation::Compare;
         auto compareResult = translate(inst.getSubtype<group>());
@@ -373,23 +354,6 @@ namespace cisc0 {
         destination = syn::ALU::performOperation<RegisterValue>( inst.shouldShiftLeft() ? ALUOperation::ShiftLeft : ALUOperation::ShiftRight, destination, source);
     }
 
-    constexpr ALUOperation translate(ArithmeticOps op) noexcept {
-        using T = ArithmeticOps;
-        switch(op) {
-            case T::Add:
-                return translateArithmeticOps<T::Add>;
-            case T::Sub:
-                return translateArithmeticOps<T::Sub>;
-            case T::Mul:
-                return translateArithmeticOps<T::Mul>;
-            case T::Div:
-                return translateArithmeticOps<T::Div>;
-            case T::Rem:
-                return translateArithmeticOps<T::Rem>;
-            default:
-                return syn::defaultErrorState<ALUOperation>;
-        }
-    }
     void Core::arithmeticOperation(DecodedInstruction&& inst) {
         static constexpr auto group = Operation::Arithmetic;
         auto result = translate(inst.getSubtype<group>());
@@ -400,22 +364,6 @@ namespace cisc0 {
         dest = syn::ALU::performOperation<RegisterValue>(op, dest, src);
     }
 
-    constexpr ALUOperation translate(LogicalOps op) noexcept {
-        switch(op) {
-            case LogicalOps::Not:
-                return translateLogicalOps<LogicalOps::Not>;
-            case LogicalOps::Or:
-                return translateLogicalOps<LogicalOps::Or>;
-            case LogicalOps::And:
-                return translateLogicalOps<LogicalOps::And>;
-            case LogicalOps::Xor:
-                return translateLogicalOps<LogicalOps::Xor>;
-            case LogicalOps::Nand:
-                return translateLogicalOps<LogicalOps::Nand>;
-            default:
-                return syn::defaultErrorState<ALUOperation>;
-        }
-    }
     void Core::logicalOperation(DecodedInstruction&& inst) {
         static constexpr auto group = Operation::Logical;
         auto result = translate(inst.getSubtype<group>());
