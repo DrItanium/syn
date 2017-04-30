@@ -235,7 +235,7 @@ namespace cisc0 {
                     case Operation::Arithmetic:
                         return static_cast<CurrentType>(decodeArithmeticFlagType(_rawValue));
                     case Operation::Memory:
-                        return static_cast<CurrentType>(decodeCompareType(_rawValue));
+                        return static_cast<CurrentType>(decodeMemoryFlagType(_rawValue));
                     case Operation::Complex:
                         return static_cast<CurrentType>(decodeComplexSubClass(_rawValue));
                     case Operation::Logical:
