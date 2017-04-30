@@ -21,13 +21,17 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (batch* lib/cortex.clp)
+(defmodule MAIN
+           (import cortex
+                   ?ALL)
+           (export ?ALL))
 (set-current-module MAIN)
 (batch* SynCores.clp)
 (batch* SynAssemblers.clp)
 
 (definstances MAIN::core-init
- (c0 of cisc0-core
-  (init-arguments)))
+              (c0 of cisc0-core
+                  (init-arguments)))
 
 
 (printout t 

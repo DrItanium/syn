@@ -98,7 +98,7 @@ class CLIPSIOController : public AddressableIODevice<D, A> {
 			if (result.type != INTEGER) {
 				throw syn::Problem("Resultant type from read call is not an integer!");
             }
-            return static_cast<D>(CVToInteger(&result));
+            return static_cast<D>(EnvDOToLong(_env, result));
 		}
 		virtual void write(A addr, D value) override {
 			std::stringstream args;

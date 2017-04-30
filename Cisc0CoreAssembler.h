@@ -489,7 +489,13 @@ namespace cisc0 {
 
 
 #define DefEncodingSubType(title, str) \
-	DefSubTypeWithSymbol(title, str, EncodingOperation)
+	DefSymbol(title, str); \
+	struct SubGroupEncodingOperation ## title : syn::Indirection<Symbol ## title> { }; \
+	DefAction(SubGroupEncodingOperation ## title) { \
+		DefApplyInstruction { \
+			state.bitmask = static_cast < decltype(state.bitmask) > ( cisc0 :: EncodingOperation :: title ) ; \
+		} \
+	}
 	DefEncodingSubType(BitSet, bitset);
 	DefEncodingSubType(BitUnset, bitunset);
 	DefEncodingSubType(Encode, encode);

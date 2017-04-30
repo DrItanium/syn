@@ -77,9 +77,9 @@
              ()
              (run)
              (if (not ?*result*) then
-                 (halt)
-                 else
-                 ?*result*))
+               (halt)
+               else
+               ?*result*))
 
 (deffunction MAIN::read-from-io-address
              (?address)
