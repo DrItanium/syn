@@ -38,13 +38,11 @@
                              Shutdown)))
          (org 0xFE010000
               (label Shutdown
-                     (set32 arg0
+                     (set32 addr
                             terminate-address)
-                     (set32 arg1
+                     (set32 value
                             0xD0CEDB00)
-                     (branch unconditional
-                             immediate
-                             WriteWord))
+                     (direct-store16l))
               (label NextRandom0
                      (set32 arg0
                             rng0)
@@ -82,21 +80,23 @@
                      (branch unconditional
                              immediate
                              WriteWord))
-              (label WriteChar
-                     ; arg0 - value to write
-                     (set32 arg1
-                            stdin-out)
-                     (swap arg1
-                           arg0)
-                     (defunc-basic WriteWord
-                                   ; arg0 - address to write to
-                                   ; arg1 - value to write
-                                   (use-registers (addr value)
-                                                  (copy addr
-                                                        arg0)
-                                                  (copy value
-                                                        arg1)
-                                                  (direct-store16l))))
+              (defunc-basic WriteChar
+                            ; arg0 - value to write
+                            (use-registers (addr value)
+                                           (set32 addr
+                                                  stdin-out)
+                                           (copy value
+                                                 arg0)
+                                           (direct-store16l)))
+              (defunc-basic WriteWord
+                            ; arg0 - address to write to
+                            ; arg1 - value to write
+                            (use-registers (addr value)
+                                           (copy addr
+                                                 arg0)
+                                           (copy value
+                                                 arg1)
+                                           (direct-store16l)))
               (defunc-basic ReadDword
                             ; arg0 - address to read from (will read two addresses)
                             (use-registers (addr value)
@@ -156,7 +156,7 @@
                                                   (not cond)
                                                   (branch conditional
                                                           immediate
-                                                          ReadLineLoopBody))
+                                                          PrintLineLoopBody))
                                            (set16l arg0
                                                    0x0a)
                                            (branch call
@@ -250,11 +250,12 @@
                             (string "Done"))
                      (label Message4
                             (string "Shutting Down!")))
-              (label ROM_Messages
-                     (dword Message0)
-                     (dword Message1)
-                     (dword Message2)
-                     (dword Message3)
-                     (dword Message4)))
-         ; data tables and such
-         )
+                     (label ROM_Messages
+                            (dword Message0)
+                            (dword Message1)
+                            (dword Message2)
+                            (dword Message3)
+                            (dword Message4)
+                            ))
+              ; data tables and such
+              )
