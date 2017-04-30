@@ -31,9 +31,6 @@
 #include "IrisClipsExtensions.h"
 
 namespace iris {
-	constexpr dword encodeDword(byte a, byte b, byte c, byte d) noexcept {
-		return syn::encodeUint32LE(a, b, c, d);
-	}
 	constexpr word encodeWord(byte a, byte b) noexcept {
 		return syn::encodeUint16LE(a, b);
 	}
