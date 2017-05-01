@@ -38,3 +38,40 @@
           "Welcome to the cisc0 repl!" crlf
           "At this point the interactive prompt has loaded the minimum set of things necessary for execution" crlf
           "Please enter (reset) to construct a cisc0-core to start playing with!" crlf)
+
+
+(deffunction MAIN::step
+             (?target)
+             (send ?target cycle))
+
+(deffunction MAIN::inspect-register
+             (?target ?index)
+             (send ?target 
+                   get-register 
+                   ?index))
+(deffunction MAIN::get-ip
+             (?target)
+             (inspect-register ?target
+                               15))
+
+(deffunction MAIN::print-registers
+             "Print out all of the cisc0 registers"
+             (?target)
+             (printout t 
+                       "Registers" crlf
+                       "-----------------------------------------------------------" crlf)
+             (loop-for-count (?i 0 15) do
+                             (printout t tab "r" ?i " : " (int->hex (inspect-register ?target
+                                                                                      ?i)) crlf))
+             (printout t 
+                       "-----------------------------------------------------------" crlf))
+
+
+(deffunction MAIN::parse-and-install-asm
+             (?target ?file)
+             (send ?target 
+                   install-values 
+                   (parse-file cisc0-assembler 
+                               ?file)))
+
+
