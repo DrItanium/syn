@@ -10,15 +10,31 @@
                      ; use /dev/ram3 as the ram disk at boot up
                      (set32 sp
                             ram3-base-address)
+                     (set32 r0
+                            0x99999999)
+                     ; initialize the registers to make sure that there isn't garbage in them
+                     (copy r1 r0)
+                     (copy r2 r1)
+                     (copy r3 r2)
+                     (copy r4 r3)
+                     (copy r5 r4)
+                     (copy r6 r5)
+                     (copy r7 r6)
+                     (copy r8 r7)
+                     (copy r9 r8)
+                     (copy r10 r9)
+                     (copy r11 r10)
+                     (copy r12 r11)
+                     (copy r13 r12)
                      (set32 addr
                             ROM_Messages)
-                     (indirect-load32 0x00)
+                     (direct-load32 0x00)
                      (copy arg0
                            value)
                      (branch call
                              immediate
                              PrintLine)
-                     (indirect-load32 0x02)
+                     (direct-load32 0x02)
                      (copy arg0
                            value)
                      (branch call
