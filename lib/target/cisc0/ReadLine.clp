@@ -34,12 +34,12 @@
                      (branch call
                              immediate
                              PrintLine)
-                     (direct-load32 0x02)
-                     (copy arg0
-                           value)
-                     (branch call
-                             immediate
-                             PrintLine)
+                     ;(direct-load32 0x02)
+                     ;(copy arg0
+                     ;      value)
+                     ;(branch call
+                     ;        immediate
+                     ;        PrintLine)
                      ; setup the seeding routines first
                      (set32 arg0
                             0xFDEDABCD)
@@ -58,6 +58,7 @@
                             terminate-address)
                      (set32 value
                             0xD0CEDB00)
+                     (direct-store16l)
                      (direct-store16l))
               (label NextRandom0
                      (set32 arg0

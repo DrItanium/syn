@@ -134,19 +134,6 @@ namespace cisc0 {
     void Core::incrementInstructionPointer() noexcept {
         incrementAddress(getInstructionPointer());
     }
-    void Core::incrementStackPointer() noexcept {
-        incrementStackPointer(getStackPointer());
-    }
-    void Core::incrementStackPointer(RegisterValue& ptr) noexcept {
-        incrementAddress(ptr);
-    }
-
-    void Core::decrementStackPointer() noexcept {
-        decrementStackPointer(getStackPointer());
-    }
-    void Core::decrementStackPointer(RegisterValue& ptr) noexcept {
-        decrementAddress(ptr);
-    }
 
     void illegalInstruction(DecodedInstruction&& current, RegisterValue ip) {
         std::stringstream str;
@@ -212,16 +199,18 @@ namespace cisc0 {
             advanceIp = false;
             if (isCall) {
                 // push the instruction pointer onto the stack
-				pushDword(getInstructionPointer() + 1);
+				auto nextAddr = getInstructionPointer() + 1;
+				pushDword(nextAddr);
             }
             auto reg = choice ? inst.getBranchIfPathRegister<true>() : inst.getBranchIfPathRegister<false>();
             getInstructionPointer() = registerValue(reg);
         } else if (isCall) {
             // call instruction
             advanceIp = false;
-            // determine next
-            auto length = isImm ? 2 : 1;
-			pushDword(getInstructionPointer() + length);
+            // determine next, 
+            auto length = isImm ? 3 : 1;
+			auto nextAddr = getInstructionPointer() + length;
+			pushDword(nextAddr);
             getInstructionPointer() = isImm ? readAddress() : registerValue(inst.getBranchIndirectDestination());
         } else {
             // jump instruction
@@ -298,7 +287,7 @@ namespace cisc0 {
                 } else {
                     // needs to be the masked value instead!
                     storeWord(newAddress, (umask & upperValue) | (loadWord(newAddress) & ~umask));
-                }
+                 }
             }
         } else if (rawType == MemoryOperation::Push) {
             if (inst.isIndirectOperation()) {
@@ -306,24 +295,22 @@ namespace cisc0 {
             }
             // update the target stack to something different
             auto pushToStack = registerValue(memoryRegister);
-            auto &stackPointer = getStackPointer();
             // read backwards because the stack grows upward towards zero
             if (useUpper) {
-                pushWord(umask & decodeUpperHalf(pushToStack), stackPointer);
+                pushWord(umask & decodeUpperHalf(pushToStack));
             }
             if (useLower) {
-                pushWord(lmask & decodeLowerHalf(pushToStack), stackPointer);
+                pushWord(lmask & decodeLowerHalf(pushToStack));
             }
         } else if (rawType == MemoryOperation::Pop) {
             if (inst.isIndirectOperation()) {
                 throw syn::Problem("Indirect bit not supported in pop operations!");
             }
-            auto &stackPointer = getStackPointer();
             if (useLower) {
-                lower = lmask & popWord(stackPointer);
+                lower = lmask & popWord();
             }
             if (useUpper) {
-                upper = umask & popWord(stackPointer);
+                upper = umask & popWord();
             }
             registerValue(memoryRegister) = encodeRegisterValue(upper, lower);
             // can't think of a case where we should
@@ -412,6 +399,7 @@ namespace cisc0 {
     }
     void Core::storeWord(RegisterValue address, Word value) {
 		if (address == ArchitectureConstants::TerminateAddress) {
+			std::cout << "Terminate!" << std::endl;
 			execute = false;
 			advanceIp = false;
 		} else {
@@ -430,26 +418,17 @@ namespace cisc0 {
     }
 
     void Core::pushWord(Word value) {
-        pushWord(value, getStackPointer());
-    }
-    void Core::pushWord(Word value, RegisterValue& ptr) {
-        decrementStackPointer(ptr);
-        storeWord(ptr, value);
-    }
-    void Core::pushDword(DWord value, RegisterValue& ptr) {
-        pushWord(decodeUpperHalf(value), ptr);
-        pushWord(decodeLowerHalf(value), ptr);
+		decrementAddress(getStackPointer());
+		storeWord(getStackPointer(), value);
     }
     void Core::pushDword(DWord value) {
-        return pushDword(value, getStackPointer());
+        pushWord(decodeUpperHalf(value));
+        pushWord(decodeLowerHalf(value));
     }
 
     Word Core::popWord() {
-        return popWord(getStackPointer());
-    }
-    Word Core::popWord(RegisterValue& ptr) {
-        auto result = loadWord(ptr);
-        incrementStackPointer(ptr);
+        auto result = loadWord(getStackPointer());
+		incrementAddress(getStackPointer());
         return result;
     }
     Word Core::tryReadNext(bool readNext) noexcept {

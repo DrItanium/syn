@@ -75,3 +75,39 @@
                                ?file)))
 
 
+(deffunction MAIN::decode-installation-values
+             (?list)
+             (bind ?tmp
+                   ?list)
+             (bind ?out
+                   (create$))
+             (while (<> (length$ ?tmp)
+                        0) do
+                    (bind ?out
+                          ?out
+                          (int->hex (nth$ 1 
+                                          ?tmp))
+                          (int->hex (nth$ 2
+                                          ?tmp)))
+                    (bind ?tmp
+                          (delete$ ?tmp
+                                   1
+                                   2)))
+             ?out)
+
+(deffunction MAIN::print-installation-map
+             (?list)
+             (printout t 
+                       "Address" tab "Value" crlf)
+             (while (<> (length$ ?list)
+                        0) do
+                    (printout t 
+                              (nth$ 1 
+                                    ?list)
+                              tab
+                              (nth$ 2
+                                    ?list) crlf)
+                    (bind ?list
+                          (delete$ ?list
+                                   1
+                                   2))))

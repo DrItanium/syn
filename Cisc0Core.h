@@ -57,11 +57,8 @@ namespace cisc0 {
 			virtual bool handleOperation(void* env, CLIPSValue* ret) override;
 		private:
 			void pushWord(Word value);
-            void pushWord(Word value, RegisterValue& ptr);
 			void pushDword(DWord value);
-            void pushDword(DWord value, RegisterValue& ptr);
 			Word popWord();
-			Word popWord(RegisterValue& ptr);
 			void dispatch(DecodedInstruction&& inst);
 			template<byte rindex>
 			inline RegisterValue& registerValue() noexcept {
@@ -92,10 +89,6 @@ namespace cisc0 {
 			RegisterValue getFieldRegister() noexcept           { return 0b11111 & registerValue<ArchitectureConstants::FieldRegister>(); }
 
 			void incrementInstructionPointer() noexcept;
-			void incrementStackPointer() noexcept;
-			void decrementStackPointer() noexcept;
-			void decrementStackPointer(RegisterValue& ptr) noexcept;
-			void incrementStackPointer(RegisterValue& ptr) noexcept;
 			void incrementAddress(RegisterValue& ptr) noexcept;
 			void decrementAddress(RegisterValue& ptr) noexcept;
 			Word getCurrentCodeWord() noexcept;
