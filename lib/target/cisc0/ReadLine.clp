@@ -34,12 +34,12 @@
                      (branch call
                              immediate
                              PrintLine)
-                     ;(direct-load32 0x02)
-                     ;(copy arg0
-                     ;      value)
-                     ;(branch call
-                     ;        immediate
-                     ;        PrintLine)
+                     (direct-load32 0x02)
+                     (copy arg0
+                           value)
+                     (branch call
+                             immediate
+                             PrintLine)
                      ; setup the seeding routines first
                      (set32 arg0
                             0xFDEDABCD)
@@ -145,15 +145,17 @@
                                                   (direct-store16l)
                                                   (incr addr)
                                                   (is-new-line value)
-                                                  (not cond)
                                                   (branch conditional
                                                           immediate
-                                                          ReadLineLoopBody)
+                                                          ReadLine_Done)
                                                   (is-null-char value)
-                                                  (not cond)
                                                   (branch conditional
+                                                          immediate
+                                                          ReadLine_Done)
+                                                  (branch unconditional
                                                           immediate
                                                           ReadLineLoopBody))
+                                           (label ReadLine_Done)
                                            (copy result
                                                  arg0)))
               (defunc-basic PrintLine
@@ -163,17 +165,20 @@
                                                  arg0)
                                            (label PrintLineLoopBody
                                                   (direct-load16l)
+                                                  (is-null-char value)
+                                                  (branch conditional
+                                                          immediate
+                                                          PrintLine_Done)
                                                   (copy arg0
                                                         value)
                                                   (branch call
                                                           immediate
                                                           WriteChar)
                                                   (incr addr)
-                                                  (is-null-char value)
-                                                  (not cond)
-                                                  (branch conditional
+                                                  (branch unconditional
                                                           immediate
                                                           PrintLineLoopBody))
+                                           (label PrintLine_Done)
                                            (set16l arg0
                                                    0x0a)
                                            (branch call
@@ -267,12 +272,12 @@
                             (string "Done"))
                      (label Message4
                             (string "Shutting Down!")))
-                     (label ROM_Messages
-                            (dword Message0)
-                            (dword Message1)
-                            (dword Message2)
-                            (dword Message3)
-                            (dword Message4)
-                            ))
-              ; data tables and such
-              )
+              (label ROM_Messages
+                     (dword Message0)
+                     (dword Message1)
+                     (dword Message2)
+                     (dword Message3)
+                     (dword Message4)
+                     ))
+         ; data tables and such
+         )
