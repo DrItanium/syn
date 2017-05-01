@@ -111,3 +111,9 @@
                           (delete$ ?list
                                    1
                                    2))))
+
+(deffunction MAIN::diff-and-step
+             (?x)
+             (print-registers ?x)
+             (step ?x)
+             (print-registers ?x))
