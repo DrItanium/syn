@@ -10,22 +10,6 @@
                      ; use /dev/ram3 as the ram disk at boot up
                      (set32 sp
                             ram3-base-address)
-                     (set32 r0
-                            0x99999999)
-                     ; initialize the registers to make sure that there isn't garbage in them
-                     (copy r1 r0)
-                     (copy r2 r1)
-                     (copy r3 r2)
-                     (copy r4 r3)
-                     (copy r5 r4)
-                     (copy r6 r5)
-                     (copy r7 r6)
-                     (copy r8 r7)
-                     (copy r9 r8)
-                     (copy r10 r9)
-                     (copy r11 r10)
-                     (copy r12 r11)
-                     (copy r13 r12)
                      (set32 addr
                             ROM_Messages)
                      (direct-load32 0x00)
@@ -67,17 +51,6 @@
                      (branch unconditional
                              immediate
                              ReadWord))
-              (label ReadChar
-                     (set32 arg0
-                            stdin-out)
-                     (defunc-basic ReadWord
-                                   ; arg0 - address to read from
-                                   (use-registers (addr value)
-                                                  (copy addr
-                                                        arg0)
-                                                  (direct-load16l)
-                                                  (copy result
-                                                        value))))
               (label SkipRandom0
                      (set32 arg0
                             rng0)
@@ -97,12 +70,32 @@
                      (branch unconditional
                              immediate
                              WriteWord))
+              (label ReadChar
+                     (set32 arg0
+                            stdin-out)
+                     (defunc-basic ReadWord
+                                   ; arg0 - address to read from
+                                   (use-registers (addr value)
+                                                  (copy addr
+                                                        arg0)
+                                                  (direct-load16l)
+                                                  (copy result
+                                                        value))))
+              (defunc-basic ReadDword
+                            ; arg0 - address to read from (will read two addresses)
+                            (use-registers (addr value)
+                                           (copy addr
+                                                 arg0)
+                                           (direct-load32)
+                                           (copy result
+                                                 value)))
               (defunc-basic WriteChar
                             ; arg0 - value to write
                             (use-registers (addr value)
                                            (set32 addr
                                                   stdin-out)
-                                           (copy value
+                                           (move 0m0001
+                                                 value
                                                  arg0)
                                            (direct-store16l)))
               (defunc-basic WriteWord
@@ -114,14 +107,6 @@
                                            (copy value
                                                  arg1)
                                            (direct-store16l)))
-              (defunc-basic ReadDword
-                            ; arg0 - address to read from (will read two addresses)
-                            (use-registers (addr value)
-                                           (copy addr
-                                                 arg0)
-                                           (direct-load32)
-                                           (copy result
-                                                 value)))
               (defunc-basic WriteDword
                             ; arg0 - address to write to
                             ; arg1 - value to write
@@ -142,8 +127,6 @@
                                                           ReadChar)
                                                   (copy value
                                                         result)
-                                                  (direct-store16l)
-                                                  (incr addr)
                                                   (is-new-line value)
                                                   (branch conditional
                                                           immediate
@@ -152,6 +135,8 @@
                                                   (branch conditional
                                                           immediate
                                                           ReadLine_Done)
+                                                  (direct-store16l)
+                                                  (incr addr)
                                                   (branch unconditional
                                                           immediate
                                                           ReadLineLoopBody))
@@ -165,9 +150,6 @@
                                                  arg0)
                                            (label PrintLineLoopBody
                                                   (direct-load16l)
-                                                  (move 0m0001
-                                                        value
-                                                        value)
                                                   (is-null-char value)
                                                   (branch conditional
                                                           immediate
@@ -187,6 +169,22 @@
                                            (branch call
                                                    immediate
                                                    WriteChar)))
+              (defunc-basic ArrayLength
+                            (use-registers (addr value)
+                                           (copy addr
+                                                 arg0)
+                                           (direct-load32)
+                                           (copy result
+                                                 value)))
+              (defunc-basic ArrayFront
+                            (use-registers (addr value)
+                                           (copy addr
+                                                 arg0)
+                                           (addi addr
+                                                 0x2)
+                                           (direct-load32)
+                                           (copy result
+                                                 value)))
               (defunc-basic DecodeDword
                             ; arg0 - value
                             ; arg1 - mask
