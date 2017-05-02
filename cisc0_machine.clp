@@ -34,7 +34,7 @@
                   (init-arguments)))
 
 
-(printout t 
+(printout t
           "Welcome to the cisc0 repl!" crlf
           "At this point the interactive prompt has loaded the minimum set of things necessary for execution" crlf
           "Please enter (reset) to construct a cisc0-core to start playing with!" crlf)
@@ -46,8 +46,8 @@
 
 (deffunction MAIN::inspect-register
              (?target ?index)
-             (send ?target 
-                   get-register 
+             (send ?target
+                   get-register
                    ?index))
 (deffunction MAIN::get-ip
              (?target)
@@ -57,21 +57,21 @@
 (deffunction MAIN::print-registers
              "Print out all of the cisc0 registers"
              (?target)
-             (printout t 
+             (printout t
                        "Registers" crlf
                        "-----------------------------------------------------------" crlf)
              (loop-for-count (?i 0 15) do
                              (printout t tab "r" ?i " : " (int->hex (inspect-register ?target
                                                                                       ?i)) crlf))
-             (printout t 
+             (printout t
                        "-----------------------------------------------------------" crlf))
 
 
 (deffunction MAIN::parse-and-install-asm
              (?target ?file)
-             (send ?target 
-                   install-values 
-                   (parse-file cisc0-assembler 
+             (send ?target
+                   install-values
+                   (parse-file cisc0-assembler
                                ?file)))
 
 
@@ -85,7 +85,7 @@
                         0) do
                     (bind ?out
                           ?out
-                          (int->hex (nth$ 1 
+                          (int->hex (nth$ 1
                                           ?tmp))
                           (int->hex (nth$ 2
                                           ?tmp)))
@@ -94,15 +94,34 @@
                                    1
                                    2)))
              ?out)
+(deffunction MAIN::fuse-installation-values
+             (?list)
+             (bind ?outcome
+                   (create$))
+             (while (<> (length$ ?list)
+                        0) do
+                    (bind ?outcome
+                          ?outcome
+                          (format nil
+                                  "%s %s"
+                                  (nth$ 1
+                                        ?list)
+                                  (nth$ 2
+                                        ?list)))
+                    (bind ?list
+                          (delete$ ?list
+                                   1
+                                   2)))
+             ?outcome)
 
 (deffunction MAIN::print-installation-map
              (?list)
-             (printout t 
+             (printout t
                        "Address" tab "Value" crlf)
              (while (<> (length$ ?list)
                         0) do
-                    (printout t 
-                              (nth$ 1 
+                    (printout t
+                              (nth$ 1
                                     ?list)
                               tab
                               (nth$ 2
@@ -111,9 +130,37 @@
                           (delete$ ?list
                                    1
                                    2))))
+(deffunction MAIN::print-list
+             (?router ?list)
+             (progn$ (?line ?list)
+                     (printout ?router
+                               ?line
+                               crlf)))
 
 (deffunction MAIN::diff-and-step
              (?x)
              (print-registers ?x)
              (step ?x)
              (print-registers ?x))
+
+(deffunction MAIN::string>
+             (?a ?b)
+             (> (str-compare ?a
+                             ?b)
+                0))
+
+(deffunction MAIN::parse-file-and-print-hex-map
+             (?router ?file)
+             (bind ?sorted
+                   (sort string>
+                         (fuse-installation-values
+                           (decode-installation-values
+                             (parse-file cisc0-assembler
+                                         ?file)))))
+             (printout ?router
+                       "ADDRESS" tab "VALUE" crlf)
+
+             (progn$ (?line ?sorted)
+                     (printout ?router
+                               ?line crlf)))
+
