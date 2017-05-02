@@ -165,6 +165,9 @@
                                                  arg0)
                                            (label PrintLineLoopBody
                                                   (direct-load16l)
+                                                  (move 0m0001
+                                                        value
+                                                        value)
                                                   (is-null-char value)
                                                   (branch conditional
                                                           immediate
