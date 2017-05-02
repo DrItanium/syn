@@ -195,28 +195,37 @@ namespace cisc0 {
             auto upper = static_cast<RegisterValue>(tryReadNext<true>()) << 16;
             return lower | upper;
         };
-        if (isIf) {
+        auto updateInstructionPointer = [this](auto value) {
             advanceIp = false;
+            getInstructionPointer() = value;
+        };
+        if (isIf) {
             if (isCall) {
                 // push the instruction pointer onto the stack
 				auto nextAddr = getInstructionPointer() + 1;
 				pushDword(nextAddr);
             }
             auto reg = choice ? inst.getBranchIfPathRegister<true>() : inst.getBranchIfPathRegister<false>();
-            getInstructionPointer() = registerValue(reg);
+            updateInstructionPointer(registerValue(reg));
         } else if (isCall) {
             // call instruction
-            advanceIp = false;
-            // determine next, 
-            auto length = isImm ? 3 : 1;
-			auto nextAddr = getInstructionPointer() + length;
-			pushDword(nextAddr);
-            getInstructionPointer() = isImm ? readAddress() : registerValue(inst.getBranchIndirectDestination());
+            // figure out where we are going to go, this will cause loads and
+            // incrementation of the instruction pointer.
+            // Once done, we then push the next address following the newly
+            // modified ip to the stack. Then we update the ip of where we are
+            // going to go!
+            auto whereToGo = isImm ? readAddress() : registerValue(inst.getBranchIndirectDestination());
+            pushDword(getInstructionPointer() + 1);
+            updateInstructionPointer(whereToGo);
         } else {
             // jump instruction
-            if ((isCond && choice) || !isCond) {
-                 advanceIp = false;
-                 getInstructionPointer() = isImm ? readAddress() : registerValue(inst.getBranchIndirectDestination());
+            auto whereToGo = isImm ? readAddress() : registerValue(inst.getBranchIndirectDestination());
+            if (isCond) {
+                if (choice) {
+                    updateInstructionPointer(whereToGo);
+                }
+            } else {
+                updateInstructionPointer(whereToGo);
             }
         }
     }
