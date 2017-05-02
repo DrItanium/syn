@@ -41,7 +41,7 @@
                  (output-type byte))
           (field (name CompareImmediateFlag)
                  (mask 0b0010000000000000)
-                 (shift 0)
+                 (shift 13)
                  (output-type bool))
           (field (name CompareType)
                  (mask 0b0000011100000000)

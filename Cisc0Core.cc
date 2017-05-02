@@ -236,7 +236,8 @@ namespace cisc0 {
         syn::throwOnErrorState(compareResult, "Illegal compare type!");
         DecodedInstruction next(tryReadNext<true>());
         auto first = registerValue(next.getCompareRegister<0>());
-        auto second = inst.getImmediateFlag<group>() ? next.getUpper() : registerValue(next.getCompareRegister<1>());
+        auto isImm = inst.getImmediateFlag<group>();
+        auto second = isImm ? next.getUpper() : registerValue(next.getCompareRegister<1>());
         auto result = syn::Comparator::performOperation(compareResult, first, second);
         // make sure that the condition takes up the entire width of the
         // register, that way normal operations will make sense!
