@@ -236,15 +236,19 @@ namespace iris {
 						throw syn::Problem("ATTEMPTED TO RETURN FROM AN INTERRUPT WHEN NOT IN ONE!!!!");
 					}
 				};
+                auto ifOperation = [this](bool link) {
+                    auto cond = getPredicateResult();
+                    if (link) {
+                        setLinkRegister(getInstructionPointer() + 1);
+                    }
+                    setInstructionPointer(gpr[InstructionDecoder::chooseRegister(current, cond)]);
+                };
 				switch(operation) {
                     case JumpOp::IfThenElse:
-                        cond = getPredicateResult();
-                        setInstructionPointer(gpr[InstructionDecoder::chooseRegister(current, cond)]);
+                        ifOperation(false);
                         break;
                     case JumpOp::IfThenElseLink:
-                        cond = getPredicateResult();
-                        setLinkRegister(getInstructionPointer() + 1);
-                        setInstructionPointer(gpr[InstructionDecoder::chooseRegister(current, cond)]);
+                        ifOperation(true);
                         break;
 					case JumpOp::BranchUnconditionalLR:
                         setInstructionPointer(getLinkRegister());
@@ -272,21 +276,18 @@ namespace iris {
 						break;
 				}
 			} else {
-                auto conditional = isConditionalBranchInstruction(operation);
-                auto immediate = isImmediate(operation);
-                auto link = isLinkBranchInstruction(operation);
-				auto newAddr = static_cast<word>(0);
+				auto newAddr = 0u;
 				auto cond = true;
 				advanceIp = false;
 				auto ip = getInstructionPointer();
-				if (conditional) {
+				if (isConditionalBranchInstruction(operation)) {
 					cond = getPredicateResult();
-					newAddr = cond ? (immediate ? getImmediate() : source0Register()) : ip + 1;
+					newAddr = cond ? (isImmediate(operation) ? getImmediate() : source0Register()) : ip + 1;
 				} else {
-					newAddr = immediate ? getImmediate() : destinationRegister();
+					newAddr = isImmediate(operation) ? getImmediate() : destinationRegister();
 				}
                 setInstructionPointer(newAddr);
-				if (link && cond) {
+				if (isLinkBranchInstruction(operation) && cond) {
                     setLinkRegister(ip + 1);
 				}
 			}
@@ -296,6 +297,9 @@ namespace iris {
             auto getSource0Index = [this]() { return InstructionDecoder::getSource0Index(current); };
 			auto op = InstructionDecoder::getOperation<MoveOp>(current);
 			raw_instruction codeStorage = 0u;
+            auto pushValue = [this](auto value) {
+                stack[++destinationRegister()] = value;
+            };
 			switch(op) {
 				case MoveOp::Move:
 					gpr.copy(getDestinationIndex(), getSource0Index());
@@ -325,10 +329,10 @@ namespace iris {
 					data.set(destinationRegister(), getImmediate());
 					break;
 				case MoveOp::Push:
-					stack[++destinationRegister()] = source0Register();
+                    pushValue(source0Register());
 					break;
 				case MoveOp::PushImmediate:
-					stack[++destinationRegister()] = getImmediate();
+                    pushValue(getImmediate());
 					break;
 				case MoveOp::Pop:
 					destinationRegister() = stack[source0Register()];
