@@ -66,15 +66,14 @@ namespace cisc0 {
 				return gpr[rindex];
 			}
             template<bool readNext>
-            inline Word tryReadNext() noexcept {
-                if (readNext) {
-                    incrementInstructionPointer();
-                    return getCurrentCodeWord();
-                } else {
+            inline Word tryReadNext() {
+                if (!readNext) {
                     return 0;
                 }
+                incrementInstructionPointer();
+                return getCurrentCodeWord();
             }
-            Word tryReadNext(bool readNext) noexcept;
+            Word tryReadNext(bool readNext);
 			RegisterValue retrieveImmediate(byte bitmask) noexcept;
 
 			RegisterValue& registerValue(byte index);
@@ -91,11 +90,9 @@ namespace cisc0 {
 			void incrementInstructionPointer() noexcept;
 			void incrementAddress(RegisterValue& ptr) noexcept;
 			void decrementAddress(RegisterValue& ptr) noexcept;
-			Word getCurrentCodeWord() noexcept;
+			Word getCurrentCodeWord();
 			void storeWord(RegisterValue address, Word value);
 			Word loadWord(RegisterValue address);
-			RegisterValue loadRegisterValue(RegisterValue address);
-			void storeRegisterValue(RegisterValue address, RegisterValue value);
 		private:
 			void complexOperation(DecodedInstruction&& inst);
 			void encodingOperation(DecodedInstruction&& inst);

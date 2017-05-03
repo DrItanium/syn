@@ -268,9 +268,14 @@ namespace cisc0 {
                 if (inst.isIndirectOperation()) {
                     address = loadIndirectAddress(address);
                 }
-                lower = useLower ? encodeLowerHalf(0, loadWord(address)) : 0u;
-                upper = useUpper ? encodeUpperHalf(0, loadWord(address + 1)) : 0u;
-                value = syn::encodeBits<RegisterValue, RegisterValue>(0u, lower | upper, fullMask, 0);
+                if (useLower) {
+                    lower = encodeLowerHalf(0, loadWord(address));
+                }
+                if (useUpper) {
+                    upper = encodeUpperHalf(0, loadWord(address + 1));
+                }
+                auto combinedValue = lower | upper;
+                value = syn::encodeBits<RegisterValue, RegisterValue>(0u, combinedValue, fullMask, 0);
             }
         } else if (rawType == MemoryOperation::Store) {
             static constexpr Word maskCheck = 0xFFFF;
@@ -297,7 +302,7 @@ namespace cisc0 {
                 } else {
                     // needs to be the masked value instead!
                     storeWord(newAddress, (umask & upperValue) | (loadWord(newAddress) & ~umask));
-                 }
+                }
             }
         } else if (rawType == MemoryOperation::Push) {
             if (inst.isIndirectOperation()) {
@@ -404,12 +409,11 @@ namespace cisc0 {
     RegisterValue& Core::registerValue(byte index) {
         return gpr[index];
     }
-    Word Core::getCurrentCodeWord() noexcept {
-		return _bus.read(getInstructionPointer());
+    Word Core::getCurrentCodeWord() {
+        return loadWord(getInstructionPointer());
     }
     void Core::storeWord(RegisterValue address, Word value) {
 		if (address == ArchitectureConstants::TerminateAddress) {
-			std::cout << "Terminate!" << std::endl;
 			execute = false;
 			advanceIp = false;
 		} else {
@@ -419,14 +423,6 @@ namespace cisc0 {
     Word Core::loadWord(RegisterValue address) {
 		return _bus.read(address);
     }
-    RegisterValue Core::loadRegisterValue(RegisterValue address) {
-        return syn::encodeBits<RegisterValue, Word, mask(0b1111), 16>(static_cast<RegisterValue>(loadWord(address)), loadWord(address + 1));
-    }
-    void Core::storeRegisterValue(RegisterValue address, RegisterValue value) {
-        storeWord(address, decodeLowerHalf(value));
-        storeWord(address + 1, decodeUpperHalf(value));
-    }
-
     void Core::pushWord(Word value) {
 		decrementAddress(getStackPointer());
 		storeWord(getStackPointer(), value);
@@ -441,11 +437,7 @@ namespace cisc0 {
 		incrementAddress(getStackPointer());
         return result;
     }
-    Word Core::tryReadNext(bool readNext) noexcept {
-        if (readNext) {
-            return tryReadNext<true>();
-        } else {
-            return tryReadNext<false>();
-        }
+    Word Core::tryReadNext(bool readNext) {
+        return readNext ? tryReadNext<true>() : tryReadNext<false>();
     }
 }
