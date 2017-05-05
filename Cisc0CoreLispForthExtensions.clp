@@ -22,3 +22,14 @@
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ; extended rules for forth specific behavior and wrapper functions!
+
+(deffacts lower::register-conventions
+          (alias sp <- call-stack <- cs)
+          (alias r7 <- data-stack <- ds)
+          (alias r6 <- parameter0 <- p0)
+          (alias r5 <- parameter1 <- p1)
+          (alias r4 <- parameter2 <- p2)
+          (alias r3 <- parameter3 <- p3)
+          (alias r2 <- temporary0 <- t0)
+          (alias r1 <- temporary1 <- t1)
+          (alias r0 <- temporary2 <- t2))
