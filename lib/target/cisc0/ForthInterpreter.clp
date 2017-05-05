@@ -38,9 +38,11 @@
                              PrintLine)
                      (copy arg0
                            value)
-                     (branch unconditional
-                             immediate
-                             Shutdown)))
+                     (set32 addr
+                            terminate-address)
+                     (set32 value
+                            0xD0CEDB00)
+                     (direct-store16l)))
          (org 0xFE010000
               (label Shutdown
                      (set32 addr
