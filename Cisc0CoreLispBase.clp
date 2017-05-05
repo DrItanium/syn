@@ -357,7 +357,7 @@
          (output-router (name ?out))
          =>
          (progn$ (?l (send ?f resolve))
-                 (printout ?out 
+                 (printout ?out
                            ?l crlf)))
 
 (defrule lower::convert-operations-fact-to-mass-operation-facts
@@ -1361,6 +1361,24 @@
                                     $?body
                                     (mk-list ?name
                                              return))))
+(defrule lower::defunc-full
+         "Automatically save the addr and value registers as they will most likely be used!"
+         ?f <- (object (is-a list)
+                       (contents defunc
+                                 ?title
+                                 $?body)
+                       (name ?name))
+         =>
+         (modify-instance ?f
+                          (contents defunc-basic
+                                    ?title
+                                    (mk-use-registers-block (gensym*)
+                                                            ?name
+                                                            (create$ addr
+                                                                     value)
+                                                            ?body))))
+
+
 
 (deffacts lower::assembler-temporary-declaration
           (alias r8 <- assembler-temporary <- at)
@@ -1609,3 +1627,54 @@
          (mk-container ?n
                        ?p
                        ?contents))
+
+(defrule lower::value-array-generate
+         ?f <- (object (is-a list)
+                       (contents array
+                                 ?type
+                                 $?values)
+                       (name ?n)
+                       (parent ?p))
+         =>
+         (unmake-instance ?f)
+         (bind ?contents
+               (create$))
+         (progn$ (?value ?values)
+                 (bind ?contents
+                       ?contents
+                       (mk-list ?n
+                                ?type
+                                ?value)))
+         (mk-container ?n
+                       ?p
+                       ?contents))
+
+(defrule lower::skip-directive
+         ?f <- (object (is-a list)
+                       (contents skip
+                                 ?count))
+         =>
+         (bind ?zeros
+               (create$))
+         (loop-for-count (?i 1 ?count) do
+                         (bind ?zeros
+                               ?zeros
+                               0))
+         (modify-instance ?f
+                          (contents array
+                                    word
+                                    ?zeros)))
+
+(defrule lower::named-string-directive
+         ?f <- (object (is-a list)
+                       (contents named-string
+                                 ?label
+                                 ?str)
+                       (name ?n))
+         =>
+         (modify-instance ?f
+                          (contents label
+                                    ?label
+                                    (mk-list ?n
+                                             string
+                                             ?str))))
