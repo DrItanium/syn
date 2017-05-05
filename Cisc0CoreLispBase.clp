@@ -1348,35 +1348,6 @@
                           ?f2)
          (assert (simple-macro ?count ?title -> $?symbols)))
 
-(defrule lower::defunc-basic
-         ?f <- (object (is-a list)
-                       (contents defunc-basic
-                                 ?title
-                                 $?body)
-                       (name ?name))
-         =>
-         (modify-instance ?f
-                          (contents label
-                                    ?title
-                                    $?body
-                                    (mk-list ?name
-                                             return))))
-(defrule lower::defunc-full
-         "Automatically save the addr and value registers as they will most likely be used!"
-         ?f <- (object (is-a list)
-                       (contents defunc
-                                 ?title
-                                 $?body)
-                       (name ?name))
-         =>
-         (modify-instance ?f
-                          (contents defunc-basic
-                                    ?title
-                                    (mk-use-registers-block (gensym*)
-                                                            ?name
-                                                            (create$ addr
-                                                                     value)
-                                                            ?body))))
 
 
 
@@ -1468,15 +1439,6 @@
           (simple-macro 3 mac -> multiply-accumulate))
 
 
-(deffacts lower::lower-eight-registers:parameter-passing-conventions
-          (alias r7 <- result-register <- result)
-          (alias r6 <- temporary-register0 <- temporary0 <- temp0)
-          (alias r5 <- temporary-register1 <- temporary1 <- temp1)
-          (alias r4 <- temporary-register2 <- temporary2 <- temp2)
-          (alias r3 <- temporary-register3 <- temporary3 <- temp3)
-          (alias r2 <- temporary-register4 <- temporary4 <- temp4)
-          (alias r1 <- temporary-register5 <- temporary5 <- temp5)
-          (alias r0 <- temporary-register6 <- temporary6 <- temp6))
 
 (deffacts lower::special-set-macros
           (simple-macro 1 set-address-register -> set32 addr)
@@ -1486,17 +1448,6 @@
           (simple-macro 1 mtaddr -> move-to-addr))
 
 
-; Pass arguments through registers! Four registers for arguments with three
-; temporaries.
-
-(deffacts lower::load-argument-macros
-          (alias temp0 <- argument-register0 <- arg0)
-          (alias temp1 <- argument-register1 <- arg1)
-          (alias temp2 <- argument-register2 <- arg2)
-          (alias temp3 <- argument-register3 <- arg3 <- rest-param)
-          (alias temp4 <- local0)
-          (alias temp5 <- local1)
-          (alias temp6 <- local2))
 
 ;-----------------------------------------------------------------------------
 ; Bootstrap rules, makes it possible to manipulate the set of simple macros
