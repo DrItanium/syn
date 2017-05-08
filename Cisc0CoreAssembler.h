@@ -394,12 +394,16 @@ namespace cisc0 {
 	DefArithmeticOperation(Mul, mul);
 	DefArithmeticOperation(Div, div);
 	DefArithmeticOperation(Rem, rem);
+    DefSubTypeWithSymbol(Min, min, ArithmeticOps);
+    DefSubTypeWithSymbol(Max, max, ArithmeticOps);
 	struct ArithmeticType : pegtl::sor<
 							SubGroupArithmeticOpsAdd,
 							SubGroupArithmeticOpsSub,
 							SubGroupArithmeticOpsMul,
 							SubGroupArithmeticOpsDiv,
-							SubGroupArithmeticOpsRem> { };
+							SubGroupArithmeticOpsRem,
+                            SubGroupArithmeticOpsMin,
+                            SubGroupArithmeticOpsMax> { };
 
 	struct ArithmeticArgs : pegtl::sor<
 							TwoGPRs,

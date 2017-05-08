@@ -358,12 +358,20 @@ namespace cisc0 {
 
     void Core::arithmeticOperation(DecodedInstruction&& inst) {
         static constexpr auto group = Operation::Arithmetic;
-        auto result = translate(inst.getSubtype<group>());
-        syn::throwOnErrorState(result, "Illegal arithmetic operation!");
-        auto op = result;
-        auto src = inst.getImmediateFlag<group>() ? inst.getImmediate<group>() : registerValue(inst.getArithmeticRegister<1>());
-        auto& dest = registerValue(inst.getArithmeticRegister<0>());
-        dest = syn::ALU::performOperation<RegisterValue>(op, dest, src);
+        auto subType = inst.getSubtype<group>();
+        auto src1 = inst.getImmediateFlag<group>() ? inst.getImmediate<group>() : registerValue(inst.getArithmeticRegister<1>());
+        auto &src0 = registerValue(inst.getArithmeticRegister<0>());
+        if (subType == ArithmeticOps::Min) {
+            getValueRegister() = src0 > src1 ? src1 : src0;
+        } else if (subType == ArithmeticOps::Max) {
+            getValueRegister() = src0 > src1 ? src0 : src1;
+        } else {
+            auto result = translate(inst.getSubtype<group>());
+            syn::throwOnErrorState(result, "Illegal arithmetic operation!");
+            auto src = src1;
+            auto& dest = src0;
+            dest = syn::ALU::performOperation<RegisterValue>(result, dest, src);
+        }
     }
 
     void Core::logicalOperation(DecodedInstruction&& inst) {

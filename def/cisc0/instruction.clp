@@ -245,7 +245,9 @@
                           Sub
                           Mul
                           Div
-                          Rem)
+                          Rem
+                          Min
+                          Max)
                 (cast-to byte)
                 (max-size "8"))
           (enum (name CompareStyle)
