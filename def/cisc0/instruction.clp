@@ -29,19 +29,19 @@
           (namespace cisc0))
 
 (deffacts cisc0-core-fields
-          (field (name Control) (mask 0b0000000000001111) (shift 0) (output-type Operation))
-          (field (name Upper)   (mask 0b1111111100000000) (shift 8) (output-type byte))
-          (field (name Lower)   (mask 0b0000000011111111) (shift 0) (output-type byte)))
+          (deffield Control 0b0000000000001111 0 Operation)
+          (deffield Upper   0b1111111100000000 8 byte)
+          (deffield Lower   0b0000000011111111 0 byte))
 
 (deffacts cisc0-compare-fields
-          (field (name CompareImmediateFlag) (mask 0b0010000000000000) (shift 13) (output-type bool))
-          (field (name CompareType)          (mask 0b0000011100000000) (shift 8) (output-type CompareStyle))
-          (field (name CompareRegister0)     (mask 0b0000000000001111) (shift 0) (output-type byte))
-          (field (name CompareRegister1)     (mask 0b0000000011110000) (shift 4) (output-type byte))
-          (field (name CompareImmediate)     (mask 0b1111111100000000) (shift 8) (output-type byte)))
+          (defbitfield CompareImmediateFlag 0b0010000000000000 13)
+          (deffield CompareType             0b0000011100000000 8 CompareStyle)
+          (deffield CompareRegister0        0b0000000000001111 0 byte)
+          (deffield CompareRegister1        0b0000000011110000 4 byte)
+          (deffield CompareImmediate        0b1111111100000000 8 byte))
 
 (deffacts cisc0-arithmetic-fields
-          (field (name ArithmeticFlagImmediate) (mask 0b0000000000010000) (shift 4) (output-type bool))
+          (defbitfield ArithmeticFlagImmediate 0b0000000000010000 4)
           (field (name ArithmeticFlagType)      (mask 0b0000000011100000) (shift 5) (output-type ArithmeticOps))
           (field (name ArithmeticImmediate)     (mask 0b1111000000000000) (shift 12) (output-type RegisterValue))
           (field (name ArithmeticDestination)   (mask 0b0000111100000000) (shift 8) (output-type byte))
@@ -51,8 +51,6 @@
           (field (name LogicalFlagImmediate)        (mask 0b0000000000010000) (shift 4) (output-type bool))
           (field (name LogicalFlagImmediateMask)    (mask 0b0000111100000000) (shift 8) (output-type byte))
           (field (name LogicalImmediateDestination) (mask 0b1111000000000000) (shift 12) (output-type byte))
-          (field (name LogicalImmediateLower16)     (mask 0b1111111111111111) (shift 0) (output-type Word))
-          (field (name LogicalImmediateUpper16)     (mask 0b1111111111111111) (shift 0) (output-type Word))
           (field (name LogicalFlagType)             (mask 0b0000000011100000) (shift 4) (output-type LogicalOps))
           (field (name LogicalRegister0)            (mask 0b0000111100000000) (shift 8) (output-type byte))
           (field (name LogicalRegister1)            (mask 0b1111000000000000) (shift 12) (output-type byte)))
@@ -65,14 +63,13 @@
           (field (name ShiftRegister1)     (mask 0b0111100000000000) (shift 11) (output-type byte)))
 
 (deffacts cisc0-branch-fields
-          (field (name BranchFlags)               (mask 0b0000000011110000) (shift 4) (output-type byte))
-          (field (name BranchFlagIsConditional)   (mask 0b0000000010000000) (shift 7) (output-type bool))
-          (field (name BranchFlagIsIfForm)        (mask 0b0000000001000000) (shift 6) (output-type bool))
-          (field (name BranchFlagIsCallForm)      (mask 0b0000000000100000) (shift 5) (output-type bool))
-          (field (name BranchFlagIsImmediate)     (mask 0b0000000000010000) (shift 4) (output-type bool))
-          (field (name BranchIfOnTrue)            (mask 0b0000111100000000) (shift 8) (output-type byte))
-          (field (name BranchIfOnFalse)           (mask 0b1111000000000000) (shift 12) (output-type byte))
-          (field (name BranchIndirectDestination) (mask 0b1111000000000000) (shift 12) (output-type byte)))
+          (defbitfield BranchFlagIsConditional   0b0000000010000000 7)
+          (defbitfield BranchFlagIsIfForm        0b0000000001000000 6)
+          (defbitfield BranchFlagIsCallForm      0b0000000000100000 5)
+          (defbitfield BranchFlagIsImmediate     0b0000000000010000 4)
+          (deffield BranchIfOnTrue               0b0000111100000000 8  byte)
+          (deffield BranchIfOnFalse              0b1111000000000000 12 byte)
+          (deffield BranchIndirectDestination    0b1111000000000000 12 byte))
 
 (deffacts cisc0-memory-fields
           (field (name MemoryFlagType)     (mask 0b0000000000110000) (shift 4) (output-type MemoryOperation))
@@ -99,6 +96,7 @@
 (deffacts cisc0-complex-fields
           (field (name ComplexSubClass)           (mask 0b0000000011110000) (shift 4) (output-type ComplexSubTypes))
           (field (name ComplexClassEncoding_Type) (mask 0b0000011100000000) (shift 8) (output-type EncodingOperation)))
+
 
 (deffacts cisc0-enums
           (enum (name Operation)
@@ -200,3 +198,27 @@
                              CompareUnitOperation GreaterThanOrEqualTo)
 
           )
+(defrule translate-flat-fact
+         (declare (salience ?*priority:first*))
+         ?f <- (deffield ?name
+                         ?mask
+                         ?shift
+                         ?output-type)
+         =>
+         (retract ?f)
+         (assert (field (name ?name)
+                        (mask ?mask)
+                        (shift ?shift)
+                        (output-type ?output-type))))
+
+(defrule translate-bit-fact
+         (declare (salience ?*priority:first*))
+         ?f <- (defbitfield ?name
+                            ?mask
+                            ?shift)
+         =>
+         (retract ?f)
+         (assert (field (name ?name)
+                        (mask ?mask)
+                        (shift ?shift)
+                        (output-type bool))))
