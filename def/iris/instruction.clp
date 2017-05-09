@@ -22,13 +22,18 @@
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-(deffacts iris16
+(deffacts iris-base-decls
           (input-type raw_instruction)
           (title _iris_decl)
-          (namespace iris)
-          (field (name Control)
-                 (mask 0x000000FF)
+          (namespace iris))
+(deffacts iris-instruction-fields
+          (field (name Group)
+                 (mask 0x00000007)
                  (shift 0)
+                 (output-type byte))
+          (field (name Operation)
+                 (mask 0x000000F8)
+                 (shift 3)
                  (output-type byte))
           (field (name Destination)
                  (mask 0x0000FF00)
@@ -50,14 +55,6 @@
                  (mask 0xFFFF0000)
                  (shift 16)
                  (output-type word))
-          (field (name Group)
-                 (mask 0x00000007)
-                 (shift 0)
-                 (output-type byte))
-          (field (name Operation)
-                 (mask 0x000000F8)
-                 (shift 3)
-                 (output-type byte))
           (field (name PredicateResult)
                  (mask 0x00000F00)
                  (shift 8)
@@ -83,17 +80,8 @@
                  (mask 0xF0)
                  (shift 4)
                  (input-type byte)
-                 (output-type byte))
-          (field (name GroupByte)
-                 (mask 0x00000007)
-                 (shift 0)
-                 (input-type byte)
-                 (output-type byte))
-          (field (name OperationByte)
-                 (mask 0x000000F8)
-                 (shift 3)
-                 (input-type byte)
-                 (output-type byte))
+                 (output-type byte)))
+(deffacts iris-error-state
           (field (name StatusInError)
                  (mask 0b0000000000000001)
                  (shift 0)
@@ -108,7 +96,8 @@
                  (mask 0b0000000000000100)
                  (shift 2)
                  (input-type word)
-                 (output-type bool))
+                 (output-type bool)))
+(deffacts iris-enums
           (enum (name InstructionGroup)
                 (children Arithmetic
                           Move
@@ -292,15 +281,15 @@
                               Neq)
           (using CRUnitOp
                  syn::Comparator::BooleanOperations)
-          (predop->crop CRAnd 
+          (predop->crop CRAnd
                         BinaryAnd)
-          (predop->crop CROr 
+          (predop->crop CROr
                         BinaryOr)
-          (predop->crop CRNand 
+          (predop->crop CRNand
                         BinaryNand)
-          (predop->crop CRNor 
+          (predop->crop CRNor
                         BinaryNor)
-          (predop->crop CRXor 
+          (predop->crop CRXor
                         BinaryXor)
-          (predop->crop CRNot 
+          (predop->crop CRNot
                         UnaryNot))
