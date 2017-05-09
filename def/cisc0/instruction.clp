@@ -42,25 +42,25 @@
 
 (deffacts cisc0-arithmetic-fields
           (defbitfield ArithmeticFlagImmediate 0b0000000000010000 4)
-          (field (name ArithmeticFlagType)      (mask 0b0000000011100000) (shift 5) (output-type ArithmeticOps))
-          (field (name ArithmeticImmediate)     (mask 0b1111000000000000) (shift 12) (output-type RegisterValue))
-          (field (name ArithmeticDestination)   (mask 0b0000111100000000) (shift 8) (output-type byte))
-          (field (name ArithmeticSource)        (mask 0b1111000000000000) (shift 12) (output-type byte)))
+          (deffield ArithmeticFlagType         0b0000000011100000 5 ArithmeticOps)
+          (deffield ArithmeticImmediate        0b1111000000000000 12 RegisterValue)
+          (deffield ArithmeticDestination      0b0000111100000000 8 byte)
+          (deffield ArithmeticSource           0b1111000000000000 12 byte))
 
 (deffacts cisc0-logical-fields
-          (field (name LogicalFlagImmediate)        (mask 0b0000000000010000) (shift 4) (output-type bool))
-          (field (name LogicalFlagImmediateMask)    (mask 0b0000111100000000) (shift 8) (output-type byte))
-          (field (name LogicalImmediateDestination) (mask 0b1111000000000000) (shift 12) (output-type byte))
-          (field (name LogicalFlagType)             (mask 0b0000000011100000) (shift 4) (output-type LogicalOps))
-          (field (name LogicalRegister0)            (mask 0b0000111100000000) (shift 8) (output-type byte))
-          (field (name LogicalRegister1)            (mask 0b1111000000000000) (shift 12) (output-type byte)))
+          (defbitfield LogicalFlagImmediate         0b0000000000010000 4)
+          (defbitmask LogicalFlagImmediateMask      0b0000111100000000 8)
+          (deffield LogicalImmediateDestination     0b1111000000000000 12 byte)
+          (deffield LogicalFlagType                 0b0000000011100000 5 LogicalOps)
+          (deffield LogicalRegister0                0b0000111100000000 8 byte)
+          (deffield LogicalRegister1                0b1111000000000000 12 byte))
 
 (deffacts cisc0-shift-fields
-          (field (name ShiftFlagLeft)      (mask 0b0000000000010000) (shift 4) (output-type bool))
-          (field (name ShiftFlagImmediate) (mask 0b0000000000100000) (shift 5) (output-type bool))
-          (field (name ShiftImmediate)     (mask 0b1111100000000000) (shift 11) (output-type RegisterValue))
-          (field (name ShiftRegister0)     (mask 0b0000011110000000) (shift 7) (output-type byte))
-          (field (name ShiftRegister1)     (mask 0b0111100000000000) (shift 11) (output-type byte)))
+          (defbitfield ShiftFlagLeft        0b0000000000010000 4)
+          (defbitfield ShiftFlagImmediate   0b0000000000100000 5)
+          (deffield ShiftImmediate          0b1111100000000000 11 RegisterValue)
+          (deffield ShiftRegister0          0b0000011110000000 7  byte)
+          (deffield ShiftRegister1          0b0111100000000000 11 byte))
 
 (deffacts cisc0-branch-fields
           (defbitfield BranchFlagIsConditional   0b0000000010000000 7)
@@ -72,30 +72,28 @@
           (deffield BranchIndirectDestination    0b1111000000000000 12 byte))
 
 (deffacts cisc0-memory-fields
-          (field (name MemoryFlagType)     (mask 0b0000000000110000) (shift 4) (output-type MemoryOperation))
-          (field (name MemoryFlagBitmask)  (mask 0b0000111100000000) (shift 8) (output-type byte))
-          (field (name MemoryFlagIndirect) (mask 0b0000000001000000) (shift 6) (output-type bool))
-          (field (name MemoryOffset)       (mask 0b1111000000000000) (shift 12) (output-type byte))
-          (field (name MemoryRegister)     (mask 0b1111000000000000) (shift 12) (output-type byte))
-          (field (name MemoryAddress)      (mask 0b0000000000001111) (shift 0) (output-type byte))
-          (field (name MemoryValue)        (mask 0b0000000011110000) (shift 4) (output-type byte)))
+          (deffield MemoryFlagType         0b0000000000110000 4 MemoryOperation)
+          (defbitmask MemoryFlagBitmask    0b0000111100000000 8)
+          (defbitmask MemoryFlagIndirect   0b0000000001000000 6)
+          (deffield MemoryOffset           0b1111000000000000 12 byte)
+          (deffield MemoryRegister         0b1111000000000000 12 byte))
 
 (deffacts cisc0-move-fields
-          (field (name MoveBitmask)   (mask 0b0000000011110000) (shift 4) (output-type byte))
-          (field (name MoveRegister0) (mask 0b0000111100000000) (shift 8) (output-type byte))
-          (field (name MoveRegister1) (mask 0b1111000000000000) (shift 12) (output-type byte)))
+          (defbitmask MoveBitmask 0b0000000011110000 4)
+          (deffield MoveRegister0 0b0000111100000000 8 byte)
+          (deffield MoveRegister1 0b1111000000000000 12 byte))
 
 (deffacts cisc0-set-fields
-          (field (name SetBitmask)     (mask 0b0000000011110000) (shift 4) (output-type byte))
-          (field (name SetDestination) (mask 0b0000111100000000) (shift 8) (output-type byte)))
+          (defbitmask SetBitmask   0b0000000011110000 4)
+          (deffield SetDestination 0b0000111100000000 8 byte))
 
 (deffacts cisc0-swap-fields
-          (field (name SwapDestination) (mask 0b0000111100000000) (shift 8) (output-type byte))
-          (field (name SwapSource)      (mask 0b1111000000000000) (shift 12) (output-type byte)))
+          (deffield SwapDestination 0b0000111100000000 8 byte)
+          (deffield SwapSource      0b1111000000000000 12 byte))
 
 (deffacts cisc0-complex-fields
-          (field (name ComplexSubClass)           (mask 0b0000000011110000) (shift 4) (output-type ComplexSubTypes))
-          (field (name ComplexClassEncoding_Type) (mask 0b0000011100000000) (shift 8) (output-type EncodingOperation)))
+          (deffield ComplexSubClass           0b0000000011110000 4 ComplexSubTypes)
+          (deffield ComplexClassEncoding_Type 0b0000011100000000 8 EncodingOperation))
 
 
 (deffacts cisc0-enums
@@ -218,7 +216,20 @@
                             ?shift)
          =>
          (retract ?f)
-         (assert (field (name ?name)
-                        (mask ?mask)
-                        (shift ?shift)
-                        (output-type bool))))
+         (assert (deffield ?name
+                           ?mask
+                           ?shift
+                           bool)))
+
+(defrule translate-bitmask-fact
+         (declare (salience ?*priority:first*))
+         ?f <- (defbitmask ?name
+                           ?mask
+                           ?shift)
+         =>
+         (retract ?f)
+         (assert (deffield ?name
+                           ?mask
+                           ?shift
+                           byte)))
+

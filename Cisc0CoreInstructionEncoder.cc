@@ -117,11 +117,7 @@ namespace cisc0 {
         first = encodeMemoryFlagIndirect(first, indirect);
         // the register and offset occupy the same space
         first = encodeMemoryOffset(first, arg0);
-        // be lazy and set up the second word even if it isn't used. Reduces
-        // the amount of branching and special cases :)
-        auto second = encodeMemoryAddress(0, arg1);
-        second = encodeMemoryValue(0, arg2);
-        return std::make_tuple(readNextWord ? 2 : 1, first, second, 0);
+        return std::make_tuple(1, first, 0, 0);
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeLogical() const {
