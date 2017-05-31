@@ -106,6 +106,7 @@ namespace iris {
 			void setPredicateSource1(bool value) noexcept;
             word getHalfImmediate() const noexcept;
             word getImmediate() const noexcept;
+            byte getDestinationIndex() const noexcept;
 		private:
 			void saveSystemState() noexcept;
 			void restoreSystemState() noexcept;

@@ -176,7 +176,9 @@
                           MoveFromIP
                           MoveToIP
                           MoveFromLR
-                          MoveToLR))
+                          MoveToLR
+                          SaveAllRegisters
+                          RestoreAllRegisters))
           (enum (cast-to byte)
                 (max-size "ArchitectureConstants::MaxOperations")
                 (name CompareOp)

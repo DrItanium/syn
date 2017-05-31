@@ -72,7 +72,7 @@ namespace iris {
 		gpr[255] = _error;
 		gpr[254] = InstructionDecoder::getGroupByte(current);
 		gpr[253] = InstructionDecoder::getOperationByte(current);
-		gpr[252] = InstructionDecoder::getDestinationIndex(current);
+		gpr[252] = getDestinationIndex();
 		gpr[251] = InstructionDecoder::getSource0Index(current);
 		gpr[250] = InstructionDecoder::getSource1Index(current);
 		gpr[249] = getImmediate();
@@ -293,7 +293,6 @@ namespace iris {
 			}
 		};
 		auto moveOperation = [this, makeIllegalInstructionMessage]() {
-            auto getDestinationIndex = [this]() { return InstructionDecoder::getDestinationIndex(current); };
             auto getSource0Index = [this]() { return InstructionDecoder::getSource0Index(current); };
 			auto op = InstructionDecoder::getOperation<MoveOp>(current);
 			raw_instruction codeStorage = 0u;
@@ -371,6 +370,23 @@ namespace iris {
 				case MoveOp::MoveToLR:
                     setLinkRegister(destinationRegister());
 					break;
+                case MoveOp::SaveAllRegisters:
+                    pushValue(destinationRegister()); // save the stack pointer
+                    for (int i = 0; i < ArchitectureConstants::RegisterCount; ++i) {
+                        if (i != getDestinationIndex()) {
+                            pushValue(gpr[i]);
+                        }
+                    }
+                    break;
+                case MoveOp::RestoreAllRegisters:
+                    for (int i = ArchitectureConstants::RegisterCount - 1; i >= 0; --i) {
+                        if (i != getDestinationIndex()) {
+                            gpr[i] = stack[destinationRegister()];
+                            --destinationRegister();
+                        }
+                    }
+                    destinationRegister() = stack[destinationRegister()];
+                    break;
 				default:
 					makeIllegalInstructionMessage("move code");
 					break;
@@ -519,4 +535,7 @@ namespace iris {
 
     word Core::getHalfImmediate() const noexcept { return InstructionDecoder::getHalfImmediate(current); }
     word Core::getImmediate() const noexcept { return InstructionDecoder::getImmediate(current); }
+    byte Core::getDestinationIndex() const noexcept {
+        return InstructionDecoder::getDestinationIndex(current);
+    }
 }

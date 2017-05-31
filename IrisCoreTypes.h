@@ -39,7 +39,6 @@ namespace iris {
         AddressCount = AddressMax + 1,
 		RegisterMax = 0xFF,
 		ConditionRegisterCount = 16,
-		StackPointerIndex = RegisterCount - 1,
 		MaxGroups = 8,
 		MaxOperations = 32,
 		ErrorDispatchVectorBase = 0x00FF,
