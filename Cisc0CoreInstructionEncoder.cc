@@ -217,6 +217,17 @@ namespace cisc0 {
 	Word encodeSubType(Word value, byte mask) noexcept {
 		return ComplexSubTypeToNestedType<t>::encodeType(value, convertBitmask<t>(mask));
 	}
+
+	template<ComplexSubTypes t>
+	Word encodeArg0(Word value, byte index) noexcept {
+		static_assert(t != ComplexSubTypes::Encoding, "Encoding operations take in no arguments!");
+		switch(t) {
+			case ComplexSubTypes::Extended:
+				return encodeComplexClassExtended_Arg0(value, index);
+			default:
+				throw syn::Problem("Given complex sub type does not take in arguments!");
+		}
+	}
     InstructionEncoder::Encoding InstructionEncoder::encodeComplex() const {
         auto sType = static_cast<ComplexSubTypes>(subType);
 		auto first = encodeControl(type);
@@ -227,7 +238,7 @@ namespace cisc0 {
 			return std::make_tuple(1, first, 0, 0);
         } else if (sType == ComplexSubTypes::Extended) {
 			first = encodeSubType<ComplexSubTypes::Extended>(first, bitmask);
-			first = encodeComplexClassExtended_Arg0(first, arg0);
+			first = encodeArg0<ComplexSubTypes::Extended>(first, arg0);
 			return std::make_tuple(1, first, 0, 0);
 		} else {
 			throw syn::Problem("Illegal complex instruction group!");
