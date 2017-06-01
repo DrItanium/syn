@@ -164,6 +164,8 @@
                           PopValueAddr
                           PushRegisters
                           PopRegisters
+                          ;SaveRegisters
+                          ;LoadRegisters
                           IsEven)
                 (cast-to byte)
                 (max-size "8")))
