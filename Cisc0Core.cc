@@ -361,15 +361,15 @@ namespace cisc0 {
 
     void Core::extendedOperation(DecodedInstruction&& inst) {
         switch(inst.getExtendedOperation()) {
-            case ExtendedOperation::RestoreValueAddr:
+            case ExtendedOperation::PopValueAddr:
                 getValueRegister() = popRegisterValue();
                 getAddressRegister() = popRegisterValue();
                 break;
-            case ExtendedOperation::SaveValueAddr:
+            case ExtendedOperation::PushValueAddr:
                 pushDword(getAddressRegister());
                 pushDword(getValueRegister());
                 break;
-            case ExtendedOperation::SaveRegisters:
+            case ExtendedOperation::PushRegisters:
                 pushDword(getStackPointer());
                 for (int i = 0; i < static_cast<int>(ArchitectureConstants::RegisterCount); ++i) {
                     switch(i) {
@@ -382,7 +382,7 @@ namespace cisc0 {
                     }
                 }
                 break;
-            case ExtendedOperation::RestoreRegisters:
+            case ExtendedOperation::PopRegisters:
                 for (int i = ArchitectureConstants::RegisterCount - 1; i >= 0; --i) {
                     switch(i) {
                         case ArchitectureConstants::InstructionPointer:
@@ -394,6 +394,9 @@ namespace cisc0 {
                     }
                 }
                 getStackPointer() = popRegisterValue();
+                break;
+            case ExtendedOperation::IsEven:
+                getConditionRegister() = normalizeCondition(syn::isEven(registerValue(inst.getComplexExtendedArg<0>())));
                 break;
             default:
                 throw syn::Problem("Undefined extended operation!");

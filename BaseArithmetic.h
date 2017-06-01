@@ -569,6 +569,11 @@ template<typename T, T min, T max>
 constexpr bool inRangeExcludingMaximum(T value) noexcept {
     return valueIsInRange<T, min, max, false>(value);
 }
+
+template<typename T>
+constexpr bool isEven(T value) noexcept {
+    return ((value >> 1) << 1) == value;
+}
 } // end namespace syn
 
 #endif // end SYN_BASE_ARITHMETIC_H__

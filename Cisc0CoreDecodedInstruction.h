@@ -144,6 +144,12 @@ namespace cisc0 {
                     return decodeArithmeticSource(_rawValue);
                 }
             }
+
+            template<int index>
+            inline byte getComplexExtendedArg() const noexcept {
+                static_assert(index >= 0 && index < 1, "Illegal complex extended arg index!");
+                return decodeComplexClassExtended_Arg0(_rawValue);
+            }
             template<Operation op>
             inline byte getBitmask() const noexcept {
                 static_assert(hasBitmask(op), "provided operation does not use a bitmask!");

@@ -94,7 +94,9 @@
 (deffacts cisc0-complex-fields
           (deffield ComplexSubClass           0b0000000011110000 4 ComplexSubTypes)
           (deffield ComplexClassEncoding_Type 0b0000011100000000 8 EncodingOperation)
-          (deffield ComplexClassExtended_Type 0b0000011100000000 8 ExtendedOperation))
+          (deffield ComplexClassExtended_Type 0b0000011100000000 8 ExtendedOperation)
+          (deffield ComplexClassExtended_Arg0 0b0111100000000000 11 byte))
+
 
 
 (deffacts cisc0-enums
@@ -158,10 +160,11 @@
                 (cast-to byte)
                 (max-size "8"))
           (enum (name ExtendedOperation)
-                (children SaveValueAddr
-                          RestoreValueAddr
-                          SaveRegisters
-                          RestoreRegisters)
+                (children PushValueAddr
+                          PopValueAddr
+                          PushRegisters
+                          PopRegisters
+                          IsEven)
                 (cast-to byte)
                 (max-size "8")))
 
