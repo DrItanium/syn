@@ -91,9 +91,8 @@ namespace cisc0 {
 		return encodeControl(0, _type);
 	}
 	template<Operation op> 
-	struct OperationToType { 
+	struct OperationToType : std::integral_constant<bool, false> { 
 		using type = decltype(syn::defaultErrorState<Operation>); 
-		static constexpr auto isImplemented = false;
 		static constexpr RegisterValue encodeType(RegisterValue input, byte value) noexcept {
 			return input; 
 		}
@@ -101,9 +100,8 @@ namespace cisc0 {
 
 #define DefOpToType( targetOperation , actualType , encoder ) \
 	template<> \
-	struct OperationToType< Operation :: targetOperation > { \
+	struct OperationToType< Operation :: targetOperation > : std::integral_constant<bool, true> { \
 		using type = actualType; \
-		static constexpr auto isImplemented = true; \
 		static constexpr RegisterValue encodeType(RegisterValue input, byte value) noexcept { \
 			return encoder ( input , static_cast < actualType > ( value ) ) ; \
 		} \
@@ -118,33 +116,36 @@ namespace cisc0 {
 	template<Operation op>
 	constexpr RegisterValue encodeType(RegisterValue input, byte t) noexcept {
 		using TypeConverter = OperationToType<op>;
-		static_assert(TypeConverter::isImplemented, "Specialized implementation for encoding the instruction type has not been provided!");
+		static_assert(TypeConverter::value, "Specialized implementation for encoding the instruction type has not been provided!");
 		return TypeConverter::encodeType ( input, t) ; 
 	}
 
 
 	template<Operation op>
-	struct HasImmediateFlag : std::integral_constant<bool, false> { };
+	struct HasImmediateFlag : std::integral_constant<bool, false> { 
+		static constexpr RegisterValue setImmediateBit(RegisterValue value, bool immediate) noexcept {
+			return value;
+		}
+	};
 
-#define DefImmediateFlag( o ) template<> struct HasImmediateFlag < Operation :: o > : std::integral_constant<bool, true > { }
-	DefImmediateFlag(Arithmetic);
-	DefImmediateFlag(Shift);
-	DefImmediateFlag(Compare);
+#define DefImmediateFlag( o , action ) template<> \
+	struct HasImmediateFlag < Operation :: o > : std::integral_constant<bool, true > {  \
+		static constexpr RegisterValue setImmediateBit(RegisterValue value, bool immediate) noexcept { \
+			return action ( value , immediate ); \
+		} \
+	}
+	DefImmediateFlag(Arithmetic, encodeArithmeticFlagImmediate);
+	DefImmediateFlag(Shift, encodeShiftFlagImmediate);
+	DefImmediateFlag(Compare, encodeCompareImmediate);
+	DefImmediateFlag(Logical, encodeLogicalFlagImmediate);
+	DefImmediateFlag(Branch, encodeBranchFlagIsImmediate);
 #undef DefImmediateFlag
+
 
 	template<Operation op>
 	constexpr RegisterValue setImmediateBit(RegisterValue input, bool immediate) noexcept {
 		static_assert(HasImmediateFlag<op>::value, "Given operation type does not have an immediate bit!");
-		switch(op) {
-			case Operation::Arithmetic:
-				return encodeArithmeticFlagImmediate(input, immediate);
-			case Operation::Shift:
-				return encodeShiftFlagImmediate(input, immediate);
-			case Operation::Compare:
-				return encodeCompareImmediateFlag(input, immediate);
-			default:
-				return input;
-		}
+		return HasImmediateFlag<op>::setImmediateBit(input, immediate);
 	}
 
 
@@ -209,9 +210,10 @@ namespace cisc0 {
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeLogical() const {
-		auto first = encodeType<Operation::Logical>(commonEncoding(), _subType);
-        first = encodeLogicalFlagImmediate(first, _immediate);
-		first = encodeArg0<Operation::Logical>(first, _arg0, _immediate);
+		constexpr auto op = Operation::Logical;
+		auto first = encodeType<op>(commonEncoding(), _subType);
+		first = setImmediateBit<op>(first, _immediate);
+		first = encodeArg0<op>(first, _arg0, _immediate);
         if (_immediate) {
             first = encodeLogicalFlagImmediateMask(first, _bitmask);
             auto maskedImmediate = mask(_bitmask) & _fullImmediate;
@@ -225,10 +227,10 @@ namespace cisc0 {
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeBranch() const {
-        auto first = commonEncoding();
+		constexpr auto op = Operation::Branch;
+		auto first = setImmediateBit<op>(commonEncoding(), _immediate);
         first = encodeBranchFlagIsConditional(first, _isConditional);
         first = encodeBranchFlagIsIfForm(first, _isIf);
-        first = encodeBranchFlagIsImmediate(first, _immediate);
         first = encodeBranchFlagIsCallForm(first, _isCall);
         if (_isIf) {
             first = encodeBranchIfOnTrue(first, _arg0);
