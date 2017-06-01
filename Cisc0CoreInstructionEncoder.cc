@@ -58,35 +58,49 @@ namespace cisc0 {
         return 1 + (readLower(bitmask) ? 1 : 0) + (readUpper(bitmask) ? 1 : 0);
     }
 
+	template<bool v>
+	using ConditionFulfillment = std::integral_constant<bool, v>;
+	template<Operation op>
+	struct HasArg0 : ConditionFulfillment<false> {
+		static constexpr RegisterValue encodeArg0(RegisterValue input, byte index, bool immediate) noexcept {
+			return input;
+		}
+	};
+
+	template<>
+	struct HasArg0 < Operation::Logical > : ConditionFulfillment<true> {
+		static constexpr RegisterValue encodeArg0(RegisterValue input, byte index, bool immediate) noexcept {
+			if (immediate) {
+				return encodeLogicalImmediateDestination(input, index);
+			} else {
+				return encodeLogicalRegister0(input, index);
+			}
+		}
+	};
+
+#define DefHasArg0(o, action) \
+	template<> \
+	struct HasArg0 < Operation:: o > : ConditionFulfillment< true >  { \
+		static constexpr RegisterValue encodeArg0(RegisterValue input, byte index, bool immediate) noexcept { \
+			return action ( input , index ); \
+		} \
+	}
+DefHasArg0(Arithmetic, encodeArithmeticDestination);
+DefHasArg0(Swap, encodeSwapDestination);
+DefHasArg0(Move, encodeMoveRegister0);
+DefHasArg0(Shift, encodeShiftRegister0);
+DefHasArg0(Compare, encodeCompareRegister0);
+DefHasArg0(Set, encodeSetDestination);
+DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the same space
+#undef DefHasArg0
+
+
 	template<Operation op>
 	Word encodeArg0(Word value, byte index, bool immediate = false) noexcept {
-		static_assert(op != Operation::Branch, "Branch operations must be handled manually!");
-		switch(op) {
-			case Operation::Arithmetic:
-				return encodeArithmeticDestination(value, index);
-			case Operation::Move:
-				return encodeMoveRegister0(value, index);
-			case Operation::Swap:
-				return encodeSwapDestination(value, index);
-			case Operation::Shift:
-				return encodeShiftRegister0(value, index);
-			case Operation::Compare:
-				return encodeCompareRegister0(value, index);
-			case Operation::Set:
-				return encodeSetDestination(value, index);
-			case Operation::Memory:
-				// the register and offset occupy the same space
-				return encodeMemoryOffset(value, index);
-			case Operation::Logical:
-				if (immediate) {
-					return encodeLogicalImmediateDestination(value, index);
-				} else {
-					return encodeLogicalRegister0(value, index);
-				}
-			default:
-				throw syn::Problem("Undefined operation!");
-		}
+		static_assert(HasArg0<op>::value, "Provided operation does not have arg0");
+		return HasArg0<op>::encodeArg0(value, index, immediate);
 	}
+
 	RegisterValue InstructionEncoder::commonEncoding() const {
 		return encodeControl(0, _type);
 	}
