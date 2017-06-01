@@ -35,14 +35,14 @@
 
 (deffacts cisc0-compare-fields
           (defbitfield CompareImmediateFlag 0b0010000000000000 13)
-          (deffield CompareType             0b0000011100000000 8 CompareStyle)
+          (defsubtypefield CompareType      0b0000011100000000 8 CompareStyle)
           (deffield CompareRegister0        0b0000000000001111 0 byte)
           (deffield CompareRegister1        0b0000000011110000 4 byte)
           (deffield CompareImmediate        0b1111111100000000 8 byte))
 
 (deffacts cisc0-arithmetic-fields
           (defbitfield ArithmeticFlagImmediate 0b0000000000010000 4)
-          (deffield ArithmeticFlagType         0b0000000011100000 5 ArithmeticOps)
+          (defsubtypefield ArithmeticFlagType  0b0000000011100000 5 ArithmeticOps)
           (deffield ArithmeticImmediate        0b1111000000000000 12 RegisterValue)
           (deffield ArithmeticDestination      0b0000111100000000 8 byte)
           (deffield ArithmeticSource           0b1111000000000000 12 byte))
@@ -51,7 +51,7 @@
           (defbitfield LogicalFlagImmediate         0b0000000000010000 4)
           (defbitmask LogicalFlagImmediateMask      0b0000111100000000 8)
           (deffield LogicalImmediateDestination     0b1111000000000000 12 byte)
-          (deffield LogicalFlagType                 0b0000000011100000 5 LogicalOps)
+          (defsubtypefield LogicalFlagType          0b0000000011100000 5 LogicalOps)
           (deffield LogicalRegister0                0b0000111100000000 8 byte)
           (deffield LogicalRegister1                0b1111000000000000 12 byte))
 
@@ -72,7 +72,7 @@
           (deffield BranchIndirectDestination    0b1111000000000000 12 byte))
 
 (deffacts cisc0-memory-fields
-          (deffield MemoryFlagType         0b0000000000110000 4 MemoryOperation)
+          (defsubtypefield MemoryFlagType  0b0000000000110000 4 MemoryOperation)
           (defbitmask MemoryFlagBitmask    0b0000111100000000 8)
           (defbitmask MemoryFlagIndirect   0b0000000001000000 6)
           (deffield MemoryOffset           0b1111000000000000 12 byte)
@@ -92,7 +92,7 @@
           (deffield SwapSource      0b1111000000000000 12 byte))
 
 (deffacts cisc0-complex-fields
-          (deffield ComplexSubClass           0b0000000011110000 4 ComplexSubTypes)
+          (defsubtypefield ComplexSubClass    0b0000000011110000 4 ComplexSubTypes)
           (deffield ComplexClassEncoding_Type 0b0000111100000000 8 EncodingOperation)
           (deffield ComplexClassExtended_Type 0b0000111100000000 8 ExtendedOperation)
           (deffield ComplexClassExtended_Arg0 0b1111000000000000 12 byte))
@@ -216,6 +216,20 @@
           (top-level-to-sub-type Operation Logical -> LogicalOps)
           (top-level-to-sub-type Operation Complex -> ComplexSubTypes)
           )
+(defrule translate-defsubtype-decl
+         (declare (salience ?*priority:first*))
+         ?f <- (defsubtypefield ?name
+                                ?mask
+                                ?shift
+                                ?output-type)
+         =>
+         (retract ?f)
+         (assert (deffield ?name
+                           ?mask
+                           ?shift
+                           ?output-type)
+                 (sub-type-field ?name
+                                 ?output-type)))
 (defrule translate-flat-fact
          (declare (salience ?*priority:first*))
          ?f <- (deffield ?name
