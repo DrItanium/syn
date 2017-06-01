@@ -91,104 +91,104 @@ namespace cisc0 {
 				throw syn::Problem("Undefined operation!");
 		}
 	}
-
+	
     InstructionEncoder::Encoding InstructionEncoder::encodeArithmetic() const {
-        auto first = encodeControl(type);
-        first = encodeArithmeticFlagImmediate(first, immediate);
-        first = encodeArithmeticFlagType(first, static_cast<ArithmeticOps>(subType));
-		first = encodeArg0<Operation::Arithmetic>(first, arg0);
-        first = immediate ? encodeArithmeticImmediate(first, arg1) : encodeArithmeticSource(first, arg1);
+        auto first = encodeControl(_type);
+        first = encodeArithmeticFlagImmediate(first, _immediate);
+        first = encodeArithmeticFlagType(first, static_cast<ArithmeticOps>(_subType));
+		first = encodeArg0<Operation::Arithmetic>(first, _arg0);
+        first = _immediate ? encodeArithmeticImmediate(first, _arg1) : encodeArithmeticSource(first, _arg1);
         return std::make_tuple(1, first, 0, 0);
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeMove() const {
-        auto first = encodeControl(type);
-        first = encodeMoveBitmask(first, bitmask);
-		first = encodeArg0<Operation::Move>(first, arg0);
-        first = encodeMoveRegister1(first, arg1);
+        auto first = encodeControl(_type);
+        first = encodeMoveBitmask(first, _bitmask);
+		first = encodeArg0<Operation::Move>(first, _arg0);
+        first = encodeMoveRegister1(first, _arg1);
         return std::make_tuple(1, first, 0, 0);
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeSwap() const {
-        return std::make_tuple(1, encodeSwapSource( encodeSwapDestination( encodeControl(type), arg0), arg1), 0, 0);
+        return std::make_tuple(1, encodeSwapSource( encodeSwapDestination( encodeControl(_type), _arg0), _arg1), 0, 0);
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeShift() const {
-        auto first = encodeControl(type);
-        first = encodeShiftFlagImmediate(first, immediate);
-        first = encodeShiftFlagLeft(first, shiftLeft);
-		first = encodeArg0<Operation::Shift>(first, arg0);
-        first = immediate ? encodeShiftImmediate(first, arg1) : encodeShiftRegister1(first, arg1);
+        auto first = encodeControl(_type);
+        first = encodeShiftFlagImmediate(first, _immediate);
+        first = encodeShiftFlagLeft(first, _shiftLeft);
+		first = encodeArg0<Operation::Shift>(first, _arg0);
+        first = _immediate ? encodeShiftImmediate(first, _arg1) : encodeShiftRegister1(first, _arg1);
         return std::make_tuple(1, first, 0, 0);
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeCompare() const {
-        auto first = encodeControl(type);
-        first = encodeCompareType(first, static_cast<CompareStyle>(subType));
-        first = encodeCompareImmediateFlag(first, immediate);
-		auto second = encodeArg0<Operation::Compare>(0, arg0);
-        second = immediate ? encodeCompareImmediate(second, arg1) : encodeCompareRegister1(second, arg1);
+        auto first = encodeControl(_type);
+        first = encodeCompareType(first, static_cast<CompareStyle>(_subType));
+        first = encodeCompareImmediateFlag(first, _immediate);
+		auto second = encodeArg0<Operation::Compare>(0, _arg0);
+        second = _immediate ? encodeCompareImmediate(second, _arg1) : encodeCompareRegister1(second, _arg1);
         return std::make_tuple(2, first, second, 0);
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeSet() const {
-        int count = instructionSizeFromImmediateMask(bitmask);
-        auto first = encodeControl(type);
-        first = encodeSetBitmask(first, bitmask);
-		first = encodeArg0<Operation::Set>(first, arg0);
+        int count = instructionSizeFromImmediateMask(_bitmask);
+        auto first = encodeControl(_type);
+        first = encodeSetBitmask(first, _bitmask);
+		first = encodeArg0<Operation::Set>(first, _arg0);
         // use the mask during encoding since we know how many Words the
         // instruction is made up of
-        auto maskedValue = mask(bitmask) & fullImmediate;
+        auto maskedValue = mask(_bitmask) & _fullImmediate;
         auto second = static_cast<Word>(maskedValue);
         auto third = static_cast<Word>(maskedValue >> 16);
         return std::make_tuple(count, first, second, third);
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeMemory() const {
-        auto first = encodeControl(type);
-        first = encodeMemoryFlagType(first, static_cast<MemoryOperation>(subType));
-        first = encodeMemoryFlagBitmask(first, bitmask);
-        first = encodeMemoryFlagIndirect(first, indirect);
+        auto first = encodeControl(_type);
+        first = encodeMemoryFlagType(first, static_cast<MemoryOperation>(_subType));
+        first = encodeMemoryFlagBitmask(first, _bitmask);
+        first = encodeMemoryFlagIndirect(first, _indirect);
         // the register and offset occupy the same space
-		first = encodeArg0<Operation::Memory>(first, arg0);
+		first = encodeArg0<Operation::Memory>(first, _arg0);
         return std::make_tuple(1, first, 0, 0);
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeLogical() const {
-        auto first = encodeControl(type);
-        first = encodeLogicalFlagImmediate(first, immediate);
-        first = encodeLogicalFlagType(first, static_cast<LogicalOps>(subType));
-		first = encodeArg0<Operation::Logical>(first, arg0, immediate);
-        if (immediate) {
-            first = encodeLogicalFlagImmediateMask(first, bitmask);
-            auto maskedImmediate = mask(bitmask) & fullImmediate;
+        auto first = encodeControl(_type);
+        first = encodeLogicalFlagImmediate(first, _immediate);
+        first = encodeLogicalFlagType(first, static_cast<LogicalOps>(_subType));
+		first = encodeArg0<Operation::Logical>(first, _arg0, _immediate);
+        if (_immediate) {
+            first = encodeLogicalFlagImmediateMask(first, _bitmask);
+            auto maskedImmediate = mask(_bitmask) & _fullImmediate;
             auto second = static_cast<Word>(maskedImmediate);
             auto third = static_cast<Word>(maskedImmediate >> 16);
-            return std::make_tuple(instructionSizeFromImmediateMask(bitmask), first, second, third);
+            return std::make_tuple(instructionSizeFromImmediateMask(_bitmask), first, second, third);
         } else {
-            first = encodeLogicalRegister1(first, arg1);
+            first = encodeLogicalRegister1(first, _arg1);
             return std::make_tuple(1, first, 0, 0);
         }
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeBranch() const {
-        auto first = encodeControl(type);
-        first = encodeBranchFlagIsConditional(first, isConditional);
-        first = encodeBranchFlagIsIfForm(first, isIf);
-        first = encodeBranchFlagIsImmediate(first, immediate);
-        first = encodeBranchFlagIsCallForm(first, isCall);
-        if (isIf) {
-            first = encodeBranchIfOnTrue(first, arg0);
-            first = encodeBranchIfOnFalse(first, arg1);
+        auto first = encodeControl(_type);
+        first = encodeBranchFlagIsConditional(first, _isConditional);
+        first = encodeBranchFlagIsIfForm(first, _isIf);
+        first = encodeBranchFlagIsImmediate(first, _immediate);
+        first = encodeBranchFlagIsCallForm(first, _isCall);
+        if (_isIf) {
+            first = encodeBranchIfOnTrue(first, _arg0);
+            first = encodeBranchIfOnFalse(first, _arg1);
             return std::make_tuple(1, first, 0, 0);
         } else {
-            if (immediate) {
+            if (_immediate) {
                 // encode the 24-bit number
-                auto second = static_cast<Word>(fullImmediate);
-				auto third = static_cast<Word>(fullImmediate >> 16);
+                auto second = static_cast<Word>(_fullImmediate);
+				auto third = static_cast<Word>(_fullImmediate >> 16);
                 return std::make_tuple(3, first, second, third);
             } else {
-                first = encodeBranchIndirectDestination(first, arg0);
+                first = encodeBranchIndirectDestination(first, _arg0);
                 return std::make_tuple(1, first, 0, 0);
             }
         }
@@ -229,16 +229,16 @@ namespace cisc0 {
 		}
 	}
     InstructionEncoder::Encoding InstructionEncoder::encodeComplex() const {
-        auto sType = static_cast<ComplexSubTypes>(subType);
-		auto first = encodeControl(type);
+        auto sType = static_cast<ComplexSubTypes>(_subType);
+		auto first = encodeControl(_type);
 		first = encodeComplexSubClass(first, sType);
         if (sType == ComplexSubTypes::Encoding) {
 			// right now it is a single word
-			first = encodeSubType<ComplexSubTypes::Encoding>(first, bitmask);
+			first = encodeSubType<ComplexSubTypes::Encoding>(first, _bitmask);
 			return std::make_tuple(1, first, 0, 0);
         } else if (sType == ComplexSubTypes::Extended) {
-			first = encodeSubType<ComplexSubTypes::Extended>(first, bitmask);
-			first = encodeArg0<ComplexSubTypes::Extended>(first, arg0);
+			first = encodeSubType<ComplexSubTypes::Extended>(first, _bitmask);
+			first = encodeArg0<ComplexSubTypes::Extended>(first, _arg0);
 			return std::make_tuple(1, first, 0, 0);
 		} else {
 			throw syn::Problem("Illegal complex instruction group!");
@@ -261,7 +261,7 @@ namespace cisc0 {
             { Operation::Complex, std::mem_fn(&InstructionEncoder::encodeComplex) },
         };
 
-        auto result = dispatchTable.find(type);
+        auto result = dispatchTable.find(_type);
         if (result == dispatchTable.end()) {
             throw syn::Problem("Illegal type to encode!");
         } else {
@@ -273,31 +273,23 @@ namespace cisc0 {
         return std::get<0>(encode());
     }
     void InstructionEncoder::clear() {
-        currentLine = 0;
-        address = 0;
-        type = Operation::Memory;
-        immediate = false;
-        shiftLeft = false;
-        isIf = false;
-        isCall = false;
-        isConditional = false;
-        bitmask = 0b0000;
-        arg0 = 0;
-        arg1 = 0;
-        arg2 = 0;
-        isLabel = false;
-        labelValue.clear();
-        subType = 0;
-        fullImmediate = 0;
-        indirect = false;
+        _currentLine = 0;
+        _address = 0;
+        _type = Operation::Memory;
+        _immediate = false;
+        _shiftLeft = false;
+        _isIf = false;
+        _isCall = false;
+        _isConditional = false;
+        _bitmask = 0b0000;
+        _arg0 = 0;
+        _arg1 = 0;
+        _arg2 = 0;
+        _isLabel = false;
+        _labelValue.clear();
+        _subType = 0;
+        _fullImmediate = 0;
+        _indirect = false;
     }
-
-	void InstructionEncoder::setBitmask(byte value) noexcept {
-		bitmask = value;
-	}
-
-	void InstructionEncoder::setSubType(byte value) noexcept {
-		subType = value;
-	}
 
 }

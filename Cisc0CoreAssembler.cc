@@ -31,19 +31,19 @@
 namespace cisc0 {
 	void AssemblerState::resolveInstructions() {
 		for (auto & op : finishedInstructions) {
-			if (op.isLabel) {
-				auto label = op.labelValue;
+			if (op.isLabel()) {
+				auto label = op.getLabelValue();
 				auto f = labels.find(label);
 				if (f == labels.end()) {
 					std::stringstream stream;
 					stream << "label " << label << " does not exist!\n";
 					throw syn::Problem(stream.str());
 				}
-				op.fullImmediate = f->second;
+				op.setFullImmediate(f->second);
 			}
 			// now that it has been resolved, we need to go through and setup
 			// the encoding correctly!
-			auto address = op.address;
+			auto address = op.getAddress();
 			int count;
 			Word first, second, third;
 			std::tie(count, first, second, third) = op.encode();

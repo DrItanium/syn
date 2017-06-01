@@ -79,6 +79,14 @@ namespace cisc0 {
 					}
 					parent.currentAddress += width;
 				}
+			void setLabel(const std::string& name) noexcept {
+				_label = name;
+				_isLabel = true;
+			}
+			void setValue(RegisterValue value) noexcept {
+				_isLabel = false;
+				_value = value;
+			}
 			bool _isLabel;
 			std::string _label;
 			RegisterValue _value;
@@ -110,7 +118,7 @@ namespace cisc0 {
 		template<typename Input>
 			AssemblerInstruction(const Input& in, AssemblerState& parent) {
 				clear();
-				address = parent.currentAddress;
+				setAddress(parent.currentAddress);
 			}
 
 		template<typename Input>
@@ -126,7 +134,7 @@ namespace cisc0 {
 
 		template<typename Input>
 			void success(const Input& in, AssemblerInstruction& parent) {
-				parent.fullImmediate = getValue();
+				parent.setFullImmediate(getValue());
 			}
 
 		template<typename Input>
@@ -145,8 +153,7 @@ namespace cisc0 {
 			}
 		template<typename Input, int width>
 			void success(const Input& in, AssemblerWordCreator<width>& parent) {
-				parent._value = getValue();
-				parent._isLabel = false;
+				parent.setValue(getValue());
 			}
 		template<typename Input>
 			void success(const Input& in, WordCreator& parent) {
@@ -169,7 +176,7 @@ namespace cisc0 {
 	struct Group ## title : syn::Indirection<Symbol ## title> { }; \
 	DefAction(Group ## title) { \
 		DefApplyInstruction { \
-			state.type = Operation:: title ; \
+			state.setType < Operation:: title > (); \
 		} \
 	}
 	// done
@@ -194,7 +201,7 @@ namespace cisc0 {
 
 	DefAction(UsesImmediate) {
 		DefApplyInstruction {
-			state.immediate = true;
+			state.markImmediate();
 		}
 	};
 
@@ -205,7 +212,7 @@ namespace cisc0 {
 	struct Number : public pegtl::state<NumberContainer, pegtl::sor<syn::HexadecimalNumber, DecimalNumber, syn::BinaryNumber > > { };
 	DefAction(Number) {
 		DefApplyInstruction {
-			state.isLabel = false;
+			state.markAsNotLabel();
 		}
 		DefApplyGeneric(ChangeCurrentAddress) { }
 		DefApplyGeneric(WordCreator) { }
@@ -222,17 +229,15 @@ namespace cisc0 {
 	using Lexeme = syn::Lexeme;
 	DefAction(Lexeme) {
 		DefApplyInstruction {
-			state.labelValue = in.string();
-			state.fullImmediate = 0;
-			state.isLabel = true;
+			state.setFullImmediate(0);
+			state.setLabelName(in.string());
 		}
 		DefApplyGeneric(RegisterLabel) {
 			state.setTitle(in.string());
 		}
 		template<typename Input, int width>
 			static void applyToWordCreator(const Input& in, AssemblerWordCreator<width>& state) {
-				state._label = in.string();
-				state._isLabel = true;
+				state.setLabel(in.string());
 			}
 
 		DefApplyGeneric(WordCreator) {
@@ -292,7 +297,7 @@ namespace cisc0 {
 	struct TwoGPRs : TwoArgumentOperation<SourceRegister> { };
 	DefAction(TwoGPRs) {
 		DefApplyInstruction {
-			state.immediate = false;
+			state.markImmediate(false);
 		}
 	};
 
@@ -303,7 +308,7 @@ namespace cisc0 {
 
 	DefAction(ShiftLeftOrRight) {
 		DefApplyInstruction {
-			state.shiftLeft = (in.string() == "left");
+			state.setShiftDirection(in.string() == "left");
 		}
 	};
 
@@ -315,7 +320,7 @@ namespace cisc0 {
 	struct ShiftImmediateValue : pegtl::seq<Number> { };
 	DefAction(ShiftImmediateValue) {
 		DefApplyInstruction {
-			state.setArg<1>(static_cast<byte>(state.fullImmediate) & 0b11111);
+			state.setArg<1>(static_cast<byte>(state.getFullImmediate()) & 0b11111);
 		}
 	};
 	struct ShiftArgs : pegtl::sor<TwoGPRs, ImmediateOperationArgs<ShiftImmediateValue>> { };
@@ -325,7 +330,7 @@ namespace cisc0 {
 	struct ByteCastImmediate : pegtl::seq<Number> { };
 	DefAction(ByteCastImmediate) {
 		DefApplyInstruction {
-			state.setArg<1>(static_cast<byte>(state.fullImmediate));
+			state.setArg<1>(static_cast<byte>(state.getFullImmediate()));
 		}
 	};
 #define DefSubType(title, str, subgroup) \
@@ -382,7 +387,7 @@ namespace cisc0 {
 	struct Arg0ImmediateValue : pegtl::seq<Number> { };
 	DefAction(Arg0ImmediateValue) {
 		DefApplyInstruction {
-			state.setArg<0>(static_cast<byte>(state.fullImmediate) & 0b1111);
+			state.setArg<0>(static_cast<byte>(state.getFullImmediate()) & 0b1111);
 		}
 	};
 #define DefArithmeticOperation(title, str) \
@@ -438,14 +443,14 @@ namespace cisc0 {
 	struct FlagIndirect : public syn::Indirection<SymbolIndirect> { };
 	DefAction(FlagIndirect) {
 		DefApplyInstruction {
-			state.indirect = true;
+			state.markIndirect();
 		}
 	};
 	DefSymbol(Direct, direct);
 	struct FlagDirect : public syn::Indirection<SymbolDirect> { };
 	DefAction(FlagDirect) {
 		DefApplyInstruction {
-			state.indirect = false;
+			state.markIndirect(false);
 		}
 	};
 	struct FlagDirectOrIndirect : pegtl::sor<FlagDirect, FlagIndirect> { };
@@ -596,22 +601,22 @@ namespace cisc0 {
 	struct BranchFlagIf : public syn::Indirection<SymbolIf> { };
 	DefAction(BranchFlagIf) {
 		DefApplyInstruction {
-			state.isIf = true;
-			state.isConditional = false;
+			state.markIfStatement();
+			state.markUnconditional();
 		}
 	};
 
 	struct BranchFlagCall : public syn::Indirection<SymbolCall> { };
 	DefAction(BranchFlagCall) {
 		DefApplyInstruction {
-			state.isCall = true;
+			state.markCall();
 		}
 	};
 
 	struct BranchFlagNoCall : public syn::Indirection<SymbolNoCall> { };
 	DefAction(BranchFlagNoCall) {
 		DefApplyInstruction {
-			state.isCall = false;
+			state.markCall(false);
 		}
 	};
 
@@ -620,14 +625,14 @@ namespace cisc0 {
 	struct BranchFlagConditional : public syn::Indirection<SymbolConditional> { };
 	DefAction(BranchFlagConditional) {
 		DefApplyInstruction {
-			state.isConditional = true;
+			state.markConditional();
 		}
 	};
 
 	struct BranchFlagUnconditional : public syn::Indirection<SymbolUnconditional> { };
 	DefAction(BranchFlagUnconditional) {
 		DefApplyInstruction {
-			state.isConditional = false;
+			state.markUnconditional();
 		}
 	};
 

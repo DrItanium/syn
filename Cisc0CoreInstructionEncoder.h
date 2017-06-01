@@ -35,56 +35,63 @@
 namespace cisc0 {
 	struct InstructionEncoder {
 		using Encoding = std::tuple<int, Word, Word, Word>;
-		int currentLine;
-		RegisterValue address;
-		Operation type;
-		bool immediate;
-		bool shiftLeft;
-		bool isIf;
-		bool isCall;
-		bool isConditional;
-		bool indirect;
-		byte bitmask;
-		byte arg0;
-		byte arg1;
-		byte arg2;
-		bool isLabel;
-		std::string labelValue;
-		byte subType;
-		RegisterValue fullImmediate;
 		int numWords() const;
 		Encoding encode() const;
 		void clear();
+		template<Operation op>
+		void setType() noexcept {
+			_type = op;
+		}
+		void setShiftDirection(bool shouldShiftLeft) noexcept { _shiftLeft = shouldShiftLeft; }
+		void markImmediate(bool isImmediate = true) noexcept { _immediate = isImmediate; }
+		void markIndirect(bool isIndirect = true) noexcept { _indirect = isIndirect; }
+		void markConditional() noexcept { _isConditional = true; }
+		void markUnconditional() noexcept { _isConditional = false; }
+		void markCall(bool isCallBranch = true) noexcept { _isCall = isCallBranch; }
 		template<typename T>
 		void setBitmask(T value) noexcept {
-			bitmask = static_cast<decltype(bitmask)>(value);
+			_bitmask = static_cast<decltype(_bitmask)>(value);
 		}
-		void setBitmask(byte value) noexcept;
+		void setBitmask(byte value) noexcept { _bitmask = value; }
 
 		template<int index>
 		void setArg(byte value) noexcept {
 			static_assert(index >= 0 && index < 3, "Illegal argument index!");
 			switch(index) {
 				case 0:
-					arg0 = value;
+					_arg0 = value;
 					break;
 				case 1:
-					arg1 = value;
+					_arg1 = value;
 					break;
 				case 2:
-					arg2 = value;
+					_arg2 = value;
 					break;
 				default:
 					throw syn::Problem("Illegal argument index!");
 			}
 		}
 
+		RegisterValue getFullImmediate() const noexcept { return _fullImmediate; }
+
 		template<typename T>
 		void setSubType(T value) noexcept {
-			subType = static_cast<decltype(subType)>(value);
+			_subType = static_cast<decltype(_subType)>(value);
 		}
 
-		void setSubType(byte value) noexcept;
+		void setSubType(byte value) noexcept { _subType = value; }
+		void setAddress(RegisterValue addr) noexcept { _address = addr; }
+
+		void markIfStatement(bool isIfStatement = true) noexcept { _isIf = isIfStatement; }
+		void setFullImmediate(RegisterValue val) noexcept { _fullImmediate = val; }
+		void markAsLabel() noexcept { _isLabel = true; }
+		void markAsNotLabel() noexcept { _isLabel = false; }
+		void setLabelName(const std::string& name) noexcept { _labelValue = name; markAsLabel(); }
+
+		bool isLabel() const noexcept { return _isLabel; }
+		std::string getLabelValue() const noexcept { return _labelValue; }
+
+		RegisterValue getAddress() const noexcept { return _address; }
 
 		private:
             Encoding encodeMemory() const;
@@ -97,6 +104,24 @@ namespace cisc0 {
             Encoding encodeSet() const;
             Encoding encodeSwap() const;
             Encoding encodeComplex() const;
+		private:
+			int _currentLine;
+			RegisterValue _address;
+			Operation _type;
+			bool _immediate;
+			bool _shiftLeft;
+			bool _isIf;
+			bool _isCall;
+			bool _isConditional;
+			bool _indirect;
+			byte _bitmask;
+			byte _arg0;
+			byte _arg1;
+			byte _arg2;
+			bool _isLabel;
+			std::string _labelValue;
+			byte _subType;
+			RegisterValue _fullImmediate;
 	};
 }
 #endif // end _TARGET_CISC0_INSTRUCTION_ENCODER_H
