@@ -294,6 +294,28 @@
                    "using type = " ?sub-type " ; " crlf
                    "};" crlf))
 
+
+
+
+
+(defrule MAIN::generate-top-level-has-sub-type-function
+         (declare (salience 1))
+         (made-top-level-type-conversion ?t)
+         (specialized-on-top-level-type ?t)
+         (not (top-level-to-sub-type ?t ? -> ?))
+         (not (made-top-level-to-sub-type-query ?t))
+         =>
+         (assert (made-top-level-to-sub-type-query ?t))
+         (printout t 
+                   "template<" ?t " value>" crlf
+                   "using SubTypeOf = typename " ?t"ToSubType<value>::type;" crlf)
+         (printout t
+                   "template<" ?t " value>" crlf
+                   "constexpr bool HasSubType() noexcept {" crlf
+                   "return " ?t "ToSubType<value>::value;" crlf
+                   "}" crlf))
+
+
 (defrule MAIN::generate-top-level-type-conversion-specialization-encoding-op:generic-case
          (declare (salience -2))
          (made-top-level-to-sub-type-specialization ?top ?v -> ?sub-type)
@@ -335,26 +357,6 @@
                    "}" crlf
                    "};" crlf))
 
-
-
-
-(defrule MAIN::generate-top-level-has-sub-type-function
-         (declare (salience 1))
-         (made-top-level-type-conversion ?t)
-         (specialized-on-top-level-type ?t)
-         (not (top-level-to-sub-type ?t ? -> ?))
-         (not (made-top-level-to-sub-type-query ?t))
-         =>
-         (assert (made-top-level-to-sub-type-query ?t))
-         (printout t 
-                   "template<" ?t " value>" crlf
-                   "using SubTypeOf = typename " ?t"ToSubType<value>::type;" crlf)
-         (printout t
-                   "template<" ?t " value>" crlf
-                   "constexpr bool HasSubType() noexcept {" crlf
-                   "return " ?t "ToSubType<value>::value;" crlf
-                   "}" crlf))
-
 (defrule MAIN::generate-basic-sub-type-encoder
          (declare (salience -4))
          (generic encoding of sub type generated ?top)
@@ -366,4 +368,58 @@
                    "constexpr typename EncodeSubType<v>::ReturnType encodeSubType(typename EncodeSubType<v>::ReturnType input, T value) noexcept {" crlf
                    "static_assert(HasSubType<v>(), \"Provided operation does not have a subtype!\");" crlf
                    "return EncodeSubType<v>::encodeSubType(input, static_cast<typename EncodeSubType<v>::CastTo>(value));" crlf
+                   "}" crlf))
+
+(defrule MAIN::generate-top-level-type-conversion-specialization-decoding-op:generic-case
+         (declare (salience -2))
+         (made-top-level-to-sub-type-specialization ?top ?v -> ?sub-type)
+         (decoding-operation ?name
+                             ?str
+                             ?sub-type
+                             ?full-type)
+         (made-top-level-to-sub-type-query ?top)
+         (not (generic decoding of sub type generated ?top))
+         =>
+         (assert (generic decoding of sub type generated ?top))
+         (printout t
+                   "template<" ?top " v>" crlf
+                   "struct DecodeSubType : syn::ConditionFulfillment<false> {" crlf
+                   "using ReturnType = SubTypeOf<v>;" crlf 
+                   "using InputType = " ?full-type ";" crlf
+                   "static constexpr ReturnType decodeSubType(InputType input) noexcept { return input; }" crlf
+                   "};" crlf))
+
+(defrule MAIN::generate-top-level-type-conversion-specialization-decoding-op
+         (declare (salience -3))
+         (made-top-level-to-sub-type-specialization ?top ?v -> ?sub-type)
+         (sub-type-field ?name
+                         ?sub-type)
+         (decoding-operation ?name
+                             ?str
+                             ?sub-type
+                             ?full-type)
+         (made-top-level-to-sub-type-query ?top)
+         (generic decoding of sub type generated ?top)
+         =>
+         (printout t 
+                   "template<>" crlf
+                   "struct DecodeSubType <" ?top " :: " ?v "> : syn::ConditionFulfillment<true> {" crlf
+                   "using InputType = " ?full-type ";" crlf
+                   "using ReturnType = SubTypeOf<" ?top " :: " ?v">;" crlf
+                   "static constexpr ReturnType decodeSubType(InputType input) noexcept {" crlf
+                   "return " ?str " ( input );" crlf
+                   "}" crlf
+                   "};" crlf))
+
+(defrule MAIN::generate-basic-sub-type-decoder
+         (declare (salience -4))
+         (generic decoding of sub type generated ?top)
+         (not (built decode sub type function ?top))
+         =>
+         (assert (built decode sub type function ?top))
+         (printout t 
+                   "template<" ?top " v>" crlf
+                   "constexpr typename DecodeSubType<v>::ReturnType encodeSubType(typename DecodeSubType<v>::InputType input) noexcept {" crlf
+                   "static_assert(HasSubType<v>(), \"Provided operation does not have a subtype!\");" crlf
+                   "return DecodeSubType<v>::decodeSubType(input);" crlf
                    "}" crlf))
