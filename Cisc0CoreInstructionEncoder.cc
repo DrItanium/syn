@@ -95,6 +95,7 @@ DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the sa
 #undef DefHasArg0
 
 
+
 	template<Operation op>
 	Word encodeArg0(Word value, byte index, bool immediate = false) noexcept {
 		static_assert(HasArg0<op>::value, "Provided operation does not have arg0");
@@ -188,13 +189,49 @@ DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the sa
 		return HasBitmaskField<op>::setBitmaskField(input, mask); 
 	}
 
+	template<Operation op>
+	struct HasArg1 : ConditionFulfillment<false> {
+		static constexpr RegisterValue encodeArg1(RegisterValue input, byte index, bool immediate) noexcept {
+			return input;
+		}
+	};
+
+#define DefHasArg1WithImmediate(o, immAction , regAction ) \
+	template<> \
+	struct HasArg1 < Operation :: o > : ConditionFulfillment<true> { \
+		static constexpr RegisterValue encodeArg1(RegisterValue input, byte index, bool immediate) noexcept { \
+			return immediate ? immAction ( input, index ) : regAction ( input, index ); \
+		} \
+	}
+#define DefHasArg1(o, action) \
+	template<> \
+	struct HasArg1 < Operation :: o > : ConditionFulfillment<true> { \
+		static constexpr RegisterValue encodeArg1(RegisterValue input, byte index, bool immediate) noexcept { \
+			return action ( input, index ) ; \
+		} \
+	}
+	DefHasArg1WithImmediate(Arithmetic, encodeArithmeticImmediate, encodeArithmeticSource);
+	DefHasArg1WithImmediate(Shift, encodeShiftImmediate, encodeShiftRegister1);
+	DefHasArg1WithImmediate(Compare, encodeCompareImmediate, encodeCompareRegister1);
+	DefHasArg1(Move, encodeMoveRegister1);
+	DefHasArg1(Swap, encodeSwapSource);
+#undef DefHasArg1
+#undef DefHasArg1WithImmediate
+
+
+	template<Operation op>
+	constexpr RegisterValue encodeArg1(RegisterValue input, byte index, bool immediate = false) noexcept {
+		static_assert(HasArg1<op>::value, "Given operation type does not have a second argument!");
+		return HasArg1<op>::encodeArg1(input, index, immediate);
+	}
+
 
     InstructionEncoder::Encoding InstructionEncoder::encodeArithmetic() const {
 		constexpr auto op = Operation::Arithmetic;
 		auto first = encodeType<op>(commonEncoding() , _subType);
 		first = setImmediateBit<op>(first, _immediate);
 		first = encodeArg0<op>(first, _arg0);
-        first = _immediate ? encodeArithmeticImmediate(first, _arg1) : encodeArithmeticSource(first, _arg1);
+		first = encodeArg1<op>(first, _arg1, _immediate);
         return std::make_tuple(1, first, 0, 0);
     }
 
@@ -202,12 +239,15 @@ DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the sa
 		constexpr auto op = Operation::Move;
 		auto first = setBitmaskField<op>(commonEncoding(), _bitmask);
 		first = encodeArg0<op>(first, _arg0);
-        first = encodeMoveRegister1(first, _arg1);
+		first = encodeArg1<op>(first, _arg1);
         return std::make_tuple(1, first, 0, 0);
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeSwap() const {
-        return std::make_tuple(1, encodeSwapSource( encodeSwapDestination( commonEncoding(), _arg0), _arg1), 0, 0);
+		constexpr auto op = Operation::Swap;
+		auto first = encodeArg0<op>(commonEncoding(), _arg0);
+		first = encodeArg1<op>(first, _arg1);
+		return std::make_tuple(1, first, 0, 0);
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeShift() const {
@@ -215,7 +255,7 @@ DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the sa
 		auto first = setImmediateBit<op>(commonEncoding(), _immediate);
         first = encodeShiftFlagLeft(first, _shiftLeft);
 		first = encodeArg0<op>(first, _arg0);
-        first = _immediate ? encodeShiftImmediate(first, _arg1) : encodeShiftRegister1(first, _arg1);
+		first = encodeArg1<op>(first, _arg1, _immediate);
         return std::make_tuple(1, first, 0, 0);
     }
 
@@ -224,7 +264,7 @@ DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the sa
 		auto first = encodeType<op>(commonEncoding(), _subType);
 		first = setImmediateBit<op>(first, _immediate);
 		auto second = encodeArg0<op>(0, _arg0);
-        second = _immediate ? encodeCompareImmediate(second, _arg1) : encodeCompareRegister1(second, _arg1);
+		second = encodeArg1<op>(second, _arg1, _immediate);
         return std::make_tuple(2, first, second, 0);
     }
 
