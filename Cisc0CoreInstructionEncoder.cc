@@ -59,7 +59,7 @@ namespace cisc0 {
     }
 
 	template<bool v>
-	using ConditionFulfillment = std::integral_constant<bool, v>;
+	using ConditionFulfillment = syn::ConditionFulfillment<v>;
 	template<Operation op>
 	struct HasArg0 : ConditionFulfillment<false> {
 		static constexpr Word encodeArg0(Word input, byte index, bool immediate) noexcept {

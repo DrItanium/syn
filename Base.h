@@ -493,5 +493,8 @@ constexpr void throwOnErrorState(T value, const std::string& msg) noexcept {
     }
 }
 
+template<bool fulfills>
+struct ConditionFulfillment : std::integral_constant<bool, fulfills> { };
+
 }
 #endif // end _SYN_BASE_H
