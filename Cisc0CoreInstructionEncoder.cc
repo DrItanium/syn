@@ -114,25 +114,10 @@ DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the sa
 		}
 	};
 
-#define DefOpToType( targetOperation , actualType , encoder ) \
-	template<> \
-	struct OperationToType< Operation :: targetOperation > : ConditionFulfillment< true> { \
-		using type = actualType; \
-		static constexpr Word encodeType(Word input, byte value) noexcept { \
-			return encoder ( input , static_cast < actualType > ( value ) ) ; \
-		} \
-	}
-	DefOpToType(Arithmetic , ArithmeticOps, encodeArithmeticFlagType);
-	DefOpToType(Compare , CompareStyle , encodeCompareType );
-	DefOpToType(Memory , MemoryOperation, encodeMemoryFlagType );
-	DefOpToType(Logical, LogicalOps, encodeLogicalFlagType );
-	DefOpToType(Complex , ComplexSubTypes , encodeComplexSubClass );
-#undef DefOpToType
 
 	template<Operation op>
 	constexpr Word encodeType(Word input, byte t) noexcept {
-		static_assert(OperationToType<op>::value, "Specialized implementation for encoding the instruction type has not been provided!");
-		return OperationToType<op>::encodeType ( input, t) ; 
+		return cisc0::encodeSubType<op, byte>(input, t);
 	}
 
 
