@@ -419,7 +419,7 @@
          (assert (built decode sub type function ?top))
          (printout t 
                    "template<" ?top " v>" crlf
-                   "constexpr typename DecodeSubType<v>::ReturnType encodeSubType(typename DecodeSubType<v>::InputType input) noexcept {" crlf
+                   "constexpr typename DecodeSubType<v>::ReturnType decodeSubType(typename DecodeSubType<v>::InputType input) noexcept {" crlf
                    "static_assert(HasSubType<v>(), \"Provided operation does not have a subtype!\");" crlf
                    "return DecodeSubType<v>::decodeSubType(input);" crlf
                    "}" crlf))
