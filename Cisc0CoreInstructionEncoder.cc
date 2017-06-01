@@ -58,10 +58,6 @@ namespace cisc0 {
         return 1 + (readLower(bitmask) ? 1 : 0) + (readUpper(bitmask) ? 1 : 0);
     }
 
-	Word encodeControl(Operation op) noexcept {
-		return encodeControl( op);
-	}
-
 	template<Operation op>
 	Word encodeArg0(Word value, byte index, bool immediate = false) noexcept {
 		static_assert(op != Operation::Branch, "Branch operations must be handled manually!");
@@ -91,18 +87,50 @@ namespace cisc0 {
 				throw syn::Problem("Undefined operation!");
 		}
 	}
-	
+	RegisterValue InstructionEncoder::commonEncoding() const {
+		return encodeControl(0, _type);
+	}
+	template<Operation op> 
+	struct OperationToType { 
+		using type = decltype(syn::defaultErrorState<Operation>); 
+		static constexpr auto isImplemented = false;
+		static constexpr RegisterValue encodeType(RegisterValue input, byte value) noexcept {
+			return input; 
+		}
+	};
+
+#define DefOpToType( targetOperation , actualType , encoder ) \
+	template<> \
+	struct OperationToType< Operation :: targetOperation > { \
+		using type = actualType; \
+		static constexpr auto isImplemented = true; \
+		static constexpr RegisterValue encodeType(RegisterValue input, byte value) noexcept { \
+			return encoder ( input , static_cast < actualType > ( value ) ) ; \
+		} \
+	}
+	DefOpToType(Arithmetic , ArithmeticOps, encodeArithmeticFlagType);
+	DefOpToType(Compare , CompareStyle , encodeCompareType );
+	DefOpToType(Memory , MemoryOperation, encodeMemoryFlagType );
+#undef DefOpToType
+
+	template<Operation op>
+	constexpr RegisterValue encodeType(RegisterValue input, byte t) noexcept {
+		using TypeConverter = OperationToType<op>;
+		static_assert(TypeConverter::isImplemented, "Specialized implementation for encoding the instruction type has not been provided!");
+		return TypeConverter::encodeType ( input, t) ; 
+	}
+
+
     InstructionEncoder::Encoding InstructionEncoder::encodeArithmetic() const {
-        auto first = encodeControl(_type);
+		auto first = encodeType<Operation::Arithmetic>(commonEncoding() , _subType);
         first = encodeArithmeticFlagImmediate(first, _immediate);
-        first = encodeArithmeticFlagType(first, static_cast<ArithmeticOps>(_subType));
 		first = encodeArg0<Operation::Arithmetic>(first, _arg0);
         first = _immediate ? encodeArithmeticImmediate(first, _arg1) : encodeArithmeticSource(first, _arg1);
         return std::make_tuple(1, first, 0, 0);
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeMove() const {
-        auto first = encodeControl(_type);
+        auto first = commonEncoding();
         first = encodeMoveBitmask(first, _bitmask);
 		first = encodeArg0<Operation::Move>(first, _arg0);
         first = encodeMoveRegister1(first, _arg1);
@@ -110,11 +138,11 @@ namespace cisc0 {
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeSwap() const {
-        return std::make_tuple(1, encodeSwapSource( encodeSwapDestination( encodeControl(_type), _arg0), _arg1), 0, 0);
+        return std::make_tuple(1, encodeSwapSource( encodeSwapDestination( commonEncoding(), _arg0), _arg1), 0, 0);
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeShift() const {
-        auto first = encodeControl(_type);
+        auto first = commonEncoding();
         first = encodeShiftFlagImmediate(first, _immediate);
         first = encodeShiftFlagLeft(first, _shiftLeft);
 		first = encodeArg0<Operation::Shift>(first, _arg0);
@@ -123,8 +151,7 @@ namespace cisc0 {
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeCompare() const {
-        auto first = encodeControl(_type);
-        first = encodeCompareType(first, static_cast<CompareStyle>(_subType));
+		auto first = encodeType<Operation::Compare>(commonEncoding(), _subType);
         first = encodeCompareImmediateFlag(first, _immediate);
 		auto second = encodeArg0<Operation::Compare>(0, _arg0);
         second = _immediate ? encodeCompareImmediate(second, _arg1) : encodeCompareRegister1(second, _arg1);
@@ -133,8 +160,7 @@ namespace cisc0 {
 
     InstructionEncoder::Encoding InstructionEncoder::encodeSet() const {
         int count = instructionSizeFromImmediateMask(_bitmask);
-        auto first = encodeControl(_type);
-        first = encodeSetBitmask(first, _bitmask);
+        auto first = encodeSetBitmask(commonEncoding(), _bitmask);
 		first = encodeArg0<Operation::Set>(first, _arg0);
         // use the mask during encoding since we know how many Words the
         // instruction is made up of
@@ -145,8 +171,7 @@ namespace cisc0 {
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeMemory() const {
-        auto first = encodeControl(_type);
-        first = encodeMemoryFlagType(first, static_cast<MemoryOperation>(_subType));
+		auto first = encodeType<Operation::Memory>(commonEncoding(), _subType);
         first = encodeMemoryFlagBitmask(first, _bitmask);
         first = encodeMemoryFlagIndirect(first, _indirect);
         // the register and offset occupy the same space
@@ -155,7 +180,7 @@ namespace cisc0 {
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeLogical() const {
-        auto first = encodeControl(_type);
+        auto first = commonEncoding();
         first = encodeLogicalFlagImmediate(first, _immediate);
         first = encodeLogicalFlagType(first, static_cast<LogicalOps>(_subType));
 		first = encodeArg0<Operation::Logical>(first, _arg0, _immediate);
@@ -172,7 +197,7 @@ namespace cisc0 {
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeBranch() const {
-        auto first = encodeControl(_type);
+        auto first = commonEncoding();
         first = encodeBranchFlagIsConditional(first, _isConditional);
         first = encodeBranchFlagIsIfForm(first, _isIf);
         first = encodeBranchFlagIsImmediate(first, _immediate);
@@ -230,7 +255,7 @@ namespace cisc0 {
 	}
     InstructionEncoder::Encoding InstructionEncoder::encodeComplex() const {
         auto sType = static_cast<ComplexSubTypes>(_subType);
-		auto first = encodeControl(_type);
+		auto first = commonEncoding();
 		first = encodeComplexSubClass(first, sType);
         if (sType == ComplexSubTypes::Encoding) {
 			// right now it is a single word

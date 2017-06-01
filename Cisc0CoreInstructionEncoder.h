@@ -94,6 +94,7 @@ namespace cisc0 {
 		RegisterValue getAddress() const noexcept { return _address; }
 
 		private:
+			RegisterValue commonEncoding() const;
             Encoding encodeMemory() const;
             Encoding encodeArithmetic() const;
             Encoding encodeShift() const;
