@@ -324,7 +324,7 @@ namespace iris {
 				case MoveOp::StoreWithOffset:
 					data.set(destinationRegister() + getHalfImmediate(), source0Register());
 					break;
-				case MoveOp::Memset:
+				case MoveOp::StoreImmediate:
 					data.set(destinationRegister(), getImmediate());
 					break;
 				case MoveOp::Push:

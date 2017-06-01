@@ -162,7 +162,7 @@
                           LoadImmediate
                           LoadWithOffset
                           Store
-                          Memset
+                          StoreImmediate
                           StoreWithOffset
                           Push
                           PushImmediate
