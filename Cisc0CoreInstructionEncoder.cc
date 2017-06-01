@@ -123,10 +123,36 @@ namespace cisc0 {
 	}
 
 
+	template<Operation op>
+	struct HasImmediateFlag : std::integral_constant<bool, false> { };
+
+#define DefImmediateFlag( o ) template<> struct HasImmediateFlag < Operation :: o > : std::integral_constant<bool, true > { }
+	DefImmediateFlag(Arithmetic);
+	DefImmediateFlag(Shift);
+	DefImmediateFlag(Compare);
+#undef DefImmediateFlag
+
+	template<Operation op>
+	constexpr RegisterValue setImmediateBit(RegisterValue input, bool immediate) noexcept {
+		static_assert(HasImmediateFlag<op>::value, "Given operation type does not have an immediate bit!");
+		switch(op) {
+			case Operation::Arithmetic:
+				return encodeArithmeticFlagImmediate(input, immediate);
+			case Operation::Shift:
+				return encodeShiftFlagImmediate(input, immediate);
+			case Operation::Compare:
+				return encodeCompareImmediateFlag(input, immediate);
+			default:
+				return input;
+		}
+	}
+
+
     InstructionEncoder::Encoding InstructionEncoder::encodeArithmetic() const {
-		auto first = encodeType<Operation::Arithmetic>(commonEncoding() , _subType);
-        first = encodeArithmeticFlagImmediate(first, _immediate);
-		first = encodeArg0<Operation::Arithmetic>(first, _arg0);
+		constexpr auto op = Operation::Arithmetic;
+		auto first = encodeType<op>(commonEncoding() , _subType);
+		first = setImmediateBit<op>(first, _immediate);
+		first = encodeArg0<op>(first, _arg0);
         first = _immediate ? encodeArithmeticImmediate(first, _arg1) : encodeArithmeticSource(first, _arg1);
         return std::make_tuple(1, first, 0, 0);
     }
@@ -144,17 +170,18 @@ namespace cisc0 {
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeShift() const {
-        auto first = commonEncoding();
-        first = encodeShiftFlagImmediate(first, _immediate);
+		constexpr auto op = Operation::Arithmetic;
+		auto first = setImmediateBit<op>(commonEncoding(), _immediate);
         first = encodeShiftFlagLeft(first, _shiftLeft);
-		first = encodeArg0<Operation::Shift>(first, _arg0);
+		first = encodeArg0<op>(first, _arg0);
         first = _immediate ? encodeShiftImmediate(first, _arg1) : encodeShiftRegister1(first, _arg1);
         return std::make_tuple(1, first, 0, 0);
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeCompare() const {
-		auto first = encodeType<Operation::Compare>(commonEncoding(), _subType);
-        first = encodeCompareImmediateFlag(first, _immediate);
+		constexpr auto op = Operation::Compare;
+		auto first = encodeType<op>(commonEncoding(), _subType);
+		first = setImmediateBit<op>(first, _immediate);
 		auto second = encodeArg0<Operation::Compare>(0, _arg0);
         second = _immediate ? encodeCompareImmediate(second, _arg1) : encodeCompareRegister1(second, _arg1);
         return std::make_tuple(2, first, second, 0);
