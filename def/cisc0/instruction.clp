@@ -209,7 +209,12 @@
                              CompareUnitOperation GreaterThan)
           (to-execution-unit CompareStyle GreaterThanOrEqualTo ->
                              CompareUnitOperation GreaterThanOrEqualTo)
-
+          (top-level-type Operation)
+          (top-level-to-sub-type Operation Arithmetic -> ArithmeticOps)
+          (top-level-to-sub-type Operation Compare -> CompareStyle)
+          (top-level-to-sub-type Operation Memory -> MemoryOperation)
+          (top-level-to-sub-type Operation Logical -> LogicalOps)
+          (top-level-to-sub-type Operation Complex -> ComplexSubTypes)
           )
 (defrule translate-flat-fact
          (declare (salience ?*priority:first*))

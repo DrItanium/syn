@@ -226,6 +226,18 @@
                    "template<" ?name " op>" crlf
                    "constexpr auto translate" ?name " = toExecutionUnitValue<decltype(op), op>;" crlf))
 
+(defrule MAIN::generate-top-level-type-conversion-generic
+         ?f <- (top-level-type ?t)
+         (constructed enum ?t)
+         =>
+         (retract ?f)
+         (assert (made-top-level-type-conversion ?t))
+         (printout t
+                   "template<" ?t " value>" crlf
+                   "struct " ?t "ToSubType : syn::ConditionFulfillment<false> {" crlf
+                   "using type = " ?t ";" crlf
+                   "};" crlf))
+         
 (defrule MAIN::generate-to-exec-unit-specialization
          ?f <- (to-execution-unit ?enum
                                   ?name
