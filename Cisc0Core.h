@@ -59,6 +59,7 @@ namespace cisc0 {
 			void pushWord(Word value);
 			void pushDword(DWord value);
 			Word popWord();
+            RegisterValue popRegisterValue();
 			void dispatch(DecodedInstruction&& inst);
 			template<byte rindex>
 			inline RegisterValue& registerValue() noexcept {
@@ -96,6 +97,7 @@ namespace cisc0 {
 		private:
 			void complexOperation(DecodedInstruction&& inst);
 			void encodingOperation(DecodedInstruction&& inst);
+            void extendedOperation(DecodedInstruction&& inst);
 			void performEncodeOp(DecodedInstruction&& inst);
         private:
             void compareOperation(DecodedInstruction&& inst);

@@ -97,6 +97,7 @@ namespace cisc0 {
             inline byte getMemoryOffset() const noexcept { return decodeMemoryOffset(_rawValue); }
             BranchFlags getOtherBranchFlags() const noexcept;
             inline EncodingOperation getEncodingOperation() const noexcept { return decodeComplexClassEncoding_Type(_rawValue); }
+            inline ExtendedOperation getExtendedOperation() const noexcept { return decodeComplexClassExtended_Type(_rawValue); }
 
             template<int index>
             inline byte getShiftRegister() const noexcept {

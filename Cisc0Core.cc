@@ -344,6 +344,9 @@ namespace cisc0 {
             case ComplexSubTypes::Encoding:
                 encodingOperation(std::move(inst));
                 break;
+            case ComplexSubTypes::Extended:
+                extendedOperation(std::move(inst));
+                break;
             default:
                 throw syn::Problem("Undefined complex subtype!");
         }
@@ -354,6 +357,47 @@ namespace cisc0 {
         auto source = (inst.getImmediateFlag<group>() ? static_cast<RegisterValue>(inst.getImmediate<group>()) : registerValue(inst.getShiftRegister<1>()));
 		auto direction = inst.shouldShiftLeft() ? ALUOperation::ShiftLeft : ALUOperation::ShiftRight;
         destination = syn::ALU::performOperation<RegisterValue>(direction, destination, source);
+    }
+
+    void Core::extendedOperation(DecodedInstruction&& inst) {
+        switch(inst.getExtendedOperation()) {
+            case ExtendedOperation::RestoreValueAddr:
+                getValueRegister() = popRegisterValue();
+                getAddressRegister() = popRegisterValue();
+                break;
+            case ExtendedOperation::SaveValueAddr:
+                pushDword(getAddressRegister());
+                pushDword(getValueRegister());
+                break;
+            case ExtendedOperation::SaveRegisters:
+                pushDword(getStackPointer());
+                for (int i = 0; i < static_cast<int>(ArchitectureConstants::RegisterCount); ++i) {
+                    switch(i) {
+                        case ArchitectureConstants::InstructionPointer:
+                        case ArchitectureConstants::StackPointer:
+                            break;
+                        default:
+                            pushDword(RegisterValue(i));
+                            break;
+                    }
+                }
+                break;
+            case ExtendedOperation::RestoreRegisters:
+                for (int i = ArchitectureConstants::RegisterCount - 1; i >= 0; --i) {
+                    switch(i) {
+                        case ArchitectureConstants::InstructionPointer:
+                        case ArchitectureConstants::StackPointer:
+                            break;
+                        default:
+                            registerValue(i) = popRegisterValue();
+                            break;
+                    }
+                }
+                getStackPointer() = popRegisterValue();
+                break;
+            default:
+                throw syn::Problem("Undefined extended operation!");
+        }
     }
 
     void Core::arithmeticOperation(DecodedInstruction&& inst) {
@@ -444,6 +488,11 @@ namespace cisc0 {
         auto result = loadWord(getStackPointer());
 		incrementAddress(getStackPointer());
         return result;
+    }
+    RegisterValue Core::popRegisterValue() {
+        auto lower = popWord();
+        auto upper = popWord();
+        return encodeRegisterValue(upper, lower);
     }
     Word Core::tryReadNext(bool readNext) {
         return readNext ? tryReadNext<true>() : tryReadNext<false>();

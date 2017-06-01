@@ -93,7 +93,8 @@
 
 (deffacts cisc0-complex-fields
           (deffield ComplexSubClass           0b0000000011110000 4 ComplexSubTypes)
-          (deffield ComplexClassEncoding_Type 0b0000011100000000 8 EncodingOperation))
+          (deffield ComplexClassEncoding_Type 0b0000011100000000 8 EncodingOperation)
+          (deffield ComplexClassExtended_Type 0b0000011100000000 8 ExtendedOperation))
 
 
 (deffacts cisc0-enums
@@ -145,7 +146,8 @@
                 (cast-to byte)
                 (max-size "4"))
           (enum (name ComplexSubTypes)
-                (children Encoding)
+                (children Encoding
+                          Extended)
                 (cast-to byte)
                 (max-size "16"))
           (enum (name EncodingOperation)
@@ -153,6 +155,13 @@
                           Decode
                           BitSet
                           BitUnset)
+                (cast-to byte)
+                (max-size "8"))
+          (enum (name ExtendedOperation)
+                (children SaveValueAddr
+                          RestoreValueAddr
+                          SaveRegisters
+                          RestoreRegisters)
                 (cast-to byte)
                 (max-size "8")))
 
