@@ -160,16 +160,30 @@ namespace cisc0 {
             }
         }
     }
+	template<ComplexSubTypes t> struct ComplexSubTypeToNestedType { };
+
+	template<> struct ComplexSubTypeToNestedType < ComplexSubTypes::Encoding > { using type = EncodingOperation; };
+	template<> struct ComplexSubTypeToNestedType < ComplexSubTypes::Extended > { using type = ExtendedOperation; };
+
+	template<ComplexSubTypes t>
+	typename ComplexSubTypeToNestedType<t>::type convertBitmask(byte mask) noexcept {
+		return static_cast<typename ComplexSubTypeToNestedType<t>::type>(mask);
+	}
     InstructionEncoder::Encoding InstructionEncoder::encodeComplex() const {
         auto sType = static_cast<ComplexSubTypes>(subType);
-        if (sType != ComplexSubTypes::Encoding) {
-            throw syn::Problem("Attempted to encode an unsupported value as a complex type!");
-        }
-        auto first = encodeControl(0, type);
-        first = encodeComplexSubClass(first, sType);
-        // right now it is a single word
-        first = encodeComplexClassEncoding_Type(first, static_cast<EncodingOperation>(bitmask));
-        return std::make_tuple(1, first, 0, 0);
+		auto first = encodeControl(0, type);
+		first = encodeComplexSubClass(first, sType);
+        if (sType == ComplexSubTypes::Encoding) {
+			// right now it is a single word
+			first = encodeComplexClassEncoding_Type(first, convertBitmask<ComplexSubTypes::Encoding>(bitmask));
+			return std::make_tuple(1, first, 0, 0);
+        } else if (sType == ComplexSubTypes::Extended) {
+			first = encodeComplexClassExtended_Type(first, convertBitmask<ComplexSubTypes::Extended>(bitmask));
+			first = encodeComplexClassExtended_Arg0(first, arg0);
+			return std::make_tuple(1, first, 0, 0);
+		} else {
+			throw syn::Problem("Illegal complex instruction group!");
+		}
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encode() const {

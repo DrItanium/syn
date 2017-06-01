@@ -509,15 +509,66 @@ namespace cisc0 {
 										 SubGroupEncodingOperationEncode,
 										 SubGroupEncodingOperationBitSet,
 										 SubGroupEncodingOperationBitUnset> { };
+	DefSymbol(PushValueAddr, push.value.addr);
+	DefSymbol(PopValueAddr, pop.value.addr);
+	DefSymbol(PushRegisters, push.registers);
+	DefSymbol(PopRegisters, pop.registers);
+	struct SubGroupExtendedOperationPushValueAddr : syn::Indirection<SymbolPushValueAddr> { };
+	DefAction(SubGroupExtendedOperationPushValueAddr) {
+		DefApplyInstruction {
+			state.bitmask = static_cast < decltype (state.bitmask) > ( cisc0::ExtendedOperation::PushValueAddr );
+		}
+	};
+	struct SubGroupExtendedOperationPopValueAddr : syn::Indirection<SymbolPopValueAddr> { };
+	DefAction(SubGroupExtendedOperationPopValueAddr) {
+		DefApplyInstruction {
+			state.bitmask = static_cast < decltype (state.bitmask) > ( cisc0::ExtendedOperation::PopValueAddr );
+		}
+	};
+
+	struct SubGroupExtendedOperationPushRegisters : syn::Indirection<SymbolPushRegisters> { };
+	DefAction(SubGroupExtendedOperationPushRegisters) {
+		DefApplyInstruction {
+			state.bitmask = static_cast < decltype (state.bitmask) > ( cisc0::ExtendedOperation::PushRegisters );
+		}
+	};
+	struct SubGroupExtendedOperationPopRegisters : syn::Indirection<SymbolPopRegisters> { };
+	DefAction(SubGroupExtendedOperationPopRegisters) {
+		DefApplyInstruction {
+			state.bitmask = static_cast < decltype (state.bitmask) > ( cisc0::ExtendedOperation::PopRegisters );
+		}
+	};
+	struct ComplexExtendedSubOperation_NoArgs : pegtl::sor<
+										 SubGroupExtendedOperationPopRegisters,
+										 SubGroupExtendedOperationPushRegisters,
+										 SubGroupExtendedOperationPopValueAddr,
+										 SubGroupExtendedOperationPushValueAddr> { };
+	DefSymbol(IsEven, evenp);
+
+	struct SubGroupExtendedOperationIsEven : syn::Indirection<SymbolIsEven> { };
+	DefAction(SubGroupExtendedOperationIsEven) {
+		DefApplyInstruction {
+			state.bitmask = static_cast < decltype (state.bitmask) > ( cisc0::ExtendedOperation::IsEven );
+		}
+	};
+
+	struct ComplexExtendedSubOperation_OneArg: pegtl::seq< pegtl::sor<SubGroupExtendedOperationIsEven>, Separator, DestinationRegister> { };
+	struct ComplexExtendedSubOperation : pegtl::sor<ComplexExtendedSubOperation_NoArgs, ComplexExtendedSubOperation_OneArg> { };
+
+
 #define DefComplexOperation(title, str) \
 	DefSubTypeWithSymbol(title, str, ComplexSubTypes)
 	DefComplexOperation(Encoding, encoding);
-
 
 	struct ComplexEncodingOperation : pegtl::seq<
 									  SubGroupComplexSubTypesEncoding,
 									  Separator,
 									  ComplexEncodingSubOperation> { };
+	DefComplexOperation(Extended, extended);
+	struct ComplexExtendedOperation : pegtl::seq<
+									  SubGroupComplexSubTypesExtended,
+									  Separator,
+									  ComplexExtendedSubOperation> { };
 	struct ComplexSubOperations : pegtl::sor<
 								  ComplexEncodingOperation> { };
 
