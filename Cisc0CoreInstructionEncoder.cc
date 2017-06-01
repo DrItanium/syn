@@ -305,7 +305,7 @@ DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the sa
 		auto first = encodeType<op>(commonEncoding(), _subType);
 		auto second = 0u;
 		auto third = 0u;
-		auto width = 1;
+		auto width = _immediate ? instructionSizeFromImmediateMask(_bitmask) : 1;
 		first = setImmediateBit<op>(first, _immediate);
 		first = encodeArg0<op>(first, _arg0, _immediate);
 		// if we are not looking at an immediate then this operation will
@@ -316,7 +316,6 @@ DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the sa
             auto maskedImmediate = mask(_bitmask) & _fullImmediate;
             second = static_cast<Word>(maskedImmediate);
             third = static_cast<Word>(maskedImmediate >> 16);
-			width = instructionSizeFromImmediateMask(_bitmask);
         } 
 		return std::make_tuple(width, first, second, third);
     }
@@ -346,18 +345,14 @@ DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the sa
     InstructionEncoder::Encoding InstructionEncoder::encodeBranch() const {
 		constexpr auto op = Operation::Branch;
 		auto first = setImmediateBit<op>(commonEncoding(), _immediate);
-		auto second = 0u;
-		auto third = 0u;
+		auto second = _immediate ? static_cast<Word>(_fullImmediate) : 0u;
+		auto third = _immediate ? static_cast<Word>(_fullImmediate >> 16) : 0u;
 		auto width = _immediate ? 3 : 1;
         first = encodeBranchFlagIsConditional(first, _isConditional);
         first = encodeBranchFlagIsIfForm(first, _isIf);
         first = encodeBranchFlagIsCallForm(first, _isCall);
 		first = encodeArg0<op>(first, _arg0, _immediate);
 		first = encodeArg1<op>(first, _arg1, _immediate);
-		if (_immediate) {
-			second = static_cast<Word>(_fullImmediate);
-			third = static_cast<Word>(_fullImmediate >> 16);
-		}
         return std::make_tuple(width, first, second, third);
     }
 	template<ComplexSubTypes t> struct ComplexSubTypeToNestedType { };
