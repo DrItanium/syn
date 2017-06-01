@@ -111,6 +111,8 @@ namespace cisc0 {
 	DefOpToType(Arithmetic , ArithmeticOps, encodeArithmeticFlagType);
 	DefOpToType(Compare , CompareStyle , encodeCompareType );
 	DefOpToType(Memory , MemoryOperation, encodeMemoryFlagType );
+	DefOpToType(Logical, LogicalOps, encodeLogicalFlagType );
+	DefOpToType(Complex , ComplexSubTypes , encodeComplexSubClass );
 #undef DefOpToType
 
 	template<Operation op>
@@ -180,9 +182,8 @@ namespace cisc0 {
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeLogical() const {
-        auto first = commonEncoding();
+		auto first = encodeType<Operation::Logical>(commonEncoding(), _subType);
         first = encodeLogicalFlagImmediate(first, _immediate);
-        first = encodeLogicalFlagType(first, static_cast<LogicalOps>(_subType));
 		first = encodeArg0<Operation::Logical>(first, _arg0, _immediate);
         if (_immediate) {
             first = encodeLogicalFlagImmediateMask(first, _bitmask);
@@ -255,8 +256,7 @@ namespace cisc0 {
 	}
     InstructionEncoder::Encoding InstructionEncoder::encodeComplex() const {
         auto sType = static_cast<ComplexSubTypes>(_subType);
-		auto first = commonEncoding();
-		first = encodeComplexSubClass(first, sType);
+		auto first = encodeType<Operation::Complex>(commonEncoding(), _subType);
         if (sType == ComplexSubTypes::Encoding) {
 			// right now it is a single word
 			first = encodeSubType<ComplexSubTypes::Encoding>(first, _bitmask);
