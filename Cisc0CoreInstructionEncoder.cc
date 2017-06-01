@@ -115,9 +115,8 @@ namespace cisc0 {
 
 	template<Operation op>
 	constexpr RegisterValue encodeType(RegisterValue input, byte t) noexcept {
-		using TypeConverter = OperationToType<op>;
-		static_assert(TypeConverter::value, "Specialized implementation for encoding the instruction type has not been provided!");
-		return TypeConverter::encodeType ( input, t) ; 
+		static_assert(OperationToType<op>::value, "Specialized implementation for encoding the instruction type has not been provided!");
+		return OperationToType<op>::encodeType ( input, t) ; 
 	}
 
 
@@ -149,6 +148,30 @@ namespace cisc0 {
 	}
 
 
+	template<Operation op>
+	struct HasBitmaskField : std::integral_constant<bool, false> { 
+		static constexpr RegisterValue setBitmaskField(RegisterValue value, byte mask) noexcept {
+			return value;
+		}
+	};
+
+#define DefHasBitmask( o , action ) \
+	template<> \
+	struct HasBitmaskField < Operation :: o > : std::integral_constant<bool, true> { \
+		static constexpr RegisterValue setBitmaskField(RegisterValue value, byte mask) noexcept { \
+			return action ( value, mask ); \
+		} \
+	}
+	DefHasBitmask(Move , encodeMoveBitmask);
+#undef DefHasBitmask
+
+	template<Operation op>
+	constexpr RegisterValue setBitmaskField(RegisterValue input, byte mask) noexcept {
+		static_assert(HasBitmaskField<op>::value, "Given operation does not have a bitmask field!");
+		return HasBitmaskField<op>::setBitmaskField(input, mask); 
+	}
+
+
     InstructionEncoder::Encoding InstructionEncoder::encodeArithmetic() const {
 		constexpr auto op = Operation::Arithmetic;
 		auto first = encodeType<op>(commonEncoding() , _subType);
@@ -159,9 +182,9 @@ namespace cisc0 {
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeMove() const {
-        auto first = commonEncoding();
-        first = encodeMoveBitmask(first, _bitmask);
-		first = encodeArg0<Operation::Move>(first, _arg0);
+		constexpr auto op = Operation::Move;
+		auto first = setBitmaskField<op>(commonEncoding(), _bitmask);
+		first = encodeArg0<op>(first, _arg0);
         first = encodeMoveRegister1(first, _arg1);
         return std::make_tuple(1, first, 0, 0);
     }
