@@ -290,7 +290,14 @@ namespace cisc0 {
         subType = 0;
         fullImmediate = 0;
         indirect = false;
-        readNextWord = false;
     }
+
+	void InstructionEncoder::setBitmask(byte value) noexcept {
+		bitmask = value;
+	}
+
+	void InstructionEncoder::setSubType(byte value) noexcept {
+		subType = value;
+	}
 
 }

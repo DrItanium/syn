@@ -216,7 +216,7 @@ namespace cisc0 {
 
 	DefAction(BitmaskNumber) {
 		DefApplyInstruction {
-			state.bitmask = syn::decodeBits<RegisterValue, byte, 0x000000FF, 0>(syn::getBinaryImmediate<RegisterValue>(in.string(), syn::reportError));
+			state.setBitmask(syn::decodeBits<RegisterValue, byte, 0x000000FF, 0>(syn::getBinaryImmediate<RegisterValue>(in.string(), syn::reportError)));
 		}
 	};
 	using Lexeme = syn::Lexeme;
@@ -270,21 +270,21 @@ namespace cisc0 {
 	DefIndirectGPR(DestinationRegister);
 	DefAction(DestinationRegister) {
 		DefApplyInstruction {
-			state.arg0 = translateRegister(in.string());
+			state.setArg<0>(translateRegister(in.string()));
 		}
 	};
 
 	DefIndirectGPR(SourceRegister);
 	DefAction(SourceRegister) {
 		DefApplyInstruction {
-			state.arg1 = translateRegister(in.string());
+			state.setArg<1>(translateRegister(in.string()));
 		}
 	};
 
 	DefIndirectGPR(SourceRegister1);
 	DefAction(SourceRegister1) {
 		DefApplyInstruction {
-			state.arg2 = translateRegister(in.string());
+			state.setArg<2>(translateRegister(in.string()));
 		}
 	};
 	template<typename S>
@@ -315,7 +315,7 @@ namespace cisc0 {
 	struct ShiftImmediateValue : pegtl::seq<Number> { };
 	DefAction(ShiftImmediateValue) {
 		DefApplyInstruction {
-			state.arg1 = static_cast<byte>(state.fullImmediate) & 0b11111;
+			state.setArg<1>(static_cast<byte>(state.fullImmediate) & 0b11111);
 		}
 	};
 	struct ShiftArgs : pegtl::sor<TwoGPRs, ImmediateOperationArgs<ShiftImmediateValue>> { };
@@ -325,14 +325,14 @@ namespace cisc0 {
 	struct ByteCastImmediate : pegtl::seq<Number> { };
 	DefAction(ByteCastImmediate) {
 		DefApplyInstruction {
-			state.arg1 = static_cast<byte>(state.fullImmediate);
+			state.setArg<1>(static_cast<byte>(state.fullImmediate));
 		}
 	};
 #define DefSubType(title, str, subgroup) \
 	struct SubGroup ## subgroup ## title : syn::Indirection<Symbol ## title> { }; \
 	DefAction(SubGroup ## subgroup ## title) { \
 		DefApplyInstruction { \
-			state.subType = static_cast < decltype(state.subType) > ( cisc0 :: subgroup :: title ) ; \
+			state.setSubType(cisc0 :: subgroup :: title ); \
 		} \
 	}
 
@@ -382,7 +382,7 @@ namespace cisc0 {
 	struct Arg0ImmediateValue : pegtl::seq<Number> { };
 	DefAction(Arg0ImmediateValue) {
 		DefApplyInstruction {
-			state.arg0 = static_cast<byte>(state.fullImmediate) & 0b1111;
+			state.setArg<0>(static_cast<byte>(state.fullImmediate) & 0b1111);
 		}
 	};
 #define DefArithmeticOperation(title, str) \
@@ -497,7 +497,7 @@ namespace cisc0 {
 	struct SubGroupEncodingOperation ## title : syn::Indirection<Symbol ## title> { }; \
 	DefAction(SubGroupEncodingOperation ## title) { \
 		DefApplyInstruction { \
-			state.bitmask = static_cast < decltype(state.bitmask) > ( cisc0 :: EncodingOperation :: title ) ; \
+			state.setBitmask( cisc0:: EncodingOperation :: title ); \
 		} \
 	}
 	DefEncodingSubType(BitSet, bitset);
@@ -516,26 +516,26 @@ namespace cisc0 {
 	struct SubGroupExtendedOperationPushValueAddr : syn::Indirection<SymbolPushValueAddr> { };
 	DefAction(SubGroupExtendedOperationPushValueAddr) {
 		DefApplyInstruction {
-			state.bitmask = static_cast < decltype (state.bitmask) > ( cisc0::ExtendedOperation::PushValueAddr );
+			state.setBitmask(cisc0::ExtendedOperation::PushValueAddr);
 		}
 	};
 	struct SubGroupExtendedOperationPopValueAddr : syn::Indirection<SymbolPopValueAddr> { };
 	DefAction(SubGroupExtendedOperationPopValueAddr) {
 		DefApplyInstruction {
-			state.bitmask = static_cast < decltype (state.bitmask) > ( cisc0::ExtendedOperation::PopValueAddr );
+			state.setBitmask(cisc0::ExtendedOperation::PopValueAddr);
 		}
 	};
 
 	struct SubGroupExtendedOperationPushRegisters : syn::Indirection<SymbolPushRegisters> { };
 	DefAction(SubGroupExtendedOperationPushRegisters) {
 		DefApplyInstruction {
-			state.bitmask = static_cast < decltype (state.bitmask) > ( cisc0::ExtendedOperation::PushRegisters );
+			state.setBitmask(cisc0::ExtendedOperation::PushRegisters);
 		}
 	};
 	struct SubGroupExtendedOperationPopRegisters : syn::Indirection<SymbolPopRegisters> { };
 	DefAction(SubGroupExtendedOperationPopRegisters) {
 		DefApplyInstruction {
-			state.bitmask = static_cast < decltype (state.bitmask) > ( cisc0::ExtendedOperation::PopRegisters );
+			state.setBitmask(cisc0::ExtendedOperation::PopRegisters);
 		}
 	};
 	struct ComplexExtendedSubOperation_NoArgs : pegtl::sor<
@@ -544,15 +544,22 @@ namespace cisc0 {
 										 SubGroupExtendedOperationPopValueAddr,
 										 SubGroupExtendedOperationPushValueAddr> { };
 	DefSymbol(IsEven, evenp);
-
+	DefSymbol(IsOdd, oddp);
 	struct SubGroupExtendedOperationIsEven : syn::Indirection<SymbolIsEven> { };
 	DefAction(SubGroupExtendedOperationIsEven) {
 		DefApplyInstruction {
-			state.bitmask = static_cast < decltype (state.bitmask) > ( cisc0::ExtendedOperation::IsEven );
+			state.setBitmask(cisc0::ExtendedOperation::IsEven);
 		}
 	};
 
-	struct ComplexExtendedSubOperation_OneArg: pegtl::seq< pegtl::sor<SubGroupExtendedOperationIsEven>, Separator, DestinationRegister> { };
+	struct SubGroupExtendedOperationIsOdd : syn::Indirection<SymbolIsOdd> { };
+	DefAction(SubGroupExtendedOperationIsOdd) {
+		DefApplyInstruction {
+			state.setBitmask(cisc0::ExtendedOperation::IsOdd);
+		}
+	};
+
+	struct ComplexExtendedSubOperation_OneArg: pegtl::seq< pegtl::sor<SubGroupExtendedOperationIsEven, SubGroupExtendedOperationIsOdd>, Separator, DestinationRegister> { };
 	struct ComplexExtendedSubOperation : pegtl::sor<ComplexExtendedSubOperation_NoArgs, ComplexExtendedSubOperation_OneArg> { };
 
 

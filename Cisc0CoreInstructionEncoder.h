@@ -44,7 +44,6 @@ namespace cisc0 {
 		bool isCall;
 		bool isConditional;
 		bool indirect;
-		bool readNextWord;
 		byte bitmask;
 		byte arg0;
 		byte arg1;
@@ -56,6 +55,37 @@ namespace cisc0 {
 		int numWords() const;
 		Encoding encode() const;
 		void clear();
+		template<typename T>
+		void setBitmask(T value) noexcept {
+			bitmask = static_cast<decltype(bitmask)>(value);
+		}
+		void setBitmask(byte value) noexcept;
+
+		template<int index>
+		void setArg(byte value) noexcept {
+			static_assert(index >= 0 && index < 3, "Illegal argument index!");
+			switch(index) {
+				case 0:
+					arg0 = value;
+					break;
+				case 1:
+					arg1 = value;
+					break;
+				case 2:
+					arg2 = value;
+					break;
+				default:
+					throw syn::Problem("Illegal argument index!");
+			}
+		}
+
+		template<typename T>
+		void setSubType(T value) noexcept {
+			subType = static_cast<decltype(subType)>(value);
+		}
+
+		void setSubType(byte value) noexcept;
+
 		private:
             Encoding encodeMemory() const;
             Encoding encodeArithmetic() const;

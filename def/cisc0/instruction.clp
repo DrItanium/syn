@@ -93,7 +93,7 @@
 
 (deffacts cisc0-complex-fields
           (deffield ComplexSubClass           0b0000000011110000 4 ComplexSubTypes)
-          (deffield ComplexClassEncoding_Type 0b0000011100000000 8 EncodingOperation)
+          (deffield ComplexClassEncoding_Type 0b0000111100000000 8 EncodingOperation)
           (deffield ComplexClassExtended_Type 0b0000111100000000 8 ExtendedOperation)
           (deffield ComplexClassExtended_Arg0 0b1111000000000000 12 byte))
 
@@ -166,9 +166,10 @@
                           PopRegisters
                           ;SaveRegisters
                           ;LoadRegisters
+                          IsOdd
                           IsEven)
                 (cast-to byte)
-                (max-size "8")))
+                (max-size "16")))
 
 (deffacts cisc0-file-layouts-and-requests
           (include "ExecutionUnits.h")

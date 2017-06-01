@@ -398,6 +398,9 @@ namespace cisc0 {
             case ExtendedOperation::IsEven:
                 getConditionRegister() = normalizeCondition(syn::isEven(registerValue(inst.getComplexExtendedArg<0>())));
                 break;
+			case ExtendedOperation::IsOdd:
+				getConditionRegister() = normalizeCondition(!syn::isEven(registerValue(inst.getComplexExtendedArg<0>())));
+				break;
             default:
                 throw syn::Problem("Undefined extended operation!");
         }
