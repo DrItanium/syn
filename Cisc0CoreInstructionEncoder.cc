@@ -105,7 +105,7 @@ DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the sa
 		return encodeControl(0, _type);
 	}
 	template<Operation op> 
-	struct OperationToType : std::integral_constant<bool, false> { 
+	struct OperationToType : ConditionFulfillment<false> {
 		using type = decltype(syn::defaultErrorState<Operation>); 
 		static constexpr RegisterValue encodeType(RegisterValue input, byte value) noexcept {
 			return input; 
@@ -114,7 +114,7 @@ DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the sa
 
 #define DefOpToType( targetOperation , actualType , encoder ) \
 	template<> \
-	struct OperationToType< Operation :: targetOperation > : std::integral_constant<bool, true> { \
+	struct OperationToType< Operation :: targetOperation > : ConditionFulfillment< true> { \
 		using type = actualType; \
 		static constexpr RegisterValue encodeType(RegisterValue input, byte value) noexcept { \
 			return encoder ( input , static_cast < actualType > ( value ) ) ; \
@@ -135,14 +135,14 @@ DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the sa
 
 
 	template<Operation op>
-	struct HasImmediateFlag : std::integral_constant<bool, false> { 
+	struct HasImmediateFlag : ConditionFulfillment< false> { 
 		static constexpr RegisterValue setImmediateBit(RegisterValue value, bool immediate) noexcept {
 			return value;
 		}
 	};
 
 #define DefImmediateFlag( o , action ) template<> \
-	struct HasImmediateFlag < Operation :: o > : std::integral_constant<bool, true > {  \
+	struct HasImmediateFlag < Operation :: o > : ConditionFulfillment< true > {  \
 		static constexpr RegisterValue setImmediateBit(RegisterValue value, bool immediate) noexcept { \
 			return action ( value , immediate ); \
 		} \
@@ -163,7 +163,7 @@ DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the sa
 
 
 	template<Operation op>
-	struct HasBitmaskField : std::integral_constant<bool, false> { 
+	struct HasBitmaskField : ConditionFulfillment< false> { 
 		static constexpr RegisterValue setBitmaskField(RegisterValue value, byte mask) noexcept {
 			return value;
 		}
@@ -171,7 +171,7 @@ DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the sa
 
 #define DefHasBitmask( o , action ) \
 	template<> \
-	struct HasBitmaskField < Operation :: o > : std::integral_constant<bool, true> { \
+	struct HasBitmaskField < Operation :: o > : ConditionFulfillment< true> { \
 		static constexpr RegisterValue setBitmaskField(RegisterValue value, byte mask) noexcept { \
 			return action ( value, mask ); \
 		} \
