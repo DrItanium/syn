@@ -203,6 +203,13 @@ DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the sa
 			return immediate ? immAction ( input, index ) : regAction ( input, index ); \
 		} \
 	}
+#define DefHasArg1DoNothingOnImmediate(o, action) \
+	template<> \
+	struct HasArg1 < Operation :: o > : ConditionFulfillment<true> { \
+		static constexpr RegisterValue encodeArg1(RegisterValue input, byte index, bool immediate) noexcept { \
+			return immediate ? input : action ( input, index ) ; \
+		} \
+	}
 #define DefHasArg1(o, action) \
 	template<> \
 	struct HasArg1 < Operation :: o > : ConditionFulfillment<true> { \
@@ -215,6 +222,8 @@ DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the sa
 	DefHasArg1WithImmediate(Compare, encodeCompareImmediate, encodeCompareRegister1);
 	DefHasArg1(Move, encodeMoveRegister1);
 	DefHasArg1(Swap, encodeSwapSource);
+	DefHasArg1DoNothingOnImmediate(Logical, encodeLogicalRegister1);
+#undef DefHasArg1DoNothingOnImmediate
 #undef DefHasArg1
 #undef DefHasArg1WithImmediate
 
@@ -293,18 +302,22 @@ DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the sa
     InstructionEncoder::Encoding InstructionEncoder::encodeLogical() const {
 		constexpr auto op = Operation::Logical;
 		auto first = encodeType<op>(commonEncoding(), _subType);
+		auto second = 0u;
+		auto third = 0u;
+		auto width = 1;
 		first = setImmediateBit<op>(first, _immediate);
 		first = encodeArg0<op>(first, _arg0, _immediate);
+		// if we are not looking at an immediate then this operation will
+		// actually do something
+		first = encodeArg1<op>(first, _arg1, _immediate);
         if (_immediate) {
 			first = setBitmaskField<op>(first, _bitmask);
             auto maskedImmediate = mask(_bitmask) & _fullImmediate;
-            auto second = static_cast<Word>(maskedImmediate);
-            auto third = static_cast<Word>(maskedImmediate >> 16);
-            return std::make_tuple(instructionSizeFromImmediateMask(_bitmask), first, second, third);
-        } else {
-            first = encodeLogicalRegister1(first, _arg1);
-            return std::make_tuple(1, first, 0, 0);
-        }
+            second = static_cast<Word>(maskedImmediate);
+            third = static_cast<Word>(maskedImmediate >> 16);
+			width = instructionSizeFromImmediateMask(_bitmask);
+        } 
+		return std::make_tuple(width, first, second, third);
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeBranch() const {
