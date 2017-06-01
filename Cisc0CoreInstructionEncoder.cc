@@ -163,6 +163,9 @@ namespace cisc0 {
 		} \
 	}
 	DefHasBitmask(Move , encodeMoveBitmask);
+	DefHasBitmask(Set, encodeSetBitmask);
+	DefHasBitmask(Memory, encodeMemoryFlagBitmask);
+	DefHasBitmask(Logical, encodeLogicalFlagImmediateMask);
 #undef DefHasBitmask
 
 	template<Operation op>
@@ -206,26 +209,27 @@ namespace cisc0 {
 		constexpr auto op = Operation::Compare;
 		auto first = encodeType<op>(commonEncoding(), _subType);
 		first = setImmediateBit<op>(first, _immediate);
-		auto second = encodeArg0<Operation::Compare>(0, _arg0);
+		auto second = encodeArg0<op>(0, _arg0);
         second = _immediate ? encodeCompareImmediate(second, _arg1) : encodeCompareRegister1(second, _arg1);
         return std::make_tuple(2, first, second, 0);
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeSet() const {
-        int count = instructionSizeFromImmediateMask(_bitmask);
-        auto first = encodeSetBitmask(commonEncoding(), _bitmask);
-		first = encodeArg0<Operation::Set>(first, _arg0);
+		constexpr auto op = Operation::Set;
+		auto first = setBitmaskField<op>(commonEncoding(), _bitmask);
+		first = encodeArg0<op>(first, _arg0);
         // use the mask during encoding since we know how many Words the
         // instruction is made up of
         auto maskedValue = mask(_bitmask) & _fullImmediate;
         auto second = static_cast<Word>(maskedValue);
         auto third = static_cast<Word>(maskedValue >> 16);
-        return std::make_tuple(count, first, second, third);
+        return std::make_tuple(instructionSizeFromImmediateMask(_bitmask), first, second, third);
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeMemory() const {
-		auto first = encodeType<Operation::Memory>(commonEncoding(), _subType);
-        first = encodeMemoryFlagBitmask(first, _bitmask);
+		constexpr auto op = Operation::Memory;
+		auto first = encodeType<op>(commonEncoding(), _subType);
+		first = setBitmaskField<op>(first, _bitmask);
         first = encodeMemoryFlagIndirect(first, _indirect);
         // the register and offset occupy the same space
 		first = encodeArg0<Operation::Memory>(first, _arg0);
@@ -238,7 +242,7 @@ namespace cisc0 {
 		first = setImmediateBit<op>(first, _immediate);
 		first = encodeArg0<op>(first, _arg0, _immediate);
         if (_immediate) {
-            first = encodeLogicalFlagImmediateMask(first, _bitmask);
+			first = setBitmaskField<op>(first, _bitmask);
             auto maskedImmediate = mask(_bitmask) & _fullImmediate;
             auto second = static_cast<Word>(maskedImmediate);
             auto third = static_cast<Word>(maskedImmediate >> 16);
