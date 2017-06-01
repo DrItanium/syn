@@ -62,14 +62,14 @@ namespace cisc0 {
 	using ConditionFulfillment = std::integral_constant<bool, v>;
 	template<Operation op>
 	struct HasArg0 : ConditionFulfillment<false> {
-		static constexpr RegisterValue encodeArg0(RegisterValue input, byte index, bool immediate) noexcept {
+		static constexpr Word encodeArg0(Word input, byte index, bool immediate) noexcept {
 			return input;
 		}
 	};
 
 	template<>
 	struct HasArg0 < Operation::Logical > : ConditionFulfillment<true> {
-		static constexpr RegisterValue encodeArg0(RegisterValue input, byte index, bool immediate) noexcept {
+		static constexpr Word encodeArg0(Word input, byte index, bool immediate) noexcept {
 			if (immediate) {
 				return encodeLogicalImmediateDestination(input, index);
 			} else {
@@ -78,10 +78,11 @@ namespace cisc0 {
 		}
 	};
 
+
 #define DefHasArg0(o, action) \
 	template<> \
 	struct HasArg0 < Operation:: o > : ConditionFulfillment< true >  { \
-		static constexpr RegisterValue encodeArg0(RegisterValue input, byte index, bool immediate) noexcept { \
+		static constexpr Word encodeArg0(Word input, byte index, bool immediate) noexcept { \
 			return action ( input , index ); \
 		} \
 	}
@@ -102,13 +103,13 @@ DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the sa
 		return HasArg0<op>::encodeArg0(value, index, immediate);
 	}
 
-	RegisterValue InstructionEncoder::commonEncoding() const {
+	Word InstructionEncoder::commonEncoding() const {
 		return encodeControl(0, _type);
 	}
 	template<Operation op> 
 	struct OperationToType : ConditionFulfillment<false> {
 		using type = decltype(syn::defaultErrorState<Operation>); 
-		static constexpr RegisterValue encodeType(RegisterValue input, byte value) noexcept {
+		static constexpr Word encodeType(Word input, byte value) noexcept {
 			return input; 
 		}
 	};
@@ -117,7 +118,7 @@ DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the sa
 	template<> \
 	struct OperationToType< Operation :: targetOperation > : ConditionFulfillment< true> { \
 		using type = actualType; \
-		static constexpr RegisterValue encodeType(RegisterValue input, byte value) noexcept { \
+		static constexpr Word encodeType(Word input, byte value) noexcept { \
 			return encoder ( input , static_cast < actualType > ( value ) ) ; \
 		} \
 	}
@@ -129,7 +130,7 @@ DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the sa
 #undef DefOpToType
 
 	template<Operation op>
-	constexpr RegisterValue encodeType(RegisterValue input, byte t) noexcept {
+	constexpr Word encodeType(Word input, byte t) noexcept {
 		static_assert(OperationToType<op>::value, "Specialized implementation for encoding the instruction type has not been provided!");
 		return OperationToType<op>::encodeType ( input, t) ; 
 	}
@@ -137,14 +138,14 @@ DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the sa
 
 	template<Operation op>
 	struct HasImmediateFlag : ConditionFulfillment< false> { 
-		static constexpr RegisterValue setImmediateBit(RegisterValue value, bool immediate) noexcept {
+		static constexpr Word setImmediateBit(Word value, bool immediate) noexcept {
 			return value;
 		}
 	};
 
 #define DefImmediateFlag( o , action ) template<> \
 	struct HasImmediateFlag < Operation :: o > : ConditionFulfillment< true > {  \
-		static constexpr RegisterValue setImmediateBit(RegisterValue value, bool immediate) noexcept { \
+		static constexpr Word setImmediateBit(Word value, bool immediate) noexcept { \
 			return action ( value , immediate ); \
 		} \
 	}
@@ -157,7 +158,7 @@ DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the sa
 
 
 	template<Operation op>
-	constexpr RegisterValue setImmediateBit(RegisterValue input, bool immediate) noexcept {
+	constexpr Word setImmediateBit(Word input, bool immediate) noexcept {
 		static_assert(HasImmediateFlag<op>::value, "Given operation type does not have an immediate bit!");
 		return HasImmediateFlag<op>::setImmediateBit(input, immediate);
 	}
@@ -165,7 +166,7 @@ DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the sa
 
 	template<Operation op>
 	struct HasBitmaskField : ConditionFulfillment< false> { 
-		static constexpr RegisterValue setBitmaskField(RegisterValue value, byte mask) noexcept {
+		static constexpr Word setBitmaskField(Word value, byte mask) noexcept {
 			return value;
 		}
 	};
@@ -173,7 +174,7 @@ DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the sa
 #define DefHasBitmask( o , action ) \
 	template<> \
 	struct HasBitmaskField < Operation :: o > : ConditionFulfillment< true> { \
-		static constexpr RegisterValue setBitmaskField(RegisterValue value, byte mask) noexcept { \
+		static constexpr Word setBitmaskField(Word value, byte mask) noexcept { \
 			return action ( value, mask ); \
 		} \
 	}
@@ -184,14 +185,14 @@ DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the sa
 #undef DefHasBitmask
 
 	template<Operation op>
-	constexpr RegisterValue setBitmaskField(RegisterValue input, byte mask) noexcept {
+	constexpr Word setBitmaskField(Word input, byte mask) noexcept {
 		static_assert(HasBitmaskField<op>::value, "Given operation does not have a bitmask field!");
 		return HasBitmaskField<op>::setBitmaskField(input, mask); 
 	}
 
 	template<Operation op>
 	struct HasArg1 : ConditionFulfillment<false> {
-		static constexpr RegisterValue encodeArg1(RegisterValue input, byte index, bool immediate) noexcept {
+		static constexpr Word encodeArg1(Word input, byte index, bool immediate) noexcept {
 			return input;
 		}
 	};
@@ -199,21 +200,21 @@ DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the sa
 #define DefHasArg1WithImmediate(o, immAction , regAction ) \
 	template<> \
 	struct HasArg1 < Operation :: o > : ConditionFulfillment<true> { \
-		static constexpr RegisterValue encodeArg1(RegisterValue input, byte index, bool immediate) noexcept { \
+		static constexpr Word encodeArg1(Word input, byte index, bool immediate) noexcept { \
 			return immediate ? immAction ( input, index ) : regAction ( input, index ); \
 		} \
 	}
 #define DefHasArg1DoNothingOnImmediate(o, action) \
 	template<> \
 	struct HasArg1 < Operation :: o > : ConditionFulfillment<true> { \
-		static constexpr RegisterValue encodeArg1(RegisterValue input, byte index, bool immediate) noexcept { \
+		static constexpr Word encodeArg1(Word input, byte index, bool immediate) noexcept { \
 			return immediate ? input : action ( input, index ) ; \
 		} \
 	}
 #define DefHasArg1(o, action) \
 	template<> \
 	struct HasArg1 < Operation :: o > : ConditionFulfillment<true> { \
-		static constexpr RegisterValue encodeArg1(RegisterValue input, byte index, bool immediate) noexcept { \
+		static constexpr Word encodeArg1(Word input, byte index, bool immediate) noexcept { \
 			return action ( input, index ) ; \
 		} \
 	}
@@ -229,7 +230,7 @@ DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the sa
 
 
 	template<Operation op>
-	constexpr RegisterValue encodeArg1(RegisterValue input, byte index, bool immediate = false) noexcept {
+	constexpr Word encodeArg1(Word input, byte index, bool immediate = false) noexcept {
 		static_assert(HasArg1<op>::value, "Given operation type does not have a second argument!");
 		return HasArg1<op>::encodeArg1(input, index, immediate);
 	}
@@ -320,27 +321,44 @@ DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the sa
 		return std::make_tuple(width, first, second, third);
     }
 
+	template<>
+	struct HasArg0 < Operation::Branch> : ConditionFulfillment<true> {
+		static constexpr Word encodeArg0(Word input, byte index, bool immediate) noexcept {
+			if (cisc0::decodeBranchFlagIsIfForm(input)) {
+				return cisc0::encodeBranchIfOnTrue(input, index); 
+			} else {
+				return immediate ? input : cisc0::encodeBranchIndirectDestination(input, index);
+			}
+		}
+	};
+
+	template<>
+	struct HasArg1 < Operation::Branch> : ConditionFulfillment<true> {
+		static constexpr Word encodeArg1(Word input, byte index, bool immediate) noexcept {
+			if (cisc0::decodeBranchFlagIsIfForm(input)) {
+				return cisc0::encodeBranchIfOnFalse(input, index); 
+			} else {
+				return input;
+			}
+		}
+	};
+
     InstructionEncoder::Encoding InstructionEncoder::encodeBranch() const {
 		constexpr auto op = Operation::Branch;
 		auto first = setImmediateBit<op>(commonEncoding(), _immediate);
+		auto second = 0u;
+		auto third = 0u;
+		auto width = _immediate ? 3 : 1;
         first = encodeBranchFlagIsConditional(first, _isConditional);
         first = encodeBranchFlagIsIfForm(first, _isIf);
         first = encodeBranchFlagIsCallForm(first, _isCall);
-        if (_isIf) {
-            first = encodeBranchIfOnTrue(first, _arg0);
-            first = encodeBranchIfOnFalse(first, _arg1);
-            return std::make_tuple(1, first, 0, 0);
-        } else {
-            if (_immediate) {
-                // encode the 24-bit number
-                auto second = static_cast<Word>(_fullImmediate);
-				auto third = static_cast<Word>(_fullImmediate >> 16);
-                return std::make_tuple(3, first, second, third);
-            } else {
-                first = encodeBranchIndirectDestination(first, _arg0);
-                return std::make_tuple(1, first, 0, 0);
-            }
-        }
+		first = encodeArg0<op>(first, _arg0, _immediate);
+		first = encodeArg1<op>(first, _arg1, _immediate);
+		if (_immediate) {
+			second = static_cast<Word>(_fullImmediate);
+			third = static_cast<Word>(_fullImmediate >> 16);
+		}
+        return std::make_tuple(width, first, second, third);
     }
 	template<ComplexSubTypes t> struct ComplexSubTypeToNestedType { };
 
