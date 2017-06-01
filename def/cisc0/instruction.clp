@@ -267,3 +267,103 @@
                            ?shift
                            byte)))
 
+(defrule MAIN::generate-top-level-type-conversion-generic
+         (declare (salience 1))
+         ?f <- (top-level-type ?t)
+         (constructed enum ?t)
+         =>
+         (retract ?f)
+         (assert (made-top-level-type-conversion ?t))
+         (printout t
+                   "template<" ?t " value>" crlf
+                   "struct " ?t "ToSubType : syn::ConditionFulfillment<false> {" crlf
+                   "using type = " ?t ";" crlf
+                   "};" crlf))
+
+(defrule MAIN::generate-top-level-type-conversion-specialization
+         (declare (salience 1))
+         ?f <- (top-level-to-sub-type ?top ?v -> ?sub-type)
+         (made-top-level-type-conversion ?top)
+         =>
+         (retract ?f)
+         (assert (made-top-level-to-sub-type-specialization ?top ?v -> ?sub-type)
+                 (specialized-on-top-level-type ?top))
+         (printout t
+                   "template<>" crlf
+                   "struct " ?top "ToSubType< " ?top " :: " ?v " > : syn::ConditionFulfillment<true> {" crlf
+                   "using type = " ?sub-type " ; " crlf
+                   "};" crlf))
+
+(defrule MAIN::generate-top-level-type-conversion-specialization-encoding-op:generic-case
+         (declare (salience -2))
+         (made-top-level-to-sub-type-specialization ?top ?v -> ?sub-type)
+         (encoding-operation ?name
+                             ?str
+                             ?sub-type
+                             ?full-type)
+         (made-top-level-to-sub-type-query ?top)
+         (not (generic encoding of sub type generated ?top))
+         =>
+         (assert (generic encoding of sub type generated ?top))
+         (printout t
+                   "template<" ?top " v>" crlf
+                   "struct EncodeSubType : syn::ConditionFulfillment<false> {" crlf
+                   "using ReturnType = " ?full-type ";" crlf
+                   "using CastTo = SubTypeOf<v>;" crlf
+                   "static constexpr ReturnType encodeSubType(ReturnType input, SubTypeOf<v> data) noexcept { return input; }" crlf
+                   "};" crlf))
+
+(defrule MAIN::generate-top-level-type-conversion-specialization-encoding-op
+         (declare (salience -3))
+         (made-top-level-to-sub-type-specialization ?top ?v -> ?sub-type)
+         (sub-type-field ?name
+                         ?sub-type)
+         (encoding-operation ?name
+                             ?str
+                             ?sub-type
+                             ?full-type)
+         (made-top-level-to-sub-type-query ?top)
+         (generic encoding of sub type generated ?top)
+         =>
+         (printout t 
+                   "template<>" crlf
+                   "struct EncodeSubType <" ?top " :: " ?v "> : syn::ConditionFulfillment<true> {" crlf
+                   "using ReturnType = " ?full-type ";" crlf
+                   "using CastTo = SubTypeOf<" ?top " :: " ?v">;" crlf
+                   "static constexpr ReturnType encodeSubType(ReturnType input, CastTo value) noexcept {" crlf
+                   "return " ?str " ( input, value );" crlf
+                   "}" crlf
+                   "};" crlf))
+
+
+
+
+(defrule MAIN::generate-top-level-has-sub-type-function
+         (declare (salience 1))
+         (made-top-level-type-conversion ?t)
+         (specialized-on-top-level-type ?t)
+         (not (top-level-to-sub-type ?t ? -> ?))
+         (not (made-top-level-to-sub-type-query ?t))
+         =>
+         (assert (made-top-level-to-sub-type-query ?t))
+         (printout t 
+                   "template<" ?t " value>" crlf
+                   "using SubTypeOf = typename " ?t"ToSubType<value>::type;" crlf)
+         (printout t
+                   "template<" ?t " value>" crlf
+                   "constexpr bool HasSubType() noexcept {" crlf
+                   "return " ?t "ToSubType<value>::value;" crlf
+                   "}" crlf))
+
+(defrule MAIN::generate-basic-sub-type-encoder
+         (declare (salience -4))
+         (generic encoding of sub type generated ?top)
+         (not (built encode sub type function ?top))
+         =>
+         (assert (built encode sub type function ?top))
+         (printout t 
+                   "template<" ?top " v, typename T = typename EncodeSubType<v>::CastTo> " crlf
+                   "constexpr typename EncodeSubType<v>::ReturnType encodeSubType(typename EncodeSubType<v>::ReturnType input, T value) noexcept {" crlf
+                   "static_assert(HasSubType<v>(), \"Provided operation does not have a subtype!\");" crlf
+                   "return EncodeSubType<v>::encodeSubType(input, static_cast<typename EncodeSubType<v>::CastTo>(value));" crlf
+                   "}" crlf))

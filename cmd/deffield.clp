@@ -126,25 +126,41 @@
 
 (deffunction generate-encode-decode-ops
              (?t ?name ?value ?mask ?shift)
+             (bind ?decodeFunc
+                   (format nil 
+                           "decode%s"
+                           ?name))
+             (bind ?encodeFunc
+                   (format nil
+                           "encode%s"
+                           ?name))
              (format t
-                     "constexpr %s decode%s(%s value) noexcept { return syn::decodeBits<%s, %s, %s, %s>(value); }%n"
+                     "constexpr %s %s(%s value) noexcept { return syn::decodeBits<%s, %s, %s, %s>(value); }%n"
                      ?t
-                     ?name
+                     ?decodeFunc
                      ?value
                      ?value
                      ?t
                      (str-cat ?mask)
                      (str-cat ?shift))
              (format t
-                     "constexpr %s encode%s(%s value, %s field) noexcept { return syn::encodeBits<%s, %s, %s, %s>(value, field); }%n"
+                     "constexpr %s %s(%s value, %s field) noexcept { return syn::encodeBits<%s, %s, %s, %s>(value, field); }%n"
                      ?value
-                     ?name
+                     ?encodeFunc
                      ?value
                      ?t
                      ?value
                      ?t
                      (str-cat ?mask)
-                     (str-cat ?shift)))
+                     (str-cat ?shift))
+             (assert (decoding-operation ?name
+                                         ?decodeFunc
+                                         ?t
+                                         ?value)
+                     (encoding-operation ?name
+                                         ?encodeFunc
+                                         ?t
+                                         ?value)))
 
 (defrule MAIN::generate-field:c++:use-input-type
          (field (name ?name)
@@ -226,47 +242,8 @@
                    "template<" ?name " op>" crlf
                    "constexpr auto translate" ?name " = toExecutionUnitValue<decltype(op), op>;" crlf))
 
-(defrule MAIN::generate-top-level-type-conversion-generic
-         (declare (salience 1))
-         ?f <- (top-level-type ?t)
-         (constructed enum ?t)
-         =>
-         (retract ?f)
-         (assert (made-top-level-type-conversion ?t))
-         (printout t
-                   "template<" ?t " value>" crlf
-                   "struct " ?t "ToSubType : syn::ConditionFulfillment<false> {" crlf
-                   "using type = " ?t ";" crlf
-                   "};" crlf))
 
-(defrule MAIN::generate-top-level-type-conversion-specialization
-         (declare (salience 1))
-         ?f <- (top-level-to-sub-type ?top ?v -> ?sub-type)
-         (made-top-level-type-conversion ?top)
-         =>
-         (retract ?f)
-         (assert (made-top-level-to-sub-type-specialization ?top ?v -> ?sub-type)
-                 (specialized-on-top-level-type ?top))
-         (printout t
-                   "template<>" crlf
-                   "struct " ?top "ToSubType< " ?top " :: " ?v " > : syn::ConditionFulfillment<true> {" crlf
-                   "using type = " ?sub-type " ; " crlf
-                   "};" crlf))
 
-(defrule MAIN::generate-top-level-has-sub-type-function
-         (made-top-level-type-conversion ?t)
-         (specialized-on-top-level-type ?t)
-         (not (top-level-to-sub-type ?t ? -> ?))
-         (not (made-top-level-to-sub-type-query ?t))
-         =>
-         (assert (made-top-level-to-sub-type-query ?t))
-         (printout t
-                   "template<" ?t " value>" crlf
-                   "constexpr bool HasSubType() noexcept {" crlf
-                   "return " ?t "ToSubType<value>::value;" crlf
-                   "}" crlf))
-
-         
 (defrule MAIN::generate-to-exec-unit-specialization
          ?f <- (to-execution-unit ?enum
                                   ?name
