@@ -266,6 +266,78 @@
                            ?mask
                            ?shift
                            byte)))
+(deffunction MAIN::explicit-enum
+             (?type ?value)
+             (str-cat ?type " :: "  ?value))
+(deffunction MAIN::variable
+             (?type ?name)
+             (str-cat ?type " " ?name))
+(deffunction MAIN::standard-using-decl
+             (?name ?value)
+             (str-cat "using " ?name " = " ?value ";"))
+
+(deffunction MAIN::comma-list
+             (?first $?rest)
+             (bind ?output 
+                   ?first)
+             (progn$ (?r ?rest)
+                     (bind ?output
+                           (str-cat ?output
+                                    ", " ?r)))
+             ?output)
+(deffunction MAIN::template-specialization
+             (?first $?rest)
+             (str-cat "< " 
+                      (comma-list ?first
+                                  ?rest)
+                      " >"))
+(deffunction MAIN::template-decl
+             (?first $?rest)
+             (str-cat "template" 
+                      (template-specialization ?first 
+                                               ?rest)))
+
+(deffunction MAIN::string-if-true
+             (?val ?prefix)
+             (if ?val then
+               (str-cat ?prefix " " ?val)
+               else
+               ""))
+
+(deffunction MAIN::struct
+             (?name ?name-postfix ?extends $?body)
+             (str-cat "struct " ?name 
+                      (string-if-true ?name-postfix 
+                                      " ")
+                      (string-if-true ?extends
+                                      " : ")
+                      " { "
+                      (expand$ ?body)
+                      " };"))
+(deffunction MAIN::cond-fulfill
+             (?result)
+             (str-cat "syn::ConditionFulfillment< " 
+                      (if ?result then
+                        true
+                        else
+                        false)
+                      " >"))
+
+(deffunction MAIN::generic-struct
+             (?name ?template-parameters $?body)
+             (str-cat (template-decl ?template-parameters) " "
+                      (struct ?name 
+                              FALSE
+                              (cond-fulfill FALSE)
+                              ?body)))
+
+(deffunction MAIN::specialize-struct
+             (?name ?special-value $?body)
+             (str-cat (template-decl "")
+                      (struct ?name
+                              (template-specialization ?special-value)
+                              (cond-fulfill TRUE)
+                              (expand$ ?body))))
 
 (defrule MAIN::generate-top-level-type-conversion-generic
          (declare (salience 1))
@@ -275,10 +347,13 @@
          (retract ?f)
          (assert (made-top-level-type-conversion ?t))
          (printout t
-                   "template<" ?t " value>" crlf
-                   "struct " ?t "ToSubType : syn::ConditionFulfillment<false> {" crlf
-                   "using type = " ?t ";" crlf
-                   "};" crlf))
+                   (generic-struct (str-cat ?t 
+                                            ToSubType)
+                                   (variable ?t
+                                             value)
+                                   (standard-using-decl type
+                                                        ?t)) crlf))
+
 
 (defrule MAIN::generate-top-level-type-conversion-specialization
          (declare (salience 1))
@@ -289,13 +364,12 @@
          (assert (made-top-level-to-sub-type-specialization ?top ?v -> ?sub-type)
                  (specialized-on-top-level-type ?top))
          (printout t
-                   "template<>" crlf
-                   "struct " ?top "ToSubType< " ?top " :: " ?v " > : syn::ConditionFulfillment<true> {" crlf
-                   "using type = " ?sub-type " ; " crlf
-                   "};" crlf))
-
-
-
+                   (specialize-struct (str-cat ?top
+                                               ToSubType)
+                                      (explicit-enum ?top
+                                                     ?v)
+                                      (standard-using-decl type
+                                                           ?sub-type)) crlf))
 
 
 (defrule MAIN::generate-top-level-has-sub-type-function
@@ -306,14 +380,27 @@
          (not (made-top-level-to-sub-type-query ?t))
          =>
          (assert (made-top-level-to-sub-type-query ?t))
+         (bind ?standard-decl
+               (template-decl (variable ?t
+                                        value)))
+         (bind ?subtype-type
+               (str-cat ?t ToSubType
+                        (template-specialization value)))
+
          (printout t 
-                   "template<" ?t " value>" crlf
-                   "using SubTypeOf = typename " ?t"ToSubType<value>::type;" crlf)
-         (printout t
-                   "template<" ?t " value>" crlf
-                   "constexpr bool HasSubType() noexcept {" crlf
-                   "return " ?t "ToSubType<value>::value;" crlf
-                   "}" crlf))
+                   ?standard-decl crlf
+                   (standard-using-decl SubTypeOf 
+                                        (explicit-enum (str-cat "typename " 
+                                                                ?subtype-type) 
+                                                       type)) crlf
+                   ?standard-decl crlf
+                   "constexpr bool HasSubType() noexcept { return " 
+                   (explicit-enum ?subtype-type
+                                  value) 
+                   "; }" crlf))
+
+
+
 
 
 (defrule MAIN::generate-top-level-type-conversion-specialization-encoding-op:generic-case
@@ -348,14 +435,17 @@
          (generic encoding of sub type generated ?top)
          =>
          (printout t 
-                   "template<>" crlf
-                   "struct EncodeSubType <" ?top " :: " ?v "> : syn::ConditionFulfillment<true> {" crlf
-                   "using ReturnType = " ?full-type ";" crlf
-                   "using CastTo = SubTypeOf<" ?top " :: " ?v">;" crlf
-                   "static constexpr ReturnType encodeSubType(ReturnType input, CastTo value) noexcept {" crlf
-                   "return " ?str " ( input, value );" crlf
-                   "}" crlf
-                   "};" crlf))
+                   (specialize-struct EncodeSubType
+                                      (explicit-enum ?top
+                                                     ?v)
+                                      (standard-using-decl ReturnType
+                                                           ?full-type)
+                                      (standard-using-decl CastTo
+                                                           (str-cat SubTypeOf
+                                                                    (template-specialization (explicit-enum ?top 
+                                                                                                            ?v))))
+                                      "static constexpr ReturnType encodeSubType(ReturnType input, CastTo value) noexcept { return " ?str "(input, value); }") 
+                   crlf))
 
 (defrule MAIN::generate-basic-sub-type-encoder
          (declare (salience -4))
@@ -423,3 +513,4 @@
                    "static_assert(HasSubType<v>(), \"Provided operation does not have a subtype!\");" crlf
                    "return DecodeSubType<v>::decodeSubType(input);" crlf
                    "}" crlf))
+
