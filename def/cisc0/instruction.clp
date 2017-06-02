@@ -34,10 +34,10 @@
           (deffield Lower   0b0000000011111111 0 byte))
 
 (deffacts cisc0-compare-fields
-          (defbitfield CompareImmediateFlag 0b0010000000000000 13)
+          (defbitfield CompareFlagImmediate 0b0010000000000000 13)
           (defsubtypefield CompareType      0b0000011100000000 8 CompareStyle)
-          (deffield CompareRegister0        0b0000000000001111 0 byte)
-          (deffield CompareRegister1        0b0000000011110000 4 byte)
+          (deffield CompareDestination        0b0000000000001111 0 byte)
+          (deffield CompareSource        0b0000000011110000 4 byte)
           (deffield CompareImmediate        0b1111111100000000 8 byte))
 
 (deffacts cisc0-arithmetic-fields
@@ -48,25 +48,25 @@
           (deffield ArithmeticSource           0b1111000000000000 12 byte))
 
 (deffacts cisc0-logical-fields
-          (defbitfield LogicalFlagImmediate         0b0000000000010000 4)
-          (defbitmask LogicalFlagImmediateMask      0b0000111100000000 8)
-          (deffield LogicalImmediateDestination     0b1111000000000000 12 byte)
-          (defsubtypefield LogicalFlagType          0b0000000011100000 5 LogicalOps)
-          (deffield LogicalRegister0                0b0000111100000000 8 byte)
-          (deffield LogicalRegister1                0b1111000000000000 12 byte))
+          (defbitfield LogicalFlagImmediate      0b0000000000010000 4)
+          (defbitmask LogicalFlagImmediateMask   0b0000111100000000 8)
+          (deffield LogicalImmediateDestination  0b1111000000000000 12 byte)
+          (defsubtypefield LogicalFlagType       0b0000000011100000 5 LogicalOps)
+          (deffield LogicalDestination           0b0000111100000000 8 byte)
+          (deffield LogicalSource                0b1111000000000000 12 byte))
 
 (deffacts cisc0-shift-fields
           (defbitfield ShiftFlagLeft        0b0000000000010000 4)
           (defbitfield ShiftFlagImmediate   0b0000000000100000 5)
           (deffield ShiftImmediate          0b1111100000000000 11 RegisterValue)
-          (deffield ShiftRegister0          0b0000011110000000 7  byte)
-          (deffield ShiftRegister1          0b0111100000000000 11 byte))
+          (deffield ShiftDestination          0b0000011110000000 7  byte)
+          (deffield ShiftSource          0b0111100000000000 11 byte))
 
 (deffacts cisc0-branch-fields
           (defbitfield BranchFlagIsConditional   0b0000000010000000 7)
           (defbitfield BranchFlagIsIfForm        0b0000000001000000 6)
           (defbitfield BranchFlagIsCallForm      0b0000000000100000 5)
-          (defbitfield BranchFlagIsImmediate     0b0000000000010000 4)
+          (defbitfield BranchFlagImmediate       0b0000000000010000 4)
           (deffield BranchIfOnTrue               0b0000111100000000 8  byte)
           (deffield BranchIfOnFalse              0b1111000000000000 12 byte)
           (deffield BranchIndirectDestination    0b1111000000000000 12 byte))
@@ -75,27 +75,26 @@
           (defsubtypefield MemoryFlagType  0b0000000000110000 4 MemoryOperation)
           (defbitmask MemoryFlagBitmask    0b0000111100000000 8)
           (defbitmask MemoryFlagIndirect   0b0000000001000000 6)
-          (deffield MemoryOffset           0b1111000000000000 12 byte)
-          (deffield MemoryRegister         0b1111000000000000 12 byte))
+          (deffield MemoryDestination      0b1111000000000000 12 byte))
 
 (deffacts cisc0-move-fields
-          (defbitmask MoveBitmask 0b0000000011110000 4)
-          (deffield MoveRegister0 0b0000111100000000 8 byte)
-          (deffield MoveRegister1 0b1111000000000000 12 byte))
+          (defbitmask MoveBitmask   0b0000000011110000 4)
+          (deffield MoveDestination 0b0000111100000000 8 byte)
+          (deffield MoveSource      0b1111000000000000 12 byte))
 
 (deffacts cisc0-set-fields
-          (defbitmask SetBitmask   0b0000000011110000 4)
-          (deffield SetDestination 0b0000111100000000 8 byte))
+          (defbitmask SetBitmask    0b0000000011110000 4)
+          (deffield SetDestination  0b0000111100000000 8 byte))
 
 (deffacts cisc0-swap-fields
           (deffield SwapDestination 0b0000111100000000 8 byte)
           (deffield SwapSource      0b1111000000000000 12 byte))
 
 (deffacts cisc0-complex-fields
-          (defsubtypefield ComplexSubClass    0b0000000011110000 4 ComplexSubTypes)
-          (deffield ComplexClassEncoding_Type 0b0000111100000000 8 EncodingOperation)
-          (deffield ComplexClassExtended_Type 0b0000111100000000 8 ExtendedOperation)
-          (deffield ComplexClassExtended_Arg0 0b1111000000000000 12 byte))
+          (defsubtypefield ComplexSubClass          0b0000000011110000 4 ComplexSubTypes)
+          (deffield ComplexClassEncodingType        0b0000111100000000 8 EncodingOperation)
+          (deffield ComplexClassExtendedType        0b0000111100000000 8 ExtendedOperation)
+          (deffield ComplexClassExtendedDestination 0b1111000000000000 12 byte))
 
 
 
@@ -214,8 +213,7 @@
           (top-level-to-sub-type Operation Compare -> CompareStyle)
           (top-level-to-sub-type Operation Memory -> MemoryOperation)
           (top-level-to-sub-type Operation Logical -> LogicalOps)
-          (top-level-to-sub-type Operation Complex -> ComplexSubTypes)
-          )
+          (top-level-to-sub-type Operation Complex -> ComplexSubTypes))
 (defrule translate-defsubtype-decl
          (declare (salience ?*priority:first*))
          ?f <- (defsubtypefield ?name
@@ -285,7 +283,7 @@
 (deffunction MAIN::terminated-scope-body
              ($?body)
              (add-terminator (scope-body ?body)))
-        
+
 
 (deffunction MAIN::comma-list
              (?first $?rest)
@@ -550,3 +548,51 @@
                    "return DecodeSubType<v>::decodeSubType(input);" crlf
                    "}" crlf))
 
+(deffacts cisc0-destination-register-usage
+          (defproperty-struct UsesDestination 
+                              Operation)
+          (property UsesDestination Operation Arithmetic)
+          (property UsesDestination Operation Swap)
+          (property UsesDestination Operation Move)
+          (property UsesDestination Operation Shift)
+          (property UsesDestination Operation Compare)
+          (property UsesDestination Operation Set)
+          (property UsesDestination Operation Memory)
+          (property UsesDestination Operation Logical)
+          (defproperty-struct UsesSource
+                              Operation)
+          (property UsesSource Operation Arithmetic)
+          (property UsesSource Operation Shift)
+          (property UsesSource Operation Compare)
+          (property UsesSource Operation Move)
+          (property UsesSource Operation Swap)
+          (property UsesSource Operation Logical))
+
+(defrule MAIN::generate-generic-struct-impl
+         ?f <- (defproperty-struct ?title
+                                   ?input-type)
+         =>
+         (retract ?f)
+         (assert (made property-struct
+                       ?title
+                       ?input-type))
+         (printout t
+                   (generic-struct ?title
+                                   (variable ?input-type
+                                             i)) crlf))
+
+(defrule MAIN::generate-property-specialization
+         (declare (salience -1))
+         (made property-struct
+               ?title
+               ?input-type)
+         ?f <- (property ?title 
+                         ?input-type 
+                         ?value)
+         =>
+         (retract ?f)
+         (printout t 
+                   (specialize-struct ?title
+                                      (explicit-enum ?input-type
+                                                     ?value)) 
+                   crlf))
