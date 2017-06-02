@@ -91,7 +91,11 @@ namespace cisc0 {
 		auto first = setFlagImmediate<op>(commonEncoding());
         first = encodeShiftFlagLeft(first, _shiftLeft);
 		first = setDestination<op>(first);
-		first = setSource<op>(first);
+		if (_immediate) {
+			first = encodeShiftImmediate(first, _arg1);
+		} else {
+			first = setSource<op>(first);
+		}
         return std::make_tuple(1, first, 0, 0);
     }
 

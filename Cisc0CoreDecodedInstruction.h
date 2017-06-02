@@ -64,8 +64,12 @@ namespace cisc0 {
             inline bool shouldShiftLeft() const noexcept { return decodeShiftFlagLeft(_rawValue); }
             inline bool isIndirectOperation() const noexcept { return decodeMemoryFlagIndirect(_rawValue); }
             BranchFlags getOtherBranchFlags() const noexcept;
-            inline EncodingOperation getEncodingOperation() const noexcept { return decodeComplexClassEncodingType(_rawValue); }
-            inline ExtendedOperation getExtendedOperation() const noexcept { return decodeComplexClassExtendedType(_rawValue); }
+			template<ComplexSubTypes op>
+			inline typename DecodeComplexSubType<op>::ReturnType getComplexSubType() const noexcept {
+				return decodeComplexSubType<op>(_rawValue);
+			}
+            inline EncodingOperation getEncodingOperation() const noexcept { return getComplexSubType<ComplexSubTypes::Encoding>(); }
+            inline ExtendedOperation getExtendedOperation() const noexcept { return getComplexSubType<ComplexSubTypes::Extended>(); }
 
 			template<Operation op>
 			inline byte getSourceRegister() const noexcept {
@@ -140,8 +144,8 @@ namespace cisc0 {
 				return getRegister<Operation::Compare, index>();
             }
             template<Operation op>
-			inline typename DecodeSubType<op>::ReturnType getSubtype() const noexcept {
-				return cisc0::decodeSubType<op>(_rawValue);
+			inline typename cisc0::DecodeType<op>::ReturnType getSubtype() const noexcept {
+				return cisc0::decodeType<op>(_rawValue);
 			}
 		private:
 			RawInstruction _rawValue;
