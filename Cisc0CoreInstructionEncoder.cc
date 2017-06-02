@@ -107,13 +107,6 @@ DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the sa
 		return encodeControl(0, _type);
 	}
 
-
-	template<Operation op>
-	constexpr Word encodeDonuts(Word input, byte t) noexcept {
-		return cisc0::encodeSubType<op, byte>(input, t);
-	}
-
-
 	template<Operation op>
 	struct HasImmediateFlag : ConditionFulfillment< false> { 
 		static constexpr Word setImmediateBit(Word value, bool immediate) noexcept {
@@ -216,7 +209,7 @@ DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the sa
 
     InstructionEncoder::Encoding InstructionEncoder::encodeArithmetic() const {
 		constexpr auto op = Operation::Arithmetic;
-		auto first = encodeDonuts<op>(commonEncoding() , _subType);
+		auto first = encodeSubType<op>(commonEncoding() , _subType);
 		first = setImmediateBit<op>(first, _immediate);
 		first = encodeArg0<op>(first, _arg0);
 		first = encodeArg1<op>(first, _arg1, _immediate);
@@ -249,7 +242,7 @@ DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the sa
 
     InstructionEncoder::Encoding InstructionEncoder::encodeCompare() const {
 		constexpr auto op = Operation::Compare;
-		auto first = encodeDonuts<op>(commonEncoding(), _subType);
+		auto first = encodeSubType<op>(commonEncoding(), _subType);
 		first = setImmediateBit<op>(first, _immediate);
 		auto second = encodeArg0<op>(0, _arg0);
 		second = encodeArg1<op>(second, _arg1, _immediate);
@@ -270,7 +263,7 @@ DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the sa
 
     InstructionEncoder::Encoding InstructionEncoder::encodeMemory() const {
 		constexpr auto op = Operation::Memory;
-		auto first = encodeDonuts<op>(commonEncoding(), _subType);
+		auto first = encodeSubType<op>(commonEncoding(), _subType);
 		first = setBitmaskField<op>(first, _bitmask);
         first = encodeMemoryFlagIndirect(first, _indirect);
         // the register and offset occupy the same space
@@ -280,7 +273,7 @@ DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the sa
 
     InstructionEncoder::Encoding InstructionEncoder::encodeLogical() const {
 		constexpr auto op = Operation::Logical;
-		auto first = encodeDonuts<op>(commonEncoding(), _subType);
+		auto first = encodeSubType<op>(commonEncoding(), _subType);
 		auto second = 0u;
 		auto third = 0u;
 		auto width = _immediate ? instructionSizeFromImmediateMask(_bitmask) : 1;
@@ -370,7 +363,7 @@ DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the sa
 	}
     InstructionEncoder::Encoding InstructionEncoder::encodeComplex() const {
         auto sType = static_cast<ComplexSubTypes>(_subType);
-		auto first = encodeDonuts<Operation::Complex>(commonEncoding(), _subType);
+		auto first = encodeSubType<Operation::Complex>(commonEncoding(), _subType);
         if (sType == ComplexSubTypes::Encoding) {
 			// right now it is a single word
 			first = encodeSubType<ComplexSubTypes::Encoding>(first, _bitmask);
