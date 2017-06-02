@@ -42,13 +42,13 @@
 
 (deffacts cisc0-arithmetic-fields
           (defbitfield ArithmeticFlagImmediate 0b0000000000010000 4)
-          (defsubtypefield ArithmeticFlagType  0b0000000011100000 5 ArithmeticOps)
+          (defsubtypefield ArithmeticType      0b0000000011100000 5 ArithmeticOps)
           (deffield ArithmeticDestination      0b0000111100000000 8 byte)
           (deffield ArithmeticSource           0b1111000000000000 12 byte))
 
 (deffacts cisc0-logical-fields
           (defbitfield LogicalFlagImmediate      0b0000000000010000 4)
-          (defsubtypefield LogicalFlagType       0b0000000011100000 5 LogicalOps)
+          (defsubtypefield LogicalType           0b0000000011100000 5 LogicalOps)
           (deffield LogicalDestination           0b0000111100000000 8 byte)
           (defbitmask LogicalBitmask             0b1111000000000000 12)
           (deffield LogicalSource                0b1111000000000000 12 byte))
@@ -66,7 +66,7 @@
           (deffield BranchDestination            0b0000111100000000 8  byte))
 
 (deffacts cisc0-memory-fields
-          (defsubtypefield MemoryFlagType  0b0000000000110000 4 MemoryOperation)
+          (defsubtypefield MemoryType      0b0000000000110000 4 MemoryOperation)
           (defbitmask MemoryBitmask        0b0000111100000000 8)
           (defbitmask MemoryFlagIndirect   0b0000000001000000 6)
           (deffield MemoryDestination      0b1111000000000000 12 byte))
@@ -85,9 +85,9 @@
           (deffield SwapSource      0b1111000000000000 12 byte))
 
 (deffacts cisc0-complex-fields
-          (defsubtypefield ComplexSubClass          0b0000000011110000 4 ComplexSubTypes)
-          (deffield ComplexClassEncodingType        0b0000111100000000 8 EncodingOperation)
-          (deffield ComplexClassExtendedType        0b0000111100000000 8 ExtendedOperation)
+          (defsubtypefield ComplexType              0b0000000011110000 4 ComplexSubTypes)
+          (deffield EncodingComplexSubType          0b0000111100000000 8 EncodingOperation)
+          (deffield ExtendedComplexSubType          0b0000111100000000 8 ExtendedOperation)
           (deffield ComplexClassExtendedDestination 0b1111000000000000 12 byte))
 
 
@@ -202,6 +202,9 @@
                              CompareUnitOperation GreaterThan)
           (to-execution-unit CompareStyle GreaterThanOrEqualTo ->
                              CompareUnitOperation GreaterThanOrEqualTo)
+          (top-level-type ComplexSubTypes)
+          (top-level-to-sub-type ComplexSubTypes Encoding -> EncodingOperation)
+          (top-level-to-sub-type ComplexSubTypes Extended -> ExtendedOperation)
           (top-level-type Operation)
           (top-level-to-sub-type Operation Arithmetic -> ArithmeticOps)
           (top-level-to-sub-type Operation Compare -> CompareStyle)
@@ -415,7 +418,8 @@
 
          (printout t 
                    ?standard-decl crlf
-                   (standard-using-decl SubTypeOf 
+                   (standard-using-decl (sym-cat SubTypeOf 
+                                                 ?t)
                                         (explicit-enum (typename ?subtype-type) 
                                                        type)) crlf
                    ?standard-decl crlf
@@ -442,105 +446,116 @@
          (not (generic encoding of sub type generated ?top))
          =>
          (assert (generic encoding of sub type generated ?top))
+         (bind ?q
+               (str-cat 
+                 (sym-cat SubTypeOf
+                          ?top)
+                 "<v>"))
+         (bind ?q2
+               (sym-cat EncodeSubType
+                        ?top))
+
          (printout t
                    "template<" ?top " v>" crlf
-                   "struct EncodeSubType : syn::ConditionFulfillment<false> {" crlf
+                   "struct " ?q2 " : syn::ConditionFulfillment<false> {" crlf
                    "using ReturnType = " ?full-type ";" crlf
-                   "using CastTo = SubTypeOf<v>;" crlf
-                   "static constexpr ReturnType encodeSubType(ReturnType input, SubTypeOf<v> data) noexcept { return input; }" crlf
+                   (standard-using-decl CastTo
+                                        ?q) crlf
+                   "static constexpr ReturnType encodeSubType(ReturnType input, " ?q " data) noexcept { return input; }" crlf
                    "};" crlf))
 
-(defrule MAIN::generate-top-level-type-conversion-specialization-encoding-op
-         (declare (salience -3))
-         (made-top-level-to-sub-type-specialization ?top ?v -> ?sub-type)
-         (sub-type-field ?name
-                         ?sub-type)
-         (encoding-operation ?name
-                             ?str
-                             ?sub-type
-                             ?full-type)
-         (made-top-level-to-sub-type-query ?top)
-         (generic encoding of sub type generated ?top)
-         =>
-         (printout t 
-                   (specialize-struct EncodeSubType
-                                      (explicit-enum ?top
-                                                     ?v)
-                                      (standard-using-decl ReturnType
-                                                           ?full-type)
-                                      (standard-using-decl CastTo
-                                                           (str-cat SubTypeOf
-                                                                    (template-specialization (explicit-enum ?top 
-                                                                                                            ?v))))
-                                      "static constexpr ReturnType encodeSubType(ReturnType input, CastTo value) noexcept { return " ?str "(input, value); }") 
-                   crlf))
-
-(defrule MAIN::generate-basic-sub-type-encoder
-         (declare (salience -4))
-         (generic encoding of sub type generated ?top)
-         (not (built encode sub type function ?top))
-         =>
-         (assert (built encode sub type function ?top))
-         (printout t 
-                   "template<" ?top " v, typename T = typename EncodeSubType<v>::CastTo> " crlf
-                   "constexpr typename EncodeSubType<v>::ReturnType encodeSubType(typename EncodeSubType<v>::ReturnType input, T value) noexcept {" crlf
-                   "static_assert(HasSubType<v>(), \"Provided operation does not have a subtype!\");" crlf
-                   "return EncodeSubType<v>::encodeSubType(input, static_cast<typename EncodeSubType<v>::CastTo>(value));" crlf
-                   "}" crlf))
-
-(defrule MAIN::generate-top-level-type-conversion-specialization-decoding-op:generic-case
-         (declare (salience -2))
-         (made-top-level-to-sub-type-specialization ?top ?v -> ?sub-type)
-         (decoding-operation ?name
-                             ?str
-                             ?sub-type
-                             ?full-type)
-         (made-top-level-to-sub-type-query ?top)
-         (not (generic decoding of sub type generated ?top))
-         =>
-         (assert (generic decoding of sub type generated ?top))
-         (printout t
-                   "template<" ?top " v>" crlf
-                   "struct DecodeSubType : syn::ConditionFulfillment<false> {" crlf
-                   "using ReturnType = SubTypeOf<v>;" crlf 
-                   "using InputType = " ?full-type ";" crlf
-                   "static constexpr ReturnType decodeSubType(InputType input) noexcept { return input; }" crlf
-                   "};" crlf))
-
-(defrule MAIN::generate-top-level-type-conversion-specialization-decoding-op
-         (declare (salience -3))
-         (made-top-level-to-sub-type-specialization ?top ?v -> ?sub-type)
-         (sub-type-field ?name
-                         ?sub-type)
-         (decoding-operation ?name
-                             ?str
-                             ?sub-type
-                             ?full-type)
-         (made-top-level-to-sub-type-query ?top)
-         (generic decoding of sub type generated ?top)
-         =>
-         (printout t 
-                   "template<>" crlf
-                   "struct DecodeSubType <" ?top " :: " ?v "> : syn::ConditionFulfillment<true> {" crlf
-                   "using InputType = " ?full-type ";" crlf
-                   "using ReturnType = SubTypeOf<" ?top " :: " ?v">;" crlf
-                   "static constexpr ReturnType decodeSubType(InputType input) noexcept {" crlf
-                   "return " ?str " ( input );" crlf
-                   "}" crlf
-                   "};" crlf))
-
-(defrule MAIN::generate-basic-sub-type-decoder
-         (declare (salience -4))
-         (generic decoding of sub type generated ?top)
-         (not (built decode sub type function ?top))
-         =>
-         (assert (built decode sub type function ?top))
-         (printout t 
-                   "template<" ?top " v>" crlf
-                   "constexpr typename DecodeSubType<v>::ReturnType decodeSubType(typename DecodeSubType<v>::InputType input) noexcept {" crlf
-                   "static_assert(HasSubType<v>(), \"Provided operation does not have a subtype!\");" crlf
-                   "return DecodeSubType<v>::decodeSubType(input);" crlf
-                   "}" crlf))
+;(defrule MAIN::generate-top-level-type-conversion-specialization-encoding-op
+;         (declare (salience -3))
+;         (made-top-level-to-sub-type-specialization ?top ?v -> ?sub-type)
+;         (sub-type-field ?name
+;                         ?sub-type)
+;         (encoding-operation ?name
+;                             ?str
+;                             ?sub-type
+;                             ?full-type)
+;         (made-top-level-to-sub-type-query ?top)
+;         (generic encoding of sub type generated ?top)
+;         =>
+;         (printout t 
+;                   (specialize-struct (sym-cat EncodeSubType
+;                                               ?top)
+;                                      (explicit-enum ?top
+;                                                     ?v)
+;                                      (standard-using-decl ReturnType
+;                                                           ?full-type)
+;                                      (standard-using-decl CastTo
+;                                                           (str-cat SubTypeOf ?top
+;                                                                    (template-specialization (explicit-enum ?top 
+;                                                                                                            ?v))))
+;                                      "static constexpr ReturnType encodeSubType(ReturnType input, CastTo value) noexcept { return " ?str "(input, value); }") 
+;                   crlf))
+;
+;(defrule MAIN::generate-basic-sub-type-encoder
+;         (declare (salience -4))
+;         (generic encoding of sub type generated ?top)
+;         (not (built encode sub type function ?top))
+;         =>
+;         (assert (built encode sub type function ?top))
+;         (printout t 
+;                   "template<" ?top " v, typename T = typename EncodeSubType<v>::CastTo> " crlf
+;                   "constexpr typename EncodeSubType<v>::ReturnType encodeSubType(typename EncodeSubType<v>::ReturnType input, T value) noexcept {" crlf
+;                   "static_assert(HasSubType<v>(), \"Provided operation does not have a subtype!\");" crlf
+;                   "return EncodeSubType<v>::encodeSubType(input, static_cast<typename EncodeSubType<v>::CastTo>(value));" crlf
+;                   "}" crlf))
+;
+;(defrule MAIN::generate-top-level-type-conversion-specialization-decoding-op:generic-case
+;         (declare (salience -2))
+;         (made-top-level-to-sub-type-specialization ?top ?v -> ?sub-type)
+;         (decoding-operation ?name
+;                             ?str
+;                             ?sub-type
+;                             ?full-type)
+;         (made-top-level-to-sub-type-query ?top)
+;         (not (generic decoding of sub type generated ?top))
+;         =>
+;         (assert (generic decoding of sub type generated ?top))
+;         (printout t
+;                   "template<" ?top " v>" crlf
+;                   "struct DecodeSubType : syn::ConditionFulfillment<false> {" crlf
+;                   "using ReturnType = " (str-cat SubTypeOf ?top "<v>;")  crlf 
+;                   "using InputType = " ?full-type ";" crlf
+;                   "static constexpr ReturnType decodeSubType(InputType input) noexcept { return input; }" crlf
+;                   "};" crlf))
+;
+;(defrule MAIN::generate-top-level-type-conversion-specialization-decoding-op
+;         (declare (salience -3))
+;         (made-top-level-to-sub-type-specialization ?top ?v -> ?sub-type)
+;         (sub-type-field ?name
+;                         ?sub-type)
+;         (decoding-operation ?name
+;                             ?str
+;                             ?sub-type
+;                             ?full-type)
+;         (made-top-level-to-sub-type-query ?top)
+;         (generic decoding of sub type generated ?top)
+;         =>
+;         (printout t 
+;                   "template<>" crlf
+;                   "struct DecodeSubType <" ?top " :: " ?v "> : syn::ConditionFulfillment<true> {" crlf
+;                   "using InputType = " ?full-type ";" crlf
+;                   "using ReturnType = SubTypeOf<" ?top " :: " ?v">;" crlf
+;                   "static constexpr ReturnType decodeSubType(InputType input) noexcept {" crlf
+;                   "return " ?str " ( input );" crlf
+;                   "}" crlf
+;                   "};" crlf))
+;
+;(defrule MAIN::generate-basic-sub-type-decoder
+;         (declare (salience -4))
+;         (generic decoding of sub type generated ?top)
+;         (not (built decode sub type function ?top))
+;         =>
+;         (assert (built decode sub type function ?top))
+;         (printout t 
+;                   "template<" ?top " v>" crlf
+;                   "constexpr typename DecodeSubType<v>::ReturnType decodeSubType(typename DecodeSubType<v>::InputType input) noexcept {" crlf
+;                   "static_assert(HasSubType<v>(), \"Provided operation does not have a subtype!\");" crlf
+;                   "return DecodeSubType<v>::decodeSubType(input);" crlf
+;                   "}" crlf))
 
 (deffacts cisc0-destination-register-usage
           (defproperty-struct UsesDestination 
@@ -586,6 +601,19 @@
           (defproperty-function usesSource UsesSource Operation)
           (defproperty-function hasBitmask HasBitmask Operation)
           (defproperty-function hasImmediateFlag HasImmediateFlag Operation)
+          (defencoder/decoder Type Operation)
+          (encoder/decoders Type 
+                            Operation
+                            Arithmetic
+                            Compare
+                            Logical
+                            Memory
+                            Complex)
+          (defencoder/decoder ComplexSubType ComplexSubTypes)
+          (encoder/decoders ComplexSubType 
+                            ComplexSubTypes
+                            Encoding
+                            Extended)
           (defencoder/decoder Bitmask Operation)
           (encoder/decoders Bitmask
                             Operation
