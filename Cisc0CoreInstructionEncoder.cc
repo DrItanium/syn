@@ -136,30 +136,31 @@ namespace cisc0 {
 		auto second = 0u;
 		auto third = 0u;
 		auto width = _immediate ? instructionSizeFromBitmask() : 1;
-		first = setImmediateBit<op>(first, _immediate);
-		first = encodeDestination<op>(first, _arg0);
+		first = setFlagImmediate<op>(first);
+		first = setDestination<op>(first);
 		// if we are not looking at an immediate then this operation will
 		// actually do something
-		first = encodeArg1<op>(first, _arg1, _immediate);
-        if (_immediate) {
-			first = setBitmaskField<op>(first, _bitmask);
+		if (_immediate) {
+			first = setBitmask<op>(first);
             auto maskedImmediate = mask(_bitmask) & _fullImmediate;
             second = static_cast<Word>(maskedImmediate);
             third = static_cast<Word>(maskedImmediate >> 16);
-        } 
+		} else {
+			first = setSource<op>(first);
+		}
 		return std::make_tuple(width, first, second, third);
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeBranch() const {
 		constexpr auto op = Operation::Branch;
-		auto first = setImmediateBit<op>(commonEncoding(), _immediate);
+		auto first = setFlagImmediate<op>(commonEncoding());
 		auto second = _immediate ? static_cast<Word>(_fullImmediate) : 0u;
 		auto third = _immediate ? static_cast<Word>(_fullImmediate >> 16) : 0u;
 		auto width = _immediate ? 3 : 1;
         first = encodeBranchFlagIsConditional(first, _isConditional);
         first = encodeBranchFlagIsCallForm(first, _isCall);
 		if (!_immediate) {
-			first = encodeDestination<op>(first, _arg0);
+			first = setDestination<op>(first);
 		}
         return std::make_tuple(width, first, second, third);
     }
