@@ -65,8 +65,7 @@
           (defbitfield BranchFlagIsConditional   0b0000000010000000 7)
           (defbitfield BranchFlagIsCallForm      0b0000000000100000 5)
           (defbitfield BranchFlagImmediate       0b0000000000010000 4)
-          (deffield BranchDestination            0b0000111100000000 8  byte)
-          (deffield BranchSource                 0b1111000000000000 12 byte))
+          (deffield BranchDestination            0b0000111100000000 8  byte))
 
 (deffacts cisc0-memory-fields
           (defsubtypefield MemoryFlagType  0b0000000000110000 4 MemoryOperation)
@@ -599,11 +598,14 @@
           (defencoder/decoder Destination Operation)
           (encoder/decoders Destination 
                             Operation 
+                            Set
                             Arithmetic
                             Shift
                             Compare
                             Move
                             Swap
+                            Memory
+                            Branch
                             Logical)
           (defencoder/decoder Source Operation)
           (encoder/decoders Source 

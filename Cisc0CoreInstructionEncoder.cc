@@ -67,11 +67,6 @@ namespace cisc0 {
 	}
 
 	template<Operation op>
-	constexpr Word encodeDestination(Word value, byte index) noexcept {
-		return cisc0::encodeDestination<op, byte>(value, index);
-	}
-
-	template<Operation op>
 	constexpr Word setImmediateBit(Word input, bool immediate) noexcept {
 		return cisc0::encodeFlagImmediate<op>(input, immediate);
 	}
@@ -195,7 +190,7 @@ namespace cisc0 {
 		first = setBitmaskField<op>(first, _bitmask);
         first = encodeMemoryFlagIndirect(first, _indirect);
         // the register and offset occupy the same space
-		first = encodeDestination<Operation::Memory>(first, _arg0);
+		first = encodeDestination<op>(first, _arg0);
         return std::make_tuple(1, first, 0, 0);
     }
 
@@ -206,7 +201,7 @@ namespace cisc0 {
 		auto third = 0u;
 		auto width = _immediate ? instructionSizeFromImmediateMask(_bitmask) : 1;
 		first = setImmediateBit<op>(first, _immediate);
-		first = encodeDestination<op>(first, _arg0, _immediate);
+		first = encodeDestination<op>(first, _arg0);
 		// if we are not looking at an immediate then this operation will
 		// actually do something
 		first = encodeArg1<op>(first, _arg1, _immediate);
@@ -219,28 +214,6 @@ namespace cisc0 {
 		return std::make_tuple(width, first, second, third);
     }
 
-	template<>
-	struct HasArg0 < Operation::Branch> : ConditionFulfillment<true> {
-		static constexpr Word encodeDestination(Word input, byte index, bool immediate) noexcept {
-			if (cisc0::decodeBranchFlagIsIfForm(input)) {
-				return cisc0::encodeBranchIfOnTrue(input, index); 
-			} else {
-				return immediate ? input : cisc0::encodeBranchIndirectDestination(input, index);
-			}
-		}
-	};
-
-	template<>
-	struct HasArg1 < Operation::Branch> : ConditionFulfillment<true> {
-		static constexpr Word encodeArg1(Word input, byte index, bool immediate) noexcept {
-			if (cisc0::decodeBranchFlagIsIfForm(input)) {
-				return cisc0::encodeBranchIfOnFalse(input, index); 
-			} else {
-				return input;
-			}
-		}
-	};
-
     InstructionEncoder::Encoding InstructionEncoder::encodeBranch() const {
 		constexpr auto op = Operation::Branch;
 		auto first = setImmediateBit<op>(commonEncoding(), _immediate);
@@ -248,10 +221,10 @@ namespace cisc0 {
 		auto third = _immediate ? static_cast<Word>(_fullImmediate >> 16) : 0u;
 		auto width = _immediate ? 3 : 1;
         first = encodeBranchFlagIsConditional(first, _isConditional);
-        first = encodeBranchFlagIsIfForm(first, _isIf);
         first = encodeBranchFlagIsCallForm(first, _isCall);
-		first = encodeDestination<op>(first, _arg0, _immediate);
-		first = encodeArg1<op>(first, _arg1, _immediate);
+		if (!_immediate) {
+			first = encodeDestination<op>(first, _arg0);
+		}
         return std::make_tuple(width, first, second, third);
     }
 	template<ComplexSubTypes t> struct ComplexSubTypeToNestedType { };

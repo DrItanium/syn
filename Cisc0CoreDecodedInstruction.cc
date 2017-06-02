@@ -27,8 +27,7 @@
 
 namespace cisc0 {
     DecodedInstruction::BranchFlags DecodedInstruction::getOtherBranchFlags() const noexcept {
-        return std::make_tuple(decodeBranchFlagIsIfForm(_rawValue),
-                               decodeBranchFlagIsCallForm(_rawValue),
+        return std::make_tuple(decodeBranchFlagIsCallForm(_rawValue),
                                decodeBranchFlagIsConditional(_rawValue));
     }
 
