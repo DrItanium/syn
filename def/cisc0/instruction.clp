@@ -566,7 +566,20 @@
           (property UsesSource Operation Compare)
           (property UsesSource Operation Move)
           (property UsesSource Operation Swap)
-          (property UsesSource Operation Logical))
+          (property UsesSource Operation Logical)
+          (defproperty-struct HasBitmask
+                              Operation)
+          (property HasBitmask Operation Move)
+          (property HasBitmask Operation Set)
+          (property HasBitmask Operation Memory)
+          (property HasBitmask Operation Logical)
+          (defproperty-struct HasImmediateFlag
+                              Operation)
+          (property HasImmediateFlag Operation Arithmetic)
+          (property HasImmediateFlag Operation Shift)
+          (property HasImmediateFlag Operation Compare)
+          (property HasImmediateFlag Operation Logical)
+          (property HasImmediateFlag Operation Branch))
 
 (defrule MAIN::generate-generic-struct-impl
          ?f <- (defproperty-struct ?title

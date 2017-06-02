@@ -222,53 +222,12 @@ namespace cisc0 {
                 }
             }
             template<Operation op>
-            struct SubtypeConversion {
-                SubtypeConversion() = delete;
-                SubtypeConversion(const SubtypeConversion&) = delete;
-                SubtypeConversion(SubtypeConversion&&) = delete;
-                ~SubtypeConversion() = delete;
-            };
-
-            template<Operation op>
-            using SubtypeType = typename SubtypeConversion<op>::ResultantType;
-
-            template<Operation op>
-            inline SubtypeType<op> getSubtype() const noexcept {
-                static_assert(hasSubtype(op), "There is no subtype for the given operation!");
-                using CurrentType = SubtypeType<op>;
-                switch(op) {
-                    case Operation::Compare:
-                        return static_cast<CurrentType>(decodeCompareType(_rawValue));
-                    case Operation::Arithmetic:
-                        return static_cast<CurrentType>(decodeArithmeticFlagType(_rawValue));
-                    case Operation::Memory:
-                        return static_cast<CurrentType>(decodeMemoryFlagType(_rawValue));
-                    case Operation::Complex:
-                        return static_cast<CurrentType>(decodeComplexSubClass(_rawValue));
-                    case Operation::Logical:
-                        return static_cast<CurrentType>(decodeLogicalFlagType(_rawValue));
-                    default:
-                        return static_cast<CurrentType>(0);
-                }
-            }
+			inline typename DecodeSubType<op>::ReturnType getSubtype() const noexcept {
+				return cisc0::decodeSubType<op>(_rawValue);
+			}
 		private:
 			RawInstruction _rawValue;
 	};
-#define DefSubtypeConversion(op, type) \
-    template<> \
-    struct DecodedInstruction::SubtypeConversion<Operation:: op > { \
-                SubtypeConversion() = delete; \
-                SubtypeConversion(const SubtypeConversion&) = delete; \
-                SubtypeConversion(SubtypeConversion&&) = delete; \
-                ~SubtypeConversion() = delete; \
-        using ResultantType = type; \
-    }
-DefSubtypeConversion(Compare, CompareStyle);
-DefSubtypeConversion(Arithmetic, ArithmeticOps);
-DefSubtypeConversion(Memory, MemoryOperation);
-DefSubtypeConversion(Complex, ComplexSubTypes);
-DefSubtypeConversion(Logical, LogicalOps);
-#undef DefSubtypeConversion
 }
 
 #endif // end _TARGET_CISC0_INSTRUCTION_DECODER_H
