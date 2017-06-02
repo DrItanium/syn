@@ -186,8 +186,8 @@ namespace cisc0 {
     }
     void Core::branchOperation(DecodedInstruction&& inst) {
         auto isImm = inst.getImmediateFlag<Operation::Branch>();
-        bool isIf, isCall, isCond;
-        std::tie(isIf, isCall, isCond) = inst.getOtherBranchFlags();
+        bool isCall, isCond;
+        std::tie(isCall, isCond) = inst.getOtherBranchFlags();
         advanceIp = true;
         auto choice = getConditionRegister() != 0;
         auto readAddress = [this]() {
@@ -199,15 +199,7 @@ namespace cisc0 {
             advanceIp = false;
             getInstructionPointer() = value;
         };
-        if (isIf) {
-            if (isCall) {
-                // push the instruction pointer onto the stack
-				auto nextAddr = getInstructionPointer() + 1;
-				pushDword(nextAddr);
-            }
-            auto reg = choice ? inst.getBranchIfPathRegister<true>() : inst.getBranchIfPathRegister<false>();
-            updateInstructionPointer(registerValue(reg));
-        } else if (isCall) {
+        if (isCall) {
             // call instruction
             // figure out where we are going to go, this will cause loads and
             // incrementation of the instruction pointer.
