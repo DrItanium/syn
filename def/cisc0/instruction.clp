@@ -601,8 +601,8 @@
                ?title 
                ?input-type)
          (not (property ?title
-               ?input-type
-               ?))
+                        ?input-type
+                        ?))
          ?f <- (defproperty-function ?name 
                                      ?title
                                      ?input-type)
@@ -658,7 +658,13 @@
                    (generic-struct (str-cat Encode
                                             ?title)
                                    (variable ?type
-                                             i)) crlf))
+                                             i)
+                                   (standard-using-decl ReturnType
+                                                        ?type)
+                                   (standard-using-decl CastTo
+                                                        ?type)
+                                   "static constexpr ReturnType encode(ReturnType in, CastTo val) noexcept { return in; }") 
+                   crlf))
 
 (defrule MAIN::generate-specialized-encoder
          (declare (salience -3))
@@ -700,7 +706,13 @@
                    (generic-struct (str-cat Decode 
                                             ?title)
                                    (variable ?type
-                                             i)) crlf))
+                                             i)
+                                   (standard-using-decl ReturnType
+                                                        ?type)
+                                   (standard-using-decl CastTo
+                                                        ?type)
+                                   "static constexpr ReturnType decode(CastTo in) noexcept { return static_cast<ReturnType>(in); }")
+                   crlf))
 
 (defrule MAIN::generate-specialized-decoder
          (declare (salience -3))
@@ -728,4 +740,39 @@
                                                            ?input)
                                       "static constexpr ReturnType decode(CastTo in) noexcept " 
                                       (scope-body (return-statement (str-cat ?operation "( in )")))) 
+                   crlf))
+
+(defrule MAIN::generate-encoder-wrapper
+         (made generic-encoder
+               ?title
+               ?type)
+         (not (encoder ?title
+                       ?type
+                       ?))
+         =>
+         (bind ?t2
+               (str-cat Encode
+                        ?title
+                        (template-specialization v)))
+         (printout t
+                   (template-decl (variable ?type 
+                                            v)
+                                  (str-cat "typename T = typename "
+                                           (explicit-enum ?t2
+                                                          CastTo)))
+                   " static constexpr typename " 
+                   (explicit-enum ?t2
+                                  ReturnType)
+                   (str-cat " encode" 
+                            ?title)
+                   (str-cat "( typename " 
+                            (explicit-enum ?t2
+                                           ReturnType)
+                            " in, T value) noexcept ")
+                   (scope-body "static_assert( " (explicit-enum ?t2 
+                                                                value) ", \"Provided control does not have support for concept " ?title "!\");"
+                               (return-statement (str-cat (explicit-enum ?t2
+                                                                         encode)
+                                                          "(in, static_cast<typename " (explicit-enum ?t2
+                                                                                                      CastTo) ">(value))")))
                    crlf))
