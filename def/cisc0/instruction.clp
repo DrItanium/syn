@@ -43,7 +43,6 @@
 (deffacts cisc0-arithmetic-fields
           (defbitfield ArithmeticFlagImmediate 0b0000000000010000 4)
           (defsubtypefield ArithmeticFlagType  0b0000000011100000 5 ArithmeticOps)
-          (deffield ArithmeticImmediate        0b1111000000000000 12 RegisterValue)
           (deffield ArithmeticDestination      0b0000111100000000 8 byte)
           (deffield ArithmeticSource           0b1111000000000000 12 byte))
 
@@ -51,15 +50,14 @@
           (defbitfield LogicalFlagImmediate      0b0000000000010000 4)
           (defsubtypefield LogicalFlagType       0b0000000011100000 5 LogicalOps)
           (deffield LogicalDestination           0b0000111100000000 8 byte)
-          (defbitmask  LogicalBitmask            0b1111000000000000 12)
+          (defbitmask LogicalBitmask             0b1111000000000000 12)
           (deffield LogicalSource                0b1111000000000000 12 byte))
 
 (deffacts cisc0-shift-fields
           (defbitfield ShiftFlagLeft        0b0000000000010000 4)
           (defbitfield ShiftFlagImmediate   0b0000000000100000 5)
-          (deffield ShiftImmediate          0b1111100000000000 11 RegisterValue)
-          (deffield ShiftDestination          0b0000011110000000 7  byte)
-          (deffield ShiftSource          0b0111100000000000 11 byte))
+          (deffield ShiftDestination        0b0000111100000000 8  byte)
+          (deffield ShiftSource             0b1111000000000000 12 byte))
 
 (deffacts cisc0-branch-fields
           (defbitfield BranchFlagIsConditional   0b0000000010000000 7)

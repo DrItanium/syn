@@ -94,6 +94,27 @@ namespace cisc0 {
 		RegisterValue getAddress() const noexcept { return _address; }
 
 		private:
+			template<Operation op>
+			Word setFlagImmediate(Word value) const noexcept {
+				return cisc0::encodeFlagImmediate<op, decltype(_immediate)>(value, _immediate);
+			}
+			template<Operation op>
+			Word setDestination(Word value) const noexcept {
+				return cisc0::encodeDestination<op, decltype(_arg0)>(value, _arg0);
+			}
+			template<Operation op>
+			Word setSource(Word value) const noexcept {
+				return cisc0::encodeSource<op, decltype(_arg1)>(value, _arg1);
+			}
+			template<Operation op>
+			Word setSubType(Word value) const noexcept {
+				return cisc0::encodeSubType<op, decltype(_subType)>(value, _subType);
+			}
+			template<Operation op>
+			Word setBitmask(Word value) const noexcept {
+				return cisc0::encodeBitmask<op, decltype(_bitmask)>(value, _bitmask);
+			}
+			int instructionSizeFromBitmask() const noexcept;
 			Word commonEncoding() const;
             Encoding encodeMemory() const;
             Encoding encodeArithmetic() const;

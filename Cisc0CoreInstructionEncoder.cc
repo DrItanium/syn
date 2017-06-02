@@ -54,143 +54,79 @@ namespace cisc0 {
 		return upperMask(bitmask) != 0;
 	}
 
-    constexpr int instructionSizeFromImmediateMask(byte bitmask) noexcept {
-        return 1 + (readLower(bitmask) ? 1 : 0) + (readUpper(bitmask) ? 1 : 0);
+    int InstructionEncoder::instructionSizeFromBitmask() const noexcept {
+        return 1 + (readLower(_bitmask) ? 1 : 0) + (readUpper(_bitmask) ? 1 : 0);
     }
-
-	template<bool v>
-	using ConditionFulfillment = syn::ConditionFulfillment<v>;
-
 
 	Word InstructionEncoder::commonEncoding() const {
 		return encodeControl(0, _type);
 	}
 
-	template<Operation op>
-	constexpr Word setImmediateBit(Word input, bool immediate) noexcept {
-		return cisc0::encodeFlagImmediate<op>(input, immediate);
-	}
-
-
-	template<Operation op>
-	struct HasBitmaskField : ConditionFulfillment< false> { 
-		static constexpr Word setBitmaskField(Word value, byte mask) noexcept {
-			return value;
-		}
-	};
-
-	template<Operation op>
-	constexpr Word setBitmaskField(Word input, byte mask) noexcept {
-		return cisc0::encodeBitmask<op, byte>(input, mask);
-	}
-
-	template<Operation op>
-	struct HasArg1 : ConditionFulfillment<false> {
-		static constexpr Word encodeArg1(Word input, byte index, bool immediate) noexcept {
-			return input;
-		}
-	};
-
-#define DefHasArg1WithImmediate(o, immAction , regAction ) \
-	template<> \
-	struct HasArg1 < Operation :: o > : ConditionFulfillment<true> { \
-		static constexpr Word encodeArg1(Word input, byte index, bool immediate) noexcept { \
-			return immediate ? immAction ( input, index ) : regAction ( input, index ); \
-		} \
-	}
-#define DefHasArg1DoNothingOnImmediate(o, action) \
-	template<> \
-	struct HasArg1 < Operation :: o > : ConditionFulfillment<true> { \
-		static constexpr Word encodeArg1(Word input, byte index, bool immediate) noexcept { \
-			return immediate ? input : action ( input, index ) ; \
-		} \
-	}
-#define DefHasArg1(o, action) \
-	template<> \
-	struct HasArg1 < Operation :: o > : ConditionFulfillment<true> { \
-		static constexpr Word encodeArg1(Word input, byte index, bool immediate) noexcept { \
-			return action ( input, index ) ; \
-		} \
-	}
-	DefHasArg1WithImmediate(Arithmetic, encodeArithmeticImmediate, encodeArithmeticSource);
-	DefHasArg1WithImmediate(Shift, encodeShiftImmediate, encodeShiftSource);
-	DefHasArg1WithImmediate(Compare, encodeCompareImmediate, encodeCompareSource);
-	DefHasArg1(Move, encodeMoveSource);
-	DefHasArg1(Swap, encodeSwapSource);
-	DefHasArg1DoNothingOnImmediate(Logical, encodeLogicalSource);
-#undef DefHasArg1DoNothingOnImmediate
-#undef DefHasArg1
-#undef DefHasArg1WithImmediate
-
-
-	template<Operation op>
-	constexpr Word encodeArg1(Word input, byte index, bool immediate = false) noexcept {
-		static_assert(HasArg1<op>::value, "Given operation type does not have a second argument!");
-		return HasArg1<op>::encodeArg1(input, index, immediate);
-	}
-
-
     InstructionEncoder::Encoding InstructionEncoder::encodeArithmetic() const {
 		constexpr auto op = Operation::Arithmetic;
-		auto first = encodeSubType<op>(commonEncoding() , _subType);
-		first = setImmediateBit<op>(first, _immediate);
-		first = encodeDestination<op>(first, _arg0);
-		first = encodeArg1<op>(first, _arg1, _immediate);
+		auto first = setSubType<op>(commonEncoding());
+		first = setFlagImmediate<op>(first);
+		first = setDestination<op>(first);
+		first = setSource<op>(first);
         return std::make_tuple(1, first, 0, 0);
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeMove() const {
 		constexpr auto op = Operation::Move;
-		auto first = setBitmaskField<op>(commonEncoding(), _bitmask);
-		first = encodeDestination<op>(first, _arg0);
-		first = encodeArg1<op>(first, _arg1);
+		auto first = setBitmask<op>(commonEncoding());
+		first = setDestination<op>(first);
+		first = setSource<op>(first);
         return std::make_tuple(1, first, 0, 0);
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeSwap() const {
 		constexpr auto op = Operation::Swap;
-		auto first = encodeDestination<op>(commonEncoding(), _arg0);
-		first = encodeArg1<op>(first, _arg1);
+		auto first = setDestination<op>(commonEncoding());
+		first = setSource<op>(first);
 		return std::make_tuple(1, first, 0, 0);
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeShift() const {
 		constexpr auto op = Operation::Arithmetic;
-		auto first = setImmediateBit<op>(commonEncoding(), _immediate);
+		auto first = setFlagImmediate<op>(commonEncoding());
         first = encodeShiftFlagLeft(first, _shiftLeft);
-		first = encodeDestination<op>(first, _arg0);
-		first = encodeArg1<op>(first, _arg1, _immediate);
+		first = setDestination<op>(first);
+		first = setSource<op>(first);
         return std::make_tuple(1, first, 0, 0);
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeCompare() const {
 		constexpr auto op = Operation::Compare;
-		auto first = encodeSubType<op>(commonEncoding(), _subType);
-		first = setImmediateBit<op>(first, _immediate);
-		auto second = encodeDestination<op>(0, _arg0);
-		second = encodeArg1<op>(second, _arg1, _immediate);
+		auto first = setSubType<op>(commonEncoding());
+		first = setFlagImmediate<op>(first);
+		auto second = setDestination<op>(0);
+		if (_immediate) {
+			second = cisc0::encodeCompareImmediate(second, _arg1);
+		} else {
+			second = setSource<op>(second);
+		}
         return std::make_tuple(2, first, second, 0);
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeSet() const {
 		constexpr auto op = Operation::Set;
-		auto first = setBitmaskField<op>(commonEncoding(), _bitmask);
-		first = encodeDestination<op>(first, _arg0);
+		auto first = setBitmask<op>(commonEncoding());
+		first = setDestination<op>(first);
         // use the mask during encoding since we know how many Words the
         // instruction is made up of
         auto maskedValue = mask(_bitmask) & _fullImmediate;
         auto second = static_cast<Word>(maskedValue);
         auto third = static_cast<Word>(maskedValue >> 16);
-        return std::make_tuple(instructionSizeFromImmediateMask(_bitmask), first, second, third);
+        return std::make_tuple(instructionSizeFromBitmask(), first, second, third);
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeMemory() const {
 		constexpr auto op = Operation::Memory;
-		auto first = encodeSubType<op>(commonEncoding(), _subType);
-		first = setBitmaskField<op>(first, _bitmask);
+		auto first = setSubType<op>(commonEncoding());
+		first = setBitmask<op>(first);
         first = encodeMemoryFlagIndirect(first, _indirect);
         // the register and offset occupy the same space
-		first = encodeDestination<op>(first, _arg0);
+		first = setDestination<op>(first);
         return std::make_tuple(1, first, 0, 0);
     }
 
@@ -199,7 +135,7 @@ namespace cisc0 {
 		auto first = encodeSubType<op>(commonEncoding(), _subType);
 		auto second = 0u;
 		auto third = 0u;
-		auto width = _immediate ? instructionSizeFromImmediateMask(_bitmask) : 1;
+		auto width = _immediate ? instructionSizeFromBitmask() : 1;
 		first = setImmediateBit<op>(first, _immediate);
 		first = encodeDestination<op>(first, _arg0);
 		// if we are not looking at an immediate then this operation will
