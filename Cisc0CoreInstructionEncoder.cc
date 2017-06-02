@@ -73,7 +73,7 @@ namespace cisc0 {
 			if (immediate) {
 				return encodeLogicalImmediateDestination(input, index);
 			} else {
-				return encodeLogicalRegister0(input, index);
+				return encodeLogicalImmediateDestination(input, index); 
 			}
 		}
 	};
@@ -88,9 +88,9 @@ namespace cisc0 {
 	}
 DefHasArg0(Arithmetic, encodeArithmeticDestination);
 DefHasArg0(Swap, encodeSwapDestination);
-DefHasArg0(Move, encodeMoveRegister0);
-DefHasArg0(Shift, encodeShiftRegister0);
-DefHasArg0(Compare, encodeCompareRegister0);
+DefHasArg0(Move, encodeMoveDestination);
+DefHasArg0(Shift, encodeShiftDestination);
+DefHasArg0(Compare, encodeCompareDestination);
 DefHasArg0(Set, encodeSetDestination);
 DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the same space
 #undef DefHasArg0
@@ -107,26 +107,6 @@ DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the sa
 		return encodeControl(0, _type);
 	}
 
-	template<Operation op>
-	struct HasImmediateFlag : ConditionFulfillment< false> { 
-		static constexpr Word setImmediateBit(Word value, bool immediate) noexcept {
-			return value;
-		}
-	};
-
-#define DefImmediateFlag( o , action ) template<> \
-	struct HasImmediateFlag < Operation :: o > : ConditionFulfillment< true > {  \
-		static constexpr Word setImmediateBit(Word value, bool immediate) noexcept { \
-			return action ( value , immediate ); \
-		} \
-	}
-	DefImmediateFlag(Arithmetic, encodeArithmeticFlagImmediate);
-	DefImmediateFlag(Shift, encodeShiftFlagImmediate);
-	DefImmediateFlag(Compare, encodeCompareImmediate);
-	DefImmediateFlag(Logical, encodeLogicalFlagImmediate);
-	DefImmediateFlag(Branch, encodeBranchFlagIsImmediate);
-#undef DefImmediateFlag
-
 
 	template<Operation op>
 	constexpr Word setImmediateBit(Word input, bool immediate) noexcept {
@@ -142,23 +122,9 @@ DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the sa
 		}
 	};
 
-#define DefHasBitmask( o , action ) \
-	template<> \
-	struct HasBitmaskField < Operation :: o > : ConditionFulfillment< true> { \
-		static constexpr Word setBitmaskField(Word value, byte mask) noexcept { \
-			return action ( value, mask ); \
-		} \
-	}
-	DefHasBitmask(Move , encodeMoveBitmask);
-	DefHasBitmask(Set, encodeSetBitmask);
-	DefHasBitmask(Memory, encodeMemoryFlagBitmask);
-	DefHasBitmask(Logical, encodeLogicalFlagImmediateMask);
-#undef DefHasBitmask
-
 	template<Operation op>
 	constexpr Word setBitmaskField(Word input, byte mask) noexcept {
-		static_assert(HasBitmaskField<op>::value, "Given operation does not have a bitmask field!");
-		return HasBitmaskField<op>::setBitmaskField(input, mask); 
+		return cisc0::encodeBitmask<op, byte>(input, mask);
 	}
 
 	template<Operation op>
@@ -190,11 +156,11 @@ DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the sa
 		} \
 	}
 	DefHasArg1WithImmediate(Arithmetic, encodeArithmeticImmediate, encodeArithmeticSource);
-	DefHasArg1WithImmediate(Shift, encodeShiftImmediate, encodeShiftRegister1);
-	DefHasArg1WithImmediate(Compare, encodeCompareImmediate, encodeCompareRegister1);
-	DefHasArg1(Move, encodeMoveRegister1);
+	DefHasArg1WithImmediate(Shift, encodeShiftImmediate, encodeShiftSource);
+	DefHasArg1WithImmediate(Compare, encodeCompareImmediate, encodeCompareSource);
+	DefHasArg1(Move, encodeMoveSource);
 	DefHasArg1(Swap, encodeSwapSource);
-	DefHasArg1DoNothingOnImmediate(Logical, encodeLogicalRegister1);
+	DefHasArg1DoNothingOnImmediate(Logical, encodeLogicalSource);
 #undef DefHasArg1DoNothingOnImmediate
 #undef DefHasArg1
 #undef DefHasArg1WithImmediate
