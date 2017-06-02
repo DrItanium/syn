@@ -594,6 +594,21 @@
           (decoder Bitmask Operation Set)
           (decoder Bitmask Operation Memory)
           (decoder Bitmask Operation Logical)
+          (defencoder Source Operation)
+          (defdecoder Source Operation)
+          (encoder Source Operation Arithmetic)
+          (encoder Source Operation Shift)
+          (encoder Source Operation Compare)
+          (encoder Source Operation Move)
+          (encoder Source Operation Swap)
+          (encoder Source Operation Logical)
+          (decoder Source Operation Arithmetic)
+          (decoder Source Operation Shift)
+          (decoder Source Operation Compare)
+          (decoder Source Operation Move)
+          (decoder Source Operation Swap)
+          (decoder Source Operation Logical)
+
           )
 
 (defrule MAIN::generate-defproperty-function
@@ -775,4 +790,35 @@
                                                                          encode)
                                                           "(in, static_cast<typename " (explicit-enum ?t2
                                                                                                       CastTo) ">(value))")))
+                   crlf))
+
+(defrule MAIN::generate-decoder-wrapper
+         (made generic-decoder
+               ?title
+               ?type)
+         (not (decoder ?title
+                       ?type
+                       ?))
+         =>
+         (bind ?t2
+               (str-cat Decode
+                        ?title
+                        (template-specialization v)))
+         (printout t
+                   (template-decl (variable ?type 
+                                            v))
+                   " static constexpr typename " 
+                   (explicit-enum ?t2
+                                  ReturnType)
+                   (str-cat " decode" 
+                            ?title)
+                   (str-cat "( typename " 
+                            (explicit-enum ?t2 
+                                           CastTo)
+                            " in) noexcept ")
+                   (scope-body "static_assert( " (explicit-enum ?t2 
+                                                                value) ", \"Provided control does not have support for concept " ?title "!\");"
+                               (return-statement (str-cat (explicit-enum ?t2
+                                                                         decode) 
+                                                          "(in)")))
                    crlf))
