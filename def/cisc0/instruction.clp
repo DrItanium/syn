@@ -49,10 +49,9 @@
 
 (deffacts cisc0-logical-fields
           (defbitfield LogicalFlagImmediate      0b0000000000010000 4)
-          (defbitmask  LogicalBitmask            0b0000111100000000 8)
-          (deffield LogicalImmediateDestination  0b1111000000000000 12 byte)
           (defsubtypefield LogicalFlagType       0b0000000011100000 5 LogicalOps)
           (deffield LogicalDestination           0b0000111100000000 8 byte)
+          (defbitmask  LogicalBitmask            0b1111000000000000 12)
           (deffield LogicalSource                0b1111000000000000 12 byte))
 
 (deffacts cisc0-shift-fields
@@ -64,12 +63,10 @@
 
 (deffacts cisc0-branch-fields
           (defbitfield BranchFlagIsConditional   0b0000000010000000 7)
-          (defbitfield BranchFlagIsIfForm        0b0000000001000000 6)
           (defbitfield BranchFlagIsCallForm      0b0000000000100000 5)
           (defbitfield BranchFlagImmediate       0b0000000000010000 4)
-          (deffield BranchIfOnTrue               0b0000111100000000 8  byte)
-          (deffield BranchIfOnFalse              0b1111000000000000 12 byte)
-          (deffield BranchIndirectDestination    0b1111000000000000 12 byte))
+          (deffield BranchDestination            0b0000111100000000 8  byte)
+          (deffield BranchSource                 0b1111000000000000 12 byte))
 
 (deffacts cisc0-memory-fields
           (defsubtypefield MemoryFlagType  0b0000000000110000 4 MemoryOperation)
@@ -598,6 +595,15 @@
                             Move
                             Set
                             Memory
+                            Logical)
+          (defencoder/decoder Destination Operation)
+          (encoder/decoders Destination 
+                            Operation 
+                            Arithmetic
+                            Shift
+                            Compare
+                            Move
+                            Swap
                             Logical)
           (defencoder/decoder Source Operation)
           (encoder/decoders Source 

@@ -82,6 +82,9 @@ namespace cisc0 {
                         return false;
                 }
             }
+			static constexpr bool legalIndex(int index) noexcept {
+				return index >= 0 && index < 2;
+			}
         public:
 			DecodedInstruction(RawInstruction input) noexcept : _rawValue(input) { }
 			DecodedInstruction(const DecodedInstruction&) = delete;
@@ -90,99 +93,70 @@ namespace cisc0 {
             inline byte getUpper() const noexcept { return decodeUpper(_rawValue); }
             inline Operation getControl() const noexcept { return decodeControl(_rawValue); }
             inline byte getSetDestination() const noexcept { return decodeSetDestination(_rawValue); }
-            inline byte getMemoryRegister() const noexcept { return decodeMemoryRegister(_rawValue); }
+            inline byte getMemoryRegister() const noexcept { return decodeMemoryDestination(_rawValue); }
+            inline byte getMemoryOffset() const noexcept { return decodeMemoryDestination(_rawValue); }
             inline byte getBranchIndirectDestination() const noexcept { return decodeBranchIndirectDestination(_rawValue); }
             inline bool shouldShiftLeft() const noexcept { return decodeShiftFlagLeft(_rawValue); }
             inline bool isIndirectOperation() const noexcept { return decodeMemoryFlagIndirect(_rawValue); }
-            inline byte getMemoryOffset() const noexcept { return decodeMemoryOffset(_rawValue); }
             BranchFlags getOtherBranchFlags() const noexcept;
-            inline EncodingOperation getEncodingOperation() const noexcept { return decodeComplexClassEncoding_Type(_rawValue); }
-            inline ExtendedOperation getExtendedOperation() const noexcept { return decodeComplexClassExtended_Type(_rawValue); }
+            inline EncodingOperation getEncodingOperation() const noexcept { return decodeComplexClassEncodingType(_rawValue); }
+            inline ExtendedOperation getExtendedOperation() const noexcept { return decodeComplexClassExtendedType(_rawValue); }
+
+			template<Operation op>
+			inline byte getSourceRegister() const noexcept {
+				return cisc0::decodeSource<op>(_rawValue);
+			}
+
+			template<Operation op>
+			inline byte getDestinationRegister() const noexcept {
+				return cisc0::decodeDestination<op>(_rawValue);
+			}
+			template<Operation op, int index>
+			inline byte getRegister() const noexcept {
+				static_assert(legalIndex(index), "Illegal register index!");
+				switch(index) {
+					case 0:
+						return getDestinationRegister<op>();
+					case 1:
+						return getSourceRegister<op>();
+					default:
+						throw syn::Problem("Illegal index, this should never ever fire!");
+				}
+			}
 
             template<int index>
             inline byte getShiftRegister() const noexcept {
-                static_assert(index >= 0 && index < 2, "Illegal shift register index!");
-                if (index == 0) {
-                    return decodeShiftRegister0(_rawValue);
-                } else {
-                    return decodeShiftRegister1(_rawValue);
-                }
+				return getRegister<Operation::Shift, index>();
             }
             template<int index>
             inline byte getMoveRegister() const noexcept {
-                static_assert(index >= 0 && index < 2, "Illegal move register index!");
-                if (index == 0) {
-                    return decodeMoveRegister0(_rawValue);
-                } else {
-                    return decodeMoveRegister1(_rawValue);
-                }
+				return getRegister<Operation::Move, index>();
             }
             template<int index>
             inline byte getSwapRegister() const noexcept {
-                static_assert(index >= 0 && index < 2, "Illegal swap register index!");
-                if (index == 0) {
-                    return decodeSwapDestination(_rawValue);
-                } else {
-                    return decodeSwapSource(_rawValue);
-                }
+				return getRegister<Operation::Swap, index>();
             }
             template<int index>
             inline byte getCompareRegister() const noexcept {
-                static_assert(index >= 0 && index < 2, "Illegal compare register index!");
-                if (index == 0) {
-                    return decodeCompareRegister0(_rawValue);
-                } else {
-                    return decodeCompareRegister1(_rawValue);
-                }
+				return getRegister<Operation::Compare, index>();
             }
             template<int index>
             inline byte getArithmeticRegister() const noexcept {
-                static_assert(index >= 0 && index < 2, "Illegal arithmetic register index!");
-                if (index == 0) {
-                    return decodeArithmeticDestination(_rawValue);
-                } else {
-                    return decodeArithmeticSource(_rawValue);
-                }
+				return getRegister<Operation::Arithmetic, index>();
             }
 
             template<int index>
             inline byte getComplexExtendedArg() const noexcept {
                 static_assert(index >= 0 && index < 1, "Illegal complex extended arg index!");
-                return decodeComplexClassExtended_Arg0(_rawValue);
+				return cisc0::decodeComplexClassExtendedDestination(_rawValue);
             }
             template<Operation op>
             inline byte getBitmask() const noexcept {
-                static_assert(hasBitmask(op), "provided operation does not use a bitmask!");
-                switch(op) {
-                    case Operation::Set:
-                        return decodeSetBitmask(_rawValue);
-                    case Operation::Memory:
-                        return decodeMemoryFlagBitmask(_rawValue);
-                    case Operation::Move:
-                        return decodeMoveBitmask(_rawValue);
-                    case Operation::Logical:
-                        return decodeLogicalFlagImmediateMask(_rawValue);
-                    default:
-                        return 0;
-                }
+				return cisc0::decodeBitmask<op>(_rawValue);
             }
             template<Operation op>
             inline bool getImmediateFlag() const noexcept {
-                static_assert(hasImmediateFlag(op), "provided operation does not have an immediate flag!");
-                switch(op) {
-                    case Operation::Shift:
-                        return decodeShiftFlagImmediate(_rawValue);
-                    case Operation::Arithmetic:
-                        return decodeArithmeticFlagImmediate(_rawValue);
-                    case Operation::Logical:
-                        return decodeLogicalFlagImmediate(_rawValue);
-                    case Operation::Branch:
-                        return decodeBranchFlagIsImmediate(_rawValue);
-                    case Operation::Compare:
-                        return decodeCompareImmediateFlag(_rawValue);
-                    default:
-                        return false;
-                }
+				return cisc0::decodeFlagImmediate<op>(_rawValue);
             }
             template<Operation op>
             inline byte getImmediate() const noexcept {
@@ -198,20 +172,7 @@ namespace cisc0 {
             }
             template<int index>
             inline byte getLogicalRegister() const noexcept {
-                static_assert(index >= 0 && index < 2, "Illegal logical register index!");
-                if (index == 0) {
-                    if (getImmediateFlag<Operation::Logical>()) {
-                        return decodeLogicalImmediateDestination(_rawValue);
-                    } else {
-                        return decodeLogicalRegister0(_rawValue);
-                    }
-                } else {
-                    if (getImmediateFlag<Operation::Logical>()) {
-                        throw syn::Problem("There is no second register argument for an immediate logical operation!");
-                    } else {
-                        return decodeLogicalRegister1(_rawValue);
-                    }
-                }
+				return getRegister<Operation::Compare, index>();
             }
             template<bool path>
             inline byte getBranchIfPathRegister() const noexcept {
