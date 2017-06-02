@@ -551,66 +551,110 @@
 (deffacts cisc0-destination-register-usage
           (defproperty-struct UsesDestination 
                               Operation)
-          (property UsesDestination Operation Arithmetic)
-          (property UsesDestination Operation Swap)
-          (property UsesDestination Operation Move)
-          (property UsesDestination Operation Shift)
-          (property UsesDestination Operation Compare)
-          (property UsesDestination Operation Set)
-          (property UsesDestination Operation Memory)
-          (property UsesDestination Operation Logical)
+          (properties UsesDestination
+                      Operation
+                      Arithmetic
+                      Swap
+                      Move
+                      Shift
+                      Compare
+                      Set
+                      Memory
+                      Logical)
           (defproperty-struct UsesSource
                               Operation)
-          (property UsesSource Operation Arithmetic)
-          (property UsesSource Operation Shift)
-          (property UsesSource Operation Compare)
-          (property UsesSource Operation Move)
-          (property UsesSource Operation Swap)
-          (property UsesSource Operation Logical)
+          (properties UsesSource 
+                      Operation 
+                      Arithmetic
+                      Shift
+                      Compare
+                      Move
+                      Swap
+                      Logical)
           (defproperty-struct HasBitmask
                               Operation)
-          (property HasBitmask Operation Move)
-          (property HasBitmask Operation Set)
-          (property HasBitmask Operation Memory)
-          (property HasBitmask Operation Logical)
+          (properties HasBitmask
+                      Operation
+                      Move
+                      Set
+                      Memory
+                      Logical)
           (defproperty-struct HasImmediateFlag
                               Operation)
-          (property HasImmediateFlag Operation Arithmetic)
-          (property HasImmediateFlag Operation Shift)
-          (property HasImmediateFlag Operation Compare)
-          (property HasImmediateFlag Operation Logical)
-          (property HasImmediateFlag Operation Branch)
+          (properties HasImmediateFlag
+                      Operation
+                      Arithmetic
+                      Shift
+                      Compare
+                      Logical
+                      Branch)
           (defproperty-function usesDestination UsesDestination Operation)
           (defproperty-function usesSource UsesSource Operation)
           (defproperty-function hasBitmask HasBitmask Operation)
           (defproperty-function hasImmediateFlag HasImmediateFlag Operation)
-          (defencoder Bitmask Operation)
-          (defdecoder Bitmask Operation)
-          (encoder Bitmask Operation Move)
-          (encoder Bitmask Operation Set)
-          (encoder Bitmask Operation Memory)
-          (encoder Bitmask Operation Logical)
-          (decoder Bitmask Operation Move)
-          (decoder Bitmask Operation Set)
-          (decoder Bitmask Operation Memory)
-          (decoder Bitmask Operation Logical)
-          (defencoder Source Operation)
-          (defdecoder Source Operation)
-          (encoder Source Operation Arithmetic)
-          (encoder Source Operation Shift)
-          (encoder Source Operation Compare)
-          (encoder Source Operation Move)
-          (encoder Source Operation Swap)
-          (encoder Source Operation Logical)
-          (decoder Source Operation Arithmetic)
-          (decoder Source Operation Shift)
-          (decoder Source Operation Compare)
-          (decoder Source Operation Move)
-          (decoder Source Operation Swap)
-          (decoder Source Operation Logical)
+          (defencoder/decoder Bitmask Operation)
+          (encoder/decoders Bitmask
+                            Operation
+                            Move
+                            Set
+                            Memory
+                            Logical)
+          (defencoder/decoder Source Operation)
+          (encoder/decoders Source 
+                            Operation 
+                            Arithmetic
+                            Shift
+                            Compare
+                            Move
+                            Swap
+                            Logical))
+(defrule MAIN::multi-encode/decode-deocmpose
+         (declare (salience ?*priority:first*))
+         ?f <- (encoder/decoders ?title
+                                 ?type 
+                                 $?values)
+         =>
+         (retract ?f)
+         (progn$ (?v ?values)
+                 (assert (encoder/decoder ?title
+                                          ?type
+                                          ?v))))
+        
+(defrule MAIN::convert-properties
+         (declare (salience ?*priority:first*))
+         ?f <- (properties ?title 
+                           ?type
+                           $?values)
+         =>
+         (retract ?f)
+         (progn$ (?v ?values)
+                 (assert (property ?title
+                                   ?type
+                                   ?v))))
 
-          )
-
+(defrule MAIN::convert-defencoder/decoder-facts
+         (declare (salience ?*priority:first*))
+         ?f <- (defencoder/decoder ?title
+                                   ?type)
+         =>
+         (retract ?f)
+         (assert (defencoder ?title
+                  ?type)
+          (defdecoder ?title
+           ?type)))
+(defrule MAIN::convert-encoder/decoder-facts
+         (declare (salience ?*priority:first*))
+         ?f <- (encoder/decoder ?title
+                                ?type
+                                ?value)
+         =>
+         (retract ?f)
+         (assert (encoder ?title
+                          ?type
+                          ?value)
+                 (decoder ?title
+                          ?type
+                          ?value)))
 (defrule MAIN::generate-defproperty-function
          (made property-struct
                ?title 
