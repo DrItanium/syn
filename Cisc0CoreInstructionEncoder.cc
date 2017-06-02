@@ -132,7 +132,7 @@ namespace cisc0 {
 
     InstructionEncoder::Encoding InstructionEncoder::encodeLogical() const {
 		constexpr auto op = Operation::Logical;
-		auto first = encodeSubType<op>(commonEncoding(), _subType);
+		auto first = setSubType<op>(commonEncoding());
 		auto second = 0u;
 		auto third = 0u;
 		auto width = _immediate ? instructionSizeFromBitmask() : 1;
@@ -164,56 +164,29 @@ namespace cisc0 {
 		}
         return std::make_tuple(width, first, second, third);
     }
-	template<ComplexSubTypes t> struct ComplexSubTypeToNestedType { };
 
-	template<> struct ComplexSubTypeToNestedType < ComplexSubTypes::Encoding > { 
-		using type = EncodingOperation; 
-		static Word encodeType(Word value, type t) noexcept {
-			return encodeComplexClassEncodingType(value, t);
-		}
-	};
-	template<> struct ComplexSubTypeToNestedType < ComplexSubTypes::Extended > { 
-		using type = ExtendedOperation; 
-		static Word encodeType(Word value, type t) noexcept {
-			return encodeComplexClassExtendedType(value, t);
-		}
-	};
-
-	template<ComplexSubTypes t>
-	typename ComplexSubTypeToNestedType<t>::type convertBitmask(byte mask) noexcept {
-		return static_cast<typename ComplexSubTypeToNestedType<t>::type>(mask);
-	}
-
-	template<ComplexSubTypes t>
-	Word encodeSubType(Word value, byte mask) noexcept {
-		return ComplexSubTypeToNestedType<t>::encodeType(value, convertBitmask<t>(mask));
-	}
-
-	template<ComplexSubTypes t>
-	Word encodeDestination(Word value, byte index) noexcept {
-		static_assert(t != ComplexSubTypes::Encoding, "Encoding operations take in no arguments!");
-		switch(t) {
-			case ComplexSubTypes::Extended:
-				return cisc0::encodeComplexClassExtendedDestination(value, index);
-			default:
-				throw syn::Problem("Given complex sub type does not take in arguments!");
-		}
-	}
     InstructionEncoder::Encoding InstructionEncoder::encodeComplex() const {
-        auto sType = static_cast<ComplexSubTypes>(_subType);
-		auto first = encodeSubType<Operation::Complex>(commonEncoding(), _subType);
-        if (sType == ComplexSubTypes::Encoding) {
-			// right now it is a single word
-			first = encodeSubType<ComplexSubTypes::Encoding>(first, _bitmask);
-			return std::make_tuple(1, first, 0, 0);
-        } else if (sType == ComplexSubTypes::Extended) {
-			first = encodeSubType<ComplexSubTypes::Extended>(first, _bitmask);
-			first = encodeDestination<ComplexSubTypes::Extended>(first, _arg0);
-			return std::make_tuple(1, first, 0, 0);
-		} else {
-			throw syn::Problem("Illegal complex instruction group!");
+		auto first = setSubType<Operation::Complex>(commonEncoding());
+		switch(static_cast<ComplexSubTypes>(_subType)) {
+			case ComplexSubTypes::Extended:
+				return encodeComplexExtended(first);
+			case ComplexSubTypes::Encoding:
+				return encodeComplexEncoding(first);
+			default:
+				throw syn::Problem("Undefined complex sub type!");
 		}
-    }
+	}
+	InstructionEncoder::Encoding InstructionEncoder::encodeComplexEncoding(Word value) const {
+		constexpr auto op = ComplexSubTypes::Encoding;
+		value = setSubType<op>(value, _bitmask);
+		return std::make_tuple(1, value, 0, 0);
+	}
+	InstructionEncoder::Encoding InstructionEncoder::encodeComplexExtended(Word value) const {
+		constexpr auto op = ComplexSubTypes::Extended;
+		value = setSubType<op>(value, _bitmask);
+		value = cisc0::encodeComplexClassExtendedDestination(value, _arg0);
+		return std::make_tuple(1, value, 0, 0);
+	}
 
     InstructionEncoder::Encoding InstructionEncoder::encode() const {
         // always encode the type

@@ -108,7 +108,11 @@ namespace cisc0 {
 			}
 			template<Operation op>
 			Word setSubType(Word value) const noexcept {
-				return cisc0::encodeSubType<op, decltype(_subType)>(value, _subType);
+				return cisc0::encodeType<op, decltype(_subType)>(value, _subType);
+			}
+			template<ComplexSubTypes op>
+			Word setSubType(Word value, byte t) const noexcept {
+				return cisc0::encodeComplexSubType<op, byte>(value, t);
 			}
 			template<Operation op>
 			Word setBitmask(Word value) const noexcept {
@@ -126,6 +130,8 @@ namespace cisc0 {
             Encoding encodeSet() const;
             Encoding encodeSwap() const;
             Encoding encodeComplex() const;
+			Encoding encodeComplexExtended(Word input) const;
+			Encoding encodeComplexEncoding(Word input) const;
 		private:
 			int _currentLine;
 			RegisterValue _address;
