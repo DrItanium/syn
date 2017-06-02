@@ -47,9 +47,6 @@ namespace cisc0 {
                         return false;
                 }
             }
-			static constexpr bool legalIndex(int index) noexcept {
-				return index >= 0 && index < 2;
-			}
         public:
 			DecodedInstruction(RawInstruction input) noexcept : _rawValue(input) { }
 			DecodedInstruction(const DecodedInstruction&) = delete;
@@ -80,44 +77,49 @@ namespace cisc0 {
 			inline byte getDestinationRegister() const noexcept {
 				return cisc0::decodeDestination<op>(_rawValue);
 			}
-			template<Operation op, int index>
+			template<Operation op, cisc0::LegalRegisterNames index>
 			inline byte getRegister() const noexcept {
-				static_assert(legalIndex(index), "Illegal register index!");
+				static_assert(!syn::isErrorState(index), "Illegal register index!");
 				switch(index) {
-					case 0:
+					case LegalRegisterNames::Destination:
 						return getDestinationRegister<op>();
-					case 1:
+					case LegalRegisterNames::Source:
 						return getSourceRegister<op>();
 					default:
 						throw syn::Problem("Illegal index, this should never ever fire!");
 				}
 			}
 
-            template<int index>
+            template<cisc0::LegalRegisterNames index>
             inline byte getShiftRegister() const noexcept {
 				return getRegister<Operation::Shift, index>();
             }
-            template<int index>
+            template<cisc0::LegalRegisterNames index>
             inline byte getMoveRegister() const noexcept {
 				return getRegister<Operation::Move, index>();
             }
-            template<int index>
+            template<cisc0::LegalRegisterNames index>
             inline byte getSwapRegister() const noexcept {
 				return getRegister<Operation::Swap, index>();
             }
-            template<int index>
+            template<cisc0::LegalRegisterNames index>
             inline byte getCompareRegister() const noexcept {
 				return getRegister<Operation::Compare, index>();
             }
-            template<int index>
+            template<cisc0::LegalRegisterNames index>
             inline byte getArithmeticRegister() const noexcept {
 				return getRegister<Operation::Arithmetic, index>();
             }
 
-            template<int index>
-            inline byte getComplexExtendedArg() const noexcept {
-                static_assert(index >= 0 && index < 1, "Illegal complex extended arg index!");
-				return cisc0::decodeComplexClassExtendedDestination(_rawValue);
+            template<ComplexSubTypes op>
+            inline byte getDestinationRegister() const noexcept {
+				static_assert(op == cisc0::ComplexSubTypes::Extended, "Only extended instructions have arguments!");
+				switch(op) {
+					case ComplexSubTypes::Extended:
+						return cisc0::decodeComplexClassExtendedDestination(_rawValue);
+					default:
+						throw syn::Problem("provided complex does not use the destination register!");
+				}
             }
             template<Operation op>
             inline byte getBitmask() const noexcept {
@@ -139,7 +141,7 @@ namespace cisc0 {
                         return 0;
                 }
             }
-            template<int index>
+            template<cisc0::LegalRegisterNames index>
             inline byte getLogicalRegister() const noexcept {
 				return getRegister<Operation::Compare, index>();
             }

@@ -95,6 +95,11 @@
 
 
 (deffacts cisc0-enums
+          (enum (name LegalRegisterNames)
+                (children Destination
+                          Source)
+                (cast-to byte)
+                (max-size "2"))
           (enum (name Operation)
                 (children Memory
                           Arithmetic

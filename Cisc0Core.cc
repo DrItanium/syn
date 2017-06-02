@@ -168,12 +168,12 @@ namespace cisc0 {
                 complexOperation(std::move(current));
                 break;
             case Operation::Swap:
-                if (current.getSwapRegister<0>() != current.getSwapRegister<1>()) {
-                    gpr.swap(current.getSwapRegister<0>(), current.getSwapRegister<1>());
+                if (current.getDestinationRegister<Operation::Swap>() != current.getSourceRegister<Operation::Swap>()) {
+                    gpr.swap(current.getDestinationRegister<Operation::Swap>(), current.getSourceRegister<Operation::Swap>());
                 }
                 break;
             case Operation::Move:
-                registerValue(current.getMoveRegister<0>()) = syn::decodeBits<RegisterValue, RegisterValue>( registerValue(current.getMoveRegister<1>()), mask(current.getBitmask<Operation::Move>()), 0);
+                registerValue(current.getDestinationRegister<Operation::Move>()) = syn::decodeBits<RegisterValue, RegisterValue>( registerValue(current.getSourceRegister<Operation::Move>()), mask(current.getBitmask<Operation::Move>()), 0);
                 break;
             case Operation::Set:
                 registerValue(current.getSetDestination()) = retrieveImmediate(current.getBitmask<Operation::Set>());
@@ -345,13 +345,14 @@ namespace cisc0 {
     }
     void Core::shiftOperation(DecodedInstruction&& inst) {
         static constexpr auto group = Operation::Shift;
-        auto &destination = registerValue(inst.getShiftRegister<0>());
-        auto source = (inst.getImmediateFlag<group>() ? static_cast<RegisterValue>(inst.getImmediate<group>()) : registerValue(inst.getShiftRegister<1>()));
+        auto &destination = registerValue(inst.getDestinationRegister<group>());
+        auto source = (inst.getImmediateFlag<group>() ? static_cast<RegisterValue>(inst.getImmediate<group>()) : registerValue(inst.getSourceRegister<group>()));
 		auto direction = inst.shouldShiftLeft() ? ALUOperation::ShiftLeft : ALUOperation::ShiftRight;
         destination = syn::ALU::performOperation<RegisterValue>(direction, destination, source);
     }
 
     void Core::extendedOperation(DecodedInstruction&& inst) {
+		constexpr auto group = ComplexSubTypes::Extended;
         switch(inst.getExtendedOperation()) {
             case ExtendedOperation::PopValueAddr:
                 getValueRegister() = popRegisterValue();
@@ -388,10 +389,10 @@ namespace cisc0 {
                 getStackPointer() = popRegisterValue();
                 break;
             case ExtendedOperation::IsEven:
-                getConditionRegister() = normalizeCondition(syn::isEven(registerValue(inst.getComplexExtendedArg<0>())));
+                getConditionRegister() = normalizeCondition(syn::isEven(registerValue(inst.getDestinationRegister<group>())));
                 break;
 			case ExtendedOperation::IsOdd:
-				getConditionRegister() = normalizeCondition(!syn::isEven(registerValue(inst.getComplexExtendedArg<0>())));
+				getConditionRegister() = normalizeCondition(!syn::isEven(registerValue(inst.getDestinationRegister<group>())));
 				break;
             default:
                 throw syn::Problem("Undefined extended operation!");
@@ -401,8 +402,8 @@ namespace cisc0 {
     void Core::arithmeticOperation(DecodedInstruction&& inst) {
         static constexpr auto group = Operation::Arithmetic;
         auto subType = inst.getSubtype<group>();
-        auto src1 = inst.getImmediateFlag<group>() ? inst.getImmediate<group>() : registerValue(inst.getArithmeticRegister<1>());
-        auto &src0 = registerValue(inst.getArithmeticRegister<0>());
+        auto src1 = inst.getImmediateFlag<group>() ? inst.getImmediate<group>() : registerValue(inst.getSourceRegister<group>());
+        auto &src0 = registerValue(inst.getDestinationRegister<group>());
         if (subType == ArithmeticOps::Min) {
             getValueRegister() = src0 > src1 ? src1 : src0;
         } else if (subType == ArithmeticOps::Max) {
@@ -421,8 +422,8 @@ namespace cisc0 {
         auto result = translate(inst.getSubtype<group>());
         syn::throwOnErrorState(result, "Illegal logical operation!");
         auto op = result;
-        auto source1 = inst.getImmediateFlag<group>() ? retrieveImmediate(inst.getBitmask<group>()) : registerValue(inst.getLogicalRegister<1>());
-        auto& dest = registerValue(inst.getLogicalRegister<0>());
+        auto source1 = inst.getImmediateFlag<group>() ? retrieveImmediate(inst.getBitmask<group>()) : registerValue(inst.getSourceRegister<group>());
+        auto& dest = registerValue(inst.getDestinationRegister<group>());
         dest = syn::ALU::performOperation<RegisterValue>(op, dest, source1);
     }
     template<syn::Comparator::StandardOperations op>
