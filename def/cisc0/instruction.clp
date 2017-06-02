@@ -49,7 +49,7 @@
 
 (deffacts cisc0-logical-fields
           (defbitfield LogicalFlagImmediate      0b0000000000010000 4)
-          (defbitmask LogicalFlagImmediateMask   0b0000111100000000 8)
+          (defbitmask  LogicalBitmask            0b0000111100000000 8)
           (deffield LogicalImmediateDestination  0b1111000000000000 12 byte)
           (defsubtypefield LogicalFlagType       0b0000000011100000 5 LogicalOps)
           (deffield LogicalDestination           0b0000111100000000 8 byte)
@@ -73,7 +73,7 @@
 
 (deffacts cisc0-memory-fields
           (defsubtypefield MemoryFlagType  0b0000000000110000 4 MemoryOperation)
-          (defbitmask MemoryFlagBitmask    0b0000111100000000 8)
+          (defbitmask MemoryBitmask        0b0000111100000000 8)
           (defbitmask MemoryFlagIndirect   0b0000000001000000 6)
           (deffield MemoryDestination      0b1111000000000000 12 byte))
 
@@ -580,18 +580,20 @@
           (property HasImmediateFlag Operation Compare)
           (property HasImmediateFlag Operation Logical)
           (property HasImmediateFlag Operation Branch)
-          (defproperty-function usesDestination
-                                UsesDestination
-                                Operation)
-          (defproperty-function usesSource 
-                                UsesSource 
-                                Operation)
-          (defproperty-function hasBitmask
-                                HasBitmask
-                                Operation)
-          (defproperty-function hasImmediateFlag
-                                HasImmediateFlag
-                                Operation)
+          (defproperty-function usesDestination UsesDestination Operation)
+          (defproperty-function usesSource UsesSource Operation)
+          (defproperty-function hasBitmask HasBitmask Operation)
+          (defproperty-function hasImmediateFlag HasImmediateFlag Operation)
+          (defencoder Bitmask Operation)
+          (defdecoder Bitmask Operation)
+          (encoder Bitmask Operation Move)
+          (encoder Bitmask Operation Set)
+          (encoder Bitmask Operation Memory)
+          (encoder Bitmask Operation Logical)
+          (decoder Bitmask Operation Move)
+          (decoder Bitmask Operation Set)
+          (decoder Bitmask Operation Memory)
+          (decoder Bitmask Operation Logical)
           )
 
 (defrule MAIN::generate-defproperty-function
@@ -642,4 +644,88 @@
                    (specialize-struct ?title
                                       (explicit-enum ?input-type
                                                      ?value)) 
+                   crlf))
+
+(defrule MAIN::generate-defencoder
+         ?f <- (defencoder ?title
+                           ?type)
+         =>
+         (retract ?f)
+         (assert (made generic-encoder
+                       ?title
+                       ?type))
+         (printout t 
+                   (generic-struct (str-cat Encode
+                                            ?title)
+                                   (variable ?type
+                                             i)) crlf))
+
+(defrule MAIN::generate-specialized-encoder
+         (declare (salience -3))
+         ?f <- (encoder ?title
+                        ?type
+                        ?value)
+         (made generic-encoder
+               ?title
+               ?type)
+         (encoding-operation =(sym-cat ?value
+                                       ?title)
+                             ?operation
+                             ?input
+                             ?ret)
+         =>
+         (retract ?f)
+         (printout t
+                   (specialize-struct (str-cat Encode 
+                                               ?title)
+                                      (explicit-enum ?type
+                                                     ?value)
+                                      (standard-using-decl ReturnType
+                                                           ?ret)
+                                      (standard-using-decl CastTo
+                                                           ?input)
+                                      "static constexpr ReturnType encode(ReturnType in, CastTo val) noexcept " 
+                                      (scope-body (return-statement (str-cat ?operation "( in, val )")))) 
+                   crlf))
+
+(defrule MAIN::generate-defdecoder
+         ?f <- (defdecoder ?title
+                           ?type)
+         =>
+         (retract ?f)
+         (assert (made generic-decoder
+                       ?title
+                       ?type))
+         (printout t 
+                   (generic-struct (str-cat Decode 
+                                            ?title)
+                                   (variable ?type
+                                             i)) crlf))
+
+(defrule MAIN::generate-specialized-decoder
+         (declare (salience -3))
+         ?f <- (decoder ?title
+                        ?type
+                        ?value)
+         (made generic-decoder
+               ?title
+               ?type)
+         (decoding-operation =(sym-cat ?value
+                                       ?title)
+                             ?operation
+                             ?ret
+                             ?input)
+         =>
+         (retract ?f)
+         (printout t
+                   (specialize-struct (str-cat Decode 
+                                               ?title)
+                                      (explicit-enum ?type
+                                                     ?value)
+                                      (standard-using-decl ReturnType
+                                                           ?ret)
+                                      (standard-using-decl CastTo
+                                                           ?input)
+                                      "static constexpr ReturnType decode(CastTo in) noexcept " 
+                                      (scope-body (return-statement (str-cat ?operation "( in )")))) 
                    crlf))
