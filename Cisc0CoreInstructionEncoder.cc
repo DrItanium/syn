@@ -60,53 +60,16 @@ namespace cisc0 {
 
 	template<bool v>
 	using ConditionFulfillment = syn::ConditionFulfillment<v>;
-	template<Operation op>
-	struct HasArg0 : ConditionFulfillment<false> {
-		static constexpr Word encodeArg0(Word input, byte index, bool immediate) noexcept {
-			return input;
-		}
-	};
 
-	template<>
-	struct HasArg0 < Operation::Logical > : ConditionFulfillment<true> {
-		static constexpr Word encodeArg0(Word input, byte index, bool immediate) noexcept {
-			if (immediate) {
-				return encodeLogicalImmediateDestination(input, index);
-			} else {
-				return encodeLogicalImmediateDestination(input, index); 
-			}
-		}
-	};
-
-
-#define DefHasArg0(o, action) \
-	template<> \
-	struct HasArg0 < Operation:: o > : ConditionFulfillment< true >  { \
-		static constexpr Word encodeArg0(Word input, byte index, bool immediate) noexcept { \
-			return action ( input , index ); \
-		} \
-	}
-DefHasArg0(Arithmetic, encodeArithmeticDestination);
-DefHasArg0(Swap, encodeSwapDestination);
-DefHasArg0(Move, encodeMoveDestination);
-DefHasArg0(Shift, encodeShiftDestination);
-DefHasArg0(Compare, encodeCompareDestination);
-DefHasArg0(Set, encodeSetDestination);
-DefHasArg0(Memory, encodeMemoryDestination); // the register and offset occupy the same space
-#undef DefHasArg0
-
-
-
-	template<Operation op>
-	Word encodeArg0(Word value, byte index, bool immediate = false) noexcept {
-		static_assert(HasArg0<op>::value, "Provided operation does not have arg0");
-		return HasArg0<op>::encodeArg0(value, index, immediate);
-	}
 
 	Word InstructionEncoder::commonEncoding() const {
 		return encodeControl(0, _type);
 	}
 
+	template<Operation op>
+	constexpr Word encodeDestination(Word value, byte index) noexcept {
+		return cisc0::encodeDestination<op, byte>(value, index);
+	}
 
 	template<Operation op>
 	constexpr Word setImmediateBit(Word input, bool immediate) noexcept {
@@ -176,7 +139,7 @@ DefHasArg0(Memory, encodeMemoryDestination); // the register and offset occupy t
 		constexpr auto op = Operation::Arithmetic;
 		auto first = encodeSubType<op>(commonEncoding() , _subType);
 		first = setImmediateBit<op>(first, _immediate);
-		first = encodeArg0<op>(first, _arg0);
+		first = encodeDestination<op>(first, _arg0);
 		first = encodeArg1<op>(first, _arg1, _immediate);
         return std::make_tuple(1, first, 0, 0);
     }
@@ -184,14 +147,14 @@ DefHasArg0(Memory, encodeMemoryDestination); // the register and offset occupy t
     InstructionEncoder::Encoding InstructionEncoder::encodeMove() const {
 		constexpr auto op = Operation::Move;
 		auto first = setBitmaskField<op>(commonEncoding(), _bitmask);
-		first = encodeArg0<op>(first, _arg0);
+		first = encodeDestination<op>(first, _arg0);
 		first = encodeArg1<op>(first, _arg1);
         return std::make_tuple(1, first, 0, 0);
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeSwap() const {
 		constexpr auto op = Operation::Swap;
-		auto first = encodeArg0<op>(commonEncoding(), _arg0);
+		auto first = encodeDestination<op>(commonEncoding(), _arg0);
 		first = encodeArg1<op>(first, _arg1);
 		return std::make_tuple(1, first, 0, 0);
     }
@@ -200,7 +163,7 @@ DefHasArg0(Memory, encodeMemoryDestination); // the register and offset occupy t
 		constexpr auto op = Operation::Arithmetic;
 		auto first = setImmediateBit<op>(commonEncoding(), _immediate);
         first = encodeShiftFlagLeft(first, _shiftLeft);
-		first = encodeArg0<op>(first, _arg0);
+		first = encodeDestination<op>(first, _arg0);
 		first = encodeArg1<op>(first, _arg1, _immediate);
         return std::make_tuple(1, first, 0, 0);
     }
@@ -209,7 +172,7 @@ DefHasArg0(Memory, encodeMemoryDestination); // the register and offset occupy t
 		constexpr auto op = Operation::Compare;
 		auto first = encodeSubType<op>(commonEncoding(), _subType);
 		first = setImmediateBit<op>(first, _immediate);
-		auto second = encodeArg0<op>(0, _arg0);
+		auto second = encodeDestination<op>(0, _arg0);
 		second = encodeArg1<op>(second, _arg1, _immediate);
         return std::make_tuple(2, first, second, 0);
     }
@@ -217,7 +180,7 @@ DefHasArg0(Memory, encodeMemoryDestination); // the register and offset occupy t
     InstructionEncoder::Encoding InstructionEncoder::encodeSet() const {
 		constexpr auto op = Operation::Set;
 		auto first = setBitmaskField<op>(commonEncoding(), _bitmask);
-		first = encodeArg0<op>(first, _arg0);
+		first = encodeDestination<op>(first, _arg0);
         // use the mask during encoding since we know how many Words the
         // instruction is made up of
         auto maskedValue = mask(_bitmask) & _fullImmediate;
@@ -232,7 +195,7 @@ DefHasArg0(Memory, encodeMemoryDestination); // the register and offset occupy t
 		first = setBitmaskField<op>(first, _bitmask);
         first = encodeMemoryFlagIndirect(first, _indirect);
         // the register and offset occupy the same space
-		first = encodeArg0<Operation::Memory>(first, _arg0);
+		first = encodeDestination<Operation::Memory>(first, _arg0);
         return std::make_tuple(1, first, 0, 0);
     }
 
@@ -243,7 +206,7 @@ DefHasArg0(Memory, encodeMemoryDestination); // the register and offset occupy t
 		auto third = 0u;
 		auto width = _immediate ? instructionSizeFromImmediateMask(_bitmask) : 1;
 		first = setImmediateBit<op>(first, _immediate);
-		first = encodeArg0<op>(first, _arg0, _immediate);
+		first = encodeDestination<op>(first, _arg0, _immediate);
 		// if we are not looking at an immediate then this operation will
 		// actually do something
 		first = encodeArg1<op>(first, _arg1, _immediate);
@@ -258,7 +221,7 @@ DefHasArg0(Memory, encodeMemoryDestination); // the register and offset occupy t
 
 	template<>
 	struct HasArg0 < Operation::Branch> : ConditionFulfillment<true> {
-		static constexpr Word encodeArg0(Word input, byte index, bool immediate) noexcept {
+		static constexpr Word encodeDestination(Word input, byte index, bool immediate) noexcept {
 			if (cisc0::decodeBranchFlagIsIfForm(input)) {
 				return cisc0::encodeBranchIfOnTrue(input, index); 
 			} else {
@@ -287,7 +250,7 @@ DefHasArg0(Memory, encodeMemoryDestination); // the register and offset occupy t
         first = encodeBranchFlagIsConditional(first, _isConditional);
         first = encodeBranchFlagIsIfForm(first, _isIf);
         first = encodeBranchFlagIsCallForm(first, _isCall);
-		first = encodeArg0<op>(first, _arg0, _immediate);
+		first = encodeDestination<op>(first, _arg0, _immediate);
 		first = encodeArg1<op>(first, _arg1, _immediate);
         return std::make_tuple(width, first, second, third);
     }
@@ -317,7 +280,7 @@ DefHasArg0(Memory, encodeMemoryDestination); // the register and offset occupy t
 	}
 
 	template<ComplexSubTypes t>
-	Word encodeArg0(Word value, byte index) noexcept {
+	Word encodeDestination(Word value, byte index) noexcept {
 		static_assert(t != ComplexSubTypes::Encoding, "Encoding operations take in no arguments!");
 		switch(t) {
 			case ComplexSubTypes::Extended:
@@ -335,7 +298,7 @@ DefHasArg0(Memory, encodeMemoryDestination); // the register and offset occupy t
 			return std::make_tuple(1, first, 0, 0);
         } else if (sType == ComplexSubTypes::Extended) {
 			first = encodeSubType<ComplexSubTypes::Extended>(first, _bitmask);
-			first = encodeArg0<ComplexSubTypes::Extended>(first, _arg0);
+			first = encodeDestination<ComplexSubTypes::Extended>(first, _arg0);
 			return std::make_tuple(1, first, 0, 0);
 		} else {
 			throw syn::Problem("Illegal complex instruction group!");

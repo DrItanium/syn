@@ -835,7 +835,7 @@
                                   (str-cat "typename T = typename "
                                            (explicit-enum ?t2
                                                           CastTo)))
-                   " static constexpr typename " 
+                   " constexpr typename " 
                    (explicit-enum ?t2
                                   ReturnType)
                    (str-cat " encode" 
@@ -867,7 +867,7 @@
          (printout t
                    (template-decl (variable ?type 
                                             v))
-                   " static constexpr typename " 
+                   " constexpr typename " 
                    (explicit-enum ?t2
                                   ReturnType)
                    (str-cat " decode" 

@@ -35,48 +35,13 @@
 namespace cisc0 {
 	class DecodedInstruction {
 		public:
-            using BranchFlags = std::tuple<bool, bool, bool>;
+            using BranchFlags = std::tuple<bool, bool>;
         private:
-            static constexpr bool hasBitmask(Operation op) noexcept {
-                switch(op) {
-                    case Operation::Set:
-                    case Operation::Memory:
-                    case Operation::Move:
-                    case Operation::Logical:
-                        return true;
-                    default:
-                        return false;
-                }
-            }
 
-            static constexpr bool hasImmediateFlag(Operation op) noexcept {
-                switch(op) {
-                    case Operation::Shift:
-                    case Operation::Logical:
-                    case Operation::Branch:
-                    case Operation::Compare:
-                    case Operation::Arithmetic:
-                        return true;
-                    default:
-                        return false;
-                }
-            }
             static constexpr bool hasImmediateValue(Operation op) noexcept {
                 switch (op) {
                     case Operation::Shift:
                     case Operation::Arithmetic:
-                        return true;
-                    default:
-                        return false;
-                }
-            }
-            static constexpr bool hasSubtype(Operation op) noexcept {
-                switch(op) {
-                    case Operation::Compare:
-                    case Operation::Memory:
-                    case Operation::Arithmetic:
-                    case Operation::Complex:
-                    case Operation::Logical:
                         return true;
                     default:
                         return false;
@@ -95,7 +60,7 @@ namespace cisc0 {
             inline byte getSetDestination() const noexcept { return decodeSetDestination(_rawValue); }
             inline byte getMemoryRegister() const noexcept { return decodeMemoryDestination(_rawValue); }
             inline byte getMemoryOffset() const noexcept { return decodeMemoryDestination(_rawValue); }
-            inline byte getBranchIndirectDestination() const noexcept { return decodeBranchIndirectDestination(_rawValue); }
+            inline byte getBranchIndirectDestination() const noexcept { return decodeBranchDestination(_rawValue); }
             inline bool shouldShiftLeft() const noexcept { return decodeShiftFlagLeft(_rawValue); }
             inline bool isIndirectOperation() const noexcept { return decodeMemoryFlagIndirect(_rawValue); }
             BranchFlags getOtherBranchFlags() const noexcept;
@@ -173,14 +138,6 @@ namespace cisc0 {
             template<int index>
             inline byte getLogicalRegister() const noexcept {
 				return getRegister<Operation::Compare, index>();
-            }
-            template<bool path>
-            inline byte getBranchIfPathRegister() const noexcept {
-                if (path) {
-                    return decodeBranchIfOnTrue(_rawValue);
-                } else {
-                    return decodeBranchIfOnFalse(_rawValue);
-                }
             }
             template<Operation op>
 			inline typename DecodeSubType<op>::ReturnType getSubtype() const noexcept {
