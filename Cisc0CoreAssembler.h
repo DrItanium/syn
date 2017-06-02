@@ -589,7 +589,6 @@ namespace cisc0 {
 							  Separator,
 							  ComplexSubOperations> { };
 
-	DefSymbol(If, if);
 	DefSymbol(Call, call);
 	DefSymbol(NoCall, nocall);
 	DefSymbol(Conditional, conditional);
@@ -597,14 +596,6 @@ namespace cisc0 {
 
 	template<typename T, typename F>
 		struct ChoiceFlag : pegtl::sor<T, F> { };
-
-	struct BranchFlagIf : public syn::Indirection<SymbolIf> { };
-	DefAction(BranchFlagIf) {
-		DefApplyInstruction {
-			state.markIfStatement();
-			state.markUnconditional();
-		}
-	};
 
 	struct BranchFlagCall : public syn::Indirection<SymbolCall> { };
 	DefAction(BranchFlagCall) {
@@ -638,12 +629,6 @@ namespace cisc0 {
 
 	struct ChooseBranchFlagUsePredicate : ChoiceFlag<BranchFlagConditional, BranchFlagUnconditional> { };
 
-	struct BranchIfOperation : pegtl::seq<
-							   BranchFlagIf,
-							   Separator,
-							   ChooseBranchFlagCall,
-							   Separator,
-							   TwoGPRs> { };
 	struct BranchNormalArgs : pegtl::sor<
 							  pegtl::seq<
 										 UsesImmediate,
@@ -662,8 +647,7 @@ namespace cisc0 {
 	struct BranchOperation : pegtl::seq<
 							 GroupBranch,
 							 Separator,
-							 pegtl::sor<BranchIfOperation,
-							 BranchCallOperation,
+							 pegtl::sor<BranchCallOperation,
 							 BranchJumpOperation>> { };
 
 	struct Instructions : pegtl::state<AssemblerInstruction,

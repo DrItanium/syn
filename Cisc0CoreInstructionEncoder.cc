@@ -225,7 +225,6 @@ namespace cisc0 {
         _type = Operation::Memory;
         _immediate = false;
         _shiftLeft = false;
-        _isIf = false;
         _isCall = false;
         _isConditional = false;
         _bitmask = 0b0000;

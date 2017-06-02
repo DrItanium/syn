@@ -82,7 +82,6 @@ namespace cisc0 {
 		void setSubType(byte value) noexcept { _subType = value; }
 		void setAddress(RegisterValue addr) noexcept { _address = addr; }
 
-		void markIfStatement(bool isIfStatement = true) noexcept { _isIf = isIfStatement; }
 		void setFullImmediate(RegisterValue val) noexcept { _fullImmediate = val; }
 		void markAsLabel() noexcept { _isLabel = true; }
 		void markAsNotLabel() noexcept { _isLabel = false; }
@@ -138,7 +137,6 @@ namespace cisc0 {
 			Operation _type;
 			bool _immediate;
 			bool _shiftLeft;
-			bool _isIf;
 			bool _isCall;
 			bool _isConditional;
 			bool _indirect;
