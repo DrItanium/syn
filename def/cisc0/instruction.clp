@@ -36,8 +36,8 @@
 (deffacts cisc0-compare-fields
           (defbitfield CompareFlagImmediate 0b0010000000000000 13)
           (defsubtypefield CompareType      0b0000011100000000 8 CompareStyle)
-          (deffield CompareDestination        0b0000000000001111 0 byte)
-          (deffield CompareSource        0b0000000011110000 4 byte)
+          (deffield CompareDestination      0b0000000000001111 0 byte)
+          (deffield CompareSource           0b0000000011110000 4 byte)
           (deffield CompareImmediate        0b1111111100000000 8 byte))
 
 (deffacts cisc0-arithmetic-fields
@@ -607,7 +607,17 @@
                             Compare
                             Move
                             Swap
-                            Logical))
+                            Logical)
+          (defencoder/decoder FlagImmediate Operation)
+          (encoder/decoders FlagImmediate
+                            Operation
+                            Arithmetic
+                            Shift
+                            Compare
+                            Logical
+                            Branch))
+
+
 (defrule MAIN::multi-encode/decode-deocmpose
          (declare (salience ?*priority:first*))
          ?f <- (encoder/decoders ?title
@@ -619,7 +629,7 @@
                  (assert (encoder/decoder ?title
                                           ?type
                                           ?v))))
-        
+
 (defrule MAIN::convert-properties
          (declare (salience ?*priority:first*))
          ?f <- (properties ?title 
@@ -639,9 +649,9 @@
          =>
          (retract ?f)
          (assert (defencoder ?title
-                  ?type)
-          (defdecoder ?title
-           ?type)))
+                             ?type)
+                 (defdecoder ?title
+                             ?type)))
 (defrule MAIN::convert-encoder/decoder-facts
          (declare (salience ?*priority:first*))
          ?f <- (encoder/decoder ?title

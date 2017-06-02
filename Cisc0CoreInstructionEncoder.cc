@@ -92,7 +92,7 @@ DefHasArg0(Move, encodeMoveDestination);
 DefHasArg0(Shift, encodeShiftDestination);
 DefHasArg0(Compare, encodeCompareDestination);
 DefHasArg0(Set, encodeSetDestination);
-DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the same space
+DefHasArg0(Memory, encodeMemoryDestination); // the register and offset occupy the same space
 #undef DefHasArg0
 
 
@@ -110,8 +110,7 @@ DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the sa
 
 	template<Operation op>
 	constexpr Word setImmediateBit(Word input, bool immediate) noexcept {
-		static_assert(HasImmediateFlag<op>::value, "Given operation type does not have an immediate bit!");
-		return HasImmediateFlag<op>::setImmediateBit(input, immediate);
+		return cisc0::encodeFlagImmediate<op>(input, immediate);
 	}
 
 
@@ -297,13 +296,13 @@ DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the sa
 	template<> struct ComplexSubTypeToNestedType < ComplexSubTypes::Encoding > { 
 		using type = EncodingOperation; 
 		static Word encodeType(Word value, type t) noexcept {
-			return encodeComplexClassEncoding_Type(value, t);
+			return encodeComplexClassEncodingType(value, t);
 		}
 	};
 	template<> struct ComplexSubTypeToNestedType < ComplexSubTypes::Extended > { 
 		using type = ExtendedOperation; 
 		static Word encodeType(Word value, type t) noexcept {
-			return encodeComplexClassExtended_Type(value, t);
+			return encodeComplexClassExtendedType(value, t);
 		}
 	};
 
@@ -322,7 +321,7 @@ DefHasArg0(Memory, encodeMemoryOffset); // the register and offset occupy the sa
 		static_assert(t != ComplexSubTypes::Encoding, "Encoding operations take in no arguments!");
 		switch(t) {
 			case ComplexSubTypes::Extended:
-				return encodeComplexClassExtended_Arg0(value, index);
+				return cisc0::encodeComplexClassExtendedDestination(value, index);
 			default:
 				throw syn::Problem("Given complex sub type does not take in arguments!");
 		}
