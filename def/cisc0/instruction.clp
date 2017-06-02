@@ -579,7 +579,41 @@
           (property HasImmediateFlag Operation Shift)
           (property HasImmediateFlag Operation Compare)
           (property HasImmediateFlag Operation Logical)
-          (property HasImmediateFlag Operation Branch))
+          (property HasImmediateFlag Operation Branch)
+          (defproperty-function usesDestination
+                                UsesDestination
+                                Operation)
+          (defproperty-function usesSource 
+                                UsesSource 
+                                Operation)
+          (defproperty-function hasBitmask
+                                HasBitmask
+                                Operation)
+          (defproperty-function hasImmediateFlag
+                                HasImmediateFlag
+                                Operation)
+          )
+
+(defrule MAIN::generate-defproperty-function
+         (made property-struct
+               ?title 
+               ?input-type)
+         (not (property ?title
+               ?input-type
+               ?))
+         ?f <- (defproperty-function ?name 
+                                     ?title
+                                     ?input-type)
+         =>
+         (retract ?f)
+         (printout t
+                   (template-decl (variable ?input-type
+                                            val)) 
+                   " constexpr bool " ?name "() noexcept"
+                   (scope-body (return-statement (explicit-enum (str-cat ?title 
+                                                                         (template-specialization val))
+                                                                value))) crlf))
+
 
 (defrule MAIN::generate-generic-struct-impl
          ?f <- (defproperty-struct ?title
