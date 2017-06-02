@@ -266,6 +266,9 @@
                            ?mask
                            ?shift
                            byte)))
+(deffunction MAIN::add-terminator
+             (?str)
+             (str-cat ?str ";"))
 (deffunction MAIN::explicit-enum
              (?type ?value)
              (str-cat ?type " :: "  ?value))
@@ -274,7 +277,15 @@
              (str-cat ?type " " ?name))
 (deffunction MAIN::standard-using-decl
              (?name ?value)
-             (str-cat "using " ?name " = " ?value ";"))
+             (add-terminator (str-cat "using " ?name " = " ?value)))
+(deffunction MAIN::scope-body
+             ($?body)
+             (str-cat " { " (expand$ ?body) " } "))
+
+(deffunction MAIN::terminated-scope-body
+             ($?body)
+             (add-terminator (scope-body ?body)))
+        
 
 (deffunction MAIN::comma-list
              (?first $?rest)
@@ -311,9 +322,7 @@
                                       " ")
                       (string-if-true ?extends
                                       " : ")
-                      " { "
-                      (expand$ ?body)
-                      " };"))
+                      (terminated-scope-body ?body)))
 (deffunction MAIN::cond-fulfill
              (?result)
              (str-cat "syn::ConditionFulfillment< " 
@@ -371,6 +380,31 @@
                                       (standard-using-decl type
                                                            ?sub-type)) crlf))
 
+(deffunction MAIN::return-statement
+             (?statement)
+             (add-terminator (str-cat "return " 
+                                      ?statement)))
+(deffunction MAIN::typename
+             (?statement)
+             (str-cat "typename "
+                      ?statement))
+(deffunction MAIN::constexpr
+             (?statement)
+             (str-cat "constexpr " 
+                      ?statement))
+(deffunction MAIN::function-decl
+             (?prefix ?return-type ?name ?name-post ?args ?specifiers $?body) 
+             (str-cat (string-if-true ?prefix
+                                      "")
+                      " " ?return-type
+                      " " ?name 
+                      (string-if-true ?name-post
+                                      " ")
+                      "( " ?args " )" 
+                      (string-if-true ?specifiers
+                                      " ")
+                      " "
+                      (scope-body ?body)))
 
 (defrule MAIN::generate-top-level-has-sub-type-function
          (declare (salience 1))
@@ -390,15 +424,17 @@
          (printout t 
                    ?standard-decl crlf
                    (standard-using-decl SubTypeOf 
-                                        (explicit-enum (str-cat "typename " 
-                                                                ?subtype-type) 
+                                        (explicit-enum (typename ?subtype-type) 
                                                        type)) crlf
                    ?standard-decl crlf
-                   "constexpr bool HasSubType() noexcept { return " 
-                   (explicit-enum ?subtype-type
-                                  value) 
-                   "; }" crlf))
-
+                   (function-decl constexpr
+                                  bool
+                                  HasSubType
+                                  FALSE
+                                  ""
+                                  noexcept
+                                  (return-statement (explicit-enum ?subtype-type
+                                                                   value))) crlf))
 
 
 
