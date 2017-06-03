@@ -493,14 +493,18 @@ constexpr void throwOnErrorState(T value, const std::string& msg) noexcept {
     }
 }
 
-template<bool fulfills>
-struct ConditionFulfillment : std::integral_constant<bool, fulfills> { };
-
 constexpr bool fulfillsCondition(std::true_type) noexcept { return true; }
 constexpr bool fulfillsCondition(std::false_type) noexcept { return false; }
 
+template<bool fulfills>
+struct ConditionFulfillment : std::integral_constant<bool, fulfills> { 
+
+};
+
+
 template<typename T>
 constexpr bool fulfillsCondition() noexcept {
+	static_assert(!std::is_integral<T>::value, "Provided type must not be an integral!");
 	return fulfillsCondition(T());
 }
 
