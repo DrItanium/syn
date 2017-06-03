@@ -497,9 +497,7 @@ constexpr bool fulfillsCondition(std::true_type) noexcept { return true; }
 constexpr bool fulfillsCondition(std::false_type) noexcept { return false; }
 
 template<bool fulfills>
-struct ConditionFulfillment : std::integral_constant<bool, fulfills> { 
-
-};
+struct ConditionFulfillment : std::integral_constant<bool, fulfills> { };
 
 
 template<typename T>
