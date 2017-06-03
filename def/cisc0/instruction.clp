@@ -471,99 +471,6 @@
                    "static constexpr ReturnType encodeSubType(ReturnType input, " ?q " data) noexcept { return input; }" crlf
                    "};" crlf))
 
-;(defrule MAIN::generate-top-level-type-conversion-specialization-encoding-op
-;         (declare (salience -3))
-;         (made-top-level-to-sub-type-specialization ?top ?v -> ?sub-type)
-;         (sub-type-field ?name
-;                         ?sub-type)
-;         (encoding-operation ?name
-;                             ?str
-;                             ?sub-type
-;                             ?full-type)
-;         (made-top-level-to-sub-type-query ?top)
-;         (generic encoding of sub type generated ?top)
-;         =>
-;         (printout t 
-;                   (specialize-struct (sym-cat EncodeSubType
-;                                               ?top)
-;                                      (explicit-enum ?top
-;                                                     ?v)
-;                                      (standard-using-decl ReturnType
-;                                                           ?full-type)
-;                                      (standard-using-decl CastTo
-;                                                           (str-cat SubTypeOf ?top
-;                                                                    (template-specialization (explicit-enum ?top 
-;                                                                                                            ?v))))
-;                                      "static constexpr ReturnType encodeSubType(ReturnType input, CastTo value) noexcept { return " ?str "(input, value); }") 
-;                   crlf))
-;
-;(defrule MAIN::generate-basic-sub-type-encoder
-;         (declare (salience -4))
-;         (generic encoding of sub type generated ?top)
-;         (not (built encode sub type function ?top))
-;         =>
-;         (assert (built encode sub type function ?top))
-;         (printout t 
-;                   "template<" ?top " v, typename T = typename EncodeSubType<v>::CastTo> " crlf
-;                   "constexpr typename EncodeSubType<v>::ReturnType encodeSubType(typename EncodeSubType<v>::ReturnType input, T value) noexcept {" crlf
-;                   "static_assert(HasSubType<v>(), \"Provided operation does not have a subtype!\");" crlf
-;                   "return EncodeSubType<v>::encodeSubType(input, static_cast<typename EncodeSubType<v>::CastTo>(value));" crlf
-;                   "}" crlf))
-;
-;(defrule MAIN::generate-top-level-type-conversion-specialization-decoding-op:generic-case
-;         (declare (salience -2))
-;         (made-top-level-to-sub-type-specialization ?top ?v -> ?sub-type)
-;         (decoding-operation ?name
-;                             ?str
-;                             ?sub-type
-;                             ?full-type)
-;         (made-top-level-to-sub-type-query ?top)
-;         (not (generic decoding of sub type generated ?top))
-;         =>
-;         (assert (generic decoding of sub type generated ?top))
-;         (printout t
-;                   "template<" ?top " v>" crlf
-;                   "struct DecodeSubType : syn::ConditionFulfillment<false> {" crlf
-;                   "using ReturnType = " (str-cat SubTypeOf ?top "<v>;")  crlf 
-;                   "using InputType = " ?full-type ";" crlf
-;                   "static constexpr ReturnType decodeSubType(InputType input) noexcept { return input; }" crlf
-;                   "};" crlf))
-;
-;(defrule MAIN::generate-top-level-type-conversion-specialization-decoding-op
-;         (declare (salience -3))
-;         (made-top-level-to-sub-type-specialization ?top ?v -> ?sub-type)
-;         (sub-type-field ?name
-;                         ?sub-type)
-;         (decoding-operation ?name
-;                             ?str
-;                             ?sub-type
-;                             ?full-type)
-;         (made-top-level-to-sub-type-query ?top)
-;         (generic decoding of sub type generated ?top)
-;         =>
-;         (printout t 
-;                   "template<>" crlf
-;                   "struct DecodeSubType <" ?top " :: " ?v "> : syn::ConditionFulfillment<true> {" crlf
-;                   "using InputType = " ?full-type ";" crlf
-;                   "using ReturnType = SubTypeOf<" ?top " :: " ?v">;" crlf
-;                   "static constexpr ReturnType decodeSubType(InputType input) noexcept {" crlf
-;                   "return " ?str " ( input );" crlf
-;                   "}" crlf
-;                   "};" crlf))
-;
-;(defrule MAIN::generate-basic-sub-type-decoder
-;         (declare (salience -4))
-;         (generic decoding of sub type generated ?top)
-;         (not (built decode sub type function ?top))
-;         =>
-;         (assert (built decode sub type function ?top))
-;         (printout t 
-;                   "template<" ?top " v>" crlf
-;                   "constexpr typename DecodeSubType<v>::ReturnType decodeSubType(typename DecodeSubType<v>::InputType input) noexcept {" crlf
-;                   "static_assert(HasSubType<v>(), \"Provided operation does not have a subtype!\");" crlf
-;                   "return DecodeSubType<v>::decodeSubType(input);" crlf
-;                   "}" crlf))
-
 (deffacts cisc0-destination-register-usage
           (defproperty-struct UsesDestination 
                               Operation)
@@ -879,8 +786,7 @@
                             (explicit-enum ?t2
                                            ReturnType)
                             " in, T value) noexcept ")
-                   (scope-body "static_assert( " (explicit-enum ?t2 
-                                                                value) ", \"Provided control does not have support for concept " ?title "!\");"
+                   (scope-body "static_assert( syn::fulfillsCondition<" ?t2 ">(), \"Provided control does not have support for concept " ?title "!\");"
                                (return-statement (str-cat (explicit-enum ?t2
                                                                          encode)
                                                           "(in, static_cast<typename " (explicit-enum ?t2
@@ -911,8 +817,7 @@
                             (explicit-enum ?t2 
                                            CastTo)
                             " in) noexcept ")
-                   (scope-body "static_assert( " (explicit-enum ?t2 
-                                                                value) ", \"Provided control does not have support for concept " ?title "!\");"
+                   (scope-body "static_assert( syn::fulfillsCondition<" ?t2 ">(), \"Provided control does not have support for concept " ?title "!\");"
                                (return-statement (str-cat (explicit-enum ?t2
                                                                          decode) 
                                                           "(in)")))
