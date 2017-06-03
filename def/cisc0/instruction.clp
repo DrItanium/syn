@@ -21,7 +21,11 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
+(deffunction MAIN::wrap-entries
+             (?prefix ?contents ?postfix)
+             (str-cat ?prefix
+                      ?contents
+                      ?postfix))
 
 (deffacts cisc0-base-decls
           (input-type Word)
@@ -300,10 +304,10 @@
              ?output)
 (deffunction MAIN::template-specialization
              (?first $?rest)
-             (str-cat "< " 
-                      (comma-list ?first
-                                  ?rest)
-                      " >"))
+             (wrap-entries "<"
+                           (comma-list ?first
+                                       ?rest)
+                           ">"))
 (deffunction MAIN::template-decl
              (?first $?rest)
              (str-cat "template" 
@@ -759,6 +763,42 @@
                                       (scope-body (return-statement (str-cat ?operation "( in )")))) 
                    crlf))
 
+(deffunction MAIN::parens
+             (?first $?args)
+             (wrap-entries "(" 
+                           (comma-list ?first 
+                                       ?args)
+                           ")"))
+
+(deffunction MAIN::string-quote
+             (?str)
+             (format nil
+                     "\"%s\""
+                     ?str))
+(deffunction MAIN::static-assert
+             (?condition ?message)
+             (add-terminator (str-cat static_assert
+                                      (parens ?condition
+                                              (string-quote ?message)))))
+(deffunction MAIN::fulfills-condition
+             (?type)
+             (str-cat "syn::fulfillsCondition" 
+                      (template-specialization ?type)
+                      "()"))
+(deffunction MAIN::static-cast
+             (?type ?value)
+             (str-cat "static_cast" 
+                      (template-specialization ?type)
+                      (parens ?value)))
+(deffunction MAIN::assign
+             (?a ?b)
+             (str-cat ?a " = " ?b))
+
+(deffunction MAIN::function-call
+             (?function ?first-arg $?args)
+             (str-cat ?function " " (parens ?first-arg ?args)))
+
+
 (defrule MAIN::generate-encoder-wrapper
          (made generic-encoder
                ?title
@@ -771,26 +811,38 @@
                (str-cat Encode
                         ?title
                         (template-specialization v)))
+         (bind ?ret-type
+               (typename (explicit-enum ?t2
+                                        ReturnType)))
+         (bind ?cast-to
+               (typename (explicit-enum ?t2
+                                        CastTo)))
+         (bind ?assert-message
+               (format nil
+                       "Provided control does not have support for concept %s!"
+                       (str-cat ?title)))
+
          (printout t
                    (template-decl (variable ?type 
                                             v)
-                                  (str-cat "typename T = typename "
-                                           (explicit-enum ?t2
-                                                          CastTo)))
-                   " constexpr typename " 
-                   (explicit-enum ?t2
-                                  ReturnType)
+                                  (assign (typename T)
+                                          ?cast-to))
+                   " constexpr "
+                   ?ret-type
                    (str-cat " encode" 
                             ?title)
-                   (str-cat "( typename " 
-                            (explicit-enum ?t2
-                                           ReturnType)
-                            " in, T value) noexcept ")
-                   (scope-body "static_assert( syn::fulfillsCondition<" ?t2 ">(), \"Provided control does not have support for concept " ?title "!\");"
-                               (return-statement (str-cat (explicit-enum ?t2
-                                                                         encode)
-                                                          "(in, static_cast<typename " (explicit-enum ?t2
-                                                                                                      CastTo) ">(value))")))
+                   (parens (variable ?ret-type
+                                     in)
+                           (variable T 
+                                     value))
+                   " noexcept "
+                   (scope-body (static-assert (fulfills-condition ?t2)
+                                              ?assert-message)
+                               (return-statement (function-call (explicit-enum ?t2
+                                                                               encode)
+                                                                in
+                                                                (static-cast ?cast-to
+                                                                             value))))
                    crlf))
 
 (defrule MAIN::generate-decoder-wrapper
