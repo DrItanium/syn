@@ -102,14 +102,19 @@ namespace cisc0 {
     InstructionEncoder::Encoding InstructionEncoder::encodeCompare() const {
 		constexpr auto op = Operation::Compare;
 		auto first = setSubType<op>(commonEncoding());
+		auto second = 0u;
+		auto third = 0u;
 		first = setFlagImmediate<op>(first);
-		auto second = setDestination<op>(0);
+		first = setDestination<op>(first);
 		if (_immediate) {
-			second = cisc0::encodeCompareImmediate(second, _arg1);
+			first = setBitmask<op>(first);
+			auto maskedImmediate = mask(_bitmask) & _fullImmediate;
+			second = static_cast<Word>(maskedImmediate);
+			third = static_cast<Word>(maskedImmediate >> 16);
 		} else {
-			second = setSource<op>(second);
+			first = setSource<op>(first);
 		}
-        return std::make_tuple(2, first, second, 0);
+        return std::make_tuple(instructionSizeFromBitmask(), first, second, third);
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeSet() const {

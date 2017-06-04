@@ -231,7 +231,6 @@ namespace cisc0 {
     void Core::compareOperation(DecodedInstruction&& inst) {
         static constexpr auto group = Operation::Compare;
 		auto compareResult = inst.getSubtype<group>();
-        syn::throwOnErrorState(compareResult, "Illegal compare type!");
 		auto destinationIndex = inst.getDestinationRegister<group>();
 		if (compareResult == CompareStyle::MoveToCondition) {
 			getConditionRegister() = (registerValue(destinationIndex) != 0);
@@ -240,7 +239,9 @@ namespace cisc0 {
 		} else {
 			auto first = registerValue(destinationIndex);
 			auto second = inst.getImmediateFlag<group>() ? retrieveImmediate(inst.getBitmask<group>()) : registerValue(inst.getSourceRegister<group>());
-			getConditionRegister() = syn::Comparator::performOperation(compareResult, first, second);
+			auto compareUnitType = translate(compareResult);
+        	syn::throwOnErrorState(compareResult, "Illegal compare type!");
+			getConditionRegister() = syn::Comparator::performOperation(compareUnitType, first, second);
 		}
     }
 
