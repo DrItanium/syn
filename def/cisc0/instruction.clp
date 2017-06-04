@@ -179,7 +179,9 @@
                           ;SaveRegisters
                           ;LoadRegisters
                           IsOdd
-                          IsEven)
+                          IsEven
+                          IncrementValueAddr
+                          DecrementValueAddr)
                 (cast-to byte)
                 (max-size "16")))
 

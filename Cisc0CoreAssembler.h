@@ -493,11 +493,15 @@ namespace cisc0 {
 	DefExtendedSubType(PopValueAddr, pop.value.addr);
 	DefExtendedSubType(PushRegisters, push.registers);
 	DefExtendedSubType(PopRegisters, pop.registers);
+	DefExtendedSubType(IncrementValueAddr, incr.value.addr);
+	DefExtendedSubType(DecrementValueAddr, decr.value.addr);
 	struct ComplexExtendedSubOperation_NoArgs : pegtl::sor<
 										 SubGroupExtendedOperationPopRegisters,
 										 SubGroupExtendedOperationPushRegisters,
 										 SubGroupExtendedOperationPopValueAddr,
-										 SubGroupExtendedOperationPushValueAddr> { };
+										 SubGroupExtendedOperationPushValueAddr,
+										 SubGroupExtendedOperationDecrementValueAddr,
+										 SubGroupExtendedOperationIncrementValueAddr > { };
 	DefExtendedSubType(IsEven, evenp);
 	DefExtendedSubType(IsOdd, oddp);
 	struct ComplexExtendedOneArg_Operations : pegtl::sor<SubGroupExtendedOperationIsEven, SubGroupExtendedOperationIsOdd> { };
@@ -519,7 +523,8 @@ namespace cisc0 {
 	DefParsingSubType(MemCopy, mem.copy);
 	struct ComplexParsingSubOperation_NoArgs : pegtl::sor<
 										 SubGroupParsingOperationHex8ToRegister,
-										 SubGroupParsingOperationRegisterToHex8> { };
+										 SubGroupParsingOperationRegisterToHex8,
+										 SubGroupParsingOperationMemCopy> { };
 	struct ComplexParsingSubOperation : pegtl::sor<ComplexExtendedSubOperation_NoArgs> { };
 
 
