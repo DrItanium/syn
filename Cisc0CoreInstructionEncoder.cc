@@ -202,6 +202,10 @@ namespace cisc0 {
 		return std::make_tuple(1, value, 0, 0);
 	}
 
+	InstructionEncoder::Encoding InstructionEncoder::encodeReturn() const {
+		return std::make_tuple(1, commonEncoding(), 0, 0);
+	}
+
     InstructionEncoder::Encoding InstructionEncoder::encode() const {
         // always encode the type
         static auto testMemFn = std::mem_fn(&InstructionEncoder::encode);
@@ -216,6 +220,7 @@ namespace cisc0 {
             { Operation::Set, std::mem_fn(&InstructionEncoder::encodeSet) },
             { Operation::Swap, std::mem_fn(&InstructionEncoder::encodeSwap) },
             { Operation::Complex, std::mem_fn(&InstructionEncoder::encodeComplex) },
+			{ Operation::Return, std::mem_fn(&InstructionEncoder::encodeReturn) },
         };
 
         auto result = dispatchTable.find(_type);
@@ -225,6 +230,7 @@ namespace cisc0 {
             return result->second(this);
         }
     }
+
 
     int InstructionEncoder::numWords() const {
         return std::get<0>(encode());
