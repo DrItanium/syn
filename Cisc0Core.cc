@@ -80,9 +80,6 @@ namespace cisc0 {
         }
         return encodeUpperHalf(encodeLowerHalf(0, lower), upper);
     }
-    constexpr RegisterValue normalizeCondition(RegisterValue input) noexcept {
-        return input != 0 ? 0xFFFFFFFF : 0x00000000;
-    }
 
     RegisterValue Core::retrieveImmediate(byte bitmask) noexcept {
         auto useLower = readLower(bitmask);
@@ -189,7 +186,7 @@ namespace cisc0 {
         bool isCall, isCond;
         std::tie(isCall, isCond) = inst.getOtherBranchFlags();
         advanceIp = true;
-        auto choice = getConditionRegister() != 0;
+        auto choice = getConditionRegister();
         auto readAddress = [this]() {
             auto lower = static_cast<RegisterValue>(tryReadNext<true>());
             auto upper = static_cast<RegisterValue>(tryReadNext<true>()) << 16;
@@ -233,7 +230,7 @@ namespace cisc0 {
         auto result = syn::Comparator::performOperation(compareResult, first, second);
         // make sure that the condition takes up the entire width of the
         // register, that way normal operations will make sense!
-        getConditionRegister() = normalizeCondition(result);
+        getConditionRegister() = result;
     }
 
     void Core::memoryOperation(DecodedInstruction&& inst) {
@@ -378,10 +375,10 @@ namespace cisc0 {
 				pushDword(getValueRegister());
 				break;
 			case ExtendedOperation::IsEven:
-				getConditionRegister() = normalizeCondition(syn::isEven(registerValue(inst.getDestinationRegister<group>())));
+				getConditionRegister() = syn::isEven(registerValue(inst.getDestinationRegister<group>()));
 				break;
 			case ExtendedOperation::IsOdd:
-				getConditionRegister() = normalizeCondition(syn::isOdd(registerValue(inst.getDestinationRegister<group>())));
+				getConditionRegister() = syn::isOdd(registerValue(inst.getDestinationRegister<group>()));
 				break;
 			case ExtendedOperation::IncrementValueAddr:
 				++getValueRegister();
@@ -550,10 +547,10 @@ namespace cisc0 {
                 getAddressRegister() = syn::encodeBits<RegisterValue, RegisterValue>(getAddressRegister(), getValueRegister(), getMaskRegister(), getShiftRegister());
                 break;
             case EncodingOperation::BitSet:
-                getConditionRegister() = normalizeCondition(sliceBitAndCheck<syn::Comparator::StandardOperations::Eq>(getAddressRegister(), getFieldRegister()));
+                getConditionRegister() = sliceBitAndCheck<syn::Comparator::StandardOperations::Eq>(getAddressRegister(), getFieldRegister());
                 break;
             case EncodingOperation::BitUnset:
-                getConditionRegister() = normalizeCondition(sliceBitAndCheck<syn::Comparator::StandardOperations::Neq>(getAddressRegister(), getFieldRegister()));
+                getConditionRegister() = sliceBitAndCheck<syn::Comparator::StandardOperations::Neq>(getAddressRegister(), getFieldRegister());
                 break;
             default:
                 throw syn::Problem("Illegal complex encoding operation defined!");

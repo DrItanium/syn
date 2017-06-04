@@ -62,7 +62,7 @@ namespace cisc0 {
 		R0  = RegisterCount - 16,
 		InstructionPointer = R15,
 		StackPointer = R14,
-		ConditionRegister = R13,
+		CallStackPointer = R13, // second stack
 		AddressRegister = R12,
 		ValueRegister = R11,
 		MaskRegister = R10,

@@ -80,7 +80,8 @@ namespace cisc0 {
 			RegisterValue& registerValue(byte index);
 			RegisterValue& getInstructionPointer() noexcept     { return registerValue<ArchitectureConstants::InstructionPointer>(); }
 			RegisterValue& getStackPointer() noexcept           { return registerValue<ArchitectureConstants::StackPointer>(); }
-			RegisterValue& getConditionRegister() noexcept      { return registerValue<ArchitectureConstants::ConditionRegister>(); }
+			RegisterValue& getCallStackPointer() noexcept 		{ return registerValue<ArchitectureConstants::CallStackPointer>(); }
+			bool& getConditionRegister() noexcept 				{ return conditionRegister; }
 			RegisterValue& getAddressRegister() noexcept        { return registerValue<ArchitectureConstants::AddressRegister>(); }
 			RegisterValue& getValueRegister() noexcept          { return registerValue<ArchitectureConstants::ValueRegister>(); }
 			RegisterValue& getMaskRegister() noexcept           { return registerValue<ArchitectureConstants::MaskRegister>(); }
@@ -111,6 +112,7 @@ namespace cisc0 {
 		private:
 			bool execute = true,
 				 advanceIp = true;
+			bool conditionRegister = false;
 			RegisterFile gpr;
 			IOBus _bus;
 	};
