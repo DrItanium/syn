@@ -62,10 +62,9 @@ namespace cisc0 {
 	struct SeparatedQuadThing : pegtl::seq<First, Sep, Second, Sep, Third, Sep, Fourth> { };
 
 	using AssemblerWord = syn::AssemblerWord<RegisterValue>;
-	struct AssemblerState {
+	struct AssemblerState : syn::LabelTracker<RegisterValue> {
 		cisc0::Address currentAddress = 0;
 		std::vector<InstructionEncoder> finishedInstructions;
-		std::map<std::string, RegisterValue> labels;
 		std::vector<AssemblerWord> finalWords;
 		std::vector<AssemblerWord> wordsToResolve;
 		void setCurrentAddress(Address addr) noexcept;
@@ -120,7 +119,7 @@ namespace cisc0 {
 
 		template<typename Input>
 			void success(const Input& in, AssemblerState& parent) {
-				parent.labels.emplace(getTitle(), getValue());
+				parent.registerLabel(getTitle(), getValue());
 			}
 	};
 	struct AssemblerInstruction : public InstructionEncoder {

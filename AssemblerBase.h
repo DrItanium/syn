@@ -30,6 +30,7 @@
 #include <functional>
 #include <sstream>
 #include <bitset>
+#include <map>
 #include <pegtl.hh>
 #include <pegtl/contrib/raw_string.hh>
 #include <pegtl/contrib/abnf.hh>
@@ -309,6 +310,39 @@ namespace syn {
 #define DefAction(rule) template<> struct Action< rule >
 #define DefApplyGeneric(type) template<typename Input> static void apply(const Input& in, type & state)
 
+	template<typename Address>
+	struct LabelTracker {
+		using LabelMap = std::map<std::string, Address>;
+		using LabelMapIterator = typename LabelMap::iterator;
+		using ConstLabelMapIterator = typename LabelMap::const_iterator;
+
+		LabelMapIterator labelsEnd() noexcept { return _labels.end(); }
+		LabelMapIterator labelsBegin() noexcept { return _labels.begin(); }
+		ConstLabelMapIterator labelsCBegin() const noexcept { return _labels.cbegin(); }
+		ConstLabelMapIterator labelsCEnd() const noexcept { return _labels.cend(); }
+
+		LabelMapIterator findLabel(const std::string& name) noexcept {
+			return _labels.find(name);
+		}
+
+		ConstLabelMapIterator findLabel(const std::string& name) const noexcept {
+			return _labels.find(name);
+		}
+
+		void registerLabel(const std::string& name, Address value) {
+			_labels.emplace(name, value);
+		}
+
+		LabelMap _labels;
+	};
+
+	template<typename Address>
+	struct AddressTracker {
+		void setCurrentAddress(Address address) noexcept { _currentAddress = address; }
+		void incrementCurrentAddress() noexcept { ++_currentAddress; }
+		Address getCurrentAddress() const noexcept { return _currentAddress; }
+		Address _currentAddress = 0;
+	};
 
 } // end namespace syn
 

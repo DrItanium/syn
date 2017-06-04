@@ -33,8 +33,8 @@ namespace cisc0 {
 		for (auto & op : finishedInstructions) {
 			if (op.isLabel()) {
 				auto label = op.getLabelValue();
-				auto f = labels.find(label);
-				if (f == labels.end()) {
+				auto f = findLabel(label);
+				if (f == labelsEnd()) {
 					std::stringstream stream;
 					stream << "label " << label << " does not exist!\n";
 					throw syn::Problem(stream.str());
@@ -64,8 +64,8 @@ namespace cisc0 {
 		for (auto & op: wordsToResolve) {
 			if (op.isLabel()) {
 				auto label = op.getLabel();
-				auto f = labels.find(label);
-				if (f == labels.end()) {
+				auto f = findLabel(label);
+				if (f == labelsEnd()) {
 					std::stringstream stream;
 					stream << "label " << label << " does not exist!\n";
 					throw syn::Problem(stream.str());
