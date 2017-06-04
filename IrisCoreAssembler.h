@@ -234,26 +234,32 @@ namespace iris {
 	};
 #define DefAction(rule) template<> struct Action < rule >
 #define DefApplyGeneric(type) template<typename Input> static void apply(const Input& in, type & state)
+#define DefApplyGenericEmpty(type) DefApplyGeneric(type) { }
 #define DefApply DefApplyGeneric(AssemblerState)
+#define DefApplyEmpty DefApply { }
 	using Separator = syn::AsmSeparator;
 	template<typename First, typename Second, typename Sep = Separator>
-	struct SeparatedBinaryThing : pegtl::seq<First, Sep, Second> { };
+	struct SeparatedBinaryThing : syn::TwoPartComponent<First, Second, Sep> { };
 	template<typename First, typename Second, typename Third, typename Sep = Separator>
-	struct SeparatedTrinaryThing : pegtl::seq<First, Sep, Second, Sep, Third> { };
+	struct SeparatedTrinaryThing : syn::ThreePartComponent<First, Second, Third, Sep, Sep> { };
 	using SingleLineComment = syn::SingleLineComment<';'>;
     using GeneralPurposeRegister = syn::GPR;
     using PredicateRegister = syn::PredicateRegister;
+	template<typename Input, word count>
+	void setRegisterValue(const Input& in, RegisterIndexContainer & state) {
+		state.setValue(syn::getRegister<word, count>(in.string(), syn::reportError));
+	}
 	DefAction(GeneralPurposeRegister) {
 		DefApplyGeneric(RegisterIndexContainer) {
-            state.setValue(syn::getRegister<word, ArchitectureConstants::RegisterCount>(in.string(), syn::reportError));
+			setRegisterValue<Input, ArchitectureConstants::RegisterCount>(in, state);
 		}
-        DefApply { }
+        DefApplyEmpty
 	};
 	DefAction(PredicateRegister) {
 		DefApplyGeneric(RegisterIndexContainer) {
-            state.setValue(syn::getRegister<word, ArchitectureConstants::ConditionRegisterCount>(in.string(), syn::reportError));
+			setRegisterValue<Input, ArchitectureConstants::ConditionRegisterCount>(in, state);
 		}
-		DefApply { }
+		DefApplyEmpty
 	};
 	using IndirectGPR = syn::Indirection<GeneralPurposeRegister>;
 #define DefIndirectGPR(title) \
