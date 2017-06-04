@@ -100,7 +100,7 @@ namespace iris {
 	void AssemblerState::saveToFinished() noexcept {
 		current.address = getCurrentAddress();
 		auto copy = current;
-		finishedData.emplace_back(copy);
+		addToFinishedData(copy);
 		resetCurrentData();
 	}
     raw_instruction AssemblerData::encode() {

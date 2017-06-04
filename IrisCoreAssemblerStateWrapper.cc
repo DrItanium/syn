@@ -71,7 +71,7 @@ namespace iris {
 				return result->second;
 			}
 		};
-        state.applyToFinishedData([resolveLabel](auto value, auto index) {
+        state.applyToFinishedData([resolveLabel](auto value) {
                     if (value.shouldResolveLabel()) {
                         auto result = resolveLabel(value);
                         if (value.instruction) {
@@ -90,7 +90,7 @@ namespace iris {
     void AssemblerStateWrapper::output(void* env, CLIPSValue* ret) noexcept {
         // we need to build a multifield out of the finalWords
         auto & state = *(get());
-        syn::MultifieldBuilder f(env, state.getNumberOfFinishedElements() * 3);
+        syn::MultifieldBuilder f(env, state.numberOfFinishedItems() * 3);
         auto body = [&f, env, ret](auto value, auto baseIndex) noexcept {
             auto i = (3 * baseIndex) + 1;
             f.setField(i + 0, INTEGER, EnvAddLong(env, value.instruction ? 0 : 1));
