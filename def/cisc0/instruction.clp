@@ -38,11 +38,12 @@
           (deffield Lower   0b0000000011111111 0 byte))
 
 (deffacts cisc0-compare-fields
-          (defbitfield CompareFlagImmediate 0b0010000000000000 13)
-          (defsubtypefield CompareType      0b0000011100000000 8 CompareStyle)
-          (deffield CompareDestination      0b0000000000001111 0 byte)
-          (deffield CompareSource           0b0000000011110000 4 byte)
-          (deffield CompareImmediate        0b1111111100000000 8 byte))
+          ; the first defines everything else we need to know
+          (defbitfield CompareFlagImmediate 0b0000000010000000 7)
+          (defsubtypefield CompareType      0b0000000001110000 4 CompareStyle)
+          (deffield CompareDestination      0b0000111100000000 8 byte)
+          (deffield CompareSource           0b1111000000000000 12 byte)
+          (defbitmask CompareBitmask        0b1111000000000000 12))
 
 (deffacts cisc0-arithmetic-fields
           (defbitfield ArithmeticFlagImmediate 0b0000000000010000 4)
@@ -513,6 +514,7 @@
                               Operation)
           (properties HasBitmask
                       Operation
+                      Compare
                       Move
                       Set
                       Memory
@@ -547,6 +549,7 @@
           (defencoder/decoder Bitmask Operation)
           (encoder/decoders Bitmask
                             Operation
+                            Compare
                             Move
                             Set
                             Memory

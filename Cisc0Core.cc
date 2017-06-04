@@ -172,6 +172,12 @@ namespace cisc0 {
                     gpr.swap(current.getDestinationRegister<Operation::Swap>(), current.getSourceRegister<Operation::Swap>());
                 }
                 break;
+			case Operation::Return:
+				// pop the top address off of the call stack and place it in
+				// the instruction pointer
+				getInstructionPointer() = popRegisterValue(getCallStackPointer());
+				advanceIp = false;
+				break;
             case Operation::Move:
                 registerValue(current.getDestinationRegister<Operation::Move>()) = syn::decodeBits<RegisterValue, RegisterValue>( registerValue(current.getSourceRegister<Operation::Move>()), mask(current.getBitmask<Operation::Move>()), 0);
                 break;
