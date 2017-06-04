@@ -137,12 +137,20 @@ namespace syn {
     template<typename State, typename C0, typename C1, typename Separator = AsmSeparator>
     struct StatefulTwoPartComponent : pegtl::state<State, TwoPartComponent<C0, C1, Separator>> { };
 
+
+	template<typename First, typename Second, typename Third, typename Sep0 = AsmSeparator, typename Sep1 = AsmSeparator>
+	struct ThreePartComponent : pegtl::seq<First, Sep0, Second, Sep1, Third> { };
+
+	template<typename State, typename First, typename Second, typename Third, typename Sep0 = AsmSeparator, typename Sep1 = AsmSeparator> 
+	struct StatefulThreePartComponent : pegtl::state<State, ThreePartComponent<First, Second, Third, Sep0, Sep1>> { };
+
+
     template<typename Register>
     struct OneRegister : pegtl::seq<Register> { };
     template<typename R0, typename R1, typename Separator = AsmSeparator>
     struct TwoRegister : TwoPartComponent<R0, R1, Separator> { };
     template<typename R0, typename R1, typename R2, typename Separator0 = AsmSeparator, typename Separator1 = AsmSeparator>
-    struct ThreeRegister : pegtl::seq<R0, Separator0, R1, Separator1, R2> { };
+	struct ThreeRegister : ThreePartComponent<R0, R1, R2, Separator0, Separator1> { };
 
 
     template<char delimiter, typename SymbolClass>

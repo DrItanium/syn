@@ -53,10 +53,10 @@ namespace cisc0 {
 	template<typename R> struct Action : syn::Action<R> { };
 
 	template<typename First, typename Rest, typename Sep = Separator>
-	struct SeparatedBinaryThing : pegtl::seq<First, Sep, Rest> { };
+	struct SeparatedBinaryThing : syn::TwoPartComponent<First, Rest, Sep> { };
 
 	template<typename First, typename Second, typename Third, typename Sep = Separator>
-	struct SeparatedTrinaryThing : pegtl::seq<First, Sep, Second, Sep, Third> { };
+	struct SeparatedTrinaryThing : syn::ThreePartComponent<First, Second, Third, Sep, Sep> { };
 
 	template<typename First, typename Second, typename Third, typename Fourth, typename Sep = Separator>
 	struct SeparatedQuadThing : pegtl::seq<First, Sep, Second, Sep, Third, Sep, Fourth> { };
@@ -303,7 +303,10 @@ namespace cisc0 {
 		}
 	};
 	template<typename S>
-	struct TwoArgumentOperation : SeparatedBinaryThing<DestinationRegister, S> { };
+	struct TwoArgumentOperation : SeparatedBinaryThing<
+								  DestinationRegister, 
+								  S> { };
+
 	struct TwoGPRs : TwoArgumentOperation<SourceRegister> { };
 	DefAction(TwoGPRs) {
 		DefApplyInstruction {
@@ -314,7 +317,9 @@ namespace cisc0 {
 	DefSymbol(Left, left);
 	DefSymbol(Right, right);
 
-	struct ShiftLeftOrRight : pegtl::sor<SymbolLeft, SymbolRight> { };
+	struct ShiftLeftOrRight : pegtl::sor<
+							  SymbolLeft, 
+							  SymbolRight> { };
 
 	DefAction(ShiftLeftOrRight) {
 		DefApplyInstruction {
@@ -323,21 +328,31 @@ namespace cisc0 {
 	};
 
 	template<typename Source>
-	struct ImmediateOperationArgs : SeparatedBinaryThing<UsesImmediate, TwoArgumentOperation<Source>> { };
+	struct ImmediateOperationArgs : SeparatedBinaryThing<
+									UsesImmediate, 
+									TwoArgumentOperation<Source>> { };
 	template<typename Source>
-	struct ImmediateOperationArgsWithBitmask : SeparatedTrinaryThing<UsesImmediate, BitmaskNumber, TwoArgumentOperation<Source>> { };
-
-	struct ShiftImmediateValue : pegtl::seq<Number> { };
+	struct ImmediateOperationArgsWithBitmask : SeparatedTrinaryThing<
+											   UsesImmediate, 
+											   BitmaskNumber, 
+											   TwoArgumentOperation<Source>> { };
+	struct SpecialImmediate : pegtl::seq<Number> { };
+	struct ShiftImmediateValue : SpecialImmediate { };
 	DefAction(ShiftImmediateValue) {
 		DefApplyInstruction {
 			state.setArg<1>(static_cast<byte>(state.getFullImmediate()) & 0b11111);
 		}
 	};
-	struct ShiftArgs : pegtl::sor<TwoGPRs, ImmediateOperationArgs<ShiftImmediateValue>> { };
+	struct ShiftArgs : pegtl::sor<
+					   TwoGPRs, 
+					   ImmediateOperationArgs<ShiftImmediateValue>> { };
 
-	struct ShiftOperation : SeparatedTrinaryThing<GroupShift, ShiftLeftOrRight, ShiftArgs> { };
+	struct ShiftOperation : SeparatedTrinaryThing<
+							GroupShift, 
+							ShiftLeftOrRight, 
+							ShiftArgs> { };
 
-	struct ByteCastImmediate : pegtl::seq<Number> { };
+	struct ByteCastImmediate : SpecialImmediate { };
 	DefAction(ByteCastImmediate) {
 		DefApplyInstruction {
 			state.setArg<1>(static_cast<byte>(state.getFullImmediate()));
@@ -372,13 +387,39 @@ namespace cisc0 {
 						 SubGroupCompareStyleLessThanOrEqualTo,
 						 SubGroupCompareStyleGreaterThan,
 						 SubGroupCompareStyleGreaterThanOrEqualTo> { };
-	struct CompareArgs : pegtl::sor<TwoGPRs, ImmediateOperationArgs<ByteCastImmediate>> { };
-	struct CompareOperation : SeparatedTrinaryThing<GroupCompare, CompareType, CompareArgs> { };
-	struct MoveOperation : SeparatedTrinaryThing<GroupMove, BitmaskNumber, TwoGPRs> { };
-	struct SetOperation : SeparatedQuadThing<GroupSet, BitmaskNumber, DestinationRegister, LexemeOrNumber> { };
-	struct SwapOperation : SeparatedBinaryThing<GroupSwap, TwoGPRs> { };
+	DefCompareStyleWithSymbol(MoveFromCondition, MoveFromCondition);
+	DefCompareStyleWithSymbol(MoveToCondition, MoveToCondition);
+	struct SpecialCompareType : pegtl::sor<
+								SubGroupCompareStyleMoveFromCondition, 
+								SubGroupCompareStyleMoveToCondition> { };
+	struct CompareArgs : pegtl::sor<
+						 TwoGPRs, 
+						 ImmediateOperationArgsWithBitmask<LexemeOrNumber>> { };
+	struct NormalCompareOperation : SeparatedBinaryThing<
+									CompareType, 
+									CompareArgs> { };
+	struct SpecialCompareOperation : SeparatedBinaryThing<
+									 SpecialCompareType, 
+									 DestinationRegister> { };
+	struct CompareOperation : SeparatedBinaryThing<
+							  GroupCompare, 
+							  pegtl::sor<
+										 NormalCompareOperation, 
+										 SpecialCompareOperation>> { };
+	struct MoveOperation : SeparatedTrinaryThing<
+						   GroupMove, 
+						   BitmaskNumber, 
+						   TwoGPRs> { };
+	struct SetOperation : SeparatedQuadThing<
+						  GroupSet, 
+						  BitmaskNumber, 
+						  DestinationRegister, 
+						  LexemeOrNumber> { };
+	struct SwapOperation : SeparatedBinaryThing<
+						   GroupSwap, 
+						   TwoGPRs> { };
 
-	struct Arg0ImmediateValue : pegtl::seq<Number> { };
+	struct Arg0ImmediateValue : SpecialImmediate { };
 	DefAction(Arg0ImmediateValue) {
 		DefApplyInstruction {
 			state.setArg<0>(static_cast<byte>(state.getFullImmediate()) & 0b1111);
@@ -437,11 +478,21 @@ namespace cisc0 {
 			state.markIndirect(false);
 		}
 	};
-	struct FlagDirectOrIndirect : pegtl::sor<FlagDirect, FlagIndirect> { };
-	struct LoadStoreOperation : SeparatedQuadThing<LoadStoreType, BitmaskNumber, FlagDirectOrIndirect, Arg0ImmediateValue> { };
+	struct FlagDirectOrIndirect : pegtl::sor<
+								  FlagDirect, 
+								  FlagIndirect> { };
+	struct LoadStoreOperation : SeparatedQuadThing<
+								LoadStoreType, 
+								BitmaskNumber, 
+								FlagDirectOrIndirect, 
+								Arg0ImmediateValue> { };
 
-	struct MemoryTypes : pegtl::sor<StackOperation, LoadStoreOperation> { };
-	struct MemoryInstruction : SeparatedBinaryThing<GroupMemory, MemoryTypes> { };
+	struct MemoryTypes : pegtl::sor<
+						 StackOperation, 
+						 LoadStoreOperation> { };
+	struct MemoryInstruction : SeparatedBinaryThing<
+							   GroupMemory, 
+							   MemoryTypes> { };
 
 #define DefLogicalOperation(title, str) \
 	DefSubTypeWithSymbol(title, str, LogicalOps)
@@ -503,10 +554,16 @@ namespace cisc0 {
 										 SubGroupExtendedOperationWordsBeforeFirstZero> { };
 	DefExtendedSubType(IsEven, evenp);
 	DefExtendedSubType(IsOdd, oddp);
-	struct ComplexExtendedOneArg_Operations : pegtl::sor<SubGroupExtendedOperationIsEven, SubGroupExtendedOperationIsOdd> { };
+	struct ComplexExtendedOneArg_Operations : pegtl::sor<
+											  SubGroupExtendedOperationIsEven, 
+											  SubGroupExtendedOperationIsOdd> { };
 
-	struct ComplexExtendedSubOperation_OneArg : SeparatedBinaryThing<ComplexExtendedOneArg_Operations, DestinationRegister> { };
-	struct ComplexExtendedSubOperation : pegtl::sor<ComplexExtendedSubOperation_NoArgs, ComplexExtendedSubOperation_OneArg> { };
+	struct ComplexExtendedSubOperation_OneArg : SeparatedBinaryThing<
+												ComplexExtendedOneArg_Operations, 
+												DestinationRegister> { };
+	struct ComplexExtendedSubOperation : pegtl::sor<
+										 ComplexExtendedSubOperation_NoArgs, 
+										 ComplexExtendedSubOperation_OneArg> { };
 
 
 #define DefParsingSubType(title, str) \
@@ -524,7 +581,8 @@ namespace cisc0 {
 										 SubGroupParsingOperationHex8ToRegister,
 										 SubGroupParsingOperationRegisterToHex8,
 										 SubGroupParsingOperationMemCopy> { };
-	struct ComplexParsingSubOperation : pegtl::sor<ComplexExtendedSubOperation_NoArgs> { };
+	struct ComplexParsingSubOperation : pegtl::sor<
+										ComplexExtendedSubOperation_NoArgs> { };
 
 
 #define DefComplexOperation(title, str) \
@@ -533,15 +591,23 @@ namespace cisc0 {
 	DefComplexOperation(Extended, extended);
 	DefComplexOperation(Parsing, parsing);
 
-	struct ComplexEncodingOperation : SeparatedBinaryThing<SubGroupComplexSubTypesEncoding, ComplexEncodingSubOperation> { };
-	struct ComplexExtendedOperation : SeparatedBinaryThing<SubGroupComplexSubTypesExtended, ComplexExtendedSubOperation> { };
-	struct ComplexParsingOperation : SeparatedBinaryThing<SubGroupComplexSubTypesParsing, ComplexParsingSubOperation> { };
+	struct ComplexEncodingOperation : SeparatedBinaryThing<
+									  SubGroupComplexSubTypesEncoding, 
+									  ComplexEncodingSubOperation> { };
+	struct ComplexExtendedOperation : SeparatedBinaryThing<
+									  SubGroupComplexSubTypesExtended, 
+									  ComplexExtendedSubOperation> { };
+	struct ComplexParsingOperation : SeparatedBinaryThing<
+									 SubGroupComplexSubTypesParsing, 
+									 ComplexParsingSubOperation> { };
 	struct ComplexSubOperations : pegtl::sor<
 								  ComplexEncodingOperation,
 								  ComplexExtendedOperation,
 								  ComplexParsingOperation> { };
 
-	struct ComplexOperation : SeparatedBinaryThing<GroupComplex, ComplexSubOperations> { };
+	struct ComplexOperation : SeparatedBinaryThing<
+							  GroupComplex, 
+							  ComplexSubOperations> { };
 
 	DefSymbol(Call, call);
 	DefSymbol(NoCall, nocall);
@@ -551,30 +617,36 @@ namespace cisc0 {
 	template<typename T, typename F>
 		struct ChoiceFlag : pegtl::sor<T, F> { };
 
-	struct BranchFlagCall : public syn::Indirection<SymbolCall> { };
+	struct BranchFlagCall : pegtl::seq<
+							SymbolCall> { };
 	DefAction(BranchFlagCall) {
 		DefApplyInstruction {
 			state.markCall();
 		}
 	};
 
-	struct BranchFlagNoCall : public syn::Indirection<SymbolNoCall> { };
+	struct BranchFlagNoCall : pegtl::seq<
+							  SymbolNoCall> { };
 	DefAction(BranchFlagNoCall) {
 		DefApplyInstruction {
 			state.markCall(false);
 		}
 	};
 
-	struct ChooseBranchFlagCall : ChoiceFlag<BranchFlagCall, BranchFlagNoCall> { };
+	struct ChooseBranchFlagCall : ChoiceFlag<
+								  BranchFlagCall, 
+								  BranchFlagNoCall> { };
 
-	struct BranchFlagConditional : public syn::Indirection<SymbolConditional> { };
+	struct BranchFlagConditional : pegtl::seq<
+								   SymbolConditional> { };
 	DefAction(BranchFlagConditional) {
 		DefApplyInstruction {
 			state.markConditional();
 		}
 	};
 
-	struct BranchFlagUnconditional : public syn::Indirection<SymbolUnconditional> { };
+	struct BranchFlagUnconditional : pegtl::seq<
+									 SymbolUnconditional> { };
 	DefAction(BranchFlagUnconditional) {
 		DefApplyInstruction {
 			state.markUnconditional();
