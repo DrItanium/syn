@@ -58,6 +58,9 @@ namespace cisc0 {
 	template<typename First, typename Second, typename Third, typename Sep = Separator>
 	struct SeparatedTrinaryThing : pegtl::seq<First, Sep, Second, Sep, Third> { };
 
+	template<typename First, typename Second, typename Third, typename Fourth, typename Sep = Separator>
+	struct SeparatedQuadThing : pegtl::seq<First, Sep, Second, Sep, Third, Sep, Fourth> { };
+
 	using AssemblerWord = syn::AssemblerWord<RegisterValue>;
 	struct AssemblerState {
 		cisc0::Address currentAddress = 0;
@@ -371,15 +374,7 @@ namespace cisc0 {
 	struct CompareArgs : pegtl::sor<TwoGPRs, ImmediateOperationArgs<ByteCastImmediate>> { };
 	struct CompareOperation : SeparatedTrinaryThing<GroupCompare, CompareType, CompareArgs> { };
 	struct MoveOperation : SeparatedTrinaryThing<GroupMove, BitmaskNumber, TwoGPRs> { };
-	struct SetOperation : pegtl::seq<
-						  GroupSet,
-						  Separator,
-						  BitmaskNumber,
-						  Separator,
-						  DestinationRegister,
-						  Separator,
-						  LexemeOrNumber> { };
-
+	struct SetOperation : SeparatedQuadThing<GroupSet, BitmaskNumber, DestinationRegister, LexemeOrNumber> { };
 	struct SwapOperation : SeparatedBinaryThing<GroupSwap, TwoGPRs> { };
 
 	struct Arg0ImmediateValue : pegtl::seq<Number> { };
@@ -442,14 +437,7 @@ namespace cisc0 {
 		}
 	};
 	struct FlagDirectOrIndirect : pegtl::sor<FlagDirect, FlagIndirect> { };
-	struct LoadStoreOperation : pegtl::seq<
-								LoadStoreType,
-								Separator,
-								BitmaskNumber,
-								Separator,
-								FlagDirectOrIndirect,
-								Separator,
-								Arg0ImmediateValue> { };
+	struct LoadStoreOperation : SeparatedQuadThing<LoadStoreType, BitmaskNumber, FlagDirectOrIndirect, Arg0ImmediateValue> { };
 
 	struct MemoryTypes : pegtl::sor<StackOperation, LoadStoreOperation> { };
 	struct MemoryInstruction : SeparatedBinaryThing<GroupMemory, MemoryTypes> { };
