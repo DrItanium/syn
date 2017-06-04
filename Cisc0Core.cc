@@ -339,6 +339,9 @@ namespace cisc0 {
             case ComplexSubTypes::Extended:
                 extendedOperation(std::move(inst));
                 break;
+			case ComplexSubTypes::Parsing:
+				parsingOperation(std::move(inst));
+				break;
             default:
                 throw syn::Problem("Undefined complex subtype!");
         }
@@ -398,6 +401,104 @@ namespace cisc0 {
                 throw syn::Problem("Undefined extended operation!");
         }
     }
+	static constexpr byte convertTextToHex(Word input) noexcept {
+		switch(input) {
+			case 'f':
+			case 'F':
+				return 0xF;
+			case 'e':
+			case 'E':
+				return 0xE;
+			case 'd':
+			case 'D':
+				return 0xD;
+			case 'c':
+			case 'C':
+				return 0xC;
+			case 'b':
+			case 'B':
+				return 0xB;
+			case 'a':
+			case 'A':
+				return 0xA;
+			case '9': return 9;
+			case '8': return 8;
+			case '7': return 7;
+			case '6': return 6;
+			case '5': return 5;
+			case '4': return 4;
+			case '3': return 3;
+			case '2': return 2;
+			case '1': return 1;
+			case '0':
+			default:
+				return 0x0;
+		}
+	}
+	static constexpr Word hexToText(byte input) noexcept {
+		switch(syn::decodeBits<byte, byte, 0x0F, 0>(input)) {
+			case 0x1: return static_cast<Word>('1');
+			case 0x2: return static_cast<Word>('2');
+			case 0x3: return static_cast<Word>('3');
+			case 0x4: return static_cast<Word>('4');
+			case 0x5: return static_cast<Word>('5');
+			case 0x6: return static_cast<Word>('6');
+			case 0x7: return static_cast<Word>('7');
+			case 0x8: return static_cast<Word>('8');
+			case 0x9: return static_cast<Word>('9');
+			case 0xA: return static_cast<Word>('A');
+			case 0xB: return static_cast<Word>('B');
+			case 0xC: return static_cast<Word>('C');
+			case 0xD: return static_cast<Word>('D');
+			case 0xE: return static_cast<Word>('E');
+			case 0xF: return static_cast<Word>('F');
+			case 0x0:
+			default:
+				return static_cast<Word>('0');
+		}
+	}
+	template<RegisterValue mask, RegisterValue shift>
+	static constexpr Word extractHexAndConvertToText(RegisterValue value) noexcept {
+		return hexToText(syn::decodeBits<RegisterValue, byte, mask, shift>(value));
+	}
+	void Core::parsingOperation(DecodedInstruction&& inst) {
+		auto hex8ToRegister = [this, &inst]() {
+			// 1) use the address contained in address to read the next 8 words
+			// 2) Parse each word as an ascii character and convert it into a 4 bit quantity
+			// 3) Place that 4bit quantity into the appropriate position in value
+			auto addr = getAddressRegister();
+			auto value = syn::encodeBits<RegisterValue, byte, 0x0000000F, 0>(0, convertTextToHex(loadWord(addr)));
+			value = syn::encodeBits<RegisterValue, byte, 0x000000F0, 4>(value, convertTextToHex(loadWord(addr + 1)));
+			value = syn::encodeBits<RegisterValue, byte, 0x00000F00, 8>(value, convertTextToHex(loadWord(addr + 2)));
+			value = syn::encodeBits<RegisterValue, byte, 0x0000F000, 12>(value, convertTextToHex(loadWord(addr + 3)));
+			value = syn::encodeBits<RegisterValue, byte, 0x000F0000, 16>(value, convertTextToHex(loadWord(addr + 4)));
+			value = syn::encodeBits<RegisterValue, byte, 0x00F00000, 20>(value, convertTextToHex(loadWord(addr + 5)));
+			value = syn::encodeBits<RegisterValue, byte, 0x0F000000, 24>(value, convertTextToHex(loadWord(addr + 6)));
+			getValueRegister() = syn::encodeBits<RegisterValue, byte, 0xF0000000, 28>(value, convertTextToHex(loadWord(addr + 7)));
+		};
+		auto registerToHex8 = [this, &inst]() {
+			auto addr = getAddressRegister();
+			auto value = getValueRegister();
+			storeWord(addr + 0, extractHexAndConvertToText<0x0000000F, 0>(value));
+			storeWord(addr + 1, extractHexAndConvertToText<0x000000F0, 4>(value));
+			storeWord(addr + 2, extractHexAndConvertToText<0x00000F00, 8>(value));
+			storeWord(addr + 3, extractHexAndConvertToText<0x0000F000, 12>(value));
+			storeWord(addr + 4, extractHexAndConvertToText<0x000F0000, 16>(value));
+			storeWord(addr + 5, extractHexAndConvertToText<0x00F00000, 20>(value));
+			storeWord(addr + 6, extractHexAndConvertToText<0x0F000000, 24>(value));
+			storeWord(addr + 7, extractHexAndConvertToText<0xF0000000, 28>(value));
+		};
+		switch(inst.getParsingOperation()) {
+			case ParsingOperation::Hex8ToRegister:
+				hex8ToRegister();
+				break;
+			case ParsingOperation::RegisterToHex8:
+				registerToHex8();
+				break;
+			default:
+				throw syn::Problem("Illegal parsing operation!");
+		}
+	}
 
     void Core::arithmeticOperation(DecodedInstruction&& inst) {
         static constexpr auto group = Operation::Arithmetic;

@@ -185,6 +185,11 @@ namespace cisc0 {
 		value = setSubType<op>(value, _bitmask);
 		return std::make_tuple(1, value, 0, 0);
 	}
+	InstructionEncoder::Encoding InstructionEncoder::encodeComplexParsing(Word value) const {
+		constexpr auto op = ComplexSubTypes::Parsing;
+		value = setSubType<op>(value, _bitmask);
+		return std::make_tuple(1, value, 0, 0);
+	}
 	InstructionEncoder::Encoding InstructionEncoder::encodeComplexExtended(Word value) const {
 		constexpr auto op = ComplexSubTypes::Extended;
 		value = setSubType<op>(value, _bitmask);

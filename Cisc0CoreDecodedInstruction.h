@@ -67,6 +67,7 @@ namespace cisc0 {
 			}
             inline EncodingOperation getEncodingOperation() const noexcept { return getComplexSubType<ComplexSubTypes::Encoding>(); }
             inline ExtendedOperation getExtendedOperation() const noexcept { return getComplexSubType<ComplexSubTypes::Extended>(); }
+			inline ParsingOperation getParsingOperation() const noexcept { return getComplexSubType<ComplexSubTypes::Parsing>(); }
 
 			template<Operation op>
 			inline byte getSourceRegister() const noexcept {

@@ -98,6 +98,7 @@ namespace cisc0 {
 			void complexOperation(DecodedInstruction&& inst);
 			void encodingOperation(DecodedInstruction&& inst);
             void extendedOperation(DecodedInstruction&& inst);
+			void parsingOperation(DecodedInstruction&& inst);
 			void performEncodeOp(DecodedInstruction&& inst);
         private:
             void compareOperation(DecodedInstruction&& inst);

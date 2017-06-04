@@ -131,6 +131,7 @@ namespace cisc0 {
             Encoding encodeComplex() const;
 			Encoding encodeComplexExtended(Word input) const;
 			Encoding encodeComplexEncoding(Word input) const;
+			Encoding encodeComplexParsing(Word input) const;
 		private:
 			int _currentLine;
 			RegisterValue _address;
