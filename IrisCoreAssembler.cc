@@ -59,12 +59,11 @@ namespace iris {
 		fullImmediate = false;
 	}
 
-
 	void AssemblerState::setCurrentAddress(word value) noexcept {
 		if (inData) {
-			currentDataIndex = value;
+			data.setCurrentAddress(value);
 		} else {
-			currentCodeIndex = value;
+			code.setCurrentAddress(value);
 		}
 	}
 	void AssemblerState::setImmediate(word value) noexcept {
@@ -86,16 +85,16 @@ namespace iris {
 	}
 
 	void AssemblerState::registerLabel(const std::string& value) noexcept {
-		labelMap.emplace(value, getCurrentAddress());
+		LabelTracker::registerLabel(value, getCurrentAddress());
 	}
 	word AssemblerState::getCurrentAddress() noexcept {
-		return inData ? currentDataIndex : currentCodeIndex;
+		return inData ? data.getCurrentAddress() : code.getCurrentAddress();
 	}
 	void AssemblerState::incrementCurrentAddress() noexcept {
 		if (inData) {
-			++currentDataIndex;
+			data.incrementCurrentAddress();
 		} else {
-			++currentCodeIndex;
+			code.incrementCurrentAddress();
 		}
 	}
 	void AssemblerState::saveToFinished() noexcept {

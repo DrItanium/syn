@@ -70,6 +70,7 @@ namespace iris {
 
 	class AssemblerState : public syn::LabelTracker<word> {
 		public:
+			using LabelTracker = syn::LabelTracker<word>;
 			AssemblerState() : inData(false), temporaryWord(0), temporaryByte(0) { }
 			void resetCurrentData() noexcept;
 			void setImmediate(word value) noexcept;
