@@ -236,6 +236,10 @@ namespace iris {
 #define DefApplyGeneric(type) template<typename Input> static void apply(const Input& in, type & state)
 #define DefApply DefApplyGeneric(AssemblerState)
 	using Separator = syn::AsmSeparator;
+	template<typename First, typename Second, typename Sep = Separator>
+	struct SeparatedBinaryThing : pegtl::seq<First, Sep, Second> { };
+	template<typename First, typename Second, typename Third, typename Sep = Separator>
+	struct SeparatedTrinaryThing : pegtl::seq<First, Sep, Second, Sep, Third> { };
 	using SingleLineComment = syn::SingleLineComment<';'>;
     using GeneralPurposeRegister = syn::GPR;
     using PredicateRegister = syn::PredicateRegister;
@@ -254,27 +258,19 @@ namespace iris {
 	using IndirectGPR = syn::Indirection<GeneralPurposeRegister>;
 #define DefIndirectGPR(title) \
 	struct title : IndirectGPR { }
+#define DefRegisterIndexContainerAction(title, theType) \
+	DefAction( title ) { \
+		DefApply { } \
+		DefApplyGeneric(RegisterIndexContainer) { \
+			state._index = RegisterIndexContainer :: Type :: theType ; \
+		} \
+	}
 	DefIndirectGPR(DestinationGPR);
-	DefAction(DestinationGPR) {
-		DefApplyGeneric(RegisterIndexContainer) {
-            state._index = RegisterIndexContainer::Type::DestinationGPR;
-		}
-        DefApply { }
-	};
+	DefRegisterIndexContainerAction(DestinationGPR, DestinationGPR);
 	DefIndirectGPR(Source0GPR);
-	DefAction(Source0GPR) {
-		DefApplyGeneric(RegisterIndexContainer) {
-            state._index = RegisterIndexContainer::Type::Source0GPR;
-		}
-        DefApply { }
-	};
+	DefRegisterIndexContainerAction(Source0GPR, Source0GPR);
     DefIndirectGPR(Source1GPR);
-	DefAction(Source1GPR) {
-		DefApplyGeneric(RegisterIndexContainer) {
-            state._index = RegisterIndexContainer::Type::Source1GPR;
-		}
-        DefApply { }
-	};
+	DefRegisterIndexContainerAction(Source1GPR, Source1GPR);
     template<typename T>
     using StatefulRegister = pegtl::state<RegisterIndexContainer, T>;
     using StatefulDestinationGPR = StatefulRegister<DestinationGPR>;
@@ -285,55 +281,39 @@ namespace iris {
 	struct ThreeGPR : syn::TwoRegister<StatefulDestinationGPR, SourceRegisters> { };
     using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
     struct DestinationPredicateRegister : IndirectPredicateRegister { };
-	DefAction(DestinationPredicateRegister) {
-        DefApplyGeneric(RegisterIndexContainer) {
-            state._index = RegisterIndexContainer::Type::PredicateDestination;
-        }
-		DefApply { }
-	};
+	DefRegisterIndexContainerAction(DestinationPredicateRegister, PredicateDestination);
     struct DestinationPredicateInverseRegister : IndirectPredicateRegister { };
-	DefAction(DestinationPredicateInverseRegister) {
-        DefApplyGeneric(RegisterIndexContainer) {
-            state._index = RegisterIndexContainer::Type::PredicateInverseDestination;
-        }
-		DefApply { }
-	};
+	DefRegisterIndexContainerAction(DestinationPredicateInverseRegister, PredicateInverseDestination);
 	struct DestinationPredicates : syn::TwoRegister<StatefulRegister<DestinationPredicateRegister>, StatefulRegister<DestinationPredicateInverseRegister>> { };
 
 	struct Source0Predicate : IndirectPredicateRegister { };
-	DefAction(Source0Predicate) {
-        DefApplyGeneric(RegisterIndexContainer) {
-            state._index = RegisterIndexContainer::Type::PredicateSource0;
-        }
-		DefApply { }
-	};
+	DefRegisterIndexContainerAction(Source0Predicate, PredicateSource0);
 	struct Source1Predicate : IndirectPredicateRegister { };
-	DefAction(Source1Predicate) {
-        DefApplyGeneric(RegisterIndexContainer) {
-            state._index = RegisterIndexContainer::Type::PredicateSource1;
-        }
-		DefApply { }
-	};
+	DefRegisterIndexContainerAction(Source1Predicate, PredicateSource1);
 
+	template<syn::KnownNumberTypes v, typename Input>
+	static void populateContainer(const Input& in, ImmediateContainer& parent) {
+		syn::populateContainer<word, v>(in.string(), parent);
+	}
 	using HexadecimalNumber = syn::HexadecimalNumber;
 	DefAction(HexadecimalNumber) {
 		template<typename Input>
 		static void apply(const Input& in, ImmediateContainer& parent) {
-			syn::populateContainer<word, syn::KnownNumberTypes::Hexadecimal>(in.string(), parent);
+			populateContainer<syn::KnownNumberTypes::Hexadecimal, Input>(in, parent);
 		}
 	};
 	using BinaryNumber = syn::BinaryNumber;
 	DefAction(BinaryNumber) {
 		template<typename Input>
 		static void apply(const Input& in, ImmediateContainer& parent) {
-			syn::populateContainer<word, syn::KnownNumberTypes::Binary>(in.string(), parent);
+			populateContainer<syn::KnownNumberTypes::Binary, Input>(in, parent);
 		}
 	};
 	using DecimalNumber = syn::Base10Number;
 	DefAction(DecimalNumber) {
 		template<typename Input>
 		static void apply(const Input& in, ImmediateContainer& parent) {
-			syn::populateContainer<word, syn::KnownNumberTypes::Decimal>(in.string(), parent);
+			populateContainer<syn::KnownNumberTypes::Decimal, Input>(in, parent);
 		}
 	};
     struct Number : pegtl::state<ImmediateContainer, pegtl::sor<HexadecimalNumber, DecimalNumber, BinaryNumber>> { };
@@ -461,7 +441,7 @@ namespace iris {
     DefOperationSameTitle(ShiftLeftImmediate, shift.left.imm);
     DefOperationSameTitle(ShiftRightImmediate, shift.right.imm);
     struct OperationArithmeticTwoGPRHalfImmediate : pegtl::sor< SymbolAddImmediate, SymbolSubImmediate, SymbolMulImmediate, SymbolDivImmediate, SymbolRemImmediate, SymbolShiftLeftImmediate, SymbolShiftRightImmediate> { };
-    struct ArithmeticTwoGPRHalfImmediateInstruction : pegtl::seq<OperationArithmeticTwoGPRHalfImmediate, Separator, TwoGPR, Separator, HalfImmediate> { };
+    struct ArithmeticTwoGPRHalfImmediateInstruction : SeparatedTrinaryThing<OperationArithmeticTwoGPRHalfImmediate, TwoGPR, HalfImmediate> { };
     struct ArithmeticInstruction : pegtl::sor<ArithmeticTwoGPRHalfImmediateInstruction, ArithmeticTwoGPRInstruction, ArithmeticThreeGPRInstruction> { };
 
 #define DefGroupSet(rule, group) DefAction( rule ) { DefApply { state.setGroup(InstructionGroup:: group ); } }
@@ -492,7 +472,8 @@ namespace iris {
     DefOperation(LoadIOWithOffset, load.with.offset, IOReadWithOffset);
     DefOperation(StoreIOWithOffset, store.with.offset, IOWriteWithOffset);
     struct OperationMoveTwoGPRHalfImmediate : pegtl::sor<SymbolLoadWithOffset, SymbolStoreWithOffset, SymbolLoadIOWithOffset, SymbolStoreIOWithOffset> { };
-    struct MoveTwoGPRHalfImmediateInstruction : pegtl::seq<OperationMoveTwoGPRHalfImmediate, Separator, TwoGPR, Separator, HalfImmediate> { };
+
+    struct MoveTwoGPRHalfImmediateInstruction : SeparatedTrinaryThing<OperationMoveTwoGPRHalfImmediate, TwoGPR, HalfImmediate> { };
 
     DefOperationSameTitle(LoadCode, load.code);
     DefOperationSameTitle(StoreCode, store.code);
@@ -505,7 +486,7 @@ namespace iris {
     DefOperationSameTitle(StoreImmediate, store.imm);
     struct OperationMoveGPRImmediate : pegtl::sor<SymbolStoreImmediate, SymbolLoadImmediate, SymbolSet, SymbolPushImmediate> { };
 
-    struct MoveGPRImmediateInstruction : pegtl::seq<OperationMoveGPRImmediate, Separator, StatefulDestinationGPR, Separator, Immediate> { };
+    struct MoveGPRImmediateInstruction : SeparatedTrinaryThing<OperationMoveGPRImmediate, StatefulDestinationGPR, Immediate> { };
 
     struct MoveInstruction : pegtl::sor<MoveGPRImmediateInstruction, MoveThreeGPRInstruction, MoveTwoGPRHalfImmediateInstruction, MoveTwoGPRInstruction, MoveOneGPRInstruction> { };
 	DefGroupSet(MoveInstruction, Move);
@@ -513,7 +494,7 @@ namespace iris {
 #define CURRENT_TYPE JumpOp
     // branch
 	template<typename Op, typename S>
-	struct BranchUnconditional : pegtl::seq<Op, Separator, S> { };
+	struct BranchUnconditional : SeparatedBinaryThing<Op, S> { };
     DefOperationSameTitle(BranchUnconditional, branch);
     DefOperationSameTitle(BranchUnconditionalLink, branch.link);
     struct OperationBranchOneGPR : pegtl::sor<SymbolBranchUnconditionalLink, SymbolBranchUnconditional> { };
@@ -525,7 +506,7 @@ namespace iris {
 
 	struct GroupBranchUnconditional : pegtl::sor<BranchOneGPRInstruction, BranchImmediateInstruction> { };
     template<typename Op, typename S>
-    struct BranchConditional : pegtl::seq<Op, Separator, DestinationPredicateRegister, Separator, S> { };
+    struct BranchConditional : SeparatedTrinaryThing<Op, DestinationPredicateRegister, S> { };
     DefOperationSameTitle(BranchConditional, branch.cond);
     DefOperationSameTitle(BranchConditionalLink, branch.cond.link);
     struct OperationBranchConditionalGPR : pegtl::sor<
@@ -553,7 +534,7 @@ namespace iris {
                                              SymbolBranchConditionalLR,
                                              SymbolBranchConditionalLRAndLink
                                              > { };
-    struct BranchConditionalNoArgsInstruction : pegtl::seq<OperationBranchConditionalNoArgs, Separator, DestinationPredicateRegister> { };
+    struct BranchConditionalNoArgsInstruction : SeparatedBinaryThing<OperationBranchConditionalNoArgs, DestinationPredicateRegister> { };
     DefOperationSameTitle(BranchUnconditionalLR, branch.lr);
     DefOperationSameTitle(BranchUnconditionalLRAndLink, branch.lr.link);
 	DefOperation(BranchReturnFromError, return.from.error, ReturnFromError);
