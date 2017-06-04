@@ -175,8 +175,6 @@ namespace cisc0 {
 			}
 	};
 
-#define DefAction(rule) template<> struct Action < rule >
-#define DefApplyGeneric(type) template<typename Input> static void apply(const Input& in, type& state)
 #define DefApplyInstruction DefApplyGeneric(cisc0::AssemblerInstruction)
 #define DefApplyAsmState DefApplyGeneric(cisc0::AssemblerState)
 

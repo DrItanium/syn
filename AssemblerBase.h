@@ -156,13 +156,12 @@ namespace syn {
     template<char delimiter, typename SymbolClass>
     struct GenericNumeral : pegtl::if_must<pegtl::istring<'0', delimiter>, pegtl::plus<SymbolClass>> { };
 
-	template<char delim>
+	template<char delim = 'x'>
 	struct Base16Number : GenericNumeral<delim, pegtl::xdigit> { };
-
-
-	template<char delim>
-	struct Base2Number : GenericNumeral<delim, pegtl::abnf::BIT> { };
 	using HexadecimalNumber = Base16Number<'x'>;
+
+	template<char delim = 'b'>
+	struct Base2Number : GenericNumeral<delim, pegtl::abnf::BIT> { };
 	using BinaryNumber = Base2Number<'b'>;
 
 
@@ -307,6 +306,8 @@ namespace syn {
 		}
 	}
 
+#define DefAction(rule) template<> struct Action< rule >
+#define DefApplyGeneric(type) template<typename Input> static void apply(const Input& in, type & state)
 
 
 } // end namespace syn

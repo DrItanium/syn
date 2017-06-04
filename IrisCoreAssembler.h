@@ -232,8 +232,6 @@ namespace iris {
 			}
 		Type _index;
 	};
-#define DefAction(rule) template<> struct Action < rule >
-#define DefApplyGeneric(type) template<typename Input> static void apply(const Input& in, type & state)
 #define DefApplyGenericEmpty(type) DefApplyGeneric(type) { }
 #define DefApply DefApplyGeneric(AssemblerState)
 #define DefApplyEmpty DefApply { }
