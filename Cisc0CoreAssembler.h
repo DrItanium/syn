@@ -62,12 +62,10 @@ namespace cisc0 {
 	struct SeparatedQuadThing : pegtl::seq<First, Sep, Second, Sep, Third, Sep, Fourth> { };
 
 	using AssemblerWord = syn::AssemblerWord<RegisterValue>;
-	struct AssemblerState : syn::LabelTracker<RegisterValue> {
-		cisc0::Address currentAddress = 0;
+	struct AssemblerState : public syn::LabelTracker<RegisterValue>, public syn::AddressTracker<RegisterValue> {
 		std::vector<InstructionEncoder> finishedInstructions;
 		std::vector<AssemblerWord> finalWords;
 		std::vector<AssemblerWord> wordsToResolve;
-		void setCurrentAddress(Address addr) noexcept;
         void output(void* env, CLIPSValue* ret) noexcept;
 		void resolveInstructions();
 		void resolveDeclarations();
@@ -81,11 +79,11 @@ namespace cisc0 {
 			template<typename Input>
 				void success(const Input& in, AssemblerState& parent) {
 					if (_isLabel) {
-						parent.wordsToResolve.emplace_back(parent.currentAddress, _label, width);
+						parent.wordsToResolve.emplace_back(parent.getCurrentAddress(), _label, width);
 					} else {
-						parent.wordsToResolve.emplace_back(parent.currentAddress, _value, width);
+						parent.wordsToResolve.emplace_back(parent.getCurrentAddress(), _value, width);
 					}
-					parent.currentAddress += width;
+					parent.incrementCurrentAddress(width);
 				}
 			void setLabel(const std::string& name) noexcept {
 				_label = name;
@@ -107,14 +105,14 @@ namespace cisc0 {
 
 		template<typename Input>
 			void success(const Input& in, AssemblerState& parent) {
-				parent.currentAddress = getValue();
+				parent.setCurrentAddress(getValue());
 			}
 	};
 	struct RegisterLabel : public syn::NameToAddressMapping<Address> {
 		using Parent = syn::NameToAddressMapping<Address>;
 		template<typename Input>
 			RegisterLabel(const Input& in, AssemblerState& parent) : Parent(in, parent) {
-				setValue(parent.currentAddress);
+				setValue(parent.getCurrentAddress());
 			}
 
 		template<typename Input>
@@ -126,12 +124,12 @@ namespace cisc0 {
 		template<typename Input>
 			AssemblerInstruction(const Input& in, AssemblerState& parent) {
 				clear();
-				setAddress(parent.currentAddress);
+				setAddress(parent.getCurrentAddress());
 			}
 
 		template<typename Input>
 			void success(const Input& in, AssemblerState& parent) {
-				parent.currentAddress += numWords();
+				parent.incrementCurrentAddress(numWords());
 				// for now, make a copy because I do not care!
 				parent.finishedInstructions.push_back(*this);
 			}

@@ -62,7 +62,7 @@ namespace iris {
         auto & state = *(get());
 		auto resolveLabel = [&state](AssemblerData& data) {
 			auto result = state.findLabel(data.currentLexeme);
-			if (result == state.endLabel()) {
+			if (result == state.labelsEnd()) {
 				std::stringstream msg;
 				msg << "ERROR: label " << data.currentLexeme << " is undefined!" << std::endl;
 				auto str = msg.str();

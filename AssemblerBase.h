@@ -311,37 +311,46 @@ namespace syn {
 #define DefApplyGeneric(type) template<typename Input> static void apply(const Input& in, type & state)
 
 	template<typename Address>
-	struct LabelTracker {
-		using LabelMap = std::map<std::string, Address>;
-		using LabelMapIterator = typename LabelMap::iterator;
-		using ConstLabelMapIterator = typename LabelMap::const_iterator;
+	class LabelTracker {
+		public:
+			using LabelMap = std::map<std::string, Address>;
+			using LabelMapIterator = typename LabelMap::iterator;
+			using ConstLabelMapIterator = typename LabelMap::const_iterator;
+		public:
+			LabelTracker() { }
+			virtual ~LabelTracker() { }
+			LabelMapIterator labelsEnd() noexcept { return _labels.end(); }
+			LabelMapIterator labelsBegin() noexcept { return _labels.begin(); }
+			ConstLabelMapIterator labelsCBegin() const noexcept { return _labels.cbegin(); }
+			ConstLabelMapIterator labelsCEnd() const noexcept { return _labels.cend(); }
 
-		LabelMapIterator labelsEnd() noexcept { return _labels.end(); }
-		LabelMapIterator labelsBegin() noexcept { return _labels.begin(); }
-		ConstLabelMapIterator labelsCBegin() const noexcept { return _labels.cbegin(); }
-		ConstLabelMapIterator labelsCEnd() const noexcept { return _labels.cend(); }
+			LabelMapIterator findLabel(const std::string& name) noexcept {
+				return _labels.find(name);
+			}
 
-		LabelMapIterator findLabel(const std::string& name) noexcept {
-			return _labels.find(name);
-		}
+			ConstLabelMapIterator findLabel(const std::string& name) const noexcept {
+				return _labels.find(name);
+			}
 
-		ConstLabelMapIterator findLabel(const std::string& name) const noexcept {
-			return _labels.find(name);
-		}
-
-		void registerLabel(const std::string& name, Address value) {
-			_labels.emplace(name, value);
-		}
-
-		LabelMap _labels;
+			void registerLabel(const std::string& name, Address value) {
+				_labels.emplace(name, value);
+			}
+		protected:
+			LabelMap _labels;
 	};
 
 	template<typename Address>
-	struct AddressTracker {
-		void setCurrentAddress(Address address) noexcept { _currentAddress = address; }
-		void incrementCurrentAddress() noexcept { ++_currentAddress; }
-		Address getCurrentAddress() const noexcept { return _currentAddress; }
-		Address _currentAddress = 0;
+	class AddressTracker {
+		public:
+			AddressTracker(Address initialVal) noexcept : _currentAddress(initialVal) { }
+			AddressTracker() noexcept : _currentAddress(0) { }
+			virtual ~AddressTracker() { _currentAddress = 0; }
+			void setCurrentAddress(Address address) noexcept { _currentAddress = address; }
+			void incrementCurrentAddress() noexcept { ++_currentAddress; }
+			void incrementCurrentAddress(Address val) noexcept { _currentAddress += val; }
+			Address getCurrentAddress() const noexcept { return _currentAddress; }
+		protected:
+			Address _currentAddress = 0;
 	};
 
 } // end namespace syn

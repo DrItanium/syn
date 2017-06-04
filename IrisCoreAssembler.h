@@ -68,13 +68,9 @@ namespace iris {
         dword encode();
 	};
 
-	class AssemblerState {
+	class AssemblerState : public syn::LabelTracker<word> {
 		public:
-			using LabelMap = std::map<std::string, word>;
-			using LabelIterator = LabelMap::iterator;
-			using ConstLabelIterator = LabelMap::const_iterator;
-		public:
-			AssemblerState() : currentDataIndex(0), currentCodeIndex(0), inData(false), temporaryWord(0), temporaryByte(0) { }
+			AssemblerState() : inData(false), temporaryWord(0), temporaryByte(0) { }
 			void resetCurrentData() noexcept;
 			void setImmediate(word value) noexcept;
 			void setHalfImmediate(byte value) noexcept;
@@ -140,10 +136,6 @@ namespace iris {
 			void markHasFullImmediate() noexcept { current.fullImmediate = true; }
 			void markNotFullImmediate() noexcept { current.fullImmediate = false; }
 			std::string getCurrentLexeme() const noexcept { return current.currentLexeme; }
-			LabelIterator findLabel(const std::string& k) { return labelMap.find(k); }
-			ConstLabelIterator findLabel(const std::string& k) const { return labelMap.find(k); }
-			LabelIterator endLabel() { return labelMap.end(); }
-			ConstLabelIterator endLabel() const { return labelMap.end(); }
 			void applyToFinishedData(std::function<void(AssemblerData&)> fn) {
                 applyToFinishedData([fn](AssemblerData& value, size_t _) { fn(value); });
 			}
@@ -158,13 +150,13 @@ namespace iris {
                 return finishedData.size();
             }
 		private:
-			word currentDataIndex;
-			word currentCodeIndex;
+			using AddressSpaceTracker = syn::AddressTracker<word>;
+			AddressSpaceTracker data;
+			AddressSpaceTracker code;
 			bool inData;
 			word temporaryWord;
 			byte temporaryByte;
 			AssemblerData current;
-			LabelMap labelMap;
 			std::vector<AssemblerData> finishedData;
 	};
 	struct ImmediateContainer : syn::NumberContainer<word> {
