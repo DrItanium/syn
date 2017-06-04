@@ -130,7 +130,7 @@ namespace syn {
 	struct AsmSeparator : pegtl::plus<pegtl::ascii::space> { };
 
     template<typename Rule>
-    struct Indirection : pegtl::seq<Rule> { };
+    struct SingleEntrySequence : pegtl::seq<Rule> { };
 
     template<typename C0, typename C1, typename Separator = AsmSeparator>
     struct TwoPartComponent : pegtl::seq<C0, Separator, C1> { };
@@ -187,6 +187,11 @@ namespace syn {
     struct MainFileParser :  MainParser<pegtl::eof, Entry> { };
 
 
+	template<typename S, typename ... NumberTypes>
+	struct StatefulNumber : pegtl::state<S, pegtl::sor<NumberTypes...>> { };
+
+	template<typename S>
+	struct StatefulNumberAll : StatefulNumber<S, HexadecimalNumber, Base10Number, BinaryNumber> { };
 	/**
 	 * Used to store the final numeric representation of a system word,
 	 * instructions are a multiple of the system word so this class makes it
@@ -250,11 +255,18 @@ namespace syn {
     DefSymbol(DivKeyword, div);
     DefSymbol(RemKeyword, rem);
 
+
     template<typename Symbol, typename Value, typename Separator = AsmSeparator>
     struct OneArgumentDirective : TwoPartComponent<Symbol, Value, Separator> { };
 
     template<typename State, typename Symbol, typename Value, typename Separator = AsmSeparator>
     struct StatefulOneArgumentDirective : StatefulTwoPartComponent<State, Symbol, Value, Separator> { };
+
+	template<typename State, typename Data>
+	struct WordDirective : syn::StatefulOneArgumentDirective<State, SymbolWordDirective, Data> { };
+
+	template<typename State, typename Data>
+	struct DwordDirective : syn::StatefulOneArgumentDirective<State, SymbolDwordDirective, Data> { };
 
     template<typename State, typename Number, typename Separator = AsmSeparator>
     struct StatefulOrgDirective : StatefulOneArgumentDirective<State, SymbolOrgDirective, Number, Separator> { };
@@ -263,7 +275,7 @@ namespace syn {
     struct StatefulLabelDirective : StatefulOneArgumentDirective<State, SymbolLabelDirective, Lexeme, Separator> { };
 
     template<typename State, typename C>
-    struct StatefulIndirection : pegtl::state<State, Indirection<C>> { };
+    struct StatefulSingleEntrySequence : pegtl::state<State, SingleEntrySequence<C>> { };
 
 
 	template<typename R>
@@ -309,6 +321,7 @@ namespace syn {
 
 #define DefAction(rule) template<> struct Action< rule >
 #define DefApplyGeneric(type) template<typename Input> static void apply(const Input& in, type & state)
+#define DefApplyGenericEmpty(type) DefApplyGeneric(type) { }
 
 	template<typename Address>
 	class LabelTracker {

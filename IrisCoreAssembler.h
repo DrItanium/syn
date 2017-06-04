@@ -238,7 +238,7 @@ namespace iris {
 		}
 		DefApplyEmpty
 	};
-	using IndirectGPR = syn::Indirection<GeneralPurposeRegister>;
+	struct IndirectGPR : syn::SingleEntrySequence<GeneralPurposeRegister> { };
 #define DefIndirectGPR(title) \
 	struct title : IndirectGPR { }
 #define DefRegisterIndexContainerAction(title, theType) \
@@ -262,7 +262,7 @@ namespace iris {
 	struct OneGPR : syn::OneRegister<StatefulDestinationGPR> { };
     struct TwoGPR : syn::TwoRegister<StatefulDestinationGPR, StatefulRegister<Source0GPR>> { };
 	struct ThreeGPR : syn::TwoRegister<StatefulDestinationGPR, SourceRegisters> { };
-    using IndirectPredicateRegister = syn::Indirection<PredicateRegister>;
+    using IndirectPredicateRegister = syn::SingleEntrySequence<PredicateRegister>;
     struct DestinationPredicateRegister : IndirectPredicateRegister { };
 	DefRegisterIndexContainerAction(DestinationPredicateRegister, PredicateDestination);
     struct DestinationPredicateInverseRegister : IndirectPredicateRegister { };
@@ -333,8 +333,10 @@ namespace iris {
 #define DefOperationSameTitle(title, str) DefOperation(title, str, title)
     DefSymbol(DataDirective, .data);
     DefSymbol(CodeDirective, .code);
-    struct CodeDirective : syn::StatefulIndirection<ModifySection<true>, SymbolCodeDirective> { };
-    struct DataDirective : syn::StatefulIndirection<ModifySection<false>, SymbolDataDirective> { };
+	template<bool modSection, typename Directive>
+	struct StatefulSpaceDirective : syn::StatefulSingleEntrySequence<ModifySection<modSection>, Directive> { };
+	struct CodeDirective : StatefulSpaceDirective<true, SymbolCodeDirective> { };
+	struct DataDirective : StatefulSpaceDirective<false, SymbolDataDirective> { };
 
     struct OrgDirective : syn::OneArgumentDirective<syn::SymbolOrgDirective, Number> { };
 	DefAction(OrgDirective) { DefApply { state.setCurrentAddress(state.getTemporaryWord()); } };

@@ -176,7 +176,7 @@ namespace cisc0 {
 
 #define DefGroup(title, str) \
 	DefSymbol(title, str); \
-	struct Group ## title : syn::Indirection<Symbol ## title> { }; \
+	struct Group ## title : syn::SingleEntrySequence<Symbol ## title> { }; \
 	DefAction(Group ## title) { \
 		DefApplyInstruction { \
 			state.setType < Operation:: title > (); \
@@ -195,11 +195,7 @@ namespace cisc0 {
 	DefGroup(Branch, branch);
 	DefGroup(Return, return);
 
-	//DefSymbol(Nop, nop);
-	//DefSymbol(Return, return);
 	DefSymbol(Immediate, immediate);
-
-
 
 	struct UsesImmediate : pegtl::seq<SymbolImmediate> { };
 
@@ -213,14 +209,14 @@ namespace cisc0 {
 	DefAction(syn::BinaryNumber) { DefApplyGeneric(NumberContainer) { syn::populateContainer<RegisterValue, syn::KnownNumberTypes::Binary>(in.string(), state); } };
 	using DecimalNumber = syn::Base10Number;
 	DefAction(DecimalNumber) { DefApplyGeneric(NumberContainer) { syn::populateContainer<RegisterValue, syn::KnownNumberTypes::Decimal>(in.string(), state); } };
-	struct Number : public pegtl::state<NumberContainer, pegtl::sor<syn::HexadecimalNumber, DecimalNumber, syn::BinaryNumber > > { };
+	struct Number : syn::StatefulNumberAll<NumberContainer> { };
 	DefAction(Number) {
 		DefApplyInstruction {
 			state.markAsNotLabel();
 		}
-		DefApplyGeneric(ChangeCurrentAddress) { }
-		DefApplyGeneric(WordCreator) { }
-		DefApplyGeneric(DwordCreator) { }
+		DefApplyGenericEmpty(ChangeCurrentAddress)
+		DefApplyGenericEmpty(WordCreator)
+		DefApplyGenericEmpty(DwordCreator)
 	};
 
 	struct BitmaskNumber : syn::GenericNumeral<'m', pegtl::abnf::BIT> { };
@@ -251,30 +247,30 @@ namespace cisc0 {
 			applyToWordCreator<Input, 2>(in, state);
 		}
 	};
-	struct LexemeOrNumber : public syn::LexemeOr<Number> { };
+	struct LexemeOrNumber : syn::LexemeOr<Number> { };
 
     using NormalRegister = syn::GPR;
 	DefSymbol(AddrRegister, addr);
 	DefSymbol(StackPointer, sp);
 	DefSymbol(InstructionPointer, ip);
-	DefSymbol(ConditionRegister, cr);
 	DefSymbol(ValueRegister, value);
 	DefSymbol(MaskRegister, mask);
 	DefSymbol(FieldRegister, field);
+	DefSymbol(CallStackPointer, csp);
 	struct GeneralPurposeRegister : pegtl::sor<
 									NormalRegister,
 									SymbolAddrRegister,
 									SymbolStackPointer,
 									SymbolInstructionPointer,
-									SymbolConditionRegister,
+									SymbolCallStackPointer,
 									SymbolValueRegister,
 									SymbolMaskRegister,
 									SymbolFieldRegister> { };
 	Word translateRegister(const std::string& input);
 
-	using IndirectGPR = syn::Indirection<GeneralPurposeRegister>;
+	struct IndirectGPR : pegtl::seq<GeneralPurposeRegister> { };
 #define DefIndirectGPR(title) \
-	struct title : public IndirectGPR { }
+	struct title : IndirectGPR { }
 
 	DefIndirectGPR(DestinationRegister);
 	DefAction(DestinationRegister) {
@@ -353,7 +349,7 @@ namespace cisc0 {
 		}
 	};
 #define DefSubType(title, str, subgroup) \
-	struct SubGroup ## subgroup ## title : syn::Indirection<Symbol ## title> { }; \
+	struct SubGroup ## subgroup ## title : syn::SingleEntrySequence<Symbol ## title> { }; \
 	DefAction(SubGroup ## subgroup ## title) { \
 		DefApplyInstruction { \
 			state.setSubType(cisc0 :: subgroup :: title ); \
@@ -459,14 +455,14 @@ namespace cisc0 {
 							 SubGroupMemoryOperationPop> { };
 	struct StackOperation : SeparatedTrinaryThing<StackMemoryType, BitmaskNumber, DestinationRegister> { };
 	DefSymbol(Indirect, indirect);
-	struct FlagIndirect : public syn::Indirection<SymbolIndirect> { };
+	struct FlagIndirect : syn::SingleEntrySequence<SymbolIndirect> { };
 	DefAction(FlagIndirect) {
 		DefApplyInstruction {
 			state.markIndirect();
 		}
 	};
 	DefSymbol(Direct, direct);
-	struct FlagDirect : public syn::Indirection<SymbolDirect> { };
+	struct FlagDirect : syn::SingleEntrySequence<SymbolDirect> { };
 	DefAction(FlagDirect) {
 		DefApplyInstruction {
 			state.markIndirect(false);
@@ -512,7 +508,7 @@ namespace cisc0 {
 
 #define DefEncodingSubType(title, str) \
 	DefSymbol(title, str); \
-	struct SubGroupEncodingOperation ## title : syn::Indirection<Symbol ## title> { }; \
+	struct SubGroupEncodingOperation ## title : syn::SingleEntrySequence<Symbol ## title> { }; \
 	DefAction(SubGroupEncodingOperation ## title) { \
 		DefApplyInstruction { \
 			state.setBitmask( cisc0:: EncodingOperation :: title ); \
@@ -529,7 +525,7 @@ namespace cisc0 {
 										 SubGroupEncodingOperationBitUnset> { };
 #define DefExtendedSubType(title, str) \
 	DefSymbol(title, str); \
-	struct SubGroupExtendedOperation ## title : syn::Indirection<Symbol ## title> { }; \
+	struct SubGroupExtendedOperation ## title : syn::SingleEntrySequence<Symbol ## title> { }; \
 	DefAction(SubGroupExtendedOperation ## title) { \
 		DefApplyInstruction { \
 			state.setBitmask( cisc0:: ExtendedOperation :: title ); \
@@ -562,7 +558,7 @@ namespace cisc0 {
 
 #define DefParsingSubType(title, str) \
 	DefSymbol(title, str); \
-	struct SubGroupParsingOperation ## title : syn::Indirection<Symbol ## title> { }; \
+	struct SubGroupParsingOperation ## title : syn::SingleEntrySequence<Symbol ## title> { }; \
 	DefAction(SubGroupParsingOperation ## title) { \
 		DefApplyInstruction { \
 			state.setBitmask( cisc0:: ParsingOperation :: title ); \
@@ -674,17 +670,14 @@ namespace cisc0 {
 			   LogicalOperation,
 			   ReturnOperation>
 								> { };
-    using OrgDirective = syn::StatefulOrgDirective<ChangeCurrentAddress, Number>;
-    using LabelDirective = syn::StatefulLabelDirective<RegisterLabel, Lexeme>;
-    struct WordDirective : syn::StatefulOneArgumentDirective<WordCreator, syn::SymbolWordDirective, LexemeOrNumber> { };
-    struct DwordDirective : syn::StatefulOneArgumentDirective<DwordCreator, syn::SymbolDwordDirective, LexemeOrNumber> { };
+    struct WordDirective : syn::WordDirective<WordCreator, LexemeOrNumber> { };
+	struct DwordDirective : syn::DwordDirective<DwordCreator, LexemeOrNumber> { };
 
 	struct Directive : pegtl::sor<
-					   OrgDirective,
-					   LabelDirective,
+					   syn::StatefulOrgDirective<ChangeCurrentAddress, Number>,
+					   syn::StatefulLabelDirective<RegisterLabel, Lexeme>,
 					   WordDirective,
-					   DwordDirective
-								   > { };
+					   DwordDirective > { };
 
 	struct Statement : pegtl::sor<
 					   Instructions,
@@ -694,6 +687,6 @@ namespace cisc0 {
 					  SingleLineComment,
 					  Statement> { };
 
-	struct Main : public syn::MainFileParser<Anything> { };
+	struct Main : syn::MainFileParser<Anything> { };
 } // end namespace cisc0
 #endif  // end CISC0_CORE_ASSEMBLER_H__
