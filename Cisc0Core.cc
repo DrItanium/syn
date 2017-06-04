@@ -397,6 +397,14 @@ namespace cisc0 {
 			case ExtendedOperation::IsOdd:
 				getConditionRegister() = normalizeCondition(!syn::isEven(registerValue(inst.getDestinationRegister<group>())));
 				break;
+			case ExtendedOperation::IncrementValueAddr:
+				++getValueRegister();
+				++getAddressRegister();
+				break;
+			case ExtendedOperation::DecrementValueAddr:
+				--getValueRegister();
+				--getAddressRegister();
+				break;
             default:
                 throw syn::Problem("Undefined extended operation!");
         }
