@@ -94,6 +94,7 @@
           (defsubtypefield ComplexType              0b0000000011110000 4 ComplexSubTypes)
           (deffield EncodingComplexSubType          0b0000111100000000 8 EncodingOperation)
           (deffield ExtendedComplexSubType          0b0000111100000000 8 ExtendedOperation)
+          (deffield ParsingComplexSubType           0b0000111100000000 8 ParsingOperation)
           (deffield ComplexClassExtendedDestination 0b1111000000000000 12 byte))
 
 
@@ -153,7 +154,8 @@
                 (max-size "4"))
           (enum (name ComplexSubTypes)
                 (children Encoding
-                          Extended)
+                          Extended
+                          Parsing)
                 (cast-to byte)
                 (max-size "16"))
           (enum (name EncodingOperation)
@@ -161,6 +163,11 @@
                           Decode
                           BitSet
                           BitUnset)
+                (cast-to byte)
+                (max-size "16"))
+          (enum (name ParsingOperation)
+                (children Hex8ToRegister
+                          RegisterToHex8)
                 (cast-to byte)
                 (max-size "16"))
           (enum (name ExtendedOperation)
@@ -216,6 +223,7 @@
           (top-level-type ComplexSubTypes)
           (top-level-to-sub-type ComplexSubTypes Encoding -> EncodingOperation)
           (top-level-to-sub-type ComplexSubTypes Extended -> ExtendedOperation)
+          (top-level-to-sub-type ComplexSubTypes Parsing   -> ParsingOperation)
           (top-level-type Operation)
           (top-level-to-sub-type Operation Arithmetic -> ArithmeticOps)
           (top-level-to-sub-type Operation Compare -> CompareStyle)
@@ -531,7 +539,8 @@
           (encoder/decoders ComplexSubType 
                             ComplexSubTypes
                             Encoding
-                            Extended)
+                            Extended
+                            Parsing)
           (defencoder/decoder Bitmask Operation)
           (encoder/decoders Bitmask
                             Operation
