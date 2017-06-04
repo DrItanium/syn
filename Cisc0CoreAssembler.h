@@ -52,6 +52,12 @@ namespace cisc0 {
 	using SingleLineComment = syn::SingleLineComment<';'>;
 	template<typename R> struct Action : syn::Action<R> { };
 
+	template<typename First, typename Rest, typename Sep = Separator>
+	struct SeparatedBinaryThing : pegtl::seq<First, Sep, Rest> { };
+
+	template<typename First, typename Second, typename Third, typename Sep = Separator>
+	struct SeparatedTrinaryThing : pegtl::seq<First, Sep, Second, Sep, Third> { };
+
 	using AssemblerWord = syn::AssemblerWord<RegisterValue>;
 	struct AssemblerState {
 		cisc0::Address currentAddress = 0;
@@ -293,7 +299,7 @@ namespace cisc0 {
 		}
 	};
 	template<typename S>
-		struct TwoArgumentOperation : pegtl::seq<DestinationRegister, Separator, S> { };
+	struct TwoArgumentOperation : SeparatedBinaryThing<DestinationRegister, S> { };
 	struct TwoGPRs : TwoArgumentOperation<SourceRegister> { };
 	DefAction(TwoGPRs) {
 		DefApplyInstruction {
@@ -313,9 +319,9 @@ namespace cisc0 {
 	};
 
 	template<typename Source>
-		struct ImmediateOperationArgs : pegtl::seq<UsesImmediate, Separator, TwoArgumentOperation<Source>> { };
+	struct ImmediateOperationArgs : SeparatedBinaryThing<UsesImmediate, TwoArgumentOperation<Source>> { };
 	template<typename Source>
-		struct ImmediateOperationArgsWithBitmask : pegtl::seq<UsesImmediate, Separator, BitmaskNumber, Separator, TwoArgumentOperation<Source>> { };
+	struct ImmediateOperationArgsWithBitmask : SeparatedTrinaryThing<UsesImmediate, BitmaskNumber, TwoArgumentOperation<Source>> { };
 
 	struct ShiftImmediateValue : pegtl::seq<Number> { };
 	DefAction(ShiftImmediateValue) {
@@ -325,7 +331,7 @@ namespace cisc0 {
 	};
 	struct ShiftArgs : pegtl::sor<TwoGPRs, ImmediateOperationArgs<ShiftImmediateValue>> { };
 
-	struct ShiftOperation : pegtl::seq<GroupShift, Separator, ShiftLeftOrRight, Separator, ShiftArgs> { };
+	struct ShiftOperation : SeparatedTrinaryThing<GroupShift, ShiftLeftOrRight, ShiftArgs> { };
 
 	struct ByteCastImmediate : pegtl::seq<Number> { };
 	DefAction(ByteCastImmediate) {
@@ -363,13 +369,8 @@ namespace cisc0 {
 						 SubGroupCompareStyleGreaterThan,
 						 SubGroupCompareStyleGreaterThanOrEqualTo> { };
 	struct CompareArgs : pegtl::sor<TwoGPRs, ImmediateOperationArgs<ByteCastImmediate>> { };
-	struct CompareOperation : pegtl::seq<GroupCompare, Separator, CompareType, Separator, CompareArgs> { };
-	struct MoveOperation : pegtl::seq<
-						   GroupMove,
-						   Separator,
-						   BitmaskNumber,
-						   Separator,
-						   TwoGPRs> { };
+	struct CompareOperation : SeparatedTrinaryThing<GroupCompare, CompareType, CompareArgs> { };
+	struct MoveOperation : SeparatedTrinaryThing<GroupMove, BitmaskNumber, TwoGPRs> { };
 	struct SetOperation : pegtl::seq<
 						  GroupSet,
 						  Separator,
@@ -379,10 +380,7 @@ namespace cisc0 {
 						  Separator,
 						  LexemeOrNumber> { };
 
-	struct SwapOperation : pegtl::seq<
-						   GroupSwap,
-						   Separator,
-						   TwoGPRs> { };
+	struct SwapOperation : SeparatedBinaryThing<GroupSwap, TwoGPRs> { };
 
 	struct Arg0ImmediateValue : pegtl::seq<Number> { };
 	DefAction(Arg0ImmediateValue) {
@@ -413,12 +411,7 @@ namespace cisc0 {
 	struct ArithmeticArgs : pegtl::sor<
 							TwoGPRs,
 							ImmediateOperationArgs<ByteCastImmediate>> { };
-	struct ArithmeticOperation : pegtl::seq<
-								 GroupArithmetic,
-								 Separator,
-								 ArithmeticType,
-								 Separator,
-								 ArithmeticArgs> { };
+	struct ArithmeticOperation : SeparatedTrinaryThing<GroupArithmetic, ArithmeticType, ArithmeticArgs> { };
 
 #define DefMemoryOperation(title, str) \
 	DefSubTypeWithSymbol(title, str, MemoryOperation)
@@ -433,12 +426,7 @@ namespace cisc0 {
 	struct StackMemoryType : pegtl::sor<
 							 SubGroupMemoryOperationPush,
 							 SubGroupMemoryOperationPop> { };
-	struct StackOperation : pegtl::seq<
-							StackMemoryType,
-							Separator,
-							BitmaskNumber,
-							Separator,
-							DestinationRegister> { };
+	struct StackOperation : SeparatedTrinaryThing<StackMemoryType, BitmaskNumber, DestinationRegister> { };
 	DefSymbol(Indirect, indirect);
 	struct FlagIndirect : public syn::Indirection<SymbolIndirect> { };
 	DefAction(FlagIndirect) {
@@ -463,12 +451,8 @@ namespace cisc0 {
 								Separator,
 								Arg0ImmediateValue> { };
 
-	struct MemoryInstruction : pegtl::seq<
-							   GroupMemory,
-							   Separator,
-							   pegtl::sor<
-										  StackOperation,
-										  LoadStoreOperation>> { };
+	struct MemoryTypes : pegtl::sor<StackOperation, LoadStoreOperation> { };
+	struct MemoryInstruction : SeparatedBinaryThing<GroupMemory, MemoryTypes> { };
 
 #define DefLogicalOperation(title, str) \
 	DefSubTypeWithSymbol(title, str, LogicalOps)
@@ -488,12 +472,7 @@ namespace cisc0 {
 	struct LogicalArgs : pegtl::sor<
 						 TwoGPRs,
 						 ImmediateOperationArgsWithBitmask<LexemeOrNumber>> { };
-	struct LogicalOperation : pegtl::seq<
-							  GroupLogical,
-							  Separator,
-							  LogicalOpsType,
-							  Separator,
-							  LogicalArgs> { };
+	struct LogicalOperation : SeparatedTrinaryThing<GroupLogical, LogicalOpsType, LogicalArgs> { };
 
 
 
@@ -514,80 +493,62 @@ namespace cisc0 {
 										 SubGroupEncodingOperationEncode,
 										 SubGroupEncodingOperationBitSet,
 										 SubGroupEncodingOperationBitUnset> { };
-	DefSymbol(PushValueAddr, push.value.addr);
-	DefSymbol(PopValueAddr, pop.value.addr);
-	DefSymbol(PushRegisters, push.registers);
-	DefSymbol(PopRegisters, pop.registers);
-	struct SubGroupExtendedOperationPushValueAddr : syn::Indirection<SymbolPushValueAddr> { };
-	DefAction(SubGroupExtendedOperationPushValueAddr) {
-		DefApplyInstruction {
-			state.setBitmask(cisc0::ExtendedOperation::PushValueAddr);
-		}
-	};
-	struct SubGroupExtendedOperationPopValueAddr : syn::Indirection<SymbolPopValueAddr> { };
-	DefAction(SubGroupExtendedOperationPopValueAddr) {
-		DefApplyInstruction {
-			state.setBitmask(cisc0::ExtendedOperation::PopValueAddr);
-		}
-	};
-
-	struct SubGroupExtendedOperationPushRegisters : syn::Indirection<SymbolPushRegisters> { };
-	DefAction(SubGroupExtendedOperationPushRegisters) {
-		DefApplyInstruction {
-			state.setBitmask(cisc0::ExtendedOperation::PushRegisters);
-		}
-	};
-	struct SubGroupExtendedOperationPopRegisters : syn::Indirection<SymbolPopRegisters> { };
-	DefAction(SubGroupExtendedOperationPopRegisters) {
-		DefApplyInstruction {
-			state.setBitmask(cisc0::ExtendedOperation::PopRegisters);
-		}
-	};
+#define DefExtendedSubType(title, str) \
+	DefSymbol(title, str); \
+	struct SubGroupExtendedOperation ## title : syn::Indirection<Symbol ## title> { }; \
+	DefAction(SubGroupExtendedOperation ## title) { \
+		DefApplyInstruction { \
+			state.setBitmask( cisc0:: ExtendedOperation :: title ); \
+		} \
+	}
+	DefExtendedSubType(PushValueAddr, push.value.addr);
+	DefExtendedSubType(PopValueAddr, pop.value.addr);
+	DefExtendedSubType(PushRegisters, push.registers);
+	DefExtendedSubType(PopRegisters, pop.registers);
 	struct ComplexExtendedSubOperation_NoArgs : pegtl::sor<
 										 SubGroupExtendedOperationPopRegisters,
 										 SubGroupExtendedOperationPushRegisters,
 										 SubGroupExtendedOperationPopValueAddr,
 										 SubGroupExtendedOperationPushValueAddr> { };
-	DefSymbol(IsEven, evenp);
-	DefSymbol(IsOdd, oddp);
-	struct SubGroupExtendedOperationIsEven : syn::Indirection<SymbolIsEven> { };
-	DefAction(SubGroupExtendedOperationIsEven) {
-		DefApplyInstruction {
-			state.setBitmask(cisc0::ExtendedOperation::IsEven);
-		}
-	};
+	DefExtendedSubType(IsEven, evenp);
+	DefExtendedSubType(IsOdd, oddp);
+	struct ComplexExtendedOneArg_Operations : pegtl::sor<SubGroupExtendedOperationIsEven, SubGroupExtendedOperationIsOdd> { };
 
-	struct SubGroupExtendedOperationIsOdd : syn::Indirection<SymbolIsOdd> { };
-	DefAction(SubGroupExtendedOperationIsOdd) {
-		DefApplyInstruction {
-			state.setBitmask(cisc0::ExtendedOperation::IsOdd);
-		}
-	};
-
-	struct ComplexExtendedSubOperation_OneArg: pegtl::seq< pegtl::sor<SubGroupExtendedOperationIsEven, SubGroupExtendedOperationIsOdd>, Separator, DestinationRegister> { };
+	struct ComplexExtendedSubOperation_OneArg : SeparatedBinaryThing<ComplexExtendedOneArg_Operations, DestinationRegister> { };
 	struct ComplexExtendedSubOperation : pegtl::sor<ComplexExtendedSubOperation_NoArgs, ComplexExtendedSubOperation_OneArg> { };
+
+
+#define DefParsingSubType(title, str) \
+	DefSymbol(title, str); \
+	struct SubGroupParsingOperation ## title : syn::Indirection<Symbol ## title> { }; \
+	DefAction(SubGroupParsingOperation ## title) { \
+		DefApplyInstruction { \
+			state.setBitmask( cisc0:: ParsingOperation :: title ); \
+		} \
+	}
+	DefParsingSubType(Hex8ToRegister, hex8.to.register);
+	DefParsingSubType(RegisterToHex8, register.to.hex8);
+	struct ComplexParsingSubOperation_NoArgs : pegtl::sor<
+										 SubGroupParsingOperationHex8ToRegister,
+										 SubGroupParsingOperationRegisterToHex8> { };
+	struct ComplexParsingSubOperation : pegtl::sor<ComplexExtendedSubOperation_NoArgs> { };
 
 
 #define DefComplexOperation(title, str) \
 	DefSubTypeWithSymbol(title, str, ComplexSubTypes)
 	DefComplexOperation(Encoding, encoding);
-
-	struct ComplexEncodingOperation : pegtl::seq<
-									  SubGroupComplexSubTypesEncoding,
-									  Separator,
-									  ComplexEncodingSubOperation> { };
 	DefComplexOperation(Extended, extended);
-	struct ComplexExtendedOperation : pegtl::seq<
-									  SubGroupComplexSubTypesExtended,
-									  Separator,
-									  ComplexExtendedSubOperation> { };
-	struct ComplexSubOperations : pegtl::sor<
-								  ComplexEncodingOperation> { };
+	DefComplexOperation(Parsing, parsing);
 
-	struct ComplexOperation : pegtl::seq<
-							  GroupComplex,
-							  Separator,
-							  ComplexSubOperations> { };
+	struct ComplexEncodingOperation : SeparatedBinaryThing<SubGroupComplexSubTypesEncoding, ComplexEncodingSubOperation> { };
+	struct ComplexExtendedOperation : SeparatedBinaryThing<SubGroupComplexSubTypesExtended, ComplexExtendedSubOperation> { };
+	struct ComplexParsingOperation : SeparatedBinaryThing<SubGroupComplexSubTypesParsing, ComplexParsingSubOperation> { };
+	struct ComplexSubOperations : pegtl::sor<
+								  ComplexEncodingOperation,
+								  ComplexExtendedOperation,
+								  ComplexParsingOperation> { };
+
+	struct ComplexOperation : SeparatedBinaryThing<GroupComplex, ComplexSubOperations> { };
 
 	DefSymbol(Call, call);
 	DefSymbol(NoCall, nocall);
@@ -630,25 +591,13 @@ namespace cisc0 {
 	struct ChooseBranchFlagUsePredicate : ChoiceFlag<BranchFlagConditional, BranchFlagUnconditional> { };
 
 	struct BranchNormalArgs : pegtl::sor<
-							  pegtl::seq<
-										 UsesImmediate,
-										 Separator,
-										 LexemeOrNumber>,
-										 DestinationRegister> { };
-	struct BranchCallOperation : pegtl::seq<
-								 BranchFlagCall,
-								 Separator,
-								 BranchNormalArgs> { };
-	struct BranchJumpOperation : pegtl::seq<
-								 ChooseBranchFlagUsePredicate,
-								 Separator,
-								 BranchNormalArgs> { };
+							  SeparatedBinaryThing<UsesImmediate, LexemeOrNumber>,
+							  DestinationRegister> { };
+	struct BranchCallOperation : SeparatedBinaryThing<BranchFlagCall, BranchNormalArgs> { };
+	struct BranchJumpOperation : SeparatedBinaryThing<ChooseBranchFlagUsePredicate, BranchNormalArgs> { };
 
-	struct BranchOperation : pegtl::seq<
-							 GroupBranch,
-							 Separator,
-							 pegtl::sor<BranchCallOperation,
-							 BranchJumpOperation>> { };
+	struct BranchTypes : pegtl::sor<BranchCallOperation, BranchJumpOperation> { };
+	struct BranchOperation : SeparatedBinaryThing<GroupBranch, BranchTypes> { };
 
 	struct Instructions : pegtl::state<AssemblerInstruction,
 	pegtl::sor<
