@@ -368,32 +368,6 @@ namespace cisc0 {
 			}
 			getValueRegister() = count;
 		};
-		auto pushRegisters = [this]() {
-			pushDword(getStackPointer());
-			for (int i = 0; i < static_cast<int>(ArchitectureConstants::RegisterCount); ++i) {
-				switch(i) {
-					case ArchitectureConstants::InstructionPointer:
-					case ArchitectureConstants::StackPointer:
-						break;
-					default:
-						pushDword(RegisterValue(i));
-						break;
-				}
-			}
-		};
-		auto popRegisters = [this]() {
-			for (int i = ArchitectureConstants::RegisterCount - 1; i >= 0; --i) {
-				switch(i) {
-					case ArchitectureConstants::InstructionPointer:
-					case ArchitectureConstants::StackPointer:
-						break;
-					default:
-						registerValue(i) = popRegisterValue();
-						break;
-				}
-			}
-			getStackPointer() = popRegisterValue();
-		};
 		switch(inst.getExtendedOperation()) {
 			case ExtendedOperation::PopValueAddr:
 				getValueRegister() = popRegisterValue();
@@ -402,12 +376,6 @@ namespace cisc0 {
 			case ExtendedOperation::PushValueAddr:
 				pushDword(getAddressRegister());
 				pushDword(getValueRegister());
-				break;
-			case ExtendedOperation::PushRegisters:
-				pushRegisters();
-				break;
-			case ExtendedOperation::PopRegisters:
-				popRegisters();
 				break;
 			case ExtendedOperation::IsEven:
 				getConditionRegister() = normalizeCondition(syn::isEven(registerValue(inst.getDestinationRegister<group>())));

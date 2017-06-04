@@ -174,10 +174,6 @@
           (enum (name ExtendedOperation)
                 (children PushValueAddr
                           PopValueAddr
-                          PushRegisters
-                          PopRegisters
-                          ;SaveRegisters
-                          ;LoadRegisters
                           IsOdd
                           IsEven
                           IncrementValueAddr

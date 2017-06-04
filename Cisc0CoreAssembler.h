@@ -491,14 +491,10 @@ namespace cisc0 {
 	}
 	DefExtendedSubType(PushValueAddr, PushValueAddr);
 	DefExtendedSubType(PopValueAddr,  PopValueAddr);
-	DefExtendedSubType(PushRegisters, PushRegisters);
-	DefExtendedSubType(PopRegisters,  PopRegisters);
 	DefExtendedSubType(IncrementValueAddr, IncrementValueAddr);
 	DefExtendedSubType(DecrementValueAddr, DecrementValueAddr);
 	DefExtendedSubType(WordsBeforeFirstZero, CountWordsBeforeFirstZero);
 	struct ComplexExtendedSubOperation_NoArgs : pegtl::sor<
-										 SubGroupExtendedOperationPopRegisters,
-										 SubGroupExtendedOperationPushRegisters,
 										 SubGroupExtendedOperationPopValueAddr,
 										 SubGroupExtendedOperationPushValueAddr,
 										 SubGroupExtendedOperationDecrementValueAddr,
