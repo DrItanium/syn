@@ -199,6 +199,7 @@ namespace cisc0 {
 	DefGroup(Logical, logical);
 	DefGroup(Complex, complex);
 	DefGroup(Branch, branch);
+	DefGroup(Return, return);
 
 	//DefSymbol(Nop, nop);
 	//DefSymbol(Return, return);
@@ -591,6 +592,8 @@ namespace cisc0 {
 	struct BranchTypes : pegtl::sor<BranchCallOperation, BranchJumpOperation> { };
 	struct BranchOperation : SeparatedBinaryThing<GroupBranch, BranchTypes> { };
 
+	struct ReturnOperation : pegtl::seq<GroupReturn> { };
+
 	struct Instructions : pegtl::state<AssemblerInstruction,
 	pegtl::sor<
 			   BranchOperation,
@@ -602,7 +605,8 @@ namespace cisc0 {
 			   ArithmeticOperation,
 			   ShiftOperation,
 			   CompareOperation,
-			   LogicalOperation>
+			   LogicalOperation,
+			   ReturnOperation>
 								> { };
     using OrgDirective = syn::StatefulOrgDirective<ChangeCurrentAddress, Number>;
     using LabelDirective = syn::StatefulLabelDirective<RegisterLabel, Lexeme>;
