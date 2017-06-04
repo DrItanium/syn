@@ -211,7 +211,6 @@ namespace iris {
 			}
 		Type _index;
 	};
-#define DefApplyGenericEmpty(type) DefApplyGeneric(type) { }
 #define DefApply DefApplyGeneric(AssemblerState)
 #define DefApplyEmpty DefApply { }
 	using Separator = syn::AsmSeparator;
@@ -239,8 +238,6 @@ namespace iris {
 		DefApplyEmpty
 	};
 	struct IndirectGPR : syn::SingleEntrySequence<GeneralPurposeRegister> { };
-#define DefIndirectGPR(title) \
-	struct title : IndirectGPR { }
 #define DefRegisterIndexContainerAction(title, theType) \
 	DefAction( title ) { \
 		DefApply { } \
@@ -248,21 +245,20 @@ namespace iris {
 			state._index = RegisterIndexContainer :: Type :: theType ; \
 		} \
 	}
-	DefIndirectGPR(DestinationGPR);
+	struct DestinationGPR : IndirectGPR { };
 	DefRegisterIndexContainerAction(DestinationGPR, DestinationGPR);
-	DefIndirectGPR(Source0GPR);
+	struct Source0GPR : IndirectGPR { };
 	DefRegisterIndexContainerAction(Source0GPR, Source0GPR);
-    DefIndirectGPR(Source1GPR);
+	struct Source1GPR : IndirectGPR { };
 	DefRegisterIndexContainerAction(Source1GPR, Source1GPR);
     template<typename T>
     using StatefulRegister = pegtl::state<RegisterIndexContainer, T>;
     using StatefulDestinationGPR = StatefulRegister<DestinationGPR>;
-#undef DefIndirectGPR
 	using SourceRegisters = syn::SourceRegisters<StatefulRegister<Source0GPR>, StatefulRegister<Source1GPR>>;
 	struct OneGPR : syn::OneRegister<StatefulDestinationGPR> { };
     struct TwoGPR : syn::TwoRegister<StatefulDestinationGPR, StatefulRegister<Source0GPR>> { };
 	struct ThreeGPR : syn::TwoRegister<StatefulDestinationGPR, SourceRegisters> { };
-    using IndirectPredicateRegister = syn::SingleEntrySequence<PredicateRegister>;
+    struct IndirectPredicateRegister : syn::SingleEntrySequence<PredicateRegister> { };
     struct DestinationPredicateRegister : IndirectPredicateRegister { };
 	DefRegisterIndexContainerAction(DestinationPredicateRegister, PredicateDestination);
     struct DestinationPredicateInverseRegister : IndirectPredicateRegister { };
@@ -278,28 +274,25 @@ namespace iris {
 	static void populateContainer(const Input& in, ImmediateContainer& parent) {
 		syn::populateContainer<word, v>(in.string(), parent);
 	}
-	using HexadecimalNumber = syn::HexadecimalNumber;
-	DefAction(HexadecimalNumber) {
+	DefAction(syn::HexadecimalNumber) {
 		template<typename Input>
 		static void apply(const Input& in, ImmediateContainer& parent) {
 			populateContainer<syn::KnownNumberTypes::Hexadecimal, Input>(in, parent);
 		}
 	};
-	using BinaryNumber = syn::BinaryNumber;
-	DefAction(BinaryNumber) {
+	DefAction(syn::BinaryNumber) {
 		template<typename Input>
 		static void apply(const Input& in, ImmediateContainer& parent) {
 			populateContainer<syn::KnownNumberTypes::Binary, Input>(in, parent);
 		}
 	};
-	using DecimalNumber = syn::Base10Number;
-	DefAction(DecimalNumber) {
+	DefAction(syn::Base10Number) {
 		template<typename Input>
 		static void apply(const Input& in, ImmediateContainer& parent) {
 			populateContainer<syn::KnownNumberTypes::Decimal, Input>(in, parent);
 		}
 	};
-    struct Number : pegtl::state<ImmediateContainer, pegtl::sor<HexadecimalNumber, DecimalNumber, BinaryNumber>> { };
+	struct Number : syn::StatefulNumberAll<ImmediateContainer> { };
 	using Lexeme = syn::Lexeme;
 	DefAction(Lexeme) {
 		DefApply {
@@ -316,7 +309,6 @@ namespace iris {
         void success(const Input& in, AssemblerState& parent) {
             parent.changeSection<toCode>();
         }
-
     };
     // directives
 #define ConstructOperationSetter(title, type) \
