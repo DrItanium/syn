@@ -495,6 +495,11 @@ namespace cisc0 {
 			case ParsingOperation::RegisterToHex8:
 				registerToHex8();
 				break;
+			case ParsingOperation::MemCopy:
+				// the address in addr loaded from and stored into the address
+				// contained within value
+				storeWord(getValueRegister(), loadWord(getAddressRegister()));
+				break;
 			default:
 				throw syn::Problem("Illegal parsing operation!");
 		}

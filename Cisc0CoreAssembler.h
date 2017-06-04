@@ -516,6 +516,7 @@ namespace cisc0 {
 	}
 	DefParsingSubType(Hex8ToRegister, hex8.to.register);
 	DefParsingSubType(RegisterToHex8, register.to.hex8);
+	DefParsingSubType(MemCopy, mem.copy);
 	struct ComplexParsingSubOperation_NoArgs : pegtl::sor<
 										 SubGroupParsingOperationHex8ToRegister,
 										 SubGroupParsingOperationRegisterToHex8> { };

@@ -167,7 +167,8 @@
                 (max-size "16"))
           (enum (name ParsingOperation)
                 (children Hex8ToRegister
-                          RegisterToHex8)
+                          RegisterToHex8
+                          MemCopy)
                 (cast-to byte)
                 (max-size "16"))
           (enum (name ExtendedOperation)
