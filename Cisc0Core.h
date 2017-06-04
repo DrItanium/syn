@@ -57,9 +57,13 @@ namespace cisc0 {
 			virtual bool handleOperation(void* env, CLIPSValue* ret) override;
 		private:
 			void pushWord(Word value);
+			void pushWord(Word value, RegisterValue& stackPointer);
 			void pushDword(DWord value);
+			void pushDword(DWord value, RegisterValue& stackPointer);
 			Word popWord();
+			Word popWord(RegisterValue& stackPointer);
             RegisterValue popRegisterValue();
+			RegisterValue popRegisterValue(RegisterValue& stackPointer);
 			void dispatch(DecodedInstruction&& inst);
 			template<byte rindex>
 			inline RegisterValue& registerValue() noexcept {

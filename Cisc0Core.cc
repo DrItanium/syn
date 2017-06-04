@@ -80,6 +80,9 @@ namespace cisc0 {
         }
         return encodeUpperHalf(encodeLowerHalf(0, lower), upper);
     }
+    constexpr RegisterValue normalizeCondition(RegisterValue input) noexcept {
+        return input != 0 ? 0xFFFFFFFF : 0x00000000;
+    }
 
     RegisterValue Core::retrieveImmediate(byte bitmask) noexcept {
         auto useLower = readLower(bitmask);
@@ -204,7 +207,7 @@ namespace cisc0 {
             // modified ip to the stack. Then we update the ip of where we are
             // going to go!
             auto whereToGo = isImm ? readAddress() : registerValue(inst.getBranchIndirectDestination());
-            pushDword(getInstructionPointer() + 1);
+            pushDword(getInstructionPointer() + 1, getCallStackPointer());
             updateInstructionPointer(whereToGo);
         } else {
             // jump instruction
@@ -575,24 +578,37 @@ namespace cisc0 {
 		return _bus.read(address);
     }
     void Core::pushWord(Word value) {
-		decrementAddress(getStackPointer());
-		storeWord(getStackPointer(), value);
+		pushWord(value, getStackPointer());
     }
+	void Core::pushWord(Word value, RegisterValue& sp) {
+		decrementAddress(sp);
+		storeWord(sp, value);
+	}
     void Core::pushDword(DWord value) {
-        pushWord(decodeUpperHalf(value));
-        pushWord(decodeLowerHalf(value));
+		pushDword(value, getStackPointer());
     }
 
+	void Core::pushDword(DWord value, RegisterValue& sp) {
+		pushWord(decodeUpperHalf(value), sp);
+		pushWord(decodeLowerHalf(value), sp);
+	}
+
     Word Core::popWord() {
-        auto result = loadWord(getStackPointer());
-		incrementAddress(getStackPointer());
-        return result;
+		return popWord(getStackPointer());
     }
-    RegisterValue Core::popRegisterValue() {
-        auto lower = popWord();
-        auto upper = popWord();
+	Word Core::popWord(RegisterValue& sp) {
+		auto result = loadWord(sp);
+		incrementAddress(sp);
+		return result;
+	}
+    RegisterValue Core::popRegisterValue(RegisterValue& sp) {
+        auto lower = popWord(sp);
+        auto upper = popWord(sp);
         return encodeRegisterValue(upper, lower);
     }
+	RegisterValue Core::popRegisterValue() {
+		return popRegisterValue(getStackPointer());
+	}
     Word Core::tryReadNext(bool readNext) {
         return readNext ? tryReadNext<true>() : tryReadNext<false>();
     }

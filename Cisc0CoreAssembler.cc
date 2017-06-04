@@ -93,7 +93,7 @@ namespace cisc0 {
 			{ "mask", static_cast<Word>(ArchitectureConstants::MaskRegister) },
 			{ "shift", static_cast<Word>(ArchitectureConstants::ShiftRegister) },
 			{ "field", static_cast<Word>(ArchitectureConstants::FieldRegister) },
-			{ "cond", static_cast<Word>(ArchitectureConstants::ConditionRegister) },
+			{ "csp", static_cast<Word>(ArchitectureConstants::CallStackPointer) },
 		};
 		auto result = builtinAliases.find(input);
 		if (result == builtinAliases.end()) {

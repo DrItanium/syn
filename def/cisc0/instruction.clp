@@ -115,6 +115,7 @@
                           Move
                           Set
                           Swap
+                          Return
                           Complex)
                 (cast-to byte)
                 (max-size "ArchitectureConstants::MaxInstructionCount"))
@@ -134,7 +135,9 @@
                           LessThan
                           GreaterThan
                           LessThanOrEqualTo
-                          GreaterThanOrEqualTo)
+                          GreaterThanOrEqualTo
+                          MoveFromCondition
+                          MoveToCondition)
                 (cast-to byte)
                 (max-size "8"))
           (enum (name LogicalOps)
