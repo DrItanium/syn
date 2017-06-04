@@ -230,16 +230,18 @@ namespace cisc0 {
 
     void Core::compareOperation(DecodedInstruction&& inst) {
         static constexpr auto group = Operation::Compare;
-        auto compareResult = translate(inst.getSubtype<group>());
+		auto compareResult = inst.getSubtype<group>();
         syn::throwOnErrorState(compareResult, "Illegal compare type!");
-        DecodedInstruction next(tryReadNext<true>());
-        auto first = registerValue(next.getDestinationRegister<group>());
-        auto isImm = inst.getImmediateFlag<group>();
-        auto second = isImm ? next.getUpper() : registerValue(next.getSourceRegister<group>());
-        auto result = syn::Comparator::performOperation(compareResult, first, second);
-        // make sure that the condition takes up the entire width of the
-        // register, that way normal operations will make sense!
-        getConditionRegister() = result;
+		auto destinationIndex = inst.getDestinationRegister<group>();
+		if (compareResult == CompareStyle::MoveToCondition) {
+			getConditionRegister() = (registerValue(destinationIndex) != 0);
+		} else if (compareResult == CompareStyle::MoveFromCondition) {
+			registerValue(destinationIndex) = normalizeCondition(getConditionRegister());
+		} else {
+			auto first = registerValue(destinationIndex);
+			auto second = inst.getImmediateFlag<group>() ? retrieveImmediate(inst.getBitmask<group>()) : registerValue(inst.getSourceRegister<group>());
+			getConditionRegister() = syn::Comparator::performOperation(compareResult, first, second);
+		}
     }
 
     void Core::memoryOperation(DecodedInstruction&& inst) {
