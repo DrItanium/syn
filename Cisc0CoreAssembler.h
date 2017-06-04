@@ -489,19 +489,21 @@ namespace cisc0 {
 			state.setBitmask( cisc0:: ExtendedOperation :: title ); \
 		} \
 	}
-	DefExtendedSubType(PushValueAddr, push.value.addr);
-	DefExtendedSubType(PopValueAddr, pop.value.addr);
-	DefExtendedSubType(PushRegisters, push.registers);
-	DefExtendedSubType(PopRegisters, pop.registers);
-	DefExtendedSubType(IncrementValueAddr, incr.value.addr);
-	DefExtendedSubType(DecrementValueAddr, decr.value.addr);
+	DefExtendedSubType(PushValueAddr, PushValueAddr);
+	DefExtendedSubType(PopValueAddr,  PopValueAddr);
+	DefExtendedSubType(PushRegisters, PushRegisters);
+	DefExtendedSubType(PopRegisters,  PopRegisters);
+	DefExtendedSubType(IncrementValueAddr, IncrementValueAddr);
+	DefExtendedSubType(DecrementValueAddr, DecrementValueAddr);
+	DefExtendedSubType(WordsBeforeFirstZero, CountWordsBeforeFirstZero);
 	struct ComplexExtendedSubOperation_NoArgs : pegtl::sor<
 										 SubGroupExtendedOperationPopRegisters,
 										 SubGroupExtendedOperationPushRegisters,
 										 SubGroupExtendedOperationPopValueAddr,
 										 SubGroupExtendedOperationPushValueAddr,
 										 SubGroupExtendedOperationDecrementValueAddr,
-										 SubGroupExtendedOperationIncrementValueAddr > { };
+										 SubGroupExtendedOperationIncrementValueAddr,
+										 SubGroupExtendedOperationWordsBeforeFirstZero> { };
 	DefExtendedSubType(IsEven, evenp);
 	DefExtendedSubType(IsOdd, oddp);
 	struct ComplexExtendedOneArg_Operations : pegtl::sor<SubGroupExtendedOperationIsEven, SubGroupExtendedOperationIsOdd> { };
@@ -518,9 +520,9 @@ namespace cisc0 {
 			state.setBitmask( cisc0:: ParsingOperation :: title ); \
 		} \
 	}
-	DefParsingSubType(Hex8ToRegister, hex8.to.register);
-	DefParsingSubType(RegisterToHex8, register.to.hex8);
-	DefParsingSubType(MemCopy, mem.copy);
+	DefParsingSubType(Hex8ToRegister, Hex8ToRegister);
+	DefParsingSubType(RegisterToHex8, RegisterToHex8);
+	DefParsingSubType(MemCopy, MemCopy);
 	struct ComplexParsingSubOperation_NoArgs : pegtl::sor<
 										 SubGroupParsingOperationHex8ToRegister,
 										 SubGroupParsingOperationRegisterToHex8,

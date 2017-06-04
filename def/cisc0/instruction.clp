@@ -181,7 +181,8 @@
                           IsOdd
                           IsEven
                           IncrementValueAddr
-                          DecrementValueAddr)
+                          DecrementValueAddr
+                          WordsBeforeFirstZero)
                 (cast-to byte)
                 (max-size "16")))
 
