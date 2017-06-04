@@ -30,7 +30,7 @@
 
 namespace cisc0 {
 	void AssemblerState::resolveInstructions() {
-		for (auto & op : finishedInstructions) {
+		applyToFinishedData([this](InstructionEncoder& op) {
 			if (op.isLabel()) {
 				auto label = op.getLabelValue();
 				auto f = findLabel(label);
@@ -58,7 +58,7 @@ namespace cisc0 {
 				default:
 					throw syn::Problem("Number of words described is not possible!");
 			}
-		}
+		});
 	}
 	void AssemblerState::resolveDeclarations() {
 		for (auto & op: wordsToResolve) {

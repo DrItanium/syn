@@ -349,9 +349,48 @@ namespace syn {
 			void incrementCurrentAddress() noexcept { ++_currentAddress; }
 			void incrementCurrentAddress(Address val) noexcept { _currentAddress += val; }
 			Address getCurrentAddress() const noexcept { return _currentAddress; }
+			void reset() noexcept { _currentAddress = 0; }
 		protected:
 			Address _currentAddress = 0;
 	};
+
+	template<typename T>
+	class FinishedDataTracker {
+		public:
+			using FinishedDataWithIndexFunc = std::function<void(T&, size_t)>;
+			using FinishedDataFunc = std::function<void(T&)>;
+			using FinishedDataStorage = std::vector<T>;
+			FinishedDataTracker() { }
+			virtual ~FinishedDataTracker() { }
+			void applyToFinishedData(FinishedDataWithIndexFunc fn) {
+				size_t index = 0;
+				for (auto& value : _finishedData) {
+					fn(value, index);
+					++index;
+				}
+			}
+			void applyToFinishedData(FinishedDataFunc fn) {
+				for (auto& value : _finishedData) {
+					fn(value);
+				}
+			}
+			void addToFinishedData(T& value) {
+				_finishedData.emplace_back(value);
+			}
+			void copyToFinishedData(T value) {
+				_finishedData.push_back(value);
+			}
+
+			size_t numberOfFinishedItems() const {
+				return _finishedData.size();
+			}
+			void reset() noexcept {
+				_finishedData.clear();
+			}
+		private:
+			FinishedDataStorage _finishedData;
+	};
+
 
 } // end namespace syn
 

@@ -62,8 +62,7 @@ namespace cisc0 {
 	struct SeparatedQuadThing : pegtl::seq<First, Sep, Second, Sep, Third, Sep, Fourth> { };
 
 	using AssemblerWord = syn::AssemblerWord<RegisterValue>;
-	struct AssemblerState : public syn::LabelTracker<RegisterValue>, public syn::AddressTracker<RegisterValue> {
-		std::vector<InstructionEncoder> finishedInstructions;
+	struct AssemblerState : public syn::LabelTracker<RegisterValue>, public syn::AddressTracker<RegisterValue>, public syn::FinishedDataTracker<InstructionEncoder> {
 		std::vector<AssemblerWord> finalWords;
 		std::vector<AssemblerWord> wordsToResolve;
         void output(void* env, CLIPSValue* ret) noexcept;
@@ -131,7 +130,7 @@ namespace cisc0 {
 			void success(const Input& in, AssemblerState& parent) {
 				parent.incrementCurrentAddress(numWords());
 				// for now, make a copy because I do not care!
-				parent.finishedInstructions.push_back(*this);
+			    parent.copyToFinishedData(*this);
 			}
 	};
 
