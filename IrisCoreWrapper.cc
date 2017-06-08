@@ -34,10 +34,7 @@ namespace iris {
         public:
             using Parent = syn::CoreWrapper<Core>;
 			enum class Operations {
-				Initialize,
-				Shutdown,
-				Run,
-				Cycle,
+                ADD_DEFAULT_CORE_OPERATIONS,
                 WriteDataMemory,
                 ReadDataMemory,
                 WriteCodeMemory,
@@ -52,12 +49,19 @@ namespace iris {
                 SetPredicateRegister,
 				Count,
 			};
+            enum class TargetSpace {
+                None,
+                Code,
+                Data,
+                Stack,
+                IO,
+                GPR,
+                Predicates,
+            };
+
         public:
             using Parent::Parent;
     };
-} // end namespace iris
-
-namespace iris {
 	void installCoreWrapper(void* env) {
 		CoreWrapper::registerWithEnvironment(env);
 	}
@@ -65,17 +69,9 @@ namespace iris {
 		static bool init = true;
 		static std::string funcStr;
 		static std::string funcErrorPrefix;
-        enum class TargetSpace {
-            None,
-            Code,
-            Data,
-            Stack,
-            IO,
-            GPR,
-            Predicates,
-        };
-		using OpToArgCount = std::tuple<CoreWrapper::Operations, int, TargetSpace>;
+        using TargetSpace = CoreWrapper::TargetSpace;
 		using WrappedOp = CoreWrapper::Operations;
+		using OpToArgCount = std::tuple<WrappedOp, int, TargetSpace>;
 		static std::map<std::string, OpToArgCount> ops = {
 			{ "initialize", std::make_tuple( WrappedOp::Initialize, 0, TargetSpace::None )},
 			{ "shutdown", std::make_tuple(WrappedOp::Shutdown, 0, TargetSpace::None)},

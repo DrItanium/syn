@@ -29,8 +29,17 @@
 #define CORE_WRAPPER_H__
 
 #include "ClipsExtensions.h"
+#include <map>
 
 namespace syn {
+
+
+// Paste these default core operations in
+#define ADD_DEFAULT_CORE_OPERATIONS \
+        Initialize, \
+        Shutdown, \
+        Run, \
+        Cycle
 
 template<typename T>
 class CoreWrapper : public syn::ExternalAddressWrapper<T> {

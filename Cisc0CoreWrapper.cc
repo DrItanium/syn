@@ -34,10 +34,7 @@ namespace cisc0 {
         public:
             using Parent = syn::CoreWrapper<Core>;
 			enum class Operations {
-				Initialize,
-				Shutdown,
-				Run,
-				Cycle,
+                ADD_DEFAULT_CORE_OPERATIONS,
 				WriteMemory,
 				ReadMemory,
 				GetRegister,
