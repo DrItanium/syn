@@ -62,8 +62,6 @@ namespace cisc0 {
             CoreWrapper(Core* core) : Parent(core) { }
 			CoreWrapper() : Parent(new Core()) { }
 			virtual ~CoreWrapper() { }
-		private:
-			void haveCorePerformInternalAction(void* env, CLIPSValue* ret, Operations op);
 	};
 } // end namespace cisc0
 
