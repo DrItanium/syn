@@ -34,7 +34,7 @@ namespace iris {
         public:
             using Parent = syn::CoreWrapper<Core>;
 			enum class Operations {
-                ADD_DEFAULT_CORE_OPERATIONS,
+                __DEFAULT_CORE_OPERATIONS__,
                 WriteDataMemory,
                 ReadDataMemory,
                 WriteCodeMemory,
@@ -47,7 +47,7 @@ namespace iris {
 				SetRegister,
                 GetPredicateRegister,
                 SetPredicateRegister,
-				Count,
+                __DEFAULT_ERROR_STATE__,
 			};
             enum class TargetSpace {
                 None,
@@ -241,15 +241,16 @@ namespace iris {
                 default:
                     break;
             }
-			CLIPSValue index, value;
+			CLIPSValue index;
             if (!syn::tryGetArgumentAsInteger(env, funcStr, 3, &index)) {
                 return badArgument(3, "Must provide an integer index to assign a register value!");
 			}
-			auto ind = syn::extractLong<word>(env, index);
+            CLIPSValue value;
             if (!syn::tryGetArgumentAsInteger(env, funcStr, 4, &value)) {
                 return badArgument(3, "Must provide an integer value to assign to the given register!");
 			}
             try {
+			    auto ind = syn::extractLong<word>(env, index);
                 auto valueToWrite = syn::extractLong(env, value);
                 switch(space) {
                     case TargetSpace::Code:

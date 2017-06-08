@@ -35,11 +35,13 @@ namespace syn {
 
 
 // Paste these default core operations in
-#define ADD_DEFAULT_CORE_OPERATIONS \
+#define __DEFAULT_CORE_OPERATIONS__ \
         Initialize, \
         Shutdown, \
         Run, \
         Cycle
+
+#define __DEFAULT_ERROR_STATE__ Count
 
 template<typename T>
 class CoreWrapper : public syn::ExternalAddressWrapper<T> {

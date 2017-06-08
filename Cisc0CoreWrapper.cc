@@ -34,12 +34,12 @@ namespace cisc0 {
         public:
             using Parent = syn::CoreWrapper<Core>;
 			enum class Operations {
-                ADD_DEFAULT_CORE_OPERATIONS,
+                __DEFAULT_CORE_OPERATIONS__,
 				WriteMemory,
 				ReadMemory,
 				GetRegister,
 				SetRegister,
-				Count,
+                __DEFAULT_ERROR_STATE__,
 			};
         public:
             using Parent::Parent;
