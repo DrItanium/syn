@@ -47,42 +47,6 @@ namespace cisc0 {
         public:
             using Parent::Parent;
     };
-    /*
-	class CoreWrapper : public syn::ExternalAddressWrapper<Core> {
-		public:
-			using Parent = syn::ExternalAddressWrapper<Core>;
-			using Self = CoreWrapper;
-			enum class Operations {
-				Initialize,
-				Shutdown,
-				Run,
-				Cycle,
-				WriteMemory,
-				ReadMemory,
-				GetRegister,
-				SetRegister,
-				Count,
-			};
-		public:
-			static bool callFunction(void* env, syn::DataObjectPtr value, syn::DataObjectPtr ret);
-			static void registerWithEnvironment(void* env, const char* title) {
-				Parent::registerWithEnvironment(env, title, callFunction);
-			}
-			static void registerWithEnvironment(void* env) {
-				static bool init = true;
-				static std::string func;
-				if (init) {
-					init = false;
-					func = Self::getType();
-				}
-				registerWithEnvironment(env, func.c_str());
-			}
-		public:
-            CoreWrapper(Core* core) : Parent(core) { }
-			CoreWrapper() : Parent(new Core()) { }
-			virtual ~CoreWrapper() { }
-	};
-    */
 } // end namespace cisc0
 
 namespace syn {
@@ -90,22 +54,6 @@ namespace syn {
 } // end namespace syn
 
 namespace cisc0 {
-	//bool CoreWrapper::callFunction(void* env, syn::DataObjectPtr value, syn::DataObjectPtr ret) {
-	//	// unpack the object and do the magic
-	//	static bool init = true;
-	//	static std::string funcErrorPrefix;
-	//	if (init) {
-	//		init = false;
-	//		auto functions = syn::retrieveFunctionNames<Core>("call");
-	//		funcErrorPrefix = std::get<2>(functions);
-	//	}
-    //    if (!syn::isExternalAddress(value)) {
-	//		return syn::errorMessage(env, "CALL", 1, funcErrorPrefix, "Function call expected an external address as the first argument!");
-	//	}
-    //    auto ptr = static_cast<CoreWrapper*>(EnvDOPToExternalAddress(value));
-	//	return ptr->get()->handleOperation(env, ret);
-	//}
-
 	void installCoreWrapper(void* env) {
 		CoreWrapper::registerWithEnvironment(env);
 	}
