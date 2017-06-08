@@ -29,7 +29,6 @@
 #define CORE_WRAPPER_H__
 
 #include "ClipsExtensions.h"
-#include <tuple>
 
 namespace syn {
 
@@ -70,10 +69,7 @@ class CoreWrapper : public syn::ExternalAddressWrapper<T> {
         CoreWrapper(T* core) : Parent(core) { }
         CoreWrapper() : Parent(new T()) { }
         virtual ~CoreWrapper() { }
-
 };
 
 } // end namespace syn
-
-
 #endif // end CORE_WRAPPER_H__

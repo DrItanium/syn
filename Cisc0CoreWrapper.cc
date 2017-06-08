@@ -47,13 +47,7 @@ namespace cisc0 {
         public:
             using Parent::Parent;
     };
-} // end namespace cisc0
 
-namespace syn {
-    DefExternalAddressWrapperType(cisc0::Core, cisc0::CoreWrapper);
-} // end namespace syn
-
-namespace cisc0 {
 	void installCoreWrapper(void* env) {
 		CoreWrapper::registerWithEnvironment(env);
 	}
@@ -193,5 +187,6 @@ namespace cisc0 {
 
 namespace syn {
 	DefWrapperSymbolicName(cisc0::Core,  "cisc0-core");
+    DefExternalAddressWrapperType(cisc0::Core, cisc0::CoreWrapper);
 } // end namespace syn
 
