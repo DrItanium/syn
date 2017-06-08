@@ -29,6 +29,7 @@
 #define CORE_WRAPPER_H__
 
 #include "ClipsExtensions.h"
+#include <tuple>
 
 namespace syn {
 
@@ -43,7 +44,7 @@ class CoreWrapper : public syn::ExternalAddressWrapper<T> {
             static std::string funcErrorPrefix;
             if (init) {
                 init = false;
-                auto functions = syn::retrieveFunctionNames<T>;
+                auto functions = syn::retrieveFunctionNames<T>("call");
                 funcErrorPrefix = std::get<2>(functions);
             }
             if (!syn::isExternalAddress(value)) {
