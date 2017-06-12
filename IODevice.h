@@ -51,19 +51,10 @@ namespace syn {
 				virtual ~IODevice() { }
 				virtual Data read(Address targetAddress) = 0;
 				virtual void write(Address targetAddress, Data value) = 0;
-				virtual void initialize() override;
-				virtual void shutdown() override;
+				virtual void initialize() override { }
+				virtual void shutdown() override { }
 		};
 
-	template<typename D, typename A>
-		void IODevice<D, A>::initialize() {
-			// do nothing
-		}
-
-	template<typename D, typename A>
-		void IODevice<D, A>::shutdown() {
-			// do nothing
-		}
 	template<typename Data, typename Address = Data>
 	class AddressableIODevice : public IODevice<Data, Address> {
 		public:
@@ -104,8 +95,20 @@ namespace syn {
 		public:
 			CaptiveAddressableIODevice(Address base, Address length = 1) : Parent(base, length) { }
 			virtual ~CaptiveAddressableIODevice() { }
-			virtual Data read(Address targetAddress) override;
-			virtual void write(Address targetAddress, Data value) override;
+			virtual Data read(Address targetAddress) override {
+                if (this->respondsTo(targetAddress)) {
+                    return _this.read(this->computeInternalAddress(targetAddress));
+                } else {
+                    throw syn::Problem("IODevice error! Provided device does not respond to the given address!");
+                }
+            }
+			virtual void write(Address targetAddress, Data value) override {
+                if (this->respondsTo(targetAddress)) {
+                    _this.write(this->computeInternalAddress(targetAddress), value);
+                } else {
+                    throw syn::Problem("IODevice error! Provided device does not respond to the given address!");
+                }
+            }
 			virtual void initialize() override {
 				_this.initialize();
 			}
@@ -115,24 +118,6 @@ namespace syn {
 		private:
 			T _this;
 	};
-
-	template<typename T>
-	typename CaptiveAddressableIODevice<T>::Data CaptiveAddressableIODevice<T>::read(CaptiveAddressableIODevice<T>::Address targetAddress) {
-		if (this->respondsTo(targetAddress)) {
-			return _this.read(this->computeInternalAddress(targetAddress));
-		} else {
-			throw syn::Problem("IODevice error! Provided device does not respond to the given address!");
-		}
-	}
-	template<typename T>
-	void CaptiveAddressableIODevice<T>::write(CaptiveAddressableIODevice<T>::Address targetAddress, CaptiveAddressableIODevice<T>::Data value) {
-		if (this->respondsTo(targetAddress)) {
-			_this.write(this->computeInternalAddress(targetAddress), value);
-		} else {
-			throw syn::Problem("IODevice error! Provided device does not respond to the given address!");
-		}
-	}
-
 
 	template<typename D, typename A = D>
 		class RandomDevice : public IODevice<D, A> {
@@ -146,7 +131,7 @@ namespace syn {
                 using Parent = IODevice<D, A>;
 				using Operations = Addresses;
                 using RandomEngine = std::mt19937_64;
-                using SeedType = RandomEngine::result_type;
+                using SeedType = typename RandomEngine::result_type;
             public:
                 RandomDevice(SeedType initialSeed = RandomEngine::default_seed) : Parent(), _engine(initialSeed) {
                     generateNextValue();
@@ -187,7 +172,7 @@ namespace syn {
 					_next = std::async(std::launch::async, [this]() { return _engine(); });
                 }
 			private:
-                std::future<RandomEngine::result_type> _next;
+                std::future<SeedType> _next;
                 RandomEngine _engine;
 		};
 } // end namespace syn
