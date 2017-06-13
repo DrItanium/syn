@@ -68,7 +68,6 @@ namespace iris {
 	bool Core::handleOperation(void* env, CLIPSValue* ret) {
 		static bool init = true;
 		static std::string funcStr;
-		static std::string funcErrorPrefix;
         using TargetSpace = CoreWrapper::TargetSpace;
 		using WrappedOp = CoreWrapper::Operations;
 		using OpToArgCount = std::tuple<WrappedOp, int, TargetSpace>;
@@ -94,7 +93,6 @@ namespace iris {
 			init = false;
 			auto functions = syn::retrieveFunctionNames<Core>("call");
 			funcStr = std::get<1>(functions);
-			funcErrorPrefix = std::get<2>(functions);
 		}
 		CLIPSValue operation;
         if (!syn::tryGetArgumentAsSymbol(env, funcStr, 2, &operation)) {

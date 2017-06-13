@@ -83,6 +83,29 @@ class CoreWrapper : public syn::ExternalAddressWrapper<T> {
 };
 
 template<typename T>
+bool tryGetArgumentAsSymbolFromCall(void* env, CLIPSValue* ret, int pos) noexcept {
+    static bool init = true;
+    static std::string funcStr;
+    if (init) {
+        init = false;
+        funcStr = std::get<1>(syn::retrieveFunctionNames<T>("call"));
+    }
+    return syn::tryGetArgumentAsSymbol(env, funcStr, pos, ret);
+}
+
+template<typename T>
+bool tryGetArgumentAsIntegerFromCall(void* env, CLIPSValue* ret, int pos) noexcept {
+    static bool init = true;
+    static std::string funcStr;
+    if (init) {
+        init = false;
+        funcStr = std::get<1>(syn::retrieveFunctionNames<T>("call"));
+    }
+    return syn::tryGetArgumentAsInteger(env, funcStr, pos, ret);
+}
+
+
+template<typename T>
 bool badCallArgument(void* env, CLIPSValue* ret, int code, const std::string& msg) noexcept {
     static bool init = true;
     static std::string funcErrorPrefix;
