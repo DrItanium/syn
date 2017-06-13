@@ -79,7 +79,6 @@ namespace syn {
         // by default, any wrapped IO device can accept zero arguments
         static T<Data, Address>* invokeNewFunction(void* env, CLIPSValuePtr ret, const std::string& funcErrorPrefix, const std::string& function) noexcept;
     };
-
     template<typename Data, typename Address, template<typename, typename> class T>
     class WrappedIODevice : public ExternalAddressWrapper<T<Data, Address>> {
         public:

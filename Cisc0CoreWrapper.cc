@@ -71,76 +71,66 @@ namespace cisc0 {
 			funcStr = std::get<1>(functions);
 			funcErrorPrefix = std::get<2>(functions);
 		}
-        auto badArgument = [env, ret](auto code, auto msg) {
-            CVSetBoolean(ret, false);
-            return syn::errorMessage(env, "CALL", code, funcErrorPrefix, msg);
-        };
-		auto callErrorMessage = [badArgument](const std::string& subOp, const std::string& rest) {
-			std::stringstream stm;
-			stm << " " << subOp << ": " << rest << std::endl;
-			auto msg = stm.str();
-            return badArgument(3, msg);
-		};
 		CLIPSValue operation;
         if (!syn::tryGetArgumentAsSymbol(env, funcStr, 2, &operation)) {
-            return badArgument(2, "expected a function name to call!");
+            return syn::callErrorCode2<Core>(env, ret, "expected a function name to call!");
 		}
 		std::string opStr(syn::extractLexeme(env, operation));
 		auto result = ops.find(opStr);
 		if (result == ops.end()) {
-			return callErrorMessage(opStr, " <- unknown operation requested!");
+			return syn::callErrorMessage<Core>(env, ret, 3, opStr, " <- unknown operation requested!");
 		}
 		WrappedOp fop;
 		int argCount;
 		std::tie(fop, argCount) = result->second;
 		auto aCount = 2 + argCount;
         if (!syn::hasCorrectArgCount(env, aCount)) {
-			return callErrorMessage(opStr, " too many arguments provided!");
+            return syn::callErrorMessage<Core>(env, ret, 3, opStr, " too many arguments provided!");
 		}
-		auto getRegister = [this, env, ret, badArgument]() {
+		auto getRegister = [this, env, ret]() {
 			CLIPSValue index;
 			if (!syn::tryGetArgumentAsInteger(env, funcStr, 3, &index)) {
-                return badArgument(3, "Must provide an integer index to retrieve a register value!");
+                return syn::callErrorCode3<Core>(env, ret, "Must provide an integer index to retrieve a register value!");
 			}
 			auto i = syn::extractLong(env, index);
 			if (i >= ArchitectureConstants::RegisterCount || i < 0) {
-                return badArgument(3, "Illegal register index!");
+                return syn::callErrorCode3<Core>(env, ret, "Illegal register index!");
 			}
 			CVSetInteger(ret, registerValue(static_cast<byte>(i)));
 			return true;
 		};
-		auto setRegister = [this, env, ret, badArgument]() {
+		auto setRegister = [this, env, ret]() {
 			CLIPSValue index, value;
 			if (!syn::tryGetArgumentAsInteger(env, funcStr, 3, &index)) {
-                return badArgument(3, "Must provide an integer index to assign a register value!");
+                return syn::callErrorCode3<Core>(env, ret, "Must provide an integer index to assign a register value!");
 			}
 			auto ind = syn::extractLong(env, index);
 			if (ind >= ArchitectureConstants::RegisterCount || ind < 0) {
-                return badArgument(3, "Illegal register index!");
+                return syn::callErrorCode3<Core>(env, ret, "Illegal register index!");
 			}
             if (!syn::tryGetArgumentAsInteger(env, funcStr, 4, &value)) {
-                return badArgument(3, "Must provide an integer value to assign to the given register!");
+                return syn::callErrorCode3<Core>(env, ret, "Must provide an integer value to assign to the given register!");
 			}
 			registerValue(static_cast<byte>(ind)) = syn::extractLong<RegisterValue>(env, value);
 			CVSetBoolean(ret, true);
 			return true;
 		};
-		auto readMemory = [this, env, ret, badArgument]() {
+		auto readMemory = [this, env, ret]() {
 			CLIPSValue index;
 			if (!syn::tryGetArgumentAsInteger(env, funcStr, 3, &index)) {
-                return badArgument(3, "Must provide an integer index to retrieve a memory value!");
+                return syn::callErrorCode3<Core>(env, ret, "Must provide an integer index to retrieve a memory value!");
 			}
 			CVSetInteger(ret, loadWord(syn::extractLong<RegisterValue>(env, index)));
 			return true;
 		};
-		auto writeMemory = [this, env, ret, badArgument]() {
+		auto writeMemory = [this, env, ret]() {
 			CLIPSValue index, value;
 			if (!syn::tryGetArgumentAsInteger(env, funcStr, 3, &index)) {
-                return badArgument(3, "Must provide an integer index to assign a register value!");
+                return syn::callErrorCode3<Core>(env, ret, "Must provide an integer index to assign a register value!");
 			}
 			auto ind = syn::extractLong<Address>(env, index);
             if (!syn::tryGetArgumentAsInteger(env, funcStr, 4, &value)) {
-                return badArgument(3, "Must provide an integer value to assign to the given register!");
+                return syn::callErrorCode3<Core>(env, ret, "Must provide an integer value to assign to the given register!");
 			}
 			storeWord(ind, syn::extractLong<Word>(env, value));
 			CVSetBoolean(ret, true);
@@ -170,11 +160,11 @@ namespace cisc0 {
 				case WrappedOp::WriteMemory:
 					return writeMemory();
 				default:
-					return callErrorMessage(opStr, " <- legal but unimplemented operation!");
+                    return syn::callErrorMessage<Core>(env, ret, 3, opStr, " <- legal but unimplemented operation!");
 			}
 			return true;
 		} catch(const syn::Problem& p) {
-            return badArgument(2, p.what());
+            return syn::callErrorCode2<Core>(env, ret, p.what());
 		}
 	}
 	Core* Core::make() noexcept {

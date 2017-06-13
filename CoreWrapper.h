@@ -82,5 +82,53 @@ class CoreWrapper : public syn::ExternalAddressWrapper<T> {
         virtual ~CoreWrapper() { }
 };
 
+template<typename T>
+bool badCallArgument(void* env, CLIPSValue* ret, int code, const std::string& msg) noexcept {
+    static bool init = true;
+    static std::string funcErrorPrefix;
+    if (init) {
+        funcErrorPrefix = std::get<2>(syn::retrieveFunctionNames<T>("call"));
+        init = false;
+    }
+    CVSetBoolean(ret, false);
+    return syn::errorMessage(env, "CALL", code, funcErrorPrefix, msg);
+}
+
+template<typename T, int code>
+inline bool badCallArgument(void* env, CLIPSValue* ret, const std::string& msg) noexcept {
+    return badCallArgument<T>(env, ret, code, msg);
+}
+
+template<typename T>
+bool callErrorMessage(void* env, CLIPSValue* ret, int code, const std::string& subOp, const std::string& rest) {
+    std::stringstream stm;
+    stm << " " << subOp << ": " << rest << std::endl;
+    auto msg = stm.str();
+    return badCallArgument<T>(env, ret, code, msg);
+}
+
+template<typename T, int code>
+bool callErrorMessage(void* env, CLIPSValue* ret, const std::string& subOp, const std::string& rest) {
+    std::stringstream stm;
+    stm << " " << subOp << ": " << rest << std::endl;
+    auto msg = stm.str();
+    return badCallArgument<T, code>(env, ret, msg);
+}
+
+template<typename T>
+inline bool callErrorCode2(void* env, CLIPSValue* ret, const std::string& msg) noexcept {
+    return badCallArgument<T, 2>(env, ret, msg);
+}
+
+template<typename T>
+inline bool callErrorCode3(void* env, CLIPSValue* ret, const std::string& msg) noexcept {
+    return badCallArgument<T, 3>(env, ret, msg);
+}
+
+template<typename T>
+inline bool callErrorCode4(void* env, CLIPSValue* ret, const std::string& msg) noexcept {
+    return badCallArgument<T, 4>(env, ret, msg);
+}
+
 } // end namespace syn
 #endif // end CORE_WRAPPER_H__
