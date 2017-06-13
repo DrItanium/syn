@@ -82,27 +82,7 @@ class CoreWrapper : public syn::ExternalAddressWrapper<T> {
         virtual ~CoreWrapper() { }
 };
 
-template<typename T>
-bool tryGetArgumentAsSymbolFromCall(void* env, CLIPSValue* ret, int pos) noexcept {
-    static bool init = true;
-    static std::string funcStr;
-    if (init) {
-        init = false;
-        funcStr = std::get<1>(syn::retrieveFunctionNames<T>("call"));
-    }
-    return syn::tryGetArgumentAsSymbol(env, funcStr, pos, ret);
-}
 
-template<typename T>
-bool tryGetArgumentAsIntegerFromCall(void* env, CLIPSValue* ret, int pos) noexcept {
-    static bool init = true;
-    static std::string funcStr;
-    if (init) {
-        init = false;
-        funcStr = std::get<1>(syn::retrieveFunctionNames<T>("call"));
-    }
-    return syn::tryGetArgumentAsInteger(env, funcStr, pos, ret);
-}
 
 
 template<typename T>
@@ -151,6 +131,41 @@ inline bool callErrorCode3(void* env, CLIPSValue* ret, const std::string& msg) n
 template<typename T>
 inline bool callErrorCode4(void* env, CLIPSValue* ret, const std::string& msg) noexcept {
     return badCallArgument<T, 4>(env, ret, msg);
+}
+using GenericTryGetFromCallFunction = std::function<bool(void*, const std::string&, int, CLIPSValue*)>;
+template<typename T>
+bool tryGetArgumentAsGenericFromCall(void* env, CLIPSValue* ret, int pos, GenericTryGetFromCallFunction fn) noexcept {
+    static bool init = true;
+    static std::string funcStr;
+    if (init) {
+        init = false;
+        funcStr = std::get<1>(syn::retrieveFunctionNames<T>("call"));
+    }
+    return fn(env, funcStr, pos, ret);
+}
+template<typename T>
+inline bool tryGetArgumentAsSymbolFromCall(void* env, CLIPSValue* ret, int pos) noexcept {
+    return syn::tryGetArgumentAsGenericFromCall<T>(env, ret, pos, tryGetArgumentAsSymbol);
+}
+
+template<typename T, int pos>
+inline bool tryGetArgumentAsSymbolFromCall(void* env, CLIPSValue* ret) noexcept {
+    return syn::tryGetArgumentAsGenericFromCall<T>(env, ret, pos, tryGetArgumentAsSymbol);
+}
+
+template<typename T>
+inline bool tryGetArgumentAsIntegerFromCall(void* env, CLIPSValue* ret, int pos) noexcept {
+    return syn::tryGetArgumentAsGenericFromCall<T>(env, ret, pos, tryGetArgumentAsInteger);
+}
+
+template<typename T, int pos>
+inline bool tryGetArgumentAsIntegerFromCall(void* env, CLIPSValue* ret) noexcept {
+    return syn::tryGetArgumentAsGenericFromCall<T>(env, ret, pos, tryGetArgumentAsInteger);
+}
+
+inline bool setClipsBoolean(CLIPSValue* ret) noexcept {
+    CVSetBoolean(ret, true);
+    return true;
 }
 
 } // end namespace syn
