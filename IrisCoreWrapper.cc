@@ -66,8 +66,6 @@ namespace iris {
 		CoreWrapper::registerWithEnvironment(env);
 	}
 	bool Core::handleOperation(void* env, CLIPSValue* ret) {
-		static bool init = true;
-		static std::string funcStr;
         using TargetSpace = CoreWrapper::TargetSpace;
 		using WrappedOp = CoreWrapper::Operations;
 		using OpToArgCount = std::tuple<WrappedOp, int, TargetSpace>;
@@ -89,13 +87,8 @@ namespace iris {
 			{ "get-predicate-register", std::make_tuple(WrappedOp::GetRegister, 1, TargetSpace::Predicates ) },
 			{ "set-predicate-register", std::make_tuple(WrappedOp::SetRegister, 2, TargetSpace::Predicates) },
 		};
-		if (init) {
-			init = false;
-			auto functions = syn::retrieveFunctionNames<Core>("call");
-			funcStr = std::get<1>(functions);
-		}
 		CLIPSValue operation;
-        if (!syn::tryGetArgumentAsSymbol(env, funcStr, 2, &operation)) {
+        if (!syn::tryGetArgumentAsSymbolFromCall<Core>(env, &operation, 2)) {
             return syn::callErrorCode2<Core>(env, ret, "expected a function name to call!");
 		}
 		std::string opStr(syn::extractLexeme(env, operation));
@@ -116,7 +109,7 @@ namespace iris {
                 return syn::callErrorCode4<Core>(env, ret, "Illegal space provided for retrieving a register from!");
             }
 			CLIPSValue index;
-            if (!syn::tryGetArgumentAsInteger(env, funcStr, 3, &index)) {
+            if (!syn::tryGetArgumentAsIntegerFromCall<Core>(env, &index, 3)) {
                 return syn::callErrorCode3<Core>(env, ret, "Must provide an integer index to retrieve a register value!");
 			}
 			auto i = syn::extractLong(env, index);
@@ -149,7 +142,7 @@ namespace iris {
                 return syn::callErrorCode4<Core>(env, ret, "Illegal space provided for setting a register!");
             }
 			CLIPSValue index, value;
-            if (!syn::tryGetArgumentAsInteger(env, funcStr, 3, &index)) {
+            if (!syn::tryGetArgumentAsIntegerFromCall<Core>(env, &index, 3)) {
                 return syn::callErrorCode3<Core>(env, ret, "Must provide an integer index to assign a register value!");
 			}
 			auto ind = syn::extractLong(env, index);
@@ -162,7 +155,7 @@ namespace iris {
 			if (space == TargetSpace::Predicates && ind >= ArchitectureConstants::ConditionRegisterCount)  {
                 return syn::callErrorCode3<Core>(env, ret, "Illegal condition register index!");
 			}
-            if (!syn::tryGetArgumentAsInteger(env, funcStr, 4, &value)) {
+            if (!syn::tryGetArgumentAsIntegerFromCall<Core>(env, &value, 4)) {
                 return syn::callErrorCode3<Core>(env, ret, "Must provide an integer value to assign to the given register!");
 			}
             try {
@@ -194,7 +187,7 @@ namespace iris {
                     break;
             }
 			CLIPSValue index;
-            if (!syn::tryGetArgumentAsInteger(env, funcStr, 3, &index)) {
+            if (!syn::tryGetArgumentAsIntegerFromCall<Core>(env, &index, 3)) {
                 return syn::callErrorCode3<Core>(env, ret, "Must provide an integer index to retrieve a memory value!");
 			}
             try {
@@ -230,11 +223,11 @@ namespace iris {
                     break;
             }
 			CLIPSValue index;
-            if (!syn::tryGetArgumentAsInteger(env, funcStr, 3, &index)) {
+            if (!syn::tryGetArgumentAsIntegerFromCall<Core>(env, &index, 3)) {
                 return syn::callErrorCode3<Core>(env, ret, "Must provide an integer index to assign a register value!");
 			}
             CLIPSValue value;
-            if (!syn::tryGetArgumentAsInteger(env, funcStr, 4, &value)) {
+            if (!syn::tryGetArgumentAsIntegerFromCall<Core>(env, &value, 4)) {
                 return syn::callErrorCode3<Core>(env, ret, "Must provide an integer value to assign to the given register!");
 			}
             try {
