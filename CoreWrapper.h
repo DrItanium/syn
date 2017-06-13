@@ -44,11 +44,93 @@ namespace syn {
 #define __DEFAULT_ERROR_STATE__ Count
 
 template<typename T>
+bool badCallArgument(void* env, CLIPSValue* ret, int code, const std::string& msg) noexcept {
+    static bool init = true;
+    static std::string funcErrorPrefix;
+    if (init) {
+        funcErrorPrefix = std::get<2>(syn::retrieveFunctionNames<T>("call"));
+        init = false;
+    }
+    CVSetBoolean(ret, false);
+    return syn::errorMessage(env, "CALL", code, funcErrorPrefix, msg);
+}
+
+
+
+using GenericTryGetFromCallFunction = std::function<bool(void*, const std::string&, int, CLIPSValue*)>;
+template<typename T>
+bool tryGetArgumentAsGenericFromCall(void* env, CLIPSValue* ret, int pos, GenericTryGetFromCallFunction fn) noexcept {
+    static bool init = true;
+    static std::string funcStr;
+    if (init) {
+        init = false;
+        funcStr = std::get<1>(syn::retrieveFunctionNames<T>("call"));
+    }
+    return fn(env, funcStr, pos, ret);
+}
+template<typename T>
+inline bool tryGetArgumentAsSymbolFromCall(void* env, CLIPSValue* ret, int pos) noexcept {
+    return syn::tryGetArgumentAsGenericFromCall<T>(env, ret, pos, tryGetArgumentAsSymbol);
+}
+
+template<typename T, int pos>
+inline bool tryGetArgumentAsSymbolFromCall(void* env, CLIPSValue* ret) noexcept {
+    return syn::tryGetArgumentAsGenericFromCall<T>(env, ret, pos, tryGetArgumentAsSymbol);
+}
+
+template<typename T>
+inline bool tryGetArgumentAsIntegerFromCall(void* env, CLIPSValue* ret, int pos) noexcept {
+    return syn::tryGetArgumentAsGenericFromCall<T>(env, ret, pos, tryGetArgumentAsInteger);
+}
+
+template<typename T, int pos>
+inline bool tryGetArgumentAsIntegerFromCall(void* env, CLIPSValue* ret) noexcept {
+    return syn::tryGetArgumentAsGenericFromCall<T>(env, ret, pos, tryGetArgumentAsInteger);
+}
+
+inline bool setClipsBoolean(CLIPSValue* ret) noexcept {
+    CVSetBoolean(ret, true);
+    return true;
+}
+
+template<typename T>
 class CoreWrapper : public syn::ExternalAddressWrapper<T> {
     public:
         using Parent = syn::ExternalAddressWrapper<T>;
         using Self = CoreWrapper<T>;
     public:
+        static inline bool badCallArgument(void* env, CLIPSValue* ret, int code, const std::string& msg) noexcept {
+            return syn::badCallArgument<T>(env, ret, code, msg);
+        }
+        template<int code>
+        static inline bool badCallArgument(void* env, CLIPSValue* ret, const std::string& msg) noexcept {
+            return badCallArgument(env, ret, code, msg);
+        }
+        static inline bool callErrorCode2(void* env, CLIPSValue* ret, const std::string& msg) noexcept {
+            return badCallArgument<2>(env, ret, msg);
+        }
+
+        static inline bool callErrorCode3(void* env, CLIPSValue* ret, const std::string& msg) noexcept {
+            return badCallArgument<3>(env, ret, msg);
+        }
+
+        static inline bool callErrorCode4(void* env, CLIPSValue* ret, const std::string& msg) noexcept {
+            return badCallArgument<4>(env, ret, msg);
+        }
+        static bool callErrorMessage(void* env, CLIPSValue* ret, int code, const std::string& subOp, const std::string& rest) {
+            std::stringstream stm;
+            stm << " " << subOp << ": " << rest << std::endl;
+            auto msg = stm.str();
+            return badCallArgument(env, ret, code, msg);
+        }
+
+        template<int code>
+        static bool callErrorMessage(void* env, CLIPSValue* ret, const std::string& subOp, const std::string& rest) {
+            std::stringstream stm;
+            stm << " " << subOp << ": " << rest << std::endl;
+            auto msg = stm.str();
+            return badCallArgument<code>(env, ret, msg);
+        }
         static bool callFunction(void* env, syn::DataObjectPtr value, syn::DataObjectPtr ret) {
             static bool init = true;
             static std::string funcErrorPrefix;
@@ -85,88 +167,6 @@ class CoreWrapper : public syn::ExternalAddressWrapper<T> {
 
 
 
-template<typename T>
-bool badCallArgument(void* env, CLIPSValue* ret, int code, const std::string& msg) noexcept {
-    static bool init = true;
-    static std::string funcErrorPrefix;
-    if (init) {
-        funcErrorPrefix = std::get<2>(syn::retrieveFunctionNames<T>("call"));
-        init = false;
-    }
-    CVSetBoolean(ret, false);
-    return syn::errorMessage(env, "CALL", code, funcErrorPrefix, msg);
-}
-
-template<typename T, int code>
-inline bool badCallArgument(void* env, CLIPSValue* ret, const std::string& msg) noexcept {
-    return badCallArgument<T>(env, ret, code, msg);
-}
-
-template<typename T>
-bool callErrorMessage(void* env, CLIPSValue* ret, int code, const std::string& subOp, const std::string& rest) {
-    std::stringstream stm;
-    stm << " " << subOp << ": " << rest << std::endl;
-    auto msg = stm.str();
-    return badCallArgument<T>(env, ret, code, msg);
-}
-
-template<typename T, int code>
-bool callErrorMessage(void* env, CLIPSValue* ret, const std::string& subOp, const std::string& rest) {
-    std::stringstream stm;
-    stm << " " << subOp << ": " << rest << std::endl;
-    auto msg = stm.str();
-    return badCallArgument<T, code>(env, ret, msg);
-}
-
-template<typename T>
-inline bool callErrorCode2(void* env, CLIPSValue* ret, const std::string& msg) noexcept {
-    return badCallArgument<T, 2>(env, ret, msg);
-}
-
-template<typename T>
-inline bool callErrorCode3(void* env, CLIPSValue* ret, const std::string& msg) noexcept {
-    return badCallArgument<T, 3>(env, ret, msg);
-}
-
-template<typename T>
-inline bool callErrorCode4(void* env, CLIPSValue* ret, const std::string& msg) noexcept {
-    return badCallArgument<T, 4>(env, ret, msg);
-}
-using GenericTryGetFromCallFunction = std::function<bool(void*, const std::string&, int, CLIPSValue*)>;
-template<typename T>
-bool tryGetArgumentAsGenericFromCall(void* env, CLIPSValue* ret, int pos, GenericTryGetFromCallFunction fn) noexcept {
-    static bool init = true;
-    static std::string funcStr;
-    if (init) {
-        init = false;
-        funcStr = std::get<1>(syn::retrieveFunctionNames<T>("call"));
-    }
-    return fn(env, funcStr, pos, ret);
-}
-template<typename T>
-inline bool tryGetArgumentAsSymbolFromCall(void* env, CLIPSValue* ret, int pos) noexcept {
-    return syn::tryGetArgumentAsGenericFromCall<T>(env, ret, pos, tryGetArgumentAsSymbol);
-}
-
-template<typename T, int pos>
-inline bool tryGetArgumentAsSymbolFromCall(void* env, CLIPSValue* ret) noexcept {
-    return syn::tryGetArgumentAsGenericFromCall<T>(env, ret, pos, tryGetArgumentAsSymbol);
-}
-
-template<typename T>
-inline bool tryGetArgumentAsIntegerFromCall(void* env, CLIPSValue* ret, int pos) noexcept {
-    return syn::tryGetArgumentAsGenericFromCall<T>(env, ret, pos, tryGetArgumentAsInteger);
-}
-
-template<typename T, int pos>
-inline bool tryGetArgumentAsIntegerFromCall(void* env, CLIPSValue* ret) noexcept {
-    return syn::tryGetArgumentAsGenericFromCall<T>(env, ret, pos, tryGetArgumentAsInteger);
-}
-
-inline bool setClipsBoolean(CLIPSValue* ret) noexcept {
-    CVSetBoolean(ret, true);
-    return true;
-}
 
 } // end namespace syn
 #endif // end CORE_WRAPPER_H__

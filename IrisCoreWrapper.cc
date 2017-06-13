@@ -104,12 +104,12 @@ namespace iris {
 		};
 		CLIPSValue operation;
         if (!syn::tryGetArgumentAsSymbolFromCall<Core, 2>(env, &operation)) {
-            return syn::callErrorCode2<Core>(env, ret, "expected a function name to call!");
+            return CoreWrapper::callErrorCode2(env, ret, "expected a function name to call!");
 		}
 		std::string opStr(syn::extractLexeme(env, operation));
 		auto result = ops.find(opStr);
 		if (result == ops.end()) {
-			return syn::callErrorMessage<Core, 3>(env, ret, opStr, " <- unknown operation requested!");
+			return CoreWrapper::callErrorMessage<3>(env, ret, opStr, " <- unknown operation requested!");
 		}
 		WrappedOp fop;
 		int argCount;
@@ -117,25 +117,25 @@ namespace iris {
 		std::tie(fop, argCount, space) = result->second;
 		auto aCount = 2 + argCount;
         if (!syn::hasCorrectArgCount(env, aCount)) {
-			return syn::callErrorMessage<Core, 3>(env, ret, opStr, " too many arguments provided!");
+			return CoreWrapper::callErrorMessage<3>(env, ret, opStr, " too many arguments provided!");
 		}
 		auto getRegister = [this, env, ret](TargetSpace space) noexcept {
             if (space != TargetSpace::GPR && space != TargetSpace::Predicates) {
-                return syn::callErrorCode4<Core>(env, ret, "Illegal space provided for retrieving a register from!");
+                return CoreWrapper::callErrorCode4(env, ret, "Illegal space provided for retrieving a register from!");
             }
 			CLIPSValue index;
             if (!syn::tryGetArgumentAsIntegerFromCall<Core, 3>(env, &index)) {
-                return syn::callErrorCode3<Core>(env, ret, "Must provide an integer index to retrieve a register value!");
+                return CoreWrapper::callErrorCode3(env, ret, "Must provide an integer index to retrieve a register value!");
 			}
 			auto i = syn::extractLong(env, index);
             if (i < 0) {
-                return syn::callErrorCode3<Core>(env, ret, "Was given a negative register index!");
+                return CoreWrapper::callErrorCode3(env, ret, "Was given a negative register index!");
             }
             if (inGivenSpaceAndValueGreaterThanExpected<TargetSpace::GPR, ArchitectureConstants::RegisterCount>(space, i)) {
-                return syn::callErrorCode3<Core>(env, ret, "Illegal register index!");
+                return CoreWrapper::callErrorCode3(env, ret, "Illegal register index!");
 			}
             if (inGivenSpaceAndValueGreaterThanExpected<TargetSpace::Predicates, ArchitectureConstants::ConditionRegisterCount>(space, i)) {
-                return syn::callErrorCode3<Core>(env, ret, "Illegal condition register index!");
+                return CoreWrapper::callErrorCode3(env, ret, "Illegal condition register index!");
 			}
             try {
                 switch(space) {
@@ -146,32 +146,32 @@ namespace iris {
                         CVSetBoolean(ret, getPredicateRegister(static_cast<byte>(i)));
                         return true;
                     default:
-                        return syn::callErrorCode4<Core>(env, ret, "illegal space specified for retrieving registers!");
+                        return CoreWrapper::callErrorCode4(env, ret, "illegal space specified for retrieving registers!");
                 }
             } catch(const syn::Problem& p) {
-                return syn::callErrorCode4<Core>(env, ret, p.what());
+                return CoreWrapper::callErrorCode4(env, ret, p.what());
             }
 		};
 		auto setRegister = [this, env, ret](TargetSpace space) noexcept {
             if (space != TargetSpace::GPR && space != TargetSpace::Predicates) {
-                return syn::callErrorCode4<Core>(env, ret, "Illegal space provided for setting a register!");
+                return CoreWrapper::callErrorCode4(env, ret, "Illegal space provided for setting a register!");
             }
 			CLIPSValue index, value;
             if (!syn::tryGetArgumentAsIntegerFromCall<Core, 3>(env, &index)) {
-                return syn::callErrorCode3<Core>(env, ret, "Must provide an integer index to assign a register value!");
+                return CoreWrapper::callErrorCode3(env, ret, "Must provide an integer index to assign a register value!");
 			}
 			auto ind = syn::extractLong(env, index);
             if (ind < 0) {
-                return syn::callErrorCode3<Core>(env, ret, "Was given a negative address!");
+                return CoreWrapper::callErrorCode3(env, ret, "Was given a negative address!");
             }
             if (inGivenSpaceAndValueGreaterThanExpected<TargetSpace::GPR, ArchitectureConstants::RegisterCount>(space, ind)) {
-                return syn::callErrorCode3<Core>(env, ret, "Illegal register index!");
+                return CoreWrapper::callErrorCode3(env, ret, "Illegal register index!");
 			}
             if (inGivenSpaceAndValueGreaterThanExpected<TargetSpace::Predicates, ArchitectureConstants::ConditionRegisterCount>(space, ind)) {
-                return syn::callErrorCode3<Core>(env, ret, "Illegal condition register index!");
+                return CoreWrapper::callErrorCode3(env, ret, "Illegal condition register index!");
 			}
             if (!syn::tryGetArgumentAsIntegerFromCall<Core, 4>(env, &value)) {
-                return syn::callErrorCode3<Core>(env, ret, "Must provide an integer value to assign to the given register!");
+                return CoreWrapper::callErrorCode3(env, ret, "Must provide an integer value to assign to the given register!");
 			}
             try {
                 auto theValue = syn::extractLong<word>(env, value);
@@ -184,19 +184,19 @@ namespace iris {
                         setPredicateRegister(rind, theValue);
                         return syn::setClipsBoolean(ret);
                     default:
-                        return syn::callErrorCode4<Core>(env, ret, "illegal space specified for assigning registers!");
+                        return CoreWrapper::callErrorCode4(env, ret, "illegal space specified for assigning registers!");
                 }
             } catch(const syn::Problem& p) {
-                return syn::callErrorCode4<Core>(env, ret, p.what());
+                return CoreWrapper::callErrorCode4(env, ret, p.what());
             }
 		};
 		auto readMemory = [this, env, ret](TargetSpace space) noexcept {
             if (registerSpaceOrNone(space)) {
-                return syn::callErrorCode4<Core>(env, ret, "illegal space specified for performing a read from memory");
+                return CoreWrapper::callErrorCode4(env, ret, "illegal space specified for performing a read from memory");
             }
 			CLIPSValue index;
             if (!syn::tryGetArgumentAsIntegerFromCall<Core, 3>(env, &index)) {
-                return syn::callErrorCode3<Core>(env, ret, "Must provide an integer index to retrieve a memory value!");
+                return CoreWrapper::callErrorCode3(env, ret, "Must provide an integer index to retrieve a memory value!");
 			}
             try {
                 auto address = syn::extractLong<word>(env, index);
@@ -214,24 +214,24 @@ namespace iris {
                         CVSetInteger(ret, ioSpaceRead(address));
                         break;
                     default:
-                        return syn::callErrorCode4<Core>(env, ret, "Unimplemented target space found!");
+                        return CoreWrapper::callErrorCode4(env, ret, "Unimplemented target space found!");
                 }
             } catch(const syn::Problem& p) {
-                return syn::callErrorCode4<Core>(env, ret, p.what());
+                return CoreWrapper::callErrorCode4(env, ret, p.what());
             }
 			return true;
 		};
 		auto writeMemory = [this, env, ret](TargetSpace space) noexcept {
             if (registerSpaceOrNone(space)) {
-                return syn::callErrorCode4<Core>(env, ret, "illegal space specified for performing a write to memory");
+                return CoreWrapper::callErrorCode4(env, ret, "illegal space specified for performing a write to memory");
             }
 			CLIPSValue index;
             if (!syn::tryGetArgumentAsIntegerFromCall<Core, 3>(env, &index)) {
-                return syn::callErrorCode3<Core>(env, ret, "Must provide an integer index to assign a register value!");
+                return CoreWrapper::callErrorCode3(env, ret, "Must provide an integer index to assign a register value!");
 			}
             CLIPSValue value;
             if (!syn::tryGetArgumentAsIntegerFromCall<Core, 4>(env, &value)) {
-                return syn::callErrorCode3<Core>(env, ret, "Must provide an integer value to assign to the given register!");
+                return CoreWrapper::callErrorCode3(env, ret, "Must provide an integer value to assign to the given register!");
 			}
             try {
 			    auto ind = syn::extractLong<word>(env, index);
@@ -250,10 +250,10 @@ namespace iris {
                         ioSpaceWrite(ind, valueToWrite);
                         break;
                     default:
-                        return syn::callErrorCode4<Core>(env, ret, "Unimplemented target space found!");
+                        return CoreWrapper::callErrorCode4(env, ret, "Unimplemented target space found!");
                 }
             } catch(const syn::Problem& p) {
-                return syn::callErrorCode4<Core>(env, ret, p.what());
+                return CoreWrapper::callErrorCode4(env, ret, p.what());
             }
 			CVSetBoolean(ret, true);
 			return true;
@@ -290,11 +290,11 @@ namespace iris {
                 case WrappedOp::WriteStackMemory:
                     return writeMemory(space);
 				default:
-					return syn::callErrorMessage<Core, 3>(env, ret, opStr, " <- legal but unimplemented operation!");
+					return CoreWrapper::callErrorMessage<3>(env, ret, opStr, " <- legal but unimplemented operation!");
 			}
 			return true;
 		} catch(const syn::Problem& p) {
-            return syn::callErrorCode2<Core>(env, ret, p.what());
+            return CoreWrapper::callErrorCode2(env, ret, p.what());
 		}
 	}
 	Core* Core::make() noexcept {
