@@ -63,7 +63,7 @@ namespace cisc0 {
 			{ "set-register", std::make_tuple(WrappedOp::SetRegister, 2 ) },
 		};
 		CLIPSValue operation;
-        if (!syn::tryGetArgumentAsSymbolFromCall<Core>(env, &operation, 2)) {
+        if (!CoreWrapper::tryGetArgumentAsSymbolFromCall<2>(env, &operation)) {
             return CoreWrapper::callErrorCode2(env, ret, "expected a function name to call!");
 		}
 		std::string opStr(syn::extractLexeme(env, operation));
@@ -80,7 +80,7 @@ namespace cisc0 {
 		}
 		auto getRegister = [this, env, ret]() {
 			CLIPSValue index;
-            if (!syn::tryGetArgumentAsIntegerFromCall<Core, 3>(env, &index)) {
+            if (!CoreWrapper::tryGetArgumentAsIntegerFromCall< 3>(env, &index)) {
                 return CoreWrapper::callErrorCode3(env, ret, "Must provide an integer index to retrieve a register value!");
 			}
 			auto i = syn::extractLong(env, index);
@@ -92,14 +92,14 @@ namespace cisc0 {
 		};
 		auto setRegister = [this, env, ret]() {
 			CLIPSValue index, value;
-            if (!syn::tryGetArgumentAsIntegerFromCall<Core, 3>(env, &index)) {
+            if (!CoreWrapper::tryGetArgumentAsIntegerFromCall< 3>(env, &index)) {
                 return CoreWrapper::callErrorCode3(env, ret, "Must provide an integer index to assign a register value!");
 			}
 			auto ind = syn::extractLong(env, index);
 			if (ind >= ArchitectureConstants::RegisterCount || ind < 0) {
                 return CoreWrapper::callErrorCode3(env, ret, "Illegal register index!");
 			}
-            if (!syn::tryGetArgumentAsIntegerFromCall<Core, 4>(env, &value)) {
+            if (!CoreWrapper::tryGetArgumentAsIntegerFromCall< 4>(env, &value)) {
                 return CoreWrapper::callErrorCode3(env, ret, "Must provide an integer value to assign to the given register!");
 			}
 			registerValue(static_cast<byte>(ind)) = syn::extractLong<RegisterValue>(env, value);
@@ -108,7 +108,7 @@ namespace cisc0 {
 		};
 		auto readMemory = [this, env, ret]() {
 			CLIPSValue index;
-            if (!syn::tryGetArgumentAsIntegerFromCall<Core, 3>(env, &index)) {
+            if (!CoreWrapper::tryGetArgumentAsIntegerFromCall< 3>(env, &index)) {
                 return CoreWrapper::callErrorCode3(env, ret, "Must provide an integer index to retrieve a memory value!");
 			}
 			CVSetInteger(ret, loadWord(syn::extractLong<RegisterValue>(env, index)));
@@ -116,11 +116,11 @@ namespace cisc0 {
 		};
 		auto writeMemory = [this, env, ret]() {
 			CLIPSValue index, value;
-            if (!syn::tryGetArgumentAsIntegerFromCall<Core, 3>(env, &index)) {
+            if (!CoreWrapper::tryGetArgumentAsIntegerFromCall< 3>(env, &index)) {
                 return CoreWrapper::callErrorCode3(env, ret, "Must provide an integer index to assign a register value!");
 			}
 			auto ind = syn::extractLong<Address>(env, index);
-            if (!syn::tryGetArgumentAsIntegerFromCall<Core, 4>(env, &index)) {
+            if (!CoreWrapper::tryGetArgumentAsIntegerFromCall< 4>(env, &index)) {
                 return CoreWrapper::callErrorCode3(env, ret, "Must provide an integer value to assign to the given register!");
 			}
 			storeWord(ind, syn::extractLong<Word>(env, value));

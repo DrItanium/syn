@@ -103,7 +103,7 @@ namespace iris {
 			{ "set-predicate-register", std::make_tuple(WrappedOp::SetRegister, 2, TargetSpace::Predicates) },
 		};
 		CLIPSValue operation;
-        if (!syn::tryGetArgumentAsSymbolFromCall<Core, 2>(env, &operation)) {
+        if (!CoreWrapper::tryGetArgumentAsSymbolFromCall<2>(env, &operation)) {
             return CoreWrapper::callErrorCode2(env, ret, "expected a function name to call!");
 		}
 		std::string opStr(syn::extractLexeme(env, operation));
