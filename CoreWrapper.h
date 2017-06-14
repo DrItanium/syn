@@ -49,6 +49,9 @@ namespace syn {
     case TYPE :: Run: run(); break; \
     case TYPE :: Cycle: CVSetBoolean(ret, cycle()); break
 
+#define __RETURN_FALSE_ON_FALSE__(condition) if (!(condition)) { return false; }
+
+
 template<typename T>
 bool badCallArgument(void* env, CLIPSValue* ret, int code, const std::string& msg) noexcept {
     static bool init = true;

@@ -103,9 +103,7 @@ namespace iris {
 			{ "set-predicate-register", std::make_tuple(WrappedOp::SetRegister, 2, TargetSpace::Predicates) },
 		};
 		CLIPSValue operation;
-        if (!CoreWrapper::tryExtractFunctionName(env, ret, &operation)) {
-            return false;
-        }
+        __RETURN_FALSE_ON_FALSE__(CoreWrapper::tryExtractFunctionName(env, ret, &operation));
 		std::string opStr(syn::extractLexeme(env, operation));
 		auto result = ops.find(opStr);
 		if (result == ops.end()) {
@@ -124,9 +122,7 @@ namespace iris {
                 return CoreWrapper::callErrorCode4(env, ret, "Illegal space provided for retrieving a register from!");
             }
 			CLIPSValue index;
-            if (!CoreWrapper::tryExtractIntegerErrorCode3(env, ret, &index, 3, "Must provide an integer index to retrieve a register value!")) {
-                return false;
-            }
+            __RETURN_FALSE_ON_FALSE__(CoreWrapper::tryExtractIntegerErrorCode3(env, ret, &index, 3, "Must provide an integer index to retrieve a register value!"));
 			auto i = syn::extractLong(env, index);
             if (i < 0) {
                 return CoreWrapper::callErrorCode3(env, ret, "Was given a negative register index!");
@@ -157,9 +153,7 @@ namespace iris {
                 return CoreWrapper::callErrorCode4(env, ret, "Illegal space provided for setting a register!");
             }
 			CLIPSValue index;
-            if (!CoreWrapper::tryExtractIntegerErrorCode3(env, ret, &index, 3, "Must provide an integer index to assign a register value!")) {
-                return false;
-			}
+            __RETURN_FALSE_ON_FALSE__(CoreWrapper::tryExtractIntegerErrorCode3(env, ret, &index, 3, "Must provide an integer index to assign a register value!"));
 			auto ind = syn::extractLong(env, index);
             if (ind < 0) {
                 return CoreWrapper::callErrorCode3(env, ret, "Was given a negative address!");
@@ -171,9 +165,7 @@ namespace iris {
                 return CoreWrapper::callErrorCode3(env, ret, "Illegal condition register index!");
 			}
             CLIPSValue value;
-            if (!CoreWrapper::tryExtractIntegerErrorCode3(env, ret, &value, 4, "Must provide an integer value to assign to the given register!")) {
-                return false;
-			}
+            __RETURN_FALSE_ON_FALSE__(CoreWrapper::tryExtractIntegerErrorCode3(env, ret, &value, 4, "Must provide an integer value to assign to the given register!"));
             try {
                 auto theValue = syn::extractLong<word>(env, value);
                 auto rind = static_cast<byte>(ind);
@@ -196,9 +188,7 @@ namespace iris {
                 return CoreWrapper::callErrorCode4(env, ret, "illegal space specified for performing a read from memory");
             }
 			CLIPSValue index;
-            if (!CoreWrapper::tryExtractIntegerErrorCode3(env, ret, &index, 3, "Must provide an integer index to retrieve a memory value!")) {
-                return false;
-            }
+            __RETURN_FALSE_ON_FALSE__(CoreWrapper::tryExtractIntegerErrorCode3(env, ret, &index, 3, "Must provide an integer index to retrieve a memory value!"));
             try {
                 auto address = syn::extractLong<word>(env, index);
                 switch(space) {
@@ -227,13 +217,9 @@ namespace iris {
                 return CoreWrapper::callErrorCode4(env, ret, "illegal space specified for performing a write to memory");
             }
 			CLIPSValue index;
-            if (!CoreWrapper::tryExtractIntegerErrorCode3(env, ret, &index, 3, "Must provide an integer index to assign a register value!")) {
-                return false;
-            }
+            __RETURN_FALSE_ON_FALSE__(CoreWrapper::tryExtractIntegerErrorCode3(env, ret, &index, 3, "Must provide an integer index to assign a register value!"));
             CLIPSValue value;
-            if (!CoreWrapper::tryExtractIntegerErrorCode3(env, ret, &value, 4, "Must provide an integer value to assign to the given register!")) {
-                return false;
-            }
+            __RETURN_FALSE_ON_FALSE__(CoreWrapper::tryExtractIntegerErrorCode3(env, ret, &value, 4, "Must provide an integer value to assign to the given register!"));
             try {
 			    auto ind = syn::extractLong<word>(env, index);
                 auto valueToWrite = syn::extractLong(env, value);
