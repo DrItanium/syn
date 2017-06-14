@@ -91,7 +91,7 @@ namespace cisc0 {
 			return true;
 		};
 		auto setRegister = [this, env, ret]() {
-			CLIPSValue index, value;
+			CLIPSValue index;
             if (!CoreWrapper::tryExtractIntegerErrorCode3(env, ret, &index, 3, "Must provide an integer index to assign a register value!")) {
                 return false;
             }
@@ -99,6 +99,7 @@ namespace cisc0 {
 			if (ind >= ArchitectureConstants::RegisterCount || ind < 0) {
                 return CoreWrapper::callErrorCode3(env, ret, "Illegal register index!");
 			}
+            CLIPSValue value;
             if (!CoreWrapper::tryExtractIntegerErrorCode3(env, ret, &value, 4, "Must provide an integer value to assign to the given register!")) {
                 return false;
             }
@@ -115,12 +116,13 @@ namespace cisc0 {
 			return true;
 		};
 		auto writeMemory = [this, env, ret]() {
-			CLIPSValue index, value;
+			CLIPSValue index;
             if (!CoreWrapper::tryExtractIntegerErrorCode3(env, ret, &index, 3, "Must provide an integer index to assign a register value!")) {
                 return false;
             }
 			auto ind = syn::extractLong<Address>(env, index);
-            if (!CoreWrapper::tryExtractIntegerErrorCode3(env, ret, &index, 4, "Must provide an integer value to assign to the given register!")) {
+            CLIPSValue value;
+            if (!CoreWrapper::tryExtractIntegerErrorCode3(env, ret, &value, 4, "Must provide an integer value to assign to the given register!")) {
                 return false;
             }
 			storeWord(ind, syn::extractLong<Word>(env, value));
