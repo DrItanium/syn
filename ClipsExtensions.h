@@ -92,6 +92,9 @@ struct ExternalAddressRegistrar {
 		static void registerExternalAddressId(void* env, unsigned int value) noexcept {
 			_cache.emplace(env, value);
 		}
+        static void registerExternalAddress(void* env, externalAddressType* type) noexcept {
+            registerExternalAddressId(env, InstallExternalAddressType(env, type));
+        }
 		static bool isOfType(void* env, DataObjectPtr ptr) {
 			return static_cast<struct externalAddressHashNode*>(ptr->value)->type == getExternalAddressId(env);
 		}
@@ -248,7 +251,7 @@ class ExternalAddressWrapper {
             }
             return name;
         }
-        static void getType(CLIPSValue* ret) noexcept {
+        static void setType(CLIPSValue* ret) noexcept {
             static bool init = true;
             static std::string name;
             if (init) {
@@ -257,9 +260,11 @@ class ExternalAddressWrapper {
             }
             CVSetString(ret, name.c_str());
         }
-		static unsigned int getAssociatedEnvironmentId(void* env) { return ExternalAddressRegistrar<InternalType>::getExternalAddressId(env); }
+		static unsigned int getAssociatedEnvironmentId(void* env) {
+            return ExternalAddressRegistrar<InternalType>::getExternalAddressId(env);
+        }
 		static void registerWithEnvironment(void* env, externalAddressType* description) noexcept {
-			ExternalAddressRegistrar<InternalType>::registerExternalAddressId(env, InstallExternalAddressType(env, description));
+			ExternalAddressRegistrar<InternalType>::registerExternalAddress(env, description);
 		}
 		static void printAddress(void* env, const char* logicalName, void* theValue) {
 			CLIPS_basePrintAddress<InternalType>(env, logicalName, theValue);
@@ -268,7 +273,6 @@ class ExternalAddressWrapper {
 			if (obj != nullptr) {
 				auto result = static_cast<typename ExternalAddressWrapperType<T>::TheType*>(obj);
 				delete result;
-                result = nullptr;
 			}
 			return true;
 		}
@@ -282,7 +286,7 @@ class ExternalAddressWrapper {
                 funcStr = std::get<1>(functions);
                 funcErrorPrefix = std::get<2>(functions);
             }
-            T* ptr = WrappedNewCallBuilder::invokeNewFunction<InternalType>(env, ret, funcErrorPrefix, funcStr);
+            InternalType* ptr = WrappedNewCallBuilder::invokeNewFunction<InternalType>(env, ret, funcErrorPrefix, funcStr);
             if (ptr) {
                 using CorrespondingType = typename ExternalAddressWrapperType<T>::TheType;
                 auto s = new CorrespondingType(ptr);

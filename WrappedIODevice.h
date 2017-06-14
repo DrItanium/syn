@@ -184,7 +184,7 @@ namespace syn {
                 };
                 switch(theOp) {
                     case Operations::Type:
-                        Self::getType(ret);
+                        Self::setType(ret);
                         return true;
                     case Operations::Shutdown:
                         CVSetBoolean(ret, true);

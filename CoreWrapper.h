@@ -67,9 +67,9 @@ bool badCallArgument(void* env, CLIPSValue* ret, int code, const std::string& ms
 
 
 
-inline bool setClipsBoolean(CLIPSValue* ret) noexcept {
-    CVSetBoolean(ret, true);
-    return true;
+inline bool setClipsBoolean(CLIPSValue* ret, bool value = true) noexcept {
+    CVSetBoolean(ret, value);
+    return value;
 }
 
 template<typename T>

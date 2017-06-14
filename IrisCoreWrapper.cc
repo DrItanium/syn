@@ -240,11 +240,10 @@ namespace iris {
                     default:
                         return CoreWrapper::callErrorCode4(env, ret, "Unimplemented target space found!");
                 }
+                return syn::setClipsBoolean(ret);
             } catch(const syn::Problem& p) {
                 return CoreWrapper::callErrorCode4(env, ret, p.what());
             }
-			CVSetBoolean(ret, true);
-			return true;
 		};
 		CVSetBoolean(ret, true);
 		try {

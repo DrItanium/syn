@@ -429,7 +429,7 @@ namespace syn {
                     return check;
                 };
                 if (op == MemoryBlockOp::Type) {
-                    Self::getType(ret);
+                    Self::setType(ret);
                 } else if (op == MemoryBlockOp::Size) {
                     CVSetInteger(ret, ptr->size());
                 } else if (op == MemoryBlockOp::Clear) {
