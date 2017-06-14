@@ -57,36 +57,6 @@ bool badCallArgument(void* env, CLIPSValue* ret, int code, const std::string& ms
 
 
 
-using GenericTryGetFromCallFunction = std::function<bool(void*, const std::string&, int, CLIPSValue*)>;
-template<typename T>
-bool tryGetArgumentAsGenericFromCall(void* env, CLIPSValue* ret, int pos, GenericTryGetFromCallFunction fn) noexcept {
-    static bool init = true;
-    static std::string funcStr;
-    if (init) {
-        init = false;
-        funcStr = std::get<1>(syn::retrieveFunctionNames<T>("call"));
-    }
-    return fn(env, funcStr, pos, ret);
-}
-template<typename T>
-inline bool tryGetArgumentAsSymbolFromCall(void* env, CLIPSValue* ret, int pos) noexcept {
-    return syn::tryGetArgumentAsGenericFromCall<T>(env, ret, pos, tryGetArgumentAsSymbol);
-}
-
-template<typename T, int pos>
-inline bool tryGetArgumentAsSymbolFromCall(void* env, CLIPSValue* ret) noexcept {
-    return syn::tryGetArgumentAsGenericFromCall<T>(env, ret, pos, tryGetArgumentAsSymbol);
-}
-
-template<typename T>
-inline bool tryGetArgumentAsIntegerFromCall(void* env, CLIPSValue* ret, int pos) noexcept {
-    return syn::tryGetArgumentAsGenericFromCall<T>(env, ret, pos, tryGetArgumentAsInteger);
-}
-
-template<typename T, int pos>
-inline bool tryGetArgumentAsIntegerFromCall(void* env, CLIPSValue* ret) noexcept {
-    return syn::tryGetArgumentAsGenericFromCall<T>(env, ret, pos, tryGetArgumentAsInteger);
-}
 
 inline bool setClipsBoolean(CLIPSValue* ret) noexcept {
     CVSetBoolean(ret, true);
@@ -124,22 +94,47 @@ class CoreWrapper : public syn::ExternalAddressWrapper<T> {
             return badCallArgument(env, ret, code, msg);
         }
 
-        template<int index>
-        static bool tryGetArgumentAsIntegerFromCall(void* env, CLIPSValue* value) noexcept {
-            return syn::tryGetArgumentAsIntegerFromCall<T, index>(env, value);
-        }
-        template<int index>
-        static bool tryGetArgumentAsSymbolFromCall(void* env, CLIPSValue* value) noexcept {
-            return syn::tryGetArgumentAsSymbolFromCall<T, index>(env, value);
+        static inline bool callErrorMessageCode3(void* env, CLIPSValue* ret, const std::string& subOp, const std::string& rest) noexcept {
+            return callErrorMessage(env, ret, 3, subOp, rest);
         }
 
-        template<int code>
-        static bool callErrorMessage(void* env, CLIPSValue* ret, const std::string& subOp, const std::string& rest) {
-            std::stringstream stm;
-            stm << " " << subOp << ": " << rest << std::endl;
-            auto msg = stm.str();
-            return badCallArgument<code>(env, ret, msg);
+        using GenericTryGetFromCallFunction = std::function<bool(void*, const std::string&, int, CLIPSValue*)>;
+        static bool tryGetArgumentAsGenericFromCall(void* env, CLIPSValue* ret, int pos, GenericTryGetFromCallFunction fn) noexcept {
+            static bool init = true;
+            static std::string funcStr;
+            if (init) {
+                init = false;
+                funcStr = std::get<1>(syn::retrieveFunctionNames<T>("call"));
+            }
+            return fn(env, funcStr, pos, ret);
         }
+
+        static inline bool tryGetArgumentAsSymbolFromCall(void* env, CLIPSValue* ret, int pos) noexcept {
+            return tryGetArgumentAsGenericFromCall(env, ret, pos, tryGetArgumentAsSymbol);
+        }
+
+        static inline bool tryGetArgumentAsIntegerFromCall(void* env, CLIPSValue* ret, int pos) noexcept {
+            return tryGetArgumentAsGenericFromCall(env, ret, pos, tryGetArgumentAsInteger);
+        }
+
+        static bool tryExtractInteger(void* env, CLIPSValue* ret, CLIPSValue* storage, int pos, int errorCode, const std::string& msg) noexcept {
+            if (!tryGetArgumentAsIntegerFromCall(env, storage, pos)) {
+                return badCallArgument(env, ret, errorCode, msg);
+            }
+            return true;
+        }
+
+        static inline bool tryExtractIntegerErrorCode3(void* env, CLIPSValue* ret, CLIPSValue* storage, int pos, const std::string& msg) noexcept {
+            return tryExtractInteger(env, ret, storage, pos, 3, msg);
+        }
+
+        static bool tryExtractFunctionName(void* env, CLIPSValue* ret, CLIPSValue* storage) noexcept {
+            if (!tryGetArgumentAsSymbolFromCall(env, storage, 2)) {
+                return badCallArgument(env, ret, 2, "expected a function name to call!");
+            }
+            return true;
+        }
+
         static bool callFunction(void* env, syn::DataObjectPtr value, syn::DataObjectPtr ret) {
             static bool init = true;
             static std::string funcErrorPrefix;
