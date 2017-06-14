@@ -80,6 +80,7 @@ namespace iris {
                 return false;
         }
     }
+
 	bool Core::handleOperation(void* env, CLIPSValue* ret) {
         using TargetSpace = CoreWrapper::TargetSpace;
 		using WrappedOp = CoreWrapper::Operations;

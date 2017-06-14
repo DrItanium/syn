@@ -48,7 +48,10 @@ namespace cisc0 {
 	void installCoreWrapper(void* env) {
 		CoreWrapper::registerWithEnvironment(env);
 	}
-
+    template<typename T>
+    constexpr bool isIllegalRegisterIndex(T value) noexcept {
+        return value >= ArchitectureConstants::RegisterCount || value < 0;
+    }
 	bool Core::handleOperation(void* env, CLIPSValue* ret) {
 		using OpToArgCount = std::tuple<CoreWrapper::Operations, int>;
 		using WrappedOp = CoreWrapper::Operations;
@@ -80,7 +83,7 @@ namespace cisc0 {
 			CLIPSValue index;
             __RETURN_FALSE_ON_FALSE__(CoreWrapper::tryExtractIntegerErrorCode3(env, ret, &index, 3, "Must provide an integer index to retrieve a register value!"));
 			auto i = syn::extractLong(env, index);
-			if (i >= ArchitectureConstants::RegisterCount || i < 0) {
+            if (isIllegalRegisterIndex(i)) {
                 return CoreWrapper::callErrorCode3(env, ret, "Illegal register index!");
 			}
 			CVSetInteger(ret, registerValue(static_cast<byte>(i)));
@@ -90,14 +93,13 @@ namespace cisc0 {
 			CLIPSValue index;
             __RETURN_FALSE_ON_FALSE__(CoreWrapper::tryExtractIntegerErrorCode3(env, ret, &index, 3, "Must provide an integer index to assign a register value!"));
 			auto ind = syn::extractLong(env, index);
-			if (ind >= ArchitectureConstants::RegisterCount || ind < 0) {
+            if (isIllegalRegisterIndex(ind)) {
                 return CoreWrapper::callErrorCode3(env, ret, "Illegal register index!");
 			}
             CLIPSValue value;
             __RETURN_FALSE_ON_FALSE__(CoreWrapper::tryExtractIntegerErrorCode3(env, ret, &value, 4, "Must provide an integer value to assign to the given register!"));
 			registerValue(static_cast<byte>(ind)) = syn::extractLong<RegisterValue>(env, value);
-			CVSetBoolean(ret, true);
-			return true;
+            return syn::setClipsBoolean(ret);
 		};
 		auto readMemory = [this, env, ret]() {
 			CLIPSValue index;
