@@ -124,7 +124,7 @@ namespace iris {
                 return CoreWrapper::callErrorCode4(env, ret, "Illegal space provided for retrieving a register from!");
             }
 			CLIPSValue index;
-            if (!syn::tryGetArgumentAsIntegerFromCall<Core, 3>(env, &index)) {
+            if (!CoreWrapper::tryGetArgumentAsIntegerFromCall<3>(env, &index)) {
                 return CoreWrapper::callErrorCode3(env, ret, "Must provide an integer index to retrieve a register value!");
 			}
 			auto i = syn::extractLong(env, index);
@@ -157,7 +157,7 @@ namespace iris {
                 return CoreWrapper::callErrorCode4(env, ret, "Illegal space provided for setting a register!");
             }
 			CLIPSValue index, value;
-            if (!syn::tryGetArgumentAsIntegerFromCall<Core, 3>(env, &index)) {
+            if (!CoreWrapper::tryGetArgumentAsIntegerFromCall<3>(env, &index)) {
                 return CoreWrapper::callErrorCode3(env, ret, "Must provide an integer index to assign a register value!");
 			}
 			auto ind = syn::extractLong(env, index);
@@ -170,7 +170,7 @@ namespace iris {
             if (inGivenSpaceAndValueGreaterThanExpected<TargetSpace::Predicates, ArchitectureConstants::ConditionRegisterCount>(space, ind)) {
                 return CoreWrapper::callErrorCode3(env, ret, "Illegal condition register index!");
 			}
-            if (!syn::tryGetArgumentAsIntegerFromCall<Core, 4>(env, &value)) {
+            if (!CoreWrapper::tryGetArgumentAsIntegerFromCall<4>(env, &value)) {
                 return CoreWrapper::callErrorCode3(env, ret, "Must provide an integer value to assign to the given register!");
 			}
             try {
@@ -195,7 +195,7 @@ namespace iris {
                 return CoreWrapper::callErrorCode4(env, ret, "illegal space specified for performing a read from memory");
             }
 			CLIPSValue index;
-            if (!syn::tryGetArgumentAsIntegerFromCall<Core, 3>(env, &index)) {
+            if (!CoreWrapper::tryGetArgumentAsIntegerFromCall<3>(env, &index)) {
                 return CoreWrapper::callErrorCode3(env, ret, "Must provide an integer index to retrieve a memory value!");
 			}
             try {
@@ -226,11 +226,11 @@ namespace iris {
                 return CoreWrapper::callErrorCode4(env, ret, "illegal space specified for performing a write to memory");
             }
 			CLIPSValue index;
-            if (!syn::tryGetArgumentAsIntegerFromCall<Core, 3>(env, &index)) {
+            if (!CoreWrapper::tryGetArgumentAsIntegerFromCall<3>(env, &index)) {
                 return CoreWrapper::callErrorCode3(env, ret, "Must provide an integer index to assign a register value!");
 			}
             CLIPSValue value;
-            if (!syn::tryGetArgumentAsIntegerFromCall<Core, 4>(env, &value)) {
+            if (!CoreWrapper::tryGetArgumentAsIntegerFromCall<4>(env, &value)) {
                 return CoreWrapper::callErrorCode3(env, ret, "Must provide an integer value to assign to the given register!");
 			}
             try {

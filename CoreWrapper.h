@@ -124,6 +124,11 @@ class CoreWrapper : public syn::ExternalAddressWrapper<T> {
             return badCallArgument(env, ret, code, msg);
         }
 
+        template<int index>
+        static bool tryGetArgumentAsIntegerFromCall(void* env, CLIPSValue* value) noexcept {
+            return syn::tryGetArgumentAsIntegerFromCall<T, index>(env, value);
+        }
+
         template<int code>
         static bool callErrorMessage(void* env, CLIPSValue* ret, const std::string& subOp, const std::string& rest) {
             std::stringstream stm;
