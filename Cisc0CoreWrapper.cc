@@ -130,18 +130,7 @@ namespace cisc0 {
 		CVSetBoolean(ret, true);
 		try {
 			switch(fop) {
-				case WrappedOp::Initialize:
-					initialize();
-					break;
-				case WrappedOp::Shutdown:
-					shutdown();
-					break;
-				case WrappedOp::Run:
-					run();
-					break;
-				case WrappedOp::Cycle:
-					CVSetBoolean(ret, cycle());
-					break;
+                __DEFAULT_CORE_OPERATIONS_EXEC__(WrappedOp);
 				case WrappedOp::GetRegister:
 					return getRegister();
 				case WrappedOp::SetRegister:

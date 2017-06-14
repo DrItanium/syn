@@ -43,6 +43,12 @@ namespace syn {
 
 #define __DEFAULT_ERROR_STATE__ Count
 
+#define __DEFAULT_CORE_OPERATIONS_EXEC__(TYPE) \
+    case TYPE :: Initialize: initialize(); break; \
+    case TYPE :: Shutdown: shutdown(); break; \
+    case TYPE :: Run: run(); break; \
+    case TYPE :: Cycle: CVSetBoolean(ret, cycle()); break
+
 template<typename T>
 bool badCallArgument(void* env, CLIPSValue* ret, int code, const std::string& msg) noexcept {
     static bool init = true;

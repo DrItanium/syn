@@ -156,7 +156,7 @@ namespace iris {
             if (space != TargetSpace::GPR && space != TargetSpace::Predicates) {
                 return CoreWrapper::callErrorCode4(env, ret, "Illegal space provided for setting a register!");
             }
-			CLIPSValue index, value;
+			CLIPSValue index;
             if (!CoreWrapper::tryExtractIntegerErrorCode3(env, ret, &index, 3, "Must provide an integer index to assign a register value!")) {
                 return false;
 			}
@@ -170,6 +170,7 @@ namespace iris {
             if (inGivenSpaceAndValueGreaterThanExpected<TargetSpace::Predicates, ArchitectureConstants::ConditionRegisterCount>(space, ind)) {
                 return CoreWrapper::callErrorCode3(env, ret, "Illegal condition register index!");
 			}
+            CLIPSValue value;
             if (!CoreWrapper::tryExtractIntegerErrorCode3(env, ret, &value, 4, "Must provide an integer value to assign to the given register!")) {
                 return false;
 			}
@@ -261,18 +262,7 @@ namespace iris {
 		CVSetBoolean(ret, true);
 		try {
 			switch(fop) {
-				case WrappedOp::Initialize:
-					initialize();
-					break;
-				case WrappedOp::Shutdown:
-					shutdown();
-					break;
-				case WrappedOp::Run:
-					run();
-					break;
-				case WrappedOp::Cycle:
-					CVSetBoolean(ret, cycle());
-					break;
+                __DEFAULT_CORE_OPERATIONS_EXEC__(WrappedOp);
 				case WrappedOp::GetRegister:
                 case WrappedOp::GetPredicateRegister:
 					return getRegister(space);
