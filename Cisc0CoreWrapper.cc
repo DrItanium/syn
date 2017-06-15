@@ -88,7 +88,7 @@ namespace cisc0 {
 		}
 		auto getRegister = [this, env, ret]() {
 			CLIPSValue index;
-            __RETURN_FALSE_ON_FALSE__(CoreWrapper::tryExtractIntegerErrorCode3(env, ret, &index, 3, "Must provide an integer index to retrieve a register value!"));
+            __RETURN_FALSE_ON_FALSE__(CoreWrapper::tryExtractArgumentAsIntegerWithErrorCode3(env, ret, &index, 3, "Must provide an integer index to retrieve a register value!"));
 			auto i = syn::extractLong(env, index);
             __RETURN_FALSE_ON_FALSE__(failOnIllegalRegisterIndex(env, ret, i));
 			CVSetInteger(ret, registerValue(static_cast<byte>(i)));
@@ -96,26 +96,26 @@ namespace cisc0 {
 		};
 		auto setRegister = [this, env, ret]() {
 			CLIPSValue index;
-            __RETURN_FALSE_ON_FALSE__(CoreWrapper::tryExtractIntegerErrorCode3(env, ret, &index, 3, "Must provide an integer index to assign a register value!"));
+            __RETURN_FALSE_ON_FALSE__(CoreWrapper::tryExtractArgumentAsIntegerWithErrorCode3(env, ret, &index, 3, "Must provide an integer index to assign a register value!"));
 			auto ind = syn::extractLong(env, index);
             __RETURN_FALSE_ON_FALSE__(failOnIllegalRegisterIndex(env, ret, ind));
             CLIPSValue value;
-            __RETURN_FALSE_ON_FALSE__(CoreWrapper::tryExtractIntegerErrorCode3(env, ret, &value, 4, "Must provide an integer value to assign to the given register!"));
+            __RETURN_FALSE_ON_FALSE__(CoreWrapper::tryExtractArgumentAsIntegerWithErrorCode3(env, ret, &value, 4, "Must provide an integer value to assign to the given register!"));
 			registerValue(static_cast<byte>(ind)) = syn::extractLong<RegisterValue>(env, value);
             return syn::setClipsBoolean(ret);
 		};
 		auto readMemory = [this, env, ret]() {
 			CLIPSValue index;
-            __RETURN_FALSE_ON_FALSE__(CoreWrapper::tryExtractIntegerErrorCode3(env, ret, &index, 3, "Must provide an integer index to retrieve a memory value!"));
+            __RETURN_FALSE_ON_FALSE__(CoreWrapper::tryExtractArgumentAsIntegerWithErrorCode3(env, ret, &index, 3, "Must provide an integer index to retrieve a memory value!"));
 			CVSetInteger(ret, loadWord(syn::extractLong<RegisterValue>(env, index)));
 			return true;
 		};
 		auto writeMemory = [this, env, ret]() {
 			CLIPSValue index;
-            __RETURN_FALSE_ON_FALSE__(CoreWrapper::tryExtractIntegerErrorCode3(env, ret, &index, 3, "Must provide an integer index to assign a register value!"));
+            __RETURN_FALSE_ON_FALSE__(CoreWrapper::tryExtractArgumentAsIntegerWithErrorCode3(env, ret, &index, 3, "Must provide an integer index to assign a register value!"));
 			auto ind = syn::extractLong<Address>(env, index);
             CLIPSValue value;
-            __RETURN_FALSE_ON_FALSE__(CoreWrapper::tryExtractIntegerErrorCode3(env, ret, &value, 4, "Must provide an integer value to assign to the given register!"));
+            __RETURN_FALSE_ON_FALSE__(CoreWrapper::tryExtractArgumentAsIntegerWithErrorCode3(env, ret, &value, 4, "Must provide an integer value to assign to the given register!"));
 			storeWord(ind, syn::extractLong<Word>(env, value));
 			CVSetBoolean(ret, true);
 			return true;

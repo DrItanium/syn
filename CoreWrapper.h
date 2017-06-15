@@ -67,11 +67,6 @@ class CoreWrapper : public syn::ExternalAddressWrapper<T> {
             return Parent::badCallArgument(env, ret, 4, msg);
         }
 
-
-        static inline bool tryExtractIntegerErrorCode3(void* env, CLIPSValue* ret, CLIPSValue* storage, int pos, const std::string& msg) noexcept {
-            return Parent::tryExtractArgumentAsInteger(env, ret, storage, pos, 3, msg);
-        }
-
         static bool callFunction(void* env, syn::DataObjectPtr value, syn::DataObjectPtr ret) {
             static bool init = true;
             static std::string funcErrorPrefix;
