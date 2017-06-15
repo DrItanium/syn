@@ -375,18 +375,18 @@ namespace syn {
                 auto ptr = static_cast<Self_Ptr>(DOPToExternalAddress(value));
                 auto rangeViolation = [errOutOfRange, ptr, &str](Address addr) { errOutOfRange(str, ptr->size(), addr); };
                 CLIPSValue arg0, arg1;
-                auto checkArg = [callErrorMessage, &str, env](unsigned int index, MayaType type, const std::string& msg, CLIPSValue* dat) noexcept {
-                    if (!checkThenGetArgument(env, funcStr, index, type, dat)) {
-                        return callErrorMessage(str, msg);
-                    }
-                    return true;
-                };
-                auto checkArg0 = [checkArg, &arg0, env, &str](MayaType type, const std::string& msg) noexcept { return checkArg(3, type, msg, &arg0); };
-                auto checkArg1 = [checkArg, &arg1, env, &str](MayaType type, const std::string& msg) noexcept { return checkArg(4, type, msg, &arg1); };
-                auto oneCheck = [checkArg0](MayaType type, const std::string& msg) noexcept { return checkArg0(type, msg); };
-                auto twoCheck = [checkArg0, checkArg1](MayaType type0, const std::string& msg0, MayaType type1, const std::string& msg1) noexcept {
-                    return checkArg0(type0, msg0) && checkArg1(type1, msg1);
-                };
+                //auto checkArg = [callErrorMessage, &str, env](unsigned int index, MayaType type, const std::string& msg, CLIPSValue* dat) noexcept {
+                //    if (!checkThenGetArgument(env, funcStr, index, type, dat)) {
+                //        return callErrorMessage(str, msg);
+                //    }
+                //    return true;
+                //};
+                //auto checkArg0 = [checkArg, &arg0, env, &str](MayaType type, const std::string& msg) noexcept { return checkArg(3, type, msg, &arg0); };
+                //auto checkArg1 = [checkArg, &arg1, env, &str](MayaType type, const std::string& msg) noexcept { return checkArg(4, type, msg, &arg1); };
+                //auto oneCheck = [checkArg0](MayaType type, const std::string& msg) noexcept { return checkArg0(type, msg); };
+                //auto twoCheck = [checkArg0, checkArg1](MayaType type0, const std::string& msg0, MayaType type1, const std::string& msg1) noexcept {
+                //    return checkArg0(type0, msg0) && checkArg1(type1, msg1);
+                //};
                 MemoryBlockOp op;
                 int aCount;
                 std::tie(op, aCount) = result->second;
@@ -397,7 +397,7 @@ namespace syn {
                     ss << " expected " << std::dec << argCount << " arguments";
                     CVSetBoolean(ret, false);
                     auto tmp = ss.str();
-                    return callErrorMessage(str, tmp);
+                    return Parent::callErrorMessage(env, ret, str, tmp);
                 }
                 CVSetBoolean(ret, true);
                 // now check and see if we are looking at a legal
@@ -409,7 +409,7 @@ namespace syn {
                     }
                     return result;
                 };
-                auto commonSingleIntegerBody = [oneCheck, checkAddr, env, &arg0, ptr](auto fn) {
+                auto commonSingleIntegerBody = [checkAddr, env, &arg0, ptr](auto fn) {
                     auto check = oneCheck(MayaType::Integer, "First argument must be an address");
                     if (check) {
                         auto addr = extractLong(env, arg0);
@@ -488,7 +488,7 @@ namespace syn {
                         try {
                             auto pCall = translateArithmeticOperation(op);
                             if (syn::isErrorState(pCall)) {
-                                return callErrorMessage(str, "<- not an arithmetic operation!");
+                                return Parent::callErrorMessage(env, ret, str, "<- not an arithmetic operation!");
                             }
                             auto val0 = ptr->getMemoryCellValue(addr0);
                             auto val1 = ptr->getMemoryCellValue(addr1);
@@ -500,7 +500,7 @@ namespace syn {
                     }
                     return check;
                 } else {
-                    return callErrorMessage(str, "<- legal but unimplemented operation!");
+                    return Parent::callErrorMessageCode3(env, ret, str, "<- legal but unimplemented operation!");
                 }
                 return true;
 			}
