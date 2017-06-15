@@ -28,6 +28,7 @@
 #define _SYN_BASE_H
 #define INDIRECTOR(a, ...) PRIMITIVE_INDIRECTOR(a, __VA_ARGS__)
 #define PRIMITIVE_INDIRECTOR(a, ...) a ## __VA_ARGS__
+#define __RETURN_FALSE_ON_FALSE__(condition) if (!(condition)) { return false; }
 #include "BaseTypes.h"
 #include "Problem.h"
 #include <memory>

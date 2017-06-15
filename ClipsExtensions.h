@@ -237,6 +237,29 @@ static FunctionStrings retrieveFunctionNames(const std::string& action) noexcept
     }
 
 template<typename T>
+bool badCallArgument(void* env, CLIPSValue* ret, int code, const std::string& msg) noexcept {
+    static bool init = true;
+    static std::string funcErrorPrefix;
+    if (init) {
+        funcErrorPrefix = std::get<2>(syn::retrieveFunctionNames<T>("call"));
+        init = false;
+    }
+    CVSetBoolean(ret, false);
+    return syn::errorMessage(env, "CALL", code, funcErrorPrefix, msg);
+}
+
+inline bool setClipsBoolean(CLIPSValue* ret, bool value = true) noexcept {
+    CVSetBoolean(ret, value);
+    return value;
+}
+bool checkThenGetArgument(void* env, const std::string& function, int position, MayaType type, DataObjectPtr saveTo) noexcept;
+bool tryGetArgumentAsInteger(void* env, const std::string& function, int position, DataObjectPtr saveTo) noexcept;
+bool tryGetArgumentAsSymbol(void* env, const std::string& function, int position, DataObjectPtr saveTo) noexcept;
+bool tryGetArgumentAsString(void* env, const std::string& function, int position, DataObjectPtr saveTo) noexcept;
+bool hasCorrectArgCount(void* env, int compare) noexcept;
+int getArgCount(void* env) noexcept;
+
+template<typename T>
 class ExternalAddressWrapper {
 	public:
 		using InternalType = T;
@@ -309,6 +332,55 @@ class ExternalAddressWrapper {
 		static bool isOfType(void* env, DataObjectPtr ptr) noexcept {
 			return ExternalAddressRegistrar<InternalType>::isOfType(env, ptr);
 		}
+        using GenericTryGetFromCallFunction = std::function<bool(void*, const std::string&, int, CLIPSValue*)>;
+        static bool tryGetArgumentAsGenericFromCall(void* env, CLIPSValue* ret, int pos, GenericTryGetFromCallFunction fn) noexcept {
+            static bool init = true;
+            static std::string funcStr;
+            if (init) {
+                init = false;
+                funcStr = std::get<1>(syn::retrieveFunctionNames<T>("call"));
+            }
+            return fn(env, funcStr, pos, ret);
+        }
+
+        static inline bool tryGetArgumentAsSymbolFromCall(void* env, CLIPSValue* ret, int pos) noexcept {
+            return tryGetArgumentAsGenericFromCall(env, ret, pos, tryGetArgumentAsSymbol);
+        }
+
+        static inline bool tryGetArgumentAsIntegerFromCall(void* env, CLIPSValue* ret, int pos) noexcept {
+            return tryGetArgumentAsGenericFromCall(env, ret, pos, tryGetArgumentAsInteger);
+        }
+
+        static inline bool badCallArgument(void* env, CLIPSValue* ret, int code, const std::string& msg) noexcept {
+            return syn::badCallArgument<T>(env, ret, code, msg);
+        }
+
+        static bool tryExtractArgument(void* env, CLIPSValue* ret, CLIPSValue* storage, MayaType type, int pos, int errorCode, const std::string& msg) noexcept {
+            if (!tryGetArgumentAsIntegerFromCall(env, storage, pos)) {
+                return badCallArgument(env, ret, errorCode, msg);
+            }
+            return true;
+        }
+        static bool tryExtractInteger(void* env, CLIPSValue* ret, CLIPSValue* storage, int pos, int errorCode, const std::string& msg) noexcept {
+        }
+
+        static bool tryExtractFunctionName(void* env, CLIPSValue* ret, CLIPSValue* storage) noexcept {
+            if (!tryGetArgumentAsSymbolFromCall(env, storage, 2)) {
+                return badCallArgument(env, ret, 2, "expected a function name to call!");
+            }
+            return true;
+        }
+
+        static bool callErrorMessage(void* env, CLIPSValue* ret, int code, const std::string& subOp, const std::string& rest) {
+            std::stringstream stm;
+            stm << " " << subOp << ": " << rest << std::endl;
+            auto msg = stm.str();
+            return badCallArgument(env, ret, code, msg);
+        }
+
+        static inline bool callErrorMessageCode3(void* env, CLIPSValue* ret, const std::string& subOp, const std::string& rest) noexcept {
+            return callErrorMessage(env, ret, 3, subOp, rest);
+        }
 	public:
 		ExternalAddressWrapper(std::unique_ptr<T>&& value) : _value(std::move(value)) { }
         ExternalAddressWrapper(T* ptr) : _value(std::move(std::unique_ptr<T>(ptr))) { }

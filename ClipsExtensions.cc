@@ -301,6 +301,7 @@ namespace syn {
                 return defaultErrorState<syn::ALU::StandardOperations>;
         }
     }
+
 	template<typename Word>
 	class ManagedMemoryBlock : public ExternalAddressWrapper<Block<Word>> {
 		public:
@@ -357,28 +358,19 @@ namespace syn {
                 if (!isExternalAddress(value)) {
 					return errorMessage(env, "CALL", 1, funcErrorPrefix, "Function call expected an external address as the first argument!");
                 }
-                auto callErrorMessage = [env, ret](const std::string& subOp, const std::string& rest) noexcept {
-                    CVSetBoolean(ret, false);
-                    std::stringstream stm;
-                    stm << " " << subOp << ": " << rest << std::endl;
-                    auto msg = stm.str();
-                    return errorMessage(env, "CALL", 3, funcErrorPrefix, msg);
-                };
-                auto errOutOfRange = [callErrorMessage, env, ret](const std::string& subOp, CLIPSInteger capacity, Address address) noexcept {
+                auto errOutOfRange = [env, ret](const std::string& subOp, CLIPSInteger capacity, Address address) noexcept {
                     std::stringstream ss;
                     ss << funcErrorPrefix << ": Provided address " << std::hex << address << " is either less than zero or greater than " << std::hex << capacity << std::endl;
-                    return callErrorMessage(subOp, ss.str());
+                    return Parent::callErrorMessage(env, ret, 3, subOp, ss.str());
                 };
                 CLIPSValue operation;
-                if (!Arg2IsSymbol(env, &operation, funcStr)) {
-                    return errorMessage(env, "CALL", 2, funcErrorPrefix, "expected a function name to call!");
-                }
+                __RETURN_FALSE_ON_FALSE__(Parent::tryExtractFunctionName(env, ret, &operation));
                 std::string str(extractLexeme(env, operation));
                 // translate the op to an enumeration
                 auto result = opTranslation.find(str);
                 if (result == opTranslation.end()) {
                     CVSetBoolean(ret, false);
-                    return callErrorMessage(str, "<- unknown operation requested!");
+                    return Parent::callErrorMessage(env, ret, 3, str, "<- unknown operation requested!");
                 }
                 auto ptr = static_cast<Self_Ptr>(DOPToExternalAddress(value));
                 auto rangeViolation = [errOutOfRange, ptr, &str](Address addr) { errOutOfRange(str, ptr->size(), addr); };
@@ -555,10 +547,10 @@ namespace syn {
 #define DefMemoryBlock(name, type, alias) \
 	DefWrapperSymbolicName(Block< type > , name ); \
 	using alias = ManagedMemoryBlock< type >
-	//DefMemoryBlock("memory-block:uint16", uint16, ManagedMemoryBlock_uint16);
-	//DefMemoryBlock("memory-block:uint32", uint32, ManagedMemoryBlock_uint32);
-	//DefMemoryBlock("memory-block:int32", int32, ManagedMemoryBlock_int32);
-	//DefMemoryBlock("memory-block:int16", int16, ManagedMemoryBlock_int16);
+	DefMemoryBlock("memory-block:uint16", uint16, ManagedMemoryBlock_uint16);
+	DefMemoryBlock("memory-block:uint32", uint32, ManagedMemoryBlock_uint32);
+	DefMemoryBlock("memory-block:int32", int32, ManagedMemoryBlock_int32);
+	DefMemoryBlock("memory-block:int16", int16, ManagedMemoryBlock_int16);
 #undef DefMemoryBlock
 
 	void installExtensions(void* theEnv) {
@@ -579,10 +571,10 @@ namespace syn {
 		EnvAddUDF(env, "right-shift", "l", CLIPS_shiftRight, "CLIPS_shiftRight", 2, 2, "l;l", nullptr);
 		EnvAddUDF(env, "break-apart-number", "m", CLIPS_breakApartNumber, "CLIPS_breakApartNumber", 1, 1, "l", nullptr);
 		StandardManagedMemoryBlock::registerWithEnvironment(theEnv);
-		//ManagedMemoryBlock_uint16::registerWithEnvironment(theEnv);
-		//ManagedMemoryBlock_uint32::registerWithEnvironment(theEnv);
-		//ManagedMemoryBlock_int16::registerWithEnvironment(theEnv);
-		//ManagedMemoryBlock_int32::registerWithEnvironment(theEnv);
+		ManagedMemoryBlock_uint16::registerWithEnvironment(theEnv);
+		ManagedMemoryBlock_uint32::registerWithEnvironment(theEnv);
+		ManagedMemoryBlock_int16::registerWithEnvironment(theEnv);
+		ManagedMemoryBlock_int32::registerWithEnvironment(theEnv);
 	}
 
     MultifieldBuilder::MultifieldBuilder(void* env, long capacity) : _size(capacity), _rawMultifield(EnvCreateMultifield(env, capacity)) { }
