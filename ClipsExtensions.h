@@ -351,6 +351,10 @@ class ExternalAddressWrapper {
         static bool tryExtractArgumentAsInteger(void* env, CLIPSValue* ret, CLIPSValue* storage, int pos, int errorCode, const std::string& msg) noexcept {
             return tryExtractArgument(env, ret, storage, MayaType::Integer, pos, errorCode, msg);
         }
+
+        static inline bool tryExtractArgumentAsIntegerWithErrorCode3(void* env, CLIPSValue* ret, CLIPSValue* storage, int pos, const std::string& msg) noexcept {
+            return tryExtractArgumentAsInteger(env, ret, storage, pos, 3, msg);
+        }
         static bool tryExtractArgumentAsSymbol(void* env, CLIPSValue* ret, CLIPSValue* storage, int pos, int errorCode, const std::string& msg) noexcept {
             return tryExtractArgument(env, ret, storage, MayaType::Symbol, pos, errorCode, msg);
         }

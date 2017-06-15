@@ -69,9 +69,8 @@ class CoreWrapper : public syn::ExternalAddressWrapper<T> {
 
 
         static inline bool tryExtractIntegerErrorCode3(void* env, CLIPSValue* ret, CLIPSValue* storage, int pos, const std::string& msg) noexcept {
-            return Parent::tryExtractInteger(env, ret, storage, pos, 3, msg);
+            return Parent::tryExtractArgumentAsInteger(env, ret, storage, pos, 3, msg);
         }
-
 
         static bool callFunction(void* env, syn::DataObjectPtr value, syn::DataObjectPtr ret) {
             static bool init = true;
