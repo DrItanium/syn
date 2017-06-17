@@ -419,15 +419,7 @@ namespace syn {
                 } else if (op == MemoryBlockOp::Shutdown) {
                     // do nothing right now
                 } else if (op == MemoryBlockOp::Get) {
-                    auto check = Parent::tryExtractArgument1(env, ret, &arg0, MayaType::Integer, "First argument but be an integer address!");
-                    if (check) {
-                        auto addr = extractLong(env, arg0);
-                        if (!checkAddr(addr)) {
-                            return false;
-                        }
-                        CVSetInteger(ret, ptr->getMemoryCellValue(addr));
-                    }
-                    return check;
+                    return commonSingleIntegerBody([ret](auto ptr, auto addr) { CVSetInteger(ret, ptr->getMemoryCellValue(addr)); });
                 } else if (op == MemoryBlockOp::Populate) {
                     auto check = Parent::tryExtractArgument1(env, ret, &arg0, MayaType::Integer, "First argument must be an INTEGER value to populate all of the memory cells with!");
                     if (check) {
