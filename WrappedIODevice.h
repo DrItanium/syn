@@ -134,9 +134,7 @@ namespace syn {
                     return badArgument(1, "Function call expected an external address as the first argument!");
                 }
                 CLIPSValue op;
-                if (!syn::tryGetArgumentAsSymbol(env, funcStr, 2, &op)) {
-                    return badArgument(2, "expected a function name to call!");
-                }
+                __RETURN_FALSE_ON_FALSE__(Parent::tryExtractFunctionName(env, ret, &op));
                 std::string str(syn::extractLexeme(env, op));
                 auto result = WrappedIODeviceConstants::nameToOperation(str);
                 if (isErrorState(result)) {
@@ -154,9 +152,7 @@ namespace syn {
                 auto ptr = static_cast<Self_Ptr>(DOPToExternalAddress(value));
                 auto readOperation = [ptr, ret, env, badArgument]() {
                     CLIPSValue tmp;
-                    if (!syn::tryGetArgumentAsInteger(env, funcStr, 3, &tmp)) {
-                        return badArgument(3, "provided address is not an integer!");
-                    }
+                    __RETURN_FALSE_ON_FALSE__(Parent::tryExtractArgumentAsIntegerWithErrorCode3(env, ret, &tmp, 3, "provided address is not an integer!"));
                     try {
                         auto address = syn::extractLong<Address>(env, tmp);
                         CVSetInteger(ret, ptr->read(address));
@@ -167,11 +163,8 @@ namespace syn {
                 };
                 auto writeOperation = [ptr, ret, env, badArgument]() {
                     CLIPSValue t0, t1;
-                    if (!syn::tryGetArgumentAsInteger(env, funcStr, 3, &t0)) {
-                        return badArgument(3, "provided address is not an integer!");
-                    } else if (!syn::tryGetArgumentAsInteger(env, funcStr, 4, &t1)) {
-                        return badArgument(3, "provided value is not an integer!");
-                    }
+                    __RETURN_FALSE_ON_FALSE__(Parent::tryExtractArgumentAsIntegerWithErrorCode3(env, ret, &t0, 3, "provided addres is not an integer!"));
+                    __RETURN_FALSE_ON_FALSE__(Parent::tryExtractArgumentAsIntegerWithErrorCode3(env, ret, &t1, 4, "provided value is not an integer!"));
                     try {
                         CVSetBoolean(ret, true);
                         auto address = syn::extractLong<Address>(env, t0);
