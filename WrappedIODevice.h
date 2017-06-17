@@ -152,7 +152,7 @@ namespace syn {
                 auto ptr = static_cast<Self_Ptr>(DOPToExternalAddress(value));
                 auto readOperation = [ptr, ret, env, badArgument]() {
                     CLIPSValue tmp;
-                    __RETURN_FALSE_ON_FALSE__(Parent::tryExtractArgumentAsIntegerWithErrorCode3(env, ret, &tmp, 3, "provided address is not an integer!"));
+                    __RETURN_FALSE_ON_FALSE__(Parent::tryExtractArgument1(env, ret, &tmp, MayaType::Integer, "provided address is not an integer!"));
                     try {
                         auto address = syn::extractLong<Address>(env, tmp);
                         CVSetInteger(ret, ptr->read(address));
@@ -163,14 +163,13 @@ namespace syn {
                 };
                 auto writeOperation = [ptr, ret, env, badArgument]() {
                     CLIPSValue t0, t1;
-                    __RETURN_FALSE_ON_FALSE__(Parent::tryExtractArgumentAsIntegerWithErrorCode3(env, ret, &t0, 3, "provided addres is not an integer!"));
-                    __RETURN_FALSE_ON_FALSE__(Parent::tryExtractArgumentAsIntegerWithErrorCode3(env, ret, &t1, 4, "provided value is not an integer!"));
+                    __RETURN_FALSE_ON_FALSE__(Parent::tryExtractArgument1(env, ret, &t0, MayaType::Integer, "provided address is not an integer!"));
+                    __RETURN_FALSE_ON_FALSE__(Parent::tryExtractArgument2(env, ret, &t1, MayaType::Integer, "provided value is not an integer!"));
                     try {
-                        CVSetBoolean(ret, true);
                         auto address = syn::extractLong<Address>(env, t0);
                         auto value = syn::extractLong<Data>(env, t1);
                         ptr->write(address, value);
-                        return true;
+                        return setClipsBoolean(ret);
                     } catch(const syn::Problem& p) {
                         return badArgument(3, p.what());
                     }
@@ -180,13 +179,11 @@ namespace syn {
                         Self::setType(ret);
                         return true;
                     case Operations::Shutdown:
-                        CVSetBoolean(ret, true);
                         ptr->shutdown();
-                        return true;
+                        return setClipsBoolean(ret);
                     case Operations::Initialize:
-                        CVSetBoolean(ret, true);
                         ptr->initialize();
-                        return true;
+                        return setClipsBoolean(ret);
                     case Operations::Read:
                         return readOperation();
                     case Operations::Write:

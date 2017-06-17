@@ -348,19 +348,8 @@ class ExternalAddressWrapper {
             }
             return true;
         }
-        static bool tryExtractArgumentAsInteger(void* env, CLIPSValue* ret, CLIPSValue* storage, int pos, int errorCode, const std::string& msg) noexcept {
-            return tryExtractArgument(env, ret, storage, MayaType::Integer, pos, errorCode, msg);
-        }
-
-        static inline bool tryExtractArgumentAsIntegerWithErrorCode3(void* env, CLIPSValue* ret, CLIPSValue* storage, int pos, const std::string& msg) noexcept {
-            return tryExtractArgumentAsInteger(env, ret, storage, pos, 3, msg);
-        }
-        static bool tryExtractArgumentAsSymbol(void* env, CLIPSValue* ret, CLIPSValue* storage, int pos, int errorCode, const std::string& msg) noexcept {
-            return tryExtractArgument(env, ret, storage, MayaType::Symbol, pos, errorCode, msg);
-        }
-
         static bool tryExtractFunctionName(void* env, CLIPSValue* ret, CLIPSValue* storage) noexcept {
-            return tryExtractArgumentAsSymbol(env, ret, storage, 2, 2, "expected a function name to call!");
+            return tryExtractArgument(env, ret, storage, MayaType::Symbol, 2, 2, "expected a function name to call!");
         }
 
         static bool callErrorMessage(void* env, CLIPSValue* ret, int code, const std::string& subOp, const std::string& rest) {
@@ -372,6 +361,12 @@ class ExternalAddressWrapper {
 
         static inline bool callErrorMessageCode3(void* env, CLIPSValue* ret, const std::string& subOp, const std::string& rest) noexcept {
             return callErrorMessage(env, ret, 3, subOp, rest);
+        }
+        static inline bool tryExtractArgument1(void* env, CLIPSValuePtr ret, CLIPSValuePtr storage, MayaType type, const std::string& errorMsg) noexcept {
+            return tryExtractArgument(env, ret, storage, type, 3, 3, errorMsg);
+        }
+        static inline bool tryExtractArgument2(void* env, CLIPSValuePtr ret, CLIPSValuePtr storage, MayaType type, const std::string& errorMsg) noexcept {
+            return tryExtractArgument(env, ret, storage, type, 4, 3, errorMsg);
         }
 	public:
 		ExternalAddressWrapper(std::unique_ptr<T>&& value) : _value(std::move(value)) { }

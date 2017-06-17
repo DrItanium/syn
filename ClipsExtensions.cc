@@ -398,7 +398,7 @@ namespace syn {
                     return result;
                 };
                 auto commonSingleIntegerBody = [checkAddr, env, ret, &arg0, ptr](auto fn) {
-                    auto check = Parent::tryExtractArgumentAsInteger(env, ret, &arg0, 3, 3, "First argument be be an address");
+                    auto check = Parent::tryExtractArgument1(env, ret, &arg0, MayaType::Integer, "First argument be be an address");
                     if (check) {
                         auto addr = extractLong(env, arg0);
                         if (!checkAddr(addr)) {
@@ -419,7 +419,7 @@ namespace syn {
                 } else if (op == MemoryBlockOp::Shutdown) {
                     // do nothing right now
                 } else if (op == MemoryBlockOp::Get) {
-                    auto check = Parent::tryExtractArgumentAsInteger(env, ret, &arg0, 3, 3, "First argument but be an integer address!");
+                    auto check = Parent::tryExtractArgument1(env, ret, &arg0, MayaType::Integer, "First argument but be an integer address!");
                     if (check) {
                         auto addr = extractLong(env, arg0);
                         if (!checkAddr(addr)) {
@@ -429,7 +429,7 @@ namespace syn {
                     }
                     return check;
                 } else if (op == MemoryBlockOp::Populate) {
-                    auto check = Parent::tryExtractArgumentAsInteger(env, ret, &arg0, 3, 3, "First argument must be an INTEGER value to populate all of the memory cells with!");
+                    auto check = Parent::tryExtractArgument1(env, ret, &arg0, MayaType::Integer, "First argument must be an INTEGER value to populate all of the memory cells with!");
                     if (check) {
                         ptr->setMemoryToSingleValue(extractLong(env, arg0));
                     }
@@ -439,8 +439,8 @@ namespace syn {
                 } else if (op == MemoryBlockOp::Decrement) {
                     return commonSingleIntegerBody([](auto ptr, auto addr) { ptr->decrementMemoryCell(addr); });
                 } else if (op == MemoryBlockOp::Swap || op == MemoryBlockOp::Move) {
-                    auto check = Parent::tryExtractArgumentAsInteger(env, ret, &arg0, 3, 3, "First argument must be an address") &&
-                                 Parent::tryExtractArgumentAsInteger(env, ret, &arg1, 4, 3, "Second argument must be an address");
+                    auto check = Parent::tryExtractArgument1(env, ret, &arg0, MayaType::Integer, "First argument must be an address") &&
+                                 Parent::tryExtractArgument2(env, ret, &arg1, MayaType::Integer, "Second argument must be an address");
                     if (check) {
                         auto addr0 = extractLong(env, arg0);
                         auto addr1 = extractLong(env, arg1);
@@ -455,8 +455,8 @@ namespace syn {
                     }
                     return check;
                 } else if (op == MemoryBlockOp::Set) {
-                    auto check = Parent::tryExtractArgumentAsInteger(env, ret, &arg0, 3, 3, "First argument must be an address") &&
-                                 Parent::tryExtractArgumentAsInteger(env, ret, &arg1, 4, 3, "Second argument must be an address");
+                    auto check = Parent::tryExtractArgument1(env, ret, &arg0, MayaType::Integer, "First argument must be an address") &&
+                                 Parent::tryExtractArgument2(env, ret, &arg1, MayaType::Integer, "Second argument must be an address");
                     if (check) {
                         auto addr0 = extractLong(env, arg0);
                         if (!checkAddr(addr0)) {
@@ -467,8 +467,8 @@ namespace syn {
                     }
                     return check;
                 } else if (isArithmeticOperation(op)) {
-                    auto check = Parent::tryExtractArgumentAsInteger(env, ret, &arg0, 3, 3, "First argument must be an address") &&
-                                 Parent::tryExtractArgumentAsInteger(env, ret, &arg1, 4, 3, "Second argument must be an address");
+                    auto check = Parent::tryExtractArgument1(env, ret, &arg0, MayaType::Integer, "First argument must be an address") &&
+                                 Parent::tryExtractArgument2(env, ret, &arg1, MayaType::Integer, "Second argument must be an address");
                     CVSetBoolean(ret, false);
                     if (check) {
                         auto addr0 = extractLong(env, arg0);
