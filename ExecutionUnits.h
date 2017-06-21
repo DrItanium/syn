@@ -125,20 +125,10 @@ namespace ALU {
      * hardcoded at compile time!
      */
     template<StandardOperations op, typename Word, typename Return = Word>
-    constexpr Return performOperation(Word a, Word b, syn::OnDivideByZero<Return> markDivideByZero) noexcept {
+    constexpr Return performOperation(Word a, Word b, syn::OnDivideByZero<Return> markDivideByZero = nullptr) noexcept {
         static_assert(!isErrorState(op), "Illegal operation!");
         return performOperation<Word, Return, decltype(op)>(op, a, b, markDivideByZero);
     }
-
-    /**
-     * Special version of performOperation where the StandardOperations is
-     * hardcoded at compile time!
-     */
-    template<StandardOperations op, typename Word, typename Return = Word>
-    constexpr Return performOperation(Word a, Word b) noexcept {
-        return performOperation<op, Word, Return>(a, b, nullptr);
-    }
-
 } // end namespace ALU
 
 namespace Comparator {
