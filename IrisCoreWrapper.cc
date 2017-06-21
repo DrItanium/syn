@@ -114,10 +114,7 @@ namespace iris {
 		int argCount;
         TargetSpace space;
 		std::tie(fop, argCount, space) = result->second;
-		auto aCount = 2 + argCount;
-        if (!syn::hasCorrectArgCount(env, aCount)) {
-			return CoreWrapper::callErrorMessageCode3(env, ret, opStr, " too many arguments provided!");
-		}
+        __RETURN_FALSE_ON_FALSE__(CoreWrapper::checkArgumentCount(env, ret, opStr, argCount));
 		auto getRegister = [this, env, ret](TargetSpace space) noexcept {
             if (space != TargetSpace::GPR && space != TargetSpace::Predicates) {
                 return CoreWrapper::callErrorCode4(env, ret, "Illegal space provided for retrieving a register from!");

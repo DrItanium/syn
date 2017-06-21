@@ -229,11 +229,11 @@ static FunctionStrings retrieveFunctionNames(const std::string& action) noexcept
     template<> \
     struct ExternalAddressWrapperType< internalType > { \
         using Self = ExternalAddressWrapperType< internalType >; \
+        using TheType = theWrapperType ; \
         ExternalAddressWrapperType() = delete; \
         ~ExternalAddressWrapperType() = delete; \
         ExternalAddressWrapperType(const ExternalAddressWrapperType < internalType > &) = delete; \
         ExternalAddressWrapperType(ExternalAddressWrapperType< internalType >&&) = delete; \
-        using TheType = theWrapperType ; \
     }
 
 template<typename T>
@@ -253,8 +253,6 @@ inline bool setClipsBoolean(CLIPSValue* ret, bool value = true) noexcept {
     return value;
 }
 bool checkThenGetArgument(void* env, const std::string& function, int position, MayaType type, DataObjectPtr saveTo) noexcept;
-bool hasCorrectArgCount(void* env, int compare) noexcept;
-int getArgCount(void* env) noexcept;
 
 template<typename T>
 class ExternalAddressWrapper {
@@ -280,6 +278,14 @@ class ExternalAddressWrapper {
             }
             CVSetString(ret, name.c_str());
         }
+        static bool checkArgumentCount(void* env, CLIPSValuePtr ret, const std::string& operation, int inputArgCount) {
+            auto aCount = baseArgumentIndex + inputArgCount;
+            if (!syn::hasCorrectArgCount(env, aCount)) {
+                return callErrorMessageCode3(env, ret, operation, " too many arguments provided!");
+            }
+            return true;
+        }
+
 		static unsigned int getAssociatedEnvironmentId(void* env) {
             return ExternalAddressRegistrar<InternalType>::getExternalAddressId(env);
         }

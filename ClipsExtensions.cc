@@ -326,7 +326,7 @@ namespace syn {
 				}
 
 				try {
-                    if (hasCorrectArgCount(env, 2)) {
+                    if (Parent::checkArgumentCount(env, ret, funcStr, 2)) {
 						CLIPSValue capacity;
                         if (!Arg2IsInteger(env, &capacity, funcStr)) {
 							CVSetBoolean(ret, false);
@@ -336,9 +336,6 @@ namespace syn {
 							auto idIndex = Self::getAssociatedEnvironmentId(env);
                             CVSetExternalAddress(ret, Self::make(size), idIndex);
 						}
-					} else {
-						errorMessage(env, "NEW", 1, funcErrorPrefix, " function new expected no arguments besides type!");
-						CVSetBoolean(ret, false);
 					}
 				} catch(const syn::Problem& p) {
                     handleProblem(env, ret, p, funcErrorPrefix);
@@ -378,15 +375,7 @@ namespace syn {
                 MemoryBlockOp op;
                 int aCount;
                 std::tie(op, aCount) = result->second;
-                // if it is registered then check the length
-                auto argCount = 2 /* always have two arguments */  + aCount;
-                if (!hasCorrectArgCount(env, argCount)) {
-                    std::stringstream ss;
-                    ss << " expected " << std::dec << argCount << " arguments";
-                    CVSetBoolean(ret, false);
-                    auto tmp = ss.str();
-                    return Parent::callErrorMessage(env, ret, 3, str, tmp);
-                }
+                __RETURN_FALSE_ON_FALSE__(Parent::checkArgumentCount(env, ret, str, aCount));
                 CVSetBoolean(ret, true);
                 // now check and see if we are looking at a legal
                 // instruction count

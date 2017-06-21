@@ -82,10 +82,7 @@ namespace cisc0 {
 		WrappedOp fop;
 		int argCount;
 		std::tie(fop, argCount) = result->second;
-		auto aCount = 2 + argCount;
-        if (!syn::hasCorrectArgCount(env, aCount)) {
-            return CoreWrapper::callErrorMessageCode3(env, ret, opStr, " too many arguments provided!");
-		}
+        __RETURN_FALSE_ON_FALSE__(CoreWrapper::checkArgumentCount(env, ret, opStr, argCount));
 		auto getRegister = [this, env, ret]() {
 			CLIPSValue index;
             __RETURN_FALSE_ON_FALSE__(CoreWrapper::tryExtractArgument1(env, ret, &index, syn::MayaType::Integer, "Must provide an integer index to retrieve a register value!"));
