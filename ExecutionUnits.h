@@ -27,6 +27,7 @@
 // define Execution Units to cut down on the amount of repeated actions
 #ifndef _SYN_XUNITS_H
 #define _SYN_XUNITS_H
+#include "Base.h"
 #include "BaseArithmetic.h"
 #include "IODevice.h"
 #include <cmath>
@@ -61,21 +62,7 @@ namespace FPU {
     template<StandardOperations op, typename Word, typename Return = Word>
     Return performOperation(Word a, Word b) {
         static_assert(!isErrorState(op), "Illegal FPU operation!");
-        using Operation = StandardOperations;
-        switch(op) {
-            case Operation::Add:
-                return syn::add<Word, Return>(a, b);
-            case Operation::Subtract:
-                return syn::sub<Word, Return>(a, b);
-            case Operation::Multiply:
-                return syn::mul<Word, Return>(a, b);
-            case Operation::Divide:
-                return syn::div<Word, Return>(a, b);
-            case Operation::SquareRoot:
-                return static_cast<Return>(sqrt(static_cast<double>(a)));
-            default:
-                throw syn::Problem("Undefined fpu operation!");
-        }
+        return performOperation<Word, Return, decltype(op)>(op, a, b);
     }
 }
 
@@ -140,40 +127,7 @@ namespace ALU {
     template<StandardOperations op, typename Word, typename Return = Word>
     constexpr Return performOperation(Word a, Word b, syn::OnDivideByZero<Return> markDivideByZero) noexcept {
         static_assert(!isErrorState(op), "Illegal operation!");
-        using Operation = StandardOperations;
-        switch(op) {
-            case Operation::Add:
-                return syn::add<Word, Return>(a, b);
-            case Operation::Subtract:
-                return syn::sub<Word, Return>(a, b);
-            case Operation::Multiply:
-                return syn::mul<Word, Return>(a, b);
-            case Operation::Divide:
-                return syn::div<Word, Return>(a, b, markDivideByZero);
-            case Operation::Remainder:
-                return syn::rem<Word, Return>(a, b, markDivideByZero);
-            case Operation::ShiftLeft:
-                return syn::shiftLeft<Word, Return>(a, b);
-            case Operation::ShiftRight:
-                return syn::shiftRight<Word, Return>(a, b);
-            case Operation::BinaryAnd:
-                return syn::binaryAnd<Word, Return>(a, b);
-            case Operation::BinaryOr:
-                return syn::binaryOr<Word, Return>(a, b);
-            case Operation::UnaryNot:
-                return syn::binaryNot<Word, Return>(a);
-            case Operation::BinaryXor:
-                return syn::binaryXor<Word, Return>(a, b);
-            case Operation::BinaryNand:
-                return syn::binaryNand<Word, Return>(a, b);
-            case Operation::CircularShiftLeft:
-                return syn::circularShiftLeft<Word, Return>(a, b);
-            case Operation::CircularShiftRight:
-                return syn::circularShiftRight<Word, Return>(a, b);
-            default:
-                // this will cause the world to hose itself!
-                throw syn::Problem("Undefined ALU operation!");
-        }
+        return performOperation<Word, Return, decltype(op)>(op, a, b, markDivideByZero);
     }
 
     /**
@@ -181,9 +135,10 @@ namespace ALU {
      * hardcoded at compile time!
      */
     template<StandardOperations op, typename Word, typename Return = Word>
-    inline constexpr Return performOperation(Word a, Word b) noexcept {
+    constexpr Return performOperation(Word a, Word b) noexcept {
         return performOperation<op, Word, Return>(a, b, nullptr);
     }
+
 } // end namespace ALU
 
 namespace Comparator {
@@ -247,45 +202,9 @@ namespace Comparator {
         }
     }
     template<StandardOperations op, typename Word, typename Return = Word>
-    Return performOperation(Word a, Word b) {
-        static_assert(!syn::isErrorState(op), "Illegal operation!");
-        using Operation = StandardOperations;
-        switch(op) {
-            case Operation::Eq:
-                return syn::eq<Word, Return>(a, b);
-            case Operation::Neq:
-                return syn::neq<Word, Return>(a, b);
-            case Operation::LessThan:
-                return syn::lt<Word, Return>(a, b);
-            case Operation::GreaterThan:
-                return syn::gt<Word, Return>(a, b);
-            case Operation::LessThanOrEqualTo:
-                return syn::le<Word, Return>(a, b);
-            case Operation::GreaterThanOrEqualTo:
-                return syn::ge<Word, Return>(a, b);
-            case Operation::BinaryAnd:
-                return syn::binaryAnd<Word, Return>(a, b);
-            case Operation::BinaryOr:
-                return syn::binaryOr<Word, Return>(a, b);
-            case Operation::UnaryNot:
-                return syn::binaryNot<Word, Return>(a);
-            case Operation::BinaryXor:
-                return syn::binaryXor<Word, Return>(a, b);
-            case Operation::BinaryNand:
-                return syn::binaryNand<Word, Return>(a, b);
-            case Operation::ShiftLeft:
-                return syn::shiftLeft<Word, Return>(a, b);
-            case Operation::ShiftRight:
-                return syn::shiftRight<Word, Return>(a, b);
-            case Operation::BinaryNor:
-                return syn::binaryNor<Word, Return>(a, b);
-            case Operation::CircularShiftLeft:
-                return syn::circularShiftLeft<Word, Return>(a, b);
-            case Operation::CircularShiftRight:
-                return syn::circularShiftRight<Word, Return>(a, b);
-            default:
-                throw syn::Problem("Illegal compare operation!");
-        }
+    inline Return performOperation(Word a, Word b) {
+        static_assert(!isErrorState(op), "Illegal operation!");
+        return performOperation<Word, Return, decltype(op)>(op, a, b);
     }
     enum class BooleanOperations {
         Eq,
@@ -323,29 +242,9 @@ namespace Comparator {
         }
     }
     template<BooleanOperations op>
-    inline bool performOperation(bool a, bool b) {
-        static_assert(!syn::isErrorState(op), "Illegal operation!");
-        using Operation = BooleanOperations;
-        switch(op) {
-            case Operation::Eq:
-                return syn::eq<bool>(a, b);
-            case Operation::Neq:
-                return syn::neq<bool>(a, b);
-            case Operation::BinaryAnd:
-                return syn::binaryAnd<bool>(a, b);
-            case Operation::BinaryOr:
-                return syn::binaryOr<bool>(a, b);
-            case Operation::BinaryXor:
-                return syn::binaryXor<bool>(a, b);
-            case Operation::UnaryNot:
-                return syn::binaryNot<bool>(a);
-            case Operation::BinaryNand:
-                return syn::binaryNand<bool>(a, b);
-            case Operation::BinaryNor:
-                return syn::binaryNor<bool>(a, b);
-            default:
-                throw syn::Problem("Illegal boolean compare operation!");
-        }
+    bool performOperation(bool a, bool b) {
+        static_assert(!isErrorState(op), "Illegal operation!");
+        return performOperation<bool, bool, decltype(op)>(op, a, b);
     }
 } // end namespace Comparator
 
