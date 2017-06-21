@@ -467,29 +467,5 @@ class Register {
         T _value;
 };
 
-template<uint64 mask = 0xFFFFFFFFFFFFFFFF>
-using RegisterUint64 = Register<uint64, mask>;
-
-template<uint32 mask = 0xFFFFFFFF>
-using RegisterUint32 = Register<uint32, mask>;
-
-template<uint16 mask = 0xFFFF>
-using RegisterUint16 = Register<uint16, mask>;
-
-template<uint8 mask = 0xFF>
-using RegisterUint8 = Register<uint8, mask>;
-
-template<int64 mask = static_cast<int64>(0xFFFFFFFFFFFFFFFF)>
-using RegisterInt64 = Register<int64, mask>;
-
-template<int32 mask = static_cast<int32>(0xFFFFFFFF)>
-using RegisterInt32 = Register<int32, mask>;
-
-template<int16 mask = static_cast<int16>(0xFFFF)>
-using RegisterInt16 = Register<int16, mask>;
-
-template<int8 mask = static_cast<int8>(0xFF)>
-using RegisterInt8 = Register<int8, mask>;
-
 } // end namespace syn
 #endif // end _SYN_XUNITS_H
