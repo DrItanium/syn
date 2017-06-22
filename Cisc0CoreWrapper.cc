@@ -76,9 +76,7 @@ namespace cisc0 {
         __RETURN_FALSE_ON_FALSE__(CoreWrapper::tryExtractFunctionName(env, ret, &operation));
 		std::string opStr(syn::extractLexeme(env, operation));
 		auto result = ops.find(opStr);
-		if (result == ops.end()) {
-            return CoreWrapper::callErrorMessageCode3(env, ret, opStr, " <- unknown operation requested!");
-		}
+        __RETURN_FALSE_ON_FALSE__(CoreWrapper::isLegalOperation(env, ret, opStr, result, ops.end()));
 		WrappedOp fop;
 		int argCount;
 		std::tie(fop, argCount) = result->second;

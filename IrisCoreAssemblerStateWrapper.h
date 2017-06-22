@@ -89,39 +89,25 @@ namespace iris {
                     funcStr = std::get<1>(functions);
                     funcErrorPrefix = std::get<2>(functions);
                 }
-                if (!syn::isExternalAddress(value)) {
-                    return syn::errorMessage(env, "CALL", 1, funcErrorPrefix, "Function call expected an external address as the first argument!");
-                }
+                __RETURN_FALSE_ON_FALSE__(Parent::isExternalAddress(env, ret, value));
                 CLIPSValue operation;
-                if (!syn::tryGetArgumentAsSymbol(env, funcStr, 2, &operation)) {
-                    return syn::errorMessage(env, "CALL", 2, funcErrorPrefix, "expected a function name to call!");
-                }
+                __RETURN_FALSE_ON_FALSE__(Parent::tryExtractFunctionName(env, ret, &operation));
                 std::string str(syn::extractLexeme(env, operation));
                 auto result = ops.find(str);
-                if (result == ops.end()) {
-                    CVSetBoolean(ret, false);
-                    return callErrorMessage(str, " <- unknown operation requested!");
-                }
+                __RETURN_FALSE_ON_FALSE__(Parent::isLegalOperation(env, ret, str, result, ops.end()));
                 Operations theOp;
                 int tArgCount;
                 std::tie(theOp, tArgCount) = result->second;
-                auto aCount = 2 + tArgCount;
-                if (!syn::hasCorrectArgCount(env, aCount)) {
-                    CVSetBoolean(ret, false);
-                    return callErrorMessage(str, " too many arguments provided!");
-                }
+                __RETURN_FALSE_ON_FALSE__(Parent::checkArgumentCount(env, ret, str, tArgCount));
                 auto ptr = static_cast<Self*>(DOPToExternalAddress(value));
                 auto parseLine = [env, ret, ptr]() {
                     CLIPSValue line;
-                    if (!syn::tryGetArgumentAsString(env, funcStr, 3, &line)) {
-                        CVSetBoolean(ret, false);
-                        return syn::errorMessage(env, "CALL", 3, funcErrorPrefix, "provided assembly line is not a string!");
-                    }
+                    __RETURN_FALSE_ON_FALSE__(Parent::tryExtractArgument1(env, ret, &line, syn::MayaType::String, "Must provide a string to parse!"));
                     std::string str(syn::extractLexeme(env, line));
                     auto result = ptr->parseLine(str);
                     CVSetBoolean(ret, result);
                     if (!result) {
-                        syn::errorMessage(env, "CALL", 3, funcErrorPrefix, "parse: error during parsing!");
+                        Parent::callErrorMessageCode3(env, ret, "parse", "error during parsing!");
                     }
                     return result;
                 };
@@ -135,7 +121,6 @@ namespace iris {
                         ptr-> getMultifield(env, ret);
                         return true;
                     default:
-                        CVSetBoolean(ret, false);
                         return callErrorMessage(str, "<- unimlemented operation!!!!");
                 }
                 return false;

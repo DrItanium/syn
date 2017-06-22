@@ -68,16 +68,7 @@ class CoreWrapper : public syn::ExternalAddressWrapper<T> {
         }
 
         static bool callFunction(void* env, syn::DataObjectPtr value, syn::DataObjectPtr ret) {
-            static bool init = true;
-            static std::string funcErrorPrefix;
-            if (init) {
-                init = false;
-                auto functions = syn::retrieveFunctionNames<T>("call");
-                funcErrorPrefix = std::get<2>(functions);
-            }
-            if (!syn::isExternalAddress(value)) {
-                return syn::errorMessage(env, "CALL", 1, funcErrorPrefix, "Function call expected an external address as the first argument!");
-            }
+            __RETURN_FALSE_ON_FALSE__(Parent::isExternalAddress(env, ret, value));
             auto ptr = static_cast<Self*>(EnvDOPToExternalAddress(value));
             return ptr->get()->handleOperation(env, ret);
         }

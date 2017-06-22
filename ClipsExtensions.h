@@ -397,6 +397,19 @@ class ExternalAddressWrapper {
         static inline bool tryExtractArgument4(void* env, CLIPSValuePtr ret, CLIPSValuePtr storage, MayaType type, const std::string& errorMsg) noexcept {
             return tryExtractArgument<4>(env, ret, storage, type, 3, errorMsg);
         }
+        template<typename Thing, typename Against>
+        static bool isLegalOperation(void* env, CLIPSValuePtr ret, const std::string& op, Thing thing, Against against) {
+            if (thing == against) {
+                return callErrorMessageCode3(env, ret, op, " <- unknown operation requested!");
+            }
+            return true;
+        }
+        static bool isExternalAddress(void* env, DataObjectPtr ret, DataObjectPtr value) noexcept {
+            if (!syn::isExternalAddress(value)) {
+                return badCallArgument(env, ret, 1, "Function call expected an external address as the first argument!");
+            }
+            return true;
+        }
 	public:
 		ExternalAddressWrapper(std::unique_ptr<T>&& value) : _value(std::move(value)) { }
         ExternalAddressWrapper(T* ptr) : _value(std::move(std::unique_ptr<T>(ptr))) { }
