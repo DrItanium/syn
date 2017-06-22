@@ -110,47 +110,20 @@ namespace syn {
                 }
             }
             static bool callFunction(void* env, CLIPSValue* value, CLIPSValue* ret) {
-                static auto init = true;
-                static std::string funcStr;
-                static std::string funcErrorPrefix;
-				if (init) {
-					init = false;
-                    auto t = retrieveFunctionNames<InternalType>("call");
-                    funcStr = std::get<1>(t);
-                    funcErrorPrefix = std::get<2>(t);
-				}
-                auto badArgument = [env, ret](auto code, auto msg) {
-                    CVSetBoolean(ret, false);
-                    return syn::errorMessage(env, "CALL", code, funcErrorPrefix, msg);
-                };
-				auto callErrorMessage = [badArgument](const std::string& subOp, const std::string& rest) {
-					std::stringstream stm;
-					stm << " " << subOp << ": " << rest << std::endl;
-					auto msg = stm.str();
-                    return badArgument(3, msg);
-				};
-
-                if (!syn::isExternalAddress(value)) {
-                    return badArgument(1, "Function call expected an external address as the first argument!");
-                }
+                __RETURN_FALSE_ON_FALSE__(Parent::isExternalAddress(env, ret, value));
                 CLIPSValue op;
                 __RETURN_FALSE_ON_FALSE__(Parent::tryExtractFunctionName(env, ret, &op));
                 std::string str(syn::extractLexeme(env, op));
                 auto result = WrappedIODeviceConstants::nameToOperation(str);
-                if (isErrorState(result)) {
-                    return callErrorMessage(str, "<- unknown operation requested!");
-                }
+                __RETURN_FALSE_ON_FALSE__(Parent::isLegalOperation(env, ret, str, result, syn::defaultErrorState<decltype(result)>));
                 auto theOp = result;
                 auto countResult = WrappedIODeviceConstants::getArgCount(theOp);
                 if (countResult == -1) {
-                    return callErrorMessage(str, "<- unknown argument count, not registered!!!");
+                    return Parent::callErrorMessageCode3(env, ret, str, "<- unknown argument count, not registered!!!");
                 }
-                auto count = 2 + countResult;
-                if (!syn::hasCorrectArgCount(env, count)) {
-                    return callErrorMessage(str, " too many arguments provided!");
-                }
+                __RETURN_FALSE_ON_FALSE__(Parent::checkArgumentCount(env, ret, str, countResult));
                 auto ptr = static_cast<Self_Ptr>(DOPToExternalAddress(value));
-                auto readOperation = [ptr, ret, env, badArgument]() {
+                auto readOperation = [ptr, ret, env]() {
                     CLIPSValue tmp;
                     __RETURN_FALSE_ON_FALSE__(Parent::tryExtractArgument1(env, ret, &tmp, MayaType::Integer, "provided address is not an integer!"));
                     try {
@@ -158,10 +131,10 @@ namespace syn {
                         CVSetInteger(ret, ptr->read(address));
                         return true;
                     } catch(const syn::Problem& p) {
-                        return badArgument(3, p.what());
+                        return Parent::callErrorMessageCode3(env, ret, "read", p);
                     }
                 };
-                auto writeOperation = [ptr, ret, env, badArgument]() {
+                auto writeOperation = [ptr, ret, env]() {
                     CLIPSValue t0, t1;
                     __RETURN_FALSE_ON_FALSE__(Parent::tryExtractArgument1(env, ret, &t0, MayaType::Integer, "provided address is not an integer!"));
                     __RETURN_FALSE_ON_FALSE__(Parent::tryExtractArgument2(env, ret, &t1, MayaType::Integer, "provided value is not an integer!"));
@@ -171,7 +144,7 @@ namespace syn {
                         ptr->write(address, value);
                         return setClipsBoolean(ret);
                     } catch(const syn::Problem& p) {
-                        return badArgument(3, p.what());
+                        return Parent::callErrorMessageCode3(env, ret, "write", p);
                     }
                 };
                 switch(theOp) {
@@ -191,7 +164,7 @@ namespace syn {
                     case Operations::ListCommands:
                         return WrappedIODeviceConstants::getCommandList(env, ret);
                     default:
-                        return callErrorMessage(str, "<- unimplemented operation!!!!");
+                        return Parent::callErrorMessageCode3(env, ret, str, "<- unimplemented operation!!!!");
                 }
             }
 			static void registerWithEnvironment(void* env, const char* title) {

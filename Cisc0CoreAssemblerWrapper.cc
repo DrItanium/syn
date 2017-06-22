@@ -106,44 +106,29 @@ namespace cisc0 {
 			funcStr = std::get<1>(functions);
 			funcErrorPrefix = std::get<2>(functions);
 		}
-        if (!syn::isExternalAddress(value)) {
-			return syn::errorMessage(env, "CALL", 1, funcErrorPrefix, "Function call expected an external address as the first argument!");
-		}
+        __RETURN_FALSE_ON_FALSE__(Parent::isExternalAddress(env, value, ret));
 		CLIPSValue operation;
-        if (!syn::tryGetArgumentAsSymbol(env, funcStr, 2, &operation)) {
-			return syn::errorMessage(env, "CALL", 2, funcErrorPrefix, "expected a function name to call!");
-		}
+        __RETURN_FALSE_ON_FALSE__(Parent::tryExtractFunctionName(env, ret, &operation));
 		std::string str(syn::extractLexeme(env, operation));
 		auto result = ops.find(str);
-		if (result == ops.end()) {
-			CVSetBoolean(ret, false);
-			return callErrorMessage(str, " <- unknown operation requested!");
-		}
+        __RETURN_FALSE_ON_FALSE__(Parent::isLegalOperation(env, ret, str, result, ops.end()));
         Operations theOp;
         int argCount;
         std::tie(theOp, argCount) = result->second;
-		auto aCount = 2 + argCount;
-        if (!syn::hasCorrectArgCount(env, aCount)) {
-			CVSetBoolean(ret, false);
-			return callErrorMessage(str, " too many arguments provided!");
-		}
+        __RETURN_FALSE_ON_FALSE__(Parent::checkArgumentCount(env, ret, str, argCount));
 		auto ptr = static_cast<Self*>(DOPToExternalAddress(value));
 		auto parseLine = [env, ret, ptr, callErrorMessage]() noexcept {
 			CLIPSValue line;
-            if (!syn::tryGetArgumentAsString(env, funcStr, 3, &line)) {
-				CVSetBoolean(ret, false);
-				return syn::errorMessage(env, "CALL", 3, funcErrorPrefix, "provided assembly line is not a string!");
-			}
+            __RETURN_FALSE_ON_FALSE__(Parent::tryExtractArgument1(env, ret, &line, syn::MayaType::String, "Must provide a string to parse!"));
 			std::string str(syn::extractLexeme(env, line));
 			try {
 				auto result = ptr->parseLine(str);
 				CVSetBoolean(ret, result);
 				if (!result) {
-					syn::errorMessage(env, "CALL", 3, funcErrorPrefix, "parse: error during parsing!");
+                    Parent::callErrorMessageCode3(env, ret, "parse", "error during parsing!");
 				}
 				return result;
 			} catch(const pegtl::basic_parse_error<pegtl::position_info>& e) {
-				CVSetBoolean(ret, false);
 				return callErrorMessage(str, e.what());
 			}
 		};
@@ -168,7 +153,6 @@ namespace cisc0 {
 				ptr->getMultifield(env, ret);
 				return true;
 			default:
-				CVSetBoolean(ret, false);
 				return callErrorMessage(str, "<- unimlemented operation!!!!");
 		}
 		return false;
