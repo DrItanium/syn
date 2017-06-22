@@ -314,39 +314,26 @@ namespace syn {
 			}
 
 			static bool callFunction(void* env, DataObjectPtr value, DataObjectPtr ret) {
-				static bool init = true;
-				static std::string funcStr;
-				static std::string funcErrorPrefix;
 #include "syn_memory_block_defines.h"
-				if (init) {
-					init = false;
-                    auto t = retrieveFunctionNames<WordBlock>("call");
-                    funcStr = std::get<1>(t);
-                    funcErrorPrefix = std::get<2>(t);
-				}
                 __RETURN_FALSE_ON_FALSE__(Parent::isExternalAddress(env, ret, value));
-                auto errOutOfRange = [env, ret](const std::string& subOp, CLIPSInteger capacity, Address address) noexcept {
-                    std::stringstream ss;
-                    ss << funcErrorPrefix << ": Provided address " << std::hex << address << " is either less than zero or greater than " << std::hex << capacity << std::endl;
-                    return Parent::callErrorMessageCode3(env, ret, subOp, ss.str());
-                };
                 CLIPSValue operation;
                 __RETURN_FALSE_ON_FALSE__(Parent::tryExtractFunctionName(env, ret, &operation));
                 std::string str(extractLexeme(env, operation));
                 // translate the op to an enumeration
                 auto result = opTranslation.find(str);
-                if (result == opTranslation.end()) {
-                    CVSetBoolean(ret, false);
-                    return Parent::callErrorMessage(env, ret, 3, str, "<- unknown operation requested!");
-                }
-                auto ptr = static_cast<Self_Ptr>(DOPToExternalAddress(value));
-                auto rangeViolation = [errOutOfRange, ptr, &str](Address addr) { errOutOfRange(str, ptr->size(), addr); };
-                CLIPSValue arg0, arg1;
+				__RETURN_FALSE_ON_FALSE__(Parent::isLegalOperation(env, ret, str, result, opTranslation.end()));
                 MemoryBlockOp op;
                 int aCount;
                 std::tie(op, aCount) = result->second;
                 __RETURN_FALSE_ON_FALSE__(Parent::checkArgumentCount(env, ret, str, aCount));
                 CVSetBoolean(ret, true);
+                auto ptr = static_cast<Self_Ptr>(DOPToExternalAddress(value));
+                auto errOutOfRange = [env, ret](const std::string& subOp, CLIPSInteger capacity, Address address) noexcept {
+                    std::stringstream ss;
+                    ss << "Provided address " << std::hex << address << " is either less than zero or greater than " << std::hex << capacity << std::endl;
+                    return Parent::callErrorMessageCode3(env, ret, subOp, ss.str());
+                };
+                auto rangeViolation = [errOutOfRange, ptr, &str](Address addr) { errOutOfRange(str, ptr->size(), addr); };
                 // now check and see if we are looking at a legal
                 // instruction count
                 auto checkAddr = [ptr, rangeViolation](auto addr) {
@@ -356,7 +343,8 @@ namespace syn {
                     }
                     return result;
                 };
-                auto commonSingleIntegerBody = [checkAddr, env, ret, &arg0, ptr](auto fn) {
+                auto commonSingleIntegerBody = [checkAddr, env, ret, ptr](auto fn) {
+					CLIPSValue arg0;
                     auto check = Parent::tryExtractArgument1(env, ret, &arg0, MayaType::Integer, "First argument be be an address");
                     if (check) {
                         auto addr = extractLong(env, arg0);
@@ -367,14 +355,16 @@ namespace syn {
                     }
                     return check;
                 };
-				auto populate = [env, ret, &arg0, ptr]() {
+				auto populate = [env, ret, ptr]() {
+					CLIPSValue arg0;
 					auto check = Parent::tryExtractArgument1(env, ret, &arg0, MayaType::Integer, "First argument must be an integer value to populate all of the memory cells with!");
 					if (check) {
 						ptr->setMemoryToSingleValue(extractLong(env, arg0));
 					}
 					return check;
 				};
-				auto swapOrMove = [env, ret, &arg0, &arg1, checkAddr, ptr](auto op) {
+				auto swapOrMove = [env, ret, checkAddr, ptr](auto op) {
+					CLIPSValue arg0, arg1;
                     auto check = Parent::tryExtractArgument1(env, ret, &arg0, MayaType::Integer, "First argument must be an address") &&
                                  Parent::tryExtractArgument2(env, ret, &arg1, MayaType::Integer, "Second argument must be an address");
                     if (check) {
@@ -391,7 +381,8 @@ namespace syn {
                     }
                     return check;
 				};
-				auto setAction = [env, ret, &arg0, &arg1, checkAddr, ptr]() {
+				auto setAction = [env, ret, checkAddr, ptr]() {
+					CLIPSValue arg0, arg1;
                     auto check = Parent::tryExtractArgument1(env, ret, &arg0, MayaType::Integer, "First argument must be an address") &&
                                  Parent::tryExtractArgument2(env, ret, &arg1, MayaType::Integer, "Second argument must be an address");
                     if (check) {
@@ -480,10 +471,10 @@ namespace syn {
 #define DefMemoryBlock(name, type, alias) \
 	DefWrapperSymbolicName(Block< type > , name ); \
 	using alias = ManagedMemoryBlock< type >
-//	DefMemoryBlock("memory-block:uint16", uint16, ManagedMemoryBlock_uint16);
-//	DefMemoryBlock("memory-block:uint32", uint32, ManagedMemoryBlock_uint32);
-//	DefMemoryBlock("memory-block:int32", int32, ManagedMemoryBlock_int32);
-//	DefMemoryBlock("memory-block:int16", int16, ManagedMemoryBlock_int16);
+	DefMemoryBlock("memory-block:uint16", uint16, ManagedMemoryBlock_uint16);
+	DefMemoryBlock("memory-block:uint32", uint32, ManagedMemoryBlock_uint32);
+	DefMemoryBlock("memory-block:int32", int32, ManagedMemoryBlock_int32);
+	DefMemoryBlock("memory-block:int16", int16, ManagedMemoryBlock_int16);
 #undef DefMemoryBlock
 
 	void installExtensions(void* theEnv) {
@@ -504,10 +495,10 @@ namespace syn {
 		EnvAddUDF(env, "right-shift", "l", CLIPS_shiftRight, "CLIPS_shiftRight", 2, 2, "l;l", nullptr);
 		EnvAddUDF(env, "break-apart-number", "m", CLIPS_breakApartNumber, "CLIPS_breakApartNumber", 1, 1, "l", nullptr);
 		StandardManagedMemoryBlock::registerWithEnvironment(theEnv);
-		//ManagedMemoryBlock_uint16::registerWithEnvironment(theEnv);
-		//ManagedMemoryBlock_uint32::registerWithEnvironment(theEnv);
-		//ManagedMemoryBlock_int16::registerWithEnvironment(theEnv);
-		//ManagedMemoryBlock_int32::registerWithEnvironment(theEnv);
+		ManagedMemoryBlock_uint16::registerWithEnvironment(theEnv);
+		ManagedMemoryBlock_uint32::registerWithEnvironment(theEnv);
+		ManagedMemoryBlock_int16::registerWithEnvironment(theEnv);
+		ManagedMemoryBlock_int32::registerWithEnvironment(theEnv);
 	}
 
     MultifieldBuilder::MultifieldBuilder(void* env, long capacity) : _size(capacity), _rawMultifield(EnvCreateMultifield(env, capacity)) { }
