@@ -350,7 +350,11 @@ class ExternalAddressWrapper {
         static inline bool callErrorMessageCode3(void* env, CLIPSValue* ret, const std::string& subOp, const std::string& rest) noexcept {
             return callErrorMessage(env, ret, 3, subOp, rest);
         }
-        static inline bool callErrorMessageCode3(void* env, CLIPSValuePtr ret, const std::string& subOp, const syn::Problem& problem) noexcept {
+        static inline bool callErrorMessageCode3(void* env, CLIPSValuePtr ret, const std::string& subOp, const char* rest) noexcept {
+            return callErrorMessageCode3(env, ret, subOp, std::string(rest));
+        }
+        template<typename E>
+        static inline bool callErrorMessageCode3(void* env, CLIPSValuePtr ret, const std::string& subOp, const E& problem) noexcept {
             return callErrorMessageCode3(env, ret, subOp, problem.what());
         }
 

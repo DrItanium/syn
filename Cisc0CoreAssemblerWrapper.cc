@@ -83,29 +83,13 @@ namespace cisc0 {
 	}
 	bool AssemblerStateWrapper::callFunction(void* env, syn::DataObjectPtr value, syn::DataObjectPtr ret) {
 		using Operations = AssemblerStateWrapper::Operations;
-		static bool init = true;
-		static std::string funcStr;
-		static std::string funcErrorPrefix;
         using MapOpToArgCount = std::tuple<Operations, int>;
 		static std::map<std::string, MapOpToArgCount> ops = {
 			{ "parse", std::make_tuple(Operations::Parse, 1) },
 			{ "resolve", std::make_tuple(Operations::Resolve, 0) },
 			{ "get", std::make_tuple(Operations::Get, 0) },
 		};
-		auto callErrorMessage = [env, ret](const std::string& subOp, const std::string& rest) noexcept {
-			CVSetBoolean(ret, false);
-			std::stringstream stm;
-			stm << " " << subOp << ": " << rest << std::endl;
-			auto msg = stm.str();
-			return syn::errorMessage(env, "CALL", 3, funcErrorPrefix, msg);
-		};
 
-		if (init) {
-			init = false;
-			auto functions = syn::retrieveFunctionNames<AssemblerState>("call");
-			funcStr = std::get<1>(functions);
-			funcErrorPrefix = std::get<2>(functions);
-		}
         __RETURN_FALSE_ON_FALSE__(Parent::isExternalAddress(env, value, ret));
 		CLIPSValue operation;
         __RETURN_FALSE_ON_FALSE__(Parent::tryExtractFunctionName(env, ret, &operation));
@@ -117,7 +101,7 @@ namespace cisc0 {
         std::tie(theOp, argCount) = result->second;
         __RETURN_FALSE_ON_FALSE__(Parent::checkArgumentCount(env, ret, str, argCount));
 		auto ptr = static_cast<Self*>(DOPToExternalAddress(value));
-		auto parseLine = [env, ret, ptr, callErrorMessage]() noexcept {
+		auto parseLine = [env, ret, ptr]() noexcept {
 			CLIPSValue line;
             __RETURN_FALSE_ON_FALSE__(Parent::tryExtractArgument1(env, ret, &line, syn::MayaType::String, "Must provide a string to parse!"));
 			std::string str(syn::extractLexeme(env, line));
@@ -129,7 +113,7 @@ namespace cisc0 {
 				}
 				return result;
 			} catch(const pegtl::basic_parse_error<pegtl::position_info>& e) {
-				return callErrorMessage(str, e.what());
+                return Parent::callErrorMessageCode3(env, ret, str, e);
 			}
 		};
 		auto resolve = [env, ret, ptr]() noexcept {
@@ -137,11 +121,7 @@ namespace cisc0 {
 				CVSetBoolean(ret, true);
 				return ptr->resolve();
 			} catch (const syn::Problem& p) {
-				CVSetBoolean(ret, false);
-				std::stringstream ss;
-				ss << "error during resolve: " << p.what();
-				auto str = ss.str();
-				return syn::errorMessage(env, "CALL", 3, funcErrorPrefix, str);
+                return Parent::callErrorMessageCode3(env, ret, "resolve", p);
 			}
 		};
 		switch(theOp) {
@@ -153,7 +133,7 @@ namespace cisc0 {
 				ptr->getMultifield(env, ret);
 				return true;
 			default:
-				return callErrorMessage(str, "<- unimlemented operation!!!!");
+                return Parent::callErrorMessageCode3(env, ret, str, "<- unimplemented operation!!!!");
 		}
 		return false;
 	}
