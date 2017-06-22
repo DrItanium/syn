@@ -66,29 +66,13 @@ namespace iris {
                 registerWithEnvironment(env, func.c_str());
             }
             static bool callFunction(void* env, syn::DataObjectPtr value, syn::DataObjectPtr ret) {
-                static bool init = true;
-                static std::string funcStr;
-                static std::string funcErrorPrefix;
                 using MapOpToCount = std::tuple<Operations, int>;
                 static std::map<std::string, MapOpToCount> ops = {
                     { "parse", std::make_tuple(Operations::Parse, 1) },
                     { "resolve", std::make_tuple(Operations::Resolve, 0) },
                     { "get", std::make_tuple(Operations::Get, 0) },
                 };
-				auto callErrorMessage = [env, ret](const std::string& subOp, const std::string& rest) {
-					CVSetBoolean(ret, false);
-					std::stringstream stm;
-					stm << " " << subOp << ": " << rest << std::endl;
-					auto msg = stm.str();
-					return syn::errorMessage(env, "CALL", 3, funcErrorPrefix, msg);
-				};
 
-                if (init) {
-                    init = false;
-                    auto functions = syn::retrieveFunctionNames<AssemblerState>("call");
-                    funcStr = std::get<1>(functions);
-                    funcErrorPrefix = std::get<2>(functions);
-                }
                 __RETURN_FALSE_ON_FALSE__(Parent::isExternalAddress(env, ret, value));
                 CLIPSValue operation;
                 __RETURN_FALSE_ON_FALSE__(Parent::tryExtractFunctionName(env, ret, &operation));
@@ -121,7 +105,7 @@ namespace iris {
                         ptr-> getMultifield(env, ret);
                         return true;
                     default:
-                        return callErrorMessage(str, "<- unimlemented operation!!!!");
+                        return Parent::callErrorMessageCode3(env, ret, str, "<- unimplemented operation!!!!");
                 }
                 return false;
             }

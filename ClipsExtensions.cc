@@ -326,6 +326,8 @@ namespace syn {
 				}
 
 				try {
+                    // TODO: fix this checkArgumentCount to not reference
+                    // the call version of this function
                     if (Parent::checkArgumentCount(env, ret, funcStr, 2)) {
 						CLIPSValue capacity;
                         if (!Arg2IsInteger(env, &capacity, funcStr)) {
@@ -352,13 +354,11 @@ namespace syn {
                     funcStr = std::get<1>(t);
                     funcErrorPrefix = std::get<2>(t);
 				}
-                if (!isExternalAddress(value)) {
-					return errorMessage(env, "CALL", 1, funcErrorPrefix, "Function call expected an external address as the first argument!");
-                }
+                __RETURN_FALSE_ON_FALSE__(Parent::isExternalAddress(env, ret, value));
                 auto errOutOfRange = [env, ret](const std::string& subOp, CLIPSInteger capacity, Address address) noexcept {
                     std::stringstream ss;
                     ss << funcErrorPrefix << ": Provided address " << std::hex << address << " is either less than zero or greater than " << std::hex << capacity << std::endl;
-                    return Parent::callErrorMessage(env, ret, 3, subOp, ss.str());
+                    return Parent::callErrorMessageCode3(env, ret, subOp, ss.str());
                 };
                 CLIPSValue operation;
                 __RETURN_FALSE_ON_FALSE__(Parent::tryExtractFunctionName(env, ret, &operation));
