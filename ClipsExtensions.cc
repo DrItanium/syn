@@ -271,37 +271,6 @@ namespace syn {
         errorMessage(env, "CALL", 2, funcErrorPrefix, str);
     }
 
-    template<typename T>
-    constexpr bool isArithmeticOperation(T value) noexcept {
-        switch(value) {
-            case T::Combine:
-            case T::Difference:
-            case T::Product:
-            case T::Divide:
-            case T::Remainder:
-                return true;
-            default:
-                return false;
-        }
-    }
-    template<typename T>
-    constexpr syn::ALU::StandardOperations translateArithmeticOperation(T op) noexcept {
-        switch(op) {
-            case T::Combine:
-                return syn::ALU::StandardOperations::Add;
-            case T::Difference:
-                return syn::ALU::StandardOperations::Subtract;
-            case T::Product:
-                return syn::ALU::StandardOperations::Multiply;
-            case T::Divide:
-                return syn::ALU::StandardOperations::Divide;
-            case T::Remainder:
-                return syn::ALU::StandardOperations::Remainder;
-            default:
-                return defaultErrorState<syn::ALU::StandardOperations>;
-        }
-    }
-
 	template<typename Word>
 	class ManagedMemoryBlock : public ExternalAddressWrapper<Block<Word>> {
 		public:
@@ -397,29 +366,14 @@ namespace syn {
                     }
                     return check;
                 };
-                if (op == MemoryBlockOp::Type) {
-                    Self::setType(ret);
-                } else if (op == MemoryBlockOp::Size) {
-                    CVSetInteger(ret, ptr->size());
-                } else if (op == MemoryBlockOp::Clear) {
-                    ptr->clearMemory();
-                } else if (op == MemoryBlockOp::Initialize) {
-                    ptr->setMemoryToSingleValue(0);
-                } else if (op == MemoryBlockOp::Shutdown) {
-                    // do nothing right now
-                } else if (op == MemoryBlockOp::Get) {
-                    return commonSingleIntegerBody([ret](auto ptr, auto addr) { CVSetInteger(ret, ptr->getMemoryCellValue(addr)); });
-                } else if (op == MemoryBlockOp::Populate) {
-                    auto check = Parent::tryExtractArgument1(env, ret, &arg0, MayaType::Integer, "First argument must be an INTEGER value to populate all of the memory cells with!");
-                    if (check) {
-                        ptr->setMemoryToSingleValue(extractLong(env, arg0));
-                    }
-                    return check;
-                } else if (op == MemoryBlockOp::Increment) {
-                    return commonSingleIntegerBody([](auto ptr, auto addr) { ptr->incrementMemoryCell(addr); });
-                } else if (op == MemoryBlockOp::Decrement) {
-                    return commonSingleIntegerBody([](auto ptr, auto addr) { ptr->decrementMemoryCell(addr); });
-                } else if (op == MemoryBlockOp::Swap || op == MemoryBlockOp::Move) {
+				auto populate = [env, ret, &arg0, ptr]() {
+					auto check = Parent::tryExtractArgument1(env, ret, &arg0, MayaType::Integer, "First argument must be an integer value to populate all of the memory cells with!");
+					if (check) {
+						ptr->setMemoryToSingleValue(extractLong(env, arg0));
+					}
+					return check;
+				};
+				auto swapOrMove = [env, ret, &arg0, &arg1, checkAddr, ptr](auto op) {
                     auto check = Parent::tryExtractArgument1(env, ret, &arg0, MayaType::Integer, "First argument must be an address") &&
                                  Parent::tryExtractArgument2(env, ret, &arg1, MayaType::Integer, "Second argument must be an address");
                     if (check) {
@@ -435,7 +389,8 @@ namespace syn {
                         }
                     }
                     return check;
-                } else if (op == MemoryBlockOp::Set) {
+				};
+				auto setAction = [env, ret, &arg0, &arg1, checkAddr, ptr]() {
                     auto check = Parent::tryExtractArgument1(env, ret, &arg0, MayaType::Integer, "First argument must be an address") &&
                                  Parent::tryExtractArgument2(env, ret, &arg1, MayaType::Integer, "Second argument must be an address");
                     if (check) {
@@ -447,33 +402,38 @@ namespace syn {
                         ptr->setMemoryCell(addr0, addr1);
                     }
                     return check;
-                } else if (isArithmeticOperation(op)) {
-                    auto check = Parent::tryExtractArgument1(env, ret, &arg0, MayaType::Integer, "First argument must be an address") &&
-                                 Parent::tryExtractArgument2(env, ret, &arg1, MayaType::Integer, "Second argument must be an address");
-                    CVSetBoolean(ret, false);
-                    if (check) {
-                        auto addr0 = extractLong(env, arg0);
-                        auto addr1 = extractLong(env, arg1);
-                        if (!checkAddr(addr0) || !checkAddr(addr1)) {
-                            return false;
-                        }
-                        try {
-                            auto pCall = translateArithmeticOperation(op);
-                            if (syn::isErrorState(pCall)) {
-                                return Parent::callErrorMessage(env, ret, 3, str, "<- not an arithmetic operation!");
-                            }
-                            auto val0 = ptr->getMemoryCellValue(addr0);
-                            auto val1 = ptr->getMemoryCellValue(addr1);
-                            CVSetInteger(ret, syn::ALU::performOperation<Word>(pCall, val0, val1));
-                        } catch (const syn::Problem& p) {
-                            handleProblem(env, ret, p, funcErrorPrefix);
-                            return false;
-                        }
-                    }
-                    return check;
-                } else {
-                    return Parent::callErrorMessageCode3(env, ret, str, "<- legal but unimplemented operation!");
-                }
+				};
+				switch(op) {
+					case MemoryBlockOp::Type:
+						Self::setType(ret);
+						break;
+					case MemoryBlockOp::Size:
+						CVSetInteger(ret, ptr->size());
+						break;
+					case MemoryBlockOp::Clear:
+						ptr->clearMemory();
+						break;
+					case MemoryBlockOp::Initialize:
+						ptr->setMemoryToSingleValue(0);
+						break;
+					case MemoryBlockOp::Shutdown:
+						break;
+					case MemoryBlockOp::Get:
+						return commonSingleIntegerBody([ret](auto ptr, auto addr) { CVSetInteger(ret, ptr->getMemoryCellValue(addr)); });
+					case MemoryBlockOp::Populate:
+						return populate();
+					case MemoryBlockOp::Increment:
+						return commonSingleIntegerBody([](auto ptr, auto addr) { ptr->incrementMemoryCell(addr); });
+					case MemoryBlockOp::Decrement:
+						return commonSingleIntegerBody([](auto ptr, auto addr) { ptr->decrementMemoryCell(addr); });
+					case MemoryBlockOp::Swap:
+					case MemoryBlockOp::Move:
+						return swapOrMove(op);
+					case MemoryBlockOp::Set:
+						return setAction();
+					default:
+                    	return Parent::callErrorMessageCode3(env, ret, str, "<- legal but unimplemented operation!");
+				}
                 return true;
 			}
 			static void registerWithEnvironment(void* env, const char* title) {

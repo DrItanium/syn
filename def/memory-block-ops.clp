@@ -14,17 +14,6 @@
           (translation decrement -- -> Decrement)
           (translation swap -> Swap)
           (translation move copy -> Move)
-          (translation add combine + -> Combine)
-          (translation sub subtract difference - -> Difference)
-          (translation mul multiply product * -> Product)
-          (translation div divide / -> Divide)
-          (translation rem remainder mod % -> Remainder)
-          (translation eq equals == -> Equals)
-          (translation neq not-equals != <> -> NotEquals)
-          (translation lt less-than < -> LessThan)
-          (translation gt greater-than > -> GreaterThan)
-          (translation lte less-than-or-equal-to <= -> LessThanOrEqualTo)
-          (translation gte greater-than-or-equal-to >= -> GreaterThanOrEqualTo)
           (translation initialize -> Initialize)
           (translation shutdown -> Shutdown)
           (defarg-count 0
@@ -34,17 +23,6 @@
                         Initialize
                         Shutdown)
           (defarg-count  2
-                         Combine
-                         Difference
-                         Product
-                         Divide
-                         Remainder
-                         Equals
-                         NotEquals
-                         LessThan
-                         GreaterThan
-                         LessThanOrEqualTo
-                         GreaterThanOrEqualTo
                          Swap
                          Move
                          Set)
