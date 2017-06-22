@@ -67,8 +67,6 @@ namespace cisc0 {
 				case 2:
 					_arg2 = value;
 					break;
-				default:
-					throw syn::Problem("Illegal argument index!");
 			}
 		}
 

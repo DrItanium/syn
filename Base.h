@@ -488,7 +488,7 @@ constexpr bool isErrorState(T op) noexcept {
 }
 
 template<typename T>
-constexpr void throwOnErrorState(T value, const std::string& msg) noexcept {
+void throwOnErrorState(T value, const std::string& msg) {
     if (isErrorState<T>(value)) {
         throw syn::Problem(msg);
     }

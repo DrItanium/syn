@@ -386,7 +386,7 @@ class Register {
             static_assert(index >= 0, "Provided index is less than zero!");
             set(syn::setBit<T, index>(_value, value));
         }
-        void setBit(T index, bool value) noexcept {
+        void setBit(T index, bool value) {
             if (index >= syn::bitwidth<T>) {
                 throw syn::Problem("Provided index is too large!");
             } else if (index < 0) {

@@ -73,8 +73,6 @@ namespace iris {
                 case 1: return getPredicateInverseResultIndex(value);
                 case 2: return getPredicateSource0Index(value);
                 case 3: return getPredicateSource1Index(value);
-                default:
-                    throw syn::Problem("Illegal index!!!!");
             }
         }
         constexpr bool samePredicateDestinations(raw_instruction value) noexcept {

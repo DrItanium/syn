@@ -312,6 +312,7 @@ namespace syn {
                     handleProblem(env, ret, p, funcErrorPrefix);
 				}
 			}
+
 			static bool callFunction(void* env, DataObjectPtr value, DataObjectPtr ret) {
 				static bool init = true;
 				static std::string funcStr;

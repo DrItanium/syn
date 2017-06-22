@@ -118,8 +118,6 @@ namespace cisc0 {
 				switch(op) {
 					case ComplexSubTypes::Extended:
 						return cisc0::decodeComplexClassExtendedDestination(_rawValue);
-					default:
-						throw syn::Problem("provided complex does not use the destination register!");
 				}
             }
             template<Operation op>
