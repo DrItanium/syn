@@ -582,9 +582,10 @@ namespace cisc0 {
     }
     template<syn::Comparator::StandardOperations op>
     constexpr RegisterValue sliceBitAndCheck(RegisterValue a, RegisterValue b) noexcept {
-        return syn::Comparator::performOperation<op, RegisterValue>(
-                syn::ALU::performOperation<translate(LogicalOps::And), RegisterValue>(
-                    syn::ALU::performOperation<ALUOperation::ShiftRight, RegisterValue>(
+        using T = RegisterValue;
+        return syn::Comparator::performOperation<op, T>(
+                syn::ALU::performOperation<translate(LogicalOps::And), T>(
+                    syn::ALU::performOperation<ALUOperation::ShiftRight, T>(
                         a,
                         b), 0x1), 1);
     }
