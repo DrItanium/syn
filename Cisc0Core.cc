@@ -219,15 +219,15 @@ namespace cisc0 {
         std::tie(isCall, isCond) = inst.getOtherBranchFlags();
         advanceIp = true;
         auto choice = getConditionRegister();
-        auto readAddress = [this]() {
+        auto whereToGo = 0;
+        if (isImm) {
             auto lower = static_cast<RegisterValue>(tryReadNext<true>());
             auto upper = static_cast<RegisterValue>(tryReadNext<true>()) << 16;
-            return lower | upper;
-        };
-        auto updateInstructionPointer = [this](auto value) {
-            advanceIp = false;
-            getInstructionPointer() = value;
-        };
+            whereToGo = lower | upper;
+        } else {
+            whereToGo = registerValue(inst.getBranchIndirectDestination());
+        }
+        auto shouldUpdateInstructionPointer = isCall || (isCond && choice) || (!isCond);
         if (isCall) {
             // call instruction
             // figure out where we are going to go, this will cause loads and
@@ -235,19 +235,12 @@ namespace cisc0 {
             // Once done, we then push the next address following the newly
             // modified ip to the stack. Then we update the ip of where we are
             // going to go!
-            auto whereToGo = isImm ? readAddress() : registerValue(inst.getBranchIndirectDestination());
             pushDword(getInstructionPointer() + 1, getCallStackPointer());
-            updateInstructionPointer(whereToGo);
-        } else {
-            // jump instruction
-            auto whereToGo = isImm ? readAddress() : registerValue(inst.getBranchIndirectDestination());
-            if (isCond) {
-                if (choice) {
-                    updateInstructionPointer(whereToGo);
-                }
-            } else {
-                updateInstructionPointer(whereToGo);
-            }
+        }
+        // otherwise we are looking at a standard jump operation
+        if (shouldUpdateInstructionPointer) {
+            advanceIp = false;
+            getInstructionPointer() = whereToGo;
         }
     }
 
@@ -550,19 +543,31 @@ namespace cisc0 {
 
     void Core::arithmeticOperation(const DecodedInstruction& inst) {
         static constexpr auto group = Operation::Arithmetic;
-        auto subType = inst.getSubtype<group>();
         auto src1 = inst.getImmediateFlag<group>() ? inst.getImmediate<group>() : registerValue(inst.getSourceRegister<group>());
         auto &src0 = registerValue(inst.getDestinationRegister<group>());
-        if (subType == ArithmeticOps::Min) {
+        auto minOp = [this, &src0, src1]() {
             getValueRegister() = src0 > src1 ? src1 : src0;
-        } else if (subType == ArithmeticOps::Max) {
+        };
+        auto maxOp = [this, &src0, src1]() {
             getValueRegister() = src0 > src1 ? src0 : src1;
-        } else {
+        };
+        auto defaultArithmetic = [this, &inst, &src0, src1]() {
             auto result = translate(inst.getSubtype<group>());
             syn::throwOnErrorState(result, "Illegal arithmetic operation!");
             auto src = src1;
             auto& dest = src0;
             dest = syn::ALU::performOperation<RegisterValue>(result, dest, src);
+        };
+        switch(inst.getSubtype<group>()) {
+            case ArithmeticOps::Min:
+                minOp();
+                break;
+            case ArithmeticOps::Max:
+                maxOp();
+                break;
+            default:
+                defaultArithmetic();
+                break;
         }
     }
 
