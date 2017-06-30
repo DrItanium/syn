@@ -157,54 +157,60 @@
                           CRMove
                           ))
           )
-(defrule MAIN::perform-special-conversion:arithmetic->aluoperation
-         (declare (salience ?*priority:first*))
-         ?f <- (arithmetic->alu ?arith ?alu)
-         =>
-         (retract ?f)
-         (assert (to-execution-unit ArithmeticOp ?arith ->
-                                    ALUOperation ?alu)))
-
-(defrule MAIN::perform-special-conversion:compare->compareop
-         (declare (salience ?*priority:first*))
-         ?f <- (compare->compareop ?cop ?comparator)
-         =>
-         (retract ?f)
-         (assert (to-execution-unit CompareOp ?cop ->
-                                    ComparatorOp ?comparator)))
-
-(defrule MAIN::perform-special-conversion:predop->crop
-         (declare (salience ?*priority:first*))
-         ?f <- (predop->crop ?cop ?comparator)
-         =>
-         (retract ?f)
-         (assert (to-execution-unit ConditionRegisterOp ?cop ->
-                                    CRUnitOp ?comparator)))
 
 (deffacts MAIN::execution-unit-conversion-routines
           (include "ExecutionUnits.h")
           (using ALUOperation
                  syn::ALU::StandardOperations)
-          (arithmetic->alu Add Add)
-          (arithmetic->alu AddImmediate Add)
-          (arithmetic->alu Sub Subtract)
-          (arithmetic->alu SubImmediate Subtract)
-          (arithmetic->alu Mul Multiply)
-          (arithmetic->alu MulImmediate Multiply)
-          (arithmetic->alu Div Divide)
-          (arithmetic->alu DivImmediate Divide)
-          (arithmetic->alu Rem Remainder)
-          (arithmetic->alu RemImmediate Remainder)
-          (arithmetic->alu ShiftLeft ShiftLeft)
-          (arithmetic->alu ShiftLeftImmediate ShiftLeft)
-          (arithmetic->alu ShiftRight ShiftRight)
-          (arithmetic->alu ShiftRightImmediate ShiftRight)
-          (arithmetic->alu BinaryNot UnaryNot)
-          (arithmetic->alu BinaryOr BinaryOr)
-          (arithmetic->alu BinaryAnd BinaryAnd)
-          (arithmetic->alu BinaryXor BinaryXor)
           (using ComparatorOp
                  syn::Comparator::StandardOperations)
+          (using CRUnitOp
+                 syn::Comparator::BooleanOperations)
+          (defspecial-execution-unit-converter arithmetic->alu
+                                               ArithmeticOp
+                                               ALUOperation)
+          (defspecial-execution-unit-converter compare->compareop
+                                               CompareOp
+                                               ComparatorOp)
+          (defspecial-execution-unit-converter predop->crop
+                                               ConditionRegisterOp
+                                               CRUnitOp)
+          (arithmetic->alu Add
+                           Add)
+          (arithmetic->alu AddImmediate
+                           Add)
+          (arithmetic->alu Sub
+                           Subtract)
+          (arithmetic->alu SubImmediate
+                           Subtract)
+          (arithmetic->alu Mul
+                           Multiply)
+          (arithmetic->alu MulImmediate
+                           Multiply)
+          (arithmetic->alu Div
+                           Divide)
+          (arithmetic->alu DivImmediate
+                           Divide)
+          (arithmetic->alu Rem
+                           Remainder)
+          (arithmetic->alu RemImmediate
+                           Remainder)
+          (arithmetic->alu ShiftLeft
+                           ShiftLeft)
+          (arithmetic->alu ShiftLeftImmediate
+                           ShiftLeft)
+          (arithmetic->alu ShiftRight
+                           ShiftRight)
+          (arithmetic->alu ShiftRightImmediate
+                           ShiftRight)
+          (arithmetic->alu BinaryNot
+                           UnaryNot)
+          (arithmetic->alu BinaryOr
+                           BinaryOr)
+          (arithmetic->alu BinaryAnd
+                           BinaryAnd)
+          (arithmetic->alu BinaryXor
+                           BinaryXor)
           (compare->compareop LessThan
                               LessThan)
           (compare->compareop LessThanImmediate
@@ -229,8 +235,6 @@
                               Neq)
           (compare->compareop NeqImmediate
                               Neq)
-          (using CRUnitOp
-                 syn::Comparator::BooleanOperations)
           (predop->crop CRAnd
                         BinaryAnd)
           (predop->crop CROr

@@ -101,25 +101,37 @@
 
 
 (deffacts cisc0-enums
-          (enum (name LegalRegisterNames)
-                (children Destination
-                          Source)
-                (cast-to byte)
-                (max-size "2"))
-          (enum (name Operation)
-                (children Memory
-                          Arithmetic
-                          Shift
-                          Logical
-                          Compare
-                          Branch
-                          Move
-                          Set
-                          Swap
-                          Return
-                          Complex)
-                (cast-to byte)
-                (max-size "ArchitectureConstants::MaxInstructionCount"))
+          (defenum LegalRegisterNames 2 byte entries: Destination Source)
+          ;(enum (name Operation)
+          ;      (children Memory
+          ;                Arithmetic
+          ;                Shift
+          ;                Logical
+          ;                Compare
+          ;                Branch
+          ;                Move
+          ;                Set
+          ;                Swap
+          ;                Return
+          ;                Complex)
+          ;      (cast-to byte)
+          ;      (max-size "ArchitectureConstants::MaxInstructionCount"))
+          (defenum Operation
+                   "ArchitectureConstants::MaxInstructionCount"
+                   byte
+                   entries:
+                   Memory
+                   Arithmetic
+                   Shift
+                   Logical
+                   Compare
+                   Branch
+                   Move
+                   Set
+                   Swap
+                   Return
+                   Complex)
+
           (enum (name ArithmeticOps)
                 (children Add
                           Sub
@@ -366,6 +378,7 @@
          (declare (salience 1))
          ?f <- (top-level-to-sub-type ?top ?v -> ?sub-type)
          (made-top-level-type-conversion ?top)
+         (constructed enum ?sub-type)
          =>
          (retract ?f)
          (assert (made-top-level-to-sub-type-specialization ?top ?v -> ?sub-type)

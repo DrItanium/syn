@@ -334,3 +334,18 @@
                         ?name
                         ?from-type
                         ?to-type)))
+
+(defrule MAIN::defenum->enum-template
+         (declare (salience ?*priority:first*))
+         ?f <- (defenum ?name
+                        ?max-size
+                        ?type
+                        entries:
+                        $?children)
+         =>
+         (retract ?f)
+         (assert (enum (name ?name)
+                       (max-size ?max-size)
+                       (cast-to ?type)
+                       (children ?children))))
+
