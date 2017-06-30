@@ -26,12 +26,206 @@
 (defmodule MAIN
            (import cortex
                    ?ALL))
+(defgeneric MAIN::wrap-entries)
+(defmethod MAIN::wrap-entries
+  ((?prefix LEXEME)
+   ?contents
+   (?postfix LEXEME))
+  (str-cat ?prefix
+           ?contents
+           ?postfix))
+(defmethod MAIN::wrap-entries
+  ((?prefix LEXEME)
+   (?contents MULTIFIELD)
+   (?postfix LEXEME))
+  (str-cat ?prefix
+           (expand$ ?contents)
+           ?postfix))
 
-(deffunction MAIN::wrap-entries
-             (?prefix ?contents ?postfix)
-             (str-cat ?prefix
-                      ?contents
-                      ?postfix))
+(deffunction MAIN::comma-list
+             ($?elements)
+             (if (= (length$ ?elements) 0) then
+               (return ""))
+             (bind ?output
+                   (expand$ (first$ ?elements)))
+             (progn$ (?r (rest$ ?elements))
+                     (bind ?output
+                           (str-cat ?output
+                                    ", " ?r)))
+             ?output)
+
+
+
+(deffunction MAIN::template-specialization
+             ($?rest)
+             (wrap-entries "<"
+                           (comma-list ?rest)
+                           ">"))
+(deffunction MAIN::template-decl
+             ($?rest)
+             (str-cat "template"
+                      (template-specialization ?rest)))
+
+(deffunction MAIN::typename
+             (?statement)
+             (str-cat "typename "
+                      ?statement))
+
+(deffunction MAIN::variable
+             (?type ?name)
+             (str-cat ?type " " ?name))
+
+(deffunction MAIN::explicit-enum
+             (?type ?value)
+             (str-cat ?type " :: "  ?value))
+(deffunction MAIN::add-terminator
+             (?str)
+             (str-cat ?str ";"))
+(deffunction MAIN::assign
+             (?a ?b)
+             (str-cat ?a " = " ?b))
+(deffunction MAIN::standard-using-decl
+             (?name ?value)
+             (add-terminator (str-cat "using "
+                                      (assign ?name
+                                              ?value))))
+(defgeneric MAIN::parens)
+(defmethod MAIN::parens
+  ((?thing LEXEME))
+  (wrap-entries "("
+                ?thing
+                ")"))
+
+(defmethod MAIN::parens
+  ((?args MULTIFIELD))
+  (wrap-entries "("
+                (comma-list ?args)
+                ")"))
+(defmethod MAIN::parens
+  ($?args)
+  (parens ?args))
+(defmethod MAIN::parens () "()")
+(deffunction MAIN::static-cast
+             (?type ?value)
+             (str-cat "static_cast"
+                      (template-specialization ?type)
+                      (parens ?value)))
+
+(deffunction MAIN::constexpr
+             (?statement)
+             (str-cat "constexpr "
+                      ?statement))
+
+(deffunction MAIN::decltype
+             (?op)
+             (wrap-entries "decltype("
+                           ?op
+                           ")"))
+
+(deffunction MAIN::string-quote
+             (?str)
+             (format nil
+                     "\"%s\""
+                     ?str))
+(deffunction MAIN::static-assert
+             (?condition ?message)
+             (add-terminator (str-cat static_assert
+                                      (parens ?condition
+                                              (string-quote ?message)))))
+(deffunction MAIN::static-assert-cond
+             ($?contents)
+             (if (= (length$ ?contents) 0) then
+               ""
+               else
+               (str-cat (expand$ ?contents))))
+
+(deffunction MAIN::scope-body
+             ($?body)
+             (wrap-entries " { "
+                           ?body
+                           " } "))
+
+(deffunction MAIN::terminated-scope-body
+             ($?body)
+             (add-terminator (scope-body ?body)))
+
+
+
+(deffunction MAIN::string-if-true
+             (?val ?prefix)
+             (if ?val then
+               (str-cat ?prefix " " ?val)
+               else
+               ""))
+
+(deffunction MAIN::struct
+             (?name ?name-postfix ?extends $?body)
+             (str-cat "struct " ?name
+                      (string-if-true ?name-postfix
+                                      " ")
+                      (string-if-true ?extends
+                                      " : ")
+                      (terminated-scope-body ?body)))
+(deffunction MAIN::cond-fulfill
+             (?result)
+             (str-cat "syn::ConditionFulfillment< "
+                      (if ?result then
+                        true
+                        else
+                        false)
+                      " >"))
+
+(deffunction MAIN::generic-struct
+             (?name ?template-parameters $?body)
+             (str-cat (template-decl ?template-parameters) " "
+                      (struct ?name
+                              FALSE
+                              (cond-fulfill FALSE)
+                              ?body)))
+
+(deffunction MAIN::specialize-struct
+             (?name ?special-value $?body)
+             (str-cat (template-decl "")
+                      (struct ?name
+                              (template-specialization ?special-value)
+                              (cond-fulfill TRUE)
+                              (expand$ ?body))))
+
+(deffunction MAIN::return-statement
+             (?statement)
+             (add-terminator (str-cat "return "
+                                      ?statement)))
+
+
+(deffunction MAIN::fulfills-condition
+             (?type)
+             (str-cat "syn::fulfillsCondition"
+                      (template-specialization ?type)
+                      "()"))
+
+(deffunction MAIN::function-call
+             (?function $?args)
+             (str-cat ?function " " (parens ?args)))
+(deffunction MAIN::noexcept () noexcept)
+(deffunction MAIN::function-signature
+             (?return-type ?name ?arguments ?specifiers)
+             (str-cat ?return-type " " ?name
+                      (parens ?arguments)
+                      " " ?specifiers))
+(deffunction MAIN::function-decl
+             (?prefix ?return-type ?name ?name-post ?args ?specifiers $?body)
+             (str-cat (string-if-true ?prefix
+                                      "")
+                      " " ?return-type
+                      " " ?name
+                      (string-if-true ?name-post
+                                      " ")
+                      "( " ?args " )"
+                      (string-if-true ?specifiers
+                                      " ")
+                      " "
+                      (scope-body ?body)))
+
 (deftemplate field
              (slot name
                    (type SYMBOL)
@@ -100,8 +294,12 @@
          (assert (close-namespace))
          (printout t
                    "namespace " ?ns " { " crlf
-                   "template<typename T, T op> " crlf
-                   "constexpr auto toExecutionUnitValue = syn::defaultErrorState<T>;" crlf))
+                   (template-decl (typename T)
+                                  (variable T op)) crlf
+                   (add-terminator (assign (constexpr (variable auto
+                                                                toExecutionUnitValue))
+                                           (str-cat "syn::defaultErrorState"
+                                                    (template-specialization T)))) crlf))
 
 (defrule MAIN::generate-using-decls
          (declare (salience ?*priority:two-after-first*))
@@ -112,7 +310,8 @@
          (retract ?f)
          (assert (made-using ?title))
          (printout t
-                   "using " ?title " = " (expand$ ?equals) ";" crlf))
+                   (standard-using-decl ?title
+                                        (implode$ ?equals)) crlf))
 
 (defrule MAIN::generate-closing-namespace-contents
          (declare (salience ?*priority:last*))
@@ -129,35 +328,57 @@
          (printout t
                    "#endif // end " (upcase ?name) crlf))
 
+(deffunction MAIN::templated-function-name
+             (?op $?args)
+             (str-cat ?op
+                      (template-specialization (expand$ ?args))))
+(deffunction MAIN::templated-function-call
+             (?op ?template-args $?args)
+             (function-call (templated-function-name ?op
+                                                     ?template-args)
+                            ?args))
+(deffunction MAIN::return-templated-function-call
+             (?op ?template-args $?args)
+             (return-statement (templated-function-call ?op
+                                                        ?template-args
+                                                        ?args)))
 (deffunction generate-encode-decode-ops
              (?t ?name ?value ?mask ?shift)
              (bind ?decodeFunc
-                   (format nil
-                           "decode%s"
-                           ?name))
+                   (str-cat decode
+                            ?name))
              (bind ?encodeFunc
-                   (format nil
-                           "encode%s"
-                           ?name))
-             (format t
-                     "constexpr %s %s(%s value) noexcept { return syn::decodeBits<%s, %s, %s, %s>(value); }%n"
-                     ?t
-                     ?decodeFunc
-                     ?value
-                     ?value
-                     ?t
-                     (str-cat ?mask)
-                     (str-cat ?shift))
-             (format t
-                     "constexpr %s %s(%s value, %s field) noexcept { return syn::encodeBits<%s, %s, %s, %s>(value, field); }%n"
-                     ?value
-                     ?encodeFunc
-                     ?value
-                     ?t
-                     ?value
-                     ?t
-                     (str-cat ?mask)
-                     (str-cat ?shift))
+                   (str-cat encode
+                            ?name))
+             (bind ?value-var
+                   (variable ?value
+                             value))
+             (bind ?template-args
+                   ?value
+                   ?t
+                   ?mask
+                   ?shift)
+
+             (printout t
+                       (constexpr (function-signature ?t
+                                                      ?decodeFunc
+                                                      ?value-var
+                                                      (noexcept)))
+                       (scope-body (return-templated-function-call "syn::decodeBits"
+                                                                   ?template-args
+                                                                   value)) crlf
+
+                       (constexpr (function-signature ?value
+                                                      ?encodeFunc
+                                                      (create$ ?value-var
+                                                               (variable ?t
+                                                                         field))
+                                                      (noexcept)))
+                       (scope-body (return-templated-function-call "syn::encodeBits"
+                                                                   ?template-args
+                                                                   value
+                                                                   field)) crlf)
+
              (assert (decoding-operation ?name
                                          ?decodeFunc
                                          ?t
@@ -234,18 +455,22 @@
                          (- ?c-index 1)))
 
          (printout t "Count, };" crlf)
-         (format t
-                 "static_assert(static_cast<%s>(%s :: Count) <= static_cast<%s>(%s), \"%s\");%n"
-                 ?ct
-                 ?name
-                 ?ct
-                 (str-cat ?size)
-                 (format nil
-                         "Too many %s entries defined!"
-                         ?name))
          (printout t
-                   "template<" ?name " op>" crlf
-                   "constexpr auto translate" ?name " = toExecutionUnitValue<decltype(op), op>;" crlf))
+                   (static-assert (static-assert-cond (static-cast ?ct
+                                                                   (explicit-enum ?name Count))
+                                                      " <= "
+                                                      (static-cast ?ct
+                                                                   ?size))
+                                  (format nil
+                                          "Too many %s entries defined!"
+                                          ?name)) crlf)
+         (printout t
+                   (template-decl (variable ?name op)) crlf
+                   (add-terminator (assign (constexpr (variable auto
+                                                                (str-cat translate
+                                                                         ?name)))
+                                           (str-cat toExecutionUnitValue
+                                                    (template-specialization (decltype op) op)))) crlf))
 
 
 
@@ -265,9 +490,13 @@
                  (output-type ?other-type)
                  (entries $?e ?name))
          (printout t
-                   "template<> constexpr auto toExecutionUnitValue<"
-                   ?enum " , " ?enum " :: " ?name "> = "
-                   ?other-type " :: " ?other-name ";" crlf))
+                   (add-terminator (assign (str-cat (template-decl "")
+                                                    (constexpr (variable auto
+                                                                         toExecutionUnitValue))
+                                                    (template-specialization ?enum
+                                                                             (explicit-enum ?enum ?name)))
+                                           (explicit-enum ?other-type
+                                                          ?other-name))) crlf))
 
 (defrule MAIN::generate-translation-function-has-no-elements
          (declare (salience -1))
@@ -355,145 +584,3 @@
                        (children ?children))))
 
 
-(deffunction MAIN::add-terminator
-             (?str)
-             (str-cat ?str ";"))
-(deffunction MAIN::explicit-enum
-             (?type ?value)
-             (str-cat ?type " :: "  ?value))
-(deffunction MAIN::variable
-             (?type ?name)
-             (str-cat ?type " " ?name))
-(deffunction MAIN::standard-using-decl
-             (?name ?value)
-             (add-terminator (str-cat "using " ?name " = " ?value)))
-(deffunction MAIN::scope-body
-             ($?body)
-             (str-cat " { " (expand$ ?body) " } "))
-
-(deffunction MAIN::terminated-scope-body
-             ($?body)
-             (add-terminator (scope-body ?body)))
-
-
-(deffunction MAIN::comma-list
-             (?first $?rest)
-             (bind ?output
-                   ?first)
-             (progn$ (?r ?rest)
-                     (bind ?output
-                           (str-cat ?output
-                                    ", " ?r)))
-             ?output)
-(deffunction MAIN::template-specialization
-             (?first $?rest)
-             (wrap-entries "<"
-                           (comma-list ?first
-                                       ?rest)
-                           ">"))
-(deffunction MAIN::template-decl
-             (?first $?rest)
-             (str-cat "template"
-                      (template-specialization ?first
-                                               ?rest)))
-
-(deffunction MAIN::string-if-true
-             (?val ?prefix)
-             (if ?val then
-               (str-cat ?prefix " " ?val)
-               else
-               ""))
-
-(deffunction MAIN::struct
-             (?name ?name-postfix ?extends $?body)
-             (str-cat "struct " ?name
-                      (string-if-true ?name-postfix
-                                      " ")
-                      (string-if-true ?extends
-                                      " : ")
-                      (terminated-scope-body ?body)))
-(deffunction MAIN::cond-fulfill
-             (?result)
-             (str-cat "syn::ConditionFulfillment< "
-                      (if ?result then
-                        true
-                        else
-                        false)
-                      " >"))
-
-(deffunction MAIN::generic-struct
-             (?name ?template-parameters $?body)
-             (str-cat (template-decl ?template-parameters) " "
-                      (struct ?name
-                              FALSE
-                              (cond-fulfill FALSE)
-                              ?body)))
-
-(deffunction MAIN::specialize-struct
-             (?name ?special-value $?body)
-             (str-cat (template-decl "")
-                      (struct ?name
-                              (template-specialization ?special-value)
-                              (cond-fulfill TRUE)
-                              (expand$ ?body))))
-
-(deffunction MAIN::return-statement
-             (?statement)
-             (add-terminator (str-cat "return "
-                                      ?statement)))
-(deffunction MAIN::typename
-             (?statement)
-             (str-cat "typename "
-                      ?statement))
-(deffunction MAIN::constexpr
-             (?statement)
-             (str-cat "constexpr "
-                      ?statement))
-(deffunction MAIN::function-decl
-             (?prefix ?return-type ?name ?name-post ?args ?specifiers $?body)
-             (str-cat (string-if-true ?prefix
-                                      "")
-                      " " ?return-type
-                      " " ?name
-                      (string-if-true ?name-post
-                                      " ")
-                      "( " ?args " )"
-                      (string-if-true ?specifiers
-                                      " ")
-                      " "
-                      (scope-body ?body)))
-
-(deffunction MAIN::parens
-             (?first $?args)
-             (wrap-entries "("
-                           (comma-list ?first
-                                       ?args)
-                           ")"))
-
-(deffunction MAIN::string-quote
-             (?str)
-             (format nil
-                     "\"%s\""
-                     ?str))
-(deffunction MAIN::static-assert
-             (?condition ?message)
-             (add-terminator (str-cat static_assert
-                                      (parens ?condition
-                                              (string-quote ?message)))))
-(deffunction MAIN::fulfills-condition
-             (?type)
-             (str-cat "syn::fulfillsCondition"
-                      (template-specialization ?type)
-                      "()"))
-(deffunction MAIN::static-cast
-             (?type ?value)
-             (str-cat "static_cast"
-                      (template-specialization ?type)
-                      (parens ?value)))
-(deffunction MAIN::assign
-             (?a ?b)
-             (str-cat ?a " = " ?b))
-
-(deffunction MAIN::function-call
-             (?function ?first-arg $?args)
-             (str-cat ?function " " (parens ?first-arg ?args)))
