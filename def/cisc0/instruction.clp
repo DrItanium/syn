@@ -21,11 +21,6 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(deffunction MAIN::wrap-entries
-             (?prefix ?contents ?postfix)
-             (str-cat ?prefix
-                      ?contents
-                      ?postfix))
 
 (deffacts cisc0-base-decls
           (input-type Word)
@@ -101,21 +96,12 @@
 
 
 (deffacts cisc0-enums
-          (defenum LegalRegisterNames 2 byte entries: Destination Source)
-          ;(enum (name Operation)
-          ;      (children Memory
-          ;                Arithmetic
-          ;                Shift
-          ;                Logical
-          ;                Compare
-          ;                Branch
-          ;                Move
-          ;                Set
-          ;                Swap
-          ;                Return
-          ;                Complex)
-          ;      (cast-to byte)
-          ;      (max-size "ArchitectureConstants::MaxInstructionCount"))
+          (defenum LegalRegisterNames
+                   2
+                   byte
+                   entries:
+                   Destination
+                   Source)
           (defenum Operation
                    "ArchitectureConstants::MaxInstructionCount"
                    byte
@@ -131,72 +117,79 @@
                    Swap
                    Return
                    Complex)
-
-          (enum (name ArithmeticOps)
-                (children Add
-                          Sub
-                          Mul
-                          Div
-                          Rem
-                          Min
-                          Max)
-                (cast-to byte)
-                (max-size "8"))
-          (enum (name CompareStyle)
-                (children Equals
-                          NotEquals
-                          LessThan
-                          GreaterThan
-                          LessThanOrEqualTo
-                          GreaterThanOrEqualTo
-                          MoveFromCondition
-                          MoveToCondition)
-                (cast-to byte)
-                (max-size "8"))
-          (enum (name LogicalOps)
-                (children And
-                          Or
-                          Xor
-                          Nand
-                          Not)
-                (cast-to byte)
-                (max-size "8"))
-          (enum (name MemoryOperation)
-                (children Load
-                          Store
-                          Push
-                          Pop)
-                (cast-to byte)
-                (max-size "4"))
-          (enum (name ComplexSubTypes)
-                (children Encoding
-                          Extended
-                          Parsing)
-                (cast-to byte)
-                (max-size "16"))
-          (enum (name EncodingOperation)
-                (children Encode
-                          Decode
-                          BitSet
-                          BitUnset)
-                (cast-to byte)
-                (max-size "16"))
-          (enum (name ParsingOperation)
-                (children Hex8ToRegister
-                          RegisterToHex8
-                          MemCopy)
-                (cast-to byte)
-                (max-size "16"))
-          (enum (name ExtendedOperation)
-                (children PushValueAddr
-                          PopValueAddr
-                          IsOdd
-                          IsEven
-                          IncrementValueAddr
-                          DecrementValueAddr
-                          WordsBeforeFirstZero)
-                (cast-to byte)
-                (max-size "16")))
+          (defenum ArithmeticOps
+                   8
+                   byte
+                   entries:
+                   Add
+                   Sub
+                   Mul
+                   Div
+                   Rem
+                   Min
+                   Max)
+          (defenum CompareStyle
+                   8
+                   byte
+                   entries:
+                   Equals
+                   NotEquals
+                   LessThan
+                   GreaterThan
+                   LessThanOrEqualTo
+                   GreaterThanOrEqualTo
+                   MoveFromCondition
+                   MoveToCondition)
+          (defenum LogicalOps
+                   8
+                   byte
+                   entries:
+                   And
+                   Or
+                   Xor
+                   Nand
+                   Not)
+          (defenum MemoryOperation
+                   4
+                   byte
+                   entries:
+                   Load
+                   Store
+                   Push
+                   Pop)
+          (defenum ComplexSubTypes
+                   16
+                   byte
+                   entries:
+                   Encoding
+                   Extended
+                   Parsing)
+          (defenum EncodingOperation
+                   16
+                   byte
+                   entries:
+                   Encode
+                   Decode
+                   BitSet
+                   BitUnset)
+          (defenum ParsingOperation
+                   16
+                   byte
+                   entries:
+                   Hex8ToRegister
+                   RegisterToHex8
+                   MemCopy)
+          (defenum ExtendedOperation
+                   16
+                   byte
+                   entries:
+                   PushValueAddr
+                   PopValueAddr
+                   IsOdd
+                   IsEven
+                   IncrementValueAddr
+                   DecrementValueAddr
+                   WordsBeforeFirstZero))
 
 (deffacts cisc0-file-layouts-and-requests
           (include "ExecutionUnits.h")
@@ -276,87 +269,6 @@
                            ?mask
                            ?shift
                            byte)))
-(deffunction MAIN::add-terminator
-             (?str)
-             (str-cat ?str ";"))
-(deffunction MAIN::explicit-enum
-             (?type ?value)
-             (str-cat ?type " :: "  ?value))
-(deffunction MAIN::variable
-             (?type ?name)
-             (str-cat ?type " " ?name))
-(deffunction MAIN::standard-using-decl
-             (?name ?value)
-             (add-terminator (str-cat "using " ?name " = " ?value)))
-(deffunction MAIN::scope-body
-             ($?body)
-             (str-cat " { " (expand$ ?body) " } "))
-
-(deffunction MAIN::terminated-scope-body
-             ($?body)
-             (add-terminator (scope-body ?body)))
-
-
-(deffunction MAIN::comma-list
-             (?first $?rest)
-             (bind ?output
-                   ?first)
-             (progn$ (?r ?rest)
-                     (bind ?output
-                           (str-cat ?output
-                                    ", " ?r)))
-             ?output)
-(deffunction MAIN::template-specialization
-             (?first $?rest)
-             (wrap-entries "<"
-                           (comma-list ?first
-                                       ?rest)
-                           ">"))
-(deffunction MAIN::template-decl
-             (?first $?rest)
-             (str-cat "template"
-                      (template-specialization ?first
-                                               ?rest)))
-
-(deffunction MAIN::string-if-true
-             (?val ?prefix)
-             (if ?val then
-               (str-cat ?prefix " " ?val)
-               else
-               ""))
-
-(deffunction MAIN::struct
-             (?name ?name-postfix ?extends $?body)
-             (str-cat "struct " ?name
-                      (string-if-true ?name-postfix
-                                      " ")
-                      (string-if-true ?extends
-                                      " : ")
-                      (terminated-scope-body ?body)))
-(deffunction MAIN::cond-fulfill
-             (?result)
-             (str-cat "syn::ConditionFulfillment< "
-                      (if ?result then
-                        true
-                        else
-                        false)
-                      " >"))
-
-(deffunction MAIN::generic-struct
-             (?name ?template-parameters $?body)
-             (str-cat (template-decl ?template-parameters) " "
-                      (struct ?name
-                              FALSE
-                              (cond-fulfill FALSE)
-                              ?body)))
-
-(deffunction MAIN::specialize-struct
-             (?name ?special-value $?body)
-             (str-cat (template-decl "")
-                      (struct ?name
-                              (template-specialization ?special-value)
-                              (cond-fulfill TRUE)
-                              (expand$ ?body))))
 
 (defrule MAIN::generate-top-level-type-conversion-generic
          (declare (salience 1))
@@ -390,32 +302,6 @@
                                                      ?v)
                                       (standard-using-decl type
                                                            ?sub-type)) crlf))
-
-(deffunction MAIN::return-statement
-             (?statement)
-             (add-terminator (str-cat "return "
-                                      ?statement)))
-(deffunction MAIN::typename
-             (?statement)
-             (str-cat "typename "
-                      ?statement))
-(deffunction MAIN::constexpr
-             (?statement)
-             (str-cat "constexpr "
-                      ?statement))
-(deffunction MAIN::function-decl
-             (?prefix ?return-type ?name ?name-post ?args ?specifiers $?body)
-             (str-cat (string-if-true ?prefix
-                                      "")
-                      " " ?return-type
-                      " " ?name
-                      (string-if-true ?name-post
-                                      " ")
-                      "( " ?args " )"
-                      (string-if-true ?specifiers
-                                      " ")
-                      " "
-                      (scope-body ?body)))
 
 (defrule MAIN::generate-top-level-has-sub-type-function
          (declare (salience 1))
@@ -771,40 +657,6 @@
                                       (scope-body (return-statement (str-cat ?operation "( in )"))))
                    crlf))
 
-(deffunction MAIN::parens
-             (?first $?args)
-             (wrap-entries "("
-                           (comma-list ?first
-                                       ?args)
-                           ")"))
-
-(deffunction MAIN::string-quote
-             (?str)
-             (format nil
-                     "\"%s\""
-                     ?str))
-(deffunction MAIN::static-assert
-             (?condition ?message)
-             (add-terminator (str-cat static_assert
-                                      (parens ?condition
-                                              (string-quote ?message)))))
-(deffunction MAIN::fulfills-condition
-             (?type)
-             (str-cat "syn::fulfillsCondition"
-                      (template-specialization ?type)
-                      "()"))
-(deffunction MAIN::static-cast
-             (?type ?value)
-             (str-cat "static_cast"
-                      (template-specialization ?type)
-                      (parens ?value)))
-(deffunction MAIN::assign
-             (?a ?b)
-             (str-cat ?a " = " ?b))
-
-(deffunction MAIN::function-call
-             (?function ?first-arg $?args)
-             (str-cat ?function " " (parens ?first-arg ?args)))
 
 
 (defrule MAIN::generate-encoder-wrapper
