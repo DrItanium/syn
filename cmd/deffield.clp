@@ -127,7 +127,7 @@
 (deffunction generate-encode-decode-ops
              (?t ?name ?value ?mask ?shift)
              (bind ?decodeFunc
-                   (format nil 
+                   (format nil
                            "decode%s"
                            ?name))
              (bind ?encodeFunc
@@ -256,7 +256,7 @@
                                               (entries $?e))
          =>
          (retract ?f)
-         (modify ?f2 
+         (modify ?f2
                  (output-type ?other-type)
                  (entries $?e ?name))
          (printout t
@@ -288,4 +288,30 @@
                    "}" crlf))
 
 
+(defrule MAIN::deffield->field-template:no-input-type
+         (declare (salience ?*priority:first*))
+         ?f <- (deffield ?name
+                         ?mask
+                         ?shift
+                         ?output-type)
+         =>
+         (retract ?f)
+         (assert (field (name ?name)
+                        (mask ?mask)
+                        (shift ?shift)
+                        (output-type ?output-type))))
 
+(defrule MAIN::deffield->field-template:input-type
+         (declare (salience ?*priority:first*))
+         ?f <- (deffield ?name
+                         ?mask
+                         ?shift
+                         ?output-type
+                         input-type:
+                         ?input-type)
+         =>
+         (retract ?f)
+         (assert (field (name ?name)
+                        (mask ?mask)
+                        (shift ?shift)
+                        (output-type ?output-type))))

@@ -248,19 +248,6 @@
                            ?output-type)
                  (sub-type-field ?name
                                  ?output-type)))
-(defrule translate-flat-fact
-         (declare (salience ?*priority:first*))
-         ?f <- (deffield ?name
-                         ?mask
-                         ?shift
-                         ?output-type)
-         =>
-         (retract ?f)
-         (assert (field (name ?name)
-                        (mask ?mask)
-                        (shift ?shift)
-                        (output-type ?output-type))))
-
 (defrule translate-bit-fact
          (declare (salience ?*priority:first*))
          ?f <- (defbitfield ?name
@@ -307,7 +294,7 @@
 
 (deffunction MAIN::comma-list
              (?first $?rest)
-             (bind ?output 
+             (bind ?output
                    ?first)
              (progn$ (?r ?rest)
                      (bind ?output
@@ -322,8 +309,8 @@
                            ">"))
 (deffunction MAIN::template-decl
              (?first $?rest)
-             (str-cat "template" 
-                      (template-specialization ?first 
+             (str-cat "template"
+                      (template-specialization ?first
                                                ?rest)))
 
 (deffunction MAIN::string-if-true
@@ -335,15 +322,15 @@
 
 (deffunction MAIN::struct
              (?name ?name-postfix ?extends $?body)
-             (str-cat "struct " ?name 
-                      (string-if-true ?name-postfix 
+             (str-cat "struct " ?name
+                      (string-if-true ?name-postfix
                                       " ")
                       (string-if-true ?extends
                                       " : ")
                       (terminated-scope-body ?body)))
 (deffunction MAIN::cond-fulfill
              (?result)
-             (str-cat "syn::ConditionFulfillment< " 
+             (str-cat "syn::ConditionFulfillment< "
                       (if ?result then
                         true
                         else
@@ -353,7 +340,7 @@
 (deffunction MAIN::generic-struct
              (?name ?template-parameters $?body)
              (str-cat (template-decl ?template-parameters) " "
-                      (struct ?name 
+                      (struct ?name
                               FALSE
                               (cond-fulfill FALSE)
                               ?body)))
@@ -374,7 +361,7 @@
          (retract ?f)
          (assert (made-top-level-type-conversion ?t))
          (printout t
-                   (generic-struct (str-cat ?t 
+                   (generic-struct (str-cat ?t
                                             ToSubType)
                                    (variable ?t
                                              value)
@@ -400,7 +387,7 @@
 
 (deffunction MAIN::return-statement
              (?statement)
-             (add-terminator (str-cat "return " 
+             (add-terminator (str-cat "return "
                                       ?statement)))
 (deffunction MAIN::typename
              (?statement)
@@ -408,17 +395,17 @@
                       ?statement))
 (deffunction MAIN::constexpr
              (?statement)
-             (str-cat "constexpr " 
+             (str-cat "constexpr "
                       ?statement))
 (deffunction MAIN::function-decl
-             (?prefix ?return-type ?name ?name-post ?args ?specifiers $?body) 
+             (?prefix ?return-type ?name ?name-post ?args ?specifiers $?body)
              (str-cat (string-if-true ?prefix
                                       "")
                       " " ?return-type
-                      " " ?name 
+                      " " ?name
                       (string-if-true ?name-post
                                       " ")
-                      "( " ?args " )" 
+                      "( " ?args " )"
                       (string-if-true ?specifiers
                                       " ")
                       " "
@@ -439,11 +426,11 @@
                (str-cat ?t ToSubType
                         (template-specialization value)))
 
-         (printout t 
+         (printout t
                    ?standard-decl crlf
-                   (standard-using-decl (sym-cat SubTypeOf 
+                   (standard-using-decl (sym-cat SubTypeOf
                                                  ?t)
-                                        (explicit-enum (typename ?subtype-type) 
+                                        (explicit-enum (typename ?subtype-type)
                                                        type)) crlf
                    ?standard-decl crlf
                    (function-decl constexpr
@@ -470,7 +457,7 @@
          =>
          (assert (generic encoding of sub type generated ?top))
          (bind ?q
-               (str-cat 
+               (str-cat
                  (sym-cat SubTypeOf
                           ?top)
                  "<v>"))
@@ -488,7 +475,7 @@
                    "};" crlf))
 
 (deffacts cisc0-destination-register-usage
-          (defproperty-struct UsesDestination 
+          (defproperty-struct UsesDestination
                               Operation)
           (properties UsesDestination
                       Operation
@@ -502,8 +489,8 @@
                       Logical)
           (defproperty-struct UsesSource
                               Operation)
-          (properties UsesSource 
-                      Operation 
+          (properties UsesSource
+                      Operation
                       Arithmetic
                       Shift
                       Compare
@@ -533,7 +520,7 @@
           (defproperty-function hasBitmask HasBitmask Operation)
           (defproperty-function hasImmediateFlag HasImmediateFlag Operation)
           (defencoder/decoder Type Operation)
-          (encoder/decoders Type 
+          (encoder/decoders Type
                             Operation
                             Arithmetic
                             Compare
@@ -541,7 +528,7 @@
                             Memory
                             Complex)
           (defencoder/decoder ComplexSubType ComplexSubTypes)
-          (encoder/decoders ComplexSubType 
+          (encoder/decoders ComplexSubType
                             ComplexSubTypes
                             Encoding
                             Extended
@@ -555,8 +542,8 @@
                             Memory
                             Logical)
           (defencoder/decoder Destination Operation)
-          (encoder/decoders Destination 
-                            Operation 
+          (encoder/decoders Destination
+                            Operation
                             Set
                             Arithmetic
                             Shift
@@ -567,8 +554,8 @@
                             Branch
                             Logical)
           (defencoder/decoder Source Operation)
-          (encoder/decoders Source 
-                            Operation 
+          (encoder/decoders Source
+                            Operation
                             Arithmetic
                             Shift
                             Compare
@@ -588,7 +575,7 @@
 (defrule MAIN::multi-encode/decode-deocmpose
          (declare (salience ?*priority:first*))
          ?f <- (encoder/decoders ?title
-                                 ?type 
+                                 ?type
                                  $?values)
          =>
          (retract ?f)
@@ -599,7 +586,7 @@
 
 (defrule MAIN::convert-properties
          (declare (salience ?*priority:first*))
-         ?f <- (properties ?title 
+         ?f <- (properties ?title
                            ?type
                            $?values)
          =>
@@ -634,21 +621,21 @@
                           ?value)))
 (defrule MAIN::generate-defproperty-function
          (made property-struct
-               ?title 
+               ?title
                ?input-type)
          (not (property ?title
                         ?input-type
                         ?))
-         ?f <- (defproperty-function ?name 
+         ?f <- (defproperty-function ?name
                                      ?title
                                      ?input-type)
          =>
          (retract ?f)
          (printout t
                    (template-decl (variable ?input-type
-                                            val)) 
+                                            val))
                    " constexpr bool " ?name "() noexcept"
-                   (scope-body (return-statement (explicit-enum (str-cat ?title 
+                   (scope-body (return-statement (explicit-enum (str-cat ?title
                                                                          (template-specialization val))
                                                                 value))) crlf))
 
@@ -671,15 +658,15 @@
          (made property-struct
                ?title
                ?input-type)
-         ?f <- (property ?title 
-                         ?input-type 
+         ?f <- (property ?title
+                         ?input-type
                          ?value)
          =>
          (retract ?f)
-         (printout t 
+         (printout t
                    (specialize-struct ?title
                                       (explicit-enum ?input-type
-                                                     ?value)) 
+                                                     ?value))
                    crlf))
 
 (defrule MAIN::generate-defencoder
@@ -690,7 +677,7 @@
          (assert (made generic-encoder
                        ?title
                        ?type))
-         (printout t 
+         (printout t
                    (generic-struct (str-cat Encode
                                             ?title)
                                    (variable ?type
@@ -699,7 +686,7 @@
                                                         ?type)
                                    (standard-using-decl CastTo
                                                         ?type)
-                                   "static constexpr ReturnType encode(ReturnType in, CastTo val) noexcept { return in; }") 
+                                   "static constexpr ReturnType encode(ReturnType in, CastTo val) noexcept { return in; }")
                    crlf))
 
 (defrule MAIN::generate-specialized-encoder
@@ -718,7 +705,7 @@
          =>
          (retract ?f)
          (printout t
-                   (specialize-struct (str-cat Encode 
+                   (specialize-struct (str-cat Encode
                                                ?title)
                                       (explicit-enum ?type
                                                      ?value)
@@ -726,8 +713,8 @@
                                                            ?ret)
                                       (standard-using-decl CastTo
                                                            ?input)
-                                      "static constexpr ReturnType encode(ReturnType in, CastTo val) noexcept " 
-                                      (scope-body (return-statement (str-cat ?operation "( in, val )")))) 
+                                      "static constexpr ReturnType encode(ReturnType in, CastTo val) noexcept "
+                                      (scope-body (return-statement (str-cat ?operation "( in, val )"))))
                    crlf))
 
 (defrule MAIN::generate-defdecoder
@@ -738,8 +725,8 @@
          (assert (made generic-decoder
                        ?title
                        ?type))
-         (printout t 
-                   (generic-struct (str-cat Decode 
+         (printout t
+                   (generic-struct (str-cat Decode
                                             ?title)
                                    (variable ?type
                                              i)
@@ -766,7 +753,7 @@
          =>
          (retract ?f)
          (printout t
-                   (specialize-struct (str-cat Decode 
+                   (specialize-struct (str-cat Decode
                                                ?title)
                                       (explicit-enum ?type
                                                      ?value)
@@ -774,14 +761,14 @@
                                                            ?ret)
                                       (standard-using-decl CastTo
                                                            ?input)
-                                      "static constexpr ReturnType decode(CastTo in) noexcept " 
-                                      (scope-body (return-statement (str-cat ?operation "( in )")))) 
+                                      "static constexpr ReturnType decode(CastTo in) noexcept "
+                                      (scope-body (return-statement (str-cat ?operation "( in )"))))
                    crlf))
 
 (deffunction MAIN::parens
              (?first $?args)
-             (wrap-entries "(" 
-                           (comma-list ?first 
+             (wrap-entries "("
+                           (comma-list ?first
                                        ?args)
                            ")"))
 
@@ -797,12 +784,12 @@
                                               (string-quote ?message)))))
 (deffunction MAIN::fulfills-condition
              (?type)
-             (str-cat "syn::fulfillsCondition" 
+             (str-cat "syn::fulfillsCondition"
                       (template-specialization ?type)
                       "()"))
 (deffunction MAIN::static-cast
              (?type ?value)
-             (str-cat "static_cast" 
+             (str-cat "static_cast"
                       (template-specialization ?type)
                       (parens ?value)))
 (deffunction MAIN::assign
@@ -838,17 +825,17 @@
                        (str-cat ?title)))
 
          (printout t
-                   (template-decl (variable ?type 
+                   (template-decl (variable ?type
                                             v)
                                   (assign (typename T)
                                           ?cast-to))
                    " constexpr "
                    ?ret-type
-                   (str-cat " encode" 
+                   (str-cat " encode"
                             ?title)
                    (parens (variable ?ret-type
                                      in)
-                           (variable T 
+                           (variable T
                                      value))
                    " noexcept "
                    (scope-body (static-assert (fulfills-condition ?t2)
@@ -873,19 +860,19 @@
                         ?title
                         (template-specialization v)))
          (printout t
-                   (template-decl (variable ?type 
+                   (template-decl (variable ?type
                                             v))
-                   " constexpr typename " 
+                   " constexpr typename "
                    (explicit-enum ?t2
                                   ReturnType)
-                   (str-cat " decode" 
+                   (str-cat " decode"
                             ?title)
-                   (str-cat "( typename " 
-                            (explicit-enum ?t2 
+                   (str-cat "( typename "
+                            (explicit-enum ?t2
                                            CastTo)
                             " in) noexcept ")
                    (scope-body "static_assert( syn::fulfillsCondition<" ?t2 ">(), \"Provided control does not have support for concept " ?title "!\");"
                                (return-statement (str-cat (explicit-enum ?t2
-                                                                         decode) 
+                                                                         decode)
                                                           "(in)")))
                    crlf))
