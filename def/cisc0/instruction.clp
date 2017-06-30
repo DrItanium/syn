@@ -190,41 +190,33 @@
           (include "ExecutionUnits.h")
           (using ALUOperation
                  syn::ALU::StandardOperations)
+          (using CompareUnitOperation
+                 syn::Comparator::StandardOperations)
           (defspecial-execution-unit-converter arithmetic->alu
                                                ArithmeticOps
                                                ALUOperation)
+          (defspecial-execution-unit-converter logical->alu
+                                               LogicalOps
+                                               ALUOperation)
+          (defspecial-execution-unit-converter compare->compareunit
+                                               CompareStyle
+                                               CompareUnitOperation)
           (arithmetic->alu Add Add)
           (arithmetic->alu Sub Subtract)
-          (to-execution-unit ArithmeticOps Mul ->
-                             ALUOperation Multiply)
-          (to-execution-unit ArithmeticOps Div ->
-                             ALUOperation Divide)
-          (to-execution-unit ArithmeticOps Rem ->
-                             ALUOperation Remainder)
-          (to-execution-unit LogicalOps Not ->
-                             ALUOperation UnaryNot)
-          (to-execution-unit LogicalOps Or ->
-                             ALUOperation BinaryOr)
-          (to-execution-unit LogicalOps And ->
-                             ALUOperation BinaryAnd)
-          (to-execution-unit LogicalOps Xor ->
-                             ALUOperation BinaryXor)
-          (to-execution-unit LogicalOps Nand ->
-                             ALUOperation BinaryNand)
-          (using CompareUnitOperation
-                 syn::Comparator::StandardOperations)
-          (to-execution-unit CompareStyle Equals ->
-                             CompareUnitOperation Eq)
-          (to-execution-unit CompareStyle NotEquals ->
-                             CompareUnitOperation Neq)
-          (to-execution-unit CompareStyle LessThan ->
-                             CompareUnitOperation LessThan)
-          (to-execution-unit CompareStyle LessThanOrEqualTo ->
-                             CompareUnitOperation LessThanOrEqualTo)
-          (to-execution-unit CompareStyle GreaterThan ->
-                             CompareUnitOperation GreaterThan)
-          (to-execution-unit CompareStyle GreaterThanOrEqualTo ->
-                             CompareUnitOperation GreaterThanOrEqualTo)
+          (arithmetic->alu Mul Multiply)
+          (arithmetic->alu Div Divide)
+          (arithmetic->alu Rem Remainder)
+          (logical->alu Not UnaryNot)
+          (logical->alu Or BinaryOr)
+          (logical->alu And BinaryAnd)
+          (logical->alu Xor BinaryXor)
+          (logical->alu Nand BinaryNand)
+          (compare->compareunit Equals Eq)
+          (compare->compareunit NotEquals Neq)
+          (compare->compareunit LessThan LessThan)
+          (compare->compareunit LessThanOrEqualTo LessThanOrEqualTo)
+          (compare->compareunit GreaterThan GreaterThan)
+          (compare->compareunit GreaterThanOrEqualTo GreaterThanOrEqualTo)
           (top-level-type ComplexSubTypes)
           (top-level-to-sub-type ComplexSubTypes Encoding -> EncodingOperation)
           (top-level-to-sub-type ComplexSubTypes Extended -> ExtendedOperation)
