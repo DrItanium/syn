@@ -325,16 +325,14 @@
                                         (explicit-enum (typename ?subtype-type)
                                                        type)) crlf
                    ?standard-decl crlf
-                   (function-decl constexpr
-                                  bool
-                                  HasSubType
-                                  FALSE
-                                  ""
-                                  noexcept
-                                  (return-statement (explicit-enum ?subtype-type
-                                                                   value))) crlf))
-
-
+                   (constexpr
+                     (function-decl bool
+                                    HasSubtype
+                                    (create$)
+                                    (noexcept)
+                                    (return-statement
+                                      (explicit-enum ?subtype-type
+                                                     value)))) crlf))
 
 
 (defrule MAIN::generate-top-level-type-conversion-specialization-encoding-op:generic-case
@@ -349,10 +347,9 @@
          =>
          (assert (generic encoding of sub type generated ?top))
          (bind ?q
-               (str-cat
-                 (sym-cat SubTypeOf
-                          ?top)
-                 "<v>"))
+               (str-cat SubTypeOf
+                        ?top
+                        (template-specialization v)))
          (bind ?q2
                (sym-cat EncodeSubType
                         ?top))
@@ -586,7 +583,17 @@
                                                         ?type)
                                    (standard-using-decl CastTo
                                                         ?type)
-                                   "static constexpr ReturnType encode(ReturnType in, CastTo val) noexcept { return in; }")
+                                   (static
+                                     (constexpr
+                                       (function-signature ReturnType
+                                                           encode
+                                                           (create$ (variable ReturnType
+                                                                              in)
+                                                                    (variable CastTo
+                                                                              val))
+                                                           (noexcept))))
+                                   (scope-body
+                                     (return-statement in)))
                    crlf))
 
 (defrule MAIN::generate-specialized-encoder
@@ -613,8 +620,20 @@
                                                            ?ret)
                                       (standard-using-decl CastTo
                                                            ?input)
-                                      "static constexpr ReturnType encode(ReturnType in, CastTo val) noexcept "
-                                      (scope-body (return-statement (str-cat ?operation "( in, val )"))))
+                                      (static
+                                        (constexpr
+                                          (function-signature ReturnType
+                                                              encode
+                                                              (create$ (variable ReturnType
+                                                                                 in)
+                                                                       (variable CastTo
+                                                                                 val))
+                                                              (noexcept))))
+                                      (scope-body
+                                        (return-statement
+                                          (function-call ?operation
+                                                         in
+                                                         val))))
                    crlf))
 
 (defrule MAIN::generate-defdecoder
@@ -634,7 +653,17 @@
                                                         ?type)
                                    (standard-using-decl CastTo
                                                         ?type)
-                                   "static constexpr ReturnType decode(CastTo in) noexcept { return static_cast<ReturnType>(in); }")
+                                   (static
+                                     (constexpr
+                                       (function-signature ReturnType
+                                                           decode
+                                                           (variable CastTo
+                                                                     in)
+                                                           (noexcept))))
+                                   (scope-body
+                                     (return-statement
+                                       (static-cast ReturnType
+                                                    in))))
                    crlf))
 
 (defrule MAIN::generate-specialized-decoder
@@ -661,11 +690,11 @@
                                                            ?ret)
                                       (standard-using-decl CastTo
                                                            ?input)
-                                      (constexpr (function-signature "static ReturnType"
-                                                                     decode
-                                                                     (variable CastTo
-                                                                               in)
-                                                                     (noexcept)))
+                                      (constexpr (static (function-signature ReturnType
+                                                                             decode
+                                                                             (variable CastTo
+                                                                                       in)
+                                                                             (noexcept))))
                                       (scope-body (return-statement
                                                     (function-call ?operation
                                                                    in))))

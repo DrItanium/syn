@@ -224,17 +224,11 @@
                       (parens ?arg)
                       (scope-body $?body)))
 (deffunction MAIN::function-decl
-             (?prefix ?return-type ?name ?name-post ?args ?specifiers $?body)
-             (str-cat (string-if-true ?prefix
-                                      "")
-                      " " ?return-type
-                      " " ?name
-                      (string-if-true ?name-post
-                                      " ")
-                      "( " ?args " )"
-                      (string-if-true ?specifiers
-                                      " ")
-                      " "
+             (?return-type ?name ?args ?specifiers $?body)
+             (str-cat (function-signature ?return-type
+                                          ?name
+                                          ?args
+                                          ?specifiers)
                       (scope-body ?body)))
 
 (deftemplate field
@@ -353,6 +347,10 @@
              (return-statement (templated-function-call ?op
                                                         ?template-args
                                                         ?args)))
+(deffunction MAIN::static
+             (?statement)
+             (str-cat "static "
+                      ?statement))
 (deffunction generate-encode-decode-ops
              (?t ?name ?value ?mask ?shift)
              (bind ?decodeFunc
