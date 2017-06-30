@@ -116,7 +116,7 @@ namespace cisc0 {
             std::cout << "\tCurrent word value: " << std::hex << getCurrentCodeWord() << std::endl;
         }
         DecodedInstruction di(getCurrentCodeWord());
-        dispatch(std::move(di));
+        dispatch(di);
         if (advanceIp) {
             incrementInstructionPointer();
         } else {
@@ -135,7 +135,7 @@ namespace cisc0 {
         incrementAddress(getInstructionPointer());
     }
 
-    void illegalInstruction(DecodedInstruction&& current, RegisterValue ip) {
+    void illegalInstruction(const DecodedInstruction& current, RegisterValue ip) {
         std::stringstream str;
         str << "Illegal instruction " << std::hex << static_cast<int>(current.getControl()) << std::endl;
         str << "Location: " << std::hex << ip << std::endl;
@@ -143,29 +143,29 @@ namespace cisc0 {
         throw syn::Problem(s);
     }
 
-    void Core::dispatch(DecodedInstruction&& current) {
+    void Core::dispatch(const DecodedInstruction& current) {
         auto tControl = current.getControl();
         switch(tControl) {
             case Operation::Shift:
-                shiftOperation(std::move(current));
+                shiftOperation((current));
                 break;
             case Operation::Arithmetic:
-                arithmeticOperation(std::move(current));
+                arithmeticOperation((current));
                 break;
             case Operation::Logical:
-                logicalOperation(std::move(current));
+                logicalOperation((current));
                 break;
             case Operation::Memory:
-                memoryOperation(std::move(current));
+                memoryOperation((current));
                 break;
             case Operation::Branch:
-                branchOperation(std::move(current));
+                branchOperation((current));
                 break;
             case Operation::Compare:
-                compareOperation(std::move(current));
+                compareOperation((current));
                 break;
             case Operation::Complex:
-                complexOperation(std::move(current));
+                complexOperation((current));
                 break;
             case Operation::Swap:
                 if (current.getDestinationRegister<Operation::Swap>() != current.getSourceRegister<Operation::Swap>()) {
@@ -186,11 +186,11 @@ namespace cisc0 {
                 break;
             default:
                 execute = false;
-                illegalInstruction(std::move(current), getInstructionPointer());
+                illegalInstruction(current, getInstructionPointer());
                 break;
         }
     }
-    void Core::branchOperation(DecodedInstruction&& inst) {
+    void Core::branchOperation(const DecodedInstruction& inst) {
         auto isImm = inst.getImmediateFlag<Operation::Branch>();
         bool isCall, isCond;
         std::tie(isCall, isCond) = inst.getOtherBranchFlags();
@@ -228,7 +228,7 @@ namespace cisc0 {
         }
     }
 
-    void Core::compareOperation(DecodedInstruction&& inst) {
+    void Core::compareOperation(const DecodedInstruction& inst) {
         static constexpr auto group = Operation::Compare;
 		auto compareResult = inst.getSubtype<group>();
 		auto destinationIndex = inst.getDestinationRegister<group>();
@@ -244,73 +244,64 @@ namespace cisc0 {
 			getConditionRegister() = syn::Comparator::performOperation(compareUnitType, first, second);
 		}
     }
-
-    void Core::memoryOperation(DecodedInstruction&& inst) {
+    void Core::memoryOperation(const DecodedInstruction& inst) {
         static constexpr auto group = Operation::Memory;
         auto rawMask = inst.getBitmask<group>();
         auto useLower = readLower(rawMask);
         auto useUpper = readUpper(rawMask);
         auto fullMask = mask(rawMask);
-        auto rawType = inst.getSubtype<group>();
-        auto memoryRegister = inst.getMemoryRegister();
         auto lmask = lowerMask(rawMask);
         auto umask = upperMask(rawMask);
-        auto upper = 0u;
-        auto lower = 0u;
-        auto loadIndirectAddress = [this](auto address) {
-			return encodeRegisterValue(loadWord(address + 1), loadWord(address));
+        auto computeAddress = [this, &inst]() {
+            auto address = getAddressRegister() + inst.getMemoryOffset();
+            if (inst.isIndirectOperation()) {
+                address = encodeRegisterValue(loadWord(address + 1), loadWord(address));
+            }
+            return address;
         };
-        if (rawType == MemoryOperation::Load) {
+        auto loadOperation = [this, computeAddress, useLower, useUpper, fullMask, &inst]() {
             auto& value = getValueRegister();
             if (!useLower && !useUpper) {
                 value = 0;
             } else {
-                auto address = getAddressRegister() + inst.getMemoryOffset();
-                if (inst.isIndirectOperation()) {
-                    address = loadIndirectAddress(address);
-                }
-                if (useLower) {
-                    lower = encodeLowerHalf(0, loadWord(address));
-                }
-                if (useUpper) {
-                    upper = encodeUpperHalf(0, loadWord(address + 1));
-                }
+                auto address = computeAddress();
+                auto lower = useLower ? encodeLowerHalf(0, loadWord(address)) : 0;
+                auto upper = useUpper ? encodeUpperHalf(0, loadWord(address + 1)) : 0;
                 auto combinedValue = lower | upper;
-                value = syn::encodeBits<RegisterValue, RegisterValue>(0u, combinedValue, fullMask, 0);
+                value = syn::encodeBits<RegisterValue, RegisterValue>(0, combinedValue, fullMask, 0);
             }
-        } else if (rawType == MemoryOperation::Store) {
-            static constexpr Word maskCheck = 0xFFFF;
+        };
+        auto storeOperation = [this, computeAddress, useLower, useUpper, lmask, umask, &inst]() {
+            constexpr Word maskCheck = 0xFFFF;
             auto value = getValueRegister();
-            auto address = getAddressRegister() + inst.getMemoryOffset();
-            if (inst.isIndirectOperation()) {
-                address = loadIndirectAddress(address);
-            }
+            auto address = computeAddress();
             if (useLower) {
                 auto lowerValue = decodeLowerHalf(value);
-                if (lmask == maskCheck) {
-                    storeWord(address, lowerValue);
-                } else {
-                    storeWord(address, (lmask & lowerValue) | (loadWord(address) & ~lmask));
+                Word tmp = lowerValue;
+                if (lmask != maskCheck) {
+                    tmp = ((lmask & lowerValue) | (loadWord(address) & ~lmask));
                 }
+                storeWord(address, tmp);
             }
             if (useUpper) {
                 auto newAddress = address + 1;
                 // pull the upper 16 bits out into a separate variable
                 auto upperValue = decodeUpperHalf(value);
-                if (umask == maskCheck) {
-                    // store the top half of the value into memory
-                    storeWord(newAddress, upperValue);
-                } else {
+                // by default, assume that we will store the top half of the value into memory
+                auto tmp = upperValue;
+                if (umask != maskCheck) {
                     // needs to be the masked value instead!
-                    storeWord(newAddress, (umask & upperValue) | (loadWord(newAddress) & ~umask));
+                    tmp = (umask & upperValue) | (loadWord(newAddress) & ~umask);
                 }
+                storeWord(newAddress, tmp);
             }
-        } else if (rawType == MemoryOperation::Push) {
+        };
+        auto pushOperation = [this, useUpper, useLower, umask, lmask, &inst]() {
             if (inst.isIndirectOperation()) {
                 throw syn::Problem("Indirect bit not supported in push operations!");
             }
             // update the target stack to something different
-            auto pushToStack = registerValue(memoryRegister);
+            auto pushToStack = registerValue(inst.getMemoryRegister());
             // read backwards because the stack grows upward towards zero
             if (useUpper) {
                 pushWord(umask & decodeUpperHalf(pushToStack));
@@ -318,44 +309,54 @@ namespace cisc0 {
             if (useLower) {
                 pushWord(lmask & decodeLowerHalf(pushToStack));
             }
-        } else if (rawType == MemoryOperation::Pop) {
+        };
+        auto popOperation = [this, useUpper, useLower, lmask, umask, &inst]() {
             if (inst.isIndirectOperation()) {
                 throw syn::Problem("Indirect bit not supported in pop operations!");
             }
-            if (useLower) {
-                lower = lmask & popWord();
-            }
-            if (useUpper) {
-                upper = umask & popWord();
-            }
-            registerValue(memoryRegister) = encodeRegisterValue(upper, lower);
+            auto lower = useLower ? lmask & popWord() : 0;
+            auto upper = useUpper ? umask & popWord() : 0;
+            registerValue(inst.getMemoryRegister()) = encodeRegisterValue(upper, lower);
             // can't think of a case where we should
             // restore the instruction pointer and then
             // immediate advance so just don't do it
-            advanceIp = memoryRegister != ArchitectureConstants::InstructionPointer;
-        } else {
-            throw syn::Problem("Illegal memory operation!");
+            advanceIp = inst.getMemoryRegister() != ArchitectureConstants::InstructionPointer;
+        };
+        switch(inst.getSubtype<group>()) {
+            case MemoryOperation::Load:
+                loadOperation();
+                break;
+            case MemoryOperation::Store:
+                storeOperation();
+                break;
+            case MemoryOperation::Push:
+                pushOperation();
+                break;
+            case MemoryOperation::Pop:
+                popOperation();
+                break;
+            default:
+                throw syn::Problem("Illegal memory operation!");
         }
-
     }
 
-    void Core::complexOperation(DecodedInstruction&& inst) {
+    void Core::complexOperation(const DecodedInstruction& inst) {
         auto type = inst.getSubtype<Operation::Complex>();
         switch(type) {
             case ComplexSubTypes::Encoding:
-                encodingOperation(std::move(inst));
+                encodingOperation((inst));
                 break;
             case ComplexSubTypes::Extended:
-                extendedOperation(std::move(inst));
+                extendedOperation((inst));
                 break;
 			case ComplexSubTypes::Parsing:
-				parsingOperation(std::move(inst));
+				parsingOperation((inst));
 				break;
             default:
                 throw syn::Problem("Undefined complex subtype!");
         }
     }
-    void Core::shiftOperation(DecodedInstruction&& inst) {
+    void Core::shiftOperation(const DecodedInstruction& inst) {
         static constexpr auto group = Operation::Shift;
         auto &destination = registerValue(inst.getDestinationRegister<group>());
         auto source = (inst.getImmediateFlag<group>() ? static_cast<RegisterValue>(inst.getImmediate<group>()) : registerValue(inst.getSourceRegister<group>()));
@@ -363,7 +364,7 @@ namespace cisc0 {
         destination = syn::ALU::performOperation<RegisterValue>(direction, destination, source);
     }
 
-    void Core::extendedOperation(DecodedInstruction&& inst) {
+    void Core::extendedOperation(const DecodedInstruction& inst) {
 		constexpr auto group = ComplexSubTypes::Extended;
 		auto wordsBeforeFirstZero = [this]() {
 			auto addr = getAddressRegister();
@@ -371,7 +372,7 @@ namespace cisc0 {
 			while(true) {
 				if (loadWord(addr) == 0) {
 					break;
-				} 
+				}
 				++count;
 				++addr;
 			}
@@ -467,7 +468,7 @@ namespace cisc0 {
 	static constexpr Word extractHexAndConvertToText(RegisterValue value) noexcept {
 		return hexToText(syn::decodeBits<RegisterValue, byte, mask, shift>(value));
 	}
-	void Core::parsingOperation(DecodedInstruction&& inst) {
+	void Core::parsingOperation(const DecodedInstruction& inst) {
 		auto hex8ToRegister = [this, &inst]() {
 			// 1) use the address contained in address to read the next 8 words
 			// 2) Parse each word as an ascii character and convert it into a 4 bit quantity
@@ -511,7 +512,7 @@ namespace cisc0 {
 		}
 	}
 
-    void Core::arithmeticOperation(DecodedInstruction&& inst) {
+    void Core::arithmeticOperation(const DecodedInstruction& inst) {
         static constexpr auto group = Operation::Arithmetic;
         auto subType = inst.getSubtype<group>();
         auto src1 = inst.getImmediateFlag<group>() ? inst.getImmediate<group>() : registerValue(inst.getSourceRegister<group>());
@@ -529,7 +530,7 @@ namespace cisc0 {
         }
     }
 
-    void Core::logicalOperation(DecodedInstruction&& inst) {
+    void Core::logicalOperation(const DecodedInstruction& inst) {
         static constexpr auto group = Operation::Logical;
         auto result = translate(inst.getSubtype<group>());
         syn::throwOnErrorState(result, "Illegal logical operation!");
@@ -548,7 +549,7 @@ namespace cisc0 {
     }
 
 
-    void Core::encodingOperation(DecodedInstruction&& inst) {
+    void Core::encodingOperation(const DecodedInstruction& inst) {
         switch(inst.getEncodingOperation()) {
             case EncodingOperation::Decode:
                 // connect the result of the logical operations alu to the

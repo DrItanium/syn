@@ -64,7 +64,7 @@ namespace cisc0 {
 			Word popWord(RegisterValue& stackPointer);
             RegisterValue popRegisterValue();
 			RegisterValue popRegisterValue(RegisterValue& stackPointer);
-			void dispatch(DecodedInstruction&& inst);
+			void dispatch(const DecodedInstruction& inst);
 			template<byte rindex>
 			inline RegisterValue& registerValue() noexcept {
 				static_assert(rindex < ArchitectureConstants::RegisterCount, "Not a legal register index!");
@@ -100,19 +100,19 @@ namespace cisc0 {
 			void storeWord(RegisterValue address, Word value);
 			Word loadWord(RegisterValue address);
 		private:
-			void complexOperation(DecodedInstruction&& inst);
-			void encodingOperation(DecodedInstruction&& inst);
-            void extendedOperation(DecodedInstruction&& inst);
-			void parsingOperation(DecodedInstruction&& inst);
-			void performEncodeOp(DecodedInstruction&& inst);
+			void complexOperation(const DecodedInstruction& inst);
+			void encodingOperation(const DecodedInstruction& inst);
+            void extendedOperation(const DecodedInstruction& inst);
+			void parsingOperation(const DecodedInstruction& inst);
+			void performEncodeOp(const DecodedInstruction& inst);
         private:
-            void compareOperation(DecodedInstruction&& inst);
-            void systemCallOperation(DecodedInstruction&& inst);
-            void branchOperation(DecodedInstruction&& inst);
-            void memoryOperation(DecodedInstruction&& inst);
-            void logicalOperation(DecodedInstruction&& inst);
-            void arithmeticOperation(DecodedInstruction&& inst);
-            void shiftOperation(DecodedInstruction&& inst);
+            void compareOperation(const DecodedInstruction& inst);
+            void systemCallOperation(const DecodedInstruction& inst);
+            void branchOperation(const DecodedInstruction& inst);
+            void memoryOperation(const DecodedInstruction& inst);
+            void logicalOperation(const DecodedInstruction& inst);
+            void arithmeticOperation(const DecodedInstruction& inst);
+            void shiftOperation(const DecodedInstruction& inst);
 		private:
 			bool execute = true,
 				 advanceIp = true;
