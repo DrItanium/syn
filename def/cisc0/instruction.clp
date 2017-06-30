@@ -356,14 +356,19 @@
          (bind ?q2
                (sym-cat EncodeSubType
                         ?top))
-
          (printout t
-                   "template<" ?top " v>" crlf
+                   (template-decl (variable ?top v)) crlf
                    "struct " ?q2 " : syn::ConditionFulfillment<false> {" crlf
-                   "using ReturnType = " ?full-type ";" crlf
+                   (standard-using-decl ReturnType
+                                        ?full-type) crlf
                    (standard-using-decl CastTo
                                         ?q) crlf
-                   "static constexpr ReturnType encodeSubType(ReturnType input, " ?q " data) noexcept { return input; }" crlf
+                   (constexpr (function-signature ReturnType
+                                                  encodeSubType
+                                                  (create$ (variable ReturnType input)
+                                                           (variable ?q data))
+                                                  (noexcept)))
+                   (scope-body (return-statement input)) crlf
                    "};" crlf))
 
 (deffacts cisc0-destination-register-usage
@@ -526,7 +531,10 @@
          (printout t
                    (template-decl (variable ?input-type
                                             val))
-                   " constexpr bool " ?name "() noexcept"
+                   (constexpr (function-signature bool
+                                                  ?name
+                                                  (create$)
+                                                  (noexcept)))
                    (scope-body (return-statement (explicit-enum (str-cat ?title
                                                                          (template-specialization val))
                                                                 value))) crlf))
@@ -653,8 +661,14 @@
                                                            ?ret)
                                       (standard-using-decl CastTo
                                                            ?input)
-                                      "static constexpr ReturnType decode(CastTo in) noexcept "
-                                      (scope-body (return-statement (str-cat ?operation "( in )"))))
+                                      (constexpr (function-signature "static ReturnType"
+                                                                     decode
+                                                                     (variable CastTo
+                                                                               in)
+                                                                     (noexcept)))
+                                      (scope-body (return-statement
+                                                    (function-call ?operation
+                                                                   in))))
                    crlf))
 
 
@@ -687,15 +701,14 @@
                                             v)
                                   (assign (typename T)
                                           ?cast-to))
-                   " constexpr "
-                   ?ret-type
-                   (str-cat " encode"
-                            ?title)
-                   (parens (variable ?ret-type
-                                     in)
-                           (variable T
-                                     value))
-                   " noexcept "
+                   (constexpr (function-signature ?ret-type
+                                                  (str-cat encode
+                                                           ?title)
+                                                  (create$ (variable ?ret-type
+                                                                     in)
+                                                           (variable T
+                                                                     value))
+                                                  (noexcept)))
                    (scope-body (static-assert (fulfills-condition ?t2)
                                               ?assert-message)
                                (return-statement (function-call (explicit-enum ?t2
@@ -720,17 +733,18 @@
          (printout t
                    (template-decl (variable ?type
                                             v))
-                   " constexpr typename "
-                   (explicit-enum ?t2
-                                  ReturnType)
-                   (str-cat " decode"
-                            ?title)
-                   (str-cat "( typename "
-                            (explicit-enum ?t2
-                                           CastTo)
-                            " in) noexcept ")
-                   (scope-body "static_assert( syn::fulfillsCondition<" ?t2 ">(), \"Provided control does not have support for concept " ?title "!\");"
-                               (return-statement (str-cat (explicit-enum ?t2
-                                                                         decode)
-                                                          "(in)")))
-                   crlf))
+                   (constexpr (function-signature (typename (explicit-enum ?t2
+                                                                           ReturnType))
+                                                  (str-cat decode
+                                                           ?title)
+                                                  (variable (typename (explicit-enum ?t2
+                                                                                     CastTo))
+                                                            in)
+                                                  (noexcept)))
+                   (scope-body
+                     (static-assert (templated-function-call "syn::fulfillsCondition"
+                                                             ?t2)
+                                    (str-cat "Provided control does not have support for concept " ?title "!"))
+                     (return-statement (function-call (explicit-enum ?t2
+                                                                     decode)
+                                                      in))) crlf))

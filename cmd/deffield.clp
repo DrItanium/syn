@@ -212,6 +212,17 @@
              (str-cat ?return-type " " ?name
                       (parens ?arguments)
                       " " ?specifiers))
+(deffunction MAIN::case-statement
+             (?value ?body)
+             (str-cat "case " ?value ":" ?body))
+(deffunction MAIN::default-case-statement
+             (?body)
+             (str-cat "default: " ?body))
+(deffunction MAIN::switch-statement
+             (?arg $?body)
+             (str-cat switch
+                      (parens ?arg)
+                      (scope-body $?body)))
 (deffunction MAIN::function-decl
              (?prefix ?return-type ?name ?name-post ?args ?specifiers $?body)
              (str-cat (string-if-true ?prefix
@@ -511,15 +522,33 @@
                                              (entries $?entries))
          =>
          (retract ?f)
+         (bind ?cases
+               (create$))
+         (bind ?tfunc
+               (str-cat translate
+                        ?name))
+         (progn$ (?e ?entries)
+                 (bind ?enum-type
+                       (explicit-enum ?name
+                                      ?e))
+                 (bind ?cases
+                       ?cases
+                       (case-statement ?enum-type
+                                       (return-statement (templated-function-name ?tfunc
+                                                                                  ?enum-type)))))
+
          (printout t
-                   "constexpr " ?output " translate(" ?name " op) noexcept {" crlf
-                   "switch(op) {" crlf)
-         (progn$ (?e $?entries)
-                 (printout t "case " ?name " :: " ?e ": return translate" ?name "<"?name " :: " ?e ">;" crlf))
-         (printout t
-                   "default: return syn::defaultErrorState<" ?output ">;" crlf
-                   "}" crlf
-                   "}" crlf))
+                   (constexpr (function-signature ?output
+                                                  translate
+                                                  (variable ?name op)
+                                                  (noexcept)))
+                   (scope-body (switch-statement op
+                                                 (expand$ ?cases)
+                                                 (default-case-statement
+                                                   (return-statement
+                                                     (templated-function-name "syn::defaultErrorState"
+                                                                              ?output)))))
+                   crlf))
 
 
 (defrule MAIN::deffield->field-template:no-input-type
