@@ -145,6 +145,34 @@ namespace cisc0 {
 
     void Core::dispatch(const DecodedInstruction& current) {
         auto tControl = current.getControl();
+        auto swapOperation = [this, &current]() {
+            constexpr auto group = Operation::Swap;
+            auto dInd = current.getDestinationRegister<group>();
+            auto sInd = current.getSourceRegister<group>();
+            if (dInd != sInd) {
+                gpr.swap(dInd, sInd);
+            }
+        };
+        auto returnOperation = [this]() {
+            // pop the top address off of the call stack and place it in
+            // the instruction pointer
+            getInstructionPointer() = popRegisterValue(getCallStackPointer());
+            advanceIp = false;
+        };
+        auto moveOperation = [this,&current]() {
+            constexpr auto group = Operation::Move;
+            using T = RegisterValue;
+            auto dInd = current.getDestinationRegister<group>();
+            auto source0 = registerValue(current.getSourceRegister<group>());
+            auto bmask = mask(current.getBitmask<group>());
+            registerValue(dInd) = syn::decodeBits<T, T>(source0, bmask, 0);
+        };
+        auto setOperation = [this, &current]() {
+            constexpr auto group = Operation::Set;
+            auto dInd = current.getDestinationRegister<group>();
+            auto bmask = current.getBitmask<group>();
+            registerValue(dInd) = retrieveImmediate(bmask);
+        };
         switch(tControl) {
             case Operation::Shift:
                 shiftOperation((current));
@@ -168,21 +196,16 @@ namespace cisc0 {
                 complexOperation((current));
                 break;
             case Operation::Swap:
-                if (current.getDestinationRegister<Operation::Swap>() != current.getSourceRegister<Operation::Swap>()) {
-                    gpr.swap(current.getDestinationRegister<Operation::Swap>(), current.getSourceRegister<Operation::Swap>());
-                }
+                swapOperation();
                 break;
 			case Operation::Return:
-				// pop the top address off of the call stack and place it in
-				// the instruction pointer
-				getInstructionPointer() = popRegisterValue(getCallStackPointer());
-				advanceIp = false;
+                returnOperation();
 				break;
             case Operation::Move:
-                registerValue(current.getDestinationRegister<Operation::Move>()) = syn::decodeBits<RegisterValue, RegisterValue>( registerValue(current.getSourceRegister<Operation::Move>()), mask(current.getBitmask<Operation::Move>()), 0);
+                moveOperation();
                 break;
             case Operation::Set:
-                registerValue(current.getSetDestination()) = retrieveImmediate(current.getBitmask<Operation::Set>());
+                setOperation();
                 break;
             default:
                 execute = false;
