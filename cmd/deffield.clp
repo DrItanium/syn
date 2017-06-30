@@ -315,3 +315,22 @@
                         (mask ?mask)
                         (shift ?shift)
                         (output-type ?output-type))))
+
+(defrule MAIN::generate-execution-unit-converter
+         (declare (salience ?*priority:first*))
+         ?f <- (defspecial-execution-unit-converter ?name
+                                                    ?from-type
+                                                    ?to-type)
+         =>
+         (retract ?f)
+         (build (format nil
+                        "(defrule MAIN::perform-special-execution-unit-conversion:%s
+                                  (declare (salience ?*priority:first*))
+                                  ?f <- (%s ?a ?b)
+                                  =>
+                                  (retract ?f)
+                                  (assert (to-execution-unit %s ?a -> %s ?b)))"
+                        ?name
+                        ?name
+                        ?from-type
+                        ?to-type)))

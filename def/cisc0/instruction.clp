@@ -190,10 +190,11 @@
           (include "ExecutionUnits.h")
           (using ALUOperation
                  syn::ALU::StandardOperations)
-          (to-execution-unit ArithmeticOps Add ->
-                             ALUOperation Add)
-          (to-execution-unit ArithmeticOps Sub ->
-                             ALUOperation Subtract)
+          (defspecial-execution-unit-converter arithmetic->alu
+                                               ArithmeticOps
+                                               ALUOperation)
+          (arithmetic->alu Add Add)
+          (arithmetic->alu Sub Subtract)
           (to-execution-unit ArithmeticOps Mul ->
                              ALUOperation Multiply)
           (to-execution-unit ArithmeticOps Div ->
