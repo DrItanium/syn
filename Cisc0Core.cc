@@ -108,6 +108,7 @@ namespace cisc0 {
 
     void Core::shutdown() {
 		_bus.shutdown();
+        gpr.shutdown();
 	}
 
     bool Core::cycle() {
@@ -145,7 +146,7 @@ namespace cisc0 {
 
     void Core::dispatch(const DecodedInstruction& current) {
         auto tControl = current.getControl();
-        auto swapOperation = [this, &current]() {
+        auto swapOperation = [this, &current]() noexcept {
             constexpr auto group = Operation::Swap;
             auto dInd = current.getDestinationRegister<group>();
             auto sInd = current.getSourceRegister<group>();
@@ -153,7 +154,7 @@ namespace cisc0 {
                 gpr.swap(dInd, sInd);
             }
         };
-        auto returnOperation = [this]() {
+        auto returnOperation = [this]() noexcept {
             // pop the top address off of the call stack and place it in
             // the instruction pointer
             getInstructionPointer() = popRegisterValue(getCallStackPointer());
@@ -214,20 +215,18 @@ namespace cisc0 {
         }
     }
     void Core::branchOperation(const DecodedInstruction& inst) {
-        auto isImm = inst.getImmediateFlag<Operation::Branch>();
         bool isCall, isCond;
         std::tie(isCall, isCond) = inst.getOtherBranchFlags();
         advanceIp = true;
-        auto choice = getConditionRegister();
         auto whereToGo = 0;
-        if (isImm) {
+        if (inst.getImmediateFlag<Operation::Branch>()) {
             auto lower = static_cast<RegisterValue>(tryReadNext<true>());
             auto upper = static_cast<RegisterValue>(tryReadNext<true>()) << 16;
             whereToGo = lower | upper;
         } else {
             whereToGo = registerValue(inst.getBranchIndirectDestination());
         }
-        auto shouldUpdateInstructionPointer = isCall || (isCond && choice) || (!isCond);
+        auto shouldUpdateInstructionPointer = isCall || (isCond && getConditionRegister()) || (!isCond);
         if (isCall) {
             // call instruction
             // figure out where we are going to go, this will cause loads and
