@@ -232,17 +232,30 @@ namespace cisc0 {
         static constexpr auto group = Operation::Compare;
 		auto compareResult = inst.getSubtype<group>();
 		auto destinationIndex = inst.getDestinationRegister<group>();
-		if (compareResult == CompareStyle::MoveToCondition) {
-			getConditionRegister() = (registerValue(destinationIndex) != 0);
-		} else if (compareResult == CompareStyle::MoveFromCondition) {
-			registerValue(destinationIndex) = normalizeCondition(getConditionRegister());
-		} else {
+        auto moveToCondition = [this, destinationIndex]() {
+            getConditionRegister() = (registerValue(destinationIndex) != 0);
+        };
+        auto moveFromCondition = [this, destinationIndex]() {
+            registerValue(destinationIndex) = normalizeCondition(getConditionRegister());
+        };
+        auto normalCompare = [this, destinationIndex, &inst, compareResult]() {
 			auto first = registerValue(destinationIndex);
 			auto second = inst.getImmediateFlag<group>() ? retrieveImmediate(inst.getBitmask<group>()) : registerValue(inst.getSourceRegister<group>());
 			auto compareUnitType = translate(compareResult);
         	syn::throwOnErrorState(compareResult, "Illegal compare type!");
 			getConditionRegister() = syn::Comparator::performOperation(compareUnitType, first, second);
-		}
+        };
+        switch(compareResult) {
+            case CompareStyle::MoveToCondition:
+                moveToCondition();
+                break;
+            case CompareStyle::MoveFromCondition:
+                moveFromCondition();
+                break;
+            default:
+                normalCompare();
+                break;
+        }
     }
     void Core::memoryOperation(const DecodedInstruction& inst) {
         static constexpr auto group = Operation::Memory;
