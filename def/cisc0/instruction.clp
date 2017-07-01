@@ -353,18 +353,19 @@
                (sym-cat EncodeSubType
                         ?top))
          (printout t
-                   (template-decl (variable ?top v)) crlf
-                   "struct " ?q2 " : syn::ConditionFulfillment<false> {" crlf
-                   (standard-using-decl ReturnType
-                                        ?full-type) crlf
-                   (standard-using-decl CastTo
-                                        ?q) crlf
-                   (constexpr-function-decl ReturnType
-                                            encodeSubType
-                                            (create$ (variable ReturnType input)
-                                                     (variable ?q data))
-                                            (return-statement input)) crlf
-                   "};" crlf))
+                   (template-decl (variable ?top v))
+                   "struct " ?q2 " : syn::ConditionFulfillment<false>"
+                   (add-terminator
+                     (scope-body (standard-using-decl ReturnType
+                                                      ?full-type)
+                                 (standard-using-decl CastTo
+                                                      ?q)
+                                 (constexpr-function-decl ReturnType
+                                                          encodeSubType
+                                                          (create$ (variable ReturnType input)
+                                                                   (variable ?q data))
+                                                          (return-statement input))))
+                   crlf))
 
 (deffacts cisc0-destination-register-usage
           (defproperty-struct UsesDestination
