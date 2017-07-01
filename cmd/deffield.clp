@@ -197,11 +197,6 @@
                                       ?statement)))
 
 
-(deffunction MAIN::fulfills-condition
-             (?type)
-             (str-cat "syn::fulfillsCondition"
-                      (template-specialization ?type)
-                      "()"))
 
 (deffunction MAIN::function-call
              (?function $?args)
@@ -231,6 +226,52 @@
                                           ?specifiers)
                       (scope-body ?body)))
 
+(deffunction MAIN::templated-function-name
+             (?op $?args)
+             (str-cat ?op
+                      (template-specialization (expand$ ?args))))
+(deffunction MAIN::templated-function-call
+             (?op ?template-args $?args)
+             (function-call (templated-function-name ?op
+                                                     ?template-args)
+                            ?args))
+(deffunction MAIN::return-templated-function-call
+             (?op ?template-args $?args)
+             (return-statement (templated-function-call ?op
+                                                        ?template-args
+                                                        ?args)))
+(deffunction MAIN::static
+             (?statement)
+             (str-cat "static "
+                      ?statement))
+(deffunction MAIN::fulfills-condition
+             (?type)
+             (templated-function-call "syn::fulfillsCondition"
+                                      ?type))
+(deffunction MAIN::static-constexpr
+             (?statement)
+             (static (constexpr ?statement)))
+(deffunction MAIN::constexpr-function-decl
+             (?return-type ?name ?args $?body)
+             (constexpr (function-decl ?return-type
+                                       ?name
+                                       ?args
+                                       (noexcept)
+                                       ?body)))
+(deffunction MAIN::static-constexpr-function-decl
+             (?return-type ?name ?args $?body)
+             (static (constexpr-function-decl ?return-type
+                                              ?name
+                                              ?args
+                                              ?body)))
+(deffunction MAIN::constexpr-variable
+             (?type ?name)
+             (constexpr (variable ?type
+                                  ?name)))
+(deffunction MAIN::default-error-state
+             (?type)
+             (templated-function-name "syn::defaultErrorState"
+                                      ?type))
 (deftemplate field
              (slot name
                    (type SYMBOL)
@@ -301,10 +342,9 @@
                    "namespace " ?ns " { " crlf
                    (template-decl (typename T)
                                   (variable T op)) crlf
-                   (add-terminator (assign (constexpr (variable auto
-                                                                toExecutionUnitValue))
-                                           (str-cat "syn::defaultErrorState"
-                                                    (template-specialization T)))) crlf))
+                   (add-terminator (assign (constexpr-variable auto
+                                                               toExecutionUnitValue)
+                                           (default-error-state T))) crlf))
 
 (defrule MAIN::generate-using-decls
          (declare (salience ?*priority:two-after-first*))
@@ -333,24 +373,6 @@
          (printout t
                    "#endif // end " (upcase ?name) crlf))
 
-(deffunction MAIN::templated-function-name
-             (?op $?args)
-             (str-cat ?op
-                      (template-specialization (expand$ ?args))))
-(deffunction MAIN::templated-function-call
-             (?op ?template-args $?args)
-             (function-call (templated-function-name ?op
-                                                     ?template-args)
-                            ?args))
-(deffunction MAIN::return-templated-function-call
-             (?op ?template-args $?args)
-             (return-statement (templated-function-call ?op
-                                                        ?template-args
-                                                        ?args)))
-(deffunction MAIN::static
-             (?statement)
-             (str-cat "static "
-                      ?statement))
 (deffunction generate-encode-decode-ops
              (?t ?name ?value ?mask ?shift)
              (bind ?decodeFunc
@@ -369,24 +391,23 @@
                    ?shift)
 
              (printout t
-                       (constexpr (function-signature ?t
-                                                      ?decodeFunc
-                                                      ?value-var
-                                                      (noexcept)))
-                       (scope-body (return-templated-function-call "syn::decodeBits"
-                                                                   ?template-args
-                                                                   value)) crlf
+                       (constexpr-function-decl ?t
+                                                ?decodeFunc
+                                                ?value-var
+                                                (return-templated-function-call "syn::decodeBits"
+                                                                                ?template-args
+                                                                                value)) crlf
 
-                       (constexpr (function-signature ?value
-                                                      ?encodeFunc
-                                                      (create$ ?value-var
-                                                               (variable ?t
-                                                                         field))
-                                                      (noexcept)))
-                       (scope-body (return-templated-function-call "syn::encodeBits"
-                                                                   ?template-args
-                                                                   value
-                                                                   field)) crlf)
+                       (constexpr-function-decl ?value
+                                                ?encodeFunc
+                                                (create$ ?value-var
+                                                         (variable ?t
+                                                                   field))
+                                                (return-templated-function-call "syn::encodeBits"
+                                                                                ?template-args
+                                                                                value
+                                                                                field))
+                       crlf)
 
              (assert (decoding-operation ?name
                                          ?decodeFunc
@@ -475,9 +496,9 @@
                                           ?name)) crlf)
          (printout t
                    (template-decl (variable ?name op)) crlf
-                   (add-terminator (assign (constexpr (variable auto
-                                                                (str-cat translate
-                                                                         ?name)))
+                   (add-terminator (assign (constexpr-variable auto
+                                                               (str-cat translate
+                                                                        ?name))
                                            (str-cat toExecutionUnitValue
                                                     (template-specialization (decltype op) op)))) crlf))
 
@@ -500,8 +521,8 @@
                  (entries $?e ?name))
          (printout t
                    (add-terminator (assign (str-cat (template-decl "")
-                                                    (constexpr (variable auto
-                                                                         toExecutionUnitValue))
+                                                    (constexpr-variable auto
+                                                                        toExecutionUnitValue)
                                                     (template-specialization ?enum
                                                                              (explicit-enum ?enum ?name)))
                                            (explicit-enum ?other-type
@@ -536,16 +557,15 @@
                                                                                   ?enum-type)))))
 
          (printout t
-                   (constexpr (function-signature ?output
-                                                  translate
-                                                  (variable ?name op)
-                                                  (noexcept)))
-                   (scope-body (switch-statement op
-                                                 (expand$ ?cases)
-                                                 (default-case-statement
-                                                   (return-statement
-                                                     (templated-function-name "syn::defaultErrorState"
-                                                                              ?output)))))
+                   (constexpr-function-decl ?output
+                                            translate
+                                            (variable ?name
+                                                      op)
+                                            (switch-statement op
+                                                              (expand$ ?cases)
+                                                              (default-case-statement
+                                                                (return-statement
+                                                                  (default-error-state ?output)))))
                    crlf))
 
 

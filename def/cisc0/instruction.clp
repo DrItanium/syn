@@ -325,14 +325,13 @@
                                         (explicit-enum (typename ?subtype-type)
                                                        type)) crlf
                    ?standard-decl crlf
-                   (constexpr
-                     (function-decl bool
-                                    HasSubtype
-                                    (create$)
-                                    (noexcept)
-                                    (return-statement
-                                      (explicit-enum ?subtype-type
-                                                     value)))) crlf))
+                   (constexpr-function-decl bool
+                                            HasSubtype
+                                            (create$)
+                                            (return-statement
+                                              (explicit-enum ?subtype-type
+                                                             value)))
+                   crlf))
 
 
 (defrule MAIN::generate-top-level-type-conversion-specialization-encoding-op:generic-case
@@ -360,12 +359,11 @@
                                         ?full-type) crlf
                    (standard-using-decl CastTo
                                         ?q) crlf
-                   (constexpr (function-signature ReturnType
-                                                  encodeSubType
-                                                  (create$ (variable ReturnType input)
-                                                           (variable ?q data))
-                                                  (noexcept)))
-                   (scope-body (return-statement input)) crlf
+                   (constexpr-function-decl ReturnType
+                                            encodeSubType
+                                            (create$ (variable ReturnType input)
+                                                     (variable ?q data))
+                                            (return-statement input)) crlf
                    "};" crlf))
 
 (deffacts cisc0-destination-register-usage
@@ -528,14 +526,14 @@
          (printout t
                    (template-decl (variable ?input-type
                                             val))
-                   (constexpr (function-signature bool
-                                                  ?name
-                                                  (create$)
-                                                  (noexcept)))
-                   (scope-body (return-statement (explicit-enum (str-cat ?title
-                                                                         (template-specialization val))
-                                                                value))) crlf))
-
+                   (constexpr-function-decl bool
+                                            ?name
+                                            (create$)
+                                            (return-statement
+                                              (explicit-enum
+                                                (templated-function-name ?title
+                                                                         val)
+                                                value))) crlf))
 
 (defrule MAIN::generate-generic-struct-impl
          ?f <- (defproperty-struct ?title
@@ -583,17 +581,13 @@
                                                         ?type)
                                    (standard-using-decl CastTo
                                                         ?type)
-                                   (static
-                                     (constexpr
-                                       (function-signature ReturnType
-                                                           encode
-                                                           (create$ (variable ReturnType
-                                                                              in)
-                                                                    (variable CastTo
-                                                                              val))
-                                                           (noexcept))))
-                                   (scope-body
-                                     (return-statement in)))
+                                   (static-constexpr-function-decl ReturnType
+                                                                   encode
+                                                                   (create$ (variable ReturnType
+                                                                                      in)
+                                                                            (variable CastTo
+                                                                                      val))
+                                                                   (return-statement in)))
                    crlf))
 
 (defrule MAIN::generate-specialized-encoder
@@ -620,20 +614,16 @@
                                                            ?ret)
                                       (standard-using-decl CastTo
                                                            ?input)
-                                      (static
-                                        (constexpr
-                                          (function-signature ReturnType
-                                                              encode
-                                                              (create$ (variable ReturnType
-                                                                                 in)
-                                                                       (variable CastTo
-                                                                                 val))
-                                                              (noexcept))))
-                                      (scope-body
-                                        (return-statement
-                                          (function-call ?operation
-                                                         in
-                                                         val))))
+                                      (static-constexpr-function-decl ReturnType
+                                                                      encode
+                                                                      (create$ (variable ReturnType
+                                                                                         in)
+                                                                               (variable CastTo
+                                                                                         val))
+                                                                      (return-statement
+                                                                        (function-call ?operation
+                                                                                       in
+                                                                                       val))))
                    crlf))
 
 (defrule MAIN::generate-defdecoder
@@ -653,17 +643,13 @@
                                                         ?type)
                                    (standard-using-decl CastTo
                                                         ?type)
-                                   (static
-                                     (constexpr
-                                       (function-signature ReturnType
-                                                           decode
-                                                           (variable CastTo
-                                                                     in)
-                                                           (noexcept))))
-                                   (scope-body
-                                     (return-statement
-                                       (static-cast ReturnType
-                                                    in))))
+                                   (static-constexpr-function-decl ReturnType
+                                                                   decode
+                                                                   (variable CastTo
+                                                                             in)
+                                                                   (return-statement
+                                                                     (static-cast ReturnType
+                                                                                  in))))
                    crlf))
 
 (defrule MAIN::generate-specialized-decoder
@@ -690,17 +676,14 @@
                                                            ?ret)
                                       (standard-using-decl CastTo
                                                            ?input)
-                                      (constexpr (static (function-signature ReturnType
-                                                                             decode
-                                                                             (variable CastTo
-                                                                                       in)
-                                                                             (noexcept))))
-                                      (scope-body (return-statement
-                                                    (function-call ?operation
-                                                                   in))))
+                                      (static-constexpr-function-decl ReturnType
+                                                                      decode
+                                                                      (variable CastTo
+                                                                                in)
+                                                                      (return-statement
+                                                                        (function-call ?operation
+                                                                                       in))))
                    crlf))
-
-
 
 (defrule MAIN::generate-encoder-wrapper
          (made generic-encoder
@@ -730,21 +713,21 @@
                                             v)
                                   (assign (typename T)
                                           ?cast-to))
-                   (constexpr (function-signature ?ret-type
-                                                  (str-cat encode
-                                                           ?title)
-                                                  (create$ (variable ?ret-type
-                                                                     in)
-                                                           (variable T
-                                                                     value))
-                                                  (noexcept)))
-                   (scope-body (static-assert (fulfills-condition ?t2)
-                                              ?assert-message)
-                               (return-statement (function-call (explicit-enum ?t2
-                                                                               encode)
-                                                                in
-                                                                (static-cast ?cast-to
-                                                                             value))))
+                   (constexpr-function-decl ?ret-type
+                                            (str-cat encode
+                                                     ?title)
+                                            (create$ (variable ?ret-type
+                                                               in)
+                                                     (variable T
+                                                               value))
+                                            (static-assert (fulfills-condition ?t2)
+                                                           ?assert-message)
+                                            (return-statement
+                                              (function-call (explicit-enum ?t2
+                                                                            encode)
+                                                             in
+                                                             (static-cast ?cast-to
+                                                                          value))))
                    crlf))
 
 (defrule MAIN::generate-decoder-wrapper
@@ -759,21 +742,27 @@
                (str-cat Decode
                         ?title
                         (template-specialization v)))
+         (bind ?assert-message
+               (format nil
+                       "Provided control does not have support for concept %s!"
+                       ?title))
          (printout t
                    (template-decl (variable ?type
                                             v))
-                   (constexpr (function-signature (typename (explicit-enum ?t2
-                                                                           ReturnType))
-                                                  (str-cat decode
-                                                           ?title)
-                                                  (variable (typename (explicit-enum ?t2
-                                                                                     CastTo))
-                                                            in)
-                                                  (noexcept)))
-                   (scope-body
-                     (static-assert (templated-function-call "syn::fulfillsCondition"
-                                                             ?t2)
-                                    (str-cat "Provided control does not have support for concept " ?title "!"))
-                     (return-statement (function-call (explicit-enum ?t2
-                                                                     decode)
-                                                      in))) crlf))
+                   (constexpr-function-decl (typename (explicit-enum ?t2
+                                                                     ReturnType))
+                                            (str-cat decode
+                                                     ?title)
+                                            (variable (typename
+                                                        (explicit-enum ?t2
+                                                                       CastTo))
+                                                      in)
+                                            (static-assert (fulfills-condition ?t2)
+                                                           ?assert-message)
+                                            (return-statement
+                                              (function-call (explicit-enum ?t2
+                                                                            decode)
+                                                             in)))
+                   crlf))
+
+
