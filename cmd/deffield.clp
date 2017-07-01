@@ -272,6 +272,60 @@
              (?type)
              (templated-function-name "syn::defaultErrorState"
                                       ?type))
+(deffunction generate-encode-decode-ops
+             (?t ?name ?value ?mask ?shift)
+             (bind ?decodeFunc
+                   (str-cat decode
+                            ?name))
+             (bind ?encodeFunc
+                   (str-cat encode
+                            ?name))
+             (bind ?value-var
+                   (variable ?value
+                             value))
+             (bind ?template-args
+                   ?value
+                   ?t
+                   ?mask
+                   ?shift)
+
+             (printout t
+                       (constexpr-function-decl ?t
+                                                ?decodeFunc
+                                                ?value-var
+                                                (return-templated-function-call "syn::decodeBits"
+                                                                                ?template-args
+                                                                                value)) crlf
+
+                       (constexpr-function-decl ?value
+                                                ?encodeFunc
+                                                (create$ ?value-var
+                                                         (variable ?t
+                                                                   field))
+                                                (return-templated-function-call "syn::encodeBits"
+                                                                                ?template-args
+                                                                                value
+                                                                                field))
+                       crlf)
+
+             (assert (decoding-operation ?name
+                                         ?decodeFunc
+                                         ?t
+                                         ?value)
+                     (encoding-operation ?name
+                                         ?encodeFunc
+                                         ?t
+                                         ?value)))
+(deffunction MAIN::enum-class
+             (?title ?cast-to $?entries )
+             (str-cat "enum class " ?title " : " ?cast-to
+                      (add-terminator (scope-body
+                                        (comma-list ?entries
+                                                    Count)))))
+(deffunction MAIN::#include
+             (?title)
+             (str-cat "#include "
+                      (string-quote ?title)))
 (deftemplate field
              (slot name
                    (type SYMBOL)
@@ -323,7 +377,7 @@
                    "// NOTE: this file is auto generated, DO NOT MODIFY!" crlf
                    "#ifndef " (upcase ?name) crlf
                    "#define " (upcase ?name) crlf
-                   "#include \"Base.h\"" crlf))
+                   (#include Base.h) crlf))
 
 (defrule MAIN::generate-extra-includes
          (declare (salience ?*priority:right-after-first*))
@@ -331,7 +385,7 @@
          =>
          (retract ?f)
          (printout t
-                   "#include \"" ?title "\"" crlf))
+                   (#include ?title) crlf))
 (defrule MAIN::generate-namespace-contents
          (declare (salience ?*priority:two-after-first*))
          (check-for-namespace)
@@ -373,50 +427,6 @@
          (printout t
                    "#endif // end " (upcase ?name) crlf))
 
-(deffunction generate-encode-decode-ops
-             (?t ?name ?value ?mask ?shift)
-             (bind ?decodeFunc
-                   (str-cat decode
-                            ?name))
-             (bind ?encodeFunc
-                   (str-cat encode
-                            ?name))
-             (bind ?value-var
-                   (variable ?value
-                             value))
-             (bind ?template-args
-                   ?value
-                   ?t
-                   ?mask
-                   ?shift)
-
-             (printout t
-                       (constexpr-function-decl ?t
-                                                ?decodeFunc
-                                                ?value-var
-                                                (return-templated-function-call "syn::decodeBits"
-                                                                                ?template-args
-                                                                                value)) crlf
-
-                       (constexpr-function-decl ?value
-                                                ?encodeFunc
-                                                (create$ ?value-var
-                                                         (variable ?t
-                                                                   field))
-                                                (return-templated-function-call "syn::encodeBits"
-                                                                                ?template-args
-                                                                                value
-                                                                                field))
-                       crlf)
-
-             (assert (decoding-operation ?name
-                                         ?decodeFunc
-                                         ?t
-                                         ?value)
-                     (encoding-operation ?name
-                                         ?encodeFunc
-                                         ?t
-                                         ?value)))
 
 (defrule MAIN::generate-field:c++:use-input-type
          (field (name ?name)
@@ -467,7 +477,6 @@
              (slot output-type
                    (type LEXEME))
              (multislot entries))
-
 (defrule MAIN::generate-enum:c++
          (declare (salience 1))
          (enum (name ?name)
@@ -475,32 +484,29 @@
                (max-size ?size)
                (children $?children))
          =>
+         (bind ?too-many-entries-msg
+               (format nil
+                       "Too many %s entries defined!"
+                       ?name))
          (assert (constructed enum ?name)
                  (translation-function-builder (target-enum ?name)))
-         (printout t "enum class " ?name " : " ?ct " {" crlf)
-         (progn$ (?c ?children)
-                 (format t
-                         "%s, // %d %n"
-                         (str-cat ?c)
-                         (- ?c-index 1)))
-
-         (printout t "Count, };" crlf)
          (printout t
+                   (enum-class ?name
+                               ?ct
+                               ?children) crlf
                    (static-assert (static-assert-cond (static-cast ?ct
                                                                    (explicit-enum ?name Count))
                                                       " <= "
                                                       (static-cast ?ct
                                                                    ?size))
-                                  (format nil
-                                          "Too many %s entries defined!"
-                                          ?name)) crlf)
-         (printout t
+                                  ?too-many-entries-msg) crlf
                    (template-decl (variable ?name op)) crlf
                    (add-terminator (assign (constexpr-variable auto
                                                                (str-cat translate
                                                                         ?name))
                                            (str-cat toExecutionUnitValue
-                                                    (template-specialization (decltype op) op)))) crlf))
+                                                    (template-specialization (decltype op) op))))
+                   crlf))
 
 
 
