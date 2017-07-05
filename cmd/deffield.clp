@@ -41,7 +41,9 @@
   (str-cat ?prefix
            (expand$ ?contents)
            ?postfix))
-
+(deffunction MAIN::args
+             ($?elements)
+             ?elements)
 (deffunction MAIN::comma-list
              ($?elements)
              (if (= (length$ ?elements) 0) then
@@ -299,9 +301,9 @@
 
                        (constexpr-function-decl ?value
                                                 ?encodeFunc
-                                                (create$ ?value-var
-                                                         (variable ?t
-                                                                   field))
+                                                (args ?value-var
+                                                      (variable ?t
+                                                                field))
                                                 (return-templated-function-call "syn::encodeBits"
                                                                                 ?template-args
                                                                                 value

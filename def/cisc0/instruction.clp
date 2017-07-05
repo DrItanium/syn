@@ -327,7 +327,7 @@
                    ?standard-decl crlf
                    (constexpr-function-decl bool
                                             HasSubtype
-                                            (create$)
+                                            (args)
                                             (return-statement
                                               (explicit-enum ?subtype-type
                                                              value)))
@@ -362,8 +362,10 @@
                                                       ?q)
                                  (constexpr-function-decl ReturnType
                                                           encodeSubType
-                                                          (create$ (variable ReturnType input)
-                                                                   (variable ?q data))
+                                                          (args (variable ReturnType
+                                                                          input)
+                                                                   (variable ?q
+                                                                             data))
                                                           (return-statement input))))
                    crlf))
 
@@ -529,7 +531,7 @@
                                             val))
                    (constexpr-function-decl bool
                                             ?name
-                                            (create$)
+                                            (args)
                                             (return-statement
                                               (explicit-enum
                                                 (templated-function-name ?title
@@ -584,10 +586,10 @@
                                                         ?type)
                                    (static-constexpr-function-decl ReturnType
                                                                    encode
-                                                                   (create$ (variable ReturnType
-                                                                                      in)
-                                                                            (variable CastTo
-                                                                                      val))
+                                                                   (args (variable ReturnType
+                                                                                   in)
+                                                                         (variable CastTo
+                                                                                   val))
                                                                    (return-statement in)))
                    crlf))
 
@@ -617,10 +619,10 @@
                                                            ?input)
                                       (static-constexpr-function-decl ReturnType
                                                                       encode
-                                                                      (create$ (variable ReturnType
-                                                                                         in)
-                                                                               (variable CastTo
-                                                                                         val))
+                                                                      (args (variable ReturnType
+                                                                                      in)
+                                                                            (variable CastTo
+                                                                                      val))
                                                                       (return-statement
                                                                         (function-call ?operation
                                                                                        in
@@ -717,10 +719,10 @@
                    (constexpr-function-decl ?ret-type
                                             (str-cat encode
                                                      ?title)
-                                            (create$ (variable ?ret-type
-                                                               in)
-                                                     (variable T
-                                                               value))
+                                            (args (variable ?ret-type
+                                                            in)
+                                                  (variable T
+                                                            value))
                                             (static-assert (fulfills-condition ?t2)
                                                            ?assert-message)
                                             (return-statement
