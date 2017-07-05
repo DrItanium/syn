@@ -171,9 +171,10 @@ namespace iris {
                 return false;
         }
     }
-    template<bool invokeMin>
+    template<ArithmeticOp op>
     constexpr word minOrMax(word a, word b) noexcept {
-        return (invokeMin ? (a < b) : (a > b))? a : b;
+        static_assert(op == ArithmeticOp::Min || op == ArithmeticOp::Max, "Illegal arithmetic op!");
+        return ((op == ArithmeticOp::Min) ? (a < b) : (a > b))? a : b;
     }
 
 	void Core::dispatch() noexcept {
@@ -188,17 +189,17 @@ namespace iris {
             if (syn::isErrorState(result)) {
                 switch(op) {
                     case ArithmeticOp::Min:
-                        destinationRegister() = minOrMax<true>(source0Register(), source1Register());
+                        destinationRegister() = minOrMax<ArithmeticOp::Min>(source0Register(), source1Register());
                         break;
                     case ArithmeticOp::Max:
-                        destinationRegister() = minOrMax<false>(source0Register(), source1Register());
+                        destinationRegister() = minOrMax<ArithmeticOp::Max>(source0Register(), source1Register());
                         break;
                     default:
 				        makeIllegalInstructionMessage("arithmetic operation");
                 }
 			} else {
                 bool divByZeroHappened = false;
-                syn::OnDivideByZero<word> markDivideByZero = [this, enableStatusRegisterBit,&divByZeroHappened]() {
+                syn::OnDivideByZero<word> markDivideByZero = [this, enableStatusRegisterBit, &divByZeroHappened]() {
                     divByZeroHappened = true;
                     enableStatusRegisterBit(encodeStatusDivideByZero);
                     return static_cast<word>(0);
