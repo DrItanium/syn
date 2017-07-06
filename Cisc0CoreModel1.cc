@@ -34,13 +34,25 @@
 
 namespace cisc0 {
     RegisterValue CoreModel1::retrieveImmediate(byte bitmask) noexcept {
+        // the immediate cache will be in positions 1 and 2
         auto useLower = readLower(bitmask);
         auto useUpper = readUpper(bitmask);
         if (!useLower && !useUpper) {
             return 0;
         } else {
-            auto lower = tryReadNext(useLower);
-            auto upper = static_cast<RegisterValue>(tryReadNext(useUpper)) << 16;
+            auto offset = 1;
+            auto lower = 0;
+            auto upper = 0;
+            if (useLower) {
+                incrementInstructionPointer();
+                lower = static_cast<RegisterValue>(_instruction[offset].getRawValue());
+                ++offset;
+            }
+            if (useUpper) {
+                incrementInstructionPointer();
+                upper = static_cast<RegisterValue>(_instruction[offset].getRawValue()) << 16;
+                ++offset;
+            }
             return mask(bitmask) & (lower | upper);
         }
     }
@@ -149,14 +161,15 @@ namespace cisc0 {
                 break;
         }
     }
-    void CoreModel1::branchOperation(const DecodedInstruction& inst) {
+    void CoreModel1::branchOperation() {
+        auto& inst = _instruction[0];
         bool isCall, isCond;
         std::tie(isCall, isCond) = inst.getOtherBranchFlags();
         advanceIp = true;
         auto whereToGo = 0;
         if (inst.getImmediateFlag<Operation::Branch>()) {
-            tryReadNext<true>();
-            tryReadNext<true>();
+            incrementInstructionPointer();
+            incrementInstructionPointer();
             auto lower = static_cast<RegisterValue>(_instruction[1].getRawValue());
             auto upper = static_cast<RegisterValue>(_instruction[2].getRawValue()) << 16;
             whereToGo = lower | upper;
@@ -494,7 +507,7 @@ namespace cisc0 {
     Word CoreModel1::getCurrentCodeWord(int offset) {
         return loadWord(getInstructionPointer() + offset);
     }
-    Word CoreModel1::tryReadNext(bool readNext) {
+    void CoreModel1::tryReadNext(bool readNext) {
         return readNext ? tryReadNext<true>() : tryReadNext<false>();
     }
     void CoreModel1::storeWord(RegisterValue address, Word value) {

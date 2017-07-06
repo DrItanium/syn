@@ -103,7 +103,7 @@ namespace cisc0 {
 			bool conditionRegister = false;
 			RegisterFile _gpr;
 			IOBus _bus;
-            std::array<DecodedInstruction, 4> _instruction;
+            DecodedInstruction _instruction[4];
 	};
 
 

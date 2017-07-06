@@ -48,7 +48,7 @@ namespace cisc0 {
                 }
             }
         public:
-			DecodedInstruction(RawInstruction input) noexcept : _rawValue(input) { }
+			DecodedInstruction(RawInstruction input = 0) noexcept : _rawValue(input) { }
 			DecodedInstruction(const DecodedInstruction&) = delete;
             virtual ~DecodedInstruction() { }
 			RawInstruction getRawValue() const noexcept { return _rawValue; }
