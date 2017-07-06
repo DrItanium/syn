@@ -59,7 +59,7 @@ namespace cisc0 {
 			virtual bool cycle() override;
 			bool shouldExecute() const noexcept { return execute; }
 		private:
-			void dispatch(const DecodedInstruction& inst);
+			void dispatch();
             template<bool readNext>
             inline Word tryReadNext() {
                 if (!readNext) {
@@ -70,7 +70,7 @@ namespace cisc0 {
             }
             Word tryReadNext(bool readNext);
 			RegisterValue retrieveImmediate(byte bitmask) noexcept;
-			Word getCurrentCodeWord();
+			Word getCurrentCodeWord(int offset = 0);
         protected:
 			RegisterValue& registerValue(byte index) override;
 			bool& getConditionRegister() noexcept override  { return conditionRegister; }
@@ -78,30 +78,32 @@ namespace cisc0 {
 			virtual void storeWord(RegisterValue address, Word value) override;
 			virtual Word loadWord(RegisterValue address) override;
 		private:
-			void complexOperation(const DecodedInstruction& inst);
-			void encodingOperation(const DecodedInstruction& inst);
-            void extendedOperation(const DecodedInstruction& inst);
-			void parsingOperation(const DecodedInstruction& inst);
-			void performEncodeOp(const DecodedInstruction& inst);
+			void complexOperation();
+			void encodingOperation();
+            void extendedOperation();
+			void parsingOperation();
+			void performEncodeOp();
         private:
-            void compareOperation(const DecodedInstruction& inst);
-            void systemCallOperation(const DecodedInstruction& inst);
-            void branchOperation(const DecodedInstruction& inst);
-            void memoryOperation(const DecodedInstruction& inst);
-            void logicalOperation(const DecodedInstruction& inst);
-            void arithmeticOperation(const DecodedInstruction& inst);
-            void shiftOperation(const DecodedInstruction& inst);
+            void compareOperation();
+            void systemCallOperation();
+            void branchOperation();
+            void memoryOperation();
+            void logicalOperation();
+            void arithmeticOperation();
+            void shiftOperation();
 		private:
             // The actual instruction is four words wide but instructions are
             // variable width up four words! It is up to the internal code to
             // increment the address pointer as we see fit! The internal is
             // only aware of this fact, the external instruction set is not
             // aware of this fact!
+            // store four words worth of data!
 			bool execute = true,
 				 advanceIp = true;
 			bool conditionRegister = false;
-			RegisterFile gpr;
+			RegisterFile _gpr;
 			IOBus _bus;
+            std::array<DecodedInstruction, 4> _instruction;
 	};
 
 

@@ -50,14 +50,14 @@ namespace cisc0 {
 
     void CoreModel1::initialize() {
         cisc0::installAssemblerParsingState(_bus.getRawEnvironment());
-		gpr.initialize();
+		_gpr.initialize();
 		_bus.initialize();
 		getInstructionPointer() = ArchitectureConstants::StartingIPAddress;
     }
 
     void CoreModel1::shutdown() {
 		_bus.shutdown();
-        gpr.shutdown();
+        _gpr.shutdown();
 	}
 
     bool CoreModel1::cycle() {
@@ -65,8 +65,10 @@ namespace cisc0 {
             std::cout << "Current Instruction Location: " << std::hex << getInstructionPointer() << std::endl;
             std::cout << "\tCurrent word value: " << std::hex << getCurrentCodeWord() << std::endl;
         }
-        DecodedInstruction di(getCurrentCodeWord());
-        dispatch(di);
+        for (auto i = 0; i < 4; ++i) {
+            _instruction[i] = getCurrentCodeWord(i);
+        }
+        dispatch();
         if (advanceIp) {
             incrementInstructionPointer();
         } else {
@@ -76,14 +78,15 @@ namespace cisc0 {
         return execute;
     }
 
-    void CoreModel1::dispatch(const DecodedInstruction& current) {
+    void CoreModel1::dispatch() {
+        auto& current = _instruction[0];
         auto tControl = current.getControl();
         auto swapOperation = [this, &current]() noexcept {
             constexpr auto group = Operation::Swap;
             auto dInd = current.getDestinationRegister<group>();
             auto sInd = current.getSourceRegister<group>();
             if (dInd != sInd) {
-                gpr.swap(dInd, sInd);
+                _gpr.swap(dInd, sInd);
             }
         };
         auto returnOperation = [this]() noexcept {
@@ -152,8 +155,10 @@ namespace cisc0 {
         advanceIp = true;
         auto whereToGo = 0;
         if (inst.getImmediateFlag<Operation::Branch>()) {
-            auto lower = static_cast<RegisterValue>(tryReadNext<true>());
-            auto upper = static_cast<RegisterValue>(tryReadNext<true>()) << 16;
+            tryReadNext<true>();
+            tryReadNext<true>();
+            auto lower = static_cast<RegisterValue>(_instruction[1].getRawValue());
+            auto upper = static_cast<RegisterValue>(_instruction[2].getRawValue()) << 16;
             whereToGo = lower | upper;
         } else {
             whereToGo = registerValue(inst.getBranchIndirectDestination());
@@ -484,10 +489,10 @@ namespace cisc0 {
     }
 
     RegisterValue& CoreModel1::registerValue(byte index) {
-        return gpr[index];
+        return _gpr[index];
     }
-    Word CoreModel1::getCurrentCodeWord() {
-        return loadWord(getInstructionPointer());
+    Word CoreModel1::getCurrentCodeWord(int offset) {
+        return loadWord(getInstructionPointer() + offset);
     }
     Word CoreModel1::tryReadNext(bool readNext) {
         return readNext ? tryReadNext<true>() : tryReadNext<false>();
