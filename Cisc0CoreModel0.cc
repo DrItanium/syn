@@ -168,7 +168,7 @@ namespace cisc0 {
             // Once done, we then push the next address following the newly
             // modified ip to the stack. Then we update the ip of where we are
             // going to go!
-            pushDword(getInstructionPointer() + 1, getCallStackPointer());
+            pushRegisterValue(getInstructionPointer() + 1, getCallStackPointer());
         }
         // otherwise we are looking at a standard jump operation
         if (shouldUpdateInstructionPointer) {
@@ -346,8 +346,8 @@ namespace cisc0 {
 				getAddressRegister() = popRegisterValue();
 				break;
 			case ExtendedOperation::PushValueAddr:
-				pushDword(getAddressRegister());
-				pushDword(getValueRegister());
+				pushRegisterValue(getAddressRegister());
+				pushRegisterValue(getValueRegister());
 				break;
 			case ExtendedOperation::IsEven:
 				getConditionRegister() = syn::isEven(registerValue(inst.getDestinationRegister<group>()));
@@ -502,38 +502,6 @@ namespace cisc0 {
     Word CoreModel0::loadWord(RegisterValue address) {
 		return _bus.read(address);
     }
-    void CoreModel0::pushWord(Word value) {
-		pushWord(value, getStackPointer());
-    }
-	void CoreModel0::pushWord(Word value, RegisterValue& sp) {
-		decrementAddress(sp);
-		storeWord(sp, value);
-	}
-    void CoreModel0::pushDword(DWord value) {
-		pushDword(value, getStackPointer());
-    }
-
-	void CoreModel0::pushDword(DWord value, RegisterValue& sp) {
-		pushWord(decodeUpperHalf(value), sp);
-		pushWord(decodeLowerHalf(value), sp);
-	}
-
-    Word CoreModel0::popWord() {
-		return popWord(getStackPointer());
-    }
-	Word CoreModel0::popWord(RegisterValue& sp) {
-		auto result = loadWord(sp);
-		incrementAddress(sp);
-		return result;
-	}
-    RegisterValue CoreModel0::popRegisterValue(RegisterValue& sp) {
-        auto lower = popWord(sp);
-        auto upper = popWord(sp);
-        return encodeRegisterValue(upper, lower);
-    }
-	RegisterValue CoreModel0::popRegisterValue() {
-		return popRegisterValue(getStackPointer());
-	}
     Word CoreModel0::tryReadNext(bool readNext) {
         return readNext ? tryReadNext<true>() : tryReadNext<false>();
     }

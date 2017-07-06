@@ -56,14 +56,6 @@ namespace cisc0 {
 			virtual bool cycle() override;
 			bool shouldExecute() const noexcept { return execute; }
 		private:
-			void pushWord(Word value);
-			void pushWord(Word value, RegisterValue& stackPointer);
-			void pushDword(DWord value);
-			void pushDword(DWord value, RegisterValue& stackPointer);
-			Word popWord();
-			Word popWord(RegisterValue& stackPointer);
-            RegisterValue popRegisterValue();
-			RegisterValue popRegisterValue(RegisterValue& stackPointer);
 			void dispatch(const DecodedInstruction& inst);
 			template<byte rindex>
 			inline RegisterValue& registerValue() noexcept {

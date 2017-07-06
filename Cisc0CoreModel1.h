@@ -61,14 +61,6 @@ namespace cisc0 {
 			virtual bool cycle() override;
 			bool shouldExecute() const noexcept { return execute; }
 		private:
-			void pushWord(Word value);
-			void pushWord(Word value, RegisterValue& stackPointer);
-			void pushDword(DWord value);
-			void pushDword(DWord value, RegisterValue& stackPointer);
-			Word popWord();
-			Word popWord(RegisterValue& stackPointer);
-            RegisterValue popRegisterValue();
-			RegisterValue popRegisterValue(RegisterValue& stackPointer);
 			void dispatch(const DecodedInstruction& inst);
 			template<byte rindex>
 			inline RegisterValue& registerValue() noexcept {
@@ -86,24 +78,21 @@ namespace cisc0 {
             Word tryReadNext(bool readNext);
 			RegisterValue retrieveImmediate(byte bitmask) noexcept;
 
-			RegisterValue& registerValue(byte index);
-			RegisterValue& getInstructionPointer() noexcept     { return registerValue<ArchitectureConstants::InstructionPointer>(); }
-			RegisterValue& getStackPointer() noexcept           { return registerValue<ArchitectureConstants::StackPointer>(); }
-			RegisterValue& getCallStackPointer() noexcept 		{ return registerValue<ArchitectureConstants::CallStackPointer>(); }
-			bool& getConditionRegister() noexcept 				{ return conditionRegister; }
-			RegisterValue& getAddressRegister() noexcept        { return registerValue<ArchitectureConstants::AddressRegister>(); }
-			RegisterValue& getValueRegister() noexcept          { return registerValue<ArchitectureConstants::ValueRegister>(); }
-			RegisterValue& getMaskRegister() noexcept           { return registerValue<ArchitectureConstants::MaskRegister>(); }
+			RegisterValue& registerValue(byte index) override;
+			RegisterValue& getInstructionPointer() noexcept override     { return registerValue<ArchitectureConstants::InstructionPointer>(); }
+			RegisterValue& getStackPointer() noexcept override           { return registerValue<ArchitectureConstants::StackPointer>(); }
+			RegisterValue& getCallStackPointer() noexcept 		         { return registerValue<ArchitectureConstants::CallStackPointer>(); }
+			bool& getConditionRegister() noexcept 				         { return conditionRegister; }
+			RegisterValue& getAddressRegister() noexcept                 { return registerValue<ArchitectureConstants::AddressRegister>(); }
+			RegisterValue& getValueRegister() noexcept                   { return registerValue<ArchitectureConstants::ValueRegister>(); }
+			RegisterValue& getMaskRegister() noexcept                    { return registerValue<ArchitectureConstants::MaskRegister>(); }
 
 			RegisterValue getShiftRegister() noexcept           { return 0b11111 & registerValue<ArchitectureConstants::ShiftRegister>(); }
 			RegisterValue getFieldRegister() noexcept           { return 0b11111 & registerValue<ArchitectureConstants::FieldRegister>(); }
 
-			void incrementInstructionPointer() noexcept;
-			void incrementAddress(RegisterValue& ptr) noexcept;
-			void decrementAddress(RegisterValue& ptr) noexcept;
 			Word getCurrentCodeWord();
-			void storeWord(RegisterValue address, Word value);
-			Word loadWord(RegisterValue address);
+			virtual void storeWord(RegisterValue address, Word value) override;
+			virtual Word loadWord(RegisterValue address) override;
 		private:
 			void complexOperation(const DecodedInstruction& inst);
 			void encodingOperation(const DecodedInstruction& inst);
