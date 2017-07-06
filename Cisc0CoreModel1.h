@@ -78,6 +78,8 @@ namespace cisc0 {
 			virtual void storeWord(RegisterValue address, Word value) override;
 			virtual Word loadWord(RegisterValue address) override;
 		private:
+            void moveToCondition(byte index) noexcept;
+            void moveFromCondition(byte index) noexcept;
 			void complexOperation();
 			void encodingOperation();
             void extendedOperation();

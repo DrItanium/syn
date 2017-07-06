@@ -135,10 +135,10 @@ namespace cisc0 {
                 memoryOperation((current));
                 break;
             case Operation::Branch:
-                branchOperation((current));
+                branchOperation();
                 break;
             case Operation::Compare:
-                compareOperation((current));
+                compareOperation();
                 break;
             case Operation::Complex:
                 complexOperation((current));
@@ -193,16 +193,18 @@ namespace cisc0 {
         }
     }
 
-    void CoreModel1::compareOperation(const DecodedInstruction& inst) {
+    void CoreModel1::moveToCondition(byte index) noexcept {
+        conditionRegister = registerValue(index) != 0;
+    }
+    void CoreModel1::moveFromCondition(byte index) noexcept {
+        registerValue(index) = normalizeCondition(conditionRegister);
+    }
+
+    void CoreModel1::compareOperation() {
+        auto& inst = _instruction[0];
         static constexpr auto group = Operation::Compare;
 		auto compareResult = inst.getSubtype<group>();
 		auto destinationIndex = inst.getDestinationRegister<group>();
-        auto moveToCondition = [this, destinationIndex]() {
-            getConditionRegister() = (registerValue(destinationIndex) != 0);
-        };
-        auto moveFromCondition = [this, destinationIndex]() {
-            registerValue(destinationIndex) = normalizeCondition(getConditionRegister());
-        };
         auto normalCompare = [this, destinationIndex, &inst, compareResult]() {
 			auto first = registerValue(destinationIndex);
 			auto second = inst.getImmediateFlag<group>() ? retrieveImmediate(inst.getBitmask<group>()) : registerValue(inst.getSourceRegister<group>());
@@ -212,10 +214,10 @@ namespace cisc0 {
         };
         switch(compareResult) {
             case CompareStyle::MoveToCondition:
-                moveToCondition();
+                moveToCondition(destinationIndex);
                 break;
             case CompareStyle::MoveFromCondition:
-                moveFromCondition();
+                moveFromCondition(destinationIndex);
                 break;
             default:
                 normalCompare();
