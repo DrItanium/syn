@@ -52,6 +52,15 @@ namespace cisc0 {
         throw syn::Problem(s);
     }
 
+    RegisterValue& Core::getInstructionPointer() noexcept { return registerValue(ArchitectureConstants::InstructionPointer); }
+    RegisterValue& Core::getStackPointer() noexcept { return registerValue(ArchitectureConstants::StackPointer); }
+    RegisterValue& Core::getCallStackPointer() noexcept { return registerValue(ArchitectureConstants::CallStackPointer); }
+    RegisterValue& Core::getAddressRegister() noexcept { return registerValue(ArchitectureConstants::AddressRegister); }
+    RegisterValue& Core::getValueRegister() noexcept { return registerValue(ArchitectureConstants::ValueRegister); }
+    RegisterValue& Core::getMaskRegister() noexcept { return registerValue(ArchitectureConstants::MaskRegister); }
+    RegisterValue  Core::getShiftRegister() noexcept { return 0b11111 & registerValue(ArchitectureConstants::ShiftRegister); }
+    RegisterValue  Core::getFieldRegister() noexcept { return 0b11111 & registerValue(ArchitectureConstants::FieldRegister); }
+
 
     void Core::pushWord(Word value) {
 		pushWord(value, getStackPointer());

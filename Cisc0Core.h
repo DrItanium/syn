@@ -163,12 +163,16 @@ namespace cisc0 {
         protected:
             void incrementAddress(RegisterValue& ptr) noexcept;
             void decrementAddress(RegisterValue& ptr) noexcept;
-            virtual RegisterValue& getInstructionPointer() noexcept = 0;
             void incrementInstructionPointer() noexcept;
-            virtual RegisterValue& registerValue(byte index) = 0;
-            virtual RegisterValue& getStackPointer() = 0;
-            virtual void storeWord(RegisterValue address, Word value) = 0;
-            virtual Word loadWord(RegisterValue address) = 0;
+            virtual RegisterValue& getInstructionPointer() noexcept;
+            virtual RegisterValue& getStackPointer() noexcept;
+            virtual RegisterValue& getCallStackPointer() noexcept;
+            virtual RegisterValue& getAddressRegister() noexcept;
+            virtual RegisterValue& getValueRegister() noexcept;
+            virtual RegisterValue& getMaskRegister() noexcept;
+            virtual RegisterValue  getShiftRegister() noexcept;
+            virtual RegisterValue  getFieldRegister() noexcept;
+            virtual bool& getConditionRegister() noexcept = 0;
             void pushWord(Word value);
             void pushWord(Word value, RegisterValue& sp);
             void pushRegisterValue(RegisterValue value);
@@ -177,6 +181,10 @@ namespace cisc0 {
             Word popWord(RegisterValue& sp);
             RegisterValue popRegisterValue(RegisterValue& sp);
             RegisterValue popRegisterValue();
+
+            virtual RegisterValue& registerValue(byte index) = 0;
+            virtual void storeWord(RegisterValue address, Word value) = 0;
+            virtual Word loadWord(RegisterValue address) = 0;
 
 		protected:
 			bool execute = true,

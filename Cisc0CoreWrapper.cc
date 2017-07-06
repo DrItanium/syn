@@ -139,12 +139,6 @@ namespace cisc0 {
             return DefaultCoreWrapper::callErrorCode2(env, ret, p.what());
 		}
 	}
-	CoreModel0* CoreModel0::make() noexcept {
-		return new CoreModel0();
-	}
-	CoreModel1* CoreModel1::make() noexcept {
-		return new CoreModel1();
-	}
 } // end namespace cisc0
 
 namespace syn {

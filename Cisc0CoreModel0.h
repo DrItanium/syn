@@ -46,8 +46,6 @@ namespace cisc0 {
 		public:
 			using IOBus = syn::CLIPSIOController<Word, CLIPSInteger>;
             using RegisterFile = syn::FixedSizeLoadStoreUnit<RegisterValue, byte, ArchitectureConstants::RegisterCount>;
-        public:
-			static CoreModel0* make() noexcept;
 		public:
 			CoreModel0() noexcept;
 			virtual ~CoreModel0() noexcept;
@@ -57,11 +55,6 @@ namespace cisc0 {
 			bool shouldExecute() const noexcept { return execute; }
 		private:
 			void dispatch(const DecodedInstruction& inst);
-			template<byte rindex>
-			inline RegisterValue& registerValue() noexcept {
-				static_assert(rindex < ArchitectureConstants::RegisterCount, "Not a legal register index!");
-				return gpr[rindex];
-			}
             template<bool readNext>
             inline Word tryReadNext() {
                 if (!readNext) {
@@ -72,20 +65,10 @@ namespace cisc0 {
             }
             Word tryReadNext(bool readNext);
 			RegisterValue retrieveImmediate(byte bitmask) noexcept;
-
-			virtual RegisterValue& registerValue(byte index) override;
-			virtual RegisterValue& getInstructionPointer() noexcept override { return registerValue<ArchitectureConstants::InstructionPointer>(); }
-			virtual RegisterValue& getStackPointer() noexcept override       { return registerValue<ArchitectureConstants::StackPointer>(); }
-			RegisterValue& getCallStackPointer() noexcept 		             { return registerValue<ArchitectureConstants::CallStackPointer>(); }
-			bool& getConditionRegister() noexcept 				             { return conditionRegister; }
-			RegisterValue& getAddressRegister() noexcept                     { return registerValue<ArchitectureConstants::AddressRegister>(); }
-			RegisterValue& getValueRegister() noexcept                       { return registerValue<ArchitectureConstants::ValueRegister>(); }
-			RegisterValue& getMaskRegister() noexcept                        { return registerValue<ArchitectureConstants::MaskRegister>(); }
-
-			RegisterValue getShiftRegister() noexcept           { return 0b11111 & registerValue<ArchitectureConstants::ShiftRegister>(); }
-			RegisterValue getFieldRegister() noexcept           { return 0b11111 & registerValue<ArchitectureConstants::FieldRegister>(); }
-
 			Word getCurrentCodeWord();
+        protected:
+			virtual RegisterValue& registerValue(byte index) override;
+			bool& getConditionRegister() noexcept override { return conditionRegister; }
 			virtual void storeWord(RegisterValue address, Word value) override;
 			virtual Word loadWord(RegisterValue address) override;
 		private:
