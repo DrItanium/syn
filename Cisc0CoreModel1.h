@@ -96,11 +96,11 @@ namespace cisc0 {
             void shiftOperation();
 		private:
             // The actual instruction is four words wide but instructions are
-            // variable width up four words! It is up to the internal code to
+            // variable width up three words! It is up to the internal code to
             // increment the address pointer as we see fit! The internal is
             // only aware of this fact, the external instruction set is not
             // aware of this fact!
-            // store four words worth of data!
+            // store three words worth of data!
 			bool execute = true,
 				 advanceIp = true;
 			bool conditionRegister = false;
