@@ -55,7 +55,6 @@ namespace cisc0 {
 			virtual void shutdown() override;
 			virtual bool cycle() override;
 			bool shouldExecute() const noexcept { return execute; }
-			virtual bool handleOperation(void* env, CLIPSValue* ret) override;
 		private:
 			void pushWord(Word value);
 			void pushWord(Word value, RegisterValue& stackPointer);
@@ -94,7 +93,6 @@ namespace cisc0 {
 			RegisterValue getShiftRegister() noexcept           { return 0b11111 & registerValue<ArchitectureConstants::ShiftRegister>(); }
 			RegisterValue getFieldRegister() noexcept           { return 0b11111 & registerValue<ArchitectureConstants::FieldRegister>(); }
 
-			void incrementInstructionPointer() noexcept;
 			Word getCurrentCodeWord();
 			virtual void storeWord(RegisterValue address, Word value) override;
 			virtual Word loadWord(RegisterValue address) override;

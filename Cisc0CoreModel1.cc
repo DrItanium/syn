@@ -33,57 +33,6 @@
 #include "Cisc0ClipsExtensions.h"
 
 namespace cisc0 {
-	constexpr Word lowerMask(byte bitmask) noexcept {
-		return syn::encodeUint16LE(syn::expandBit(syn::getBit<byte, 0>(bitmask)),
-									syn::expandBit(syn::getBit<byte, 1>(bitmask)));
-	}
-	constexpr Word upperMask(byte bitmask) noexcept {
-		return syn::encodeUint16LE(syn::expandBit(syn::getBit<byte, 2>(bitmask)),
-									syn::expandBit(syn::getBit<byte, 3>(bitmask)));
-	}
-
-	constexpr RegisterValue mask(byte bitmask) noexcept {
-		return syn::encodeUint32LE(lowerMask(bitmask), upperMask(bitmask));
-	}
-
-	constexpr bool readLower(byte bitmask) noexcept {
-		return lowerMask(bitmask) != 0;
-	}
-
-	constexpr bool readUpper(byte bitmask) noexcept {
-		return upperMask(bitmask) != 0;
-	}
-    constexpr RegisterValue encodeRegisterValue(byte a, byte b, byte c, byte d) noexcept {
-        return syn::encodeUint32LE(a, b, c, d);
-    }
-    constexpr Word encodeWord(byte a, byte b) noexcept {
-        return syn::encodeUint16LE(a, b);
-    }
-
-    constexpr Word decodeUpperHalf(RegisterValue value) noexcept {
-        return syn::decodeBits<RegisterValue, Word, mask(0b1100), 16>(value);
-    }
-    constexpr Word decodeLowerHalf(RegisterValue value) noexcept {
-        return syn::decodeBits<RegisterValue, Word, mask(0b0011), 0>(value);
-    }
-
-    constexpr RegisterValue encodeUpperHalf(RegisterValue value, Word upperHalf) noexcept {
-        return syn::encodeBits<RegisterValue, Word, mask(0b1100), 16>(value, upperHalf);
-    }
-    constexpr RegisterValue encodeLowerHalf(RegisterValue value, Word lowerHalf) noexcept {
-        return syn::encodeBits<RegisterValue, Word, mask(0b0011), 0>(value, lowerHalf);
-    }
-
-    constexpr RegisterValue encodeRegisterValue(Word upper, Word lower) noexcept {
-        if (upper == 0 && lower == 0) {
-            return 0;
-        }
-        return encodeUpperHalf(encodeLowerHalf(0, lower), upper);
-    }
-    constexpr RegisterValue normalizeCondition(RegisterValue input) noexcept {
-        return input != 0 ? 0xFFFFFFFF : 0x00000000;
-    }
-
     RegisterValue CoreModel1::retrieveImmediate(byte bitmask) noexcept {
         auto useLower = readLower(bitmask);
         auto useUpper = readUpper(bitmask);
@@ -134,14 +83,6 @@ namespace cisc0 {
     }
     void CoreModel1::incrementInstructionPointer() noexcept {
         incrementAddress(getInstructionPointer());
-    }
-
-    void illegalInstruction(const DecodedInstruction& current, RegisterValue ip) {
-        std::stringstream str;
-        str << "Illegal instruction " << std::hex << static_cast<int>(current.getControl()) << std::endl;
-        str << "Location: " << std::hex << ip << std::endl;
-        auto s = str.str();
-        throw syn::Problem(s);
     }
 
     void CoreModel1::dispatch(const DecodedInstruction& current) {
@@ -436,66 +377,6 @@ namespace cisc0 {
 				throw syn::Problem("Undefined extended operation!");
         }
     }
-	static constexpr byte convertTextToHex(Word input) noexcept {
-		switch(input) {
-			case 'f':
-			case 'F':
-				return 0xF;
-			case 'e':
-			case 'E':
-				return 0xE;
-			case 'd':
-			case 'D':
-				return 0xD;
-			case 'c':
-			case 'C':
-				return 0xC;
-			case 'b':
-			case 'B':
-				return 0xB;
-			case 'a':
-			case 'A':
-				return 0xA;
-			case '9': return 9;
-			case '8': return 8;
-			case '7': return 7;
-			case '6': return 6;
-			case '5': return 5;
-			case '4': return 4;
-			case '3': return 3;
-			case '2': return 2;
-			case '1': return 1;
-			case '0':
-			default:
-				return 0x0;
-		}
-	}
-	static constexpr Word hexToText(byte input) noexcept {
-		switch(syn::decodeBits<byte, byte, 0x0F, 0>(input)) {
-			case 0x1: return static_cast<Word>('1');
-			case 0x2: return static_cast<Word>('2');
-			case 0x3: return static_cast<Word>('3');
-			case 0x4: return static_cast<Word>('4');
-			case 0x5: return static_cast<Word>('5');
-			case 0x6: return static_cast<Word>('6');
-			case 0x7: return static_cast<Word>('7');
-			case 0x8: return static_cast<Word>('8');
-			case 0x9: return static_cast<Word>('9');
-			case 0xA: return static_cast<Word>('A');
-			case 0xB: return static_cast<Word>('B');
-			case 0xC: return static_cast<Word>('C');
-			case 0xD: return static_cast<Word>('D');
-			case 0xE: return static_cast<Word>('E');
-			case 0xF: return static_cast<Word>('F');
-			case 0x0:
-			default:
-				return static_cast<Word>('0');
-		}
-	}
-	template<RegisterValue mask, RegisterValue shift>
-	static constexpr Word extractHexAndConvertToText(RegisterValue value) noexcept {
-		return hexToText(syn::decodeBits<RegisterValue, byte, mask, shift>(value));
-	}
 	void CoreModel1::parsingOperation(const DecodedInstruction& inst) {
 		auto hex8ToRegister = [this, &inst]() {
 			// 1) use the address contained in address to read the next 8 words

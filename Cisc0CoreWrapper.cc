@@ -150,6 +150,7 @@ namespace cisc0 {
 namespace syn {
 	DefWrapperSymbolicName(cisc0::CoreModel0,  "cisc0-core-model0");
 	DefWrapperSymbolicName(cisc0::CoreModel1,  "cisc0-core-model1");
+    // this is here for compilation purposes only!
     DefWrapperSymbolicName(cisc0::Core, "cisc0-abstract-core");
     DefExternalAddressWrapperType(cisc0::CoreModel0, cisc0::CoreWrapper<cisc0::CoreModel0>);
     DefExternalAddressWrapperType(cisc0::CoreModel1, cisc0::CoreWrapper<cisc0::CoreModel1>);

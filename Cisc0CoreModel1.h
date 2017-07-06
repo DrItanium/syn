@@ -37,15 +37,17 @@
 #include "ExecutionUnits.h"
 #include "IODevice.h"
 #include "IOController.h"
+#include "Cisc0Core.h"
 #include "Cisc0CoreConstants.h"
 #include "Cisc0CoreDecodedInstruction.h"
+
 
 namespace cisc0 {
     /**
      * A reimplementation of the cisc0 instruction set with modifications to
      * the internals!
      */
-	class CoreModel1 : public syn::ClipsCore {
+	class CoreModel1 : public Core {
 		public:
 			using IOBus = syn::CLIPSIOController<Word, CLIPSInteger>;
             using RegisterFile = syn::FixedSizeLoadStoreUnit<RegisterValue, byte, ArchitectureConstants::RegisterCount>;
@@ -58,7 +60,6 @@ namespace cisc0 {
 			virtual void shutdown() override;
 			virtual bool cycle() override;
 			bool shouldExecute() const noexcept { return execute; }
-			virtual bool handleOperation(void* env, CLIPSValue* ret) override;
 		private:
 			void pushWord(Word value);
 			void pushWord(Word value, RegisterValue& stackPointer);

@@ -156,8 +156,8 @@ namespace cisc0 {
 	}
 	class Core : public syn::ClipsCore {
 		public:
-			Core() noexcept;
-			virtual ~Core() noexcept;
+			Core() noexcept { }
+			virtual ~Core() noexcept { }
 			bool shouldExecute() const noexcept { return execute; }
 			virtual bool handleOperation(void* env, CLIPSValue* ret) override;
         protected:
