@@ -51,6 +51,7 @@ namespace cisc0 {
 		public:
 			using IOBus = syn::CLIPSIOController<Word, CLIPSInteger>;
             using RegisterFile = syn::FixedSizeLoadStoreUnit<RegisterValue, byte, ArchitectureConstants::RegisterCount>;
+            static constexpr auto instructionCacheWidth = 3;
 		public:
 			CoreModel1() noexcept;
 			virtual ~CoreModel1() noexcept;
@@ -105,7 +106,7 @@ namespace cisc0 {
 			bool conditionRegister = false;
 			RegisterFile _gpr;
 			IOBus _bus;
-            DecodedInstruction _instruction[4];
+            DecodedInstruction _instruction[instructionCacheWidth];
 	};
 
 

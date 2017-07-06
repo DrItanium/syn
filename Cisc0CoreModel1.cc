@@ -77,7 +77,7 @@ namespace cisc0 {
             std::cout << "Current Instruction Location: " << std::hex << getInstructionPointer() << std::endl;
             std::cout << "\tCurrent word value: " << std::hex << getCurrentCodeWord() << std::endl;
         }
-        for (auto i = 0; i < 4; ++i) {
+        for (auto i = 0; i < instructionCacheWidth; ++i) {
             _instruction[i] = getCurrentCodeWord(i);
         }
         dispatch();
