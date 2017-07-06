@@ -204,7 +204,6 @@ namespace WrappedNewCallBuilder {
         }
         return nullptr;
     }
-
 }
 using FunctionStrings = std::tuple<std::string, std::string, std::string>;
 template<typename T>

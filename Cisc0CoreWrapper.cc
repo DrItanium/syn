@@ -25,14 +25,17 @@
 
 #include "Cisc0CoreWrapper.h"
 #include "Cisc0Core.h"
+#include "Cisc0CoreModel0.h"
+#include "Cisc0CoreModel1.h"
 #include "ClipsExtensions.h"
 #include "CoreWrapper.h"
 
 
 namespace cisc0 {
-    class CoreWrapper : public syn::CoreWrapper<Core> {
+    template<typename T = Core>
+    class CoreWrapper : public syn::CoreWrapper<T> {
         public:
-            using Parent = syn::CoreWrapper<Core>;
+            using Parent = syn::CoreWrapper<T>;
 			enum class Operations {
                 __DEFAULT_CORE_OPERATIONS__,
 				WriteMemory,
@@ -44,9 +47,11 @@ namespace cisc0 {
         public:
             using Parent::Parent;
     };
+    using DefaultCoreWrapper = CoreWrapper<Core>;
 
 	void installCoreWrapper(void* env) {
-		CoreWrapper::registerWithEnvironment(env);
+        CoreWrapper<CoreModel0>::registerWithEnvironment(env);
+        CoreWrapper<CoreModel1>::registerWithEnvironment(env);
 	}
     template<typename T>
     constexpr bool isIllegalRegisterIndex(T value) noexcept {
@@ -55,13 +60,13 @@ namespace cisc0 {
     template<typename T>
     bool failOnIllegalRegisterIndex(void* env, CLIPSValue* ret, T value) noexcept {
         if (isIllegalRegisterIndex(value)) {
-            return CoreWrapper::callErrorCode3(env, ret, "Illegal register index!");
+            return DefaultCoreWrapper::callErrorCode3(env, ret, "Illegal register index!");
         }
         return true;
     }
 	bool Core::handleOperation(void* env, CLIPSValue* ret) {
-		using OpToArgCount = std::tuple<CoreWrapper::Operations, int>;
-		using WrappedOp = CoreWrapper::Operations;
+		using OpToArgCount = std::tuple<DefaultCoreWrapper::Operations, int>;
+		using WrappedOp = DefaultCoreWrapper::Operations;
 		static std::map<std::string, OpToArgCount> ops = {
 			{ "initialize", std::make_tuple( WrappedOp::Initialize, 0 )},
 			{ "shutdown", std::make_tuple(WrappedOp::Shutdown, 0 )},
@@ -73,17 +78,17 @@ namespace cisc0 {
 			{ "set-register", std::make_tuple(WrappedOp::SetRegister, 2 ) },
 		};
 		CLIPSValue operation;
-        __RETURN_FALSE_ON_FALSE__(CoreWrapper::tryExtractFunctionName(env, ret, &operation));
+        __RETURN_FALSE_ON_FALSE__(DefaultCoreWrapper::tryExtractFunctionName(env, ret, &operation));
 		std::string opStr(syn::extractLexeme(env, operation));
 		auto result = ops.find(opStr);
-        __RETURN_FALSE_ON_FALSE__(CoreWrapper::isLegalOperation(env, ret, opStr, result, ops.end()));
+        __RETURN_FALSE_ON_FALSE__(DefaultCoreWrapper::isLegalOperation(env, ret, opStr, result, ops.end()));
 		WrappedOp fop;
 		int argCount;
 		std::tie(fop, argCount) = result->second;
-        __RETURN_FALSE_ON_FALSE__(CoreWrapper::checkArgumentCount(env, ret, opStr, argCount));
+        __RETURN_FALSE_ON_FALSE__(DefaultCoreWrapper::checkArgumentCount(env, ret, opStr, argCount));
 		auto getRegister = [this, env, ret]() {
 			CLIPSValue index;
-            __RETURN_FALSE_ON_FALSE__(CoreWrapper::tryExtractArgument1(env, ret, &index, syn::MayaType::Integer, "Must provide an integer index to retrieve a register value!"));
+            __RETURN_FALSE_ON_FALSE__(DefaultCoreWrapper::tryExtractArgument1(env, ret, &index, syn::MayaType::Integer, "Must provide an integer index to retrieve a register value!"));
 			auto i = syn::extractLong(env, index);
             __RETURN_FALSE_ON_FALSE__(failOnIllegalRegisterIndex(env, ret, i));
 			CVSetInteger(ret, registerValue(static_cast<byte>(i)));
@@ -91,26 +96,26 @@ namespace cisc0 {
 		};
 		auto setRegister = [this, env, ret]() {
 			CLIPSValue index;
-            __RETURN_FALSE_ON_FALSE__(CoreWrapper::tryExtractArgument1(env, ret, &index, syn::MayaType::Integer, "Must provide an integer index to assign a register value!"));
+            __RETURN_FALSE_ON_FALSE__(DefaultCoreWrapper::tryExtractArgument1(env, ret, &index, syn::MayaType::Integer, "Must provide an integer index to assign a register value!"));
 			auto ind = syn::extractLong(env, index);
             __RETURN_FALSE_ON_FALSE__(failOnIllegalRegisterIndex(env, ret, ind));
             CLIPSValue value;
-            __RETURN_FALSE_ON_FALSE__(CoreWrapper::tryExtractArgument2(env, ret, &value, syn::MayaType::Integer, "Must provide an integer value to assign to the given register!"));
+            __RETURN_FALSE_ON_FALSE__(DefaultCoreWrapper::tryExtractArgument2(env, ret, &value, syn::MayaType::Integer, "Must provide an integer value to assign to the given register!"));
 			registerValue(static_cast<byte>(ind)) = syn::extractLong<RegisterValue>(env, value);
             return syn::setClipsBoolean(ret);
 		};
 		auto readMemory = [this, env, ret]() {
 			CLIPSValue index;
-            __RETURN_FALSE_ON_FALSE__(CoreWrapper::tryExtractArgument1(env, ret, &index, syn::MayaType::Integer, "Must provide an integer index to retrieve a memory value!"));
+            __RETURN_FALSE_ON_FALSE__(DefaultCoreWrapper::tryExtractArgument1(env, ret, &index, syn::MayaType::Integer, "Must provide an integer index to retrieve a memory value!"));
 			CVSetInteger(ret, loadWord(syn::extractLong<RegisterValue>(env, index)));
 			return true;
 		};
 		auto writeMemory = [this, env, ret]() {
 			CLIPSValue index;
-            __RETURN_FALSE_ON_FALSE__(CoreWrapper::tryExtractArgument1(env, ret, &index, syn::MayaType::Integer, "Must provide an integer index to assign a register value!"));
+            __RETURN_FALSE_ON_FALSE__(DefaultCoreWrapper::tryExtractArgument1(env, ret, &index, syn::MayaType::Integer, "Must provide an integer index to assign a register value!"));
 			auto ind = syn::extractLong<Address>(env, index);
             CLIPSValue value;
-            __RETURN_FALSE_ON_FALSE__(CoreWrapper::tryExtractArgument2(env, ret, &value, syn::MayaType::Integer, "Must provide an integer value to assign to the given register!"));
+            __RETURN_FALSE_ON_FALSE__(DefaultCoreWrapper::tryExtractArgument2(env, ret, &value, syn::MayaType::Integer, "Must provide an integer value to assign to the given register!"));
 			storeWord(ind, syn::extractLong<Word>(env, value));
             return syn::setClipsBoolean(ret);
 		};
@@ -127,20 +132,26 @@ namespace cisc0 {
 				case WrappedOp::WriteMemory:
 					return writeMemory();
 				default:
-                    return CoreWrapper::callErrorMessageCode3(env, ret, opStr, " <- legal but unimplemented operation!");
+                    return DefaultCoreWrapper::callErrorMessageCode3(env, ret, opStr, " <- legal but unimplemented operation!");
 			}
 			return true;
 		} catch(const syn::Problem& p) {
-            return CoreWrapper::callErrorCode2(env, ret, p.what());
+            return DefaultCoreWrapper::callErrorCode2(env, ret, p.what());
 		}
 	}
-	Core* Core::make() noexcept {
-		return new Core();
+	CoreModel0* CoreModel0::make() noexcept {
+		return new CoreModel0();
+	}
+	CoreModel1* CoreModel1::make() noexcept {
+		return new CoreModel1();
 	}
 } // end namespace cisc0
 
 namespace syn {
-	DefWrapperSymbolicName(cisc0::Core,  "cisc0-core");
-    DefExternalAddressWrapperType(cisc0::Core, cisc0::CoreWrapper);
+	DefWrapperSymbolicName(cisc0::CoreModel0,  "cisc0-core-model0");
+	DefWrapperSymbolicName(cisc0::CoreModel1,  "cisc0-core-model1");
+    DefWrapperSymbolicName(cisc0::Core, "cisc0-abstract-core");
+    DefExternalAddressWrapperType(cisc0::CoreModel0, cisc0::CoreWrapper<cisc0::CoreModel0>);
+    DefExternalAddressWrapperType(cisc0::CoreModel1, cisc0::CoreWrapper<cisc0::CoreModel1>);
 } // end namespace syn
 

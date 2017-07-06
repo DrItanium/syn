@@ -41,84 +41,146 @@
 #include "Cisc0CoreDecodedInstruction.h"
 
 namespace cisc0 {
+
+    void illegalInstruction(const DecodedInstruction& current, RegisterValue ip);
+	constexpr Word lowerMask(byte bitmask) noexcept {
+		return syn::encodeUint16LE(syn::expandBit(syn::getBit<byte, 0>(bitmask)),
+									syn::expandBit(syn::getBit<byte, 1>(bitmask)));
+	}
+	constexpr Word upperMask(byte bitmask) noexcept {
+		return syn::encodeUint16LE(syn::expandBit(syn::getBit<byte, 2>(bitmask)),
+									syn::expandBit(syn::getBit<byte, 3>(bitmask)));
+	}
+
+	constexpr RegisterValue mask(byte bitmask) noexcept {
+		return syn::encodeUint32LE(lowerMask(bitmask), upperMask(bitmask));
+	}
+
+	constexpr bool readLower(byte bitmask) noexcept {
+		return lowerMask(bitmask) != 0;
+	}
+
+	constexpr bool readUpper(byte bitmask) noexcept {
+		return upperMask(bitmask) != 0;
+	}
+    constexpr RegisterValue encodeRegisterValue(byte a, byte b, byte c, byte d) noexcept {
+        return syn::encodeUint32LE(a, b, c, d);
+    }
+    constexpr Word encodeWord(byte a, byte b) noexcept {
+        return syn::encodeUint16LE(a, b);
+    }
+
+    constexpr Word decodeUpperHalf(RegisterValue value) noexcept {
+        return syn::decodeBits<RegisterValue, Word, mask(0b1100), 16>(value);
+    }
+    constexpr Word decodeLowerHalf(RegisterValue value) noexcept {
+        return syn::decodeBits<RegisterValue, Word, mask(0b0011), 0>(value);
+    }
+
+    constexpr RegisterValue encodeUpperHalf(RegisterValue value, Word upperHalf) noexcept {
+        return syn::encodeBits<RegisterValue, Word, mask(0b1100), 16>(value, upperHalf);
+    }
+    constexpr RegisterValue encodeLowerHalf(RegisterValue value, Word lowerHalf) noexcept {
+        return syn::encodeBits<RegisterValue, Word, mask(0b0011), 0>(value, lowerHalf);
+    }
+
+    constexpr RegisterValue encodeRegisterValue(Word upper, Word lower) noexcept {
+        if (upper == 0 && lower == 0) {
+            return 0;
+        }
+        return encodeUpperHalf(encodeLowerHalf(0, lower), upper);
+    }
+    constexpr RegisterValue normalizeCondition(RegisterValue input) noexcept {
+        return input != 0 ? 0xFFFFFFFF : 0x00000000;
+    }
+
+	constexpr byte convertTextToHex(Word input) noexcept {
+		switch(input) {
+			case 'f':
+			case 'F':
+				return 0xF;
+			case 'e':
+			case 'E':
+				return 0xE;
+			case 'd':
+			case 'D':
+				return 0xD;
+			case 'c':
+			case 'C':
+				return 0xC;
+			case 'b':
+			case 'B':
+				return 0xB;
+			case 'a':
+			case 'A':
+				return 0xA;
+			case '9': return 9;
+			case '8': return 8;
+			case '7': return 7;
+			case '6': return 6;
+			case '5': return 5;
+			case '4': return 4;
+			case '3': return 3;
+			case '2': return 2;
+			case '1': return 1;
+			case '0':
+			default:
+				return 0x0;
+		}
+	}
+	constexpr Word hexToText(byte input) noexcept {
+		switch(syn::decodeBits<byte, byte, 0x0F, 0>(input)) {
+			case 0x1: return static_cast<Word>('1');
+			case 0x2: return static_cast<Word>('2');
+			case 0x3: return static_cast<Word>('3');
+			case 0x4: return static_cast<Word>('4');
+			case 0x5: return static_cast<Word>('5');
+			case 0x6: return static_cast<Word>('6');
+			case 0x7: return static_cast<Word>('7');
+			case 0x8: return static_cast<Word>('8');
+			case 0x9: return static_cast<Word>('9');
+			case 0xA: return static_cast<Word>('A');
+			case 0xB: return static_cast<Word>('B');
+			case 0xC: return static_cast<Word>('C');
+			case 0xD: return static_cast<Word>('D');
+			case 0xE: return static_cast<Word>('E');
+			case 0xF: return static_cast<Word>('F');
+			case 0x0:
+			default:
+				return static_cast<Word>('0');
+		}
+	}
+	template<RegisterValue mask, RegisterValue shift>
+	static constexpr Word extractHexAndConvertToText(RegisterValue value) noexcept {
+		return hexToText(syn::decodeBits<RegisterValue, byte, mask, shift>(value));
+	}
 	class Core : public syn::ClipsCore {
-		public:
-			using IOBus = syn::CLIPSIOController<Word, CLIPSInteger>;
-            using RegisterFile = syn::FixedSizeLoadStoreUnit<RegisterValue, byte, ArchitectureConstants::RegisterCount>;
-        public:
-			static Core* make() noexcept;
 		public:
 			Core() noexcept;
 			virtual ~Core() noexcept;
-			virtual void initialize() override;
-			virtual void shutdown() override;
-			virtual bool cycle() override;
 			bool shouldExecute() const noexcept { return execute; }
 			virtual bool handleOperation(void* env, CLIPSValue* ret) override;
-		private:
-			void pushWord(Word value);
-			void pushWord(Word value, RegisterValue& stackPointer);
-			void pushDword(DWord value);
-			void pushDword(DWord value, RegisterValue& stackPointer);
-			Word popWord();
-			Word popWord(RegisterValue& stackPointer);
+        protected:
+            void incrementAddress(RegisterValue& ptr) noexcept;
+            void decrementAddress(RegisterValue& ptr) noexcept;
+            virtual RegisterValue& getInstructionPointer() noexcept = 0;
+            void incrementInstructionPointer() noexcept;
+            virtual RegisterValue& registerValue(byte index) = 0;
+            virtual RegisterValue& getStackPointer() = 0;
+            virtual void storeWord(RegisterValue address, Word value) = 0;
+            virtual Word loadWord(RegisterValue address) = 0;
+            void pushWord(Word value);
+            void pushWord(Word value, RegisterValue& sp);
+            void pushRegisterValue(RegisterValue value);
+            void pushRegisterValue(RegisterValue value, RegisterValue& sp);
+            Word popWord();
+            Word popWord(RegisterValue& sp);
+            RegisterValue popRegisterValue(RegisterValue& sp);
             RegisterValue popRegisterValue();
-			RegisterValue popRegisterValue(RegisterValue& stackPointer);
-			void dispatch(const DecodedInstruction& inst);
-			template<byte rindex>
-			inline RegisterValue& registerValue() noexcept {
-				static_assert(rindex < ArchitectureConstants::RegisterCount, "Not a legal register index!");
-				return gpr[rindex];
-			}
-            template<bool readNext>
-            inline Word tryReadNext() {
-                if (!readNext) {
-                    return 0;
-                }
-                incrementInstructionPointer();
-                return getCurrentCodeWord();
-            }
-            Word tryReadNext(bool readNext);
-			RegisterValue retrieveImmediate(byte bitmask) noexcept;
 
-			RegisterValue& registerValue(byte index);
-			RegisterValue& getInstructionPointer() noexcept     { return registerValue<ArchitectureConstants::InstructionPointer>(); }
-			RegisterValue& getStackPointer() noexcept           { return registerValue<ArchitectureConstants::StackPointer>(); }
-			RegisterValue& getCallStackPointer() noexcept 		{ return registerValue<ArchitectureConstants::CallStackPointer>(); }
-			bool& getConditionRegister() noexcept 				{ return conditionRegister; }
-			RegisterValue& getAddressRegister() noexcept        { return registerValue<ArchitectureConstants::AddressRegister>(); }
-			RegisterValue& getValueRegister() noexcept          { return registerValue<ArchitectureConstants::ValueRegister>(); }
-			RegisterValue& getMaskRegister() noexcept           { return registerValue<ArchitectureConstants::MaskRegister>(); }
-
-			RegisterValue getShiftRegister() noexcept           { return 0b11111 & registerValue<ArchitectureConstants::ShiftRegister>(); }
-			RegisterValue getFieldRegister() noexcept           { return 0b11111 & registerValue<ArchitectureConstants::FieldRegister>(); }
-
-			void incrementInstructionPointer() noexcept;
-			void incrementAddress(RegisterValue& ptr) noexcept;
-			void decrementAddress(RegisterValue& ptr) noexcept;
-			Word getCurrentCodeWord();
-			void storeWord(RegisterValue address, Word value);
-			Word loadWord(RegisterValue address);
-		private:
-			void complexOperation(const DecodedInstruction& inst);
-			void encodingOperation(const DecodedInstruction& inst);
-            void extendedOperation(const DecodedInstruction& inst);
-			void parsingOperation(const DecodedInstruction& inst);
-			void performEncodeOp(const DecodedInstruction& inst);
-        private:
-            void compareOperation(const DecodedInstruction& inst);
-            void systemCallOperation(const DecodedInstruction& inst);
-            void branchOperation(const DecodedInstruction& inst);
-            void memoryOperation(const DecodedInstruction& inst);
-            void logicalOperation(const DecodedInstruction& inst);
-            void arithmeticOperation(const DecodedInstruction& inst);
-            void shiftOperation(const DecodedInstruction& inst);
-		private:
+		protected:
 			bool execute = true,
 				 advanceIp = true;
-			bool conditionRegister = false;
-			RegisterFile gpr;
-			IOBus _bus;
 	};
 
 

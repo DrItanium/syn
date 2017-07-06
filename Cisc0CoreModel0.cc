@@ -33,56 +33,6 @@
 #include "Cisc0ClipsExtensions.h"
 
 namespace cisc0 {
-	constexpr Word lowerMask(byte bitmask) noexcept {
-		return syn::encodeUint16LE(syn::expandBit(syn::getBit<byte, 0>(bitmask)),
-									syn::expandBit(syn::getBit<byte, 1>(bitmask)));
-	}
-	constexpr Word upperMask(byte bitmask) noexcept {
-		return syn::encodeUint16LE(syn::expandBit(syn::getBit<byte, 2>(bitmask)),
-									syn::expandBit(syn::getBit<byte, 3>(bitmask)));
-	}
-
-	constexpr RegisterValue mask(byte bitmask) noexcept {
-		return syn::encodeUint32LE(lowerMask(bitmask), upperMask(bitmask));
-	}
-
-	constexpr bool readLower(byte bitmask) noexcept {
-		return lowerMask(bitmask) != 0;
-	}
-
-	constexpr bool readUpper(byte bitmask) noexcept {
-		return upperMask(bitmask) != 0;
-	}
-    constexpr RegisterValue encodeRegisterValue(byte a, byte b, byte c, byte d) noexcept {
-        return syn::encodeUint32LE(a, b, c, d);
-    }
-    constexpr Word encodeWord(byte a, byte b) noexcept {
-        return syn::encodeUint16LE(a, b);
-    }
-
-    constexpr Word decodeUpperHalf(RegisterValue value) noexcept {
-        return syn::decodeBits<RegisterValue, Word, mask(0b1100), 16>(value);
-    }
-    constexpr Word decodeLowerHalf(RegisterValue value) noexcept {
-        return syn::decodeBits<RegisterValue, Word, mask(0b0011), 0>(value);
-    }
-
-    constexpr RegisterValue encodeUpperHalf(RegisterValue value, Word upperHalf) noexcept {
-        return syn::encodeBits<RegisterValue, Word, mask(0b1100), 16>(value, upperHalf);
-    }
-    constexpr RegisterValue encodeLowerHalf(RegisterValue value, Word lowerHalf) noexcept {
-        return syn::encodeBits<RegisterValue, Word, mask(0b0011), 0>(value, lowerHalf);
-    }
-
-    constexpr RegisterValue encodeRegisterValue(Word upper, Word lower) noexcept {
-        if (upper == 0 && lower == 0) {
-            return 0;
-        }
-        return encodeUpperHalf(encodeLowerHalf(0, lower), upper);
-    }
-    constexpr RegisterValue normalizeCondition(RegisterValue input) noexcept {
-        return input != 0 ? 0xFFFFFFFF : 0x00000000;
-    }
 
     RegisterValue CoreModel0::retrieveImmediate(byte bitmask) noexcept {
         auto useLower = readLower(bitmask);
@@ -96,7 +46,7 @@ namespace cisc0 {
         }
     }
 
-    CoreModel0::CoreModel0() noexcept : _bus(0x00000000, 0xFFFFFFFF, "Cisc0CoreModel0IOBus.clp")  { }
+    CoreModel0::CoreModel0() noexcept : Core(), _bus(0x00000000, 0xFFFFFFFF, "Cisc0CoreModel0IOBus.clp")  { }
     CoreModel0::~CoreModel0() noexcept { }
 
     void CoreModel0::initialize() {
@@ -136,13 +86,6 @@ namespace cisc0 {
         incrementAddress(getInstructionPointer());
     }
 
-    void illegalInstruction(const DecodedInstruction& current, RegisterValue ip) {
-        std::stringstream str;
-        str << "Illegal instruction " << std::hex << static_cast<int>(current.getControl()) << std::endl;
-        str << "Location: " << std::hex << ip << std::endl;
-        auto s = str.str();
-        throw syn::Problem(s);
-    }
 
     void CoreModel0::dispatch(const DecodedInstruction& current) {
         auto tControl = current.getControl();

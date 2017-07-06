@@ -5,6 +5,7 @@
 include config.mk
 ARCH_OBJECTS = IrisCore.o \
 			   Cisc0Core.o \
+			   Cisc0CoreModel0.o \
 			   Cisc0CoreModel1.o
 
 ASM_PARSERS_OBJECTS = Cisc0CoreAssembler.o \
