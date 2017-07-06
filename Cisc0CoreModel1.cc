@@ -91,7 +91,7 @@ namespace cisc0 {
     }
 
     void CoreModel1::dispatch() {
-        auto& current = _instruction[0];
+        const auto& current = _instruction[0];
         auto tControl = current.getControl();
         auto swapOperation = [this, &current]() noexcept {
             constexpr auto group = Operation::Swap;
@@ -123,16 +123,16 @@ namespace cisc0 {
         };
         switch(tControl) {
             case Operation::Shift:
-                shiftOperation((current));
+                shiftOperation();
                 break;
             case Operation::Arithmetic:
-                arithmeticOperation((current));
+                arithmeticOperation();
                 break;
             case Operation::Logical:
-                logicalOperation((current));
+                logicalOperation();
                 break;
             case Operation::Memory:
-                memoryOperation((current));
+                memoryOperation();
                 break;
             case Operation::Branch:
                 branchOperation();
@@ -141,7 +141,7 @@ namespace cisc0 {
                 compareOperation();
                 break;
             case Operation::Complex:
-                complexOperation((current));
+                complexOperation();
                 break;
             case Operation::Swap:
                 swapOperation();
@@ -162,7 +162,7 @@ namespace cisc0 {
         }
     }
     void CoreModel1::branchOperation() {
-        auto& inst = _instruction[0];
+        const auto& inst = _instruction[0];
         bool isCall, isCond;
         std::tie(isCall, isCond) = inst.getOtherBranchFlags();
         advanceIp = true;
@@ -201,7 +201,7 @@ namespace cisc0 {
     }
 
     void CoreModel1::compareOperation() {
-        auto& inst = _instruction[0];
+        const auto& inst = _instruction[0];
         static constexpr auto group = Operation::Compare;
 		auto compareResult = inst.getSubtype<group>();
 		auto destinationIndex = inst.getDestinationRegister<group>();
@@ -224,7 +224,8 @@ namespace cisc0 {
                 break;
         }
     }
-    void CoreModel1::memoryOperation(const DecodedInstruction& inst) {
+    void CoreModel1::memoryOperation() {
+        const auto& inst = _instruction[0];
         static constexpr auto group = Operation::Memory;
         auto rawMask = inst.getBitmask<group>();
         auto useLower = readLower(rawMask);
@@ -320,23 +321,24 @@ namespace cisc0 {
         }
     }
 
-    void CoreModel1::complexOperation(const DecodedInstruction& inst) {
-        auto type = inst.getSubtype<Operation::Complex>();
+    void CoreModel1::complexOperation() {
+        auto type = _instruction[0].getSubtype<Operation::Complex>();
         switch(type) {
             case ComplexSubTypes::Encoding:
-                encodingOperation((inst));
+                encodingOperation();
                 break;
             case ComplexSubTypes::Extended:
-                extendedOperation((inst));
+                extendedOperation();
                 break;
 			case ComplexSubTypes::Parsing:
-				parsingOperation((inst));
+				parsingOperation();
 				break;
             default:
                 throw syn::Problem("Undefined complex subtype!");
         }
     }
-    void CoreModel1::shiftOperation(const DecodedInstruction& inst) {
+    void CoreModel1::shiftOperation() {
+        const auto& inst = _instruction[0];
         static constexpr auto group = Operation::Shift;
         auto &destination = registerValue(inst.getDestinationRegister<group>());
         auto source = (inst.getImmediateFlag<group>() ? static_cast<RegisterValue>(inst.getImmediate<group>()) : registerValue(inst.getSourceRegister<group>()));
@@ -344,7 +346,8 @@ namespace cisc0 {
         destination = syn::ALU::performOperation<RegisterValue>(direction, destination, source);
     }
 
-    void CoreModel1::extendedOperation(const DecodedInstruction& inst) {
+    void CoreModel1::extendedOperation() {
+        const auto& inst = _instruction[0];
 		constexpr auto group = ComplexSubTypes::Extended;
 		auto wordsBeforeFirstZero = [this]() {
 			auto addr = getAddressRegister();
@@ -388,7 +391,8 @@ namespace cisc0 {
 				throw syn::Problem("Undefined extended operation!");
         }
     }
-	void CoreModel1::parsingOperation(const DecodedInstruction& inst) {
+	void CoreModel1::parsingOperation() {
+        const auto& inst = _instruction[0];
 		auto hex8ToRegister = [this, &inst]() {
 			// 1) use the address contained in address to read the next 8 words
 			// 2) Parse each word as an ascii character and convert it into a 4 bit quantity
@@ -432,8 +436,9 @@ namespace cisc0 {
 		}
 	}
 
-    void CoreModel1::arithmeticOperation(const DecodedInstruction& inst) {
+    void CoreModel1::arithmeticOperation() {
         static constexpr auto group = Operation::Arithmetic;
+        const auto& inst = _instruction[0];
         auto src1 = inst.getImmediateFlag<group>() ? inst.getImmediate<group>() : registerValue(inst.getSourceRegister<group>());
         auto &src0 = registerValue(inst.getDestinationRegister<group>());
         auto minOp = [this, &src0, src1]() {
@@ -462,7 +467,8 @@ namespace cisc0 {
         }
     }
 
-    void CoreModel1::logicalOperation(const DecodedInstruction& inst) {
+    void CoreModel1::logicalOperation() {
+        const auto& inst = _instruction[0];
         static constexpr auto group = Operation::Logical;
         auto result = translate(inst.getSubtype<group>());
         syn::throwOnErrorState(result, "Illegal logical operation!");
@@ -482,7 +488,8 @@ namespace cisc0 {
     }
 
 
-    void CoreModel1::encodingOperation(const DecodedInstruction& inst) {
+    void CoreModel1::encodingOperation() {
+        const auto& inst = _instruction[0];
         switch(inst.getEncodingOperation()) {
             case EncodingOperation::Decode:
                 // connect the result of the logical operations alu to the
@@ -509,7 +516,7 @@ namespace cisc0 {
     Word CoreModel1::getCurrentCodeWord(int offset) {
         return loadWord(getInstructionPointer() + offset);
     }
-    void CoreModel1::tryReadNext(bool readNext) {
+    Word CoreModel1::tryReadNext(bool readNext) {
         return readNext ? tryReadNext<true>() : tryReadNext<false>();
     }
     void CoreModel1::storeWord(RegisterValue address, Word value) {
