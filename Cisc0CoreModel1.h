@@ -61,15 +61,6 @@ namespace cisc0 {
 			bool shouldExecute() const noexcept { return execute; }
 		private:
 			void dispatch();
-            template<bool readNext>
-            inline Word tryReadNext() {
-                if (!readNext) {
-                    return 0;
-                }
-                incrementInstructionPointer();
-                return getCurrentCodeWord();
-            }
-            Word tryReadNext(bool readNext);
 			RegisterValue retrieveImmediate(byte bitmask) noexcept;
 			Word getCurrentCodeWord(int offset = 0);
         protected:

@@ -92,7 +92,6 @@ namespace cisc0 {
 
     void CoreModel1::dispatch() {
         const auto& current = _instruction[0];
-        auto tControl = current.getControl();
         auto swapOperation = [this, &current]() noexcept {
             constexpr auto group = Operation::Swap;
             auto dInd = current.getDestinationRegister<group>();
@@ -121,7 +120,7 @@ namespace cisc0 {
             auto bmask = current.getBitmask<group>();
             registerValue(dInd) = retrieveImmediate(bmask);
         };
-        switch(tControl) {
+        switch(current.getControl()) {
             case Operation::Shift:
                 shiftOperation();
                 break;
@@ -515,9 +514,6 @@ namespace cisc0 {
     }
     Word CoreModel1::getCurrentCodeWord(int offset) {
         return loadWord(getInstructionPointer() + offset);
-    }
-    Word CoreModel1::tryReadNext(bool readNext) {
-        return readNext ? tryReadNext<true>() : tryReadNext<false>();
     }
     void CoreModel1::storeWord(RegisterValue address, Word value) {
 		if (address == ArchitectureConstants::TerminateAddress) {
