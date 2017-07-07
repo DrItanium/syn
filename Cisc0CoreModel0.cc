@@ -46,18 +46,17 @@ namespace cisc0 {
         }
     }
 
-    CoreModel0::CoreModel0() noexcept : Core(), _bus(0x00000000, 0xFFFFFFFF, "Cisc0CoreModel0IOBus.clp")  { }
+    CoreModel0::CoreModel0() noexcept : Parent("Cisc0CoreModel0IOBus.clp") { }
     CoreModel0::~CoreModel0() noexcept { }
 
     void CoreModel0::initialize() {
-        cisc0::installAssemblerParsingState(_bus.getRawEnvironment());
+        Parent::initialize();
 		gpr.initialize();
-		_bus.initialize();
 		getInstructionPointer() = ArchitectureConstants::StartingIPAddress;
     }
 
     void CoreModel0::shutdown() {
-		_bus.shutdown();
+        Parent::shutdown();
         gpr.shutdown();
 	}
 

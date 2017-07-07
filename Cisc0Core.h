@@ -155,11 +155,17 @@ namespace cisc0 {
 		return hexToText(syn::decodeBits<RegisterValue, byte, mask, shift>(value));
 	}
 	class Core : public syn::ClipsCore {
+        public:
+			using IOBus = syn::CLIPSIOController<Word, CLIPSInteger>;
+            using RegisterFile = syn::FixedSizeLoadStoreUnit<RegisterValue, byte, ArchitectureConstants::RegisterCount>;
+            static constexpr RegisterValue busStart = 0x00000000;
+            static constexpr RegisterValue busEnd = 0xFFFFFFFF;
 		public:
-			Core() noexcept { }
+			Core(const std::string& busMicrocodePath, RegisterValue ioStart = busStart, RegisterValue ioEnd = busEnd) noexcept;
 			virtual ~Core() noexcept { }
-			bool shouldExecute() const noexcept { return execute; }
 			virtual bool handleOperation(void* env, CLIPSValue* ret) override;
+            virtual void initialize() override;
+            virtual void shutdown() override;
         protected:
             void incrementAddress(RegisterValue& ptr) noexcept;
             void decrementAddress(RegisterValue& ptr) noexcept;
@@ -187,8 +193,8 @@ namespace cisc0 {
             virtual Word loadWord(RegisterValue address) = 0;
 
 		protected:
-			bool execute = true,
-				 advanceIp = true;
+			bool advanceIp = true;
+            IOBus _bus;
 	};
 
 

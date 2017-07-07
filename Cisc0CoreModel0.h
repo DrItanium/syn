@@ -43,16 +43,14 @@
 
 namespace cisc0 {
 	class CoreModel0 : public Core {
-		public:
-			using IOBus = syn::CLIPSIOController<Word, CLIPSInteger>;
-            using RegisterFile = syn::FixedSizeLoadStoreUnit<RegisterValue, byte, ArchitectureConstants::RegisterCount>;
+        public:
+            using Parent = Core;
 		public:
 			CoreModel0() noexcept;
 			virtual ~CoreModel0() noexcept;
 			virtual void initialize() override;
 			virtual void shutdown() override;
 			virtual bool cycle() override;
-			bool shouldExecute() const noexcept { return execute; }
 		private:
 			void dispatch(const DecodedInstruction& inst);
             template<bool readNext>
@@ -86,11 +84,8 @@ namespace cisc0 {
             void arithmeticOperation(const DecodedInstruction& inst);
             void shiftOperation(const DecodedInstruction& inst);
 		private:
-			bool execute = true,
-				 advanceIp = true;
 			bool conditionRegister = false;
 			RegisterFile gpr;
-			IOBus _bus;
 	};
 
 

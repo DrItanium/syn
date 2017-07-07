@@ -49,8 +49,7 @@ namespace cisc0 {
      */
 	class CoreModel1 : public Core {
 		public:
-			using IOBus = syn::CLIPSIOController<Word, CLIPSInteger>;
-            using RegisterFile = syn::FixedSizeLoadStoreUnit<RegisterValue, byte, ArchitectureConstants::RegisterCount>;
+            using Parent = Core;
             static constexpr auto instructionCacheWidth = 3;
 		public:
 			CoreModel1() noexcept;
@@ -58,7 +57,6 @@ namespace cisc0 {
 			virtual void initialize() override;
 			virtual void shutdown() override;
 			virtual bool cycle() override;
-			bool shouldExecute() const noexcept { return execute; }
 		private:
 			void dispatch();
 			RegisterValue retrieveImmediate(byte bitmask) noexcept;
@@ -86,17 +84,14 @@ namespace cisc0 {
             void arithmeticOperation();
             void shiftOperation();
 		private:
+			bool conditionRegister = false;
+			RegisterFile _gpr;
             // The actual instruction is four words wide but instructions are
             // variable width up three words! It is up to the internal code to
             // increment the address pointer as we see fit! The internal is
             // only aware of this fact, the external instruction set is not
             // aware of this fact!
             // store three words worth of data!
-			bool execute = true,
-				 advanceIp = true;
-			bool conditionRegister = false;
-			RegisterFile _gpr;
-			IOBus _bus;
             DecodedInstruction _instruction[instructionCacheWidth];
 	};
 

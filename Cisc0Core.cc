@@ -33,7 +33,14 @@
 #include "Cisc0ClipsExtensions.h"
 
 namespace cisc0 {
-
+    Core::Core(const std::string& busUcode, RegisterValue ioStart, RegisterValue ioEnd) noexcept : _bus(ioStart, ioEnd, busUcode) { }
+    void Core::initialize() {
+        cisc0::installAssemblerParsingState(_bus.getRawEnvironment());
+		_bus.initialize();
+    }
+    void Core::shutdown() {
+        _bus.shutdown();
+    }
     void Core::incrementAddress(RegisterValue& ptr) noexcept {
         ++ptr;
     }
