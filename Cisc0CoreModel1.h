@@ -65,8 +65,6 @@ namespace cisc0 {
 			RegisterValue& registerValue(byte index) override;
 			bool& getConditionRegister() noexcept override  { return conditionRegister; }
 
-			virtual void storeWord(RegisterValue address, Word value) override;
-			virtual Word loadWord(RegisterValue address) override;
 		private:
             void moveToCondition(byte index) noexcept;
             void moveFromCondition(byte index) noexcept;

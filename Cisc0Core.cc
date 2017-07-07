@@ -101,4 +101,21 @@ namespace cisc0 {
 	RegisterValue Core::popRegisterValue() {
 		return popRegisterValue(getStackPointer());
 	}
+
+    void Core::storeWord(RegisterValue address, Word value) {
+        if (address == ArchitectureConstants::TerminateAddress) {
+            execute = false;
+            advanceIp = false;
+        } else {
+            _bus.write(address, value);
+        }
+    }
+
+    Word Core::loadWord(RegisterValue address) {
+        if (address == ArchitectureConstants::TerminateAddress) {
+            return 0;
+        } else {
+            return _bus.read(address);
+        }
+    }
 }

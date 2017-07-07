@@ -490,17 +490,6 @@ namespace cisc0 {
     Word CoreModel0::getCurrentCodeWord() {
         return loadWord(getInstructionPointer());
     }
-    void CoreModel0::storeWord(RegisterValue address, Word value) {
-		if (address == ArchitectureConstants::TerminateAddress) {
-			execute = false;
-			advanceIp = false;
-		} else {
-			_bus.write(address, value);
-		}
-    }
-    Word CoreModel0::loadWord(RegisterValue address) {
-		return _bus.read(address);
-    }
     Word CoreModel0::tryReadNext(bool readNext) {
         return readNext ? tryReadNext<true>() : tryReadNext<false>();
     }

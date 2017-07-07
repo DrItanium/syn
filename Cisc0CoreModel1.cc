@@ -514,15 +514,4 @@ namespace cisc0 {
     Word CoreModel1::getCurrentCodeWord(int offset) {
         return loadWord(getInstructionPointer() + offset);
     }
-    void CoreModel1::storeWord(RegisterValue address, Word value) {
-		if (address == ArchitectureConstants::TerminateAddress) {
-			execute = false;
-			advanceIp = false;
-		} else {
-			_bus.write(address, value);
-		}
-    }
-    Word CoreModel1::loadWord(RegisterValue address) {
-		return _bus.read(address);
-    }
 }

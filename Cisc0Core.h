@@ -189,8 +189,8 @@ namespace cisc0 {
             RegisterValue popRegisterValue();
 
             virtual RegisterValue& registerValue(byte index) = 0;
-            virtual void storeWord(RegisterValue address, Word value) = 0;
-            virtual Word loadWord(RegisterValue address) = 0;
+            virtual void storeWord(RegisterValue address, Word value);
+            virtual Word loadWord(RegisterValue address);
 
 		protected:
 			bool advanceIp = true;
