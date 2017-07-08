@@ -72,12 +72,12 @@ namespace cisc0 {
 	}
 
     bool CoreModel1::cycle() {
+        for (auto i = 0; i < instructionCacheWidth; ++i) {
+            _instruction[i] = loadWord(getInstructionPointer() + i);
+        }
         if (debugEnabled()) {
             std::cout << "Current Instruction Location: " << std::hex << getInstructionPointer() << std::endl;
-            std::cout << "\tCurrent word value: " << std::hex << getCurrentCodeWord() << std::endl;
-        }
-        for (auto i = 0; i < instructionCacheWidth; ++i) {
-            _instruction[i] = getCurrentCodeWord(i);
+            std::cout << "\tCurrent word value: " << std::hex << firstWord().getRawValue() << std::endl;
         }
         dispatch();
         if (advanceIp) {
@@ -443,8 +443,5 @@ namespace cisc0 {
 
     RegisterValue& CoreModel1::registerValue(byte index) {
         return _gpr[index];
-    }
-    Word CoreModel1::getCurrentCodeWord(int offset) {
-        return loadWord(getInstructionPointer() + offset);
     }
 }

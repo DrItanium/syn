@@ -60,11 +60,9 @@ namespace cisc0 {
 		private:
 			void dispatch();
 			RegisterValue retrieveImmediate(byte bitmask) noexcept;
-			Word getCurrentCodeWord(int offset = 0);
         protected:
 			RegisterValue& registerValue(byte index) override;
 			bool& getConditionRegister() noexcept override  { return conditionRegister; }
-
 		private:
             void moveToCondition(byte index) noexcept;
             void moveFromCondition(byte index) noexcept;
@@ -73,7 +71,6 @@ namespace cisc0 {
             void extendedOperation();
 			void parsingOperation();
 			void performEncodeOp();
-        private:
             void compareOperation();
             void systemCallOperation();
             void branchOperation();
@@ -81,7 +78,6 @@ namespace cisc0 {
             void logicalOperation();
             void arithmeticOperation();
             void shiftOperation();
-        private:
             inline const DecodedInstruction& firstWord() const noexcept { return _instruction[0]; }
 		private:
 			bool conditionRegister = false;
