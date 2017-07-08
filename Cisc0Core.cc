@@ -169,6 +169,33 @@ namespace cisc0 {
     void Core::unsetBit() {
         defaultSliceBitAndCheck<syn::Comparator::StandardOperations::Neq>();
     }
+    void Core::encodeBits() {
+        getAddressRegister() = syn::encodeBits<RegisterValue, RegisterValue>(getAddressRegister(), getValueRegister(), getMaskRegister(), getShiftRegister());
+    }
+    void Core::decodeBits() {
+        // connect the result of the logical operations alu to the
+        // shifter alu then store the result in the value register
+        getValueRegister() = syn::decodeBits<RegisterValue, RegisterValue>(getAddressRegister(), getMaskRegister(), getShiftRegister());
+    }
+
+    void Core::defaultEncodingOperation(EncodingOperation op) {
+        switch(op) {
+            case EncodingOperation::Decode:
+                decodeBits();
+                break;
+            case EncodingOperation::Encode:
+                encodeBits();
+                break;
+            case EncodingOperation::BitSet:
+                setBit();
+                break;
+            case EncodingOperation::BitUnset:
+                unsetBit();
+                break;
+            default:
+                throw syn::Problem("Illegal complex encoding operation defined!");
+        }
+    }
 
 
 }

@@ -213,7 +213,9 @@ namespace cisc0 {
             }
             virtual void setBit();
             virtual void unsetBit();
-
+            virtual void decodeBits();
+            virtual void encodeBits();
+            virtual void defaultEncodingOperation(EncodingOperation op);
 		protected:
 			bool advanceIp = true;
             IOBus _bus;

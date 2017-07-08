@@ -422,24 +422,7 @@ namespace cisc0 {
     }
 
     void CoreModel0::encodingOperation(const DecodedInstruction& inst) {
-        switch(inst.getEncodingOperation()) {
-            case EncodingOperation::Decode:
-                // connect the result of the logical operations alu to the
-                // shifter alu then store the result in the value register
-                getValueRegister() = syn::decodeBits<RegisterValue, RegisterValue>(getAddressRegister(), getMaskRegister(), getShiftRegister());
-                break;
-            case EncodingOperation::Encode:
-                getAddressRegister() = syn::encodeBits<RegisterValue, RegisterValue>(getAddressRegister(), getValueRegister(), getMaskRegister(), getShiftRegister());
-                break;
-            case EncodingOperation::BitSet:
-                setBit();
-                break;
-            case EncodingOperation::BitUnset:
-                unsetBit();
-                break;
-            default:
-                throw syn::Problem("Illegal complex encoding operation defined!");
-        }
+        defaultEncodingOperation(inst.getEncodingOperation());
     }
 
     RegisterValue& CoreModel0::registerValue(byte index) {
