@@ -90,7 +90,7 @@ namespace cisc0 {
     }
 
     void CoreModel1::dispatch() {
-        const auto& current = _instruction[0];
+        const auto& current = firstWord();
         auto swapOperation = [this, &current]() noexcept {
             constexpr auto group = Operation::Swap;
             auto dInd = current.getDestinationRegister<group>();
@@ -154,7 +154,7 @@ namespace cisc0 {
         }
     }
     void CoreModel1::branchOperation() {
-        const auto& inst = _instruction[0];
+        const auto& inst = firstWord();
         bool isCall, isCond;
         std::tie(isCall, isCond) = inst.getOtherBranchFlags();
         advanceIp = true;
@@ -193,7 +193,7 @@ namespace cisc0 {
     }
 
     void CoreModel1::compareOperation() {
-        const auto& inst = _instruction[0];
+        const auto& inst = firstWord();
         static constexpr auto group = Operation::Compare;
 		auto compareResult = inst.getSubtype<group>();
 		auto destinationIndex = inst.getDestinationRegister<group>();
@@ -217,7 +217,7 @@ namespace cisc0 {
         }
     }
     void CoreModel1::memoryOperation() {
-        const auto& inst = _instruction[0];
+        const auto& inst = firstWord();
         static constexpr auto group = Operation::Memory;
         auto rawMask = inst.getBitmask<group>();
         auto useLower = readLower(rawMask);
@@ -314,7 +314,7 @@ namespace cisc0 {
     }
 
     void CoreModel1::complexOperation() {
-        auto type = _instruction[0].getSubtype<Operation::Complex>();
+        auto type = firstWord().getSubtype<Operation::Complex>();
         switch(type) {
             case ComplexSubTypes::Encoding:
                 encodingOperation();
@@ -330,7 +330,7 @@ namespace cisc0 {
         }
     }
     void CoreModel1::shiftOperation() {
-        const auto& inst = _instruction[0];
+        const auto& inst = firstWord();
         static constexpr auto group = Operation::Shift;
         auto &destination = registerValue(inst.getDestinationRegister<group>());
         auto source = (inst.getImmediateFlag<group>() ? static_cast<RegisterValue>(inst.getImmediate<group>()) : registerValue(inst.getSourceRegister<group>()));
@@ -339,7 +339,7 @@ namespace cisc0 {
     }
 
     void CoreModel1::extendedOperation() {
-        const auto& inst = _instruction[0];
+        const auto& inst = firstWord();
 		constexpr auto group = ComplexSubTypes::Extended;
 		auto wordsBeforeFirstZero = [this]() {
 			auto addr = getAddressRegister();
@@ -384,7 +384,7 @@ namespace cisc0 {
         }
     }
 	void CoreModel1::parsingOperation() {
-        const auto& inst = _instruction[0];
+        const auto& inst = firstWord();
 		switch(inst.getParsingOperation()) {
 			case ParsingOperation::Hex8ToRegister:
 				hex8ToRegister();
@@ -404,28 +404,20 @@ namespace cisc0 {
 
     void CoreModel1::arithmeticOperation() {
         static constexpr auto group = Operation::Arithmetic;
-        const auto& inst = _instruction[0];
+        const auto& inst = firstWord();
         auto src1 = inst.getImmediateFlag<group>() ? inst.getImmediate<group>() : registerValue(inst.getSourceRegister<group>());
         auto &src0 = registerValue(inst.getDestinationRegister<group>());
-        auto minOp = [this, &src0, src1]() {
-            getValueRegister() = src0 > src1 ? src1 : src0;
-        };
-        auto maxOp = [this, &src0, src1]() {
-            getValueRegister() = src0 > src1 ? src0 : src1;
-        };
-        auto defaultArithmetic = [this, &inst, &src0, src1]() {
-            auto result = translate(inst.getSubtype<group>());
+        auto defaultArithmetic = [&src0, src1, subType = inst.getSubtype<group>()]() {
+            auto result = translate(subType);
             syn::throwOnErrorState(result, "Illegal arithmetic operation!");
-            auto src = src1;
-            auto& dest = src0;
-            dest = syn::ALU::performOperation<RegisterValue>(result, dest, src);
+            src0 = syn::ALU::performOperation<RegisterValue>(result, src0, src1);
         };
         switch(inst.getSubtype<group>()) {
             case ArithmeticOps::Min:
-                minOp();
+                getValueRegister() = src0 > src1 ? src1 : src0;
                 break;
             case ArithmeticOps::Max:
-                maxOp();
+                getValueRegister() = src0 > src1 ? src0 : src1;
                 break;
             default:
                 defaultArithmetic();
@@ -434,7 +426,7 @@ namespace cisc0 {
     }
 
     void CoreModel1::logicalOperation() {
-        const auto& inst = _instruction[0];
+        const auto& inst = firstWord();
         static constexpr auto group = Operation::Logical;
         auto result = translate(inst.getSubtype<group>());
         syn::throwOnErrorState(result, "Illegal logical operation!");
@@ -455,7 +447,7 @@ namespace cisc0 {
 
 
     void CoreModel1::encodingOperation() {
-        const auto& inst = _instruction[0];
+        const auto& inst = firstWord();
         switch(inst.getEncodingOperation()) {
             case EncodingOperation::Decode:
                 // connect the result of the logical operations alu to the

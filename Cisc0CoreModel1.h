@@ -81,6 +81,8 @@ namespace cisc0 {
             void logicalOperation();
             void arithmeticOperation();
             void shiftOperation();
+        private:
+            inline const DecodedInstruction& firstWord() const noexcept { return _instruction[0]; }
 		private:
 			bool conditionRegister = false;
 			RegisterFile _gpr;
