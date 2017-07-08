@@ -191,6 +191,12 @@ namespace cisc0 {
             virtual RegisterValue& registerValue(byte index) = 0;
             virtual void storeWord(RegisterValue address, Word value);
             virtual Word loadWord(RegisterValue address);
+            Word loadWord(RegisterValue address, byte offset);
+            void storeWord(RegisterValue address, byte offset, Word value);
+        protected:
+            virtual void returnOperation() noexcept;
+            virtual void hex8ToRegister();
+            virtual void registerToHex8();
 
 		protected:
 			bool advanceIp = true;

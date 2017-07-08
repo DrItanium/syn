@@ -118,4 +118,47 @@ namespace cisc0 {
             return _bus.read(address);
         }
     }
+
+    void Core::returnOperation() noexcept {
+        // pop the top address off of the call stack and place it in the
+        // instruction pointer!
+        getInstructionPointer() = popRegisterValue(getCallStackPointer());
+        advanceIp = false;
+    }
+
+    void Core::storeWord(RegisterValue addr, byte offset, Word value) {
+        storeWord(addr + offset, value);
+    }
+
+    Word Core::loadWord(RegisterValue addr, byte offset) {
+        return loadWord(addr + offset);
+    }
+
+    void Core::hex8ToRegister() {
+        // 1) use the address contained in address to read the next 8 words
+        // 2) Parse each word as an ascii character and convert it into a 4 bit quantity
+        // 3) Place that 4bit quantity into the appropriate position in value
+        auto addr = getAddressRegister();
+        auto value = syn::encodeBits<RegisterValue, byte, 0x0000000F, 0>(0, convertTextToHex(loadWord(addr)));
+        value = syn::encodeBits<RegisterValue, byte, 0x000000F0, 4>(value, convertTextToHex(loadWord(addr, 1)));
+        value = syn::encodeBits<RegisterValue, byte, 0x00000F00, 8>(value, convertTextToHex(loadWord(addr, 2)));
+        value = syn::encodeBits<RegisterValue, byte, 0x0000F000, 12>(value, convertTextToHex(loadWord(addr, 3)));
+        value = syn::encodeBits<RegisterValue, byte, 0x000F0000, 16>(value, convertTextToHex(loadWord(addr, 4)));
+        value = syn::encodeBits<RegisterValue, byte, 0x00F00000, 20>(value, convertTextToHex(loadWord(addr, 5)));
+        value = syn::encodeBits<RegisterValue, byte, 0x0F000000, 24>(value, convertTextToHex(loadWord(addr, 6)));
+        getValueRegister() = syn::encodeBits<RegisterValue, byte, 0xF0000000, 28>(value, convertTextToHex(loadWord(addr, 7)));
+    }
+
+    void Core::registerToHex8() {
+        auto addr = getAddressRegister();
+        auto value = getValueRegister();
+        storeWord(addr, extractHexAndConvertToText<0x0000000F, 0>(value));
+        storeWord(addr, 1, extractHexAndConvertToText<0x000000F0, 4>(value));
+        storeWord(addr, 2, extractHexAndConvertToText<0x00000F00, 8>(value));
+        storeWord(addr, 3, extractHexAndConvertToText<0x0000F000, 12>(value));
+        storeWord(addr, 4, extractHexAndConvertToText<0x000F0000, 16>(value));
+        storeWord(addr, 5, extractHexAndConvertToText<0x00F00000, 20>(value));
+        storeWord(addr, 6, extractHexAndConvertToText<0x0F000000, 24>(value));
+        storeWord(addr, 7, extractHexAndConvertToText<0xF0000000, 28>(value));
+    }
 }
