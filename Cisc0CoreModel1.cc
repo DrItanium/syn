@@ -435,15 +435,6 @@ namespace cisc0 {
         auto& dest = registerValue(inst.getDestinationRegister<group>());
         dest = syn::ALU::performOperation<RegisterValue>(op, dest, source1);
     }
-    template<syn::Comparator::StandardOperations op>
-    constexpr RegisterValue sliceBitAndCheck(RegisterValue a, RegisterValue b) noexcept {
-        using T = RegisterValue;
-        return syn::Comparator::performOperation<op, T>(
-                syn::ALU::performOperation<translate(LogicalOps::And), T>(
-                    syn::ALU::performOperation<ALUOperation::ShiftRight, T>(
-                        a,
-                        b), 0x1), 1);
-    }
 
 
     void CoreModel1::encodingOperation() {

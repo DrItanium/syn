@@ -151,9 +151,19 @@ namespace cisc0 {
 		}
 	}
 	template<RegisterValue mask, RegisterValue shift>
-	static constexpr Word extractHexAndConvertToText(RegisterValue value) noexcept {
+	constexpr Word extractHexAndConvertToText(RegisterValue value) noexcept {
 		return hexToText(syn::decodeBits<RegisterValue, byte, mask, shift>(value));
 	}
+
+    template<syn::Comparator::StandardOperations op>
+    constexpr RegisterValue sliceBitAndCheck(RegisterValue a, RegisterValue b) noexcept {
+        using T = RegisterValue;
+        return syn::Comparator::performOperation<op, T>(
+                syn::ALU::performOperation<translate(LogicalOps::And), T>(
+                    syn::ALU::performOperation<ALUOperation::ShiftRight, T>(
+                        a,
+                        b), 0x1), 1);
+    }
 	class Core : public syn::ClipsCore {
         public:
 			using IOBus = syn::CLIPSIOController<Word, CLIPSInteger>;
