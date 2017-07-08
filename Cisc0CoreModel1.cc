@@ -449,10 +449,10 @@ namespace cisc0 {
                 getAddressRegister() = syn::encodeBits<RegisterValue, RegisterValue>(getAddressRegister(), getValueRegister(), getMaskRegister(), getShiftRegister());
                 break;
             case EncodingOperation::BitSet:
-                getConditionRegister() = sliceBitAndCheck<syn::Comparator::StandardOperations::Eq>(getAddressRegister(), getFieldRegister());
+                setBit();
                 break;
             case EncodingOperation::BitUnset:
-                getConditionRegister() = sliceBitAndCheck<syn::Comparator::StandardOperations::Neq>(getAddressRegister(), getFieldRegister());
+                unsetBit();
                 break;
             default:
                 throw syn::Problem("Illegal complex encoding operation defined!");

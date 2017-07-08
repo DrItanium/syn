@@ -161,4 +161,14 @@ namespace cisc0 {
         storeWord(addr, 6, extractHexAndConvertToText<0x0F000000, 24>(value));
         storeWord(addr, 7, extractHexAndConvertToText<0xF0000000, 28>(value));
     }
+
+    void Core::setBit() {
+        defaultSliceBitAndCheck<syn::Comparator::StandardOperations::Eq>();
+    }
+
+    void Core::unsetBit() {
+        defaultSliceBitAndCheck<syn::Comparator::StandardOperations::Neq>();
+    }
+
+
 }

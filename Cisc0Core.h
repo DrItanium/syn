@@ -207,6 +207,12 @@ namespace cisc0 {
             virtual void returnOperation() noexcept;
             virtual void hex8ToRegister();
             virtual void registerToHex8();
+            template<syn::Comparator::StandardOperations op>
+            inline void defaultSliceBitAndCheck() {
+                getConditionRegister() = sliceBitAndCheck<op>(getAddressRegister(), getFieldRegister());
+            }
+            virtual void setBit();
+            virtual void unsetBit();
 
 		protected:
 			bool advanceIp = true;
