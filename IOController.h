@@ -40,7 +40,6 @@
 
 namespace syn {
 
-#define IO_CONTROLLER_REFERENCE USER_ENVIRONMENT_DATA
 struct IOControllerWrapper {
     CLIPSInteger baseAddress;
     CLIPSInteger endAddress;
@@ -71,15 +70,13 @@ class CLIPSIOController : public AddressableIODevice<D, A> {
             installExtensions(_env);
 			CLIPS_installDefaultIODevices(_env);
 			// install custom functions into the environment
-			EnvAddUDF(theEnv, "io-controller:get-base-address", "l", getCLIPSIOControllerBaseAddress, "getCLIPSIOControllerBaseAddress", 0, 0, "", nullptr);
-			EnvAddUDF(theEnv, "io-controller:get-end-address", "l", getCLIPSIOControllerEndAddress, "getCLIPSIOControllerEndAddress", 0, 0, "", nullptr);
-			EnvAddUDF(theEnv, "io-controller:get-address-size", "l", getCLIPSIOControllerSize, "getCLIPSIOControllerSize", 0, 0, "", nullptr);
+			EnvAddUDF(theEnv, "io-controller:get-base-address", "l", getCLIPSIOControllerBaseAddress, "getCLIPSIOControllerBaseAddress", 0, 0, "", &_wrapper);
+			EnvAddUDF(theEnv, "io-controller:get-end-address", "l", getCLIPSIOControllerEndAddress, "getCLIPSIOControllerEndAddress", 0, 0, "", &_wrapper);
+			EnvAddUDF(theEnv, "io-controller:get-address-size", "l", getCLIPSIOControllerSize, "getCLIPSIOControllerSize", 0, 0, "", &_wrapper);
             // save self into the environment as a form of callback!
-            AllocateEnvironmentData(_env, IO_CONTROLLER_REFERENCE, sizeof(IOControllerWrapper), NULL);
-            auto wrap = static_cast<IOControllerWrapper*>(GetEnvironmentData(_env, IO_CONTROLLER_REFERENCE));
-            wrap->baseAddress = this->baseAddress();
-            wrap->endAddress = this->endAddress();
-            wrap->size = this->size();
+			_wrapper.baseAddress = this->baseAddress();
+			_wrapper.endAddress = this->endAddress();
+			_wrapper.size = this->size();
 			if (!EnvBatchStar(theEnv, _bootstrapLocation.c_str())) {
 				std::stringstream msg;
 				msg << "Could not load the bootstrap microcode file " << _bootstrapLocation << "! Make sure the file exists and is accessible!";
@@ -114,6 +111,7 @@ class CLIPSIOController : public AddressableIODevice<D, A> {
         std::string getBootstrapLocation() const noexcept { return _bootstrapLocation; }
         void* getRawEnvironment() const noexcept { return _env; }
 	private:
+		IOControllerWrapper _wrapper;
 		std::string _bootstrapLocation;
 		void* _env;
 };

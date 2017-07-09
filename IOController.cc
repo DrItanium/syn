@@ -26,19 +26,19 @@
 namespace syn {
 void getCLIPSIOControllerBaseAddress(UDFContext* context, CLIPSValue* ret) {
     auto env = UDFContextEnvironment(context);
-    auto wrap = static_cast<IOControllerWrapper*>(GetEnvironmentData(env, IO_CONTROLLER_REFERENCE));
+	auto wrap = static_cast<IOControllerWrapper*>(GetEnvironmentFunctionContext(env));
     CVSetInteger(ret, wrap->baseAddress);
 }
 
 void getCLIPSIOControllerEndAddress(UDFContext* context, CLIPSValue* ret) {
     auto env = UDFContextEnvironment(context);
-    auto wrap = static_cast<IOControllerWrapper*>(GetEnvironmentData(env, IO_CONTROLLER_REFERENCE));
+	auto wrap = static_cast<IOControllerWrapper*>(GetEnvironmentFunctionContext(env));
     CVSetInteger(ret, wrap->endAddress);
 }
 
 void getCLIPSIOControllerSize(UDFContext* context, CLIPSValue* ret) {
     auto env = UDFContextEnvironment(context);
-    auto wrap = static_cast<IOControllerWrapper*>(GetEnvironmentData(env, IO_CONTROLLER_REFERENCE));
+	auto wrap = static_cast<IOControllerWrapper*>(GetEnvironmentFunctionContext(env));
     CVSetInteger(ret, wrap->size);
 }
 
