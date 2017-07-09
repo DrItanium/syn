@@ -199,8 +199,7 @@
                    entries:
                    GetModelNumber
                    GetTerminateAddress
-                   SetTerminateAddress)
-          )
+                   SetTerminateAddress))
 
 (deffacts cisc0-file-layouts-and-requests
           (include "ExecutionUnits.h")
