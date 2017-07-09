@@ -33,8 +33,8 @@ namespace syn {
 
 	class Problem {
 		public:
-			Problem(const std::string& message) : _msg(message) { }
-			std::string what() const { return _msg; }
+			Problem(const std::string& message) noexcept : _msg(message) { }
+			const std::string& what() const noexcept { return _msg; }
 		private:
 			std::string _msg;
 	};

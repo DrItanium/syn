@@ -207,7 +207,7 @@ namespace syn {
 			inline Word getValue() const noexcept { return _value; }
 			inline void setValue(Word value) noexcept { _value = value; }
 			inline bool isLabel() const noexcept { return _isLabel; }
-			inline std::string getLabel() const noexcept { return _label; }
+			inline const std::string& getLabel() const noexcept { return _label; }
 			inline int getWidth() const noexcept { return _width; }
 		protected:
 			int _width;
@@ -233,7 +233,7 @@ namespace syn {
 	class NameToAddressMapping : public NumberContainer<Address> {
 		public:
 			using NumberContainer<Address>::NumberContainer;
-			std::string getTitle() const noexcept { return _title; }
+			const std::string& getTitle() const noexcept { return _title; }
 			void setTitle(const std::string& value) noexcept { _title = value; }
 		private:
 			std::string _title;

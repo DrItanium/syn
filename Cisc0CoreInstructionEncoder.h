@@ -83,10 +83,13 @@ namespace cisc0 {
 		void setFullImmediate(RegisterValue val) noexcept { _fullImmediate = val; }
 		void markAsLabel() noexcept { _isLabel = true; }
 		void markAsNotLabel() noexcept { _isLabel = false; }
-		void setLabelName(const std::string& name) noexcept { _labelValue = name; markAsLabel(); }
+		void setLabelName(const std::string& name) noexcept { 
+			_labelValue = name; 
+			markAsLabel(); 
+		}
 
-		bool isLabel() const noexcept { return _isLabel; }
-		std::string getLabelValue() const noexcept { return _labelValue; }
+		inline bool isLabel() const noexcept { return _isLabel; }
+		const std::string& getLabelValue() const noexcept { return _labelValue; }
 
 		RegisterValue getAddress() const noexcept { return _address; }
 
