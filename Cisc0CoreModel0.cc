@@ -79,8 +79,13 @@ namespace cisc0 {
 
     void CoreModel0::dispatch(const DecodedInstruction& current) {
         auto tControl = current.getControl();
-        auto swapOperation = [this, &current]() noexcept {
+        auto swapOperation = [this, &current]() {
             constexpr auto group = Operation::Swap;
+			// make sure that the control bits are always zero in this case so
+			// that backwards compatibility isn't broken
+			if (current.getSwapControlBits() != 0) {
+				throw syn::Problem("Control bits for swap must be zero!");
+			}
             auto dInd = current.getDestinationRegister<group>();
             auto sInd = current.getSourceRegister<group>();
             if (dInd != sInd) {
