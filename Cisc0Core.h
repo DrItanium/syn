@@ -216,6 +216,7 @@ namespace cisc0 {
             virtual void decodeBits();
             virtual void encodeBits();
             virtual void defaultEncodingOperation(EncodingOperation op);
+            virtual bool isTerminateAddress(RegisterValue address) const noexcept;
 		protected:
 			bool advanceIp = true;
             IOBus _bus;

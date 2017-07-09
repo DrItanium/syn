@@ -61,8 +61,9 @@ namespace cisc0 {
 			void dispatch();
 			RegisterValue retrieveImmediate(byte bitmask) noexcept;
         protected:
-			RegisterValue& registerValue(byte index) override;
-			bool& getConditionRegister() noexcept override  { return conditionRegister; }
+			virtual RegisterValue& registerValue(byte index) override;
+			virtual bool& getConditionRegister() noexcept override  { return conditionRegister; }
+			virtual bool isTerminateAddress(RegisterValue address) const noexcept override;
 		private:
             void moveToCondition(byte index) noexcept;
             void moveFromCondition(byte index) noexcept;
@@ -78,6 +79,7 @@ namespace cisc0 {
             void logicalOperation();
             void arithmeticOperation();
             void shiftOperation();
+			void featureCheckOperation();
             inline const DecodedInstruction& firstWord() const noexcept { return _instruction[0]; }
 		private:
 			bool conditionRegister = false;
@@ -89,6 +91,7 @@ namespace cisc0 {
             // aware of this fact!
             // store three words worth of data!
             DecodedInstruction _instruction[instructionCacheWidth];
+			cisc0::Address _terminateAddress;
 	};
 
 

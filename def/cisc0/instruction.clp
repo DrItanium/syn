@@ -91,6 +91,7 @@
           (deffield EncodingComplexSubType          0b0000111100000000 8 EncodingOperation)
           (deffield ExtendedComplexSubType          0b0000111100000000 8 ExtendedOperation)
           (deffield ParsingComplexSubType           0b0000111100000000 8 ParsingOperation)
+          (deffield FeatureCheckComplexSubType      0b0000111100000000 8 FeatureCheckOperation)
           (deffield ComplexClassExtendedDestination 0b1111000000000000 12 byte))
 
 
@@ -106,6 +107,7 @@
                    "ArchitectureConstants::MaxInstructionCount"
                    byte
                    entries:
+                   ; Model 0 and greater groups
                    Memory
                    Arithmetic
                    Shift
@@ -163,7 +165,8 @@
                    entries:
                    Encoding
                    Extended
-                   Parsing)
+                   Parsing
+                   FeatureCheck)
           (defenum EncodingOperation
                    16
                    byte
@@ -189,7 +192,15 @@
                    IsEven
                    IncrementValueAddr
                    DecrementValueAddr
-                   WordsBeforeFirstZero))
+                   WordsBeforeFirstZero)
+          (defenum FeatureCheckOperation
+                   16
+                   byte
+                   entries:
+                   GetModelNumber
+                   GetTerminateAddress
+                   SetTerminateAddress)
+          )
 
 (deffacts cisc0-file-layouts-and-requests
           (include "ExecutionUnits.h")
@@ -226,6 +237,7 @@
           (top-level-to-sub-type ComplexSubTypes Encoding -> EncodingOperation)
           (top-level-to-sub-type ComplexSubTypes Extended -> ExtendedOperation)
           (top-level-to-sub-type ComplexSubTypes Parsing   -> ParsingOperation)
+          (top-level-to-sub-type ComplexSubTypes FeatureCheck -> FeatureCheckOperation)
           (top-level-type Operation)
           (top-level-to-sub-type Operation Arithmetic -> ArithmeticOps)
           (top-level-to-sub-type Operation Compare -> CompareStyle)
@@ -364,8 +376,8 @@
                                                           encodeSubType
                                                           (args (variable ReturnType
                                                                           input)
-                                                                   (variable ?q
-                                                                             data))
+                                                                (variable ?q
+                                                                          data))
                                                           (return-statement input))))
                    crlf))
 
@@ -427,7 +439,8 @@
                             ComplexSubTypes
                             Encoding
                             Extended
-                            Parsing)
+                            Parsing
+                            FeatureCheck)
           (defencoder/decoder Bitmask Operation)
           (encoder/decoders Bitmask
                             Operation

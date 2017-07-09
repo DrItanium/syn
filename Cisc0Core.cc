@@ -103,7 +103,7 @@ namespace cisc0 {
 	}
 
     void Core::storeWord(RegisterValue address, Word value) {
-        if (address == ArchitectureConstants::TerminateAddress) {
+        if (isTerminateAddress(address)) {
             execute = false;
             advanceIp = false;
         } else {
@@ -112,11 +112,15 @@ namespace cisc0 {
     }
 
     Word Core::loadWord(RegisterValue address) {
-        if (address == ArchitectureConstants::TerminateAddress) {
+        if (isTerminateAddress(address)) {
             return 0;
         } else {
             return _bus.read(address);
         }
+    }
+
+    bool Core::isTerminateAddress(RegisterValue address) const noexcept {
+        return address == ArchitectureConstants::TerminateAddress;
     }
 
     void Core::returnOperation() noexcept {

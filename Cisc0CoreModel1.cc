@@ -58,6 +58,7 @@ namespace cisc0 {
         Parent::initialize();
 		_gpr.initialize();
 		getInstructionPointer() = ArchitectureConstants::StartingIPAddress;
+		_terminateAddress = ArchitectureConstants::TerminateAddress;
     }
 
     void CoreModel1::shutdown() {
@@ -307,6 +308,9 @@ namespace cisc0 {
 			case ComplexSubTypes::Parsing:
 				parsingOperation();
 				break;
+			case ComplexSubTypes::FeatureCheck:
+				featureCheckOperation();
+				break;
             default:
                 throw syn::Problem("Undefined complex subtype!");
         }
@@ -426,4 +430,25 @@ namespace cisc0 {
     RegisterValue& CoreModel1::registerValue(byte index) {
         return _gpr[index];
     }
+
+	bool CoreModel1::isTerminateAddress(RegisterValue address) const noexcept {
+		return address == _terminateAddress;
+	}
+
+	void CoreModel1::featureCheckOperation() {
+		const auto& inst = firstWord();
+		switch (inst.getFeatureCheckOperation()) {
+			case FeatureCheckOperation::GetModelNumber:
+				getValueRegister() = 1;
+				break;
+			case FeatureCheckOperation::GetTerminateAddress:
+				getAddressRegister() = _terminateAddress;
+				break;
+			case FeatureCheckOperation::SetTerminateAddress:
+				_terminateAddress = getValueRegister();
+				break;
+			default:
+				throw syn::Problem("Undefined feature check operation!");
+		}
+	}
 }
