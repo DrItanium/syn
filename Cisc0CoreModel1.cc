@@ -33,29 +33,23 @@
 #include "Cisc0ClipsExtensions.h"
 
 namespace cisc0 {
-    RegisterValue CoreModel1::retrieveImmediate(byte bitmask) noexcept {
-        // the immediate cache will be in positions 1 and 2
-        auto useLower = readLower(bitmask);
-        auto useUpper = readUpper(bitmask);
-        if (!useLower && !useUpper) {
-            return 0;
-        } else {
-            auto offset = 1;
-            auto lower = 0;
-            auto upper = 0;
-            if (useLower) {
-                incrementInstructionPointer();
-                lower = static_cast<RegisterValue>(_instruction[offset].getRawValue());
-                ++offset;
-            }
-            if (useUpper) {
-                incrementInstructionPointer();
-                upper = static_cast<RegisterValue>(_instruction[offset].getRawValue()) << 16;
-                ++offset;
-            }
-            return mask(bitmask) & (lower | upper);
-        }
-    }
+	RegisterValue CoreModel1::retrieveImmediate(byte bitmask) noexcept {
+		// the immediate cache will be in positions 1 and 2
+		auto offset = 1;
+		auto getWord = [this, &offset](auto cond, auto shift) noexcept {
+			if (cond) {
+				incrementInstructionPointer();
+				auto result = _instruction[offset].getRawValue();
+				++offset;
+				return static_cast<RegisterValue>(result) << shift;
+			} else {
+				return static_cast<RegisterValue>(0);
+			}
+		};
+		auto lower = getWord(readLower(bitmask), 0);
+		auto upper = getWord(readUpper(bitmask), 16);
+		return mask(bitmask) & (lower | upper);
+	}
 
     CoreModel1::CoreModel1() noexcept : Parent("Cisc0CoreModel1IOBus.clp")  { }
     CoreModel1::~CoreModel1() noexcept { }
@@ -154,20 +148,12 @@ namespace cisc0 {
         }
     }
     void CoreModel1::branchOperation() {
+		static constexpr auto group = Operation::Branch;
         const auto& inst = firstWord();
         bool isCall, isCond;
         std::tie(isCall, isCond) = inst.getOtherBranchFlags();
         advanceIp = true;
-        auto whereToGo = 0;
-        if (inst.getImmediateFlag<Operation::Branch>()) {
-            incrementInstructionPointer();
-            incrementInstructionPointer();
-            auto lower = static_cast<RegisterValue>(_instruction[1].getRawValue());
-            auto upper = static_cast<RegisterValue>(_instruction[2].getRawValue()) << 16;
-            whereToGo = lower | upper;
-        } else {
-            whereToGo = registerValue(inst.getBranchIndirectDestination());
-        }
+		auto whereToGo = inst.getImmediateFlag<group>() ? retrieveImmediate(0b1111) : registerValue(inst.getBranchIndirectDestination());
         auto shouldUpdateInstructionPointer = isCall || (isCond && getConditionRegister()) || (!isCond);
         if (isCall) {
             // call instruction
@@ -198,10 +184,10 @@ namespace cisc0 {
 		auto compareResult = inst.getSubtype<group>();
 		auto destinationIndex = inst.getDestinationRegister<group>();
         auto normalCompare = [this, destinationIndex, &inst, compareResult]() {
-			auto first = registerValue(destinationIndex);
-			auto second = inst.getImmediateFlag<group>() ? retrieveImmediate(inst.getBitmask<group>()) : registerValue(inst.getSourceRegister<group>());
 			auto compareUnitType = translate(compareResult);
         	syn::throwOnErrorState(compareResult, "Illegal compare type!");
+			auto first = registerValue(destinationIndex);
+			auto second = inst.getImmediateFlag<group>() ? retrieveImmediate(inst.getBitmask<group>()) : registerValue(inst.getSourceRegister<group>());
 			getConditionRegister() = syn::Comparator::performOperation(compareUnitType, first, second);
         };
         switch(compareResult) {
@@ -233,16 +219,12 @@ namespace cisc0 {
             return address;
         };
         auto loadOperation = [this, computeAddress, useLower, useUpper, fullMask, &inst]() {
-            auto& value = getValueRegister();
-            if (!useLower && !useUpper) {
-                value = 0;
-            } else {
-                auto address = computeAddress();
-                auto lower = useLower ? encodeLowerHalf(0, loadWord(address)) : 0;
-                auto upper = useUpper ? encodeUpperHalf(0, loadWord(address + 1)) : 0;
-                auto combinedValue = lower | upper;
-                value = syn::encodeBits<RegisterValue, RegisterValue>(0, combinedValue, fullMask, 0);
-            }
+			auto& value = getValueRegister();
+			auto address = computeAddress();
+			auto lower = useLower ? encodeLowerHalf(0, loadWord(address)) : 0;
+			auto upper = useUpper ? encodeUpperHalf(0, loadWord(address + 1)) : 0;
+			auto combinedValue = lower | upper;
+			value = syn::encodeBits<RegisterValue, RegisterValue>(0, combinedValue, fullMask, 0);
         };
         auto storeOperation = [this, computeAddress, useLower, useUpper, lmask, umask, &inst]() {
             constexpr Word maskCheck = 0xFFFF;
