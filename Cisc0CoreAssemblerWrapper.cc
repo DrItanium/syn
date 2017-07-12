@@ -28,6 +28,12 @@
 #include "Cisc0ClipsExtensions.h"
 #include "Cisc0CoreAssembler.h"
 #include "Cisc0CoreAssemblerWrapper.h"
+#include <pegtl.hh>
+#include <pegtl/analyze.hh>
+#include <pegtl/file_parser.hh>
+#include <pegtl/contrib/raw_string.hh>
+#include <pegtl/contrib/abnf.hh>
+#include <pegtl/parse.hh>
 
 namespace cisc0 {
 

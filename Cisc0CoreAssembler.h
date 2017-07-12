@@ -77,10 +77,11 @@ namespace cisc0 {
 			virtual ~AssemblerWordCreator() { }
 			template<typename Input>
 				void success(const Input& in, AssemblerState& parent) {
+                    auto address = parent.getCurrentAddress();
 					if (_isLabel) {
-						parent.wordsToResolve.emplace_back(parent.getCurrentAddress(), _label, width);
+						parent.wordsToResolve.emplace_back(address, _label, width);
 					} else {
-						parent.wordsToResolve.emplace_back(parent.getCurrentAddress(), _value, width);
+						parent.wordsToResolve.emplace_back(address, _value, width);
 					}
 					parent.incrementCurrentAddress(width);
 				}
@@ -294,7 +295,7 @@ namespace cisc0 {
 	};
 	template<typename S>
 	struct TwoArgumentOperation : SeparatedBinaryThing<
-								  DestinationRegister, 
+								  DestinationRegister,
 								  S> { };
 
 	struct TwoGPRs : TwoArgumentOperation<SourceRegister> { };
@@ -308,7 +309,7 @@ namespace cisc0 {
 	DefSymbol(Right, right);
 
 	struct ShiftLeftOrRight : pegtl::sor<
-							  SymbolLeft, 
+							  SymbolLeft,
 							  SymbolRight> { };
 
 	DefAction(ShiftLeftOrRight) {
@@ -319,12 +320,12 @@ namespace cisc0 {
 
 	template<typename Source>
 	struct ImmediateOperationArgs : SeparatedBinaryThing<
-									UsesImmediate, 
+									UsesImmediate,
 									TwoArgumentOperation<Source>> { };
 	template<typename Source>
 	struct ImmediateOperationArgsWithBitmask : SeparatedTrinaryThing<
-											   UsesImmediate, 
-											   BitmaskNumber, 
+											   UsesImmediate,
+											   BitmaskNumber,
 											   TwoArgumentOperation<Source>> { };
 	struct SpecialImmediate : pegtl::seq<Number> { };
 	struct ShiftImmediateValue : SpecialImmediate { };
@@ -334,12 +335,12 @@ namespace cisc0 {
 		}
 	};
 	struct ShiftArgs : pegtl::sor<
-					   TwoGPRs, 
+					   TwoGPRs,
 					   ImmediateOperationArgs<ShiftImmediateValue>> { };
 
 	struct ShiftOperation : SeparatedTrinaryThing<
-							GroupShift, 
-							ShiftLeftOrRight, 
+							GroupShift,
+							ShiftLeftOrRight,
 							ShiftArgs> { };
 
 	struct ByteCastImmediate : SpecialImmediate { };
@@ -380,33 +381,33 @@ namespace cisc0 {
 	DefCompareStyleWithSymbol(MoveFromCondition, MoveFromCondition);
 	DefCompareStyleWithSymbol(MoveToCondition, MoveToCondition);
 	struct SpecialCompareType : pegtl::sor<
-								SubGroupCompareStyleMoveFromCondition, 
+								SubGroupCompareStyleMoveFromCondition,
 								SubGroupCompareStyleMoveToCondition> { };
 	struct CompareArgs : pegtl::sor<
-						 TwoGPRs, 
+						 TwoGPRs,
 						 ImmediateOperationArgsWithBitmask<LexemeOrNumber>> { };
 	struct NormalCompareOperation : SeparatedBinaryThing<
-									CompareType, 
+									CompareType,
 									CompareArgs> { };
 	struct SpecialCompareOperation : SeparatedBinaryThing<
-									 SpecialCompareType, 
+									 SpecialCompareType,
 									 DestinationRegister> { };
 	struct CompareOperation : SeparatedBinaryThing<
-							  GroupCompare, 
+							  GroupCompare,
 							  pegtl::sor<
-										 NormalCompareOperation, 
+										 NormalCompareOperation,
 										 SpecialCompareOperation>> { };
 	struct MoveOperation : SeparatedTrinaryThing<
-						   GroupMove, 
-						   BitmaskNumber, 
+						   GroupMove,
+						   BitmaskNumber,
 						   TwoGPRs> { };
 	struct SetOperation : SeparatedQuadThing<
-						  GroupSet, 
-						  BitmaskNumber, 
-						  DestinationRegister, 
+						  GroupSet,
+						  BitmaskNumber,
+						  DestinationRegister,
 						  LexemeOrNumber> { };
 	struct SwapOperation : SeparatedBinaryThing<
-						   GroupSwap, 
+						   GroupSwap,
 						   TwoGPRs> { };
 
 	struct Arg0ImmediateValue : SpecialImmediate { };
@@ -469,19 +470,19 @@ namespace cisc0 {
 		}
 	};
 	struct FlagDirectOrIndirect : pegtl::sor<
-								  FlagDirect, 
+								  FlagDirect,
 								  FlagIndirect> { };
 	struct LoadStoreOperation : SeparatedQuadThing<
-								LoadStoreType, 
-								BitmaskNumber, 
-								FlagDirectOrIndirect, 
+								LoadStoreType,
+								BitmaskNumber,
+								FlagDirectOrIndirect,
 								Arg0ImmediateValue> { };
 
 	struct MemoryTypes : pegtl::sor<
-						 StackOperation, 
+						 StackOperation,
 						 LoadStoreOperation> { };
 	struct MemoryInstruction : SeparatedBinaryThing<
-							   GroupMemory, 
+							   GroupMemory,
 							   MemoryTypes> { };
 
 #define DefLogicalOperation(title, str) \
@@ -545,14 +546,14 @@ namespace cisc0 {
 	DefExtendedSubType(IsEven, evenp);
 	DefExtendedSubType(IsOdd, oddp);
 	struct ComplexExtendedOneArg_Operations : pegtl::sor<
-											  SubGroupExtendedOperationIsEven, 
+											  SubGroupExtendedOperationIsEven,
 											  SubGroupExtendedOperationIsOdd> { };
 
 	struct ComplexExtendedSubOperation_OneArg : SeparatedBinaryThing<
-												ComplexExtendedOneArg_Operations, 
+												ComplexExtendedOneArg_Operations,
 												DestinationRegister> { };
 	struct ComplexExtendedSubOperation : pegtl::sor<
-										 ComplexExtendedSubOperation_NoArgs, 
+										 ComplexExtendedSubOperation_NoArgs,
 										 ComplexExtendedSubOperation_OneArg> { };
 
 
@@ -582,13 +583,13 @@ namespace cisc0 {
 	DefComplexOperation(Parsing, parsing);
 
 	struct ComplexEncodingOperation : SeparatedBinaryThing<
-									  SubGroupComplexSubTypesEncoding, 
+									  SubGroupComplexSubTypesEncoding,
 									  ComplexEncodingSubOperation> { };
 	struct ComplexExtendedOperation : SeparatedBinaryThing<
-									  SubGroupComplexSubTypesExtended, 
+									  SubGroupComplexSubTypesExtended,
 									  ComplexExtendedSubOperation> { };
 	struct ComplexParsingOperation : SeparatedBinaryThing<
-									 SubGroupComplexSubTypesParsing, 
+									 SubGroupComplexSubTypesParsing,
 									 ComplexParsingSubOperation> { };
 	struct ComplexSubOperations : pegtl::sor<
 								  ComplexEncodingOperation,
@@ -596,7 +597,7 @@ namespace cisc0 {
 								  ComplexParsingOperation> { };
 
 	struct ComplexOperation : SeparatedBinaryThing<
-							  GroupComplex, 
+							  GroupComplex,
 							  ComplexSubOperations> { };
 
 	DefSymbol(Call, call);
@@ -624,7 +625,7 @@ namespace cisc0 {
 	};
 
 	struct ChooseBranchFlagCall : ChoiceFlag<
-								  BranchFlagCall, 
+								  BranchFlagCall,
 								  BranchFlagNoCall> { };
 
 	struct BranchFlagConditional : pegtl::seq<

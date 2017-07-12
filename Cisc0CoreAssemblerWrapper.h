@@ -35,12 +35,6 @@
 #include "Base.h"
 #include "AssemblerBase.h"
 #include "Problem.h"
-#include <pegtl.hh>
-#include <pegtl/analyze.hh>
-#include <pegtl/file_parser.hh>
-#include <pegtl/contrib/raw_string.hh>
-#include <pegtl/contrib/abnf.hh>
-#include <pegtl/parse.hh>
 #include <vector>
 #include "ClipsExtensions.h"
 
@@ -72,4 +66,4 @@ namespace cisc0 {
 namespace syn {
 	DefWrapperSymbolicName(cisc0::AssemblerState, "cisc0:assembly-parsing-state");
 }
-#endif 
+#endif
