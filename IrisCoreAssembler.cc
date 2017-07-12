@@ -45,6 +45,7 @@
 #include "IrisCoreAssembler.h"
 
 namespace iris {
+    AssemblerData::AssemblerData() : instruction(false), address(0), dataValue(0), group(0), operation(0), destination(0), source0(0), source1(0), hasLexeme(false), fullImmediate(false) { }
 	void AssemblerData::reset() noexcept {
 		instruction = false;
 		address = 0;
@@ -58,6 +59,9 @@ namespace iris {
 		currentLexeme.clear();
 		fullImmediate = false;
 	}
+
+    AssemblerState::AssemblerState() : inData(false), temporaryWord(0), temporaryByte(0) { }
+    AssemblerState::~AssemblerState() { }
 
 	void AssemblerState::setCurrentAddress(word value) noexcept {
 		if (inData) {
@@ -109,5 +113,63 @@ namespace iris {
         } else {
             return dataValue;
         }
+    }
+    void AssemblerState::markHasLexeme() noexcept {
+        current.hasLexeme = true;
+    }
+    void AssemblerState::markNotLexeme() noexcept {
+        current.hasLexeme = false;
+    }
+    void AssemblerState::setLexeme(const std::string& lexeme) noexcept {
+        markHasLexeme();
+        current.currentLexeme = lexeme;
+    }
+    void AssemblerState::markIsInstruction() noexcept {
+        current.instruction = true;
+    }
+    void AssemblerState::markIsNotInstruction() noexcept {
+        current.instruction = false;
+    }
+    void AssemblerState::nowInCodeSection() noexcept {
+        inData = false;
+    }
+    void AssemblerState::nowInDataSection() noexcept {
+        inData = true;
+    }
+    void AssemblerState::setDataValue(word value) noexcept {
+        current.dataValue = value;
+    }
+    void AssemblerState::stashTemporaryWordIntoDataValue() noexcept {
+        setDataValue(getTemporaryWord());
+    }
+    void AssemblerState::setDestination(byte dest) noexcept {
+        current.destination = dest;
+    }
+    void AssemblerState::setSource0(byte src0) noexcept {
+        current.source0 = src0;
+    }
+    void AssemblerState::setSource1(byte src1) noexcept {
+        current.source1 = src1;
+    }
+    void AssemblerState::stashTemporaryByteInDestination() noexcept {
+        setDestination(temporaryByte);
+    }
+    void AssemblerState::stashTemporaryByteInSource0() noexcept {
+        setSource0(temporaryByte);
+    }
+    void AssemblerState::stashTemporaryByteInSource1() noexcept {
+        setSource1(temporaryByte);
+    }
+    void AssemblerState::setTemporaryByte(byte value) noexcept {
+        temporaryByte = value;
+    }
+    void AssemblerState::setTemporaryWord(word value) noexcept {
+        temporaryWord = value;
+    }
+    void AssemblerState::markHasFullImmediate() noexcept {
+        current.fullImmediate = true;
+    }
+    void AssemblerState::markNotFullImmediate() noexcept {
+        current.fullImmediate = false;
     }
 } // end namespace iris

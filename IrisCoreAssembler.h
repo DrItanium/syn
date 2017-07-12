@@ -48,7 +48,7 @@
 namespace iris {
     template<typename R> struct Action : syn::Action<R> { };
     struct AssemblerData {
-        AssemblerData() : instruction(false), address(0), dataValue(0), group(0), operation(0), destination(0), source0(0), source1(0), hasLexeme(false), fullImmediate(false) { }
+        AssemblerData();
         bool instruction;
         word address;
         word dataValue;
@@ -71,19 +71,41 @@ namespace iris {
     class AssemblerState : public syn::LabelTracker<word>, public syn::FinishedDataTracker<AssemblerData> {
         public:
             using LabelTracker = syn::LabelTracker<word>;
-            AssemblerState() : inData(false), temporaryWord(0), temporaryByte(0) { }
+            AssemblerState();
+            virtual ~AssemblerState();
             void resetCurrentData() noexcept;
             void setImmediate(word value) noexcept;
             void setHalfImmediate(byte value) noexcept;
             void setGroup(InstructionGroup value) noexcept;
+            void nowInCodeSection() noexcept;
+            void nowInDataSection() noexcept;
+            void setCurrentAddress(word value) noexcept;
+            void registerLabel(const std::string& label) noexcept;
+            word getCurrentAddress() noexcept;
+            void incrementCurrentAddress() noexcept;
+            void saveToFinished() noexcept;
+            void setTemporaryByte(byte value) noexcept;
+            void setTemporaryWord(word value) noexcept;
+            void setDestination(byte destination) noexcept;
+            void setSource0(byte value) noexcept;
+            void setSource1(byte value) noexcept;
+            void stashTemporaryByteInDestination() noexcept;
+            void stashTemporaryByteInSource0() noexcept;
+            void stashTemporaryByteInSource1() noexcept;
+            void markHasLexeme() noexcept;
+            void markNotLexeme() noexcept;
+            void setLexeme(const std::string& lexeme) noexcept;
+            void markIsInstruction() noexcept;
+            void markIsNotInstruction() noexcept;
+            void setDataValue(word value) noexcept;
+            void stashTemporaryWordIntoDataValue() noexcept;
+            void markHasFullImmediate() noexcept;
+            void markNotFullImmediate() noexcept;
+        public:
             template<typename T>
                 void setOperation(T value) noexcept {
                     current.operation = static_cast<byte>(value);
                 }
-            bool inCodeSection() const noexcept { return !inData; }
-            bool inDataSection() const noexcept { return inData; }
-            void nowInCodeSection() noexcept { inData = false; }
-            void nowInDataSection() noexcept { inData = true; }
             template<bool toCodeSection>
                 void changeSection() noexcept {
                     if (toCodeSection) {
@@ -92,21 +114,6 @@ namespace iris {
                         nowInDataSection();
                     }
                 }
-            void setCurrentAddress(word value) noexcept;
-            void registerLabel(const std::string& label) noexcept;
-            word getCurrentAddress() noexcept;
-            void incrementCurrentAddress() noexcept;
-            void saveToFinished() noexcept;
-            void setTemporaryByte(byte value) noexcept { temporaryByte = value; }
-            byte getTemporaryByte() const noexcept { return temporaryByte; }
-            void setTemporaryWord(word value) noexcept { temporaryWord = value; }
-            word getTemporaryWord() const noexcept { return temporaryWord; }
-            void setDestination(byte destination) noexcept { current.destination = destination; }
-            void setSource0(byte destination) noexcept { current.source0 = destination; }
-            void setSource1(byte destination) noexcept { current.source1 = destination; }
-            void stashTemporaryByteInDestination() noexcept { setDestination(temporaryByte); }
-            void stashTemporaryByteInSource0() noexcept { setSource0(temporaryByte); }
-            void stashTemporaryByteInSource1() noexcept { setSource1(temporaryByte); }
             template<bool upper>
                 void encodeDestinationPredicate(byte value) noexcept {
                     setDestination(iris::encode4Bits<upper>(current.destination, value));
@@ -123,20 +130,13 @@ namespace iris {
                 void encodeSource0Predicate() noexcept {
                     encodeSource0Predicate<upper>(temporaryByte);
                 }
-            void markHasLexeme() noexcept { current.hasLexeme = true; }
-            void markNotLexeme() noexcept { current.hasLexeme = false; }
-            void setLexeme(const std::string& lexeme) noexcept {
-                markHasLexeme();
-                current.currentLexeme = lexeme;
-            }
-            void markIsInstruction() noexcept { current.instruction = true; }
-            void markIsNotInstruction() noexcept { current.instruction = false; }
+        public:
+            bool inCodeSection() const noexcept { return !inData; }
+            bool inDataSection() const noexcept { return inData; }
             bool hasLexeme() const noexcept { return current.hasLexeme; }
-            void setDataValue(word value) noexcept { current.dataValue = value; }
-            void stashTemporaryWordIntoDataValue() noexcept { setDataValue(getTemporaryWord()); }
-            void markHasFullImmediate() noexcept { current.fullImmediate = true; }
-            void markNotFullImmediate() noexcept { current.fullImmediate = false; }
             std::string getCurrentLexeme() const noexcept { return current.currentLexeme; }
+            byte getTemporaryByte() const noexcept { return temporaryByte; }
+            word getTemporaryWord() const noexcept { return temporaryWord; }
         private:
             using AddressSpaceTracker = syn::AddressTracker<word>;
             AddressSpaceTracker data;
@@ -383,13 +383,20 @@ namespace iris {
         using OneGPRInstruction = GenericInstruction<Operation, OneGPR>;
     template<typename Operation>
         using ThreeGPRInstruction = GenericInstruction<Operation, ThreeGPR>;
+    template<typename ... Operations>
+        using ThreeGPRInstructionWithMultipleOps = ThreeGPRInstruction<pegtl::sor<Operations...>>;
     template<typename Operation>
         using TwoGPRInstruction = GenericInstruction<Operation, TwoGPR>;
+    template<typename ... Operations>
+        using TwoGPRInstructionWithMultipleOps = TwoGPRInstruction<pegtl::sor<Operations...>>;
 #define CURRENT_TYPE ArithmeticOp
 #define DefActionUsingPredefinedSymbol(title) \
     using Symbol ## title = syn:: Symbol ## title ## Keyword ; \
     ConstructOperationSetter(title, title)
 
+#define DefActionUsingPredefinedSymbolWithSeparateType(title, type) \
+    using Symbol ## title = syn:: Symbol ## title ## Keyword ; \
+    ConstructOperationSetter(title, type)
     DefActionUsingPredefinedSymbol(Add);
     DefActionUsingPredefinedSymbol(Sub);
     DefActionUsingPredefinedSymbol(Mul);
@@ -397,18 +404,16 @@ namespace iris {
     DefActionUsingPredefinedSymbol(Rem);
     DefOperationSameTitle(ShiftLeft, shift.left);
     DefOperationSameTitle(ShiftRight, shift.right);
-    DefOperation(And, and, BinaryAnd);
-    DefOperation(Or, or, BinaryOr);
+    DefActionUsingPredefinedSymbolWithSeparateType(And, BinaryAnd);
+    DefActionUsingPredefinedSymbolWithSeparateType(Or, BinaryOr);
     DefOperation(Xor, xor, BinaryXor);
     DefOperation(Nand, nand, BinaryNand);
     DefOperation(Nor, nor, BinaryNor);
     DefOperationSameTitle(Min, min);
     DefOperationSameTitle(Max, max);
-    struct OperationArithmeticThreeGPR : pegtl::sor<SymbolAdd, SymbolSub, SymbolMul, SymbolDiv, SymbolRem, SymbolShiftLeft, SymbolShiftRight, SymbolAnd, SymbolOr, SymbolXor, SymbolMin, SymbolMax> { };
-    struct ArithmeticThreeGPRInstruction : ThreeGPRInstruction<OperationArithmeticThreeGPR> { };
+    struct ArithmeticThreeGPRInstruction : ThreeGPRInstructionWithMultipleOps<SymbolAdd, SymbolSub, SymbolMul, SymbolDiv, SymbolRem, SymbolShiftLeft, SymbolShiftRight, SymbolAnd, SymbolOr, SymbolXor, SymbolMin, SymbolMax> { };
     DefOperation(Not, not, BinaryNot);
-    struct OperationArithmeticTwoGPR : pegtl::sor<SymbolNot> { };
-    struct ArithmeticTwoGPRInstruction : TwoGPRInstruction<OperationArithmeticTwoGPR> { };
+    struct ArithmeticTwoGPRInstruction : TwoGPRInstructionWithMultipleOps< SymbolNot > { };
 
     DefOperationSameTitle(AddImmediate, add.imm);
     DefOperationSameTitle(SubImmediate, sub.imm);
@@ -452,8 +457,7 @@ namespace iris {
     DefOperation(StoreIO, store.io, IOWrite);
     DefOperationSameTitle(Push, push);
     DefOperationSameTitle(Pop, pop);
-    struct OperationMoveTwoGPR : pegtl::sor<SymbolMove, SymbolSwap, SymbolLoadIO, SymbolStoreIO, SymbolLoad, SymbolStore, SymbolPush, SymbolPop> { };
-    struct MoveTwoGPRInstruction : TwoGPRInstruction<OperationMoveTwoGPR> { };
+    struct MoveTwoGPRInstruction : TwoGPRInstructionWithMultipleOps<SymbolMove, SymbolSwap, SymbolLoadIO, SymbolStoreIO, SymbolLoad, SymbolStore, SymbolPush, SymbolPop> { };
     DefOperationSameTitle(LoadWithOffset, load.offset);
     DefOperationSameTitle(StoreWithOffset, store.offset);
     DefOperation(LoadIOWithOffset, load.with.offset, IOReadWithOffset);
@@ -531,9 +535,7 @@ namespace iris {
     DefGroupSet(BranchInstruction, Jump);
 
 #undef CURRENT_TYPE
-    template<typename T>
-        struct ThenField : pegtl::seq<Separator, T> { };
-    struct ThenDestinationPredicates : ThenField<DestinationPredicates> { };
+    struct ThenDestinationPredicates : syn::ThenField<DestinationPredicates> { };
 #define CURRENT_TYPE CompareOp
     // compare operations
     DefOperationSameTitle(Eq, =);
@@ -550,8 +552,8 @@ namespace iris {
     DefOperationSameTitle(GreaterThanOrEqualToImmediate, >=.imm);
     struct CompareRegisterOperation : pegtl::sor<SymbolEq, SymbolNeq, SymbolLessThan, SymbolGreaterThan, SymbolLessThanOrEqualTo, SymbolGreaterThanOrEqualTo> { };
     struct CompareImmediateOperation : pegtl::sor<SymbolEqImmediate, SymbolNeqImmediate, SymbolLessThanImmediate, SymbolGreaterThanImmediate, SymbolLessThanOrEqualToImmediate, SymbolGreaterThanOrEqualToImmediate> { };
-    struct CompareRegisterInstruction : pegtl::seq<CompareRegisterOperation, ThenDestinationPredicates, ThenField<SourceRegisters>> { };
-    struct CompareImmediateInstruction : pegtl::seq<CompareImmediateOperation, ThenDestinationPredicates, ThenField<Source0GPR>, ThenField<HalfImmediate>> { };
+    struct CompareRegisterInstruction : pegtl::seq<CompareRegisterOperation, ThenDestinationPredicates, syn::ThenField<SourceRegisters>> { };
+    struct CompareImmediateInstruction : pegtl::seq<CompareImmediateOperation, ThenDestinationPredicates, syn::ThenField<Source0GPR>, syn::ThenField<HalfImmediate>> { };
     struct CompareInstruction : pegtl::sor<
                                 CompareRegisterInstruction,
                                 CompareImmediateInstruction> { };
@@ -571,14 +573,14 @@ namespace iris {
     DefOperationSameTitle(CRNor, pred.nor);
     DefOperationSameTitle(CRSwap, pred.swap);
     DefOperationSameTitle(CRMove, pred.move);
-    struct ThenSource0Predicate : ThenField<StatefulRegister<Source0Predicate>> { };
+    struct ThenSource0Predicate : syn::ThenField<StatefulRegister<Source0Predicate>> { };
     struct OperationPredicateTwoArgs : pegtl::sor<SymbolCRSwap, SymbolCRMove> { };
     struct OperationPredicateOneGPR : pegtl::sor<SymbolSaveCRs, SymbolRestoreCRs> { };
     struct OperationPredicateFourArgs : pegtl::sor<SymbolCRXor, SymbolCRAnd, SymbolCROr, SymbolCRNand, SymbolCRNor> { };
-    struct PredicateInstructionOneGPR : pegtl::seq<OperationPredicateOneGPR, ThenField<StatefulDestinationGPR>> { };
+    struct PredicateInstructionOneGPR : pegtl::seq<OperationPredicateOneGPR, syn::ThenField<StatefulDestinationGPR>> { };
     struct PredicateInstructionTwoArgs : pegtl::seq<OperationPredicateTwoArgs, ThenDestinationPredicates> { };
     struct PredicateInstructionThreeArgs : pegtl::seq<SymbolCRNot, ThenDestinationPredicates, ThenSource0Predicate> { };
-    struct PredicateInstructionFourArgs : pegtl::seq<OperationPredicateFourArgs, ThenDestinationPredicates, ThenSource0Predicate, ThenField<StatefulRegister<Source1Predicate>>> { };
+    struct PredicateInstructionFourArgs : pegtl::seq<OperationPredicateFourArgs, ThenDestinationPredicates, ThenSource0Predicate, syn::ThenField<StatefulRegister<Source1Predicate>>> { };
     struct PredicateInstruction : pegtl::sor<PredicateInstructionOneGPR, PredicateInstructionTwoArgs, PredicateInstructionThreeArgs, PredicateInstructionFourArgs> { };
     DefGroupSet(PredicateInstruction, ConditionalRegister);
 
