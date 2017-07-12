@@ -35,12 +35,6 @@
 #include "AssemblerBase.h"
 #include "Problem.h"
 #include "IrisCore.h"
-#include <pegtl.hh>
-#include <pegtl/analyze.hh>
-#include <pegtl/file_parser.hh>
-#include <pegtl/contrib/raw_string.hh>
-#include <pegtl/contrib/abnf.hh>
-#include <pegtl/parse.hh>
 #include <vector>
 #include "IrisClipsExtensions.h"
 #include "ClipsExtensions.h"
@@ -52,63 +46,10 @@ namespace iris {
         public:
             using Self = AssemblerStateWrapper;
             using Parent = syn::ExternalAddressWrapper<AssemblerState>;
-            static Self* make() noexcept { return new Self(); }
-            static void registerWithEnvironment(void* env, const char* title) {
-                Parent::registerWithEnvironment(env, title, callFunction);
-            }
-            static void registerWithEnvironment(void* env) {
-                static bool init = true;
-                static std::string func;
-                if (init) {
-                    init = false;
-                    func = Self::getType();
-                }
-                registerWithEnvironment(env, func.c_str());
-            }
-            static bool callFunction(void* env, syn::DataObjectPtr value, syn::DataObjectPtr ret) {
-                using MapOpToCount = std::tuple<Operations, int>;
-                static std::map<std::string, MapOpToCount> ops = {
-                    { "parse", std::make_tuple(Operations::Parse, 1) },
-                    { "resolve", std::make_tuple(Operations::Resolve, 0) },
-                    { "get", std::make_tuple(Operations::Get, 0) },
-                };
-
-                __RETURN_FALSE_ON_FALSE__(Parent::isExternalAddress(env, ret, value));
-                CLIPSValue operation;
-                __RETURN_FALSE_ON_FALSE__(Parent::tryExtractFunctionName(env, ret, &operation));
-                std::string str(syn::extractLexeme(env, operation));
-                auto result = ops.find(str);
-                __RETURN_FALSE_ON_FALSE__(Parent::isLegalOperation(env, ret, str, result, ops.end()));
-                Operations theOp;
-                int tArgCount;
-                std::tie(theOp, tArgCount) = result->second;
-                __RETURN_FALSE_ON_FALSE__(Parent::checkArgumentCount(env, ret, str, tArgCount));
-                auto ptr = static_cast<Self*>(DOPToExternalAddress(value));
-                auto parseLine = [env, ret, ptr]() {
-                    CLIPSValue line;
-                    __RETURN_FALSE_ON_FALSE__(Parent::tryExtractArgument1(env, ret, &line, syn::MayaType::String, "Must provide a string to parse!"));
-                    std::string str(syn::extractLexeme(env, line));
-                    auto result = ptr->parseLine(str);
-                    CVSetBoolean(ret, result);
-                    if (!result) {
-                        Parent::callErrorMessageCode3(env, ret, "parse", "error during parsing!");
-                    }
-                    return result;
-                };
-                switch(theOp) {
-                    case Operations::Parse:
-                        return parseLine();
-                    case Operations::Resolve:
-                        return ptr->resolve();
-                        return true;
-                    case Operations::Get:
-                        ptr-> getMultifield(env, ret);
-                        return true;
-                    default:
-                        return Parent::callErrorMessageCode3(env, ret, str, "<- unimplemented operation!!!!");
-                }
-                return false;
-            }
+            static inline Self* make() noexcept { return new Self(); }
+            static void registerWithEnvironment(void* env, const char* title);
+            static void registerWithEnvironment(void* env);
+            static bool callFunction(void* env, syn::DataObjectPtr value, syn::DataObjectPtr ret);
         public:
             enum Operations {
                 Parse,
