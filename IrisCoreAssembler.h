@@ -46,7 +46,15 @@
 #include "ClipsExtensions.h"
 
 namespace iris {
-    template<typename R> struct Action : syn::Action<R> { };
+    enum class RegisterIndexType {
+        DestinationGPR,
+        Source0GPR,
+        Source1GPR,
+        PredicateDestination,
+        PredicateInverseDestination,
+        PredicateSource0,
+        PredicateSource1,
+    };
     struct AssemblerData {
         AssemblerData();
         bool instruction;
@@ -66,6 +74,12 @@ namespace iris {
         void setImmediate(word value) noexcept;
         bool shouldResolveLabel() noexcept { return fullImmediate && hasLexeme; }
         dword encode();
+        void populateField(RegisterIndexType type, byte value);
+    };
+
+    enum class StorageSection {
+        Data,
+        Code,
     };
 
     class AssemblerState : public syn::LabelTracker<word>, public syn::FinishedDataTracker<AssemblerData> {
@@ -101,17 +115,18 @@ namespace iris {
             void stashTemporaryWordIntoDataValue() noexcept;
             void markHasFullImmediate() noexcept;
             void markNotFullImmediate() noexcept;
+            void setOperation(byte value) noexcept;
+            void populateField(RegisterIndexType type, byte value);
         public:
-            template<typename T>
-                void setOperation(T value) noexcept {
-                    current.operation = static_cast<byte>(value);
-                }
-            template<bool toCodeSection>
+            template<StorageSection section>
                 void changeSection() noexcept {
-                    if (toCodeSection) {
-                        nowInCodeSection();
-                    } else {
-                        nowInDataSection();
+                    switch(section) {
+                        case StorageSection::Data:
+                            nowInDataSection();
+                            break;
+                        case StorageSection::Code:
+                            nowInCodeSection();
+                            break;
                     }
                 }
             template<bool upper>
@@ -146,6 +161,7 @@ namespace iris {
             byte temporaryByte;
             AssemblerData current;
     };
+    template<typename R> struct Action : syn::Action<R> { };
     struct ImmediateContainer : syn::NumberContainer<word> {
         using syn::NumberContainer<word>::NumberContainer;
         template<typename Input>
@@ -156,58 +172,14 @@ namespace iris {
     };
     struct RegisterIndexContainer : syn::NumberContainer<byte> {
         using syn::NumberContainer<byte>::NumberContainer;
-        enum class Type {
-            DestinationGPR,
-            Source0GPR,
-            Source1GPR,
-            PredicateDestination,
-            PredicateInverseDestination,
-            PredicateSource0,
-            PredicateSource1,
-        };
+        using Type = RegisterIndexType;
         template<typename Input>
             void success(const Input& in, AssemblerData& parent) {
-                switch(_index) {
-                    case Type::DestinationGPR:
-                        parent.destination = getValue();
-                        break;
-                    case Type::Source0GPR:
-                        parent.source0 = getValue();
-                        break;
-                    case Type::Source1GPR:
-                        parent.source1 = getValue();
-                        break;
-                    default:
-                        syn::reportError("Illegal index provided!");
-                }
+                parent.populateField(_index, getValue());
             }
         template<typename Input>
             void success(const Input& in, AssemblerState& parent) {
-                switch(_index) {
-                    case Type::DestinationGPR:
-                        parent.setDestination(getValue());
-                        break;
-                    case Type::Source0GPR:
-                        parent.setSource0(getValue());
-                        break;
-                    case Type::Source1GPR:
-                        parent.setSource1(getValue());
-                        break;
-                    case Type::PredicateDestination:
-                        parent.encodeDestinationPredicate<false>(getValue());
-                        break;
-                    case Type::PredicateInverseDestination:
-                        parent.encodeDestinationPredicate<true>(getValue());
-                        break;
-                    case Type::PredicateSource0:
-                        parent.encodeSource0Predicate<false>(getValue());
-                        break;
-                    case Type::PredicateSource1:
-                        parent.encodeSource0Predicate<true>(getValue());
-                        break;
-                    default:
-                        syn::reportError("Illegal index provided!");
-                }
+                parent.populateField(_index, getValue());
             }
         Type _index;
     };
@@ -218,7 +190,7 @@ namespace iris {
         struct SeparatedBinaryThing : syn::TwoPartComponent<First, Second, Sep> { };
     template<typename First, typename Second, typename Third, typename Sep = Separator>
         struct SeparatedTrinaryThing : syn::ThreePartComponent<First, Second, Third, Sep, Sep> { };
-    using SingleLineComment = syn::SingleLineComment<';'>;
+    using SingleLineComment = syn::DefaultSingleLineComment;
     using GeneralPurposeRegister = syn::GPR;
     using PredicateRegister = syn::PredicateRegister;
     template<typename Input, word count>
@@ -253,6 +225,8 @@ namespace iris {
     DefRegisterIndexContainerAction(Source1GPR, Source1GPR);
     template<typename T>
         using StatefulRegister = pegtl::state<RegisterIndexContainer, T>;
+    template<typename T>
+    struct ThenStatefulRegister : syn::ThenField<StatefulRegister<T>> { };
     using StatefulDestinationGPR = StatefulRegister<DestinationGPR>;
     using SourceRegisters = syn::SourceRegisters<StatefulRegister<Source0GPR>, StatefulRegister<Source1GPR>>;
     struct OneGPR : syn::OneRegister<StatefulDestinationGPR> { };
@@ -271,27 +245,19 @@ namespace iris {
     DefRegisterIndexContainerAction(Source1Predicate, PredicateSource1);
 
     template<syn::KnownNumberTypes v, typename Input>
-        static void populateContainer(const Input& in, ImmediateContainer& parent) {
-            syn::populateContainer<word, v>(in.string(), parent);
+    inline static void populateContainer(const Input& in, ImmediateContainer& parent) {
+        syn::populateContainer<word, v>(in.string(), parent);
+    }
+    template<syn::KnownNumberTypes type>
+    struct CommonNumericConversion {
+        template<typename Input>
+        static void apply(const Input& in, ImmediateContainer& parent) {
+            populateContainer<type, Input>(in, parent);
         }
-    DefAction(syn::HexadecimalNumber) {
-        template<typename Input>
-            static void apply(const Input& in, ImmediateContainer& parent) {
-                populateContainer<syn::KnownNumberTypes::Hexadecimal, Input>(in, parent);
-            }
     };
-    DefAction(syn::BinaryNumber) {
-        template<typename Input>
-            static void apply(const Input& in, ImmediateContainer& parent) {
-                populateContainer<syn::KnownNumberTypes::Binary, Input>(in, parent);
-            }
-    };
-    DefAction(syn::Base10Number) {
-        template<typename Input>
-            static void apply(const Input& in, ImmediateContainer& parent) {
-                populateContainer<syn::KnownNumberTypes::Decimal, Input>(in, parent);
-            }
-    };
+    template<> struct Action<syn::HexadecimalNumber> : CommonNumericConversion<syn::KnownNumberTypes::Hexadecimal> { };
+    template<> struct Action<syn::BinaryNumber> : CommonNumericConversion<syn::KnownNumberTypes::Binary> { };
+    template<> struct Action<syn::Base10Number> : CommonNumericConversion<syn::KnownNumberTypes::Decimal> { };
     struct Number : syn::StatefulNumberAll<ImmediateContainer> { };
     using Lexeme = syn::Lexeme;
     DefAction(Lexeme) {
@@ -300,21 +266,21 @@ namespace iris {
         }
     };
     struct LexemeOrNumber : syn::LexemeOr<Number> { };
-    template<bool toCode>
+    template<StorageSection section>
         struct ModifySection {
             template<typename Input>
                 ModifySection(const Input& in, AssemblerState& parent) { }
 
             template<typename Input>
                 void success(const Input& in, AssemblerState& parent) {
-                    parent.changeSection<toCode>();
+                    parent.changeSection<section>();
                 }
         };
     // directives
 #define ConstructOperationSetter(title, type) \
     DefAction(Symbol ## title ) { \
         DefApply { \
-            state.setOperation< CURRENT_TYPE >(CURRENT_TYPE :: type ) ; \
+            state.setOperation(static_cast<byte>(CURRENT_TYPE :: type )) ; \
         } \
     }
 
@@ -325,10 +291,10 @@ namespace iris {
 #define DefOperationSameTitle(title, str) DefOperation(title, str, title)
     DefSymbol(DataDirective, .data);
     DefSymbol(CodeDirective, .code);
-    template<bool modSection, typename Directive>
+    template<StorageSection modSection, typename Directive>
         struct StatefulSpaceDirective : syn::StatefulSingleEntrySequence<ModifySection<modSection>, Directive> { };
-    struct CodeDirective : StatefulSpaceDirective<true, SymbolCodeDirective> { };
-    struct DataDirective : StatefulSpaceDirective<false, SymbolDataDirective> { };
+    struct CodeDirective : StatefulSpaceDirective<StorageSection::Code, SymbolCodeDirective> { };
+    struct DataDirective : StatefulSpaceDirective<StorageSection::Data, SymbolDataDirective> { };
 
     struct OrgDirective : syn::OneArgumentDirective<syn::SymbolOrgDirective, Number> { };
     DefAction(OrgDirective) { DefApply { state.setCurrentAddress(state.getTemporaryWord()); } };
@@ -346,16 +312,15 @@ namespace iris {
     struct DeclareDirective : LexemeOrNumberDirective<syn::SymbolWordDirective> { };
     DefAction(DeclareDirective) {
         DefApply {
-            if (state.inDataSection()) {
-                state.markIsNotInstruction();
-                if (!state.hasLexeme()) {
-                    state.stashTemporaryWordIntoDataValue();
-                }
-                state.saveToFinished();
-                state.incrementCurrentAddress();
-            } else {
+            if (!state.inDataSection()) {
                 throw syn::Problem("can't use a declare in a non data section!");
             }
+            state.markIsNotInstruction();
+            if (!state.hasLexeme()) {
+                state.stashTemporaryWordIntoDataValue();
+            }
+            state.saveToFinished();
+            state.incrementCurrentAddress();
         }
     };
     struct Directive : pegtl::sor<OrgDirective, LabelDirective, CodeDirective, DataDirective, DeclareDirective> { };
@@ -537,6 +502,8 @@ namespace iris {
 #undef CURRENT_TYPE
     struct ThenDestinationPredicates : syn::ThenField<DestinationPredicates> { };
 #define CURRENT_TYPE CompareOp
+    template<typename Operations, typename ... Rest>
+    struct SaveToPredicatesInstruction : pegtl::seq<Operations, ThenDestinationPredicates, Rest...> { };
     // compare operations
     DefOperationSameTitle(Eq, =);
     DefOperationSameTitle(Neq, !=);
@@ -544,16 +511,16 @@ namespace iris {
     DefOperationSameTitle(GreaterThan, >);
     DefOperationSameTitle(LessThanOrEqualTo, <=);
     DefOperationSameTitle(GreaterThanOrEqualTo, >=);
+    struct CompareRegisterOperation : pegtl::sor<SymbolEq, SymbolNeq, SymbolLessThan, SymbolGreaterThan, SymbolLessThanOrEqualTo, SymbolGreaterThanOrEqualTo> { };
+    struct CompareRegisterInstruction : SaveToPredicatesInstruction<CompareRegisterOperation, syn::ThenField<SourceRegisters>> { };
     DefOperationSameTitle(EqImmediate, =.imm);
     DefOperationSameTitle(NeqImmediate, !=.imm);
     DefOperationSameTitle(LessThanImmediate, <.imm);
     DefOperationSameTitle(GreaterThanImmediate, >.imm);
     DefOperationSameTitle(LessThanOrEqualToImmediate, <=.imm);
     DefOperationSameTitle(GreaterThanOrEqualToImmediate, >=.imm);
-    struct CompareRegisterOperation : pegtl::sor<SymbolEq, SymbolNeq, SymbolLessThan, SymbolGreaterThan, SymbolLessThanOrEqualTo, SymbolGreaterThanOrEqualTo> { };
     struct CompareImmediateOperation : pegtl::sor<SymbolEqImmediate, SymbolNeqImmediate, SymbolLessThanImmediate, SymbolGreaterThanImmediate, SymbolLessThanOrEqualToImmediate, SymbolGreaterThanOrEqualToImmediate> { };
-    struct CompareRegisterInstruction : pegtl::seq<CompareRegisterOperation, ThenDestinationPredicates, syn::ThenField<SourceRegisters>> { };
-    struct CompareImmediateInstruction : pegtl::seq<CompareImmediateOperation, ThenDestinationPredicates, syn::ThenField<Source0GPR>, syn::ThenField<HalfImmediate>> { };
+    struct CompareImmediateInstruction : SaveToPredicatesInstruction<CompareImmediateOperation, syn::ThenField<Source0GPR>, syn::ThenField<HalfImmediate>> { };
     struct CompareInstruction : pegtl::sor<
                                 CompareRegisterInstruction,
                                 CompareImmediateInstruction> { };
@@ -562,26 +529,33 @@ namespace iris {
 #undef CURRENT_TYPE
 #define CURRENT_TYPE ConditionRegisterOp
 
+    struct ThenSource0Predicate : ThenStatefulRegister<Source0Predicate> { };
+    struct ThenSource1Predicate : ThenStatefulRegister<Source1Predicate> { };
+    template<typename Operations, typename ... Rest>
+    struct SaveToPredicatesWithSource0Instruction : SaveToPredicatesInstruction<Operations, ThenSource0Predicate, Rest...> { };
     // conditional register actions
+    DefOperationSameTitle(CRNot, pred.not);
     DefOperationSameTitle(SaveCRs, pred.save);
     DefOperationSameTitle(RestoreCRs, pred.restore);
+    struct OperationPredicateOneGPR : pegtl::sor<SymbolSaveCRs, SymbolRestoreCRs> { };
+    DefOperationSameTitle(CRSwap, pred.swap);
+    DefOperationSameTitle(CRMove, pred.move);
+    struct OperationPredicateTwoArgs : pegtl::sor<SymbolCRSwap, SymbolCRMove> { };
     DefOperationSameTitle(CRXor, pred.xor);
-    DefOperationSameTitle(CRNot, pred.not);
     DefOperationSameTitle(CRAnd, pred.and);
     DefOperationSameTitle(CROr, pred.or);
     DefOperationSameTitle(CRNand, pred.nand);
     DefOperationSameTitle(CRNor, pred.nor);
-    DefOperationSameTitle(CRSwap, pred.swap);
-    DefOperationSameTitle(CRMove, pred.move);
-    struct ThenSource0Predicate : syn::ThenField<StatefulRegister<Source0Predicate>> { };
-    struct OperationPredicateTwoArgs : pegtl::sor<SymbolCRSwap, SymbolCRMove> { };
-    struct OperationPredicateOneGPR : pegtl::sor<SymbolSaveCRs, SymbolRestoreCRs> { };
     struct OperationPredicateFourArgs : pegtl::sor<SymbolCRXor, SymbolCRAnd, SymbolCROr, SymbolCRNand, SymbolCRNor> { };
-    struct PredicateInstructionOneGPR : pegtl::seq<OperationPredicateOneGPR, syn::ThenField<StatefulDestinationGPR>> { };
-    struct PredicateInstructionTwoArgs : pegtl::seq<OperationPredicateTwoArgs, ThenDestinationPredicates> { };
-    struct PredicateInstructionThreeArgs : pegtl::seq<SymbolCRNot, ThenDestinationPredicates, ThenSource0Predicate> { };
-    struct PredicateInstructionFourArgs : pegtl::seq<OperationPredicateFourArgs, ThenDestinationPredicates, ThenSource0Predicate, syn::ThenField<StatefulRegister<Source1Predicate>>> { };
-    struct PredicateInstruction : pegtl::sor<PredicateInstructionOneGPR, PredicateInstructionTwoArgs, PredicateInstructionThreeArgs, PredicateInstructionFourArgs> { };
+    struct PredicateInstructionOneGPR : pegtl::seq<OperationPredicateOneGPR, ThenStatefulRegister<DestinationGPR>> { };
+    struct PredicateInstructionTwoArgs : SaveToPredicatesInstruction<OperationPredicateTwoArgs> { };
+    struct PredicateInstructionThreeArgs : SaveToPredicatesWithSource0Instruction<SymbolCRNot> { };
+    struct PredicateInstructionFourArgs : SaveToPredicatesWithSource0Instruction<OperationPredicateFourArgs, ThenSource1Predicate> { };
+    struct PredicateInstruction : pegtl::sor<
+                                  PredicateInstructionOneGPR,
+                                  PredicateInstructionTwoArgs,
+                                  PredicateInstructionThreeArgs,
+                                  PredicateInstructionFourArgs> { };
     DefGroupSet(PredicateInstruction, ConditionalRegister);
 
 

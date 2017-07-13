@@ -407,6 +407,7 @@ namespace syn {
     template<typename T, typename Sep = AsmSeparator>
     struct ThenField : pegtl::seq<Sep, T> { };
 
+    struct DefaultSingleLineComment : SingleLineComment<';'> { };
 
 } // end namespace syn
 

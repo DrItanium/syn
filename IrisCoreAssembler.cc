@@ -60,6 +60,23 @@ namespace iris {
 		fullImmediate = false;
 	}
 
+    void AssemblerData::populateField(RegisterIndexType type, byte value) {
+        using Type = RegisterIndexType;
+        switch(type) {
+            case Type::DestinationGPR:
+                destination = value;
+                break;
+            case Type::Source0GPR:
+                source0 = value;
+                break;
+            case Type::Source1GPR:
+                source1 = value;
+                break;
+            default:
+                syn::reportError("Illegal index provided!");
+        }
+    }
+
     AssemblerState::AssemblerState() : inData(false), temporaryWord(0), temporaryByte(0) { }
     AssemblerState::~AssemblerState() { }
 
@@ -171,5 +188,36 @@ namespace iris {
     }
     void AssemblerState::markNotFullImmediate() noexcept {
         current.fullImmediate = false;
+    }
+    void AssemblerState::setOperation(byte value) noexcept {
+        current.operation = value;
+    }
+    void AssemblerState::populateField(RegisterIndexType index, byte value) {
+        using Type = RegisterIndexType;
+        switch(index) {
+            case Type::DestinationGPR:
+                setDestination(value);
+                break;
+            case Type::Source0GPR:
+                setSource0(value);
+                break;
+            case Type::Source1GPR:
+                setSource1(value);
+                break;
+            case Type::PredicateDestination:
+                encodeDestinationPredicate<false>(value);
+                break;
+            case Type::PredicateInverseDestination:
+                encodeDestinationPredicate<true>(value);
+                break;
+            case Type::PredicateSource0:
+                encodeSource0Predicate<false>(value);
+                break;
+            case Type::PredicateSource1:
+                encodeSource0Predicate<true>(value);
+                break;
+            default:
+                syn::reportError("Illegal index provided!");
+        }
     }
 } // end namespace iris

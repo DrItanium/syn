@@ -49,7 +49,7 @@
 
 namespace cisc0 {
 	using Separator = syn::AsmSeparator;
-	using SingleLineComment = syn::SingleLineComment<';'>;
+	using SingleLineComment = syn::DefaultSingleLineComment;
 	template<typename R> struct Action : syn::Action<R> { };
 
 	template<typename First, typename Rest, typename Sep = Separator>
