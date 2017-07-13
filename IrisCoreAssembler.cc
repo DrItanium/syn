@@ -205,16 +205,16 @@ namespace iris {
                 setSource1(value);
                 break;
             case Type::PredicateDestination:
-                encodeDestinationPredicate<false>(value);
+                setDestination(iris::encode4Bits<false>(current.destination, value));
                 break;
             case Type::PredicateInverseDestination:
-                encodeDestinationPredicate<true>(value);
+                setDestination(iris::encode4Bits<true>(current.destination, value));
                 break;
             case Type::PredicateSource0:
-                encodeSource0Predicate<false>(value);
+                setSource0(iris::encode4Bits<false>(current.source0, value));
                 break;
             case Type::PredicateSource1:
-                encodeSource0Predicate<true>(value);
+                setSource0(iris::encode4Bits<true>(current.source0, value));
                 break;
             default:
                 syn::reportError("Illegal index provided!");
