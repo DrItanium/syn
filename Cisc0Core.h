@@ -164,10 +164,99 @@ namespace cisc0 {
                         a,
                         b), 0x1), 1);
     }
-	class Core : public syn::ClipsCore {
+	template<byte bankCount, typename RegisterType>
+	class BankedCore : public syn::ClipsCore {
+		static_assert(bankCount <= ArchitectureConstants::MaxRegisterBanks, "Too many register banks specified!");
+		public:
+			using IOBus = syn::CLIPSIOController<Word, CLIPSInteger>;
+			using RegisterFile = syn::FixedSizeLoadStoreUnit<RegisterType, byte, ArchitectureConstants::RegistersPerBank * bankCount>;
+		public:
+			BankedCore(const std::string& busMicrocodePath, RegisterType ioStart, RegisterType ioEnd) noexcept : _bus(ioStart, ioEnd, busMicrocodePath) { }
+			virtual ~BankedCore() noexcept { }
+            virtual void initialize() override {
+				_bus.initialize();
+			}
+            virtual void shutdown() override {
+				_bus.shutdown();
+			}
+			virtual RegisterType& registerValue(byte bank, byte offset) = 0;
+			virtual RegisterType& registerValue(byte index) {
+				return registerValue(index / ArchitectureConstants::RegistersPerBank, index % ArchitectureConstants::RegistersPerBank);
+			}
+            virtual void incrementAddress(RegisterValue& ptr) noexcept = 0;
+            virtual void decrementAddress(RegisterValue& ptr) noexcept = 0;
+            virtual void incrementInstructionPointer() noexcept {
+				incrementAddress(getInstructionPointer());
+			}
+            virtual RegisterType& getInstructionPointer() noexcept = 0;
+            virtual RegisterType& getStackPointer() noexcept = 0;
+            virtual RegisterType& getCallStackPointer() noexcept = 0;
+            virtual RegisterType& getAddressRegister() noexcept = 0;
+            virtual RegisterType& getValueRegister() noexcept = 0;
+            virtual RegisterType& getMaskRegister() noexcept = 0;
+            virtual RegisterType  getShiftRegister() noexcept = 0;
+            virtual RegisterType  getFieldRegister() noexcept = 0;
+            virtual bool& getConditionRegister() noexcept = 0;
+            virtual void pushWord(Word value) {
+				pushWord(value, getStackPointer());
+			}
+            virtual void pushWord(Word value, RegisterType& sp) {
+				decrementAddress(sp);
+				storeWord(sp, value);
+			}
+            virtual void pushRegisterValue(RegisterType value) {
+				pushRegisterValue(value, getStackPointer());
+			}
+            virtual void pushRegisterValue(RegisterType value, RegisterType& sp) {
+				pushWord(decodeUpperHalf(value), sp);
+				pushWord(decodeLowerHalf(value), sp);
+			}
+            virtual Word popWord() {
+				return popWord(getStackPointer());
+			}
+            virtual Word popWord(RegisterType& sp) {
+				auto result = loadWord(sp);
+				incrementAddress(sp);
+				return result;
+			}
+            virtual RegisterType popRegisterValue(RegisterType& sp) {
+				auto lower = popWord(sp);
+				auto upper = popWord(sp);
+				return encodeRegisterValue(upper, lower);
+			}
+            virtual RegisterType popRegisterValue() {
+				return popRegisterValue(getStackPointer());
+			}
+            virtual void storeWord(RegisterType address, Word value) {
+				if (isTerminateAddress(address)) {
+					execute = false;
+					advanceIp = false;
+				} else {
+					_bus.write(address, value);
+				}
+			}
+			virtual Word loadWord(RegisterType address) {
+				if (isTerminateAddress(address)) {
+					return 0;
+				} else {
+					return _bus.read(address);
+				}
+			}
+            inline Word loadWord(RegisterType address, byte offset) {
+				return loadWord(address + offset);
+			}
+            inline void storeWord(RegisterType address, byte offset, Word value) {
+				storeWord(address + offset, value);
+			}
+		protected:
+			bool advanceIp = true;
+			IOBus _bus;
+	};
+	class Core : public BankedCore<2, RegisterValue> {
         public:
 			using IOBus = syn::CLIPSIOController<Word, CLIPSInteger>;
             using RegisterFile = syn::FixedSizeLoadStoreUnit<RegisterValue, byte, ArchitectureConstants::RegisterCount>;
+			using Parent = BankedCore<2, RegisterValue>;
             static constexpr RegisterValue busStart = 0x00000000;
             static constexpr RegisterValue busEnd = 0xFFFFFFFF;
 		public:
@@ -175,34 +264,17 @@ namespace cisc0 {
 			virtual ~Core() noexcept { }
 			virtual bool handleOperation(void* env, CLIPSValue* ret) override;
             virtual void initialize() override;
-            virtual void shutdown() override;
         protected:
-            void incrementAddress(RegisterValue& ptr) noexcept;
-            void decrementAddress(RegisterValue& ptr) noexcept;
-            void incrementInstructionPointer() noexcept;
-            virtual RegisterValue& getInstructionPointer() noexcept;
-            virtual RegisterValue& getStackPointer() noexcept;
-            virtual RegisterValue& getCallStackPointer() noexcept;
-            virtual RegisterValue& getAddressRegister() noexcept;
-            virtual RegisterValue& getValueRegister() noexcept;
-            virtual RegisterValue& getMaskRegister() noexcept;
-            virtual RegisterValue  getShiftRegister() noexcept;
-            virtual RegisterValue  getFieldRegister() noexcept;
-            virtual bool& getConditionRegister() noexcept = 0;
-            void pushWord(Word value);
-            void pushWord(Word value, RegisterValue& sp);
-            void pushRegisterValue(RegisterValue value);
-            void pushRegisterValue(RegisterValue value, RegisterValue& sp);
-            Word popWord();
-            Word popWord(RegisterValue& sp);
-            RegisterValue popRegisterValue(RegisterValue& sp);
-            RegisterValue popRegisterValue();
-
-            virtual RegisterValue& registerValue(byte index) = 0;
-            virtual void storeWord(RegisterValue address, Word value);
-            virtual Word loadWord(RegisterValue address);
-            Word loadWord(RegisterValue address, byte offset);
-            void storeWord(RegisterValue address, byte offset, Word value);
+            virtual void incrementAddress(RegisterValue& ptr) noexcept override;
+            virtual void decrementAddress(RegisterValue& ptr) noexcept override;
+            virtual RegisterValue& getInstructionPointer() noexcept override;
+            virtual RegisterValue& getStackPointer() noexcept override;
+            virtual RegisterValue& getCallStackPointer() noexcept override;
+            virtual RegisterValue& getAddressRegister() noexcept override;
+            virtual RegisterValue& getValueRegister() noexcept override;
+            virtual RegisterValue& getMaskRegister() noexcept override;
+            virtual RegisterValue  getShiftRegister() noexcept override;
+            virtual RegisterValue  getFieldRegister() noexcept override;
         protected:
             virtual void returnOperation() noexcept;
             virtual void hex8ToRegister();
@@ -219,7 +291,6 @@ namespace cisc0 {
             virtual bool isTerminateAddress(RegisterValue address) const noexcept;
 		protected:
 			bool advanceIp = true;
-            IOBus _bus;
 	};
 
 

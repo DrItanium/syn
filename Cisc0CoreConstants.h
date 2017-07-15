@@ -38,6 +38,8 @@ namespace cisc0 {
 	enum ArchitectureConstants  {
 		RegisterCount = 16,
 		MaxInstructionCount = 16,
+		MaxRegisterBanks = 32,
+		RegistersPerBank = 8,
 		TerminateAddress = 0xFFFFFFFF,
 		StartingIPAddress = 0xFE000000,
 		// unlike iris16 and iris32, there is a limited set of registers with

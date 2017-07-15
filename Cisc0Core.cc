@@ -33,22 +33,16 @@
 #include "Cisc0ClipsExtensions.h"
 
 namespace cisc0 {
-    Core::Core(const std::string& busUcode, RegisterValue ioStart, RegisterValue ioEnd) noexcept : _bus(ioStart, ioEnd, busUcode) { }
+    Core::Core(const std::string& busUcode, RegisterValue ioStart, RegisterValue ioEnd) noexcept : Parent(busUcode, ioStart, ioEnd) { }
     void Core::initialize() {
+		Parent::initialize();
         cisc0::installAssemblerParsingState(_bus.getRawEnvironment());
-		_bus.initialize();
-    }
-    void Core::shutdown() {
-        _bus.shutdown();
     }
     void Core::incrementAddress(RegisterValue& ptr) noexcept {
         ++ptr;
     }
     void Core::decrementAddress(RegisterValue& ptr) noexcept {
         --ptr;
-    }
-    void Core::incrementInstructionPointer() noexcept {
-        incrementAddress(getInstructionPointer());
     }
 
     void illegalInstruction(const DecodedInstruction& current, RegisterValue ip) {
@@ -102,22 +96,6 @@ namespace cisc0 {
 		return popRegisterValue(getStackPointer());
 	}
 
-    void Core::storeWord(RegisterValue address, Word value) {
-        if (isTerminateAddress(address)) {
-            execute = false;
-            advanceIp = false;
-        } else {
-            _bus.write(address, value);
-        }
-    }
-
-    Word Core::loadWord(RegisterValue address) {
-        if (isTerminateAddress(address)) {
-            return 0;
-        } else {
-            return _bus.read(address);
-        }
-    }
 
     bool Core::isTerminateAddress(RegisterValue address) const noexcept {
         return address == ArchitectureConstants::TerminateAddress;
@@ -200,6 +178,18 @@ namespace cisc0 {
                 throw syn::Problem("Illegal complex encoding operation defined!");
         }
     }
+
+	RegisterValue& Core::registerValue(byte bank, byte offset) {
+		if (bank > 2 || offset > 7) {
+			throw syn::Problem("Illegal register value!");
+		} else {
+			if (bank == 0) {
+				return registerValue(offset);
+			} else {
+				return registerValue(ArchitectureConstants::RegistersPerBank + offset);
+			}
+		}
+	}
 
 
 }
