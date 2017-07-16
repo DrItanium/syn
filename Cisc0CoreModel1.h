@@ -47,9 +47,9 @@ namespace cisc0 {
      * A reimplementation of the cisc0 instruction set with modifications to
      * the internals!
      */
-	class CoreModel1 : public Core {
+	class CoreModel1 : public Core, public ConditionRegisterImplementation {
 		public:
-            using Parent = Core;
+            using Parent = cisc0::Core;
             static constexpr auto instructionCacheWidth = 3;
 		public:
 			CoreModel1() noexcept;

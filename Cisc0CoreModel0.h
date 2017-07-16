@@ -42,9 +42,9 @@
 #include "Cisc0Core.h"
 
 namespace cisc0 {
-	class CoreModel0 : public Core {
+	class CoreModel0 : public Core, public ConditionRegisterImplementation {
         public:
-            using Parent = Core;
+            using Parent = cisc0::Core;
 		public:
 			CoreModel0() noexcept;
 			virtual ~CoreModel0() noexcept;

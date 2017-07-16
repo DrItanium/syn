@@ -164,12 +164,14 @@ namespace cisc0 {
                         a,
                         b), 0x1), 1);
     }
-	template<byte bankCount, typename RegisterType>
+	template<byte bankCount, typename R>
 	class BankedCore : public syn::ClipsCore {
 		static_assert(bankCount <= ArchitectureConstants::MaxRegisterBanks, "Too many register banks specified!");
 		public:
+			using RegisterType = R;
 			using IOBus = syn::CLIPSIOController<Word, CLIPSInteger>;
 			using RegisterFile = syn::FixedSizeLoadStoreUnit<RegisterType, byte, ArchitectureConstants::RegistersPerBank * bankCount>;
+			static constexpr auto targetBankCount = bankCount;
 		public:
 			BankedCore(const std::string& busMicrocodePath, RegisterType ioStart, RegisterType ioEnd) noexcept : _bus(ioStart, ioEnd, busMicrocodePath) { }
 			virtual ~BankedCore() noexcept { }
@@ -311,6 +313,14 @@ namespace cisc0 {
 			bool advanceIp = true;
 			IOBus _bus;
 	};
+	class ConditionRegisterImplementation {
+		public:
+			ConditionRegisterImplementation() { }
+			virtual ~ConditionRegisterImplementation() { }
+			virtual bool& getConditionRegister() noexcept { return _conditionRegister; }
+		protected:
+			bool _conditionRegister = true;
+	};
 	class Core : public BankedCore<2, RegisterValue> {
         public:
             using RegisterFile = syn::FixedSizeLoadStoreUnit<RegisterValue, byte, ArchitectureConstants::RegisterCount>;
@@ -345,8 +355,6 @@ namespace cisc0 {
             virtual void decodeBits() override;
             virtual void encodeBits() override;
 	};
-
-
 } // end namespace cisc0
 
 #endif // end _TARGET_CISC0_IRIS_H
