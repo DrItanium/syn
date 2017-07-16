@@ -62,60 +62,6 @@ namespace cisc0 {
     RegisterValue  Core::getShiftRegister() noexcept { return 0b11111 & registerValue(ArchitectureConstants::ShiftRegister); }
     RegisterValue  Core::getFieldRegister() noexcept { return 0b11111 & registerValue(ArchitectureConstants::FieldRegister); }
 
-
-    void Core::pushWord(Word value) {
-		pushWord(value, getStackPointer());
-    }
-	void Core::pushWord(Word value, RegisterValue& sp) {
-		decrementAddress(sp);
-		storeWord(sp, value);
-	}
-    void Core::pushRegisterValue(RegisterValue value) {
-		pushRegisterValue(value, getStackPointer());
-    }
-
-	void Core::pushRegisterValue(RegisterValue value, RegisterValue& sp) {
-		pushWord(decodeUpperHalf(value), sp);
-		pushWord(decodeLowerHalf(value), sp);
-	}
-
-    Word Core::popWord() {
-		return popWord(getStackPointer());
-    }
-	Word Core::popWord(RegisterValue& sp) {
-		auto result = loadWord(sp);
-		incrementAddress(sp);
-		return result;
-	}
-    RegisterValue Core::popRegisterValue(RegisterValue& sp) {
-        auto lower = popWord(sp);
-        auto upper = popWord(sp);
-        return encodeRegisterValue(upper, lower);
-    }
-	RegisterValue Core::popRegisterValue() {
-		return popRegisterValue(getStackPointer());
-	}
-
-
-    bool Core::isTerminateAddress(RegisterValue address) const noexcept {
-        return address == ArchitectureConstants::TerminateAddress;
-    }
-
-    void Core::returnOperation() noexcept {
-        // pop the top address off of the call stack and place it in the
-        // instruction pointer!
-        getInstructionPointer() = popRegisterValue(getCallStackPointer());
-        advanceIp = false;
-    }
-
-    void Core::storeWord(RegisterValue addr, byte offset, Word value) {
-        storeWord(addr + offset, value);
-    }
-
-    Word Core::loadWord(RegisterValue addr, byte offset) {
-        return loadWord(addr + offset);
-    }
-
     void Core::hex8ToRegister() {
         // 1) use the address contained in address to read the next 8 words
         // 2) Parse each word as an ascii character and convert it into a 4 bit quantity

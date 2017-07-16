@@ -249,6 +249,16 @@ namespace cisc0 {
 				storeWord(address + offset, value);
 			}
 		protected:
+			virtual void returnOperation() noexcept {
+				// pop the top address off of the call stack and place it in the
+				// instruction pointer!
+				getInstructionPointer() = popRegisterValue(getCallStackPointer());
+				advanceIp = false;
+			}
+            virtual bool isTerminateAddress(RegisterValue address) const noexcept {
+				return address == ArchitectureConstants::TerminateAddress;
+			}
+		protected:
 			bool advanceIp = true;
 			IOBus _bus;
 	};
@@ -276,7 +286,6 @@ namespace cisc0 {
             virtual RegisterValue  getShiftRegister() noexcept override;
             virtual RegisterValue  getFieldRegister() noexcept override;
         protected:
-            virtual void returnOperation() noexcept;
             virtual void hex8ToRegister();
             virtual void registerToHex8();
             template<syn::Comparator::StandardOperations op>
@@ -288,9 +297,6 @@ namespace cisc0 {
             virtual void decodeBits();
             virtual void encodeBits();
             virtual void defaultEncodingOperation(EncodingOperation op);
-            virtual bool isTerminateAddress(RegisterValue address) const noexcept;
-		protected:
-			bool advanceIp = true;
 	};
 
 
