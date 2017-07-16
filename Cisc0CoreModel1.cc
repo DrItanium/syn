@@ -56,15 +56,8 @@ namespace cisc0 {
 
     void CoreModel1::initialize() {
         Parent::initialize();
-		_gpr.initialize();
-		getInstructionPointer() = ArchitectureConstants::StartingIPAddress;
 		_terminateAddress = ArchitectureConstants::TerminateAddress;
     }
-
-    void CoreModel1::shutdown() {
-        Parent::shutdown();
-        _gpr.shutdown();
-	}
 
     bool CoreModel1::cycle() {
         for (auto i = 0; i < instructionCacheWidth; ++i) {
@@ -173,10 +166,10 @@ namespace cisc0 {
     }
 
     void CoreModel1::moveToCondition(byte index) noexcept {
-        conditionRegister = registerValue(index) != 0;
+		getConditionRegister() = registerValue(index) != 0;
     }
     void CoreModel1::moveFromCondition(byte index) noexcept {
-        registerValue(index) = normalizeCondition(conditionRegister);
+        registerValue(index) = normalizeCondition(getConditionRegister());
     }
 
     void CoreModel1::compareOperation() {
@@ -425,10 +418,6 @@ namespace cisc0 {
 
     void CoreModel1::encodingOperation() {
         defaultEncodingOperation(firstWord().getEncodingOperation());
-    }
-
-    RegisterValue& CoreModel1::registerValue(byte index) {
-        return _gpr[index];
     }
 
 	bool CoreModel1::isTerminateAddress(RegisterValue address) const noexcept {

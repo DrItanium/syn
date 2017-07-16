@@ -47,22 +47,19 @@ namespace cisc0 {
      * A reimplementation of the cisc0 instruction set with modifications to
      * the internals!
      */
-	class CoreModel1 : public Core, public ConditionRegisterImplementation {
+	class CoreModel1 : public Core {
 		public:
-            using Parent = cisc0::Core;
+            using Parent = Core;
             static constexpr auto instructionCacheWidth = 3;
 		public:
 			CoreModel1() noexcept;
 			virtual ~CoreModel1() noexcept;
 			virtual void initialize() override;
-			virtual void shutdown() override;
 			virtual bool cycle() override;
 		private:
 			void dispatch();
 			RegisterValue retrieveImmediate(byte bitmask) noexcept;
         protected:
-			virtual RegisterValue& registerValue(byte index) override;
-			virtual bool& getConditionRegister() noexcept override  { return conditionRegister; }
 			virtual bool isTerminateAddress(RegisterValue address) const noexcept override;
 		private:
             void moveToCondition(byte index) noexcept;
@@ -82,7 +79,6 @@ namespace cisc0 {
 			void featureCheckOperation();
             inline const DecodedInstruction& firstWord() const noexcept { return _instruction[0]; }
 		private:
-			bool conditionRegister = false;
 			RegisterFile _gpr;
             // The actual instruction is four words wide but instructions are
             // variable width up three words! It is up to the internal code to

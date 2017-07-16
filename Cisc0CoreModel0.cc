@@ -49,17 +49,6 @@ namespace cisc0 {
     CoreModel0::CoreModel0() noexcept : Parent("Cisc0CoreModel0IOBus.clp") { }
     CoreModel0::~CoreModel0() noexcept { }
 
-    void CoreModel0::initialize() {
-        Parent::initialize();
-		gpr.initialize();
-		getInstructionPointer() = ArchitectureConstants::StartingIPAddress;
-    }
-
-    void CoreModel0::shutdown() {
-        Parent::shutdown();
-        gpr.shutdown();
-	}
-
     bool CoreModel0::cycle() {
         if (debugEnabled()) {
             std::cout << "Current Instruction Location: " << std::hex << getInstructionPointer() << std::endl;
@@ -89,7 +78,7 @@ namespace cisc0 {
             auto dInd = current.getDestinationRegister<group>();
             auto sInd = current.getSourceRegister<group>();
             if (dInd != sInd) {
-                gpr.swap(dInd, sInd);
+                _gpr.swap(dInd, sInd);
             }
         };
         auto moveOperation = [this,&current]() {
@@ -430,9 +419,6 @@ namespace cisc0 {
         defaultEncodingOperation(inst.getEncodingOperation());
     }
 
-    RegisterValue& CoreModel0::registerValue(byte index) {
-        return gpr[index];
-    }
     Word CoreModel0::getCurrentCodeWord() {
         return loadWord(getInstructionPointer());
     }

@@ -42,14 +42,12 @@
 #include "Cisc0Core.h"
 
 namespace cisc0 {
-	class CoreModel0 : public Core, public ConditionRegisterImplementation {
+	class CoreModel0 : public Core {
         public:
-            using Parent = cisc0::Core;
+            using Parent = Core ;
 		public:
 			CoreModel0() noexcept;
 			virtual ~CoreModel0() noexcept;
-			virtual void initialize() override;
-			virtual void shutdown() override;
 			virtual bool cycle() override;
 		private:
 			void dispatch(const DecodedInstruction& inst);
@@ -64,9 +62,6 @@ namespace cisc0 {
             Word tryReadNext(bool readNext);
 			RegisterValue retrieveImmediate(byte bitmask) noexcept;
 			Word getCurrentCodeWord();
-        protected:
-			virtual RegisterValue& registerValue(byte index) override;
-			bool& getConditionRegister() noexcept override { return conditionRegister; }
 		private:
 			void complexOperation(const DecodedInstruction& inst);
 			void encodingOperation(const DecodedInstruction& inst);
@@ -81,9 +76,6 @@ namespace cisc0 {
             void logicalOperation(const DecodedInstruction& inst);
             void arithmeticOperation(const DecodedInstruction& inst);
             void shiftOperation(const DecodedInstruction& inst);
-		private:
-			bool conditionRegister = false;
-			RegisterFile gpr;
 	};
 
 

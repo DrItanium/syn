@@ -182,9 +182,6 @@ namespace cisc0 {
 				_bus.shutdown();
 			}
 		protected:
-			virtual RegisterType& registerValue(byte index) {
-				return registerValue(index / ArchitectureConstants::RegistersPerBank, index % ArchitectureConstants::RegistersPerBank);
-			}
 			virtual RegisterType& registerValue(byte bank, byte offset) = 0;
             virtual void incrementAddress(RegisterValue& ptr) noexcept = 0;
             virtual void decrementAddress(RegisterValue& ptr) noexcept = 0;
@@ -315,13 +312,11 @@ namespace cisc0 {
 	};
 	class ConditionRegisterImplementation {
 		public:
-			ConditionRegisterImplementation() { }
-			virtual ~ConditionRegisterImplementation() { }
 			virtual bool& getConditionRegister() noexcept { return _conditionRegister; }
 		protected:
 			bool _conditionRegister = true;
 	};
-	class Core : public BankedCore<2, RegisterValue> {
+	class Core : public BankedCore<2, RegisterValue>, public ConditionRegisterImplementation {
         public:
             using RegisterFile = syn::FixedSizeLoadStoreUnit<RegisterValue, byte, ArchitectureConstants::RegisterCount>;
 			using Parent = BankedCore<2, RegisterValue>;
@@ -332,9 +327,11 @@ namespace cisc0 {
 			virtual ~Core() noexcept { }
 			virtual bool handleOperation(void* env, CLIPSValue* ret) override;
             virtual void initialize() override;
+			virtual void shutdown() override;
 		protected:
-			using Parent::registerValue;
 			virtual RegisterValue& registerValue(byte bank, byte offset) override;
+			virtual RegisterValue& registerValue(byte index);
+			virtual bool& getConditionRegister() noexcept override;
             virtual void incrementAddress(RegisterValue& ptr) noexcept override;
             virtual void decrementAddress(RegisterValue& ptr) noexcept override;
             virtual RegisterValue& getInstructionPointer() noexcept override;
@@ -354,6 +351,8 @@ namespace cisc0 {
             virtual void unsetBit() override;
             virtual void decodeBits() override;
             virtual void encodeBits() override;
+		protected:
+			RegisterFile _gpr;
 	};
 } // end namespace cisc0
 

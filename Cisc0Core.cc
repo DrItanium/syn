@@ -34,10 +34,17 @@
 
 namespace cisc0 {
     Core::Core(const std::string& busUcode, RegisterValue ioStart, RegisterValue ioEnd) noexcept : Parent(busUcode, ioStart, ioEnd) { }
+
     void Core::initialize() {
 		Parent::initialize();
+		_gpr.initialize();
         cisc0::installAssemblerParsingState(_bus.getRawEnvironment());
+		getInstructionPointer() = ArchitectureConstants::StartingIPAddress;
     }
+	void Core::shutdown() {
+		Parent::shutdown();
+		_gpr.shutdown();
+	}
     void Core::incrementAddress(RegisterValue& ptr) noexcept {
         ++ptr;
     }
@@ -88,6 +95,14 @@ namespace cisc0 {
 				return registerValue(ArchitectureConstants::RegistersPerBank + offset);
 			}
 		}
+	}
+
+	RegisterValue& Core::registerValue(byte index) {
+		return _gpr[index];
+	}
+
+	bool& Core::getConditionRegister() noexcept {
+		return ConditionRegisterImplementation::getConditionRegister();
 	}
 
 
