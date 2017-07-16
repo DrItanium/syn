@@ -179,10 +179,11 @@ namespace cisc0 {
             virtual void shutdown() override {
 				_bus.shutdown();
 			}
-			virtual RegisterType& registerValue(byte bank, byte offset) = 0;
+		protected:
 			virtual RegisterType& registerValue(byte index) {
 				return registerValue(index / ArchitectureConstants::RegistersPerBank, index % ArchitectureConstants::RegistersPerBank);
 			}
+			virtual RegisterType& registerValue(byte bank, byte offset) = 0;
             virtual void incrementAddress(RegisterValue& ptr) noexcept = 0;
             virtual void decrementAddress(RegisterValue& ptr) noexcept = 0;
             virtual void incrementInstructionPointer() noexcept {
@@ -258,13 +259,60 @@ namespace cisc0 {
             virtual bool isTerminateAddress(RegisterValue address) const noexcept {
 				return address == ArchitectureConstants::TerminateAddress;
 			}
+            virtual void hex8ToRegister() {
+				// 1) use the address contained in address to read the next 8 words
+				// 2) Parse each word as an ascii character and convert it into a 4 bit quantity
+				// 3) Place that 4bit quantity into the appropriate position in value
+				auto addr = getAddressRegister();
+				auto value = syn::encodeBits<RegisterValue, byte, 0x0000000F, 0>(0, convertTextToHex(loadWord(addr)));
+				value = syn::encodeBits<RegisterValue, byte, 0x000000F0, 4>(value, convertTextToHex(loadWord(addr, 1)));
+				value = syn::encodeBits<RegisterValue, byte, 0x00000F00, 8>(value, convertTextToHex(loadWord(addr, 2)));
+				value = syn::encodeBits<RegisterValue, byte, 0x0000F000, 12>(value, convertTextToHex(loadWord(addr, 3)));
+				value = syn::encodeBits<RegisterValue, byte, 0x000F0000, 16>(value, convertTextToHex(loadWord(addr, 4)));
+				value = syn::encodeBits<RegisterValue, byte, 0x00F00000, 20>(value, convertTextToHex(loadWord(addr, 5)));
+				value = syn::encodeBits<RegisterValue, byte, 0x0F000000, 24>(value, convertTextToHex(loadWord(addr, 6)));
+				getValueRegister() = syn::encodeBits<RegisterValue, byte, 0xF0000000, 28>(value, convertTextToHex(loadWord(addr, 7)));
+			}
+            virtual void registerToHex8() {
+				auto addr = getAddressRegister();
+				auto value = getValueRegister();
+				storeWord(addr, extractHexAndConvertToText<0x0000000F, 0>(value));
+				storeWord(addr, 1, extractHexAndConvertToText<0x000000F0, 4>(value));
+				storeWord(addr, 2, extractHexAndConvertToText<0x00000F00, 8>(value));
+				storeWord(addr, 3, extractHexAndConvertToText<0x0000F000, 12>(value));
+				storeWord(addr, 4, extractHexAndConvertToText<0x000F0000, 16>(value));
+				storeWord(addr, 5, extractHexAndConvertToText<0x00F00000, 20>(value));
+				storeWord(addr, 6, extractHexAndConvertToText<0x0F000000, 24>(value));
+				storeWord(addr, 7, extractHexAndConvertToText<0xF0000000, 28>(value));
+			}
+            virtual void defaultEncodingOperation(EncodingOperation op) {
+				switch(op) {
+					case EncodingOperation::Decode:
+						decodeBits();
+						break;
+					case EncodingOperation::Encode:
+						encodeBits();
+						break;
+					case EncodingOperation::BitSet:
+						setBit();
+						break;
+					case EncodingOperation::BitUnset:
+						unsetBit();
+						break;
+					default:
+						throw syn::Problem("Illegal complex encoding operation defined!");
+				}
+			}
+            virtual void setBit() = 0;
+            virtual void unsetBit() = 0;
+            virtual void decodeBits() = 0;
+            virtual void encodeBits() = 0;
 		protected:
 			bool advanceIp = true;
 			IOBus _bus;
 	};
 	class Core : public BankedCore<2, RegisterValue> {
         public:
-			using IOBus = syn::CLIPSIOController<Word, CLIPSInteger>;
             using RegisterFile = syn::FixedSizeLoadStoreUnit<RegisterValue, byte, ArchitectureConstants::RegisterCount>;
 			using Parent = BankedCore<2, RegisterValue>;
             static constexpr RegisterValue busStart = 0x00000000;
@@ -274,7 +322,9 @@ namespace cisc0 {
 			virtual ~Core() noexcept { }
 			virtual bool handleOperation(void* env, CLIPSValue* ret) override;
             virtual void initialize() override;
-        protected:
+		protected:
+			using Parent::registerValue;
+			virtual RegisterValue& registerValue(byte bank, byte offset) override;
             virtual void incrementAddress(RegisterValue& ptr) noexcept override;
             virtual void decrementAddress(RegisterValue& ptr) noexcept override;
             virtual RegisterValue& getInstructionPointer() noexcept override;
@@ -286,17 +336,14 @@ namespace cisc0 {
             virtual RegisterValue  getShiftRegister() noexcept override;
             virtual RegisterValue  getFieldRegister() noexcept override;
         protected:
-            virtual void hex8ToRegister();
-            virtual void registerToHex8();
             template<syn::Comparator::StandardOperations op>
             inline void defaultSliceBitAndCheck() {
                 getConditionRegister() = sliceBitAndCheck<op>(getAddressRegister(), getFieldRegister());
             }
-            virtual void setBit();
-            virtual void unsetBit();
-            virtual void decodeBits();
-            virtual void encodeBits();
-            virtual void defaultEncodingOperation(EncodingOperation op);
+            virtual void setBit() override;
+            virtual void unsetBit() override;
+            virtual void decodeBits() override;
+            virtual void encodeBits() override;
 	};
 
 

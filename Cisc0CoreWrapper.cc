@@ -91,7 +91,7 @@ namespace cisc0 {
             __RETURN_FALSE_ON_FALSE__(DefaultCoreWrapper::tryExtractArgument1(env, ret, &index, syn::MayaType::Integer, "Must provide an integer index to retrieve a register value!"));
 			auto i = syn::extractLong(env, index);
             __RETURN_FALSE_ON_FALSE__(failOnIllegalRegisterIndex(env, ret, i));
-			CVSetInteger(ret, registerValue(static_cast<byte>(i)));
+			CVSetInteger(ret, this->registerValue(static_cast<byte>(i)));
 			return true;
 		};
 		auto setRegister = [this, env, ret]() {

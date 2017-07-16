@@ -62,34 +62,6 @@ namespace cisc0 {
     RegisterValue  Core::getShiftRegister() noexcept { return 0b11111 & registerValue(ArchitectureConstants::ShiftRegister); }
     RegisterValue  Core::getFieldRegister() noexcept { return 0b11111 & registerValue(ArchitectureConstants::FieldRegister); }
 
-    void Core::hex8ToRegister() {
-        // 1) use the address contained in address to read the next 8 words
-        // 2) Parse each word as an ascii character and convert it into a 4 bit quantity
-        // 3) Place that 4bit quantity into the appropriate position in value
-        auto addr = getAddressRegister();
-        auto value = syn::encodeBits<RegisterValue, byte, 0x0000000F, 0>(0, convertTextToHex(loadWord(addr)));
-        value = syn::encodeBits<RegisterValue, byte, 0x000000F0, 4>(value, convertTextToHex(loadWord(addr, 1)));
-        value = syn::encodeBits<RegisterValue, byte, 0x00000F00, 8>(value, convertTextToHex(loadWord(addr, 2)));
-        value = syn::encodeBits<RegisterValue, byte, 0x0000F000, 12>(value, convertTextToHex(loadWord(addr, 3)));
-        value = syn::encodeBits<RegisterValue, byte, 0x000F0000, 16>(value, convertTextToHex(loadWord(addr, 4)));
-        value = syn::encodeBits<RegisterValue, byte, 0x00F00000, 20>(value, convertTextToHex(loadWord(addr, 5)));
-        value = syn::encodeBits<RegisterValue, byte, 0x0F000000, 24>(value, convertTextToHex(loadWord(addr, 6)));
-        getValueRegister() = syn::encodeBits<RegisterValue, byte, 0xF0000000, 28>(value, convertTextToHex(loadWord(addr, 7)));
-    }
-
-    void Core::registerToHex8() {
-        auto addr = getAddressRegister();
-        auto value = getValueRegister();
-        storeWord(addr, extractHexAndConvertToText<0x0000000F, 0>(value));
-        storeWord(addr, 1, extractHexAndConvertToText<0x000000F0, 4>(value));
-        storeWord(addr, 2, extractHexAndConvertToText<0x00000F00, 8>(value));
-        storeWord(addr, 3, extractHexAndConvertToText<0x0000F000, 12>(value));
-        storeWord(addr, 4, extractHexAndConvertToText<0x000F0000, 16>(value));
-        storeWord(addr, 5, extractHexAndConvertToText<0x00F00000, 20>(value));
-        storeWord(addr, 6, extractHexAndConvertToText<0x0F000000, 24>(value));
-        storeWord(addr, 7, extractHexAndConvertToText<0xF0000000, 28>(value));
-    }
-
     void Core::setBit() {
         defaultSliceBitAndCheck<syn::Comparator::StandardOperations::Eq>();
     }
@@ -104,25 +76,6 @@ namespace cisc0 {
         // connect the result of the logical operations alu to the
         // shifter alu then store the result in the value register
         getValueRegister() = syn::decodeBits<RegisterValue, RegisterValue>(getAddressRegister(), getMaskRegister(), getShiftRegister());
-    }
-
-    void Core::defaultEncodingOperation(EncodingOperation op) {
-        switch(op) {
-            case EncodingOperation::Decode:
-                decodeBits();
-                break;
-            case EncodingOperation::Encode:
-                encodeBits();
-                break;
-            case EncodingOperation::BitSet:
-                setBit();
-                break;
-            case EncodingOperation::BitUnset:
-                unsetBit();
-                break;
-            default:
-                throw syn::Problem("Illegal complex encoding operation defined!");
-        }
     }
 
 	RegisterValue& Core::registerValue(byte bank, byte offset) {
