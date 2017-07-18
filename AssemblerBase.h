@@ -142,7 +142,7 @@ namespace syn {
 	template<typename First, typename Second, typename Third, typename Sep0 = AsmSeparator, typename Sep1 = AsmSeparator>
 	struct ThreePartComponent : pegtl::seq<First, Sep0, Second, Sep1, Third> { };
 
-	template<typename State, typename First, typename Second, typename Third, typename Sep0 = AsmSeparator, typename Sep1 = AsmSeparator> 
+	template<typename State, typename First, typename Second, typename Third, typename Sep0 = AsmSeparator, typename Sep1 = AsmSeparator>
 	struct StatefulThreePartComponent : pegtl::state<State, ThreePartComponent<First, Second, Third, Sep0, Sep1>> { };
 
 
@@ -164,8 +164,6 @@ namespace syn {
 	template<char delim = 'b'>
 	struct Base2Number : GenericNumeral<delim, pegtl::abnf::BIT> { };
 	using BinaryNumber = Base2Number<'b'>;
-
-
 
 	struct Base10Number : pegtl::plus<pegtl::digit> { };
 
