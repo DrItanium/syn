@@ -72,9 +72,9 @@ namespace cisc0 {
         auto moveOperation = [this]() {
             constexpr auto group = Operation::Move;
             using T = RegisterValue;
-            auto dInd = _instruction.getDestinationRegister<group>();
-            auto source0 = registerValue(_instruction.getSourceRegister<group>());
-            auto bmask = mask(_instruction.getBitmask<group>());
+            auto dInd = destinationRegister<group>();
+            auto source0 = sourceRegister<group>();
+            auto bmask = _instruction.expandedBitmask<group>();
             registerValue(dInd) = syn::decodeBits<T, T>(source0, bmask, 0);
         };
         auto setOperation = [this]() {
@@ -161,7 +161,7 @@ namespace cisc0 {
 			auto compareUnitType = translate(compareResult);
         	syn::throwOnErrorState(compareResult, "Illegal compare type!");
 			auto first = registerValue(destinationIndex);
-			auto second = _instruction.isImmediate<group>() ?  _instruction.retrieveImmediate<group>() : registerValue(_instruction.getSourceRegister<group>());
+			auto second = _instruction.isImmediate<group>() ?  _instruction.retrieveImmediate<group>() : sourceRegister<group>();
 			getConditionRegister() = syn::Comparator::performOperation(compareUnitType, first, second);
         };
         switch(compareResult) {
@@ -385,8 +385,8 @@ namespace cisc0 {
         auto result = translate(_instruction.getSubtype<group>());
         syn::throwOnErrorState(result, "Illegal logical operation!");
         auto op = result;
-        auto source1 = _instruction.isImmediate<group>() ? _instruction.retrieveImmediate<group>() : registerValue(_instruction.getSourceRegister<group>());
-        auto& dest = registerValue(_instruction.getDestinationRegister<group>());
+        auto source1 = _instruction.isImmediate<group>() ? _instruction.retrieveImmediate<group>() : sourceRegister<group>();
+        auto& dest = destinationRegister<group>();
         dest = syn::ALU::performOperation<RegisterValue>(op, dest, source1);
     }
 

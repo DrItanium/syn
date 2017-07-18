@@ -93,6 +93,11 @@ namespace cisc0 {
                     inline byte getBitmask() const noexcept {
                         return _first.getBitmask<op>();
                     }
+                public:
+                    template<Operation op>
+                    inline RegisterValue expandedBitmask() const noexcept {
+                        return mask(getBitmask<op>());
+                    }
 
 
                 private:
@@ -124,6 +129,15 @@ namespace cisc0 {
             void arithmeticOperation();
             void shiftOperation();
 			void featureCheckOperation();
+        private:
+            template<Operation op>
+            inline RegisterValue& destinationRegister() noexcept {
+                return registerValue(_instruction.getDestinationRegister<op>());
+            }
+            template<Operation op>
+            inline RegisterValue& sourceRegister() noexcept {
+                return registerValue(_instruction.getSourceRegister<op>());
+            }
 		private:
 			RegisterFile _gpr;
 			cisc0::Address _terminateAddress;
