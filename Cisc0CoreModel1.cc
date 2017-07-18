@@ -414,4 +414,33 @@ namespace cisc0 {
 				throw syn::Problem("Undefined feature check operation!");
 		}
 	}
+    void CoreModel1::FusedInstruction::reset(Word first, Word second, Word third) noexcept {
+        _first = DecodedInstruction(first);
+        _second = DecodedInstruction(second);
+        _third = DecodedInstruction(third);
+    }
+
+    Operation CoreModel1::FusedInstruction::getControl() const noexcept {
+        return _first.getControl();
+    }
+
+    RegisterValue CoreModel1::FusedInstruction::retrieveImmediate(byte bitmask) const noexcept {
+        // the immediate cache will be in positions 1 and 2
+        auto offset = 1;
+        auto getWord = [this, &offset](auto cond, auto shift, const auto& ref) noexcept {
+            if (cond) {
+                ++_ip;
+                auto result = ref.getRawValue();
+                ++offset;
+                return static_cast<RegisterValue>(result) << shift;
+            } else {
+                return static_cast<RegisterValue>(0);
+            }
+        };
+        auto lower = getWord(readLower(bitmask), 0, _second);
+        auto upper = getWord(readUpper(bitmask), 16, _third);
+        return mask(bitmask) & (lower | upper);
+    }
+    CoreModel1::FusedInstruction::~FusedInstruction() { }
+    CoreModel1::FusedInstruction::FusedInstruction(RegisterValue& ip, Word first, Word second, Word third) : _first(first), _second(second), _third(third), _ip(ip) { }
 }

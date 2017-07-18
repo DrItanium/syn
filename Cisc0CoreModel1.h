@@ -51,67 +51,53 @@ namespace cisc0 {
 		public:
             using Parent = Core;
             static constexpr auto instructionCacheWidth = 3;
-            struct FusedInstruction {
-                FusedInstruction(RegisterValue& ip, Word first = 0, Word second = 0, Word third = 0) : _first(first), _second(second), _third(third), _ip(ip) { }
-                inline Operation getControl() const noexcept { return _first.getControl(); }
-                template<Operation op>
-                inline typename cisc0::DecodeType<op>::ReturnType getSubtype() const noexcept { return _first.getSubtype<op>(); }
-                void reset(Word first, Word second, Word third) noexcept {
-                    _first = DecodedInstruction(first);
-                    _second = DecodedInstruction(second);
-                    _third = DecodedInstruction(third);
-                }
-                template<Operation op>
-                inline byte getDestinationRegister() const noexcept {
-                    return _first.getDestinationRegister<op>();
-                }
+            class FusedInstruction {
+                public:
+                    FusedInstruction(RegisterValue& ip, Word first = 0, Word second = 0, Word third = 0);
+                    virtual ~FusedInstruction();
+                    Operation getControl() const noexcept;
+                    void reset(Word first, Word second, Word third) noexcept;
+                    RegisterValue retrieveImmediate(byte bitmask) const noexcept;
+                    const DecodedInstruction& firstWord() const noexcept { return _first; }
+                public:
+                    template<Operation op>
+                    inline typename cisc0::DecodeType<op>::ReturnType getSubtype() const noexcept {
+                        return _first.getSubtype<op>();
+                    }
+                    template<Operation op>
+                    inline byte getDestinationRegister() const noexcept {
+                        return _first.getDestinationRegister<op>();
+                    }
 
-                template<Operation op>
-                inline byte getSourceRegister() const noexcept {
-                    return _first.getSourceRegister<op>();
-                }
+                    template<Operation op>
+                    inline byte getSourceRegister() const noexcept {
+                        return _first.getSourceRegister<op>();
+                    }
 
-                template<Operation op>
-                inline Word getImmediate() const noexcept {
-                    return _first.getImmediate<op>();
-                }
+                    template<Operation op>
+                    inline Word getImmediate() const noexcept {
+                        return _first.getImmediate<op>();
+                    }
 
-                template<Operation op>
-                inline bool isImmediate() const noexcept {
-                    return _first.getImmediateFlag<op>();
-                }
+                    template<Operation op>
+                    inline bool isImmediate() const noexcept {
+                        return _first.getImmediateFlag<op>();
+                    }
 
-                inline RegisterValue retrieveImmediate(byte bitmask) const noexcept {
-                    // the immediate cache will be in positions 1 and 2
-                    auto offset = 1;
-                    auto getWord = [this, &offset](auto cond, auto shift, const auto& ref) noexcept {
-                        if (cond) {
-                            ++_ip;
-                            auto result = ref.getRawValue();
-                            ++offset;
-                            return static_cast<RegisterValue>(result) << shift;
-                        } else {
-                            return static_cast<RegisterValue>(0);
-                        }
-                    };
-                    auto lower = getWord(readLower(bitmask), 0, _second);
-                    auto upper = getWord(readUpper(bitmask), 16, _third);
-                    return mask(bitmask) & (lower | upper);
-                }
-                template<Operation op>
-                inline RegisterValue retrieveImmediate() const noexcept {
-                    return retrieveImmediate(getBitmask<op>());
-                }
+                    template<Operation op>
+                    inline RegisterValue retrieveImmediate() const noexcept {
+                        return retrieveImmediate(getBitmask<op>());
+                    }
 
-                template<Operation op>
-                inline byte getBitmask() const noexcept {
-                    return _first.getBitmask<op>();
-                }
+                    template<Operation op>
+                    inline byte getBitmask() const noexcept {
+                        return _first.getBitmask<op>();
+                    }
 
-                const DecodedInstruction& firstWord() const noexcept { return _first; }
 
-                DecodedInstruction _first, _second, _third;
-                RegisterValue& _ip;
+                private:
+                    DecodedInstruction _first, _second, _third;
+                    RegisterValue& _ip;
             };
 		public:
 			CoreModel1() noexcept;
