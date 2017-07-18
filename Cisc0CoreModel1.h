@@ -109,8 +109,6 @@ namespace cisc0 {
                 }
 
                 const DecodedInstruction& firstWord() const noexcept { return _first; }
-                const DecodedInstruction& secondWord() const noexcept { return _second; }
-                const DecodedInstruction& thirdWord() const noexcept { return _third; }
 
                 DecodedInstruction _first, _second, _third;
                 RegisterValue& _ip;
