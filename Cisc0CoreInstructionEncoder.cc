@@ -62,27 +62,25 @@ namespace cisc0 {
 		return encodeControl(0, _type);
 	}
 
+
+
     InstructionEncoder::Encoding InstructionEncoder::encodeArithmetic() const {
 		constexpr auto op = Operation::Arithmetic;
 		auto first = setSubType<op>(commonEncoding());
-		first = setFlagImmediate<op>(first);
-		first = setDestination<op>(first);
-		first = setSource<op>(first);
+        first = setImmediateFlagAndDestinationAndSource<op>(first);
         return Encoding(1, first);
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeMove() const {
 		constexpr auto op = Operation::Move;
 		auto first = setBitmask<op>(commonEncoding());
-		first = setDestination<op>(first);
-		first = setSource<op>(first);
+        first = setSourceAndDestination<op>(first);
         return Encoding(1, first);
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeSwap() const {
 		constexpr auto op = Operation::Swap;
-		auto first = setDestination<op>(commonEncoding());
-		first = setSource<op>(first);
+        auto first = setSourceAndDestination<op>(commonEncoding());
         return Encoding(1, first);
     }
 
@@ -104,8 +102,7 @@ namespace cisc0 {
 		auto first = setSubType<op>(commonEncoding());
 		auto second = 0u;
 		auto third = 0u;
-		first = setFlagImmediate<op>(first);
-		first = setDestination<op>(first);
+        first = setImmediateFlagAndDestination<op>(first);
 		if (_immediate) {
 			first = setBitmask<op>(first);
 			auto maskedImmediate = mask(_bitmask) & _fullImmediate;
@@ -145,8 +142,7 @@ namespace cisc0 {
 		auto second = 0u;
 		auto third = 0u;
 		auto width = _immediate ? instructionSizeFromBitmask() : 1;
-		first = setFlagImmediate<op>(first);
-		first = setDestination<op>(first);
+        first = setImmediateFlagAndDestination<op>(first);
 		// if we are not looking at an immediate then this operation will
 		// actually do something
 		if (_immediate) {
@@ -182,7 +178,7 @@ namespace cisc0 {
 			case ComplexSubTypes::Encoding:
 				return encodeComplexEncoding(first);
 			default:
-				throw syn::Problem("Undefined complex sub type!");
+				throw syn::Problem("Undefined or unimplemented complex sub type!");
 		}
 	}
 	InstructionEncoder::Encoding InstructionEncoder::encodeComplexEncoding(Word value) const {

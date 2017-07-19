@@ -131,6 +131,19 @@ namespace cisc0 {
 			Word setBitmask(Word value) const noexcept {
 				return cisc0::encodeBitmask<op, decltype(_bitmask)>(value, _bitmask);
 			}
+            template<Operation op>
+            Word setSourceAndDestination(Word value) const noexcept {
+                return setSource<op>(setDestination<op>(value));
+            }
+
+            template<Operation op>
+            Word setImmediateFlagAndDestination(Word value) const noexcept {
+                return setDestination<op>(setFlagImmediate<op>(value));
+            }
+            template<Operation op>
+            Word setImmediateFlagAndDestinationAndSource(Word value) const noexcept {
+                return setSourceAndDestination<op>(setFlagImmediate<op>(value));
+            }
 			int instructionSizeFromBitmask() const noexcept;
 			Word commonEncoding() const;
             Encoding encodeMemory() const;
