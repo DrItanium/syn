@@ -572,7 +572,7 @@ constexpr bool inRangeExcludingMaximum(T value) noexcept {
 
 template<typename T>
 constexpr bool isEven(T value) noexcept {
-    return ((value >> 1) << 1) == value;
+    return (value & 1) == 0;
 }
 
 template<typename T>
