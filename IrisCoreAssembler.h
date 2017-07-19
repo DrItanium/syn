@@ -48,24 +48,26 @@
 namespace iris {
     template<typename R> struct Action : syn::Action<R> { };
     struct AssemblerData {
-        AssemblerData() : instruction(false), address(0), dataValue(0), group(0), operation(0), destination(0), source0(0), source1(0), hasLexeme(false), fullImmediate(false) { }
-        bool instruction;
-        word address;
-        word dataValue;
+        public:
+            AssemblerData() noexcept;
+            void reset() noexcept;
+            void setImmediate(word value) noexcept;
+            bool shouldResolveLabel() const noexcept { return fullImmediate && hasLexeme; }
+            dword encode() const noexcept;
+        public:
+            bool instruction;
+            word address;
+            word dataValue;
 
-        byte group;
-        byte operation;
-        byte destination;
-        byte source0;
-        byte source1;
-        bool hasLexeme;
-        bool fullImmediate;
-        std::string currentLexeme;
+            byte group;
+            byte operation;
+            byte destination;
+            byte source0;
+            byte source1;
+            bool hasLexeme;
+            bool fullImmediate;
+            std::string currentLexeme;
 
-        void reset() noexcept;
-        void setImmediate(word value) noexcept;
-        bool shouldResolveLabel() noexcept { return fullImmediate && hasLexeme; }
-        dword encode();
     };
 
     class AssemblerState : public syn::LabelTracker<word>, public syn::FinishedDataTracker<AssemblerData> {
@@ -94,7 +96,7 @@ namespace iris {
                 }
             void setCurrentAddress(word value) noexcept;
             void registerLabel(const std::string& label) noexcept;
-            word getCurrentAddress() noexcept;
+            word getCurrentAddress() const noexcept;
             void incrementCurrentAddress() noexcept;
             void saveToFinished() noexcept;
             void setTemporaryByte(byte value) noexcept { temporaryByte = value; }

@@ -45,6 +45,7 @@
 #include "IrisCoreAssembler.h"
 
 namespace iris {
+    AssemblerData::AssemblerData() noexcept : instruction(false), address(0), dataValue(0), group(0), operation(0), destination(0), source0(0), source1(0), hasLexeme(false), fullImmediate(false) { }
 	void AssemblerData::reset() noexcept {
 		instruction = false;
 		address = 0;
@@ -59,6 +60,18 @@ namespace iris {
 		fullImmediate = false;
 	}
 
+	void AssemblerData::setImmediate(word value) noexcept {
+		source0 = syn::getLowerHalf<word>(value);
+		source1 = syn::getUpperHalf<word>(value);
+	}
+    raw_instruction AssemblerData::encode() const noexcept {
+        if (instruction) {
+            return iris::encodeInstruction(group, operation, destination, source0, source1);
+        } else {
+            return dataValue;
+        }
+    }
+
 	void AssemblerState::setCurrentAddress(word value) noexcept {
 		if (inData) {
 			data.setCurrentAddress(value);
@@ -68,10 +81,6 @@ namespace iris {
 	}
 	void AssemblerState::setImmediate(word value) noexcept {
 		current.setImmediate(value);
-	}
-	void AssemblerData::setImmediate(word value) noexcept {
-		source0 = syn::getLowerHalf<word>(value);
-		source1 = syn::getUpperHalf<word>(value);
 	}
 	void AssemblerState::setGroup(InstructionGroup value) noexcept {
 		current.group = static_cast<byte>(value);
@@ -87,7 +96,7 @@ namespace iris {
 	void AssemblerState::registerLabel(const std::string& value) noexcept {
 		LabelTracker::registerLabel(value, getCurrentAddress());
 	}
-	word AssemblerState::getCurrentAddress() noexcept {
+	word AssemblerState::getCurrentAddress() const noexcept {
 		return inData ? data.getCurrentAddress() : code.getCurrentAddress();
 	}
 	void AssemblerState::incrementCurrentAddress() noexcept {
@@ -103,11 +112,4 @@ namespace iris {
 		addToFinishedData(copy);
 		resetCurrentData();
 	}
-    raw_instruction AssemblerData::encode() {
-        if (instruction) {
-            return iris::encodeInstruction(group, operation, destination, source0, source1);
-        } else {
-            return dataValue;
-        }
-    }
 } // end namespace iris
