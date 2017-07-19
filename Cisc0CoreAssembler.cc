@@ -44,16 +44,14 @@ namespace cisc0 {
 			// now that it has been resolved, we need to go through and setup
 			// the encoding correctly!
 			auto address = op.getAddress();
-			int count;
-			Word first, second, third;
-			std::tie(count, first, second, third) = op.encode();
-			switch(count) {
+            auto encoding = op.encode();
+			switch(encoding.getNumWords()) {
 				case 3:
-					finalWords.emplace_back(address + 2, third);
+					finalWords.emplace_back(address + 2, encoding.getWord2());
 				case 2:
-					finalWords.emplace_back(address + 1, second);
+					finalWords.emplace_back(address + 1, encoding.getWord1());
 				case 1:
-					finalWords.emplace_back(address, first);
+					finalWords.emplace_back(address, encoding.getWord0());
 					break;
 				default:
 					throw syn::Problem("Number of words described is not possible!");

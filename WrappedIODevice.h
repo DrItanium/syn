@@ -115,7 +115,7 @@ namespace syn {
                 __RETURN_FALSE_ON_FALSE__(Parent::tryExtractFunctionName(env, ret, &op));
                 std::string str(syn::extractLexeme(env, op));
                 auto result = WrappedIODeviceConstants::nameToOperation(str);
-                __RETURN_FALSE_ON_FALSE__(Parent::isLegalOperation(env, ret, str, result, syn::defaultErrorState<decltype(result)>));
+                __RETURN_FALSE_ON_FALSE__(Parent::isLegalOperation(env, ret, str, result, syn::defaultErrorState<decltype(WrappedIODeviceConstants::nameToOperation(str))>));
                 auto theOp = result;
                 auto countResult = WrappedIODeviceConstants::getArgCount(theOp);
                 if (countResult == -1) {

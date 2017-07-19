@@ -34,7 +34,20 @@
 
 namespace cisc0 {
 	struct InstructionEncoder {
-		using Encoding = std::tuple<int, Word, Word, Word>;
+        struct Encoding {
+            public:
+                Encoding(int numWords, Word w0 = 0, Word w2 = 0, Word w3 = 0) noexcept;
+                virtual ~Encoding() noexcept;
+                int getNumWords() const noexcept { return _numWords; }
+                Word getWord0() const noexcept { return _word0; }
+                Word getWord1() const noexcept { return _word1; }
+                Word getWord2() const noexcept { return _word2; }
+            private:
+                int _numWords;
+                Word _word0;
+                Word _word1;
+                Word _word2;
+        };
 		int numWords() const;
 		Encoding encode() const;
 		void clear();
@@ -83,9 +96,9 @@ namespace cisc0 {
 		void setFullImmediate(RegisterValue val) noexcept { _fullImmediate = val; }
 		void markAsLabel() noexcept { _isLabel = true; }
 		void markAsNotLabel() noexcept { _isLabel = false; }
-		void setLabelName(const std::string& name) noexcept { 
-			_labelValue = name; 
-			markAsLabel(); 
+		void setLabelName(const std::string& name) noexcept {
+			_labelValue = name;
+			markAsLabel();
 		}
 
 		inline bool isLabel() const noexcept { return _isLabel; }

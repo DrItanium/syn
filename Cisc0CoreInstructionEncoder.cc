@@ -68,7 +68,7 @@ namespace cisc0 {
 		first = setFlagImmediate<op>(first);
 		first = setDestination<op>(first);
 		first = setSource<op>(first);
-        return std::make_tuple(1, first, 0, 0);
+        return Encoding(1, first);
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeMove() const {
@@ -76,14 +76,14 @@ namespace cisc0 {
 		auto first = setBitmask<op>(commonEncoding());
 		first = setDestination<op>(first);
 		first = setSource<op>(first);
-        return std::make_tuple(1, first, 0, 0);
+        return Encoding(1, first);
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeSwap() const {
 		constexpr auto op = Operation::Swap;
 		auto first = setDestination<op>(commonEncoding());
 		first = setSource<op>(first);
-		return std::make_tuple(1, first, 0, 0);
+        return Encoding(1, first);
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeShift() const {
@@ -96,7 +96,7 @@ namespace cisc0 {
 		} else {
 			first = setSource<op>(first);
 		}
-        return std::make_tuple(1, first, 0, 0);
+        return Encoding(1, first);
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeCompare() const {
@@ -114,7 +114,7 @@ namespace cisc0 {
 		} else {
 			first = setSource<op>(first);
 		}
-        return std::make_tuple(instructionSizeFromBitmask(), first, second, third);
+        return Encoding(instructionSizeFromBitmask(), first, second, third);
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeSet() const {
@@ -126,7 +126,7 @@ namespace cisc0 {
         auto maskedValue = mask(_bitmask) & _fullImmediate;
         auto second = static_cast<Word>(maskedValue);
         auto third = static_cast<Word>(maskedValue >> 16);
-        return std::make_tuple(instructionSizeFromBitmask(), first, second, third);
+        return Encoding(instructionSizeFromBitmask(), first, second, third);
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeMemory() const {
@@ -136,7 +136,7 @@ namespace cisc0 {
         first = encodeMemoryFlagIndirect(first, _indirect);
         // the register and offset occupy the same space
 		first = setDestination<op>(first);
-        return std::make_tuple(1, first, 0, 0);
+        return Encoding(1, first);
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeLogical() const {
@@ -157,7 +157,7 @@ namespace cisc0 {
 		} else {
 			first = setSource<op>(first);
 		}
-		return std::make_tuple(width, first, second, third);
+        return Encoding(width, first, second, third);
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeBranch() const {
@@ -171,7 +171,7 @@ namespace cisc0 {
 		if (!_immediate) {
 			first = setDestination<op>(first);
 		}
-        return std::make_tuple(width, first, second, third);
+        return Encoding(width, first, second, third);
     }
 
     InstructionEncoder::Encoding InstructionEncoder::encodeComplex() const {
@@ -188,28 +188,27 @@ namespace cisc0 {
 	InstructionEncoder::Encoding InstructionEncoder::encodeComplexEncoding(Word value) const {
 		constexpr auto op = ComplexSubTypes::Encoding;
 		value = setSubType<op>(value, _bitmask);
-		return std::make_tuple(1, value, 0, 0);
+        return Encoding(1, value);
 	}
 	InstructionEncoder::Encoding InstructionEncoder::encodeComplexParsing(Word value) const {
 		constexpr auto op = ComplexSubTypes::Parsing;
 		value = setSubType<op>(value, _bitmask);
-		return std::make_tuple(1, value, 0, 0);
+        return Encoding(1, value);
 	}
 	InstructionEncoder::Encoding InstructionEncoder::encodeComplexExtended(Word value) const {
 		constexpr auto op = ComplexSubTypes::Extended;
 		value = setSubType<op>(value, _bitmask);
 		value = cisc0::encodeComplexClassExtendedDestination(value, _arg0);
-		return std::make_tuple(1, value, 0, 0);
+        return Encoding(1, value);
 	}
 
 	InstructionEncoder::Encoding InstructionEncoder::encodeReturn() const {
-		return std::make_tuple(1, commonEncoding(), 0, 0);
+        return Encoding(1, commonEncoding());
 	}
 
     InstructionEncoder::Encoding InstructionEncoder::encode() const {
         // always encode the type
-        static auto testMemFn = std::mem_fn(&InstructionEncoder::encode);
-        static std::map<Operation, decltype(testMemFn)> dispatchTable = {
+        static std::map<Operation, decltype(std::mem_fn(&InstructionEncoder::encode))> dispatchTable = {
             { Operation::Memory, std::mem_fn(&InstructionEncoder::encodeMemory) },
             { Operation::Arithmetic, std::mem_fn(&InstructionEncoder::encodeArithmetic) },
             { Operation::Shift, std::mem_fn(&InstructionEncoder::encodeShift) },
@@ -233,7 +232,7 @@ namespace cisc0 {
 
 
     int InstructionEncoder::numWords() const {
-        return std::get<0>(encode());
+        return encode().getNumWords();
     }
     void InstructionEncoder::clear() {
         _currentLine = 0;
@@ -253,5 +252,14 @@ namespace cisc0 {
         _fullImmediate = 0;
         _indirect = false;
     }
+
+    InstructionEncoder::Encoding::Encoding(int numWords, Word w0, Word w1, Word w2) noexcept : _numWords(numWords), _word0(w0), _word1(w1), _word2(w2) { }
+    InstructionEncoder::Encoding::~Encoding() noexcept {
+        _numWords = 0;
+        _word0 = 0;
+        _word1 = 0;
+        _word2 = 0;
+    }
+
 
 }
