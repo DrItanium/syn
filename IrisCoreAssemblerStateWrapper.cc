@@ -51,9 +51,8 @@ namespace iris {
 namespace syn {
     DefWrapperSymbolicName(iris::AssemblerState, "iris:assembly-parsing-state");
 }
+
 namespace iris {
-
-
     void AssemblerStateWrapper::getMultifield(void* env, CLIPSValuePtr ret) {
         //get()->output(env, ret);
         output(env, ret);

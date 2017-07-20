@@ -46,6 +46,11 @@
 #include "ClipsExtensions.h"
 
 namespace iris {
+    enum class SectionType {
+        Code,
+        Data,
+        Count,
+    };
     template<typename R> struct Action : syn::Action<R> { };
     struct AssemblerData {
         public:
@@ -86,12 +91,16 @@ namespace iris {
             bool inDataSection() const noexcept { return inData; }
             void nowInCodeSection() noexcept { inData = false; }
             void nowInDataSection() noexcept { inData = true; }
-            template<bool toCodeSection>
+            template<SectionType section>
                 void changeSection() noexcept {
-                    if (toCodeSection) {
-                        nowInCodeSection();
-                    } else {
-                        nowInDataSection();
+                    static_assert(!syn::isErrorState<SectionType>(section), "Illegal state!");
+                    switch(section) {
+                        case SectionType::Code:
+                            nowInCodeSection();
+                            break;
+                        case SectionType::Data:
+                            nowInDataSection();
+                            break;
                     }
                 }
             void setCurrentAddress(word value) noexcept;
@@ -302,14 +311,14 @@ namespace iris {
         }
     };
     struct LexemeOrNumber : syn::LexemeOr<Number> { };
-    template<bool toCode>
+    template<SectionType section>
         struct ModifySection {
             template<typename Input>
                 ModifySection(const Input& in, AssemblerState& parent) { }
 
             template<typename Input>
                 void success(const Input& in, AssemblerState& parent) {
-                    parent.changeSection<toCode>();
+                    parent.changeSection<section>();
                 }
         };
     // directives
@@ -327,10 +336,10 @@ namespace iris {
 #define DefOperationSameTitle(title, str) DefOperation(title, str, title)
     DefSymbol(DataDirective, .data);
     DefSymbol(CodeDirective, .code);
-    template<bool modSection, typename Directive>
+    template<SectionType modSection, typename Directive>
         struct StatefulSpaceDirective : syn::StatefulSingleEntrySequence<ModifySection<modSection>, Directive> { };
-    struct CodeDirective : StatefulSpaceDirective<true, SymbolCodeDirective> { };
-    struct DataDirective : StatefulSpaceDirective<false, SymbolDataDirective> { };
+    struct CodeDirective : StatefulSpaceDirective<SectionType::Code, SymbolCodeDirective> { };
+    struct DataDirective : StatefulSpaceDirective<SectionType::Data, SymbolDataDirective> { };
 
     struct OrgDirective : syn::OneArgumentDirective<syn::SymbolOrgDirective, Number> { };
     DefAction(OrgDirective) { DefApply { state.setCurrentAddress(state.getTemporaryWord()); } };
@@ -397,8 +406,8 @@ namespace iris {
     DefActionUsingPredefinedSymbol(Mul);
     DefActionUsingPredefinedSymbol(Div);
     DefActionUsingPredefinedSymbol(Rem);
-    DefOperationSameTitle(ShiftLeft, shift.left);
-    DefOperationSameTitle(ShiftRight, shift.right);
+    DefOperationSameTitle(ShiftLeft, shl);
+    DefOperationSameTitle(ShiftRight, shr);
     DefOperation(And, and, BinaryAnd);
     DefOperation(Or, or, BinaryOr);
     DefOperation(Xor, xor, BinaryXor);
@@ -412,13 +421,13 @@ namespace iris {
     struct OperationArithmeticTwoGPR : pegtl::sor<SymbolNot> { };
     struct ArithmeticTwoGPRInstruction : TwoGPRInstruction<OperationArithmeticTwoGPR> { };
 
-    DefOperationSameTitle(AddImmediate, add.imm);
-    DefOperationSameTitle(SubImmediate, sub.imm);
-    DefOperationSameTitle(MulImmediate, mul.imm);
-    DefOperationSameTitle(DivImmediate, div.imm);
-    DefOperationSameTitle(RemImmediate, rem.imm);
-    DefOperationSameTitle(ShiftLeftImmediate, shift.left.imm);
-    DefOperationSameTitle(ShiftRightImmediate, shift.right.imm);
+    DefOperationSameTitle(AddImmediate, addi);
+    DefOperationSameTitle(SubImmediate, subi);
+    DefOperationSameTitle(MulImmediate, muli);
+    DefOperationSameTitle(DivImmediate, divi);
+    DefOperationSameTitle(RemImmediate, remi);
+    DefOperationSameTitle(ShiftLeftImmediate, shli);
+    DefOperationSameTitle(ShiftRightImmediate, shri);
     struct OperationArithmeticTwoGPRHalfImmediate : pegtl::sor<
                                                     SymbolAddImmediate,
                                                     SymbolSubImmediate,
@@ -438,41 +447,41 @@ namespace iris {
 #undef CURRENT_TYPE
 #define CURRENT_TYPE MoveOp
 
-    DefOperationSameTitle(MoveToIP, move.to.ip);
-    DefOperationSameTitle(MoveFromIP, move.from.ip);
-    DefOperationSameTitle(MoveToLR, move.to.lr);
-    DefOperationSameTitle(MoveFromLR, move.from.lr);
-    DefOperationSameTitle(RestoreAllRegisters, restore.regs);
-    DefOperationSameTitle(SaveAllRegisters, save.regs);
+    DefOperationSameTitle(MoveToIP, mtip);
+    DefOperationSameTitle(MoveFromIP, mfip);
+    DefOperationSameTitle(MoveToLR, mtlr);
+    DefOperationSameTitle(MoveFromLR, mflr);
+    DefOperationSameTitle(RestoreAllRegisters, rregs);
+    DefOperationSameTitle(SaveAllRegisters, sregs);
     struct OperationMoveOneGPR : pegtl::sor<SymbolMoveToIP, SymbolMoveFromIP, SymbolMoveToLR, SymbolMoveFromLR, SymbolRestoreAllRegisters, SymbolSaveAllRegisters> { };
     struct MoveOneGPRInstruction : OneGPRInstruction<OperationMoveOneGPR> { };
     DefOperationSameTitle(Move, move);
     DefOperationSameTitle(Swap, swap);
-    DefOperationSameTitle(Load, load);
-    DefOperationSameTitle(Store, store);
-    DefOperation(LoadIO, load.io, IORead);
-    DefOperation(StoreIO, store.io, IOWrite);
+    DefOperationSameTitle(Load, ld);
+    DefOperationSameTitle(Store, st);
+    DefOperation(LoadIO, iold, IORead);
+    DefOperation(StoreIO, iost, IOWrite);
     DefOperationSameTitle(Push, push);
     DefOperationSameTitle(Pop, pop);
     struct OperationMoveTwoGPR : pegtl::sor<SymbolMove, SymbolSwap, SymbolLoadIO, SymbolStoreIO, SymbolLoad, SymbolStore, SymbolPush, SymbolPop> { };
     struct MoveTwoGPRInstruction : TwoGPRInstruction<OperationMoveTwoGPR> { };
-    DefOperationSameTitle(LoadWithOffset, load.offset);
-    DefOperationSameTitle(StoreWithOffset, store.offset);
-    DefOperation(LoadIOWithOffset, load.with.offset, IOReadWithOffset);
-    DefOperation(StoreIOWithOffset, store.with.offset, IOWriteWithOffset);
+    DefOperationSameTitle(LoadWithOffset, ldof);
+    DefOperationSameTitle(StoreWithOffset, stof);
+    DefOperation(LoadIOWithOffset, ioldof, IOReadWithOffset);
+    DefOperation(StoreIOWithOffset, iostof, IOWriteWithOffset);
     struct OperationMoveTwoGPRHalfImmediate : pegtl::sor<SymbolLoadWithOffset, SymbolStoreWithOffset, SymbolLoadIOWithOffset, SymbolStoreIOWithOffset> { };
 
     struct MoveTwoGPRHalfImmediateInstruction : SeparatedTrinaryThing<OperationMoveTwoGPRHalfImmediate, TwoGPR, HalfImmediate> { };
 
-    DefOperationSameTitle(LoadCode, load.code);
-    DefOperationSameTitle(StoreCode, store.code);
+    DefOperationSameTitle(LoadCode, cld);
+    DefOperationSameTitle(StoreCode, cst);
     struct OperationMoveThreeGPR : pegtl::sor<SymbolLoadCode, SymbolStoreCode> { };
     struct MoveThreeGPRInstruction : ThreeGPRInstruction<OperationMoveThreeGPR> { };
 
-    DefOperationSameTitle(PushImmediate, push.imm);
+    DefOperationSameTitle(PushImmediate, pushi);
     DefOperationSameTitle(Set, set);
-    DefOperationSameTitle(LoadImmediate, load.imm);
-    DefOperationSameTitle(StoreImmediate, store.imm);
+    DefOperationSameTitle(LoadImmediate, ldi);
+    DefOperationSameTitle(StoreImmediate, sti);
     struct OperationMoveGPRImmediate : pegtl::sor<SymbolStoreImmediate, SymbolLoadImmediate, SymbolSet, SymbolPushImmediate> { };
 
     struct MoveGPRImmediateInstruction : SeparatedTrinaryThing<OperationMoveGPRImmediate, StatefulDestinationGPR, Immediate> { };
@@ -484,50 +493,50 @@ namespace iris {
     // branch
     template<typename Op, typename S>
         struct BranchUnconditional : SeparatedBinaryThing<Op, S> { };
-    DefOperationSameTitle(BranchUnconditional, branch);
-    DefOperationSameTitle(BranchUnconditionalLink, branch.link);
+    DefOperationSameTitle(BranchUnconditional, j);
+    DefOperationSameTitle(BranchUnconditionalLink, jl);
     struct OperationBranchOneGPR : pegtl::sor<SymbolBranchUnconditionalLink, SymbolBranchUnconditional> { };
     struct BranchOneGPRInstruction : BranchUnconditional<OperationBranchOneGPR, StatefulDestinationGPR> { };
-    DefOperationSameTitle(BranchUnconditionalImmediate, branch.imm);
-    DefOperationSameTitle(BranchUnconditionalImmediateLink, branch.imm.link);
+    DefOperationSameTitle(BranchUnconditionalImmediate, ji);
+    DefOperationSameTitle(BranchUnconditionalImmediateLink, jil);
     struct OperationBranchImmediate : pegtl::sor<SymbolBranchUnconditionalImmediateLink, SymbolBranchUnconditionalImmediate> { };
     struct BranchImmediateInstruction : BranchUnconditional<OperationBranchImmediate, Immediate> { };
 
     struct GroupBranchUnconditional : pegtl::sor<BranchOneGPRInstruction, BranchImmediateInstruction> { };
     template<typename Op, typename S>
         struct BranchConditional : SeparatedTrinaryThing<Op, DestinationPredicateRegister, S> { };
-    DefOperationSameTitle(BranchConditional, branch.cond);
-    DefOperationSameTitle(BranchConditionalLink, branch.cond.link);
+    DefOperationSameTitle(BranchConditional, bc);
+    DefOperationSameTitle(BranchConditionalLink, bcl);
     struct OperationBranchConditionalGPR : pegtl::sor<
                                            SymbolBranchConditionalLink,
                                            SymbolBranchConditional
                                            > { };
     struct BranchConditionalGPRInstruction : BranchConditional<OperationBranchConditionalGPR, Source0GPR> { };
-    DefOperationSameTitle(BranchConditionalImmediate, branch.cond.imm);
-    DefOperationSameTitle(BranchConditionalImmediateLink, branch.cond.imm.link);
+    DefOperationSameTitle(BranchConditionalImmediate, bci);
+    DefOperationSameTitle(BranchConditionalImmediateLink, bcil);
     struct OperationBranchConditionalImmediate : pegtl::sor<
                                                  SymbolBranchConditionalImmediateLink,
                                                  SymbolBranchConditionalImmediate
                                                  > { };
     struct BranchConditionalImmediateInstruction : BranchConditional<OperationBranchConditionalImmediate, Immediate> { };
     DefOperationSameTitle(IfThenElse, if);
-    DefOperationSameTitle(IfThenElseLink, if.link);
+    DefOperationSameTitle(IfThenElseLink, ifl);
     struct OperationBranchIfStatement : pegtl::sor<
-                                        SymbolIfThenElse,
-                                        SymbolIfThenElseLink
+                                        SymbolIfThenElseLink,
+                                        SymbolIfThenElse
                                         > { };
     struct BranchIfInstruction : BranchConditional<OperationBranchIfStatement, SourceRegisters> { };
-    DefOperationSameTitle(BranchConditionalLR, branch.cond.lr);
-    DefOperationSameTitle(BranchConditionalLRAndLink, branch.cond.lr.link);
+    DefOperationSameTitle(BranchConditionalLR, bclr);
+    DefOperationSameTitle(BranchConditionalLRAndLink, bclrl);
     struct OperationBranchConditionalNoArgs : pegtl::sor<
-                                              SymbolBranchConditionalLR,
-                                              SymbolBranchConditionalLRAndLink
+                                              SymbolBranchConditionalLRAndLink,
+                                              SymbolBranchConditionalLR
                                               > { };
     struct BranchConditionalNoArgsInstruction : SeparatedBinaryThing<OperationBranchConditionalNoArgs, DestinationPredicateRegister> { };
-    DefOperationSameTitle(BranchUnconditionalLR, branch.lr);
-    DefOperationSameTitle(BranchUnconditionalLRAndLink, branch.lr.link);
-    DefOperation(BranchReturnFromError, return.from.error, ReturnFromError);
-    struct BranchNoArgsInstruction : pegtl::sor<SymbolBranchUnconditionalLR,  SymbolBranchUnconditionalLRAndLink, SymbolBranchReturnFromError> { };
+    DefOperationSameTitle(BranchUnconditionalLR, blr);
+    DefOperationSameTitle(BranchUnconditionalLRAndLink, blrl);
+    DefOperation(BranchReturnFromError, rfe, ReturnFromError);
+    struct BranchNoArgsInstruction : pegtl::sor<SymbolBranchUnconditionalLRAndLink, SymbolBranchUnconditionalLR, SymbolBranchReturnFromError> { };
 
     struct BranchInstruction : pegtl::sor<GroupBranchUnconditional, BranchConditionalGPRInstruction, BranchConditionalImmediateInstruction, BranchIfInstruction, BranchConditionalNoArgsInstruction, BranchNoArgsInstruction> { };
     DefGroupSet(BranchInstruction, Jump);
@@ -538,41 +547,42 @@ namespace iris {
     struct ThenDestinationPredicates : ThenField<DestinationPredicates> { };
 #define CURRENT_TYPE CompareOp
     // compare operations
-    DefOperationSameTitle(Eq, =);
-    DefOperationSameTitle(Neq, !=);
-    DefOperationSameTitle(LessThan, <);
-    DefOperationSameTitle(GreaterThan, >);
-    DefOperationSameTitle(LessThanOrEqualTo, <=);
-    DefOperationSameTitle(GreaterThanOrEqualTo, >=);
-    DefOperationSameTitle(EqImmediate, =.imm);
-    DefOperationSameTitle(NeqImmediate, !=.imm);
-    DefOperationSameTitle(LessThanImmediate, <.imm);
-    DefOperationSameTitle(GreaterThanImmediate, >.imm);
-    DefOperationSameTitle(LessThanOrEqualToImmediate, <=.imm);
-    DefOperationSameTitle(GreaterThanOrEqualToImmediate, >=.imm);
+    DefOperationSameTitle(Eq, eq);
+    DefOperationSameTitle(Neq, neq);
+    DefOperationSameTitle(LessThan, lt);
+    DefOperationSameTitle(GreaterThan, gt);
+    DefOperationSameTitle(LessThanOrEqualTo, le);
+    DefOperationSameTitle(GreaterThanOrEqualTo, ge);
+    DefOperationSameTitle(EqImmediate, eqi);
+    DefOperationSameTitle(NeqImmediate, neqi);
+    DefOperationSameTitle(LessThanImmediate, lti);
+    DefOperationSameTitle(GreaterThanImmediate, gti);
+    DefOperationSameTitle(LessThanOrEqualToImmediate, lei);
+    DefOperationSameTitle(GreaterThanOrEqualToImmediate, gei);
     struct CompareRegisterOperation : pegtl::sor<SymbolEq, SymbolNeq, SymbolLessThan, SymbolGreaterThan, SymbolLessThanOrEqualTo, SymbolGreaterThanOrEqualTo> { };
     struct CompareImmediateOperation : pegtl::sor<SymbolEqImmediate, SymbolNeqImmediate, SymbolLessThanImmediate, SymbolGreaterThanImmediate, SymbolLessThanOrEqualToImmediate, SymbolGreaterThanOrEqualToImmediate> { };
     struct CompareRegisterInstruction : pegtl::seq<CompareRegisterOperation, ThenDestinationPredicates, ThenField<SourceRegisters>> { };
     struct CompareImmediateInstruction : pegtl::seq<CompareImmediateOperation, ThenDestinationPredicates, ThenField<Source0GPR>, ThenField<HalfImmediate>> { };
     struct CompareInstruction : pegtl::sor<
-                                CompareRegisterInstruction,
-                                CompareImmediateInstruction> { };
+                                CompareImmediateInstruction,
+                                CompareRegisterInstruction
+                                > { };
     DefGroupSet(CompareInstruction, Compare);
 
 #undef CURRENT_TYPE
 #define CURRENT_TYPE ConditionRegisterOp
 
     // conditional register actions
-    DefOperationSameTitle(SaveCRs, pred.save);
-    DefOperationSameTitle(RestoreCRs, pred.restore);
-    DefOperationSameTitle(CRXor, pred.xor);
-    DefOperationSameTitle(CRNot, pred.not);
-    DefOperationSameTitle(CRAnd, pred.and);
-    DefOperationSameTitle(CROr, pred.or);
-    DefOperationSameTitle(CRNand, pred.nand);
-    DefOperationSameTitle(CRNor, pred.nor);
-    DefOperationSameTitle(CRSwap, pred.swap);
-    DefOperationSameTitle(CRMove, pred.move);
+    DefOperationSameTitle(SaveCRs, psave);
+    DefOperationSameTitle(RestoreCRs, prestore);
+    DefOperationSameTitle(CRXor, pxor);
+    DefOperationSameTitle(CRNot, pnot);
+    DefOperationSameTitle(CRAnd, pand);
+    DefOperationSameTitle(CROr, por);
+    DefOperationSameTitle(CRNand, pnand);
+    DefOperationSameTitle(CRNor, pnor);
+    DefOperationSameTitle(CRSwap, pswap);
+    DefOperationSameTitle(CRMove, pmove);
     struct ThenSource0Predicate : ThenField<StatefulRegister<Source0Predicate>> { };
     struct OperationPredicateTwoArgs : pegtl::sor<SymbolCRSwap, SymbolCRMove> { };
     struct OperationPredicateOneGPR : pegtl::sor<SymbolSaveCRs, SymbolRestoreCRs> { };
@@ -604,6 +614,5 @@ namespace iris {
     struct Statement : pegtl::sor<Instruction, Directive> { };
     struct Anything : pegtl::sor<Separator, SingleLineComment,Statement> { };
     struct Main : syn::MainFileParser<Anything> { };
-
 } // end namespace iris
 #endif // end IRIS_CORE_ASSEMBLER_H__
