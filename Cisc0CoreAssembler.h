@@ -276,21 +276,21 @@ namespace cisc0 {
 	DefIndirectGPR(DestinationRegister);
 	DefAction(DestinationRegister) {
 		DefApplyInstruction {
-			state.setArg<0>(translateRegister(in.string()));
+            state.setFirstArg(translateRegister(in.string()));
 		}
 	};
 
 	DefIndirectGPR(SourceRegister);
 	DefAction(SourceRegister) {
 		DefApplyInstruction {
-			state.setArg<1>(translateRegister(in.string()));
+			state.setSecondArg(translateRegister(in.string()));
 		}
 	};
 
 	DefIndirectGPR(SourceRegister1);
 	DefAction(SourceRegister1) {
 		DefApplyInstruction {
-			state.setArg<2>(translateRegister(in.string()));
+			state.setThirdArg(translateRegister(in.string()));
 		}
 	};
 	template<typename S>
@@ -331,7 +331,7 @@ namespace cisc0 {
 	struct ShiftImmediateValue : SpecialImmediate { };
 	DefAction(ShiftImmediateValue) {
 		DefApplyInstruction {
-			state.setArg<1>(static_cast<byte>(state.getFullImmediate()) & 0b11111);
+            state.setSecondArg(static_cast<byte>(state.getFullImmediate()) & 0b11111);
 		}
 	};
 	struct ShiftArgs : pegtl::sor<
@@ -346,7 +346,7 @@ namespace cisc0 {
 	struct ByteCastImmediate : SpecialImmediate { };
 	DefAction(ByteCastImmediate) {
 		DefApplyInstruction {
-			state.setArg<1>(static_cast<byte>(state.getFullImmediate()));
+            state.setSecondArg(static_cast<byte>(state.getFullImmediate()));
 		}
 	};
 #define DefSubType(title, str, subgroup) \
@@ -365,19 +365,26 @@ namespace cisc0 {
 
 #define DefCompareStyleWithSymbol(title, str) DefSubTypeWithSymbol(title, str, CompareStyle)
 
-	DefCompareStyleWithSymbol(Equals, ==);
-	DefCompareStyleWithSymbol(NotEquals, !=);
-	DefCompareStyleWithSymbol(LessThan, <);
-	DefCompareStyleWithSymbol(LessThanOrEqualTo, <=);
-	DefCompareStyleWithSymbol(GreaterThan, >);
-	DefCompareStyleWithSymbol(GreaterThanOrEqualTo, >=);
+    CompareStyle stringToCompareStyle(const std::string& str) noexcept;
+
+	DefSymbol(Equals, ==);
+	DefSymbol(NotEquals, !=);
+	DefSymbol(LessThan, <);
+	DefSymbol(LessThanOrEqualTo, <=);
+	DefSymbol(GreaterThan, >);
+	DefSymbol(GreaterThanOrEqualTo, >=);
 	struct CompareType : pegtl::sor<
-						 SubGroupCompareStyleEquals,
-						 SubGroupCompareStyleNotEquals,
-						 SubGroupCompareStyleLessThan,
-						 SubGroupCompareStyleLessThanOrEqualTo,
-						 SubGroupCompareStyleGreaterThan,
-						 SubGroupCompareStyleGreaterThanOrEqualTo> { };
+						 SymbolEquals,
+						 SymbolNotEquals,
+						 SymbolLessThan,
+						 SymbolLessThanOrEqualTo,
+						 SymbolGreaterThan,
+						 SymbolGreaterThanOrEqualTo> { };
+    DefAction(CompareType) {
+        DefApplyInstruction {
+            state.setSubType(stringToCompareStyle(in.string()));
+        }
+    };
 	DefCompareStyleWithSymbol(MoveFromCondition, MoveFromCondition);
 	DefCompareStyleWithSymbol(MoveToCondition, MoveToCondition);
 	struct SpecialCompareType : pegtl::sor<
@@ -413,7 +420,7 @@ namespace cisc0 {
 	struct Arg0ImmediateValue : SpecialImmediate { };
 	DefAction(Arg0ImmediateValue) {
 		DefApplyInstruction {
-			state.setArg<0>(static_cast<byte>(state.getFullImmediate()) & 0b1111);
+            state.setFirstArg(static_cast<byte>(state.getFullImmediate()) & 0b1111);
 		}
 	};
 #define DefArithmeticOperation(title, str) \
@@ -649,8 +656,10 @@ namespace cisc0 {
 	struct BranchNormalArgs : pegtl::sor<
 							  SeparatedBinaryThing<UsesImmediate, LexemeOrNumber>,
 							  DestinationRegister> { };
-	struct BranchCallOperation : SeparatedBinaryThing<BranchFlagCall, BranchNormalArgs> { };
-	struct BranchJumpOperation : SeparatedBinaryThing<ChooseBranchFlagUsePredicate, BranchNormalArgs> { };
+    template<typename T>
+    struct BranchWithNormalArgs : SeparatedBinaryThing<T, BranchNormalArgs> { };
+    struct BranchCallOperation : BranchWithNormalArgs<BranchFlagCall> { };
+    struct BranchJumpOperation : BranchWithNormalArgs<ChooseBranchFlagUsePredicate> { };
 
 	struct BranchTypes : pegtl::sor<BranchCallOperation, BranchJumpOperation> { };
 	struct BranchOperation : SeparatedBinaryThing<GroupBranch, BranchTypes> { };

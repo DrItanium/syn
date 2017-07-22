@@ -67,21 +67,9 @@ namespace cisc0 {
 		}
 		void setBitmask(byte value) noexcept { _bitmask = value; }
 
-		template<int index>
-		void setArg(byte value) noexcept {
-			static_assert(index >= 0 && index < 3, "Illegal argument index!");
-			switch(index) {
-				case 0:
-					_arg0 = value;
-					break;
-				case 1:
-					_arg1 = value;
-					break;
-				case 2:
-					_arg2 = value;
-					break;
-			}
-		}
+        void setFirstArg(byte value) noexcept;
+        void setSecondArg(byte value) noexcept;
+        void setThirdArg(byte value) noexcept;
 
 		RegisterValue getFullImmediate() const noexcept { return _fullImmediate; }
 

@@ -100,4 +100,20 @@ namespace cisc0 {
 			return result->second;
 		}
 	}
+    CompareStyle stringToCompareStyle(const std::string& str) noexcept {
+        static std::map<std::string, CompareStyle> translation = {
+            { "==", CompareStyle::Equals },
+            { "!=", CompareStyle::NotEquals },
+            { "<", CompareStyle::LessThan },
+            { "<=", CompareStyle::LessThanOrEqualTo },
+            { ">", CompareStyle::GreaterThan },
+            { ">=", CompareStyle::GreaterThanOrEqualTo},
+        };
+        auto x = translation.find(str);
+        if (x == translation.end()) {
+            return syn::defaultErrorState<CompareStyle>;
+        } else {
+            return x->second;
+        }
+    }
 }

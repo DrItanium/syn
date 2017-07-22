@@ -257,5 +257,14 @@ namespace cisc0 {
         _word2 = 0;
     }
 
+    void InstructionEncoder::setFirstArg(byte value) noexcept {
+        _arg0 = value;
+    }
+    void InstructionEncoder::setSecondArg(byte value) noexcept {
+        _arg1 = value;
+    }
+    void InstructionEncoder::setThirdArg(byte value) noexcept {
+        _arg2 = value;
+    }
 
 }
