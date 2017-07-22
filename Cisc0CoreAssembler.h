@@ -587,25 +587,24 @@ namespace cisc0 {
 										 ComplexExtendedSubOperation_OneArg> { };
 
 
-#define DefParsingSubType(title, str) \
-	DefSymbol(title, str); \
-	struct SubGroupParsingOperation ## title : syn::SingleEntrySequence<Symbol ## title> { }; \
-	DefAction(SubGroupParsingOperation ## title) { \
-		DefApplyInstruction { \
-			state.setBitmask( cisc0:: ParsingOperation :: title ); \
-		} \
-	}
-	DefParsingSubType(Hex8ToRegister, Hex8ToRegister);
-	DefParsingSubType(RegisterToHex8, RegisterToHex8);
-	DefParsingSubType(MemCopy, MemCopy);
+	DefSymbol(Hex8ToRegister, Hex8ToRegister);
+	DefSymbol(RegisterToHex8, RegisterToHex8);
+	DefSymbol(MemCopy, MemCopy);
+    ParsingOperation stringToParsingOperation(const std::string& str) noexcept;
 	struct ComplexParsingSubOperation_NoArgs : pegtl::sor<
-										 SubGroupParsingOperationHex8ToRegister,
-										 SubGroupParsingOperationRegisterToHex8,
-										 SubGroupParsingOperationMemCopy> { };
+										 SymbolHex8ToRegister,
+										 SymbolRegisterToHex8,
+										 SymbolMemCopy> { };
+    DefAction(ComplexParsingSubOperation_NoArgs) {
+        DefApplyInstruction {
+            state.setBitmask(stringToParsingOperation(in.string()));
+        }
+    };
 	struct ComplexParsingSubOperation : pegtl::sor<
 										ComplexExtendedSubOperation_NoArgs> { };
 
 
+    ComplexSubTypes stringToComplexSubTypes(const std::string& str) noexcept;
 #define DefComplexOperation(title, str) \
 	DefSubTypeWithSymbol(title, str, ComplexSubTypes)
 	DefComplexOperation(Encoding, encoding);

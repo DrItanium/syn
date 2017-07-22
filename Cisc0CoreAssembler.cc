@@ -195,4 +195,31 @@ namespace cisc0 {
             return x->second;
         }
     }
+    ComplexSubTypes stringToComplexSubTypes(const std::string& str) noexcept {
+        static std::map<std::string, ComplexSubTypes> translation = {
+            { "encoding", ComplexSubTypes::Encoding},
+            { "extended", ComplexSubTypes::Extended},
+            { "parsing", ComplexSubTypes::Parsing},
+            { "feature-check", ComplexSubTypes::FeatureCheck },
+        };
+        auto x = translation.find(str);
+        if (x == translation.end()) {
+            return syn::defaultErrorState<ComplexSubTypes>;
+        } else {
+            return x->second;
+        }
+    }
+    ParsingOperation stringToParsingOperation(const std::string& str) noexcept {
+        static std::map<std::string, ParsingOperation> translation = {
+            { "Hex8ToRegister", ParsingOperation::Hex8ToRegister},
+            { "RegisterToHex8", ParsingOperation::RegisterToHex8 },
+            { "MemCopy", ParsingOperation::MemCopy },
+        };
+        auto x = translation.find(str);
+        if (x == translation.end()) {
+            return syn::defaultErrorState<ParsingOperation>;
+        } else {
+            return x->second;
+        }
+    }
 }
