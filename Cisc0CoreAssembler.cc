@@ -149,4 +149,50 @@ namespace cisc0 {
             return x->second;
         }
     }
+    LogicalOps stringToLogicalOps(const std::string& str) noexcept {
+        static std::map<std::string, LogicalOps> translation = {
+            { "and", LogicalOps::And},
+            { "or", LogicalOps::Or},
+            { "not", LogicalOps::Not},
+            { "xor", LogicalOps::Xor},
+            { "nand", LogicalOps::Nand},
+        };
+        auto x = translation.find(str);
+        if (x == translation.end()) {
+            return syn::defaultErrorState<LogicalOps>;
+        } else {
+            return x->second;
+        }
+    }
+    EncodingOperation stringToEncodingOperation(const std::string& str) noexcept {
+        static std::map<std::string, EncodingOperation> translation = {
+            { "bitset", EncodingOperation::BitSet},
+            { "bitunset", EncodingOperation::BitUnset},
+            { "encode", EncodingOperation::Encode},
+            { "decode", EncodingOperation::Decode},
+        };
+        auto x = translation.find(str);
+        if (x == translation.end()) {
+            return syn::defaultErrorState<EncodingOperation>;
+        } else {
+            return x->second;
+        }
+    }
+    ExtendedOperation stringToExtendedOperation(const std::string& str) noexcept {
+        static std::map<std::string, ExtendedOperation> translation = {
+            { "PushValueAddr", ExtendedOperation::PushValueAddr},
+            { "PopValueAddr", ExtendedOperation::PopValueAddr},
+            { "IncrementValueAddr", ExtendedOperation::IncrementValueAddr},
+            { "DecrementValueAddr", ExtendedOperation::DecrementValueAddr},
+            { "WordsBeforeFirstZero", ExtendedOperation::WordsBeforeFirstZero },
+            { "evenp", ExtendedOperation::IsEven },
+            { "oddp", ExtendedOperation::IsOdd },
+        };
+        auto x = translation.find(str);
+        if (x == translation.end()) {
+            return syn::defaultErrorState<ExtendedOperation>;
+        } else {
+            return x->second;
+        }
+    }
 }

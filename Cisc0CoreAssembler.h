@@ -511,69 +511,73 @@ namespace cisc0 {
 							   GroupMemory,
 							   MemoryTypes> { };
 
-#define DefLogicalOperation(title, str) \
-	DefSubTypeWithSymbol(title, str, LogicalOps)
-	DefLogicalOperation(And, and);
-	DefLogicalOperation(Or, or);
-	DefLogicalOperation(Not, not);
-	DefLogicalOperation(Xor, xor);
-	DefLogicalOperation(Nand, nand);
+    LogicalOps stringToLogicalOps(const std::string& str) noexcept;
+    using SymbolAnd = syn::SymbolAndKeyword;
+    using SymbolOr = syn::SymbolOrKeyword;
+    using SymbolNot = syn::SymbolNotKeyword;
+	DefSymbol(Xor, xor);
+	DefSymbol(Nand, nand);
 
 
 	struct LogicalOpsType : pegtl::sor<
-							SubGroupLogicalOpsAnd,
-							SubGroupLogicalOpsOr,
-							SubGroupLogicalOpsNot,
-							SubGroupLogicalOpsXor,
-							SubGroupLogicalOpsNand> { };
+							SymbolAnd,
+							SymbolOr,
+							SymbolNot,
+							SymbolXor,
+							SymbolNand> { };
+    DefAction(LogicalOpsType) {
+        DefApplyInstruction {
+            state.setSubType(stringToLogicalOps(in.string()));
+        }
+    };
 	struct LogicalArgs : pegtl::sor<
 						 TwoGPRs,
 						 ImmediateOperationArgsWithBitmask<LexemeOrNumber>> { };
 	struct LogicalOperation : SeparatedTrinaryThing<GroupLogical, LogicalOpsType, LogicalArgs> { };
 
-
-
-#define DefEncodingSubType(title, str) \
-	DefSymbol(title, str); \
-	struct SubGroupEncodingOperation ## title : syn::SingleEntrySequence<Symbol ## title> { }; \
-	DefAction(SubGroupEncodingOperation ## title) { \
-		DefApplyInstruction { \
-			state.setBitmask( cisc0:: EncodingOperation :: title ); \
-		} \
-	}
-	DefEncodingSubType(BitSet, bitset);
-	DefEncodingSubType(BitUnset, bitunset);
-	DefEncodingSubType(Encode, encode);
-	DefEncodingSubType(Decode, decode);
+    EncodingOperation stringToEncodingOperation(const std::string& str) noexcept;
+	DefSymbol(BitSet, bitset);
+	DefSymbol(BitUnset, bitunset);
+	DefSymbol(Encode, encode);
+	DefSymbol(Decode, decode);
 	struct ComplexEncodingSubOperation : pegtl::sor<
-										 SubGroupEncodingOperationDecode,
-										 SubGroupEncodingOperationEncode,
-										 SubGroupEncodingOperationBitSet,
-										 SubGroupEncodingOperationBitUnset> { };
-#define DefExtendedSubType(title, str) \
-	DefSymbol(title, str); \
-	struct SubGroupExtendedOperation ## title : syn::SingleEntrySequence<Symbol ## title> { }; \
-	DefAction(SubGroupExtendedOperation ## title) { \
-		DefApplyInstruction { \
-			state.setBitmask( cisc0:: ExtendedOperation :: title ); \
-		} \
-	}
-	DefExtendedSubType(PushValueAddr, PushValueAddr);
-	DefExtendedSubType(PopValueAddr,  PopValueAddr);
-	DefExtendedSubType(IncrementValueAddr, IncrementValueAddr);
-	DefExtendedSubType(DecrementValueAddr, DecrementValueAddr);
-	DefExtendedSubType(WordsBeforeFirstZero, CountWordsBeforeFirstZero);
+										 SymbolDecode,
+										 SymbolEncode,
+										 SymbolBitSet,
+										 SymbolBitUnset> { };
+    DefAction(ComplexEncodingSubOperation) {
+        DefApplyInstruction {
+            state.setBitmask(stringToEncodingOperation(in.string()));
+        }
+    };
+
+    ExtendedOperation stringToExtendedOperation(const std::string& str) noexcept;
+	DefSymbol(PushValueAddr, PushValueAddr);
+	DefSymbol(PopValueAddr,  PopValueAddr);
+	DefSymbol(IncrementValueAddr, IncrementValueAddr);
+	DefSymbol(DecrementValueAddr, DecrementValueAddr);
+	DefSymbol(WordsBeforeFirstZero, CountWordsBeforeFirstZero);
 	struct ComplexExtendedSubOperation_NoArgs : pegtl::sor<
-										 SubGroupExtendedOperationPopValueAddr,
-										 SubGroupExtendedOperationPushValueAddr,
-										 SubGroupExtendedOperationDecrementValueAddr,
-										 SubGroupExtendedOperationIncrementValueAddr,
-										 SubGroupExtendedOperationWordsBeforeFirstZero> { };
-	DefExtendedSubType(IsEven, evenp);
-	DefExtendedSubType(IsOdd, oddp);
+										 SymbolPopValueAddr,
+										 SymbolPushValueAddr,
+										 SymbolDecrementValueAddr,
+										 SymbolIncrementValueAddr,
+										 SymbolWordsBeforeFirstZero> { };
+    DefAction(ComplexExtendedSubOperation_NoArgs) {
+        DefApplyInstruction {
+            state.setBitmask(stringToExtendedOperation(in.string()));
+        }
+    };
+	DefSymbol(IsEven, evenp);
+	DefSymbol(IsOdd, oddp);
 	struct ComplexExtendedOneArg_Operations : pegtl::sor<
-											  SubGroupExtendedOperationIsEven,
-											  SubGroupExtendedOperationIsOdd> { };
+											  SymbolIsEven,
+											  SymbolIsOdd> { };
+    DefAction(ComplexExtendedOneArg_Operations) {
+        DefApplyInstruction {
+            state.setBitmask(stringToExtendedOperation(in.string()));
+        }
+    };
 
 	struct ComplexExtendedSubOperation_OneArg : SeparatedBinaryThing<
 												ComplexExtendedOneArg_Operations,
