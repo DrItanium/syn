@@ -385,11 +385,16 @@ namespace cisc0 {
             state.setSubType(stringToCompareStyle(in.string()));
         }
     };
-	DefCompareStyleWithSymbol(MoveFromCondition, MoveFromCondition);
-	DefCompareStyleWithSymbol(MoveToCondition, MoveToCondition);
+    DefSymbol(MoveToCondition, MoveToCondition);
+    DefSymbol(MoveFromCondition, MoveFromCondition);
 	struct SpecialCompareType : pegtl::sor<
-								SubGroupCompareStyleMoveFromCondition,
-								SubGroupCompareStyleMoveToCondition> { };
+								SymbolMoveFromCondition,
+                                SymbolMoveToCondition> { };
+    DefAction(SpecialCompareType) {
+        DefApplyInstruction {
+            state.setSubType(stringToCompareStyle(in.string()));
+        }
+    };
 	struct CompareArgs : pegtl::sor<
 						 TwoGPRs,
 						 ImmediateOperationArgsWithBitmask<LexemeOrNumber>> { };
@@ -426,41 +431,55 @@ namespace cisc0 {
 #define DefArithmeticOperation(title, str) \
     using Symbol ## title = syn:: Symbol ## title ## Keyword; \
     DefSubType(title, str, ArithmeticOps)
-
-	DefArithmeticOperation(Add, add);
-	DefArithmeticOperation(Sub, sub);
-	DefArithmeticOperation(Mul, mul);
-	DefArithmeticOperation(Div, div);
-	DefArithmeticOperation(Rem, rem);
-    DefSubTypeWithSymbol(Min, min, ArithmeticOps);
-    DefSubTypeWithSymbol(Max, max, ArithmeticOps);
+    ArithmeticOps stringToArithmeticOps(const std::string& str) noexcept;
+    using SymbolAdd = syn::SymbolAddKeyword;
+    using SymbolSub = syn::SymbolSubKeyword;
+    using SymbolMul = syn::SymbolMulKeyword;
+    using SymbolDiv = syn::SymbolDivKeyword;
+    using SymbolRem = syn::SymbolRemKeyword;
+    DefSymbol(Min, min);
+    DefSymbol(Max, max);
 	struct ArithmeticType : pegtl::sor<
-							SubGroupArithmeticOpsAdd,
-							SubGroupArithmeticOpsSub,
-							SubGroupArithmeticOpsMul,
-							SubGroupArithmeticOpsDiv,
-							SubGroupArithmeticOpsRem,
-                            SubGroupArithmeticOpsMin,
-                            SubGroupArithmeticOpsMax> { };
+                            SymbolAdd,
+                            SymbolSub,
+                            SymbolMul,
+                            SymbolDiv,
+                            SymbolRem,
+                            SymbolMin,
+                            SymbolMax> { };
+    DefAction(ArithmeticType) {
+        DefApplyInstruction {
+            state.setSubType(stringToArithmeticOps(in.string()));
+        }
+    };
 
 	struct ArithmeticArgs : pegtl::sor<
 							TwoGPRs,
 							ImmediateOperationArgs<ByteCastImmediate>> { };
 	struct ArithmeticOperation : SeparatedTrinaryThing<GroupArithmetic, ArithmeticType, ArithmeticArgs> { };
 
-#define DefMemoryOperation(title, str) \
-	DefSubTypeWithSymbol(title, str, MemoryOperation)
-	DefMemoryOperation(Load, load);
-	DefMemoryOperation(Store, store);
-	DefMemoryOperation(Push, push);
-	DefMemoryOperation(Pop, pop);
+	DefSymbol(Load, load);
+	DefSymbol(Store, store);
+	DefSymbol(Push, push);
+	DefSymbol(Pop, pop);
 
+    MemoryOperation stringToMemoryOperation(const std::string& str) noexcept;
 	struct LoadStoreType : pegtl::sor<
-						   SubGroupMemoryOperationLoad,
-						   SubGroupMemoryOperationStore> { };
+						   SymbolLoad,
+						   SymbolStore> { };
+    DefAction(LoadStoreType) {
+        DefApplyInstruction {
+            state.setSubType(stringToMemoryOperation(in.string()));
+        }
+    };
 	struct StackMemoryType : pegtl::sor<
-							 SubGroupMemoryOperationPush,
-							 SubGroupMemoryOperationPop> { };
+							 SymbolPush,
+							 SymbolPop> { };
+    DefAction(StackMemoryType) {
+        DefApplyInstruction {
+            state.setSubType(stringToMemoryOperation(in.string()));
+        }
+    };
 	struct StackOperation : SeparatedTrinaryThing<StackMemoryType, BitmaskNumber, DestinationRegister> { };
 	DefSymbol(Indirect, indirect);
 	struct FlagIndirect : syn::SingleEntrySequence<SymbolIndirect> { };
@@ -692,6 +711,7 @@ namespace cisc0 {
 	struct Statement : pegtl::sor<
 					   Instructions,
 					   Directive> { };
+
 	struct Anything : pegtl::sor<
 					  Separator,
 					  SingleLineComment,

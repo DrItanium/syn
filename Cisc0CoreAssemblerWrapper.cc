@@ -96,7 +96,7 @@ namespace cisc0 {
 			{ "get", std::make_tuple(Operations::Get, 0) },
 		};
 
-        __RETURN_FALSE_ON_FALSE__(Parent::isExternalAddress(env, value, ret));
+        __RETURN_FALSE_ON_FALSE__(Parent::isExternalAddress(env, ret, value));
 		CLIPSValue operation;
         __RETURN_FALSE_ON_FALSE__(Parent::tryExtractFunctionName(env, ret, &operation));
 		std::string str(syn::extractLexeme(env, operation));

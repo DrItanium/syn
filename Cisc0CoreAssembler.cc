@@ -108,10 +108,43 @@ namespace cisc0 {
             { "<=", CompareStyle::LessThanOrEqualTo },
             { ">", CompareStyle::GreaterThan },
             { ">=", CompareStyle::GreaterThanOrEqualTo},
+            { "MoveFromCondition", CompareStyle::MoveFromCondition },
+            { "MoveToCondition", CompareStyle::MoveToCondition },
         };
         auto x = translation.find(str);
         if (x == translation.end()) {
             return syn::defaultErrorState<CompareStyle>;
+        } else {
+            return x->second;
+        }
+    }
+    ArithmeticOps stringToArithmeticOps(const std::string& str) noexcept {
+        static std::map<std::string, ArithmeticOps> translation = {
+            { "add", ArithmeticOps::Add},
+            { "sub", ArithmeticOps::Sub},
+            { "mul", ArithmeticOps::Mul},
+            { "div", ArithmeticOps::Div},
+            { "rem", ArithmeticOps::Rem},
+            { "min", ArithmeticOps::Min},
+            { "max", ArithmeticOps::Max},
+        };
+        auto x = translation.find(str);
+        if (x == translation.end()) {
+            return syn::defaultErrorState<ArithmeticOps>;
+        } else {
+            return x->second;
+        }
+    }
+    MemoryOperation stringToMemoryOperation(const std::string& str) noexcept {
+        static std::map<std::string, MemoryOperation> translation = {
+            { "store", MemoryOperation::Store},
+            { "load", MemoryOperation::Load},
+            { "push", MemoryOperation::Push},
+            { "pop", MemoryOperation::Pop},
+        };
+        auto x = translation.find(str);
+        if (x == translation.end()) {
+            return syn::defaultErrorState<MemoryOperation>;
         } else {
             return x->second;
         }
