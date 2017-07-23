@@ -172,6 +172,7 @@ namespace syn {
 
     struct Lexeme : pegtl::identifier { };
 
+
     template<typename Other>
     struct LexemeOr : pegtl::sor<Lexeme, Other> { };
 
@@ -220,13 +221,48 @@ namespace syn {
     class NumberContainer {
         public:
             template<typename Input, typename ... States>
-                NumberContainer(const Input& in, States&& ...) { }
+            NumberContainer(const Input& in, States&& ...) { }
             virtual ~NumberContainer() { }
             Word getValue() const noexcept { return _value; }
             void setValue(Word value) noexcept { _value = value; }
         private:
             Word _value;
     };
+	class StringContainer {
+		public:
+			template<typename Input, typename ... States>
+			StringContainer(const Input& in, States&& ...) { }
+			virtual ~StringContainer() { }
+			const std::string& getValue() const noexcept { return _value; }
+			void setValue(const std::string& value) noexcept { _value = value; }
+		private:
+			std::string _value;
+	};
+
+	template<typename Word>
+	class NumberOrStringContainer : public NumberContainer<Word>, public StringContainer {
+		public:
+			using NumberParent = NumberContainer<Word>;
+			using StringParent = StringContainer;
+		public:
+			template<typename Input, typename ... States>
+				NumberOrStringContainer(const Input& in, States&& ...) { }
+			virtual ~NumberOrStringContainer() { }
+			bool isNumber() const noexcept { return _isNumber; }
+			Word getNumberValue() const noexcept { return NumberParent::getValue(); }
+			const std::string& getStringValue() const noexcept { return StringParent::getValue(); }
+			void setNumberValue(Word value) { 
+				_isNumber = true;
+				NumberParent::setValue(value); 
+			}
+			void setStringValue(const std::string& value) { 
+				_isNumber = false;
+				StringParent::setValue(value); 
+			}
+		private:
+			bool _isNumber = false;
+	};
+
 	template<typename Address>
 	class NameToAddressMapping : public NumberContainer<Address> {
 		public:
@@ -400,6 +436,12 @@ namespace syn {
 			}
 		private:
 			FinishedDataStorage _finishedData;
+	};
+
+	struct StashIntoStringContainer {
+		DefApplyGeneric(StringContainer) {
+			state.setValue(in.string());
+		}
 	};
 
 

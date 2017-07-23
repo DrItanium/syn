@@ -72,7 +72,6 @@ namespace iris {
             bool hasLexeme;
             bool fullImmediate;
             std::string currentLexeme;
-
     };
 
     class AssemblerState : public syn::LabelTracker<word>, public syn::FinishedDataTracker<AssemblerData> {
@@ -157,6 +156,31 @@ namespace iris {
             byte temporaryByte;
             AssemblerData current;
     };
+	struct HalfImmediateContainer;
+	struct AssemblerInstruction;
+	struct AssemblerDirective;
+    struct ImmediateContainer : syn::NumberContainer<word> {
+        using syn::NumberContainer<word>::NumberContainer;
+        template<typename Input>
+            void success(const Input& in, AssemblerState& parent) {
+                parent.markNotLexeme();
+                parent.setTemporaryWord(getValue());
+            }
+		template<typename Input>
+			void success(const Input& in, HalfImmediateContainer& parent);
+		template<typename Input>
+			void success(const Input& in, AssemblerInstruction& parent);
+    };
+	enum class RegisterPositionType {
+		DestinationGPR,
+		Source0GPR,
+		Source1GPR,
+		PredicateDestination,
+		PredicateInverseDestination,
+		PredicateSource0,
+		PredicateSource1,
+		Count,
+	};
 	struct AssemblerInstruction : public AssemblerData {
 		template<typename Input>
 		AssemblerInstruction(const Input& in, AssemblerState& parent) {
@@ -172,56 +196,68 @@ namespace iris {
 				parent.incrementCurrentAddress();
 				parent.addToFinishedData(*this);
 			}
+		void setField(RegisterPositionType type, byte value);
 	};
-    struct ImmediateContainer : syn::NumberContainer<word> {
-        using syn::NumberContainer<word>::NumberContainer;
-        template<typename Input>
-            void success(const Input& in, AssemblerState& parent) {
-                parent.markNotLexeme();
-                parent.setTemporaryWord(getValue());
-            }
-    };
+	enum class AssemblerDirectiveAction {
+		ChangeCurrentAddress,
+		ChangeSection,
+		DefineLabel,
+		StoreWord,
+		Count,
+	};
+	struct AssemblerDirective : public AssemblerData {
+		template<typename I>
+		AssemblerDirective(const I& in, AssemblerState& parent) {
+			instruction = false;
+			address = parent.getCurrentAddress();
+		}
+		template<typename Input>
+		void success(const Input& in, AssemblerState& parent) {
+			// TODO: insert code
+			if (shouldChangeSectionToCode()) {
+				parent.nowInCodeSection();
+			} else if (shouldChangeSectionToData()) {
+				parent.nowInDataSection();
+			} else if (shouldChangeCurrentAddress()) {
+				parent.setCurrentAddress(address);
+			} else if (shouldDefineLabel()) {
+				parent.registerLabel(currentLexeme);
+			} else if (shouldStoreWord()) {
+
+			} else {
+				throw syn::Problem("Undefined directive action!");
+			}
+		}
+		bool shouldChangeSectionToCode() const noexcept { return (action == AssemblerDirectiveAction::ChangeSection) && (section == SectionType::Code); }
+		bool shouldChangeSectionToData() const noexcept { return (action == AssemblerDirectiveAction::ChangeSection) && (section == SectionType::Data); }
+		bool shouldChangeCurrentAddress() const noexcept { return (action == AssemblerDirectiveAction::ChangeCurrentAddress); }
+		bool shouldDefineLabel() const noexcept { return (action == AssemblerDirectiveAction::DefineLabel); }
+		bool shouldStoreWord() const noexcept { return (action == AssemblerDirectiveAction::StoreWord); }
+
+		AssemblerDirectiveAction action = syn::defaultErrorState<AssemblerDirectiveAction>;
+		SectionType section = syn::defaultErrorState<SectionType>;
+	};
+	struct LexemeOrNumberContainer : syn::NumberOrStringContainer<word> {
+		public:
+			using Parent = syn::NumberOrStringContainer<word>;
+		public:
+			template<typename Input>
+			LexemeOrNumberContainer(const Input& in, AssemblerDirective& parent) { }
+
+			template<typename Input>
+			void success(const Input& in, AssemblerDirective& parent) {
+				
+			}
+	};
     struct RegisterIndexContainer : syn::NumberContainer<byte> {
         using syn::NumberContainer<byte>::NumberContainer;
-        enum class Type {
-            DestinationGPR,
-            Source0GPR,
-            Source1GPR,
-            PredicateDestination,
-            PredicateInverseDestination,
-            PredicateSource0,
-            PredicateSource1,
-        };
         template<typename Input>
             void success(const Input& in, AssemblerInstruction& parent) {
-                switch(_index) {
-                    case Type::DestinationGPR:
-                        parent.destination = getValue();
-                        break;
-                    case Type::Source0GPR:
-                        parent.source0 = getValue();
-                        break;
-                    case Type::Source1GPR:
-                        parent.source1 = getValue();
-                        break;
-					case Type::PredicateDestination:
-						parent.destination = iris::encode4Bits<false>(parent.destination, getValue());
-						break;
-					case Type::PredicateInverseDestination:
-						parent.destination = iris::encode4Bits<true>(parent.destination, getValue());
-						break;
-					case Type::PredicateSource0:
-						parent.source0 = iris::encode4Bits<false>(parent.source0, getValue());
-						break;
-					case Type::PredicateSource1:
-						parent.source0 = iris::encode4Bits<true>(parent.source0, getValue());
-						break;
-                    default:
-                        syn::reportError("Illegal index provided!");
-                }
+				parent.setField(_index, getValue());
             }
         template<typename Input>
             void success(const Input& in, AssemblerState& parent) {
+				using Type = RegisterPositionType;
                 switch(_index) {
                     case Type::DestinationGPR:
                         parent.setDestination(getValue());
@@ -248,7 +284,7 @@ namespace iris {
                         syn::reportError("Illegal index provided!");
                 }
             }
-        Type _index;
+        RegisterPositionType _index;
     };
 	template<InstructionGroup type>
 	struct SetInstructionGroup {
@@ -286,9 +322,11 @@ namespace iris {
     struct IndirectGPR : syn::SingleEntrySequence<GeneralPurposeRegister> { };
 #define DefRegisterIndexContainerAction(title, theType) \
     DefAction( title ) { \
+	    static constexpr auto targetType = RegisterPositionType :: theType ; \
         DefApply { } \
+		DefApplyGeneric(AssemblerInstruction) { }  \
         DefApplyGeneric(RegisterIndexContainer) { \
-            state._index = RegisterIndexContainer :: Type :: theType ; \
+            state._index = targetType; \
         } \
     }
     struct DestinationGPR : IndirectGPR { };
@@ -338,23 +376,40 @@ namespace iris {
                 populateContainer<syn::KnownNumberTypes::Decimal, Input>(in, parent);
             }
     };
-    struct Number : syn::StatefulNumberAll<ImmediateContainer> { };
+	template<typename State = ImmediateContainer>
+    struct Number : syn::StatefulNumberAll<State> { };
     using Lexeme = syn::Lexeme;
+	
     DefAction(Lexeme) {
         DefApply {
             state.setLexeme(in.string());
         }
+		DefApplyGeneric(AssemblerInstruction) { 
+			state.hasLexeme = true;
+			state.currentLexeme = in.string();
+		}
+		DefApplyGeneric(syn::StringContainer) {
+			setValue(in.string());
+		}
     };
-    struct LexemeOrNumber : syn::LexemeOr<Number> { };
+    struct LexemeOrNumber : syn::LexemeOr<Number<ImmediateContainer>> { };
     template<SectionType section>
         struct ModifySection {
             template<typename Input>
                 ModifySection(const Input& in, AssemblerState& parent) { }
+			template<typename Input>
+				ModifySection(const Input& in, AssemblerDirective& parent) { 
+					parent.action = AssemblerDirectiveAction::ChangeSection;
+					parent.section = section;
+				}
 
             template<typename Input>
                 void success(const Input& in, AssemblerState& parent) {
                     parent.changeSection<section>();
                 }
+
+			template<typename Input>
+			void success(const Input& in, AssemblerDirective& parent) { }
         };
     // directives
 #define ConstructOperationSetter(title, type) \
@@ -376,16 +431,37 @@ namespace iris {
     struct CodeDirective : StatefulSpaceDirective<SectionType::Code, SymbolCodeDirective> { };
     struct DataDirective : StatefulSpaceDirective<SectionType::Data, SymbolDataDirective> { };
 
-    struct OrgDirective : syn::OneArgumentDirective<syn::SymbolOrgDirective, Number> { };
-    DefAction(OrgDirective) { DefApply { state.setCurrentAddress(state.getTemporaryWord()); } };
+	struct OrgDirectiveHandler : public ImmediateContainer {
+		template<typename Input>
+		OrgDirectiveHandler(const Input& in, AssemblerDirective& parent) {
+			parent.action = AssemblerDirectiveAction::ChangeCurrentAddress;
+		}
 
-    struct LabelDirective : syn::OneArgumentDirective<syn::SymbolLabelDirective, Lexeme> { };
-    DefAction(LabelDirective) {
-        DefApply {
-            state.registerLabel(state.getCurrentLexeme());
-            state.resetCurrentData();
-        }
-    };
+		template<typename Input>
+		void success(const Input& in, AssemblerDirective& parent) {
+			parent.address = getValue();
+		}
+	};
+    struct OrgDirective : syn::OneArgumentDirective<syn::SymbolOrgDirective, Number<OrgDirectiveHandler>> { };
+    DefAction(OrgDirective) { 
+		DefApply { 
+			state.setCurrentAddress(state.getTemporaryWord()); 
+		}
+		DefApplyGeneric(AssemblerDirective) { }
+	};
+
+	struct LabelDirectiveHandler : public syn::StringContainer {
+		template<typename Input>
+		LabelDirectiveHandler(const Input& in, AssemblerDirective& parent) {
+			parent.action = AssemblerDirectiveAction::DefineLabel;
+		}
+
+		template<typename Input>
+		void success(const Input& in, AssemblerDirective& parent) {
+			parent.currentLexeme = getValue();
+		}
+	};
+    struct LabelDirective : pegtl::state<LabelDirectiveHandler, syn::OneArgumentDirective<syn::SymbolLabelDirective, Lexeme>> { };
 
     template<typename T>
         struct LexemeOrNumberDirective : syn::OneArgumentDirective<T, LexemeOrNumber> { };
@@ -403,8 +479,10 @@ namespace iris {
                 throw syn::Problem("can't use a declare in a non data section!");
             }
         }
+		DefApplyGeneric(AssemblerDirective) {
+		}
     };
-    struct Directive : pegtl::sor<OrgDirective, LabelDirective, CodeDirective, DataDirective, DeclareDirective> { };
+    struct Directive : pegtl::state<AssemblerDirective, pegtl::sor<OrgDirective, LabelDirective, CodeDirective, DataDirective, DeclareDirective>> { };
     struct Immediate : pegtl::sor<LexemeOrNumber> { };
     DefAction(Immediate) {
         DefApply {
@@ -414,13 +492,22 @@ namespace iris {
             }
         }
     };
-    struct HalfImmediate : pegtl::sor<Number> { };
-    DefAction(HalfImmediate) {
-        DefApply {
-            state.markNotFullImmediate();
-            state.setHalfImmediate(state.getTemporaryWord());
-        }
-    };
+	struct HalfImmediateContainer : ImmediateContainer {
+		using ImmediateContainer::ImmediateContainer;
+		template<typename I>
+		void success(const I& in, AssemblerInstruction& inst) {
+			inst.hasLexeme = false;
+			inst.fullImmediate = false;
+			inst.source1 = getValue();
+		}
+	};
+
+	template<typename Input>
+	void ImmediateContainer::success(const Input& in, HalfImmediateContainer& parent) {
+		parent.setValue(getValue());
+	}
+	
+    struct HalfImmediate : pegtl::sor<Number<HalfImmediateContainer>> { };
 
     template<typename Operation, typename Operands>
         using GenericInstruction = syn::Instruction<Operation, Operands>;
@@ -437,7 +524,7 @@ namespace iris {
 	ArithmeticOp stringToArithmeticOp(const std::string& title) noexcept;
 	struct ArithmeticSubTypeSelector {
 		DefApplyGeneric(AssemblerInstruction) {
-			state.operation = stringToArithmeticOp(in.string());
+			state.operation = (byte)stringToArithmeticOp(in.string());
 		}
 	};
 	
@@ -489,7 +576,7 @@ namespace iris {
 	MoveOp stringToMoveOp(const std::string& title) noexcept;
 	struct MoveOpSubTypeSelector {
 		DefApplyGeneric(AssemblerInstruction) {
-			state.operation = stringToMoveOp(in.string());
+			state.operation = (byte)stringToMoveOp(in.string());
 		}
 	};
     DefSymbol(MoveToIP, mtip);
@@ -542,7 +629,7 @@ namespace iris {
 	JumpOp stringToJumpOp(const std::string& title) noexcept;
 	struct BranchOpSubTypeSelector {
 		DefApplyGeneric(AssemblerInstruction) {
-			state.operation = stringToJumpOp(in.string());
+			state.operation = (byte)stringToJumpOp(in.string());
 		}
 	};
     template<typename Op, typename S>
@@ -611,7 +698,7 @@ namespace iris {
 	CompareOp stringToCompareOp(const std::string& title) noexcept;
 	struct CompareOpSubTypeSelector {
 		DefApplyGeneric(AssemblerInstruction) {
-			state.operation = stringToCompareOp(in.string());
+			state.operation = (byte)stringToCompareOp(in.string());
 		}
 	};
     DefSymbol(Eq, eq);
@@ -653,7 +740,7 @@ namespace iris {
     DefSymbol(CRMove, pmove);
 	struct CompareRegisterOpTranslationLogic {
 		DefApplyGeneric(AssemblerInstruction) {
-			state.operation = stringToConditionRegisterOp(in.string());
+			state.operation = (byte)stringToConditionRegisterOp(in.string());
 		}
 	};
     struct ThenSource0Predicate : ThenField<StatefulRegister<Source0Predicate>> { };

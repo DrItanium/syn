@@ -112,6 +112,34 @@ namespace iris {
 		addToFinishedData(copy);
 		resetCurrentData();
 	}
+	void AssemblerInstruction::setField(RegisterPositionType type, byte value) {
+		using Type = RegisterPositionType;
+		switch(type) {
+			case Type::DestinationGPR:
+				destination = value;
+				break;
+			case Type::Source0GPR:
+				source0 = value;
+				break;
+			case Type::Source1GPR:
+				source1 = value;
+				break;
+			case Type::PredicateDestination:
+				destination = iris::encode4Bits<false>(destination, value);
+				break;
+			case Type::PredicateInverseDestination:
+				destination = iris::encode4Bits<true>(destination, value);
+				break;
+			case Type::PredicateSource0:
+				source0 = iris::encode4Bits<false>(source0, value);
+				break;
+			case Type::PredicateSource1:
+				source0 = iris::encode4Bits<true>(source0, value);
+				break;
+			default:
+				syn::reportError("Illegal index provided!");
+		}
+	}
 	ConditionRegisterOp stringToConditionRegisterOp(const std::string& title) noexcept {
 		static std::map<std::string, ConditionRegisterOp> lookup = {
 			{ "psave", ConditionRegisterOp::SaveCRs },
