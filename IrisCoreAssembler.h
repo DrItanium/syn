@@ -431,7 +431,6 @@ namespace iris {
         using ThreeGPRInstruction = GenericInstruction<Operation, ThreeGPR>;
     template<typename Operation>
         using TwoGPRInstruction = GenericInstruction<Operation, TwoGPR>;
-#define CURRENT_TYPE ArithmeticOp
 #define DefActionUsingPredefinedSymbol(title) \
     using Symbol ## title = syn:: Symbol ## title ## Keyword ; \
     ConstructOperationSetter(title, title)
@@ -487,8 +486,6 @@ namespace iris {
                                    ArithmeticThreeGPRInstruction> { };
 	DefAction(ArithmeticInstruction) : public SetInstructionGroup<InstructionGroup::Arithmetic> { };
 
-#undef CURRENT_TYPE
-#define CURRENT_TYPE MoveOp
 	MoveOp stringToMoveOp(const std::string& title) noexcept;
 	struct MoveOpSubTypeSelector {
 		DefApplyGeneric(AssemblerInstruction) {
@@ -541,80 +538,98 @@ namespace iris {
 
     struct MoveInstruction : pegtl::sor<MoveGPRImmediateInstruction, MoveThreeGPRInstruction, MoveTwoGPRHalfImmediateInstruction, MoveTwoGPRInstruction, MoveOneGPRInstruction> { };
 	DefAction(MoveInstruction) : public SetInstructionGroup<InstructionGroup::Move> { };
-    //DefGroupSet(MoveInstruction, Move);
-#undef CURRENT_TYPE
-#define CURRENT_TYPE JumpOp
     // branch
+	JumpOp stringToJumpOp(const std::string& title) noexcept;
+	struct BranchOpSubTypeSelector {
+		DefApplyGeneric(AssemblerInstruction) {
+			state.operation = stringToJumpOp(in.string());
+		}
+	};
     template<typename Op, typename S>
         struct BranchUnconditional : SeparatedBinaryThing<Op, S> { };
-    DefOperationSameTitle(BranchUnconditional, j);
-    DefOperationSameTitle(BranchUnconditionalLink, jl);
+    DefSymbol(BranchUnconditional, j);
+    DefSymbol(BranchUnconditionalLink, jl);
     struct OperationBranchOneGPR : pegtl::sor<SymbolBranchUnconditionalLink, SymbolBranchUnconditional> { };
+	DefAction(OperationBranchOneGPR) : public BranchOpSubTypeSelector { };
     struct BranchOneGPRInstruction : BranchUnconditional<OperationBranchOneGPR, StatefulDestinationGPR> { };
-    DefOperationSameTitle(BranchUnconditionalImmediate, ji);
-    DefOperationSameTitle(BranchUnconditionalImmediateLink, jil);
+    DefSymbol(BranchUnconditionalImmediate, ji);
+    DefSymbol(BranchUnconditionalImmediateLink, jil);
     struct OperationBranchImmediate : pegtl::sor<SymbolBranchUnconditionalImmediateLink, SymbolBranchUnconditionalImmediate> { };
+	DefAction(OperationBranchImmediate) : public BranchOpSubTypeSelector { };
     struct BranchImmediateInstruction : BranchUnconditional<OperationBranchImmediate, Immediate> { };
 
     struct GroupBranchUnconditional : pegtl::sor<BranchOneGPRInstruction, BranchImmediateInstruction> { };
     template<typename Op, typename S>
         struct BranchConditional : SeparatedTrinaryThing<Op, DestinationPredicateRegister, S> { };
-    DefOperationSameTitle(BranchConditional, bc);
-    DefOperationSameTitle(BranchConditionalLink, bcl);
+    DefSymbol(BranchConditional, bc);
+    DefSymbol(BranchConditionalLink, bcl);
     struct OperationBranchConditionalGPR : pegtl::sor<
                                            SymbolBranchConditionalLink,
                                            SymbolBranchConditional
                                            > { };
+	DefAction(OperationBranchConditionalGPR) : public BranchOpSubTypeSelector { };
     struct BranchConditionalGPRInstruction : BranchConditional<OperationBranchConditionalGPR, Source0GPR> { };
-    DefOperationSameTitle(BranchConditionalImmediate, bci);
-    DefOperationSameTitle(BranchConditionalImmediateLink, bcil);
+    DefSymbol(BranchConditionalImmediate, bci);
+    DefSymbol(BranchConditionalImmediateLink, bcil);
     struct OperationBranchConditionalImmediate : pegtl::sor<
                                                  SymbolBranchConditionalImmediateLink,
                                                  SymbolBranchConditionalImmediate
                                                  > { };
+	DefAction(OperationBranchConditionalImmediate) : public BranchOpSubTypeSelector { };
     struct BranchConditionalImmediateInstruction : BranchConditional<OperationBranchConditionalImmediate, Immediate> { };
-    DefOperationSameTitle(IfThenElse, if);
-    DefOperationSameTitle(IfThenElseLink, ifl);
+    DefSymbol(IfThenElse, if);
+    DefSymbol(IfThenElseLink, ifl);
     struct OperationBranchIfStatement : pegtl::sor<
                                         SymbolIfThenElseLink,
                                         SymbolIfThenElse
                                         > { };
+	DefAction(OperationBranchIfStatement) : public BranchOpSubTypeSelector { };
     struct BranchIfInstruction : BranchConditional<OperationBranchIfStatement, SourceRegisters> { };
-    DefOperationSameTitle(BranchConditionalLR, bclr);
-    DefOperationSameTitle(BranchConditionalLRAndLink, bclrl);
+    DefSymbol(BranchConditionalLR, bclr);
+    DefSymbol(BranchConditionalLRAndLink, bclrl);
     struct OperationBranchConditionalNoArgs : pegtl::sor<
                                               SymbolBranchConditionalLRAndLink,
                                               SymbolBranchConditionalLR
                                               > { };
+	DefAction(OperationBranchConditionalNoArgs) : public BranchOpSubTypeSelector { };
     struct BranchConditionalNoArgsInstruction : SeparatedBinaryThing<OperationBranchConditionalNoArgs, DestinationPredicateRegister> { };
-    DefOperationSameTitle(BranchUnconditionalLR, blr);
-    DefOperationSameTitle(BranchUnconditionalLRAndLink, blrl);
-    DefOperation(BranchReturnFromError, rfe, ReturnFromError);
+    DefSymbol(BranchUnconditionalLR, blr);
+    DefSymbol(BranchUnconditionalLRAndLink, blrl);
+    DefSymbol(BranchReturnFromError, rfe);
     struct BranchNoArgsInstruction : pegtl::sor<SymbolBranchUnconditionalLRAndLink, SymbolBranchUnconditionalLR, SymbolBranchReturnFromError> { };
+	DefAction(BranchNoArgsInstruction) : public BranchOpSubTypeSelector { };
 
     struct BranchInstruction : pegtl::sor<GroupBranchUnconditional, BranchConditionalGPRInstruction, BranchConditionalImmediateInstruction, BranchIfInstruction, BranchConditionalNoArgsInstruction, BranchNoArgsInstruction> { };
+	DefAction(BranchInstruction) : public SetInstructionGroup<InstructionGroup::Jump> { };
     //DefGroupSet(BranchInstruction, Jump);
 
-#undef CURRENT_TYPE
     template<typename T>
         struct ThenField : pegtl::seq<Separator, T> { };
     struct ThenDestinationPredicates : ThenField<DestinationPredicates> { };
 #define CURRENT_TYPE CompareOp
     // compare operations
-    DefOperationSameTitle(Eq, eq);
-    DefOperationSameTitle(Neq, neq);
-    DefOperationSameTitle(LessThan, lt);
-    DefOperationSameTitle(GreaterThan, gt);
-    DefOperationSameTitle(LessThanOrEqualTo, le);
-    DefOperationSameTitle(GreaterThanOrEqualTo, ge);
-    DefOperationSameTitle(EqImmediate, eqi);
-    DefOperationSameTitle(NeqImmediate, neqi);
-    DefOperationSameTitle(LessThanImmediate, lti);
-    DefOperationSameTitle(GreaterThanImmediate, gti);
-    DefOperationSameTitle(LessThanOrEqualToImmediate, lei);
-    DefOperationSameTitle(GreaterThanOrEqualToImmediate, gei);
+	CompareOp stringToCompareOp(const std::string& title) noexcept;
+	struct CompareOpSubTypeSelector {
+		DefApplyGeneric(AssemblerInstruction) {
+			state.operation = stringToCompareOp(in.string());
+		}
+	};
+    DefSymbol(Eq, eq);
+    DefSymbol(Neq, neq);
+    DefSymbol(LessThan, lt);
+    DefSymbol(GreaterThan, gt);
+    DefSymbol(LessThanOrEqualTo, le);
+    DefSymbol(GreaterThanOrEqualTo, ge);
+    DefSymbol(EqImmediate, eqi);
+    DefSymbol(NeqImmediate, neqi);
+    DefSymbol(LessThanImmediate, lti);
+    DefSymbol(GreaterThanImmediate, gti);
+    DefSymbol(LessThanOrEqualToImmediate, lei);
+    DefSymbol(GreaterThanOrEqualToImmediate, gei);
     struct CompareRegisterOperation : pegtl::sor<SymbolEq, SymbolNeq, SymbolLessThan, SymbolGreaterThan, SymbolLessThanOrEqualTo, SymbolGreaterThanOrEqualTo> { };
+	DefAction(CompareRegisterOperation) : public CompareOpSubTypeSelector { };
     struct CompareImmediateOperation : pegtl::sor<SymbolEqImmediate, SymbolNeqImmediate, SymbolLessThanImmediate, SymbolGreaterThanImmediate, SymbolLessThanOrEqualToImmediate, SymbolGreaterThanOrEqualToImmediate> { };
+	DefAction(CompareImmediateOperation) : public CompareOpSubTypeSelector { };
     struct CompareRegisterInstruction : pegtl::seq<CompareRegisterOperation, ThenDestinationPredicates, ThenField<SourceRegisters>> { };
     struct CompareImmediateInstruction : pegtl::seq<CompareImmediateOperation, ThenDestinationPredicates, ThenField<Source0GPR>, ThenField<HalfImmediate>> { };
     struct CompareInstruction : pegtl::sor<
@@ -622,9 +637,7 @@ namespace iris {
                                 CompareRegisterInstruction
                                 > { };
     //DefGroupSet(CompareInstruction, Compare);
-
-#undef CURRENT_TYPE
-#define CURRENT_TYPE ConditionRegisterOp
+	DefAction(CompareInstruction) : public SetInstructionGroup<InstructionGroup::Compare> { };
 
     // conditional register actions
 	ConditionRegisterOp stringToConditionRegisterOp(const std::string& title) noexcept;
@@ -655,28 +668,10 @@ namespace iris {
     struct PredicateInstructionThreeArgs : pegtl::seq<SymbolCRNot, ThenDestinationPredicates, ThenSource0Predicate> { };
     struct PredicateInstructionFourArgs : pegtl::seq<OperationPredicateFourArgs, ThenDestinationPredicates, ThenSource0Predicate, ThenField<StatefulRegister<Source1Predicate>>> { };
     struct PredicateInstruction : pegtl::sor<PredicateInstructionOneGPR, PredicateInstructionTwoArgs, PredicateInstructionThreeArgs, PredicateInstructionFourArgs> { };
-	DefAction(PredicateInstruction) {
-		DefApplyGeneric(AssemblerInstruction) {
-			state.group = InstructionGroup::ConditionalRegister;
-		}
-	};
+	DefAction(PredicateInstruction) : public SetInstructionGroup<InstructionGroup::ConditionalRegister> { };
 
-//#undef DefGroupSet
-#undef DefOperation
-#undef DefOperationSameTitle
-#undef CURRENT_TYPE
 #undef DefSymbol
     struct Instruction : pegtl::state<AssemblerInstruction, pegtl::sor<ArithmeticInstruction, MoveInstruction, BranchInstruction, CompareInstruction, PredicateInstruction>> { };
-    //DefAction(Instruction) {
-    //    DefApply {
-    //        if (!state.inCodeSection()) {
-    //            throw syn::Problem("Can't construct instructions in the data section!");
-    //        }
-    //        state.markIsInstruction();
-    //        state.saveToFinished();
-    //        state.incrementCurrentAddress();
-    //    }
-    //};
     struct Statement : pegtl::sor<Instruction, Directive> { };
     struct Anything : pegtl::sor<Separator, SingleLineComment,Statement> { };
     struct Main : syn::MainFileParser<Anything> { };

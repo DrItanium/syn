@@ -198,4 +198,51 @@ namespace iris {
 			return find->second;
 		}
 	}
+	JumpOp stringToJumpOp(const std::string& title) noexcept {
+		static std::map<std::string, JumpOp> lookup = {
+			{ "j", JumpOp::BranchUnconditional},
+			{ "jl", JumpOp::BranchUnconditionalLink},
+			{ "ji", JumpOp::BranchUnconditionalImmediate},
+			{ "jil", JumpOp::BranchUnconditionalImmediateLink},
+			{ "bc", JumpOp::BranchConditional },
+			{ "bcl", JumpOp::BranchConditionalLink},
+			{ "bci", JumpOp::BranchConditionalImmediate},
+			{ "bcil", JumpOp::BranchConditionalImmediateLink},
+			{ "if", JumpOp::IfThenElse},
+			{ "ifl", JumpOp::IfThenElseLink}, 
+			{ "bclr", JumpOp::BranchConditionalLR},
+			{ "bclrl", JumpOp::BranchConditionalLRAndLink},
+			{ "blr", JumpOp::BranchUnconditionalLR},
+			{ "blrl", JumpOp::BranchUnconditionalLRAndLink},
+			{ "rfe", JumpOp::ReturnFromError},
+		};
+		auto find = lookup.find(title);
+		if (find == lookup.end()) {
+			return syn::defaultErrorState<JumpOp>;
+		} else {
+			return find->second;
+		}
+	}
+	CompareOp stringToCompareOp(const std::string& title) noexcept {
+		static std::map<std::string, CompareOp> lookup = {
+			{ "eq",   CompareOp::Eq},
+			{ "neq",  CompareOp::Neq},
+			{ "lt",   CompareOp::LessThan},
+			{ "gt",   CompareOp::GreaterThan},
+			{ "le",   CompareOp::LessThanOrEqualTo},
+			{ "ge",   CompareOp::GreaterThanOrEqualTo},
+			{ "eqi",  CompareOp::EqImmediate },
+			{ "neqi", CompareOp::NeqImmediate },
+			{ "lti",  CompareOp::LessThanImmediate },
+			{ "gti",  CompareOp::GreaterThanImmediate },
+			{ "lei",  CompareOp::LessThanOrEqualToImmediate },
+			{ "gei",  CompareOp::GreaterThanOrEqualToImmediate },
+		};
+		auto find = lookup.find(title);
+		if (find == lookup.end()) {
+			return syn::defaultErrorState<CompareOp>;
+		} else {
+			return find->second;
+		}
+	}
 } // end namespace iris
