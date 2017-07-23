@@ -112,4 +112,90 @@ namespace iris {
 		addToFinishedData(copy);
 		resetCurrentData();
 	}
+	ConditionRegisterOp stringToConditionRegisterOp(const std::string& title) noexcept {
+		static std::map<std::string, ConditionRegisterOp> lookup = {
+			{ "psave", ConditionRegisterOp::SaveCRs },
+			{ "prestore", ConditionRegisterOp::RestoreCRs },
+			{ "pxor", ConditionRegisterOp::CRXor },
+			{ "pnot", ConditionRegisterOp::CRNot },
+			{ "pand", ConditionRegisterOp::CRAnd },
+			{ "por", ConditionRegisterOp::CROr },
+			{ "pnand", ConditionRegisterOp::CRNand },
+			{ "pnor", ConditionRegisterOp::CRNor }, 
+			{ "pswap", ConditionRegisterOp::CRSwap },
+			{ "pmove", ConditionRegisterOp::CRMove },
+		};
+		auto find = lookup.find(title);
+		if (find == lookup.end()) {
+			return syn::defaultErrorState<ConditionRegisterOp>;
+		} else {
+			return find->second;
+		}
+	}
+	ArithmeticOp stringToArithmeticOp(const std::string& title) noexcept {
+		static std::map<std::string, ArithmeticOp> lookup = {
+			{ "add", ArithmeticOp::Add},
+			{ "sub", ArithmeticOp::Sub},
+			{ "mul", ArithmeticOp::Mul},
+			{ "div", ArithmeticOp::Div},
+			{ "rem", ArithmeticOp::Rem},
+			{ "shl", ArithmeticOp::ShiftLeft},
+			{ "shr", ArithmeticOp::ShiftRight },
+			{ "and", ArithmeticOp::BinaryAnd}, 
+			{ "or", ArithmeticOp::BinaryOr},
+			{ "not", ArithmeticOp::BinaryNot},
+			{ "xor", ArithmeticOp::BinaryXor },
+			{ "nand", ArithmeticOp::BinaryNand},
+			{ "nor", ArithmeticOp::BinaryNor},
+			{ "min", ArithmeticOp::Min},
+			{ "max", ArithmeticOp::Max},
+			{ "addi", ArithmeticOp::AddImmediate},
+			{ "subi", ArithmeticOp::SubImmediate},
+			{ "muli", ArithmeticOp::MulImmediate},
+			{ "divi", ArithmeticOp::DivImmediate},
+			{ "remi", ArithmeticOp::RemImmediate},
+			{ "shli", ArithmeticOp::ShiftLeftImmediate },
+			{ "shri", ArithmeticOp::ShiftRightImmediate },
+		};
+		auto find = lookup.find(title);
+		if (find == lookup.end()) {
+			return syn::defaultErrorState<ArithmeticOp>;
+		} else {
+			return find->second;
+		}
+	}
+	MoveOp stringToMoveOp(const std::string& title) noexcept {
+		static std::map<std::string, MoveOp> lookup = {
+			{ "mtip", MoveOp::MoveToIP},
+			{ "mfip", MoveOp::MoveFromIP},
+			{ "mtlr", MoveOp::MoveToLR},
+			{ "mflr", MoveOp::MoveFromLR},
+			{ "rregs", MoveOp::RestoreAllRegisters},
+			{ "sregs", MoveOp::SaveAllRegisters},
+			{ "move", MoveOp::Move},
+			{ "swap", MoveOp::Swap},
+			{ "ld", MoveOp::Load},
+			{ "st", MoveOp::Store}, 
+			{ "iold", MoveOp::IORead},
+			{ "iost", MoveOp::IOWrite },
+			{ "push", MoveOp::Push },
+			{ "pop", MoveOp::Pop },
+			{ "ldof", MoveOp::LoadWithOffset },
+			{ "stof", MoveOp::StoreWithOffset },
+			{ "ioldof", MoveOp::IOReadWithOffset },
+			{ "iostof", MoveOp::IOWriteWithOffset },
+			{ "cld", MoveOp::LoadCode },
+			{ "cst", MoveOp::StoreCode },
+			{ "pushi", MoveOp::PushImmediate}, 
+			{ "set", MoveOp::Set },
+			{ "ldi", MoveOp::LoadImmediate },
+			{ "sti", MoveOp::StoreImmediate },
+		};
+		auto find = lookup.find(title);
+		if (find == lookup.end()) {
+			return syn::defaultErrorState<MoveOp>;
+		} else {
+			return find->second;
+		}
+	}
 } // end namespace iris

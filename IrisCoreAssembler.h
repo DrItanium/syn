@@ -157,6 +157,22 @@ namespace iris {
             byte temporaryByte;
             AssemblerData current;
     };
+	struct AssemblerInstruction : public AssemblerData {
+		template<typename Input>
+		AssemblerInstruction(const Input& in, AssemblerState& parent) {
+			if (!parent.inCodeSection()) {
+				throw syn::Problem("Must be in a code section to add an instruction!");
+			}
+			instruction = true;
+			address = parent.getCurrentAddress();
+		}
+
+		template<typename Input>
+			void success(const Input& in, AssemblerState& parent) {
+				parent.incrementCurrentAddress();
+				parent.addToFinishedData(*this);
+			}
+	};
     struct ImmediateContainer : syn::NumberContainer<word> {
         using syn::NumberContainer<word>::NumberContainer;
         template<typename Input>
@@ -177,7 +193,7 @@ namespace iris {
             PredicateSource1,
         };
         template<typename Input>
-            void success(const Input& in, AssemblerData& parent) {
+            void success(const Input& in, AssemblerInstruction& parent) {
                 switch(_index) {
                     case Type::DestinationGPR:
                         parent.destination = getValue();
@@ -188,6 +204,18 @@ namespace iris {
                     case Type::Source1GPR:
                         parent.source1 = getValue();
                         break;
+					case Type::PredicateDestination:
+						parent.destination = iris::encode4Bits<false>(parent.destination, getValue());
+						break;
+					case Type::PredicateInverseDestination:
+						parent.destination = iris::encode4Bits<true>(parent.destination, getValue());
+						break;
+					case Type::PredicateSource0:
+						parent.source0 = iris::encode4Bits<false>(parent.source0, getValue());
+						break;
+					case Type::PredicateSource1:
+						parent.source0 = iris::encode4Bits<true>(parent.source0, getValue());
+						break;
                     default:
                         syn::reportError("Illegal index provided!");
                 }
@@ -222,6 +250,13 @@ namespace iris {
             }
         Type _index;
     };
+	template<InstructionGroup type>
+	struct SetInstructionGroup {
+		template<typename Input>
+		static void apply(const Input& in, AssemblerInstruction& instruction) {
+			instruction.group = static_cast<byte>(type);
+		}
+	};
 #define DefApply DefApplyGeneric(AssemblerState)
 #define DefApplyEmpty DefApply { }
     using Separator = syn::AsmSeparator;
@@ -400,34 +435,42 @@ namespace iris {
 #define DefActionUsingPredefinedSymbol(title) \
     using Symbol ## title = syn:: Symbol ## title ## Keyword ; \
     ConstructOperationSetter(title, title)
-
-    DefActionUsingPredefinedSymbol(Add);
-    DefActionUsingPredefinedSymbol(Sub);
-    DefActionUsingPredefinedSymbol(Mul);
-    DefActionUsingPredefinedSymbol(Div);
-    DefActionUsingPredefinedSymbol(Rem);
-    DefOperationSameTitle(ShiftLeft, shl);
-    DefOperationSameTitle(ShiftRight, shr);
-    DefOperation(And, and, BinaryAnd);
-    DefOperation(Or, or, BinaryOr);
-    DefOperation(Xor, xor, BinaryXor);
-    DefOperation(Nand, nand, BinaryNand);
-    DefOperation(Nor, nor, BinaryNor);
-    DefOperationSameTitle(Min, min);
-    DefOperationSameTitle(Max, max);
+	ArithmeticOp stringToArithmeticOp(const std::string& title) noexcept;
+	struct ArithmeticSubTypeSelector {
+		DefApplyGeneric(AssemblerInstruction) {
+			state.operation = stringToArithmeticOp(in.string());
+		}
+	};
+	
+    using SymbolAdd = syn::SymbolAddKeyword;
+    using SymbolSub = syn::SymbolSubKeyword;
+    using SymbolMul = syn::SymbolMulKeyword;
+    using SymbolDiv = syn::SymbolDivKeyword;
+    using SymbolRem = syn::SymbolRemKeyword;
+    DefSymbol(ShiftLeft, shl);
+    DefSymbol(ShiftRight, shr);
+    DefSymbol(And, and);
+    DefSymbol(Or, or);
+    DefSymbol(Xor, xor);
+    DefSymbol(Nand, nand);
+    DefSymbol(Nor, nor);
+    DefSymbol(Min, min);
+    DefSymbol(Max, max);
     struct OperationArithmeticThreeGPR : pegtl::sor<SymbolAdd, SymbolSub, SymbolMul, SymbolDiv, SymbolRem, SymbolShiftLeft, SymbolShiftRight, SymbolAnd, SymbolOr, SymbolXor, SymbolMin, SymbolMax> { };
+	DefAction(OperationArithmeticThreeGPR) : public ArithmeticSubTypeSelector { };
     struct ArithmeticThreeGPRInstruction : ThreeGPRInstruction<OperationArithmeticThreeGPR> { };
-    DefOperation(Not, not, BinaryNot);
+    DefSymbol(Not, not);
     struct OperationArithmeticTwoGPR : pegtl::sor<SymbolNot> { };
+	DefAction(OperationArithmeticTwoGPR) : public ArithmeticSubTypeSelector { };
     struct ArithmeticTwoGPRInstruction : TwoGPRInstruction<OperationArithmeticTwoGPR> { };
 
-    DefOperationSameTitle(AddImmediate, addi);
-    DefOperationSameTitle(SubImmediate, subi);
-    DefOperationSameTitle(MulImmediate, muli);
-    DefOperationSameTitle(DivImmediate, divi);
-    DefOperationSameTitle(RemImmediate, remi);
-    DefOperationSameTitle(ShiftLeftImmediate, shli);
-    DefOperationSameTitle(ShiftRightImmediate, shri);
+    DefSymbol(AddImmediate, addi);
+    DefSymbol(SubImmediate, subi);
+    DefSymbol(MulImmediate, muli);
+    DefSymbol(DivImmediate, divi);
+    DefSymbol(RemImmediate, remi);
+    DefSymbol(ShiftLeftImmediate, shli);
+    DefSymbol(ShiftRightImmediate, shri);
     struct OperationArithmeticTwoGPRHalfImmediate : pegtl::sor<
                                                     SymbolAddImmediate,
                                                     SymbolSubImmediate,
@@ -436,58 +479,69 @@ namespace iris {
                                                     SymbolRemImmediate,
                                                     SymbolShiftLeftImmediate,
                                                     SymbolShiftRightImmediate> { };
+	DefAction(OperationArithmeticTwoGPRHalfImmediate) : public ArithmeticSubTypeSelector { };
     struct ArithmeticTwoGPRHalfImmediateInstruction : SeparatedTrinaryThing<OperationArithmeticTwoGPRHalfImmediate, TwoGPR, HalfImmediate> { };
     struct ArithmeticInstruction : pegtl::sor<
                                    ArithmeticTwoGPRHalfImmediateInstruction,
                                    ArithmeticTwoGPRInstruction,
                                    ArithmeticThreeGPRInstruction> { };
+	DefAction(ArithmeticInstruction) : public SetInstructionGroup<InstructionGroup::Arithmetic> { };
 
-#define DefGroupSet(rule, group) DefAction( rule ) { DefApply { state.setGroup(InstructionGroup:: group ); } }
-    DefGroupSet(ArithmeticInstruction, Arithmetic);
 #undef CURRENT_TYPE
 #define CURRENT_TYPE MoveOp
-
-    DefOperationSameTitle(MoveToIP, mtip);
-    DefOperationSameTitle(MoveFromIP, mfip);
-    DefOperationSameTitle(MoveToLR, mtlr);
-    DefOperationSameTitle(MoveFromLR, mflr);
-    DefOperationSameTitle(RestoreAllRegisters, rregs);
-    DefOperationSameTitle(SaveAllRegisters, sregs);
+	MoveOp stringToMoveOp(const std::string& title) noexcept;
+	struct MoveOpSubTypeSelector {
+		DefApplyGeneric(AssemblerInstruction) {
+			state.operation = stringToMoveOp(in.string());
+		}
+	};
+    DefSymbol(MoveToIP, mtip);
+    DefSymbol(MoveFromIP, mfip);
+    DefSymbol(MoveToLR, mtlr);
+    DefSymbol(MoveFromLR, mflr);
+    DefSymbol(RestoreAllRegisters, rregs);
+    DefSymbol(SaveAllRegisters, sregs);
     struct OperationMoveOneGPR : pegtl::sor<SymbolMoveToIP, SymbolMoveFromIP, SymbolMoveToLR, SymbolMoveFromLR, SymbolRestoreAllRegisters, SymbolSaveAllRegisters> { };
+	DefAction(OperationMoveOneGPR) : public MoveOpSubTypeSelector { };
     struct MoveOneGPRInstruction : OneGPRInstruction<OperationMoveOneGPR> { };
-    DefOperationSameTitle(Move, move);
-    DefOperationSameTitle(Swap, swap);
-    DefOperationSameTitle(Load, ld);
-    DefOperationSameTitle(Store, st);
-    DefOperation(LoadIO, iold, IORead);
-    DefOperation(StoreIO, iost, IOWrite);
-    DefOperationSameTitle(Push, push);
-    DefOperationSameTitle(Pop, pop);
+    DefSymbol(Move, move);
+    DefSymbol(Swap, swap);
+    DefSymbol(Load, ld);
+    DefSymbol(Store, st);
+    DefSymbol(LoadIO, iold);
+    DefSymbol(StoreIO, iost);
+    DefSymbol(Push, push);
+    DefSymbol(Pop, pop);
     struct OperationMoveTwoGPR : pegtl::sor<SymbolMove, SymbolSwap, SymbolLoadIO, SymbolStoreIO, SymbolLoad, SymbolStore, SymbolPush, SymbolPop> { };
+	DefAction(OperationMoveTwoGPR) : public MoveOpSubTypeSelector { };
     struct MoveTwoGPRInstruction : TwoGPRInstruction<OperationMoveTwoGPR> { };
-    DefOperationSameTitle(LoadWithOffset, ldof);
-    DefOperationSameTitle(StoreWithOffset, stof);
-    DefOperation(LoadIOWithOffset, ioldof, IOReadWithOffset);
-    DefOperation(StoreIOWithOffset, iostof, IOWriteWithOffset);
+    DefSymbol(LoadWithOffset, ldof);
+    DefSymbol(StoreWithOffset, stof);
+    DefSymbol(LoadIOWithOffset, ioldof);
+    DefSymbol(StoreIOWithOffset, iostof);
     struct OperationMoveTwoGPRHalfImmediate : pegtl::sor<SymbolLoadWithOffset, SymbolStoreWithOffset, SymbolLoadIOWithOffset, SymbolStoreIOWithOffset> { };
+	DefAction(OperationMoveTwoGPRHalfImmediate) : public MoveOpSubTypeSelector { };
 
     struct MoveTwoGPRHalfImmediateInstruction : SeparatedTrinaryThing<OperationMoveTwoGPRHalfImmediate, TwoGPR, HalfImmediate> { };
 
-    DefOperationSameTitle(LoadCode, cld);
-    DefOperationSameTitle(StoreCode, cst);
+    DefSymbol(LoadCode, cld);
+    DefSymbol(StoreCode, cst);
     struct OperationMoveThreeGPR : pegtl::sor<SymbolLoadCode, SymbolStoreCode> { };
+	DefAction(OperationMoveThreeGPR) : public MoveOpSubTypeSelector { };
     struct MoveThreeGPRInstruction : ThreeGPRInstruction<OperationMoveThreeGPR> { };
 
-    DefOperationSameTitle(PushImmediate, pushi);
-    DefOperationSameTitle(Set, set);
-    DefOperationSameTitle(LoadImmediate, ldi);
-    DefOperationSameTitle(StoreImmediate, sti);
+    DefSymbol(PushImmediate, pushi);
+    DefSymbol(Set, set);
+    DefSymbol(LoadImmediate, ldi);
+    DefSymbol(StoreImmediate, sti);
     struct OperationMoveGPRImmediate : pegtl::sor<SymbolStoreImmediate, SymbolLoadImmediate, SymbolSet, SymbolPushImmediate> { };
+	DefAction(OperationMoveGPRImmediate) : public MoveOpSubTypeSelector { };
 
     struct MoveGPRImmediateInstruction : SeparatedTrinaryThing<OperationMoveGPRImmediate, StatefulDestinationGPR, Immediate> { };
 
     struct MoveInstruction : pegtl::sor<MoveGPRImmediateInstruction, MoveThreeGPRInstruction, MoveTwoGPRHalfImmediateInstruction, MoveTwoGPRInstruction, MoveOneGPRInstruction> { };
-    DefGroupSet(MoveInstruction, Move);
+	DefAction(MoveInstruction) : public SetInstructionGroup<InstructionGroup::Move> { };
+    //DefGroupSet(MoveInstruction, Move);
 #undef CURRENT_TYPE
 #define CURRENT_TYPE JumpOp
     // branch
@@ -539,7 +593,7 @@ namespace iris {
     struct BranchNoArgsInstruction : pegtl::sor<SymbolBranchUnconditionalLRAndLink, SymbolBranchUnconditionalLR, SymbolBranchReturnFromError> { };
 
     struct BranchInstruction : pegtl::sor<GroupBranchUnconditional, BranchConditionalGPRInstruction, BranchConditionalImmediateInstruction, BranchIfInstruction, BranchConditionalNoArgsInstruction, BranchNoArgsInstruction> { };
-    DefGroupSet(BranchInstruction, Jump);
+    //DefGroupSet(BranchInstruction, Jump);
 
 #undef CURRENT_TYPE
     template<typename T>
@@ -567,50 +621,62 @@ namespace iris {
                                 CompareImmediateInstruction,
                                 CompareRegisterInstruction
                                 > { };
-    DefGroupSet(CompareInstruction, Compare);
+    //DefGroupSet(CompareInstruction, Compare);
 
 #undef CURRENT_TYPE
 #define CURRENT_TYPE ConditionRegisterOp
 
     // conditional register actions
-    DefOperationSameTitle(SaveCRs, psave);
-    DefOperationSameTitle(RestoreCRs, prestore);
-    DefOperationSameTitle(CRXor, pxor);
-    DefOperationSameTitle(CRNot, pnot);
-    DefOperationSameTitle(CRAnd, pand);
-    DefOperationSameTitle(CROr, por);
-    DefOperationSameTitle(CRNand, pnand);
-    DefOperationSameTitle(CRNor, pnor);
-    DefOperationSameTitle(CRSwap, pswap);
-    DefOperationSameTitle(CRMove, pmove);
+	ConditionRegisterOp stringToConditionRegisterOp(const std::string& title) noexcept;
+    DefSymbol(SaveCRs, psave);
+    DefSymbol(RestoreCRs, prestore);
+    DefSymbol(CRXor, pxor);
+    DefSymbol(CRNot, pnot);
+    DefSymbol(CRAnd, pand);
+    DefSymbol(CROr, por);
+    DefSymbol(CRNand, pnand);
+    DefSymbol(CRNor, pnor);
+    DefSymbol(CRSwap, pswap);
+    DefSymbol(CRMove, pmove);
+	struct CompareRegisterOpTranslationLogic {
+		DefApplyGeneric(AssemblerInstruction) {
+			state.operation = stringToConditionRegisterOp(in.string());
+		}
+	};
     struct ThenSource0Predicate : ThenField<StatefulRegister<Source0Predicate>> { };
     struct OperationPredicateTwoArgs : pegtl::sor<SymbolCRSwap, SymbolCRMove> { };
+	DefAction(OperationPredicateTwoArgs) : public CompareRegisterOpTranslationLogic { };
     struct OperationPredicateOneGPR : pegtl::sor<SymbolSaveCRs, SymbolRestoreCRs> { };
+	DefAction(OperationPredicateOneGPR) : public CompareRegisterOpTranslationLogic { };
     struct OperationPredicateFourArgs : pegtl::sor<SymbolCRXor, SymbolCRAnd, SymbolCROr, SymbolCRNand, SymbolCRNor> { };
+	DefAction(OperationPredicateFourArgs) : public CompareRegisterOpTranslationLogic { };
     struct PredicateInstructionOneGPR : pegtl::seq<OperationPredicateOneGPR, ThenField<StatefulDestinationGPR>> { };
     struct PredicateInstructionTwoArgs : pegtl::seq<OperationPredicateTwoArgs, ThenDestinationPredicates> { };
     struct PredicateInstructionThreeArgs : pegtl::seq<SymbolCRNot, ThenDestinationPredicates, ThenSource0Predicate> { };
     struct PredicateInstructionFourArgs : pegtl::seq<OperationPredicateFourArgs, ThenDestinationPredicates, ThenSource0Predicate, ThenField<StatefulRegister<Source1Predicate>>> { };
     struct PredicateInstruction : pegtl::sor<PredicateInstructionOneGPR, PredicateInstructionTwoArgs, PredicateInstructionThreeArgs, PredicateInstructionFourArgs> { };
-    DefGroupSet(PredicateInstruction, ConditionalRegister);
+	DefAction(PredicateInstruction) {
+		DefApplyGeneric(AssemblerInstruction) {
+			state.group = InstructionGroup::ConditionalRegister;
+		}
+	};
 
-
-#undef DefGroupSet
+//#undef DefGroupSet
 #undef DefOperation
 #undef DefOperationSameTitle
 #undef CURRENT_TYPE
 #undef DefSymbol
-    struct Instruction : pegtl::sor<ArithmeticInstruction, MoveInstruction, BranchInstruction, CompareInstruction, PredicateInstruction> { };
-    DefAction(Instruction) {
-        DefApply {
-            if (!state.inCodeSection()) {
-                throw syn::Problem("Can't construct instructions in the data section!");
-            }
-            state.markIsInstruction();
-            state.saveToFinished();
-            state.incrementCurrentAddress();
-        }
-    };
+    struct Instruction : pegtl::state<AssemblerInstruction, pegtl::sor<ArithmeticInstruction, MoveInstruction, BranchInstruction, CompareInstruction, PredicateInstruction>> { };
+    //DefAction(Instruction) {
+    //    DefApply {
+    //        if (!state.inCodeSection()) {
+    //            throw syn::Problem("Can't construct instructions in the data section!");
+    //        }
+    //        state.markIsInstruction();
+    //        state.saveToFinished();
+    //        state.incrementCurrentAddress();
+    //    }
+    //};
     struct Statement : pegtl::sor<Instruction, Directive> { };
     struct Anything : pegtl::sor<Separator, SingleLineComment,Statement> { };
     struct Main : syn::MainFileParser<Anything> { };
