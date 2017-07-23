@@ -239,6 +239,7 @@ namespace syn {
 			std::string _value;
 	};
 
+
 	template<typename Word>
 	class NumberOrStringContainer : public NumberContainer<Word>, public StringContainer {
 		public:
