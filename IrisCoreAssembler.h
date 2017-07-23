@@ -348,9 +348,13 @@ namespace iris {
     struct Source1Predicate : IndirectPredicateRegister { };
     DefAction(Source1Predicate) : GenericRegisterIndexContainerAction<RegisterPositionType::PredicateSource1> { };
 
+	struct FullImmediateContainer;
 	template<syn::KnownNumberTypes t>
 	struct PopulateNumberType {
 		DefApplyGeneric(ImmediateContainer) {
+			syn::populateContainer<word, t>(in.string(), state);
+		}
+		DefApplyGeneric(FullImmediateContainer) {
 			syn::populateContainer<word, t>(in.string(), state);
 		}
 	};
@@ -380,7 +384,8 @@ namespace iris {
 			state.currentLexeme = in.string();
 		}
     };
-    struct LexemeOrNumber : syn::LexemeOr<Number<ImmediateContainer>> { };
+	template<typename State = ImmediateContainer>
+    struct LexemeOrNumber : syn::LexemeOr<Number<State>> { };
     template<SectionType section>
         struct ModifySection {
             template<typename Input>
@@ -437,28 +442,28 @@ namespace iris {
 		}
 	};
     struct LabelDirective : pegtl::state<LabelDirectiveHandler, syn::OneArgumentDirective<syn::SymbolLabelDirective, Lexeme>> { };
-
-    template<typename T>
-        struct LexemeOrNumberDirective : syn::OneArgumentDirective<T, LexemeOrNumber> { };
-    struct DeclareDirective : LexemeOrNumberDirective<syn::SymbolWordDirective> { };
-    DefAction(DeclareDirective) {
-        DefApplyGeneric(AssemblerState) {
-            if (state.inDataSection()) {
-                state.markIsNotInstruction();
-                if (!state.hasLexeme()) {
-                    state.stashTemporaryWordIntoDataValue();
-                }
-                state.saveToFinished();
-                state.incrementCurrentAddress();
-            } else {
-                throw syn::Problem("can't use a declare in a non data section!");
-            }
-        }
-		DefApplyGeneric(AssemblerDirective) {
-		}
-    };
+	struct FullImmediateContainer;
+    template<typename T, typename State = ImmediateContainer>
+        struct LexemeOrNumberDirective : syn::OneArgumentDirective<T, LexemeOrNumber<State>> { };
+    struct DeclareDirective : LexemeOrNumberDirective<syn::SymbolWordDirective, FullImmediateContainer> { };
+    //DefAction(DeclareDirective) {
+    //    DefApplyGeneric(AssemblerState) {
+    //        if (state.inDataSection()) {
+    //            state.markIsNotInstruction();
+    //            if (!state.hasLexeme()) {
+    //                state.stashTemporaryWordIntoDataValue();
+    //            }
+    //            state.saveToFinished();
+    //            state.incrementCurrentAddress();
+    //        } else {
+    //            throw syn::Problem("can't use a declare in a non data section!");
+    //        }
+    //    }
+	//	DefApplyGeneric(AssemblerDirective) {
+	//	}
+    //};
     struct Directive : pegtl::state<AssemblerDirective, pegtl::sor<OrgDirective, LabelDirective, CodeDirective, DataDirective, DeclareDirective>> { };
-    struct Immediate : pegtl::sor<LexemeOrNumber> { };
+    struct Immediate : pegtl::sor<LexemeOrNumber<FullImmediateContainer>> { };
     DefAction(Immediate) {
         DefApplyGeneric(AssemblerState) {
             state.markHasFullImmediate();
@@ -474,6 +479,8 @@ namespace iris {
 		public:
 			template<typename Input>
 			FullImmediateContainer(const Input& in, AssemblerInstruction& parent) : Parent(in, parent) { }
+			template<typename Input>
+			FullImmediateContainer(const Input& in, AssemblerDirective& parent) : Parent(in, parent) { }
 
 			template<typename Input>
 			void success(const Input& in, AssemblerInstruction& parent) {
@@ -481,6 +488,16 @@ namespace iris {
 				parent.hasLexeme = !isNumber();
 				if (isNumber()) {
 					parent.setImmediate(getNumberValue());
+				} else {
+					parent.currentLexeme = getStringValue();
+				}
+			}
+			template<typename Input>
+			void success(const Input& in, AssemblerDirective& parent) {
+				parent.fullImmediate = true;
+				parent.hasLexeme = !isNumber();
+				if (isNumber()) {
+					parent.dataValue = getNumberValue();
 				} else {
 					parent.currentLexeme = getStringValue();
 				}

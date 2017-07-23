@@ -246,7 +246,7 @@ namespace syn {
 			using StringParent = StringContainer;
 		public:
 			template<typename Input, typename ... States>
-				NumberOrStringContainer(const Input& in, States&& ...) { }
+			NumberOrStringContainer(const Input& in, States&& ... s) : NumberParent(in, s...), StringParent(in, s...) { }
 			virtual ~NumberOrStringContainer() { }
 			bool isNumber() const noexcept { return _isNumber; }
 			Word getNumberValue() const noexcept { return NumberParent::getValue(); }
