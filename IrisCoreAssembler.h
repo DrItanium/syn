@@ -44,6 +44,7 @@
 #include <vector>
 #include "IrisClipsExtensions.h"
 #include "ClipsExtensions.h"
+#include "IrisCoreAssemblerKeywords.h"
 
 namespace iris {
     enum class SectionType {
@@ -434,20 +435,6 @@ namespace iris {
 			void success(const Input& in, AssemblerDirective& parent) { }
         };
     // directives
-#define ConstructOperationSetter(title, type) \
-    DefAction(Symbol ## title ) { \
-        DefApply { \
-            state.setOperation< CURRENT_TYPE >(CURRENT_TYPE :: type ) ; \
-        } \
-    }
-
-#define DefOperation(title, str, type) \
-    DefSymbol(title, str); \
-    ConstructOperationSetter(title, type)
-
-#define DefOperationSameTitle(title, str) DefOperation(title, str, title)
-    DefSymbol(DataDirective, .data);
-    DefSymbol(CodeDirective, .code);
     template<SectionType modSection, typename Directive>
         struct StatefulSpaceDirective : syn::StatefulSingleEntrySequence<ModifySection<modSection>, Directive> { };
     struct CodeDirective : StatefulSpaceDirective<SectionType::Code, SymbolCodeDirective> { };
@@ -552,9 +539,6 @@ namespace iris {
         using ThreeGPRInstruction = GenericInstruction<Operation, ThreeGPR>;
     template<typename Operation>
         using TwoGPRInstruction = GenericInstruction<Operation, TwoGPR>;
-#define DefActionUsingPredefinedSymbol(title) \
-    using Symbol ## title = syn:: Symbol ## title ## Keyword ; \
-    ConstructOperationSetter(title, title)
 	ArithmeticOp stringToArithmeticOp(const std::string& title) noexcept;
 	struct ArithmeticSubTypeSelector {
 		DefApplyGeneric(AssemblerInstruction) {
@@ -562,35 +546,13 @@ namespace iris {
 		}
 	};
 	
-    using SymbolAdd = syn::SymbolAddKeyword;
-    using SymbolSub = syn::SymbolSubKeyword;
-    using SymbolMul = syn::SymbolMulKeyword;
-    using SymbolDiv = syn::SymbolDivKeyword;
-    using SymbolRem = syn::SymbolRemKeyword;
-    DefSymbol(ShiftLeft, shl);
-    DefSymbol(ShiftRight, shr);
-    DefSymbol(And, and);
-    DefSymbol(Or, or);
-    DefSymbol(Xor, xor);
-    DefSymbol(Nand, nand);
-    DefSymbol(Nor, nor);
-    DefSymbol(Min, min);
-    DefSymbol(Max, max);
     struct OperationArithmeticThreeGPR : pegtl::sor<SymbolAdd, SymbolSub, SymbolMul, SymbolDiv, SymbolRem, SymbolShiftLeft, SymbolShiftRight, SymbolAnd, SymbolOr, SymbolXor, SymbolMin, SymbolMax> { };
 	DefAction(OperationArithmeticThreeGPR) : public ArithmeticSubTypeSelector { };
     struct ArithmeticThreeGPRInstruction : ThreeGPRInstruction<OperationArithmeticThreeGPR> { };
-    DefSymbol(Not, not);
     struct OperationArithmeticTwoGPR : pegtl::sor<SymbolNot> { };
 	DefAction(OperationArithmeticTwoGPR) : public ArithmeticSubTypeSelector { };
     struct ArithmeticTwoGPRInstruction : TwoGPRInstruction<OperationArithmeticTwoGPR> { };
 
-    DefSymbol(AddImmediate, addi);
-    DefSymbol(SubImmediate, subi);
-    DefSymbol(MulImmediate, muli);
-    DefSymbol(DivImmediate, divi);
-    DefSymbol(RemImmediate, remi);
-    DefSymbol(ShiftLeftImmediate, shli);
-    DefSymbol(ShiftRightImmediate, shri);
     struct OperationArithmeticTwoGPRHalfImmediate : pegtl::sor<
                                                     SymbolAddImmediate,
                                                     SymbolSubImmediate,
@@ -613,45 +575,21 @@ namespace iris {
 			state.operation = (byte)stringToMoveOp(in.string());
 		}
 	};
-    DefSymbol(MoveToIP, mtip);
-    DefSymbol(MoveFromIP, mfip);
-    DefSymbol(MoveToLR, mtlr);
-    DefSymbol(MoveFromLR, mflr);
-    DefSymbol(RestoreAllRegisters, rregs);
-    DefSymbol(SaveAllRegisters, sregs);
     struct OperationMoveOneGPR : pegtl::sor<SymbolMoveToIP, SymbolMoveFromIP, SymbolMoveToLR, SymbolMoveFromLR, SymbolRestoreAllRegisters, SymbolSaveAllRegisters> { };
 	DefAction(OperationMoveOneGPR) : public MoveOpSubTypeSelector { };
     struct MoveOneGPRInstruction : OneGPRInstruction<OperationMoveOneGPR> { };
-    DefSymbol(Move, move);
-    DefSymbol(Swap, swap);
-    DefSymbol(Load, ld);
-    DefSymbol(Store, st);
-    DefSymbol(LoadIO, iold);
-    DefSymbol(StoreIO, iost);
-    DefSymbol(Push, push);
-    DefSymbol(Pop, pop);
     struct OperationMoveTwoGPR : pegtl::sor<SymbolMove, SymbolSwap, SymbolLoadIO, SymbolStoreIO, SymbolLoad, SymbolStore, SymbolPush, SymbolPop> { };
 	DefAction(OperationMoveTwoGPR) : public MoveOpSubTypeSelector { };
     struct MoveTwoGPRInstruction : TwoGPRInstruction<OperationMoveTwoGPR> { };
-    DefSymbol(LoadWithOffset, ldof);
-    DefSymbol(StoreWithOffset, stof);
-    DefSymbol(LoadIOWithOffset, ioldof);
-    DefSymbol(StoreIOWithOffset, iostof);
     struct OperationMoveTwoGPRHalfImmediate : pegtl::sor<SymbolLoadWithOffset, SymbolStoreWithOffset, SymbolLoadIOWithOffset, SymbolStoreIOWithOffset> { };
 	DefAction(OperationMoveTwoGPRHalfImmediate) : public MoveOpSubTypeSelector { };
 
     struct MoveTwoGPRHalfImmediateInstruction : SeparatedTrinaryThing<OperationMoveTwoGPRHalfImmediate, TwoGPR, HalfImmediate> { };
 
-    DefSymbol(LoadCode, cld);
-    DefSymbol(StoreCode, cst);
     struct OperationMoveThreeGPR : pegtl::sor<SymbolLoadCode, SymbolStoreCode> { };
 	DefAction(OperationMoveThreeGPR) : public MoveOpSubTypeSelector { };
     struct MoveThreeGPRInstruction : ThreeGPRInstruction<OperationMoveThreeGPR> { };
 
-    DefSymbol(PushImmediate, pushi);
-    DefSymbol(Set, set);
-    DefSymbol(LoadImmediate, ldi);
-    DefSymbol(StoreImmediate, sti);
     struct OperationMoveGPRImmediate : pegtl::sor<SymbolStoreImmediate, SymbolLoadImmediate, SymbolSet, SymbolPushImmediate> { };
 	DefAction(OperationMoveGPRImmediate) : public MoveOpSubTypeSelector { };
 
@@ -668,13 +606,9 @@ namespace iris {
 	};
     template<typename Op, typename S>
         struct BranchUnconditional : SeparatedBinaryThing<Op, S> { };
-    DefSymbol(BranchUnconditional, j);
-    DefSymbol(BranchUnconditionalLink, jl);
     struct OperationBranchOneGPR : pegtl::sor<SymbolBranchUnconditionalLink, SymbolBranchUnconditional> { };
 	DefAction(OperationBranchOneGPR) : public BranchOpSubTypeSelector { };
     struct BranchOneGPRInstruction : BranchUnconditional<OperationBranchOneGPR, StatefulDestinationGPR> { };
-    DefSymbol(BranchUnconditionalImmediate, ji);
-    DefSymbol(BranchUnconditionalImmediateLink, jil);
     struct OperationBranchImmediate : pegtl::sor<SymbolBranchUnconditionalImmediateLink, SymbolBranchUnconditionalImmediate> { };
 	DefAction(OperationBranchImmediate) : public BranchOpSubTypeSelector { };
     struct BranchImmediateInstruction : BranchUnconditional<OperationBranchImmediate, Immediate> { };
@@ -682,41 +616,30 @@ namespace iris {
     struct GroupBranchUnconditional : pegtl::sor<BranchOneGPRInstruction, BranchImmediateInstruction> { };
     template<typename Op, typename S>
         struct BranchConditional : SeparatedTrinaryThing<Op, DestinationPredicateRegister, S> { };
-    DefSymbol(BranchConditional, bc);
-    DefSymbol(BranchConditionalLink, bcl);
     struct OperationBranchConditionalGPR : pegtl::sor<
                                            SymbolBranchConditionalLink,
                                            SymbolBranchConditional
                                            > { };
 	DefAction(OperationBranchConditionalGPR) : public BranchOpSubTypeSelector { };
     struct BranchConditionalGPRInstruction : BranchConditional<OperationBranchConditionalGPR, Source0GPR> { };
-    DefSymbol(BranchConditionalImmediate, bci);
-    DefSymbol(BranchConditionalImmediateLink, bcil);
     struct OperationBranchConditionalImmediate : pegtl::sor<
                                                  SymbolBranchConditionalImmediateLink,
                                                  SymbolBranchConditionalImmediate
                                                  > { };
 	DefAction(OperationBranchConditionalImmediate) : public BranchOpSubTypeSelector { };
     struct BranchConditionalImmediateInstruction : BranchConditional<OperationBranchConditionalImmediate, Immediate> { };
-    DefSymbol(IfThenElse, if);
-    DefSymbol(IfThenElseLink, ifl);
     struct OperationBranchIfStatement : pegtl::sor<
                                         SymbolIfThenElseLink,
                                         SymbolIfThenElse
                                         > { };
 	DefAction(OperationBranchIfStatement) : public BranchOpSubTypeSelector { };
     struct BranchIfInstruction : BranchConditional<OperationBranchIfStatement, SourceRegisters> { };
-    DefSymbol(BranchConditionalLR, bclr);
-    DefSymbol(BranchConditionalLRAndLink, bclrl);
     struct OperationBranchConditionalNoArgs : pegtl::sor<
                                               SymbolBranchConditionalLRAndLink,
                                               SymbolBranchConditionalLR
                                               > { };
 	DefAction(OperationBranchConditionalNoArgs) : public BranchOpSubTypeSelector { };
     struct BranchConditionalNoArgsInstruction : SeparatedBinaryThing<OperationBranchConditionalNoArgs, DestinationPredicateRegister> { };
-    DefSymbol(BranchUnconditionalLR, blr);
-    DefSymbol(BranchUnconditionalLRAndLink, blrl);
-    DefSymbol(BranchReturnFromError, rfe);
     struct BranchNoArgsInstruction : pegtl::sor<SymbolBranchUnconditionalLRAndLink, SymbolBranchUnconditionalLR, SymbolBranchReturnFromError> { };
 	DefAction(BranchNoArgsInstruction) : public BranchOpSubTypeSelector { };
 
@@ -735,18 +658,6 @@ namespace iris {
 			state.operation = (byte)stringToCompareOp(in.string());
 		}
 	};
-    DefSymbol(Eq, eq);
-    DefSymbol(Neq, neq);
-    DefSymbol(LessThan, lt);
-    DefSymbol(GreaterThan, gt);
-    DefSymbol(LessThanOrEqualTo, le);
-    DefSymbol(GreaterThanOrEqualTo, ge);
-    DefSymbol(EqImmediate, eqi);
-    DefSymbol(NeqImmediate, neqi);
-    DefSymbol(LessThanImmediate, lti);
-    DefSymbol(GreaterThanImmediate, gti);
-    DefSymbol(LessThanOrEqualToImmediate, lei);
-    DefSymbol(GreaterThanOrEqualToImmediate, gei);
     struct CompareRegisterOperation : pegtl::sor<SymbolEq, SymbolNeq, SymbolLessThan, SymbolGreaterThan, SymbolLessThanOrEqualTo, SymbolGreaterThanOrEqualTo> { };
 	DefAction(CompareRegisterOperation) : public CompareOpSubTypeSelector { };
     struct CompareImmediateOperation : pegtl::sor<SymbolEqImmediate, SymbolNeqImmediate, SymbolLessThanImmediate, SymbolGreaterThanImmediate, SymbolLessThanOrEqualToImmediate, SymbolGreaterThanOrEqualToImmediate> { };
@@ -762,16 +673,6 @@ namespace iris {
 
     // conditional register actions
 	ConditionRegisterOp stringToConditionRegisterOp(const std::string& title) noexcept;
-    DefSymbol(SaveCRs, psave);
-    DefSymbol(RestoreCRs, prestore);
-    DefSymbol(CRXor, pxor);
-    DefSymbol(CRNot, pnot);
-    DefSymbol(CRAnd, pand);
-    DefSymbol(CROr, por);
-    DefSymbol(CRNand, pnand);
-    DefSymbol(CRNor, pnor);
-    DefSymbol(CRSwap, pswap);
-    DefSymbol(CRMove, pmove);
 	struct CompareRegisterOpTranslationLogic {
 		DefApplyGeneric(AssemblerInstruction) {
 			state.operation = (byte)stringToConditionRegisterOp(in.string());
@@ -791,7 +692,6 @@ namespace iris {
     struct PredicateInstruction : pegtl::sor<PredicateInstructionOneGPR, PredicateInstructionTwoArgs, PredicateInstructionThreeArgs, PredicateInstructionFourArgs> { };
 	DefAction(PredicateInstruction) : public SetInstructionGroup<InstructionGroup::ConditionalRegister> { };
 
-#undef DefSymbol
     struct Instruction : pegtl::state<AssemblerInstruction, pegtl::sor<ArithmeticInstruction, MoveInstruction, BranchInstruction, CompareInstruction, PredicateInstruction>> { };
     struct Statement : pegtl::sor<Instruction, Directive> { };
     struct Anything : pegtl::sor<Separator, SingleLineComment,Statement> { };
