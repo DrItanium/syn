@@ -304,45 +304,31 @@ namespace iris {
     using SingleLineComment = syn::SingleLineComment<';'>;
     using GeneralPurposeRegister = syn::GPR;
     using PredicateRegister = syn::PredicateRegister;
-    template<typename Input, word count>
-        void setRegisterValue(const Input& in, RegisterIndexContainer & state) {
-            state.setValue(syn::getRegister<word, count>(in.string(), syn::reportError));
-        }
-    DefAction(GeneralPurposeRegister) {
-        DefApplyGeneric(RegisterIndexContainer) {
-            setRegisterValue<Input, ArchitectureConstants::RegisterCount>(in, state);
-        }
-		DefApplyGeneric(AssemblerState) { }
-        
-		DefApplyGeneric(AssemblerInstruction) {
-
+	template<word count>
+	struct SetRegisterGeneric {
+		DefApplyGeneric(RegisterIndexContainer) {
+			state.setValue(syn::getRegister<word, count>(in.string(), syn::reportError));
 		}
-    };
-    DefAction(PredicateRegister) {
-        DefApplyGeneric(RegisterIndexContainer) {
-            setRegisterValue<Input, ArchitectureConstants::ConditionRegisterCount>(in, state);
-        }
         DefApplyGeneric(AssemblerState) { }
-		DefApplyGeneric(AssemblerInstruction) {
-
-		}
-    };
+		DefApplyGeneric(AssemblerInstruction) { }
+	};
+    DefAction(GeneralPurposeRegister) : public SetRegisterGeneric<ArchitectureConstants::RegisterCount> { };
+    DefAction(PredicateRegister) : public SetRegisterGeneric<ArchitectureConstants::ConditionRegisterCount> { };
     struct IndirectGPR : syn::SingleEntrySequence<GeneralPurposeRegister> { };
-#define DefRegisterIndexContainerAction(title, theType) \
-    DefAction( title ) { \
-	    static constexpr auto targetType = RegisterPositionType :: theType ; \
-        DefApplyGeneric(AssemblerState) { } \
-		DefApplyGeneric(AssemblerInstruction) { }  \
-        DefApplyGeneric(RegisterIndexContainer) { \
-            state._index = targetType; \
-        } \
-    }
+	template<RegisterPositionType pos>
+	struct GenericRegisterIndexContainerAction {
+		DefApplyGeneric(AssemblerState) { }
+		DefApplyGeneric(AssemblerInstruction) { }
+		DefApplyGeneric(RegisterIndexContainer) { 
+			state._index = pos;
+		}
+	};
     struct DestinationGPR : IndirectGPR { };
-    DefRegisterIndexContainerAction(DestinationGPR, DestinationGPR);
+	DefAction(DestinationGPR) : GenericRegisterIndexContainerAction<RegisterPositionType::DestinationGPR> { };
     struct Source0GPR : IndirectGPR { };
-    DefRegisterIndexContainerAction(Source0GPR, Source0GPR);
+	DefAction(Source0GPR) : GenericRegisterIndexContainerAction<RegisterPositionType::Source0GPR> { };
     struct Source1GPR : IndirectGPR { };
-    DefRegisterIndexContainerAction(Source1GPR, Source1GPR);
+	DefAction(Source1GPR) : GenericRegisterIndexContainerAction<RegisterPositionType::Source1GPR> { };
     template<typename T>
         using StatefulRegister = pegtl::state<RegisterIndexContainer, T>;
     using StatefulDestinationGPR = StatefulRegister<DestinationGPR>;
@@ -352,38 +338,25 @@ namespace iris {
     struct ThreeGPR : syn::TwoRegister<StatefulDestinationGPR, SourceRegisters> { };
     struct IndirectPredicateRegister : syn::SingleEntrySequence<PredicateRegister> { };
     struct DestinationPredicateRegister : IndirectPredicateRegister { };
-    DefRegisterIndexContainerAction(DestinationPredicateRegister, PredicateDestination);
+    DefAction(DestinationPredicateRegister) : GenericRegisterIndexContainerAction<RegisterPositionType::PredicateDestination> { };
     struct DestinationPredicateInverseRegister : IndirectPredicateRegister { };
-    DefRegisterIndexContainerAction(DestinationPredicateInverseRegister, PredicateInverseDestination);
+    DefAction(DestinationPredicateInverseRegister) : GenericRegisterIndexContainerAction<RegisterPositionType::PredicateInverseDestination> { };
     struct DestinationPredicates : syn::TwoRegister<StatefulRegister<DestinationPredicateRegister>, StatefulRegister<DestinationPredicateInverseRegister>> { };
 
     struct Source0Predicate : IndirectPredicateRegister { };
-    DefRegisterIndexContainerAction(Source0Predicate, PredicateSource0);
+    DefAction(Source0Predicate) : GenericRegisterIndexContainerAction<RegisterPositionType::PredicateSource0> { };
     struct Source1Predicate : IndirectPredicateRegister { };
-    DefRegisterIndexContainerAction(Source1Predicate, PredicateSource1);
+    DefAction(Source1Predicate) : GenericRegisterIndexContainerAction<RegisterPositionType::PredicateSource1> { };
 
-    template<syn::KnownNumberTypes v, typename Input>
-        static void populateContainer(const Input& in, ImmediateContainer& parent) {
-            syn::populateContainer<word, v>(in.string(), parent);
-        }
-    DefAction(syn::HexadecimalNumber) {
-        template<typename Input>
-            static void apply(const Input& in, ImmediateContainer& parent) {
-                populateContainer<syn::KnownNumberTypes::Hexadecimal, Input>(in, parent);
-            }
-    };
-    DefAction(syn::BinaryNumber) {
-        template<typename Input>
-            static void apply(const Input& in, ImmediateContainer& parent) {
-                populateContainer<syn::KnownNumberTypes::Binary, Input>(in, parent);
-            }
-    };
-    DefAction(syn::Base10Number) {
-        template<typename Input>
-            static void apply(const Input& in, ImmediateContainer& parent) {
-                populateContainer<syn::KnownNumberTypes::Decimal, Input>(in, parent);
-            }
-    };
+	template<syn::KnownNumberTypes t>
+	struct PopulateNumberType {
+		DefApplyGeneric(ImmediateContainer) {
+			syn::populateContainer<word, t>(in.string(), state);
+		}
+	};
+    DefAction(syn::HexadecimalNumber) : PopulateNumberType<syn::KnownNumberTypes::Hexadecimal>{ };
+    DefAction(syn::BinaryNumber) : PopulateNumberType<syn::KnownNumberTypes::Binary> { };
+    DefAction(syn::Base10Number) : PopulateNumberType<syn::KnownNumberTypes::Decimal> { };
 	template<typename State = ImmediateContainer>
     struct Number : syn::StatefulNumberAll<State> { };
     using Lexeme = syn::Lexeme;
