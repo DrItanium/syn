@@ -468,6 +468,24 @@ namespace iris {
         }
 		DefApplyGeneric(AssemblerInstruction) { }
     };
+	struct FullImmediateContainer : public syn::NumberOrStringContainer<word> {
+		public: 
+			using Parent = syn::NumberOrStringContainer<word>;
+		public:
+			template<typename Input>
+			FullImmediateContainer(const Input& in, AssemblerInstruction& parent) : Parent(in, parent) { }
+
+			template<typename Input>
+			void success(const Input& in, AssemblerInstruction& parent) {
+				parent.fullImmediate = true;
+				parent.hasLexeme = !isNumber();
+				if (isNumber()) {
+					parent.setImmediate(getNumberValue());
+				} else {
+					parent.currentLexeme = getStringValue();
+				}
+			}
+	};
 	struct HalfImmediateContainer : ImmediateContainer {
 		using ImmediateContainer::ImmediateContainer;
 		template<typename I>
