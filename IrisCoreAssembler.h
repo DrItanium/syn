@@ -446,22 +446,6 @@ namespace iris {
     template<typename T, typename State = ImmediateContainer>
         struct LexemeOrNumberDirective : syn::OneArgumentDirective<T, LexemeOrNumber<State>> { };
     struct DeclareDirective : LexemeOrNumberDirective<syn::SymbolWordDirective, FullImmediateContainer> { };
-    //DefAction(DeclareDirective) {
-    //    DefApplyGeneric(AssemblerState) {
-    //        if (state.inDataSection()) {
-    //            state.markIsNotInstruction();
-    //            if (!state.hasLexeme()) {
-    //                state.stashTemporaryWordIntoDataValue();
-    //            }
-    //            state.saveToFinished();
-    //            state.incrementCurrentAddress();
-    //        } else {
-    //            throw syn::Problem("can't use a declare in a non data section!");
-    //        }
-    //    }
-	//	DefApplyGeneric(AssemblerDirective) {
-	//	}
-    //};
     struct Directive : pegtl::state<AssemblerDirective, pegtl::sor<OrgDirective, LabelDirective, CodeDirective, DataDirective, DeclareDirective>> { };
     struct Immediate : pegtl::sor<LexemeOrNumber<FullImmediateContainer>> { };
     DefAction(Immediate) {
@@ -494,6 +478,7 @@ namespace iris {
 			}
 			template<typename Input>
 			void success(const Input& in, AssemblerDirective& parent) {
+				parent.action = AssemblerDirectiveAction::StoreWord;
 				parent.fullImmediate = true;
 				parent.hasLexeme = !isNumber();
 				if (isNumber()) {
