@@ -170,6 +170,8 @@ namespace iris {
 			void success(const Input& in, HalfImmediateContainer& parent);
 		template<typename Input>
 			void success(const Input& in, AssemblerInstruction& parent);
+		template<typename Input>
+			void success(const Input& in, AssemblerDirective& parent);
     };
 	enum class RegisterPositionType {
 		DestinationGPR,
@@ -223,7 +225,14 @@ namespace iris {
 			} else if (shouldDefineLabel()) {
 				parent.registerLabel(currentLexeme);
 			} else if (shouldStoreWord()) {
-
+				if (parent.inDataSection()) {
+					if (!hasLexeme()) {
+						parent.addToFinished(*this);
+					}
+					parent.incrementCurrentAddress();
+				} else {
+					throw syn::Problem("can't use a declare in a non data section!");
+				}
 			} else {
 				throw syn::Problem("Undefined directive action!");
 			}
@@ -312,12 +321,18 @@ namespace iris {
             setRegisterValue<Input, ArchitectureConstants::RegisterCount>(in, state);
         }
         DefApplyEmpty
+		DefApplyGeneric(AssemblerInstruction) {
+
+		}
     };
     DefAction(PredicateRegister) {
         DefApplyGeneric(RegisterIndexContainer) {
             setRegisterValue<Input, ArchitectureConstants::ConditionRegisterCount>(in, state);
         }
         DefApplyEmpty
+		DefApplyGeneric(AssemblerInstruction) {
+
+		}
     };
     struct IndirectGPR : syn::SingleEntrySequence<GeneralPurposeRegister> { };
 #define DefRegisterIndexContainerAction(title, theType) \
@@ -389,7 +404,14 @@ namespace iris {
 			state.currentLexeme = in.string();
 		}
 		DefApplyGeneric(syn::StringContainer) {
-			setValue(in.string());
+			state.setValue(in.string());
+		}
+		DefApplyGeneric(syn::NumberOrStringContainer<word>) {
+			state.setStringValue(in.string());
+		}
+		DefApplyGeneric(AssemblerDirective) {
+			state.hasLexeme = true;
+			state.currentLexeme = in.string();
 		}
     };
     struct LexemeOrNumber : syn::LexemeOr<Number<ImmediateContainer>> { };
@@ -432,8 +454,9 @@ namespace iris {
     struct DataDirective : StatefulSpaceDirective<SectionType::Data, SymbolDataDirective> { };
 
 	struct OrgDirectiveHandler : public ImmediateContainer {
+		using Parent = ImmediateContainer;
 		template<typename Input>
-		OrgDirectiveHandler(const Input& in, AssemblerDirective& parent) {
+		OrgDirectiveHandler(const Input& in, AssemblerDirective& parent) : Parent(in, parent){
 			parent.action = AssemblerDirectiveAction::ChangeCurrentAddress;
 		}
 
@@ -451,11 +474,11 @@ namespace iris {
 	};
 
 	struct LabelDirectiveHandler : public syn::StringContainer {
+		using Parent = syn::StringContainer;
 		template<typename Input>
-		LabelDirectiveHandler(const Input& in, AssemblerDirective& parent) {
+		LabelDirectiveHandler(const Input& in, AssemblerDirective& parent) : Parent(in, parent){
 			parent.action = AssemblerDirectiveAction::DefineLabel;
-		}
-
+		} 
 		template<typename Input>
 		void success(const Input& in, AssemblerDirective& parent) {
 			parent.currentLexeme = getValue();
@@ -491,6 +514,7 @@ namespace iris {
                 state.setImmediate(state.getTemporaryWord());
             }
         }
+		DefApplyGeneric(AssemblerInstruction) { }
     };
 	struct HalfImmediateContainer : ImmediateContainer {
 		using ImmediateContainer::ImmediateContainer;
@@ -505,6 +529,16 @@ namespace iris {
 	template<typename Input>
 	void ImmediateContainer::success(const Input& in, HalfImmediateContainer& parent) {
 		parent.setValue(getValue());
+	}
+
+	template<typename Input>
+	void ImmediateContainer::success(const Input& in, AssemblerInstruction& parent) {
+		parent.setImmediate(getValue());
+	}
+
+	template<typename Input>
+	void ImmediateContainer::success(const Input& in, AssemblerDirective& parent) {
+		parent.setImmediate(getValue());
 	}
 	
     struct HalfImmediate : pegtl::sor<Number<HalfImmediateContainer>> { };
