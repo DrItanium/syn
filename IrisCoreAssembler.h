@@ -227,9 +227,7 @@ namespace iris {
 				parent.registerLabel(currentLexeme);
 			} else if (shouldStoreWord()) {
 				if (parent.inDataSection()) {
-					if (!hasLexeme()) {
-						parent.addToFinished(*this);
-					}
+					parent.addToFinishedData(*this);
 					parent.incrementCurrentAddress();
 				} else {
 					throw syn::Problem("can't use a declare in a non data section!");
