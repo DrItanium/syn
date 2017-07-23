@@ -47,6 +47,13 @@
 #include "IrisCoreAssemblerKeywords.h"
 
 namespace iris {
+
+	ArithmeticOp stringToArithmeticOp(const std::string& title) noexcept;
+	MoveOp stringToMoveOp(const std::string& title) noexcept;
+	JumpOp stringToJumpOp(const std::string& title) noexcept;
+	CompareOp stringToCompareOp(const std::string& title) noexcept;
+	ConditionRegisterOp stringToConditionRegisterOp(const std::string& title) noexcept;
+
     enum class SectionType {
         Code,
         Data,
@@ -245,18 +252,6 @@ namespace iris {
 		AssemblerDirectiveAction action = syn::defaultErrorState<AssemblerDirectiveAction>;
 		SectionType section = syn::defaultErrorState<SectionType>;
 	};
-	struct LexemeOrNumberContainer : syn::NumberOrStringContainer<word> {
-		public:
-			using Parent = syn::NumberOrStringContainer<word>;
-		public:
-			template<typename Input>
-			LexemeOrNumberContainer(const Input& in, AssemblerDirective& parent) { }
-
-			template<typename Input>
-			void success(const Input& in, AssemblerDirective& parent) {
-				
-			}
-	};
     struct RegisterIndexContainer : syn::NumberContainer<byte> {
         using syn::NumberContainer<byte>::NumberContainer;
         template<typename Input>
@@ -301,8 +296,6 @@ namespace iris {
 			instruction.group = static_cast<byte>(type);
 		}
 	};
-#define DefApply DefApplyGeneric(AssemblerState)
-#define DefApplyEmpty DefApply { }
     using Separator = syn::AsmSeparator;
     template<typename First, typename Second, typename Sep = Separator>
         struct SeparatedBinaryThing : syn::TwoPartComponent<First, Second, Sep> { };
@@ -319,7 +312,8 @@ namespace iris {
         DefApplyGeneric(RegisterIndexContainer) {
             setRegisterValue<Input, ArchitectureConstants::RegisterCount>(in, state);
         }
-        DefApplyEmpty
+		DefApplyGeneric(AssemblerState) { }
+        
 		DefApplyGeneric(AssemblerInstruction) {
 
 		}
@@ -328,7 +322,7 @@ namespace iris {
         DefApplyGeneric(RegisterIndexContainer) {
             setRegisterValue<Input, ArchitectureConstants::ConditionRegisterCount>(in, state);
         }
-        DefApplyEmpty
+        DefApplyGeneric(AssemblerState) { }
 		DefApplyGeneric(AssemblerInstruction) {
 
 		}
@@ -337,7 +331,7 @@ namespace iris {
 #define DefRegisterIndexContainerAction(title, theType) \
     DefAction( title ) { \
 	    static constexpr auto targetType = RegisterPositionType :: theType ; \
-        DefApply { } \
+        DefApplyGeneric(AssemblerState) { } \
 		DefApplyGeneric(AssemblerInstruction) { }  \
         DefApplyGeneric(RegisterIndexContainer) { \
             state._index = targetType; \
@@ -395,7 +389,7 @@ namespace iris {
     using Lexeme = syn::Lexeme;
 	
     DefAction(Lexeme) {
-        DefApply {
+        DefApplyGeneric(AssemblerState) {
             state.setLexeme(in.string());
         }
 		DefApplyGeneric(AssemblerInstruction) { 
@@ -452,7 +446,7 @@ namespace iris {
 	};
     struct OrgDirective : syn::OneArgumentDirective<syn::SymbolOrgDirective, Number<OrgDirectiveHandler>> { };
     DefAction(OrgDirective) { 
-		DefApply { 
+		DefApplyGeneric(AssemblerState) { 
 			state.setCurrentAddress(state.getTemporaryWord()); 
 		}
 		DefApplyGeneric(AssemblerDirective) { }
@@ -475,7 +469,7 @@ namespace iris {
         struct LexemeOrNumberDirective : syn::OneArgumentDirective<T, LexemeOrNumber> { };
     struct DeclareDirective : LexemeOrNumberDirective<syn::SymbolWordDirective> { };
     DefAction(DeclareDirective) {
-        DefApply {
+        DefApplyGeneric(AssemblerState) {
             if (state.inDataSection()) {
                 state.markIsNotInstruction();
                 if (!state.hasLexeme()) {
@@ -493,7 +487,7 @@ namespace iris {
     struct Directive : pegtl::state<AssemblerDirective, pegtl::sor<OrgDirective, LabelDirective, CodeDirective, DataDirective, DeclareDirective>> { };
     struct Immediate : pegtl::sor<LexemeOrNumber> { };
     DefAction(Immediate) {
-        DefApply {
+        DefApplyGeneric(AssemblerState) {
             state.markHasFullImmediate();
             if (!state.hasLexeme()) {
                 state.setImmediate(state.getTemporaryWord());
@@ -537,7 +531,6 @@ namespace iris {
         using ThreeGPRInstruction = GenericInstruction<Operation, ThreeGPR>;
     template<typename Operation>
         using TwoGPRInstruction = GenericInstruction<Operation, TwoGPR>;
-	ArithmeticOp stringToArithmeticOp(const std::string& title) noexcept;
 	struct ArithmeticSubTypeSelector {
 		DefApplyGeneric(AssemblerInstruction) {
 			state.operation = (byte)stringToArithmeticOp(in.string());
@@ -567,7 +560,6 @@ namespace iris {
                                    ArithmeticThreeGPRInstruction> { };
 	DefAction(ArithmeticInstruction) : public SetInstructionGroup<InstructionGroup::Arithmetic> { };
 
-	MoveOp stringToMoveOp(const std::string& title) noexcept;
 	struct MoveOpSubTypeSelector {
 		DefApplyGeneric(AssemblerInstruction) {
 			state.operation = (byte)stringToMoveOp(in.string());
@@ -596,7 +588,6 @@ namespace iris {
     struct MoveInstruction : pegtl::sor<MoveGPRImmediateInstruction, MoveThreeGPRInstruction, MoveTwoGPRHalfImmediateInstruction, MoveTwoGPRInstruction, MoveOneGPRInstruction> { };
 	DefAction(MoveInstruction) : public SetInstructionGroup<InstructionGroup::Move> { };
     // branch
-	JumpOp stringToJumpOp(const std::string& title) noexcept;
 	struct BranchOpSubTypeSelector {
 		DefApplyGeneric(AssemblerInstruction) {
 			state.operation = (byte)stringToJumpOp(in.string());
@@ -643,14 +634,11 @@ namespace iris {
 
     struct BranchInstruction : pegtl::sor<GroupBranchUnconditional, BranchConditionalGPRInstruction, BranchConditionalImmediateInstruction, BranchIfInstruction, BranchConditionalNoArgsInstruction, BranchNoArgsInstruction> { };
 	DefAction(BranchInstruction) : public SetInstructionGroup<InstructionGroup::Jump> { };
-    //DefGroupSet(BranchInstruction, Jump);
 
     template<typename T>
         struct ThenField : pegtl::seq<Separator, T> { };
     struct ThenDestinationPredicates : ThenField<DestinationPredicates> { };
-#define CURRENT_TYPE CompareOp
     // compare operations
-	CompareOp stringToCompareOp(const std::string& title) noexcept;
 	struct CompareOpSubTypeSelector {
 		DefApplyGeneric(AssemblerInstruction) {
 			state.operation = (byte)stringToCompareOp(in.string());
@@ -666,11 +654,9 @@ namespace iris {
                                 CompareImmediateInstruction,
                                 CompareRegisterInstruction
                                 > { };
-    //DefGroupSet(CompareInstruction, Compare);
 	DefAction(CompareInstruction) : public SetInstructionGroup<InstructionGroup::Compare> { };
 
     // conditional register actions
-	ConditionRegisterOp stringToConditionRegisterOp(const std::string& title) noexcept;
 	struct CompareRegisterOpTranslationLogic {
 		DefApplyGeneric(AssemblerInstruction) {
 			state.operation = (byte)stringToConditionRegisterOp(in.string());
