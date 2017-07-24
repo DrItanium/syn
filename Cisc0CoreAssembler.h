@@ -482,16 +482,30 @@ namespace cisc0 {
 	struct LogicalOperation : SeparatedTrinaryThing<SymbolLogical, LogicalOpsType, LogicalArgs> { };
     DefAction(LogicalOperation) : SetOperationOnApply<Operation::Logical> { };
 
+    template<ComplexSubTypes type>
+    struct SetComplexSubSubType {
+        static_assert(!syn::isErrorState(type), "Can't operate on the error type!");
+        DefApplyInstruction {
+            switch(type) {
+                case ComplexSubTypes::Encoding:
+                    state.setBitmask(stringToEncodingOperation(in.string()));
+                    break;
+                case ComplexSubTypes::Extended:
+                    state.setBitmask(stringToExtendedOperation(in.string()));
+                    break;
+                case ComplexSubTypes::Parsing:
+                    state.setBitmask(stringToParsingOperation(in.string()));
+                    break;
+            }
+        }
+    };
+
 	struct ComplexEncodingSubOperation : pegtl::sor<
 										 SymbolDecode,
 										 SymbolEncode,
 										 SymbolBitSet,
 										 SymbolBitUnset> { };
-    DefAction(ComplexEncodingSubOperation) {
-        DefApplyInstruction {
-            state.setBitmask(stringToEncodingOperation(in.string()));
-        }
-    };
+    DefAction(ComplexEncodingSubOperation) : SetComplexSubSubType<ComplexSubTypes::Encoding> { };
 
 	struct ComplexExtendedSubOperation_NoArgs : pegtl::sor<
 										 SymbolPopValueAddr,
@@ -499,19 +513,11 @@ namespace cisc0 {
 										 SymbolDecrementValueAddr,
 										 SymbolIncrementValueAddr,
 										 SymbolWordsBeforeFirstZero> { };
-    DefAction(ComplexExtendedSubOperation_NoArgs) {
-        DefApplyInstruction {
-            state.setBitmask(stringToExtendedOperation(in.string()));
-        }
-    };
+    DefAction(ComplexExtendedSubOperation_NoArgs) : SetComplexSubSubType<ComplexSubTypes::Extended> { };
 	struct ComplexExtendedOneArg_Operations : pegtl::sor<
 											  SymbolIsEven,
 											  SymbolIsOdd> { };
-    DefAction(ComplexExtendedOneArg_Operations) {
-        DefApplyInstruction {
-            state.setBitmask(stringToExtendedOperation(in.string()));
-        }
-    };
+    DefAction(ComplexExtendedOneArg_Operations) : SetComplexSubSubType<ComplexSubTypes::Extended> { };
 
 	struct ComplexExtendedSubOperation_OneArg : SeparatedBinaryThing<
 												ComplexExtendedOneArg_Operations,
@@ -525,11 +531,7 @@ namespace cisc0 {
 										 SymbolHex8ToRegister,
 										 SymbolRegisterToHex8,
 										 SymbolMemCopy> { };
-    DefAction(ComplexParsingSubOperation_NoArgs) {
-        DefApplyInstruction {
-            state.setBitmask(stringToParsingOperation(in.string()));
-        }
-    };
+    DefAction(ComplexParsingSubOperation_NoArgs) : SetComplexSubSubType<ComplexSubTypes::Parsing> { };
 	struct ComplexParsingSubOperation : pegtl::sor<
 										ComplexExtendedSubOperation_NoArgs> { };
 
