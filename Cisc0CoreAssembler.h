@@ -440,18 +440,16 @@ namespace cisc0 {
 							 SymbolPop> { };
     DefAction(StackMemoryType) : GetMemorySubType { };
 	struct StackOperation : SeparatedTrinaryThing<StackMemoryType, BitmaskNumber, DestinationRegister> { };
+    template<bool indirect>
+    struct MarkIndirectFlag {
+        DefApplyInstruction {
+            state.markIndirect(indirect);
+        }
+    };
 	struct FlagIndirect : syn::SingleEntrySequence<SymbolIndirect> { };
-	DefAction(FlagIndirect) {
-		DefApplyInstruction {
-			state.markIndirect();
-		}
-	};
+	DefAction(FlagIndirect) : MarkIndirectFlag<true> { };
 	struct FlagDirect : syn::SingleEntrySequence<SymbolDirect> { };
-	DefAction(FlagDirect) {
-		DefApplyInstruction {
-			state.markIndirect(false);
-		}
-	};
+    DefAction(FlagDirect) : MarkIndirectFlag<false> { };
 	struct FlagDirectOrIndirect : pegtl::sor<
 								  FlagDirect,
 								  FlagIndirect> { };
