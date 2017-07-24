@@ -79,20 +79,6 @@ namespace iris {
 			code.setCurrentAddress(value);
 		}
 	}
-	void AssemblerState::setImmediate(word value) noexcept {
-		current.setImmediate(value);
-	}
-	void AssemblerState::setGroup(InstructionGroup value) noexcept {
-		current.group = static_cast<byte>(value);
-	}
-	void AssemblerState::setHalfImmediate(byte value) noexcept {
-		current.source1 = value;
-	}
-
-	void AssemblerState::resetCurrentData() noexcept {
-		current.reset();
-	}
-
 	void AssemblerState::registerLabel(const std::string& value) noexcept {
 		LabelTracker::registerLabel(value, getCurrentAddress());
 	}
@@ -105,12 +91,6 @@ namespace iris {
 		} else {
 			code.incrementCurrentAddress();
 		}
-	}
-	void AssemblerState::saveToFinished() noexcept {
-		current.address = getCurrentAddress();
-		auto copy = current;
-		addToFinishedData(copy);
-		resetCurrentData();
 	}
 	void AssemblerInstruction::setField(RegisterPositionType type, byte value) {
 		using Type = RegisterPositionType;

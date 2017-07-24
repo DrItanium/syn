@@ -252,13 +252,13 @@ namespace syn {
 			bool isNumber() const noexcept { return _isNumber; }
 			Word getNumberValue() const noexcept { return NumberParent::getValue(); }
 			const std::string& getStringValue() const noexcept { return StringParent::getValue(); }
-			void setNumberValue(Word value) { 
+			void setNumberValue(Word value) {
 				_isNumber = true;
-				NumberParent::setValue(value); 
+				NumberParent::setValue(value);
 			}
-			void setStringValue(const std::string& value) { 
+			void setStringValue(const std::string& value) {
 				_isNumber = false;
-				StringParent::setValue(value); 
+				StringParent::setValue(value);
 			}
 		private:
 			bool _isNumber = false;
@@ -445,6 +445,8 @@ namespace syn {
 		}
 	};
 
+    template<typename T, typename Separator>
+    struct ThenField : pegtl::seq<Separator, T> { };
 
 } // end namespace syn
 
