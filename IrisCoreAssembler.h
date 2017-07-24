@@ -314,7 +314,6 @@ namespace iris {
 	};
     DefAction(GeneralPurposeRegister) : public SetRegisterGeneric<ArchitectureConstants::RegisterCount> { };
     DefAction(PredicateRegister) : public SetRegisterGeneric<ArchitectureConstants::ConditionRegisterCount> { };
-    struct IndirectGPR : syn::SingleEntrySequence<GeneralPurposeRegister> { };
 	template<RegisterPositionType pos>
 	struct GenericRegisterIndexContainerAction {
 		DefApplyGeneric(AssemblerState) { }
@@ -323,11 +322,11 @@ namespace iris {
 			state._index = pos;
 		}
 	};
-    struct DestinationGPR : IndirectGPR { };
+    struct DestinationGPR : syn::SingleEntrySequence<GeneralPurposeRegister> {  };
 	DefAction(DestinationGPR) : GenericRegisterIndexContainerAction<RegisterPositionType::DestinationGPR> { };
-    struct Source0GPR : IndirectGPR { };
+    struct Source0GPR : syn::SingleEntrySequence<GeneralPurposeRegister> { };
 	DefAction(Source0GPR) : GenericRegisterIndexContainerAction<RegisterPositionType::Source0GPR> { };
-    struct Source1GPR : IndirectGPR { };
+    struct Source1GPR : syn::SingleEntrySequence<GeneralPurposeRegister> { };
 	DefAction(Source1GPR) : GenericRegisterIndexContainerAction<RegisterPositionType::Source1GPR> { };
     template<typename T>
         using StatefulRegister = pegtl::state<RegisterIndexContainer, T>;
