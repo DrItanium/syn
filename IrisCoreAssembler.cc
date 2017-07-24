@@ -149,7 +149,7 @@ namespace iris {
 			{ "pand", ConditionRegisterOp::CRAnd },
 			{ "por", ConditionRegisterOp::CROr },
 			{ "pnand", ConditionRegisterOp::CRNand },
-			{ "pnor", ConditionRegisterOp::CRNor }, 
+			{ "pnor", ConditionRegisterOp::CRNor },
 			{ "pswap", ConditionRegisterOp::CRSwap },
 			{ "pmove", ConditionRegisterOp::CRMove },
 		};
@@ -169,7 +169,7 @@ namespace iris {
 			{ "rem", ArithmeticOp::Rem},
 			{ "shl", ArithmeticOp::ShiftLeft},
 			{ "shr", ArithmeticOp::ShiftRight },
-			{ "and", ArithmeticOp::BinaryAnd}, 
+			{ "and", ArithmeticOp::BinaryAnd},
 			{ "or", ArithmeticOp::BinaryOr},
 			{ "not", ArithmeticOp::BinaryNot},
 			{ "xor", ArithmeticOp::BinaryXor },
@@ -203,7 +203,7 @@ namespace iris {
 			{ "move", MoveOp::Move},
 			{ "swap", MoveOp::Swap},
 			{ "ld", MoveOp::Load},
-			{ "st", MoveOp::Store}, 
+			{ "st", MoveOp::Store},
 			{ "iold", MoveOp::IORead},
 			{ "iost", MoveOp::IOWrite },
 			{ "push", MoveOp::Push },
@@ -214,7 +214,7 @@ namespace iris {
 			{ "iostof", MoveOp::IOWriteWithOffset },
 			{ "cld", MoveOp::LoadCode },
 			{ "cst", MoveOp::StoreCode },
-			{ "pushi", MoveOp::PushImmediate}, 
+			{ "pushi", MoveOp::PushImmediate},
 			{ "set", MoveOp::Set },
 			{ "ldi", MoveOp::LoadImmediate },
 			{ "sti", MoveOp::StoreImmediate },
@@ -237,7 +237,7 @@ namespace iris {
 			{ "bci", JumpOp::BranchConditionalImmediate},
 			{ "bcil", JumpOp::BranchConditionalImmediateLink},
 			{ "if", JumpOp::IfThenElse},
-			{ "ifl", JumpOp::IfThenElseLink}, 
+			{ "ifl", JumpOp::IfThenElseLink},
 			{ "bclr", JumpOp::BranchConditionalLR},
 			{ "bclrl", JumpOp::BranchConditionalLRAndLink},
 			{ "blr", JumpOp::BranchUnconditionalLR},
@@ -273,4 +273,5 @@ namespace iris {
 			return find->second;
 		}
 	}
+
 } // end namespace iris
