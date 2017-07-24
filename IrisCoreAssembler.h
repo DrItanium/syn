@@ -319,7 +319,7 @@ namespace iris {
 	struct GenericRegisterIndexContainerAction {
 		DefApplyGeneric(AssemblerState) { }
 		DefApplyGeneric(AssemblerInstruction) { }
-		DefApplyGeneric(RegisterIndexContainer) { 
+		DefApplyGeneric(RegisterIndexContainer) {
 			state._index = pos;
 		}
 	};
@@ -364,24 +364,20 @@ namespace iris {
 	template<typename State = ImmediateContainer>
     struct Number : syn::StatefulNumberAll<State> { };
     using Lexeme = syn::Lexeme;
-	
+
     DefAction(Lexeme) {
         DefApplyGeneric(AssemblerState) {
             state.setLexeme(in.string());
         }
-		DefApplyGeneric(AssemblerInstruction) { 
+        DefApplyGeneric(AssemblerData) {
 			state.hasLexeme = true;
 			state.currentLexeme = in.string();
-		}
+        }
 		DefApplyGeneric(syn::StringContainer) {
 			state.setValue(in.string());
 		}
 		DefApplyGeneric(syn::NumberOrStringContainer<word>) {
 			state.setStringValue(in.string());
-		}
-		DefApplyGeneric(AssemblerDirective) {
-			state.hasLexeme = true;
-			state.currentLexeme = in.string();
 		}
     };
 	template<typename State = ImmediateContainer>
@@ -391,7 +387,7 @@ namespace iris {
             template<typename Input>
                 ModifySection(const Input& in, AssemblerState& parent) { }
 			template<typename Input>
-				ModifySection(const Input& in, AssemblerDirective& parent) { 
+				ModifySection(const Input& in, AssemblerDirective& parent) {
 					parent.action = AssemblerDirectiveAction::ChangeSection;
 					parent.section = section;
 				}
@@ -423,9 +419,9 @@ namespace iris {
 		}
 	};
     struct OrgDirective : syn::OneArgumentDirective<syn::SymbolOrgDirective, Number<OrgDirectiveHandler>> { };
-    DefAction(OrgDirective) { 
-		DefApplyGeneric(AssemblerState) { 
-			state.setCurrentAddress(state.getTemporaryWord()); 
+    DefAction(OrgDirective) {
+		DefApplyGeneric(AssemblerState) {
+			state.setCurrentAddress(state.getTemporaryWord());
 		}
 		DefApplyGeneric(AssemblerDirective) { }
 	};
@@ -435,7 +431,7 @@ namespace iris {
 		template<typename Input>
 		LabelDirectiveHandler(const Input& in, AssemblerDirective& parent) : Parent(in, parent){
 			parent.action = AssemblerDirectiveAction::DefineLabel;
-		} 
+		}
 		template<typename Input>
 		void success(const Input& in, AssemblerDirective& parent) {
 			parent.currentLexeme = getValue();
@@ -458,7 +454,7 @@ namespace iris {
 		DefApplyGeneric(AssemblerInstruction) { }
     };
 	struct FullImmediateContainer : public syn::NumberOrStringContainer<word> {
-		public: 
+		public:
 			using Parent = syn::NumberOrStringContainer<word>;
 		public:
 			template<typename Input>
@@ -512,7 +508,7 @@ namespace iris {
 	void ImmediateContainer::success(const Input& in, AssemblerDirective& parent) {
 		parent.setImmediate(getValue());
 	}
-	
+
     struct HalfImmediate : pegtl::sor<Number<HalfImmediateContainer>> { };
 
     template<typename Operation, typename Operands>
@@ -529,7 +525,7 @@ namespace iris {
 			state.operation = (byte)stringToArithmeticOp(in.string());
 		}
 	};
-	
+
     struct OperationArithmeticThreeGPR : pegtl::sor<SymbolAdd, SymbolSub, SymbolMul, SymbolDiv, SymbolRem, SymbolShiftLeft, SymbolShiftRight, SymbolAnd, SymbolOr, SymbolXor, SymbolMin, SymbolMax> { };
 	DefAction(OperationArithmeticThreeGPR) : public ArithmeticSubTypeSelector { };
     struct ArithmeticThreeGPRInstruction : ThreeGPRInstruction<OperationArithmeticThreeGPR> { };
