@@ -368,7 +368,14 @@ namespace iris {
     template<typename T, typename State = ImmediateContainer>
         struct LexemeOrNumberDirective : syn::OneArgumentDirective<T, LexemeOrNumber<State>> { };
     struct DeclareDirective : LexemeOrNumberDirective<syn::SymbolWordDirective, FullImmediateContainer> { };
-    struct Directive : pegtl::state<AssemblerDirective, pegtl::sor<OrgDirective, LabelDirective, CodeDirective, DataDirective, DeclareDirective>> { };
+    struct Directive : pegtl::state<
+                       AssemblerDirective,
+                       pegtl::sor<
+                         OrgDirective,
+                         LabelDirective,
+                         CodeDirective,
+                         DataDirective,
+                         DeclareDirective>> { };
     using Immediate = LexemeOrNumber<FullImmediateContainer>;
 	struct HalfImmediateContainer : ImmediateContainer {
 		using ImmediateContainer::ImmediateContainer;
@@ -394,8 +401,7 @@ namespace iris {
 	void ImmediateContainer::success(const Input& in, AssemblerDirective& parent) {
 		parent.setImmediate(getValue());
 	}
-
-    struct HalfImmediate : pegtl::sor<Number<HalfImmediateContainer>> { };
+    using HalfImmediate = Number<HalfImmediateContainer>;
 
     template<InstructionGroup op>
     struct SubTypeSelector {
@@ -526,7 +532,8 @@ namespace iris {
     struct MoveTwoGPRInstruction : TwoGPRInstruction<OperationMoveTwoGPR> { };
     struct MoveTwoGPRHalfImmediateInstruction : SeparatedTrinaryThing<
                                                 OperationMoveTwoGPRHalfImmediate,
-                                                TwoGPR, HalfImmediate> { };
+                                                TwoGPR,
+                                                HalfImmediate> { };
     struct MoveThreeGPRInstruction : ThreeGPRInstruction<OperationMoveThreeGPR> { };
     struct MoveGPRImmediateInstruction : SeparatedTrinaryThing<
                                          OperationMoveGPRImmediate,
