@@ -253,5 +253,10 @@ namespace iris {
 			return find->second;
 		}
 	}
+		bool AssemblerDirective::shouldChangeSectionToCode() const noexcept { return (action == AssemblerDirectiveAction::ChangeSection) && (section == SectionType::Code); }
+		bool AssemblerDirective::shouldChangeSectionToData() const noexcept { return (action == AssemblerDirectiveAction::ChangeSection) && (section == SectionType::Data); }
+		bool AssemblerDirective::shouldChangeCurrentAddress() const noexcept { return (action == AssemblerDirectiveAction::ChangeCurrentAddress); }
+		bool AssemblerDirective::shouldDefineLabel() const noexcept { return (action == AssemblerDirectiveAction::DefineLabel); }
+		bool AssemblerDirective::shouldStoreWord() const noexcept { return (action == AssemblerDirectiveAction::StoreWord); }
 
 } // end namespace iris
