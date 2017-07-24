@@ -46,8 +46,17 @@
 #include "ClipsExtensions.h"
 #include "Cisc0CoreInstructionEncoder.h"
 #include "Cisc0ClipsExtensions.h"
+#include "Cisc0CoreAssemblerKeywords.h"
 
 namespace cisc0 {
+    CompareStyle stringToCompareStyle(const std::string& str) noexcept;
+    ArithmeticOps stringToArithmeticOps(const std::string& str) noexcept;
+    ComplexSubTypes stringToComplexSubTypes(const std::string& str) noexcept;
+    MemoryOperation stringToMemoryOperation(const std::string& str) noexcept;
+    LogicalOps stringToLogicalOps(const std::string& str) noexcept;
+    EncodingOperation stringToEncodingOperation(const std::string& str) noexcept;
+    ExtendedOperation stringToExtendedOperation(const std::string& str) noexcept;
+    ParsingOperation stringToParsingOperation(const std::string& str) noexcept;
 	using Separator = syn::AsmSeparator;
 	using SingleLineComment = syn::SingleLineComment<';'>;
 	template<typename R> struct Action : syn::Action<R> { };
@@ -172,6 +181,7 @@ namespace cisc0 {
 			}
 	};
 
+
 #define DefApplyInstruction DefApplyGeneric(cisc0::AssemblerInstruction)
 #define DefApplyAsmState DefApplyGeneric(cisc0::AssemblerState)
 
@@ -196,7 +206,6 @@ namespace cisc0 {
 	DefGroup(Branch, branch);
 	DefGroup(Return, return);
 
-	DefSymbol(Immediate, immediate);
 
 	struct UsesImmediate : pegtl::seq<SymbolImmediate> { };
 
@@ -251,13 +260,6 @@ namespace cisc0 {
 	struct LexemeOrNumber : syn::LexemeOr<Number> { };
 
     using NormalRegister = syn::GPR;
-	DefSymbol(AddrRegister, addr);
-	DefSymbol(StackPointer, sp);
-	DefSymbol(InstructionPointer, ip);
-	DefSymbol(ValueRegister, value);
-	DefSymbol(MaskRegister, mask);
-	DefSymbol(FieldRegister, field);
-	DefSymbol(CallStackPointer, csp);
 	struct GeneralPurposeRegister : pegtl::sor<
 									NormalRegister,
 									SymbolAddrRegister,
@@ -305,8 +307,6 @@ namespace cisc0 {
 		}
 	};
 
-	DefSymbol(Left, left);
-	DefSymbol(Right, right);
 
 	struct ShiftLeftOrRight : pegtl::sor<
 							  SymbolLeft,
@@ -361,18 +361,28 @@ namespace cisc0 {
 	DefSymbol(title, str); \
 	DefSubType(title, str, subgroup)
 
-#define DefCompareStyle(title, str) DefSubType(title, str, CompareStyle)
+    template<Operation op>
+    struct ConvertOperationToSubType {
+        static_assert(HasSubtype<op>(), "Provided operation does not have a subtype!");
+        DefApplyGeneric(AssemblerInstruction) {
+            switch(op) {
+                case Operation::Compare:
+                    state.setSubType(stringToCompareStyle(in.string()));
+                    break;
+                case Operation::Arithmetic:
+                    state.setSubType(stringToArithmeticOps(in.string()));
+                    break;
+                case Operation::Memory:
+                    state.setSubType(stringToMemoryOperation(in.string()));
+                    break;
+                case Operation::Logical:
+                    state.setSubType(stringToLogicalOps(in.string()));
+                    break;
+            }
+        }
+    };
 
-#define DefCompareStyleWithSymbol(title, str) DefSubTypeWithSymbol(title, str, CompareStyle)
-
-    CompareStyle stringToCompareStyle(const std::string& str) noexcept;
-
-	DefSymbol(Equals, ==);
-	DefSymbol(NotEquals, !=);
-	DefSymbol(LessThan, <);
-	DefSymbol(LessThanOrEqualTo, <=);
-	DefSymbol(GreaterThan, >);
-	DefSymbol(GreaterThanOrEqualTo, >=);
+    using GetCompareSubType = ConvertOperationToSubType<Operation::Compare>;
 	struct CompareType : pegtl::sor<
 						 SymbolEquals,
 						 SymbolNotEquals,
@@ -380,21 +390,11 @@ namespace cisc0 {
 						 SymbolLessThanOrEqualTo,
 						 SymbolGreaterThan,
 						 SymbolGreaterThanOrEqualTo> { };
-    DefAction(CompareType) {
-        DefApplyInstruction {
-            state.setSubType(stringToCompareStyle(in.string()));
-        }
-    };
-    DefSymbol(MoveToCondition, MoveToCondition);
-    DefSymbol(MoveFromCondition, MoveFromCondition);
 	struct SpecialCompareType : pegtl::sor<
 								SymbolMoveFromCondition,
                                 SymbolMoveToCondition> { };
-    DefAction(SpecialCompareType) {
-        DefApplyInstruction {
-            state.setSubType(stringToCompareStyle(in.string()));
-        }
-    };
+    DefAction(CompareType) : GetCompareSubType { };
+    DefAction(SpecialCompareType) : GetCompareSubType { };
 	struct CompareArgs : pegtl::sor<
 						 TwoGPRs,
 						 ImmediateOperationArgsWithBitmask<LexemeOrNumber>> { };
@@ -431,14 +431,6 @@ namespace cisc0 {
 #define DefArithmeticOperation(title, str) \
     using Symbol ## title = syn:: Symbol ## title ## Keyword; \
     DefSubType(title, str, ArithmeticOps)
-    ArithmeticOps stringToArithmeticOps(const std::string& str) noexcept;
-    using SymbolAdd = syn::SymbolAddKeyword;
-    using SymbolSub = syn::SymbolSubKeyword;
-    using SymbolMul = syn::SymbolMulKeyword;
-    using SymbolDiv = syn::SymbolDivKeyword;
-    using SymbolRem = syn::SymbolRemKeyword;
-    DefSymbol(Min, min);
-    DefSymbol(Max, max);
 	struct ArithmeticType : pegtl::sor<
                             SymbolAdd,
                             SymbolSub,
@@ -447,48 +439,31 @@ namespace cisc0 {
                             SymbolRem,
                             SymbolMin,
                             SymbolMax> { };
-    DefAction(ArithmeticType) {
-        DefApplyInstruction {
-            state.setSubType(stringToArithmeticOps(in.string()));
-        }
-    };
+    DefAction(ArithmeticType) : ConvertOperationToSubType<Operation::Arithmetic> { };
 
 	struct ArithmeticArgs : pegtl::sor<
 							TwoGPRs,
 							ImmediateOperationArgs<ByteCastImmediate>> { };
 	struct ArithmeticOperation : SeparatedTrinaryThing<GroupArithmetic, ArithmeticType, ArithmeticArgs> { };
 
-	DefSymbol(Load, load);
-	DefSymbol(Store, store);
-	DefSymbol(Push, push);
-	DefSymbol(Pop, pop);
 
-    MemoryOperation stringToMemoryOperation(const std::string& str) noexcept;
+    using GetMemorySubType = ConvertOperationToSubType<Operation::Memory>;
 	struct LoadStoreType : pegtl::sor<
 						   SymbolLoad,
 						   SymbolStore> { };
-    DefAction(LoadStoreType) {
-        DefApplyInstruction {
-            state.setSubType(stringToMemoryOperation(in.string()));
-        }
-    };
+
+    DefAction(LoadStoreType) : GetMemorySubType { };
 	struct StackMemoryType : pegtl::sor<
 							 SymbolPush,
 							 SymbolPop> { };
-    DefAction(StackMemoryType) {
-        DefApplyInstruction {
-            state.setSubType(stringToMemoryOperation(in.string()));
-        }
-    };
+    DefAction(StackMemoryType) : GetMemorySubType { };
 	struct StackOperation : SeparatedTrinaryThing<StackMemoryType, BitmaskNumber, DestinationRegister> { };
-	DefSymbol(Indirect, indirect);
 	struct FlagIndirect : syn::SingleEntrySequence<SymbolIndirect> { };
 	DefAction(FlagIndirect) {
 		DefApplyInstruction {
 			state.markIndirect();
 		}
 	};
-	DefSymbol(Direct, direct);
 	struct FlagDirect : syn::SingleEntrySequence<SymbolDirect> { };
 	DefAction(FlagDirect) {
 		DefApplyInstruction {
@@ -511,12 +486,6 @@ namespace cisc0 {
 							   GroupMemory,
 							   MemoryTypes> { };
 
-    LogicalOps stringToLogicalOps(const std::string& str) noexcept;
-    using SymbolAnd = syn::SymbolAndKeyword;
-    using SymbolOr = syn::SymbolOrKeyword;
-    using SymbolNot = syn::SymbolNotKeyword;
-	DefSymbol(Xor, xor);
-	DefSymbol(Nand, nand);
 
 
 	struct LogicalOpsType : pegtl::sor<
@@ -525,21 +494,12 @@ namespace cisc0 {
 							SymbolNot,
 							SymbolXor,
 							SymbolNand> { };
-    DefAction(LogicalOpsType) {
-        DefApplyInstruction {
-            state.setSubType(stringToLogicalOps(in.string()));
-        }
-    };
+    DefAction(LogicalOpsType) : ConvertOperationToSubType<Operation::Logical> { };
 	struct LogicalArgs : pegtl::sor<
 						 TwoGPRs,
 						 ImmediateOperationArgsWithBitmask<LexemeOrNumber>> { };
 	struct LogicalOperation : SeparatedTrinaryThing<GroupLogical, LogicalOpsType, LogicalArgs> { };
 
-    EncodingOperation stringToEncodingOperation(const std::string& str) noexcept;
-	DefSymbol(BitSet, bitset);
-	DefSymbol(BitUnset, bitunset);
-	DefSymbol(Encode, encode);
-	DefSymbol(Decode, decode);
 	struct ComplexEncodingSubOperation : pegtl::sor<
 										 SymbolDecode,
 										 SymbolEncode,
@@ -551,12 +511,6 @@ namespace cisc0 {
         }
     };
 
-    ExtendedOperation stringToExtendedOperation(const std::string& str) noexcept;
-	DefSymbol(PushValueAddr, PushValueAddr);
-	DefSymbol(PopValueAddr,  PopValueAddr);
-	DefSymbol(IncrementValueAddr, IncrementValueAddr);
-	DefSymbol(DecrementValueAddr, DecrementValueAddr);
-	DefSymbol(WordsBeforeFirstZero, CountWordsBeforeFirstZero);
 	struct ComplexExtendedSubOperation_NoArgs : pegtl::sor<
 										 SymbolPopValueAddr,
 										 SymbolPushValueAddr,
@@ -568,8 +522,6 @@ namespace cisc0 {
             state.setBitmask(stringToExtendedOperation(in.string()));
         }
     };
-	DefSymbol(IsEven, evenp);
-	DefSymbol(IsOdd, oddp);
 	struct ComplexExtendedOneArg_Operations : pegtl::sor<
 											  SymbolIsEven,
 											  SymbolIsOdd> { };
@@ -587,10 +539,6 @@ namespace cisc0 {
 										 ComplexExtendedSubOperation_OneArg> { };
 
 
-	DefSymbol(Hex8ToRegister, Hex8ToRegister);
-	DefSymbol(RegisterToHex8, RegisterToHex8);
-	DefSymbol(MemCopy, MemCopy);
-    ParsingOperation stringToParsingOperation(const std::string& str) noexcept;
 	struct ComplexParsingSubOperation_NoArgs : pegtl::sor<
 										 SymbolHex8ToRegister,
 										 SymbolRegisterToHex8,
@@ -604,7 +552,6 @@ namespace cisc0 {
 										ComplexExtendedSubOperation_NoArgs> { };
 
 
-    ComplexSubTypes stringToComplexSubTypes(const std::string& str) noexcept;
 #define DefComplexOperation(title, str) \
 	DefSubTypeWithSymbol(title, str, ComplexSubTypes)
 	DefComplexOperation(Encoding, encoding);
@@ -629,10 +576,6 @@ namespace cisc0 {
 							  GroupComplex,
 							  ComplexSubOperations> { };
 
-	DefSymbol(Call, call);
-	DefSymbol(NoCall, nocall);
-	DefSymbol(Conditional, conditional);
-	DefSymbol(Unconditional, unconditional);
 
 	template<typename T, typename F>
 		struct ChoiceFlag : pegtl::sor<T, F> { };

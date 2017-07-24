@@ -453,8 +453,8 @@ namespace iris {
                                          SymbolXor,
                                          SymbolMin,
                                          SymbolMax> { };
-    struct OperationArithmeticTwoGPR : pegtl::sor<
-                                       SymbolNot> { };
+    // Just extend off of this single type for now
+    struct OperationArithmeticTwoGPR : SymbolNot { };
     struct ArithmeticImmediateOperation : pegtl::sor<
                                           SymbolAddImmediate,
                                           SymbolSubImmediate,
