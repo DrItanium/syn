@@ -30,6 +30,18 @@
 #include "AssemblerBase.h"
 
 namespace cisc0 {
+	// groups
+	DefSymbol(Shift, shift);
+	DefSymbol(Compare, compare);
+	DefSymbol(Move, move);
+	DefSymbol(Set, set);
+	DefSymbol(Swap, swap);
+	DefSymbol(Arithmetic, arithmetic);
+	DefSymbol(Memory, memory);
+	DefSymbol(Logical, logical);
+	DefSymbol(Complex, complex);
+	DefSymbol(Branch, branch);
+	DefSymbol(Return, return);
     // modifiers
 	DefSymbol(Immediate, immediate);
 	DefSymbol(Indirect, indirect);
@@ -99,5 +111,9 @@ namespace cisc0 {
 	DefSymbol(NoCall, nocall);
 	DefSymbol(Conditional, conditional);
 	DefSymbol(Unconditional, unconditional);
+    // complex related
+	DefSymbol(Encoding, encoding);
+	DefSymbol(Extended, extended);
+	DefSymbol(Parsing, parsing);
 } // end namespace cisc0
 #endif // end CISC0_CORE_ASSEMBLER_KEYWORDS_H__
