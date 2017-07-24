@@ -210,17 +210,15 @@ namespace iris {
     using PredicateRegister = syn::PredicateRegister;
 	template<word count>
 	struct SetRegisterGeneric {
+		DefApplyGeneric(AssemblerInstruction) { }
 		DefApplyGeneric(RegisterIndexContainer) {
 			state.setValue(syn::getRegister<word, count>(in.string(), syn::reportError));
 		}
-        DefApplyGeneric(AssemblerState) { }
-		DefApplyGeneric(AssemblerInstruction) { }
 	};
     DefAction(GeneralPurposeRegister) : SetRegisterGeneric<ArchitectureConstants::RegisterCount> { };
     DefAction(PredicateRegister) : SetRegisterGeneric<ArchitectureConstants::ConditionRegisterCount> { };
 	template<RegisterPositionType pos>
 	struct GenericRegisterIndexContainerAction {
-		DefApplyGeneric(AssemblerState) { }
 		DefApplyGeneric(AssemblerInstruction) { }
 		DefApplyGeneric(RegisterIndexContainer) {
 			state._index = pos;
@@ -238,9 +236,9 @@ namespace iris {
     using StatefulRegister = pegtl::state<RegisterIndexContainer, T>;
     using StatefulDestinationGPR = StatefulRegister<DestinationGPR>;
     using SourceRegisters = syn::SourceRegisters<StatefulRegister<Source0GPR>, StatefulRegister<Source1GPR>>;
-    struct OneGPR : syn::OneRegister<StatefulDestinationGPR> { };
-    struct TwoGPR : syn::TwoRegister<StatefulDestinationGPR, StatefulRegister<Source0GPR>> { };
-    struct ThreeGPR : syn::TwoRegister<StatefulDestinationGPR, SourceRegisters> { };
+    using OneGPR = syn::OneRegister<StatefulDestinationGPR>;
+    using TwoGPR = syn::TwoRegister<StatefulDestinationGPR, StatefulRegister<Source0GPR>>;
+    using ThreeGPR = syn::TwoRegister<StatefulDestinationGPR, SourceRegisters>;
 
     // predicate registers
     using IndirectPredicateRegister = syn::SingleEntrySequence<PredicateRegister>;
