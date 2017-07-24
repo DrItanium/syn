@@ -48,6 +48,8 @@
 
 namespace iris {
 
+    template<typename R> struct Action : syn::Action<R> { };
+
 	ArithmeticOp stringToArithmeticOp(const std::string& title) noexcept;
 	MoveOp stringToMoveOp(const std::string& title) noexcept;
 	JumpOp stringToJumpOp(const std::string& title) noexcept;
@@ -59,13 +61,11 @@ namespace iris {
         Data,
         Count,
     };
-    template<typename R> struct Action : syn::Action<R> { };
     struct AssemblerData {
         public:
             AssemblerData() noexcept;
-            void reset() noexcept;
             void setImmediate(word value) noexcept;
-            bool shouldResolveLabel() const noexcept { return fullImmediate && hasLexeme; }
+            bool shouldResolveLabel() const noexcept;
             dword encode() const noexcept;
         public:
             bool instruction;
@@ -85,23 +85,16 @@ namespace iris {
     class AssemblerState : public syn::LabelTracker<word>, public syn::FinishedDataTracker<AssemblerData> {
         public:
             using LabelTracker = syn::LabelTracker<word>;
-            AssemblerState() : inData(false) { }
-            bool inCodeSection() const noexcept { return !inData; }
-            bool inDataSection() const noexcept { return inData; }
-            void nowInCodeSection() noexcept { inData = false; }
-            void nowInDataSection() noexcept { inData = true; }
+            AssemblerState() : _section(SectionType::Code) { }
+            bool inCodeSection() const noexcept { return _section == SectionType::Code; }
+            bool inDataSection() const noexcept { return _section == SectionType::Data; }
+            void nowInCodeSection() noexcept;
+            void nowInDataSection() noexcept;
             template<SectionType section>
-                void changeSection() noexcept {
-                    static_assert(!syn::isErrorState<SectionType>(section), "Illegal state!");
-                    switch(section) {
-                        case SectionType::Code:
-                            nowInCodeSection();
-                            break;
-                        case SectionType::Data:
-                            nowInDataSection();
-                            break;
-                    }
-                }
+            void changeSection() noexcept {
+                static_assert(!syn::isErrorState<SectionType>(section), "Illegal state!");
+                _section = section;
+            }
             void setCurrentAddress(word value) noexcept;
             void registerLabel(const std::string& label) noexcept;
             word getCurrentAddress() const noexcept;
@@ -110,7 +103,7 @@ namespace iris {
             using AddressSpaceTracker = syn::AddressTracker<word>;
             AddressSpaceTracker data;
             AddressSpaceTracker code;
-            bool inData;
+            SectionType _section;
     };
 	struct HalfImmediateContainer;
 	struct AssemblerInstruction;
@@ -136,19 +129,16 @@ namespace iris {
 	};
 	struct AssemblerInstruction : public AssemblerData {
 		template<typename Input>
-		AssemblerInstruction(const Input& in, AssemblerState& parent) {
-			if (!parent.inCodeSection()) {
-				throw syn::Problem("Must be in a code section to add an instruction!");
-			}
+		AssemblerInstruction(const Input& in, AssemblerState& parent) noexcept {
 			instruction = true;
 			address = parent.getCurrentAddress();
 		}
 
 		template<typename Input>
-			void success(const Input& in, AssemblerState& parent) {
-				parent.incrementCurrentAddress();
-				parent.addToFinishedData(*this);
-			}
+		void success(const Input& in, AssemblerState& parent) {
+			parent.incrementCurrentAddress();
+			parent.addToFinishedData(*this);
+		}
 		void setField(RegisterPositionType type, byte value);
 	};
 	enum class AssemblerDirectiveAction {

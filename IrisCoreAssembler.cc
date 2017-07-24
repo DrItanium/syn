@@ -46,19 +46,6 @@
 
 namespace iris {
     AssemblerData::AssemblerData() noexcept : instruction(false), address(0), dataValue(0), group(0), operation(0), destination(0), source0(0), source1(0), hasLexeme(false), fullImmediate(false) { }
-	void AssemblerData::reset() noexcept {
-		instruction = false;
-		address = 0;
-		dataValue = 0;
-		group = 0;
-		operation = 0;
-		destination = 0;
-		source0 = 0;
-		source1 = 0;
-		hasLexeme = false;
-		currentLexeme.clear();
-		fullImmediate = false;
-	}
 
 	void AssemblerData::setImmediate(word value) noexcept {
 		source0 = syn::getLowerHalf<word>(value);
@@ -73,7 +60,7 @@ namespace iris {
     }
 
 	void AssemblerState::setCurrentAddress(word value) noexcept {
-		if (inData) {
+		if (inDataSection()) {
 			data.setCurrentAddress(value);
 		} else {
 			code.setCurrentAddress(value);
@@ -83,10 +70,10 @@ namespace iris {
 		LabelTracker::registerLabel(value, getCurrentAddress());
 	}
 	word AssemblerState::getCurrentAddress() const noexcept {
-		return inData ? data.getCurrentAddress() : code.getCurrentAddress();
+		return inDataSection() ? data.getCurrentAddress() : code.getCurrentAddress();
 	}
 	void AssemblerState::incrementCurrentAddress() noexcept {
-		if (inData) {
+		if (inDataSection()) {
 			data.incrementCurrentAddress();
 		} else {
 			code.incrementCurrentAddress();
@@ -253,10 +240,30 @@ namespace iris {
 			return find->second;
 		}
 	}
-		bool AssemblerDirective::shouldChangeSectionToCode() const noexcept { return (action == AssemblerDirectiveAction::ChangeSection) && (section == SectionType::Code); }
-		bool AssemblerDirective::shouldChangeSectionToData() const noexcept { return (action == AssemblerDirectiveAction::ChangeSection) && (section == SectionType::Data); }
-		bool AssemblerDirective::shouldChangeCurrentAddress() const noexcept { return (action == AssemblerDirectiveAction::ChangeCurrentAddress); }
-		bool AssemblerDirective::shouldDefineLabel() const noexcept { return (action == AssemblerDirectiveAction::DefineLabel); }
-		bool AssemblerDirective::shouldStoreWord() const noexcept { return (action == AssemblerDirectiveAction::StoreWord); }
+		bool AssemblerDirective::shouldChangeSectionToCode() const noexcept {
+            return (action == AssemblerDirectiveAction::ChangeSection) && (section == SectionType::Code);
+        }
+		bool AssemblerDirective::shouldChangeSectionToData() const noexcept {
+            return (action == AssemblerDirectiveAction::ChangeSection) && (section == SectionType::Data);
+        }
+		bool AssemblerDirective::shouldChangeCurrentAddress() const noexcept {
+            return (action == AssemblerDirectiveAction::ChangeCurrentAddress);
+        }
+		bool AssemblerDirective::shouldDefineLabel() const noexcept {
+            return (action == AssemblerDirectiveAction::DefineLabel);
+        }
+        bool AssemblerDirective::shouldStoreWord() const noexcept {
+            return (action == AssemblerDirectiveAction::StoreWord);
+        }
+        bool AssemblerData::shouldResolveLabel() const noexcept {
+            return fullImmediate && hasLexeme;
+        }
+
+        void AssemblerState::nowInCodeSection() noexcept {
+            _section = SectionType::Code;
+        }
+        void AssemblerState::nowInDataSection() noexcept {
+            _section = SectionType::Data;
+        }
 
 } // end namespace iris
