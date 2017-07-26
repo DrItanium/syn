@@ -72,7 +72,7 @@ namespace cisc0 {
             constexpr auto group = Operation::Swap;
 			// make sure that the control bits are always zero in this case so
 			// that backwards compatibility isn't broken
-			if (current.getSwapControlBits() != 0) {
+            if (current.getSubtypeControlBits() != 0) {
 				throw syn::Problem("Control bits for swap must be zero!");
 			}
             auto dInd = current.getDestinationRegister<group>();

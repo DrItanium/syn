@@ -80,7 +80,6 @@
           (deffield SetDestination  0b0000111100000000 8 byte))
 
 (deffacts cisc0-swap-fields
-          (deffield SwapControlBits 0b0000000011110000 4 byte)
           (deffield SwapDestination 0b0000111100000000 8 byte)
           (deffield SwapSource      0b1111000000000000 12 byte))
 

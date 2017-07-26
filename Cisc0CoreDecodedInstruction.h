@@ -58,7 +58,7 @@ namespace cisc0 {
             inline byte getMemoryRegister() const noexcept { return decodeMemoryDestination(_rawValue); }
             inline byte getMemoryOffset() const noexcept { return decodeMemoryDestination(_rawValue); }
             inline byte getBranchIndirectDestination() const noexcept { return decodeBranchDestination(_rawValue); }
-			inline byte getSwapControlBits() const noexcept { return decodeSwapControlBits(_rawValue); }
+            inline byte getSubtypeControlBits() const noexcept { return decodeGenericCommonSubTypeField(_rawValue); }
             inline bool shouldShiftLeft() const noexcept { return decodeShiftFlagLeft(_rawValue); }
             inline bool isIndirectOperation() const noexcept { return decodeMemoryFlagIndirect(_rawValue); }
             BranchFlags getOtherBranchFlags() const noexcept;
