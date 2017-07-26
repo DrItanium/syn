@@ -254,6 +254,11 @@ namespace cisc0 {
                 auto upper = RegisterType(loadWord(address + 1)) << 16;
                 return upper | lower;
             }
+            inline void storeRegisterValue(RegisterType address, RegisterType value) {
+                // carve the pieces up and store the lower then upper
+                storeWord(address, decodeLowerHalf(value));
+                storeWord(address + 1, decodeUpperHalf(value));
+            }
 		protected:
 			virtual void returnOperation() noexcept {
 				// pop the top address off of the call stack and place it in the

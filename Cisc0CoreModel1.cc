@@ -176,6 +176,9 @@ namespace cisc0 {
                 break;
         }
     }
+    inline constexpr RegisterValue maskRegisterValue(RegisterValue base, RegisterValue newValue, RegisterValue fullMask) noexcept {
+        return syn::encodeBits<RegisterValue, RegisterValue>(base, newValue, fullMask, 0);
+    }
     void CoreModel1::memoryOperation() {
         static constexpr auto group = Operation::Memory;
         auto rawMask = _instruction.getBitmask<group>();
@@ -187,34 +190,9 @@ namespace cisc0 {
         auto computeAddress = [this]() {
             auto address = getAddressRegister() + _instruction.firstWord().getMemoryOffset();
             if (_instruction.firstWord().isIndirectOperation()) {
-                address = encodeRegisterValue(loadWord(address + 1), loadWord(address));
+                address = loadRegisterValue(address);
             }
             return address;
-        };
-        auto storeOperation = [this, computeAddress, useLower, useUpper, lmask, umask]() {
-            constexpr Word maskCheck = 0xFFFF;
-            auto value = getValueRegister();
-            auto address = computeAddress();
-            if (useLower) {
-                auto lowerValue = decodeLowerHalf(value);
-                Word tmp = lowerValue;
-                if (lmask != maskCheck) {
-                    tmp = ((lmask & lowerValue) | (loadWord(address) & ~lmask));
-                }
-                storeWord(address, tmp);
-            }
-            if (useUpper) {
-                auto newAddress = address + 1;
-                // pull the upper 16 bits out into a separate variable
-                auto upperValue = decodeUpperHalf(value);
-                // by default, assume that we will store the top half of the value into memory
-                auto tmp = upperValue;
-                if (umask != maskCheck) {
-                    // needs to be the masked value instead!
-                    tmp = (umask & upperValue) | (loadWord(newAddress) & ~umask);
-                }
-                storeWord(newAddress, tmp);
-            }
         };
         auto pushOperation = [this, useUpper, useLower, umask, lmask]() {
             if (_instruction.firstWord().isIndirectOperation()) {
@@ -243,12 +221,17 @@ namespace cisc0 {
             // immediate advance so just don't do it
             advanceIp = dest != ArchitectureConstants::InstructionPointer;
         };
+
+        decltype(computeAddress()) address = 0;
         switch(_instruction.getSubtype<group>()) {
             case MemoryOperation::Load:
-			    getValueRegister() = syn::encodeBits<RegisterValue, RegisterValue>(getValueRegister(), loadRegisterValue(computeAddress()), fullMask, 0);
+                // load the entire thing from memory and then mask it instead
+                // of discriminating
+                getValueRegister() = maskRegisterValue(getValueRegister(), loadRegisterValue(computeAddress()), fullMask);
                 break;
             case MemoryOperation::Store:
-                storeOperation();
+                address = computeAddress();
+                storeRegisterValue(address, maskRegisterValue(loadRegisterValue(address), getValueRegister(), fullMask));
                 break;
             case MemoryOperation::Push:
                 pushOperation();
