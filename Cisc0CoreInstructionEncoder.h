@@ -97,7 +97,8 @@ namespace cisc0 {
 		private:
 			template<Operation op>
 			Word setFlagImmediate(Word value) const noexcept {
-				return cisc0::encodeFlagImmediate<op, decltype(_immediate)>(value, _immediate);
+                static_assert(cisc0::HasImmediateFlag<op>::value, "Provided type does not support an immediate flag!");
+                return cisc0::encodeGenericImmediateFlag(value, _immediate);
 			}
 			template<Operation op>
 			Word setDestination(Word value) const noexcept {

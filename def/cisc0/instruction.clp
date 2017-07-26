@@ -31,46 +31,43 @@
           (deffield Control 0b0000000000001111 0 Operation)
           (deffield Upper   0b1111111100000000 8 byte)
           (deffield Lower   0b0000000011111111 0 byte))
-
+(deffacts cisc0-common-fields
+          (deffield GenericCommonSubTypeField 0b0000000011110000 4 byte)
+          (defbitfield GenericImmediateFlag   0b0000000000010000 4))
 (deffacts cisc0-compare-fields
           ; the first defines everything else we need to know
-          (defbitfield CompareFlagImmediate 0b0000000010000000 7)
-          (defsubtypefield CompareType      0b0000000001110000 4 CompareStyle)
+          (defsubtypefield CompareType      0b0000000011100000 5 CompareStyle)
           (deffield CompareDestination      0b0000111100000000 8 byte)
           (deffield CompareSource           0b1111000000000000 12 byte)
           (defbitmask CompareBitmask        0b1111000000000000 12))
 
 (deffacts cisc0-arithmetic-fields
-          (defbitfield ArithmeticFlagImmediate 0b0000000000010000 4)
           (defsubtypefield ArithmeticType      0b0000000011100000 5 ArithmeticOps)
           (deffield ArithmeticDestination      0b0000111100000000 8 byte)
           (deffield ArithmeticImmediate        0b1111000000000000 12 byte)
           (deffield ArithmeticSource           0b1111000000000000 12 byte))
 
 (deffacts cisc0-logical-fields
-          (defbitfield LogicalFlagImmediate      0b0000000000010000 4)
           (defsubtypefield LogicalType           0b0000000011100000 5 LogicalOps)
           (deffield LogicalDestination           0b0000111100000000 8 byte)
           (defbitmask LogicalBitmask             0b1111000000000000 12)
           (deffield LogicalSource                0b1111000000000000 12 byte))
 
 (deffacts cisc0-shift-fields
-          (defbitfield ShiftFlagLeft        0b0000000000010000 4)
-          (defbitfield ShiftFlagImmediate   0b0000000000100000 5)
+          (defbitfield ShiftFlagLeft        0b0000000000100000 5)
           (deffield ShiftDestination        0b0000011110000000 7  byte)
           (deffield ShiftImmediate          0b1111100000000000 11 byte)
           (deffield ShiftSource             0b0111100000000000 11 byte))
 
 (deffacts cisc0-branch-fields
-          (defbitfield BranchFlagIsConditional   0b0000000010000000 7)
           (defbitfield BranchFlagIsCallForm      0b0000000000100000 5)
-          (defbitfield BranchFlagImmediate       0b0000000000010000 4)
-          (deffield BranchDestination            0b0000111100000000 8  byte))
+          (defbitfield BranchFlagIsConditional   0b0000000001000000 6)
+          (deffield BranchDestination            0b0000111100000000 8 byte))
 
 (deffacts cisc0-memory-fields
           (defsubtypefield MemoryType      0b0000000000110000 4 MemoryOperation)
-          (defbitmask MemoryBitmask        0b0000111100000000 8)
           (defbitmask MemoryFlagIndirect   0b0000000001000000 6)
+          (defbitmask MemoryBitmask        0b0000111100000000 8)
           (deffield MemoryDestination      0b1111000000000000 12 byte))
 
 (deffacts cisc0-move-fields
@@ -204,6 +201,7 @@
 
 (deffacts cisc0-file-layouts-and-requests
           (include "ExecutionUnits.h")
+          (include "Cisc0CoreConstants.h")
           (using ALUOperation
                  syn::ALU::StandardOperations)
           (using CompareUnitOperation
@@ -244,6 +242,104 @@
           (top-level-to-sub-type Operation Memory -> MemoryOperation)
           (top-level-to-sub-type Operation Logical -> LogicalOps)
           (top-level-to-sub-type Operation Complex -> ComplexSubTypes))
+
+(deffacts cisc0-destination-register-usage
+          (defproperty-struct UsesDestination
+                              Operation)
+          (properties UsesDestination
+                      Operation
+                      Arithmetic
+                      Swap
+                      Move
+                      Shift
+                      Compare
+                      Set
+                      Memory
+                      Logical)
+          (defproperty-struct UsesSource
+                              Operation)
+          (properties UsesSource
+                      Operation
+                      Arithmetic
+                      Shift
+                      Compare
+                      Move
+                      Swap
+                      Logical)
+          (defproperty-struct HasBitmask
+                              Operation)
+          (properties HasBitmask
+                      Operation
+                      Compare
+                      Move
+                      Set
+                      Memory
+                      Logical)
+          (defproperty-struct HasImmediateFlag
+                              Operation)
+          (properties HasImmediateFlag
+                      Operation
+                      Arithmetic
+                      Shift
+                      Compare
+                      Logical
+                      Branch)
+          (defproperty-function usesDestination UsesDestination Operation)
+          (defproperty-function usesSource UsesSource Operation)
+          (defproperty-function hasBitmask HasBitmask Operation)
+          (defproperty-function hasImmediateFlag HasImmediateFlag Operation)
+          (defencoder/decoder Type Operation)
+          (encoder/decoders Type
+                            Operation
+                            Arithmetic
+                            Compare
+                            Logical
+                            Memory
+                            Complex)
+          (defencoder/decoder ComplexSubType ComplexSubTypes)
+          (encoder/decoders ComplexSubType
+                            ComplexSubTypes
+                            Encoding
+                            Extended
+                            Parsing
+                            FeatureCheck)
+          (defencoder/decoder Bitmask Operation)
+          (encoder/decoders Bitmask
+                            Operation
+                            Compare
+                            Move
+                            Set
+                            Memory
+                            Logical)
+          (defencoder/decoder Destination Operation)
+          (encoder/decoders Destination
+                            Operation
+                            Set
+                            Arithmetic
+                            Shift
+                            Compare
+                            Move
+                            Swap
+                            Memory
+                            Branch
+                            Logical)
+          (defencoder/decoder Source Operation)
+          (encoder/decoders Source
+                            Operation
+                            Arithmetic
+                            Shift
+                            Compare
+                            Move
+                            Swap
+                            Logical)
+          (defencoder/decoder FlagImmediate Operation)
+          (encoder/decoders FlagImmediate
+                            Operation
+                            Arithmetic
+                            Shift
+                            Compare
+                            Logical
+                            Branch))
 (defrule translate-defsubtype-decl
          (declare (salience ?*priority:first*))
          ?f <- (defsubtypefield ?name
@@ -381,103 +477,6 @@
                                                           (return-statement input))))
                    crlf))
 
-(deffacts cisc0-destination-register-usage
-          (defproperty-struct UsesDestination
-                              Operation)
-          (properties UsesDestination
-                      Operation
-                      Arithmetic
-                      Swap
-                      Move
-                      Shift
-                      Compare
-                      Set
-                      Memory
-                      Logical)
-          (defproperty-struct UsesSource
-                              Operation)
-          (properties UsesSource
-                      Operation
-                      Arithmetic
-                      Shift
-                      Compare
-                      Move
-                      Swap
-                      Logical)
-          (defproperty-struct HasBitmask
-                              Operation)
-          (properties HasBitmask
-                      Operation
-                      Compare
-                      Move
-                      Set
-                      Memory
-                      Logical)
-          (defproperty-struct HasImmediateFlag
-                              Operation)
-          (properties HasImmediateFlag
-                      Operation
-                      Arithmetic
-                      Shift
-                      Compare
-                      Logical
-                      Branch)
-          (defproperty-function usesDestination UsesDestination Operation)
-          (defproperty-function usesSource UsesSource Operation)
-          (defproperty-function hasBitmask HasBitmask Operation)
-          (defproperty-function hasImmediateFlag HasImmediateFlag Operation)
-          (defencoder/decoder Type Operation)
-          (encoder/decoders Type
-                            Operation
-                            Arithmetic
-                            Compare
-                            Logical
-                            Memory
-                            Complex)
-          (defencoder/decoder ComplexSubType ComplexSubTypes)
-          (encoder/decoders ComplexSubType
-                            ComplexSubTypes
-                            Encoding
-                            Extended
-                            Parsing
-                            FeatureCheck)
-          (defencoder/decoder Bitmask Operation)
-          (encoder/decoders Bitmask
-                            Operation
-                            Compare
-                            Move
-                            Set
-                            Memory
-                            Logical)
-          (defencoder/decoder Destination Operation)
-          (encoder/decoders Destination
-                            Operation
-                            Set
-                            Arithmetic
-                            Shift
-                            Compare
-                            Move
-                            Swap
-                            Memory
-                            Branch
-                            Logical)
-          (defencoder/decoder Source Operation)
-          (encoder/decoders Source
-                            Operation
-                            Arithmetic
-                            Shift
-                            Compare
-                            Move
-                            Swap
-                            Logical)
-          (defencoder/decoder FlagImmediate Operation)
-          (encoder/decoders FlagImmediate
-                            Operation
-                            Arithmetic
-                            Shift
-                            Compare
-                            Logical
-                            Branch))
 
 
 (defrule MAIN::multi-encode/decode-deocmpose

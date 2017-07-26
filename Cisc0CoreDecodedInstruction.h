@@ -128,7 +128,8 @@ namespace cisc0 {
             }
             template<Operation op>
             inline bool getImmediateFlag() const noexcept {
-				return cisc0::decodeFlagImmediate<op>(_rawValue);
+                static_assert(cisc0::HasImmediateFlag<op>::value, "Provided operation does not have an immediate flag!");
+                return cisc0::decodeGenericImmediateFlag(_rawValue);
             }
             template<Operation op>
             inline byte getImmediate() const noexcept {
