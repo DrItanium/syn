@@ -248,6 +248,12 @@ namespace cisc0 {
             inline void storeWord(RegisterType address, byte offset, Word value) {
 				storeWord(address + offset, value);
 			}
+            inline RegisterType loadRegisterValue(RegisterType address) {
+                // just load both halves
+                auto lower = RegisterType(loadWord(address));
+                auto upper = RegisterType(loadWord(address + 1)) << 16;
+                return upper | lower;
+            }
 		protected:
 			virtual void returnOperation() noexcept {
 				// pop the top address off of the call stack and place it in the

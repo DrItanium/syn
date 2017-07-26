@@ -67,7 +67,6 @@ namespace cisc0 {
 			void encodingOperation();
             void extendedOperation();
 			void parsingOperation();
-			void performEncodeOp();
         private:
             void compareOperation();
             void systemCallOperation();

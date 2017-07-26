@@ -191,14 +191,6 @@ namespace cisc0 {
             }
             return address;
         };
-        auto loadOperation = [this, computeAddress, useLower, useUpper, fullMask]() {
-			auto& value = getValueRegister();
-			auto address = computeAddress();
-			auto lower = useLower ? encodeLowerHalf(0, loadWord(address)) : 0;
-			auto upper = useUpper ? encodeUpperHalf(0, loadWord(address + 1)) : 0;
-			auto combinedValue = lower | upper;
-			value = syn::encodeBits<RegisterValue, RegisterValue>(0, combinedValue, fullMask, 0);
-        };
         auto storeOperation = [this, computeAddress, useLower, useUpper, lmask, umask]() {
             constexpr Word maskCheck = 0xFFFF;
             auto value = getValueRegister();
@@ -253,7 +245,7 @@ namespace cisc0 {
         };
         switch(_instruction.getSubtype<group>()) {
             case MemoryOperation::Load:
-                loadOperation();
+			    getValueRegister() = syn::encodeBits<RegisterValue, RegisterValue>(getValueRegister(), loadRegisterValue(computeAddress()), fullMask, 0);
                 break;
             case MemoryOperation::Store:
                 storeOperation();

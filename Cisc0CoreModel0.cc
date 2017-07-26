@@ -210,10 +210,8 @@ namespace cisc0 {
             return address;
         };
         auto loadOperation = [this, computeAddress, useLower, useUpper, fullMask]() {
-            auto& value = getValueRegister();
-            if (!useLower && !useUpper) {
-                value = 0;
-            } else {
+            if (useLower || useUpper) {
+                auto& value = getValueRegister();
                 auto address = computeAddress();
                 auto lower = useLower ? encodeLowerHalf(0, loadWord(address)) : 0;
                 auto upper = useUpper ? encodeUpperHalf(0, loadWord(address + 1)) : 0;
@@ -290,6 +288,14 @@ namespace cisc0 {
         }
     }
 
+    void CoreModel0::shiftOperation() {
+        static constexpr auto group = Operation::Shift;
+        auto &destination = registerValue(_first.getDestinationRegister<group>());
+        auto source = (_first.getImmediateFlag<group>() ? static_cast<RegisterValue>(_first.getImmediate<group>()) : registerValue(_first.getSourceRegister<group>()));
+		auto direction = _first.shouldShiftLeft() ? ALUOperation::ShiftLeft : ALUOperation::ShiftRight;
+        destination = syn::ALU::performOperation<RegisterValue>(direction, destination, source);
+    }
+
     void CoreModel0::complexOperation() {
         auto type = _first.getSubtype<Operation::Complex>();
         switch(type) {
@@ -305,13 +311,6 @@ namespace cisc0 {
             default:
                 throw syn::Problem("Undefined complex subtype!");
         }
-    }
-    void CoreModel0::shiftOperation() {
-        static constexpr auto group = Operation::Shift;
-        auto &destination = registerValue(_first.getDestinationRegister<group>());
-        auto source = (_first.getImmediateFlag<group>() ? static_cast<RegisterValue>(_first.getImmediate<group>()) : registerValue(_first.getSourceRegister<group>()));
-		auto direction = _first.shouldShiftLeft() ? ALUOperation::ShiftLeft : ALUOperation::ShiftRight;
-        destination = syn::ALU::performOperation<RegisterValue>(direction, destination, source);
     }
 
     void CoreModel0::extendedOperation() {
