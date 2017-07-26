@@ -21,6 +21,7 @@ maya
 *.tab.h
 *.yy.c
 
+#hmmm...do we want to commit the defines?
 *_defines.h
 *_defines.clp
 
