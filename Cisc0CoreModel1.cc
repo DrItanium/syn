@@ -264,8 +264,8 @@ namespace cisc0 {
     }
     void CoreModel1::shiftOperation() {
         static constexpr auto group = Operation::Shift;
-        auto &destination = registerValue(_instruction.getDestinationRegister<group>());
-        auto source = (_instruction.isImmediate<group>() ? static_cast<RegisterValue>(_instruction.getImmediate<group>()) : registerValue(_instruction.getSourceRegister<group>()));
+        auto &destination = destinationRegister<group>();
+        auto source = retrieveSourceOrImmediate<group>();
         auto direction = _instruction.firstWord().shouldShiftLeft() ?  ALUOperation::ShiftLeft : ALUOperation::ShiftRight;
         destination = syn::ALU::performOperation<RegisterValue>(direction, destination, source);
     }
@@ -334,8 +334,8 @@ namespace cisc0 {
 
     void CoreModel1::arithmeticOperation() {
         static constexpr auto group = Operation::Arithmetic;
-        auto src1 = _instruction.isImmediate<group>() ? _instruction.getImmediate<group>() : registerValue(_instruction.getSourceRegister<group>());
-        auto &src0 = registerValue(_instruction.getDestinationRegister<group>());
+        auto src1 = retrieveSourceOrImmediate<group>();
+        auto &src0 = destinationRegister<group>();
         auto subType = _instruction.getSubtype<group>();
         auto defaultArithmetic = [&src0, src1, subType]() {
             auto result = translate(subType);
@@ -360,7 +360,7 @@ namespace cisc0 {
         auto result = translate(_instruction.getSubtype<group>());
         syn::throwOnErrorState(result, "Illegal logical operation!");
         auto op = result;
-        auto source1 = _instruction.isImmediate<group>() ? _instruction.retrieveImmediate<group>() : sourceRegister<group>();
+        auto source1 = retrieveSourceOrImmediate<group>();
         auto& dest = destinationRegister<group>();
         dest = syn::ALU::performOperation<RegisterValue>(op, dest, source1);
     }

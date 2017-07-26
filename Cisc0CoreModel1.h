@@ -129,6 +129,9 @@ namespace cisc0 {
             void arithmeticOperation();
             void shiftOperation();
 			void featureCheckOperation();
+
+
+
         private:
             template<Operation op>
             inline RegisterValue& destinationRegister() noexcept {
@@ -137,6 +140,26 @@ namespace cisc0 {
             template<Operation op>
             inline RegisterValue& sourceRegister() noexcept {
                 return registerValue(_instruction.getSourceRegister<op>());
+            }
+            template<Operation group>
+            RegisterValue retrieveSourceOrImmediate(std::false_type) {
+                if (_instruction.isImmediate<group>()) {
+                    return RegisterValue(_instruction.getImmediate<group>());
+                } else {
+                    return sourceRegister<group>();
+                }
+            }
+            template<Operation group>
+            RegisterValue retrieveSourceOrImmediate(std::true_type) {
+                if (_instruction.isImmediate<group>()) {
+                    return _instruction.retrieveImmediate<group>();
+                } else {
+                    return sourceRegister<group>();
+                }
+            }
+            template<Operation group>
+            RegisterValue retrieveSourceOrImmediate() {
+                return retrieveSourceOrImmediate<group>(std::integral_constant<bool, !cisc0::DecodedInstruction::hasImmediateValue(group)>{ });
             }
 		private:
 			RegisterFile _gpr;

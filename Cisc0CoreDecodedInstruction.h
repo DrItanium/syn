@@ -36,8 +36,6 @@ namespace cisc0 {
 	class DecodedInstruction {
 		public:
             using BranchFlags = std::tuple<bool, bool>;
-        private:
-
             static constexpr bool hasImmediateValue(Operation op) noexcept {
                 switch (op) {
                     case Operation::Shift:
