@@ -90,7 +90,7 @@ namespace cisc0 {
         first = encodeShiftFlagLeft(first, _shiftLeft);
 		first = setDestination<op>(first);
 		if (_immediate) {
-			first = encodeShiftImmediate(first, _arg1);
+            first = encodeGenericImmediate5(first, _arg1);
 		} else {
 			first = setSource<op>(first);
 		}

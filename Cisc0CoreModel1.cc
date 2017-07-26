@@ -128,7 +128,7 @@ namespace cisc0 {
         bool isCall, isCond;
         std::tie(isCall, isCond) = _instruction.firstWord().getOtherBranchFlags();
         advanceIp = true;
-		auto whereToGo = _instruction.isImmediate<group>() ? _instruction.retrieveImmediate(0b1111) : registerValue(_instruction.firstWord().getBranchIndirectDestination());
+		auto whereToGo = _instruction.isImmediate<group>() ? _instruction.retrieveImmediate(0b1111) : registerValue(_instruction.firstWord().getDestination());
         auto shouldUpdateInstructionPointer = isCall || (isCond && getConditionRegister()) || (!isCond);
         if (isCall) {
             // call instruction
@@ -229,7 +229,7 @@ namespace cisc0 {
                 throw syn::Problem("Indirect bit not supported in push operations!");
             }
             // update the target stack to something different
-            auto pushToStack = registerValue(_instruction.firstWord().getMemoryRegister());
+            auto pushToStack = registerValue(_instruction.firstWord().getDestination());
             // read backwards because the stack grows upward towards zero
             if (useUpper) {
                 pushWord(umask & decodeUpperHalf(pushToStack));
@@ -244,11 +244,12 @@ namespace cisc0 {
             }
             auto lower = useLower ? lmask & popWord() : 0;
             auto upper = useUpper ? umask & popWord() : 0;
-            registerValue(_instruction.firstWord().getMemoryRegister()) = encodeRegisterValue(upper, lower);
+            auto dest = _instruction.firstWord().getDestination();
+            registerValue(dest) = encodeRegisterValue(upper, lower);
             // can't think of a case where we should
             // restore the instruction pointer and then
             // immediate advance so just don't do it
-            advanceIp = _instruction.firstWord().getMemoryRegister() != ArchitectureConstants::InstructionPointer;
+            advanceIp = dest != ArchitectureConstants::InstructionPointer;
         };
         switch(_instruction.getSubtype<group>()) {
             case MemoryOperation::Load:

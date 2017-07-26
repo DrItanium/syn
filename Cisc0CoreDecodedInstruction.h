@@ -55,10 +55,7 @@ namespace cisc0 {
             inline byte getUpper() const noexcept { return decodeUpper(_rawValue); }
             inline Operation getControl() const noexcept { return decodeControl(_rawValue); }
             inline byte getDestination() const noexcept { return decodeGenericDestination(_rawValue); }
-            inline byte getSetDestination() const noexcept { return getDestination(); }
-            inline byte getMemoryRegister() const noexcept { return getDestination(); }
             inline byte getMemoryOffset() const noexcept { return getDestination(); }
-            inline byte getBranchIndirectDestination() const noexcept { return getDestination(); }
             inline byte getSubtypeControlBits() const noexcept { return decodeGenericCommonSubTypeField(_rawValue); }
             inline bool shouldShiftLeft() const noexcept { return decodeShiftFlagLeft(_rawValue); }
             inline bool isIndirectOperation() const noexcept { return decodeMemoryFlagIndirect(_rawValue); }
@@ -74,47 +71,15 @@ namespace cisc0 {
 
 			template<Operation op>
 			inline byte getSourceRegister() const noexcept {
-				return cisc0::decodeSource<op>(_rawValue);
+                static_assert(usesSource<op>(), "Provided type does not use the source field!");
+                return cisc0::decodeGenericSource(_rawValue);
 			}
 
 			template<Operation op>
 			inline byte getDestinationRegister() const noexcept {
-                static_assert(cisc0::UsesDestination<op>::value, "Provided operation does not use the destination type!");
-                return cisc0::decodeGenericDestination(_rawValue);
+                static_assert(usesDestination<op>(), "Provided operation does not use the destination type!");
+                return getDestination();
 			}
-			template<Operation op, cisc0::LegalRegisterNames index>
-			inline byte getRegister() const noexcept {
-				static_assert(!syn::isErrorState(index), "Illegal register index!");
-				switch(index) {
-					case LegalRegisterNames::Destination:
-						return getDestinationRegister<op>();
-					case LegalRegisterNames::Source:
-						return getSourceRegister<op>();
-					default:
-						throw syn::Problem("Illegal index, this should never ever fire!");
-				}
-			}
-
-            template<cisc0::LegalRegisterNames index>
-            inline byte getShiftRegister() const noexcept {
-				return getRegister<Operation::Shift, index>();
-            }
-            template<cisc0::LegalRegisterNames index>
-            inline byte getMoveRegister() const noexcept {
-				return getRegister<Operation::Move, index>();
-            }
-            template<cisc0::LegalRegisterNames index>
-            inline byte getSwapRegister() const noexcept {
-				return getRegister<Operation::Swap, index>();
-            }
-            template<cisc0::LegalRegisterNames index>
-            inline byte getCompareRegister() const noexcept {
-				return getRegister<Operation::Compare, index>();
-            }
-            template<cisc0::LegalRegisterNames index>
-            inline byte getArithmeticRegister() const noexcept {
-				return getRegister<Operation::Arithmetic, index>();
-            }
 
             template<ComplexSubTypes op>
             inline byte getDestinationRegister() const noexcept {
@@ -127,7 +92,7 @@ namespace cisc0 {
             }
             template<Operation op>
             inline bool getImmediateFlag() const noexcept {
-                static_assert(cisc0::HasImmediateFlag<op>::value, "Provided operation does not have an immediate flag!");
+                static_assert(hasImmediateFlag<op>(), "Provided operation does not have an immediate flag!");
                 return cisc0::decodeGenericImmediateFlag(_rawValue);
             }
             template<Operation op>
@@ -135,16 +100,12 @@ namespace cisc0 {
                 static_assert(hasImmediateValue(op), "provided operation cannot contain an immediate value!");
                 switch(op) {
                     case Operation::Shift:
-                        return decodeShiftImmediate(_rawValue);
+                        return decodeGenericImmediate5(_rawValue);
                     case Operation::Arithmetic:
-                        return decodeArithmeticImmediate(_rawValue);
+                        return decodeGenericImmediate4(_rawValue);
                     default:
                         return 0;
                 }
-            }
-            template<cisc0::LegalRegisterNames index>
-            inline byte getLogicalRegister() const noexcept {
-				return getRegister<Operation::Compare, index>();
             }
             template<Operation op>
 			inline typename cisc0::DecodeType<op>::ReturnType getSubtype() const noexcept {

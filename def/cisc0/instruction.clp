@@ -48,7 +48,6 @@
 
 (deffacts cisc0-arithmetic-fields
           (defsubtypefield ArithmeticType      0b0000000011100000 5 ArithmeticOps)
-          (deffield ArithmeticImmediate        0b0000111100000000 8 byte)
           (deffield ArithmeticSource           0b0000111100000000 8 byte))
 
 (deffacts cisc0-logical-fields

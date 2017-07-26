@@ -136,16 +136,17 @@ namespace cisc0 {
         }
     }
     void CoreModel0::branchOperation(const DecodedInstruction& inst) {
+        static constexpr auto group = Operation::Branch;
         bool isCall, isCond;
         std::tie(isCall, isCond) = inst.getOtherBranchFlags();
         advanceIp = true;
         auto whereToGo = 0;
-        if (inst.getImmediateFlag<Operation::Branch>()) {
+        if (inst.getImmediateFlag<group>()) {
             auto lower = static_cast<RegisterValue>(tryReadNext<true>());
             auto upper = static_cast<RegisterValue>(tryReadNext<true>()) << 16;
             whereToGo = lower | upper;
         } else {
-            whereToGo = registerValue(inst.getBranchIndirectDestination());
+            whereToGo = registerValue(inst.getDestinationRegister<group>());
         }
         auto shouldUpdateInstructionPointer = isCall || (isCond && getConditionRegister()) || (!isCond);
         if (isCall) {
@@ -250,7 +251,7 @@ namespace cisc0 {
                 throw syn::Problem("Indirect bit not supported in push operations!");
             }
             // update the target stack to something different
-            auto pushToStack = registerValue(inst.getMemoryRegister());
+            auto pushToStack = registerValue(inst.getDestination());
             // read backwards because the stack grows upward towards zero
             if (useUpper) {
                 pushWord(umask & decodeUpperHalf(pushToStack));
@@ -265,11 +266,11 @@ namespace cisc0 {
             }
             auto lower = useLower ? lmask & popWord() : 0;
             auto upper = useUpper ? umask & popWord() : 0;
-            registerValue(inst.getMemoryRegister()) = encodeRegisterValue(upper, lower);
+            registerValue(inst.getDestination()) = encodeRegisterValue(upper, lower);
             // can't think of a case where we should
             // restore the instruction pointer and then
             // immediate advance so just don't do it
-            advanceIp = inst.getMemoryRegister() != ArchitectureConstants::InstructionPointer;
+            advanceIp = inst.getDestination() != ArchitectureConstants::InstructionPointer;
         };
         switch(inst.getSubtype<group>()) {
             case MemoryOperation::Load:
