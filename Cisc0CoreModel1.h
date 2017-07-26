@@ -61,8 +61,16 @@ namespace cisc0 {
                     const DecodedInstruction& firstWord() const noexcept { return _first; }
                 public:
                     template<Operation op>
-                    inline typename cisc0::DecodeType<op>::ReturnType getSubtype() const noexcept {
+                    using DecodedReturnSubtype = typename cisc0::DecodeType<op>::ReturnType;
+                    template<ComplexSubTypes op>
+                    using DecodedReturnComplexSubtype = typename cisc0::DecodeComplexSubType<op>::ReturnType;
+                    template<Operation op>
+                    inline DecodedReturnSubtype<op> getSubtype() const noexcept {
                         return _first.getSubtype<op>();
+                    }
+                    template<ComplexSubTypes op>
+                    inline DecodedReturnComplexSubtype<op> getSubtype() const noexcept {
+                        return _first.getComplexSubType<op>();
                     }
                     template<Operation op>
                     inline byte getDestinationRegister() const noexcept {
@@ -126,8 +134,6 @@ namespace cisc0 {
         protected:
 			virtual bool isTerminateAddress(RegisterValue address) const noexcept override;
 		private:
-            void moveToCondition(byte index) noexcept;
-            void moveFromCondition(byte index) noexcept;
 			void complexOperation();
 			void encodingOperation();
             void extendedOperation();
@@ -145,36 +151,42 @@ namespace cisc0 {
 
 
         private:
-            // if the destination is ip then make sure that we don't
-            inline RegisterValue& checkThenGetRegister(byte index, bool checkAdvanceIp) noexcept {
-                if (checkAdvanceIp) {
-                    advanceIp = !isInstructionPointer(index);
-                }
-                return registerValue(index);
+            template<Operation op>
+            inline void setDestinationRegister(RegisterValue value) noexcept {
+                auto index = _instruction.getDestinationRegister<op>();
+                advanceIp = !isInstructionPointer(index);
+                registerValue(index) = value;
             }
-            template<Operation op, bool checkAdvanceIp = true>
-            inline RegisterValue& destinationRegister() noexcept {
-                return checkThenGetRegister(_instruction.getDestinationRegister<op>(), checkAdvanceIp);
+            template<Operation op>
+            inline RegisterValue getDestinationRegister() noexcept {
+                return registerValue(_instruction.getDestinationRegister<op>());
             }
-            template<ComplexSubTypes op, bool checkAdvanceIp = true>
-            inline RegisterValue& destinationRegister() noexcept {
-                return checkThenGetRegister(_instruction.getDestinationRegister<op>(), checkAdvanceIp);
-
+            template<ComplexSubTypes op>
+            inline RegisterValue getDestinationRegister() noexcept {
+                return registerValue(_instruction.getDestinationRegister<op>());
             }
             template<Operation op>
             inline RegisterValue& sourceRegister() noexcept {
                 return registerValue(_instruction.getSourceRegister<op>());
             }
-            template<Operation group>
+            template<Operation op>
             inline RegisterValue retrieveSourceOrImmediate() noexcept {
-                if (_instruction.isImmediate<group>()) {
-                    return _instruction.retrieveImmediate<group>();
+                if (_instruction.isImmediate<op>()) {
+                    return _instruction.retrieveImmediate<op>();
                 } else {
-                    return sourceRegister<group>();
+                    return sourceRegister<op>();
                 }
             }
             static constexpr bool isInstructionPointer(byte index) noexcept {
                 return index == ArchitectureConstants::InstructionPointer;
+            }
+            template<Operation op>
+            inline FusedInstruction::DecodedReturnSubtype<op> getSubtype() const noexcept {
+                return _instruction.getSubtype<op>();
+            }
+            template<ComplexSubTypes op>
+            inline FusedInstruction::DecodedReturnComplexSubtype<op> getSubtype() const noexcept {
+                return _instruction.getSubtype<op>();
             }
 		private:
 			RegisterFile _gpr;

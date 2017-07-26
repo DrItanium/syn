@@ -103,10 +103,10 @@ namespace cisc0 {
                 returnOperation();
 				break;
             case Operation::Move:
-                destinationRegister<Operation::Move>() = castWithMask(sourceRegister<Operation::Move>(), _instruction.expandedBitmask<Operation::Move>());
+                setDestinationRegister<Operation::Move>(castWithMask(sourceRegister<Operation::Move>(), _instruction.expandedBitmask<Operation::Move>()));
                 break;
             case Operation::Set:
-                destinationRegister<Operation::Set>() = _instruction.retrieveImmediate<Operation::Set>();
+                setDestinationRegister<Operation::Set>(_instruction.retrieveImmediate<Operation::Set>());
                 break;
             default:
                 execute = false;
@@ -119,7 +119,7 @@ namespace cisc0 {
         bool isCall, isCond;
         std::tie(isCall, isCond) = _instruction.firstWord().getOtherBranchFlags();
         advanceIp = true;
-		auto whereToGo = _instruction.isImmediate<group>() ? _instruction.retrieveImmediate(0b1111) : destinationRegister<group>();
+		auto whereToGo = _instruction.isImmediate<group>() ? _instruction.retrieveImmediate(0b1111) : getDestinationRegister<group>();
         auto shouldUpdateInstructionPointer = isCall || (isCond && getConditionRegister()) || (!isCond);
         if (isCall) {
             // call instruction
@@ -137,30 +137,23 @@ namespace cisc0 {
         }
     }
 
-    void CoreModel1::moveToCondition(byte index) noexcept {
-		getConditionRegister() = registerValue(index) != 0;
-    }
-    void CoreModel1::moveFromCondition(byte index) noexcept {
-        registerValue(index) = normalizeCondition(getConditionRegister());
-    }
 
     void CoreModel1::compareOperation() {
         static constexpr auto group = Operation::Compare;
-		auto compareResult = _instruction.getSubtype<group>();
-		auto destinationIndex = _instruction.getDestinationRegister<group>();
-        auto normalCompare = [this, destinationIndex, compareResult]() {
+		auto compareResult = getSubtype<group>();
+        auto normalCompare = [this, compareResult]() {
 			auto compareUnitType = translate(compareResult);
         	syn::throwOnErrorState(compareResult, "Illegal compare type!");
-			auto first = registerValue(destinationIndex);
+			auto first = getDestinationRegister<group>();
             auto second = retrieveSourceOrImmediate<group>();
 			getConditionRegister() = syn::Comparator::performOperation(compareUnitType, first, second);
         };
         switch(compareResult) {
             case CompareStyle::MoveToCondition:
-                moveToCondition(destinationIndex);
+                getConditionRegister() = getDestinationRegister<group>() != 0;
                 break;
             case CompareStyle::MoveFromCondition:
-                moveFromCondition(destinationIndex);
+                setDestinationRegister<group>(normalizeCondition(getConditionRegister()));
                 break;
             default:
                 normalCompare();
@@ -189,7 +182,7 @@ namespace cisc0 {
             }
             // just fully mask the loaded value!
             // update the target stack to something different
-            auto pushToStack = maskRegisterValue(0, registerValue(_instruction.firstWord().getDestination()), fullMask);
+            auto pushToStack = maskRegisterValue(0, getDestinationRegister<group>(), fullMask);
             if (useUpper) {
                 pushWord(decodeUpperHalf(pushToStack));
             }
@@ -204,16 +197,11 @@ namespace cisc0 {
             // the order of popping matters!
             auto lower = useLower ? popWord() : 0;
             auto upper = useUpper ? popWord() : 0;
-            auto dest = _instruction.firstWord().getDestination();
-            registerValue(dest) = maskRegisterValue(0, encodeRegisterValue(upper, lower), fullMask);
-            // can't think of a case where we should
-            // restore the instruction pointer and then
-            // immediate advance so just don't do it
-            advanceIp = dest != ArchitectureConstants::InstructionPointer;
+            setDestinationRegister<group>(maskRegisterValue(0, encodeRegisterValue(upper, lower), fullMask));
         };
 
         decltype(computeAddress()) address = 0;
-        switch(_instruction.getSubtype<group>()) {
+        switch(getSubtype<group>()) {
             case MemoryOperation::Load:
                 // load the entire thing from memory and then mask it instead
                 // of discriminating
@@ -235,8 +223,7 @@ namespace cisc0 {
     }
 
     void CoreModel1::complexOperation() {
-        auto type = _instruction.firstWord().getSubtype<Operation::Complex>();
-        switch(type) {
+        switch(getSubtype<Operation::Complex>()) {
             case ComplexSubTypes::Encoding:
                 encodingOperation();
                 break;
@@ -255,10 +242,11 @@ namespace cisc0 {
     }
     void CoreModel1::shiftOperation() {
         static constexpr auto group = Operation::Shift;
-        auto &destination = destinationRegister<group>();
         auto source = retrieveSourceOrImmediate<group>();
-        auto direction = _instruction.firstWord().shouldShiftLeft() ?  ALUOperation::ShiftLeft : ALUOperation::ShiftRight;
-        destination = syn::ALU::performOperation<RegisterValue>(direction, destination, source);
+        if (source != 0) {
+            auto direction = _instruction.firstWord().shouldShiftLeft() ?  ALUOperation::ShiftLeft : ALUOperation::ShiftRight;
+            setDestinationRegister<group>(syn::ALU::performOperation<RegisterValue>(direction, getDestinationRegister<group>(), source));
+        }
     }
 
     void CoreModel1::extendedOperation() {
@@ -275,7 +263,7 @@ namespace cisc0 {
 			}
 			getValueRegister() = count;
 		};
-		switch(_instruction.firstWord().getExtendedOperation()) {
+        switch(getSubtype<group>()) {
 			case ExtendedOperation::PopValueAddr:
 				getValueRegister() = popRegisterValue();
 				getAddressRegister() = popRegisterValue();
@@ -285,10 +273,10 @@ namespace cisc0 {
 				pushRegisterValue(getValueRegister());
 				break;
 			case ExtendedOperation::IsEven:
-                getConditionRegister() = syn::isEven(destinationRegister<group, false>());
+                getConditionRegister() = syn::isEven(getDestinationRegister<group>());
 				break;
 			case ExtendedOperation::IsOdd:
-                getConditionRegister() = syn::isOdd(destinationRegister<group, false>());
+                getConditionRegister() = syn::isOdd(getDestinationRegister<group>());
 				break;
 			case ExtendedOperation::IncrementValueAddr:
 				++getValueRegister();
@@ -306,7 +294,7 @@ namespace cisc0 {
         }
     }
 	void CoreModel1::parsingOperation() {
-		switch(_instruction.firstWord().getParsingOperation()) {
+		switch(getSubtype<ComplexSubTypes::Parsing>()) {
 			case ParsingOperation::Hex8ToRegister:
 				hex8ToRegister();
 				break;
@@ -326,12 +314,12 @@ namespace cisc0 {
     void CoreModel1::arithmeticOperation() {
         static constexpr auto group = Operation::Arithmetic;
         auto src1 = retrieveSourceOrImmediate<group>();
-        auto &src0 = destinationRegister<group>();
-        auto subType = _instruction.getSubtype<group>();
-        auto defaultArithmetic = [&src0, src1, subType]() {
+        auto src0 = getDestinationRegister<group>();
+        auto subType = getSubtype<group>();
+        auto defaultArithmetic = [this, src0, src1, subType]() {
             auto result = translate(subType);
             syn::throwOnErrorState(result, "Illegal arithmetic operation!");
-            src0 = syn::ALU::performOperation<RegisterValue>(result, src0, src1);
+            setDestinationRegister<group>(syn::ALU::performOperation<RegisterValue>(result, src0, src1));
         };
         switch(subType) {
             case ArithmeticOps::Min:
@@ -348,17 +336,17 @@ namespace cisc0 {
 
     void CoreModel1::logicalOperation() {
         static constexpr auto group = Operation::Logical;
-        auto result = translate(_instruction.getSubtype<group>());
+        auto result = translate(getSubtype<group>());
         syn::throwOnErrorState(result, "Illegal logical operation!");
         auto op = result;
         auto source1 = retrieveSourceOrImmediate<group>();
-        auto& dest = destinationRegister<group>();
-        dest = syn::ALU::performOperation<RegisterValue>(op, dest, source1);
+        auto dest = getDestinationRegister<group>();
+        setDestinationRegister<group>(syn::ALU::performOperation<RegisterValue>(op, dest, source1));
     }
 
 
     void CoreModel1::encodingOperation() {
-        defaultEncodingOperation(_instruction.firstWord().getEncodingOperation());
+        defaultEncodingOperation(getSubtype<ComplexSubTypes::Encoding>());
     }
 
 	bool CoreModel1::isTerminateAddress(RegisterValue address) const noexcept {
@@ -366,7 +354,7 @@ namespace cisc0 {
 	}
 
 	void CoreModel1::featureCheckOperation() {
-		switch (_instruction.firstWord().getFeatureCheckOperation()) {
+        switch (getSubtype<ComplexSubTypes::FeatureCheck>()) {
 			case FeatureCheckOperation::GetModelNumber:
 				getValueRegister() = 1;
 				break;
