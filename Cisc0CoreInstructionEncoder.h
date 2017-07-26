@@ -97,12 +97,12 @@ namespace cisc0 {
 		private:
 			template<Operation op>
 			Word setFlagImmediate(Word value) const noexcept {
-                static_assert(cisc0::HasImmediateFlag<op>::value, "Provided type does not support an immediate flag!");
+                static_assert(hasImmediateFlag<op>(), "Provided type does not support an immediate flag!");
                 return cisc0::encodeGenericImmediateFlag(value, _immediate);
 			}
 			template<Operation op>
 			Word setDestination(Word value) const noexcept {
-                static_assert(cisc0::UsesDestination<op>::value, "Provided operation does not support a destination register index!");
+                static_assert(usesDestination<op>(), "Provided operation does not support a destination register index!");
                 return cisc0::encodeGenericDestination(value, _arg0);
 			}
 			template<Operation op>

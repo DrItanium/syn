@@ -250,7 +250,9 @@
                       Compare
                       Set
                       Memory
-                      Logical)
+                      Logical
+                      Complex
+                      Branch) ; in some cases
           (defproperty-struct UsesSource
                               Operation)
           (properties UsesSource
@@ -317,7 +319,8 @@
                             Swap
                             Memory
                             Branch
-                            Logical)
+                            Logical
+                            Complex)
           (defencoder/decoder Source Operation)
           (encoder/decoders Source
                             Operation

@@ -54,10 +54,11 @@ namespace cisc0 {
 			RawInstruction getRawValue() const noexcept { return _rawValue; }
             inline byte getUpper() const noexcept { return decodeUpper(_rawValue); }
             inline Operation getControl() const noexcept { return decodeControl(_rawValue); }
-            inline byte getSetDestination() const noexcept { return decodeSetDestination(_rawValue); }
-            inline byte getMemoryRegister() const noexcept { return decodeMemoryDestination(_rawValue); }
-            inline byte getMemoryOffset() const noexcept { return decodeMemoryDestination(_rawValue); }
-            inline byte getBranchIndirectDestination() const noexcept { return decodeBranchDestination(_rawValue); }
+            inline byte getDestination() const noexcept { return decodeGenericDestination(_rawValue); }
+            inline byte getSetDestination() const noexcept { return getDestination(); }
+            inline byte getMemoryRegister() const noexcept { return getDestination(); }
+            inline byte getMemoryOffset() const noexcept { return getDestination(); }
+            inline byte getBranchIndirectDestination() const noexcept { return getDestination(); }
             inline byte getSubtypeControlBits() const noexcept { return decodeGenericCommonSubTypeField(_rawValue); }
             inline bool shouldShiftLeft() const noexcept { return decodeShiftFlagLeft(_rawValue); }
             inline bool isIndirectOperation() const noexcept { return decodeMemoryFlagIndirect(_rawValue); }
@@ -118,10 +119,7 @@ namespace cisc0 {
             template<ComplexSubTypes op>
             inline byte getDestinationRegister() const noexcept {
 				static_assert(op == cisc0::ComplexSubTypes::Extended, "Only extended instructions have arguments!");
-				switch(op) {
-					case ComplexSubTypes::Extended:
-						return cisc0::decodeComplexClassExtendedDestination(_rawValue);
-				}
+                return getDestination();
             }
             template<Operation op>
             inline byte getBitmask() const noexcept {
