@@ -194,7 +194,7 @@ namespace cisc0 {
 	InstructionEncoder::Encoding InstructionEncoder::encodeComplexExtended(Word value) const {
 		constexpr auto op = ComplexSubTypes::Extended;
 		value = setSubType<op>(value, _bitmask);
-		value = cisc0::encodeComplexClassExtendedDestination(value, _arg0);
+        value = cisc0::encodeGenericDestination(value, _arg0);
         return Encoding(1, value);
 	}
 

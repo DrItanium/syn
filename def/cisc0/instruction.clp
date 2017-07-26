@@ -33,63 +33,59 @@
           (deffield Lower   0b0000000011111111 0 byte))
 (deffacts cisc0-common-fields
           (deffield GenericCommonSubTypeField 0b0000000011110000 4 byte)
-          (defbitfield GenericImmediateFlag   0b0000000000010000 4))
+          (defbitfield GenericImmediateFlag   0b0000000000010000 4)
+          (deffield GenericDestination        0b1111000000000000 12 byte)
+          (deffield GenericSource             0b0000111100000000 8 byte)
+          (defbitmask GenericBitmask          0b0000111100000000 8)
+          (deffield GenericImmediate4         0b0000111100000000 8 byte)
+          (deffield GenericImmediate5         0b0000111110000000 7 byte))
+
 (deffacts cisc0-compare-fields
           ; the first defines everything else we need to know
           (defsubtypefield CompareType      0b0000000011100000 5 CompareStyle)
-          (deffield CompareDestination      0b0000111100000000 8 byte)
-          (deffield CompareSource           0b1111000000000000 12 byte)
-          (defbitmask CompareBitmask        0b1111000000000000 12))
+          (deffield CompareSource           0b0000111100000000 8 byte)
+          (defbitmask CompareBitmask        0b0000111100000000 8))
 
 (deffacts cisc0-arithmetic-fields
           (defsubtypefield ArithmeticType      0b0000000011100000 5 ArithmeticOps)
-          (deffield ArithmeticDestination      0b0000111100000000 8 byte)
-          (deffield ArithmeticImmediate        0b1111000000000000 12 byte)
-          (deffield ArithmeticSource           0b1111000000000000 12 byte))
+          (deffield ArithmeticImmediate        0b0000111100000000 8 byte)
+          (deffield ArithmeticSource           0b0000111100000000 8 byte))
 
 (deffacts cisc0-logical-fields
           (defsubtypefield LogicalType           0b0000000011100000 5 LogicalOps)
-          (deffield LogicalDestination           0b0000111100000000 8 byte)
-          (defbitmask LogicalBitmask             0b1111000000000000 12)
-          (deffield LogicalSource                0b1111000000000000 12 byte))
+          (defbitmask LogicalBitmask             0b0000111100000000 8)
+          (deffield LogicalSource                0b0000111100000000 8 byte))
 
 (deffacts cisc0-shift-fields
           (defbitfield ShiftFlagLeft        0b0000000000100000 5)
-          (deffield ShiftDestination        0b0000011110000000 7  byte)
-          (deffield ShiftImmediate          0b1111100000000000 11 byte)
-          (deffield ShiftSource             0b0111100000000000 11 byte))
+          (deffield ShiftImmediate          0b0000111110000000 7 byte)
+          (deffield ShiftSource             0b0000111100000000 8 byte))
 
 (deffacts cisc0-branch-fields
           (defbitfield BranchFlagIsCallForm      0b0000000000100000 5)
-          (defbitfield BranchFlagIsConditional   0b0000000001000000 6)
-          (deffield BranchDestination            0b0000111100000000 8 byte))
+          (defbitfield BranchFlagIsConditional   0b0000000001000000 6))
 
 (deffacts cisc0-memory-fields
           (defsubtypefield MemoryType      0b0000000000110000 4 MemoryOperation)
           (defbitmask MemoryFlagIndirect   0b0000000001000000 6)
-          (defbitmask MemoryBitmask        0b0000111100000000 8)
-          (deffield MemoryDestination      0b1111000000000000 12 byte))
+          (defbitmask MemoryBitmask        0b0000111100000000 8))
 
 (deffacts cisc0-move-fields
           (defbitmask MoveBitmask   0b0000000011110000 4)
-          (deffield MoveDestination 0b0000111100000000 8 byte)
-          (deffield MoveSource      0b1111000000000000 12 byte))
+          (deffield MoveSource      0b0000111100000000 8 byte))
 
 (deffacts cisc0-set-fields
-          (defbitmask SetBitmask    0b0000000011110000 4)
-          (deffield SetDestination  0b0000111100000000 8 byte))
+          (defbitmask SetBitmask    0b0000111100000000 8))
 
 (deffacts cisc0-swap-fields
-          (deffield SwapDestination 0b0000111100000000 8 byte)
-          (deffield SwapSource      0b1111000000000000 12 byte))
+          (deffield SwapSource      0b0000111100000000 8 byte))
 
 (deffacts cisc0-complex-fields
           (defsubtypefield ComplexType              0b0000000011110000 4 ComplexSubTypes)
           (deffield EncodingComplexSubType          0b0000111100000000 8 EncodingOperation)
           (deffield ExtendedComplexSubType          0b0000111100000000 8 ExtendedOperation)
           (deffield ParsingComplexSubType           0b0000111100000000 8 ParsingOperation)
-          (deffield FeatureCheckComplexSubType      0b0000111100000000 8 FeatureCheckOperation)
-          (deffield ComplexClassExtendedDestination 0b1111000000000000 12 byte))
+          (deffield FeatureCheckComplexSubType      0b0000111100000000 8 FeatureCheckOperation))
 
 
 

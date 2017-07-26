@@ -78,7 +78,8 @@ namespace cisc0 {
 
 			template<Operation op>
 			inline byte getDestinationRegister() const noexcept {
-				return cisc0::decodeDestination<op>(_rawValue);
+                static_assert(cisc0::UsesDestination<op>::value, "Provided operation does not use the destination type!");
+                return cisc0::decodeGenericDestination(_rawValue);
 			}
 			template<Operation op, cisc0::LegalRegisterNames index>
 			inline byte getRegister() const noexcept {

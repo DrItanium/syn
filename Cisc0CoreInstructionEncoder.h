@@ -102,7 +102,8 @@ namespace cisc0 {
 			}
 			template<Operation op>
 			Word setDestination(Word value) const noexcept {
-				return cisc0::encodeDestination<op, decltype(_arg0)>(value, _arg0);
+                static_assert(cisc0::UsesDestination<op>::value, "Provided operation does not support a destination register index!");
+                return cisc0::encodeGenericDestination(value, _arg0);
 			}
 			template<Operation op>
 			Word setSource(Word value) const noexcept {
