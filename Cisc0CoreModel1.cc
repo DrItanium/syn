@@ -128,7 +128,7 @@ namespace cisc0 {
         bool isCall, isCond;
         std::tie(isCall, isCond) = _instruction.firstWord().getOtherBranchFlags();
         advanceIp = true;
-		auto whereToGo = _instruction.isImmediate<group>() ? _instruction.retrieveImmediate(0b1111) : registerValue(_instruction.firstWord().getDestination());
+		auto whereToGo = _instruction.isImmediate<group>() ? _instruction.retrieveImmediate(0b1111) : destinationRegister<group>();
         auto shouldUpdateInstructionPointer = isCall || (isCond && getConditionRegister()) || (!isCond);
         if (isCall) {
             // call instruction
@@ -161,7 +161,7 @@ namespace cisc0 {
 			auto compareUnitType = translate(compareResult);
         	syn::throwOnErrorState(compareResult, "Illegal compare type!");
 			auto first = registerValue(destinationIndex);
-			auto second = _instruction.isImmediate<group>() ?  _instruction.retrieveImmediate<group>() : sourceRegister<group>();
+            auto second = retrieveSourceOrImmediate<group>();
 			getConditionRegister() = syn::Comparator::performOperation(compareUnitType, first, second);
         };
         switch(compareResult) {

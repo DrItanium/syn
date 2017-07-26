@@ -85,11 +85,6 @@ namespace cisc0 {
                     }
 
                     template<Operation op>
-                    inline RegisterValue retrieveImmediate() const noexcept {
-                        return retrieveImmediate(getBitmask<op>());
-                    }
-
-                    template<Operation op>
                     inline byte getBitmask() const noexcept {
                         return _first.getBitmask<op>();
                     }
@@ -97,6 +92,19 @@ namespace cisc0 {
                     template<Operation op>
                     inline RegisterValue expandedBitmask() const noexcept {
                         return mask(getBitmask<op>());
+                    }
+                    template<Operation op>
+                    inline RegisterValue retrieveImmediate(std::true_type) {
+                        return retrieveImmediate(getBitmask<op>());
+                    }
+                    template<Operation op>
+                    inline RegisterValue retrieveImmediate(std::false_type) {
+                        return RegisterValue(getImmediate<op>());
+                    }
+                    template<Operation op>
+                    inline RegisterValue retrieveImmediate() {
+                        using DispatchType = std::integral_constant<bool, !cisc0::DecodedInstruction::hasImmediateValue(op)>;
+                        return retrieveImmediate<op>(DispatchType { });
                     }
 
 
@@ -142,24 +150,12 @@ namespace cisc0 {
                 return registerValue(_instruction.getSourceRegister<op>());
             }
             template<Operation group>
-            RegisterValue retrieveSourceOrImmediate(std::false_type) {
-                if (_instruction.isImmediate<group>()) {
-                    return RegisterValue(_instruction.getImmediate<group>());
-                } else {
-                    return sourceRegister<group>();
-                }
-            }
-            template<Operation group>
-            RegisterValue retrieveSourceOrImmediate(std::true_type) {
+            RegisterValue retrieveSourceOrImmediate() {
                 if (_instruction.isImmediate<group>()) {
                     return _instruction.retrieveImmediate<group>();
                 } else {
                     return sourceRegister<group>();
                 }
-            }
-            template<Operation group>
-            RegisterValue retrieveSourceOrImmediate() {
-                return retrieveSourceOrImmediate<group>(std::integral_constant<bool, !cisc0::DecodedInstruction::hasImmediateValue(group)>{ });
             }
 		private:
 			RegisterFile _gpr;
