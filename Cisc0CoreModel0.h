@@ -50,7 +50,7 @@ namespace cisc0 {
 			virtual ~CoreModel0() noexcept;
 			virtual bool cycle() override;
 		private:
-			void dispatch(const DecodedInstruction& inst);
+			void dispatch();
             template<bool readNext>
             inline Word tryReadNext() {
                 if (!readNext) {
@@ -63,19 +63,21 @@ namespace cisc0 {
 			RegisterValue retrieveImmediate(byte bitmask) noexcept;
 			Word getCurrentCodeWord();
 		private:
-			void complexOperation(const DecodedInstruction& inst);
-			void encodingOperation(const DecodedInstruction& inst);
-            void extendedOperation(const DecodedInstruction& inst);
-			void parsingOperation(const DecodedInstruction& inst);
-			void performEncodeOp(const DecodedInstruction& inst);
+			void complexOperation();
+			void encodingOperation();
+            void extendedOperation();
+			void parsingOperation();
+			void performEncodeOp();
         private:
-            void compareOperation(const DecodedInstruction& inst);
-            void systemCallOperation(const DecodedInstruction& inst);
-            void branchOperation(const DecodedInstruction& inst);
-            void memoryOperation(const DecodedInstruction& inst);
-            void logicalOperation(const DecodedInstruction& inst);
-            void arithmeticOperation(const DecodedInstruction& inst);
-            void shiftOperation(const DecodedInstruction& inst);
+            void compareOperation();
+            void systemCallOperation();
+            void branchOperation();
+            void memoryOperation();
+            void logicalOperation();
+            void arithmeticOperation();
+            void shiftOperation();
+        private:
+            DecodedInstruction _first;
 	};
 
 
