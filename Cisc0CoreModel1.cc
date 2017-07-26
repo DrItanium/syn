@@ -59,7 +59,9 @@ namespace cisc0 {
         }
         return execute;
     }
-
+    constexpr RegisterValue castWithMask(RegisterValue base, RegisterValue mask) noexcept {
+        return syn::decodeBits<RegisterValue, RegisterValue>(base, mask, 0);
+    }
     void CoreModel1::dispatch() {
         auto swapOperation = [this]() noexcept {
             constexpr auto group = Operation::Swap;
@@ -67,21 +69,10 @@ namespace cisc0 {
             auto sInd = _instruction.getSourceRegister<group>();
             if (dInd != sInd) {
                 _gpr.swap(dInd, sInd);
+                // if we swapped from ip into something or vice versa then we
+                // need to make sure that we don't ignore an instruction
+                advanceIp = !isInstructionPointer(dInd) && !isInstructionPointer(sInd);
             }
-        };
-        auto moveOperation = [this]() {
-            constexpr auto group = Operation::Move;
-            using T = RegisterValue;
-            auto dInd = destinationRegister<group>();
-            auto source0 = sourceRegister<group>();
-            auto bmask = _instruction.expandedBitmask<group>();
-            registerValue(dInd) = syn::decodeBits<T, T>(source0, bmask, 0);
-        };
-        auto setOperation = [this]() {
-            constexpr auto group = Operation::Set;
-            auto dInd = _instruction.getDestinationRegister<group>();
-            auto bmask = _instruction.getBitmask<group>();
-            registerValue(dInd) = _instruction.retrieveImmediate(bmask);
         };
         switch(_instruction.getControl()) {
             case Operation::Shift:
@@ -112,10 +103,10 @@ namespace cisc0 {
                 returnOperation();
 				break;
             case Operation::Move:
-                moveOperation();
+                destinationRegister<Operation::Move>() = castWithMask(sourceRegister<Operation::Move>(), _instruction.expandedBitmask<Operation::Move>());
                 break;
             case Operation::Set:
-                setOperation();
+                destinationRegister<Operation::Set>() = _instruction.retrieveImmediate<Operation::Set>();
                 break;
             default:
                 execute = false;
@@ -294,10 +285,10 @@ namespace cisc0 {
 				pushRegisterValue(getValueRegister());
 				break;
 			case ExtendedOperation::IsEven:
-				getConditionRegister() = syn::isEven(registerValue(_instruction.firstWord().getDestinationRegister<group>()));
+                getConditionRegister() = syn::isEven(destinationRegister<group, false>());
 				break;
 			case ExtendedOperation::IsOdd:
-				getConditionRegister() = syn::isOdd(registerValue(_instruction.firstWord().getDestinationRegister<group>()));
+                getConditionRegister() = syn::isOdd(destinationRegister<group, false>());
 				break;
 			case ExtendedOperation::IncrementValueAddr:
 				++getValueRegister();

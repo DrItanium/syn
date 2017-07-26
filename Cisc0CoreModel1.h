@@ -68,6 +68,10 @@ namespace cisc0 {
                     inline byte getDestinationRegister() const noexcept {
                         return _first.getDestinationRegister<op>();
                     }
+                    template<ComplexSubTypes op>
+                    inline byte getDestinationRegister() const noexcept {
+                        return _first.getDestinationRegister<op>();
+                    }
 
                     template<Operation op>
                     inline byte getSourceRegister() const noexcept {
@@ -94,15 +98,15 @@ namespace cisc0 {
                         return mask(getBitmask<op>());
                     }
                     template<Operation op>
-                    inline RegisterValue retrieveImmediate(std::true_type) {
+                    inline RegisterValue retrieveImmediate(std::true_type) const noexcept {
                         return retrieveImmediate(getBitmask<op>());
                     }
                     template<Operation op>
-                    inline RegisterValue retrieveImmediate(std::false_type) {
+                    inline RegisterValue retrieveImmediate(std::false_type) const noexcept {
                         return RegisterValue(getImmediate<op>());
                     }
                     template<Operation op>
-                    inline RegisterValue retrieveImmediate() {
+                    inline RegisterValue retrieveImmediate() const noexcept {
                         using DispatchType = std::integral_constant<bool, !cisc0::DecodedInstruction::hasImmediateValue(op)>;
                         return retrieveImmediate<op>(DispatchType { });
                     }
@@ -141,21 +145,36 @@ namespace cisc0 {
 
 
         private:
-            template<Operation op>
+            // if the destination is ip then make sure that we don't
+            inline RegisterValue& checkThenGetRegister(byte index, bool checkAdvanceIp) noexcept {
+                if (checkAdvanceIp) {
+                    advanceIp = !isInstructionPointer(index);
+                }
+                return registerValue(index);
+            }
+            template<Operation op, bool checkAdvanceIp = true>
             inline RegisterValue& destinationRegister() noexcept {
-                return registerValue(_instruction.getDestinationRegister<op>());
+                return checkThenGetRegister(_instruction.getDestinationRegister<op>(), checkAdvanceIp);
+            }
+            template<ComplexSubTypes op, bool checkAdvanceIp = true>
+            inline RegisterValue& destinationRegister() noexcept {
+                return checkThenGetRegister(_instruction.getDestinationRegister<op>(), checkAdvanceIp);
+
             }
             template<Operation op>
             inline RegisterValue& sourceRegister() noexcept {
                 return registerValue(_instruction.getSourceRegister<op>());
             }
             template<Operation group>
-            RegisterValue retrieveSourceOrImmediate() {
+            inline RegisterValue retrieveSourceOrImmediate() noexcept {
                 if (_instruction.isImmediate<group>()) {
                     return _instruction.retrieveImmediate<group>();
                 } else {
                     return sourceRegister<group>();
                 }
+            }
+            static constexpr bool isInstructionPointer(byte index) noexcept {
+                return index == ArchitectureConstants::InstructionPointer;
             }
 		private:
 			RegisterFile _gpr;
