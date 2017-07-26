@@ -185,8 +185,6 @@ namespace cisc0 {
         auto useLower = readLower(rawMask);
         auto useUpper = readUpper(rawMask);
         auto fullMask = mask(rawMask);
-        auto lmask = lowerMask(rawMask);
-        auto umask = upperMask(rawMask);
         auto computeAddress = [this]() {
             auto address = getAddressRegister() + _instruction.firstWord().getMemoryOffset();
             if (_instruction.firstWord().isIndirectOperation()) {
@@ -194,28 +192,29 @@ namespace cisc0 {
             }
             return address;
         };
-        auto pushOperation = [this, useUpper, useLower, umask, lmask]() {
+        auto pushOperation = [this, useUpper, useLower, fullMask]() {
             if (_instruction.firstWord().isIndirectOperation()) {
                 throw syn::Problem("Indirect bit not supported in push operations!");
             }
+            // just fully mask the loaded value!
             // update the target stack to something different
-            auto pushToStack = registerValue(_instruction.firstWord().getDestination());
-            // read backwards because the stack grows upward towards zero
+            auto pushToStack = maskRegisterValue(0, registerValue(_instruction.firstWord().getDestination()), fullMask);
             if (useUpper) {
-                pushWord(umask & decodeUpperHalf(pushToStack));
+                pushWord(decodeUpperHalf(pushToStack));
             }
             if (useLower) {
-                pushWord(lmask & decodeLowerHalf(pushToStack));
+                pushWord(decodeLowerHalf(pushToStack));
             }
         };
-        auto popOperation = [this, useUpper, useLower, lmask, umask]() {
+        auto popOperation = [this, useUpper, useLower, fullMask]() {
             if (_instruction.firstWord().isIndirectOperation()) {
                 throw syn::Problem("Indirect bit not supported in pop operations!");
             }
-            auto lower = useLower ? lmask & popWord() : 0;
-            auto upper = useUpper ? umask & popWord() : 0;
+            // the order of popping matters!
+            auto lower = useLower ? popWord() : 0;
+            auto upper = useUpper ? popWord() : 0;
             auto dest = _instruction.firstWord().getDestination();
-            registerValue(dest) = encodeRegisterValue(upper, lower);
+            registerValue(dest) = maskRegisterValue(0, encodeRegisterValue(upper, lower), fullMask);
             // can't think of a case where we should
             // restore the instruction pointer and then
             // immediate advance so just don't do it
