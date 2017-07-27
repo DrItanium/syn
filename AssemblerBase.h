@@ -308,6 +308,7 @@ namespace syn {
 	DefSymbol(GreaterThanKeyword, gt);
 	DefSymbol(GreaterThanOrEqualToKeyword, ge);
     DefSymbol(BranchKeyword, branch);
+    DefSymbol(ImmediateKeyword, immediate);
 
 
     template<typename Symbol, typename Value, typename Separator = AsmSeparator>

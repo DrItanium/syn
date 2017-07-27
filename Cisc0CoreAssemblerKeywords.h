@@ -43,7 +43,7 @@ namespace cisc0 {
     using SymbolBranch = syn::SymbolBranchKeyword;
 	DefSymbol(Return, return);
     // modifiers
-	DefSymbol(Immediate, immediate);
+    using SymbolImmediate = syn::SymbolImmediateKeyword;
 	DefSymbol(Indirect, indirect);
 	DefSymbol(Direct, direct);
     // shift modifiers
