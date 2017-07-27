@@ -33,14 +33,14 @@ namespace cisc0 {
 	// groups
 	DefSymbol(Shift, shift);
 	DefSymbol(Compare, compare);
-	DefSymbol(Move, move);
-	DefSymbol(Set, set);
-	DefSymbol(Swap, swap);
+    using SymbolMove = syn::SymbolMoveKeyword;
+    using SymbolSet = syn::SymbolSetKeyword;
+    using SymbolSwap = syn::SymbolSwapKeyword;
 	DefSymbol(Arithmetic, arithmetic);
 	DefSymbol(Memory, memory);
 	DefSymbol(Logical, logical);
 	DefSymbol(Complex, complex);
-	DefSymbol(Branch, branch);
+    using SymbolBranch = syn::SymbolBranchKeyword;
 	DefSymbol(Return, return);
     // modifiers
 	DefSymbol(Immediate, immediate);
@@ -59,12 +59,12 @@ namespace cisc0 {
 	DefSymbol(CallStackPointer, csp);
 
     // compare operations
-	DefSymbol(Equals, ==);
-	DefSymbol(NotEquals, !=);
-	DefSymbol(LessThan, <);
-	DefSymbol(LessThanOrEqualTo, <=);
-	DefSymbol(GreaterThan, >);
-	DefSymbol(GreaterThanOrEqualTo, >=);
+    using SymbolEquals = syn::SymbolEqualsKeyword;
+    using SymbolNotEquals = syn::SymbolNotEqualsKeyword;
+    using SymbolLessThan = syn::SymbolLessThanKeyword;
+    using SymbolLessThanOrEqualTo = syn::SymbolLessThanOrEqualToKeyword;
+    using SymbolGreaterThan = syn::SymbolGreaterThanKeyword;
+    using SymbolGreaterThanOrEqualTo = syn::SymbolGreaterThanOrEqualToKeyword;
     DefSymbol(MoveToCondition, MoveToCondition);
     DefSymbol(MoveFromCondition, MoveFromCondition);
     // arithmetic operations
@@ -73,21 +73,21 @@ namespace cisc0 {
     using SymbolMul = syn::SymbolMulKeyword;
     using SymbolDiv = syn::SymbolDivKeyword;
     using SymbolRem = syn::SymbolRemKeyword;
-    DefSymbol(Min, min);
-    DefSymbol(Max, max);
+    using SymbolMin = syn::SymbolMinKeyword;
+    using SymbolMax = syn::SymbolMaxKeyword;
 
     // memory operations
-	DefSymbol(Load, load);
-	DefSymbol(Store, store);
-	DefSymbol(Push, push);
-	DefSymbol(Pop, pop);
+    using SymbolStore = syn::SymbolStoreKeyword;
+    using SymbolLoad = syn::SymbolLoadKeyword;
+    using SymbolPush = syn::SymbolPushKeyword;
+    using SymbolPop = syn::SymbolPopKeyword;
 
     // logical operations
     using SymbolAnd = syn::SymbolAndKeyword;
     using SymbolOr = syn::SymbolOrKeyword;
     using SymbolNot = syn::SymbolNotKeyword;
-	DefSymbol(Xor, xor);
-	DefSymbol(Nand, nand);
+    using SymbolXor = syn::SymbolXorKeyword;
+    using SymbolNand = syn::SymbolNandKeyword;
 
 	DefSymbol(BitSet, bitset);
 	DefSymbol(BitUnset, bitunset);

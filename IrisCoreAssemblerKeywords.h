@@ -50,15 +50,15 @@ namespace iris {
     using SymbolRem = syn::SymbolRemKeyword;
     DefSymbol(ShiftLeft, shl);
     DefSymbol(ShiftRight, shr);
-    DefSymbol(And, and);
-    DefSymbol(Or, or);
-    DefSymbol(Xor, xor);
-    DefSymbol(Nand, nand);
-    DefSymbol(Nor, nor);
-    DefSymbol(Min, min);
-    DefSymbol(Max, max);
+    using SymbolAnd = syn::SymbolAndKeyword;
+    using SymbolOr = syn::SymbolOrKeyword;
+    using SymbolXor = syn::SymbolXorKeyword;
+    using SymbolNand = syn::SymbolNandKeyword;
+    using SymbolNor = syn::SymbolNorKeyword;
+    using SymbolMin = syn::SymbolMinKeyword;
+    using SymbolMax = syn::SymbolMaxKeyword;
 	// two arg variants
-    DefSymbol(Not, not);
+    using SymbolNot = syn::SymbolNotKeyword;
 	// immediate variants
     DefSymbol(AddImmediate, addi);
     DefSymbol(SubImmediate, subi);
@@ -77,58 +77,58 @@ namespace iris {
     DefSymbol(SaveAllRegisters, sregs);
 
 	// two arg operations
-    DefSymbol(Move, move);
-    DefSymbol(Swap, swap);
-    DefSymbol(Load, ld);
-    DefSymbol(Store, st);
-    DefSymbol(LoadIO, iold);
-    DefSymbol(StoreIO, iost);
-    DefSymbol(Push, push);
-    DefSymbol(Pop, pop);
+    using SymbolMove = syn::SymbolMoveKeyword;
+    using SymbolSwap = syn::SymbolSwapKeyword;
+    using SymbolStore = syn::SymbolStoreKeyword;
+    using SymbolLoad = syn::SymbolLoadKeyword;
+    DefSymbol(LoadIO, io-load);
+    DefSymbol(StoreIO, io-store);
+    using SymbolPush = syn::SymbolPushKeyword;
+    using SymbolPop = syn::SymbolPopKeyword;
 	// immediate variants
-    DefSymbol(LoadWithOffset, ldof);
-    DefSymbol(StoreWithOffset, stof);
-    DefSymbol(LoadIOWithOffset, ioldof);
-    DefSymbol(StoreIOWithOffset, iostof);
+    DefSymbol(LoadWithOffset, load-offset);
+    DefSymbol(StoreWithOffset, store-offset);
+    DefSymbol(LoadIOWithOffset, io-load-offset);
+    DefSymbol(StoreIOWithOffset, io-store-offset);
 	// three gpr variant
-    DefSymbol(LoadCode, cld);
-    DefSymbol(StoreCode, cst);
+    DefSymbol(LoadCode, code-load);
+    DefSymbol(StoreCode, code-store);
 	// gpr immediate
     DefSymbol(PushImmediate, pushi);
-    DefSymbol(Set, set);
-    DefSymbol(LoadImmediate, ldi);
-    DefSymbol(StoreImmediate, sti);
+    using SymbolSet = syn::SymbolSetKeyword;
+    DefSymbol(LoadImmediate, loadi);
+    DefSymbol(StoreImmediate, storei);
 
 	// branch instructions
 	// one unconditional gpr
-    DefSymbol(BranchUnconditional, j);
-    DefSymbol(BranchUnconditionalLink, jl);
+    using SymbolBranchUnconditional = syn::SymbolBranchKeyword;
+    DefSymbol(BranchUnconditionalLink, branch_l);
 	// branch unconditional immediate
-    DefSymbol(BranchUnconditionalImmediate, ji);
-    DefSymbol(BranchUnconditionalImmediateLink, jil);
+    DefSymbol(BranchUnconditionalImmediate, branch_i);
+    DefSymbol(BranchUnconditionalImmediateLink, branch_il);
 	// conditional branch gpr
-    DefSymbol(BranchConditional, bc);
-    DefSymbol(BranchConditionalLink, bcl);
+    DefSymbol(BranchConditional, branch_c);
+    DefSymbol(BranchConditionalLink, branch_cl);
 	// branch conditional immediate variants
-    DefSymbol(BranchConditionalImmediate, bci);
-    DefSymbol(BranchConditionalImmediateLink, bcil);
+    DefSymbol(BranchConditionalImmediate, branch_ci);
+    DefSymbol(BranchConditionalImmediateLink, branch_cil);
+	// branch conditional to the link register
+    DefSymbol(BranchConditionalLR, branch_clr);
+    DefSymbol(BranchConditionalLRAndLink, branch_clrl);
 	// if then else branching
     DefSymbol(IfThenElse, if);
     DefSymbol(IfThenElseLink, ifl);
-	// branch conditional to the link register
-    DefSymbol(BranchConditionalLR, bclr);
-    DefSymbol(BranchConditionalLRAndLink, bclrl);
-	// no argument branching 
-    DefSymbol(BranchUnconditionalLR, blr);
-    DefSymbol(BranchUnconditionalLRAndLink, blrl);
+	// no argument branching
+    DefSymbol(BranchUnconditionalLR, branch_lr);
+    DefSymbol(BranchUnconditionalLRAndLink, branch_lrl);
     DefSymbol(BranchReturnFromError, rfe);
 	// Compare operations
-    DefSymbol(Eq, eq);
-    DefSymbol(Neq, neq);
-    DefSymbol(LessThan, lt);
-    DefSymbol(GreaterThan, gt);
-    DefSymbol(LessThanOrEqualTo, le);
-    DefSymbol(GreaterThanOrEqualTo, ge);
+    using SymbolEq = syn::SymbolEqualsKeyword;
+    using SymbolNeq = syn::SymbolNotEqualsKeyword;
+    using SymbolLessThan = syn::SymbolLessThanKeyword;
+    using SymbolLessThanOrEqualTo = syn::SymbolLessThanOrEqualToKeyword;
+    using SymbolGreaterThan = syn::SymbolGreaterThanKeyword;
+    using SymbolGreaterThanOrEqualTo = syn::SymbolGreaterThanOrEqualToKeyword;
     DefSymbol(EqImmediate, eqi);
     DefSymbol(NeqImmediate, neqi);
     DefSymbol(LessThanImmediate, lti);
