@@ -1,4 +1,4 @@
-CC := cc
+CC ?= cc
 OUTPUT := maya
 PREFIX := /usr/local
 GENERIC_DEFINES := -DMAXIMUM_EXTERNAL_ADDRESS_TYPES=256
@@ -7,7 +7,7 @@ CFLAGS := ${GENFLAGS} -std=c99
 LDFLAGS := -lm -lrt
 CXXEXTENSIONS ?= TRUE
 ifeq ($(CXXEXTENSIONS), TRUE)
-	CXX := c++
+	CXX ?= c++
 	LDFLAGS += -lboost_system -lboost_filesystem
 	CXXFLAGS := ${GENFLAGS} -std=c++11
 	LD := $(CXX)

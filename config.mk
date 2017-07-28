@@ -1,7 +1,7 @@
 LIBS = -lc -lm -lboost_system -lboost_filesystem -lpthread
 
-CC := cc
-CXX := c++
+CC ?= cc
+CXX ?= c++
 LEX ?= flex
 YACC ?= bison
 GENFLAGS = -Wall -g3 -Imisc/maya/ -Imisc/PEGTL/
