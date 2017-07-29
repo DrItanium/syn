@@ -43,6 +43,7 @@
 #include "IrisClipsExtensions.h"
 #include "ClipsExtensions.h"
 #include "IrisCoreAssemblerStructures.h"
+#include "IrisCoreEncodingOperations.h"
 
 namespace iris {
     AssemblerData::AssemblerData() noexcept : instruction(false), address(0), dataValue(0), group(0), operation(0), destination(0), source0(0), source1(0), hasLexeme(false), fullImmediate(false) { }
@@ -216,25 +217,32 @@ namespace iris {
 			return find->second;
 		}
 	}
+	
 	JumpOp stringToJumpOp(const std::string& title) noexcept {
 		static std::map<std::string, JumpOp> lookup = {
-			{ "branch", JumpOp::BranchUnconditional},
-			{ "branch_l", JumpOp::BranchUnconditionalLink},
-			{ "branch_i", JumpOp::BranchUnconditionalImmediate},
-			{ "branch_il", JumpOp::BranchUnconditionalImmediateLink},
-			{ "branch_c", JumpOp::BranchConditional },
-			{ "branch_cl", JumpOp::BranchConditionalLink},
-			{ "branch_ci", JumpOp::BranchConditionalImmediate},
-			{ "branch_cil", JumpOp::BranchConditionalImmediateLink},
-			{ "branch_clr", JumpOp::BranchConditionalLR},
-			{ "branch_clrl", JumpOp::BranchConditionalLRAndLink},
-			{ "branch_lr", JumpOp::BranchUnconditionalLR},
-			{ "branch_lrl", JumpOp::BranchUnconditionalLRAndLink},
-			{ "rfe", JumpOp::ReturnFromError},
+#define X(str, op) \
+			{ str , op },
+#include "IrisJumpOp.desc"
+#undef X
 		};
 		auto find = lookup.find(title);
 		if (find == lookup.end()) {
 			return syn::defaultErrorState<JumpOp>;
+		} else {
+			return find->second;
+		}
+	}
+	const std::string& jumpOpToString(JumpOp op) noexcept {
+		static std::string errorState;
+		static std::map<JumpOp, std::string> lookup = {
+#define X(str, op) \
+			{ op , str },
+#include "IrisJumpOp.desc"
+#undef X
+		};
+		auto find = lookup.find(op);
+		if (find == lookup.end()) {
+			return errorState;
 		} else {
 			return find->second;
 		}
@@ -337,6 +345,154 @@ namespace iris {
 			} else {
 				return find->second;
 			}
+		}
+		constexpr bool usesFullImmediate(MoveOp op) noexcept {
+			switch(op) {
+				case MoveOp::PushImmediate:
+				case MoveOp::StoreImmediate:
+				case MoveOp::LoadImmediate:
+				case MoveOp::Set:
+					return true;
+				default:
+					return false;
+			}
+		}
+		constexpr bool usesFullImmediate(JumpOp op) noexcept {
+			switch(op) {
+				case JumpOp::BranchConditionalImmediateLink:
+				case JumpOp::BranchConditionalImmediate:
+				case JumpOp::BranchUnconditionalImmediate:
+				case JumpOp::BranchUnconditionalImmediateLink:
+					return true;
+				default:
+					return false;
+			}
+		}
+		constexpr bool usesFullImmediate(InstructionGroup op, byte subType) noexcept {
+			switch(op) {
+				case InstructionGroup::Move:
+					return usesFullImmediate((MoveOp)subType);
+				case InstructionGroup::Jump:
+					return usesFullImmediate((JumpOp)subType);
+				default:
+					return false;
+			}
+		}
+		constexpr bool usesHalfImmediate(ArithmeticOp op) noexcept {
+			using Op = decltype(op);
+			switch(op) {
+				case Op::AddImmediate:
+				case Op::SubImmediate:
+				case Op::MulImmediate:
+				case Op::DivImmediate:
+				case Op::RemImmediate:
+				case Op::ShiftLeftImmediate:
+				case Op::ShiftRightImmediate:
+					return true;
+				default:
+					return false;
+			}
+		}
+		constexpr bool usesHalfImmediate(MoveOp op) noexcept {
+			switch(op) {
+				case MoveOp::LoadWithOffset:
+				case MoveOp::StoreWithOffset:
+				case MoveOp::IOReadWithOffset:
+				case MoveOp::IOWriteWithOffset:
+					return true;
+				default:
+					return false;
+			}
+		}
+		constexpr bool usesHalfImmediate(CompareOp op) noexcept {
+			switch(op) {
+				case CompareOp::GreaterThanOrEqualToImmediate:
+				case CompareOp::LessThanOrEqualToImmediate:
+				case CompareOp::GreaterThanImmediate:
+				case CompareOp::LessThanImmediate:
+				case CompareOp::NeqImmediate:
+				case CompareOp::EqImmediate:
+					return true;
+				default:
+					return false;
+			}
+		}
+		constexpr bool usesHalfImmediate(InstructionGroup op, byte subType) noexcept {
+			switch(op) {
+				case InstructionGroup::Arithmetic:
+					return usesHalfImmediate((ArithmeticOp)subType);
+				case InstructionGroup::Move:
+					return usesHalfImmediate((MoveOp)subType);
+				case InstructionGroup::Compare:
+					return usesHalfImmediate((CompareOp)subType);
+				default:
+					return false;
+			}
+		}
+		constexpr bool usesPredicateDestination(ConditionRegisterOp op) noexcept {
+			switch (op) {
+				case ConditionRegisterOp::SaveCRs:
+				case ConditionRegisterOp::RestoreCRs:
+					return false;
+				default:
+					return true;
+			}
+		}
+		constexpr bool usesPredicateDestination(InstructionGroup op, byte subType) noexcept {
+			switch(op) {
+				case InstructionGroup::Compare:
+					return true;
+				case InstructionGroup::ConditionalRegister:
+					return usesPredicateDestination((ConditionRegisterOp)subType);
+				default:
+					return false;
+			}
+		}
+		const std::string& decodeOperation(InstructionGroup group, byte op) noexcept {
+			static std::string errorState;
+			switch(group) {
+				case InstructionGroup::ConditionalRegister:
+					return conditionRegisterOpToString((ConditionRegisterOp)op);
+				case InstructionGroup::Jump:
+					return jumpOpToString((JumpOp)op);
+				case InstructionGroup::Arithmetic:
+					return arithmeticOpToString((ArithmeticOp)op);
+				default:
+					return errorState;
+			}
+		}
+		void decodeInstruction(raw_instruction instruction, std::ostream& out) noexcept {
+			// this is the primary one and we should return it in a form that
+			// is parsable by the assembler
+			auto operation = InstructionDecoder::getGroup(instruction);
+			auto subType = InstructionDecoder::getOperationByte(instruction);
+			out << decodeOperation(operation, subType) << " ";
+			if (usesPredicateDestination(operation, subType)) {
+				auto pdest = predicateIndexToString(InstructionDecoder::getPredicateResultIndex(instruction));
+				auto pinvdest = predicateIndexToString(InstructionDecoder::getPredicateInverseResultIndex(instruction));
+				out << pdest << " " << pinvdest;
+			} else {
+				out << registerIndexToString(InstructionDecoder::getDestinationIndex(instruction));
+			}
+			out << " ";
+			if (usesFullImmediate(operation, subType)) {
+				out << "0x" << std::hex << static_cast<int>(InstructionDecoder::getImmediate(instruction));
+			} else {
+				// we have source0 to get
+				out << registerIndexToString(InstructionDecoder::getSource0Index(instruction)) << " ";
+				if (usesHalfImmediate(operation, subType)) {
+					out << std::hex << static_cast<int>(InstructionDecoder::getHalfImmediate(instruction));
+				} else {
+					out << registerIndexToString(InstructionDecoder::getSource1Index(instruction));
+				}
+			}
+		}
+
+		std::string decodeInstruction(raw_instruction instruction) noexcept {
+			std::stringstream output;
+			decodeInstruction(instruction, output);
+			auto result = output.str();
+			return result;
 		}
 
 } // end namespace iris

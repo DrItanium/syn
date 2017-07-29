@@ -51,10 +51,14 @@ namespace iris {
 	const std::string& instructionGroupToString(InstructionGroup group) noexcept;
 	ArithmeticOp stringToArithmeticOp(const std::string& title) noexcept;
 	MoveOp stringToMoveOp(const std::string& title) noexcept;
+	const std::string& jumpOpToString(JumpOp op) noexcept;
 	JumpOp stringToJumpOp(const std::string& title) noexcept;
 	CompareOp stringToCompareOp(const std::string& title) noexcept;
 	const std::string& conditionRegisterOpToString(ConditionRegisterOp op) noexcept;
 	ConditionRegisterOp stringToConditionRegisterOp(const std::string& title) noexcept;
+	const std::string& decodeOperation(InstructionGroup group, byte operation) noexcept;
+	std::string decodeInstruction(raw_instruction instruction) noexcept;
+	void decodeInstruction(raw_instruction instruction, std::ostream& stream) noexcept;
 
     enum class SectionType {
         Code,
