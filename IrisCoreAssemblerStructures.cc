@@ -143,28 +143,9 @@ namespace iris {
 	}
 	ArithmeticOp stringToArithmeticOp(const std::string& title) noexcept {
 		static std::map<std::string, ArithmeticOp> lookup = {
-			{ "add", ArithmeticOp::Add},
-			{ "sub", ArithmeticOp::Sub},
-			{ "mul", ArithmeticOp::Mul},
-			{ "div", ArithmeticOp::Div},
-			{ "rem", ArithmeticOp::Rem},
-			{ "shl", ArithmeticOp::ShiftLeft},
-			{ "shr", ArithmeticOp::ShiftRight },
-			{ "and", ArithmeticOp::BinaryAnd},
-			{ "or", ArithmeticOp::BinaryOr},
-			{ "not", ArithmeticOp::BinaryNot},
-			{ "xor", ArithmeticOp::BinaryXor },
-			{ "nand", ArithmeticOp::BinaryNand},
-			{ "nor", ArithmeticOp::BinaryNor},
-			{ "min", ArithmeticOp::Min},
-			{ "max", ArithmeticOp::Max},
-			{ "addi", ArithmeticOp::AddImmediate},
-			{ "subi", ArithmeticOp::SubImmediate},
-			{ "muli", ArithmeticOp::MulImmediate},
-			{ "divi", ArithmeticOp::DivImmediate},
-			{ "remi", ArithmeticOp::RemImmediate},
-			{ "shli", ArithmeticOp::ShiftLeftImmediate },
-			{ "shri", ArithmeticOp::ShiftRightImmediate },
+#define X(str, op) StringToType(str, op)
+#include "IrisArithmeticOp.desc"
+#undef X
 		};
 		auto find = lookup.find(title);
 		if (find == lookup.end()) {
@@ -173,36 +154,45 @@ namespace iris {
 			return find->second;
 		}
 	}
+
+	const std::string& arithmeticOpToString(ArithmeticOp op) noexcept {
+		static std::string errorState;
+		static std::map<ArithmeticOp, std::string> lookup = {
+#define X(str, op) TypeToString(str, op)
+#include "IrisArithmeticOp.desc"
+#undef X
+		};
+		auto find = lookup.find(op);
+		if (find == lookup.end()) {
+			return errorState;
+		} else {
+			return find->second;
+		}
+	}
 	MoveOp stringToMoveOp(const std::string& title) noexcept {
 		static std::map<std::string, MoveOp> lookup = {
-			{ "mtip", MoveOp::MoveToIP},
-			{ "mfip", MoveOp::MoveFromIP},
-			{ "mtlr", MoveOp::MoveToLR},
-			{ "mflr", MoveOp::MoveFromLR},
-			{ "rregs", MoveOp::RestoreAllRegisters},
-			{ "sregs", MoveOp::SaveAllRegisters},
-			{ "move", MoveOp::Move},
-			{ "swap", MoveOp::Swap},
-			{ "load", MoveOp::Load},
-			{ "store", MoveOp::Store},
-			{ "io-load", MoveOp::IORead},
-			{ "io-store", MoveOp::IOWrite },
-			{ "push", MoveOp::Push },
-			{ "pop", MoveOp::Pop },
-			{ "load-offset", MoveOp::LoadWithOffset },
-			{ "store-offset", MoveOp::StoreWithOffset },
-			{ "ioldof", MoveOp::IOReadWithOffset },
-			{ "iostof", MoveOp::IOWriteWithOffset },
-			{ "code-load", MoveOp::LoadCode },
-			{ "code-store", MoveOp::StoreCode },
-			{ "pushi", MoveOp::PushImmediate},
-			{ "set", MoveOp::Set },
-			{ "loadi", MoveOp::LoadImmediate },
-			{ "storei", MoveOp::StoreImmediate },
+#define X(str, op) StringToType(str, op)
+#include "IrisMoveOp.desc"
+#undef X
 		};
 		auto find = lookup.find(title);
 		if (find == lookup.end()) {
 			return syn::defaultErrorState<MoveOp>;
+		} else {
+			return find->second;
+		}
+	}
+	
+	const std::string& moveOpToString(MoveOp op) noexcept {
+		static std::string errorState;
+		static std::map<MoveOp, std::string> lookup = {
+#define X(str, op) TypeToString(str, op)
+#include "IrisMoveOp.desc"
+#undef X
+		};
+		auto find = lookup.find(op);
+		if (find == lookup.end()) {
+			return errorState;
 		} else {
 			return find->second;
 		}
@@ -441,7 +431,7 @@ namespace iris {
 				return false;
 		}
 	}
-	const std::string& decodeOperation(InstructionGroup group, byte op) noexcept {
+	const std::string& translateOperation(InstructionGroup group, byte op) noexcept {
 		static std::string errorState;
 		switch(group) {
 			case InstructionGroup::ConditionalRegister:
@@ -456,12 +446,13 @@ namespace iris {
 				return errorState;
 		}
 	}
-	void decodeInstruction(raw_instruction instruction, std::ostream& out) noexcept {
+	
+	void translateInstruction(raw_instruction instruction, std::ostream& out) noexcept {
 		// this is the primary one and we should return it in a form that
 		// is parsable by the assembler
 		auto operation = InstructionDecoder::getGroup(instruction);
 		auto subType = InstructionDecoder::getOperationByte(instruction);
-		out << decodeOperation(operation, subType) << " ";
+		out << translateOperation(operation, subType) << " ";
 		if (usesPredicateDestination(operation, subType)) {
 			auto pdest = predicateIndexToString(InstructionDecoder::getPredicateResultIndex(instruction));
 			auto pinvdest = predicateIndexToString(InstructionDecoder::getPredicateInverseResultIndex(instruction));
@@ -483,9 +474,9 @@ namespace iris {
 		}
 	}
 
-	std::string decodeInstruction(raw_instruction instruction) noexcept {
+	std::string translateInstruction(raw_instruction instruction) noexcept {
 		std::stringstream output;
-		decodeInstruction(instruction, output);
+		translateInstruction(instruction, output);
 		auto result = output.str();
 		return result;
 	}
