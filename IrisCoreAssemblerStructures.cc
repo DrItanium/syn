@@ -442,6 +442,8 @@ namespace iris {
 				return arithmeticOpToString((ArithmeticOp)op);
 			case InstructionGroup::Compare:
 				return compareOpToString((CompareOp)op);
+			case InstructionGroup::Move:
+				return moveOpToString((MoveOp)op);
 			default:
 				return errorState;
 		}
