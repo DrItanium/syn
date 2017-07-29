@@ -115,9 +115,6 @@ namespace iris {
 	// branch conditional to the link register
     DefSymbol(BranchConditionalLR, branch_clr);
     DefSymbol(BranchConditionalLRAndLink, branch_clrl);
-	// if then else branching
-    DefSymbol(IfThenElse, if);
-    DefSymbol(IfThenElseLink, ifl);
 	// no argument branching
     DefSymbol(BranchUnconditionalLR, branch_lr);
     DefSymbol(BranchUnconditionalLRAndLink, branch_lrl);
