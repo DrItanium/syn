@@ -145,10 +145,13 @@ define generateDefines
 	$(call generateFunctions,def/$(1)/instruction.clp,$(1)_defines)
 endef
 
-iris_defines.h: ${REPL_BINARY} ${COMMON_GEN_ENCODER_DECODER_FILES} def/iris/instruction.clp
-	@$(call generateDefines,iris)
+define generateDefinesRule
 
-cisc0_defines.h: ${REPL_BINARY} ${COMMON_GEN_ENCODER_DECODER_FILES} def/cisc0/instruction.clp
-	@$(call generateDefines,cisc0)
+$(1)_defines.h: ${REPL_BINARY} ${COMMON_GEN_ENCODER_DECODER_FILES} def/$(1)/instruction.clp
+	@$(call generateDefines,$(1))
+
+endef
+
+$(foreach i,iris cisc0,$(eval $(call generateDefinesRule,$(i))))
 
 include deps.make
