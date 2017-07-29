@@ -622,13 +622,18 @@ namespace iris {
 
     struct CompareRegisterInstruction : pegtl::seq<
                                         CompareRegisterOperation,
-                                        ThenDestinationPredicates,
-                                        ThenField<SourceRegisters>> { };
+										Separator,
+										DestinationPredicates,
+										Separator,
+										SourceRegisters> { };
     struct CompareImmediateInstruction : pegtl::seq<
                                          CompareImmediateOperation,
-                                         ThenDestinationPredicates,
-                                         ThenField<Source0GPR>,
-                                         ThenField<HalfImmediate>> { };
+										 Separator,
+										 DestinationPredicates,
+										 Separator,
+										 Source0GPR,
+										 Separator,
+										 HalfImmediate> { };
     struct CompareInstruction : pegtl::sor<
                                 CompareImmediateInstruction,
                                 CompareRegisterInstruction
@@ -637,7 +642,7 @@ namespace iris {
 
     // conditional register actions
 	using ConditionalRegisterSubTypeSelector = SubTypeSelector<InstructionGroup::ConditionalRegister>;
-    using ThenSource0Predicate = ThenField<StatefulRegister<Source0Predicate>>;
+	using StatefulSource0Predicate = StatefulRegister<Source0Predicate>;
     struct OperationPredicateTwoArgs : pegtl::sor<
                                        SymbolCRSwap,
                                        SymbolCRMove> { };
@@ -657,19 +662,26 @@ namespace iris {
 
     struct PredicateInstructionOneGPR : pegtl::seq<
                                         OperationPredicateOneGPR,
-                                        ThenField<StatefulDestinationGPR>> { };
+										Separator,
+										StatefulDestinationGPR> { };
     struct PredicateInstructionTwoArgs : pegtl::seq<
                                          OperationPredicateTwoArgs,
-                                         ThenDestinationPredicates> { };
+										 Separator,
+										 DestinationPredicates> { };
     struct PredicateInstructionThreeArgs : pegtl::seq<
                                            SymbolCRNot,
-                                           ThenDestinationPredicates,
-                                           ThenSource0Predicate> { };
+										   Separator,
+										   DestinationPredicates,
+										   Separator,
+										   StatefulSource0Predicate> { };
     struct PredicateInstructionFourArgs : pegtl::seq<
                                           OperationPredicateFourArgs,
-                                          ThenDestinationPredicates,
-                                          ThenSource0Predicate,
-                                          ThenField<StatefulRegister<Source1Predicate>>> { };
+										  Separator,
+										  DestinationPredicates,
+										  Separator,
+										  StatefulSource0Predicate,
+										  Separator,
+										  StatefulRegister<Source1Predicate>> { };
     struct PredicateInstruction : pegtl::sor<
                                   PredicateInstructionOneGPR,
                                   PredicateInstructionTwoArgs,
