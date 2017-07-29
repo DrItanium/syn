@@ -49,14 +49,21 @@ namespace iris {
 	const std::string& registerIndexToString(byte index) noexcept;
 	const std::string& predicateIndexToString(byte index) noexcept;
 	const std::string& instructionGroupToString(InstructionGroup group) noexcept;
+
 	ArithmeticOp stringToArithmeticOp(const std::string& title) noexcept;
 	MoveOp stringToMoveOp(const std::string& title) noexcept;
-	const std::string& jumpOpToString(JumpOp op) noexcept;
 	JumpOp stringToJumpOp(const std::string& title) noexcept;
 	CompareOp stringToCompareOp(const std::string& title) noexcept;
-	const std::string& conditionRegisterOpToString(ConditionRegisterOp op) noexcept;
 	ConditionRegisterOp stringToConditionRegisterOp(const std::string& title) noexcept;
+
+	const std::string& arithmeticOpToString(ArithmeticOp op) noexcept;
+	const std::string& moveOpToString(MoveOp op) noexcept;
+	const std::string& jumpOpToString(JumpOp op) noexcept;
+	const std::string& compareOpToString(CompareOp op) noexcept;
+	const std::string& conditionRegisterOpToString(ConditionRegisterOp op) noexcept;
+
 	const std::string& decodeOperation(InstructionGroup group, byte operation) noexcept;
+	const std::string& decodeOperation(raw_instruction instruction) noexcept;
 	std::string decodeInstruction(raw_instruction instruction) noexcept;
 	void decodeInstruction(raw_instruction instruction, std::ostream& stream) noexcept;
 

@@ -108,18 +108,15 @@ namespace iris {
 				syn::reportError("Illegal index provided!");
 		}
 	}
+#define TypeToString(str, type) \
+	{ type , str },
+#define StringToType(str, type) \
+	{ str , type },
 	ConditionRegisterOp stringToConditionRegisterOp(const std::string& title) noexcept {
 		static std::map<std::string, ConditionRegisterOp> lookup = {
-			{ "psave", ConditionRegisterOp::SaveCRs },
-			{ "prestore", ConditionRegisterOp::RestoreCRs },
-			{ "pxor", ConditionRegisterOp::CRXor },
-			{ "pnot", ConditionRegisterOp::CRNot },
-			{ "pand", ConditionRegisterOp::CRAnd },
-			{ "por", ConditionRegisterOp::CROr },
-			{ "pnand", ConditionRegisterOp::CRNand },
-			{ "pnor", ConditionRegisterOp::CRNor },
-			{ "pswap", ConditionRegisterOp::CRSwap },
-			{ "pmove", ConditionRegisterOp::CRMove },
+#define X(str, op) StringToType(str, op) 
+#include "IrisConditionRegisterOp.desc"
+#undef X
 		};
 		auto find = lookup.find(title);
 		if (find == lookup.end()) {
@@ -132,16 +129,9 @@ namespace iris {
 	const std::string& conditionRegisterOpToString(ConditionRegisterOp op) noexcept {
 		static std::string errorState;
 		static std::map<ConditionRegisterOp, std::string> lookup = {
-			{ ConditionRegisterOp::SaveCRs, "psave" },
-			{ ConditionRegisterOp::RestoreCRs, "prestore"},
-			{ ConditionRegisterOp::CRXor, "pxor" },
-			{ ConditionRegisterOp::CRNot, "pnot" },
-			{ ConditionRegisterOp::CRAnd, "pand" },
-			{ ConditionRegisterOp::CROr, "por" },
-			{ ConditionRegisterOp::CRNand, "pnand" },
-			{ ConditionRegisterOp::CRNor, "pnor" },
-			{ ConditionRegisterOp::CRSwap , "pswap" },
-			{ ConditionRegisterOp::CRMove, "pmove" },
+#define X(str, op) TypeToString(str, op)
+#include "IrisConditionRegisterOp.desc"
+#undef X
 		};
 		auto find = lookup.find(op);
 		if (find == lookup.end()) {
@@ -220,8 +210,7 @@ namespace iris {
 	
 	JumpOp stringToJumpOp(const std::string& title) noexcept {
 		static std::map<std::string, JumpOp> lookup = {
-#define X(str, op) \
-			{ str , op },
+#define X(str, op) StringToType(str, op)
 #include "IrisJumpOp.desc"
 #undef X
 		};
@@ -235,8 +224,7 @@ namespace iris {
 	const std::string& jumpOpToString(JumpOp op) noexcept {
 		static std::string errorState;
 		static std::map<JumpOp, std::string> lookup = {
-#define X(str, op) \
-			{ op , str },
+#define X(str, op) TypeToString(str, op)
 #include "IrisJumpOp.desc"
 #undef X
 		};
@@ -249,18 +237,9 @@ namespace iris {
 	}
 	CompareOp stringToCompareOp(const std::string& title) noexcept {
 		static std::map<std::string, CompareOp> lookup = {
-			{ "eq",   CompareOp::Eq},
-			{ "neq",  CompareOp::Neq},
-			{ "lt",   CompareOp::LessThan},
-			{ "gt",   CompareOp::GreaterThan},
-			{ "le",   CompareOp::LessThanOrEqualTo},
-			{ "ge",   CompareOp::GreaterThanOrEqualTo},
-			{ "eqi",  CompareOp::EqImmediate },
-			{ "neqi", CompareOp::NeqImmediate },
-			{ "lti",  CompareOp::LessThanImmediate },
-			{ "gti",  CompareOp::GreaterThanImmediate },
-			{ "lei",  CompareOp::LessThanOrEqualToImmediate },
-			{ "gei",  CompareOp::GreaterThanOrEqualToImmediate },
+#define X(str, op) StringToType(str, op)
+#include "IrisCompareOp.desc"
+#undef X
 		};
 		auto find = lookup.find(title);
 		if (find == lookup.end()) {
@@ -269,230 +248,246 @@ namespace iris {
 			return find->second;
 		}
 	}
-		bool AssemblerDirective::shouldChangeSectionToCode() const noexcept {
-            return (action == AssemblerDirectiveAction::ChangeSection) && (section == SectionType::Code);
-        }
-		bool AssemblerDirective::shouldChangeSectionToData() const noexcept {
-            return (action == AssemblerDirectiveAction::ChangeSection) && (section == SectionType::Data);
-        }
-		bool AssemblerDirective::shouldChangeCurrentAddress() const noexcept {
-            return (action == AssemblerDirectiveAction::ChangeCurrentAddress);
-        }
-		bool AssemblerDirective::shouldDefineLabel() const noexcept {
-            return (action == AssemblerDirectiveAction::DefineLabel);
-        }
-        bool AssemblerDirective::shouldStoreWord() const noexcept {
-            return (action == AssemblerDirectiveAction::StoreWord);
-        }
-        bool AssemblerData::shouldResolveLabel() const noexcept {
-            return fullImmediate && hasLexeme;
-        }
-
-        void AssemblerState::nowInCodeSection() noexcept {
-            _section = SectionType::Code;
-        }
-        void AssemblerState::nowInDataSection() noexcept {
-            _section = SectionType::Data;
-        }
-		bool AssemblerState::inCodeSection() const noexcept { return _section == SectionType::Code; }
-		bool AssemblerState::inDataSection() const noexcept { return _section == SectionType::Data; }
-
-		const std::string& registerIndexToString(byte index) noexcept {
-			static bool init = true;
-			static std::string container[ArchitectureConstants::RegisterCount];
-			if (init) {
-				init = false;
-				std::stringstream builder;
-				for (int i = 0; i < ArchitectureConstants::RegisterCount; ++i) {
-					builder << "r" << i;
-					auto tmp = builder.str();
-					container[i] = tmp;
-					builder.str();
-				}
-			}
-			return container[index];
+	const std::string& compareOpToString(CompareOp op) noexcept {
+		static std::string errorState;
+		static std::map<CompareOp, std::string> lookup = {
+#define X(str, op) TypeToString(str, op)
+#include "IrisCompareOp.desc"
+#undef X
+		};
+		auto find = lookup.find(op);
+		if (find == lookup.end()) {
+			return errorState;
+		} else {
+			return find->second;
 		}
-		const std::string& predicateIndexToString(byte index) noexcept {
-			static bool init = true;
-			static std::string container[ArchitectureConstants::ConditionRegisterCount];
-			if (init) {
-				init = false;
-				std::stringstream builder;
-				for (int i = 0; i < ArchitectureConstants::ConditionRegisterCount; ++i) {
-					builder << "p" << i;
-					auto tmp = builder.str();
-					container[i] = tmp;
-					builder.str();
-				}
-			}
-			return container[index & ArchitectureConstants::ConditionRegisterMask];
-		}
+	}
+	bool AssemblerDirective::shouldChangeSectionToCode() const noexcept {
+		return (action == AssemblerDirectiveAction::ChangeSection) && (section == SectionType::Code);
+	}
+	bool AssemblerDirective::shouldChangeSectionToData() const noexcept {
+		return (action == AssemblerDirectiveAction::ChangeSection) && (section == SectionType::Data);
+	}
+	bool AssemblerDirective::shouldChangeCurrentAddress() const noexcept {
+		return (action == AssemblerDirectiveAction::ChangeCurrentAddress);
+	}
+	bool AssemblerDirective::shouldDefineLabel() const noexcept {
+		return (action == AssemblerDirectiveAction::DefineLabel);
+	}
+	bool AssemblerDirective::shouldStoreWord() const noexcept {
+		return (action == AssemblerDirectiveAction::StoreWord);
+	}
+	bool AssemblerData::shouldResolveLabel() const noexcept {
+		return fullImmediate && hasLexeme;
+	}
 
-		const std::string& instructionGroupToString(InstructionGroup group) noexcept {
-			static std::string errorState;
-			static std::map<InstructionGroup, std::string> lookup = {
-				{ InstructionGroup::Move, "move" },
-				{ InstructionGroup::Jump, "jump" },
-				{ InstructionGroup::Compare, "compare" },
-				{ InstructionGroup::Arithmetic, "arithmetic" },
-				{ InstructionGroup::Unused0, "unused0" },
-				{ InstructionGroup::CustomInstructionReserved, "custom-instruction" },
-				{ InstructionGroup::ConditionalRegister, "conditional-register" },
-			};
-			auto find = lookup.find(group);
-			if (find == lookup.end()) {
+	void AssemblerState::nowInCodeSection() noexcept {
+		_section = SectionType::Code;
+	}
+	void AssemblerState::nowInDataSection() noexcept {
+		_section = SectionType::Data;
+	}
+	bool AssemblerState::inCodeSection() const noexcept { return _section == SectionType::Code; }
+	bool AssemblerState::inDataSection() const noexcept { return _section == SectionType::Data; }
+
+	const std::string& registerIndexToString(byte index) noexcept {
+		static bool init = true;
+		static std::string container[ArchitectureConstants::RegisterCount];
+		if (init) {
+			init = false;
+			std::stringstream builder;
+			for (int i = 0; i < ArchitectureConstants::RegisterCount; ++i) {
+				builder << "r" << i;
+				auto tmp = builder.str();
+				container[i] = tmp;
+				builder.str();
+			}
+		}
+		return container[index];
+	}
+	const std::string& predicateIndexToString(byte index) noexcept {
+		static bool init = true;
+		static std::string container[ArchitectureConstants::ConditionRegisterCount];
+		if (init) {
+			init = false;
+			std::stringstream builder;
+			for (int i = 0; i < ArchitectureConstants::ConditionRegisterCount; ++i) {
+				builder << "p" << i;
+				auto tmp = builder.str();
+				container[i] = tmp;
+				builder.str();
+			}
+		}
+		return container[index & ArchitectureConstants::ConditionRegisterMask];
+	}
+
+	const std::string& instructionGroupToString(InstructionGroup group) noexcept {
+		static std::string errorState;
+		static std::map<InstructionGroup, std::string> lookup = {
+			{ InstructionGroup::Move, "move" },
+			{ InstructionGroup::Jump, "jump" },
+			{ InstructionGroup::Compare, "compare" },
+			{ InstructionGroup::Arithmetic, "arithmetic" },
+			{ InstructionGroup::Unused0, "unused0" },
+			{ InstructionGroup::CustomInstructionReserved, "custom-instruction" },
+			{ InstructionGroup::ConditionalRegister, "conditional-register" },
+		};
+		auto find = lookup.find(group);
+		if (find == lookup.end()) {
+			return errorState;
+		} else {
+			return find->second;
+		}
+	}
+	constexpr bool usesFullImmediate(MoveOp op) noexcept {
+		switch(op) {
+			case MoveOp::PushImmediate:
+			case MoveOp::StoreImmediate:
+			case MoveOp::LoadImmediate:
+			case MoveOp::Set:
+				return true;
+			default:
+				return false;
+		}
+	}
+	constexpr bool usesFullImmediate(JumpOp op) noexcept {
+		switch(op) {
+			case JumpOp::BranchConditionalImmediateLink:
+			case JumpOp::BranchConditionalImmediate:
+			case JumpOp::BranchUnconditionalImmediate:
+			case JumpOp::BranchUnconditionalImmediateLink:
+				return true;
+			default:
+				return false;
+		}
+	}
+	constexpr bool usesFullImmediate(InstructionGroup op, byte subType) noexcept {
+		switch(op) {
+			case InstructionGroup::Move:
+				return usesFullImmediate((MoveOp)subType);
+			case InstructionGroup::Jump:
+				return usesFullImmediate((JumpOp)subType);
+			default:
+				return false;
+		}
+	}
+	constexpr bool usesHalfImmediate(ArithmeticOp op) noexcept {
+		using Op = decltype(op);
+		switch(op) {
+			case Op::AddImmediate:
+			case Op::SubImmediate:
+			case Op::MulImmediate:
+			case Op::DivImmediate:
+			case Op::RemImmediate:
+			case Op::ShiftLeftImmediate:
+			case Op::ShiftRightImmediate:
+				return true;
+			default:
+				return false;
+		}
+	}
+	constexpr bool usesHalfImmediate(MoveOp op) noexcept {
+		switch(op) {
+			case MoveOp::LoadWithOffset:
+			case MoveOp::StoreWithOffset:
+			case MoveOp::IOReadWithOffset:
+			case MoveOp::IOWriteWithOffset:
+				return true;
+			default:
+				return false;
+		}
+	}
+	constexpr bool usesHalfImmediate(CompareOp op) noexcept {
+		switch(op) {
+			case CompareOp::GreaterThanOrEqualToImmediate:
+			case CompareOp::LessThanOrEqualToImmediate:
+			case CompareOp::GreaterThanImmediate:
+			case CompareOp::LessThanImmediate:
+			case CompareOp::NeqImmediate:
+			case CompareOp::EqImmediate:
+				return true;
+			default:
+				return false;
+		}
+	}
+	constexpr bool usesHalfImmediate(InstructionGroup op, byte subType) noexcept {
+		switch(op) {
+			case InstructionGroup::Arithmetic:
+				return usesHalfImmediate((ArithmeticOp)subType);
+			case InstructionGroup::Move:
+				return usesHalfImmediate((MoveOp)subType);
+			case InstructionGroup::Compare:
+				return usesHalfImmediate((CompareOp)subType);
+			default:
+				return false;
+		}
+	}
+	constexpr bool usesPredicateDestination(ConditionRegisterOp op) noexcept {
+		switch (op) {
+			case ConditionRegisterOp::SaveCRs:
+			case ConditionRegisterOp::RestoreCRs:
+				return false;
+			default:
+				return true;
+		}
+	}
+	constexpr bool usesPredicateDestination(InstructionGroup op, byte subType) noexcept {
+		switch(op) {
+			case InstructionGroup::Compare:
+				return true;
+			case InstructionGroup::ConditionalRegister:
+				return usesPredicateDestination((ConditionRegisterOp)subType);
+			default:
+				return false;
+		}
+	}
+	const std::string& decodeOperation(InstructionGroup group, byte op) noexcept {
+		static std::string errorState;
+		switch(group) {
+			case InstructionGroup::ConditionalRegister:
+				return conditionRegisterOpToString((ConditionRegisterOp)op);
+			case InstructionGroup::Jump:
+				return jumpOpToString((JumpOp)op);
+			case InstructionGroup::Arithmetic:
+				return arithmeticOpToString((ArithmeticOp)op);
+			case InstructionGroup::Compare:
+				return compareOpToString((CompareOp)op);
+			default:
 				return errorState;
+		}
+	}
+	void decodeInstruction(raw_instruction instruction, std::ostream& out) noexcept {
+		// this is the primary one and we should return it in a form that
+		// is parsable by the assembler
+		auto operation = InstructionDecoder::getGroup(instruction);
+		auto subType = InstructionDecoder::getOperationByte(instruction);
+		out << decodeOperation(operation, subType) << " ";
+		if (usesPredicateDestination(operation, subType)) {
+			auto pdest = predicateIndexToString(InstructionDecoder::getPredicateResultIndex(instruction));
+			auto pinvdest = predicateIndexToString(InstructionDecoder::getPredicateInverseResultIndex(instruction));
+			out << pdest << " " << pinvdest;
+		} else {
+			out << registerIndexToString(InstructionDecoder::getDestinationIndex(instruction));
+		}
+		out << " ";
+		if (usesFullImmediate(operation, subType)) {
+			out << "0x" << std::hex << static_cast<int>(InstructionDecoder::getImmediate(instruction));
+		} else {
+			// we have source0 to get
+			out << registerIndexToString(InstructionDecoder::getSource0Index(instruction)) << " ";
+			if (usesHalfImmediate(operation, subType)) {
+				out << std::hex << static_cast<int>(InstructionDecoder::getHalfImmediate(instruction));
 			} else {
-				return find->second;
+				out << registerIndexToString(InstructionDecoder::getSource1Index(instruction));
 			}
 		}
-		constexpr bool usesFullImmediate(MoveOp op) noexcept {
-			switch(op) {
-				case MoveOp::PushImmediate:
-				case MoveOp::StoreImmediate:
-				case MoveOp::LoadImmediate:
-				case MoveOp::Set:
-					return true;
-				default:
-					return false;
-			}
-		}
-		constexpr bool usesFullImmediate(JumpOp op) noexcept {
-			switch(op) {
-				case JumpOp::BranchConditionalImmediateLink:
-				case JumpOp::BranchConditionalImmediate:
-				case JumpOp::BranchUnconditionalImmediate:
-				case JumpOp::BranchUnconditionalImmediateLink:
-					return true;
-				default:
-					return false;
-			}
-		}
-		constexpr bool usesFullImmediate(InstructionGroup op, byte subType) noexcept {
-			switch(op) {
-				case InstructionGroup::Move:
-					return usesFullImmediate((MoveOp)subType);
-				case InstructionGroup::Jump:
-					return usesFullImmediate((JumpOp)subType);
-				default:
-					return false;
-			}
-		}
-		constexpr bool usesHalfImmediate(ArithmeticOp op) noexcept {
-			using Op = decltype(op);
-			switch(op) {
-				case Op::AddImmediate:
-				case Op::SubImmediate:
-				case Op::MulImmediate:
-				case Op::DivImmediate:
-				case Op::RemImmediate:
-				case Op::ShiftLeftImmediate:
-				case Op::ShiftRightImmediate:
-					return true;
-				default:
-					return false;
-			}
-		}
-		constexpr bool usesHalfImmediate(MoveOp op) noexcept {
-			switch(op) {
-				case MoveOp::LoadWithOffset:
-				case MoveOp::StoreWithOffset:
-				case MoveOp::IOReadWithOffset:
-				case MoveOp::IOWriteWithOffset:
-					return true;
-				default:
-					return false;
-			}
-		}
-		constexpr bool usesHalfImmediate(CompareOp op) noexcept {
-			switch(op) {
-				case CompareOp::GreaterThanOrEqualToImmediate:
-				case CompareOp::LessThanOrEqualToImmediate:
-				case CompareOp::GreaterThanImmediate:
-				case CompareOp::LessThanImmediate:
-				case CompareOp::NeqImmediate:
-				case CompareOp::EqImmediate:
-					return true;
-				default:
-					return false;
-			}
-		}
-		constexpr bool usesHalfImmediate(InstructionGroup op, byte subType) noexcept {
-			switch(op) {
-				case InstructionGroup::Arithmetic:
-					return usesHalfImmediate((ArithmeticOp)subType);
-				case InstructionGroup::Move:
-					return usesHalfImmediate((MoveOp)subType);
-				case InstructionGroup::Compare:
-					return usesHalfImmediate((CompareOp)subType);
-				default:
-					return false;
-			}
-		}
-		constexpr bool usesPredicateDestination(ConditionRegisterOp op) noexcept {
-			switch (op) {
-				case ConditionRegisterOp::SaveCRs:
-				case ConditionRegisterOp::RestoreCRs:
-					return false;
-				default:
-					return true;
-			}
-		}
-		constexpr bool usesPredicateDestination(InstructionGroup op, byte subType) noexcept {
-			switch(op) {
-				case InstructionGroup::Compare:
-					return true;
-				case InstructionGroup::ConditionalRegister:
-					return usesPredicateDestination((ConditionRegisterOp)subType);
-				default:
-					return false;
-			}
-		}
-		const std::string& decodeOperation(InstructionGroup group, byte op) noexcept {
-			static std::string errorState;
-			switch(group) {
-				case InstructionGroup::ConditionalRegister:
-					return conditionRegisterOpToString((ConditionRegisterOp)op);
-				case InstructionGroup::Jump:
-					return jumpOpToString((JumpOp)op);
-				case InstructionGroup::Arithmetic:
-					return arithmeticOpToString((ArithmeticOp)op);
-				default:
-					return errorState;
-			}
-		}
-		void decodeInstruction(raw_instruction instruction, std::ostream& out) noexcept {
-			// this is the primary one and we should return it in a form that
-			// is parsable by the assembler
-			auto operation = InstructionDecoder::getGroup(instruction);
-			auto subType = InstructionDecoder::getOperationByte(instruction);
-			out << decodeOperation(operation, subType) << " ";
-			if (usesPredicateDestination(operation, subType)) {
-				auto pdest = predicateIndexToString(InstructionDecoder::getPredicateResultIndex(instruction));
-				auto pinvdest = predicateIndexToString(InstructionDecoder::getPredicateInverseResultIndex(instruction));
-				out << pdest << " " << pinvdest;
-			} else {
-				out << registerIndexToString(InstructionDecoder::getDestinationIndex(instruction));
-			}
-			out << " ";
-			if (usesFullImmediate(operation, subType)) {
-				out << "0x" << std::hex << static_cast<int>(InstructionDecoder::getImmediate(instruction));
-			} else {
-				// we have source0 to get
-				out << registerIndexToString(InstructionDecoder::getSource0Index(instruction)) << " ";
-				if (usesHalfImmediate(operation, subType)) {
-					out << std::hex << static_cast<int>(InstructionDecoder::getHalfImmediate(instruction));
-				} else {
-					out << registerIndexToString(InstructionDecoder::getSource1Index(instruction));
-				}
-			}
-		}
+	}
 
-		std::string decodeInstruction(raw_instruction instruction) noexcept {
-			std::stringstream output;
-			decodeInstruction(instruction, output);
-			auto result = output.str();
-			return result;
-		}
+	std::string decodeInstruction(raw_instruction instruction) noexcept {
+		std::stringstream output;
+		decodeInstruction(instruction, output);
+		auto result = output.str();
+		return result;
+	}
 
 } // end namespace iris
