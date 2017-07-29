@@ -45,6 +45,7 @@ namespace iris {
 		RegistersToSaveOnError = 18,
 		ErrorRegisterStart = 255,
         TerminateIOAddress = 0xFFFF,
+		ConditionRegisterMask = 0xF,
 	};
 
 } // end namespace iris

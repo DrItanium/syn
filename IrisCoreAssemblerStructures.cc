@@ -127,6 +127,29 @@ namespace iris {
 			return find->second;
 		}
 	}
+	
+	const std::string& conditionRegisterOpToString(ConditionRegisterOp op) noexcept {
+		static std::string errorState;
+		static std::map<ConditionRegisterOp, std::string> lookup = {
+			{ ConditionRegisterOp::SaveCRs, "psave" },
+			{ ConditionRegisterOp::RestoreCRs, "prestore"},
+			{ ConditionRegisterOp::CRXor, "pxor" },
+			{ ConditionRegisterOp::CRNot, "pnot" },
+			{ ConditionRegisterOp::CRAnd, "pand" },
+			{ ConditionRegisterOp::CROr, "por" },
+			{ ConditionRegisterOp::CRNand, "pnand" },
+			{ ConditionRegisterOp::CRNor, "pnor" },
+			{ ConditionRegisterOp::CRSwap , "pswap" },
+			{ ConditionRegisterOp::CRMove, "pmove" },
+		};
+		auto find = lookup.find(op);
+		if (find == lookup.end()) {
+			return errorState;
+		} else {
+			return find->second;
+		}
+
+	}
 	ArithmeticOp stringToArithmeticOp(const std::string& title) noexcept {
 		static std::map<std::string, ArithmeticOp> lookup = {
 			{ "add", ArithmeticOp::Add},
@@ -265,5 +288,55 @@ namespace iris {
         }
 		bool AssemblerState::inCodeSection() const noexcept { return _section == SectionType::Code; }
 		bool AssemblerState::inDataSection() const noexcept { return _section == SectionType::Data; }
+
+		const std::string& registerIndexToString(byte index) noexcept {
+			static bool init = true;
+			static std::string container[ArchitectureConstants::RegisterCount];
+			if (init) {
+				init = false;
+				std::stringstream builder;
+				for (int i = 0; i < ArchitectureConstants::RegisterCount; ++i) {
+					builder << "r" << i;
+					auto tmp = builder.str();
+					container[i] = tmp;
+					builder.str();
+				}
+			}
+			return container[index];
+		}
+		const std::string& predicateIndexToString(byte index) noexcept {
+			static bool init = true;
+			static std::string container[ArchitectureConstants::ConditionRegisterCount];
+			if (init) {
+				init = false;
+				std::stringstream builder;
+				for (int i = 0; i < ArchitectureConstants::ConditionRegisterCount; ++i) {
+					builder << "p" << i;
+					auto tmp = builder.str();
+					container[i] = tmp;
+					builder.str();
+				}
+			}
+			return container[index & ArchitectureConstants::ConditionRegisterMask];
+		}
+
+		const std::string& instructionGroupToString(InstructionGroup group) noexcept {
+			static std::string errorState;
+			static std::map<InstructionGroup, std::string> lookup = {
+				{ InstructionGroup::Move, "move" },
+				{ InstructionGroup::Jump, "jump" },
+				{ InstructionGroup::Compare, "compare" },
+				{ InstructionGroup::Arithmetic, "arithmetic" },
+				{ InstructionGroup::Unused0, "unused0" },
+				{ InstructionGroup::CustomInstructionReserved, "custom-instruction" },
+				{ InstructionGroup::ConditionalRegister, "conditional-register" },
+			};
+			auto find = lookup.find(group);
+			if (find == lookup.end()) {
+				return errorState;
+			} else {
+				return find->second;
+			}
+		}
 
 } // end namespace iris
