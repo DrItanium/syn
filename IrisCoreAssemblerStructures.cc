@@ -263,5 +263,7 @@ namespace iris {
         void AssemblerState::nowInDataSection() noexcept {
             _section = SectionType::Data;
         }
+		bool AssemblerState::inCodeSection() const noexcept { return _section == SectionType::Code; }
+		bool AssemblerState::inDataSection() const noexcept { return _section == SectionType::Data; }
 
 } // end namespace iris

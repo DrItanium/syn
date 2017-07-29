@@ -157,11 +157,11 @@ namespace syn {
 	struct StatefulFourPartComponent : pegtl::state<State, FourPartComponent<First, Second, Third, Fourth, S0, S1, S2>> { };
 
     template<typename Register>
-    struct OneRegister : pegtl::seq<Register> { };
+	using OneRegister = SingleEntrySequence<Register>;
     template<typename R0, typename R1, typename Separator = AsmSeparator>
-    struct TwoRegister : TwoPartComponent<R0, R1, Separator> { };
+	using TwoRegister = TwoPartComponent<R0, R1, Separator>;
     template<typename R0, typename R1, typename R2, typename Separator0 = AsmSeparator, typename Separator1 = AsmSeparator>
-	struct ThreeRegister : ThreePartComponent<R0, R1, R2, Separator0, Separator1> { };
+	using ThreeRegister = ThreePartComponent<R0, R1, R2, Separator0, Separator1>;
 
 	template<typename T>
 	struct OptionalSpaceWrapped : pegtl::seq<OptionalSpace, T, OptionalSpace> { };

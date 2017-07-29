@@ -83,8 +83,8 @@ namespace iris {
         public:
             using LabelTracker = syn::LabelTracker<word>;
             AssemblerState() : _section(SectionType::Code) { }
-            bool inCodeSection() const noexcept { return _section == SectionType::Code; }
-            bool inDataSection() const noexcept { return _section == SectionType::Data; }
+            bool inCodeSection() const noexcept; 
+            bool inDataSection() const noexcept; 
             void nowInCodeSection() noexcept;
             void nowInDataSection() noexcept;
             template<SectionType section>
@@ -121,10 +121,30 @@ namespace iris {
 
 		template<typename Input>
 		void success(const Input& in, AssemblerState& parent) {
+            switch(static_cast<InstructionGroup>(group)) {
+                case InstructionGroup::Arithmetic:
+                    operation = (byte)stringToArithmeticOp(_subtype);
+                    break;
+                case InstructionGroup::ConditionalRegister:
+                    operation = (byte)stringToConditionRegisterOp(_subtype);
+                    break;
+                case InstructionGroup::Jump:
+                    operation = (byte)stringToJumpOp(_subtype);
+                    break;
+                case InstructionGroup::Move:
+                    operation = (byte)stringToMoveOp(_subtype);
+                    break;
+                case InstructionGroup::Compare:
+                    operation = (byte)stringToCompareOp(_subtype);
+                    break;
+				default:
+					throw syn::Problem("Illegal instruction group!");
+            }
 			parent.incrementCurrentAddress();
 			parent.addToFinishedData(*this);
 		}
 		void setField(RegisterPositionType type, byte value);
+		std::string _subtype;
 	};
 	enum class AssemblerDirectiveAction {
 		ChangeCurrentAddress,
@@ -138,6 +158,8 @@ namespace iris {
 		AssemblerDirective(const I& in, AssemblerState& parent) {
 			instruction = false;
 			address = parent.getCurrentAddress();
+			action = syn::defaultErrorState<decltype(action)>;
+			section = syn::defaultErrorState<decltype(section)>;
 		}
 		template<typename Input>
 		void success(const Input& in, AssemblerState& parent) {
@@ -167,7 +189,7 @@ namespace iris {
 		bool shouldDefineLabel() const noexcept;
 		bool shouldStoreWord() const noexcept;
 
-		AssemblerDirectiveAction action = syn::defaultErrorState<AssemblerDirectiveAction>;
+		AssemblerDirectiveAction action;
 		SectionType section = syn::defaultErrorState<SectionType>;
 	};
 } // end namespace iris
