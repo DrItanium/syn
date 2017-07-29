@@ -167,32 +167,6 @@ namespace syn {
 	struct OptionalSpaceWrapped : pegtl::seq<OptionalSpace, T, OptionalSpace> { };
 	using EqualsSignSeparator = OptionalSpaceWrapped<SymbolEqualsSign>;
 	using CommaSeparator = OptionalSpaceWrapped<SymbolComma>;
-	template<typename Keyword, typename Destination, typename Source0, typename Source1, typename Space = AsmSeparator>
-	struct ItaniumStyleThreeArgInstruction : pegtl::seq<
-											 Keyword, 
-											 Space, 
-											 Destination, 
-											 EqualsSignSeparator, 
-											 Source0, 
-											 CommaSeparator, 
-											 Source1> { };
-
-	template<typename Keyword, typename Destination, typename Destination2, typename Source0, typename Source1, typename Space = AsmSeparator>
-	struct ItaniumStylePredicateInstruction : pegtl::seq<
-											  Keyword, 
-											  Space, 
-											  Destination, 
-											  CommaSeparator, 
-											  Destination2, 
-											  EqualsSignSeparator, 
-											  Source0, 
-											  CommaSeparator, 
-											  Source1> { };
-
-	template<typename T>
-	struct ItaniumStylePredicateSpecifier : pegtl::seq<SymbolLeftParen, T, SymbolRightParen> { };
-	
-
 
     template<char delimiter, typename SymbolClass>
     struct GenericNumeral : pegtl::if_must<pegtl::istring<'0', delimiter>, pegtl::plus<SymbolClass>> { };

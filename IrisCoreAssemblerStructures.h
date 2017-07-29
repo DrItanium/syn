@@ -121,30 +121,10 @@ namespace iris {
 
 		template<typename Input>
 		void success(const Input& in, AssemblerState& parent) {
-            switch(static_cast<InstructionGroup>(group)) {
-                case InstructionGroup::Arithmetic:
-                    operation = (byte)stringToArithmeticOp(_subtype);
-                    break;
-                case InstructionGroup::ConditionalRegister:
-                    operation = (byte)stringToConditionRegisterOp(_subtype);
-                    break;
-                case InstructionGroup::Jump:
-                    operation = (byte)stringToJumpOp(_subtype);
-                    break;
-                case InstructionGroup::Move:
-                    operation = (byte)stringToMoveOp(_subtype);
-                    break;
-                case InstructionGroup::Compare:
-                    operation = (byte)stringToCompareOp(_subtype);
-                    break;
-				default:
-					throw syn::Problem("Illegal instruction group!");
-            }
 			parent.incrementCurrentAddress();
 			parent.addToFinishedData(*this);
 		}
 		void setField(RegisterPositionType type, byte value);
-		std::string _subtype;
 	};
 	enum class AssemblerDirectiveAction {
 		ChangeCurrentAddress,

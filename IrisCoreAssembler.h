@@ -268,9 +268,39 @@ namespace iris {
 	}
     using HalfImmediate = Number<HalfImmediateContainer>;
 
+    template<InstructionGroup op>
     struct SubTypeSelector {
+        static constexpr bool legalInstructionGroup(InstructionGroup group) noexcept {
+            switch(group) {
+                case InstructionGroup::Arithmetic:
+                case InstructionGroup::ConditionalRegister:
+                case InstructionGroup::Jump:
+                case InstructionGroup::Move:
+                case InstructionGroup::Compare:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+        static_assert(legalInstructionGroup(op), "Instruction group has no subtypes or is unimplemented!");
         DefApplyGeneric(AssemblerInstruction) {
-			state._subtype = in.string();
+            switch(op) {
+                case InstructionGroup::Arithmetic:
+                    state.operation = (byte)stringToArithmeticOp(in.string());
+                    break;
+                case InstructionGroup::ConditionalRegister:
+                    state.operation = (byte)stringToConditionRegisterOp(in.string());
+                    break;
+                case InstructionGroup::Jump:
+                    state.operation = (byte)stringToJumpOp(in.string());
+                    break;
+                case InstructionGroup::Move:
+                    state.operation = (byte)stringToMoveOp(in.string());
+                    break;
+                case InstructionGroup::Compare:
+                    state.operation = (byte)stringToCompareOp(in.string());
+                    break;
+            }
         }
     };
 
@@ -284,7 +314,7 @@ namespace iris {
     using ThreeGPRInstruction = GenericInstruction<Operation, ThreeGPR>;
 
     // Arithmetic group
-    using ArithmeticSubTypeSelector = SubTypeSelector;
+    using ArithmeticSubTypeSelector = SubTypeSelector<InstructionGroup::Arithmetic>;
     struct OperationArithmeticThreeGPR : pegtl::sor<
                                          SymbolAdd,
                                          SymbolSub,
@@ -326,7 +356,7 @@ namespace iris {
 	DefAction(ArithmeticInstruction) : SetInstructionGroup<InstructionGroup::Arithmetic> { };
 
     // Move operations
-	using MoveOpSubTypeSelector = SubTypeSelector;
+	using MoveOpSubTypeSelector = SubTypeSelector<InstructionGroup::Move>;
     struct OperationMoveOneGPR : pegtl::sor<
                                  SymbolMoveToIP,
                                  SymbolMoveFromIP,
@@ -383,7 +413,7 @@ namespace iris {
 	DefAction(MoveInstruction) : SetInstructionGroup<InstructionGroup::Move> { };
 
     // branch
-	using BranchOpSubTypeSelector = SubTypeSelector;
+	using BranchOpSubTypeSelector = SubTypeSelector<InstructionGroup::Jump>;
     template<typename Op, typename S>
     using BranchUnconditional = SeparatedBinaryThing<Op, S>;
     template<typename Op, typename S>
@@ -445,7 +475,7 @@ namespace iris {
 	DefAction(BranchInstruction) : SetInstructionGroup<InstructionGroup::Jump> { };
 
     // compare operations
-	using CompareOpSubTypeSelector = SubTypeSelector;
+	using CompareOpSubTypeSelector = SubTypeSelector<InstructionGroup::Compare>;
     struct CompareRegisterOperation : pegtl::sor<
                                       SymbolEq,
                                       SymbolNeq,
@@ -481,7 +511,7 @@ namespace iris {
 	DefAction(CompareInstruction) : SetInstructionGroup<InstructionGroup::Compare> { };
 
     // conditional register actions
-	using ConditionalRegisterSubTypeSelector = SubTypeSelector;
+	using ConditionalRegisterSubTypeSelector = SubTypeSelector<InstructionGroup::ConditionalRegister>;
 	using StatefulSource0Predicate = StatefulRegister<Source0Predicate>;
     struct OperationPredicateTwoArgs : pegtl::sor<
                                        SymbolCRSwap,
