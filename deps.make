@@ -381,7 +381,9 @@ IrisCoreAssemblerStructures.o: IrisCoreAssemblerStructures.cc Base.h \
  misc/maya/msgcom.h misc/maya/msgpass.h misc/maya/objrtmch.h \
  IOController.h WrappedIODevice.h ClipsExtensions.h IrisCoreTypes.h \
  IrisCoreEncodingOperations.h iris_defines.h IrisClipsExtensions.h \
- IrisCoreAssemblerStructures.h IrisCoreAssemblerKeywords.h
+ IrisCoreAssemblerStructures.h IrisCoreAssemblerKeywords.h \
+ IrisConditionRegisterOp.desc IrisArithmeticOp.desc IrisMoveOp.desc \
+ IrisJumpOp.desc IrisCompareOp.desc
 IrisCore.o: IrisCore.cc IrisCore.h Base.h BaseTypes.h Problem.h \
  ExecutionUnits.h BaseArithmetic.h IODevice.h Device.h ClipsCore.h Core.h \
  misc/maya/clips.h misc/maya/setup.h misc/maya/os_shim.h \
