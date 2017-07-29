@@ -9,7 +9,7 @@ ARCH_OBJECTS = IrisCore.o \
 			   Cisc0CoreModel1.o
 
 ASM_PARSERS_OBJECTS = Cisc0CoreAssembler.o \
-					  IrisCoreAssembler.o \
+					  IrisCoreAssemblerStructures.o \
 					  AssemblerBase.o
 
 COMMON_THINGS = Core.o \

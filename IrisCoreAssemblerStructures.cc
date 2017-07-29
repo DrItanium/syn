@@ -42,7 +42,7 @@
 #include <vector>
 #include "IrisClipsExtensions.h"
 #include "ClipsExtensions.h"
-#include "IrisCoreAssembler.h"
+#include "IrisCoreAssemblerStructures.h"
 
 namespace iris {
     AssemblerData::AssemblerData() noexcept : instruction(false), address(0), dataValue(0), group(0), operation(0), destination(0), source0(0), source1(0), hasLexeme(false), fullImmediate(false) { }

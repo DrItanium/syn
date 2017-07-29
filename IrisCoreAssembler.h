@@ -45,69 +45,13 @@
 #include "IrisClipsExtensions.h"
 #include "ClipsExtensions.h"
 #include "IrisCoreAssemblerKeywords.h"
+#include "IrisCoreAssemblerStructures.h"
 
 namespace iris {
 
     template<typename R> struct Action : syn::Action<R> { };
 
-	ArithmeticOp stringToArithmeticOp(const std::string& title) noexcept;
-	MoveOp stringToMoveOp(const std::string& title) noexcept;
-	JumpOp stringToJumpOp(const std::string& title) noexcept;
-	CompareOp stringToCompareOp(const std::string& title) noexcept;
-	ConditionRegisterOp stringToConditionRegisterOp(const std::string& title) noexcept;
-
-    enum class SectionType {
-        Code,
-        Data,
-        Count,
-    };
-    struct AssemblerData {
-        public:
-            AssemblerData() noexcept;
-            void setImmediate(word value) noexcept;
-            bool shouldResolveLabel() const noexcept;
-            dword encode() const noexcept;
-        public:
-            bool instruction;
-            word address;
-            word dataValue;
-
-            byte group;
-            byte operation;
-            byte destination;
-            byte source0;
-            byte source1;
-            bool hasLexeme;
-            bool fullImmediate;
-            std::string currentLexeme;
-    };
-
-    class AssemblerState : public syn::LabelTracker<word>, public syn::FinishedDataTracker<AssemblerData> {
-        public:
-            using LabelTracker = syn::LabelTracker<word>;
-            AssemblerState() : _section(SectionType::Code) { }
-            bool inCodeSection() const noexcept { return _section == SectionType::Code; }
-            bool inDataSection() const noexcept { return _section == SectionType::Data; }
-            void nowInCodeSection() noexcept;
-            void nowInDataSection() noexcept;
-            template<SectionType section>
-            void changeSection() noexcept {
-                static_assert(!syn::isErrorState<SectionType>(section), "Illegal state!");
-                _section = section;
-            }
-            void setCurrentAddress(word value) noexcept;
-            void registerLabel(const std::string& label) noexcept;
-            word getCurrentAddress() const noexcept;
-            void incrementCurrentAddress() noexcept;
-        private:
-            using AddressSpaceTracker = syn::AddressTracker<word>;
-            AddressSpaceTracker data;
-            AddressSpaceTracker code;
-            SectionType _section;
-    };
 	struct HalfImmediateContainer;
-	struct AssemblerInstruction;
-	struct AssemblerDirective;
     struct ImmediateContainer : syn::NumberContainer<word> {
         using syn::NumberContainer<word>::NumberContainer;
 		template<typename Input>
@@ -117,74 +61,6 @@ namespace iris {
 		template<typename Input>
 			void success(const Input& in, AssemblerDirective& parent);
     };
-	enum class RegisterPositionType {
-		DestinationGPR,
-		Source0GPR,
-		Source1GPR,
-		PredicateDestination,
-		PredicateInverseDestination,
-		PredicateSource0,
-		PredicateSource1,
-		Count,
-	};
-	struct AssemblerInstruction : public AssemblerData {
-		template<typename Input>
-		AssemblerInstruction(const Input& in, AssemblerState& parent) noexcept {
-			instruction = true;
-			address = parent.getCurrentAddress();
-		}
-
-		template<typename Input>
-		void success(const Input& in, AssemblerState& parent) {
-			parent.incrementCurrentAddress();
-			parent.addToFinishedData(*this);
-		}
-		void setField(RegisterPositionType type, byte value);
-	};
-	enum class AssemblerDirectiveAction {
-		ChangeCurrentAddress,
-		ChangeSection,
-		DefineLabel,
-		StoreWord,
-		Count,
-	};
-	struct AssemblerDirective : public AssemblerData {
-		template<typename I>
-		AssemblerDirective(const I& in, AssemblerState& parent) {
-			instruction = false;
-			address = parent.getCurrentAddress();
-		}
-		template<typename Input>
-		void success(const Input& in, AssemblerState& parent) {
-			// TODO: insert code
-			if (shouldChangeSectionToCode()) {
-				parent.nowInCodeSection();
-			} else if (shouldChangeSectionToData()) {
-				parent.nowInDataSection();
-			} else if (shouldChangeCurrentAddress()) {
-				parent.setCurrentAddress(address);
-			} else if (shouldDefineLabel()) {
-				parent.registerLabel(currentLexeme);
-			} else if (shouldStoreWord()) {
-				if (parent.inDataSection()) {
-					parent.addToFinishedData(*this);
-					parent.incrementCurrentAddress();
-				} else {
-					throw syn::Problem("can't use a declare in a non data section!");
-				}
-			} else {
-				throw syn::Problem("Undefined directive action!");
-			}
-		}
-		bool shouldChangeSectionToCode() const noexcept;
-		bool shouldChangeSectionToData() const noexcept;
-		bool shouldChangeCurrentAddress() const noexcept;
-		bool shouldDefineLabel() const noexcept;
-		bool shouldStoreWord() const noexcept;
-
-		AssemblerDirectiveAction action = syn::defaultErrorState<AssemblerDirectiveAction>;
-		SectionType section = syn::defaultErrorState<SectionType>;
-	};
     struct RegisterIndexContainer : syn::NumberContainer<byte> {
         using syn::NumberContainer<byte>::NumberContainer;
         template<typename Input>
@@ -597,9 +473,6 @@ namespace iris {
                                BranchNoArgsInstruction> { };
 	DefAction(BranchInstruction) : SetInstructionGroup<InstructionGroup::Jump> { };
 
-    template<typename T>
-    using ThenField = syn::ThenField<T, Separator>;
-    using ThenDestinationPredicates = ThenField<DestinationPredicates>;
     // compare operations
 	using CompareOpSubTypeSelector = SubTypeSelector<InstructionGroup::Compare>;
     struct CompareRegisterOperation : pegtl::sor<
