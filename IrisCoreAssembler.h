@@ -556,10 +556,6 @@ namespace iris {
                                                  SymbolBranchConditionalImmediateLink,
                                                  SymbolBranchConditionalImmediate
                                                  > { };
-    struct OperationBranchIfStatement : pegtl::sor<
-                                        SymbolIfThenElseLink,
-                                        SymbolIfThenElse
-                                        > { };
     struct OperationBranchConditionalNoArgs : pegtl::sor<
                                               SymbolBranchConditionalLRAndLink,
                                               SymbolBranchConditionalLR
@@ -573,7 +569,6 @@ namespace iris {
 	DefAction(OperationBranchImmediate) : BranchOpSubTypeSelector { };
 	DefAction(OperationBranchConditionalGPR) : BranchOpSubTypeSelector { };
 	DefAction(OperationBranchConditionalImmediate) : BranchOpSubTypeSelector { };
-	DefAction(OperationBranchIfStatement) : BranchOpSubTypeSelector { };
 	DefAction(OperationBranchConditionalNoArgs) : BranchOpSubTypeSelector { };
 	DefAction(BranchNoArgsInstruction) : BranchOpSubTypeSelector { };
 
@@ -589,9 +584,6 @@ namespace iris {
     struct BranchConditionalImmediateInstruction : BranchConditional<
                                                    OperationBranchConditionalImmediate,
                                                    Immediate> { };
-    struct BranchIfInstruction : BranchConditional<
-                                 OperationBranchIfStatement,
-                                 SourceRegisters> { };
     struct BranchConditionalNoArgsInstruction : SeparatedBinaryThing<
                                                 OperationBranchConditionalNoArgs,
                                                 DestinationPredicateRegister> { };
@@ -601,7 +593,6 @@ namespace iris {
                                BranchImmediateInstruction,
                                BranchConditionalGPRInstruction,
                                BranchConditionalImmediateInstruction,
-                               BranchIfInstruction,
                                BranchConditionalNoArgsInstruction,
                                BranchNoArgsInstruction> { };
 	DefAction(BranchInstruction) : SetInstructionGroup<InstructionGroup::Jump> { };

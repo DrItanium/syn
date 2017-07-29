@@ -93,8 +93,6 @@
                           BranchConditionalImmediateLink
                           BranchConditional
                           BranchConditionalLink
-                          IfThenElse
-                          IfThenElseLink
                           BranchUnconditionalLR
                           BranchUnconditionalLRAndLink
                           BranchConditionalLR

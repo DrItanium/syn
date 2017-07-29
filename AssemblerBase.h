@@ -128,6 +128,11 @@ namespace syn {
     struct SingleLineComment : pegtl::disable<pegtl::one<tag>, EndOfLineComment> { };
 
 	struct AsmSeparator : pegtl::plus<pegtl::ascii::space> { };
+	struct OptionalSpace : pegtl::star<pegtl::ascii::space> { };
+	struct SymbolComma : pegtl::one<','> { };
+	struct SymbolEqualsSign : pegtl::one<'='> { };
+	struct SymbolLeftParen : pegtl::one<'('> { };
+	struct SymbolRightParen : pegtl::one<')'> { };
 
     template<typename Rule>
     struct SingleEntrySequence : pegtl::seq<Rule> { };
@@ -145,6 +150,11 @@ namespace syn {
 	template<typename State, typename First, typename Second, typename Third, typename Sep0 = AsmSeparator, typename Sep1 = AsmSeparator>
 	struct StatefulThreePartComponent : pegtl::state<State, ThreePartComponent<First, Second, Third, Sep0, Sep1>> { };
 
+	template<typename First, typename Second, typename Third, typename Fourth, typename S0 = AsmSeparator, typename S1 = AsmSeparator, typename S2 = AsmSeparator>
+	struct FourPartComponent : pegtl::seq<First, S0, Second, S1, Third, S2, Fourth> { };
+
+	template<typename State, typename First, typename Second, typename Third, typename Fourth, typename S0 = AsmSeparator, typename S1 = AsmSeparator, typename S2 = AsmSeparator>
+	struct StatefulFourPartComponent : pegtl::state<State, FourPartComponent<First, Second, Third, Fourth, S0, S1, S2>> { };
 
     template<typename Register>
     struct OneRegister : pegtl::seq<Register> { };
@@ -152,6 +162,36 @@ namespace syn {
     struct TwoRegister : TwoPartComponent<R0, R1, Separator> { };
     template<typename R0, typename R1, typename R2, typename Separator0 = AsmSeparator, typename Separator1 = AsmSeparator>
 	struct ThreeRegister : ThreePartComponent<R0, R1, R2, Separator0, Separator1> { };
+
+	template<typename T>
+	struct OptionalSpaceWrapped : pegtl::seq<OptionalSpace, T, OptionalSpace> { };
+	using EqualsSignSeparator = OptionalSpaceWrapped<SymbolEqualsSign>;
+	using CommaSeparator = OptionalSpaceWrapped<SymbolComma>;
+	template<typename Keyword, typename Destination, typename Source0, typename Source1, typename Space = AsmSeparator>
+	struct ItaniumStyleThreeArgInstruction : pegtl::seq<
+											 Keyword, 
+											 Space, 
+											 Destination, 
+											 EqualsSignSeparator, 
+											 Source0, 
+											 CommaSeparator, 
+											 Source1> { };
+
+	template<typename Keyword, typename Destination, typename Destination2, typename Source0, typename Source1, typename Space = AsmSeparator>
+	struct ItaniumStylePredicateInstruction : pegtl::seq<
+											  Keyword, 
+											  Space, 
+											  Destination, 
+											  CommaSeparator, 
+											  Destination2, 
+											  EqualsSignSeparator, 
+											  Source0, 
+											  CommaSeparator, 
+											  Source1> { };
+
+	template<typename T>
+	struct ItaniumStylePredicateSpecifier : pegtl::seq<SymbolLeftParen, T, SymbolRightParen> { };
+	
 
 
     template<char delimiter, typename SymbolClass>

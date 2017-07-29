@@ -207,8 +207,6 @@ namespace iris {
 			{ "branch_clrl", JumpOp::BranchConditionalLRAndLink},
 			{ "branch_lr", JumpOp::BranchUnconditionalLR},
 			{ "branch_lrl", JumpOp::BranchUnconditionalLRAndLink},
-			{ "if", JumpOp::IfThenElse},
-			{ "ifl", JumpOp::IfThenElseLink},
 			{ "rfe", JumpOp::ReturnFromError},
 		};
 		auto find = lookup.find(title);

@@ -237,20 +237,7 @@ namespace iris {
 						throw syn::Problem("ATTEMPTED TO RETURN FROM AN INTERRUPT WHEN NOT IN ONE!!!!");
 					}
 				};
-                auto ifOperation = [this](bool link) {
-                    auto cond = getPredicateResult();
-                    if (link) {
-                        setLinkRegister(getInstructionPointer() + 1);
-                    }
-                    setInstructionPointer(gpr[InstructionDecoder::chooseRegister(current, cond)]);
-                };
 				switch(operation) {
-                    case JumpOp::IfThenElse:
-                        ifOperation(false);
-                        break;
-                    case JumpOp::IfThenElseLink:
-                        ifOperation(true);
-                        break;
 					case JumpOp::BranchUnconditionalLR:
                         setInstructionPointer(getLinkRegister());
 						break;
