@@ -47,10 +47,10 @@
 namespace iris {
     AssemblerData::AssemblerData() noexcept : instruction(false), address(0), dataValue(0), group(0), operation(0), destination(0), source0(0), source1(0), hasLexeme(false), fullImmediate(false) { }
 
-	void AssemblerData::setImmediate(word value) noexcept {
-		source0 = syn::getLowerHalf<word>(value);
-		source1 = syn::getUpperHalf<word>(value);
-	}
+    void AssemblerData::setImmediate(word value) noexcept {
+        source0 = syn::getLowerHalf<word>(value);
+        source1 = syn::getUpperHalf<word>(value);
+    }
     raw_instruction AssemblerData::encode() const noexcept {
         if (instruction) {
             return iris::encodeInstruction(group, operation, destination, source0, source1);
@@ -59,211 +59,169 @@ namespace iris {
         }
     }
 
-	void AssemblerState::setCurrentAddress(word value) noexcept {
-		if (inDataSection()) {
-			data.setCurrentAddress(value);
-		} else {
-			code.setCurrentAddress(value);
-		}
-	}
-	void AssemblerState::registerLabel(const std::string& value) noexcept {
-		LabelTracker::registerLabel(value, getCurrentAddress());
-	}
-	word AssemblerState::getCurrentAddress() const noexcept {
-		return inDataSection() ? data.getCurrentAddress() : code.getCurrentAddress();
-	}
-	void AssemblerState::incrementCurrentAddress() noexcept {
-		if (inDataSection()) {
-			data.incrementCurrentAddress();
-		} else {
-			code.incrementCurrentAddress();
-		}
-	}
-	void AssemblerInstruction::setField(RegisterPositionType type, byte value) {
-		using Type = RegisterPositionType;
-		switch(type) {
-			case Type::DestinationGPR:
-				destination = value;
-				break;
-			case Type::Source0GPR:
-				source0 = value;
-				break;
-			case Type::Source1GPR:
-				source1 = value;
-				break;
-			case Type::PredicateDestination:
-				destination = iris::encode4Bits<false>(destination, value);
-				break;
-			case Type::PredicateInverseDestination:
-				destination = iris::encode4Bits<true>(destination, value);
-				break;
-			case Type::PredicateSource0:
-				source0 = iris::encode4Bits<false>(source0, value);
-				break;
-			case Type::PredicateSource1:
-				source0 = iris::encode4Bits<true>(source0, value);
-				break;
-			default:
-				syn::reportError("Illegal index provided!");
-		}
-	}
-	ConditionRegisterOp stringToConditionRegisterOp(const std::string& title) noexcept {
-		static std::map<std::string, ConditionRegisterOp> lookup = {
-			{ "psave", ConditionRegisterOp::SaveCRs },
-			{ "prestore", ConditionRegisterOp::RestoreCRs },
-			{ "pxor", ConditionRegisterOp::CRXor },
-			{ "pnot", ConditionRegisterOp::CRNot },
-			{ "pand", ConditionRegisterOp::CRAnd },
-			{ "por", ConditionRegisterOp::CROr },
-			{ "pnand", ConditionRegisterOp::CRNand },
-			{ "pnor", ConditionRegisterOp::CRNor },
-			{ "pswap", ConditionRegisterOp::CRSwap },
-			{ "pmove", ConditionRegisterOp::CRMove },
-		};
-		auto find = lookup.find(title);
-		if (find == lookup.end()) {
-			return syn::defaultErrorState<ConditionRegisterOp>;
-		} else {
-			return find->second;
-		}
-	}
-	ArithmeticOp stringToArithmeticOp(const std::string& title) noexcept {
-		static std::map<std::string, ArithmeticOp> lookup = {
-			{ "add", ArithmeticOp::Add},
-			{ "sub", ArithmeticOp::Sub},
-			{ "mul", ArithmeticOp::Mul},
-			{ "div", ArithmeticOp::Div},
-			{ "rem", ArithmeticOp::Rem},
-			{ "shl", ArithmeticOp::ShiftLeft},
-			{ "shr", ArithmeticOp::ShiftRight },
-			{ "and", ArithmeticOp::BinaryAnd},
-			{ "or", ArithmeticOp::BinaryOr},
-			{ "not", ArithmeticOp::BinaryNot},
-			{ "xor", ArithmeticOp::BinaryXor },
-			{ "nand", ArithmeticOp::BinaryNand},
-			{ "nor", ArithmeticOp::BinaryNor},
-			{ "min", ArithmeticOp::Min},
-			{ "max", ArithmeticOp::Max},
-			{ "addi", ArithmeticOp::AddImmediate},
-			{ "subi", ArithmeticOp::SubImmediate},
-			{ "muli", ArithmeticOp::MulImmediate},
-			{ "divi", ArithmeticOp::DivImmediate},
-			{ "remi", ArithmeticOp::RemImmediate},
-			{ "shli", ArithmeticOp::ShiftLeftImmediate },
-			{ "shri", ArithmeticOp::ShiftRightImmediate },
-		};
-		auto find = lookup.find(title);
-		if (find == lookup.end()) {
-			return syn::defaultErrorState<ArithmeticOp>;
-		} else {
-			return find->second;
-		}
-	}
-	MoveOp stringToMoveOp(const std::string& title) noexcept {
-		static std::map<std::string, MoveOp> lookup = {
-			{ "mtip", MoveOp::MoveToIP},
-			{ "mfip", MoveOp::MoveFromIP},
-			{ "mtlr", MoveOp::MoveToLR},
-			{ "mflr", MoveOp::MoveFromLR},
-			{ "rregs", MoveOp::RestoreAllRegisters},
-			{ "sregs", MoveOp::SaveAllRegisters},
-			{ "move", MoveOp::Move},
-			{ "swap", MoveOp::Swap},
-			{ "load", MoveOp::Load},
-			{ "store", MoveOp::Store},
-			{ "io-load", MoveOp::IORead},
-			{ "io-store", MoveOp::IOWrite },
-			{ "push", MoveOp::Push },
-			{ "pop", MoveOp::Pop },
-			{ "load-offset", MoveOp::LoadWithOffset },
-			{ "store-offset", MoveOp::StoreWithOffset },
-			{ "ioldof", MoveOp::IOReadWithOffset },
-			{ "iostof", MoveOp::IOWriteWithOffset },
-			{ "code-load", MoveOp::LoadCode },
-			{ "code-store", MoveOp::StoreCode },
-			{ "pushi", MoveOp::PushImmediate},
-			{ "set", MoveOp::Set },
-			{ "loadi", MoveOp::LoadImmediate },
-			{ "storei", MoveOp::StoreImmediate },
-		};
-		auto find = lookup.find(title);
-		if (find == lookup.end()) {
-			return syn::defaultErrorState<MoveOp>;
-		} else {
-			return find->second;
-		}
-	}
-	JumpOp stringToJumpOp(const std::string& title) noexcept {
-		static std::map<std::string, JumpOp> lookup = {
-			{ "branch", JumpOp::BranchUnconditional},
-			{ "branch_l", JumpOp::BranchUnconditionalLink},
-			{ "branch_i", JumpOp::BranchUnconditionalImmediate},
-			{ "branch_il", JumpOp::BranchUnconditionalImmediateLink},
-			{ "branch_c", JumpOp::BranchConditional },
-			{ "branch_cl", JumpOp::BranchConditionalLink},
-			{ "branch_ci", JumpOp::BranchConditionalImmediate},
-			{ "branch_cil", JumpOp::BranchConditionalImmediateLink},
-			{ "branch_clr", JumpOp::BranchConditionalLR},
-			{ "branch_clrl", JumpOp::BranchConditionalLRAndLink},
-			{ "branch_lr", JumpOp::BranchUnconditionalLR},
-			{ "branch_lrl", JumpOp::BranchUnconditionalLRAndLink},
-			{ "rfe", JumpOp::ReturnFromError},
-		};
-		auto find = lookup.find(title);
-		if (find == lookup.end()) {
-			return syn::defaultErrorState<JumpOp>;
-		} else {
-			return find->second;
-		}
-	}
-	CompareOp stringToCompareOp(const std::string& title) noexcept {
-		static std::map<std::string, CompareOp> lookup = {
-			{ "eq",   CompareOp::Eq},
-			{ "neq",  CompareOp::Neq},
-			{ "lt",   CompareOp::LessThan},
-			{ "gt",   CompareOp::GreaterThan},
-			{ "le",   CompareOp::LessThanOrEqualTo},
-			{ "ge",   CompareOp::GreaterThanOrEqualTo},
-			{ "eqi",  CompareOp::EqImmediate },
-			{ "neqi", CompareOp::NeqImmediate },
-			{ "lti",  CompareOp::LessThanImmediate },
-			{ "gti",  CompareOp::GreaterThanImmediate },
-			{ "lei",  CompareOp::LessThanOrEqualToImmediate },
-			{ "gei",  CompareOp::GreaterThanOrEqualToImmediate },
-		};
-		auto find = lookup.find(title);
-		if (find == lookup.end()) {
-			return syn::defaultErrorState<CompareOp>;
-		} else {
-			return find->second;
-		}
-	}
-		bool AssemblerDirective::shouldChangeSectionToCode() const noexcept {
-            return (action == AssemblerDirectiveAction::ChangeSection) && (section == SectionType::Code);
+    void AssemblerState::setCurrentAddress(word value) noexcept {
+        if (inDataSection()) {
+            data.setCurrentAddress(value);
+        } else {
+            code.setCurrentAddress(value);
         }
-		bool AssemblerDirective::shouldChangeSectionToData() const noexcept {
-            return (action == AssemblerDirectiveAction::ChangeSection) && (section == SectionType::Data);
+    }
+    void AssemblerState::registerLabel(const std::string& value) noexcept {
+        LabelTracker::registerLabel(value, getCurrentAddress());
+    }
+    word AssemblerState::getCurrentAddress() const noexcept {
+        return inDataSection() ? data.getCurrentAddress() : code.getCurrentAddress();
+    }
+    void AssemblerState::incrementCurrentAddress() noexcept {
+        if (inDataSection()) {
+            data.incrementCurrentAddress();
+        } else {
+            code.incrementCurrentAddress();
         }
-		bool AssemblerDirective::shouldChangeCurrentAddress() const noexcept {
-            return (action == AssemblerDirectiveAction::ChangeCurrentAddress);
+    }
+    void AssemblerInstruction::setField(RegisterPositionType type, byte value) {
+        using Type = RegisterPositionType;
+        switch(type) {
+            case Type::DestinationGPR:
+                destination = value;
+                break;
+            case Type::Source0GPR:
+                source0 = value;
+                break;
+            case Type::Source1GPR:
+                source1 = value;
+                break;
+            case Type::PredicateDestination:
+                destination = iris::encode4Bits<false>(destination, value);
+                break;
+            case Type::PredicateInverseDestination:
+                destination = iris::encode4Bits<true>(destination, value);
+                break;
+            case Type::PredicateSource0:
+                source0 = iris::encode4Bits<false>(source0, value);
+                break;
+            case Type::PredicateSource1:
+                source0 = iris::encode4Bits<true>(source0, value);
+                break;
+            default:
+                syn::reportError("Illegal index provided!");
         }
-		bool AssemblerDirective::shouldDefineLabel() const noexcept {
-            return (action == AssemblerDirectiveAction::DefineLabel);
-        }
-        bool AssemblerDirective::shouldStoreWord() const noexcept {
-            return (action == AssemblerDirectiveAction::StoreWord);
-        }
-        bool AssemblerData::shouldResolveLabel() const noexcept {
-            return fullImmediate && hasLexeme;
-        }
+    }
+    bool AssemblerDirective::shouldChangeSectionToCode() const noexcept {
+        return (action == AssemblerDirectiveAction::ChangeSection) && (section == SectionType::Code);
+    }
+    bool AssemblerDirective::shouldChangeSectionToData() const noexcept {
+        return (action == AssemblerDirectiveAction::ChangeSection) && (section == SectionType::Data);
+    }
+    bool AssemblerDirective::shouldChangeCurrentAddress() const noexcept {
+        return (action == AssemblerDirectiveAction::ChangeCurrentAddress);
+    }
+    bool AssemblerDirective::shouldDefineLabel() const noexcept {
+        return (action == AssemblerDirectiveAction::DefineLabel);
+    }
+    bool AssemblerDirective::shouldStoreWord() const noexcept {
+        return (action == AssemblerDirectiveAction::StoreWord);
+    }
+    bool AssemblerData::shouldResolveLabel() const noexcept {
+        return fullImmediate && hasLexeme;
+    }
 
-        void AssemblerState::nowInCodeSection() noexcept {
-            _section = SectionType::Code;
-        }
-        void AssemblerState::nowInDataSection() noexcept {
-            _section = SectionType::Data;
-        }
-		bool AssemblerState::inCodeSection() const noexcept { return _section == SectionType::Code; }
-		bool AssemblerState::inDataSection() const noexcept { return _section == SectionType::Data; }
+    void AssemblerState::nowInCodeSection() noexcept {
+        _section = SectionType::Code;
+    }
+    void AssemblerState::nowInDataSection() noexcept {
+        _section = SectionType::Data;
+    }
+    bool AssemblerState::inCodeSection() const noexcept { return _section == SectionType::Code; }
+    bool AssemblerState::inDataSection() const noexcept { return _section == SectionType::Data; }
+
+#define StringToEnumEntry(str, type) { str , type },
+#define EnumToStringEntry(str, type) { type , str },
+#define DefBeginStringToEnumFn(type) \
+    type stringTo ## type (const std::string& str) noexcept { \
+        static std::map<std::string, type > translation = {
+#define DefEndStringToEnumFn(type) \
+        }; \
+        auto x = translation.find(str); \
+        if (x == translation.end()) { \
+            return syn::defaultErrorState< type > ; \
+        } else { \
+            return x->second; \
+        } \
+    }
+#define DefBeginEnumToStringFn(type, title) \
+    const std::string& title ## ToString ( type value ) noexcept { \
+        static std::string errorState; \
+        static std::map < type , std::string > translation = {
+
+#define DefEndEnumToStringFn(type) \
+        }; \
+        auto x = translation.find(value); \
+        if (x == translation.end()) { \
+            return errorState; \
+        } else { \
+            return x->second; \
+        } \
+    }
+    DefBeginEnumToStringFn(CompareOp, compareOp)
+#define X(str, type, _) EnumToStringEntry(str, type)
+#include "desc/iris/CompareOp.desc"
+#undef X
+        DefEndEnumToStringFn(CompareOp)
+
+        DefBeginStringToEnumFn(CompareOp)
+#define X(str, type, _) StringToEnumEntry(str, type)
+#include "desc/iris/CompareOp.desc"
+#undef X
+        DefEndStringToEnumFn(CompareOp)
+
+        DefBeginEnumToStringFn(JumpOp, jumpOp)
+#define X(str, type, _) EnumToStringEntry(str, type)
+#include "desc/iris/JumpOp.desc"
+#undef X
+        DefEndEnumToStringFn(JumpOp)
+
+        DefBeginStringToEnumFn(JumpOp)
+#define X(str, type, _) StringToEnumEntry(str, type)
+#include "desc/iris/JumpOp.desc"
+#undef X
+        DefEndStringToEnumFn(JumpOp)
+
+        DefBeginEnumToStringFn(ConditionRegisterOp, conditionRegisterOp)
+#define X(str, type, _) EnumToStringEntry(str, type)
+#include "desc/iris/ConditionRegisterOp.desc"
+#undef X
+        DefEndEnumToStringFn(ConditionRegisterOp)
+
+        DefBeginStringToEnumFn(ConditionRegisterOp)
+#define X(str, type, _) StringToEnumEntry(str, type)
+#include "desc/iris/ConditionRegisterOp.desc"
+#undef X
+        DefEndStringToEnumFn(ConditionRegisterOp)
+
+        DefBeginEnumToStringFn(ArithmeticOp, arithmeticOp)
+#define X(str, type, _) EnumToStringEntry(str, type)
+#include "desc/iris/ArithmeticOp.desc"
+#undef X
+        DefEndEnumToStringFn(ArithmeticOp)
+
+        DefBeginStringToEnumFn(ArithmeticOp)
+#define X(str, type, _) StringToEnumEntry(str, type)
+#include "desc/iris/ArithmeticOp.desc"
+#undef X
+        DefEndStringToEnumFn(ArithmeticOp)
+
+        DefBeginEnumToStringFn(MoveOp, moveOp)
+#define X(str, type, _) EnumToStringEntry(str, type)
+#include "desc/iris/MoveOp.desc"
+#undef X
+        DefEndEnumToStringFn(MoveOp)
+
+        DefBeginStringToEnumFn(MoveOp)
+#define X(str, type, _) StringToEnumEntry(str, type)
+#include "desc/iris/MoveOp.desc"
+#undef X
+        DefEndStringToEnumFn(MoveOp)
+
 
 } // end namespace iris

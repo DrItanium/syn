@@ -323,13 +323,13 @@ namespace iris {
                                          SymbolRem,
                                          SymbolShiftLeft,
                                          SymbolShiftRight,
-                                         SymbolAnd,
-                                         SymbolOr,
-                                         SymbolXor,
+                                         SymbolBinaryAnd,
+                                         SymbolBinaryOr,
+                                         SymbolBinaryXor,
                                          SymbolMin,
                                          SymbolMax> { };
     // Just extend off of this single type for now
-    struct OperationArithmeticTwoGPR : SymbolNot { };
+    struct OperationArithmeticTwoGPR : SymbolBinaryNot { };
     struct ArithmeticImmediateOperation : pegtl::sor<
                                           SymbolAddImmediate,
                                           SymbolSubImmediate,
@@ -440,7 +440,7 @@ namespace iris {
     struct BranchNoArgsInstruction : pegtl::sor<
                                      SymbolBranchUnconditionalLRAndLink,
                                      SymbolBranchUnconditionalLR,
-                                     SymbolBranchReturnFromError> { };
+                                     SymbolReturnFromError> { };
 
 	DefAction(OperationBranchOneGPR) : BranchOpSubTypeSelector { };
 	DefAction(OperationBranchImmediate) : BranchOpSubTypeSelector { };

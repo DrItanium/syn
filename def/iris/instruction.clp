@@ -112,10 +112,10 @@
                                                         pop Pop
                                                         ldc LoadCode
                                                         stc StoreCode
-                                                        stio IOWrite
-                                                        ldio IORead
-                                                        stiowo IOWriteWithOffset
-                                                        ldiowo IOReadWithOffset
+                                                        ldio LoadIO
+                                                        stio StoreIO
+                                                        ldiowo LoadIOWithOffset
+                                                        stiowo StoreIOWithOffset
                                                         mfip MoveFromIP
                                                         mtip MoveToIP
                                                         mflr MoveFromLR

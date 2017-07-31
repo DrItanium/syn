@@ -333,16 +333,16 @@ namespace iris {
 				case MoveOp::StoreCode:
 					instruction[destinationRegister()] = encodeDword(source0Register(), source1Register());
 					break;
-				case MoveOp::IORead:
+				case MoveOp::LoadIO:
                     destinationRegister() = ioSpaceRead(source0Register());
 					break;
-				case MoveOp::IOReadWithOffset:
+				case MoveOp::LoadIOWithOffset:
                     destinationRegister() = ioSpaceRead(source0Register() + getHalfImmediate());
 					break;
-				case MoveOp::IOWrite:
+				case MoveOp::StoreIO:
                     ioSpaceWrite(destinationRegister(), source0Register());
 					break;
-				case MoveOp::IOWriteWithOffset:
+				case MoveOp::StoreIOWithOffset:
                     ioSpaceWrite(destinationRegister() + getHalfImmediate(), source0Register());
 					break;
 				case MoveOp::MoveFromIP:

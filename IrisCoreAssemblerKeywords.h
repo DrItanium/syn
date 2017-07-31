@@ -42,107 +42,13 @@ namespace iris {
 	// DIRECTIVES
     DefSymbol(DataDirective, .data);
     DefSymbol(CodeDirective, .code);
-	// Arithmetic operations
-    using SymbolAdd = syn::SymbolAddKeyword;
-    using SymbolSub = syn::SymbolSubKeyword;
-    using SymbolMul = syn::SymbolMulKeyword;
-    using SymbolDiv = syn::SymbolDivKeyword;
-    using SymbolRem = syn::SymbolRemKeyword;
-    DefSymbol(ShiftLeft, shl);
-    DefSymbol(ShiftRight, shr);
-    using SymbolAnd = syn::SymbolAndKeyword;
-    using SymbolOr = syn::SymbolOrKeyword;
-    using SymbolXor = syn::SymbolXorKeyword;
-    using SymbolNand = syn::SymbolNandKeyword;
-    using SymbolNor = syn::SymbolNorKeyword;
-    using SymbolMin = syn::SymbolMinKeyword;
-    using SymbolMax = syn::SymbolMaxKeyword;
-	// two arg variants
-    using SymbolNot = syn::SymbolNotKeyword;
-	// immediate variants
-    DefSymbol(AddImmediate, addi);
-    DefSymbol(SubImmediate, subi);
-    DefSymbol(MulImmediate, muli);
-    DefSymbol(DivImmediate, divi);
-    DefSymbol(RemImmediate, remi);
-    DefSymbol(ShiftLeftImmediate, shli);
-    DefSymbol(ShiftRightImmediate, shri);
-	// MoveOperations
-	// one arg operations
-    DefSymbol(MoveToIP, mtip);
-    DefSymbol(MoveFromIP, mfip);
-    DefSymbol(MoveToLR, mtlr);
-    DefSymbol(MoveFromLR, mflr);
-    DefSymbol(RestoreAllRegisters, rregs);
-    DefSymbol(SaveAllRegisters, sregs);
-
-	// two arg operations
-    using SymbolMove = syn::SymbolMoveKeyword;
-    using SymbolSwap = syn::SymbolSwapKeyword;
-    using SymbolStore = syn::SymbolStoreKeyword;
-    using SymbolLoad = syn::SymbolLoadKeyword;
-    DefSymbol(LoadIO, io-load);
-    DefSymbol(StoreIO, io-store);
-    using SymbolPush = syn::SymbolPushKeyword;
-    using SymbolPop = syn::SymbolPopKeyword;
-	// immediate variants
-    DefSymbol(LoadWithOffset, load-offset);
-    DefSymbol(StoreWithOffset, store-offset);
-    DefSymbol(LoadIOWithOffset, io-load-offset);
-    DefSymbol(StoreIOWithOffset, io-store-offset);
-	// three gpr variant
-    DefSymbol(LoadCode, code-load);
-    DefSymbol(StoreCode, code-store);
-	// gpr immediate
-    DefSymbol(PushImmediate, pushi);
-    using SymbolSet = syn::SymbolSetKeyword;
-    DefSymbol(LoadImmediate, loadi);
-    DefSymbol(StoreImmediate, storei);
-
-	// branch instructions
-	// one unconditional gpr
-    using SymbolBranchUnconditional = syn::SymbolBranchKeyword;
-    DefSymbol(BranchUnconditionalLink, branch_l);
-	// branch unconditional immediate
-    DefSymbol(BranchUnconditionalImmediate, branch_i);
-    DefSymbol(BranchUnconditionalImmediateLink, branch_il);
-	// conditional branch gpr
-    DefSymbol(BranchConditional, branch_c);
-    DefSymbol(BranchConditionalLink, branch_cl);
-	// branch conditional immediate variants
-    DefSymbol(BranchConditionalImmediate, branch_ci);
-    DefSymbol(BranchConditionalImmediateLink, branch_cil);
-	// branch conditional to the link register
-    DefSymbol(BranchConditionalLR, branch_clr);
-    DefSymbol(BranchConditionalLRAndLink, branch_clrl);
-	// no argument branching
-    DefSymbol(BranchUnconditionalLR, branch_lr);
-    DefSymbol(BranchUnconditionalLRAndLink, branch_lrl);
-    DefSymbol(BranchReturnFromError, rfe);
-	// Compare operations
-    using SymbolEq = syn::SymbolEqualsKeyword;
-    using SymbolNeq = syn::SymbolNotEqualsKeyword;
-    using SymbolLessThan = syn::SymbolLessThanKeyword;
-    using SymbolLessThanOrEqualTo = syn::SymbolLessThanOrEqualToKeyword;
-    using SymbolGreaterThan = syn::SymbolGreaterThanKeyword;
-    using SymbolGreaterThanOrEqualTo = syn::SymbolGreaterThanOrEqualToKeyword;
-    DefSymbol(EqImmediate, eqi);
-    DefSymbol(NeqImmediate, neqi);
-    DefSymbol(LessThanImmediate, lti);
-    DefSymbol(GreaterThanImmediate, gti);
-    DefSymbol(LessThanOrEqualToImmediate, lei);
-    DefSymbol(GreaterThanOrEqualToImmediate, gei);
-	// conditional register operations
-    DefSymbol(SaveCRs, psave);
-    DefSymbol(RestoreCRs, prestore);
-    DefSymbol(CRXor, pxor);
-    DefSymbol(CRNot, pnot);
-    DefSymbol(CRAnd, pand);
-    DefSymbol(CROr, por);
-    DefSymbol(CRNand, pnand);
-    DefSymbol(CRNor, pnor);
-    DefSymbol(CRSwap, pswap);
-    DefSymbol(CRMove, pmove);
+#define X(str, _, id) DefSymbol(id, str);
+#include "desc/iris/ArithmeticOp.desc"
+#include "desc/iris/MoveOp.desc"
+#include "desc/iris/JumpOp.desc"
+#include "desc/iris/CompareOp.desc"
+#include "desc/iris/ConditionRegisterOp.desc"
+#undef X
 } // end namespace iris
 
 
