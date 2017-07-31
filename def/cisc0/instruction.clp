@@ -194,31 +194,6 @@
                                    GetTerminateAddress GetTerminateAddress
                                    SetTerminateAddress SetTerminateAddress))
 
-(defrule MAIN::generate-enum-and-keyword-generator
-         (declare (salience 10000))
-         ?f <- (defenum-and-translation ?title
-                                        ?max
-                                        ?type
-                                        ?path
-                                        entries:
-                                        $?entries)
-         =>
-         (retract ?f)
-         (bind ?enum-entries
-               (create$))
-         (progn$ (?e $?entries)
-                 (if (evenp ?e-index) then
-                   (bind ?enum-entries
-                         ?enum-entries
-                         ?e)))
-         (assert (defenum ?title
-                          ?max
-                          ?type
-                          entries:
-                          ?enum-entries)
-                 (keyword-generator (path ?path)
-                                    (class ?title)
-                                    (translations $?entries))))
 
 
 
