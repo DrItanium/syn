@@ -86,6 +86,142 @@
           (deffield ParsingComplexSubType           0b0000111100000000 8 ParsingOperation)
           (deffield FeatureCheckComplexSubType      0b0000111100000000 8 FeatureCheckOperation))
 
+(deffacts MAIN::cisc0-enum-and-translation-declarations
+          (defenum-and-translation Operation
+                                   "ArchitectureConstants::MaxInstructionCount"
+                                   byte
+                                   desc/cisc0/Operation.desc
+                                   entries:
+                                   memory Memory
+                                   arithmetic Arithmetic
+                                   shift Shift
+                                   logical Logical
+                                   compare Compare
+                                   branch Branch
+                                   move Move
+                                   set Set
+                                   swap Swap
+                                   return Return
+                                   complex Complex)
+          (defenum-and-translation ArithmeticOps
+                                   8
+                                   byte
+                                   desc/cisc0/ArithmeticOps.desc
+                                   entries:
+                                   add Add
+                                   sub Sub
+                                   mul Mul
+                                   div Div
+                                   rem Rem
+                                   min Min
+                                   max Max)
+          (defenum-and-translation CompareStyle
+                                   8
+                                   byte
+                                   desc/cisc0/CompareStyle.desc
+                                   entries:
+                                   "==" Equals
+                                   "!=" NotEquals
+                                   "<" LessThan
+                                   "<=" GreaterThan
+                                   ">" LessThanOrEqualTo
+                                   ">=" GreaterThanOrEqualTo
+                                   MoveFromCondition MoveFromCondition
+                                   MoveToCondition MoveToCondition)
+          (defenum-and-translation LogicalOps
+                                   8
+                                   byte
+                                   desc/cisc0/LogicalOps.desc
+                                   entries:
+                                   and And
+                                   or Or
+                                   xor Xor
+                                   nand Nand
+                                   not Not)
+          (defenum-and-translation MemoryOperation
+                                   4
+                                   byte
+                                   desc/cisc0/MemoryOperation.desc
+                                   entries:
+                                   load Load
+                                   store Store
+                                   push Push
+                                   pop Pop)
+          (defenum-and-translation ComplexSubTypes
+                                   16
+                                   byte
+                                   desc/cisc0/ComplexSubTypes.desc
+                                   entries:
+                                   encoding Encoding
+                                   extended Extended
+                                   parsing Parsing
+                                   feature-check FeatureCheck)
+          (defenum-and-translation EncodingOperation
+                                   16
+                                   byte
+                                   desc/cisc0/EncodingOperation.desc
+                                   entries:
+                                   encode Encode
+                                   decode Decode
+                                   bitset BitSet
+                                   bitunset BitUnset)
+          (defenum-and-translation ParsingOperation
+                                   16
+                                   byte
+                                   desc/cisc0/ParsingOperation.desc
+                                   entries:
+                                   Hex8ToRegister Hex8ToRegister
+                                   RegisterToHex8 RegisterToHex8
+                                   MemCopy MemCopy)
+          (defenum-and-translation ExtendedOperation
+                                   16
+                                   byte
+                                   desc/cisc0/ExtendedOperation.desc
+                                   entries:
+                                   PushValueAddr PushValueAddr
+                                   PopValueAddr PopValueAddr
+                                   oddp IsOdd
+                                   evenp IsEven
+                                   IncrementValueAddr IncrementValueAddr
+                                   DecrementValueAddr DecrementValueAddr
+                                   WordsBeforeFirstZero WordsBeforeFirstZero)
+          (defenum-and-translation FeatureCheckOperation
+                                   16
+                                   byte
+                                   desc/cisc0/FeatureCheckOperation.desc
+                                   entries:
+                                   GetModelNumber GetModelNumber
+                                   GetTerminateAddress GetTerminateAddress
+                                   SetTerminateAddress SetTerminateAddress))
+
+(defrule MAIN::generate-enum-and-keyword-generator
+         (declare (salience 10000))
+         ?f <- (defenum-and-translation ?title
+                                        ?max
+                                        ?type
+                                        ?path
+                                        entries:
+                                        $?entries)
+         =>
+         (retract ?f)
+         (bind ?enum-entries
+               (create$))
+         (progn$ (?e $?entries)
+                 (if (evenp ?e-index) then
+                   (bind ?enum-entries
+                         ?enum-entries
+                         ?e)))
+         (assert (defenum ?title
+                          ?max
+                          ?type
+                          entries:
+                          ?enum-entries)
+                 (keyword-generator (path ?path)
+                                    (class ?title)
+                                    (translations $?entries))))
+
+
+
 
 
 (deffacts cisc0-enums
@@ -94,104 +230,7 @@
                    byte
                    entries:
                    Destination
-                   Source)
-          (defenum Operation
-                   "ArchitectureConstants::MaxInstructionCount"
-                   byte
-                   entries:
-                   ; Model 0 and greater groups
-                   Memory
-                   Arithmetic
-                   Shift
-                   Logical
-                   Compare
-                   Branch
-                   Move
-                   Set
-                   Swap
-                   Return
-                   Complex)
-          (defenum ArithmeticOps
-                   8
-                   byte
-                   entries:
-                   Add
-                   Sub
-                   Mul
-                   Div
-                   Rem
-                   Min
-                   Max)
-          (defenum CompareStyle
-                   8
-                   byte
-                   entries:
-                   Equals
-                   NotEquals
-                   LessThan
-                   GreaterThan
-                   LessThanOrEqualTo
-                   GreaterThanOrEqualTo
-                   MoveFromCondition
-                   MoveToCondition)
-          (defenum LogicalOps
-                   8
-                   byte
-                   entries:
-                   And
-                   Or
-                   Xor
-                   Nand
-                   Not)
-          (defenum MemoryOperation
-                   4
-                   byte
-                   entries:
-                   Load
-                   Store
-                   Push
-                   Pop)
-          (defenum ComplexSubTypes
-                   16
-                   byte
-                   entries:
-                   Encoding
-                   Extended
-                   Parsing
-                   FeatureCheck)
-          (defenum EncodingOperation
-                   16
-                   byte
-                   entries:
-                   Encode
-                   Decode
-                   BitSet
-                   BitUnset)
-          (defenum ParsingOperation
-                   16
-                   byte
-                   entries:
-                   Hex8ToRegister
-                   RegisterToHex8
-                   MemCopy)
-          (defenum ExtendedOperation
-                   16
-                   byte
-                   entries:
-                   PushValueAddr
-                   PopValueAddr
-                   IsOdd
-                   IsEven
-                   IncrementValueAddr
-                   DecrementValueAddr
-                   WordsBeforeFirstZero)
-          (defenum FeatureCheckOperation
-                   16
-                   byte
-                   entries:
-                   GetModelNumber
-                   GetTerminateAddress
-                   SetTerminateAddress))
+                   Source))
 
 (deffacts cisc0-file-layouts-and-requests
           (include "ExecutionUnits.h")
@@ -777,18 +816,3 @@
                                                              in)))
                    crlf))
 
-
-(deffacts MAIN::cisc0-string-to-keyword-translation
-          (keyword-generator (path desc/cisc0/Operation.desc)
-                             (class Operation)
-                             (translations arithmetic Arithmetic
-                                           shift Shift
-                                           compare Compare
-                                           move Move
-                                           set Set
-                                           swap Swap
-                                           memory Memory
-                                           logical Logical
-                                           complex Complex
-                                           branch Branch
-                                           return Return)))
