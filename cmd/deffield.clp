@@ -692,7 +692,7 @@
                  (translations $?rest)))
 
 (defrule MAIN::generate-enum-and-keyword-generator
-         (declare (salience 10000))
+         (declare (salience ?*priority:first*))
          ?f <- (defenum-and-translation ?title
                                         ?max
                                         ?type
@@ -716,3 +716,4 @@
                  (keyword-generator (path ?path)
                                     (class ?title)
                                     (translations $?entries))))
+

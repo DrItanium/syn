@@ -153,7 +153,7 @@
 
 
 (defrule MAIN::translate-iris-operation-group
-         (declare (salience 10000))
+         (declare (salience ?*priority:first*))
          ?f <- (defenum-and-translation:iris-operation-group ?title
                                                              entries:
                                                              $?entries)
