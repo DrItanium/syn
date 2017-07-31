@@ -57,6 +57,15 @@ namespace cisc0 {
     EncodingOperation stringToEncodingOperation(const std::string& str) noexcept;
     ExtendedOperation stringToExtendedOperation(const std::string& str) noexcept;
     ParsingOperation stringToParsingOperation(const std::string& str) noexcept;
+    const std::string& compareStyleToString(CompareStyle value) noexcept;
+    const std::string& arithmeticOpsToString(ArithmeticOps value) noexcept;
+    const std::string& complexSubTypesToString(ComplexSubTypes value) noexcept;
+    const std::string& memoryOperationToString(MemoryOperation value) noexcept;
+    const std::string& logicalOpsToString(LogicalOps value) noexcept;
+    const std::string& encodingOperationToString(EncodingOperation value) noexcept;
+    const std::string& extendedOperationToString(ExtendedOperation value) noexcept;
+    const std::string& parsingOperationToString(ParsingOperation value) noexcept;
+
 	using Separator = syn::AsmSeparator;
 	using SingleLineComment = syn::SingleLineComment<';'>;
 	template<typename R> struct Action : syn::Action<R> { };
