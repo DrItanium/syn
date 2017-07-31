@@ -30,18 +30,6 @@
 #include "AssemblerBase.h"
 
 namespace cisc0 {
-	// groups
-	DefSymbol(Shift, shift);
-	DefSymbol(Compare, compare);
-    using SymbolMove = syn::SymbolMoveKeyword;
-    using SymbolSet = syn::SymbolSetKeyword;
-    using SymbolSwap = syn::SymbolSwapKeyword;
-	DefSymbol(Arithmetic, arithmetic);
-	DefSymbol(Memory, memory);
-	DefSymbol(Logical, logical);
-	DefSymbol(Complex, complex);
-    using SymbolBranch = syn::SymbolBranchKeyword;
-	DefSymbol(Return, return);
     // modifiers
     using SymbolImmediate = syn::SymbolImmediateKeyword;
 	DefSymbol(Indirect, indirect);
@@ -65,6 +53,8 @@ namespace cisc0 {
 
     // have one location where specific symbols are defined!
 #define X(str, _, id) DefSymbol (id , str);
+	// groups
+#include "desc/cisc0/Operation.desc"
     // compare operations
 #include "desc/cisc0/CompareStyle.desc"
     // arithmetic operations

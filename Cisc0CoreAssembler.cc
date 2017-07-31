@@ -226,4 +226,15 @@ DefBeginEnumToStringFn(ParsingOperation, parsingOperation)
 #undef X
 DefEndEnumToStringFn(ParsingOperation)
 
+DefBeginEnumToStringFn(Operation, operation)
+#define X(str, type, _) EnumToStringEntry(str, type)
+#include "desc/cisc0/Operation.desc"
+#undef X
+DefEndEnumToStringFn(Operation)
+
+DefBeginStringToEnumFn(Operation)
+#define X(str, type, _) StringToEnumEntry(str, type)
+#include "desc/cisc0/Operation.desc"
+#undef X
+DefEndStringToEnumFn(Operation)
 }
