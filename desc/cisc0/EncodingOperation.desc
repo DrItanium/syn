@@ -1,0 +1,4 @@
+X( "bitset", EncodingOperation::BitSet)
+X( "bitunset", EncodingOperation::BitUnset)
+X( "encode", EncodingOperation::Encode)
+X( "decode", EncodingOperation::Decode)

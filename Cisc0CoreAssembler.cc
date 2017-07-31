@@ -82,6 +82,18 @@ namespace cisc0 {
 		}
 	}
 
+#define DefBeginStringToFn(type) \
+    type stringTo ## type (const std::string& str) noexcept { \
+        static std::map<std::string, type > translation = {
+#define DefEndStringToFn(type) \
+        }; \
+        auto x = translation.find(str); \
+        if (x == translation.end()) { \
+            return syn::defaultErrorState< type > ; \
+        } else { \
+            return x->second; \
+        } \
+    }
 	Word translateRegister(const std::string& input) {
 		static std::map<std::string, Word> builtinAliases = {
 			{ "addr", static_cast<Word>(ArchitectureConstants::AddressRegister) },
@@ -100,41 +112,12 @@ namespace cisc0 {
 			return result->second;
 		}
 	}
-    CompareStyle stringToCompareStyle(const std::string& str) noexcept {
-        static std::map<std::string, CompareStyle> translation = {
-            { "==", CompareStyle::Equals },
-            { "!=", CompareStyle::NotEquals },
-            { "<", CompareStyle::LessThan },
-            { "<=", CompareStyle::LessThanOrEqualTo },
-            { ">", CompareStyle::GreaterThan },
-            { ">=", CompareStyle::GreaterThanOrEqualTo},
-            { "MoveFromCondition", CompareStyle::MoveFromCondition },
-            { "MoveToCondition", CompareStyle::MoveToCondition },
-        };
-        auto x = translation.find(str);
-        if (x == translation.end()) {
-            return syn::defaultErrorState<CompareStyle>;
-        } else {
-            return x->second;
-        }
-    }
-    ArithmeticOps stringToArithmeticOps(const std::string& str) noexcept {
-        static std::map<std::string, ArithmeticOps> translation = {
-            { "add", ArithmeticOps::Add},
-            { "sub", ArithmeticOps::Sub},
-            { "mul", ArithmeticOps::Mul},
-            { "div", ArithmeticOps::Div},
-            { "rem", ArithmeticOps::Rem},
-            { "min", ArithmeticOps::Min},
-            { "max", ArithmeticOps::Max},
-        };
-        auto x = translation.find(str);
-        if (x == translation.end()) {
-            return syn::defaultErrorState<ArithmeticOps>;
-        } else {
-            return x->second;
-        }
-    }
+    DefBeginStringToFn(CompareStyle)
+       #include "desc/cisc0/CompareStyle.desc"
+    DefEndStringToFn(CompareStyle)
+    DefBeginStringToFn(ArithmeticOps)
+       #include "desc/cisc0/ArithmeticOps.desc"
+    DefEndStringToFn(ArithmeticOps)
     MemoryOperation stringToMemoryOperation(const std::string& str) noexcept {
         static std::map<std::string, MemoryOperation> translation = {
             { "store", MemoryOperation::Store},
@@ -166,10 +149,10 @@ namespace cisc0 {
     }
     EncodingOperation stringToEncodingOperation(const std::string& str) noexcept {
         static std::map<std::string, EncodingOperation> translation = {
-            { "bitset", EncodingOperation::BitSet},
-            { "bitunset", EncodingOperation::BitUnset},
-            { "encode", EncodingOperation::Encode},
-            { "decode", EncodingOperation::Decode},
+#define X(str, type) \
+            { str, type },
+#include "desc/cisc0/EncodingOperation.desc"
+#undef X
         };
         auto x = translation.find(str);
         if (x == translation.end()) {
@@ -180,13 +163,10 @@ namespace cisc0 {
     }
     ExtendedOperation stringToExtendedOperation(const std::string& str) noexcept {
         static std::map<std::string, ExtendedOperation> translation = {
-            { "PushValueAddr", ExtendedOperation::PushValueAddr},
-            { "PopValueAddr", ExtendedOperation::PopValueAddr},
-            { "IncrementValueAddr", ExtendedOperation::IncrementValueAddr},
-            { "DecrementValueAddr", ExtendedOperation::DecrementValueAddr},
-            { "WordsBeforeFirstZero", ExtendedOperation::WordsBeforeFirstZero },
-            { "evenp", ExtendedOperation::IsEven },
-            { "oddp", ExtendedOperation::IsOdd },
+#define X(str, type) \
+            { str, type },
+#include "desc/cisc0/ExtendedOperation.desc"
+#undef X
         };
         auto x = translation.find(str);
         if (x == translation.end()) {
@@ -195,20 +175,10 @@ namespace cisc0 {
             return x->second;
         }
     }
-    ComplexSubTypes stringToComplexSubTypes(const std::string& str) noexcept {
-        static std::map<std::string, ComplexSubTypes> translation = {
-            { "encoding", ComplexSubTypes::Encoding},
-            { "extended", ComplexSubTypes::Extended},
-            { "parsing", ComplexSubTypes::Parsing},
-            { "feature-check", ComplexSubTypes::FeatureCheck },
-        };
-        auto x = translation.find(str);
-        if (x == translation.end()) {
-            return syn::defaultErrorState<ComplexSubTypes>;
-        } else {
-            return x->second;
-        }
-    }
+DefBeginStringToFn(ComplexSubTypes)
+#include "desc/cisc0/ComplexSubTypes.desc"
+DefEndStringToFn(ComplexSubTypes)
+
     ParsingOperation stringToParsingOperation(const std::string& str) noexcept {
         static std::map<std::string, ParsingOperation> translation = {
             { "Hex8ToRegister", ParsingOperation::Hex8ToRegister},

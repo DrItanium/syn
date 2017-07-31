@@ -1,0 +1,4 @@
+X( "encoding", ComplexSubTypes::Encoding)
+X( "extended", ComplexSubTypes::Extended)
+X( "parsing", ComplexSubTypes::Parsing)
+X( "feature-check", ComplexSubTypes::FeatureCheck )

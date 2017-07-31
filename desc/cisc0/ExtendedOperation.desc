@@ -1,0 +1,7 @@
+X( "PushValueAddr", ExtendedOperation::PushValueAddr)
+X( "PopValueAddr", ExtendedOperation::PopValueAddr)
+X( "IncrementValueAddr", ExtendedOperation::IncrementValueAddr)
+X( "DecrementValueAddr", ExtendedOperation::DecrementValueAddr)
+X( "WordsBeforeFirstZero", ExtendedOperation::WordsBeforeFirstZero )
+X( "evenp", ExtendedOperation::IsEven )
+X( "oddp", ExtendedOperation::IsOdd )

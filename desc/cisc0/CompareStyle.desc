@@ -1,0 +1,8 @@
+X( "==", CompareStyle::Equals )
+X( "!=", CompareStyle::NotEquals )
+X( "<", CompareStyle::LessThan )
+X( "<=", CompareStyle::LessThanOrEqualTo )
+X( ">", CompareStyle::GreaterThan )
+X( ">=", CompareStyle::GreaterThanOrEqualTo)
+X( "MoveFromCondition", CompareStyle::MoveFromCondition )
+X( "MoveToCondition", CompareStyle::MoveToCondition )

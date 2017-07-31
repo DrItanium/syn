@@ -1,0 +1,7 @@
+X( "add", ArithmeticOps::Add)
+X( "sub", ArithmeticOps::Sub)
+X( "mul", ArithmeticOps::Mul)
+X( "div", ArithmeticOps::Div)
+X( "rem", ArithmeticOps::Rem)
+X( "min", ArithmeticOps::Min)
+X( "max", ArithmeticOps::Max)
