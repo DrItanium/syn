@@ -58,62 +58,30 @@ namespace cisc0 {
 	DefSymbol(FieldRegister, field);
 	DefSymbol(CallStackPointer, csp);
 
-    // compare operations
-    using SymbolEquals = syn::SymbolEqualsKeyword;
-    using SymbolNotEquals = syn::SymbolNotEqualsKeyword;
-    using SymbolLessThan = syn::SymbolLessThanKeyword;
-    using SymbolLessThanOrEqualTo = syn::SymbolLessThanOrEqualToKeyword;
-    using SymbolGreaterThan = syn::SymbolGreaterThanKeyword;
-    using SymbolGreaterThanOrEqualTo = syn::SymbolGreaterThanOrEqualToKeyword;
-    DefSymbol(MoveToCondition, MoveToCondition);
-    DefSymbol(MoveFromCondition, MoveFromCondition);
-    // arithmetic operations
-    using SymbolAdd = syn::SymbolAddKeyword;
-    using SymbolSub = syn::SymbolSubKeyword;
-    using SymbolMul = syn::SymbolMulKeyword;
-    using SymbolDiv = syn::SymbolDivKeyword;
-    using SymbolRem = syn::SymbolRemKeyword;
-    using SymbolMin = syn::SymbolMinKeyword;
-    using SymbolMax = syn::SymbolMaxKeyword;
-
-    // memory operations
-    using SymbolStore = syn::SymbolStoreKeyword;
-    using SymbolLoad = syn::SymbolLoadKeyword;
-    using SymbolPush = syn::SymbolPushKeyword;
-    using SymbolPop = syn::SymbolPopKeyword;
-
-    // logical operations
-    using SymbolAnd = syn::SymbolAndKeyword;
-    using SymbolOr = syn::SymbolOrKeyword;
-    using SymbolNot = syn::SymbolNotKeyword;
-    using SymbolXor = syn::SymbolXorKeyword;
-    using SymbolNand = syn::SymbolNandKeyword;
-
-	DefSymbol(BitSet, bitset);
-	DefSymbol(BitUnset, bitunset);
-	DefSymbol(Encode, encode);
-	DefSymbol(Decode, decode);
-
-	DefSymbol(PushValueAddr, PushValueAddr);
-	DefSymbol(PopValueAddr,  PopValueAddr);
-	DefSymbol(IncrementValueAddr, IncrementValueAddr);
-	DefSymbol(DecrementValueAddr, DecrementValueAddr);
-	DefSymbol(WordsBeforeFirstZero, CountWordsBeforeFirstZero);
-
-	DefSymbol(IsEven, evenp);
-	DefSymbol(IsOdd, oddp);
-
-	DefSymbol(Hex8ToRegister, Hex8ToRegister);
-	DefSymbol(RegisterToHex8, RegisterToHex8);
-	DefSymbol(MemCopy, MemCopy);
-
 	DefSymbol(Call, call);
 	DefSymbol(NoCall, nocall);
 	DefSymbol(Conditional, conditional);
 	DefSymbol(Unconditional, unconditional);
+
+    // have one location where specific symbols are defined!
+#define X(str, _, id) DefSymbol (id , str);
+    // compare operations
+#include "desc/cisc0/CompareStyle.desc"
+    // arithmetic operations
+#include "desc/cisc0/ArithmeticOps.desc"
+    // memory operations
+#include "desc/cisc0/MemoryOperation.desc"
+    // logical operations
+#include "desc/cisc0/LogicalOps.desc"
+
+    // encoding operations
+#include "desc/cisc0/EncodingOperation.desc"
+    // extended operations
+#include "desc/cisc0/ExtendedOperation.desc"
+    // parsing operations
+#include "desc/cisc0/ParsingOperation.desc"
     // complex related
-	DefSymbol(Encoding, encoding);
-	DefSymbol(Extended, extended);
-	DefSymbol(Parsing, parsing);
+#include "desc/cisc0/ComplexSubTypes.desc"
+#undef X
 } // end namespace cisc0
 #endif // end CISC0_CORE_ASSEMBLER_KEYWORDS_H__

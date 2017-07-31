@@ -131,97 +131,97 @@ namespace cisc0 {
 		}
 	}
 DefBeginStringToEnumFn(CompareStyle)
-#define X(str, type) StringToEnumEntry(str, type)
+#define X(str, type, _) StringToEnumEntry(str, type)
 #include "desc/cisc0/CompareStyle.desc"
 #undef X
 DefEndStringToEnumFn(CompareStyle)
 
 DefBeginStringToEnumFn(ArithmeticOps)
-#define X(str, type) StringToEnumEntry(str, type)
+#define X(str, type, _) StringToEnumEntry(str, type)
 #include "desc/cisc0/ArithmeticOps.desc"
 #undef X
 DefEndStringToEnumFn(ArithmeticOps)
 
 DefBeginStringToEnumFn(MemoryOperation)
-#define X(str, type) StringToEnumEntry(str, type)
+#define X(str, type, _) StringToEnumEntry(str, type)
 #include "desc/cisc0/MemoryOperation.desc"
 #undef X
 DefEndStringToEnumFn(MemoryOperation)
 
 DefBeginStringToEnumFn(LogicalOps)
-#define X(str, type) StringToEnumEntry(str, type)
+#define X(str, type, _) StringToEnumEntry(str, type)
 #include "desc/cisc0/LogicalOps.desc"
 #undef X
 DefEndStringToEnumFn(LogicalOps)
 
 DefBeginStringToEnumFn(EncodingOperation)
-#define X(str, type) StringToEnumEntry(str, type)
+#define X(str, type, _) StringToEnumEntry(str, type)
 #include "desc/cisc0/EncodingOperation.desc"
 #undef X
 DefEndStringToEnumFn(EncodingOperation)
 
 DefBeginStringToEnumFn(ExtendedOperation)
-#define X(str, type) StringToEnumEntry(str, type)
+#define X(str, type, _) StringToEnumEntry(str, type)
 #include "desc/cisc0/ExtendedOperation.desc"
 #undef X
 DefEndStringToEnumFn(ExtendedOperation)
 
 DefBeginStringToEnumFn(ComplexSubTypes)
-#define X(str, type) StringToEnumEntry(str, type)
+#define X(str, type, _) StringToEnumEntry(str, type)
 #include "desc/cisc0/ComplexSubTypes.desc"
 #undef X
 DefEndStringToEnumFn(ComplexSubTypes)
 
 DefBeginStringToEnumFn(ParsingOperation)
-#define X(str, type) StringToEnumEntry(str, type)
+#define X(str, type, _) StringToEnumEntry(str, type)
 #include "desc/cisc0/ParsingOperation.desc"
 #undef X
 DefEndStringToEnumFn(ParsingOperation)
 
 DefBeginEnumToStringFn(CompareStyle, compareStyle)
-#define X(str, type) EnumToStringEntry(str, type)
+#define X(str, type, _) EnumToStringEntry(str, type)
 #include "desc/cisc0/CompareStyle.desc"
 #undef X
 DefEndEnumToStringFn(CompareStyle)
 
 DefBeginEnumToStringFn(ArithmeticOps, arithmeticOps)
-#define X(str, type) EnumToStringEntry(str, type)
+#define X(str, type, _) EnumToStringEntry(str, type)
 #include "desc/cisc0/ArithmeticOps.desc"
 #undef X
 DefEndEnumToStringFn(ArithmeticOps)
 
 DefBeginEnumToStringFn(MemoryOperation, memoryOperation)
-#define X(str, type) EnumToStringEntry(str, type)
+#define X(str, type, _) EnumToStringEntry(str, type)
 #include "desc/cisc0/MemoryOperation.desc"
 #undef X
 DefEndEnumToStringFn(MemoryOperation)
 
 DefBeginEnumToStringFn(LogicalOps, logicalOps)
-#define X(str, type) EnumToStringEntry(str, type)
+#define X(str, type, _) EnumToStringEntry(str, type)
 #include "desc/cisc0/LogicalOps.desc"
 #undef X
 DefEndEnumToStringFn(LogicalOps)
 
 DefBeginEnumToStringFn(EncodingOperation, encodingOperation)
-#define X(str, type) EnumToStringEntry(str, type)
+#define X(str, type, _) EnumToStringEntry(str, type)
 #include "desc/cisc0/EncodingOperation.desc"
 #undef X
 DefEndEnumToStringFn(EncodingOperation)
 
 DefBeginEnumToStringFn(ExtendedOperation, extendedOperation)
-#define X(str, type) EnumToStringEntry(str, type)
+#define X(str, type, _) EnumToStringEntry(str, type)
 #include "desc/cisc0/ExtendedOperation.desc"
 #undef X
 DefEndEnumToStringFn(ExtendedOperation)
 
 DefBeginEnumToStringFn(ComplexSubTypes, complexSubTypes)
-#define X(str, type) EnumToStringEntry(str, type)
+#define X(str, type, _) EnumToStringEntry(str, type)
 #include "desc/cisc0/ComplexSubTypes.desc"
 #undef X
 DefEndEnumToStringFn(ComplexSubTypes)
 
 DefBeginEnumToStringFn(ParsingOperation, parsingOperation)
-#define X(str, type) EnumToStringEntry(str, type)
+#define X(str, type, _) EnumToStringEntry(str, type)
 #include "desc/cisc0/ParsingOperation.desc"
 #undef X
 DefEndEnumToStringFn(ParsingOperation)
