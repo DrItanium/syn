@@ -1,0 +1,3 @@
+X( "Hex8ToRegister", ParsingOperation::Hex8ToRegister)
+X( "RegisterToHex8", ParsingOperation::RegisterToHex8 )
+X( "MemCopy", ParsingOperation::MemCopy )

@@ -1,0 +1,5 @@
+X( "and", LogicalOps::And)
+X( "or", LogicalOps::Or)
+X( "not", LogicalOps::Not)
+X( "xor", LogicalOps::Xor)
+X( "nand", LogicalOps::Nand)

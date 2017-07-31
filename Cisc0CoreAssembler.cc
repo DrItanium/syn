@@ -112,84 +112,52 @@ namespace cisc0 {
 			return result->second;
 		}
 	}
-    DefBeginStringToFn(CompareStyle)
-       #include "desc/cisc0/CompareStyle.desc"
-    DefEndStringToFn(CompareStyle)
-    DefBeginStringToFn(ArithmeticOps)
-       #include "desc/cisc0/ArithmeticOps.desc"
-    DefEndStringToFn(ArithmeticOps)
-    MemoryOperation stringToMemoryOperation(const std::string& str) noexcept {
-        static std::map<std::string, MemoryOperation> translation = {
-            { "store", MemoryOperation::Store},
-            { "load", MemoryOperation::Load},
-            { "push", MemoryOperation::Push},
-            { "pop", MemoryOperation::Pop},
-        };
-        auto x = translation.find(str);
-        if (x == translation.end()) {
-            return syn::defaultErrorState<MemoryOperation>;
-        } else {
-            return x->second;
-        }
-    }
-    LogicalOps stringToLogicalOps(const std::string& str) noexcept {
-        static std::map<std::string, LogicalOps> translation = {
-            { "and", LogicalOps::And},
-            { "or", LogicalOps::Or},
-            { "not", LogicalOps::Not},
-            { "xor", LogicalOps::Xor},
-            { "nand", LogicalOps::Nand},
-        };
-        auto x = translation.find(str);
-        if (x == translation.end()) {
-            return syn::defaultErrorState<LogicalOps>;
-        } else {
-            return x->second;
-        }
-    }
-    EncodingOperation stringToEncodingOperation(const std::string& str) noexcept {
-        static std::map<std::string, EncodingOperation> translation = {
-#define X(str, type) \
-            { str, type },
+DefBeginStringToFn(CompareStyle)
+#define X(str, type) { str, type },
+#include "desc/cisc0/CompareStyle.desc"
+#undef X
+DefEndStringToFn(CompareStyle)
+
+DefBeginStringToFn(ArithmeticOps)
+#define X(str, type) { str, type },
+#include "desc/cisc0/ArithmeticOps.desc"
+#undef X
+DefEndStringToFn(ArithmeticOps)
+
+DefBeginStringToFn(MemoryOperation)
+#define X(str, type) { str, type },
+#include "desc/cisc0/MemoryOperation.desc"
+#undef X
+DefEndStringToFn(MemoryOperation)
+
+DefBeginStringToFn(LogicalOps)
+#define X(str, type) { str, type },
+#include "desc/cisc0/LogicalOps.desc"
+#undef X
+DefEndStringToFn(LogicalOps)
+
+DefBeginStringToFn(EncodingOperation)
+#define X(str, type) { str, type },
 #include "desc/cisc0/EncodingOperation.desc"
 #undef X
-        };
-        auto x = translation.find(str);
-        if (x == translation.end()) {
-            return syn::defaultErrorState<EncodingOperation>;
-        } else {
-            return x->second;
-        }
-    }
-    ExtendedOperation stringToExtendedOperation(const std::string& str) noexcept {
-        static std::map<std::string, ExtendedOperation> translation = {
-#define X(str, type) \
-            { str, type },
+DefEndStringToFn(EncodingOperation)
+
+DefBeginStringToFn(ExtendedOperation)
+#define X(str, type) { str, type },
 #include "desc/cisc0/ExtendedOperation.desc"
 #undef X
-        };
-        auto x = translation.find(str);
-        if (x == translation.end()) {
-            return syn::defaultErrorState<ExtendedOperation>;
-        } else {
-            return x->second;
-        }
-    }
+DefEndStringToFn(ExtendedOperation)
+
 DefBeginStringToFn(ComplexSubTypes)
+#define X(str, type) { str, type },
 #include "desc/cisc0/ComplexSubTypes.desc"
+#undef X
 DefEndStringToFn(ComplexSubTypes)
 
-    ParsingOperation stringToParsingOperation(const std::string& str) noexcept {
-        static std::map<std::string, ParsingOperation> translation = {
-            { "Hex8ToRegister", ParsingOperation::Hex8ToRegister},
-            { "RegisterToHex8", ParsingOperation::RegisterToHex8 },
-            { "MemCopy", ParsingOperation::MemCopy },
-        };
-        auto x = translation.find(str);
-        if (x == translation.end()) {
-            return syn::defaultErrorState<ParsingOperation>;
-        } else {
-            return x->second;
-        }
-    }
+DefBeginStringToFn(ParsingOperation)
+#define X(str, type) { str, type },
+#include "desc/cisc0/ParsingOperation.desc"
+#undef X
+DefEndStringToFn(ParsingOperation)
+
 }
