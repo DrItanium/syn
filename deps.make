@@ -66,11 +66,11 @@ Cisc0CoreAssembler.o: Cisc0CoreAssembler.cc Cisc0ClipsExtensions.h \
  misc/maya/insfile.h misc/maya/msgcom.h misc/maya/msgpass.h \
  misc/maya/objrtmch.h Cisc0CoreInstructionEncoder.h Cisc0CoreConstants.h \
  cisc0_defines.h ExecutionUnits.h IODevice.h Device.h \
- Cisc0CoreAssemblerKeywords.h desc/cisc0/CompareStyle.desc \
- desc/cisc0/ArithmeticOps.desc desc/cisc0/MemoryOperation.desc \
- desc/cisc0/LogicalOps.desc desc/cisc0/EncodingOperation.desc \
- desc/cisc0/ExtendedOperation.desc desc/cisc0/ParsingOperation.desc \
- desc/cisc0/ComplexSubTypes.desc
+ Cisc0CoreAssemblerKeywords.h desc/cisc0/Operation.desc \
+ desc/cisc0/CompareStyle.desc desc/cisc0/ArithmeticOps.desc \
+ desc/cisc0/MemoryOperation.desc desc/cisc0/LogicalOps.desc \
+ desc/cisc0/EncodingOperation.desc desc/cisc0/ExtendedOperation.desc \
+ desc/cisc0/ParsingOperation.desc desc/cisc0/ComplexSubTypes.desc
 Cisc0CoreAssemblerAssembleOperation.o: \
  Cisc0CoreAssemblerAssembleOperation.cc Cisc0ClipsExtensions.h \
  Cisc0CoreAssembler.h Base.h BaseTypes.h Problem.h AssemblerBase.h \
@@ -105,11 +105,11 @@ Cisc0CoreAssemblerAssembleOperation.o: \
  misc/maya/insfile.h misc/maya/msgcom.h misc/maya/msgpass.h \
  misc/maya/objrtmch.h Cisc0CoreInstructionEncoder.h Cisc0CoreConstants.h \
  cisc0_defines.h ExecutionUnits.h IODevice.h Device.h \
- Cisc0CoreAssemblerKeywords.h desc/cisc0/CompareStyle.desc \
- desc/cisc0/ArithmeticOps.desc desc/cisc0/MemoryOperation.desc \
- desc/cisc0/LogicalOps.desc desc/cisc0/EncodingOperation.desc \
- desc/cisc0/ExtendedOperation.desc desc/cisc0/ParsingOperation.desc \
- desc/cisc0/ComplexSubTypes.desc
+ Cisc0CoreAssemblerKeywords.h desc/cisc0/Operation.desc \
+ desc/cisc0/CompareStyle.desc desc/cisc0/ArithmeticOps.desc \
+ desc/cisc0/MemoryOperation.desc desc/cisc0/LogicalOps.desc \
+ desc/cisc0/EncodingOperation.desc desc/cisc0/ExtendedOperation.desc \
+ desc/cisc0/ParsingOperation.desc desc/cisc0/ComplexSubTypes.desc
 Cisc0CoreAssemblerWrapper.o: Cisc0CoreAssemblerWrapper.cc \
  Cisc0ClipsExtensions.h Cisc0CoreAssembler.h Base.h BaseTypes.h Problem.h \
  AssemblerBase.h BaseArithmetic.h ClipsExtensions.h misc/maya/clips.h \
@@ -143,11 +143,12 @@ Cisc0CoreAssemblerWrapper.o: Cisc0CoreAssemblerWrapper.cc \
  misc/maya/insfun.h misc/maya/insfile.h misc/maya/msgcom.h \
  misc/maya/msgpass.h misc/maya/objrtmch.h Cisc0CoreInstructionEncoder.h \
  Cisc0CoreConstants.h cisc0_defines.h ExecutionUnits.h IODevice.h \
- Device.h Cisc0CoreAssemblerKeywords.h desc/cisc0/CompareStyle.desc \
- desc/cisc0/ArithmeticOps.desc desc/cisc0/MemoryOperation.desc \
- desc/cisc0/LogicalOps.desc desc/cisc0/EncodingOperation.desc \
- desc/cisc0/ExtendedOperation.desc desc/cisc0/ParsingOperation.desc \
- desc/cisc0/ComplexSubTypes.desc Cisc0CoreAssemblerWrapper.h
+ Device.h Cisc0CoreAssemblerKeywords.h desc/cisc0/Operation.desc \
+ desc/cisc0/CompareStyle.desc desc/cisc0/ArithmeticOps.desc \
+ desc/cisc0/MemoryOperation.desc desc/cisc0/LogicalOps.desc \
+ desc/cisc0/EncodingOperation.desc desc/cisc0/ExtendedOperation.desc \
+ desc/cisc0/ParsingOperation.desc desc/cisc0/ComplexSubTypes.desc \
+ Cisc0CoreAssemblerWrapper.h
 Cisc0CoreDecodedInstruction.o: Cisc0CoreDecodedInstruction.cc \
  Cisc0CoreDecodedInstruction.h Cisc0CoreConstants.h BaseTypes.h \
  cisc0_defines.h Base.h Problem.h ExecutionUnits.h BaseArithmetic.h \
