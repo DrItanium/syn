@@ -37,14 +37,6 @@ namespace cisc0 {
     // shift modifiers
 	DefSymbol(Left, left);
 	DefSymbol(Right, right);
-    // register names
-	DefSymbol(AddrRegister, addr);
-	DefSymbol(StackPointer, sp);
-	DefSymbol(InstructionPointer, ip);
-	DefSymbol(ValueRegister, value);
-	DefSymbol(MaskRegister, mask);
-	DefSymbol(FieldRegister, field);
-	DefSymbol(CallStackPointer, csp);
 
 	DefSymbol(Call, call);
 	DefSymbol(NoCall, nocall);
@@ -53,6 +45,7 @@ namespace cisc0 {
 
     // have one location where specific symbols are defined!
 #define X(str, _, id) DefSymbol (id , str);
+#include "desc/cisc0/RegisterNames.desc"
 	// groups
 #include "desc/cisc0/Operation.desc"
     // compare operations

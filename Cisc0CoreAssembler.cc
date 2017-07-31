@@ -114,14 +114,10 @@ namespace cisc0 {
 
 	Word translateRegister(const std::string& input) {
 		static std::map<std::string, Word> builtinAliases = {
-			{ "addr", static_cast<Word>(ArchitectureConstants::AddressRegister) },
-			{ "ip", static_cast<Word>(ArchitectureConstants::InstructionPointer) },
-			{ "sp", static_cast<Word>(ArchitectureConstants::StackPointer) },
-			{ "value", static_cast<Word>(ArchitectureConstants::ValueRegister) },
-			{ "mask", static_cast<Word>(ArchitectureConstants::MaskRegister) },
-			{ "shift", static_cast<Word>(ArchitectureConstants::ShiftRegister) },
-			{ "field", static_cast<Word>(ArchitectureConstants::FieldRegister) },
-			{ "csp", static_cast<Word>(ArchitectureConstants::CallStackPointer) },
+#define X(str, type, _) \
+            { str , static_cast<Word>(type) } ,
+#include "desc/cisc0/RegisterNames.desc"
+#undef X
 		};
 		auto result = builtinAliases.find(input);
 		if (result == builtinAliases.end()) {
@@ -130,6 +126,34 @@ namespace cisc0 {
 			return result->second;
 		}
 	}
+
+    const std::string& registerIndexToString(Word input) {
+        static std::map<Word, std::string> lookup = {
+#define X(str, type, _) \
+            { static_cast<Word>(type), str },
+#include "desc/cisc0/RegisterNames.desc"
+#undef X
+        };
+        static std::string constants[ArchitectureConstants::RegisterCount];
+        static bool init = true;
+        if (init) {
+            init = false;
+            for (int i = 0; i < static_cast<int>(ArchitectureConstants::RegisterCount); ++i) {
+                std::stringstream tmp;
+                tmp << "r" << i;
+                auto str = tmp.str();
+                constants[i] = str;
+            }
+        }
+        auto result = lookup.find(input);
+        if (result == lookup.end()) {
+            auto index = input & 0xF;
+            return constants[index];
+        } else {
+            return result->second;
+        }
+    }
+
 DefBeginStringToEnumFn(CompareStyle)
 #define X(str, type, _) StringToEnumEntry(str, type)
 #include "desc/cisc0/CompareStyle.desc"
