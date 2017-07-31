@@ -639,3 +639,54 @@
                        (children ?children))))
 
 
+(deftemplate MAIN::keyword-generator
+             (slot path
+                   (type LEXEME)
+                   (default ?NONE))
+             (slot id
+                   (type LEXEME)
+                   (default-dynamic (gensym*)))
+             (slot open
+                   (type SYMBOL)
+                   (allowed-symbols FALSE
+                                    TRUE))
+             (slot class
+                   (type SYMBOL)
+                   (default ?NONE))
+             (multislot translations))
+(defrule MAIN::open-described-file-in-keyword-generator
+         ?f <- (keyword-generator (open FALSE)
+                                  (path ?path)
+                                  (id ?id))
+         =>
+         (if (not (open ?path
+                        ?id
+                        "w")) then
+           (retract ?f)
+           (printout werror "Couldn't open " ?path " for writing!" crlf)
+           else
+           (modify ?f
+                   (open TRUE))))
+(defrule MAIN::retract-keyword-generator-as-its-empty
+         ?f <- (keyword-generator (open TRUE)
+                                  (id ?id)
+                                  (translations))
+         =>
+         (close ?id)
+         (retract ?f))
+
+(defrule MAIN::populate-file-from-keyword-generator
+         ?f <- (keyword-generator (open TRUE)
+                                  (id ?id)
+                                  (class ?op)
+                                  (translations ?str ?keyword
+                                                $?rest))
+         =>
+         (format ?id
+                 "X(\"%s\", %s :: %s , %s)%n"
+                 ?str
+                 ?op
+                 ?keyword
+                 ?keyword)
+         (modify ?f
+                 (translations $?rest)))
