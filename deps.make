@@ -392,6 +392,8 @@ IrisCoreAssemblerStateWrapper.o: IrisCoreAssemblerStateWrapper.cc Base.h \
  IOController.h WrappedIODevice.h ClipsExtensions.h IrisCoreTypes.h \
  IrisCoreEncodingOperations.h iris_defines.h IrisClipsExtensions.h \
  IrisCoreAssembler.h IrisCoreAssemblerKeywords.h \
+ desc/iris/ArithmeticOp.desc desc/iris/MoveOp.desc desc/iris/JumpOp.desc \
+ desc/iris/CompareOp.desc desc/iris/ConditionRegisterOp.desc \
  IrisCoreAssemblerStructures.h IrisCoreAssemblerStateWrapper.h
 IrisCoreAssemblerStructures.o: IrisCoreAssemblerStructures.cc Base.h \
  BaseTypes.h Problem.h AssemblerBase.h BaseArithmetic.h IrisCore.h \
@@ -427,7 +429,9 @@ IrisCoreAssemblerStructures.o: IrisCoreAssemblerStructures.cc Base.h \
  misc/maya/msgcom.h misc/maya/msgpass.h misc/maya/objrtmch.h \
  IOController.h WrappedIODevice.h ClipsExtensions.h IrisCoreTypes.h \
  IrisCoreEncodingOperations.h iris_defines.h IrisClipsExtensions.h \
- IrisCoreAssemblerStructures.h IrisCoreAssemblerKeywords.h
+ IrisCoreAssemblerStructures.h IrisCoreAssemblerKeywords.h \
+ desc/iris/ArithmeticOp.desc desc/iris/MoveOp.desc desc/iris/JumpOp.desc \
+ desc/iris/CompareOp.desc desc/iris/ConditionRegisterOp.desc
 IrisCoreWrapper.o: IrisCoreWrapper.cc IrisCoreWrapper.h IrisCore.h Base.h \
  BaseTypes.h Problem.h ExecutionUnits.h BaseArithmetic.h IODevice.h \
  Device.h ClipsCore.h Core.h misc/maya/clips.h misc/maya/setup.h \
