@@ -27,3 +27,5 @@ maya
 
 # make sure that we don't accidentially commit this
 .gitconfig
+
+doc/html
