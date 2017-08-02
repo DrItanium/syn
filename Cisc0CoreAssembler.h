@@ -49,14 +49,27 @@
 #include "Cisc0CoreAssemblerKeywords.h"
 
 namespace cisc0 {
-    CompareStyle stringToCompareStyle(const std::string& str) noexcept;
-    ArithmeticOps stringToArithmeticOps(const std::string& str) noexcept;
-    ComplexSubTypes stringToComplexSubTypes(const std::string& str) noexcept;
-    MemoryOperation stringToMemoryOperation(const std::string& str) noexcept;
-    LogicalOps stringToLogicalOps(const std::string& str) noexcept;
-    EncodingOperation stringToEncodingOperation(const std::string& str) noexcept;
-    ExtendedOperation stringToExtendedOperation(const std::string& str) noexcept;
-    ParsingOperation stringToParsingOperation(const std::string& str) noexcept;
+#define DefTranslators(type, str) \
+    type stringTo ## type ( const std::string& title ) noexcept; \
+    const std::string& str ## ToString ( type value ) noexcept
+    DefTranslators(CompareStyle, compareStyle);
+    DefTranslators(ArithmeticOps, arithmeticOps);
+    DefTranslators(ComplexSubTypes, complexSubTypes);
+    DefTranslators(MemoryOperation, memoryOperation);
+    DefTranslators(EncodingOperation, encodingOperation);
+    DefTranslators(ExtendedOperation, extendedOperation);
+    DefTranslators(LogicalOps, logicalOps);
+    DefTranslators(ParsingOperation, parsingOperation);
+    DefTranslators(Operation, operation);
+#undef DefTranslators
+
+
+    const std::string& registerIndexToString(Word index);
+    inline const std::string& translateRegister(Word index) { return registerIndexToString(index); }
+	Word translateRegister(const std::string& input);
+    void translateInstruction(std::ostream& out, Word first, Word second = 0, Word third = 0) noexcept;
+    std::string translateInstruction(Word first, Word second = 0, Word third = 0) noexcept;
+
 	using Separator = syn::AsmSeparator;
 	using SingleLineComment = syn::SingleLineComment<';'>;
 	template<typename R> struct Action : syn::Action<R> { };
@@ -255,7 +268,6 @@ namespace cisc0 {
 									SymbolValueRegister,
 									SymbolMaskRegister,
 									SymbolFieldRegister> { };
-	Word translateRegister(const std::string& input);
 
 	struct IndirectGPR : pegtl::seq<GeneralPurposeRegister> { };
 #define DefIndirectGPR(title) \

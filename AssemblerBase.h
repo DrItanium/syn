@@ -295,33 +295,6 @@ namespace syn {
     DefSymbol(LabelDirective, .label);
     DefSymbol(WordDirective, .word);
     DefSymbol(DwordDirective, .dword);
-    DefSymbol(AndKeyword, and);
-    DefSymbol(OrKeyword, or);
-    DefSymbol(NotKeyword, not);
-    DefSymbol(AddKeyword, add);
-    DefSymbol(SubKeyword, sub);
-    DefSymbol(MulKeyword, mul);
-    DefSymbol(DivKeyword, div);
-    DefSymbol(RemKeyword, rem);
-    DefSymbol(MoveKeyword, move);
-    DefSymbol(SetKeyword, set);
-    DefSymbol(SwapKeyword, swap);
-    DefSymbol(LoadKeyword, load);
-    DefSymbol(StoreKeyword, store);
-    DefSymbol(PushKeyword, push);
-    DefSymbol(PopKeyword, pop);
-    DefSymbol(XorKeyword, xor);
-    DefSymbol(NandKeyword, nand);
-    DefSymbol(NorKeyword, nor);
-    DefSymbol(MinKeyword, min);
-    DefSymbol(MaxKeyword, max);
-	DefSymbol(EqualsKeyword, eq);
-	DefSymbol(NotEqualsKeyword, neq);
-	DefSymbol(LessThanKeyword, lt);
-	DefSymbol(LessThanOrEqualToKeyword, le);
-	DefSymbol(GreaterThanKeyword, gt);
-	DefSymbol(GreaterThanOrEqualToKeyword, ge);
-    DefSymbol(BranchKeyword, branch);
     DefSymbol(ImmediateKeyword, immediate);
 
 

@@ -27,6 +27,8 @@
 // Cisc0CoreAssembler rewritten to use pegtl
 #include "Cisc0ClipsExtensions.h"
 #include "Cisc0CoreAssembler.h"
+#include "Cisc0CoreDecodedInstruction.h"
+#include "Cisc0Core.h"
 
 namespace cisc0 {
 	void AssemblerState::resolveInstructions() {
@@ -82,16 +84,112 @@ namespace cisc0 {
 		}
 	}
 
+    void outputBitmask(std::ostream& out, byte value) noexcept {
+        static std::string output[16] = {
+            "0m0000",
+            "0m0001",
+            "0m0010",
+            "0m0011",
+            "0m0100",
+            "0m0101",
+            "0m0110",
+            "0m0111",
+            "0m1000",
+            "0m1001",
+            "0m1010",
+            "0m1011",
+            "0m1100",
+            "0m1101",
+            "0m1110",
+            "0m1111",
+        };
+        out << output[value & 0xF] << " ";
+    }
+    template<Operation op>
+    void outputBitmask(std::ostream& out, const DecodedInstruction& inst) noexcept {
+        outputBitmask(out, inst.getBitmask<op>());
+    }
+
+    void outputRegister(std::ostream& out, byte index) {
+        out << translateRegister(index) << " ";
+    }
+    template<Operation op>
+    void outputDestinationRegister(std::ostream& out, const DecodedInstruction& inst) noexcept {
+        outputRegister(out, inst.getDestinationRegister<op>());
+    }
+
+    template<Operation op>
+    void outputSourceRegister(std::ostream& out, const DecodedInstruction& inst) noexcept {
+        outputRegister(out, inst.getSourceRegister<op>());
+    }
+
+
+    void outputFullImmediate(std::ostream& out, Word lower, Word upper) noexcept {
+        out << "0x" << std::hex << cisc0::encodeRegisterValue(upper, lower) << " ";
+    }
+
+    std::string translateInstruction(Word a, Word b, Word c) noexcept {
+        std::stringstream out;
+        translateInstruction(out, a, b, c);
+        auto tmp = out.str();
+        return tmp;
+    }
+
+    void translateInstruction(std::ostream& out, Word a, Word b, Word c) noexcept {
+        DecodedInstruction first(a);
+        out << operationToString(first.getControl()) << " ";
+        switch(first.getControl()) {
+            case Operation::Return:
+                break;
+            case Operation::Set:
+                outputBitmask<Operation::Set>(out, first);
+                outputDestinationRegister<Operation::Set>(out, first);
+                outputFullImmediate(out, b, c);
+                break;
+            case Operation::Swap:
+                outputDestinationRegister<Operation::Swap>(out, first);
+                outputSourceRegister<Operation::Swap>(out, first);
+                break;
+#warning "This code is unfinished, please continue here!!!"
+        }
+    }
+
+#define StringToEnumEntry(str, type) { str , type },
+#define EnumToStringEntry(str, type) { type , str },
+#define DefBeginStringToEnumFn(type) \
+    type stringTo ## type (const std::string& str) noexcept { \
+        static std::map<std::string, type > translation = {
+#define DefEndStringToEnumFn(type) \
+        }; \
+        auto x = translation.find(str); \
+        if (x == translation.end()) { \
+            return syn::defaultErrorState< type > ; \
+        } else { \
+            return x->second; \
+        } \
+    }
+#define DefBeginEnumToStringFn(type, title) \
+    const std::string& title ## ToString ( type value ) noexcept { \
+        static std::string errorState; \
+        static std::map < type , std::string > translation = {
+
+#define DefEndEnumToStringFn(type) \
+        }; \
+        auto x = translation.find(value); \
+        if (x == translation.end()) { \
+            return errorState; \
+        } else { \
+            return x->second; \
+        } \
+    }
+
+
 	Word translateRegister(const std::string& input) {
 		static std::map<std::string, Word> builtinAliases = {
-			{ "addr", static_cast<Word>(ArchitectureConstants::AddressRegister) },
-			{ "ip", static_cast<Word>(ArchitectureConstants::InstructionPointer) },
-			{ "sp", static_cast<Word>(ArchitectureConstants::StackPointer) },
-			{ "value", static_cast<Word>(ArchitectureConstants::ValueRegister) },
-			{ "mask", static_cast<Word>(ArchitectureConstants::MaskRegister) },
-			{ "shift", static_cast<Word>(ArchitectureConstants::ShiftRegister) },
-			{ "field", static_cast<Word>(ArchitectureConstants::FieldRegister) },
-			{ "csp", static_cast<Word>(ArchitectureConstants::CallStackPointer) },
+#define X(str, type, _) \
+            { str , static_cast<Word>(type) } ,
+#include "desc/cisc0/RegisterNames.desc"
+#undef X
 		};
 		auto result = builtinAliases.find(input);
 		if (result == builtinAliases.end()) {
@@ -100,126 +198,139 @@ namespace cisc0 {
 			return result->second;
 		}
 	}
-    CompareStyle stringToCompareStyle(const std::string& str) noexcept {
-        static std::map<std::string, CompareStyle> translation = {
-            { "==", CompareStyle::Equals },
-            { "!=", CompareStyle::NotEquals },
-            { "<", CompareStyle::LessThan },
-            { "<=", CompareStyle::LessThanOrEqualTo },
-            { ">", CompareStyle::GreaterThan },
-            { ">=", CompareStyle::GreaterThanOrEqualTo},
-            { "MoveFromCondition", CompareStyle::MoveFromCondition },
-            { "MoveToCondition", CompareStyle::MoveToCondition },
+
+    const std::string& registerIndexToString(Word input) {
+        static std::map<Word, std::string> lookup = {
+#define X(str, type, _) \
+            { static_cast<Word>(type), str },
+#include "desc/cisc0/RegisterNames.desc"
+#undef X
         };
-        auto x = translation.find(str);
-        if (x == translation.end()) {
-            return syn::defaultErrorState<CompareStyle>;
+        static std::string constants[ArchitectureConstants::RegisterCount];
+        static bool init = true;
+        if (init) {
+            init = false;
+            for (int i = 0; i < static_cast<int>(ArchitectureConstants::RegisterCount); ++i) {
+                std::stringstream tmp;
+                tmp << "r" << i;
+                auto str = tmp.str();
+                constants[i] = str;
+            }
+        }
+        auto result = lookup.find(input);
+        if (result == lookup.end()) {
+            auto index = input & 0xF;
+            return constants[index];
         } else {
-            return x->second;
+            return result->second;
         }
     }
-    ArithmeticOps stringToArithmeticOps(const std::string& str) noexcept {
-        static std::map<std::string, ArithmeticOps> translation = {
-            { "add", ArithmeticOps::Add},
-            { "sub", ArithmeticOps::Sub},
-            { "mul", ArithmeticOps::Mul},
-            { "div", ArithmeticOps::Div},
-            { "rem", ArithmeticOps::Rem},
-            { "min", ArithmeticOps::Min},
-            { "max", ArithmeticOps::Max},
-        };
-        auto x = translation.find(str);
-        if (x == translation.end()) {
-            return syn::defaultErrorState<ArithmeticOps>;
-        } else {
-            return x->second;
-        }
-    }
-    MemoryOperation stringToMemoryOperation(const std::string& str) noexcept {
-        static std::map<std::string, MemoryOperation> translation = {
-            { "store", MemoryOperation::Store},
-            { "load", MemoryOperation::Load},
-            { "push", MemoryOperation::Push},
-            { "pop", MemoryOperation::Pop},
-        };
-        auto x = translation.find(str);
-        if (x == translation.end()) {
-            return syn::defaultErrorState<MemoryOperation>;
-        } else {
-            return x->second;
-        }
-    }
-    LogicalOps stringToLogicalOps(const std::string& str) noexcept {
-        static std::map<std::string, LogicalOps> translation = {
-            { "and", LogicalOps::And},
-            { "or", LogicalOps::Or},
-            { "not", LogicalOps::Not},
-            { "xor", LogicalOps::Xor},
-            { "nand", LogicalOps::Nand},
-        };
-        auto x = translation.find(str);
-        if (x == translation.end()) {
-            return syn::defaultErrorState<LogicalOps>;
-        } else {
-            return x->second;
-        }
-    }
-    EncodingOperation stringToEncodingOperation(const std::string& str) noexcept {
-        static std::map<std::string, EncodingOperation> translation = {
-            { "bitset", EncodingOperation::BitSet},
-            { "bitunset", EncodingOperation::BitUnset},
-            { "encode", EncodingOperation::Encode},
-            { "decode", EncodingOperation::Decode},
-        };
-        auto x = translation.find(str);
-        if (x == translation.end()) {
-            return syn::defaultErrorState<EncodingOperation>;
-        } else {
-            return x->second;
-        }
-    }
-    ExtendedOperation stringToExtendedOperation(const std::string& str) noexcept {
-        static std::map<std::string, ExtendedOperation> translation = {
-            { "PushValueAddr", ExtendedOperation::PushValueAddr},
-            { "PopValueAddr", ExtendedOperation::PopValueAddr},
-            { "IncrementValueAddr", ExtendedOperation::IncrementValueAddr},
-            { "DecrementValueAddr", ExtendedOperation::DecrementValueAddr},
-            { "WordsBeforeFirstZero", ExtendedOperation::WordsBeforeFirstZero },
-            { "evenp", ExtendedOperation::IsEven },
-            { "oddp", ExtendedOperation::IsOdd },
-        };
-        auto x = translation.find(str);
-        if (x == translation.end()) {
-            return syn::defaultErrorState<ExtendedOperation>;
-        } else {
-            return x->second;
-        }
-    }
-    ComplexSubTypes stringToComplexSubTypes(const std::string& str) noexcept {
-        static std::map<std::string, ComplexSubTypes> translation = {
-            { "encoding", ComplexSubTypes::Encoding},
-            { "extended", ComplexSubTypes::Extended},
-            { "parsing", ComplexSubTypes::Parsing},
-            { "feature-check", ComplexSubTypes::FeatureCheck },
-        };
-        auto x = translation.find(str);
-        if (x == translation.end()) {
-            return syn::defaultErrorState<ComplexSubTypes>;
-        } else {
-            return x->second;
-        }
-    }
-    ParsingOperation stringToParsingOperation(const std::string& str) noexcept {
-        static std::map<std::string, ParsingOperation> translation = {
-            { "Hex8ToRegister", ParsingOperation::Hex8ToRegister},
-            { "RegisterToHex8", ParsingOperation::RegisterToHex8 },
-            { "MemCopy", ParsingOperation::MemCopy },
-        };
-        auto x = translation.find(str);
-        if (x == translation.end()) {
-            return syn::defaultErrorState<ParsingOperation>;
-        } else {
-            return x->second;
-        }
-    }
+
+DefBeginStringToEnumFn(CompareStyle)
+#define X(str, type, _) StringToEnumEntry(str, type)
+#include "desc/cisc0/CompareStyle.desc"
+#undef X
+DefEndStringToEnumFn(CompareStyle)
+
+DefBeginStringToEnumFn(ArithmeticOps)
+#define X(str, type, _) StringToEnumEntry(str, type)
+#include "desc/cisc0/ArithmeticOps.desc"
+#undef X
+DefEndStringToEnumFn(ArithmeticOps)
+
+DefBeginStringToEnumFn(MemoryOperation)
+#define X(str, type, _) StringToEnumEntry(str, type)
+#include "desc/cisc0/MemoryOperation.desc"
+#undef X
+DefEndStringToEnumFn(MemoryOperation)
+
+DefBeginStringToEnumFn(LogicalOps)
+#define X(str, type, _) StringToEnumEntry(str, type)
+#include "desc/cisc0/LogicalOps.desc"
+#undef X
+DefEndStringToEnumFn(LogicalOps)
+
+DefBeginStringToEnumFn(EncodingOperation)
+#define X(str, type, _) StringToEnumEntry(str, type)
+#include "desc/cisc0/EncodingOperation.desc"
+#undef X
+DefEndStringToEnumFn(EncodingOperation)
+
+DefBeginStringToEnumFn(ExtendedOperation)
+#define X(str, type, _) StringToEnumEntry(str, type)
+#include "desc/cisc0/ExtendedOperation.desc"
+#undef X
+DefEndStringToEnumFn(ExtendedOperation)
+
+DefBeginStringToEnumFn(ComplexSubTypes)
+#define X(str, type, _) StringToEnumEntry(str, type)
+#include "desc/cisc0/ComplexSubTypes.desc"
+#undef X
+DefEndStringToEnumFn(ComplexSubTypes)
+
+DefBeginStringToEnumFn(ParsingOperation)
+#define X(str, type, _) StringToEnumEntry(str, type)
+#include "desc/cisc0/ParsingOperation.desc"
+#undef X
+DefEndStringToEnumFn(ParsingOperation)
+
+DefBeginEnumToStringFn(CompareStyle, compareStyle)
+#define X(str, type, _) EnumToStringEntry(str, type)
+#include "desc/cisc0/CompareStyle.desc"
+#undef X
+DefEndEnumToStringFn(CompareStyle)
+
+DefBeginEnumToStringFn(ArithmeticOps, arithmeticOps)
+#define X(str, type, _) EnumToStringEntry(str, type)
+#include "desc/cisc0/ArithmeticOps.desc"
+#undef X
+DefEndEnumToStringFn(ArithmeticOps)
+
+DefBeginEnumToStringFn(MemoryOperation, memoryOperation)
+#define X(str, type, _) EnumToStringEntry(str, type)
+#include "desc/cisc0/MemoryOperation.desc"
+#undef X
+DefEndEnumToStringFn(MemoryOperation)
+
+DefBeginEnumToStringFn(LogicalOps, logicalOps)
+#define X(str, type, _) EnumToStringEntry(str, type)
+#include "desc/cisc0/LogicalOps.desc"
+#undef X
+DefEndEnumToStringFn(LogicalOps)
+
+DefBeginEnumToStringFn(EncodingOperation, encodingOperation)
+#define X(str, type, _) EnumToStringEntry(str, type)
+#include "desc/cisc0/EncodingOperation.desc"
+#undef X
+DefEndEnumToStringFn(EncodingOperation)
+
+DefBeginEnumToStringFn(ExtendedOperation, extendedOperation)
+#define X(str, type, _) EnumToStringEntry(str, type)
+#include "desc/cisc0/ExtendedOperation.desc"
+#undef X
+DefEndEnumToStringFn(ExtendedOperation)
+
+DefBeginEnumToStringFn(ComplexSubTypes, complexSubTypes)
+#define X(str, type, _) EnumToStringEntry(str, type)
+#include "desc/cisc0/ComplexSubTypes.desc"
+#undef X
+DefEndEnumToStringFn(ComplexSubTypes)
+
+DefBeginEnumToStringFn(ParsingOperation, parsingOperation)
+#define X(str, type, _) EnumToStringEntry(str, type)
+#include "desc/cisc0/ParsingOperation.desc"
+#undef X
+DefEndEnumToStringFn(ParsingOperation)
+
+DefBeginEnumToStringFn(Operation, operation)
+#define X(str, type, _) EnumToStringEntry(str, type)
+#include "desc/cisc0/Operation.desc"
+#undef X
+DefEndEnumToStringFn(Operation)
+
+DefBeginStringToEnumFn(Operation)
+#define X(str, type, _) StringToEnumEntry(str, type)
+#include "desc/cisc0/Operation.desc"
+#undef X
+DefEndStringToEnumFn(Operation)
 }

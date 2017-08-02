@@ -44,117 +44,128 @@
           (deffield StatusInError            0b0000000000000001 0 bool input-type: word)
           (deffield StatusDivideByZero       0b0000000000000010 1 bool input-type: word)
           (deffield StatusIllegalInstruction 0b0000000000000100 2 bool input-type: word))
+(deffacts iris-enums-and-keyword-generators
+          (defenum-and-translation InstructionGroup
+                                   "ArchitectureConstants::MaxGroups"
+                                   byte
+                                   desc/iris/InstructionGroup.desc
+                                   entries:
+                                   arithmetic Arithmetic
+                                   move Move
+                                   jump Jump
+                                   compare Compare
+                                   predicate ConditionalRegister
+                                   unused0 Unused0
+                                   reserved CustomInstructionReserved)
+          (defenum-and-translation:iris-operation-group ArithmeticOp
+                                                        entries:
+                                                        add Add
+                                                        sub Sub
+                                                        mul Mul
+                                                        div Div
+                                                        rem Rem
+                                                        shl ShiftLeft
+                                                        shr ShiftRight
+                                                        and BinaryAnd
+                                                        or BinaryOr
+                                                        not BinaryNot
+                                                        xor BinaryXor
+                                                        nand BinaryNand
+                                                        nor BinaryNor
+                                                        addi AddImmediate
+                                                        subi SubImmediate
+                                                        muli MulImmediate
+                                                        divi DivImmediate
+                                                        remi RemImmediate
+                                                        shli ShiftLeftImmediate
+                                                        shri ShiftRightImmediate
+                                                        min Min
+                                                        max Max)
+          (defenum-and-translation:iris-operation-group JumpOp
+                                                        entries:
+                                                        bi BranchUnconditionalImmediate
+                                                        bil BranchUnconditionalImmediateLink
+                                                        b BranchUnconditional
+                                                        bl BranchUnconditionalLink
+                                                        bci BranchConditionalImmediate
+                                                        bcil BranchConditionalImmediateLink
+                                                        bc BranchConditional
+                                                        bcl BranchConditionalLink
+                                                        blr BranchUnconditionalLR
+                                                        blrl BranchUnconditionalLRAndLink
+                                                        bclr BranchConditionalLR
+                                                        bclrl BranchConditionalLRAndLink
+                                                        rfe ReturnFromError)
+          (defenum-and-translation:iris-operation-group MoveOp
+                                                        entries:
+                                                        move Move
+                                                        set Set
+                                                        swap Swap
+                                                        ld Load
+                                                        ldi LoadImmediate
+                                                        ldwo LoadWithOffset
+                                                        st Store
+                                                        sti StoreImmediate
+                                                        stwo StoreWithOffset
+                                                        push Push
+                                                        pushi PushImmediate
+                                                        pop Pop
+                                                        ldc LoadCode
+                                                        stc StoreCode
+                                                        ldio LoadIO
+                                                        stio StoreIO
+                                                        ldiowo LoadIOWithOffset
+                                                        stiowo StoreIOWithOffset
+                                                        mfip MoveFromIP
+                                                        mtip MoveToIP
+                                                        mflr MoveFromLR
+                                                        mtlr MoveToLR
+                                                        sregs SaveAllRegisters
+                                                        rregs RestoreAllRegisters)
+          (defenum-and-translation:iris-operation-group CompareOp
+                                                        entries:
+                                                        eq Eq
+                                                        eqi EqImmediate
+                                                        ne Neq
+                                                        nei NeqImmediate
+                                                        lt LessThan
+                                                        lti LessThanImmediate
+                                                        gt GreaterThan
+                                                        gti GreaterThanImmediate
+                                                        le LessThanOrEqualTo
+                                                        lei LessThanOrEqualToImmediate
+                                                        ge GreaterThanOrEqualTo
+                                                        gei GreaterThanOrEqualToImmediate)
+          (defenum-and-translation:iris-operation-group ConditionRegisterOp
+                                                        entries:
+                                                        psave SaveCRs
+                                                        prestore RestoreCRs
+                                                        pxor CRXor
+                                                        pnot CRNot
+                                                        pand CRAnd
+                                                        por CROr
+                                                        pnand CRNand
+                                                        pnor CRNor
+                                                        pswap CRSwap
+                                                        pmove CRMove))
 
-(deffacts iris-enums
-          (enum (name InstructionGroup)
-                (children Arithmetic
-                          Move
-                          Jump
-                          Compare
-                          ConditionalRegister
-                          Unused0
-                          CustomInstructionReserved)
-                (cast-to byte)
-                (max-size "ArchitectureConstants::MaxGroups"))
-          (enum (cast-to byte)
-                (max-size "ArchitectureConstants::MaxOperations")
-                (name ArithmeticOp)
-                (children Add
-                          Sub
-                          Mul
-                          Div
-                          Rem
-                          ShiftLeft
-                          ShiftRight
-                          BinaryAnd
-                          BinaryOr
-                          BinaryNot
-                          BinaryXor
-                          BinaryNand
-                          BinaryNor
-                          AddImmediate
-                          SubImmediate
-                          MulImmediate
-                          DivImmediate
-                          RemImmediate
-                          ShiftLeftImmediate
-                          ShiftRightImmediate
-                          Min
-                          Max
-                          ))
-          (enum (cast-to byte)
-                (max-size "ArchitectureConstants::MaxOperations")
-                (name JumpOp)
-                (children BranchUnconditionalImmediate
-                          BranchUnconditionalImmediateLink
-                          BranchUnconditional
-                          BranchUnconditionalLink
-                          BranchConditionalImmediate
-                          BranchConditionalImmediateLink
-                          BranchConditional
-                          BranchConditionalLink
-                          BranchUnconditionalLR
-                          BranchUnconditionalLRAndLink
-                          BranchConditionalLR
-                          BranchConditionalLRAndLink
-                          ReturnFromError))
-          (enum (cast-to byte)
-                (max-size "ArchitectureConstants::MaxOperations")
-                (name MoveOp)
-                (children Move
-                          Set
-                          Swap
-                          Load
-                          LoadImmediate
-                          LoadWithOffset
-                          Store
-                          StoreImmediate
-                          StoreWithOffset
-                          Push
-                          PushImmediate
-                          Pop
-                          LoadCode
-                          StoreCode
-                          IOWrite
-                          IORead
-                          IOWriteWithOffset
-                          IOReadWithOffset
-                          MoveFromIP
-                          MoveToIP
-                          MoveFromLR
-                          MoveToLR
-                          SaveAllRegisters
-                          RestoreAllRegisters))
-          (enum (cast-to byte)
-                (max-size "ArchitectureConstants::MaxOperations")
-                (name CompareOp)
-                (children Eq
-                          EqImmediate
-                          Neq
-                          NeqImmediate
-                          LessThan
-                          LessThanImmediate
-                          GreaterThan
-                          GreaterThanImmediate
-                          LessThanOrEqualTo
-                          LessThanOrEqualToImmediate
-                          GreaterThanOrEqualTo
-                          GreaterThanOrEqualToImmediate))
-          (enum (cast-to byte)
-                (max-size "ArchitectureConstants::MaxOperations")
-                (name ConditionRegisterOp)
-                (children SaveCRs
-                          RestoreCRs
-                          CRXor
-                          CRNot
-                          CRAnd
-                          CROr
-                          CRNand
-                          CRNor
-                          CRSwap
-                          CRMove
-                          ))
-          )
+
+
+
+(defrule MAIN::translate-iris-operation-group
+         (declare (salience ?*priority:first*))
+         ?f <- (defenum-and-translation:iris-operation-group ?title
+                                                             entries:
+                                                             $?entries)
+         =>
+         (retract ?f)
+         (assert (defenum-and-translation ?title
+                                          "ArchitectureConstants::MaxOperations"
+                                          byte
+                                          (sym-cat desc/iris/ ?title .desc)
+                                          entries:
+                                          ?entries)))
+
 
 (deffacts MAIN::execution-unit-conversion-routines
           (include "ExecutionUnits.h")

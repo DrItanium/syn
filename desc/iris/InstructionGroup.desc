@@ -1,0 +1,7 @@
+X("arithmetic", InstructionGroup :: Arithmetic , Arithmetic)
+X("move", InstructionGroup :: Move , Move)
+X("jump", InstructionGroup :: Jump , Jump)
+X("compare", InstructionGroup :: Compare , Compare)
+X("predicate", InstructionGroup :: ConditionalRegister , ConditionalRegister)
+X("unused0", InstructionGroup :: Unused0 , Unused0)
+X("reserved", InstructionGroup :: CustomInstructionReserved , CustomInstructionReserved)
