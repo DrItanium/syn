@@ -35,55 +35,6 @@
 
 namespace syn {
 
-    namespace FieldData {
-        constexpr uint8 fields[8] = {
-            0,
-            8,
-            16,
-            24,
-            32,
-            40,
-            48,
-            56
-        };
-
-        template<typename T, int32 index>
-        constexpr auto Value = static_cast<T>(0);
-
-        template<typename T, int32 index>
-        constexpr auto FieldIndex = static_cast<T>(fields[index]);
-    } // end namespace FieldData
-
-
-#define DefFieldData(type, index, mask) \
-    namespace FieldData { \
-        template<> constexpr auto Value<type, index>  = static_cast<type>(mask); \
-    }
-
-#define DefSignedAndUnsignedFieldData(type, index, mask) \
-    DefFieldData(type, index, mask) \
-    DefFieldData( u ## type, index, mask)
-
-    DefSignedAndUnsignedFieldData(int16, 0, 0x00FF);
-    DefSignedAndUnsignedFieldData(int16, 1, 0xFF00);
-
-	DefSignedAndUnsignedFieldData(int32, 0, 0x000000FF);
-	DefSignedAndUnsignedFieldData(int32, 1, 0x0000FF00);
-	DefSignedAndUnsignedFieldData(int32, 2, 0x00FF0000);
-	DefSignedAndUnsignedFieldData(int32, 3, 0xFF000000);
-
-	DefSignedAndUnsignedFieldData(int64,  0, 0x00000000000000FF);
-	DefSignedAndUnsignedFieldData(int64,  1, 0x000000000000FF00);
-	DefSignedAndUnsignedFieldData(int64,  2, 0x0000000000FF0000);
-	DefSignedAndUnsignedFieldData(int64,  3, 0x00000000FF000000);
-	DefSignedAndUnsignedFieldData(int64,  4, 0x000000FF00000000);
-	DefSignedAndUnsignedFieldData(int64,  5, 0x0000FF0000000000);
-	DefSignedAndUnsignedFieldData(int64,  6, 0x00FF000000000000);
-	DefSignedAndUnsignedFieldData(int64,  7, 0xFF00000000000000);
-
-#undef DefSignedAndUnsignedFieldData
-#undef DefFieldData
-
     namespace UpperLowerPair {
         template<typename T>
         struct TypeData {
@@ -116,7 +67,7 @@ namespace syn {
 
     DefUpperLowerPair(uint8, uint8, 0xF0, 0x0F, 4);
     DefUpperLowerPair(int8, int8, 0xF0, 0x0F, 4);
-    DefUpperLowerPair(uint16, byte, 0xFF00, 0x00FF, 8);
+    DefUpperLowerPair(uint16, uint8, 0xFF00, 0x00FF, 8);
     DefUpperLowerPair(int16, int8, 0xFF00, 0x00FF, 8);
     DefUpperLowerPair(uint32, uint16, 0xFFFF0000, 0x0000FFFF, 16);
     DefUpperLowerPair(int32, int16, 0xFFFF0000, 0x0000FFFF, 16);
@@ -162,7 +113,6 @@ template<typename T, T bitmask>
 constexpr T mask(T input) noexcept {
     return input & bitmask;
 }
-
 template<> constexpr uint8 mask<uint8, 0xFF>(uint8 value) noexcept { return value; }
 template<> constexpr uint8 mask<uint8, 0>(uint8 value) noexcept { return 0; }
 
@@ -193,11 +143,6 @@ template<> constexpr uint32 decodeBits<uint32, uint32, 0, 0>(uint32 input) noexc
 template<> constexpr uint64 decodeBits<uint64, uint64, 0xFFFFFFFFFFFFFFFF, 0>(uint64 input) noexcept { return input; }
 template<> constexpr uint64 decodeBits<uint64, uint64, 0, 0>(uint64 input) noexcept { return 0; }
 
-template<typename T, typename F, int field>
-constexpr F decodeField(T input) noexcept {
-	return decodeBits<T, F, FieldData::Value<T, field>, FieldData::FieldIndex<T, field>>(input);
-}
-
 template<typename T, T mask>
 constexpr bool decodeFlag(T input) noexcept {
 	return decodeBits<T, bool, mask, static_cast<T>(0)>(input);
@@ -225,11 +170,6 @@ template<> constexpr uint64 encodeBits<uint64, uint64, 0, 0>(uint64 input, uint6
 template<typename T, T mask, T shift>
 constexpr T encodeFlag(T input, bool value) noexcept {
 	return encodeBits<T, bool, mask, shift>(input, value);
-}
-
-template<typename T, typename F, int field>
-constexpr T encodeField(T input, F value) noexcept {
-	return encodeBits<T, F, FieldData::Value<T, field>, FieldData::FieldIndex<T, field>>(input, value);
 }
 
 template<typename T>
@@ -276,63 +216,6 @@ constexpr uint32 encodeUint32LE(uint16 lower, uint16 upper) noexcept {
 
 constexpr int32 encodeInt32LE(int16 lower, int16 upper) noexcept {
     return encodeValueLE<int32>(lower, upper);
-}
-
-template<typename T>
-inline void decode2byteQuantityLE(T value, byte storage[sizeof(T)], int offset = 0) noexcept {
-	static_assert(sizeof(T) >= 2, "Provided type is too small to decode a 2 byte quantity into!");
-	using Number = T;
-	using Field = byte;
-	storage[offset + 0] = decodeField<Number, Field, 0>(value);
-	storage[offset + 1] = decodeField<Number, Field, 1>(value);
-}
-
-template<typename T>
-inline void decode4byteQuantityLE(T value, byte storage[sizeof(T)], int offset = 0) noexcept {
-	static_assert(sizeof(T) >= 4, "Provided type is too small to decode a 4 byte quantity into!");
-	using Number = T;
-	using Field = byte;
-	storage[offset + 0] = decodeField<Number, Field, 0>(value);
-	storage[offset + 1] = decodeField<Number, Field, 1>(value);
-	storage[offset + 2] = decodeField<Number, Field, 2>(value);
-	storage[offset + 3] = decodeField<Number, Field, 3>(value);
-}
-
-template<typename T>
-inline void decode8byteQuantityLE(T value, byte storage[sizeof(T)], int offset = 0) noexcept {
-	static_assert(sizeof(T) >= 8, "Provided type is too small to decode an 8 byte quantity into!");
-	using Number = T;
-	using Field = byte;
-	storage[offset+0] = decodeField<Number, Field, 0>(value);
-	storage[offset+1] = decodeField<Number, Field, 1>(value);
-	storage[offset+2] = decodeField<Number, Field, 2>(value);
-	storage[offset+3] = decodeField<Number, Field, 3>(value);
-	storage[offset+4] = decodeField<Number, Field, 4>(value);
-	storage[offset+5] = decodeField<Number, Field, 5>(value);
-	storage[offset+6] = decodeField<Number, Field, 6>(value);
-	storage[offset+7] = decodeField<Number, Field, 7>(value);
-}
-inline void decodeUint32LE(uint32 value, byte storage[sizeof(uint32)], int offset = 0) noexcept {
-	decode4byteQuantityLE<uint32>(value, storage, offset);
-}
-
-inline void decodeUint16LE(uint16 value, byte storage[sizeof(uint16)], int offset = 0) noexcept {
-	decode2byteQuantityLE<uint16>(value, storage, offset);
-}
-inline void decodeInt32LE(int32 value, byte storage[sizeof(int32)], int offset = 0) noexcept {
-	decode4byteQuantityLE<int32>(value, storage, offset);
-
-}
-
-inline void decodeInt16LE(int16 value, byte storage[sizeof(int16)], int offset = 0) noexcept {
-	decode2byteQuantityLE<int16>(value, storage, offset);
-}
-inline void decodeUint64LE(uint64 value, byte storage[sizeof(uint64)], int offset = 0) noexcept {
-	decode8byteQuantityLE<uint64>(value, storage, offset);
-}
-
-inline void decodeInt64LE(int64 value, byte storage[sizeof(int64)], int offset = 0) noexcept {
-	decode8byteQuantityLE<int64>(value, storage, offset);
 }
 
 

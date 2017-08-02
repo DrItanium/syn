@@ -237,11 +237,11 @@ namespace syn {
         auto env = UDFContextEnvironment(context);
         auto integer = CVToInteger(&number);
         static constexpr auto iTypeSize = static_cast<long>(sizeof(decltype(integer)));
-        byte container[iTypeSize] = { 0 };
-        syn::decodeInt64LE(integer, container);
         FixedSizeMultifieldBuilder<iTypeSize> mf(env);
+        using IType = decltype(integer);
+        using OType = decltype(integer);
         for (int i = 0, j = 1; i < iTypeSize; ++i, ++j) {
-            mf.setField(j, MayaType::Integer, EnvAddLong(env, container[i]));
+            mf.setField(j, MayaType::Integer, EnvAddLong(env, syn::decodeBits<IType, OType>(integer, 0x00000000000000FF << (8 * i), (8 * i))));
         }
         mf.assign(ret);
 	}
