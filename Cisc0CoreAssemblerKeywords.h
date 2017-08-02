@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * Assembler keywords
+ * @copyright
  * syn
  * Copyright (c) 2013-2017, Joshua Scoggins and Contributors
  * All rights reserved.
@@ -30,6 +33,7 @@
 #include "AssemblerBase.h"
 
 namespace cisc0 {
+    namespace assembler {
     // modifiers
     using SymbolImmediate = syn::SymbolImmediateKeyword;
 	DefSymbol(Indirect, indirect);
@@ -66,5 +70,6 @@ namespace cisc0 {
     // complex related
 #include "desc/cisc0/ComplexSubTypes.desc"
 #undef X
+    } // end namespace assembler
 } // end namespace cisc0
 #endif // end CISC0_CORE_ASSEMBLER_KEYWORDS_H__

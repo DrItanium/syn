@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * Implementation of cisc0's assembler <-> CLIPS interface
+ * @copyright
  * syn
  * Copyright (c) 2013-2017, Joshua Scoggins and Contributors
  * All rights reserved.

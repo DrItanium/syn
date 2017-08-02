@@ -1,4 +1,10 @@
-/*
+/**
+ * @file
+ * The base of the cisc0 architecture and implementation.
+ * The cisc0 architecture is a 32-bit variable length instruction cisc
+ * architecture. Registers are 32-bits wide and memory words are 16-bits wide.
+ * This makes loading data much easier.
+ * @copyright
  * syn
  * Copyright (c) 2013-2017, Joshua Scoggins and Contributors
  * All rights reserved.
@@ -300,6 +306,16 @@ namespace cisc0 {
 				_bus.shutdown();
 			}
 		protected:
+            /**
+             * Given a bank index and offset, retrieve a register value
+             * reference.
+             * @param bank the bank id of the given register
+             * @param offset the index of the register within the given bank
+             * @return a Register reference to the described register value if
+             * it is there
+             * @throw syn::Problem register in the given bank and offset does
+             * not exist or can't be accessed.
+             */
 			virtual RegisterType& registerValue(byte bank, byte offset) = 0;
             virtual void incrementAddress(RegisterValue& ptr) noexcept = 0;
             virtual void decrementAddress(RegisterValue& ptr) noexcept = 0;

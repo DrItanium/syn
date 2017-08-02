@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * Common assembler related routines and classes
+ * @copyright
  * syn
  * Copyright (c) 2013-2017, Joshua Scoggins and Contributors
  * All rights reserved.

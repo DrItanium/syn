@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * Cisc0 architecture model 0 (first implementation)
+ * @copyright
  * syn
  * Copyright (c) 2013-2017, Joshua Scoggins and Contributors
  * All rights reserved.

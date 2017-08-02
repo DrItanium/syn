@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * Basic routines, classes, and concepts used throughout syn.
+ * @copyright
  * syn
  * Copyright (c) 2013-2017, Joshua Scoggins and Contributors
  * All rights reserved.
@@ -35,6 +38,9 @@
 
 namespace syn {
 
+    /**
+     * Describes the upper and lower halves of a type
+     */
     namespace UpperLowerPair {
         template<typename T>
         struct TypeData {
@@ -76,9 +82,17 @@ namespace syn {
 #undef DefUpperLowerPair
 
 
+/**
+ * If the given type T was halved, what would its type be?
+ * @tparam T the type to be halved
+ */
 template<typename T>
 using HalfType = typename UpperLowerPair::TypeData<T>::HalfType;
 
+/**
+ * If the given type T was quartered, what would its type be?
+ * @tparam T the type to be quartered
+ */
 template<typename T>
 using QuarterType = HalfType<HalfType<T>>;
 
@@ -332,6 +346,12 @@ constexpr T setUpperHalf(T value, typename UpperLowerPair::TypeData<T>::HalfType
 }
 
 
+/**
+ * Swaps the contents of two references
+ * @param a the first reference
+ * @param b the second reference
+ * @tparam T the type of the things to be swapped
+ */
 template<typename T>
 inline void swap(T& a, T& b) {
     auto c = b;
@@ -365,14 +385,43 @@ void putc(T value) noexcept {
     std::cout << static_cast<char>(value);
 }
 
+/**
+ * A common interface to make it possible to describe error states without
+ * using exceptions. This concept is widely used with enums where the Count
+ * value doubles as the error state. This makes it possible to mark functions
+ * as noexcept and return an error state instead.
+ *
+ * @tparam T The type of the thing to describe it's error state
+ */
 template<typename T>
 constexpr T defaultErrorState = T::Count;
 
+/**
+ * Checks to see if the given input type is equal to the corresponding
+ * defaultErrorState. This is meant to be used with static_assert and other
+ * boolean checks. This is a safe abstraction and should be used over direct
+ * equality checks!
+ * @param op the thing to compare against the defaultErrorState
+ * @tparam T the type of the thing to check to see if it is the error state.
+ * @return boolean value signifying if the given input is the same as the
+ * defaultErrorState for that type.
+ */
 template<typename T>
 constexpr bool isErrorState(T op) noexcept {
     return op == defaultErrorState<T>;
 }
 
+/**
+ * Given a specific type, check and see if the provided value is the
+ * error state; if it is then throw an exception with the provided message.
+ * This function provides a clean way to check for errorStates without
+ * repeating the same code over and over again.
+ * @param value the value to compare against the defaultErrorState of the
+ * specified type
+ * @param msg the message to install into the problem exception if the given
+ * value is the defaultErrorState
+ * @tparam T the type of the thing to compare against the defaultErrorState.
+ */
 template<typename T>
 void throwOnErrorState(T value, const std::string& msg) {
     if (isErrorState<T>(value)) {

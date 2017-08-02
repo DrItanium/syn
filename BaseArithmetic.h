@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * Common arithmetic routines
+ * @copyright
  * syn
  * Copyright (c) 2013-2017, Joshua Scoggins and Contributors
  * All rights reserved.
@@ -33,6 +36,12 @@
 #include <climits>
 namespace syn {
 
+/**
+ * Retrieve the number of bits that a given type consumes. This is different
+ * from plain sizeof in that this is CHAR_BIT * the number of bytes that make
+ * up the target type.
+ * @tparam T the type to find the size of
+ */
 template<typename T>
 constexpr size_t bitwidth = CHAR_BIT * sizeof(T);
 
@@ -532,6 +541,13 @@ constexpr R circularShiftRight(T value, T shift) noexcept {
     // taken from the wikipedia entry on circular shifts
 	return static_cast<R>( (value >> shift) | (value << ((-shift) & width)));
 }
+/**
+ * Perform a multiply followed by an add. The form is (a * b) + c
+ * @param a the first argument to the product
+ * @param b the second argument to the product
+ * @param c the second argument to the sum
+ * @return the result of the multiply add
+ */
 template<typename T>
 constexpr T multiplyAdd(T a, T b, T c) noexcept {
     return (a * b) + c;
@@ -570,11 +586,23 @@ constexpr bool inRangeExcludingMaximum(T value) noexcept {
     return valueIsInRange<T, min, max, false>(value);
 }
 
+/**
+ * Checks to see if the given value is even.
+ * @param value the value to check evenness against
+ * @return boolean signifying that the given input is even.
+ * @tparam T the type of the thing to check to see if it is even.
+ */
 template<typename T>
 constexpr bool isEven(T value) noexcept {
     return (value & 1) == 0;
 }
 
+/**
+ * Checks to see if the given value is odd.
+ * @param value the value to check oddness against
+ * @return boolean signifying that the given input is odd.
+ * @tparam T the type of the thing to check to see if it is odd.
+ */
 template<typename T>
 constexpr bool isOdd(T value) noexcept {
 	return !isEven<T>(value);
