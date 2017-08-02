@@ -46,12 +46,19 @@
 #include "IrisCoreAssemblerKeywords.h"
 
 namespace iris {
+#define DEF(type, str) \
+    type stringTo ## type (const std::string& str) noexcept; \
+    const std::string& str ## ToString ( type value ) noexcept
+    DEF(ArithmeticOp, arithmeticOp);
+    DEF(MoveOp, moveOp);
+    DEF(JumpOp, jumpOp);
+    DEF(CompareOp, compareOp);
+    DEF(ConditionRegisterOp, conditionRegisterOp);
+#undef DEF
 
-	ArithmeticOp stringToArithmeticOp(const std::string& title) noexcept;
-	MoveOp stringToMoveOp(const std::string& title) noexcept;
-	JumpOp stringToJumpOp(const std::string& title) noexcept;
-	CompareOp stringToCompareOp(const std::string& title) noexcept;
-	ConditionRegisterOp stringToConditionRegisterOp(const std::string& title) noexcept;
+    const std::string& translateRegister(byte index) noexcept;
+    const std::string& translatePredicateRegister(byte index) noexcept;
+    std::string translateInstruction(raw_instruction input) noexcept;
 
     enum class SectionType {
         Code,
@@ -83,8 +90,8 @@ namespace iris {
         public:
             using LabelTracker = syn::LabelTracker<word>;
             AssemblerState() : _section(SectionType::Code) { }
-            bool inCodeSection() const noexcept; 
-            bool inDataSection() const noexcept; 
+            bool inCodeSection() const noexcept;
+            bool inDataSection() const noexcept;
             void nowInCodeSection() noexcept;
             void nowInDataSection() noexcept;
             template<SectionType section>

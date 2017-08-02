@@ -33,16 +33,10 @@
 #include "AssemblerBase.h"
 #include "Problem.h"
 #include "IrisCore.h"
-#include <pegtl.hh>
-#include <pegtl/analyze.hh>
-#include <pegtl/file_parser.hh>
-#include <pegtl/contrib/raw_string.hh>
-#include <pegtl/contrib/abnf.hh>
-#include <pegtl/parse.hh>
-#include <vector>
 #include "IrisClipsExtensions.h"
 #include "ClipsExtensions.h"
 #include "IrisCoreAssemblerStructures.h"
+#include "IrisCoreEncodingOperations.h"
 
 namespace iris {
     AssemblerData::AssemblerData() noexcept : instruction(false), address(0), dataValue(0), group(0), operation(0), destination(0), source0(0), source1(0), hasLexeme(false), fullImmediate(false) { }
@@ -134,6 +128,268 @@ namespace iris {
     }
     bool AssemblerState::inCodeSection() const noexcept { return _section == SectionType::Code; }
     bool AssemblerState::inDataSection() const noexcept { return _section == SectionType::Data; }
+
+    const std::string& translateRegister(byte index) noexcept {
+        static bool init = true;
+        static std::string names[ArchitectureConstants::RegisterCount];
+        if (init) {
+            init = false;
+            std::stringstream tmp;
+            for (int i = 0; i < int(ArchitectureConstants::RegisterCount); ++i) {
+                tmp.str("");
+                tmp << "r" << i;
+                names[i] = tmp.str();
+            }
+        }
+        return names[index];
+    }
+
+    const std::string& translatePredicateRegister(byte index) noexcept {
+        static bool init = true;
+        static constexpr auto count = ArchitectureConstants::ConditionRegisterCount;
+        static std::string names[count];
+        if (init) {
+            init = false;
+            std::stringstream tmp;
+            for (int i = 0; i < int(count); ++i) {
+                tmp.str("");
+                tmp << "p" << i;
+                names[i] = tmp.str();
+            }
+        }
+        return names[index & 0xF];
+    }
+    void outputRegister(std::ostream& out, byte input) noexcept {
+        out << translateRegister(input) << " ";
+    }
+    void outputPredicateRegister(std::ostream& out, byte input) noexcept {
+        out << translatePredicateRegister(input) << " ";
+    }
+    void translateDestinationRegister(std::ostream& out, raw_instruction input) noexcept {
+        outputRegister(out, InstructionDecoder::getDestinationIndex(input));
+    }
+    void translatePredicateDestinationRegister(std::ostream& out, raw_instruction input) noexcept {
+        outputPredicateRegister(out, InstructionDecoder::getPredicateResultIndex(input));
+    }
+    void translatePredicateDestinationInverseRegister(std::ostream& out, raw_instruction input) noexcept {
+        outputPredicateRegister(out, InstructionDecoder::getPredicateInverseResultIndex(input));
+    }
+    void translateSource0Register(std::ostream& out, raw_instruction input) noexcept {
+        outputRegister(out, InstructionDecoder::getSource0Index(input));
+    }
+    void translatePredicateSource0Register(std::ostream& out, raw_instruction input) noexcept {
+        outputPredicateRegister(out, InstructionDecoder::getPredicateSource0Index(input));
+    }
+    void translatePredicateSource1Register(std::ostream& out, raw_instruction input) noexcept {
+        outputPredicateRegister(out, InstructionDecoder::getPredicateSource1Index(input));
+    }
+    void translateSource1Register(std::ostream& out, raw_instruction input) noexcept {
+        outputRegister(out, InstructionDecoder::getSource1Index(input));
+    }
+    void outputWord(std::ostream& out, word value) noexcept {
+        out << "0x" << std::hex << value << " ";
+    }
+    void translateHalfImmediate(std::ostream& out, raw_instruction input) noexcept {
+        outputWord(out, InstructionDecoder::getHalfImmediate(input));
+    }
+    void translateFullImmediate(std::ostream& out, raw_instruction input) noexcept {
+        outputWord(out, InstructionDecoder::getImmediate(input));
+    }
+    template<typename T>
+    constexpr bool isImmediate(T op) noexcept {
+        return false;
+    }
+    template<>
+    constexpr bool isImmediate<ArithmeticOp>(ArithmeticOp op) noexcept {
+        switch(op) {
+            case ArithmeticOp::AddImmediate:
+            case ArithmeticOp::SubImmediate:
+            case ArithmeticOp::MulImmediate:
+            case ArithmeticOp::DivImmediate:
+            case ArithmeticOp::RemImmediate:
+            case ArithmeticOp::ShiftRightImmediate:
+            case ArithmeticOp::ShiftLeftImmediate:
+                return true;
+            default:
+                return false;
+        }
+    }
+    template<>
+    constexpr bool isImmediate<CompareOp>(CompareOp op) noexcept {
+        switch(op) {
+            case CompareOp::EqImmediate:
+            case CompareOp::NeqImmediate:
+            case CompareOp::LessThanImmediate:
+            case CompareOp::LessThanOrEqualToImmediate:
+            case CompareOp::GreaterThanImmediate:
+            case CompareOp::GreaterThanOrEqualToImmediate:
+                return true;
+            default:
+                return false;
+        }
+    }
+    template<typename T>
+    void translateSource1(std::ostream& out, raw_instruction input, T op) noexcept {
+        if (isImmediate<T>(op)) {
+            translateHalfImmediate(out, input);
+        } else {
+            translateSource1Register(out, input);
+        }
+    }
+    void translateInstruction(std::ostream& out, raw_instruction input, ArithmeticOp op) noexcept {
+         out << arithmeticOpToString(op) << " ";
+         translateDestinationRegister(out, input);
+         translateSource0Register(out, input);
+         translateSource1(out, input, op);
+    }
+    void translateInstruction(std::ostream& out, raw_instruction input, CompareOp op) noexcept {
+        out << compareOpToString(op) << " ";
+        translatePredicateDestinationRegister(out, input);
+        translatePredicateDestinationInverseRegister(out, input);
+        translateSource0Register(out, input);
+        translateSource1(out, input, op);
+    }
+    void translateInstruction(std::ostream& out, raw_instruction input, ConditionRegisterOp op) noexcept {
+        out << conditionRegisterOpToString(op) << " ";
+        switch (op) {
+            case ConditionRegisterOp::RestoreCRs:
+            case ConditionRegisterOp::SaveCRs:
+                translateDestinationRegister(out, input);
+                translateFullImmediate(out, input);
+                break;
+            case ConditionRegisterOp::CRSwap:
+            case ConditionRegisterOp::CRMove:
+                translatePredicateDestinationRegister(out, input);
+                translatePredicateDestinationInverseRegister(out, input);
+                break;
+            case ConditionRegisterOp::CRNot:
+                translatePredicateDestinationRegister(out, input);
+                translatePredicateDestinationInverseRegister(out, input);
+                translatePredicateSource0Register(out, input);
+                break;
+
+            case ConditionRegisterOp::CROr:
+            case ConditionRegisterOp::CRAnd:
+            case ConditionRegisterOp::CRXor:
+            case ConditionRegisterOp::CRNor:
+            case ConditionRegisterOp::CRNand:
+                translatePredicateDestinationRegister(out, input);
+                translatePredicateDestinationInverseRegister(out, input);
+                translatePredicateSource0Register(out, input);
+                translatePredicateSource1Register(out, input);
+                break;
+            default:
+                break;
+        }
+    }
+    void translateInstruction(std::ostream& out, raw_instruction input, MoveOp op) noexcept {
+        out << moveOpToString(op) << " ";
+        translateDestinationRegister(out, input);
+        switch(op) {
+            case MoveOp::StoreCode:
+            case MoveOp::LoadCode:
+                translateSource0Register(out, input);
+                translateSource1Register(out, input);
+                break;
+            case MoveOp::LoadWithOffset:
+            case MoveOp::StoreWithOffset:
+            case MoveOp::LoadIOWithOffset:
+            case MoveOp::StoreIOWithOffset:
+                translateSource0Register(out, input);
+                translateHalfImmediate(out, input);
+                break;
+                break;
+            case MoveOp::StoreImmediate:
+            case MoveOp::LoadImmediate:
+            case MoveOp::Set:
+            case MoveOp::PushImmediate:
+                translateFullImmediate(out, input);
+                break;
+            case MoveOp::Move:
+            case MoveOp::Swap:
+            case MoveOp::LoadIO:
+            case MoveOp::StoreIO:
+            case MoveOp::Load:
+            case MoveOp::Store:
+            case MoveOp::Push:
+            case MoveOp::Pop:
+                translateSource0Register(out, input);
+                break;
+            case MoveOp::MoveToIP:
+            case MoveOp::MoveToLR:
+            case MoveOp::MoveFromIP:
+            case MoveOp::MoveFromLR:
+            case MoveOp::RestoreAllRegisters:
+            case MoveOp::SaveAllRegisters:
+            default:
+                break;
+
+        }
+    }
+    void translateInstruction(std::ostream& out, raw_instruction input, JumpOp op) noexcept {
+        out << jumpOpToString(op) << " ";
+        switch(op) {
+            case JumpOp::BranchUnconditionalLink:
+            case JumpOp::BranchUnconditional:
+                translateDestinationRegister(out, input);
+                break;
+            case JumpOp::BranchUnconditionalImmediateLink:
+            case JumpOp::BranchUnconditionalImmediate:
+                translateFullImmediate(out, input);
+                break;
+            case JumpOp::BranchConditionalLink:
+            case JumpOp::BranchConditional:
+                translatePredicateDestinationRegister(out, input);
+                translateSource0Register(out, input);
+                break;
+            case JumpOp::BranchConditionalImmediate:
+            case JumpOp::BranchConditionalImmediateLink:
+                translatePredicateDestinationRegister(out, input);
+                translateFullImmediate(out, input);
+                break;
+            case JumpOp::BranchConditionalLRAndLink:
+            case JumpOp::BranchConditionalLR:
+                translatePredicateDestinationRegister(out, input);
+                break;
+            case JumpOp::ReturnFromError:
+            case JumpOp::BranchUnconditionalLR:
+            case JumpOp::BranchUnconditionalLRAndLink:
+                break;
+            default:
+                break;
+        }
+    }
+    std::string translateInstruction(raw_instruction input) noexcept {
+        std::stringstream output;
+        auto group = InstructionDecoder::getGroup(input);
+        switch(group) {
+            case InstructionGroup::Arithmetic:
+                translateInstruction(output, input, InstructionDecoder::getOperation<ArithmeticOp>(input));
+                break;
+            case InstructionGroup::Compare:
+                translateInstruction(output, input, InstructionDecoder::getOperation<CompareOp>(input));
+                break;
+            case InstructionGroup::ConditionalRegister:
+                translateInstruction(output, input, InstructionDecoder::getOperation<ConditionRegisterOp>(input));
+                break;
+            case InstructionGroup::Move:
+                translateInstruction(output, input, InstructionDecoder::getOperation<MoveOp>(input));
+                break;
+            case InstructionGroup::Jump:
+                translateInstruction(output, input, InstructionDecoder::getOperation<JumpOp>(input));
+                break;
+            case InstructionGroup::Unused0:
+                output << ".dword 0x" << std::hex << input << " ; unused instruction group 0 instruction!";
+                break;
+            case InstructionGroup::CustomInstructionReserved:
+                output << ".dword 0x" << std::hex << input << " ; custom instruction reserved group instruction!";
+                break;
+            default:
+                break;
+        }
+        auto result = output.str();
+        return result;
+    }
 
 #define StringToEnumEntry(str, type) { str , type },
 #define EnumToStringEntry(str, type) { type , str },

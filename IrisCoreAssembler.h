@@ -533,7 +533,9 @@ namespace iris {
     struct PredicateInstructionOneGPR : pegtl::seq<
                                         OperationPredicateOneGPR,
 										Separator,
-										StatefulDestinationGPR> { };
+										StatefulDestinationGPR,
+                                        Separator,
+                                        Immediate> { };
     struct PredicateInstructionTwoArgs : pegtl::seq<
                                          OperationPredicateTwoArgs,
 										 Separator,
