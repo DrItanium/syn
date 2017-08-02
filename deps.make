@@ -71,7 +71,8 @@ Cisc0CoreAssembler.o: Cisc0CoreAssembler.cc Cisc0ClipsExtensions.h \
  desc/cisc0/ArithmeticOps.desc desc/cisc0/MemoryOperation.desc \
  desc/cisc0/LogicalOps.desc desc/cisc0/EncodingOperation.desc \
  desc/cisc0/ExtendedOperation.desc desc/cisc0/ParsingOperation.desc \
- desc/cisc0/ComplexSubTypes.desc
+ desc/cisc0/ComplexSubTypes.desc Cisc0CoreDecodedInstruction.h \
+ Cisc0Core.h ClipsCore.h Core.h IOController.h WrappedIODevice.h
 Cisc0CoreAssemblerAssembleOperation.o: \
  Cisc0CoreAssemblerAssembleOperation.cc Cisc0ClipsExtensions.h \
  Cisc0CoreAssembler.h Base.h BaseTypes.h Problem.h AssemblerBase.h \
