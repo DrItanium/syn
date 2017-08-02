@@ -452,19 +452,17 @@ namespace cisc0 {
 							 SymbolPop> { };
     DefAction(StackMemoryType) : GetMemorySubType { };
 	struct StackOperation : SeparatedTrinaryThing<StackMemoryType, BitmaskNumber, DestinationRegister> { };
-    template<bool indirect>
-    struct MarkIndirectFlag {
-        DefApplyInstruction {
-            state.markIndirect(indirect);
-        }
-    };
 	struct FlagIndirect : syn::SingleEntrySequence<SymbolIndirect> { };
-	DefAction(FlagIndirect) : MarkIndirectFlag<true> { };
 	struct FlagDirect : syn::SingleEntrySequence<SymbolDirect> { };
-    DefAction(FlagDirect) : MarkIndirectFlag<false> { };
 	struct FlagDirectOrIndirect : pegtl::sor<
 								  FlagDirect,
 								  FlagIndirect> { };
+	DefAction(FlagDirectOrIndirect) {
+		DefApplyInstruction {
+			static std::string compare("indirect");
+			state.markIndirect(in.string() == compare);
+		}
+	};
 	struct LoadStoreOperation : SeparatedQuadThing<
 								LoadStoreType,
 								BitmaskNumber,
@@ -571,47 +569,28 @@ namespace cisc0 {
 							  ComplexSubOperations> { };
     DefAction(ComplexOperation) : SetOperationOnApply<Operation::Complex> { };
 
-
-	template<typename T, typename F>
-		struct ChoiceFlag : pegtl::sor<T, F> { };
-
-	struct BranchFlagCall : pegtl::seq<
-							SymbolCall> { };
+	struct BranchFlagCall : SymbolCall { };
 	DefAction(BranchFlagCall) {
 		DefApplyInstruction {
 			state.markCall();
 		}
 	};
 
-	struct BranchFlagNoCall : pegtl::seq<
-							  SymbolNoCall> { };
-	DefAction(BranchFlagNoCall) {
-		DefApplyInstruction {
-			state.markCall(false);
-		}
-	};
-
-	struct ChooseBranchFlagCall : ChoiceFlag<
-								  BranchFlagCall,
-								  BranchFlagNoCall> { };
-
-	struct BranchFlagConditional : pegtl::seq<
-								   SymbolConditional> { };
+	struct BranchFlagConditional : SymbolConditional { };
 	DefAction(BranchFlagConditional) {
 		DefApplyInstruction {
 			state.markConditional();
 		}
 	};
 
-	struct BranchFlagUnconditional : pegtl::seq<
-									 SymbolUnconditional> { };
+	struct BranchFlagUnconditional : SymbolUnconditional { };
 	DefAction(BranchFlagUnconditional) {
 		DefApplyInstruction {
 			state.markUnconditional();
 		}
 	};
 
-	struct ChooseBranchFlagUsePredicate : ChoiceFlag<BranchFlagConditional, BranchFlagUnconditional> { };
+	struct ChooseBranchFlagUsePredicate : pegtl::sor<BranchFlagConditional, BranchFlagUnconditional> { };
 
 	struct BranchNormalArgs : pegtl::sor<
 							  SeparatedBinaryThing<UsesImmediate, LexemeOrNumber>,

@@ -58,6 +58,8 @@ namespace cisc0 {
             inline bool shouldShiftLeft() const noexcept { return decodeShiftFlagLeft(_rawValue); }
             inline bool isIndirectOperation() const noexcept { return decodeMemoryFlagIndirect(_rawValue); }
             BranchFlags getOtherBranchFlags() const noexcept;
+			inline bool isCallBranch() const noexcept { return decodeBranchFlagIsCallForm(_rawValue); }
+			inline bool isConditionalBranch() const noexcept { return decodeBranchFlagIsConditional(_rawValue); }
 			template<ComplexSubTypes op>
 			inline typename DecodeComplexSubType<op>::ReturnType getComplexSubType() const noexcept {
 				return decodeComplexSubType<op>(_rawValue);

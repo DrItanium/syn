@@ -118,12 +118,19 @@ namespace cisc0 {
         outputRegister(out, inst.getDestinationRegister<op>());
     }
 
+    template<ComplexSubTypes op>
+    void outputDestinationRegister(std::ostream& out, const DecodedInstruction& inst) noexcept {
+        outputRegister(out, inst.getDestinationRegister<op>());
+    }
+
     template<Operation op>
     void outputSourceRegister(std::ostream& out, const DecodedInstruction& inst) noexcept {
         outputRegister(out, inst.getSourceRegister<op>());
     }
 
-
+	void outputByteImmediate(std::ostream& out, byte value) noexcept {
+		out << "0x" << std::hex << int(value) << " ";
+	}
     void outputFullImmediate(std::ostream& out, Word lower, Word upper) noexcept {
         out << "0x" << std::hex << cisc0::encodeRegisterValue(upper, lower) << " ";
     }
@@ -134,6 +141,166 @@ namespace cisc0 {
         auto tmp = out.str();
         return tmp;
     }
+
+	inline void outputShiftDirection(std::ostream& out, const DecodedInstruction& inst) noexcept {
+		if (inst.shouldShiftLeft()) {
+			out << "left ";
+		} else {
+			out << "right ";
+		}
+	}
+
+	template<Operation op>
+	bool outputImmediateFlag(std::ostream& out, const DecodedInstruction& inst) noexcept {
+		auto immediateForm = inst.getImmediateFlag<op>();
+		if (immediateForm) {
+			out << "immediate ";
+		}
+		return immediateForm;
+	}
+
+	void translateShiftInstruction(std::ostream& out, const DecodedInstruction& inst) noexcept {
+		constexpr auto op = Operation::Shift;
+		outputShiftDirection(out, inst);
+		auto immediateForm = outputImmediateFlag<op>(out, inst);
+		outputDestinationRegister<op>(out, inst);
+		if (immediateForm) {
+			outputByteImmediate(out, inst.getImmediate<op>());
+		} else {
+			outputSourceRegister<op>(out, inst);
+		}
+	}
+
+	void translateArithmetic(std::ostream& out, const DecodedInstruction& inst) noexcept {
+		constexpr auto op = Operation::Arithmetic;
+		out << arithmeticOpsToString(inst.getSubtype<op>()) << " ";
+		auto immediateForm = outputImmediateFlag<op>(out, inst);
+		outputDestinationRegister<op>(out, inst);
+		if (immediateForm) {
+			outputByteImmediate(out, inst.getImmediate<op>());
+		} else {
+			outputSourceRegister<op>(out, inst);
+		}
+	}
+
+	void translateLogical(std::ostream& out, const DecodedInstruction& inst, Word second, Word third) noexcept {
+		constexpr auto op = Operation::Logical;
+		out << logicalOpsToString(inst.getSubtype<op>()) << " ";
+		auto immediateForm = outputImmediateFlag<op>(out, inst);
+		if (immediateForm) {
+			outputBitmask<op>(out, inst);
+		}
+		outputDestinationRegister<op>(out, inst);
+		if (immediateForm) {
+			outputFullImmediate(out, second, third);
+		} else {
+			outputSourceRegister<op>(out, inst);
+		}
+	}
+
+	void translateCompare(std::ostream& out, const DecodedInstruction& inst, Word second, Word third) noexcept {
+		constexpr auto op = Operation::Compare;
+		auto subType = inst.getSubtype<op>();
+		out << compareStyleToString(subType) << " ";
+		if (subType == CompareStyle::MoveFromCondition) {
+			outputDestinationRegister<op>(out, inst);
+		} else if (subType == CompareStyle::MoveToCondition) {
+			outputDestinationRegister<op>(out, inst);
+		} else {
+			auto immediateForm = outputImmediateFlag<op>(out, inst);
+			if (immediateForm) {
+				outputBitmask<op>(out, inst);
+			}
+			outputDestinationRegister<op>(out, inst);
+			if (immediateForm) {
+				outputFullImmediate(out, second, third);
+			} else {
+				outputSourceRegister<op>(out, inst);
+			}
+		}
+	}
+
+	void translateBranch(std::ostream& out, const DecodedInstruction& inst, Word second, Word third) noexcept {
+		constexpr auto op = Operation::Branch;
+		if (inst.isCallBranch()) {
+			out << "call";
+		} else {
+			if (inst.isConditionalBranch()) {
+				out << "conditional";
+			} else {
+				out << "unconditional";
+			}
+		}
+		out << " ";
+		if (outputImmediateFlag<op>(out, inst)) {
+			outputFullImmediate(out, second, third);
+		} else {
+			outputDestinationRegister<op>(out, inst);
+		}
+	}
+	constexpr bool isStackOperation(MemoryOperation op) noexcept {
+		switch(op) {
+			case MemoryOperation::Pop:
+			case MemoryOperation::Push:
+				return true;
+			default:
+				return false;
+		}
+	}
+	void translateMemory(std::ostream& out, const DecodedInstruction& inst) noexcept {
+		constexpr auto op = Operation::Memory;
+		auto subType = inst.getSubtype<op>();
+		out << memoryOperationToString(subType) << " ";
+		outputBitmask<op>(out, inst);
+		if (isStackOperation(subType)) {
+			outputDestinationRegister<op>(out, inst);
+		} else {
+			if (inst.isIndirectOperation()) {
+				out << "indirect";
+			} else {
+				out << "direct";
+			}
+			out << " ";
+			outputByteImmediate(out, inst.getMemoryOffset());
+		}
+	}
+
+	void translateComplex(std::ostream& out, const DecodedInstruction& inst) noexcept {
+		constexpr auto op = Operation::Complex;
+		auto subType = inst.getSubtype<op>();
+		out << complexSubTypesToString(subType) << " ";
+		auto extendedOp = [&inst, &out]() {
+			constexpr auto op = ComplexSubTypes::Extended;
+			auto subType = inst.getComplexSubType<op>();
+			using T = decltype(subType);
+			out << extendedOperationToString(subType) << " ";
+			switch(subType) {
+				case T::IsEven:
+				case T::IsOdd:
+					outputDestinationRegister<op>(out, inst);
+					break;
+				default:
+					break;
+			}
+		};
+		switch(subType) {
+			case ComplexSubTypes::Encoding:
+				out << encodingOperationToString(inst.getComplexSubType<ComplexSubTypes::Encoding>()) << " ";
+				break;
+			case ComplexSubTypes::Extended:
+				extendedOp();
+				break;
+			case ComplexSubTypes::Parsing:
+				out << parsingOperationToString(inst.getComplexSubType<ComplexSubTypes::Parsing>()) << " ";
+				break;
+			case ComplexSubTypes::FeatureCheck:
+				out << " ; NOTE: feature check is unimplemented right now so this will fail to parse!";
+				break;
+			default:
+				break;
+		}
+
+	}
 
     void translateInstruction(std::ostream& out, Word a, Word b, Word c) noexcept {
         DecodedInstruction first(a);
@@ -155,7 +322,30 @@ namespace cisc0 {
 				outputDestinationRegister<Operation::Move>(out, first);
 				outputSourceRegister<Operation::Move>(out, first);
 				break;
-#warning "This code is unfinished, please continue here!!!"
+			case Operation::Shift:
+				translateShiftInstruction(out, first);
+				break;
+			case Operation::Arithmetic:
+				translateArithmetic(out, first);
+				break;
+			case Operation::Logical:
+				translateLogical(out, first, b, c);
+				break;
+			case Operation::Compare:
+				translateCompare(out, first, b, c);
+				break;
+			case Operation::Branch:
+				translateBranch(out, first, b, c);
+				break;
+			case Operation::Memory:
+				translateMemory(out, first);
+				break;
+			case Operation::Complex:
+				translateComplex(out, first);
+				break;
+			default:
+				out << " ; type is unimplemented!";
+				break;
         }
     }
 
