@@ -42,44 +42,121 @@
 
 namespace cisc0 {
 
+    /**
+     * Prints out a message stating that the given instruction is illegal and
+     * the address it was at.
+     * @param current the illegal instruction
+     * @param ip the address it was found at!
+     */
     void illegalInstruction(const DecodedInstruction& current, RegisterValue ip);
+
+    /**
+     * Given a four bit bitmask, expand the lower two bits into field mask
+     * format; so 0m0110 will return 0xFF00.
+     * @param bitmask the bitmask to extract and expand the lower two bits from
+     * @return the lower two bits of the bitmask expanded into a Word.
+     */
 	constexpr Word lowerMask(byte bitmask) noexcept {
 		return syn::encodeUint16LE(syn::expandBit(syn::getBit<byte, 0>(bitmask)),
 									syn::expandBit(syn::getBit<byte, 1>(bitmask)));
 	}
+
+    /**
+     * Given a four bit bitmask, expand the upper two bits into field mask
+     * format so 0m0101 will return 0x00FF.
+     * @param bitmask the bitmask to extract and expand the upper two bits from
+     * @return the upper two bits of the bitmask expanded into a Word.
+     */
 	constexpr Word upperMask(byte bitmask) noexcept {
 		return syn::encodeUint16LE(syn::expandBit(syn::getBit<byte, 2>(bitmask)),
 									syn::expandBit(syn::getBit<byte, 3>(bitmask)));
 	}
 
+    /**
+     * Construct a register wide number from the given bitmask encoding; so
+     * 0m1010 will be expanded to 0xFF00FF00.
+     * @param bitmask the four bit bitmask to expand to register width
+     * @return the four bits that make up the mask expanded into a register
+     * wide value.
+     */
 	constexpr RegisterValue mask(byte bitmask) noexcept {
 		return syn::encodeUint32LE(lowerMask(bitmask), upperMask(bitmask));
 	}
 
+    /**
+     * Should we read the lower word based off of the supplied bitmask's lower
+     * two bits; so 0m1101 would return true, where 0m1100 would return false.
+     * @param bitmask the mask to parse and check
+     * @return a bool value signifying that the lower word should be read
+     */
 	constexpr bool readLower(byte bitmask) noexcept {
 		return lowerMask(bitmask) != 0;
 	}
 
+    /**
+     * Should we read the upper word based off of the supplied bitmask's lower
+     * two bits; so 0m1101 would return true, where 0m0011 would return false.
+     * @param bitmask the mask to parse and check
+     * @return a bool value signifying that the upper word should be read
+     */
 	constexpr bool readUpper(byte bitmask) noexcept {
 		return upperMask(bitmask) != 0;
 	}
+    /**
+     * Given four bytes, encode them into a register wide value
+     * @param a the byte that makes up bits 0-7
+     * @param b the byte that makes up bits 8-15
+     * @param c the byte that makes up bits 16-23
+     * @param d the byte that makes up bits 24-31
+     * @return a register wide encoded value from the given bytes
+     */
     constexpr RegisterValue encodeRegisterValue(byte a, byte b, byte c, byte d) noexcept {
         return syn::encodeUint32LE(a, b, c, d);
     }
+
+    /**
+     * Given two bytes, encode them into a word wide value
+     * @param a the lower half of the word
+     * @param b the upper half of the word
+     * @return the word encoded from the supplied two halves
+     */
     constexpr Word encodeWord(byte a, byte b) noexcept {
         return syn::encodeUint16LE(a, b);
     }
 
+    /**
+     * Extract the upper half of the register value.
+     * @param value the register value to extract the upper half from
+     * @return the word that makes up the upper half of the register value
+     */
     constexpr Word decodeUpperHalf(RegisterValue value) noexcept {
         return syn::decodeBits<RegisterValue, Word, mask(0b1100), 16>(value);
     }
+
+    /**
+     * Extract the lower half of the register value.
+     * @param value the register value to extract the lower half from
+     * @return the word that makes up the lower half of the register value
+     */
     constexpr Word decodeLowerHalf(RegisterValue value) noexcept {
         return syn::decodeBits<RegisterValue, Word, mask(0b0011), 0>(value);
     }
 
+    /**
+     * Puts the given word value into the upper half of a register
+     * @param value the register to encode the upper half into
+     * @param upperHalf the value to be encoded into the register
+     * @return the newly encoded register value
+     */
     constexpr RegisterValue encodeUpperHalf(RegisterValue value, Word upperHalf) noexcept {
         return syn::encodeBits<RegisterValue, Word, mask(0b1100), 16>(value, upperHalf);
     }
+    /**
+     * Puts the given word value into the lower half of a register
+     * @param value the register to encode the lower half into
+     * @param lowerHalf the value to be encoded into the register
+     * @return the newly encoded register value
+     */
     constexpr RegisterValue encodeLowerHalf(RegisterValue value, Word lowerHalf) noexcept {
         return syn::encodeBits<RegisterValue, Word, mask(0b0011), 0>(value, lowerHalf);
     }
@@ -90,10 +167,28 @@ namespace cisc0 {
         }
         return encodeUpperHalf(encodeLowerHalf(0, lower), upper);
     }
+
+    /**
+     * Given a register value, convert it to 0xFFFFFFFF if it is not zero,
+     * otherwise return zero; this is used when parsing the result of the
+     * condition register (which is a full 32-bits wide).
+     * Thus someone can easily stash more data inside the condition register if
+     * necessary.
+     * @param input the register value to normalize to 0xFFFFFFFF or 0
+     * @return If the input is not zero then 0xFFFFFFFF otherwise zero
+     */
     constexpr RegisterValue normalizeCondition(RegisterValue input) noexcept {
         return input != 0 ? 0xFFFFFFFF : 0x00000000;
     }
 
+    /**
+     * Parse the given input word as ascii value and returns the numeric value
+     * it is meant to represent; so 'f' -> 0xF.
+     * @param input the word to parse as a character and convert to its numeric
+     * concept
+     * @return the numeric concept associated with the given symbol, if not one
+     * of the legal ascii chars, then zero is returned.
+     */
 	constexpr byte convertTextToHex(Word input) noexcept {
 		switch(input) {
 			case 'f':
@@ -128,6 +223,13 @@ namespace cisc0 {
 				return 0x0;
 		}
 	}
+
+    /**
+     * Converts the given input byte to its corresponding hex character in
+     * ASCII, if the input is not 0-15 then ascii zero is returned.
+     * @param input the byte value to translate to the ascii hex value, so 0d1 will return '1'.
+     * @return the ascii value of the provided input as a Word
+     */
 	constexpr Word hexToText(byte input) noexcept {
 		switch(syn::decodeBits<byte, byte, 0x0F, 0>(input)) {
 			case 0x1: return static_cast<Word>('1');
@@ -150,6 +252,7 @@ namespace cisc0 {
 				return static_cast<Word>('0');
 		}
 	}
+
 	template<RegisterValue mask, RegisterValue shift>
 	constexpr Word extractHexAndConvertToText(RegisterValue value) noexcept {
 		return hexToText(syn::decodeBits<RegisterValue, byte, mask, shift>(value));
@@ -164,6 +267,16 @@ namespace cisc0 {
                         a,
                         b), 0x1), 1);
     }
+
+    /**
+     * A cisc0 core which describes registers in terms of banks; each bank
+     * contains 8 registers; there can be between 0 and 32 banks; model 0
+     * conceptually has two banks; this class allows register banks to be
+     * described in a concise and consistent manner across different cisc0
+     * implementations.
+     * @tparam bankCount the number of register banks
+     * @tparam R the type of the register
+     */
 	template<byte bankCount, typename R>
 	class BankedCore : public syn::ClipsCore {
 		static_assert(bankCount <= ArchitectureConstants::MaxRegisterBanks, "Too many register banks specified!");

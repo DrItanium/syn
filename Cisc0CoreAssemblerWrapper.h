@@ -42,11 +42,18 @@ namespace cisc0 {
     namespace assembler {
 	    struct AssemblerState;
     } // end namespace assembler
+    /**
+     * Interface between cisc0's assembler and clips.
+     */
     class AssemblerStateWrapper : public syn::ExternalAddressWrapper<assembler::AssemblerState> {
         public:
             using Self = AssemblerStateWrapper;
             using Parent = syn::ExternalAddressWrapper<assembler::AssemblerState>;
         public:
+            /**
+             * The different actions that this wrapper can perform when invoked
+             * through clips.
+             */
             enum Operations {
                 Parse,
                 Resolve,

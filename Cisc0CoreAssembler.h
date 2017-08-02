@@ -63,13 +63,56 @@ namespace cisc0 {
     DefTranslators(Operation, operation);
 #undef DefTranslators
 
-
+    /**
+     * Given an integer index, convert it to a string representation
+     * understandable by the assembler.
+     * @param index the numerical index of a register, this will masked to
+     * the appropriate range automatically.
+     * @return the string representation of the provided register index
+     */
     const std::string& registerIndexToString(Word index);
+
+    /**
+     * Given an integer index, convert it to a string representation
+     * understandable by the assembler.
+     * @param index the numerical index of a register, this will masked to
+     * the appropriate range automatically.
+     * @return the string representation of the provided register index
+     */
     inline const std::string& translateRegister(Word index) { return registerIndexToString(index); }
+
+    /**
+     * Given a string representation of a register, see if it is possible to
+     * translate it to an index value.
+     * @param input The string input to attempt to convert
+     * @return The index corresponding to the provided input
+     */
 	Word translateRegister(const std::string& input);
+
+    /**
+     * Given an encoded instruction, convert it back to a text representation
+     * and save it to the provided stream.
+     * @param out the stream to output the data to
+     * @param first the first word that makes up the encoded instruction
+     * @param second the second word that makes up the encoded instruction (not always applicable)
+     * @param third the third word that makes up the encoded instruction (not always applicable)
+     */
     void translateInstruction(std::ostream& out, Word first, Word second = 0, Word third = 0) noexcept;
+
+    /**
+     * Given an encoded instruction, convert it back to a text representation
+     * and return that as a string
+     * @param out the stream to output the data to
+     * @param first the first word that makes up the encoded instruction
+     * @param second the second word that makes up the encoded instruction (not always applicable)
+     * @param third the third word that makes up the encoded instruction (not always applicable)
+     * @return a string containing the text representation of the encoded * instruction.
+     */
     std::string translateInstruction(Word first, Word second = 0, Word third = 0) noexcept;
 
+    /**
+     * The cisc0 text -> encoded number translator
+     */
     namespace assembler {
 	    using Separator = syn::AsmSeparator;
 	    using SingleLineComment = syn::SingleLineComment<';'>;
@@ -85,6 +128,10 @@ namespace cisc0 {
 	    struct SeparatedQuadThing : pegtl::seq<First, Sep, Second, Sep, Third, Sep, Fourth> { };
 
 	    using AssemblerWord = syn::AssemblerWord<RegisterValue>;
+        /**
+         * Keeps track of the overall state throughout the lifetime of a given
+         * parsing
+         */
 	    struct AssemblerState : public syn::LabelTracker<RegisterValue>, public syn::AddressTracker<RegisterValue>, public syn::FinishedDataTracker<InstructionEncoder> {
 	    	std::vector<AssemblerWord> finalWords;
 	    	std::vector<AssemblerWord> wordsToResolve;
@@ -207,6 +254,9 @@ namespace cisc0 {
             }
         };
 
+        /**
+         * Describes the instruction as an immediate type!
+         */
 	    struct UsesImmediate : pegtl::seq<SymbolImmediate> { };
 
 	    DefAction(UsesImmediate) {
