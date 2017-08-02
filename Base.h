@@ -339,8 +339,6 @@ inline void swap(T& a, T& b) {
     a = c;
 }
 
-
-
 template<typename T>
 union BinaryContainer {
     T value;
@@ -349,6 +347,11 @@ union BinaryContainer {
 using BinaryFloat = BinaryContainer<float>;
 using BinaryDouble = BinaryContainer<double>;
 using BinaryLongDouble = BinaryContainer<long double>;
+template<typename T>
+constexpr auto byteCount = sizeof(T);
+
+template<typename T>
+constexpr auto byteCount<BinaryContainer<T>> = sizeof(T);
 
 template<typename T>
 T getc() noexcept {
