@@ -70,575 +70,577 @@ namespace cisc0 {
     void translateInstruction(std::ostream& out, Word first, Word second = 0, Word third = 0) noexcept;
     std::string translateInstruction(Word first, Word second = 0, Word third = 0) noexcept;
 
-	using Separator = syn::AsmSeparator;
-	using SingleLineComment = syn::SingleLineComment<';'>;
-	template<typename R> struct Action : syn::Action<R> { };
+    namespace assembler {
+	    using Separator = syn::AsmSeparator;
+	    using SingleLineComment = syn::SingleLineComment<';'>;
+	    template<typename R> struct Action : syn::Action<R> { };
 
-	template<typename First, typename Rest, typename Sep = Separator>
-	struct SeparatedBinaryThing : syn::TwoPartComponent<First, Rest, Sep> { };
+	    template<typename First, typename Rest, typename Sep = Separator>
+	    struct SeparatedBinaryThing : syn::TwoPartComponent<First, Rest, Sep> { };
 
-	template<typename First, typename Second, typename Third, typename Sep = Separator>
-	struct SeparatedTrinaryThing : syn::ThreePartComponent<First, Second, Third, Sep, Sep> { };
+	    template<typename First, typename Second, typename Third, typename Sep = Separator>
+	    struct SeparatedTrinaryThing : syn::ThreePartComponent<First, Second, Third, Sep, Sep> { };
 
-	template<typename First, typename Second, typename Third, typename Fourth, typename Sep = Separator>
-	struct SeparatedQuadThing : pegtl::seq<First, Sep, Second, Sep, Third, Sep, Fourth> { };
+	    template<typename First, typename Second, typename Third, typename Fourth, typename Sep = Separator>
+	    struct SeparatedQuadThing : pegtl::seq<First, Sep, Second, Sep, Third, Sep, Fourth> { };
 
-	using AssemblerWord = syn::AssemblerWord<RegisterValue>;
-	struct AssemblerState : public syn::LabelTracker<RegisterValue>, public syn::AddressTracker<RegisterValue>, public syn::FinishedDataTracker<InstructionEncoder> {
-		std::vector<AssemblerWord> finalWords;
-		std::vector<AssemblerWord> wordsToResolve;
-        void output(void* env, CLIPSValue* ret) noexcept;
-		void resolveInstructions();
-		void resolveDeclarations();
-	};
-	template<int width>
-		struct AssemblerWordCreator {
-			static_assert(width > 0, "Can't have a width of zero or less!");
-			template<typename Input>
-				AssemblerWordCreator(const Input& in, AssemblerState& parent) { }
-			virtual ~AssemblerWordCreator() { }
-			template<typename Input>
-				void success(const Input& in, AssemblerState& parent) {
-                    auto address = parent.getCurrentAddress();
-					if (_isLabel) {
-						parent.wordsToResolve.emplace_back(address, _label, width);
-					} else {
-						parent.wordsToResolve.emplace_back(address, _value, width);
-					}
-					parent.incrementCurrentAddress(width);
-				}
-			void setLabel(const std::string& name) noexcept {
-				_label = name;
-				_isLabel = true;
-			}
-			void setValue(RegisterValue value) noexcept {
-				_isLabel = false;
-				_value = value;
-			}
-			bool _isLabel;
-			std::string _label;
-			RegisterValue _value;
-		};
-	using WordCreator = AssemblerWordCreator<1>;
-	using DwordCreator = AssemblerWordCreator<2>;
+	    using AssemblerWord = syn::AssemblerWord<RegisterValue>;
+	    struct AssemblerState : public syn::LabelTracker<RegisterValue>, public syn::AddressTracker<RegisterValue>, public syn::FinishedDataTracker<InstructionEncoder> {
+	    	std::vector<AssemblerWord> finalWords;
+	    	std::vector<AssemblerWord> wordsToResolve;
+            void output(void* env, CLIPSValue* ret) noexcept;
+	    	void resolveInstructions();
+	    	void resolveDeclarations();
+	    };
+	    template<int width>
+	    	struct AssemblerWordCreator {
+	    		static_assert(width > 0, "Can't have a width of zero or less!");
+	    		template<typename Input>
+	    			AssemblerWordCreator(const Input& in, AssemblerState& parent) { }
+	    		virtual ~AssemblerWordCreator() { }
+	    		template<typename Input>
+	    			void success(const Input& in, AssemblerState& parent) {
+                        auto address = parent.getCurrentAddress();
+	    				if (_isLabel) {
+	    					parent.wordsToResolve.emplace_back(address, _label, width);
+	    				} else {
+	    					parent.wordsToResolve.emplace_back(address, _value, width);
+	    				}
+	    				parent.incrementCurrentAddress(width);
+	    			}
+	    		void setLabel(const std::string& name) noexcept {
+	    			_label = name;
+	    			_isLabel = true;
+	    		}
+	    		void setValue(RegisterValue value) noexcept {
+	    			_isLabel = false;
+	    			_value = value;
+	    		}
+	    		bool _isLabel;
+	    		std::string _label;
+	    		RegisterValue _value;
+	    	};
+	    using WordCreator = AssemblerWordCreator<1>;
+	    using DwordCreator = AssemblerWordCreator<2>;
 
-	struct ChangeCurrentAddress : public syn::NumberContainer<RegisterValue> {
-		using syn::NumberContainer<RegisterValue>::NumberContainer;
+	    struct ChangeCurrentAddress : public syn::NumberContainer<RegisterValue> {
+	    	using syn::NumberContainer<RegisterValue>::NumberContainer;
 
-		template<typename Input>
-			void success(const Input& in, AssemblerState& parent) {
-				parent.setCurrentAddress(getValue());
-			}
-	};
-	struct RegisterLabel : public syn::NameToAddressMapping<Address> {
-		using Parent = syn::NameToAddressMapping<Address>;
-		template<typename Input>
-			RegisterLabel(const Input& in, AssemblerState& parent) : Parent(in, parent) {
-				setValue(parent.getCurrentAddress());
-			}
+	    	template<typename Input>
+	    		void success(const Input& in, AssemblerState& parent) {
+	    			parent.setCurrentAddress(getValue());
+	    		}
+	    };
+	    struct RegisterLabel : public syn::NameToAddressMapping<Address> {
+	    	using Parent = syn::NameToAddressMapping<Address>;
+	    	template<typename Input>
+	    		RegisterLabel(const Input& in, AssemblerState& parent) : Parent(in, parent) {
+	    			setValue(parent.getCurrentAddress());
+	    		}
 
-		template<typename Input>
-			void success(const Input& in, AssemblerState& parent) {
-				parent.registerLabel(getTitle(), getValue());
-			}
-	};
-	struct AssemblerInstruction : public InstructionEncoder {
-		template<typename Input>
-			AssemblerInstruction(const Input& in, AssemblerState& parent) {
-				clear();
-				setAddress(parent.getCurrentAddress());
-			}
+	    	template<typename Input>
+	    		void success(const Input& in, AssemblerState& parent) {
+	    			parent.registerLabel(getTitle(), getValue());
+	    		}
+	    };
+	    struct AssemblerInstruction : public InstructionEncoder {
+	    	template<typename Input>
+	    		AssemblerInstruction(const Input& in, AssemblerState& parent) {
+	    			clear();
+	    			setAddress(parent.getCurrentAddress());
+	    		}
 
-		template<typename Input>
-			void success(const Input& in, AssemblerState& parent) {
-				parent.incrementCurrentAddress(numWords());
-				// for now, make a copy because I do not care!
-			    parent.copyToFinishedData(*this);
-			}
-	};
+	    	template<typename Input>
+	    		void success(const Input& in, AssemblerState& parent) {
+	    			parent.incrementCurrentAddress(numWords());
+	    			// for now, make a copy because I do not care!
+	    		    parent.copyToFinishedData(*this);
+	    		}
+	    };
 
-	struct NumberContainer : public syn::NumberContainer<RegisterValue> {
-		using syn::NumberContainer<RegisterValue>::NumberContainer;
+	    struct NumberContainer : public syn::NumberContainer<RegisterValue> {
+	    	using syn::NumberContainer<RegisterValue>::NumberContainer;
 
-		template<typename Input>
-			void success(const Input& in, AssemblerInstruction& parent) {
-				parent.setFullImmediate(getValue());
-			}
+	    	template<typename Input>
+	    		void success(const Input& in, AssemblerInstruction& parent) {
+	    			parent.setFullImmediate(getValue());
+	    		}
 
-		template<typename Input>
-			void success(const Input& in, RegisterLabel& parent) {
-				parent.setValue(getValue());
-			}
+	    	template<typename Input>
+	    		void success(const Input& in, RegisterLabel& parent) {
+	    			parent.setValue(getValue());
+	    		}
 
-		template<typename Input>
-			void success(const Input& in, ChangeCurrentAddress& parent) {
-                parent.setValue(getValue());
-			}
+	    	template<typename Input>
+	    		void success(const Input& in, ChangeCurrentAddress& parent) {
+                    parent.setValue(getValue());
+	    		}
 
-		template<typename Input>
-			void success(const Input& in, AssemblerWord& parent) {
-				parent.setValue(getValue());
-			}
-		template<typename Input, int width>
-			void success(const Input& in, AssemblerWordCreator<width>& parent) {
-				parent.setValue(getValue());
-			}
-		template<typename Input>
-			void success(const Input& in, WordCreator& parent) {
-				success<Input, 1>(in, parent);
-			}
+	    	template<typename Input>
+	    		void success(const Input& in, AssemblerWord& parent) {
+	    			parent.setValue(getValue());
+	    		}
+	    	template<typename Input, int width>
+	    		void success(const Input& in, AssemblerWordCreator<width>& parent) {
+	    			parent.setValue(getValue());
+	    		}
+	    	template<typename Input>
+	    		void success(const Input& in, WordCreator& parent) {
+	    			success<Input, 1>(in, parent);
+	    		}
 
-		template<typename Input>
-			void success(const Input& in, DwordCreator& parent) {
-				success<Input, 2>(in, parent);
-			}
-	};
-
-
-#define DefApplyInstruction DefApplyGeneric(cisc0::AssemblerInstruction)
-#define DefApplyAsmState DefApplyGeneric(cisc0::AssemblerState)
+	    	template<typename Input>
+	    		void success(const Input& in, DwordCreator& parent) {
+	    			success<Input, 2>(in, parent);
+	    		}
+	    };
 
 
-    template<Operation op>
-    struct SetOperationOnApply {
-        DefApplyInstruction {
-            state.setType<op>();
-        }
-    };
+#define DefApplyInstruction DefApplyGeneric(cisc0::assembler::AssemblerInstruction)
+#define DefApplyAsmState DefApplyGeneric(cisc0::assembler::AssemblerState)
 
-	struct UsesImmediate : pegtl::seq<SymbolImmediate> { };
 
-	DefAction(UsesImmediate) {
-		DefApplyInstruction {
-			state.markImmediate();
-		}
-	};
+        template<Operation op>
+        struct SetOperationOnApply {
+            DefApplyInstruction {
+                state.setType<op>();
+            }
+        };
 
-	DefAction(syn::HexadecimalNumber) { DefApplyGeneric(NumberContainer) { syn::populateContainer<RegisterValue, syn::KnownNumberTypes::Hexadecimal>(in.string(), state); } };
-	DefAction(syn::BinaryNumber) { DefApplyGeneric(NumberContainer) { syn::populateContainer<RegisterValue, syn::KnownNumberTypes::Binary>(in.string(), state); } };
-	using DecimalNumber = syn::Base10Number;
-	DefAction(DecimalNumber) { DefApplyGeneric(NumberContainer) { syn::populateContainer<RegisterValue, syn::KnownNumberTypes::Decimal>(in.string(), state); } };
-	struct Number : syn::StatefulNumberAll<NumberContainer> { };
-	DefAction(Number) {
-		DefApplyInstruction {
-			state.markAsNotLabel();
-		}
-		DefApplyGenericEmpty(ChangeCurrentAddress)
-		DefApplyGenericEmpty(WordCreator)
-		DefApplyGenericEmpty(DwordCreator)
-	};
+	    struct UsesImmediate : pegtl::seq<SymbolImmediate> { };
 
-	struct BitmaskNumber : syn::GenericNumeral<'m', pegtl::abnf::BIT> { };
+	    DefAction(UsesImmediate) {
+	    	DefApplyInstruction {
+	    		state.markImmediate();
+	    	}
+	    };
 
-	DefAction(BitmaskNumber) {
-		DefApplyInstruction {
-			state.setBitmask(syn::decodeBits<RegisterValue, byte, 0x000000FF, 0>(syn::getBinaryImmediate<RegisterValue>(in.string(), syn::reportError)));
-		}
-	};
-	using Lexeme = syn::Lexeme;
-	DefAction(Lexeme) {
-		DefApplyInstruction {
-			state.setFullImmediate(0);
-			state.setLabelName(in.string());
-		}
-		DefApplyGeneric(RegisterLabel) {
-			state.setTitle(in.string());
-		}
-		template<typename Input, int width>
-			static void applyToWordCreator(const Input& in, AssemblerWordCreator<width>& state) {
-				state.setLabel(in.string());
-			}
+	    DefAction(syn::HexadecimalNumber) { DefApplyGeneric(NumberContainer) { syn::populateContainer<RegisterValue, syn::KnownNumberTypes::Hexadecimal>(in.string(), state); } };
+	    DefAction(syn::BinaryNumber) { DefApplyGeneric(NumberContainer) { syn::populateContainer<RegisterValue, syn::KnownNumberTypes::Binary>(in.string(), state); } };
+	    using DecimalNumber = syn::Base10Number;
+	    DefAction(DecimalNumber) { DefApplyGeneric(NumberContainer) { syn::populateContainer<RegisterValue, syn::KnownNumberTypes::Decimal>(in.string(), state); } };
+	    struct Number : syn::StatefulNumberAll<NumberContainer> { };
+	    DefAction(Number) {
+	    	DefApplyInstruction {
+	    		state.markAsNotLabel();
+	    	}
+	    	DefApplyGenericEmpty(ChangeCurrentAddress)
+	    	DefApplyGenericEmpty(WordCreator)
+	    	DefApplyGenericEmpty(DwordCreator)
+	    };
 
-		DefApplyGeneric(WordCreator) {
-			applyToWordCreator<Input, 1>(in, state);
-		}
-		DefApplyGeneric(DwordCreator) {
-			applyToWordCreator<Input, 2>(in, state);
-		}
-	};
-	struct LexemeOrNumber : syn::LexemeOr<Number> { };
+	    struct BitmaskNumber : syn::GenericNumeral<'m', pegtl::abnf::BIT> { };
 
-    using NormalRegister = syn::GPR;
-	struct GeneralPurposeRegister : pegtl::sor<
-									NormalRegister,
-									SymbolAddrRegister,
-									SymbolStackPointer,
-									SymbolInstructionPointer,
-									SymbolCallStackPointer,
-									SymbolValueRegister,
-									SymbolMaskRegister,
-									SymbolFieldRegister> { };
+	    DefAction(BitmaskNumber) {
+	    	DefApplyInstruction {
+	    		state.setBitmask(syn::decodeBits<RegisterValue, byte, 0x000000FF, 0>(syn::getBinaryImmediate<RegisterValue>(in.string(), syn::reportError)));
+	    	}
+	    };
+	    using Lexeme = syn::Lexeme;
+	    DefAction(Lexeme) {
+	    	DefApplyInstruction {
+	    		state.setFullImmediate(0);
+	    		state.setLabelName(in.string());
+	    	}
+	    	DefApplyGeneric(RegisterLabel) {
+	    		state.setTitle(in.string());
+	    	}
+	    	template<typename Input, int width>
+	    		static void applyToWordCreator(const Input& in, AssemblerWordCreator<width>& state) {
+	    			state.setLabel(in.string());
+	    		}
 
-	struct IndirectGPR : pegtl::seq<GeneralPurposeRegister> { };
+	    	DefApplyGeneric(WordCreator) {
+	    		applyToWordCreator<Input, 1>(in, state);
+	    	}
+	    	DefApplyGeneric(DwordCreator) {
+	    		applyToWordCreator<Input, 2>(in, state);
+	    	}
+	    };
+	    struct LexemeOrNumber : syn::LexemeOr<Number> { };
+
+        using NormalRegister = syn::GPR;
+	    struct GeneralPurposeRegister : pegtl::sor<
+	    								NormalRegister,
+	    								SymbolAddrRegister,
+	    								SymbolStackPointer,
+	    								SymbolInstructionPointer,
+	    								SymbolCallStackPointer,
+	    								SymbolValueRegister,
+	    								SymbolMaskRegister,
+	    								SymbolFieldRegister> { };
+
+	    struct IndirectGPR : pegtl::seq<GeneralPurposeRegister> { };
 #define DefIndirectGPR(title) \
-	struct title : IndirectGPR { }
+	    struct title : IndirectGPR { }
 
-	DefIndirectGPR(DestinationRegister);
-	DefAction(DestinationRegister) {
-		DefApplyInstruction {
-            state.setFirstArg(translateRegister(in.string()));
-		}
-	};
+	    DefIndirectGPR(DestinationRegister);
+	    DefAction(DestinationRegister) {
+	    	DefApplyInstruction {
+                state.setFirstArg(translateRegister(in.string()));
+	    	}
+	    };
 
-	DefIndirectGPR(SourceRegister);
-	DefAction(SourceRegister) {
-		DefApplyInstruction {
-			state.setSecondArg(translateRegister(in.string()));
-		}
-	};
+	    DefIndirectGPR(SourceRegister);
+	    DefAction(SourceRegister) {
+	    	DefApplyInstruction {
+	    		state.setSecondArg(translateRegister(in.string()));
+	    	}
+	    };
 
-	DefIndirectGPR(SourceRegister1);
-	DefAction(SourceRegister1) {
-		DefApplyInstruction {
-			state.setThirdArg(translateRegister(in.string()));
-		}
-	};
-	template<typename S>
-	struct TwoArgumentOperation : SeparatedBinaryThing<
-								  DestinationRegister,
-								  S> { };
+	    DefIndirectGPR(SourceRegister1);
+	    DefAction(SourceRegister1) {
+	    	DefApplyInstruction {
+	    		state.setThirdArg(translateRegister(in.string()));
+	    	}
+	    };
+	    template<typename S>
+	    struct TwoArgumentOperation : SeparatedBinaryThing<
+	    							  DestinationRegister,
+	    							  S> { };
 
-	struct TwoGPRs : TwoArgumentOperation<SourceRegister> { };
-	DefAction(TwoGPRs) {
-		DefApplyInstruction {
-			state.markImmediate(false);
-		}
-	};
+	    struct TwoGPRs : TwoArgumentOperation<SourceRegister> { };
+	    DefAction(TwoGPRs) {
+	    	DefApplyInstruction {
+	    		state.markImmediate(false);
+	    	}
+	    };
 
 
-	struct ShiftLeftOrRight : pegtl::sor<
-							  SymbolLeft,
-							  SymbolRight> { };
+	    struct ShiftLeftOrRight : pegtl::sor<
+	    						  SymbolLeft,
+	    						  SymbolRight> { };
 
-	DefAction(ShiftLeftOrRight) {
-		DefApplyInstruction {
-			state.setShiftDirection(in.string() == "left");
-		}
-	};
+	    DefAction(ShiftLeftOrRight) {
+	    	DefApplyInstruction {
+	    		state.setShiftDirection(in.string() == "left");
+	    	}
+	    };
 
-	template<typename Source>
-	struct ImmediateOperationArgs : SeparatedBinaryThing<
-									UsesImmediate,
-									TwoArgumentOperation<Source>> { };
-	template<typename Source>
-	struct ImmediateOperationArgsWithBitmask : SeparatedTrinaryThing<
-											   UsesImmediate,
-											   BitmaskNumber,
-											   TwoArgumentOperation<Source>> { };
-	struct SpecialImmediate : pegtl::seq<Number> { };
-	struct ShiftImmediateValue : SpecialImmediate { };
-	DefAction(ShiftImmediateValue) {
-		DefApplyInstruction {
-            state.setSecondArg(static_cast<byte>(state.getFullImmediate()) & 0b11111);
-		}
-	};
-	struct ShiftArgs : pegtl::sor<
-					   TwoGPRs,
-					   ImmediateOperationArgs<ShiftImmediateValue>> { };
+	    template<typename Source>
+	    struct ImmediateOperationArgs : SeparatedBinaryThing<
+	    								UsesImmediate,
+	    								TwoArgumentOperation<Source>> { };
+	    template<typename Source>
+	    struct ImmediateOperationArgsWithBitmask : SeparatedTrinaryThing<
+	    										   UsesImmediate,
+	    										   BitmaskNumber,
+	    										   TwoArgumentOperation<Source>> { };
+	    struct SpecialImmediate : pegtl::seq<Number> { };
+	    struct ShiftImmediateValue : SpecialImmediate { };
+	    DefAction(ShiftImmediateValue) {
+	    	DefApplyInstruction {
+                state.setSecondArg(static_cast<byte>(state.getFullImmediate()) & 0b11111);
+	    	}
+	    };
+	    struct ShiftArgs : pegtl::sor<
+	    				   TwoGPRs,
+	    				   ImmediateOperationArgs<ShiftImmediateValue>> { };
 
-	struct ShiftOperation : SeparatedTrinaryThing<
-							SymbolShift,
-							ShiftLeftOrRight,
-							ShiftArgs> { };
-    DefAction(ShiftOperation) : SetOperationOnApply<Operation::Shift> { };
+	    struct ShiftOperation : SeparatedTrinaryThing<
+	    						SymbolShift,
+	    						ShiftLeftOrRight,
+	    						ShiftArgs> { };
+        DefAction(ShiftOperation) : SetOperationOnApply<Operation::Shift> { };
 
-	struct ByteCastImmediate : SpecialImmediate { };
-	DefAction(ByteCastImmediate) {
-		DefApplyInstruction {
-            state.setSecondArg(static_cast<byte>(state.getFullImmediate()));
-		}
-	};
+	    struct ByteCastImmediate : SpecialImmediate { };
+	    DefAction(ByteCastImmediate) {
+	    	DefApplyInstruction {
+                state.setSecondArg(static_cast<byte>(state.getFullImmediate()));
+	    	}
+	    };
 
-    template<Operation op>
-    struct ConvertOperationToSubType {
-        static_assert(HasSubtype<op>(), "Provided operation does not have a subtype!");
-        DefApplyGeneric(AssemblerInstruction) {
-            switch(op) {
-                case Operation::Compare:
-                    state.setSubType(stringToCompareStyle(in.string()));
-                    break;
-                case Operation::Arithmetic:
-                    state.setSubType(stringToArithmeticOps(in.string()));
-                    break;
-                case Operation::Memory:
-                    state.setSubType(stringToMemoryOperation(in.string()));
-                    break;
-                case Operation::Logical:
-                    state.setSubType(stringToLogicalOps(in.string()));
-                    break;
-                case Operation::Complex:
-                    state.setSubType(stringToComplexSubTypes(in.string()));
-                    break;
+        template<Operation op>
+        struct ConvertOperationToSubType {
+            static_assert(HasSubtype<op>(), "Provided operation does not have a subtype!");
+            DefApplyGeneric(AssemblerInstruction) {
+                switch(op) {
+                    case Operation::Compare:
+                        state.setSubType(stringToCompareStyle(in.string()));
+                        break;
+                    case Operation::Arithmetic:
+                        state.setSubType(stringToArithmeticOps(in.string()));
+                        break;
+                    case Operation::Memory:
+                        state.setSubType(stringToMemoryOperation(in.string()));
+                        break;
+                    case Operation::Logical:
+                        state.setSubType(stringToLogicalOps(in.string()));
+                        break;
+                    case Operation::Complex:
+                        state.setSubType(stringToComplexSubTypes(in.string()));
+                        break;
+                }
             }
-        }
-    };
+        };
 
-    using GetCompareSubType = ConvertOperationToSubType<Operation::Compare>;
-	struct CompareType : pegtl::sor<
-						 SymbolEquals,
-						 SymbolNotEquals,
-						 SymbolLessThan,
-						 SymbolLessThanOrEqualTo,
-						 SymbolGreaterThan,
-						 SymbolGreaterThanOrEqualTo> { };
-	struct SpecialCompareType : pegtl::sor<
-								SymbolMoveFromCondition,
-                                SymbolMoveToCondition> { };
-    DefAction(CompareType) : GetCompareSubType { };
-    DefAction(SpecialCompareType) : GetCompareSubType { };
-	struct CompareArgs : pegtl::sor<
-						 TwoGPRs,
-						 ImmediateOperationArgsWithBitmask<LexemeOrNumber>> { };
-	struct NormalCompareOperation : SeparatedBinaryThing<
-									CompareType,
-									CompareArgs> { };
-	struct SpecialCompareOperation : SeparatedBinaryThing<
-									 SpecialCompareType,
-									 DestinationRegister> { };
-	struct CompareOperation : SeparatedBinaryThing<
-							  SymbolCompare,
-							  pegtl::sor<
-										 NormalCompareOperation,
-										 SpecialCompareOperation>> { };
-    DefAction(CompareOperation) : SetOperationOnApply<Operation::Compare> { };
-	struct MoveOperation : SeparatedTrinaryThing<
-						   SymbolMove,
-						   BitmaskNumber,
-						   TwoGPRs> { };
-    DefAction(MoveOperation) : SetOperationOnApply<Operation::Move> { };
-	struct SetOperation : SeparatedQuadThing<
-						  SymbolSet,
-						  BitmaskNumber,
-						  DestinationRegister,
-						  LexemeOrNumber> { };
-    DefAction(SetOperation) : SetOperationOnApply<Operation::Set> { };
-	struct SwapOperation : SeparatedBinaryThing<
-						   SymbolSwap,
-						   TwoGPRs> { };
-    DefAction(SwapOperation) : SetOperationOnApply<Operation::Swap> { };
+        using GetCompareSubType = ConvertOperationToSubType<Operation::Compare>;
+	    struct CompareType : pegtl::sor<
+	    					 SymbolEquals,
+	    					 SymbolNotEquals,
+	    					 SymbolLessThan,
+	    					 SymbolLessThanOrEqualTo,
+	    					 SymbolGreaterThan,
+	    					 SymbolGreaterThanOrEqualTo> { };
+	    struct SpecialCompareType : pegtl::sor<
+	    							SymbolMoveFromCondition,
+                                    SymbolMoveToCondition> { };
+        DefAction(CompareType) : GetCompareSubType { };
+        DefAction(SpecialCompareType) : GetCompareSubType { };
+	    struct CompareArgs : pegtl::sor<
+	    					 TwoGPRs,
+	    					 ImmediateOperationArgsWithBitmask<LexemeOrNumber>> { };
+	    struct NormalCompareOperation : SeparatedBinaryThing<
+	    								CompareType,
+	    								CompareArgs> { };
+	    struct SpecialCompareOperation : SeparatedBinaryThing<
+	    								 SpecialCompareType,
+	    								 DestinationRegister> { };
+	    struct CompareOperation : SeparatedBinaryThing<
+	    						  SymbolCompare,
+	    						  pegtl::sor<
+	    									 NormalCompareOperation,
+	    									 SpecialCompareOperation>> { };
+        DefAction(CompareOperation) : SetOperationOnApply<Operation::Compare> { };
+	    struct MoveOperation : SeparatedTrinaryThing<
+	    					   SymbolMove,
+	    					   BitmaskNumber,
+	    					   TwoGPRs> { };
+        DefAction(MoveOperation) : SetOperationOnApply<Operation::Move> { };
+	    struct SetOperation : SeparatedQuadThing<
+	    					  SymbolSet,
+	    					  BitmaskNumber,
+	    					  DestinationRegister,
+	    					  LexemeOrNumber> { };
+        DefAction(SetOperation) : SetOperationOnApply<Operation::Set> { };
+	    struct SwapOperation : SeparatedBinaryThing<
+	    					   SymbolSwap,
+	    					   TwoGPRs> { };
+        DefAction(SwapOperation) : SetOperationOnApply<Operation::Swap> { };
 
-	struct Arg0ImmediateValue : SpecialImmediate { };
-	DefAction(Arg0ImmediateValue) {
-		DefApplyInstruction {
-            state.setFirstArg(static_cast<byte>(state.getFullImmediate()) & 0b1111);
-		}
-	};
-	struct ArithmeticType : pegtl::sor<
-                            SymbolAdd,
-                            SymbolSub,
-                            SymbolMul,
-                            SymbolDiv,
-                            SymbolRem,
-                            SymbolMin,
-                            SymbolMax> { };
-    DefAction(ArithmeticType) : ConvertOperationToSubType<Operation::Arithmetic> { };
+	    struct Arg0ImmediateValue : SpecialImmediate { };
+	    DefAction(Arg0ImmediateValue) {
+	    	DefApplyInstruction {
+                state.setFirstArg(static_cast<byte>(state.getFullImmediate()) & 0b1111);
+	    	}
+	    };
+	    struct ArithmeticType : pegtl::sor<
+                                SymbolAdd,
+                                SymbolSub,
+                                SymbolMul,
+                                SymbolDiv,
+                                SymbolRem,
+                                SymbolMin,
+                                SymbolMax> { };
+        DefAction(ArithmeticType) : ConvertOperationToSubType<Operation::Arithmetic> { };
 
-	struct ArithmeticArgs : pegtl::sor<
-							TwoGPRs,
-							ImmediateOperationArgs<ByteCastImmediate>> { };
-	struct ArithmeticOperation : SeparatedTrinaryThing<SymbolArithmetic, ArithmeticType, ArithmeticArgs> { };
+	    struct ArithmeticArgs : pegtl::sor<
+	    						TwoGPRs,
+	    						ImmediateOperationArgs<ByteCastImmediate>> { };
+	    struct ArithmeticOperation : SeparatedTrinaryThing<SymbolArithmetic, ArithmeticType, ArithmeticArgs> { };
 
-    DefAction(ArithmeticOperation) : SetOperationOnApply<Operation::Arithmetic> { };
-
-
-    using GetMemorySubType = ConvertOperationToSubType<Operation::Memory>;
-	struct LoadStoreType : pegtl::sor<
-						   SymbolLoad,
-						   SymbolStore> { };
-
-    DefAction(LoadStoreType) : GetMemorySubType { };
-	struct StackMemoryType : pegtl::sor<
-							 SymbolPush,
-							 SymbolPop> { };
-    DefAction(StackMemoryType) : GetMemorySubType { };
-	struct StackOperation : SeparatedTrinaryThing<StackMemoryType, BitmaskNumber, DestinationRegister> { };
-	struct FlagIndirect : syn::SingleEntrySequence<SymbolIndirect> { };
-	struct FlagDirect : syn::SingleEntrySequence<SymbolDirect> { };
-	struct FlagDirectOrIndirect : pegtl::sor<
-								  FlagDirect,
-								  FlagIndirect> { };
-	DefAction(FlagDirectOrIndirect) {
-		DefApplyInstruction {
-			static std::string compare("indirect");
-			state.markIndirect(in.string() == compare);
-		}
-	};
-	struct LoadStoreOperation : SeparatedQuadThing<
-								LoadStoreType,
-								BitmaskNumber,
-								FlagDirectOrIndirect,
-								Arg0ImmediateValue> { };
-
-	struct MemoryTypes : pegtl::sor<
-						 StackOperation,
-						 LoadStoreOperation> { };
-	struct MemoryInstruction : SeparatedBinaryThing<
-							   SymbolMemory,
-							   MemoryTypes> { };
-    DefAction(MemoryInstruction) : SetOperationOnApply<Operation::Memory> { };
+        DefAction(ArithmeticOperation) : SetOperationOnApply<Operation::Arithmetic> { };
 
 
+        using GetMemorySubType = ConvertOperationToSubType<Operation::Memory>;
+	    struct LoadStoreType : pegtl::sor<
+	    					   SymbolLoad,
+	    					   SymbolStore> { };
 
-	struct LogicalOpsType : pegtl::sor<
-							SymbolAnd,
-							SymbolOr,
-							SymbolNot,
-							SymbolXor,
-							SymbolNand> { };
-    DefAction(LogicalOpsType) : ConvertOperationToSubType<Operation::Logical> { };
-	struct LogicalArgs : pegtl::sor<
-						 TwoGPRs,
-						 ImmediateOperationArgsWithBitmask<LexemeOrNumber>> { };
-	struct LogicalOperation : SeparatedTrinaryThing<SymbolLogical, LogicalOpsType, LogicalArgs> { };
-    DefAction(LogicalOperation) : SetOperationOnApply<Operation::Logical> { };
+        DefAction(LoadStoreType) : GetMemorySubType { };
+	    struct StackMemoryType : pegtl::sor<
+	    						 SymbolPush,
+	    						 SymbolPop> { };
+        DefAction(StackMemoryType) : GetMemorySubType { };
+	    struct StackOperation : SeparatedTrinaryThing<StackMemoryType, BitmaskNumber, DestinationRegister> { };
+	    struct FlagIndirect : syn::SingleEntrySequence<SymbolIndirect> { };
+	    struct FlagDirect : syn::SingleEntrySequence<SymbolDirect> { };
+	    struct FlagDirectOrIndirect : pegtl::sor<
+	    							  FlagDirect,
+	    							  FlagIndirect> { };
+	    DefAction(FlagDirectOrIndirect) {
+	    	DefApplyInstruction {
+	    		static std::string compare("indirect");
+	    		state.markIndirect(in.string() == compare);
+	    	}
+	    };
+	    struct LoadStoreOperation : SeparatedQuadThing<
+	    							LoadStoreType,
+	    							BitmaskNumber,
+	    							FlagDirectOrIndirect,
+	    							Arg0ImmediateValue> { };
 
-    template<ComplexSubTypes type>
-    struct SetComplexSubSubType {
-        static_assert(!syn::isErrorState(type), "Can't operate on the error type!");
-        DefApplyInstruction {
-            switch(type) {
-                case ComplexSubTypes::Encoding:
-                    state.setBitmask(stringToEncodingOperation(in.string()));
-                    break;
-                case ComplexSubTypes::Extended:
-                    state.setBitmask(stringToExtendedOperation(in.string()));
-                    break;
-                case ComplexSubTypes::Parsing:
-                    state.setBitmask(stringToParsingOperation(in.string()));
-                    break;
+	    struct MemoryTypes : pegtl::sor<
+	    					 StackOperation,
+	    					 LoadStoreOperation> { };
+	    struct MemoryInstruction : SeparatedBinaryThing<
+	    						   SymbolMemory,
+	    						   MemoryTypes> { };
+        DefAction(MemoryInstruction) : SetOperationOnApply<Operation::Memory> { };
+
+
+
+	    struct LogicalOpsType : pegtl::sor<
+	    						SymbolAnd,
+	    						SymbolOr,
+	    						SymbolNot,
+	    						SymbolXor,
+	    						SymbolNand> { };
+        DefAction(LogicalOpsType) : ConvertOperationToSubType<Operation::Logical> { };
+	    struct LogicalArgs : pegtl::sor<
+	    					 TwoGPRs,
+	    					 ImmediateOperationArgsWithBitmask<LexemeOrNumber>> { };
+	    struct LogicalOperation : SeparatedTrinaryThing<SymbolLogical, LogicalOpsType, LogicalArgs> { };
+        DefAction(LogicalOperation) : SetOperationOnApply<Operation::Logical> { };
+
+        template<ComplexSubTypes type>
+        struct SetComplexSubSubType {
+            static_assert(!syn::isErrorState(type), "Can't operate on the error type!");
+            DefApplyInstruction {
+                switch(type) {
+                    case ComplexSubTypes::Encoding:
+                        state.setBitmask(stringToEncodingOperation(in.string()));
+                        break;
+                    case ComplexSubTypes::Extended:
+                        state.setBitmask(stringToExtendedOperation(in.string()));
+                        break;
+                    case ComplexSubTypes::Parsing:
+                        state.setBitmask(stringToParsingOperation(in.string()));
+                        break;
+                }
             }
-        }
-    };
+        };
 
-	struct ComplexEncodingSubOperation : pegtl::sor<
-										 SymbolDecode,
-										 SymbolEncode,
-										 SymbolBitSet,
-										 SymbolBitUnset> { };
-    DefAction(ComplexEncodingSubOperation) : SetComplexSubSubType<ComplexSubTypes::Encoding> { };
+	    struct ComplexEncodingSubOperation : pegtl::sor<
+	    									 SymbolDecode,
+	    									 SymbolEncode,
+	    									 SymbolBitSet,
+	    									 SymbolBitUnset> { };
+        DefAction(ComplexEncodingSubOperation) : SetComplexSubSubType<ComplexSubTypes::Encoding> { };
 
-	struct ComplexExtendedSubOperation_NoArgs : pegtl::sor<
-										 SymbolPopValueAddr,
-										 SymbolPushValueAddr,
-										 SymbolDecrementValueAddr,
-										 SymbolIncrementValueAddr,
-										 SymbolWordsBeforeFirstZero> { };
-    DefAction(ComplexExtendedSubOperation_NoArgs) : SetComplexSubSubType<ComplexSubTypes::Extended> { };
-	struct ComplexExtendedOneArg_Operations : pegtl::sor<
-											  SymbolIsEven,
-											  SymbolIsOdd> { };
-    DefAction(ComplexExtendedOneArg_Operations) : SetComplexSubSubType<ComplexSubTypes::Extended> { };
+	    struct ComplexExtendedSubOperation_NoArgs : pegtl::sor<
+	    									 SymbolPopValueAddr,
+	    									 SymbolPushValueAddr,
+	    									 SymbolDecrementValueAddr,
+	    									 SymbolIncrementValueAddr,
+	    									 SymbolWordsBeforeFirstZero> { };
+        DefAction(ComplexExtendedSubOperation_NoArgs) : SetComplexSubSubType<ComplexSubTypes::Extended> { };
+	    struct ComplexExtendedOneArg_Operations : pegtl::sor<
+	    										  SymbolIsEven,
+	    										  SymbolIsOdd> { };
+        DefAction(ComplexExtendedOneArg_Operations) : SetComplexSubSubType<ComplexSubTypes::Extended> { };
 
-	struct ComplexExtendedSubOperation_OneArg : SeparatedBinaryThing<
-												ComplexExtendedOneArg_Operations,
-												DestinationRegister> { };
-	struct ComplexExtendedSubOperation : pegtl::sor<
-										 ComplexExtendedSubOperation_NoArgs,
-										 ComplexExtendedSubOperation_OneArg> { };
-
-
-	struct ComplexParsingSubOperation_NoArgs : pegtl::sor<
-										 SymbolHex8ToRegister,
-										 SymbolRegisterToHex8,
-										 SymbolMemCopy> { };
-    DefAction(ComplexParsingSubOperation_NoArgs) : SetComplexSubSubType<ComplexSubTypes::Parsing> { };
-	struct ComplexParsingSubOperation : pegtl::sor<
-										ComplexExtendedSubOperation_NoArgs> { };
+	    struct ComplexExtendedSubOperation_OneArg : SeparatedBinaryThing<
+	    											ComplexExtendedOneArg_Operations,
+	    											DestinationRegister> { };
+	    struct ComplexExtendedSubOperation : pegtl::sor<
+	    									 ComplexExtendedSubOperation_NoArgs,
+	    									 ComplexExtendedSubOperation_OneArg> { };
 
 
-    using ConvertComplexSubtype = ConvertOperationToSubType<Operation::Complex>;
-	struct ComplexEncodingOperation : SeparatedBinaryThing<
-									  SymbolEncoding,
-									  ComplexEncodingSubOperation> { };
-    DefAction(ComplexEncodingOperation) : ConvertComplexSubtype { };
-	struct ComplexExtendedOperation : SeparatedBinaryThing<
-									  SymbolExtended,
-									  ComplexExtendedSubOperation> { };
-    DefAction(ComplexExtendedOperation) : ConvertComplexSubtype { };
-	struct ComplexParsingOperation : SeparatedBinaryThing<
-									 SymbolParsing,
-									 ComplexParsingSubOperation> { };
-    DefAction(ComplexParsingOperation) : ConvertComplexSubtype { };
-	struct ComplexSubOperations : pegtl::sor<
-								  ComplexEncodingOperation,
-								  ComplexExtendedOperation,
-								  ComplexParsingOperation> { };
+	    struct ComplexParsingSubOperation_NoArgs : pegtl::sor<
+	    									 SymbolHex8ToRegister,
+	    									 SymbolRegisterToHex8,
+	    									 SymbolMemCopy> { };
+        DefAction(ComplexParsingSubOperation_NoArgs) : SetComplexSubSubType<ComplexSubTypes::Parsing> { };
+	    struct ComplexParsingSubOperation : pegtl::sor<
+	    									ComplexExtendedSubOperation_NoArgs> { };
 
-	struct ComplexOperation : SeparatedBinaryThing<
-							  SymbolComplex,
-							  ComplexSubOperations> { };
-    DefAction(ComplexOperation) : SetOperationOnApply<Operation::Complex> { };
 
-	struct BranchFlagCall : SymbolCall { };
-	DefAction(BranchFlagCall) {
-		DefApplyInstruction {
-			state.markCall();
-		}
-	};
+        using ConvertComplexSubtype = ConvertOperationToSubType<Operation::Complex>;
+	    struct ComplexEncodingOperation : SeparatedBinaryThing<
+	    								  SymbolEncoding,
+	    								  ComplexEncodingSubOperation> { };
+        DefAction(ComplexEncodingOperation) : ConvertComplexSubtype { };
+	    struct ComplexExtendedOperation : SeparatedBinaryThing<
+	    								  SymbolExtended,
+	    								  ComplexExtendedSubOperation> { };
+        DefAction(ComplexExtendedOperation) : ConvertComplexSubtype { };
+	    struct ComplexParsingOperation : SeparatedBinaryThing<
+	    								 SymbolParsing,
+	    								 ComplexParsingSubOperation> { };
+        DefAction(ComplexParsingOperation) : ConvertComplexSubtype { };
+	    struct ComplexSubOperations : pegtl::sor<
+	    							  ComplexEncodingOperation,
+	    							  ComplexExtendedOperation,
+	    							  ComplexParsingOperation> { };
 
-	struct BranchFlagConditional : SymbolConditional { };
-	DefAction(BranchFlagConditional) {
-		DefApplyInstruction {
-			state.markConditional();
-		}
-	};
+	    struct ComplexOperation : SeparatedBinaryThing<
+	    						  SymbolComplex,
+	    						  ComplexSubOperations> { };
+        DefAction(ComplexOperation) : SetOperationOnApply<Operation::Complex> { };
 
-	struct BranchFlagUnconditional : SymbolUnconditional { };
-	DefAction(BranchFlagUnconditional) {
-		DefApplyInstruction {
-			state.markUnconditional();
-		}
-	};
+	    struct BranchFlagCall : SymbolCall { };
+	    DefAction(BranchFlagCall) {
+	    	DefApplyInstruction {
+	    		state.markCall();
+	    	}
+	    };
 
-	struct ChooseBranchFlagUsePredicate : pegtl::sor<BranchFlagConditional, BranchFlagUnconditional> { };
+	    struct BranchFlagConditional : SymbolConditional { };
+	    DefAction(BranchFlagConditional) {
+	    	DefApplyInstruction {
+	    		state.markConditional();
+	    	}
+	    };
 
-	struct BranchNormalArgs : pegtl::sor<
-							  SeparatedBinaryThing<UsesImmediate, LexemeOrNumber>,
-							  DestinationRegister> { };
-    template<typename T>
-    struct BranchWithNormalArgs : SeparatedBinaryThing<T, BranchNormalArgs> { };
-    struct BranchCallOperation : BranchWithNormalArgs<BranchFlagCall> { };
-    struct BranchJumpOperation : BranchWithNormalArgs<ChooseBranchFlagUsePredicate> { };
+	    struct BranchFlagUnconditional : SymbolUnconditional { };
+	    DefAction(BranchFlagUnconditional) {
+	    	DefApplyInstruction {
+	    		state.markUnconditional();
+	    	}
+	    };
 
-	struct BranchTypes : pegtl::sor<BranchCallOperation, BranchJumpOperation> { };
-	struct BranchOperation : SeparatedBinaryThing<SymbolBranch, BranchTypes> { };
-    DefAction(BranchOperation) : SetOperationOnApply<Operation::Branch> { };
+	    struct ChooseBranchFlagUsePredicate : pegtl::sor<BranchFlagConditional, BranchFlagUnconditional> { };
 
-	struct ReturnOperation : pegtl::seq<SymbolReturn> { };
-    DefAction(ReturnOperation) : SetOperationOnApply<Operation::Return> { };
+	    struct BranchNormalArgs : pegtl::sor<
+	    						  SeparatedBinaryThing<UsesImmediate, LexemeOrNumber>,
+	    						  DestinationRegister> { };
+        template<typename T>
+        struct BranchWithNormalArgs : SeparatedBinaryThing<T, BranchNormalArgs> { };
+        struct BranchCallOperation : BranchWithNormalArgs<BranchFlagCall> { };
+        struct BranchJumpOperation : BranchWithNormalArgs<ChooseBranchFlagUsePredicate> { };
 
-	struct Instructions : pegtl::state<AssemblerInstruction,
-	pegtl::sor<
-			   BranchOperation,
-			   ComplexOperation,
-			   MemoryInstruction,
-			   MoveOperation,
-			   SetOperation,
-			   SwapOperation,
-			   ArithmeticOperation,
-			   ShiftOperation,
-			   CompareOperation,
-			   LogicalOperation,
-			   ReturnOperation>
-								> { };
-    struct WordDirective : syn::WordDirective<WordCreator, LexemeOrNumber> { };
-	struct DwordDirective : syn::DwordDirective<DwordCreator, LexemeOrNumber> { };
+	    struct BranchTypes : pegtl::sor<BranchCallOperation, BranchJumpOperation> { };
+	    struct BranchOperation : SeparatedBinaryThing<SymbolBranch, BranchTypes> { };
+        DefAction(BranchOperation) : SetOperationOnApply<Operation::Branch> { };
 
-	struct Directive : pegtl::sor<
-					   syn::StatefulOrgDirective<ChangeCurrentAddress, Number>,
-					   syn::StatefulLabelDirective<RegisterLabel, Lexeme>,
-					   WordDirective,
-					   DwordDirective > { };
+	    struct ReturnOperation : pegtl::seq<SymbolReturn> { };
+        DefAction(ReturnOperation) : SetOperationOnApply<Operation::Return> { };
 
-	struct Statement : pegtl::sor<
-					   Instructions,
-					   Directive> { };
+	    struct Instructions : pegtl::state<AssemblerInstruction,
+	    pegtl::sor<
+	    		   BranchOperation,
+	    		   ComplexOperation,
+	    		   MemoryInstruction,
+	    		   MoveOperation,
+	    		   SetOperation,
+	    		   SwapOperation,
+	    		   ArithmeticOperation,
+	    		   ShiftOperation,
+	    		   CompareOperation,
+	    		   LogicalOperation,
+	    		   ReturnOperation>
+	    							> { };
+        struct WordDirective : syn::WordDirective<WordCreator, LexemeOrNumber> { };
+	    struct DwordDirective : syn::DwordDirective<DwordCreator, LexemeOrNumber> { };
 
-	struct Anything : pegtl::sor<
-					  Separator,
-					  SingleLineComment,
-					  Statement> { };
+	    struct Directive : pegtl::sor<
+	    				   syn::StatefulOrgDirective<ChangeCurrentAddress, Number>,
+	    				   syn::StatefulLabelDirective<RegisterLabel, Lexeme>,
+	    				   WordDirective,
+	    				   DwordDirective > { };
 
-	struct Main : syn::MainFileParser<Anything> { };
+	    struct Statement : pegtl::sor<
+	    				   Instructions,
+	    				   Directive> { };
+
+	    struct Anything : pegtl::sor<
+	    				  Separator,
+	    				  SingleLineComment,
+	    				  Statement> { };
+
+	    struct Main : syn::MainFileParser<Anything> { };
+    } // end namespace assembler
 } // end namespace cisc0
 #endif  // end CISC0_CORE_ASSEMBLER_H__

@@ -39,11 +39,13 @@
 #include "ClipsExtensions.h"
 
 namespace cisc0 {
-	struct AssemblerState;
-    class AssemblerStateWrapper : public syn::ExternalAddressWrapper<AssemblerState> {
+    namespace assembler {
+	    struct AssemblerState;
+    } // end namespace assembler
+    class AssemblerStateWrapper : public syn::ExternalAddressWrapper<assembler::AssemblerState> {
         public:
             using Self = AssemblerStateWrapper;
-            using Parent = syn::ExternalAddressWrapper<AssemblerState>;
+            using Parent = syn::ExternalAddressWrapper<assembler::AssemblerState>;
         public:
             enum Operations {
                 Parse,
@@ -64,6 +66,6 @@ namespace cisc0 {
     };
 }
 namespace syn {
-	DefWrapperSymbolicName(cisc0::AssemblerState, "cisc0:assembly-parsing-state");
+	DefWrapperSymbolicName(cisc0::assembler::AssemblerState, "cisc0:assembly-parsing-state");
 }
 #endif

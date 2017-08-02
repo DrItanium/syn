@@ -31,58 +31,60 @@
 #include "Cisc0Core.h"
 
 namespace cisc0 {
-	void AssemblerState::resolveInstructions() {
-		applyToFinishedData([this](InstructionEncoder& op) {
-			if (op.isLabel()) {
-				auto label = op.getLabelValue();
-				auto f = findLabel(label);
-				if (f == labelsEnd()) {
-					std::stringstream stream;
-					stream << "label " << label << " does not exist!\n";
-					throw syn::Problem(stream.str());
-				}
-				op.setFullImmediate(f->second);
-			}
-			// now that it has been resolved, we need to go through and setup
-			// the encoding correctly!
-			auto address = op.getAddress();
-            auto encoding = op.encode();
-			switch(encoding.getNumWords()) {
-				case 3:
-					finalWords.emplace_back(address + 2, encoding.getWord2());
-				case 2:
-					finalWords.emplace_back(address + 1, encoding.getWord1());
-				case 1:
-					finalWords.emplace_back(address, encoding.getWord0());
-					break;
-				default:
-					throw syn::Problem("Number of words described is not possible!");
-			}
-		});
-	}
-	void AssemblerState::resolveDeclarations() {
-		for (auto & op: wordsToResolve) {
-			if (op.isLabel()) {
-				auto label = op.getLabel();
-				auto f = findLabel(label);
-				if (f == labelsEnd()) {
-					std::stringstream stream;
-					stream << "label " << label << " does not exist!\n";
-					throw syn::Problem(stream.str());
-				}
-				op.setValue(f->second);
-			}
-			switch(op.getWidth()) {
-				case 2:
-					finalWords.emplace_back(op.getAddress() + 1, syn::getUpperHalf(op.getValue()));
-				case 1:
-					finalWords.emplace_back(op.getAddress(), syn::getLowerHalf(op.getValue()));
-					break;
-				default:
-					throw syn::Problem("Got a declaration of with a width that was not 1 or 2");
-			}
-		}
-	}
+    namespace assembler {
+	    void AssemblerState::resolveInstructions() {
+	    	applyToFinishedData([this](InstructionEncoder& op) {
+	    		if (op.isLabel()) {
+	    			auto label = op.getLabelValue();
+	    			auto f = findLabel(label);
+	    			if (f == labelsEnd()) {
+	    				std::stringstream stream;
+	    				stream << "label " << label << " does not exist!\n";
+	    				throw syn::Problem(stream.str());
+	    			}
+	    			op.setFullImmediate(f->second);
+	    		}
+	    		// now that it has been resolved, we need to go through and setup
+	    		// the encoding correctly!
+	    		auto address = op.getAddress();
+                auto encoding = op.encode();
+	    		switch(encoding.getNumWords()) {
+	    			case 3:
+	    				finalWords.emplace_back(address + 2, encoding.getWord2());
+	    			case 2:
+	    				finalWords.emplace_back(address + 1, encoding.getWord1());
+	    			case 1:
+	    				finalWords.emplace_back(address, encoding.getWord0());
+	    				break;
+	    			default:
+	    				throw syn::Problem("Number of words described is not possible!");
+	    		}
+	    	});
+	    }
+	    void AssemblerState::resolveDeclarations() {
+	    	for (auto & op: wordsToResolve) {
+	    		if (op.isLabel()) {
+	    			auto label = op.getLabel();
+	    			auto f = findLabel(label);
+	    			if (f == labelsEnd()) {
+	    				std::stringstream stream;
+	    				stream << "label " << label << " does not exist!\n";
+	    				throw syn::Problem(stream.str());
+	    			}
+	    			op.setValue(f->second);
+	    		}
+	    		switch(op.getWidth()) {
+	    			case 2:
+	    				finalWords.emplace_back(op.getAddress() + 1, syn::getUpperHalf(op.getValue()));
+	    			case 1:
+	    				finalWords.emplace_back(op.getAddress(), syn::getLowerHalf(op.getValue()));
+	    				break;
+	    			default:
+	    				throw syn::Problem("Got a declaration of with a width that was not 1 or 2");
+	    		}
+	    	}
+	    }
+    } // end namespace assembler
 
     void outputBitmask(std::ostream& out, byte value) noexcept {
         static std::string output[16] = {

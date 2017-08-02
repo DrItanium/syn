@@ -40,24 +40,26 @@ namespace cisc0 {
 	void installAssemblerParsingState(void* env) {
 		// AssemblerState needs to be an external address and we can have
 		// multiple assembler states sitting around too!
-		pegtl::analyze<cisc0::Main>();
+		pegtl::analyze<cisc0::assembler::Main>();
 		// make sure that the parser is still valid before we go any further!
 		AssemblerStateWrapper::registerWithEnvironment(env);
 		AssemblerStateWrapper::registerWithEnvironment(env, "cisc0-asm-parser");
 		AssemblerStateWrapper::registerWithEnvironment(env, "cisc0-assembler");
 	}
-    void AssemblerState::output(void* env, CLIPSValue* ret) noexcept {
-        // we need to build a multifield out of the finalWords
-        syn::MultifieldBuilder f(env, finalWords.size() * 2);
-        int i = 1;
-        for (auto q : finalWords) {
-            // add them two at a time!
-            f.setField(i, INTEGER, EnvAddLong(env, q.getAddress()));
-            f.setField(i + 1, INTEGER, EnvAddLong(env, q.getValue()));
-            i += 2;
+    namespace assembler {
+        void AssemblerState::output(void* env, CLIPSValue* ret) noexcept {
+            // we need to build a multifield out of the finalWords
+            syn::MultifieldBuilder f(env, finalWords.size() * 2);
+            int i = 1;
+            for (auto q : finalWords) {
+                // add them two at a time!
+                f.setField(i, INTEGER, EnvAddLong(env, q.getAddress()));
+                f.setField(i + 1, INTEGER, EnvAddLong(env, q.getValue()));
+                i += 2;
+            }
+            f.assign(ret);
         }
-        f.assign(ret);
-    }
+    } // end namespace assembler
 	AssemblerStateWrapper* AssemblerStateWrapper::make() noexcept {
 		return new AssemblerStateWrapper();
 	}
@@ -71,7 +73,7 @@ namespace cisc0 {
 	}
 	bool AssemblerStateWrapper::parseLine(const std::string& line) {
 		auto& ref = *(get());
-		return pegtl::parse_string<cisc0::Main, cisc0::Action>(line, "clips-input", ref);
+		return pegtl::parse_string<assembler::Main, assembler::Action>(line, "clips-input", ref);
 	}
 
 
@@ -143,5 +145,5 @@ namespace cisc0 {
 		}
 		return false;
 	}
-	AssemblerStateWrapper::AssemblerStateWrapper() : Parent(std::move(std::make_unique<AssemblerState>())) { }
+	AssemblerStateWrapper::AssemblerStateWrapper() : Parent(std::move(std::make_unique<assembler::AssemblerState>())) { }
 }
