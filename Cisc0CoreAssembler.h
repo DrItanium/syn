@@ -49,25 +49,19 @@
 #include "Cisc0CoreAssemblerKeywords.h"
 
 namespace cisc0 {
-    CompareStyle stringToCompareStyle(const std::string& str) noexcept;
-    ArithmeticOps stringToArithmeticOps(const std::string& str) noexcept;
-    ComplexSubTypes stringToComplexSubTypes(const std::string& str) noexcept;
-    MemoryOperation stringToMemoryOperation(const std::string& str) noexcept;
-    LogicalOps stringToLogicalOps(const std::string& str) noexcept;
-    EncodingOperation stringToEncodingOperation(const std::string& str) noexcept;
-    ExtendedOperation stringToExtendedOperation(const std::string& str) noexcept;
-    ParsingOperation stringToParsingOperation(const std::string& str) noexcept;
-    const std::string& compareStyleToString(CompareStyle value) noexcept;
-    const std::string& arithmeticOpsToString(ArithmeticOps value) noexcept;
-    const std::string& complexSubTypesToString(ComplexSubTypes value) noexcept;
-    const std::string& memoryOperationToString(MemoryOperation value) noexcept;
-    const std::string& logicalOpsToString(LogicalOps value) noexcept;
-    const std::string& encodingOperationToString(EncodingOperation value) noexcept;
-    const std::string& extendedOperationToString(ExtendedOperation value) noexcept;
-    const std::string& parsingOperationToString(ParsingOperation value) noexcept;
-
-    Operation stringToOperation(const std::string& str) noexcept;
-    const std::string& operationToString(Operation value) noexcept;
+#define DefTranslators(type, str) \
+    type stringTo ## type ( const std::string& title ) noexcept; \
+    const std::string& str ## ToString ( type value ) noexcept
+    DefTranslators(CompareStyle, compareStyle);
+    DefTranslators(ArithmeticOps, arithmeticOps);
+    DefTranslators(ComplexSubTypes, complexSubTypes);
+    DefTranslators(MemoryOperation, memoryOperation);
+    DefTranslators(EncodingOperation, encodingOperation);
+    DefTranslators(ExtendedOperation, extendedOperation);
+    DefTranslators(LogicalOps, logicalOps);
+    DefTranslators(ParsingOperation, parsingOperation);
+    DefTranslators(Operation, operation);
+#undef DefTranslators
 
 	using Separator = syn::AsmSeparator;
 	using SingleLineComment = syn::SingleLineComment<';'>;
