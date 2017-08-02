@@ -27,6 +27,8 @@
 // Cisc0CoreAssembler rewritten to use pegtl
 #include "Cisc0ClipsExtensions.h"
 #include "Cisc0CoreAssembler.h"
+#include "Cisc0CoreDecodedInstruction.h"
+#include "Cisc0Core.h"
 
 namespace cisc0 {
 	void AssemblerState::resolveInstructions() {
@@ -81,6 +83,76 @@ namespace cisc0 {
 			}
 		}
 	}
+
+    void outputBitmask(std::ostream& out, byte value) noexcept {
+        static std::string output[16] = {
+            "0m0000",
+            "0m0001",
+            "0m0010",
+            "0m0011",
+            "0m0100",
+            "0m0101",
+            "0m0110",
+            "0m0111",
+            "0m1000",
+            "0m1001",
+            "0m1010",
+            "0m1011",
+            "0m1100",
+            "0m1101",
+            "0m1110",
+            "0m1111",
+        };
+        out << output[value & 0xF] << " ";
+    }
+    template<Operation op>
+    void outputBitmask(std::ostream& out, const DecodedInstruction& inst) noexcept {
+        outputBitmask(out, inst.getBitmask<op>());
+    }
+
+    void outputRegister(std::ostream& out, byte index) {
+        out << translateRegister(index) << " ";
+    }
+    template<Operation op>
+    void outputDestinationRegister(std::ostream& out, const DecodedInstruction& inst) noexcept {
+        outputRegister(out, inst.getDestinationRegister<op>());
+    }
+
+    template<Operation op>
+    void outputSourceRegister(std::ostream& out, const DecodedInstruction& inst) noexcept {
+        outputRegister(out, inst.getSourceRegister<op>());
+    }
+
+
+    void outputFullImmediate(std::ostream& out, Word lower, Word upper) noexcept {
+        out << "0x" << std::hex << cisc0::encodeRegisterValue(upper, lower) << " ";
+    }
+
+    std::string translateInstruction(Word a, Word b, Word c) noexcept {
+        std::stringstream out;
+        translateInstruction(out, a, b, c);
+        auto tmp = out.str();
+        return tmp;
+    }
+
+    void translateInstruction(std::ostream& out, Word a, Word b, Word c) noexcept {
+        DecodedInstruction first(a);
+        out << operationToString(first.getControl()) << " ";
+        switch(first.getControl()) {
+            case Operation::Return:
+                break;
+            case Operation::Set:
+                outputBitmask<Operation::Set>(out, first);
+                outputDestinationRegister<Operation::Set>(out, first);
+                outputFullImmediate(out, b, c);
+                break;
+            case Operation::Swap:
+                outputDestinationRegister<Operation::Swap>(out, first);
+                outputSourceRegister<Operation::Swap>(out, first);
+                break;
+#warning "This code is unfinished, please continue here!!!"
+        }
+    }
 
 #define StringToEnumEntry(str, type) { str , type },
 #define EnumToStringEntry(str, type) { type , str },

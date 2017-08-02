@@ -63,6 +63,13 @@ namespace cisc0 {
     DefTranslators(Operation, operation);
 #undef DefTranslators
 
+
+    const std::string& registerIndexToString(Word index);
+    inline const std::string& translateRegister(Word index) { return registerIndexToString(index); }
+	Word translateRegister(const std::string& input);
+    void translateInstruction(std::ostream& out, Word first, Word second = 0, Word third = 0) noexcept;
+    std::string translateInstruction(Word first, Word second = 0, Word third = 0) noexcept;
+
 	using Separator = syn::AsmSeparator;
 	using SingleLineComment = syn::SingleLineComment<';'>;
 	template<typename R> struct Action : syn::Action<R> { };
@@ -261,7 +268,6 @@ namespace cisc0 {
 									SymbolValueRegister,
 									SymbolMaskRegister,
 									SymbolFieldRegister> { };
-	Word translateRegister(const std::string& input);
 
 	struct IndirectGPR : pegtl::seq<GeneralPurposeRegister> { };
 #define DefIndirectGPR(title) \
