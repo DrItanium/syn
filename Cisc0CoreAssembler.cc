@@ -150,6 +150,11 @@ namespace cisc0 {
                 outputDestinationRegister<Operation::Swap>(out, first);
                 outputSourceRegister<Operation::Swap>(out, first);
                 break;
+			case Operation::Move:
+				outputBitmask<Operation::Move>(out, first);
+				outputDestinationRegister<Operation::Move>(out, first);
+				outputSourceRegister<Operation::Move>(out, first);
+				break;
 #warning "This code is unfinished, please continue here!!!"
         }
     }
