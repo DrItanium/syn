@@ -43,14 +43,20 @@
 
 
 namespace cisc0 {
+
     /**
-     * A reimplementation of the cisc0 instruction set with modifications to
-     * the internals!
+     * cisc0 implementation that reads in three words at the beginning of the
+     * cycle. This is a caching implementation which prevents memory from being
+     * constantly hit in the cases of reading in immediate values.
      */
 	class CoreModel1 : public Core {
 		public:
             using Parent = Core;
             static constexpr auto instructionCacheWidth = 3;
+            /**
+             * Stores the a series of words from memory and treats them as
+             * though they are the parts of a variable length instruction.
+             */
             class FusedInstruction {
                 public:
                     FusedInstruction(RegisterValue& ip, Word first = 0, Word second = 0, Word third = 0);

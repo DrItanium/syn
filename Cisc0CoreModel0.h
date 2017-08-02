@@ -42,6 +42,10 @@
 #include "Cisc0Core.h"
 
 namespace cisc0 {
+    /**
+     * Original cisc0 implementation.
+     * Retrieves instruction words from memory as needed
+     */
 	class CoreModel0 : public Core {
         public:
             using Parent = Core ;

@@ -40,6 +40,11 @@
 #include "Cisc0CoreConstants.h"
 #include "Cisc0CoreDecodedInstruction.h"
 
+
+/**
+ * A CISC style instruction set architecture with odd edge cases and a limited
+ * register set
+ */
 namespace cisc0 {
 
     /**
@@ -434,12 +439,25 @@ namespace cisc0 {
 			bool advanceIp = true;
 			IOBus _bus;
 	};
+    /**
+     * A generic implementation of a condition register. It is built assuming
+     * that the condition register is not part of the GPR set.
+     */
 	class ConditionRegisterImplementation {
 		public:
+            /**
+             * retrieve the condition register value as a reference
+             * @return a bool reference of the backing condition register
+             */
 			virtual bool& getConditionRegister() noexcept { return _conditionRegister; }
 		protected:
 			bool _conditionRegister = true;
 	};
+
+    /**
+     * Standard two bank core implementation, all standard cisc0 configuration
+     * uses this design.
+     */
 	class Core : public BankedCore<2, RegisterValue>, public ConditionRegisterImplementation {
         public:
             using RegisterFile = syn::FixedSizeLoadStoreUnit<RegisterValue, byte, ArchitectureConstants::RegisterCount>;
