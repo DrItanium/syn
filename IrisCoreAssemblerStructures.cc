@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * Implementation of iris assembler structures and related functions
+ * @copyright
  * syn
  * Copyright (c) 2013-2017, Joshua Scoggins and Contributors
  * All rights reserved.
@@ -39,95 +42,97 @@
 #include "IrisCoreEncodingOperations.h"
 
 namespace iris {
-    AssemblerData::AssemblerData() noexcept : instruction(false), address(0), dataValue(0), group(0), operation(0), destination(0), source0(0), source1(0), hasLexeme(false), fullImmediate(false) { }
+    namespace assembler {
+        AssemblerData::AssemblerData() noexcept : instruction(false), address(0), dataValue(0), group(0), operation(0), destination(0), source0(0), source1(0), hasLexeme(false), fullImmediate(false) { }
 
-    void AssemblerData::setImmediate(word value) noexcept {
-        source0 = syn::getLowerHalf<word>(value);
-        source1 = syn::getUpperHalf<word>(value);
-    }
-    raw_instruction AssemblerData::encode() const noexcept {
-        if (instruction) {
-            return iris::encodeInstruction(group, operation, destination, source0, source1);
-        } else {
-            return dataValue;
+        void AssemblerData::setImmediate(word value) noexcept {
+            source0 = syn::getLowerHalf<word>(value);
+            source1 = syn::getUpperHalf<word>(value);
         }
-    }
+        raw_instruction AssemblerData::encode() const noexcept {
+            if (instruction) {
+                return iris::encodeInstruction(group, operation, destination, source0, source1);
+            } else {
+                return dataValue;
+            }
+        }
 
-    void AssemblerState::setCurrentAddress(word value) noexcept {
-        if (inDataSection()) {
-            data.setCurrentAddress(value);
-        } else {
-            code.setCurrentAddress(value);
+        void AssemblerState::setCurrentAddress(word value) noexcept {
+            if (inDataSection()) {
+                data.setCurrentAddress(value);
+            } else {
+                code.setCurrentAddress(value);
+            }
         }
-    }
-    void AssemblerState::registerLabel(const std::string& value) noexcept {
-        LabelTracker::registerLabel(value, getCurrentAddress());
-    }
-    word AssemblerState::getCurrentAddress() const noexcept {
-        return inDataSection() ? data.getCurrentAddress() : code.getCurrentAddress();
-    }
-    void AssemblerState::incrementCurrentAddress() noexcept {
-        if (inDataSection()) {
-            data.incrementCurrentAddress();
-        } else {
-            code.incrementCurrentAddress();
+        void AssemblerState::registerLabel(const std::string& value) noexcept {
+            LabelTracker::registerLabel(value, getCurrentAddress());
         }
-    }
-    void AssemblerInstruction::setField(RegisterPositionType type, byte value) {
-        using Type = RegisterPositionType;
-        switch(type) {
-            case Type::DestinationGPR:
-                destination = value;
-                break;
-            case Type::Source0GPR:
-                source0 = value;
-                break;
-            case Type::Source1GPR:
-                source1 = value;
-                break;
-            case Type::PredicateDestination:
-                destination = iris::encode4Bits<false>(destination, value);
-                break;
-            case Type::PredicateInverseDestination:
-                destination = iris::encode4Bits<true>(destination, value);
-                break;
-            case Type::PredicateSource0:
-                source0 = iris::encode4Bits<false>(source0, value);
-                break;
-            case Type::PredicateSource1:
-                source0 = iris::encode4Bits<true>(source0, value);
-                break;
-            default:
-                syn::reportError("Illegal index provided!");
+        word AssemblerState::getCurrentAddress() const noexcept {
+            return inDataSection() ? data.getCurrentAddress() : code.getCurrentAddress();
         }
-    }
-    bool AssemblerDirective::shouldChangeSectionToCode() const noexcept {
-        return (action == AssemblerDirectiveAction::ChangeSection) && (section == SectionType::Code);
-    }
-    bool AssemblerDirective::shouldChangeSectionToData() const noexcept {
-        return (action == AssemblerDirectiveAction::ChangeSection) && (section == SectionType::Data);
-    }
-    bool AssemblerDirective::shouldChangeCurrentAddress() const noexcept {
-        return (action == AssemblerDirectiveAction::ChangeCurrentAddress);
-    }
-    bool AssemblerDirective::shouldDefineLabel() const noexcept {
-        return (action == AssemblerDirectiveAction::DefineLabel);
-    }
-    bool AssemblerDirective::shouldStoreWord() const noexcept {
-        return (action == AssemblerDirectiveAction::StoreWord);
-    }
-    bool AssemblerData::shouldResolveLabel() const noexcept {
-        return fullImmediate && hasLexeme;
-    }
+        void AssemblerState::incrementCurrentAddress() noexcept {
+            if (inDataSection()) {
+                data.incrementCurrentAddress();
+            } else {
+                code.incrementCurrentAddress();
+            }
+        }
+        void AssemblerInstruction::setField(RegisterPositionType type, byte value) {
+            using Type = RegisterPositionType;
+            switch(type) {
+                case Type::DestinationGPR:
+                    destination = value;
+                    break;
+                case Type::Source0GPR:
+                    source0 = value;
+                    break;
+                case Type::Source1GPR:
+                    source1 = value;
+                    break;
+                case Type::PredicateDestination:
+                    destination = iris::encode4Bits<false>(destination, value);
+                    break;
+                case Type::PredicateInverseDestination:
+                    destination = iris::encode4Bits<true>(destination, value);
+                    break;
+                case Type::PredicateSource0:
+                    source0 = iris::encode4Bits<false>(source0, value);
+                    break;
+                case Type::PredicateSource1:
+                    source0 = iris::encode4Bits<true>(source0, value);
+                    break;
+                default:
+                    syn::reportError("Illegal index provided!");
+            }
+        }
+        bool AssemblerDirective::shouldChangeSectionToCode() const noexcept {
+            return (action == AssemblerDirectiveAction::ChangeSection) && (section == SectionType::Code);
+        }
+        bool AssemblerDirective::shouldChangeSectionToData() const noexcept {
+            return (action == AssemblerDirectiveAction::ChangeSection) && (section == SectionType::Data);
+        }
+        bool AssemblerDirective::shouldChangeCurrentAddress() const noexcept {
+            return (action == AssemblerDirectiveAction::ChangeCurrentAddress);
+        }
+        bool AssemblerDirective::shouldDefineLabel() const noexcept {
+            return (action == AssemblerDirectiveAction::DefineLabel);
+        }
+        bool AssemblerDirective::shouldStoreWord() const noexcept {
+            return (action == AssemblerDirectiveAction::StoreWord);
+        }
+        bool AssemblerData::shouldResolveLabel() const noexcept {
+            return fullImmediate && hasLexeme;
+        }
 
-    void AssemblerState::nowInCodeSection() noexcept {
-        _section = SectionType::Code;
-    }
-    void AssemblerState::nowInDataSection() noexcept {
-        _section = SectionType::Data;
-    }
-    bool AssemblerState::inCodeSection() const noexcept { return _section == SectionType::Code; }
-    bool AssemblerState::inDataSection() const noexcept { return _section == SectionType::Data; }
+        void AssemblerState::nowInCodeSection() noexcept {
+            _section = SectionType::Code;
+        }
+        void AssemblerState::nowInDataSection() noexcept {
+            _section = SectionType::Data;
+        }
+        bool AssemblerState::inCodeSection() const noexcept { return _section == SectionType::Code; }
+        bool AssemblerState::inDataSection() const noexcept { return _section == SectionType::Data; }
+    } // end namespace assembler
 
     const std::string& translateRegister(byte index) noexcept {
         static bool init = true;

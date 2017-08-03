@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * Implementation of AssemblerStateWrapper
+ * @copyright
  * syn
  * Copyright (c) 2013-2017, Joshua Scoggins and Contributors
  * All rights reserved.
@@ -46,11 +49,13 @@
 #include "IrisCoreAssemblerStateWrapper.h"
 
 namespace iris {
-    class AssemblerState;
-}
+    namespace assembler {
+        class AssemblerState;
+    } // end namespace assembler
+} // end namespace iris
 namespace syn {
-    DefWrapperSymbolicName(iris::AssemblerState, "iris:assembly-parsing-state");
-}
+    DefWrapperSymbolicName(iris::assembler::AssemblerState, "iris:assembly-parsing-state");
+} // end namespace syn
 
 namespace iris {
     void AssemblerStateWrapper::getMultifield(void* env, CLIPSValuePtr ret) {
@@ -59,7 +64,7 @@ namespace iris {
     }
     bool AssemblerStateWrapper::resolve() {
         auto & state = *(get());
-		auto resolveLabel = [&state](AssemblerData& data) {
+		auto resolveLabel = [&state](assembler::AssemblerData& data) {
 			auto result = state.findLabel(data.currentLexeme);
 			if (result == state.labelsEnd()) {
 				std::stringstream msg;
@@ -84,7 +89,7 @@ namespace iris {
     }
     bool AssemblerStateWrapper::parseLine(const std::string& line) {
         auto& ref = *(get());
-        return pegtl::parse_string<iris::Main, iris::Action>(line, "clips-input", ref);
+        return pegtl::parse_string<iris::assembler::Main, iris::assembler::Action>(line, "clips-input", ref);
     }
     void AssemblerStateWrapper::output(void* env, CLIPSValue* ret) noexcept {
         // we need to build a multifield out of the finalWords
@@ -101,7 +106,7 @@ namespace iris {
     }
 
     void installAssemblerParsingState(void* env) {
-        pegtl::analyze<iris::Main>();
+        pegtl::analyze<iris::assembler::Main>();
         AssemblerStateWrapper::registerWithEnvironment(env);
         AssemblerStateWrapper::registerWithEnvironment(env, "iris-asm-parser");
         AssemblerStateWrapper::registerWithEnvironment(env, "iris-assembler");

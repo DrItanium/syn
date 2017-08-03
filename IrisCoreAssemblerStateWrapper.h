@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * An interface between clips and the iris assembler
+ * @copyright
  * syn
  * Copyright (c) 2013-2017, Joshua Scoggins and Contributors
  * All rights reserved.
@@ -40,12 +43,14 @@
 #include "ClipsExtensions.h"
 
 namespace iris {
-	struct AssemblerState;
-    class AssemblerStateWrapper : public syn::ExternalAddressWrapper<AssemblerState> {
+    namespace assembler {
+	    class AssemblerState;
+    }
+    class AssemblerStateWrapper : public syn::ExternalAddressWrapper<assembler::AssemblerState> {
 
         public:
             using Self = AssemblerStateWrapper;
-            using Parent = syn::ExternalAddressWrapper<AssemblerState>;
+            using Parent = syn::ExternalAddressWrapper<assembler::AssemblerState>;
             static inline Self* make() noexcept { return new Self(); }
             static void registerWithEnvironment(void* env, const char* title);
             static void registerWithEnvironment(void* env);
@@ -58,7 +63,7 @@ namespace iris {
                 Count,
             };
          public:
-            AssemblerStateWrapper() : Parent(std::move(std::make_unique<AssemblerState>())) { }
+            AssemblerStateWrapper() : Parent(std::move(std::make_unique<assembler::AssemblerState>())) { }
             bool parseLine(const std::string& line);
             bool resolve();
             void getMultifield(void* env, CLIPSValuePtr ret);
