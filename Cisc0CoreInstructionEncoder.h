@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * class and routines for generating encoded numbers from gleaned data
+ * @copyright
  * syn
  * Copyright (c) 2013-2017, Joshua Scoggins and Contributors
  * All rights reserved.
@@ -33,7 +36,15 @@
 #include "cisc0_defines.h"
 
 namespace cisc0 {
+    /**
+     * Converts a given set of described data into corresponding encoded
+     * numbers.
+     */
 	struct InstructionEncoder {
+        /**
+         * The result of calling encode; it contains the words that make up the
+         * instruction.
+         */
         struct Encoding {
             public:
                 Encoding(int numWords, Word w0 = 0, Word w2 = 0, Word w3 = 0) noexcept;

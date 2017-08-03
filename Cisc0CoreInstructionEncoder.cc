@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * routines for constructing numeric equivalents of described instructions
+ * @copyright
  * syn
  * Copyright (c) 2013-2017, Joshua Scoggins and Contributors
  * All rights reserved.

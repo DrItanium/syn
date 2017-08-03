@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * implementations of any functions described in the DecodedInstruction class
+ * @copyright
  * syn
  * Copyright (c) 2013-2017, Joshua Scoggins and Contributors
  * All rights reserved.

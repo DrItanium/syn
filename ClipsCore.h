@@ -1,4 +1,8 @@
-/*
+/**
+ * @file
+ * An abstract class which simplifies the process of adding cores to CLIPS as
+ * external address types.
+ * @copyright
  * syn
  * Copyright (c) 2013-2017, Joshua Scoggins and Contributors
  * All rights reserved.
@@ -35,8 +39,16 @@ namespace syn {
      */
     class ClipsCore : public Core {
         public:
+            /**
+             * given an environment and return value, figure out what action is
+             * requested and carry it out if it makes sense.
+             * @param env the clips environment
+             * @param ret the return address
+             * @return a boolean value signifying if the operation was executed
+             * successfully.
+             */
             virtual bool handleOperation(void* env, CLIPSValue* ret) = 0;
     };
-}
+} // end namespace syn
 
 #endif // end SYN_CLIPS_CORE_H_

@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * Values and types that are constant to the entire cisc0 architecture
+ * @copyright
  * syn
  * Copyright (c) 2013-2017, Joshua Scoggins and Contributors
  * All rights reserved.
@@ -29,18 +32,28 @@
 #include "BaseTypes.h"
 
 namespace cisc0 {
+    /// the unit that memory is divided into
 	using Word = uint16;
+    /// the unit that can be described as two words
 	using DWord = uint32;
+    /// the basic unit of an instruction since the architecture is variable-length
 	using RawInstruction = Word; // this is more of a packet!
+    /// The type of registers
 	using RegisterValue = DWord;
+    /// the type of addresses
     using Address = DWord;
 
+    /**
+     * Constants that are always relevant to cisc0
+     */
 	enum ArchitectureConstants  {
 		RegisterCount = 16,
 		MaxInstructionCount = 16,
 		MaxRegisterBanks = 32,
 		RegistersPerBank = 8,
+        /// Writing to this address will cause the cpu to stop
 		TerminateAddress = 0xFFFFFFFF,
+        /// Where ip starts on cpu boot
 		StartingIPAddress = 0xFE000000,
 		// unlike iris16 and iris32, there is a limited set of registers with
 		// a majority of them marked for explicit usage, instructions
@@ -65,7 +78,9 @@ namespace cisc0 {
 		InstructionPointer = R15,
 		StackPointer = R14,
 		CallStackPointer = R13, // second stack
+        /// used by load/store routines to describe the memory address
 		AddressRegister = R12,
+        /// used by load/store routines to describe the source or destination of the operation
 		ValueRegister = R11,
 		MaskRegister = R10,
 		ShiftRegister = R9,
