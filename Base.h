@@ -96,18 +96,41 @@ using HalfType = typename UpperLowerPair::TypeData<T>::HalfType;
 template<typename T>
 using QuarterType = HalfType<HalfType<T>>;
 
+/**
+ * If the given type was split into eight parts, what would its type be?
+ * @tparam T the type to be split into eight parts
+ */
 template<typename T>
 using EighthType = HalfType<QuarterType<T>>;
 
+/**
+ * Retrieves the mask to extract the upper half of a type. By default, this
+ * will be zero. The backing templated variables must be specialized.
+ * @tparam T the type to retrieve the upper half mask of
+ * @return the upper half mask of the specified type
+ */
 template<typename T>
 constexpr T getUpperMask() noexcept {
     return UpperLowerPair::upperMask<T>;
 }
+
+/**
+ * Retrieves the mask to extract the lower half of a type.  By default, this
+ * will be zero. The backing templated variables must be specialized.
+ * @tparam T the type to retrieve the lower half mask of
+ * @return the lower half mask of the specified type
+ */
 template<typename T>
 constexpr T getLowerMask() noexcept {
     return UpperLowerPair::lowerMask<T>;
 }
 
+/**
+ * Retrieve the shift count needed for extracting the upper half of a given
+ * type. Unless specialized this will be zero
+ * @tparam T the type to retrieve the shift count of
+ * @return the shift count for the specified type
+ */
 template<typename T>
 constexpr T getShiftCount() noexcept {
     return UpperLowerPair::shiftCount<T>;
@@ -115,14 +138,35 @@ constexpr T getShiftCount() noexcept {
 
 
 
+/**
+ * A compile type computation for defining a bit at a given position. For
+ * instance, singleBitmaskValue<byte, 7> will put 0x1 at position seven which
+ * will result in 0x80.
+ * @tparam T the type to make the bitmask of
+ * @tparam index the position in the type to place the 1
+ */
 template<typename T, T index>
 constexpr auto singleBitmaskValue = static_cast<T>(0x1 << index);
 
+/**
+ * A version of singleBitmaskValue where the shift index is only known at
+ * runtime.
+ * @tparam T the resultant type of the single bit bitmask
+ * @param index the position in the type to place the single bit
+ * @return the bitmask of the given type at the specified position
+ */
 template<typename T>
 constexpr T computeSingleBitmask(T index) noexcept {
 	return static_cast<T>(1 << index);
 }
 
+/**
+ * mask the given input with the fixed bitmask
+ * @tparam T the type of all things in this function
+ * @tparam bitmask the mask to apply to the input
+ * @param input the value to be masked
+ * @return the result of masking input with bitmask
+ */
 template<typename T, T bitmask>
 constexpr T mask(T input) noexcept {
     return input & bitmask;
@@ -139,6 +183,16 @@ template<> constexpr uint32 mask<uint32, 0>(uint32 value) noexcept { return 0; }
 template<> constexpr uint64 mask<uint64, 0xFFFFFFFFFFFFFFFF>(uint64 value) noexcept { return value; }
 template<> constexpr uint64 mask<uint64, 0>(uint64 value) noexcept { return 0; }
 
+/**
+ * Extract a section of bits out of a given input and return it as a given
+ * type.
+ * @tparam T the type of the input
+ * @tparam F the type of the output
+ * @tparam bitmask the mask to apply to the input
+ * @tparam shiftcount the amount of positions to shift right
+ * @param input source value to extract bits out of
+ * @return input masked, shifted, and then cast to the specified type
+ */
 template<typename T, typename F, T bitmask, T shiftcount>
 constexpr F decodeBits(T input) noexcept {
     auto result = mask<T, bitmask>(input);
@@ -157,6 +211,13 @@ template<> constexpr uint32 decodeBits<uint32, uint32, 0, 0>(uint32 input) noexc
 template<> constexpr uint64 decodeBits<uint64, uint64, 0xFFFFFFFFFFFFFFFF, 0>(uint64 input) noexcept { return input; }
 template<> constexpr uint64 decodeBits<uint64, uint64, 0, 0>(uint64 input) noexcept { return 0; }
 
+/**
+ * Mask a given input and return a bool based on its resultant value
+ * @tparam T the type of the input
+ * @tparam mask the bitmask to apply to the input
+ * @param input the input to check for flag status on
+ * @return input masked and cast to bool
+ */
 template<typename T, T mask>
 constexpr bool decodeFlag(T input) noexcept {
 	return decodeBits<T, bool, mask, static_cast<T>(0)>(input);
@@ -373,6 +434,12 @@ constexpr auto byteCount = sizeof(T);
 template<typename T>
 constexpr auto byteCount<BinaryContainer<T>> = sizeof(T);
 
+/**
+ * Retrieves a byte from std::cin, casts it to the specified type, and returns
+ * it.
+ * @tparam T the type to cast the input byte to
+ * @return the extracted byte cast to the specified type
+ */
 template<typename T>
 T getc() noexcept {
     byte value = 0;
@@ -380,6 +447,11 @@ T getc() noexcept {
     return static_cast<T>(value);
 }
 
+/**
+ * Simple wrapper over outputting characters (or whatever) to std::cout
+ * @tparam T the type of the input
+ * @param value the value to output to standard out
+ */
 template<typename T>
 void putc(T value) noexcept {
     std::cout << static_cast<char>(value);

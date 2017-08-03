@@ -252,6 +252,11 @@ namespace Comparator {
     }
 } // end namespace Comparator
 
+/**
+ * A wrapper over a block of memory
+ * @tparam Word the type of each memory cell
+ * @tparam Address the type of the address used to access words
+ */
 template<typename Word, typename Address = Word>
 class LoadStoreUnit : public AddressableIODevice<Word, Address> {
 	public:
@@ -364,24 +369,46 @@ class Register {
         static constexpr T getAddressMask() noexcept { return addressMask; }
         static constexpr T generateProperAddress(T value) noexcept { return syn::decodeBits<T, T, getAddressMask(), 0>(value); }
     public:
+        /// construct a new register with a pre-defined value
+        /// @param value the initial value
         Register(T value) noexcept : _value(value) { }
+        /// construct a new register and init to zero
         Register() noexcept : _value(static_cast<T>(0)) { }
+        /// move constructor
+        /// @param other the register to move into this register
         Register(Register&& other) noexcept : _value(std::move(other._value)) { }
+        /// copy constructor
+        /// @param other the register to make a copy of
         Register(const Register& other) noexcept : _value(other.get()) { }
+
+        /// destructor
         virtual ~Register() { }
+
+        /// get the raw backing value of this register
+        /// @return the raw backing value
         inline T get() const noexcept { return _value; }
+        /// set the register to the specified value after performing a mask
+        /// @param value the value to mask and then assign to the backing storage of this instance
         inline void set(T value) noexcept { _value = generateProperAddress(value); }
+        /// increment the register by a given amount
+        /// @param value the amount to increment by (defaults to one)
         inline void increment(T value = 1) noexcept { set(get() + value); }
+        /// decrement the register by a given amount
+        /// @param value the amount to decrement by (defaults to one)
         inline void decrement(T value = 1) noexcept { set(get() - value); }
 
+
+        /// operator increment the register
         inline Self& operator++() {
             increment();
             return *this;
         }
+        /// operator decrement the register
         inline Self& operator--() {
             decrement();
             return *this;
         }
+
         template<T index>
         bool getBit() const noexcept {
             static_assert(index < syn::bitwidth<T>, "Provided index is too large!");
