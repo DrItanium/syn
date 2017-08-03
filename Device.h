@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * The device class concept
+ * @copyright
  * syn
  * Copyright (c) 2013-2017, Joshua Scoggins and Contributors
  * All rights reserved.
@@ -24,18 +27,28 @@
  */
 
 
-/**
- * The concept of a devices which is initialized and shutdown
- */
 #ifndef IRIS_DEVICE_H_
 #define IRIS_DEVICE_H_
 namespace syn {
+/**
+ * The concept of a devices which is initialized and shutdown. This is the base
+ * class of all other invokable things in syn.
+ */
 class Device {
 	public:
         Device() { }
         virtual ~Device() { }
+        /**
+         * Called manually when this device wants to be brought up. It is _NOT_
+         * automatically called on instantiation.
+         */
 		virtual void initialize() = 0;
+        /**
+         * Called manually when this device wants to be brought down. It is
+         * _NOT_ automatically called by the destructor.
+         */
 		virtual void shutdown() = 0;
+        /// Is debugging active?
 		bool debugEnabled() const noexcept { return _debug; }
 		void toggleDebug() noexcept { _debug = !_debug; }
 	private:

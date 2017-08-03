@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * Interface functions for installing core wrappers to CLIPS
+ * @copyright
  * syn
  * Copyright (c) 2013-2017, Joshua Scoggins and Contributors
  * All rights reserved.

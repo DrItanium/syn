@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * Common CLIPS <-> C++ core wrapper
+ * @copyright
  * syn
  * Copyright (c) 2013-2017, Joshua Scoggins and Contributors
  * All rights reserved.
@@ -24,7 +27,6 @@
  */
 
 
-// Common CLIPS <-> C++ core wrapper
 #ifndef CORE_WRAPPER_H__
 #define CORE_WRAPPER_H__
 
@@ -32,8 +34,6 @@
 #include <map>
 
 namespace syn {
-
-
 // Paste these default core operations in
 #define __DEFAULT_CORE_OPERATIONS__ \
         Initialize, \
@@ -49,6 +49,10 @@ namespace syn {
     case TYPE :: Run: run(); break; \
     case TYPE :: Cycle: CVSetBoolean(ret, cycle()); break
 
+/**
+ * Base class for wrapping a Core for use in CLIPS as an external address type.
+ * @tparam T the type to wrap
+ */
 template<typename T>
 class CoreWrapper : public syn::ExternalAddressWrapper<T> {
     public:
@@ -86,7 +90,9 @@ class CoreWrapper : public syn::ExternalAddressWrapper<T> {
             registerWithEnvironment(env, func.c_str());
         }
    public:
+        /// Wrap an already existing core type
         CoreWrapper(T* core) : Parent(core) { }
+        /// Construct a new Core type and pass it to the parent
         CoreWrapper() : Parent(new T()) { }
         virtual ~CoreWrapper() { }
 };

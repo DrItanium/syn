@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * concept of an execution core
+ * @copyright
  * syn
  * Copyright (c) 2013-2017, Joshua Scoggins and Contributors
  * All rights reserved.
@@ -30,11 +33,16 @@
 #include <typeinfo>
 #include "Device.h"
 namespace syn {
-	 // Generic syn core interface
+     /// Basic concept of an execution core
 	 class Core : public Device {
 		public:
+            /// Invokes a single execution cycle
+            /// @return false if the core shouldn't execute anymore
 			virtual bool cycle() = 0;
+            /// Runs the core forever until cycle returns false
 			virtual void run();
+            /// should the given core execute an instruction?
+            /// @return true if the core should continue to execute
 			inline bool shouldExecute() const noexcept { return execute; }
 		protected:
 			bool execute = true;
