@@ -33,7 +33,7 @@
 
 #include "Base.h"
 #include "Cisc0CoreConstants.h"
-#include "cisc0_defines.h"
+#include "defines_cisc0.h"
 
 namespace cisc0 {
     /**

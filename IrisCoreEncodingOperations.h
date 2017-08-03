@@ -34,7 +34,7 @@
 #include <memory>
 #include "IrisCoreTypes.h"
 #include "ClipsExtensions.h"
-#include "iris_defines.h"
+#include "defines_iris.h"
 
 namespace iris {
     namespace InstructionDecoder {

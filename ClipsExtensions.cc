@@ -319,7 +319,7 @@ namespace syn {
 			}
 
 			static bool callFunction(void* env, DataObjectPtr value, DataObjectPtr ret) {
-#include "syn_memory_block_defines.h"
+#include "defines_syn_memory_block.h"
                 __RETURN_FALSE_ON_FALSE__(Parent::isExternalAddress(env, ret, value));
                 CLIPSValue operation;
                 __RETURN_FALSE_ON_FALSE__(Parent::tryExtractFunctionName(env, ret, &operation));

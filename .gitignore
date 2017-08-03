@@ -22,8 +22,8 @@ maya
 *.yy.c
 
 #hmmm...do we want to commit the defines?
-*_defines.h
-*_defines.clp
+defines_*.h
+defines_*.clp
 
 # make sure that we don't accidentially commit this
 .gitconfig

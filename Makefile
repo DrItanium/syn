@@ -41,12 +41,12 @@ REPL_FINAL_OBJECTS = Repl.o \
 ALL_BINARIES = ${REPL_BINARY} \
 			   ${REPL_FINAL_BINARY}
 
-DEFINE_OBJECTS = iris_defines.h \
-				 cisc0_defines.h \
-				 syn_memory_block_defines.h
+DEFINE_OBJECTS = defines_iris.h \
+				 defines_cisc0.h \
+				 defines_syn_memory_block.h
 
-DEFINE_CLPS = iris_defines.clp \
-			  cisc0_defines.clp
+DEFINE_CLPS = define_iris.clp \
+			  define_cisc0.clp
 
 ALL_OBJECTS = ${COMMON_THINGS} \
 			  ${ARCH_OBJECTS} \
@@ -131,10 +131,10 @@ uninstall:
 
 bootstrap: ${REPL_BINARY} ${DEFINE_OBJECTS}
 
-# generate the syn_memory_block_defines.h prior to generating ClipsExtensions.h
-syn_memory_block_defines.h: maya ${COMMON_CLP_FILES} def/memory-block-ops.clp
+# generate the syn_memory_block.h prior to generating ClipsExtensions.h
+defines_syn_memory_block.h: maya ${COMMON_CLP_FILES} def/memory-block-ops.clp
 	@echo "Generating memory block call operations..."
-	@./maya -f2 def/memory-block-ops.clp -f2 lib/reset-run-exit.clp > syn_memory_block_defines.h
+	@./maya -f2 def/memory-block-ops.clp -f2 lib/reset-run-exit.clp > defines_syn_memory_block.h
 
 define generateFields
 	./deffield.sh -f2 $(1) -f2 lib/reset-run-exit.clp > $(2).h
@@ -146,13 +146,13 @@ endef
 
 define generateDefines
 	echo "Generating encoders, decoders, and enumerations for $(1)..."
-	$(call generateFields,def/$(1)/instruction.clp,$(1)_defines)
-	$(call generateFunctions,def/$(1)/instruction.clp,$(1)_defines)
+	$(call generateFields,def/$(1)/instruction.clp,defines_$(1))
+	$(call generateFunctions,def/$(1)/instruction.clp,defines_$(1))
 endef
 
 define generateDefinesRule
 
-$(1)_defines.h: ${REPL_BINARY} ${COMMON_GEN_ENCODER_DECODER_FILES} def/$(1)/instruction.clp
+defines_$(1).h: ${REPL_BINARY} ${COMMON_GEN_ENCODER_DECODER_FILES} def/$(1)/instruction.clp
 	@$(call generateDefines,$(1))
 
 endef
