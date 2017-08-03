@@ -1,4 +1,16 @@
-/*
+/**
+ * @file
+ * basic types for the iris architecture.
+ *
+ * iris is a 16-bit RISCy CPU with 256 GPRs and a harvard architecture. Words
+ * are 16-bits Little Endian and instructions are 32-bits wide.
+ * It has four memory pools:
+ * - code (32-bits per word)
+ * - data (16-bits per word)
+ * - stack (16-bits per word)
+ * - io (16-bits per word)
+ * Each memory pool contains 64k words
+ * @copyright
  * syn
  * Copyright (c) 2013-2017, Joshua Scoggins and Contributors
  * All rights reserved.
@@ -27,12 +39,16 @@
 #ifndef IRIS_CORE_TYPES_H__
 #define IRIS_CORE_TYPES_H__
 #include "BaseTypes.h"
+
+/// iris is a 16-bit RISCy harvard architecture
 namespace iris {
     using word = uint16;
     using dword = uint32;
     using raw_instruction = dword;
     using immediate = word;
     using QuadWord = uint64;
+
+    /// Known aspects of this architecture whill will NOT change
 	enum ArchitectureConstants  {
 		RegisterCount = 256,
 		AddressMax = 0xFFFF,
