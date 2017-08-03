@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * The concept of an IO device which is mapped into memory
+ * @copyright
  * syn
  * Copyright (c) 2013-2017, Joshua Scoggins and Contributors
  * All rights reserved.
@@ -23,10 +26,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
-/**
- * The concept of an IO devices which is mapped into memory
- */
 #ifndef IRIS_IO_CONTROLLER_H_
 #define IRIS_IO_CONTROLLER_H_
 #include <tuple>
@@ -40,6 +39,10 @@
 
 namespace syn {
 
+/**
+ * simple structure used to keep track of address information for a given CLIPS
+ * environment acting as memory management unit.
+ */
 struct IOControllerWrapper {
     CLIPSInteger baseAddress;
     CLIPSInteger endAddress;

@@ -1,4 +1,8 @@
-/*
+/**
+ * @file
+ * Common execution logic that the cores use for execution.
+ * Define Execution Units to cut down on the amount of repeated actions
+ * @copyright
  * syn
  * Copyright (c) 2013-2017, Joshua Scoggins and Contributors
  * All rights reserved.
@@ -24,7 +28,6 @@
  */
 
 
-// define Execution Units to cut down on the amount of repeated actions
 #ifndef _SYN_XUNITS_H
 #define _SYN_XUNITS_H
 #include "Base.h"
@@ -33,12 +36,19 @@
 #include <cmath>
 namespace syn {
 
+/// Generic floating point unit concept
 namespace FPU {
+    /// Set of standard operations that is found in the FPU
     enum class StandardOperations {
+        /// add two numbers together
         Add,
+        /// subtract two numbers
         Subtract,
+        /// multiply two numbers
         Multiply,
+        /// divide two numbers
         Divide,
+        /// take the square root of a given number
         SquareRoot,
         Count,
     };
@@ -66,7 +76,9 @@ namespace FPU {
     }
 }
 
+/// Generic arithmetic logic unit
 namespace ALU {
+    /// default set of ALU operations
     enum class StandardOperations {
         Add,
         Subtract,
@@ -131,6 +143,7 @@ namespace ALU {
     }
 } // end namespace ALU
 
+/// Default logic for comparing two things
 namespace Comparator {
     enum class StandardOperations {
         Eq,
@@ -196,6 +209,7 @@ namespace Comparator {
         static_assert(!isErrorState(op), "Illegal operation!");
         return performOperation<Word, Return, decltype(op)>(op, a, b);
     }
+    /// compare operations when acting on booleans
     enum class BooleanOperations {
         Eq,
         Neq,
@@ -339,6 +353,9 @@ class FixedSizeLoadStoreUnit : public LoadStoreUnit<Word, Address> {
 		virtual ~FixedSizeLoadStoreUnit() { }
 };
 
+/// Concept of a storage cell that is local to the processor
+/// @tparam T the backing data type of the register
+/// @tparam addressMask the mask that is used when setting the register
 template<typename T, T addressMask>
 class Register {
     public:
