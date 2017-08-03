@@ -65,6 +65,10 @@ COMMON_GEN_ENCODER_DECODER_FILES= ${COMMON_CLP_FILES} \
 
 all: options bootstrap ${ALL_BINARIES}
 
+docs: bootstrap ${ALL_BINARIES}
+	@echo "running doxygen"
+	@doxygen
+
 maya:
 	@echo "Building maya..."
 	@cd misc/maya && $(MAKE)
@@ -107,6 +111,7 @@ clean:
 nuke: clean
 	@echo "Cleaning maya..."
 	@cd misc/maya && $(MAKE) clean
+	@rm -rf doc/html
 
 install: ${ALL_BINARIES}
 	@echo installing executables to ${DESTDIR}${PREFIX}/bin
@@ -122,7 +127,7 @@ uninstall:
 		rm -f ${DESTDIR}${PREFIX}/bin/$$n ; \
 	done
 
-.PHONY: all options clean install uninstall
+.PHONY: all options clean install uninstall docs
 
 bootstrap: ${REPL_BINARY} ${DEFINE_OBJECTS}
 
