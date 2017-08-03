@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * expose the iris core to a CLIPS instance
+ * @copyright
  * syn
  * Copyright (c) 2013-2017, Joshua Scoggins and Contributors
  * All rights reserved.
@@ -23,8 +26,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-// expose the iris core to a CLIPS instance
-//
 #ifndef IRIS_CORE_WRAPPER_H__
 #define IRIS_CORE_WRAPPER_H__
 

@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * Definition and implementation of the core wrapper for iris
+ * @copyright
  * syn
  * Copyright (c) 2013-2017, Joshua Scoggins and Contributors
  * All rights reserved.
@@ -30,9 +33,11 @@
 
 
 namespace iris {
+    /// CLIPS interface to an instance of an iris core
     class CoreWrapper : public syn::CoreWrapper<Core> {
         public:
             using Parent = syn::CoreWrapper<Core>;
+            /// list of operations exposed to CLIPS
 			enum class Operations {
                 __DEFAULT_CORE_OPERATIONS__,
                 WriteDataMemory,
@@ -49,6 +54,7 @@ namespace iris {
                 SetPredicateRegister,
                 __DEFAULT_ERROR_STATE__,
 			};
+            /// list of spaces that the core exposes conceptually
             enum class TargetSpace {
                 None,
                 Code,
@@ -69,7 +75,13 @@ namespace iris {
     constexpr bool inGivenSpaceAndValueGreaterThanExpected(CoreWrapper::TargetSpace space, word value) noexcept {
         return (expectedSpace == space) && (value >= expectedValue);
     }
-    bool registerSpaceOrNone(CoreWrapper::TargetSpace space) {
+    /**
+     * Is the given TargetSpace one which holds registers or isn't a space at
+     * all?
+     * @param space the space to check
+     * @return true if the given space holds registers or doesn't hold anything
+     */
+    constexpr bool registerSpaceOrNone(CoreWrapper::TargetSpace space) noexcept {
         using TargetSpace = CoreWrapper::TargetSpace;
         switch(space) {
             case TargetSpace::None:
