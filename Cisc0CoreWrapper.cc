@@ -29,6 +29,7 @@
 #include "Cisc0CoreModel1.h"
 #include "ClipsExtensions.h"
 #include "CoreWrapper.h"
+#include "Cisc0CoreAssembler.h"
 
 
 namespace cisc0 {
@@ -76,6 +77,7 @@ namespace cisc0 {
 			{ "read-memory", std::make_tuple(WrappedOp::ReadMemory, 1 ) },
 			{ "get-register", std::make_tuple(WrappedOp::GetRegister, 1 ) },
 			{ "set-register", std::make_tuple(WrappedOp::SetRegister, 2 ) },
+			{ "decode-instruction", std::make_tuple(WrappedOp::DecodeInstruction, 3) },
 		};
 		CLIPSValue operation;
         __RETURN_FALSE_ON_FALSE__(DefaultCoreWrapper::tryExtractFunctionName(env, ret, &operation));
@@ -118,6 +120,20 @@ namespace cisc0 {
             __RETURN_FALSE_ON_FALSE__(DefaultCoreWrapper::tryExtractArgument2(env, ret, &value, syn::MayaType::Integer, "Must provide an integer value to assign to the given register!"));
 			storeWord(ind, syn::extractLong<Word>(env, value));
             return syn::setClipsBoolean(ret);
+		};
+		auto decodeInstruction = [this, env, ret]() {
+			CLIPSValue encodedValue;
+			__RETURN_FALSE_ON_FALSE__(DefaultCoreWrapper::tryExtractArgument1(env, ret, &encodedValue, syn::MayaType::Integer, "Must provide an encoded integer value for translation!"));
+			auto part0 = syn::extractLong<RawInstruction>(env, encodedValue);
+			CLIPSValue encodedValue1;
+			__RETURN_FALSE_ON_FALSE__(DefaultCoreWrapper::tryExtractArgument2(env, ret, &encodedValue1, syn::MayaType::Integer, "Must provide an encoded integer value for translation!"));
+			auto part1 = syn::extractLong<RawInstruction>(env, encodedValue1);
+			CLIPSValue encodedValue2;
+			__RETURN_FALSE_ON_FALSE__(DefaultCoreWrapper::tryExtractArgument3(env, ret, &encodedValue2, syn::MayaType::Integer, "Must provide an encoded integer value for translation!"));
+			auto part2 = syn::extractLong<RawInstruction>(env, encodedValue2);
+			auto outcome = cisc0::translateInstruction(part0, part1, part2);
+			CVSetString(ret, outcome.c_str());
+			return true;
 		};
 		CVSetBoolean(ret, true);
 		try {

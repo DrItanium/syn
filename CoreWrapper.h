@@ -39,7 +39,8 @@ namespace syn {
         Initialize, \
         Shutdown, \
         Run, \
-        Cycle
+        Cycle, \
+		DecodeInstruction 
 
 #define __DEFAULT_ERROR_STATE__ Count
 
@@ -47,7 +48,8 @@ namespace syn {
     case TYPE :: Initialize: initialize(); break; \
     case TYPE :: Shutdown: shutdown(); break; \
     case TYPE :: Run: run(); break; \
-    case TYPE :: Cycle: CVSetBoolean(ret, cycle()); break
+    case TYPE :: Cycle: CVSetBoolean(ret, cycle()); break; \
+	case TYPE :: DecodeInstruction: decodeInstruction(); break
 
 /**
  * Base class for wrapping a Core for use in CLIPS as an external address type.
@@ -89,6 +91,9 @@ class CoreWrapper : public syn::ExternalAddressWrapper<T> {
             }
             registerWithEnvironment(env, func.c_str());
         }
+		static void setString(CLIPSValuePtr val, const std::string& str) noexcept {
+			CVSetString(val, str.c_str());
+		}
    public:
         /// Wrap an already existing core type
         CoreWrapper(T* core) : Parent(core) { }
