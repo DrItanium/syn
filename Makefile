@@ -62,6 +62,8 @@ COMMON_GEN_ENCODER_DECODER_FILES= ${COMMON_CLP_FILES} \
 								  lib/cortex.clp \
 								  Base.h
 
+TEST_SUITES = lib/target/iris/test_Base.clp
+
 
 all: options bootstrap ${ALL_BINARIES}
 
@@ -127,7 +129,15 @@ uninstall:
 		rm -f ${DESTDIR}${PREFIX}/bin/$$n ; \
 	done
 
-.PHONY: all options clean install uninstall docs
+tests: bootstrap ${ALL_BINARIES} ${TEST_SUITES}
+	@echo "Running tests..."
+	@for n in ${TEST_SUITES}; do \
+		./syn_repl -f2 $$n -f2 cmd/test-case-invoke.clp ; \
+	done
+
+
+
+.PHONY: all options clean install uninstall docs tests
 
 bootstrap: ${REPL_BINARY} ${DEFINE_OBJECTS}
 
