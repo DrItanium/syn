@@ -103,7 +103,7 @@ namespace iris {
 			{ "shutdown", std::make_tuple(WrappedOp::Shutdown, 0, TargetSpace::None)},
 			{ "run", std::make_tuple(WrappedOp::Run, 0, TargetSpace::None)},
 			{ "cycle", std::make_tuple(WrappedOp::Cycle, 0, TargetSpace::None) },
-			{ "write-data-memory", std::make_tuple(WrappedOp::WriteDataMemory, 2, TargetSpace::Code) },
+			{ "write-data-memory", std::make_tuple(WrappedOp::WriteDataMemory, 2, TargetSpace::Data) },
 			{ "read-data-memory", std::make_tuple(WrappedOp::ReadDataMemory, 1, TargetSpace::Data  ) },
 			{ "write-code-memory", std::make_tuple(WrappedOp::WriteCodeMemory, 2, TargetSpace::Code ) },
 			{ "read-code-memory", std::make_tuple(WrappedOp::ReadCodeMemory, 1, TargetSpace::Code ) },
