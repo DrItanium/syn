@@ -30,6 +30,7 @@
 #include "IrisCore.h"
 #include "ClipsExtensions.h"
 #include "CoreWrapper.h"
+#include "IrisCoreAssemblerStructures.h"
 
 
 namespace iris {
@@ -114,6 +115,7 @@ namespace iris {
 			{ "set-register", std::make_tuple(WrappedOp::SetRegister, 2, TargetSpace::GPR) },
 			{ "get-predicate-register", std::make_tuple(WrappedOp::GetRegister, 1, TargetSpace::Predicates ) },
 			{ "set-predicate-register", std::make_tuple(WrappedOp::SetRegister, 2, TargetSpace::Predicates) },
+			{ "translate-instruction", std::make_tuple(WrappedOp::DecodeInstruction, 1, TargetSpace::None) },
 		};
 		CLIPSValue operation;
         __RETURN_FALSE_ON_FALSE__(CoreWrapper::tryExtractFunctionName(env, ret, &operation));
@@ -253,6 +255,14 @@ namespace iris {
             } catch(const syn::Problem& p) {
                 return CoreWrapper::callErrorCode4(env, ret, p.what());
             }
+		};
+		auto decodeInstruction = [this, env, ret]() noexcept {
+			CLIPSValue instruction;
+			__RETURN_FALSE_ON_FALSE__(CoreWrapper::tryExtractArgument1(env, ret, &instruction, syn::MayaType::Integer, "Must provide an instruction as an integer!"));
+			auto result = syn::extractLong<raw_instruction>(env, instruction);
+			auto outcome = translateInstruction(result);
+			CVSetString(ret, outcome.c_str());
+			return true;
 		};
 		CVSetBoolean(ret, true);
 		try {
