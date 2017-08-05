@@ -27,55 +27,76 @@
            (import cortex 
                    ?ALL)
            (export ?ALL))
-(defgeneric test::check-result
-            "Check and see if the given result is expected")
 
-(defmethod test::check-result
-           ((?router SYMBOL)
-            ?expected
-            ?value)
-           (if (neq ?expected
-                    ?value) then
+(deftemplate test::testcase
+             (slot id
+                   (type SYMBOL)
+                   (default ?NONE))
+             (slot description
+                   (type LEXEME)
+                   (default ?NONE))
+             (slot router
+                   (type SYMBOL)
+                   (default-dynamic t)))
 
-               (printout ?router 
-                         "CHECK FAILED: expected " ?expected " but got " ?value crlf)
-               FALSE
-               else
-               TRUE))
+(deftemplate test::testcase-assertion
+             (slot parent
+                   (type SYMBOL)
+                   (default ?NONE))
+             (slot expected
+                   (default ?NONE))
+             (slot actual-value
+                   (default ?NONE))
+             (slot outcome
+                   (type SYMBOL)
+                   (allowed-symbols ANALYZE
+                                    TRUE
+                                    FALSE)))
 
-(defgeneric test::display-testcase)
+(defrule test::evaluate-assertion
+         (declare (salience ?*priority:one*))
+         ?f <- (testcase-assertion (outcome ANALYZE)
+                                   (expected ?expected)
+                                   (actual-value ?actual))
+         =>
+         (bind ?check
+          (eq ?expected
+           ?actual))
+         (modify ?f
+                 (outcome ?check)))
 
-(defmethod test::display-testcase
-           ((?router SYMBOL)
-            (?id INTEGER
-                 LEXEME)
-            (?title LEXEME))
-           (printout ?router
-                     "Testcase " ?id ": " ?title crlf))
-
-(defgeneric test::testcase)
-
-(defmethod test::testcase
-           ((?router SYMBOL)
-            (?id INTEGER
-                 LEXEME)
-            (?title LEXEME)
-            (?function SYMBOL)
-            $?arguments)
-           (display-testcase ?router
-                             ?id
-                             ?title)
-           (bind ?result
-                 (funcall ?function
-                  $?arguments))
-           (printout ?router
-                     tab "Result: " 
-                     (if ?result then
-                       PASSED
-                       else
-                       (halt)
-                       FAILED) crlf))
-               
-
-            
+(defrule test::printout-testcase
+         "Once all assertions have been checked, print out the result"
+         ?f <- (testcase (id ?id)
+                         (description ?description)
+                         (router ?router))
+         (not (testcase-assertion (parent ?id)
+                                  (outcome ANALYZE)))
+         =>
+         (retract ?f)
+         (printout ?router
+                   "Testcase " ?id ": " ?description crlf)
+         (bind ?failed
+               FALSE)
+         (do-for-all-facts ((?ta testcase-assertion))
+                           (eq ?ta:parent
+                               ?id)
+                           (printout ?router
+                                     tab tab "CHECK ")
+                           (if ?ta:outcome then
+                             (printout ?router
+                                       PASSED)
+                             else
+                             (bind ?failed
+                                   TRUE)
+                             (printout ?router
+                                       "FAILED: expected " ?ta:expected " but got " ?ta:actual-value))
+                           (printout ?router
+                                     crlf))
+         (printout ?router
+                   tab "Result: " 
+                   (if ?failed then
+                     FAILED
+                     else
+                     PASSED) crlf))
 
