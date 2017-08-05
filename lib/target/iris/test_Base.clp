@@ -33,13 +33,6 @@
                    ?ALL)
            (import test
                    ?ALL))
-(deffacts MAIN::testcases
-          (testcase (id memtest-data-space-read0)
-                    (description "Make sure that the address is zero on startup"))
-          (testcase (id memtest-data-space-write0)
-                    (description "Test writing to data space"))
-          (testcase (id memtest-data-space-read1)
-                    (description "Test reading from data space")))
 (deffunction MAIN::test-memory-space-read-generic
              (?testcase ?core ?space ?address ?expected)
              (assert (testcase-assertion (parent ?testcase)
@@ -58,32 +51,57 @@
                                                                           ?value)))))
 
 (deffunction MAIN::test-memory-manipulation-routines
-             (?core)
+             (?core ?space)
              (bind ?data-address0
                    (hex->int 0xFDED))
              (bind ?expected-value
                    81)
-             (test-memory-space-read-generic memtest-data-space-read0
+             (bind ?m0 
+                   (sym-cat memtest- 
+                            ?space 
+                            -space-read-initial))
+             (bind ?m1
+                   (sym-cat memtest- 
+                            ?space 
+                            -space-write-value))
+             (bind ?m2
+                   (sym-cat memtest- 
+                            ?space 
+                            -space-read-written-value))
+             (assert (testcase (id ?m0)
+                               (description (format nil
+                                                    "Make sure that the data at the specified address is zero in space %s"
+                                                    ?space)))
+                     (testcase (id ?m1)
+                               (description (format nil
+                                                    "Test writing to %s space"
+                                                    ?space)))
+                     (testcase (id ?m2)
+                               (description (format nil
+                                                    "Test read from %s space after write"
+                                                    ?space))))
+
+             (test-memory-space-read-generic ?m0
                                              ?core
-                                             data
+                                             ?space
                                              ?data-address0
                                              0)
-             (test-memory-space-write-generic memtest-data-space-write0
+             (test-memory-space-write-generic ?m1 
                                               ?core
-                                              data
+                                              ?space
                                               ?data-address0
                                               ?expected-value)
-             (test-memory-space-read-generic memtest-data-space-read1
+             (test-memory-space-read-generic ?m2 
                                              ?core
-                                             data
+                                             ?space
                                              ?data-address0
                                              ?expected-value))
 (deffunction MAIN::invoke-test
              ()
              (bind ?core
                    (new iris-core))
-             (test-memory-manipulation-routines ?core))
-
-
-
-
+             (progn$ (?space (create$ data
+                                      code
+                                      stack))
+                     (test-memory-manipulation-routines ?core
+                                                        ?space)))
