@@ -22,48 +22,46 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;------------------------------------------------------------------------------
-; Base.clp - routines to make interfacing with the raw iris external address 
+; Base.clp - routines to make interfacing with the raw cisc0 external address 
 ; far simpler 
 ;------------------------------------------------------------------------------
-(defgeneric MAIN::iris-decode-instruction
+(defgeneric MAIN::cisc0-decode-instruction
             "Given an instruction encoded as an integer, translate it back to a string form")
-(defgeneric MAIN::iris-initialize)
-(defgeneric MAIN::iris-shutdown)
-(defgeneric MAIN::iris-run)
-(defgeneric MAIN::iris-cycle)
-(defgeneric MAIN::iris-write-memory)
-(defgeneric MAIN::iris-read-memory)
-(defgeneric MAIN::iris-get-register)
-(defgeneric MAIN::iris-set-register)
-(defgeneric MAIN::iris-get-predicate-register)
-(defgeneric MAIN::iris-set-predicate-register)
+(defgeneric MAIN::cisc0-initialize)
+(defgeneric MAIN::cisc0-shutdown)
+(defgeneric MAIN::cisc0-run)
+(defgeneric MAIN::cisc0-cycle)
+(defgeneric MAIN::cisc0-write-memory)
+(defgeneric MAIN::cisc0-read-memory)
+(defgeneric MAIN::cisc0-get-register)
+(defgeneric MAIN::cisc0-set-register)
 
-(defmethod MAIN::iris-decode-instruction
+(defmethod MAIN::cisc0-decode-instruction
   ((?core EXTERNAL-ADDRESS)
    (?instruction INTEGER))
   (call ?core 
         translate-instruction
         ?instruction))
-(defmethod MAIN::iris-initialize
+(defmethod MAIN::cisc0-initialize
   ((?core EXTERNAL-ADDRESS))
   (call ?core
         initialize))
-(defmethod MAIN::iris-shutdown
+(defmethod MAIN::cisc0-shutdown
   ((?core EXTERNAL-ADDRESS))
   (call ?core
         shutdown))
 
-(defmethod MAIN::iris-run
+(defmethod MAIN::cisc0-run
   ((?core EXTERNAL-ADDRESS))
   (call ?core
         run))
 
-(defmethod MAIN::iris-cycle
+(defmethod MAIN::cisc0-cycle
   ((?core EXTERNAL-ADDRESS))
   (call ?core
         cycle))
 
-(defmethod MAIN::iris-cycle
+(defmethod MAIN::cisc0-cycle
   "Run the core the provided number of times!"
   ((?core EXTERNAL-ADDRESS)
    (?count INTEGER
@@ -72,75 +70,38 @@
         TRUE)
   (loop-for-count (?c 1 ?count)
                   (bind ?last-result
-                        (iris-cycle ?core))
+                        (cisc0-cycle ?core))
                   (if (not ?last-result) then
                     (break)))
   ?last-result)
 
 
-(defmethod MAIN::iris-write-memory
+(defmethod MAIN::cisc0-write-memory
   ((?core EXTERNAL-ADDRESS)
-   (?space SYMBOL
-           (not (neq ?current-argument
-                     data
-                     code
-                     io
-                     stack)))
    (?address INTEGER)
    (?value INTEGER))
   (call ?core
-        (sym-cat write- ?space -memory)
+        write-memory
         ?address
         ?value))
-(defmethod MAIN::iris-read-memory
+(defmethod MAIN::cisc0-read-memory
   ((?core EXTERNAL-ADDRESS)
-   (?space SYMBOL
-           (not (neq ?current-argument
-                     data
-                     code
-                     io
-                     stack)))
    (?address INTEGER))
   (call ?core 
-        (sym-cat read- ?space -memory)
+        read-memory
         ?address))
-(defmethod MAIN::iris-get-register
-  ((?core EXTERNAL-ADDRESS)
-   (?index INTEGER))
-  (call ?core
-        get-register
-        ?index))
-(defmethod MAIN::iris-set-register
-  ((?core EXTERNAL-ADDRESS)
-   (?index INTEGER)
-   (?value INTEGER))
-  (call ?core
-        set-register
-        ?index
-        ?value))
 
-(defmethod MAIN::iris-get-predicate-register
-  ((?core EXTERNAL-ADDRESS)
-   (?index INTEGER))
-  (call ?core
-        get-predicate-register
-        ?index))
-(defmethod MAIN::iris-set-predicate-register
-  ((?core EXTERNAL-ADDRESS)
-   (?index INTEGER)
-   (?value INTEGER))
-  (call ?core
-        set-predicate-register
-        ?index
-        ?value))
-(defmethod MAIN::iris-set-predicate-register
+(defmethod MAIN::cisc0-get-register
+ ((?core EXTERNAL-ADDRESS)
+  (?index INTEGER))
+ (call ?core
+       get-register
+       ?index))
+(defmethod MAIN::cisc0-set-register
  ((?core EXTERNAL-ADDRESS)
   (?index INTEGER)
-  (?value SYMBOL))
- (iris-set-predicate-register ?core
-  ?index
-  (if ?value then 
-   (hex->int 0xFFFF)
-   else
-   0)))
-
+  (?value INTEGER))
+ (call ?core
+       set-register
+       ?index
+       ?value))

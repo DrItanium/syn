@@ -186,7 +186,7 @@ namespace iris {
                         gpr[rind] = theValue;
                         return syn::setClipsBoolean(ret);
                     case TargetSpace::Predicates:
-                        setPredicateRegister(rind, theValue);
+                        setPredicateRegister(rind, theValue != 0);
                         return syn::setClipsBoolean(ret);
                     default:
                         return CoreWrapper::callErrorCode4(env, ret, "illegal space specified for assigning registers!");

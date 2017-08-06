@@ -56,16 +56,18 @@
                    (hex->int 0xFDED))
              (bind ?expected-value
                    81)
+             (bind ?common-prefix
+                   iris-memtest-)
              (bind ?m0 
-                   (sym-cat memtest- 
+                   (sym-cat ?common-prefix
                             ?space 
                             -space-read-initial))
              (bind ?m1
-                   (sym-cat memtest- 
+                   (sym-cat ?common-prefix
                             ?space 
                             -space-write-value))
              (bind ?m2
-                   (sym-cat memtest- 
+                   (sym-cat ?common-prefix
                             ?space 
                             -space-read-written-value))
              (assert (testcase (id ?m0)
@@ -96,6 +98,81 @@
                                              ?space
                                              ?data-address0
                                              ?expected-value))
+
+(deffunction MAIN::test-register-manipulation-routines
+             (?core)
+             (bind ?register-index
+                   71)
+             (bind ?value
+                   (hex->int 0xFDED))
+             (bind ?common-prefix
+                   iris-register-test)
+             (bind ?m0
+                   (sym-cat ?common-prefix
+                            -initial-register-check))
+             (bind ?m1
+                   (sym-cat ?common-prefix
+                            -register-write))
+             (bind ?m2
+                   (sym-cat ?common-prefix
+                            -register-read-after-write))
+             (assert (testcase (id ?m0)
+                               (description "Make sure that the register is initially zero!"))
+                     (testcase (id ?m1)
+                               (description "Attempt to set a register to a given value"))
+                     (testcase (id ?m2)
+                               (description "Make sure that the result of the previous write has stuck")))
+             (assert (testcase-assertion (parent ?m0)
+                                         (expected 0)
+                                         (actual-value (iris-get-register ?core
+                                                                          ?register-index)))
+                     (testcase-assertion (parent ?m1)
+                                         (expected TRUE)
+                                         (actual-value (iris-set-register ?core
+                                                                          ?register-index
+                                                                          ?value)))
+                     (testcase-assertion (parent ?m2)
+                                         (expected ?value)
+                                         (actual-value (iris-get-register ?core
+                                                                          ?register-index)))))
+
+(deffunction MAIN::test-predicate-register-manipulation-routines
+             (?core)
+             (bind ?register-index
+                   12)
+             (bind ?value
+                   TRUE)
+             (bind ?common-prefix
+                   iris-predicate-register-test)
+             (bind ?m0
+                   (sym-cat ?common-prefix
+                            -initial-predicate-register-check))
+             (bind ?m1
+                   (sym-cat ?common-prefix
+                            -predicate-register-write))
+             (bind ?m2
+                   (sym-cat ?common-prefix
+                            -predicate-register-read-after-write))
+             (assert (testcase (id ?m0)
+                               (description "Make sure that the predicate register is initially FALSE!"))
+                     (testcase (id ?m1)
+                               (description "Attempt to set a predicate register to a given value"))
+                     (testcase (id ?m2)
+                               (description "Make sure that the result of the previous write has stuck")))
+             (assert (testcase-assertion (parent ?m0)
+                                         (expected FALSE)
+                                         (actual-value (iris-get-predicate-register ?core
+                                                                                    ?register-index)))
+                     (testcase-assertion (parent ?m1)
+                                         (expected TRUE)
+                                         (actual-value (iris-set-predicate-register ?core
+                                                                          ?register-index
+                                                                          ?value)))
+                     (testcase-assertion (parent ?m2)
+                                         (expected ?value)
+                                         (actual-value (iris-get-predicate-register ?core
+                                                                                    ?register-index)))))
+
 (deffunction MAIN::invoke-test
              ()
              (bind ?core
@@ -104,4 +181,6 @@
                                       code
                                       stack))
                      (test-memory-manipulation-routines ?core
-                                                        ?space)))
+                                                        ?space))
+             (test-register-manipulation-routines ?core)
+             (test-predicate-register-manipulation-routines ?core))

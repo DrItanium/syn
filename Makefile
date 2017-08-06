@@ -62,7 +62,8 @@ COMMON_GEN_ENCODER_DECODER_FILES= ${COMMON_CLP_FILES} \
 								  lib/cortex.clp \
 								  Base.h
 
-TEST_SUITES = lib/target/iris/test_Base.clp
+TEST_SUITES = lib/target/iris/test_Base.clp \
+			  lib/target/cisc0/test_Base.clp
 
 
 all: options bootstrap ${ALL_BINARIES}
