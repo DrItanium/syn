@@ -98,5 +98,8 @@
                    (if ?failed then
                      FAILED
                      else
-                     PASSED) crlf))
+                     PASSED) crlf)
+         ; we want to terminate if we failed!
+         (if ?failed then
+             (exit 1)))
 

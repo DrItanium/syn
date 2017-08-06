@@ -126,7 +126,8 @@
              (?core-id)
              (bind ?core
                    (new ?core-id))
-             (test-memory-manipulation-routines ?core)
+             ; need to make sure we can setup the io controller first before we can uncomment this
+             ;(test-memory-manipulation-routines ?core)
              (test-register-manipulation-routines ?core))
 
 (deffunction MAIN::invoke-test
