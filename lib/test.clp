@@ -81,18 +81,11 @@
          (do-for-all-facts ((?ta testcase-assertion))
                            (eq ?ta:parent
                                ?id)
-                           (printout ?router
-                                     tab tab "CHECK ")
-                           (if ?ta:outcome then
-                             (printout ?router
-                                       PASSED)
-                             else
+                           (if (not ?ta:outcome) then
                              (bind ?failed
                                    TRUE)
                              (printout ?router
-                                       "FAILED: expected " ?ta:expected " but got " ?ta:actual-value))
-                           (printout ?router
-                                     crlf))
+                                       tab tab"CHECK FAILED: expected " ?ta:expected " but got " ?ta:actual-value crlf)))
          (printout ?router
                    tab "Result: " 
                    (if ?failed then
