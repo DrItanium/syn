@@ -1,4 +1,4 @@
-X("load", MemoryOperation :: Load , Load)
-X("store", MemoryOperation :: Store , Store)
-X("push", MemoryOperation :: Push , Push)
-X("pop", MemoryOperation :: Pop , Pop)
+X(load, MemoryOperation :: Load , Load)
+X(store, MemoryOperation :: Store , Store)
+X(push, MemoryOperation :: Push , Push)
+X(pop, MemoryOperation :: Pop , Pop)
