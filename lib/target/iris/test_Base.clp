@@ -2,7 +2,7 @@
 ; syn
 ; Copyright (c) 2013-2017, Joshua Scoggins and Contributors
 ; All rights reserved.
-; 
+;
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions are met:
 ;     * Redistributions of source code must retain the above copyright
@@ -10,7 +10,7 @@
 ;     * Redistributions in binary form must reproduce the above copyright
 ;       notice, this list of conditions and the following disclaimer in the
 ;       documentation and/or other materials provided with the distribution.
-; 
+;
 ; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ; ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 ; WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -22,17 +22,31 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;------------------------------------------------------------------------------
-; test_Base.clp - routines to make interfacing with the raw iris external address 
-; far simpler 
+; test_Base.clp - routines to make interfacing with the raw iris external address
+; far simpler
 ;------------------------------------------------------------------------------
 (batch* lib/cortex.clp)
 (batch* lib/test.clp)
 (batch* lib/target/iris/Base.clp)
 (defmodule MAIN
-           (import cortex 
+           (import cortex
                    ?ALL)
            (import test
                    ?ALL))
+(deffunction MAIN::test-instruction-encode-routines
+             (?testcase ?instruction ?expected)
+             (assert (testcase-assertion (actual-value (iris-parse-and-encode-instruction ?instruction))
+                                         (expected ?expected)
+                                         (parent ?testcase))))
+
+(deffunction MAIN::test-instruction-decode-routines
+             (?testcase ?core ?instruction ?expected)
+             (assert (testcase-assertion (actual-value (iris-decode-instruction ?core
+                                                                                ?instruction))
+                                         (expected ?expected)
+                                         (parent ?testcase))))
+
+
 (deffunction MAIN::test-memory-space-read-generic
              (?testcase ?core ?space ?address ?expected)
              (assert (testcase-assertion (parent ?testcase)
@@ -58,17 +72,17 @@
                    81)
              (bind ?common-prefix
                    iris-memtest-)
-             (bind ?m0 
+             (bind ?m0
                    (sym-cat ?common-prefix
-                            ?space 
+                            ?space
                             -space-read-initial))
              (bind ?m1
                    (sym-cat ?common-prefix
-                            ?space 
+                            ?space
                             -space-write-value))
              (bind ?m2
                    (sym-cat ?common-prefix
-                            ?space 
+                            ?space
                             -space-read-written-value))
              (assert (testcase (id ?m0)
                                (description (format nil
@@ -88,12 +102,12 @@
                                              ?space
                                              ?data-address0
                                              0)
-             (test-memory-space-write-generic ?m1 
+             (test-memory-space-write-generic ?m1
                                               ?core
                                               ?space
                                               ?data-address0
                                               ?expected-value)
-             (test-memory-space-read-generic ?m2 
+             (test-memory-space-read-generic ?m2
                                              ?core
                                              ?space
                                              ?data-address0
@@ -172,7 +186,9 @@
                                          (expected ?value)
                                          (actual-value (iris-get-predicate-register ?core
                                                                                     ?register-index)))))
-
+(deffacts MAIN::encode-tests
+          (testcase (id simple-encode-instruction0)
+                    (description "Make sure that 'add r0 r0 r0' works correctly!")))
 (deffunction MAIN::invoke-test
              ()
              (bind ?core
@@ -183,4 +199,7 @@
                      (test-memory-manipulation-routines ?core
                                                         ?space))
              (test-register-manipulation-routines ?core)
-             (test-predicate-register-manipulation-routines ?core))
+             (test-predicate-register-manipulation-routines ?core)
+             (test-instruction-encode-routines simple-encode-instruction0
+                                               "add r0 r0 r0"
+                                               0))

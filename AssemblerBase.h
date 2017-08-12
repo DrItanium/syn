@@ -202,7 +202,6 @@ namespace syn {
     template<typename Entry>
     struct MainFileParser :  MainParser<pegtl::eof, Entry> { };
 
-
 	template<typename S, typename ... NumberTypes>
 	struct StatefulNumber : pegtl::state<S, pegtl::sor<NumberTypes...>> { };
 

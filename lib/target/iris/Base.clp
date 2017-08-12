@@ -2,7 +2,7 @@
 ; syn
 ; Copyright (c) 2013-2017, Joshua Scoggins and Contributors
 ; All rights reserved.
-; 
+;
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions are met:
 ;     * Redistributions of source code must retain the above copyright
@@ -10,7 +10,7 @@
 ;     * Redistributions in binary form must reproduce the above copyright
 ;       notice, this list of conditions and the following disclaimer in the
 ;       documentation and/or other materials provided with the distribution.
-; 
+;
 ; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ; ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 ; WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -22,8 +22,8 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;------------------------------------------------------------------------------
-; Base.clp - routines to make interfacing with the raw iris external address 
-; far simpler 
+; Base.clp - routines to make interfacing with the raw iris external address
+; far simpler
 ;------------------------------------------------------------------------------
 (defgeneric MAIN::iris-decode-instruction
             "Given an instruction encoded as an integer, translate it back to a string form")
@@ -37,11 +37,15 @@
 (defgeneric MAIN::iris-set-register)
 (defgeneric MAIN::iris-get-predicate-register)
 (defgeneric MAIN::iris-set-predicate-register)
+(defgeneric MAIN::iris-parse-instruction)
+(defgeneric MAIN::iris-resolve-assembler-labels)
+(defgeneric MAIN::iris-get-encoded-instructions)
+(defgeneric MAIN::iris-parse-and-encode-instruction)
 
 (defmethod MAIN::iris-decode-instruction
   ((?core EXTERNAL-ADDRESS)
    (?instruction INTEGER))
-  (call ?core 
+  (call ?core
         translate-instruction
         ?instruction))
 (defmethod MAIN::iris-initialize
@@ -101,7 +105,7 @@
                      io
                      stack)))
    (?address INTEGER))
-  (call ?core 
+  (call ?core
         (sym-cat read- ?space -memory)
         ?address))
 (defmethod MAIN::iris-get-register
@@ -139,8 +143,41 @@
   (?value SYMBOL))
  (iris-set-predicate-register ?core
   ?index
-  (if ?value then 
+  (if ?value then
    (hex->int 0xFFFF)
    else
    0)))
 
+(defmethod MAIN::iris-parse-instruction
+  ((?asm EXTERNAL-ADDRESS)
+   (?statement LEXEME))
+  (call ?asm
+        parse
+        ?statement))
+
+(defmethod MAIN::iris-resolve-assembler-labels
+  ((?asm EXTERNAL-ADDRESS))
+  (call ?asm
+        resolve))
+
+(defmethod MAIN::iris-get-encoded-instructions
+  ((?asm EXTERNAL-ADDRESS))
+  (call ?asm
+        get))
+(defmethod MAIN::iris-parse-and-encode-instruction
+  ((?statement LEXEME))
+  (bind ?asm
+        (new iris-assembler))
+  (iris-parse-instruction ?asm
+                          ?statement)
+  (iris-resolve-assembler-labels ?asm)
+  ; grab the actual encoded value
+  (nth$ 3
+        (iris-get-encoded-instructions ?asm)))
+
+(defmethod MAIN::iris-decode-instruction
+  ((?core EXTERNAL-ADDRESS)
+   (?value INTEGER))
+  (call ?core
+        decode-instruction
+        ?value))

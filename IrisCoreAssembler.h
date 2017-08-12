@@ -565,12 +565,11 @@ namespace iris {
                                 BranchInstruction,
                                 CompareInstruction,
                                 PredicateInstruction>> { };
-        struct Statement : pegtl::sor<
-                           Instruction,
-                           Directive> { };
         struct Anything : pegtl::sor<
                           Separator,
-                          SingleLineComment,Statement> { };
+                          Instruction,
+                          Directive,
+                          SingleLineComment> { };
         struct Main : syn::MainFileParser<Anything> { };
     } // end namespace assembler
 } // end namespace iris

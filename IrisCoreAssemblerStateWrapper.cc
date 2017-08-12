@@ -89,7 +89,7 @@ namespace iris {
     }
     bool AssemblerStateWrapper::parseLine(const std::string& line) {
         auto& ref = *(get());
-        return pegtl::parse_string<iris::assembler::Main, iris::assembler::Action>(line, "clips-input", ref);
+        return pegtl::parse_string<assembler::Main, assembler::Action>(line, "clips-input", ref);
     }
     void AssemblerStateWrapper::output(void* env, CLIPSValue* ret) noexcept {
         // we need to build a multifield out of the finalWords
@@ -134,12 +134,19 @@ namespace iris {
             CLIPSValue line;
             __RETURN_FALSE_ON_FALSE__(Parent::tryExtractArgument1(env, ret, &line, syn::MayaType::String, "Must provide a string to parse!"));
             std::string str(syn::extractLexeme(env, line));
+            try {
             auto result = ptr->parseLine(str);
             CVSetBoolean(ret, result);
             if (!result) {
                 Parent::callErrorMessageCode3(env, ret, "parse", "error during parsing!");
             }
             return result;
+            } catch(pegtl::basic_parse_error<pegtl::position_info>& ex) {
+
+                std::string msg(ex.what());
+                Parent::callErrorMessageCode3(env, ret, "parse", msg);
+                return false;
+            }
         };
         switch(theOp) {
             case Operations::Parse:

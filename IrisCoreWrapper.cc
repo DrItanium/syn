@@ -116,6 +116,7 @@ namespace iris {
 			{ "get-predicate-register", std::make_tuple(WrappedOp::GetRegister, 1, TargetSpace::Predicates ) },
 			{ "set-predicate-register", std::make_tuple(WrappedOp::SetRegister, 2, TargetSpace::Predicates) },
 			{ "translate-instruction", std::make_tuple(WrappedOp::DecodeInstruction, 1, TargetSpace::None) },
+			{ "decode-instruction", std::make_tuple(WrappedOp::DecodeInstruction, 1, TargetSpace::None) },
 		};
 		CLIPSValue operation;
         __RETURN_FALSE_ON_FALSE__(CoreWrapper::tryExtractFunctionName(env, ret, &operation));
