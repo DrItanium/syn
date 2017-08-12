@@ -35,6 +35,9 @@
 (defgeneric MAIN::cisc0-read-memory)
 (defgeneric MAIN::cisc0-get-register)
 (defgeneric MAIN::cisc0-set-register)
+(defgeneric MAIN::cisc0-parse-lin)
+(defgeneric MAIN::cisc0-resolve-instructions)
+(defgeneric MAIN::cisc0-get-encoded-instructions)
 
 (defmethod MAIN::cisc0-decode-instruction
   ((?core EXTERNAL-ADDRESS)
@@ -92,16 +95,32 @@
         ?address))
 
 (defmethod MAIN::cisc0-get-register
- ((?core EXTERNAL-ADDRESS)
-  (?index INTEGER))
- (call ?core
-       get-register
-       ?index))
+  ((?core EXTERNAL-ADDRESS)
+   (?index INTEGER))
+  (call ?core
+        get-register
+        ?index))
 (defmethod MAIN::cisc0-set-register
- ((?core EXTERNAL-ADDRESS)
-  (?index INTEGER)
-  (?value INTEGER))
- (call ?core
-       set-register
-       ?index
-       ?value))
+  ((?core EXTERNAL-ADDRESS)
+   (?index INTEGER)
+   (?value INTEGER))
+  (call ?core
+        set-register
+        ?index
+        ?value))
+
+(defmethod MAIN::cisc0-parse-line
+  ((?asm EXTERNAL-ADDRESS)
+   (?line LEXEME))
+  (call ?asm
+        parse
+        ?line))
+(defmethod MAIN::cisc0-resolve-instructions
+  ((?asm EXTERNAL-ADDRESS))
+  (call ?asm
+        resolve))
+(defmethod MAIN::cisc0-get-encoded-instructions
+  ((?asm EXTERNAL-ADDRESS))
+  (call ?asm
+        get))
+

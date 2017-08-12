@@ -187,7 +187,7 @@
                                          (actual-value (iris-get-predicate-register ?core
                                                                                     ?register-index)))))
 (deffacts MAIN::encode-tests
-          (testcase (id simple-encode-instruction0)
+          (testcase (id iris-simple-encode-instruction0)
                     (description "Make sure that 'add r0 r0 r0' works correctly!")))
 (deffunction MAIN::invoke-test
              ()
@@ -200,6 +200,6 @@
                                                         ?space))
              (test-register-manipulation-routines ?core)
              (test-predicate-register-manipulation-routines ?core)
-             (test-instruction-encode-routines simple-encode-instruction0
+             (test-instruction-encode-routines iris-simple-encode-instruction0
                                                "add r0 r0 r0"
                                                0))
