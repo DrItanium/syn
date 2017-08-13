@@ -190,7 +190,9 @@
           (testcase (id iris-simple-encode-instruction0)
                     (description "Make sure that 'add r0 r0 r0' works correctly!"))
           (testcase (id iris-simple-encode-instruction1)
-                    (description "Make sure that 'set r0 0xFDED' works correctly!")))
+                    (description "Make sure that 'set r0 0xFDED' works correctly!"))
+          (testcase (id iris-simple-encode-instruction2)
+                    (description "Make sure that 'add r127 r67 r227' works correctly!")))
 (deffunction MAIN::invoke-test
              ()
              (bind ?core
@@ -207,4 +209,7 @@
                                                0)
              (test-instruction-encode-routines iris-simple-encode-instruction1
                                                "set r0 0xFDED"
-                                               (hex->int 0xFDED0009)))
+                                               (hex->int 0xFDED0009))
+             (test-instruction-encode-routines iris-simple-encode-instruction2
+                                               "add r127 r67 r227"
+                                               (hex->int 0xE3437F00)))
