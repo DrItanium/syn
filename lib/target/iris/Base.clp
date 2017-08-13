@@ -41,6 +41,7 @@
 (defgeneric MAIN::iris-resolve-assembler-labels)
 (defgeneric MAIN::iris-get-encoded-instructions)
 (defgeneric MAIN::iris-parse-and-encode-instruction)
+(defgeneric MAIN::iris-parse-file)
 
 (defmethod MAIN::iris-decode-instruction
   ((?core EXTERNAL-ADDRESS)
@@ -138,15 +139,15 @@
         ?index
         ?value))
 (defmethod MAIN::iris-set-predicate-register
- ((?core EXTERNAL-ADDRESS)
-  (?index INTEGER)
-  (?value SYMBOL))
- (iris-set-predicate-register ?core
-  ?index
-  (if ?value then
-   (hex->int 0xFFFF)
-   else
-   0)))
+  ((?core EXTERNAL-ADDRESS)
+   (?index INTEGER)
+   (?value SYMBOL))
+  (iris-set-predicate-register ?core
+                               ?index
+                               (if ?value then
+                                 (hex->int 0xFFFF)
+                                 else
+                                 0)))
 
 (defmethod MAIN::iris-parse-instruction
   ((?asm EXTERNAL-ADDRESS)
@@ -181,3 +182,21 @@
   (call ?core
         decode-instruction
         ?value))
+
+(defmethod MAIN::iris-parse-file
+  ((?path LEXEME))
+  (if (open ?path
+            (bind ?name
+                  (gensym*))
+            "r") then
+    (bind ?asm
+          (new iris-assembler))
+    (while (neq (bind ?line
+                      (readline ?name))
+                EOF) do
+           (iris-parse-instruction ?asm
+                                   ?line))
+    (close ?name)
+    (iris-resolve-assembler-labels ?asm)
+    (iris-get-encoded-instructions ?asm)))
+
