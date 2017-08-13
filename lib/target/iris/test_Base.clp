@@ -188,7 +188,9 @@
                                                                                     ?register-index)))))
 (deffacts MAIN::encode-tests
           (testcase (id iris-simple-encode-instruction0)
-                    (description "Make sure that 'add r0 r0 r0' works correctly!")))
+                    (description "Make sure that 'add r0 r0 r0' works correctly!"))
+          (testcase (id iris-simple-encode-instruction1)
+                    (description "Make sure that 'set r0 0xFDED' works correctly!")))
 (deffunction MAIN::invoke-test
              ()
              (bind ?core
@@ -202,4 +204,7 @@
              (test-predicate-register-manipulation-routines ?core)
              (test-instruction-encode-routines iris-simple-encode-instruction0
                                                "add r0 r0 r0"
-                                               0))
+                                               0)
+             (test-instruction-encode-routines iris-simple-encode-instruction1
+                                               "set r0 0xFDED"
+                                               (hex->int 0xFDED0009)))

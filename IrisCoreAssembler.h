@@ -157,7 +157,7 @@ namespace iris {
     			state.setValue(in.string());
     		}
     		DefApplyGeneric(syn::NumberOrStringContainer<word>) {
-    			state.setStringValue(in.string());
+				state.setValue(in.string());
     		}
         };
     	template<typename State = ImmediateContainer>

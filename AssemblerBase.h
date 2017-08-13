@@ -240,7 +240,7 @@ namespace syn {
             NumberContainer(const Input& in, States&& ...) { }
             virtual ~NumberContainer() { }
             Word getValue() const noexcept { return _value; }
-            void setValue(Word value) noexcept { _value = value; }
+            virtual void setValue(Word value) noexcept { _value = value; }
         private:
             Word _value;
     };
@@ -250,7 +250,7 @@ namespace syn {
 			StringContainer(const Input& in, States&& ...) { }
 			virtual ~StringContainer() { }
 			const std::string& getValue() const noexcept { return _value; }
-			void setValue(const std::string& value) noexcept { _value = value; }
+			virtual void setValue(const std::string& value) noexcept { _value = value; }
 		private:
 			std::string _value;
 	};
@@ -268,13 +268,13 @@ namespace syn {
 			bool isNumber() const noexcept { return _isNumber; }
 			Word getNumberValue() const noexcept { return NumberParent::getValue(); }
 			const std::string& getStringValue() const noexcept { return StringParent::getValue(); }
-			void setNumberValue(Word value) {
-				_isNumber = true;
+			virtual void setValue(Word value) noexcept override {
 				NumberParent::setValue(value);
+				_isNumber = true;
 			}
-			void setStringValue(const std::string& value) {
-				_isNumber = false;
+			virtual void setValue(const std::string& value) noexcept override {
 				StringParent::setValue(value);
+				_isNumber = false;
 			}
 		private:
 			bool _isNumber = false;
