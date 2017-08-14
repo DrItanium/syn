@@ -36,17 +36,17 @@
 #include "AssemblerBase.h"
 #include "Problem.h"
 #include "IrisCore.h"
-#include <pegtl.hh>
-#include <pegtl/analyze.hh>
-#include <pegtl/file_parser.hh>
-#include <pegtl/contrib/raw_string.hh>
-#include <pegtl/contrib/abnf.hh>
-#include <pegtl/parse.hh>
-#include <vector>
 #include "IrisClipsExtensions.h"
 #include "ClipsExtensions.h"
 #include "IrisCoreAssembler.h"
 #include "IrisCoreAssemblerStateWrapper.h"
+
+#include <tao/pegtl.hpp>
+#include <tao/pegtl/analyze.hpp>
+#include <tao/pegtl/contrib/raw_string.hpp>
+#include <tao/pegtl/contrib/abnf.hpp>
+#include <tao/pegtl/parse.hpp>
+#include <vector>
 
 namespace iris {
     namespace assembler {
@@ -89,7 +89,9 @@ namespace iris {
     }
     bool AssemblerStateWrapper::parseLine(const std::string& line) {
         auto& ref = *(get());
-        return pegtl::parse_string<assembler::Main, assembler::Action>(line, "clips-input", ref);
+        std::string copy;
+        tao::pegtl::string_input<> in(line, copy);
+        return tao::pegtl::parse<assembler::Main, assembler::Action>(in, ref);
     }
     void AssemblerStateWrapper::output(void* env, CLIPSValue* ret) noexcept {
         // we need to build a multifield out of the finalWords
@@ -106,7 +108,7 @@ namespace iris {
     }
 
     void installAssemblerParsingState(void* env) {
-        pegtl::analyze<iris::assembler::Main>();
+        tao::pegtl::analyze<iris::assembler::Main>();
         AssemblerStateWrapper::registerWithEnvironment(env);
         AssemblerStateWrapper::registerWithEnvironment(env, "iris-asm-parser");
         AssemblerStateWrapper::registerWithEnvironment(env, "iris-assembler");
@@ -141,7 +143,7 @@ namespace iris {
                 Parent::callErrorMessageCode3(env, ret, "parse", "error during parsing!");
             }
             return result;
-            } catch(pegtl::basic_parse_error<pegtl::position_info>& ex) {
+            } catch(const tao::pegtl::parse_error& ex) {
 
                 std::string msg(ex.what());
                 Parent::callErrorMessageCode3(env, ret, "parse", msg);

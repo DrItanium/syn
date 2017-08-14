@@ -76,8 +76,9 @@ namespace cisc0 {
 	}
 	bool AssemblerStateWrapper::parseLine(const std::string& line) {
 		auto& ref = *(get());
-        tao::pegtl::string_input<> in(line);
-        return tao::pegtl::parse<assembler::Main>(in, ref);
+        std::string tmpStorage;
+        tao::pegtl::string_input<> in(line, tmpStorage);
+        return tao::pegtl::parse<assembler::Main, assembler::Action>(in, ref);
 	}
 
 

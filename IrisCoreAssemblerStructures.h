@@ -29,24 +29,24 @@
 
 #ifndef IRIS_CORE_ASSEMBLER_STRUCTURES_H__
 #define IRIS_CORE_ASSEMBLER_STRUCTURES_H__
-#include <sstream>
-#include <typeinfo>
-#include <iostream>
-#include <map>
 #include "Base.h"
 #include "AssemblerBase.h"
 #include "Problem.h"
 #include "IrisCoreEncodingOperations.h"
-#include <pegtl.hh>
-#include <pegtl/analyze.hh>
-#include <pegtl/file_parser.hh>
-#include <pegtl/contrib/raw_string.hh>
-#include <pegtl/contrib/abnf.hh>
-#include <pegtl/parse.hh>
-#include <vector>
 #include "IrisClipsExtensions.h"
 #include "ClipsExtensions.h"
 #include "IrisCoreAssemblerKeywords.h"
+
+#include <tao/pegtl.hpp>
+#include <tao/pegtl/analyze.hpp>
+#include <tao/pegtl/contrib/raw_string.hpp>
+#include <tao/pegtl/contrib/abnf.hpp>
+#include <tao/pegtl/parse.hpp>
+#include <sstream>
+#include <typeinfo>
+#include <iostream>
+#include <map>
+#include <vector>
 
 namespace iris {
 #define DEF(type, str) \

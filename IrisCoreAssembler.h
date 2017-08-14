@@ -29,25 +29,25 @@
 
 #ifndef IRIS_CORE_ASSEMBLER_H__
 #define IRIS_CORE_ASSEMBLER_H__
-#include <sstream>
-#include <typeinfo>
-#include <iostream>
-#include <map>
 #include "Base.h"
 #include "AssemblerBase.h"
 #include "Problem.h"
 #include "IrisCoreEncodingOperations.h"
-#include <pegtl.hh>
-#include <pegtl/analyze.hh>
-#include <pegtl/file_parser.hh>
-#include <pegtl/contrib/raw_string.hh>
-#include <pegtl/contrib/abnf.hh>
-#include <pegtl/parse.hh>
-#include <vector>
 #include "IrisClipsExtensions.h"
 #include "ClipsExtensions.h"
 #include "IrisCoreAssemblerKeywords.h"
 #include "IrisCoreAssemblerStructures.h"
+
+#include <tao/pegtl.hpp>
+#include <tao/pegtl/analyze.hpp>
+#include <tao/pegtl/contrib/raw_string.hpp>
+#include <tao/pegtl/contrib/abnf.hpp>
+#include <tao/pegtl/parse.hpp>
+#include <vector>
+#include <sstream>
+#include <typeinfo>
+#include <iostream>
+#include <map>
 
 namespace iris {
     namespace assembler {
@@ -111,7 +111,7 @@ namespace iris {
     	DefAction(Source0GPR) : GenericRegisterIndexContainerAction<RegisterPositionType::Source0GPR> { };
     	DefAction(Source1GPR) : GenericRegisterIndexContainerAction<RegisterPositionType::Source1GPR> { };
         template<typename T>
-        using StatefulRegister = pegtl::state<RegisterIndexContainer, T>;
+        using StatefulRegister = tao::pegtl::state<RegisterIndexContainer, T>;
         using StatefulDestinationGPR = StatefulRegister<DestinationGPR>;
         using SourceRegisters = syn::SourceRegisters<StatefulRegister<Source0GPR>, StatefulRegister<Source1GPR>>;
         using OneGPR = syn::OneRegister<StatefulDestinationGPR>;
@@ -203,7 +203,7 @@ namespace iris {
     			parent.currentLexeme = getValue();
     		}
     	};
-        struct LabelDirective : pegtl::state<LabelDirectiveHandler, syn::OneArgumentDirective<syn::SymbolLabelDirective, Lexeme>> { };
+        struct LabelDirective : tao::pegtl::state<LabelDirectiveHandler, syn::OneArgumentDirective<syn::SymbolLabelDirective, Lexeme>> { };
     	struct FullImmediateContainer : public syn::NumberOrStringContainer<word> {
     		public:
     			using Parent = syn::NumberOrStringContainer<word>;
@@ -235,9 +235,9 @@ namespace iris {
         template<typename T, typename State = ImmediateContainer>
         using LexemeOrNumberDirective = syn::OneArgumentDirective<T, LexemeOrNumber<State>>;
         struct DeclareDirective : LexemeOrNumberDirective<syn::SymbolWordDirective, FullImmediateContainer> { };
-        struct Directive : pegtl::state<
+        struct Directive : tao::pegtl::state<
                            AssemblerDirective,
-                           pegtl::sor<
+                           tao::pegtl::sor<
                              OrgDirective,
                              LabelDirective,
                              CodeDirective,
@@ -317,7 +317,7 @@ namespace iris {
 
         // Arithmetic group
         using ArithmeticSubTypeSelector = SubTypeSelector<InstructionGroup::Arithmetic>;
-        struct OperationArithmeticThreeGPR : pegtl::sor<
+        struct OperationArithmeticThreeGPR : tao::pegtl::sor<
                                              SymbolAdd,
                                              SymbolSub,
                                              SymbolMul,
@@ -332,7 +332,7 @@ namespace iris {
                                              SymbolMax> { };
         // Just extend off of this single type for now
         struct OperationArithmeticTwoGPR : SymbolBinaryNot { };
-        struct ArithmeticImmediateOperation : pegtl::sor<
+        struct ArithmeticImmediateOperation : tao::pegtl::sor<
                                               SymbolAddImmediate,
                                               SymbolSubImmediate,
                                               SymbolMulImmediate,
@@ -351,7 +351,7 @@ namespace iris {
                                                           ArithmeticImmediateOperation,
                                                           TwoGPR,
                                                           HalfImmediate> { };
-        struct ArithmeticInstruction : pegtl::sor<
+        struct ArithmeticInstruction : tao::pegtl::sor<
                                        ArithmeticTwoGPRHalfImmediateInstruction,
                                        ArithmeticTwoGPRInstruction,
                                        ArithmeticThreeGPRInstruction> { };
@@ -359,14 +359,14 @@ namespace iris {
 
         // Move operations
     	using MoveOpSubTypeSelector = SubTypeSelector<InstructionGroup::Move>;
-        struct OperationMoveOneGPR : pegtl::sor<
+        struct OperationMoveOneGPR : tao::pegtl::sor<
                                      SymbolMoveToIP,
                                      SymbolMoveFromIP,
                                      SymbolMoveToLR,
                                      SymbolMoveFromLR,
                                      SymbolRestoreAllRegisters,
                                      SymbolSaveAllRegisters> { };
-        struct OperationMoveTwoGPR : pegtl::sor<
+        struct OperationMoveTwoGPR : tao::pegtl::sor<
                                      SymbolMove,
                                      SymbolSwap,
                                      SymbolLoadIO,
@@ -375,15 +375,15 @@ namespace iris {
                                      SymbolStore,
                                      SymbolPush,
                                      SymbolPop> { };
-        struct OperationMoveTwoGPRHalfImmediate : pegtl::sor<
+        struct OperationMoveTwoGPRHalfImmediate : tao::pegtl::sor<
                                                   SymbolLoadWithOffset,
                                                   SymbolStoreWithOffset,
                                                   SymbolLoadIOWithOffset,
                                                   SymbolStoreIOWithOffset> { };
-        struct OperationMoveThreeGPR : pegtl::sor<
+        struct OperationMoveThreeGPR : tao::pegtl::sor<
                                        SymbolLoadCode,
                                        SymbolStoreCode> { };
-        struct OperationMoveGPRImmediate : pegtl::sor<
+        struct OperationMoveGPRImmediate : tao::pegtl::sor<
                                            SymbolStoreImmediate,
                                            SymbolLoadImmediate,
                                            SymbolSet,
@@ -406,7 +406,7 @@ namespace iris {
                                              OperationMoveGPRImmediate,
                                              StatefulDestinationGPR,
                                              Immediate> { };
-        struct MoveInstruction : pegtl::sor<
+        struct MoveInstruction : tao::pegtl::sor<
                                  MoveGPRImmediateInstruction,
                                  MoveThreeGPRInstruction,
                                  MoveTwoGPRHalfImmediateInstruction,
@@ -421,25 +421,25 @@ namespace iris {
         template<typename Op, typename S>
         using BranchConditional = SeparatedTrinaryThing<Op, DestinationPredicateRegister, S>;
 
-        struct OperationBranchOneGPR : pegtl::sor<
+        struct OperationBranchOneGPR : tao::pegtl::sor<
                                        SymbolBranchUnconditionalLink,
                                        SymbolBranchUnconditional> { };
-        struct OperationBranchImmediate : pegtl::sor<
+        struct OperationBranchImmediate : tao::pegtl::sor<
                                           SymbolBranchUnconditionalImmediateLink,
                                           SymbolBranchUnconditionalImmediate> { };
-        struct OperationBranchConditionalGPR : pegtl::sor<
+        struct OperationBranchConditionalGPR : tao::pegtl::sor<
                                                SymbolBranchConditionalLink,
                                                SymbolBranchConditional
                                                > { };
-        struct OperationBranchConditionalImmediate : pegtl::sor<
+        struct OperationBranchConditionalImmediate : tao::pegtl::sor<
                                                      SymbolBranchConditionalImmediateLink,
                                                      SymbolBranchConditionalImmediate
                                                      > { };
-        struct OperationBranchConditionalNoArgs : pegtl::sor<
+        struct OperationBranchConditionalNoArgs : tao::pegtl::sor<
                                                   SymbolBranchConditionalLRAndLink,
                                                   SymbolBranchConditionalLR
                                                   > { };
-        struct BranchNoArgsInstruction : pegtl::sor<
+        struct BranchNoArgsInstruction : tao::pegtl::sor<
                                          SymbolBranchUnconditionalLRAndLink,
                                          SymbolBranchUnconditionalLR,
                                          SymbolReturnFromError> { };
@@ -467,7 +467,7 @@ namespace iris {
                                                     OperationBranchConditionalNoArgs,
                                                     DestinationPredicateRegister> { };
 
-        struct BranchInstruction : pegtl::sor<
+        struct BranchInstruction : tao::pegtl::sor<
                                    BranchOneGPRInstruction,
                                    BranchImmediateInstruction,
                                    BranchConditionalGPRInstruction,
@@ -478,14 +478,14 @@ namespace iris {
 
         // compare operations
     	using CompareOpSubTypeSelector = SubTypeSelector<InstructionGroup::Compare>;
-        struct CompareRegisterOperation : pegtl::sor<
+        struct CompareRegisterOperation : tao::pegtl::sor<
                                           SymbolEq,
                                           SymbolNeq,
                                           SymbolLessThan,
                                           SymbolGreaterThan,
                                           SymbolLessThanOrEqualTo,
                                           SymbolGreaterThanOrEqualTo> { };
-        struct CompareImmediateOperation : pegtl::sor<
+        struct CompareImmediateOperation : tao::pegtl::sor<
                                            SymbolEqImmediate,
                                            SymbolNeqImmediate,
                                            SymbolLessThanImmediate,
@@ -497,7 +497,7 @@ namespace iris {
     	DefAction(CompareImmediateOperation) : CompareOpSubTypeSelector { };
 
     	template<typename Operation, typename ... Sources>
-    	using PredicateDestinationInstruction = pegtl::seq<Operation, Separator, DestinationPredicates, Separator, Sources...>;
+    	using PredicateDestinationInstruction = tao::pegtl::seq<Operation, Separator, DestinationPredicates, Separator, Sources...>;
     	struct CompareRegisterInstruction : PredicateDestinationInstruction<
     										CompareRegisterOperation,
     										SourceRegisters> { };
@@ -506,7 +506,7 @@ namespace iris {
     										 Source0GPR,
     										 Separator,
     										 HalfImmediate> { };
-        struct CompareInstruction : pegtl::sor<
+        struct CompareInstruction : tao::pegtl::sor<
                                     CompareImmediateInstruction,
                                     CompareRegisterInstruction
                                     > { };
@@ -515,13 +515,13 @@ namespace iris {
         // conditional register actions
     	using ConditionalRegisterSubTypeSelector = SubTypeSelector<InstructionGroup::ConditionalRegister>;
     	using StatefulSource0Predicate = StatefulRegister<Source0Predicate>;
-        struct OperationPredicateTwoArgs : pegtl::sor<
+        struct OperationPredicateTwoArgs : tao::pegtl::sor<
                                            SymbolCRSwap,
                                            SymbolCRMove> { };
-        struct OperationPredicateOneGPR : pegtl::sor<
+        struct OperationPredicateOneGPR : tao::pegtl::sor<
                                           SymbolSaveCRs,
                                           SymbolRestoreCRs> { };
-        struct OperationPredicateFourArgs : pegtl::sor<
+        struct OperationPredicateFourArgs : tao::pegtl::sor<
                                             SymbolCRXor,
                                             SymbolCRAnd,
                                             SymbolCROr,
@@ -534,13 +534,13 @@ namespace iris {
     	DefAction(OperationPredicateFourArgs) : ConditionalRegisterSubTypeSelector { };
 		DefAction(OperationPredicateThreeArgs) : ConditionalRegisterSubTypeSelector { };
 
-        struct PredicateInstructionOneGPR : pegtl::seq<
+        struct PredicateInstructionOneGPR : tao::pegtl::seq<
                                             OperationPredicateOneGPR,
     										Separator,
     										StatefulDestinationGPR,
                                             Separator,
                                             Immediate> { };
-        struct PredicateInstructionTwoArgs : pegtl::seq<
+        struct PredicateInstructionTwoArgs : tao::pegtl::seq<
                                              OperationPredicateTwoArgs,
     										 Separator,
     										 DestinationPredicates> { };
@@ -552,22 +552,22 @@ namespace iris {
     										  StatefulSource0Predicate,
     										  Separator,
     										  StatefulRegister<Source1Predicate>> { };
-        struct PredicateInstruction : pegtl::sor<
+        struct PredicateInstruction : tao::pegtl::sor<
                                       PredicateInstructionOneGPR,
                                       PredicateInstructionTwoArgs,
                                       PredicateInstructionThreeArgs,
                                       PredicateInstructionFourArgs> { };
     	DefAction(PredicateInstruction) : SetInstructionGroup<InstructionGroup::ConditionalRegister> { };
 
-        struct Instruction : pegtl::state<
+        struct Instruction : tao::pegtl::state<
                              AssemblerInstruction,
-                             pegtl::sor<
+                             tao::pegtl::sor<
                                 ArithmeticInstruction,
                                 MoveInstruction,
                                 BranchInstruction,
                                 CompareInstruction,
                                 PredicateInstruction>> { };
-        struct Anything : pegtl::sor<
+        struct Anything : tao::pegtl::sor<
                           Separator,
                           Instruction,
                           Directive,
