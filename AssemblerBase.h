@@ -34,9 +34,9 @@
 #include <sstream>
 #include <bitset>
 #include <map>
-#include <pegtl.hh>
-#include <pegtl/contrib/raw_string.hh>
-#include <pegtl/contrib/abnf.hh>
+#include <tao/pegtl.hpp>
+#include <tao/pegtl/contrib/raw_string.hpp>
+#include <tao/pegtl/contrib/abnf.hpp>
 
 #include "BaseArithmetic.h"
 namespace syn {

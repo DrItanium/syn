@@ -35,12 +35,11 @@
 #include <typeinfo>
 #include <iostream>
 #include <map>
-#include <pegtl.hh>
-#include <pegtl/analyze.hh>
-#include <pegtl/file_parser.hh>
-#include <pegtl/contrib/raw_string.hh>
-#include <pegtl/contrib/abnf.hh>
-#include <pegtl/parse.hh>
+#include <tao/pegtl.hpp>
+#include <tao/pegtl/analyze.hpp>
+#include <tao/pegtl/contrib/raw_string.hpp>
+#include <tao/pegtl/contrib/abnf.hpp>
+#include <tao/pegtl/parse.hpp>
 #include <vector>
 
 #include "Base.h"

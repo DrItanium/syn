@@ -31,19 +31,18 @@
 #include "Cisc0ClipsExtensions.h"
 #include "Cisc0CoreAssembler.h"
 #include "Cisc0CoreAssemblerWrapper.h"
-#include <pegtl.hh>
-#include <pegtl/analyze.hh>
-#include <pegtl/file_parser.hh>
-#include <pegtl/contrib/raw_string.hh>
-#include <pegtl/contrib/abnf.hh>
-#include <pegtl/parse.hh>
+#include <tao/pegtl.hpp>
+#include <tao/pegtl/analyze.hpp>
+#include <tao/pegtl/contrib/raw_string.hpp>
+#include <tao/pegtl/contrib/abnf.hpp>
+#include <tao/pegtl/parse.hpp>
 
 namespace cisc0 {
 
 	void installAssemblerParsingState(void* env) {
 		// AssemblerState needs to be an external address and we can have
 		// multiple assembler states sitting around too!
-		pegtl::analyze<cisc0::assembler::Main>();
+        tao::pegtl::analyze<cisc0::assembler::Main>();
 		// make sure that the parser is still valid before we go any further!
 		AssemblerStateWrapper::registerWithEnvironment(env);
 		AssemblerStateWrapper::registerWithEnvironment(env, "cisc0-asm-parser");
@@ -76,7 +75,7 @@ namespace cisc0 {
 	}
 	bool AssemblerStateWrapper::parseLine(const std::string& line) {
 		auto& ref = *(get());
-		return pegtl::parse_string<assembler::Main, assembler::Action>(line, "clips-input", ref);
+		return tao::pegtl::parse_string<assembler::Main, assembler::Action>(line, "clips-input", ref);
 	}
 
 
@@ -123,7 +122,7 @@ namespace cisc0 {
                     Parent::callErrorMessageCode3(env, ret, "parse", "error during parsing!");
 				}
 				return result;
-			} catch(const pegtl::basic_parse_error<pegtl::position_info>& e) {
+			} catch(const tao::pegtl::parse_error& e) {
                 return Parent::callErrorMessageCode3(env, ret, str, e);
 			}
 		};
