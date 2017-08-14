@@ -36,6 +36,7 @@
 #include <tao/pegtl/contrib/raw_string.hpp>
 #include <tao/pegtl/contrib/abnf.hpp>
 #include <tao/pegtl/parse.hpp>
+#include <tao/pegtl/string_input.hpp>
 
 namespace cisc0 {
 
@@ -75,7 +76,8 @@ namespace cisc0 {
 	}
 	bool AssemblerStateWrapper::parseLine(const std::string& line) {
 		auto& ref = *(get());
-		return tao::pegtl::parse_string<assembler::Main, assembler::Action>(line, "clips-input", ref);
+        tao::pegtl::string_input<> in(line);
+        return tao::pegtl::parse<assembler::Main>(in, ref);
 	}
 
 

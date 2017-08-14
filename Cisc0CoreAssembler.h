@@ -127,7 +127,7 @@ namespace cisc0 {
 	    struct SeparatedTrinaryThing : syn::ThreePartComponent<First, Second, Third, Sep, Sep> { };
 
 	    template<typename First, typename Second, typename Third, typename Fourth, typename Sep = Separator>
-	    struct SeparatedQuadThing : pegtl::seq<First, Sep, Second, Sep, Third, Sep, Fourth> { };
+	    struct SeparatedQuadThing : tao::pegtl::seq<First, Sep, Second, Sep, Third, Sep, Fourth> { };
 
 	    using AssemblerWord = syn::AssemblerWord<RegisterValue>;
         /**
@@ -259,7 +259,7 @@ namespace cisc0 {
         /**
          * Describes the instruction as an immediate type!
          */
-	    struct UsesImmediate : pegtl::seq<SymbolImmediate> { };
+	    struct UsesImmediate : tao::pegtl::seq<KeywordImmediate> { };
 
 	    DefAction(UsesImmediate) {
 	    	DefApplyInstruction {
@@ -281,7 +281,7 @@ namespace cisc0 {
 	    	DefApplyGenericEmpty(DwordCreator)
 	    };
 
-	    struct BitmaskNumber : syn::GenericNumeral<'m', pegtl::abnf::BIT> { };
+	    struct BitmaskNumber : syn::GenericNumeral<'m', tao::pegtl::abnf::BIT> { };
 
 	    DefAction(BitmaskNumber) {
 	    	DefApplyInstruction {
@@ -312,7 +312,7 @@ namespace cisc0 {
 	    struct LexemeOrNumber : syn::LexemeOr<Number> { };
 
         using NormalRegister = syn::GPR;
-	    struct GeneralPurposeRegister : pegtl::sor<
+	    struct GeneralPurposeRegister : tao::pegtl::sor<
 	    								NormalRegister,
 	    								SymbolAddrRegister,
 	    								SymbolStackPointer,
@@ -322,7 +322,7 @@ namespace cisc0 {
 	    								SymbolMaskRegister,
 	    								SymbolFieldRegister> { };
 
-	    struct IndirectGPR : pegtl::seq<GeneralPurposeRegister> { };
+	    struct IndirectGPR : tao::pegtl::seq<GeneralPurposeRegister> { };
 #define DefIndirectGPR(title) \
 	    struct title : IndirectGPR { }
 
@@ -359,7 +359,7 @@ namespace cisc0 {
 	    };
 
 
-	    struct ShiftLeftOrRight : pegtl::sor<
+	    struct ShiftLeftOrRight : tao::pegtl::sor<
 	    						  SymbolLeft,
 	    						  SymbolRight> { };
 
@@ -378,14 +378,14 @@ namespace cisc0 {
 	    										   UsesImmediate,
 	    										   BitmaskNumber,
 	    										   TwoArgumentOperation<Source>> { };
-	    struct SpecialImmediate : pegtl::seq<Number> { };
+	    struct SpecialImmediate : tao::pegtl::seq<Number> { };
 	    struct ShiftImmediateValue : SpecialImmediate { };
 	    DefAction(ShiftImmediateValue) {
 	    	DefApplyInstruction {
                 state.setSecondArg(static_cast<byte>(state.getFullImmediate()) & 0b11111);
 	    	}
 	    };
-	    struct ShiftArgs : pegtl::sor<
+	    struct ShiftArgs : tao::pegtl::sor<
 	    				   TwoGPRs,
 	    				   ImmediateOperationArgs<ShiftImmediateValue>> { };
 
@@ -427,19 +427,19 @@ namespace cisc0 {
         };
 
         using GetCompareSubType = ConvertOperationToSubType<Operation::Compare>;
-	    struct CompareType : pegtl::sor<
+	    struct CompareType : tao::pegtl::sor<
 	    					 SymbolEquals,
 	    					 SymbolNotEquals,
 	    					 SymbolLessThan,
 	    					 SymbolLessThanOrEqualTo,
 	    					 SymbolGreaterThan,
 	    					 SymbolGreaterThanOrEqualTo> { };
-	    struct SpecialCompareType : pegtl::sor<
+	    struct SpecialCompareType : tao::pegtl::sor<
 	    							SymbolMoveFromCondition,
                                     SymbolMoveToCondition> { };
         DefAction(CompareType) : GetCompareSubType { };
         DefAction(SpecialCompareType) : GetCompareSubType { };
-	    struct CompareArgs : pegtl::sor<
+	    struct CompareArgs : tao::pegtl::sor<
 	    					 TwoGPRs,
 	    					 ImmediateOperationArgsWithBitmask<LexemeOrNumber>> { };
 	    struct NormalCompareOperation : SeparatedBinaryThing<
@@ -450,7 +450,7 @@ namespace cisc0 {
 	    								 DestinationRegister> { };
 	    struct CompareOperation : SeparatedBinaryThing<
 	    						  SymbolCompare,
-	    						  pegtl::sor<
+	    						  tao::pegtl::sor<
 	    									 NormalCompareOperation,
 	    									 SpecialCompareOperation>> { };
         DefAction(CompareOperation) : SetOperationOnApply<Operation::Compare> { };
@@ -476,7 +476,7 @@ namespace cisc0 {
                 state.setFirstArg(static_cast<byte>(state.getFullImmediate()) & 0b1111);
 	    	}
 	    };
-	    struct ArithmeticType : pegtl::sor<
+	    struct ArithmeticType : tao::pegtl::sor<
                                 SymbolAdd,
                                 SymbolSub,
                                 SymbolMul,
@@ -486,7 +486,7 @@ namespace cisc0 {
                                 SymbolMax> { };
         DefAction(ArithmeticType) : ConvertOperationToSubType<Operation::Arithmetic> { };
 
-	    struct ArithmeticArgs : pegtl::sor<
+	    struct ArithmeticArgs : tao::pegtl::sor<
 	    						TwoGPRs,
 	    						ImmediateOperationArgs<ByteCastImmediate>> { };
 	    struct ArithmeticOperation : SeparatedTrinaryThing<SymbolArithmetic, ArithmeticType, ArithmeticArgs> { };
@@ -495,19 +495,19 @@ namespace cisc0 {
 
 
         using GetMemorySubType = ConvertOperationToSubType<Operation::Memory>;
-	    struct LoadStoreType : pegtl::sor<
+	    struct LoadStoreType : tao::pegtl::sor<
 	    					   SymbolLoad,
 	    					   SymbolStore> { };
 
         DefAction(LoadStoreType) : GetMemorySubType { };
-	    struct StackMemoryType : pegtl::sor<
+	    struct StackMemoryType : tao::pegtl::sor<
 	    						 SymbolPush,
 	    						 SymbolPop> { };
         DefAction(StackMemoryType) : GetMemorySubType { };
 	    struct StackOperation : SeparatedTrinaryThing<StackMemoryType, BitmaskNumber, DestinationRegister> { };
 	    struct FlagIndirect : syn::SingleEntrySequence<SymbolIndirect> { };
 	    struct FlagDirect : syn::SingleEntrySequence<SymbolDirect> { };
-	    struct FlagDirectOrIndirect : pegtl::sor<
+	    struct FlagDirectOrIndirect : tao::pegtl::sor<
 	    							  FlagDirect,
 	    							  FlagIndirect> { };
 	    DefAction(FlagDirectOrIndirect) {
@@ -522,7 +522,7 @@ namespace cisc0 {
 	    							FlagDirectOrIndirect,
 	    							Arg0ImmediateValue> { };
 
-	    struct MemoryTypes : pegtl::sor<
+	    struct MemoryTypes : tao::pegtl::sor<
 	    					 StackOperation,
 	    					 LoadStoreOperation> { };
 	    struct MemoryInstruction : SeparatedBinaryThing<
@@ -532,14 +532,14 @@ namespace cisc0 {
 
 
 
-	    struct LogicalOpsType : pegtl::sor<
+	    struct LogicalOpsType : tao::pegtl::sor<
 	    						SymbolAnd,
 	    						SymbolOr,
 	    						SymbolNot,
 	    						SymbolXor,
 	    						SymbolNand> { };
         DefAction(LogicalOpsType) : ConvertOperationToSubType<Operation::Logical> { };
-	    struct LogicalArgs : pegtl::sor<
+	    struct LogicalArgs : tao::pegtl::sor<
 	    					 TwoGPRs,
 	    					 ImmediateOperationArgsWithBitmask<LexemeOrNumber>> { };
 	    struct LogicalOperation : SeparatedTrinaryThing<SymbolLogical, LogicalOpsType, LogicalArgs> { };
@@ -563,21 +563,21 @@ namespace cisc0 {
             }
         };
 
-	    struct ComplexEncodingSubOperation : pegtl::sor<
+	    struct ComplexEncodingSubOperation : tao::pegtl::sor<
 	    									 SymbolDecode,
 	    									 SymbolEncode,
 	    									 SymbolBitSet,
 	    									 SymbolBitUnset> { };
         DefAction(ComplexEncodingSubOperation) : SetComplexSubSubType<ComplexSubTypes::Encoding> { };
 
-	    struct ComplexExtendedSubOperation_NoArgs : pegtl::sor<
+	    struct ComplexExtendedSubOperation_NoArgs : tao::pegtl::sor<
 	    									 SymbolPopValueAddr,
 	    									 SymbolPushValueAddr,
 	    									 SymbolDecrementValueAddr,
 	    									 SymbolIncrementValueAddr,
 	    									 SymbolWordsBeforeFirstZero> { };
         DefAction(ComplexExtendedSubOperation_NoArgs) : SetComplexSubSubType<ComplexSubTypes::Extended> { };
-	    struct ComplexExtendedOneArg_Operations : pegtl::sor<
+	    struct ComplexExtendedOneArg_Operations : tao::pegtl::sor<
 	    										  SymbolIsEven,
 	    										  SymbolIsOdd> { };
         DefAction(ComplexExtendedOneArg_Operations) : SetComplexSubSubType<ComplexSubTypes::Extended> { };
@@ -585,17 +585,17 @@ namespace cisc0 {
 	    struct ComplexExtendedSubOperation_OneArg : SeparatedBinaryThing<
 	    											ComplexExtendedOneArg_Operations,
 	    											DestinationRegister> { };
-	    struct ComplexExtendedSubOperation : pegtl::sor<
+	    struct ComplexExtendedSubOperation : tao::pegtl::sor<
 	    									 ComplexExtendedSubOperation_NoArgs,
 	    									 ComplexExtendedSubOperation_OneArg> { };
 
 
-	    struct ComplexParsingSubOperation_NoArgs : pegtl::sor<
+	    struct ComplexParsingSubOperation_NoArgs : tao::pegtl::sor<
 	    									 SymbolHex8ToRegister,
 	    									 SymbolRegisterToHex8,
 	    									 SymbolMemCopy> { };
         DefAction(ComplexParsingSubOperation_NoArgs) : SetComplexSubSubType<ComplexSubTypes::Parsing> { };
-	    struct ComplexParsingSubOperation : pegtl::sor<
+	    struct ComplexParsingSubOperation : tao::pegtl::sor<
 	    									ComplexExtendedSubOperation_NoArgs> { };
 
 
@@ -612,7 +612,7 @@ namespace cisc0 {
 	    								 SymbolParsing,
 	    								 ComplexParsingSubOperation> { };
         DefAction(ComplexParsingOperation) : ConvertComplexSubtype { };
-	    struct ComplexSubOperations : pegtl::sor<
+	    struct ComplexSubOperations : tao::pegtl::sor<
 	    							  ComplexEncodingOperation,
 	    							  ComplexExtendedOperation,
 	    							  ComplexParsingOperation> { };
@@ -643,9 +643,9 @@ namespace cisc0 {
 	    	}
 	    };
 
-	    struct ChooseBranchFlagUsePredicate : pegtl::sor<BranchFlagConditional, BranchFlagUnconditional> { };
+	    struct ChooseBranchFlagUsePredicate : tao::pegtl::sor<BranchFlagConditional, BranchFlagUnconditional> { };
 
-	    struct BranchNormalArgs : pegtl::sor<
+	    struct BranchNormalArgs : tao::pegtl::sor<
 	    						  SeparatedBinaryThing<UsesImmediate, LexemeOrNumber>,
 	    						  DestinationRegister> { };
         template<typename T>
@@ -653,15 +653,15 @@ namespace cisc0 {
         struct BranchCallOperation : BranchWithNormalArgs<BranchFlagCall> { };
         struct BranchJumpOperation : BranchWithNormalArgs<ChooseBranchFlagUsePredicate> { };
 
-	    struct BranchTypes : pegtl::sor<BranchCallOperation, BranchJumpOperation> { };
+	    struct BranchTypes : tao::pegtl::sor<BranchCallOperation, BranchJumpOperation> { };
 	    struct BranchOperation : SeparatedBinaryThing<SymbolBranch, BranchTypes> { };
         DefAction(BranchOperation) : SetOperationOnApply<Operation::Branch> { };
 
-	    struct ReturnOperation : pegtl::seq<SymbolReturn> { };
+	    struct ReturnOperation : tao::pegtl::seq<SymbolReturn> { };
         DefAction(ReturnOperation) : SetOperationOnApply<Operation::Return> { };
 
-	    struct Instructions : pegtl::state<AssemblerInstruction,
-	    pegtl::sor<
+	    struct Instructions : tao::pegtl::state<AssemblerInstruction,
+	    tao::pegtl::sor<
 	    		   BranchOperation,
 	    		   ComplexOperation,
 	    		   MemoryInstruction,
@@ -677,17 +677,17 @@ namespace cisc0 {
         struct WordDirective : syn::WordDirective<WordCreator, LexemeOrNumber> { };
 	    struct DwordDirective : syn::DwordDirective<DwordCreator, LexemeOrNumber> { };
 
-	    struct Directive : pegtl::sor<
+	    struct Directive : tao::pegtl::sor<
 	    				   syn::StatefulOrgDirective<ChangeCurrentAddress, Number>,
 	    				   syn::StatefulLabelDirective<RegisterLabel, Lexeme>,
 	    				   WordDirective,
 	    				   DwordDirective > { };
 
-	    struct Statement : pegtl::sor<
+	    struct Statement : tao::pegtl::sor<
 	    				   Instructions,
 	    				   Directive> { };
 
-	    struct Anything : pegtl::sor<
+	    struct Anything : tao::pegtl::sor<
 	    				  Separator,
 	    				  SingleLineComment,
 	    				  Statement> { };

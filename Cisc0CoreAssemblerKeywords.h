@@ -35,7 +35,7 @@
 namespace cisc0 {
     namespace assembler {
     // modifiers
-    using SymbolImmediate = syn::SymbolImmediateKeyword;
+    using KeywordImmediate = syn::KeywordImmediate;
 	DefSymbol(Indirect, indirect);
 	DefSymbol(Direct, direct);
     // shift modifiers

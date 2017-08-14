@@ -120,44 +120,44 @@ namespace syn {
         return getDecimalImmediate<T>(text.c_str(), onError);
     }
 	template<char prefix>
-	struct GenericRegister : pegtl::if_must<pegtl::one<prefix>, pegtl::plus<pegtl::digit>> { };
+	struct GenericRegister : tao::pegtl::if_must<tao::pegtl::one<prefix>, tao::pegtl::plus<tao::pegtl::digit>> { };
 
     using GPR = GenericRegister<'r'>;
     using FloatRegister = GenericRegister<'f'>;
     using PredicateRegister = GenericRegister<'p'>;
 
-    struct EndOfLineComment : pegtl::until<pegtl::eolf> { };
+    struct EndOfLineComment : tao::pegtl::until<tao::pegtl::eolf> { };
     template<char tag>
-    struct SingleLineComment : pegtl::disable<pegtl::one<tag>, EndOfLineComment> { };
+    struct SingleLineComment : tao::pegtl::disable<tao::pegtl::one<tag>, EndOfLineComment> { };
 
-	struct AsmSeparator : pegtl::plus<pegtl::ascii::space> { };
-	struct OptionalSpace : pegtl::star<pegtl::ascii::space> { };
-	struct SymbolComma : pegtl::one<','> { };
-	struct SymbolEqualsSign : pegtl::one<'='> { };
-	struct SymbolLeftParen : pegtl::one<'('> { };
-	struct SymbolRightParen : pegtl::one<')'> { };
+	struct AsmSeparator : tao::pegtl::plus<tao::pegtl::ascii::space> { };
+	struct OptionalSpace : tao::pegtl::star<tao::pegtl::ascii::space> { };
+	struct SymbolComma : tao::pegtl::one<','> { };
+	struct SymbolEqualsSign : tao::pegtl::one<'='> { };
+	struct SymbolLeftParen : tao::pegtl::one<'('> { };
+	struct SymbolRightParen : tao::pegtl::one<')'> { };
 
     template<typename Rule>
-    struct SingleEntrySequence : pegtl::seq<Rule> { };
+    struct SingleEntrySequence : tao::pegtl::seq<Rule> { };
 
     template<typename C0, typename C1, typename Separator = AsmSeparator>
-    struct TwoPartComponent : pegtl::seq<C0, Separator, C1> { };
+    struct TwoPartComponent : tao::pegtl::seq<C0, Separator, C1> { };
 
     template<typename State, typename C0, typename C1, typename Separator = AsmSeparator>
-    struct StatefulTwoPartComponent : pegtl::state<State, TwoPartComponent<C0, C1, Separator>> { };
+    struct StatefulTwoPartComponent : tao::pegtl::state<State, TwoPartComponent<C0, C1, Separator>> { };
 
 
 	template<typename First, typename Second, typename Third, typename Sep0 = AsmSeparator, typename Sep1 = AsmSeparator>
-	struct ThreePartComponent : pegtl::seq<First, Sep0, Second, Sep1, Third> { };
+	struct ThreePartComponent : tao::pegtl::seq<First, Sep0, Second, Sep1, Third> { };
 
 	template<typename State, typename First, typename Second, typename Third, typename Sep0 = AsmSeparator, typename Sep1 = AsmSeparator>
-	struct StatefulThreePartComponent : pegtl::state<State, ThreePartComponent<First, Second, Third, Sep0, Sep1>> { };
+	struct StatefulThreePartComponent : tao::pegtl::state<State, ThreePartComponent<First, Second, Third, Sep0, Sep1>> { };
 
 	template<typename First, typename Second, typename Third, typename Fourth, typename S0 = AsmSeparator, typename S1 = AsmSeparator, typename S2 = AsmSeparator>
-	struct FourPartComponent : pegtl::seq<First, S0, Second, S1, Third, S2, Fourth> { };
+	struct FourPartComponent : tao::pegtl::seq<First, S0, Second, S1, Third, S2, Fourth> { };
 
 	template<typename State, typename First, typename Second, typename Third, typename Fourth, typename S0 = AsmSeparator, typename S1 = AsmSeparator, typename S2 = AsmSeparator>
-	struct StatefulFourPartComponent : pegtl::state<State, FourPartComponent<First, Second, Third, Fourth, S0, S1, S2>> { };
+	struct StatefulFourPartComponent : tao::pegtl::state<State, FourPartComponent<First, Second, Third, Fourth, S0, S1, S2>> { };
 
     template<typename Register>
 	using OneRegister = SingleEntrySequence<Register>;
@@ -167,43 +167,43 @@ namespace syn {
 	using ThreeRegister = ThreePartComponent<R0, R1, R2, Separator0, Separator1>;
 
 	template<typename T>
-	struct OptionalSpaceWrapped : pegtl::seq<OptionalSpace, T, OptionalSpace> { };
+	struct OptionalSpaceWrapped : tao::pegtl::seq<OptionalSpace, T, OptionalSpace> { };
 	using EqualsSignSeparator = OptionalSpaceWrapped<SymbolEqualsSign>;
 	using CommaSeparator = OptionalSpaceWrapped<SymbolComma>;
 
     template<char delimiter, typename SymbolClass>
-    struct GenericNumeral : pegtl::if_must<pegtl::istring<'0', delimiter>, pegtl::plus<SymbolClass>> { };
+    struct GenericNumeral : tao::pegtl::if_must<tao::pegtl::istring<'0', delimiter>, tao::pegtl::plus<SymbolClass>> { };
 
 	template<char delim = 'x'>
-	struct Base16Number : GenericNumeral<delim, pegtl::xdigit> { };
+	struct Base16Number : GenericNumeral<delim, tao::pegtl::xdigit> { };
 	using HexadecimalNumber = Base16Number<'x'>;
 
 	template<char delim = 'b'>
-	struct Base2Number : GenericNumeral<delim, pegtl::abnf::BIT> { };
+	struct Base2Number : GenericNumeral<delim, tao::pegtl::abnf::BIT> { };
 	using BinaryNumber = Base2Number<'b'>;
 
-	struct Base10Number : pegtl::plus<pegtl::digit> { };
+	struct Base10Number : tao::pegtl::plus<tao::pegtl::digit> { };
 
     template<typename Src0, typename Src1, typename Separator = AsmSeparator>
     struct SourceRegisters : TwoRegister<Src0, Src1, Separator> { };
 
-    struct Lexeme : pegtl::identifier { };
+    struct Lexeme : tao::pegtl::identifier { };
 
 
     template<typename Other>
-    struct LexemeOr : pegtl::sor<Lexeme, Other> { };
+    struct LexemeOr : tao::pegtl::sor<Lexeme, Other> { };
 
     template<typename Operation, typename Operands, typename Separator = AsmSeparator>
-    struct Instruction : pegtl::seq<Operation, Separator, Operands> { };
+    struct Instruction : tao::pegtl::seq<Operation, Separator, Operands> { };
 
 
     template<typename End, typename Entry>
-    struct MainParser : pegtl::until<End, pegtl::must<Entry>> { };
+    struct MainParser : tao::pegtl::until<End, tao::pegtl::must<Entry>> { };
     template<typename Entry>
-    struct MainFileParser :  MainParser<pegtl::eof, Entry> { };
+    struct MainFileParser :  MainParser<tao::pegtl::eof, Entry> { };
 
 	template<typename S, typename ... NumberTypes>
-	struct StatefulNumber : pegtl::state<S, pegtl::sor<NumberTypes...>> { };
+	struct StatefulNumber : tao::pegtl::state<S, tao::pegtl::sor<NumberTypes...>> { };
 
 	template<typename S>
 	struct StatefulNumberAll : StatefulNumber<S, HexadecimalNumber, Base10Number, BinaryNumber> { };
@@ -291,13 +291,15 @@ namespace syn {
 	};
 
 #define DefSymbol(title, str) \
-    struct Symbol ## title : public pegtl_string_t ( #str ) { }
-
+    struct Symbol ## title : public TAOCPP_PEGTL_STRING( #str ) { }
     DefSymbol(OrgDirective, .org);
     DefSymbol(LabelDirective, .label);
     DefSymbol(WordDirective, .word);
     DefSymbol(DwordDirective, .dword);
-    DefSymbol(ImmediateKeyword, immediate);
+
+#define DefKeyword(title, str) \
+    struct Keyword ## title : public TAOCPP_PEGTL_KEYWORD( #str ) { }
+    DefKeyword(Immediate, immediate);
 
 
     template<typename Symbol, typename Value, typename Separator = AsmSeparator>
@@ -319,11 +321,11 @@ namespace syn {
     struct StatefulLabelDirective : StatefulOneArgumentDirective<State, SymbolLabelDirective, Lexeme, Separator> { };
 
     template<typename State, typename C>
-    struct StatefulSingleEntrySequence : pegtl::state<State, SingleEntrySequence<C>> { };
+    struct StatefulSingleEntrySequence : tao::pegtl::state<State, SingleEntrySequence<C>> { };
 
 
 	template<typename R>
-	struct Action : pegtl::nothing<R> { };
+	struct Action : tao::pegtl::nothing<R> { };
 
 	void reportError(const std::string& msg);
 	template<typename T>
@@ -455,7 +457,7 @@ namespace syn {
 	};
 
     template<typename T, typename Separator>
-    struct ThenField : pegtl::seq<Separator, T> { };
+    struct ThenField : tao::pegtl::seq<Separator, T> { };
 
 } // end namespace syn
 
