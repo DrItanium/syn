@@ -36,9 +36,10 @@
 (defgeneric MAIN::cisc0-read-memory)
 (defgeneric MAIN::cisc0-get-register)
 (defgeneric MAIN::cisc0-set-register)
-(defgeneric MAIN::cisc0-parse-lin)
+(defgeneric MAIN::cisc0-parse-line)
 (defgeneric MAIN::cisc0-resolve-instructions)
 (defgeneric MAIN::cisc0-get-encoded-instructions)
+(defgeneric MAIN::cisc0-parse-file)
 
 (defmethod MAIN::cisc0-decode-instruction
   ((?core EXTERNAL-ADDRESS)
@@ -113,15 +114,27 @@
 (defmethod MAIN::cisc0-parse-line
   ((?asm EXTERNAL-ADDRESS)
    (?line LEXEME))
-  (call ?asm
-        parse
-        ?line))
+  (asm-parse-line ?asm
+                  ?line))
 (defmethod MAIN::cisc0-resolve-instructions
   ((?asm EXTERNAL-ADDRESS))
-  (call ?asm
-        resolve))
+  (asm-resolve-labels ?asm))
 (defmethod MAIN::cisc0-get-encoded-instructions
   ((?asm EXTERNAL-ADDRESS))
-  (call ?asm
-        get))
+  (asm-get-encoded-instructions ?asm))
+
+(defmethod MAIN::cisc0-parse-file
+  ((?asm EXTERNAL-ADDRESS)
+   (?path LEXEME))
+  (asm-parse-file ?asm
+                  ?path))
+
+(defmethod MAIN::cisc0-parse-file
+  ((?path LEXEME))
+  (bind ?asm
+        (new cisc0-assembler))
+  (if (cisc0-parse-file ?asm
+                        ?path) then
+    (cisc0-resolve-instructions ?asm)
+    (cisc0-get-encoded-instructions ?asm)))
 

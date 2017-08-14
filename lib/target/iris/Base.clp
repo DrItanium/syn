@@ -183,21 +183,18 @@
   (call ?core
         decode-instruction
         ?value))
+(defmethod MAIN::iris-parse-file
+ ((?asm EXTERNAL-ADDRESS)
+  (?path LEXEME))
+ (asm-parse-file ?asm
+                 ?path))
 
 (defmethod MAIN::iris-parse-file
   ((?path LEXEME))
-  (if (open ?path
-            (bind ?name
-                  (gensym*))
-            "r") then
-    (bind ?asm
-          (new iris-assembler))
-    (while (neq (bind ?line
-                      (readline ?name))
-                EOF) do
-           (iris-parse-instruction ?asm
-                                   ?line))
-    (close ?name)
-    (iris-resolve-assembler-labels ?asm)
-    (iris-get-encoded-instructions ?asm)))
+  (bind ?asm
+        (new iris-assembler))
+  (if (iris-parse-file ?asm
+                       ?path) then
+   (iris-resolve-assembler-labels ?asm)
+   (iris-get-encoded-instructions ?asm)))
 
