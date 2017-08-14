@@ -527,10 +527,12 @@ namespace iris {
                                             SymbolCROr,
                                             SymbolCRNand,
                                             SymbolCRNor> { };
+		struct OperationPredicateThreeArgs : SymbolCRNot { };
 
     	DefAction(OperationPredicateTwoArgs) : ConditionalRegisterSubTypeSelector { };
     	DefAction(OperationPredicateOneGPR) : ConditionalRegisterSubTypeSelector { };
     	DefAction(OperationPredicateFourArgs) : ConditionalRegisterSubTypeSelector { };
+		DefAction(OperationPredicateThreeArgs) : ConditionalRegisterSubTypeSelector { };
 
         struct PredicateInstructionOneGPR : pegtl::seq<
                                             OperationPredicateOneGPR,
@@ -543,7 +545,7 @@ namespace iris {
     										 Separator,
     										 DestinationPredicates> { };
         struct PredicateInstructionThreeArgs : PredicateDestinationInstruction<
-                                               SymbolCRNot,
+											   OperationPredicateThreeArgs,
     										   StatefulSource0Predicate> { };
         struct PredicateInstructionFourArgs : PredicateDestinationInstruction<
                                               OperationPredicateFourArgs,
