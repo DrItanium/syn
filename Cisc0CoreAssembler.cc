@@ -351,8 +351,8 @@ namespace cisc0 {
         }
     }
 
-#define StringToEnumEntry(str, type) { #str , type },
-#define EnumToStringEntry(str, type) { type , #str },
+#define StringToEnumEntry(str, type) { str , type },
+#define EnumToStringEntry(str, type) { type , str },
 #define DefBeginStringToEnumFn(type) \
     type stringTo ## type (const std::string& str) noexcept { \
         static std::map<std::string, type > translation = {

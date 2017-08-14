@@ -291,15 +291,15 @@ namespace syn {
 	};
 
 #define DefSymbol(title, str) \
-    struct Symbol ## title : public TAOCPP_PEGTL_STRING( #str ) { }
-    DefSymbol(OrgDirective, .org);
-    DefSymbol(LabelDirective, .label);
-    DefSymbol(WordDirective, .word);
-    DefSymbol(DwordDirective, .dword);
+    struct Symbol ## title : public TAOCPP_PEGTL_STRING( str ) { }
+    DefSymbol(OrgDirective, ".org");
+    DefSymbol(LabelDirective, ".label");
+    DefSymbol(WordDirective,  ".word");
+    DefSymbol(DwordDirective, ".dword");
 
 #define DefKeyword(title, str) \
-    struct Keyword ## title : public TAOCPP_PEGTL_KEYWORD( #str ) { }
-    DefKeyword(Immediate, immediate);
+    struct Keyword ## title : public TAOCPP_PEGTL_KEYWORD( str ) { }
+    DefKeyword(Immediate, "immediate");
 
 
     template<typename Symbol, typename Value, typename Separator = AsmSeparator>

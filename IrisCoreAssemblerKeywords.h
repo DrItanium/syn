@@ -34,8 +34,8 @@
 namespace iris {
 
 	// DIRECTIVES
-    DefSymbol(DataDirective, .data);
-    DefSymbol(CodeDirective, .code);
+    DefSymbol(DataDirective, ".data");
+    DefSymbol(CodeDirective, ".code");
 #define X(str, _, id) DefSymbol(id, str);
 #include "desc/iris/ArithmeticOp.desc"
 #include "desc/iris/MoveOp.desc"

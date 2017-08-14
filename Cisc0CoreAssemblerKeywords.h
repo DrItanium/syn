@@ -36,16 +36,16 @@ namespace cisc0 {
     namespace assembler {
     // modifiers
     using KeywordImmediate = syn::KeywordImmediate;
-	DefSymbol(Indirect, indirect);
-	DefSymbol(Direct, direct);
+	DefSymbol(Indirect, "indirect");
+	DefSymbol(Direct, "direct");
     // shift modifiers
-	DefSymbol(Left, left);
-	DefSymbol(Right, right);
+	DefSymbol(Left, "left");
+	DefSymbol(Right, "right");
 
-	DefSymbol(Call, call);
-	DefSymbol(NoCall, nocall);
-	DefSymbol(Conditional, conditional);
-	DefSymbol(Unconditional, unconditional);
+	DefSymbol(Call, "call");
+	DefSymbol(NoCall, "nocall");
+	DefSymbol(Conditional, "conditional");
+	DefSymbol(Unconditional, "unconditional");
 
     // have one location where specific symbols are defined!
 #define X(str, _, id) DefSymbol (id , str);
