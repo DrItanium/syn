@@ -25,6 +25,7 @@
 ; Base.clp - routines to make interfacing with the raw cisc0 external address 
 ; far simpler 
 ;------------------------------------------------------------------------------
+(batch* lib/target/AssemblerBase.clp)
 (defgeneric MAIN::cisc0-decode-instruction
             "Given an instruction encoded as an integer, translate it back to a string form")
 (defgeneric MAIN::cisc0-initialize)
