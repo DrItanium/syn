@@ -87,7 +87,7 @@ namespace cisc0 {
         /**
          * Describes the instruction as an immediate type!
          */
-	    struct UsesImmediate : seq<KeywordImmediate> { };
+	    struct UsesImmediate : KeywordImmediate { };
 
 	    DefAction(UsesImmediate) {
 	    	DefApplyInstruction {
