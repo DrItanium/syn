@@ -78,16 +78,17 @@
                    "Testcase " ?id ": " ?description crlf)
          (bind ?failed
                FALSE)
-         (do-for-all-facts ((?ta testcase-assertion))
-                           (eq ?ta:parent
-                               ?id)
-                           (if (not ?ta:outcome) then
-                             (bind ?failed
-                                   TRUE)
-                             (printout ?router
-                                       tab tab "CHECK FAILED: " crlf
-                                       tab tab tab "expected: " ?ta:expected crlf
-                                       tab tab tab "actual value: " ?ta:actual-value crlf)))
+         (delayed-do-for-all-facts ((?ta testcase-assertion))
+                                   (eq ?ta:parent
+                                       ?id)
+                                   (retract ?ta)
+                                   (if (not ?ta:outcome) then
+                                     (bind ?failed
+                                           TRUE)
+                                     (printout ?router
+                                               tab tab "CHECK FAILED: " crlf
+                                               tab tab tab "expected: " ?ta:expected crlf
+                                               tab tab tab "actual value: " ?ta:actual-value crlf)))
          (printout ?router
                    tab "Result: "
                    (if ?failed then

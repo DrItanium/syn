@@ -193,6 +193,22 @@
                     (description "Make sure that 'set r0 0xFDED' works correctly!"))
           (testcase (id iris-simple-encode-instruction2)
                     (description "Make sure that 'add r127 r67 r227' works correctly!")))
+(deffunction MAIN::mk-register
+             (?index)
+             (str-cat r
+                      ?index))
+
+(deffunction MAIN::register-index-to-hex
+             (?index)
+             (format nil
+                     (if (< ?index
+                            16) then
+                       "0%x"
+                       else
+                       "%x")
+                     ?index))
+
+
 (deffunction MAIN::invoke-test
              ()
              (bind ?core
@@ -212,4 +228,52 @@
                                                (hex->int 0xFDED0009))
              (test-instruction-encode-routines iris-simple-encode-instruction2
                                                "add r127 r67 r227"
-                                               (hex->int 0xE3437F00)))
+                                               (hex->int 0xE3437F00))
+             (printout t "Generating all 2^24 register add combinations as tests... this will take a while!" crlf)
+             (loop-for-count (?di 0 255) do
+                             (bind ?destIndex
+                                   (register-index-to-hex ?di))
+                             (bind ?rd
+                                   (mk-register ?di))
+                             (bind ?prefix0
+                                   (sym-cat iris-add-instruction- ?rd))
+                             (bind ?hex0
+                                   (sym-cat ?destIndex
+                                            "00"))
+                             (loop-for-count (?s0 0 255) do
+                                             (bind ?s0index
+                                                   (register-index-to-hex ?s0))
+                                             (bind ?rs0
+                                                   (mk-register ?s0))
+                                             (bind ?prefix1
+                                                   (sym-cat ?prefix0 - ?rs0))
+                                             (bind ?hex1
+                                                   (sym-cat ?s0index
+                                                            ?hex0))
+                                             (loop-for-count (?s1 0 255) do
+                                                             (bind ?s1index
+                                                                   (register-index-to-hex ?s1))
+                                                             (bind ?rs1
+                                                                   (mk-register ?s1))
+                                                             (bind ?tc
+                                                                   (sym-cat ?prefix1 - ?rs1))
+                                                             (bind ?hex
+                                                                   (sym-cat 0x
+                                                                            ?s1index
+                                                                            ?hex1))
+                                                             (assert (testcase (id ?tc)
+                                                                               (description (str-cat "Make sure that '"
+                                                                                                     (bind ?inst
+                                                                                                           (str-cat "add " ?rd " " ?rs0 " " ?rs1))
+                                                                                                     "' works correctly"))))
+                                                             (test-instruction-encode-routines ?tc
+                                                                                               ?inst
+                                                                                               (hex->int (sym-cat 0x
+                                                                                                                  ?s1index
+                                                                                                                  ?hex1))))
+                                             ; there are so many combos that we have to do this here!
+                                             ; otherwise it takes forever to do!
+                                             (focus test)
+                                             (run))))
+
+
