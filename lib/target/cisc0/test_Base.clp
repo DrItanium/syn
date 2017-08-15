@@ -266,7 +266,7 @@
 
 
 
-(deffunction MAIN::bitmask-to-int
+(deffunction MAIN::bitmask-to-hex
              (?mask)
              (register-index-to-symbol (- (member$ ?mask
                                                    ?*masks*)
@@ -296,17 +296,17 @@
 
              (test-all-register-combinations:single-word swap
                                                          (group-to-hex swap)
-                                                         (bitmask-to-int 0m0000)
+                                                         (bitmask-to-hex 0m0000)
                                                          swap
                                                          swap)
              (test-all-register-combinations:single-word shift-left
                                                          (group-to-hex shift)
-                                                         (bitmask-to-int 0m0010)
+                                                         (bitmask-to-hex 0m0010)
                                                          "shift left"
                                                          "shift left")
              (test-all-register-combinations:single-word shift-right
                                                          (group-to-hex shift)
-                                                         (bitmask-to-int 0m0000)
+                                                         (bitmask-to-hex 0m0000)
                                                          "shift right"
                                                          "shift right")
              (progn$ (?mask ?*masks*)
@@ -317,8 +317,8 @@
                                              "memory load %s direct 0x00"
                                              ?mask)
                                      (sym-cat 0x0
-                                              (bitmask-to-int ?mask)
-                                              (bitmask-to-int 0m0000) ; config
+                                              (bitmask-to-hex ?mask)
+                                              (bitmask-to-hex 0m0000) ; config
                                               0))
                      (parse-asm-test (sym-cat memory-load-indirect- ?mask)
                                      (str-cat "parse the load indirect instruction with mask "
@@ -327,8 +327,8 @@
                                              "memory load %s indirect 0x00"
                                              ?mask)
                                      (sym-cat 0x0
-                                              (bitmask-to-int ?mask)
-                                              (bitmask-to-int 0m0100) ; this is the four config bits
+                                              (bitmask-to-hex ?mask)
+                                              (bitmask-to-hex 0m0100) ; this is the four config bits
                                               0))
                      (parse-asm-test (sym-cat memory-store-direct- ?mask)
                                      (str-cat "parse the store direct instruction with mask "
@@ -337,8 +337,8 @@
                                              "memory store %s direct 0x00"
                                              ?mask)
                                      (sym-cat 0x0
-                                              (bitmask-to-int ?mask)
-                                              (bitmask-to-int 0m0001) ; this is the four config bits
+                                              (bitmask-to-hex ?mask)
+                                              (bitmask-to-hex 0m0001) ; this is the four config bits
                                               0))
                      (parse-asm-test (sym-cat memory-store-indirect- ?mask)
                                      (str-cat "parse the store indirect instruction with mask "
@@ -347,13 +347,13 @@
                                              "memory store %s indirect 0x00"
                                              ?mask)
                                      (sym-cat 0x0
-                                              (bitmask-to-int ?mask)
-                                              (bitmask-to-int 0m0101) ; config bits
+                                              (bitmask-to-hex ?mask)
+                                              (bitmask-to-hex 0m0101) ; config bits
                                               0))
                      (test-all-register-combinations:single-word (sym-cat move-
                                                                           ?mask)
                                                                  (group-to-hex move)
-                                                                 (bitmask-to-int ?mask)
+                                                                 (bitmask-to-hex ?mask)
                                                                  (format nil
                                                                          "move %s"
                                                                          ?mask)
