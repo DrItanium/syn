@@ -299,6 +299,16 @@
                                                          0
                                                          swap
                                                          swap)
+             (test-all-register-combinations:single-word shift-left
+                                                         (group-to-hex shift)
+                                                         2
+                                                         "shift left"
+                                                         "shift left")
+             (test-all-register-combinations:single-word shift-right
+                                                         (group-to-hex shift)
+                                                         0
+                                                         "shift right"
+                                                         "shift right")
              (progn$ (?mask ?*masks*)
                      (parse-asm-test (sym-cat memory-load-direct- ?mask)
                                      (str-cat "parse the load direct instruction with mask "
