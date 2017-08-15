@@ -37,8 +37,8 @@
 #include <tao/pegtl.hpp>
 #include <tao/pegtl/contrib/raw_string.hpp>
 #include <tao/pegtl/contrib/abnf.hpp>
-
 #include "BaseArithmetic.h"
+
 namespace syn {
 	using ErrorReportingFunction = std::function<void(const std::string&)>;
 	template<typename T, T count>
@@ -120,44 +120,44 @@ namespace syn {
         return getDecimalImmediate<T>(text.c_str(), onError);
     }
 	template<char prefix>
-	struct GenericRegister : tao::pegtl::if_must<tao::pegtl::one<prefix>, tao::pegtl::plus<tao::pegtl::digit>> { };
+	struct GenericRegister : tao::TAOCPP_PEGTL_NAMESPACE::if_must<tao::TAOCPP_PEGTL_NAMESPACE::one<prefix>, tao::TAOCPP_PEGTL_NAMESPACE::plus<tao::TAOCPP_PEGTL_NAMESPACE::digit>> { };
 
     using GPR = GenericRegister<'r'>;
     using FloatRegister = GenericRegister<'f'>;
     using PredicateRegister = GenericRegister<'p'>;
 
-    struct EndOfLineComment : tao::pegtl::until<tao::pegtl::eolf> { };
+    struct EndOfLineComment : tao::TAOCPP_PEGTL_NAMESPACE::until<tao::TAOCPP_PEGTL_NAMESPACE::eolf> { };
     template<char tag>
-    struct SingleLineComment : tao::pegtl::disable<tao::pegtl::one<tag>, EndOfLineComment> { };
+    struct SingleLineComment : tao::TAOCPP_PEGTL_NAMESPACE::disable<tao::TAOCPP_PEGTL_NAMESPACE::one<tag>, EndOfLineComment> { };
 
-	struct AsmSeparator : tao::pegtl::plus<tao::pegtl::ascii::space> { };
-	struct OptionalSpace : tao::pegtl::star<tao::pegtl::ascii::space> { };
-	struct SymbolComma : tao::pegtl::one<','> { };
-	struct SymbolEqualsSign : tao::pegtl::one<'='> { };
-	struct SymbolLeftParen : tao::pegtl::one<'('> { };
-	struct SymbolRightParen : tao::pegtl::one<')'> { };
+	struct AsmSeparator : tao::TAOCPP_PEGTL_NAMESPACE::plus<tao::TAOCPP_PEGTL_NAMESPACE::ascii::space> { };
+	struct OptionalSpace : tao::TAOCPP_PEGTL_NAMESPACE::star<tao::TAOCPP_PEGTL_NAMESPACE::ascii::space> { };
+	struct SymbolComma : tao::TAOCPP_PEGTL_NAMESPACE::one<','> { };
+	struct SymbolEqualsSign : tao::TAOCPP_PEGTL_NAMESPACE::one<'='> { };
+	struct SymbolLeftParen : tao::TAOCPP_PEGTL_NAMESPACE::one<'('> { };
+	struct SymbolRightParen : tao::TAOCPP_PEGTL_NAMESPACE::one<')'> { };
 
     template<typename Rule>
-    struct SingleEntrySequence : tao::pegtl::seq<Rule> { };
+    struct SingleEntrySequence : tao::TAOCPP_PEGTL_NAMESPACE::seq<Rule> { };
 
     template<typename C0, typename C1, typename Separator = AsmSeparator>
-    struct TwoPartComponent : tao::pegtl::seq<C0, Separator, C1> { };
+    struct TwoPartComponent : tao::TAOCPP_PEGTL_NAMESPACE::seq<C0, Separator, C1> { };
 
     template<typename State, typename C0, typename C1, typename Separator = AsmSeparator>
-    struct StatefulTwoPartComponent : tao::pegtl::state<State, TwoPartComponent<C0, C1, Separator>> { };
+    struct StatefulTwoPartComponent : tao::TAOCPP_PEGTL_NAMESPACE::state<State, TwoPartComponent<C0, C1, Separator>> { };
 
 
 	template<typename First, typename Second, typename Third, typename Sep0 = AsmSeparator, typename Sep1 = AsmSeparator>
-	struct ThreePartComponent : tao::pegtl::seq<First, Sep0, Second, Sep1, Third> { };
+	struct ThreePartComponent : tao::TAOCPP_PEGTL_NAMESPACE::seq<First, Sep0, Second, Sep1, Third> { };
 
 	template<typename State, typename First, typename Second, typename Third, typename Sep0 = AsmSeparator, typename Sep1 = AsmSeparator>
-	struct StatefulThreePartComponent : tao::pegtl::state<State, ThreePartComponent<First, Second, Third, Sep0, Sep1>> { };
+	struct StatefulThreePartComponent : tao::TAOCPP_PEGTL_NAMESPACE::state<State, ThreePartComponent<First, Second, Third, Sep0, Sep1>> { };
 
 	template<typename First, typename Second, typename Third, typename Fourth, typename S0 = AsmSeparator, typename S1 = AsmSeparator, typename S2 = AsmSeparator>
-	struct FourPartComponent : tao::pegtl::seq<First, S0, Second, S1, Third, S2, Fourth> { };
+	struct FourPartComponent : tao::TAOCPP_PEGTL_NAMESPACE::seq<First, S0, Second, S1, Third, S2, Fourth> { };
 
 	template<typename State, typename First, typename Second, typename Third, typename Fourth, typename S0 = AsmSeparator, typename S1 = AsmSeparator, typename S2 = AsmSeparator>
-	struct StatefulFourPartComponent : tao::pegtl::state<State, FourPartComponent<First, Second, Third, Fourth, S0, S1, S2>> { };
+	struct StatefulFourPartComponent : tao::TAOCPP_PEGTL_NAMESPACE::state<State, FourPartComponent<First, Second, Third, Fourth, S0, S1, S2>> { };
 
     template<typename Register>
 	using OneRegister = SingleEntrySequence<Register>;
@@ -167,43 +167,43 @@ namespace syn {
 	using ThreeRegister = ThreePartComponent<R0, R1, R2, Separator0, Separator1>;
 
 	template<typename T>
-	struct OptionalSpaceWrapped : tao::pegtl::seq<OptionalSpace, T, OptionalSpace> { };
+	struct OptionalSpaceWrapped : tao::TAOCPP_PEGTL_NAMESPACE::seq<OptionalSpace, T, OptionalSpace> { };
 	using EqualsSignSeparator = OptionalSpaceWrapped<SymbolEqualsSign>;
 	using CommaSeparator = OptionalSpaceWrapped<SymbolComma>;
 
     template<char delimiter, typename SymbolClass>
-    struct GenericNumeral : tao::pegtl::if_must<tao::pegtl::istring<'0', delimiter>, tao::pegtl::plus<SymbolClass>> { };
+    struct GenericNumeral : tao::TAOCPP_PEGTL_NAMESPACE::if_must<tao::TAOCPP_PEGTL_NAMESPACE::istring<'0', delimiter>, tao::TAOCPP_PEGTL_NAMESPACE::plus<SymbolClass>> { };
 
 	template<char delim = 'x'>
-	struct Base16Number : GenericNumeral<delim, tao::pegtl::xdigit> { };
+	struct Base16Number : GenericNumeral<delim, tao::TAOCPP_PEGTL_NAMESPACE::xdigit> { };
 	using HexadecimalNumber = Base16Number<'x'>;
 
 	template<char delim = 'b'>
-	struct Base2Number : GenericNumeral<delim, tao::pegtl::abnf::BIT> { };
+	struct Base2Number : GenericNumeral<delim, tao::TAOCPP_PEGTL_NAMESPACE::abnf::BIT> { };
 	using BinaryNumber = Base2Number<'b'>;
 
-	struct Base10Number : tao::pegtl::plus<tao::pegtl::digit> { };
+	struct Base10Number : tao::TAOCPP_PEGTL_NAMESPACE::plus<tao::TAOCPP_PEGTL_NAMESPACE::digit> { };
 
     template<typename Src0, typename Src1, typename Separator = AsmSeparator>
     struct SourceRegisters : TwoRegister<Src0, Src1, Separator> { };
 
-    struct Lexeme : tao::pegtl::identifier { };
+    struct Lexeme : tao::TAOCPP_PEGTL_NAMESPACE::identifier { };
 
 
     template<typename Other>
-    struct LexemeOr : tao::pegtl::sor<Lexeme, Other> { };
+    struct LexemeOr : tao::TAOCPP_PEGTL_NAMESPACE::sor<Lexeme, Other> { };
 
     template<typename Operation, typename Operands, typename Separator = AsmSeparator>
-    struct Instruction : tao::pegtl::seq<Operation, Separator, Operands> { };
+    struct Instruction : tao::TAOCPP_PEGTL_NAMESPACE::seq<Operation, Separator, Operands> { };
 
 
     template<typename End, typename Entry>
-    struct MainParser : tao::pegtl::until<End, tao::pegtl::must<Entry>> { };
+    struct MainParser : tao::TAOCPP_PEGTL_NAMESPACE::until<End, tao::TAOCPP_PEGTL_NAMESPACE::must<Entry>> { };
     template<typename Entry>
-    struct MainFileParser :  MainParser<tao::pegtl::eof, Entry> { };
+    struct MainFileParser :  MainParser<tao::TAOCPP_PEGTL_NAMESPACE::eof, Entry> { };
 
 	template<typename S, typename ... NumberTypes>
-	struct StatefulNumber : tao::pegtl::state<S, tao::pegtl::sor<NumberTypes...>> { };
+	struct StatefulNumber : tao::TAOCPP_PEGTL_NAMESPACE::state<S, tao::TAOCPP_PEGTL_NAMESPACE::sor<NumberTypes...>> { };
 
 	template<typename S>
 	struct StatefulNumberAll : StatefulNumber<S, HexadecimalNumber, Base10Number, BinaryNumber> { };
@@ -321,11 +321,11 @@ namespace syn {
     struct StatefulLabelDirective : StatefulOneArgumentDirective<State, SymbolLabelDirective, Lexeme, Separator> { };
 
     template<typename State, typename C>
-    struct StatefulSingleEntrySequence : tao::pegtl::state<State, SingleEntrySequence<C>> { };
+    struct StatefulSingleEntrySequence : tao::TAOCPP_PEGTL_NAMESPACE::state<State, SingleEntrySequence<C>> { };
 
 
 	template<typename R>
-	struct Action : tao::pegtl::nothing<R> { };
+	struct Action : tao::TAOCPP_PEGTL_NAMESPACE::nothing<R> { };
 
 	void reportError(const std::string& msg);
 	template<typename T>
@@ -457,7 +457,7 @@ namespace syn {
 	};
 
     template<typename T, typename Separator>
-    struct ThenField : tao::pegtl::seq<Separator, T> { };
+    struct ThenField : tao::TAOCPP_PEGTL_NAMESPACE::seq<Separator, T> { };
 
 } // end namespace syn
 
