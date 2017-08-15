@@ -169,12 +169,118 @@
 (deffunction MAIN::testcase-id-asm-parsing
              (?postfix)
              (sym-cat cisc0-assembly-parsing-test- ?postfix))
+(deffunction MAIN::parse-asm-test
+             (?postfix ?desc ?line ?hex)
+             (parse-assembly-line (testcase-id-asm-parsing ?postfix)
+                                  ?desc
+                                  ?line
+                                  (hex->int ?hex)))
+(deffunction MAIN::register
+             (?index)
+             (sym-cat r
+                      ?index))
+(defglobal MAIN
+           ?*register-to-hex-translation* = (create$ 0 1 2 3 4 5 6 7 8 9 A B C
+                                                     D E F)
+           ?*masks* = (create$ 0m0000
+                               0m0001
+                               0m0010
+                               0m0011
+                               0m0100
+                               0m0101
+                               0m0110
+                               0m0111
+                               0m1000
+                               0m1001
+                               0m1010
+                               0m1011
+                               0m1100
+                               0m1101
+                               0m1110
+                               0m1111))
+
+
+(deffunction MAIN::register-index-to-symbol
+             (?index)
+             (nth$ (+ ?index 1)
+                   ?*register-to-hex-translation*))
+(deffunction MAIN::form-word-as-hex
+             (?n0 ?n1 ?n2 ?n3)
+             (sym-cat 0x ?n3 ?n2 ?n1 ?n0))
+(deffunction MAIN::test-all-register-combinations
+             (?postfix ?nyb0 ?nyb1 ?operation ?desc-name)
+             (loop-for-count (?di 0 15) do
+                             (bind ?rdest
+                                   (register ?di))
+                             (loop-for-count (?si 0 15) do
+                                             (bind ?rsrc
+                                                   (register ?si))
+                                             (bind ?desc
+                                                   (format nil
+                                                           "Parse a %s operation with the register %s and %s"
+                                                           ?desc-name
+                                                           ?rdest
+                                                           ?rsrc))
+                                             (bind ?hex
+                                                   (form-word-as-hex ?nyb0
+                                                                     ?nyb1
+                                                                     (register-index-to-symbol ?si)
+                                                                     (register-index-to-symbol ?di)))
+                                             (parse-asm-test (sym-cat ?postfix
+                                                                      -
+                                                                      ?rdest
+                                                                      -
+                                                                      ?rsrc)
+                                                             ?desc
+                                                             (format nil
+                                                                     "%s %s %s"
+                                                                     ?operation
+                                                                     ?rdest
+                                                                     ?rsrc)
+                                                             ?hex))))
+
+
+
+(deffunction MAIN::bitmask-to-int
+             (?mask)
+             (register-index-to-symbol (- (member$ ?mask
+                                                   ?*masks*)
+                                          1)))
 (deffunction MAIN::invoke-test
              ()
              (map invoke-core-test
                   cisc0-core-model0
                   cisc0-core-model1)
-             (parse-assembly-line (testcase-id-asm-parsing simple)
-                                  "Parse a simple one word instruction!"
-                                  "arithmetic add r0 r1"
-                                  (hex->int 0x101)))
+             (parse-asm-test move-simple
+                             "Parse a simple move instruction"
+                             "move 0m1111 r0 r1"
+                             0x1f6)
+             (parse-asm-test move-byte-cast
+                             "Parse a simple byte cast move instruction"
+                             "move 0m0001 r0 r1"
+                             0x116)
+             (parse-asm-test return
+                             "Parse a return instruction"
+                             "return"
+                             0x9)
+             (parse-asm-test arithmetic-simple
+                             "Parse a single arithmetic instruction"
+                             "arithmetic add r0 r1"
+                             0x101)
+             (test-all-register-combinations swap
+                                             8
+                                             0
+                                             swap
+                                             swap)
+             (progn$ (?mask ?*masks*)
+                     (test-all-register-combinations (sym-cat move-
+                                                              ?mask)
+                                                     6
+                                                     (bitmask-to-int ?mask)
+                                                     (format nil
+                                                             "move %s"
+                                                             ?mask)
+                                                     (str-cat "move with bitmask "
+                                                              ?mask))))
+
+
