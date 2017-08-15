@@ -24,7 +24,7 @@
 ;------------------------------------------------------------------------------
 (defmodule test
            "Testing related operations"
-           (import cortex 
+           (import cortex
                    ?ALL)
            (export ?ALL))
 
@@ -85,9 +85,11 @@
                              (bind ?failed
                                    TRUE)
                              (printout ?router
-                                       tab tab"CHECK FAILED: expected " ?ta:expected " but got " ?ta:actual-value crlf)))
+                                       tab tab "CHECK FAILED: " crlf
+                                       tab tab tab "expected: " ?ta:expected crlf
+                                       tab tab tab "actual value: " ?ta:actual-value crlf)))
          (printout ?router
-                   tab "Result: " 
+                   tab "Result: "
                    (if ?failed then
                      FAILED
                      else

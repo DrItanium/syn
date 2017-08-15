@@ -226,6 +226,9 @@
              (?index)
              (nth$ (+ ?index 1)
                    ?*register-to-hex-translation*))
+(deffunction MAIN::group-to-hex
+             (?group)
+             (register-index-to-symbol (group-to-index ?group)))
 (deffunction MAIN::form-word-as-hex
              (?n0 ?n1 ?n2 ?n3)
              (sym-cat 0x ?n3 ?n2 ?n1 ?n0))
@@ -268,11 +271,8 @@
              (register-index-to-symbol (- (member$ ?mask
                                                    ?*masks*)
                                           1)))
-(deffunction MAIN::invoke-test
+(deffunction MAIN::asm-parsing-tests
              ()
-             (map invoke-core-test
-                  cisc0-core-model0
-                  cisc0-core-model1)
              (parse-asm-test return
                              "Parse a return instruction"
                              "return"
@@ -282,38 +282,37 @@
                              "arithmetic add r0 r1"
                              0x101)
              (progn$ (?sub-op ?*arithmetic-ops*)
-                     (bind ?op
-                           (format nil
-                                   "arithmetic %s"
-                                   ?sub-op))
-                     (bind ?index
-                           (left-shift (- ?sub-op-index
-                                          1)
-                                       1))
-                     (printout t "index = " ?index crlf
-                                 "sub-op-index = " ?sub-op-index crlf)
-
-
                      (test-all-register-combinations:single-word (sym-cat arithmetic-
                                                                           ?sub-op)
-                                                                 (register-index-to-symbol (group-to-index arithmetic))
-                                                                 (register-index-to-symbol ?index)
-                                                                 ?op
+                                                                 (group-to-hex arithmetic)
+                                                                 (register-index-to-symbol (left-shift (- ?sub-op-index
+                                                                                                          1)
+                                                                                                       1))
+                                                                 (bind ?op
+                                                                       (format nil
+                                                                               "arithmetic %s"
+                                                                               ?sub-op))
                                                                  ?op))
 
              (test-all-register-combinations:single-word swap
-                                                         8
+                                                         (group-to-hex swap)
                                                          0
                                                          swap
                                                          swap)
              (progn$ (?mask ?*masks*)
                      (test-all-register-combinations:single-word (sym-cat move-
                                                                           ?mask)
-                                                                 6
+                                                                 (group-to-hex move)
                                                                  (bitmask-to-int ?mask)
                                                                  (format nil
                                                                          "move %s"
                                                                          ?mask)
                                                                  (str-cat "move with bitmask "
-                                                                          ?mask)))
-             )
+                                                                          ?mask))))
+
+(deffunction MAIN::invoke-test
+             ()
+             (map invoke-core-test
+                  cisc0-core-model0
+                  cisc0-core-model1)
+             (asm-parsing-tests))
