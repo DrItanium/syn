@@ -197,9 +197,31 @@
                                0m1100
                                0m1101
                                0m1110
-                               0m1111))
+                               0m1111)
+           ?*arithmetic-ops* = (create$ add
+                                        sub
+                                        mul
+                                        div
+                                        rem
+                                        min
+                                        max)
+           ?*groups* = (create$ memory
+                                arithmetic
+                                shift
+                                logical
+                                compare
+                                branch
+                                move
+                                set
+                                swap
+                                return
+                                complex))
 
 
+(deffunction MAIN::group-to-index
+             (?group)
+             (- (member$ ?group
+                         ?*groups*) 1))
 (deffunction MAIN::register-index-to-symbol
              (?index)
              (nth$ (+ ?index 1)
@@ -207,7 +229,7 @@
 (deffunction MAIN::form-word-as-hex
              (?n0 ?n1 ?n2 ?n3)
              (sym-cat 0x ?n3 ?n2 ?n1 ?n0))
-(deffunction MAIN::test-all-register-combinations
+(deffunction MAIN::test-all-register-combinations:single-word
              (?postfix ?nyb0 ?nyb1 ?operation ?desc-name)
              (loop-for-count (?di 0 15) do
                              (bind ?rdest
@@ -251,14 +273,6 @@
              (map invoke-core-test
                   cisc0-core-model0
                   cisc0-core-model1)
-             (parse-asm-test move-simple
-                             "Parse a simple move instruction"
-                             "move 0m1111 r0 r1"
-                             0x1f6)
-             (parse-asm-test move-byte-cast
-                             "Parse a simple byte cast move instruction"
-                             "move 0m0001 r0 r1"
-                             0x116)
              (parse-asm-test return
                              "Parse a return instruction"
                              "return"
@@ -267,20 +281,39 @@
                              "Parse a single arithmetic instruction"
                              "arithmetic add r0 r1"
                              0x101)
-             (test-all-register-combinations swap
-                                             8
-                                             0
-                                             swap
-                                             swap)
+             (progn$ (?sub-op ?*arithmetic-ops*)
+                     (bind ?op
+                           (format nil
+                                   "arithmetic %s"
+                                   ?sub-op))
+                     (bind ?index
+                           (left-shift (- ?sub-op-index
+                                          1)
+                                       1))
+                     (printout t "index = " ?index crlf
+                                 "sub-op-index = " ?sub-op-index crlf)
+
+
+                     (test-all-register-combinations:single-word (sym-cat arithmetic-
+                                                                          ?sub-op)
+                                                                 (register-index-to-symbol (group-to-index arithmetic))
+                                                                 (register-index-to-symbol ?index)
+                                                                 ?op
+                                                                 ?op))
+
+             (test-all-register-combinations:single-word swap
+                                                         8
+                                                         0
+                                                         swap
+                                                         swap)
              (progn$ (?mask ?*masks*)
-                     (test-all-register-combinations (sym-cat move-
-                                                              ?mask)
-                                                     6
-                                                     (bitmask-to-int ?mask)
-                                                     (format nil
-                                                             "move %s"
-                                                             ?mask)
-                                                     (str-cat "move with bitmask "
-                                                              ?mask))))
-
-
+                     (test-all-register-combinations:single-word (sym-cat move-
+                                                                          ?mask)
+                                                                 6
+                                                                 (bitmask-to-int ?mask)
+                                                                 (format nil
+                                                                         "move %s"
+                                                                         ?mask)
+                                                                 (str-cat "move with bitmask "
+                                                                          ?mask)))
+             )
