@@ -26,7 +26,7 @@
 
 // Cisc0CoreAssembler rewritten to use pegtl
 #include "Cisc0ClipsExtensions.h"
-#include "Cisc0CoreAssembler.h"
+#include "Cisc0CoreAssemblerStructures.h"
 #include "Cisc0CoreDecodedInstruction.h"
 #include "Cisc0Core.h"
 

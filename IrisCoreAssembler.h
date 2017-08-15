@@ -73,8 +73,7 @@ namespace iris {
         };
     	template<InstructionGroup type>
     	struct SetInstructionGroup {
-    		template<typename Input>
-    		static void apply(const Input& in, AssemblerInstruction& instruction) {
+    		static void apply0(AssemblerInstruction& instruction) {
     			instruction.group = static_cast<byte>(type);
     		}
     	};
@@ -97,10 +96,10 @@ namespace iris {
         DefAction(PredicateRegister) : SetRegisterGeneric<ArchitectureConstants::ConditionRegisterCount> { };
     	template<RegisterPositionType pos>
     	struct GenericRegisterIndexContainerAction {
-    		DefApplyGeneric(AssemblerInstruction) { }
-    		DefApplyGeneric(RegisterIndexContainer) {
-    			state._index = pos;
-    		}
+            static void apply0(RegisterIndexContainer& state) {
+                state._index = pos;
+            }
+            static void apply0(AssemblerInstruction& state) { }
     	};
         // GPRs
         using IndirectGPR = syn::SingleEntrySequence<GeneralPurposeRegister>;

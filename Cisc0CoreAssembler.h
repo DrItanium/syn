@@ -49,68 +49,10 @@
 #include "Cisc0CoreInstructionEncoder.h"
 #include "Cisc0ClipsExtensions.h"
 #include "Cisc0CoreAssemblerKeywords.h"
+#include "Cisc0CoreAssemblerStructures.h"
 
+using namespace tao::TAOCPP_PEGTL_NAMESPACE;
 namespace cisc0 {
-#define DefTranslators(type, str) \
-    type stringTo ## type ( const std::string& title ) noexcept; \
-    const std::string& str ## ToString ( type value ) noexcept
-    DefTranslators(CompareStyle, compareStyle);
-    DefTranslators(ArithmeticOps, arithmeticOps);
-    DefTranslators(ComplexSubTypes, complexSubTypes);
-    DefTranslators(MemoryOperation, memoryOperation);
-    DefTranslators(EncodingOperation, encodingOperation);
-    DefTranslators(ExtendedOperation, extendedOperation);
-    DefTranslators(LogicalOps, logicalOps);
-    DefTranslators(ParsingOperation, parsingOperation);
-    DefTranslators(Operation, operation);
-#undef DefTranslators
-
-    /**
-     * Given an integer index, convert it to a string representation
-     * understandable by the assembler.
-     * @param index the numerical index of a register, this will masked to
-     * the appropriate range automatically.
-     * @return the string representation of the provided register index
-     */
-    const std::string& registerIndexToString(Word index);
-
-    /**
-     * Given an integer index, convert it to a string representation
-     * understandable by the assembler.
-     * @param index the numerical index of a register, this will masked to
-     * the appropriate range automatically.
-     * @return the string representation of the provided register index
-     */
-    inline const std::string& translateRegister(Word index) { return registerIndexToString(index); }
-
-    /**
-     * Given a string representation of a register, see if it is possible to
-     * translate it to an index value.
-     * @param input The string input to attempt to convert
-     * @return The index corresponding to the provided input
-     */
-	Word translateRegister(const std::string& input);
-
-    /**
-     * Given an encoded instruction, convert it back to a text representation
-     * and save it to the provided stream.
-     * @param out the stream to output the data to
-     * @param first the first word that makes up the encoded instruction
-     * @param second the second word that makes up the encoded instruction (not always applicable)
-     * @param third the third word that makes up the encoded instruction (not always applicable)
-     */
-    void translateInstruction(std::ostream& out, Word first, Word second = 0, Word third = 0) noexcept;
-
-    /**
-     * Given an encoded instruction, convert it back to a text representation
-     * and return that as a string
-     * @param out the stream to output the data to
-     * @param first the first word that makes up the encoded instruction
-     * @param second the second word that makes up the encoded instruction (not always applicable)
-     * @param third the third word that makes up the encoded instruction (not always applicable)
-     * @return a string containing the text representation of the encoded * instruction.
-     */
-    std::string translateInstruction(Word first, Word second = 0, Word third = 0) noexcept;
 
     /**
      * The cisc0 text -> encoded number translator
@@ -127,122 +69,8 @@ namespace cisc0 {
 	    struct SeparatedTrinaryThing : syn::ThreePartComponent<First, Second, Third, Sep, Sep> { };
 
 	    template<typename First, typename Second, typename Third, typename Fourth, typename Sep = Separator>
-	    struct SeparatedQuadThing : tao::pegtl::seq<First, Sep, Second, Sep, Third, Sep, Fourth> { };
+	    struct SeparatedQuadThing : seq<First, Sep, Second, Sep, Third, Sep, Fourth> { };
 
-	    using AssemblerWord = syn::AssemblerWord<RegisterValue>;
-        /**
-         * Keeps track of the overall state throughout the lifetime of a given
-         * parsing
-         */
-	    struct AssemblerState : public syn::LabelTracker<RegisterValue>, public syn::AddressTracker<RegisterValue>, public syn::FinishedDataTracker<InstructionEncoder> {
-	    	std::vector<AssemblerWord> finalWords;
-	    	std::vector<AssemblerWord> wordsToResolve;
-            void output(void* env, CLIPSValue* ret) noexcept;
-	    	void resolveInstructions();
-	    	void resolveDeclarations();
-	    };
-	    template<int width>
-	    	struct AssemblerWordCreator {
-	    		static_assert(width > 0, "Can't have a width of zero or less!");
-	    		template<typename Input>
-	    			AssemblerWordCreator(const Input& in, AssemblerState& parent) { }
-	    		virtual ~AssemblerWordCreator() { }
-	    		template<typename Input>
-	    			void success(const Input& in, AssemblerState& parent) {
-                        auto address = parent.getCurrentAddress();
-	    				if (_isLabel) {
-	    					parent.wordsToResolve.emplace_back(address, _label, width);
-	    				} else {
-	    					parent.wordsToResolve.emplace_back(address, _value, width);
-	    				}
-	    				parent.incrementCurrentAddress(width);
-	    			}
-	    		void setLabel(const std::string& name) noexcept {
-	    			_label = name;
-	    			_isLabel = true;
-	    		}
-	    		void setValue(RegisterValue value) noexcept {
-	    			_isLabel = false;
-	    			_value = value;
-	    		}
-	    		bool _isLabel;
-	    		std::string _label;
-	    		RegisterValue _value;
-	    	};
-	    using WordCreator = AssemblerWordCreator<1>;
-	    using DwordCreator = AssemblerWordCreator<2>;
-
-	    struct ChangeCurrentAddress : public syn::NumberContainer<RegisterValue> {
-	    	using syn::NumberContainer<RegisterValue>::NumberContainer;
-
-	    	template<typename Input>
-	    		void success(const Input& in, AssemblerState& parent) {
-	    			parent.setCurrentAddress(getValue());
-	    		}
-	    };
-	    struct RegisterLabel : public syn::NameToAddressMapping<Address> {
-	    	using Parent = syn::NameToAddressMapping<Address>;
-	    	template<typename Input>
-	    		RegisterLabel(const Input& in, AssemblerState& parent) : Parent(in, parent) {
-	    			setValue(parent.getCurrentAddress());
-	    		}
-
-	    	template<typename Input>
-	    		void success(const Input& in, AssemblerState& parent) {
-	    			parent.registerLabel(getTitle(), getValue());
-	    		}
-	    };
-	    struct AssemblerInstruction : public InstructionEncoder {
-	    	template<typename Input>
-	    		AssemblerInstruction(const Input& in, AssemblerState& parent) {
-	    			clear();
-	    			setAddress(parent.getCurrentAddress());
-	    		}
-
-	    	template<typename Input>
-	    		void success(const Input& in, AssemblerState& parent) {
-	    			parent.incrementCurrentAddress(numWords());
-	    			// for now, make a copy because I do not care!
-	    		    parent.copyToFinishedData(*this);
-	    		}
-	    };
-
-	    struct NumberContainer : public syn::NumberContainer<RegisterValue> {
-	    	using syn::NumberContainer<RegisterValue>::NumberContainer;
-
-	    	template<typename Input>
-	    		void success(const Input& in, AssemblerInstruction& parent) {
-	    			parent.setFullImmediate(getValue());
-	    		}
-
-	    	template<typename Input>
-	    		void success(const Input& in, RegisterLabel& parent) {
-	    			parent.setValue(getValue());
-	    		}
-
-	    	template<typename Input>
-	    		void success(const Input& in, ChangeCurrentAddress& parent) {
-                    parent.setValue(getValue());
-	    		}
-
-	    	template<typename Input>
-	    		void success(const Input& in, AssemblerWord& parent) {
-	    			parent.setValue(getValue());
-	    		}
-	    	template<typename Input, int width>
-	    		void success(const Input& in, AssemblerWordCreator<width>& parent) {
-	    			parent.setValue(getValue());
-	    		}
-	    	template<typename Input>
-	    		void success(const Input& in, WordCreator& parent) {
-	    			success<Input, 1>(in, parent);
-	    		}
-
-	    	template<typename Input>
-	    		void success(const Input& in, DwordCreator& parent) {
-	    			success<Input, 2>(in, parent);
-	    		}
-	    };
 
 
 #define DefApplyInstruction DefApplyGeneric(cisc0::assembler::AssemblerInstruction)
@@ -251,7 +79,7 @@ namespace cisc0 {
 
         template<Operation op>
         struct SetOperationOnApply {
-            DefApplyInstruction {
+            static void apply0(AssemblerInstruction& state) {
                 state.setType<op>();
             }
         };
@@ -259,7 +87,7 @@ namespace cisc0 {
         /**
          * Describes the instruction as an immediate type!
          */
-	    struct UsesImmediate : tao::pegtl::seq<KeywordImmediate> { };
+	    struct UsesImmediate : seq<KeywordImmediate> { };
 
 	    DefAction(UsesImmediate) {
 	    	DefApplyInstruction {
@@ -281,7 +109,7 @@ namespace cisc0 {
 	    	DefApplyGenericEmpty(DwordCreator)
 	    };
 
-	    struct BitmaskNumber : syn::GenericNumeral<'m', tao::pegtl::abnf::BIT> { };
+	    struct BitmaskNumber : syn::GenericNumeral<'m', abnf::BIT> { };
 
 	    DefAction(BitmaskNumber) {
 	    	DefApplyInstruction {
@@ -312,7 +140,7 @@ namespace cisc0 {
 	    struct LexemeOrNumber : syn::LexemeOr<Number> { };
 
         using NormalRegister = syn::GPR;
-	    struct GeneralPurposeRegister : tao::pegtl::sor<
+	    struct GeneralPurposeRegister : sor<
 	    								NormalRegister,
 	    								SymbolAddrRegister,
 	    								SymbolStackPointer,
@@ -322,7 +150,7 @@ namespace cisc0 {
 	    								SymbolMaskRegister,
 	    								SymbolFieldRegister> { };
 
-	    struct IndirectGPR : tao::pegtl::seq<GeneralPurposeRegister> { };
+	    struct IndirectGPR : seq<GeneralPurposeRegister> { };
 #define DefIndirectGPR(title) \
 	    struct title : IndirectGPR { }
 
@@ -359,7 +187,7 @@ namespace cisc0 {
 	    };
 
 
-	    struct ShiftLeftOrRight : tao::pegtl::sor<
+	    struct ShiftLeftOrRight : sor<
 	    						  SymbolLeft,
 	    						  SymbolRight> { };
 
@@ -378,14 +206,14 @@ namespace cisc0 {
 	    										   UsesImmediate,
 	    										   BitmaskNumber,
 	    										   TwoArgumentOperation<Source>> { };
-	    struct SpecialImmediate : tao::pegtl::seq<Number> { };
+	    struct SpecialImmediate : seq<Number> { };
 	    struct ShiftImmediateValue : SpecialImmediate { };
 	    DefAction(ShiftImmediateValue) {
 	    	DefApplyInstruction {
                 state.setSecondArg(static_cast<byte>(state.getFullImmediate()) & 0b11111);
 	    	}
 	    };
-	    struct ShiftArgs : tao::pegtl::sor<
+	    struct ShiftArgs : sor<
 	    				   TwoGPRs,
 	    				   ImmediateOperationArgs<ShiftImmediateValue>> { };
 
@@ -427,19 +255,19 @@ namespace cisc0 {
         };
 
         using GetCompareSubType = ConvertOperationToSubType<Operation::Compare>;
-	    struct CompareType : tao::pegtl::sor<
+	    struct CompareType : sor<
 	    					 SymbolEquals,
 	    					 SymbolNotEquals,
 	    					 SymbolLessThan,
 	    					 SymbolLessThanOrEqualTo,
 	    					 SymbolGreaterThan,
 	    					 SymbolGreaterThanOrEqualTo> { };
-	    struct SpecialCompareType : tao::pegtl::sor<
+	    struct SpecialCompareType : sor<
 	    							SymbolMoveFromCondition,
                                     SymbolMoveToCondition> { };
         DefAction(CompareType) : GetCompareSubType { };
         DefAction(SpecialCompareType) : GetCompareSubType { };
-	    struct CompareArgs : tao::pegtl::sor<
+	    struct CompareArgs : sor<
 	    					 TwoGPRs,
 	    					 ImmediateOperationArgsWithBitmask<LexemeOrNumber>> { };
 	    struct NormalCompareOperation : SeparatedBinaryThing<
@@ -450,7 +278,7 @@ namespace cisc0 {
 	    								 DestinationRegister> { };
 	    struct CompareOperation : SeparatedBinaryThing<
 	    						  SymbolCompare,
-	    						  tao::pegtl::sor<
+	    						  sor<
 	    									 NormalCompareOperation,
 	    									 SpecialCompareOperation>> { };
         DefAction(CompareOperation) : SetOperationOnApply<Operation::Compare> { };
@@ -476,7 +304,7 @@ namespace cisc0 {
                 state.setFirstArg(static_cast<byte>(state.getFullImmediate()) & 0b1111);
 	    	}
 	    };
-	    struct ArithmeticType : tao::pegtl::sor<
+	    struct ArithmeticType : sor<
                                 SymbolAdd,
                                 SymbolSub,
                                 SymbolMul,
@@ -486,7 +314,7 @@ namespace cisc0 {
                                 SymbolMax> { };
         DefAction(ArithmeticType) : ConvertOperationToSubType<Operation::Arithmetic> { };
 
-	    struct ArithmeticArgs : tao::pegtl::sor<
+	    struct ArithmeticArgs : sor<
 	    						TwoGPRs,
 	    						ImmediateOperationArgs<ByteCastImmediate>> { };
 	    struct ArithmeticOperation : SeparatedTrinaryThing<SymbolArithmetic, ArithmeticType, ArithmeticArgs> { };
@@ -495,19 +323,19 @@ namespace cisc0 {
 
 
         using GetMemorySubType = ConvertOperationToSubType<Operation::Memory>;
-	    struct LoadStoreType : tao::pegtl::sor<
+	    struct LoadStoreType : sor<
 	    					   SymbolLoad,
 	    					   SymbolStore> { };
 
         DefAction(LoadStoreType) : GetMemorySubType { };
-	    struct StackMemoryType : tao::pegtl::sor<
+	    struct StackMemoryType : sor<
 	    						 SymbolPush,
 	    						 SymbolPop> { };
         DefAction(StackMemoryType) : GetMemorySubType { };
 	    struct StackOperation : SeparatedTrinaryThing<StackMemoryType, BitmaskNumber, DestinationRegister> { };
 	    struct FlagIndirect : syn::SingleEntrySequence<SymbolIndirect> { };
 	    struct FlagDirect : syn::SingleEntrySequence<SymbolDirect> { };
-	    struct FlagDirectOrIndirect : tao::pegtl::sor<
+	    struct FlagDirectOrIndirect : sor<
 	    							  FlagDirect,
 	    							  FlagIndirect> { };
 	    DefAction(FlagDirectOrIndirect) {
@@ -522,7 +350,7 @@ namespace cisc0 {
 	    							FlagDirectOrIndirect,
 	    							Arg0ImmediateValue> { };
 
-	    struct MemoryTypes : tao::pegtl::sor<
+	    struct MemoryTypes : sor<
 	    					 StackOperation,
 	    					 LoadStoreOperation> { };
 	    struct MemoryInstruction : SeparatedBinaryThing<
@@ -532,14 +360,14 @@ namespace cisc0 {
 
 
 
-	    struct LogicalOpsType : tao::pegtl::sor<
+	    struct LogicalOpsType : sor<
 	    						SymbolAnd,
 	    						SymbolOr,
 	    						SymbolNot,
 	    						SymbolXor,
 	    						SymbolNand> { };
         DefAction(LogicalOpsType) : ConvertOperationToSubType<Operation::Logical> { };
-	    struct LogicalArgs : tao::pegtl::sor<
+	    struct LogicalArgs : sor<
 	    					 TwoGPRs,
 	    					 ImmediateOperationArgsWithBitmask<LexemeOrNumber>> { };
 	    struct LogicalOperation : SeparatedTrinaryThing<SymbolLogical, LogicalOpsType, LogicalArgs> { };
@@ -563,21 +391,21 @@ namespace cisc0 {
             }
         };
 
-	    struct ComplexEncodingSubOperation : tao::pegtl::sor<
+	    struct ComplexEncodingSubOperation : sor<
 	    									 SymbolDecode,
 	    									 SymbolEncode,
 	    									 SymbolBitSet,
 	    									 SymbolBitUnset> { };
         DefAction(ComplexEncodingSubOperation) : SetComplexSubSubType<ComplexSubTypes::Encoding> { };
 
-	    struct ComplexExtendedSubOperation_NoArgs : tao::pegtl::sor<
+	    struct ComplexExtendedSubOperation_NoArgs : sor<
 	    									 SymbolPopValueAddr,
 	    									 SymbolPushValueAddr,
 	    									 SymbolDecrementValueAddr,
 	    									 SymbolIncrementValueAddr,
 	    									 SymbolWordsBeforeFirstZero> { };
         DefAction(ComplexExtendedSubOperation_NoArgs) : SetComplexSubSubType<ComplexSubTypes::Extended> { };
-	    struct ComplexExtendedOneArg_Operations : tao::pegtl::sor<
+	    struct ComplexExtendedOneArg_Operations : sor<
 	    										  SymbolIsEven,
 	    										  SymbolIsOdd> { };
         DefAction(ComplexExtendedOneArg_Operations) : SetComplexSubSubType<ComplexSubTypes::Extended> { };
@@ -585,17 +413,17 @@ namespace cisc0 {
 	    struct ComplexExtendedSubOperation_OneArg : SeparatedBinaryThing<
 	    											ComplexExtendedOneArg_Operations,
 	    											DestinationRegister> { };
-	    struct ComplexExtendedSubOperation : tao::pegtl::sor<
+	    struct ComplexExtendedSubOperation : sor<
 	    									 ComplexExtendedSubOperation_NoArgs,
 	    									 ComplexExtendedSubOperation_OneArg> { };
 
 
-	    struct ComplexParsingSubOperation_NoArgs : tao::pegtl::sor<
+	    struct ComplexParsingSubOperation_NoArgs : sor<
 	    									 SymbolHex8ToRegister,
 	    									 SymbolRegisterToHex8,
 	    									 SymbolMemCopy> { };
         DefAction(ComplexParsingSubOperation_NoArgs) : SetComplexSubSubType<ComplexSubTypes::Parsing> { };
-	    struct ComplexParsingSubOperation : tao::pegtl::sor<
+	    struct ComplexParsingSubOperation : sor<
 	    									ComplexExtendedSubOperation_NoArgs> { };
 
 
@@ -612,7 +440,7 @@ namespace cisc0 {
 	    								 SymbolParsing,
 	    								 ComplexParsingSubOperation> { };
         DefAction(ComplexParsingOperation) : ConvertComplexSubtype { };
-	    struct ComplexSubOperations : tao::pegtl::sor<
+	    struct ComplexSubOperations : sor<
 	    							  ComplexEncodingOperation,
 	    							  ComplexExtendedOperation,
 	    							  ComplexParsingOperation> { };
@@ -643,9 +471,9 @@ namespace cisc0 {
 	    	}
 	    };
 
-	    struct ChooseBranchFlagUsePredicate : tao::pegtl::sor<BranchFlagConditional, BranchFlagUnconditional> { };
+	    struct ChooseBranchFlagUsePredicate : sor<BranchFlagConditional, BranchFlagUnconditional> { };
 
-	    struct BranchNormalArgs : tao::pegtl::sor<
+	    struct BranchNormalArgs : sor<
 	    						  SeparatedBinaryThing<UsesImmediate, LexemeOrNumber>,
 	    						  DestinationRegister> { };
         template<typename T>
@@ -653,15 +481,15 @@ namespace cisc0 {
         struct BranchCallOperation : BranchWithNormalArgs<BranchFlagCall> { };
         struct BranchJumpOperation : BranchWithNormalArgs<ChooseBranchFlagUsePredicate> { };
 
-	    struct BranchTypes : tao::pegtl::sor<BranchCallOperation, BranchJumpOperation> { };
+	    struct BranchTypes : sor<BranchCallOperation, BranchJumpOperation> { };
 	    struct BranchOperation : SeparatedBinaryThing<SymbolBranch, BranchTypes> { };
         DefAction(BranchOperation) : SetOperationOnApply<Operation::Branch> { };
 
-	    struct ReturnOperation : tao::pegtl::seq<SymbolReturn> { };
+	    struct ReturnOperation : seq<SymbolReturn> { };
         DefAction(ReturnOperation) : SetOperationOnApply<Operation::Return> { };
 
-	    struct Instructions : tao::pegtl::state<AssemblerInstruction,
-	    tao::pegtl::sor<
+	    struct Instructions : state<AssemblerInstruction,
+	    sor<
 	    		   BranchOperation,
 	    		   ComplexOperation,
 	    		   MemoryInstruction,
@@ -677,17 +505,17 @@ namespace cisc0 {
         struct WordDirective : syn::WordDirective<WordCreator, LexemeOrNumber> { };
 	    struct DwordDirective : syn::DwordDirective<DwordCreator, LexemeOrNumber> { };
 
-	    struct Directive : tao::pegtl::sor<
+	    struct Directive : sor<
 	    				   syn::StatefulOrgDirective<ChangeCurrentAddress, Number>,
 	    				   syn::StatefulLabelDirective<RegisterLabel, Lexeme>,
 	    				   WordDirective,
 	    				   DwordDirective > { };
 
-	    struct Statement : tao::pegtl::sor<
+	    struct Statement : sor<
 	    				   Instructions,
 	    				   Directive> { };
 
-	    struct Anything : tao::pegtl::sor<
+	    struct Anything : sor<
 	    				  Separator,
 	    				  SingleLineComment,
 	    				  Statement> { };
