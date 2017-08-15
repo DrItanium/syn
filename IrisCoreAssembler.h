@@ -51,6 +51,9 @@
 
 using namespace tao::TAOCPP_PEGTL_NAMESPACE;
 namespace iris {
+    /**
+     * Defines the parsing logic for the iris architecture assembler
+     */
     namespace assembler {
         template<typename R> struct Action : syn::Action<R> { };
 

@@ -49,26 +49,35 @@
 #include <vector>
 
 namespace iris {
-#define DEF(type, str) \
-    type stringTo ## type (const std::string& str) noexcept; \
-    const std::string& str ## ToString ( type value ) noexcept
-    DEF(ArithmeticOp, arithmeticOp);
-    DEF(MoveOp, moveOp);
-    DEF(JumpOp, jumpOp);
-    DEF(CompareOp, compareOp);
-    DEF(ConditionRegisterOp, conditionRegisterOp);
-#undef DEF
+    ArithmeticOp stringToArithmeticOp(const std::string& str) noexcept;
+    const std::string& arithmeticOpToString(ArithmeticOp value) noexcept;
+    MoveOp stringToMoveOp(const std::string& str) noexcept;
+    const std::string& moveOpToString(MoveOp value) noexcept;
+    JumpOp stringToJumpOp(const std::string& str) noexcept;
+    const std::string& jumpOpToString(JumpOp value) noexcept;
+    CompareOp stringToCompareOp(const std::string& str) noexcept;
+    const std::string& compareOpToString(CompareOp value) noexcept;
+    ConditionRegisterOp stringToConditionRegisterOp(const std::string& str) noexcept;
+    const std::string& conditionRegisterOpToString(ConditionRegisterOp value) noexcept;
 
     const std::string& translateRegister(byte index) noexcept;
     const std::string& translatePredicateRegister(byte index) noexcept;
     std::string translateInstruction(raw_instruction input) noexcept;
 
     namespace assembler {
+        /**
+         * A list of the different hardware sections that are directly
+         * modifyable by the assembler.
+         */
         enum class SectionType {
             Code,
             Data,
             Count,
         };
+        /**
+         * Base class of the different kinds of data that can be encoded into a
+         * given iris execution space.
+         */
         struct AssemblerData {
             public:
                 AssemblerData() noexcept;
@@ -90,6 +99,10 @@ namespace iris {
                 std::string currentLexeme;
         };
 
+        /**
+         * The overarching state of the machine itself as seen through the
+         * assembler.
+         */
         class AssemblerState : public syn::LabelTracker<word>, public syn::FinishedDataTracker<AssemblerData> {
             public:
                 using LabelTracker = syn::LabelTracker<word>;
@@ -113,6 +126,9 @@ namespace iris {
                 AddressSpaceTracker code;
                 SectionType _section;
         };
+        /**
+         * Describes the position of the given register in the instruction word
+         */
     	enum class RegisterPositionType {
     		DestinationGPR,
     		Source0GPR,
@@ -123,6 +139,9 @@ namespace iris {
     		PredicateSource1,
     		Count,
     	};
+        /**
+         * Holds data for forming an encoded instruction
+         */
     	struct AssemblerInstruction : public AssemblerData {
     		template<typename Input>
     		AssemblerInstruction(const Input& in, AssemblerState& parent) noexcept {
@@ -137,6 +156,10 @@ namespace iris {
     		}
     		void setField(RegisterPositionType type, byte value);
     	};
+        /**
+         * Describes the kinds of actions that can be performed by an assembler
+         * directive
+         */
     	enum class AssemblerDirectiveAction {
     		ChangeCurrentAddress,
     		ChangeSection,
@@ -144,6 +167,10 @@ namespace iris {
     		StoreWord,
     		Count,
     	};
+        /**
+         * Holds data for describing an action to perform to the state of the
+         * machine, not an instruction itself.
+         */
     	struct AssemblerDirective : public AssemblerData {
     		template<typename I>
     		AssemblerDirective(const I& in, AssemblerState& parent) {
