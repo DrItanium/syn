@@ -300,6 +300,42 @@
                                                          swap
                                                          swap)
              (progn$ (?mask ?*masks*)
+                     (parse-asm-test (sym-cat memory-load-direct- ?mask)
+                                     (str-cat "parse the load direct instruction with mask "
+                                              ?mask)
+                                     (format nil
+                                             "memory load %s direct 0x00"
+                                             ?mask)
+                                     (sym-cat 0x0
+                                              (bitmask-to-int ?mask)
+                                              "00"))
+                     (parse-asm-test (sym-cat memory-load-indirect- ?mask)
+                                     (str-cat "parse the load indirect instruction with mask "
+                                              ?mask)
+                                     (format nil
+                                             "memory load %s indirect 0x00"
+                                             ?mask)
+                                     (sym-cat 0x0
+                                              (bitmask-to-int ?mask)
+                                              "40"))
+                     (parse-asm-test (sym-cat memory-store-direct- ?mask)
+                                     (str-cat "parse the store direct instruction with mask "
+                                              ?mask)
+                                     (format nil
+                                             "memory store %s direct 0x00"
+                                             ?mask)
+                                     (sym-cat 0x0
+                                              (bitmask-to-int ?mask)
+                                              "10"))
+                     (parse-asm-test (sym-cat memory-store-indirect- ?mask)
+                                     (str-cat "parse the store indirect instruction with mask "
+                                              ?mask)
+                                     (format nil
+                                             "memory store %s indirect 0x00"
+                                             ?mask)
+                                     (sym-cat 0x0
+                                              (bitmask-to-int ?mask)
+                                              "50"))
                      (test-all-register-combinations:single-word (sym-cat move-
                                                                           ?mask)
                                                                  (group-to-hex move)
