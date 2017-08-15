@@ -2,7 +2,7 @@
 ; syn
 ; Copyright (c) 2013-2017, Joshua Scoggins and Contributors
 ; All rights reserved.
-; 
+;
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions are met:
 ;     * Redistributions of source code must retain the above copyright
@@ -10,7 +10,7 @@
 ;     * Redistributions in binary form must reproduce the above copyright
 ;       notice, this list of conditions and the following disclaimer in the
 ;       documentation and/or other materials provided with the distribution.
-; 
+;
 ; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ; ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 ; WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -22,14 +22,14 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;------------------------------------------------------------------------------
-; test_Base.clp - routines to make interfacing with the raw cisc0 external address 
-; far simpler 
+; test_Base.clp - routines to make interfacing with the raw cisc0 external address
+; far simpler
 ;------------------------------------------------------------------------------
 (batch* lib/cortex.clp)
 (batch* lib/test.clp)
 (batch* lib/target/cisc0/Base.clp)
 (defmodule MAIN
-           (import cortex 
+           (import cortex
                    ?ALL)
            (import test
                    ?ALL))
@@ -48,6 +48,8 @@
                                                                            ?address
                                                                            ?value)))))
 
+
+
 (deffunction MAIN::test-memory-manipulation-routines
              (?core)
              (bind ?data-address0
@@ -56,7 +58,7 @@
                    81)
              (bind ?common-prefix
                    cisc0-memtest-)
-             (bind ?m0 
+             (bind ?m0
                    (sym-cat ?common-prefix
                             -space-read-initial))
              (bind ?m1
@@ -76,11 +78,12 @@
                                              ?core
                                              ?data-address0
                                              0)
-             (test-memory-space-write-generic ?m1 
+             (test-memory-space-write-generic ?m1
                                               ?core
                                               ?data-address0
                                               ?expected-value)
-             (test-memory-space-read-generic ?m2 
+             (test-memory-space-read-generic ?m2
+
                                              ?core
                                              ?data-address0
                                              ?expected-value))
@@ -130,8 +133,48 @@
              ;(test-memory-manipulation-routines ?core)
              (test-register-manipulation-routines ?core))
 
+(deffunction MAIN::parse-assembly-line
+             (?id ?description ?line $?expected)
+             (bind ?core
+                   (new cisc0-assembler))
+             (assert (testcase (id ?id)
+                               (description ?description))
+                     (testcase-assertion (parent ?id)
+                                         (expected TRUE)
+                                         (actual-value (cisc0-parse-line ?core
+                                                                         ?line)))
+                     (testcase-assertion (parent ?id)
+                                         (expected TRUE)
+                                         (actual-value (cisc0-resolve-instructions ?core))))
+             ; with cisc0, we get a variable length architecture going on
+             (bind ?result
+                   (cisc0-get-encoded-instructions ?core))
+             (bind ?has-elements
+                   (not ?result))
+             (assert (testcase-assertion (parent ?id)
+                                         (expected FALSE)
+                                         (actual-value ?has-elements))
+                     (testcase-assertion (parent ?id)
+                                         (expected (length$ ?expected))
+                                         (actual-value (div (length$ ?result)
+                                                            2))))
+             (progn$ (?a ?result)
+                     (if (evenp ?a-index) then
+                       (assert (testcase-assertion (parent ?id)
+                                                   (expected (nth$ (div ?a-index
+                                                                        2)
+                                                                   ?expected))
+                                                   (actual-value ?a))))))
+
+(deffunction MAIN::testcase-id-asm-parsing
+             (?postfix)
+             (sym-cat cisc0-assembly-parsing-test- ?postfix))
 (deffunction MAIN::invoke-test
              ()
              (map invoke-core-test
                   cisc0-core-model0
-                  cisc0-core-model1))
+                  cisc0-core-model1)
+             (parse-assembly-line (testcase-id-asm-parsing simple)
+                                  "Parse a simple one word instruction!"
+                                  "arithmetic add r0 r1"
+                                  (hex->int 0x101)))
