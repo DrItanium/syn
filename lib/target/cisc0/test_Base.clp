@@ -280,7 +280,7 @@
              (parse-asm-test arithmetic-simple
                              "Parse a single arithmetic instruction"
                              "arithmetic add r0 r1"
-                             0x101)
+                             0x0101)
              (progn$ (?sub-op ?*arithmetic-ops*)
                      (test-all-register-combinations:single-word (sym-cat arithmetic-
                                                                           ?sub-op)
@@ -296,17 +296,17 @@
 
              (test-all-register-combinations:single-word swap
                                                          (group-to-hex swap)
-                                                         0
+                                                         (bitmask-to-int 0m0000)
                                                          swap
                                                          swap)
              (test-all-register-combinations:single-word shift-left
                                                          (group-to-hex shift)
-                                                         2
+                                                         (bitmask-to-int 0m0010)
                                                          "shift left"
                                                          "shift left")
              (test-all-register-combinations:single-word shift-right
                                                          (group-to-hex shift)
-                                                         0
+                                                         (bitmask-to-int 0m0000)
                                                          "shift right"
                                                          "shift right")
              (progn$ (?mask ?*masks*)
@@ -318,7 +318,8 @@
                                              ?mask)
                                      (sym-cat 0x0
                                               (bitmask-to-int ?mask)
-                                              "00"))
+                                              (bitmask-to-int 0m0000) ; config
+                                              0))
                      (parse-asm-test (sym-cat memory-load-indirect- ?mask)
                                      (str-cat "parse the load indirect instruction with mask "
                                               ?mask)
@@ -327,7 +328,8 @@
                                              ?mask)
                                      (sym-cat 0x0
                                               (bitmask-to-int ?mask)
-                                              "40"))
+                                              (bitmask-to-int 0m0100) ; this is the four config bits
+                                              0))
                      (parse-asm-test (sym-cat memory-store-direct- ?mask)
                                      (str-cat "parse the store direct instruction with mask "
                                               ?mask)
@@ -336,7 +338,8 @@
                                              ?mask)
                                      (sym-cat 0x0
                                               (bitmask-to-int ?mask)
-                                              "10"))
+                                              (bitmask-to-int 0m0001) ; this is the four config bits
+                                              0))
                      (parse-asm-test (sym-cat memory-store-indirect- ?mask)
                                      (str-cat "parse the store indirect instruction with mask "
                                               ?mask)
@@ -345,7 +348,8 @@
                                              ?mask)
                                      (sym-cat 0x0
                                               (bitmask-to-int ?mask)
-                                              "50"))
+                                              (bitmask-to-int 0m0101) ; config bits
+                                              0))
                      (test-all-register-combinations:single-word (sym-cat move-
                                                                           ?mask)
                                                                  (group-to-hex move)
