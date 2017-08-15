@@ -208,27 +208,8 @@
                        "%x")
                      ?index))
 
-
-(deffunction MAIN::invoke-test
+(deffunction MAIN::run-all-add-operations
              ()
-             (bind ?core
-                   (new iris-core))
-             (progn$ (?space (create$ data
-                                      code
-                                      stack))
-                     (test-memory-manipulation-routines ?core
-                                                        ?space))
-             (test-register-manipulation-routines ?core)
-             (test-predicate-register-manipulation-routines ?core)
-             (test-instruction-encode-routines iris-simple-encode-instruction0
-                                               "add r0 r0 r0"
-                                               0)
-             (test-instruction-encode-routines iris-simple-encode-instruction1
-                                               "set r0 0xFDED"
-                                               (hex->int 0xFDED0009))
-             (test-instruction-encode-routines iris-simple-encode-instruction2
-                                               "add r127 r67 r227"
-                                               (hex->int 0xE3437F00))
              (printout t "Generating all 2^24 register add combinations as tests... this will take a while!" crlf)
              (loop-for-count (?di 0 255) do
                              (bind ?destIndex
@@ -275,5 +256,59 @@
                                              ; otherwise it takes forever to do!
                                              (focus test)
                                              (run))))
+
+(deffunction MAIN::invoke-test
+             ()
+             (bind ?core
+                   (new iris-core))
+             (progn$ (?space (create$ data
+                                      code
+                                      stack))
+                     (test-memory-manipulation-routines ?core
+                                                        ?space))
+             (test-register-manipulation-routines ?core)
+             (test-predicate-register-manipulation-routines ?core)
+             (test-instruction-encode-routines iris-simple-encode-instruction0
+                                               "add r0 r0 r0"
+                                               0)
+             (test-instruction-encode-routines iris-simple-encode-instruction1
+                                               "set r0 0xFDED"
+                                               (hex->int 0xFDED0009))
+             (test-instruction-encode-routines iris-simple-encode-instruction2
+                                               "add r127 r67 r227"
+                                               (hex->int 0xE3437F00))
+             (loop-for-count (?pos 0 255) do
+                             (bind ?index
+                                   (register-index-to-hex ?pos))
+                             (bind ?reg
+                                   (mk-register ?pos))
+                             (bind ?tc0
+                                   (sym-cat iris-add-instruction-test-dest- ?reg))
+                             (bind ?tc1
+                                   (sym-cat iris-add-instruction-test-src0- ?reg))
+                             (bind ?tc2
+                                   (sym-cat iris-add-instruction-test-src1- ?reg))
+                             (bind ?h0
+                                   (sym-cat 0x0000 ?index "00"))
+                             (bind ?h1
+                                   (sym-cat 0x00 ?index "0000"))
+                             (bind ?h2
+                                   (sym-cat 0x ?index "000000"))
+                             (assert (testcase (id ?tc0)
+                                               (description (str-cat "test the destination field being " ?reg)))
+                                    (testcase (id ?tc1)
+                                               (description (str-cat "test the source 0 field being " ?reg)))
+                                    (testcase (id ?tc2)
+                                               (description (str-cat "test the source 1 field being " ?reg))))
+
+                             (test-instruction-encode-routines ?tc0
+                                                               (str-cat "add " ?reg " r0 r0")
+                                                               (hex->int ?h0))
+                             (test-instruction-encode-routines ?tc1
+                                                               (str-cat "add r0 " ?reg " r0")
+                                                               (hex->int ?h1))
+                             (test-instruction-encode-routines ?tc2
+                                                               (str-cat "add r0 r0 " ?reg)
+                                                               (hex->int ?h2))))
 
 
