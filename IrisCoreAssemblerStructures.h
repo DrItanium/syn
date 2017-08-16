@@ -50,14 +50,15 @@
 
 namespace iris {
     ArithmeticOp stringToArithmeticOp(const std::string& str) noexcept;
-    const std::string& arithmeticOpToString(ArithmeticOp value) noexcept;
     MoveOp stringToMoveOp(const std::string& str) noexcept;
-    const std::string& moveOpToString(MoveOp value) noexcept;
     JumpOp stringToJumpOp(const std::string& str) noexcept;
-    const std::string& jumpOpToString(JumpOp value) noexcept;
     CompareOp stringToCompareOp(const std::string& str) noexcept;
-    const std::string& compareOpToString(CompareOp value) noexcept;
     ConditionRegisterOp stringToConditionRegisterOp(const std::string& str) noexcept;
+
+    const std::string& arithmeticOpToString(ArithmeticOp value) noexcept;
+    const std::string& moveOpToString(MoveOp value) noexcept;
+    const std::string& jumpOpToString(JumpOp value) noexcept;
+    const std::string& compareOpToString(CompareOp value) noexcept;
     const std::string& conditionRegisterOpToString(ConditionRegisterOp value) noexcept;
 
     const std::string& translateRegister(byte index) noexcept;
