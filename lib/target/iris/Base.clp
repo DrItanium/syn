@@ -39,6 +39,7 @@
 (defgeneric MAIN::iris-get-predicate-register)
 (defgeneric MAIN::iris-set-predicate-register)
 (defgeneric MAIN::iris-parse-instruction)
+(defgeneric MAIN::iris-parse-instructions)
 (defgeneric MAIN::iris-resolve-assembler-labels)
 (defgeneric MAIN::iris-get-encoded-instructions)
 (defgeneric MAIN::iris-parse-and-encode-instruction)
@@ -172,6 +173,18 @@
   (call ?asm
         parse
         ?statement))
+
+(defmethod MAIN::iris-parse-instructions
+  ((?asm EXTERNAL-ADDRESS)
+   (?lines MULTIFIELD))
+  (progn$ (?line ?lines)
+          (iris-parse-instruction ?asm
+                                  ?line)))
+(defmethod MAIN::iris-parse-instructions
+  ((?asm EXTERNAL-ADDRESS)
+   $?lines)
+  (iris-parse-instructions ?asm
+                          ?lines))
 
 (defmethod MAIN::iris-resolve-assembler-labels
   ((?asm EXTERNAL-ADDRESS))

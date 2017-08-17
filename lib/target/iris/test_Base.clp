@@ -315,26 +315,49 @@
                             ?mf)
                       (nth$ 3
                             ?mf)))
+(deffunction MAIN::expect-num-instructions
+             "Make an assertion about the number of instructions encoded"
+             (?id ?description ?expected-num-instructions ?encoded-values)
+             (assert (testcase (id ?id)
+                               (description ?description))
+                     (testcase-assertion (parent ?id)
+                                         (expected (* ?expected-num-instructions
+                                                     3))
+                                         (actual-value (length$ ?encoded-values)))))
+
+(deffunction MAIN::check-register-value
+             (?core ?register ?expected)
+             (assert (testcase (id (bind ?id
+                                         (sym-cat iris:check-register-value:
+                                                  ?register)))
+                               (description (str-cat "Check "
+                                                     ?register
+                                                     " to see if it is set to "
+                                                     ?expected)))
+                     (testcase-assertion (parent ?id)
+                                         (expected ?expected)
+                                         (actual-value (iris-get-register ?core
+                                                                          ?register)))))
+
+
 (deffunction MAIN::test-instruction-mix0
              "Set two registers and check the result"
              (?core)
              (iris-initialize ?core)
              (bind ?asm
                    (new iris-assembler))
-             (iris-parse-instruction ?asm
-                                     "set r0 0x1")
-             (iris-parse-instruction ?asm
-                                     "set r1 0x2")
-             (iris-parse-instruction ?asm
-                                     "add r2 r0 r1")
+             (bind ?lines
+                   (create$ "set r0 0x1"
+                            "set r1 0x2"
+                            "add r2 r0 r1"))
+             (iris-parse-instructions ?asm
+                                      ?lines)
              (iris-resolve-assembler-labels ?asm)
-             (bind ?result
-                   (iris-get-encoded-instructions ?asm))
-             (assert (testcase (id iris:check-instruction-mix0:num-words)
-                               (description "Make sure the number of encoded words is correct!"))
-                     (testcase-assertion (parent iris:check-instruction-mix0:num-words)
-                                         (expected 9)
-                                         (actual-value (length$ ?result))))
+             (expect-num-instructions iris:check-instruction-mix0:num-words
+                                      "make sure the number of encoded words is correct!"
+                                      (length$ ?lines)
+                                      (bind ?result
+                                            (iris-get-encoded-instructions ?asm)))
              (while (> (length$ ?result) 0) do
                     (iris-write-memory ?core
                                        (expand$ (extract-triple$ ?result)))
@@ -342,28 +365,17 @@
                           (skip-three$ ?result)))
              ; now we go through and execute three cycles
              (iris-cycle ?core
-                         3)
-             ; now we take a look at the third register
-             (assert (testcase (id check-iris-simple-assign-r0)
-                               (description "test r0's assignment"))
-                     (testcase (id check-iris-simple-assign-r1)
-                               (description "test r1's assignment"))
-                     (testcase (id check-iris-simple-assign-r2)
-                               (description "test that the add was successful!"))
-                     (testcase-assertion (parent check-iris-simple-assign-r0)
-                                         (expected 1)
-                                         (actual-value (iris-get-register ?core
-                                                                          r0)))
-                     (testcase-assertion (parent check-iris-simple-assign-r1)
-                                         (expected 2)
-                                         (actual-value (iris-get-register ?core
-                                                                          r1)))
-                     (testcase-assertion (parent check-iris-simple-assign-r2)
-                                         (expected 3)
-                                         (actual-value (iris-get-register ?core
-                                                                          r2)))))
-
-
+                         (length$ ?lines))
+             ; now we take a look at r0, r1, and r2
+             (check-register-value ?core
+                                   r0
+                                   1)
+             (check-register-value ?core
+                                   r1
+                                   2)
+             (check-register-value ?core
+                                   r2
+                                   3))
 
 (deffunction MAIN::invoke-test
              ()
