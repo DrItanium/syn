@@ -303,6 +303,18 @@
                              (test-instruction-encode-routines ?tc2
                                                                (str-cat "add r0 r0 " ?reg)
                                                                (hex->int ?h2))))
+(deffunction MAIN::skip-three$
+             (?mf)
+             (rest$ (rest$ (rest$ ?mf))))
+
+(deffunction MAIN::extract-triple$
+             (?mf)
+             (create$ (nth$ 1
+                            ?mf)
+                      (nth$ 2
+                            ?mf)
+                      (nth$ 3
+                            ?mf)))
 (deffunction MAIN::test-instruction-mix0
              "Set two registers and check the result"
              (?core)
@@ -316,23 +328,21 @@
              (iris-parse-instruction ?asm
                                      "add r2 r0 r1")
              (iris-resolve-assembler-labels ?asm)
-             (bind ?encoded
-                   (iris-get-encoded-instructions ?asm))
              (bind ?result
-                   ?encoded)
+                   (iris-get-encoded-instructions ?asm))
+             (assert (testcase (id iris:check-instruction-mix0:num-words)
+                               (description "Make sure the number of encoded words is correct!"))
+                     (testcase-assertion (parent iris:check-instruction-mix0:num-words)
+                                         (expected 9)
+                                         (actual-value (length$ ?result))))
              (while (> (length$ ?result) 0) do
                     (iris-write-memory ?core
-                                       code
-                                       (nth$ 2
-                                             ?result)
-                                       (nth$ 3
-                                             ?result))
+                                       (expand$ (extract-triple$ ?result)))
                     (bind ?result
-                          (rest$ (rest$ (rest$ ?result)))))
+                          (skip-three$ ?result)))
              ; now we go through and execute three cycles
-             (iris-cycle ?core)
-             (iris-cycle ?core)
-             (iris-cycle ?core)
+             (iris-cycle ?core
+                         3)
              ; now we take a look at the third register
              (assert (testcase (id check-iris-simple-assign-r0)
                                (description "test r0's assignment"))
@@ -343,15 +353,15 @@
                      (testcase-assertion (parent check-iris-simple-assign-r0)
                                          (expected 1)
                                          (actual-value (iris-get-register ?core
-                                                                          0)))
+                                                                          r0)))
                      (testcase-assertion (parent check-iris-simple-assign-r1)
                                          (expected 2)
                                          (actual-value (iris-get-register ?core
-                                                                          1)))
+                                                                          r1)))
                      (testcase-assertion (parent check-iris-simple-assign-r2)
                                          (expected 3)
                                          (actual-value (iris-get-register ?core
-                                                                          2)))))
+                                                                          r2)))))
 
 
 

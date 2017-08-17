@@ -213,4 +213,27 @@
                        ?path) then
    (iris-resolve-assembler-labels ?asm)
    (iris-get-encoded-instructions ?asm)))
+(defmethod MAIN::iris-get-register
+  ((?core EXTERNAL-ADDRESS)
+   (?register SYMBOL
+              (eq (str-index r
+                             ?current-argument)
+                  1)))
+  (iris-get-register ?core
+                     (string-to-field (sub-string 2
+                                                  (str-length ?register)
+                                                  ?register))))
 
+(defmethod MAIN::iris-set-register
+  ((?core EXTERNAL-ADDRESS)
+   (?register SYMBOL
+              (eq (str-index r
+                             ?current-argument)
+                  1))
+   (?value INTEGER))
+
+  (iris-set-register ?core
+                     (string-to-field (sub-string 2
+                                                  (str-length ?register)
+                                                  ?register))
+                     ?value))
