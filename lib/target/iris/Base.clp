@@ -98,6 +98,22 @@
         (sym-cat write- ?space -memory)
         ?address
         ?value))
+(defglobal MAIN
+           ?*iris-memory-spaces* = (create$ code
+                                            data
+                                            stack
+                                            io))
+(defmethod MAIN::iris-write-memory
+  ((?core EXTERNAL-ADDRESS)
+   (?space INTEGER)
+   (?address INTEGER)
+   (?value INTEGER))
+  (iris-write-memory ?core
+                     (nth$ (+ ?space 1)
+                           ?*iris-memory-spaces*)
+                     ?address
+                     ?value))
+
 (defmethod MAIN::iris-read-memory
   ((?core EXTERNAL-ADDRESS)
    (?space SYMBOL

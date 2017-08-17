@@ -257,15 +257,8 @@
                                              (focus test)
                                              (run))))
 
-(deffunction MAIN::invoke-test
-             ()
-             (bind ?core
-                   (new iris-core))
-             (progn$ (?space (create$ data
-                                      code
-                                      stack))
-                     (test-memory-manipulation-routines ?core
-                                                        ?space))
+(deffunction MAIN::test-instruction-parsing-and-encoding
+             (?core)
              (test-register-manipulation-routines ?core)
              (test-predicate-register-manipulation-routines ?core)
              (test-instruction-encode-routines iris-simple-encode-instruction0
@@ -310,5 +303,68 @@
                              (test-instruction-encode-routines ?tc2
                                                                (str-cat "add r0 r0 " ?reg)
                                                                (hex->int ?h2))))
+(deffunction MAIN::test-instruction-mix0
+             "Set two registers and check the result"
+             (?core)
+             (iris-initialize ?core)
+             (bind ?asm
+                   (new iris-assembler))
+             (iris-parse-instruction ?asm
+                                     "set r0 0x1")
+             (iris-parse-instruction ?asm
+                                     "set r1 0x2")
+             (iris-parse-instruction ?asm
+                                     "add r2 r0 r1")
+             (iris-resolve-assembler-labels ?asm)
+             (bind ?encoded
+                   (iris-get-encoded-instructions ?asm))
+             (bind ?result
+                   ?encoded)
+             (while (> (length$ ?result) 0) do
+                    (iris-write-memory ?core
+                                       code
+                                       (nth$ 2
+                                             ?result)
+                                       (nth$ 3
+                                             ?result))
+                    (bind ?result
+                          (rest$ (rest$ (rest$ ?result)))))
+             ; now we go through and execute three cycles
+             (iris-cycle ?core)
+             (iris-cycle ?core)
+             (iris-cycle ?core)
+             ; now we take a look at the third register
+             (assert (testcase (id check-iris-simple-assign-r0)
+                               (description "test r0's assignment"))
+                     (testcase (id check-iris-simple-assign-r1)
+                               (description "test r1's assignment"))
+                     (testcase (id check-iris-simple-assign-r2)
+                               (description "test that the add was successful!"))
+                     (testcase-assertion (parent check-iris-simple-assign-r0)
+                                         (expected 1)
+                                         (actual-value (iris-get-register ?core
+                                                                          0)))
+                     (testcase-assertion (parent check-iris-simple-assign-r1)
+                                         (expected 2)
+                                         (actual-value (iris-get-register ?core
+                                                                          1)))
+                     (testcase-assertion (parent check-iris-simple-assign-r2)
+                                         (expected 3)
+                                         (actual-value (iris-get-register ?core
+                                                                          2)))))
+
+
+
+(deffunction MAIN::invoke-test
+             ()
+             (bind ?core
+                   (new iris-core))
+             (progn$ (?space (create$ data
+                                      code
+                                      stack))
+                     (test-memory-manipulation-routines ?core
+                                                        ?space))
+             (test-instruction-parsing-and-encoding ?core)
+             (test-instruction-mix0 ?core))
 
 
