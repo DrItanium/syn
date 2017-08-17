@@ -25,6 +25,7 @@
 ; AssemblerBase.clp - Common routines for interfacing with the assembler external
 ; address type. It is common for all assembler types.
 ;------------------------------------------------------------------------------
+(batch* lib/target/ExternalAddressWrapper.clp)
 (defgeneric MAIN::asm-parse-line
             "Parse an assembler line")
 (defgeneric MAIN::asm-parse-lines)
@@ -80,39 +81,19 @@
   (asm-parse-lines ?lines))
 
 
-(defclass MAIN::external-address-wrapper
-  (is-a USER)
-  (slot backing-type
-        (type SYMBOL)
-        (storage local)
-        (visibility public)
-        (default ?NONE))
-  (slot backing-store
-        (type EXTERNAL-ADDRESS)
-        (storage local)
-        (visibility public))
-  (multislot constructor-args)
-  (message-handler call primary))
-
-(defmessage-handler MAIN::external-address-wrapper init after
-                    ()
-                    (bind ?self:backing-store
-                          (new (dynamic-get backing-type)
-                               (expand$ (dynamic-get constructor-args)))))
-
-(defmessage-handler MAIN::external-address-wrapper call primary
-                    (?cmd $?args)
-                    (call ?self:backing-store
-                          ?cmd
-                          (expand$ ?args)))
-
 (defclass MAIN::assembler
   (is-a external-address-wrapper)
   (role abstract)
+  (pattern-match non-reactive)
   (slot backing-type
         (source composite)
         (storage shared)
         (default UNIMPLEMENTED-ASSEMBLER))
+  (slot labels-resolved
+        (type SYMBOL)
+        (storage local)
+        (allowed-symbols FALSE
+                         TRUE))
   (message-handler parse-line primary)
   (message-handler parse-lines primary)
   (message-handler resolve-assembler-labels primary)
@@ -127,3 +108,21 @@
                     ($?lines)
                     (asm-parse-lines ?self:backing-store
                                      ?lines))
+(defmessage-handler MAIN::assembler resolve-assembler-labels primary
+                    ()
+                    ; TODO: resolving labels again?
+                    (if (not ?self:labels-resolved) then
+                      (bind ?self:labels-resolved
+                            (asm-resolve-labels ?self:backing-store))))
+
+(defmessage-handler MAIN::assembler get-encoded-instructions primary
+                    ()
+                    (if (not ?self:labels-resolved) then
+                      ; since labels haven't been resolved yet, there is no way
+                      ; that the outcome of this call will be legal
+                      FALSE
+                      else
+                      (asm-get-encoded-instructions ?self:backing-store)))
+
+
+
