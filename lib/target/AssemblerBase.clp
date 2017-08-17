@@ -27,12 +27,15 @@
 ;------------------------------------------------------------------------------
 (defgeneric MAIN::asm-parse-line
             "Parse an assembler line")
+(defgeneric MAIN::asm-parse-lines)
 (defgeneric MAIN::asm-resolve-labels
             "Second phase: replace labels with addresses")
 (defgeneric MAIN::asm-get-encoded-instructions
             "Return instructions encoded into the format of the target core")
 (defgeneric MAIN::asm-parse-file
             "Parse the given file using the given assembler target")
+
+
 
 (defmethod MAIN::asm-parse-line
   ((?asm EXTERNAL-ADDRESS)
@@ -63,3 +66,64 @@
                            ?line))
     (close ?name)
     TRUE))
+
+(defmethod MAIN::asm-parse-lines
+  ((?asm EXTERNAL-ADDRESS)
+   (?lines MULTIFIELD))
+  (progn$ (?line ?lines)
+          (asm-parse-line ?asm
+                          ?line)))
+
+(defmethod MAIN::asm-parse-lines
+  ((?asm EXTERNAL-ADDRESS)
+   $?lines)
+  (asm-parse-lines ?lines))
+
+
+(defclass MAIN::external-address-wrapper
+  (is-a USER)
+  (slot backing-type
+        (type SYMBOL)
+        (storage local)
+        (visibility public)
+        (default ?NONE))
+  (slot backing-store
+        (type EXTERNAL-ADDRESS)
+        (storage local)
+        (visibility public))
+  (multislot constructor-args)
+  (message-handler call primary))
+
+(defmessage-handler MAIN::external-address-wrapper init after
+                    ()
+                    (bind ?self:backing-store
+                          (new (dynamic-get backing-type)
+                               (expand$ (dynamic-get constructor-args)))))
+
+(defmessage-handler MAIN::external-address-wrapper call primary
+                    (?cmd $?args)
+                    (call ?self:backing-store
+                          ?cmd
+                          (expand$ ?args)))
+
+(defclass MAIN::assembler
+  (is-a external-address-wrapper)
+  (role abstract)
+  (slot backing-type
+        (source composite)
+        (storage shared)
+        (default UNIMPLEMENTED-ASSEMBLER))
+  (message-handler parse-line primary)
+  (message-handler parse-lines primary)
+  (message-handler resolve-assembler-labels primary)
+  (message-handler get-encoded-instructions primary))
+
+(defmessage-handler MAIN::assembler parse-line primary
+                    (?line)
+                    (asm-parse-line ?self:backing-store
+                                    ?line))
+
+(defmessage-handler MAIN::assembler parse-lines primary
+                    ($?lines)
+                    (asm-parse-lines ?self:backing-store
+                                     ?lines))
