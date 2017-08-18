@@ -303,96 +303,19 @@
                              (test-instruction-encode-routines ?tc2
                                                                (str-cat "add r0 r0 " ?reg)
                                                                (hex->int ?h2))))
-(deffunction MAIN::skip-three$
-             (?mf)
-             (rest$ (rest$ (rest$ ?mf))))
 
-(deffunction MAIN::extract-triple$
-             (?mf)
-             (create$ (nth$ 1
-                            ?mf)
-                      (nth$ 2
-                            ?mf)
-                      (nth$ 3
-                            ?mf)))
-(deffunction MAIN::expect-num-instructions
-             "Make an assertion about the number of instructions encoded"
-             (?id ?description ?expected-num-instructions ?encoded-values)
-             (assert (testcase (id ?id)
-                               (description ?description))
-                     (testcase-assertion (parent ?id)
-                                         (expected (* ?expected-num-instructions
-                                                     3))
-                                         (actual-value (length$ ?encoded-values)))))
-
-(deffunction MAIN::check-register-value
-             (?core ?register ?expected)
-             (assert (testcase (id (bind ?id
-                                         (sym-cat iris:check-register-value:
-                                                  ?register)))
-                               (description (str-cat "Check "
-                                                     ?register
-                                                     " to see if it is set to "
-                                                     ?expected)))
-                     (testcase-assertion (parent ?id)
-                                         (expected ?expected)
-                                         (actual-value (iris-get-register ?core
-                                                                          ?register)))))
-
-
-(deffunction MAIN::test-instruction-mix0
-             "Set two registers and check the result"
-             (?core)
-             (iris-initialize ?core)
-             (progn$ (?register (create$ r0
-                                         r1
-                                         r2))
-                     (check-register-value ?core
-                                           ?register
-                                           0))
-             (bind ?asm
-                   (new iris-assembler))
-             (bind ?lines
-                   (create$ "set r0 0x1"
-                            "set r1 0x2"
-                            "add r2 r0 r1"))
-             (iris-parse-instructions ?asm
-                                      ?lines)
-             (iris-resolve-assembler-labels ?asm)
-             (expect-num-instructions iris:check-instruction-mix0:num-words
-                                      "make sure the number of encoded words is correct!"
-                                      (length$ ?lines)
-                                      (bind ?result
-                                            (iris-get-encoded-instructions ?asm)))
-             (while (> (length$ ?result) 0) do
-                    (iris-write-memory ?core
-                                       (expand$ (extract-triple$ ?result)))
-                    (bind ?result
-                          (skip-three$ ?result)))
-             ; now we go through and execute three cycles
-             (iris-cycle ?core
-                         (length$ ?lines))
-             ; now we take a look at r0, r1, and r2
-             (check-register-value ?core
-                                   r0
-                                   1)
-             (check-register-value ?core
-                                   r1
-                                   2)
-             (check-register-value ?core
-                                   r2
-                                   3))
 
 (deffunction MAIN::invoke-test
              ()
              (bind ?core
                    (new iris-core))
+             (iris-initialize ?core)
              (progn$ (?space (create$ data
                                       code
                                       stack))
                      (test-memory-manipulation-routines ?core
                                                         ?space))
              (test-instruction-parsing-and-encoding ?core)
-             (test-instruction-mix0 ?core))
+             (iris-shutdown ?core))
 
 
