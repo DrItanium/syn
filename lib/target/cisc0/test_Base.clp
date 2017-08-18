@@ -271,16 +271,8 @@
              (register-index-to-symbol (- (member$ ?mask
                                                    ?*masks*)
                                           1)))
-(deffunction MAIN::asm-parsing-tests
+(deffunction MAIN::run-all-arithmetic-ops-parse-tests
              ()
-             (parse-asm-test return
-                             "Parse a return instruction"
-                             "return"
-                             0x9)
-             (parse-asm-test arithmetic-simple
-                             "Parse a single arithmetic instruction"
-                             "arithmetic add r0 r1"
-                             0x0101)
              (progn$ (?sub-op ?*arithmetic-ops*)
                      (test-all-register-combinations:single-word (sym-cat arithmetic-
                                                                           ?sub-op)
@@ -292,8 +284,19 @@
                                                                        (format nil
                                                                                "arithmetic %s"
                                                                                ?sub-op))
-                                                                 ?op))
+                                                                 ?op)))
 
+(deffunction MAIN::asm-parsing-tests
+             ()
+             (parse-asm-test return
+                             "Parse a return instruction"
+                             "return"
+                             0x9)
+             (parse-asm-test arithmetic-simple
+                             "Parse a single arithmetic instruction"
+                             "arithmetic add r0 r1"
+                             0x0101)
+             (run-all-arithmetic-ops-parse-tests)
              (test-all-register-combinations:single-word swap
                                                          (group-to-hex swap)
                                                          (bitmask-to-hex 0m0000)

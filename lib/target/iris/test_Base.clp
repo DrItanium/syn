@@ -344,6 +344,12 @@
              "Set two registers and check the result"
              (?core)
              (iris-initialize ?core)
+             (progn$ (?register (create$ r0
+                                         r1
+                                         r2))
+                     (check-register-value ?core
+                                           ?register
+                                           0))
              (bind ?asm
                    (new iris-assembler))
              (bind ?lines
