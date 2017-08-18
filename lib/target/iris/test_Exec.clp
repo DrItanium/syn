@@ -68,7 +68,7 @@
                                (description ?description))
                      (testcase-assertion (parent ?id)
                                          (expected (* ?expected-num-instructions
-                                                     3))
+                                                      3))
                                          (actual-value (length$ ?encoded-values)))))
 
 (deffunction MAIN::check-register-value
@@ -84,6 +84,30 @@
                                          (expected ?expected)
                                          (actual-value (iris-get-register ?core
                                                                           ?register)))))
+(deffunction MAIN::parse-instruction-mix
+             (?core ?uid $?lines)
+             (bind ?asm
+                   (new iris-assembler))
+             (iris-parse-instructions ?asm
+                                      ?lines)
+             (iris-resolve-assembler-labels ?asm)
+             (expect-num-instructions (sym-cat iris:parse-instruction-mix-
+                                               ?uid
+                                               :num-words)
+                                      "make sure the number of encoded words for this instruction mix is correct!"
+                                      (length$ ?lines)
+                                      (bind ?result
+                                            (iris-get-encoded-instructions ?asm)))
+             (while (> (length$ ?result) 0) do
+                    (iris-write-memory ?core
+                                       (expand$ (extract-triple$ ?result)))
+                    (bind ?result
+                          (skip-three$ ?result))))
+(deffunction MAIN::run-instruction-mix
+             (?core $?lines)
+             (iris-cycle ?core
+                         (length$ ?lines)))
+
 
 
 (deffunction MAIN::test-instruction-mix0
@@ -95,28 +119,15 @@
                      (check-register-value ?core
                                            ?register
                                            0))
-             (bind ?asm
-                   (new iris-assembler))
              (bind ?lines
                    (create$ "set r0 0x1"
                             "set r1 0x2"
                             "add r2 r0 r1"))
-             (iris-parse-instructions ?asm
-                                      ?lines)
-             (iris-resolve-assembler-labels ?asm)
-             (expect-num-instructions iris:check-instruction-mix0:num-words
-                                      "make sure the number of encoded words is correct!"
-                                      (length$ ?lines)
-                                      (bind ?result
-                                            (iris-get-encoded-instructions ?asm)))
-             (while (> (length$ ?result) 0) do
-                    (iris-write-memory ?core
-                                       (expand$ (extract-triple$ ?result)))
-                    (bind ?result
-                          (skip-three$ ?result)))
-             ; now we go through and execute three cycles
-             (iris-cycle ?core
-                         (length$ ?lines))
+             (parse-instruction-mix ?core
+                                    simple0
+                                    ?lines)
+             (run-instruction-mix ?core
+                                  ?lines)
              ; now we take a look at r0, r1, and r2
              (check-register-value ?core
                                    r0
