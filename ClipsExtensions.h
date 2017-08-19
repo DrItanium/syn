@@ -450,7 +450,7 @@ class ExternalAddressWrapper {
 		using InternalType = T;
 		using BaseClass = ExternalAddressWrapper<T>;
         using Self = BaseClass;
-		static std::string getType() noexcept {
+		static const std::string& getType() noexcept {
             /// @todo modify this function so that it returns a string ref
             static bool init = true;
             static std::string name;
@@ -618,7 +618,7 @@ class ExternalAddressWrapper {
 };
 
 template<typename T>
-class CommonExternalAddressWrapper : ExternalAddressWrapper<T> {
+class CommonExternalAddressWrapper : public ExternalAddressWrapper<T> {
 
     public:
         using Parent = ExternalAddressWrapper<T>;
@@ -632,12 +632,23 @@ class CommonExternalAddressWrapper : ExternalAddressWrapper<T> {
             __RETURN_FALSE_ON_FALSE__(Parent::tryExtractFunctionName(env, ret, &operation));
             std::string str(extractLexeme(env, operation));
             if (str == "type") {
-                CVSetSymbol(ret, Parent::getType());
+                CVSetSymbol(ret, Parent::getType().c_str());
                 return true;
             } else {
                 auto ptr = static_cast<Self*>(EnvDOPToExternalAddress(value));
                 return ptr->handleCallOperation(env, value, ret, str);
             }
+        }
+        static inline bool callErrorCode2(void* env, CLIPSValue* ret, const std::string& msg) noexcept {
+            return Parent::badCallArgument(env, ret, 2, msg);
+        }
+
+        static inline bool callErrorCode3(void* env, CLIPSValue* ret, const std::string& msg) noexcept {
+            return Parent::badCallArgument(env, ret, 3, msg);
+        }
+
+        static inline bool callErrorCode4(void* env, CLIPSValue* ret, const std::string& msg) noexcept {
+            return Parent::badCallArgument(env, ret, 4, msg);
         }
     public:
         using Parent::Parent;

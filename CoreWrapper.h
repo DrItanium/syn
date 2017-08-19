@@ -61,35 +61,14 @@ class CoreWrapper : public syn::CommonExternalAddressWrapper<T> {
         using Parent = syn::CommonExternalAddressWrapper<T>;
         using Self = CoreWrapper<T>;
     public:
-        static inline bool callErrorCode2(void* env, CLIPSValue* ret, const std::string& msg) noexcept {
-            return Parent::badCallArgument(env, ret, 2, msg);
-        }
-
-        static inline bool callErrorCode3(void* env, CLIPSValue* ret, const std::string& msg) noexcept {
-            return Parent::badCallArgument(env, ret, 3, msg);
-        }
-
-        static inline bool callErrorCode4(void* env, CLIPSValue* ret, const std::string& msg) noexcept {
-            return Parent::badCallArgument(env, ret, 4, msg);
-        }
-
-        static bool callFunction(void* env, syn::DataObjectPtr value, syn::DataObjectPtr ret) {
-            __RETURN_FALSE_ON_FALSE__(Parent::isExternalAddress(env, ret, value));
-            auto ptr = static_cast<Self*>(EnvDOPToExternalAddress(value));
-            return ptr->get()->handleOperation(env, ret);
-        }
-        static void registerWithEnvironment(void* env, const char* title) {
-            Parent::registerWithEnvironment(env, title);
-        }
-
         static void registerWithEnvironment(void* env) {
             static bool init = true;
             static std::string func;
             if (init) {
                 init = false;
-                func = Self::getType();
+                func = Parent::getType();
             }
-            registerWithEnvironment(env, func.c_str());
+            Parent::registerWithEnvironment(env, func.c_str());
         }
 		static void setString(CLIPSValuePtr val, const std::string& str) noexcept {
 			CVSetString(val, str.c_str());
@@ -104,6 +83,7 @@ class CoreWrapper : public syn::CommonExternalAddressWrapper<T> {
             return this->get()->handleOperation(env, ret);
         }
 };
+
 
 
 
