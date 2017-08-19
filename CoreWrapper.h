@@ -40,7 +40,7 @@ namespace syn {
         Shutdown, \
         Run, \
         Cycle, \
-		DecodeInstruction 
+		DecodeInstruction
 
 #define __DEFAULT_ERROR_STATE__ Count
 
@@ -56,9 +56,9 @@ namespace syn {
  * @tparam T the type to wrap
  */
 template<typename T>
-class CoreWrapper : public syn::ExternalAddressWrapper<T> {
+class CoreWrapper : public syn::CommonExternalAddressWrapper<T> {
     public:
-        using Parent = syn::ExternalAddressWrapper<T>;
+        using Parent = syn::CommonExternalAddressWrapper<T>;
         using Self = CoreWrapper<T>;
     public:
         static inline bool callErrorCode2(void* env, CLIPSValue* ret, const std::string& msg) noexcept {
@@ -79,7 +79,7 @@ class CoreWrapper : public syn::ExternalAddressWrapper<T> {
             return ptr->get()->handleOperation(env, ret);
         }
         static void registerWithEnvironment(void* env, const char* title) {
-            Parent::registerWithEnvironment(env, title, callFunction);
+            Parent::registerWithEnvironment(env, title);
         }
 
         static void registerWithEnvironment(void* env) {
@@ -100,6 +100,9 @@ class CoreWrapper : public syn::ExternalAddressWrapper<T> {
         /// Construct a new Core type and pass it to the parent
         CoreWrapper() : Parent(new T()) { }
         virtual ~CoreWrapper() { }
+        virtual bool handleCallOperation(void* env, DataObjectPtr value, DataObjectPtr ret, const std::string& operation) override {
+            return this->get()->handleOperation(env, ret);
+        }
 };
 
 

@@ -617,6 +617,36 @@ class ExternalAddressWrapper {
 		std::unique_ptr<T> _value;
 };
 
+template<typename T>
+class CommonExternalAddressWrapper : ExternalAddressWrapper<T> {
+
+    public:
+        using Parent = ExternalAddressWrapper<T>;
+        using Self = CommonExternalAddressWrapper<T>;
+		static void registerWithEnvironment(void* env, const char* title, CallFunction _call = callFunction, NewFunction _new = Parent::newFunction, DeleteFunction _delete = Parent::deleteWrapper, PrintFunction _print = Parent::printAddress) {
+            Parent::registerWithEnvironment(env, title, _call, _new, _delete, _print);
+		}
+        static bool callFunction(void* env, DataObjectPtr value, DataObjectPtr ret) {
+            __RETURN_FALSE_ON_FALSE__(Parent::isExternalAddress(env, ret, value));
+            CLIPSValue operation;
+            __RETURN_FALSE_ON_FALSE__(Parent::tryExtractFunctionName(env, ret, &operation));
+            std::string str(extractLexeme(env, operation));
+            if (str == "type") {
+                CVSetSymbol(ret, Parent::getType());
+                return true;
+            } else {
+                auto ptr = static_cast<Self*>(EnvDOPToExternalAddress(value));
+                return ptr->handleCallOperation(env, value, ret, str);
+            }
+        }
+    public:
+        using Parent::Parent;
+        virtual bool handleCallOperation(void* env, DataObjectPtr value, DataObjectPtr ret, const std::string& operation) {
+            CVSetBoolean(ret, false);
+            return true;
+        }
+};
+
 /**
  * Class which makes building multifields much easier. It is a wrapper class so
  * if it goes out of scope then the underlying raw multifield will not be
