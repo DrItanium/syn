@@ -81,20 +81,7 @@ namespace cisc0 {
         return tao::pegtl::parse<assembler::Main, assembler::Action>(in, ref);
 	}
 
-
-	void AssemblerStateWrapper::registerWithEnvironment(void* env, const char* title) {
-		AssemblerStateWrapper::Parent::registerWithEnvironment(env, title, callFunction);
-	}
-	void AssemblerStateWrapper::registerWithEnvironment(void* env) {
-		static bool init = true;
-		static std::string func;
-		if (init) {
-			init = false;
-			func = Self::getType();
-		}
-		registerWithEnvironment(env, func.c_str());
-	}
-	bool AssemblerStateWrapper::callFunction(void* env, syn::DataObjectPtr value, syn::DataObjectPtr ret) {
+	bool AssemblerStateWrapper::handleCallOperation(void* env, syn::DataObjectPtr value, syn::DataObjectPtr ret, const std::string& str) {
 		using Operations = AssemblerStateWrapper::Operations;
         using MapOpToArgCount = std::tuple<Operations, int>;
 		static std::map<std::string, MapOpToArgCount> ops = {
@@ -102,11 +89,6 @@ namespace cisc0 {
 			{ "resolve", std::make_tuple(Operations::Resolve, 0) },
 			{ "get", std::make_tuple(Operations::Get, 0) },
 		};
-
-        __RETURN_FALSE_ON_FALSE__(Parent::isExternalAddress(env, ret, value));
-		CLIPSValue operation;
-        __RETURN_FALSE_ON_FALSE__(Parent::tryExtractFunctionName(env, ret, &operation));
-		std::string str(syn::extractLexeme(env, operation));
 		auto result = ops.find(str);
         __RETURN_FALSE_ON_FALSE__(Parent::isLegalOperation(env, ret, str, result, ops.end()));
         Operations theOp;

@@ -650,6 +650,9 @@ class CommonExternalAddressWrapper : public ExternalAddressWrapper<T> {
         static inline bool callErrorCode4(void* env, CLIPSValue* ret, const std::string& msg) noexcept {
             return Parent::badCallArgument(env, ret, 4, msg);
         }
+        static void registerWithEnvironment(void* env) noexcept {
+            registerWithEnvironment(env, Parent::getType().c_str());
+        }
     public:
         using Parent::Parent;
         virtual bool handleCallOperation(void* env, DataObjectPtr value, DataObjectPtr ret, const std::string& operation) {

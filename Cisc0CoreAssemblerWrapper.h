@@ -48,10 +48,10 @@ namespace cisc0 {
     /**
      * Interface between cisc0's assembler and clips.
      */
-    class AssemblerStateWrapper : public syn::ExternalAddressWrapper<assembler::AssemblerState> {
+    class AssemblerStateWrapper : public syn::CommonExternalAddressWrapper<assembler::AssemblerState> {
         public:
             using Self = AssemblerStateWrapper;
-            using Parent = syn::ExternalAddressWrapper<assembler::AssemblerState>;
+            using Parent = syn::CommonExternalAddressWrapper<assembler::AssemblerState>;
         public:
             /**
              * The different actions that this wrapper can perform when invoked
@@ -64,14 +64,12 @@ namespace cisc0 {
                 Count,
             };
 			static Self* make() noexcept;
-            static void registerWithEnvironment(void* env, const char* title);
-            static void registerWithEnvironment(void* env);
-            static bool callFunction(void* env, syn::DataObjectPtr value, syn::DataObjectPtr ret);
         public:
 			AssemblerStateWrapper();
             bool parseLine(const std::string& line);
             bool resolve();
             void getMultifield(void* env, CLIPSValuePtr ret);
+            virtual bool handleCallOperation(void* env, syn::DataObjectPtr value, syn::DataObjectPtr ret, const std::string& operation) override;
 
     };
 }
