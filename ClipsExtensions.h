@@ -621,51 +621,6 @@ class ExternalAddressWrapper {
 		std::unique_ptr<T> _value;
 };
 
-template<typename T>
-class CommonExternalAddressWrapper : public ExternalAddressWrapper<T> {
-
-    public:
-        using Parent = ExternalAddressWrapper<T>;
-        using Self = CommonExternalAddressWrapper<T>;
-        static bool callFunction(void* env, DataObjectPtr value, DataObjectPtr ret) {
-            __RETURN_FALSE_ON_FALSE__(Parent::isExternalAddress(env, ret, value));
-            CLIPSValue operation;
-            __RETURN_FALSE_ON_FALSE__(Parent::tryExtractFunctionName(env, ret, &operation));
-            std::string str(extractLexeme(env, operation));
-            if (str == "type") {
-                CVSetSymbol(ret, Parent::getType().c_str());
-                return true;
-            } else {
-				static_assert(ExternalAddressWrapperType<T>::customImpl, "Must provide a custom external address wrapper type defintion, the default one will segfault the program on use!");
-				// most likely we can safely do this so go for it if we
-				// have a custom implementation
-				auto* ptr = static_cast<typename ExternalAddressWrapperType<T>::TheType *>(EnvDOPToExternalAddress(value));
-				return ptr->handleCallOperation(env, value, ret, str);
-            }
-        }
-        static inline bool callErrorCode2(void* env, CLIPSValue* ret, const std::string& msg) noexcept {
-            return Parent::badCallArgument(env, ret, 2, msg);
-        }
-
-        static inline bool callErrorCode3(void* env, CLIPSValue* ret, const std::string& msg) noexcept {
-            return Parent::badCallArgument(env, ret, 3, msg);
-        }
-
-        static inline bool callErrorCode4(void* env, CLIPSValue* ret, const std::string& msg) noexcept {
-            return Parent::badCallArgument(env, ret, 4, msg);
-        }
-        static void registerWithEnvironment(void* env) noexcept {
-            registerWithEnvironment(env, Parent::getType().c_str());
-        }
-		static void registerWithEnvironment(void* env, const char* title) {
-            Parent::registerWithEnvironment(env, title, callFunction);
-		}
-    public:
-        using Parent::Parent;
-		virtual ~CommonExternalAddressWrapper() { }
-        virtual bool handleCallOperation(void* env, DataObjectPtr value, DataObjectPtr ret, const std::string& operation) = 0;
-};
-
 /**
  * Class which makes building multifields much easier. It is a wrapper class so
  * if it goes out of scope then the underlying raw multifield will not be

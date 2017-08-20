@@ -30,7 +30,7 @@
 
 #ifndef __SYN_COMMON_ASSEMBLER_WRAPPER_H
 #define __SYN_COMMON_ASSEMBLER_WRAPPER_H
-#include "ClipsExtensions.h"
+#include "CommonExternalAddressWrapper.h"
 
 namespace syn {
 

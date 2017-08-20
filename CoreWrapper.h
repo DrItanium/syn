@@ -31,6 +31,7 @@
 #define CORE_WRAPPER_H__
 
 #include "ClipsExtensions.h"
+#include "CommonExternalAddressWrapper.h"
 #include <map>
 
 namespace syn {
