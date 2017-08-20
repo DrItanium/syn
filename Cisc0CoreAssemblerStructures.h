@@ -120,11 +120,19 @@ namespace cisc0 {
          * parsing
          */
 	    struct AssemblerState : public syn::LabelTracker<RegisterValue>, public syn::AddressTracker<RegisterValue>, public syn::FinishedDataTracker<InstructionEncoder> {
-	    	std::vector<AssemblerWord> finalWords;
-	    	std::vector<AssemblerWord> wordsToResolve;
-            void output(void* env, CLIPSValue* ret) noexcept;
-	    	void resolveInstructions();
-	    	void resolveDeclarations();
+			public:
+				using Self = AssemblerState;
+				using LabelParent = syn::LabelTracker<RegisterValue>;
+				using AddressParent = syn::AddressTracker<RegisterValue>;
+				using FinishedDataParent = syn::FinishedDataTracker<InstructionEncoder>;
+
+			public:
+	    		std::vector<AssemblerWord> finalWords;
+	    		std::vector<AssemblerWord> wordsToResolve;
+            	void output(void* env, CLIPSValue* ret) noexcept;
+	    		void resolveInstructions();
+	    		void resolveDeclarations();
+				void reset() noexcept;
 	    };
 	    template<int width>
 	    	struct AssemblerWordCreator {

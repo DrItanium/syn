@@ -73,9 +73,9 @@ class AssemblerWrapper : public CommonExternalAddressWrapper<T> {
 			__RETURN_FALSE_ON_FALSE__(Parent::checkArgumentCount(env, ret, operation, argCount));
 			switch(theOp) {
 				case Operations::Parse:
-					return this->parseLine();
+					return this->extractAndParseLine(env, ret);
 				case Operations::Resolve:
-					return this->resolve();
+					return this->resolveLabels(env, ret);
 				case Operations::Get:
 					this->getEncodedValues(env, ret);
 					return true;
@@ -86,14 +86,33 @@ class AssemblerWrapper : public CommonExternalAddressWrapper<T> {
 					return this->parseCustomOperation(env, ret, operation);
 			}
 		}
-		virtual bool parseLine(void* env, const std::string& line) = 0;
-		virtual bool resolve() = 0;
+		virtual bool parseLine(void* env, DataObjectPtr ret, const std::string& line) = 0;
+		virtual bool resolve(void* env, DataObjectPtr ret) = 0;
 		virtual void getEncodedValues(void* env, DataObjectPtr ret) = 0;
 		virtual void reset() {
-			this->_value = std::make_unique(new T());
+			this->get()->reset();
 		}
 		virtual bool parseCustomOperation(void* env, DataObjectPtr ret, const std::string& operation) {
             return Parent::callErrorMessageCode3(env, ret, operation, "<- unknown operation!!!!");
+		}
+		bool extractAndParseLine(void* env, DataObjectPtr ret) {
+			CLIPSValue line;
+			__RETURN_FALSE_ON_FALSE__(Parent::tryExtractArgument1(env, ret, &line, syn::MayaType::String, "Must provide a string to parse!"));
+			std::string str(syn::extractLexeme(env, line));
+			auto result = parseLine(env, ret, str);
+			CVSetBoolean(ret, result);
+			if (!result) {
+				Parent::callErrorMessageCode3(env, ret, "parse", "error during parsing!");
+			}
+			return result;
+		}
+		bool resolveLabels(void* env, DataObjectPtr ret) {
+			try {
+				CVSetBoolean(ret, true);
+				return resolve(env, ret);
+			} catch (const syn::Problem& p) {
+                return Parent::callErrorMessageCode3(env, ret, "resolve", p);
+			}
 		}
 };
 } // end namespace syn

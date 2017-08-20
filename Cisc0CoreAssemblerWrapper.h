@@ -49,10 +49,10 @@ namespace cisc0 {
     /**
      * Interface between cisc0's assembler and clips.
      */
-    class AssemblerStateWrapper : public syn::CommonExternalAddressWrapper<assembler::AssemblerState> {
+    class AssemblerStateWrapper : public syn::AssemblerWrapper<assembler::AssemblerState> {
         public:
             using Self = AssemblerStateWrapper;
-            using Parent = syn::CommonExternalAddressWrapper<assembler::AssemblerState>;
+            using Parent = syn::AssemblerWrapper<assembler::AssemblerState>;
         public:
             /**
              * The different actions that this wrapper can perform when invoked
@@ -66,11 +66,9 @@ namespace cisc0 {
             };
         public:
 			using Parent::Parent;
-            bool parseLine(const std::string& line);
-            bool resolve();
-            void getMultifield(void* env, CLIPSValuePtr ret);
-            virtual bool handleCallOperation(void* env, syn::DataObjectPtr value, syn::DataObjectPtr ret, const std::string& operation) override;
-
+            virtual bool parseLine(void* env, syn::DataObjectPtr ret, const std::string& line) override;
+            virtual bool resolve(void* env, syn::DataObjectPtr ret) override;
+			virtual void getEncodedValues(void* env, CLIPSValuePtr ret) override;
     };
 }
 namespace syn {

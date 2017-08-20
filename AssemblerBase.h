@@ -394,6 +394,9 @@ namespace syn {
 			void registerLabel(const std::string& name, Address value) {
 				_labels.emplace(name, value);
 			}
+			void reset() noexcept {
+				_labels.clear();
+			}
 		protected:
 			LabelMap _labels;
 	};

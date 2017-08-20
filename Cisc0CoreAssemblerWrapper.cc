@@ -50,6 +50,13 @@ namespace cisc0 {
 		AssemblerStateWrapper::registerWithEnvironment(env, "cisc0-assembler");
 	}
     namespace assembler {
+		void AssemblerState::reset() noexcept {
+			finalWords.clear();
+			wordsToResolve.clear();
+			LabelParent::reset();
+			AddressParent::reset();
+			FinishedDataParent::reset();
+		}
         void AssemblerState::output(void* env, CLIPSValue* ret) noexcept {
             // we need to build a multifield out of the finalWords
             syn::MultifieldBuilder f(env, finalWords.size() * 2);
@@ -63,70 +70,23 @@ namespace cisc0 {
             f.assign(ret);
         }
     } // end namespace assembler
-	void AssemblerStateWrapper::getMultifield(void* env, CLIPSValuePtr ret) {
+	void AssemblerStateWrapper::getEncodedValues(void* env, CLIPSValuePtr ret) {
 		get()->output(env, ret);
 	}
-	bool AssemblerStateWrapper::resolve() {
+
+	bool AssemblerStateWrapper::resolve(void* env, syn::DataObjectPtr ret) {
 		get()->resolveDeclarations();
 		get()->resolveInstructions();
 		return true;
 	}
-	bool AssemblerStateWrapper::parseLine(const std::string& line) {
-		auto& ref = *(get());
-        std::string tmpStorage;
-        tao::pegtl::string_input<> in(line, tmpStorage);
-        return tao::pegtl::parse<assembler::Main, assembler::Action>(in, ref);
-	}
-
-	bool AssemblerStateWrapper::handleCallOperation(void* env, syn::DataObjectPtr value, syn::DataObjectPtr ret, const std::string& str) {
-		using Operations = AssemblerStateWrapper::Operations;
-        using MapOpToArgCount = std::tuple<Operations, int>;
-		static std::map<std::string, MapOpToArgCount> ops = {
-			{ "parse", std::make_tuple(Operations::Parse, 1) },
-			{ "resolve", std::make_tuple(Operations::Resolve, 0) },
-			{ "get", std::make_tuple(Operations::Get, 0) },
-		};
-		auto result = ops.find(str);
-        __RETURN_FALSE_ON_FALSE__(Parent::isLegalOperation(env, ret, str, result, ops.end()));
-        Operations theOp;
-        int argCount;
-        std::tie(theOp, argCount) = result->second;
-        __RETURN_FALSE_ON_FALSE__(Parent::checkArgumentCount(env, ret, str, argCount));
-		auto ptr = static_cast<Self*>(DOPToExternalAddress(value));
-		auto parseLine = [env, ret, ptr]() noexcept {
-			CLIPSValue line;
-            __RETURN_FALSE_ON_FALSE__(Parent::tryExtractArgument1(env, ret, &line, syn::MayaType::String, "Must provide a string to parse!"));
-			std::string str(syn::extractLexeme(env, line));
-			try {
-				auto result = ptr->parseLine(str);
-				CVSetBoolean(ret, result);
-				if (!result) {
-                    Parent::callErrorMessageCode3(env, ret, "parse", "error during parsing!");
-				}
-				return result;
-			} catch(const tao::pegtl::parse_error& e) {
-                return Parent::callErrorMessageCode3(env, ret, str, e);
-			}
-		};
-		auto resolve = [env, ret, ptr]() noexcept {
-			try {
-				CVSetBoolean(ret, true);
-				return ptr->resolve();
-			} catch (const syn::Problem& p) {
-                return Parent::callErrorMessageCode3(env, ret, "resolve", p);
-			}
-		};
-		switch(theOp) {
-			case Operations::Parse:
-				return parseLine();
-			case Operations::Resolve:
-				return resolve();
-			case Operations::Get:
-				ptr->getMultifield(env, ret);
-				return true;
-			default:
-                return Parent::callErrorMessageCode3(env, ret, str, "<- unimplemented operation!!!!");
+	bool AssemblerStateWrapper::parseLine(void* env, syn::DataObjectPtr ret, const std::string& line) {
+		try {
+			auto& ref = *(get());
+			std::string tmpStorage;
+			tao::pegtl::string_input<> in(line, tmpStorage);
+			return tao::pegtl::parse<assembler::Main, assembler::Action>(in, ref);
+		} catch(const tao::pegtl::parse_error& e) {
+			return Parent::callErrorMessageCode3(env, ret, line, e);
 		}
-		return false;
 	}
 }
