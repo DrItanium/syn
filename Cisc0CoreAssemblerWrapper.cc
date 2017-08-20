@@ -63,9 +63,6 @@ namespace cisc0 {
             f.assign(ret);
         }
     } // end namespace assembler
-	AssemblerStateWrapper* AssemblerStateWrapper::make() noexcept {
-		return new AssemblerStateWrapper();
-	}
 	void AssemblerStateWrapper::getMultifield(void* env, CLIPSValuePtr ret) {
 		get()->output(env, ret);
 	}
@@ -132,5 +129,4 @@ namespace cisc0 {
 		}
 		return false;
 	}
-	AssemblerStateWrapper::AssemblerStateWrapper() : Parent(std::move(std::make_unique<assembler::AssemblerState>())) { }
 }

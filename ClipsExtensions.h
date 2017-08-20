@@ -34,6 +34,7 @@
 #include <memory>
 #include <sstream>
 #include <iostream>
+#include <typeinfo>
 #include "BaseArithmetic.h"
 #include "Problem.h"
 extern "C" {
@@ -288,6 +289,7 @@ struct ExternalAddressWrapperType {
     ExternalAddressWrapperType(const ExternalAddressWrapperType&) = delete;
     ExternalAddressWrapperType(ExternalAddressWrapperType&&) = delete;
     using TheType = ExternalAddressWrapper<T>;
+	static constexpr bool customImpl = false;
 };
 
 /**
@@ -386,6 +388,7 @@ static FunctionStrings retrieveFunctionNames(const std::string& action) noexcept
     struct ExternalAddressWrapperType< internalType > { \
         using Self = ExternalAddressWrapperType< internalType >; \
         using TheType = theWrapperType ; \
+		static constexpr bool customImpl = true; \
         ExternalAddressWrapperType() = delete; \
         ~ExternalAddressWrapperType() = delete; \
         ExternalAddressWrapperType(const ExternalAddressWrapperType < internalType > &) = delete; \
@@ -611,8 +614,9 @@ class ExternalAddressWrapper {
 	public:
 		ExternalAddressWrapper(std::unique_ptr<T>&& value) : _value(std::move(value)) { }
         ExternalAddressWrapper(T* ptr) : _value(std::move(std::unique_ptr<T>(ptr))) { }
+		virtual ~ExternalAddressWrapper() { }
 		inline T* get() const noexcept { return _value.get(); }
-        T* operator->() const noexcept { return get(); }
+        //T* operator->() const noexcept { return get(); }
 	protected:
 		std::unique_ptr<T> _value;
 };
@@ -623,9 +627,6 @@ class CommonExternalAddressWrapper : public ExternalAddressWrapper<T> {
     public:
         using Parent = ExternalAddressWrapper<T>;
         using Self = CommonExternalAddressWrapper<T>;
-		static void registerWithEnvironment(void* env, const char* title, CallFunction _call = callFunction, NewFunction _new = Parent::newFunction, DeleteFunction _delete = Parent::deleteWrapper, PrintFunction _print = Parent::printAddress) {
-            Parent::registerWithEnvironment(env, title, _call, _new, _delete, _print);
-		}
         static bool callFunction(void* env, DataObjectPtr value, DataObjectPtr ret) {
             __RETURN_FALSE_ON_FALSE__(Parent::isExternalAddress(env, ret, value));
             CLIPSValue operation;
@@ -635,8 +636,16 @@ class CommonExternalAddressWrapper : public ExternalAddressWrapper<T> {
                 CVSetSymbol(ret, Parent::getType().c_str());
                 return true;
             } else {
-                auto ptr = static_cast<Self*>(EnvDOPToExternalAddress(value));
-                return ptr->handleCallOperation(env, value, ret, str);
+				if (!ExternalAddressWrapperType<T>::customImpl) {
+					// since this class is abstract, we can't make a custom
+					// impl easily so just throw
+					throw syn::Problem("can't use the common external address wrapper type as the NewType references the parent type not this type, this will lead to segfaults!");
+				} else {
+					// most likely we can safely do this so go for it if we
+					// have a custom implementation
+                	auto* ptr = static_cast<typename ExternalAddressWrapperType<T>::TheType *>(EnvDOPToExternalAddress(value));
+					return ptr->handleCallOperation(env, value, ret, str);
+				}
             }
         }
         static inline bool callErrorCode2(void* env, CLIPSValue* ret, const std::string& msg) noexcept {
@@ -653,12 +662,13 @@ class CommonExternalAddressWrapper : public ExternalAddressWrapper<T> {
         static void registerWithEnvironment(void* env) noexcept {
             registerWithEnvironment(env, Parent::getType().c_str());
         }
+		static void registerWithEnvironment(void* env, const char* title) {
+            Parent::registerWithEnvironment(env, title, callFunction);
+		}
     public:
         using Parent::Parent;
-        virtual bool handleCallOperation(void* env, DataObjectPtr value, DataObjectPtr ret, const std::string& operation) {
-            CVSetBoolean(ret, false);
-            return true;
-        }
+		virtual ~CommonExternalAddressWrapper() { }
+        virtual bool handleCallOperation(void* env, DataObjectPtr value, DataObjectPtr ret, const std::string& operation) = 0;
 };
 
 /**

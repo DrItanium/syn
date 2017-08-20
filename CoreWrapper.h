@@ -62,13 +62,7 @@ class CoreWrapper : public syn::CommonExternalAddressWrapper<T> {
         using Self = CoreWrapper<T>;
     public:
         static void registerWithEnvironment(void* env) {
-            static bool init = true;
-            static std::string func;
-            if (init) {
-                init = false;
-                func = Parent::getType();
-            }
-            Parent::registerWithEnvironment(env, func.c_str());
+            Parent::registerWithEnvironment(env, Parent::getType().c_str());
         }
 		static void setString(CLIPSValuePtr val, const std::string& str) noexcept {
 			CVSetString(val, str.c_str());

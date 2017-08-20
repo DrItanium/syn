@@ -63,9 +63,8 @@ namespace cisc0 {
                 Get,
                 Count,
             };
-			static Self* make() noexcept;
         public:
-			AssemblerStateWrapper();
+			using Parent::Parent;
             bool parseLine(const std::string& line);
             bool resolve();
             void getMultifield(void* env, CLIPSValuePtr ret);
@@ -75,5 +74,6 @@ namespace cisc0 {
 }
 namespace syn {
 	DefWrapperSymbolicName(cisc0::assembler::AssemblerState, "cisc0:assembly-parsing-state");
+	DefExternalAddressWrapperType(cisc0::assembler::AssemblerState, cisc0::AssemblerStateWrapper);
 }
 #endif
