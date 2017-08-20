@@ -36,12 +36,6 @@
 
 namespace syn {
 // Paste these default core operations in
-#define __DEFAULT_CORE_OPERATIONS__ \
-        Initialize, \
-        Shutdown, \
-        Run, \
-        Cycle, \
-		DecodeInstruction
 
 #define __DEFAULT_ERROR_STATE__ Count
 
@@ -68,6 +62,14 @@ class CoreWrapper : public syn::CommonExternalAddressWrapper<T> {
 		static void setString(CLIPSValuePtr val, const std::string& str) noexcept {
 			CVSetString(val, str.c_str());
 		}
+		enum class DefaultCoreOperations {
+			Initialize, 
+			Shutdown, 
+			Run, 
+			Cycle, 
+			DecodeInstruction,
+			__DEFAULT_ERROR_STATE__
+		};
    public:
         /// Wrap an already existing core type
         CoreWrapper(T* core) : Parent(core) { }
@@ -75,17 +77,37 @@ class CoreWrapper : public syn::CommonExternalAddressWrapper<T> {
         CoreWrapper() : Parent(new T()) { }
         virtual ~CoreWrapper() { }
         virtual bool handleCallOperation(void* env, DataObjectPtr value, DataObjectPtr ret, const std::string& operation) override {
-            return this->get()->handleOperation(env, ret);
+			// all of the default core operations should be handled here
+			static std::map<std::string, DefaultCoreOperations> lookup = {
+				{ "initialize", DefaultCoreOperations::Initialize }, 
+				{ "shutdown", DefaultCoreOperations::Shutdown },
+				{ "run", DefaultCoreOperations::Run },
+				{ "cycle", DefaultCoreOperations::Cycle },
+				{ "decode-instruction", DefaultCoreOperations::DecodeInstruction },
+			};
+			auto result = lookup.find(operation);
+			if (result != lookup.end()) {
+				switch(result->second) {
+					case DefaultCoreOperations::Initialize:
+						get()->initialize();
+						return true;
+					case DefaultCoreOperations::Shutdown:
+						get()->shutdown();
+						return true;
+					case DefaultCoreOperations::Run:
+						get()->run();
+						return true;
+					default:
+            			return Parent::callErrorMessageCode3(env, ret, str, "<- unknown but registered operation!!!!");
+				}
+			} else {
+            	return this->get()->handleOperation(env, ret);
+			}
         }
 		virtual bool isCore() noexcept override {
 			return true;
 		}
 };
-
-
-
-
-
 
 } // end namespace syn
 #endif // end CORE_WRAPPER_H__

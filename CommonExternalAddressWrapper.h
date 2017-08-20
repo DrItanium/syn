@@ -58,9 +58,7 @@ class CommonExternalAddressWrapper : public ExternalAddressWrapper<T> {
 			static std::map<std::string, BuiltinStandardFunctions> lookup = {
 				{ "type", BuiltinStandardFunctions::Type },
 				{ "corep", BuiltinStandardFunctions::IsCore },
-				{ "is-core", BuiltinStandardFunctions::IsCore },
 				{ "assemblerp", BuiltinStandardFunctions::IsAssembler },
-				{ "is-assembler", BuiltinStandardFunctions::IsAssembler },
 			};
             __RETURN_FALSE_ON_FALSE__(Parent::isExternalAddress(env, ret, value));
             CLIPSValue operation;
