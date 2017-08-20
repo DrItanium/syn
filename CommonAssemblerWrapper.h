@@ -34,6 +34,68 @@
 
 namespace syn {
 
+/**
+ * Common super type for all assembler wrappers, provides the common call
+ * function code for parsing results
+ */
+template<typename T>
+class AssemblerWrapper : public CommonExternalAddressWrapper<T> {
+	public:
+		using Self = AssemblerWrapper<T>;
+		using Parent = CommonExternalAddressWrapper<T>;
+		/**
+		 * Common assembler parsing operations
+		 */
+		enum Operations {
+			Parse,
+			Resolve,
+			Get,
+			Reset,
+			Count,
+		};
+	public:
+		using Parent::Parent;
+		virtual ~AssemblerWrapper() { }
+		virtual bool handleCallOperation(void* env, DataObjectPtr value, DataObjectPtr ret, const std::string& operation) override {
+			using Operations = Operations;
+			using MapOpToArgCount = std::tuple<Operations, int>;
+			static std::map<std::string, MapOpToArgCount> ops = {
+				{ "parse", std::make_tuple(Operations::Parse, 1) },
+				{ "resolve", std::make_tuple(Operations::Resolve, 0) },
+				{ "get", std::make_tuple(Operations::Get, 0) },
+				{ "reset", std::make_tuple(Operations::Reset, 0) },
+			};
+			auto result = ops.find(operation);
+			__RETURN_FALSE_ON_FALSE__(Parent::isLegalOperation(env, ret, operation, result, ops.end()));
+			Operations theOp;
+			int argCount;
+			std::tie(theOp, argCount) = result->second;
+			__RETURN_FALSE_ON_FALSE__(Parent::checkArgumentCount(env, ret, operation, argCount));
+			switch(theOp) {
+				case Operations::Parse:
+					return this->parseLine();
+				case Operations::Resolve:
+					return this->resolve();
+				case Operations::Get:
+					this->getEncodedValues(env, ret);
+					return true;
+				case Operations::Reset:
+					this->reset();
+					return true;
+				default:
+					return this->parseCustomOperation(env, ret, operation);
+			}
+		}
+		virtual bool parseLine(void* env, const std::string& line) = 0;
+		virtual bool resolve() = 0;
+		virtual void getEncodedValues(void* env, DataObjectPtr ret) = 0;
+		virtual void reset() {
+			this->_value = std::make_unique(new T());
+		}
+		virtual bool parseCustomOperation(void* env, DataObjectPtr ret, const std::string& operation) {
+            return Parent::callErrorMessageCode3(env, ret, operation, "<- unknown operation!!!!");
+		}
+};
 } // end namespace syn
 
 #endif // end __SYN_COMMON_ASSEMBLER_WRAPPER_H

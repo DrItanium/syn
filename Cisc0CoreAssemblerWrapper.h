@@ -40,6 +40,7 @@
 #include "Problem.h"
 #include <vector>
 #include "ClipsExtensions.h"
+#include "CommonAssemblerWrapper.h"
 
 namespace cisc0 {
     namespace assembler {
