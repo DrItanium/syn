@@ -636,16 +636,11 @@ class CommonExternalAddressWrapper : public ExternalAddressWrapper<T> {
                 CVSetSymbol(ret, Parent::getType().c_str());
                 return true;
             } else {
-				if (!ExternalAddressWrapperType<T>::customImpl) {
-					// since this class is abstract, we can't make a custom
-					// impl easily so just throw
-					throw syn::Problem("can't use the common external address wrapper type as the NewType references the parent type not this type, this will lead to segfaults!");
-				} else {
-					// most likely we can safely do this so go for it if we
-					// have a custom implementation
-                	auto* ptr = static_cast<typename ExternalAddressWrapperType<T>::TheType *>(EnvDOPToExternalAddress(value));
-					return ptr->handleCallOperation(env, value, ret, str);
-				}
+				static_assert(ExternalAddressWrapperType<T>::customImpl, "Must provide a custom external address wrapper type defintion, the default one will segfault the program on use!");
+				// most likely we can safely do this so go for it if we
+				// have a custom implementation
+				auto* ptr = static_cast<typename ExternalAddressWrapperType<T>::TheType *>(EnvDOPToExternalAddress(value));
+				return ptr->handleCallOperation(env, value, ret, str);
             }
         }
         static inline bool callErrorCode2(void* env, CLIPSValue* ret, const std::string& msg) noexcept {
