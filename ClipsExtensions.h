@@ -223,16 +223,20 @@ namespace TypeToName {
      * will _NOT_ compile.
      */
     template<typename T>
-    std::string getSymbolicName() noexcept {
+    const std::string& getSymbolicName() noexcept {
         static_assert(hasSymbolicImplementation<T>, "Provided type does not have a symbolic name");
-        return "";
+		static std::string empty;
+		return empty;
     }
 
 }
 #define DefWrapperSymbolicName(t, name) \
     namespace TypeToName { \
         template<> constexpr bool hasSymbolicImplementation < t > = true; \
-        template<> std::string getSymbolicName < t > () noexcept { return name; } \
+        template<> const std::string& getSymbolicName < t > () noexcept { \
+			static std::string _tmp( name ) ; \
+			return _tmp; \
+		} \
     }
 
 /**
