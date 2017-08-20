@@ -77,6 +77,9 @@ class CoreWrapper : public syn::CommonExternalAddressWrapper<T> {
         virtual bool handleCallOperation(void* env, DataObjectPtr value, DataObjectPtr ret, const std::string& operation) override {
             return this->get()->handleOperation(env, ret);
         }
+		virtual bool isCore() noexcept override {
+			return true;
+		}
 };
 
 

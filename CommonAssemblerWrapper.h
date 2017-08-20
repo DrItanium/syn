@@ -114,6 +114,9 @@ class AssemblerWrapper : public CommonExternalAddressWrapper<T> {
                 return Parent::callErrorMessageCode3(env, ret, "resolve", p);
 			}
 		}
+		virtual bool isAssembler() noexcept override {
+			return true;
+		}
 };
 } // end namespace syn
 

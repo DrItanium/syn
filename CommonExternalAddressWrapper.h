@@ -30,6 +30,7 @@
 #ifndef __SYN_COMMON_EXTERNAL_ADDRESS_WRAPPER_H
 #define __SYN_COMMON_EXTERNAL_ADDRESS_WRAPPER_H
 #include "ClipsExtensions.h"
+
 namespace syn {
 
 /**
@@ -46,19 +47,44 @@ class CommonExternalAddressWrapper : public ExternalAddressWrapper<T> {
     public:
         using Parent = ExternalAddressWrapper<T>;
         using Self = CommonExternalAddressWrapper<T>;
+		enum class BuiltinStandardFunctions {
+			Type,
+			IsCore,
+			IsAssembler,
+			Count,
+		};
         static bool callFunction(void* env, DataObjectPtr value, DataObjectPtr ret) {
+			static_assert(ExternalAddressWrapperType<T>::customImpl, "Must provide a custom external address wrapper type defintion, the default one will segfault the program on use!");
+			static std::map<std::string, BuiltinStandardFunctions> lookup = {
+				{ "type", BuiltinStandardFunctions::Type },
+				{ "corep", BuiltinStandardFunctions::IsCore },
+				{ "is-core", BuiltinStandardFunctions::IsCore },
+				{ "assemblerp", BuiltinStandardFunctions::IsAssembler },
+				{ "is-assembler", BuiltinStandardFunctions::IsAssembler },
+			};
             __RETURN_FALSE_ON_FALSE__(Parent::isExternalAddress(env, ret, value));
             CLIPSValue operation;
             __RETURN_FALSE_ON_FALSE__(Parent::tryExtractFunctionName(env, ret, &operation));
             std::string str(extractLexeme(env, operation));
-            if (str == "type") {
-                CVSetSymbol(ret, Parent::getType().c_str());
-                return true;
+			// most likely we can safely do this so go for it if we
+			// have a custom implementation
+			auto* ptr = static_cast<typename ExternalAddressWrapperType<T>::TheType *>(EnvDOPToExternalAddress(value));
+			auto result = lookup.find(str);
+			if (result != lookup.end()) {
+				switch(result->second) {
+					case BuiltinStandardFunctions::Type:
+						CVSetSymbol(ret, Parent::getType().c_str());
+						return true;
+					case BuiltinStandardFunctions::IsCore:
+						CVSetBoolean(ret, ptr->isCore());
+						return true;
+					case BuiltinStandardFunctions::IsAssembler:
+						CVSetBoolean(ret, ptr->isAssembler());
+						return true;
+					default:
+            			return Parent::callErrorMessageCode3(env, ret, str, "<- unknown but registered operation!!!!");
+				}
             } else {
-				static_assert(ExternalAddressWrapperType<T>::customImpl, "Must provide a custom external address wrapper type defintion, the default one will segfault the program on use!");
-				// most likely we can safely do this so go for it if we
-				// have a custom implementation
-				auto* ptr = static_cast<typename ExternalAddressWrapperType<T>::TheType *>(EnvDOPToExternalAddress(value));
 				return ptr->handleCallOperation(env, value, ret, str);
             }
         }
@@ -96,6 +122,12 @@ class CommonExternalAddressWrapper : public ExternalAddressWrapper<T> {
 		 * is not the same as what is actually returned to CLIPS.
 		 */
         virtual bool handleCallOperation(void* env, DataObjectPtr value, DataObjectPtr ret, const std::string& operation) = 0;
+		virtual bool isCore() noexcept {
+			return false;
+		}
+		virtual bool isAssembler() noexcept {
+			return false;
+		}
 };
 } // end namespace syn
 #endif
