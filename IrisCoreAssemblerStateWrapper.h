@@ -41,32 +41,23 @@
 #include <vector>
 #include "IrisClipsExtensions.h"
 #include "ClipsExtensions.h"
+#include "CommonAssemblerWrapper.h"
 
 namespace iris {
     namespace assembler {
 	    class AssemblerState;
     }
-    class AssemblerStateWrapper : public syn::ExternalAddressWrapper<assembler::AssemblerState> {
+    class AssemblerStateWrapper : public syn::AssemblerWrapper<assembler::AssemblerState> {
 
         public:
             using Self = AssemblerStateWrapper;
-            using Parent = syn::ExternalAddressWrapper<assembler::AssemblerState>;
-            static inline Self* make() noexcept { return new Self(); }
-            static void registerWithEnvironment(void* env, const char* title);
-            static void registerWithEnvironment(void* env);
-            static bool callFunction(void* env, syn::DataObjectPtr value, syn::DataObjectPtr ret);
-        public:
-            enum Operations {
-                Parse,
-                Resolve,
-                Get,
-                Count,
-            };
+            using Parent = syn::AssemblerWrapper<assembler::AssemblerState>;
          public:
-            AssemblerStateWrapper() : Parent(std::move(std::make_unique<assembler::AssemblerState>())) { }
-            bool parseLine(const std::string& line);
-            bool resolve();
-            void getMultifield(void* env, CLIPSValuePtr ret);
+			using Parent::Parent;
+			virtual ~AssemblerStateWrapper()  { }
+            virtual bool parseLine(void* env, syn::DataObjectPtr ret, const std::string& line) override;
+            virtual bool resolve(void* env, syn::DataObjectPtr ret) override;
+			virtual void getEncodedValues(void* env, syn::DataObjectPtr ret) override;
          private:
             void output(void* env, CLIPSValue* ret) noexcept;
     };

@@ -45,6 +45,7 @@ namespace iris {
     namespace assembler {
         AssemblerData::AssemblerData() noexcept : instruction(false), address(0), dataValue(0), group(0), operation(0), destination(0), source0(0), source1(0), hasLexeme(false), fullImmediate(false) { }
 
+
         void AssemblerData::setImmediate(word value) noexcept {
             source0 = syn::getLowerHalf<word>(value);
             source1 = syn::getUpperHalf<word>(value);
@@ -65,7 +66,7 @@ namespace iris {
             }
         }
         void AssemblerState::registerLabel(const std::string& value) noexcept {
-            LabelTracker::registerLabel(value, getCurrentAddress());
+            LabelParent::registerLabel(value, getCurrentAddress());
         }
         word AssemblerState::getCurrentAddress() const noexcept {
             return inDataSection() ? data.getCurrentAddress() : code.getCurrentAddress();
@@ -77,6 +78,14 @@ namespace iris {
                 code.incrementCurrentAddress();
             }
         }
+
+		void AssemblerState::reset() noexcept {
+			LabelParent::reset();
+			FinishedDataParent::reset();
+			data.reset();
+			code.reset();
+			_section = assembler::SectionType::Code;
+		}
         void AssemblerInstruction::setField(RegisterPositionType type, byte value) {
             using Type = RegisterPositionType;
             switch(type) {

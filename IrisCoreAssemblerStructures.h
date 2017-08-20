@@ -106,7 +106,11 @@ namespace iris {
          */
         class AssemblerState : public syn::LabelTracker<word>, public syn::FinishedDataTracker<AssemblerData> {
             public:
-                using LabelTracker = syn::LabelTracker<word>;
+				
+                using LabelParent = syn::LabelTracker<word>;
+				using FinishedDataParent = syn::FinishedDataTracker<AssemblerData>;
+				using Self = AssemblerState;
+			public:
                 AssemblerState() : _section(SectionType::Code) { }
                 bool inCodeSection() const noexcept;
                 bool inDataSection() const noexcept;
@@ -121,6 +125,7 @@ namespace iris {
                 void registerLabel(const std::string& label) noexcept;
                 word getCurrentAddress() const noexcept;
                 void incrementCurrentAddress() noexcept;
+				void reset() noexcept;
             private:
                 using AddressSpaceTracker = syn::AddressTracker<word>;
                 AddressSpaceTracker data;

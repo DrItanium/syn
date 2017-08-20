@@ -54,18 +54,8 @@ namespace cisc0 {
             using Self = AssemblerStateWrapper;
             using Parent = syn::AssemblerWrapper<assembler::AssemblerState>;
         public:
-            /**
-             * The different actions that this wrapper can perform when invoked
-             * through clips.
-             */
-            enum Operations {
-                Parse,
-                Resolve,
-                Get,
-                Count,
-            };
-        public:
 			using Parent::Parent;
+			virtual ~AssemblerStateWrapper()  { }
             virtual bool parseLine(void* env, syn::DataObjectPtr ret, const std::string& line) override;
             virtual bool resolve(void* env, syn::DataObjectPtr ret) override;
 			virtual void getEncodedValues(void* env, CLIPSValuePtr ret) override;
