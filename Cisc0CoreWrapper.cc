@@ -37,8 +37,8 @@ namespace cisc0 {
     class CoreWrapper : public syn::CoreWrapper<T> {
         public:
             using Parent = syn::CoreWrapper<T>;
+			using Self = CoreWrapper<T>;
 			enum class Operations {
-                __DEFAULT_CORE_OPERATIONS__,
 				WriteMemory,
 				ReadMemory,
 				GetRegister,
@@ -47,6 +47,22 @@ namespace cisc0 {
 			};
         public:
             using Parent::Parent;
+			virtual bool decodeInstruction(void* env, syn::DataObjectPtr ret, const std::string& op) override {
+				// we expect three args
+				__RETURN_FALSE_ON_FALSE__(Self::checkArgumentCount(env, ret, op, 3));
+				CLIPSValue encodedValue;
+				__RETURN_FALSE_ON_FALSE__(Self::tryExtractArgument1(env, ret, &encodedValue, syn::MayaType::Integer, "Must provide an encoded integer value for translation!"));
+				auto part0 = syn::extractLong<RawInstruction>(env, encodedValue);
+				CLIPSValue encodedValue1;
+				__RETURN_FALSE_ON_FALSE__(Self::tryExtractArgument2(env, ret, &encodedValue1, syn::MayaType::Integer, "Must provide an encoded integer value for translation!"));
+				auto part1 = syn::extractLong<RawInstruction>(env, encodedValue1);
+				CLIPSValue encodedValue2;
+				__RETURN_FALSE_ON_FALSE__(Self::tryExtractArgument3(env, ret, &encodedValue2, syn::MayaType::Integer, "Must provide an encoded integer value for translation!"));
+				auto part2 = syn::extractLong<RawInstruction>(env, encodedValue2);
+				auto outcome = cisc0::translateInstruction(part0, part1, part2);
+				CVSetString(ret, outcome.c_str());
+				return true;
+			}
     };
     using DefaultCoreWrapper = CoreWrapper<Core>;
 
@@ -69,15 +85,10 @@ namespace cisc0 {
 		using OpToArgCount = std::tuple<DefaultCoreWrapper::Operations, int>;
 		using WrappedOp = DefaultCoreWrapper::Operations;
 		static std::map<std::string, OpToArgCount> ops = {
-			{ "initialize", std::make_tuple( WrappedOp::Initialize, 0 )},
-			{ "shutdown", std::make_tuple(WrappedOp::Shutdown, 0 )},
-			{ "run", std::make_tuple(WrappedOp::Run, 0 )},
-			{ "cycle", std::make_tuple(WrappedOp::Cycle, 0) },
 			{ "write-memory", std::make_tuple(WrappedOp::WriteMemory, 2 ) },
 			{ "read-memory", std::make_tuple(WrappedOp::ReadMemory, 1 ) },
 			{ "get-register", std::make_tuple(WrappedOp::GetRegister, 1 ) },
 			{ "set-register", std::make_tuple(WrappedOp::SetRegister, 2 ) },
-			{ "decode-instruction", std::make_tuple(WrappedOp::DecodeInstruction, 3) },
 		};
 		CLIPSValue operation;
         __RETURN_FALSE_ON_FALSE__(DefaultCoreWrapper::tryExtractFunctionName(env, ret, &operation));
@@ -121,24 +132,9 @@ namespace cisc0 {
 			storeWord(ind, syn::extractLong<Word>(env, value));
             return syn::setClipsBoolean(ret);
 		};
-		auto decodeInstruction = [this, env, ret]() {
-			CLIPSValue encodedValue;
-			__RETURN_FALSE_ON_FALSE__(DefaultCoreWrapper::tryExtractArgument1(env, ret, &encodedValue, syn::MayaType::Integer, "Must provide an encoded integer value for translation!"));
-			auto part0 = syn::extractLong<RawInstruction>(env, encodedValue);
-			CLIPSValue encodedValue1;
-			__RETURN_FALSE_ON_FALSE__(DefaultCoreWrapper::tryExtractArgument2(env, ret, &encodedValue1, syn::MayaType::Integer, "Must provide an encoded integer value for translation!"));
-			auto part1 = syn::extractLong<RawInstruction>(env, encodedValue1);
-			CLIPSValue encodedValue2;
-			__RETURN_FALSE_ON_FALSE__(DefaultCoreWrapper::tryExtractArgument3(env, ret, &encodedValue2, syn::MayaType::Integer, "Must provide an encoded integer value for translation!"));
-			auto part2 = syn::extractLong<RawInstruction>(env, encodedValue2);
-			auto outcome = cisc0::translateInstruction(part0, part1, part2);
-			CVSetString(ret, outcome.c_str());
-			return true;
-		};
 		CVSetBoolean(ret, true);
 		try {
 			switch(fop) {
-                __DEFAULT_CORE_OPERATIONS_EXEC__(WrappedOp);
 				case WrappedOp::GetRegister:
 					return getRegister();
 				case WrappedOp::SetRegister:

@@ -89,17 +89,23 @@ class CoreWrapper : public syn::CommonExternalAddressWrapper<T> {
 			if (result != lookup.end()) {
 				switch(result->second) {
 					case DefaultCoreOperations::Initialize:
-						get()->initialize();
-						return true;
+						this->get()->initialize();
+						break;
 					case DefaultCoreOperations::Shutdown:
-						get()->shutdown();
-						return true;
+						this->get()->shutdown();
+						break;
 					case DefaultCoreOperations::Run:
-						get()->run();
-						return true;
+						this->get()->run();
+						break;
+					case DefaultCoreOperations::Cycle:
+						CVSetBoolean(ret, this->get()->cycle());
+						break;
+					case DefaultCoreOperations::DecodeInstruction:
+						return this->decodeInstruction(env, ret, operation);
 					default:
-            			return Parent::callErrorMessageCode3(env, ret, str, "<- unknown but registered operation!!!!");
+            			return Parent::callErrorMessageCode3(env, ret, operation, "<- unknown but registered operation!!!!");
 				}
+				return true;
 			} else {
             	return this->get()->handleOperation(env, ret);
 			}
@@ -107,6 +113,7 @@ class CoreWrapper : public syn::CommonExternalAddressWrapper<T> {
 		virtual bool isCore() noexcept override {
 			return true;
 		}
+		virtual bool decodeInstruction(void* env, DataObjectPtr ret, const std::string& op) = 0;
 };
 
 } // end namespace syn

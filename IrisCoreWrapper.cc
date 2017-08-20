@@ -40,7 +40,6 @@ namespace iris {
             using Parent = syn::CoreWrapper<Core>;
             /// list of operations exposed to CLIPS
 			enum class Operations {
-                __DEFAULT_CORE_OPERATIONS__,
                 WriteDataMemory,
                 ReadDataMemory,
                 WriteCodeMemory,
@@ -68,7 +67,17 @@ namespace iris {
 
         public:
             using Parent::Parent;
+			virtual bool decodeInstruction(void* env, syn::DataObjectPtr ret, const std::string& op) override;
     };
+	bool CoreWrapper::decodeInstruction(void* env, syn::DataObjectPtr ret, const std::string& op) {
+		__RETURN_FALSE_ON_FALSE__(CoreWrapper::checkArgumentCount(env, ret, op, 1));
+		CLIPSValue instruction;
+		__RETURN_FALSE_ON_FALSE__(CoreWrapper::tryExtractArgument1(env, ret, &instruction, syn::MayaType::Integer, "Must provide an instruction as an integer!"));
+		auto result = syn::extractLong<raw_instruction>(env, instruction);
+		auto outcome = translateInstruction(result);
+		CVSetString(ret, outcome.c_str());
+		return true;
+	}
 	void installCoreWrapper(void* env) {
 		CoreWrapper::registerWithEnvironment(env);
 	}
@@ -99,10 +108,6 @@ namespace iris {
 		using WrappedOp = CoreWrapper::Operations;
 		using OpToArgCount = std::tuple<WrappedOp, int, TargetSpace>;
 		static std::map<std::string, OpToArgCount> ops = {
-			{ "initialize", std::make_tuple( WrappedOp::Initialize, 0, TargetSpace::None )},
-			{ "shutdown", std::make_tuple(WrappedOp::Shutdown, 0, TargetSpace::None)},
-			{ "run", std::make_tuple(WrappedOp::Run, 0, TargetSpace::None)},
-			{ "cycle", std::make_tuple(WrappedOp::Cycle, 0, TargetSpace::None) },
 			{ "write-data-memory", std::make_tuple(WrappedOp::WriteDataMemory, 2, TargetSpace::Data) },
 			{ "read-data-memory", std::make_tuple(WrappedOp::ReadDataMemory, 1, TargetSpace::Data  ) },
 			{ "write-code-memory", std::make_tuple(WrappedOp::WriteCodeMemory, 2, TargetSpace::Code ) },
@@ -115,8 +120,6 @@ namespace iris {
 			{ "set-register", std::make_tuple(WrappedOp::SetRegister, 2, TargetSpace::GPR) },
 			{ "get-predicate-register", std::make_tuple(WrappedOp::GetRegister, 1, TargetSpace::Predicates ) },
 			{ "set-predicate-register", std::make_tuple(WrappedOp::SetRegister, 2, TargetSpace::Predicates) },
-			{ "translate-instruction", std::make_tuple(WrappedOp::DecodeInstruction, 1, TargetSpace::None) },
-			{ "decode-instruction", std::make_tuple(WrappedOp::DecodeInstruction, 1, TargetSpace::None) },
 		};
 		CLIPSValue operation;
         __RETURN_FALSE_ON_FALSE__(CoreWrapper::tryExtractFunctionName(env, ret, &operation));
@@ -257,18 +260,9 @@ namespace iris {
                 return CoreWrapper::callErrorCode4(env, ret, p.what());
             }
 		};
-		auto decodeInstruction = [this, env, ret]() noexcept {
-			CLIPSValue instruction;
-			__RETURN_FALSE_ON_FALSE__(CoreWrapper::tryExtractArgument1(env, ret, &instruction, syn::MayaType::Integer, "Must provide an instruction as an integer!"));
-			auto result = syn::extractLong<raw_instruction>(env, instruction);
-			auto outcome = translateInstruction(result);
-			CVSetString(ret, outcome.c_str());
-			return true;
-		};
 		CVSetBoolean(ret, true);
 		try {
 			switch(fop) {
-                __DEFAULT_CORE_OPERATIONS_EXEC__(WrappedOp);
 				case WrappedOp::GetRegister:
                 case WrappedOp::GetPredicateRegister:
 					return getRegister(space);
