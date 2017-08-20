@@ -119,7 +119,8 @@ Cisc0CoreAssemblerWrapper.o: Cisc0CoreAssemblerWrapper.cc \
  desc/cisc0/LogicalOps.desc desc/cisc0/EncodingOperation.desc \
  desc/cisc0/ExtendedOperation.desc desc/cisc0/ParsingOperation.desc \
  desc/cisc0/ComplexSubTypes.desc Cisc0CoreAssemblerStructures.h \
- Cisc0CoreAssemblerWrapper.h CommonAssemblerWrapper.h
+ Cisc0CoreAssemblerWrapper.h CommonAssemblerWrapper.h \
+ CommonExternalAddressWrapper.h
 Cisc0Core.o: Cisc0Core.cc Cisc0Core.h Problem.h Base.h BaseTypes.h \
  ClipsCore.h Core.h Device.h misc/maya/clips.h misc/maya/setup.h \
  misc/maya/os_shim.h misc/maya/platform.h misc/maya/envrnmnt.h \
@@ -262,14 +263,15 @@ Cisc0CoreWrapper.o: Cisc0CoreWrapper.cc Cisc0CoreWrapper.h Cisc0Core.h \
  ExecutionUnits.h BaseArithmetic.h IODevice.h IOController.h \
  WrappedIODevice.h ClipsExtensions.h Cisc0CoreConstants.h \
  Cisc0CoreDecodedInstruction.h defines_cisc0.h Cisc0CoreModel0.h \
- Cisc0CoreModel1.h CoreWrapper.h Cisc0CoreAssembler.h AssemblerBase.h \
- Cisc0CoreInstructionEncoder.h Cisc0ClipsExtensions.h \
- Cisc0CoreAssemblerKeywords.h desc/cisc0/RegisterNames.desc \
- desc/cisc0/Operation.desc desc/cisc0/CompareStyle.desc \
- desc/cisc0/ArithmeticOps.desc desc/cisc0/MemoryOperation.desc \
- desc/cisc0/LogicalOps.desc desc/cisc0/EncodingOperation.desc \
- desc/cisc0/ExtendedOperation.desc desc/cisc0/ParsingOperation.desc \
- desc/cisc0/ComplexSubTypes.desc Cisc0CoreAssemblerStructures.h
+ Cisc0CoreModel1.h CoreWrapper.h CommonExternalAddressWrapper.h \
+ Cisc0CoreAssembler.h AssemblerBase.h Cisc0CoreInstructionEncoder.h \
+ Cisc0ClipsExtensions.h Cisc0CoreAssemblerKeywords.h \
+ desc/cisc0/RegisterNames.desc desc/cisc0/Operation.desc \
+ desc/cisc0/CompareStyle.desc desc/cisc0/ArithmeticOps.desc \
+ desc/cisc0/MemoryOperation.desc desc/cisc0/LogicalOps.desc \
+ desc/cisc0/EncodingOperation.desc desc/cisc0/ExtendedOperation.desc \
+ desc/cisc0/ParsingOperation.desc desc/cisc0/ComplexSubTypes.desc \
+ Cisc0CoreAssemblerStructures.h
 ClipsExtensions.o: ClipsExtensions.cc BaseTypes.h ClipsExtensions.h \
  BaseArithmetic.h Problem.h misc/maya/clips.h misc/maya/setup.h \
  misc/maya/os_shim.h misc/maya/platform.h misc/maya/envrnmnt.h \
@@ -373,7 +375,7 @@ IrisCoreAssemblerStateWrapper.o: IrisCoreAssemblerStateWrapper.cc Base.h \
  desc/iris/ArithmeticOp.desc desc/iris/MoveOp.desc desc/iris/JumpOp.desc \
  desc/iris/CompareOp.desc desc/iris/ConditionRegisterOp.desc \
  IrisCoreAssemblerStructures.h IrisCoreAssemblerStateWrapper.h \
- CommonAssemblerWrapper.h
+ CommonAssemblerWrapper.h CommonExternalAddressWrapper.h
 IrisCoreAssemblerStructures.o: IrisCoreAssemblerStructures.cc Base.h \
  BaseTypes.h Problem.h AssemblerBase.h BaseArithmetic.h IrisCore.h \
  ExecutionUnits.h IODevice.h Device.h ClipsCore.h Core.h \
@@ -477,10 +479,11 @@ IrisCoreWrapper.o: IrisCoreWrapper.cc IrisCoreWrapper.h IrisCore.h Base.h \
  misc/maya/insfile.h misc/maya/msgcom.h misc/maya/msgpass.h \
  misc/maya/objrtmch.h IOController.h WrappedIODevice.h ClipsExtensions.h \
  IrisCoreTypes.h IrisCoreEncodingOperations.h defines_iris.h \
- CoreWrapper.h IrisCoreAssemblerStructures.h AssemblerBase.h \
- IrisClipsExtensions.h IrisCoreAssemblerKeywords.h \
- desc/iris/ArithmeticOp.desc desc/iris/MoveOp.desc desc/iris/JumpOp.desc \
- desc/iris/CompareOp.desc desc/iris/ConditionRegisterOp.desc
+ CoreWrapper.h CommonExternalAddressWrapper.h \
+ IrisCoreAssemblerStructures.h AssemblerBase.h IrisClipsExtensions.h \
+ IrisCoreAssemblerKeywords.h desc/iris/ArithmeticOp.desc \
+ desc/iris/MoveOp.desc desc/iris/JumpOp.desc desc/iris/CompareOp.desc \
+ desc/iris/ConditionRegisterOp.desc
 RegisteredExternalAddressAssemblers.o: \
  RegisteredExternalAddressAssemblers.cc \
  AssemblerExternalAddressRegistrar.h Cisc0ClipsExtensions.h \
