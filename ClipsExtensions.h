@@ -349,17 +349,72 @@ namespace WrappedNewCallBuilder {
         return nullptr;
     }
 }
+void buildFunctionErrorString(std::ostream& stream, const std::string& action, const std::string& name) noexcept;
+void buildFunctionString(std::ostream& stream, const std::string& action, const std::string& name) noexcept;
+template<typename T>
+const std::string& getFunctionErrorPrefixCall() noexcept {
+    static bool init = true;
+    static std::string str;
+    if (init) {
+        init = false;
+        std::stringstream ss;
+        buildFunctionErrorString(ss, "call", TypeToName::getSymbolicName<T>());
+        str = ss.str();
+    }
+    return str;
+}
 
+template<typename T>
+const std::string& getFunctionErrorPrefixNew() noexcept {
+    static bool init = true;
+    static std::string str;
+    if (init) {
+        init = false;
+        std::stringstream ss;
+        buildFunctionErrorString(ss, "new", TypeToName::getSymbolicName<T>());
+        str = ss.str();
+    }
+    return str;
+}
+
+template<typename T>
+const std::string& getFunctionPrefixCall() noexcept {
+    static bool init = true;
+    static std::string str;
+    if (init) {
+        init = false;
+        std::stringstream ss;
+        buildFunctionString(ss, "call", TypeToName::getSymbolicName<T>());
+        str = ss.str();
+    }
+    return str;
+}
+
+template<typename T>
+const std::string& getFunctionPrefixNew() noexcept {
+    static bool init = true;
+    static std::string str;
+    if (init) {
+        init = false;
+        std::stringstream ss;
+        buildFunctionString(ss, "new", TypeToName::getSymbolicName<T>());
+        str = ss.str();
+    }
+    return str;
+}
 using FunctionStrings = std::tuple<std::string, std::string, std::string>;
 template<typename T>
-static FunctionStrings retrieveFunctionNames(const std::string& action) noexcept {
+FunctionStrings retrieveFunctionNames(const std::string& action) noexcept {
     std::stringstream ss, ss2;
-    ss << action << " (" << TypeToName::getSymbolicName<T>() << ")";
+    buildFunctionString(ss, action, TypeToName::getSymbolicName<T>());
+    buildFunctionErrorString(ss2, action, TypeToName::getSymbolicName<T>());
     auto str0 = ss.str();
-    ss2 << "Function " << str0;
     auto str1 = ss2.str();
     return std::make_tuple(TypeToName::getSymbolicName<T>(), str0, str1);
 }
+
+
+
 
 
 
@@ -386,14 +441,8 @@ static FunctionStrings retrieveFunctionNames(const std::string& action) noexcept
  */
 template<typename T>
 bool badCallArgument(void* env, CLIPSValue* ret, int code, const std::string& msg) noexcept {
-    static bool init = true;
-    static std::string funcErrorPrefix;
-    if (init) {
-        funcErrorPrefix = std::get<2>(syn::retrieveFunctionNames<T>("call"));
-        init = false;
-    }
     CVSetBoolean(ret, false);
-    return syn::errorMessage(env, "CALL", code, funcErrorPrefix, msg);
+    return syn::errorMessage(env, "CALL", code, getFunctionErrorPrefixCall<T>(), msg);
 }
 
 /**
@@ -467,16 +516,7 @@ class ExternalAddressWrapper {
 			return true;
 		}
         static void newFunction(void* env, CLIPSValue* ret) {
-            static auto init = true;
-            static std::string funcStr;
-            static std::string funcErrorPrefix;
-            if (init) {
-                init = false;
-                auto functions = retrieveFunctionNames<InternalType>("new");
-                funcStr = std::get<1>(functions);
-                funcErrorPrefix = std::get<2>(functions);
-            }
-            InternalType* ptr = WrappedNewCallBuilder::invokeNewFunction<InternalType>(env, ret, funcErrorPrefix, funcStr);
+            InternalType* ptr = WrappedNewCallBuilder::invokeNewFunction<InternalType>(env, ret, getFunctionErrorPrefixNew<InternalType>(), getFunctionPrefixNew<InternalType>());
             if (ptr) {
                 using CorrespondingType = typename ExternalAddressWrapperType<T>::TheType;
                 auto s = new CorrespondingType(ptr);

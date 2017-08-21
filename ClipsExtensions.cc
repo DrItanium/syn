@@ -566,4 +566,12 @@ namespace syn {
     int getArgCount(void* env) noexcept {
         return EnvRtnArgCount(env);
     }
+
+    void buildFunctionErrorString(std::ostream& stream, const std::string& action, const std::string& name) noexcept {
+        stream << "Function ";
+        buildFunctionString(stream, action, name);
+    }
+    void buildFunctionString(std::ostream& stream, const std::string& action, const std::string& name) noexcept {
+        stream << "Function " << action << " (" << name << ")";
+    }
 }
