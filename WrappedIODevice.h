@@ -59,7 +59,7 @@ namespace syn {
             Count,
             Error = Count,
         };
-        const char* operationsName(Operations op) noexcept;
+		const std::string& operationsName(Operations op) noexcept;
 
         Operations nameToOperation(const std::string& title) noexcept;
         constexpr int getArgCount(Operations op) noexcept;

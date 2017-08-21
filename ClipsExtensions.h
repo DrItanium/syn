@@ -264,13 +264,7 @@ void CLIPS_basePrintAddress(void* env, const char* logicalName, void* theValue, 
  */
 template<typename T>
 void CLIPS_basePrintAddress(void* env, const char* logicalName, void* theValue) {
-	static bool init = true;
-	static std::string func;
-	if (init) {
-		init = false;
-		func = TypeToName::getSymbolicName<T>();
-	}
-	CLIPS_basePrintAddress(env, logicalName, theValue, func.c_str(), "Wrapper");
+	CLIPS_basePrintAddress(env, logicalName, theValue, TypeToName::getSymbolicName<T>().c_str(), "Wrapper");
 }
 
 /**
@@ -371,18 +365,12 @@ namespace WrappedNewCallBuilder {
 using FunctionStrings = std::tuple<std::string, std::string, std::string>;
 template<typename T>
 static FunctionStrings retrieveFunctionNames(const std::string& action) noexcept {
-    static bool init = true;
-    static std::string title;
-    if (init) {
-        init = false;
-        title = TypeToName::getSymbolicName<T>();
-    }
     std::stringstream ss, ss2;
-    ss << action << " (" << title << ")";
+    ss << action << " (" << TypeToName::getSymbolicName<T>() << ")";
     auto str0 = ss.str();
     ss2 << "Function " << str0;
     auto str1 = ss2.str();
-    return std::make_tuple(title, str0, str1);
+    return std::make_tuple(TypeToName::getSymbolicName<T>(), str0, str1);
 }
 
 
@@ -457,24 +445,14 @@ class ExternalAddressWrapper {
 		using InternalType = T;
 		using BaseClass = ExternalAddressWrapper<T>;
         using Self = BaseClass;
+		static void setString(CLIPSValuePtr val, const std::string& str) noexcept {
+			CVSetString(val, str.c_str());
+		}
 		static const std::string& getType() noexcept {
-            /// @todo modify this function so that it returns a string ref
-            static bool init = true;
-            static std::string name;
-            if (init) {
-                init = false;
-                name = TypeToName::getSymbolicName<InternalType>();
-            }
-            return name;
+            return TypeToName::getSymbolicName<InternalType>();
         }
         static void setType(CLIPSValue* ret) noexcept {
-            static bool init = true;
-            static std::string name;
-            if (init) {
-                init = false;
-                name = getType();
-            }
-            CVSetString(ret, name.c_str());
+            CVSetString(ret, getType().c_str());
         }
         static bool checkArgumentCount(void* env, CLIPSValuePtr ret, const std::string& operation, int inputArgCount) {
             auto aCount = baseArgumentIndex + inputArgCount;

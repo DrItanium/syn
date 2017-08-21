@@ -39,13 +39,6 @@ namespace syn {
 
 #define __DEFAULT_ERROR_STATE__ Count
 
-#define __DEFAULT_CORE_OPERATIONS_EXEC__(TYPE) \
-    case TYPE :: Initialize: initialize(); break; \
-    case TYPE :: Shutdown: shutdown(); break; \
-    case TYPE :: Run: run(); break; \
-    case TYPE :: Cycle: CVSetBoolean(ret, cycle()); break; \
-	case TYPE :: DecodeInstruction: decodeInstruction(); break
-
 /**
  * Base class for wrapping a Core for use in CLIPS as an external address type.
  * @tparam T the type to wrap

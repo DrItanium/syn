@@ -51,24 +51,14 @@ namespace syn {
             }
         }
 
-        template<Operations op>
-        const char* fixedOperationName() noexcept {
-            static bool init = true;
-            static const char* name = nullptr;
-            if (init) {
-                init = false;
-                name = operationsName(op);
-            }
-            return name;
-        }
         Operations nameToOperation(const std::string& title) noexcept {
             static std::map<std::string, Operations> opTranslation = {
-                { fixedOperationName<Operations::Read>(), Operations::Read },
-                { fixedOperationName<Operations::Write>(), Operations::Write },
-                { fixedOperationName<Operations::Type>(),  Operations::Type },
-                { fixedOperationName<Operations::Initialize>(), Operations::Initialize },
-                { fixedOperationName<Operations::Shutdown>(), Operations::Shutdown },
-                { fixedOperationName<Operations::ListCommands>(), Operations::ListCommands },
+                { operationsName(Operations::Read), Operations::Read },
+                { operationsName(Operations::Write), Operations::Write },
+                { operationsName(Operations::Type),  Operations::Type },
+                { operationsName(Operations::Initialize), Operations::Initialize },
+                { operationsName(Operations::Shutdown), Operations::Shutdown },
+                { operationsName(Operations::ListCommands), Operations::ListCommands },
             };
             auto result = opTranslation.find(title);
             if (result == opTranslation.end()) {
@@ -76,7 +66,7 @@ namespace syn {
             }
             return result->second;
         }
-        const char* operationsName(Operations op) noexcept {
+        const std::string& operationsName(Operations op) noexcept {
 
             // update this list of names only! everything else is dependent on it!
             static std::map<Operations, std::string> reverseNameLookup = {
@@ -87,22 +77,23 @@ namespace syn {
                 { Operations::Shutdown, "shutdown" },
                 { Operations::ListCommands, "list-commands" },
             };
+			static std::string empty;
             auto result = reverseNameLookup.find(op);
             if (result == reverseNameLookup.end()) {
-                return nullptr;
+                return empty;
             } else {
-                return result->second.c_str();
+                return result->second;
             }
         }
 
         bool getCommandList(void* env, CLIPSValuePtr ret) noexcept {
             FixedSizeMultifieldBuilder<static_cast<long>(Operations::Count)> mb(env);
-            mb.setField<1, MayaType::Symbol>(EnvAddSymbol(env, fixedOperationName<Operations::Read>()));
-            mb.setField<2, MayaType::Symbol>(EnvAddSymbol(env, fixedOperationName<Operations::Write>()));
-            mb.setField<3, MayaType::Symbol>(EnvAddSymbol(env, fixedOperationName<Operations::Type>()));
-            mb.setField<4, MayaType::Symbol>(EnvAddSymbol(env, fixedOperationName<Operations::Initialize>()));
-            mb.setField<5, MayaType::Symbol>(EnvAddSymbol(env, fixedOperationName<Operations::Shutdown>()));
-            mb.setField<6, MayaType::Symbol>(EnvAddSymbol(env, fixedOperationName<Operations::ListCommands>()));
+            mb.setField<1, MayaType::Symbol>(EnvAddSymbol(env, operationsName(Operations::Read).c_str()));
+            mb.setField<2, MayaType::Symbol>(EnvAddSymbol(env, operationsName(Operations::Write).c_str()));
+            mb.setField<3, MayaType::Symbol>(EnvAddSymbol(env, operationsName(Operations::Type).c_str()));
+            mb.setField<4, MayaType::Symbol>(EnvAddSymbol(env, operationsName(Operations::Initialize).c_str()));
+            mb.setField<5, MayaType::Symbol>(EnvAddSymbol(env, operationsName(Operations::Shutdown).c_str()));
+            mb.setField<6, MayaType::Symbol>(EnvAddSymbol(env, operationsName(Operations::ListCommands).c_str()));
             mb.assign(ret);
             return true;
         }

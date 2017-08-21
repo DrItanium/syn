@@ -438,13 +438,7 @@ namespace syn {
 			}
 
 			static void registerWithEnvironment(void* env) {
-				static bool init = true;
-				static std::string func;
-				if (init) {
-					init = false;
-					func = Parent::getType();
-				}
-				registerWithEnvironment(env, func.c_str());
+				registerWithEnvironment(env, Parent::getType().c_str());
 			}
 		public:
 			ManagedMemoryBlock(Address capacity) : Parent(std::move(std::make_unique<WordBlock>(capacity))), _capacity(capacity) { }
