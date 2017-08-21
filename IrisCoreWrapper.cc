@@ -297,7 +297,7 @@ namespace syn {
 namespace syn {
 	namespace WrappedNewCallBuilder {
 		template<>
-		iris::Core* invokeNewFunction<iris::Core>(void* env, CLIPSValuePtr ret, const std::string funcErrorPrefix, const std::string& function) noexcept {
+		iris::Core* invokeNewFunction<iris::Core>(void* env, CLIPSValuePtr ret, const std::string& funcErrorPrefix, const std::string& function) noexcept {
 			return syn::newCore<iris::Core>(env, ret, funcErrorPrefix, function);
 		}
 	} // end namespace WrappedNewCallBuilder

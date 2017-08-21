@@ -56,10 +56,10 @@ class CoreWrapper : public syn::CommonExternalAddressWrapper<T> {
 			CVSetString(val, str.c_str());
 		}
 		enum class DefaultCoreOperations {
-			Initialize, 
-			Shutdown, 
-			Run, 
-			Cycle, 
+			Initialize,
+			Shutdown,
+			Run,
+			Cycle,
 			DecodeInstruction,
 			__DEFAULT_ERROR_STATE__
 		};
@@ -72,7 +72,7 @@ class CoreWrapper : public syn::CommonExternalAddressWrapper<T> {
         virtual bool handleCallOperation(void* env, DataObjectPtr value, DataObjectPtr ret, const std::string& operation) override {
 			// all of the default core operations should be handled here
 			static std::map<std::string, DefaultCoreOperations> lookup = {
-				{ "initialize", DefaultCoreOperations::Initialize }, 
+				{ "initialize", DefaultCoreOperations::Initialize },
 				{ "shutdown", DefaultCoreOperations::Shutdown },
 				{ "run", DefaultCoreOperations::Run },
 				{ "cycle", DefaultCoreOperations::Cycle },
@@ -110,7 +110,9 @@ class CoreWrapper : public syn::CommonExternalAddressWrapper<T> {
 };
 
 template<typename Core>
-Core* newCore(void* env, CLIPSValuePtr ret, const std::string funcErrorPrefix, const std::string& function) noexcept {
+Core* newCore(void* env, CLIPSValuePtr ret, const std::string& funcErrorPrefix, const std::string& function) noexcept {
+    static_assert(std::is_constructible<Core>::value, "The target core must be constructible");
+    static_assert(std::is_constructible<Core, const std::string&>::value, "The target core must be constructible with a single string argument for io loading!");
 	try {
 		if (syn::getArgCount(env) == 1) {
 			return new Core();
@@ -119,7 +121,7 @@ Core* newCore(void* env, CLIPSValuePtr ret, const std::string funcErrorPrefix, c
 			if (syn::CoreWrapper<Core>::tryExtractArgument1(env, ret, &index, syn::MayaType::Lexeme, "Must provide a lexeme which is the path to the io bootstrap")) {
 				CVSetBoolean(ret, false);
 				return nullptr;
-			} 
+			}
 			std::string path(syn::extractLexeme(env, index));
 			return new Core(path);
 		} else {

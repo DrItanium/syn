@@ -343,8 +343,9 @@ namespace WrappedNewCallBuilder {
      * @return a newly allocated thing of type T
      */
     template<typename T>
-    T* invokeNewFunction(void* env, CLIPSValuePtr ret, const std::string funcErrorPrefix, const std::string& function) noexcept {
+    T* invokeNewFunction(void* env, CLIPSValuePtr ret, const std::string& funcErrorPrefix, const std::string& function) noexcept {
         using InternalType = T;
+        static_assert(std::is_constructible<InternalType>::value, "Must be constructable with no args");
         try {
             if (getArgCount(env) == 1) {
                 return new InternalType();
