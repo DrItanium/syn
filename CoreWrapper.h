@@ -116,5 +116,31 @@ class CoreWrapper : public syn::CommonExternalAddressWrapper<T> {
 		virtual bool decodeInstruction(void* env, DataObjectPtr ret, const std::string& op) = 0;
 };
 
+template<typename Core>
+Core* newCore(void* env, CLIPSValuePtr ret, const std::string funcErrorPrefix, const std::string& function) noexcept {
+	try {
+		if (syn::getArgCount(env) == 1) {
+			return new Core();
+		} else if (syn::getArgCount(env) == 2) {
+			CLIPSValue index;
+			if (syn::CoreWrapper<Core>::tryExtractArgument1(env, ret, &index, syn::MayaType::Lexeme, "Must provide a lexeme which is the path to the io bootstrap")) {
+				CVSetBoolean(ret, false);
+				return nullptr;
+			} 
+			std::string path(syn::extractLexeme(env, index));
+			return new Core(path);
+		} else {
+			syn::errorMessage(env, "NEW", 2, funcErrorPrefix, " no arguments should be provided for function new!");
+		}
+	} catch (const syn::Problem& p) {
+		CVSetBoolean(ret, false);
+		std::stringstream s;
+		s << "an exception was thrown: " << p.what();
+		auto str = s.str();
+		syn::errorMessage(env, "NEW", 2, funcErrorPrefix, str);
+	}
+	return nullptr;
+}
+
 } // end namespace syn
 #endif // end CORE_WRAPPER_H__

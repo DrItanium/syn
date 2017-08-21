@@ -162,3 +162,16 @@ namespace syn {
     DefExternalAddressWrapperType(cisc0::CoreModel1, cisc0::CoreWrapper<cisc0::CoreModel1>);
 } // end namespace syn
 
+namespace syn {
+	namespace WrappedNewCallBuilder {
+		template<>
+		cisc0::CoreModel1* invokeNewFunction<cisc0::CoreModel1>(void* env, CLIPSValuePtr ret, const std::string funcErrorPrefix, const std::string& function) noexcept {
+			return syn::newCore<cisc0::CoreModel1>(env, ret, funcErrorPrefix, function);
+		}
+		template<>
+		cisc0::CoreModel0* invokeNewFunction<cisc0::CoreModel0>(void* env, CLIPSValuePtr ret, const std::string funcErrorPrefix, const std::string& function) noexcept {
+			return syn::newCore<cisc0::CoreModel0>(env, ret, funcErrorPrefix, function);
+		}
+	} // end namespace WrappedNewCallBuilder
+} // end namespace syn
+
