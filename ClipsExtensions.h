@@ -290,19 +290,6 @@ struct ExternalAddressWrapperType {
 	static constexpr bool customImpl = false;
 };
 
-/**
- * Given a CLIPSValuePtr which contains an external address type, extract the
- * acutal internal type. This is a convienence method which handles the casting
- * and conversion from CLIPS.
- * @param value the CLIPSValuePtr containing the external address pointer
- * @tparam T The internal type of the external address
- * @return a pointer to the internal type itself
- */
-template<typename T>
-T* unwrapExternalAddress(CLIPSValue* value) noexcept {
-    return static_cast<typename ExternalAddressWrapperType<T>::TheType *>(DOPToExternalAddress(value));
-}
-
 // Have to do it this way because std::function's will go out of scope and
 // everything breaks
 /**
