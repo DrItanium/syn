@@ -54,7 +54,9 @@ class CommonExternalAddressWrapper : public ExternalAddressWrapper<T> {
 			Count,
 		};
         static bool callFunction(void* env, DataObjectPtr value, DataObjectPtr ret) {
+            using CastTo = typename ExternalAddressWrapperType<T>::TheType;
 			static_assert(ExternalAddressWrapperType<T>::customImpl, "Must provide a custom external address wrapper type defintion, the default one will segfault the program on use!");
+            static_assert(std::is_base_of<Self, CastTo>::value, "To use the common functionality hierarchy, you must inherit from CommonExternalAddressWrapper");
 			static std::map<std::string, BuiltinStandardFunctions> lookup = {
 				{ "type", BuiltinStandardFunctions::Type },
 				{ "corep", BuiltinStandardFunctions::IsCore },
@@ -66,7 +68,7 @@ class CommonExternalAddressWrapper : public ExternalAddressWrapper<T> {
             std::string str(extractLexeme(env, operation));
 			// most likely we can safely do this so go for it if we
 			// have a custom implementation
-			auto* ptr = static_cast<typename ExternalAddressWrapperType<T>::TheType *>(EnvDOPToExternalAddress(value));
+			auto* ptr = static_cast<CastTo*>(EnvDOPToExternalAddress(value));
 			auto result = lookup.find(str);
 			if (result != lookup.end()) {
 				switch(result->second) {
