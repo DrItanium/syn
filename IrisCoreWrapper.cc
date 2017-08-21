@@ -287,9 +287,6 @@ namespace iris {
             return CoreWrapper::callErrorCode2(env, ret, p.what());
 		}
 	}
-	Core* Core::make() noexcept {
-		return new Core();
-	}
 } // end namespace iris
 
 namespace syn {

@@ -55,6 +55,7 @@ namespace cisc0 {
 	class CoreModel1 : public Core {
 		public:
             using Parent = Core;
+			using Self = CoreModel1;
             static constexpr auto instructionCacheWidth = 3;
             /**
              * Stores the a series of words from memory and treats them as
@@ -135,6 +136,7 @@ namespace cisc0 {
             };
 		public:
 			CoreModel1() noexcept;
+			CoreModel1(const std::string& ucodePath) noexcept;
 			virtual ~CoreModel1() noexcept;
 			virtual void initialize() override;
 			virtual bool cycle() override;

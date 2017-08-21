@@ -41,7 +41,6 @@
 namespace iris {
 	class Core : public syn::ClipsCore {
         public:
-            static Core* make() noexcept;
             using IOSpace = syn::CLIPSIOController<word, CLIPSInteger>;
             template<dword capacity>
             using WordMemorySpace = syn::FixedSizeLoadStoreUnit<word, dword, capacity>;
@@ -55,6 +54,7 @@ namespace iris {
             using PredicateRegisterBlock = syn::Register<word, ArchitectureConstants::AddressMax>;
 		public:
 			Core() noexcept;
+			Core(const std::string& ucodePath) noexcept;
 			virtual ~Core();
 			virtual void initialize() override;
 			virtual void shutdown() override;

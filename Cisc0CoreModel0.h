@@ -51,9 +51,11 @@ namespace cisc0 {
      */
 	class CoreModel0 : public Core {
         public:
-            using Parent = Core ;
+            using Parent = Core;
+			using Self = CoreModel0;
 		public:
 			CoreModel0() noexcept;
+			CoreModel0(const std::string& path) noexcept;
 			virtual ~CoreModel0() noexcept;
 			virtual bool cycle() override;
 		private:

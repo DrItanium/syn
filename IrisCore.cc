@@ -30,6 +30,31 @@
 #include <vector>
 #include "IrisClipsExtensions.h"
 
+/*
+namespace syn {
+	namespace WrappedNewCallBuilder {
+    template<>
+    iris::Core* invokeNewFunction<iris::Core>(void* env, CLIPSValuePtr ret, const std::string funcErrorPrefix, const std::string& function) noexcept {
+        using InternalType = T;
+        try {
+            if (getArgCount(env) == 1) {
+                return new InternalType();
+            } else {
+                errorMessage(env, "NEW", 2, funcErrorPrefix, " no arguments should be provided for function new!");
+            }
+        } catch (const syn::Problem& p) {
+            CVSetBoolean(ret, false);
+            std::stringstream s;
+            s << "an exception was thrown: " << p.what();
+            auto str = s.str();
+            errorMessage(env, "NEW", 2, funcErrorPrefix, str);
+        }
+        return nullptr;
+
+	}
+	} // end namespace WrappedNewCallBuilder
+} // end namespace syn
+*/
 namespace iris {
 	constexpr word encodeWord(byte a, byte b) noexcept {
 		return syn::encodeUint16LE(a, b);
@@ -37,7 +62,8 @@ namespace iris {
 	constexpr dword encodeDword(word lower, word upper) noexcept {
 		return syn::encodeUint32LE(lower, upper);
 	}
-	Core::Core() noexcept : execute(true), advanceIp(true), current(0), _ip(0), _lr(0), _error(0), _io(0, 0xFFFF, "IrisCoreIOBootstrap.clp") { }
+	Core::Core() noexcept : Core("IrisCoreIOBootstrap.clp") { }
+	Core::Core(const std::string& ucodePath) noexcept : execute(true), advanceIp(true), current(0), _ip(0), _lr(0), _error(0), _io(0, 0xFFFF, ucodePath) { }
 
 	Core::~Core() {
 	}
