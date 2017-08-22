@@ -32,6 +32,7 @@
 
 #include "ClipsExtensions.h"
 #include "CommonExternalAddressWrapper.h"
+#include "DeviceWrapper.h"
 #include <map>
 
 namespace syn {
@@ -44,9 +45,9 @@ namespace syn {
  * @tparam T the type to wrap
  */
 template<typename T>
-class CoreWrapper : public syn::CommonExternalAddressWrapper<T> {
+class CoreWrapper : public syn::DeviceWrapper<T> {
     public:
-        using Parent = syn::CommonExternalAddressWrapper<T>;
+        using Parent = syn::DeviceWrapper<T>;
         using Self = CoreWrapper<T>;
     public:
         static void registerWithEnvironment(void* env) {
@@ -56,8 +57,6 @@ class CoreWrapper : public syn::CommonExternalAddressWrapper<T> {
 			CVSetString(val, str.c_str());
 		}
 		enum class DefaultCoreOperations {
-			Initialize,
-			Shutdown,
 			Run,
 			Cycle,
 			DecodeInstruction,
@@ -69,12 +68,10 @@ class CoreWrapper : public syn::CommonExternalAddressWrapper<T> {
         /// Construct a new Core type and pass it to the parent
         CoreWrapper() : Parent(new T()) { }
         virtual ~CoreWrapper() { }
-        virtual bool handleCallOperation(void* env, DataObjectPtr value, DataObjectPtr ret, const std::string& operation) override {
+        virtual bool handleExtendedCallOperation(void* env, DataObjectPtr value, DataObjectPtr ret, const std::string& operation) override {
             static_assert(std::is_base_of<Self, typename ExternalAddressWrapperType<T>::TheType>::value, "The external address wrapper for this core must inherit from this class to take advantage of it!");
 			// all of the default core operations should be handled here
 			static std::map<std::string, DefaultCoreOperations> lookup = {
-				{ "initialize", DefaultCoreOperations::Initialize },
-				{ "shutdown", DefaultCoreOperations::Shutdown },
 				{ "run", DefaultCoreOperations::Run },
 				{ "cycle", DefaultCoreOperations::Cycle },
 				{ "decode-instruction", DefaultCoreOperations::DecodeInstruction },
@@ -82,12 +79,6 @@ class CoreWrapper : public syn::CommonExternalAddressWrapper<T> {
 			auto result = lookup.find(operation);
 			if (result != lookup.end()) {
 				switch(result->second) {
-					case DefaultCoreOperations::Initialize:
-						this->get()->initialize();
-						break;
-					case DefaultCoreOperations::Shutdown:
-						this->get()->shutdown();
-						break;
 					case DefaultCoreOperations::Run:
 						this->get()->run();
 						break;
@@ -104,7 +95,7 @@ class CoreWrapper : public syn::CommonExternalAddressWrapper<T> {
             	return this->get()->handleOperation(env, ret);
 			}
         }
-		virtual bool isCore() noexcept override {
+		virtual bool isCore() noexcept override final {
 			return true;
 		}
 		virtual bool decodeInstruction(void* env, DataObjectPtr ret, const std::string& op) = 0;

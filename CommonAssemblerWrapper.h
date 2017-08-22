@@ -115,7 +115,7 @@ class AssemblerWrapper : public CommonExternalAddressWrapper<T> {
                 return Parent::callErrorMessageCode3(env, ret, "resolve", p);
 			}
 		}
-		virtual bool isAssembler() noexcept override {
+		virtual bool isAssembler() noexcept override final {
 			return true;
 		}
 };
