@@ -29,6 +29,7 @@ namespace syn {
 	using CLIPSRandomNumberGeneratorDevice = RandomDevice<CLIPSInteger, CLIPSInteger>;
 	DefWrapperSymbolicName(CLIPSRandomNumberGeneratorDevice, "random-number-generator");
 	using WrappedCLIPSRandomNumberGeneratorDevice = WrappedGenericRandomDevice<CLIPSInteger>;
+    DefExternalAddressWrapperType(CLIPSRandomNumberGeneratorDevice, WrappedCLIPSRandomNumberGeneratorDevice);
 
     void CLIPS_installDefaultIODevices(void* theEnv) {
 		WrappedCLIPSRandomNumberGeneratorDevice::registerWithEnvironment(theEnv);
@@ -37,7 +38,6 @@ namespace syn {
         constexpr int getArgCount(Operations op) noexcept {
             using Op = Operations;
             switch(op) {
-                case Op::Type:
                 case Op::Initialize:
                 case Op::Shutdown:
                 case Op::ListCommands:
@@ -55,7 +55,6 @@ namespace syn {
             static std::map<std::string, Operations> opTranslation = {
                 { operationsName(Operations::Read), Operations::Read },
                 { operationsName(Operations::Write), Operations::Write },
-                { operationsName(Operations::Type),  Operations::Type },
                 { operationsName(Operations::Initialize), Operations::Initialize },
                 { operationsName(Operations::Shutdown), Operations::Shutdown },
                 { operationsName(Operations::ListCommands), Operations::ListCommands },
@@ -72,7 +71,6 @@ namespace syn {
             static std::map<Operations, std::string> reverseNameLookup = {
                 { Operations::Read, "read" },
                 { Operations::Write, "write" },
-                { Operations::Type, "type" },
                 { Operations::Initialize, "initialize" },
                 { Operations::Shutdown, "shutdown" },
                 { Operations::ListCommands, "list-commands" },
@@ -90,10 +88,9 @@ namespace syn {
             FixedSizeMultifieldBuilder<static_cast<long>(Operations::Count)> mb(env);
             mb.setField<1, MayaType::Symbol>(EnvAddSymbol(env, operationsName(Operations::Read).c_str()));
             mb.setField<2, MayaType::Symbol>(EnvAddSymbol(env, operationsName(Operations::Write).c_str()));
-            mb.setField<3, MayaType::Symbol>(EnvAddSymbol(env, operationsName(Operations::Type).c_str()));
-            mb.setField<4, MayaType::Symbol>(EnvAddSymbol(env, operationsName(Operations::Initialize).c_str()));
-            mb.setField<5, MayaType::Symbol>(EnvAddSymbol(env, operationsName(Operations::Shutdown).c_str()));
-            mb.setField<6, MayaType::Symbol>(EnvAddSymbol(env, operationsName(Operations::ListCommands).c_str()));
+            mb.setField<3, MayaType::Symbol>(EnvAddSymbol(env, operationsName(Operations::Initialize).c_str()));
+            mb.setField<4, MayaType::Symbol>(EnvAddSymbol(env, operationsName(Operations::Shutdown).c_str()));
+            mb.setField<5, MayaType::Symbol>(EnvAddSymbol(env, operationsName(Operations::ListCommands).c_str()));
             mb.assign(ret);
             return true;
         }

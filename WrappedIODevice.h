@@ -42,6 +42,7 @@
 #include "Core.h"
 #include "IODevice.h"
 #include "ClipsExtensions.h"
+#include "CommonExternalAddressWrapper.h"
 namespace syn {
 
     /**
@@ -50,14 +51,12 @@ namespace syn {
      */
     namespace WrappedIODeviceConstants {
         enum class Operations {
-            Type,
             Read,
             Write,
             Initialize,
             Shutdown,
             ListCommands,
             Count,
-            Error = Count,
         };
 		const std::string& operationsName(Operations op) noexcept;
 
@@ -65,9 +64,6 @@ namespace syn {
         constexpr int getArgCount(Operations op) noexcept;
         bool getCommandList(void* env, CLIPSValuePtr ret) noexcept;
     } // end namespace WrappedIODeviceConstants
-
-    template<>
-    constexpr auto defaultErrorState<WrappedIODeviceConstants::Operations> = WrappedIODeviceConstants::Operations::Error;
 
     void handleProblem(void* env, const syn::Problem& p, CLIPSValue* ret, const std::string& funcErrorPrefix, const char* type, int code) noexcept;
     template<typename Data, typename Address, template<typename, typename> class T>
@@ -80,31 +76,15 @@ namespace syn {
         static T<Data, Address>* invokeNewFunction(void* env, CLIPSValuePtr ret, const std::string& funcErrorPrefix, const std::string& function) noexcept;
     };
     template<typename Data, typename Address, template<typename, typename> class T>
-    class WrappedIODevice : public ExternalAddressWrapper<T<Data, Address>> {
+    class WrappedIODevice : public CommonExternalAddressWrapper<T<Data, Address>> {
         public:
             using InternalType = T<Data, Address>;
             using Self = WrappedIODevice<Data, Address, T>;
-            using Parent = ExternalAddressWrapper<InternalType>;
+            using Parent = CommonExternalAddressWrapper<InternalType>;
             using Self_Ptr = Self*;
             using Operations = WrappedIODeviceConstants::Operations;
        public:
-            static void newFunction(void* env, CLIPSValue* ret) {
-                // build the internal object first!
-                auto ptr = WrappedIODeviceBuilder<Data, Address, T>::invokeNewFunction(env, ret, getFunctionErrorPrefixNew<InternalType>(), getFunctionPrefixNew<InternalType>());
-                if (ptr) {
-                    auto idIndex = Self::getAssociatedEnvironmentId(env);
-                    ret->bitType = EXTERNAL_ADDRESS_TYPE;
-                    SetpType(ret, EXTERNAL_ADDRESS);
-                    SetpValue(ret, EnvAddExternalAddress(env, Self::make(ptr), idIndex));
-                } else {
-                    CVSetBoolean(ret, false);
-                }
-            }
-            static bool callFunction(void* env, CLIPSValue* value, CLIPSValue* ret) {
-                __RETURN_FALSE_ON_FALSE__(Parent::isExternalAddress(env, ret, value));
-                CLIPSValue op;
-                __RETURN_FALSE_ON_FALSE__(Parent::tryExtractFunctionName(env, ret, &op));
-                std::string str(syn::extractLexeme(env, op));
+            virtual bool handleCallOperation(void* env, syn::DataObjectPtr value, syn::DataObjectPtr ret, const std::string& str) override {
                 auto result = WrappedIODeviceConstants::nameToOperation(str);
                 __RETURN_FALSE_ON_FALSE__(Parent::isLegalOperation(env, ret, str, result, syn::defaultErrorState<decltype(WrappedIODeviceConstants::nameToOperation(str))>));
                 auto theOp = result;
@@ -139,9 +119,6 @@ namespace syn {
                     }
                 };
                 switch(theOp) {
-                    case Operations::Type:
-                        Self::setType(ret);
-                        return true;
                     case Operations::Shutdown:
                         ptr->shutdown();
                         return setClipsBoolean(ret);
@@ -159,32 +136,14 @@ namespace syn {
                 }
             }
 			static void registerWithEnvironment(void* env, const char* title) {
-				Parent::registerWithEnvironment(env, title, callFunction, newFunction);
+				Parent::registerWithEnvironment(env, title);
 			}
 			static void registerWithEnvironment(void* env) {
-                bool init = true;
-                static std::string typeString;
-                if (init) {
-                    init = false;
-                    typeString = Self::getType();
-                }
-				registerWithEnvironment(env, typeString.c_str());
+				registerWithEnvironment(env, Parent::getType().c_str());
 			}
-			static Self* make() noexcept {
-				return new Self();
-			}
-            template<typename ... Args>
-            static Self* make(Args ... args) noexcept {
-                return new Self(args...);
-            }
-            static Self* make(InternalType* ptr) noexcept {
-                return new Self(ptr);
-            }
         public:
-            WrappedIODevice() : Parent(std::move(std::make_unique<InternalType>())) { }
-            template<typename ... Args>
-            WrappedIODevice(Args ... args) : Parent(std::move(std::make_unique<InternalType>(args...))) { }
-            WrappedIODevice(InternalType* ptr) : Parent(std::move(std::unique_ptr<InternalType>(ptr))) { }
+            using Parent::Parent;
+            virtual ~WrappedIODevice() { }
             Data read(Address addr) { return this->_value->read(addr); }
             void write(Address addr, Data value) { this->_value->write(addr, value); }
             void initialize() { this->_value->initialize(); }

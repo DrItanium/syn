@@ -619,6 +619,8 @@ class ExternalAddressWrapper {
 	public:
 		ExternalAddressWrapper(std::unique_ptr<T>&& value) : _value(std::move(value)) { }
         ExternalAddressWrapper(T* ptr) : _value(std::move(std::unique_ptr<T>(ptr))) { }
+        template<typename ... Args>
+        ExternalAddressWrapper(Args ... args) : _value(std::move(std::make_unique<T>(args...))) { }
 		virtual ~ExternalAddressWrapper() { }
 		inline T* get() const noexcept { return _value.get(); }
         T* operator->() const noexcept { return get(); }
