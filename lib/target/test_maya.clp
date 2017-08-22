@@ -42,6 +42,30 @@
                     (description "does string-trim-front work?"))
           (testcase (id boost-string-trim-back0)
                     (description "does string-trim-back work?"))
+          (testcase (id boost-fs-path-exists0)
+                    (description "does path-exists work on a file?"))
+          (testcase (id boost-fs-path-exists1)
+                    (description "does path-exists work on a directory?"))
+          (testcase (id boost-fs-directoryp0)
+                    (description "does directoryp work?"))
+          (testcase (id boost-fs-regular-filep0)
+                    (description "does regular-filep work?"))
+          (testcase-assertion (parent boost-fs-path-exists0)
+                              (expected TRUE)
+                              (actual-value (bind ?tmp
+                                                  (path-exists "lib/cortex.clp"))))
+          (testcase-assertion (parent boost-fs-path-exists1)
+                              (expected TRUE)
+                              (actual-value (bind ?tmp
+                                                  (path-exists "lib/"))))
+          (testcase-assertion (parent boost-fs-directoryp0)
+                              (expected TRUE)
+                              (actual-value (bind ?tmp
+                                                  (directoryp "lib/"))))
+          (testcase-assertion (parent boost-fs-regular-filep0)
+                              (expected TRUE)
+                              (actual-value (bind ?tmp
+                                                  (regular-filep "lib/cortex.clp"))))
           (testcase-assertion (parent boost-has-prefix0)
                               (expected TRUE)
                               (actual-value (bind ?prefix-test
