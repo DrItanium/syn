@@ -57,6 +57,7 @@ class AssemblerWrapper : public CommonExternalAddressWrapper<T> {
 		using Parent::Parent;
 		virtual ~AssemblerWrapper() { }
 		virtual bool handleCallOperation(void* env, DataObjectPtr value, DataObjectPtr ret, const std::string& operation) override {
+            static_assert(std::is_base_of<Self, typename ExternalAddressWrapperType<T>::TheType>::value, "To take advantage of this wrapper class, you must inherit from it and register that with the target type!");
 			using Operations = Operations;
 			using MapOpToArgCount = std::tuple<Operations, int>;
 			static std::map<std::string, MapOpToArgCount> ops = {
