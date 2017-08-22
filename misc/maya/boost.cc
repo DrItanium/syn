@@ -31,7 +31,7 @@ extern "C" {
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/random_generator.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/uuid/uuid_io.hpp>
+//#include <boost/uuid/uuid_io.hpp>
 #include <boost/math/common_factor.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/system/error_code.hpp>
@@ -45,14 +45,14 @@ void HasSuffix(UDFContext*, CLIPSValue*);
 void TrimString(UDFContext*, CLIPSValue*);
 void TrimStringFront(UDFContext*, CLIPSValue*);
 void TrimStringBack(UDFContext*, CLIPSValue*);
-void NewUUID(UDFContext*, CLIPSValue*);
+//void NewUUID(UDFContext*, CLIPSValue*);
 void gcdFunction(UDFContext*, CLIPSValue*);
 void lcmFunction(UDFContext*, CLIPSValue*);
 void FileExists(UDFContext*, CLIPSValue*);
 void IsDirectory(UDFContext*, CLIPSValue*);
 void IsRegularFile(UDFContext*, CLIPSValue*);
-void ClampValue(UDFContext*, CLIPSValue*);
-void MinMaxFunction(UDFContext*, CLIPSValue*);
+//void ClampValue(UDFContext*, CLIPSValue*);
+//void MinMaxFunction(UDFContext*, CLIPSValue*);
 #endif
 
 extern "C" void InstallBoostExtensions(void* theEnv) {
@@ -63,59 +63,59 @@ extern "C" void InstallBoostExtensions(void* theEnv) {
 	EnvAddUDF(env, "string-trim", "y", TrimString, "TrimString", 1, 1, "s", NULL);
 	EnvAddUDF(env, "string-trim-front", "y", TrimStringFront, "TrimStringFront", 1, 1, "s", NULL);
 	EnvAddUDF(env, "string-trim-back", "y", TrimStringBack, "TrimStringBack", 1, 1, "s", NULL);
-	EnvAddUDF(env, "new-uuid", "s", NewUUID, "NewUUID", 0, 0, "", NULL);
+	//EnvAddUDF(env, "new-uuid", "s", NewUUID, "NewUUID", 0, 0, "", NULL);
 	EnvAddUDF(env, "gcd", "l", gcdFunction, "gcdFunction", 2, 2, "l;l;l", NULL);
 	EnvAddUDF(env, "lcm", "l", lcmFunction, "lcmFunction", 2, 2, "l;l;l", NULL);
 	EnvAddUDF(env, "path-exists", "b", FileExists, "FileExists", 1, 1, "sy", NULL);
 	EnvAddUDF(env, "directoryp", "b", IsDirectory, "IsDirectory", 1, 1, "sy", NULL);
 	EnvAddUDF(env, "regular-filep", "b", IsRegularFile, "IsRegularFile", 1, 1, "sy", NULL);
-	EnvAddUDF(env, "clamp", "l", ClampValue, "ClampValue", 3, 3, "l;l;l;l", NULL);
-	EnvAddUDF(env, "min-max", "m", MinMaxFunction, "MinMaxFunction", 2, 2, "ld;ld;ld", NULL);
+	//EnvAddUDF(env, "clamp", "l", ClampValue, "ClampValue", 3, 3, "l;l;l;l", NULL);
+	//EnvAddUDF(env, "min-max", "m", MinMaxFunction, "MinMaxFunction", 2, 2, "ld;ld;ld", NULL);
 #endif
 }
 
 
 #if BOOST_EXTENSIONS
-void MinMaxFunction(UDFContext* context, CLIPSValue* ret) {
-	CLIPSValue a, b;
-	if (!UDFFirstArgument(context, NUMBER_TYPES, &a)) {
-		CVSetBoolean(ret, false);
-	} else if (!UDFNextArgument(context, NUMBER_TYPES, &b)) {
-		CVSetBoolean(ret, false);
-	} else {
-		Environment* environment = UDFContextEnvironment(context);
-		ret->type = MULTIFIELD;
-		ret->begin = 0;
-		ret->end = 1;
-		ret->value = EnvCreateMultifield(environment, 2L);
-		if (CVIsType(&a, INTEGER_TYPE) && CVIsType(&b, INTEGER_TYPE)) {
-			auto result = boost::minmax(CVToInteger(&a), CVToInteger(&b));
-			SetMFType(ret->value, 1, INTEGER);
-			SetMFValue(ret->value, 1, EnvAddLong(environment, result.get<0>()));
-			SetMFType(ret->value, 2, INTEGER);
-			SetMFValue(ret->value, 2, EnvAddLong(environment, result.get<1>()));
-		} else {
-			// one of them is FLOAT_TYPE
-			auto result = boost::minmax(CVToFloat(&a), CVToFloat(&b));
-			SetMFType(ret->value, 1, FLOAT);
-			SetMFValue(ret->value, 1, EnvAddDouble(environment, result.get<0>()));
-			SetMFType(ret->value, 2, FLOAT);
-			SetMFValue(ret->value, 2, EnvAddDouble(environment, result.get<1>()));
-		}
-	}
-}
-void ClampValue(UDFContext* context, CLIPSValue* ret) {
-	CLIPSValue v, lo, hi;
-	if (!UDFFirstArgument(context, INTEGER_TYPE,  &v)) {
-		CVSetBoolean(ret, false);
-	} else if (!UDFNextArgument(context, INTEGER_TYPE, &lo)) {
-		CVSetBoolean(ret, false);
-	} else if (!UDFNextArgument(context, INTEGER_TYPE, &hi)) {
-		CVSetBoolean(ret, false);
-	} else {
-		CVSetInteger(ret, boost::algorithm::clamp(CVToInteger(&v), CVToInteger(&lo), CVToInteger(&hi)));
-	}
-}
+//void MinMaxFunction(UDFContext* context, CLIPSValue* ret) {
+//	CLIPSValue a, b;
+//	if (!UDFFirstArgument(context, NUMBER_TYPES, &a)) {
+//		CVSetBoolean(ret, false);
+//	} else if (!UDFNextArgument(context, NUMBER_TYPES, &b)) {
+//		CVSetBoolean(ret, false);
+//	} else {
+//		Environment* environment = UDFContextEnvironment(context);
+//		ret->type = MULTIFIELD;
+//		ret->begin = 0;
+//		ret->end = 1;
+//		ret->value = EnvCreateMultifield(environment, 2L);
+//		if (CVIsType(&a, INTEGER_TYPE) && CVIsType(&b, INTEGER_TYPE)) {
+//			auto result = boost::minmax(CVToInteger(&a), CVToInteger(&b));
+//			SetMFType(ret->value, 1, INTEGER);
+//			SetMFValue(ret->value, 1, EnvAddLong(environment, result.get<0>()));
+//			SetMFType(ret->value, 2, INTEGER);
+//			SetMFValue(ret->value, 2, EnvAddLong(environment, result.get<1>()));
+//		} else {
+//			// one of them is FLOAT_TYPE
+//			auto result = boost::minmax(CVToFloat(&a), CVToFloat(&b));
+//			SetMFType(ret->value, 1, FLOAT);
+//			SetMFValue(ret->value, 1, EnvAddDouble(environment, result.get<0>()));
+//			SetMFType(ret->value, 2, FLOAT);
+//			SetMFValue(ret->value, 2, EnvAddDouble(environment, result.get<1>()));
+//		}
+//	}
+//}
+//void ClampValue(UDFContext* context, CLIPSValue* ret) {
+//	CLIPSValue v, lo, hi;
+//	if (!UDFFirstArgument(context, INTEGER_TYPE,  &v)) {
+//		CVSetBoolean(ret, false);
+//	} else if (!UDFNextArgument(context, INTEGER_TYPE, &lo)) {
+//		CVSetBoolean(ret, false);
+//	} else if (!UDFNextArgument(context, INTEGER_TYPE, &hi)) {
+//		CVSetBoolean(ret, false);
+//	} else {
+//		CVSetInteger(ret, boost::algorithm::clamp(CVToInteger(&v), CVToInteger(&lo), CVToInteger(&hi)));
+//	}
+//}
 void FileExists(UDFContext* context, CLIPSValue* ret) {
 	CLIPSValue path;
 	if (!UDFFirstArgument(context, LEXEME_TYPES, &path)) {
@@ -166,12 +166,12 @@ void lcmFunction(UDFContext* context, CLIPSValue* ret) {
 		CVSetInteger(ret, boost::math::lcm(CVToInteger(&first), CVToInteger(&second)));
 	}
 }
-void NewUUID(UDFContext* context, CLIPSValue* ret) {
-	boost::uuids::random_generator rgen;
-	boost::uuids::uuid theUUID(rgen());
-	const std::string tmp = boost::lexical_cast<std::string>(theUUID);
-	CVSetSymbol(ret, tmp.c_str());
-}
+//void NewUUID(UDFContext* context, CLIPSValue* ret) {
+//	boost::uuids::random_generator rgen;
+//	boost::uuids::uuid theUUID(rgen());
+//	const std::string tmp = boost::lexical_cast<std::string>(theUUID);
+//	CVSetSymbol(ret, tmp.c_str());
+//}
 void HasPrefix(UDFContext* context, CLIPSValue* ret) {
 	CLIPSValue data, prefix;
 	if (!UDFFirstArgument(context, LEXEME_TYPES, &data)) {
