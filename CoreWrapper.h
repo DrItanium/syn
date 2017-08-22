@@ -70,6 +70,7 @@ class CoreWrapper : public syn::CommonExternalAddressWrapper<T> {
         CoreWrapper() : Parent(new T()) { }
         virtual ~CoreWrapper() { }
         virtual bool handleCallOperation(void* env, DataObjectPtr value, DataObjectPtr ret, const std::string& operation) override {
+            static_assert(std::is_base_of<Self, typename ExternalAddressWrapperType<T>::TheType>::value, "The external address wrapper for this core must inherit from this class to take advantage of it!");
 			// all of the default core operations should be handled here
 			static std::map<std::string, DefaultCoreOperations> lookup = {
 				{ "initialize", DefaultCoreOperations::Initialize },
