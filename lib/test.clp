@@ -43,10 +43,10 @@
              (slot parent
                    (type SYMBOL)
                    (default ?NONE))
-             (slot expected
-                   (default ?NONE))
-             (slot actual-value
-                   (default ?NONE))
+             (multislot expected
+                        (default ?NONE))
+             (multislot actual-value
+                        (default ?NONE))
              (slot outcome
                    (type SYMBOL)
                    (allowed-symbols ANALYZE

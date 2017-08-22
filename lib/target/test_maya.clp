@@ -52,30 +52,24 @@
                     (description "does regular-filep work?"))
           (testcase-assertion (parent boost-fs-path-exists0)
                               (expected TRUE)
-                              (actual-value (bind ?tmp
-                                                  (path-exists "lib/cortex.clp"))))
+                              (actual-value (path-exists "lib/cortex.clp")))
           (testcase-assertion (parent boost-fs-path-exists1)
                               (expected TRUE)
-                              (actual-value (bind ?tmp
-                                                  (path-exists "lib/"))))
+                              (actual-value (path-exists "lib/")))
           (testcase-assertion (parent boost-fs-directoryp0)
                               (expected TRUE)
-                              (actual-value (bind ?tmp
-                                                  (directoryp "lib/"))))
+                              (actual-value (directoryp "lib/")))
           (testcase-assertion (parent boost-fs-regular-filep0)
                               (expected TRUE)
-                              (actual-value (bind ?tmp
-                                                  (regular-filep "lib/cortex.clp"))))
+                              (actual-value (regular-filep "lib/cortex.clp")))
           (testcase-assertion (parent boost-has-prefix0)
                               (expected TRUE)
-                              (actual-value (bind ?prefix-test
-                                                  (has-prefix donuts
-                                                              do))))
+                              (actual-value (has-prefix donuts
+                                                        do)))
           (testcase-assertion (parent boost-has-suffix0)
                               (expected TRUE)
-                              (actual-value (bind ?suffix-test
-                                                  (has-suffix donuts
-                                                              nuts))))
+                              (actual-value (has-suffix donuts
+                                                        nuts)))
           (testcase-assertion (parent boost-string-trim0)
                               (expected "donuts")
                               (actual-value (string-trim "   donuts   ")))
@@ -86,7 +80,7 @@
                               (expected "   donuts")
                               (actual-value (string-trim-back "   donuts   "))))
 
-
+;TODO: add tests for the functions found in functional.cc
 
 (deffunction MAIN::invoke-test
              ()
