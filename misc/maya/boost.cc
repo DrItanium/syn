@@ -32,11 +32,11 @@ extern "C" {
 #include <boost/uuid/random_generator.hpp>
 #include <boost/lexical_cast.hpp>
 //#include <boost/uuid/uuid_io.hpp>
-#include <boost/math/common_factor.hpp>
+//#include <boost/math/common_factor.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/system/error_code.hpp>
-#include <boost/algorithm/clamp.hpp>
-#include <boost/algorithm/minmax.hpp>
+//#include <boost/algorithm/clamp.hpp>
+//#include <boost/algorithm/minmax.hpp>
 
 
 #if BOOST_EXTENSIONS
@@ -46,8 +46,9 @@ void TrimString(UDFContext*, CLIPSValue*);
 void TrimStringFront(UDFContext*, CLIPSValue*);
 void TrimStringBack(UDFContext*, CLIPSValue*);
 //void NewUUID(UDFContext*, CLIPSValue*);
-void gcdFunction(UDFContext*, CLIPSValue*);
-void lcmFunction(UDFContext*, CLIPSValue*);
+//void gcdFunction(UDFContext*, CLIPSValue*);
+//void lcmFunction(UDFContext*, CLIPSValue*);
+void ManipulatePath(UDFContext* context, CLIPSValue* ret, std::function<bool(const std::string&)> op);
 void FileExists(UDFContext*, CLIPSValue*);
 void IsDirectory(UDFContext*, CLIPSValue*);
 void IsRegularFile(UDFContext*, CLIPSValue*);
@@ -64,8 +65,8 @@ extern "C" void InstallBoostExtensions(void* theEnv) {
 	EnvAddUDF(env, "string-trim-front", "y", TrimStringFront, "TrimStringFront", 1, 1, "s", NULL);
 	EnvAddUDF(env, "string-trim-back", "y", TrimStringBack, "TrimStringBack", 1, 1, "s", NULL);
 	//EnvAddUDF(env, "new-uuid", "s", NewUUID, "NewUUID", 0, 0, "", NULL);
-	EnvAddUDF(env, "gcd", "l", gcdFunction, "gcdFunction", 2, 2, "l;l;l", NULL);
-	EnvAddUDF(env, "lcm", "l", lcmFunction, "lcmFunction", 2, 2, "l;l;l", NULL);
+	//EnvAddUDF(env, "gcd", "l", gcdFunction, "gcdFunction", 2, 2, "l;l;l", NULL);
+	//EnvAddUDF(env, "lcm", "l", lcmFunction, "lcmFunction", 2, 2, "l;l;l", NULL);
 	EnvAddUDF(env, "path-exists", "b", FileExists, "FileExists", 1, 1, "sy", NULL);
 	EnvAddUDF(env, "directoryp", "b", IsDirectory, "IsDirectory", 1, 1, "sy", NULL);
 	EnvAddUDF(env, "regular-filep", "b", IsRegularFile, "IsRegularFile", 1, 1, "sy", NULL);
@@ -116,56 +117,47 @@ extern "C" void InstallBoostExtensions(void* theEnv) {
 //		CVSetInteger(ret, boost::algorithm::clamp(CVToInteger(&v), CVToInteger(&lo), CVToInteger(&hi)));
 //	}
 //}
+void ManipulatePath(UDFContext* context, CLIPSValue* ret, std::function<bool(const std::string&)> op) {
+    CLIPSValue thing;
+    if (!UDFFirstArgument(context, LEXEME_TYPES, &thing)) {
+        CVSetBoolean(ret, false);
+    } else {
+        std::string p(CVToString(&thing));
+        CVSetBoolean(ret, op(p));
+    }
+}
 void FileExists(UDFContext* context, CLIPSValue* ret) {
-	CLIPSValue path;
-	if (!UDFFirstArgument(context, LEXEME_TYPES, &path)) {
-		CVSetBoolean(ret, false);
-	} else {
-        std::string p(CVToString(&path));
-		CVSetBoolean(ret, boost::filesystem::exists(p));
-	}
+    ManipulatePath(context, ret, [](const std::string& op) { return boost::filesystem::exists(op); });
 }
 
 void IsDirectory(UDFContext* context, CLIPSValue* ret) {
-	CLIPSValue path;
-	if (!UDFFirstArgument(context, LEXEME_TYPES, &path)) {
-		CVSetBoolean(ret, false);
-	} else {
-        std::string p(CVToString(&path));
-		CVSetBoolean(ret, boost::filesystem::is_directory(p));
-	}
+    ManipulatePath(context, ret, [](const std::string& op) { return boost::filesystem::is_directory(op); });
 }
 
 void IsRegularFile(UDFContext* context, CLIPSValue* ret) {
-	CLIPSValue path;
-	if (!UDFFirstArgument(context, LEXEME_TYPES, &path)) {
-		CVSetBoolean(ret, false);
-	} else {
-        std::string p(CVToString(&path));
-		CVSetBoolean(ret, boost::filesystem::is_regular_file(p));
-	}
+    ManipulatePath(context, ret, [](const std::string& op) { return boost::filesystem::is_regular_file(op); });
 }
 
-void gcdFunction(UDFContext* context, CLIPSValue* ret) {
-	CLIPSValue first, second;
-	if (!UDFFirstArgument(context, INTEGER_TYPE, &first)) {
-		CVSetBoolean(ret, false);
-	} else if (!UDFNextArgument(context, INTEGER_TYPE, &second)) {
-		CVSetBoolean(ret, false);
-	} else {
-		CVSetInteger(ret, boost::math::gcd(CVToInteger(&first), CVToInteger(&second)));
-	}
-}
-void lcmFunction(UDFContext* context, CLIPSValue* ret) {
-	CLIPSValue first, second;
-	if (!UDFFirstArgument(context, INTEGER_TYPE, &first)) {
-		CVSetBoolean(ret, false);
-	} else if (!UDFNextArgument(context, INTEGER_TYPE, &second)) {
-		CVSetBoolean(ret, false);
-	} else {
-		CVSetInteger(ret, boost::math::lcm(CVToInteger(&first), CVToInteger(&second)));
-	}
-}
+//void gcdFunction(UDFContext* context, CLIPSValue* ret) {
+//	CLIPSValue first, second;
+//	if (!UDFFirstArgument(context, INTEGER_TYPE, &first)) {
+//		CVSetBoolean(ret, false);
+//	} else if (!UDFNextArgument(context, INTEGER_TYPE, &second)) {
+//		CVSetBoolean(ret, false);
+//	} else {
+//		CVSetInteger(ret, boost::math::gcd(CVToInteger(&first), CVToInteger(&second)));
+//	}
+//}
+//void lcmFunction(UDFContext* context, CLIPSValue* ret) {
+//	CLIPSValue first, second;
+//	if (!UDFFirstArgument(context, INTEGER_TYPE, &first)) {
+//		CVSetBoolean(ret, false);
+//	} else if (!UDFNextArgument(context, INTEGER_TYPE, &second)) {
+//		CVSetBoolean(ret, false);
+//	} else {
+//		CVSetInteger(ret, boost::math::lcm(CVToInteger(&first), CVToInteger(&second)));
+//	}
+//}
 //void NewUUID(UDFContext* context, CLIPSValue* ret) {
 //	boost::uuids::random_generator rgen;
 //	boost::uuids::uuid theUUID(rgen());
