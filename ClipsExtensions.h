@@ -402,16 +402,17 @@ const std::string& getFunctionPrefixNew() noexcept {
     }
     return str;
 }
-using FunctionStrings = std::tuple<std::string, std::string, std::string>;
-template<typename T>
-FunctionStrings retrieveFunctionNames(const std::string& action) noexcept {
-    std::stringstream ss, ss2;
-    buildFunctionString(ss, action, TypeToName::getSymbolicName<T>());
-    buildFunctionErrorString(ss2, action, TypeToName::getSymbolicName<T>());
-    auto str0 = ss.str();
-    auto str1 = ss2.str();
-    return std::make_tuple(TypeToName::getSymbolicName<T>(), str0, str1);
-}
+
+//using FunctionStrings = std::tuple<std::string, std::string, std::string>;
+//template<typename T>
+//FunctionStrings retrieveFunctionNames(const std::string& action) noexcept {
+//    std::stringstream ss, ss2;
+//    buildFunctionString(ss, action, TypeToName::getSymbolicName<T>());
+//    buildFunctionErrorString(ss2, action, TypeToName::getSymbolicName<T>());
+//    auto str0 = ss.str();
+//    auto str1 = ss2.str();
+//    return std::make_tuple(TypeToName::getSymbolicName<T>(), str0, str1);
+//}
 
 
 
@@ -563,13 +564,7 @@ class ExternalAddressWrapper {
         }
 
         static bool tryGetArgument(void* env, CLIPSValue* ret, int pos, MayaType type) noexcept {
-            static bool init = true;
-            static std::string funcStr;
-            if (init) {
-                init = false;
-                funcStr = std::get<1>(syn::retrieveFunctionNames<T>("call"));
-            }
-            return checkThenGetArgument(env, funcStr, pos, type, ret);
+            return checkThenGetArgument(env, getFunctionPrefixCall<T>(), pos, type, ret);
         }
         static constexpr int baseArgumentIndex = 2;
         template<int index>

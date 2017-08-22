@@ -89,17 +89,8 @@ namespace syn {
             using Operations = WrappedIODeviceConstants::Operations;
        public:
             static void newFunction(void* env, CLIPSValue* ret) {
-                static auto init = true;
-                static std::string funcStr;
-                static std::string funcErrorPrefix;
-                if (init) {
-                    init = false;
-                    auto t = retrieveFunctionNames<InternalType>("new");
-                    funcStr = std::get<1>(t);
-                    funcErrorPrefix = std::get<2>(t);
-                }
                 // build the internal object first!
-                auto ptr = WrappedIODeviceBuilder<Data, Address, T>::invokeNewFunction(env, ret, funcErrorPrefix, funcStr);
+                auto ptr = WrappedIODeviceBuilder<Data, Address, T>::invokeNewFunction(env, ret, getFunctionErrorPrefixNew<InternalType>(), getFunctionPrefixNew<InternalType>());
                 if (ptr) {
                     auto idIndex = Self::getAssociatedEnvironmentId(env);
                     ret->bitType = EXTERNAL_ADDRESS_TYPE;

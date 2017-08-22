@@ -289,24 +289,14 @@ namespace syn {
 			}
 			using ManagedMemoryBlock_Ptr = ManagedMemoryBlock*;
 			static void newFunction(void* env, DataObjectPtr ret) {
-				static bool init = true;
-				static std::string funcStr;
-				static std::string funcErrorPrefix;
-				if (init) {
-					init = false;
-                    auto functions = syn::retrieveFunctionNames<WordBlock>("new");
-                    funcStr = std::get<1>(functions);
-                    funcErrorPrefix = std::get<2>(functions);
-				}
-
 				try {
                     // TODO: fix this checkArgumentCount to not reference
                     // the call version of this function
-                    if (Parent::checkArgumentCount(env, ret, funcStr, 2)) {
+                    if (Parent::checkArgumentCount(env, ret, getFunctionPrefixNew<WordBlock>(), 2)) {
 						CLIPSValue capacity;
-                        if (!Arg2IsInteger(env, &capacity, funcStr)) {
+                        if (!Arg2IsInteger(env, &capacity, getFunctionPrefixNew<WordBlock>())) {
 							CVSetBoolean(ret, false);
-							errorMessage(env, "NEW", 1, funcErrorPrefix, " expected an integer for capacity!");
+							errorMessage(env, "NEW", 1, getFunctionErrorPrefixNew<WordBlock>(), " expected an integer for capacity!");
 						} else {
                             auto size = extractLong(env, capacity);
 							auto idIndex = Self::getAssociatedEnvironmentId(env);
@@ -314,7 +304,7 @@ namespace syn {
 						}
 					}
 				} catch(const syn::Problem& p) {
-                    handleProblem(env, ret, p, funcErrorPrefix);
+                    handleProblem(env, ret, p, getFunctionErrorPrefixNew<WordBlock>());
 				}
 			}
 
