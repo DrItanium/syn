@@ -53,11 +53,32 @@
                                     TRUE
                                     FALSE)))
 
+
+(defrule test::unpack-boolean-assertion:assert-result-true
+         "Define shorthand conversion facts for making boolean checks"
+         (declare (salience ?*priority:first*))
+         ?f <- (expect-true ?parent ?result)
+         =>
+         (retract ?f)
+         (assert (testcase-assertion (parent ?parent)
+                                     (actual-value ?result)
+                                     (expected TRUE))))
+
+(defrule test::unpack-boolean-assertion:assert-result-false
+         "Define shorthand conversion facts for making boolean checks"
+         (declare (salience ?*priority:first*))
+         ?f <- (expect-false ?parent ?result)
+         =>
+         (retract ?f)
+         (assert (testcase-assertion (parent ?parent)
+                                     (actual-value ?result)
+                                     (expected FALSE))))
+
 (defrule test::evaluate-assertion
          (declare (salience ?*priority:one*))
          ?f <- (testcase-assertion (outcome ANALYZE)
-                                   (expected ?expected)
-                                   (actual-value ?actual))
+                                   (expected $?expected)
+                                   (actual-value $?actual))
          =>
          (bind ?check
           (eq ?expected
