@@ -50,6 +50,8 @@
                     (description "does directoryp work?"))
           (testcase (id boost-fs-regular-filep0)
                     (description "does regular-filep work?"))
+          (testcase (id boost-clamp0)
+                    (description "test the range clamp"))
           (testcase-assertion (parent boost-fs-path-exists0)
                               (expected TRUE)
                               (actual-value (path-exists "lib/cortex.clp")))
@@ -78,10 +80,19 @@
                               (actual-value (string-trim-front "   donuts   ")))
           (testcase-assertion (parent boost-string-trim-back0)
                               (expected "   donuts")
-                              (actual-value (string-trim-back "   donuts   "))))
+                              (actual-value (string-trim-back "   donuts   ")))
+          (testcase-assertion (parent boost-clamp0)
+                              (expected 0)
+                              (actual-value (clamp 0 -1 1)))
+          (testcase-assertion (parent boost-clamp0)
+                              (expected 1)
+                              (actual-value (clamp 0 1 2)))
+          (testcase-assertion (parent boost-clamp0)
+                              (expected 2)
+                              (actual-value (clamp 89 1 2))))
+
 
 ;TODO: add tests for the functions found in functional.cc
-
 (deffunction MAIN::invoke-test
              ()
              )
