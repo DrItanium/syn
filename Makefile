@@ -65,7 +65,8 @@ COMMON_GEN_ENCODER_DECODER_FILES= ${COMMON_CLP_FILES} \
 TEST_SUITES = lib/target/iris/test_Base.clp \
 			  lib/target/iris/test_Exec.clp \
 			  lib/target/cisc0/test_Base.clp \
-			  lib/target/test_maya.clp
+			  lib/target/test_maya.clp \
+			  lib/target/test_ClipsExtensions.clp
 
 
 all: options bootstrap ${ALL_BINARIES}

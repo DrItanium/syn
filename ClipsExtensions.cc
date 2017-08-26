@@ -129,12 +129,13 @@ namespace syn {
 		if (!UDFFirstArgument(context, NUMBER_TYPES, &number)) {
 			CVSetBoolean(ret, false);
 		} else {
+            auto value = CVToInteger(&number);
 			switch(op) {
 				case CLIPS_UnaryOperations::Not:
-					CVSetInteger(ret, binaryNot<CLIPSInteger>(CVToInteger(&number)));
+					CVSetInteger(ret, binaryNot<CLIPSInteger>(value));
 					break;
 				case CLIPS_UnaryOperations::ExpandBits:
-					CVSetInteger(ret, static_cast<CLIPSInteger>(expandBit(CVIsTrueSymbol(&number))));
+					CVSetInteger(ret, static_cast<CLIPSInteger>(expandBit(value != 0)));
 					break;
 				default:
 					CVSetBoolean(ret, false);
