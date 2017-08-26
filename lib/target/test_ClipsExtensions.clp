@@ -67,6 +67,18 @@
           (testcase-assertion (parent expand-bit:TRUE)
                               (expected (hex->int 0xFF))
                               (actual-value (expand-bit 1)))
+          (testcase (id break-apart-number:simple)
+                    (description "carve a simple number apart into constituent pieces"))
+          (testcase-assertion (parent break-apart-number:simple)
+                              (expected (hex->int 0xED)
+                                        (hex->int 0xFD)
+                                        0
+                                        0
+                                        0
+                                        0
+                                        0
+                                        0)
+                              (actual-value (break-apart-number (hex->int 0xFDED))))
 
           )
 ;TODO: add tests for the functions found in functional.cc
