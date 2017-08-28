@@ -81,8 +81,8 @@
                                    (actual-value $?actual))
          =>
          (bind ?check
-          (eq ?expected
-           ?actual))
+               (eq ?expected
+                   ?actual))
          (modify ?f
                  (outcome ?check)))
 
@@ -118,5 +118,5 @@
                      PASSED) crlf)
          ; we want to terminate if we failed!
          (if ?failed then
-             (exit 1)))
+           (exit 1)))
 
