@@ -57,15 +57,15 @@ void InstallMayaExtensions(void* environment) {
 	EnvAddUDF(environment, "next-token", "synldfie", NextToken, "NextToken", 1, 1, "y", NULL);
 	EnvAddUDF(environment, "last$", "m", LastFunction, "LastFunction", 1,1,"m",NULL);
 
-	EnvAddUDF(environment, "binary-not", "l", BinaryNot, "BinaryNot", 1, 1, "l", nullptr);
-	EnvAddUDF(environment, "binary-and", "l", BinaryAnd, "BinaryAnd", 2, 2, "l;l", nullptr);
-	EnvAddUDF(environment, "binary-or", "l", BinaryOr, "BinaryOr", 2, 2, "l;l", nullptr);
-	EnvAddUDF(environment, "binary-xor", "l", BinaryXor, "BinaryXor", 2, 2, "l;l", nullptr);
-	EnvAddUDF(environment, "binary-nand", "l", BinaryNand, "BinaryNand", 2, 2, "l;l", nullptr);
-	EnvAddUDF(environment, "binary-nor", "l", BinaryNor, "BinaryNor", 2, 2, "l;l", nullptr);
+	EnvAddUDF(environment, "binary-not", "l", BinaryNot, "BinaryNot", 1, 1, "l", NULL);
+	EnvAddUDF(environment, "binary-and", "l", BinaryAnd, "BinaryAnd", 2, 2, "l;l", NULL);
+	EnvAddUDF(environment, "binary-or", "l", BinaryOr, "BinaryOr", 2, 2, "l;l", NULL);
+	EnvAddUDF(environment, "binary-xor", "l", BinaryXor, "BinaryXor", 2, 2, "l;l", NULL);
+	EnvAddUDF(environment, "binary-nand", "l", BinaryNand, "BinaryNand", 2, 2, "l;l", NULL);
+	EnvAddUDF(environment, "binary-nor", "l", BinaryNor, "BinaryNor", 2, 2, "l;l", NULL);
 
-	EnvAddUDF(environment, "left-shift", "l", ShiftLeft, "ShiftLeft", 2, 2, "l;l", nullptr);
-	EnvAddUDF(environment, "right-shift", "l", ShiftRight, "ShiftRight", 2, 2, "l;l", nullptr);
+	EnvAddUDF(environment, "left-shift", "l", ShiftLeft, "ShiftLeft", 2, 2, "l;l", NULL);
+	EnvAddUDF(environment, "right-shift", "l", ShiftRight, "ShiftRight", 2, 2, "l;l", NULL);
 #if  BOOST_EXTENSIONS
 	InstallBoostExtensions(environment);
 #endif
