@@ -182,6 +182,7 @@ void
 BinaryNot(UDFContext* context, CLIPSValue* ret) {
 	CLIPSValue val;
 	if (UDFFirstArgument(context, INTEGER_TYPE, &val)) {
+		CVSetBoolean(ret, false);
 		return;
 	}
 	CVSetInteger(ret, ~(CVToInteger(&val)));
@@ -191,8 +192,10 @@ void
 BinaryOr(UDFContext* context, CLIPSValue* ret) {
 	CLIPSValue a, b;
 	if (UDFFirstArgument(context, INTEGER_TYPE, &a)) {
+		CVSetBoolean(ret, false);
 		return;
 	} else if (UDFNextArgument(context, INTEGER_TYPE, &b)) {
+		CVSetBoolean(ret, false);
 		return;
 	} 
 
@@ -203,8 +206,10 @@ void
 BinaryAnd(UDFContext* context, CLIPSValue* ret) {
 	CLIPSValue a, b;
 	if (UDFFirstArgument(context, INTEGER_TYPE, &a)) {
+		CVSetBoolean(ret, false);
 		return;
 	} else if (UDFNextArgument(context, INTEGER_TYPE, &b)) {
+		CVSetBoolean(ret, false);
 		return;
 	} 
 
@@ -215,8 +220,10 @@ void
 BinaryXor(UDFContext* context, CLIPSValue* ret) {
 	CLIPSValue a, b;
 	if (UDFFirstArgument(context, INTEGER_TYPE, &a)) {
+		CVSetBoolean(ret, false);
 		return;
 	} else if (UDFNextArgument(context, INTEGER_TYPE, &b)) {
+		CVSetBoolean(ret, false);
 		return;
 	} 
 
@@ -227,8 +234,10 @@ void
 BinaryNor(UDFContext* context, CLIPSValue* ret) {
 	CLIPSValue a, b;
 	if (UDFFirstArgument(context, INTEGER_TYPE, &a)) {
+		CVSetBoolean(ret, false);
 		return;
 	} else if (UDFNextArgument(context, INTEGER_TYPE, &b)) {
+		CVSetBoolean(ret, false);
 		return;
 	} 
 
@@ -239,8 +248,10 @@ void
 BinaryNand(UDFContext* context, CLIPSValue* ret) {
 	CLIPSValue a, b;
 	if (UDFFirstArgument(context, INTEGER_TYPE, &a)) {
+		CVSetBoolean(ret, false);
 		return;
 	} else if (UDFNextArgument(context, INTEGER_TYPE, &b)) {
+		CVSetBoolean(ret, false);
 		return;
 	} 
 
@@ -251,8 +262,10 @@ void
 ShiftLeft(UDFContext* context, CLIPSValue* ret) {
 	CLIPSValue value, by;
 	if (UDFFirstArgument(context, INTEGER_TYPE, &value)) {
+		CVSetBoolean(ret, false);
 		return;
 	} else if (UDFNextArgument(context, INTEGER_TYPE, &by)) {
+		CVSetBoolean(ret, false);
 		return;
 	} 
 
@@ -263,8 +276,10 @@ void
 ShiftRight(UDFContext* context, CLIPSValue* ret) {
 	CLIPSValue value, by;
 	if (UDFFirstArgument(context, INTEGER_TYPE, &value)) {
+		CVSetBoolean(ret, false);
 		return;
 	} else if (UDFNextArgument(context, INTEGER_TYPE, &by)) {
+		CVSetBoolean(ret, false);
 		return;
 	} 
 

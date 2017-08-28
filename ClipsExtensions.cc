@@ -83,33 +83,15 @@ namespace syn {
 		CLIPS_errorMessageGeneric(context, ret, "provided number is larger than 64-bits!");
 	}
 
-	enum CLIPS_UnaryOperations {
-		Not,
-		ExpandBits,
-	};
-	template<CLIPS_UnaryOperations op>
-	void CLIPS_genericUnaryIntegerOperation(UDFContext* context, CLIPSValue* ret) noexcept {
+
+	void CLIPS_expandBit(UDFContext* context, CLIPSValue* ret) noexcept {
 		CLIPSValue number;
 		if (!UDFFirstArgument(context, NUMBER_TYPES, &number)) {
 			CVSetBoolean(ret, false);
-		} else {
-            auto value = CVToInteger(&number);
-			switch(op) {
-				case CLIPS_UnaryOperations::Not:
-					CVSetInteger(ret, binaryNot<CLIPSInteger>(value));
-					break;
-				case CLIPS_UnaryOperations::ExpandBits:
-					CVSetInteger(ret, static_cast<CLIPSInteger>(expandBit(value != 0)));
-					break;
-				default:
-					CVSetBoolean(ret, false);
-					break;
-			}
-		}
-	}
-
-	void CLIPS_expandBit(UDFContext* context, CLIPSValue* ret) noexcept {
-		CLIPS_genericUnaryIntegerOperation<CLIPS_UnaryOperations::ExpandBits>(context, ret);
+			return;
+		} 
+		auto value = CVToInteger(&number);
+		CVSetInteger(ret, CLIPSInteger(expandBit(value != 0)));
 	}
 
 	void CLIPS_basePrintAddress(void* env, const char* logicalName, void* theValue, const char* func, const char* majorType) {
