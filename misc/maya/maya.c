@@ -181,7 +181,7 @@ specialCaseEntry(MF_WILDCARD, "MF_WILDCARD")
 void 
 BinaryNot(UDFContext* context, CLIPSValue* ret) {
 	CLIPSValue val;
-	if (UDFFirstArgument(context, INTEGER_TYPE, &val)) {
+	if (!UDFFirstArgument(context, INTEGER_TYPE, &val)) {
 		CVSetBoolean(ret, false);
 		return;
 	}
@@ -191,10 +191,10 @@ BinaryNot(UDFContext* context, CLIPSValue* ret) {
 void
 BinaryOr(UDFContext* context, CLIPSValue* ret) {
 	CLIPSValue a, b;
-	if (UDFFirstArgument(context, INTEGER_TYPE, &a)) {
+	if (!UDFFirstArgument(context, INTEGER_TYPE, &a)) {
 		CVSetBoolean(ret, false);
 		return;
-	} else if (UDFNextArgument(context, INTEGER_TYPE, &b)) {
+	} else if (!UDFNextArgument(context, INTEGER_TYPE, &b)) {
 		CVSetBoolean(ret, false);
 		return;
 	} 
@@ -205,10 +205,10 @@ BinaryOr(UDFContext* context, CLIPSValue* ret) {
 void
 BinaryAnd(UDFContext* context, CLIPSValue* ret) {
 	CLIPSValue a, b;
-	if (UDFFirstArgument(context, INTEGER_TYPE, &a)) {
+	if (!UDFFirstArgument(context, INTEGER_TYPE, &a)) {
 		CVSetBoolean(ret, false);
 		return;
-	} else if (UDFNextArgument(context, INTEGER_TYPE, &b)) {
+	} else if (!UDFNextArgument(context, INTEGER_TYPE, &b)) {
 		CVSetBoolean(ret, false);
 		return;
 	} 
@@ -219,10 +219,10 @@ BinaryAnd(UDFContext* context, CLIPSValue* ret) {
 void
 BinaryXor(UDFContext* context, CLIPSValue* ret) {
 	CLIPSValue a, b;
-	if (UDFFirstArgument(context, INTEGER_TYPE, &a)) {
+	if (!UDFFirstArgument(context, INTEGER_TYPE, &a)) {
 		CVSetBoolean(ret, false);
 		return;
-	} else if (UDFNextArgument(context, INTEGER_TYPE, &b)) {
+	} else if (!UDFNextArgument(context, INTEGER_TYPE, &b)) {
 		CVSetBoolean(ret, false);
 		return;
 	} 
@@ -233,10 +233,10 @@ BinaryXor(UDFContext* context, CLIPSValue* ret) {
 void
 BinaryNor(UDFContext* context, CLIPSValue* ret) {
 	CLIPSValue a, b;
-	if (UDFFirstArgument(context, INTEGER_TYPE, &a)) {
+	if (!UDFFirstArgument(context, INTEGER_TYPE, &a)) {
 		CVSetBoolean(ret, false);
 		return;
-	} else if (UDFNextArgument(context, INTEGER_TYPE, &b)) {
+	} else if (!UDFNextArgument(context, INTEGER_TYPE, &b)) {
 		CVSetBoolean(ret, false);
 		return;
 	} 
@@ -247,10 +247,10 @@ BinaryNor(UDFContext* context, CLIPSValue* ret) {
 void
 BinaryNand(UDFContext* context, CLIPSValue* ret) {
 	CLIPSValue a, b;
-	if (UDFFirstArgument(context, INTEGER_TYPE, &a)) {
+	if (!UDFFirstArgument(context, INTEGER_TYPE, &a)) {
 		CVSetBoolean(ret, false);
 		return;
-	} else if (UDFNextArgument(context, INTEGER_TYPE, &b)) {
+	} else if (!UDFNextArgument(context, INTEGER_TYPE, &b)) {
 		CVSetBoolean(ret, false);
 		return;
 	} 
@@ -261,10 +261,10 @@ BinaryNand(UDFContext* context, CLIPSValue* ret) {
 void
 ShiftLeft(UDFContext* context, CLIPSValue* ret) {
 	CLIPSValue value, by;
-	if (UDFFirstArgument(context, INTEGER_TYPE, &value)) {
+	if (!UDFFirstArgument(context, INTEGER_TYPE, &value)) {
 		CVSetBoolean(ret, false);
 		return;
-	} else if (UDFNextArgument(context, INTEGER_TYPE, &by)) {
+	} else if (!UDFNextArgument(context, INTEGER_TYPE, &by)) {
 		CVSetBoolean(ret, false);
 		return;
 	} 
@@ -275,10 +275,10 @@ ShiftLeft(UDFContext* context, CLIPSValue* ret) {
 void
 ShiftRight(UDFContext* context, CLIPSValue* ret) {
 	CLIPSValue value, by;
-	if (UDFFirstArgument(context, INTEGER_TYPE, &value)) {
+	if (!UDFFirstArgument(context, INTEGER_TYPE, &value)) {
 		CVSetBoolean(ret, false);
 		return;
-	} else if (UDFNextArgument(context, INTEGER_TYPE, &by)) {
+	} else if (!UDFNextArgument(context, INTEGER_TYPE, &by)) {
 		CVSetBoolean(ret, false);
 		return;
 	} 
