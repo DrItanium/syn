@@ -83,42 +83,6 @@ namespace syn {
 		CLIPS_errorMessageGeneric(context, ret, "provided number is larger than 64-bits!");
 	}
 
-	template<bool zeroPositionOne = false>
-	void CLIPS_translateNumberBase(UDFContext* context, CLIPSValue* ret, const std::string& prefix, int base, const std::string& badPrefix) noexcept {
-        constexpr unsigned long long maximumIntegerValue = 0xFFFFFFFFFFFFFFFF;
-		CLIPSValue value;
-		if (!UDFFirstArgument(context, LEXEME_TYPES, &value)) {
-			CVSetBoolean(ret, false);
-		} else {
-			std::string str(CVToString(&value));
-			if (boost::starts_with(str, prefix)) {
-				if (zeroPositionOne) {
-					str.at(1) = '0';
-				}
-				auto tmp = strtoull(str.c_str(), nullptr, base);
-				if (tmp == ULLONG_MAX && errno == ERANGE) {
-					CLIPS_errorOverflowedNumber(context, ret);
-				} else {
-					if (tmp > maximumIntegerValue) {
-						CLIPS_errorNumberLargerThan64Bits(context, ret);
-					} else {
-						CVSetInteger(ret, static_cast<CLIPSInteger>(tmp));
-					}
-				}
-			} else {
-				CLIPS_errorMessageGeneric(context, ret, badPrefix);
-			}
-		}
-	}
-	void CLIPS_translateBinary(UDFContext* context, CLIPSValue* ret) noexcept {
-		CLIPS_translateNumberBase<true>(context, ret, "0b", 2, "Binary must start with 0b");
-	}
-
-	void CLIPS_translateHex(UDFContext* context, CLIPSValue* ret) {
-		CLIPS_translateNumberBase(context, ret, "0x", 16, "Hex must start with 0x");
-	}
-
-
 	enum CLIPS_UnaryOperations {
 		Not,
 		ExpandBits,
@@ -142,54 +106,6 @@ namespace syn {
 					break;
 			}
 		}
-	}
-
-    template<syn::ALU::StandardOperations op>
-    constexpr bool isBinaryIntegerOperation = false;
-    template<> constexpr bool isBinaryIntegerOperation<syn::ALU::StandardOperations::BinaryAnd> = true;
-    template<> constexpr bool isBinaryIntegerOperation<syn::ALU::StandardOperations::BinaryOr> = true;
-    template<> constexpr bool isBinaryIntegerOperation<syn::ALU::StandardOperations::BinaryXor> = true;
-    template<> constexpr bool isBinaryIntegerOperation<syn::ALU::StandardOperations::BinaryNand> = true;
-    template<> constexpr bool isBinaryIntegerOperation<syn::ALU::StandardOperations::ShiftLeft> = true;
-    template<> constexpr bool isBinaryIntegerOperation<syn::ALU::StandardOperations::ShiftRight> = true;
-
-	template<syn::ALU::StandardOperations op>
-	inline void CLIPS_genericBinaryIntegerOperation(UDFContext* context, CLIPSValue* ret) noexcept {
-        static_assert(isBinaryIntegerOperation<op>, "Illegal clips binary operation!");
-		CLIPSValue a, b;
-		if (!UDFFirstArgument(context, NUMBER_TYPES, &a)) {
-			CVSetBoolean(ret, false);
-		} else if (!UDFNextArgument(context, NUMBER_TYPES, &b)) {
-			CVSetBoolean(ret, false);
-		} else {
-			auto first = CVToInteger(&a);
-			auto second = CVToInteger(&b);
-            CVSetInteger(ret, syn::ALU::performOperation<op, CLIPSInteger>(first, second));
-		}
-	}
-	void CLIPS_binaryAnd(UDFContext* context, CLIPSValue* ret) noexcept {
-		CLIPS_genericBinaryIntegerOperation<syn::ALU::StandardOperations::BinaryAnd>(context, ret);
-	}
-	void CLIPS_binaryOr(UDFContext* context, CLIPSValue* ret) noexcept {
-		CLIPS_genericBinaryIntegerOperation<syn::ALU::StandardOperations::BinaryOr>(context, ret);
-	}
-	void CLIPS_binaryXor(UDFContext* context, CLIPSValue* ret) noexcept {
-		CLIPS_genericBinaryIntegerOperation<syn::ALU::StandardOperations::BinaryXor>(context, ret);
-	}
-	void CLIPS_binaryNand(UDFContext* context, CLIPSValue* ret) noexcept {
-		CLIPS_genericBinaryIntegerOperation<syn::ALU::StandardOperations::BinaryNand>(context, ret);
-	}
-
-	void CLIPS_shiftLeft(UDFContext* context, CLIPSValue* ret) noexcept {
-		CLIPS_genericBinaryIntegerOperation<syn::ALU::StandardOperations::ShiftLeft>(context, ret);
-	}
-
-	void CLIPS_shiftRight(UDFContext* context, CLIPSValue* ret) noexcept {
-		CLIPS_genericBinaryIntegerOperation<syn::ALU::StandardOperations::ShiftRight>(context, ret);
-	}
-
-	void CLIPS_binaryNot(UDFContext* context, CLIPSValue* ret) noexcept {
-		CLIPS_genericUnaryIntegerOperation<CLIPS_UnaryOperations::Not>(context, ret);
 	}
 
 	void CLIPS_expandBit(UDFContext* context, CLIPSValue* ret) noexcept {
@@ -477,18 +393,9 @@ namespace syn {
 		Environment* env = static_cast<Environment*>(theEnv);
 
 		EnvAddUDF(env, "bitmask->int", "l", CLIPS_translateBitmask, "CLIPS_translateBitmask", 1, 1, "sy", nullptr);
-		EnvAddUDF(env, "binary->int", "l", CLIPS_translateBinary, "CLIPS_translateBinary", 1, 1, "sy", nullptr);
-		EnvAddUDF(env, "hex->int", "l", CLIPS_translateHex, "CLIPS_translateHex", 1, 1, "sy", nullptr);
-		EnvAddUDF(env, "binary-not", "l", CLIPS_binaryNot, "CLIPS_binaryNot", 1, 1, "l", nullptr);
-		EnvAddUDF(env, "binary-and", "l", CLIPS_binaryAnd, "CLIPS_binaryAnd", 2, 2, "l;l", nullptr);
-		EnvAddUDF(env, "binary-or", "l", CLIPS_binaryOr, "CLIPS_binaryOr", 2, 2, "l;l", nullptr);
-		EnvAddUDF(env, "binary-xor", "l", CLIPS_binaryXor, "CLIPS_binaryXor", 2, 2, "l;l", nullptr);
-		EnvAddUDF(env, "binary-nand", "l", CLIPS_binaryNand, "CLIPS_binaryNand", 2, 2, "l;l", nullptr);
 		EnvAddUDF(env, "expand-bit", "l", CLIPS_expandBit, "CLIPS_expandBit", 1, 1,  nullptr, nullptr);
 		EnvAddUDF(env, "decode-bits", "l", CLIPS_decodeBits, "CLIPS_decodeBits", 3, 3, "l;l;l", nullptr);
 		EnvAddUDF(env, "encode-bits", "l", CLIPS_encodeBits, "CLIPS_encodeBits", 4, 4, "l;l;l;l", nullptr);
-		EnvAddUDF(env, "left-shift", "l", CLIPS_shiftLeft, "CLIPS_shiftLeft", 2, 2, "l;l", nullptr);
-		EnvAddUDF(env, "right-shift", "l", CLIPS_shiftRight, "CLIPS_shiftRight", 2, 2, "l;l", nullptr);
 		EnvAddUDF(env, "break-apart-number", "m", CLIPS_breakApartNumber, "CLIPS_breakApartNumber", 1, 1, "l", nullptr);
 		StandardManagedMemoryBlock::registerWithEnvironment(theEnv);
 #if ENABLE_EXTENDED_MEMORY_BLOCKS

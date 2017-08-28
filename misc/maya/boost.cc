@@ -50,6 +50,8 @@ void FileExists(UDFContext*, CLIPSValue*);
 void IsDirectory(UDFContext*, CLIPSValue*);
 void IsRegularFile(UDFContext*, CLIPSValue*);
 void ClampValue(UDFContext*, CLIPSValue*);
+void CLIPS_translateBinary(UDFContext* context, CLIPSValue* ret) noexcept;
+void CLIPS_translateHex(UDFContext* context, CLIPSValue* ret) noexcept;
 #endif
 
 extern "C" void InstallBoostExtensions(void* theEnv) {
@@ -66,6 +68,8 @@ extern "C" void InstallBoostExtensions(void* theEnv) {
 	EnvAddUDF(env, "directoryp", "b", IsDirectory, "IsDirectory", 1, 1, "sy", NULL);
 	EnvAddUDF(env, "regular-filep", "b", IsRegularFile, "IsRegularFile", 1, 1, "sy", NULL);
 	EnvAddUDF(env, "clamp", "l", ClampValue, "ClampValue", 3, 3, "l;l;l;l", NULL);
+	EnvAddUDF(env, "binary->int", "l", CLIPS_translateBinary, "CLIPS_translateBinary", 1, 1, "sy", nullptr);
+	EnvAddUDF(env, "hex->int", "l", CLIPS_translateHex, "CLIPS_translateHex", 1, 1, "sy", nullptr);
 #endif
 }
 
@@ -180,6 +184,57 @@ void TrimStringBack(UDFContext* context, CLIPSValue* ret) {
 		boost::algorithm::trim_right(tmp);
 		CVSetString(ret, tmp.c_str());
 	}
+}
+
+void CLIPS_errorMessageGeneric(UDFContext* context, CLIPSValue* ret, const char* msg) noexcept {
+	UDFInvalidArgumentMessage(context, msg);
+	CVSetBoolean(ret, false);
+}
+
+void CLIPS_errorMessageGeneric(UDFContext* context, CLIPSValue* ret, const std::string& msg) noexcept {
+	CLIPS_errorMessageGeneric(context, ret, msg.c_str());
+}
+void CLIPS_errorNumberLargerThan64Bits(UDFContext* context, CLIPSValue* ret) noexcept {
+	CLIPS_errorMessageGeneric(context, ret, "provided number is larger than 64-bits!");
+}
+
+void CLIPS_errorOverflowedNumber(UDFContext* context, CLIPSValue* ret) noexcept {
+	CLIPS_errorMessageGeneric(context, ret, "number is too large and overflowed!");
+}
+
+template<bool zeroPositionOne = false>
+void CLIPS_translateNumberBase(UDFContext* context, CLIPSValue* ret, const std::string& prefix, int base, const std::string& badPrefix) noexcept {
+	constexpr unsigned long long maximumIntegerValue = 0xFFFFFFFFFFFFFFFF;
+	CLIPSValue value;
+	if (!UDFFirstArgument(context, LEXEME_TYPES, &value)) {
+		CVSetBoolean(ret, false);
+	} else {
+		std::string str(CVToString(&value));
+		if (boost::starts_with(str, prefix)) {
+			if (zeroPositionOne) {
+				str.at(1) = '0';
+			}
+			auto tmp = strtoull(str.c_str(), nullptr, base);
+			if (tmp == ULLONG_MAX && errno == ERANGE) {
+				CLIPS_errorOverflowedNumber(context, ret);
+			} else {
+				if (tmp > maximumIntegerValue) {
+					CLIPS_errorNumberLargerThan64Bits(context, ret);
+				} else {
+					CVSetInteger(ret, static_cast<CLIPSInteger>(tmp));
+				}
+			}
+		} else {
+			CLIPS_errorMessageGeneric(context, ret, badPrefix);
+		}
+	}
+}
+void CLIPS_translateBinary(UDFContext* context, CLIPSValue* ret) noexcept {
+	CLIPS_translateNumberBase<true>(context, ret, "0b", 2, "Binary must start with 0b");
+}
+
+void CLIPS_translateHex(UDFContext* context, CLIPSValue* ret) noexcept {
+	CLIPS_translateNumberBase(context, ret, "0x", 16, "Hex must start with 0x");
 }
 #endif
 

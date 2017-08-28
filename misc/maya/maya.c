@@ -39,6 +39,15 @@ static void EmptyFunction(UDFContext*, CLIPSValue*);
 static void IsDeffunction(UDFContext*, CLIPSValue*);
 static void NextToken(UDFContext* context, CLIPSValue* ret);
 static void LastFunction(UDFContext* context, CLIPSValue* ret);
+static void BinaryNot(UDFContext* context, CLIPSValue* ret); 
+static void BinaryAnd(UDFContext* context, CLIPSValue* ret); 
+static void BinaryOr(UDFContext* context, CLIPSValue* ret); 
+static void BinaryXor(UDFContext* context, CLIPSValue* ret); 
+static void BinaryNand(UDFContext* context, CLIPSValue* ret); 
+static void BinaryNor(UDFContext* context, CLIPSValue* ret); 
+static void ShiftLeft(UDFContext* context, CLIPSValue* ret);
+static void ShiftRight(UDFContext* context, CLIPSValue* ret);
+
 
 void InstallMayaExtensions(void* environment) {
 	EnvAddUDF(environment, "empty$", "b", EmptyFunction, "EmptyFunction", 1, 1, "m", NULL);
@@ -47,6 +56,16 @@ void InstallMayaExtensions(void* environment) {
 	EnvAddUDF(environment, "bye",   "v", ExitCommand,    "ExitCommand", 0,1,"l",NULL);
 	EnvAddUDF(environment, "next-token", "synldfie", NextToken, "NextToken", 1, 1, "y", NULL);
 	EnvAddUDF(environment, "last$", "m", LastFunction, "LastFunction", 1,1,"m",NULL);
+
+	EnvAddUDF(environment, "binary-not", "l", BinaryNot, "BinaryNot", 1, 1, "l", nullptr);
+	EnvAddUDF(environment, "binary-and", "l", BinaryAnd, "BinaryAnd", 2, 2, "l;l", nullptr);
+	EnvAddUDF(environment, "binary-or", "l", BinaryOr, "BinaryOr", 2, 2, "l;l", nullptr);
+	EnvAddUDF(environment, "binary-xor", "l", BinaryXor, "BinaryXor", 2, 2, "l;l", nullptr);
+	EnvAddUDF(environment, "binary-nand", "l", BinaryNand, "BinaryNand", 2, 2, "l;l", nullptr);
+	EnvAddUDF(environment, "binary-nor", "l", BinaryNor, "BinaryNor", 2, 2, "l;l", nullptr);
+
+	EnvAddUDF(environment, "left-shift", "l", ShiftLeft, "ShiftLeft", 2, 2, "l;l", nullptr);
+	EnvAddUDF(environment, "right-shift", "l", ShiftRight, "ShiftRight", 2, 2, "l;l", nullptr);
 #if  BOOST_EXTENSIONS
 	InstallBoostExtensions(environment);
 #endif
@@ -159,7 +178,98 @@ specialCaseEntry(MF_WILDCARD, "MF_WILDCARD")
 }
 
 
+void 
+BinaryNot(UDFContext* context, CLIPSValue* ret) {
+	CLIPSValue val;
+	if (UDFFirstArgument(context, INTEGER_TYPE, &val)) {
+		return;
+	}
+	CVSetInteger(ret, ~(CVToInteger(&val)));
+}
 
+void
+BinaryOr(UDFContext* context, CLIPSValue* ret) {
+	CLIPSValue a, b;
+	if (UDFFirstArgument(context, INTEGER_TYPE, &a)) {
+		return;
+	} else if (UDFNextArgument(context, INTEGER_TYPE, &b)) {
+		return;
+	} 
+
+	CVSetInteger(ret, CVToInteger(&a) | CVToInteger(&b));
+}
+
+void
+BinaryAnd(UDFContext* context, CLIPSValue* ret) {
+	CLIPSValue a, b;
+	if (UDFFirstArgument(context, INTEGER_TYPE, &a)) {
+		return;
+	} else if (UDFNextArgument(context, INTEGER_TYPE, &b)) {
+		return;
+	} 
+
+	CVSetInteger(ret, CVToInteger(&a) & CVToInteger(&b));
+}
+
+void
+BinaryXor(UDFContext* context, CLIPSValue* ret) {
+	CLIPSValue a, b;
+	if (UDFFirstArgument(context, INTEGER_TYPE, &a)) {
+		return;
+	} else if (UDFNextArgument(context, INTEGER_TYPE, &b)) {
+		return;
+	} 
+
+	CVSetInteger(ret, CVToInteger(&a) ^ CVToInteger(&b));
+}
+
+void
+BinaryNor(UDFContext* context, CLIPSValue* ret) {
+	CLIPSValue a, b;
+	if (UDFFirstArgument(context, INTEGER_TYPE, &a)) {
+		return;
+	} else if (UDFNextArgument(context, INTEGER_TYPE, &b)) {
+		return;
+	} 
+
+	CVSetInteger(ret, ~(CVToInteger(&a) | CVToInteger(&b)));
+}
+
+void
+BinaryNand(UDFContext* context, CLIPSValue* ret) {
+	CLIPSValue a, b;
+	if (UDFFirstArgument(context, INTEGER_TYPE, &a)) {
+		return;
+	} else if (UDFNextArgument(context, INTEGER_TYPE, &b)) {
+		return;
+	} 
+
+	CVSetInteger(ret, ~(CVToInteger(&a) & CVToInteger(&b)));
+}
+
+void
+ShiftLeft(UDFContext* context, CLIPSValue* ret) {
+	CLIPSValue value, by;
+	if (UDFFirstArgument(context, INTEGER_TYPE, &value)) {
+		return;
+	} else if (UDFNextArgument(context, INTEGER_TYPE, &by)) {
+		return;
+	} 
+
+	CVSetInteger(ret, (CVToInteger(&value) << CVToInteger(&by)));
+}
+
+void
+ShiftRight(UDFContext* context, CLIPSValue* ret) {
+	CLIPSValue value, by;
+	if (UDFFirstArgument(context, INTEGER_TYPE, &value)) {
+		return;
+	} else if (UDFNextArgument(context, INTEGER_TYPE, &by)) {
+		return;
+	} 
+
+	CVSetInteger(ret, (CVToInteger(&value) >> CVToInteger(&by)));
+}
 
 
 #endif // end MAYA_EXTENSIONS
