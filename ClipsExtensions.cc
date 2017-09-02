@@ -388,27 +388,6 @@ namespace syn {
 #endif // end ENABLE_EXTENDED_MEMORY_BLOCKS
 	}
 
-    MultifieldBuilder::MultifieldBuilder(void* env, long capacity) : _size(capacity), _rawMultifield(EnvCreateMultifield(env, capacity)) { }
-
-    void MultifieldBuilder::setField(int index, int type, void* value) {
-        if (index <= 0) {
-            throw syn::Problem("Can't set a value to a field with a negative index!");
-        } else if (index > _size) {
-            throw syn::Problem("Attempted to set a field which was out of range of the multifield!");
-        }
-        SetMFType(_rawMultifield, index, type);
-        SetMFValue(_rawMultifield, index, value);
-    }
-    void MultifieldBuilder::setField(int index, MayaType type, void* value) {
-        setField(index, static_cast<int>(type), value);
-    }
-	void MultifieldBuilder::assign(DataObjectPtr ptr) noexcept {
-		ptr->type = MULTIFIELD;
-		ptr->begin = 0;
-		ptr->end = _size - 1;
-		ptr->value = _rawMultifield;
-	}
-
     bool isExternalAddress(DataObjectPtr value) noexcept {
         return GetpType(value) == EXTERNAL_ADDRESS;
     }

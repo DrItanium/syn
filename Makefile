@@ -22,6 +22,7 @@ REPL_BINARY = xsyn_repl
 
 REPL_OBJECTS= ReplBootstrap.o \
 			  ClipsExtensions.o \
+			  MultifieldBuilder.o \
 			  libmaya.a
 
 REPL_FINAL_BINARY = syn_repl

@@ -403,22 +403,6 @@ const std::string& getFunctionPrefixNew() noexcept {
     return str;
 }
 
-//using FunctionStrings = std::tuple<std::string, std::string, std::string>;
-//template<typename T>
-//FunctionStrings retrieveFunctionNames(const std::string& action) noexcept {
-//    std::stringstream ss, ss2;
-//    buildFunctionString(ss, action, TypeToName::getSymbolicName<T>());
-//    buildFunctionErrorString(ss2, action, TypeToName::getSymbolicName<T>());
-//    auto str0 = ss.str();
-//    auto str1 = ss2.str();
-//    return std::make_tuple(TypeToName::getSymbolicName<T>(), str0, str1);
-//}
-
-
-
-
-
-
 #define DefExternalAddressWrapperType(internalType, theWrapperType) \
     template<> \
     struct ExternalAddressWrapperType< internalType > { \
@@ -646,6 +630,7 @@ class MultifieldBuilder {
          * set the given cell to the given type and corresponding value
          */
         void setField(int index, int type, void* value);
+
         /**
          * set the given cell to the give wrapped type and corresponding value
          */
@@ -654,6 +639,33 @@ class MultifieldBuilder {
         long getSize() const noexcept { return _size; }
         /// get the actual multifield pointer itself
         void* getRawMultifield() const noexcept { return _rawMultifield; }
+		/// Set the given cell as an integer
+		void setFieldAsNumber(int index, CLIPSInteger value);
+		/// Set the given cell as a float64 value
+		void setFieldAsNumber(int index, double value);
+		/// Set the given cell as a symbol
+		void setFieldAsSymbol(int index, const char* value);
+		/// Set the given cell as a symbol
+		void setFieldAsSymbol(int index, const std::string& value);
+		/// Set the given cell as a string 
+		void setFieldAsString(int index, const char* value);
+		/// Set the given cell as a string 
+		void setFieldAsString(int index, const std::string& value);
+
+		/**
+		 * Set the given field to an external address!
+		 */
+		template<typename T>
+		void setField(int index, T* value) {
+			setField(index, MayaType::ExternalAddress, EnvAddExternalAddress(_env, value, ExternalAddressRegistrar<T>::getExternalAddressId(_env)));
+		}
+		/**
+		 * Set the given field to an external address!
+		 */
+		template<typename T>
+		void setField(int index, T& value) {
+			setField(index, MayaType::ExternalAddress, EnvAddExternalAddress(_env, &value, ExternalAddressRegistrar<T>::getExternalAddressId(_env)));
+		}
         /**
          * install the multifield into a data object pointer.
          * Use this method when extracting the data out, it does more than just
@@ -664,7 +676,23 @@ class MultifieldBuilder {
     private:
         long _size;
         void* _rawMultifield;
+		void* _env;
 };
+
+
+using MultifieldCell = std::tuple<MayaType, void*>;
+
+MultifieldCell symbol(void* env, const char* value);
+MultifieldCell symbol(void* env, const std::string& value);
+template<typename T>
+MultifieldCell externalAddress(void* env, T* value) {
+	return std::make_tuple(MayaType::ExternalAddress, EnvAddExternalAddress(env, value, ExternalAddressRegistrar<T>::getExternalAddressId(env)));
+}
+
+template<typename T>
+MultifieldCell externalAddress(void* env, T& value) {
+	return std::make_tuple(MayaType::ExternalAddress, EnvAddExternalAddress(env, &value, ExternalAddressRegistrar<T>::getExternalAddressId(env)));
+}
 
 /**
  * A wrapper class that allows construction of multifields with compile-time
@@ -677,7 +705,7 @@ class FixedSizeMultifieldBuilder {
     public:
         using CapacityType = long;
     public:
-        FixedSizeMultifieldBuilder(void* env) noexcept : _rawMultifield(EnvCreateMultifield(env, capacity)) { }
+        FixedSizeMultifieldBuilder(void* env) noexcept : _rawMultifield(EnvCreateMultifield(env, capacity)), _env(env) { }
         virtual ~FixedSizeMultifieldBuilder() noexcept { }
         static constexpr CapacityType getSize() noexcept { return capacity; }
         void* getRawMultifield() const noexcept { return _rawMultifield; }
@@ -730,9 +758,100 @@ class FixedSizeMultifieldBuilder {
         void setSecond(MayaType type, void* value) noexcept {
             setSecond(static_cast<int>(type), value);
         }
+		template<int index, typename T>
+		void setField(T value) {
+			setField<index>(MayaType::ExternalAddress, EnvAddExternalAddress(_env, &value, ExternalAddressRegistrar<T>::getExternalAddressId(_env)));
+		}
+		template<int index, typename T>
+		void setField(T* value) {
+			setField<index>(MayaType::ExternalAddress, EnvAddExternalAddress(_env, value, ExternalAddressRegistrar<T>::getExternalAddressId(_env)));
+		}
+		template<int index, typename T>
+		void setField(T& value) {
+			setField<index>(MayaType::ExternalAddress, EnvAddExternalAddress(_env, value, ExternalAddressRegistrar<T>::getExternalAddressId(_env)));
+		}
+		template<int index>
+		void setField(MultifieldCell pair) {
+			setField<index>(std::get<0>(pair), std::get<1>(pair));
+		}
+		template<int index>
+		void setField(const char* value) {
+			setField<index>(MayaType::String, EnvAddSymbol(_env, value));
+		}
+		template<int index>
+		void setField(const std::string& value) {
+			setField<index>(value.c_str());
+		}
+		template<int index>
+		void setField(CLIPSInteger value) {
+			setField<index>(MayaType::Integer, EnvAddLong(_env, value));
+		}
+		template<int index>
+		void setField(double value) {
+			setField<index>(MayaType::Float, EnvAddDouble(_env, value));
+		}
+
+		template<typename ... Rest>
+		void setField(CLIPSInteger curr, Rest ... rest) {
+			setField<capacity - sizeof...(Rest)>(curr);
+			setField(rest...);
+		}
+
+		template<typename ... Rest>
+		void setField(double curr, Rest ... rest) {
+			setField<capacity - sizeof...(Rest)>(curr);
+			setField(rest...);
+		}
+
+		template<typename ... Rest>
+		void setField(const std::string& curr, Rest ... rest) {
+			setField<capacity - sizeof...(Rest)>(curr);
+			setField(rest...);
+		}
+
+		template<typename ... Rest>
+		void setField(const char* curr, Rest ... rest) {
+			setField<capacity - sizeof...(Rest)>(curr);
+			setField(rest...);
+		}
+
+		template<typename ... Rest>
+		void setField(MultifieldCell curr, Rest ... rest) {
+			setField<capacity - sizeof...(Rest)>(curr);
+			setField(rest...);
+		}
+
+		template<typename T, typename ... Rest>
+		void setField(T external, Rest ... rest) {
+			setField<capacity - sizeof...(Rest), T>(external);
+			setField(rest...);
+		}
+		template<typename T, typename ... Rest>
+		void setField(T& external, Rest ... rest) {
+			setField<capacity - sizeof...(Rest), T>(external);
+			setField(rest...);
+		}
+
+		template<typename T, typename ... Rest>
+		void setField(T* external, Rest ... rest) {
+			setField<capacity - sizeof...(Rest), T>(external);
+			setField(rest...);
+		}
+
+	private:
+		void setField() { }
+
     private:
         void* _rawMultifield;
+		void* _env;
 };
+
+template<typename... Arguments>
+void createMultifield(void* env, DataObjectPtr storage, Arguments... args) {
+	FixedSizeMultifieldBuilder<sizeof...(Arguments)> tmp(env);
+	tmp.setField(args...);
+	tmp.assign(storage);
+}
 
 }
 #endif
