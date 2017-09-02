@@ -16,6 +16,7 @@ COMMON_THINGS = Core.o \
 				WrappedIODevice.o \
 				IOController.o \
 				ClipsExtensions.o \
+			 	MultifieldBuilder.o \
 				libmaya.a
 
 REPL_BINARY = xsyn_repl

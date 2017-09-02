@@ -85,13 +85,12 @@ namespace syn {
         }
 
         bool getCommandList(void* env, CLIPSValuePtr ret) noexcept {
-            FixedSizeMultifieldBuilder<static_cast<long>(Operations::Count)> mb(env);
-            mb.setField<1, MayaType::Symbol>(EnvAddSymbol(env, operationsName(Operations::Read).c_str()));
-            mb.setField<2, MayaType::Symbol>(EnvAddSymbol(env, operationsName(Operations::Write).c_str()));
-            mb.setField<3, MayaType::Symbol>(EnvAddSymbol(env, operationsName(Operations::Initialize).c_str()));
-            mb.setField<4, MayaType::Symbol>(EnvAddSymbol(env, operationsName(Operations::Shutdown).c_str()));
-            mb.setField<5, MayaType::Symbol>(EnvAddSymbol(env, operationsName(Operations::ListCommands).c_str()));
-            mb.assign(ret);
+			createMultifield(env, ret, 
+					symbol(env, operationsName(Operations::Read)),
+					symbol(env, operationsName(Operations::Write)),
+					symbol(env, operationsName(Operations::Initialize)),
+					symbol(env, operationsName(Operations::Shutdown)),
+					symbol(env, operationsName(Operations::ListCommands)));
             return true;
         }
     } // end namespace WrappedIODeviceConstants
