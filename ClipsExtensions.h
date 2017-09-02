@@ -612,6 +612,20 @@ class ExternalAddressWrapper {
 		std::unique_ptr<T> _value;
 };
 
+using MultifieldCell = std::tuple<MayaType, void*>;
+
+MultifieldCell symbol(void* env, const char* value);
+MultifieldCell symbol(void* env, const std::string& value);
+template<typename T>
+MultifieldCell externalAddress(void* env, T* value) {
+	return std::make_tuple(MayaType::ExternalAddress, EnvAddExternalAddress(env, value, ExternalAddressRegistrar<T>::getExternalAddressId(env)));
+}
+
+template<typename T>
+MultifieldCell externalAddress(void* env, T& value) {
+	return std::make_tuple(MayaType::ExternalAddress, EnvAddExternalAddress(env, &value, ExternalAddressRegistrar<T>::getExternalAddressId(env)));
+}
+
 /**
  * Class which makes building multifields much easier. It is a wrapper class so
  * if it goes out of scope then the underlying raw multifield will not be
@@ -639,32 +653,38 @@ class MultifieldBuilder {
         long getSize() const noexcept { return _size; }
         /// get the actual multifield pointer itself
         void* getRawMultifield() const noexcept { return _rawMultifield; }
+		/// Set the given index with the given cell, used for custom types
+		void setField(int index, MultifieldCell cell);
 		/// Set the given cell as an integer
-		void setFieldAsNumber(int index, CLIPSInteger value);
+		void setField(int index, CLIPSInteger value);
 		/// Set the given cell as a float64 value
-		void setFieldAsNumber(int index, double value);
-		/// Set the given cell as a symbol
-		void setFieldAsSymbol(int index, const char* value);
-		/// Set the given cell as a symbol
-		void setFieldAsSymbol(int index, const std::string& value);
+		void setField(int index, double value);
 		/// Set the given cell as a string 
-		void setFieldAsString(int index, const char* value);
+		void setField(int index, const char* value);
 		/// Set the given cell as a string 
-		void setFieldAsString(int index, const std::string& value);
+		void setField(int index, const std::string& value);
 
 		/**
 		 * Set the given field to an external address!
 		 */
 		template<typename T>
 		void setField(int index, T* value) {
-			setField(index, MayaType::ExternalAddress, EnvAddExternalAddress(_env, value, ExternalAddressRegistrar<T>::getExternalAddressId(_env)));
+			setField(index, externalAddress<T>(_env, value));
 		}
 		/**
 		 * Set the given field to an external address!
 		 */
 		template<typename T>
 		void setField(int index, T& value) {
-			setField(index, MayaType::ExternalAddress, EnvAddExternalAddress(_env, &value, ExternalAddressRegistrar<T>::getExternalAddressId(_env)));
+			setField(index, externalAddress<T>(_env, value));
+		}
+
+		/**
+		 * Set the given field to an external address!
+		 */
+		template<typename T>
+		void setField(int index, T value) {
+			setField(index, externalAddress<T>(_env, value));
 		}
         /**
          * install the multifield into a data object pointer.
@@ -680,19 +700,6 @@ class MultifieldBuilder {
 };
 
 
-using MultifieldCell = std::tuple<MayaType, void*>;
-
-MultifieldCell symbol(void* env, const char* value);
-MultifieldCell symbol(void* env, const std::string& value);
-template<typename T>
-MultifieldCell externalAddress(void* env, T* value) {
-	return std::make_tuple(MayaType::ExternalAddress, EnvAddExternalAddress(env, value, ExternalAddressRegistrar<T>::getExternalAddressId(env)));
-}
-
-template<typename T>
-MultifieldCell externalAddress(void* env, T& value) {
-	return std::make_tuple(MayaType::ExternalAddress, EnvAddExternalAddress(env, &value, ExternalAddressRegistrar<T>::getExternalAddressId(env)));
-}
 
 /**
  * A wrapper class that allows construction of multifields with compile-time

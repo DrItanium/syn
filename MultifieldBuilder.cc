@@ -66,28 +66,24 @@ namespace syn {
 		ptr->value = _rawMultifield;
 	}
 
-	void MultifieldBuilder::setFieldAsNumber(int index, CLIPSInteger value) {
+	void MultifieldBuilder::setField(int index, CLIPSInteger value) {
 		setField(index, MayaType::Integer, EnvAddLong(_env, value));
 	}
 
-	void MultifieldBuilder::setFieldAsNumber(int index, double value) {
+	void MultifieldBuilder::setField(int index, double value) {
 		setField(index, MayaType::Float, EnvAddDouble(_env, value));
 	}
 
-	void MultifieldBuilder::setFieldAsSymbol(int index, const char* value) {
-		setField(index, MayaType::Symbol, EnvAddSymbol(_env, value));
-	}
-
-	void MultifieldBuilder::setFieldAsSymbol(int index, const std::string& value) {
-		setFieldAsSymbol(index, value.c_str());
-	}
-
-	void MultifieldBuilder::setFieldAsString(int index, const char* value) {
+	void MultifieldBuilder::setField(int index, const char* value) {
 		setField(index, MayaType::String, EnvAddSymbol(_env, value));
 	}
 
-	void MultifieldBuilder::setFieldAsString(int index, const std::string& value) {
-		setFieldAsString(index, value.c_str());
+	void MultifieldBuilder::setField(int index, const std::string& value) {
+		setField(index, value.c_str());
+	}
+
+	void MultifieldBuilder::setField(int index, MultifieldCell cell) {
+		setField(index, std::get<0>(cell), std::get<1>(cell));
 	}
 
 }
