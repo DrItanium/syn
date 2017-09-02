@@ -40,6 +40,7 @@
 #include "ClipsExtensions.h"
 #include "IrisCoreAssembler.h"
 #include "IrisCoreAssemblerStateWrapper.h"
+#include "MultifieldBuilder.h"
 
 #include <tao/pegtl.hpp>
 #include <tao/pegtl/analyze.hpp>

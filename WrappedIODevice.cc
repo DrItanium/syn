@@ -24,6 +24,7 @@
  */
 
 #include "WrappedIODevice.h"
+#include "MultifieldBuilder.h"
 namespace syn {
 
 	using CLIPSRandomNumberGeneratorDevice = RandomDevice<CLIPSInteger, CLIPSInteger>;

@@ -27,21 +27,7 @@
  */
 
 
-#include "BaseTypes.h"
-#include "ClipsExtensions.h"
-#include "Base.h"
-#include "ExecutionUnits.h"
-
-#include <cstdint>
-#include <climits>
-#include <sstream>
-#include <memory>
-#include <map>
-#include <iostream>
-
-extern "C" {
-#include "clips.h"
-}
+#include "MultifieldBuilder.h"
 
 namespace syn {
 

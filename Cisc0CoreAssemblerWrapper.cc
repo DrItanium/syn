@@ -31,6 +31,7 @@
 #include "Cisc0ClipsExtensions.h"
 #include "Cisc0CoreAssembler.h"
 #include "Cisc0CoreAssemblerWrapper.h"
+#include "MultifieldBuilder.h"
 #include <tao/pegtl.hpp>
 #include <tao/pegtl/analyze.hpp>
 #include <tao/pegtl/contrib/raw_string.hpp>

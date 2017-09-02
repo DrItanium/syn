@@ -31,6 +31,7 @@
 #include "ClipsExtensions.h"
 #include "Base.h"
 #include "ExecutionUnits.h"
+#include "MultifieldBuilder.h"
 
 #include <cstdint>
 #include <climits>
