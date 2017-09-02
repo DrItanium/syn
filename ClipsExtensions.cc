@@ -433,4 +433,12 @@ namespace syn {
     void buildFunctionString(std::ostream& stream, const std::string& action, const std::string& name) noexcept {
         stream << "Function " << action << " (" << name << ")";
     }
+
+	MultifieldCell symbol(void* env, const char* sym) {
+		return std::make_tuple(MayaType::Symbol, EnvAddSymbol(env, sym));
+	}
+
+	MultifieldCell symbol(void* env, const std::string& sym) {
+		return symbol(env, sym.c_str());
+	}
 }
