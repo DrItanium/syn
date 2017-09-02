@@ -86,11 +86,11 @@ namespace syn {
 
         bool getCommandList(void* env, CLIPSValuePtr ret) noexcept {
 			createMultifield(env, ret, 
-					symbol(env, operationsName(Operations::Read)),
-					symbol(env, operationsName(Operations::Write)),
-					symbol(env, operationsName(Operations::Initialize)),
-					symbol(env, operationsName(Operations::Shutdown)),
-					symbol(env, operationsName(Operations::ListCommands)));
+					makeSymbol(env, operationsName(Operations::Read)),
+					makeSymbol(env, operationsName(Operations::Write)),
+					makeSymbol(env, operationsName(Operations::Initialize)),
+					makeSymbol(env, operationsName(Operations::Shutdown)),
+					makeSymbol(env, operationsName(Operations::ListCommands)));
             return true;
         }
     } // end namespace WrappedIODeviceConstants

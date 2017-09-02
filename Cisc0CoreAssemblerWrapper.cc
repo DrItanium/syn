@@ -63,8 +63,8 @@ namespace cisc0 {
             int i = 1;
             for (auto q : finalWords) {
                 // add them two at a time!
-                f.setField(i, INTEGER, EnvAddLong(env, q.getAddress()));
-                f.setField(i + 1, INTEGER, EnvAddLong(env, q.getValue()));
+				f.setField(i, q.getAddress());
+                f.setField(i + 1, q.getValue());
                 i += 2;
             }
             f.assign(ret);

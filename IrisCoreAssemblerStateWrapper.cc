@@ -100,9 +100,9 @@ namespace iris {
         syn::MultifieldBuilder f(env, state.numberOfFinishedItems() * 3);
         auto body = [&f, env, ret](auto value, auto baseIndex) noexcept {
             auto i = (3 * baseIndex) + 1;
-            f.setField(i + 0, INTEGER, EnvAddLong(env, value.instruction ? 0 : 1));
-            f.setField(i + 1, INTEGER, EnvAddLong(env, value.address));
-            f.setField(i + 2, INTEGER, EnvAddLong(env, value.encode()));
+            f.setField(i + 0, (value.instruction ? 0 : 1));
+            f.setField(i + 1, (value.address));
+            f.setField(i + 2, (value.encode()));
         };
         state.applyToFinishedData(body);
         f.assign(ret);

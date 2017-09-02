@@ -86,4 +86,39 @@ namespace syn {
 		setField(index, std::get<0>(cell), std::get<1>(cell));
 	}
 
+	MultifieldCell makeCell(MayaType t, void* value) {
+		return std::make_tuple(t, value);
+	}
+	template<MayaType t>
+	MultifieldCell makeLexeme(void* env, const char* value) {
+		static_assert(t == MayaType::Symbol || t == MayaType::String, "Lexemes can only be symbols or strings!");
+		return makeCell(t, EnvAddSymbol(env, value));
+	}
+	MultifieldCell makeSymbol(void* env, const char* sym) {
+		return makeLexeme<MayaType::Symbol>(env, sym);
+	}
+
+	MultifieldCell makeSymbol(void* env, const std::string& sym) {
+		return makeSymbol(env, sym.c_str());
+	}
+
+	MultifieldCell makeString(void* env, const char* sym) {
+		return makeLexeme<MayaType::String>(env, sym);
+	}
+
+	MultifieldCell makeString(void* env, const std::string& sym) {
+		return makeString(env, sym.c_str());
+	}
+
+	MultifieldCell makeInteger(void* env, CLIPSInteger value) {
+		return makeCell(MayaType::Integer, EnvAddLong(env, value));
+	}
+
+	MultifieldCell makeFloat(void* env, double value) {
+		return makeCell(MayaType::Float, EnvAddDouble(env, value));
+	}
+
+	void emptyMultifield(void* env, DataObjectPtr storage) {
+		createMultifield(env, storage);
+	}
 }
