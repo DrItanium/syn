@@ -32,7 +32,8 @@
                    ?ALL)
            (import test
                    ?ALL))
-
+(deffacts MAIN::testsuite-info
+          (testsuite iris-exec-tests))
 (deffunction MAIN::mk-register
              (?index)
              (str-cat r

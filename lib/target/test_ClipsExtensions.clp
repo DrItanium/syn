@@ -32,6 +32,7 @@
            (import test
                    ?ALL))
 (deffacts MAIN::clips-extensions-tests
+          (testsuite clips-extensions-tests)
           (testcase (id hex->int:basic)
                     (description "make sure that converting a hex symbol to a number works"))
           (testcase-assertion (parent hex->int:basic)

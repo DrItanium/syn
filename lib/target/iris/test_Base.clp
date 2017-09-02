@@ -33,6 +33,8 @@
                    ?ALL)
            (import test
                    ?ALL))
+(deffacts MAIN::testsuite-info
+         (testsuite iris-base-tests))
 (deffunction MAIN::test-instruction-encode-routines
              (?testcase ?instruction ?expected)
              (assert (testcase-assertion (actual-value (iris-parse-and-encode-instruction ?instruction))

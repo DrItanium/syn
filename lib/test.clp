@@ -95,8 +95,9 @@
                                   (outcome ANALYZE)))
          =>
          (retract ?f)
-         (printout ?router
-                   "Testcase " ?id ": " ?description crlf)
+         (assert (target-router ?router))
+         (bind ?sentences
+               "Testcase " ?id ": " ?description crlf)
          (bind ?failed
                FALSE)
          (delayed-do-for-all-facts ((?ta testcase-assertion))
@@ -106,17 +107,31 @@
                                    (if (not ?ta:outcome) then
                                      (bind ?failed
                                            TRUE)
-                                     (printout ?router
-                                               tab tab "CHECK FAILED: " crlf
-                                               tab tab tab "expected: " ?ta:expected crlf
-                                               tab tab tab "actual value: " ?ta:actual-value crlf)))
-         (printout ?router
-                   tab "Result: "
-                   (if ?failed then
-                     FAILED
-                     else
-                     PASSED) crlf)
+                                     (bind ?sentences
+                                           ?sentences
+                                           tab tab "CHECK FAILED: " crlf
+                                           tab tab tab "expected: " ?ta:expected crlf
+                                           tab tab tab "actual value: " ?ta:actual-value crlf)))
+         (bind ?sentences
+               ?sentences
+               tab "Result: "
+               (if ?failed then
+                 FAILED
+                 else
+                 PASSED) crlf)
          ; we want to terminate if we failed!
          (if ?failed then
+           (printout ?router
+                     (expand$ ?sentences))
            (exit 1)))
 
+
+(defrule test::testsuite-was-successful
+         (declare (salience -10000))
+         ?f <- (target-router ?router)
+         ?f2 <- (testsuite ?name)
+         =>
+         (retract ?f
+                  ?f2)
+         (printout ?router
+                   "testsuite " ?name ": All tests passed!" crlf))

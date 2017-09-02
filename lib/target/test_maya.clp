@@ -31,6 +31,8 @@
                    ?ALL)
            (import test
                    ?ALL))
+(deffacts MAIN::testsuite-info
+          (testsuite boost-and-functional-tests))
 (deffacts MAIN::boost-test-cases
           (testcase (id boost-has-prefix0)
                     (description "does has-prefix work?"))

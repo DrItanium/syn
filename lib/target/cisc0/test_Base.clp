@@ -33,6 +33,8 @@
                    ?ALL)
            (import test
                    ?ALL))
+(deffacts MAIN::testsuite-info
+          (testsuite cisc0-base-tests))
 (deffunction MAIN::test-memory-space-read-generic
              (?testcase ?core ?address ?expected)
              (assert (testcase-assertion (parent ?testcase)
