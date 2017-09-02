@@ -31,6 +31,7 @@
 #include "ClipsExtensions.h"
 #include "Base.h"
 #include "ExecutionUnits.h"
+#include "ExternalAddressWrapper.h"
 #include "MultifieldBuilder.h"
 
 #include <cstdint>
@@ -333,7 +334,7 @@ namespace syn {
 		public:
 			ManagedMemoryBlock(Address capacity) : Parent(std::move(std::make_unique<WordBlock>(capacity))), _capacity(capacity) { }
 			inline Address size() const noexcept                                    { return _capacity; }
-			inline bool legalAddress(Address idx) const noexcept                    { return inRange<Address>(_capacity, idx); }
+			inline bool legalAddress(Address idx) const noexcept                    { return addressInRange<Address>(_capacity, idx); }
 			inline Word getMemoryCellValue(Address addr) noexcept                   { return this->_value.get()[addr]; }
 			inline void setMemoryCell(Address addr0, Word value) noexcept           { this->_value.get()[addr0] = value; }
 			inline void swapMemoryCells(Address addr0, Address addr1) noexcept      { swap<Word>(this->_value.get()[addr0], this->_value.get()[addr1]); }

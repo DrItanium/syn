@@ -608,6 +608,38 @@ constexpr bool isOdd(T value) noexcept {
 	return !isEven<T>(value);
 }
 
+/**
+ * Check and see if the given value is the range of [0, capacity).
+ * @param capacity the max size that the value can be minus 1
+ * @param address the value to see range on
+ * @tparam T the type of the things to check range on
+ * @return true if the given value is in the range of [0, capacity)
+ */
+template<typename T>
+constexpr bool addressInRange(T capacity, T address) noexcept {
+	return address >= 0 && address < capacity;
+}
+
+template<>
+constexpr bool addressInRange<uint16>(uint16 capacity, uint16 address) noexcept {
+    return address < capacity;
+}
+
+template<>
+constexpr bool addressInRange<uint32>(uint32 capacity, uint32 address) noexcept {
+    return address < capacity;
+}
+
+template<>
+constexpr bool addressInRange<uint64>(uint64 capacity, uint64 address) noexcept {
+    return address < capacity;
+}
+
+template<>
+constexpr bool addressInRange<uint8>(uint8 capacity, uint8 address) noexcept {
+    return address < capacity;
+}
+
 } // end namespace syn
 
 #endif // end SYN_BASE_ARITHMETIC_H__

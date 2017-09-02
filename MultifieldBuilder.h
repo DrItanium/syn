@@ -37,6 +37,7 @@
 #include "BaseArithmetic.h"
 #include "Problem.h"
 #include "ClipsExtensions.h"
+#include "ExternalAddressWrapper.h"
 
 extern "C" {
 	#include "clips.h"
