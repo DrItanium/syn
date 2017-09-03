@@ -17,6 +17,7 @@ COMMON_THINGS = Core.o \
 				IOController.o \
 				ClipsExtensions.o \
 			 	MultifieldBuilder.o \
+				MemoryBlock.o \
 				libmaya.a
 
 REPL_BINARY = xsyn_repl
@@ -24,6 +25,7 @@ REPL_BINARY = xsyn_repl
 REPL_OBJECTS= ReplBootstrap.o \
 			  ClipsExtensions.o \
 			  MultifieldBuilder.o \
+			  MemoryBlock.o \
 			  libmaya.a
 
 REPL_FINAL_BINARY = syn_repl

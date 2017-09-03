@@ -49,118 +49,6 @@ extern "C" {
 }
 
 namespace syn {
-	void CLIPS_errorMessageGeneric(UDFContext* context, CLIPSValue* ret, const char* msg) noexcept {
-		UDFInvalidArgumentMessage(context, msg);
-		CVSetBoolean(ret, false);
-	}
-	void CLIPS_errorMessageGeneric(UDFContext* context, CLIPSValue* ret, const std::string& msg) noexcept {
-		CLIPS_errorMessageGeneric(context, ret, msg.c_str());
-	}
-	void CLIPS_errorOverflowedNumber(UDFContext* context, CLIPSValue* ret) noexcept {
-		CLIPS_errorMessageGeneric(context, ret, "number is too large and overflowed");
-	}
-	void CLIPS_translateBitmask(UDFContext* context, CLIPSValue* ret) noexcept {
-		CLIPSValue value;
-		if (!UDFFirstArgument(context, LEXEME_TYPES, &value)) {
-			CVSetBoolean(ret, false);
-		} else {
-			std::string str(CVToString(&value));
-			if (boost::starts_with(str, "0m")) {
-				str.at(1) = '0';
-				auto tmp = strtoul(str.c_str(), NULL, 2);
-				if (tmp == ULONG_MAX && errno == ERANGE) {
-					CLIPS_errorOverflowedNumber(context, ret);
-				} else {
-					if (tmp > 0xFF) {
-						CLIPS_errorMessageGeneric(context, ret, "provided number is larger than 8-bits!");
-					} else {
-						CVSetInteger(ret, static_cast<CLIPSInteger>(static_cast<byte>(tmp)));
-					}
-				}
-			} else {
-				CLIPS_errorMessageGeneric(context, ret, "Bitmask must start with 0m");
-			}
-		}
-	}
-	void CLIPS_errorNumberLargerThan64Bits(UDFContext* context, CLIPSValue* ret) noexcept {
-		CLIPS_errorMessageGeneric(context, ret, "provided number is larger than 64-bits!");
-	}
-
-
-	void CLIPS_expandBit(UDFContext* context, CLIPSValue* ret) noexcept {
-		CLIPSValue number;
-		if (!UDFFirstArgument(context, NUMBER_TYPES, &number)) {
-			CVSetBoolean(ret, false);
-			return;
-		} 
-		auto value = CVToInteger(&number);
-		CVSetInteger(ret, CLIPSInteger(expandBit(value != 0)));
-	}
-
-	void CLIPS_basePrintAddress(void* env, const char* logicalName, void* theValue, const char* func, const char* majorType) {
-		std::stringstream ss;
-		void* ptr = EnvValueToExternalAddress(env, theValue);
-		ss << "<" << majorType << "-" << func << "-" << std::hex << ((ptr) ? ptr : theValue) << ">";
-		auto str = ss.str();
-		EnvPrintRouter(env, logicalName, str.c_str());
-	}
-	void CLIPS_basePrintAddress_Pointer(void* env, const char* logicalName, void* theValue, const char* func) noexcept {
-		CLIPS_basePrintAddress(env, logicalName, theValue, func, "Pointer");
-	}
-	void CLIPS_decodeBits(UDFContext* context, CLIPSValue* ret) {
-		CLIPSValue value, mask, shift;
-		if (!UDFFirstArgument(context, NUMBER_TYPES, &value)) {
-			CVSetBoolean(ret, false);
-		} else if (!UDFNextArgument(context, NUMBER_TYPES, &mask)) {
-			CVSetBoolean(ret, false);
-		} else if (!UDFNextArgument(context, NUMBER_TYPES, &shift)) {
-			CVSetBoolean(ret, false);
-		} else {
-			CVSetInteger(ret, decodeBits<CLIPSInteger, CLIPSInteger>(CVToInteger(&value), CVToInteger(&mask), CVToInteger(&shift)));
-		}
-	}
-	void CLIPS_encodeBits(UDFContext* context, CLIPSValue* ret) noexcept {
-		CLIPSValue input, value, mask, shift;
-		if (!UDFFirstArgument(context, NUMBER_TYPES, &input)) {
-			CVSetBoolean(ret, false);
-		} else if (!UDFNextArgument(context, NUMBER_TYPES, &value)) {
-			CVSetBoolean(ret, false);
-		} else if (!UDFNextArgument(context, NUMBER_TYPES, &mask)) {
-			CVSetBoolean(ret, false);
-		} else if (!UDFNextArgument(context, NUMBER_TYPES, &shift)) {
-			CVSetBoolean(ret, false);
-		} else {
-			CVSetInteger(ret, encodeBits<CLIPSInteger, CLIPSInteger>(CVToInteger(&input), CVToInteger(&value), CVToInteger(&mask), CVToInteger(&shift)));
-		}
-	}
-	void CLIPS_breakApartNumber(UDFContext* context, CLIPSValue* ret) {
-		CLIPSValue number;
-		if (!UDFFirstArgument(context, NUMBER_TYPES, &number)) {
-			CVSetBoolean(ret, false);
-            return;
-		}
-        auto env = UDFContextEnvironment(context);
-        auto integer = CVToInteger(&number);
-        BinaryContainer<decltype(integer)> storage;
-        storage.value = integer;
-        constexpr int integerWidth = byteCount<decltype(storage)>;
-        FixedSizeMultifieldBuilder<integerWidth> mf(env);
-        using IType = decltype(integer);
-        using OType = decltype(integer);
-        for (int i = 0, j = 1; i < integerWidth; ++i, ++j) {
-            mf.setField(j, MayaType::Integer, EnvAddLong(env, syn::decodeBits<IType, OType>(integer, 0x00000000000000FF << (8 * i), (8 * i))));
-        }
-        mf.assign(ret);
-	}
-
-	bool errorMessage(void* env, const std::string& idClass, int idIndex, const std::string& msgPrefix, const std::string& msg) noexcept {
-		PrintErrorID(env, idClass.c_str(), idIndex, false);
-		EnvPrintRouter(env, WERROR, msgPrefix.c_str());
-		EnvPrintRouter(env, WERROR, msg.c_str());
-		EnvPrintRouter(env, WERROR, "\n");
-		EnvSetEvaluationError(env, true);
-		return false;
-	}
 	template<typename T>
 	using Block = T[];
 
@@ -270,7 +158,7 @@ namespace syn {
                 // translate the op to an enumeration
 				auto result = getParameters(str);
 				if (syn::isErrorState(std::get<0>(result))) {
-                	return callErrorMessageCode3(env, ret, std::get<0>(result), " <- unknown operation requested!");
+                	return Parent::callErrorMessageCode3(env, ret, str, " <- unknown operation requested!");
 				}
                 MemoryBlockOp op;
                 int aCount;

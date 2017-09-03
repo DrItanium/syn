@@ -36,6 +36,7 @@
 #include "Device.h"
 #include "IODevice.h"
 #include "WrappedIODevice.h"
+#include "MemoryBlock.h"
 
 namespace syn {
 
@@ -71,6 +72,7 @@ class CLIPSIOController : public AddressableIODevice<D, A> {
 		virtual void initialize() override {
 			auto theEnv = static_cast<Environment*>(_env);
             installExtensions(_env);
+			installMemoryBlockTypes(_env);
 			CLIPS_installDefaultIODevices(_env);
 			// install custom functions into the environment
 			EnvAddUDF(theEnv, "io-controller:get-base-address", "l", getCLIPSIOControllerBaseAddress, "getCLIPSIOControllerBaseAddress", 0, 0, "", &_wrapper);

@@ -160,23 +160,6 @@ namespace syn {
 		EnvSetEvaluationError(env, true);
 		return false;
 	}
-	template<typename T>
-	using Block = T[];
-
-    bool Arg2IsInteger(void* env, CLIPSValuePtr storage, const std::string& funcStr) noexcept {
-        return tryGetArgumentAsInteger(env, funcStr, 2, storage);
-    }
-    bool Arg2IsSymbol(void* env, CLIPSValuePtr storage, const std::string& funcStr) noexcept {
-        return tryGetArgumentAsSymbol(env, funcStr, 2, storage);
-    }
-    void handleProblem(void* env, CLIPSValuePtr ret, const syn::Problem& p, const std::string funcErrorPrefix) noexcept {
-        CVSetBoolean(ret, false);
-        std::stringstream s;
-        s << "an exception was thrown: " << p.what();
-        auto str = s.str();
-        errorMessage(env, "CALL", 2, funcErrorPrefix, str);
-    }
-
 
 	void installExtensions(void* theEnv) {
 		Environment* env = static_cast<Environment*>(theEnv);
