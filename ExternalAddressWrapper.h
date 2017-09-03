@@ -139,22 +139,10 @@ namespace TypeToName {
     namespace TypeToName { \
         template<> constexpr bool hasSymbolicImplementation < t > = true; \
         template<> const std::string& getSymbolicName < t > () noexcept { \
-			static std::string _tmp( name ) ; \
+			static std::string _tmp{ name } ; \
 			return _tmp; \
 		} \
     }
-
-/**
- * Common implementation for printing out an external address from within
- * CLIPS. Unless you've got really specific or odd requirements, it is
- * suggested that this be used as a base.
- * @param env the environment that called this function
- * @param logicalName the io router to output to
- * @param theValue the raw value that is printed (well it's address)
- * @param func The type of the given externalAddressType
- * @param majorType Used for appending Wrapper, etc to the output name
- */
-void CLIPS_basePrintAddress(void* env, const char* logicalName, void* theValue, const char* func, const char* majorType);
 
 /**
  * Uses the symbolic implementation of the specified type when printing from
@@ -256,8 +244,11 @@ namespace WrappedNewCallBuilder {
         return nullptr;
     }
 }
+
 void buildFunctionErrorString(std::ostream& stream, const std::string& action, const std::string& name) noexcept;
+
 void buildFunctionString(std::ostream& stream, const std::string& action, const std::string& name) noexcept;
+
 template<typename T>
 const std::string& getFunctionErrorPrefixCall() noexcept {
     static bool init = true;
@@ -325,19 +316,6 @@ bool badCallArgument(void* env, CLIPSValue* ret, int code, const std::string& ms
     CVSetBoolean(ret, false);
     return syn::errorMessage(env, "CALL", code, getFunctionErrorPrefixCall<T>(), msg);
 }
-
-/**
- * Check and see if the given CLIPS argument is of a given type and extract it
- * if it is.
- * @param env the environment to perform the check on
- * @param function the user defined function where this check is taking place
- * @param position the one-indexed position of the argument
- * @param type the type that is desired
- * @param saveTo the data object to where the argument will be stored to on
- * successful find
- * @return true if the given argument is of the correct type.
- */
-bool checkThenGetArgument(void* env, const std::string& function, int position, MayaType type, DataObjectPtr saveTo) noexcept;
 
 /**
  * A class which simplifies the act of interfacing C++ types with CLIPS. It

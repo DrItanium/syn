@@ -141,6 +141,17 @@ bool checkThenGetArgument(void* env, const std::string& function, int position, 
  */
 bool errorMessage(void* env, const std::string& idClass, int idIndex, const std::string& msgPrefix, const std::string& msg) noexcept;
 
+/**
+ * Common implementation for printing out an external address from within
+ * CLIPS. Unless you've got really specific or odd requirements, it is
+ * suggested that this be used as a base.
+ * @param env the environment that called this function
+ * @param logicalName the io router to output to
+ * @param theValue the raw value that is printed (well it's address)
+ * @param func The type of the given externalAddressType
+ * @param majorType Used for appending Wrapper, etc to the output name
+ */
+void CLIPS_basePrintAddress(void* env, const char* logicalName, void* theValue, const char* func, const char* majorType);
 
 
 }
