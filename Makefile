@@ -20,14 +20,6 @@ COMMON_THINGS = Core.o \
 				MemoryBlock.o \
 				libmaya.a
 
-REPL_BINARY = xsyn_repl
-
-REPL_OBJECTS= ReplBootstrap.o \
-			  ClipsExtensions.o \
-			  MultifieldBuilder.o \
-			  MemoryBlock.o \
-			  libmaya.a
-
 REPL_FINAL_BINARY = syn_repl
 
 REPL_FINAL_OBJECTS = Repl.o \
@@ -42,15 +34,10 @@ REPL_FINAL_OBJECTS = Repl.o \
 					 ${ARCH_OBJECTS} \
 					 ${ASM_PARSERS_OBJECTS} \
 
-ALL_BINARIES = ${REPL_BINARY} \
-			   ${REPL_FINAL_BINARY}
+ALL_BINARIES = ${REPL_FINAL_BINARY}
 
 DEFINE_OBJECTS = defines_iris.h \
-				 defines_cisc0.h \
-				 defines_syn_memory_block.h
-
-DEFINE_CLPS = define_iris.clp \
-			  define_cisc0.clp
+				 defines_cisc0.h 
 
 ALL_OBJECTS = ${COMMON_THINGS} \
 			  ${ARCH_OBJECTS} \
@@ -106,11 +93,7 @@ options:
 	@echo CXX $<
 	@${CXX} ${CXXFLAGS} -c $< -o $@
 
-${REPL_BINARY}: ${REPL_OBJECTS}
-	@echo Building ${REPL_BINARY}
-	@${CXX} ${LIBS} -o ${REPL_BINARY} ${REPL_OBJECTS}
-
-${REPL_FINAL_BINARY}: ${REPL_BINARY} ${REPL_FINAL_OBJECTS}
+${REPL_FINAL_BINARY}: ${REPL_FINAL_OBJECTS}
 	@echo Building ${REPL_FINAL_BINARY}
 	@${CXX} ${LDFLAGS} -o ${REPL_FINAL_BINARY} ${REPL_FINAL_OBJECTS}
 
@@ -147,30 +130,20 @@ tests: bootstrap ${ALL_BINARIES} ${TEST_SUITES}
 
 .PHONY: all options clean install uninstall docs tests
 
-bootstrap: ${REPL_BINARY} ${DEFINE_OBJECTS}
-
-# generate the syn_memory_block.h prior to generating ClipsExtensions.h
-defines_syn_memory_block.h: maya ${COMMON_CLP_FILES} def/memory-block-ops.clp
-	@echo "Generating memory block call operations..."
-	@./maya -f2 def/memory-block-ops.clp -f2 lib/reset-run-exit.clp > defines_syn_memory_block.h
+bootstrap: ${DEFINE_OBJECTS}
 
 define generateFields
 	./deffield.sh -f2 $(1) -f2 lib/reset-run-exit.clp > $(2).h
 endef
 
-define generateFunctions
-	./deffunction.sh -f2 $(1) -f2 lib/reset-run-exit.clp > $(2).clp
-endef
-
 define generateDefines
 	echo "Generating encoders, decoders, and enumerations for $(1)..."
 	$(call generateFields,def/$(1)/instruction.clp,defines_$(1))
-	$(call generateFunctions,def/$(1)/instruction.clp,defines_$(1))
 endef
 
 define generateDefinesRule
 
-defines_$(1).h: ${REPL_BINARY} ${COMMON_GEN_ENCODER_DECODER_FILES} def/$(1)/instruction.clp
+defines_$(1).h: maya ${COMMON_GEN_ENCODER_DECODER_FILES} def/$(1)/instruction.clp
 	@$(call generateDefines,$(1))
 
 endef
