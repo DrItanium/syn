@@ -103,19 +103,11 @@ class CoreWrapper : public syn::DeviceWrapper<T> {
 
 template<typename Core>
 Core* newCore(void* env, CLIPSValuePtr ret, const std::string& funcErrorPrefix, const std::string& function) noexcept {
-    static_assert(std::is_constructible<Core>::value, "The target core must be constructible");
-    static_assert(std::is_constructible<Core, const std::string&>::value, "The target core must be constructible with a single string argument for io loading!");
+    static_assert(std::is_constructible<Core, syn::CLIPSIOController&>::value, "The target core must be constructible with a reference to the clips io bus!");
 	try {
 		if (syn::getArgCount(env) == 1) {
-			return new Core();
-		} else if (syn::getArgCount(env) == 2) {
-			CLIPSValue index;
-			if (syn::CoreWrapper<Core>::tryExtractArgument1(env, ret, &index, syn::MayaType::Lexeme, "Must provide a lexeme which is the path to the io bootstrap")) {
-				CVSetBoolean(ret, false);
-				return nullptr;
-			}
-			std::string path(syn::extractLexeme(env, index));
-			return new Core(path);
+			// make sure that our base is actually an IOBus
+			return new Core(syn::CLIPSIOController::fromRaw(env));
 		} else {
 			syn::errorMessage(env, "NEW", 2, funcErrorPrefix, " no arguments should be provided for function new!");
 		}

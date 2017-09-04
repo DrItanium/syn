@@ -33,16 +33,14 @@
 #include "Cisc0ClipsExtensions.h"
 
 namespace cisc0 {
-    Core::Core(const std::string& busUcode, RegisterValue ioStart, RegisterValue ioEnd) noexcept : Parent(busUcode, ioStart, ioEnd) { }
+    Core::Core(syn::CLIPSIOController& bus) noexcept : Parent(bus) { }
 
     void Core::initialize() {
-		Parent::initialize();
 		_gpr.initialize();
         cisc0::installAssemblerParsingState(_bus.getRawEnvironment());
 		getInstructionPointer() = ArchitectureConstants::StartingIPAddress;
     }
 	void Core::shutdown() {
-		Parent::shutdown();
 		_gpr.shutdown();
 	}
     void Core::incrementAddress(RegisterValue& ptr) noexcept {

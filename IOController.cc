@@ -24,27 +24,20 @@
  */
 #include "IOController.h"
 namespace syn {
-	CLIPSIOController::CLIPSIOController(CLIPSInteger base, CLIPSInteger length, const std::string& bootstrapFileLocation) : Parent(base, length), _bootstrapLocation(bootstrapFileLocation) {
-		_env = CreateEnvironment();
+	CLIPSIOController::CLIPSIOController(CLIPSInteger base, CLIPSInteger length) : Parent(base, length), _env(CreateEnvironment()) {
+		addIOController(this);
 	}
 	CLIPSIOController::~CLIPSIOController() {
+		removeIOController(this);
 		if (_env) {
 			DestroyEnvironment(_env);
 		}
 	}
 	void CLIPSIOController::initialize() {
-		auto theEnv = static_cast<Environment*>(_env);
 		installExtensions(_env);
 		installMemoryBlockTypes(_env);
 		CLIPS_installDefaultIODevices(_env);
 		// install custom functions into the environment
-		// save self into the environment as a form of callback!
-		if (!EnvBatchStar(theEnv, _bootstrapLocation.c_str())) {
-			std::stringstream msg;
-			msg << "Could not load the bootstrap microcode file " << _bootstrapLocation << "! Make sure the file exists and is accessible!";
-			auto str = msg.str();
-			throw syn::Problem(str);
-		}
 	}
 	CLIPSInteger CLIPSIOController::read(CLIPSInteger addr) {
 		std::stringstream args;
@@ -70,4 +63,32 @@ namespace syn {
 			throw syn::Problem("Calling write-to-io-address failed!");
 		}
 	}
+
+	void CLIPSIOController::Registrar::add(CLIPSIOController* c) {
+		if (_backing.count(c->getRawEnvironment()) > 0) {
+			throw syn::Problem("Can't register an environment twice!");
+		} else {
+			_backing.emplace(c->getRawEnvironment(), c);
+		}
+	}
+	void CLIPSIOController::Registrar::remove(CLIPSIOController* c) {
+		auto result = _backing.find(c->getRawEnvironment());
+		if (result == _backing.end()) {
+			throw syn::Problem("Given CLIPSIOController is not registered!");
+		} else {
+			_backing.erase(result);
+		}
+	}
+
+	CLIPSIOController& CLIPSIOController::Registrar::get(void* env) {
+		auto result = _backing.find(env);
+		if (result == _backing.end()) {
+			throw syn::Problem("Given environment is not linked to a CLIPSIOController!");
+		} else {
+			return *(result->second);
+		}
+	}
+
+	CLIPSIOController::Registrar CLIPSIOController::_registrar;
+
 }

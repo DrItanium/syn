@@ -33,8 +33,7 @@
 #include "Cisc0ClipsExtensions.h"
 
 namespace cisc0 {
-	CoreModel1::CoreModel1(const std::string& path) noexcept : Parent(path), _instruction(getInstructionPointer()) { }
-    CoreModel1::CoreModel1() noexcept : Self("Cisc0CoreModel1IOBus.clp") { }
+	CoreModel1::CoreModel1(syn::CLIPSIOController& bus) noexcept : Parent(bus), _instruction(getInstructionPointer()) { }
     CoreModel1::~CoreModel1() noexcept { }
 
     void CoreModel1::initialize() {

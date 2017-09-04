@@ -46,8 +46,8 @@ namespace cisc0 {
         }
     }
 
-    CoreModel0::CoreModel0() noexcept : Self("Cisc0CoreModel0IOBus.clp") { }
-    CoreModel0::CoreModel0(const std::string& microcodePath) noexcept : Parent("Cisc0CoreModel0IOBus.clp") { }
+    CoreModel0::CoreModel0(syn::CLIPSIOController& bus) noexcept : Parent(bus) { };
+
     CoreModel0::~CoreModel0() noexcept { }
 
     bool CoreModel0::cycle() {

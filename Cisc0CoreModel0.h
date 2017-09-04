@@ -54,8 +54,7 @@ namespace cisc0 {
             using Parent = Core;
 			using Self = CoreModel0;
 		public:
-			CoreModel0() noexcept;
-			CoreModel0(const std::string& path) noexcept;
+			CoreModel0(syn::CLIPSIOController& bus) noexcept;
 			virtual ~CoreModel0() noexcept;
 			virtual bool cycle() override;
 		private:

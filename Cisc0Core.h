@@ -471,10 +471,8 @@ namespace cisc0 {
         public:
             using RegisterFile = syn::FixedSizeLoadStoreUnit<RegisterValue, byte, ArchitectureConstants::RegisterCount>;
 			using Parent = BankedCore<2, RegisterValue>;
-            static constexpr RegisterValue busStart = 0x00000000;
-            static constexpr RegisterValue busEnd = 0xFFFFFFFF;
 		public:
-			Core(const std::string& busMicrocodePath, RegisterValue ioStart = busStart, RegisterValue ioEnd = busEnd) noexcept;
+			Core(syn::CLIPSIOController& bus) noexcept;
 			virtual ~Core() noexcept { }
 			virtual bool handleOperation(void* env, CLIPSValue* ret) override;
             virtual void initialize() override;

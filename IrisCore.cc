@@ -339,7 +339,7 @@ namespace iris {
 					destinationRegister() = readFromBus(source0Register());
 					break;
 				case MoveOp::LoadIOWithOffset:
-					destinationregister() = readFromBus(source0Register() + getHalfImmediate());
+					destinationRegister() = readFromBus(source0Register() + getHalfImmediate());
 					break;
 				case MoveOp::StoreIO:
 					writeToBus(destinationRegister(), source0Register());

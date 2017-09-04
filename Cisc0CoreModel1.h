@@ -135,8 +135,7 @@ namespace cisc0 {
                     RegisterValue& _ip;
             };
 		public:
-			CoreModel1() noexcept;
-			CoreModel1(const std::string& ucodePath) noexcept;
+			CoreModel1(syn::CLIPSIOController& bus) noexcept;
 			virtual ~CoreModel1() noexcept;
 			virtual void initialize() override;
 			virtual bool cycle() override;

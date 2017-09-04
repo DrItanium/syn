@@ -28,6 +28,7 @@
 
 #ifndef IRIS_IO_CONTROLLER_H_
 #define IRIS_IO_CONTROLLER_H_
+#include <map>
 #include <tuple>
 #include <functional>
 #include <memory>
@@ -46,16 +47,39 @@ class CLIPSIOController : public AddressableIODevice<CLIPSInteger, CLIPSInteger>
 		using Self = CLIPSIOController;
 		using SharedSelf = std::shared_ptr<Self>;
 	public:
-		CLIPSIOController(CLIPSInteger base, CLIPSInteger length, const std::string& bootstrapFileLocation);
+		CLIPSIOController(CLIPSInteger base = 0, CLIPSInteger length = INT64_MAX);
 		virtual ~CLIPSIOController();
 		virtual void initialize() override;
 		virtual CLIPSInteger read(CLIPSInteger addr) override;
 		virtual void write(CLIPSInteger addr, CLIPSInteger value) override;
-        const std::string& getBootstrapLocation() const noexcept { return _bootstrapLocation; }
         void* getRawEnvironment() const noexcept { return _env; }
 	private:
-		std::string _bootstrapLocation;
+		/**
+		 * Keep track of IOControllers as they are built
+		 */
+		class Registrar 
+		{
+			public:
+				Registrar() = default;
+				~Registrar() = default;
+				Registrar(const Registrar&) = delete;
+				Registrar(Registrar&&) = delete;
+				Registrar& operator=(const Registrar&) = delete;
+				Registrar& operator=(Registrar&&) = delete;
+				void add(CLIPSIOController* controller);
+				void remove(CLIPSIOController* controller);
+				CLIPSIOController& get(void* env);
+			private:
+				std::map<void*, CLIPSIOController*> _backing;
+		};
+	private:
 		void* _env;
+	private:
+		static Registrar _registrar;
+		static void addIOController(CLIPSIOController* c) { _registrar.add(c); }
+		static void removeIOController(CLIPSIOController* c) { _registrar.remove(c); }
+	public:
+		static CLIPSIOController& fromRaw(void* env) { return _registrar.get(env); }
 };
 
 } // end namespace syn

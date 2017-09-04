@@ -29,13 +29,17 @@
 #include "AssemblerExternalAddressRegistrar.h"
 #include "Cisc0CoreWrapper.h"
 #include "IrisCoreWrapper.h"
+#include "IOController.h"
 
 extern "C" {
 	#include "clips.h"
 }
 
 int main(int argc, char* argv[]) {
-	void* mainEnv = CreateEnvironment();
+	// make sure this is a common io bus
+	syn::CLIPSIOController bus;
+	auto mainEnv = bus.getRawEnvironment();
+	bus.initialize();
 	// install features here
 	syn::installExtensions(mainEnv);
 	syn::installMemoryBlockTypes(mainEnv);
@@ -44,6 +48,6 @@ int main(int argc, char* argv[]) {
     iris::installCoreWrapper(mainEnv);
 	RerouteStdin(mainEnv, argc, argv);
 	CommandLoop(mainEnv);
-	DestroyEnvironment(mainEnv);
+	bus.shutdown();
 	return -1;
 }
