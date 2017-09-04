@@ -33,12 +33,15 @@
 extern "C" {
     #include "clips.h"
 }
+#include "IOController.h"
 namespace syn {
     /**
      * A Core which can interface with CLIPS
      */
     class ClipsCore : public Core {
         public:
+			ClipsCore(CLIPSIOController& bus) : _bus(bus) { }
+			virtual ~ClipsCore() { }
             /**
              * given an environment and return value, figure out what action is
              * requested and carry it out if it makes sense.
@@ -48,6 +51,10 @@ namespace syn {
              * successfully.
              */
             virtual bool handleOperation(void* env, CLIPSValue* ret) = 0;
+		protected:
+			CLIPSIOController& _bus;
+			
+
     };
 } // end namespace syn
 

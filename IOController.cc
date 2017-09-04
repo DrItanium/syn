@@ -24,22 +24,50 @@
  */
 #include "IOController.h"
 namespace syn {
-void getCLIPSIOControllerBaseAddress(UDFContext* context, CLIPSValue* ret) {
-    auto env = UDFContextEnvironment(context);
-	auto wrap = static_cast<IOControllerWrapper*>(GetEnvironmentFunctionContext(env));
-    CVSetInteger(ret, wrap->baseAddress);
-}
-
-void getCLIPSIOControllerEndAddress(UDFContext* context, CLIPSValue* ret) {
-    auto env = UDFContextEnvironment(context);
-	auto wrap = static_cast<IOControllerWrapper*>(GetEnvironmentFunctionContext(env));
-    CVSetInteger(ret, wrap->endAddress);
-}
-
-void getCLIPSIOControllerSize(UDFContext* context, CLIPSValue* ret) {
-    auto env = UDFContextEnvironment(context);
-	auto wrap = static_cast<IOControllerWrapper*>(GetEnvironmentFunctionContext(env));
-    CVSetInteger(ret, wrap->size);
-}
-
+	CLIPSIOController::CLIPSIOController(CLIPSInteger base, CLIPSInteger length, const std::string& bootstrapFileLocation) : Parent(base, length), _bootstrapLocation(bootstrapFileLocation) {
+		_env = CreateEnvironment();
+	}
+	CLIPSIOController::~CLIPSIOController() {
+		if (_env) {
+			DestroyEnvironment(_env);
+		}
+	}
+	void CLIPSIOController::initialize() {
+		auto theEnv = static_cast<Environment*>(_env);
+		installExtensions(_env);
+		installMemoryBlockTypes(_env);
+		CLIPS_installDefaultIODevices(_env);
+		// install custom functions into the environment
+		// save self into the environment as a form of callback!
+		if (!EnvBatchStar(theEnv, _bootstrapLocation.c_str())) {
+			std::stringstream msg;
+			msg << "Could not load the bootstrap microcode file " << _bootstrapLocation << "! Make sure the file exists and is accessible!";
+			auto str = msg.str();
+			throw syn::Problem(str);
+		}
+	}
+	CLIPSInteger CLIPSIOController::read(CLIPSInteger addr) {
+		std::stringstream args;
+		args << addr;
+		auto str = args.str();
+		CLIPSValue result;
+		if (EnvFunctionCall(_env, "read-from-io-address", str.c_str(), &result)) {
+			throw syn::Problem("Calling read-from-io-address failed!");
+		}
+		if (result.type != INTEGER) {
+			throw syn::Problem("Resultant type from read call is not an integer!");
+		}
+		return (EnvDOToLong(_env, result));
+	}
+	void CLIPSIOController::write(CLIPSInteger addr, CLIPSInteger value) {
+		std::stringstream args;
+		args << addr << " " << value;
+		auto str = args.str();
+		CLIPSValue result;
+		if (EnvFunctionCall(_env, "write-to-io-address", str.c_str(), &result)) {
+			throw syn::Problem("Calling write-to-io-address failed!");
+		} else if (result.type != INTEGER) {
+			throw syn::Problem("Calling write-to-io-address failed!");
+		}
+	}
 }

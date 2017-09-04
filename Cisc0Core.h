@@ -293,11 +293,10 @@ namespace cisc0 {
 		static_assert(bankCount <= ArchitectureConstants::MaxRegisterBanks, "Too many register banks specified!");
 		public:
 			using RegisterType = R;
-			using IOBus = syn::CLIPSIOController<Word, CLIPSInteger>;
 			using RegisterFile = syn::FixedSizeLoadStoreUnit<RegisterType, byte, ArchitectureConstants::RegistersPerBank * bankCount>;
 			static constexpr auto targetBankCount = bankCount;
 		public:
-			BankedCore(const std::string& busMicrocodePath, RegisterType ioStart, RegisterType ioEnd) noexcept : _bus(ioStart, ioEnd, busMicrocodePath) { }
+			BankedCore(CLIPSIOController& bus) noexcept : Parent(bus) { }
 			virtual ~BankedCore() noexcept { }
             virtual void initialize() override {
 				_bus.initialize();
@@ -373,7 +372,7 @@ namespace cisc0 {
 				if (isTerminateAddress(address)) {
 					return 0;
 				} else {
-					return _bus.read(address);
+					return Word(_bus.read(address));
 				}
 			}
             inline Word loadWord(RegisterType address, byte offset) {
@@ -453,7 +452,6 @@ namespace cisc0 {
             virtual void encodeBits() = 0;
 		protected:
 			bool advanceIp = true;
-			IOBus _bus;
 	};
     /**
      * A generic implementation of a condition register. It is built assuming
