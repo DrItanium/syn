@@ -153,9 +153,9 @@ Cisc0Core.o: Cisc0Core.cc Cisc0Core.h Problem.h Base.h BaseTypes.h \
  misc/maya/classinf.h misc/maya/classini.h misc/maya/classpsr.h \
  misc/maya/defins.h misc/maya/inscom.h misc/maya/insfun.h \
  misc/maya/insfile.h misc/maya/msgcom.h misc/maya/msgpass.h \
- misc/maya/objrtmch.h ExecutionUnits.h BaseArithmetic.h IODevice.h \
- IOController.h WrappedIODevice.h ClipsExtensions.h \
- CommonExternalAddressWrapper.h ExternalAddressWrapper.h MemoryBlock.h \
+ misc/maya/objrtmch.h IOController.h IODevice.h BaseArithmetic.h \
+ WrappedIODevice.h ClipsExtensions.h CommonExternalAddressWrapper.h \
+ ExternalAddressWrapper.h MemoryBlock.h ExecutionUnits.h \
  Cisc0CoreConstants.h Cisc0CoreDecodedInstruction.h defines_cisc0.h \
  Cisc0ClipsExtensions.h
 Cisc0CoreDecodedInstruction.o: Cisc0CoreDecodedInstruction.cc \
@@ -195,12 +195,11 @@ Cisc0CoreModel0.o: Cisc0CoreModel0.cc Cisc0CoreModel0.h Problem.h Base.h \
  misc/maya/classexm.h misc/maya/classinf.h misc/maya/classini.h \
  misc/maya/classpsr.h misc/maya/defins.h misc/maya/inscom.h \
  misc/maya/insfun.h misc/maya/insfile.h misc/maya/msgcom.h \
- misc/maya/msgpass.h misc/maya/objrtmch.h ExecutionUnits.h \
- BaseArithmetic.h IODevice.h IOController.h WrappedIODevice.h \
- ClipsExtensions.h CommonExternalAddressWrapper.h \
- ExternalAddressWrapper.h MemoryBlock.h Cisc0CoreConstants.h \
- Cisc0CoreDecodedInstruction.h defines_cisc0.h Cisc0Core.h \
- Cisc0ClipsExtensions.h
+ misc/maya/msgpass.h misc/maya/objrtmch.h IOController.h IODevice.h \
+ BaseArithmetic.h WrappedIODevice.h ClipsExtensions.h \
+ CommonExternalAddressWrapper.h ExternalAddressWrapper.h MemoryBlock.h \
+ ExecutionUnits.h Cisc0CoreConstants.h Cisc0CoreDecodedInstruction.h \
+ defines_cisc0.h Cisc0Core.h Cisc0ClipsExtensions.h
 Cisc0CoreModel1.o: Cisc0CoreModel1.cc Cisc0CoreModel1.h Problem.h Base.h \
  BaseTypes.h ClipsCore.h Core.h Device.h misc/maya/clips.h \
  misc/maya/setup.h misc/maya/os_shim.h misc/maya/platform.h \
@@ -231,10 +230,10 @@ Cisc0CoreModel1.o: Cisc0CoreModel1.cc Cisc0CoreModel1.h Problem.h Base.h \
  misc/maya/classexm.h misc/maya/classinf.h misc/maya/classini.h \
  misc/maya/classpsr.h misc/maya/defins.h misc/maya/inscom.h \
  misc/maya/insfun.h misc/maya/insfile.h misc/maya/msgcom.h \
- misc/maya/msgpass.h misc/maya/objrtmch.h ExecutionUnits.h \
- BaseArithmetic.h IODevice.h IOController.h WrappedIODevice.h \
- ClipsExtensions.h CommonExternalAddressWrapper.h \
- ExternalAddressWrapper.h MemoryBlock.h Cisc0Core.h Cisc0CoreConstants.h \
+ misc/maya/msgpass.h misc/maya/objrtmch.h IOController.h IODevice.h \
+ BaseArithmetic.h WrappedIODevice.h ClipsExtensions.h \
+ CommonExternalAddressWrapper.h ExternalAddressWrapper.h MemoryBlock.h \
+ ExecutionUnits.h Cisc0Core.h Cisc0CoreConstants.h \
  Cisc0CoreDecodedInstruction.h defines_cisc0.h Cisc0ClipsExtensions.h
 Cisc0CoreWrapper.o: Cisc0CoreWrapper.cc Cisc0CoreWrapper.h Cisc0Core.h \
  Problem.h Base.h BaseTypes.h ClipsCore.h Core.h Device.h \
@@ -267,18 +266,19 @@ Cisc0CoreWrapper.o: Cisc0CoreWrapper.cc Cisc0CoreWrapper.h Cisc0Core.h \
  misc/maya/classini.h misc/maya/classpsr.h misc/maya/defins.h \
  misc/maya/inscom.h misc/maya/insfun.h misc/maya/insfile.h \
  misc/maya/msgcom.h misc/maya/msgpass.h misc/maya/objrtmch.h \
- ExecutionUnits.h BaseArithmetic.h IODevice.h IOController.h \
- WrappedIODevice.h ClipsExtensions.h CommonExternalAddressWrapper.h \
- ExternalAddressWrapper.h MemoryBlock.h Cisc0CoreConstants.h \
- Cisc0CoreDecodedInstruction.h defines_cisc0.h Cisc0CoreModel0.h \
- Cisc0CoreModel1.h CoreWrapper.h DeviceWrapper.h Cisc0CoreAssembler.h \
- AssemblerBase.h Cisc0CoreInstructionEncoder.h Cisc0ClipsExtensions.h \
- Cisc0CoreAssemblerKeywords.h desc/cisc0/RegisterNames.desc \
- desc/cisc0/Operation.desc desc/cisc0/CompareStyle.desc \
- desc/cisc0/ArithmeticOps.desc desc/cisc0/MemoryOperation.desc \
- desc/cisc0/LogicalOps.desc desc/cisc0/EncodingOperation.desc \
- desc/cisc0/ExtendedOperation.desc desc/cisc0/ParsingOperation.desc \
- desc/cisc0/ComplexSubTypes.desc Cisc0CoreAssemblerStructures.h
+ IOController.h IODevice.h BaseArithmetic.h WrappedIODevice.h \
+ ClipsExtensions.h CommonExternalAddressWrapper.h \
+ ExternalAddressWrapper.h MemoryBlock.h ExecutionUnits.h \
+ Cisc0CoreConstants.h Cisc0CoreDecodedInstruction.h defines_cisc0.h \
+ Cisc0CoreModel0.h Cisc0CoreModel1.h CoreWrapper.h DeviceWrapper.h \
+ Cisc0CoreAssembler.h AssemblerBase.h Cisc0CoreInstructionEncoder.h \
+ Cisc0ClipsExtensions.h Cisc0CoreAssemblerKeywords.h \
+ desc/cisc0/RegisterNames.desc desc/cisc0/Operation.desc \
+ desc/cisc0/CompareStyle.desc desc/cisc0/ArithmeticOps.desc \
+ desc/cisc0/MemoryOperation.desc desc/cisc0/LogicalOps.desc \
+ desc/cisc0/EncodingOperation.desc desc/cisc0/ExtendedOperation.desc \
+ desc/cisc0/ParsingOperation.desc desc/cisc0/ComplexSubTypes.desc \
+ Cisc0CoreAssemblerStructures.h
 ClipsExtensions.o: ClipsExtensions.cc BaseTypes.h ClipsExtensions.h \
  misc/maya/clips.h misc/maya/setup.h misc/maya/os_shim.h \
  misc/maya/platform.h misc/maya/envrnmnt.h misc/maya/symbol.h \
@@ -595,7 +595,9 @@ Repl.o: Repl.cc ClipsExtensions.h misc/maya/clips.h misc/maya/setup.h \
  misc/maya/defins.h misc/maya/inscom.h misc/maya/insfun.h \
  misc/maya/insfile.h misc/maya/msgcom.h misc/maya/msgpass.h \
  misc/maya/objrtmch.h MemoryBlock.h AssemblerExternalAddressRegistrar.h \
- Cisc0CoreWrapper.h IrisCoreWrapper.h
+ Cisc0CoreWrapper.h IrisCoreWrapper.h IOController.h Problem.h Device.h \
+ IODevice.h BaseArithmetic.h BaseTypes.h WrappedIODevice.h Base.h Core.h \
+ CommonExternalAddressWrapper.h ExternalAddressWrapper.h
 WrappedIODevice.o: WrappedIODevice.cc WrappedIODevice.h Base.h \
  BaseTypes.h Problem.h Device.h Core.h IODevice.h BaseArithmetic.h \
  ClipsExtensions.h misc/maya/clips.h misc/maya/setup.h \
