@@ -38,7 +38,11 @@ namespace syn {
     /**
      * A Core which can interface with CLIPS
      */
+	template<typename Word, typename AddressWord = Word>
     class ClipsCore : public Core {
+		public:
+			using Parent = Core;
+			using Self = ClipsCore<Word, AddressWord>;
         public:
 			ClipsCore(CLIPSIOController& bus) : _bus(bus) { }
 			virtual ~ClipsCore() { }
@@ -51,6 +55,8 @@ namespace syn {
              * successfully.
              */
             virtual bool handleOperation(void* env, CLIPSValue* ret) = 0;
+			virtual Word readFromBus(AddressWord addr) { return Word(_bus.read(addr)); }
+			virtual void writeToBus(AddressWord addr, Word value) { _bus.write(addr, value); }
 		protected:
 			CLIPSIOController& _bus;
 			

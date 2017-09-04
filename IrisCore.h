@@ -39,27 +39,27 @@
 #include "IrisCoreEncodingOperations.h"
 
 namespace iris {
-	class Core : public syn::ClipsCore {
+	class Core : public syn::ClipsCore<word> {
         public:
-            using IOSpace = syn::CLIPSIOController<word, CLIPSInteger>;
             template<dword capacity>
             using WordMemorySpace = syn::FixedSizeLoadStoreUnit<word, dword, capacity>;
             using WordMemorySpace64k = WordMemorySpace<ArchitectureConstants::AddressCount>;
             using RegisterFile = WordMemorySpace<ArchitectureConstants::RegisterCount>;
-            using IODevice = syn::IODevice<word>;
             using PredicateRegisterFile = syn::FixedSizeLoadStoreUnit<bool, byte, ArchitectureConstants::ConditionRegisterCount>;
             using ErrorStorage = WordMemorySpace<ArchitectureConstants::RegistersToSaveOnError>;
             using InstructionPointer = syn::Register<QuadWord, ArchitectureConstants::AddressMax>;
             using LinkRegister = syn::Register<QuadWord, ArchitectureConstants::AddressMax>;
             using PredicateRegisterBlock = syn::Register<word, ArchitectureConstants::AddressMax>;
+			using Parent = syn::ClipsCore<word>;
 		public:
-			Core() noexcept;
-			Core(const std::string& ucodePath) noexcept;
+			Core(syn::CLIPSIOController& io) noexcept;
 			virtual ~Core();
 			virtual void initialize() override;
 			virtual void shutdown() override;
 			virtual bool cycle() override;
 			virtual bool handleOperation(void* env, CLIPSValue* ret) override;
+			virtual word readFromBus(word addr) override;
+			virtual void writeToBus(word addr, word value) override;
 		private:
             inline QuadWord getInstructionPointer() const noexcept { return _ip.get(); }
             inline QuadWord getLinkRegister() const noexcept { return _lr.get(); }
@@ -111,8 +111,6 @@ namespace iris {
 			void saveSystemState() noexcept;
 			void restoreSystemState() noexcept;
 			void dispatchInterruptHandler();
-            void ioSpaceWrite(word address, word value) noexcept;
-            word ioSpaceRead(word address) noexcept;
 			void restorePredicateRegisters(word input, word mask) noexcept;
 			word savePredicateRegisters(word mask) noexcept;
 
@@ -124,7 +122,6 @@ namespace iris {
             InstructionPointer _ip;
             LinkRegister _lr;
 			word _error;
-			IOSpace _io;
 			RegisterFile gpr;
 			WordMemorySpace64k data;
 			syn::FixedSizeLoadStoreUnit<dword, dword, ArchitectureConstants::AddressMax + 1> instruction;

@@ -218,7 +218,7 @@ namespace iris {
                         CVSetInteger(ret, instruction[address]);
                         break;
                     case TargetSpace::IO:
-                        CVSetInteger(ret, ioSpaceRead(address));
+						CVSetInteger(ret, readFromBus(address));
                         break;
                     default:
                         return CoreWrapper::callErrorCode4(env, ret, "Unimplemented target space found!");
@@ -250,7 +250,7 @@ namespace iris {
                         stack[ind] = static_cast<word>(valueToWrite);
                         break;
                     case TargetSpace::IO:
-                        ioSpaceWrite(ind, valueToWrite);
+                        writeToBus(ind, valueToWrite);
                         break;
                     default:
                         return CoreWrapper::callErrorCode4(env, ret, "Unimplemented target space found!");

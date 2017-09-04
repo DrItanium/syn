@@ -43,7 +43,7 @@ namespace syn {
 class CLIPSIOController : public AddressableIODevice<CLIPSInteger, CLIPSInteger> {
 	public:
 		using Parent = AddressableIODevice<CLIPSInteger, CLIPSInteger>;
-		using Self = CLIPSIOController<CLIPSInteger, CLIPSInteger>;
+		using Self = CLIPSIOController;
 		using SharedSelf = std::shared_ptr<Self>;
 	public:
 		CLIPSIOController(CLIPSInteger base, CLIPSInteger length, const std::string& bootstrapFileLocation);

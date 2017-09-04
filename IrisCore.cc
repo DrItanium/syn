@@ -38,8 +38,8 @@ namespace iris {
 	constexpr dword encodeDword(word lower, word upper) noexcept {
 		return syn::encodeUint32LE(lower, upper);
 	}
-	Core::Core() noexcept : Core("IrisCoreIOBootstrap.clp") { }
-	Core::Core(const std::string& ucodePath) noexcept : execute(true), advanceIp(true), current(0), _ip(0), _lr(0), _error(0), _io(0, 0xFFFF, ucodePath) { }
+
+	Core::Core(syn::CLIPSIOController& io) noexcept : Parent(io), execute(true), advanceIp(true), current(0), _ip(0), _lr(0), _error(0) { }
 
 	Core::~Core() {
 	}
@@ -336,16 +336,16 @@ namespace iris {
 					instruction[destinationRegister()] = encodeDword(source0Register(), source1Register());
 					break;
 				case MoveOp::LoadIO:
-                    destinationRegister() = ioSpaceRead(source0Register());
+					destinationRegister() = readFromBus(source0Register());
 					break;
 				case MoveOp::LoadIOWithOffset:
-                    destinationRegister() = ioSpaceRead(source0Register() + getHalfImmediate());
+					destinationregister() = readFromBus(source0Register() + getHalfImmediate());
 					break;
 				case MoveOp::StoreIO:
-                    ioSpaceWrite(destinationRegister(), source0Register());
+					writeToBus(destinationRegister(), source0Register());
 					break;
 				case MoveOp::StoreIOWithOffset:
-                    ioSpaceWrite(destinationRegister() + getHalfImmediate(), source0Register());
+					writeToBus(destinationRegister() + getHalfImmediate(), source0Register());
 					break;
 				case MoveOp::MoveFromIP:
 					destinationRegister() = getInstructionPointer();
@@ -465,8 +465,7 @@ namespace iris {
 		data.initialize();
 		instruction.initialize();
 		stack.initialize();
-		_io.initialize();
-        installAssemblerParsingState(_io.getRawEnvironment());
+        installAssemblerParsingState(_bus.getRawEnvironment());
         _cr.set(0);
 	}
 
@@ -475,7 +474,6 @@ namespace iris {
 		data.shutdown();
 		instruction.shutdown();
 		stack.shutdown();
-		_io.shutdown();
 	}
 
 	bool Core::getPredicateRegister(byte index) const {
@@ -486,20 +484,26 @@ namespace iris {
         _cr.setBit(index, bit);
     }
 
-    word Core::ioSpaceRead(word address) noexcept {
-        return address == ArchitectureConstants::TerminateIOAddress ? 0 : _io.read(address);
-    }
+	word Core::readFromBus(word addr) {
+		if (addr == ArchitectureConstants::TerminateIOAddress) {
+			return 0;
+		} else {
+			return Parent::readFromBus(addr);
+		}
+	}
 
-    void Core::ioSpaceWrite(word address, word value) noexcept {
-        if (address == ArchitectureConstants::TerminateIOAddress) {
+	void Core::writeToBus(word addr, word value) {
+		if (addr == ArchitectureConstants::TerminateIOAddress) {
             // this is execution termination if you write to address zero in IO
             // space!
             execute = false;
             advanceIp = false;
-        } else {
-            _io.write(address, value);
-        }
-    }
+		} else {
+			Parent::writeToBus(addr, value);
+		}
+	}
+
+
     bool Core::getPredicateResult() const noexcept        { return getPredicate<0>(); }
     bool Core::getPredicateInverseResult() const noexcept { return getPredicate<1>(); }
     bool Core::getPredicateSource0() const noexcept       { return getPredicate<2>(); }

@@ -289,22 +289,32 @@ namespace cisc0 {
      * @tparam R the type of the register
      */
 	template<byte bankCount, typename R>
-	class BankedCore : public syn::ClipsCore {
+	class BankedCore : public syn::ClipsCore<Word, R> {
 		static_assert(bankCount <= ArchitectureConstants::MaxRegisterBanks, "Too many register banks specified!");
 		public:
 			using RegisterType = R;
 			using RegisterFile = syn::FixedSizeLoadStoreUnit<RegisterType, byte, ArchitectureConstants::RegistersPerBank * bankCount>;
+			using Parent = syn::ClipsCore<Word, RegisterType>; 
 			static constexpr auto targetBankCount = bankCount;
 		public:
-			BankedCore(CLIPSIOController& bus) noexcept : Parent(bus) { }
+			BankedCore(syn::CLIPSIOController& bus) noexcept : Parent(bus) { }
 			virtual ~BankedCore() noexcept { }
-            virtual void initialize() override {
-				_bus.initialize();
-			}
-            virtual void shutdown() override {
-				_bus.shutdown();
-			}
 		protected:
+            virtual void storeWord(RegisterType address, Word value) {
+				if (isTerminateAddress(address)) {
+					Parent::execute = false;
+					advanceIp = false;
+				} else {
+					Parent::writeToBus(address, value);
+				}
+			}
+			virtual Word loadWord(RegisterType address) {
+				if (isTerminateAddress(address)) {
+					return 0;
+				} else {
+					return Parent::readFromBus(address);
+				}
+			}
             /**
              * Given a bank index and offset, retrieve a register value
              * reference.
@@ -359,21 +369,6 @@ namespace cisc0 {
 			}
             virtual RegisterType popRegisterValue() {
 				return popRegisterValue(getStackPointer());
-			}
-            virtual void storeWord(RegisterType address, Word value) {
-				if (isTerminateAddress(address)) {
-					execute = false;
-					advanceIp = false;
-				} else {
-					_bus.write(address, value);
-				}
-			}
-			virtual Word loadWord(RegisterType address) {
-				if (isTerminateAddress(address)) {
-					return 0;
-				} else {
-					return Word(_bus.read(address));
-				}
 			}
             inline Word loadWord(RegisterType address, byte offset) {
 				return loadWord(address + offset);
