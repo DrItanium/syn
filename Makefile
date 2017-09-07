@@ -17,8 +17,7 @@ COMMON_THINGS = Core.o \
 				IOController.o \
 				ClipsExtensions.o \
 			 	MultifieldBuilder.o \
-				MemoryBlock.o \
-				libmaya.a
+				MemoryBlock.o
 
 REPL_FINAL_BINARY = syn_repl
 
@@ -92,18 +91,18 @@ options:
 	@echo CXX $<
 	@${CXX} ${CXXFLAGS} -c $< -o $@
 
-${REPL_FINAL_BINARY}: ${REPL_FINAL_OBJECTS}
+${REPL_FINAL_BINARY}: ${REPL_FINAL_OBJECTS} libmaya.a
 	@echo Building ${REPL_FINAL_BINARY}
-	@${CXX} ${LDFLAGS} -o ${REPL_FINAL_BINARY} ${REPL_FINAL_OBJECTS}
+	@${CXX} ${LDFLAGS} -o ${REPL_FINAL_BINARY} ${REPL_FINAL_OBJECTS} libmaya.a
 
 clean:
 	@echo Cleaning...
-	@rm -f ${ALL_OBJECTS} ${ALL_BINARIES} maya libmaya.a
+	@rm -f ${ALL_OBJECTS} ${ALL_BINARIES}
 
 nuke: clean
 	@echo "Cleaning maya..."
 	@cd misc/maya && $(MAKE) clean
-	@rm -rf doc/html
+	@rm -rf doc/html maya libmaya.a
 
 install: ${ALL_BINARIES}
 	@echo installing executables to ${DESTDIR}${PREFIX}/bin
