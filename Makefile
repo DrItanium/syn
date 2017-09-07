@@ -37,12 +37,11 @@ REPL_FINAL_OBJECTS = Repl.o \
 ALL_BINARIES = ${REPL_FINAL_BINARY}
 
 DEFINE_OBJECTS = defines_iris.h \
-				 defines_cisc0.h 
+				 defines_cisc0.h
 
 ALL_OBJECTS = ${COMMON_THINGS} \
 			  ${ARCH_OBJECTS} \
 			  ${REPL_OBJECTS} \
-			  ${DEFINE_OBJECTS} \
 			  ${DEFINE_CLPS} \
 			  ${REPL_FINAL_OBJECTS}
 
