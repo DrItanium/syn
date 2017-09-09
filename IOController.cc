@@ -25,6 +25,12 @@
 #include "IOController.h"
 #include "MemoryBlock.h"
 namespace syn {
+	void getMMUAddressSize(UDFContext* context, CLIPSValuePtr ret) {
+		CVSetInteger(ret, sizeof(CLIPSInteger));
+	}
+	void getMMUWordSize(UDFContext* context, CLIPSValuePtr ret) {
+		CVSetInteger(ret, sizeof(CLIPSInteger));
+	}
 	CLIPSIOController::CLIPSIOController() : _env(CreateEnvironment()) {
 		addIOController(this);
 	}
@@ -37,6 +43,9 @@ namespace syn {
 	void CLIPSIOController::initialize() {
 		installExtensions(_env);
 		installMemoryBlockTypes(_env);
+		auto theEnv = (Environment*)(_env);
+		EnvAddUDF(theEnv, "mmu-address-size", "l", getMMUAddressSize, "getMMUAddressSize", 0, 0, nullptr, nullptr);
+		EnvAddUDF(theEnv, "mmu-word-size", "l", getMMUWordSize, "getMMUWordSize", 0, 0, nullptr, nullptr);
 		// install custom functions into the environment
 	}
 	void CLIPSIOController::shutdown() {

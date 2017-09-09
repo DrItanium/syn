@@ -68,7 +68,15 @@ namespace iris {
         public:
             using Parent::Parent;
 			virtual bool decodeInstruction(void* env, syn::DataObjectPtr ret, const std::string& op) override;
+			virtual CLIPSInteger getWordSize() const noexcept override;
+			virtual CLIPSInteger getAddressSize() const noexcept override;
     };
+	CLIPSInteger CoreWrapper::getWordSize() const noexcept {
+		return sizeof(word);
+	}
+	CLIPSInteger CoreWrapper::getAddressSize() const noexcept {
+		return sizeof(word);
+	}
 	bool CoreWrapper::decodeInstruction(void* env, syn::DataObjectPtr ret, const std::string& op) {
 		__RETURN_FALSE_ON_FALSE__(CoreWrapper::checkArgumentCount(env, ret, op, 1));
 		CLIPSValue instruction;

@@ -43,7 +43,7 @@
 
 (definstances MAIN::cores
  ([primary0] of cisc0-core-model1)
- ([io0] of iris-core)
+ ([dma-engine] of iris-core)
  ([io1] of iris-core)
  ([rand0] of random-number-generator)
  )

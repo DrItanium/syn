@@ -63,6 +63,8 @@ namespace cisc0 {
 				CVSetString(ret, outcome.c_str());
 				return true;
 			}
+			virtual CLIPSInteger getAddressSize() const noexcept override { return sizeof(RegisterValue); }
+			virtual CLIPSInteger getWordSize() const noexcept override { return sizeof(Word); }
     };
     using DefaultCoreWrapper = CoreWrapper<Core>;
 

@@ -33,6 +33,7 @@
 #include "ClipsExtensions.h"
 #include "CommonExternalAddressWrapper.h"
 #include "DeviceWrapper.h"
+#include "IOController.h"
 #include <map>
 
 namespace syn {
@@ -60,6 +61,8 @@ class CoreWrapper : public syn::DeviceWrapper<T> {
 			Run,
 			Cycle,
 			DecodeInstruction,
+			WordSize,
+			AddressSize,
 			__DEFAULT_ERROR_STATE__
 		};
    public:
@@ -75,6 +78,8 @@ class CoreWrapper : public syn::DeviceWrapper<T> {
 				{ "run", DefaultCoreOperations::Run },
 				{ "cycle", DefaultCoreOperations::Cycle },
 				{ "decode-instruction", DefaultCoreOperations::DecodeInstruction },
+				{ "address-size", DefaultCoreOperations::AddressSize },
+				{ "word-size", DefaultCoreOperations::WordSize },
 			};
 			auto result = lookup.find(operation);
 			if (result != lookup.end()) {
@@ -84,6 +89,12 @@ class CoreWrapper : public syn::DeviceWrapper<T> {
 						break;
 					case DefaultCoreOperations::Cycle:
 						CVSetBoolean(ret, this->get()->cycle());
+						break;
+					case DefaultCoreOperations::AddressSize:
+						CVSetInteger(ret, this->getAddressSize());
+						break;
+					case DefaultCoreOperations::WordSize:
+						CVSetInteger(ret, this->getWordSize());
 						break;
 					case DefaultCoreOperations::DecodeInstruction:
 						return this->decodeInstruction(env, ret, operation);
@@ -99,6 +110,8 @@ class CoreWrapper : public syn::DeviceWrapper<T> {
 			return true;
 		}
 		virtual bool decodeInstruction(void* env, DataObjectPtr ret, const std::string& op) = 0;
+		virtual CLIPSInteger getWordSize() const noexcept = 0;
+		virtual CLIPSInteger getAddressSize() const noexcept = 0;
 };
 
 template<typename Core>
