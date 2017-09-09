@@ -35,23 +35,21 @@
 #include <vector>
 #include "Problem.h"
 #include "Device.h"
-#include "IODevice.h"
-#include "WrappedIODevice.h"
-#include "MemoryBlock.h"
+#include "ClipsExtensions.h"
 
 namespace syn {
 
-class CLIPSIOController : public AddressableIODevice<CLIPSInteger, CLIPSInteger> {
+class CLIPSIOController : public Device {
 	public:
-		using Parent = AddressableIODevice<CLIPSInteger, CLIPSInteger>;
+		using Parent = Device;
 		using Self = CLIPSIOController;
 		using SharedSelf = std::shared_ptr<Self>;
 	public:
-		CLIPSIOController(CLIPSInteger base = 0, CLIPSInteger length = INT64_MAX);
+		CLIPSIOController();
 		virtual ~CLIPSIOController();
 		virtual void initialize() override;
-		virtual CLIPSInteger read(CLIPSInteger addr) override;
-		virtual void write(CLIPSInteger addr, CLIPSInteger value) override;
+		virtual CLIPSInteger read(CLIPSInteger addr);
+		virtual void write(CLIPSInteger addr, CLIPSInteger value);
         void* getRawEnvironment() const noexcept { return _env; }
 	private:
 		/**

@@ -23,8 +23,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #include "IOController.h"
+#include "MemoryBlock.h"
 namespace syn {
-	CLIPSIOController::CLIPSIOController(CLIPSInteger base, CLIPSInteger length) : Parent(base, length), _env(CreateEnvironment()) {
+	CLIPSIOController::CLIPSIOController() : _env(CreateEnvironment()) {
 		addIOController(this);
 	}
 	CLIPSIOController::~CLIPSIOController() {
@@ -36,7 +37,6 @@ namespace syn {
 	void CLIPSIOController::initialize() {
 		installExtensions(_env);
 		installMemoryBlockTypes(_env);
-		CLIPS_installDefaultIODevices(_env);
 		// install custom functions into the environment
 	}
 	CLIPSInteger CLIPSIOController::read(CLIPSInteger addr) {
