@@ -24,7 +24,6 @@
 ;------------------------------------------------------------------------------
 ; CoreBase.clp - base classes for execution cores and common concepts
 ;------------------------------------------------------------------------------
-(batch* lib/target/ExternalAddressWrapper.clp)
 (defgeneric MAIN::core-initialize)
 (defgeneric MAIN::core-shutdown)
 (defgeneric MAIN::core-cycle)

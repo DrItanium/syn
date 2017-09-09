@@ -25,6 +25,7 @@
 ; Base.clp - routines to make interfacing with the raw cisc0 external address
 ; far simpler
 ;------------------------------------------------------------------------------
+(batch* lib/target/ExternalAddressWrapper.clp)
 (batch* lib/target/AssemblerBase.clp)
 (batch* lib/target/CoreBase.clp)
 (defgeneric MAIN::cisc0-decode-instruction

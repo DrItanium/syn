@@ -25,7 +25,6 @@
 ; AssemblerBase.clp - Common routines for interfacing with the assembler external
 ; address type. It is common for all assembler types.
 ;------------------------------------------------------------------------------
-(batch* lib/target/ExternalAddressWrapper.clp)
 (defgeneric MAIN::asm-parse-line
             "Parse an assembler line")
 (defgeneric MAIN::asm-parse-lines)

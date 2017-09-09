@@ -25,6 +25,7 @@
 ; Base.clp - routines to make interfacing with the raw iris external address
 ; far simpler
 ;------------------------------------------------------------------------------
+(batch* lib/target/ExternalAddressWrapper.clp)
 (batch* lib/target/CoreBase.clp)
 (batch* lib/target/AssemblerBase.clp)
 (defgeneric MAIN::iris-decode-instruction
@@ -266,4 +267,5 @@
   (pattern-match reactive)
   (slot backing-type
         (source composite)
+        (storage shared)
         (default iris-core)))
