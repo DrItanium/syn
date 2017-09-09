@@ -29,6 +29,8 @@
            (export ?ALL))
 
 (set-current-module MAIN)
+(batch* lib/target/IODevice.clp)
+(batch* lib/target/RandomNumberDevice.clp)
 (batch* lib/target/cisc0/Base.clp)
 (batch* lib/target/iris/Base.clp)
 
@@ -39,6 +41,7 @@
  ([primary0] of cisc0-core-model1)
  ([io0] of iris-core)
  ([io1] of iris-core)
+ ([rand0] of random-number-device)
  )
 
 

@@ -21,34 +21,4 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 (defclass MAIN::io-device
-  (is-a USER)
-  (slot index
-        (type INTEGER)
-        (range 0 ?VARIABLE)
-        (storage local)
-        (visibility public)
-        (default ?NONE))
-  (slot length
-        (type INTEGER)
-        (range 1 ?VARIABLE)
-        (storage local)
-        (visibility public)
-        (default-dynamic 1))
-  (message-handler responds-to primary)
-  (message-handler read primary)
-  (message-handler write primary))
-(defmessage-handler MAIN::io-device responds-to primary
-                    (?address)
-                    (and (<= ?self:index
-                             ?address)
-                         (< ?address
-                            (+ ?self:index
-                               (dynamic-get length)))))
-
-(defmessage-handler MAIN::io-device read primary
-                    (?address)
-                    0)
-
-(defmessage-handler MAIN::io-device write primary
-                    (?address ?value))
-
+  (is-a USER))

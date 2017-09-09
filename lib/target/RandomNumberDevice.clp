@@ -37,16 +37,10 @@
         (visibility public)
         (allowed-symbols FALSE)
         (default-dynamic FALSE))
-  (slot length
-        (source composite)
-        (storage shared)
-        (default 5))
   (message-handler clear-range primary)
   (message-handler seed primary)
   (message-handler skip primary)
-  (message-handler next primary)
-  (message-handler read primary)
-  (message-handler write primary))
+  (message-handler next primary))
 
 (defmessage-handler random-number-generator seed primary
                     (?value)
@@ -64,67 +58,6 @@
                               ?self:range-end)
                       else
                       (random)))
-
-(defmessage-handler random-number-generator read primary
-                    (?address)
-                    ; first eliminate the base offset
-                    (bind ?actual-offset
-                          (- ?address
-                             ?self:index))
-                    ; memory map is as follows for reads
-                    ; address 0 -> next
-                    ; address 1 -> return zero
-                    ; address 2 -> range-start
-                    ; address 3 -> range-end 
-                    ; address 4 -> nothing
-                    (switch ?actual-offset
-                            (case 0 then 
-                              (send ?self
-                                    next))
-                            (case 2 then
-                              (if (not ?self:range-start) then
-                                -1
-                                else
-                                ?self:range-start))
-                            (case 3 then
-                              (if (not ?self:range-end) then
-                                -1
-                                else
-                                ?self:range-end))
-                            (default 0)))
-
-
-(defmessage-handler random-number-generator write primary
-                    (?address ?value)
-                    (bind ?acutal-offset
-                          (- ?address
-                             ?self:index))
-                    ; memory map
-                    ; address 0 -> seed
-                    ; address 1 -> skip
-                    ; address 2 -> range-start
-                    ; address 3 -> range-end
-                    ; address 4 -> clear range
-                    (switch ?actual-offset
-                            (case 0 then
-                              (send ?self
-                                    seed
-                                    ?value))
-                            (case 1 then
-                              (send ?self
-                                    skip
-                                    ?value))
-                            (case 2 then
-                              (bind ?self:range-start
-                                    ?value))
-                            (case 3 then
-                              (bind ?self:range-end
-                                    ?value))
-                            (case 4 then
-                              (send ?self
-                                    clear-range))
-                            (default FALSE)))
-
 
 (defmessage-handler random-number-generator clear-range primary
                     ()
