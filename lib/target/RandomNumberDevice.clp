@@ -20,25 +20,11 @@
 ; ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+(batch* lib/target/ExternalAddressWrapper.clp)
 
-(batch* lib/cortex.clp)
-
-(defmodule MAIN
-           (import cortex
-                   ?ALL)
-           (export ?ALL))
-
-(set-current-module MAIN)
-(batch* lib/target/cisc0/Base.clp)
-(batch* lib/target/iris/Base.clp)
-
-(defglobal MAIN
-           ?*current-core* = FALSE)
-
-(definstances cores
- ([primary0] of cisc0-core-model1)
- ([io0] of iris-core)
- ([io1] of iris-core)
- )
-
-
+(defclass MAIN::random-number-generator
+          (is-a external-address-wrapper)
+          (slot backing-type
+                (source composite)
+                (storage shared)
+                (default random-number-generator)))
