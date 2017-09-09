@@ -185,7 +185,7 @@
   ((?asm EXTERNAL-ADDRESS)
    $?lines)
   (iris-parse-instructions ?asm
-                          ?lines))
+                           ?lines))
 
 (defmethod MAIN::iris-resolve-assembler-labels
   ((?asm EXTERNAL-ADDRESS))
@@ -214,10 +214,10 @@
         decode-instruction
         ?value))
 (defmethod MAIN::iris-parse-file
- ((?asm EXTERNAL-ADDRESS)
-  (?path LEXEME))
- (asm-parse-file ?asm
-                 ?path))
+  ((?asm EXTERNAL-ADDRESS)
+   (?path LEXEME))
+  (asm-parse-file ?asm
+                  ?path))
 
 (defmethod MAIN::iris-parse-file
   ((?path LEXEME))
@@ -225,8 +225,8 @@
         (new iris-assembler))
   (if (iris-parse-file ?asm
                        ?path) then
-   (iris-resolve-assembler-labels ?asm)
-   (iris-get-encoded-instructions ?asm)))
+    (iris-resolve-assembler-labels ?asm)
+    (iris-get-encoded-instructions ?asm)))
 (defmethod MAIN::iris-get-register
   ((?core EXTERNAL-ADDRESS)
    (?register SYMBOL
@@ -252,10 +252,18 @@
                                                   ?register))
                      ?value))
 (defclass MAIN::iris-assembler
-          (is-a assembler)
-          (role concrete)
-          (pattern-match reactive)
-          (slot backing-type
-                (source composite)
-                (storage shared)
-                (default iris-assembler)))
+  (is-a assembler)
+  (role concrete)
+  (pattern-match reactive)
+  (slot backing-type
+        (source composite)
+        (storage shared)
+        (default iris-assembler)))
+
+(defclass MAIN::iris-core
+  (is-a core)
+  (role concrete)
+  (pattern-match reactive)
+  (slot backing-type
+        (source composite)
+        (default iris-core)))

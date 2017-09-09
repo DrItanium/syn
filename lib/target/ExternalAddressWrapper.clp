@@ -36,7 +36,8 @@
         (storage local)
         (visibility public))
   (multislot constructor-args)
-  (message-handler call primary))
+  (message-handler call primary)
+  (message-handler init after))
 
 (defmessage-handler MAIN::external-address-wrapper init after
                     ()

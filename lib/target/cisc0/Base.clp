@@ -26,6 +26,7 @@
 ; far simpler
 ;------------------------------------------------------------------------------
 (batch* lib/target/AssemblerBase.clp)
+(batch* lib/target/CoreBase.clp)
 (defgeneric MAIN::cisc0-decode-instruction
             "Given an instruction encoded as an integer, translate it back to a string form")
 (defgeneric MAIN::cisc0-initialize)
@@ -138,3 +139,22 @@
     (cisc0-resolve-instructions ?asm)
     (cisc0-get-encoded-instructions ?asm)))
 
+
+(defclass MAIN::cisc0-core
+          (is-a core))
+
+(defclass MAIN::cisc0-core-model0
+          (is-a cisc0-core)
+          (role concrete)
+          (pattern-match reactive)
+          (slot backing-type 
+           (source composite)
+           (default cisc0-core-model0)))
+
+(defclass MAIN::cisc0-core-model1
+          (is-a cisc0-core)
+          (role concrete)
+          (pattern-match reactive)
+          (slot backing-type 
+           (source composite)
+           (default cisc0-core-model0)))

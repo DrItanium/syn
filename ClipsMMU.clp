@@ -31,3 +31,16 @@
 (set-current-module MAIN)
 (batch* lib/target/cisc0/Base.clp)
 (batch* lib/target/iris/Base.clp)
+(batch* random-number-generator-device.clp)
+(batch* memory-device.clp)
+
+(defglobal MAIN
+           ?*current-core* = FALSE)
+
+(definstances cores
+ ([primary0] of cisc0-core-model1)
+ ([io0] of iris-core)
+ ([io1] of iris-core)
+ )
+
+
