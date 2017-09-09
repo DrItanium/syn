@@ -13,7 +13,6 @@ ASM_PARSERS_OBJECTS = Cisc0CoreAssembler.o \
 					  AssemblerBase.o
 
 COMMON_THINGS = Core.o \
-				WrappedIODevice.o \
 				IOController.o \
 				ClipsExtensions.o \
 			 	MultifieldBuilder.o \

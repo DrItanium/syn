@@ -50,6 +50,7 @@ class CLIPSIOController : public Device {
 		virtual void initialize() override;
 		virtual CLIPSInteger read(CLIPSInteger addr);
 		virtual void write(CLIPSInteger addr, CLIPSInteger value);
+		virtual void shutdown() override;
         void* getRawEnvironment() const noexcept { return _env; }
 	private:
 		/**

@@ -39,6 +39,9 @@ namespace syn {
 		installMemoryBlockTypes(_env);
 		// install custom functions into the environment
 	}
+	void CLIPSIOController::shutdown() {
+
+	}
 	CLIPSInteger CLIPSIOController::read(CLIPSInteger addr) {
 		std::stringstream args;
 		args << addr;

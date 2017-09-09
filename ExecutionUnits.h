@@ -32,7 +32,7 @@
 #define _SYN_XUNITS_H
 #include "Base.h"
 #include "BaseArithmetic.h"
-#include "IODevice.h"
+#include "Device.h"
 #include <cmath>
 namespace syn {
 
@@ -258,11 +258,10 @@ namespace Comparator {
  * @tparam Address the type of the address used to access words
  */
 template<typename Word, typename Address = Word>
-class LoadStoreUnit : public AddressableIODevice<Word, Address> {
+class LoadStoreUnit : public Device {
 	public:
 		using WordType = Word;
 		using AddressType = Address;
-		using Parent = AddressableIODevice<Word, Address>;
         using BadLoadHandler = std::function<Word&(Address)>;
         using BadStoreHandler = std::function<void(Address, Word)>;
         enum class Operation {
@@ -282,7 +281,7 @@ class LoadStoreUnit : public AddressableIODevice<Word, Address> {
             throw syn::Problem("Provided address is not legal!");
         }
 	public:
-		LoadStoreUnit(Address size, Address base = 0, BadLoadHandler onBadLoad = defaultBadLoadHandler, BadStoreHandler onBadStore = defaultBadStoreHandler) : Parent(base, size), _memory(std::move(std::make_unique<Word[]>(size))), _size(size), _onBadLoad(onBadLoad), _onBadStore(onBadStore) { }
+		LoadStoreUnit(Address size, Address base = 0, BadLoadHandler onBadLoad = defaultBadLoadHandler, BadStoreHandler onBadStore = defaultBadStoreHandler) : _base(base), _memory(std::move(std::make_unique<Word[]>(size))), _size(size), _onBadLoad(onBadLoad), _onBadStore(onBadStore) { }
 		LoadStoreUnit() : LoadStoreUnit(0) { }
 
         void setLoadExceptionHandler(BadLoadHandler op) {
@@ -291,6 +290,9 @@ class LoadStoreUnit : public AddressableIODevice<Word, Address> {
         void setStoreExceptionHandler(BadStoreHandler op) {
             _onBadStore = op;
         }
+
+		virtual void initialize() override { }
+		virtual void shutdown() override { }
 
 		virtual ~LoadStoreUnit() { }
 		inline void zero() noexcept {
@@ -312,10 +314,10 @@ class LoadStoreUnit : public AddressableIODevice<Word, Address> {
 		inline Word& retrieveMemory(Address addr) {
             return legalAddress(addr) ? _memory[addr] : _onBadLoad(addr);
 		}
-		virtual Word read(Address addr) override {
+		virtual Word read(Address addr) {
 			return retrieveMemory(addr);
 		}
-		virtual void write(Address addr, Word value) override {
+		virtual void write(Address addr, Word value) {
 			set(addr, value);
 		}
 		Word& operator[](Address addr) {
@@ -342,6 +344,7 @@ class LoadStoreUnit : public AddressableIODevice<Word, Address> {
 			}
 		}
 	private:
+		Address _base;
 		std::unique_ptr<Word[]> _memory;
 		Address _size;
         BadLoadHandler _onBadLoad;
