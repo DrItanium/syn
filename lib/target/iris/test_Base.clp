@@ -27,6 +27,9 @@
 ;------------------------------------------------------------------------------
 (batch* lib/cortex.clp)
 (batch* lib/test.clp)
+(batch* lib/target/ExternalAddressWrapper.clp)
+(batch* lib/target/CoreBase.clp)
+(batch* lib/target/AssemblerBase.clp)
 (batch* lib/target/iris/Base.clp)
 (defmodule MAIN
            (import cortex

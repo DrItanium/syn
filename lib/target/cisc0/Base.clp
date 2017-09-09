@@ -25,9 +25,6 @@
 ; Base.clp - routines to make interfacing with the raw cisc0 external address
 ; far simpler
 ;------------------------------------------------------------------------------
-(batch* lib/target/ExternalAddressWrapper.clp)
-(batch* lib/target/AssemblerBase.clp)
-(batch* lib/target/CoreBase.clp)
 (defgeneric MAIN::cisc0-decode-instruction
             "Given an instruction encoded as an integer, translate it back to a string form")
 (defgeneric MAIN::cisc0-initialize)
@@ -158,4 +155,4 @@
           (pattern-match reactive)
           (slot backing-type 
            (source composite)
-           (default cisc0-core-model0)))
+           (default cisc0-core-model1)))

@@ -29,19 +29,23 @@
            (export ?ALL))
 
 (set-current-module MAIN)
+
 (batch* lib/target/IODevice.clp)
 (batch* lib/target/RandomNumberDevice.clp)
-(batch* lib/target/cisc0/Base.clp)
+(batch* lib/target/ExternalAddressWrapper.clp)
+(batch* lib/target/AssemblerBase.clp)
+(batch* lib/target/CoreBase.clp)
 (batch* lib/target/iris/Base.clp)
+(batch* lib/target/cisc0/Base.clp)
 
 (defglobal MAIN
            ?*current-core* = FALSE)
 
-(definstances cores
+(definstances MAIN::cores
  ([primary0] of cisc0-core-model1)
  ([io0] of iris-core)
  ([io1] of iris-core)
- ([rand0] of random-number-device)
+ ([rand0] of random-number-generator)
  )
 
 

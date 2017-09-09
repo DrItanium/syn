@@ -25,9 +25,6 @@
 ; Base.clp - routines to make interfacing with the raw iris external address
 ; far simpler
 ;------------------------------------------------------------------------------
-(batch* lib/target/ExternalAddressWrapper.clp)
-(batch* lib/target/CoreBase.clp)
-(batch* lib/target/AssemblerBase.clp)
 (defgeneric MAIN::iris-decode-instruction
             "Given an instruction encoded as an integer, translate it back to a string form")
 (defgeneric MAIN::iris-initialize)
