@@ -38,7 +38,6 @@
 #include "Base.h"
 #include "ClipsCore.h"
 #include "ExecutionUnits.h"
-#include "IODevice.h"
 #include "IOController.h"
 #include "Cisc0CoreConstants.h"
 #include "Cisc0CoreDecodedInstruction.h"
