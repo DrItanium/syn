@@ -37,17 +37,25 @@
         (visibility public))
   (multislot constructor-args)
   (message-handler call primary)
-  (message-handler init after))
+  (message-handler init after)
+  (message-handler delete before))
 
 (defmessage-handler MAIN::external-address-wrapper init after
                     ()
                     (bind ?self:backing-store
                           (new (dynamic-get backing-type)
                                (expand$ (send ?self
-                                              get-constructor-args)))))
+                                              get-constructor-args))))
+                    (call ?self:backing-store
+                          initialize))
 
 (defmessage-handler MAIN::external-address-wrapper call primary
                     (?cmd $?args)
                     (call ?self:backing-store
                           ?cmd
                           (expand$ ?args)))
+
+(defmessage-handler MAIN::external-address-wrapper delete before
+                    ()
+                    (call ?self:backing-store
+                          shutdown))

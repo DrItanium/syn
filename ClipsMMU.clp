@@ -74,26 +74,147 @@
                           ?value))
 
 (defglobal MAIN
-           ?*current-core* = FALSE)
+           ?*current-core* = FALSE
+           ?*result* = FALSE)
 
 (definstances MAIN::cores
               ([primary0] of cisc0-core-model1)
               ([dma] of iris-core)
               ([memory0] of memory-block
                          (length (hex->int 0x00400000))))
+(deffunction MAIN::call-read
+             (?target ?address)
+             (send ?target
+                   read
+                   ?address))
+(deffunction MAIN::call-write
+             (?target ?address ?value)
+             (send ?target
+                   write
+                   ?address
+                   ?value))
+(deffunction MAIN::write-iris-data
+             (?target ?address ?value)
+             (send ?target 
+                   write-data-memory
+                   ?address
+                   ?value))
+(deffunction MAIN::read-iris-data
+             (?target ?address)
+             (send ?target
+                   read-data-memory
+                   ?address))
 
+; for this machine, assume that all 64-bit entries are actually 16-bit words even though they are not, this makes the code very simple
+; with the tradeoff being wasted space for the time being
 (deffacts MAIN::memory-map
-          ; we have a 64-bit memory space with 64-bit words
-          (map [primary0] from 0x0000000000000000 to 0x000000003FFFFFFF)
+          ; we have a 64-bit memory space with 16-bit words stored in 64-bit signed words :D
           (map [memory0] from  0x0000000000000000 to 0x0000000000400000)
-          (map [dma] from      0x0000000000400000 to 0x0000000000402000) 
+          (map [dma] from      0x0000000000400000 to 0x0000000000402000 read read-iris-data write write-iris-data)
+          ; TODO: comeup with a way to describe engine mappings easily and efficiently :D
+          ;(map [dma] from      0x0000000000402000 to 0x0000000000404000 read read-iris-io write write-iris-io
           )
+(defclass memory-map-entry
+  (is-a USER)
+  (slot target
+        (type INSTANCE)
+        (storage local)
+        (default ?NONE))
+  (slot from
+        (type INTEGER)
+        (storage local)
+        (default ?NONE))
+  (slot to
+        (type INTEGER)
+        (storage local)
+        (default ?NONE))
+  (slot on-read
+        (type SYMBOL)
+        (storage local)
+        (visibility public)
+        (default-dynamic call-read))
+  (slot on-write
+        (type SYMBOL)
+        (storage local)
+        (visibility public)
+        (default-dynamic call-write))
+  (message-handler write primary)
+  (message-handler read primary))
+
+(defmessage-handler memory-map-entry read primary
+                    (?address)
+                    (funcall ?self:on-read
+                             ?self:target
+                             ?address))
+(defmessage-handler memory-map-entry write primary
+                    (?address ?value)
+                    (funcall ?self:on-write
+                             ?self:target
+                             ?address
+                             ?value))
+
+(defrule MAIN::make-memory-map-entry
+         ?f <- (map ?target from ?start to ?end)
+         =>
+         (retract ?f)
+         (make-instance of memory-map-entry
+                        (target ?target)
+                        (from (hex->int ?start))
+                        (to (hex->int ?end))))
+
+(defrule MAIN::make-memory-map-entry-with-custom-actions
+         ?f <- (map ?target from ?start to ?end read ?on-read write ?on-write)
+         =>
+         (retract ?f)
+         (make-instance of memory-map-entry
+                        (target ?target)
+                        (from (hex->int ?start))
+                        (to (hex->int ?end))
+                        (on-read ?on-read)
+                        (on-write ?on-write)))
+
+(deffunction MAIN::process-io-event
+             ()
+             (run)
+             (if (not ?*result*) then
+               (halt)
+               else
+               ?*result*))
 
 (deffunction MAIN::read-from-io-address
              (?address)
-             (assert (read ?address)))
+             ; okay, we have an address to read from
+             (assert (read ?*current-core*
+                           ?address))
+             (process-io-event))
 
 (deffunction MAIN::write-to-io-address
              (?address ?value)
-             (assert (write ?address
-                            ?value)))
+             (assert (write ?*current-core*
+                            ?address
+                            ?value))
+             (process-io-event))
+
+(deffunction MAIN::main-cycle
+             (?core)
+             (bind ?*current-core*
+                   ?core)
+             (send ?*current-core*
+                   cycle))
+
+(deffunction MAIN::doit
+             ()
+             (while TRUE do
+                    (if (not (main-cycle [primary0])) then
+                      (break))
+                    ; run the dma engine for 4 cycles for every primary cpu cycle!
+                    (bind ?run
+                          TRUE)
+                    (loop-for-count 4 do
+                                    (bind ?run
+                                          (main-cycle [dma]))
+                                    (if (not ?run) then
+                                      (break)))
+                    (if (not ?run) then
+                      (break))))
+
