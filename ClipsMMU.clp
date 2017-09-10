@@ -38,14 +38,62 @@
 (batch* lib/target/iris/Base.clp)
 (batch* lib/target/cisc0/Base.clp)
 
+(defclass MAIN::memory-block
+  (is-a external-address-wrapper)
+  (role concrete)
+  (pattern-match reactive)
+  (slot backing-type
+        (source composite)
+        (storage shared)
+        (default memory-block))
+  (slot length
+        (type INTEGER)
+        (storage local)
+        (visibility public)
+        (default ?NONE))
+  (message-handler read primary)
+  (message-handler write primary)
+  (message-handler get-constructor-args primary))
+
+(defmessage-handler memory-block get-constructor-args primary
+                    ()
+                    (create$ (dynamic-get length)))
+(defmessage-handler memory-block read primary
+                    (?address)
+                    (send ?self
+                          call
+                          get
+                          ?address))
+
+(defmessage-handler memory-block write primary
+                    (?address ?value)
+                    (send ?self
+                          call
+                          set
+                          ?address
+                          ?value))
+
 (defglobal MAIN
            ?*current-core* = FALSE)
 
 (definstances MAIN::cores
- ([primary0] of cisc0-core-model1)
- ([dma-engine] of iris-core)
- ([io1] of iris-core)
- ([rand0] of random-number-generator)
- )
+              ([primary0] of cisc0-core-model1)
+              ([dma] of iris-core)
+              ([memory0] of memory-block
+                         (length (hex->int 0x00400000))))
 
+(deffacts MAIN::memory-map
+          ; we have a 64-bit memory space with 64-bit words
+          (map [primary0] from 0x0000000000000000 to 0x000000003FFFFFFF)
+          (map [memory0] from  0x0000000000000000 to 0x0000000000400000)
+          (map [dma] from      0x0000000000400000 to 0x0000000000402000) 
+          )
 
+(deffunction MAIN::read-from-io-address
+             (?address)
+             (assert (read ?address)))
+
+(deffunction MAIN::write-to-io-address
+             (?address ?value)
+             (assert (write ?address
+                            ?value)))

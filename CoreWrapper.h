@@ -63,6 +63,7 @@ class CoreWrapper : public syn::DeviceWrapper<T> {
 			DecodeInstruction,
 			WordSize,
 			AddressSize,
+			RegisterSize,
 			__DEFAULT_ERROR_STATE__
 		};
    public:
@@ -80,6 +81,7 @@ class CoreWrapper : public syn::DeviceWrapper<T> {
 				{ "decode-instruction", DefaultCoreOperations::DecodeInstruction },
 				{ "address-size", DefaultCoreOperations::AddressSize },
 				{ "word-size", DefaultCoreOperations::WordSize },
+				{ "register-size", DefaultCoreOperations::RegisterSize },
 			};
 			auto result = lookup.find(operation);
 			if (result != lookup.end()) {
@@ -96,6 +98,8 @@ class CoreWrapper : public syn::DeviceWrapper<T> {
 					case DefaultCoreOperations::WordSize:
 						CVSetInteger(ret, this->getWordSize());
 						break;
+					case DefaultCoreOperations::RegisterSize:
+						CVSetInteger(ret, this->getRegisterSize());
 					case DefaultCoreOperations::DecodeInstruction:
 						return this->decodeInstruction(env, ret, operation);
 					default:
@@ -112,6 +116,7 @@ class CoreWrapper : public syn::DeviceWrapper<T> {
 		virtual bool decodeInstruction(void* env, DataObjectPtr ret, const std::string& op) = 0;
 		virtual CLIPSInteger getWordSize() const noexcept = 0;
 		virtual CLIPSInteger getAddressSize() const noexcept = 0;
+		virtual CLIPSInteger getRegisterSize() const noexcept = 0;
 };
 
 template<typename Core>

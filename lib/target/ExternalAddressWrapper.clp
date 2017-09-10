@@ -43,7 +43,8 @@
                     ()
                     (bind ?self:backing-store
                           (new (dynamic-get backing-type)
-                               (expand$ (dynamic-get constructor-args)))))
+                               (expand$ (send ?self
+                                              get-constructor-args)))))
 
 (defmessage-handler MAIN::external-address-wrapper call primary
                     (?cmd $?args)

@@ -70,11 +70,15 @@ namespace iris {
 			virtual bool decodeInstruction(void* env, syn::DataObjectPtr ret, const std::string& op) override;
 			virtual CLIPSInteger getWordSize() const noexcept override;
 			virtual CLIPSInteger getAddressSize() const noexcept override;
+			virtual CLIPSInteger getRegisterSize() const noexcept override;
     };
 	CLIPSInteger CoreWrapper::getWordSize() const noexcept {
 		return sizeof(word);
 	}
 	CLIPSInteger CoreWrapper::getAddressSize() const noexcept {
+		return sizeof(word);
+	}
+	CLIPSInteger CoreWrapper::getRegisterSize() const noexcept {
 		return sizeof(word);
 	}
 	bool CoreWrapper::decodeInstruction(void* env, syn::DataObjectPtr ret, const std::string& op) {
