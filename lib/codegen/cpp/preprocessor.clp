@@ -29,6 +29,7 @@
 (defgeneric #endif)
 (defgeneric #define)
 (defgeneric #include)
+(defgeneric #undef)
 (defgeneric defined)
 (defgeneric macro-or)
 (defgeneric macro-and)
@@ -217,3 +218,47 @@
   (create$ (#if ?key)
            ?body
            (#endif ?key)))
+
+(defmethod #undef
+  ((?key SYMBOL))
+  (str-cat "#undef "
+           ?key))
+(defmethod #define
+  ((?key SYMBOL)
+   (?args MULTIFIELD)
+   (?definition MULTIFIELD))
+  (create$ (format nil
+                   "%s(%s)"
+                   (#define ?key)
+                   (implode$ ?args)) \
+           ?definition))
+(defmethod #define
+  ((?key SYMBOL)
+   (?args MULTIFIELD)
+   $?body)
+  (#define ?key ?args ?body))
+(defmethod #define
+  ((?key SYMBOL)
+   (?args MULTIFIELD)
+   (?definition MULTIFIELD)
+   (?unused SYMBOL
+            (eq ?current-argument
+                do))
+   (?body MULTIFIELD))
+  (create$ (#define ?key ?args ?definition)
+           ?body
+           (#undef ?key)))
+
+(defmethod #define
+  ((?key SYMBOL)
+   (?args MULTIFIELD)
+   (?definition MULTIFIELD)
+   (?unused SYMBOL
+            (eq ?current-argument
+                do))
+   $?body)
+  (#define ?key
+   ?args
+   ?definition
+   ?unused
+   ?body))
