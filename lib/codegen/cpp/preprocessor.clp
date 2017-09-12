@@ -34,6 +34,11 @@
 (defgeneric macro-or)
 (defgeneric macro-and)
 (defgeneric macro-not)
+(defgeneric #warning)
+(defgeneric #error)
+(defgeneric #pragma)
+(defgeneric concat#)
+(defgeneric string#)
 
 (defmethod #include
   ((?path STRING))
@@ -262,3 +267,31 @@
    ?definition
    ?unused
    ?body))
+
+(defmethod #pragma
+  ((?elements MULTIFIELD))
+  (format nil
+          "#pragma %s"
+          (implode$ ?elements)))
+(defmethod #pragma
+  ($?elements)
+  (#pragma ?elements))
+
+(defmethod #warning
+  ((?message STRING))
+  (format nil
+          "#warning \"%s\""
+          ?message))
+(defmethod #error
+  ((?message STRING))
+  (format nil
+          "#error \"%s\""
+          ?message))
+
+(defmethod string#
+  ((?item SYMBOL))
+  (str-cat # ?item))
+(defmethod concat#
+  ((?item1 LEXEME)
+   (?item2 LEXEME))
+  (str-cat ?item1 " ## " ?item2))
