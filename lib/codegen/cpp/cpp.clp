@@ -308,6 +308,15 @@
         (create-accessor read)
         (default struct)))
 
+(defclass cpp::union
+  (is-a data-structure)
+  (slot type
+        (source composite)
+        (access read-only)
+        (create-accessor read)
+        (default union)))
+
+
 (defmethod cpp::do-while#
   ((?condition LEXEME)
    (?body MULTIFIELD))
@@ -438,20 +447,13 @@
              ?body))
 
 
-(defmethod cpp::union
-  ()
-  union)
-
-(defmethod cpp::union
-  ((?title SYMBOL))
-  (str-cat "union "
-           ?title))
 
 (defmethod cpp::union
   ((?title SYMBOL)
    (?body MULTIFIELD))
-  (with-body (union ?title)
-             ?body))
+  (make-instance of union
+                 (title ?title)
+                 (contents ?body)))
 
 (defmethod cpp::union
   ((?body MULTIFIELD))
