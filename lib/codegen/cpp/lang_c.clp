@@ -28,6 +28,16 @@
 (defgeneric field)
 (defgeneric typedef)
 (defgeneric typedef-function-pointer)
+(defgeneric body)
+(defgeneric function)
+
+
+(defmethod body
+  ((?contents MULTIFIELD))
+  (create$ { ?contents }))
+(defmethod body
+  ($?contents)
+  (body ?contents))
 
 
 (defmethod struct
@@ -37,38 +47,37 @@
   ((?title SYMBOL))
   (str-cat "struct "
            ?title))
+
 (defmethod struct
   ((?title SYMBOL)
    (?body MULTIFIELD))
-  (create$ (struct ?title) {
-           ?body
-           }))
+  (create$ (struct ?title)
+           (body ?body)))
 
 (defmethod struct
   ((?body MULTIFIELD))
-  (create$ (struct) {
-           ?body
-           }))
+  (create$ (struct)
+           (body ?body)))
 
 (defmethod union
   ()
   union)
+
 (defmethod union
   ((?title SYMBOL))
   (str-cat "union "
            ?title))
+
 (defmethod union
   ((?title SYMBOL)
    (?body MULTIFIELD))
-  (create$ (union ?title) {
-           ?body
-           }))
+  (create$ (union ?title)
+           (body ?body)))
 
 (defmethod union
   ((?body MULTIFIELD))
-  (create$ (union) {
-           ?body
-           }))
+  (create$ (union)
+           (body ?body)))
 
 
 
@@ -83,7 +92,7 @@
 
 (defmethod typedef
   ((?raw LEXEME)
-   (?name SYMBOL))
+   (?name LEXEME))
   (format nil
           "typedef %s %s;"
           ?raw
@@ -106,3 +115,30 @@
    (typedef-function-pointer ?name
                              ?return
                              ?arguments))
+(defmethod function
+  ((?name SYMBOL)
+   (?args MULTIFIELD)
+   (?return LEXEME))
+  (format nil
+          "%s %s(%s)"
+          ?return
+          ?name
+          (implode$ ?args)))
+(defmethod function
+  ((?name SYMBOL)
+   (?args MULTIFIELD)
+   (?return LEXEME)
+   (?body MULTIFIELD))
+  (create$ (function ?name
+                     ?args
+                     ?return)
+           (body ?body)))
+(defmethod function
+  ((?name SYMBOL)
+   (?args MULTIFIELD)
+   (?return LEXEME)
+   $?body)
+  (function ?name
+            ?args
+            ?return
+            ?body))
