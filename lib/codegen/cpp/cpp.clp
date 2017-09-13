@@ -21,7 +21,7 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-; lang_c.clp - c language related code generator routines
+; cpp.clp - c++ language related code generator routines
 
 (defgeneric struct)
 (defgeneric union)
@@ -30,6 +30,118 @@
 (defgeneric typedef-function-pointer)
 (defgeneric body)
 (defgeneric function)
+(defgeneric template)
+(defgeneric class#)
+(defgeneric semi-colon)
+(defgeneric specialized-function)
+(defgeneric using)
+(defgeneric typename)
+(defgeneric reference)
+(defgeneric r-value-reference)
+(defgeneric if#)
+(defgeneric else-if#)
+(defgeneric else#)
+(defgeneric while#)
+(defgeneric for#)
+(defgeneric for-each#)
+
+(defmethod while#
+  ((?condition LEXEME))
+  (format nil
+          "while (%s)"
+          ?condition))
+(defmethod while#
+  ((?condition LEXEME)
+   (?body MULTIFIELD))
+  (create$ (while# ?condition)
+           ?body))
+(defmethod while#
+  ((?cond LEXEME)
+   $?body)
+  (while# ?cond
+          ?body))
+(defmethod for#
+  ((?init LEXEME)
+   (?cond LEXEME)
+   (?incr LEXEME))
+  (format nil
+          "for(%s;%s;%s)"
+          ?init
+          ?cond
+          ?incr))
+
+(defmethod for#
+  ((?init LEXEME)
+   (?cond LEXEME)
+   (?incr LEXEME)
+   (?body MULTIFIELD))
+  (create$ (for# ?init
+                 ?cond
+                 ?incr)
+           ?body))
+(defmethod for#
+  ((?init LEXEME)
+   (?cond LEXEME)
+   (?incr LEXEME)
+   $?body)
+  (for# ?init
+        ?cond
+        ?incr
+        ?body))
+
+
+(defmethod else#
+  ((?body MULTIFIELD))
+  (create$ else
+           ?body))
+(defmethod else#
+  ($?body)
+  (else# ?body))
+(defmethod else-if#
+  ((?condition LEXEME)
+   (?body MULTIFIELD))
+  (create$ (format nil
+                   "else if (%s)"
+                   ?condition)
+           ?body))
+(defmethod else-if#
+  ((?condition LEXEME)
+   $?body)
+  (else-if# ?condition
+            ?body))
+
+(defmethod if#
+  ((?condition LEXEME))
+  (format nil
+          "if (%s)"
+          ?condition))
+(defmethod if#
+  ((?condition LEXEME)
+   (?unused0 SYMBOL
+             (eq ?current-argument
+                 then))
+   (?body MULTIFIELD))
+  (create$ (if# ?condition)
+           ?body))
+
+(defmethod using
+  ((?alias LEXEME)
+   (?raw LEXEME))
+  (format nil
+          "using %s = %s;"
+          ?alias
+          ?raw))
+
+(defmethod semi-colon
+  ((?str LEXEME))
+  (format nil
+          "%s;"
+          ?str))
+
+(defmethod semi-colon
+  ((?collection MULTIFIELD))
+   (create$ ?collection
+            ";"))
 
 
 (defmethod body
@@ -99,46 +211,163 @@
           ?name))
 
 (defmethod typedef-function-pointer
-    ((?name SYMBOL)
-     (?return LEXEME)
-     (?arguments MULTIFIELD))
-    (format nil
-            "typedef %s (*%s)(%s);"
-            ?return
-            ?name
-            (implode$ ?arguments)))
+  ((?name SYMBOL)
+   (?return LEXEME)
+   (?arguments MULTIFIELD))
+  (format nil
+          "typedef %s (*%s)(%s);"
+          ?return
+          ?name
+          (implode$ ?arguments)))
 
 (defmethod typedef-function-pointer
   ((?name SYMBOL)
    (?return LEXEME)
    $?arguments)
-   (typedef-function-pointer ?name
-                             ?return
-                             ?arguments))
-(defmethod function
-  ((?name SYMBOL)
-   (?args MULTIFIELD)
-   (?return LEXEME))
-  (format nil
-          "%s %s(%s)"
-          ?return
-          ?name
-          (implode$ ?args)))
+  (typedef-function-pointer ?name
+                            ?return
+                            ?arguments))
 (defmethod function
   ((?name SYMBOL)
    (?args MULTIFIELD)
    (?return LEXEME)
+   (?qualifiers MULTIFIELD))
+  (format nil
+          "%s %s(%s) %s"
+          ?return
+          ?name
+          (implode$ ?args)
+          (implode$ ?qualifiers)))
+
+(defmethod function
+  ((?name SYMBOL)
+   (?args MULTIFIELD)
+   (?return LEXEME)
+   (?qualifiers MULTIFIELD)
    (?body MULTIFIELD))
   (create$ (function ?name
                      ?args
-                     ?return)
+                     ?return
+                     ?qualifiers)
            (body ?body)))
 (defmethod function
   ((?name SYMBOL)
    (?args MULTIFIELD)
    (?return LEXEME)
+   (?qualifiers MULTIFIELD)
    $?body)
   (function ?name
             ?args
             ?return
+            ?qualifiers
             ?body))
+
+(defmethod template-args
+  ((?elements MULTIFIELD))
+  (format nil
+          "<%s>"
+          (implode$ ?elements)))
+(defmethod template-args
+  ($?elements)
+  (template-args ?elements))
+(defmethod template
+  ((?elements MULTIFIELD))
+  (format nil
+          "template%s"
+          (template-args ?elements)))
+
+(defmethod template
+  ($?elements)
+  (template ?elements))
+
+(defmethod class#
+  ((?name SYMBOL))
+  (format nil
+          "class %s"
+          ?name))
+(defmethod class#
+  ((?name SYMBOL)
+   (?parents MULTIFIELD))
+  (bind ?base
+        (class# ?name))
+  (if (<> (length$ ?parents) 0) then
+    (format nil
+            "%s : %s"
+            ?base
+            (implode$ ?parents))
+    else
+    ?base))
+(defmethod class#
+  ((?name SYMBOL)
+   (?parents MULTIFIELD)
+   (?body MULTIFIELD))
+  (create$ (class# ?name
+                   ?parents)
+           (body ?body)))
+(defmethod class#
+  ((?name SYMBOL)
+   (?parents MULTIFIELD)
+   $?body)
+  (class# ?name
+          ?parents
+          ?body))
+
+(defmethod specialized-function
+  ((?name SYMBOL)
+   (?args MULTIFIELD)
+   (?return LEXEME)
+   (?qualifiers MULTIFIELD)
+   (?template-args MULTIFIELD)
+   (?body MULTIFIELD))
+  (create$ (template)
+           (function (str-cat ?name
+                              (template-args ?template-args))
+                     ?args
+                     ?return
+                     ?qualifiers
+                     ?body)))
+(defmethod specialized-function
+  ((?name SYMBOL)
+   (?args MULTIFIELD)
+   (?return LEXEME)
+   (?qualifiers MULTIFIELD)
+   (?template-args MULTIFIELD)
+   $?body)
+  (specialized-function ?name
+                        ?args
+                        ?return
+                        ?qualifiers
+                        ?template-args
+                        ?body))
+
+(defmethod typename
+  ()
+  typename)
+(defmethod typename
+  ((?name LEXEME))
+  (format nil
+          "typename %s"
+          ?name))
+
+(defmethod for-each#
+  ((?variable LEXEME)
+   (?container LEXEME))
+  (format nil
+          "for (%s : %s)"
+          ?variable
+          ?container))
+
+(defmethod for-each#
+  ((?variable LEXEME)
+   (?container LEXEME)
+   (?body MULTIFIELD))
+  (create$ (for-each# ?variable
+                      ?container)
+           ?body))
+(defmethod for-each#
+  ((?variable LEXEME)
+   (?container LEXEME)
+   $?body)
+  (for-each# ?variable
+             ?container
+             ?body))
