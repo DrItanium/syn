@@ -51,6 +51,7 @@
 (defgeneric cpp::public:)
 (defgeneric cpp::private:)
 (defgeneric cpp::protected:)
+(defgeneric cpp::do-while#)
 
 (deffunction cpp::bodyp
              "Is the given thing a direct body type"
@@ -101,41 +102,90 @@
         (source composite)
         (default protected:)))
 
+(defclass cpp::while-loop
+  (is-a body)
+  (slot condition
+        (type LEXEME)
+        (default ?NONE))
+  (message-handler to-multifield primary))
 
-(defmethod cpp::while#
-  ((?condition LEXEME))
-  (format nil
-          "while (%s)"
-          ?condition))
+(defmessage-handler cpp::while-loop to-multifield primary
+                    ()
+                    (create$ (format nil
+                                     "while (%s)"
+                                     ?self:condition)
+                             (call-next-handler)))
+
+(defclass cpp::do-while-loop
+  (is-a body)
+  (slot condition
+        (type LEXEME)
+        (default ?NONE))
+  (message-handler to-multifield primary))
+
+(defmessage-handler cpp::do-while-loop to-multifield primary
+                    ()
+                    (create$ do
+                             (call-next-handler)
+                             (semi-colon (format nil
+                                                 "while (%s)"
+                                                 ?self:condition))))
+
+(defclass cpp::for-loop
+  (is-a body)
+  (slot initialize
+        (type LEXEME)
+        (default-dynamic ""))
+  (slot condition
+        (type LEXEME)
+        (default-dynamic ""))
+  (slot advance
+        (type LEXEME)
+        (default-dynamic ""))
+  (message-handler to-multifield primary))
+
+(defmessage-handler cpp::for-loop to-multifield primary
+                    ()
+                    (create$ (format nil
+                                     "for (%s;%s;%s)"
+                                     ?self:initialize
+                                     ?self:condition
+                                     ?self:advance)
+                             (call-next-handler)))
+
+(defmethod cpp::do-while#
+  ((?condition LEXEME)
+   (?body MULTIFIELD))
+  (make-instance of do-while-loop
+                 (condition ?condition)
+                 (contents ?body)))
+(defmethod cpp::do-while#
+  ((?condition LEXEME)
+   $?body)
+  (do-while# ?condition
+             ?body))
 (defmethod cpp::while#
   ((?condition LEXEME)
    (?body MULTIFIELD))
-  (create$ (while# ?condition)
-           ?body))
+  (make-instance of while-loop
+                 (condition ?condition)
+                 (contents ?body)))
 (defmethod cpp::while#
   ((?cond LEXEME)
    $?body)
   (while# ?cond
           ?body))
-(defmethod cpp::for#
-  ((?init LEXEME)
-   (?cond LEXEME)
-   (?incr LEXEME))
-  (format nil
-          "for(%s;%s;%s)"
-          ?init
-          ?cond
-          ?incr))
 
 (defmethod cpp::for#
   ((?init LEXEME)
    (?cond LEXEME)
    (?incr LEXEME)
    (?body MULTIFIELD))
-  (create$ (for# ?init
-                 ?cond
-                 ?incr)
-           (body ?body)))
+  (make-instance of for-loop
+                 (initialize ?init)
+                 (condition ?cond)
+                 (advance ?incr)
+                 (contents ?body)))
 (defmethod cpp::for#
   ((?init LEXEME)
    (?cond LEXEME)
