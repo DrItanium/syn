@@ -58,7 +58,12 @@
              (?thing)
              (eq (class ?thing)
                  body))
-
+(defmessage-handler PRIMITIVE to-multifield primary
+                    ()
+                    (create$ ?self))
+(defmessage-handler MULTIFIELD to-multifield primary
+                    ()
+                    ?self)
 (defclass cpp::body
   (is-a USER)
   (multislot contents
@@ -195,6 +200,15 @@
         ?cond
         ?incr
         ?body))
+
+(defclass cpp::else
+  (is-a body)
+  (message-handler to-multifield primary))
+
+(defmessage-handler cpp::else to-multifield primary
+                    ()
+                    (create$ else
+                             (call-next-handler)))
 
 
 (defmethod cpp::else#
