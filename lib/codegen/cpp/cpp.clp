@@ -182,13 +182,15 @@
 (defmethod struct
   ((?title SYMBOL)
    (?body MULTIFIELD))
-  (create$ (struct ?title)
-           (body ?body)))
+  (with-body (struct ?title)
+             ?body))
+(create$ (struct ?title)
+         (body ?body)))
 
 (defmethod struct
   ((?body MULTIFIELD))
-  (create$ (struct)
-           (body ?body)))
+  (with-body (struct)
+             ?body))
 
 (defmethod union
   ()
@@ -202,13 +204,13 @@
 (defmethod union
   ((?title SYMBOL)
    (?body MULTIFIELD))
-  (create$ (union ?title)
-           (body ?body)))
+  (with-body (union ?title)
+             ?body))
 
 (defmethod union
   ((?body MULTIFIELD))
-  (create$ (union)
-           (body ?body)))
+  (with-body (union)
+             ?body))
 
 
 
@@ -399,8 +401,8 @@
 (defmethod namespace
   ((?name LEXEME)
    (?body MULTIFIELD))
-  (create$ (namespace ?name)
-           (body ?body)))
+  (with-body (namespace ?name)
+             ?body))
 (defmethod namespace
   ((?name LEXEME)
    $?body)
