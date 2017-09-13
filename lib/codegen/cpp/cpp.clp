@@ -63,7 +63,40 @@
                     (create$ ?self))
 (defmessage-handler MULTIFIELD to-multifield primary
                     ()
-                    ?self)
+                    (bind ?contents
+                          (create$))
+                    (progn$ (?a ?self)
+                            (bind ?contents
+                                  ?contents
+                                  (send ?a
+                                        to-multifield)))
+                    ?contents)
+(defclass cpp::has-condition
+  (is-a USER)
+  (slot condition
+        (type LEXEME)
+        (storage local)
+        (visibility public)
+        (default-dynamic "")))
+(defclass cpp::has-title
+  (is-a USER)
+  (slot title
+        (type LEXEME)
+        (storage local)
+        (visibility public)
+        (default-dynamic "")))
+
+(defclass cpp::requires-condition
+  (is-a has-condition)
+  (slot condition
+        (source composite)
+        (default ?NONE)))
+(defclass cpp::requires-title
+  (is-a has-title)
+  (slot title
+        (source composite)
+        (default ?NONE)))
+
 (defclass cpp::body
   (is-a USER)
   (multislot contents
@@ -73,7 +106,10 @@
   (message-handler to-multifield primary))
 (defmessage-handler cpp::body to-multifield primary
                     ()
-                    (create$ { ?self:contents }))
+                    (create$ {
+                             (send ?self:contents
+                                   to-multifield)
+                             }))
 (defclass cpp::access-declaration
   (is-a body)
   (slot type
@@ -87,7 +123,8 @@
 (defmessage-handler cpp::access-declaration to-multifield primary
                     ()
                     (create$ (dynamic-get type)
-                             ?self:contents))
+                             (send ?self:contents
+                                   to-multifield)))
 
 (defclass cpp::public:
   (is-a access-declaration)
@@ -108,7 +145,8 @@
         (default protected:)))
 
 (defclass cpp::while-loop
-  (is-a body)
+  (is-a body
+        requires-condition)
   (slot condition
         (type LEXEME)
         (default ?NONE))
@@ -118,11 +156,12 @@
                     ()
                     (create$ (format nil
                                      "while (%s)"
-                                     ?self:condition)
+                                     (dynamic-get condition))
                              (call-next-handler)))
 
 (defclass cpp::do-while-loop
-  (is-a body)
+  (is-a body
+        requires-condition)
   (slot condition
         (type LEXEME)
         (default ?NONE))
@@ -134,15 +173,16 @@
                              (call-next-handler)
                              (semi-colon (format nil
                                                  "while (%s)"
-                                                 ?self:condition))))
+                                                 (dynamic-get condition)))))
 
 (defclass cpp::for-loop
-  (is-a body)
+  (is-a body
+        has-condition)
   (slot initialize
         (type LEXEME)
         (default-dynamic ""))
   (slot condition
-        (type LEXEME)
+        (source composite)
         (default-dynamic ""))
   (slot advance
         (type LEXEME)
@@ -154,8 +194,39 @@
                     (create$ (format nil
                                      "for (%s;%s;%s)"
                                      ?self:initialize
-                                     ?self:condition
+                                     (dynamic-get condition)
                                      ?self:advance)
+                             (call-next-handler)))
+
+(defclass cpp::else
+  (is-a body)
+  (message-handler to-multifield primary))
+
+(defmessage-handler cpp::else to-multifield primary
+                    ()
+                    (create$ else
+                             (call-next-handler)))
+
+(defclass cpp::else-if
+  (is-a body
+        requires-condition)
+  (message-handler to-multifield primary))
+(defmessage-handler cpp::else-if to-multifield primary
+                    ()
+                    (create$ (format nil
+                                     "else if (%s)"
+                                     (dynamic-get condition))
+                             (call-next-handler)))
+(defclass cpp::if
+  (is-a body
+        requires-condition)
+  (message-handler to-multifield primary))
+
+(defmessage-handler cpp::if to-multifield primary
+                    ()
+                    (create$ (format nil
+                                     "if (%s)"
+                                     (dynamic-get condition))
                              (call-next-handler)))
 
 (defmethod cpp::do-while#
@@ -201,20 +272,12 @@
         ?incr
         ?body))
 
-(defclass cpp::else
-  (is-a body)
-  (message-handler to-multifield primary))
-
-(defmessage-handler cpp::else to-multifield primary
-                    ()
-                    (create$ else
-                             (call-next-handler)))
 
 
 (defmethod cpp::else#
   ((?body MULTIFIELD))
-  (with-body else
-             ?body))
+  (make-instance of else
+                 (contents ?body)))
 (defmethod cpp::else#
   ($?body)
   (else# ?body))
@@ -222,10 +285,10 @@
 (defmethod cpp::else-if#
   ((?condition LEXEME)
    (?body MULTIFIELD))
-  (create$ (format nil
-                   "else if (%s)"
-                   ?condition)
-           (body ?body)))
+  (make-instance of else-if
+                 (condition ?condition)
+                 (contents ?body)))
+
 (defmethod cpp::else-if#
   ((?condition LEXEME)
    $?body)
@@ -233,18 +296,15 @@
             ?body))
 
 (defmethod cpp::if#
-  ((?condition LEXEME))
-  (format nil
-          "if (%s)"
-          ?condition))
-(defmethod cpp::if#
   ((?condition LEXEME)
    (?unused0 SYMBOL
              (eq ?current-argument
                  then))
    (?body MULTIFIELD))
-  (create$ (if# ?condition)
-           (body ?body)))
+  (make-instance of if
+                 (condition ?condition)
+                 (contents ?body)))
+
 (defmethod cpp::if#
   ((?condition LEXEME)
    (?unused SYMBOL
@@ -518,65 +578,139 @@
              ?container
              ?body))
 
-(defmethod cpp::namespace
-  ((?name LEXEME))
-  (format nil
-          "namespace %s"
-          ?name))
+(defclass cpp::namespace
+  (is-a body
+        has-title)
+  (message-handler to-multifield primary))
+(defmessage-handler cpp::namespace to-multifield primary
+                    ()
+                    (create$ (format nil
+                                     "namespace %s"
+                                     (dynamic-get title))
+                             (call-next-handler)))
 (defmethod cpp::namespace
   ((?name LEXEME)
    (?body MULTIFIELD))
-  (with-body (namespace ?name)
-             ?body))
+  (make-instance of namespace
+                 (name ?name)
+                 (contents ?body)))
+
 (defmethod cpp::namespace
   ((?name LEXEME)
    $?body)
   (namespace ?name
              ?body))
+(defclass cpp::enum
+  (is-a body
+        has-title)
+  (slot signifier
+        (type LEXEME)
+        (storage shared)
+        (visibility public)
+        (default enum))
+  (slot numeric-type
+        (type LEXEME)
+        (storage local)
+        (visibility public)
+        (default-dynamic FALSE))
+  (message-handler to-multifield primary))
+(defmessage-handler cpp::enum to-multifield primary
+                    ()
+                    (create$ (format nil
+                                     (expand$ (if ?self:numeric-type then
+                                                (create$ "%s %s : %s"
+                                                         (dynamic-get signifier)
+                                                         (dynamic-get title)
+                                                         ?self:numeric-type)
+                                                else
+                                                (create$ "%s %s"
+                                                         (dynamic-get signifier)
+                                                         (dynamic-get title)))))
+                             {
+                             (comma-separated-list (send (dynamic-get contents)
+                                                         to-multifield))
+                             "};"))
 
-(defmethod cpp::enum
-  ((?name LEXEME))
-  (format nil
-          "enum %s"
-          ?name))
+(defclass cpp::enum-class
+  (is-a enum)
+  (slot signifier
+        (source composite)
+        (default "enum class")))
+
+
+
+
 (defmethod cpp::enum
   ((?name LEXEME)
    (?body MULTIFIELD))
-  (with-body (enum ?name)
-             ?body))
+  (make-instance of enum
+                 (title ?name)
+                 (contents ?body)))
+(defmethod cpp::enum
+  ((?name LEXEME)
+   (?unused0 SYMBOL
+             (eq ?current-argument
+                 is))
+   (?type LEXEME)
+   (?body MULTIFIELD))
+  (make-instance of enum
+                 (title ?name)
+                 (numeric-type ?type)
+                 (contents ?body)))
 (defmethod cpp::enum
   ((?name LEXEME)
    $?body)
   (enum ?name
         ?body))
 
-(defmethod cpp::enum-class
-  ((?name LEXEME))
-  (enum (class ?name)))
-(defmethod cpp::enum-class
+(defmethod cpp::enum
   ((?name LEXEME)
-   (?type LEXEME))
-  (format nil
-          "%s : %s"
-          (enum-class ?name)
-          ?type))
+   (?unused0 SYMBOL
+             (eq ?current-argument
+                 is))
+   (?type LEXEME)
+   $?body)
+  (enum ?name
+        ?unused0
+        ?type
+        ?body))
+
 (defmethod cpp::enum-class
   ((?name LEXEME)
    (?body MULTIFIELD))
-  (create$ (enum-class ?name)
-           (body ?body)))
+  (make-instance of enum-class
+                 (title ?name)
+                 (contents ?body)))
 (defmethod cpp::enum-class
   ((?name LEXEME)
+   (?unused0 SYMBOL
+             (eq ?current-argument
+                 is))
    (?type LEXEME)
    (?body MULTIFIELD))
-  (with-body (enum-class ?name
-                         ?type)
-             ?body))
+  (make-instance of enum-class
+                 (title ?name)
+                 (numeric-type ?type)
+                 (contents ?body)))
 (defmethod cpp::enum-class
   ((?name LEXEME)
    $?body)
   (enum-class ?name
-              ?body))
+        ?body))
+
+(defmethod cpp::enum-class
+  ((?name LEXEME)
+   (?unused0 SYMBOL
+             (eq ?current-argument
+                 is))
+   (?type LEXEME)
+   $?body)
+  (enum-class ?name
+        ?unused0
+        ?type
+        ?body))
+
+
 
 (defmethod cpp::comma-separated-list
   ((?list MULTIFIELD
@@ -592,6 +726,7 @@
               ?list))
   (progn$ (?item (rest$ ?list))
           (bind ?collection
+                ?collection
                 ,
                 ?item))
   ?collection)
