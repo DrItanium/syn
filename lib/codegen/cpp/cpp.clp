@@ -44,6 +44,11 @@
 (defgeneric while#)
 (defgeneric for#)
 (defgeneric for-each#)
+(defgeneric namespace)
+(defgeneric enum)
+(defgeneric enum-class)
+(defgeneric with-body)
+
 
 (defmethod while#
   ((?condition LEXEME))
@@ -140,17 +145,31 @@
 
 (defmethod semi-colon
   ((?collection MULTIFIELD))
-   (create$ ?collection
-            ";"))
+  (create$ ?collection
+           ";"))
 
 
 (defmethod body
   ((?contents MULTIFIELD))
   (create$ { ?contents }))
+
 (defmethod body
   ($?contents)
   (body ?contents))
 
+(defmethod with-body
+  ((?header LEXEME
+            MULTIFIELD)
+   (?body MULTIFIELD))
+  (create$ ?header
+           (body ?body)))
+
+(defmethod with-body
+  ((?header MULTIFIELD
+            LEXEME)
+   $?body)
+  (with-body ?header
+             ?body))
 
 (defmethod struct
   ()
@@ -371,3 +390,63 @@
   (for-each# ?variable
              ?container
              ?body))
+
+(defmethod namespace
+  ((?name LEXEME))
+  (format nil
+          "namespace %s"
+          ?name))
+(defmethod namespace
+  ((?name LEXEME)
+   (?body MULTIFIELD))
+  (create$ (namespace ?name)
+           (body ?body)))
+(defmethod namespace
+  ((?name LEXEME)
+   $?body)
+  (namespace ?name
+             ?body))
+
+(defmethod enum
+  ((?name LEXEME))
+  (format nil
+          "enum %s"
+          ?name))
+(defmethod enum
+  ((?name LEXEME)
+   (?body MULTIFIELD))
+  (with-body (enum ?name)
+             ?body))
+(defmethod enum
+  ((?name LEXEME)
+   $?body)
+  (enum ?name
+        ?body))
+
+(defmethod enum-class
+  ((?name LEXEME))
+  (enum (class ?name)))
+(defmethod enum-class
+  ((?name LEXEME)
+   (?type LEXEME))
+  (format nil
+          "%s : %s"
+          (enum-class ?name)
+          ?type))
+(defmethod enum-class
+  ((?name LEXEME)
+   (?body MULTIFIELD))
+  (create$ (enum-class ?name)
+           (body ?body)))
+(defmethod enum-class
+  ((?name LEXEME)
+   (?type LEXEME)
+   (?body MULTIFIELD))
+  (with-body (enum-class ?name
+                         ?type)
+             ?body))
+(defmethod enum-class
+  ((?name LEXEME)
+   $?body)
+  (enum-class ?name
+              ?body))
