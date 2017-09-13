@@ -23,39 +23,39 @@
 
 
 ; preprocessor.clp - functions to generate c/c++ preprocessor statements
-(defgeneric #ifdef)
-(defgeneric #ifndef)
-(defgeneric #if)
-(defgeneric #endif)
-(defgeneric #define)
-(defgeneric #include)
-(defgeneric #undef)
-(defgeneric defined)
-(defgeneric macro-or)
-(defgeneric macro-and)
-(defgeneric macro-not)
-(defgeneric #warning)
-(defgeneric #error)
-(defgeneric #pragma)
-(defgeneric concat#)
-(defgeneric string#)
+(defgeneric cpp::#ifdef)
+(defgeneric cpp::#ifndef)
+(defgeneric cpp::#if)
+(defgeneric cpp::#endif)
+(defgeneric cpp::#define)
+(defgeneric cpp::#include)
+(defgeneric cpp::#undef)
+(defgeneric cpp::defined)
+(defgeneric cpp::macro-or)
+(defgeneric cpp::macro-and)
+(defgeneric cpp::macro-not)
+(defgeneric cpp::#warning)
+(defgeneric cpp::#error)
+(defgeneric cpp::#pragma)
+(defgeneric cpp::concat#)
+(defgeneric cpp::string#)
 
-(defmethod #include
+(defmethod cpp::#include
   ((?path STRING))
   (format nil
           "#include \"%s\""
           ?path))
-(defmethod #include
+(defmethod cpp::#include
   ((?path SYMBOL))
   (format nil
           "#include %s"
           ?path))
 
-(defmethod #ifdef
+(defmethod cpp::#ifdef
   ((?key SYMBOL))
   (str-cat "#ifdef "
            ?key))
-(defmethod #ifdef
+(defmethod cpp::#ifdef
   ((?key SYMBOL)
    (?unused SYMBOL
             (eq ?current-argument
@@ -65,12 +65,12 @@
            ?body
            (#endif ?key)))
 
-(defmethod #ifndef
+(defmethod cpp::#ifndef
   ((?key SYMBOL))
   (str-cat "#ifndef "
            ?key))
 
-(defmethod #ifndef
+(defmethod cpp::#ifndef
   ((?key SYMBOL)
    (?unused SYMBOL
             (eq ?current-argument
@@ -79,7 +79,7 @@
   (create$ (#ifndef ?key)
            ?body
            (#endif ?key)))
-(defmethod #ifndef
+(defmethod cpp::#ifndef
   ((?key SYMBOL)
    (?unused SYMBOL
             (eq ?current-argument
@@ -88,7 +88,7 @@
   (#ifndef ?key
    ?unused
    ?body))
-(defmethod #ifndef
+(defmethod cpp::#ifndef
   ((?key SYMBOL)
    (?action SYMBOL
             (eq ?current-argument
@@ -98,7 +98,7 @@
    (#define ?key)
    ?body))
 
-(defmethod #ifndef
+(defmethod cpp::#ifndef
   ((?key SYMBOL)
    (?unused SYMBOL
             (eq ?current-argument
@@ -108,14 +108,14 @@
    ?unused
    ?body))
 
-(defmethod #define
+(defmethod cpp::#define
   ((?key SYMBOL)
    ?value)
   (str-cat "#define "
            ?key
            " "
            ?value))
-(defmethod #define
+(defmethod cpp::#define
   ((?key SYMBOL)
    (?value STRING))
   (format nil
@@ -123,23 +123,23 @@
           ?key
           ?value))
 
-(defmethod #define
+(defmethod cpp::#define
   ((?key SYMBOL))
   (format nil
           "#define %s"
           ?key))
 
-(defmethod #endif
+(defmethod cpp::#endif
   ()
   #endif)
 
-(defmethod #endif
+(defmethod cpp::#endif
   ((?key SYMBOL))
   (format nil
           "#endif // end %s"
           ?key))
 
-(defmethod macro-or
+(defmethod cpp::macro-or
   ((?a LEXEME)
    (?b LEXEME))
   (format nil
@@ -147,7 +147,7 @@
           ?a
           ?b))
 
-(defmethod macro-or
+(defmethod cpp::macro-or
   ((?a LEXEME)
    (?b LEXEME)
    (?rest MULTIFIELD))
@@ -162,7 +162,7 @@
           "(%s)"
           ?base))
 
-(defmethod macro-or
+(defmethod cpp::macro-or
   ((?a LEXEME)
    (?b LEXEME)
    $?rest)
@@ -171,7 +171,7 @@
             ?rest))
 
 
-(defmethod macro-and
+(defmethod cpp::macro-and
   ((?a LEXEME)
    (?b LEXEME))
   (format nil
@@ -179,7 +179,7 @@
           ?a
           ?b))
 
-(defmethod macro-and
+(defmethod cpp::macro-and
   ((?a LEXEME)
    (?b LEXEME)
    (?rest MULTIFIELD))
@@ -194,7 +194,7 @@
           "(%s)"
           ?base))
 
-(defmethod macro-and
+(defmethod cpp::macro-and
   ((?a LEXEME)
    (?b LEXEME)
    $?rest)
@@ -202,20 +202,20 @@
              ?b
              ?rest))
 
-(defmethod macro-not
+(defmethod cpp::macro-not
   ((?a LEXEME))
   (str-cat !
            ?a))
-(defmethod defined
+(defmethod cpp::defined
   ((?a SYMBOL))
   (str-cat "defined(" ?a ")"))
 
-(defmethod #if
+(defmethod cpp::#if
   (?a)
   (str-cat "#if "
            ?a))
 
-(defmethod #if
+(defmethod cpp::#if
   (?key (?unused SYMBOL
                  (eq ?current-argument
                      do))
@@ -224,11 +224,11 @@
            ?body
            (#endif ?key)))
 
-(defmethod #undef
+(defmethod cpp::#undef
   ((?key SYMBOL))
   (str-cat "#undef "
            ?key))
-(defmethod #define
+(defmethod cpp::#define
   ((?key SYMBOL)
    (?args MULTIFIELD)
    (?definition MULTIFIELD))
@@ -237,12 +237,12 @@
                    (#define ?key)
                    (implode$ ?args)) \
            ?definition))
-(defmethod #define
+(defmethod cpp::#define
   ((?key SYMBOL)
    (?args MULTIFIELD)
    $?body)
   (#define ?key ?args ?body))
-(defmethod #define
+(defmethod cpp::#define
   ((?key SYMBOL)
    (?args MULTIFIELD)
    (?definition MULTIFIELD)
@@ -254,7 +254,7 @@
            ?body
            (#undef ?key)))
 
-(defmethod #define
+(defmethod cpp::#define
   ((?key SYMBOL)
    (?args MULTIFIELD)
    (?definition MULTIFIELD)
@@ -268,30 +268,30 @@
    ?unused
    ?body))
 
-(defmethod #pragma
+(defmethod cpp::#pragma
   ((?elements MULTIFIELD))
   (format nil
           "#pragma %s"
           (implode$ ?elements)))
-(defmethod #pragma
+(defmethod cpp::#pragma
   ($?elements)
   (#pragma ?elements))
 
-(defmethod #warning
+(defmethod cpp::#warning
   ((?message STRING))
   (format nil
           "#warning \"%s\""
           ?message))
-(defmethod #error
+(defmethod cpp::#error
   ((?message STRING))
   (format nil
           "#error \"%s\""
           ?message))
 
-(defmethod string#
+(defmethod cpp::string#
   ((?item SYMBOL))
   (str-cat # ?item))
-(defmethod concat#
+(defmethod cpp::concat#
   ((?item1 LEXEME)
    (?item2 LEXEME))
   (str-cat ?item1 " ## " ?item2))
