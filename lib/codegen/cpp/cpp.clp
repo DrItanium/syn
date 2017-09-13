@@ -378,6 +378,57 @@
                                    to-multifield)
                              ")"))
 
+(defclass cpp::explicit-cast
+  (is-a binary-operation)
+  (slot first-arg
+        (source composite)
+        (type LEXEME))
+  (slot operation
+        (source composite)
+        (storage shared)
+        (access read-only)
+        (create-accessor read)
+        (default PLEASE_REDEFINE_CAST_TYPE))
+  (message-handler to-multifield primary))
+(defmessage-handler cpp::explicit-cast to-multifield primary
+                    ()
+                    (create$ (str-cat "("
+                                      (dynamic-get operation)
+                                      "<"
+                                      (send ?self:first-arg
+                                            to-multifield)
+                                      ">")
+                                      "("
+                                      (send ?self:second-arg
+                                            to-multifield)
+                                      ")"))
+
+(defclass cpp::static-cast
+  (is-a explicit-cast)
+  (slot operation
+        (source composite)
+        (default static_cast)))
+
+(defclass cpp::dynamic-cast
+  (is-a explicit-cast)
+  (slot operation
+        (source composite)
+        (default dynamic_cast)))
+
+(defclass cpp::const-cast
+  (is-a explicit-cast)
+  (slot operation
+        (source composite)
+        (default const_cast)))
+(defclass cpp::reinterpret-cast
+  (is-a explicit-cast)
+  (slot operation
+        (source composite)
+        (default reinterpret_cast)))
+
+
+
+
 (defgeneric cpp::unary-operation)
 (defgeneric cpp::binary-operation)
 (defgeneric cpp::logical-not#)
@@ -390,6 +441,78 @@
 (defgeneric cpp::bitwise-xor#)
 (defgeneric cpp::not-equals#)
 (defgeneric cpp::equals#)
+(defgeneric cpp::+#)
+(defgeneric cpp::-#)
+(defgeneric cpp::*#)
+(defgeneric cpp::/#)
+(defgeneric cpp::%#)
+(defgeneric cpp::shift-left#)
+(defgeneric cpp::shift-right#)
+(defgeneric cpp::static-cast)
+(defgeneric cpp::dynamic-cast)
+(defgeneric cpp::const-cast)
+(defgeneric cpp::reinterpret-cast)
+
+(defmethod cpp::static-cast
+  ((?type LEXEME)
+   ?arg)
+  (make-instance of static-cast
+                 (first-arg ?type)
+                 (second-arg ?arg)))
+(defmethod cpp::dynamic-cast
+  ((?type LEXEME)
+   ?arg)
+  (make-instance of dynamic-cast
+                 (first-arg ?type)
+                 (second-arg ?arg)))
+(defmethod cpp::const-cast
+  ((?type LEXEME)
+   ?arg)
+  (make-instance of const-cast
+                 (first-arg ?type)
+                 (second-arg ?arg)))
+(defmethod cpp::reinterpret-cast
+  ((?type LEXEME)
+   ?arg)
+  (make-instance of reinterpret-cast
+                 (first-arg ?type)
+                 (second-arg ?arg)))
+
+(defmethod cpp::shift-left#
+  (?arg0 ?arg1)
+  (binary-operation "<<"
+                    ?arg0
+                    ?arg1))
+(defmethod cpp::shift-right#
+  (?arg0 ?arg1)
+  (binary-operation ">>"
+                    ?arg0
+                    ?arg1))
+(defmethod cpp::+#
+  (?arg0 ?arg1)
+  (binary-operation +
+                    ?arg0
+                    ?arg1))
+(defmethod cpp::-#
+  (?arg0 ?arg1)
+  (binary-operation -
+                    ?arg0
+                    ?arg1))
+(defmethod cpp::*#
+  (?arg0 ?arg1)
+  (binary-operation *
+                    ?arg0
+                    ?arg1))
+(defmethod cpp::/#
+  (?arg0 ?arg1)
+  (binary-operation /
+                    ?arg0
+                    ?arg1))
+(defmethod cpp::%#
+  (?arg0 ?arg1)
+  (binary-operation %
+                    ?arg0
+                    ?arg1))
 
 (defmethod cpp::equals#
   (?arg0 ?arg1)
