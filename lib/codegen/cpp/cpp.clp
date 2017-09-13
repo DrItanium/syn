@@ -22,50 +22,53 @@
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ; cpp.clp - c++ language related code generator routines
+(defmodule cpp
+           (export ?ALL))
+(defgeneric cpp::comma-separated-list)
+(defgeneric cpp::struct)
+(defgeneric cpp::union)
+(defgeneric cpp::field)
+(defgeneric cpp::typedef)
+(defgeneric cpp::typedef-function-pointer)
+(defgeneric cpp::body)
+(defgeneric cpp::function)
+(defgeneric cpp::template)
+(defgeneric cpp::class#)
+(defgeneric cpp::semi-colon)
+(defgeneric cpp::specialized-function)
+(defgeneric cpp::using)
+(defgeneric cpp::typename)
+(defgeneric cpp::if#)
+(defgeneric cpp::else-if#)
+(defgeneric cpp::else#)
+(defgeneric cpp::while#)
+(defgeneric cpp::for#)
+(defgeneric cpp::for-each#)
+(defgeneric cpp::namespace)
+(defgeneric cpp::enum)
+(defgeneric cpp::enum-class)
+(defgeneric cpp::with-body)
+(defgeneric cpp::public:)
+(defgeneric cpp::private:)
+(defgeneric cpp::protected:)
 
-(defgeneric struct)
-(defgeneric union)
-(defgeneric field)
-(defgeneric typedef)
-(defgeneric typedef-function-pointer)
-(defgeneric body)
-(defgeneric function)
-(defgeneric template)
-(defgeneric class#)
-(defgeneric semi-colon)
-(defgeneric specialized-function)
-(defgeneric using)
-(defgeneric typename)
-(defgeneric reference)
-(defgeneric r-value-reference)
-(defgeneric if#)
-(defgeneric else-if#)
-(defgeneric else#)
-(defgeneric while#)
-(defgeneric for#)
-(defgeneric for-each#)
-(defgeneric namespace)
-(defgeneric enum)
-(defgeneric enum-class)
-(defgeneric with-body)
 
-
-(defmethod while#
+(defmethod cpp::while#
   ((?condition LEXEME))
   (format nil
           "while (%s)"
           ?condition))
-(defmethod while#
+(defmethod cpp::while#
   ((?condition LEXEME)
    (?body MULTIFIELD))
   (create$ (while# ?condition)
            ?body))
-(defmethod while#
+(defmethod cpp::while#
   ((?cond LEXEME)
    $?body)
   (while# ?cond
           ?body))
-(defmethod for#
+(defmethod cpp::for#
   ((?init LEXEME)
    (?cond LEXEME)
    (?incr LEXEME))
@@ -75,7 +78,7 @@
           ?cond
           ?incr))
 
-(defmethod for#
+(defmethod cpp::for#
   ((?init LEXEME)
    (?cond LEXEME)
    (?incr LEXEME)
@@ -84,7 +87,7 @@
                  ?cond
                  ?incr)
            ?body))
-(defmethod for#
+(defmethod cpp::for#
   ((?init LEXEME)
    (?cond LEXEME)
    (?incr LEXEME)
@@ -95,32 +98,32 @@
         ?body))
 
 
-(defmethod else#
+(defmethod cpp::else#
   ((?body MULTIFIELD))
   (create$ else
            ?body))
-(defmethod else#
+(defmethod cpp::else#
   ($?body)
   (else# ?body))
-(defmethod else-if#
+(defmethod cpp::else-if#
   ((?condition LEXEME)
    (?body MULTIFIELD))
   (create$ (format nil
                    "else if (%s)"
                    ?condition)
            ?body))
-(defmethod else-if#
+(defmethod cpp::else-if#
   ((?condition LEXEME)
    $?body)
   (else-if# ?condition
             ?body))
 
-(defmethod if#
+(defmethod cpp::if#
   ((?condition LEXEME))
   (format nil
           "if (%s)"
           ?condition))
-(defmethod if#
+(defmethod cpp::if#
   ((?condition LEXEME)
    (?unused0 SYMBOL
              (eq ?current-argument
@@ -129,7 +132,7 @@
   (create$ (if# ?condition)
            ?body))
 
-(defmethod using
+(defmethod cpp::using
   ((?alias LEXEME)
    (?raw LEXEME))
   (format nil
@@ -137,49 +140,49 @@
           ?alias
           ?raw))
 
-(defmethod semi-colon
+(defmethod cpp::semi-colon
   ((?str LEXEME))
   (format nil
           "%s;"
           ?str))
 
-(defmethod semi-colon
+(defmethod cpp::semi-colon
   ((?collection MULTIFIELD))
   (create$ ?collection
            ";"))
 
 
-(defmethod body
+(defmethod cpp::body
   ((?contents MULTIFIELD))
   (create$ { ?contents }))
 
-(defmethod body
+(defmethod cpp::body
   ($?contents)
   (body ?contents))
 
-(defmethod with-body
+(defmethod cpp::with-body
   ((?header LEXEME
             MULTIFIELD)
    (?body MULTIFIELD))
   (create$ ?header
            (body ?body)))
 
-(defmethod with-body
+(defmethod cpp::with-body
   ((?header MULTIFIELD
             LEXEME)
    $?body)
   (with-body ?header
              ?body))
 
-(defmethod struct
+(defmethod cpp::struct
   ()
   struct)
-(defmethod struct
+(defmethod cpp::struct
   ((?title SYMBOL))
   (str-cat "struct "
            ?title))
 
-(defmethod struct
+(defmethod cpp::struct
   ((?title SYMBOL)
    (?body MULTIFIELD))
   (with-body (struct ?title)
@@ -187,34 +190,34 @@
 (create$ (struct ?title)
          (body ?body)))
 
-(defmethod struct
+(defmethod cpp::struct
   ((?body MULTIFIELD))
   (with-body (struct)
              ?body))
 
-(defmethod union
+(defmethod cpp::union
   ()
   union)
 
-(defmethod union
+(defmethod cpp::union
   ((?title SYMBOL))
   (str-cat "union "
            ?title))
 
-(defmethod union
+(defmethod cpp::union
   ((?title SYMBOL)
    (?body MULTIFIELD))
   (with-body (union ?title)
              ?body))
 
-(defmethod union
+(defmethod cpp::union
   ((?body MULTIFIELD))
   (with-body (union)
              ?body))
 
 
 
-(defmethod field
+(defmethod cpp::field
   ((?type SYMBOL)
    (?name SYMBOL))
   (format nil
@@ -223,7 +226,7 @@
           ?name))
 
 
-(defmethod typedef
+(defmethod cpp::typedef
   ((?raw LEXEME)
    (?name LEXEME))
   (format nil
@@ -231,7 +234,7 @@
           ?raw
           ?name))
 
-(defmethod typedef-function-pointer
+(defmethod cpp::typedef-function-pointer
   ((?name SYMBOL)
    (?return LEXEME)
    (?arguments MULTIFIELD))
@@ -241,14 +244,14 @@
           ?name
           (implode$ ?arguments)))
 
-(defmethod typedef-function-pointer
+(defmethod cpp::typedef-function-pointer
   ((?name SYMBOL)
    (?return LEXEME)
    $?arguments)
   (typedef-function-pointer ?name
                             ?return
                             ?arguments))
-(defmethod function
+(defmethod cpp::function
   ((?name SYMBOL)
    (?args MULTIFIELD)
    (?return LEXEME)
@@ -260,7 +263,7 @@
           (implode$ ?args)
           (implode$ ?qualifiers)))
 
-(defmethod function
+(defmethod cpp::function
   ((?name SYMBOL)
    (?args MULTIFIELD)
    (?return LEXEME)
@@ -271,7 +274,7 @@
                      ?return
                      ?qualifiers)
            (body ?body)))
-(defmethod function
+(defmethod cpp::function
   ((?name SYMBOL)
    (?args MULTIFIELD)
    (?return LEXEME)
@@ -283,30 +286,30 @@
             ?qualifiers
             ?body))
 
-(defmethod template-args
+(defmethod cpp::template-args
   ((?elements MULTIFIELD))
   (format nil
           "<%s>"
           (implode$ ?elements)))
-(defmethod template-args
+(defmethod cpp::template-args
   ($?elements)
   (template-args ?elements))
-(defmethod template
+(defmethod cpp::template
   ((?elements MULTIFIELD))
   (format nil
           "template%s"
           (template-args ?elements)))
 
-(defmethod template
+(defmethod cpp::template
   ($?elements)
   (template ?elements))
 
-(defmethod class#
+(defmethod cpp::class#
   ((?name SYMBOL))
   (format nil
           "class %s"
           ?name))
-(defmethod class#
+(defmethod cpp::class#
   ((?name SYMBOL)
    (?parents MULTIFIELD))
   (bind ?base
@@ -318,14 +321,14 @@
             (implode$ ?parents))
     else
     ?base))
-(defmethod class#
+(defmethod cpp::class#
   ((?name SYMBOL)
    (?parents MULTIFIELD)
    (?body MULTIFIELD))
   (create$ (class# ?name
                    ?parents)
            (body ?body)))
-(defmethod class#
+(defmethod cpp::class#
   ((?name SYMBOL)
    (?parents MULTIFIELD)
    $?body)
@@ -333,7 +336,7 @@
           ?parents
           ?body))
 
-(defmethod specialized-function
+(defmethod cpp::specialized-function
   ((?name SYMBOL)
    (?args MULTIFIELD)
    (?return LEXEME)
@@ -347,7 +350,7 @@
                      ?return
                      ?qualifiers
                      ?body)))
-(defmethod specialized-function
+(defmethod cpp::specialized-function
   ((?name SYMBOL)
    (?args MULTIFIELD)
    (?return LEXEME)
@@ -361,16 +364,16 @@
                         ?template-args
                         ?body))
 
-(defmethod typename
+(defmethod cpp::typename
   ()
   typename)
-(defmethod typename
+(defmethod cpp::typename
   ((?name LEXEME))
   (format nil
           "typename %s"
           ?name))
 
-(defmethod for-each#
+(defmethod cpp::for-each#
   ((?variable LEXEME)
    (?container LEXEME))
   (format nil
@@ -378,14 +381,14 @@
           ?variable
           ?container))
 
-(defmethod for-each#
+(defmethod cpp::for-each#
   ((?variable LEXEME)
    (?container LEXEME)
    (?body MULTIFIELD))
   (create$ (for-each# ?variable
                       ?container)
            ?body))
-(defmethod for-each#
+(defmethod cpp::for-each#
   ((?variable LEXEME)
    (?container LEXEME)
    $?body)
@@ -393,62 +396,116 @@
              ?container
              ?body))
 
-(defmethod namespace
+(defmethod cpp::namespace
   ((?name LEXEME))
   (format nil
           "namespace %s"
           ?name))
-(defmethod namespace
+(defmethod cpp::namespace
   ((?name LEXEME)
    (?body MULTIFIELD))
   (with-body (namespace ?name)
              ?body))
-(defmethod namespace
+(defmethod cpp::namespace
   ((?name LEXEME)
    $?body)
   (namespace ?name
              ?body))
 
-(defmethod enum
+(defmethod cpp::enum
   ((?name LEXEME))
   (format nil
           "enum %s"
           ?name))
-(defmethod enum
+(defmethod cpp::enum
   ((?name LEXEME)
    (?body MULTIFIELD))
   (with-body (enum ?name)
              ?body))
-(defmethod enum
+(defmethod cpp::enum
   ((?name LEXEME)
    $?body)
   (enum ?name
         ?body))
 
-(defmethod enum-class
+(defmethod cpp::enum-class
   ((?name LEXEME))
   (enum (class ?name)))
-(defmethod enum-class
+(defmethod cpp::enum-class
   ((?name LEXEME)
    (?type LEXEME))
   (format nil
           "%s : %s"
           (enum-class ?name)
           ?type))
-(defmethod enum-class
+(defmethod cpp::enum-class
   ((?name LEXEME)
    (?body MULTIFIELD))
   (create$ (enum-class ?name)
            (body ?body)))
-(defmethod enum-class
+(defmethod cpp::enum-class
   ((?name LEXEME)
    (?type LEXEME)
    (?body MULTIFIELD))
   (with-body (enum-class ?name
                          ?type)
              ?body))
-(defmethod enum-class
+(defmethod cpp::enum-class
   ((?name LEXEME)
    $?body)
   (enum-class ?name
               ?body))
+
+(defmethod cpp::comma-separated-list
+  ((?list MULTIFIELD
+          (= (length$ ?current-argument)
+             0)))
+  (create$))
+(defmethod cpp::comma-separated-list
+  ((?list MULTIFIELD
+          (> (length$ ?current-argument)
+             0)))
+  (bind ?collection
+        (nth$ 1
+              ?list))
+  (progn$ (?item (rest$ ?list))
+          (bind ?collection
+                ,
+                ?item))
+  ?collection)
+
+(defmethod cpp::comma-separated-list
+  ($?list)
+  (comma-separated-list ?list))
+
+(defmethod cpp::public:
+  ()
+  public:)
+(defmethod cpp::public:
+  ((?body MULTIFIELD))
+  (create$ (public:)
+           ?body))
+(defmethod cpp::public:
+  ($?body)
+  (public: ?body))
+(defmethod cpp::private:
+  ()
+  private:)
+(defmethod cpp::private:
+  ((?body MULTIFIELD))
+  (create$ (private:)
+           ?body))
+(defmethod cpp::private:
+  ($?body)
+  (private: ?body))
+(defmethod cpp::protected:
+  ()
+  protected:)
+(defmethod cpp::protected:
+  ((?body MULTIFIELD))
+  (create$ (protected:)
+           ?body))
+(defmethod cpp::protected:
+  ($?body)
+  (protected: ?body))
+
