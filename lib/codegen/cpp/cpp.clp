@@ -47,12 +47,28 @@
 (defgeneric cpp::namespace)
 (defgeneric cpp::enum)
 (defgeneric cpp::enum-class)
-(defgeneric cpp::with-body)
 (defgeneric cpp::public:)
 (defgeneric cpp::private:)
 (defgeneric cpp::protected:)
 (defgeneric cpp::do-while#)
 (defgeneric cpp::inherits-from)
+; preprocessor related operations
+(defgeneric cpp::#ifdef)
+(defgeneric cpp::#ifndef)
+(defgeneric cpp::#if)
+(defgeneric cpp::#endif)
+(defgeneric cpp::#define)
+(defgeneric cpp::#include)
+(defgeneric cpp::#undef)
+(defgeneric cpp::defined)
+(defgeneric cpp::macro-or)
+(defgeneric cpp::macro-and)
+(defgeneric cpp::macro-not)
+(defgeneric cpp::#warning)
+(defgeneric cpp::#error)
+(defgeneric cpp::#pragma)
+(defgeneric cpp::concat#)
+(defgeneric cpp::string#)
 
 (deffunction cpp::bodyp
              "Is the given thing a direct body type"
@@ -316,6 +332,132 @@
         (create-accessor read)
         (default union)))
 
+(defclass cpp::binary-operation
+  (is-a USER)
+  (slot operation
+        (type LEXEME)
+        (storage local)
+        (visibility public)
+        (default ?NONE))
+  (slot first-arg
+        (storage local)
+        (visibility public)
+        (default ?NONE))
+  (slot second-arg
+        (storage local)
+        (visibility public)
+        (default ?NONE))
+  (message-handler to-multifield primary))
+
+(defmessage-handler cpp::binary-operation to-multifield primary
+                    ()
+                    (create$ "("
+                             (send ?self:first-arg
+                                   to-multifield)
+                             (dynamic-get operation)
+                             (send ?self:second-arg
+                                   to-multifield)
+                             ")"))
+(defclass cpp::unary-operation
+  (is-a USER)
+  (slot operation
+        (type LEXEME)
+        (storage local)
+        (visibility public)
+        (default ?NONE))
+  (slot first-arg
+        (storage local)
+        (visibility public)
+        (default ?NONE))
+  (message-handler to-multifield primary))
+(defmessage-handler cpp::unary-operation to-multifield primary
+                    ()
+                    (create$ "("
+                             (dynamic-get operation)
+                             (send ?self:first-arg
+                                   to-multifield)
+                             ")"))
+
+(defgeneric cpp::unary-operation)
+(defgeneric cpp::binary-operation)
+(defgeneric cpp::logical-not#)
+(defgeneric cpp::logical-and#)
+(defgeneric cpp::logical-or#)
+(defgeneric cpp::logical-xor#)
+(defgeneric cpp::bitwise-not#)
+(defgeneric cpp::bitwise-and#)
+(defgeneric cpp::bitwise-or#)
+(defgeneric cpp::bitwise-xor#)
+(defgeneric cpp::not-equals#)
+(defgeneric cpp::equals#)
+
+(defmethod cpp::equals#
+  (?arg0 ?arg1)
+  (binary-operation "=="
+                    ?arg0
+                    ?arg1))
+
+(defmethod cpp::not-equals#
+  (?arg0 ?arg1)
+  (binary-operation "!="
+                    ?arg0
+                    ?arg1))
+
+(defmethod cpp::unary-operation
+  ((?operation LEXEME)
+   ?arg0)
+  (make-instance of unary-operation
+                 (operation ?operation)
+                 (first-arg ?arg0)))
+(defmethod cpp::binary-operation
+  ((?operation LEXEME)
+   ?arg0
+   ?arg1)
+  (make-instance of binary-operation
+                 (operation ?operation)
+                 (first-arg ?arg0)
+                 (second-arg ?arg1)))
+
+(defmethod cpp::logical-not#
+  (?arg0)
+  (unary-operation !
+                   ?arg0))
+(defmethod cpp::bitwise-not#
+  (?arg0)
+  (unary-operation "~"
+                   ?arg0))
+(defmethod cpp::logical-and#
+  (?arg0 ?arg1)
+  (binary-operation "&&"
+                    ?arg0
+                    ?arg1))
+(defmethod cpp::bitwise-and#
+  (?arg0 ?arg1)
+  (binary-operation "&"
+                    ?arg0
+                    ?arg1))
+
+(defmethod cpp::logical-or#
+  (?arg0 ?arg1)
+  (binary-operation "||"
+                    ?arg0
+                    ?arg1))
+(defmethod cpp::bitwise-or#
+  (?arg0 ?arg1)
+  (binary-operation "|"
+                    ?arg0
+                    ?arg1))
+
+(defmethod cpp::logical-xor#
+  (?arg0 ?arg1)
+  (not-equals# ?arg0
+               ?arg1))
+
+(defmethod cpp::bitwise-xor#
+  (?arg0 ?arg1)
+  (binary-operation "^"
+                    ?arg0
+                    ?arg1))
 
 (defmethod cpp::do-while#
   ((?condition LEXEME)
@@ -432,22 +574,6 @@
   ($?contents)
   (body ?contents))
 
-(defmethod cpp::with-body
-  ((?header LEXEME
-            MULTIFIELD)
-   (?body MULTIFIELD))
-  (create$ ?header
-           (body ?body)))
-
-(defmethod cpp::with-body
-  ((?header MULTIFIELD
-            LEXEME)
-   $?body)
-  (with-body ?header
-             ?body))
-
-
-
 (defmethod cpp::union
   ((?title SYMBOL)
    (?body MULTIFIELD))
@@ -457,8 +583,9 @@
 
 (defmethod cpp::union
   ((?body MULTIFIELD))
-  (with-body (union)
-             ?body))
+  (make-instance of union
+                 (title "")
+                 (contents ?body)))
 
 
 
@@ -850,22 +977,6 @@
 
 
 ; preprocessor related operations
-(defgeneric cpp::#ifdef)
-(defgeneric cpp::#ifndef)
-(defgeneric cpp::#if)
-(defgeneric cpp::#endif)
-(defgeneric cpp::#define)
-(defgeneric cpp::#include)
-(defgeneric cpp::#undef)
-(defgeneric cpp::defined)
-(defgeneric cpp::macro-or)
-(defgeneric cpp::macro-and)
-(defgeneric cpp::macro-not)
-(defgeneric cpp::#warning)
-(defgeneric cpp::#error)
-(defgeneric cpp::#pragma)
-(defgeneric cpp::concat#)
-(defgeneric cpp::string#)
 
 (defmethod cpp::#include
   ((?path STRING))
