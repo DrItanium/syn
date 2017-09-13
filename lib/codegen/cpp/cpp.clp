@@ -52,6 +52,13 @@
 (defgeneric cpp::private:)
 (defgeneric cpp::protected:)
 
+(deffunction cpp::bodyp
+             "Is the given thing a direct body type"
+             (?thing)
+             (eq (class ?thing)
+                 body))
+
+
 
 (defmethod cpp::while#
   ((?condition LEXEME))
@@ -100,18 +107,19 @@
 
 (defmethod cpp::else#
   ((?body MULTIFIELD))
-  (create$ else
-           ?body))
+  (with-body else
+             ?body))
 (defmethod cpp::else#
   ($?body)
   (else# ?body))
+
 (defmethod cpp::else-if#
   ((?condition LEXEME)
    (?body MULTIFIELD))
   (create$ (format nil
                    "else if (%s)"
                    ?condition)
-           ?body))
+           (body ?body)))
 (defmethod cpp::else-if#
   ((?condition LEXEME)
    $?body)
@@ -130,7 +138,16 @@
                  then))
    (?body MULTIFIELD))
   (create$ (if# ?condition)
-           ?body))
+           (body ?body)))
+(defmethod cpp::if#
+  ((?condition LEXEME)
+   (?unused SYMBOL
+            (eq ?current-argument
+                then))
+   $?body)
+  (if# ?condition
+       ?unused
+       ?body))
 
 (defmethod cpp::using
   ((?alias LEXEME)
@@ -154,7 +171,8 @@
 
 (defmethod cpp::body
   ((?contents MULTIFIELD))
-  (create$ { ?contents }))
+  (make-instance of body
+                 (contents ?contents)))
 
 (defmethod cpp::body
   ($?contents)
@@ -187,8 +205,6 @@
    (?body MULTIFIELD))
   (with-body (struct ?title)
              ?body))
-(create$ (struct ?title)
-         (body ?body)))
 
 (defmethod cpp::struct
   ((?body MULTIFIELD))
@@ -480,31 +496,36 @@
 
 (defmethod cpp::public:
   ()
-  public:)
+  (make-instance of public:
+                 (contents)))
 (defmethod cpp::public:
   ((?body MULTIFIELD))
-  (create$ (public:)
-           ?body))
+  (make-instance of public:
+                 (contents ?body)))
 (defmethod cpp::public:
   ($?body)
   (public: ?body))
+
 (defmethod cpp::private:
   ()
-  private:)
+  (make-instance of private:
+                 (contents)))
 (defmethod cpp::private:
   ((?body MULTIFIELD))
-  (create$ (private:)
-           ?body))
+  (make-instance of private:
+                 (contents ?body)))
 (defmethod cpp::private:
   ($?body)
   (private: ?body))
+
 (defmethod cpp::protected:
   ()
-  protected:)
+  (make-instance of protected:
+                 (contents)))
 (defmethod cpp::protected:
   ((?body MULTIFIELD))
-  (create$ (protected:)
-           ?body))
+  (make-instance of protected:
+                 (contents ?body)))
 (defmethod cpp::protected:
   ($?body)
   (protected: ?body))
@@ -782,3 +803,49 @@
   ((?item1 LEXEME)
    (?item2 LEXEME))
   (str-cat ?item1 " ## " ?item2))
+
+(defclass cpp::body
+  (is-a USER)
+  (multislot contents
+             (storage local)
+             (visibility public)
+             (default ?NONE))
+  (message-handler to-multifield primary))
+(defmessage-handler cpp::body to-multifield primary
+                    ()
+                    (create$ { ?self:contents }))
+(defclass cpp::access-declaration
+  (is-a body)
+  (slot type
+        (visibility public)
+        (storage local)
+        (type SYMBOL))
+  (message-handler to-multifield primary))
+(defmessage-handler cpp::access-declaration to-multifield primary
+                    ()
+                    (create$ (dynamic-get type)
+                             ?self:contents))
+
+(defclass cpp::public:
+  (is-a access-declaration)
+  (slot type
+        (source composite)
+        (storage shared)
+        (access read-only)
+        (default public:)))
+
+(defclass cpp::private:
+  (is-a access-declaration)
+  (slot type
+        (source composite)
+        (storage shared)
+        (access read-only)
+        (default private:)))
+
+(defclass cpp::protected:
+  (is-a access-declaration)
+  (slot type
+        (source composite)
+        (storage shared)
+        (access read-only)
+        (default protected:)))
