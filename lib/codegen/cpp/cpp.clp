@@ -58,6 +58,48 @@
              (eq (class ?thing)
                  body))
 
+(defclass cpp::body
+  (is-a USER)
+  (multislot contents
+             (storage local)
+             (visibility public)
+             (default ?NONE))
+  (message-handler to-multifield primary))
+(defmessage-handler cpp::body to-multifield primary
+                    ()
+                    (create$ { ?self:contents }))
+(defclass cpp::access-declaration
+  (is-a body)
+  (slot type
+        (visibility public)
+        (storage shared)
+        (access read-only)
+        (create-accessor read)
+        (type SYMBOL)
+        (default unimplmented-type))
+  (message-handler to-multifield primary))
+(defmessage-handler cpp::access-declaration to-multifield primary
+                    ()
+                    (create$ (dynamic-get type)
+                             ?self:contents))
+
+(defclass cpp::public:
+  (is-a access-declaration)
+  (slot type
+        (source composite)
+        (default public:)))
+
+(defclass cpp::private:
+  (is-a access-declaration)
+  (slot type
+        (source composite)
+        (default private:)))
+
+(defclass cpp::protected:
+  (is-a access-declaration)
+  (slot type
+        (source composite)
+        (default protected:)))
 
 
 (defmethod cpp::while#
@@ -93,7 +135,7 @@
   (create$ (for# ?init
                  ?cond
                  ?incr)
-           ?body))
+           (body ?body)))
 (defmethod cpp::for#
   ((?init LEXEME)
    (?cond LEXEME)
@@ -804,48 +846,3 @@
    (?item2 LEXEME))
   (str-cat ?item1 " ## " ?item2))
 
-(defclass cpp::body
-  (is-a USER)
-  (multislot contents
-             (storage local)
-             (visibility public)
-             (default ?NONE))
-  (message-handler to-multifield primary))
-(defmessage-handler cpp::body to-multifield primary
-                    ()
-                    (create$ { ?self:contents }))
-(defclass cpp::access-declaration
-  (is-a body)
-  (slot type
-        (visibility public)
-        (storage local)
-        (type SYMBOL))
-  (message-handler to-multifield primary))
-(defmessage-handler cpp::access-declaration to-multifield primary
-                    ()
-                    (create$ (dynamic-get type)
-                             ?self:contents))
-
-(defclass cpp::public:
-  (is-a access-declaration)
-  (slot type
-        (source composite)
-        (storage shared)
-        (access read-only)
-        (default public:)))
-
-(defclass cpp::private:
-  (is-a access-declaration)
-  (slot type
-        (source composite)
-        (storage shared)
-        (access read-only)
-        (default private:)))
-
-(defclass cpp::protected:
-  (is-a access-declaration)
-  (slot type
-        (source composite)
-        (storage shared)
-        (access read-only)
-        (default protected:)))
