@@ -52,6 +52,7 @@
 (defgeneric cpp::private:)
 (defgeneric cpp::protected:)
 (defgeneric cpp::do-while#)
+(defgeneric cpp::inherits-from)
 
 (deffunction cpp::bodyp
              "Is the given thing a direct body type"
@@ -228,6 +229,84 @@
                                      "if (%s)"
                                      (dynamic-get condition))
                              (call-next-handler)))
+(defclass cpp::inherits-from
+  (is-a requires-title)
+  (slot accessibility
+        (type LEXEME)
+        (allowed-strings "")
+        (allowed-symbols public
+                         protected)
+        (default-dynamic ""))
+  (message-handler to-multifield primary))
+(defmessage-handler cpp::inherits-from to-multifield primary
+                    ()
+                    (create$ (format nil
+                                     "%s %s"
+                                     (dynamic-get accessibility)
+                                     (dynamic-get title))))
+
+(defclass cpp::data-structure
+  (is-a body
+        has-title)
+  (slot type
+        (type LEXEME)
+        (storage shared)
+        (visibility public)
+        (default UNIMPLEMENTED))
+  (message-handler to-multifield primary)
+  (message-handler construct-definition primary))
+
+(defmessage-handler cpp::data-structure to-multifield primary
+                    ()
+                    (create$ (send ?self
+                                   construct-definition)
+                             (call-next-handler)))
+(defmessage-handler cpp::data-structure construct-definition primary
+                    ()
+                    (format nil
+                            "%s %s"
+                            (dynamic-get type)
+                            (dynamic-get title)))
+
+
+
+
+(defclass cpp::inheritable-data-structure
+  (is-a data-structure)
+  (multislot inherits-from
+             (type INSTANCE)
+             (allowed-classes inherits-from))
+  (message-handler construct-definition primary))
+
+(defmessage-handler cpp::inheritable-data-structure construct-definition primary
+                    ()
+                    (bind ?base
+                          (call-next-handler))
+                    (if (= (length$ ?self:inherits-from)
+                            0) then
+                      ?base
+                      else
+                      (format nil
+                              "%s : %s"
+                              ?base
+                              (comma-separated-list
+                                (send ?self:inherits-from
+                                      to-multifield)))))
+(defclass cpp::class
+  (is-a inheritable-data-structure)
+  (slot type
+        (source composite)
+        (access read-only)
+        (create-accessor read)
+        (default class)))
+
+(defclass cpp::struct
+  (is-a inheritable-data-structure)
+  (slot type
+        (source composite)
+        (access read-only)
+        (create-accessor read)
+        (default struct)))
 
 (defmethod cpp::do-while#
   ((?condition LEXEME)
@@ -358,24 +437,6 @@
   (with-body ?header
              ?body))
 
-(defmethod cpp::struct
-  ()
-  struct)
-(defmethod cpp::struct
-  ((?title SYMBOL))
-  (str-cat "struct "
-           ?title))
-
-(defmethod cpp::struct
-  ((?title SYMBOL)
-   (?body MULTIFIELD))
-  (with-body (struct ?title)
-             ?body))
-
-(defmethod cpp::struct
-  ((?body MULTIFIELD))
-  (with-body (struct)
-             ?body))
 
 (defmethod cpp::union
   ()
@@ -486,37 +547,6 @@
   ($?elements)
   (template ?elements))
 
-(defmethod cpp::class#
-  ((?name SYMBOL))
-  (format nil
-          "class %s"
-          ?name))
-(defmethod cpp::class#
-  ((?name SYMBOL)
-   (?parents MULTIFIELD))
-  (bind ?base
-        (class# ?name))
-  (if (<> (length$ ?parents) 0) then
-    (format nil
-            "%s : %s"
-            ?base
-            (implode$ ?parents))
-    else
-    ?base))
-(defmethod cpp::class#
-  ((?name SYMBOL)
-   (?parents MULTIFIELD)
-   (?body MULTIFIELD))
-  (create$ (class# ?name
-                   ?parents)
-           (body ?body)))
-(defmethod cpp::class#
-  ((?name SYMBOL)
-   (?parents MULTIFIELD)
-   $?body)
-  (class# ?name
-          ?parents
-          ?body))
 
 (defmethod cpp::specialized-function
   ((?name SYMBOL)
@@ -770,6 +800,52 @@
 (defmethod cpp::protected:
   ($?body)
   (protected: ?body))
+(defmethod cpp::inherits-from
+  ((?name LEXEME)
+   (?access LEXEME))
+  (make-instance of inherits-from
+                 (title ?name)
+                 (accessibility ?access)))
+(defmethod cpp::inherits-from
+  ((?name LEXEME))
+  (make-instance of inherits-from
+                 (title ?name)))
+
+
+
+(defmethod cpp::class#
+  ((?name SYMBOL)
+   (?parents MULTIFIELD)
+   (?body MULTIFIELD))
+  (make-instance of class
+                 (title ?name)
+                 (inherits-from ?parents)
+                 (contents ?body)))
+(defmethod cpp::class#
+  ((?name SYMBOL)
+   (?parents MULTIFIELD)
+   $?body)
+  (class# ?name
+          ?parents
+          ?body))
+
+
+(defmethod cpp::struct
+  ((?name SYMBOL)
+   (?parents MULTIFIELD)
+   (?body MULTIFIELD))
+  (make-instance of class
+                 (title ?name)
+                 (inherits-from ?parents)
+                 (contents ?body)))
+(defmethod cpp::struct
+  ((?name SYMBOL)
+   (?parents MULTIFIELD)
+   $?body)
+  (struct ?name
+          ?parents
+          ?body))
+
 
 ; preprocessor related operations
 (defgeneric cpp::#ifdef)
