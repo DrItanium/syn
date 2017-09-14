@@ -25,3 +25,5 @@ maya
 .gitconfig
 
 doc/html
+# the include directory is only for termbox because I can't override the value :(
+include/
