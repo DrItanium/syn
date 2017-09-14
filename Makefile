@@ -103,6 +103,7 @@ nuke: clean
 	@echo "Cleaning maya..."
 	@cd misc/maya && $(MAKE) clean
 	@rm -rf doc/html maya libmaya.a
+	@cd misc/termbox && ./waf clean
 
 install: ${ALL_BINARIES}
 	@echo installing executables to ${DESTDIR}${PREFIX}/bin
@@ -126,9 +127,18 @@ tests: bootstrap ${ALL_BINARIES} ${TEST_SUITES}
 
 
 
-.PHONY: all options clean install uninstall docs tests
+.PHONY: all options clean install uninstall docs tests bootstrap
 
-bootstrap: ${DEFINE_OBJECTS}
+bootstrap: ${DEFINE_OBJECTS} termbox
+
+misc/termbox/out/lib/libtermbox.a: termbox
+misc/termbox/out/include/termbox.h: termbox
+
+
+termbox:
+	@cd misc/termbox && ./waf configure --prefix=out
+	@cd misc/termbox && ./waf
+	@cd misc/termbox && ./waf install --targets=termbox_static
 
 define generateFields
 	./deffield.sh -f2 $(1) -f2 lib/reset-run-exit.clp > $(2).h
