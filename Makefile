@@ -91,7 +91,7 @@ options:
 	@echo CXX $<
 	@${CXX} ${CXXFLAGS} -c $< -o $@
 
-${REPL_FINAL_BINARY}: ${REPL_FINAL_OBJECTS} libmaya.a
+${REPL_FINAL_BINARY}: ${REPL_FINAL_OBJECTS} libmaya.a misc/termbox/out/lib/libtermbox.a
 	@echo Building ${REPL_FINAL_BINARY}
 	@${CXX} ${LDFLAGS} -o ${REPL_FINAL_BINARY} ${REPL_FINAL_OBJECTS} libmaya.a
 
@@ -103,7 +103,8 @@ nuke: clean
 	@echo "Cleaning maya..."
 	@cd misc/maya && $(MAKE) clean
 	@rm -rf doc/html maya libmaya.a
-	@cd misc/termbox && ./waf clean
+	@cd misc/termbox && ./waf uninstall --targets=termbox_static
+	@cd misc/termbox && ./waf distclean
 
 install: ${ALL_BINARIES}
 	@echo installing executables to ${DESTDIR}${PREFIX}/bin
@@ -134,8 +135,10 @@ bootstrap: ${DEFINE_OBJECTS} termbox
 misc/termbox/out/lib/libtermbox.a: termbox
 misc/termbox/out/include/termbox.h: termbox
 
+misc/termbox:
+	@git submodule --init --recursive
 
-termbox:
+termbox: misc/termbox
 	@cd misc/termbox && ./waf configure --prefix=out
 	@cd misc/termbox && ./waf
 	@cd misc/termbox && ./waf install --targets=termbox_static
