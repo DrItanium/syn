@@ -91,9 +91,9 @@ options:
 	@echo CXX $<
 	@${CXX} ${CXXFLAGS} -c $< -o $@
 
-${REPL_FINAL_BINARY}: ${REPL_FINAL_OBJECTS} libmaya.a misc/termbox/out/lib/libtermbox.a
+${REPL_FINAL_BINARY}: ${REPL_FINAL_OBJECTS} libmaya.a libtermbox.a
 	@echo Building ${REPL_FINAL_BINARY}
-	@${CXX} ${LDFLAGS} -o ${REPL_FINAL_BINARY} ${REPL_FINAL_OBJECTS} libmaya.a
+	@${CXX} ${LDFLAGS} -o ${REPL_FINAL_BINARY} ${REPL_FINAL_OBJECTS} libmaya.a libtermbox.a
 
 clean:
 	@echo Cleaning...
@@ -132,14 +132,14 @@ tests: bootstrap ${ALL_BINARIES} ${TEST_SUITES}
 
 bootstrap: ${DEFINE_OBJECTS} termbox
 
-misc/termbox/out/lib/libtermbox.a: termbox
-misc/termbox/out/include/termbox.h: termbox
+libtermbox.a: termbox
+include/termbox.h: termbox
 
 misc/termbox:
-	@git submodule --init --recursive
+	@git submodule update --init --recursive
 
 termbox: misc/termbox
-	@cd misc/termbox && ./waf configure --prefix=out
+	@cd misc/termbox && ./waf configure --prefix=../../ --libdir=../../
 	@cd misc/termbox && ./waf
 	@cd misc/termbox && ./waf install --targets=termbox_static
 
