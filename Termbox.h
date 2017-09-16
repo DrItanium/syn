@@ -30,6 +30,7 @@
 #define TERMBOX_H__
 
 #include "include/termbox.h"
+#include "Base.h"
 
 namespace termbox {
     enum class Key {
@@ -65,6 +66,7 @@ namespace termbox {
         Y(MouseRelease, MOUSE_RELEASE),
         Y(MouseWheelUp, MOUSE_WHEEL_UP),
         Y(MouseWheelDown, MOUSE_WHEEL_DOWN),
+        // alt modifiers
 #undef X
 #undef Y
     };
@@ -83,10 +85,11 @@ namespace termbox {
         White = TB_WHITE,
     };
 
-    enum class EventType {
+    enum class EventType : int {
         Key = TB_EVENT_KEY,
         Resize = TB_EVENT_RESIZE,
         Mouse = TB_EVENT_MOUSE,
+        Error = -1,
     };
 
     enum class ErrorCode {
@@ -161,20 +164,61 @@ namespace termbox {
         return tb_cell_buffer();
     }
 
-    enum class InputMode : int {
-        Current = TB_INPUT_CURRENT,
+    enum InputMode : int {
         Esc = TB_INPUT_ESC,
         Alt = TB_INPUT_ALT,
         Mouse = TB_INPUT_MOUSE,
     };
 
-    inline int selectInputMode(InputMode mode) noexcept {
-        return tb_select_input_mode(static_cast<int>(mode));
+
+    inline int getInputMode() noexcept {
+        return tb_select_input_mode(TB_INPUT_CURRENT);
     }
 
+    inline void setInputMode(InputMode mode) noexcept {
+        (void)tb_select_input_mode(static_cast<int>(mode));
+    }
 
+    enum class OutputMode {
+        Normal = TB_OUTPUT_NORMAL,
+        Color256 = TB_OUTPUT_256,
+        Color216 = TB_OUTPUT_216,
+        Grayscale = TB_OUTPUT_GRAYSCALE,
+    };
 
+    inline OutputMode getOutputMode() noexcept {
+        return static_cast<OutputMode>(tb_select_output_mode(TB_OUTPUT_CURRENT));
+    }
+    inline void setOutputMode(OutputMode mode) noexcept {
+        (void)tb_select_output_mode(static_cast<int>(mode));
+    }
 
+    inline EventType peekEvent(Event* event, int timeout) noexcept {
+        return static_cast<EventType>(tb_peek_event(event, timeout));
+    }
+    inline EventType peekEvent(Event& event, int timeout) noexcept {
+        return peekEvent(&event, timeout);
+    }
+    inline EventType pollEvent(Event* event) noexcept {
+        return static_cast<EventType>(tb_poll_event(event));
+    }
+    inline EventType pollEvent(Event& event) noexcept {
+        return pollEvent(&event);
+    }
+    constexpr auto eof = TB_EOF;
+    inline int utf8CharLength(char c) noexcept { return tb_utf8_char_length(c); }
+    inline int utf8CharToUnicode(uint32_t* out, const char* c) noexcept {
+        return tb_utf8_char_to_unicode(out, c);
+    }
+    inline int utf8UnicodeToChar(char* out, uint32_t c) noexcept {
+        return tb_utf8_unicode_to_char(out, c);
+    }
+} // end namespace termbox
+
+namespace syn {
+    template<>
+    constexpr auto defaultErrorState<termbox::EventType> = termbox::EventType::Error;
 } // end namespace syn
+
 
 #endif // end TERMBOX_H__
