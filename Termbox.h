@@ -31,6 +31,7 @@
 
 #include "include/termbox.h"
 #include "Base.h"
+#include <string.h>
 
 namespace termbox {
     enum class SpecialKey {
@@ -73,6 +74,8 @@ namespace termbox {
 
     using RawCell = struct tb_cell;
     using RawEvent = struct tb_event;
+	using ForegroundColor = decltype(RawCell::fg);
+	using BackgroundColor = decltype(RawCell::bg);
     enum class Color {
         Default = TB_DEFAULT,
         Black = TB_BLACK,
@@ -102,7 +105,7 @@ namespace termbox {
     };
 
     constexpr bool errorOccurred(int errorCode) noexcept {
-        return errorCode < 0;
+		return errorCode != 0;
     }
 
     constexpr bool isBold(decltype(RawCell::fg) value) noexcept {
@@ -143,7 +146,7 @@ namespace termbox {
         tb_clear();
     }
 
-    inline void setClearAttributes(uint16_t fg, uint16_t bg) noexcept {
+    inline void setClearAttributes(ForegroundColor fg, BackgroundColor bg) noexcept {
         tb_set_clear_attributes(fg, bg);
     }
     /// synchronizes the internal back buffer with the terminal.
@@ -164,7 +167,7 @@ namespace termbox {
         putCell(x, y, &cell);
     }
 
-    inline void changeCell(int x, int y, decltype(RawCell::ch) ch, decltype(RawCell::fg) fg, decltype(RawCell::bg) bg) noexcept {
+    inline void changeCell(int x, int y, decltype(RawCell::ch) ch, ForegroundColor fg, BackgroundColor bg) noexcept {
         tb_change_cell(x, y, ch, fg, bg);
     }
 
@@ -252,8 +255,8 @@ namespace termbox {
 			Cell(Cell&&) = delete;
 			Cell(const Cell& other) : Cell(other._cell) { }
 			RawCell& getRawCell() const noexcept { return _cell; }
-			decltype(RawCell::fg) getForegroundColor() const noexcept { return _cell.fg; }
-			decltype(RawCell::bg) getBackgroundColor() const noexcept { return _cell.bg; }
+			ForegroundColor getForegroundColor() const noexcept { return _cell.fg; }
+			BackgroundColor getBackgroundColor() const noexcept { return _cell.bg; }
 			decltype(RawCell::ch) getCharacter() const noexcept { return _cell.ch; }
 			void put(int x, int y) noexcept { putCell(x, y, &_cell); }
 		private:
@@ -274,7 +277,7 @@ namespace termbox {
 				// update the back buffer after present is called!
 				_cells = termbox::getCellBuffer();
 			}
-			void setClearAttributes(decltype(RawCell::fg) fg, decltype(RawCell::bg) bg) { termbox::setClearAttributes(fg, bg); }
+			void setClearAttributes(ForegroundColor fg, BackgroundColor bg) { termbox::setClearAttributes(fg, bg); }
 			void clear() noexcept {
 				termbox::clear();
 				// update the back buffer after clear is called!
@@ -284,6 +287,22 @@ namespace termbox {
 		private:
 			RawCell* _cells;
 	};
+	constexpr auto keyEscape = TB_KEY_ESC;
+	constexpr auto keyF1 = TB_KEY_F1;
+	constexpr auto keyF2 = TB_KEY_F2;
+	constexpr auto keyF3 = TB_KEY_F3;
+	constexpr auto keyF4 = TB_KEY_F4;
+	constexpr auto keyF5 = TB_KEY_F5;
+	constexpr auto keyF6 = TB_KEY_F6;
+	constexpr auto keyF7 = TB_KEY_F7;
+	constexpr auto keyF8 = TB_KEY_F8;
+	constexpr auto keyF9 = TB_KEY_F9;
+	constexpr auto keyF10 = TB_KEY_F10;
+	constexpr auto keyF11 = TB_KEY_F11;
+	constexpr auto keyF12 = TB_KEY_F12;
+
+
+	void printString(const std::string& str, int x, int y, ForegroundColor fg, BackgroundColor bg) noexcept;
 } // end namespace termbox
 
 namespace syn {
