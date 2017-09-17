@@ -21,13 +21,17 @@ void printLine(const std::stringstream& str) {
 	auto tmp = str.str();
 	printLine(tmp);
 }
-void printLines(termbox::Screen& scr) {
+void printLines(termbox::Screen& scr, std::stringstream& dimensions) {
 	// one statement per line!
+	scr.printLine(dimensions, 0, 0, termbox::Color::Green, termbox::Color::Black);
 	auto y = 1;
 	for (const auto& line : lines) {
-		scr.printLine(line, 1, y, termbox::Color::Green, termbox::Color::Black);
+		scr.printLine(line, 0, y, termbox::Color::Green, termbox::Color::Black);
 		++y;
 	}
+}
+void updateDimensions(termbox::Screen& screen, std::stringstream& ss) {
+	ss << "Width: " << screen.getWidth() << " Height: " << screen.getHeight() << std::endl;
 }
 int main(int argc, char** argv) {
 	auto ret = termbox::init();
@@ -38,13 +42,13 @@ int main(int argc, char** argv) {
 
 	termbox::setInputMode(termbox::InputMode::EscMouse);
 	termbox::RawEvent evt;
-	std::stringstream ss;
+	std::stringstream ss, dimensions;
 	termbox::setClearAttributes(termbox::Color::Black, termbox::Color::Black);
 	termbox::Screen screen;
 	bool done = false;
-	ss << "Width: " << screen.getWidth() << " Height: " << screen.getHeight() << std::endl;
 	// still getting strange artifacts at this point but it's much better
-	screen.printLine(ss, 0, 0, termbox::Color::Green, termbox::Color::Black);
+	updateDimensions(screen, dimensions);
+	printLines(screen,dimensions);
 	screen.present();
 	screen.clear();
 	while (!syn::isErrorState(termbox::pollEvent(evt))) {
@@ -77,6 +81,8 @@ int main(int argc, char** argv) {
 				printLine("Resize Event\n");
 				screen.resize();
 				screen.present();
+				dimensions.str("");
+				updateDimensions(screen, dimensions);
 				break;
 			default:
 				printLine("Error event!?");
@@ -86,7 +92,7 @@ int main(int argc, char** argv) {
 		if (done) {
 			break;
 		}
-		printLines(screen);
+		printLines(screen, dimensions);
 		screen.present();
 		screen.clear();
 		ss.str("");
