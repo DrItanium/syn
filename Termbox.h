@@ -33,7 +33,7 @@
 #include "Base.h"
 
 namespace termbox {
-    enum class Key {
+    enum class SpecialKey {
 #define Y(title, fix) \
         title = TB_KEY_ ## fix
 #define X(title) \
@@ -71,8 +71,8 @@ namespace termbox {
 #undef Y
     };
 
-    using Cell = struct tb_cell;
-    using Event = struct tb_event;
+    using RawCell = struct tb_cell;
+    using RawEvent = struct tb_event;
     enum class Color {
         Default = TB_DEFAULT,
         Black = TB_BLACK,
@@ -85,11 +85,11 @@ namespace termbox {
         White = TB_WHITE,
     };
 
-    enum class EventType : int {
+    enum class EventType : decltype(RawEvent::type) {
         Key = TB_EVENT_KEY,
         Resize = TB_EVENT_RESIZE,
         Mouse = TB_EVENT_MOUSE,
-        Error = -1,
+        Error = 0,
     };
 
     enum class ErrorCode {
@@ -105,16 +105,16 @@ namespace termbox {
         return errorCode < 0;
     }
 
-    constexpr bool isBold(decltype(Cell::fg) value) noexcept {
+    constexpr bool isBold(decltype(RawCell::fg) value) noexcept {
         return (value & (TB_BOLD)) != 0;
     }
-    constexpr bool isUnderline(decltype(Cell::fg) value) noexcept {
+    constexpr bool isUnderline(decltype(RawCell::fg) value) noexcept {
         return (value & (TB_UNDERLINE)) != 0;
     }
-    constexpr bool isReverse(decltype(Cell::fg) value) noexcept {
+    constexpr bool isReverse(decltype(RawCell::fg) value) noexcept {
         return (value & (TB_REVERSE)) != 0;
     }
-    constexpr Color getColor(decltype(Cell::fg) value) noexcept {
+    constexpr Color getColor(decltype(RawCell::fg) value) noexcept {
         return static_cast<Color>(0x00FF & value);
     }
     inline int init() noexcept {
@@ -126,6 +126,14 @@ namespace termbox {
     inline int init(int inout) noexcept {
         return tb_init_fd(inout);
     }
+
+	inline int getWidth() noexcept {
+		return tb_width();
+	} 
+
+	inline int getHeight() noexcept {
+		return tb_height();
+	}
 
     inline void shutdown() noexcept {
         tb_shutdown();
@@ -149,18 +157,18 @@ namespace termbox {
         tb_set_cursor(cx, cy);
     }
 
-    inline void putCell(int x, int y, const Cell* cell) noexcept {
+    inline void putCell(int x, int y, const RawCell* cell) noexcept {
         tb_put_cell(x, y, cell);
     }
-    inline void putCell(int x, int y, const Cell& cell) noexcept {
+    inline void putCell(int x, int y, const RawCell& cell) noexcept {
         putCell(x, y, &cell);
     }
 
-    inline void changeCell(int x, int y, decltype(Cell::ch) ch, decltype(Cell::fg) fg, decltype(Cell::bg) bg) noexcept {
+    inline void changeCell(int x, int y, decltype(RawCell::ch) ch, decltype(RawCell::fg) fg, decltype(RawCell::bg) bg) noexcept {
         tb_change_cell(x, y, ch, fg, bg);
     }
 
-    inline Cell* getCellBuffer() noexcept {
+    inline RawCell* getCellBuffer() noexcept {
         return tb_cell_buffer();
     }
 
@@ -193,16 +201,16 @@ namespace termbox {
         (void)tb_select_output_mode(static_cast<int>(mode));
     }
 
-    inline EventType peekEvent(Event* event, int timeout) noexcept {
+    inline EventType peekEvent(RawEvent* event, int timeout) noexcept {
         return static_cast<EventType>(tb_peek_event(event, timeout));
     }
-    inline EventType peekEvent(Event& event, int timeout) noexcept {
+    inline EventType peekEvent(RawEvent& event, int timeout) noexcept {
         return peekEvent(&event, timeout);
     }
-    inline EventType pollEvent(Event* event) noexcept {
+    inline EventType pollEvent(RawEvent* event) noexcept {
         return static_cast<EventType>(tb_poll_event(event));
     }
-    inline EventType pollEvent(Event& event) noexcept {
+    inline EventType pollEvent(RawEvent& event) noexcept {
         return pollEvent(&event);
     }
     constexpr auto eof = TB_EOF;
@@ -213,6 +221,69 @@ namespace termbox {
     inline int utf8UnicodeToChar(char* out, uint32_t c) noexcept {
         return tb_utf8_unicode_to_char(out, c);
     }
+
+	class Event {
+		public:
+			using ResizePair = std::tuple<decltype(RawEvent::w), decltype(RawEvent::h)>;
+			using Coordinates = std::tuple<decltype(RawEvent::x), decltype(RawEvent::y)>;
+		public:
+			Event(RawEvent& evt) : _evt(evt) { }
+			Event(const Event& evt) : _evt(evt._evt) { }
+			Event(Event&&) = delete;
+			~Event() { }
+			EventType getType() const noexcept { return static_cast<EventType>(_evt.type); }
+			decltype(RawEvent::mod) getModifiers() const noexcept { return _evt.mod; } 
+			decltype(RawEvent::key) getKey() const noexcept { return _evt.key; }
+			decltype(RawEvent::ch) getCharacter() const noexcept { return _evt.ch; }
+			decltype(RawEvent::w) getW() const noexcept { return _evt.w; }
+			decltype(RawEvent::h) getH() const noexcept { return _evt.h; }
+			decltype(RawEvent::x) getX() const noexcept { return _evt.x; }
+			decltype(RawEvent::y) getY() const noexcept { return _evt.y; }
+			ResizePair getResize() const noexcept { return std::make_tuple(_evt.w, _evt.h); }
+			Coordinates getCoordinates() const noexcept { return std::make_tuple(_evt.x, _evt.y); }
+			RawEvent& getRawEvent() const noexcept { return _evt; }
+		private:
+			RawEvent& _evt;
+	};
+
+	class Cell {
+		public:
+			Cell(RawCell& cell) : _cell(cell) { }
+			Cell(Cell&&) = delete;
+			Cell(const Cell& other) : Cell(other._cell) { }
+			RawCell& getRawCell() const noexcept { return _cell; }
+			decltype(RawCell::fg) getForegroundColor() const noexcept { return _cell.fg; }
+			decltype(RawCell::bg) getBackgroundColor() const noexcept { return _cell.bg; }
+			decltype(RawCell::ch) getCharacter() const noexcept { return _cell.ch; }
+			void put(int x, int y) noexcept { putCell(x, y, &_cell); }
+		private:
+			RawCell& _cell;
+
+	};
+
+	class CellBuffer {
+		public:
+			CellBuffer() : _cells(termbox::getCellBuffer()) { }
+			~CellBuffer() { _cells = nullptr; }
+			CellBuffer(const CellBuffer& other) : _cells(other._cells) { }
+			CellBuffer(CellBuffer&& other) : _cells(std::move(other._cells)) { }
+			decltype(termbox::getWidth()) getWidth() const noexcept { return termbox::getWidth(); }
+			decltype(termbox::getHeight()) getHeight() const noexcept { return termbox::getHeight(); }
+			void present() noexcept {
+				termbox::present();
+				// update the back buffer after present is called!
+				_cells = termbox::getCellBuffer();
+			}
+			void setClearAttributes(decltype(RawCell::fg) fg, decltype(RawCell::bg) bg) { termbox::setClearAttributes(fg, bg); }
+			void clear() noexcept {
+				termbox::clear();
+				// update the back buffer after clear is called!
+				_cells = termbox::getCellBuffer();
+			}
+			RawCell* getBackingBuffer() noexcept { return _cells; }
+		private:
+			RawCell* _cells;
+	};
 } // end namespace termbox
 
 namespace syn {
