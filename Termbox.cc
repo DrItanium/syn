@@ -56,7 +56,7 @@ namespace termbox {
 		}
 	}
 	void Screen::clear() {
-		memset(_cells, 0, _width * _height);
+		memset(_cells, 0, sizeof(RawCell)*_width * _height);
 	}
 	void Screen::resize() {
 		if (_cells) {

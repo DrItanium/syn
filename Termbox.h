@@ -180,6 +180,8 @@ namespace termbox {
         Esc = TB_INPUT_ESC,
         Alt = TB_INPUT_ALT,
         Mouse = TB_INPUT_MOUSE,
+		EscMouse = Esc | Mouse,
+		AltMouse = Alt | Mouse,
     };
 
 

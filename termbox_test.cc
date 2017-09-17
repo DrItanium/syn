@@ -1,5 +1,4 @@
 #include "Termbox.h"
-#include <iostream>
 #include "Base.h"
 #include <sstream>
 #include <list>
@@ -33,18 +32,23 @@ void printLines(termbox::Screen& scr) {
 int main(int argc, char** argv) {
 	auto ret = termbox::init();
 	if (termbox::errorOccurred(ret)) {
-		std::cerr << "termbox initialization failed with error code 0x" << std::hex << ret << std::endl;
+		//std::cerr << "termbox initialization failed with error code 0x" << std::hex << ret << std::endl;
 		return 1;
 	}
 
-
+	termbox::setInputMode(termbox::InputMode::EscMouse);
 	termbox::RawEvent evt;
 	std::stringstream ss;
 	termbox::setClearAttributes(termbox::Color::Black, termbox::Color::Black);
 	termbox::Screen screen;
 	bool done = false;
+	ss << "Width: " << screen.getWidth() << " Height: " << screen.getHeight() << std::endl;
+	// still getting strange artifacts at this point but it's much better
+	screen.printLine(ss, 0, 0, termbox::Color::Green, termbox::Color::Black);
+	screen.present();
+	screen.clear();
 	while (!syn::isErrorState(termbox::pollEvent(evt))) {
-		ss.clear();
+		screen.present();
 		termbox::Event e(evt);
 		switch(e.getType()) {
 			case termbox::EventType::Key:
@@ -72,6 +76,7 @@ int main(int argc, char** argv) {
 			case termbox::EventType::Resize:
 				printLine("Resize Event\n");
 				screen.resize();
+				screen.present();
 				break;
 			default:
 				printLine("Error event!?");
@@ -84,6 +89,7 @@ int main(int argc, char** argv) {
 		printLines(screen);
 		screen.present();
 		screen.clear();
+		ss.str("");
 	}
 	termbox::shutdown();
 	return 0;
