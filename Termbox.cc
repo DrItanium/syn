@@ -49,7 +49,7 @@ namespace termbox {
 			++x;
 		}
 	}
-	Screen::Screen() : _width(getWidth()), _height(getHeight()), _cells(new RawCell[getWidth() * getHeight()]) { }
+	Screen::Screen() : _width(termbox::getWidth()), _height(termbox::getHeight()), _cells(new RawCell[termbox::getWidth() * termbox::getHeight()]) { }
 	Screen::~Screen() {
 		if (_cells) {
 			delete [] _cells;

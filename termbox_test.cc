@@ -78,11 +78,11 @@ int main(int argc, char** argv) {
 				done = true;
 				break;
 		}
-		printLines(screen);
-		screen.present();
 		if (done) {
 			break;
 		}
+		printLines(screen);
+		screen.present();
 		screen.clear();
 	}
 	termbox::shutdown();
