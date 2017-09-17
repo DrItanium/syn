@@ -31,7 +31,8 @@
 
 #include "include/termbox.h"
 #include "Base.h"
-#include <string.h>
+#include <string>
+#include <sstream>
 
 namespace termbox {
     enum class SpecialKey {
@@ -76,7 +77,7 @@ namespace termbox {
     using RawEvent = struct tb_event;
 	using ForegroundColor = decltype(RawCell::fg);
 	using BackgroundColor = decltype(RawCell::bg);
-    enum class Color {
+    enum Color {
         Default = TB_DEFAULT,
         Black = TB_BLACK,
         Red = TB_RED,
@@ -264,27 +265,30 @@ namespace termbox {
 
 	};
 
-	class CellBuffer {
+	class Screen {
 		public:
-			CellBuffer() : _cells(termbox::getCellBuffer()) { }
-			~CellBuffer() { _cells = nullptr; }
-			CellBuffer(const CellBuffer& other) : _cells(other._cells) { }
-			CellBuffer(CellBuffer&& other) : _cells(std::move(other._cells)) { }
-			decltype(termbox::getWidth()) getWidth() const noexcept { return termbox::getWidth(); }
-			decltype(termbox::getHeight()) getHeight() const noexcept { return termbox::getHeight(); }
-			void present() noexcept {
-				termbox::present();
-				// update the back buffer after present is called!
-				_cells = termbox::getCellBuffer();
-			}
-			void setClearAttributes(ForegroundColor fg, BackgroundColor bg) { termbox::setClearAttributes(fg, bg); }
-			void clear() noexcept {
-				termbox::clear();
-				// update the back buffer after clear is called!
-				_cells = termbox::getCellBuffer();
-			}
+			using HeightType = decltype(termbox::getWidth());
+			using WidthType = decltype(termbox::getHeight());
+		public:
+			Screen();
+			~Screen();
+			Screen(const Screen&) = delete;
+			Screen(Screen&& other) = delete;
+			void clear();
+			void resize();
+			HeightType getHeight() const noexcept { return _height; }
+			WidthType getWidth() const noexcept { return _width; }
 			RawCell* getBackingBuffer() noexcept { return _cells; }
+			void present() noexcept;
+			void setCell(int x, int y, uint32_t ch, ForegroundColor fg, BackgroundColor bg) noexcept;
+			void setAllCells(uint32_t ch, ForegroundColor fg, BackgroundColor bg);
+
+			void printLine(const char* line, int x, int y, ForegroundColor fg, BackgroundColor bg) noexcept;
+			void printLine(const std::string& line, int x, int y, ForegroundColor fg, BackgroundColor bg) noexcept;
+			void printLine(const std::stringstream& line, int x, int y, ForegroundColor fg, BackgroundColor bg) noexcept;
 		private:
+			WidthType _width;
+			HeightType _height;
 			RawCell* _cells;
 	};
 	constexpr auto keyEscape = TB_KEY_ESC;
@@ -302,7 +306,9 @@ namespace termbox {
 	constexpr auto keyF12 = TB_KEY_F12;
 
 
+	void printString(const char* str, int x, int y, ForegroundColor fg, BackgroundColor bg) noexcept;
 	void printString(const std::string& str, int x, int y, ForegroundColor fg, BackgroundColor bg) noexcept;
+	void printString(const std::stringstream& ss, int x, int y, ForegroundColor fg, BackgroundColor bg) noexcept;
 } // end namespace termbox
 
 namespace syn {
