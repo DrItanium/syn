@@ -271,6 +271,7 @@ namespace termbox {
 		public:
 			using HeightType = decltype(termbox::getWidth());
 			using WidthType = decltype(termbox::getHeight());
+			using BackingStore = std::unique_ptr<RawCell[]>;
 		public:
 			Screen();
 			~Screen();
@@ -280,7 +281,6 @@ namespace termbox {
 			void resize();
 			HeightType getHeight() const noexcept { return _height; }
 			WidthType getWidth() const noexcept { return _width; }
-			RawCell* getBackingBuffer() noexcept { return _cells; }
 			void present() noexcept;
 			void setCell(int x, int y, uint32_t ch, ForegroundColor fg, BackgroundColor bg) noexcept;
 			void setAllCells(uint32_t ch, ForegroundColor fg, BackgroundColor bg);
@@ -291,7 +291,7 @@ namespace termbox {
 		private:
 			WidthType _width;
 			HeightType _height;
-			RawCell* _cells;
+			std::unique_ptr<RawCell[]> _cells;
 	};
 	constexpr auto keyEscape = TB_KEY_ESC;
 	constexpr auto keyF1 = TB_KEY_F1;

@@ -5,9 +5,11 @@
 
 // maximum of 10 lines!
 std::list<std::string> lines;
-
+size_t maxLines() noexcept {
+	return static_cast<size_t>(termbox::getHeight() - 10);
+}
 void printLine(const std::string& str) {
-	if (lines.size() == 10) {
+	while(lines.size() >= maxLines()) {
 		lines.pop_back();
 	}
 	lines.push_front(str);
@@ -68,6 +70,9 @@ int main(int argc, char** argv) {
 					case termbox::keyF2:
 						ss << "F2";
 						break;
+					case termbox::keyF3:
+						ss << "F3";
+						break;
 					default:
 						ss << "Something???";
 						break;
@@ -80,6 +85,7 @@ int main(int argc, char** argv) {
 			case termbox::EventType::Resize:
 				printLine("Resize Event\n");
 				screen.resize();
+				screen.clear();
 				screen.present();
 				dimensions.str("");
 				updateDimensions(screen, dimensions);

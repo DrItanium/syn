@@ -49,27 +49,22 @@ namespace termbox {
 			++x;
 		}
 	}
-	Screen::Screen() : _width(termbox::getWidth()), _height(termbox::getHeight()), _cells(new RawCell[termbox::getWidth() * termbox::getHeight()]) { }
-	Screen::~Screen() {
-		if (_cells) {
-			delete [] _cells;
-		}
-	}
+	Screen::Screen() : _width(termbox::getWidth()), _height(termbox::getHeight()), _cells{new RawCell[_width * _height]} { }
+	Screen::~Screen() { }
 	void Screen::clear() {
-		memset(_cells, 0, sizeof(RawCell)*_width * _height);
+		memset(_cells.get(), 0, _width * _height * sizeof(RawCell));
 	}
 	void Screen::resize() {
-		if (_cells) {
-			delete[] _cells;
-		}
-		_width = getWidth();
-		_height = getHeight();
-		_cells = new RawCell[_width*_height];
+		auto w = termbox::getWidth();
+		auto h = termbox::getHeight();
+		_cells.reset(new RawCell[w * h]);
+		_width = w;
+		_height = h;
 	}
 
 	void Screen::present() noexcept {
-		termbox::clear();
-		memcpy(getCellBuffer(), _cells, sizeof(RawCell)*_width*_height);
+		auto destination = termbox::getCellBuffer();
+		memcpy(destination, _cells.get(), sizeof(RawCell)*_width*_height);
 		termbox::present();
 	}
 
