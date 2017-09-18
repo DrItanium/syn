@@ -3,6 +3,8 @@
 #include <sstream>
 #include <list>
 
+termbox::ForegroundColor fg = termbox::Color::White;
+termbox::BackgroundColor bg = termbox::Color::Black;
 // maximum of 10 lines!
 std::list<std::string> lines;
 size_t maxLines() noexcept {
@@ -25,10 +27,10 @@ void printLine(const std::stringstream& str) {
 }
 void printLines(termbox::Screen& scr, std::stringstream& dimensions) {
 	// one statement per line!
-	scr.printLine(dimensions, 0, 0, termbox::Color::Green, termbox::Color::Black);
+	scr.printLine(dimensions, 0, 0, fg, bg);
 	auto y = 1;
 	for (const auto& line : lines) {
-		scr.printLine(line, 0, y, termbox::Color::Green, termbox::Color::Black);
+		scr.printLine(line, 0, y, fg, bg);
 		++y;
 	}
 }
@@ -45,7 +47,7 @@ int main(int argc, char** argv) {
 	termbox::setInputMode(termbox::InputMode::EscMouse);
 	termbox::RawEvent evt;
 	std::stringstream ss, dimensions;
-	termbox::setClearAttributes(termbox::Color::Black, termbox::Color::Black);
+	termbox::setClearAttributes(fg, bg);
 	termbox::Screen screen;
 	bool done = false;
 	// still getting strange artifacts at this point but it's much better
@@ -66,12 +68,21 @@ int main(int argc, char** argv) {
 						break;
 					case termbox::keyF1:
 						ss << "F1";
+						fg = termbox::Color::Black;
+						bg = termbox::Color::White;
+						termbox::setClearAttributes(fg, bg);
 						break;
 					case termbox::keyF2:
 						ss << "F2";
+						fg = termbox::Color::Yellow;
+						bg = termbox::Color::Blue;
+						termbox::setClearAttributes(fg, bg);
 						break;
 					case termbox::keyF3:
 						ss << "F3";
+						fg = termbox::Color::Green;
+						bg = termbox::Color::Black;
+						termbox::setClearAttributes(fg, bg);
 						break;
 					default:
 						ss << "Something???";
