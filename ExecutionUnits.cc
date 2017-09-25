@@ -468,26 +468,26 @@ namespace Comparator {
 	};
 
 	bool CLIPSUnitWrapper::extractArg1(void* env, CLIPSValuePtr ret, CLIPSValuePtr storage) noexcept { 
-		return Parent::tryExtractArgument1(env, ret, storage, syn::MayaType::Float, "Must provide a floating point number for the first argument!");
+		return Parent::tryExtractArgument1(env, ret, storage, syn::MayaType::Integer, "Must provide an integer for the first argument!");
 	}
 	bool CLIPSUnitWrapper::extractArg2(void* env, CLIPSValuePtr ret, CLIPSValuePtr storage) noexcept { 
-		return Parent::tryExtractArgument2(env, ret, storage, syn::MayaType::Float, "Must provide a floating point number for the second argument!");
+		return Parent::tryExtractArgument2(env, ret, storage, syn::MayaType::Integer, "Must provide an integer number for the second argument!");
 	}
 	bool CLIPSUnitWrapper::execute(void* env, CLIPSValuePtr storage, CLIPSValuePtr ret, const std::string& operation, Operation op, Word a, Word b) { 
 		try {
 			auto result = this->get()->performOperation(op, a, b);
-			CVSetFloat(ret, result);
+			CVSetInteger(ret, result);
 			return true;
 		} catch (const syn::UndefinedOperationProblem& p) {
 			auto result = this->get()->getUndefinedOperationHandler()();
-			CVSetFloat(ret, result);
+			CVSetInteger(ret, result);
 			return true;
 		} catch(const syn::Problem& p) {
 			return Parent::callErrorMessageCode3(env, ret, operation, p);
 		}
 	}
 	CLIPSUnitWrapper::Word unpackArg(void* env, CLIPSValuePtr storage) noexcept {
-		return syn::extractFloat<CLIPSUnitWrapper::Word>(env, storage);
+		return syn::extractLong<CLIPSUnitWrapper::Word>(env, storage);
 	}
 	CLIPSUnitWrapper::Word CLIPSUnitWrapper::unpackArg1(void* env, CLIPSValuePtr storage) noexcept {
 		return unpackArg(env, storage);
@@ -516,14 +516,14 @@ namespace Comparator {
 	bool BooleanCLIPSUnitWrapper::extractArg1(void* env, CLIPSValuePtr ret, CLIPSValuePtr storage) noexcept { 
 		return Parent::tryExtractArgument1(env, ret, storage, syn::MayaType::Symbol, "Must provide a true or false symbol for the first argument!");
 	}
+
 	bool BooleanCLIPSUnitWrapper::extractArg2(void* env, CLIPSValuePtr ret, CLIPSValuePtr storage) noexcept { 
-		return Parent::tryExtractArgument2(env, ret, storage, syn::MayaType::Float, "Must provide a true or false symbol for the second argument!");
+		return Parent::tryExtractArgument2(env, ret, storage, syn::MayaType::Symbol, "Must provide a true or false symbol for the second argument!");
 	}
 	bool BooleanCLIPSUnitWrapper::execute(void* env, CLIPSValuePtr storage, CLIPSValuePtr ret, const std::string& operation, Operation op, Word a, Word b) { 
 		try {
 			auto result = this->get()->performOperation(op, a, b);
 			CVSetBoolean(ret, result);
-			CVSetFloat(ret, result);
 			return true;
 		} catch (const syn::UndefinedOperationProblem& p) {
 			auto result = this->get()->getUndefinedOperationHandler()();
