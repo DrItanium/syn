@@ -30,6 +30,7 @@
 #include "Cisc0CoreWrapper.h"
 #include "IrisCoreWrapper.h"
 #include "IOController.h"
+#include "ExecutionUnits.h"
 
 extern "C" {
 	#include "clips.h"
@@ -44,6 +45,7 @@ int main(int argc, char* argv[]) {
 	syn::installExtensions(mainEnv);
 	syn::installMemoryBlockTypes(mainEnv);
     syn::installExternalAddressAssemblers(mainEnv);
+	syn::installExecutionUnits(mainEnv);
 	cisc0::installCoreWrapper(mainEnv);
     iris::installCoreWrapper(mainEnv);
 	RerouteStdin(mainEnv, argc, argv);

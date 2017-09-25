@@ -629,7 +629,7 @@ Repl.o: Repl.cc ClipsExtensions.h misc/maya/clips.h misc/maya/setup.h \
  misc/maya/objrtmch.h MemoryBlock.h AssemblerExternalAddressRegistrar.h \
  Cisc0CoreWrapper.h IrisCoreWrapper.h IOController.h Problem.h Device.h \
  IODevice.h BaseArithmetic.h BaseTypes.h WrappedIODevice.h Base.h Core.h \
- CommonExternalAddressWrapper.h ExternalAddressWrapper.h
+ CommonExternalAddressWrapper.h ExternalAddressWrapper.h ExecutionUnits.h
 Termbox.o: Termbox.cc Termbox.h include/termbox.h Base.h BaseTypes.h \
  Problem.h
 termbox_test.o: termbox_test.cc Termbox.h include/termbox.h Base.h \

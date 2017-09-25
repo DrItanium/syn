@@ -353,7 +353,7 @@ DefWrapperSymbolicName(FPU::CLIPSUnit, "fpu");
 DefExternalAddressWrapperType(ALU::CLIPSUnitWrapper::WrappedType, ALU::CLIPSUnitWrapper);
 DefExternalAddressWrapperType(FPU::CLIPSUnitWrapper::WrappedType, FPU::CLIPSUnitWrapper);
 
-void InstallExecutionUnits(void* theEnv) noexcept {
+void installExecutionUnits(void* theEnv) noexcept {
 	ALU::CLIPSUnitWrapper::registerWithEnvironment(theEnv);
 	FPU::CLIPSUnitWrapper::registerWithEnvironment(theEnv);
 }
