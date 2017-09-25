@@ -239,7 +239,87 @@ namespace syn {
 			virtual Word unpackArg2(void* env, CLIPSValuePtr storage) noexcept override;
 			virtual bool execute(void* env, CLIPSValuePtr storage, CLIPSValuePtr ret, const std::string& operation, Operation op, Word a, Word b) override;
 	};
-	} // end namespace ALU
+} // end namespace ALU
+namespace Comparator {
+	class CLIPSUnit : public BasicCLIPSExecutionUnit<CLIPSInteger, CLIPSInteger, StandardOperations> {
+		public:
+			using Parent = BasicCLIPSExecutionUnit<CLIPSInteger, CLIPSInteger, StandardOperations>;
+			using Word = CLIPSInteger;
+			using Return = CLIPSInteger;
+			using Operation = StandardOperations;
+			using Self = CLIPSUnit;
+			static constexpr bool operationIsBinary(Operation op) noexcept {
+				return op != Operation::UnaryNot;
+			}
+		public:
+			CLIPSUnit() { }
+			virtual ~CLIPSUnit() { }
+			virtual const ArgCountCheckMap& getMap() const override;
+			virtual bool isBinaryOperation(Operation op) const override { return operationIsBinary(op); }
+			Return performOperation(Operation op, Word a, Word b);
+
+
+	};
+	CLIPSUnit::Return CLIPSUnit::performOperation(Operation op, Word a, Word b) {
+		return Comparator::performOperation<Word, Return, Operation>(op, a, b);
+	}
+	const CLIPSUnit::ArgCountCheckMap& CLIPSUnit::getMap() const {
+		static ArgCountCheckMap ops = {
+			{ "eq", syn::binaryOperation(Operation::Eq) },
+			{ "neq", syn::binaryOperation(Operation::Neq) },
+			{ "less-than", syn::binaryOperation(Operation::LessThan) },
+			{ "greater-than", syn::binaryOperation(Operation::GreaterThan) },
+			{ "less-than-or-equal-to", syn::binaryOperation(Operation::LessThanOrEqualTo) },
+			{ "greater-than-or-equal-to", syn::binaryOperation(Operation::GreaterThanOrEqualTo) },
+			{ "binary-and", syn::binaryOperation(Operation::BinaryAnd) },
+			{ "binary-or", syn::binaryOperation(Operation::BinaryOr) },
+			{ "binary-nand", syn::binaryOperation(Operation::BinaryNand) },
+			{ "binary-nor", syn::binaryOperation(Operation::BinaryNor) },
+			{ "unary-not", syn::unaryOperation(Operation::UnaryNot) },
+			{ "shift-left", syn::binaryOperation(Operation::ShiftLeft) },
+			{ "circular-shift-left", syn::binaryOperation(Operation::CircularShiftLeft) },
+			{ "shift-right", syn::binaryOperation(Operation::ShiftRight) },
+			{ "circular-shift-right", syn::binaryOperation(Operation::CircularShiftRight) },
+		};
+		return ops;
+	}
+
+	class BooleanCLIPSUnit : public BasicCLIPSExecutionUnit<bool, bool, BooleanOperations> {
+		public:
+			using Self = BooleanCLIPSUnit;
+			using Parent = BasicCLIPSExecutionUnit<bool, bool, BooleanOperations>;
+			using Word = bool;
+			using Return = bool;
+			using Operation = BooleanOperations;
+			static constexpr bool operationIsBinary(Operation op) noexcept {
+				return op != Operation::UnaryNot;
+			}
+		public:
+			BooleanCLIPSUnit() { }
+			virtual ~BooleanCLIPSUnit() { }
+			virtual const ArgCountCheckMap& getMap() const override;
+			virtual bool isBinaryOperation(Operation op) const override { return operationIsBinary(op); }
+			Return performOperation(Operation op, Word a, Word b);
+	};
+
+	BooleanCLIPSUnit::Return BooleanCLIPSUnit::performOperation(Operation op, Word a, Word b) {
+		return Comparator::performOperation<Word, Return, Operation>(op, a, b);
+	}
+
+	const BooleanCLIPSUnit::ArgCountCheckMap& BooleanCLIPSUnit::getMap() const {
+		static ArgCountCheckMap ops = {
+			{ "eq", syn::binaryOperation(Operation::Eq) },
+			{ "neq", syn::binaryOperation(Operation::Neq) },
+			{ "binary-and", syn::binaryOperation(Operation::BinaryAnd) },
+			{ "binary-or", syn::binaryOperation(Operation::BinaryOr) },
+			{ "binary-nand", syn::binaryOperation(Operation::BinaryNand) },
+			{ "binary-nor", syn::binaryOperation(Operation::BinaryNor) },
+			{ "unary-not", syn::unaryOperation(Operation::UnaryNot) },
+		};
+		return ops;
+	}
+
+} // end namespace Comparator
 namespace FPU {
 	const CLIPSUnit::ArgCountCheckMap& CLIPSUnit::getMap() const {
 		static CLIPSUnit::ArgCountCheckMap ops = {
@@ -375,6 +455,7 @@ namespace ALU {
 		return unpackArg(env, storage);
 	}
 } // end namespace ALU
+
 
 DefWrapperSymbolicName(ALU::CLIPSUnitWrapper::WrappedType,  "alu");
 DefWrapperSymbolicName(FPU::CLIPSUnit, "fpu");
