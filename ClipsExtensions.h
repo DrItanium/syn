@@ -191,6 +191,16 @@ bool hasCorrectArgCount(void* env, ArgCountChecker<T> compare, ArgCountModifier<
  */
 bool isExternalAddress(DataObjectPtr value) noexcept;
 
+CLIPSFloat extractFloat(void* env, DataObjectPtr value) noexcept;
+CLIPSFloat extractFloat(void* env, DataObject& value) noexcept;
+template<typename Ret>
+Ret extractFloat(void* env, DataObjectPtr value) noexcept {
+	return static_cast<Ret>(extractFloat(env, value));
+}
+template<typename Ret>
+Ret extractFloat(void* env, DataObject& value) noexcept {
+	return static_cast<Ret>(extractFloat(env, value));
+}
 CLIPSInteger extractLong(void* env, DataObjectPtr value) noexcept;
 CLIPSInteger extractLong(void* env, DataObject& value) noexcept;
 template<typename Ret>

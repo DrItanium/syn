@@ -93,7 +93,7 @@ namespace syn {
 				}
 				auto* target = this->get();
 				auto result = target->findOperation(operation);
-				__RETURN_FALSE_ON_FALSE__(!Parent::isLegalOperation(env, ret, operation, result, target->end()));
+				__RETURN_FALSE_ON_FALSE__(Parent::isLegalOperation(env, ret, operation, result, target->end()));
 				Operation op;
 				CheckerFunction fn;
 				std::tie(op, fn) = result->second;
@@ -146,16 +146,18 @@ namespace syn {
 			virtual ~BasicCLIPSBinaryExecutionUnitWrapper() { }
 			virtual bool extractArg1(void* env, CLIPSValuePtr ret, CLIPSValuePtr storage) noexcept = 0;
 			virtual bool extractArg2(void* env, CLIPSValuePtr ret, CLIPSValuePtr storage) noexcept = 0;
+			virtual Word unpackArg1(void* env, CLIPSValuePtr storage) noexcept = 0;
+			virtual Word unpackArg2(void* env, CLIPSValuePtr storage) noexcept = 0;
 			virtual bool execute(void* env, DataObjectPtr value, DataObjectPtr ret, const std::string& operation, Operation op, Word a, Word b) = 0;
 			virtual bool handleArgumentsAndExecute(void* env, DataObjectPtr value, DataObjectPtr ret, const std::string& operation, Operation op) override {
 				CLIPSValue arg0;
 				__RETURN_FALSE_ON_FALSE__(extractArg1(env, ret, &arg0));
-				Word a = syn::extractLong<Word>(env, arg0);
+				Word a = unpackArg1(env, &arg0);
 				Word b = 0;
 				if (this->get()->isBinaryOperation(op)) {
 					CLIPSValue arg1;
 					__RETURN_FALSE_ON_FALSE__(extractArg2(env, ret, &arg1));
-					b = syn::extractLong<Word>(env, arg1);
+					b = unpackArg2(env, &arg1);
 				}
 				return execute(env, value, ret, operation, op, a, b);
 			}
@@ -190,7 +192,9 @@ namespace syn {
 				virtual ~CLIPSUnitWrapper() { }
 				virtual bool extractArg1(void* env, CLIPSValuePtr ret, CLIPSValuePtr storage) noexcept override;
 				virtual bool extractArg2(void* env, CLIPSValuePtr ret, CLIPSValuePtr storage) noexcept override;
-				virtual bool execute(void* env, CLIPSValuePtr ret, CLIPSValuePtr storage, const std::string& operation, Operation op, Word a, Word b) override;
+				virtual Word unpackArg1(void* env, CLIPSValuePtr storage) noexcept override;
+				virtual Word unpackArg2(void* env, CLIPSValuePtr storage) noexcept override;
+				virtual bool execute(void* env, CLIPSValuePtr storage, CLIPSValuePtr ret, const std::string& operation, Operation op, Word a, Word b) override;
 		};
 	} // end namespace FPU
 	namespace ALU {
@@ -231,7 +235,9 @@ namespace syn {
 			virtual ~CLIPSUnitWrapper() { }
 			virtual bool extractArg1(void* env, CLIPSValuePtr ret, CLIPSValuePtr storage) noexcept override;
 			virtual bool extractArg2(void* env, CLIPSValuePtr ret, CLIPSValuePtr storage) noexcept override;
-			virtual bool execute(void* env, CLIPSValuePtr ret, CLIPSValuePtr storage, const std::string& operation, Operation op, Word a, Word b) override;
+			virtual Word unpackArg1(void* env, CLIPSValuePtr storage) noexcept override;
+			virtual Word unpackArg2(void* env, CLIPSValuePtr storage) noexcept override;
+			virtual bool execute(void* env, CLIPSValuePtr storage, CLIPSValuePtr ret, const std::string& operation, Operation op, Word a, Word b) override;
 	};
 	} // end namespace ALU
 namespace FPU {
@@ -254,16 +260,28 @@ namespace FPU {
 	bool CLIPSUnitWrapper::extractArg2(void* env, CLIPSValuePtr ret, CLIPSValuePtr storage) noexcept { 
 		return Parent::tryExtractArgument2(env, ret, storage, syn::MayaType::Float, "Must provide a floating point number for the second argument!");
 	}
-	bool CLIPSUnitWrapper::execute(void* env, CLIPSValuePtr ret, CLIPSValuePtr storage, const std::string& operation, Operation op, Word a, Word b) { 
+	bool CLIPSUnitWrapper::execute(void* env, CLIPSValuePtr storage, CLIPSValuePtr ret, const std::string& operation, Operation op, Word a, Word b) { 
 		try {
-			CVSetFloat(ret, this->get()->performOperation(op, a, b));
+			auto result = this->get()->performOperation(op, a, b);
+			CVSetFloat(ret, result);
 			return true;
 		} catch (const syn::UndefinedOperationProblem& p) {
-			CVSetFloat(ret, this->get()->getUndefinedOperationHandler()());
+			auto result = this->get()->getUndefinedOperationHandler()();
+			CVSetFloat(ret, result);
 			return true;
 		} catch(const syn::Problem& p) {
 			return Parent::callErrorMessageCode3(env, ret, operation, p);
 		}
+	}
+	CLIPSUnitWrapper::Word unpackArg(void* env, CLIPSValuePtr storage) noexcept {
+		return syn::extractFloat<CLIPSUnitWrapper::Word>(env, storage);
+	}
+	CLIPSUnitWrapper::Word CLIPSUnitWrapper::unpackArg1(void* env, CLIPSValuePtr storage) noexcept {
+		return unpackArg(env, storage);
+	}
+
+	CLIPSUnitWrapper::Word CLIPSUnitWrapper::unpackArg2(void* env, CLIPSValuePtr storage) noexcept {
+		return unpackArg(env, storage);
 	}
 } // end namespace FPU
 namespace ALU {
@@ -298,7 +316,7 @@ namespace ALU {
 	bool CLIPSUnitWrapper::extractArg2(void* env, CLIPSValuePtr ret, CLIPSValuePtr storage) noexcept { 
 		return Parent::tryExtractArgument2(env, ret, storage, syn::MayaType::Integer, "Must provide an integer for the second argument!");
 	}
-	bool CLIPSUnitWrapper::execute(void* env, CLIPSValuePtr ret, CLIPSValuePtr storage, const std::string& operation, Operation op, Word a, Word b) {
+	bool CLIPSUnitWrapper::execute(void* env, CLIPSValuePtr storage, CLIPSValuePtr ret, const std::string& operation, Operation op, Word a, Word b) {
 		auto standardAluOperation = [this, env, ret, op, opStr = operation](Word a, Word b) {
 			try {
 				CVSetInteger(ret, this->get()->performOperation(op, a, b));
@@ -345,7 +363,17 @@ namespace ALU {
 			default:
 				return standardAluOperation(a, b);
 		}
-}
+	}
+	CLIPSUnitWrapper::Word unpackArg(void* env, CLIPSValuePtr storage) noexcept {
+		return syn::extractLong<CLIPSUnitWrapper::Word>(env, storage);
+	}
+	CLIPSUnitWrapper::Word CLIPSUnitWrapper::unpackArg1(void* env, CLIPSValuePtr storage) noexcept {
+		return unpackArg(env, storage);
+	}
+
+	CLIPSUnitWrapper::Word CLIPSUnitWrapper::unpackArg2(void* env, CLIPSValuePtr storage) noexcept {
+		return unpackArg(env, storage);
+	}
 } // end namespace ALU
 
 DefWrapperSymbolicName(ALU::CLIPSUnitWrapper::WrappedType,  "alu");

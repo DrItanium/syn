@@ -188,6 +188,13 @@ namespace syn {
         return EnvDOToString(env, value);
     }
 
+	CLIPSFloat extractFloat(void* env, DataObject& value) noexcept {
+		return EnvDOToDouble(env, value);
+	}
+	CLIPSFloat extractFloat(void* env, DataObjectPtr value) noexcept {
+		return EnvDOPToDouble(env, value);
+	}
+
     bool checkThenGetArgument(void* env, const std::string& function, int position, MayaType type, DataObjectPtr saveTo) noexcept {
         return EnvArgTypeCheck(env, function.c_str(), position, static_cast<int>(type), saveTo);
     }
