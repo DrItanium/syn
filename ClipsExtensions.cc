@@ -205,6 +205,10 @@ namespace syn {
     bool hasCorrectArgCount(void* env, int compare) noexcept {
         return compare == getArgCount(env);
     }
+	bool hasCorrectArgCount(void* env, std::function<bool(int)> fn, std::function<int(int)> modify) noexcept {
+		auto count = getArgCount(env);
+		return fn(modify == nullptr ? count : modify(count));
+	}
     int getArgCount(void* env) noexcept {
         return EnvRtnArgCount(env);
     }

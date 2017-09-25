@@ -78,6 +78,18 @@ int getArgCount(void* env) noexcept;
  */
 bool hasCorrectArgCount(void* env, int compare) noexcept;
 
+
+/**
+ * performs a check to see if the acquired number of arguments equals the
+ * expected count with a provided offset modifier.
+ * @param env the environment to check
+ * @param compare the comparison function to use
+ * @param modify the argcount modification function, this is optional. Pass
+ * nullptr to disable modification of the arg count
+ * @return true if the compare equals the actual argument code modified
+ */
+bool hasCorrectArgCount(void* env, std::function<bool(int)> compare, std::function<int(int)> modify = nullptr) noexcept;
+
 /**
  * Return true if the given dataObjetPtr is tagged as an ExternalAddress type
  * @param value the dataObjectPtr to check

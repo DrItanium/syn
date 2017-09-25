@@ -155,7 +155,7 @@ namespace ALU {
 			Unit(HandleDivideByZero handler = defaultHandler) : _handler(handler) { }
 			~Unit() { }
 			Return performOperation(Operation op, Word a, Word b) {
-				return performBinaryOperation(op, a, b, _handler);
+				return performOperation(op, a, b, _handler);
 			}
 			Return performOperation(Operation op, Word a, Word b, HandleDivideByZero customOp) {
 				return syn::ALU::performOperation(op, a, b, customOp);
@@ -168,6 +168,8 @@ namespace ALU {
 	template<typename Word, typename Return = Word, typename Operation = StandardOperations>
 	class ALUWrapper : public syn::CommonExternalAddressWrapper<Unit<Word, Return, Operation>> {
 		public:
+			static_assert(std::is_integral<Word>::value, "Expected the word type to be an integral type!");
+			static_assert(std::is_integral<Return>::value, "Expected the return type to an integral type!");
 			using WrappedType = Unit<Word, Return, Operation>;
 			using Parent = syn::CommonExternalAddressWrapper<WrappedType>;
 			using CheckerFunction = std::function<bool(int)>;
@@ -199,11 +201,61 @@ namespace ALU {
 					{ "unary-not", unaryOperation(Operation::UnaryNot) },
 					{ "div", associate(Operation::Divide, expectRangeInclusive(2, 3)) },
 					{ "rem", associate(Operation::Remainder, expectRangeInclusive(2, 3)) },
-
 				};
 				auto result = ops.find(operation);
 				__RETURN_FALSE_ON_FALSE__(Parent::isLegalOperation(env, ret, operation, result, ops.end()));
-				return true;
+				Operation op;
+				CheckerFunction fn;
+				std::tie(op, fn) = result->second;
+				__RETURN_FALSE_ON_FALSE__(Parent::checkArgumentCount(env, ret, operation, fn));
+				CLIPSValue arg0, arg1;
+				__RETURN_FALSE_ON_FALSE__(Parent::tryExtractArgument1(env, ret, &arg0, syn::MayaType::Integer, "Must provide an integer for the first argument!"));
+				__RETURN_FALSE_ON_FALSE__(Parent::tryExtractArgument2(env, ret, &arg1, syn::MayaType::Integer, "Must provide an integer for the second argument!"));
+				auto a = syn::extractLong<Word>(env, arg0);
+				auto b = syn::extractLong<Word>(env, arg1);
+				auto standardAluOperation = [this, env, ret, op, fn, opStr = &operation](auto a, auto b) {
+					try {
+						CVSetInteger(ret, this->get().performOperation(op, a, b));
+					} catch (const syn::Problem& p) {
+						return Parent::callErrorMessageCode3(env, ret, opStr, p);
+					}
+					return true;
+				};
+				auto handleDivideRemOperation = [this, env, ret, op, fn, opStr = &operation, standardAluOperation](auto a, auto b) {
+					auto argCount = Parent::getCorrectArgCount();
+					if (argCount == 3) {
+						// we have to extract the name of the function to call
+						// on failure from within clips!
+						CLIPSValue arg2;
+						__RETURN_FALSE_ON_FALSE__(Parent::tryExtractArgument3(env, ret, &arg2, syn::MayaType::Symbol, "Must provide the name of a clips function to call as the third argument!"));
+						std::string fnName(syn::extractLexeme(env, arg2));
+						// we now need to setup a new lambda to call this
+						// function!
+						auto fnToCallOnFailure = [this, env, fnName]() noexcept {
+							CLIPSValue tmp;
+							if (EnvFunctionCall(env, fnName.c_str(), "", &tmp)) {
+								return static_cast<Return>(0);
+							} else {
+								return syn::extractLong<Return>(env, tmp);
+							}
+						};
+						try {
+							CVSetInteger(ret, this->get().performOperation(op, a, b, fnToCallOnFailure));
+							return true;
+						} catch (const syn::Problem& p) {
+							return Parent::callErrorMessageCode3(env, ret, opStr);
+						}
+					} else {
+						return standardAluOperation(a, b);
+					}
+				};
+				switch(op) {
+					case Operation::Divide:
+					case Operation::Remainder:
+						return handleDivideRemOperation(a, b);
+					default:
+						return standardAluOperation(a, b);
+				}
 			}
 	};
 
