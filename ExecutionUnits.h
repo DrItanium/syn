@@ -33,6 +33,7 @@
 #include "Base.h"
 #include "BaseArithmetic.h"
 #include "IODevice.h"
+#include "CommonExternalAddressWrapper.h"
 #include <cmath>
 namespace syn {
 
@@ -97,8 +98,9 @@ namespace ALU {
         Count,
     };
 
+
     template<typename Word, typename Return = Word, typename Operation = StandardOperations>
-    Return performOperation(Operation op, Word a, Word b, syn::OnDivideByZero<Return> markDivideByZero = nullptr) {
+    static Return performOperation(Operation op, Word a, Word b, syn::OnDivideByZero<Return> markDivideByZero = nullptr) {
         switch(op) {
             case Operation::Add:
                 return syn::add<Word, Return>(a, b);
@@ -141,6 +143,71 @@ namespace ALU {
         static_assert(!isErrorState(op), "Illegal operation!");
         return performOperation<Word, Return, decltype(op)>(op, a, b, markDivideByZero);
     }
+	template<typename Word, typename Return = Word, typename Operation = StandardOperations>
+	class Unit {
+		public:
+			using Self = Unit<Word, Return, Operation>;
+			using HandleDivideByZero = syn::OnDivideByZero<Return>;
+			static constexpr Return defaultHandler() noexcept {
+				return static_cast<Return>(0);
+			}
+		public:
+			Unit(HandleDivideByZero handler = defaultHandler) : _handler(handler) { }
+			~Unit() { }
+			Return performOperation(Operation op, Word a, Word b) {
+				return performBinaryOperation(op, a, b, _handler);
+			}
+			Return performOperation(Operation op, Word a, Word b, HandleDivideByZero customOp) {
+				return syn::ALU::performOperation(op, a, b, customOp);
+			}
+			HandleDivideByZero getDivideByZeroHandler() const noexcept { return _handler; }
+		private:
+			HandleDivideByZero _handler;
+	};
+
+	template<typename Word, typename Return = Word, typename Operation = StandardOperations>
+	class ALUWrapper : public syn::CommonExternalAddressWrapper<Unit<Word, Return, Operation>> {
+		public:
+			using WrappedType = Unit<Word, Return, Operation>;
+			using Parent = syn::CommonExternalAddressWrapper<WrappedType>;
+			using CheckerFunction = std::function<bool(int)>;
+			using OperationToCheckerFunction = std::tuple<Operation, CheckerFunction>;
+			static OperationToCheckerFunction associate(Operation op, CheckerFunction fn) noexcept { return std::make_tuple(op, fn); }
+			static CheckerFunction expectExactly(int count) noexcept { return [count](auto compare) { return compare == count; }; }
+			static CheckerFunction expectRangeInclusive(int min, int max) noexcept { return [min, max](auto compare) { return (min <= compare) && (max >= compare); }; }
+			static CheckerFunction expectRangeExclusive(int min, int max) noexcept { return [min, max](auto compare) { return (min < compare) && (max > compare); }; }
+			static CheckerFunction binaryOperation() noexcept { return expectExactly(2); }
+			static CheckerFunction unaryOperation() noexcept { return expectExactly(1); }
+			static OperationToCheckerFunction binaryOperation(Operation op) { return associate(op, binaryOperation()); }
+			static OperationToCheckerFunction unaryOperation(Operation op) { return associate(op, unaryOperation()); }
+		public:
+			ALUWrapper() { }
+			virtual ~ALUWrapper() { }
+        	virtual bool handleCallOperation(void* env, DataObjectPtr value, DataObjectPtr ret, const std::string& operation) override {
+				static std::map<std::string, OperationToCheckerFunction> ops = {
+					{ "add", binaryOperation(Operation::Add) },
+					{ "sub", binaryOperation(Operation::Subtract) },
+					{ "mul", binaryOperation(Operation::Multipy) },
+					{ "shift-left", binaryOperation(Operation::ShiftLeft) },
+					{ "shift-right", binaryOperation(Operation::ShiftRight) },
+					{ "binary-and", binaryOperation(Operation::BinaryAnd) },
+					{ "binary-or", binaryOperation(Operation::BinaryOr) },
+					{ "binary-xor", binaryOperation(Operation::BinaryXor) },
+					{ "binary-nand", binaryOperation(Operation::BinaryNand) },
+					{ "circular-shift-right", binaryOperation(Operation::CircularShiftRight) },
+					{ "circular-shift-left", binaryOperation(Operation::CircularShiftLeft) },
+					{ "unary-not", unaryOperation(Operation::UnaryNot) },
+					{ "div", associate(Operation::Divide, expectRangeInclusive(2, 3)) },
+					{ "rem", associate(Operation::Remainder, expectRangeInclusive(2, 3)) },
+
+				};
+				auto result = ops.find(operation);
+				__RETURN_FALSE_ON_FALSE__(Parent::isLegalOperation(env, ret, operation, result, ops.end()));
+				return true;
+			}
+	};
+
+	
 } // end namespace ALU
 
 /// Default logic for comparing two things
