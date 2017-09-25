@@ -31,4 +31,8 @@ namespace syn {
 DefWrapperSymbolicName(ALU::ClipsALUWrapper::WrappedType,  "alu");
 DefExternalAddressWrapperType(ALU::ClipsALUWrapper::WrappedType, ALU::ClipsALUWrapper);
 
+void InstallExecutionUnits(void* theEnv) noexcept {
+	ALU::ClipsALUWrapper::registerWithEnvironment(theEnv);
+}
+
 } // end namespace syn

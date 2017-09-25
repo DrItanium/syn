@@ -36,7 +36,7 @@
 #include "CommonExternalAddressWrapper.h"
 #include <cmath>
 namespace syn {
-
+void installExecutionUnits(void* theEnv) noexcept;
 /// Generic floating point unit concept
 namespace FPU {
     /// Set of standard operations that is found in the FPU
