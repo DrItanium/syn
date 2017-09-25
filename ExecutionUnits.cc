@@ -234,13 +234,6 @@ namespace syn {
 			virtual bool execute(void* env, CLIPSValuePtr ret, CLIPSValuePtr storage, const std::string& operation, Operation op, Word a, Word b) override;
 	};
 	} // end namespace ALU
-DefWrapperSymbolicName(ALU::CLIPSUnitWrapper::WrappedType,  "alu");
-DefWrapperSymbolicName(FPU::CLIPSUnit, "fpu");
-DefExternalAddressWrapperType(ALU::CLIPSUnitWrapper::WrappedType, ALU::CLIPSUnitWrapper);
-
-void InstallExecutionUnits(void* theEnv) noexcept {
-	ALU::CLIPSUnitWrapper::registerWithEnvironment(theEnv);
-}
 namespace FPU {
 	const CLIPSUnit::ArgCountCheckMap& CLIPSUnit::getMap() const {
 		static CLIPSUnit::ArgCountCheckMap ops = {
@@ -354,5 +347,15 @@ namespace ALU {
 		}
 }
 } // end namespace ALU
+
+DefWrapperSymbolicName(ALU::CLIPSUnitWrapper::WrappedType,  "alu");
+DefWrapperSymbolicName(FPU::CLIPSUnit, "fpu");
+DefExternalAddressWrapperType(ALU::CLIPSUnitWrapper::WrappedType, ALU::CLIPSUnitWrapper);
+DefExternalAddressWrapperType(FPU::CLIPSUnitWrapper::WrappedType, FPU::CLIPSUnitWrapper);
+
+void InstallExecutionUnits(void* theEnv) noexcept {
+	ALU::CLIPSUnitWrapper::registerWithEnvironment(theEnv);
+	FPU::CLIPSUnitWrapper::registerWithEnvironment(theEnv);
+}
 
 } // end namespace syn
