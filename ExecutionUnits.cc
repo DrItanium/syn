@@ -1,7 +1,6 @@
 /**
  * @file
- * Common execution logic that the cores use for execution.
- * Define Execution Units to cut down on the amount of repeated actions
+ * CLIPS wrapper impls of different execution units
  * @copyright
  * syn
  * Copyright (c) 2013-2017, Joshua Scoggins and Contributors
