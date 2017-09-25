@@ -28,41 +28,53 @@
 #include "ExecutionUnits.h"
 #include "CommonExternalAddressWrapper.h"
 namespace syn {
+	namespace FPU {
+		class CLIPSUnit {
+			public:
+				using Word = CLIPSFloat;
+				using Return = CLIPSFloat;
+				using Operation = StandardOperations;
+				using Self = CLIPSUnit;
+			public:
+				CLIPSUnit() { }
+				virtual ~CLIPSUnit() { }
+				Return performOperation(Operation op, Word a, Word b);
+		};
+	} // end namespace FPU
 	namespace ALU {
-	template<typename Word, typename Return = Word, typename Operation = StandardOperations>
-	class Unit {
+	class CLIPSUnit {
 		public:
-			using Self = Unit<Word, Return, Operation>;
+			using Word = CLIPSInteger;
+			using Return = CLIPSInteger;
+			using Operation = StandardOperations;
+			using Self = CLIPSUnit;
 			using HandleDivideByZero = syn::OnDivideByZero<Return>;
-			static constexpr Return defaultHandler() noexcept {
+			static constexpr Return defaultDivideByZeroHandler() noexcept {
 				return static_cast<Return>(0);
 			}
 		public:
-			Unit(HandleDivideByZero handler = defaultHandler) : _handler(handler) { }
-			~Unit() { }
-			Return performOperation(Operation op, Word a, Word b) {
-				return performOperation(op, a, b, _handler);
-			}
-			Return performOperation(Operation op, Word a, Word b, HandleDivideByZero customOp) {
-				return syn::ALU::performOperation(op, a, b, customOp);
-			}
+			CLIPSUnit(HandleDivideByZero handler = defaultDivideByZeroHandler) : _handler(handler) { }
+			~CLIPSUnit() { }
+			Return performOperation(Operation op, Word a, Word b);
+			Return performOperation(Operation op, Word a, Word b, HandleDivideByZero customOp);
+			void setDivideByZeroHandler(HandleDivideByZero handler) noexcept { _handler = handler; }
 			HandleDivideByZero getDivideByZeroHandler() const noexcept { return _handler; }
 		private:
 			HandleDivideByZero _handler;
 	};
 
-	template<typename Word, typename Return = Word, typename Operation = StandardOperations>
-	class ALUWrapper : public syn::CommonExternalAddressWrapper<Unit<Word, Return, Operation>> {
+	class CLIPSUnitWrapper : public syn::CommonExternalAddressWrapper<CLIPSUnit> {
 		public:
-			static_assert(std::is_integral<Word>::value, "Expected the word type to be an integral type!");
-			static_assert(std::is_integral<Return>::value, "Expected the return type to an integral type!");
-			using WrappedType = Unit<Word, Return, Operation>;
+			using WrappedType = CLIPSUnit;
+			using Operation = WrappedType::Operation;
+			using Word = WrappedType::Word;
+			using Return = WrappedType::Return;
 			using Parent = syn::CommonExternalAddressWrapper<WrappedType>;
 			using CheckerFunction = syn::ArgCountChecker<int>;
 			using OperationToCheckerFunction = syn::OperationToArgCountChecker<Operation>;
 		public:
 			using Parent::Parent;
-			virtual ~ALUWrapper() { }
+			virtual ~CLIPSUnitWrapper() { }
         	virtual bool handleCallOperation(void* env, DataObjectPtr value, DataObjectPtr ret, const std::string& operation) override {
 				static std::map<std::string, OperationToCheckerFunction> ops = {
 					{ "add", syn::binaryOperation(Operation::Add) },
@@ -136,14 +148,25 @@ namespace syn {
 				}
 			}
 	};
-	using ClipsALUWrapper = ALUWrapper<CLIPSInteger, CLIPSInteger>;
-	using ClipsALU = Unit<CLIPSInteger, CLIPSInteger>;
 	} // end namespace ALU
-DefWrapperSymbolicName(ALU::ClipsALUWrapper::WrappedType,  "alu");
-DefExternalAddressWrapperType(ALU::ClipsALUWrapper::WrappedType, ALU::ClipsALUWrapper);
+DefWrapperSymbolicName(ALU::CLIPSUnitWrapper::WrappedType,  "alu");
+DefExternalAddressWrapperType(ALU::CLIPSUnitWrapper::WrappedType, ALU::CLIPSUnitWrapper);
 
 void InstallExecutionUnits(void* theEnv) noexcept {
-	ALU::ClipsALUWrapper::registerWithEnvironment(theEnv);
+	ALU::CLIPSUnitWrapper::registerWithEnvironment(theEnv);
 }
+namespace FPU {
+	CLIPSUnit::Return CLIPSUnit::performOperation(CLIPSUnit::Operation op, CLIPSUnit::Word a, CLIPSUnit::Word b) {
+		return FPU::performOperation<CLIPSUnit::Word, CLIPSUnit::Return, CLIPSUnit::Operation>(op, a, b);
+	}
+} // end namespace FPU
+namespace ALU {
+	CLIPSUnit::Return CLIPSUnit::performOperation(CLIPSUnit::Operation op, CLIPSUnit::Word a, CLIPSUnit::Word b) {
+		return performOperation(op, a, b, _handler);
+	}
+	CLIPSUnit::Return CLIPSUnit::performOperation(CLIPSUnit::Operation op, CLIPSUnit::Word a, CLIPSUnit::Word b, CLIPSUnit::HandleDivideByZero customOp) {
+		return syn::ALU::performOperation(op, a, b, customOp);
+	}
+} // end namespace ALU
 
 } // end namespace syn
