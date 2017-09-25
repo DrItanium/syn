@@ -33,7 +33,6 @@
 #include "Base.h"
 #include "BaseArithmetic.h"
 #include "IODevice.h"
-#include "CommonExternalAddressWrapper.h"
 #include <cmath>
 namespace syn {
 void installExecutionUnits(void* theEnv) noexcept;

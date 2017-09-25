@@ -27,6 +27,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #include "ExecutionUnits.h"
+#include "CommonExternalAddressWrapper.h"
 namespace syn {
 	namespace ALU {
 	template<typename Word, typename Return = Word, typename Operation = StandardOperations>
