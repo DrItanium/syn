@@ -419,6 +419,10 @@ class ExternalAddressWrapper {
             return callErrorMessageCode3(env, ret, subOp, problem.what());
         }
 
+		static inline bool callErrorMessageCode3(void* env, CLIPSValuePtr ret, const std::string& subOp, const syn::Problem& problem) noexcept {
+			return callErrorMessageCode3<syn::Problem>(env, ret, subOp, problem);
+		}
+
         static bool tryGetArgument(void* env, CLIPSValue* ret, int pos, MayaType type) noexcept {
             return checkThenGetArgument(env, getFunctionPrefixCall<T>(), pos, type, ret);
         }

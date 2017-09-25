@@ -111,6 +111,7 @@ class CommonExternalAddressWrapper : public ExternalAddressWrapper<T> {
 		static void registerWithEnvironment(void* env, const char* title) {
             Parent::registerWithEnvironment(env, title, callFunction);
 		}
+		using Parent::callErrorMessageCode3;
     public:
         using Parent::Parent;
 		virtual ~CommonExternalAddressWrapper() { }
