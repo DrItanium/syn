@@ -129,12 +129,9 @@ tests: bootstrap ${ALL_BINARIES} ${TEST_SUITES}
 
 
 
-.PHONY: all options clean install uninstall docs tests bootstrap
+.PHONY: all options clean install uninstall docs tests bootstrap termbox
 
-bootstrap: ${DEFINE_OBJECTS} termbox
-
-libtermbox.a: termbox
-include/termbox.h: termbox
+bootstrap: ${DEFINE_OBJECTS} 
 
 misc/termbox:
 	@git submodule update --init --recursive
@@ -143,6 +140,10 @@ termbox: misc/termbox
 	@cd misc/termbox && ./waf configure --prefix=../../ --libdir=../../
 	@cd misc/termbox && ./waf
 	@cd misc/termbox && ./waf install --targets=termbox_static
+
+libtermbox.a: termbox
+include/termbox.h: termbox
+
 
 define generateFields
 	./deffield.sh -f2 $(1) -f2 lib/reset-run-exit.clp > $(2).h
