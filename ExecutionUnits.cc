@@ -28,8 +28,24 @@
 #include "ExecutionUnits.h"
 #include "CommonExternalAddressWrapper.h"
 namespace syn {
+	template<typename W, typename R, typename O>
+	class BasicCLIPSExecutionUnit {
+		public:
+			using Word = W;
+			using Return = R;
+			using Operation = O;
+			using Self = BasicCLIPSExecutionUnit<W, R, O>;
+			using OperationToArgCountChecker = syn::OperationToArgCountChecker<Operation, int>;
+			using ArgCountCheckMap = std::map<std::string, OperationToArgCountChecker>;
+		public:
+			BasicCLIPSExecutionUnit() { }
+			virtual ~BasicCLIPSExecutionUnit() { }
+			virtual const ArgCountCheckMap& getMap() const = 0;
+			virtual typename ArgCountCheckMap::const_iterator findOperation(const std::string& operation) const { return getMap().find(operation); }
+			virtual typename ArgCountCheckMap::const_iterator end() const { return getMap().end(); }
+	};
 	namespace FPU {
-		class CLIPSUnit {
+		class CLIPSUnit : public BasicCLIPSExecutionUnit<CLIPSFloat, CLIPSFloat, StandardOperations> {
 			public:
 				using Word = CLIPSFloat;
 				using Return = CLIPSFloat;
@@ -39,10 +55,13 @@ namespace syn {
 				CLIPSUnit() { }
 				virtual ~CLIPSUnit() { }
 				Return performOperation(Operation op, Word a, Word b);
+				virtual const ArgCountCheckMap& getMap() const override;
+			private:
+				
 		};
 	} // end namespace FPU
 	namespace ALU {
-	class CLIPSUnit {
+	class CLIPSUnit : public BasicCLIPSExecutionUnit<CLIPSInteger, CLIPSInteger, StandardOperations> {
 		public:
 			using Word = CLIPSInteger;
 			using Return = CLIPSInteger;
@@ -55,6 +74,7 @@ namespace syn {
 		public:
 			CLIPSUnit(HandleDivideByZero handler = defaultDivideByZeroHandler) : _handler(handler) { }
 			~CLIPSUnit() { }
+			virtual const ArgCountCheckMap& getMap() const override;
 			Return performOperation(Operation op, Word a, Word b);
 			Return performOperation(Operation op, Word a, Word b, HandleDivideByZero customOp);
 			void setDivideByZeroHandler(HandleDivideByZero handler) noexcept { _handler = handler; }
@@ -76,24 +96,9 @@ namespace syn {
 			using Parent::Parent;
 			virtual ~CLIPSUnitWrapper() { }
         	virtual bool handleCallOperation(void* env, DataObjectPtr value, DataObjectPtr ret, const std::string& operation) override {
-				static std::map<std::string, OperationToCheckerFunction> ops = {
-					{ "add", syn::binaryOperation(Operation::Add) },
-					{ "sub", syn::binaryOperation(Operation::Subtract) },
-					{ "mul", syn::binaryOperation(Operation::Multiply) },
-					{ "shift-left", syn::binaryOperation(Operation::ShiftLeft) },
-					{ "shift-right", syn::binaryOperation(Operation::ShiftRight) },
-					{ "binary-and", syn::binaryOperation(Operation::BinaryAnd) },
-					{ "binary-or", syn::binaryOperation(Operation::BinaryOr) },
-					{ "binary-xor", syn::binaryOperation(Operation::BinaryXor) },
-					{ "binary-nand", syn::binaryOperation(Operation::BinaryNand) },
-					{ "circular-shift-right", syn::binaryOperation(Operation::CircularShiftRight) },
-					{ "circular-shift-left", syn::binaryOperation(Operation::CircularShiftLeft) },
-					{ "unary-not", syn::unaryOperation(Operation::UnaryNot) },
-					{ "div", syn::expectRangeInclusive(Operation::Divide, 2, 3) },
-					{ "rem", syn::expectRangeInclusive(Operation::Remainder, 2, 3) },
-				};
-				auto result = ops.find(operation);
-				__RETURN_FALSE_ON_FALSE__(Parent::isLegalOperation(env, ret, operation, result, ops.end()));
+				auto* target = this->get();
+				auto result = target->findOperation(operation);
+				__RETURN_FALSE_ON_FALSE__(Parent::isLegalOperation(env, ret, operation, result, target->end()));
 				Operation op;
 				CheckerFunction fn;
 				std::tie(op, fn) = result->second;
@@ -156,11 +161,40 @@ void InstallExecutionUnits(void* theEnv) noexcept {
 	ALU::CLIPSUnitWrapper::registerWithEnvironment(theEnv);
 }
 namespace FPU {
+	const CLIPSUnit::ArgCountCheckMap& CLIPSUnit::getMap() const {
+		static CLIPSUnit::ArgCountCheckMap ops = {
+			{ "add", syn::binaryOperation(Operation::Add) },
+			{ "sub", syn::binaryOperation(Operation::Subtract) },
+			{ "mul", syn::binaryOperation(Operation::Multiply) },
+			{ "div", syn::binaryOperation(Operation::Divide) },
+			{ "sqrt", syn::unaryOperation(Operation::SquareRoot) },
+		};
+		return ops;
+	}
 	CLIPSUnit::Return CLIPSUnit::performOperation(CLIPSUnit::Operation op, CLIPSUnit::Word a, CLIPSUnit::Word b) {
 		return FPU::performOperation<CLIPSUnit::Word, CLIPSUnit::Return, CLIPSUnit::Operation>(op, a, b);
 	}
 } // end namespace FPU
 namespace ALU {
+	const CLIPSUnit::ArgCountCheckMap& CLIPSUnit::getMap() const {
+		static ArgCountCheckMap ops = {
+			{ "add", syn::binaryOperation(Operation::Add) },
+			{ "sub", syn::binaryOperation(Operation::Subtract) },
+			{ "mul", syn::binaryOperation(Operation::Multiply) },
+			{ "shift-left", syn::binaryOperation(Operation::ShiftLeft) },
+			{ "shift-right", syn::binaryOperation(Operation::ShiftRight) },
+			{ "binary-and", syn::binaryOperation(Operation::BinaryAnd) },
+			{ "binary-or", syn::binaryOperation(Operation::BinaryOr) },
+			{ "binary-xor", syn::binaryOperation(Operation::BinaryXor) },
+			{ "binary-nand", syn::binaryOperation(Operation::BinaryNand) },
+			{ "circular-shift-right", syn::binaryOperation(Operation::CircularShiftRight) },
+			{ "circular-shift-left", syn::binaryOperation(Operation::CircularShiftLeft) },
+			{ "unary-not", syn::unaryOperation(Operation::UnaryNot) },
+			{ "div", syn::expectRangeInclusive(Operation::Divide, 2, 3) },
+			{ "rem", syn::expectRangeInclusive(Operation::Remainder, 2, 3) },
+		};
+		return ops;
+	}
 	CLIPSUnit::Return CLIPSUnit::performOperation(CLIPSUnit::Operation op, CLIPSUnit::Word a, CLIPSUnit::Word b) {
 		return performOperation(op, a, b, _handler);
 	}
