@@ -17,7 +17,8 @@ COMMON_THINGS = Core.o \
 				IOController.o \
 				ClipsExtensions.o \
 			 	MultifieldBuilder.o \
-				MemoryBlock.o
+				MemoryBlock.o \
+				ExecutionUnits.o
 
 REPL_FINAL_BINARY = syn_repl
 

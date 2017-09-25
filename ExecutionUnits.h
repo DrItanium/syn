@@ -258,9 +258,12 @@ namespace ALU {
 				}
 			}
 	};
+	using ClipsALUWrapper = ALUWrapper<CLIPSInteger, CLIPSInteger>;
+	using ClipsALU = Unit<CLIPSInteger, CLIPSInteger>;
 
-	
 } // end namespace ALU
+
+
 
 /// Default logic for comparing two things
 namespace Comparator {
