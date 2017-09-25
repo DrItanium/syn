@@ -35,6 +35,15 @@
 #include "IODevice.h"
 #include <cmath>
 namespace syn {
+	class UndefinedOperationProblem : public syn::Problem 
+	{
+		public:
+			using Self = UndefinedOperationProblem;
+			using Parent = syn::Problem;
+		public:
+			using Parent::Parent;
+			virtual ~UndefinedOperationProblem() { }
+	};
 void installExecutionUnits(void* theEnv) noexcept;
 /// Generic floating point unit concept
 namespace FPU {
@@ -66,7 +75,7 @@ namespace FPU {
             case Operation::SquareRoot:
                 return static_cast<Return>(sqrt(static_cast<double>(a)));
             default:
-                throw syn::Problem("Undefined fpu operation!");
+				throw syn::UndefinedOperationProblem("Undefined fpu operation!");
         }
     }
     template<StandardOperations op, typename Word, typename Return = Word>
@@ -130,7 +139,7 @@ namespace ALU {
             case Operation::CircularShiftRight:
                 return syn::circularShiftRight<Word, Return>(a, b);
             default:
-                throw syn::Problem("Undefined ALU operation!");
+				throw syn::UndefinedOperationProblem("Undefined ALU operation!");
         }
     }
     /**
@@ -205,7 +214,7 @@ namespace Comparator {
             case Operation::CircularShiftRight:
                 return syn::circularShiftRight<Word, Return>(a, b);
             default:
-                throw syn::Problem("Illegal compare operation!");
+				throw syn::UndefinedOperationProblem("Illegal compare operation!");
         }
     }
     template<StandardOperations op, typename Word, typename Return = Word>
@@ -246,7 +255,7 @@ namespace Comparator {
             case Operation::BinaryNor:
                 return syn::binaryNor<bool>(a, b);
             default:
-                throw syn::Problem("Illegal boolean compare operation!");
+                throw syn::UndefinedOperationProblem("Illegal boolean compare operation!");
         }
     }
     template<BooleanOperations op>
