@@ -79,6 +79,96 @@ int getArgCount(void* env) noexcept;
 bool hasCorrectArgCount(void* env, int compare) noexcept;
 
 
+template<typename T = int>
+using ArgCountChecker = std::function<bool(T)>;
+template<typename T = int>
+using ArgCountModifier = std::function<T(T)>;
+
+template<typename Operation, typename T = int>
+using OperationToArgCountChecker = std::tuple<Operation, ArgCountChecker<T>>;
+
+template<typename Operation, typename T = int>
+OperationToArgCountChecker<Operation, T> associate(Operation op, ArgCountChecker<T> fn) noexcept {
+	return std::make_tuple(op, fn);
+}
+template<typename T = int>
+ArgCountChecker<T> expectExactly(T count) noexcept {
+	return [count](auto against) noexcept { return count == against; };
+}
+
+template<typename Operation, typename T = int>
+OperationToArgCountChecker<Operation, T> expectExactly(Operation op, T count) noexcept {
+	return associate<Operation, T>(op, expectExactly<T>(count));
+}
+
+template<typename T = int>
+ArgCountChecker<T> expectRangeInclusive(T min, T max) noexcept {
+	return [min, max](auto against) { 
+		return (against >= min) && (against <= max);
+	};
+}
+template<typename Operation, typename T = int>
+OperationToArgCountChecker<Operation, T> expectRangeInclusive(Operation op, T min, T max) noexcept {
+	return associate<Operation, T>(op, expectRangeInclusive<T>(min, max));
+}
+template<typename T = int>
+ArgCountChecker<T> expectRangeExclusive(T min, T max) noexcept {
+	return [min, max](auto against) { return (against > min) && (against < max); };
+}
+
+template<typename Operation, typename T = int>
+OperationToArgCountChecker<Operation, T> expectRangeExclusive(Operation op, T min, T max) noexcept {
+	return associate<Operation, T>(op, expectRangeExclusive<T>(min, max));
+}
+
+template<typename T = int>
+ArgCountChecker<T> expectAtLeast(T min) noexcept {
+	return [min](auto against) { return (against >= min); };
+}
+template<typename Operation, typename T = int>
+OperationToArgCountChecker<Operation, T> expectAtLeast(Operation op, T count) noexcept {
+	return associate<Operation, T>(op, expectAtLeast<T>(count));
+}
+template<typename T = int>
+ArgCountChecker<T> expectAtMost(T max) noexcept {
+	return [max](auto against) { return (against <= max); };
+}
+template<typename Operation, typename T = int>
+OperationToArgCountChecker<Operation, T> expectAtMost(Operation op, T count) noexcept {
+	return associate<Operation, T>(op, expectAtMost<T>(count));
+}
+
+template<typename T = int>
+ArgCountChecker<T> binaryOperation() noexcept {
+	return expectExactly<T>(static_cast<T>(2));
+}
+
+template<typename Operation, typename T = int>
+OperationToArgCountChecker<Operation, T> binaryOperation(Operation op) noexcept {
+	return associate<Operation, T>(op, binaryOperation<T>());
+}
+
+
+template<typename T = int>
+ArgCountChecker<T> unaryOperation() noexcept {
+	return expectExactly<T>(static_cast<T>(1));
+}
+
+template<typename Operation, typename T = int>
+OperationToArgCountChecker<Operation, T> unaryOperation(Operation op) noexcept {
+	return associate<Operation, T>(op, unaryOperation<T>());
+}
+
+template<typename T = int>
+ArgCountChecker<T> trinaryOperation() noexcept {
+	return expectExactly<T>(static_cast<T>(3));
+}
+
+template<typename Operation, typename T = int>
+OperationToArgCountChecker<Operation, T> trinaryOperation(Operation op) noexcept {
+	return associate<Operation, T>(op, trinaryOperation<T>());
+}
+
 /**
  * performs a check to see if the acquired number of arguments equals the
  * expected count with a provided offset modifier.
@@ -88,7 +178,11 @@ bool hasCorrectArgCount(void* env, int compare) noexcept;
  * nullptr to disable modification of the arg count
  * @return true if the compare equals the actual argument code modified
  */
-bool hasCorrectArgCount(void* env, std::function<bool(int)> compare, std::function<int(int)> modify = nullptr) noexcept;
+template<typename T = int>
+bool hasCorrectArgCount(void* env, ArgCountChecker<T> compare, ArgCountModifier<T> modify = nullptr) noexcept {
+	auto count = getArgCount(env);
+	return compare(modify == nullptr ? count : modify(count));
+}
 
 /**
  * Return true if the given dataObjetPtr is tagged as an ExternalAddress type

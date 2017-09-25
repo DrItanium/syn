@@ -172,35 +172,27 @@ namespace ALU {
 			static_assert(std::is_integral<Return>::value, "Expected the return type to an integral type!");
 			using WrappedType = Unit<Word, Return, Operation>;
 			using Parent = syn::CommonExternalAddressWrapper<WrappedType>;
-			using CheckerFunction = std::function<bool(int)>;
-			using OperationToCheckerFunction = std::tuple<Operation, CheckerFunction>;
-			static OperationToCheckerFunction associate(Operation op, CheckerFunction fn) noexcept { return std::make_tuple(op, fn); }
-			static CheckerFunction expectExactly(int count) noexcept { return [count](auto compare) { return compare == count; }; }
-			static CheckerFunction expectRangeInclusive(int min, int max) noexcept { return [min, max](auto compare) { return (min <= compare) && (max >= compare); }; }
-			static CheckerFunction expectRangeExclusive(int min, int max) noexcept { return [min, max](auto compare) { return (min < compare) && (max > compare); }; }
-			static CheckerFunction binaryOperation() noexcept { return expectExactly(2); }
-			static CheckerFunction unaryOperation() noexcept { return expectExactly(1); }
-			static OperationToCheckerFunction binaryOperation(Operation op) { return associate(op, binaryOperation()); }
-			static OperationToCheckerFunction unaryOperation(Operation op) { return associate(op, unaryOperation()); }
+			using CheckerFunction = syn::ArgCountChecker<int>;
+			using OperationToCheckerFunction = syn::OperationToArgCountChecker<Operation>;
 		public:
-			ALUWrapper() { }
+			using Parent::Parent;
 			virtual ~ALUWrapper() { }
         	virtual bool handleCallOperation(void* env, DataObjectPtr value, DataObjectPtr ret, const std::string& operation) override {
 				static std::map<std::string, OperationToCheckerFunction> ops = {
-					{ "add", binaryOperation(Operation::Add) },
-					{ "sub", binaryOperation(Operation::Subtract) },
-					{ "mul", binaryOperation(Operation::Multipy) },
-					{ "shift-left", binaryOperation(Operation::ShiftLeft) },
-					{ "shift-right", binaryOperation(Operation::ShiftRight) },
-					{ "binary-and", binaryOperation(Operation::BinaryAnd) },
-					{ "binary-or", binaryOperation(Operation::BinaryOr) },
-					{ "binary-xor", binaryOperation(Operation::BinaryXor) },
-					{ "binary-nand", binaryOperation(Operation::BinaryNand) },
-					{ "circular-shift-right", binaryOperation(Operation::CircularShiftRight) },
-					{ "circular-shift-left", binaryOperation(Operation::CircularShiftLeft) },
-					{ "unary-not", unaryOperation(Operation::UnaryNot) },
-					{ "div", associate(Operation::Divide, expectRangeInclusive(2, 3)) },
-					{ "rem", associate(Operation::Remainder, expectRangeInclusive(2, 3)) },
+					{ "add", syn::binaryOperation(Operation::Add) },
+					{ "sub", syn::binaryOperation(Operation::Subtract) },
+					{ "mul", syn::binaryOperation(Operation::Multiply) },
+					{ "shift-left", syn::binaryOperation(Operation::ShiftLeft) },
+					{ "shift-right", syn::binaryOperation(Operation::ShiftRight) },
+					{ "binary-and", syn::binaryOperation(Operation::BinaryAnd) },
+					{ "binary-or", syn::binaryOperation(Operation::BinaryOr) },
+					{ "binary-xor", syn::binaryOperation(Operation::BinaryXor) },
+					{ "binary-nand", syn::binaryOperation(Operation::BinaryNand) },
+					{ "circular-shift-right", syn::binaryOperation(Operation::CircularShiftRight) },
+					{ "circular-shift-left", syn::binaryOperation(Operation::CircularShiftLeft) },
+					{ "unary-not", syn::unaryOperation(Operation::UnaryNot) },
+					{ "div", syn::expectRangeInclusive(Operation::Divide, 2, 3) },
+					{ "rem", syn::expectRangeInclusive(Operation::Remainder, 2, 3) },
 				};
 				auto result = ops.find(operation);
 				__RETURN_FALSE_ON_FALSE__(Parent::isLegalOperation(env, ret, operation, result, ops.end()));
@@ -213,16 +205,16 @@ namespace ALU {
 				__RETURN_FALSE_ON_FALSE__(Parent::tryExtractArgument2(env, ret, &arg1, syn::MayaType::Integer, "Must provide an integer for the second argument!"));
 				auto a = syn::extractLong<Word>(env, arg0);
 				auto b = syn::extractLong<Word>(env, arg1);
-				auto standardAluOperation = [this, env, ret, op, fn, opStr = &operation](auto a, auto b) {
+				auto standardAluOperation = [this, env, ret, op, fn, opStr = &operation](Word a, Word b) {
 					try {
-						CVSetInteger(ret, this->get().performOperation(op, a, b));
+						CVSetInteger(ret, this->get()->performOperation(op, a, b));
 					} catch (const syn::Problem& p) {
 						return Parent::callErrorMessageCode3(env, ret, opStr, p);
 					}
 					return true;
 				};
-				auto handleDivideRemOperation = [this, env, ret, op, fn, opStr = &operation, standardAluOperation](auto a, auto b) {
-					auto argCount = Parent::getCorrectArgCount();
+				auto handleDivideRemOperation = [this, env, ret, op, fn, opStr = &operation, standardAluOperation](Word a, Word b) -> bool {
+					auto argCount = Parent::getCorrectArgCount(env);
 					if (argCount == 3) {
 						// we have to extract the name of the function to call
 						// on failure from within clips!

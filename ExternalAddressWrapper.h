@@ -348,8 +348,9 @@ class ExternalAddressWrapper {
 		static int getCorrectArgCount(void* env) noexcept {
 			return syn::getArgCount(env) - baseArgumentIndex;
 		}
-		static bool checkArgumentCount(void* env, CLIPSValuePtr ret, const std::string& operation, std::function<bool(int)> fn) {
-			if (!syn::hasCorrectArgCount(env, fn, [](auto count) { return count - baseArgumentIndex; })) {
+		template<typename I = int>
+		static bool checkArgumentCount(void* env, CLIPSValuePtr ret, const std::string& operation, syn::ArgCountChecker<I> fn) {
+			if (!syn::hasCorrectArgCount<I>(env, fn, [](auto count) { return count - baseArgumentIndex; })) {
 				return callErrorMessageCode3(env, ret, operation, " too many or too few arguments provided!");
 			}
 			return true;
