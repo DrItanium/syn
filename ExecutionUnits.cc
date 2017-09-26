@@ -563,4 +563,5 @@ void installExecutionUnits(void* theEnv) noexcept {
 	Comparator::BooleanCLIPSUnitWrapper::registerWithEnvironment(theEnv);
 }
 
+
 } // end namespace syn
