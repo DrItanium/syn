@@ -28,15 +28,29 @@
 #include "ExecutionUnits.h"
 #include "CommonExternalAddressWrapper.h"
 namespace syn {
-	template<typename W, typename R, typename O>
-	class BasicCLIPSExecutionUnit {
+	template<typename O>
+	class RequiresArgCountChecking {
 		public:
-			using Word = W;
-			using Return = R;
 			using Operation = O;
-			using Self = BasicCLIPSExecutionUnit<W, R, O>;
+			using Self = RequiresArgCountChecking<Operation>;
 			using OperationToArgCountChecker = syn::OperationToArgCountChecker<Operation, int>;
 			using ArgCountCheckMap = std::map<std::string, OperationToArgCountChecker>;
+		public:
+			virtual ~RequiresArgCountChecking() { }
+			virtual const ArgCountCheckMap& getMap() const = 0;
+			virtual typename ArgCountCheckMap::const_iterator findOperation(const std::string& operation) const { return getMap().find(operation); }
+			virtual typename ArgCountCheckMap::const_iterator end() const { return getMap().end(); }
+
+
+	};
+	template<typename W, typename R, typename O>
+	class BasicCLIPSExecutionUnit : public RequiresArgCountChecking<O> {
+		public:
+			using Parent = RequiresArgCountChecking<O>;
+			using Word = W;
+			using Return = R;
+			using Operation = typename Parent::Operation;
+			using Self = BasicCLIPSExecutionUnit<W, R, O>;
 			using UndefinedOperationHandler = std::function<Return()>;
 			static constexpr Return defaultUndefinedHandlerOperation() noexcept {
 				return static_cast<Return>(0);
@@ -44,10 +58,7 @@ namespace syn {
 		public:
 			BasicCLIPSExecutionUnit() : _undefinedOperationHandler(defaultUndefinedHandlerOperation), _undefinedOperationHandlerName("C++defaultUndefinedHandlerOperation") { }
 			virtual ~BasicCLIPSExecutionUnit() { }
-			virtual const ArgCountCheckMap& getMap() const = 0;
 			virtual bool isBinaryOperation(Operation op) const = 0;
-			virtual typename ArgCountCheckMap::const_iterator findOperation(const std::string& operation) const { return getMap().find(operation); }
-			virtual typename ArgCountCheckMap::const_iterator end() const { return getMap().end(); }
 			void setUndefinedOperationHandlerName(const std::string& function) noexcept { _undefinedOperationHandlerName = function; }
 			void setUndefinedOperationHandler(UndefinedOperationHandler handler) noexcept { _undefinedOperationHandler = handler; }
 			UndefinedOperationHandler getUndefinedOperationHandler() const noexcept { return _undefinedOperationHandler; }
@@ -546,7 +557,173 @@ namespace Comparator {
 
 } // end namespace Comparator
 
+enum class RegisterOperations {
+	Get,
+	Set,
+	Increment,
+	Decrement,
+	Decode,
+	Encode,
+	SetMask,
+	GetMask,
+	Count,
+};
+class CLIPSRegister : public VariableMaskRegister<CLIPSInteger>, public BasicCLIPSExecutionUnit<CLIPSInteger, CLIPSInteger, RegisterOperations> {
+	public: 
+		using Self = CLIPSRegister;
+		using Parent = VariableMaskRegister<CLIPSInteger>;
+		using Parent2 = BasicCLIPSExecutionUnit<CLIPSInteger, CLIPSInteger, RegisterOperations>;
+		using Word = CLIPSInteger;
+		using Return = CLIPSInteger;
+		using Operation = RegisterOperations;
+	public:
+		CLIPSRegister() : Parent(), Parent2() { }
+		virtual ~CLIPSRegister() { }
+		virtual const Parent2::ArgCountCheckMap& getMap() const override;
+		inline Word decode(Word mask, Word shift) noexcept { return Parent::decode(mask, shift); }
+		inline void encode(Word newValue, Word mask, Word shift) noexcept { Parent::encode(newValue, mask, shift); }
+};
 
+const CLIPSRegister::Parent2::ArgCountCheckMap& CLIPSRegister::getMap() const {
+	static Parent2::ArgCountCheckMap ops = {
+		{ "get", syn::expectExactly<Operation, int>(Operation::Get, 0) },
+		{ "set", syn::expectExactly<Operation, int>(Operation::Set, 1) },
+		{ "increment", syn::expectAtMost<Operation, int>(Operation::Increment, 1) },
+		{ "decrement", syn::expectAtMost<Operation, int>(Operation::Decrement, 1) },
+		{ "decode", syn::expectExactly<Operation, int>(Operation::Decode, 2) },
+		{ "encode", syn::expectExactly<Operation, int>(Operation::Encode, 3) },
+		{ "get-mask", syn::expectExactly<Operation, int>(Operation::GetMask, 0) },
+		{ "set-mask", syn::expectExactly<Operation, int>(Operation::SetMask, 1) },
+	};
+	return ops;
+}
+
+class CLIPSRegisterWrapper : public syn::BasicCLIPSExecutionUnitWrapper<CLIPSRegister> {
+	public:
+		using Self = CLIPSRegisterWrapper;
+		using WrappedType = CLIPSRegister;
+		using Parent = syn::BasicCLIPSExecutionUnitWrapper<WrappedType>;
+	public:
+		using Parent::Parent;
+		virtual ~CLIPSRegisterWrapper() { }
+		virtual bool handleArgumentsAndExecute(void* env, DataObjectPtr value, DataObjectPtr ret, const std::string& operation, Operation op) override;
+	protected:
+		bool setRegister(void* env, DataObjectPtr ret, const std::string& operation);
+		bool incrementRegister(void* env, DataObjectPtr ret, const std::string& operation);
+		bool decrementRegister(void* env, DataObjectPtr ret, const std::string& operation);
+		bool setMask(void* env, DataObjectPtr ret, const std::string& operation);
+		bool decodeRegister(void* env, DataObjectPtr ret, const std::string& operation);
+		bool encodeRegister(void* env, DataObjectPtr ret, const std::string& operation);
+		bool getMask(void* env, DataObjectPtr ret, const std::string& operation);
+		bool getRegister(void* env, DataObjectPtr ret, const std::string& operation);
+};
+bool CLIPSRegisterWrapper::getMask(void* env, DataObjectPtr ret, const std::string& operation) {
+	CVSetInteger(ret, this->get()->getMask());
+	return true;
+}
+bool CLIPSRegisterWrapper::getRegister(void* env, DataObjectPtr ret, const std::string& operation) {
+	CVSetInteger(ret, this->get()->get());
+	return true;
+}
+bool CLIPSRegisterWrapper::setRegister(void* env, DataObjectPtr ret, const std::string& operation) {
+	CLIPSValue arg0;
+	__RETURN_FALSE_ON_FALSE__(Parent::tryExtractArgument1(env, ret, &arg0, syn::MayaType::Integer, "Expected an integer as the only argument to setting the register!"));
+	this->get()->set(syn::extractLong<WrappedType::AddressType>(env, arg0));
+	CVSetBoolean(ret, true);
+	return true;
+}
+
+bool CLIPSRegisterWrapper::setMask(void* env, DataObjectPtr ret, const std::string& operation) {
+	CLIPSValue arg0;
+	__RETURN_FALSE_ON_FALSE__(Parent::tryExtractArgument1(env, ret, &arg0, syn::MayaType::Integer, "Expected an integer as the only argument to setting the register mask!"));
+	this->get()->setMask(syn::extractLong<WrappedType::AddressType>(env, arg0));
+	CVSetBoolean(ret, true);
+	return true;
+}
+
+bool CLIPSRegisterWrapper::incrementRegister(void* env, DataObjectPtr ret, const std::string& operation) {
+	auto actualCount = Parent::getCorrectArgCount(env);
+	if (actualCount == 0) {
+		CVSetBoolean(ret, true);
+		this->get()->increment();
+		return true;
+	} else if (actualCount == 1) {
+		CLIPSValue arg0;
+		__RETURN_FALSE_ON_FALSE__(Parent::tryExtractArgument1(env, ret, &arg0, syn::MayaType::Integer, "Expected an integer as the only argument to incrementing the register!"));
+		this->get()->increment(syn::extractLong<WrappedType::AddressType>(env, arg0));
+		CVSetBoolean(ret, true);
+		return true;
+	} else {
+		return Parent::callErrorMessageCode3(env, ret, operation, "Got too many arguments!");
+	}
+}
+
+bool CLIPSRegisterWrapper::decrementRegister(void* env, DataObjectPtr ret, const std::string& operation) {
+	auto actualCount = Parent::getCorrectArgCount(env);
+	if (actualCount == 0) {
+		CVSetBoolean(ret, true);
+		this->get()->decrement();
+		return true;
+	} else if (actualCount == 1) {
+		CLIPSValue arg0;
+		__RETURN_FALSE_ON_FALSE__(Parent::tryExtractArgument1(env, ret, &arg0, syn::MayaType::Integer, "Expected an integer as the only argument to decrementing the register!"));
+		this->get()->decrement(syn::extractLong<WrappedType::AddressType>(env, arg0));
+		CVSetBoolean(ret, true);
+		return true;
+	} else {
+		return Parent::callErrorMessageCode3(env, ret, operation, "Got too many arguments!");
+	}
+}
+
+bool CLIPSRegisterWrapper::decodeRegister(void* env, DataObjectPtr ret, const std::string& operation) {
+	
+	CLIPSValue arg0, arg1;
+	__RETURN_FALSE_ON_FALSE__(Parent::tryExtractArgument1(env, ret, &arg0, syn::MayaType::Integer, "Expected an integer for the mask value"));
+	__RETURN_FALSE_ON_FALSE__(Parent::tryExtractArgument1(env, ret, &arg1, syn::MayaType::Integer, "Expected an integer for the shift value!"));
+	auto mask = syn::extractLong(env, arg0);
+	auto shift = syn::extractLong(env, arg1);
+	auto decodedValue = this->get()->decode(mask, shift);
+	CVSetInteger(ret, decodedValue);
+	return true;
+}
+
+bool CLIPSRegisterWrapper::encodeRegister(void* env, DataObjectPtr ret, const std::string& operation) {
+	
+	CLIPSValue arg0, arg1, arg2;
+	__RETURN_FALSE_ON_FALSE__(Parent::tryExtractArgument1(env, ret, &arg0, syn::MayaType::Integer, "Expected an integer for the value to insert"));
+	__RETURN_FALSE_ON_FALSE__(Parent::tryExtractArgument1(env, ret, &arg1, syn::MayaType::Integer, "Expected an integer for the mask value"));
+	__RETURN_FALSE_ON_FALSE__(Parent::tryExtractArgument1(env, ret, &arg2, syn::MayaType::Integer, "Expected an integer for the shift value!"));
+	auto newValue = syn::extractLong(env, arg0);
+	auto mask = syn::extractLong(env, arg1);
+	auto shift = syn::extractLong(env, arg2);
+	this->get()->encode(newValue, mask, shift);
+	CVSetBoolean(ret, true);
+	return true;
+}
+bool CLIPSRegisterWrapper::handleArgumentsAndExecute(void* env, DataObjectPtr value, DataObjectPtr ret, const std::string& operation, Operation op) {
+	using InvocationOperation = std::function<bool(Self*, void*, DataObjectPtr,const std::string&)>;
+	static std::map<Operation, InvocationOperation> translationTable = {
+		{ Operation::GetMask, std::mem_fn(&CLIPSRegisterWrapper::getMask) },
+		{ Operation::Get, std::mem_fn(&CLIPSRegisterWrapper::getRegister) },
+		{ Operation::Set, std::mem_fn(&CLIPSRegisterWrapper::setRegister) },
+		{ Operation::SetMask, std::mem_fn(&CLIPSRegisterWrapper::setMask) },
+		{ Operation::Increment, std::mem_fn(&CLIPSRegisterWrapper::incrementRegister) },
+		{ Operation::Decrement, std::mem_fn(&CLIPSRegisterWrapper::decrementRegister) },
+		{ Operation::Decode, std::mem_fn(&CLIPSRegisterWrapper::decodeRegister) },
+		{ Operation::Encode, std::mem_fn(&CLIPSRegisterWrapper::encodeRegister) },
+	};
+
+	auto result = translationTable.find(op);
+	if (result == translationTable.end()) {
+		return Parent::callErrorMessageCode3(env, ret, operation, "Unimplemented or unknown register operation!");
+	} else {
+		InvocationOperation fn = result->second;
+		return fn(this, env, ret, operation);
+	}
+}
+
+
+DefWrapperSymbolicName(CLIPSRegister, "register");
 DefWrapperSymbolicName(Comparator::CLIPSUnitWrapper::WrappedType, "comparator");
 DefWrapperSymbolicName(Comparator::BooleanCLIPSUnitWrapper::WrappedType, "boolean-comparator");
 DefWrapperSymbolicName(ALU::CLIPSUnitWrapper::WrappedType,  "alu");

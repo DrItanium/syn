@@ -374,13 +374,11 @@ class FixedSizeLoadStoreUnit : public LoadStoreUnit<Word, Address> {
 /// Concept of a storage cell that is local to the processor
 /// @tparam T the backing data type of the register
 /// @tparam addressMask the mask that is used when setting the register
-template<typename T, T addressMask>
+template<typename T>
 class Register {
     public:
         using AddressType = T;
-        using Self = Register<T, addressMask>;
-        static constexpr T getAddressMask() noexcept { return addressMask; }
-        static constexpr T generateProperAddress(T value) noexcept { return syn::decodeBits<T, T, getAddressMask(), 0>(value); }
+		using Self = Register<AddressType>;
     public:
         /// construct a new register with a pre-defined value
         /// @param value the initial value
@@ -399,16 +397,16 @@ class Register {
 
         /// get the raw backing value of this register
         /// @return the raw backing value
-        inline T get() const noexcept { return _value; }
+        virtual T get() const noexcept { return _value; }
         /// set the register to the specified value after performing a mask
         /// @param value the value to mask and then assign to the backing storage of this instance
-        inline void set(T value) noexcept { _value = generateProperAddress(value); }
+        void set(T value) noexcept { _value = value; }
         /// increment the register by a given amount
         /// @param value the amount to increment by (defaults to one)
-        inline void increment(T value = 1) noexcept { set(get() + value); }
+        void increment(T value = 1) noexcept { set(get() + value); }
         /// decrement the register by a given amount
         /// @param value the amount to decrement by (defaults to one)
-        inline void decrement(T value = 1) noexcept { set(get() - value); }
+        void decrement(T value = 1) noexcept { set(get() - value); }
 
 
         /// operator increment the register
@@ -512,6 +510,44 @@ class Register {
         }
     private:
         T _value;
+};
+
+template<typename T, T addressMask>
+class FixedMaskRegister : public Register<T> {
+	public:
+        using AddressType = T;
+        using Self = FixedMaskRegister<AddressType, addressMask>;
+		using Parent = Register<AddressType>;
+        static constexpr AddressType getAddressMask() noexcept { 
+			return addressMask; 
+		}
+        static constexpr AddressType generateProperAddress(T value) noexcept { 
+			return syn::decodeBits<T, T, getAddressMask(), 0>(value); 
+		}
+	public:
+		using Parent::Parent;
+		virtual ~FixedMaskRegister() { }
+		virtual T get() const noexcept override { 
+			return generateProperAddress(Parent::get());
+		}
+};
+
+template<typename T>
+class VariableMaskRegister : public Register<T> {
+	public:
+        using AddressType = T;
+        using Self = VariableMaskRegister<AddressType>;
+		using Parent = Register<AddressType>;
+	public:
+		using Parent::Parent;
+		virtual ~VariableMaskRegister() { }
+		virtual T get() const noexcept override { 
+			return syn::decodeBits<T, T>(Parent::get(), _mask, 0);
+		}
+		void setMask(T mask) noexcept { _mask = mask; }
+		T getMask() const noexcept { return _mask; }
+	private:
+		T _mask = static_cast<T>(-1);
 };
 
 } // end namespace syn
