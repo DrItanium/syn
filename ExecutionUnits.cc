@@ -732,12 +732,14 @@ DefExternalAddressWrapperType(ALU::CLIPSUnitWrapper::WrappedType, ALU::CLIPSUnit
 DefExternalAddressWrapperType(FPU::CLIPSUnitWrapper::WrappedType, FPU::CLIPSUnitWrapper);
 DefExternalAddressWrapperType(Comparator::CLIPSUnitWrapper::WrappedType, Comparator::CLIPSUnitWrapper);
 DefExternalAddressWrapperType(Comparator::BooleanCLIPSUnitWrapper::WrappedType, Comparator::BooleanCLIPSUnitWrapper);
+DefExternalAddressWrapperType(CLIPSRegister, CLIPSRegisterWrapper);
 
 void installExecutionUnits(void* theEnv) noexcept {
 	ALU::CLIPSUnitWrapper::registerWithEnvironment(theEnv);
 	FPU::CLIPSUnitWrapper::registerWithEnvironment(theEnv);
 	Comparator::CLIPSUnitWrapper::registerWithEnvironment(theEnv);
 	Comparator::BooleanCLIPSUnitWrapper::registerWithEnvironment(theEnv);
+	CLIPSRegisterWrapper::registerWithEnvironment(theEnv);
 }
 
 
