@@ -47,9 +47,9 @@ namespace iris {
             using RegisterFile = WordMemorySpace<ArchitectureConstants::RegisterCount>;
             using PredicateRegisterFile = syn::FixedSizeLoadStoreUnit<bool, byte, ArchitectureConstants::ConditionRegisterCount>;
             using ErrorStorage = WordMemorySpace<ArchitectureConstants::RegistersToSaveOnError>;
-            using InstructionPointer = syn::Register<QuadWord, ArchitectureConstants::AddressMax>;
-            using LinkRegister = syn::Register<QuadWord, ArchitectureConstants::AddressMax>;
-            using PredicateRegisterBlock = syn::Register<word, ArchitectureConstants::AddressMax>;
+            using InstructionPointer = syn::FixedMaskRegister<QuadWord, ArchitectureConstants::AddressMax>;
+            using LinkRegister = syn::FixedMaskRegister<QuadWord, ArchitectureConstants::AddressMax>;
+            using PredicateRegisterBlock = syn::FixedMaskRegister<word, ArchitectureConstants::AddressMax>;
 			using Parent = syn::ClipsCore<word>;
 		public:
 			Core(syn::CLIPSIOController& io) noexcept;

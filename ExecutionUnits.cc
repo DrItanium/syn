@@ -582,8 +582,11 @@ class CLIPSRegister : public VariableMaskRegister<CLIPSInteger>, public BasicCLI
 		virtual const Parent2::ArgCountCheckMap& getMap() const override;
 		inline Word decode(Word mask, Word shift) noexcept { return Parent::decode(mask, shift); }
 		inline void encode(Word newValue, Word mask, Word shift) noexcept { Parent::encode(newValue, mask, shift); }
+		virtual bool isBinaryOperation(Operation op) const override;
 };
-
+bool CLIPSRegister::isBinaryOperation(Operation op) const {
+	return op == Operation::Decode;
+}
 const CLIPSRegister::Parent2::ArgCountCheckMap& CLIPSRegister::getMap() const {
 	static Parent2::ArgCountCheckMap ops = {
 		{ "get", syn::expectExactly<Operation, int>(Operation::Get, 0) },
