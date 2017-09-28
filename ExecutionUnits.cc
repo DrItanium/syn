@@ -407,12 +407,6 @@ namespace Comparator {
 	}
 	const CLIPSUnit::ArgCountCheckMap& CLIPSUnit::getMap() const {
 		static ArgCountCheckMap ops = {
-			{ "eq", syn::binaryOperation(Operation::Eq) },
-			{ "neq", syn::binaryOperation(Operation::Neq) },
-			{ "less-than", syn::binaryOperation(Operation::LessThan) },
-			{ "greater-than", syn::binaryOperation(Operation::GreaterThan) },
-			{ "less-than-or-equal-to", syn::binaryOperation(Operation::LessThanOrEqualTo) },
-			{ "greater-than-or-equal-to", syn::binaryOperation(Operation::GreaterThanOrEqualTo) },
 			{ "binary-and", syn::binaryOperation(Operation::BinaryAnd) },
 			{ "binary-or", syn::binaryOperation(Operation::BinaryOr) },
 			{ "binary-nand", syn::binaryOperation(Operation::BinaryNand) },
@@ -426,40 +420,6 @@ namespace Comparator {
 		return ops;
 	}
 
-	class BooleanCLIPSUnit : public BasicCLIPSExecutionUnit<bool, bool, BooleanOperations> {
-		public:
-			using Self = BooleanCLIPSUnit;
-			using Parent = BasicCLIPSExecutionUnit<bool, bool, BooleanOperations>;
-			using Word = bool;
-			using Return = bool;
-			using Operation = BooleanOperations;
-			static constexpr bool operationIsBinary(Operation op) noexcept {
-				return op != Operation::UnaryNot;
-			}
-		public:
-			BooleanCLIPSUnit() { }
-			virtual ~BooleanCLIPSUnit() { }
-			virtual const ArgCountCheckMap& getMap() const override;
-			virtual bool isBinaryOperation(Operation op) const override { return operationIsBinary(op); }
-			Return performOperation(Operation op, Word a, Word b);
-	};
-
-	BooleanCLIPSUnit::Return BooleanCLIPSUnit::performOperation(Operation op, Word a, Word b) {
-		return Comparator::performOperation<Word, Return, Operation>(op, a, b);
-	}
-
-	const BooleanCLIPSUnit::ArgCountCheckMap& BooleanCLIPSUnit::getMap() const {
-		static ArgCountCheckMap ops = {
-			{ "eq", syn::binaryOperation(Operation::Eq) },
-			{ "neq", syn::binaryOperation(Operation::Neq) },
-			{ "binary-and", syn::binaryOperation(Operation::BinaryAnd) },
-			{ "binary-or", syn::binaryOperation(Operation::BinaryOr) },
-			{ "binary-nand", syn::binaryOperation(Operation::BinaryNand) },
-			{ "binary-nor", syn::binaryOperation(Operation::BinaryNor) },
-			{ "unary-not", syn::unaryOperation(Operation::UnaryNot) },
-		};
-		return ops;
-	}
 
 	class CLIPSUnitWrapper : public syn::BasicCLIPSBinaryExecutionUnitWrapper<CLIPSUnit> {
 		public:
@@ -507,54 +467,6 @@ namespace Comparator {
 	CLIPSUnitWrapper::Word CLIPSUnitWrapper::unpackArg2(void* env, CLIPSValuePtr storage) noexcept {
 		return unpackArg(env, storage);
 	}
-	class BooleanCLIPSUnitWrapper : public syn::BasicCLIPSBinaryExecutionUnitWrapper<BooleanCLIPSUnit> {
-		public:
-			using WrappedType = BooleanCLIPSUnit;
-			using Operation = WrappedType::Operation;
-			using Word = WrappedType::Word;
-			using Return = WrappedType::Return;
-			using Parent = syn::BasicCLIPSBinaryExecutionUnitWrapper<WrappedType>;
-		public:
-			using Parent::Parent;
-			virtual ~BooleanCLIPSUnitWrapper() { }
-			virtual bool extractArg1(void* env, CLIPSValuePtr ret, CLIPSValuePtr storage) noexcept override;
-			virtual bool extractArg2(void* env, CLIPSValuePtr ret, CLIPSValuePtr storage) noexcept override;
-			virtual Word unpackArg1(void* env, CLIPSValuePtr storage) noexcept override;
-			virtual Word unpackArg2(void* env, CLIPSValuePtr storage) noexcept override;
-			virtual bool execute(void* env, CLIPSValuePtr storage, CLIPSValuePtr ret, const std::string& operation, Operation op, Word a, Word b) override;
-	};
-
-	bool BooleanCLIPSUnitWrapper::extractArg1(void* env, CLIPSValuePtr ret, CLIPSValuePtr storage) noexcept { 
-		return Parent::tryExtractArgument1(env, ret, storage, syn::MayaType::Symbol, "Must provide a true or false symbol for the first argument!");
-	}
-
-	bool BooleanCLIPSUnitWrapper::extractArg2(void* env, CLIPSValuePtr ret, CLIPSValuePtr storage) noexcept { 
-		return Parent::tryExtractArgument2(env, ret, storage, syn::MayaType::Symbol, "Must provide a true or false symbol for the second argument!");
-	}
-	bool BooleanCLIPSUnitWrapper::execute(void* env, CLIPSValuePtr storage, CLIPSValuePtr ret, const std::string& operation, Operation op, Word a, Word b) { 
-		try {
-			auto result = this->get()->performOperation(op, a, b);
-			CVSetBoolean(ret, result);
-			return true;
-		} catch (const syn::UndefinedOperationProblem& p) {
-			auto result = this->get()->getUndefinedOperationHandler()();
-			CVSetBoolean(ret, result);
-			return true;
-		} catch(const syn::Problem& p) {
-			return Parent::callErrorMessageCode3(env, ret, operation, p);
-		}
-	}
-	BooleanCLIPSUnitWrapper::Word unpackBoolean(void* env, CLIPSValuePtr storage) noexcept {
-		return !CVIsFalseSymbol(storage);
-	}
-	BooleanCLIPSUnitWrapper::Word BooleanCLIPSUnitWrapper::unpackArg1(void* env, CLIPSValuePtr storage) noexcept {
-		return unpackBoolean(env, storage);
-	}
-
-	BooleanCLIPSUnitWrapper::Word BooleanCLIPSUnitWrapper::unpackArg2(void* env, CLIPSValuePtr storage) noexcept {
-		return unpackBoolean(env, storage);
-	}
-
 } // end namespace Comparator
 
 enum class RegisterOperations {
@@ -728,20 +640,17 @@ bool CLIPSRegisterWrapper::handleArgumentsAndExecute(void* env, DataObjectPtr va
 
 DefWrapperSymbolicName(CLIPSRegister, "register");
 DefWrapperSymbolicName(Comparator::CLIPSUnitWrapper::WrappedType, "comparator");
-DefWrapperSymbolicName(Comparator::BooleanCLIPSUnitWrapper::WrappedType, "boolean-comparator");
 DefWrapperSymbolicName(ALU::CLIPSUnitWrapper::WrappedType,  "alu");
 DefWrapperSymbolicName(FPU::CLIPSUnit, "fpu");
 DefExternalAddressWrapperType(ALU::CLIPSUnitWrapper::WrappedType, ALU::CLIPSUnitWrapper);
 DefExternalAddressWrapperType(FPU::CLIPSUnitWrapper::WrappedType, FPU::CLIPSUnitWrapper);
 DefExternalAddressWrapperType(Comparator::CLIPSUnitWrapper::WrappedType, Comparator::CLIPSUnitWrapper);
-DefExternalAddressWrapperType(Comparator::BooleanCLIPSUnitWrapper::WrappedType, Comparator::BooleanCLIPSUnitWrapper);
 DefExternalAddressWrapperType(CLIPSRegister, CLIPSRegisterWrapper);
 
 void installExecutionUnits(void* theEnv) noexcept {
 	ALU::CLIPSUnitWrapper::registerWithEnvironment(theEnv);
 	FPU::CLIPSUnitWrapper::registerWithEnvironment(theEnv);
 	Comparator::CLIPSUnitWrapper::registerWithEnvironment(theEnv);
-	Comparator::BooleanCLIPSUnitWrapper::registerWithEnvironment(theEnv);
 	CLIPSRegisterWrapper::registerWithEnvironment(theEnv);
 }
 
