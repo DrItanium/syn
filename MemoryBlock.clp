@@ -28,5 +28,18 @@
         (default memory-block)
         (access read-only)
         (create-accessor read)
-        (source composite)))
+        (source composite))
+  (slot capacity
+        (type INTEGER)
+        (range 0 
+               ?VARIABLE)
+        (storage local)
+        (visibility public)
+        (default ?NONE))
+  (message-handler init after))
+
+(defmessage-handler MAIN::memory-block init after
+                    ()
+                    (bind ?self:constructor-args
+                          ?self:capacity))
 

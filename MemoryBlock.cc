@@ -82,7 +82,7 @@ namespace syn {
 				try {
                     // TODO: fix this checkArgumentCount to not reference
                     // the call version of this function
-                    if (Parent::checkArgumentCount(env, ret, getFunctionPrefixNew<WordBlock>(), 2)) {
+					if (syn::getArgCount(env) == 2) {
 						CLIPSValue capacity;
                         if (!Arg2IsInteger(env, &capacity, getFunctionPrefixNew<WordBlock>())) {
 							CVSetBoolean(ret, false);
@@ -92,6 +92,8 @@ namespace syn {
 							auto idIndex = Self::getAssociatedEnvironmentId(env);
                             CVSetExternalAddress(ret, Self::make(size), idIndex);
 						}
+					} else {
+						Parent::callErrorMessageCode3(env, ret, getFunctionPrefixNew<WordBlock>(), " either too many or too few arguments provided!");
 					}
 				} catch(const syn::Problem& p) {
                     handleProblem(env, ret, p, getFunctionErrorPrefixNew<WordBlock>());

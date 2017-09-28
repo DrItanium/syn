@@ -35,11 +35,15 @@
         (type EXTERNAL-ADDRESS)
         (storage local)
         (visibility public))
-  (multislot constructor-args)
+  (multislot constructor-args
+             (storage local)
+             (visibility public))
+  (message-handler init around)
   (message-handler call primary))
 
-(defmessage-handler MAIN::external-address-wrapper init after
+(defmessage-handler MAIN::external-address-wrapper init around
                     ()
+                    (call-next-handler)
                     (bind ?self:backing-store
                           (new (dynamic-get backing-type)
                                (expand$ (dynamic-get constructor-args)))))
