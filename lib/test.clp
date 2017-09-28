@@ -24,8 +24,6 @@
 ;------------------------------------------------------------------------------
 (defmodule test
            "Testing related operations"
-           (import cortex
-                   ?ALL)
            (export ?ALL))
 
 (deftemplate test::testcase
