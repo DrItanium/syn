@@ -29,8 +29,6 @@
 (batch* lib/test.clp)
 (batch* lib/target/cisc0/Base.clp)
 (defmodule MAIN
-           (import cortex
-                   ?ALL)
            (import test
                    ?ALL))
 (deffacts MAIN::testsuite-info

@@ -27,8 +27,6 @@
 (batch* lib/cortex.clp)
 (batch* lib/test.clp)
 (defmodule MAIN
-           (import cortex
-                   ?ALL)
            (import test
                    ?ALL))
 (deffacts MAIN::testsuite-info

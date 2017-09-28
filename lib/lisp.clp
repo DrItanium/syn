@@ -41,8 +41,6 @@
 ; 3. This notice may not be removed or altered from any source distribution.
 
 (defmodule lisp-parse
-           (import cortex
-                   ?ALL)
            (export ?ALL))
 (deftemplate lisp-parse::parse-request
              (slot path
