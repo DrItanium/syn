@@ -23,11 +23,7 @@
 
 
 (defmodule MAIN
-           (import cortex
-                   ?ALL)
            (import lisp-parse
-                   ?ALL)
-           (import lower
                    ?ALL))
 (defgeneric MAIN::translate-file)
 (defmethod MAIN::translate-file
@@ -35,8 +31,7 @@
    (?router SYMBOL))
   (assert (parse-request (path ?path))
           (output-router (name ?router)))
-  (focus lisp-parse
-         lower)
+  (focus lisp-parse)
   (run)
   TRUE)
 

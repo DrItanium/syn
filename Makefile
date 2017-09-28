@@ -45,18 +45,18 @@ ALL_OBJECTS = ${COMMON_THINGS} \
 			  ${DEFINE_CLPS} \
 			  ${REPL_FINAL_OBJECTS}
 
-COMMON_CLP_FILES = lib/reset-run-exit.clp
+COMMON_CLP_FILES = reset-run-exit.clp
 COMMON_GEN_ENCODER_DECODER_FILES= ${COMMON_CLP_FILES} \
 								  cmd/deffield.clp \
 								  cmd/deffunctions.clp \
-								  lib/cortex.clp \
+								  cortex.clp \
 								  Base.h
 
-TEST_SUITES = lib/target/iris/test_Base.clp \
-			  lib/target/iris/test_Exec.clp \
-			  lib/target/cisc0/test_Base.clp \
-			  lib/target/test_maya.clp \
-			  lib/target/test_ClipsExtensions.clp
+TEST_SUITES = target/iris/test_Base.clp \
+			  target/iris/test_Exec.clp \
+			  target/cisc0/test_Base.clp \
+			  target/test_maya.clp \
+			  target/test_ClipsExtensions.clp
 
 
 all: options bootstrap ${ALL_BINARIES}
@@ -146,7 +146,7 @@ include/termbox.h: termbox
 
 
 define generateFields
-	./deffield.sh -f2 $(1) -f2 lib/reset-run-exit.clp > $(2).h
+	./deffield.sh -f2 $(1) -f2 reset-run-exit.clp > $(2).h
 endef
 
 define generateDefines
