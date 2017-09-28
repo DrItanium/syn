@@ -12,7 +12,8 @@ COMMON_THINGS = Core.o \
 				ClipsExtensions.o \
 			 	MultifieldBuilder.o \
 				MemoryBlock.o \
-				ExecutionUnits.o
+				ExecutionUnits.o \
+				Termbox.o
 
 REPL_FINAL_BINARY = syn
 
@@ -100,9 +101,11 @@ bootstrap: ${DEFINE_OBJECTS}
 misc/termbox:
 	@git submodule update --init --recursive
 
-include/termbox.h libtermbox.a: misc/termbox
+libtermbox.a: misc/termbox
 	@cd misc/termbox && ./waf configure --prefix=../../ --libdir=../../
 	@cd misc/termbox && ./waf
 	@cd misc/termbox && ./waf install --targets=termbox_static
+
+include/termbox.h: libtermbox.a
 
 include deps.make
