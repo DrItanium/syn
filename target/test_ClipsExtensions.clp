@@ -24,9 +24,11 @@
 ;------------------------------------------------------------------------------
 ; test_ClipsExtensions.clp - Test the extra UDFs found in ClipsExtensions.cc
 ;------------------------------------------------------------------------------
-(batch* lib/cortex.clp)
-(batch* lib/test.clp)
+(batch* cortex.clp)
+(batch* test.clp)
 (defmodule MAIN
+           (import cortex
+                   ?ALL)
            (import test
                    ?ALL))
 (deffacts MAIN::clips-extensions-tests

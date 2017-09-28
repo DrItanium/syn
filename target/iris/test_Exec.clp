@@ -24,10 +24,12 @@
 ;------------------------------------------------------------------------------
 ; test_Exec.clp - test running instructions
 ;------------------------------------------------------------------------------
-(batch* lib/cortex.clp)
-(batch* lib/test.clp)
-(batch* lib/target/iris/Base.clp)
+(batch* cortex.clp)
+(batch* test.clp)
+(batch* target/iris/Base.clp)
 (defmodule MAIN
+           (import cortex
+                   ?ALL)
            (import test
                    ?ALL))
 (deffacts MAIN::testsuite-info

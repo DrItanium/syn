@@ -24,9 +24,11 @@
 ;------------------------------------------------------------------------------
 ; test_maya.clp - Test the extra maya user defined functions
 ;------------------------------------------------------------------------------
-(batch* lib/cortex.clp)
-(batch* lib/test.clp)
+(batch* cortex.clp)
+(batch* test.clp)
 (defmodule MAIN
+           (import cortex
+                   ?ALL)
            (import test
                    ?ALL))
 (deffacts MAIN::testsuite-info

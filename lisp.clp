@@ -39,36 +39,40 @@
 ; 2. Altered source versions must be plainly marked as such, and must not be
 ;    misrepresented as being the original software.
 ; 3. This notice may not be removed or altered from any source distribution.
+(defmodule lisp-parse
+           (import cortex
+                   ?ALL)
+           (export ?ALL))
 
-(deftemplate MAIN::parse-request
+(deftemplate lisp-parse::parse-request
              (slot path
                    (type LEXEME)
                    (default ?NONE)))
-(defgeneric MAIN::no-strings-in-list
+(defgeneric lisp-parse::no-strings-in-list
             "checks to see if the given list is free of strings")
-(defgeneric MAIN::no-primitive-strings-in-list
+(defgeneric lisp-parse::no-primitive-strings-in-list
             "checks to see if the given list is free of primitive strings")
-(deffunction MAIN::string-classp
+(deffunction lisp-parse::string-classp
              (?value)
              (eq (class ?value)
                  string))
-(defmethod MAIN::no-primitive-strings-in-list
+(defmethod lisp-parse::no-primitive-strings-in-list
   ((?list MULTIFIELD))
   (not-exists stringp
               (expand$ ?list)))
-(defmethod MAIN::no-primitive-strings-in-list
+(defmethod lisp-parse::no-primitive-strings-in-list
   ($?list)
   (no-primitive-strings-in-list ?list))
-(defmethod MAIN::no-strings-in-list
+(defmethod lisp-parse::no-strings-in-list
   ((?list MULTIFIELD))
   (not-exists string-classp
               (expand$ ?list)))
-(defmethod MAIN::no-strings-in-list
+(defmethod lisp-parse::no-strings-in-list
   ($?list)
   (not-exists string-classp
               $?list))
 
-(defclass MAIN::file
+(defclass lisp-parse::file
   (is-a thing)
   (slot parent
         (source composite)
@@ -95,86 +99,86 @@
              (storage local))
   (message-handler parent-is primary))
 
-(defmessage-handler MAIN::file parent-is primary
+(defmessage-handler lisp-parse::file parent-is primary
                     (?parent)
                     (eq (instance-name ?self)
                         ?parent))
 
 
 
-(defclass MAIN::node
+(defclass lisp-parse::node
   (is-a thing))
 
-(defclass MAIN::has-comment
+(defclass lisp-parse::has-comment
   (is-a USER)
   (slot comment
         (visibility public)
         (type STRING)))
 
-(defclass MAIN::has-local-binds
+(defclass lisp-parse::has-local-binds
   (is-a USER)
   (multislot local-binds
              (visibility public)))
 
-(defclass MAIN::has-arguments
+(defclass lisp-parse::has-arguments
   (is-a USER)
   (multislot arguments
              (visibility public)))
 
-(defclass MAIN::has-body
+(defclass lisp-parse::has-body
   (is-a USER)
   (multislot body
              (visibility public)))
 
-(defclass MAIN::composite-node
+(defclass lisp-parse::composite-node
   "A node that is made up of other nodes. This is separate from a list!"
   (is-a node
         has-contents)
   (multislot contents
              (source composite)
              (default ?NONE)))
-(defclass MAIN::scalar-node
+(defclass lisp-parse::scalar-node
   (is-a node
         has-value)
   (slot value
         (source composite)
         (default ?NONE)))
 
-(defclass MAIN::typed-scalar-node
+(defclass lisp-parse::typed-scalar-node
   (is-a scalar-node)
   (slot type
         (type SYMBOL)
         (default ?NONE)))
 
-(defclass MAIN::string
+(defclass lisp-parse::string
   "Strings need to be wrapped in their own nodes"
   (is-a scalar-node)
   (slot value
         (type STRING)
         (source composite)
         (storage local)))
-(defclass MAIN::variable (is-a scalar-node))
-(defclass MAIN::global-variable (is-a variable))
-(defclass MAIN::singlefield-global-variable (is-a global-variable))
-(defclass MAIN::multifield-global-variable (is-a global-variable))
-(defclass MAIN::local-variable (is-a variable))
-(defclass MAIN::multifield-variable (is-a local-variable))
-(defclass MAIN::singlefield-variable (is-a local-variable))
-(defclass MAIN::constraint (is-a scalar-node))
-(defclass MAIN::not-constraint (is-a constraint))
-(defclass MAIN::and-constraint (is-a constraint))
-(defclass MAIN::or-constraint (is-a constraint))
-(defclass MAIN::wildcard (is-a scalar-node))
-(defclass MAIN::multifield-wildcard (is-a wildcard))
-(defclass MAIN::singlefield-wildcard (is-a wildcard))
+(defclass lisp-parse::variable (is-a scalar-node))
+(defclass lisp-parse::global-variable (is-a variable))
+(defclass lisp-parse::singlefield-global-variable (is-a global-variable))
+(defclass lisp-parse::multifield-global-variable (is-a global-variable))
+(defclass lisp-parse::local-variable (is-a variable))
+(defclass lisp-parse::multifield-variable (is-a local-variable))
+(defclass lisp-parse::singlefield-variable (is-a local-variable))
+(defclass lisp-parse::constraint (is-a scalar-node))
+(defclass lisp-parse::not-constraint (is-a constraint))
+(defclass lisp-parse::and-constraint (is-a constraint))
+(defclass lisp-parse::or-constraint (is-a constraint))
+(defclass lisp-parse::wildcard (is-a scalar-node))
+(defclass lisp-parse::multifield-wildcard (is-a wildcard))
+(defclass lisp-parse::singlefield-wildcard (is-a wildcard))
 
 
 
-(defclass MAIN::list
+(defclass lisp-parse::list
   (is-a node
         has-contents))
 
-(defclass MAIN::reference
+(defclass lisp-parse::reference
   "An indirect reference to something else, useful for deffunctions and arguments"
   (is-a scalar-node)
   (slot expand
@@ -182,7 +186,7 @@
         (allowed-symbols FALSE
                          TRUE)))
 ;------------------------------------------------------------------------------
-(defrule MAIN::open-file
+(defrule lisp-parse::open-file
          ?f <- (parse-request (path ?path))
          =>
          (retract ?f)
@@ -200,7 +204,7 @@
            (printout werror
                      "couldn't open " ?path crlf)))
 
-(defrule MAIN::new-top-level
+(defrule lisp-parse::new-top-level
          (declare (salience 2))
          (object (is-a file)
                  (elements LPAREN ?)
@@ -218,7 +222,7 @@
                         1 2
                         (next-token ?router)))
 
-(defrule MAIN::new-list
+(defrule lisp-parse::new-list
          (declare (salience 3))
          ?f <- (object (is-a file)
                        (elements LPAREN ?)
@@ -237,7 +241,7 @@
                         1 2
                         (next-token ?r)))
 
-(defrule MAIN::end-list
+(defrule lisp-parse::end-list
          (declare (salience 3))
          ?f <- (object (is-a file)
                        (elements RPAREN ?)
@@ -255,7 +259,7 @@
                           (elements (next-token ?r))
                           (top ?parent
                                ?rest)))
-(defrule MAIN::end-list:top-level
+(defrule lisp-parse::end-list:top-level
          (declare (salience 3))
          ?f <- (object (is-a file)
                        (elements RPAREN ?)
@@ -272,7 +276,7 @@
                         (next-token ?r)))
 
 
-(defrule MAIN::parse-special-element
+(defrule lisp-parse::parse-special-element
          (declare (salience 1))
          ?f <- (object (is-a file)
                        (elements ?type
@@ -291,7 +295,7 @@
                                                    (parent ?top)
                                                    (value ?value)))))
 
-(defrule MAIN::warn:parse-special-element-outside-list
+(defrule lisp-parse::warn:parse-special-element-outside-list
          (declare (salience 1))
          ?f <- (object (is-a file)
                        (elements ?type ?value)
@@ -307,7 +311,7 @@
                         (parent ?file)
                         (value ?value)))
 
-(defrule MAIN::parse-string
+(defrule lisp-parse::parse-string
          (declare (salience 2))
          ?f <- (object (is-a file)
                        (elements ?value&:(stringp ?value))
@@ -326,7 +330,7 @@
                                       (parent ?top)
                                       (value ?value))))
 
-(defrule MAIN::parse-string-outside-list
+(defrule lisp-parse::parse-string-outside-list
          (declare (salience 2))
          ?f <- (object (is-a file)
                        (elements ?value&:(stringp ?value))
@@ -342,7 +346,7 @@
                         (parent ?file)
                         (value ?value)))
 
-(defrule MAIN::parse-normal-element
+(defrule lisp-parse::parse-normal-element
          (declare (salience 1))
          ?f <- (object (is-a file)
                        (elements ?value)
@@ -363,7 +367,7 @@
                         (next-token ?r)))
 
 
-(defrule MAIN::warn:parse-normal-element-outside-list
+(defrule lisp-parse::warn:parse-normal-element-outside-list
          (declare (salience 1))
          ?f <- (object (is-a file)
                        (elements ?value)
@@ -383,7 +387,7 @@
                         (value ?value)))
 
 
-(defrule MAIN::error:end-list-without-beginning
+(defrule lisp-parse::error:end-list-without-beginning
          (declare (salience 2))
          ?f <- (object (is-a file)
                        (elements RPAREN ?)
@@ -397,7 +401,7 @@
                    tab "found a ) outside an actual list!" crlf)
          (halt))
 
-(defrule MAIN::finished-completely
+(defrule lisp-parse::finished-completely
          (declare (salience 3))
          ?f <- (object (is-a file)
                        (elements STOP ?)
@@ -407,7 +411,7 @@
          (modify-instance ?f
                           (elements)))
 
-(defrule MAIN::error:bottom-of-top-should-be-self-referential
+(defrule lisp-parse::error:bottom-of-top-should-be-self-referential
          (declare (salience 10000))
          ?f <- (object (is-a file)
                        (name ?file)
@@ -420,7 +424,7 @@
                    tab "The bottom of the parsing stack is not the file itself. Some rule has broken the parser" crlf)
          (halt))
 
-(defrule MAIN::error:top-is-empty
+(defrule lisp-parse::error:top-is-empty
          (declare (salience 10000))
          ?f <- (object (is-a file)
                        (top)
@@ -433,7 +437,7 @@
 ;-----------------------------------------------------------------------------
 ; Auto generated rules for special symbols
 ;-----------------------------------------------------------------------------
-(defrule MAIN::construct-special-instance:or-constraint
+(defrule lisp-parse::construct-special-instance:or-constraint
          "convert a symbol of type OR_CONSTRAINT to class of type or-constraint"
          (declare (salience 2))
          ?f <- (object (is-a file)
@@ -458,7 +462,7 @@
                         (next-token ?r)))
 
 
-(defrule MAIN::construct-special-instance-outside-list:or-constraint
+(defrule lisp-parse::construct-special-instance-outside-list:or-constraint
          "convert a symbol of type OR_CONSTRAINT to class of type or-constraint"
          (declare (salience 2))
          ?f <- (object (is-a file)
@@ -478,7 +482,7 @@
                         (parent ?file)
                         (value ?value)))
 
-(defrule MAIN::construct-special-instance:and-constraint
+(defrule lisp-parse::construct-special-instance:and-constraint
          "convert a symbol of type AND_CONSTRAINT to class of type and-constraint"
          (declare (salience 2))
          ?f <- (object (is-a file)
@@ -503,7 +507,7 @@
                         (next-token ?r)))
 
 
-(defrule MAIN::construct-special-instance-outside-list:and-constraint
+(defrule lisp-parse::construct-special-instance-outside-list:and-constraint
          "convert a symbol of type AND_CONSTRAINT to class of type and-constraint"
          (declare (salience 2))
          ?f <- (object (is-a file)
@@ -523,7 +527,7 @@
                         (parent ?file)
                         (value ?value)))
 
-(defrule MAIN::construct-special-instance:not-constraint
+(defrule lisp-parse::construct-special-instance:not-constraint
          "convert a symbol of type NOT_CONSTRAINT to class of type not-constraint"
          (declare (salience 2))
          ?f <- (object (is-a file)
@@ -548,7 +552,7 @@
                         (next-token ?r)))
 
 
-(defrule MAIN::construct-special-instance-outside-list:not-constraint
+(defrule lisp-parse::construct-special-instance-outside-list:not-constraint
          "convert a symbol of type NOT_CONSTRAINT to class of type not-constraint"
          (declare (salience 2))
          ?f <- (object (is-a file)
@@ -568,7 +572,7 @@
                         (parent ?file)
                         (value ?value)))
 
-(defrule MAIN::construct-special-instance:multifield-wildcard
+(defrule lisp-parse::construct-special-instance:multifield-wildcard
          "convert a symbol of type MF_WILDCARD to class of type multifield-wildcard"
          (declare (salience 2))
          ?f <- (object (is-a file)
@@ -593,7 +597,7 @@
                         (next-token ?r)))
 
 
-(defrule MAIN::construct-special-instance-outside-list:multifield-wildcard
+(defrule lisp-parse::construct-special-instance-outside-list:multifield-wildcard
          "convert a symbol of type MF_WILDCARD to class of type multifield-wildcard"
          (declare (salience 2))
          ?f <- (object (is-a file)
@@ -613,7 +617,7 @@
                         (parent ?file)
                         (value ?value)))
 
-(defrule MAIN::construct-special-instance:singlefield-wildcard
+(defrule lisp-parse::construct-special-instance:singlefield-wildcard
          "convert a symbol of type SF_WILDCARD to class of type singlefield-wildcard"
          (declare (salience 2))
          ?f <- (object (is-a file)
@@ -638,7 +642,7 @@
                         (next-token ?r)))
 
 
-(defrule MAIN::construct-special-instance-outside-list:singlefield-wildcard
+(defrule lisp-parse::construct-special-instance-outside-list:singlefield-wildcard
          "convert a symbol of type SF_WILDCARD to class of type singlefield-wildcard"
          (declare (salience 2))
          ?f <- (object (is-a file)
@@ -658,7 +662,7 @@
                         (parent ?file)
                         (value ?value)))
 
-(defrule MAIN::construct-special-instance:multifield-variable
+(defrule lisp-parse::construct-special-instance:multifield-variable
          "convert a symbol of type MF_VARIABLE to class of type multifield-variable"
          (declare (salience 2))
          ?f <- (object (is-a file)
@@ -683,7 +687,7 @@
                         (next-token ?r)))
 
 
-(defrule MAIN::construct-special-instance-outside-list:multifield-variable
+(defrule lisp-parse::construct-special-instance-outside-list:multifield-variable
          "convert a symbol of type MF_VARIABLE to class of type multifield-variable"
          (declare (salience 2))
          ?f <- (object (is-a file)
@@ -703,7 +707,7 @@
                         (parent ?file)
                         (value ?value)))
 
-(defrule MAIN::construct-special-instance:singlefield-variable
+(defrule lisp-parse::construct-special-instance:singlefield-variable
          "convert a symbol of type SF_VARIABLE to class of type singlefield-variable"
          (declare (salience 2))
          ?f <- (object (is-a file)
@@ -728,7 +732,7 @@
                         (next-token ?r)))
 
 
-(defrule MAIN::construct-special-instance-outside-list:singlefield-variable
+(defrule lisp-parse::construct-special-instance-outside-list:singlefield-variable
          "convert a symbol of type SF_VARIABLE to class of type singlefield-variable"
          (declare (salience 2))
          ?f <- (object (is-a file)
@@ -748,7 +752,7 @@
                         (parent ?file)
                         (value ?value)))
 
-(defrule MAIN::construct-special-instance:multifield-global-variable
+(defrule lisp-parse::construct-special-instance:multifield-global-variable
          "convert a symbol of type MF_GBL_VARIABLE to class of type multifield-global-variable"
          (declare (salience 2))
          ?f <- (object (is-a file)
@@ -773,7 +777,7 @@
                         (next-token ?r)))
 
 
-(defrule MAIN::construct-special-instance-outside-list:multifield-global-variable
+(defrule lisp-parse::construct-special-instance-outside-list:multifield-global-variable
          "convert a symbol of type MF_GBL_VARIABLE to class of type multifield-global-variable"
          (declare (salience 2))
          ?f <- (object (is-a file)
@@ -793,7 +797,7 @@
                         (parent ?file)
                         (value ?value)))
 
-(defrule MAIN::construct-special-instance:singlefield-global-variable
+(defrule lisp-parse::construct-special-instance:singlefield-global-variable
          "convert a symbol of type GBL_VARIABLE to class of type singlefield-global-variable"
          (declare (salience 2))
          ?f <- (object (is-a file)
@@ -818,7 +822,7 @@
                         (next-token ?r)))
 
 
-(defrule MAIN::construct-special-instance-outside-list:singlefield-global-variable
+(defrule lisp-parse::construct-special-instance-outside-list:singlefield-global-variable
          "convert a symbol of type GBL_VARIABLE to class of type singlefield-global-variable"
          (declare (salience 2))
          ?f <- (object (is-a file)

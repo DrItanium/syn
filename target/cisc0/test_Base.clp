@@ -25,10 +25,12 @@
 ; test_Base.clp - routines to make interfacing with the raw cisc0 external address
 ; far simpler
 ;------------------------------------------------------------------------------
-(batch* lib/cortex.clp)
-(batch* lib/test.clp)
-(batch* lib/target/cisc0/Base.clp)
+(batch* cortex.clp)
+(batch* test.clp)
+(batch* target/cisc0/Base.clp)
 (defmodule MAIN
+           (import cortex
+                   ?ALL)
            (import test
                    ?ALL))
 (deffacts MAIN::testsuite-info

@@ -25,10 +25,12 @@
 ; test_Base.clp - routines to make interfacing with the raw iris external address
 ; far simpler
 ;------------------------------------------------------------------------------
-(batch* lib/cortex.clp)
-(batch* lib/test.clp)
-(batch* lib/target/iris/Base.clp)
+(batch* cortex.clp)
+(batch* test.clp)
+(batch* target/iris/Base.clp)
 (defmodule MAIN
+           (import cortex
+                   ?ALL)
            (import test
                    ?ALL))
 (deffacts MAIN::testsuite-info
