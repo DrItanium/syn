@@ -3,14 +3,8 @@
 # See LICENSE file for copyright and license details.
 
 include config.mk
-ARCH_OBJECTS = IrisCore.o \
-			   Cisc0Core.o \
-			   Cisc0CoreModel0.o \
-			   Cisc0CoreModel1.o
 
-ASM_PARSERS_OBJECTS = Cisc0CoreAssembler.o \
-					  IrisCoreAssemblerStructures.o \
-					  AssemblerBase.o
+ASM_PARSERS_OBJECTS = AssemblerBase.o
 
 COMMON_THINGS = Core.o \
 				WrappedIODevice.o \
@@ -24,23 +18,13 @@ REPL_FINAL_BINARY = syn_repl
 
 REPL_FINAL_OBJECTS = Repl.o \
 					 RegisteredExternalAddressAssemblers.o \
-					 Cisc0CoreAssemblerWrapper.o \
-					 Cisc0CoreInstructionEncoder.o \
-					 IrisCoreAssemblerStateWrapper.o \
-					 Cisc0CoreWrapper.o \
-					 IrisCoreWrapper.o \
-					 Cisc0CoreDecodedInstruction.o \
 					 ${COMMON_THINGS} \
 					 ${ARCH_OBJECTS} \
 					 ${ASM_PARSERS_OBJECTS} \
 
 ALL_BINARIES = ${REPL_FINAL_BINARY}
 
-DEFINE_OBJECTS = defines_iris.h \
-				 defines_cisc0.h
-
 ALL_OBJECTS = ${COMMON_THINGS} \
-			  ${ARCH_OBJECTS} \
 			  ${REPL_OBJECTS} \
 			  ${DEFINE_CLPS} \
 			  ${REPL_FINAL_OBJECTS}
@@ -52,10 +36,7 @@ COMMON_GEN_ENCODER_DECODER_FILES= ${COMMON_CLP_FILES} \
 								  cortex.clp \
 								  Base.h
 
-TEST_SUITES = target/iris/test_Base.clp \
-			  target/iris/test_Exec.clp \
-			  target/cisc0/test_Base.clp \
-			  target/test_maya.clp \
+TEST_SUITES = target/test_maya.clp \
 			  target/test_ClipsExtensions.clp
 
 
@@ -144,23 +125,5 @@ termbox: misc/termbox
 libtermbox.a: termbox
 include/termbox.h: termbox
 
-
-define generateFields
-	./deffield.sh -f2 $(1) -f2 reset-run-exit.clp > $(2).h
-endef
-
-define generateDefines
-	echo "Generating encoders, decoders, and enumerations for $(1)..."
-	$(call generateFields,def/$(1)/instruction.clp,defines_$(1))
-endef
-
-define generateDefinesRule
-
-defines_$(1).h: maya ${COMMON_GEN_ENCODER_DECODER_FILES} def/$(1)/instruction.clp
-	@$(call generateDefines,$(1))
-
-endef
-
-$(foreach i,iris cisc0,$(eval $(call generateDefinesRule,$(i))))
 
 include deps.make
