@@ -26,15 +26,18 @@
              ()
              0)
 (defclass MAIN::basic-execution-unit
-  (is-a external-address-wrapper)
+  (is-a USER)
   (slot undefined-operation-handler
         (type SYMBOL)
         (storage local)
         (visbility public)
-        (default-dynamic default-undefined-operation-handler))
+        (default-dynamic default-undefined-operation-handler)))
+(defclass MAIN::wrapped-basic-execution-unit
+  (is-a basic-execution-unit
+        external-address-wrapper)
   (message-handler put-undefined-operation-handler after))
 
-(defmessage-handler MAIN::basic-execution-unit put-undefined-operation-handler after
+(defmessage-handler MAIN::wrapped-basic-execution-unit put-undefined-operation-handler after
                     (?sym)
                     (call (dynamic-get backing-store)
                           set-undefined-operation-handler
@@ -53,56 +56,37 @@
 
 (defmessage-handler MAIN::basic-combinatorial-logic-unit add primary 
                     (?a ?b) 
-                    (call (dynamic-get backing-store)
-                          add
-                          ?a
-                          ?b))
+                    (+ ?a ?b))
 (defmessage-handler MAIN::basic-combinatorial-logic-unit sub primary 
                     (?a ?b) 
-                    (call (dynamic-get backing-store)
-                          sub
-                          ?a
-                          ?b))
+                    (- ?a ?b))
 (defmessage-handler MAIN::basic-combinatorial-logic-unit mul primary 
                     (?a ?b) 
-                    (call (dynamic-get backing-store)
-                          mul
-                          ?a
-                          ?b))
+                    (* ?a ?b))
 (defmessage-handler MAIN::basic-combinatorial-logic-unit div primary 
                     (?a ?b) 
-                    (call (dynamic-get backing-store)
-                          div
-                          ?a
-                          ?b))
+                    (/ ?a ?b))
 
 (defclass MAIN::fpu
   (is-a basic-combinatorial-logic-unit)
-  (slot backing-type
-        (source composite)
-        (storage shared)
-        (access read-only)
-        (create-accessor read)
-        (default fpu))
   (message-handler sqrt primary))
 
 (defmessage-handler MAIN::fpu sqrt primary
                     (?a)
-                    (call (dynamic-get backing-store)
-                          sqrt
-                          ?a))
+                    (sqrt ?a))
 
 (deffunction MAIN::default-divide-by-zero-handler
              ()
              0)
 (defclass MAIN::alu
-  (is-a basic-combinatorial-logic-unit)
+  (is-a basic-combinatorial-logic-unit
+        wrapped-basic-execution-unit)
   (slot backing-type
         (source composite)
         (storage shared)
         (access read-only)
         (create-accessor read)
-        (default alu))
+        (default comparator))
   (slot divide-by-zero-handler
         (type SYMBOL)
         (storage local)
@@ -133,24 +117,23 @@
 
 (defmessage-handler MAIN::alu div primary
                     (?a ?b $?handler)
-                    (call (dynamic-get backing-store)
-                          div
-                          ?a
-                          ?b
-                          (if (= (length$ ?handler) 0) then
-                           ?self:divide-by-zero-handler
-                           else
-                           (nth$ 1 
-                            ?handler))))
+                    (if (= ?b 0) then
+                        (funcall (if (= (length$ ?handler) 0) then
+                                     ?self:divide-by-zero-handler
+                                     else
+                                     (nth$ 1 ?handler)))
+                        else
+                        (div ?a 
+                             ?b)))
 
 (defmessage-handler MAIN::alu rem primary
                     (?a ?b $?handler)
-                    (call (dynamic-get backing-store)
-                          rem
-                          ?a
-                          ?b
-                          (if (= (length$ ?handler) 0) then
-                           ?self:remide-by-zero-handler
-                           else
-                           (nth$ 1 
-                            ?handler))))
+                    (if (= ?b 0) then
+                        (funcall (if (= (length$ ?handler) 0) then
+                                     ?self:divide-by-zero-handler
+                                     else
+                                     (nth$ 1 ?handler)))
+                        else
+                        (mod ?a 
+                             ?b)))
+
