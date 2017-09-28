@@ -30,7 +30,7 @@
   (slot undefined-operation-handler
         (type SYMBOL)
         (storage local)
-        (visbility public)
+        (visibility public)
         (default-dynamic default-undefined-operation-handler)))
 (defclass MAIN::wrapped-basic-execution-unit
   (is-a basic-execution-unit
