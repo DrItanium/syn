@@ -1,9 +1,0 @@
-The machine calling convention is very simple
-
-- R0 - R3 are the first four args, 
-- R0 is also the return register
-- R4 is the call
-- R5, R6, R7 are temporaries
-- R8-R15 are purpose built but R8, R9, R10, R11 can be used as temporary values
-  if necessary.
-
