@@ -16,6 +16,7 @@ xsyn_repl
 MoleculeCoreBootstrap
 molecule_bootstrap
 maya
+syn
 
 *.tab.c
 *.tab.h

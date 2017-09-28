@@ -14,7 +14,7 @@ COMMON_THINGS = Core.o \
 				MemoryBlock.o \
 				ExecutionUnits.o
 
-REPL_FINAL_BINARY = syn_repl
+REPL_FINAL_BINARY = syn
 
 REPL_FINAL_OBJECTS = Repl.o \
 					 RegisteredExternalAddressAssemblers.o \
@@ -46,15 +46,12 @@ docs: bootstrap ${ALL_BINARIES}
 	@echo "running doxygen"
 	@doxygen
 
-maya:
-	@echo "Building maya..."
+libmaya.a: 
+	@echo "Building libmaya..."
 	@cd misc/maya && $(MAKE)
 	@echo "Finished building maya"
-	@echo "Copying maya to root..."
-	@cp misc/maya/maya .
+	@echo "Copying libmaya.a to root..."
 	@cp misc/maya/libmaya.a .
-
-libmaya.a: maya
 
 options:
 	@echo syn build options:
@@ -84,23 +81,9 @@ clean:
 nuke: clean
 	@echo "Cleaning maya..."
 	@cd misc/maya && $(MAKE) clean
-	@rm -rf doc/html maya libmaya.a
+	@rm -rf doc/html libmaya.a
 	@cd misc/termbox && ./waf uninstall --targets=termbox_static
 	@cd misc/termbox && ./waf distclean
-
-install: ${ALL_BINARIES}
-	@echo installing executables to ${DESTDIR}${PREFIX}/bin
-	@mkdir -p ${DESTDIR}${PREFIX}/bin
-	@for n in $(ALL_BINARIES); do \
-		cp $$n ${DESTDIR}${PREFIX}/bin/$$n; \
-		chmod 755 ${DESTDIR}${PREFIX}/bin/$$n; \
-	done
-
-uninstall:
-	@echo removing executables from ${DESTDIR}${PREFIX}/bin
-	@for n in $(ALL_BINARIES); do \
-		rm -f ${DESTDIR}${PREFIX}/bin/$$n ; \
-	done
 
 tests: bootstrap ${ALL_BINARIES} ${TEST_SUITES}
 	@echo "Running tests..."
