@@ -23,38 +23,27 @@
 
 
 ; IO related operations
-(defmodule io
-           (export defgeneric
-                   include
-                   include:batch
-                   include:batch*
-                   include:load
-                   include:load*
-                   add-to-search-path)
-           (export defglobal
-                   search-path))
-
-(defgeneric io::include
+(defgeneric MAIN::include
             "Iterate through a search path to try and find the first the instance of a given file!")
-(defgeneric io::include:batch
+(defgeneric MAIN::include:batch
             "Perform the include using the batch command!")
-(defgeneric io::include:batch*
+(defgeneric MAIN::include:batch*
             "Perform the include using the batch* command!")
-(defgeneric io::include:load
+(defgeneric MAIN::include:load
             "Perform the include using the load command!")
-(defgeneric io::include:load*
+(defgeneric MAIN::include:load*
             "Perform the include using the load* command!")
 
-(defgeneric io::add-to-search-path)
+(defgeneric MAIN::add-to-search-path)
 
-(defglobal io
+(defglobal MAIN
            ?*legal-io-load-commands* = (create$ batch
                                                 batch*
                                                 load
                                                 load*)
            ?*search-path* = (create$ .))
 
-(defmethod io::include
+(defmethod MAIN::include
   "Try to load the given file using a specified clips operation"
   ((?operation SYMBOL
                (not (neq ?current-argument
@@ -68,25 +57,25 @@
             (return TRUE)))
   FALSE)
 
-(defmethod io::add-to-search-path
+(defmethod MAIN::add-to-search-path
   ((?location LEXEME))
   (bind ?*search-path*
         ?*search-path*
         ?location))
 
-(defmethod io::include:batch
+(defmethod MAIN::include:batch
   ((?path LEXEME))
   (include batch
            ?path))
-(defmethod io::include:batch*
+(defmethod MAIN::include:batch*
   ((?path LEXEME))
   (include batch*
            ?path))
-(defmethod io::include:load
+(defmethod MAIN::include:load
   ((?path LEXEME))
   (include load
            ?path))
-(defmethod io::include:load*
+(defmethod MAIN::include:load*
   ((?path LEXEME))
   (include load*
            ?path))

@@ -22,10 +22,7 @@
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-(defmodule cortex
-           "Defines basic functions and such!"
-           (export ?ALL))
-(defglobal cortex
+(defglobal MAIN
            ?*priority:first* = 10000
            ?*priority:right-after-first* = 9999
            ?*priority:two-after-first* = 9998
@@ -34,30 +31,30 @@
            ?*priority:one* = 1
            ?*priority:last* = -9999
            ?*priority:dead-last* = -10000)
-(defgeneric cortex::increment
+(defgeneric MAIN::increment
             "Increment the given number by 1")
-(defgeneric cortex::decrement
+(defgeneric MAIN::decrement
             "Decrement the given number by 1")
-(defgeneric cortex::int->hex
+(defgeneric MAIN::int->hex
             "Convert the given integer to a hex number!")
 
-(defmethod cortex::int->hex
+(defmethod MAIN::int->hex
            ((?value INTEGER))
            (sym-cat (format nil
                             "0x%x"
                             ?value)))
 
-(defmethod cortex::increment
+(defmethod MAIN::increment
   ((?value INTEGER))
   (+ ?value
      1))
 
-(defmethod cortex::decrement
+(defmethod MAIN::decrement
   ((?value INTEGER))
   (- ?value
      1))
 
-(defclass cortex::thing
+(defclass MAIN::thing
   "Base class for everything that requires a parent relationship!"
   (is-a USER)
   (slot parent
@@ -69,7 +66,7 @@
         (default ?NONE))
   (message-handler parent-is primary))
 
-(defmessage-handler cortex::thing parent-is primary
+(defmessage-handler MAIN::thing parent-is primary
                     "Is the given name a parent of the current thing"
                     (?c)
                     (or (eq ?c
@@ -79,30 +76,30 @@
                                    parent-is
                                    ?c))))
 
-(defclass cortex::has-children
+(defclass MAIN::has-children
   "An interface that stipulates the given class has children!"
   (is-a USER)
   (multislot children
              (storage local)
              (visibility public)))
 
-(defclass cortex::thing-with-children
+(defclass MAIN::thing-with-children
   (is-a thing
         has-children))
-(deffunction cortex::int->bool
+(deffunction MAIN::int->bool
              "Convert the number to a boolean value!"
              (?value)
              (<> ?value
                  0))
-(deffunction cortex::bool
+(deffunction MAIN::bool
  (?value)
  (int->bool ?value))
 
-(deffunction cortex::bool->int
+(deffunction MAIN::bool->int
              (?value)
              (if ?value then 1 else 0))
 
-(defclass cortex::has-title
+(defclass MAIN::has-title
   "An object which has a title separate from its instance name"
   (is-a USER)
   (slot title
@@ -110,29 +107,29 @@
         (visibility public)
         (storage local)))
 
-(defclass cortex::has-index
+(defclass MAIN::has-index
   (is-a USER)
   (slot index
         (type INTEGER)
         (visibility public)
         (storage local)))
 
-(defclass cortex::indexed-thing
+(defclass MAIN::indexed-thing
   (is-a thing
         has-index))
 
-(defclass cortex::indexed-thing-with-children
+(defclass MAIN::indexed-thing-with-children
   (is-a thing-with-children
         indexed-thing))
 
-(defclass cortex::has-value
+(defclass MAIN::has-value
   (is-a USER)
   (slot value
         (storage local)
         (visibility public)
         (default ?NONE)))
 
-(deftemplate cortex::fact
+(deftemplate MAIN::fact
              (slot target
                    (default ?NONE))
              (slot description
@@ -141,67 +138,67 @@
              (multislot data))
 
 
-(defgeneric cortex::type-of)
-(defmethod cortex::type-of
+(defgeneric MAIN::type-of)
+(defmethod MAIN::type-of
   ((?a EXTERNAL-ADDRESS))
   (call ?a
         type))
-(defmethod cortex::type-of
+(defmethod MAIN::type-of
   ((?a PRIMITIVE))
   (class ?a))
 
 
-(defclass cortex::has-contents
+(defclass MAIN::has-contents
   (is-a USER)
   (multislot contents
              (storage local)
              (visibility public)))
 
 
-(deffunction cortex::number-list->bytes
+(deffunction MAIN::number-list->bytes
              (?number-list)
              (map break-apart-number
                   (expand$ ?number-list)))
 
 
 
-(defgeneric cortex::buildf)
-(defmethod cortex::buildf
+(defgeneric MAIN::buildf)
+(defmethod MAIN::buildf
   ((?router SYMBOL)
    (?fmt STRING)
    (?args MULTIFIELD))
   (build (format ?router
                  ?fmt
                  (expand$ ?args))))
-(defmethod cortex::buildf
+(defmethod MAIN::buildf
   ((?router SYMBOL)
    (?fmt STRING)
    $?args)
   (buildf ?router
           ?fmt
           ?args))
-(defmethod cortex::buildf
+(defmethod MAIN::buildf
   ((?fmt STRING)
    (?args MULTIFIELD))
   (buildf nil
           ?fmt
           ?args))
-(defmethod cortex::buildf
+(defmethod MAIN::buildf
   ((?fmt STRING)
    $?args)
   (buildf ?fmt
           ?args))
 
-(deffunction cortex::symbol->index
+(deffunction MAIN::symbol->index
              (?symbol ?collection)
              (member$ ?symbol
                       ?collection))
-(deffunction cortex::symbol->zero-index
+(deffunction MAIN::symbol->zero-index
              (?symbol ?collection)
              (- (symbol->index ?symbol
                                ?collection)
                 1))
-(deffunction cortex::build-stubbed-message-handler
+(deffunction MAIN::build-stubbed-message-handler
              (?type ?op)
              (buildf "(defmessage-handler %s %s primary () ?self)"
                      ?type
