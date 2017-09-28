@@ -22,7 +22,7 @@
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 (defclass MAIN::memory-block
-  (is-a external-address-wrapper)
+  (is-a device)
   (slot backing-type
         (storage shared)
         (default memory-block)
@@ -36,10 +36,76 @@
         (storage local)
         (visibility public)
         (default ?NONE))
-  (message-handler init after))
+  (message-handler init after)
+  (message-handler read primary)
+  (message-handler write primary)
+  (message-handler clear primary)
+  (message-handler populate primary)
+  (message-handler move primary)
+  (message-handler swap primary)
+  (message-handler size primary)
+  (message-handler decrement primary)
+  (message-handler increment primary))
 
 (defmessage-handler MAIN::memory-block init after
                     ()
                     (bind ?self:constructor-args
                           ?self:capacity))
 
+(defmessage-handler MAIN::memory-block read primary
+                    (?addr)
+                    (send ?self
+                          call
+                          read
+                          ?addr))
+(defmessage-handler MAIN::memory-block write primary
+                    (?addr ?value)
+                    (send ?self
+                          call
+                          write
+                          ?addr
+                          ?value))
+(defmessage-handler MAIN::memory-block clear primary
+                    ()
+                    (send ?self
+                          call
+                          clear))
+(defmessage-handler MAIN::memory-block populate primary
+                    (?value)
+                    (send ?self
+                          call
+                          populate
+                          ?value))
+
+(defmessage-handler MAIN::memory-block move primary
+                    (?from ?to)
+                    (send ?self
+                          call
+                          move
+                          ?from
+                          ?to))
+(defmessage-handler MAIN::memory-block swap primary
+                    (?addr0 ?addr1)
+                    (send ?self
+                          call
+                          swap
+                          ?addr0
+                          ?addr1))
+
+(defmessage-handler MAIN::memory-block decrement primary
+                    (?addr)
+                    (send ?self
+                          call
+                          decrement
+                          ?addr))
+(defmessage-handler MAIN::memory-block increment primary
+                    (?addr)
+                    (send ?self
+                          call
+                          increment
+                          ?addr))
+(defmessage-handler MAIN::memory-block size primary
+                    ()
+                    (send ?self
+                          call
+                          size))

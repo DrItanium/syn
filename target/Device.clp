@@ -22,35 +22,30 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;------------------------------------------------------------------------------
-; ExternalAddressWrapper.clp - Common class concept for external address wrappers
+; Device.clp - Common class concept for external address wrappers
 ;------------------------------------------------------------------------------
-(defclass MAIN::external-address-wrapper
-  (is-a USER)
-  (slot backing-type
-        (type SYMBOL)
-        (storage local)
-        (visibility public)
-        (default ?NONE))
-  (slot backing-store
-        (type EXTERNAL-ADDRESS)
-        (storage local)
-        (visibility public))
-  (multislot constructor-args
-             (storage local)
-             (visibility public))
-  (message-handler init around)
-  (message-handler call primary))
-
-(defmessage-handler MAIN::external-address-wrapper init around
+(defgeneric MAIN::device-initialize)
+(defgeneric MAIN::device-shutdown)
+(defmethod MAIN::device-initialize
+  ((?x EXTERNAL-ADDRESS))
+  (call ?x
+        initialize))
+(defmethod MAIN::device-shutdown
+  ((?x EXTERNAL-ADDRESS))
+  (call ?x
+        shutdown))
+      
+    
+(defclass MAIN::device
+  (is-a external-address-wrapper)
+  (role abstract)
+  (pattern-match non-reactive)
+  (message-handler init after)
+  (message-handler delete before))
+(defmessage-handler MAIN::device delete before
+                    ()
+                    (device-shutdown (dynamic-get backing-store)))
+(defmessage-handler MAIN::device init after
                     ()
                     (call-next-handler)
-                    (bind ?self:backing-store
-                          (new (dynamic-get backing-type)
-                               (expand$ (dynamic-get constructor-args)))))
-
-(defmessage-handler MAIN::external-address-wrapper call primary
-                    (?cmd $?args)
-                    (call (dynamic-get backing-store)
-                          ?cmd
-                          (expand$ ?args)))
-
+                    (device-initialize (dynamic-get backing-store)))

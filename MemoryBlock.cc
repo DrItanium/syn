@@ -123,20 +123,12 @@ namespace syn {
 					{ "size", std::make_tuple(MemoryBlockOp:: Size , 0) },
 					{ "type", std::make_tuple(MemoryBlockOp:: Type , 0) },
 					{ "clear", std::make_tuple(MemoryBlockOp:: Clear , 0) },
-					{ "zero", std::make_tuple(MemoryBlockOp:: Clear , 0) },
-					{ "set", std::make_tuple(MemoryBlockOp:: Set , 2) },
 					{ "write", std::make_tuple(MemoryBlockOp:: Set , 2) },
-					{ "store", std::make_tuple(MemoryBlockOp:: Set , 2) },
 					{ "move", std::make_tuple(MemoryBlockOp:: Move , 2) },
-					{ "copy", std::make_tuple(MemoryBlockOp:: Move , 2) },
 					{ "swap", std::make_tuple(MemoryBlockOp:: Swap , 2) },
 					{ "decrement", std::make_tuple(MemoryBlockOp:: Decrement , 1) },
-					{ "--", std::make_tuple(MemoryBlockOp:: Decrement , 1) },
 					{ "increment", std::make_tuple(MemoryBlockOp:: Increment , 1) },
-					{ "++", std::make_tuple(MemoryBlockOp:: Increment , 1) },
-					{ "get", std::make_tuple(MemoryBlockOp:: Get , 1) },
 					{ "read", std::make_tuple(MemoryBlockOp:: Get , 1) },
-					{ "load", std::make_tuple(MemoryBlockOp:: Get , 1) },
 				};
 				static std::tuple<MemoryBlockOp, int> bad;
 				static bool init = false;
