@@ -21,93 +21,73 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(defclass MAIN::memory-block
-  (is-a device)
-  (role concrete)
-  (pattern-match reactive)
+; Register.clp - wrapper class for the register concept
+
+(defclass MAIN::register
+  (is-a external-address-wrapper)
   (slot backing-type
         (storage shared)
         (access read-only)
         (create-accessor read)
         (source composite)
-        (default memory-block))
-  (slot capacity
-        (type INTEGER)
-        (range 0 
-               ?VARIABLE)
-        (storage local)
-        (visibility public)
-        (default ?NONE))
-  (message-handler init after)
-  (message-handler read primary)
+        (default register))
+  (message-handler set-mask primary)
+  (message-handler get-mask primary)
   (message-handler write primary)
-  (message-handler clear primary)
-  (message-handler populate primary)
-  (message-handler move primary)
-  (message-handler swap primary)
-  (message-handler size primary)
+  (message-handler read primary)
+  (message-handler increment primary)
   (message-handler decrement primary)
-  (message-handler increment primary))
-
-(defmessage-handler MAIN::memory-block init after
-                    ()
-                    (bind ?self:constructor-args
-                          ?self:capacity))
-
-(defmessage-handler MAIN::memory-block read primary
-                    (?addr)
+  (message-handler decode primary)
+  (message-handler encode primary))
+(defmessage-handler MAIN::register set-mask primary
+                    (?mask)
                     (send ?self
                           call
-                          read
-                          ?addr))
-(defmessage-handler MAIN::memory-block write primary
-                    (?addr ?value)
-                    (send ?self
-                          call
-                          write
-                          ?addr
-                          ?value))
-(defmessage-handler MAIN::memory-block clear primary
+                          set-mask
+                          ?mask))
+(defmessage-handler MAIN::register get-mask primary
                     ()
                     (send ?self
                           call
-                          clear))
-(defmessage-handler MAIN::memory-block populate primary
+                          get-mask))
+
+(defmessage-handler MAIN::register write primary
                     (?value)
                     (send ?self
                           call
-                          populate
+                          set
                           ?value))
-
-(defmessage-handler MAIN::memory-block move primary
-                    (?from ?to)
-                    (send ?self
-                          call
-                          move
-                          ?from
-                          ?to))
-(defmessage-handler MAIN::memory-block swap primary
-                    (?addr0 ?addr1)
-                    (send ?self
-                          call
-                          swap
-                          ?addr0
-                          ?addr1))
-
-(defmessage-handler MAIN::memory-block decrement primary
-                    (?addr)
-                    (send ?self
-                          call
-                          decrement
-                          ?addr))
-(defmessage-handler MAIN::memory-block increment primary
-                    (?addr)
-                    (send ?self
-                          call
-                          increment
-                          ?addr))
-(defmessage-handler MAIN::memory-block size primary
+(defmessage-handler MAIN::register read primary
                     ()
                     (send ?self
                           call
-                          size))
+                          get))
+(defmessage-handler MAIN::register increment primary
+                    ($?count)
+                    (send ?self
+                          call
+                          increment
+                          ?count))
+(defmessage-handler MAIN::register decrement primary
+                    ($?count)
+                    (send ?self
+                          call
+                          decrement
+                          ?count))
+
+(defmessage-handler MAIN::register decode primary
+                    (?mask ?shift)
+                    (send ?self
+                          call
+                          decode
+                          ?mask
+                          ?shift))
+
+(defmessage-handler MAIN::register encode primary
+                    (?value ?mask ?shift)
+                    (send ?self
+                          call
+                          encode
+                          ?value
+                          ?mask
+                          ?shift))
