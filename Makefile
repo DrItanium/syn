@@ -93,20 +93,16 @@ tests: bootstrap ${ALL_BINARIES} ${TEST_SUITES}
 
 
 
-.PHONY: all options clean install uninstall docs tests bootstrap termbox
+.PHONY: all options clean install uninstall docs tests bootstrap 
 
 bootstrap: ${DEFINE_OBJECTS} 
 
 misc/termbox:
 	@git submodule update --init --recursive
 
-termbox: misc/termbox
+include/termbox.h libtermbox.a: misc/termbox
 	@cd misc/termbox && ./waf configure --prefix=../../ --libdir=../../
 	@cd misc/termbox && ./waf
 	@cd misc/termbox && ./waf install --targets=termbox_static
-
-libtermbox.a: termbox
-include/termbox.h: termbox
-
 
 include deps.make
