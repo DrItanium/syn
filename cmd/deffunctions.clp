@@ -23,9 +23,6 @@
 
 
 ; define encode and decode C++ functions
-(defmodule MAIN
-           (import cortex
-                   ?ALL))
 (deffunction binaryp
              (?sym)
              (eq (str-index 0b

@@ -23,9 +23,6 @@
 
 
 ; define encode and decode C++ functions
-(defmodule MAIN
-           (import cortex
-                   ?ALL))
 (defgeneric MAIN::wrap-entries)
 (defmethod MAIN::wrap-entries
   ((?prefix LEXEME)
