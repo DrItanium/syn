@@ -22,4 +22,11 @@
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 (defclass MAIN::memory-space 
- (is-a external-address-wrapper) 
+  (is-a external-address-wrapper)
+  (slot backing-type
+        (storage shared)
+        (default memory-block)
+        (access read-only)
+        (create-accessor read)
+        (source composite)))
+
