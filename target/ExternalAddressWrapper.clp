@@ -54,3 +54,19 @@
                           ?cmd
                           (expand$ ?args)))
 
+(defmethod call
+  ((?target external-address-wrapper)
+   (?cmd SYMBOL)
+   (?arguments MULTIFIELD))
+  (send ?target
+        call
+        ?cmd
+        ?arguments))
+(defmethod call
+  ((?target external-address-wrapper)
+   (?cmd SYMBOL)
+   $?arguments)
+  (call ?target
+        ?cmd
+        ?arguments))
+
