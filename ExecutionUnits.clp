@@ -53,31 +53,27 @@
 
 (defmessage-handler MAIN::basic-combinatorial-logic-unit add primary 
                     (?a ?b) 
-                    (send ?self 
-                          call 
-                          add 
+                    (call (dynamic-get backing-store)
+                          add
                           ?a
                           ?b))
 (defmessage-handler MAIN::basic-combinatorial-logic-unit sub primary 
                     (?a ?b) 
-                    (send ?self 
-                          call 
-                          sub 
-                          ?a 
+                    (call (dynamic-get backing-store)
+                          sub
+                          ?a
                           ?b))
 (defmessage-handler MAIN::basic-combinatorial-logic-unit mul primary 
                     (?a ?b) 
-                    (send ?self 
-                          call 
-                          mul 
-                          ?a 
+                    (call (dynamic-get backing-store)
+                          mul
+                          ?a
                           ?b))
 (defmessage-handler MAIN::basic-combinatorial-logic-unit div primary 
                     (?a ?b) 
-                    (send ?self 
-                          call 
-                          div 
-                          ?a 
+                    (call (dynamic-get backing-store)
+                          div
+                          ?a
                           ?b))
 
 (defclass MAIN::fpu
@@ -92,8 +88,7 @@
 
 (defmessage-handler MAIN::fpu sqrt primary
                     (?a)
-                    (send ?self
-                          call
+                    (call (dynamic-get backing-store)
                           sqrt
                           ?a))
 
@@ -127,81 +122,35 @@
   (message-handler shift-right primary))
 
 
-(defmessage-handler MAIN::alu shift-left primary
-                    (?a ?b)
-                    (send ?self
-                          call
-                          shift-left
-                          ?a 
-                          ?b))
-(defmessage-handler MAIN::alu circular-shift-left primary
-                    (?a ?b)
-                    (send ?self
-                          call
-                          circular-shift-left
-                          ?a 
-                          ?b))
-(defmessage-handler MAIN::alu shift-right primary
-                    (?a ?b)
-                    (send ?self
-                          call
-                          shift-right
-                          ?a 
-                          ?b))
-(defmessage-handler MAIN::alu circular-shift-right primary
-                    (?a ?b)
-                    (send ?self
-                          call
-                          circular-shift-right
-                          ?a 
-                          ?b))
-(defmessage-handler MAIN::alu binary-and primary
-                    (?a ?b)
-                    (send ?self
-                          call
-                          binary-and
-                          ?a 
-                          ?b))
-(defmessage-handler MAIN::alu binary-or primary
-                    (?a ?b)
-                    (send ?self
-                          call
-                          binary-or
-                          ?a 
-                          ?b))
-(defmessage-handler MAIN::alu binary-nand primary
-                    (?a ?b)
-                    (send ?self
-                          call
-                          binary-nand
-                          ?a 
-                          ?b))
-(defmessage-handler MAIN::alu unary-not primary
-                    (?a) 
-                    (send ?self
-                          call
-                          unary-not
-                          ?a))
+(defmessage-handler MAIN::alu shift-left primary (?a ?b) (call (dynamic-get backing-store) shift-left ?a ?b))
+(defmessage-handler MAIN::alu circular-shift-left primary (?a ?b) (call (dynamic-get backing-store) circular-shift-left ?a ?b))
+(defmessage-handler MAIN::alu shift-right primary (?a ?b) (call (dynamic-get backing-store) shift-right ?a ?b))
+(defmessage-handler MAIN::alu circular-shift-right primary (?a ?b) (call (dynamic-get backing-store) circular-shift-right ?a ?b))
+(defmessage-handler MAIN::alu binary-and primary (?a ?b) (call (dynamic-get backing-store) binary-and ?a ?b))
+(defmessage-handler MAIN::alu binary-or primary (?a ?b) (call (dynamic-get backing-store) binary-or ?a ?b))
+(defmessage-handler MAIN::alu binary-nand primary (?a ?b) (call (dynamic-get backing-store) binary-nand ?a ?b))
+(defmessage-handler MAIN::alu unary-not primary (?a) (call (dynamic-get backing-store) unary-not ?a))
 
 (defmessage-handler MAIN::alu div primary
                     (?a ?b $?handler)
-                    (override-next-handler ?a 
-                                           ?b 
-                                           (if (= (length$ ?handler) 0) then
-                                             ?self:divide-by-zero-handler
-                                             else
-                                             (nth$ 1 
-                                                   ?handler))))
+                    (call (dynamic-get backing-store)
+                          div
+                          ?a
+                          ?b
+                          (if (= (length$ ?handler) 0) then
+                           ?self:divide-by-zero-handler
+                           else
+                           (nth$ 1 
+                            ?handler))))
 
 (defmessage-handler MAIN::alu rem primary
                     (?a ?b $?handler)
-                    (send ?self
-                          call
+                    (call (dynamic-get backing-store)
                           rem
                           ?a
                           ?b
                           (if (= (length$ ?handler) 0) then
-                            ?self:divide-by-zero-handler
-                            else
-                            (nth$ 1 
-                                  ?handler))))
+                           ?self:remide-by-zero-handler
+                           else
+                           (nth$ 1 
+                            ?handler))))

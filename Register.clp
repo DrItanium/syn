@@ -22,24 +22,6 @@
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ; Register.clp - wrapper class for the register concept
-(deffunction MAIN::register:set-mask
-             (?id ?mask)
-             (call ?id
-                   set-mask
-                   ?mask))
-(deffunction MAIN::register:get-mask
-             (?id)
-             (call ?id
-                   get-mask))
-(deffunction MAIN::register:write
-             (?id ?value)
-             (call ?id
-                   set
-                   ?value))
-(deffunction MAIN::register:read
-             (?id)
-             (call ?id
-                   get))
 (defgeneric MAIN::register:increment)
 (defmethod MAIN::register:increment
   ((?id EXTERNAL-ADDRESS)
@@ -117,34 +99,41 @@
   (message-handler encode primary))
 (defmessage-handler MAIN::register set-mask primary
                     (?mask)
-                    (register:set-mask (dynamic-get backing-store)
-                                       ?mask))
+                    (call (dynamic-get backing-store)
+                          set-mask
+                          ?mask))
 (defmessage-handler MAIN::register get-mask primary
                     ()
-                    (register:get-mask (dynamic-get backing-store)
-                                       ?mask))
+                    (call (dynamic-get backing-store)
+                          get-mask))
 
 (defmessage-handler MAIN::register write primary
                     (?value)
-                    (register:write (dynamic-get backing-store)
-                                    ?value))
+                    (call (dynamic-get backing-store)
+                           set
+                           ?value))
+
 (defmessage-handler MAIN::register read primary
                     ()
-                    (register:read (dynamic-get backing-store)))
+                    (call (dynamic-get backing-store)
+                          get))
 
 (defmessage-handler MAIN::register increment primary
                     ($?count)
                     (register:increment (dynamic-get backing-store)
                                         (expand$ (first$ ?count))))
+
 (defmessage-handler MAIN::register decrement primary
                     ($?count)
                     (register:decrement (dynamic-get backing-store)
                                         (expand$ (first$ ?count))))
+
 (defmessage-handler MAIN::register decode primary
                     (?mask $?shift)
                     (register:decode (dynamic-get backing-store)
                                      ?mask
                                      (expand$ (first$ ?shift))))
+
 (defmessage-handler MAIN::register encode primary
                     (?value ?mask $?shift)
                     (register:encode (dynamic-get backing-store)
