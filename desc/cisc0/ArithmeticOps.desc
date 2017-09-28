@@ -1,7 +1,0 @@
-X("add", ArithmeticOps :: Add , Add)
-X("sub", ArithmeticOps :: Sub , Sub)
-X("mul", ArithmeticOps :: Mul , Mul)
-X("div", ArithmeticOps :: Div , Div)
-X("rem", ArithmeticOps :: Rem , Rem)
-X("min", ArithmeticOps :: Min , Min)
-X("max", ArithmeticOps :: Max , Max)

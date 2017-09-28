@@ -1,7 +1,0 @@
-X("PushValueAddr", ExtendedOperation :: PushValueAddr , PushValueAddr)
-X("PopValueAddr", ExtendedOperation :: PopValueAddr , PopValueAddr)
-X("oddp", ExtendedOperation :: IsOdd , IsOdd)
-X("evenp", ExtendedOperation :: IsEven , IsEven)
-X("IncrementValueAddr", ExtendedOperation :: IncrementValueAddr , IncrementValueAddr)
-X("DecrementValueAddr", ExtendedOperation :: DecrementValueAddr , DecrementValueAddr)
-X("WordsBeforeFirstZero", ExtendedOperation :: WordsBeforeFirstZero , WordsBeforeFirstZero)

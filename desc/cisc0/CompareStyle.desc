@@ -1,8 +1,0 @@
-X("==", CompareStyle :: Equals , Equals)
-X("!=", CompareStyle :: NotEquals , NotEquals)
-X("<", CompareStyle :: LessThan , LessThan)
-X("<=", CompareStyle :: GreaterThan , GreaterThan)
-X(">", CompareStyle :: LessThanOrEqualTo , LessThanOrEqualTo)
-X(">=", CompareStyle :: GreaterThanOrEqualTo , GreaterThanOrEqualTo)
-X("MoveFromCondition", CompareStyle :: MoveFromCondition , MoveFromCondition)
-X("MoveToCondition", CompareStyle :: MoveToCondition , MoveToCondition)

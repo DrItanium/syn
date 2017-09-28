@@ -1,4 +1,0 @@
-X("encoding", ComplexSubTypes :: Encoding , Encoding)
-X("extended", ComplexSubTypes :: Extended , Extended)
-X("parsing", ComplexSubTypes :: Parsing , Parsing)
-X("feature-check", ComplexSubTypes :: FeatureCheck , FeatureCheck)

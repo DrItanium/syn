@@ -1,4 +1,0 @@
-X("encode", EncodingOperation :: Encode , Encode)
-X("decode", EncodingOperation :: Decode , Decode)
-X("bitset", EncodingOperation :: BitSet , BitSet)
-X("bitunset", EncodingOperation :: BitUnset , BitUnset)

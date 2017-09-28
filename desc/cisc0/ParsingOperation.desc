@@ -1,3 +1,0 @@
-X("Hex8ToRegister", ParsingOperation :: Hex8ToRegister , Hex8ToRegister)
-X("RegisterToHex8", ParsingOperation :: RegisterToHex8 , RegisterToHex8)
-X("MemCopy", ParsingOperation :: MemCopy , MemCopy)

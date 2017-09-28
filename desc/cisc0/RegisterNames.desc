@@ -1,8 +1,0 @@
-X("addr", ArchitectureConstants::AddressRegister, AddrRegister)
-X("ip", ArchitectureConstants::InstructionPointer, InstructionPointer)
-X("sp", ArchitectureConstants::StackPointer, StackPointer)
-X("value", ArchitectureConstants::ValueRegister, ValueRegister)
-X("mask", ArchitectureConstants::MaskRegister, MaskRegister)
-X("shift", ArchitectureConstants::ShiftRegister, ShiftRegister)
-X("field", ArchitectureConstants::FieldRegister, FieldRegister)
-X("csp", ArchitectureConstants::CallStackPointer, CallStackPointer)

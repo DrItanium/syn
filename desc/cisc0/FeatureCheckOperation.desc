@@ -1,3 +1,0 @@
-X("GetModelNumber", FeatureCheckOperation :: GetModelNumber , GetModelNumber)
-X("GetTerminateAddress", FeatureCheckOperation :: GetTerminateAddress , GetTerminateAddress)
-X("SetTerminateAddress", FeatureCheckOperation :: SetTerminateAddress , SetTerminateAddress)

@@ -1,5 +1,0 @@
-X("and", LogicalOps :: And , And)
-X("or", LogicalOps :: Or , Or)
-X("xor", LogicalOps :: Xor , Xor)
-X("nand", LogicalOps :: Nand , Nand)
-X("not", LogicalOps :: Not , Not)
