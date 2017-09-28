@@ -23,6 +23,8 @@
 
 (defclass MAIN::memory-block
   (is-a device)
+  (role concrete)
+  (pattern-match reactive)
   (slot backing-type
         (storage shared)
         (default memory-block)

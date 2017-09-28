@@ -45,7 +45,7 @@
 (defmessage-handler MAIN::device delete before
                     ()
                     (device-shutdown (dynamic-get backing-store)))
-(defmessage-handler MAIN::device init after
+(defmessage-handler MAIN::device init around 
                     ()
                     (call-next-handler)
                     (device-initialize (dynamic-get backing-store)))
