@@ -33,6 +33,7 @@
         (visbility public)
         (default-dynamic default-undefined-operation-handler))
   (message-handler put-undefined-operation-handler after))
+
 (defmessage-handler MAIN::basic-execution-unit put-undefined-operation-handler after
                     (?sym)
                     (call (dynamic-get backing-store)
@@ -42,9 +43,6 @@
                             else
                             ?sym)))
 
-(deffunction MAIN::default-divide-by-zero-handler
-             ()
-             0)
 
 (defclass MAIN::basic-combinatorial-logic-unit
   (is-a basic-execution-unit)
@@ -99,6 +97,9 @@
                           sqrt
                           ?a))
 
+(deffunction MAIN::default-divide-by-zero-handler
+             ()
+             0)
 (defclass MAIN::alu
   (is-a basic-combinatorial-logic-unit)
   (slot backing-type
@@ -112,6 +113,7 @@
         (storage local)
         (visibility public)
         (default-dynamic default-divide-by-zero-handler))
+  (message-handler init around)
   (message-handler div primary)
   (message-handler rem primary)
   (message-handler binary-and primary)

@@ -22,6 +22,82 @@
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ; Register.clp - wrapper class for the register concept
+(deffunction MAIN::register:set-mask
+             (?id ?mask)
+             (call ?id
+                   set-mask
+                   ?mask))
+(deffunction MAIN::register:get-mask
+             (?id)
+             (call ?id
+                   get-mask))
+(deffunction MAIN::register:write
+             (?id ?value)
+             (call ?id
+                   set
+                   ?value))
+(deffunction MAIN::register:read
+             (?id)
+             (call ?id
+                   get))
+(defgeneric MAIN::register:increment)
+(defmethod MAIN::register:increment
+  ((?id EXTERNAL-ADDRESS)
+   (?value INTEGER))
+  (call ?id
+        increment
+        ?value))
+(defmethod MAIN::register:increment
+  ((?id EXTERNAL-ADDRESS))
+  (call ?id
+        increment))
+(defgeneric MAIN::register:decrement)
+(defmethod MAIN::register:decrement
+  ((?id EXTERNAL-ADDRESS)
+   (?value INTEGER))
+  (call ?id
+        decrement
+        ?value))
+(defmethod MAIN::register:decrement
+  ((?id EXTERNAL-ADDRESS))
+  (call ?id
+        decrement))
+(defgeneric MAIN::register:decode)
+(defmethod MAIN::register:decode
+  ((?id EXTERNAL-ADDRESS)
+   (?mask INTEGER)
+   (?shift INTEGER))
+  (call ?id
+        decode
+        ?mask
+        ?shift))
+(defmethod MAIN::register:decode
+  ((?id EXTERNAL-ADDRESS)
+   (?mask INTEGER))
+  (register:decode ?id
+                   ?mask
+                   0))
+
+(defgeneric MAIN::register:encode)
+(defmethod MAIN::register:encode
+  ((?id EXTERNAL-ADDRESS)
+   (?value INTEGER)
+   (?mask INTEGER)
+   (?shift INTEGER))
+  (call ?id
+        encode
+        ?value
+        ?mask
+        ?shift))
+(defmethod MAIN::register:encode
+  ((?id EXTERNAL-ADDRESS)
+   (?value INTEGER)
+   (?mask INTEGER))
+  (register:encode ?id
+                   ?value
+                   ?mask
+                   0))
+
 
 (defclass MAIN::register
   (is-a external-address-wrapper)
@@ -41,53 +117,37 @@
   (message-handler encode primary))
 (defmessage-handler MAIN::register set-mask primary
                     (?mask)
-                    (send ?self
-                          call
-                          set-mask
-                          ?mask))
+                    (register:set-mask (dynamic-get backing-store)
+                                       ?mask))
 (defmessage-handler MAIN::register get-mask primary
                     ()
-                    (send ?self
-                          call
-                          get-mask))
+                    (register:get-mask (dynamic-get backing-store)
+                                       ?mask))
 
 (defmessage-handler MAIN::register write primary
                     (?value)
-                    (send ?self
-                          call
-                          set
-                          ?value))
+                    (register:write (dynamic-get backing-store)
+                                    ?value))
 (defmessage-handler MAIN::register read primary
                     ()
-                    (send ?self
-                          call
-                          get))
+                    (register:read (dynamic-get backing-store)))
+
 (defmessage-handler MAIN::register increment primary
                     ($?count)
-                    (send ?self
-                          call
-                          increment
-                          ?count))
+                    (register:increment (dynamic-get backing-store)
+                                        (expand$ (first$ ?count))))
 (defmessage-handler MAIN::register decrement primary
                     ($?count)
-                    (send ?self
-                          call
-                          decrement
-                          ?count))
-
+                    (register:decrement (dynamic-get backing-store)
+                                        (expand$ (first$ ?count))))
 (defmessage-handler MAIN::register decode primary
-                    (?mask ?shift)
-                    (send ?self
-                          call
-                          decode
-                          ?mask
-                          ?shift))
-
+                    (?mask $?shift)
+                    (register:decode (dynamic-get backing-store)
+                                     ?mask
+                                     (expand$ (first$ ?shift))))
 (defmessage-handler MAIN::register encode primary
-                    (?value ?mask ?shift)
-                    (send ?self
-                          call
-                          encode
-                          ?value
-                          ?mask
-                          ?shift))
+                    (?value ?mask $?shift)
+                    (register:encode (dynamic-get backing-store)
+                                     ?value
+                                     ?mask
+                                     (expand$ (first$ ?shift))))
