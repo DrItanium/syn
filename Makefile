@@ -84,7 +84,7 @@ nuke: clean
 tests: bootstrap ${ALL_BINARIES} ${TEST_SUITES}
 	@echo "Running tests..."
 	@for n in ${TEST_SUITES}; do \
-		./syn_repl -f2 $$n -f2 cmd/test-case-invoke.clp ; \
+		./${REPL_FINAL_BINARY} -f2 $$n -f2 cmd/test-case-invoke.clp ; \
 	done
 
 
