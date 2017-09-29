@@ -153,3 +153,56 @@
          (make-instance ?name of register)
          (printout t
                    Done crlf))
+
+(defrule MAIN::bootstrap-shutdown:print-phase
+         (declare (salience ?*priority:first*))
+         (stage (id bootstrap)
+                (current shutdown))
+         =>
+         (printout t
+                   "Shutting down machine0 system!" crlf))
+(defrule MAIN::bootstrap-shutdown:delete-memory-block
+         (stage (id bootstrap)
+                (current shutdown))
+         (object (is-a machine0-memory-block)
+                 (name ?name))
+         =>
+         (assert (delete "memory block" 
+                         ?name)))
+
+(defrule MAIN::bootstrap-shutdown:delete-register-file
+         (stage (id bootstrap)
+                (current shutdown))
+         (object (is-a register-file)
+                 (name ?name))
+         =>
+         (assert (delete "register file"
+                         ?name)))
+
+(defrule MAIN::bootstrap-shutdown:delete-register
+         (stage (id bootstrap)
+                (current shutdown))
+         (object (is-a register)
+                 (name ?name))
+         =>
+         (assert (delete register ?name)))
+(defrule MAIN::bootstrap-shutdown:delete-thingy
+         (stage (id bootstrap)
+                (current shutdown))
+         ?f <- (delete ?title ?name)
+         =>
+         (retract ?f)
+         (printout t
+                   "Bringing down " ?title ": " (instance-name-to-symbol ?name) " .... ")
+         (unmake-instance ?name)
+         (printout t
+                   Done crlf))
+
+(defrule MAIN::bootstrap-shutdown:shutdown-complete
+         (declare (salience -9000))
+         (stage (id bootstrap)
+                (current shutdown))
+         =>
+         (printout t
+                   "shutdown complete .... bye" crlf))
+
