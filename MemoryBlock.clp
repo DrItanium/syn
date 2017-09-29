@@ -52,7 +52,7 @@
 (defmessage-handler MAIN::memory-block init after
                     ()
                     (bind ?self:constructor-args
-                          ?self:capacity))
+                          (dynamic-get capacity)))
 
 (defmessage-handler MAIN::memory-block read primary
                     (?addr)
