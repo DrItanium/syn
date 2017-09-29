@@ -43,22 +43,21 @@
         (default (+ (hex->int 0x00FFFFFF) 
                     1))))
 (defclass MAIN::register-file
-          (is-a memory-block)
-          (slot capacity
-                (source composite)
-                (storage shared)
-                (default 16)))
+  (is-a memory-block)
+  (slot capacity
+        (source composite)
+        (storage shared)
+        (default 16)))
 ; There are 8 memory spaces in this machine setup for a total of 1 gigabyte or 128 megawords
-(definstances MAIN::machine0-memory-spaces
-              (space0 of machine0-memory-block)
-              ;(space1 of machine0-memory-block)
-              ;(space3 of machine0-memory-block)
-              ;(space3 of machine0-memory-block)
-              ;(space4 of machine0-memory-block)
-              ;(space5 of machine0-memory-block)
-              ;(space6 of machine0-memory-block)
-              ;(space7 of machine0-memory-block)
-              )
+(deffacts MAIN::make-memory-blocks
+          (make memory-block named space0)
+          (make memory-block named space1)
+          (make memory-block named space2)
+          (make memory-block named space3)
+          (make memory-block named space4)
+          (make memory-block named space5)
+          (make memory-block named space6)
+          (make memory-block named space7))
 
 ; The instruction pointer register is 27-bits wide or having a mask of 0x07FFFFFF 
 ; this applies to the stack register as well. All bits above the mask must be zero to maintain
@@ -66,10 +65,91 @@
 (defglobal MAIN
            ?*address-mask* = (hex->int 0x00FFFFFF)
            ?*address-mask27* = (hex->int 0x07FFFFFF))
-(definstances MAIN::machine0-registers
-              (rf0 of register-file)
-              (ip of register
-                  (mask ?*address-mask*))
-              (sp of register
-                  (mask ?*address-mask*)))
+(deffacts MAIN::make-registers
+          (make register-file named rf0)
+          (make register named ip with mask ?*address-mask*)
+          (make register named sp with mask ?*address-mask*))
 
+
+(deffacts MAIN::cycles
+          (stage (id bootstrap)
+                 (current startup)
+                 (rest initialize
+                       check
+                       execute
+                       shutdown)))
+; the cpu bootstrap process requires lower priority because it always exists in the background and dispatches 
+; cycles as we go along. This is how we service interrupts and other such things. 
+(defrule MAIN::boostrap-startup
+         (declare (salience ?*priority:first*)) 
+         (stage (id bootstrap)
+                (current startup))
+         =>
+         (printout t 
+                   "Machine0 System boot" crlf
+                   "Starting up .... please wait" crlf))
+
+(defrule MAIN::bootstrap-initialize:describe-phase
+         (declare (salience ?*priority:first*))
+         (stage (id bootstrap)
+                (current initialize))
+         =>
+         (printout t
+                   "Initializing memory space ... please wait" crlf))
+
+(defrule MAIN::bootstrap-initialize:make-memory-block
+         (stage (id bootstrap)
+                (current initialize))
+         ?f <- (make memory-block named ?name)
+         =>
+         (retract ?f)
+         (printout t 
+                   "Bringing up memory block: " ?name " .... ")
+         (make-instance ?name of machine0-memory-block)
+         (printout t 
+                   Done crlf
+                   tab (format nil
+                               "size: 0x%x words"
+                               (send (symbol-to-instance-name ?name)
+                                     size)) crlf))
+(defrule MAIN::bootstrap-initialize:make-register-file
+         (stage (id bootstrap)
+                (current initialize))
+         ?f <- (make register-file named ?name)
+         =>
+         (retract ?f)
+         (printout t
+                   "Bringing up register-file: " ?name " .... ")
+         (make-instance ?name of register-file)
+         (printout t
+                   Done crlf
+                   tab (format nil
+                               "register count: %d"
+                               (send (symbol-to-instance-name ?name)
+                                     size)) crlf))
+(defrule MAIN::bootstrap-initialize:make-register-with-mask
+         (stage (id bootstrap)
+                (current initialize))
+         ?f <- (make register named ?name with mask ?mask)
+         =>
+         (retract ?f)
+         (printout t
+                   "Bringing up register: " ?name " .... ")
+         (make-instance ?name of register 
+                        (mask ?mask))
+         (printout t 
+                   Done crlf
+                   tab (format nil 
+                               "mask: 0x%x"
+                               ?mask) crlf))
+(defrule MAIN::bootstrap-initialize:make-register-default
+         (stage (id bootstrap)
+                (current initialize))
+         ?f <- (make register named ?name)
+         =>
+         (retract ?f)
+         (printout t
+                   "Bringing up register: " ?name " .... ")
+         (make-instance ?name of register)
+         (printout t
+                   Done crlf))
