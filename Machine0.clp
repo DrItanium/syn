@@ -35,23 +35,34 @@
         (storage shared)
         (default (+ (hex->int 0x00FFFFFF) 
                     1))))
+(defclass MAIN::register-file
+          (is-a memory-block)
+          (slot capacity
+                (source composite)
+                (storage shared)
+                (default 16)))
 ; There are 8 memory spaces in this machine setup for a total of 1 gigabyte or 128 megawords
 (definstances MAIN::machine0-memory-spaces
               (space0 of machine0-memory-block)
-              (space1 of machine0-memory-block)
-              (space2 of machine0-memory-block)
-              (space3 of machine0-memory-block)
-              (space4 of machine0-memory-block)
-              (space5 of machine0-memory-block)
-              (space6 of machine0-memory-block)
-              (space7 of machine0-memory-block))
+              ;(space1 of machine0-memory-block)
+              ;(space3 of machine0-memory-block)
+              ;(space3 of machine0-memory-block)
+              ;(space4 of machine0-memory-block)
+              ;(space5 of machine0-memory-block)
+              ;(space6 of machine0-memory-block)
+              ;(space7 of machine0-memory-block)
+              )
 
 ; The instruction pointer register is 27-bits wide or having a mask of 0x07FFFFFF 
 ; this applies to the stack register as well. All bits above the mask must be zero to maintain
 ; backwards compatibility
+(defglobal MAIN
+           ?*address-mask* = (hex->int 0x00FFFFFF)
+           ?*address-mask27* = (hex->int 0x07FFFFFF))
 (definstances MAIN::machine0-registers
+              (rf0 of register-file)
               (ip of register
-                  (mask (hex->int 0x07FFFFFF)))
+                  (mask ?*address-mask*))
               (sp of register
-                  (mask (hex->int 0x07FFFFFF))))
+                  (mask ?*address-mask*)))
 
