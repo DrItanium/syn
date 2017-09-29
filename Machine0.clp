@@ -35,7 +35,13 @@
         (storage shared)
         (default (+ (hex->int 0x00FFFFFF) 
                     1))))
-; There are 8 memory spaces in this machine setup
+; There are 8 memory spaces in this machine setup for a total of 1 gigabyte or 128 megawords
 (definstances MAIN::machine0-memory-spaces
               ([space0] of machine0-memory-block)
-              ([space1] of machine0-memory
+              ([space1] of machine0-memory-block)
+              ([space2] of machine0-memory-block)
+              ([space3] of machine0-memory-block)
+              ([space4] of machine0-memory-block)
+              ([space5] of machine0-memory-block)
+              ([space6] of machine0-memory-block)
+              ([space7] of machine0-memory-block))
