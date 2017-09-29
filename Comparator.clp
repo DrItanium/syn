@@ -44,6 +44,8 @@
         (access read-only)
         (create-accessor read)
         (default comparator))
+  (message-handler eq primary)
+  (message-handler neq primary)
   (message-handler binary-and primary)
   (message-handler binary-or primary)
   (message-handler binary-nand primary)
@@ -53,6 +55,13 @@
   (message-handler circular-shift-left primary)
   (message-handler shift-right primary)
   (message-handler circular-shift-right primary))
+
+(defmessage-handler MAIN::integer-comparator eq primary
+                    (?a ?b)
+                    (= ?a ?b))
+(defmessage-handler MAIN::integer-comparator neq primary
+ (?a ?b)
+ (<> ?a ?b))
 
 (defmessage-handler MAIN::integer-comparator binary-and primary
                     (?a ?b)
