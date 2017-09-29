@@ -47,6 +47,8 @@
               (space7 of machine0-memory-block))
 
 ; The instruction pointer register is 27-bits wide or having a mask of 0x07FFFFFF 
+; this applies to the stack register as well. All bits above the mask must be zero to maintain
+; backwards compatibility
 (definstances MAIN::machine0-registers
               (ip of register
                   (mask (hex->int 0x07FFFFFF)))
