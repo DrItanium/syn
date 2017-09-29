@@ -66,17 +66,25 @@
 (defglobal MAIN
            ?*address-mask* = (hex->int 0x00FFFFFF)
            ?*address-mask27* = (hex->int 0x07FFFFFF))
+; Internally, machine
 (deffacts MAIN::make-registers
-          (terminate at (hex->int 0x10000) cycles)
-          (make register-file named rf0)
+          (terminate at 128 cycles)
+          ;(terminate at ?*address-mask* cycles)
           (make register named ip with mask ?*address-mask*)
-          (make register named sp with mask ?*address-mask*))
+          (make register named sp with mask ?*address-mask*)
+          (make register named cs with mask ?*address-mask*)
+          (make register named dictionary with mask ?*address-mask*)
+          (make register named t0)
+          (make register named t1)
+          (make register named t2))
 
 (defglobal MAIN
-           ?*execution-cycle-stages* = (create$ read
-                                                eval
-                                                print
-                                                loop))
+           ?*execution-cycle-stages* = (create$ read ; load the instruction from memory
+                                                eval ; evaluate instruction input and construct the ucode sequence
+                                                print ; invoke the execution unit and save the result as needed
+                                                advance ; advance ip
+                                                loop ; perform checks to see if we should loop or terminate
+                                                ))
 (deffacts MAIN::cycles
           (stage (id bootstrap)
                  (current startup)
@@ -230,31 +238,51 @@
          ?ms0 <- (object (is-a machine0-memory-block)
                          (name [space0]))
          =>
-         (printout t
-                   "read from address " ?value crlf
-                   tab "extracted value: " (send ?ms0
-                                                 read
-                                                 ?value) crlf))
-(defrule MAIN::bootstrap-execute:execution-cycle:print-advance-ip
+         (assert (read from address ?value with extracted value: (send ?ms0
+                                                                       read
+                                                                       ?value))))
+(deftemplate MAIN::smashed-instruction
+             (slot address
+                   (type INTEGER)
+                   (default ?NONE))
+             (slot original-value
+                   (type INTEGER)
+                   (default ?NONE)))
+(defrule MAIN::bootstrap-execute:execution-cycle:eval:smash-instruction
+         "Smash the instruction up into multiple components which make up the different aspects of the instruction itself"
          (stage (id bootstrap)
-                (current print))
+                (current eval))
+         ?f <- (read from address ?addr with extracted value: ?value)
+         =>
+         (retract ?f)
+         (assert (smashed-instruction (address ?addr)
+                                      (original-value ?value))))
+
+(defrule MAIN::bootstrap-execute:execution-cycle:advance:next-address
+         "If we didn't update the instruction pointer then make sure we do that now!"
+         (stage (id bootstrap)
+                (current advance))
+         (not (check [ip]))
          ?ip <- (object (is-a register)
                         (name [ip]))
          =>
+         (assert (check [ip]))
          (send ?ip 
                increment))
-(defrule MAIN::bootstrap-execute:execution-cycle:loop-restart-cycle
+(defrule MAIN::bootstrap-execute:execution-cycle:loop:restart-cycle
          ?f <- (stage (id bootstrap)
                       (current loop)
                       (rest $?rest))
+         ?f2 <- (check ?ip)
          (object (is-a register)
-                 (name [ip])
+                 (name ?ip)
                  (value ?value))
          (terminate at ?addr cycles)
-         (test (< ?value ?addr))
+         (test (<> ?value 
+                   ?addr))
          =>
+         (retract ?f2)
          (modify ?f 
-                 (current to-the-next-stage)
                  (rest ?*execution-cycle-stages*
                        $?rest)))
 
