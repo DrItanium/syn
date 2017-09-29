@@ -30,18 +30,13 @@ ALL_OBJECTS = ${COMMON_THINGS} \
 			  ${DEFINE_CLPS} \
 			  ${REPL_FINAL_OBJECTS}
 
-COMMON_CLP_FILES = reset-run-exit.clp
-COMMON_GEN_ENCODER_DECODER_FILES= ${COMMON_CLP_FILES} \
-								  cmd/deffield.clp \
-								  cmd/deffunctions.clp \
-								  cortex.clp \
-								  Base.h
-
-TEST_SUITES = target/test_maya.clp \
-			  target/test_ClipsExtensions.clp
+TEST_SUITES = test_maya.clp \
+			  test_ClipsExtensions.clp
 
 
 all: options bootstrap ${ALL_BINARIES}
+
+full: all tests
 
 docs: bootstrap ${ALL_BINARIES}
 	@echo "running doxygen"
