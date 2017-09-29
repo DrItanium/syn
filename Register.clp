@@ -50,10 +50,17 @@
         (storage local)
         (visibility public)
         (default-dynamic 0))
+  (message-handler increment primary)
   (message-handler put-mask after)
   (message-handler put-value around)
   (message-handler decode primary)
   (message-handler encode primary))
+(defmessage-handler MAIN::register increment primary
+                    ()
+                    (send ?self
+                          put-value 
+                          (+ (dynamic-get value)
+                             1)))
 
 (defmessage-handler MAIN::register put-value around
                     "Mask the value before storing it!"

@@ -51,13 +51,14 @@
 ; There are 8 memory spaces in this machine setup for a total of 1 gigabyte or 128 megawords
 (deffacts MAIN::make-memory-blocks
           (make memory-block named space0)
-          (make memory-block named space1)
-          (make memory-block named space2)
-          (make memory-block named space3)
-          (make memory-block named space4)
-          (make memory-block named space5)
-          (make memory-block named space6)
-          (make memory-block named space7))
+          ;(make memory-block named space1)
+          ;(make memory-block named space2)
+          ;(make memory-block named space3)
+          ;(make memory-block named space4)
+          ;(make memory-block named space5)
+          ;(make memory-block named space6)
+          ;(make memory-block named space7)
+          )
 
 ; The instruction pointer register is 27-bits wide or having a mask of 0x07FFFFFF 
 ; this applies to the stack register as well. All bits above the mask must be zero to maintain
@@ -66,17 +67,22 @@
            ?*address-mask* = (hex->int 0x00FFFFFF)
            ?*address-mask27* = (hex->int 0x07FFFFFF))
 (deffacts MAIN::make-registers
+          (terminate at (hex->int 0x10000) cycles)
           (make register-file named rf0)
           (make register named ip with mask ?*address-mask*)
           (make register named sp with mask ?*address-mask*))
 
-
+(defglobal MAIN
+           ?*execution-cycle-stages* = (create$ read
+                                                eval
+                                                print
+                                                loop))
 (deffacts MAIN::cycles
           (stage (id bootstrap)
                  (current startup)
                  (rest initialize
-                       check
                        execute
+                       ?*execution-cycle-stages*
                        shutdown)))
 ; the cpu bootstrap process requires lower priority because it always exists in the background and dispatches 
 ; cycles as we go along. This is how we service interrupts and other such things. 
@@ -205,4 +211,51 @@
          =>
          (printout t
                    "shutdown complete .... bye" crlf))
+
+
+(defrule MAIN::bootstrap-execute:generate-cycle-execute
+         "setup the execution cycle!"
+         (stage (id bootstrap)
+                (current execute))
+         =>
+         (printout t
+                   "Setting up the execution cycle!" crlf))
+
+(defrule MAIN::bootstrap-execute:execution-cycle:read-from-memory
+         (stage (id bootstrap)
+                (current read))
+         (object (is-a register)
+                 (name [ip])
+                 (value ?value))
+         ?ms0 <- (object (is-a machine0-memory-block)
+                         (name [space0]))
+         =>
+         (printout t
+                   "read from address " ?value crlf
+                   tab "extracted value: " (send ?ms0
+                                                 read
+                                                 ?value) crlf))
+(defrule MAIN::bootstrap-execute:execution-cycle:print-advance-ip
+         (stage (id bootstrap)
+                (current print))
+         ?ip <- (object (is-a register)
+                        (name [ip]))
+         =>
+         (send ?ip 
+               increment))
+(defrule MAIN::bootstrap-execute:execution-cycle:loop-restart-cycle
+         ?f <- (stage (id bootstrap)
+                      (current loop)
+                      (rest $?rest))
+         (object (is-a register)
+                 (name [ip])
+                 (value ?value))
+         (terminate at ?addr cycles)
+         (test (< ?value ?addr))
+         =>
+         (modify ?f 
+                 (current to-the-next-stage)
+                 (rest ?*execution-cycle-stages*
+                       $?rest)))
+
 
