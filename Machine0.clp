@@ -49,4 +49,7 @@
 ; The instruction pointer register is 27-bits wide or having a mask of 0x07FFFFFF 
 (definstances MAIN::machine0-registers
               (ip of register
+                  (mask (hex->int 0x07FFFFFF)))
+              (sp of register
                   (mask (hex->int 0x07FFFFFF))))
+
