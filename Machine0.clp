@@ -28,6 +28,13 @@
 ; and a 27-bit memory space. If the addresses are expanded to the byte level then it would
 ; be a 30-bit memory space!
 ; This 27 bit memory space is divided up into 8 16 mega word sections!
+(batch* cortex.clp)
+(batch* MainModuleDeclaration.clp)
+(batch* ExternalAddressWrapper.clp)
+(batch* Device.clp)
+(batch* MemoryBlock.clp)
+(batch* Register.clp)
+(batch* order.clp)
 (defclass MAIN::machine0-memory-block
   (is-a memory-block)
   (slot capacity

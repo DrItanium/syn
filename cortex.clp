@@ -22,7 +22,7 @@
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 (defmodule cortex
- (export ?ALL))
+           (export ?ALL))
 (defglobal cortex
            ?*priority:first* = 10000
            ?*priority:right-after-first* = 9999
@@ -40,10 +40,10 @@
             "Convert the given integer to a hex number!")
 
 (defmethod cortex::int->hex
-           ((?value INTEGER))
-           (sym-cat (format nil
-                            "0x%x"
-                            ?value)))
+  ((?value INTEGER))
+  (sym-cat (format nil
+                   "0x%x"
+                   ?value)))
 
 (defmethod cortex::increment
   ((?value INTEGER))
@@ -93,8 +93,8 @@
              (<> ?value
                  0))
 (deffunction cortex::bool
- (?value)
- (int->bool ?value))
+             (?value)
+             (int->bool ?value))
 
 (deffunction cortex::bool->int
              (?value)
