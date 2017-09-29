@@ -66,10 +66,14 @@
 (defmessage-handler MAIN::register put-mask after
                     "update the value after updating the mask!"
                     (?mask)
-                    (dynamic-put value
-                                 (decode-bits (dynamic-get value)
-                                              ?mask
-                                              0)))
+                    ; when we initialize this class, the slot for value is nil
+                    ; so we have to make sure that we've initialized correctly before hand!
+                    (bind ?old-value
+                          (dynamic-get value))
+                    (if (integerp ?old-value) then
+                      (dynamic-put value
+                                   (decode-bits ?old-value
+                                                ?mask))))
 
 (defmessage-handler MAIN::register decode primary
                     (?mask $?shift)
