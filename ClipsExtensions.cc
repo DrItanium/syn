@@ -129,7 +129,11 @@ namespace syn {
 		} else if (!UDFNextArgument(context, NUMBER_TYPES, &shift)) {
 			CVSetBoolean(ret, false);
 		} else {
-			CVSetInteger(ret, encodeBits<CLIPSInteger, CLIPSInteger>(CVToInteger(&input), CVToInteger(&value), CVToInteger(&mask), CVToInteger(&shift)));
+			auto i = CVToInteger(&input);
+			auto v = CVToInteger(&value);
+			auto m = CVToInteger(&mask);
+			auto s = CVToInteger(&shift);
+			CVSetInteger(ret, encodeBits<CLIPSInteger, CLIPSInteger>(i, v, m, s));
 		}
 	}
 	void CLIPS_breakApartNumber(UDFContext* context, CLIPSValue* ret) {

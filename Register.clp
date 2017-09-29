@@ -22,121 +22,64 @@
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ; Register.clp - wrapper class for the register concept
-(defgeneric MAIN::register:increment)
-(defmethod MAIN::register:increment
-  ((?id EXTERNAL-ADDRESS)
-   (?value INTEGER))
-  (call ?id
-        increment
-        ?value))
-(defmethod MAIN::register:increment
-  ((?id EXTERNAL-ADDRESS))
-  (call ?id
-        increment))
-(defgeneric MAIN::register:decrement)
-(defmethod MAIN::register:decrement
-  ((?id EXTERNAL-ADDRESS)
-   (?value INTEGER))
-  (call ?id
-        decrement
-        ?value))
-(defmethod MAIN::register:decrement
-  ((?id EXTERNAL-ADDRESS))
-  (call ?id
-        decrement))
-(defgeneric MAIN::register:decode)
-(defmethod MAIN::register:decode
-  ((?id EXTERNAL-ADDRESS)
-   (?mask INTEGER)
-   (?shift INTEGER))
-  (call ?id
-        decode
-        ?mask
-        ?shift))
-(defmethod MAIN::register:decode
-  ((?id EXTERNAL-ADDRESS)
+(defmethod decode-bits
+  ((?value INTEGER)
    (?mask INTEGER))
-  (register:decode ?id
-                   ?mask
-                   0))
+  (decode-bits ?value
+               ?mask
+               0))
 
-(defgeneric MAIN::register:encode)
-(defmethod MAIN::register:encode
-  ((?id EXTERNAL-ADDRESS)
-   (?value INTEGER)
-   (?mask INTEGER)
-   (?shift INTEGER))
-  (call ?id
-        encode
-        ?value
-        ?mask
-        ?shift))
-(defmethod MAIN::register:encode
-  ((?id EXTERNAL-ADDRESS)
-   (?value INTEGER)
+(defmethod encode-bits
+  ((?value INTEGER)
+   (?insert INTEGER)
    (?mask INTEGER))
-  (register:encode ?id
-                   ?value
-                   ?mask
-                   0))
-
+  (encode-bits ?value
+               ?insert
+               ?mask
+               0))
 
 (defclass MAIN::register
-  (is-a external-address-wrapper)
-  (slot backing-type
-        (storage shared)
-        (access read-only)
-        (create-accessor read)
-        (source composite)
-        (default register))
-  (message-handler set-mask primary)
-  (message-handler get-mask primary)
-  (message-handler write primary)
-  (message-handler read primary)
-  (message-handler increment primary)
-  (message-handler decrement primary)
+  (is-a USER)
+  (slot mask
+        (type INTEGER)
+        (storage local)
+        (visibility public)
+        (default-dynamic -1))
+  (slot value
+        (type INTEGER)
+        (storage local)
+        (visibility public)
+        (default-dynamic 0))
+  (message-handler put-mask after)
+  (message-handler put-value around)
   (message-handler decode primary)
   (message-handler encode primary))
-(defmessage-handler MAIN::register set-mask primary
-                    (?mask)
-                    (call (dynamic-get backing-store)
-                          set-mask
-                          ?mask))
-(defmessage-handler MAIN::register get-mask primary
-                    ()
-                    (call (dynamic-get backing-store)
-                          get-mask))
 
-(defmessage-handler MAIN::register write primary
+(defmessage-handler MAIN::register put-value around
+                    "Mask the value before storing it!"
                     (?value)
-                    (call (dynamic-get backing-store)
-                           set
-                           ?value))
+                    (override-next-handler (decode-bits ?value
+                                                        (dynamic-get mask)
+                                                        0)))
 
-(defmessage-handler MAIN::register read primary
-                    ()
-                    (call (dynamic-get backing-store)
-                          get))
 
-(defmessage-handler MAIN::register increment primary
-                    ($?count)
-                    (register:increment (dynamic-get backing-store)
-                                        (expand$ (first$ ?count))))
-
-(defmessage-handler MAIN::register decrement primary
-                    ($?count)
-                    (register:decrement (dynamic-get backing-store)
-                                        (expand$ (first$ ?count))))
+(defmessage-handler MAIN::register put-mask after
+                    "update the value after updating the mask!"
+                    (?mask)
+                    (dynamic-put value
+                                 (decode-bits (dynamic-get value)
+                                              ?mask
+                                              0)))
 
 (defmessage-handler MAIN::register decode primary
                     (?mask $?shift)
-                    (register:decode (dynamic-get backing-store)
-                                     ?mask
-                                     (expand$ (first$ ?shift))))
+                    (decode-bits (dynamic-get value)
+                                 ?mask
+                                 (expand$ (first$ ?shift))))
 
 (defmessage-handler MAIN::register encode primary
-                    (?value ?mask $?shift)
-                    (register:encode (dynamic-get backing-store)
-                                     ?value
-                                     ?mask
-                                     (expand$ (first$ ?shift))))
+                    (?new-value ?mask $?shift)
+                    (decode-bits (dynamic-get value)
+                                 ?new-value
+                                 ?mask
+                                 (expand$ (first$ ?shift))))

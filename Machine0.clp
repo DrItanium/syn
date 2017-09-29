@@ -37,11 +37,16 @@
                     1))))
 ; There are 8 memory spaces in this machine setup for a total of 1 gigabyte or 128 megawords
 (definstances MAIN::machine0-memory-spaces
-              ([space0] of machine0-memory-block)
-              ([space1] of machine0-memory-block)
-              ([space2] of machine0-memory-block)
-              ([space3] of machine0-memory-block)
-              ([space4] of machine0-memory-block)
-              ([space5] of machine0-memory-block)
-              ([space6] of machine0-memory-block)
-              ([space7] of machine0-memory-block))
+              (space0 of machine0-memory-block)
+              (space1 of machine0-memory-block)
+              (space2 of machine0-memory-block)
+              (space3 of machine0-memory-block)
+              (space4 of machine0-memory-block)
+              (space5 of machine0-memory-block)
+              (space6 of machine0-memory-block)
+              (space7 of machine0-memory-block))
+
+; The instruction pointer register is 27-bits wide or having a mask of 0x07FFFFFF 
+(definstances MAIN::machine0-registers
+              (ip of register
+                  (mask (hex->int 0x07FFFFFF))))
