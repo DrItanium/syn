@@ -257,7 +257,8 @@
              (< ?value 
                 0))
 
-; The next 7 bits (56-62) are the group bits
+; The next 7 bits (56-62) are the group bits, the upper most 8 bits have the same purpose in 
+; jumps and everything else!
 (deffunction MAIN::get-group-bits
              (?value)
              (decode-bits ?value
