@@ -259,6 +259,15 @@
                                           read
                                           ?addr)))))
 
+(defrule MAIN::eval:delete-nops
+         "End the cycle early since this is a nop so discard the operation"
+         (declare (salience ?*priority:first*))
+         (stage (current eval))
+         ?f <- (instruction ?addr
+                            0)
+         =>
+         ; just retract the nop instruction as it does nothing!
+         (retract ?f))
 
 
 ; When dealing with non branch instructions, we have further bits defined for operations, the next
@@ -269,21 +278,137 @@
                           (hex->int 0x00FF000000000000)
                           48))
 
+(deftemplate MAIN::operation
+             (slot address
+                   (type INTEGER)
+                   (default ?NONE))
+             (slot original-value
+                   (type INTEGER)
+                   (default ?NONE))
+; use a system of objects that are fixed in concept to describe the different fields that
+; make up the instruction. 
+(defclass MAIN::primary-class-descriptor
+          "Is the instruction a branch or non-branch instruction?"
+          (is-a thing)
+          (slot parent
+                (source composite)
+                (default FALSE))
+          (slot matches-with
+                (type SYMBOL)
+                (allowed-symbols FALSE
+                                 TRUE)
+                (storage local)
+                (visibility public)
+                (access initialize-only)
+                (default ?NONE))
+          (slot title
+                (type SYMBOL)
+                (allowed-symbols branch
+                                 non-branch)
+                (storage local)
+                (visibility public)
+                (access initialize-only)
+                (default ?NONE)))
 
-(defrule MAIN::eval:nop-instruction
-         "Smash the instruction up into multiple components which make up the different aspects of the instruction itself"
+(definstances MAIN::primary-class-descriptors
+              ([primary-class:branch] of primary-class-descriptor
+                                      (matches-with TRUE)
+                                      (title branch))
+              ([primary-class:non-branch] of primary-class-descriptor
+                                          (matches-with FALSE)
+                                          (title non-branch)))
+(defclass MAIN::bits-descriptor
+          (is-a thing)
+          (slot matches-with
+                (type INTEGER)
+                (range 0 127)
+                (storage local)
+                (visibility public)
+                (access initialize-only)
+                (default ?NONE))
+          (slot title
+                (type SYMBOL)
+                (storage local)
+                (visibility public)
+                (access initialize-only)
+                (default ?NONE)))
+
+(defclass MAIN::group-bits-descriptor
+          (is-a bits-descriptor)
+          (slot parent
+                (source composite)
+                (allowed-classes primary-class-descriptor))
+          (slot matches-with
+                (source composite)
+                (range 0 127)))
+
+(defclass MAIN::branch-group-bits-descriptor
+          (is-a groups-bits-descriptor)
+          (slot parent
+                (source composite)
+                (default [primary-class:branch])))
+
+(definstances MAIN::branch-group-ops
+              ([group-branch:immediate-direct] of branch-group-bits-descriptor
+                                        (matches-with 0)
+                                        (title immediate))
+              ([group-branch:immediate-indirect] of branch-group-bits-descriptor
+                                                 (matches-with 1)
+                                                 (title immediate-indirect))
+              ([group-branch:register] of branch-group-bits-descriptor
+                                    (matches-with 2)
+                                    (title register))
+              ([group-branch:register-indirect] of branch-group-bits-descriptor
+                                    (matches-with 3)
+                                    (title register-indirect))
+              ([group-branch:register-computed] of branch-group-bits-descriptor
+                                                (matches-with 4)
+                                                (title register-computed)))
+
+(defclass MAIN::operation-bits-descriptor
+          (is-a bits-descriptor)
+          (slot parent
+                (source composite)
+                (allowed-classes group-bits-descriptor))
+          (slot matches-with
+                (source composite)
+                (range 0 255)))
+
+(defrule MAIN::eval:get-more-information
+         "Not a nop instruction at all, so we need to decode it further"
          (stage (current eval))
          ?f <- (instruction ?addr
-                            0)
+                            ?value)
          =>
          (retract ?f)
-         (assert (operation ?addr 0 nop)))
-(defrule MAIN::print:execute-instruction:nop
-         (stage (current print))
-         ?f <- (operation ?addr 0 nop)
+         (assert (operation (address ?addr)
+                            (value ?value))))
+
+; These are constant fields that we know about so we should keep them around
+(defrule MAIN::eval:mark-branch-target
+         (declare (salience ?*priority:first*))
+         (stage (current eval))
+         ?f <- (operation (original-value ?value)
+                          (chain $?chain))
+         (object (is-a primary-class-descriptor)
+                 (matches-with =(branch-instructionp ?value))
+                 (name ?descriptor))
          =>
-         ; do nothing and continue on
-         (retract ?f))
+         (modify ?f
+                 (chain $?chain 
+                        ?descriptor)))
+(defrule MAIN::eval:mark-group-bits
+         (declare (salience ?*priority:first*))
+         (stage (current eval))
+         ?f <- (operation (group UNKNOWN)
+                          (original-value ?value))
+         =>
+         (modify ?f
+                 (group (get-group-bits ?value))))
+
+(defrule MAIN::eval:mark-operation
+         
+
 (defrule MAIN::execute:execution-cycle:advance:next-address
          "If we didn't update the instruction pointer then make sure we do that now!"
          (stage (current advance))
