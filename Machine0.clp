@@ -87,8 +87,7 @@
                                                 loop ; perform checks to see if we should loop or terminate
                                                 ))
 (deffacts MAIN::cycles
-          (stage (id bootstrap)
-                 (current startup)
+          (stage (current startup)
                  (rest initialize
                        execute
                        ?*execution-cycle-stages*
@@ -97,24 +96,21 @@
 ; cycles as we go along. This is how we service interrupts and other such things. 
 (defrule MAIN::boostrap-startup
          (declare (salience ?*priority:first*)) 
-         (stage (id bootstrap)
-                (current startup))
+         (stage (current startup))
          =>
          (printout t 
                    "Machine0 System boot" crlf
                    "Starting up .... please wait" crlf))
 
-(defrule MAIN::bootstrap-initialize:describe-phase
+(defrule MAIN::initialize:describe-phase
          (declare (salience ?*priority:first*))
-         (stage (id bootstrap)
-                (current initialize))
+         (stage (current initialize))
          =>
          (printout t
                    "Initializing memory space ... please wait" crlf))
 
-(defrule MAIN::bootstrap-initialize:make-memory-block
-         (stage (id bootstrap)
-                (current initialize))
+(defrule MAIN::initialize:make-memory-block
+         (stage (current initialize))
          ?f <- (make memory-block named ?name)
          =>
          (retract ?f)
@@ -127,9 +123,8 @@
                                "size: 0x%x words"
                                (send (symbol-to-instance-name ?name)
                                      size)) crlf))
-(defrule MAIN::bootstrap-initialize:make-register-file
-         (stage (id bootstrap)
-                (current initialize))
+(defrule MAIN::initialize:make-register-file
+         (stage (current initialize))
          ?f <- (make register-file named ?name)
          =>
          (retract ?f)
@@ -142,9 +137,8 @@
                                "register count: %d"
                                (send (symbol-to-instance-name ?name)
                                      size)) crlf))
-(defrule MAIN::bootstrap-initialize:make-register-with-mask
-         (stage (id bootstrap)
-                (current initialize))
+(defrule MAIN::initialize:make-register-with-mask
+         (stage (current initialize))
          ?f <- (make register named ?name with mask ?mask)
          =>
          (retract ?f)
@@ -157,9 +151,8 @@
                    tab (format nil 
                                "mask: 0x%x"
                                ?mask) crlf))
-(defrule MAIN::bootstrap-initialize:make-register-default
-         (stage (id bootstrap)
-                (current initialize))
+(defrule MAIN::initialize:make-register-default
+         (stage (current initialize))
          ?f <- (make register named ?name)
          =>
          (retract ?f)
@@ -169,41 +162,36 @@
          (printout t
                    Done crlf))
 
-(defrule MAIN::bootstrap-shutdown:print-phase
+(defrule MAIN::shutdown:print-phase
          (declare (salience ?*priority:first*))
-         (stage (id bootstrap)
-                (current shutdown))
+         (stage (current shutdown))
          =>
          (printout t
                    "Shutting down machine0 system!" crlf))
-(defrule MAIN::bootstrap-shutdown:delete-memory-block
-         (stage (id bootstrap)
-                (current shutdown))
+(defrule MAIN::shutdown:delete-memory-block
+         (stage (current shutdown))
          (object (is-a machine0-memory-block)
                  (name ?name))
          =>
          (assert (delete "memory block" 
                          ?name)))
 
-(defrule MAIN::bootstrap-shutdown:delete-register-file
-         (stage (id bootstrap)
-                (current shutdown))
+(defrule MAIN::shutdown:delete-register-file
+         (stage (current shutdown))
          (object (is-a register-file)
                  (name ?name))
          =>
          (assert (delete "register file"
                          ?name)))
 
-(defrule MAIN::bootstrap-shutdown:delete-register
-         (stage (id bootstrap)
-                (current shutdown))
+(defrule MAIN::shutdown:delete-register
+         (stage (current shutdown))
          (object (is-a register)
                  (name ?name))
          =>
          (assert (delete register ?name)))
-(defrule MAIN::bootstrap-shutdown:delete-thingy
-         (stage (id bootstrap)
-                (current shutdown))
+(defrule MAIN::shutdown:delete-thingy
+         (stage (current shutdown))
          ?f <- (delete ?title ?name)
          =>
          (retract ?f)
@@ -213,19 +201,17 @@
          (printout t
                    Done crlf))
 
-(defrule MAIN::bootstrap-shutdown:shutdown-complete
+(defrule MAIN::shutdown:shutdown-complete
          (declare (salience -9000))
-         (stage (id bootstrap)
-                (current shutdown))
+         (stage (current shutdown))
          =>
          (printout t
                    "shutdown complete .... bye" crlf))
 
 
-(defrule MAIN::bootstrap-execute:generate-cycle-execute
+(defrule MAIN::execute:generate-cycle-execute
          "setup the execution cycle!"
-         (stage (id bootstrap)
-                (current execute))
+         (stage (current execute))
          =>
          (printout t
                    "Setting up the execution cycle!" crlf))
@@ -259,9 +245,8 @@
                           (hex->int 0x00FFFFFFFFFFFFFF)
                           0))
 
-(defrule MAIN::bootstrap-execute:execution-cycle:read-from-memory
-         (stage (id bootstrap)
-                (current read))
+(defrule MAIN::execute:execution-cycle:read-from-memory
+         (stage (current read))
          (object (is-a register)
                  (name [ip])
                  (value ?addr))
@@ -272,56 +257,12 @@
                               (bind ?value
                                     (send ?ms0
                                           read
-                                          ?addr))
-                              (branch-instructionp ?value)
-                              (get-group-bits ?value))))
+                                          ?addr)))))
 
 
-(defclass MAIN::smashed-instruction
-          (is-a USER)
-          (slot address
-                (type INTEGER)
-                (storage local)
-                (visibility public)
-                (access initialize-only)
-                (default ?NONE))
-          (slot original-value
-                (type INTEGER)
-                (storage local)
-                (visibility public)
-                (access initialize-only)
-                (default ?NONE))
-          (slot is-branch
-                (type SYMBOL)
-                (allowed-symbols FALSE
-                                 TRUE)
-                (storage local)
-                (visibility public)
-                (access initialize-only)
-                (default ?NONE))
-          (slot group-bits
-                (type INTEGER)
-                (access initialize-only)
-                (storage local)
-                (visibility public)
-                (default ?NONE)))
 
 ; When dealing with non branch instructions, we have further bits defined for operations, the next
 ; 8 bits define the operation category
-(defclass MAIN::smashed-non-branch-instruction
-  (is-a smashed-instruction)
-  (slot is-branch
-        (source composite)
-        (create-accessor read)
-        (access read-only)
-        (default FALSE))
-  (slot operation
-        (type INTEGER)
-        (storage local)
-        (visibility public)
-        (access initialize-only)
-        (default ?NONE)))
-
 (deffunction MAIN::extract-operation-field
              (?value)
              (decode-bits ?value
@@ -329,26 +270,23 @@
                           48))
 
 
-(defrule MAIN::bootstrap-execute:execution-cycle:eval:smash-instruction:non-branch-instruction
+(defrule MAIN::eval:nop-instruction
          "Smash the instruction up into multiple components which make up the different aspects of the instruction itself"
-         (stage (id bootstrap)
-                (current eval))
+         (stage (current eval))
          ?f <- (instruction ?addr
-                            ?value
-                            FALSE
-                            ?group)
+                            0)
          =>
          (retract ?f)
-         (make-instance of smashed-non-branch-instruction
-                        (address ?addr)
-                        (original-value ?value)
-                        (operation (extract-operation-field ?value))
-                        (group-bits ?group)))
-
-(defrule MAIN::bootstrap-execute:execution-cycle:advance:next-address
+         (assert (operation ?addr 0 nop)))
+(defrule MAIN::print:execute-instruction:nop
+         (stage (current print))
+         ?f <- (operation ?addr 0 nop)
+         =>
+         ; do nothing and continue on
+         (retract ?f))
+(defrule MAIN::execute:execution-cycle:advance:next-address
          "If we didn't update the instruction pointer then make sure we do that now!"
-         (stage (id bootstrap)
-                (current advance))
+         (stage (current advance))
          (not (check [ip]))
          ?ip <- (object (is-a register)
                         (name [ip]))
@@ -356,16 +294,9 @@
          (assert (check [ip]))
          (send ?ip 
                increment))
-(defrule MAIN::bootstrap-loop:retract-current-instruction
-         (stage (id bootstrap)
-                (current loop))
-         ?f <- (object (is-a smashed-instruction))
-         =>
-         (unmake-instance ?f))
 
-(defrule MAIN::bootstrap-loop:restart-cycle
-         ?f <- (stage (id bootstrap)
-                      (current loop)
+(defrule MAIN::loop:restart-cycle
+         ?f <- (stage (current loop)
                       (rest $?rest))
          ?f2 <- (check ?ip)
          (object (is-a register)

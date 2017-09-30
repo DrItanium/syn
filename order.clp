@@ -25,9 +25,6 @@
 
 (deftemplate MAIN::stage
              "describes the current stage that execution is on!"
-             (slot id
-                   (type SYMBOL)
-                   (default-dynamic (gensym*)))
              (slot current
                    (type SYMBOL)
                    (default ?NONE))
