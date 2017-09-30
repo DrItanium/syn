@@ -68,8 +68,9 @@
            ?*address-mask27* = (hex->int 0x07FFFFFF))
 ; Internally, machine
 (deffacts MAIN::make-registers
-          (terminate at 128 cycles)
+          ;(terminate at 128 cycles)
           ;(terminate at ?*address-mask* cycles)
+          (terminate at (hex->int 0xFFFF) cycles)
           (make register named ip with mask ?*address-mask*)
           (make register named sp with mask ?*address-mask*)
           (make register named cs with mask ?*address-mask*)
@@ -241,13 +242,39 @@
          (assert (read from address ?value with extracted value: (send ?ms0
                                                                        read
                                                                        ?value))))
-(deftemplate MAIN::smashed-instruction
-             (slot address
-                   (type INTEGER)
-                   (default ?NONE))
-             (slot original-value
-                   (type INTEGER)
-                   (default ?NONE)))
+(defclass MAIN::smashed-instruction
+          (is-a USER)
+          (slot address
+                (type INTEGER)
+                (storage local)
+                (visibility public)
+                (access initialize-only)
+                (default ?NONE))
+          (slot original-value
+                (type INTEGER)
+                (storage local)
+                (visibility public)
+                (access initialize-only)
+                (default ?NONE))
+          (slot is-branch
+                (type SYMBOL)
+                (allowed-symbols FALSE
+                                 TRUE)
+                (storage local)
+                (create-accessor read)
+                (visibility public))
+          (message-handler init after))
+
+(defmessage-handler MAIN::smashed-instruction init after
+                    ()
+                    ; find out if we're looking at a branch or not
+                    (bind ?self:is-branch
+                          (bind ?tmp
+                                (= (decode-bits ?self:original-value
+                                                (hex->int 0x8000000000000000)
+                                                62)
+                                   1))))
+
 (defrule MAIN::bootstrap-execute:execution-cycle:eval:smash-instruction
          "Smash the instruction up into multiple components which make up the different aspects of the instruction itself"
          (stage (id bootstrap)
@@ -255,8 +282,9 @@
          ?f <- (read from address ?addr with extracted value: ?value)
          =>
          (retract ?f)
-         (assert (smashed-instruction (address ?addr)
-                                      (original-value ?value))))
+         (make-instance of smashed-instruction
+                        (address ?addr)
+                        (original-value ?value)))
 
 (defrule MAIN::bootstrap-execute:execution-cycle:advance:next-address
          "If we didn't update the instruction pointer then make sure we do that now!"
@@ -269,7 +297,14 @@
          (assert (check [ip]))
          (send ?ip 
                increment))
-(defrule MAIN::bootstrap-execute:execution-cycle:loop:restart-cycle
+;(defrule MAIN::bootstrap-loop:retract-current-instruction
+;         (stage (id bootstrap)
+;                (current loop))
+;         ?f <- (object (is-a smashed-instruction))
+;         =>
+;         (unmake-instance ?f))
+
+(defrule MAIN::bootstrap-loop:restart-cycle
          ?f <- (stage (id bootstrap)
                       (current loop)
                       (rest $?rest))
