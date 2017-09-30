@@ -242,6 +242,29 @@
          (assert (read from address ?value with extracted value: (send ?ms0
                                                                        read
                                                                        ?value))))
+; The layout of the instruction is pretty simple, if the number is negative then it is
+; a branch instruction
+(deffunction MAIN::branch-instructionp
+             "The most significant bit of an instruction signifies if it is a branch instruction or not"
+             (?value)
+             ; in this case it is bit 63,
+             ; the proper code is:
+             ; (<> (decode-bits ?value
+             ;                 (hex->int 0x8000000000000000)
+             ;                 62)
+             ;    0))
+             ; but since CLIPSIntegers are signed then we can just imply twos compliment
+             (< ?value 
+                0))
+
+; The next 7 bits (56-62) are the group bits
+(deffunction MAIN::get-group-bits
+             (?value)
+             (decode-bits ?value
+                          (hex->int 0x7F00000000000000)
+                          56))
+
+
 (defclass MAIN::smashed-instruction
           (is-a USER)
           (slot address
@@ -263,17 +286,20 @@
                 (storage local)
                 (create-accessor read)
                 (visibility public))
+          (slot group-bits
+                (type INTEGER)
+                (create-accessor read)
+                (storage local)
+                (visibility public))
           (message-handler init after))
 
 (defmessage-handler MAIN::smashed-instruction init after
                     ()
-                    ; find out if we're looking at a branch or not
                     (bind ?self:is-branch
-                          (bind ?tmp
-                                (= (decode-bits ?self:original-value
-                                                (hex->int 0x8000000000000000)
-                                                62)
-                                   1))))
+                          (branch-instructionp ?self:original-value))
+                    (bind ?self:group-bits
+                          (get-group-bits ?self:original-value)))
+
 
 (defrule MAIN::bootstrap-execute:execution-cycle:eval:smash-instruction
          "Smash the instruction up into multiple components which make up the different aspects of the instruction itself"
