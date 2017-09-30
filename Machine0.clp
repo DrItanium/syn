@@ -230,18 +230,6 @@
          (printout t
                    "Setting up the execution cycle!" crlf))
 
-(defrule MAIN::bootstrap-execute:execution-cycle:read-from-memory
-         (stage (id bootstrap)
-                (current read))
-         (object (is-a register)
-                 (name [ip])
-                 (value ?value))
-         ?ms0 <- (object (is-a machine0-memory-block)
-                         (name [space0]))
-         =>
-         (assert (read from address ?value with extracted value: (send ?ms0
-                                                                       read
-                                                                       ?value))))
 ; The layout of the instruction is pretty simple, if the number is negative then it is
 ; a branch instruction
 (deffunction MAIN::branch-instructionp
@@ -265,6 +253,29 @@
                           (hex->int 0x7F00000000000000)
                           56))
 
+(deffunction MAIN::instruction-volatile-bits
+             (?value)
+             (decode-bits ?value
+                          (hex->int 0x00FFFFFFFFFFFFFF)
+                          0))
+
+(defrule MAIN::bootstrap-execute:execution-cycle:read-from-memory
+         (stage (id bootstrap)
+                (current read))
+         (object (is-a register)
+                 (name [ip])
+                 (value ?addr))
+         ?ms0 <- (object (is-a machine0-memory-block)
+                         (name [space0]))
+         =>
+         (assert (instruction ?addr
+                              (bind ?value
+                                    (send ?ms0
+                                          read
+                                          ?addr))
+                              (branch-instructionp ?value)
+                              (get-group-bits ?value))))
+
 
 (defclass MAIN::smashed-instruction
           (is-a USER)
@@ -285,33 +296,54 @@
                 (allowed-symbols FALSE
                                  TRUE)
                 (storage local)
-                (create-accessor read)
-                (visibility public))
+                (visibility public)
+                (access initialize-only)
+                (default ?NONE))
           (slot group-bits
                 (type INTEGER)
-                (create-accessor read)
+                (access initialize-only)
                 (storage local)
-                (visibility public))
-          (message-handler init after))
+                (visibility public)
+                (default ?NONE)))
 
-(defmessage-handler MAIN::smashed-instruction init after
-                    ()
-                    (bind ?self:is-branch
-                          (branch-instructionp ?self:original-value))
-                    (bind ?self:group-bits
-                          (get-group-bits ?self:original-value)))
+; When dealing with non branch instructions, we have further bits defined for operations, the next
+; 8 bits define the operation category
+(defclass MAIN::smashed-non-branch-instruction
+  (is-a smashed-instruction)
+  (slot is-branch
+        (source composite)
+        (create-accessor read)
+        (access read-only)
+        (default FALSE))
+  (slot operation
+        (type INTEGER)
+        (storage local)
+        (visibility public)
+        (access initialize-only)
+        (default ?NONE)))
+
+(deffunction MAIN::extract-operation-field
+             (?value)
+             (decode-bits ?value
+                          (hex->int 0x00FF000000000000)
+                          48))
 
 
-(defrule MAIN::bootstrap-execute:execution-cycle:eval:smash-instruction
+(defrule MAIN::bootstrap-execute:execution-cycle:eval:smash-instruction:non-branch-instruction
          "Smash the instruction up into multiple components which make up the different aspects of the instruction itself"
          (stage (id bootstrap)
                 (current eval))
-         ?f <- (read from address ?addr with extracted value: ?value)
+         ?f <- (instruction ?addr
+                            ?value
+                            FALSE
+                            ?group)
          =>
          (retract ?f)
-         (make-instance of smashed-instruction
+         (make-instance of smashed-non-branch-instruction
                         (address ?addr)
-                        (original-value ?value)))
+                        (original-value ?value)
+                        (operation (extract-operation-field ?value))
+                        (group-bits ?group)))
 
 (defrule MAIN::bootstrap-execute:execution-cycle:advance:next-address
          "If we didn't update the instruction pointer then make sure we do that now!"
@@ -324,12 +356,12 @@
          (assert (check [ip]))
          (send ?ip 
                increment))
-;(defrule MAIN::bootstrap-loop:retract-current-instruction
-;         (stage (id bootstrap)
-;                (current loop))
-;         ?f <- (object (is-a smashed-instruction))
-;         =>
-;         (unmake-instance ?f))
+(defrule MAIN::bootstrap-loop:retract-current-instruction
+         (stage (id bootstrap)
+                (current loop))
+         ?f <- (object (is-a smashed-instruction))
+         =>
+         (unmake-instance ?f))
 
 (defrule MAIN::bootstrap-loop:restart-cycle
          ?f <- (stage (id bootstrap)
