@@ -98,6 +98,30 @@
                              ?self:base-address)
                           ?value))
 
+(defclass MAIN::keyboard-controller
+          "An abstraction layer over the keyboard, reading and writing to its MMIO does a getc and putc respectively"
+          (is-a USER)
+          (slot last-address
+                (storage shared)
+                (type INTEGER)
+                (access read-only)
+                (create-accessor read)
+                (default 1))
+          (slot router
+                (type SYMBOL)
+                (visibility public)
+                (storage local)
+                (default-dynamic t))
+          (message-handler read primary)
+          (message-handler write primary))
+(defmessage-handler MAIN::keyboard-controller read primary
+                    (?address)
+                    (get-char ?self:router))
+(defmessage-handler MAIN::keyboard-controller write primary
+                    (?address ?value)
+                    (put-char ?self:router
+                              ?value))
+                
 ; There are 8 memory spaces in this machine setup for a total of 1 gigabyte or 128 megawords
 (deffacts MAIN::make-memory-blocks
           (make memory-block named space0)
