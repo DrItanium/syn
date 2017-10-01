@@ -6,9 +6,7 @@ include config.mk
 
 ASM_PARSERS_OBJECTS = AssemblerBase.o
 
-COMMON_THINGS = Core.o \
-				WrappedIODevice.o \
-				ClipsExtensions.o \
+COMMON_THINGS = ClipsExtensions.o \
 			 	MultifieldBuilder.o \
 				MemoryBlock.o \
 				ExecutionUnits.o \

@@ -80,63 +80,6 @@ namespace syn {
 			Address _base;
 			Address _length;
 	};
-
-	template<typename D, typename A = D>
-		class RandomDevice : public IODevice<D, A> {
-			public:
-				enum Addresses : A {
-					SeedRandom,
-					NextRandom,
-					SkipRandom,
-					Count,
-				};
-                using Parent = IODevice<D, A>;
-				using Operations = Addresses;
-                using RandomEngine = std::mt19937_64;
-                using SeedType = typename RandomEngine::result_type;
-            public:
-                RandomDevice(SeedType initialSeed = RandomEngine::default_seed) : Parent(), _engine(initialSeed) {
-                    generateNextValue();
-                }
-				virtual ~RandomDevice() { }
-				virtual D read(A addr) override {
-					if (addr == static_cast<A>(Addresses::NextRandom)) {
-						auto result = static_cast<D>(_next.get());
-                        generateNextValue();
-						return result;
-					} else {
-						throw syn::Problem("Illegal random device address to read from");
-					}
-				}
-
-				virtual void write(A addr, D value) override {
-					if (addr == static_cast<A>(Addresses::SeedRandom)) {
-						_engine.seed(value);
-                        skipToNextValue();
-					} else if (addr == static_cast<A>(Addresses::SkipRandom)) {
-						_engine.discard(value);
-                        skipToNextValue();
-					} else {
-						throw syn::Problem("Illegal random device address to write to");
-					}
-				}
-			private:
-				void skipToNextValue() noexcept {
-                    (void)_next.get();
-                    generateNextValue();
-				}
-                void generateNextValue() noexcept {
-                    // This function contains the only async call in the class
-                    // to cut down on the size of the object. If we were to
-                    // update _next in different locations then more
-                    // instantiations of the std::async backends would be
-                    // created for no reason.
-					_next = std::async(std::launch::async, [this]() { return _engine(); });
-                }
-			private:
-                std::future<SeedType> _next;
-                RandomEngine _engine;
-		};
 } // end namespace syn
 #endif // end SYN_IO_DEVICE_H_
 
