@@ -22,7 +22,7 @@
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 (defclass MAIN::memory-block
-  (is-a device)
+  (is-a external-device)
   (role concrete)
   (pattern-match reactive)
   (slot backing-type
