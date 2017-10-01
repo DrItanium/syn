@@ -47,13 +47,7 @@
         (visibility public)
         (access read-only)
         (create-accessor read)
-        (default (hex->int 0x00FFFFFF)))
-  (message-handler in-range primary))
-(defmessage-handler MAIN::machine0-memory-block in-range primary
-                    (?addr)
-                    (>= 0 
-                        ?addr 
-                        (dynamic-get last-address)))
+        (default (hex->int 0x00FFFFFF))))
 
 (defclass MAIN::register-file
   (is-a memory-block)
@@ -73,9 +67,10 @@
         (type INTEGER)
         (storage local)
         (visibility public))
-  (message-handler responds-to primary)
   (message-handler put-base-address after)
-  (message-handler init after))
+  (message-handler init after)
+  (message-handler read primary)
+  (message-handler write primary))
 (defmessage-handler MAIN::memory-map-entry put-base-address after
                     (?addr)
                     (bind ?self:last-address
@@ -89,12 +84,19 @@
                              (send ?self:parent
                                    get-last-address))))
 
-(defmessage-handler MAIN::memory-map-entry responds-to primary
-                    (?address)
+(defmessage-handler MAIN::memory-map-entry read primary
+                    (?addr)
                     (send ?self:parent
-                          in-range
-                          (- ?address
+                          read
+                          (- ?addr
                              ?self:base-address)))
+(defmessage-handler MAIN::memory-map-entry write primary
+                    (?address ?value)
+                    (send ?self:parent
+                          write
+                          (- ?address
+                             ?self:base-address)
+                          ?value))
 
 ; There are 8 memory spaces in this machine setup for a total of 1 gigabyte or 128 megawords
 (deffacts MAIN::make-memory-blocks
@@ -297,8 +299,9 @@
          (object (is-a register)
                  (name [ip])
                  (value ?addr))
-         ?ms0 <- (object (is-a machine0-memory-block)
-                         (name [space0]))
+         ?ms0 <- (object (is-a memory-map-entry)
+                         (base-address ?ba&:(>= ?addr ?ba))
+                         (last-address ?la&:(<= ?addr ?la)))
          =>
          (assert (instruction ?addr
                               (bind ?value
