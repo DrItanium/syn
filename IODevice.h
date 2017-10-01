@@ -80,44 +80,6 @@ namespace syn {
 			Address _base;
 			Address _length;
 	};
-	/**
-	 * Wrap another IODevice in this class and perform address checks before
-	 * passing the data off to the device itself. It will also perform the
-	 * address flattening as well
-	 */
-	template<typename T>
-	class CaptiveAddressableIODevice : public AddressableIODevice<typename T::DataType, typename T::AddressType> {
-		public:
-			using Parent = AddressableIODevice<typename T::DataType, typename T::AddressType>;
-			using CapturedType = T;
-			using Address = typename Parent::AddressType;
-			using Data = typename Parent::DataType;
-		public:
-			CaptiveAddressableIODevice(Address base, Address length = 1) : Parent(base, length) { }
-			virtual ~CaptiveAddressableIODevice() { }
-			virtual Data read(Address targetAddress) override {
-                if (this->respondsTo(targetAddress)) {
-                    return _this.read(this->computeInternalAddress(targetAddress));
-                } else {
-                    throw syn::Problem("IODevice error! Provided device does not respond to the given address!");
-                }
-            }
-			virtual void write(Address targetAddress, Data value) override {
-                if (this->respondsTo(targetAddress)) {
-                    _this.write(this->computeInternalAddress(targetAddress), value);
-                } else {
-                    throw syn::Problem("IODevice error! Provided device does not respond to the given address!");
-                }
-            }
-			virtual void initialize() override {
-				_this.initialize();
-			}
-			virtual void shutdown() override {
-				_this.shutdown();
-			}
-		private:
-			T _this;
-	};
 
 	template<typename D, typename A = D>
 		class RandomDevice : public IODevice<D, A> {
