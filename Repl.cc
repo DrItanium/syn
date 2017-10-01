@@ -26,7 +26,6 @@
 
 #include "ClipsExtensions.h"
 #include "MemoryBlock.h"
-#include "AssemblerExternalAddressRegistrar.h"
 #include "ExecutionUnits.h"
 
 extern "C" {
@@ -39,7 +38,6 @@ int main(int argc, char* argv[]) {
 	// install features here
 	syn::installExtensions(mainEnv);
 	syn::installMemoryBlockTypes(mainEnv);
-    syn::installExternalAddressAssemblers(mainEnv);
 	syn::installExecutionUnits(mainEnv);
 	RerouteStdin(mainEnv, argc, argv);
 	CommandLoop(mainEnv);

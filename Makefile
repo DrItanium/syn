@@ -17,7 +17,6 @@ COMMON_THINGS = Core.o \
 REPL_FINAL_BINARY = syn
 
 REPL_FINAL_OBJECTS = Repl.o \
-					 RegisteredExternalAddressAssemblers.o \
 					 ${COMMON_THINGS} \
 					 ${ARCH_OBJECTS} \
 					 ${ASM_PARSERS_OBJECTS} \
