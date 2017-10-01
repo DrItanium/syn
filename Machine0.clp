@@ -51,13 +51,13 @@
 ; There are 8 memory spaces in this machine setup for a total of 1 gigabyte or 128 megawords
 (deffacts MAIN::make-memory-blocks
           (make memory-block named space0)
-          ;(make memory-block named space1)
-          ;(make memory-block named space2)
-          ;(make memory-block named space3)
-          ;(make memory-block named space4)
-          ;(make memory-block named space5)
-          ;(make memory-block named space6)
-          ;(make memory-block named space7)
+          (make memory-block named space1)
+          (make memory-block named space2)
+          (make memory-block named space3)
+          (make memory-block named space4)
+          (make memory-block named space5)
+          (make memory-block named space6)
+          (make memory-block named space7)
           )
 
 ; The instruction pointer register is 27-bits wide or having a mask of 0x07FFFFFF 
