@@ -8,7 +8,6 @@ ASM_PARSERS_OBJECTS = AssemblerBase.o
 
 COMMON_THINGS = Core.o \
 				WrappedIODevice.o \
-				IOController.o \
 				ClipsExtensions.o \
 			 	MultifieldBuilder.o \
 				MemoryBlock.o \
