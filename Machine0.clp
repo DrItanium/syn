@@ -64,9 +64,6 @@
 
 (defclass MAIN::memory-map-entry
   (is-a thing)
-  (slot parent
-        (source composite)
-        (type INSTANCE))
   (slot base-address 
         (type INTEGER)
         (storage local)
