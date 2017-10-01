@@ -165,7 +165,8 @@
          (retract ?f)
          (printout t 
                    "Bringing up memory block: " ?name " .... ")
-         (make-instance ?name of machine0-memory-block)
+         (assert (delete "memory block" 
+                         (make-instance ?name of machine0-memory-block)))
          (printout t 
                    Done crlf
                    tab (format nil
@@ -179,7 +180,8 @@
          (retract ?f)
          (printout t
                    "Bringing up register-file: " ?name " .... ")
-         (make-instance ?name of register-file)
+         (assert (delete "register file"
+                         (make-instance ?name of register-file)))
          (printout t
                    Done crlf
                    tab (format nil
@@ -193,8 +195,9 @@
          (retract ?f)
          (printout t
                    "Bringing up register: " ?name " .... ")
-         (make-instance ?name of register 
-                        (mask ?mask))
+         (assert (delete register
+                         (make-instance ?name of register 
+                                        (mask ?mask))))
          (printout t 
                    Done crlf
                    tab (format nil 
@@ -207,7 +210,8 @@
          (retract ?f)
          (printout t
                    "Bringing up register: " ?name " .... ")
-         (make-instance ?name of register)
+         (assert (delete register
+                         (make-instance ?name of register)))
          (printout t
                    Done crlf))
 
@@ -217,28 +221,7 @@
          =>
          (printout t
                    "Shutting down machine0 system!" crlf))
-(defrule MAIN::shutdown:delete-memory-block
-         (stage (current shutdown))
-         (object (is-a machine0-memory-block)
-                 (name ?name))
-         =>
-         (assert (delete "memory block" 
-                         ?name)))
 
-(defrule MAIN::shutdown:delete-register-file
-         (stage (current shutdown))
-         (object (is-a register-file)
-                 (name ?name))
-         =>
-         (assert (delete "register file"
-                         ?name)))
-
-(defrule MAIN::shutdown:delete-register
-         (stage (current shutdown))
-         (object (is-a register)
-                 (name ?name))
-         =>
-         (assert (delete register ?name)))
 (defrule MAIN::shutdown:delete-thingy
          (stage (current shutdown))
          ?f <- (delete ?title ?name)
@@ -560,9 +543,12 @@
                  (name ?space))
          =>
          (retract ?f)
-         (assert (mapped memory block (make-instance of memory-map-entry 
-                                                     (parent ?space)
-                                                     (base-address ?base)))))
+         (bind ?mme
+               (make-instance of memory-map-entry 
+                              (parent ?space)
+                              (base-address ?base)))
+         (assert (mapped memory block ?mme)
+                 (delete "memory map entry" ?mme)))
 (defrule MAIN::report-mapping
          (stage (current initialize))
          ?f <- (mapped memory block ?instance)
