@@ -27,7 +27,6 @@
 #include "ClipsExtensions.h"
 #include "MemoryBlock.h"
 #include "AssemblerExternalAddressRegistrar.h"
-#include "IOController.h"
 #include "ExecutionUnits.h"
 
 extern "C" {
@@ -36,9 +35,7 @@ extern "C" {
 
 int main(int argc, char* argv[]) {
 	// make sure this is a common io bus
-	syn::CLIPSIOController bus;
-	auto mainEnv = bus.getRawEnvironment();
-	bus.initialize();
+	void* mainEnv = CreateEnvironment();
 	// install features here
 	syn::installExtensions(mainEnv);
 	syn::installMemoryBlockTypes(mainEnv);
@@ -46,6 +43,6 @@ int main(int argc, char* argv[]) {
 	syn::installExecutionUnits(mainEnv);
 	RerouteStdin(mainEnv, argc, argv);
 	CommandLoop(mainEnv);
-	bus.shutdown();
+	DestroyEnvironment(mainEnv);
 	return -1;
 }

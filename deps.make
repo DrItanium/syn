@@ -195,7 +195,7 @@ Repl.o: Repl.cc ClipsExtensions.h misc/maya/clips.h misc/maya/setup.h \
  misc/maya/defins.h misc/maya/inscom.h misc/maya/insfun.h \
  misc/maya/insfile.h misc/maya/msgcom.h misc/maya/msgpass.h \
  misc/maya/objrtmch.h MemoryBlock.h AssemblerExternalAddressRegistrar.h \
- IOController.h Problem.h Device.h IODevice.h BaseArithmetic.h \
+ Problem.h Device.h IODevice.h BaseArithmetic.h \
  BaseTypes.h WrappedIODevice.h Base.h Core.h \
  CommonExternalAddressWrapper.h ExternalAddressWrapper.h ExecutionUnits.h
 Termbox.o: Termbox.cc Termbox.h include/termbox.h Base.h BaseTypes.h \
