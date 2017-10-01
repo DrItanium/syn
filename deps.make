@@ -159,5 +159,7 @@ Repl.o: Repl.cc ClipsExtensions.h misc/maya/clips.h misc/maya/setup.h \
  misc/maya/insfile.h misc/maya/msgcom.h misc/maya/msgpass.h \
  misc/maya/objrtmch.h MemoryBlock.h ExecutionUnits.h Base.h BaseTypes.h \
  Problem.h BaseArithmetic.h IODevice.h Device.h
-
-Termbox.o: include/termbox.h
+Termbox.o: Termbox.cc Termbox.h include/termbox.h Base.h BaseTypes.h \
+ Problem.h
+termbox_test.o: termbox_test.cc Termbox.h include/termbox.h Base.h \
+ BaseTypes.h Problem.h
