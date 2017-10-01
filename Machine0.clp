@@ -41,25 +41,75 @@
         (source composite)
         (storage shared)
         (default (+ (hex->int 0x00FFFFFF) 
-                    1))))
+                    1)))
+  (slot last-address
+        (storage shared)
+        (visibility public)
+        (access read-only)
+        (create-accessor read)
+        (default (hex->int 0x00FFFFFF)))
+  (message-handler in-range primary))
+(defmessage-handler MAIN::machine0-memory-block in-range primary
+                    (?addr)
+                    (>= 0 
+                        ?addr 
+                        (dynamic-get last-address)))
+
 (defclass MAIN::register-file
   (is-a memory-block)
   (slot capacity
         (source composite)
         (storage shared)
         (default 16)))
+
+(defclass MAIN::memory-map-entry
+  (is-a thing)
+  (slot parent
+        (source composite)
+        (type INSTANCE))
+  (slot base-address 
+        (type INTEGER)
+        (storage local)
+        (visibility public)
+        (default ?NONE))
+  (slot last-address 
+        (type INTEGER)
+        (storage local)
+        (visibility public))
+  (message-handler responds-to primary)
+  (message-handler put-base-address after)
+  (message-handler init after))
+(defmessage-handler MAIN::memory-map-entry put-base-address after
+                    (?addr)
+                    (bind ?self:last-address
+                          (+ ?addr
+                             (send ?self:parent
+                                   get-last-address))))
+(defmessage-handler MAIN::memory-map-entry init after
+                    ()
+                    (bind ?self:last-address
+                          (+ ?self:base-address
+                             (send ?self:parent
+                                   get-last-address))))
+
+(defmessage-handler MAIN::memory-map-entry responds-to primary
+                    (?address)
+                    (send ?self:parent
+                          in-range
+                          (- ?address
+                             ?self:base-address)))
+
 ; There are 8 memory spaces in this machine setup for a total of 1 gigabyte or 128 megawords
 (deffacts MAIN::make-memory-blocks
           (make memory-block named space0)
           (make memory-block named space1)
           (make memory-block named space2)
           (make memory-block named space3)
-          (make memory-block named space4)
-          (make memory-block named space5)
-          (make memory-block named space6)
-          (make memory-block named space7)
+          ;(make memory-block named space4)
+          ;(make memory-block named space5)
+          ;(make memory-block named space6)
+          ;(make memory-block named space7)
           )
-
 ; The instruction pointer register is 27-bits wide or having a mask of 0x07FFFFFF 
 ; this applies to the stack register as well. All bits above the mask must be zero to maintain
 ; backwards compatibility
@@ -391,10 +441,10 @@
         (range 0 255)))
 
 (defclass MAIN::basic-operation-bits-descriptor
-          (is-a operation-bits-descriptor)
-          (slot parent
-                (source composite)
-                (default [group-non-branch:basic])))
+  (is-a operation-bits-descriptor)
+  (slot parent
+        (source composite)
+        (default [group-non-branch:basic])))
 (definstances MAIN::basic-operations-descs
               ([basic-op:nop] of basic-operation-bits-descriptor
                               (matches-with 0)
@@ -495,3 +545,33 @@
                        $?rest)))
 
 
+(deffacts MAIN::memory-map
+          ; dumb memory map description, start at address zero and fill this out
+          ; until we hit the end of the memory map
+          (make memory-map-entry parent [space0] base 0)
+          (make memory-map-entry parent [space1] follows [space0])
+          (make memory-map-entry parent [space2] follows [space1])
+          (make memory-map-entry parent [space3] follows [space2]))
+
+(defrule MAIN::initialize:construct-memory-map-entry
+         (stage (current initialize))
+         ?f <- (make memory-map-entry parent ?space base ?base)
+         (object (is-a machine0-memory-block)
+                 (name ?space))
+         =>
+         (retract ?f)
+         (make-instance of memory-map-entry 
+                        (parent ?space)
+                        (base-address ?base)))
+(defrule MAIN::initialize:concat-memory-map
+         "Use the previous memory map entry to identify where to place this one"
+         (stage (current initialize))
+         ?f <- (make memory-map-entry parent ?space follows ?other-space)
+         (object (is-a memory-map-entry)
+                 (parent ?other-space)
+                 (last-address ?b))
+         (object (is-a machine0-memory-block)
+                 (name ?space))
+         =>
+         (retract ?f)
+         (assert (make memory-map-entry parent ?space base (+ ?b 1))))
