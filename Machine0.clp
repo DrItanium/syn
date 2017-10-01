@@ -560,9 +560,22 @@
                  (name ?space))
          =>
          (retract ?f)
-         (make-instance of memory-map-entry 
-                        (parent ?space)
-                        (base-address ?base)))
+         (assert (mapped memory block (make-instance of memory-map-entry 
+                                                     (parent ?space)
+                                                     (base-address ?base)))))
+(defrule MAIN::report-mapping
+         (stage (current initialize))
+         ?f <- (mapped memory block ?instance)
+         (object (is-a memory-map-entry)
+                 (parent ?block)
+                 (base-address ?start)
+                 (last-address ?end))
+         =>
+         (retract ?f)
+         (printout t
+                   "Mapped " (instance-name-to-symbol ?block) 
+                   " to the address range [" ?start ", " ?end "]" crlf))
+
 (defrule MAIN::initialize:concat-memory-map
          "Use the previous memory map entry to identify where to place this one"
          (stage (current initialize))
