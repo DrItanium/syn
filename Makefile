@@ -6,11 +6,14 @@ include config.mk
 
 ASM_PARSERS_OBJECTS = AssemblerBase.o
 
+MAYA_OBJECTS = $(patsubst %.c,%.o, $(wildcard *.c))
 COMMON_THINGS = ClipsExtensions.o \
 			 	MultifieldBuilder.o \
 				MemoryBlock.o \
 				ExecutionUnits.o \
-				Termbox.o
+				Termbox.o \
+				boost.o \
+				functional.o
 
 REPL_FINAL_BINARY = syn
 
@@ -18,32 +21,25 @@ REPL_FINAL_OBJECTS = Repl.o \
 					 ${COMMON_THINGS} \
 					 ${ARCH_OBJECTS} \
 					 ${ASM_PARSERS_OBJECTS} \
+					 ${MAYA_OBJECTS}
 
 ALL_BINARIES = ${REPL_FINAL_BINARY}
 
 ALL_OBJECTS = ${COMMON_THINGS} \
 			  ${REPL_OBJECTS} \
-			  ${DEFINE_CLPS} \
 			  ${REPL_FINAL_OBJECTS}
 
 TEST_SUITES = test_maya.clp \
 			  test_ClipsExtensions.clp
 
 
-all: options bootstrap ${ALL_BINARIES}
+all: options ${ALL_BINARIES}
 
 full: all tests
 
-docs: bootstrap ${ALL_BINARIES}
+docs: ${ALL_BINARIES}
 	@echo "running doxygen"
 	@doxygen
-
-libmaya.a: 
-	@echo "Building libmaya..."
-	@cd misc/maya && $(MAKE)
-	@echo "Finished building maya"
-	@echo "Copying libmaya.a to root..."
-	@cp misc/maya/libmaya.a .
 
 options:
 	@echo syn build options:
@@ -62,22 +58,20 @@ options:
 	@echo CXX $<
 	@${CXX} ${CXXFLAGS} -c $< -o $@
 
-${REPL_FINAL_BINARY}: ${REPL_FINAL_OBJECTS} libmaya.a libtermbox.a
+${REPL_FINAL_BINARY}: ${REPL_FINAL_OBJECTS} libtermbox.a
 	@echo Building ${REPL_FINAL_BINARY}
-	@${CXX} ${LDFLAGS} -o ${REPL_FINAL_BINARY} ${REPL_FINAL_OBJECTS} libmaya.a libtermbox.a
+	@${CXX} ${LDFLAGS} -o ${REPL_FINAL_BINARY} ${REPL_FINAL_OBJECTS} libtermbox.a
 
 clean:
 	@echo Cleaning...
 	@rm -f ${ALL_OBJECTS} ${ALL_BINARIES}
 
 nuke: clean
-	@echo "Cleaning maya..."
-	@cd misc/maya && $(MAKE) clean
-	@rm -rf doc/html libmaya.a
+	@rm -rf doc/html 
 	@cd misc/termbox && ./waf uninstall --targets=termbox_static
 	@cd misc/termbox && ./waf distclean
 
-tests: bootstrap ${ALL_BINARIES} ${TEST_SUITES}
+tests: ${ALL_BINARIES} ${TEST_SUITES}
 	@echo "Running tests..."
 	@for n in ${TEST_SUITES}; do \
 		./${REPL_FINAL_BINARY} -f2 $$n -f2 cmd/test-case-invoke.clp ; \
@@ -85,9 +79,7 @@ tests: bootstrap ${ALL_BINARIES} ${TEST_SUITES}
 
 
 
-.PHONY: all options clean install uninstall docs tests bootstrap 
-
-bootstrap: ${DEFINE_OBJECTS} 
+.PHONY: all options clean install uninstall docs tests
 
 misc/termbox:
 	@git submodule update --init --recursive
