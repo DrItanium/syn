@@ -74,15 +74,20 @@
 (defmessage-handler MAIN::memory-map-entry put-base-address after
                     (?addr)
                     (bind ?self:last-address
-                          (+ ?addr
-                             (send ?self:parent
-                                   get-last-address))))
+                          (send ?self
+                                compute-last-address
+                                ?addr)))
+(defmessage-handler MAIN::memory-map-entry compute-last-address primary
+                    (?addr)
+                    (+ ?addr
+                       (send ?self:parent
+                             get-last-address)))
 (defmessage-handler MAIN::memory-map-entry init after
                     ()
                     (bind ?self:last-address
-                          (+ ?self:base-address
-                             (send ?self:parent
-                                   get-last-address))))
+                          (send ?self
+                                compute-last-address
+                                ?self:base-address)))
 
 (defmessage-handler MAIN::memory-map-entry read primary
                     (?addr)
@@ -100,20 +105,22 @@
 
 (defclass MAIN::keyboard-controller
           "An abstraction layer over the keyboard, reading and writing to its MMIO does a getc and putc respectively"
-          (is-a USER)
-          (slot last-address
-                (storage shared)
-                (type INTEGER)
-                (access read-only)
-                (create-accessor read)
-                (default 1))
+          (is-a memory-map-entry)
+          (slot parent
+                (source composite)
+                (default-dynamic FALSE))
           (slot router
                 (type SYMBOL)
                 (visibility public)
                 (storage local)
                 (default-dynamic t))
+          (message-handler compute-last-address primary)
           (message-handler read primary)
           (message-handler write primary))
+(defmessage-handler MAIN::keyboard-controller compute-last-address primary
+                    (?addr)
+                    ; only one cell so don't do anything goofy
+                    ?addr)
 (defmessage-handler MAIN::keyboard-controller read primary
                     (?address)
                     (get-char ?self:router))
@@ -121,16 +128,16 @@
                     (?address ?value)
                     (put-char ?self:router
                               ?value))
-                
+
 ; There are 8 memory spaces in this machine setup for a total of 1 gigabyte or 128 megawords
 (deffacts MAIN::make-memory-blocks
           (make memory-block named space0)
           (make memory-block named space1)
           (make memory-block named space2)
           (make memory-block named space3)
-          ;(make memory-block named space4)
-          ;(make memory-block named space5)
-          ;(make memory-block named space6)
+          (make memory-block named space4)
+          (make memory-block named space5)
+          (make memory-block named space6)
           ;(make memory-block named space7)
           )
 ; The instruction pointer register is 27-bits wide or having a mask of 0x07FFFFFF 
@@ -555,46 +562,58 @@
 (deffacts MAIN::memory-map
           ; dumb memory map description, start at address zero and fill this out
           ; until we hit the end of the memory map
-          (make memory-map-entry parent [space0] base 0)
-          (make memory-map-entry parent [space1] follows [space0])
-          (make memory-map-entry parent [space2] follows [space1])
-          (make memory-map-entry parent [space3] follows [space2]))
+          (mmap memory-map-entry parent [space0] base 0)
+          (mmap memory-map-entry parent [space1] follows [space0])
+          (mmap memory-map-entry parent [space2] follows [space1])
+          (mmap memory-map-entry parent [space3] follows [space2])
+          (mmap memory-map-entry parent [space4] follows [space3])
+          (mmap memory-map-entry parent [space5] follows [space4])
+          (mmap memory-map-entry parent [space6] follows [space5])
+          (mmap keyboard-controller parent FALSE follows [space6]))
 
-(defrule MAIN::initialize:construct-memory-map-entry
+(defrule MAIN::initialize:make-mmap-type
          (stage (current initialize))
-         ?f <- (make memory-map-entry parent ?space base ?base)
-         (object (is-a machine0-memory-block)
-                 (name ?space))
+         ?f <- (mmap ?type parent ?parent base ?base)
          =>
          (retract ?f)
-         (bind ?mme
-               (make-instance of memory-map-entry 
-                              (parent ?space)
+         (bind ?k
+               (make-instance of ?type
+                              (parent ?parent)
                               (base-address ?base)))
-         (assert (mapped memory block ?mme)
-                 (delete "memory map entry" ?mme)))
+         (assert (mapped ?type ?k)
+                 (delete ?type ?k)))
+
+(defrule MAIN::initialize:concat-memory-map
+         "Use the previous memory map entry to identify where to place this one"
+         (stage (current initialize))
+         ?f <- (mmap ?type parent ?space follows ?other-space)
+         (object (is-a memory-map-entry)
+                 (parent ?other-space)
+                 (last-address ?b))
+         =>
+         (retract ?f)
+         (assert (mmap ?type parent ?space base (+ ?b 1))))
+
+(defrule MAIN::initialize:concat-memory-map:previous-is-memory-map
+         ?f <- (mmap ?type parent ?thingy follows ?other-entry)
+         (object (is-a memory-map-entry)
+                 (name ?other-entry)
+                 (last-address ?b))
+         =>
+         (retract ?f)
+         (assert (mmap ?type parent ?thingy base (+ ?b 1))))
+
 (defrule MAIN::report-mapping
          (stage (current initialize))
-         ?f <- (mapped memory block ?instance)
-         (object (is-a memory-map-entry)
+         ?f <- (mapped ?type ?instance)
+         (object (is-a ?type)
+                 (name ?instance)
                  (parent ?block)
                  (base-address ?start)
                  (last-address ?end))
          =>
          (retract ?f)
          (printout t
-                   "Mapped " (instance-name-to-symbol ?block) 
+                   "Mapped " ?type " named " 
+                   (instance-name-to-symbol (if ?block then ?block else ?instance))
                    " to the address range [" ?start ", " ?end "]" crlf))
-
-(defrule MAIN::initialize:concat-memory-map
-         "Use the previous memory map entry to identify where to place this one"
-         (stage (current initialize))
-         ?f <- (make memory-map-entry parent ?space follows ?other-space)
-         (object (is-a memory-map-entry)
-                 (parent ?other-space)
-                 (last-address ?b))
-         (object (is-a machine0-memory-block)
-                 (name ?space))
-         =>
-         (retract ?f)
-         (assert (make memory-map-entry parent ?space base (+ ?b 1))))
