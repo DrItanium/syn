@@ -173,17 +173,22 @@
 ; this applies to the stack register as well. All bits above the mask must be zero to maintain
 ; backwards compatibility
 (defglobal MAIN
-           ?*address-mask* = (hex->int 0x00FFFFFF)
-           ?*address-mask27* = (hex->int 0x07FFFFFF))
+           ?*address-mask24* = (hex->int 0x00FFFFFF)
+           ?*address-mask27* = (hex->int 0x07FFFFFF)
+           ?*address-mask* = ?*address-mask27*)
+(defgeneric MAIN::address-mask)
+(defmethod MAIN::address-mask
+  ()
+  ?*address-mask*)
 ; Internally, machine
 (deffacts MAIN::make-registers
           ;(terminate at 128 cycles)
           ;(terminate at ?*address-mask* cycles)
           (terminate at (hex->int 0xFFFF) cycles)
-          (make register named ip with mask ?*address-mask*)
-          (make register named sp with mask ?*address-mask*)
-          (make register named cs with mask ?*address-mask*)
-          (make register named dictionary with mask ?*address-mask*)
+          (make register named ip with mask (address-mask))
+          (make register named sp with mask (address-mask))
+          (make register named cs with mask (address-mask))
+          (make register named dictionary with mask (address-mask))
           (make register named t0)
           (make register named t1)
           (make register named t2))
@@ -204,13 +209,19 @@
                        shutdown)))
 ; the cpu bootstrap process requires lower priority because it always exists in the background and dispatches 
 ; cycles as we go along. This is how we service interrupts and other such things. 
-(defrule MAIN::boostrap-startup
+(defrule MAIN::bootstrap-startup
          (declare (salience ?*priority:first*)) 
          (stage (current startup))
          =>
          (printout t 
                    "Machine0 System boot" crlf
                    "Starting up .... please wait" crlf))
+(defrule MAIN::bootstrap-set-address-mask
+         (declare (salience 9999))
+         (stage (current startup))
+         (not (address-mask is ?))
+         =>
+         (assert (address-mask is (address-mask))))
 
 (defrule MAIN::initialize:describe-phase
          (declare (salience ?*priority:first*))
@@ -738,11 +749,24 @@
                  (name ?mme1&~?mme0)
                  (base-address ?base1)
                  (last-address ?last1))
-         (test (or (>= ?base0 ?base1 ?last0)
-                   (>= ?base0 ?last1 ?last0)
-                   (>= ?base1 ?base0 ?last1)
-                   (>= ?base1 ?last0 ?last1)))
+         (test (or (<= ?base0 ?base1 ?last0)
+                   (<= ?base0 ?last1 ?last0)
+                   (<= ?base1 ?base0 ?last1)
+                   (<= ?base1 ?last0 ?last1)))
          =>
          (halt)
          (printout t
                    "ERROR: memory map entries: " ?mme0 " and " ?mme1 " overlap!" crlf))
+
+(defrule MAIN::mmap-beyond-address-mask
+         (stage (current check))
+         (object (is-a memory-map-entry)
+                 (base-address ?b)
+                 (last-address ?l)
+                 (name ?mme0))
+         (address-mask is ?addr-mask)
+         (test (<= ?b ?addr-mask ?l))
+         =>
+         (halt)
+         (printout t
+                   "ERROR: memory map entry " ?mme0 " goes beyond the address mask!" crlf))
