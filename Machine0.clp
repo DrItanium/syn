@@ -607,7 +607,29 @@
                  (rest ?*execution-cycle-stages*
                        $?rest)))
 
-
+(deftemplate MAIN::mmap
+             "describes an mmap action to perform"
+             (slot type
+              (type SYMBOL)
+              (default ?NONE))
+             (slot parent
+                   (type SYMBOL
+                         INSTANCE)
+                   (default-dynamic FALSE))
+             (slot named
+                   (type SYMBOL
+                         INSTANCE-NAME)
+                   (default-dynamic (gensym*)))
+             (slot base
+                   (type INTEGER
+                         SYMBOL)
+                   (allowed-symbols FALSE)
+                   (default-dynamic FALSE))
+             (slot follows
+                   (type INSTANCE-NAME
+                         SYMBOL)
+                   (allowed-symbols FALSE)
+                   (default-dynamic FALSE)))
 (deffacts MAIN::memory-map
           ; dumb memory map description, start at address zero and fill this out
           ; until we hit the end of the memory map
@@ -623,56 +645,55 @@
 
 (defrule MAIN::initialize:make-mmap-type
          (stage (current initialize))
-         ?f <- (mmap ?type parent ?parent base ?base)
+         ?f <- (mmap (type ?type)
+                     (follows FALSE)
+                     (parent ?parent)
+                     (named ?name&~FALSE)
+                     (base ?base))
          =>
          (retract ?f)
-         (assert (mmap ?type named (gensym*) parent ?parent base ?base)))
-
-(defrule MAIN::initialize:make-mmap-type:named
-         (stage (current initialize))
-         ?f <- (mmap ?type named ?name parent ?parent base ?base)
-         =>
-         (retract ?f)
-         (bind ?k
-               (make-instance ?name of ?type
-                              (parent ?parent)
-                              (base-address ?base)))
-         (assert (mapped ?type ?k)
-                 (delete ?type ?k)))
+         (bind ?k 
+          (make-instance ?name of ?type
+           (parent ?parent)
+           (base-address ?base)))
+         (assert (delete ?type ?k)
+                 (mapped ?type ?k)))
 
 (defrule MAIN::initialize:concat-memory-map
          "Use the previous memory map entry to identify where to place this one"
          (stage (current initialize))
-         ?f <- (mmap ?type named ?name parent ?space follows ?other-space)
+         ?f <- (mmap (follows ?other&~FALSE)
+                     (base FALSE))
          (object (is-a memory-map-entry)
-                 (parent ?other-space)
+                 (parent ?other)
                  (last-address ?b))
          =>
-         (retract ?f)
-         (assert (mmap ?type named ?name parent ?space base (+ ?b 1))))
+         (modify ?f
+                 (follows FALSE)
+                 (base (+ ?b 1))))
 
 (defrule MAIN::initialize:concat-memory-map:previous-is-memory-map
-         ?f <- (mmap ?type named ?name parent ?thingy follows ?other-entry)
-         (object (is-a memory-map-entry)
-                 (name ?other-entry)
-                 (last-address ?b))
-         =>
-         (retract ?f)
-         (assert (mmap ?type named ?name parent ?thingy base (+ ?b 1))))
-
-(defrule MAIN::initialize:concat-memory-map:no-name
          "Use the previous memory map entry to identify where to place this one"
          (stage (current initialize))
-         ?f <- (mmap ?type parent ?space follows ?other-space)
+         ?f <- (mmap (follows ?other&~FALSE)
+                     (base FALSE))
+         (object (is-a memory-map-entry)
+                 (name ?other)
+                 (last-address ?b))
          =>
-         (retract ?f)
-         (assert (mmap ?type named (gensym*) parent ?space follows ?other-space)))
+         (modify ?f
+                 (follows FALSE)
+                 (base (+ ?b 1))))
+(defrule MAIN::check:error-out-on-bogus-mmap-assertion
+         (stage (current check))
+         ?f <- (mmap (follows FALSE)
+                     (base FALSE))
+         =>
+         (printout t
+                   "ERROR: found a mmap request which does not follow anything and does not have a base address!" 
+                   crlf)
+         (halt))
 
-(defrule MAIN::initialize:concat-memory-map:previous-is-memory-map:no-name
-         ?f <- (mmap ?type parent ?thingy follows ?other-entry)
-         =>
-         (retract ?f)
-         (assert (mmap ?type named (gensym*) parent ?thingy follows ?other-entry)))
 
 (defrule MAIN::report-mapping
          (stage (current initialize))
