@@ -610,8 +610,8 @@
 (deftemplate MAIN::mmap
              "describes an mmap action to perform"
              (slot type
-              (type SYMBOL)
-              (default ?NONE))
+                   (type SYMBOL)
+                   (default ?NONE))
              (slot parent
                    (type SYMBOL
                          INSTANCE)
@@ -633,15 +633,15 @@
 (deffacts MAIN::memory-map
           ; dumb memory map description, start at address zero and fill this out
           ; until we hit the end of the memory map
-          (mmap memory-map-entry parent [space0] base 0)
-          (mmap memory-map-entry parent [space1] follows [space0])
-          (mmap memory-map-entry parent [space2] follows [space1])
-          (mmap memory-map-entry parent [space3] follows [space2])
-          (mmap memory-map-entry parent [space4] follows [space3])
-          (mmap memory-map-entry parent [space5] follows [space4])
-          (mmap memory-map-entry parent [space6] follows [space5])
-          (mmap keyboard-controller named [kc] parent FALSE follows [space6])
-          (mmap runlevel-controller named [rlc] parent FALSE follows [kc]))
+          (mmap (type memory-map-entry) (parent [space0]) (base 0))
+          (mmap (type memory-map-entry) (parent [space1]) (follows [space0]))
+          (mmap (type memory-map-entry) (parent [space2]) (follows [space1]))
+          (mmap (type memory-map-entry) (parent [space3]) (follows [space2]))
+          (mmap (type memory-map-entry) (parent [space4]) (follows [space3]))
+          (mmap (type memory-map-entry) (parent [space5]) (follows [space4]))
+          (mmap (type memory-map-entry) (parent [space6]) (follows [space5]))
+          (mmap (type keyboard-controller) (named [kc]) (parent FALSE) (follows [space6]))
+          (mmap (type runlevel-controller) (named [rlc]) (parent FALSE) (follows [kc])))
 
 (defrule MAIN::initialize:make-mmap-type
          (stage (current initialize))
@@ -653,9 +653,9 @@
          =>
          (retract ?f)
          (bind ?k 
-          (make-instance ?name of ?type
-           (parent ?parent)
-           (base-address ?base)))
+               (make-instance ?name of ?type
+                              (parent ?parent)
+                              (base-address ?base)))
          (assert (delete ?type ?k)
                  (mapped ?type ?k)))
 
