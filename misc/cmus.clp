@@ -26,45 +26,45 @@
 (defgeneric MAIN::cmus-remote)
 (defgeneric MAIN::cmus)
 (defmethod MAIN::cmus-remote
- ((?cmdline MULTIFIELD))
- (system (format nil
-                 "cmus-remote %s"
-                 (implode$ ?cmdline))))
+  ((?cmdline MULTIFIELD))
+  (system (format nil
+                  "cmus-remote %s"
+                  (implode$ ?cmdline))))
 (defmethod MAIN::cmus-remote
- ($?cmdline)
- (cmus-remote ?cmdline))
+  ($?cmdline)
+  (cmus-remote ?cmdline))
 
 (defmethod MAIN::cmus
- ((?cmd SYMBOL
-        (eq ?current-argument
-            status)))
- (cmus-remote -C ?cmd))
+  ((?cmd SYMBOL
+         (eq ?current-argument
+             status)))
+  (cmus-remote -C ?cmd))
 (defmethod MAIN::cmus
- ((?cmd SYMBOL
-   (eq ?current-argument
-       add))
-  (?path LEXEME))
- (cmus-remote ?path))
+  ((?cmd SYMBOL
+         (eq ?current-argument
+             add))
+   (?path LEXEME))
+  (cmus-remote ?path))
 (defmethod MAIN::cmus
- ((?cmd SYMBOL
-   (not (neq ?current-argument
-             repeat
-             toggle-repeat))))
- (cmus-remote --repeat))
+  ((?cmd SYMBOL
+         (not (neq ?current-argument
+                   repeat
+                   toggle-repeat))))
+  (cmus-remote --repeat))
 
 (defmethod MAIN::cmus
- ((?cmd SYMBOL
-   (not (neq ?current-argument
-             shuffle
-             toggle-shuffle))))
- (cmus-remote --shuffle))
+  ((?cmd SYMBOL
+         (not (neq ?current-argument
+                   shuffle
+                   toggle-shuffle))))
+  (cmus-remote --shuffle))
 
 (defmethod MAIN::cmus
- ((?cmd SYMBOL
-   (not (neq ?current-argument
-             prev
-             previous))
- (cmus-remote --prev))
+  ((?cmd SYMBOL
+         (not (neq ?current-argument
+                   prev
+                   previous))))
+  (cmus-remote --prev))
 
 (defmethod MAIN::cmus
   ((?cmd SYMBOL
@@ -94,9 +94,9 @@
 (defmethod MAIN::cmus
   ((?cmd SYMBOL
          (not (neq ?current-argument
-             vol
-             volume
-             set-volume)))
+                   vol
+                   volume
+                   set-volume)))
    (?level INTEGER
            LEXEME))
   (cmus-remote --volume 
@@ -104,6 +104,6 @@
 
 (defmethod MAIN::cmus
   ((?cmd SYMBOL
-    (eq ?current-argument
-        clear)))
+         (eq ?current-argument
+             clear)))
   (cmus-remote --clear))
