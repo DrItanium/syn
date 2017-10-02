@@ -175,11 +175,17 @@
 (defglobal MAIN
            ?*address-mask24* = (hex->int 0x00FFFFFF)
            ?*address-mask27* = (hex->int 0x07FFFFFF)
-           ?*address-mask* = ?*address-mask27*)
+           ?*address-mask* = ?*address-mask27*
+           ?*execution-cycle-stages* = (create$ read ; load the instruction from memory
+                                                eval ; evaluate instruction input and construct the ucode sequence
+                                                print ; invoke the execution unit and save the result as needed
+                                                advance ; advance ip
+                                                loop ; perform checks to see if we should loop or terminate
+                                                ))
 (defgeneric MAIN::address-mask)
-(defmethod MAIN::address-mask
-  ()
-  ?*address-mask*)
+(defgeneric MAIN::execution-cycle-stages)
+(defmethod MAIN::address-mask () ?*address-mask*)
+(defmethod MAIN::execution-cycle-stages () ?*execution-cycle-stages*)
 ; Internally, machine
 (deffacts MAIN::make-registers
           ;(terminate at 128 cycles)
@@ -193,19 +199,12 @@
           (make register named t1)
           (make register named t2))
 
-(defglobal MAIN
-           ?*execution-cycle-stages* = (create$ read ; load the instruction from memory
-                                                eval ; evaluate instruction input and construct the ucode sequence
-                                                print ; invoke the execution unit and save the result as needed
-                                                advance ; advance ip
-                                                loop ; perform checks to see if we should loop or terminate
-                                                ))
 (deffacts MAIN::cycles
           (stage (current startup)
                  (rest initialize
                        check
                        execute
-                       ?*execution-cycle-stages*
+                       (execution-cycle-stages)
                        shutdown)))
 ; the cpu bootstrap process requires lower priority because it always exists in the background and dispatches 
 ; cycles as we go along. This is how we service interrupts and other such things. 
@@ -615,7 +614,7 @@
          =>
          (retract ?f2)
          (modify ?f 
-                 (rest ?*execution-cycle-stages*
+                 (rest (execution-cycle-stages)
                        $?rest)))
 
 (deftemplate MAIN::mmap
