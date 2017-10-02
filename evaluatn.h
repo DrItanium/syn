@@ -22,7 +22,7 @@
 /*                                                           */
 /*            Added EvaluateAndStoreInDataObject function.   */
 /*                                                           */
-/*      6.30: Added support for passing context information  */ 
+/*      6.30: Added support for passing context information  */
 /*            to user defined functions.                     */
 /*                                                           */
 /*            Added support for external address hash table  */
@@ -182,11 +182,7 @@ typedef struct entityRecord * ENTITY_RECORD_PTR;
 #define GetNextArgument(ep)          (ep->nextArg)
 
 #define MAXIMUM_PRIMITIVES 150
-#ifndef MAXIMUM_EXTERNAL_ADDRESS_TYPES
-// make this customizable by the build system instead of having to hack this
-// file everytime!
-#define MAXIMUM_EXTERNAL_ADDRESS_TYPES 10
-#endif // end MAXIMUM_EXTERNAL_ADDRESS_TYPES
+#define MAXIMUM_EXTERNAL_ADDRESS_TYPES 256
 
 #define BITS_PER_BYTE    8
 
@@ -201,7 +197,7 @@ typedef struct entityRecord * ENTITY_RECORD_PTR;
 #define EVALUATION_DATA 44
 
 struct evaluationData
-  { 
+  {
    struct expr *CurrentExpression;
    bool EvaluationError;
    bool HaltExecution;
