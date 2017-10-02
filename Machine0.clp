@@ -104,19 +104,19 @@
                           ?value))
 
 (defclass MAIN::keyboard-controller
-          "An abstraction layer over the keyboard, reading and writing to its MMIO does a getc and putc respectively"
-          (is-a memory-map-entry)
-          (slot parent
-                (source composite)
-                (default-dynamic FALSE))
-          (slot router
-                (type SYMBOL)
-                (visibility public)
-                (storage local)
-                (default-dynamic t))
-          (message-handler compute-last-address primary)
-          (message-handler read primary)
-          (message-handler write primary))
+  "An abstraction layer over the keyboard, reading and writing to its MMIO does a getc and putc respectively"
+  (is-a memory-map-entry)
+  (slot parent
+        (source composite)
+        (default-dynamic FALSE))
+  (slot router
+        (type SYMBOL)
+        (visibility public)
+        (storage local)
+        (default-dynamic t))
+  (message-handler compute-last-address primary)
+  (message-handler read primary)
+  (message-handler write primary))
 (defmessage-handler MAIN::keyboard-controller compute-last-address primary
                     (?addr)
                     ; only one cell so don't do anything goofy
@@ -128,6 +128,35 @@
                     (?address ?value)
                     (put-char ?self:router
                               ?value))
+
+(defclass MAIN::runlevel-controller
+  "An abstraction layer over basic system runlevels and such things!"
+  (is-a memory-map-entry)
+  (slot parent
+        (source composite)
+        (default-dynamic FALSE))
+  (message-handler compute-last-address primary)
+  (message-handler read primary)
+  (message-handler write primary))
+(defmessage-handler MAIN::runlevel-controller compute-last-address primary
+                    (?addr)
+                    (+ ?addr 1))
+(defmessage-handler MAIN::runlevel-controller write primary
+                    (?address ?value)
+                    (switch (- ?address
+                               (dynamic-get base-address))
+                            (case 0 then
+                              (halt)
+                              0)
+                            (case 1 then
+                              (assert (should shutdown))
+                              0)
+                            (default 
+                              0)))
+0)
+(defmessage-handler MAIN::runlevel-controller read primary
+                    (?addr)
+                    0)
 
 ; There are 8 memory spaces in this machine setup for a total of 1 gigabyte or 128 megawords
 (deffacts MAIN::make-memory-blocks
@@ -169,6 +198,7 @@
 (deffacts MAIN::cycles
           (stage (current startup)
                  (rest initialize
+                       check
                        execute
                        ?*execution-cycle-stages*
                        shutdown)))
@@ -542,7 +572,26 @@
          (send ?ip 
                increment))
 
-(defrule MAIN::loop:restart-cycle
+(defrule MAIN::loop:restart-cycle:terminate-execution
+         (stage (current loop))
+         ?f <- (check ?ip)
+         ?f2 <- (should shutdown)
+         =>
+         (retract ?f ?f2))
+(defrule MAIN::loop:restart-cycle:terminate-execution-on-address
+         (stage (current loop))
+         ?f <- (check ?ip)
+         (object (is-a register)
+                 (name ?ip)
+                 (value ?value))
+         (terminate at ?addr cycles)
+         (test (= ?value 
+                  ?addr))
+         =>
+         (retract ?f))
+
+
+(defrule MAIN::loop:restart-cycle:continue-execution
          ?f <- (stage (current loop)
                       (rest $?rest))
          ?f2 <- (check ?ip)
@@ -569,15 +618,23 @@
           (mmap memory-map-entry parent [space4] follows [space3])
           (mmap memory-map-entry parent [space5] follows [space4])
           (mmap memory-map-entry parent [space6] follows [space5])
-          (mmap keyboard-controller parent FALSE follows [space6]))
+          (mmap keyboard-controller named [kc] parent FALSE follows [space6])
+          (mmap runlevel-controller named [rlc] parent FALSE follows [kc]))
 
 (defrule MAIN::initialize:make-mmap-type
          (stage (current initialize))
          ?f <- (mmap ?type parent ?parent base ?base)
          =>
          (retract ?f)
+         (assert (mmap ?type named (gensym*) parent ?parent base ?base)))
+
+(defrule MAIN::initialize:make-mmap-type:named
+         (stage (current initialize))
+         ?f <- (mmap ?type named ?name parent ?parent base ?base)
+         =>
+         (retract ?f)
          (bind ?k
-               (make-instance of ?type
+               (make-instance ?name of ?type
                               (parent ?parent)
                               (base-address ?base)))
          (assert (mapped ?type ?k)
@@ -586,22 +643,36 @@
 (defrule MAIN::initialize:concat-memory-map
          "Use the previous memory map entry to identify where to place this one"
          (stage (current initialize))
-         ?f <- (mmap ?type parent ?space follows ?other-space)
+         ?f <- (mmap ?type named ?name parent ?space follows ?other-space)
          (object (is-a memory-map-entry)
                  (parent ?other-space)
                  (last-address ?b))
          =>
          (retract ?f)
-         (assert (mmap ?type parent ?space base (+ ?b 1))))
+         (assert (mmap ?type named ?name parent ?space base (+ ?b 1))))
 
 (defrule MAIN::initialize:concat-memory-map:previous-is-memory-map
-         ?f <- (mmap ?type parent ?thingy follows ?other-entry)
+         ?f <- (mmap ?type named ?name parent ?thingy follows ?other-entry)
          (object (is-a memory-map-entry)
                  (name ?other-entry)
                  (last-address ?b))
          =>
          (retract ?f)
-         (assert (mmap ?type parent ?thingy base (+ ?b 1))))
+         (assert (mmap ?type named ?name parent ?thingy base (+ ?b 1))))
+
+(defrule MAIN::initialize:concat-memory-map:no-name
+         "Use the previous memory map entry to identify where to place this one"
+         (stage (current initialize))
+         ?f <- (mmap ?type parent ?space follows ?other-space)
+         =>
+         (retract ?f)
+         (assert (mmap ?type named (gensym*) parent ?space follows ?other-space)))
+
+(defrule MAIN::initialize:concat-memory-map:previous-is-memory-map:no-name
+         ?f <- (mmap ?type parent ?thingy follows ?other-entry)
+         =>
+         (retract ?f)
+         (assert (mmap ?type named (gensym*) parent ?thingy follows ?other-entry)))
 
 (defrule MAIN::report-mapping
          (stage (current initialize))
@@ -617,3 +688,40 @@
                    "Mapped " ?type " named " 
                    (instance-name-to-symbol (if ?block then ?block else ?instance))
                    " to the address range [" ?start ", " ?end "]" crlf))
+
+(defrule MAIN::halt-on-mmap-equality
+         "Every mmap entry should not have an overlap at system boot!"
+         (stage (current check))
+         (object (is-a memory-map-entry)
+                 (base-address ?base)
+                 (last-address ?last)
+                 (name ?mme0))
+         (object (is-a memory-map-entry)
+                 (name ?mme1&~?mme0)
+                 (base-address ?base)
+                 (last-address ?last))
+         =>
+         (halt)
+         (printout t
+                   "ERROR: memory map entries: " ?mme0 " and " ?mme1 " occupy the exact same space!" crlf))
+
+
+(defrule MAIN::halt-on-mmap-overlap
+         "Every mmap entry should not have an overlap at system boot!"
+         (stage (current check))
+         (object (is-a memory-map-entry)
+                 (base-address ?base0)
+                 (last-address ?last0)
+                 (name ?mme0))
+         (object (is-a memory-map-entry)
+                 (name ?mme1&~?mme0)
+                 (base-address ?base1)
+                 (last-address ?last1))
+         (test (or (>= ?base0 ?base1 ?last0)
+                   (>= ?base0 ?last1 ?last0)
+                   (>= ?base1 ?base0 ?last1)
+                   (>= ?base1 ?last0 ?last1)))
+         =>
+         (halt)
+         (printout t
+                   "ERROR: memory map entries: " ?mme0 " and " ?mme1 " overlap!" crlf))
