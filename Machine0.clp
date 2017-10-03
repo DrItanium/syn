@@ -35,19 +35,21 @@
 (batch* MemoryBlock.clp)
 (batch* Register.clp)
 (batch* order.clp)
+(defglobal MAIN
+           ?*address24bit* = (hex->int 0x00FFFFFF))
 (defclass MAIN::machine0-memory-block
   (is-a memory-block)
   (slot capacity
         (source composite)
         (storage shared)
-        (default (+ (hex->int 0x00FFFFFF)
+        (default (+ ?*address24bit*
                     1)))
   (slot last-address
         (storage shared)
         (visibility public)
         (access read-only)
         (create-accessor read)
-        (default (hex->int 0x00FFFFFF))))
+        (default ?*address24bit*)))
 
 (defclass MAIN::register-file
   (is-a memory-block)
@@ -235,7 +237,6 @@
 ; this applies to the stack register as well. All bits above the mask must be zero to maintain
 ; backwards compatibility
 (defglobal MAIN
-           ?*address-mask24* = (hex->int 0x00FFFFFF)
            ?*address-mask27* = (hex->int 0x07FFFFFF)
            ?*address-mask* = ?*address-mask27*
            ?*execution-cycle-stages* = (create$ read ; load the instruction from memory
