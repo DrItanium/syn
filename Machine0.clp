@@ -268,6 +268,22 @@
                        execute
                        (execution-cycle-stages)
                        shutdown)))
+(deffunction MAIN::note-bring-up
+             (?router ?type ?name)
+             (printout ?router
+                       "Bringing up " ?type ": " ?name " .... "))
+(deffunction MAIN::done-with-bring-up
+             (?router $?extra)
+             (printout ?router
+                       Done crlf
+                       (expand$ ?extra)))
+(deffunction MAIN::request-future-delete
+             (?type ?instance)
+             (assert (delete ?type
+                             ?instance)))
+
+
+
 ; the cpu bootstrap process requires lower priority because it always exists in the background and dispatches
 ; cycles as we go along. This is how we service interrupts and other such things.
 (defrule MAIN::bootstrap-startup
@@ -296,57 +312,58 @@
          ?f <- (make memory-block named ?name)
          =>
          (retract ?f)
-         (printout t
-                   "Bringing up memory block: " ?name " .... ")
-         (assert (delete "memory block"
-                         (make-instance ?name of machine0-memory-block)))
-         (printout t
-                   Done crlf
-                   tab (format nil
-                               "size: 0x%x words"
-                               (send (symbol-to-instance-name ?name)
-                                     size)) crlf))
+         (note-bring-up t
+                        "memory block"
+                        ?name)
+         (request-future-delete "memory block"
+                                (make-instance ?name of machine0-memory-block))
+         (done-with-bring-up t
+                             tab (format nil
+                                         "size: 0x%x words"
+                                         (send (symbol-to-instance-name ?name)
+                                               size)) crlf))
 (defrule MAIN::initialize:make-register-file
          (stage (current initialize))
          ?f <- (make register-file named ?name)
          =>
          (retract ?f)
-         (printout t
-                   "Bringing up register-file: " ?name " .... ")
-         (assert (delete "register file"
-                         (make-instance ?name of register-file)))
-         (printout t
-                   Done crlf
-                   tab (format nil
-                               "register count: %d"
-                               (send (symbol-to-instance-name ?name)
-                                     size)) crlf))
+         (note-bring-up t
+                        register-file
+                        ?name)
+         (request-future-delete "register file"
+                                (make-instance ?name of register-file))
+         (done-with-bring-up t
+                             tab (format nil
+                                         "register count: %d"
+                                         (send (symbol-to-instance-name ?name)
+                                               size)) crlf))
+
 (defrule MAIN::initialize:make-register-with-mask
          (stage (current initialize))
          ?f <- (make register named ?name with mask ?mask)
          =>
          (retract ?f)
-         (printout t
-                   "Bringing up register: " ?name " .... ")
-         (assert (delete register
-                         (make-instance ?name of register
-                                        (mask ?mask))))
-         (printout t
-                   Done crlf
-                   tab (format nil
-                               "mask: 0x%x"
-                               ?mask) crlf))
+         (note-bring-up t
+                        register
+                        ?name)
+         (request-future-delete register
+                                (make-instance ?name of register
+                                               (mask ?mask)))
+         (done-with-bring-up t
+                             tab (format nil
+                                         "mask: 0x%x"
+                                         ?mask) crlf))
 (defrule MAIN::initialize:make-register-default
          (stage (current initialize))
          ?f <- (make register named ?name)
          =>
          (retract ?f)
-         (printout t
-                   "Bringing up register: " ?name " .... ")
-         (assert (delete register
-                         (make-instance ?name of register)))
-         (printout t
-                   Done crlf))
+         (note-bring-up t
+                        register
+                        ?name)
+         (request-future-delete register
+                                (make-instance ?name of register))
+         (done-with-bring-up t))
 
 (defrule MAIN::shutdown:print-phase
          (declare (salience ?*priority:first*))
