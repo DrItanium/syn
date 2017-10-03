@@ -282,6 +282,11 @@
              (assert (delete ?type
                              ?instance)))
 
+(deffunction MAIN::error-message
+             ($?contents)
+             (printout werror
+                       "ERROR: " (expand$ ?contents)))
+
 
 
 ; the cpu bootstrap process requires lower priority because it always exists in the background and dispatches
@@ -779,10 +784,8 @@
          ?f <- (mmap (follows FALSE)
                      (base FALSE))
          =>
-         (printout t
-                   "ERROR: found a mmap request which does not follow anything and does not have a base address!"
-                   crlf)
-         (halt))
+         (halt)
+         (error-message "found a mmap request which does not follow anything and does not have a base address!" crlf))
 
 
 (defrule MAIN::report-mapping
@@ -813,8 +816,7 @@
                  (last-address ?last))
          =>
          (halt)
-         (printout t
-                   "ERROR: memory map entries: " ?mme0 " and " ?mme1 " occupy the exact same space!" crlf))
+         (error-message "memory map entries: " ?mme0 " and " ?mme1 " occupy the exact same space!" crlf))
 
 
 (defrule MAIN::halt-on-mmap-overlap
@@ -834,8 +836,7 @@
                    (<= ?base1 ?last0 ?last1)))
          =>
          (halt)
-         (printout t
-                   "ERROR: memory map entries: " ?mme0 " and " ?mme1 " overlap!" crlf))
+         (error-message "memory map entries: " ?mme0 " and " ?mme1 " overlap!" crlf))
 
 (defrule MAIN::mmap-beyond-address-mask
          (stage (current check))
@@ -847,6 +848,4 @@
          (test (<= ?b ?addr-mask ?l))
          =>
          (halt)
-         (printout t
-                   "ERROR: memory map entry " ?mme0 " goes beyond the address mask!" crlf))
-
+         (error-message "memory map entry " ?mme0 " goes beyond the address mask!" crlf))
