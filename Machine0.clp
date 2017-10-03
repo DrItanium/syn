@@ -323,10 +323,9 @@
          (request-future-delete "memory block"
                                 (make-instance ?name of machine0-memory-block))
          (done-with-bring-up t
-                             tab (format nil
-                                         "size: 0x%x words"
-                                         (send (symbol-to-instance-name ?name)
-                                               size)) crlf))
+                             tab "size: "
+                             (int->hex (send (symbol-to-instance-name ?name)
+                                             size)) crlf))
 (defrule MAIN::initialize:make-register-file
          (stage (current initialize))
          ?f <- (make register-file named ?name)
@@ -338,10 +337,9 @@
          (request-future-delete "register file"
                                 (make-instance ?name of register-file))
          (done-with-bring-up t
-                             tab (format nil
-                                         "register count: %d"
-                                         (send (symbol-to-instance-name ?name)
-                                               size)) crlf))
+                             tab "register count: "
+                             (send (symbol-to-instance-name ?name)
+                                   size) crlf))
 
 (defrule MAIN::initialize:make-register-with-mask
          (stage (current initialize))
@@ -355,9 +353,8 @@
                                 (make-instance ?name of register
                                                (mask ?mask)))
          (done-with-bring-up t
-                             tab (format nil
-                                         "mask: 0x%x"
-                                         ?mask) crlf))
+                             tab "mask: " (int->hex ?mask) crlf))
+
 (defrule MAIN::initialize:make-register-default
          (stage (current initialize))
          ?f <- (make register named ?name)
