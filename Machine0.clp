@@ -40,7 +40,7 @@
   (slot capacity
         (source composite)
         (storage shared)
-        (default (+ (hex->int 0x00FFFFFF) 
+        (default (+ (hex->int 0x00FFFFFF)
                     1)))
   (slot last-address
         (storage shared)
@@ -58,12 +58,12 @@
 
 (defclass MAIN::memory-map-entry
   (is-a thing)
-  (slot base-address 
+  (slot base-address
         (type INTEGER)
         (storage local)
         (visibility public)
         (default ?NONE))
-  (slot last-address 
+  (slot last-address
         (type INTEGER)
         (storage local)
         (visibility public))
@@ -129,6 +129,69 @@
                     (put-char ?self:router
                               ?value))
 
+(defclass MAIN::random-number-generator
+  (is-a memory-map-entry)
+  (slot parent
+        (source composite)
+        (default-dynamic FALSE))
+  (slot seed
+        (type INTEGER)
+        (visibility public)
+        (storage local)
+        (default-dynamic (integer (time))))
+  (slot current-value
+        (type INTEGER)
+        (visibility public)
+        (create-accessor read)
+        (storage local))
+  (message-handler init after)
+  (message-handler put-seed after)
+  (message-handler compute-last-address primary)
+  (message-handler read primary)
+  (message-handler write primary))
+
+(defmessage-handler MAIN::random-number-generator init after
+                    ()
+                    (seed (dynamic-get seed))
+                    (dynamic-put current-value
+                                 (random)))
+
+(defmessage-handler MAIN::random-number-generator put-seed after
+                    (?seed)
+                    (seed ?seed))
+
+(defmessage-handler MAIN::random-number-generator compute-last-address primary
+                    (?addr)
+                    (+ ?addr 1))
+(defmessage-handler MAIN::random-number-generator read primary
+                    (?address)
+                    (switch (- ?address
+                               (dynamic-get base-address))
+                            ; random number port
+                            (case 0 then
+                              (bind ?result
+                                    (dynamic-get current-value))
+                              (dynamic-put current-value
+                                           (random))
+                              ?result)
+                            ; seed port
+                            (case 1 then
+                              (dynamic-get seed))
+                            (default 0)))
+(defmessage-handler MAIN::random-number-generator write primary
+                    (?address ?value)
+                    (switch (- ?address
+                               (dynamic-get base-address))
+                            ; random number port, skip the current entry
+                            (case 0 then
+                              (dynamic-put current-value
+                                           (random)))
+                            (case 1 then
+                              (dynamic-put seed
+                                           ?value)
+                              (seed ?value))
+                            (default 0)))
+
 (defclass MAIN::runlevel-controller
   "An abstraction layer over basic system runlevels and such things!"
   (is-a memory-map-entry)
@@ -151,9 +214,8 @@
                             (case 1 then
                               (assert (should shutdown))
                               0)
-                            (default 
+                            (default
                               0)))
-0)
 (defmessage-handler MAIN::runlevel-controller read primary
                     (?addr)
                     0)
@@ -169,7 +231,7 @@
           (make memory-block named space6)
           ;(make memory-block named space7)
           )
-; The instruction pointer register is 27-bits wide or having a mask of 0x07FFFFFF 
+; The instruction pointer register is 27-bits wide or having a mask of 0x07FFFFFF
 ; this applies to the stack register as well. All bits above the mask must be zero to maintain
 ; backwards compatibility
 (defglobal MAIN
@@ -206,13 +268,13 @@
                        execute
                        (execution-cycle-stages)
                        shutdown)))
-; the cpu bootstrap process requires lower priority because it always exists in the background and dispatches 
-; cycles as we go along. This is how we service interrupts and other such things. 
+; the cpu bootstrap process requires lower priority because it always exists in the background and dispatches
+; cycles as we go along. This is how we service interrupts and other such things.
 (defrule MAIN::bootstrap-startup
-         (declare (salience ?*priority:first*)) 
+         (declare (salience ?*priority:first*))
          (stage (current startup))
          =>
-         (printout t 
+         (printout t
                    "Machine0 System boot" crlf
                    "Starting up .... please wait" crlf))
 (defrule MAIN::bootstrap-set-address-mask
@@ -234,11 +296,11 @@
          ?f <- (make memory-block named ?name)
          =>
          (retract ?f)
-         (printout t 
+         (printout t
                    "Bringing up memory block: " ?name " .... ")
-         (assert (delete "memory block" 
+         (assert (delete "memory block"
                          (make-instance ?name of machine0-memory-block)))
-         (printout t 
+         (printout t
                    Done crlf
                    tab (format nil
                                "size: 0x%x words"
@@ -267,11 +329,11 @@
          (printout t
                    "Bringing up register: " ?name " .... ")
          (assert (delete register
-                         (make-instance ?name of register 
+                         (make-instance ?name of register
                                         (mask ?mask))))
-         (printout t 
+         (printout t
                    Done crlf
-                   tab (format nil 
+                   tab (format nil
                                "mask: 0x%x"
                                ?mask) crlf))
 (defrule MAIN::initialize:make-register-default
@@ -331,10 +393,10 @@
              ;                 62)
              ;    0))
              ; but since CLIPSIntegers are signed then we can just imply twos compliment
-             (< ?value 
+             (< ?value
                 0))
 
-; The next 7 bits (56-62) are the group bits, the upper most 8 bits have the same purpose in 
+; The next 7 bits (56-62) are the group bits, the upper most 8 bits have the same purpose in
 ; jumps and everything else!
 (deffunction MAIN::get-group-bits
              (?value)
@@ -386,7 +448,7 @@
              (multislot arguments))
 
 ; use a system of objects that are fixed in concept to describe the different fields that
-; make up the instruction. 
+; make up the instruction.
 (defclass MAIN::primary-class-descriptor
   "Is the instruction a branch or non-branch instruction?"
   (is-a thing)
@@ -470,12 +532,12 @@
               ([group-branch:conditional-register] of branch-group-bits-descriptor
                                                    (matches-with 7)
                                                    (title conditional-register))
-              ([group-branch:conditional-register-indirect] of branch-group-bits-descriptor 
+              ([group-branch:conditional-register-indirect] of branch-group-bits-descriptor
                                                             (matches-with 8)
                                                             (title conditional-register-indirect)))
 (defclass MAIN::non-branch-group-bits-descriptor
   (is-a group-bits-descriptor)
-  (slot parent 
+  (slot parent
         (source composite)
         (default [primary-class:non-branch])))
 
@@ -552,7 +614,7 @@
                  (matches-with =(extract-operation-field ?value))
                  (name ?operation))
          =>
-         (modify ?f 
+         (modify ?f
                  (type ?operation)))
 
 
@@ -579,7 +641,7 @@
                         (name [ip]))
          =>
          (assert (check [ip]))
-         (send ?ip 
+         (send ?ip
                increment))
 
 (defrule MAIN::loop:restart-cycle:terminate-execution
@@ -595,7 +657,7 @@
                  (name ?ip)
                  (value ?value))
          (terminate at ?addr cycles)
-         (test (= ?value 
+         (test (= ?value
                   ?addr))
          =>
          (retract ?f))
@@ -609,11 +671,11 @@
                  (name ?ip)
                  (value ?value))
          (terminate at ?addr cycles)
-         (test (<> ?value 
+         (test (<> ?value
                    ?addr))
          =>
          (retract ?f2)
-         (modify ?f 
+         (modify ?f
                  (rest (execution-cycle-stages)
                        $?rest)))
 
@@ -651,7 +713,8 @@
           (mmap (type memory-map-entry) (parent [space5]) (follows [space4]))
           (mmap (type memory-map-entry) (parent [space6]) (follows [space5]))
           (mmap (type keyboard-controller) (named [kc]) (parent FALSE) (follows [space6]))
-          (mmap (type runlevel-controller) (named [rlc]) (parent FALSE) (follows [kc])))
+          (mmap (type runlevel-controller) (named [rlc]) (parent FALSE) (follows [kc]))
+          (mmap (type random-number-generator) (named [rng0]) (parent FALSE) (follows [rlc])))
 
 (defrule MAIN::initialize:make-mmap-type
          (stage (current initialize))
@@ -662,7 +725,7 @@
                      (base ?base))
          =>
          (retract ?f)
-         (bind ?k 
+         (bind ?k
                (make-instance ?name of ?type
                               (parent ?parent)
                               (base-address ?base)))
@@ -700,7 +763,7 @@
                      (base FALSE))
          =>
          (printout t
-                   "ERROR: found a mmap request which does not follow anything and does not have a base address!" 
+                   "ERROR: found a mmap request which does not follow anything and does not have a base address!"
                    crlf)
          (halt))
 
@@ -716,7 +779,7 @@
          =>
          (retract ?f)
          (printout t
-                   "Mapped " ?type " named " 
+                   "Mapped " ?type " named "
                    (instance-name-to-symbol (if ?block then ?block else ?instance))
                    " to the address range [" ?start ", " ?end "]" crlf))
 
@@ -769,3 +832,4 @@
          (halt)
          (printout t
                    "ERROR: memory map entry " ?mme0 " goes beyond the address mask!" crlf))
+
