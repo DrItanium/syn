@@ -33,17 +33,8 @@
 #include "Problem.h"
 
 #include <functional>
-#include <climits>
 namespace syn {
 
-/**
- * Retrieve the number of bits that a given type consumes. This is different
- * from plain sizeof in that this is CHAR_BIT * the number of bytes that make
- * up the target type.
- * @tparam T the type to find the size of
- */
-template<typename T>
-constexpr size_t bitwidth = CHAR_BIT * sizeof(T);
 
 template<typename T, typename R = T>
 constexpr R add(T a, T b) noexcept {

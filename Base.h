@@ -38,6 +38,24 @@
 
 namespace syn {
 
+/**
+ * A compile type computation for defining a bit at a given position. For
+ * instance, singleBitmaskValue<byte, 7> will put 0x1 at position seven which
+ * will result in 0x80.
+ * @tparam T the type to make the bitmask of
+ * @tparam index the position in the type to place the 1
+ */
+template<typename T, T index>
+constexpr auto singleBitmaskValue = static_cast<T>(0x1 << index);
+
+/**
+ * A compile time computation which describes the largest value a given type
+ * can store.
+ * @tparam T the type to get the largest value of
+ */
+template<typename T>
+constexpr auto largestValue = static_cast<T>(-1);
+
     /**
      * Describes the upper and lower halves of a type
      */
@@ -50,11 +68,20 @@ namespace syn {
             ~TypeData() = delete;
         };
         template<typename T>
-        constexpr auto upperMask = static_cast<T>(0);
+        constexpr auto shiftCount = bitwidth<T> / 2;
         template<typename T>
-        constexpr auto lowerMask = static_cast<T>(0);
+        constexpr auto upperMask = static_cast<T>(largestValue<T> << shiftCount<T>);
         template<typename T>
-        constexpr auto shiftCount = static_cast<T>(0);
+        constexpr auto lowerMask = static_cast<T>(largestValue<T> >> shiftCount<T>);
+        // negative shifts are not allowed
+        template<> constexpr auto upperMask<int64> = static_cast<int64>(0xFFFFFFFF00000000);
+        template<> constexpr auto lowerMask<int64> = static_cast<int64>(0x00000000FFFFFFFF);
+        template<> constexpr auto upperMask<int32> = static_cast<int32>(0xFFFF0000);
+        template<> constexpr auto lowerMask<int32> = static_cast<int32>(0x0000FFFF);
+        template<> constexpr auto upperMask<int16> = static_cast<int16>(0xFF00);
+        template<> constexpr auto lowerMask<int16> = static_cast<int16>(0x00FF);
+        template<> constexpr auto upperMask<int8>  = static_cast<int8>(0xF0);
+        template<> constexpr auto lowerMask<int8>  = static_cast<int8>(0x0F);
     } // end namespace UpperLowerPair
     #define DefUpperLowerPair(type, halfType, up, low, shift) \
     namespace UpperLowerPair { \
@@ -66,9 +93,9 @@ namespace syn {
             using HalfType = halfType; \
             using DataType = type; \
         }; \
-        template<> constexpr auto upperMask<type> = static_cast< type > ( up ); \
-        template<> constexpr auto lowerMask<type> = static_cast< type > ( low ) ; \
-        template<> constexpr auto shiftCount<type> = static_cast< type > ( shift ); \
+        static_assert(static_cast<type>(up) == upperMask < type > , "Upper mask is wrong!"); \
+        static_assert(static_cast<type>(low) == lowerMask < type > , "Lower mask is wrong!"); \
+        static_assert(static_cast<type>(shift) == shiftCount< type > , "shift count is wrong!"); \
     }
 
     DefUpperLowerPair(uint8, uint8, 0xF0, 0x0F, 4);
@@ -80,7 +107,6 @@ namespace syn {
     DefUpperLowerPair(int64, int32, 0xFFFFFFFF00000000, 0x00000000FFFFFFFF, 32);
     DefUpperLowerPair(uint64, uint32, 0xFFFFFFFF00000000, 0x00000000FFFFFFFF, 32);
 #undef DefUpperLowerPair
-
 
 /**
  * If the given type T was halved, what would its type be?
@@ -138,15 +164,6 @@ constexpr T getShiftCount() noexcept {
 
 
 
-/**
- * A compile type computation for defining a bit at a given position. For
- * instance, singleBitmaskValue<byte, 7> will put 0x1 at position seven which
- * will result in 0x80.
- * @tparam T the type to make the bitmask of
- * @tparam index the position in the type to place the 1
- */
-template<typename T, T index>
-constexpr auto singleBitmaskValue = static_cast<T>(0x1 << index);
 
 /**
  * A version of singleBitmaskValue where the shift index is only known at
@@ -171,16 +188,16 @@ template<typename T, T bitmask>
 constexpr T mask(T input) noexcept {
     return input & bitmask;
 }
-template<> constexpr uint8 mask<uint8, 0xFF>(uint8 value) noexcept { return value; }
+template<> constexpr uint8 mask<uint8, largestValue<uint8>>(uint8 value) noexcept { return value; }
 template<> constexpr uint8 mask<uint8, 0>(uint8 value) noexcept { return 0; }
 
-template<> constexpr uint16 mask<uint16, 0xFFFF>(uint16 value) noexcept { return value; }
+template<> constexpr uint16 mask<uint16, largestValue<uint16>>(uint16 value) noexcept { return value; }
 template<> constexpr uint16 mask<uint16, 0>(uint16 value) noexcept { return 0; }
 
-template<> constexpr uint32 mask<uint32, 0xFFFFFFFF>(uint32 value) noexcept { return value; }
+template<> constexpr uint32 mask<uint32, largestValue<uint32>>(uint32 value) noexcept { return value; }
 template<> constexpr uint32 mask<uint32, 0>(uint32 value) noexcept { return 0; }
 
-template<> constexpr uint64 mask<uint64, 0xFFFFFFFFFFFFFFFF>(uint64 value) noexcept { return value; }
+template<> constexpr uint64 mask<uint64, largestValue<uint64>>(uint64 value) noexcept { return value; }
 template<> constexpr uint64 mask<uint64, 0>(uint64 value) noexcept { return 0; }
 
 /**
@@ -202,13 +219,14 @@ constexpr F decodeBits(T input) noexcept {
     return static_cast<F>(result);
 }
 
-template<> constexpr uint8 decodeBits<uint8, uint8, 0xFF, 0>(uint8 input) noexcept { return input; }
+
+template<> constexpr uint8 decodeBits<uint8, uint8, largestValue<uint8>, 0>(uint8 input) noexcept { return input; }
 template<> constexpr uint8 decodeBits<uint8, uint8, 0, 0>(uint8 input) noexcept { return 0; }
-template<> constexpr uint16 decodeBits<uint16, uint16, 0xFFFF, 0>(uint16 input) noexcept { return input; }
+template<> constexpr uint16 decodeBits<uint16, uint16, largestValue<uint16>, 0>(uint16 input) noexcept { return input; }
 template<> constexpr uint16 decodeBits<uint16, uint16, 0, 0>(uint16 input) noexcept { return 0; }
-template<> constexpr uint32 decodeBits<uint32, uint32, 0xFFFFFFFF, 0>(uint32 input) noexcept { return input; }
+template<> constexpr uint32 decodeBits<uint32, uint32, largestValue<uint32>, 0>(uint32 input) noexcept { return input; }
 template<> constexpr uint32 decodeBits<uint32, uint32, 0, 0>(uint32 input) noexcept { return 0; }
-template<> constexpr uint64 decodeBits<uint64, uint64, 0xFFFFFFFFFFFFFFFF, 0>(uint64 input) noexcept { return input; }
+template<> constexpr uint64 decodeBits<uint64, uint64, largestValue<uint64>, 0>(uint64 input) noexcept { return input; }
 template<> constexpr uint64 decodeBits<uint64, uint64, 0, 0>(uint64 input) noexcept { return 0; }
 
 /**
@@ -233,10 +251,10 @@ constexpr T encodeBits(T input, F value) noexcept {
     valueToInject &= bitmask;
     return static_cast<T>(maskedValue | valueToInject);
 }
-template<> constexpr uint8 encodeBits<uint8, uint8, 0xFF, 0>(uint8 input, uint8 value) noexcept { return value; }
-template<> constexpr uint16 encodeBits<uint16, uint16, 0xFFFF, 0>(uint16 input, uint16 value) noexcept { return value; }
-template<> constexpr uint32 encodeBits<uint32, uint32, 0xFFFFFFFF, 0>(uint32 input, uint32 value) noexcept { return value; }
-template<> constexpr uint64 encodeBits<uint64, uint64, 0xFFFFFFFFFFFFFFFF, 0>(uint64 input, uint64 value) noexcept { return value; }
+template<> constexpr uint8 encodeBits<uint8, uint8, largestValue<uint8>, 0>(uint8 input, uint8 value) noexcept { return value; }
+template<> constexpr uint16 encodeBits<uint16, uint16, largestValue<uint16>, 0>(uint16 input, uint16 value) noexcept { return value; }
+template<> constexpr uint32 encodeBits<uint32, uint32, largestValue<uint32>, 0>(uint32 input, uint32 value) noexcept { return value; }
+template<> constexpr uint64 encodeBits<uint64, uint64, largestValue<uint64>, 0>(uint64 input, uint64 value) noexcept { return value; }
 template<> constexpr uint8 encodeBits<uint8, uint8, 0, 0>(uint8 input, uint8 value) noexcept { return input; }
 template<> constexpr uint16 encodeBits<uint16, uint16, 0, 0>(uint16 input, uint16 value) noexcept { return input; }
 template<> constexpr uint32 encodeBits<uint32, uint32, 0, 0>(uint32 input, uint32 value) noexcept { return input; }

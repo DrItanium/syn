@@ -30,6 +30,7 @@
 #ifndef _SYN_TYPES_H
 #define _SYN_TYPES_H
 #include <cstdint>
+#include <climits>
 
 using int8 = int8_t;
 using uint8 = uint8_t;
@@ -40,5 +41,16 @@ using int32 = int32_t;
 using uint32 = uint32_t;
 using int64 = int64_t;
 using uint64 = uint64_t;
+
+namespace syn {
+/**
+ * Retrieve the number of bits that a given type consumes. This is different
+ * from plain sizeof in that this is CHAR_BIT * the number of bytes that make
+ * up the target type.
+ * @tparam T the type to find the size of
+ */
+template<typename T>
+constexpr auto bitwidth = CHAR_BIT * sizeof(T);
+} // end namespace syn
 
 #endif // end _SYN_BASE_H
