@@ -41,6 +41,9 @@ using int32 = int32_t;
 using uint32 = uint32_t;
 using int64 = int64_t;
 using uint64 = uint64_t;
+// lock into gcc and other targets which have access to 128-bit integers
+using int128 = __int128;
+using uint128 = unsigned __int128;
 
 namespace syn {
 /**

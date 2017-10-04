@@ -73,15 +73,18 @@ constexpr auto largestValue = static_cast<T>(-1);
         constexpr auto upperMask = static_cast<T>(largestValue<T> << shiftCount<T>);
         template<typename T>
         constexpr auto lowerMask = static_cast<T>(largestValue<T> >> shiftCount<T>);
+        template<> constexpr auto lowerMask<int128> = static_cast<int128>(0xFFFFFFFFFFFFFFFF);
+        template<> constexpr auto upperMask<int128> = lowerMask<int128> << shiftCount<int128>;
         // negative shifts are not allowed
-        template<> constexpr auto upperMask<int64> = static_cast<int64>(0xFFFFFFFF00000000);
-        template<> constexpr auto lowerMask<int64> = static_cast<int64>(0x00000000FFFFFFFF);
-        template<> constexpr auto upperMask<int32> = static_cast<int32>(0xFFFF0000);
-        template<> constexpr auto lowerMask<int32> = static_cast<int32>(0x0000FFFF);
-        template<> constexpr auto upperMask<int16> = static_cast<int16>(0xFF00);
-        template<> constexpr auto lowerMask<int16> = static_cast<int16>(0x00FF);
-        template<> constexpr auto upperMask<int8>  = static_cast<int8>(0xF0);
-        template<> constexpr auto lowerMask<int8>  = static_cast<int8>(0x0F);
+        template<> constexpr auto lowerMask<int64>  = static_cast<int64>(0x00000000FFFFFFFF);
+        template<> constexpr auto upperMask<int64>  = static_cast<int64>(0xFFFFFFFF00000000);
+        template<> constexpr auto lowerMask<int32>  = static_cast<int32>(0x0000FFFF);
+        template<> constexpr auto upperMask<int32>  = static_cast<int32>(0xFFFF0000);
+        template<> constexpr auto upperMask<int16>  = static_cast<int16>(0xFF00);
+        template<> constexpr auto lowerMask<int16>  = static_cast<int16>(0x00FF);
+        template<> constexpr auto upperMask<int8>   = static_cast<int8>(0xF0);
+        template<> constexpr auto lowerMask<int8>   = static_cast<int8>(0x0F);
+        // int128 needs to be handled specially!
     } // end namespace UpperLowerPair
     #define DefUpperLowerPair(type, halfType, up, low, shift) \
     namespace UpperLowerPair { \
@@ -106,6 +109,11 @@ constexpr auto largestValue = static_cast<T>(-1);
     DefUpperLowerPair(int32, int16, 0xFFFF0000, 0x0000FFFF, 16);
     DefUpperLowerPair(int64, int32, 0xFFFFFFFF00000000, 0x00000000FFFFFFFF, 32);
     DefUpperLowerPair(uint64, uint32, 0xFFFFFFFF00000000, 0x00000000FFFFFFFF, 32);
+    DefUpperLowerPair(uint128, uint64, (largestValue<uint128> << 64),
+                                       (largestValue<uint128> >> 64), 64);
+    DefUpperLowerPair(int128, int64, (static_cast<int128>(0xFFFFFFFFFFFFFFFF)<< 64),
+                                     (static_cast<int128>(0xFFFFFFFFFFFFFFFF)), 64);
+
 #undef DefUpperLowerPair
 
 /**
@@ -200,6 +208,10 @@ template<> constexpr uint32 mask<uint32, 0>(uint32 value) noexcept { return 0; }
 template<> constexpr uint64 mask<uint64, largestValue<uint64>>(uint64 value) noexcept { return value; }
 template<> constexpr uint64 mask<uint64, 0>(uint64 value) noexcept { return 0; }
 
+template<> constexpr uint128 mask<uint128, largestValue<uint128>>(uint128 value) noexcept { return value; }
+template<> constexpr uint128 mask<uint128, 0>(uint128 value) noexcept { return 0; }
+
+
 /**
  * Extract a section of bits out of a given input and return it as a given
  * type.
@@ -228,6 +240,8 @@ template<> constexpr uint32 decodeBits<uint32, uint32, largestValue<uint32>, 0>(
 template<> constexpr uint32 decodeBits<uint32, uint32, 0, 0>(uint32 input) noexcept { return 0; }
 template<> constexpr uint64 decodeBits<uint64, uint64, largestValue<uint64>, 0>(uint64 input) noexcept { return input; }
 template<> constexpr uint64 decodeBits<uint64, uint64, 0, 0>(uint64 input) noexcept { return 0; }
+template<> constexpr uint128 decodeBits<uint128, uint128, largestValue<uint128>, 0>(uint128 input) noexcept { return input; }
+template<> constexpr uint128 decodeBits<uint128, uint128, 0, 0>(uint128 input) noexcept { return 0; }
 
 /**
  * Mask a given input and return a bool based on its resultant value
@@ -252,13 +266,15 @@ constexpr T encodeBits(T input, F value) noexcept {
     return static_cast<T>(maskedValue | valueToInject);
 }
 template<> constexpr uint8 encodeBits<uint8, uint8, largestValue<uint8>, 0>(uint8 input, uint8 value) noexcept { return value; }
-template<> constexpr uint16 encodeBits<uint16, uint16, largestValue<uint16>, 0>(uint16 input, uint16 value) noexcept { return value; }
-template<> constexpr uint32 encodeBits<uint32, uint32, largestValue<uint32>, 0>(uint32 input, uint32 value) noexcept { return value; }
-template<> constexpr uint64 encodeBits<uint64, uint64, largestValue<uint64>, 0>(uint64 input, uint64 value) noexcept { return value; }
 template<> constexpr uint8 encodeBits<uint8, uint8, 0, 0>(uint8 input, uint8 value) noexcept { return input; }
+template<> constexpr uint16 encodeBits<uint16, uint16, largestValue<uint16>, 0>(uint16 input, uint16 value) noexcept { return value; }
 template<> constexpr uint16 encodeBits<uint16, uint16, 0, 0>(uint16 input, uint16 value) noexcept { return input; }
+template<> constexpr uint32 encodeBits<uint32, uint32, largestValue<uint32>, 0>(uint32 input, uint32 value) noexcept { return value; }
 template<> constexpr uint32 encodeBits<uint32, uint32, 0, 0>(uint32 input, uint32 value) noexcept { return input; }
+template<> constexpr uint64 encodeBits<uint64, uint64, largestValue<uint64>, 0>(uint64 input, uint64 value) noexcept { return value; }
 template<> constexpr uint64 encodeBits<uint64, uint64, 0, 0>(uint64 input, uint64 value) noexcept { return input; }
+template<> constexpr uint128 encodeBits<uint128, uint128, largestValue<uint128>, 0>(uint128 input, uint128 value) noexcept { return value; }
+template<> constexpr uint128 encodeBits<uint128, uint128, 0, 0>(uint128 input, uint128 value) noexcept { return input; }
 
 template<typename T, T mask, T shift>
 constexpr T encodeFlag(T input, bool value) noexcept {
