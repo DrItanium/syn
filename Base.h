@@ -50,7 +50,7 @@ constexpr auto singleBitmaskValue = static_cast<T>(0x1 << index);
 
 /**
  * A compile time computation which describes the largest value a given type
- * can store.
+ * can store, which is usually all F's if looking at the number in hex!
  * @tparam T the type to get the largest value of
  */
 template<typename T>
