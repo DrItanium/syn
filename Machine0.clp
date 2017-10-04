@@ -816,7 +816,6 @@
          (halt)
          (error-message "memory map entries: " ?mme0 " and " ?mme1 " occupy the exact same space!" crlf))
 
-
 (defrule MAIN::halt-on-mmap-overlap
          "Every mmap entry should not have an overlap at system boot!"
          (stage (current check))
