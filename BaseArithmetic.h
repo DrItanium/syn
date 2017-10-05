@@ -615,6 +615,18 @@ constexpr bool addressInRange(T capacity, T address) noexcept {
     }
 }
 
+template<typename T>
+constexpr T onesComplement(T value) noexcept {
+    return ~value;
+}
+
+template<typename T>
+constexpr T twosComplement(T value) noexcept {
+    return onesComplement<T>(value) + numeralOne<T>;
+}
+
+
 } // end namespace syn
+
 
 #endif // end SYN_BASE_ARITHMETIC_H__

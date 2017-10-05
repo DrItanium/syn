@@ -559,5 +559,15 @@ constexpr bool fulfillsCondition() noexcept {
 	return fulfillsCondition(T());
 }
 
+/**
+ * Construct a 128 bit unsigned integer
+ */
+constexpr uint128 makeuint128(uint64 lower, uint64 upper) noexcept {
+    auto lowerHalf = decodeBits<uint64, uint128, UpperLowerPair::lowerMask<uint128>, 0>(lower);
+    return encodeBits<uint128, uint64, UpperLowerPair::upperMask<uint128>, UpperLowerPair::shiftCount<uint128>>(lowerHalf, upper);
 }
+
+}
+
+
 #endif // end _SYN_BASE_H
