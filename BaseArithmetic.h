@@ -521,14 +521,14 @@ constexpr bool binaryNor(bool a, bool b) noexcept {
 
 template<typename T, typename R = T>
 constexpr R circularShiftLeft(T value, T shift) noexcept {
-    constexpr T width = bitwidth<T> - 1;
+    constexpr auto width = largestShiftValue<T>;
     // taken from the wikipedia entry on circular shifts
     return static_cast<R>((value << shift) | (value >> ((-shift) & width)));
 }
 
 template<typename T, typename R = T>
 constexpr R circularShiftRight(T value, T shift) noexcept {
-    constexpr T width = bitwidth<T> - 1;
+    constexpr auto width = largestShiftValue<T>;
     // taken from the wikipedia entry on circular shifts
 	return static_cast<R>( (value >> shift) | (value << ((-shift) & width)));
 }
@@ -608,27 +608,11 @@ constexpr bool isOdd(T value) noexcept {
  */
 template<typename T>
 constexpr bool addressInRange(T capacity, T address) noexcept {
-	return address >= 0 && address < capacity;
-}
-
-template<>
-constexpr bool addressInRange<uint16>(uint16 capacity, uint16 address) noexcept {
-    return address < capacity;
-}
-
-template<>
-constexpr bool addressInRange<uint32>(uint32 capacity, uint32 address) noexcept {
-    return address < capacity;
-}
-
-template<>
-constexpr bool addressInRange<uint64>(uint64 capacity, uint64 address) noexcept {
-    return address < capacity;
-}
-
-template<>
-constexpr bool addressInRange<uint8>(uint8 capacity, uint8 address) noexcept {
-    return address < capacity;
+    if (std::is_unsigned<T>::value) {
+        return address < capacity;
+    } else {
+	    return address >= 0 && address < capacity;
+    }
 }
 
 } // end namespace syn

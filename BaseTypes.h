@@ -62,6 +62,13 @@ constexpr auto bitwidth = CHAR_BIT * sizeof(T);
  */
 template<typename T>
 constexpr auto numeralOne = static_cast<T>(0x1);
+
+/**
+ * Retrieve the number of positions that a given type can shift left and right by without clearing all digits
+ * @tparam T the type of the thing
+ */
+template<typename T>
+constexpr auto largestShiftValue = bitwidth<T> - 1;
 } // end namespace syn
 
 #endif // end _SYN_BASE_H
