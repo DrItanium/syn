@@ -46,7 +46,8 @@ namespace syn {
  * @tparam index the position in the type to place the 1
  */
 template<typename T, T index>
-constexpr auto singleBitmaskValue = static_cast<T>(0x1 << index);
+constexpr auto singleBitmaskValue = static_cast<T>(numeralOne<T> << index);
+
 
 /**
  * A compile time computation which describes the largest value a given type
@@ -55,6 +56,7 @@ constexpr auto singleBitmaskValue = static_cast<T>(0x1 << index);
  */
 template<typename T>
 constexpr auto largestValue = static_cast<T>(-1);
+
 
     /**
      * Describes the upper and lower halves of a type
@@ -182,7 +184,7 @@ constexpr T getShiftCount() noexcept {
  */
 template<typename T>
 constexpr T computeSingleBitmask(T index) noexcept {
-	return static_cast<T>(1 << index);
+	return static_cast<T>(numeralOne<T> << index);
 }
 
 /**

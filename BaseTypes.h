@@ -54,6 +54,14 @@ namespace syn {
  */
 template<typename T>
 constexpr auto bitwidth = CHAR_BIT * sizeof(T);
+
+/**
+ * A little hack used to support int128 and anything other numeric constants by defining a constant one for a given
+ * type.
+ * @tparam T the type to coerce the number one into
+ */
+template<typename T>
+constexpr auto numeralOne = static_cast<T>(0x1);
 } // end namespace syn
 
 #endif // end _SYN_BASE_H
