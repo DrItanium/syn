@@ -470,6 +470,13 @@ constexpr auto byteCount = sizeof(T);
 template<typename T>
 constexpr auto byteCount<BinaryContainer<T>> = sizeof(T);
 
+template<typename T>
+T getc(std::istream& input) noexcept {
+    byte value = 0;
+    input >> std::noskipws >> value;
+    return static_cast<T>(value);
+}
+
 /**
  * Retrieves a byte from std::cin, casts it to the specified type, and returns
  * it.
@@ -477,20 +484,22 @@ constexpr auto byteCount<BinaryContainer<T>> = sizeof(T);
  * @return the extracted byte cast to the specified type
  */
 template<typename T>
-T getc() noexcept {
-    byte value = 0;
-    std::cin >> std::noskipws >> value;
-    return static_cast<T>(value);
+inline T getc() noexcept {
+    return getc<T>(std::cin);
 }
 
+template<typename T>
+void putc(T value, std::ostream& output) noexcept {
+    output << static_cast<char>(value);
+}
 /**
  * Simple wrapper over outputting characters (or whatever) to std::cout
  * @tparam T the type of the input
  * @param value the value to output to standard out
  */
 template<typename T>
-void putc(T value) noexcept {
-    std::cout << static_cast<char>(value);
+inline void putc(T value) noexcept {
+    putc<T>(value, std::cout);
 }
 
 /**
@@ -502,7 +511,7 @@ void putc(T value) noexcept {
  * @tparam T The type of the thing to describe it's error state
  */
 template<typename T>
-constexpr T defaultErrorState = T::Count;
+constexpr T defaultErrorState = std::is_enum<T>::value ? T::Count : static_cast<T>(0);
 
 /**
  * Checks to see if the given input type is equal to the corresponding
