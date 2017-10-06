@@ -200,6 +200,47 @@ namespace syn {
     void CLIPS_circularShiftRight(UDFContext* context, CLIPSValuePtr ret) {
         CLIPS_circularShiftBase<false>(context, ret);
     }
+    void CLIPS_onesComplement(UDFContext* context, CLIPSValuePtr ret) {
+        CLIPSValue val;
+        if (!UDFFirstArgument(context, INTEGER_TYPE, &val)) {
+            CVSetBoolean(ret, false);
+        } else {
+            CVSetInteger(ret, onesComplement(CVToInteger(&val)));
+        }
+    }
+    void CLIPS_twosComplement(UDFContext* context, CLIPSValuePtr ret) {
+        CLIPSValue val;
+        if (!UDFFirstArgument(context, INTEGER_TYPE, &val)) {
+            CVSetBoolean(ret, false);
+        } else {
+            CVSetInteger(ret, twosComplement(CVToInteger(&val)));
+        }
+    }
+    void CLIPS_multiplyAdd(UDFContext* context, CLIPSValuePtr ret) {
+        CLIPSValue a, b, c;
+        if (!UDFFirstArgument(context, INTEGER_TYPE, &a)) {
+            CVSetBoolean(ret, false);
+        } else if (!UDFNextArgument(context, INTEGER_TYPE, &b)) {
+            CVSetBoolean(ret, false);
+        } else if (!UDFNextArgument(context, INTEGER_TYPE, &c)) {
+            CVSetBoolean(ret, false);
+        } else {
+            CVSetInteger(ret, multiplyAdd(CVToInteger(&a), CVToInteger(&b), CVToInteger(&c)));
+        }
+    }
+
+    void CLIPS_binaryNor(UDFContext* context, CLIPSValuePtr ret) {
+        CLIPSValue a, b;
+        if (!UDFFirstArgument(context, INTEGER_TYPE, &a)) {
+            CVSetBoolean(ret, false);
+        } else if (!UDFNextArgument(context, INTEGER_TYPE, &b)) {
+            CVSetBoolean(ret, false);
+        } else {
+            auto firstValue = CVToInteger(&a);
+            auto secondValue = CVToInteger(&b);
+            CVSetInteger(ret, binaryNor<decltype(firstValue)>(firstValue, secondValue));
+        }
+    }
 	void installExtensions(void* theEnv) {
 		Environment* env = static_cast<Environment*>(theEnv);
 
@@ -210,6 +251,10 @@ namespace syn {
 		EnvAddUDF(env, "break-apart-number", "m", CLIPS_breakApartNumber, "CLIPS_breakApartNumber", 1, 1, "l", nullptr);
         EnvAddUDF(env, "circular-shift-right", "l", CLIPS_circularShiftRight, "CLIPS_circularShiftRight", 2, 2, "l;l", nullptr);
         EnvAddUDF(env, "circular-shift-left", "l", CLIPS_circularShiftLeft, "CLIPS_circularShiftLeft", 2, 2, "l;l", nullptr);
+        EnvAddUDF(env, "ones-complement", "l", CLIPS_onesComplement, "CLIPS_onesComplement", 1, 1, "l", nullptr);
+        EnvAddUDF(env, "two-complement", "l", CLIPS_twosComplement, "CLIPS_twosComplement",1, 1, "l", nullptr);
+        EnvAddUDF(env, "multiply-add", "l", CLIPS_multiplyAdd, "CLIPS_multiplyAdd", 3, 3, "l;l;l", nullptr);
+        EnvAddUDF(env, "binary-nor", "l", CLIPS_binaryNor, "CLIPS_binaryNor", 2, 2, "l;l", nullptr);
 	}
 
     bool isExternalAddress(DataObjectPtr value) noexcept {
