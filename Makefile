@@ -4,8 +4,6 @@
 
 include config.mk
 
-ASM_PARSERS_OBJECTS = AssemblerBase.o
-
 MAYA_OBJECTS = $(patsubst %.c,%.o, $(wildcard *.c))
 COMMON_THINGS = ClipsExtensions.o \
 			 	MultifieldBuilder.o \
@@ -19,7 +17,6 @@ REPL_FINAL_BINARY = syn
 REPL_FINAL_OBJECTS = Repl.o \
 					 ${COMMON_THINGS} \
 					 ${ARCH_OBJECTS} \
-					 ${ASM_PARSERS_OBJECTS} \
 					 ${MAYA_OBJECTS}
 
 ALL_BINARIES = ${REPL_FINAL_BINARY}
