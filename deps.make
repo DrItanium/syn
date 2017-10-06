@@ -125,10 +125,6 @@ Repl.o: Repl.cc ClipsExtensions.h clips.h setup.h \
  insfile.h msgcom.h msgpass.h \
  objrtmch.h MemoryBlock.h Base.h BaseTypes.h \
  Problem.h BaseArithmetic.h IODevice.h Device.h
-Termbox.o: Termbox.cc Termbox.h include/termbox.h Base.h BaseTypes.h \
- Problem.h
-termbox_test.o: termbox_test.cc Termbox.h include/termbox.h Base.h \
- BaseTypes.h Problem.h
 
 
 agenda.o: agenda.c setup.h os_shim.h platform.h envrnmnt.h symbol.h \

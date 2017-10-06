@@ -8,7 +8,6 @@ MAYA_OBJECTS = $(patsubst %.c,%.o, $(wildcard *.c))
 COMMON_THINGS = ClipsExtensions.o \
 			 	MultifieldBuilder.o \
 				MemoryBlock.o \
-				Termbox.o \
 				boost.o \
 				functional.o
 
@@ -54,9 +53,9 @@ options:
 	@echo CXX $<
 	@${CXX} ${CXXFLAGS} -c $< -o $@
 
-${REPL_FINAL_BINARY}: ${REPL_FINAL_OBJECTS} libtermbox.a
+${REPL_FINAL_BINARY}: ${REPL_FINAL_OBJECTS}
 	@echo Building ${REPL_FINAL_BINARY}
-	@${CXX} ${LDFLAGS} -o ${REPL_FINAL_BINARY} ${REPL_FINAL_OBJECTS} libtermbox.a
+	@${CXX} ${LDFLAGS} -o ${REPL_FINAL_BINARY} ${REPL_FINAL_OBJECTS}
 
 clean:
 	@echo Cleaning...
@@ -64,8 +63,6 @@ clean:
 
 nuke: clean
 	@rm -rf doc/html
-	@cd misc/termbox && ./waf uninstall --targets=termbox_static
-	@cd misc/termbox && ./waf distclean
 
 tests: ${ALL_BINARIES} ${TEST_SUITES}
 	@echo "Running tests..."
@@ -76,15 +73,5 @@ tests: ${ALL_BINARIES} ${TEST_SUITES}
 
 
 .PHONY: all options clean install uninstall docs tests
-
-misc/termbox:
-	@git submodule update --init --recursive
-
-libtermbox.a: misc/termbox
-	@cd misc/termbox && ./waf configure --prefix=../../ --libdir=../../
-	@cd misc/termbox && ./waf
-	@cd misc/termbox && ./waf install --targets=termbox_static
-
-include/termbox.h: libtermbox.a
 
 include deps.make

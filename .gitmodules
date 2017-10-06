@@ -1,4 +1,0 @@
-[submodule "misc/termbox"]
-	path = misc/termbox
-	url = https://github.com/nsf/termbox
-	branch = master
