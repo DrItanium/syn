@@ -1,5 +1,3 @@
-AssemblerBase.o: AssemblerBase.cc AssemblerBase.h BaseArithmetic.h \
- BaseTypes.h Problem.h
 ClipsExtensions.o: ClipsExtensions.cc BaseTypes.h ClipsExtensions.h \
  clips.h setup.h os_shim.h \
  platform.h envrnmnt.h symbol.h \
