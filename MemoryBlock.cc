@@ -30,7 +30,6 @@
 #include "BaseTypes.h"
 #include "ClipsExtensions.h"
 #include "Base.h"
-#include "ExecutionUnits.h"
 #include "ExternalAddressWrapper.h"
 #include "MultifieldBuilder.h"
 #include "MemoryBlock.h"

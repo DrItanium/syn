@@ -10,7 +10,6 @@ MAYA_OBJECTS = $(patsubst %.c,%.o, $(wildcard *.c))
 COMMON_THINGS = ClipsExtensions.o \
 			 	MultifieldBuilder.o \
 				MemoryBlock.o \
-				ExecutionUnits.o \
 				Termbox.o \
 				boost.o \
 				functional.o
@@ -67,7 +66,7 @@ clean:
 	@rm -f ${ALL_OBJECTS} ${ALL_BINARIES}
 
 nuke: clean
-	@rm -rf doc/html 
+	@rm -rf doc/html
 	@cd misc/termbox && ./waf uninstall --targets=termbox_static
 	@cd misc/termbox && ./waf distclean
 
