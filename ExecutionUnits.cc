@@ -260,20 +260,6 @@ namespace Comparator {
 	}
 } // end namespace Comparator
 
-enum class RegisterOperations {
-	Get,
-	Set,
-	Increment,
-	Decrement,
-	Decode,
-	Encode,
-	SetMask,
-	GetMask,
-	Count,
-};
-
-
-
 DefWrapperSymbolicName(Comparator::CLIPSUnitWrapper::WrappedType, "comparator");
 DefExternalAddressWrapperType(Comparator::CLIPSUnitWrapper::WrappedType, Comparator::CLIPSUnitWrapper);
 
