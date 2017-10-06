@@ -47,7 +47,6 @@ namespace syn {
 /// Wrapper over the CLIPS data objet type
 
 using MultifieldCell = std::tuple<MayaType, void*>;
-
 MultifieldCell makeSymbol(void* env, const char* value);
 MultifieldCell makeSymbol(void* env, const std::string& value);
 MultifieldCell makeString(void* env, const char* value);
@@ -97,9 +96,9 @@ class MultifieldBuilder {
 		void setField(int index, int16_t value) { setField(index, CLIPSInteger(value)); }
 		/// Set the given cell as a float64 value
 		void setField(int index, double value);
-		/// Set the given cell as a string 
+		/// Set the given cell as a string
 		void setField(int index, const char* value);
-		/// Set the given cell as a string 
+		/// Set the given cell as a string
 		void setField(int index, const std::string& value);
 
         /**

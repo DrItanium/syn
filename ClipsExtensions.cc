@@ -91,7 +91,7 @@ namespace syn {
 		if (!UDFFirstArgument(context, NUMBER_TYPES, &number)) {
 			CVSetBoolean(ret, false);
 			return;
-		} 
+		}
 		auto value = CVToInteger(&number);
 		CVSetInteger(ret, CLIPSInteger(expandBit(value != 0)));
 	}
@@ -136,6 +136,10 @@ namespace syn {
 			CVSetInteger(ret, encodeBits<CLIPSInteger, CLIPSInteger>(i, v, m, s));
 		}
 	}
+    template<typename I, typename O, I mask, int index>
+    O performDecode(I input) noexcept {
+        return syn::decodeBits<I, O, mask << (8 * index), (8 * index)>(input);
+    }
 	void CLIPS_breakApartNumber(UDFContext* context, CLIPSValue* ret) {
 		CLIPSValue number;
 		if (!UDFFirstArgument(context, NUMBER_TYPES, &number)) {
@@ -144,16 +148,27 @@ namespace syn {
 		}
         auto env = UDFContextEnvironment(context);
         auto integer = CVToInteger(&number);
-        BinaryContainer<decltype(integer)> storage;
-        storage.value = integer;
-        constexpr int integerWidth = byteCount<decltype(storage)>;
-        FixedSizeMultifieldBuilder<integerWidth> mf(env);
+        constexpr int integerWidth = byteCount<decltype(integer)>;
+        constexpr auto baseMask = static_cast<decltype(integer)>(0xFF);
         using IType = decltype(integer);
         using OType = decltype(integer);
-        for (int i = 0, j = 1; i < integerWidth; ++i, ++j) {
-            mf.setField(j, MayaType::Integer, EnvAddLong(env, syn::decodeBits<IType, OType>(integer, 0x00000000000000FF << (8 * i), (8 * i))));
+        if (integerWidth == 8) {
+            createMultifield(env, ret,
+                    performDecode<IType, OType, baseMask, 0>(integer),
+                    performDecode<IType, OType, baseMask, 1>(integer),
+                    performDecode<IType, OType, baseMask, 2>(integer),
+                    performDecode<IType, OType, baseMask, 3>(integer),
+                    performDecode<IType, OType, baseMask, 4>(integer),
+                    performDecode<IType, OType, baseMask, 5>(integer),
+                    performDecode<IType, OType, baseMask, 6>(integer),
+                    performDecode<IType, OType, baseMask, 7>(integer));
+        } else {
+            FixedSizeMultifieldBuilder<integerWidth> mf(env);
+            for (int i = 0, j = 1; i < integerWidth; ++i, ++j) {
+                mf.setField(j, MayaType::Integer, EnvAddLong(env, syn::decodeBits<IType, OType>(integer, baseMask << (8 * i), (8 * i))));
+            }
+            mf.assign(ret);
         }
-        mf.assign(ret);
 	}
 
 	bool errorMessage(void* env, const std::string& idClass, int idIndex, const std::string& msgPrefix, const std::string& msg) noexcept {
@@ -178,10 +193,10 @@ namespace syn {
     bool isExternalAddress(DataObjectPtr value) noexcept {
         return GetpType(value) == EXTERNAL_ADDRESS;
     }
-    CLIPSInteger extractLong(void* env, DataObjectPtr value) noexcept {
+    CLIPSInteger extractCLIPSInteger(void* env, DataObjectPtr value) noexcept {
         return EnvDOPToLong(env, value);
     }
-    CLIPSInteger extractLong(void* env, DataObject& value) noexcept {
+    CLIPSInteger extractCLIPSInteger(void* env, DataObject& value) noexcept {
         return EnvDOToLong(env, value);
     }
 

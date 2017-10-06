@@ -88,7 +88,7 @@ namespace syn {
 							CVSetBoolean(ret, false);
 							errorMessage(env, "NEW", 1, getFunctionErrorPrefixNew<WordBlock>(), " expected an integer for capacity!");
 						} else {
-                            auto size = extractLong(env, capacity);
+                            auto size = extractCLIPSInteger(env, capacity);
 							auto idIndex = Self::getAssociatedEnvironmentId(env);
                             CVSetExternalAddress(ret, Self::make(size), idIndex);
 						}
@@ -179,7 +179,7 @@ namespace syn {
 					CLIPSValue arg0;
                     auto check = Parent::tryExtractArgument1(env, ret, &arg0, MayaType::Integer, "First argument be be an address");
                     if (check) {
-                        auto addr = extractLong(env, arg0);
+                        auto addr = extractCLIPSInteger(env, arg0);
                         if (!checkAddr(addr)) {
                             return false;
                         }
@@ -191,7 +191,7 @@ namespace syn {
 					CLIPSValue arg0;
 					auto check = Parent::tryExtractArgument1(env, ret, &arg0, MayaType::Integer, "First argument must be an integer value to populate all of the memory cells with!");
 					if (check) {
-						ptr->setMemoryToSingleValue(extractLong(env, arg0));
+						ptr->setMemoryToSingleValue(extractCLIPSInteger(env, arg0));
 					}
 					return check;
 				};
@@ -200,8 +200,8 @@ namespace syn {
                     auto check = Parent::tryExtractArgument1(env, ret, &arg0, MayaType::Integer, "First argument must be an address") &&
                                  Parent::tryExtractArgument2(env, ret, &arg1, MayaType::Integer, "Second argument must be an address");
                     if (check) {
-                        auto addr0 = extractLong(env, arg0);
-                        auto addr1 = extractLong(env, arg1);
+                        auto addr0 = extractCLIPSInteger(env, arg0);
+                        auto addr1 = extractCLIPSInteger(env, arg1);
                         if (!checkAddr(addr0) || !checkAddr(addr1)) {
                             return false;
                         }
@@ -218,11 +218,11 @@ namespace syn {
                     auto check = Parent::tryExtractArgument1(env, ret, &arg0, MayaType::Integer, "First argument must be an address") &&
                                  Parent::tryExtractArgument2(env, ret, &arg1, MayaType::Integer, "Second argument must be an address");
                     if (check) {
-                        auto addr0 = extractLong(env, arg0);
+                        auto addr0 = extractCLIPSInteger(env, arg0);
                         if (!checkAddr(addr0)) {
                             return false;
                         }
-                        auto addr1 = extractLong(env, arg1);
+                        auto addr1 = extractCLIPSInteger(env, arg1);
                         ptr->setMemoryCell(addr0, addr1);
                     }
                     return check;

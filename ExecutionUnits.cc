@@ -123,7 +123,7 @@ namespace syn {
 						if (EnvFunctionCall(env, fnName.c_str(), "", &tmp)) {
 							return static_cast<Return>(0);
 						} else {
-							return syn::extractLong<Return>(env, tmp);
+							return syn::extractCLIPSInteger<Return>(env, tmp);
 						}
 					};
 					this->get()->setUndefinedOperationHandlerName(fnName);
@@ -229,13 +229,13 @@ namespace Comparator {
 			virtual bool execute(void* env, CLIPSValuePtr storage, CLIPSValuePtr ret, const std::string& operation, Operation op, Word a, Word b) override;
 	};
 
-	bool CLIPSUnitWrapper::extractArg1(void* env, CLIPSValuePtr ret, CLIPSValuePtr storage) noexcept { 
+	bool CLIPSUnitWrapper::extractArg1(void* env, CLIPSValuePtr ret, CLIPSValuePtr storage) noexcept {
 		return Parent::tryExtractArgument1(env, ret, storage, syn::MayaType::Integer, "Must provide an integer for the first argument!");
 	}
-	bool CLIPSUnitWrapper::extractArg2(void* env, CLIPSValuePtr ret, CLIPSValuePtr storage) noexcept { 
+	bool CLIPSUnitWrapper::extractArg2(void* env, CLIPSValuePtr ret, CLIPSValuePtr storage) noexcept {
 		return Parent::tryExtractArgument2(env, ret, storage, syn::MayaType::Integer, "Must provide an integer number for the second argument!");
 	}
-	bool CLIPSUnitWrapper::execute(void* env, CLIPSValuePtr storage, CLIPSValuePtr ret, const std::string& operation, Operation op, Word a, Word b) { 
+	bool CLIPSUnitWrapper::execute(void* env, CLIPSValuePtr storage, CLIPSValuePtr ret, const std::string& operation, Operation op, Word a, Word b) {
 		try {
 			auto result = this->get()->performOperation(op, a, b);
 			CVSetInteger(ret, result);
@@ -249,7 +249,7 @@ namespace Comparator {
 		}
 	}
 	CLIPSUnitWrapper::Word unpackArg(void* env, CLIPSValuePtr storage) noexcept {
-		return syn::extractLong<CLIPSUnitWrapper::Word>(env, storage);
+		return syn::extractCLIPSInteger<CLIPSUnitWrapper::Word>(env, storage);
 	}
 	CLIPSUnitWrapper::Word CLIPSUnitWrapper::unpackArg1(void* env, CLIPSValuePtr storage) noexcept {
 		return unpackArg(env, storage);

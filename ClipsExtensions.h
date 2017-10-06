@@ -34,6 +34,7 @@
 #include <memory>
 #include <sstream>
 #include <iostream>
+#include <functional>
 #include <typeinfo>
 extern "C" {
 	#include "clips.h"
@@ -103,7 +104,7 @@ OperationToArgCountChecker<Operation, T> expectExactly(Operation op, T count) no
 
 template<typename T = int>
 ArgCountChecker<T> expectRangeInclusive(T min, T max) noexcept {
-	return [min, max](auto against) { 
+	return [min, max](auto against) {
 		return (against >= min) && (against <= max);
 	};
 }
@@ -201,16 +202,16 @@ template<typename Ret>
 Ret extractFloat(void* env, DataObject& value) noexcept {
 	return static_cast<Ret>(extractFloat(env, value));
 }
-CLIPSInteger extractLong(void* env, DataObjectPtr value) noexcept;
-CLIPSInteger extractLong(void* env, DataObject& value) noexcept;
+CLIPSInteger extractCLIPSInteger(void* env, DataObjectPtr value) noexcept;
+CLIPSInteger extractCLIPSInteger(void* env, DataObject& value) noexcept;
 template<typename Ret>
-Ret extractLong(void* env, DataObjectPtr value) noexcept {
-    return static_cast<Ret>(extractLong(env, value));
+Ret extractCLIPSInteger(void* env, DataObjectPtr value) noexcept {
+    return static_cast<Ret>(extractCLIPSInteger(env, value));
 }
 
 template<typename Ret>
-Ret extractLong(void* env, DataObject& value) noexcept {
-    return static_cast<Ret>(extractLong(env, value));
+Ret extractCLIPSInteger(void* env, DataObject& value) noexcept {
+    return static_cast<Ret>(extractCLIPSInteger(env, value));
 }
 
 const char* extractLexeme(void* env, DataObjectPtr value) noexcept;
