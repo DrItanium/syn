@@ -178,7 +178,28 @@ namespace syn {
 		EnvSetEvaluationError(env, true);
 		return false;
 	}
-
+    template<bool shiftLeft>
+    void CLIPS_circularShiftBase(UDFContext* context, CLIPSValuePtr ret) {
+        CLIPSValue a, b;
+        if (!UDFFirstArgument(context, INTEGER_TYPE, &a)) {
+            CVSetBoolean(ret, false);
+        } else if (!UDFNextArgument(context, INTEGER_TYPE, &b)) {
+            CVSetBoolean(ret, false);
+        } else {
+            auto firstValue = CVToInteger(&a);
+            auto secondValue = CVToInteger(&b);
+            auto result = shiftLeft ?
+                circularShiftLeft<CLIPSInteger>(firstValue, secondValue) :
+                circularShiftRight<CLIPSInteger>(firstValue, secondValue);
+            CVSetInteger(ret, result);
+        }
+    }
+    void CLIPS_circularShiftLeft(UDFContext* context, CLIPSValuePtr ret) {
+        CLIPS_circularShiftBase<true>(context, ret);
+    }
+    void CLIPS_circularShiftRight(UDFContext* context, CLIPSValuePtr ret) {
+        CLIPS_circularShiftBase<false>(context, ret);
+    }
 	void installExtensions(void* theEnv) {
 		Environment* env = static_cast<Environment*>(theEnv);
 
@@ -187,6 +208,8 @@ namespace syn {
 		EnvAddUDF(env, "decode-bits", "l", CLIPS_decodeBits, "CLIPS_decodeBits", 3, 3, "l;l;l", nullptr);
 		EnvAddUDF(env, "encode-bits", "l", CLIPS_encodeBits, "CLIPS_encodeBits", 4, 4, "l;l;l;l", nullptr);
 		EnvAddUDF(env, "break-apart-number", "m", CLIPS_breakApartNumber, "CLIPS_breakApartNumber", 1, 1, "l", nullptr);
+        EnvAddUDF(env, "circular-shift-right", "l", CLIPS_circularShiftRight, "CLIPS_circularShiftRight", 2, 2, "l;l", nullptr);
+        EnvAddUDF(env, "circular-shift-left", "l", CLIPS_circularShiftLeft, "CLIPS_circularShiftLeft", 2, 2, "l;l", nullptr);
 	}
 
     bool isExternalAddress(DataObjectPtr value) noexcept {

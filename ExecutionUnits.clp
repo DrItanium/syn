@@ -20,31 +20,10 @@
 ; ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-; 
+;
 ; ExecutionUnits.clp - CLIPS wrapper code around the FPU and ALU types
-(deffunction MAIN::default-undefined-operation-handler
-             ()
-             0)
 (defclass MAIN::basic-execution-unit
-  (is-a USER)
-  (slot undefined-operation-handler
-        (type SYMBOL)
-        (storage local)
-        (visibility public)
-        (default-dynamic default-undefined-operation-handler)))
-(defclass MAIN::wrapped-basic-execution-unit
-  (is-a basic-execution-unit
-        external-address-wrapper)
-  (message-handler put-undefined-operation-handler after))
-
-(defmessage-handler MAIN::wrapped-basic-execution-unit put-undefined-operation-handler after
-                    (?sym)
-                    (call (dynamic-get backing-store)
-                          set-undefined-operation-handler
-                          (if (not ?sym) then
-                            default-undefined-operation-handler
-                            else
-                            ?sym)))
+  (is-a USER))
 
 
 (defclass MAIN::basic-combinatorial-logic-unit
@@ -54,17 +33,17 @@
   (message-handler mul primary)
   (message-handler div primary))
 
-(defmessage-handler MAIN::basic-combinatorial-logic-unit add primary 
-                    (?a ?b) 
+(defmessage-handler MAIN::basic-combinatorial-logic-unit add primary
+                    (?a ?b)
                     (+ ?a ?b))
-(defmessage-handler MAIN::basic-combinatorial-logic-unit sub primary 
-                    (?a ?b) 
+(defmessage-handler MAIN::basic-combinatorial-logic-unit sub primary
+                    (?a ?b)
                     (- ?a ?b))
-(defmessage-handler MAIN::basic-combinatorial-logic-unit mul primary 
-                    (?a ?b) 
+(defmessage-handler MAIN::basic-combinatorial-logic-unit mul primary
+                    (?a ?b)
                     (* ?a ?b))
-(defmessage-handler MAIN::basic-combinatorial-logic-unit div primary 
-                    (?a ?b) 
+(defmessage-handler MAIN::basic-combinatorial-logic-unit div primary
+                    (?a ?b)
                     (/ ?a ?b))
 
 (defclass MAIN::fpu
@@ -79,20 +58,12 @@
              ()
              0)
 (defclass MAIN::alu
-  (is-a basic-combinatorial-logic-unit
-        wrapped-basic-execution-unit)
-  (slot backing-type
-        (source composite)
-        (storage shared)
-        (access read-only)
-        (create-accessor read)
-        (default comparator))
+  (is-a basic-combinatorial-logic-unit)
   (slot divide-by-zero-handler
         (type SYMBOL)
         (storage local)
         (visibility public)
         (default-dynamic default-divide-by-zero-handler))
-  (message-handler init around)
   (message-handler div primary)
   (message-handler rem primary)
   (message-handler binary-and primary)
@@ -106,14 +77,14 @@
   (message-handler shift-right primary))
 
 
-(defmessage-handler MAIN::alu shift-left primary (?a ?b) (call (dynamic-get backing-store) shift-left ?a ?b))
-(defmessage-handler MAIN::alu circular-shift-left primary (?a ?b) (call (dynamic-get backing-store) circular-shift-left ?a ?b))
-(defmessage-handler MAIN::alu shift-right primary (?a ?b) (call (dynamic-get backing-store) shift-right ?a ?b))
-(defmessage-handler MAIN::alu circular-shift-right primary (?a ?b) (call (dynamic-get backing-store) circular-shift-right ?a ?b))
-(defmessage-handler MAIN::alu binary-and primary (?a ?b) (call (dynamic-get backing-store) binary-and ?a ?b))
-(defmessage-handler MAIN::alu binary-or primary (?a ?b) (call (dynamic-get backing-store) binary-or ?a ?b))
-(defmessage-handler MAIN::alu binary-nand primary (?a ?b) (call (dynamic-get backing-store) binary-nand ?a ?b))
-(defmessage-handler MAIN::alu unary-not primary (?a) (call (dynamic-get backing-store) unary-not ?a))
+(defmessage-handler MAIN::alu shift-left primary (?a ?b) (shift-left ?a ?b))
+(defmessage-handler MAIN::alu shift-right primary (?a ?b) (shift-right ?a ?b))
+(defmessage-handler MAIN::alu circular-shift-left primary (?a ?b) (circular-shift-left ?a ?b))
+(defmessage-handler MAIN::alu circular-shift-right primary (?a ?b) (circular-shift-right ?a ?b))
+(defmessage-handler MAIN::alu binary-and primary (?a ?b) (binary-and ?a ?b))
+(defmessage-handler MAIN::alu binary-or primary (?a ?b) (binary-or ?a ?b))
+(defmessage-handler MAIN::alu binary-nand primary (?a ?b) (binary-nand ?a ?b))
+(defmessage-handler MAIN::alu unary-not (?a) (binary-not ?a))
 
 (defmessage-handler MAIN::alu div primary
                     (?a ?b $?handler)
@@ -123,7 +94,7 @@
                                      else
                                      (nth$ 1 ?handler)))
                         else
-                        (div ?a 
+                        (div ?a
                              ?b)))
 
 (defmessage-handler MAIN::alu rem primary
@@ -134,6 +105,6 @@
                                      else
                                      (nth$ 1 ?handler)))
                         else
-                        (mod ?a 
+                        (mod ?a
                              ?b)))
 
