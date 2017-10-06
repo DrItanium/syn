@@ -198,21 +198,6 @@ template<typename T, T bitmask>
 constexpr T mask(T input) noexcept {
     return input & bitmask;
 }
-template<> constexpr uint8 mask<uint8, largestValue<uint8>>(uint8 value) noexcept { return value; }
-template<> constexpr uint8 mask<uint8, 0>(uint8 value) noexcept { return 0; }
-
-template<> constexpr uint16 mask<uint16, largestValue<uint16>>(uint16 value) noexcept { return value; }
-template<> constexpr uint16 mask<uint16, 0>(uint16 value) noexcept { return 0; }
-
-template<> constexpr uint32 mask<uint32, largestValue<uint32>>(uint32 value) noexcept { return value; }
-template<> constexpr uint32 mask<uint32, 0>(uint32 value) noexcept { return 0; }
-
-template<> constexpr uint64 mask<uint64, largestValue<uint64>>(uint64 value) noexcept { return value; }
-template<> constexpr uint64 mask<uint64, 0>(uint64 value) noexcept { return 0; }
-
-template<> constexpr uint128 mask<uint128, largestValue<uint128>>(uint128 value) noexcept { return value; }
-template<> constexpr uint128 mask<uint128, 0>(uint128 value) noexcept { return 0; }
-
 
 /**
  * Extract a section of bits out of a given input and return it as a given
@@ -232,18 +217,6 @@ constexpr F decodeBits(T input) noexcept {
     }
     return static_cast<F>(result);
 }
-
-
-template<> constexpr uint8 decodeBits<uint8, uint8, largestValue<uint8>, 0>(uint8 input) noexcept { return input; }
-template<> constexpr uint8 decodeBits<uint8, uint8, 0, 0>(uint8 input) noexcept { return 0; }
-template<> constexpr uint16 decodeBits<uint16, uint16, largestValue<uint16>, 0>(uint16 input) noexcept { return input; }
-template<> constexpr uint16 decodeBits<uint16, uint16, 0, 0>(uint16 input) noexcept { return 0; }
-template<> constexpr uint32 decodeBits<uint32, uint32, largestValue<uint32>, 0>(uint32 input) noexcept { return input; }
-template<> constexpr uint32 decodeBits<uint32, uint32, 0, 0>(uint32 input) noexcept { return 0; }
-template<> constexpr uint64 decodeBits<uint64, uint64, largestValue<uint64>, 0>(uint64 input) noexcept { return input; }
-template<> constexpr uint64 decodeBits<uint64, uint64, 0, 0>(uint64 input) noexcept { return 0; }
-template<> constexpr uint128 decodeBits<uint128, uint128, largestValue<uint128>, 0>(uint128 input) noexcept { return input; }
-template<> constexpr uint128 decodeBits<uint128, uint128, 0, 0>(uint128 input) noexcept { return 0; }
 
 /**
  * Mask a given input and return a bool based on its resultant value
@@ -267,16 +240,6 @@ constexpr T encodeBits(T input, F value) noexcept {
     valueToInject &= bitmask;
     return static_cast<T>(maskedValue | valueToInject);
 }
-template<> constexpr uint8 encodeBits<uint8, uint8, largestValue<uint8>, 0>(uint8 input, uint8 value) noexcept { return value; }
-template<> constexpr uint8 encodeBits<uint8, uint8, 0, 0>(uint8 input, uint8 value) noexcept { return input; }
-template<> constexpr uint16 encodeBits<uint16, uint16, largestValue<uint16>, 0>(uint16 input, uint16 value) noexcept { return value; }
-template<> constexpr uint16 encodeBits<uint16, uint16, 0, 0>(uint16 input, uint16 value) noexcept { return input; }
-template<> constexpr uint32 encodeBits<uint32, uint32, largestValue<uint32>, 0>(uint32 input, uint32 value) noexcept { return value; }
-template<> constexpr uint32 encodeBits<uint32, uint32, 0, 0>(uint32 input, uint32 value) noexcept { return input; }
-template<> constexpr uint64 encodeBits<uint64, uint64, largestValue<uint64>, 0>(uint64 input, uint64 value) noexcept { return value; }
-template<> constexpr uint64 encodeBits<uint64, uint64, 0, 0>(uint64 input, uint64 value) noexcept { return input; }
-template<> constexpr uint128 encodeBits<uint128, uint128, largestValue<uint128>, 0>(uint128 input, uint128 value) noexcept { return value; }
-template<> constexpr uint128 encodeBits<uint128, uint128, 0, 0>(uint128 input, uint128 value) noexcept { return input; }
 
 template<typename T, T mask, T shift>
 constexpr T encodeFlag(T input, bool value) noexcept {
@@ -382,11 +345,6 @@ constexpr bool getBit(T value, T index) noexcept {
     return decodeBits<T, bool>(value, computeSingleBitmask<T>(index), index);
 }
 
-template<> constexpr bool getBit<byte, 0>(byte value) noexcept { return (singleBitmaskValue<byte, 0> & value) != 0; }
-template<> constexpr bool getBit<byte, 1>(byte value) noexcept { return (singleBitmaskValue<byte, 1> & value) != 0; }
-template<> constexpr bool getBit<byte, 2>(byte value) noexcept { return (singleBitmaskValue<byte, 2> & value) != 0; }
-template<> constexpr bool getBit<byte, 3>(byte value) noexcept { return (singleBitmaskValue<byte, 3> & value) != 0; }
-
 constexpr byte expandBit(bool value) noexcept {
     return value ? 0xFF : 0x00;
 }
@@ -427,9 +385,6 @@ constexpr typename UpperLowerPair::TypeData<T>::HalfType getLowerHalf(T value) n
     using OutputType = typename DataPair::HalfType;
     return syn::decodeBits<InputType, OutputType, UpperLowerPair::lowerMask<T>, 0>(value);
 }
-template<> constexpr byte getLowerHalf<uint16>(uint16 value) noexcept { return static_cast<byte>(value); }
-template<> constexpr uint16 getLowerHalf<uint32>(uint32 value) noexcept { return static_cast<uint16>(value); }
-template<> constexpr uint32 getLowerHalf<uint64>(uint64 value) noexcept { return static_cast<uint32>(value); }
 
 template<typename T>
 constexpr T setLowerHalf(T value, typename UpperLowerPair::TypeData<T>::HalfType lower) noexcept {
@@ -469,38 +424,6 @@ constexpr auto byteCount = sizeof(T);
 
 template<typename T>
 constexpr auto byteCount<BinaryContainer<T>> = sizeof(T);
-
-template<typename T>
-T getc(std::istream& input) noexcept {
-    byte value = 0;
-    input >> std::noskipws >> value;
-    return static_cast<T>(value);
-}
-
-/**
- * Retrieves a byte from std::cin, casts it to the specified type, and returns
- * it.
- * @tparam T the type to cast the input byte to
- * @return the extracted byte cast to the specified type
- */
-template<typename T>
-inline T getc() noexcept {
-    return getc<T>(std::cin);
-}
-
-template<typename T>
-void putc(T value, std::ostream& output) noexcept {
-    output << static_cast<char>(value);
-}
-/**
- * Simple wrapper over outputting characters (or whatever) to std::cout
- * @tparam T the type of the input
- * @param value the value to output to standard out
- */
-template<typename T>
-inline void putc(T value) noexcept {
-    putc<T>(value, std::cout);
-}
 
 /**
  * A common interface to make it possible to describe error states without
