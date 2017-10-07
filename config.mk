@@ -2,8 +2,8 @@ LIBS = -lc -lm -lboost_system -lboost_filesystem -lpthread -lrt
 
 CC := cc
 CXX := c++
-GENFLAGS = -Wall -g3 -Imisc/maya/ -Imisc/PEGTL/include -O2
+GENFLAGS = -Wall -g3 -Imisc/maya/ -Imisc/PEGTL/include
 CFLAGS = -ansi -std=c99 ${GENFLAGS}
 CXXFLAGS = -std=c++14 ${GENFLAGS}
-LDFLAGS = ${LIBS} -flto
+LDFLAGS = ${LIBS}
 PREFIX = /usr/local
