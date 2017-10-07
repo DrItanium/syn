@@ -61,13 +61,13 @@
 /*                                                           */
 /*            Combined BASIC_IO and EXT_IO compilation       */
 /*            flags into the IO_FUNCTIONS compilation flag.  */
-/*                                                           */    
+/*                                                           */
 /*            Changed the EX_MATH compilation flag to        */
 /*            EXTENDED_MATH_FUNCTIONS.                       */
 /*                                                           */
 /*            Removed VOID definition because of conflict    */
 /*            with Windows.h header file.                    */
-/*                                                           */    
+/*                                                           */
 /*            Removed deprecated definitions.                */
 /*                                                           */
 /*            The ALLOW_ENVIRONMENT_GLOBALS flag now         */
@@ -132,7 +132,7 @@
 #ifndef GENERIC
 #if (! UNIX_V) && (! LINUX) && (! UNIX_7) && \
     (! MAC_XCD) && (! DARWIN) && \
-    (! WIN_MVC) && (! WIN_GCC) 
+    (! WIN_MVC) && (! WIN_GCC)
 #define GENERIC 1   /* Generic (any machine)                   */
 #else
 #define GENERIC 0   /* Generic (any machine)                   */
@@ -369,7 +369,7 @@
 /********************************************************************/
 
 #ifndef CONSTRUCT_COMPILER
-#define  CONSTRUCT_COMPILER 1
+#define  CONSTRUCT_COMPILER 0
 #endif
 
 #if CONSTRUCT_COMPILER

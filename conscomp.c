@@ -159,11 +159,11 @@ void InitializeConstructCompilerData(
   void *theEnv)
   {
    AllocateEnvironmentData(theEnv,CONSTRUCT_COMPILER_DATA,sizeof(struct constructCompilerData),DeallocateConstructCompilerData);
-   
+
    ConstructCompilerData(theEnv)->MaxIndices = 2000;
    ConstructCompilerData(theEnv)->CodeGeneratorCount = 0;
   }
-  
+
 /************************************************************/
 /* DeallocateConstructCompilerData: Deallocates environment */
 /*    data for the constructs-to-c command.                 */
@@ -173,7 +173,7 @@ static void DeallocateConstructCompilerData(
   {
    struct CodeGeneratorItem *tmpPtr, *nextPtr;
    int i;
-   
+
    tmpPtr = ConstructCompilerData(theEnv)->ListOfCodeGeneratorItems;
    while (tmpPtr != NULL)
      {
@@ -181,10 +181,10 @@ static void DeallocateConstructCompilerData(
 
       for (i = 0; i < tmpPtr->arrayCount ; i++)
         { rm(theEnv,tmpPtr->arrayNames[i],strlen(tmpPtr->arrayNames[i]) + 1); }
-        
+
       if (tmpPtr->arrayCount != 0)
         { rm(theEnv,tmpPtr->arrayNames,sizeof(char *) * tmpPtr->arrayCount); }
-      
+
       rtn_struct(theEnv,CodeGeneratorItem,tmpPtr);
       tmpPtr = nextPtr;
      }
@@ -203,7 +203,7 @@ void ConstructsToCCommand(
    const char *pathName;
    DATA_OBJECT theArg;
    int argCount;
-   long long id, max; 
+   long long id, max;
    int nameLength, pathLength;
    void *theEnv = UDFContextEnvironment(context);
 #if WIN_MVC
@@ -294,7 +294,7 @@ void ConstructsToCCommand(
    /*==================================================*/
    /* Get the path name argument if one was specified. */
    /*==================================================*/
-   
+
    if (argCount == 3)
      {
       if (EnvArgTypeCheck(theEnv,"constructs-to-c",3,SYMBOL_OR_STRING,&theArg) == false)
@@ -304,9 +304,9 @@ void ConstructsToCCommand(
       pathLength = (int) strlen(pathName);
      }
    else
-     { 
+     {
       pathName = "";
-      pathLength = 0; 
+      pathLength = 0;
      }
 
    /*===========================================*/
@@ -334,11 +334,11 @@ void ConstructsToCCommand(
    /* Call the driver routine to */
    /* generate the C code.       */
    /*============================*/
- 
+
    fileNameBuffer = (char *) genalloc(theEnv,nameLength + pathLength + EXTRA_FILE_NAME);
-   
+
    ConstructsToC(theEnv,fileName,pathName,fileNameBuffer,id,max);
-   
+
    genfree(theEnv,fileNameBuffer,nameLength + pathLength + EXTRA_FILE_NAME);
   }
 
@@ -438,7 +438,7 @@ static int ConstructsToC(
 
    fprintf(ConstructCompilerData(theEnv)->FixupFP,"#include \"%s.h\"\n",fileName);
    fprintf(ConstructCompilerData(theEnv)->FixupFP,"\n");
-   
+
    fprintf(ConstructCompilerData(theEnv)->FixupFP,"\n");
    fprintf(ConstructCompilerData(theEnv)->FixupFP,"/**********************************/\n");
    fprintf(ConstructCompilerData(theEnv)->FixupFP,"/* CONSTRUCT IMAGE FIXUP FUNCTION */\n");
@@ -555,11 +555,11 @@ static void WriteFunctionExternDeclarations(
          case 'i':
            fprintf(fp,"int ");
            break;
-           
+
          case 'b':
            fprintf(fp,"bool ");
            break;
-           
+
          case 'g':
            fprintf(fp,"long long ");
            break;
@@ -608,7 +608,7 @@ static void WriteFunctionExternDeclarations(
         }
 
       fprintf(fp,"%s(",theFunction->actualFunctionName);
-      
+
       switch(theFunction->returnValueType)
         {
          case 'i':
@@ -705,11 +705,11 @@ static bool FunctionsToCode(
       fprintf(fp,"%u,",fctnPtr->unknownReturnValueType);
       fprintf(fp,"PTIF %s,",fctnPtr->actualFunctionName);
       fprintf(fp,"NULL,");
-      
+
       PrintSymbolReference(theEnv,fp,fctnPtr->restrictions);
-         
+
       fprintf(fp,",%d,%d,0,0,0,",fctnPtr->minArgs,fctnPtr->maxArgs);
-      
+
       PrintFunctionReference(theEnv,fp,fctnPtr->next);
 
       i++;
@@ -806,7 +806,7 @@ static bool WriteInitializationFunction(
    fprintf(fp,"   if (theEnv != NULL) return(NULL);\n\n");
    fprintf(fp,"   theEnv = CreateRuntimeEnvironment(sht%d,fht%d,iht%d,bmht%d);\n\n",
            ConstructCompilerData(theEnv)->ImageID,ConstructCompilerData(theEnv)->ImageID,
-           ConstructCompilerData(theEnv)->ImageID,ConstructCompilerData(theEnv)->ImageID);   
+           ConstructCompilerData(theEnv)->ImageID,ConstructCompilerData(theEnv)->ImageID);
 
    fprintf(fp,"   EnvClear(theEnv);\n");
 
@@ -1611,6 +1611,8 @@ void ConstructModuleToCode(
   }
 
 #else /* CONSTRUCT_COMPILER && (! RUN_TIME) */
+
+#include "conscomp.h"
 
    void                               ConstructsToCCommand(UDFContext *,CLIPSValue *);
 
