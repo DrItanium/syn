@@ -228,19 +228,23 @@ namespace syn {
             CVSetInteger(ret, multiplyAdd(CVToInteger(&a), CVToInteger(&b), CVToInteger(&c)));
         }
     }
-
-    void CLIPS_binaryNor(UDFContext* context, CLIPSValuePtr ret) {
-        CLIPSValue a, b;
-        if (!UDFFirstArgument(context, INTEGER_TYPE, &a)) {
-            CVSetBoolean(ret, false);
-        } else if (!UDFNextArgument(context, INTEGER_TYPE, &b)) {
-            CVSetBoolean(ret, false);
-        } else {
-            auto firstValue = CVToInteger(&a);
-            auto secondValue = CVToInteger(&b);
-            CVSetInteger(ret, binaryNor<decltype(firstValue)>(firstValue, secondValue));
+    void CLIPS_getEndianness(UDFContext* context, CLIPSValuePtr ret) {
+        static bool init = true;
+        static std::string storage;
+        if (init) {
+            init = false;
+            if (syn::isBigEndian()) {
+                storage = "big";
+            } else if (syn::isLittleEndian()) {
+                storage = "little";
+            } else {
+                storage = "unknown";
+            }
         }
+        // only compute this once!
+        CVSetSymbol(ret, storage.c_str());
     }
+
 	void installExtensions(void* theEnv) {
 		Environment* env = static_cast<Environment*>(theEnv);
 
@@ -254,7 +258,7 @@ namespace syn {
         EnvAddUDF(env, "ones-complement", "l", CLIPS_onesComplement, "CLIPS_onesComplement", 1, 1, "l", nullptr);
         EnvAddUDF(env, "two-complement", "l", CLIPS_twosComplement, "CLIPS_twosComplement",1, 1, "l", nullptr);
         EnvAddUDF(env, "multiply-add", "l", CLIPS_multiplyAdd, "CLIPS_multiplyAdd", 3, 3, "l;l;l", nullptr);
-        EnvAddUDF(env, "binary-nor", "l", CLIPS_binaryNor, "CLIPS_binaryNor", 2, 2, "l;l", nullptr);
+        EnvAddUDF(env, "get-endian", "sy", CLIPS_getEndianness, "CLIPS_getEndianness", 0, 0, nullptr, nullptr);
 	}
 
     bool isExternalAddress(DataObjectPtr value) noexcept {

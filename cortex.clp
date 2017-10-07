@@ -204,3 +204,16 @@
              (buildf "(defmessage-handler %s %s primary () ?self)"
                      ?type
                      ?op))
+(deffunction cortex::little-endianp
+             ()
+             (eq (get-endian)
+                 little))
+(deffunction cortex::unknown-endianp
+             ()
+             (eq (get-endian)
+                 unknown))
+(deffunction cortex::big-endianp
+             ()
+             (eq (get-endian)
+                 big))
+

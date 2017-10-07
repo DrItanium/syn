@@ -489,8 +489,20 @@ constexpr uint128 makeuint128(uint64 lower, uint64 upper) noexcept {
     auto lowerHalf = decodeBits<uint64, uint128, UpperLowerPair::lowerMask<uint128>, 0>(lower);
     return encodeBits<uint128, uint64, UpperLowerPair::upperMask<uint128>, UpperLowerPair::shiftCount<uint128>>(lowerHalf, upper);
 }
-
+constexpr uint8 getEndianIdent() noexcept {
+    union {
+        uint32 i;
+        uint8 storage[sizeof(uint32)];
+    } temp = { 0x01020304 };
+    return temp.storage[0];
+}
+constexpr bool isBigEndian() noexcept {
+    return getEndianIdent() == 1;
+}
+constexpr bool isLittleEndian() noexcept {
+    return getEndianIdent() == 4;
 }
 
+} // end namespace syn
 
 #endif // end _SYN_BASE_H
