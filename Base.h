@@ -55,100 +55,7 @@ constexpr auto singleBitmaskValue = static_cast<T>(numeralOne<T> << index);
  * @tparam T the type to get the largest value of
  */
 template<typename T>
-constexpr auto largestValue = static_cast<T>(-1);
-
-
-    /**
-     * Describes the upper and lower halves of a type
-     */
-    namespace UpperLowerPair {
-        template<typename T>
-        struct TypeData {
-            TypeData() = delete;
-            TypeData(const TypeData&) = delete;
-            TypeData(TypeData&&) = delete;
-            ~TypeData() = delete;
-        };
-        template<typename T>
-        constexpr auto shiftCount = bitwidth<T> / 2;
-        template<typename T>
-        constexpr auto upperMask = static_cast<T>(largestValue<T> << shiftCount<T>);
-        template<typename T>
-        constexpr auto lowerMask = static_cast<T>(largestValue<T> >> shiftCount<T>);
-        template<> constexpr auto lowerMask<int128> = static_cast<int128>(0xFFFFFFFFFFFFFFFF);
-        template<> constexpr auto upperMask<int128> = lowerMask<int128> << shiftCount<int128>;
-        // negative shifts are not allowed
-        template<> constexpr auto lowerMask<int64>  = static_cast<int64>(0x00000000FFFFFFFF);
-        template<> constexpr auto upperMask<int64>  = static_cast<int64>(0xFFFFFFFF00000000);
-        template<> constexpr auto lowerMask<int32>  = static_cast<int32>(0x0000FFFF);
-        template<> constexpr auto upperMask<int32>  = static_cast<int32>(0xFFFF0000);
-        template<> constexpr auto upperMask<int16>  = static_cast<int16>(0xFF00);
-        template<> constexpr auto lowerMask<int16>  = static_cast<int16>(0x00FF);
-        template<> constexpr auto upperMask<int8>   = static_cast<int8>(0xF0);
-        template<> constexpr auto lowerMask<int8>   = static_cast<int8>(0x0F);
-        // int128 needs to be handled specially!
-    } // end namespace UpperLowerPair
-    #define DefUpperLowerPair(type, halfType, up, low, shift) \
-    namespace UpperLowerPair { \
-        template<> struct TypeData<type> { \
-            TypeData() = delete; \
-            TypeData(const TypeData&) = delete; \
-            TypeData(TypeData&&) = delete; \
-            ~TypeData() = delete; \
-            using HalfType = halfType; \
-            using DataType = type; \
-        }; \
-        static_assert(static_cast<type>(up) == upperMask < type > , "Upper mask is wrong!"); \
-        static_assert(static_cast<type>(low) == lowerMask < type > , "Lower mask is wrong!"); \
-        static_assert(static_cast<type>(shift) == shiftCount< type > , "shift count is wrong!"); \
-    }
-
-    DefUpperLowerPair(uint8, uint8, 0xF0, 0x0F, 4);
-    DefUpperLowerPair(int8, int8, 0xF0, 0x0F, 4);
-    DefUpperLowerPair(uint16, uint8, 0xFF00, 0x00FF, 8);
-    DefUpperLowerPair(int16, int8, 0xFF00, 0x00FF, 8);
-    DefUpperLowerPair(uint32, uint16, 0xFFFF0000, 0x0000FFFF, 16);
-    DefUpperLowerPair(int32, int16, 0xFFFF0000, 0x0000FFFF, 16);
-    DefUpperLowerPair(int64, int32, 0xFFFFFFFF00000000, 0x00000000FFFFFFFF, 32);
-    DefUpperLowerPair(uint64, uint32, 0xFFFFFFFF00000000, 0x00000000FFFFFFFF, 32);
-    DefUpperLowerPair(uint128, uint64, (largestValue<uint128> << 64),
-                                       (largestValue<uint128> >> 64), 64);
-    DefUpperLowerPair(int128, int64, (static_cast<int128>(0xFFFFFFFFFFFFFFFF)<< 64),
-                                     (static_cast<int128>(0xFFFFFFFFFFFFFFFF)), 64);
-
-#undef DefUpperLowerPair
-
-/**
- * If the given type T was halved, what would its type be?
- * @tparam T the type to be halved
- */
-template<typename T>
-using HalfType = typename UpperLowerPair::TypeData<T>::HalfType;
-
-/**
- * If the given type T was quartered, what would its type be?
- * @tparam T the type to be quartered
- */
-template<typename T>
-using QuarterType = HalfType<HalfType<T>>;
-
-/**
- * If the given type was split into eight parts, what would its type be?
- * @tparam T the type to be split into eight parts
- */
-template<typename T>
-using EighthType = HalfType<QuarterType<T>>;
-
-/**
- * Retrieves the mask to extract the upper half of a type. By default, this
- * will be zero. The backing templated variables must be specialized.
- * @tparam T the type to retrieve the upper half mask of
- * @return the upper half mask of the specified type
- */
-template<typename T>
-constexpr T getUpperMask() noexcept {
-    return UpperLowerPair::upperMask<T>;
-}
+constexpr auto largestValue = static_cast<T>(0 + (-1));
 
 /**
  * Retrieves the mask to extract the lower half of a type.  By default, this
@@ -158,7 +65,20 @@ constexpr T getUpperMask() noexcept {
  */
 template<typename T>
 constexpr T getLowerMask() noexcept {
-    return UpperLowerPair::lowerMask<T>;
+    return static_cast<T>(largestValue<T> >> (bitwidth<T> / 2));
+}
+
+template<> constexpr int128 getLowerMask<int128> () noexcept {  return static_cast<int128>(0xFFFFFFFFFFFFFFFF); }
+
+/**
+ * Retrieves the mask to extract the upper half of a type. By default, this
+ * will be zero. The backing templated variables must be specialized.
+ * @tparam T the type to retrieve the upper half mask of
+ * @return the upper half mask of the specified type
+ */
+template<typename T>
+constexpr T getUpperMask() noexcept {
+    return static_cast<T>(getLowerMask<T>() << (bitwidth<T> / 2));
 }
 
 /**
@@ -169,7 +89,7 @@ constexpr T getLowerMask() noexcept {
  */
 template<typename T>
 constexpr T getShiftCount() noexcept {
-    return UpperLowerPair::shiftCount<T>;
+    return bitwidth<T> / 2;
 }
 
 
@@ -246,83 +166,6 @@ constexpr T encodeFlag(T input, bool value) noexcept {
 	return encodeBits<T, bool, mask, shift>(input, value);
 }
 
-template<typename T>
-constexpr T encodeValueLE(HalfType<T> lower, HalfType<T> upper) noexcept {
-    // this will break on int4 and such ;)
-    return encodeBits<T, HalfType<T>, getUpperMask<T>(), getShiftCount<T>()>( encodeBits<T, HalfType<T>, getLowerMask<T>(), 0>(0, lower), upper);
-}
-template<typename T>
-constexpr T encodeValueLE(QuarterType<T> lowest, QuarterType<T> upperLower, QuarterType<T> lowerUpper, QuarterType<T> upperMost) noexcept {
-    return encodeValueLE<T>(encodeValueLE<HalfType<T>>(lowest, upperLower), encodeValueLE<HalfType<T>>(lowerUpper, upperMost));
-}
-
-template<typename T>
-constexpr T encodeValueLE(EighthType<T> a, EighthType<T> b, EighthType<T> c, EighthType<T> d, EighthType<T> e, EighthType<T> f, EighthType<T> g, EighthType<T> h) noexcept {
-    return encodeValueLE<T>(
-            encodeValueLE<QuarterType<T>>(a, b),
-            encodeValueLE<QuarterType<T>>(c, d),
-            encodeValueLE<QuarterType<T>>(e, f),
-            encodeValueLE<QuarterType<T>>(g, h));
-}
-
-constexpr uint16 encodeUint16LE(byte a, byte b) noexcept {
-    return encodeValueLE<uint16>(a, b);
-}
-constexpr int16 encodeInt16LE(byte a, byte b) noexcept {
-    return encodeValueLE<int16>(a, b);
-}
-constexpr uint32 encodeUint32LE(byte a, byte b, byte c, byte d)  noexcept {
-    return encodeValueLE<uint32>(a, b, c, d);
-}
-constexpr uint16 encodeUint16LE(byte* buf)  noexcept {
-	return encodeUint16LE(buf[0], buf[1]);
-}
-constexpr uint32 encodeUint32LE(byte* buf)  noexcept {
-	return encodeUint32LE(buf[0], buf[1], buf[2], buf[3]);
-}
-constexpr int32 encodeInt32LE(byte lowest, byte upperLower, byte lowerUpper, byte upperMost)  noexcept {
-    return encodeValueLE<int32>(lowest, upperLower, lowerUpper, upperMost);
-}
-
-constexpr uint32 encodeUint32LE(uint16 lower, uint16 upper) noexcept {
-    return encodeValueLE<uint32>(lower, upper);
-}
-
-constexpr int32 encodeInt32LE(int16 lower, int16 upper) noexcept {
-    return encodeValueLE<int32>(lower, upper);
-}
-
-
-constexpr uint64 encodeUint64LE(uint32 lower, uint32 upper) noexcept {
-    return encodeValueLE<uint64>(lower, upper);
-}
-constexpr uint64 encodeUint64LE(byte a, byte b, byte c, byte d, byte e, byte f, byte g, byte h) noexcept {
-    return encodeValueLE<uint64>(a, b, c, d, e, f, g, h);
-}
-
-constexpr uint64 encodeUint64LE(uint16 a, uint16 b, uint16 c, uint16 d) noexcept {
-    return encodeValueLE<uint64>(a, b, c, d);
-
-}
-
-constexpr uint64 encodeUint64LE(byte* buf) noexcept {
-	return encodeUint64LE(buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]);
-}
-
-constexpr int64 encodeInt64LE(uint32 lower, uint32 upper) noexcept {
-    return encodeValueLE<int64>(lower, upper);
-}
-constexpr int64 encodeInt64LE(byte a, byte b, byte c, byte d, byte e, byte f, byte g, byte h) noexcept {
-    return encodeValueLE<int64>(a, b, c, d, e, f, g, h);
-}
-
-constexpr int64 encodeInt64LE(uint16 a, uint16 b, uint16 c, uint16 d) noexcept {
-    return encodeValueLE<int64>(a, b, c, d);
-}
-
-constexpr int64 encodeInt64LE(byte* buf) noexcept {
-	return encodeInt64LE(buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]);
-}
 
 template<typename T, typename F>
 constexpr F decodeBits(T value, T mask, T shiftcount) noexcept {
@@ -357,44 +200,6 @@ constexpr T setBit(T value, bool bit) noexcept {
 template<typename T>
 constexpr T setBit(T value, bool bit, T index) noexcept {
     return encodeBits<T, bool>(value, bit, computeSingleBitmask<T>(index), index);
-}
-
-constexpr uint32 expandUInt32LE(bool lowest, bool lowerUpper, bool upperLower, bool upperMost) noexcept {
-    return encodeUint32LE(expandBit(lowest), expandBit(lowerUpper), expandBit(upperLower), expandBit(upperMost));
-}
-
-constexpr uint16 expandUInt16LE(bool lower, bool upper) noexcept {
-    return encodeUint16LE(expandBit(lower), expandBit(upper));
-}
-
-constexpr uint64 expandUInt64LE(bool b0, bool b1, bool b2, bool b3, bool b4, bool b5, bool b6, bool b7) noexcept {
-    return encodeUint64LE(expandUInt32LE(b0, b1, b2, b3), expandUInt32LE(b4, b5, b6, b7));
-}
-
-template<typename T>
-constexpr typename UpperLowerPair::TypeData<T>::HalfType getUpperHalf(T value) noexcept {
-    using InputType = T;
-    using DataPair = UpperLowerPair::TypeData<T>;
-    using OutputType = typename DataPair::HalfType;
-    return syn::decodeBits<InputType, OutputType, UpperLowerPair::upperMask<T>, UpperLowerPair::shiftCount<T>>(value);
-}
-template<typename T>
-constexpr typename UpperLowerPair::TypeData<T>::HalfType getLowerHalf(T value) noexcept {
-    using InputType = T;
-    using DataPair = UpperLowerPair::TypeData<T>;
-    using OutputType = typename DataPair::HalfType;
-    return syn::decodeBits<InputType, OutputType, UpperLowerPair::lowerMask<T>, 0>(value);
-}
-
-template<typename T>
-constexpr T setLowerHalf(T value, typename UpperLowerPair::TypeData<T>::HalfType lower) noexcept {
-    using DataPair = UpperLowerPair::TypeData<T>;
-    return syn::encodeBits<T, typename DataPair::HalfType, UpperLowerPair::lowerMask<T>, 0>(value, lower);
-}
-template<typename T>
-constexpr T setUpperHalf(T value, typename UpperLowerPair::TypeData<T>::HalfType upper) noexcept {
-    using DataPair = UpperLowerPair::TypeData<T>;
-    return syn::encodeBits<T, typename DataPair::HalfType, UpperLowerPair::lowerMask<T>, UpperLowerPair::shiftCount<T>>(value, upper);
 }
 
 
@@ -486,21 +291,22 @@ constexpr bool fulfillsCondition() noexcept {
  * Construct a 128 bit unsigned integer
  */
 constexpr uint128 makeuint128(uint64 lower, uint64 upper) noexcept {
-    auto lowerHalf = decodeBits<uint64, uint128, UpperLowerPair::lowerMask<uint128>, 0>(lower);
-    return encodeBits<uint128, uint64, UpperLowerPair::upperMask<uint128>, UpperLowerPair::shiftCount<uint128>>(lowerHalf, upper);
+    auto lowerHalf = decodeBits<uint64, uint128, getLowerMask<uint128>(), 0>(lower);
+    return encodeBits<uint128, uint64, getUpperMask<uint128>(), getShiftCount<uint128>()>(lowerHalf, upper);
 }
+template<uint8 check>
 constexpr uint8 getEndianIdent() noexcept {
     union {
         uint32 i;
         uint8 storage[sizeof(uint32)];
     } temp = { 0x01020304 };
-    return temp.storage[0];
+    return temp.storage[0] == check;
 }
 constexpr bool isBigEndian() noexcept {
-    return getEndianIdent() == 1;
+    return getEndianIdent<1>();
 }
 constexpr bool isLittleEndian() noexcept {
-    return getEndianIdent() == 4;
+    return getEndianIdent<4>();
 }
 
 } // end namespace syn

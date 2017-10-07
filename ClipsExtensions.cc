@@ -28,8 +28,8 @@
 
 
 #include "BaseTypes.h"
-#include "ClipsExtensions.h"
 #include "Base.h"
+#include "ClipsExtensions.h"
 #include "ExternalAddressWrapper.h"
 #include "MultifieldBuilder.h"
 
@@ -245,6 +245,24 @@ namespace syn {
         CVSetSymbol(ret, storage.c_str());
     }
 
+    template<bool upperHalf>
+    void upperLowerHalfManip(UDFContext* context, CLIPSValuePtr ret) {
+        CLIPSValue num;
+        if (!UDFFirstArgument(context, INTEGER_TYPE, &num)) {
+            CVSetBoolean(ret, false);
+        } else {
+            CLIPSInteger n = CVToInteger(&num);
+            if (upperHalf) {
+                CVSetInteger(ret, syn::decodeBits<CLIPSInteger, CLIPSInteger, static_cast<CLIPSInteger>(0xFFFFFFFF00000000), syn::bitwidth<CLIPSInteger> / 2>(n));
+            } else {
+                CVSetInteger(ret, decodeBits<CLIPSInteger, CLIPSInteger, 0x00000000FFFFFFFF, 0>(n));
+            }
+        }
+    }
+
+    void CLIPS_getUpperHalf(UDFContext* c, CLIPSValuePtr ret) { upperLowerHalfManip<true>(c, ret); }
+    void CLIPS_getLowerHalf(UDFContext* c, CLIPSValuePtr ret) { upperLowerHalfManip<false>(c, ret); }
+
 	void installExtensions(void* theEnv) {
 		Environment* env = static_cast<Environment*>(theEnv);
 
@@ -259,6 +277,8 @@ namespace syn {
         EnvAddUDF(env, "two-complement", "l", CLIPS_twosComplement, "CLIPS_twosComplement",1, 1, "l", nullptr);
         EnvAddUDF(env, "multiply-add", "l", CLIPS_multiplyAdd, "CLIPS_multiplyAdd", 3, 3, "l;l;l", nullptr);
         EnvAddUDF(env, "get-endian", "sy", CLIPS_getEndianness, "CLIPS_getEndianness", 0, 0, nullptr, nullptr);
+        EnvAddUDF(env, "upper-half", "l", CLIPS_getUpperHalf, "CLIPS_getUpperHalf", 1, 1, "l", nullptr);
+        EnvAddUDF(env, "lower-half", "l", CLIPS_getLowerHalf, "CLIPS_getLowerHalf", 1, 1, "l", nullptr);
 	}
 
     bool isExternalAddress(DataObjectPtr value) noexcept {
