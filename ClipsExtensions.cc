@@ -253,7 +253,7 @@ namespace syn {
         } else {
             CLIPSInteger n = CVToInteger(&num);
             if (upperHalf) {
-                CVSetInteger(ret, syn::decodeBits<CLIPSInteger, CLIPSInteger, static_cast<CLIPSInteger>(0xFFFFFFFF00000000), syn::bitwidth<CLIPSInteger> / 2>(n));
+                CVSetInteger(ret, syn::decodeBits<CLIPSInteger, CLIPSInteger, static_cast<CLIPSInteger>(0xFFFFFFFF00000000), getShiftCount<CLIPSInteger>()>(n));
             } else {
                 CVSetInteger(ret, decodeBits<CLIPSInteger, CLIPSInteger, 0x00000000FFFFFFFF, 0>(n));
             }
