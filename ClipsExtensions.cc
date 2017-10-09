@@ -274,7 +274,7 @@ namespace syn {
         EnvAddUDF(env, "circular-shift-right", "l", CLIPS_circularShiftRight, "CLIPS_circularShiftRight", 2, 2, "l;l", nullptr);
         EnvAddUDF(env, "circular-shift-left", "l", CLIPS_circularShiftLeft, "CLIPS_circularShiftLeft", 2, 2, "l;l", nullptr);
         EnvAddUDF(env, "ones-complement", "l", CLIPS_onesComplement, "CLIPS_onesComplement", 1, 1, "l", nullptr);
-        EnvAddUDF(env, "two-complement", "l", CLIPS_twosComplement, "CLIPS_twosComplement",1, 1, "l", nullptr);
+        EnvAddUDF(env, "twos-complement", "l", CLIPS_twosComplement, "CLIPS_twosComplement",1, 1, "l", nullptr);
         EnvAddUDF(env, "multiply-add", "l", CLIPS_multiplyAdd, "CLIPS_multiplyAdd", 3, 3, "l;l;l", nullptr);
         EnvAddUDF(env, "get-endian", "sy", CLIPS_getEndianness, "CLIPS_getEndianness", 0, 0, nullptr, nullptr);
         EnvAddUDF(env, "upper-half", "l", CLIPS_getUpperHalf, "CLIPS_getUpperHalf", 1, 1, "l", nullptr);
