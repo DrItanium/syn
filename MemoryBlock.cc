@@ -101,11 +101,8 @@ namespace syn {
 
 			enum class MemoryBlockOp {
 				Populate,
-				Shutdown,
-				Initialize,
 				Size,
 				Type,
-				Clear,
 				Set,
 				Move,
 				Swap,
@@ -117,11 +114,8 @@ namespace syn {
 			static std::tuple<MemoryBlockOp, int> getParameters(const std::string& op) noexcept {
 				static std::map<std::string, std::tuple<MemoryBlockOp, int>> opTranslation = {
 					{ "populate", std::make_tuple(MemoryBlockOp:: Populate , 1) },
-					{ "shutdown", std::make_tuple(MemoryBlockOp:: Shutdown , 0) },
-					{ "initialize", std::make_tuple(MemoryBlockOp:: Initialize , 0) },
 					{ "size", std::make_tuple(MemoryBlockOp:: Size , 0) },
 					{ "type", std::make_tuple(MemoryBlockOp:: Type , 0) },
-					{ "clear", std::make_tuple(MemoryBlockOp:: Clear , 0) },
 					{ "write", std::make_tuple(MemoryBlockOp:: Set , 2) },
 					{ "move", std::make_tuple(MemoryBlockOp:: Move , 2) },
 					{ "swap", std::make_tuple(MemoryBlockOp:: Swap , 2) },
@@ -233,12 +227,6 @@ namespace syn {
 					case MemoryBlockOp::Size:
 						CVSetInteger(ret, ptr->size());
 						break;
-					case MemoryBlockOp::Clear:
-						ptr->clearMemory();
-						break;
-					case MemoryBlockOp::Initialize:
-						ptr->setMemoryToSingleValue(0);
-						break;
 					case MemoryBlockOp::Shutdown:
 						break;
 					case MemoryBlockOp::Get:
@@ -275,7 +263,6 @@ namespace syn {
 			inline void swapMemoryCells(Address addr0, Address addr1) noexcept      { swap<Word>(this->_value.get()[addr0], this->_value.get()[addr1]); }
 			inline void decrementMemoryCell(Address address) noexcept               { --this->_value.get()[address]; }
 			inline void incrementMemoryCell(Address address) noexcept               { ++this->_value.get()[address]; }
-            inline void clearMemory() noexcept                                      { setMemoryToSingleValue(0); }
 
 			inline void copyMemoryCell(Address from, Address to) noexcept {
 				auto ptr = this->_value.get();

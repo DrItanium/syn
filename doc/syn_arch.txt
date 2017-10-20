@@ -1,0 +1,110 @@
+0MBEGIN-ENTRY-ROOT
+The syn architecture is a tool for constructing simulators out of custom
+instruction sets. It is meant to be educational and simple over speed. The
+logic for the core is implemented in CLIPS and extra features are exposed from
+C++ to make processor/system simulation much easier.
+
+This document is meant to be an online help guide relating to the different
+components exposed to CLIPS.
+
+Supported subfields are:
+
+EXTERNAL_ADDRESSES - a sub menu which describes what external address types are
+                     exposed.
+END-ENTRY
+
+1MBEGIN-ENTRY-EXTERNAL_ADDRESSES
+syn uses the external address mechanism of CLIPS to provide concepts and
+features which would be difficult or goofy to implement in pure CLIPS.
+
+Supported subtopics are:
+
+MEMORY_BLOCK - Information on the memory block external address type
+END-ENTRY
+
+2MBEGIN-ENTRY-MEMORY-BLOCK
+The memory block is an allocation of heap storage that can be manipulated
+through the CLIPS call interface. It is reclaimed automatically when it goes
+out of scope. Each memory cell is the same size as a CLIPSInteger so keep this
+in mind when allocating cells
+
+Supported subtopics are:
+
+    CONSTRUCTING - How to construct one
+    COMMANDS_MB - List of commands and what they do
+END-ENTRY
+
+3IBEGIN-ENTRY-DOCCOMMANDS_MB
+CONSTRUCTING
+COMMANDS
+END-ENTRY
+
+3MBEGIN-ENTRY-CONSTRUCTING_MB
+Building a memory-block is quite easy, all you need to do is provide it with
+the number of memory cells you want to allocate.
+
+Examples:
+
+    (bind ?k (new memory-block 128)) ; Allocate 128 cells worth of space
+
+    (deffunction MAIN::new-block
+                 (?size)
+                 (new memory-block
+                      ?size))
+END-ENTRY
+
+3MBEGIN-ENTRY-COMMANDS_MB
+The following is a list of commands that the memory-block type will respond to.
+This list also can be queried for further information
+  type - return the external address type name of this memory block
+  populate - set all cells to the same value
+  write - set a given memory cell to a provided value
+  read - get the value stored in the provided address
+  size - retrieve the number of cells allocated for this memory-block
+  increment - increment the value in the given memory cell by one
+  decrement - decrement the value in the given memory cell by one
+  swap - swap the contents of two addresses
+  move - copy the contents from one cell to another
+END-ENTRY
+
+4IBEGIN-ENTRY-TYPE_MB
+-- type
+
+Returns the type of the memory-block. This operation takes in no arguments
+END-ENTRY
+
+4IBEGIN-ENTRY-SIZE_MB
+-- size
+
+Returns the number of cells allocated to the memory-block.  This operation
+takes in no arguments
+
+END-ENTRY
+
+4IBEGIN-ENTRY-POPULATE_MB
+-- populate
+
+Sets each memory cell to the provided value. This operation is significantly
+faster than calling write for each memory cell.
+
+Examples:
+
+    (call ?mb populate 32) ; will set each memory cell to the value 32
+
+    (call ?mb populate 0) ; will set each memory cell to zero/clears memory
+
+END-ENTRY
+
+4IBEGIN-ENTRY-POPULATE_MB
+-- populate
+
+Sets each memory cell to the provided value. This operation is significantly
+faster than calling write for each memory cell.
+
+Examples:
+
+    (call ?mb populate 32) ; will set each memory cell to the value 32
+
+    (call ?mb populate 0) ; will set each memory cell to zero/clears memory
+
+END-ENTRY
