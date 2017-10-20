@@ -57,20 +57,24 @@ END-ENTRY
 The following is a list of commands that the memory-block type will respond to.
 This list also can be queried for further information
   type - return the external address type name of this memory block
+  size - retrieve the number of cells allocated for this memory-block
   populate - set all cells to the same value
   write - set a given memory cell to a provided value
   read - get the value stored in the provided address
-  size - retrieve the number of cells allocated for this memory-block
-  increment - increment the value in the given memory cell by one
-  decrement - decrement the value in the given memory cell by one
   swap - swap the contents of two addresses
   move - copy the contents from one cell to another
+  increment - increment the value in the given memory cell by one
+  decrement - decrement the value in the given memory cell by one
 END-ENTRY
 
 4IBEGIN-ENTRY-TYPE_MB
 -- type
 
 Returns the type of the memory-block. This operation takes in no arguments
+
+Format:
+
+    (call <memory-block> type)
 END-ENTRY
 
 4IBEGIN-ENTRY-SIZE_MB
@@ -79,19 +83,9 @@ END-ENTRY
 Returns the number of cells allocated to the memory-block.  This operation
 takes in no arguments
 
-END-ENTRY
+Format:
 
-4IBEGIN-ENTRY-POPULATE_MB
--- populate
-
-Sets each memory cell to the provided value. This operation is significantly
-faster than calling write for each memory cell.
-
-Examples:
-
-    (call ?mb populate 32) ; will set each memory cell to the value 32
-
-    (call ?mb populate 0) ; will set each memory cell to zero/clears memory
+    (call <memory-block> size)
 
 END-ENTRY
 
@@ -101,10 +95,60 @@ END-ENTRY
 Sets each memory cell to the provided value. This operation is significantly
 faster than calling write for each memory cell.
 
+Format:
+
+    (call <memory-block> populate <value>)
+
 Examples:
 
     (call ?mb populate 32) ; will set each memory cell to the value 32
 
     (call ?mb populate 0) ; will set each memory cell to zero/clears memory
+
+END-ENTRY
+
+4IBEGIN-ENTRY-READ_MB
+-- read
+
+Retrieves the value stored at the given memory cell address. This address is an
+offset from the beginning of this memory-block. Extra math will have to be
+done if multiple memory-blocks are allocated to make up a memory-space for a
+machine. The read operation takes in a single argument, the address to load.
+
+If the address is not in the range of the memory block then an error will be
+raised and FALSE will be returned. CLIPS will halt as a result and return to
+the REPL.
+
+Format:
+
+    (call <memory-block> read <address>)
+
+Examples:
+
+    (call ?blk read 1) ; read address 1 of the memory-block
+
+
+END-ENTRY
+
+4IBEGIN-ENTRY-WRITE_MB
+-- write
+
+Writes the provided value to the given memory cell address.  This address is an
+offset from the beginning of this memory-block. Extra math will have to be
+done if multiple memory-blocks are allocated to make up a memory-space for a
+machine. The write operation takes in two arguments: the address to write to
+and the value to write to that address.
+
+If the address is not in the range of the memory block then an error will be
+raised and FALSE will be returned. CLIPS will halt as a result and return to
+the REPL.
+
+Format:
+
+    (call <memory-block> write <address> <value>)
+
+Examples:
+
+    (call ?blk write 1 32) ; write 32 to address 1 of the memory-block ?blk
 
 END-ENTRY
