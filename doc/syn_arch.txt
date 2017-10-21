@@ -13,13 +13,21 @@ EXTERNAL_ADDRESSES - a sub menu which describes what external address types are
                      exposed.
 END-ENTRY
 
+1IBEGIN-ENTRY-SUB-TOPICS_ROOT
+EXTERNAL_ADDRESSES
+END-ENTRY
+
 1MBEGIN-ENTRY-EXTERNAL_ADDRESSES
 syn uses the external address mechanism of CLIPS to provide concepts and
 features which would be difficult or goofy to implement in pure CLIPS.
 
 Supported subtopics are:
 
-MEMORY_BLOCK - Information on the memory block external address type
+MEMORY-BLOCK - Information on the memory block external address type
+END-ENTRY
+
+2IBEGIN-ENTRY-SUB-TOPICS_EXTERNAL_ADDRESSES
+MEMORY-BLOCK
 END-ENTRY
 
 2MBEGIN-ENTRY-MEMORY-BLOCK
@@ -31,10 +39,10 @@ in mind when allocating cells
 Supported subtopics are:
 
     CONSTRUCTING - How to construct one
-    COMMANDS_MB - List of commands and what they do
+    COMMANDS - List of commands and what they do
 END-ENTRY
 
-3IBEGIN-ENTRY-DOCCOMMANDS_MB
+3IBEGIN-ENTRY-SUB-TOPICS_MB
 CONSTRUCTING
 COMMANDS
 END-ENTRY
@@ -65,6 +73,18 @@ This list also can be queried for further information
   move - copy the contents from one cell to another
   increment - increment the value in the given memory cell by one
   decrement - decrement the value in the given memory cell by one
+END-ENTRY
+
+4IBEGIN-ENTRY-SUB-TOPICS_COMMANDS_MB
+TYPE
+SIZE
+POPULATE
+WRITE
+READ
+SWAP
+MOVE
+INCREMENT
+DECREMENT
 END-ENTRY
 
 4IBEGIN-ENTRY-TYPE_MB

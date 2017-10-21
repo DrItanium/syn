@@ -1,0 +1,21 @@
+0MBEGIN-ENTRY-ROOT
+Welcome to the documentation system
+
+type help at the prompt to get a list of commands
+END-ENTRY
+
+1IBEGIN-ENTRY-LIST-COMMANDS
+Available commands:
+    - up
+    - sub-topics
+    - sub-topic
+    - reload
+    - help
+    - fetch
+    - toss
+    - current
+    - print
+    - files
+    - quit
+END-ENTRY
+
