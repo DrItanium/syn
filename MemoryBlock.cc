@@ -227,8 +227,6 @@ namespace syn {
 					case MemoryBlockOp::Size:
 						CVSetInteger(ret, ptr->size());
 						break;
-					case MemoryBlockOp::Shutdown:
-						break;
 					case MemoryBlockOp::Get:
 						return commonSingleIntegerBody([ret](auto ptr, auto addr) { CVSetInteger(ret, ptr->getMemoryCellValue(addr)); });
 					case MemoryBlockOp::Populate:
