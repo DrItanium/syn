@@ -9,7 +9,8 @@ COMMON_THINGS = ClipsExtensions.o \
 			 	MultifieldBuilder.o \
 				MemoryBlock.o \
 				boost.o \
-				functional.o
+				functional.o \
+				AlsaMIDIExtensions.o 
 
 REPL_FINAL_BINARY = syn
 

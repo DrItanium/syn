@@ -1,4 +1,4 @@
-LIBS = -lc -lm -lboost_system -lboost_filesystem -lrt
+LIBS = -lc -lm -lboost_system -lboost_filesystem -lrt -lasound
 
 CC := cc
 CXX := c++

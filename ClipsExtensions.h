@@ -259,6 +259,17 @@ bool checkThenGetArgument(void* env, const std::string& function, int position, 
 bool errorMessage(void* env, const std::string& idClass, int idIndex, const std::string& msgPrefix, const std::string& msg) noexcept;
 
 /**
+ * Output an error message through clips
+ * @param env the environment where the error happened
+ * @param idClass the error class
+ * @param idIndex the error index
+ * @param msgPrefix the prefix to add
+ * @param msg the message to display
+ * @return bool signifying if successful error output occurred
+ */
+bool errorMessage(UDFContext* env, const std::string& idClass, int idIndex, const std::string& msgPrefix, const std::string& msg) noexcept;
+
+/**
  * Common implementation for printing out an external address from within
  * CLIPS. Unless you've got really specific or odd requirements, it is
  * suggested that this be used as a base.

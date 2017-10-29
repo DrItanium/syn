@@ -178,6 +178,9 @@ namespace syn {
 		EnvSetEvaluationError(env, true);
 		return false;
 	}
+	bool errorMessage(UDFContext* env, const std::string& idClass, int idIndex, const std::string& msgPrefix, const std::string& msg) noexcept {
+        return errorMessage(UDFContextEnvironment(env), idClass, idIndex, msgPrefix, msg);
+    }
     template<bool shiftLeft>
     void CLIPS_circularShiftBase(UDFContext* context, CLIPSValuePtr ret) {
         CLIPSValue a, b;
