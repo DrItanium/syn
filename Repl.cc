@@ -30,6 +30,9 @@
 extern "C" {
 	#include "clips.h"
 }
+#ifdef PLATFORM_LINUX
+    #include "AlsaMIDIExtensions.h"
+#endif // end PLATFORM_LINUX
 
 int main(int argc, char* argv[]) {
 	// make sure this is a common io bus
@@ -37,6 +40,9 @@ int main(int argc, char* argv[]) {
 	// install features here
 	syn::installExtensions(mainEnv);
 	syn::installMemoryBlockTypes(mainEnv);
+#ifdef PLATFORM_LINUX
+    syn::installAlsaMIDIExtensions(mainEnv);
+#endif // end PLATFORM_LINUX
 	RerouteStdin(mainEnv, argc, argv);
 	CommandLoop(mainEnv);
 	DestroyEnvironment(mainEnv);
