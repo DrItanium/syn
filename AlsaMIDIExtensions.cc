@@ -1,6 +1,6 @@
 /**
  * @file
- * extensions for ALSA related operations
+ * implementation of methods described in ClipsExtensions.h
  * @copyright
  * syn
  * Copyright (c) 2013-2017, Joshua Scoggins and Contributors
@@ -26,12 +26,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
-#ifndef SYN_ALSA_EXTENSIONS_H__
-#define SYN_ALSA_EXTENSIONS_H__
-
-namespace syn {
-	void installAlsaMIDIExtensions(void* env);
+#include "AlsaMIDIExtensions.h"
+#include <alsa/asoundlib.h>
+extern "C" {
+	#include "clips.h"
 }
 
-#endif // end SYN_ALSA_EXTENSIONS_H__
+namespace syn {
+
+void installAlsaMIDIExtensions(void* env) {
+
+}
+
+} // end namespace syn
