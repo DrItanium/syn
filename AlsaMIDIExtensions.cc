@@ -332,5 +332,6 @@ namespace syn {
 		midiout = nullptr;
 		CVSetBoolean(ret, true);
 	}
+	//TODO: make the midi device an external address
 
 } // end namespace syn
