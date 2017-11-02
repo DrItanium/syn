@@ -299,6 +299,8 @@ namespace syn {
 	using RawMidi = snd_rawmidi_t;
 	void writeToMidiPort(UDFContext* context, CLIPSValue* ret) {
 		// taken from https://ccrma.stanford.edu/~craig/articles/linuxmidi/alsa-1.0/alsarawmidiout.c
+		// TODO: update this function to take in a multifield of bytes instead
+		// of a fixed count!
 		CLIPSValue portname, noteP0, noteP1, noteP2;
 		if (!UDFFirstArgument(context, LEXEME_TYPES, &portname)) {
 			return;
