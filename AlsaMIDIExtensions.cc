@@ -45,9 +45,12 @@ namespace syn {
 	}
 	using SoundCardId = int;
 	using SoundCardStatusCode = int;
+	std::string decodeSoundCardStatusCode(SoundCardStatusCode status) {
+		return std::string(snd_strerror(status));
+	}
 	void soundCardError(UDFContext* context, CLIPSValue* ret, int code, const std::string& desc, SoundCardStatusCode status) {
 		CVSetBoolean(ret, false);
-		std::string cardId (snd_strerror(status));
+		std::string cardId (decodeSoundCardStatusCode(status));
 		std::stringstream msg;
 		msg << desc << ": " << cardId;
 		auto str2 = msg.str();
@@ -63,6 +66,22 @@ namespace syn {
 	}
 	void unableToDetermineCardNumberError(UDFContext* context, CLIPSValue* ret, SoundCardStatusCode status) {
 		soundCardError(context, ret, 1, "cannot determine card number", status);
+	}
+	template<typename First>
+	void collectArguments(std::ostream& storage, First&& f) {
+		storage << f;
+	}
+	template<typename First, typename ... Args>
+	void collectArguments(std::ostream& storage, First&& f, Args&& ...rest) {
+		collectArguments<First>(storage, f);
+		collectArguments(storage, rest...);
+	}
+	template<typename ... Args>
+	void soundCardError(UDFContext* context, CLIPSValue* ret, int code, Args&& ...args) {
+		std::ostringstream str;
+		collectArguments(str, args...);
+		auto string = str.str();
+		soundCardError(context, ret, code, string);
 	}
 	void listSoundCards(UDFContext* context, CLIPSValue* ret) {
 		// an adaption of the code found at https://ccrma.stanford.edu/~craig/articles/linuxmidi/alsa-1.0/alsarawportlist.c
@@ -110,6 +129,117 @@ namespace syn {
 	}
 	using SoundController = snd_ctl_t;
 	using RawMidiDeviceId = int;
+	using RawMidiInfo = snd_rawmidi_info_t;
+	template<decltype(SND_RAWMIDI_STREAM_INPUT) direction>
+	SoundCardStatusCode supportsDirection(SoundController* ctl, SoundCardId card, RawMidiDeviceId device, int sub) {
+		RawMidiInfo* info = nullptr;
+		SoundCardStatusCode status = 0;
+
+		snd_rawmidi_info_alloca(&info);
+		snd_rawmidi_info_set_device(info, device);
+		snd_rawmidi_info_set_subdevice(info, sub);
+		snd_rawmidi_info_set_stream(info, direction);
+
+		status = snd_ctl_rawmidi_info(ctl, info);
+		if (status < 0 && status != -ENXIO) {
+			return status;
+		} else if(status == 0) {
+			return 1;
+		} else {
+			return 0;
+		}
+	}
+	inline SoundCardStatusCode isOutput(SoundController* ctl, SoundCardId card, RawMidiDeviceId device, int sub) { return supportsDirection<SND_RAWMIDI_STREAM_OUTPUT>(ctl, card, device, sub); }
+	inline SoundCardStatusCode isInput(SoundController* ctl, SoundCardId card, RawMidiDeviceId device, int sub) { return supportsDirection<SND_RAWMIDI_STREAM_INPUT>(ctl, card, device, sub); }
+
+	void listSubdeviceInfo(UDFContext* context, CLIPSValue* ret, SoundController* ctl, SoundCardId card, RawMidiDeviceId device, const char* logicalName) {
+		RawMidiInfo* info = nullptr;
+		SoundCardStatusCode status = 0;
+		snd_rawmidi_info_alloca(&info);
+		snd_rawmidi_info_set_device(info, device);
+
+		snd_rawmidi_info_set_stream(info, SND_RAWMIDI_STREAM_INPUT);
+		snd_ctl_rawmidi_info(ctl, info);
+		auto subsIn = snd_rawmidi_info_get_subdevices_count(info);
+		snd_rawmidi_info_set_stream(info, SND_RAWMIDI_STREAM_OUTPUT);
+		snd_ctl_rawmidi_info(ctl, info);
+		auto subsOut = snd_rawmidi_info_get_subdevices_count(info);
+		int subs = subsIn > subsOut ? subsIn : subsOut;
+
+		auto sub = 0;
+		auto in = 0;
+		auto out = 0;
+		status = isOutput(ctl, card, device, sub);
+		if (status < 0) {
+			soundCardError(context, ret, 2, "cannot get rawmidi information ", card, ":", device, ": ", decodeSoundCardStatusCode(status));
+			return;
+		} else if(status) {
+			out = true;
+		}
+		if (status == 0) {
+			status = isInput(ctl, card, device, sub);
+			if (status < 0) {
+				soundCardError(context, ret, 2, "cannot get rawmidi information ", card, ":", device, ": ", decodeSoundCardStatusCode(status));
+				return;
+			} else if (status) {
+				out = true;
+			}
+		}
+		if (status == 0) {
+			return;
+		}
+
+		std::string name(snd_rawmidi_info_get_name(info));
+		std::string subName(snd_rawmidi_info_get_subdevice_name(info));
+		auto theEnv = UDFContextEnvironment(context);
+		if (subName.empty()) {
+			std::stringstream str;
+			str << (in ? "I" : " ");
+			str << (out ? "O" : " ");
+			str << "  hw:" << card << "," << device <<  "    " << name;
+			if (subs == 1) {
+				str << std::endl;
+			} else {
+				str << " (" << subs << " subdevices)" << std::endl;
+
+			}
+			EnvPrintRouter(theEnv, logicalName, str.str().c_str());
+		} else {
+			sub = 0;
+			for (;;) {
+				std::stringstream str;
+				str << (in ? "I" : " ");
+				str << (out ? "O" : " ");
+				str << "   hw:" << card << "," << device << "," << sub << "  " << subName << std::endl;
+				EnvPrintRouter(theEnv, logicalName, str.str().c_str());
+				++sub;
+				if (sub >= subs) {
+					break;
+				}
+				in = isInput(ctl, card, device, sub);
+				out = isOutput(ctl, card, device, sub);
+				snd_rawmidi_info_set_subdevice(info, sub);
+				if (out) {
+					snd_rawmidi_info_set_stream(info, SND_RAWMIDI_STREAM_OUTPUT);
+					status = snd_ctl_rawmidi_info(ctl, info);
+					if (status < 0) {
+						soundCardError(context, ret, 2, "cannot get rawmidi information ", card, ":", device, ":", sub, ": ", decodeSoundCardStatusCode(status));
+						break;
+					}
+				} else {
+					snd_rawmidi_info_set_stream(info, SND_RAWMIDI_STREAM_INPUT);
+					status = snd_ctl_rawmidi_info(ctl, info);
+					if (status < 0) {
+						soundCardError(context, ret, 2, "cannot get rawmidi information ", card, ":", device, ":", sub, ": ", decodeSoundCardStatusCode(status));
+						break;
+					}
+				}
+				subName = snd_rawmidi_info_get_subdevice_name(info);
+			}
+		}
+
+
+	}
 	void listMidiDevicesOnCard(UDFContext* context, CLIPSValue* ret, SoundCardId card, const char* logicalName) {
 		SoundController* ctl;
 		RawMidiDeviceId device = -1;
@@ -131,9 +261,13 @@ namespace syn {
 				soundCardError(context, ret, 2, "cannot determine device number", status);
 				return;
 			}
-			// TODO: continue this
+			if (device >= 0) {
+				listSubdeviceInfo(context, ret, ctl, card, device, logicalName);
+			}
 		} while (device >= 0);
+		snd_ctl_close(ctl);
 	}
+
 	void listMidiPorts(UDFContext* context, CLIPSValue* ret) {
 		SoundCardStatusCode status;
 		SoundCardId card = -1;  // use -1 to prime the pump of iterating through card list
@@ -151,14 +285,13 @@ namespace syn {
 		EnvPrintRouter(theEnv, WDISPLAY, "\nType Device    Name\n");
 		EnvPrintRouter(theEnv, WDISPLAY, "====================================\n");
 		while (card >= 0) {
-			list_midi_devices_on_card(card);
+			listMidiDevicesOnCard(context, ret, card, WDISPLAY);
 			if ((status = snd_card_next(&card)) < 0) {
 				unableToDetermineCardNumberError(context, ret, status);
 				return;
 			}
 		} 
-		EnvPrintRouter
-		printf("\n");
+		EnvPrintRouter(theEnv, WDISPLAY, "\n");
 	}
 
 } // end namespace syn
