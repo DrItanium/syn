@@ -38,10 +38,12 @@ extern "C" {
 namespace syn {
 	void listSoundCards(UDFContext* context, CLIPSValue* ret);
 	void listMidiPorts(UDFContext* context, CLIPSValue* ret);
+	void writeToMidiPort(UDFContext* context, CLIPSValue* ret);
 	void installAlsaMIDIExtensions(void* theEnv) {
 		Environment* env = (Environment*)theEnv;
 		EnvAddUDF(env, "list-sound-cards", "v", listSoundCards, "listSoundCards", 0, 0, nullptr, nullptr);
 		EnvAddUDF(env, "list-midi-ports", "v", listMidiPorts, "listMidiPorts", 0, 0, nullptr, nullptr);
+		EnvAddUDF(env, "write-to-midi-port", "b", writeToMidiPort, "writeToMidiPort", 4, 4, "sy;l;l;l", nullptr);
 	}
 	using SoundCardId = int;
 	using SoundCardStatusCode = int;
@@ -292,6 +294,43 @@ namespace syn {
 			}
 		} 
 		EnvPrintRouter(theEnv, WDISPLAY, "\n");
+	}
+
+	using RawMidi = snd_rawmidi_t;
+	void writeToMidiPort(UDFContext* context, CLIPSValue* ret) {
+		// taken from https://ccrma.stanford.edu/~craig/articles/linuxmidi/alsa-1.0/alsarawmidiout.c
+		CLIPSValue portname, noteP0, noteP1, noteP2;
+		if (!UDFFirstArgument(context, LEXEME_TYPES, &portname)) {
+			return;
+		} else if (!UDFNextArgument(context, INTEGER_TYPE, &noteP0)) {
+			return;
+		} else if (!UDFNextArgument(context, INTEGER_TYPE, &noteP1)) {
+			return;
+		} else if (!UDFNextArgument(context, INTEGER_TYPE, &noteP2)) {
+			return;
+		}
+
+		SoundCardStatusCode status;
+		RawMidi* midiout = nullptr;
+		std::string port(CVToString(&portname));
+		status = snd_rawmidi_open(nullptr, &midiout, port.c_str(), SND_RAWMIDI_SYNC);
+		if (status < 0) {
+			soundCardError(context, ret, 1, "Problem opening midi output: ", decodeSoundCardStatusCode(status));
+			return;
+		}
+		char note[3] = { 0 };
+		note[0] = static_cast<char>(CVToInteger(&noteP0));
+		note[1] = static_cast<char>(CVToInteger(&noteP1));
+		note[2] = static_cast<char>(CVToInteger(&noteP2));
+		status = snd_rawmidi_write(midiout, note, 3);
+		if (status < 0) {
+			soundCardError(context, ret, 2, "Problem writing to MIDI output: ", decodeSoundCardStatusCode(status));
+			return;
+		}
+
+		snd_rawmidi_close(midiout);
+		midiout = nullptr;
+		CVSetBoolean(ret, true);
 	}
 
 } // end namespace syn
