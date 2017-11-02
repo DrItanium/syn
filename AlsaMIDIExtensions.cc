@@ -43,7 +43,7 @@ namespace syn {
 		Environment* env = (Environment*)theEnv;
 		EnvAddUDF(env, "list-sound-cards", "v", listSoundCards, "listSoundCards", 0, 0, nullptr, nullptr);
 		EnvAddUDF(env, "list-midi-ports", "v", listMidiPorts, "listMidiPorts", 0, 0, nullptr, nullptr);
-		EnvAddUDF(env, "write-to-midi-port", "b", writeToMidiPort, "writeToMidiPort", 4, 4, "sy;l;l;l", nullptr);
+		EnvAddUDF(env, "write-to-midi-port", "b", writeToMidiPort, "writeToMidiPort", 4, 4, "syl;sy;l;l;l", nullptr);
 	}
 	using SoundCardId = int;
 	using SoundCardStatusCode = int;
