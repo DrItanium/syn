@@ -50,9 +50,6 @@ class CommonExternalAddressWrapper : public ExternalAddressWrapper<T> {
         using Self = CommonExternalAddressWrapper<T>;
 		enum class BuiltinStandardFunctions {
 			Type,
-			IsCore,
-			IsAssembler,
-			IsDevice,
 			Count,
 		};
         static bool callFunction(void* env, DataObjectPtr value, DataObjectPtr ret) {
@@ -61,9 +58,6 @@ class CommonExternalAddressWrapper : public ExternalAddressWrapper<T> {
             static_assert(std::is_base_of<Self, CastTo>::value, "To use the common functionality hierarchy, you must inherit from CommonExternalAddressWrapper");
 			static std::map<std::string, BuiltinStandardFunctions> lookup = {
 				{ "type", BuiltinStandardFunctions::Type },
-				{ "corep", BuiltinStandardFunctions::IsCore },
-				{ "assemblerp", BuiltinStandardFunctions::IsAssembler },
-				{ "devicep", BuiltinStandardFunctions::IsDevice },
 			};
             __RETURN_FALSE_ON_FALSE__(Parent::isExternalAddress(env, ret, value));
             CLIPSValue operation;
@@ -77,15 +71,6 @@ class CommonExternalAddressWrapper : public ExternalAddressWrapper<T> {
 				switch(result->second) {
 					case BuiltinStandardFunctions::Type:
 						CVSetSymbol(ret, Parent::getType().c_str());
-						return true;
-					case BuiltinStandardFunctions::IsCore:
-						CVSetBoolean(ret, ptr->isCore());
-						return true;
-					case BuiltinStandardFunctions::IsAssembler:
-						CVSetBoolean(ret, ptr->isAssembler());
-						return true;
-					case BuiltinStandardFunctions::IsDevice:
-						CVSetBoolean(ret, ptr->isDevice());
 						return true;
 					default:
             			return Parent::callErrorMessageCode3(env, ret, str, "<- unknown but registered operation!!!!");
@@ -128,9 +113,6 @@ class CommonExternalAddressWrapper : public ExternalAddressWrapper<T> {
 		 * is not the same as what is actually returned to CLIPS.
 		 */
         virtual bool handleCallOperation(void* env, DataObjectPtr value, DataObjectPtr ret, const std::string& operation) = 0;
-		virtual bool isCore() noexcept { return false; }
-		virtual bool isAssembler() noexcept { return false; }
-		virtual bool isDevice() noexcept { return false; }
 };
 } // end namespace syn
 #endif

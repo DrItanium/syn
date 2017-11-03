@@ -36,23 +36,77 @@ extern "C" {
 #include "MultifieldBuilder.h"
 #include "ClipsExtensions.h"
 #include "ExternalAddressWrapper.h"
+#include "CommonExternalAddressWrapper.h"
 namespace alsa {
     std::string decodeStatusCode(StatusCode status) noexcept {
         return std::string(snd_strerror(status));
     }
 }
 namespace syn {
-    class MidiConnection : public ExternalAddressWrapper<alsa::rawmidi::Device> {
+    class MidiConnection {
         public:
+            MidiConnection(const std::string& id);
+            ~MidiConnection();
+            const std::string& getId() const noexcept { return _id; }
+            bool isOpen() const noexcept { return _open; }
+            alsa::StatusCode open(alsa::rawmidi::OpenMode mode = alsa::rawmidi::OpenMode::Sync);
+            alsa::StatusCode close();
+            ssize_t write(const void* buffer, size_t count) noexcept;
+            ssize_t read(void* buffer, size_t count) noexcept;
+        private:
+            std::string _id;
+            bool _open;
+            alsa::rawmidi::Device* _output;
+    };
+    MidiConnection::MidiConnection(const std::string& id) : _id(id), _open(false), _output(nullptr) { }
+    MidiConnection::~MidiConnection() {
+        if (_open) {
+            close();
+            _output = nullptr;
+        }
+    }
+
+    alsa::StatusCode MidiConnection::open(alsa::rawmidi::OpenMode mode) {
+        if (_open) {
+            return 0;
+        }
+        _open = true;
+        return alsa::rawmidi::open(nullptr, &_output, _id, mode);
+    }
+
+    alsa::StatusCode MidiConnection::close() {
+        _open = false;
+        auto status = alsa::rawmidi::close(_output);
+        _output = nullptr;
+        return status;
+    }
+
+    ssize_t MidiConnection::write(const void* buffer, size_t size) noexcept {
+        return alsa::rawmidi::write(_output, buffer, size);
+    }
+
+    ssize_t MidiConnection::read(void* buffer, size_t size) noexcept {
+        return alsa::rawmidi::read(_output, buffer, size);
+    }
+
+
+
+
+    class MidiConnectionWrapper : public CommonExternalAddressWrapper<MidiConnection> {
+        public:
+            using Parent = CommonExternalAddressWrapper<MidiConnection>;
             static MidiConnection* make(const std::string& hwId) noexcept {
                 return new MidiConnection(hwId);
             }
         public:
-            MidiConnection(const std::string& id);
-            ~MidiConnection();
-        private:
-            std::string _id;
+            MidiConnectionWrapper(std::unique_ptr<MidiConnection>&& ptr) : Parent(std::move(ptr)) { }
+            MidiConnectionWrapper(MidiConnection* connection) : Parent(connection) { }
+            MidiConnectionWrapper(const std::string& id) : Parent(id) { }
+            virtual ~MidiConnectionWrapper() { }
+            virtual bool handleCallOperation(void* env, DataObjectPtr value, DataObjectPtr ret, const std::string& operation) override;
     };
+
+    //bool MidiConnectionWrapper::handleCa
 	void listSoundCards(UDFContext* context, CLIPSValue* ret);
 	void listMidiPorts(UDFContext* context, CLIPSValue* ret);
 	void writeToMidiPort(UDFContext* context, CLIPSValue* ret);
