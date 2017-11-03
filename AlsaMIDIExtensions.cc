@@ -118,8 +118,11 @@ namespace syn {
         if (_open) {
             return 0;
         }
-        _open = true;
-        return alsa::rawmidi::open(&_input, &_output, _id, mode);
+        auto status = alsa::rawmidi::open(&_input, &_output, _id, mode);
+        if (status == 0) {
+            _open = true;
+        }
+        return status;
     }
 
     std::tuple<alsa::StatusCode, alsa::StatusCode> MidiConnection::close() {
@@ -153,10 +156,12 @@ namespace syn {
             try {
                 if (getArgCount(env) != 2) {
                     errorMessage(env, "NEW", 2, funcErrorPrefix, " need the hardware id of the midi device!");
+                    return nullptr;
                 }
                 CLIPSValue hwid;
                 if (!EnvArgTypeCheck(env, function.c_str(), 2, SYMBOL_OR_STRING, &hwid)) {
                     errorMessage(env, "NEW", 3, funcErrorPrefix, " provided input value must be a lexeme!");
+                    return nullptr;
                 }
                 std::string id(DOToString(hwid));
                 return new MidiConnection(id);
