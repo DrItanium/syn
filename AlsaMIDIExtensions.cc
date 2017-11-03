@@ -35,20 +35,34 @@ extern "C" {
 
 #include "MultifieldBuilder.h"
 #include "ClipsExtensions.h"
+#include "ExternalAddressWrapper.h"
 namespace alsa {
     std::string decodeStatusCode(StatusCode status) noexcept {
         return std::string(snd_strerror(status));
     }
 }
 namespace syn {
+    class MidiConnection : public ExternalAddressWrapper<alsa::rawmidi::Device> {
+        public:
+            static MidiConnection* make(const std::string& hwId) noexcept {
+                return new MidiConnection(hwId);
+            }
+        public:
+            MidiConnection(const std::string& id);
+            ~MidiConnection();
+        private:
+            std::string _id;
+    };
 	void listSoundCards(UDFContext* context, CLIPSValue* ret);
 	void listMidiPorts(UDFContext* context, CLIPSValue* ret);
 	void writeToMidiPort(UDFContext* context, CLIPSValue* ret);
+    void openMidiPort(UDFContext* context, CLIPSValue* ret);
 	void installAlsaMIDIExtensions(void* theEnv) {
 		Environment* env = (Environment*)theEnv;
 		EnvAddUDF(env, "list-sound-cards", "v", listSoundCards, "listSoundCards", 0, 0, nullptr, nullptr);
 		EnvAddUDF(env, "list-midi-ports", "v", listMidiPorts, "listMidiPorts", 0, 0, nullptr, nullptr);
-		EnvAddUDF(env, "write-to-midi-port", "b", writeToMidiPort, "writeToMidiPort", 4, 4, "syl;sy;l;l;l", nullptr);
+        EnvAddUDF(env, "open-midi-port", "b", openMidiPort, "openMidiPort", 1, 1, "sy", nullptr);
+		EnvAddUDF(env, "write-to-midi-port", "b", writeToMidiPort, "writeToMidiPort", 2, 2, "*;sy;m", nullptr);
 	}
 	void soundCardError(UDFContext* context, CLIPSValue* ret, int code, const std::string& desc, alsa::StatusCode status) {
 		CVSetBoolean(ret, false);
@@ -293,19 +307,15 @@ namespace syn {
 		}
 		EnvPrintRouter(theEnv, WDISPLAY, "\n");
 	}
-
 	void writeToMidiPort(UDFContext* context, CLIPSValue* ret) {
 		// taken from https://ccrma.stanford.edu/~craig/articles/linuxmidi/alsa-1.0/alsarawmidiout.c
 		// TODO: update this function to take in a multifield of bytes instead
 		// of a fixed count!
-		CLIPSValue portname, noteP0, noteP1, noteP2;
+		CLIPSValue portname, noteP0;
+        CVSetBoolean(ret, false);
 		if (!UDFFirstArgument(context, LEXEME_TYPES, &portname)) {
 			return;
-		} else if (!UDFNextArgument(context, INTEGER_TYPE, &noteP0)) {
-			return;
-		} else if (!UDFNextArgument(context, INTEGER_TYPE, &noteP1)) {
-			return;
-		} else if (!UDFNextArgument(context, INTEGER_TYPE, &noteP2)) {
+		} else if (!UDFNextArgument(context, MULTIFIELD_TYPE, &noteP0)) {
 			return;
 		}
 
