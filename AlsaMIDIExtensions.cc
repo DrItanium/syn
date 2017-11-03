@@ -217,7 +217,7 @@ namespace syn {
 				}
 				in = isInput(ctl, card, device, sub);
 				out = isOutput(ctl, card, device, sub);
-				snd_rawmidi_info_set_subdevice(info, sub);
+                alsa::rawmidi::setSubdevice(info, sub);
 				if (out) {
                     alsa::rawmidi::setStream(info, alsa::rawmidi::StreamDirection::Output);
 					status = snd_ctl_rawmidi_info(ctl, info);
