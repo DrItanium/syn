@@ -26,6 +26,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "Base.h"
 #include "AlsaMIDIExtensions.h"
 #include "AlsaRawMidi.h"
 extern "C" {
@@ -43,78 +44,6 @@ namespace alsa {
     }
 }
 namespace syn {
-    class OutputMidiConnection {
-        public:
-            OutputMidiConnection(const std::string& id);
-            ~OutputMidiConnection();
-            const std::string& getId() const noexcept { return _id; }
-            bool isOpen() const noexcept { return _open; }
-            alsa::StatusCode open(alsa::rawmidi::OpenMode mode = alsa::rawmidi::OpenMode::Sync);
-            alsa::StatusCode close();
-            ssize_t write(const void* buffer, size_t count) noexcept;
-            ssize_t read(void* buffer, size_t count) noexcept;
-        private:
-            std::string _id;
-            bool _open;
-            alsa::rawmidi::Device* _output;
-    };
-    OutputMidiConnection::OutputMidiConnection(const std::string& id) : _id(id), _open(false), _output(nullptr) { }
-    OutputMidiConnection::~OutputMidiConnection() {
-        if (_open) {
-            close();
-            _output = nullptr;
-        }
-    }
-
-    alsa::StatusCode OutputMidiConnection::open(alsa::rawmidi::OpenMode mode) {
-        if (_open) {
-            return 0;
-        }
-        _open = true;
-        return alsa::rawmidi::open(nullptr, &_output, _id, mode);
-    }
-
-    alsa::StatusCode OutputMidiConnection::close() {
-        _open = false;
-        auto status = alsa::rawmidi::close(_output);
-        _output = nullptr;
-        return status;
-    }
-
-    ssize_t OutputMidiConnection::write(const void* buffer, size_t size) noexcept {
-        return alsa::rawmidi::write(_output, buffer, size);
-    }
-
-    ssize_t OutputMidiConnection::read(void* buffer, size_t size) noexcept {
-        return alsa::rawmidi::read(_output, buffer, size);
-    }
-
-
-
-
-    class OutputMidiConnectionWrapper : public CommonExternalAddressWrapper<OutputMidiConnection> {
-        public:
-            using Parent = CommonExternalAddressWrapper<OutputMidiConnection>;
-        public:
-            OutputMidiConnectionWrapper(std::unique_ptr<OutputMidiConnection>&& ptr) : Parent(std::move(ptr)) { }
-            OutputMidiConnectionWrapper(OutputMidiConnection* connection) : Parent(connection) { }
-            OutputMidiConnectionWrapper(const std::string& id) : Parent(id) { }
-            virtual ~OutputMidiConnectionWrapper() { }
-            virtual bool handleCallOperation(void* env, DataObjectPtr value, DataObjectPtr ret, const std::string& operation) override;
-    };
-
-    //bool OutputMidiConnectionWrapper::handleCa
-	void listSoundCards(UDFContext* context, CLIPSValue* ret);
-	void listMidiPorts(UDFContext* context, CLIPSValue* ret);
-	void writeToMidiPort(UDFContext* context, CLIPSValue* ret);
-    void openMidiPort(UDFContext* context, CLIPSValue* ret);
-	void installAlsaMIDIExtensions(void* theEnv) {
-		Environment* env = (Environment*)theEnv;
-		EnvAddUDF(env, "list-sound-cards", "v", listSoundCards, "listSoundCards", 0, 0, nullptr, nullptr);
-		EnvAddUDF(env, "list-midi-ports", "v", listMidiPorts, "listMidiPorts", 0, 0, nullptr, nullptr);
-        EnvAddUDF(env, "open-midi-port", "b", openMidiPort, "openMidiPort", 1, 1, "sy", nullptr);
-		EnvAddUDF(env, "write-to-midi-port", "b", writeToMidiPort, "writeToMidiPort", 2, 2, "*;sy;m", nullptr);
-	}
 	void soundCardError(UDFContext* context, CLIPSValue* ret, int code, const std::string& desc, alsa::StatusCode status) {
 		CVSetBoolean(ret, false);
 		std::string cardId (alsa::decodeStatusCode(status));
@@ -149,6 +78,262 @@ namespace syn {
 		collectArguments(str, args...);
 		auto string = str.str();
 		soundCardError(context, ret, code, string);
+	}
+    template<typename ... Args>
+    void soundCardError(void* env, DataObjectPtr ret, int code, Args&& ... args) {
+        std::ostringstream str;
+        collectArguments(str, args...);
+        auto string = str.str();
+        CVSetBoolean(ret, false);
+        errorMessage(env, "SYSTEM", code, "sound card error: ", str.str());
+    }
+
+    class MidiConnection {
+        public:
+            using MidiDirectionResults = std::tuple<alsa::StatusCode, alsa::StatusCode>;
+        public:
+            MidiConnection(const std::string& id);
+            ~MidiConnection();
+            const std::string& getId() const noexcept { return _id; }
+            bool isOpen() const noexcept { return _open; }
+            alsa::StatusCode open(alsa::rawmidi::OpenMode mode = alsa::rawmidi::OpenMode::Sync);
+            MidiDirectionResults close();
+            ssize_t write(const void* buffer, size_t count) noexcept;
+            ssize_t read(void* buffer, size_t count) noexcept;
+        private:
+            std::string _id;
+            bool _open;
+            alsa::rawmidi::Device* _output;
+            alsa::rawmidi::Device* _input;
+    };
+    MidiConnection::MidiConnection(const std::string& id) : _id(id), _open(false), _output(nullptr), _input(nullptr) { }
+    MidiConnection::~MidiConnection() {
+        if (_open) {
+            close();
+            _output = nullptr;
+        }
+    }
+
+    alsa::StatusCode MidiConnection::open(alsa::rawmidi::OpenMode mode) {
+        if (_open) {
+            return 0;
+        }
+        _open = true;
+        return alsa::rawmidi::open(&_input, &_output, _id, mode);
+    }
+
+    std::tuple<alsa::StatusCode, alsa::StatusCode> MidiConnection::close() {
+        _open = false;
+        auto statusOut = alsa::rawmidi::close(_output);
+        auto statusIn = alsa::rawmidi::close(_input);
+        _output = nullptr;
+        _input = nullptr;
+        return std::make_tuple(statusIn, statusOut);
+    }
+
+    ssize_t MidiConnection::write(const void* buffer, size_t size) noexcept {
+        if (_open) {
+            return alsa::rawmidi::write(_output, buffer, size);
+        } else {
+            return 0;
+        }
+    }
+
+    ssize_t MidiConnection::read(void* buffer, size_t size) noexcept {
+        if (_open) {
+            return alsa::rawmidi::read(_input, buffer, size);
+        } else {
+            return 0;
+        }
+    }
+
+    namespace WrappedNewCallBuilder {
+        template<>
+        MidiConnection* invokeNewFunction(void* env, CLIPSValuePtr ret, const std::string& funcErrorPrefix, const std::string& function) noexcept {
+            try {
+                if (getArgCount(env) != 2) {
+                    errorMessage(env, "NEW", 2, funcErrorPrefix, " need the hardware id of the midi device!");
+                }
+                CLIPSValue hwid;
+                if (!EnvArgTypeCheck(env, function.c_str(), 2, SYMBOL_OR_STRING, &hwid)) {
+                    errorMessage(env, "NEW", 3, funcErrorPrefix, " provided input value must be a lexeme!");
+                }
+                std::string id(DOToString(hwid));
+                return new MidiConnection(id);
+            } catch (const syn::Problem& p) {
+                CVSetBoolean(ret, false);
+                std::stringstream s;
+                s << "an exception was thrown: " << p.what();
+                auto str = s.str();
+                errorMessage(env, "NEW", 2, funcErrorPrefix, str);
+            }
+            return nullptr;
+        }
+    } // end namespace WrappedNewCallBuilder
+
+
+
+    class MidiConnectionWrapper : public CommonExternalAddressWrapper<MidiConnection> {
+        public:
+            using Parent = CommonExternalAddressWrapper<MidiConnection>;
+            enum class Operations {
+                Read,
+                Write,
+                Open,
+                Close,
+                IsOpen,
+                GetID,
+                Count,
+            };
+        public:
+            MidiConnectionWrapper(std::unique_ptr<MidiConnection>&& ptr) : Parent(std::move(ptr)) { }
+            MidiConnectionWrapper(MidiConnection* connection) : Parent(connection) { }
+            MidiConnectionWrapper(const std::string& id) : Parent(id) { }
+            virtual ~MidiConnectionWrapper() { }
+            virtual bool handleCallOperation(void* env, DataObjectPtr value, DataObjectPtr ret, const std::string& operation) override;
+            bool performRead(void* env, DataObjectPtr ret);
+            bool performWrite(void* env, DataObjectPtr ret);
+            bool openDevice(void* env, DataObjectPtr ret);
+            bool closeDevice(void* env, DataObjectPtr ret);
+            bool isOpen(void* env, DataObjectPtr ret);
+            bool getId(void* env, DataObjectPtr ret);
+    };
+    bool MidiConnectionWrapper::getId(void* env, DataObjectPtr ret) {
+        CVSetSymbol(ret, get()->getId().c_str());
+        return true;
+    }
+
+    bool MidiConnectionWrapper::isOpen(void* env, DataObjectPtr ret) {
+        CVSetBoolean(ret, get()->isOpen());
+        return true;
+    }
+    bool MidiConnectionWrapper::closeDevice(void* env, DataObjectPtr ret) {
+        if (!get()->isOpen()) {
+            CVSetBoolean(ret, false);
+        } else {
+            alsa::StatusCode input, output;
+            std::tie(input, output) = get()->close();
+            if (input < 0) {
+                soundCardError(env, ret, 2, "could not close input stream: ", alsa::decodeStatusCode(input));
+                return false;
+            }
+            if (output < 0) {
+                soundCardError(env, ret, 2, "could not close output stream: ", alsa::decodeStatusCode(input));
+                return false;
+            }
+            CVSetBoolean(ret, true);
+        }
+        return true;
+    }
+
+    bool MidiConnectionWrapper::openDevice(void* env, DataObjectPtr ret) {
+        if (get()->isOpen()) {
+            CVSetBoolean(ret, false);
+        } else {
+            auto status = get()->open();
+            if (status < 0) {
+                soundCardError(env, ret, 2, "could not open midi device: ", alsa::decodeStatusCode(status));
+                return false;
+            }
+            CVSetBoolean(ret, true);
+        }
+        return true;
+    }
+
+    bool MidiConnectionWrapper::performWrite(void* env, DataObjectPtr ret) {
+        if (!get()->isOpen()) {
+            soundCardError(env, ret, 2, "midi device not open");
+            return false;
+        } else {
+            // this should always be a multifield
+            CLIPSValue firstArgument;
+            __RETURN_FALSE_ON_FALSE__(Parent::tryExtractArgument1(env, ret, &firstArgument, syn::MayaType::Multifield, "This operation only accepts a multifield"));
+            auto length = GetDOLength(firstArgument);
+            std::unique_ptr<char[]> code = std::make_unique<char[]>(length);
+            auto* ptr = code.get();
+            for(auto index = GetDOBegin(firstArgument); index <= GetDOEnd(firstArgument); ++index, ++ptr) {
+                if (GetMFType(GetValue(firstArgument), index) != INTEGER_TYPE) {
+                    return Parent::callErrorCode4(env, ret, "Expected all arguments to be of type INTEGER!");
+                }
+                *ptr = static_cast<char>(EnvValueToInteger(env, GetMFValue(GetValue(firstArgument), index)));
+            }
+            auto result = get()->write(code.get(), length);
+            if (result < 0) {
+                soundCardError(env, ret, 2, "error occurred during write to midi device: ", alsa::decodeStatusCode(result));
+                return false;
+            }
+            CVSetInteger(ret, result);
+            return true;
+        }
+    }
+
+    bool MidiConnectionWrapper::performRead(void* env, DataObjectPtr ret) {
+        if (!get()->isOpen()) {
+            soundCardError(env, ret, 2, "midi device not open!");
+            return false;
+        } else {
+            CLIPSValue cap;
+            __RETURN_FALSE_ON_FALSE__(Parent::tryExtractArgument1(env, ret, &cap, syn::MayaType::Integer, "This operation only accepts an integer which is a maximum"));
+            auto capacity = CVToInteger(&cap);
+            if (capacity <= 0) {
+                CVSetBoolean(ret, false);
+                errorMessage(env, "SYSTEM", 2, "Read from midi device failure: ", "max size is zero or negative!");
+                return false;
+            }
+            std::unique_ptr<char[]> extraction = std::make_unique<char[]>(capacity);
+            // okay now perform the read
+            get()->read(extraction.get(), capacity);
+            MultifieldBuilder mv(env, capacity);
+            for (auto i = 0, j = 1; i <= capacity; ++i, ++j) {
+                mv.setField(j, static_cast<CLIPSInteger>(extraction[i]));
+            }
+            mv.assign(ret);
+            return true;
+        }
+    }
+
+    bool MidiConnectionWrapper::handleCallOperation(void* env, DataObjectPtr value, DataObjectPtr ret, const std::string& operation) {
+        static std::map<std::string, MidiConnectionWrapper::Operations> ops = {
+            { "read", Operations::Read },
+            { "write", Operations::Write },
+            { "open", Operations::Open },
+            { "close", Operations::Close },
+            { "is-open", Operations::IsOpen },
+            { "openp", Operations::IsOpen },
+            { "get-id", Operations::GetID },
+        };
+
+        auto result = ops.find(operation);
+        if (result == ops.end()) {
+            return Parent::callErrorMessageCode3(env, ret, operation, "<- unknown operation!");
+        } else {
+            switch(result->second) {
+                case Operations::Read:
+                    return performRead(env, ret);
+                case Operations::Write:
+                    return performWrite(env, ret);
+                case Operations::Open:
+                    return openDevice(env, ret);
+                case Operations::Close:
+                    return closeDevice(env, ret);
+                case Operations::IsOpen:
+                    return isOpen(env, ret);
+                case Operations::GetID:
+                    return getId(env, ret);
+                default:
+                    return Parent::callErrorMessageCode3(env, ret, operation, "<- defined but unimplemented operation!");
+            }
+        }
+    }
+    DefWrapperSymbolicName(MidiConnection, "midi-connection");
+    DefExternalAddressWrapperType(MidiConnection, MidiConnectionWrapper);
+	void listSoundCards(UDFContext* context, CLIPSValue* ret);
+	void listMidiPorts(UDFContext* context, CLIPSValue* ret);
+	void installAlsaMIDIExtensions(void* theEnv) {
+		Environment* env = (Environment*)theEnv;
+		EnvAddUDF(env, "list-sound-cards", "v", listSoundCards, "listSoundCards", 0, 0, nullptr, nullptr);
+		EnvAddUDF(env, "list-midi-ports", "v", listMidiPorts, "listMidiPorts", 0, 0, nullptr, nullptr);
+        MidiConnectionWrapper::registerWithEnvironment(env);
 	}
 	void listSoundCards(UDFContext* context, CLIPSValue* ret) {
 		// an adaption of the code found at https://ccrma.stanford.edu/~craig/articles/linuxmidi/alsa-1.0/alsarawportlist.c
@@ -358,39 +543,5 @@ namespace syn {
 		}
 		EnvPrintRouter(theEnv, WDISPLAY, "\n");
 	}
-	void writeToMidiPort(UDFContext* context, CLIPSValue* ret) {
-		// taken from https://ccrma.stanford.edu/~craig/articles/linuxmidi/alsa-1.0/alsarawmidiout.c
-		// TODO: update this function to take in a multifield of bytes instead
-		// of a fixed count!
-		CLIPSValue portname, noteP0;
-        CVSetBoolean(ret, false);
-		if (!UDFFirstArgument(context, LEXEME_TYPES, &portname)) {
-			return;
-		} else if (!UDFNextArgument(context, MULTIFIELD_TYPE, &noteP0)) {
-			return;
-		}
-
-		alsa::StatusCode status;
-        alsa::rawmidi::Device* midiout = nullptr;
-		std::string port(CVToString(&portname));
-        status = alsa::rawmidi::open(nullptr, &midiout, port, alsa::rawmidi::OpenMode::Sync);
-		if (status < 0) {
-			soundCardError(context, ret, 1, "Problem opening midi output: ", alsa::decodeStatusCode(status));
-			return;
-		}
-		char note[3] = { 0 };
-		note[0] = static_cast<char>(CVToInteger(&noteP0));
-		note[1] = static_cast<char>(CVToInteger(&noteP1));
-		note[2] = static_cast<char>(CVToInteger(&noteP2));
-        status = alsa::rawmidi::write(midiout, note, 3);
-		if (status < 0) {
-			soundCardError(context, ret, 2, "Problem writing to MIDI output: ", alsa::decodeStatusCode(status));
-			return;
-		}
-        alsa::rawmidi::close(midiout);
-		midiout = nullptr;
-		CVSetBoolean(ret, true);
-	}
-	//TODO: make the midi device an external address
 
 } // end namespace syn
