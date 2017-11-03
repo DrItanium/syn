@@ -37,6 +37,7 @@
             "sent when a controller value changes. Controller include devices such as pedals and levers")
 (defgeneric midi::program-change
             "Changes the patch number")
+(defgeneric midi::change-patch)
 ; channel mode messages
 (defgeneric midi::channel-mode
             "Same as the control change but implements mode control and special
@@ -157,3 +158,14 @@
   (create$ (make-control-byte (hex->int 0xc)
                               ?channel)
            (seven-bit-value ?program)))
+
+(defmethod midi::change-patch
+  ((?channel INTEGER)
+   (?msb INTEGER)
+   (?lsb INTEGER)
+   (?patch INTEGER))
+  (create$ (bank-select ?channel
+                        ?msb
+                        ?lsb)
+           (program-change ?channel
+                           ?patch)))
