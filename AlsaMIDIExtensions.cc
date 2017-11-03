@@ -43,10 +43,10 @@ namespace alsa {
     }
 }
 namespace syn {
-    class MidiConnection {
+    class OutputMidiConnection {
         public:
-            MidiConnection(const std::string& id);
-            ~MidiConnection();
+            OutputMidiConnection(const std::string& id);
+            ~OutputMidiConnection();
             const std::string& getId() const noexcept { return _id; }
             bool isOpen() const noexcept { return _open; }
             alsa::StatusCode open(alsa::rawmidi::OpenMode mode = alsa::rawmidi::OpenMode::Sync);
@@ -58,15 +58,15 @@ namespace syn {
             bool _open;
             alsa::rawmidi::Device* _output;
     };
-    MidiConnection::MidiConnection(const std::string& id) : _id(id), _open(false), _output(nullptr) { }
-    MidiConnection::~MidiConnection() {
+    OutputMidiConnection::OutputMidiConnection(const std::string& id) : _id(id), _open(false), _output(nullptr) { }
+    OutputMidiConnection::~OutputMidiConnection() {
         if (_open) {
             close();
             _output = nullptr;
         }
     }
 
-    alsa::StatusCode MidiConnection::open(alsa::rawmidi::OpenMode mode) {
+    alsa::StatusCode OutputMidiConnection::open(alsa::rawmidi::OpenMode mode) {
         if (_open) {
             return 0;
         }
@@ -74,39 +74,36 @@ namespace syn {
         return alsa::rawmidi::open(nullptr, &_output, _id, mode);
     }
 
-    alsa::StatusCode MidiConnection::close() {
+    alsa::StatusCode OutputMidiConnection::close() {
         _open = false;
         auto status = alsa::rawmidi::close(_output);
         _output = nullptr;
         return status;
     }
 
-    ssize_t MidiConnection::write(const void* buffer, size_t size) noexcept {
+    ssize_t OutputMidiConnection::write(const void* buffer, size_t size) noexcept {
         return alsa::rawmidi::write(_output, buffer, size);
     }
 
-    ssize_t MidiConnection::read(void* buffer, size_t size) noexcept {
+    ssize_t OutputMidiConnection::read(void* buffer, size_t size) noexcept {
         return alsa::rawmidi::read(_output, buffer, size);
     }
 
 
 
 
-    class MidiConnectionWrapper : public CommonExternalAddressWrapper<MidiConnection> {
+    class OutputMidiConnectionWrapper : public CommonExternalAddressWrapper<OutputMidiConnection> {
         public:
-            using Parent = CommonExternalAddressWrapper<MidiConnection>;
-            static MidiConnection* make(const std::string& hwId) noexcept {
-                return new MidiConnection(hwId);
-            }
+            using Parent = CommonExternalAddressWrapper<OutputMidiConnection>;
         public:
-            MidiConnectionWrapper(std::unique_ptr<MidiConnection>&& ptr) : Parent(std::move(ptr)) { }
-            MidiConnectionWrapper(MidiConnection* connection) : Parent(connection) { }
-            MidiConnectionWrapper(const std::string& id) : Parent(id) { }
-            virtual ~MidiConnectionWrapper() { }
+            OutputMidiConnectionWrapper(std::unique_ptr<OutputMidiConnection>&& ptr) : Parent(std::move(ptr)) { }
+            OutputMidiConnectionWrapper(OutputMidiConnection* connection) : Parent(connection) { }
+            OutputMidiConnectionWrapper(const std::string& id) : Parent(id) { }
+            virtual ~OutputMidiConnectionWrapper() { }
             virtual bool handleCallOperation(void* env, DataObjectPtr value, DataObjectPtr ret, const std::string& operation) override;
     };
 
-    //bool MidiConnectionWrapper::handleCa
+    //bool OutputMidiConnectionWrapper::handleCa
 	void listSoundCards(UDFContext* context, CLIPSValue* ret);
 	void listMidiPorts(UDFContext* context, CLIPSValue* ret);
 	void writeToMidiPort(UDFContext* context, CLIPSValue* ret);
