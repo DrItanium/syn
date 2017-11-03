@@ -32,6 +32,33 @@
 (defgeneric midi::note-on)
 (defgeneric midi::polyphonic-key-press)
 (defgeneric midi::control-change)
+; channel mode messages
+(defgeneric midi::channel-mode
+            "Same as the control change but implements mode control and special
+            message by using reserved controller numbers 120-127. This is the raw
+            interface and not meant to be visible")
+
+(defmethod midi::all-sound-off
+  "All oscillators will turn off, and their volume envelopes are set ot zero as soon as possible"
+  ()
+  (channel-mode 120
+                0))
+(defmethod midi::reset-all-controllers
+  "All controller values are reset to their default values"
+  ((?x INTEGER))
+  (channel-mode 121
+                ?x))
+(defmethod midi::local-control-off
+  "All devices on a given channel will respond only to data recieved over MIDI. Played data, etc. will be ignored"
+  ()
+  (channel-mode 122
+                0))
+(defmethod midi::local-control-on
+  "restore the functionality of the normal controllers"
+  ()
+  (channel-mode 122
+                127))
+; NOTE: there are more under this segment but I'm not sure what they do nor am I comfortable adding them right now
 ; system common messages
 (defgeneric midi::system-exclusive
             "Allows manufacturers to create their own messages (e.g. bulk
