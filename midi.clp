@@ -24,19 +24,26 @@
 ; midi.clp - front end to the exposed midi functionality
 ; Doc strings taken from the specs on midi.org
 (defmodule midi
-           (import cortex
-                   ?ALL)
            (export ?ALL))
 (defgeneric midi::make-control-byte)
 (defgeneric midi::seven-bit-value)
+(defgeneric midi::key->note-number
+            "Converts a lookup table of keys that a human understands to the midi note number")
+(defgeneric midi::note-number->key
+            "Converts a note-number to the corresponding human readable key")
 ; these functions form the midi messages only, you still have to send them off
 (defgeneric midi::note-off)
 (defgeneric midi::note-on)
-(defgeneric midi::polyphonic-key-press)
+(defgeneric midi::polyphonic-key-press
+            "also known as aftertouch")
 (defgeneric midi::control-change
             "sent when a controller value changes. Controller include devices such as pedals and levers")
 (defgeneric midi::program-change
             "Changes the patch number")
+(defgeneric midi::pitch-wheel
+            "changes a notes pitch up or down")
+(defgeneric midi::channel-pressure
+            "Controls how hard a given key is being pressed, keyboards constantly send this information while one is playing")
 (defgeneric midi::change-patch)
 ; channel mode messages
 (defgeneric midi::channel-mode
@@ -81,7 +88,8 @@
 (defmethod midi::make-control-byte
   ((?cmd INTEGER)
    (?channel INTEGER))
-  (encode-bits (left-shift ?cmd 15 4)
+  (encode-bits (left-shift ?cmd
+                           4)
                ?channel
                (hex->int 0xf0)
                0))
@@ -169,3 +177,93 @@
                         ?lsb)
            (program-change ?channel
                            ?patch)))
+
+(defmethod midi::note-off
+  ((?channel INTEGER)
+   (?note-number INTEGER)
+   (?velocity INTEGER))
+  (create$ (make-control-byte (hex->int 0x8)
+                              ?channel)
+           (seven-bit-value ?note-number)
+           (seven-bit-value ?velocity)))
+(defmethod midi::note-on
+  ((?channel INTEGER)
+   (?note-number INTEGER)
+   (?velocity INTEGER))
+  (create$ (make-control-byte (hex->int 0x9)
+                              ?channel)
+           (seven-bit-value ?note-number)
+           (seven-bit-value ?velocity)))
+(defmethod midi::polyphonic-key-pressure
+  ((?channel INTEGER)
+   (?note INTEGER)
+   (?pressure INTEGER))
+  (create$ (make-control-byte (hex->int 0xA)
+                              ?channel)
+           (seven-bit-value ?note)
+           (seven-bit-value ?pressure)))
+
+(defmethod midi::pitch-wheel
+  ((?channel INTEGER)
+   (?position INTEGER))
+  ; this is a little odd, since this is an emulation of a pitch wheel we have to actually carve this value up
+  ; into two seven bit chunks
+
+  (create$ (make-control-byte (hex->int 0xE)
+                              ?channel)
+           (seven-bit-value ?position) ; lower seven bits of the number
+           (seven-bit-value (right-shift ?position 7)))) ; upper seven bits of the number
+
+(defmethod midi::center-pitch-wheel
+  ((?channel INTEGER))
+  (pitch-wheel ?channel
+               (hex->int 0x2000)))
+
+(defmethod midi::channel-pressure
+  ((?channel INTEGER)
+   (?pressure INTEGER))
+  (create$ (make-control-byte (hex->int 0xD)
+                              ?channel)
+           (seven-bit-value ?pressure)))
+
+
+(deffunction midi::construct-octave
+             (?octave-number)
+             (bind ?output
+                   (create$))
+             (progn$ (?key (create$ c c#
+                                    d d# e
+                                    f f#
+                                    g g#
+                                    a a# b))
+                     (bind ?output
+                           ?output
+                           (sym-cat ?key
+                                    ?octave-number)))
+             ?output)
+(defglobal midi
+           ?*key-to-note-table* = (create$ (construct-octave 0)
+                                           (construct-octave 1)
+                                           (construct-octave 2)
+                                           (construct-octave 3)
+                                           (construct-octave 4)
+                                           (construct-octave 5)
+                                           (construct-octave 6)
+                                           (construct-octave 7)
+                                           (construct-octave 8)
+                                           (construct-octave 9)
+                                           c10 c#10
+                                           d10 d#10 e10
+                                           f10 f#10 g10))
+(defmethod midi::key->note-number
+  ((?key LEXEME))
+  (bind ?result
+        (member$ ?key
+                 ?*key-to-note-table*))
+  (if ?result then
+    (- ?result 1)))
+(defmethod midi::note-number->key
+  ((?note INTEGER))
+  (nth$ (+ (seven-bit-value ?note)
+           1)
+        ?*key-to-note-table*))
