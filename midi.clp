@@ -242,6 +242,152 @@
                                     ?octave-number)))
              ?output)
 (defglobal midi
+           ?*piano-gm-patches* = (create$ "acoustic grand"
+                                          "bright acoustic"
+                                          "electric grand"
+                                          honky-tonk
+                                          "electric piano 1"
+                                          "electric piano 2"
+                                          harpsichord
+                                          clavinet)
+           ?*chromatic-percussion-gm-patches* = (create$ celesta
+                                                         glockenspiel
+                                                         "music box"
+                                                         vibraphone
+                                                         marimba
+                                                         xylophone
+                                                         "tubular bells"
+                                                         dulcimer)
+           ?*organ-gm-patches* = (create$ "drawbar organ"
+                                          "percussive organ"
+                                          "rock organ"
+                                          "church organ"
+                                          "reed organ"
+                                          accordian
+                                          harmonica
+                                          "tango accordian")
+           ?*guitar-gm-patches* = (create$ "nylon string guitar"
+                                           "steel string guitar"
+                                           "electric jazz guitar"
+                                           "electric clean guitar"
+                                           "electric muted guitar"
+                                           "overdriven guitar"
+                                           "distortion guitar"
+                                           "guitar harmonics")
+           ?*bass-gm-patches* = (create$ "acoustic bass"
+                                         "electric bass(finger)"
+                                         "electric bass(pick)"
+                                         "fretless bass"
+                                         "slap bass 1"
+                                         "slap bass 2"
+                                         "synth bass 1"
+                                         "synth bass 2")
+           ?*solo-strings-gm-patches* = (create$ violin
+                                                 viola
+                                                 cello
+                                                 contrabass
+                                                 "tremolo strings"
+                                                 "pizzicato strings"
+                                                 "orchestral strings"
+                                                 timpani)
+           ?*ensemble-gm-patches* = (create$ "string ensemble 1"
+                                             "string ensemble 2"
+                                             "synthstrings 1"
+                                             "synthstrings 2"
+                                             "choir aahs"
+                                             "voice oohs"
+                                             "synth voice"
+                                             "orchestra hit")
+           ?*brass-gm-patches* = (create$ trumpet
+                                          trombone
+                                          tuba
+                                          "muted trumpet"
+                                          "french horn"
+                                          "brass section"
+                                          "synthbrass 1"
+                                          "synthbrass 2")
+           ?*reed-gm-patches* = (create$ "soprano sax"
+                                         "alto sax"
+                                         "tenor sax"
+                                         "baritone sax"
+                                         oboe
+                                         "english horn"
+                                         bassoon
+                                         clairinet)
+           ?*pipe-gm-patches* = (create$ piccolo
+                                         flute
+                                         recorder
+                                         "pan flute"
+                                         "blown bottle"
+                                         shakuhachi
+                                         whistle
+                                         ocarina)
+           ?*synth-lead-gm-patches* = (create$ square
+                                               sawtooth
+                                               calliope
+                                               chiff
+                                               charang
+                                               voice
+                                               fifths
+                                               bass+lead)
+           ?*synth-pad-gm-patches* = (create$ "new age"
+                                              warm
+                                              polysynth
+                                              choir
+                                              bowed
+                                              metallic
+                                              halo
+                                              sweep)
+           ?*synth-effects-gm-patches* = (create$ rain
+                                                  soundtrack
+                                                  crystal
+                                                  atmosphere
+                                                  brightness
+                                                  goblins
+                                                  echoes
+                                                  sci-fi)
+           ?*ethnic-gm-patches* = (create$ sitar
+                                           banjo
+                                           shamisen
+                                           koto
+                                           kalimba
+                                           bagpipe
+                                           fiddle
+                                           shanai)
+           ?*percussive-gm-patches* = (create$ "tinkle bell"
+                                               agogo
+                                               "steel drums"
+                                               woodblock
+                                               "taiko drum"
+                                               "melodic tom"
+                                               "synth drum"
+                                               "reverse cymbal")
+           ?*sound-effects-gm-patches* = (create$ "guitar fret noise"
+                                                  "breath noise"
+                                                  seashore
+                                                  "bird tweet"
+                                                  "telephone ring"
+                                                  helicopter
+                                                  applause
+                                                  gunshot)
+           ; DON'T REORDER THIS, IT IS TO THE GM SPEC, thanks midi.teragonaudio.com/tutr/gm.htm
+           ?*gm-patches* = (create$ ?*piano-gm-patches*
+                                    ?*chromatic-percussion-gm-patches*
+                                    ?*organ-gm-patches*
+                                    ?*guitar-gm-patches*
+                                    ?*bass-gm-patches*
+                                    ?*solo-strings-gm-patches*
+                                    ?*ensemble-gm-patches*
+                                    ?*brass-gm-patches*
+                                    ?*reed-gm-patches*
+                                    ?*pipe-gm-patches*
+                                    ?*synth-lead-gm-patches*
+                                    ?*synth-pad-gm-patches*
+                                    ?*synth-effects-gm-patches*
+                                    ?*ethnic-gm-patches*
+                                    ?*percussive-gm-patches*
+                                    ?*sound-effects-gm-patches* ; last patch group
+                                    )
            ?*key-to-note-table* = (create$ (construct-octave 0)
                                            (construct-octave 1)
                                            (construct-octave 2)
@@ -258,7 +404,7 @@
 (defmethod midi::key->note-number
   ((?key LEXEME))
   (bind ?result
-        (member$ ?key
+        (member$ (lowcase ?key)
                  ?*key-to-note-table*))
   (if ?result then
     (- ?result 1)))
@@ -267,3 +413,17 @@
   (nth$ (+ (seven-bit-value ?note)
            1)
         ?*key-to-note-table*))
+
+(defmethod midi::gm-patch-name->program-number
+  ((?name LEXEME))
+  (bind ?result
+        (member$ (lowcase ?name)
+                 ?*gm-patches*))
+  (if ?result then
+    (- ?result 1)))
+(defmethod midi::program-number->gm-patch-name
+  ((?program-number INTEGER))
+  (nth$ (+ (seven-bit-value ?program-number)
+           1)
+        ?*gm-patches*))
+
