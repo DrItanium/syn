@@ -24,31 +24,7 @@
 ;------------------------------------------------------------------------------
 ; Device.clp - Common class concept for external address wrappers
 ;------------------------------------------------------------------------------
-(defgeneric MAIN::device-initialize)
-(defgeneric MAIN::device-shutdown)
-
-(defmethod MAIN::device-initialize
-  ((?x EXTERNAL-ADDRESS))
-  (call ?x
-        initialize))
-
-(defmethod MAIN::device-shutdown
-  ((?x EXTERNAL-ADDRESS))
-  (call ?x
-        shutdown))
-
 (defclass MAIN::external-device
   (is-a external-address-wrapper)
   (role abstract)
-  (pattern-match non-reactive)
-  (message-handler init after)
-  (message-handler delete before))
-
-(defmessage-handler MAIN::external-device delete before
-                    ()
-                    (device-shutdown (dynamic-get backing-store)))
-
-(defmessage-handler MAIN::external-device init around 
-                    ()
-                    (call-next-handler)
-                    (device-initialize (dynamic-get backing-store)))
+  (pattern-match non-reactive))
