@@ -25,12 +25,15 @@
 ; Doc strings taken from the specs on midi.org
 (defmodule midi
            (export ?ALL))
+(defgeneric midi::make-message)
 (defgeneric midi::make-control-byte)
 (defgeneric midi::seven-bit-value)
 (defgeneric midi::key->note-number
             "Converts a lookup table of keys that a human understands to the midi note number")
 (defgeneric midi::note-number->key
             "Converts a note-number to the corresponding human readable key")
+(defgeneric midi::gm-patch-name->program-number)
+(defgeneric midi::program-number->gm-patch-name)
 ; these functions form the midi messages only, you still have to send them off
 (defgeneric midi::note-off)
 (defgeneric midi::note-on)
@@ -55,7 +58,7 @@
 ; system common messages
 (defgeneric midi::system-exclusive
             "Allows manufacturers to create their own messages (e.g. bulk
-             dumps, patch parameters, and other non-spec data) and provides
+                                                                     dumps, patch parameters, and other non-spec data) and provides
             a mechanism for creating additional MIDI specification messages")
 (defgeneric midi::time-code-quarter-frame)
 (defgeneric midi::song-position-pointer
@@ -119,15 +122,14 @@
   ()
   (channel-mode 122
                 127))
-
 (defmethod midi::control-change
   ((?channel INTEGER)
    (?c INTEGER)
    (?v INTEGER))
-  (create$ (make-control-byte (hex->int 0xb) ; 0b1011
-                              ?channel)
-           (seven-bit-value ?c)
-           (seven-bit-value ?v)))
+  (make-message (hex->int 0xb)
+                ?channel
+                (map seven-bit-value 
+                     ?c ?v)))
 
 (defmethod midi::bank-select-msb
   ((?channel INTEGER)
@@ -155,7 +157,7 @@
    (?lsb INTEGER
          (<> ?current-argument 0)))
   (create$ (bank-select-msb ?channel
-                        ?msb)
+                            ?msb)
            (bank-select-lsb ?channel
                             ?lsb)))
 
@@ -163,9 +165,10 @@
 (defmethod midi::program-change
   ((?channel INTEGER)
    (?program INTEGER))
-  (create$ (make-control-byte (hex->int 0xc)
-                              ?channel)
-           (seven-bit-value ?program)))
+  (make-message (hex->int 0xc)
+                ?channel
+                (seven-bit-value ?program)))
+
 
 (defmethod midi::change-patch
   ((?channel INTEGER)
@@ -178,41 +181,47 @@
            (program-change ?channel
                            ?patch)))
 
+
 (defmethod midi::note-off
   ((?channel INTEGER)
    (?note-number INTEGER)
    (?velocity INTEGER))
-  (create$ (make-control-byte (hex->int 0x8)
-                              ?channel)
-           (seven-bit-value ?note-number)
-           (seven-bit-value ?velocity)))
+  (make-message (hex->int 0x8)
+                ?channel
+                (map seven-bit-value 
+                     ?note-number
+                     ?velocity)))
 (defmethod midi::note-on
   ((?channel INTEGER)
    (?note-number INTEGER)
    (?velocity INTEGER))
-  (create$ (make-control-byte (hex->int 0x9)
-                              ?channel)
-           (seven-bit-value ?note-number)
-           (seven-bit-value ?velocity)))
+  (make-message (hex->int 0x9)
+                ?channel
+                (map seven-bit-value
+                     ?note-number
+                     ?velocity)))
 (defmethod midi::polyphonic-key-pressure
   ((?channel INTEGER)
    (?note INTEGER)
    (?pressure INTEGER))
-  (create$ (make-control-byte (hex->int 0xA)
-                              ?channel)
-           (seven-bit-value ?note)
-           (seven-bit-value ?pressure)))
+  (make-message (hex->int 0xa)
+   ?channel
+   (map seven-bit-value
+    ?note
+    ?pressure)))
+
 
 (defmethod midi::pitch-wheel
   ((?channel INTEGER)
    (?position INTEGER))
   ; this is a little odd, since this is an emulation of a pitch wheel we have to actually carve this value up
   ; into two seven bit chunks
-
-  (create$ (make-control-byte (hex->int 0xE)
-                              ?channel)
-           (seven-bit-value ?position) ; lower seven bits of the number
-           (seven-bit-value (right-shift ?position 7)))) ; upper seven bits of the number
+  (make-message (hex->int 0xe)
+                ?channel
+                (map seven-bit-value
+                     ?position ; lower seven bits of the number
+                     (right-shift ?position ; upper seven bits of the number
+                                  7))))
 
 (defmethod midi::center-pitch-wheel
   ((?channel INTEGER))
@@ -222,9 +231,9 @@
 (defmethod midi::channel-pressure
   ((?channel INTEGER)
    (?pressure INTEGER))
-  (create$ (make-control-byte (hex->int 0xD)
-                              ?channel)
-           (seven-bit-value ?pressure)))
+  (make-message (hex->int 0xd)
+                ?channel
+                (seven-bit-value ?pressure)))
 
 
 (deffunction midi::construct-octave
@@ -414,6 +423,7 @@
            1)
         ?*key-to-note-table*))
 
+
 (defmethod midi::gm-patch-name->program-number
   ((?name LEXEME))
   (bind ?result
@@ -427,3 +437,58 @@
            1)
         ?*gm-patches*))
 
+(defmethod midi::note-on
+  ((?channel INTEGER)
+   (?note LEXEME)
+   (?velocity INTEGER))
+  (note-on ?channel
+           (key->note-number ?note)
+           ?velocity))
+
+(defmethod midi::note-off
+  ((?channel INTEGER)
+   (?note LEXEME)
+   (?velocity INTEGER))
+  (note-off ?channel
+            (key->note-number ?note)
+            ?velocity))
+
+(defmethod midi::polyphonic-key-pressure
+  ((?channel INTEGER)
+   (?note LEXEME)
+   (?pressure INTEGER))
+  (polyphonic-key-pressure ?channel
+                           (key->note-number ?note)
+                           ?pressure))
+
+(defmethod midi::program-change
+  ((?channel INTEGER)
+   (?program LEXEME))
+  (program-change ?channel
+                  (gm-patch-name->program-number ?program)))
+
+
+(defmethod midi::change-patch
+  ((?channel INTEGER)
+   (?msb INTEGER)
+   (?lsb INTEGER)
+   (?patch LEXEME))
+  (change-patch ?channel
+                ?msb
+                ?lsb
+                (gm-patch-name->program-number ?patch)))
+(defmethod midi::make-message
+  ((?operation INTEGER)
+   (?channel INTEGER)
+   (?bytes MULTIFIELD))
+  (create$ (make-control-byte ?operation
+                              ?channel)
+           ?bytes))
+
+(defmethod midi::make-message
+  ((?operation INTEGER)
+   (?channel INTEGER)
+   $?bytes)
+  (make-message ?operation
+                ?channel
+                ?bytes))
