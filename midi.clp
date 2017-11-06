@@ -492,3 +492,13 @@
   (make-message ?operation
                 ?channel
                 ?bytes))
+(defgeneric midi::list-gm-sounds)
+
+(defmethod midi::list-gm-sounds
+ ()
+ (printout wdisplay
+           "List of general MIDI sounds" crlf)
+           
+ (progn$ (?patch ?*gm-patches*)
+  (printout wdisplay
+            tab "- " ?patch crlf)))
