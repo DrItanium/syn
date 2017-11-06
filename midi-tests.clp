@@ -23,7 +23,11 @@
                            (note-off 0
                                      (key->note-number ?key)
                                      ?velocity))))
-
+(defglobal MAIN
+           ?*default-velocity* = 100
+           ?*default-sleep-duration* = 2)
+(defgeneric print-all-notes-for-sound
+            "print all keys for a given patch sound")
 (defmethod print-all-notes-for-sound
            ((?dev EXTERNAL-ADDRESS)
             (?tone LEXEME)
@@ -56,11 +60,11 @@
   (print-all-notes-for-sound ?dev
                              ?tone
                              ?velocity 
-                             2))
+                             ?*default-sleep-duration*))
 
 (defmethod print-all-notes-for-sound 
   ((?dev EXTERNAL-ADDRESS)
    (?tone LEXEME))
   (print-all-notes-for-sound ?dev
                              ?tone
-                             100))
+                             ?*default-velocity*))
