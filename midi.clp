@@ -88,11 +88,11 @@
 (defmethod midi::make-control-byte
   ((?cmd INTEGER)
    (?channel INTEGER))
-  (encode-bits (left-shift ?cmd
-                           4)
-               ?channel
-               (hex->int 0xf0)
-               0))
+  (binary-or (left-shift ?cmd
+                         4)
+             (binary-and ?channel
+                         (hex->int 0x0f))))
+
 (defmethod midi::seven-bit-value
   ((?value INTEGER))
   (decode-bits ?value

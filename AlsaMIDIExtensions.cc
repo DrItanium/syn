@@ -257,7 +257,7 @@ namespace syn {
             std::unique_ptr<char[]> code = std::make_unique<char[]>(length);
             auto* ptr = code.get();
             for(auto index = GetDOBegin(firstArgument); index <= GetDOEnd(firstArgument); ++index, ++ptr) {
-                if (GetMFType(GetValue(firstArgument), index) != INTEGER_TYPE) {
+                if (GetMFType(GetValue(firstArgument), index) != INTEGER) {
                     return Parent::callErrorCode4(env, ret, "Expected all arguments to be of type INTEGER!");
                 }
                 *ptr = static_cast<char>(EnvValueToInteger(env, GetMFValue(GetValue(firstArgument), index)));
