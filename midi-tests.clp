@@ -56,7 +56,7 @@
   (print-all-notes-for-sound ?dev
                              ?tone
                              ?velocity 
-                             5))
+                             2))
 
 (defmethod print-all-notes-for-sound 
   ((?dev EXTERNAL-ADDRESS)
