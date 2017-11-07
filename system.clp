@@ -28,10 +28,8 @@
            (export ?ALL))
 (defgeneric os::sleep
             "Call the shell's sleep command and wait for the specified duration")
-
 (defgeneric os::uname
             "Calls the uname function and passes the result back")
-
 
 (defmethod os::sleep
   ((?duration NUMBER))
