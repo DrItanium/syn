@@ -286,18 +286,22 @@ namespace syn {
 #define DefMemoryBlock(name, type, alias) \
 	DefWrapperSymbolicName(Block< type > , name ); \
 	using alias = ManagedMemoryBlock< type >
+    DefMemoryBlock("memory-block:uint8", uint8, ManagedMemoryBlock_uint8);
 	DefMemoryBlock("memory-block:uint16", uint16, ManagedMemoryBlock_uint16);
 	DefMemoryBlock("memory-block:uint32", uint32, ManagedMemoryBlock_uint32);
 	DefMemoryBlock("memory-block:int32", int32, ManagedMemoryBlock_int32);
 	DefMemoryBlock("memory-block:int16", int16, ManagedMemoryBlock_int16);
+    DefMemoryBlock("memory-block:int8", int8, ManagedMemoryBlock_int8);
 #undef DefMemoryBlock
 #endif // end ENABLE_EXTENDED_MEMORY_BLOCKS
 
 	void installMemoryBlockTypes(void* theEnv) {
 		StandardManagedMemoryBlock::registerWithEnvironment(theEnv);
 #if ENABLE_EXTENDED_MEMORY_BLOCKS
+        ManagedMemoryBlock_uint8::registerWithEnvironment(theEnv);
 		ManagedMemoryBlock_uint16::registerWithEnvironment(theEnv);
 		ManagedMemoryBlock_uint32::registerWithEnvironment(theEnv);
+        ManagedMemoryBlock_int8::registerWithEnvironment(theEnv);
 		ManagedMemoryBlock_int16::registerWithEnvironment(theEnv);
 		ManagedMemoryBlock_int32::registerWithEnvironment(theEnv);
 #endif // end ENABLE_EXTENDED_MEMORY_BLOCKS
