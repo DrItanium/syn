@@ -155,7 +155,7 @@
    (?src-address INTEGER)
    (?dest EXTERNAL-ADDRESS
           memory-block)
-   (?dest-address))
+   (?dest-address INTEGER))
   (move ?src
         ?dest
         ?dest-address))
