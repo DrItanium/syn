@@ -711,3 +711,42 @@
   (send ?a
         put-value
         0))
+
+(defmethod MAIN::load-value
+  ((?memory EXTERNAL-ADDRESS
+            memory-block)
+   (?address register))
+  (load-value ?memory
+              (send ?address
+                    get-value)))
+
+(defmethod MAIN::store-value
+  ((?memory EXTERNAL-ADDRESS
+            memory-block)
+   (?address register)
+   (?value register))
+  (store-value ?memory
+    (send ?address
+          get-value)
+    (send ?value
+          get-value)))
+
+(defmethod MAIN::store-value
+  ((?memory EXTERNAL-ADDRESS
+            memory-block)
+   (?address register)
+   (?value INTEGER))
+  (store-value ?memory
+    (send ?address
+          get-value)
+    ?value))
+
+(defmethod MAIN::store-value
+  ((?memory EXTERNAL-ADDRESS
+            memory-block)
+   (?address INTEGER)
+   (?value register))
+  (store-value ?memory
+    ?address
+    (send ?value
+          get-value)))
