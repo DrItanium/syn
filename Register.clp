@@ -22,6 +22,10 @@
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ; Register.clp - wrapper class for the register concept
+(defmessage-handler PRIMITIVE get-value primary
+                    ()
+                    ?self)
+
 (defmethod decode-bits
   ((?value INTEGER)
    (?mask INTEGER))
@@ -259,3 +263,403 @@
    (?dest-address INTEGER))
   (swap ?src
         ?dest))
+
+(defmethod +
+  ((?a register)
+   (?b register))
+  (+ (send ?a
+           get-value)
+     (send ?b
+           get-value)))
+(defmethod +
+  ((?a register)
+   (?b NUMBER))
+  (+ (send ?a
+           get-value)
+     ?b))
+(defmethod +
+  ((?a NUMBER)
+   (?b register))
+  (+ ?a
+     (send ?b
+           get-value)))
+
+(defmethod -
+  ((?a register)
+   (?b register))
+  (- (send ?a
+           get-value)
+     (send ?b
+           get-value)))
+(defmethod -
+  ((?a register)
+   (?b NUMBER))
+  (- (send ?a
+           get-value)
+     ?b))
+(defmethod -
+  ((?a NUMBER)
+   (?b register))
+  (- ?a
+     (send ?b
+           get-value)))
+
+(defmethod *
+  ((?a register)
+   (?b register))
+  (* (send ?a
+           get-value)
+     (send ?b
+           get-value)))
+
+(defmethod *
+  ((?a register)
+   (?b NUMBER))
+  (* (send ?a
+           get-value)
+     ?b))
+
+(defmethod *
+  ((?a NUMBER)
+   (?b register))
+  (* ?a
+     (send ?b
+           get-value)))
+
+
+(defmethod /
+  ((?a register)
+   (?b register))
+  (/ (send ?a
+           get-value)
+     (send ?b
+           get-value)))
+
+(defmethod /
+  ((?a register)
+   (?b NUMBER))
+  (/ (send ?a
+           get-value)
+     ?b))
+
+(defmethod /
+  ((?a NUMBER)
+   (?b register))
+  (/ ?a
+     (send ?b
+           get-value)))
+
+(defmethod div
+  ((?a register)
+   (?b register))
+  (div (send ?a
+             get-value)
+       (send ?b
+             get-value)))
+
+(defmethod div
+  ((?a register)
+   (?b NUMBER))
+  (div (send ?a
+             get-value)
+       ?b))
+
+(defmethod div
+  ((?a NUMBER)
+   (?b register))
+  (div ?a
+       (send ?b
+             get-value)))
+
+(defmethod mod
+  ((?a register)
+   (?b register))
+  (mod (send ?a
+             get-value)
+       (send ?b
+             get-value)))
+
+(defmethod mod
+  ((?a register)
+   (?b NUMBER))
+  (mod (send ?a
+             get-value)
+       ?b))
+
+(defmethod mod
+  ((?a NUMBER)
+   (?b register))
+  (mod ?a
+       (send ?b
+             get-value)))
+
+(defmethod left-shift
+  ((?a register)
+   (?b INTEGER))
+  (left-shift (send ?a
+                    get-value)
+              ?b))
+(defmethod left-shift
+  ((?a INTEGER)
+   (?b register))
+  (left-shift ?a
+              (send ?b
+                    get-value)))
+(defmethod left-shift
+  ((?a register)
+   (?b register))
+  (left-shift (send ?a
+                    get-value)
+              (send ?b
+                    get-value)))
+
+(defmethod right-shift
+  ((?a register)
+   (?b INTEGER))
+  (right-shift (send ?a
+                     get-value)
+               ?b))
+(defmethod right-shift
+  ((?a INTEGER)
+   (?b register))
+  (right-shift ?a
+               (send ?b
+                     get-value)))
+(defmethod right-shift
+  ((?a register)
+   (?b register))
+  (right-shift (send ?a
+                     get-value)
+               (send ?b
+                     get-value)))
+
+(defmethod circular-shift-left
+  ((?a register)
+   (?b INTEGER))
+  (circular-shift-left (send ?a
+                             get-value)
+                       ?b))
+(defmethod circular-shift-left
+  ((?a INTEGER)
+   (?b register))
+  (circular-shift-left ?a
+                       (send ?b
+                             get-value)))
+(defmethod circular-shift-left
+  ((?a register)
+   (?b register))
+  (circular-shift-left (send ?a
+                             get-value)
+                       (send ?b
+                             get-value)))
+
+(defmethod circular-shift-right
+  ((?a register)
+   (?b INTEGER))
+  (circular-shift-right (send ?a
+                              get-value)
+                        ?b))
+(defmethod circular-shift-right
+  ((?a INTEGER)
+   (?b register))
+  (circular-shift-right ?a
+                        (send ?b
+                              get-value)))
+(defmethod circular-shift-right
+  ((?a register)
+   (?b register))
+  (circular-shift-right (send ?a
+                              get-value)
+                        (send ?b
+                              get-value)))
+
+(defmethod binary-nand
+  ((?a register)
+   (?b INTEGER))
+  (binary-nand (send ?a
+                     get-value)
+               ?b))
+(defmethod binary-nand
+  ((?a INTEGER)
+   (?b register))
+  (binary-nand ?a
+               (send ?b
+                     get-value)))
+(defmethod binary-nand
+  ((?a register)
+   (?b register))
+  (binary-nand (send ?a
+                     get-value)
+               (send ?b
+                     get-value)))
+(defmethod binary-and
+  ((?a register)
+   (?b INTEGER))
+  (binary-and (send ?a
+                    get-value)
+              ?b))
+(defmethod binary-and
+  ((?a INTEGER)
+   (?b register))
+  (binary-and ?a
+              (send ?b
+                    get-value)))
+(defmethod binary-and
+  ((?a register)
+   (?b register))
+  (binary-and (send ?a
+                    get-value)
+              (send ?b
+                    get-value)))
+(defmethod binary-xor
+  ((?a register)
+   (?b INTEGER))
+  (binary-xor (send ?a
+                    get-value)
+              ?b))
+(defmethod binary-xor
+  ((?a INTEGER)
+   (?b register))
+  (binary-xor ?a
+              (send ?b
+                    get-value)))
+(defmethod binary-xor
+  ((?a register)
+   (?b register))
+  (binary-xor (send ?a
+                    get-value)
+              (send ?b
+                    get-value)))
+(defmethod binary-nor
+  ((?a register)
+   (?b INTEGER))
+  (binary-nor (send ?a
+                    get-value)
+              ?b))
+(defmethod binary-nor
+  ((?a INTEGER)
+   (?b register))
+  (binary-nor ?a
+              (send ?b
+                    get-value)))
+(defmethod binary-nor
+  ((?a register)
+   (?b register))
+  (binary-nor (send ?a
+                    get-value)
+              (send ?b
+                    get-value)))
+(defmethod binary-or
+  ((?a register)
+   (?b INTEGER))
+  (binary-or (send ?a
+                   get-value)
+             ?b))
+(defmethod binary-or
+  ((?a INTEGER)
+   (?b register))
+  (binary-or ?a
+             (send ?b
+                   get-value)))
+(defmethod binary-or
+  ((?a register)
+   (?b register))
+  (binary-or (send ?a
+                   get-value)
+             (send ?b
+                   get-value)))
+
+(defmethod binary-not
+  ((?a register))
+  (binary-not (send ?a
+                    get-value)))
+
+(defmethod upper-half
+  ((?a register))
+  (upper-half (send ?a
+                    get-value)))
+(defmethod lower-half
+  ((?a register))
+  (lower-half (send ?a
+                    get-value)))
+
+(defmethod ones-complement
+  ((?a register))
+  (ones-complement (send ?a
+                         get-value)))
+(defmethod twos-complement
+  ((?a register))
+  (twos-complement (send ?a
+                         get-value)))
+
+(defmethod multiply-add
+  ((?a register)
+   (?b register
+       INTEGER)
+   (?c register
+       INTEGER))
+  (multiply-add (send ?a
+                      get-value)
+                (send ?b
+                      get-value)
+                (send ?c
+                      get-value)))
+
+
+(defmethod break-apart-number
+  ((?a register))
+  (break-apart-number (send ?a
+                            get-value)))
+
+
+(defmethod decode-bits
+  ((?value register)
+   (?mask register
+          INTEGER)
+   (?shift register
+           INTEGER))
+  (decode-bits (send ?value
+                     get-value)
+               (send ?mask
+                     get-value)
+               (send ?shift
+                     get-value)))
+
+(defmethod decode-bits
+  ((?value register)
+   (?mask register
+          INTEGER))
+  (decode-bits (send ?value
+                     get-value)
+               (send ?mask
+                     get-value)))
+
+
+(defmethod encode-bits
+  ((?value register)
+   (?insert register
+            INTEGER)
+   (?mask register
+          INTEGER)
+   (?shift register
+           INTEGER))
+  (encode-bits (send ?value
+                     get-value)
+               (send ?insert
+                     get-value)
+               (send ?mask
+                     get-value)
+               (send ?shift
+                     get-value)))
+(defmethod encode-bits
+  ((?value register)
+   (?insert register
+            INTEGER)
+   (?mask register
+          INTEGER))
+  (encode-bits (send ?value
+                     get-value)
+               (send ?insert
+                     get-value)
+               (send ?mask
+                     get-value)))
