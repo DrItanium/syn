@@ -23,7 +23,10 @@
 ;
 ; mmu.clp - declares a simple memory management unit
 (defclass MAIN::memory-map-entry
-  (is-a thing)
+  (is-a thing
+        device)
+  (role concrete)
+  (pattern-match reactive)
   (slot base-address
         (type INTEGER)
         (storage local)

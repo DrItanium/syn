@@ -136,7 +136,7 @@
 
 (defmethod MAIN::move
   ((?src register)
-   (?dest memory-block)
+   (?dest device)
    (?address INTEGER))
   (send ?dest
         write
@@ -145,7 +145,7 @@
               get-value)))
 
 (defmethod MAIN::move
-  ((?src memory-block)
+  ((?src device)
    (?address INTEGER)
    (?dest register))
   (send ?dest
@@ -158,7 +158,7 @@
   ((?src register)
    (?src-address INTEGER)
    (?dest EXTERNAL-ADDRESS
-          memory-block)
+          device)
    (?dest-address INTEGER))
   (move ?src
         ?dest
@@ -166,7 +166,7 @@
 
 (defmethod MAIN::move
   ((?src EXTERNAL-ADDRESS
-         memory-block)
+         device)
    (?src-address INTEGER)
    (?dest register)
    (?dest-address INTEGER))
@@ -195,7 +195,7 @@
 (defmethod MAIN::swap
   "Swap data between a memory block and a register"
   ((?src register)
-   (?dest memory-block)
+   (?dest device)
    (?dest-address INTEGER))
   (bind ?value
         (send ?dest
@@ -237,7 +237,7 @@
   ((?src register)
    (?src-address INTEGER) ; ignore this
    (?dest EXTERNAL-ADDRESS
-          memory-block)
+          device)
    (?dest-address INTEGER))
   (swap ?src
         ?dest
@@ -246,7 +246,7 @@
 (defmethod MAIN::swap
   "Swap data between a memory block and a register"
   ((?dest EXTERNAL-ADDRESS
-          memory-block)
+          device)
    (?dest-address INTEGER) ; ignore this
    (?src register)
    (?src-address INTEGER))
@@ -714,7 +714,7 @@
 
 (defmethod MAIN::load-value
   ((?memory EXTERNAL-ADDRESS
-            memory-block)
+            device)
    (?address register))
   (load-value ?memory
               (send ?address
@@ -722,7 +722,7 @@
 
 (defmethod MAIN::store-value
   ((?memory EXTERNAL-ADDRESS
-            memory-block)
+            device)
    (?address register)
    (?value register))
   (store-value ?memory
@@ -733,7 +733,7 @@
 
 (defmethod MAIN::store-value
   ((?memory EXTERNAL-ADDRESS
-            memory-block)
+            device)
    (?address register)
    (?value INTEGER))
   (store-value ?memory
@@ -743,7 +743,7 @@
 
 (defmethod MAIN::store-value
   ((?memory EXTERNAL-ADDRESS
-            memory-block)
+            device)
    (?address INTEGER)
    (?value register))
   (store-value ?memory
@@ -758,7 +758,7 @@
 
 (defmethod MAIN::store-value-and-increment
   ((?memory EXTERNAL-ADDRESS
-            memory-block)
+            device)
    (?address register)
    (?value INTEGER
            register))
@@ -770,7 +770,7 @@
 
 (defmethod MAIN::store-value-and-decrement
   ((?memory EXTERNAL-ADDRESS
-            memory-block)
+            device)
    (?address register)
    (?value INTEGER
            register))
@@ -782,7 +782,7 @@
 
 (defmethod MAIN::load-value-and-increment
   ((?memory EXTERNAL-ADDRESS
-            memory-block)
+            device)
    (?address register)
    (?value INTEGER
            register))
@@ -796,7 +796,7 @@
 
 (defmethod MAIN::load-value-and-decrement
   ((?memory EXTERNAL-ADDRESS
-            memory-block)
+            device)
    (?address register)
    (?value INTEGER
            register))
