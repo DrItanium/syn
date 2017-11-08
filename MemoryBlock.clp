@@ -263,32 +263,34 @@
 (defgeneric MAIN::store-value)
 
 (defmethod MAIN::load-value
- ((?memory EXTERNAL-ADDRESS)
-  (?address INTEGER))
- (call ?memory
-       read
-       ?address))
+  ((?memory EXTERNAL-ADDRESS)
+   (?address INTEGER))
+  (call ?memory
+        read
+        ?address))
 (defmethod MAIN::load-value
- ((?memory memory-block)
-  (?address INTEGER))
- (send ?memory
-       read
-       ?address))
+  ((?memory memory-block)
+   (?address INTEGER))
+  (send ?memory
+        read
+        ?address))
 
 (defmethod MAIN::store-value
- ((?memory EXTERNAL-ADDRESS)
-  (?address INTEGER)
-  (?value INTEGER))
- (call ?memory
-       write
-       ?address
-       ?value))
+  ((?memory EXTERNAL-ADDRESS)
+   (?address INTEGER)
+   (?value INTEGER))
+  (call ?memory
+        write
+        ?address
+        ?value))
 
 (defmethod MAIN::store-value
- ((?memory memory-block)
-  (?address INTEGER)
-  (?value INTEGER))
- (send ?memory
-       write
-       ?address
-       ?value))
+  ((?memory memory-block)
+   (?address INTEGER)
+   (?value INTEGER))
+  (send ?memory
+        write
+        ?address
+        ?value))
+
+

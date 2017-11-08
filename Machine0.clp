@@ -34,6 +34,7 @@
 (batch* Device.clp)
 (batch* MemoryBlock.clp)
 (batch* Register.clp)
+(batch* mmu.clp)
 (batch* order.clp)
 (defglobal MAIN
            ?*address24bit* = (hex->int 0x00FFFFFF))
@@ -58,52 +59,6 @@
         (storage shared)
         (default 16)))
 
-(defclass MAIN::memory-map-entry
-  (is-a thing)
-  (slot base-address
-        (type INTEGER)
-        (storage local)
-        (visibility public)
-        (default ?NONE))
-  (slot last-address
-        (type INTEGER)
-        (storage local)
-        (visibility public))
-  (message-handler put-base-address after)
-  (message-handler init after)
-  (message-handler read primary)
-  (message-handler write primary))
-(defmessage-handler MAIN::memory-map-entry put-base-address after
-                    (?addr)
-                    (bind ?self:last-address
-                          (send ?self
-                                compute-last-address
-                                ?addr)))
-(defmessage-handler MAIN::memory-map-entry compute-last-address primary
-                    (?addr)
-                    (+ ?addr
-                       (send ?self:parent
-                             get-last-address)))
-(defmessage-handler MAIN::memory-map-entry init after
-                    ()
-                    (bind ?self:last-address
-                          (send ?self
-                                compute-last-address
-                                ?self:base-address)))
-
-(defmessage-handler MAIN::memory-map-entry read primary
-                    (?addr)
-                    (send ?self:parent
-                          read
-                          (- ?addr
-                             ?self:base-address)))
-(defmessage-handler MAIN::memory-map-entry write primary
-                    (?address ?value)
-                    (send ?self:parent
-                          write
-                          (- ?address
-                             ?self:base-address)
-                          ?value))
 
 (defclass MAIN::keyboard-controller
   "An abstraction layer over the keyboard, reading and writing to its MMIO does a getc and putc respectively"

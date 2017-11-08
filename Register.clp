@@ -750,3 +750,60 @@
     ?address
     (send ?value
           get-value)))
+
+(defgeneric MAIN::store-value-and-increment)
+(defgeneric MAIN::store-value-and-decrement)
+(defgeneric MAIN::load-value-and-increment)
+(defgeneric MAIN::load-value-and-decrement)
+
+(defmethod MAIN::store-value-and-increment
+  ((?memory EXTERNAL-ADDRESS
+            memory-block)
+   (?address register)
+   (?value INTEGER
+           register))
+  (store-value ?memory
+    ?address
+    ?value)
+  (send ?address
+        increment))
+
+(defmethod MAIN::store-value-and-decrement
+  ((?memory EXTERNAL-ADDRESS
+            memory-block)
+   (?address register)
+   (?value INTEGER
+           register))
+  (store-value ?memory
+    ?address
+    ?value)
+  (send ?address
+        decrement))
+
+(defmethod MAIN::load-value-and-increment
+  ((?memory EXTERNAL-ADDRESS
+            memory-block)
+   (?address register)
+   (?value INTEGER
+           register))
+  (bind ?x
+        (load-value ?memory
+                    ?address
+                    ?value))
+  (send ?address
+        increment)
+  ?x)
+
+(defmethod MAIN::load-value-and-decrement
+  ((?memory EXTERNAL-ADDRESS
+            memory-block)
+   (?address register)
+   (?value INTEGER
+           register))
+  (bind ?x
+        (load-value ?memory
+                    ?address
+                    ?value))
+  (send ?address
+        decrement)
+  ?x)
