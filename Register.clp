@@ -663,3 +663,51 @@
                      get-value)
                (send ?mask
                      get-value)))
+
+(defmethod min
+  ((?a register)
+   (?b register))
+  (min (send ?a
+             get-value)
+       (send ?b
+             get-value)))
+(defmethod min
+  ((?a INTEGER)
+   (?b register))
+  (min ?a
+       (send ?b
+             get-value)))
+
+(defmethod min
+  ((?a register)
+   (?b INTEGER))
+  (min (send ?a
+             get-value)
+       ?b))
+
+(defmethod max
+  ((?a register)
+   (?b register))
+  (max (send ?a
+             get-value)
+       (send ?b
+             get-value)))
+(defmethod max
+  ((?a INTEGER)
+   (?b register))
+  (max ?a
+       (send ?b
+             get-value)))
+
+(defmethod max
+  ((?a register)
+   (?b INTEGER))
+  (max (send ?a
+             get-value)
+       ?b))
+
+(defmethod MAIN::zero
+  ((?a register))
+  (send ?a
+        put-value
+        0))
