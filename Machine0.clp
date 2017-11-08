@@ -51,8 +51,8 @@
         (create-accessor read)
         (default ?*address24bit*)))
 
-(defclass MAIN::register-file
-  (is-a memory-block)
+(defclass MAIN::machine0-register-file
+  (is-a register-file)
   (slot capacity
         (source composite)
         (storage shared)
@@ -336,7 +336,7 @@
                         register-file
                         ?name)
          (request-future-delete "register file"
-                                (make-instance ?name of register-file))
+                                (make-instance ?name of machine0-register-file))
          (done-with-bring-up t
                              tab "register count: "
                              (send (symbol-to-instance-name ?name)
