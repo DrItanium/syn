@@ -33,7 +33,7 @@
         (default memory-block))
   (slot capacity
         (type INTEGER)
-        (range 0 
+        (range 0
                ?VARIABLE)
         (storage local)
         (visibility public)
@@ -41,7 +41,6 @@
   (message-handler init after)
   (message-handler read primary)
   (message-handler write primary)
-  (message-handler clear primary)
   (message-handler populate primary)
   (message-handler move primary)
   (message-handler swap primary)
@@ -67,11 +66,6 @@
                           write
                           ?addr
                           ?value))
-(defmessage-handler MAIN::memory-block clear primary
-                    ()
-                    (send ?self
-                          call
-                          clear))
 (defmessage-handler MAIN::memory-block populate primary
                     (?value)
                     (send ?self
@@ -111,3 +105,156 @@
                     (send ?self
                           call
                           size))
+
+(defgeneric MAIN::move
+            "Move a value from one place to another, meant for multiple memory-blocks")
+(defgeneric MAIN::swap
+            "swap a value from one place to another, meant for multiple memory-blocks")
+(defgeneric MAIN::zero
+            "Zero the contents of the memory block")
+
+(defmethod MAIN::move
+  "transfer data from one memory-block to another"
+  ((?src EXTERNAL-ADDRESS)
+   (?src-address INTEGER)
+   (?dest EXTERNAL-ADDRESS
+          (neq ?src
+               ?current-argument))
+   (?dest-address INTEGER))
+  (call ?dest
+        write
+        ?dest-address
+        (call ?src
+              read
+              ?src-address)))
+(defmethod MAIN::move
+  "call move when the two memory-blocks are the same"
+  ((?src EXTERNAL-ADDRESS)
+   (?src-address INTEGER)
+   (?dest EXTERNAL-ADDRESS
+          (eq ?src
+              ?current-argument))
+   (?dest-address INTEGER))
+  (call ?src
+        move
+        ?src-address
+        ?dest-address))
+
+(defmethod MAIN::move
+  "transfer data from one memory-block to another"
+  ((?src memory-block)
+   (?src-address INTEGER)
+   (?dest memory-block
+          (neq ?src
+               ?current-argument))
+   (?dest-address INTEGER))
+  (send ?dest
+        write
+        ?dest-address
+        (send ?src
+              read
+              ?src-address)))
+
+(defmethod MAIN::move
+  "call move when the two memory-blocks are the same"
+  ((?src memory-block)
+   (?src-address INTEGER)
+   (?dest memory-block
+          (eq ?src
+              ?current-argument))
+   (?dest-address INTEGER))
+  (send ?src
+        move
+        ?src-address
+        ?dest-address))
+
+(defmethod MAIN::swap
+  "transfer data from one memory-block to another"
+  ((?src EXTERNAL-ADDRESS)
+   (?src-address INTEGER)
+   (?dest EXTERNAL-ADDRESS
+          (neq ?src
+               ?current-argument))
+   (?dest-address INTEGER))
+  (bind ?dest-value
+        (call ?dest
+              read
+              ?dest-address))
+  (call ?dest
+        write
+        ?dest-address
+        (call ?src
+              read
+              ?src-address))
+  (call ?src
+        write
+        ?src-address
+        ?dest-value))
+
+(defmethod MAIN::swap
+  "call swap when the two memory-blocks are the same"
+  ((?src EXTERNAL-ADDRESS)
+   (?src-address INTEGER)
+   (?dest EXTERNAL-ADDRESS
+          (eq ?src
+              ?current-argument))
+   (?dest-address INTEGER))
+  (call ?src
+        swap
+        ?src-address
+        ?dest-address))
+
+(defmethod MAIN::swap
+  "swap data between two different memory blocks"
+  ((?src memory-block)
+   (?src-address INTEGER)
+   (?dest memory-block
+          (neq ?src
+               ?current-argument))
+   (?dest-address INTEGER))
+  (bind ?dest-value
+        (send ?dest
+              read
+              ?dest-address))
+  (send ?dest
+        write
+        ?dest-address
+        (send ?src
+              read
+              ?src-address))
+  (send ?src
+        write
+        ?src-address
+        ?dest-value))
+
+(defmethod MAIN::swap
+  "call swap when the two memory-blocks are the same"
+  ((?src memory-block)
+   (?src-address INTEGER)
+   (?dest memory-block
+          (eq ?src
+              ?current-argument))
+   (?dest-address INTEGER))
+  (send ?src
+        swap
+        ?src-address
+        ?dest-address))
+(defmethod MAIN::zero
+  ((?mem EXTERNAL-ADDRESS))
+  (call ?mem
+        populate
+        0))
+(defmethod MAIN::zero
+  ((?mem memory-block))
+  (send ?mem
+        populate
+        0))
+(defclass MAIN::register-file
+  "Represents a bunch of fast memory"
+  (is-a memory-block)
+  (message-handler init around))
+(defmessage-handler MAIN::register-file init around
+                    ()
+                    (call-next-handler)
+                    ; now we can zero out the block of memory
+                    (zero (dynamic-get backing-store)))
