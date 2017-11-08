@@ -58,7 +58,7 @@
 (defmessage-handler MAIN::register increment primary
                     ()
                     (send ?self
-                          put-value 
+                          put-value
                           (+ (dynamic-get value)
                              1)))
 
@@ -94,3 +94,168 @@
                                  ?new-value
                                  ?mask
                                  (expand$ (first$ ?shift))))
+(defmethod MAIN::move
+  ((?src register)
+   (?dest register
+          (neq ?src
+               ?current-argument)))
+  (send ?dest
+        put-value
+        (send ?src
+              get-value)))
+
+(defmethod MAIN::move
+  ((?src register)
+   (?dest register
+          (eq ?src
+              ?current-argument))))
+
+(defmethod MAIN::move
+  ((?src register)
+   (?dest EXTERNAL-ADDRESS)
+   (?address INTEGER))
+  (call ?dest
+        write
+        ?address
+        (send ?src
+              get-value)))
+
+(defmethod MAIN::move
+  ((?src EXTERNAL-ADDRESS)
+   (?address INTEGER)
+   (?dest register))
+  (send ?dest
+        put-value
+        (call ?src
+              read
+              ?address)))
+
+(defmethod MAIN::move
+  ((?src register)
+   (?dest memory-block)
+   (?address INTEGER))
+  (send ?dest
+        write
+        ?address
+        (send ?src
+              get-value)))
+
+(defmethod MAIN::move
+  ((?src memory-block)
+   (?address INTEGER)
+   (?dest register))
+  (send ?dest
+        put-value
+        (send ?src
+              read
+              ?address)))
+
+(defmethod MAIN::move
+  ((?src register)
+   (?src-address INTEGER)
+   (?dest EXTERNAL-ADDRESS
+          memory-block)
+   (?dest-address))
+  (move ?src
+        ?dest
+        ?dest-address))
+
+(defmethod MAIN::move
+  ((?src EXTERNAL-ADDRESS
+         memory-block)
+   (?src-address INTEGER)
+   (?dest register)
+   (?dest-address INTEGER))
+  (move ?src
+        ?src-address
+        ?dest))
+
+(defmethod MAIN::swap
+  "Swap data between a memory block and a register"
+  ((?src register)
+   (?dest EXTERNAL-ADDRESS)
+   (?dest-address INTEGER))
+  (bind ?value
+        (call ?dest
+              read
+              ?dest-address))
+  (call ?dest
+        write
+        ?dest-address
+        (send ?src
+              get-value))
+  (send ?src
+        put-value
+        ?value))
+
+(defmethod MAIN::swap
+  "Swap data between a memory block and a register"
+  ((?src register)
+   (?dest memory-block)
+   (?dest-address INTEGER))
+  (bind ?value
+        (send ?dest
+              read
+              ?dest-address))
+  (send ?dest
+        write
+        ?dest-address
+        (send ?src
+              get-value))
+  (send ?src
+        put-value
+        ?value))
+
+(defmethod MAIN::swap
+  ((?src register)
+   (?dest register
+          (neq ?src
+               ?current-argument)))
+  (bind ?k
+        (send ?src
+              get-value))
+  (send ?src
+        put-value
+        (send ?dest
+              get-value))
+  (send ?dest
+        put-value
+        ?k))
+
+(defmethod MAIN::swap
+  ((?src register)
+   (?dest register
+          (eq ?src
+              ?current-argument))))
+
+(defmethod MAIN::swap
+  "Swap data between a memory block and a register"
+  ((?src register)
+   (?src-address INTEGER) ; ignore this
+   (?dest EXTERNAL-ADDRESS
+          memory-block)
+   (?dest-address INTEGER))
+  (swap ?src
+        ?dest
+        ?dest-address))
+
+(defmethod MAIN::swap
+  "Swap data between a memory block and a register"
+  ((?dest EXTERNAL-ADDRESS
+          memory-block)
+   (?dest-address INTEGER) ; ignore this
+   (?src register)
+   (?src-address INTEGER))
+  ; reverse the arguments and call it as we expect it
+  (swap ?src
+        ?src-address
+        ?dest
+        ?dest-address))
+
+(defmethod MAIN::swap
+  ((?src register)
+   (?src-address INTEGER)
+   (?dest register)
+   (?dest-address INTEGER))
+  (swap ?src
+        ?dest))
