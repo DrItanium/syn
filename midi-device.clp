@@ -45,9 +45,9 @@
                     ()
                     (call-next-handler)
                     ; at this point we can call open!
-                    (if (not (call ?self:backing-store
+                    (if (not (call (dynamic-get backing-store)
                                    openp)) then
-                      (call ?self:backing-store
+                      (call (dynamic-get backing-store)
                             open)))
 (defmessage-handler MAIN::midi-device init after
                     ()
@@ -55,17 +55,19 @@
                           ?self:hardware-id))
 (defmessage-handler MAIN::midi-device delete before
                     ()
-                    (call ?self:backing-store
+                    (send ?self
+                          call
                           close))
 
 (defmessage-handler MAIN::midi-device read primary
                     (?capacity)
-                    (call ?self:backing-store
+                    (send ?self
+                          call
                           read
                           ?capacity))
 (defmessage-handler MAIN::midi-device write primary
                     ($?elements)
-                    (call ?self:backing-store
+                    (send ?self
+                          call
                           write
                           ?elements))
-
