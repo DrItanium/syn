@@ -644,3 +644,76 @@
                put-value
                (binary-and [tmp]
                            [ac])))
+
+(defrule MAIN::invoke-operation:and,direct,zero-page
+         (stage (current print))
+         ?f <- (operation (type ?p)
+                          (args direct
+                                zero-page
+                                ?
+                                ?address))
+         (object (is-a primary-class-descriptor)
+                 (name ?p)
+                 (title and))
+         =>
+         (retract ?f)
+         (send [tmp]
+               put-value
+               (send [space]
+                     read
+                     ?address))
+         (send [ac]
+               put-value
+               (binary-and [tmp]
+                           [ac])))
+
+(defrule MAIN::invoke-operation:and,indirect,zero-page
+         (stage (current print))
+         ?f <- (operation (type ?p)
+                          (args indirect
+                                zero-page
+                                ?
+                                ?address))
+         (object (is-a primary-class-descriptor)
+                 (name ?p)
+                 (title and))
+         =>
+         (retract ?f)
+         (send [tmp]
+               put-value
+               (load-value [space]
+                           ?address))
+         (send [tmp]
+               put-value
+               (load-value [space]
+                           [tmp]))
+         (send [ac]
+               put-value
+               (binary-and [tmp]
+                           [ac])))
+(defrule MAIN::invoke-operation:and,indirect,any-page
+         (stage (current print))
+         ?f <- (operation (type ?p)
+                          (args indirect
+                                any-page
+                                ?
+                                ?address))
+         (object (is-a primary-class-descriptor)
+                 (name ?p)
+                 (title and))
+         =>
+         (retract ?f)
+         (send [tmp]
+               put-value
+               (binary-or (get-current-page)
+                          (send [space]
+                                read
+                                ?address)))
+         (send [tmp]
+               put-value
+               (load-value [space]
+                           [tmp]))
+         (send [ac]
+               put-value
+               (binary-and [tmp]
+                           [ac])))
