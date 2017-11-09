@@ -22,7 +22,7 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;------------------------------------------------------------------------------
-; Machine0.clp - First architecture using the new ucoded techniques
+; Machine0.clp - playground file
 ;------------------------------------------------------------------------------
 ; The machine0 core is a 64-bit signed integer architecture with a 64-bit word
 ; and a 27-bit memory space. If the addresses are expanded to the byte level then it would
