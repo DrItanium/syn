@@ -24,7 +24,7 @@
 ;------------------------------------------------------------------------------
 ; X8.clp - First architecture using the new ucoded techniques
 ;------------------------------------------------------------------------------
-; The x8 core is a 64-bit signed integer architecture which takes its instruction
+; The x8 core is a 24-bit signed integer architecture which takes its instruction
 ; from the pdp-8. It can address a maximum of 16 megawords or 128 megabytes
 (batch* cortex.clp)
 (batch* MainModuleDeclaration.clp)
@@ -83,9 +83,9 @@
           ;(terminate at 128 cycles)
           ;(terminate at ?*address-mask* cycles)
           ;(terminate at (hex->int 0xFFFF) cycles)
+          (make x8-register named tmp)
           (make x8-register named ac)
           (make x8-register named pc)
-          (make x8-register named status)
           (make x8-register named mbr)
           (make x8-register named mar))
 
@@ -117,7 +117,18 @@
                        "ERROR: " (expand$ ?contents)))
 
 
-
+(deffunction MAIN::get-bit
+             (?value ?index)
+             (<> (decode-bits ?value
+                              (left-shift 1
+                                          ?index)
+                              ?index)
+                 0))
+(deffunction MAIN::get-link-bit
+             ()
+             (get-bit (send [ac]
+                            get-value)
+                      24))
 ; the cpu bootstrap process requires lower priority because it always exists in the background and dispatches
 ; cycles as we go along. This is how we service interrupts and other such things.
 (defrule MAIN::bootstrap-startup
@@ -215,35 +226,6 @@
          (printout t
                    "Setting up the execution cycle!" crlf))
 
-; The layout of the instruction is pretty simple, if the number is negative then it is
-; a branch instruction
-(deffunction MAIN::branch-instructionp
-             "The most significant bit of an instruction signifies if it is a branch instruction or not"
-             (?value)
-             ; in this case it is bit 63,
-             ; the proper code is:
-             ; (<> (decode-bits ?value
-             ;                 (hex->int 0x8000000000000000)
-             ;                 62)
-             ;    0))
-             ; but since CLIPSIntegers are signed then we can just imply twos compliment
-             (< ?value
-                0))
-
-; The next 7 bits (56-62) are the group bits, the upper most 8 bits have the same purpose in
-; jumps and everything else!
-(deffunction MAIN::get-group-bits
-             (?value)
-             (decode-bits ?value
-                          (hex->int 0x7F00000000000000)
-                          56))
-
-(deffunction MAIN::instruction-volatile-bits
-             (?value)
-             (decode-bits ?value
-                          (hex->int 0x00FFFFFFFFFFFFFF)
-                          0))
-
 (defrule MAIN::execute:execution-cycle:read-from-memory
          (stage (current read))
          (object (is-a register)
@@ -258,14 +240,6 @@
                                     (send ?ms0
                                           read
                                           ?addr)))))
-
-; When dealing with non branch instructions, we have further bits defined for operations, the next
-; 8 bits define the operation category
-(deffunction MAIN::extract-operation-field
-             (?value)
-             (decode-bits ?value
-                          (hex->int 0x00FF000000000000)
-                          48))
 
 (deftemplate MAIN::operation
              (slot address
@@ -380,11 +354,9 @@
 (deffunction MAIN::get-offset
              (?value)
              (decode-bits ?value
-                          (hex->int 0xFFFFFF00)
+                          (hex->int 0xFFFF00)
                           8))
-; to make these instructions easier to parse, we modify the instruction layout
-; so that the first 8 bits are reserved for control!
-; These are constant fields that we know about so we should keep them around
+
 (defrule MAIN::eval:mark-primary-descriptor
          (stage (current eval))
          ?f <- (operation (original-value ?value)
@@ -442,13 +414,6 @@
                  (args (get-iot-device-id ?value)
                        (get-iot-function-id ?value))))
 ; TODO: add support for OPR instruction from PDP8
-(deffunction MAIN::get-bit
-             (?value ?index)
-             (<> (decode-bits ?value
-                              (left-shift 1
-                                          ?index)
-                              ?index)
-                 0))
 (deffunction MAIN::get-opr-bit4
              (?value)
              (get-bit ?value
@@ -651,5 +616,31 @@
          (modify ?f
                  (rest (execution-cycle-stages)
                        $?rest)))
-
-
+(deffunction MAIN::get-current-page
+             ()
+             (decode-bits (send [pc]
+                                get-value)
+                          (hex->int 0xFF0000)
+                          0))
+(defrule MAIN::invoke-operation:and,direct,any-page
+         (stage (current print))
+         ?f <- (operation (type ?p)
+                          (args direct
+                                any-page
+                                ?
+                                ?address))
+         (object (is-a primary-class-descriptor)
+                 (name ?p)
+                 (title and))
+         =>
+         (retract ?f)
+         (send [tmp]
+               put-value
+               (binary-or (get-current-page)
+                          (send [space]
+                                read
+                                ?address)))
+         (send [ac]
+               put-value
+               (binary-and [tmp]
+                           [ac])))
