@@ -406,8 +406,14 @@
                  (matches-with ?k&:(< ?k 6)))
          =>
          (modify ?f
-                 (args (get-indirect-bit ?value)
-                       (get-clear-bit ?value)
+                 (args (if (get-indirect-bit ?value) then
+                           indirect
+                           else
+                           direct)
+                       (if (get-clear-bit ?value) then
+                           zero-page
+                           else
+                           any-page)
                        (get-rest-bits ?value)
                        (get-offset ?value))))
 (deffunction MAIN::get-iot-device-id
@@ -423,6 +429,7 @@
                           (hex->int 0xFFFF0000)
                           16))
 (defrule MAIN::decode-iot-argument
+         (stage (current eval))
          ?f <- (operation (type ?p)
                           (args)
                           (original-value ?value))
@@ -435,15 +442,169 @@
                  (args (get-iot-device-id ?value)
                        (get-iot-function-id ?value))))
 ; TODO: add support for OPR instruction from PDP8
+(deffunction MAIN::get-bit
+             (?value ?index)
+             (<> (decode-bits ?value
+                              (left-shift 1
+                                          ?index)
+                              ?index)
+                 0))
+(deffunction MAIN::get-opr-bit4
+             (?value)
+             (get-bit ?value
+                      3))
+(defgeneric MAIN::get-opr-group)
+(defmethod MAIN::get-opr-group
+  ((?value INTEGER
+           (not (get-opr-bit4 ?current-argument))))
+  0)
+(defmethod MAIN::get-opr-group
+  ((?value INTEGER
+           (and (get-opr-bit4 ?current-argument)
+                (not (get-bit ?current-argument
+                              11))
+                (not (get-bit ?current-argument
+                              8)))))
+  ; type 2, or group becomes code 1
+  1)
 
+(defmethod MAIN::get-opr-group
+  ((?value INTEGER
+           (and (get-opr-bit4 ?current-argument)
+                (not (get-bit ?current-argument
+                              11))
+                (get-bit ?current-argument
+                              8))))
+  ; type 2, and group becomes code 2
+  2)
 
+(defmethod MAIN::get-opr-group
+  ((?value INTEGER
+           (and (get-opr-bit4 ?current-argument)
+                (get-bit ?current-argument
+                         11))))
+  3)
 
+(deffunction MAIN::return-on-bit-true
+             (?value ?index ?ret)
+             (if (get-bit ?value
+                          ?index) then
+               ?ret
+               else
+               (create$)))
+(defgeneric MAIN::decode-opr-bits)
+(defmethod MAIN::decode-opr-bits
+  ((?group INTEGER
+           (= ?current-argument
+              0))
+   (?value INTEGER))
+  (create$ (return-on-bit-true ?value
+                               4
+                               CLA)
+           (return-on-bit-true ?value
+                               5
+                               CLL)
+           (return-on-bit-true ?value
+                               6
+                               CMA)
+           (return-on-bit-true ?value
+                               7
+                               CML)
+           (return-on-bit-true ?value
+                               8
+                               RAR)
+           (return-on-bit-true ?value
+                               9
+                               RAL)
+           (return-on-bit-true ?value
+                               10
+                               BSW)
+           (return-on-bit-true ?value
+                               11
+                               IAC)))
 
+(defmethod MAIN::decode-opr-bits
+  ((?group INTEGER
+           (= ?current-argument
+              1))
+   (?value INTEGER))
+  (create$ (return-on-bit-true ?value
+                               4
+                               CLA)
+           (return-on-bit-true ?value
+                               5
+                               SMA)
+           (return-on-bit-true ?value
+                               6
+                               SZA)
+           (return-on-bit-true ?value
+                               7
+                               SNL)))
 
+(defmethod MAIN::decode-opr-bits
+  ((?group INTEGER
+           (= ?current-argument
+              2))
+   (?value INTEGER))
+  (create$ (return-on-bit-true ?value
+                               4
+                               CLA)
+           (return-on-bit-true ?value
+                               5
+                               SPA)
+           (return-on-bit-true ?value
+                               6
+                               SNA)
+           (return-on-bit-true ?value
+                               7
+                               SZL)
+           ;according to http://homepage.divms.uiowa.edu/~jones/pdp8/man/micro.html
+           ; privileged ucode instructions are only allowed in the group 2, and group
+           (return-on-bit-true ?value
+                               9
+                               OSR)
+           (return-on-bit-true ?value
+                               10
+                               HLT)))
 
+(defmethod MAIN::decode-opr-bits
+  ((?group INTEGER
+           (= ?current-argument
+              3))
+   (?value INTEGER))
+  (create$ (return-on-bit-true ?value
+                               4
+                               CLA)
+           (return-on-bit-true ?value
+                               5
+                               MQA)
+           (return-on-bit-true ?value
+                               6
+                               SCA)
+           (return-on-bit-true ?value
+                               7
+                               MQL)
+           ;according to http://homepage.divms.uiowa.edu/~jones/pdp8/man/micro.html
+           ; the code field is three bits wide
+           (decode-bits ?value
+                        (hex->int 0x700)
+                        8)))
 
-
-
+(defrule MAIN::decode-opr-argument
+         (stage (current eval))
+         ?f <- (operation (type ?p)
+                          (args)
+                          (original-value ?value))
+         (object (is-a primary-class-descriptor)
+                 (name ?p)
+                 (title opr))
+         =>
+         (bind ?group
+               (get-opr-group ?value))
+         (modify ?f
+                 (args ?group
+                       (decode-opr-bits ?group
+                                        ?value))))
 
 (defrule MAIN::execute:execution-cycle:advance:next-address
          "If we didn't update the instruction pointer then make sure we do that now!"
