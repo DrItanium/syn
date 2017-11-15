@@ -622,6 +622,15 @@
                                 get-value)
                           (hex->int 0xFF0000)
                           0))
+;(defrule MAIN::invoke-operation:direct-bit
+;         (declare (salience 1))
+;         ?f <- (operation (args direct
+;
+;                                ?rest
+;                                ?address))
+;         =>
+;         (modify ?f
+;                 (args
 (defrule MAIN::invoke-operation:and,direct,any-page
          (stage (current print))
          ?f <- (operation (type ?p)
