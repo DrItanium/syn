@@ -38,6 +38,8 @@
             "Decrement the given number by 1")
 (defgeneric cortex::int->hex
             "Convert the given integer to a hex number!")
+(defgeneric cortex::get-bit
+            "Retrieves a single bit from a number as a boolean")
 
 (defmethod cortex::int->hex
   ((?value INTEGER))
@@ -216,4 +218,21 @@
              ()
              (eq (get-endian)
                  big))
+
+(defmethod cortex::get-bit
+  ((?value INTEGER)
+   (?index INTEGER
+           (<= 0 ?current-argument 63)))
+  (<> (decode-bits ?value
+                   (left-shift 1
+                               ?index)
+                   ?index)
+      0))
+(defmethod cortex::get-bit
+  ((?value INTEGER)
+   (?index INTEGER
+           (not (<= 0 ?current-argument 63))))
+  FALSE)
+
+
 

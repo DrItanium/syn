@@ -117,13 +117,6 @@
                        "ERROR: " (expand$ ?contents)))
 
 
-(deffunction MAIN::get-bit
-             (?value ?index)
-             (<> (decode-bits ?value
-                              (left-shift 1
-                                          ?index)
-                              ?index)
-                 0))
 (deffunction MAIN::get-link-bit
              ()
              (get-bit (send [ac]
