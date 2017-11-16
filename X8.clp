@@ -83,11 +83,11 @@
           ;(terminate at 128 cycles)
           ;(terminate at ?*address-mask* cycles)
           ;(terminate at (hex->int 0xFFFF) cycles)
-          (make x8-register named tmp)
-          (make x8-register named ac)
-          (make x8-register named pc)
-          (make x8-register named mbr)
-          (make x8-register named mar))
+          (make register named tmp)
+          (make register named ac)
+          (make register named pc)
+          (make register named mbr)
+          (make register named mar))
 
 
 (deffacts MAIN::cycles
@@ -122,118 +122,6 @@
              (get-bit (send [ac]
                             get-value)
                       24))
-; the cpu bootstrap process requires lower priority because it always exists in the background and dispatches
-; cycles as we go along. This is how we service interrupts and other such things.
-(defrule MAIN::bootstrap-startup
-         (declare (salience ?*priority:first*))
-         (stage (current startup))
-         =>
-         (printout t
-                   "Machine0 System boot" crlf
-                   "Starting up .... please wait" crlf))
-(defrule MAIN::bootstrap-set-address-mask
-         (declare (salience 9999))
-         (stage (current startup))
-         (not (address-mask is ?))
-         =>
-         (assert (address-mask is (address-mask))))
-
-(defrule MAIN::initialize:describe-phase
-         (declare (salience ?*priority:first*))
-         (stage (current initialize))
-         =>
-         (printout t
-                   "Initializing memory space ... please wait" crlf))
-
-(defrule MAIN::initialize:make-memory-block
-         (stage (current initialize))
-         ?f <- (make memory-block named ?name)
-         =>
-         (retract ?f)
-         (note-bring-up t
-                        "memory block"
-                        ?name)
-         (request-future-delete "memory block"
-                                (make-instance ?name of x8-memory-block))
-         (done-with-bring-up t
-                             tab "size: "
-                             (int->hex (send (symbol-to-instance-name ?name)
-                                             size)) crlf))
-
-(defrule MAIN::initialize:make-register-with-mask
-         (stage (current initialize))
-         ?f <- (make register named ?name with mask ?mask)
-         =>
-         (retract ?f)
-         (note-bring-up t
-                        register
-                        ?name)
-         (request-future-delete register
-                                (make-instance ?name of register
-                                               (mask ?mask)))
-         (done-with-bring-up t
-                             tab "mask: " (int->hex ?mask) crlf))
-
-(defrule MAIN::initialize:make-register-default
-         (stage (current initialize))
-         ?f <- (make register named ?name)
-         =>
-         (retract ?f)
-         (note-bring-up t
-                        register
-                        ?name)
-         (request-future-delete register
-                                (make-instance ?name of register))
-         (done-with-bring-up t))
-
-(defrule MAIN::shutdown:print-phase
-         (declare (salience ?*priority:first*))
-         (stage (current shutdown))
-         =>
-         (printout t
-                   "Shutting down x8 system!" crlf))
-
-(defrule MAIN::shutdown:delete-thingy
-         (stage (current shutdown))
-         ?f <- (delete ?title ?name)
-         =>
-         (retract ?f)
-         (printout t
-                   "Bringing down " ?title ": " (instance-name-to-symbol ?name) " .... ")
-         (unmake-instance ?name)
-         (printout t
-                   Done crlf))
-
-(defrule MAIN::shutdown:shutdown-complete
-         (declare (salience -9000))
-         (stage (current shutdown))
-         =>
-         (printout t
-                   "shutdown complete .... bye" crlf))
-
-
-(defrule MAIN::execute:generate-cycle-execute
-         "setup the execution cycle!"
-         (stage (current execute))
-         =>
-         (printout t
-                   "Setting up the execution cycle!" crlf))
-
-(defrule MAIN::execute:execution-cycle:read-from-memory
-         (stage (current read))
-         (object (is-a register)
-                 (name [ip])
-                 (value ?addr))
-         ?ms0 <- (object (is-a memory-map-entry)
-                         (base-address ?ba&:(>= ?addr ?ba))
-                         (last-address ?la&:(<= ?addr ?la)))
-         =>
-         (assert (instruction ?addr
-                              (bind ?value
-                                    (send ?ms0
-                                          read
-                                          ?addr)))))
-
 (deftemplate MAIN::operation
              (slot address
                    (type INTEGER)
@@ -265,8 +153,21 @@
         (default ?NONE))
   (slot title
         (type SYMBOL)
-        (allowed-symbols branch
-                         non-branch)
+        (storage local)
+        (visibility public)
+        (access initialize-only)
+        (default ?NONE)))
+
+(defclass MAIN::bits-descriptor
+  (is-a thing)
+  (slot matches-with
+        (type INTEGER)
+        (storage local)
+        (visibility public)
+        (access initialize-only)
+        (default ?NONE))
+  (slot title
+        (type SYMBOL)
         (storage local)
         (visibility public)
         (access initialize-only)
@@ -297,30 +198,7 @@
               ([op:opr] of primary-class-descriptor
                         (matches-with 7)
                         (title opr)))
-(defclass MAIN::bits-descriptor
-  (is-a thing)
-  (slot matches-with
-        (type INTEGER)
-        (storage local)
-        (visibility public)
-        (access initialize-only)
-        (default ?NONE))
-  (slot title
-        (type SYMBOL)
-        (storage local)
-        (visibility public)
-        (access initialize-only)
-        (default ?NONE)))
 
-
-(defrule MAIN::eval:get-more-information
-         (stage (current eval))
-         ?f <- (instruction ?addr
-                            ?value)
-         =>
-         (retract ?f)
-         (assert (operation (address ?addr)
-                            (original-value ?value))))
 
 (deffunction MAIN::get-operation-bits
              (?value)
@@ -350,37 +228,6 @@
                           (hex->int 0xFFFF00)
                           8))
 
-(defrule MAIN::eval:mark-primary-descriptor
-         (stage (current eval))
-         ?f <- (operation (original-value ?value)
-                          (type FALSE))
-         (object (is-a primary-class-descriptor)
-                 (matches-with =(get-operation-bits ?value))
-                 (name ?descriptor))
-         =>
-         (modify ?f
-                 (type ?descriptor)))
-
-(defrule MAIN::decode-arguments
-         (stage (current eval))
-         ?f <- (operation (type ?p)
-                          (args)
-                          (original-value ?value))
-         (object (is-a primary-class-descriptor)
-                 (name ?p)
-                 (matches-with ?k&:(< ?k 6)))
-         =>
-         (modify ?f
-                 (args (if (get-indirect-bit ?value) then
-                           indirect
-                           else
-                           direct)
-                       (if (get-clear-bit ?value) then
-                           zero-page
-                           else
-                           any-page)
-                       (get-rest-bits ?value)
-                       (get-offset ?value))))
 (deffunction MAIN::get-iot-device-id
              (?value)
              ; bits 4 -> 15 are the function id
@@ -393,19 +240,6 @@
              (decode-bits ?value
                           (hex->int 0xFFFF0000)
                           16))
-(defrule MAIN::decode-iot-argument
-         (stage (current eval))
-         ?f <- (operation (type ?p)
-                          (args)
-                          (original-value ?value))
-         ; iot
-         (object (is-a primary-class-descriptor)
-                 (name ?p)
-                 (title iot))
-         =>
-         (modify ?f
-                 (args (get-iot-device-id ?value)
-                       (get-iot-function-id ?value))))
 ; TODO: add support for OPR instruction from PDP8
 (deffunction MAIN::get-opr-bit4
              (?value)
@@ -548,10 +382,188 @@
                         (hex->int 0x700)
                         8)))
 
+(deffunction MAIN::get-current-page
+             ()
+             (decode-bits (send [pc]
+                                get-value)
+                          (hex->int 0xFF0000)
+                          0))
+;-----------------------------------------------------------------------------
+; !RULES
+;-----------------------------------------------------------------------------
+; the cpu bootstrap process requires lower priority because it always exists in the background and dispatches
+; cycles as we go along. This is how we service interrupts and other such things.
+(defrule MAIN::bootstrap-startup
+         (declare (salience ?*priority:first*))
+         (stage (current startup))
+         =>
+         (printout t
+                   "Machine0 System boot" crlf
+                   "Starting up .... please wait" crlf))
+(defrule MAIN::bootstrap-set-address-mask
+         (declare (salience 9999))
+         (stage (current startup))
+         (not (address-mask is ?))
+         =>
+         (assert (address-mask is (address-mask))))
+
+(defrule MAIN::initialize:describe-phase
+         (declare (salience ?*priority:first*))
+         (stage (current initialize))
+         =>
+         (printout t
+                   "Initializing memory space ... please wait" crlf))
+
+(defrule MAIN::initialize:make-memory-block
+         (stage (current initialize))
+         ?f <- (make memory-block named ?name)
+         =>
+         (retract ?f)
+         (note-bring-up t
+                        "memory block"
+                        ?name)
+         (request-future-delete "memory block"
+                                (make-instance ?name of x8-memory-block))
+         (done-with-bring-up t
+                             tab "size: "
+                             (int->hex (send (symbol-to-instance-name ?name)
+                                             size)) crlf))
+
+(defrule MAIN::initialize:make-register-with-mask
+         (stage (current initialize))
+         ?f <- (make register named ?name with mask ?mask)
+         =>
+         (retract ?f)
+         (note-bring-up t
+                        register
+                        ?name)
+         (request-future-delete register
+                                (make-instance ?name of x8-register
+                                               (mask ?mask)))
+         (done-with-bring-up t
+                             tab "mask: " (int->hex ?mask) crlf))
+
+(defrule MAIN::initialize:make-register-default
+         (stage (current initialize))
+         ?f <- (make register named ?name)
+         =>
+         (retract ?f)
+         (note-bring-up t
+                        register
+                        ?name)
+         (request-future-delete register
+                                (make-instance ?name of register))
+         (done-with-bring-up t))
+
+(defrule MAIN::shutdown:print-phase
+         (declare (salience ?*priority:first*))
+         (stage (current shutdown))
+         =>
+         (printout t
+                   "Shutting down x8 system!" crlf))
+
+(defrule MAIN::shutdown:delete-thingy
+         (stage (current shutdown))
+         ?f <- (delete ?title ?name)
+         =>
+         (retract ?f)
+         (printout t
+                   "Bringing down " ?title ": " (instance-name-to-symbol ?name) " .... ")
+         (unmake-instance ?name)
+         (printout t
+                   Done crlf))
+
+(defrule MAIN::shutdown:shutdown-complete
+         (declare (salience -9000))
+         (stage (current shutdown))
+         =>
+         (printout t
+                   "shutdown complete .... bye" crlf))
+
+
+(defrule MAIN::execute:generate-cycle-execute
+         "setup the execution cycle!"
+         (stage (current execute))
+         =>
+         (printout t
+                   "Setting up the execution cycle!" crlf))
+
+(defrule MAIN::execute:execution-cycle:read-from-memory
+         (stage (current read))
+         (object (is-a register)
+                 (name [ip])
+                 (value ?addr))
+         ?ms0 <- (object (is-a memory-map-entry)
+                         (base-address ?ba&:(>= ?addr
+                                                ?ba))
+                         (last-address ?la&:(<= ?addr
+                                                ?la)))
+         =>
+         (assert (instruction ?addr
+                              (bind ?value
+                                    (send ?ms0
+                                          read
+                                          ?addr)))))
+
+
+(defrule MAIN::eval:get-more-information
+         (stage (current eval))
+         ?f <- (instruction ?addr
+                            ?value)
+         =>
+         (retract ?f)
+         (assert (operation (address ?addr)
+                            (original-value ?value))))
+
+(defrule MAIN::eval:mark-primary-descriptor
+         (stage (current eval))
+         ?f <- (operation (original-value ?value)
+                          (type FALSE))
+         (object (is-a primary-class-descriptor)
+                 (matches-with =(get-operation-bits ?value))
+                 (name ?descriptor))
+         =>
+         (modify ?f
+                 (type ?descriptor)))
+
+(defrule MAIN::decode-arguments
+         (stage (current eval))
+         ?f <- (operation (type ?p)
+                          (arguments)
+                          (original-value ?value))
+         (object (is-a primary-class-descriptor)
+                 (name ?p)
+                 (matches-with ?k&:(< ?k 6)))
+         =>
+         (modify ?f
+                 (arguments (if (get-indirect-bit ?value) then
+                           indirect
+                           else
+                           direct)
+                       (if (get-clear-bit ?value) then
+                           zero-page
+                           else
+                           any-page)
+                       (get-rest-bits ?value)
+                       (get-offset ?value))))
+(defrule MAIN::decode-iot-argument
+         (stage (current eval))
+         ?f <- (operation (type ?p)
+                          (arguments)
+                          (original-value ?value))
+         ; iot
+         (object (is-a primary-class-descriptor)
+                 (name ?p)
+                 (title iot))
+         =>
+         (modify ?f
+                 (arguments (get-iot-device-id ?value)
+                       (get-iot-function-id ?value))))
+
 (defrule MAIN::decode-opr-argument
          (stage (current eval))
          ?f <- (operation (type ?p)
-                          (args)
+                          (arguments)
                           (original-value ?value))
          (object (is-a primary-class-descriptor)
                  (name ?p)
@@ -560,7 +572,7 @@
          (bind ?group
                (get-opr-group ?value))
          (modify ?f
-                 (args ?group
+                 (arguments ?group
                        (decode-opr-bits ?group
                                         ?value))))
 
@@ -609,25 +621,19 @@
          (modify ?f
                  (rest (execution-cycle-stages)
                        $?rest)))
-(deffunction MAIN::get-current-page
-             ()
-             (decode-bits (send [pc]
-                                get-value)
-                          (hex->int 0xFF0000)
-                          0))
 ;(defrule MAIN::invoke-operation:direct-bit
 ;         (declare (salience 1))
-;         ?f <- (operation (args direct
+;         ?f <- (operation (arguments direct
 ;
 ;                                ?rest
 ;                                ?address))
 ;         =>
 ;         (modify ?f
-;                 (args
+;                 (arguments
 (defrule MAIN::invoke-operation:and,direct,any-page
          (stage (current print))
          ?f <- (operation (type ?p)
-                          (args direct
+                          (arguments direct
                                 any-page
                                 ?
                                 ?address))
@@ -650,7 +656,7 @@
 (defrule MAIN::invoke-operation:and,direct,zero-page
          (stage (current print))
          ?f <- (operation (type ?p)
-                          (args direct
+                          (arguments direct
                                 zero-page
                                 ?
                                 ?address))
@@ -672,7 +678,7 @@
 (defrule MAIN::invoke-operation:and,indirect,zero-page
          (stage (current print))
          ?f <- (operation (type ?p)
-                          (args indirect
+                          (arguments indirect
                                 zero-page
                                 ?
                                 ?address))
@@ -696,7 +702,7 @@
 (defrule MAIN::invoke-operation:and,indirect,any-page
          (stage (current print))
          ?f <- (operation (type ?p)
-                          (args indirect
+                          (arguments indirect
                                 any-page
                                 ?
                                 ?address))
