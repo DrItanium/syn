@@ -388,6 +388,15 @@
                                 get-value)
                           (hex->int 0xFF0000)
                           0))
+(deffunction MAIN::perform-initial-startup
+             ()
+             (printout t
+                       "X8 System boot" crlf
+                       "Starting up .... please wait" crlf)))
+(deffunction MAIN::final-shutdown
+             ()
+             (printout t
+                       "shutdown complete .... bye" crlf))
 ;-----------------------------------------------------------------------------
 ; !RULES
 ;-----------------------------------------------------------------------------
@@ -397,9 +406,8 @@
          (declare (salience ?*priority:first*))
          (stage (current startup))
          =>
-         (printout t
-                   "Machine0 System boot" crlf
-                   "Starting up .... please wait" crlf))
+         (perform-initial-startup))
+
 (defrule MAIN::bootstrap-set-address-mask
          (declare (salience 9999))
          (stage (current startup))
@@ -477,8 +485,7 @@
          (declare (salience -9000))
          (stage (current shutdown))
          =>
-         (printout t
-                   "shutdown complete .... bye" crlf))
+         (final-shutdown))
 
 
 (defrule MAIN::execute:generate-cycle-execute
@@ -546,6 +553,7 @@
                            any-page)
                        (get-rest-bits ?value)
                        (get-offset ?value))))
+
 (defrule MAIN::decode-iot-argument
          (stage (current eval))
          ?f <- (operation (type ?p)
