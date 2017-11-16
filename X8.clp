@@ -29,6 +29,8 @@
 ; testing purposes
 (batch* cortex.clp)
 (batch* MainModuleDeclaration.clp)
+(batch* InterruptHandler.clp)
+(set-current-module MAIN)
 (batch* ExternalAddressWrapper.clp)
 (batch* Device.clp)
 (batch* MemoryBlock.clp)
@@ -394,7 +396,7 @@
                     ; save the link register bit or the portion above :D
                     (dynamic-put value
                                  (decode-bits (dynamic-get value)
-                                              (unary-not (hex->int 0xFFF))
+                                              (binary-not (hex->int 0xFFF))
                                               0)))
 (defmessage-handler MAIN::register clear-link primary
                     ()
@@ -410,12 +412,12 @@
                                        0))
                     (bind ?rest
                           (decode-bits (dynamic-get value)
-                                       (unary-not (hex->int 0xFFF))
+                                       (binary-not (hex->int 0xFFF))
                                        0))
                     ; make sure that all of the bits are cleared correctly
                     (dynamic-put value
                                  (binary-or (binary-and (hex->int 0xFFF)
-                                                        (unary-not ?accumulator-bits))
+                                                        (binary-not ?accumulator-bits))
                                             ?rest)))
 (defmessage-handler MAIN::register complement-link primary
                     ()
@@ -425,11 +427,11 @@
                                        0))
                     (bind ?link
                           (decode-bits (dynamic-get value)
-                                       (unary-not (hex->int 0xFFF))
+                                       (binary-not (hex->int 0xFFF))
                                        12))
                     (dynamic-put value
                                  (binary-or ?accumulator-bits
-                                            (right-shift (unary-not ?link)
+                                            (right-shift (binary-not ?link)
                                                          12))))
 (defmessage-handler MAIN::register byte-swap primary
                     "byte swap the upper and lower 6 bits of the value"
@@ -439,8 +441,8 @@
                                        (hex->int 0xFFF)
                                        0))
                     (bind ?link
-                          (decode-bits (dyanmic-get value)
-                                       (unary-not (hex->int 0xFFF))
+                          (decode-bits (dynamic-get value)
+                                       (binary-not (hex->int 0xFFF))
                                        0))
                     (bind ?lower
                           (decode-bits ?accumulator-bits
@@ -500,7 +502,6 @@
              ()
              (send [ac]
                    increment))
-
 ;-----------------------------------------------------------------------------
 ; !RULES
 ;-----------------------------------------------------------------------------
@@ -655,7 +656,6 @@
                            zero-page
                            else
                            any-page)
-                       (get-rest-bits ?value)
                        (get-offset ?value))))
 
 (defrule MAIN::decode-iot-argument
@@ -670,7 +670,7 @@
          =>
          (modify ?f
                  (arguments (get-iot-device-id ?value)
-                       (get-iot-function-id ?value))))
+                            (get-iot-function-code ?value))))
 
 (defrule MAIN::decode-opr-argument
          (stage (current eval))
@@ -770,7 +770,6 @@
          ?f <- (operation (type ?p)
                           (arguments direct
                                 zero-page
-                                ?
                                 ?address))
          (object (is-a primary-class-descriptor)
                  (name ?p)
@@ -792,7 +791,6 @@
          ?f <- (operation (type ?p)
                           (arguments indirect
                                 zero-page
-                                ?
                                 ?address))
          (object (is-a primary-class-descriptor)
                  (name ?p)
@@ -816,7 +814,6 @@
          ?f <- (operation (type ?p)
                           (arguments indirect
                                 any-page
-                                ?
                                 ?address))
          (object (is-a primary-class-descriptor)
                  (name ?p)
