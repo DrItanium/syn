@@ -209,39 +209,29 @@
                           0))
 (deffunction MAIN::get-indirect-bit
              (?value)
-             (<> (decode-bits ?value
-                          (hex->int 0x8)
-                          3)
-                 0))
+             (get-bit ?value
+                      3))
 (deffunction MAIN::get-clear-bit
              (?value)
-             (<> (decode-bits ?value
-                              (hex->int 0x10)
-                              4)
-                 0))
-(deffunction MAIN::get-rest-bits
-             (?value)
-             (decode-bits ?value
-                          (hex->int 0xe0)
-                          5))
+             (get-bit ?value
+                      4))
+
 (deffunction MAIN::get-offset
              (?value)
              (decode-bits ?value
-                          (hex->int 0xFFFF00)
-                          8))
+                          (hex->int 0xFE0)
+                          5))
 
 (deffunction MAIN::get-iot-device-id
              (?value)
-             ; bits 4 -> 15 are the function id
              (decode-bits ?value
-                          (hex->int 0xFFF0)
+                          (hex->int 0xFF0)
                           4))
-(deffunction MAIN::get-iot-function-id
+(deffunction MAIN::get-iot-function-code
              (?value)
-             ; we can have up to 64k operations using bits 16-31
              (decode-bits ?value
-                          (hex->int 0xFFFF0000)
-                          16))
+                          (hex->int 0x700)
+                          8))
 ; TODO: add support for OPR instruction from PDP8
 (deffunction MAIN::get-opr-bit4
              (?value)
@@ -399,6 +389,118 @@
              ()
              (printout t
                        "shutdown complete .... bye" crlf))
+(defmessage-handler MAIN::register clear-accumulator primary
+                    ()
+                    ; save the link register bit or the portion above :D
+                    (dynamic-put value
+                                 (decode-bits (dynamic-get value)
+                                              (unary-not (hex->int 0xFFF))
+                                              0)))
+(defmessage-handler MAIN::register clear-link primary
+                    ()
+                    (dynamic-put value
+                                 (decode-bits (dynamic-get value)
+                                              (hex->int 0xFFF)
+                                              0)))
+(defmessage-handler MAIN::register complement-accumulator primary
+                    ()
+                    (bind ?accumulator-bits
+                          (decode-bits (dynamic-get value)
+                                       (hex->int 0xFFF)
+                                       0))
+                    (bind ?rest
+                          (decode-bits (dynamic-get value)
+                                       (unary-not (hex->int 0xFFF))
+                                       0))
+                    ; make sure that all of the bits are cleared correctly
+                    (dynamic-put value
+                                 (binary-or (binary-and (hex->int 0xFFF)
+                                                        (unary-not ?accumulator-bits))
+                                            ?rest)))
+(defmessage-handler MAIN::register complement-link primary
+                    ()
+                    (bind ?accumulator-bits
+                          (decode-bits (dynamic-get value)
+                                       (hex->int 0xFFF)
+                                       0))
+                    (bind ?link
+                          (decode-bits (dynamic-get value)
+                                       (unary-not (hex->int 0xFFF))
+                                       12))
+                    (dynamic-put value
+                                 (binary-or ?accumulator-bits
+                                            (right-shift (unary-not ?link)
+                                                         12))))
+(defmessage-handler MAIN::register byte-swap primary
+                    "byte swap the upper and lower 6 bits of the value"
+                    ()
+                    (bind ?accumulator-bits
+                          (decode-bits (dynamic-get value)
+                                       (hex->int 0xFFF)
+                                       0))
+                    (bind ?link
+                          (decode-bits (dyanmic-get value)
+                                       (unary-not (hex->int 0xFFF))
+                                       0))
+                    (bind ?lower
+                          (decode-bits ?accumulator-bits
+                                       (hex->int 0x3F)
+                                       0))
+                    (bind ?upper
+                          (decode-bits ?accumulator-bits
+                                       (hex->int 0xFC0)
+                                       6))
+                    (dynamic-put value
+                                 (binary-or ?link
+                                            (binary-or (right-shift ?lower
+                                                                    6)
+                                                       ?upper))))
+(defmessage-handler MAIN::register rotate-accumulator-right
+                    ()
+                    ; need to extract the least significant bit
+                    (bind ?new-link
+                          (right-shift (decode-bits (dynamic-get value)
+                                                    (hex->int 0x1)
+                                                    0)
+                                       12))
+
+
+                    (bind ?contents
+                          (right-shift (binary-and (dynamic-get value)
+                                                   (hex->int 0x1FFFF))
+                                       1))
+                    (dynamic-put value
+                                 (binary-or ?new-link
+                                            ?contents)))
+
+;TOOD: implement more of the microcoded operations
+
+; microcoded internal operations!
+(deffunction MAIN::clear-accumulator
+             ()
+             (send [ac]
+                   clear-accumulator))
+(deffunction MAIN::clear-link
+             ()
+             (send [ac]
+                   clear-link))
+(deffunction MAIN::complement-accumulator
+             ()
+             (send [ac]
+                   complement-accumulator))
+(deffunction MAIN::complement-link
+             ()
+             (send [ac]
+                   complement-link))
+(deffunction MAIN::byte-swap
+             ()
+             (send [ac]
+                   byte-swap))
+(deffunction MAIN::increment-accumulator
+             ()
+             (send [ac]
+                   increment))
+
 ;-----------------------------------------------------------------------------
 ; !RULES
 ;-----------------------------------------------------------------------------
@@ -448,7 +550,7 @@
                         register
                         ?name)
          (request-future-delete register
-                                (make-instance ?name of x8-register
+                                (make-instance ?name of register
                                                (mask ?mask)))
          (done-with-bring-up t
                              tab "mask: " (int->hex ?mask) crlf))
