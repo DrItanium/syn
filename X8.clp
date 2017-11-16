@@ -24,8 +24,9 @@
 ;------------------------------------------------------------------------------
 ; X8.clp - First architecture using the new ucoded techniques
 ;------------------------------------------------------------------------------
-; The x8 core is a 24-bit signed integer architecture which takes its instruction
-; from the pdp-8. It can address a maximum of 16 megawords or 128 megabytes
+; The x8 core is a 12-bit signed integer architecture which is a reimplementation
+; of the DEC PDP-8e architecture :D. I did this so I have a variety of software for
+; testing purposes
 (batch* cortex.clp)
 (batch* MainModuleDeclaration.clp)
 (batch* ExternalAddressWrapper.clp)
@@ -38,20 +39,20 @@
 (batch* RunLevelController.clp)
 (batch* order.clp)
 (defglobal MAIN
-           ?*address24bit* = (hex->int 0x00FFFFFF))
+           ?*address12bit* = (hex->int 0x00000FFF))
 (defclass MAIN::x8-memory-block
   (is-a memory-block)
   (slot capacity
         (source composite)
         (storage shared)
-        (default (+ ?*address24bit*
+        (default (+ ?*address12bit*
                     1)))
   (slot last-address
         (storage shared)
         (visibility public)
         (access read-only)
         (create-accessor read)
-        (default ?*address24bit*)))
+        (default ?*address12bit*)))
 
 
 
@@ -62,7 +63,7 @@
 ; this applies to the stack register as well. All bits above the mask must be zero to maintain
 ; backwards compatibility
 (defglobal MAIN
-           ?*address-mask* = ?*address24bit*
+           ?*address-mask* = ?*address12bit*
            ?*execution-cycle-stages* = (create$ read ; load the instruction from memory
                                                 eval ; evaluate instruction input and construct the ucode sequence
                                                 print ; invoke the execution unit and save the result as needed
@@ -121,7 +122,8 @@
              ()
              (get-bit (send [ac]
                             get-value)
-                      24))
+                      12))
+
 (deftemplate MAIN::operation
              (slot address
                    (type INTEGER)
