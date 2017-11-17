@@ -564,7 +564,7 @@
              (rotate-accumulator-left))
 (deffunction MAIN::skip-if-zero-accumulator
              ()
-             (if (eq (send [ac]
+             (if (= (send [ac]
                            get-value)
                      0) then
                  (send [pc]
@@ -581,6 +581,32 @@
 (deffunction MAIN::skip-if-nonzero-link
              ()
              (if (<> (send [ac]
+                          get-link-bit)
+                    0) then
+               (send [pc]
+                     increment)))
+
+(deffunction MAIN::skip-if-positive-accumulator
+             ()
+             (if (= (decode-bits (send [ac]
+                                    get-value)
+                              (hex->int 0x800)
+                              11)
+                    0) then
+               (send [pc]
+                     increment)))
+
+(deffunction MAIN::skip-if-nonzero-accumulator
+             ()
+             (if (<> (send [ac]
+                           get-value)
+                     0) then
+                 (send [pc]
+                       increment)))
+
+(deffunction MAIN::skip-if-zero-link
+             ()
+             (if (= (send [ac]
                           get-link-bit)
                     0) then
                (send [pc]
