@@ -56,8 +56,6 @@
         (create-accessor read)
         (default ?*address12bit*)))
 
-
-
 ; There is one memory space
 (deffacts MAIN::make-memory-blocks
           (make memory-block named space))
@@ -80,17 +78,39 @@
   (is-a register)
   (slot mask
         (source composite)
-        (default-dynamic ?*address-mask*)))
+        (default-dynamic ?*address-mask*))
+  (message-handler init after))
+
+(defclass MAIN::x8-program-counter
+  (is-a x8-register)
+  (message-handler init after)
+  (message-handler increment primary))
+(defmessage-handler x8-program-counter increment primary
+                    ()
+                    (dynamic-put value
+                                 (binary-and (hex->int 0xFFF)
+                                             (+ (dynamic-get value)
+                                                1))))
+(defclass MAIN::x8-accumulator
+  (is-a x8-register)
+  (message-handler get-link-bit primary))
+(defmessage-handler MAIN::x8-accumulator get-link-bit primary
+                    ()
+                    (decode-bits (dynamic-get value)
+                                 (hex->int 0x1000)
+                                 12))
 ; Internally, machine
 (deffacts MAIN::make-registers
           ;(terminate at 128 cycles)
           ;(terminate at ?*address-mask* cycles)
           ;(terminate at (hex->int 0xFFFF) cycles)
           (make register named tmp)
-          (make register named ac)
-          (make register named pc)
           (make register named mbr)
           (make register named mar))
+(definstances MAIN::make-specific-registers
+              (ac of x8-accumulator)
+              (pc of x8-program-counter))
+
 
 
 (deffacts MAIN::cycles
@@ -119,6 +139,13 @@
              (printout werror
                        "ERROR: " (expand$ ?contents)))
 
+(defmessage-handler MAIN::x8-register init after
+                    ()
+                    (note-bring-up t
+                                   register
+                                   ?name)
+                    (request-future-delete register
+                                           (instance-name ?self)))
 
 (deffunction MAIN::get-link-bit
              ()
@@ -391,20 +418,20 @@
              ()
              (printout t
                        "shutdown complete .... bye" crlf))
-(defmessage-handler MAIN::register clear-accumulator primary
+(defmessage-handler MAIN::x8-accumulator clear-accumulator primary
                     ()
                     ; save the link register bit or the portion above :D
                     (dynamic-put value
                                  (decode-bits (dynamic-get value)
                                               (binary-not (hex->int 0xFFF))
                                               0)))
-(defmessage-handler MAIN::register clear-link primary
+(defmessage-handler MAIN::x8-accumulator clear-link primary
                     ()
                     (dynamic-put value
                                  (decode-bits (dynamic-get value)
                                               (hex->int 0xFFF)
                                               0)))
-(defmessage-handler MAIN::register complement-accumulator primary
+(defmessage-handler MAIN::x8-accumulator complement-accumulator primary
                     ()
                     (bind ?accumulator-bits
                           (decode-bits (dynamic-get value)
@@ -419,7 +446,7 @@
                                  (binary-or (binary-and (hex->int 0xFFF)
                                                         (binary-not ?accumulator-bits))
                                             ?rest)))
-(defmessage-handler MAIN::register complement-link primary
+(defmessage-handler MAIN::x8-accumulator complement-link primary
                     ()
                     (bind ?accumulator-bits
                           (decode-bits (dynamic-get value)
@@ -433,7 +460,7 @@
                                  (binary-or ?accumulator-bits
                                             (right-shift (binary-not ?link)
                                                          12))))
-(defmessage-handler MAIN::register byte-swap primary
+(defmessage-handler MAIN::x8-accumulator byte-swap primary
                     "byte swap the upper and lower 6 bits of the value"
                     ()
                     (bind ?accumulator-bits
@@ -457,7 +484,7 @@
                                             (binary-or (right-shift ?lower
                                                                     6)
                                                        ?upper))))
-(defmessage-handler MAIN::register rotate-accumulator-right
+(defmessage-handler MAIN::x8-accumulator rotate-accumulator-right
                     ()
                     ; need to extract the least significant bit
                     (bind ?new-link
@@ -475,7 +502,7 @@
                                  (binary-or ?new-link
                                             ?contents)))
 
-(defmessage-handler MAIN::register rotate-accumulator-left
+(defmessage-handler MAIN::x8-accumulator rotate-accumulator-left
                     ()
                     (bind ?old-link
                           (decode-bits (dynamic-get value)
@@ -488,7 +515,6 @@
                                  (binary-or (binary-and ?new-accumulator
                                                         (hex->int 0x1FFF))
                                             ?old-link)))
-
 
 
 
@@ -536,6 +562,29 @@
              ()
              (rotate-accumulator-left)
              (rotate-accumulator-left))
+(deffunction MAIN::skip-if-zero-accumulator
+             ()
+             (if (eq (send [ac]
+                           get-value)
+                     0) then
+                 (send [pc]
+                       increment)))
+(deffunction MAIN::skip-if-minus-accumulator
+             ()
+             (if (= (decode-bits (send [ac]
+                                    get-value)
+                              (hex->int 0x800)
+                              11)
+                    1) then
+               (send [pc]
+                     increment)))
+(deffunction MAIN::skip-if-nonzero-link
+             ()
+             (if (<> (send [ac]
+                          get-link-bit)
+                    0) then
+               (send [pc]
+                     increment)))
 
 ;-----------------------------------------------------------------------------
 ; !RULES
