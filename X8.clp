@@ -611,6 +611,15 @@
                     0) then
                (send [pc]
                      increment)))
+(deffunction MAIN::switch-register
+             ()
+             ; switch the contents of the front panel register with the accumulator
+             )
+(deffunction MAIN::halt-execution
+             ()
+             ; invoke the cpu halt state
+             )
+;TODO: add support for the MQA and MQL instructions from group three
 
 ;-----------------------------------------------------------------------------
 ; !RULES
