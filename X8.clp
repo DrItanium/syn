@@ -475,6 +475,24 @@
                                  (binary-or ?new-link
                                             ?contents)))
 
+(defmessage-handler MAIN::register rotate-accumulator-left
+                    ()
+                    (bind ?old-link
+                          (decode-bits (dynamic-get value)
+                                       (hex->int 0x1000)
+                                       12))
+                    (bind ?new-accumulator
+                          (right-shift (dynamic-get value)
+                                       1))
+                    (dynamic-put value
+                                 (binary-or (binary-and ?new-accumulator
+                                                        (hex->int 0x1FFF))
+                                            ?old-link)))
+
+
+
+
+
 ;TOOD: implement more of the microcoded operations
 
 ; microcoded internal operations!
@@ -502,6 +520,23 @@
              ()
              (send [ac]
                    increment))
+(deffunction MAIN::rotate-accumulator-right
+             ()
+             (send [ac]
+                   rotate-accumulator-right))
+(deffunction MAIN::rotate-accumulator-right-twice
+             ()
+             (rotate-accumulator-right)
+             (rotate-accumulator-right))
+(deffunction MAIN::rotate-accumulator-left
+             ()
+             (send [ac]
+                   rotate-accumulator-left))
+(deffunction MAIN::rotate-accumulator-left-twice
+             ()
+             (rotate-accumulator-left)
+             (rotate-accumulator-left))
+
 ;-----------------------------------------------------------------------------
 ; !RULES
 ;-----------------------------------------------------------------------------
