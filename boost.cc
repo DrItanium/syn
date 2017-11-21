@@ -240,7 +240,7 @@ void CLIPS_translateHex(UDFContext* context, CLIPSValue* ret) noexcept {
 }
 
 void CLIPS_translateOctal(UDFContext* context, CLIPSValue* ret) noexcept {
-	CLIPS_translateNumberBase(context, ret, "0q", 8, "Octal must start with 0q");
+	CLIPS_translateNumberBase<true>(context, ret, "0q", 8, "Octal must start with 0q");
 }
 #endif
 
