@@ -41,7 +41,7 @@
 (batch* RunLevelController.clp)
 (batch* order.clp)
 (defglobal MAIN
-           ?*address12bit* = (hex->int 0x00000FFF))
+           ?*address12bit* = (oct->int 0q7777))
 (defclass MAIN::x8-memory-block
   (is-a memory-block)
   (slot capacity
@@ -88,7 +88,7 @@
 (defmessage-handler x8-program-counter increment primary
                     ()
                     (dynamic-put value
-                                 (binary-and (hex->int 0xFFF)
+                                 (binary-and (oct->int 0q7777)
                                              (+ (dynamic-get value)
                                                 1))))
 (defclass MAIN::x8-accumulator
@@ -97,7 +97,7 @@
 (defmessage-handler MAIN::x8-accumulator get-link-bit primary
                     ()
                     (decode-bits (dynamic-get value)
-                                 (hex->int 0x1000)
+                                 (oct->int 0q10000)
                                  12))
 ; Internally, machine
 (deffacts MAIN::make-registers
@@ -234,7 +234,7 @@
 (deffunction MAIN::get-operation-bits
              (?value)
              (decode-bits ?value
-                          (hex->int 0x7)
+                          (oct->int 0q7)
                           0))
 (deffunction MAIN::get-indirect-bit
              (?value)
@@ -248,18 +248,18 @@
 (deffunction MAIN::get-offset
              (?value)
              (decode-bits ?value
-                          (hex->int 0xFE0)
+                          (oct->int 0q7740)
                           5))
 
 (deffunction MAIN::get-iot-device-id
              (?value)
              (decode-bits ?value
-                          (hex->int 0xFF0)
+                          (oct->int 0q7760)
                           4))
 (deffunction MAIN::get-iot-function-code
              (?value)
              (decode-bits ?value
-                          (hex->int 0x700)
+                          (oct->int 0q3400)
                           8))
 ; TODO: add support for OPR instruction from PDP8
 (deffunction MAIN::get-opr-bit4
@@ -400,14 +400,14 @@
            ;according to http://homepage.divms.uiowa.edu/~jones/pdp8/man/micro.html
            ; the code field is three bits wide
            (decode-bits ?value
-                        (hex->int 0x700)
+                        (oct->int 0q3400)
                         8)))
 
 (deffunction MAIN::get-current-page
              ()
              (decode-bits (send [pc]
                                 get-value)
-                          (hex->int 0xFF0000)
+                          (oct->int 0q7600)
                           0))
 (deffunction MAIN::perform-initial-startup
              ()
@@ -423,38 +423,38 @@
                     ; save the link register bit or the portion above :D
                     (dynamic-put value
                                  (decode-bits (dynamic-get value)
-                                              (binary-not (hex->int 0xFFF))
+                                              (binary-not ?*address12bit*)
                                               0)))
 (defmessage-handler MAIN::x8-accumulator clear-link primary
                     ()
                     (dynamic-put value
                                  (decode-bits (dynamic-get value)
-                                              (hex->int 0xFFF)
+                                              ?*address12bit*
                                               0)))
 (defmessage-handler MAIN::x8-accumulator complement-accumulator primary
                     ()
                     (bind ?accumulator-bits
                           (decode-bits (dynamic-get value)
-                                       (hex->int 0xFFF)
+                                       ?*address12bit*
                                        0))
                     (bind ?rest
                           (decode-bits (dynamic-get value)
-                                       (binary-not (hex->int 0xFFF))
+                                       (binary-not ?*address12bit*)
                                        0))
                     ; make sure that all of the bits are cleared correctly
                     (dynamic-put value
-                                 (binary-or (binary-and (hex->int 0xFFF)
+                                 (binary-or (binary-and ?*address12bit*
                                                         (binary-not ?accumulator-bits))
                                             ?rest)))
 (defmessage-handler MAIN::x8-accumulator complement-link primary
                     ()
                     (bind ?accumulator-bits
                           (decode-bits (dynamic-get value)
-                                       (hex->int 0xFFF)
+                                       ?*address12bit*
                                        0))
                     (bind ?link
                           (decode-bits (dynamic-get value)
-                                       (binary-not (hex->int 0xFFF))
+                                       (binary-not ?*address12bit*)
                                        12))
                     (dynamic-put value
                                  (binary-or ?accumulator-bits
@@ -465,19 +465,19 @@
                     ()
                     (bind ?accumulator-bits
                           (decode-bits (dynamic-get value)
-                                       (hex->int 0xFFF)
+                                       ?*address12bit*
                                        0))
                     (bind ?link
                           (decode-bits (dynamic-get value)
-                                       (binary-not (hex->int 0xFFF))
+                                       (binary-not ?*address12bit*)
                                        0))
                     (bind ?lower
                           (decode-bits ?accumulator-bits
-                                       (hex->int 0x3F)
+                                       (oct->int 0q77)
                                        0))
                     (bind ?upper
                           (decode-bits ?accumulator-bits
-                                       (hex->int 0xFC0)
+                                       (oct->int 0q7700)
                                        6))
                     (dynamic-put value
                                  (binary-or ?link
@@ -489,14 +489,14 @@
                     ; need to extract the least significant bit
                     (bind ?new-link
                           (right-shift (decode-bits (dynamic-get value)
-                                                    (hex->int 0x1)
+                                                    (oct->int 0q1)
                                                     0)
                                        12))
 
 
                     (bind ?contents
                           (right-shift (binary-and (dynamic-get value)
-                                                   (hex->int 0x1FFFF))
+                                                   (oct->int 0q17777))
                                        1))
                     (dynamic-put value
                                  (binary-or ?new-link
@@ -506,14 +506,14 @@
                     ()
                     (bind ?old-link
                           (decode-bits (dynamic-get value)
-                                       (hex->int 0x1000)
+                                       (oct->int 0q10000)
                                        12))
                     (bind ?new-accumulator
                           (right-shift (dynamic-get value)
                                        1))
                     (dynamic-put value
                                  (binary-or (binary-and ?new-accumulator
-                                                        (hex->int 0x1FFF))
+                                                        (oct->int 0q17777))
                                             ?old-link)))
 
 
@@ -573,7 +573,7 @@
              ()
              (if (= (decode-bits (send [ac]
                                     get-value)
-                              (hex->int 0x800)
+                              (oct->int 0q4000)
                               11)
                     1) then
                (send [pc]
@@ -589,8 +589,8 @@
 (deffunction MAIN::skip-if-positive-accumulator
              ()
              (if (= (decode-bits (send [ac]
-                                    get-value)
-                              (hex->int 0x800)
+                                       get-value)
+                              (oct->int 0q4000)
                               11)
                     0) then
                (send [pc]
