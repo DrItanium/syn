@@ -52,6 +52,7 @@ void IsRegularFile(UDFContext*, CLIPSValue*);
 void ClampValue(UDFContext*, CLIPSValue*);
 void CLIPS_translateBinary(UDFContext* context, CLIPSValue* ret) noexcept;
 void CLIPS_translateHex(UDFContext* context, CLIPSValue* ret) noexcept;
+void CLIPS_translateOctal(UDFContext* context, CLIPSValue* ret) noexcept;
 #endif
 
 extern "C" void InstallBoostExtensions(void* theEnv) {
@@ -70,6 +71,7 @@ extern "C" void InstallBoostExtensions(void* theEnv) {
 	EnvAddUDF(env, "clamp", "l", ClampValue, "ClampValue", 3, 3, "l;l;l;l", NULL);
 	EnvAddUDF(env, "binary->int", "l", CLIPS_translateBinary, "CLIPS_translateBinary", 1, 1, "sy", nullptr);
 	EnvAddUDF(env, "hex->int", "l", CLIPS_translateHex, "CLIPS_translateHex", 1, 1, "sy", nullptr);
+    EnvAddUDF(env, "oct->int", "l", CLIPS_translateOctal, "CLIPS_translateOctal", 1, 1, "sy", nullptr);
 #endif
 }
 
@@ -235,6 +237,10 @@ void CLIPS_translateBinary(UDFContext* context, CLIPSValue* ret) noexcept {
 
 void CLIPS_translateHex(UDFContext* context, CLIPSValue* ret) noexcept {
 	CLIPS_translateNumberBase(context, ret, "0x", 16, "Hex must start with 0x");
+}
+
+void CLIPS_translateOctal(UDFContext* context, CLIPSValue* ret) noexcept {
+	CLIPS_translateNumberBase(context, ret, "0q", 8, "Octal must start with 0q");
 }
 #endif
 
