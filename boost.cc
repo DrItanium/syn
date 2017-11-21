@@ -204,9 +204,8 @@ void CLIPS_errorOverflowedNumber(UDFContext* context, CLIPSValue* ret) noexcept 
 	CLIPS_errorMessageGeneric(context, ret, "number is too large and overflowed!");
 }
 
-template<bool zeroPositionOne = false>
-void CLIPS_translateNumberBase(UDFContext* context, CLIPSValue* ret, const std::string& prefix, int base, const std::string& badPrefix) noexcept {
-	constexpr unsigned long long maximumIntegerValue = 0xFFFFFFFFFFFFFFFF;
+void CLIPS_translateNumberBase(UDFContext* context, CLIPSValue* ret, const std::string& prefix, int base, const std::string& badPrefix, bool zeroPositionOne = false) noexcept {
+	constexpr uint64_t maximumIntegerValue = 0xFFFFFFFFFFFFFFFF;
 	CLIPSValue value;
 	if (!UDFFirstArgument(context, LEXEME_TYPES, &value)) {
 		CVSetBoolean(ret, false);
@@ -232,7 +231,7 @@ void CLIPS_translateNumberBase(UDFContext* context, CLIPSValue* ret, const std::
 	}
 }
 void CLIPS_translateBinary(UDFContext* context, CLIPSValue* ret) noexcept {
-	CLIPS_translateNumberBase<true>(context, ret, "0b", 2, "Binary must start with 0b");
+	CLIPS_translateNumberBase(context, ret, "0b", 2, "Binary must start with 0b", true);
 }
 
 void CLIPS_translateHex(UDFContext* context, CLIPSValue* ret) noexcept {
@@ -240,7 +239,7 @@ void CLIPS_translateHex(UDFContext* context, CLIPSValue* ret) noexcept {
 }
 
 void CLIPS_translateOctal(UDFContext* context, CLIPSValue* ret) noexcept {
-	CLIPS_translateNumberBase<true>(context, ret, "0q", 8, "Octal must start with 0q");
+	CLIPS_translateNumberBase(context, ret, "0q", 8, "Octal must start with 0q", true);
 }
 #endif
 
