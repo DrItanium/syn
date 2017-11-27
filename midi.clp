@@ -102,15 +102,26 @@
                (hex->int 0x7f)
                0))
 
+(defmethod midi::channel-mode
+  ((?channel INTEGER)
+   (?byte2 INTEGER)
+   (?byte3 INTEGER))
+  (create$ (make-control-byte (hex->int 0xB)
+                              ?channel)
+           (seven-bit-value ?byte2)
+           (seven-bit-value ?byte3)))
 (defmethod midi::all-sound-off
   "All oscillators will turn off, and their volume envelopes are set ot zero as soon as possible"
-  ()
-  (channel-mode 120
+  ((?channel INTEGER))
+  (channel-mode ?channel
+                120
                 0))
 (defmethod midi::reset-all-controllers
   "All controller values are reset to their default values"
-  ((?x INTEGER))
-  (channel-mode 121
+  ((?channel INTEGER)
+   (?x INTEGER))
+  (channel-mode ?channel
+                121
                 ?x))
 (defmethod midi::local-control-off
   "All devices on a given channel will respond only to data recieved over MIDI. Played data, etc. will be ignored"
@@ -205,10 +216,10 @@
    (?note INTEGER)
    (?pressure INTEGER))
   (make-message (hex->int 0xa)
-   ?channel
-   (map seven-bit-value
-    ?note
-    ?pressure)))
+                ?channel
+                (map seven-bit-value
+                     ?note
+                     ?pressure)))
 
 
 (defmethod midi::pitch-wheel
@@ -495,10 +506,10 @@
 (defgeneric midi::list-gm-sounds)
 
 (defmethod midi::list-gm-sounds
- ()
- (printout wdisplay
-           "List of general MIDI sounds" crlf)
-           
- (progn$ (?patch ?*gm-patches*)
+  ()
   (printout wdisplay
-            tab "- " ?patch crlf)))
+            "List of general MIDI sounds" crlf)
+
+  (progn$ (?patch ?*gm-patches*)
+          (printout wdisplay
+                    tab "- " ?patch crlf)))

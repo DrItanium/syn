@@ -17,7 +17,7 @@
                            (note-on 0
                                     (key->note-number ?key)
                                     ?velocity))
-                     (sleep 1)
+                     (sleep 10)
                      (call ?dev
                            write
                            (note-off 0
