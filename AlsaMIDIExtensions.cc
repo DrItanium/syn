@@ -358,7 +358,7 @@ namespace syn {
 			std::stringstream msg;
 			msg << "Card " << card << ":" << std::endl;
 			auto cardId = msg.str();
-			EnvPrintRouter(theEnv, WDISPLAY, cardId.c_str());
+            clips::printRouter(theEnv, WDISPLAY, cardId);
 			msg.str("");
 			char* longName = nullptr;
 			char* shortName = nullptr;
@@ -375,7 +375,7 @@ namespace syn {
 			msg << "\tLong name: " << longName << std::endl;
 			msg << "\tShort name: " << shortName << std::endl;
 			auto names = msg.str();
-			EnvPrintRouter(theEnv, WDISPLAY, names.c_str());
+            clips::printRouter(theEnv, WDISPLAY, names);
             status = alsa::nextCard(&card);
 			if (status < 0) {
 				unableToDetermineCardNumberError(context, ret, status);
@@ -457,7 +457,8 @@ namespace syn {
 				str << " (" << subs << " subdevices)" << std::endl;
 
 			}
-			EnvPrintRouter(theEnv, logicalName, str.str().c_str());
+            auto statement = str.str();
+            clips::printRouter(theEnv, logicalName, statement);
 		} else {
 			sub = 0;
 			for (;;) {
@@ -465,7 +466,8 @@ namespace syn {
 				str << (in ? "I" : " ");
 				str << (out ? "O" : " ");
 				str << "   hw:" << card << "," << device << "," << sub << "  " << subName << std::endl;
-				EnvPrintRouter(theEnv, logicalName, str.str().c_str());
+                auto statement = str.str();
+                clips::printRouter(theEnv, logicalName, statement);
 				++sub;
 				if (sub >= subs) {
 					break;
@@ -536,8 +538,8 @@ namespace syn {
 			return;
 		}
 		auto theEnv = UDFContextEnvironment(context);
-		EnvPrintRouter(theEnv, WDISPLAY, "\nType Device    Name\n");
-		EnvPrintRouter(theEnv, WDISPLAY, "====================================\n");
+        clips::printRouter(theEnv, WDISPLAY, "\nType Device    Name\n");
+        clips::printRouter(theEnv, WDISPLAY, "====================================\n");
 		while (card >= 0) {
 			listMidiDevicesOnCard(context, ret, card, WDISPLAY);
             status = alsa::nextCard(&card);
@@ -546,7 +548,7 @@ namespace syn {
 				return;
 			}
 		}
-		EnvPrintRouter(theEnv, WDISPLAY, "\n");
+        clips::printLine(theEnv, WDISPLAY);
 	}
 
 } // end namespace syn

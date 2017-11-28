@@ -40,6 +40,21 @@ extern "C" {
 	#include "clips.h"
 }
 
+namespace clips {
+inline int printRouter(void* theEnv, const std::string& logicalName, const std::string& msg) noexcept {
+    return EnvPrintRouter(theEnv, logicalName.c_str(), msg.c_str());
+}
+inline int printRouter(void* theEnv, const char* logicalName, const std::string& msg) noexcept {
+    return EnvPrintRouter(theEnv, logicalName, msg.c_str());
+}
+inline int printLine(void* theEnv, const char* logicalName) noexcept {
+    return printRouter(theEnv, logicalName, "\n");
+}
+inline int printLine(void* theEnv, const std::string& logicalName) noexcept {
+    return printRouter(theEnv, logicalName, "\n");
+}
+} // end namespace clips
+
 namespace syn {
 /// Wrapper over the CLIPS data objet type
 using DataObject = DATA_OBJECT;

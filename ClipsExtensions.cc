@@ -100,7 +100,7 @@ namespace syn {
 		void* ptr = EnvValueToExternalAddress(env, theValue);
 		ss << "<" << majorType << "-" << func << "-" << std::hex << ((ptr) ? ptr : theValue) << ">";
 		auto str = ss.str();
-		EnvPrintRouter(env, logicalName, str.c_str());
+        clips::printRouter(env, logicalName, str);
 	}
 	void CLIPS_basePrintAddress_Pointer(void* env, const char* logicalName, void* theValue, const char* func) noexcept {
 		CLIPS_basePrintAddress(env, logicalName, theValue, func, "Pointer");
@@ -172,9 +172,9 @@ namespace syn {
 
 	bool errorMessage(void* env, const std::string& idClass, int idIndex, const std::string& msgPrefix, const std::string& msg) noexcept {
 		PrintErrorID(env, idClass.c_str(), idIndex, false);
-		EnvPrintRouter(env, WERROR, msgPrefix.c_str());
-		EnvPrintRouter(env, WERROR, msg.c_str());
-		EnvPrintRouter(env, WERROR, "\n");
+        clips::printRouter(env, WERROR, msgPrefix);
+        clips::printRouter(env, WERROR, msg);
+        clips::printLine(env, WERROR);
 		EnvSetEvaluationError(env, true);
 		return false;
 	}
