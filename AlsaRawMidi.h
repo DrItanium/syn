@@ -41,10 +41,13 @@ namespace alsa {
     StatusCode nextCard(CardId* card) noexcept { return snd_card_next(card); }
     StatusCode close(Controller* ctl) noexcept { return snd_ctl_close(ctl);  }
     // TODO: fix the open mode with an enum
-    StatusCode open(Controller** ctl, const std::string& name, int mode) noexcept { return snd_ctl_open(ctl, name.c_str(), static_cast<int>(mode)); }
-    StatusCode open(Controller** ctl, const std::string& name, int mode, Config* lconf) noexcept { return snd_ctl_open_lconf(ctl, name.c_str(), static_cast<int>(mode), lconf); }
+    inline StatusCode open(Controller** ctl, const std::string& name, int mode) noexcept { return snd_ctl_open(ctl, name.c_str(), static_cast<int>(mode)); }
+    inline StatusCode open(Controller** ctl, const std::string& name, int mode, Config* lconf) noexcept { return snd_ctl_open_lconf(ctl, name.c_str(), static_cast<int>(mode), lconf); }
+	inline StatusCode getCardName(CardId card, char** storage) noexcept { return snd_card_get_name(card, storage); }
+	inline StatusCode getCardLongName(CardId card, char** storage) noexcept { return snd_card_get_longname(card, storage); }
 namespace rawmidi {
     using Device = snd_rawmidi_t;
+	using RawInfo = snd_rawmidi_info_t;
     using DeviceId = int;
     enum class OpenMode : int {
         Append = SND_RAWMIDI_APPEND,
@@ -60,25 +63,16 @@ namespace rawmidi {
     alsa::StatusCode close(Device* rmidi) noexcept { return snd_rawmidi_close(rmidi); }
     ssize_t write(Device* dev, const void* buffer, size_t size) noexcept { return snd_rawmidi_write(dev, buffer, size); }
     ssize_t read(Device* dev, void* buffer, size_t size) noexcept { return snd_rawmidi_read(dev, buffer, size); }
-
     alsa::StatusCode nextDevice(alsa::Controller* ctl, int* device) noexcept { return snd_ctl_rawmidi_next_device(ctl, device); }
 
-	class Info {
+	void setDevice(RawInfo* _info, unsigned int val) noexcept { snd_rawmidi_info_set_device(_info, val); }
+	void setSubdevice(RawInfo* _info, unsigned int val) noexcept { snd_rawmidi_info_set_subdevice(_info, val); }
+	void setStream(RawInfo* _info, StreamDirection direction) noexcept { snd_rawmidi_info_set_stream(_info, snd_rawmidi_stream_t(direction)); }
+	alsa::StatusCode populate(RawInfo* _info, alsa::Controller* ctl) noexcept { return snd_ctl_rawmidi_info(ctl, _info); }
+	int getSubdeviceCount(RawInfo* _info) noexcept { return snd_rawmidi_info_get_subdevices_count(_info); }
+	const char* getSubdeviceName(RawInfo* _info) noexcept { return snd_rawmidi_info_get_subdevice_name(_info); }
+	const char* getName(RawInfo* _info) noexcept { return snd_rawmidi_info_get_name(_info); }
 
-		public:
-			using BackingType = snd_rawmidi_info_t;
-		public:
-			Info() : _info(nullptr) { snd_rawmidi_info_alloca(&_info); }
-			void setDevice(unsigned int val) noexcept { snd_rawmidi_info_set_device(_info, val); }
-			void setSubdevice(unsigned int val) noexcept { snd_rawmidi_info_set_subdevice(_info, val); }
-			void setStream(StreamDirection direction) noexcept { snd_rawmidi_info_set_stream(_info, static_cast<snd_rawmidi_stream_t>(direction)); }
-			alsa::StatusCode populate(alsa::Controller* ctl) noexcept { return snd_ctl_rawmidi_info(ctl, _info); }
-			int getSubdeviceCount() noexcept { return snd_rawmidi_info_get_subdevices_count(_info); }
-			const char* getSubdeviceName() noexcept { return snd_rawmidi_info_get_subdevice_name(_info); }
-			const char* getName() noexcept { return snd_rawmidi_info_get_name(_info); }
-		private:
-			BackingType* _info;
-	};
 }
 } // end namespace alsa
 

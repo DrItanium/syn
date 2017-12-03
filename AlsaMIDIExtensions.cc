@@ -44,7 +44,7 @@ namespace alsa {
     }
 }
 namespace syn {
-	void soundCardError(UDFContext* context, CLIPSValue* ret, int code, const std::string& desc, alsa::StatusCode status) {
+	void soundCardError_Base(UDFContext* context, CLIPSValue* ret, int code, const std::string& desc, alsa::StatusCode status) {
 		CVSetBoolean(ret, false);
 		std::string cardId (alsa::decodeStatusCode(status));
 		std::stringstream msg;
@@ -52,10 +52,17 @@ namespace syn {
 		auto str2 = msg.str();
 		errorMessage(context, "SYSTEM", code, "sound card error: ", str2);
 	}
-
-	void soundCardError(UDFContext* context, CLIPSValue* ret, int code, const std::string& desc) {
+	void soundCardError_Base(UDFContext* context, CLIPSValue* ret, int code, const std::string& desc) {
 		CVSetBoolean(ret, false);
 		errorMessage(context, "SYSTEM", code, "sound card error: ", desc);
+	}
+	void soundCardError(UDFContext* context, CLIPSValue* ret, int code, const std::string& desc, alsa::StatusCode status) {
+		soundCardError_Base(context, ret, code, desc, status); 
+	}
+
+
+	void soundCardError(UDFContext* context, CLIPSValue* ret, int code, const std::string& desc) {
+		soundCardError_Base(context, ret, code, desc);
 	}
 	void noSoundCardsFoundError(UDFContext* context, CLIPSValue* ret) {
 		soundCardError(context, ret, 1, "no sound cards found!");
@@ -77,7 +84,7 @@ namespace syn {
 		std::ostringstream str;
 		collectArguments(str, args...);
 		auto string = str.str();
-		soundCardError(context, ret, code, string);
+		soundCardError_Base(context, ret, code, string);
 	}
     template<typename ... Args>
     void soundCardError(void* env, DataObjectPtr ret, int code, Args&& ... args) {
@@ -363,12 +370,12 @@ namespace syn {
 			msg.str("");
 			char* longName = nullptr;
 			char* shortName = nullptr;
-			status = snd_card_get_name(card, &shortName);
+			status = alsa::getCardName(card, &shortName);
 			if (status < 0) {
 				soundCardError(context, ret, 2, "cannot determine card shortname", status);
 				return;
 			}
-			status = snd_card_get_longname(card, &longName);
+			status = alsa::getCardLongName(card, &longName);
 			if (status < 0) {
 				soundCardError(context, ret, 2, "cannot determine card longname", status);
 				return;
@@ -382,19 +389,21 @@ namespace syn {
 				unableToDetermineCardNumberError(context, ret, status);
 				return;
 			}
+			free(longName);
+			free(shortName);
 		}
 		CVSetBoolean(ret, true);
 	}
 	template<alsa::rawmidi::StreamDirection direction>
 	alsa::StatusCode supportsDirection(alsa::Controller* ctl, alsa::CardId card, alsa::rawmidi::DeviceId device, int sub) {
-		alsa::rawmidi::Info info;
+		alsa::rawmidi::RawInfo* info = nullptr;
         alsa::StatusCode status = 0;
+		snd_rawmidi_info_alloca(&info);
+		alsa::rawmidi::setDevice(info, device);
+		alsa::rawmidi::setSubdevice(info, sub);
+		alsa::rawmidi::setStream(info, direction);
 
-		info.setDevice(device);
-		info.setSubdevice(sub);
-		info.setStream(direction);
-
-		status = info.populate(ctl);
+		status = alsa::rawmidi::populate(info, ctl);
 		if (status < 0 && status != -ENXIO) {
 			return status;
 		} else if(status == 0) {
@@ -407,17 +416,18 @@ namespace syn {
 	inline alsa::StatusCode isInput(alsa::Controller* ctl, alsa::CardId card, alsa::rawmidi::DeviceId device, int sub) { return supportsDirection<alsa::rawmidi::StreamDirection::Input>(ctl, card, device, sub); }
 
 	void listSubdeviceInfo(UDFContext* context, CLIPSValue* ret, alsa::Controller* ctl, alsa::CardId card, alsa::rawmidi::DeviceId device, const char* logicalName) {
-		alsa::rawmidi::Info info;
-		int subsIn, subsOut;
-		info.setDevice(device);
+		alsa::rawmidi::RawInfo* info;
 
-		info.setStream(alsa::rawmidi::StreamDirection::Input);
-		info.populate(ctl);
-		subsIn = info.getSubdeviceCount();
-		info.setStream(alsa::rawmidi::StreamDirection::Output);
-		info.populate(ctl);
-		subsOut = info.getSubdeviceCount();
-		int subs = subsIn > subsOut ? subsIn : subsOut;
+		int subs, subsIn, subsOut;
+		snd_rawmidi_info_alloca(&info);
+		alsa::rawmidi::setDevice(info, device);
+		alsa::rawmidi::setStream(info, alsa::rawmidi::StreamDirection::Input);
+		alsa::rawmidi::populate(info, ctl);
+		subsIn = alsa::rawmidi::getSubdeviceCount(info);
+		alsa::rawmidi::setStream(info, alsa::rawmidi::StreamDirection::Output);
+		alsa::rawmidi::populate(info, ctl);
+		subsOut = alsa::rawmidi::getSubdeviceCount(info);
+		subs = subsIn > subsOut ? subsIn : subsOut;
 
 		int sub = 0;
 		auto in = 0;
@@ -441,25 +451,23 @@ namespace syn {
 		if (status == 0) {
 			return;
 		}
-		const char* tmpSubName = info.getSubdeviceName();
 		auto theEnv = UDFContextEnvironment(context);
-		if (tmpSubName[0] == '\0') {
-			std::string name(info.getName());
+		auto name = alsa::rawmidi::getName(info);
+		auto subName = alsa::rawmidi::getSubdeviceName(info);
+		std::cout << "name: " << name << ", subName: " << subName << std::endl;
+		if (subName[0] == '\0') {
 			std::stringstream str;
 			str << (in ? "I" : " ");
 			str << (out ? "O" : " ");
-			str << "   hw:" << card << "," << device <<  "    " << name;
-			if (subs != 1) {
-				str << " (" << subs << " subdevices)";
+			if (subs == 1) {
+				str << "   hw:" << card << "," << device << "    " << name;
+			} else {
+				str << "   hw:" << card << "," << device << "    " << name << " (" << subs << " subdevices)";
 			}
 			str << std::endl;
             auto statement = str.str();
             clips::printRouter(theEnv, logicalName, statement);
 		} else {
-			tmpSubName = info.getSubdeviceName();
-			std::string subName(info.getSubdeviceName());
-			std::cout << "value of tmpSubName: " << static_cast<const void*>(tmpSubName) << std::endl;
-			std::cout << "subName = " << subName << std::endl;
 			sub = 0;
 			for (;;) {
 				std::stringstream str;
@@ -474,30 +482,27 @@ namespace syn {
 				}
 				in = isInput(ctl, card, device, sub);
 				out = isOutput(ctl, card, device, sub);
-				info.setSubdevice(sub);
+				alsa::rawmidi::setSubdevice(info, sub);
 				if (out) {
-					info.setStream(alsa::rawmidi::StreamDirection::Output);
-
-					status = info.populate(ctl);
+					alsa::rawmidi::setStream(info, alsa::rawmidi::StreamDirection::Output);
+					status = alsa::rawmidi::populate(info, ctl);
 					if (status < 0) {
 						soundCardError(context, ret, 2, "cannot get rawmidi information ", card, ":", device, ":", sub, ": ", alsa::decodeStatusCode(status));
 						break;
 					}
 				} else {
-					info.setStream(alsa::rawmidi::StreamDirection::Input);
-					status = info.populate(ctl);
+					alsa::rawmidi::setStream(info, alsa::rawmidi::StreamDirection::Input);
+					status = alsa::rawmidi::populate(info, ctl);
 					if (status < 0) {
 						soundCardError(context, ret, 2, "cannot get rawmidi information ", card, ":", device, ":", sub, ": ", alsa::decodeStatusCode(status));
 						break;
 					}
 				}
-				tmpSubName = info.getSubdeviceName();
-				subName = tmpSubName;
+				subName = alsa::rawmidi::getSubdeviceName(info);
 			}
 		}
-
-
 	}
+
 	void listMidiDevicesOnCard(UDFContext* context, CLIPSValue* ret, alsa::CardId card, const char* logicalName) {
         alsa::Controller* ctl = nullptr;
 		alsa::rawmidi::DeviceId device = -1;
