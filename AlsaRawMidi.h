@@ -45,7 +45,6 @@ namespace alsa {
     StatusCode open(Controller** ctl, const std::string& name, int mode, Config* lconf) noexcept { return snd_ctl_open_lconf(ctl, name.c_str(), static_cast<int>(mode), lconf); }
 namespace rawmidi {
     using Device = snd_rawmidi_t;
-    using Info = snd_rawmidi_info_t;
     using DeviceId = int;
     enum class OpenMode : int {
         Append = SND_RAWMIDI_APPEND,
@@ -62,11 +61,24 @@ namespace rawmidi {
     ssize_t write(Device* dev, const void* buffer, size_t size) noexcept { return snd_rawmidi_write(dev, buffer, size); }
     ssize_t read(Device* dev, void* buffer, size_t size) noexcept { return snd_rawmidi_read(dev, buffer, size); }
 
-    void setDevice(Info* info, unsigned int val) noexcept { snd_rawmidi_info_set_device(info, val); }
-    void setSubdevice(Info* info, unsigned int val) noexcept { snd_rawmidi_info_set_subdevice(info, val); }
-    void setStream(Info* info, StreamDirection direction) noexcept { snd_rawmidi_info_set_stream(info, static_cast<snd_rawmidi_stream_t>(direction)); }
-    void allocateInfo(Info** i) noexcept { snd_rawmidi_info_alloca(i); }
     alsa::StatusCode nextDevice(alsa::Controller* ctl, int* device) noexcept { return snd_ctl_rawmidi_next_device(ctl, device); }
+
+	class Info {
+
+		public:
+			using BackingType = snd_rawmidi_info_t;
+		public:
+			Info() : _info(nullptr) { snd_rawmidi_info_alloca(&_info); }
+			void setDevice(unsigned int val) noexcept { snd_rawmidi_info_set_device(_info, val); }
+			void setSubdevice(unsigned int val) noexcept { snd_rawmidi_info_set_subdevice(_info, val); }
+			void setStream(StreamDirection direction) noexcept { snd_rawmidi_info_set_stream(_info, static_cast<snd_rawmidi_stream_t>(direction)); }
+			alsa::StatusCode populate(alsa::Controller* ctl) noexcept { return snd_ctl_rawmidi_info(ctl, _info); }
+			int getSubdeviceCount() noexcept { return snd_rawmidi_info_get_subdevices_count(_info); }
+			const char* getSubdeviceName() noexcept { return snd_rawmidi_info_get_subdevice_name(_info); }
+			const char* getName() noexcept { return snd_rawmidi_info_get_name(_info); }
+		private:
+			BackingType* _info;
+	};
 }
 } // end namespace alsa
 
