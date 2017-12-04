@@ -56,10 +56,11 @@
 (deffunction MAIN::make-section
              ()
              (bind ?result
-                    (create$))
+                   (create$))
              (loop-for-count (?i 1 256) do
                              (bind ?result
                                    ?result
                                    (make-page)))
              (make-instance of encyclopedia-section
-              (children ?result)))
+                            (children ?result)))
+
