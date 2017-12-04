@@ -53,7 +53,7 @@
                           ?*encyclopedia-sentence-mask*
                           0))
 
-    
+
 (defmessage-handler encyclopedia-sentence read primary
                     (?address)
                     (override-next-handler (address->sentence-address ?address)))
