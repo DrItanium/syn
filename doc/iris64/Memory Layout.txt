@@ -1,0 +1,46 @@
+Memory Layout / Memory Address of iris64
+
+The entire 64-bit memory space is divided up into multiple components reminiscent of a set of encyclopedias.
+The encyclopedia set contains 256 books with 2^12 chapters. Each chapter consists of 2^20 sections.
+
+Each section contains 256 pages. Each page consists of 255 paragraphs with each paragraph
+containing 32 sentences and 256 words per sentence. Each word consists of 8 characters.
+
+This looks like this:
+
+bit 71     63              
+[ Book (8) | Chapter (12) | Section (20) | Page (8) | Paragraph (8) | Sentence (5) | Word (8) | Character (3) ]
+
+All addresses are 72-bits wide in full. Currently, the design assumes that books 1-255 are unmapped. However,
+this addition can be taken advantage of in the future through an instruction set extension. 
+
+The "back" of the book contains the IO space, it starts at book 0, chapter 2^12 - 1, section 2^20 - 1, page 255 and ends at 
+book 0, chapter 2^32 - 1, section 2^20 - 1, page 255, paragraph 255, sentence 31, word 255, character 7. 
+
+Thus 0x00ffffffffff000000 to 0x00ffffffffffffffff is the IO space. We have 2 megabytes of IO space to work with (which is plenty!)
+
+All instructions are aligned to 64-bit boundaries and the program counter increments 8 at a time and are 64-bits
+wide per word. An instruction can be multiple words wide but always a series of words.
+
+The actual design of the instruction set is up in the air at the moment.
+
+The first paragraph is for the interrupt table and other system specific structures. The first sentence 
+is the interrupt table. The other 31 sentences are currently unused but may become used at any time.
+There are a total of 8192 words in the paragraph or 64 kb per paragraph. 
+
+The second paragraph is where the pc points to on boot up (0x10000) it is where the initial bootloader is found and the 
+BIOS setup routines. Once the initial boot has been performed, the data found in the first paragraph should be setup correctly. 
+The second paragraph can then become another 64kb of bootloader/system services data. In fact, the entire first page should be 
+saved for the system and bios ideally. This gives a total of 2 megawords or 16 megabytes worth of space per page. 
+Thus each chapter contains 32 megawords or 128 megabytes of space. 
+
+
+A single chapter system could work quite well and would be similar to the early high end RISC machines of the 
+early 1990s/late 1980s in terms of performance and memory capacity. 
+
+The IO space would always be mapped to the back of the first book with the backs of the other books possibly having more IO 
+space if absolutely necessary. 
+
+
+The MMU is known as the encyclopedia set, it takes in a 64-bit and handles manipulating the islands of data. In a multiple book
+setup, the encyclopedia-set uses sub encyclopedia chips to interact with the different data setups. 

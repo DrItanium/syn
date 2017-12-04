@@ -1,0 +1,95 @@
+The main unit of memory manipulation is the word instead of the character. 
+
+
+
+
+All memory manipulation operations operate on words. Larger instructions for 
+manipulating sentences, paragraphs, pages, chapters, and books may exist at some point
+but they will be DMA style operations.
+
+The rest of this document details all of the different instructions used for manipulating the encyclopedia set.
+
+=== Load Word ===
+
+Takes in two word registers. The first register is the address to load from, the second register is where to
+store the loaded value to. 
+
+Syntax:
+    load-word ?address ?destination
+
+Implementation:
+    (deffunction load-word
+                 (?address ?destination)
+                 (send ?destination
+                       put-value
+                       (send [encyclopedia]
+                             load-value
+                             (send ?address
+                                   get-value))))
+
+=== Load Word Masked ===
+
+Takes in three registers, the first register is the address to load from, the second register is the register to store
+the value into. The third register contains a word mask to do a binary-and with the value loaded before storing
+it in the target register. 
+
+Syntax:
+    load-word-with-mask ?address ?destination ?mask
+
+Implementation:
+    (deffunction load-word-with-mask
+                 (?address ?destination ?mask)
+                 (send ?destination
+                       put-value
+                       (binary-and (send ?mask
+                                         get-value)
+                                   (send [encyclopedia]
+                                         load-value
+                                         (send ?address
+                                               get-value)))))
+              
+=== Store Word ===
+
+Takes in two register, the first register contains the address to store the word at. The second register contains
+the value to store into memory.
+
+Syntax:
+    store-word ?address ?value
+
+Implementation:
+    (deffunction store-word
+                 (?address ?value)
+                 (send [encyclopedia]
+                       store-value
+                       (send ?address
+                             get-value)
+                       (send ?value
+                             get-value)))
+                             
+=== Store Word Masked ===
+
+Takes in three registers, the first register contains the address to store the word at. The second register contains
+the value to store. The third register contains a word mask to and with the value to be stored.
+
+Syntax:
+    store-word-with-mask ?address ?value ?mask
+    
+Implementation:
+    (deffunction store-word-with-mask
+                 (?address ?value ?mask)
+                 (send [encyclopedia]
+                       store-value
+                       (send ?address
+                             get-value)
+                       (binary-and (send ?mask
+                                         get-value)
+                                   (send ?value
+                                         get-value))))
+                 
+                       
+- load-indirect - use the address referenced 
+- store-indirect
+- copy
+- set
+- push
+- pop

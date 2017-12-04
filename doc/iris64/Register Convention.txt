@@ -1,0 +1,36 @@
+There are 256 word sized general purpose registers. These GPRs can be referenced in multiple
+ways. 
+
+1) Whole words (256)
+2) Half word (512)
+3) Quarter word (1024)
+4) characters (2048)
+
+Each of these styles are an overlay over the 256 Word sized GPRS. There are separate instructions
+to operate on these different types and very few instructions which interface with different kinds
+of styles at the same time. 
+
+Each style has a different encoding width, 
+
+Whole words are represented with eight-bit fields
+Half words are represented with nine-bit fields
+Quarter words are represented with ten-bit fields
+Character fields are represented with 11-bit fields
+
+The whole GPRs are rX with X being an index in the range [0, 255]
+The Half words are rXu and rXl with X being an index in the range [0, 255] with 'u' representing the upper half and
+    'l' representing the lower half of the word.
+The quarter words are rXqY with X being an index in the range [0, 255] and Y being in the range [0, 3]
+The character are rXcY where X is an index in the range [0, 255] and Y being in the range [0, 7]
+
+There are alternative representations of the non whole word representations:
+
+For the words, wX with X being [0, 255]
+For the half words, hX with X being [0, 511]
+For the quarter words, qX with X being [0, 1023]
+For the characters, cX with X being [0, 2047]
+
+The registers are referenceable like this to make the memory layout and design easy to do as well as just be 
+super convienent. 
+
+Keep in mind that iris64 is not a RISC architecture.
