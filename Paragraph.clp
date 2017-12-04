@@ -52,6 +52,8 @@
              (decode-bits ?address
                           ?*encyclopedia-sentence-mask*
                           0))
+
+    
 (defmessage-handler encyclopedia-sentence read primary
                     (?address)
                     (override-next-handler (address->sentence-address ?address)))
@@ -67,6 +69,8 @@
   "The higher level containers for the encyclopedia concept which do not 
   directly interface with native memory blocks"
   (is-a device)
+  (role concrete)
+  (pattern-match reactive)
   (multislot children
              (type INSTANCE)
              (visibility public)
@@ -145,7 +149,7 @@
 
 (defglobal MAIN
            ?*encyclopedia-page-max-address* = (hex->int 0xFF)
-           ?*encyclopedia-page-size* = (+ ?*encyclopedia-page-max-size*
+           ?*encyclopedia-page-size* = (+ ?*encyclopedia-page-max-address*
                                           1)
            ?*encyclopedia-page-mask* = (hex->int 0x1FE000))
 
@@ -167,7 +171,7 @@
 
 (defglobal MAIN
            ?*encyclopedia-section-max-address* = (hex->int 0xFF)
-           ?*encyclopedia-section-size* = (+ ?*encyclopedia-section-max-size*
+           ?*encyclopedia-section-size* = (+ ?*encyclopedia-section-max-address*
                                              1)
            ?*encyclopedia-section-mask* = (hex->int 0x1FE00000))
 
@@ -204,11 +208,11 @@
   (is-a encyclopedia-container)
   (multislot children
              (source composite)
-             (cardinaltiy 1 1048576)
+             (cardinality 1 1048576)
              (allowed-classes encyclopedia-section)
              (default ?NONE))
   (message-handler compute-child-address primary))
-(defmessage-handler MAIN::encyclopedia-chapter compute-child-address
+(defmessage-handler MAIN::encyclopedia-chapter compute-child-address primary
                     (?address)
                     (decode-bits ?address
                                  ?*encyclopedia-chapter-mask*
@@ -218,3 +222,20 @@
 ; of actually implementing support for this as I'll never see it! I may eat my words but holy fuck,
 ; that is a lot of memory. I'll have to get creative anyway with the current clips implementation anyway
 ; to get values beyond 64-bit signed. For my emulation purposes, even having a full chapter is nuts!!!
+
+(defclass MAIN::iris64-encyclopedia
+  "A child of the encyclopedia-chapter, it is the mmu interface that an iris64 cpu would use, it is 
+  hard masked to at most 4 full sections or 16 gigabytes!"
+  (is-a encyclopedia-chapter)
+  (multislot children
+             (source composite)
+             (cardinality 1 4))
+  (message-handler compute-child-address primary))
+
+(defmessage-handler MAIN::iris64-encyclopedia compute-child-address primary
+                    (?address)
+                    ; TODO: add support for handling the IO section and its magic :D
+                    ; mask down to 4 sections
+                    (decode-bits ?address
+                                 (hex->int 0x60000000)
+                                 29))
