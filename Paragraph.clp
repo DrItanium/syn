@@ -165,6 +165,11 @@
                                           1)
            ?*encyclopedia-page-mask* = (hex->int 0x1FE000))
 
+(deffunction MAIN::address->page-address
+             (?address)
+             (decode-bits ?address
+                          ?*encyclopedia-page-mask*
+                          13))
 (defclass MAIN::encyclopedia-page
   "A page consists of 256 pages which is 16 megabytes"
   (is-a encyclopedia-container)
@@ -177,9 +182,7 @@
 
 (defmessage-handler encyclopedia-page compute-child-address primary
                     (?address)
-                    (decode-bits ?address
-                                 ?*encyclopedia-page-mask*
-                                 13))
+                    (address->page-address ?address))
 
 (defglobal MAIN
            ?*encyclopedia-section-max-address* = (hex->int 0xFF)
@@ -212,7 +215,11 @@
            ?*encyclopedia-chapter-size* = (+ ?*encyclopedia-chapter-max-address*
                                              1)
            ?*encyclopedia-chapter-mask* = (hex->int 0x1ffffe0000000))
-
+(deffunction MAIN::address->chapter-address
+             (?address)
+             (decode-bits ?address
+                          ?*encyclopedia-chapter-mask*
+                          29))
 (defclass MAIN::encyclopedia-chapter
   "An encyclopedia chapter consists of 2^20 sections which is 4 petabytes!!!!
   To put this in perspective, one chapter has the same storage capacity as the
@@ -226,9 +233,8 @@
   (message-handler compute-child-address primary))
 (defmessage-handler MAIN::encyclopedia-chapter compute-child-address primary
                     (?address)
-                    (decode-bits ?address
-                                 ?*encyclopedia-chapter-mask*
-                                 29))
+                    (address->chapter-address ?address))
+
 ; The highest level of the current addressing scheme is the book, there are 256 possible 
 ; books in the current addressing scheme and that totals 4096 exabytes!!! I do not see the point
 ; of actually implementing support for this as I'll never see it! I may eat my words but holy fuck,
