@@ -4,18 +4,18 @@ The entire 64-bit memory space is divided up into multiple components reminiscen
 The encyclopedia set contains 256 books with 2^12 chapters. Each chapter consists of 2^20 sections.
 
 Each section contains 256 pages. Each page consists of 255 paragraphs with each paragraph
-containing 16 sentences and 512 words per sentence. Each word consists of 8 characters.
+containing 8 sentences and 1024 words per sentence. Each word consists of 8 characters.
 
 This looks like this:
 
 bit 71     63              
-[ Book (8) | Chapter (12) | Section (20) | Page (8) | Paragraph (8) | Sentence (4) | Word (9) | Character (3) ]
+[ Book (8) | Chapter (12) | Section (20) | Page (8) | Paragraph (8) | Sentence (3) | Word (10) | Character (3) ]
 
 All addresses are 72-bits wide in full. Currently, the design assumes that books 1-255 are unmapped. However,
 this addition can be taken advantage of in the future through an instruction set extension. 
 
 The "back" of the book contains the IO space, it starts at book 0, chapter 2^12 - 1, section 2^20 - 1, page 255 and ends at 
-book 0, chapter 2^32 - 1, section 2^20 - 1, page 255, paragraph 255, sentence 15, word 511, character 7. 
+book 0, chapter 2^32 - 1, section 2^20 - 1, page 255, paragraph 255, sentence 7, word 1023, character 7. 
 
 Thus 0x00ffffffffff000000 to 0x00ffffffffffffffff is the IO space. We have 2 megabytes of IO space to work with (which is plenty!)
 
