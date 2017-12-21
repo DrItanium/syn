@@ -29,14 +29,30 @@
 
 ; See doc/iris64/Memory Layout.txt
 
+
+
 (defglobal MAIN
-           ?*encyclopedia-sentence-max-address* = (hex->int 0xFF)
+           ?*encyclopedia-sentence-max-address* = (hex->int 0x1FF)
            ?*encyclopedia-sentence-size* = (+ ?*encyclopedia-sentence-max-address* 
                                               1)
            ?*encyclopedia-sentence-mask* = ?*encyclopedia-sentence-max-address*)
+
+(deffunction MAIN::address->sentence-address
+             "extract the lowest 9 bits"
+             (?address)
+             (decode-bits ?address
+                          ?*encyclopedia-sentence-mask*
+                          0))
+
+; conceptually, the sentence is the smallest unit of measurement, unfortunately it is way too 
+; fine grain of control for CLIPS, having directly addressable 2kb worth of memory is too fine 
+; and adds about 750 megabytes of overhead for one section! 
+
+; First lets see if we do nine-bits instead of eight bits!
+
 (defclass MAIN::encyclopedia-sentence
-  "A set of 256 words which is the smallest unit, this would be known as a block in
-  other architectures! This translates to 2k per sentence"
+  "A set of 512 words which is the smallest unit, this would be known as a block in
+  other architectures! This translates to 4k per sentence"
   (is-a memory-block)
   (slot capacity
         (source composite)
@@ -46,12 +62,7 @@
         (default ?*encyclopedia-sentence-size*))
   (message-handler read primary)
   (message-handler write primary))
-(deffunction MAIN::address->sentence-address
-             "extract the lowest eight bits"
-             (?address)
-             (decode-bits ?address
-                          ?*encyclopedia-sentence-mask*
-                          0))
+
 
 
 (defmessage-handler encyclopedia-sentence read primary
@@ -116,12 +127,13 @@
                       (nth$ ?conv
                             (dynamic-get children))))
 
-; A paragraph has 32 sentences in it for a total of 64k per paragraph
+; A paragraph has 16 sentences in it for a total of 64k per paragraph
 (defglobal MAIN
-           ?*encyclopedia-paragraph-max-address* = (hex->int 0x1F)
+           ?*encyclopedia-paragraph-max-address* = (hex->int 0xF)
            ?*encyclopedia-paragraph-size* = (+ ?*encyclopedia-paragraph-max-address*
                                                1)
-           ?*encyclopedia-paragraph-mask* = (hex->int 0x1f00))
+           ?*encyclopedia-paragraph-mask* = (left-shift ?*encyclopedia-paragraph-max-address* 
+                                                        9))
 
 
 
@@ -129,15 +141,16 @@
              (?address)
              (decode-bits ?address
                           ?*encyclopedia-paragraph-mask*
-                          8))
+                          9))
 
 (defclass MAIN::encyclopedia-paragraph
-  "A paragraph is 5 bits worth of sentences which make up 64k of space"
+  "A paragraph is 4 bits worth of sentences which make up 64k of space"
   (is-a encyclopedia-container)
   (multislot children
              (source composite)
              (allowed-classes encyclopedia-sentence)
-             (cardinality 1 32)
+             (cardinality 1 
+                          16)
              (default ?NONE))
   (message-handler compute-child-address primary))
 

@@ -35,7 +35,7 @@
              ()
              (bind ?result
                    (create$))
-             (loop-for-count (?i 1 32) do
+             (loop-for-count (?i 1 16) do
                              (bind ?result
                                    ?result
                                    (make-instance of encyclopedia-sentence)))
