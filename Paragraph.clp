@@ -32,13 +32,13 @@
 
 
 (defglobal MAIN
-           ?*encyclopedia-sentence-max-address* = (hex->int 0x1FF)
+           ?*encyclopedia-sentence-max-address* = (hex->int 0x3FF)
            ?*encyclopedia-sentence-size* = (+ ?*encyclopedia-sentence-max-address* 
                                               1)
            ?*encyclopedia-sentence-mask* = ?*encyclopedia-sentence-max-address*)
 
 (deffunction MAIN::address->sentence-address
-             "extract the lowest 9 bits"
+             "extract the lowest 10 bits"
              (?address)
              (decode-bits ?address
                           ?*encyclopedia-sentence-mask*
@@ -51,8 +51,8 @@
 ; First lets see if we do nine-bits instead of eight bits!
 
 (defclass MAIN::encyclopedia-sentence
-  "A set of 512 words which is the smallest unit, this would be known as a block in
-  other architectures! This translates to 4k per sentence"
+  "A set of 1024 words which is the smallest unit, this would be known as a block in
+  other architectures! This translates to 8k per sentence"
   (is-a memory-block)
   (slot capacity
         (source composite)
@@ -129,11 +129,12 @@
 
 ; A paragraph has 16 sentences in it for a total of 64k per paragraph
 (defglobal MAIN
-           ?*encyclopedia-paragraph-max-address* = (hex->int 0xF)
+           ?*encyclopedia-paragraph-max-address* = (hex->int 0x7)
            ?*encyclopedia-paragraph-size* = (+ ?*encyclopedia-paragraph-max-address*
                                                1)
+           ?*encyclopedia-shift-amount* = 10
            ?*encyclopedia-paragraph-mask* = (left-shift ?*encyclopedia-paragraph-max-address* 
-                                                        9))
+                                                        ?*encyclopedia-shift-amount*))
 
 
 
@@ -141,24 +142,22 @@
              (?address)
              (decode-bits ?address
                           ?*encyclopedia-paragraph-mask*
-                          9))
+                          ?*encyclopedia-shift-amount*))
 
 (defclass MAIN::encyclopedia-paragraph
-  "A paragraph is 4 bits worth of sentences which make up 64k of space"
+  "A paragraph is 3 bits worth of sentences which make up 64k of space"
   (is-a encyclopedia-container)
   (multislot children
              (source composite)
              (allowed-classes encyclopedia-sentence)
              (cardinality 1 
-                          16)
+                          8)
              (default ?NONE))
   (message-handler compute-child-address primary))
 
 (defmessage-handler encyclopedia-paragraph compute-child-address primary
                     (?address)
-                    (decode-bits ?address
-                                 ?*encyclopedia-paragraph-mask*
-                                 8))
+                    (address->paragraph-address ?address))
 
 (defglobal MAIN
            ?*encyclopedia-page-max-address* = (hex->int 0xFF)
