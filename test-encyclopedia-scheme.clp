@@ -127,7 +127,7 @@
                ?value))
 ; the first paragraph (64k) is for the bios and other such things
 (defglobal MAIN
-           ?*system-structure-base-address* = 0
+           ?*system-structure-base-address* = (hex->int 0x0400) ; the interrupt table starts the second sentence, the first sentence is for a simple boot loader
            ?*interrupt-table-base-address* = (+ ?*system-structure-base-address*
                                                 0)
            ?*interrupt-table-layout* = (create$ illegal-instruction
