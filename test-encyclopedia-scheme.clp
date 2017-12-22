@@ -30,37 +30,153 @@
 (batch* Device.clp)
 (batch* MemoryBlock.clp)
 (batch* Paragraph.clp)
+(batch* order.clp)
 
-(deffunction MAIN::make-paragraph
-             ()
-             (bind ?result
-                   (create$))
-             (loop-for-count (?i 1 8) do
-                             (bind ?result
-                                   ?result
-                                   (make-instance of encyclopedia-sentence)))
-             (make-instance of encyclopedia-paragraph
-                            (children ?result)))
+(defgeneric MAIN::make-section)
+(defgeneric MAIN::make-paragraph)
+(defgeneric MAIN::make-page)
+(defmethod MAIN::make-paragraph
+  ((?count INTEGER
+           (>= 8 
+               ?current-argument
+               1)))
+  (bind ?result
+        (create$))
+  (loop-for-count (?i 1 ?count) do
+                  (bind ?result
+                        ?result
+                        (make-instance of encyclopedia-sentence)))
+  (make-instance of encyclopedia-paragraph
+                 (children ?result)))
 
-(deffunction MAIN::make-page
-             ()
-             (bind ?result
-                   (create$))
-             (loop-for-count (?i 1 256) do
-                             (bind ?result
-                                   ?result
-                                   (make-paragraph)))
-             (make-instance of encyclopedia-page
-                            (children ?result)))
+(defmethod MAIN::make-paragraph
+  ()
+  (make-paragraph 8))
 
-(deffunction MAIN::make-section
-             ()
-             (bind ?result
-                   (create$))
-             (loop-for-count (?i 1 256) do
-                             (bind ?result
-                                   ?result
-                                   (make-page)))
-             (make-instance of encyclopedia-section
-                            (children ?result)))
+(defmethod MAIN::make-page
+  ()
+  (make-page 256))
+
+(defmethod MAIN::make-page
+  ((?count INTEGER
+           (>= 256
+               ?current-argument
+               1)))
+
+  (bind ?result
+        (create$))
+  (loop-for-count (?i 1 ?count) do
+                  (bind ?result
+                        ?result
+                        (make-paragraph)))
+  (make-instance of encyclopedia-page
+                 (children ?result)))
+
+(defmethod MAIN::make-section
+  ()
+  (make-section 256))
+(defmethod MAIN::make-section
+  ((?num-pages INTEGER
+               (>= 256 ?current-argument
+                   1)))
+  (bind ?result
+        (create$))
+  (loop-for-count (?i 1 ?num-pages) do
+                  (bind ?result
+                        ?result
+                        (make-page)))
+  (make-instance of encyclopedia-section
+                 (children ?result)))
+(definstances MAIN::main-memory
+              (main-memory of iris64-encyclopedia 
+                           (children)))
+
+(deffacts MAIN::sections
+          (make-section for [main-memory] (gensym*))
+          (make-section for [main-memory] (gensym*))
+          (make-section for [main-memory] (gensym*)))
+(deffacts MAIN::execution-flow 
+          (stage (current initialize)
+                 (rest setup-tables
+                       check)))
+
+(defrule MAIN::construct-section
+         (stage (current initialize))
+         ?f <- (make-section for ?mem ?)
+         (object (is-a iris64-encyclopedia)
+                 (name ?mem)
+                 (children $?children))
+         =>
+         (retract ?f)
+         ; have to do this outside the modify instance to keep performance up
+         (bind ?section
+               (make-section))
+         (modify-instance ?mem
+                          (children $?children
+                                    ?section)))
+(defrule MAIN::setup-interrupt-table
+         "During initial setup, write a given value to the target address"
+         (stage (current setup-tables))
+         ?f <- (write ?value to ?address)
+         =>
+         (retract ?f)
+         (assert (verify write ?value to ?address))
+         (send [main-memory]
+               write
+               ?address
+               ?value))
+; the first paragraph (64k) is for the bios and other such things
+(defglobal MAIN
+           ?*system-structure-base-address* = 0
+           ?*interrupt-table-base-address* = (+ ?*system-structure-base-address*
+                                                0)
+           ?*interrupt-table-layout* = (create$ illegal-instruction
+                                                divide-by-zero
+                                                user))
+
+
+
+(defrule MAIN::initialize-interrupt-table-entries
+         (declare (salience ?*priority:first*))
+         (stage (current initialize))
+         =>
+         (progn$ (?table ?*interrupt-table-layout*)
+                 (assert (interrupt-table-entry ?table
+                                                (+ ?*interrupt-table-base-address*
+                                                   (- ?table-index
+                                                      1))))))
+
+(defrule MAIN::translate-interrupt-table-write
+         (stage (current setup-tables))
+         ?f <- (interrupt ?name ->
+                          ?value)
+         (interrupt-table-entry ?name
+                                ?address)
+         =>
+         (retract ?f)
+         (printout t 
+                   "Setting interrupt " ?name " at " ?address " to " ?value crlf)
+         (assert (write ?value to ?address)))
+
+(deffacts MAIN::interrupt-table-layout
+          (interrupt illegal-instruction -> (hex->int 0x2000))
+          (interrupt divide-by-zero -> (hex->int 0x2100))
+          (interrupt user -> (hex->int 0x2200)))
+
+(defrule MAIN::verify-writes
+         (stage (current check))
+         ?f <- (verify write ?value to ?address)
+         =>
+         (retract ?f)
+         (bind ?from-memory
+               (send [main-memory]
+                     read
+                     ?address))
+         (if (neq ?from-memory
+                  ?value) then
+             (halt)
+             (printout werror
+                       "ERROR: write to address " ?address " failed!" crlf
+                       tab "Expected: " ?value " but got " ?from-memory " instead!" crlf)))
+
 
