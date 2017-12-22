@@ -163,13 +163,16 @@
            ?*encyclopedia-page-max-address* = (hex->int 0xFF)
            ?*encyclopedia-page-size* = (+ ?*encyclopedia-page-max-address*
                                           1)
-           ?*encyclopedia-page-mask* = (hex->int 0x1FE000))
+           ?*encyclopedia-page-shift-count* = 13
+           ?*encyclopedia-page-mask* = (left-shift ?*encyclopedia-page-max-address*
+                                                   ?*encyclopedia-page-shift-count*))
 
 (deffunction MAIN::address->page-address
              (?address)
              (decode-bits ?address
                           ?*encyclopedia-page-mask*
-                          13))
+                          ?*encyclopedia-page-shift-count*))
+
 (defclass MAIN::encyclopedia-page
   "A page consists of 256 pages which is 16 megabytes"
   (is-a encyclopedia-container)
@@ -188,13 +191,15 @@
            ?*encyclopedia-section-max-address* = (hex->int 0xFF)
            ?*encyclopedia-section-size* = (+ ?*encyclopedia-section-max-address*
                                              1)
-           ?*encyclopedia-section-mask* = (hex->int 0x1FE00000))
+           ?*encyclopedia-section-shift-count* = 21
+           ?*encyclopedia-section-mask* = (left-shift ?*encyclopedia-section-max-address*
+                                                      ?*encyclopedia-section-shift-count*))
 
 (deffunction MAIN::address->section-address
              (?address)
              (decode-bits ?address
                           ?*encyclopedia-section-mask*
-                          21))
+                          ?*encyclopedia-section-shift-count*))
 
 (defclass MAIN::encyclopedia-section
   "A section consists of 256 pages which is 4 gigabytes!"
