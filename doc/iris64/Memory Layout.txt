@@ -25,7 +25,7 @@ wide per word. An instruction can be multiple words wide but always a series of 
 The actual design of the instruction set is up in the air at the moment.
 
 The first paragraph is for the interrupt table and other system specific structures. The first sentence 
-is the interrupt table. The other 15 sentences are currently unused but may become used at any time.
+is the interrupt table. The other 7 sentences are currently unused but may become used at any time.
 There are a total of 8192 words in the paragraph or 64 kb per paragraph. 
 
 The second paragraph is where the pc points to on boot up (0x10000) it is where the initial bootloader is found and the 
