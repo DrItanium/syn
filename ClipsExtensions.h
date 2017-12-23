@@ -39,33 +39,41 @@
 extern "C" {
 	#include "clips.h"
 }
-
 namespace clips {
-inline int printRouter(void* theEnv, const std::string& logicalName, const std::string& msg) noexcept {
-    return EnvPrintRouter(theEnv, logicalName.c_str(), msg.c_str());
+inline void printRouter(Environment* theEnv, const std::string& logicalName, const std::string& msg) noexcept {
+	WriteString(theEnv, logicalName.c_str(), msg.c_str());
 }
-inline int printRouter(void* theEnv, const char* logicalName, const std::string& msg) noexcept {
-    return EnvPrintRouter(theEnv, logicalName, msg.c_str());
+inline void printRouter(Environment* theEnv, const char* logicalName, const std::string& msg) noexcept {
+    WriteString(theEnv, logicalName, msg.c_str());
 }
-inline int printLine(void* theEnv, const char* logicalName) noexcept {
-    return printRouter(theEnv, logicalName, "\n");
+inline void printLine(Environment* theEnv, const char* logicalName) noexcept {
+	Writeln(theEnv, logicalName);
 }
-inline int printLine(void* theEnv, const std::string& logicalName) noexcept {
-    return printRouter(theEnv, logicalName, "\n");
+inline void printLine(Environment* theEnv, const std::string& logicalName) noexcept {
+	printLine(theEnv, logicalName.c_str());
+}
+inline void printRouter(Environment* theEnv, const std::string& logicalName, int64_t value) noexcept {
+	WriteInteger(theEnv, logicalName.c_str(), value); 
+}
+
+inline void printRouter(Environment* theEnv, const std::string& logicalName, double value) noexcept {
+	WriteFloat(theEnv, logicalName.c_str(), value); 
+}
+inline void printRouter(Environment* theEnv, const std::string& logicalName, UDFValue* value) noexcept {
+	WriteUDFValue(theEnv, logicalName.c_str(), value);
+}
+inline void printRouter(Environment* theEnv, const std::string& logicalName, CLIPSValue* value) noexcept {
+	WriteCLIPSValue(theEnv, logicalName.c_str(), value);
 }
 } // end namespace clips
 
 namespace syn {
-/// Wrapper over the CLIPS data objet type
-using DataObject = DATA_OBJECT;
-/// Wrapper over the CLIPS data object pointer type
-using DataObjectPtr = DATA_OBJECT_PTR;
 
 /**
  * Install extended user functions to make life easier.
  * @param theEnv the environment to install the extended user functions into
  */
-void installExtensions(void* theEnv);
+void installExtensions(Environment* theEnv);
 
 /**
  * A wrapper enum for interfacing with CLIPS' constants
@@ -205,32 +213,10 @@ bool hasCorrectArgCount(void* env, ArgCountChecker<T> compare, ArgCountModifier<
  * @param value the dataObjectPtr to check
  * @return true if the given dataObjectPtr contains an external address
  */
-bool isExternalAddress(DataObjectPtr value) noexcept;
+bool isExternalAddress(UDFValue* value) noexcept;
 
-CLIPSFloat extractFloat(void* env, DataObjectPtr value) noexcept;
-CLIPSFloat extractFloat(void* env, DataObject& value) noexcept;
-template<typename Ret>
-Ret extractFloat(void* env, DataObjectPtr value) noexcept {
-	return static_cast<Ret>(extractFloat(env, value));
-}
-template<typename Ret>
-Ret extractFloat(void* env, DataObject& value) noexcept {
-	return static_cast<Ret>(extractFloat(env, value));
-}
-CLIPSInteger extractCLIPSInteger(void* env, DataObjectPtr value) noexcept;
-CLIPSInteger extractCLIPSInteger(void* env, DataObject& value) noexcept;
-template<typename Ret>
-Ret extractCLIPSInteger(void* env, DataObjectPtr value) noexcept {
-    return static_cast<Ret>(extractCLIPSInteger(env, value));
-}
-
-template<typename Ret>
-Ret extractCLIPSInteger(void* env, DataObject& value) noexcept {
-    return static_cast<Ret>(extractCLIPSInteger(env, value));
-}
-
-const char* extractLexeme(void* env, DataObjectPtr value) noexcept;
-const char* extractLexeme(void* env, DataObject& value) noexcept;
+const char* extractLexeme(UDFValue* value) noexcept;
+const char* extractLexeme(UDFValue& value) noexcept;
 
 bool checkThenGetArgument(void* env, const std::string& function, int position, MayaType type, DataObjectPtr saveTo) noexcept;
 bool tryGetArgumentAsInteger(void* env, const std::string& function, int position, DataObjectPtr saveTo) noexcept;
@@ -245,8 +231,21 @@ bool tryGetArgumentAsString(void* env, const std::string& function, int position
  * @param value the boolean value itself (defaults to true)
  * @return the input argument 'value'
  */
-inline bool setClipsBoolean(CLIPSValue* ret, bool value = true) noexcept {
-    CVSetBoolean(ret, value);
+inline bool setClipsBoolean(Environment* theEnv, CLIPSValue* ret, bool value = true) noexcept {
+	ret->lexemeValue = value ? TrueSymbol(theEnv) : FalseSymbol(theEnv);
+    return value;
+}
+
+/**
+ * Wrapper method for setting a clips value to a boolean value. The boolean
+ * value is also returned as a way to set the ret pointer and return a boolean
+ * value from a function.
+ * @param ret the area to store the boolean into
+ * @param value the boolean value itself (defaults to true)
+ * @return the input argument 'value'
+ */
+inline bool setClipsBoolean(Environment* theEnv, UDFValue* ret, bool value = true) noexcept {
+	ret->lexemeValue = value ? TrueSymbol(theEnv) : FalseSymbol(theEnv);
     return value;
 }
 /**

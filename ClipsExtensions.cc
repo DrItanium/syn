@@ -47,18 +47,18 @@ extern "C" {
 }
 
 namespace syn {
-	void CLIPS_errorMessageGeneric(UDFContext* context, CLIPSValue* ret, const char* msg) noexcept {
+	void CLIPS_errorMessageGeneric(UDFContext* context, UDFValue* ret, const char* msg) noexcept {
 		UDFInvalidArgumentMessage(context, msg);
 		CVSetBoolean(ret, false);
 	}
-	void CLIPS_errorMessageGeneric(UDFContext* context, CLIPSValue* ret, const std::string& msg) noexcept {
+	void CLIPS_errorMessageGeneric(UDFContext* context, UDFValue* ret, const std::string& msg) noexcept {
 		CLIPS_errorMessageGeneric(context, ret, msg.c_str());
 	}
-	void CLIPS_errorOverflowedNumber(UDFContext* context, CLIPSValue* ret) noexcept {
+	void CLIPS_errorOverflowedNumber(UDFContext* context, UDFValue* ret) noexcept {
 		CLIPS_errorMessageGeneric(context, ret, "number is too large and overflowed");
 	}
-	void CLIPS_translateBitmask(UDFContext* context, CLIPSValue* ret) noexcept {
-		CLIPSValue value;
+	void CLIPS_translateBitmask(UDFContext* context, UDFValue* ret) noexcept {
+		UDFValue value;
 		if (!UDFFirstArgument(context, LEXEME_TYPES, &value)) {
 			CVSetBoolean(ret, false);
 		} else {
@@ -72,7 +72,7 @@ namespace syn {
 					if (tmp > 0xFF) {
 						CLIPS_errorMessageGeneric(context, ret, "provided number is larger than 8-bits!");
 					} else {
-						CVSetInteger(ret, static_cast<CLIPSInteger>(static_cast<byte>(tmp)));
+						CVSetInteger(ret, static_cast<int64_t>(static_cast<byte>(tmp)));
 					}
 				}
 			} else {
@@ -80,33 +80,33 @@ namespace syn {
 			}
 		}
 	}
-	void CLIPS_errorNumberLargerThan64Bits(UDFContext* context, CLIPSValue* ret) noexcept {
+	void CLIPS_errorNumberLargerThan64Bits(UDFContext* context, UDFValue* ret) noexcept {
 		CLIPS_errorMessageGeneric(context, ret, "provided number is larger than 64-bits!");
 	}
 
 
-	void CLIPS_expandBit(UDFContext* context, CLIPSValue* ret) noexcept {
-		CLIPSValue number;
+	void CLIPS_expandBit(UDFContext* context, UDFValue* ret) noexcept {
+		UDFValue number;
 		if (!UDFFirstArgument(context, NUMBER_TYPES, &number)) {
 			CVSetBoolean(ret, false);
 			return;
 		}
 		auto value = CVToInteger(&number);
-		CVSetInteger(ret, CLIPSInteger(expandBit(value != 0)));
+		CVSetInteger(ret, int64_t(expandBit(value != 0)));
 	}
 
-	void CLIPS_basePrintAddress(void* env, const char* logicalName, void* theValue, const char* func, const char* majorType) {
+	void CLIPS_basePrintAddress(Environment* env, const char* logicalName, void* theValue, const char* func, const char* majorType) {
 		std::stringstream ss;
 		void* ptr = EnvValueToExternalAddress(env, theValue);
 		ss << "<" << majorType << "-" << func << "-" << std::hex << ((ptr) ? ptr : theValue) << ">";
 		auto str = ss.str();
         clips::printRouter(env, logicalName, str);
 	}
-	void CLIPS_basePrintAddress_Pointer(void* env, const char* logicalName, void* theValue, const char* func) noexcept {
+	void CLIPS_basePrintAddress_Pointer(Environment* env, const char* logicalName, void* theValue, const char* func) noexcept {
 		CLIPS_basePrintAddress(env, logicalName, theValue, func, "Pointer");
 	}
-	void CLIPS_decodeBits(UDFContext* context, CLIPSValue* ret) {
-		CLIPSValue value, mask, shift;
+	void CLIPS_decodeBits(UDFContext* context, UDFValue* ret) {
+		UDFValue value, mask, shift;
 		if (!UDFFirstArgument(context, NUMBER_TYPES, &value)) {
 			CVSetBoolean(ret, false);
 		} else if (!UDFNextArgument(context, NUMBER_TYPES, &mask)) {
@@ -114,11 +114,11 @@ namespace syn {
 		} else if (!UDFNextArgument(context, NUMBER_TYPES, &shift)) {
 			CVSetBoolean(ret, false);
 		} else {
-			CVSetInteger(ret, decodeBits<CLIPSInteger, CLIPSInteger>(CVToInteger(&value), CVToInteger(&mask), CVToInteger(&shift)));
+			CVSetInteger(ret, decodeBits<int64_t, int64_t>(CVToInteger(&value), CVToInteger(&mask), CVToInteger(&shift)));
 		}
 	}
-	void CLIPS_encodeBits(UDFContext* context, CLIPSValue* ret) noexcept {
-		CLIPSValue input, value, mask, shift;
+	void CLIPS_encodeBits(UDFContext* context, UDFValue* ret) noexcept {
+		UDFValue input, value, mask, shift;
 		if (!UDFFirstArgument(context, NUMBER_TYPES, &input)) {
 			CVSetBoolean(ret, false);
 		} else if (!UDFNextArgument(context, NUMBER_TYPES, &value)) {
@@ -132,15 +132,15 @@ namespace syn {
 			auto v = CVToInteger(&value);
 			auto m = CVToInteger(&mask);
 			auto s = CVToInteger(&shift);
-			CVSetInteger(ret, encodeBits<CLIPSInteger, CLIPSInteger>(i, v, m, s));
+			CVSetInteger(ret, encodeBits<int64_t, int64_t>(i, v, m, s));
 		}
 	}
     template<typename I, typename O, I mask, int index>
     O performDecode(I input) noexcept {
         return syn::decodeBits<I, O, mask << (8 * index), (8 * index)>(input);
     }
-	void CLIPS_breakApartNumber(UDFContext* context, CLIPSValue* ret) {
-		CLIPSValue number;
+	void CLIPS_breakApartNumber(UDFContext* context, UDFValue* ret) {
+		UDFValue number;
 		if (!UDFFirstArgument(context, NUMBER_TYPES, &number)) {
 			CVSetBoolean(ret, false);
             return;
@@ -170,7 +170,7 @@ namespace syn {
         }
 	}
 
-	bool errorMessage(void* env, const std::string& idClass, int idIndex, const std::string& msgPrefix, const std::string& msg) noexcept {
+	bool errorMessage(Environment* env, const std::string& idClass, int idIndex, const std::string& msgPrefix, const std::string& msg) noexcept {
 		PrintErrorID(env, idClass.c_str(), idIndex, false);
         clips::printRouter(env, WERROR, msgPrefix);
         clips::printRouter(env, WERROR, msg);
@@ -182,8 +182,8 @@ namespace syn {
         return errorMessage(UDFContextEnvironment(env), idClass, idIndex, msgPrefix, msg);
     }
     template<bool shiftLeft>
-    void CLIPS_circularShiftBase(UDFContext* context, CLIPSValuePtr ret) {
-        CLIPSValue a, b;
+    void CLIPS_circularShiftBase(UDFContext* context, UDFValue* ret) {
+        UDFValue a, b;
         if (!UDFFirstArgument(context, INTEGER_TYPE, &a)) {
             CVSetBoolean(ret, false);
         } else if (!UDFNextArgument(context, INTEGER_TYPE, &b)) {
@@ -192,35 +192,35 @@ namespace syn {
             auto firstValue = CVToInteger(&a);
             auto secondValue = CVToInteger(&b);
             auto result = shiftLeft ?
-                circularShiftLeft<CLIPSInteger>(firstValue, secondValue) :
-                circularShiftRight<CLIPSInteger>(firstValue, secondValue);
+                circularShiftLeft<int64_t>(firstValue, secondValue) :
+                circularShiftRight<int64_t>(firstValue, secondValue);
             CVSetInteger(ret, result);
         }
     }
-    void CLIPS_circularShiftLeft(UDFContext* context, CLIPSValuePtr ret) {
+    void CLIPS_circularShiftLeft(UDFContext* context, UDFValue* ret) {
         CLIPS_circularShiftBase<true>(context, ret);
     }
-    void CLIPS_circularShiftRight(UDFContext* context, CLIPSValuePtr ret) {
+    void CLIPS_circularShiftRight(UDFContext* context, UDFValue* ret) {
         CLIPS_circularShiftBase<false>(context, ret);
     }
-    void CLIPS_onesComplement(UDFContext* context, CLIPSValuePtr ret) {
-        CLIPSValue val;
+    void CLIPS_onesComplement(UDFContext* context, UDFValue* ret) {
+        UDFValue val;
         if (!UDFFirstArgument(context, INTEGER_TYPE, &val)) {
             CVSetBoolean(ret, false);
         } else {
             CVSetInteger(ret, onesComplement(CVToInteger(&val)));
         }
     }
-    void CLIPS_twosComplement(UDFContext* context, CLIPSValuePtr ret) {
-        CLIPSValue val;
+    void CLIPS_twosComplement(UDFContext* context, UDFValue* ret) {
+        UDFValue val;
         if (!UDFFirstArgument(context, INTEGER_TYPE, &val)) {
             CVSetBoolean(ret, false);
         } else {
             CVSetInteger(ret, twosComplement(CVToInteger(&val)));
         }
     }
-    void CLIPS_multiplyAdd(UDFContext* context, CLIPSValuePtr ret) {
-        CLIPSValue a, b, c;
+    void CLIPS_multiplyAdd(UDFContext* context, UDFValue* ret) {
+        UDFValue a, b, c;
         if (!UDFFirstArgument(context, INTEGER_TYPE, &a)) {
             CVSetBoolean(ret, false);
         } else if (!UDFNextArgument(context, INTEGER_TYPE, &b)) {
@@ -231,7 +231,7 @@ namespace syn {
             CVSetInteger(ret, multiplyAdd(CVToInteger(&a), CVToInteger(&b), CVToInteger(&c)));
         }
     }
-    void CLIPS_getEndianness(UDFContext* context, CLIPSValuePtr ret) {
+    void CLIPS_getEndianness(UDFContext* context, UDFValue* ret) {
         static bool init = true;
         static std::string storage;
         if (init) {
@@ -249,84 +249,83 @@ namespace syn {
     }
 
     template<bool upperHalf>
-    void upperLowerHalfManip(UDFContext* context, CLIPSValuePtr ret) {
-        CLIPSValue num;
+    void upperLowerHalfManip(Environment* env, UDFContext* context, UDFValue* ret) {
+        UDFValue num;
         if (!UDFFirstArgument(context, INTEGER_TYPE, &num)) {
             CVSetBoolean(ret, false);
         } else {
-            CLIPSInteger n = CVToInteger(&num);
+            int64_t n = CVToInteger(&num);
             if (upperHalf) {
-                CVSetInteger(ret, syn::decodeBits<CLIPSInteger, CLIPSInteger, static_cast<CLIPSInteger>(0xFFFFFFFF00000000), getShiftCount<CLIPSInteger>()>(n));
+                CVSetInteger(ret, syn::decodeBits<int64_t, int64_t, static_cast<int64_t>(0xFFFFFFFF00000000), getShiftCount<int64_t>()>(n));
             } else {
-                CVSetInteger(ret, decodeBits<CLIPSInteger, CLIPSInteger, 0x00000000FFFFFFFF, 0>(n));
+                CVSetInteger(ret, decodeBits<int64_t, int64_t, 0x00000000FFFFFFFF, 0>(n));
             }
         }
     }
 
-    void CLIPS_getUpperHalf(UDFContext* c, CLIPSValuePtr ret) { upperLowerHalfManip<true>(c, ret); }
-    void CLIPS_getLowerHalf(UDFContext* c, CLIPSValuePtr ret) { upperLowerHalfManip<false>(c, ret); }
+    void CLIPS_getUpperHalf(Environment* env, UDFContext* c, UDFValue* ret) { upperLowerHalfManip<true>(env, c, ret); }
+    void CLIPS_getLowerHalf(Environment* env, UDFContext* c, UDFValue* ret) { upperLowerHalfManip<false>(env, c, ret); }
 
-	void installExtensions(void* theEnv) {
-		Environment* env = static_cast<Environment*>(theEnv);
+	void installExtensions(Environment* theEnv) {
 
-		EnvAddUDF(env, "bitmask->int", "l", CLIPS_translateBitmask, "CLIPS_translateBitmask", 1, 1, "sy", nullptr);
-		EnvAddUDF(env, "expand-bit", "l", CLIPS_expandBit, "CLIPS_expandBit", 1, 1,  nullptr, nullptr);
-		EnvAddUDF(env, "decode-bits", "l", CLIPS_decodeBits, "CLIPS_decodeBits", 3, 3, "l;l;l", nullptr);
-		EnvAddUDF(env, "encode-bits", "l", CLIPS_encodeBits, "CLIPS_encodeBits", 4, 4, "l;l;l;l", nullptr);
-		EnvAddUDF(env, "break-apart-number", "m", CLIPS_breakApartNumber, "CLIPS_breakApartNumber", 1, 1, "l", nullptr);
-        EnvAddUDF(env, "circular-shift-right", "l", CLIPS_circularShiftRight, "CLIPS_circularShiftRight", 2, 2, "l;l", nullptr);
-        EnvAddUDF(env, "circular-shift-left", "l", CLIPS_circularShiftLeft, "CLIPS_circularShiftLeft", 2, 2, "l;l", nullptr);
-        EnvAddUDF(env, "ones-complement", "l", CLIPS_onesComplement, "CLIPS_onesComplement", 1, 1, "l", nullptr);
-        EnvAddUDF(env, "twos-complement", "l", CLIPS_twosComplement, "CLIPS_twosComplement",1, 1, "l", nullptr);
-        EnvAddUDF(env, "multiply-add", "l", CLIPS_multiplyAdd, "CLIPS_multiplyAdd", 3, 3, "l;l;l", nullptr);
-        EnvAddUDF(env, "get-endian", "sy", CLIPS_getEndianness, "CLIPS_getEndianness", 0, 0, nullptr, nullptr);
-        EnvAddUDF(env, "upper-half", "l", CLIPS_getUpperHalf, "CLIPS_getUpperHalf", 1, 1, "l", nullptr);
-        EnvAddUDF(env, "lower-half", "l", CLIPS_getLowerHalf, "CLIPS_getLowerHalf", 1, 1, "l", nullptr);
+		AddUDF(theEnv, "bitmask->int", "l", 1, 1, "sy", CLIPS_translateBitmask, "CLIPS_translateBitmask", nullptr);
+		AddUDF(theEnv, "expand-bit", "l", 1, 1,  nullptr,  CLIPS_expandBit, "CLIPS_expandBit",  nullptr);
+		AddUDF(theEnv, "decode-bits", "l", 3, 3, "l;l;l",   CLIPS_decodeBits, "CLIPS_decodeBits",nullptr);
+		AddUDF(theEnv, "encode-bits", "l", 4, 4, "l;l;l;l", CLIPS_encodeBits, "CLIPS_encodeBits",nullptr);
+		AddUDF(theEnv, "break-apart-number", "m",    1, 1, "l",   CLIPS_breakApartNumber, "CLIPS_breakApartNumber",    nullptr);
+        AddUDF(theEnv, "circular-shift-right", "l",  2, 2, "l;l", CLIPS_circularShiftRight, "CLIPS_circularShiftRight",nullptr);
+        AddUDF(theEnv, "circular-shift-left", "l",   2, 2, "l;l", CLIPS_circularShiftLeft, "CLIPS_circularShiftLeft",  nullptr);
+        AddUDF(theEnv, "ones-complement", "l",  1, 1, "l",     CLIPS_onesComplement, "CLIPS_onesComplement",nullptr);
+        AddUDF(theEnv, "twos-complement", "l",  1, 1, "l",     CLIPS_twosComplement, "CLIPS_twosComplement",nullptr);
+        AddUDF(theEnv, "multiply-add", "l",     3, 3, "l;l;l", CLIPS_multiplyAdd, "CLIPS_multiplyAdd",      nullptr);
+        AddUDF(theEnv, "get-endian", "sy",      0, 0, nullptr, CLIPS_getEndianness, "CLIPS_getEndianness",  nullptr);
+        AddUDF(theEnv, "upper-half", "l",  1, 1, "l", CLIPS_getUpperHalf, "CLIPS_getUpperHalf",nullptr);
+        AddUDF(theEnv, "lower-half", "l",  1, 1, "l", CLIPS_getLowerHalf, "CLIPS_getLowerHalf",nullptr);
 	}
 
     bool isExternalAddress(DataObjectPtr value) noexcept {
         return GetpType(value) == EXTERNAL_ADDRESS;
     }
-    CLIPSInteger extractCLIPSInteger(void* env, DataObjectPtr value) noexcept {
+    int64_t extractInteger(Environment* env, DataObjectPtr value) noexcept {
         return EnvDOPToLong(env, value);
     }
-    CLIPSInteger extractCLIPSInteger(void* env, DataObject& value) noexcept {
+    int64_t extractInteger(Environment* env, DataObject& value) noexcept {
         return EnvDOToLong(env, value);
     }
 
-    const char* extractLexeme(void* env, DataObjectPtr value) noexcept {
+    const char* extractLexeme(Environment* env, DataObjectPtr value) noexcept {
         return EnvDOPToString(env, value);
     }
-    const char* extractLexeme(void* env, DataObject& value) noexcept {
+    const char* extractLexeme(Environment* env, DataObject& value) noexcept {
         return EnvDOToString(env, value);
     }
 
-	CLIPSFloat extractFloat(void* env, DataObject& value) noexcept {
+	CLIPSFloat extractFloat(Environment* env, DataObject& value) noexcept {
 		return EnvDOToDouble(env, value);
 	}
-	CLIPSFloat extractFloat(void* env, DataObjectPtr value) noexcept {
+	CLIPSFloat extractFloat(Environment* env, DataObjectPtr value) noexcept {
 		return EnvDOPToDouble(env, value);
 	}
 
-    bool checkThenGetArgument(void* env, const std::string& function, int position, MayaType type, DataObjectPtr saveTo) noexcept {
+    bool checkThenGetArgument(Environment* env, const std::string& function, int position, MayaType type, DataObjectPtr saveTo) noexcept {
         return EnvArgTypeCheck(env, function.c_str(), position, static_cast<int>(type), saveTo);
     }
 
-    bool tryGetArgumentAsInteger(void* env, const std::string& function, int position, DataObjectPtr saveTo) noexcept {
+    bool tryGetArgumentAsInteger(Environment* env, const std::string& function, int position, DataObjectPtr saveTo) noexcept {
         return checkThenGetArgument(env, function, position, MayaType::Integer, saveTo);
     }
 
-    bool tryGetArgumentAsSymbol(void* env, const std::string& function, int position, DataObjectPtr saveTo) noexcept {
+    bool tryGetArgumentAsSymbol(Environment* env, const std::string& function, int position, DataObjectPtr saveTo) noexcept {
         return checkThenGetArgument(env, function, position, MayaType::Symbol, saveTo);
     }
-    bool tryGetArgumentAsString(void* env, const std::string& function, int position, DataObjectPtr saveTo) noexcept {
+    bool tryGetArgumentAsString(Environment* env, const std::string& function, int position, DataObjectPtr saveTo) noexcept {
         return checkThenGetArgument(env, function, position, MayaType::String, saveTo);
     }
-    bool hasCorrectArgCount(void* env, int compare) noexcept {
+    bool hasCorrectArgCount(Environment* env, int compare) noexcept {
         return compare == getArgCount(env);
     }
 
-    int getArgCount(void* env) noexcept {
+    int getArgCount(Environment* env) noexcept {
         return EnvRtnArgCount(env);
     }
 
