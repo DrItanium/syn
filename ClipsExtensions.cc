@@ -251,29 +251,25 @@ ShiftRight(Environment* env, UDFContext* context, UDFValue* ret) {
 			setClipsBoolean(env, ret, false);
             return;
 		}
-        auto env = UDFContextEnvironment(context);
         auto integer = CVCoerceToInteger(&number);
         constexpr int integerWidth = byteCount<decltype(integer)>;
         constexpr auto baseMask = static_cast<decltype(integer)>(0xFF);
-        using IType = decltype(integer);
-        using OType = decltype(integer);
+		maya::MultifieldBuilder mb(env);
         if (integerWidth == 8) {
-            createMultifield(env, ret,
-                    performDecode<IType, OType, baseMask, 0>(integer),
-                    performDecode<IType, OType, baseMask, 1>(integer),
-                    performDecode<IType, OType, baseMask, 2>(integer),
-                    performDecode<IType, OType, baseMask, 3>(integer),
-                    performDecode<IType, OType, baseMask, 4>(integer),
-                    performDecode<IType, OType, baseMask, 5>(integer),
-                    performDecode<IType, OType, baseMask, 6>(integer),
-                    performDecode<IType, OType, baseMask, 7>(integer));
+			mb.append(performDecode<int64_t, int64_t, baseMask, 0>(integer));
+			mb.append(performDecode<int64_t, int64_t, baseMask, 1>(integer));
+			mb.append(performDecode<int64_t, int64_t, baseMask, 2>(integer));
+			mb.append(performDecode<int64_t, int64_t, baseMask, 3>(integer));
+			mb.append(performDecode<int64_t, int64_t, baseMask, 4>(integer));
+			mb.append(performDecode<int64_t, int64_t, baseMask, 5>(integer));
+			mb.append(performDecode<int64_t, int64_t, baseMask, 6>(integer));
+			mb.append(performDecode<int64_t, int64_t, baseMask, 7>(integer));
         } else {
-			maya::MultifieldBuilder mb(env);
             for (int i = 0; i < integerWidth; ++i) {
-				mb.append(syn::decodeBits<IType, OType>(integer, baseMask << (8 * i), (8 * i)));
+				mb.append(int64_t(syn::decodeBits<IType, OType>(integer, baseMask << (8 * i), (8 * i))));
             }
-			ret->multifieldValue = mb.create();
         }
+		ret->multifieldValue = mb.create();
 	}
 
 	bool errorMessage(Environment* env, const std::string& idClass, int idIndex, const std::string& msgPrefix, const std::string& msg) noexcept {
