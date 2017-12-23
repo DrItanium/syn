@@ -6,7 +6,6 @@ include config.mk
 
 MAYA_OBJECTS = $(patsubst %.c,%.o, $(wildcard *.c))
 COMMON_THINGS = ClipsExtensions.o \
-			 	MultifieldBuilder.o \
 				MemoryBlock.o \
 				boost.o \
 				functional.o \

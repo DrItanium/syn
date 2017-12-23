@@ -31,7 +31,7 @@
 #include "Base.h"
 #include "ClipsExtensions.h"
 #include "ExternalAddressWrapper.h"
-#include "MultifieldBuilder.h"
+#include "functional.h"
 
 #include <cstdint>
 #include <climits>
@@ -47,6 +47,112 @@ extern "C" {
 }
 
 namespace syn {
+
+void 
+BinaryNot(Environment* env, UDFContext* context, UDFValue* ret) {
+	UDFValue val;
+	if (!UDFFirstArgument(context, INTEGER_TYPE, &val)) {
+		setClipsBoolean(env, ret, false);
+		return;
+	}
+	ret->integerValue = CreateInteger(env, ~(CVCoerceToInteger(&val)));
+}
+
+void
+BinaryOr(Environment* env, UDFContext* context, UDFValue* ret) {
+	UDFValue a, b;
+	if (!UDFFirstArgument(context, INTEGER_TYPE, &a)) {
+		setClipsBoolean(env, ret, false);
+		return;
+	} else if (!UDFNextArgument(context, INTEGER_TYPE, &b)) {
+		setClipsBoolean(env, ret, false);
+		return;
+	} 
+
+	ret->integerValue = CreateInteger(env, CVCoerceToInteger(&a) | CVCoerceToInteger(&b));
+}
+
+void
+BinaryAnd(Environment* env, UDFContext* context, UDFValue* ret) {
+	UDFValue a, b;
+	if (!UDFFirstArgument(context, INTEGER_TYPE, &a)) {
+		setClipsBoolean(env, ret, false);
+		return;
+	} else if (!UDFNextArgument(context, INTEGER_TYPE, &b)) {
+		setClipsBoolean(env, ret, false);
+		return;
+	} 
+	ret->integerValue = CreateInteger(env, CVCoerceToInteger(&a) & CVCoerceToInteger(&b));
+}
+
+void
+BinaryXor(Environment* env, UDFContext* context, UDFValue* ret) {
+	UDFValue a, b;
+	if (!UDFFirstArgument(context, INTEGER_TYPE, &a)) {
+		setClipsBoolean(env, ret, false);
+		return;
+	} else if (!UDFNextArgument(context, INTEGER_TYPE, &b)) {
+		setClipsBoolean(env, ret, false);
+		return;
+	} 
+	ret->integerValue = CreateInteger(env, CVCoerceToInteger(&a) ^ CVCoerceToInteger(&b));
+}
+
+void
+BinaryNor(Environment* env, UDFContext* context, UDFValue* ret) {
+	UDFValue a, b;
+	if (!UDFFirstArgument(context, INTEGER_TYPE, &a)) {
+		setClipsBoolean(env, ret, false);
+		return;
+	} else if (!UDFNextArgument(context, INTEGER_TYPE, &b)) {
+		setClipsBoolean(env, ret, false);
+		return;
+	} 
+
+	ret->integerValue = CreateInteger(env,  ~(CVCoerceToInteger(&a) | CVCoerceToInteger(&b)));
+}
+
+void
+BinaryNand(Environment* env, UDFContext* context, UDFValue* ret) {
+	UDFValue a, b;
+	if (!UDFFirstArgument(context, INTEGER_TYPE, &a)) {
+		setClipsBoolean(env, ret, false);
+		return;
+	} else if (!UDFNextArgument(context, INTEGER_TYPE, &b)) {
+		setClipsBoolean(env, ret, false);
+		return;
+	} 
+
+	ret->integerValue = CreateInteger(env,  ~(CVCoerceToInteger(&a) & CVCoerceToInteger(&b)));
+}
+
+void
+ShiftLeft(Environment* env, UDFContext* context, UDFValue* ret) {
+	UDFValue value, by;
+	if (!UDFFirstArgument(context, INTEGER_TYPE, &value)) {
+		setClipsBoolean(env, ret, false);
+		return;
+	} else if (!UDFNextArgument(context, INTEGER_TYPE, &by)) {
+		setClipsBoolean(env, ret, false);
+		return;
+	} 
+
+	ret->integerValue = CreateInteger(env,  (CVCoerceToInteger(&value) << CVCoerceToInteger(&by)));
+}
+
+void
+ShiftRight(Environment* env, UDFContext* context, UDFValue* ret) {
+	UDFValue value, by;
+	if (!UDFFirstArgument(context, INTEGER_TYPE, &value)) {
+		setClipsBoolean(env, ret, false);
+		return;
+	} else if (!UDFNextArgument(context, INTEGER_TYPE, &by)) {
+		setClipsBoolean(env, ret, false);
+		return;
+	} 
+
+	ret->integerValue = CreateInteger(env,  (CVCoerceToInteger(&value) >> CVCoerceToInteger(&by)));
+}
 	void CLIPS_errorMessageGeneric(Environment* env, UDFContext* context, UDFValue* ret, const char* msg) noexcept {
 		UDFInvalidArgumentMessage(context, msg);
 		setClipsBoolean(env, ret, false);
@@ -72,7 +178,7 @@ namespace syn {
 					if (tmp > 0xFF) {
 						CLIPS_errorMessageGeneric(context, ret, "provided number is larger than 8-bits!");
 					} else {
-						CVSetInteger(ret, static_cast<int64_t>(static_cast<byte>(tmp)));
+						ret->integerValue = CreateInteger(env,  static_cast<int64_t>(static_cast<byte>(tmp)));
 					}
 				}
 			} else {
@@ -87,12 +193,12 @@ namespace syn {
 
 	void CLIPS_expandBit(Environment* env, UDFContext* context, UDFValue* ret) noexcept {
 		UDFValue number;
-		if (!UDFFirstArgument(context, NUMBER_TYPES, &number)) {
+		if (!UDFFirstArgument(context, NUMBER_BITS, &number)) {
 			setClipsBoolean(env, ret, false);
 			return;
 		}
-		auto value = CVToInteger(&number);
-		CVSetInteger(ret, int64_t(expandBit(value != 0)));
+		auto value = CVCoerceToInteger(&number);
+		ret->integerValue = CreateInteger(env,  int64_t(expandBit(value != 0)));
 	}
 
 	void CLIPS_basePrintAddress(Environment* env, const char* logicalName, void* theValue, const char* func, const char* majorType) {
@@ -107,32 +213,32 @@ namespace syn {
 	}
 	void CLIPS_decodeBits(Environment* env, UDFContext* context, UDFValue* ret) {
 		UDFValue value, mask, shift;
-		if (!UDFFirstArgument(context, NUMBER_TYPES, &value)) {
+		if (!UDFFirstArgument(context, NUMBER_BITS, &value)) {
 			setClipsBoolean(env, ret, false);
-		} else if (!UDFNextArgument(context, NUMBER_TYPES, &mask)) {
+		} else if (!UDFNextArgument(context, NUMBER_BITS, &mask)) {
 			setClipsBoolean(env, ret, false);
-		} else if (!UDFNextArgument(context, NUMBER_TYPES, &shift)) {
+		} else if (!UDFNextArgument(context, NUMBER_BITS, &shift)) {
 			setClipsBoolean(env, ret, false);
 		} else {
-			CVSetInteger(ret, decodeBits<int64_t, int64_t>(CVToInteger(&value), CVToInteger(&mask), CVToInteger(&shift)));
+			ret->integerValue = CreateInteger(env,  decodeBits<int64_t, int64_t>(CVCoerceToInteger(&value), CVCoerceToInteger(&mask), CVCoerceToInteger(&shift)));
 		}
 	}
 	void CLIPS_encodeBits(Environment* env, UDFContext* context, UDFValue* ret) noexcept {
 		UDFValue input, value, mask, shift;
-		if (!UDFFirstArgument(context, NUMBER_TYPES, &input)) {
+		if (!UDFFirstArgument(context, NUMBER_BITS, &input)) {
 			setClipsBoolean(env, ret, false);
-		} else if (!UDFNextArgument(context, NUMBER_TYPES, &value)) {
+		} else if (!UDFNextArgument(context, NUMBER_BITS, &value)) {
 			setClipsBoolean(env, ret, false);
-		} else if (!UDFNextArgument(context, NUMBER_TYPES, &mask)) {
+		} else if (!UDFNextArgument(context, NUMBER_BITS, &mask)) {
 			setClipsBoolean(env, ret, false);
-		} else if (!UDFNextArgument(context, NUMBER_TYPES, &shift)) {
+		} else if (!UDFNextArgument(context, NUMBER_BITS, &shift)) {
 			setClipsBoolean(env, ret, false);
 		} else {
-			auto i = CVToInteger(&input);
-			auto v = CVToInteger(&value);
-			auto m = CVToInteger(&mask);
-			auto s = CVToInteger(&shift);
-			CVSetInteger(ret, encodeBits<int64_t, int64_t>(i, v, m, s));
+			auto i = CVCoerceToInteger(&input);
+			auto v = CVCoerceToInteger(&value);
+			auto m = CVCoerceToInteger(&mask);
+			auto s = CVCoerceToInteger(&shift);
+			ret->integerValue = CreateInteger(env,  encodeBits<int64_t, int64_t>(i, v, m, s));
 		}
 	}
     template<typename I, typename O, I mask, int index>
@@ -141,12 +247,12 @@ namespace syn {
     }
 	void CLIPS_breakApartNumber(Environment* env, UDFContext* context, UDFValue* ret) {
 		UDFValue number;
-		if (!UDFFirstArgument(context, NUMBER_TYPES, &number)) {
+		if (!UDFFirstArgument(context, NUMBER_BITS, &number)) {
 			setClipsBoolean(env, ret, false);
             return;
 		}
         auto env = UDFContextEnvironment(context);
-        auto integer = CVToInteger(&number);
+        auto integer = CVCoerceToInteger(&number);
         constexpr int integerWidth = byteCount<decltype(integer)>;
         constexpr auto baseMask = static_cast<decltype(integer)>(0xFF);
         using IType = decltype(integer);
@@ -162,24 +268,24 @@ namespace syn {
                     performDecode<IType, OType, baseMask, 6>(integer),
                     performDecode<IType, OType, baseMask, 7>(integer));
         } else {
-            FixedSizeMultifieldBuilder<integerWidth> mf(env);
-            for (int i = 0, j = 1; i < integerWidth; ++i, ++j) {
-                mf.setField(j, MayaType::Integer, EnvAddLong(env, syn::decodeBits<IType, OType>(integer, baseMask << (8 * i), (8 * i))));
+			maya::MultifieldBuilder mb(env);
+            for (int i = 0; i < integerWidth; ++i) {
+				mb.append(syn::decodeBits<IType, OType>(integer, baseMask << (8 * i), (8 * i)));
             }
-            mf.assign(ret);
+			ret->multifieldValue = mb.create();
         }
 	}
 
 	bool errorMessage(Environment* env, const std::string& idClass, int idIndex, const std::string& msgPrefix, const std::string& msg) noexcept {
 		PrintErrorID(env, idClass.c_str(), idIndex, false);
-        clips::printRouter(env, WERROR, msgPrefix);
-        clips::printRouter(env, WERROR, msg);
-        clips::printLine(env, WERROR);
-		EnvSetEvaluationError(env, true);
+        clips::printRouter(env, STDERR, msgPrefix);
+        clips::printRouter(env, STDERR, msg);
+        clips::printLine(env, STDERR);
+		SetEvaluationError(env, true);
 		return false;
 	}
-	bool errorMessage(Environment* env, UDFContext* env, const std::string& idClass, int idIndex, const std::string& msgPrefix, const std::string& msg) noexcept {
-        return errorMessage(Environment* env, UDFContextEnvironment(env), idClass, idIndex, msgPrefix, msg);
+	bool errorMessage(Environment* env, UDFContext* context, const std::string& idClass, int idIndex, const std::string& msgPrefix, const std::string& msg) noexcept {
+        return errorMessage(env, idClass, idIndex, msgPrefix, msg);
     }
     template<bool shiftLeft>
     void CLIPS_circularShiftBase(Environment* env, UDFContext* context, UDFValue* ret) {
@@ -189,26 +295,26 @@ namespace syn {
         } else if (!UDFNextArgument(context, INTEGER_BIT, &b)) {
             setClipsBoolean(env, ret, false);
         } else {
-            auto firstValue = CVToInteger(&a);
-            auto secondValue = CVToInteger(&b);
+            auto firstValue = CVCoerceToInteger(&a);
+            auto secondValue = CVCoerceToInteger(&b);
             auto result = shiftLeft ?
                 circularShiftLeft<int64_t>(firstValue, secondValue) :
                 circularShiftRight<int64_t>(firstValue, secondValue);
-            CVSetInteger(ret, result);
+            ret->integerValue = CreateInteger(env,  result);
         }
     }
     void CLIPS_circularShiftLeft(Environment* env, UDFContext* context, UDFValue* ret) {
-        CLIPS_circularShiftBase<true>(context, ret);
+        CLIPS_circularShiftBase<true>(env, context, ret);
     }
     void CLIPS_circularShiftRight(Environment* env, UDFContext* context, UDFValue* ret) {
-        CLIPS_circularShiftBase<false>(context, ret);
+        CLIPS_circularShiftBase<false>(env, context, ret);
     }
     void CLIPS_onesComplement(Environment* env, UDFContext* context, UDFValue* ret) {
         UDFValue val;
         if (!UDFFirstArgument(context, INTEGER_BIT, &val)) {
             setClipsBoolean(env, ret, false);
         } else {
-            CVSetInteger(ret, onesComplement(CVToInteger(&val)));
+            ret->integerValue = CreateInteger(env,  onesComplement(CVCoerceToInteger(&val)));
         }
     }
     void CLIPS_twosComplement(Environment* env, UDFContext* context, UDFValue* ret) {
@@ -216,7 +322,7 @@ namespace syn {
         if (!UDFFirstArgument(context, INTEGER_BIT, &val)) {
             setClipsBoolean(env, ret, false);
         } else {
-            CVSetInteger(ret, twosComplement(CVToInteger(&val)));
+            ret->integerValue = CreateInteger(env,  twosComplement(CVCoerceToInteger(&val)));
         }
     }
     void CLIPS_multiplyAdd(Environment* env, UDFContext* context, UDFValue* ret) {
@@ -228,7 +334,7 @@ namespace syn {
         } else if (!UDFNextArgument(context, INTEGER_BIT, &c)) {
             setClipsBoolean(env, ret, false);
         } else {
-            CVSetInteger(ret, multiplyAdd(CVToInteger(&a), CVToInteger(&b), CVToInteger(&c)));
+            ret->integerValue = CreateInteger(env,  multiplyAdd(CVCoerceToInteger(&a), CVCoerceToInteger(&b), CVCoerceToInteger(&c)));
         }
     }
     void CLIPS_getEndianness(Environment* env, UDFContext* context, UDFValue* ret) {
@@ -245,7 +351,7 @@ namespace syn {
             }
         }
         // only compute this once!
-        CVSetSymbol(ret, storage.c_str());
+		ret->lexemeValue = CreateSymbol(env, storage.c_str());
     }
 
     template<bool upperHalf>
@@ -281,6 +387,14 @@ namespace syn {
         AddUDF(theEnv, "get-endian", "sy",      0, 0, nullptr, CLIPS_getEndianness, "CLIPS_getEndianness",  nullptr);
         AddUDF(theEnv, "upper-half", "l",  1, 1, "l", CLIPS_getUpperHalf, "CLIPS_getUpperHalf",nullptr);
         AddUDF(theEnv, "lower-half", "l",  1, 1, "l", CLIPS_getLowerHalf, "CLIPS_getLowerHalf",nullptr);
+	AddUDF(theEnv, "binary-not", "l",  1, 1, "l",   BinaryNot, "BinaryNot",   nullptr);
+	AddUDF(theEnv, "binary-and", "l",  2, 2, "l;l", BinaryAnd, "BinaryAnd",   nullptr);
+	AddUDF(theEnv, "binary-or", "l",   2, 2, "l;l", BinaryOr, "BinaryOr",     nullptr);
+	AddUDF(theEnv, "binary-xor", "l",  2, 2, "l;l", BinaryXor, "BinaryXor",   nullptr);
+	AddUDF(theEnv, "binary-nand", "l", 2, 2, "l;l", BinaryNand, "BinaryNand", nullptr);
+	AddUDF(theEnv, "binary-nor", "l",  2, 2, "l;l", BinaryNor, "BinaryNor",   nullptr);
+	AddUDF(theEnv, "left-shift", "l",   2, 2, "l;l",ShiftLeft, "ShiftLeft",    nullptr);
+	AddUDF(theEnv, "right-shift", "l", 2, 2, "l;l", ShiftRight, "ShiftRight", nullptr);
 	}
 
     bool isExternalAddress(UDFValue* value) noexcept {

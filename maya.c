@@ -39,7 +39,6 @@ void InstallMayaExtensions(void* environment) { }
 #else
 static void EmptyFunction(Environment*, UDFContext*, UDFValue*);
 static void Functionp(Environment*, UDFContext*, UDFValue*);
-//static void NextToken(Environment*, UDFContext* context, UDFValue* ret);
 static void LastFunction(Environment*, UDFContext* context, UDFValue* ret);
 
 void InstallMayaExtensions(Environment* environment) {
@@ -94,5 +93,6 @@ EmptyFunction(Environment* env, UDFContext* context, UDFValue* ret) {
 	}
 	ret->lexemeValue = (theArg.range > 0) ? FalseSymbol(env) : TrueSymbol(env);
 }
+
 
 #endif // end MAYA_EXTENSIONS
