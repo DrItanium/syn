@@ -50,14 +50,15 @@ namespace syn {
 	template<typename T>
 	using Block = T[];
 
-    bool Arg2IsInteger(void* env, CLIPSValuePtr storage, const std::string& funcStr) noexcept {
-        return tryGetArgumentAsInteger(env, funcStr, 2, storage);
-    }
-    bool Arg2IsSymbol(void* env, CLIPSValuePtr storage, const std::string& funcStr) noexcept {
-        return tryGetArgumentAsSymbol(env, funcStr, 2, storage);
-    }
-    void handleProblem(void* env, CLIPSValuePtr ret, const syn::Problem& p, const std::string funcErrorPrefix) noexcept {
+    //bool Arg2IsInteger(Environment* env, UDFValue* storage, const std::string& funcStr) noexcept {
+    //    return tryGetArgumentAsInteger(env, funcStr, 2, storage);
+    //}
+    //bool Arg2IsSymbol(Environment* env, UDFValue* storage, const std::string& funcStr) noexcept {
+    //    return tryGetArgumentAsSymbol(env, funcStr, 2, storage);
+    //}
+    void handleProblem(Environment* env, UDFValue* ret, const syn::Problem& p, const std::string funcErrorPrefix) noexcept {
         CVSetBoolean(ret, false);
+
         std::stringstream s;
         s << "an exception was thrown: " << p.what();
         auto str = s.str();
@@ -76,12 +77,12 @@ namespace syn {
 				return new ManagedMemoryBlock(capacity);
 			}
 			using ManagedMemoryBlock_Ptr = ManagedMemoryBlock*;
-			static void newFunction(void* env, DataObjectPtr ret) {
+			static void newFunction(Environment* env, DataObject* ret) {
 				try {
                     // TODO: fix this checkArgumentCount to not reference
                     // the call version of this function
 					if (syn::getArgCount(env) == 2) {
-						CLIPSValue capacity;
+						UDFValue capacity;
                         if (!Arg2IsInteger(env, &capacity, getFunctionPrefixNew<WordBlock>())) {
 							CVSetBoolean(ret, false);
 							errorMessage(env, "NEW", 1, getFunctionErrorPrefixNew<WordBlock>(), " expected an integer for capacity!");
@@ -136,9 +137,9 @@ namespace syn {
 				}
 			}
 
-			static bool callFunction(void* env, DataObjectPtr value, DataObjectPtr ret) {
+			static bool callFunction(Environment* env, DataObject* value, DataObject* ret) {
                 __RETURN_FALSE_ON_FALSE__(Parent::isExternalAddress(env, ret, value));
-                CLIPSValue operation;
+                UDFValue operation;
                 __RETURN_FALSE_ON_FALSE__(Parent::tryExtractFunctionName(env, ret, &operation));
                 std::string str(extractLexeme(env, operation));
                 // translate the op to an enumeration
@@ -168,7 +169,7 @@ namespace syn {
                     return result;
                 };
                 auto commonSingleIntegerBody = [checkAddr, env, ret, ptr](auto fn) {
-					CLIPSValue arg0;
+					UDFValue arg0;
                     auto check = Parent::tryExtractArgument1(env, ret, &arg0, MayaType::Integer, "First argument be be an address");
                     if (check) {
                         auto addr = extractCLIPSInteger(env, arg0);
@@ -180,7 +181,7 @@ namespace syn {
                     return check;
                 };
 				auto populate = [env, ret, ptr]() {
-					CLIPSValue arg0;
+					UDFValue arg0;
 					auto check = Parent::tryExtractArgument1(env, ret, &arg0, MayaType::Integer, "First argument must be an integer value to populate all of the memory cells with!");
 					if (check) {
 						ptr->setMemoryToSingleValue(extractCLIPSInteger(env, arg0));
@@ -188,7 +189,7 @@ namespace syn {
 					return check;
 				};
 				auto swapOrMove = [env, ret, checkAddr, ptr](auto op) {
-					CLIPSValue arg0, arg1;
+					UDFValue arg0, arg1;
                     auto check = Parent::tryExtractArgument1(env, ret, &arg0, MayaType::Integer, "First argument must be an address") &&
                                  Parent::tryExtractArgument2(env, ret, &arg1, MayaType::Integer, "Second argument must be an address");
                     if (check) {
@@ -206,7 +207,7 @@ namespace syn {
                     return check;
 				};
 				auto setAction = [env, ret, checkAddr, ptr]() {
-					CLIPSValue arg0, arg1;
+					UDFValue arg0, arg1;
                     auto check = Parent::tryExtractArgument1(env, ret, &arg0, MayaType::Integer, "First argument must be an address") &&
                                  Parent::tryExtractArgument2(env, ret, &arg1, MayaType::Integer, "Second argument must be an address");
                     if (check) {
@@ -244,11 +245,11 @@ namespace syn {
 				}
                 return true;
 			}
-			static void registerWithEnvironment(void* env, const char* title) {
+			static void registerWithEnvironment(Environment* env, const char* title) {
 				Parent::registerWithEnvironment(env, title, callFunction, newFunction);
 			}
 
-			static void registerWithEnvironment(void* env) {
+			static void registerWithEnvironment(Environment* env) {
 				registerWithEnvironment(env, Parent::getType().c_str());
 			}
 		public:

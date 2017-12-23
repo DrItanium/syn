@@ -313,7 +313,7 @@ const std::string& getFunctionPrefixNew() noexcept {
  */
 template<typename T>
 bool badCallArgument(Environment* env, UDFValue* ret, int code, const std::string& msg) noexcept {
-    CVSetBoolean(ret, false);
+	setClipsBoolean(env, ret, false);
     return syn::errorMessage(env, "CALL", code, getFunctionErrorPrefixCall<T>(), msg);
 }
 
