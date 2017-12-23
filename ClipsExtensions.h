@@ -78,15 +78,15 @@ void installExtensions(Environment* theEnv);
 /**
  * A wrapper enum for interfacing with CLIPS' constants
  */
-enum class MayaType {
-    Integer = INTEGER,
-    Float = FLOAT,
-    ExternalAddress = EXTERNAL_ADDRESS,
-    Symbol = SYMBOL,
-    String = STRING,
-    Lexeme = SYMBOL_OR_STRING,
-    Multifield = MULTIFIELD,
-};
+//enum class MayaType {
+//    Integer = INTEGER,
+//    Float = FLOAT,
+//    ExternalAddress = EXTERNAL_ADDRESS,
+//    Symbol = SYMBOL,
+//    String = STRING,
+//    Lexeme = SYMBOL_OR_STRING,
+//    Multifield = MULTIFIELD,
+//};
 
 /**
  * retrieves the argument count of the function call originating in CLIPS.
@@ -218,10 +218,10 @@ bool isExternalAddress(UDFValue* value) noexcept;
 const char* extractLexeme(UDFValue* value) noexcept;
 const char* extractLexeme(UDFValue& value) noexcept;
 
-bool checkThenGetArgument(void* env, const std::string& function, int position, MayaType type, DataObjectPtr saveTo) noexcept;
-bool tryGetArgumentAsInteger(void* env, const std::string& function, int position, DataObjectPtr saveTo) noexcept;
-bool tryGetArgumentAsSymbol(void* env, const std::string& function, int position, DataObjectPtr saveTo) noexcept;
-bool tryGetArgumentAsString(void* env, const std::string& function, int position, DataObjectPtr saveTo) noexcept;
+//bool checkThenGetArgument(void* env, const std::string& function, int position, MayaType type, DataObjectPtr saveTo) noexcept;
+//bool tryGetArgumentAsInteger(void* env, const std::string& function, int position, DataObjectPtr saveTo) noexcept;
+//bool tryGetArgumentAsSymbol(void* env, const std::string& function, int position, DataObjectPtr saveTo) noexcept;
+//bool tryGetArgumentAsString(void* env, const std::string& function, int position, DataObjectPtr saveTo) noexcept;
 
 /**
  * Wrapper method for setting a clips value to a boolean value. The boolean
@@ -259,7 +259,7 @@ inline bool setClipsBoolean(Environment* theEnv, UDFValue* ret, bool value = tru
  * successful find
  * @return true if the given argument is of the correct type.
  */
-bool checkThenGetArgument(void* env, const std::string& function, int position, MayaType type, DataObjectPtr saveTo) noexcept;
+//bool checkThenGetArgument(void* env, const std::string& function, int position, MayaType type, DataObjectPtr saveTo) noexcept;
 
 /**
  * Output an error message through clips

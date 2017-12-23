@@ -36,7 +36,7 @@ extern "C" {
 
 int main(int argc, char* argv[]) {
 	// make sure this is a common io bus
-	void* mainEnv = CreateEnvironment();
+	auto* mainEnv = CreateEnvironment();
 	// install features here
 	syn::installExtensions(mainEnv);
 	syn::installMemoryBlockTypes(mainEnv);
